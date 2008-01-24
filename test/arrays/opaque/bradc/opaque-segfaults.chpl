@@ -50,8 +50,8 @@ def createRandomGraph() {
 
   // allocate vertices
   for i in 1..numVertices {
-    //    vertices(i) = Vertices.new();
-    const newVertex = Vertices.new();
+    //    vertices(i) = Vertices.create();
+    const newVertex = Vertices.create();
     Label(newVertex) = "v" + i;
     VertexWeight(newVertex) = myRandNums.getNext();
   }
@@ -63,7 +63,7 @@ def createRandomGraph() {
     const randVal = myRandNums.getNext();
     if (randVal > 0.5) {
       // allocate a new edge index
-      const newEdge = Edges.new();
+      const newEdge = Edges.create();
       EdgeWeight(newEdge) = myRandNums.getNext();
 
       // increment the number of out edges for the source vertex vi and grab

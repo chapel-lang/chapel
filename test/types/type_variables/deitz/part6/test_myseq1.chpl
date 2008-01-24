@@ -11,10 +11,10 @@ class myseq {
   var last : myseq_node(elementType);
 
   def append(e : elementType) {
-    var new : myseq_node(elementType) = myseq_node(elementType = elementType);
-    new.element = e;
-    first = new;
-    last = new;
+    var copy : myseq_node(elementType) = myseq_node(elementType = elementType);
+    copy.element = e;
+    first = copy;
+    last = copy;
     length = 1;
   }
 

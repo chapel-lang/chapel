@@ -119,6 +119,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TLABEL
 %token TLET
 %token TMODULE
+%token TNEW
 %token TNIL
 %token TOF
 %token TON
@@ -1549,6 +1550,8 @@ expr:
 
 top_level_expr: 
   lvalue
+| TNEW parenop_expr
+    { INT_FATAL("new is reserved"); $$ = $2; }
 | TLP TDOTDOTDOT expr TRP
     { $$ = new CallExpr(PRIMITIVE_TUPLE_EXPAND, $3); }
 | TNIL

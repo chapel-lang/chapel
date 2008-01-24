@@ -1,9 +1,9 @@
 var D: domain(opaque);
 var A: [D] index(D);
 
-var root = D.new();
-A(root) = D.new();
-A(A(root)) = D.new();
+var root = D.create();
+A(root) = D.create();
+A(A(root)) = D.create();
 A(A(A(root))) = root;
 
 var B: [D] int;

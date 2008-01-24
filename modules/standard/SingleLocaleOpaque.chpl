@@ -8,7 +8,7 @@ class SingleLocaleOpaqueDomain: BaseDomain {
     adomain = SingleLocaleAssociativeDomain(rank=rank, idxType=_OpaqueIndex);
   }
 
-  def new() {
+  def create() {
     var i = _OpaqueIndex();
     adomain.add(i);
     return i;

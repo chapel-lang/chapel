@@ -143,7 +143,7 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-primary-expr-kwds
   "Keywords besides constants and operators that start primary expressions."
-  chpl '("this")) ;; Not really a keyword, but practically works as one.
+  chpl '("this" "new")) ;; Not really a keyword, but practically works as one.
 
 
 (c-lang-defconst c-other-kwds

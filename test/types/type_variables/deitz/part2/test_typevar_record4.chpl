@@ -11,28 +11,28 @@ record foo {
   var last : node(t);
 
   def append(e : t) {
-   var new : node(t) = node(t);
-    new.element = e;
+   var anew : node(t) = node(t);
+    anew.element = e;
     if length > 0 {
-      last.next = new;
-      last = new;
+      last.next = anew;
+      last = anew;
     } else {
-      first = new;
-      last = new;
+      first = anew;
+      last = anew;
     }
     length += 1;
     return this;
   }
 
   def prepend(e : t) {
-    var new : node(t) = node(t);
-    new.element = e;
+    var anew : node(t) = node(t);
+    anew.element = e;
     if length > 0 {
-      new.next = first;
-      first = new;
+      anew.next = first;
+      first = anew;
     } else {
-      first = new;
-      last = new;
+      first = anew;
+      last = anew;
     }
     length += 1;
     return this;

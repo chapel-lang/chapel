@@ -351,16 +351,16 @@ class CMOArray:BaseArray {
 
   def reallocate(d: _domain) {
     if (d._value.type == dom.type) {
-      var new = CMOArray(eltType, rank, idxType, d._value.stridable, reindexed, d._value);
+      var copy = CMOArray(eltType, rank, idxType, d._value.stridable, reindexed, d._value);
       for i in _intersect(d._value, dom) do
-        new(i) = this(i);
-      off = new.off;
-      blk = new.blk;
-      str = new.str;
-      origin = new.origin;
-      factoredOffs = new.factoredOffs;
-      size = new.size;
-      data = new.data;
+        copy(i) = this(i);
+      off = copy.off;
+      blk = copy.blk;
+      str = copy.str;
+      origin = copy.origin;
+      factoredOffs = copy.factoredOffs;
+      size = copy.size;
+      data = copy.data;
     } else {
       halt("illegal reallocation");
     }

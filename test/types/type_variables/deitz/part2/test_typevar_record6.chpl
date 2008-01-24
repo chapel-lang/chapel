@@ -11,27 +11,27 @@ record foo {
   var last : node(t);
 
   def append(e : t) {
-   var new : node(t) = node(t);
-    new.element = e;
+   var anew : node(t) = node(t);
+    anew.element = e;
     if length > 0 {
-      last.next = new;
-      last = new;
+      last.next = anew;
+      last = anew;
     } else {
-      first = new;
-      last = new;
+      first = anew;
+      last = anew;
     }
     length += 1;
     return this;
   }
 
   def copy() {
-    var new : foo(t);
+    var anew : foo(t);
     var tmp = first;
     while (tmp != nil) {
-      new.append(tmp.element);
+      anew.append(tmp.element);
       tmp  = tmp.next;    
     }
-    return new;     
+    return anew;     
   }
 }
 

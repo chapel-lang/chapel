@@ -86,6 +86,7 @@ inout           processToken(TINOUT);
 label           processToken(TLABEL);
 let             processToken(TLET);
 module          processToken(TMODULE);
+new             processToken(TNEW);
 nil             processToken(TNIL);
 of              processToken(TOF);
 on              processToken(TON);

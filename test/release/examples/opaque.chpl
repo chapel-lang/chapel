@@ -21,9 +21,9 @@ var People: domain(opaque);
 // do the following declarations/assignments:
 //
 
-var person1 = People.new();  // person inferred to be of type index(People);
-var person2: index(People) = People.new();
-var person3: index(opaque) = People.new();
+var person1 = People.create();  // person inferred to be of type index(People);
+var person2: index(People) = People.create();
+var person3: index(opaque) = People.create();
 
 //
 // Like other domain types, arrays can be declared using opaque
@@ -228,7 +228,7 @@ def createRandomGraph() {
   // allocate all the vertices and assign them labels and random weights
   //
   for i in 1..numVertices {
-    const newVertex = Vertices.new();
+    const newVertex = Vertices.create();
     Label(newVertex) = "v" + i;
     VertexWeight(newVertex) = myRandNums.getNext();
   }
@@ -244,7 +244,7 @@ def createRandomGraph() {
       //
       // allocate a new edge and give it a random weight
       //
-      const newEdge = Edges.new();
+      const newEdge = Edges.create();
       EdgeWeight(newEdge) = myRandNums.getNext();
 
       //

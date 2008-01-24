@@ -1,6 +1,6 @@
 var D: domain(opaque);
-var i1 = D.new();
-var i2 = D.new();
+var i1 = D.create();
+var i2 = D.create();
 var A: [D] int;
 A(i1) = 4;
 A(i2) = 5;

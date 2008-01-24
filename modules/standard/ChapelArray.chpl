@@ -190,10 +190,10 @@ record _domain {
     _value.clear();
   }
 
-  def new() {
+  def create() {
     if _value.idxType != _OpaqueIndex then
-      compilerError("domain.new only applies to opaque domains");
-    return _value.new();
+      compilerError("domain.create() only applies to opaque domains");
+    return _value.create();
   }
 
   def add(i) {
