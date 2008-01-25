@@ -277,7 +277,7 @@ static void build_constructor(ClassType* ct) {
     fn->addPragma("tuple");
     fn->addPragma("inline");
   }
-  ArgSymbol* meme;
+  ArgSymbol* meme = NULL;
   fn->_this = new VarSymbol("this", ct);
   fn->insertAtTail(new DefExpr(fn->_this));
   if (ct->classTag == CLASS_CLASS) {
