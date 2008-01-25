@@ -230,7 +230,6 @@ insertWideReferences(void) {
       buildWideClass(ct);
     }
   }
-  buildWideClass(dtObject);
 
   //
   // change all classes into wide classes
