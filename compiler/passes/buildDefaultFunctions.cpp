@@ -173,7 +173,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   }
   if (ct->classTag == CLASS_UNION)
     fn->insertAtTail(new CondStmt(new SymExpr(fn->setter->sym), new CallExpr(PRIMITIVE_UNION_SETID, _this, new_IntSymbol(field->id)), new CondStmt(new CallExpr("!", new CallExpr(PRIMITIVE_UNION_GETID, _this, new_IntSymbol(field->id))), new CallExpr("halt", new_StringSymbol("illegal union access")))));
-  if (field->isTypeVariable)
+  if (field->isTypeVariable || field->hasPragma("super class"))
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   else
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
