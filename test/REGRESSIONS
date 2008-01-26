@@ -20,6 +20,101 @@ differing memory sizes on different platforms
 [Error matching program output for memory/shannon/memstatPrint]
 [Error matching program output for memory/shannon/printFinalMemStat]
 
+garbage collection broken due to super field changes
+----------------------------------------------------
+classes/diten/allocateManyObjects
+
+??? invaid type combination in equality test error ???
+------------------------------------------------------
+compflags/bradc/gdbddash/declint
+
+
+=============================
+baseline-specific regressions
+=============================
+
+C warnings due to super field changes
+-------------------------------------
+[Error matching compiler output for compflags/bradc/gdbddash/declint]
+[Error matching program output for
+classes/bradc/dispatchNil/dispatchNil-alistError]
+[Error matching program output for classes/bradc/dispatchNil/dispatchNil]
+[Error matching program output for classes/deitz/dispatch/test_dc1]
+[Error matching program output for classes/deitz/dispatch/test_dd2]
+[Error matching program output for classes/deitz/dispatch/test_dd5]
+[Error matching program output for classes/deitz/inherit/test_inherit1]
+[Error matching program output for classes/deitz/inherit/test_inherit2]
+[Error matching program output for classes/deitz/inherit/test_inherit4]
+[Error matching program output for classes/deitz/inherit/test_inherit4b]
+[Error matching program output for classes/deitz/test_dynamic_dispatch2]
+[Error matching program output for classes/deitz/test_inherit1]
+[Error matching program output for classes/diten/allocateManyObjects]
+[Error matching program output for functions/deitz/test_base_method_call]
+[Error matching program output for
+functions/deitz/test_return_base_derived_class]
+[Error matching program output for memory/shannon/memstatPrint]
+[Error matching program output for memory/shannon/printFinalMemStat]
+[Error matching program output for memory/shannon/printMemTable2]
+[Error matching program output for modules/deitz/test_module_class_conflict]
+[Error matching program output for trivial/deitz/test_plusassign]
+[Error matching program output for types/seq/deitz/test_seq_class4]
+[Error matching program output for
+types/type_variables/deitz/part5/inherit_instantiate3]
+[Error matching program output for
+types/type_variables/deitz/part5/inherit_instantiate]
+
+
+===============================
+CHPL_THREADS = none regressions
+===============================
+
+Uncategorized as of yet
+-----------------------
+[Error matching program output for users/shetag/fock/fock-1-latest]
+[Error matching program output for users/shetag/fock/fock-3-blc]
+[Error matching program output for memory/shannon/printMemTable2]
+[Error matching program output for parallel/begin/deitz/test_begin3]
+[Error matching program output for parallel/begin/deitz/test_begin4]
+[Error matching program output for parallel/begin/deitz/test_begin5]
+[Error matching program output for parallel/begin/deitz/test_heap_begin]
+[Error matching program output for parallel/serial/deitz/test_serial1]
+[Error matching program output for parallel/serial/waynew/begin1a]
+[Error matching program output for parallel/serial/waynew/cobegin1a]
+[Error matching program output for
+parallel/single/figueroa/ReadWriteMethods]
+[Error matching program output for parallel/single/waynew/class0]
+[Error matching program output for parallel/single/waynew/class1]
+[Error matching program output for parallel/single/waynew/simple1-int64]
+[Error matching program output for parallel/single/waynew/simple1]
+[Error matching program output for parallel/single/waynew/simple2]
+[Error matching program output for parallel/single/waynew/simple3]
+[Error matching program output for parallel/single/waynew/simple4]
+[Error matching program output for parallel/sync/bradc/fib_sync]
+[Error matching program output for parallel/sync/deitz/test_sync_in_generic]
+[Error matching program output for parallel/sync/figueroa/ReadMethods]
+[Error matching program output for parallel/sync/figueroa/WriteMethods]
+[Error matching program output for parallel/sync/waynew/class1]
+[Error matching program output for parallel/sync/waynew/class2]
+[Error matching program output for parallel/sync/waynew/record1]
+[Error matching program output for parallel/sync/waynew/record2]
+[Error matching program output for parallel/sync/waynew/simple1]
+[Error matching program output for parallel/sync/waynew/simple2]
+[Error matching program output for release/examples/prodCons]
+[Error matching program output for studies/590o/blerner/xml-parse]
+[Error matching program output for users/shetag/fock/fock-1-begin-blc]
+[Error matching program output for users/shetag/fock/fock-1]
+[Error matching program output for users/shetag/fock/fock-orig]
+[Error: Timed out executing program
+parallel/begin/deitz/test_begin_error_lineno]
+[Error: Timed out executing program
+parallel/begin/deitz/test_coforall_sugar3]
+[Error: Timed out executing program
+parallel/begin/deitz/test_global_for_begin]
+[Error: Timed out executing program parallel/begin/waynew/simple2]
+[Error: Timed out executing program parallel/cobegin/bradc/exitone]
+[Error: Timed out executing program parallel/cobegin/waynew/depend]
+[Error: Timed out executing program parallel/cobegin/waynew/while]
+[Error: Timed out executing program parallel/coforall/figueroa/ManyThreads]
 
 
 ==========================
@@ -155,6 +250,45 @@ gdb doesn't work with GASNet yet
 [Error: Timed out executing program execflags/bradc/gdbddash/declint] 
 [Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] 
 
+gasnet global variable support regressions:
+-------------------------------------------
+
+compiler output error - incorrect line number        
+--------------------------------
+   classes/bradc/overloadMethods/v2NoReturnValueButType
+
+ compiler output error - recursive function return type
+--------------------------------
+   classes/deitz/tree
+   functions/deitz/iterators/tree
+   parallel/cobegin/bradc/varsEscape-workaround
+   release/examples/iterators
+
+ program output error - undiagnosed nil dereference
+--------------------------------
+   arrays/deitz/test_array_dot_type
+   arrays/deitz/part2/test_array_init
+
+ program output error - sizeof primitive of heap class
+--------------------------------
+   trivial/deitz/test_type_sizes
+
+ program output error - unions and references
+--------------------------------
+   classes/bradc/writeunion-workaround
+   classes/bradc/writeunion
+   classes/bradc/unions/assign
+   classes/bradc/unions/assign1a
+   classes/bradc/unions/stringunion
+   classes/bradc/unions/twounions
+   classes/bradc/unions/writeunion
+   classes/deitz/test_union1
+   classes/deitz/test_union2
+   classes/deitz/test_union3
+   classes/deitz/test_union4
+   classes/deitz/test_union_method1
+   classes/deitz/test_union_method2
+   classes/deitz/test_union_method3
 
 
 ========================
