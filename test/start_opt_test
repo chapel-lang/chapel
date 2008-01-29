@@ -50,7 +50,7 @@ foreach $line (@lines) {
 
 if ($cron) {
     $nerror = $nerrort2/2;
-    open(FILE, "| mail -s \"Chapel Opts Nightly: $nerror errors\" chapel_cronmail\@cray.com");
+    open(FILE, "| mail -s \"Cron Opts Tests: $nerror errors\" chapel_cronmail\@cray.com");
 } else {
     open(FILE, ">&STDOUT");
 }

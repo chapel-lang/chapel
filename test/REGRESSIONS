@@ -16,9 +16,9 @@ linux and general regressions
 
 differing memory sizes on different platforms
 ---------------------------------------------
-[Error matching program output for memory/shannon/printMemTable2]
 [Error matching program output for memory/shannon/memstatPrint]
 [Error matching program output for memory/shannon/printFinalMemStat]
+[Error matching program output for memory/shannon/printMemTable2]
 
 garbage collection broken due to super field changes
 ----------------------------------------------------
@@ -32,37 +32,6 @@ compflags/bradc/gdbddash/declint
 =============================
 baseline-specific regressions
 =============================
-
-C warnings due to super field changes
--------------------------------------
-[Error matching compiler output for compflags/bradc/gdbddash/declint]
-[Error matching program output for
-classes/bradc/dispatchNil/dispatchNil-alistError]
-[Error matching program output for classes/bradc/dispatchNil/dispatchNil]
-[Error matching program output for classes/deitz/dispatch/test_dc1]
-[Error matching program output for classes/deitz/dispatch/test_dd2]
-[Error matching program output for classes/deitz/dispatch/test_dd5]
-[Error matching program output for classes/deitz/inherit/test_inherit1]
-[Error matching program output for classes/deitz/inherit/test_inherit2]
-[Error matching program output for classes/deitz/inherit/test_inherit4]
-[Error matching program output for classes/deitz/inherit/test_inherit4b]
-[Error matching program output for classes/deitz/test_dynamic_dispatch2]
-[Error matching program output for classes/deitz/test_inherit1]
-[Error matching program output for classes/diten/allocateManyObjects]
-[Error matching program output for functions/deitz/test_base_method_call]
-[Error matching program output for
-functions/deitz/test_return_base_derived_class]
-[Error matching program output for memory/shannon/memstatPrint]
-[Error matching program output for memory/shannon/printFinalMemStat]
-[Error matching program output for memory/shannon/printMemTable2]
-[Error matching program output for modules/deitz/test_module_class_conflict]
-[Error matching program output for trivial/deitz/test_plusassign]
-[Error matching program output for types/seq/deitz/test_seq_class4]
-[Error matching program output for
-types/type_variables/deitz/part5/inherit_instantiate3]
-[Error matching program output for
-types/type_variables/deitz/part5/inherit_instantiate]
-
 
 ===============================
 CHPL_THREADS = none regressions

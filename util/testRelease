@@ -112,9 +112,9 @@ if ($teststatus == 0) {
     $shortstatus = "something failed";
 }
 if ($debug == 1) {
-    $mailsubject = "Chapel Release Test Debug ($platform): $shortstatus";
+    $mailsubject = "Dbug Release Test ($platform): $shortstatus";
 } else {
-    $mailsubject = "Chapel Release Test Nightly ($platform): $shortstatus";
+    $mailsubject = "Cron Release Test ($platform): $shortstatus";
 }
     
 if ($debug == 1) {
