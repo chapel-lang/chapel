@@ -77,11 +77,11 @@ void _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
   writeef(&(s->is_full), false);                   // mark empty and unlock
 }
 
-_bool _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var) {
+_chpl_bool _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _chpl_bool simple_sync_var) {
   if (simple_sync_var)
-    return (_bool)(((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0);
+    return (_chpl_bool)(((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0);
   else
-    return (_bool)readxx(&(s->is_full));
+    return (_chpl_bool)readxx(&(s->is_full));
 }
 
 void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
@@ -109,11 +109,11 @@ void _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
   writexf(&(s->signal_full), true); // signal full
 }
 
-_bool _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _bool simple_single_var) {
+_chpl_bool _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _chpl_bool simple_single_var) {
   if (simple_single_var)
-    return (_bool)(((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0);
+    return (_chpl_bool)(((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0);
   else
-    return (_bool)readxx(&(s->is_full));
+    return (_chpl_bool)readxx(&(s->is_full));
 }
 
 void _chpl_init_single_aux(_chpl_single_aux_t *s) {
@@ -153,9 +153,9 @@ _uint64 _chpl_thread_id(void) {
 }
 
 
-_bool _chpl_get_serial(void) {
-  _bool *p = NULL;
-  p = (_bool*) mta_register_task_data(p);
+_chpl_bool _chpl_get_serial(void) {
+  _chpl_bool *p = NULL;
+  p = (_chpl_bool*) mta_register_task_data(p);
   if (p == NULL)
     return false;
   else {
@@ -165,11 +165,11 @@ _bool _chpl_get_serial(void) {
 }
 
 
-void _chpl_set_serial(_bool state) {
-  _bool *p = NULL;
-  p = (_bool*) mta_register_task_data(p);
+void _chpl_set_serial(_chpl_bool state) {
+  _chpl_bool *p = NULL;
+  p = (_chpl_bool*) mta_register_task_data(p);
   if (p == NULL)
-    p = (_bool*) _chpl_alloc(sizeof(_bool), "serial flag", 0, 0);
+    p = (_chpl_bool*) _chpl_alloc(sizeof(_chpl_bool), "serial flag", 0, 0);
   if (p) {
     *p = state;
     mta_register_task_data(p);

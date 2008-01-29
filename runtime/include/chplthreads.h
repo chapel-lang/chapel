@@ -24,7 +24,7 @@ int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *, _int32, _string);
 int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *, _int32, _string);
 void _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *);     // also unlocks
 void _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *);    // also unlocks
-_bool _chpl_sync_is_full(void *, _chpl_sync_aux_t *, _bool);
+_chpl_bool _chpl_sync_is_full(void *, _chpl_sync_aux_t *, _chpl_bool);
 void _chpl_init_sync_aux(_chpl_sync_aux_t *);
 
 
@@ -33,7 +33,7 @@ void _chpl_init_sync_aux(_chpl_sync_aux_t *);
 int _chpl_single_lock(_chpl_single_aux_t *);
 int _chpl_single_wait_full(_chpl_single_aux_t *, _int32, _string);
 void _chpl_single_mark_and_signal_full(_chpl_single_aux_t *); // also unlocks
-_bool _chpl_single_is_full(void *, _chpl_single_aux_t *, _bool);
+_chpl_bool _chpl_single_is_full(void *, _chpl_single_aux_t *, _chpl_bool);
 void _chpl_init_single_aux(_chpl_single_aux_t *);
 
 
@@ -43,8 +43,8 @@ void    exitChplThreads(void);             // called by the main thread
 
 _uint64 _chpl_thread_id(void);             // return caller's thread id
 void    _chpl_thread_init(void);           // setup per-thread state
-_bool   _chpl_get_serial(void);            // set dynamic serial state
-void    _chpl_set_serial(_bool);           // set dynamic serial state true or false
+_chpl_bool   _chpl_get_serial(void);       // set dynamic serial state
+void    _chpl_set_serial(_chpl_bool);      // set dynamic serial state true or false
 
 
 typedef void* (*_chpl_threadfp_t)(void*);  // function pointer

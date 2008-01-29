@@ -508,7 +508,7 @@ void initPrimitiveTypes(void) {
   dtObject = objectDef->sym->type;
   dtValue = createPrimitiveType("value", "_chpl_value");
 
-  dtBool = createPrimitiveType ("bool", "_bool");
+  dtBool = createPrimitiveType ("bool", "_chpl_bool");
 
   // Inititalize the outermost module
   theProgram = new ModuleSymbol("_Program", MOD_STANDARD, new BlockStmt());

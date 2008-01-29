@@ -94,7 +94,7 @@ _define_string_to_int_precise(uint, 32, 1)
 _define_string_to_bigint_precise(uint, 64, 1, "%llu")
 
 
-_bool _string_to_bool(const char* str, int lineno, const char* filename) {
+_chpl_bool _string_to_chpl_bool(const char* str, int lineno, const char* filename) {
   if (string_equal(str, "true")) {
     return true;
   } else if (string_equal(str, "false")) {

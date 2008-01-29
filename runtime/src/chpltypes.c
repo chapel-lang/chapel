@@ -106,7 +106,7 @@ string_index(_string x, int i, _int32 lineno, _string filename) {
 }
 
 
-_bool
+_chpl_bool
 string_contains(_string x, _string y) {
   if (strstr(x, y))
     return true;
@@ -115,7 +115,7 @@ string_contains(_string x, _string y) {
 }
 
 
-_bool
+_chpl_bool
 string_equal(_string x, _string y) {
   if (!strcmp(x, y)) {
     return true;

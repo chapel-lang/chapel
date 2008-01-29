@@ -19,10 +19,9 @@
 #define UINT32( i) (i ## UL)
 #define UINT64( i) (i ## ULL)
 
-typedef enum ___bool {
-  false = 0,
-  true = 1
-} _bool;
+typedef char _chpl_bool;
+#define false 0
+#define  true 1
 
 typedef signed char         _int8;
 typedef short int           _int16;
@@ -78,12 +77,12 @@ _string _format(_string format, ...)
 
 char* _glom_strings(int numstrings, ...);
 
-_bool string_contains(_string x, _string y);
+_chpl_bool string_contains(_string x, _string y);
 _string string_concat(_string x, _string y, _int32 lineno, _string filename);
 _string string_index(_string x, int i, _int32 lineno, _string filename);
 _string string_select(_string x, int low, int high, _int32 lineno, _string filename);
 _string string_strided_select(_string x, int low, int high, int stride, _int32 lineno, _string filename);
-_bool string_equal(_string x, _string y);
+_chpl_bool string_equal(_string x, _string y);
 _int64 string_length(_string x);
 
 _int64 real2int( _real64 f);       // return the raw bytes of the float

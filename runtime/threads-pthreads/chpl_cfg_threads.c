@@ -111,7 +111,7 @@ void _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
     _printInternalError("pthread_cond_signal() failed");
 }
 
-_bool _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var) {
+_chpl_bool _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _chpl_bool simple_sync_var) {
   return s->is_full;
 }
 
@@ -145,7 +145,7 @@ void _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
     _printInternalError("pthread_cond_signal() failed");
 }
 
-_bool _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _bool simple_single_var) {
+_chpl_bool _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _chpl_bool simple_single_var) {
   return s->is_full;
 }
 
@@ -158,7 +158,7 @@ void _chpl_init_single_aux(_chpl_single_aux_t *s) {
 
 // Threads
 
-static void _chpl_serial_delete(_bool *p) {
+static void _chpl_serial_delete(_chpl_bool *p) {
   if (NULL != p) {
     _chpl_free(p, 0, 0);
   }
@@ -200,18 +200,18 @@ _uint64 _chpl_thread_id(void) {
 }
 
 
-_bool _chpl_get_serial(void) {
-  _bool *p;
-  p = (_bool*) pthread_getspecific(_chpl_serial);
+_chpl_bool _chpl_get_serial(void) {
+  _chpl_bool *p;
+  p = (_chpl_bool*) pthread_getspecific(_chpl_serial);
   return p == NULL ? false : *p;
 }
 
-void _chpl_set_serial(_bool state) {
-  _bool *p;
-  p = (_bool*) pthread_getspecific(_chpl_serial);
+void _chpl_set_serial(_chpl_bool state) {
+  _chpl_bool *p;
+  p = (_chpl_bool*) pthread_getspecific(_chpl_serial);
   if (p == NULL) {
     if (state) {
-      p = (_bool*) _chpl_alloc(sizeof(_bool), "serial flag", 0, 0);
+      p = (_chpl_bool*) _chpl_alloc(sizeof(_chpl_bool), "serial flag", 0, 0);
       *p = state;
       if (pthread_setspecific(_chpl_serial, p))
         _printInternalError("serial state not created");
@@ -278,7 +278,7 @@ add_to_task_pool (_chpl_createarg_t *nt) {
 static void _chpl_begin_helper (_chpl_createarg_t *);
 
 // Returns true if next task from task pool was launched successfully, false otherwise.
-static _bool
+static _chpl_bool
 launch_next_task(void) {
   _chpl_thread_t      thread;
   struct task_pool *task = task_pool_head;

@@ -28,8 +28,8 @@ _int32 _fscan_int32(FILE* fp, _int32 lineno, _string filename);
 _uint32 _fscan_uint32(FILE* fp, _int32 lineno, _string filename);
 _real64 _fscan_real64(FILE* fp, _int32 lineno, _string filename);
 
-_bool _fscan_literal(FILE* fp, _string val, _bool ignoreWhiteSpace,
-                     _int32 lineno, _string filename);
+_chpl_bool _fscan_literal(FILE* fp, _string val, _chpl_bool ignoreWhiteSpace,
+                          _int32 lineno, _string filename);
 
 void _readToEndOfLine(FILE* fp);
 

@@ -39,7 +39,7 @@ void _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
   *s = false;
 }
 
-_bool _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _bool simple_sync_var) {
+_chpl_bool _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _chpl_bool simple_sync_var) {
   return *s;
 }
 
@@ -65,7 +65,7 @@ void _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
   *s = true;
 }
 
-_bool _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _bool simple_single_var) {
+_chpl_bool _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _chpl_bool simple_single_var) {
   return *s;
 }
 
@@ -81,8 +81,11 @@ void exitChplThreads() { }
 void _chpl_thread_init(void) { }
 
 _uint64 _chpl_thread_id(void) { return 0; }
-_bool _chpl_get_serial(void) { return true; }
-void _chpl_set_serial(_bool state) { }
+_chpl_bool _chpl_get_serial(void) { return true; }
+void _chpl_set_serial(_chpl_bool state) {
+  if (!state)
+    _printError("cannot set serial state to false when running in single-threaded mode", 0, 0);
+}
 
 int
 _chpl_cobegin(int                      nthreads,

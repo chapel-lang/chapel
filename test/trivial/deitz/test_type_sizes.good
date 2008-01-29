@@ -6,7 +6,7 @@ uint(8): 1
 uint(16): 2
 uint(32): 4
 uint(64): 8
-bool: 4
+bool: 1
 real(32): 4
 real(64): 8
 imag(32): 4

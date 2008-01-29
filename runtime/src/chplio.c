@@ -58,8 +58,8 @@ _real64 _fscan_real64(FILE* fp, _int32 lineno, _string filename) {
   return result;
 }
 
-_bool _fscan_literal(FILE* fp, _string val, _bool ignoreWhiteSpace,
-                     _int32 lineno, _string filename) {
+_chpl_bool _fscan_literal(FILE* fp, _string val, _chpl_bool ignoreWhiteSpace,
+                          _int32 lineno, _string filename) {
   char ch  = ' ';
   int err;
 

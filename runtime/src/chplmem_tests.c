@@ -22,7 +22,7 @@ void _memtest_resetMemStat(_int32 lineno, _string filename) {
 
 void _memtest_allocAndFree(_int32 lineno, _string filename) {
   _int64* i;
-  _bool* b;
+  _chpl_bool* b;
   _real64* f;
 
   resetMemStat();
@@ -30,8 +30,8 @@ void _memtest_allocAndFree(_int32 lineno, _string filename) {
   i = (_int64*) _chpl_malloc(1, sizeof(_int64), "_int64", lineno, filename);
   fprintf(stdout, "malloc'd an int\n");
   printMemStat(lineno, filename);
-  b = (_bool*) _chpl_malloc(1, sizeof(_bool), "_bool", lineno, filename);
-  fprintf(stdout, "malloc'd abool\n");
+  b = (_chpl_bool*) _chpl_malloc(1, sizeof(_chpl_bool), "_chpl_bool", lineno, filename);
+  fprintf(stdout, "malloc'd a bool\n");
   printMemStat(lineno, filename);
 
   f = (_real64*) _chpl_calloc(1, sizeof(_real64), "_real64", lineno, filename);
