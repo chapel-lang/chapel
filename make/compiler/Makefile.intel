@@ -23,33 +23,44 @@ PROFILE_CFLAGS = -pg
 PROFILE_LFLAGS = -pg
 
 
-
-
-
-
-
 #
 # Flags for compiler, runtime, and generated code
 #
 
 COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL = -wr111,193,1418,1419
-RUNTIME_CFLAGS = $(CFLAGS)
-GEN_CFLAGS = -std=c99 -wr188
+RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
+GEN_CFLAGS = -std=c99
 
 #
-# Flags for turning on warnings for C++/C code
-# 177  : warngs about unused variable declarations
-# 304  : requires inherited classes to specify access control (e.g. public)
-# 593  : variable was set but never used
-# 810  : numeric conversion may lose significant bits (e.g., long double->float)
-# 869  : warns about arguments that are never used
-# 981  : operands are evaluated in unspecified order (mysterious vec.h problems)
+# Warnings squashed for flex-/bison-generated code
+#
+#  111 : statement is unreachable
+#  193 : zero used for undefined preprocessing identifier
+# 1418 : external function definition with no prior declaration
+# 1419 : external declaration in primary source file
+
+#
+# Warnings squashed for compiler/runtime C/C++ code
+#
+#  304 : requires inherited classes to specify access control (e.g. public)
+#  593 : variable was set but never used
+#  810 : numeric conversion may lose significant bits (e.g., long double->float)
+#  869 : warns about arguments that are never used
+#  981 : operands are evaluated in unspecified order (mysterious vec.h problems)
 # 1572 : floating point equality and inequality comparisons are unreliable
 # 1599 : one variable shadows another
+
+#
+# Warnings squashed for generated code
+#
+#  111 : warns about unreachable statements
+#  174 : warns about expressions that have no effect
+#  177 : warns about unused variable declarations
+
 WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr304,593,810,869,981,1572,1599
 WARN_CFLAGS = $(WARN_CXXFLAGS)
-WARN_GEN_CFLAGS = $(WARN_CFLAGS) -wr177
+WARN_GEN_CFLAGS = $(WARN_CFLAGS) -wr111,174,177
 
 
 #
