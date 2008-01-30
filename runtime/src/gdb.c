@@ -2,6 +2,4 @@
 #include "chplrt.h"
 #include "gdb.h"
 
-void gdbShouldBreakHere(void) {
-  printf("%s", "");
-}
+void gdbShouldBreakHere(void) {printf("%s", "");}
