@@ -29,19 +29,43 @@ classes/diten/allocateManyObjects
 compflags/bradc/gdbddash/declint
 
 
+
 =============================
 baseline-specific regressions
 =============================
+
+config const initialization issue uncovered by stricter warnings
+-- config const read before written
+---------------------------------------------------------------------
+[Error matching compiler output for npb/cg/bradc/cg-makea1-sparse-sort]
+[Error matching compiler output for npb/cg/bradc/cg-printa]
+[Error matching compiler output for npb/cg/bradc/cg-sparse]
+[Error matching compiler output for npb/ft/ft-serial]
+[Error matching compiler output for parallel/coforall/figueroa/ManyThreads]
+[Error matching compiler output for
+performance/compiler/bradc/cg-sparse-timecomp]
+[Error matching compiler output for performance/compiler/bradc/fft-timecomp]
+[Error matching compiler output for performance/deitz/test_cgapb]
+[Error matching compiler output for performance/deitz/test_cgapb_loop]
+[Error matching compiler output for performance/deitz/test_for2d]
+[Error matching compiler output for release/examples/hpcc/ra]
+
 
 ===============================
 CHPL_THREADS = none regressions
 ===============================
 
-Uncategorized as of yet
------------------------
+Write doesn't seem to be locked properly
+----------------------------------------
+[Error matching program output for classes/diten/allocateManyObjects]
+
+Inherently multithreaded?  Needs re-queueing ability
+----------------------------------------------------
 [Error matching program output for users/shetag/fock/fock-1-latest]
 [Error matching program output for users/shetag/fock/fock-3-blc]
-[Error matching program output for memory/shannon/printMemTable2]
+
+Assumes something about timing?
+-------------------------------
 [Error matching program output for parallel/begin/deitz/test_begin3]
 [Error matching program output for parallel/begin/deitz/test_begin4]
 [Error matching program output for parallel/begin/deitz/test_begin5]
@@ -49,6 +73,9 @@ Uncategorized as of yet
 [Error matching program output for parallel/serial/deitz/test_serial1]
 [Error matching program output for parallel/serial/waynew/begin1a]
 [Error matching program output for parallel/serial/waynew/cobegin1a]
+
+Uncategorized as of yet
+-----------------------
 [Error matching program output for
 parallel/single/figueroa/ReadWriteMethods]
 [Error matching program output for parallel/single/waynew/class0]
@@ -92,28 +119,24 @@ intel-specific regressions
 
 Warning about unused labels
 ---------------------------
-[Error matching program output for arrays/deitz/jacobi-unoptimized]
+[Error matching compiler output for arrays/deitz/jacobi-unoptimized]
 
 Warning about using a variable before its value is set
 ------------------------------------------------------
-[Error matching program output for classes/deitz/test_empty_record]
-[Error matching program output for functions/jplevyak/scoping/visibility-1]
-[Error matching program output for types/tuple/diten/tupleComparisons]
-
-gdb breakpoint line number off by one
--------------------------------------
-[Error matching program output for execflags/bradc/gdbddash/declint2]
+[Error matching compiler output for classes/deitz/test_empty_record]
+[Error matching compiler output for functions/jplevyak/scoping/visibility-1]
+[Error matching compiler output for types/tuple/diten/tupleComparisons]
 
 presumed to be floating point precision differences
 ---------------------------------------------------
-[Error matching program output for npb/cg/bradc/cg-dense]
-[Error matching program output for studies/hpcc/FFT/bradc/fft]
-[Error matching program output for studies/hpcc/FFT/marybeth/fft]
 [Error matching make output for studies/madness/Makefile]
 [Error matching make output for studies/madness/dinan/mad_chapel/Makefile]
 [Error matching make output for studies/madness/marybeth/Makefile]
-[Error matching program output for studies/madness/marybeth/futures/MRAfail]
+[Error matching program output for npb/cg/bradc/cg-dense]
+[Error matching program output for studies/hpcc/FFT/bradc/fft]
+[Error matching program output for studies/hpcc/FFT/marybeth/fft]
 [Error matching program output for users/rbarrett/diffuse2d-orig-blc]
+[Error matching program output for studies/madness/marybeth/futures/MRAfail]
 
 ???
 ---
@@ -289,3 +312,24 @@ I/O precision error?
 apsim error
 -----------
 [Error matching program output for release/examples/genericStack] 
+
+
+
+===============================
+--no-local-specific regressions
+===============================
+
+part of Steve's set of currently expected GASNet regressions (?)
+----------------------------------------------------------------
+[Error matching compiler output for release/examples/iterators]
+
+
+=====================================================
+--no-expand-iterators-inline-opt specific regressions
+=====================================================
+
+result of turning on more aggressive warnings for generated code --
+"variable may be uninitialized" in declaration of Locales array
+----------------------------------------------------------------
+[Error matching compiler output for release/examples/hpcc/ra]
+
