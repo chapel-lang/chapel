@@ -39,6 +39,7 @@ GEN_CFLAGS = -std=c99 -wr188
 
 #
 # Flags for turning on warnings for C++/C code
+# 177  : warngs about unused variable declarations
 # 304  : requires inherited classes to specify access control (e.g. public)
 # 593  : variable was set but never used
 # 810  : numeric conversion may lose significant bits (e.g., long double->float)
@@ -48,6 +49,7 @@ GEN_CFLAGS = -std=c99 -wr188
 # 1599 : one variable shadows another
 WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr304,593,810,869,981,1572,1599
 WARN_CFLAGS = $(WARN_CXXFLAGS)
+WARN_GEN_CFLAGS = $(WARN_CFLAGS) -wr177
 
 
 #
@@ -56,4 +58,5 @@ WARN_CFLAGS = $(WARN_CXXFLAGS)
 ifdef CHPL_DEVELOPER
 COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
+# GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 endif

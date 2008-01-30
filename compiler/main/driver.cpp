@@ -83,6 +83,16 @@ static void setChapelDebug(ArgumentState* arg_state, char* arg_unused) {
   printCppLineno = true;
 }
 
+static void setDevelSettings(ArgumentState* arg_state, char* arg_unused) {
+  // have to handle both cases since this will be called with --devel
+  // and --no-devel
+  if (developer) {
+    ccwarnings = true;
+  } else {
+    ccwarnings = false;
+  }
+}
+
 static void 
 handleLibrary(ArgumentState* arg_state, char* arg_unused) {
   addLibInfo(astr("-l", libraryFilename));
@@ -236,7 +246,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
  {"chplhome", ' ', "<directory>", "Over-ride $CHPL_HOME", "P", chplhome, "CHPL_HOME", NULL},
- {"devel", ' ', NULL, "Compile as developer", "N", &developer, "CHPL_DEVELOPER", NULL},
+ {"devel", ' ', NULL, "Compile as developer", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"main-module", ' ', "<module>", "Specify module where main is located", "S256", mainModuleName, NULL, NULL},
@@ -253,7 +263,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
  {"", ' ', NULL, "Debug Output", NULL, NULL, NULL, NULL},
- {"ccwarnings", ' ', NULL, "Give warnings for generated code", "T", &ccwarnings, "CHPL_CC_WARNINGS", NULL},
+ {"cc-warnings", ' ', NULL, "Give warnings for generated code", "N", &ccwarnings, "CHPL_CC_WARNINGS", NULL},
  {"html", 't', NULL, "Dump IR in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
  {"log", 'd', "[a|i|F|d|s]", "Specify debug logs", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},

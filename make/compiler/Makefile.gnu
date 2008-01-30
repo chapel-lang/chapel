@@ -42,7 +42,7 @@ GEN_CFLAGS = -std=c99
 #
 WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings
 WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wmissing-format-attribute
-
+WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused
 
 #
 # developer settings
@@ -50,5 +50,5 @@ WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-declarations -Wmissing-prototypes -Wstr
 ifdef CHPL_DEVELOPER
 COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
-GEN_CFLAGS += $(WARN_CFLAGS) -Wno-unused
+# GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 endif

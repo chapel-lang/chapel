@@ -416,7 +416,7 @@ void codegen_makefile(fileinfo* mainfile) {
   // to specifying BINNAME on the C compiler command line.
   fprintf(makefile.fptr, "COMP_GEN_CFLAGS =");
   if (ccwarnings) {
-    fprintf(makefile.fptr, " $(WARN_CFLAGS)");
+    fprintf(makefile.fptr, " $(WARN_GEN_CFLAGS)");
   }
   if (debugCCode) {
     fprintf(makefile.fptr, " $(DEBUG_CFLAGS)");

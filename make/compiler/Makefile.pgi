@@ -35,6 +35,7 @@ GEN_CFLAGS =
 #
 WARN_CXXFLAGS =
 WARN_CFLAGS =
+WARN_GEN_CFLAGS = 
 
 
 #
@@ -43,4 +44,5 @@ WARN_CFLAGS =
 ifdef CHPL_DEVELOPER
 COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
+# GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 endif

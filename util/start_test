@@ -59,7 +59,7 @@
 #              [list of directories]  "test" if in $CHPL_HOME, "." otherwise
 #              [list of tests]        ""
 #   -compiler  <compiler executable>  $CHPL_HOME/bin/<platform>/chpl
-#   -compopts  <option list>          ""
+#   -compopts  <option list>          "--cc-warnings"
 #   -execopts  <option list>          ""
 #   -launchcmd <launcher command>     ""
 #   -norecurse
@@ -89,6 +89,11 @@
 # options that should be used on every invocation to the compiler.
 # Additional compiler options can be specified on a directory-by-
 # directory basis using mechanisms described below (COMPOPTS/.compopts).
+# By default, -compopts is set to --cc-warnings, and additional
+# -compopts arguments will append to this list.  If, for some reason,
+# one wants to disable the --cc-warnings flag, currently the only
+# way to do so is by specifying "-compopts --no-cc-warnings" to
+# reverse the effects of that flag.
 #
 # The -componly option specifies that this testing run should only
 # be compiled and not executed; this causes success of a test to
@@ -426,7 +431,7 @@ limit stacksize 8192k
 
 set execopts = ""
 set compiler = ""
-set compopts = ""
+set compopts = "--cc-warnings"
 set launchcmd = ""
 set dirlist = ""
 set testlist = ""
@@ -467,7 +472,7 @@ while ( $#argv > 0 )
 	case -compopts:
 	case --compopts:
 		shift
-		set compopts = "$argv[1]"
+		set compopts = "$compopts $argv[1]"
 		shift
 		breaksw
 	case -logfile:
@@ -543,7 +548,7 @@ while ( $#argv > 0 )
 		echo Usage and defaults\:
 		echo "     start_test <file list> <directory list>"
 		echo "          -compiler <path>     (currently: $CHPL_HOME/bin/$platform/chpl)"
-		echo "          -compopts <options>  (currently: '')"
+		echo "          -compopts <options>  (currently: '--cc-warnings')"
 		echo "          -execopts <options>  (currently: '')"
                 echo "          -launchcmd <command> (currently: '')"
                 echo "          -norecurse"
@@ -563,12 +568,12 @@ while ( $#argv > 0 )
 		breaksw
 	default:
                 if ( -d "$argv[1]" && -x "$argv[1]") then
-                    echo "$argv[1] is a directory"
+#                    echo "$argv[1] is a directory"
                     set dirlist = "$dirlist $argv[1]"
                     shift
                     breaksw
                 else if ( -r "$argv[1]") then
-                    echo "$argv[1] is a file"
+#                    echo "$argv[1] is a file"
                     set testlist = "$testlist $argv[1]"
                     shift
                     breaksw
