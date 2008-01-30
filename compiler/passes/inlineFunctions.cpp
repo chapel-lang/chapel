@@ -80,7 +80,9 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (FnSymbol* fn = call->isResolved()) {
-        if (fn->hasPragma("inline") && !inlinedSet.set_in(fn)) {
+        if (call->parentSymbol && fn->hasPragma("inline")) {
+          if (inlinedSet.set_in(fn))
+            INT_FATAL(call, "recursive inlining detected");
           inlineFunction(fn, inlinedSet);
         }
       }
