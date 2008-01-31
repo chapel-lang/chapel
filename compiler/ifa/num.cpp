@@ -7,7 +7,7 @@
 
 static int 
 sprint_float_val(char* str, float64 val) {
-  int numchars = sprintf(str, "%lg", val);
+  int numchars = sprintf(str, "%g", val);
   if (strchr(str, '.') == NULL && strchr(str, 'e') == NULL) {
     strcat(str, ".0");
     return numchars + 2;
