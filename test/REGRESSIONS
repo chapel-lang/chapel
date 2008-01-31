@@ -117,11 +117,7 @@ parallel/begin/deitz/test_global_for_begin]
 intel-specific regressions
 ==========================
 
-Warning about unused labels
----------------------------
-[Error matching compiler output for arrays/deitz/jacobi-unoptimized]
-
-Warning about using a variable before its value is set
+Warning about using a variable before its value is set -- error #592
 ------------------------------------------------------
 [Error matching compiler output for classes/deitz/test_empty_record]
 [Error matching compiler output for functions/jplevyak/scoping/visibility-1]
@@ -137,14 +133,6 @@ presumed to be floating point precision differences
 [Error matching program output for studies/hpcc/FFT/marybeth/fft]
 [Error matching program output for users/rbarrett/diffuse2d-orig-blc]
 [Error matching program output for studies/madness/marybeth/futures/MRAfail]
-
-???
----
-[Error matching program output for parallel/begin/waynew/simple2]
-
-timed out
----------
-[Error: Timed out executing program parallel/cobegin/waynew/while]
 
 
 
