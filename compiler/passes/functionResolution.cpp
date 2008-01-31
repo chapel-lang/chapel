@@ -3104,9 +3104,16 @@ pruneResolvedTree() {
         // Remove Noops
         call->remove();
       } else if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
-        // Replace PRIMITIVE_TYPEOF with argument
         if (!call->get(1)->typeInfo()->symbol->hasPragma("array")) {
-          call->replace(call->get(1)->remove());
+          // Remove move(x, PRIMITIVE_TYPEOF(y)) calls -- useless after this
+          CallExpr* parentCall = toCallExpr(call->parentExpr);
+          if (parentCall && parentCall->isPrimitive(PRIMITIVE_MOVE) && 
+              parentCall->get(2) == call) {
+            parentCall->remove();
+          } else {
+            // Replace PRIMITIVE_TYPEOF with argument
+            call->replace(call->get(1)->remove());
+          }
         }
       } else if (call->isPrimitive(PRIMITIVE_ARRAY_INIT)) {
         // Capture array types for allocation before runtime array

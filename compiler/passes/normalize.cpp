@@ -623,53 +623,54 @@ fix_def_expr(VarSymbol* var) {
   //
   // insert code to initialize config variable from the command line
   //
-  if (var->isConfig && !var->isParam) {
-    Expr* noop = new CallExpr(PRIMITIVE_NOOP);
-    ModuleSymbol* module = var->getModule();
-    CallExpr* strToValExpr =
-      new CallExpr("_cast",
-                   new CallExpr(PRIMITIVE_TYPEOF, constTemp),
-                   new CallExpr(primitives_map.get("_config_get_value"),
-                                new_StringSymbol(var->name),
-                                new_StringSymbol(module->name)));
-    stmt->insertAfter(
-      new CondStmt(
-        new CallExpr("!",
-          new CallExpr(primitives_map.get("_config_has_value"),
-                       new_StringSymbol(var->name),
-                       new_StringSymbol(module->name))),
-        noop,
-        new CallExpr(PRIMITIVE_MOVE, constTemp, strToValExpr)));
-    strToValExpr->filename = astr("<command line setting of '", var->name,
-                                       "'>");
-    strToValExpr->lineno = 0;
+  if (var->isConfig) {
+    if (!var->isParam) {
+      Expr* noop = new CallExpr(PRIMITIVE_NOOP);
+      ModuleSymbol* module = var->getModule();
+      CallExpr* strToValExpr =
+        new CallExpr("_cast",
+                     new CallExpr(PRIMITIVE_TYPEOF, constTemp),
+                     new CallExpr(primitives_map.get("_config_get_value"),
+                                  new_StringSymbol(var->name),
+                                  new_StringSymbol(module->name)));
+      stmt->insertAfter(
+        new CondStmt(
+          new CallExpr("!",
+            new CallExpr(primitives_map.get("_config_has_value"),
+                         new_StringSymbol(var->name),
+                         new_StringSymbol(module->name))),
+          noop,
+          new CallExpr(PRIMITIVE_MOVE, constTemp, strToValExpr)));
+      strToValExpr->filename = astr("<command line setting of '", var->name,
+                                    "'>");
+      strToValExpr->lineno = 0;
                      
 
-    stmt = noop; // insert regular definition code in then block
-  }
-  if (var->isConfig && var->isParam) {
-    if (const char* value = configParamMap.get(astr(var->name))) {
-      usedConfigParams.add(astr(var->name));
-      if (SymExpr* symExpr = toSymExpr(init)) {
-        if (VarSymbol* varSymbol = toVarSymbol(symExpr->var)) {
-          if (varSymbol->immediate) {
-            Immediate* imm;
-            if (varSymbol->immediate->const_kind == CONST_KIND_STRING) {
-              imm = new Immediate(value);
-            } else {
-              imm = new Immediate(*varSymbol->immediate);
-              convert_string_to_immediate(value, imm);
+      stmt = noop; // insert regular definition code in then block
+    } else {
+      if (const char* value = configParamMap.get(astr(var->name))) {
+        usedConfigParams.add(astr(var->name));
+        if (SymExpr* symExpr = toSymExpr(init)) {
+          if (VarSymbol* varSymbol = toVarSymbol(symExpr->var)) {
+            if (varSymbol->immediate) {
+              Immediate* imm;
+              if (varSymbol->immediate->const_kind == CONST_KIND_STRING) {
+                imm = new Immediate(value);
+              } else {
+                imm = new Immediate(*varSymbol->immediate);
+                convert_string_to_immediate(value, imm);
+              }
+              init->replace(new SymExpr(new_ImmediateSymbol(imm)));
+              init = var->defPoint->init;
             }
-            init->replace(new SymExpr(new_ImmediateSymbol(imm)));
-            init = var->defPoint->init;
-          }
-        } else if (EnumSymbol* sym = toEnumSymbol(symExpr->var)) {
-          if (EnumType* et = toEnumType(sym->type)) {
-            for_enums(constant, et) {
-              if (!strcmp(constant->sym->name, value)) {
-                init->replace(new SymExpr(constant->sym));
-                init = var->defPoint->init;
-                break;
+          } else if (EnumSymbol* sym = toEnumSymbol(symExpr->var)) {
+            if (EnumType* et = toEnumType(sym->type)) {
+              for_enums(constant, et) {
+                if (!strcmp(constant->sym->name, value)) {
+                  init->replace(new SymExpr(constant->sym));
+                  init = var->defPoint->init;
+                  break;
+                }
               }
             }
           }
