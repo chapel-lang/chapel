@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +12,7 @@ int verbosity = 1;
 void _printError(const char* message, int32_t lineno, _string filename) {
   fflush(stdout);
   if (lineno)
-    fprintf(stderr, "%s:%d: error: %s\n", filename, lineno, message);
+    fprintf(stderr, "%s:%" PRId32 ": error: %s\n", filename, lineno, message);
   else if (filename)
     fprintf(stderr, "%s: error: %s\n", filename, message);
   else
