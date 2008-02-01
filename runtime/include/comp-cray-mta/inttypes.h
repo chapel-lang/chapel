@@ -1,3 +1,6 @@
+#ifndef _CHPL_MTA_INT_TYPES_H_
+#define _CHPL_MTA_INT_TYPES_H_
+
 // subset of standard C's inttypes.h for MTA
 
 #include <stdint.h>
@@ -15,3 +18,5 @@
 #define SCNd64 "d"
 #define SCNu32 "hu"
 #define SCNu64 "u"
+
+#endif
