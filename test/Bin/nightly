@@ -7,6 +7,7 @@ $interpret = 0;
 $printusage = 1;
 $debug = 1;
 $runtests = 1;
+$hello = 0;
 $examples = 0;
 $componly = 0;
 $suppressions = "";
@@ -26,6 +27,8 @@ while (@ARGV) {
         $interpret = 1;
     } elsif ($flag eq "-notest") {
         $runtests = 0;
+    } elsif ($flag eq "-hello") {
+	$hello = 1;
     } elsif ($flag eq "-examples") {
         $examples = 1;
     } elsif ($flag eq "-performance") {
@@ -60,6 +63,7 @@ if ($printusage == 1) {
     print "\t-cron        : use for nightly cron runs only\n";
     print "\t-notest      : don't run the tests (check the build only)\n";
     print "\t-examples    : run the release/examples tests only\n";
+    print "\t-hello       : run the release/examples/hello.chpl test only\n";
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
@@ -314,6 +318,9 @@ mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 runtime", "making chapel run
 #
 
 $testflags = "-logfile $rawlog";
+if ($ENV{'CHPL_TARGET_PLATFORM'} eq "mta") {
+    $testflags = "$testflags -compopts '--ldflags -static'";
+}
 if ($interpret == 1) {
     $testflags = "$testflags -interpret";
 }
@@ -330,6 +337,14 @@ if ($examples == 1) {
         mysystem("cd $testdir && echo 'release/examples' > DIRFILE && echo release/examples/hpcc >> DIRFILE", 
                  "making directory file", 1, 1);
         $testflags = "$testflags -dirfile DIRFILE";
+    }
+}
+if ($hello == 1) {
+    if ($parnodefile eq "") {
+	$testflags = "$testflags release/examples/hello.chpl";
+    } else {
+	print("Error: Can't yet run the parallel tests with --hello");
+	exit(1);
     }
 }
 if ($performance == 1) {
