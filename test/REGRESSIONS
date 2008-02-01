@@ -24,31 +24,12 @@ garbage collection broken due to super field changes
 ----------------------------------------------------
 classes/diten/allocateManyObjects
 
-??? invaid type combination in equality test error ???
-------------------------------------------------------
-compflags/bradc/gdbddash/declint
-
 
 
 =============================
 baseline-specific regressions
 =============================
 
-config const initialization issue uncovered by stricter warnings
--- config const read before written
----------------------------------------------------------------------
-[Error matching compiler output for npb/cg/bradc/cg-makea1-sparse-sort]
-[Error matching compiler output for npb/cg/bradc/cg-printa]
-[Error matching compiler output for npb/cg/bradc/cg-sparse]
-[Error matching compiler output for npb/ft/ft-serial]
-[Error matching compiler output for parallel/coforall/figueroa/ManyThreads]
-[Error matching compiler output for
-performance/compiler/bradc/cg-sparse-timecomp]
-[Error matching compiler output for performance/compiler/bradc/fft-timecomp]
-[Error matching compiler output for performance/deitz/test_cgapb]
-[Error matching compiler output for performance/deitz/test_cgapb_loop]
-[Error matching compiler output for performance/deitz/test_for2d]
-[Error matching compiler output for release/examples/hpcc/ra]
 
 
 ===============================
@@ -123,17 +104,6 @@ Warning about using a variable before its value is set -- error #592
 [Error matching compiler output for functions/jplevyak/scoping/visibility-1]
 [Error matching compiler output for types/tuple/diten/tupleComparisons]
 
-presumed to be floating point precision differences
----------------------------------------------------
-[Error matching make output for studies/madness/Makefile]
-[Error matching make output for studies/madness/dinan/mad_chapel/Makefile]
-[Error matching make output for studies/madness/marybeth/Makefile]
-[Error matching program output for npb/cg/bradc/cg-dense]
-[Error matching program output for studies/hpcc/FFT/bradc/fft]
-[Error matching program output for studies/hpcc/FFT/marybeth/fft]
-[Error matching program output for users/rbarrett/diffuse2d-orig-blc]
-[Error matching program output for studies/madness/marybeth/futures/MRAfail]
-
 
 
 ===========================
@@ -194,6 +164,10 @@ numeric stability issues
 ========================
 pgi-specific regressions
 ========================
+
+Some sort of offset type mismatch -- likely caused by long identifiers
+----------------------------------------------------------------------
+[Error matching compiler output for arrays/deitz/test_major_nesting_of_arrays] 
 
 long identifiers
 ----------------
