@@ -28,7 +28,7 @@ OPT_CFLAGS = -O3
 COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL =
 RUNTIME_CFLAGS = $(CFLAGS)
-GEN_CFLAGS =
+GEN_CFLAGS = -Kieee
 
 #
 # Flags for turning on warnings for C++/C code

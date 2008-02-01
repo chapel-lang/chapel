@@ -30,7 +30,7 @@ PROFILE_LFLAGS = -pg
 COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL = -wr111,193,1418,1419
 RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
-GEN_CFLAGS = -std=c99
+GEN_CFLAGS = -std=c99 -mp
 
 #
 # Warnings squashed for flex-/bison-generated code
