@@ -2,6 +2,7 @@
 #define _chplrt_H_
 
 #include "chpltypes.h"
+#include <stdint.h>
 
 extern void _initModuleGuards(void);
 
@@ -19,9 +20,9 @@ extern _timervalue _default_timer; // hack as a default value
 #define _new_timer() (_default_timer)
 #define _seconds_timer(time) ((_real64)((time).tv_sec))
 #define _microseconds_timer(time) ((_real64)((time).tv_usec))
-_int32 _now_year(void);
-_int32 _now_month(void);
-_int32 _now_day(void);
+int32_t _now_year(void);
+int32_t _now_month(void);
+int32_t _now_day(void);
 _real64 _now_time(void);
 
 #define _ARRAY_GET(x, i) (&((x)->_data[i]))

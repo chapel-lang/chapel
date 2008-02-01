@@ -7,6 +7,8 @@
 #define GASNET_PAR 1
 #include "gasnet.h"
 
+#include <stdint.h>
+
 /*#define _DIST_DEBUG 1*/
 
 #ifdef _DIST_DEBUG
@@ -158,12 +160,12 @@ int _chpl_comm_default_num_locales(void) {
 }
 
 
-void _chpl_comm_verify_num_locales(_int32 proposedNumLocales) {
+void _chpl_comm_verify_num_locales(int32_t proposedNumLocales) {
 }
 
 static char numLocalesString[64];
 
-char** _chpl_comm_create_argcv(_int32 numLocales, int argc, char* argv[],
+char** _chpl_comm_create_argcv(int32_t numLocales, int argc, char* argv[],
                                int* commArgc) {
   char** commArgv;
   int i;
@@ -248,7 +250,7 @@ void _chpl_comm_exit_any(int status) {
   _chpl_comm_exit_common(status);
 }
 
-void  _chpl_comm_put(void* addr, _int32 locale, void* raddr, _int32 size) {
+void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
   PRINTF("_chpl_comm_write");
   if (_localeID == locale) {
     bcopy(addr, raddr, size);
@@ -257,7 +259,7 @@ void  _chpl_comm_put(void* addr, _int32 locale, void* raddr, _int32 size) {
   }
 }
 
-void  _chpl_comm_get(void* addr, _int32 locale, void* raddr, _int32 size) {
+void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size) {
   PRINTF("_chpl_comm_read");
   if (_localeID == locale) {
     bcopy(raddr, addr, size);

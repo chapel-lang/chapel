@@ -2,9 +2,10 @@
 #define _arg_H_
 
 #include "chpltypes.h"
+#include <stdint.h>
 
 void parseArgs(int argc, char* argv[]);
-_int32 getArgNumLocales(void);
+int32_t getArgNumLocales(void);
 int _runInGDB(void);
 
 #endif

@@ -7,6 +7,8 @@
 #include "chplmem.h"
 #include "error.h"
 
+#include <stdint.h>
+
 // Undefine this symbol to deactivate extra runtime error checking
 #define _ARMCI_DEBUG
 
@@ -84,7 +86,7 @@ int _chpl_comm_default_num_locales(void) {
 // be used.  In particular, if a number exceeding some sort of maximum
 // was provided, an error should be reported.
 //
-void _chpl_comm_verify_num_locales(_int32 proposedNumLocales) {
+void _chpl_comm_verify_num_locales(int32_t proposedNumLocales) {
   // This can probably remain empty for ARMCI unless there is any sort of
   // maximum that you'd need to check against
 }
@@ -110,7 +112,7 @@ void _chpl_comm_verify_num_locales(_int32 proposedNumLocales) {
 // invocation of main().  If the comm layer does not need to modify
 // argc/argv, it can just pass them through to commArgc/commArgv.
 //
-char** _chpl_comm_create_argcv(_int32 execNumLocales, int argc, char* argv[], 
+char** _chpl_comm_create_argcv(int32_t execNumLocales, int argc, char* argv[], 
                                int* commArgc) {
   // Depending on how _chpl_comm_init() is called, this may need to
   // add extra command line arguments to those provided by the user
@@ -269,7 +271,7 @@ void _chpl_comm_exit_any(int status) {
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_put(void* addr, _int32 locale, void* raddr, _int32 size) {
+void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
   // this should be an ARMCI put call
 
   _chpl_msg(2, "Called _chpl_comm_put() on: %d\n", _localeID);
@@ -289,7 +291,7 @@ void  _chpl_comm_put(void* addr, _int32 locale, void* raddr, _int32 size) {
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_get(void *addr, _int32 locale, void* raddr, _int32 size) {
+void  _chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size) {
   // this should be an ARMCI get call
 
   _chpl_msg(2, "Called _chpl_comm_get() on: %d\n", _localeID);

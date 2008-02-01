@@ -1,13 +1,14 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "error.h"
 #include "chplexit.h"
 #include "chplrt.h"
 
 int verbosity = 1;
 
-void _printError(const char* message, _int32 lineno, _string filename) {
+void _printError(const char* message, int32_t lineno, _string filename) {
   fflush(stdout);
   if (lineno)
     fprintf(stderr, "%s:%d: error: %s\n", filename, lineno, message);

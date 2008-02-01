@@ -1667,7 +1667,8 @@ void CallExpr::codegen(FILE* outfile) {
       if (dst == src) {
         get(2)->codegen(outfile);
       } else if (dst == dtString || src == dtString) {
-        fprintf(outfile, "%s_to%s(", src->symbol->cname, dst->symbol->cname);
+        fprintf(outfile, *dst->symbol->cname == '_' ? "%s_to%s(" : "%s_to_%s(",
+                src->symbol->cname, dst->symbol->cname);
         get(2)->codegen(outfile);
         if (src == dtString) {
           fprintf(outfile, ", ");

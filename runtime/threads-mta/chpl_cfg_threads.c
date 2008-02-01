@@ -5,6 +5,7 @@
 #include "chplmem.h"
 #include "error.h"
 #include <stdlib.h>
+#include <stdint.h>
 #include <machine/runtime.h>
 
 #ifdef MTA_DEBUG
@@ -15,8 +16,8 @@
 // The global vars are to synchronize with threads created with 
 // begin's which are not joined.  We need to wait on them before the
 // main thread can call exit for the process.
-static _int64          _chpl_begin_cnt;      // number of unjoined threads 
-static sync _int64     _chpl_can_exit;       // can main thread exit?
+static int64_t          _chpl_begin_cnt;      // number of unjoined threads 
+static sync int64_t     _chpl_can_exit;       // can main thread exit?
 
 
 // Mutex
@@ -43,11 +44,11 @@ int _chpl_sync_lock(_chpl_sync_aux_t *s) {
 }
 
 void _chpl_sync_unlock(_chpl_sync_aux_t *s) {
-  _int64 is_full = readxx(&(s->is_full));
+  int64_t is_full = readxx(&(s->is_full));
   writeef(&(s->is_full), is_full);  // mark full
 }
 
-int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
+int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, int32_t lineno, _string filename) {
   _chpl_sync_lock(s);
   while (!readxx(&(s->is_full))) {
     _chpl_sync_unlock(s);
@@ -57,7 +58,7 @@ int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string fi
   return 0;
 }
 
-int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
+int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, int32_t lineno, _string filename) {
   _chpl_sync_lock(s);
   while (readxx(&(s->is_full))) {
     _chpl_sync_unlock(s);
@@ -98,7 +99,7 @@ int _chpl_single_lock(_chpl_single_aux_t *s) {
   return 0;
 }
 
-int _chpl_single_wait_full(_chpl_single_aux_t *s, _int32 lineno, _string filename) {
+int _chpl_single_wait_full(_chpl_single_aux_t *s, int32_t lineno, _string filename) {
   while (!readxx(&(s->is_full)))
     readff(&(s->signal_full));
   return 0;
@@ -148,7 +149,7 @@ void exitChplThreads() {
 void _chpl_thread_init(void) {}  // No need to do anything!
 
 
-_uint64 _chpl_thread_id(void) {
+uint64_t _chpl_thread_id(void) {
   return mta_get_threadid();
 }
 
@@ -188,8 +189,8 @@ int _chpl_cobegin (int                      nthreads,
       (*fps[t])(args[t]);
 
   else {
-    _int64 can_exit, *can_exit_p = &can_exit;
-    _int64 begin_cnt = 0, *begin_cnt_p = &begin_cnt;
+    int64_t can_exit, *can_exit_p = &can_exit;
+    int64_t begin_cnt = 0, *begin_cnt_p = &begin_cnt;
 
     // create threads
     for (t=0; t<nthreads; t++, fps++, args++) {
@@ -248,7 +249,7 @@ _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t arg) {
     // thread is to wait on that function and coordinate the exiting
     // of the main Chapel thread.
     future (fp, arg, init_begin_cnt) {
-      _int64         begin_cnt;
+      int64_t         begin_cnt;
 
 #ifdef MTA_DEBUG
       fprintf(stderr, "Inside future no. %d\n", init_begin_cnt);

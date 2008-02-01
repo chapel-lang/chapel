@@ -17,7 +17,7 @@
 #define POSINFSTRING "inf"
 
 const char* _default_format_write_complex64 = "%g + %gi";
-const char* _default_format_write_complex128 = "%lg + %lgi";
+const char* _default_format_write_complex128 = "%g + %gi";
 
 char* _glom_strings(int numstrings, ...) {
   va_list ap;
@@ -54,7 +54,7 @@ _string _format(_string format, ...) {
 
 
 _string
-string_concat(_string x, _string y, _int32 lineno, _string filename) {
+string_concat(_string x, _string y, int32_t lineno, _string filename) {
   char *z = (char*)_chpl_malloc(strlen(x)+strlen(y)+1, sizeof(char),
                                 "string_concat", lineno, filename);
   z[0] = '\0';
@@ -65,8 +65,8 @@ string_concat(_string x, _string y, _int32 lineno, _string filename) {
 
 
 _string
-string_strided_select(_string x, int low, int high, int stride, _int32 lineno, _string filename) {
-  _int64 length = string_length(x);
+string_strided_select(_string x, int low, int high, int stride, int32_t lineno, _string filename) {
+  int64_t length = string_length(x);
   char* result = NULL;
   char* dst = NULL;
   _string src = stride > 0 ? x + low - 1 : x + high - 1;
@@ -92,12 +92,12 @@ string_strided_select(_string x, int low, int high, int stride, _int32 lineno, _
 }
 
 _string
-string_select(_string x, int low, int high, _int32 lineno, _string filename) {
+string_select(_string x, int low, int high, int32_t lineno, _string filename) {
   return string_strided_select(x, low, high, 1, lineno, filename);
 }
 
 _string
-string_index(_string x, int i, _int32 lineno, _string filename) {
+string_index(_string x, int i, int32_t lineno, _string filename) {
   char buffer[2];
   if (i-1 < 0 || i-1 >= string_length(x))
     _printError("string index out of bounds", lineno, filename);
@@ -125,18 +125,18 @@ string_equal(_string x, _string y) {
 }
 
 
-_int64
+int64_t
 string_length(_string x) {
   return strlen(x);
 }
 
 
-_int64 real2int( _real64 f) {
+int64_t real2int( _real64 f) {
   // need to use a union here rather than a pointer cast to avoid gcc
   // warnings when compiling -O3
   union {     
     _real64 r;
-    _uint64 u;
+    uint64_t u;
   } converter;
 
   converter.r = f;
@@ -144,7 +144,7 @@ _int64 real2int( _real64 f) {
 }
 
 
-_int64 
+int64_t 
 object2int( _chpl_object o) {
   return (intptr_t) o;
 }
@@ -156,7 +156,7 @@ _timervalue* _now_timer_help(_timervalue* time) {
 }
 _timervalue _default_timer;
 
-_int32 _now_year(void) {
+int32_t _now_year(void) {
   struct tm * now;
   _timervalue t;
   gettimeofday(&t, NULL);
@@ -164,7 +164,7 @@ _int32 _now_year(void) {
   return now->tm_year;
 }
 
-_int32 _now_month(void) {
+int32_t _now_month(void) {
   struct tm * now;
   _timervalue t;
   gettimeofday(&t, NULL);
@@ -172,7 +172,7 @@ _int32 _now_month(void) {
   return now->tm_mon;
 }
 
-_int32 _now_day(void) {
+int32_t _now_day(void) {
   struct tm * now;
   _timervalue t;
   gettimeofday(&t, NULL);

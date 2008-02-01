@@ -3,9 +3,10 @@
 
 #include "chpltypes.h"
 #include "chpl_cfg_comm.h"
+#include <stdint.h>
 
-extern _int32 _localeID;   // unique ID for each locale: 0, 1, 2, ...
-extern _int32 _numLocales; // number of locales
+extern int32_t _localeID;   // unique ID for each locale: 0, 1, 2, ...
+extern int32_t _numLocales; // number of locales
 
 extern void _heapAllocateGlobals(void);
 extern char* _global_vars_registry[];
@@ -143,7 +144,7 @@ int _chpl_comm_default_num_locales(void);
 // be used.  In particular, if a number exceeding some sort of maximum
 // was provided, an error should be reported.
 //
-void _chpl_comm_verify_num_locales(_int32 proposedNumLocales);
+void _chpl_comm_verify_num_locales(int32_t proposedNumLocales);
 
 //
 // This routine allows a comm layer to process the argc/argv calls
@@ -165,7 +166,7 @@ void _chpl_comm_verify_num_locales(_int32 proposedNumLocales);
 // invocation of main().  If the comm layer does not need to modify
 // argc/argv, it can just pass them through to commArgc/commArgv.
 //
-char** _chpl_comm_create_argcv(_int32 execNumLocales, int argc, char* argv[], 
+char** _chpl_comm_create_argcv(int32_t execNumLocales, int argc, char* argv[], 
                                int* commArgc);
 
 //
@@ -251,7 +252,7 @@ void _chpl_comm_exit_any(int status);
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_put(void* addr, _int32 locale, void* raddr, _int32 size);
+void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size);
 
 //
 // get 'size' bytes of remote data at 'raddr' on locale 'locale' to
@@ -260,7 +261,7 @@ void  _chpl_comm_put(void* addr, _int32 locale, void* raddr, _int32 size);
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_get(void *addr, _int32 locale, void* raddr, _int32 size);
+void  _chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size);
 
 //
 // remote fork should launch a thread on locale that runs function f

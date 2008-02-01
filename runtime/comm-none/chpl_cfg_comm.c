@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include "chplrt.h"
 #include "chplcomm.h"
 #include "chplexit.h"
@@ -32,13 +33,13 @@ int _chpl_comm_default_num_locales(void) {
   return 1;
 }
 
-void _chpl_comm_verify_num_locales(_int32 proposedNumLocales) {
+void _chpl_comm_verify_num_locales(int32_t proposedNumLocales) {
   if (proposedNumLocales != 1) {
     _printError("Only 1 locale may be used for CHPL_COMM layer 'none'", 0, 0);
   }
 }
 
-char** _chpl_comm_create_argcv(_int32 numLocales, int argc, char* argv[],
+char** _chpl_comm_create_argcv(int32_t numLocales, int argc, char* argv[],
                                int* commArgc) {
   *commArgc = argc;
   return argv;
@@ -80,11 +81,11 @@ void _chpl_comm_exit_any(int status) { }
 
 void _chpl_comm_exit_all(int status) { }
 
-void  _chpl_comm_put(void* addr, _int32 locale, void* raddr, _int32 size) {
+void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
   memcpy(raddr, addr, size);
 }
 
-void  _chpl_comm_get(void* addr, _int32 locale, void* raddr, _int32 size) {
+void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size) {
   memcpy(addr, raddr, size);
 }
 

@@ -20,17 +20,15 @@
 #define UINT64( i) (i ## ULL)
 
 typedef char _chpl_bool;
+// It is tempting to #undef true and false and then #define them just to be sure
+// they expand correctly, but future versions of the C standard may not allow this!
+#ifndef false
 #define false 0
+#endif
+#ifndef  true
 #define  true 1
+#endif
 
-typedef signed char         _int8;
-typedef short int           _int16;
-typedef int                 _int32;
-typedef long long int       _int64;
-typedef unsigned char       _uint8;
-typedef unsigned short int  _uint16;
-typedef unsigned int        _uint32;
-typedef unsigned long long  _uint64;
 typedef float               _real32;
 typedef double              _real64;
 typedef float               _imag32;
@@ -38,7 +36,7 @@ typedef double              _imag64;
 typedef struct __complex64 { _real32 re; _real32 im; } _complex64;
 typedef struct __complex128 { _real64 re; _real64 im; } _complex128;
 typedef const char*         _string;
-typedef _int64              _symbol;
+typedef int64_t              _symbol;
 
 
 // macros for Chapel min/max -> C stdint.h or values.h min/max
@@ -65,7 +63,7 @@ typedef _int64              _symbol;
 #define MAX_FLOAT32         FLT_MAX
 #define MAX_FLOAT64         DBL_MAX
 
-#define ascii(s) ((_int8)(*s))
+#define ascii(s) ((int8_t)(*s))
 
 #define string_copy(rhs, lineno, filename) (string_concat(rhs, "", lineno, filename))
 
@@ -78,14 +76,14 @@ _string _format(_string format, ...)
 char* _glom_strings(int numstrings, ...);
 
 _chpl_bool string_contains(_string x, _string y);
-_string string_concat(_string x, _string y, _int32 lineno, _string filename);
-_string string_index(_string x, int i, _int32 lineno, _string filename);
-_string string_select(_string x, int low, int high, _int32 lineno, _string filename);
-_string string_strided_select(_string x, int low, int high, int stride, _int32 lineno, _string filename);
+_string string_concat(_string x, _string y, int32_t lineno, _string filename);
+_string string_index(_string x, int i, int32_t lineno, _string filename);
+_string string_select(_string x, int low, int high, int32_t lineno, _string filename);
+_string string_strided_select(_string x, int low, int high, int stride, int32_t lineno, _string filename);
 _chpl_bool string_equal(_string x, _string y);
-_int64 string_length(_string x);
+int64_t string_length(_string x);
 
-_int64 real2int( _real64 f);       // return the raw bytes of the float
-_int64 object2int( _chpl_object o);  // return the ptr
+int64_t real2int( _real64 f);       // return the raw bytes of the float
+int64_t object2int( _chpl_object o);  // return the ptr
 
 #endif

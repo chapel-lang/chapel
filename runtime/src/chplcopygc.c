@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include "chplcgfns.h"
 #include "chplcopygc.h"
 #include "chplrt.h"
@@ -105,7 +106,7 @@ void _chpl_gc_copy_collect(void) {
 }
 
 void* _chpl_gc_malloc(size_t number, size_t size, const char* description,
-                      _int32 lineno, _string filename) {
+                      int32_t lineno, _string filename) {
   char* current = NULL;
   size_t chunk = number * size;
   if (_from_space->current + chunk > _from_space->tail) {

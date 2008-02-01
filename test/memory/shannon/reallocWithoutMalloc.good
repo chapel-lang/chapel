@@ -1,1 +1,1 @@
-reallocWithoutMalloc.chpl:1: error: Attempting to realloc memory for _int64that wasn't allocated
+reallocWithoutMalloc.chpl:1: error: Attempting to realloc memory for int64_t that wasn't allocated

@@ -6,7 +6,7 @@
 Size:    Number:  Total:   Address:    Description:
 (bytes)           (bytes)  
 ================================================================================
-8        1        8        0xnnnnnnnn  _int64
+8        1        8        0xnnnnnnnn  int64_t
 
 After a call to realloc with size equal to 0:
 

@@ -79,7 +79,7 @@ void _chpl_sync_unlock(_chpl_sync_aux_t *s) {
   _chpl_mutex_unlock(s->lock);
 }
 
-int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
+int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, int32_t lineno, _string filename) {
   int return_value = _chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
     if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
@@ -88,7 +88,7 @@ int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string fi
   return return_value;
 }
 
-int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
+int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, int32_t lineno, _string filename) {
   int return_value = _chpl_mutex_lock(s->lock);
   while (return_value == 0 && s->is_full) {
     if ((return_value = pthread_cond_wait(s->signal_empty, s->lock)))
@@ -129,7 +129,7 @@ int _chpl_single_lock(_chpl_single_aux_t *s) {
   return _chpl_mutex_lock(s->lock);
 }
 
-int _chpl_single_wait_full(_chpl_single_aux_t *s, _int32 lineno, _string filename) {
+int _chpl_single_wait_full(_chpl_single_aux_t *s, int32_t lineno, _string filename) {
   int return_value = _chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
     if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
@@ -195,7 +195,7 @@ void exitChplThreads() {
 void _chpl_thread_init(void) {}  // No need to do anything!
 
 
-_uint64 _chpl_thread_id(void) {
+uint64_t _chpl_thread_id(void) {
   return (intptr_t) pthread_self();
 }
 

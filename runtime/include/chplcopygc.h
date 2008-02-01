@@ -2,6 +2,7 @@
 #define _chplcopygc_H_
 
 #include <stddef.h>
+#include <stdint.h>
 #include "chpltypes.h"
 #define MAXROOTS 1024
 
@@ -38,7 +39,7 @@ void _chpl_gc_cleanup(void);
 /* Allocate space in the from-space.  If not enough space exists,
    run a garbage collection cycle. */
 void* _chpl_gc_malloc(size_t number, size_t size, const char* description,
-                      _int32 lineno, _string filename);
+                      int32_t lineno, _string filename);
 
 /* Run a garbage collection cycle */
 void _chpl_gc_copy_collect(void);

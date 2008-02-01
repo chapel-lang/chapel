@@ -5,6 +5,7 @@
 #include "chplrt.h"
 #include "chplcomm.h"
 
-_int32 _localeID = -1;
-_int32 _numLocales = -1;
+#include <stdint.h>
 
+int32_t _localeID = -1;
+int32_t _numLocales = -1;

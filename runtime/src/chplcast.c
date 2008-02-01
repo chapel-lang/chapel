@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include <math.h>
 #include "chplcast.h"
 #include "chplrt.h"
@@ -34,14 +35,14 @@ static int illegalFirstUnsChar(char c) {
    spaces to disappear between the type name and the subsequent
    tokens */
 
-#define _type(base, width) _##base##width
+#define _type(base, width) base##width##_t
 
 #define _define_string_to_int_precise(base, width, uns)                 \
-  _type(base,width) _string_to_##base##width##_precise(const char* str, \
-                                                       int* invalid,    \
-                                                       char* invalidCh) { \
+  _type(base,width) _string_to_##base##width##_t_precise(const char* str, \
+                                                         int* invalid,    \
+                                                         char* invalidCh) { \
     char* endPtr;                                                       \
-    _type(base, width) val = (_##base##width)strtol(str, &endPtr, 10);  \
+    _type(base, width) val = (_type(base, width))strtol(str, &endPtr, 10);  \
     *invalid = (*str == '\0' || *endPtr != '\0');                       \
     *invalidCh = *endPtr;                                               \
     /* for negatives, strtol works, but we wouldn't want chapel to */   \
@@ -53,9 +54,9 @@ static int illegalFirstUnsChar(char c) {
   }
 
 #define _define_string_to_bigint_precise(base, width, uns, format)      \
-  _type(base, width)  _string_to_##base##width##_precise(const char* str, \
-                                                         int* invalid,  \
-                                                         char* invalidCh) { \
+  _type(base, width)  _string_to_##base##width##_t_precise(const char* str, \
+                                                           int* invalid,  \
+                                                           char* invalidCh) { \
     _type(base, width)  val;                                            \
     int numbytes;                                                       \
     int numitems = sscanf(str, format"%n", &val, &numbytes);            \
@@ -87,11 +88,11 @@ static int illegalFirstUnsChar(char c) {
 _define_string_to_int_precise(int, 8, 0)
 _define_string_to_int_precise(int, 16, 0)
 _define_string_to_int_precise(int, 32, 0)
-_define_string_to_bigint_precise(int, 64, 0, "%lld")
+_define_string_to_bigint_precise(int, 64, 0, "%" SCNd64)
 _define_string_to_int_precise(uint, 8, 1)
 _define_string_to_int_precise(uint, 16, 1)
 _define_string_to_int_precise(uint, 32, 1)
-_define_string_to_bigint_precise(uint, 64, 1, "%llu")
+_define_string_to_bigint_precise(uint, 64, 1, "%" SCNu64)
 
 
 _chpl_bool _string_to_chpl_bool(const char* str, int lineno, const char* filename) {
@@ -110,11 +111,13 @@ _chpl_bool _string_to_chpl_bool(const char* str, int lineno, const char* filenam
 }
 
 
+#define _real_type(base, width) _##base##width
+
 #define _define_string_to_float_precise(base, width, format)            \
-  _type(base, width) _string_to_##base##width##_precise(const char* str, \
-                                                        int* invalid,   \
-                                                        char* invalidCh) { \
-    _type(base, width) val;                                             \
+  _real_type(base, width) _string_to_##base##width##_precise(const char* str, \
+                                                             int* invalid,   \
+                                                             char* invalidCh) { \
+    _real_type(base, width) val;                                        \
     int numbytes;                                                       \
     int numitems = sscanf(str, format"%n", &val, &numbytes);            \
     if (scanningNCounts() && numitems == 2) {                           \
@@ -140,10 +143,10 @@ _define_string_to_float_precise(real, 32, "%f")
 _define_string_to_float_precise(real, 64, "%lf")
 
 #define _define_string_to_imag_precise(base, width, format)             \
-  _type(base, width) _string_to_##base##width##_precise(const char* str, \
-                                                        int* invalid,   \
-                                                        char* invalidCh) { \
-    _type(base, width) val;                                             \
+  _real_type(base, width) _string_to_##base##width##_precise(const char* str, \
+                                                             int* invalid,   \
+                                                             char* invalidCh) { \
+    _real_type(base, width) val;                                        \
     int numbytes;                                                       \
     char i = '\0';                                                      \
     int numitems = sscanf(str, format"%c%n", &val, &i, &numbytes);      \
@@ -179,10 +182,10 @@ _define_string_to_imag_precise(imag, 64, "%lf")
 
 
 #define _define_string_to_complex_precise(base, width, format, halfwidth) \
-  _type(base, width) _string_to_##base##width##_precise(const char* str, \
-                                                        int* invalid,   \
-                                                        char* invalidCh) { \
-    _type(base, width) val = {0.0, 0.0};                                \
+  _real_type(base, width) _string_to_##base##width##_precise(const char* str, \
+                                                             int* invalid,   \
+                                                             char* invalidCh) { \
+    _real_type(base, width) val = {0.0, 0.0};                           \
     /* check for pure imaginary case first */                           \
     val.im = _string_to_imag##halfwidth##_precise(str, invalid, invalidCh); \
     if (*invalid) {                                                     \
@@ -254,13 +257,13 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
 
 
 #define _define_string_to_type(base, width)                             \
-  _type(base, width) _string_to_##base##width(const char* str, int lineno, \
-                                              const char* filename) {   \
+  _type(base, width) _string_to_##base##width##_t(const char* str, int lineno, \
+                                                  const char* filename) {   \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
-    _type(base, width) val = _string_to_##base##width##_precise(str,    \
-                                                                &invalid, \
-                                                                invalidStr); \
+    _type(base, width) val = _string_to_##base##width##_t_precise(str,    \
+                                                                  &invalid, \
+                                                                  invalidStr); \
     if (invalid) {                                                      \
       const char* message;                                              \
       if (invalid == 2) {                                               \
@@ -288,12 +291,38 @@ _define_string_to_type(uint, 16)
 _define_string_to_type(uint, 32)
 _define_string_to_type(uint, 64)
 
-_define_string_to_type(real, 32)
-_define_string_to_type(real, 64)
-_define_string_to_type(imag, 32)
-_define_string_to_type(imag, 64)
-_define_string_to_type(complex, 64)
-_define_string_to_type(complex, 128)
+#define _define_string_to_real_type(base, width)                        \
+  _real_type(base, width) _string_to_##base##width(const char* str, int lineno, \
+                                                   const char* filename) {   \
+    int invalid;                                                        \
+    char invalidStr[2] = "\0\0";                                        \
+    _real_type(base, width) val = _string_to_##base##width##_precise(str,    \
+                                                                     &invalid, \
+                                                                     invalidStr); \
+    if (invalid) {                                                      \
+      const char* message;                                              \
+      if (invalid == 2) {                                               \
+        if (invalidStr[0] == '\0') {                                    \
+          message = "Missing terminating 'i' character when converting from string to " #base "(" #width ")"; \
+        } else {                                                        \
+          message = _glom_strings(3, "Missing terminating 'i' character when converting from string to " #base "(" #width "); got '", invalidStr, "' instead"); \
+        }                                                               \
+      } else if (invalidStr[0]) {                                       \
+        message = _glom_strings(3, "Unexpected character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
+      } else {                                                          \
+        message = "Empty string when converting from string to " #base "(" #width ")"; \
+      }                                                                 \
+      _printError(message, lineno, filename);                           \
+    }                                                                   \
+    return val;                                                         \
+  }
+
+_define_string_to_real_type(real, 32)
+_define_string_to_real_type(real, 64)
+_define_string_to_real_type(imag, 32)
+_define_string_to_real_type(imag, 64)
+_define_string_to_real_type(complex, 64)
+_define_string_to_real_type(complex, 128)
 
 
 /*
@@ -306,14 +335,14 @@ _define_string_to_type(complex, 128)
     return _glom_strings(1, buffer);            \
   }
 
-integral_to_string(_int8, "%d")
-integral_to_string(_int16, "%d")
-integral_to_string(_int32, "%d")
-integral_to_string(_int64, "%lld")
-integral_to_string(_uint8, "%hhu")
-integral_to_string(_uint16, "%hu")
-integral_to_string(_uint32, "%u")
-integral_to_string(_uint64, "%llu")
+integral_to_string(int8_t, "%" PRId8)
+integral_to_string(int16_t, "%" PRId16)
+integral_to_string(int32_t, "%" PRId32)
+integral_to_string(int64_t, "%" PRId64)
+integral_to_string(uint8_t, "%" PRIu8)
+integral_to_string(uint16_t, "%" PRIu16)
+integral_to_string(uint32_t, "%" PRIu32)
+integral_to_string(uint64_t, "%" PRIu64)
 
 /*
  *  real and imag to string

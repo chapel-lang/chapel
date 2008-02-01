@@ -374,7 +374,7 @@ void ClassType::codegenDef(FILE* outfile) {
     }
     printedSomething = true;
   } else if (classTag == CLASS_UNION) {
-    fprintf(outfile, "_int64 _uid;\n");
+    fprintf(outfile, "int64_t _uid;\n");
     fprintf(outfile, "union {\n");
   }
   for_fields(field, this) {
@@ -463,11 +463,11 @@ createPrimitiveType(const char *name, const char *cname) {
 // probably be something like int1, int8, etc. in the end. In that case
 // we can just specify the width (i.e., size).
 #define INIT_PRIMITIVE_INT( name, width)                                 \
-  dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "_int" #width); \
+  dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t"); \
   dtInt[INT_SIZE_ ## width]->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width)
 
 #define INIT_PRIMITIVE_UINT( name, width)                                  \
-  dtUInt[INT_SIZE_ ## width] = createPrimitiveType (name, "_uint" #width); \
+  dtUInt[INT_SIZE_ ## width] = createPrimitiveType (name, "uint" #width "_t"); \
   dtUInt[INT_SIZE_ ## width]->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width)
 
 #define INIT_PRIMITIVE_REAL( name, width)                                     \

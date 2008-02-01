@@ -2,28 +2,29 @@
 #define _chplcast_h_
 
 #include "chpltypes.h"
+#include <stdint.h>
 
 
 /* invalid is a flag indicating valid or not
    invalidChar is the character that was invalid */
-_int8 _string_to_int8_precise(const char* str, int* invalid, char* invalidChar);
-_int16 _string_to_int16_precise(const char* str, int* invalid, char* invalidChar);
-_int32 _string_to_int32_precise(const char* str, int* invalid, char* invalidChar);
-_int64 _string_to_int64_precise(const char* str, int* invalid, char* invalidChar);
-_uint8 _string_to_uint8_precise(const char* str, int* invalid, char* invalidChar);
-_uint16 _string_to_uint16_precise(const char* str, int* invalid, char* invalidChar);
-_uint32 _string_to_uint32_precise(const char* str, int* invalid, char* invalidChar);
-_uint64 _string_to_uint64_precise(const char* str, int* invalid, char* invalidChar);
+int8_t _string_to_int8_t_precise(const char* str, int* invalid, char* invalidChar);
+int16_t _string_to_int16_t_precise(const char* str, int* invalid, char* invalidChar);
+int32_t _string_to_int32_t_precise(const char* str, int* invalid, char* invalidChar);
+int64_t _string_to_int64_t_precise(const char* str, int* invalid, char* invalidChar);
+uint8_t _string_to_uint8_t_precise(const char* str, int* invalid, char* invalidChar);
+uint16_t _string_to_uint16_t_precise(const char* str, int* invalid, char* invalidChar);
+uint32_t _string_to_uint32_t_precise(const char* str, int* invalid, char* invalidChar);
+uint64_t _string_to_uint64_t_precise(const char* str, int* invalid, char* invalidChar);
 
 /* string to every other primitive type */
-_int8 _string_to_int8(const char* str, int lineno, const char* filename);
-_int16 _string_to_int16(const char* str, int lineno, const char* filename);
-_int32 _string_to_int32(const char* str, int lineno, const char* filename);
-_int64 _string_to_int64(const char* str, int lineno, const char* filename);
-_uint8 _string_to_uint8(const char* str, int lineno, const char* filename);
-_uint16 _string_to_uint16(const char* str, int lineno, const char* filename);
-_uint32 _string_to_uint32(const char* str, int lineno, const char* filename);
-_uint64 _string_to_uint64(const char* str, int lineno, const char* filename);
+int8_t _string_to_int8_t(const char* str, int lineno, const char* filename);
+int16_t _string_to_int16_t(const char* str, int lineno, const char* filename);
+int32_t _string_to_int32_t(const char* str, int lineno, const char* filename);
+int64_t _string_to_int64_t(const char* str, int lineno, const char* filename);
+uint8_t _string_to_uint8_t(const char* str, int lineno, const char* filename);
+uint16_t _string_to_uint16_t(const char* str, int lineno, const char* filename);
+uint32_t _string_to_uint32_t(const char* str, int lineno, const char* filename);
+uint64_t _string_to_uint64_t(const char* str, int lineno, const char* filename);
 
 _chpl_bool _string_to_chpl_bool(const char* str, int lineno, const char* filename);
 
@@ -43,14 +44,14 @@ _complex128 _string_to_complex128(const char* str, int lineno, const char* filen
 
 
 /* every other primitive type to string */
-_string _int8_to_string(_int8 x);
-_string _int16_to_string(_int16 x);
-_string _int32_to_string(_int32 x);
-_string _int64_to_string(_int64 x);
-_string _uint8_to_string(_uint8 x);
-_string _uint16_to_string(_uint16 x);
-_string _uint32_to_string(_uint32 x);
-_string _uint64_to_string(_uint64 x);
+_string int8_t_to_string(int8_t x);
+_string int16_t_to_string(int16_t x);
+_string int32_t_to_string(int32_t x);
+_string int64_t_to_string(int64_t x);
+_string uint8_t_to_string(uint8_t x);
+_string uint16_t_to_string(uint16_t x);
+_string uint32_t_to_string(uint32_t x);
+_string uint64_t_to_string(uint64_t x);
 _string _real32_to_string(_real32 x);
 _string _real64_to_string(_real64 x);
 _string _imag32_to_string(_imag32 x);

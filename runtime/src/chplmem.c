@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include "chplmem.h"
 #include "chplrt.h"
@@ -52,8 +53,8 @@ static int memtrace = 0;
 static int memtraceSet = 0;
 static int memtrack = 0;
 static int memtrackSet = 0;
-static _int64 memmaxValue = 0;
-static _int64 memthresholdValue = 0;
+static int64_t memmaxValue = 0;
+static int64_t memthresholdValue = 0;
 static FILE* memlog = NULL;
 static size_t totalMem = 0;  /* total memory currently allocated */
 static size_t maxMem = 0;    /* maximum total memory during run  */
@@ -73,7 +74,7 @@ void initMemTable(void) {
 }
 
 
-void setMemmax(_int64 value) {
+void setMemmax(int64_t value) {
   memmaxValue = value;
   setMemstat();
 }
@@ -90,7 +91,7 @@ void setMemtrack(void) {
 }
 
 
-void setMemthreshold(_int64 value) {
+void setMemthreshold(int64_t value) {
   if (!memlog) {
     _printError("--memthreshold useless when used without --memtrace", 0, 0);
   }
@@ -118,7 +119,7 @@ static void updateMaxMem(void) {
 }
 
 
-static void increaseMemStat(size_t chunk, _int32 lineno, _string filename) {
+static void increaseMemStat(size_t chunk, int32_t lineno, _string filename) {
   totalMem += chunk;
   if (memmaxValue && (totalMem > memmaxValue)) {
     const char* message = "Exceeded memory limit";
@@ -150,16 +151,16 @@ void startTrackingMem(void) {
 
 static int alreadyPrintingStat = 0;
 
-_uint64 _mem_used(_int32 lineno, _string filename) {
-  _uint64 u;
+uint64_t _mem_used(int32_t lineno, _string filename) {
+  uint64_t u;
   alreadyPrintingStat = 1; /* hack: don't want to print final stats */
   if (!memstat)
     _printError("memoryUsed() only works with the --memstat flag", lineno, filename);
-  u = (_uint64)totalMem;
+  u = (uint64_t)totalMem;
   return u;
 }
 
-void printMemStat(_int32 lineno, _string filename) {
+void printMemStat(int32_t lineno, _string filename) {
   if (memstat) {
     _chpl_mutex_lock(&_memstat_lock);
     fprintf(stdout, "totalMem=%u, maxMem=%u\n", 
@@ -173,7 +174,7 @@ void printMemStat(_int32 lineno, _string filename) {
 }
 
 
-void printFinalMemStat(_int32 lineno, _string filename) {
+void printFinalMemStat(int32_t lineno, _string filename) {
   if (!alreadyPrintingStat && memstat) {
     fprintf(stdout, "Final Memory Statistics:  ");
     printMemStat(lineno, filename);
@@ -181,7 +182,7 @@ void printFinalMemStat(_int32 lineno, _string filename) {
 }
 
 
-void printMemTable(_int64 threshold, _int32 lineno, _string filename) {
+void printMemTable(int64_t threshold, int32_t lineno, _string filename) {
   memTableEntry* memEntry = NULL;
 
   int numberWidth   = 9;
@@ -341,7 +342,7 @@ static void updateMemory(memTableEntry* memEntry, void* oldAddress,
 }
 
 
-static void removeMemory(void* memAlloc, _int32 lineno, _string filename) {
+static void removeMemory(void* memAlloc, int32_t lineno, _string filename) {
   memTableEntry* memEntry = lookupMemory(memAlloc);
   memTableEntry* thisBucketEntry;
 
@@ -373,7 +374,7 @@ static void removeMemory(void* memAlloc, _int32 lineno, _string filename) {
 
 
 static void
-confirm(void* memAlloc, const char* description, _int32 lineno, 
+confirm(void* memAlloc, const char* description, int32_t lineno, 
         _string filename) {
   if (!memAlloc) {
     char message[1024];
@@ -403,7 +404,7 @@ static void printToMemLog(size_t number, size_t size, const char* description,
 
 
 void* _chpl_malloc(size_t number, size_t size, const char* description,
-                   _int32 lineno, _string filename) {
+                   int32_t lineno, _string filename) {
   size_t chunk = number * size;
   void* memAlloc = malloc(chunk);
   confirm(memAlloc, description, lineno, filename);
@@ -428,7 +429,7 @@ void* _chpl_malloc(size_t number, size_t size, const char* description,
 
 
 void* _chpl_calloc(size_t number, size_t size, const char* description, 
-                   _int32 lineno, _string filename) {
+                   int32_t lineno, _string filename) {
   void* memAlloc = calloc(number, size);
   confirm(memAlloc, description, lineno, filename);
 
@@ -454,7 +455,7 @@ void* _chpl_calloc(size_t number, size_t size, const char* description,
 }
 
 
-void _chpl_free(void* memAlloc, _int32 lineno, _string filename) {
+void _chpl_free(void* memAlloc, int32_t lineno, _string filename) {
   if (memtrace) {
     _chpl_mutex_lock(&_memtrace_lock);
     if (memtrack) {
@@ -489,7 +490,7 @@ void _chpl_free(void* memAlloc, _int32 lineno, _string filename) {
 
 
 void* _chpl_realloc(void* memAlloc, size_t number, size_t size, 
-                    const char* description, _int32 lineno, _string filename) {
+                    const char* description, int32_t lineno, _string filename) {
   size_t newChunk = number * size;
   memTableEntry* memEntry = NULL;
   void* moreMemAlloc;
@@ -504,7 +505,7 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
     if (!memEntry && (memAlloc != NULL)) {
       char* message;
       message = _glom_strings(3, "Attempting to realloc memory for ",
-                              description, "that wasn't allocated");
+                              description, " that wasn't allocated");
       _printError(message, lineno, filename);
     }
   }

@@ -2,6 +2,7 @@
 #include "chplthreads.h"
 #include "chplmem.h"
 #include "error.h"
+#include <stdint.h>
 
 // Mutex
 
@@ -14,7 +15,7 @@ void _chpl_mutex_unlock(_chpl_mutex_p mutex) { }
 int _chpl_sync_lock(_chpl_sync_aux_t *s) { return s == NULL; }
 void _chpl_sync_unlock(_chpl_sync_aux_t *s) { }
 
-int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
+int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, int32_t lineno, _string filename) {
   if (*s)
     return 0;
   else {
@@ -23,7 +24,7 @@ int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string fi
   }
 }
 
-int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, _int32 lineno, _string filename) {
+int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, int32_t lineno, _string filename) {
   if (*s) {
     _printError("sync var full (running in single-threaded mode)", lineno, filename);
     return 1;
@@ -52,7 +53,7 @@ void _chpl_init_sync_aux(_chpl_sync_aux_t *s) {
 
 int _chpl_single_lock(_chpl_single_aux_t *s) { return s == NULL; }
 
-int _chpl_single_wait_full(_chpl_single_aux_t *s, _int32 lineno, _string filename) {
+int _chpl_single_wait_full(_chpl_single_aux_t *s, int32_t lineno, _string filename) {
   if (*s)
     return 0;
   else {
@@ -80,7 +81,7 @@ void initChplThreads() { }
 void exitChplThreads() { }
 void _chpl_thread_init(void) { }
 
-_uint64 _chpl_thread_id(void) { return 0; }
+uint64_t _chpl_thread_id(void) { return 0; }
 _chpl_bool _chpl_get_serial(void) { return true; }
 void _chpl_set_serial(_chpl_bool state) {
   if (!state)

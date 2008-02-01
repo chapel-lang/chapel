@@ -10,6 +10,7 @@
 #include "config.h"
 #include "error.h"
 #include "gdb.h"
+#include <stdint.h>
 
 
 int main(int argc, char* argv[]) {
@@ -19,7 +20,7 @@ int main(int argc, char* argv[]) {
     // If it's the user, parse the arguments to determine the number
     // of locales.
     //
-    _int32 execNumLocales;
+    int32_t execNumLocales;
     parseArgs(argc, argv);
 
     execNumLocales = getArgNumLocales();

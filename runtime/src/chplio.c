@@ -2,11 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include "chplio.h"
 #include "chplrt.h"
 #include "error.h"
 
-static void _fscan_error_check(int err, _int32 lineno, _string filename) {
+static void _fscan_error_check(int err, int32_t lineno, _string filename) {
   if (err == EOF)
     _printError("read failed: eof", lineno, filename);
   else if (err < 0)
@@ -16,7 +17,7 @@ static void _fscan_error_check(int err, _int32 lineno, _string filename) {
     _printError("read failed: value not read", lineno, filename);
 }
 
-_string _fscan_string(FILE* fp, _int32 lineno, _string filename) {
+_string _fscan_string(FILE* fp, int32_t lineno, _string filename) {
   char result[_default_string_length];
   char dsl[1024];
   int err;
@@ -31,25 +32,25 @@ _string _fscan_string(FILE* fp, _int32 lineno, _string filename) {
   return _glom_strings(1, result);
 }
 
-_int32 _fscan_int32(FILE* fp, _int32 lineno, _string filename) {
-  _int32 result;
+int32_t _fscan_int32(FILE* fp, int32_t lineno, _string filename) {
+  int32_t result;
   int err;
 
-  err = fscanf(fp, "%d", &result);
+  err = fscanf(fp, "%" SCNd32, &result);
   _fscan_error_check(err, lineno, filename);
   return result;
 }
 
-_uint32 _fscan_uint32(FILE* fp, _int32 lineno, _string filename) {
-  _uint32 result;
+uint32_t _fscan_uint32(FILE* fp, int32_t lineno, _string filename) {
+  uint32_t result;
   int err;
 
-  err = fscanf(fp, "%u", &result);
+  err = fscanf(fp, "%" SCNu32, &result);
   _fscan_error_check(err, lineno, filename);
   return result;
 }
 
-_real64 _fscan_real64(FILE* fp, _int32 lineno, _string filename) {
+_real64 _fscan_real64(FILE* fp, int32_t lineno, _string filename) {
   _real64 result;
   int err;
 
@@ -59,7 +60,7 @@ _real64 _fscan_real64(FILE* fp, _int32 lineno, _string filename) {
 }
 
 _chpl_bool _fscan_literal(FILE* fp, _string val, _chpl_bool ignoreWhiteSpace,
-                          _int32 lineno, _string filename) {
+                          int32_t lineno, _string filename) {
   char ch  = ' ';
   int err;
 

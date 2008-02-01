@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include "arg.h"
 #include "chplcast.h"
 #include "chplcgfns.h"
@@ -97,9 +98,9 @@ static void printHelpTable(void) {
 }
 
 
-static _int64 getIntArg(char* valueString, const char* memFlag) {
+static int64_t getIntArg(char* valueString, const char* memFlag) {
   char extraChars;
-  _int64 value = 0;  /* initialization is silly hack for freebsd */
+  int64_t value = 0;  /* initialization is silly hack for freebsd */
   int numScans;
   char* message;
 
@@ -169,7 +170,7 @@ static int parseMemFlag(const char* memFlag) {
   switch (flag) {
   case MemMax:
     {
-      _int64 value;
+      int64_t value;
       value = getIntArg(valueString, "--memmax");
       setMemmax(value);
       break;
@@ -191,7 +192,7 @@ static int parseMemFlag(const char* memFlag) {
 
   case MemThreshold:
     {
-      _int64 value;
+      int64_t value;
       value = getIntArg(valueString, "--memthreshold");
       setMemthreshold(value);
       break;
@@ -218,12 +219,12 @@ static void unexpectedArg(const char* currentArg) {
 }
 
 
-static _int32 _argNumLocales = 0;
+static int32_t _argNumLocales = 0;
 
 static void parseNumLocales(const char* numPtr) {
   int invalid;
   char invalidChars[2] = "\0\0";
-  _argNumLocales = _string_to_int32_precise(numPtr, &invalid, invalidChars);
+  _argNumLocales = _string_to_int32_t_precise(numPtr, &invalid, invalidChars);
   if (invalid) {
     char* message = _glom_strings(3, "\"", numPtr, 
                                   "\" is not a valid number of locales"
@@ -236,7 +237,7 @@ static void parseNumLocales(const char* numPtr) {
 }
 
 
-_int32 getArgNumLocales(void) {
+int32_t getArgNumLocales(void) {
   return _argNumLocales;
 }
 
