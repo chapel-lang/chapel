@@ -29,7 +29,7 @@ PROFILE_LFLAGS = -pg
 
 COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL = -wr111,193,1418,1419
-RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
+RUNTIME_CFLAGS = -std=c99 $(CFLAGS) -wr181
 GEN_CFLAGS = -std=c99 -mp
 
 #
@@ -39,6 +39,12 @@ GEN_CFLAGS = -std=c99 -mp
 #  193 : zero used for undefined preprocessing identifier
 # 1418 : external function definition with no prior declaration
 # 1419 : external declaration in primary source file
+
+#
+# Warnings squashed for runtime code
+#
+#  181 : due to warning using PRIu8/PRIu16 to print uint8_t and uint16_t's --
+#        apparently a bug -- filed to intel to see what they say
 
 #
 # Warnings squashed for compiler/runtime C/C++ code
