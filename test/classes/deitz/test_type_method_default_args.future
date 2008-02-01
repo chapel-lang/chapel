@@ -1,0 +1,4 @@
+bug: type method with arguments with default values
+
+interesting case in which the default value may be taken in the resolution of
+the partial method call
