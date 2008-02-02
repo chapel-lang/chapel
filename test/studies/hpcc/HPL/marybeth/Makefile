@@ -32,4 +32,4 @@ ps:
 	@echo To 2-up any of the .ps files, do: "psnup -2 -pletter in.ps out.ps"
 
 clean: 
-	rm -f $(TARGETS)
+	rm -f $(TARGET)
