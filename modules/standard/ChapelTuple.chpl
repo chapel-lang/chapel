@@ -109,19 +109,23 @@ pragma "inline" def =(x : _tuple, y) {
 def ==( a: _tuple, b: _tuple): bool {
   if (a.size != b.size) then
     return false;
-  for param i in 1..a.size do
-    if (a(i) != b(i)) then
-      return false;
-  return true;
+  else {
+    for param i in 1..a.size do
+      if (a(i) != b(i)) then
+        return false;
+    return true;
+  }
 }
 
 def !=( a: _tuple, b: _tuple): bool {
   if (a.size != b.size) then
     return true;
-  for param i in 1..a.size do
-    if (a(i) != b(i)) then
-      return true;
-  return false;
+  else {
+    for param i in 1..a.size do
+      if (a(i) != b(i)) then
+        return true;
+    return false;
+  }
 }
 
 def _tuple.writeThis(f: Writer) {

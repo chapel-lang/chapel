@@ -99,11 +99,12 @@ intel-specific regressions
 ==========================
 
 Warning about using a variable before its value is set -- error #592
-------------------------------------------------------
+caused by records with no fields and the constructor that gets created
+for them -- could be cleaned up by moving the fake record field earlier
+than codegen and having it be constructed like any other field.
+-----------------------------------------------------------------------
 [Error matching compiler output for classes/deitz/test_empty_record]
 [Error matching compiler output for functions/jplevyak/scoping/visibility-1]
-[Error matching compiler output for types/tuple/diten/tupleComparisons]
-
 
 
 ===========================
