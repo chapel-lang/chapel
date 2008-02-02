@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
-#ifdef __APPLE__
+#if defined __APPLE__ || defined __MTA__
 #include <sys/sysctl.h>
 #endif
 #include "chplrt.h"
