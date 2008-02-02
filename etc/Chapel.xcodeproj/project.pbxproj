@@ -299,6 +299,24 @@
 		F721A2380D458F6800A6B43F /* chpl_cfg_threads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_cfg_threads.h; path = "../runtime/include/threads-pthreads/chpl_cfg_threads.h"; sourceTree = SOURCE_ROOT; };
 		F731D5D80D510E84009F6897 /* COPYRIGHT */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 4; name = COPYRIGHT; path = ../COPYRIGHT; sourceTree = SOURCE_ROOT; };
 		F731D5D90D510E84009F6897 /* LICENSE */ = {isa = PBXFileReference; explicitFileType = sourcecode; fileEncoding = 4; name = LICENSE; path = ../LICENSE; sourceTree = SOURCE_ROOT; };
+		F76B61800D53AC0C005C6869 /* chpl_cfg_threads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_threads.c; path = "../runtime/threads-mta/chpl_cfg_threads.c"; sourceTree = SOURCE_ROOT; };
+		F76B61850D53AC56005C6869 /* chpl_cfg_threads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_cfg_threads.h; path = "../runtime/include/threads-mta/chpl_cfg_threads.h"; sourceTree = SOURCE_ROOT; };
+		F76B61CD0D53B15D005C6869 /* chpl_cfg_threads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_cfg_threads.h; path = "../runtime/include/threads-none/chpl_cfg_threads.h"; sourceTree = SOURCE_ROOT; };
+		F76B61D00D53B188005C6869 /* chpl_cfg_threads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_threads.c; path = "../runtime/threads-none/chpl_cfg_threads.c"; sourceTree = SOURCE_ROOT; };
+		F76B61DA0D53D1D6005C6869 /* chpl_cfg_comm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_cfg_comm.h; path = "../runtime/include/comm-gasnet/chpl_cfg_comm.h"; sourceTree = SOURCE_ROOT; };
+		F76B61DD0D53D218005C6869 /* chpl_cfg_comm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm.c; path = "../runtime/comm-gasnet/chpl_cfg_comm.c"; sourceTree = SOURCE_ROOT; };
+		F76B61E50D53D29B005C6869 /* chpl_cfg_comm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_cfg_comm.h; path = "../runtime/include/comm-armci/chpl_cfg_comm.h"; sourceTree = SOURCE_ROOT; };
+		F76B61E80D53D2B5005C6869 /* chpl_cfg_comm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm.c; path = "../runtime/comm-armci/chpl_cfg_comm.c"; sourceTree = SOURCE_ROOT; };
+		F76B61F40D53D4CE005C6869 /* chplfp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplfp.h; path = ../runtime/include/cygwin/chplfp.h; sourceTree = SOURCE_ROOT; };
+		F76B61F50D53D4CE005C6869 /* chplsys.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplsys.h; path = ../runtime/include/cygwin/chplsys.h; sourceTree = SOURCE_ROOT; };
+		F76B62070D53D6C8005C6869 /* stdint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stdint.h; path = ../runtime/include/freebsd/stdint.h; sourceTree = SOURCE_ROOT; };
+		F76B620C0D53D75E005C6869 /* chplfp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplfp.h; path = ../runtime/include/x1/chplfp.h; sourceTree = SOURCE_ROOT; };
+		F76B62120D53D890005C6869 /* chpl_md.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_md.h; path = ../runtime/include/sunos/chpl_md.h; sourceTree = SOURCE_ROOT; };
+		F76B62130D53D890005C6869 /* chplfp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplfp.h; path = ../runtime/include/sunos/chplfp.h; sourceTree = SOURCE_ROOT; };
+		F76B62140D53D890005C6869 /* stdint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stdint.h; path = ../runtime/include/sunos/stdint.h; sourceTree = SOURCE_ROOT; };
+		F76B62280D53EA83005C6869 /* chpl_md.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_md.h; path = "../runtime/include/comp-cray-mta/chpl_md.h"; sourceTree = SOURCE_ROOT; };
+		F76B62290D53EA83005C6869 /* inttypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = inttypes.h; path = "../runtime/include/comp-cray-mta/inttypes.h"; sourceTree = SOURCE_ROOT; };
+		F76B622A0D53EA83005C6869 /* stdint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stdint.h; path = "../runtime/include/comp-cray-mta/stdint.h"; sourceTree = SOURCE_ROOT; };
 		F79B20160D46AC8B003A01E6 /* cast_code.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cast_code.cpp; path = ../compiler/ifa/cast_code.cpp; sourceTree = "<group>"; };
 		F7FAC4F90D4537A700C02B67 /* libchpl.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libchpl.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7FAC5010D45384C00C02B67 /* arg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = arg.c; path = ../runtime/src/arg.c; sourceTree = SOURCE_ROOT; };
@@ -362,11 +380,11 @@
 		08FB7794FE84155DC02AAC07 /* Chapel */ = {
 			isa = PBXGroup;
 			children = (
-				F731D5D80D510E84009F6897 /* COPYRIGHT */,
-				F731D5D90D510E84009F6897 /* LICENSE */,
 				08FB7795FE84155DC02AAC07 /* Source */,
 				C6859E8C029090F304C91782 /* Documentation */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
+				F731D5D80D510E84009F6897 /* COPYRIGHT */,
+				F731D5D90D510E84009F6897 /* LICENSE */,
 			);
 			name = Chapel;
 			sourceTree = "<group>";
@@ -586,7 +604,6 @@
 				F7FAC5400D4539E400C02B67 /* chplcast.h */,
 				F7FAC5410D4539E400C02B67 /* chplcgfns.h */,
 				F7FAC5420D4539E400C02B67 /* chplcomm.h */,
-				F721A2330D458F1600A6B43F /* chpl_cfg_comm.h */,
 				F7FAC5430D4539E400C02B67 /* chplcopygc.h */,
 				F7FAC5440D4539E400C02B67 /* chplexit.h */,
 				F7FAC5450D4539E400C02B67 /* chplfp.h */,
@@ -598,7 +615,6 @@
 				F7FAC54B0D4539E400C02B67 /* chplsys.h */,
 				F7FAC5700D45411200C02B67 /* chplsys.h */,
 				F7FAC54C0D4539E400C02B67 /* chplthreads.h */,
-				F721A2380D458F6800A6B43F /* chpl_cfg_threads.h */,
 				F7FAC54D0D4539E400C02B67 /* chpltypes.h */,
 				F7FAC54E0D4539E400C02B67 /* config.h */,
 				F7FAC54F0D4539E400C02B67 /* error.h */,
@@ -608,11 +624,101 @@
 			name = "Header files";
 			sourceTree = "<group>";
 		};
-		F7FAC5230D45389000C02B67 /* Runtime */ = {
+		F76B618A0D53ACA3005C6869 /* MTA */ = {
+			isa = PBXGroup;
+			children = (
+				F76B62280D53EA83005C6869 /* chpl_md.h */,
+				F76B62290D53EA83005C6869 /* inttypes.h */,
+				F76B622A0D53EA83005C6869 /* stdint.h */,
+				F76B61800D53AC0C005C6869 /* chpl_cfg_threads.c */,
+				F76B61850D53AC56005C6869 /* chpl_cfg_threads.h */,
+			);
+			name = MTA;
+			sourceTree = "<group>";
+		};
+		F76B61CA0D53B0EE005C6869 /* Single threaded */ = {
+			isa = PBXGroup;
+			children = (
+				F76B61D00D53B188005C6869 /* chpl_cfg_threads.c */,
+				F76B61CD0D53B15D005C6869 /* chpl_cfg_threads.h */,
+			);
+			name = "Single threaded";
+			sourceTree = "<group>";
+		};
+		F76B61D50D53B1C1005C6869 /* Gasnet */ = {
+			isa = PBXGroup;
+			children = (
+				F76B61DD0D53D218005C6869 /* chpl_cfg_comm.c */,
+				F76B61DA0D53D1D6005C6869 /* chpl_cfg_comm.h */,
+			);
+			name = Gasnet;
+			sourceTree = "<group>";
+		};
+		F76B61E00D53D22C005C6869 /* Armci */ = {
+			isa = PBXGroup;
+			children = (
+				F76B61E80D53D2B5005C6869 /* chpl_cfg_comm.c */,
+				F76B61E50D53D29B005C6869 /* chpl_cfg_comm.h */,
+			);
+			name = Armci;
+			sourceTree = "<group>";
+		};
+		F76B61EF0D53D470005C6869 /* Cygwin */ = {
+			isa = PBXGroup;
+			children = (
+				F76B61F40D53D4CE005C6869 /* chplfp.h */,
+				F76B61F50D53D4CE005C6869 /* chplsys.h */,
+			);
+			name = Cygwin;
+			sourceTree = "<group>";
+		};
+		F76B61FA0D53D56A005C6869 /* FreeBSD */ = {
+			isa = PBXGroup;
+			children = (
+				F76B62070D53D6C8005C6869 /* stdint.h */,
+			);
+			name = FreeBSD;
+			sourceTree = "<group>";
+		};
+		F76B61FD0D53D576005C6869 /* X1 */ = {
+			isa = PBXGroup;
+			children = (
+				F76B620C0D53D75E005C6869 /* chplfp.h */,
+			);
+			name = X1;
+			sourceTree = "<group>";
+		};
+		F76B62020D53D636005C6869 /* POSIX threads */ = {
+			isa = PBXGroup;
+			children = (
+				F7FAC5360D45390200C02B67 /* chpl_cfg_threads.c */,
+				F721A2380D458F6800A6B43F /* chpl_cfg_threads.h */,
+			);
+			name = "POSIX threads";
+			sourceTree = "<group>";
+		};
+		F76B620F0D53D790005C6869 /* Single locale */ = {
 			isa = PBXGroup;
 			children = (
 				F7FAC53A0D45391800C02B67 /* chpl_cfg_comm.c */,
-				F7FAC5360D45390200C02B67 /* chpl_cfg_threads.c */,
+				F721A2330D458F1600A6B43F /* chpl_cfg_comm.h */,
+			);
+			name = "Single locale";
+			sourceTree = "<group>";
+		};
+		F76B62170D53D894005C6869 /* SunOS */ = {
+			isa = PBXGroup;
+			children = (
+				F76B62120D53D890005C6869 /* chpl_md.h */,
+				F76B62130D53D890005C6869 /* chplfp.h */,
+				F76B62140D53D890005C6869 /* stdint.h */,
+			);
+			name = SunOS;
+			sourceTree = "<group>";
+		};
+		F7FAC5230D45389000C02B67 /* Runtime */ = {
+			isa = PBXGroup;
+			children = (
 				F7FAC5010D45384C00C02B67 /* arg.c */,
 				F7FAC5020D45384C00C02B67 /* chplcast.c */,
 				F7FAC5030D45384C00C02B67 /* chplcomm.c */,
@@ -629,6 +735,16 @@
 				F7FAC50E0D45384C00C02B67 /* gdb.c */,
 				F7FAC50F0D45384C00C02B67 /* main.c */,
 				F721A2190D458E0000A6B43F /* Header files */,
+				F76B620F0D53D790005C6869 /* Single locale */,
+				F76B61D50D53B1C1005C6869 /* Gasnet */,
+				F76B61E00D53D22C005C6869 /* Armci */,
+				F76B61CA0D53B0EE005C6869 /* Single threaded */,
+				F76B62020D53D636005C6869 /* POSIX threads */,
+				F76B618A0D53ACA3005C6869 /* MTA */,
+				F76B61EF0D53D470005C6869 /* Cygwin */,
+				F76B61FA0D53D56A005C6869 /* FreeBSD */,
+				F76B62170D53D894005C6869 /* SunOS */,
+				F76B61FD0D53D576005C6869 /* X1 */,
 			);
 			name = Runtime;
 			sourceTree = "<group>";
@@ -977,6 +1093,17 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				HEADER_SEARCH_PATHS = "";
 				INSTALL_PATH = "/lib/darwin/gnu/threads-pthreads/comm-none";
+				OTHER_CFLAGS = (
+					"-Wall",
+					"-Wpointer-arith",
+					"-Wwrite-strings",
+					"-Wmissing-declarations",
+					"-Wmissing-prototypes",
+					"-Wstrict-prototypes",
+					"-Wnested-externs",
+					"-Wdeclaration-after-statement",
+					"-Wmissing-format-attribute",
+				);
 				PREBINDING = NO;
 				PRODUCT_NAME = chpl;
 				USER_HEADER_SEARCH_PATHS = "";
@@ -994,6 +1121,17 @@
 				GCC_MODEL_TUNING = G5;
 				HEADER_SEARCH_PATHS = "";
 				INSTALL_PATH = "/lib/darwin/gnu/threads-pthreads/comm-none";
+				OTHER_CFLAGS = (
+					"-Wall",
+					"-Wpointer-arith",
+					"-Wwrite-strings",
+					"-Wmissing-declarations",
+					"-Wmissing-prototypes",
+					"-Wstrict-prototypes",
+					"-Wnested-externs",
+					"-Wdeclaration-after-statement",
+					"-Wmissing-format-attribute",
+				);
 				PREBINDING = NO;
 				PRODUCT_NAME = chpl;
 				USER_HEADER_SEARCH_PATHS = "";
