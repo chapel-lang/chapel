@@ -1,4 +1,4 @@
-var f : file = file(filename = "_test_filename.txt");
+var f : file = new file(filename = "_test_filename.txt");
 
 writeln("filename set in constructor:  ", f.filename);
 writeln("default mode:  ", f.mode);

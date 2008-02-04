@@ -7,7 +7,7 @@ config const inputfile = "blockChol-Mat.dat";
 config const upper = true;
 
 def main() {
-  var Adat = file(inputfile,path='./',mode='r');
+  var Adat = new file(inputfile,path='./',mode='r');
   Adat.open();
 
   const n = readSize(Adat);

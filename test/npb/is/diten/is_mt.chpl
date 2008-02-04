@@ -44,8 +44,8 @@ var keyBuff1: [E] int;
 var passedVerifications = 0;
 
 def main() {
-  var time = Timer();
-  var randomStream = RandomStream(seed);
+  var time = new Timer();
+  var randomStream = new RandomStream(seed);
   var tempreals: [1..4] real;
   var max = maxKey / 4;
 

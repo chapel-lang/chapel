@@ -3,5 +3,5 @@ class C {
   var x : t;
 }
 
-var c : C(int) = C(int, 12);
+var c : C(int) = new C(int, 12);
 writeln(c);

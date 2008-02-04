@@ -7,7 +7,7 @@ class A {
 }
 
 class C {
-  var a : A = A();
+  var a : A = new A();
   var bb : int;
   def f() {
     a(1) *= 2.0;
@@ -17,11 +17,11 @@ class C {
   }
 }
 
-var a = A();
+var a = new A();
 a(1) = 1.0;
 writeln(a(1));
 
-var c = C();
+var c = new C();
 
 c.a(1) = 1.0;
 c.f();

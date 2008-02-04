@@ -23,7 +23,7 @@ Code 6 Top-level driver for task pool - Chapel
 -------------------------------------------------*/
 config const numConsumers = max(1, (+ reduce Locales.numCores) - 1),
              poolSize = numConsumers;
-const t = taskpool(poolSize);
+const t = new taskpool(poolSize);
 cobegin {
   coforall cons in 1..numConsumers do
     consumer();

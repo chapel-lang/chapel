@@ -6,7 +6,7 @@ class D : C {
   def foo() { writeln("isa D"); }
 }
 
-var c = C();
+var c = new C();
 c.foo();
-c = D();
+c = new D();
 c.foo();

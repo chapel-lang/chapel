@@ -30,14 +30,14 @@ def main() {
     var k   = 5;       // order of wavelet
     var thresh = 1e-5; // truncation threshold
 
-    var tests  : [1..3] AFcn = (Fn_Test1():AFcn,  Fn_Test2():AFcn,  Fn_Test3():AFcn);
-    var dtests : [1..3] AFcn = (Fn_dTest1():AFcn, Fn_dTest2():AFcn, Fn_dTest3():AFcn);
+    var tests  : [1..3] AFcn = (new Fn_Test1():AFcn,  new Fn_Test2():AFcn,  new Fn_Test3():AFcn);
+    var dtests : [1..3] AFcn = (new Fn_dTest1():AFcn, new Fn_dTest2():AFcn, new Fn_dTest3():AFcn);
 
     var buf = "                           ";
 
     for (test, dtest) in (tests, dtests) {
         writeln("\n\n");
-        var f = Function(k, thresh, test);
+        var f = new Function(k, thresh, test);
         writeln("norm of function is ", f.norm2());
 
         f.evalNPT(npt);
@@ -65,12 +65,12 @@ def main() {
     for tf2 in tests {
         var tf1 = tests[1];
         writeln("\n\n");
-        var f1 = Function(k, thresh, tf1);
+        var f1 = new Function(k, thresh, tf1);
         writeln("norm of f1 is ", f1.norm2());
-        var f2 = Function(k, thresh, tf2);
+        var f2 = new Function(k, thresh, tf2);
         writeln("norm of f2 is ", f2.norm2());
         var f3 = f1 + f2;
-        f3.f = Sum(tf1, tf2):AFcn;
+        f3.f = new Sum(tf1, tf2):AFcn;
         writeln("norm of f3 = f1 + f2 is ", f3.norm2());
         f3.summarize();
 
@@ -84,12 +84,12 @@ def main() {
     for tf2 in tests {
         var tf1 = tests[1];
         writeln("\n\n");
-        var f1 = Function(k, thresh, tf1);
+        var f1 = new Function(k, thresh, tf1);
         writeln("norm of f1 is ", f1.norm2());
-        var f2 = Function(k, thresh, tf2);
+        var f2 = new Function(k, thresh, tf2);
         writeln("norm of f2 is ", f2.norm2());
         var f3 = f1 * f2;
-        f3.f = Product(tf1, tf2):AFcn;
+        f3.f = new Product(tf1, tf2):AFcn;
         writeln("norm of f3 = f1 * f2 is ", f3.norm2());
         f3.summarize();
 

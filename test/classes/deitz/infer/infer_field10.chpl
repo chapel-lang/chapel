@@ -3,7 +3,7 @@ record R {
 }
 
 record R2 {
-  var y : R(2);
+  var y : R(int);
 }
 
 var r : R2;

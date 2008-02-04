@@ -3,6 +3,6 @@ class foo {
   var f : real = 3.14;
 }
 
-var x : foo = foo();
+var x : foo = new foo();
 
 writeln("x: (", x.i, ", ", x.f, ")");

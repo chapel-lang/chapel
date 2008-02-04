@@ -5,10 +5,10 @@ class foo {
   }
 }
 
-var f = foo(2);
+var f = new foo(2);
 
 f.print();
 
-var f2 = foo(3.2);
+var f2 = new foo(3.2);
 
 f2.print();

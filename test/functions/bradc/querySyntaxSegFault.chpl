@@ -7,6 +7,6 @@ def foo(x: C(t=?tt, r=?rr)) {
   writeln("In foo");
 }
 
-var myC = C(int, 2);
+var myC = new C(int, 2);
 
 foo(myC);

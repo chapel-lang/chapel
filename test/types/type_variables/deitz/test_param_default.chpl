@@ -3,8 +3,8 @@ class C {
   var x: p*int;
 }
 
-var c = C(p=5);
+var c = new C(p=5);
 writeln(c);
 
-var c2 = C();
+var c2 = new C();
 writeln(c2);

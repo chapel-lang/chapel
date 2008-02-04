@@ -6,7 +6,7 @@ class A {
 class C {
   var a;
 }
-var c = A(=> f(1));
-var d = C(c);
+var c = new A(=> f(1));
+var d = new C(c);
 var e = => d.a(2);
 e(3);

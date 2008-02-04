@@ -15,8 +15,8 @@ def foo(d: D) {
 }
 
 def main() {
-  var myC = C(x=1);
+  var myC = new C(x=1);
   foo(myC);
-  var myD = D(C(2));
+  var myD = new D(new C(2));
   foo(myD);
 }

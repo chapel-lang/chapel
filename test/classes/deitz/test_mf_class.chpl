@@ -9,7 +9,7 @@ def bar(f : foo) {
   writeln("function bar ", f.x);
 }
 
-var f : foo = foo();
+var f : foo = new foo();
 
 f.bar();
 bar(f);

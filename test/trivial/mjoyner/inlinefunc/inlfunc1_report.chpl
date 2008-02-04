@@ -6,7 +6,7 @@ class Foo {
 }
 
 def main() {
-  var f : Foo = Foo();
+  var f : Foo = new Foo();
   f.x = 1;
   f.y = 2;
   f.z = 3; 

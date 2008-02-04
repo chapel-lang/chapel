@@ -30,7 +30,7 @@ def main() {
 }
 
 def get_strings(out s1: string, out s2: string) {
-  var infile = file(filename, "r", ".");
+  var infile = new file(filename, "r", ".");
 
   infile.open();
   infile.read(s1);

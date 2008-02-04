@@ -10,7 +10,7 @@ class C {
   }
 }
 
-var c : C = C();
+var c : C = new C();
 
 writeln(c);
 c.foo();

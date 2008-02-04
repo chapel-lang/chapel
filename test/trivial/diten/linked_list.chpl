@@ -9,7 +9,7 @@ class ll {
   }
 
   def add_front(e) {
-    list = ll_entry(itemType, e, list);
+    list = new ll_entry(itemType, e, list);
   }
 
   def remove_front() {
@@ -23,12 +23,12 @@ class ll {
 
   def add_back(e) {
     if list == nil then
-      list = ll_entry(itemType, e);
+      list = new ll_entry(itemType, e);
     else {
       var mylist = list;
       while mylist.next != nil do
         mylist = mylist.next;
-      mylist.next = ll_entry(itemType, e);
+      mylist.next = new ll_entry(itemType, e);
     }
   }
 
@@ -81,7 +81,7 @@ class ll {
 
     while list != nil {
       e = list.element;
-      mylist = ll_entry(itemType, e, mylist);
+      mylist = new ll_entry(itemType, e, mylist);
       list = list.next;
     }
     list = mylist;
@@ -117,8 +117,8 @@ class ll_entry {
 }
 
 def main(){
-  var list: ll(int) = ll(int);
-  var list2: ll(int) = ll(int);
+  var list: ll(int) = new ll(int);
+  var list2: ll(int) = new ll(int);
 
   for i in 1..10 {
     list.add_front(i);

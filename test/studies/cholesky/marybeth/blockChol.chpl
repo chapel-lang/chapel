@@ -4,7 +4,7 @@
 config const inputfile = "lehmer10.dat";
 
 def main() {
-  var Adat = file(inputfile,path='./',mode='r');
+  var Adat = new file(inputfile,path='./',mode='r');
   Adat.open();
 
   const n = readSize(Adat);

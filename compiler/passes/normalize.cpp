@@ -18,7 +18,7 @@ Vec<const char*> usedConfigParams;
 
 static void change_method_into_constructor(FnSymbol* fn);
 static void normalize_returns(FnSymbol* fn);
-static void call_constructor_for_class(CallExpr* call);
+static void call_constructor_for_class(SymExpr* se);
 static void hack_resolve_types(Expr* expr);
 static void apply_getters_setters(FnSymbol* fn);
 static void insert_call_temps(CallExpr* call);
@@ -65,7 +65,7 @@ checkUseBeforeDefs() {
                 (sym->var->defPoint->parentSymbol == fn ||
                  (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
               if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
-                if (sym->var != fn->_this) {
+                if (strcmp(sym->var->name, "this")) {
                   USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
                   undefined.set_add(sym->var);
                 }
@@ -307,7 +307,9 @@ void normalize(BaseAST* base) {
     if (FnSymbol* fn = toFnSymbol(ast)) {
       currentLineno = fn->lineno;
       currentFilename = fn->filename;
-      if (fn->fnTag != FN_CONSTRUCTOR) fixup_array_formals(fn);
+      if (!fn->hasPragma("type constructor") &&
+          !fn->hasPragma("default constructor"))
+        fixup_array_formals(fn);
       clone_parameterized_primitive_methods(fn);
       fixup_query_formals(fn);
       change_method_into_constructor(fn);
@@ -320,7 +322,9 @@ void normalize(BaseAST* base) {
     if (FnSymbol* fn = toFnSymbol(ast)) {
       currentLineno = fn->lineno;
       currentFilename = fn->filename;
-      if (fn->fnTag != FN_CONSTRUCTOR) fixup_array_formals(fn);
+      if (!fn->hasPragma("type constructor") &&
+          !fn->hasPragma("default constructor"))
+        fixup_array_formals(fn);
       fixup_query_formals(fn);
 
       // functions (not methods) without parentheses are resolved
@@ -344,9 +348,9 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (CallExpr* a = toCallExpr(ast)) {
-      call_constructor_for_class(a);
-    }
+    if (FnSymbol* a = toFnSymbol(ast))
+      if (!a->defSetGet)
+        apply_getters_setters(a);
   }
 
   asts.clear();
@@ -354,9 +358,9 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (FnSymbol* a = toFnSymbol(ast))
-      if (!a->defSetGet)
-        apply_getters_setters(a);
+    if (SymExpr* a = toSymExpr(ast)) {
+      call_constructor_for_class(a);
+    }
   }
 
   asts.clear();
@@ -438,8 +442,10 @@ static void normalize_returns(FnSymbol* fn) {
     retval->isCompilerTemp = true;
     if (fn->retTag == RET_PARAM)
       retval->isParam = true;
+    if (fn->retTag == RET_TYPE)
+      retval->isTypeVariable = true;
     if (fn->retExprType && fn->retTag != RET_VAR) {
-      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr("_init", fn->retExprType->copy())));
+      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_INIT, fn->retExprType->copy())));
       fn->addPragma("specified return type");
     }
     fn->insertAtHead(new DefExpr(retval));
@@ -477,16 +483,35 @@ static void normalize_returns(FnSymbol* fn) {
 }
 
 
-static void call_constructor_for_class(CallExpr* call) {
-  if (SymExpr* baseVar = toSymExpr(call->baseExpr)) {
-    if (TypeSymbol* ts = toTypeSymbol(baseVar->var)) {
+static void call_constructor_for_class(SymExpr* se) {
+  if (TypeSymbol* ts = toTypeSymbol(se->var)) {
+    CallExpr* call = toCallExpr(se->parentExpr);
+    if (call && call->baseExpr == se) {
       if (ClassType* ct = toClassType(ts->type)) {
-        if (ct->defaultConstructor)
-          call->baseExpr->replace(new SymExpr(ct->defaultConstructor->name));
-        else
-          INT_FATAL(call, "class type has no default constructor");
+        CallExpr* parent = toCallExpr(call->parentExpr);
+        CallExpr* parentParent = NULL;
+        if (parent)
+          parentParent = toCallExpr(parent->parentExpr);
+        if (parent && parent->isPrimitive(PRIMITIVE_NEW)) {
+          if (!ct->defaultConstructor)
+            INT_FATAL(call, "class type has no default constructor");
+          se->replace(new SymExpr(ct->defaultConstructor->name));
+          parent->replace(call->remove());
+        } else if (parentParent && parentParent->isPrimitive(PRIMITIVE_NEW) &&
+                   call->partialTag == true) {
+          if (!ct->defaultConstructor)
+            INT_FATAL(call, "class type has no default constructor");
+          se->replace(new SymExpr(ct->defaultConstructor->name));
+          parentParent->replace(parent->remove());
+        } else {
+          if (!ct->defaultTypeConstructor)
+            INT_FATAL(call, "class type has no default type constructor");
+          se->replace(new SymExpr(ct->defaultTypeConstructor->name));
+        }
       }
-    }
+    } //else if (isClassType(ts->type)) {
+      //se->replace(new CallExpr(se));
+    //}
   }
 }
 
@@ -511,16 +536,20 @@ static void apply_getters_setters(FnSymbol* fn) {
                                      // getter or a setter
         continue;
       if (call->isNamed(".")) { // handle getter
-        const char* method = NULL;
-        if (SymExpr* symExpr = toSymExpr(call->get(2)))
-          if (VarSymbol* var = toVarSymbol(symExpr->var))
-            if (var->immediate->const_kind == CONST_KIND_STRING)
-              method = var->immediate->v_string;
-        if (!method)
-          INT_FATAL(call, "No method name for getter or setter");
-        Expr* _this = call->get(1);
-        _this->remove();
-        CallExpr* getter = new CallExpr(method, gMethodToken, _this);
+        CallExpr* getter = NULL;
+        if (SymExpr* symExpr = toSymExpr(call->get(2))) {
+          if (VarSymbol* var = toVarSymbol(symExpr->var)) {
+            if (var->immediate->const_kind == CONST_KIND_STRING) {
+              getter = new CallExpr(var->immediate->v_string,
+                                    gMethodToken, call->get(1)->remove());
+            }
+          } else if (TypeSymbol* type = toTypeSymbol(symExpr->var)) {
+            getter = new CallExpr(type,
+                                  gMethodToken, call->get(1)->remove());
+          }
+        }
+        if (!getter)
+          INT_FATAL(call, "invalid dot call expression");
         getter->methodTag = true;
         call->replace(getter);
         if (CallExpr* parent = toCallExpr(getter->parentExpr))
@@ -698,9 +727,14 @@ fix_def_expr(VarSymbol* var) {
     VarSymbol* typeTemp = new VarSymbol("_typeTmp");
     typeTemp->isCompilerTemp = true;
     stmt->insertBefore(new DefExpr(typeTemp));
-    stmt->insertBefore(
-      new CallExpr(PRIMITIVE_MOVE, typeTemp,
-        new CallExpr("_init", type->remove())));
+    CallExpr* callType = toCallExpr(type);
+    if (callType && callType->isNamed("_build_sparse_subdomain_type"))
+      stmt->insertBefore(
+        new CallExpr(PRIMITIVE_MOVE, typeTemp, type->remove()));
+    else
+      stmt->insertBefore(
+        new CallExpr(PRIMITIVE_MOVE, typeTemp,
+          new CallExpr(PRIMITIVE_INIT, type->remove())));
     if (init) {
       VarSymbol* initTemp = new VarSymbol("_tmp");
       initTemp->isCompilerTemp = true;
@@ -711,8 +745,12 @@ fix_def_expr(VarSymbol* var) {
       stmt->insertAfter(
         new CallExpr(PRIMITIVE_MOVE, typeTemp,
           new CallExpr("=", typeTemp, initTemp)));
-    } else
-      stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, constTemp, typeTemp));
+    } else {
+      if (constTemp->isTypeVariable)
+        stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, constTemp, new CallExpr(PRIMITIVE_TYPEOF, typeTemp)));
+      else
+        stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, constTemp, typeTemp));
+    }
 
   } else {
 

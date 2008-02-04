@@ -14,7 +14,7 @@ def callin(in x: pair) {
 
 def callout(out x: pair) {
   writeln("in callout, x ought to be nil");
-  x = pair();
+  x = new pair();
   x.a = 12;
   x.b = 4.5;
   writeln("re-assigned new instance to be: ", x.a, " ", x.b);
@@ -38,7 +38,7 @@ def callblank(x: pair) {
 
 
 def main() {
-  var a: pair = pair();
+  var a: pair = new pair();
   a.a = 10;
   a.b = 2.3;
 

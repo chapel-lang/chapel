@@ -7,7 +7,7 @@ class foo {
   }
 }
 
-var f = foo();
+var f = new foo();
 
 if f.bar
   then writeln("Bar");

@@ -3,6 +3,6 @@ record R {
   var x;
 }
 
-var r = R(2, "hello world");
+var r = new R(2, "hello world");
 
 writeln(r);

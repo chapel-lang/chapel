@@ -3,4 +3,4 @@ class C {
   var x: t;
 }
 
-writeln(C(t=C(int),x=C(int)));
+writeln(new C(t=C(int),x=new C(int)));

@@ -198,7 +198,7 @@ def computePivotRow(A:[?D]) {
 def main() {
 
   // Open the input file, read in the array size, ensure it's square
-  var infile = file(inputfile, path='./', mode='r');
+  var infile = new file(inputfile, path='./', mode='r');
   infile.open();
   const m = infile.read(int),
         n = infile.read(int);

@@ -52,7 +52,7 @@ def printConfiguration() {
 
 
 def initVectors(B, C) {
-  var randlist = RandomStream(seed);
+  var randlist = new RandomStream(seed);
 
   randlist.fillRandom(B);
   randlist.fillRandom(C);

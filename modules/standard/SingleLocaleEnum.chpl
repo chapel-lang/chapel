@@ -5,7 +5,7 @@ class SingleLocaleEnumDomain: BaseDomain {
   var adomain: SingleLocaleAssociativeDomain(rank=rank, idxType=idxType);
 
   def initialize() {
-    adomain = SingleLocaleAssociativeDomain(rank=rank, idxType=idxType);
+    adomain = new SingleLocaleAssociativeDomain(rank=rank, idxType=idxType);
     var enumTuple = _enum_enumerate(idxType);
     for param i in 1..enumTuple.size do
       adomain.add(enumTuple(i));
@@ -31,10 +31,10 @@ class SingleLocaleEnumDomain: BaseDomain {
   }
 
   def buildEmptyDomain()
-    return SingleLocaleEnumDomain(rank=rank, idxType=idxType);
+    return new SingleLocaleEnumDomain(rank=rank, idxType=idxType);
 
   def buildArray(type eltType) {
-    var ia = SingleLocaleEnumArray(eltType, idxType, dom=this);
+    var ia = new SingleLocaleEnumArray(eltType, idxType, dom=this);
     return ia;
   }
 }
@@ -52,7 +52,7 @@ class SingleLocaleEnumArray: BaseArray {
   type idxType;
 
   var dom: SingleLocaleEnumDomain(rank=1, idxType=idxType);
-  var anarray = SingleLocaleAssociativeArray(eltType, idxType, dom.adomain);
+  var anarray = new SingleLocaleAssociativeArray(eltType, idxType, dom.adomain);
 
   def this(ind : idxType) var : eltType
     return anarray(ind);

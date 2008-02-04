@@ -10,7 +10,7 @@ class D: C {
 
 var s: list of C;
 
-s.append(D(1, 2));
-s.append(C(3));
+s.append(new D(1, 2));
+s.append(new C(3));
 
 writeln(s);

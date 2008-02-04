@@ -4,7 +4,7 @@ class foo {
   f = 2.2;
 }
 
-var x : foo = foo();
+var x : foo = new foo();
 
 x.i = -1;
 x.f = 3.1415;

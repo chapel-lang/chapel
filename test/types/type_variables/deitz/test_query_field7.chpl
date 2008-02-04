@@ -19,6 +19,6 @@ def foo(c: C(real, ?tt) ...?k) {
   writeln(c);
 }
 
-foo(C(int, real), C(int, real));
-foo(C(real, int), C(real, int));
-foo(C(real, int), C(real, real));
+foo(new C(int, real), new C(int, real));
+foo(new C(real, int), new C(real, int));
+foo(new C(real, int), new C(real, real));

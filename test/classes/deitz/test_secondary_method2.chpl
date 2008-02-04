@@ -9,7 +9,7 @@ class foo {
   }
 }
 
-var f : foo = foo();
+var f : foo = new foo();
 f.i = 4;
 
 f.primary();

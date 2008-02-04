@@ -15,7 +15,7 @@ class Doppelganger {
 var x: [1..M] int = 1;
 
 var pre  = memoryUsed();
-var y    = Doppelganger(x);
+var y    = new Doppelganger(x);
 var post = memoryUsed();
 
 if post >= 2*pre then

@@ -42,7 +42,7 @@ def main {
 //
 def writeSquareArray(n, X, filename) {
   // Create an output file with the specified filename in write ("w") mode
-  var outfile = file(filename, "w");
+  var outfile = new file(filename, "w");
 
   // Open the file
   outfile.open();
@@ -63,7 +63,7 @@ def writeSquareArray(n, X, filename) {
 //
 def readArray(filename) {
   // Create an input file with the specified filename in read ("r") mode
-  var infile = file(filename, "r");
+  var infile = new file(filename, "r");
 
   // Open the file
   infile.open();

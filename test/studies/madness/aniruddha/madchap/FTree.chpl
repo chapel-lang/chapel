@@ -50,7 +50,7 @@ record LocTree {
         if !locIndices.member((lvl, idx)) {
             if setter {
               locIndices += ((lvl, idx));
-              locNodes[(lvl, idx)] = Coeff(coeffDom);
+              locNodes[(lvl, idx)] = new Coeff(coeffDom);
             } else {
               // This is a getter so it shouldn't be modifying what
               // we return, should be safe to return the zero vector.
@@ -129,7 +129,7 @@ class FTree {
         if order == 0 then
             halt("FTree must be initialized with an order > 0");
 
-        [loc in locDom] nodes[loc] = LocTree(coeffDom);
+        [loc in locDom] nodes[loc] = new LocTree(coeffDom);
     }
 
     def mapNodeToLoc(lvl, idx) {
@@ -176,7 +176,7 @@ class FTree {
     /** Return a copy of this FTree
      */
     def copy() {
-        var t = FTree(order);
+        var t = new FTree(order);
         t.nodes = nodes;
         return t;
     }
@@ -198,7 +198,7 @@ class FTree {
 
 def main() {
     /*
-    var f = FTree(2);
+    var f = new FTree(2);
 
     for (i, j) in [0..2, 0..2] do f[i, j] = (i, j);
 
@@ -218,7 +218,7 @@ def main() {
             writeln(i, ": ", n);
     */
 
-    var f = FTree(2);
+    var f = new FTree(2);
     
     for (i, j) in [1..3, 2..4] do f[i, j] = (i, j);
   

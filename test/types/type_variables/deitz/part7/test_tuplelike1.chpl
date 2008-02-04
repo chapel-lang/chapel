@@ -7,7 +7,7 @@ record AnonTuple {
   var f;
 }
 
-var x = AnonTuple(f = 1);
+var x = new AnonTuple(f = 1);
 var y : TupleType(int);
 
 writeln(x);

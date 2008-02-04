@@ -6,7 +6,7 @@ class D {
   var s: single real;
 }
 
-var d: D = D();
+var d: D = new D();
 var i: int;
 
 begin writeln( "got ", d.s);

@@ -2,7 +2,7 @@ record R {
   var f;
 }
 
-var r = R(12);
+var r = new R(12);
 
 r.f = 14;
 

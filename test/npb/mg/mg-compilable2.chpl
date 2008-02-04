@@ -53,7 +53,7 @@ const checksum: [S..O] real  = (0.0000530770700573,
 // it's a configuration constant, it may be set on the executable's
 // command-line.  The default is to run class S.
 
-config const Class: classVals = S;
+config const Class: classVals = new S;
 
 
 // the problem size.  By default, the problem size will be the same in
@@ -136,7 +136,7 @@ const Stencil: domain(3) = [-1..1, -1..1, -1..1];
 def main() {
   // two timer variables that are used to time the initialization and
   // the benchmark time, respectively
-  //  var initTimer = timer(), benchTimer = timer();
+  //  var initTimer = new timer(), benchTimer = timer();
 
   // Here's the timed initialization portion (indentation for emphasis)
   //  initTimer.start();
@@ -355,7 +355,7 @@ def rprj3(S, R) {
   var w3d: [Stencil] real;
   [i,j,k in Stencil] w3d(i,j,k) = w((i!=0) + (j!=0) + (k!=0));
 
-  const SD = S.Domain,
+  const SD = new S.Domain,
         Rstr = R.stride;
 
   S = [ijk in SD] + reduce [off in Stencil] (w3d(off) * R(ijk + Rstr*off));
@@ -392,9 +392,9 @@ def interp(R, S) {
   var w: [IDom] real;
   [ijk in IDom] w(ijk) = 1.0 / IStn.numIndices();
 
-  const SD = S.Domain(),
+  const SD = new S.Domain(),
         Rstr = R.stride,
-        Sstr = S.stride;
+        Sstr = new S.stride;
 
   forall ioff in IDom {
     [ijk in SD] R(ijk + Rstr*ioff) 
@@ -419,7 +419,7 @@ def norm2u3(R) {
 // initCValues() sets the c values for the psinv() stencil
 
 def initCValues(Class) {
-  if (Class == A || Class == S || Class == W) {
+  if (Class == A || Class == new S || Class == W) {
     return (-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0);
   } else {
     return (-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0);

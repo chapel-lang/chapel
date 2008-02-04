@@ -9,6 +9,6 @@ class C {
 
 type t = [1..3] int;
 
-var c = C(t);
+var c = new C(t);
 writeln(c);
 c.foo();

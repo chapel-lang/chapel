@@ -84,7 +84,7 @@ class TreeNode {
 
     for i in [0..nChildren-1] {
       if debug then writeln("  + (", depth, ", ", i, ")");
-      var t = TreeNode(depth+1);
+      var t = new TreeNode(depth+1);
       rng_spawn(hash[1], t.hash[1], i);
       q.pushTop(t);
     }
@@ -231,7 +231,7 @@ def balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int {
 */
 def create_tree(inout q: DeQueue(TreeNode)) {
   var count, maxDepth: int;
-  var ldbal_state = LDBalanceState();
+  var ldbal_state = new LDBalanceState();
 
   if q.isEmpty() {
     writeln("create_tree(): Warning, called with no work");
@@ -265,7 +265,7 @@ def main() {
   var queue: DeQueue(TreeNode);
  
   // Create the root and push it into a queue
-  root = TreeNode(0);
+  root = new TreeNode(0);
   rng_init(root.hash[1], SEED:int);
   global_count += 1;
   queue.pushTop(root);

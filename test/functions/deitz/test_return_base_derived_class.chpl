@@ -8,9 +8,9 @@ class D: C {
 
 def f(b: bool) {
   if b then
-    return C();
+    return new C();
   else
-    return D();
+    return new D();
 }
 
 writeln(f(false), f(true));

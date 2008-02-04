@@ -17,7 +17,7 @@ config const seed: uint = 13,
              arraySize = 10;
 
 def main {
-  var r = Random (seed);
+  var r = new Random (seed);
   var rArray: [1..arraySize] real;
   rArray = r.RandomNumber(arraySize);
   writeln (rArray);

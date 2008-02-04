@@ -57,7 +57,7 @@ class FTree {
         if !indices.member((lvl, idx)) {
             if setter {
               indices += ((lvl, idx));
-              nodes[(lvl, idx)] = Coeff(coeffDom);
+              nodes[(lvl, idx)] = new Coeff(coeffDom);
             } else {
               // This is a getter so it shouldn't be modifying what
               // we return, should be safe to return the zero vector.
@@ -138,7 +138,7 @@ class FTree {
     /** Return a copy of this FTree
      */
     def copy() {
-        var t = FTree(order);
+        var t = new FTree(order);
         t.indices = indices;
         t.nodes   = nodes;
         return t;
@@ -161,7 +161,7 @@ class FTree {
 }
 
 def main() {
-    var f = FTree(2);
+    var f = new FTree(2);
 
     for (i, j) in [0..2, 0..2] do f[i, j] = (i, j);
 

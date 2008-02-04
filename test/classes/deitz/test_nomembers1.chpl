@@ -4,6 +4,6 @@ class addition {
   }
 }
 
-var a : addition = addition();
+var a : addition = new addition();
 
 writeln(a.identity(2));

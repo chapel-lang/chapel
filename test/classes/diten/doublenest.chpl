@@ -1,11 +1,11 @@
 class a {
   def foo() {
-    var bvar = b();
+    var bvar = new b();
     bvar.foo();
   }
   class b {
     def foo() {
-      var cvar = c(9);
+      var cvar = new c(9);
       writeln("in a.b.foo(), cvar.x is: ", cvar.x);
     }
     class c {
@@ -15,6 +15,6 @@ class a {
 }
 
 def main() {
-  var avar = a();
+  var avar = new a();
   avar.foo();
 }

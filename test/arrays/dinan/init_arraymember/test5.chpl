@@ -8,6 +8,6 @@ class C {
   var x: [d] real = f(d);
 }
 
-var c = C();
+var c = new C();
 
 writeln(c.x);

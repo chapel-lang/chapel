@@ -6,7 +6,7 @@ class intList {
   }
 
   def insert(value: int) {
-    head = Node(value, head);
+    head = new Node(value, head);
   }
 
   def these() {
@@ -21,16 +21,16 @@ class intList {
 class intSortedList: intList {
   def insert(value: int) {
     if head == nil || head.value >= value {
-      head = Node(value, head);
+      head = new Node(value, head);
       return;
     }
     var current = head;
     while current.next != nil && current.next.value < value do
       current = current.next;
-    current.next = Node(value, current.next);
+    current.next = new Node(value, current.next);
   }
 }
 
 def main() {
-  var lst = intSortedList();
+  var lst = new intSortedList();
 }

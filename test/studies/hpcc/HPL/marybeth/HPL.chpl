@@ -7,8 +7,8 @@ config var writeTimingInfo = false;
 config var writeAccuracyInfo = false;
 
 def main() {
-  var TEST = HPLparams(inFileName=inputfile);
-  var outfile = file(TEST.outFileName, path='./', mode='w');
+  var TEST = new HPLparams(inFileName=inputfile);
+  var outfile = new file(TEST.outFileName, path='./', mode='w');
   outfile.open();
 
 //for p in TEST.P {
@@ -29,7 +29,7 @@ def main() {
        var resid: 3*real;
        var norms: 5*real;
 
-       var testTimer = Timer();
+       var testTimer = new Timer();
        var timeData: 2*real; 
 
 //     A is initialized to be a (n x n+1) matrix, since

@@ -13,9 +13,9 @@ class E {
 var a : [d] int;
 var x = 1;
 var z = 1;
-var Y1 = C();
-var Y2 = D();
-var Y3 = E();
+var Y1 = new C();
+var Y2 = new D();
+var Y3 = new E();
 
 a(x) = z;
 writeln(a(x));

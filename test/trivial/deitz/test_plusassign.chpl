@@ -17,9 +17,9 @@ class C : D {
   }
 }
 
-var d = D();
+var d = new D();
 writeln(d);
 
-var c = C();
+var c = new C();
 c.foo();
 writeln(c);

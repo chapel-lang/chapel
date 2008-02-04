@@ -7,9 +7,9 @@ class Sub: Base {
 }
 
 def main() {
-  var sub = Sub();
+  var sub = new Sub();
   var base:Base() = sub;
-  var base2 = Base();
+  var base2 = new Base();
   base.s = "Base";
   writeln(sub.s);
   writeln(base.s);

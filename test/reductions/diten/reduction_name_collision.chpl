@@ -1,7 +1,7 @@
 config var n = 10;
-var r = R();
-var s = R();
-var longerName = R();
+var r = new R();
+var s = new R();
+var longerName = new R();
 writeln(+ reduce [1..n] r.next());
 writeln(+ reduce [1..n] s.next());
 writeln(+ reduce [1..n] longerName.next());

@@ -1,13 +1,13 @@
 record R { var x: int; }
 
-var r1 = R(1);
+var r1 = new R(1);
 
 def foo() {
   return r1;
 }
 
 def bar() {
-  var r2 = R(2);
+  var r2 = new R(2);
   return r2;
 }
 

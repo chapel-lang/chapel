@@ -3,5 +3,5 @@ class pragma "xx" foo {
   var x;
 }
 
-var y = foo(1);
+var y = new foo(1);
 writeln(y.x);

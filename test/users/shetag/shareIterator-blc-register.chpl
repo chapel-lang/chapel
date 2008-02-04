@@ -22,7 +22,7 @@ class OneToTen {
   }
 }
 
-var sharedOneToTen = OneToTen();
+var sharedOneToTen = new OneToTen();
 cobegin {
   for x in sharedOneToTen.count() do register(1, x);
   for y in sharedOneToTen.count() do register(2, y);

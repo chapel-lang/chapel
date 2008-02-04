@@ -10,9 +10,9 @@ class Sub: Base {
 }
 
 def main() {
-  var sub = Sub();
+  var sub = new Sub();
   var base = sub;
-  var base2= Base();
+  var base2= new Base();
   writeln(sub.get_s());
   writeln(base.get_s());
   writeln(base2.get_s());

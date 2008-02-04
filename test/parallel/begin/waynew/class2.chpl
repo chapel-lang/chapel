@@ -5,7 +5,7 @@ class C {
 }
 
 def jam() {
-  var c = C();
+  var c = new C();
   c.x = 7;
   writeln( c);
 

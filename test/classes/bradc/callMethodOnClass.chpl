@@ -3,7 +3,7 @@ class C {
 }
 
 def newC() {
-  var c = C();
+  var c = new C();
   c.x = 2.3;
   return c;
 }
@@ -21,7 +21,7 @@ class D {
 }
 
 def main() {
-  var myD = D();
+  var myD = new D();
   D.start;  // BUG if I call this on D!!
   D.testit;
 }

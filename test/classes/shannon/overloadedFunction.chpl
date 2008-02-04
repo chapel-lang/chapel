@@ -8,7 +8,7 @@ class C {
 
 }
 
-var myC = C();
+var myC = new C();
 
 def foo(c: C = myC, fmt: string = "foo", x: int) {
   writeln("and got the int foo.");

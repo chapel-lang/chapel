@@ -3,6 +3,6 @@ class C {
   var b: int = a-1;
 }
 
-var c: C = C();
+var c: C = new C();
 
 writeln("a=", c.a, " b=", c.b);

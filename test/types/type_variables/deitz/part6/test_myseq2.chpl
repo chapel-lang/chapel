@@ -11,7 +11,7 @@ class myseq {
   var last : myseq_node(elementType);
 
   def append(e : elementType) : myseq(elementType) {
-    var anew : myseq_node(elementType) = myseq_node(elementType);
+    var anew : myseq_node(elementType) = new myseq_node(elementType);
     anew.element = e;
     if length > 0 {
       last.next = anew;
@@ -35,7 +35,7 @@ class myseq {
   }
 }
 
-var s : myseq(int) = myseq(int);
+var s : myseq(int) = new myseq(int);
 
 s.append(2);
 s.append(3);

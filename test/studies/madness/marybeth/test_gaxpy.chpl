@@ -6,13 +6,13 @@ def main() {
 
     writeln("Mad Chapel -- Gaxpy Test\n");
 
-    var fcn  : [1..3] AFcn = (Fn_Test1():AFcn,  Fn_Test2():AFcn,  Fn_Test3():AFcn);
-    var dfcn : [1..3] AFcn = (Fn_dTest1():AFcn, Fn_dTest2():AFcn, Fn_dTest3():AFcn);
+    var fcn  : [1..3] AFcn = (new Fn_Test1():AFcn,  new Fn_Test2():AFcn,  new Fn_Test3():AFcn);
+    var dfcn : [1..3] AFcn = (new Fn_dTest1():AFcn, new Fn_dTest2():AFcn, new Fn_dTest3():AFcn);
 
     for i in fcn.domain {
         writeln("** Testing function ", i);
-        var F = Function(k=5, thresh=1e-5, f=fcn[i]);
-        var G = Function(k=5, thresh=1e-5, f=fcn[i]);
+        var F = new Function(k=5, thresh=1e-5, f=fcn[i]);
+        var G = new Function(k=5, thresh=1e-5, f=fcn[i]);
 
         writeln("\nAdding F", i, " ...");
         var H = F + G;

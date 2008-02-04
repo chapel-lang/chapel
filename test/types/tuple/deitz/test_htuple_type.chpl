@@ -4,5 +4,5 @@ class C {
   type t;
   var x: t;
 }
-var c = C(2*int);
+var c = new C(2*int);
 writeln(c);

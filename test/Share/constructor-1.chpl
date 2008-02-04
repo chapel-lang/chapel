@@ -8,5 +8,5 @@ constructor EndPoints(s, e) {
     end = e;
 }
 
-var x = EndPoints(1,2);
+var x = new EndPoints(1,2);
 writeln("expect 3 ", x.start + x.end);

@@ -242,16 +242,22 @@ void scopeResolve(void) {
                                              method->_this,
                                              new_StringSymbol("outer"));
                         } else {
-                          dot = new CallExpr(".",
-                                             method->_this,
-                                             new_StringSymbol(name));
+                          if (isTypeSymbol(sym))
+                            dot = new CallExpr(".", method->_this, sym);
+                          else
+                            dot = new CallExpr(".",
+                                               method->_this,
+                                               new_StringSymbol(name));
                         }
                       } else {
                         if (i < nestDepth) {
                           dot = new CallExpr(".",
                                              dot, new_StringSymbol("outer"));
                         } else {
-                          dot = new CallExpr(".", dot, new_StringSymbol(name));
+                          if (isTypeSymbol(sym))
+                            dot = new CallExpr(".", dot, sym);
+                          else
+                            dot = new CallExpr(".", dot, new_StringSymbol(name));
                         }
                       }
                     }

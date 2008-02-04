@@ -19,7 +19,7 @@ class E : C {
   }
 }
 
-var e:C = E(4);
+var e:C = new E(4);
 writeln(e.bbox(1));
 writeln(e.bbox(2));
 writeln(e.bbox(3));

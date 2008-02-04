@@ -83,10 +83,10 @@ class Graph {
 -- this => is necessary at this point.
 -- BLC: I tend to agree
 
-  var intg = Subgraph(wtype=int,
+  var intg = new Subgraph(wtype=int,
                       VertexD=>VertexD,
                       ParEdgeD=>ParEdgeD);
-  var strg = Subgraph(wtype=string,
+  var strg = new Subgraph(wtype=string,
                       VertexD=>VertexD,
                       ParEdgeD=>ParEdgeD);
 */
@@ -259,7 +259,7 @@ def genScalData(totVertices, maxCliqueSize, maxParalEdges,
   use Random only RandomNumbers;
 */
   var random_numbers = RandomNumbers();
-  var fedges = Edges();
+  var fedges = new Edges();
   use fedges;
   maxIntWeight = maxIntWeightP;
 
@@ -464,7 +464,7 @@ def binsearch(x : [?lo..?hi] , y]) {
 
 def computeGraph(edges , totVertices, maxParalEdges, 
                       maxIntWeight ) : Graph {
-  var G = Graph();
+  var G = new Graph();
 /* TMP
 -- BLC: lhs casts don't parse yet
 
@@ -657,7 +657,7 @@ def cutClusters(G, cutBoxSize, alpha) {
 
   var intVertexRemap = cutClustersCommon( G.intg, cutBoxSize, alpha );
   var strVertexRemap = cutClustersCommon( G.strg, cutBoxSize, alpha );
-  var cutG = Graph.copy(G);
+  var cutG = new Graph.copy(G);
 
   def remap(oldg, newg, vertexRemap) {
 

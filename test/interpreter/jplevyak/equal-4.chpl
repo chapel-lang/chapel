@@ -1,4 +1,4 @@
 class foo { var a : int;  }
-var x : foo = foo();
-x = foo();
+var x : foo = new foo();
+x = new foo();
 writeln(x);

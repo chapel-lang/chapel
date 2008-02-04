@@ -39,6 +39,7 @@ class Type : public BaseAST {
   TypeSymbol* symbol;
   Symbol* defaultValue;
   FnSymbol *defaultConstructor;
+  FnSymbol *defaultTypeConstructor;
   Vec<FnSymbol*> methods;
   bool isGeneric;
   Type *instantiatedFrom;

@@ -8,13 +8,13 @@ class outer {
     }
   }
   def foo() {
-    var inside_inner = inner();
+    var inside_inner = new inner();
     writeln("outer.a is: ", a);
     inside_inner.bar();
   }
 }
 
 def main() {
-  var outside: outer = outer();
+  var outside: outer = new outer();
   outside.foo();
 }

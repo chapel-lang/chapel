@@ -8,8 +8,8 @@ class D2 : C {
   var x : real;
 }
 
-var c1 : C = D1();
-var c2 : C = D2();
+var c1 : C = new D1();
+var c2 : C = new D2();
 
 writeln(c1);
 writeln(c2);

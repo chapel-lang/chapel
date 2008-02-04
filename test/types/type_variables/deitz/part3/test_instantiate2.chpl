@@ -11,10 +11,10 @@ class bar {
   var y : int;
 }
 
-var b : bar = bar(x = 12, y = 13);
+var b : bar = new bar(x = 12, y = 13);
 writeln(b);
 
-var f : foo(t=bar) = foo(t=bar);
+var f : foo(t=bar) = new foo(t=bar);
 
 writeln(f);
 f.print();

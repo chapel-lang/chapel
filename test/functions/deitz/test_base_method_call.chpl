@@ -12,5 +12,5 @@ class D: C {
   }
 }
 
-var d: D = D();
+var d: D = new D();
 (d:C).foo();

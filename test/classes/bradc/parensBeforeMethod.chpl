@@ -4,7 +4,7 @@ class C {
   }
 }
 
-var c = C();
+var c = new C();
 
 c.foo(2);
 (c.foo)(3);

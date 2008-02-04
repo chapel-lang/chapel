@@ -16,7 +16,7 @@ module M1 {
   }
 
   def main {
-    var c = C();
+    var c = new C();
     writeln(c);
   }
 }

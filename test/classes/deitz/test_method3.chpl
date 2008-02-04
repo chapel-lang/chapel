@@ -8,7 +8,7 @@ class foo {
   }
 }
 
-var f : foo = foo();
+var f : foo = new foo();
 
 f.setxhi(3);
 writeln(f.x);

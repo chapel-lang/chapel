@@ -16,5 +16,5 @@ class C {
   }
 }
 
-var myC = C();
+var myC = new C();
 myC.foo();

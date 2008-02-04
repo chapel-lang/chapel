@@ -6,8 +6,8 @@ class C {
   }
 }
 
-var c = C(2, 5);
+var c = new C(2, 5);
 writeln(c.foo());
 
-var d = C("hello", "world");
+var d = new C("hello", "world");
 writeln(d.foo());

@@ -18,10 +18,10 @@ class outer {
     }
   }
   def runit() {
-    var nes = nested();
+    var nes = new nested();
     nes.bar();
   }
 }
 
-var outervar = outer();
+var outervar = new outer();
 outervar.runit();

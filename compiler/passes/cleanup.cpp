@@ -226,47 +226,37 @@ static void destructure_tuple(CallExpr* call) {
   parent->replace(stmt);
   int i = 1;
   for_actuals(expr, call) {
-    if (i > 1) {
-      Expr *removed_expr = expr->remove();
-      if (SymExpr *sym_expr = toSymExpr(removed_expr)) {
-        if (sym_expr->isNamed("_")) {
-          i++;
-          continue;
-        }
+    Expr *removed_expr = expr->remove();
+    if (SymExpr *sym_expr = toSymExpr(removed_expr)) {
+      if (sym_expr->isNamed("_")) {
+        i++;
+        continue;
       }
-      stmt->insertAfter(
-        new CallExpr("=", removed_expr,
-          new CallExpr(temp, new_IntSymbol(i-1))));
     }
+    stmt->insertAfter(
+      new CallExpr("=", removed_expr,
+        new CallExpr(temp, new_IntSymbol(i))));
     i++;
   }
 }
 
 
-static void build_constructor(ClassType* ct) {
-  if (ct->defaultConstructor)
+static void build_type_constructor(ClassType* ct) {
+  if (ct->defaultTypeConstructor)
     return;
 
   currentLineno = ct->lineno;
   currentFilename = ct->filename;
 
-  if (ct->symbol->hasPragma("sync"))
-    ct->defaultValue = NULL;
-  const char* name;
-  if (!toClassType(ct->symbol->defPoint->parentSymbol->type)) {
-    name = astr("_construct_", ct->symbol->name);
-  } else {
-    name = astr(ct->symbol->name);
-  }
+  const char* name = astr("_type_construct_", ct->symbol->name);
+
   FnSymbol* fn = new FnSymbol(name);
-  ct->defaultConstructor = fn;
-  fn->fnTag = FN_CONSTRUCTOR;
-  if (!toClassType(ct->symbol->defPoint->parentSymbol->type)) {
-    fn->cname = astr("_construct_", ct->symbol->cname);
-  } else {
-    fn->cname = astr(ct->symbol->cname);
-  }
-  fn->isCompilerTemp = true; // compiler inserted
+  fn->addPragma("type constructor");
+  ct->defaultTypeConstructor = fn;
+  fn->cname = astr("_type_construct_", ct->symbol->cname);
+  fn->isCompilerTemp = true;
+  fn->retTag = RET_TYPE;
+
   if (ct->symbol->hasPragma("ref"))
     fn->addPragma("ref");
 
@@ -277,63 +267,14 @@ static void build_constructor(ClassType* ct) {
     fn->addPragma("tuple");
     fn->addPragma("inline");
   }
-  ArgSymbol* meme = NULL;
+
   fn->_this = new VarSymbol("this", ct);
   fn->insertAtTail(new DefExpr(fn->_this));
-  if (ct->classTag == CLASS_CLASS) {
-    if (ct->symbol->hasPragma("ref") || ct->symbol->hasPragma("sync")) {
-      fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
-                       new CallExpr(PRIMITIVE_CHPL_ALLOC,
-                         ct->symbol,
-                         new_StringSymbol(astr("instance of class ",
-                                               ct->symbol->name)))));
-    } else {
-      meme = new ArgSymbol(INTENT_BLANK, "meme", ct, new SymExpr(gNil));
-      meme->addPragma("is meme");
-      BlockStmt* allocate = new BlockStmt();
-      allocate->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
-                             new CallExpr(PRIMITIVE_CHPL_ALLOC,
-                             ct->symbol,
-                             new_StringSymbol(astr("instance of class ",
-                                                   ct->symbol->name)))));
-      allocate->insertAtTail(new CallExpr(PRIMITIVE_SETCID, fn->_this));
-      CondStmt* cond = new CondStmt(
-        new CallExpr(PRIMITIVE_PTR_EQUAL, new SymExpr(gNil), new SymExpr(meme)),
-        allocate,
-        new CallExpr(PRIMITIVE_MOVE, fn->_this, new SymExpr(meme)));
-      fn->insertAtTail(cond);
-      if (ct->dispatchParents.n > 0) {
-       if (!ct->dispatchParents.v[0]->defaultConstructor)
-         build_constructor(toClassType(ct->dispatchParents.v[0]));
-       FnSymbol* superCtor = ct->dispatchParents.v[0]->defaultConstructor;
-       CallExpr* superCall = new CallExpr(superCtor->name);
-       for_formals_backward(formal, superCtor) {
-         if (formal->hasPragma("is meme"))
-           continue;
-         DefExpr* superArg = formal->defPoint->copy();
-         fn->insertFormalAtHead(superArg);
-         superCall->insertAtHead(superArg->sym);
-       }
-       VarSymbol* tmp = new VarSymbol("_tmp");
-       superCall->insertAtTail(new NamedExpr("meme", new SymExpr(tmp)));
-       cond->insertAfter(superCall);
-       superCall->insertBefore(new DefExpr(tmp));
-       superCall->insertBefore(
-         new CallExpr(PRIMITIVE_MOVE, tmp,
-                      new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
-                                   fn->_this, new_StringSymbol("super"))));
-      }
-    
-    }
-  }
 
-  if (ct->classTag == CLASS_UNION)
-    fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, fn->_this, new_IntSymbol(0)));
-
-  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
 
   Vec<const char*> fieldNamesSet;
   for_fields(tmp, ct) {
+
     VarSymbol* field = toVarSymbol(tmp);
 
     if (!field)
@@ -348,14 +289,219 @@ static void build_constructor(ClassType* ct) {
         new BlockStmt(
           new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
             new_StringSymbol(field->name),
-            new CallExpr("_init", exprType)), BLOCK_TYPE));
+            new CallExpr(PRIMITIVE_INIT, exprType)), BLOCK_TYPE));
       continue;
     }
+
+    fieldNamesSet.set_add(field->name);
+
+    //
+    // if formal is generic
+    //
+    Expr* exprType = field->defPoint->exprType;
+    Expr* init = field->defPoint->init;
+    if (field->isTypeVariable || field->isParam ||
+        (!exprType && !init)) {
+      ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
+      if (field->isParam)
+        arg->intent = INTENT_PARAM;
+      else
+        arg->isTypeVariable = true;
+
+      if (init)
+        arg->defaultExpr = init->copy();
+
+      if (!exprType && arg->type == dtUnknown)
+        arg->type = dtAny;
+      
+      DefExpr* def = new DefExpr(arg);
+      if (exprType)
+        def->exprType = exprType->copy();
+      fn->insertFormalAtTail(def);
+      if (field->isParam || field->isTypeVariable)
+        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+                                      new_StringSymbol(field->name), arg));
+      else
+        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+                                      new_StringSymbol(field->name),
+                                      new CallExpr(PRIMITIVE_INIT, arg)));
+    } else {
+      if (exprType)
+        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+                                      new_StringSymbol(field->name),
+                                      new CallExpr(PRIMITIVE_INIT, exprType->copy())));
+      else if (init)
+        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+                                      new_StringSymbol(field->name),
+                                      new CallExpr("_copy", init->copy())));
+    }
+  }
+
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, fn->_this));
+  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+  fn->retType = ct;
+
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn->body);
+  forv_Vec(BaseAST, ast, asts) {
+    if (SymExpr* se = toSymExpr(ast))
+      if (!se->var)
+        if (fieldNamesSet.set_in(se->unresolved))
+          se->replace(new CallExpr(".", fn->_this, new_StringSymbol(se->unresolved)));
+  }
+
+  ClassType *outerType =
+    toClassType(ct->symbol->defPoint->parentSymbol->type);
+  if (outerType) {
+    // Create an "outer" pointer to the outer class in the inner class
+    VarSymbol* outer = new VarSymbol("outer");
+
+
+    // Remove the DefPoint for this constructor, add it to the outer
+    // class's method list.
+    outerType->addDeclarations(fn->defPoint->remove(), true);
+
+    // Save the pointer to the outer class
+    ct->fields.insertAtTail(new DefExpr(outer));
+    fn->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER,
+                                  fn->_this,
+                                  new_StringSymbol("outer"),
+                                  fn->_outer));
+    ct->outer = outer;
+  }
+}
+
+
+static void build_constructor(ClassType* ct) {
+  if (ct->defaultConstructor)
+    return;
+
+  currentLineno = ct->lineno;
+  currentFilename = ct->filename;
+
+  if (ct->symbol->hasPragma("sync"))
+    ct->defaultValue = NULL;
+  const char* name;
+  name = astr("_construct_", ct->symbol->name);
+  FnSymbol* fn = new FnSymbol(name);
+  fn->addPragma("default constructor");
+  ct->defaultConstructor = fn;
+  fn->cname = astr("_construct_", ct->symbol->cname);
+  fn->isCompilerTemp = true; // compiler inserted
+  if (ct->symbol->hasPragma("ref"))
+    fn->addPragma("ref");
+
+  if (ct->symbol->hasPragma("heap"))
+    fn->addPragma("heap");
+
+  if (ct->symbol->hasPragma("tuple")) {
+    fn->addPragma("tuple");
+    fn->addPragma("inline");
+  }
+  ArgSymbol* meme = NULL;
+  fn->_this = new VarSymbol("this", ct);
+  CallExpr* typeConstructorCall = new CallExpr(ct->symbol);
+  fn->insertAtTail(new DefExpr(fn->_this)); // , NULL, typeConstructorCall));
+
+  Map<VarSymbol*,ArgSymbol*> fieldArgMap;
+  for_fields(tmp, ct) {
+    VarSymbol* field = toVarSymbol(tmp);
+    if (!field || field->hasPragma("super class") ||
+        !strcmp(field->name, "_promotionType") ||
+        !strcmp(field->name, "outer") ||
+        field->hasPragma("omit from constructor"))
+      continue;
 
     currentLineno = field->lineno;
     currentFilename = field->filename;
 
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
+    fieldArgMap.put(field, arg);
+
+    Expr* exprType = field->defPoint->exprType;
+    Expr* init = field->defPoint->init;
+    if (field->isTypeVariable || field->isParam)
+      typeConstructorCall->insertAtTail(arg);
+    else if (!exprType && !init)
+      typeConstructorCall->insertAtTail(new CallExpr(PRIMITIVE_TYPEOF, arg));
+  }
+
+//   VarSymbol* typeTmp = new VarSymbol("_tmp");
+//   typeTmp->isCompilerTemp = true;
+//   typeTmp->canType = true;
+//   fn->insertAtTail(new DefExpr(typeTmp));
+//   BlockStmt* block = new BlockStmt();
+//   block->blockTag = BLOCK_TYPE;
+//   block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, typeTmp, new CallExpr(PRIMITIVE_TYPEOF, fn->_this)));
+//   // block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this, new CallExpr(PRIMITIVE_INIT, typeTmp)));
+//   fn->insertAtTail(block);
+
+  if (ct->classTag == CLASS_CLASS) {
+    if (ct->symbol->hasPragma("ref") || ct->symbol->hasPragma("sync")) {
+      fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
+                         new CallExpr(PRIMITIVE_CHPL_ALLOC, fn->_this,
+                           new_StringSymbol(astr("instance of class ", ct->symbol->name)))));
+    } else {
+      meme = new ArgSymbol(INTENT_BLANK, "meme", ct, new SymExpr(gNil));
+      meme->addPragma("is meme");
+      BlockStmt* allocate = new BlockStmt();
+      allocate->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
+                               new CallExpr(PRIMITIVE_CHPL_ALLOC, fn->_this,
+                                 new_StringSymbol(astr("instance of class ", ct->symbol->name)))));
+      allocate->insertAtTail(new CallExpr(PRIMITIVE_SETCID, fn->_this));
+      CondStmt* cond = new CondStmt(
+        new CallExpr(PRIMITIVE_PTR_EQUAL, new SymExpr(gNil), new SymExpr(meme)),
+        allocate,
+        new CallExpr(PRIMITIVE_MOVE, fn->_this, new SymExpr(meme)));
+      fn->insertAtTail(cond);
+      if (ct->dispatchParents.n > 0) {
+        if (!ct->dispatchParents.v[0]->defaultConstructor) {
+          build_type_constructor(toClassType(ct->dispatchParents.v[0]));
+          build_constructor(toClassType(ct->dispatchParents.v[0]));
+        }
+        FnSymbol* superCtor = ct->dispatchParents.v[0]->defaultConstructor;
+        CallExpr* superCall = new CallExpr(superCtor->name);
+        for_formals_backward(formal, superCtor) {
+          if (formal->hasPragma("is meme"))
+            continue;
+          DefExpr* superArg = formal->defPoint->copy();
+          fn->insertFormalAtHead(superArg);
+          superCall->insertAtHead(superArg->sym);
+        }
+        VarSymbol* tmp = new VarSymbol("_tmp");
+        superCall->insertAtTail(new NamedExpr("meme", new SymExpr(tmp)));
+        cond->insertAfter(superCall);
+        superCall->insertBefore(new DefExpr(tmp));
+        superCall->insertBefore(
+          new CallExpr(PRIMITIVE_MOVE, tmp,
+            new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
+                         fn->_this, new_StringSymbol("super"))));
+      }
+    }
+  } else {
+
+  }
+
+  if (ct->classTag == CLASS_UNION)
+    fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, fn->_this, new_IntSymbol(0)));
+
+  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+
+  Vec<const char*> fieldNamesSet;
+  for_fields(tmp, ct) {
+    VarSymbol* field = toVarSymbol(tmp);
+
+    if (!field)
+      continue;
+
+    ArgSymbol* arg = fieldArgMap.get(field);
+
+    if (!arg)
+      continue;
+
+    currentLineno = field->lineno;
+    currentFilename = field->filename;
+
     if (field->isParam)
       arg->intent = INTENT_PARAM;
     fieldNamesSet.set_add(field->name);
@@ -369,7 +515,11 @@ static void build_constructor(ClassType* ct) {
         arg->initUsingCopy = true;
       }
     } else if (exprType && !field->isTypeVariable && !field->isParam) {
-      init = new CallExpr("_init", exprType->copy());
+      CallExpr* callExprType = toCallExpr(exprType);
+      if (callExprType && callExprType->isNamed("_build_sparse_subdomain_type"))
+        init = exprType->copy();
+      else
+        init = new CallExpr(PRIMITIVE_INIT, exprType->copy());
       arg->initUsingCopy = true;
     }
     arg->defaultExpr = init;
@@ -383,7 +533,12 @@ static void build_constructor(ClassType* ct) {
       if (hasType) {
         VarSymbol* tmp = new VarSymbol("_tmp");
         fn->insertAtTail(new DefExpr(tmp));
-        Expr* init = new CallExpr("_init", exprType->copy());
+        Expr* init = NULL;
+        CallExpr* callExprType = toCallExpr(exprType);
+        if (callExprType && callExprType->isNamed("_build_sparse_subdomain_type"))
+          init = exprType->copy();
+        else
+          init = new CallExpr(PRIMITIVE_INIT, exprType->copy());
         fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, init));
         fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_set_field", tmp, arg)));
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
@@ -412,12 +567,11 @@ static void build_constructor(ClassType* ct) {
   currentLineno = ct->lineno;
   currentFilename = ct->filename;
 
-  Symbol* myThis = fn->_this;
   ClassType *outerType =
     toClassType(ct->symbol->defPoint->parentSymbol->type);
   if (outerType) {
     // Create an "outer" pointer to the outer class in the inner class
-    VarSymbol* outer = new VarSymbol("outer");
+    //    VarSymbol* outer = new VarSymbol("outer");
 
 
     // Remove the DefPoint for this constructor, add it to the outer
@@ -425,12 +579,12 @@ static void build_constructor(ClassType* ct) {
     outerType->addDeclarations(fn->defPoint->remove(), true);
 
     // Save the pointer to the outer class
-    ct->fields.insertAtTail(new DefExpr(outer));
+    //    ct->fields.insertAtTail(new DefExpr(outer));
     fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER,
-                                  new SymExpr(myThis),
+                                  fn->_this,
                                   new_StringSymbol("outer"),
-                                  new SymExpr(fn->_this)));
-    ct->outer = outer;
+                                  fn->_outer));
+    //    ct->outer = outer;
   }
 
   bool hasReturn = false;
@@ -443,15 +597,15 @@ static void build_constructor(ClassType* ct) {
           if (CallExpr* call = toCallExpr(ast)) {
             if (call->isPrimitive(PRIMITIVE_RETURN)) {
               SymExpr* se = toSymExpr(call->get(1));
-              if (se->var != gVoid)
+              if (!se || se->var != gVoid)
                 hasReturn = true;
             }
           }
         }
         if (hasReturn)
-          fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr("initialize")));
+          fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr("initialize", gMethodToken, fn->_this)));
         else
-          fn->insertAtTail(new CallExpr("initialize"));
+          fn->insertAtTail(new CallExpr("initialize", gMethodToken, fn->_this));
         break;
       }
     }
@@ -460,8 +614,7 @@ static void build_constructor(ClassType* ct) {
     fn->insertFormalAtTail(new DefExpr(meme));
   }
   if (!hasReturn)
-    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, myThis));
-  fn->retType = ct;
+    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, fn->_this));
 }
 
 
@@ -608,7 +761,7 @@ void cleanup(void) {
       if (block->blockTag == BLOCK_SCOPELESS)
         flatten_scopeless_block(block);
     } else if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isNamed("_tuple"))
+      if (call->isNamed("_build_tuple"))
         destructure_tuple(call);
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (TypeSymbol* ts = toTypeSymbol(def->sym)) {
@@ -627,10 +780,12 @@ void cleanup(void) {
     currentFilename = ast->filename;
     if (TypeSymbol* ts = toTypeSymbol(ast)) {
       if (ClassType* ct = toClassType(ts->type)) {
+        build_type_constructor(ct);
         build_constructor(ct);
         if (ct->defaultConstructor->isMethod) {
           // This is a nested class constructor
           flatten_primary_methods(ct->defaultConstructor);
+          flatten_primary_methods(ct->defaultTypeConstructor);
         }
       }
     }

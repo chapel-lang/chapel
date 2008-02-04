@@ -25,7 +25,7 @@ forall i in D {
   A(i) = i;
 }
 
-var myreduce = mysumreduce(t = int);
+var myreduce = new mysumreduce(t = int);
 myreduce.init();
 myreduce.combine(A);
 var result = myreduce.finalize();

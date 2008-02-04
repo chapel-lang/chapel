@@ -32,37 +32,37 @@ class A {
                   }
                 }
                 def method() {
-                  var x = I(); x.method();
+                  var x = new I(); x.method();
                 } 
               }
               def method() {
-                var x = H(); x.method();
+                var x = new H(); x.method();
               } 
             }
             def method() {
-              var x = G(); x.method();
+              var x = new G(); x.method();
             } 
           }
           def method() {
-            var x = F(); x.method();
+            var x = new F(); x.method();
           } 
         }
         def method() {
-          var x = E(); x.method();
+          var x = new E(); x.method();
         } 
       }
       def method() {
-        var x = D(); x.method();
+        var x = new D(); x.method();
       } 
     }
     def method() {
-      var x = C(); x.method();
+      var x = new C(); x.method();
     } 
   }
   def method() {
-    var x = B(); x.method();
+    var x = new B(); x.method();
   } 
 }
 
-var a = A();
+var a = new A();
 a.method();

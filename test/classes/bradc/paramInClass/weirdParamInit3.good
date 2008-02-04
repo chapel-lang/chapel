@@ -1,2 +1,1 @@
-weirdParamInit3.chpl:6: error: unresolved call 'C()'
-weirdParamInit3.chpl:1: note: candidates are: C(param x: int)
+weirdParamInit3.chpl:6: error: invalid generic type specification on class field

@@ -18,8 +18,8 @@ class E : C {
   var myCType = myC.printType();
 }
 
-var c = C();
-var d = D();
+var c = new C();
+var d = new D();
 
-var e1 = E(c);
-var e2 = E(d);
+var e1 = new E(c);
+var e2 = new E(d);

@@ -11,13 +11,13 @@ class C {
 }
 
 _chpl_memtest_printMemStat();
-var c = C();
+var c = new C();
 _chpl_memtest_printMemStat();
-var d = C();
+var d = new C();
 _chpl_memtest_printMemStat();
-var e = C();
+var e = new C();
 _chpl_memtest_printMemStat();
-var f = C();
+var f = new C();
 _chpl_memtest_printMemStat();
 
 if print {

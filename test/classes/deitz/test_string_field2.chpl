@@ -3,6 +3,6 @@ class C {
   var s : string;
 }
 
-var c : C = C(2, "hello world");
+var c : C = new C(2, "hello world");
 
 writeln(c);

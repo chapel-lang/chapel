@@ -80,7 +80,7 @@ def processTag(i,j) {
   if (!(hasIndex(i+1, j, StartIndices) || hasIndex(i, j-1, EndIndices)) &&
       (sourceText.substring(i) != "<" && sourceText.substring(j) != ">")) then {
     /* all text? assumes all entities are escaped*/
-    var elt = XmlPCData(j-i+1, sourceText.substring[i..j]);
+    var elt = new XmlPCData(j-i+1, sourceText.substring[i..j]);
     parsedElements(i,j) = elt;
     writeln("PCData : ", elt.data);
     return;
@@ -100,7 +100,7 @@ def processTag(i,j) {
         name = sourceText.substring[i+1..end-1];
         break;
       }
-    var elt = XmlTag(j-i+1, name);
+    var elt = new XmlTag(j-i+1, name);
     parsedElements(i,j) = elt;
     writeln("Self-closed : ", elt.name);
     return;
@@ -132,7 +132,7 @@ def processTag(i,j) {
     return;
   }
   var start = min reduce ([x in EndIndices] if x > i then x);
-  var elt = XmlTag(j-i+1, tagName);
+  var elt = new XmlTag(j-i+1, tagName);
   start = min reduce ([x in StartIndices] if x > start then x);
   while (start < end) {
     var item : XmlElement = nil;

@@ -19,5 +19,5 @@ def foo(c: C(real, ?tt)) {
   writeln(c);
 }
 
-foo(C(int, real));
-foo(C(real, int));
+foo(new C(int, real));
+foo(new C(real, int));

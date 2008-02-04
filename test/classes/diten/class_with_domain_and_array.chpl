@@ -4,10 +4,10 @@ class FTree {
 }
 
 class Function1d {
-  var s = FTree();
+  var s = new FTree();
 }
 
 def main() {
   var f: Function1d;
-  //var ff = Function1d();
+  //var ff = new Function1d();
 }

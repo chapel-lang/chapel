@@ -2,7 +2,7 @@ enum cleaningSupplies {MrClean, Windex, SoftScrub, mop, broom};
 var item1: cleaningSupplies;
 var item2: cleaningSupplies;
 
-var f: file = file(filename = "freadEnum.txt", mode = "r");
+var f: file = new file(filename = "freadEnum.txt", mode = "r");
 f.open();
 
 f.read(item1, item2);

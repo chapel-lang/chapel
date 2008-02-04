@@ -7,7 +7,7 @@ class C {
 
 type t = sync int;
 
-var c = C(t);
+var c = new C(t);
 
 begin writeln(c.x);
 

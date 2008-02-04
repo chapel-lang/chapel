@@ -23,7 +23,7 @@ Code 6 Top-level driver for task pool - Chapel
 -------------------------------------------------*/
 config const numLocs = 10;
 config const poolSize = 10;
-const t = taskpool(poolSize);
+const t = new taskpool(poolSize);
 cobegin {
   coforall loc in 1..numLocs do
     consumer();

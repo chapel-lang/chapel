@@ -7,6 +7,6 @@ class C {
   }
 }
 
-var c = C();
+var c = new C();
 c.foo(j=3,i=2);
 writeln(c);

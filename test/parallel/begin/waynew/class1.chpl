@@ -4,7 +4,7 @@ class C {
   var x: int;
 }
 
-var c = C();
+var c = new C();
 c.x = 7;
 writeln( c);
 

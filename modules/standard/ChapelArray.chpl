@@ -1,24 +1,24 @@
 def _build_domain_type(dist, param rank : int, type idxType = int,
                        param stridable = false) type
-  return _domain(rank, dist.buildDomain(rank, idxType, stridable));
+  return new _domain(rank, dist.buildDomain(rank, idxType, stridable));
 
 def _build_domain_type(dist, type ind) type where !__primitive("isEnumType", ind)
-  return _domain(1, dist.buildDomain(ind));
+  return new _domain(1, dist.buildDomain(ind));
 
 def _build_domain_type(dist, type ind) type where __primitive("isEnumType", ind)
-  return _domain(1, dist.buildEnumDomain(ind));
+  return new _domain(1, dist.buildEnumDomain(ind));
 
 def _build_subdomain_type(dom) type
   return dom.buildSubdomain();
 
 def _build_sparse_subdomain_type(dist, parentDom)
-  return _domain(parentDom.rank,
-                 dist.buildSparseDomain(parentDom.rank,
-                                        parentDom._value.idxType,
-                                        parentDom._value));
+  return new _domain(parentDom.rank,
+                     dist.buildSparseDomain(parentDom.rank,
+                                            parentDom._value.idxType,
+                                            parentDom._value));
 
 def _build_opaque_domain_type(dist) type
-  return _domain(1, dist.buildOpaqueDomain());
+  return new _domain(1, dist.buildOpaqueDomain());
 
 def _build_array_type(dom, type eltType) type
   return dom.buildArray(eltType);
@@ -38,7 +38,7 @@ def _build_domain(ranges: range(?eltType,bounded,?stridable) ...?rank) {
   return d;
 }
 
-def _wrapDomain(d) return _domain(d.rank, d);
+def _wrapDomain(d) return new _domain(d.rank, d);
 
 //
 // computes && reduction over stridable of ranges
@@ -135,8 +135,7 @@ record _domain {
 
   def initialize() {
     if _value == nil {
-      var x = buildEmptyDomain();
-      return x;
+      _value = _value.buildEmptyDomain();
     }
     return this;
   }
@@ -147,12 +146,12 @@ record _domain {
   }
 
   def this(ranges: range(?eltType,?boundedType,?stridable) ...rank)
-    return _domain(rank, _value.slice(_any_stridable(ranges), ranges));
+    return new _domain(rank, _value.slice(_any_stridable(ranges), ranges));
 
   def this(args ...rank) where _validRankChangeArgs(args) {
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = _any_stridable(ranges);
-    return _domain(rank, _value.rankChange(rank, stridable, args));
+    return new _domain(rank, _value.rankChange(rank, stridable, args));
   }
 
   def dim(d : int)
@@ -165,7 +164,7 @@ record _domain {
   def buildArray(type eltType) {
     var x = _value.buildArray(eltType);
     _value._arrs.append(x);
-    return _array(_value.idxType, eltType, rank, x);
+    return new _array(_value.idxType, eltType, rank, x);
   }
 
   // buildEmptyDomain is meant to return an uninitialized domain for
@@ -175,16 +174,16 @@ record _domain {
   // not refer to any fields that aren't types and params.
   def buildEmptyDomain() {
     var x = _value.buildEmptyDomain();
-    return _domain(rank, x);
+    return new _domain(rank, x);
   }
 
   def buildSubdomain() {
     var x = _value.buildSubdomain();
-    return _domain(rank, x);
+    return new _domain(rank, x);
   }
 
   def buildOpenIntervalUpper()
-    return _domain(rank, _value.buildOpenIntervalUpper());
+    return new _domain(rank, _value.buildOpenIntervalUpper());
 
   def clear() {
     _value.clear();
@@ -216,17 +215,17 @@ record _domain {
     return expand(i);
 
   def expand(i: rank*int)
-    return _domain(rank, _value.expand(i));
+    return new _domain(rank, _value.expand(i));
 
   def expand(i: int) where rank > 1
-    return _domain(rank, _value.expand(i));
+    return new _domain(rank, _value.expand(i));
 
   def exterior(i: int ...rank)
     return exterior(i);
 
   def exterior(i: rank*int) {
     var x = _value.exterior(i);
-    return _domain(rank, x);
+    return new _domain(rank, x);
   }
 
   def interior(i: int ...rank)
@@ -234,7 +233,7 @@ record _domain {
 
   def interior(i: rank*int) {
     var x = _value.interior(i);
-    return _domain(rank, x);
+    return new _domain(rank, x);
   }
 
   def translate(i: int ...rank)
@@ -242,7 +241,7 @@ record _domain {
 
   def translate(i: rank*int) {
     var x = _value.translate(i);
-    return _domain(rank, x);
+    return new _domain(rank, x);
   }
 
   def subBlocks {
@@ -306,7 +305,7 @@ def _domain.writeThis(f: Writer) {
 
 def by(a: _domain, b) {
   var x = a._value.strideBy(b);
-  return _domain(a.rank, x);
+  return new _domain(a.rank, x);
 }
 
 // this is a wrapper class for all arrays
@@ -319,7 +318,7 @@ record _array {
   var _promotionType : eltType;
 
   def _dom
-    return _domain(rank, _value.dom);
+    return new _domain(rank, _value.dom);
 
   pragma "inline"
   def this(i: rank*idxType) var where rank > 1
@@ -350,7 +349,7 @@ record _array {
   def this(ranges: range(?_eltType,?boundedType,?stridable) ...rank) var {
     if boundsChecking then
       _value.checkSlice(ranges);
-    return _array(idxType, eltType, rank, _value.slice(_dom((...ranges))._value));
+    return new _array(idxType, eltType, rank, _value.slice(_dom((...ranges))._value));
   }
 
   pragma "valid var"
@@ -359,7 +358,7 @@ record _array {
       _value.checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = _any_stridable(ranges);
-    return _array(idxType, eltType, rank, _value.rankChange(rank, stridable, args));
+    return new _array(idxType, eltType, rank, _value.rankChange(rank, stridable, args));
   }
 
   def these() var {
@@ -371,12 +370,12 @@ record _array {
 
   def reindex(d: _domain) where rank == 1 {
     var x = _value.reindex(d._value);
-    return _array(x.idxType, eltType, rank, x);
+    return new _array(x.idxType, eltType, rank, x);
   }
 
   def reindex(d: _domain) where rank != 1 {
     var x = _value.reindex(d._value);
-    return _array(x.idxType, eltType, rank, x);
+    return new _array(x.idxType, eltType, rank, x);
   }
 
   def IRV var {
@@ -497,13 +496,13 @@ def _copy(ic: _iteratorClass) {
     var c = ic.getHeadCursor();
 
     var capacity = 4, size = 0;
-    var data = _ddata(ic.getValue(c).type, capacity);
+    var data = new _ddata(ic.getValue(c).type, capacity);
     data.init();
 
     while ic.isValidCursor(c) do {
       if size == capacity {
         capacity = capacity * 2;
-        var tmp = _ddata(ic.getValue(c).type, capacity);
+        var tmp = new _ddata(ic.getValue(c).type, capacity);
         tmp.init();
         for i in 0..size-1 do
           tmp(i) = data(i);

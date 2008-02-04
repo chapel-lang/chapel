@@ -5,6 +5,6 @@ class foo {
   }
 }
 
-var f : foo(2) = foo(2);
+var f : foo(int) = new foo(2);
 
 f.print();

@@ -5,12 +5,12 @@ class C {
       writeln(d);
     }
   }
-  var d = D();
+  var d = new D();
   def foo() {
     writeln(d.x);
     d.bar();
   }
 }
 
-var c = C();
+var c = new C();
 c.foo();

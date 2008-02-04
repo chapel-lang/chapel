@@ -5,7 +5,7 @@ class Subgraph {
   }
 }
 
-var x = Subgraph(5);
+var x = new Subgraph(5);
 
 x.x = 1;
 

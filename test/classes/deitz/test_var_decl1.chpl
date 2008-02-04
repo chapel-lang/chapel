@@ -6,8 +6,8 @@ record R {
   var y = 14;
 }
 
-var c = C();
-var r = R();
+var c = new C();
+var r = new R();
 
 writeln(c);
 writeln(r);

@@ -5,7 +5,7 @@ class C {
   }
 }
 
-var c = C();
+var c = new C();
 writeln(c);
 c.foo(3, 5);
 c.foo(3);

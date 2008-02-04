@@ -11,8 +11,8 @@ class C {
 
 
 
-var myR = R();
-var myC = C();
+var myR = new R();
+var myC = new C();
 
 writeln("A is: ", A);
 foo(A, 17);

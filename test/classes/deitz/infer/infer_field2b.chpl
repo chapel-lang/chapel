@@ -33,7 +33,7 @@ label _1
 }
 
 def foo() {
-  var c = C();
+  var c = new C();
   c = next_foo(c);
   var s : list of c.result.type;
   while c != nil {
@@ -49,7 +49,7 @@ writeln(foo());
 for i in bar() do
   writeln(i);
 
-var c = C();
+var c = new C();
 c = next_foo(c);
 while c != nil {
   writeln(c.result);

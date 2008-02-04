@@ -1,6 +1,6 @@
 config var inputfile = "test.dat";
 
-var infile = file(inputfile, path='./', mode='r');
+var infile = new file(inputfile, path='./', mode='r');
 
 infile.open();
 

@@ -16,9 +16,9 @@ var a : arr;
 var x = 1;
 var z = 1;
 
-var y1 = C();
-var y2 = D();
-var y3 = E();
+var y1 = new C();
+var y2 = new D();
+var y3 = new E();
 
 
 a(x) = z;

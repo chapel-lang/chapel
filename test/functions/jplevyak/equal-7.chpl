@@ -1,6 +1,6 @@
 class foo { var a : int;  }
-var x : foo = foo();
-var y : foo = foo();
+var x : foo = new foo();
+var y : foo = new foo();
 var z : foo = x;
 y.a = 1;
 x = y;

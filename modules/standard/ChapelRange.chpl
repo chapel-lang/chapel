@@ -28,35 +28,35 @@ record range {
 // syntax function for bounded ranges
 //
 def _build_range(low: int, high: int)
-  return range(int, bounded, false, low, high);
+  return new range(int, bounded, false, low, high);
 def _build_range(low: uint, high: uint)
-  return range(uint, bounded, false, low, high);
+  return new range(uint, bounded, false, low, high);
 def _build_range(low: int(64), high: int(64))
-  return range(int(64), bounded, false, low, high);
+  return new range(int(64), bounded, false, low, high);
 def _build_range(low: uint(64), high: uint(64))
-  return range(uint(64), bounded, false, low, high);
+  return new range(uint(64), bounded, false, low, high);
 
 
 //
 // syntax function for unbounded ranges
 //
 def _build_range(param bt: BoundedRangeType, bound: int)
-  return range(int, bt, false, bound, bound);
+  return new range(int, bt, false, bound, bound);
 def _build_range(param bt: BoundedRangeType, bound: uint)
-  return range(uint, bt, false, bound, bound);
+  return new range(uint, bt, false, bound, bound);
 def _build_range(param bt: BoundedRangeType, bound: int(64))
-  return range(int(64), bt, false, bound, bound);
+  return new range(int(64), bt, false, bound, bound);
 def _build_range(param bt: BoundedRangeType, bound: uint(64))
-  return range(uint(64), bt, false, bound, bound);
+  return new range(uint(64), bt, false, bound, bound);
 def _build_range(param bt: BoundedRangeType)
-  return range(int, bt, false);
+  return new range(int, bt, false);
 
 
 //
 // syntax function for [range)
 //
 def _build_open_interval_upper(r: range)
-  return range(r.eltType, r.boundedType, r.stridable, r.low, r.high-1);
+  return new range(r.eltType, r.boundedType, r.stridable, r.low, r.high-1);
 
 
 //
@@ -67,7 +67,7 @@ def by(r : range, i : int) {
     halt("range cannot be strided by zero");
   if r.boundedType == boundedNone then
     halt("unbounded range cannot be strided");
-  var result = range(r.eltType, r.boundedType, true, r.low, r.high, r.stride*i);
+  var result = new range(r.eltType, r.boundedType, true, r.low, r.high, r.stride*i);
   if r.low > r.high then
     return result;
   if result.stride < 0 then
@@ -188,12 +188,12 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
 
   var (g, x) = extendedEuclid(st1, st2);
 
-  var result = range(eltType,
-                     computeBoundedType(this, other),
-                     this.stridable | other.stridable,
-                     max(lo1, lo2),
-                     min(hi1, hi2),
-                     st1 * st2 / g);
+  var result = new range(eltType,
+                         computeBoundedType(this, other),
+                         this.stridable | other.stridable,
+                         max(lo1, lo2),
+                         min(hi1, hi2),
+                         st1 * st2 / g);
 
   if abs(lo1 - lo2) % g:eltType != 0 {
     // empty intersection, return degenerate result
@@ -357,9 +357,9 @@ def range.interior(i: eltType) {
   if i == 0 then
     return this;
   else if i < 0 then
-    return range(eltType, boundedType, stridable, low, low-1-i, stride);
+    return new range(eltType, boundedType, stridable, low, low-1-i, stride);
   else
-    return range(eltType, boundedType, stridable, high+1-i, high, stride);
+    return new range(eltType, boundedType, stridable, high+1-i, high, stride);
 }
 
 
@@ -372,9 +372,9 @@ def range.exterior(i: eltType) {
   if i == 0 then
     return this;
   else if i < 0 then
-    return range(eltType, boundedType, stridable, low+i, low-1, stride);
+    return new range(eltType, boundedType, stridable, low+i, low-1, stride);
   else
-    return range(eltType, boundedType, stridable, high+1, high+i, stride);
+    return new range(eltType, boundedType, stridable, high+1, high+i, stride);
 }
 
 
@@ -382,41 +382,41 @@ def range.exterior(i: eltType) {
 // returns an expanded range, or a contracted range if i < 0
 //
 def range.expand(i: eltType)
-  return range(eltType, boundedType, stridable, low-i, high+i, stride);
+  return new range(eltType, boundedType, stridable, low-i, high+i, stride);
 
 
 //
 // range op scalar and scalar op range arithmetic
 //
 def +(r: range(?e,?b,?s), i: integral)
-  return range((r.low+i).type, b, s, r.low+i, r.high+i, r.stride);
+  return new range((r.low+i).type, b, s, r.low+i, r.high+i, r.stride);
 
 def -(r: range(?e,?b,?s), i: integral)
-  return range((r.low-i).type, b, s, r.low-i, r.high-i, r.stride);
+  return new range((r.low-i).type, b, s, r.low-i, r.high-i, r.stride);
 
 def *(r: range(?e,?b,?s), i: integral) {
   if i == 0 then
     halt("multiplication of range by zero");
-  return range((r.low*i).type, b, true, r.low*i, r.high*i, r.stride*i);
+  return new range((r.low*i).type, b, true, r.low*i, r.high*i, r.stride*i);
 }
 
 def /(r: range(?e,?b,?s), i: integral)
-  return range((r.low/i).type, b, true, r.low/i, r.high/i, r.stride/i);
+  return new range((r.low/i).type, b, true, r.low/i, r.high/i, r.stride/i);
 
 def +(i:integral, r: range(?e,?b,?s))
-  return range((i+r.low).type, b, s, i+r.low, i+r.high, r.stride);
+  return new range((i+r.low).type, b, s, i+r.low, i+r.high, r.stride);
 
 def -(i:integral, r: range(?e,?b,?s))
-  return range((i-r.low).type, b, s, i-r.low, i-r.high, r.stride);
+  return new range((i-r.low).type, b, s, i-r.low, i-r.high, r.stride);
 
 def *(i:integral, r: range(?e,?b,?s)) {
   if i == 0 then
     halt("multiplication of range by zero");
-  return range((i*r.low).type, b, true, i*r.low, i*r.high, i*r.stride);
+  return new range((i*r.low).type, b, true, i*r.low, i*r.high, i*r.stride);
 }
 
 def /(i:integral, r: range(?e,?b,?s))
-  return range((i/r.low).type, b, true, i/r.low, i/r.high, i/r.stride);
+  return new range((i/r.low).type, b, true, i/r.low, i/r.high, i/r.stride);
 
 
 //

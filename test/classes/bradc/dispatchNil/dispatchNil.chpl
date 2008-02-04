@@ -21,12 +21,12 @@ class D : C {
     return y;
   }
   def buildNew() {
-    return D();
+    return new D();
   }
 }
 
-var myC = C();
-var myD = D(DsC=myC);
+var myC = new C();
+var myD = new D(DsC=myC);
 writeln("myC = ", myC);
 writeln("myD = ", myD);
 

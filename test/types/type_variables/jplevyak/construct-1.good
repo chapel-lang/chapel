@@ -1,1 +1,2 @@
-(x = 0.0)
+construct-1.chpl:6: error: unresolved type specifier 'R(t=type real, x=3)'
+construct-1.chpl:1: note: candidates are: R(type t)

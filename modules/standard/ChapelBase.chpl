@@ -410,7 +410,12 @@ pragma "inline" def _init(x) return nil:x.type;
 //
 pragma "inline" def _copy(a) return a;
 
+pragma "inline" def _copy(type t) {
+  compilerError("illegal assignment of type to value");
+}
+
 pragma "inline" def _pass(a) return _copy(a);
+
 
 //
 // _cond_test function supports statement bool conversions and sync
@@ -524,13 +529,13 @@ class _heap {
   var _val;
 }
 
-pragma "heap" def _heapAlloc(x) return _heap(x);
+pragma "heap" def _heapAlloc(x) return new _heap(x);
 pragma "heap" def _heapAccess(x) var return x._val;
 
-pragma "heap" def _heapAllocGlobal(x) return _heap(x);
+pragma "heap" def _heapAllocGlobal(x) return new _heap(x);
 
 pragma "heap" def _heapAllocConstGlobal(x) where _isSimpleScalarType(x.type) return x;
-pragma "heap" def _heapAllocConstGlobal(x) where !_isSimpleScalarType(x.type) return _heap(x);
+pragma "heap" def _heapAllocConstGlobal(x) where !_isSimpleScalarType(x.type) return new _heap(x);
 pragma "heap" def _heapAccessConstGlobal(x) where _isSimpleScalarType(x.type) return x;
 pragma "heap" def _heapAccessConstGlobal(x) where !_isSimpleScalarType(x.type) return x._val;
 
@@ -705,7 +710,7 @@ class _syncStack {
   var v: sync bool;
   var next: _syncStack;
 }
-def _pushSyncStack(s: _syncStack) return _syncStack(next=s);
+def _pushSyncStack(s: _syncStack) return new _syncStack(next=s);
 def _waitSyncStack(in s: _syncStack) {
   while s != nil {
     s.v.readFE();

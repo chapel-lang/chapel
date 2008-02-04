@@ -7,9 +7,9 @@ class D {
   param y: int = c.x;
 }
 
-var c = C(2);
+var c = new C(2);
 
-var d = D(c);
+var d = new D(c);
 
 writeln("c is: ", c);
 writeln("d is: ", d);

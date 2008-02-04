@@ -4,45 +4,45 @@ record mycomplex {
 }
 
 def +(x : mycomplex, y : mycomplex)
-  return mycomplex(x.re + y.re, x.im + y.im);
+  return new mycomplex(x.re + y.re, x.im + y.im);
 
 def +(x : mycomplex, y : real)
-  return mycomplex(x.re + y, x.im);
+  return new mycomplex(x.re + y, x.im);
 
 def +(x : real, y : mycomplex)
-  return mycomplex(x + y.re, y.im);
+  return new mycomplex(x + y.re, y.im);
 
 def -(x : mycomplex, y : mycomplex)
-  return mycomplex(x.re - y.re, x.im - y.im);
+  return new mycomplex(x.re - y.re, x.im - y.im);
 
 def -(x : mycomplex, y : real)
-  return mycomplex(x.re - y, x.im);
+  return new mycomplex(x.re - y, x.im);
 
 def -(x : real, y : mycomplex)
-  return mycomplex(x - y.re, -y.im);
+  return new mycomplex(x - y.re, -y.im);
 
 def *(x : mycomplex, y : mycomplex)
-  return mycomplex(x.re*y.re - x.im*y.im, x.im*y.re + x.re*y.im);
+  return new mycomplex(x.re*y.re - x.im*y.im, x.im*y.re + x.re*y.im);
 
 def *(x : mycomplex, y : real)
-  return mycomplex(x.re*y, x.im*y);
+  return new mycomplex(x.re*y, x.im*y);
 
 def *(x : real, y : mycomplex)
-  return mycomplex(x*y.re, x*y.im);
+  return new mycomplex(x*y.re, x*y.im);
 
 def /(x : mycomplex, y : mycomplex)
   return let d = y.re*y.re + y.im*y.im in
-    mycomplex((x.re*y.re + x.im*y.im)/d, (x.im*y.re - x.re*y.im)/d);
+    new mycomplex((x.re*y.re + x.im*y.im)/d, (x.im*y.re - x.re*y.im)/d);
 
 def /(x : mycomplex, y : real)
-  return mycomplex(x.re/y, x.im/y);
+  return new mycomplex(x.re/y, x.im/y);
 
 def /(x : real, y : mycomplex)
   return let d = y.re*y.re + y.im*y.im in
-    mycomplex(x*y.re/d, -x*y.im/d);
+    new mycomplex(x*y.re/d, -x*y.im/d);
 
-var x : mycomplex = mycomplex(re = 8.0, im = 1.0);
-var y : mycomplex = mycomplex(re = 4.0, im = 2.0);
+var x : mycomplex = new mycomplex(re = 8.0, im = 1.0);
+var y : mycomplex = new mycomplex(re = 4.0, im = 2.0);
 
 writeln("x = ", x);
 writeln("y = ", y);

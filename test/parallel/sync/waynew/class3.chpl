@@ -8,7 +8,7 @@ class C {
 
 var s: sync C;
 
-s = C();
+s = new C();
 s.x = 1;
 s.x = 2;
 s.y = 3;

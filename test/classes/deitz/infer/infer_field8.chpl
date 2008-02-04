@@ -2,10 +2,10 @@ record R {
   var x;
 }
 
-var r1 = R(1);
-var r2 = R(2);
-var r3 = R(3.0);
-var r4 = R(4.0);
+var r1 = new R(1);
+var r2 = new R(2);
+var r3 = new R(3.0);
+var r4 = new R(4.0);
 
 writeln(r1);
 writeln(r2);

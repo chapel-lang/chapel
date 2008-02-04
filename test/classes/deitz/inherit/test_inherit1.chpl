@@ -6,7 +6,7 @@ class D : C {
   var y : real = 2.0;
 }
 
-var c : C = C(), d : D = D();
+var c : C = new C(), d : D = new D();
 
 writeln(c);
 writeln(d);

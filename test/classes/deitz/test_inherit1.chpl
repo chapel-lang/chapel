@@ -13,7 +13,7 @@ class D: C {
 }
 
 def main() {
-  var d = D();
+  var d = new D();
 
   d.s.append(4);
   d.s.append(5);

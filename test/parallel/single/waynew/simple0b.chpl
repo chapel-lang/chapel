@@ -7,7 +7,7 @@ class C {
 var s: single C;
 var t: C;
 
-s = C();
+s = new C();
 s = t;
 
 

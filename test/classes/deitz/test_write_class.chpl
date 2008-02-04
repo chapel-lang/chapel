@@ -8,7 +8,7 @@ class C: Writer {
   }
 }
 
-var c = C();
+var c = new C();
 
 c.write(41, 32, 23, 14);
 

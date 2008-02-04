@@ -27,15 +27,15 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
 
 
   def buildArray(type eltType)
-    return SingleLocaleSparseArray(eltType, rank, idxType, dom=this);
+    return new SingleLocaleSparseArray(eltType, rank, idxType, dom=this);
 
   def buildEmptyDomain() {
     // why would this ever be nil?  See comment in SingleLocaleArithmetic.chpl,
     // or the CVSLOG message of 09/19/07 10:28:04 and then complain to Steve :)
     if this != nil then
-      return SingleLocaleSparseDomain(rank=rank, idxType=idxType, parentDom=parentDom);
+      return new SingleLocaleSparseDomain(rank=rank, idxType=idxType, parentDom=parentDom);
     else
-      return SingleLocaleSparseDomain(rank=rank, idxType=idxType);
+      return new SingleLocaleSparseDomain(rank=rank, idxType=idxType);
   }
 
   def these() {

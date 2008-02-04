@@ -26,7 +26,7 @@ class Fn_dTest1: AFcn {
 
 /** superposition of multiple gaussians */
 class Fn_Test2: AFcn {
-    var g = Fn_Test1();
+    var g = new Fn_Test1();
 
     def this(x: real): real {
         return g(x-0.3) + g(x) + g(x+0.3);
@@ -36,7 +36,7 @@ class Fn_Test2: AFcn {
 
 /** derivative of test2 */
 class Fn_dTest2: AFcn {
-    var g = Fn_dTest1();
+    var g = new Fn_dTest1();
 
     def this(x: real): real {
         return g(x-0.3) + g(x) + g(x+0.3);

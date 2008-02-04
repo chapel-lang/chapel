@@ -9,6 +9,6 @@ class foo {
   }
 }
 
-var f : foo(t=int) = foo(t=int, x=3);
+var f : foo(t=int) = new foo(t=int, x=3);
 
 f.print();

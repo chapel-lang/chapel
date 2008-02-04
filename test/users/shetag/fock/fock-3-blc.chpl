@@ -13,7 +13,7 @@ var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType;
 
 config const numConsumers = max(1, (+ reduce Locales.numCores) - 1),
              poolSize = numConsumers;
-const t = taskpool(poolSize);
+const t = new taskpool(poolSize);
 
 def buildjk() {
   cobegin {
@@ -61,7 +61,7 @@ def genBlocks() {
       const lattop = if (kat==iat) then jat 
                                    else kat;
       forall lat in 1..lattop do
-        yield blockIndices(iat, jat, kat, lat);
+        yield new blockIndices(iat, jat, kat, lat);
     }
   forall loc in 1..numConsumers do
     yield nil;

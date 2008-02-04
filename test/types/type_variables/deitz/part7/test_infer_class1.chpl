@@ -3,6 +3,6 @@ class C {
   var f : t;
 }
 
-var c = C(f = 1);
+var c = new C(f = 1);
 
 writeln(c);

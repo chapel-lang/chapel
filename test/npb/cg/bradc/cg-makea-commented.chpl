@@ -33,7 +33,7 @@ module CGMakeA {
     //
     // create the pseudo-random stream of values
     //
-    var randStr = RandomStream(314159265);
+    var randStr = new RandomStream(314159265);
 
     //
     // loop over the problem size

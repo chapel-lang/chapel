@@ -3,7 +3,7 @@ record C {
   var a : [d] int;
 }
 
-var myC = C();
+var myC = new C();
 
 
 

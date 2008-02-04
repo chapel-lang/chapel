@@ -1,4 +1,4 @@
-var f = file(filename = "f.out", mode = "w");
+var f = new file(filename = "f.out", mode = "w");
 
 f.open();
 f.mode = "r";

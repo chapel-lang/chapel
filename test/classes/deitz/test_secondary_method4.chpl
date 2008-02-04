@@ -6,7 +6,7 @@ def foo() {
   def C.a() {
     writeln(y);
   }
-  var a = C();
+  var a = new C();
   a.a();
 }
 

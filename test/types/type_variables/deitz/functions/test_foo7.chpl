@@ -8,4 +8,4 @@ def foo(c : C(?u)) {
   writeln("foo of ", c, " with y = ", y);
 }
 
-foo(C(int, 2));
+foo(new C(int, 2));

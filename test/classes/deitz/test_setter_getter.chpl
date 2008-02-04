@@ -9,6 +9,6 @@ class C {
   }
 }
 
-var c = C();
+var c = new C();
 c.x = 2;
 writeln(c.x);

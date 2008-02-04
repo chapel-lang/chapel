@@ -311,19 +311,17 @@ destructureIndices(BlockStmt* block,
                    BaseAST* indices,
                    Expr* init) {
   if (CallExpr* call = toCallExpr(indices)) {
-    if (call->isNamed("_tuple")) {
-      int i = 0;
+    if (call->isNamed("_build_tuple")) {
+      int i = 1;
       for_actuals(actual, call) {
-        if (i > 0) { // skip first (size parameter)
-          if (SymExpr *sym_expr = toSymExpr(actual)) {
-            if (sym_expr->isNamed("_")) {
-              i++;
-              continue;
-            }
+        if (SymExpr *sym_expr = toSymExpr(actual)) {
+          if (sym_expr->isNamed("_")) {
+            i++;
+            continue;
           }
-          destructureIndices(block, actual,
-                             new CallExpr(init->copy(), new_IntSymbol(i)));
         }
+        destructureIndices(block, actual,
+                           new CallExpr(init->copy(), new_IntSymbol(i)));
         i++;
       }
     }
@@ -345,7 +343,7 @@ destructureIndices(BlockStmt* block,
 static void
 checkIndices(BaseAST* indices) {
   if (CallExpr* call = toCallExpr(indices)) {
-    if (!call->isNamed("_tuple"))
+    if (!call->isNamed("_build_tuple"))
       USR_FATAL(indices, "invalid index expression");
     for_actuals(actual, call)
       checkIndices(actual);
@@ -373,7 +371,7 @@ BlockStmt* build_for_block(BlockTag tag,
                                new_StringSymbol("v")), gTrue));
     body = buildBeginStmt(beginBlk);
     BlockStmt* block = build_for_block(BLOCK_FOR, indices, iterator, body);
-    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, ss, new CallExpr("_init", new SymExpr("_syncStack"))));
+    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, ss, new CallExpr(PRIMITIVE_INIT, new SymExpr("_syncStack"))));
     block->insertAtHead(new DefExpr(ss));
     body->insertBefore(new DefExpr(me));
     body->insertBefore(new CallExpr(PRIMITIVE_MOVE, me, new CallExpr("_pushSyncStack", ss)));
@@ -689,15 +687,16 @@ FnSymbol* build_reduce(Expr* red, Expr* data, bool scan) {
   fn->insertAtTail(
     new BlockStmt(
       new CallExpr(PRIMITIVE_MOVE, eltType,
-        new CallExpr(
-          new CallExpr(".", new CallExpr("_getIterator", tmp), new_StringSymbol("getValue")),
+        new CallExpr(PRIMITIVE_TYPEOF,
           new CallExpr(
-            new CallExpr(".", new CallExpr("_getIterator", tmp), new_StringSymbol("getHeadCursor"))))),
+            new CallExpr(".", new CallExpr("_getIterator", tmp), new_StringSymbol("getValue")),
+            new CallExpr(
+              new CallExpr(".", new CallExpr("_getIterator", tmp), new_StringSymbol("getHeadCursor")))))),
       BLOCK_TYPE));
   fn->insertAtTail(
     new CallExpr(PRIMITIVE_RETURN,
       new CallExpr(scan ? "_scan" : "_reduce",
-        new CallExpr(red, eltType), tmp)));
+        new CallExpr(PRIMITIVE_NEW, new CallExpr(red, eltType)), tmp)));
   return fn;
 }
 

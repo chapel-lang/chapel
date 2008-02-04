@@ -18,7 +18,6 @@ class IteratorInfo;
 
 enum FnTag {
   FN_FUNCTION,
-  FN_CONSTRUCTOR,
   FN_ITERATOR
 };
 
@@ -61,7 +60,6 @@ class Symbol : public BaseAST {
   bool canType;        // can be a type (determined during resolution)
   bool isConcurrent;   // can be accessed concurrently
   bool isExtern;       // external to Chapel, implemented in C
-  bool isConstructor;  // captures result of a constructor call
   Vec<SymExpr*> defs;
   Vec<SymExpr*> uses;
   Vec<const char*> pragmas;
@@ -167,6 +165,7 @@ class FnSymbol : public Symbol {
   SymScope* argScope;
   bool isGeneric;
   Symbol* _this;
+  Symbol* _outer;
   bool isMethod;
   FnSymbol *instantiatedFrom;
   ASTMap substitutions;

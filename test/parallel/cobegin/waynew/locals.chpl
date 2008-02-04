@@ -54,11 +54,11 @@ def function3() {
     var c:C;
   }
 
-  var c:C = C();
+  var c:C = new C();
   c.a = 1;
 
-  var d:D = D();
-  d.c = C();
+  var d:D = new D();
+  d.c = new C();
   d.c.a = 2;
 
   cobegin {

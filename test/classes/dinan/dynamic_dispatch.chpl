@@ -10,8 +10,8 @@ class B: A {
   }
 }
 
-var a  = A();
-var b  = B();
+var a  = new A();
+var b  = new B();
 var ba = b:A;
 
 writeln("a   says: ", a.fcn());

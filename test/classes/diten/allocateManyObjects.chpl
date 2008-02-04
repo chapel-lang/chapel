@@ -13,7 +13,7 @@ def main() {
   var i = 0;
 
   while i < iterations {
-    cc = letterclass(i, i+1);
+    cc = new letterclass(i, i+1);
     n += cc.total();
     i += 1;
   }

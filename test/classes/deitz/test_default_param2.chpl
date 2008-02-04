@@ -6,6 +6,6 @@ class C {
 
 var c: C(int);
 
-c = C(int);
+c = new C(int);
 
 writeln(c);

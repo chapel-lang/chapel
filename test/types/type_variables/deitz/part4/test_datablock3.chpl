@@ -1,4 +1,4 @@
-var d : _ddata(int) = _ddata(int, 3);
+var d : _ddata(int) = new _ddata(int, 3);
 d.init();
 
 d(0) = 1;

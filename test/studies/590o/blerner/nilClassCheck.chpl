@@ -7,7 +7,7 @@ const D = [1..10];
 var A: [D] C;
 
 for i in 1..5 {
-  A(i) = C(i);
+  A(i) = new C(i);
 }
 
 write("A is: ");

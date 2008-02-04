@@ -29,13 +29,13 @@ class Graph {
   with Numbers;
   var VertexD : domain(1);
   var ParEdgeD : domain(1);
-  var intg = Subgraph(wtype = int, VertexD => VertexD, ParEdgeD => ParEdgeD);
-  var strg = Subgraph(wtype = string, VertexD => VertexD, ParEdgeD => ParEdgeD);
+  var intg = new Subgraph(wtype = int, VertexD => VertexD, ParEdgeD => ParEdgeD);
+  var strg = new Subgraph(wtype = string, VertexD => VertexD, ParEdgeD => ParEdgeD);
   def copy(s : Graph) {
     return Graph(VertexD = s.VertexD, ParEdgeD = s.ParEdgeD);
   }
 }
 
-var x = Graph();
+var x = new Graph();
 
 writeln("expecting 6 :", x.z);

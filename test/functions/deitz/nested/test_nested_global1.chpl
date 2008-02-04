@@ -2,7 +2,7 @@ class C {
   var x : int;
 }
 
-var c = C(x = 2);
+var c = new C(x = 2);
 
 def foo(type t) {
   var x : t;

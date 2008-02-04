@@ -2,7 +2,7 @@ record R {
   var x: 3*(int,int);
 }
 
-var r = R(x=((1, 2), (3, 4), (5, 6)));
+var r = new R(x=((1, 2), (3, 4), (5, 6)));
 
 def R.foo() {
   for param i in 1..3 do

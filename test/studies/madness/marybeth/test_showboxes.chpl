@@ -9,10 +9,10 @@ def main() {
 
     writeln("Mad Chapel -- Show me the boxes\n");
 
-    var fcn  = Fn_Test1();
-    var dfcn = Fn_dTest1();
+    var fcn  = new Fn_Test1();
+    var dfcn = new Fn_dTest1();
 
-    var F = Function(k=k, thresh=thresh, f=fcn);
+    var F = new Function(k=k, thresh=thresh, f=fcn);
 
     writeln("F.norm2() = ", F.norm2());
     F.summarize();

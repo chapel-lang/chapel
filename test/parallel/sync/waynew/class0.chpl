@@ -4,7 +4,7 @@ class D {
   var s: sync int;
 }
 
-var d: D = D();
+var d: D = new D();
 var i: int;
 
 d.s = 4;
@@ -16,7 +16,7 @@ class E {
   var sf: sync real;
 }
 
-var e: E = E(); 
+var e: E = new E(); 
 var f: real;
 
 e.sf = 1.2;

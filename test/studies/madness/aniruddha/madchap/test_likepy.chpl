@@ -70,7 +70,7 @@ def main() {
         var f2 = Function(k, thresh, tf2);
         writeln("norm of f2 is ", f2.norm2());
         var f3 = f1 + f2;
-        f3.f = Sum(tf1, tf2):AFcn;
+        f3.f = new Sum(tf1, tf2):AFcn;
         writeln("norm of f3 = f1 + f2 is ", f3.norm2());
         f3.summarize();
 
@@ -89,7 +89,7 @@ def main() {
         var f2 = Function(k, thresh, tf2);
         writeln("norm of f2 is ", f2.norm2());
         var f3 = f1 * f2;
-        f3.f = Product(tf1, tf2):AFcn;
+        f3.f = new Product(tf1, tf2):AFcn;
         writeln("norm of f3 = f1 * f2 is ", f3.norm2());
         f3.summarize();
 

@@ -84,7 +84,7 @@ def generateDirectedEdges(v1, v2) {
     } else {
       weight.stringWeight = randomString(maxStrLen);
     }
-    edges #= edgeTuple(source = v1, sink = v2, weight = weight);
+    edges #= new edgeTuple(source = v1, sink = v2, weight = weight);
   }
   return edges;
 }

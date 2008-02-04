@@ -17,7 +17,7 @@ module dequeue {
 
     // pushTop: add an item to the top of the DeQueue
     def pushTop(item: itemType) {
-      var newTop = MyNode(itemType, item, nil, top);
+      var newTop = new MyNode(itemType, item, nil, top);
       if top == nil {
         bottom = newTop;
       } else {
@@ -29,7 +29,7 @@ module dequeue {
 
     // pushBottom: add an item to the bottom of the DeQueue
     def pushBottom(item: itemType) {
-      var newBottom = MyNode(itemType, item, bottom, nil);
+      var newBottom = new MyNode(itemType, item, bottom, nil);
       if bottom == nil {
         top = newBottom;
       } else {
@@ -83,7 +83,7 @@ module dequeue {
       // Update new top
       newTop.prev = nil;
 
-      return DeQueue(itemType, n, newTop, newBottom, id+1);
+      return new DeQueue(itemType, n, newTop, newBottom, id+1);
     }
 
     // isEmpty: true if the stack is empty; otherwise false

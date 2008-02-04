@@ -1109,7 +1109,7 @@ tuple_type:
     {
       CallExpr* call = new CallExpr("_tuple", new_IntSymbol($2->length()));
       for_alist(expr, *$2) {
-        call->insertAtTail(new CallExpr("_init", expr->remove()));
+        call->insertAtTail(expr->remove());
       }
       $$ = call;
     }
@@ -1175,7 +1175,7 @@ composable_type:
 
 distributed_expr: /* not supported in one-locale implementation */
   /* nothing */
-    { $$ = new CallExpr(defaultDistribution); }
+    { $$ = new CallExpr(PRIMITIVE_NEW, new CallExpr(defaultDistribution)); }
 | TDISTRIBUTED TLP expr TRP
     { $$ = $3; }
 ;
@@ -1210,7 +1210,7 @@ array_type:
 top_level_type:
   type
 | composable_type TSTAR type %prec TSTAR  
-    { $$ = new CallExpr("_tuple", $1, new CallExpr("_init", $3)); }
+    { $$ = new CallExpr("_tuple", $1, $3); }
 ;
 
 
@@ -1371,9 +1371,7 @@ tuple_paren_expr:
         $$ = $2->get(1);
         $$->remove();
       } else {
-        CallExpr* tupleCall = new CallExpr("_tuple", $2);
-        tupleCall->insertAtHead(new_IntSymbol(tupleCall->numActuals()));
-        $$ = tupleCall;
+        $$ = new CallExpr("_build_tuple", $2);
       }
     }
 ;
@@ -1551,7 +1549,7 @@ expr:
 top_level_expr: 
   lvalue
 | TNEW parenop_expr
-    { INT_FATAL("new is reserved"); $$ = $2; }
+    { $$ = new CallExpr(PRIMITIVE_NEW, $2); }
 | TLP TDOTDOTDOT expr TRP
     { $$ = new CallExpr(PRIMITIVE_TUPLE_EXPAND, $3); }
 | TNIL

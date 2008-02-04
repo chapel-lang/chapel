@@ -9,7 +9,7 @@ class C {
   }
 }
 
-var c = C(2, 3);
+var c = new C(2, 3);
 writeln(c);
-c = C(true);
+c = new C(true);
 writeln(c);

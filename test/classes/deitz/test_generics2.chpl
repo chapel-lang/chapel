@@ -7,6 +7,6 @@ class D {
   var c: C(D);
 }
 
-var d = D();
+var d = new D();
 
 writeln(d);

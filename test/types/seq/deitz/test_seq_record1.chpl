@@ -5,7 +5,7 @@ record R {
   var y : real;
 }
 
-var r : R = R(1, 2.3);
+var r : R = new R(1, 2.3);
 
 var s : list of R = makeList( r );
 

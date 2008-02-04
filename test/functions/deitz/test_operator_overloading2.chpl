@@ -9,15 +9,15 @@ def ==(p1 : point, p2 : point) : bool {
   return true;
 }
 
-var a : point = point();
+var a : point = new point();
 a.x = 1;
 a.y = 1;
 
-var b : point = point();
+var b : point = new point();
 b.x = 1;
 b.y = 1;
 
-var c : point = point();
+var c : point = new point();
 c.x = 2;
 c.y = 2;
 

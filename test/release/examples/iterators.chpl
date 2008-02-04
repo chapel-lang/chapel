@@ -61,7 +61,7 @@ class Tree {
   var left, right: Tree;
 }
 
-var tree = Tree("a", Tree("b"), Tree("c", Tree("d"), Tree("e")));
+var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"), new Tree("e")));
 
 //
 // postorder - iterate over the Tree in postorder using recursion

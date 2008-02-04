@@ -18,7 +18,7 @@ class SeedGeneratorClass {
   }
 }
 
-var SeedGenerator = SeedGeneratorClass();
+var SeedGenerator = new SeedGeneratorClass();
 
 class RandomStream {
   const seed:int(64) = SeedGenerator.clockMS; 
@@ -99,7 +99,7 @@ class RandomStream {
 
 
 def fillRandom(x:[], initseed: int(64) = SeedGenerator.clockMS) {
-  var randNums = RandomStream(initseed);
+  var randNums = new RandomStream(initseed);
 
   randNums.fillRandom(x); 
 }

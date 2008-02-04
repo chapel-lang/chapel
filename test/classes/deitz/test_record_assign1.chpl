@@ -18,7 +18,7 @@ writeln("a1 is ", a1);
 writeln("a2 is ", a2);
 
 a1 = a2;
-a2 = A();
+a2 = new A();
 
 writeln("a1 is ", a1);
 writeln("a2 is ", a2);

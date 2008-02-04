@@ -7,10 +7,10 @@ record R {
 
 var s : list of R;
 
-s.append(R(1, 2));
+s.append(new R(1, 2));
 
 writeln(s);
 
-s.prepend(R(3, 4));
+s.prepend(new R(3, 4));
 
 writeln(s);

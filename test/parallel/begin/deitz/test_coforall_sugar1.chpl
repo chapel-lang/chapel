@@ -9,7 +9,7 @@ class syncStack {
   var next: syncStack;
 }
 
-def pushSyncStack(s: syncStack) return syncStack(next=s);
+def pushSyncStack(s: syncStack) return new syncStack(next=s);
 
 var ss: syncStack;
 for i in 1..n {

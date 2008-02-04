@@ -6,4 +6,4 @@ class C {
   var r : R;
 }
 
-writeln(C());
+writeln(new C());

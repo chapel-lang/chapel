@@ -3,25 +3,25 @@ use List;
 
 class SingleLocaleDistribution {
   def buildDomain(param rank: int, type idxType, param stridable: bool)
-    return SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                        stridable=stridable, dist=this);
+    return new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
+                                            stridable=stridable, dist=this);
 
   def buildEnumDomain(type idxType)
-    return SingleLocaleEnumDomain(rank=1, idxType=idxType);
+    return new SingleLocaleEnumDomain(rank=1, idxType=idxType);
 
   def buildDomain(type idxType)
-    return SingleLocaleAssociativeDomain(rank=1, idxType=idxType);
+    return new SingleLocaleAssociativeDomain(rank=1, idxType=idxType);
 
   def buildSparseDomain(param rank:int, type idxType,
                         parentDom: BaseArithmeticDomain)
-    return SingleLocaleSparseDomain(rank=rank, idxType=idxType,
-                                    parentDom=parentDom);
+    return new SingleLocaleSparseDomain(rank=rank, idxType=idxType,
+                                        parentDom=parentDom);
 
   def buildOpaqueDomain()
-    return SingleLocaleOpaqueDomain(rank=1);
+    return new SingleLocaleOpaqueDomain(rank=1);
 }
 
-var Block = SingleLocaleDistribution();
+var Block = new SingleLocaleDistribution();
 
 class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   param rank : int;
@@ -41,8 +41,8 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   }
 
   def buildOpenIntervalUpper() {
-    var x = SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                         stridable=stridable, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
+                                             stridable=stridable, dist=dist);
     for param i in 1..rank {
       if ranges(i)._stride != 1 then
         halt("syntax [domain-specification) requires a stride of one");
@@ -125,30 +125,30 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   }
 
   def buildArray(type eltType) {
-    return SingleLocaleArithmeticArray(eltType, rank, idxType, stridable,
-                                       dom=this);
+    return new SingleLocaleArithmeticArray(eltType, rank, idxType, stridable,
+                                           dom=this);
   }
 
   def buildSubdomain()
-    return SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                        stridable=stridable, dist=dist);
+    return new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
+                                            stridable=stridable, dist=dist);
 
   def buildEmptyDomain() {
     if this != nil then
-      return SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                          stridable=stridable, dist=dist);
+      return new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
+                                              stridable=stridable, dist=dist);
     else
       // special case for array fields in classes; see
       // arrays/deitz/part2/test_array_in_class2
-      return SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                          stridable=stridable,
-                                          dist=SingleLocaleDistribution());
+      return new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
+                                              stridable=stridable,
+                                              dist=new SingleLocaleDistribution());
 
   }
 
   def slice(param stridable: bool, ranges) {
-    var d = SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                         stridable=stridable, dist=dist);
+    var d = new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
+                                             stridable=stridable, dist=dist);
     for param i in 1..rank do
       d.ranges(i) = dim(i)(ranges(i));
     return d;
@@ -158,8 +158,8 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
-    var d = SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                         stridable=stridable, dist=dist);
+    var d = new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
+                                             stridable=stridable, dist=dist);
     var i = 1;
     for param j in 1..args.size {
       if isRange(args(j)) {
@@ -171,16 +171,16 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   }
 
   def translate(off: rank*int) {
-    var x = SingleLocaleArithmeticDomain(rank=rank, idxType=int,
-                                         stridable=stridable, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=int,
+                                             stridable=stridable, dist=dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).translate(off(i));
     return x;
   }
 
   def interior(off: rank*int) {
-    var x = SingleLocaleArithmeticDomain(rank=rank, idxType=int,
-                                         stridable=stridable, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=int,
+                                             stridable=stridable, dist=dist);
     for i in 1..rank do {
       if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
           (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
@@ -192,16 +192,16 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   }
 
   def exterior(off: rank*int) {
-    var x = SingleLocaleArithmeticDomain(rank=rank, idxType=int,
-                                         stridable=stridable, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=int,
+                                             stridable=stridable, dist=dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).exterior(off(i));
     return x;
   }
 
   def expand(off: rank*int) {
-    var x = SingleLocaleArithmeticDomain(rank=rank, idxType=int,
-                                         stridable=stridable, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=int,
+                                             stridable=stridable, dist=dist);
     for i in 1..rank do {
       x.ranges(i) = ranges(i).expand(off(i));
       if (x.ranges(i)._low > x.ranges(i)._high) {
@@ -212,8 +212,8 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   }  
 
   def expand(off: int) {
-    var x = SingleLocaleArithmeticDomain(rank=rank, idxType=int,
-                                         stridable=stridable, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=int,
+                                             stridable=stridable, dist=dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i).expand(off);
     return x;
@@ -230,16 +230,16 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   }
 
   def strideBy(str : rank*int) {
-    var x = SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                         stridable=true, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
+                                             stridable=true, dist=dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str(i);
     return x;
   }
 
   def strideBy(str : int) {
-    var x = SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                         stridable=true, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
+                                             stridable=true, dist=dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str;
     return x;
@@ -288,7 +288,7 @@ class SingleLocaleArithmeticArray: BaseArray {
       blk(dim) = blk(dim+1) * dom.dim(dim+1).length;
     computeFactoredOffs();
     size = blk(1) * dom.dim(1).length;
-    data = _ddata(eltType, size:int); // ahh!!! can't cast to int here
+    data = new _ddata(eltType, size:int); // ahh!!! can't cast to int here
     data.init();
   }
 
@@ -325,8 +325,9 @@ class SingleLocaleArithmeticArray: BaseArray {
     for param i in 1..rank do
       if d.dim(i).length != dom.dim(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    var alias = SingleLocaleArithmeticArray(eltType, d.rank, d.idxType,
-                                            d.stridable, true, d, noinit=true);
+    var alias = new SingleLocaleArithmeticArray(eltType, d.rank, d.idxType,
+                                                d.stridable, true, d,
+                                                noinit=true);
     //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit=true);
     alias.data = data;
     alias.size = size: d.idxType;
@@ -347,9 +348,9 @@ class SingleLocaleArithmeticArray: BaseArray {
   }
 
   def slice(d: SingleLocaleArithmeticDomain) {
-    var alias = SingleLocaleArithmeticArray(eltType, rank, idxType,
-                                            d.stridable, reindexed,
-                                            d, noinit=true);
+    var alias = new SingleLocaleArithmeticArray(eltType, rank, idxType,
+                                                d.stridable, reindexed,
+                                                d, noinit=true);
     alias.data = data;
     alias.size = size;
     alias.blk = blk;
@@ -379,8 +380,9 @@ class SingleLocaleArithmeticArray: BaseArray {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
-    var alias = SingleLocaleArithmeticArray(eltType, newRank, idxType,
-                                            newStridable, true, d, noinit=true);
+    var alias = new SingleLocaleArithmeticArray(eltType, newRank, idxType,
+                                                newStridable, true, d,
+                                                noinit=true);
     alias.data = data;
     alias.size = size;
     var i = 1;
@@ -402,9 +404,9 @@ class SingleLocaleArithmeticArray: BaseArray {
 
   def reallocate(d: _domain) {
     if (d._value.type == dom.type) {
-      var copy = SingleLocaleArithmeticArray(eltType, rank, idxType,
-                                            d._value.stridable, reindexed,
-                                            d._value);
+      var copy = new SingleLocaleArithmeticArray(eltType, rank, idxType,
+                                                 d._value.stridable, reindexed,
+                                                 d._value);
       for i in d((...dom.ranges)) do
         copy(i) = this(i);
       off = copy.off;

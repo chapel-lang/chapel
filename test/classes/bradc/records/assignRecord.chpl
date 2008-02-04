@@ -11,11 +11,11 @@ def main() {
   var x: myrecord;
   var y: myrecord;
 
-  x.c = myclass();
+  x.c = new myclass();
   x.c.a = 1;
   x.c.b = 2.3;
 
-  y.c = myclass();
+  y.c = new myclass();
   y.c.a = 4;
   y.c.b = 5.6;
 

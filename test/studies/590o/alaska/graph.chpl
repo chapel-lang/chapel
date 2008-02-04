@@ -15,7 +15,7 @@ class position{
 class Node {
   var id: int;
   var name: string;
-  var pos: position = position(-1,-1);
+  var pos: position = new position(-1,-1);
   var color : colors = WHITE;
   var pred : Node = nil;
   var disc,fini : int = -1;
@@ -108,7 +108,7 @@ def file.read(inout val: Edge){
   if( a != "->" ){
      halt("Expecting directed graphs!");
   }
-  val = Edge(Node(s),Node(d));
+  val = new Edge(new Node(s),new Node(d));
   return val;
 }
 
@@ -119,7 +119,7 @@ def Edge.read(infile: file){
   if( a != "->" ){
      halt("Expecting directed graphs!");
   }
-  return Edge(Node(s),Node(d));
+  return Edge(new Node(s),new Node(d));
 }
 */
 
@@ -493,7 +493,7 @@ def DFS(G){
 //
 def readGraph(filename) {
   // Create an input file with the specified filename in read ("r") mode
-  var infile = file(filename, "r");
+  var infile = new file(filename, "r");
 
   // Open the file
   infile.open();
@@ -520,7 +520,7 @@ def readGraph(filename) {
     if(!ND.member(s)){
       writeln("New source node ",s);
       ND.add(s);
-      NameMap(s) = Node(j,s);
+      NameMap(s) = new Node(j,s);
       j+=1;
     }
 
@@ -528,14 +528,14 @@ def readGraph(filename) {
     if(!ND.member(d)){
       writeln("New dest node ",d);
       ND.add(d);
-      NameMap(d) = Node(j,d);
+      NameMap(d) = new Node(j,d);
       j+=1;
     }
 
     // Create an Edge if needed
     if(!ED.member((s,d))){
       ED.add((s,d));
-      EdgeMap((s,d)) = Edge(i,NameMap(s),NameMap(d));
+      EdgeMap((s,d)) = new Edge(i,NameMap(s),NameMap(d));
       writeln("Added edge ",s," ",arrow," ",d);
     } else {
       halt("Duplicate edge ",s," ",arrow," ",d);
@@ -559,7 +559,7 @@ def readGraph(filename) {
   infile.close();
 
   // Return the Graph
-  return Graph(N,E,X,Y);
+  return new Graph(N,E,X,Y);
 }
 
 

@@ -136,8 +136,7 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   canParam(false),
   canType(false),
   isConcurrent(false),
-  isExtern(false),
-  isConstructor(false)
+  isExtern(false)
 {}
 
 
@@ -292,7 +291,6 @@ VarSymbol::copyInner(ASTMap* map) {
   newVarSymbol->canType = canType;
   newVarSymbol->isConcurrent = isConcurrent;
   newVarSymbol->isExtern = isExtern;
-  newVarSymbol->isConstructor = isConstructor;
   INT_ASSERT(!newVarSymbol->immediate);
   return newVarSymbol;
 }
@@ -549,6 +547,7 @@ FnSymbol::FnSymbol(const char* initName) :
   argScope(NULL),
   isGeneric(false),
   _this(NULL),
+  _outer(NULL),
   isMethod(false),
   instantiatedFrom(NULL),
   instantiatedTo(NULL),
@@ -622,6 +621,7 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->cname = cname;
   copy->isGeneric = isGeneric;
   copy->_this = _this;
+  copy->_outer = _outer;
   copy->isMethod = isMethod;
   copy->visible = visible;
   copy->global = global;
@@ -681,8 +681,6 @@ build_empty_wrapper(FnSymbol* fn) {
     if (fn->setter)
       wrapper->setter = fn->setter->copy();
   }
-  if (fn->fnTag == FN_CONSTRUCTOR || fn->hasPragma("constructor type"))
-    wrapper->addPragma("constructor type");
   wrapper->isMethod = fn->isMethod;
   return wrapper;
 }
@@ -743,8 +741,8 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map,
       call->insertAtTail(wrapper_formal);
     }
   }
-  if (isMethod && !noParens)
-    call = make_method_call_partial(call);
+  //if (isMethod && !noParens)
+    //call = make_method_call_partial(call);
   if (retType == dtVoid || (retType == dtUnknown && returns_void(this)))
     wrapper->insertAtTail(call);
   else
@@ -806,15 +804,17 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
           temp_type = new SymExpr(formal->type->symbol);
         else if (formal->type->symbol->hasPragma("sync") ||
                  formal->type->symbol->hasPragma("ref"))
-          temp_type = new CallExpr("_init", formal->type->symbol);
+          temp_type = new CallExpr(PRIMITIVE_INIT, formal->type->symbol);
+        if (temp->isTypeVariable && temp_init)
+          temp_init = new CallExpr(PRIMITIVE_TYPEOF, temp_init);
         wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
       }
       call->insertAtTail(temp);
     }
   }
   update_symbols(wrapper->body, &copy_map);
-  if (isMethod)
-    call = make_method_call_partial(call);
+  //if (isMethod)
+    //call = make_method_call_partial(call);
   if (returns_void(this)) {
     wrapper->insertAtTail(call);
   } else if (fnTag != FN_ITERATOR) {
@@ -879,7 +879,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
                                       bool square) {
   FnSymbol* wrapper = build_empty_wrapper(this);
   wrapper->cname = astr("_promotion_wrap_", cname);
-  CallExpr* indicesCall = new CallExpr("_tuple"); // destructured in build
+  CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
   CallExpr* iterator = new CallExpr(square ? "_build_domain" : "_build_tuple");
   CallExpr* actualCall = new CallExpr(this);
   int i = 1;
@@ -911,8 +911,6 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
   BaseAST* indices = indicesCall;
   if (indicesCall->numActuals() == 1)
     indices = indicesCall->get(1)->remove();
-  else
-    indicesCall->insertAtHead(new_IntSymbol(indicesCall->numActuals()));
   if (returns_void(this)) {
     wrapper->insertAtTail(new BlockStmt(build_for_block(BLOCK_FORALL,
                                          indices, iterator,
@@ -930,7 +928,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
 
 static void
 copyGenericSub(ASTMap& subs, FnSymbol* root, FnSymbol* fn, BaseAST* key, BaseAST* value) {
-  if (!strcmp("_construct__tuple", root->name)) {
+  if (!strcmp("_type_construct__tuple", root->name)) {
     if (Symbol* sym = toSymbol(key)) {
       if (sym->name[0] == 'x') {
         subs.put((BaseAST*)(intptr_t)atoi(sym->name+1), value);
@@ -1046,16 +1044,53 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
 static void
 instantiate_tuple(FnSymbol* fn) {
   ClassType* tuple = toClassType(fn->retType);
-  int64 size = toVarSymbol(tuple->substitutions.v[0].value)->immediate->int_value();
+  //
+  // tuple is the return type for the type constructor
+  // tuple is NULL for the default constructor
+  //
+
+//   CallExpr* typeConstructorCall = NULL;
+//   if (!tuple) {
+//     Vec<BaseAST*> asts;
+//     collect_asts(&asts, fn);
+//     forv_Vec(BaseAST, ast, asts) {
+//       if (CallExpr* call = toCallExpr(ast)) {
+//         if (call->isNamed("_type_construct__tuple")) {
+//           typeConstructorCall = call;
+//         }
+//       }
+//     }
+//     INT_ASSERT(typeConstructorCall);
+//   }
+
+  int64 size = toVarSymbol(fn->substitutions.v[0].value)->immediate->int_value();
   Expr* last = fn->body->body.last();
   for (int i = 1; i <= size; i++) {
     const char* name = astr("x", istr(i));
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, new SymExpr(gNil));
+    if (tuple)
+      arg->isTypeVariable = true;
     fn->insertFormalAtTail(arg);
-    last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
-                                    new_StringSymbol(name), arg));
-    VarSymbol* field = new VarSymbol(name);
-    tuple->fields.insertAtTail(new DefExpr(field));
+    if (tuple) {
+      VarSymbol* tmp = new VarSymbol("_tmp");
+      last->insertBefore(new DefExpr(tmp));
+      last->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, arg)));
+      last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
+                                      new_StringSymbol(name), tmp));
+    } else {
+      last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
+                                      new_StringSymbol(name), arg));
+    }
+    if (tuple)
+      tuple->fields.insertAtTail(new DefExpr(new VarSymbol(name)));
+//     if (typeConstructorCall) {
+//       VarSymbol* tmp = new VarSymbol("_tmp");
+//       tmp->isCompilerTemp = true;
+//       tmp->canType = true;
+//       typeConstructorCall->getStmtExpr()->insertBefore(new DefExpr(tmp));
+//       typeConstructorCall->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_TYPEOF, arg)));
+//       typeConstructorCall->insertAtTail(tmp);
+//     }
   }
   fn->removePragma("tuple");
 }
@@ -1082,8 +1117,7 @@ instantiate_tuple_copy(FnSymbol* fn) {
     INT_FATAL(fn, "tuple copy function has more than one argument");
   ArgSymbol* arg = fn->getFormal(1);
   ClassType* ct = toClassType(arg->type);
-  CallExpr* call = new CallExpr(ct->defaultConstructor->name);
-  call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
+  CallExpr* call = new CallExpr("_build_tuple_always");
   for (int i = 1; i < ct->fields.length(); i++)
     call->insertAtTail(new CallExpr(arg, new_IntSymbol(i)));
   fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, call)));
@@ -1101,7 +1135,7 @@ instantiate_tuple_init(FnSymbol* fn) {
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
   for (int i = 1; i < ct->fields.length(); i++)
-    call->insertAtTail(new CallExpr("_init", new CallExpr(arg, new_IntSymbol(i))));
+    call->insertAtTail(new CallExpr(PRIMITIVE_INIT, new CallExpr(arg, new_IntSymbol(i))));
   fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, call)));
   normalize(fn);
   return fn;
@@ -1246,7 +1280,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
       //  because folding is done via instantiation
       //  caution: be careful developing in the base module
       baseModule != getModule()) {
-    if (fnTag == FN_CONSTRUCTOR) {
+    if (hasPragma("type constructor")) {
       USR_FATAL_CONT(retType, "Type '%s' has been instantiated too many times",
                      retType->symbol->name);
     } else {
@@ -1258,7 +1292,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     USR_STOP();
   }
 
-  if (fnTag == FN_CONSTRUCTOR) {
+  if (hasPragma("type constructor")) {
     if (!toClassType(retType))
       INT_FATAL("bad instantiation of non-class type");
 
@@ -1338,7 +1372,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
 
     newfn = instantiate_function(this, generic_substitutions, clone->type,
                                  paramMap, call);
-    clone->type->defaultConstructor = newfn;
+    clone->type->defaultTypeConstructor = newfn;
     newfn->retType = clone->type;
     if (hasPragma("tuple"))
       instantiate_tuple(newfn);
@@ -1357,6 +1391,9 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
 
     if (hasPragma("tuple hash function"))  // finish generating hash function?
       newfn = instantiate_tuple_hash( newfn);
+
+    if (hasPragma("tuple"))
+      instantiate_tuple(newfn);
   }
 
   instantiatedTo->add(newfn);
@@ -1586,7 +1623,7 @@ bool FnSymbol::tag_generic() {
     return false;
   if (hasGenericArgs(this)) {
     isGeneric = 1; 
-    if (retType != dtUnknown && fnTag == FN_CONSTRUCTOR)
+    if (retType != dtUnknown && hasPragma("type constructor"))
       retType->isGeneric = true;
     return true;
   }

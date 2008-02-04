@@ -7,7 +7,7 @@ def setVolcano(inout al: int, inout name: string) {
   al = 2;
 }
 
-var mtStHelens: volcano = volcano();
+var mtStHelens: volcano = new volcano();
 var name: string;
 
 setVolcano(mtStHelens.alertLevel, name);

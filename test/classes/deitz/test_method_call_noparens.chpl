@@ -3,6 +3,6 @@ class C {
   def foo return 3;
 }
 
-var c = C(4);
+var c = new C(4);
 
 writeln(c.foo);

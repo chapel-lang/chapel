@@ -76,7 +76,7 @@ class FTree {
         if !indices.member((lvl, idx)) {
             if setter {
               indices += ((lvl, idx));
-              nodes[(lvl, idx)] = Coeff(coeffDom);
+              nodes[(lvl, idx)] = new Coeff(coeffDom);
             } else {
               // This is a getter so it shouldn't be modifying what
               // we return, should be safe to return the zero vector.
@@ -93,7 +93,7 @@ class FTree {
         if !indices.member((lvl, idx)) {
             if setter {
               indices += ((lvl, idx));
-              nodes[(lvl, idx)] = Coeff(coeffDom);
+              nodes[(lvl, idx)] = new Coeff(coeffDom);
             } else {
               // This is a getter so it shouldn't be modifying what
               // we return, should be safe to return the zero vector.
@@ -145,8 +145,8 @@ class Function {
     var   compressed    = false;// keep track of what basis we are in
 
     // Sum and Difference coefficients
-    var   s = FTree(order=k);
-    var   d = FTree(order=k);
+    var   s = new FTree(order=k);
+    var   d = new FTree(order=k);
 
     // FIXME: Ideally all of these matrices should be const as well but they
     //        can't be presently since they must be assigned in initialize()
@@ -239,7 +239,7 @@ class Function {
      */
     def skeletonCopy() {
         // Omit: f, compressed, s, d
-        return Function(k=k, thresh=thresh, initial_level=initial_level,
+        return new Function(k=k, thresh=thresh, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine);
     }
 
@@ -685,7 +685,7 @@ def gl_getWeights(k: int) {
  */
 def hg_readCoeffs(inputfile) {
     var max_k: int;
-    var coeffData = file(inputfile, path='./', mode='r');
+    var coeffData = new file(inputfile, path='./', mode='r');
 
     coeffData.open();
     coeffData.read(max_k);
@@ -806,13 +806,13 @@ def main() {
 
     writeln("Mad Chapel -- Differentiation Test\n");
 
-    var fcn  : [1..1] AFcn = (Fn_Test1():AFcn);  
-    var dfcn : [1..1] AFcn = (Fn_dTest1():AFcn);
+    var fcn  : [1..1] AFcn = (new Fn_Test1()):AFcn;  
+    var dfcn : [1..1] AFcn = (new Fn_dTest1()):AFcn;
 
     hg_readCoeffs(hg_inputfile);
     for i in fcn.domain {
         writeln("** Testing function ", i);
-        var F = Function(k=5, thresh=1e-5, f=fcn[i]);
+        var F = new Function(k=5, thresh=1e-5, f=fcn[i]);
 
         writeln("F", i, ".norm2() = ", F.norm2());
 

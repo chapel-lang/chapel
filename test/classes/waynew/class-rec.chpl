@@ -14,4 +14,4 @@ class C {
   var inds: CC(R(ind_type));
 }
 
-var c: C(real) = C(real);
+var c: C(real) = new C(real);

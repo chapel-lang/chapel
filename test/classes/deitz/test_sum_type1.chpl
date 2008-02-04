@@ -18,7 +18,7 @@ def bar(e) {
   foo(e);
 }
 
-var c : C = C(), d : D = D();
+var c : C = new C(), d : D = new D();
 
 foo(c);
 foo(d);

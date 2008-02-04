@@ -3,7 +3,7 @@ class foo {
   var f : real;
 }
 
-var x : foo = foo(2, 3.2);
+var x : foo = new foo(2, 3.2);
 
 x.i = -1;
 x.f = 3.1415;

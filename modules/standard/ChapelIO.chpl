@@ -3,9 +3,9 @@
 //  chapel-level implementations of read, write, writeln
 //  chapel-level implementations of assert, halt
 
-const stdin  = file("stdin", "r", "/dev", _get_stdin());
-const stdout = file("stdout", "w", "/dev", _get_stdout());
-const stderr = file("stderr", "w", "/dev", _get_stderr());
+const stdin  = new file("stdin", "r", "/dev", _get_stdin());
+const stdout = new file("stdout", "w", "/dev", _get_stdout());
+const stderr = new file("stderr", "w", "/dev", _get_stderr());
 
 class file: Writer {
   var filename : string = "";
@@ -228,7 +228,7 @@ class StringClass: Writer {
 
 pragma "ref this"
 def string.write(args ...?n) {
-  var sc = StringClass(this);
+  var sc = new StringClass(this);
   sc.write((...args));
   this = sc.s;
 }

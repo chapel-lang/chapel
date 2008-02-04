@@ -13,14 +13,14 @@ class D: C {
   }
 }
 
-var c = C();
+var c = new C();
 c.foo();
 c.foo();
 
-c = D(rank=1);
+c = new D(rank=1);
 c.foo();
 c.foo();
 
-c = D(rank=2);
+c = new D(rank=2);
 c.foo();
 c.foo();

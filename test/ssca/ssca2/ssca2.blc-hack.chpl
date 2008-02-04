@@ -56,11 +56,11 @@ def generateDirectedEdges(start, stop) {
     } else {
       weight.stringWeight = randomString(maxStrLen);
     }
---    edges #= edgeTuple(start, stop, weight);
+--    edges #= new edgeTuple(start, stop, weight);
 -- rewritten:
 --    edges = edges # _seq( edgeTuple(start, stop, weight) );
 -- rewritten:
-    var newEdge: edgeTuple = edgeTuple();
+    var newEdge: edgeTuple = new edgeTuple();
     newEdge.start = start;
     newEdge.stop = stop;
     newEdge.weight = weight;
@@ -111,7 +111,7 @@ def generateEdgeList() {
       forall start in 1..cliqueSize {
         forall stop in start+1..cliqueSize {
 --          edgeTuples #= generateEdges(start, stop);
---          edgeTuples = edgeTuples # generateEdges(start, stop);
+--          edgeTuples = new edgeTuples # generateEdges(start, stop);
         }
       }
     }

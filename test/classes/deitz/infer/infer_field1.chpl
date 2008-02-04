@@ -13,7 +13,7 @@ def bar(c : C) {
   c.y = "world";
 }
 
-var c = C(0, 0), d = C("", "");
+var c = new C(0, 0), d = new C("", "");
 foo(c);
 bar(d);
 writeln(c);

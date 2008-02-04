@@ -6,12 +6,12 @@ class C {
 
 const a : [1..2] int = (1, 2);
 
-var c2 = C(a);
+var c2 = new C(a);
 
 var c1 : C;
-c1 = C(a);
+c1 = new C(a);
 
-var c3 = C();
+var c3 = new C();
 
 var c4: C;
 

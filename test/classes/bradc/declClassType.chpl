@@ -14,7 +14,7 @@ class D {
 }
 
 def main() {
-  var d: D = D();
+  var d: D = new D();
   d.doit;
   writeln(d);
 }

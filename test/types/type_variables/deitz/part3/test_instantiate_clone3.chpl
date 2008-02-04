@@ -4,6 +4,6 @@ class C {
   var y;
 }
 
-var c = C(t=int, y=14.0);
+var c = new C(t=int, y=14.0);
 c.y = 12;
 writeln(c);

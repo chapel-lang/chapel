@@ -5,7 +5,7 @@ class G {
 }
 
 def main() {
-  var goo = G();
+  var goo = new G();
   var gooResult = goo.readit();
   writeln("gooResult = ", gooResult);
 }

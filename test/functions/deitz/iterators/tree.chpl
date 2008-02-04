@@ -13,7 +13,7 @@ def treeNodes(tree: Tree): Tree {
       yield t;
 }
 
-var tree = Tree(1, Tree(2), Tree(3, Tree(4), Tree(5)));
+var tree = new Tree(1, new Tree(2), new Tree(3, new Tree(4), new Tree(5)));
 
 for t in treeNodes(tree) do
   writeln(t.data);

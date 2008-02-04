@@ -66,7 +66,7 @@ class Vector {
     
   def getslice(lo,hi) {
     var aslice => a(lo..hi);
-    return Vector(aslice.numElements,aslice);
+    return new Vector(aslice.numElements,aslice);
   }
 
   def setslice(lo,hi,value) {
@@ -134,7 +134,7 @@ class Matrix {
 
   // does (nxm)*(mx1)
   def mul(v) {
-    var r = Vector(n);
+    var r = new Vector(n);
     
     //Case 1 -- works fine if v is of type [1..m]. 
     //tested by m4.mul(v3.a) from main(); v3.a is of type [1..m].
@@ -159,7 +159,7 @@ class Matrix {
  
   // does (1xn)*(nxm) 
   def rmul(v) {
-    var r = Vector(m);
+    var r = new Vector(m);
 
     //Case 1 -- works fine if v is of type [1..n]. 
     //tested by m4.rmul(v4.a) from main(); v4.a is of type [1..n]. 
@@ -184,15 +184,15 @@ class Matrix {
 }
 
 def main() {
-  const v1 = Vector(6);
+  const v1 = new Vector(6);
   writeln("v1 = ",v1);
 
   var a2 : [i in 1..6] elemType = i; 
-  var v2 = Vector(a2.numElements,a2);
+  var v2 = new Vector(a2.numElements,a2);
   writeln("v2 = ",v2);
 
   var a3 : [i in 1..6] elemType = 10.0;
-  var v3 = Vector(a3.numElements,a3);
+  var v3 = new Vector(a3.numElements,a3);
   writeln("v3 = ",v3);
 
   writeln("v1.normf() = ",v1.normf());
@@ -228,11 +228,11 @@ def main() {
   writeln("v2.add(v3) = ",v2);
   writeln("v3 = ",v3);
 
-  var m1 = Matrix(2,3);
+  var m1 = new Matrix(2,3);
   writeln("m1 = ",m1);
 
   var a4 : [(i,j) in [1..3,1..6]] elemType = i+j;
-  var m4 = Matrix(a4.domain.dim(1).high,a4.domain.dim(2).high,a4);
+  var m4 = new Matrix(a4.domain.dim(1).high,a4.domain.dim(2).high,a4);
   writeln("m4 = ",m4);
 
   writeln("m1.dims() = ",m1.dims());

@@ -3,7 +3,7 @@ class C {
 }
 
 def main {
-  var c = C();
+  var c = new C();
   _debugWriteln(localeID(), " ", c.x);
   c.x = 18;
   on Locales(1) {

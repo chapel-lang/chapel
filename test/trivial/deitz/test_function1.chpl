@@ -4,7 +4,7 @@ record R {
 }
 
 def foo(a, b) {
-  var r = R(a, b);
+  var r = new R(a, b);
   writeln(r);
 }
 

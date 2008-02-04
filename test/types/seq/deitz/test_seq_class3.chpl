@@ -8,6 +8,6 @@ var s: list of C;
 
 writeln(s);
 
-s.append(C(2));
+s.append(new C(2));
 
 writeln(s);

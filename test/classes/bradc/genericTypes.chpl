@@ -13,8 +13,8 @@ class C {
   }
 }
 
-var c = C(2,int);
+var c = new C(2,int);
 c.foo();
 
-var c2 = C(3,real);
+var c2 = new C(3,real);
 c2.foo();

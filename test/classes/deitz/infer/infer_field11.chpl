@@ -3,11 +3,11 @@ record R {
 }
 
 record R2 {
-  var y: R(2);
+  var y: R(int);
 }
 
 record R3 {
-  var y: R(2.0);
+  var y: R(real);
 }
 
 var r: R2;

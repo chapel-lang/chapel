@@ -2,7 +2,7 @@ class C {
   var s: sync int;
 }
 
-var c = C();
+var c = new C();
 
 c.s = 2;
 

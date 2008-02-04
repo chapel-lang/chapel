@@ -9,7 +9,7 @@ def foo.secondary() {
   writeln("secondary method call");
 }
 
-var f : foo = foo();
+var f : foo = new foo();
 
 f.primary();
 f.secondary();

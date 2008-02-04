@@ -4,7 +4,7 @@ class C {
   def x(i: int) return 4;
 }
 
-var c = C();
+var c = new C();
 c.y = (1, 2, 3);
 writeln(c);
 writeln(c.x);

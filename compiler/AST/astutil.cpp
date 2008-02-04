@@ -189,6 +189,7 @@ void update_symbols(BaseAST* ast, ASTMap* map) {
       XSUB(ps->type, Type);
       XSUB(ps->retType, Type);
       XSUB(ps->_this, Symbol);
+      XSUB(ps->_outer, Symbol);
     } else if (ArgSymbol* ps = toArgSymbol(ast)) {
       XSUB(ps->type, Type);
     }

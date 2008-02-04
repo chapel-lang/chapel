@@ -9,7 +9,7 @@ class two_d_array {
 }
 
 def main(){
-  var tda: two_d_array = two_d_array(3, 4);
+  var tda: two_d_array = new two_d_array(3, 4);
   writeln(tda.D);
 }
 

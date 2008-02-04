@@ -17,6 +17,6 @@ class Edges {
   var z = f(y);
 }
 
-var x = Edges();
+var x = new Edges();
 
 writeln("expecting 6 :", x.z);

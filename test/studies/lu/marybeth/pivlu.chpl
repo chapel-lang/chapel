@@ -53,7 +53,7 @@ writeln(piv);
 
 def initA(A,filename:string){
 
-  var Adat = file(filename,path='./',mode='r');
+  var Adat = new file(filename,path='./',mode='r');
 
   Adat.open();
   for ij in A.domain {

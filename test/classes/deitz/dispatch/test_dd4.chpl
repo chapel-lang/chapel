@@ -16,4 +16,4 @@ class E : D {
   }
 }
 
-C().goo();
+(new C()).goo();

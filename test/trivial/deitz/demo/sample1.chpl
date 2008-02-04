@@ -13,8 +13,8 @@ def trio.writeThis(f : Writer) {
   f.write("(", x1, " & ", x2, " & ", x3, ")");
 }
 
-var t1 : trio(int) = trio(int, 1, 2, 3);
-var t2 : trio(real) = trio(real, x1=1.0);
+var t1 : trio(int) = new trio(int, 1, 2, 3);
+var t2 : trio(real) = new trio(real, x1=1.0);
 
 writeln(t1);
 writeln(t1.sum());

@@ -1,13 +1,13 @@
 class C { var x: int; }
 
-var c1 = C(1);
+var c1 = new C(1);
 
 def foo() {
   return c1;
 }
 
 def bar() {
-  var c2 = C(2);
+  var c2 = new C(2);
   return c2;
 }
 

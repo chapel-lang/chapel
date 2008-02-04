@@ -8,6 +8,6 @@ class Params {
   }
 }
 
-var ListOfParams = Params();
+var ListOfParams = new Params();
 
 writeln(ListOfParams);

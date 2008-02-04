@@ -12,7 +12,7 @@ class C {
   }
 }
 
-var c = C(C(), C(C(), C()));
+var c = new C(C(), C(C(), C()));
 
 writeln("c has ", c.countNodes(), " nodes");
 

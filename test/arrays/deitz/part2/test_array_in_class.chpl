@@ -4,5 +4,5 @@ class C {
   var a : [d] int;
 }
 
-var c = C(n = 8);
+var c = new C(n = 8);
 writeln(c);

@@ -9,7 +9,7 @@ if c != nil then
 else
   writeln("c is nil");
 
-c = C();
+c = new C();
 
 if c != nil then
   writeln(c.x);

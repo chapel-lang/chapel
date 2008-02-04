@@ -160,7 +160,7 @@ def populateBoard(inout board: [] int) {
 
 
 def main() {
-  var boardData = file(inputfile, path='./', mode='r');
+  var boardData = new file(inputfile, path='./', mode='r');
 
   // Read the board from the input file
   boardData.open();

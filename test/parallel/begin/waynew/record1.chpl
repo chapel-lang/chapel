@@ -4,7 +4,7 @@ record R {
   var x: int;
 }
 
-var r = R();
+var r = new R();
 r.x = 7;
 writeln( r);
 

@@ -9,7 +9,7 @@ config const seed = 27;
 def main() {
   var A: [1..size] int;
   var rands: [1..size] real;
-  var randomStream = RandomStream(seed);
+  var randomStream = new RandomStream(seed);
 
   // Fill A with random int values in [0, 99999]
   randomStream.fillRandom(rands);

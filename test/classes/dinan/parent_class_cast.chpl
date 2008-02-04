@@ -11,7 +11,7 @@ class D: P {
 }
 
 // OK: var ps: [1..2] P = (C():P, D():P);
-var ps: [1..2] P = (C(), D());
+var ps: [1..2] P = (new C(), new D());
 
 for i in ps do
     writeln(i.f());

@@ -7,6 +7,6 @@ class C {
   var z: int;
 }
 
-var c = C();
+var c = new C();
 
 writeln("Shouldn't get here if --memmax is less than 48");

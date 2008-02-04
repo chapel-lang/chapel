@@ -18,7 +18,7 @@ module M2 {
     return r.x * 2;
 
   def main() {
-    var c = C(R);
+    var c = new C(R);
     writeln(c.bar());
   }
 }

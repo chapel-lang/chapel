@@ -11,7 +11,7 @@ class D : C {
   }
 }
 
-var c = C();
+var c = new C();
 c();
-c = D();
+c = new D();
 c();

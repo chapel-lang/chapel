@@ -6,6 +6,6 @@ class D : C {
   var y : int = 1;
 }
 
-var c : C = C();
+var c : C = new C();
 
 writeln(c);

@@ -4,7 +4,7 @@ class C {
   var z: [1..4] complex;
 }
 
-var c = C();
+var c = new C();
 
 var s: string;
 

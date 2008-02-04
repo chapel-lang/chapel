@@ -4,7 +4,7 @@ def Nil(): NilClass
   return nil;
 
 def isNil(x): bool {
-  if x.type == NilClass then
+  if x.type == new NilClass then
     return true;
   else
     return false;

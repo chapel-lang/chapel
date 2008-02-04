@@ -5,9 +5,9 @@ class C {
   var x: int;
 }
 
-var c = C();
+var c = new C();
 writeln(c);
 
-var cc = C(Blue);
+var cc = new C(Blue);
 writeln(cc);
   

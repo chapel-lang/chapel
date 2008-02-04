@@ -6,7 +6,7 @@ record point {
   }
 }
 
-var p : point = point();
+var p : point = new point();
 
 p.x = 3.0;
 p.y = 4.5;

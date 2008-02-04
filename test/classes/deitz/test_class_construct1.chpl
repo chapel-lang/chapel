@@ -5,6 +5,6 @@ class foo {
   }
 }
 
-var f : foo = foo(50);
+var f : foo = new foo(50);
 
 writeln(f);

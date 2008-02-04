@@ -21,7 +21,7 @@ for i in foo(10) do
 // AFTER
 //
 def goo(n: int)
-  return bar(n);
+  return new bar(n);
 
 class bar {
   var n, i, result: int;

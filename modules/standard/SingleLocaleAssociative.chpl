@@ -3,7 +3,7 @@ use List;
 param _MIN_SIZE = 0;
 param _MAX_SIZE = 26;
 
-var _ps : _ddata(int) = _ddata(int, 27);
+var _ps : _ddata(int) = new _ddata(int, 27);
 _ps.init();
 _ps(_MIN_SIZE) = 23;
 _ps(1) = 53;
@@ -66,16 +66,16 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   }
 
   def buildEmptyDomain()
-    return SingleLocaleAssociativeDomain(rank=rank,idxType=idxType);
+    return new SingleLocaleAssociativeDomain(rank=rank,idxType=idxType);
 
   // compiler-internal routines
 
   def initialize() {
-    table  = _ddata(int, _ps(size));
+    table = new _ddata(int, _ps(size));
     table.init( _EMPTY);
-    inds =  _ddata(_ind_data_t(idxType), _ps(size)/2);
+    inds = new _ddata(_ind_data_t(idxType), _ps(size)/2);
     inds.init();
-    free_inds = _stack(int);
+    free_inds = new _stack(int);
   }
 
   def these() {
@@ -96,13 +96,13 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     if (size > _MIN_SIZE) {
       var new_len = _ps(size-1);
 
-      var new_table = _ddata(int, new_len);
+      var new_table = new _ddata(int, new_len);
       new_table.init(_EMPTY);
 
-      var new_inds = _ddata(_ind_data_t(idxType), new_len/2);
+      var new_inds = new _ddata(_ind_data_t(idxType), new_len/2);
       new_inds.init();
       var old_map: _ddata(int);
-      old_map = _ddata( int, num_inds);
+      old_map = new _ddata( int, num_inds);
       old_map.init();
       var inds_count = 0;
       var inds_pos = 0;
@@ -132,12 +132,12 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     if (size < _MAX_SIZE) {
       var new_len = _ps(size+1);
 
-      var new_table = _ddata( int, new_len);
+      var new_table = new _ddata( int, new_len);
       new_table.init( _EMPTY);
-      var new_inds = _ddata( _ind_data_t(idxType), new_len/2);
+      var new_inds = new _ddata( _ind_data_t(idxType), new_len/2);
       new_inds.init();
       var old_map: _ddata(int);
-      old_map = _ddata( int, inds.size);
+      old_map = new _ddata( int, inds.size);
       old_map.init();
       for inds_pos in 0..inds.size-1 {  
         var ind = inds(inds_pos);
@@ -209,7 +209,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   }
 
   def buildArray(type eltType) {
-    var ia = SingleLocaleAssociativeArray(eltType, idxType, dom=this); 
+    var ia = new SingleLocaleAssociativeArray(eltType, idxType, dom=this); 
     _arrs2.append(ia);
     return ia;
   }
@@ -351,7 +351,7 @@ class SingleLocaleAssociativeArray: BaseArray {
   var data : _ddata(eltType);
 
   def initialize() {
-    data = _ddata( eltType, _ps(0)/2);
+    data = new _ddata( eltType, _ps(0)/2);
     data.init();
   }
 
@@ -363,7 +363,7 @@ class SingleLocaleAssociativeArray: BaseArray {
   }
 
   def _resize( length: int, old_map: _ddata(int)) {
-    var new_data: _ddata(eltType) = _ddata( eltType, length);
+    var new_data: _ddata(eltType) = new _ddata( eltType, length);
     new_data.init();
     for i in 0..old_map.size-1 {
       new_data(i) = data(old_map(i));

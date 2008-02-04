@@ -11,7 +11,7 @@ def locale.writeThis(f: Writer) {
   f.write("LOCALE", id);
 }
 
-const Locales: [loc in LocalesDomain] locale = locale(id = loc);
+const Locales: [loc in LocalesDomain] locale = new locale(id = loc);
 
 def locale.numCores {
   /* on this do */ return __primitive("_coresPerLocale");

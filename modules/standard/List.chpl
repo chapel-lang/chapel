@@ -20,10 +20,10 @@ record list {
 
   def append(e : eltType) {
     if last {
-      last.next = listNode(eltType, e);
+      last.next = new listNode(eltType, e);
       last = last.next;
     } else {
-      first = listNode(eltType, e);
+      first = new listNode(eltType, e);
       last = first;
     }
     length += 1;
@@ -36,7 +36,7 @@ record list {
   }
 
   def prepend(e : eltType) {
-    first = listNode(eltType, e, first);
+    first = new listNode(eltType, e, first);
     if last == nil then
       last = first;
     length += 1;

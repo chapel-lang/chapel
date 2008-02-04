@@ -8,7 +8,7 @@ class D : C {
   def foo(z: bool) { writeln("D.foo bool (z, this) = ", (z, this)); }
 }
 
-var c: C = D(x=3,y=4);
+var c: C = new D(x=3,y=4);
 
 c.foo(12);
 c.foo(true);

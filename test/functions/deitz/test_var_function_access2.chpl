@@ -6,7 +6,7 @@ def bar(x : foo) var {
   return x;
 }
 
-var f : foo = foo(a = 12);
+var f : foo = new foo(a = 12);
 
 writeln(f);
 

@@ -6,7 +6,7 @@ class pair {
 
 def callin(in x: pair) {
   writeln("in callin, x is: ", x.a, " ", x.b);
-  x = pair();
+  x = new pair();
   x.a = 11;
   x.b = 3.4;
   writeln("re-assigned to be new instance: ", x.a, " ", x.b);
@@ -15,7 +15,7 @@ def callin(in x: pair) {
 
 def callout(out x: pair) {
   writeln("in callout, x ought to be nil");
-  x = pair();
+  x = new pair();
   x.a = 12;
   x.b = 4.5;
   writeln("re-assigned to be new instance: ", x.a, " ", x.b);
@@ -24,7 +24,7 @@ def callout(out x: pair) {
 
 def callinout(inout x: pair) {
   writeln("in callinout, x is: ", x.a, " ", x.b);
-  x = pair();
+  x = new pair();
   x.a = 13;
   x.b = 5.6;
   writeln("re-assigned to be new instance: ", x.a, " ", x.b);
@@ -40,7 +40,7 @@ def callblank(x: pair) {
 
 
 def main() {
-  var a: pair = pair();
+  var a: pair = new pair();
 
   a.a = 10;
   a.b = 2.3;

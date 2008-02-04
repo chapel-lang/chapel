@@ -4,6 +4,6 @@ class C {
 
 var c: C;
 
-c = C();
+c = new C();
 
 writeln(c);

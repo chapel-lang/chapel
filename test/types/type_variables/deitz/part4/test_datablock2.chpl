@@ -13,7 +13,7 @@ class DataBlock {
   }
 }
 
-var x : DataBlock(int) = DataBlock(int);
+var x : DataBlock(int) = new DataBlock(int);
 
 x(1) = 1;
 x(2) = 2;
@@ -23,7 +23,7 @@ writeln(x(1));
 writeln(x(2));
 writeln(x(3));
 
-var y : DataBlock(string) = DataBlock(string);
+var y : DataBlock(string) = new DataBlock(string);
 
 y(1) = "hello";
 y(2) = "world";

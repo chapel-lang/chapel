@@ -5,7 +5,7 @@ class C {
   var y : real;
 }
 
-var c : C = C(1, 2.3);
+var c : C = new C(1, 2.3);
 
 var s : list of C = makeList( c );
 

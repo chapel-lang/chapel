@@ -3,7 +3,7 @@ class C {
 }
 
 begin {
-  var c = C();
+  var c = new C();
 
   c.s = 2;
 

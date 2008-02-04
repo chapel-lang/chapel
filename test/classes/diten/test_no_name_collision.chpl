@@ -3,7 +3,7 @@ class outerClass {
     var a: int;
   }
   def foo() {
-    var c = aClass(4);
+    var c = new aClass(4);
     writeln(c.a);
   }
 }
@@ -13,8 +13,8 @@ class aClass {
 }
 
 def main() {
-  var a = aClass(3);
-  var b = outerClass();
+  var a = new aClass(3);
+  var b = new outerClass();
   b.foo();
   writeln(a.b);
 }

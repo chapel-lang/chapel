@@ -6,9 +6,9 @@ class myClass {
   var y: real;
 }
 
-var a: myClass = myClass(x = 1, y = 2.3);
+var a: myClass = new myClass(x = 1, y = 2.3);
 var myInt: int = 9;
-var myFile: file = file(filename = "_test_freadToClassDataMember.txt", mode = "w");
+var myFile: file = new file(filename = "_test_freadToClassDataMember.txt", mode = "w");
 
 myFile.open();
 myFile.writeln(myInt);

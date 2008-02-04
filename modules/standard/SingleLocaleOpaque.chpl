@@ -5,11 +5,11 @@ class SingleLocaleOpaqueDomain: BaseDomain {
   var adomain: SingleLocaleAssociativeDomain(rank=rank, idxType=_OpaqueIndex);
 
   def initialize() {
-    adomain = SingleLocaleAssociativeDomain(rank=rank, idxType=_OpaqueIndex);
+    adomain = new SingleLocaleAssociativeDomain(rank=rank, idxType=_OpaqueIndex);
   }
 
   def create() {
-    var i = _OpaqueIndex();
+    var i = new _OpaqueIndex();
     adomain.add(i);
     return i;
   }
@@ -34,10 +34,10 @@ class SingleLocaleOpaqueDomain: BaseDomain {
   }
 
   def buildEmptyDomain()
-    return SingleLocaleOpaqueDomain(rank=rank, idxType=idxType);
+    return new SingleLocaleOpaqueDomain(rank=rank, idxType=idxType);
 
   def buildArray(type eltType) {
-    var ia = SingleLocaleOpaqueArray(eltType, idxType, dom=this);
+    var ia = new SingleLocaleOpaqueArray(eltType, idxType, dom=this);
     return ia;
   }
 }
@@ -55,7 +55,7 @@ class SingleLocaleOpaqueArray: BaseArray {
   type idxType;
 
   var dom: SingleLocaleOpaqueDomain(rank=1, idxType=idxType);
-  var anarray = SingleLocaleAssociativeArray(eltType, idxType, dom.adomain);
+  var anarray = new SingleLocaleAssociativeArray(eltType, idxType, dom.adomain);
 
   def this(ind : idxType) var : eltType
     return anarray(ind);

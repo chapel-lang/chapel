@@ -2,4 +2,4 @@ class C {
   var x : int;
 }
 
-writeln(C(1));
+writeln(new C(1));

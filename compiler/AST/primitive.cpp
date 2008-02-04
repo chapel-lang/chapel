@@ -78,6 +78,14 @@ returnInfoFirst(CallExpr* call) {
 }
 
 static Type*
+returnInfoFirstDeref(CallExpr* call) {
+  Type *t = call->get(1)->typeInfo();
+  if (t->symbol->hasPragma("ref"))
+    t = getValueType(t);
+  return t;
+}
+
+static Type*
 returnInfoCast(CallExpr* call) {
   Type* t = call->get(1)->typeInfo();
   if (t->isGeneric) {
@@ -149,9 +157,11 @@ returnInfoArrayIndex(CallExpr* call) {
 static Type*
 returnInfoChplAlloc(CallExpr* call) {
   SymExpr* sym = toSymExpr(call->get(1));
-  if (!sym)
-    INT_FATAL(call, "bad _chpl_alloc primitive");
-  return sym->var->type;
+  INT_ASSERT(sym);
+  Type* type = sym->var->type;
+  if (type->symbol->hasPragma("wide class"))
+    type = type->getField("addr")->type;
+  return type;
 }
 
 static Type*
@@ -249,6 +259,7 @@ initPrimitive() {
 
   prim_def(PRIMITIVE_NOOP, "noop", returnInfoVoid);
   prim_def(PRIMITIVE_MOVE, "move", returnInfoMove);
+  prim_def(PRIMITIVE_INIT, "init", returnInfoFirstDeref);
   prim_def(PRIMITIVE_SET_REF, "set ref", returnInfoRef);
   prim_def(PRIMITIVE_GET_REF, "get ref", returnInfoVal);
   prim_def(PRIMITIVE_RETURN, "return", returnInfoFirst, true);
@@ -293,6 +304,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_GET_MEMBER_VALUE, ".v", returnInfoGetMember);
   prim_def(PRIMITIVE_SET_MEMBER, ".=", returnInfoVoid, true);
   prim_def(PRIMITIVE_CHECK_NIL, "_check_nil", returnInfoVoid, true, true);
+  prim_def(PRIMITIVE_NEW, "new", returnInfoFirst);
   prim_def(PRIMITIVE_GET_REAL, "complex_get_real", returnInfoComplexField);
   prim_def(PRIMITIVE_GET_IMAG, "complex_get_imag", returnInfoComplexField);
 

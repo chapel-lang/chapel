@@ -8,7 +8,7 @@ class Foo {
 }
 
 def main() {
-  var f : Foo = Foo();
+  var f : Foo = new Foo();
   /* setter method will be created, temporary should not be created for f
    * since formal param this will be a ref */
   f.y = 1;

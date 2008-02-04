@@ -7,6 +7,7 @@ enum PrimitiveTag {
   PRIMITIVE_UNKNOWN = 0,    // use for any primitives not in this list
   PRIMITIVE_NOOP,
   PRIMITIVE_MOVE,
+  PRIMITIVE_INIT,
   PRIMITIVE_SET_REF,
   PRIMITIVE_GET_REF,
   PRIMITIVE_RETURN,
@@ -49,6 +50,7 @@ enum PrimitiveTag {
   PRIMITIVE_GET_MEMBER_VALUE,
   PRIMITIVE_SET_MEMBER,
   PRIMITIVE_CHECK_NIL,
+  PRIMITIVE_NEW,                       // new keyword
   PRIMITIVE_GET_REAL,                  // get complex real component
   PRIMITIVE_GET_IMAG,                  // get complex imag component
 

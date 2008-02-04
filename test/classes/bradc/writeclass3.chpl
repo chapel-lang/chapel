@@ -3,8 +3,8 @@ class myclass {
   var y: real = 4.2;
 }
 
-var a: myclass = myclass();
-var b: myclass = myclass();
+var a: myclass = new myclass();
+var b: myclass = new myclass();
 
 writeln("a is: ", a, ", b is: ", b);
 

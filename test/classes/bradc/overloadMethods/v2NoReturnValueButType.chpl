@@ -18,7 +18,7 @@ class D : C {
   }
 }
 
-var d:C = D(4);
+var d:C = new D(4);
 writeln(d.bbox(1));
 writeln(d.bbox(2));
 writeln(d.bbox(3));

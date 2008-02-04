@@ -5,7 +5,7 @@ class C {
 var A: [1..5] C;
 
 for i in 1..5 do
-  A(i) = C(i);
+  A(i) = new C(i);
 
 writeln(A);
 

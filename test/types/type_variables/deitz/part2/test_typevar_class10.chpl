@@ -2,10 +2,10 @@ class bar {
   type t;
   var y : t;
   def clone()
-    return bar(t, y);
+    return new bar(t, y);
 }
 
-var b : bar(int) = bar(int, 4);
+var b : bar(int) = new bar(int, 4);
 
 writeln(b);
 

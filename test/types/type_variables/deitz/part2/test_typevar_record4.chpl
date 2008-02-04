@@ -11,7 +11,7 @@ record foo {
   var last : node(t);
 
   def append(e : t) {
-   var anew : node(t) = node(t);
+   var anew : node(t) = new node(t);
     anew.element = e;
     if length > 0 {
       last.next = anew;
@@ -25,7 +25,7 @@ record foo {
   }
 
   def prepend(e : t) {
-    var anew : node(t) = node(t);
+    var anew : node(t) = new node(t);
     anew.element = e;
     if length > 0 {
       anew.next = first;

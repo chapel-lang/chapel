@@ -7,6 +7,6 @@ record R {
   var y : int;
 }
 
-var c = C(R);
+var c = new C(R);
 
 writeln(c);

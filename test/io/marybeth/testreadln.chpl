@@ -1,6 +1,6 @@
 config var inputfile = "smallHPL.dat";
 
-var infile = file(inputfile, path='./', mode='r');
+var infile = new file(inputfile, path='./', mode='r');
 var outdevice: int;
 var outfile : string ;
 

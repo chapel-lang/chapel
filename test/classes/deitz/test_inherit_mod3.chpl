@@ -13,7 +13,7 @@ def foo(c : C) {
 }
 
 var c : C;
-c = D1();
+c = new D1();
 foo(c);
-c = D2();
+c = new D2();
 foo(c);

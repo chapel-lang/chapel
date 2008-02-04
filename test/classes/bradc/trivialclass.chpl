@@ -3,8 +3,8 @@ class myclass {
   var y: real;
 }
 
-var a: myclass = myclass();
-var b: myclass = myclass();
+var a: myclass = new myclass();
+var b: myclass = new myclass();
 
 a.x = 1;
 a.y = 2.3;

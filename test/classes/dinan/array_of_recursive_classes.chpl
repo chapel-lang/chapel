@@ -9,7 +9,7 @@ class B {
 }
 
 
-var b = B();
-b.a = A(10);
+var b = new B();
+b.a = new A(10);
 
 writeln(b.a.x);

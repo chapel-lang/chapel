@@ -11,9 +11,9 @@ class bar {
   var y : int;
 }
 
-var f : foo(t=bar) = foo(t=bar);
+var f : foo(t=bar) = new foo(t=bar);
 
-f.x = bar(x = 12, y = 13);
+f.x = new bar(x = 12, y = 13);
 
 writeln(f);
 f.print();

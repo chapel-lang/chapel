@@ -2,7 +2,7 @@ class C {
   var x = 10;
 }
 
-var globc: C = C();
+var globc: C = new C();
 
 class D {
   var y = 20;
@@ -14,7 +14,7 @@ class D {
 }
 
 def main() {
-  var d: D = D();
+  var d: D = new D();
   d.doit;
   writeln(d);
 }

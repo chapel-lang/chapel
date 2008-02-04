@@ -4,9 +4,9 @@ record R {
 
 var d : domain(R);
 
-d += R(2);
-d += R(3);
-d += R(4);
-d += R(5);
+d += new R(2);
+d += new R(3);
+d += new R(4);
+d += new R(5);
 
 writeln(d);

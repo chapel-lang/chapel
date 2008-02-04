@@ -51,11 +51,13 @@ static Expr* postFold(Expr* expr);
 
 static FnSymbol* instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call);
 
-static void setFieldTypes(FnSymbol* fn);
+static void setScalarPromotionType(ClassType* ct);
+static void fixTypeNames(ClassType* ct);
 
 static int explainLine;
 static ModuleSymbol* explainModule;
 
+static Vec<CallExpr*> inits;
 static Vec<FnSymbol*> resolvedFns;
 static Vec<FnSymbol*> resolvedFormals;
 Vec<CallExpr*> callStack;
@@ -96,8 +98,8 @@ static void makeRefType(Type* type) {
   if (type->refType || type->isGeneric || type->symbol->hasPragma("ref"))
     return;
 
-  DefExpr* def = new DefExpr(new VarSymbol("tmp", type));
-  CallInfo info(new CallExpr("_construct__ref", def->sym));
+  //  DefExpr* def = new DefExpr(new VarSymbol("tmp", type));
+  CallInfo info(new CallExpr("_type_construct__ref", type->symbol));
   chpl_main->insertAtHead(info.call); // add call to AST temporarily
   FnSymbol* fn = resolve_call(&info);
   info.call->remove();
@@ -449,6 +451,13 @@ computeGenericSubs(ASTMap &subs,
           INT_FATAL(fn, "unable to handle default parameter");
       }
     } else if (formal->type->isGeneric) {
+
+      //
+      // check for field with specified generic type
+      //
+      if (!formal->isTypeVariable && strcmp(formal->name, "outer") && strcmp(formal->name, "meme") && formal->type != dtAny && (fn->hasPragma("default constructor") || fn->hasPragma("type constructor")))
+        USR_FATAL(formal, "invalid generic type specification on class field");
+
       if (formalActuals->v[i]) {
         if (canInstantiate(formalActuals->v[i], formal->type)) {
           subs.put(formal, formalActuals->v[i]);
@@ -540,7 +549,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
       if (VarSymbol* n_var = toVarSymbol(sym->var)) {
         if (n_var->type == dtInt[INT_SIZE_32] && n_var->immediate) {
           int n = n_var->immediate->int_value();
-          CallExpr* tupleCall = new CallExpr("_construct__tuple");
+          CallExpr* tupleCall = new CallExpr((arg->isTypeVariable) ? "_type_construct__tuple" : "_construct__tuple");
           for (int i = 0; i < n; i++) {
             DefExpr* new_arg_def = arg->defPoint->copy();
             ArgSymbol* new_arg = toArgSymbol(new_arg_def->sym);
@@ -551,6 +560,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
             arg->defPoint->insertBefore(new_arg_def);
           }
           VarSymbol* var = new VarSymbol(arg->name);
+          var->isTypeVariable = arg->isTypeVariable;
 
           if (arg->intent == INTENT_OUT || arg->intent == INTENT_INOUT) {
             int i = 1;
@@ -573,7 +583,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
           if (fn->where) {
             VarSymbol* var = new VarSymbol(arg->name);
             fn->where->insertAtHead(
-              new CallExpr(PRIMITIVE_MOVE, var, tupleCall->copy()));
+                                    new CallExpr(PRIMITIVE_MOVE, var, tupleCall->copy()));
             fn->where->insertAtHead(new DefExpr(var));
             ASTMap update;
             update.put(arg, var);
@@ -581,6 +591,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
           }
         }
       }
+      
     } else if (!fn->isGeneric && arg->variableExpr)
       INT_FATAL("bad variableExpr");
   }
@@ -633,6 +644,38 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
   if (fn->isGeneric)
     INT_FATAL(fn, "unexpected generic function");
 
+  //
+  // make sure that type constructor is resolved before other constructors
+  //
+  if (fn->hasPragma("default constructor")) {
+    CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
+    for_formals(formal, fn) {
+      if (strcmp(formal->name, "meme")) {
+        if (fn->_this->type->symbol->hasPragma("tuple")) {
+          if (formal->instantiatedFrom) {
+            typeConstructorCall->insertAtTail(formal->type->symbol);
+          } else if (formal->instantiatedParam) {
+            typeConstructorCall->insertAtTail(paramMap.get(formal));
+          }
+        } else {
+          if (!strcmp(formal->name, "outer") || formal->type == dtMethodToken) {
+            typeConstructorCall->insertAtTail(formal);
+          } else if (formal->instantiatedFrom) {
+            typeConstructorCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal->type->symbol)));
+          } else if (formal->instantiatedParam) {
+            typeConstructorCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(paramMap.get(formal))));
+          }
+        }
+      }
+    }
+    fn->defPoint->insertBefore(typeConstructorCall);
+    resolveCall(typeConstructorCall);
+    INT_ASSERT(typeConstructorCall->isResolved());
+    resolveFns(typeConstructorCall->isResolved());
+    fn->_this->type = typeConstructorCall->isResolved()->retType;
+    typeConstructorCall->remove();
+  }
+
   resolveFormals(fn);
 
   int j = -1;
@@ -656,7 +699,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
       delete actualFormals;
       return;
    }
-    if (formalSyms.v[j] && !formalSyms.v[j]->isTypeVariable && !formalSyms.v[j]->isConstructor && formal->isTypeVariable) {
+    if (formalSyms.v[j] && !formalSyms.v[j]->isTypeVariable && formal->isTypeVariable) {
       delete actualFormals;
       return;
     }
@@ -970,7 +1013,9 @@ static const char* toString(CallInfo* info) {
     else
       str = astr(str, toString(info->actualTypes.v[1]), ".");
   }
-  if (!strncmp("_construct_", info->name, 11)) {
+  if (!strncmp("_type_construct_", info->name, 16)) {
+    str = astr(str, info->name+16);
+  } else if (!strncmp("_construct_", info->name, 11)) {
     str = astr(str, info->name+11);
   } else if (!_this) {
     str = astr(str, info->name);
@@ -1017,7 +1062,9 @@ static const char* toString(FnSymbol* fn) {
   int start = 0;
   if (fn->instantiatedFrom)
     fn = fn->instantiatedFrom;
-  if (!strncmp("_construct_", fn->name, 11)) {
+  if (!strncmp("_type_construct_", fn->name, 16)) {
+    str = astr(fn->name+16);
+  } else if (!strncmp("_construct_", fn->name, 11)) {
     str = astr(fn->name+11);
   } else if (fn->isMethod) {
     if (!strcmp(fn->name, "this")) {
@@ -1078,6 +1125,8 @@ explainCallMatch(CallExpr* call) {
 
 static CallExpr*
 userCall(CallExpr* call) {
+  if (developer)
+    return call;
   if (call->getModule()->modTag == MOD_STANDARD) {
     for (int i = callStack.n-1; i >= 0; i--) {
       if (callStack.v[i]->getModule()->modTag != MOD_STANDARD)
@@ -1102,7 +1151,7 @@ printResolutionError(const char* error,
              !strcmp("these", info->name)) {
     USR_FATAL(call, "cannot iterate over values of type %s",
               toString(info->actualTypes.v[1]));
-  } else if (!strcmp("_construct__tuple", info->name)) {
+  } else if (!strcmp("_type_construct__tuple", info->name)) {
     SymExpr* sym = toSymExpr(info->call->get(1));
     if (!sym || !sym->isParameter()) {
       USR_FATAL(call, "tuple size must be static");
@@ -1124,8 +1173,11 @@ printResolutionError(const char* error,
                    toString(info));
     USR_STOP();
   } else {
+    const char* entity = "call";
+    if (!strncmp("_type_construct_", info->name, 16))
+      entity = "type specifier";
     const char* str = toString(info);
-    USR_FATAL_CONT(call, "%s call '%s'", error, str);
+    USR_FATAL_CONT(call, "%s %s '%s'", error, entity, str);
     if (candidates.n > 0) {
       if (developer) {
         for (int i = callStack.n-1; i>=0; i--) {
@@ -1289,30 +1341,54 @@ makeNoop(CallExpr* call) {
 }
 
 
-static void
-resolveCall(CallExpr* call) {
-  if (!call->primitive) {
+static bool
+isTypeExpr(Expr* expr) {
+  if (SymExpr* sym = toSymExpr(expr)) {
+    if (sym->var->isTypeVariable)
+      return true;
+    if (toTypeSymbol(sym->var))
+      return true;
+  } else if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isPrimitive(PRIMITIVE_TYPEOF))
+      return true;
+    if (FnSymbol* fn = call->isResolved())
+      if (fn->retTag == RET_TYPE)
+        return true;
+  }
+  return false;
+}
 
-    //
-    // special case cast of class w/ type variables that is not generic
-    //   i.e. type variables are type definitions (have default types)
-    //
-    for_actuals(actual, call) {
-      if (NamedExpr* ne = toNamedExpr(actual))
-        actual = ne->actual;
-      if (SymExpr* te = toSymExpr(actual)) {
-        if (TypeSymbol* ts = toTypeSymbol(te->var)) {
-          if (ClassType* ct = toClassType(ts->type)) {
-            if (ct->isGeneric) {
-              CallExpr* cc = new CallExpr(ct->defaultConstructor->name);
-              te->replace(cc);
-              resolveCall(cc);
-              cc->replace(new SymExpr(cc->typeInfo()->symbol));
-            }
+
+//
+// special case cast of class w/ type variables that is not generic
+//   i.e. type variables are type definitions (have default types)
+//
+static void
+resolveDefaultGenericType(CallExpr* call) {
+  for_actuals(actual, call) {
+    if (NamedExpr* ne = toNamedExpr(actual))
+      actual = ne->actual;
+    if (SymExpr* te = toSymExpr(actual)) {
+      if (TypeSymbol* ts = toTypeSymbol(te->var)) {
+        if (ClassType* ct = toClassType(ts->type)) {
+          if (ct->isGeneric) {
+            CallExpr* cc = new CallExpr(ct->defaultTypeConstructor->name);
+            te->replace(cc);
+            resolveCall(cc);
+            cc->replace(new SymExpr(cc->typeInfo()->symbol));
           }
         }
       }
     }
+  }
+}
+
+
+static void
+resolveCall(CallExpr* call) {
+  if (!call->primitive) {
+
+    resolveDefaultGenericType(call);
 
     if (SymExpr* sym = toSymExpr(call->baseExpr)) {
       if (toVarSymbol(sym->var) ||
@@ -1407,12 +1483,16 @@ resolveCall(CallExpr* call) {
     for (int i = 1; i <= size; i++) {
       VarSymbol* tmp1 = new VarSymbol("_expand_temp1");
       tmp1->canParam = true;
+      tmp1->canType = true;
       VarSymbol* tmp2 = new VarSymbol("_expand_temp2");
       tmp2->canParam = true;
+      tmp2->canType = true;
       VarSymbol* tmp3 = new VarSymbol("_expand_temp3");
       tmp3->canParam = true;
+      tmp3->canType = true;
       VarSymbol* tmp4 = new VarSymbol("_expand_temp4");
       tmp4->canParam = true;
+      tmp4->canType = true;
       call->getStmtExpr()->insertBefore(new DefExpr(tmp1));
       call->getStmtExpr()->insertBefore(new DefExpr(tmp2));
       call->getStmtExpr()->insertBefore(new DefExpr(tmp3));
@@ -1466,25 +1546,25 @@ resolveCall(CallExpr* call) {
     noop->replace(call); // put call back in ast for function resolution
     makeNoop(call);
     // increase tuple rank
-    if (parent && parent->isNamed("_construct__tuple")) {
+    if (parent && parent->isNamed("_type_construct__tuple")) {
       parent->get(1)->replace(new SymExpr(new_IntSymbol(parent->numActuals()-1)));
     }
   } else if (call->isPrimitive(PRIMITIVE_CAST)) {
     Type* t= call->get(1)->typeInfo();
     if (t == dtUnknown)
       INT_FATAL(call, "Unable to resolve type");
-    if (t->scalarPromotionType) {
-      // ignore for now to handle translation of A op= B of arrays
-      // should be an error in general
-      //   can't cast to an array type ...
-      Expr* castee = call->get(2);
-      castee->remove();
-      call->replace(castee);
-      makeNoop(call);
-      castee->getStmtExpr()->insertBefore(call);
-    } else {
+//     if (t->scalarPromotionType) {
+//       // ignore for now to handle translation of A op= B of arrays
+//       // should be an error in general
+//       //   can't cast to an array type ...
+//       Expr* castee = call->get(2);
+//       castee->remove();
+//       call->replace(castee);
+//       makeNoop(call);
+//       castee->getStmtExpr()->insertBefore(call);
+//     } else {
       call->get(1)->replace(new SymExpr(t->symbol));
-    }
+//    }
   } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
     SymExpr* sym = toSymExpr(call->get(2));
     if (!sym)
@@ -1493,6 +1573,15 @@ resolveCall(CallExpr* call) {
     if (!var || !var->immediate)
       INT_FATAL(call, "bad set member primitive");
     const char* name = var->immediate->v_string;
+
+    {
+      long i;
+      if (get_int(sym, &i)) {
+        name = astr("x", istr(i));
+        call->get(2)->replace(new SymExpr(new_StringSymbol(name)));
+      }
+    }
+
     ClassType* ct = toClassType(call->get(1)->typeInfo());
     if (!ct)
       INT_FATAL(call, "bad set member primitive");
@@ -1521,10 +1610,21 @@ resolveCall(CallExpr* call) {
     INT_ASSERT(lhs);
 
     // do not resolve function return type yet
-    if (FnSymbol* fn = toFnSymbol(call->parentSymbol))
-      if (fn->getReturnSymbol() == lhs)
-        if (fn->retType == dtUnknown)
-          return;
+    // except for constructors
+    FnSymbol* fn = toFnSymbol(call->parentSymbol);
+    if (fn && fn->getReturnSymbol() == lhs && fn->_this != lhs)
+      if (fn->retType == dtUnknown)
+        return;
+
+    //
+    // should this be moved up to check returns of type functions??
+    //
+    if (lhs->isTypeVariable && !isTypeExpr(rhs))
+      if (!fn || fn->_this == lhs) // ignore type constructor
+        USR_FATAL(call, "illegal assignment of value to type");
+
+    if (!lhs->isTypeVariable && !lhs->canType && isTypeExpr(rhs))
+      USR_FATAL(call, "illegal assignment of type to value");
 
     Type* rhsType = rhs->typeInfo();
 
@@ -1572,6 +1672,8 @@ resolveCall(CallExpr* call) {
       rhs->remove();
       call->insertAtTail(new CallExpr(PRIMITIVE_CAST, lhsBaseType->symbol, rhs));
     }
+  } else if (call->isPrimitive(PRIMITIVE_INIT)) {
+    resolveDefaultGenericType(call);
   }
 }
 
@@ -1581,6 +1683,7 @@ formalRequiresTemp(ArgSymbol* formal) {
       formal->intent == INTENT_TYPE ||
       formal->intent == INTENT_REF ||
       !strcmp("this", formal->name) ||
+      (formal == toFnSymbol(formal->defPoint->parentSymbol)->_outer) ||
       formal->isTypeVariable ||
       formal->instantiatedParam ||
       formal->type == dtMethodToken)
@@ -1620,7 +1723,7 @@ insertFormalTemps(FnSymbol* fn) {
         if (formal->defaultExpr && formal->defaultExpr->typeInfo() != dtNil)
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, formal->defaultExpr->copy()));
         else
-          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_init", formal)));
+          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, formal)));
       } else if (formal->intent == INTENT_INOUT || formal->intent == INTENT_IN)
         fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_copy", formal)));
       else
@@ -1631,20 +1734,6 @@ insertFormalTemps(FnSymbol* fn) {
       }
     }
   }
-}
-
-static bool
-isTypeExpr(Expr* expr) {
-  if (SymExpr* sym = toSymExpr(expr)) {
-    if (sym->var->isTypeVariable)
-      return true;
-    if (toTypeSymbol(sym->var))
-      return true;
-  } else if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIMITIVE_TYPEOF))
-      return true;
-  }
-  return false;
 }
 
 static void fold_param_for(CallExpr* loop) {
@@ -1884,25 +1973,58 @@ preFold(Expr* expr) {
       sprintf(field, "x%ld", index);
       result = new SymExpr(base->var->type->getField(field)->type->symbol);
       call->replace(result);
-    } else if (call->isNamed("_init")) {
+    } else if (call->isPrimitive(PRIMITIVE_INIT)) {
+      Type* type = call->get(1)->typeInfo();
+      if (type ->symbol->hasPragma("ref"))
+        type = getValueType(type);
+      if (type->symbol->hasPragma("array")) {
+        result = new CallExpr("_init", call->get(1)->remove());
+        call->replace(result);
+      } else if (type->symbol->hasPragma("iterator class")) {
+        result = new CallExpr(PRIMITIVE_CAST, type->symbol, gNil);
+        call->replace(result);
+      } else if (type->defaultValue == gNil) {
+        result = new CallExpr("_cast", type->symbol, type->defaultValue);
+        call->replace(result);
+      } else if (type->defaultValue) {
+        result = new SymExpr(type->defaultValue);
+        call->replace(result);
+      } else {
+        inits.add(call);
+      }
+//         } else {
+//           call->get(1)->replace(new SymExpr(type->symbol));
+//         }
+//       }
+      /*
       if (SymExpr* sym = toSymExpr(call->get(1))) {
         TypeSymbol* ts = toTypeSymbol(sym->var);
         if (!ts && sym->var->isTypeVariable)
           ts = sym->var->type->symbol;
-        if (ts && !ts->hasPragma("array")) {
+        if (ts && ts->hasPragma("iterator class")) {
+          result = new CallExpr(ts->type->defaultConstructor);
+          call->replace(result);
+        } else if (ts && !ts->hasPragma("array")) {
           if (ts->hasPragma("ref"))
             ts = getValueType(ts->type)->symbol;
-          if (ts->type->defaultValue == gNil)
+          if (ts->type->defaultValue == gNil) {
             result = new CallExpr("_cast", ts, ts->type->defaultValue);
-          else if (ts->type->defaultValue)
+            call->replace(result);
+          } else if (ts->type->defaultValue) {
             result = new SymExpr(ts->type->defaultValue);
-          else if (ts->type->defaultConstructor)
+            call->replace(result);
+          } else if (ts->type->defaultConstructor) {
             result = new CallExpr(ts->type->defaultConstructor);
-          else
-            INT_FATAL(ts, "type has neither defaultValue nor defaultConstructor");
-          call->replace(result);
+            call->replace(result);
+          } else if (ts->type->defaultTypeConstructor) {
+            //            INT_FATAL(ts, "build default constructor from type constructor");
+          } else
+            INT_FATAL(ts, "type has neither defaultValue nor defaultTypeConstructor");
+        } else {
+          INT_FATAL("ahh!");
         }
       }
+      */
     } else if (call->isNamed("_copy")) {
       if (call->numActuals() == 1) {
         if (SymExpr* symExpr = toSymExpr(call->get(1))) {
@@ -1993,7 +2115,7 @@ preFold(Expr* expr) {
           call->replace(result);
         }
       }
-    } else if (call->isNamed("_construct__tuple") && !call->isResolved()) {
+    } else if (call->isNamed("_type_construct__tuple") && !call->isResolved()) {
       if (SymExpr* sym = toSymExpr(call->get(1))) {
         if (VarSymbol* var = toVarSymbol(sym->var)) {
           if (var->immediate) {
@@ -2014,25 +2136,25 @@ preFold(Expr* expr) {
       // handle tuple types in expression contexts
       //   see test/types/tuple/deitz/test_tuple_type3.chpl
       //
-      if (SymExpr* se = toSymExpr(call->get(2))) {
-        if (se->var->isTypeVariable) {
-          CallExpr* move = toCallExpr(call->parentExpr);
-          INT_ASSERT(move);
-          for (int i = 2; i <= call->numActuals(); i++) {
-            Expr* actual = call->get(i);
-            VarSymbol* tmp = new VarSymbol("_tmp");
-            tmp->isCompilerTemp = true;
-            tmp->canParam = true;
-            move->insertBefore(new DefExpr(tmp));
-            actual->replace(new SymExpr(tmp));
-            CallExpr* init = new CallExpr("_init", actual);
-            move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, init));
-            if (result == expr)
-              result = init;
-          }
-          result = preFold(result);
-        }
-      }
+//       if (SymExpr* se = toSymExpr(call->get(2))) {
+//         if (se->var->isTypeVariable) {
+//           CallExpr* move = toCallExpr(call->parentExpr);
+//           INT_ASSERT(move);
+//           for (int i = 2; i <= call->numActuals(); i++) {
+//             Expr* actual = call->get(i);
+//             VarSymbol* tmp = new VarSymbol("_tmp");
+//             tmp->isCompilerTemp = true;
+//             tmp->canParam = true;
+//             move->insertBefore(new DefExpr(tmp));
+//             actual->replace(new SymExpr(tmp));
+//             CallExpr* init = new CallExpr("_init", actual);
+//             move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, init));
+//             if (result == expr)
+//               result = init;
+//           }
+//           result = preFold(result);
+//         }
+//       }
 
     } else if (call->isPrimitive(PRIMITIVE_LOOP_PARAM)) {
       fold_param_for(call);
@@ -2318,11 +2440,6 @@ postFold(Expr* expr) {
             }
           }
           if (CallExpr* rhs = toCallExpr(call->get(2))) {
-            if (FnSymbol* fn = rhs->isResolved())
-              if (fn->fnTag == FN_CONSTRUCTOR || fn->hasPragma("constructor type"))
-                lhs->var->isConstructor = true;
-          }
-          if (CallExpr* rhs = toCallExpr(call->get(2))) {
             if (rhs->isPrimitive(PRIMITIVE_TYPEOF)) {
               lhs->var->isTypeVariable = true;
             }
@@ -2443,6 +2560,12 @@ postFold(Expr* expr) {
       FOLD_CALL2(P_prim_rsh);
     } else if (call->isPrimitive(PRIMITIVE_BUILD_ARRAY)) {
       BlockStmt* block = new BlockStmt();
+
+      // since we are going to remove this block, better not let
+      // buildArray function capture its instantiation point as this
+      // block's scope
+      block->blockTag = BLOCK_SCOPELESS;
+
       SymExpr* se = toSymExpr(call->get(1));
       VarSymbol* elt = new VarSymbol("_tmp", se->var->type->getField("eltType")->type);
       block->insertAtTail(new DefExpr(elt));
@@ -2559,9 +2682,9 @@ resolveBody(Expr* body) {
 
         if (ClassType* ct = toClassType(sym->typeInfo())) {
           if (!ct->isGeneric && !ct->symbol->hasPragma("iterator class")) {
-            resolveFormals(ct->defaultConstructor);
-            if (resolvedFormals.set_in(ct->defaultConstructor))
-              resolveFns(ct->defaultConstructor);
+            resolveFormals(ct->defaultTypeConstructor);
+            if (resolvedFormals.set_in(ct->defaultTypeConstructor))
+              resolveFns(ct->defaultTypeConstructor);
           }
         }
       }
@@ -2579,12 +2702,20 @@ resolveFns(FnSymbol* fn) {
   if (fn->isExtern)
     return;
 
+//   if (fn->hasPragma("default constructor"))
+//     fn->_this->type = dtUnknown;
+
   insertFormalTemps(fn);
 
   resolveBody(fn->body);
 
-  if (fn->fnTag == FN_CONSTRUCTOR)
-    setFieldTypes(fn);
+  if (fn->hasPragma("type constructor")) {
+    ClassType* ct = toClassType(fn->retType);
+    if (!ct)
+      INT_FATAL(fn, "Constructor has no class type");
+    setScalarPromotionType(ct);
+    fixTypeNames(ct);
+  }
 
   Symbol* ret = fn->getReturnSymbol();
   Type* retType = ret->type;
@@ -2675,24 +2806,55 @@ resolveFns(FnSymbol* fn) {
     resolvedFns.set_add(fn->iteratorInfo->getZipCursor4);
   }
 
-  if (fn->fnTag == FN_CONSTRUCTOR) {
+  if (fn->hasPragma("type constructor")) {
     forv_Vec(Type, parent, fn->retType->dispatchParents) {
-      if (toClassType(parent) && parent != dtValue && parent != dtObject && parent->defaultConstructor) {
-        resolveFormals(parent->defaultConstructor);
-        if (resolvedFormals.set_in(parent->defaultConstructor))
-          resolveFns(parent->defaultConstructor);
+      if (toClassType(parent) && parent != dtValue && parent != dtObject && parent->defaultTypeConstructor) {
+        resolveFormals(parent->defaultTypeConstructor);
+        if (resolvedFormals.set_in(parent->defaultTypeConstructor))
+          resolveFns(parent->defaultTypeConstructor);
       }
     }
     if (ClassType* ct = toClassType(fn->retType)) {
       for_fields(field, ct) {
         if (ClassType* fct = toClassType(field->type)) {
-          if (fct->defaultConstructor) {
-            resolveFormals(fct->defaultConstructor);
-            if (resolvedFormals.set_in(fct->defaultConstructor))
-              resolveFns(fct->defaultConstructor);
+          if (fct->defaultTypeConstructor) {
+            resolveFormals(fct->defaultTypeConstructor);
+            if (resolvedFormals.set_in(fct->defaultTypeConstructor))
+              resolveFns(fct->defaultTypeConstructor);
           }
         }
       }
+    }
+
+    //
+    // instantiate default constructor
+    //
+    if (fn->instantiatedFrom) {
+      INT_ASSERT(!fn->retType->defaultConstructor);
+      FnSymbol* instantiatedFrom = fn->instantiatedFrom;
+      while (instantiatedFrom->instantiatedFrom)
+        instantiatedFrom = instantiatedFrom->instantiatedFrom;
+      CallExpr* call = new CallExpr(instantiatedFrom->retType->defaultConstructor);
+      for_formals(formal, fn) {
+        if (formal->type == dtMethodToken || formal == fn->_this) {
+          call->insertAtTail(formal);
+        } else if (paramMap.get(formal)) {
+          call->insertAtTail(new NamedExpr(formal->name, new SymExpr(paramMap.get(formal))));
+        } else {
+          Symbol* field = fn->retType->getField(formal->name);
+          if (instantiatedFrom->hasPragma("tuple")) {
+            call->insertAtTail(field);
+          } else {
+            call->insertAtTail(new NamedExpr(formal->name, new SymExpr(field)));
+          }
+        }
+      }
+      fn->insertBeforeReturn(call);
+      resolveCall(call);
+      fn->retType->defaultConstructor = call->isResolved();
+      INT_ASSERT(fn->retType->defaultConstructor);
+      //      resolveFns(fn->retType->defaultConstructor);
+      call->remove();
     }
   }
 }
@@ -2737,8 +2899,8 @@ signature_match(FnSymbol* fn, FnSymbol* gn) {
 //
 static void
 collectInstantiatedClassTypes(Vec<Type*>& icts, Type* ct) {
-  if (ct->defaultConstructor->instantiatedTo)
-    forv_Vec(FnSymbol, fn, *ct->defaultConstructor->instantiatedTo) {
+  if (ct->defaultTypeConstructor->instantiatedTo)
+    forv_Vec(FnSymbol, fn, *ct->defaultTypeConstructor->instantiatedTo) {
       Type* ict = fn->retType;
       if (ict->isGeneric)
         collectInstantiatedClassTypes(icts, ict);
@@ -2821,8 +2983,8 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
 
 static void
 add_all_children_ddf_help(FnSymbol* fn, ClassType* pt, ClassType* ct) {
-  if (ct->defaultConstructor->instantiatedTo ||
-      resolvedFns.set_in(ct->defaultConstructor))
+  if (ct->defaultTypeConstructor->instantiatedTo ||
+      resolvedFns.set_in(ct->defaultTypeConstructor))
     add_to_ddf(fn, ct);
   forv_Vec(Type, t, ct->dispatchChildren) {
     ClassType* ct = toClassType(t);
@@ -2942,6 +3104,41 @@ resolve() {
     }
   }
 
+  //
+  // resolve PRIMITIVE_INITs for records
+  //
+  forv_Vec(CallExpr, init, inits) {
+    if (init->parentSymbol) {
+      Type* type = init->get(1)->typeInfo();
+      if (type->symbol->hasPragma("array"))
+        INT_FATAL(init, "PRIMITIVE_INIT should have been replaced already");
+      if (type->symbol->hasPragma("ref"))
+        type = getValueType(type);
+      if (type->defaultValue) {
+        INT_FATAL(init, "PRIMITIVE_INIT should have been replaced already");
+      } else {
+        INT_ASSERT(type->defaultConstructor);
+        CallExpr* call = new CallExpr(type->defaultConstructor);
+        init->replace(call);
+        resolveCall(call);
+        if (call->isResolved())
+          resolveFns(call->isResolved());
+      }
+    }
+  }
+
+  //
+  // resolve buildArray functions
+  //
+  {
+    Vec<FnSymbol*> fns;
+    buildArrayMap.get_values(fns);
+    forv_Vec(FnSymbol, fn, fns) {
+      resolveFns(fn);
+    }
+  }
+
+
   Vec<CallExpr*> calls;
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast))
@@ -3014,20 +3211,20 @@ resolve() {
 // remove arguments to calls; handle temporary normalization by
 // recursively removing temporaries.
 //
-static void
-removeActual(Expr* actual) {
-  if (SymExpr* sym = toSymExpr(actual)) {
-    if (sym->var->isCompilerTemp) {
-      if (sym->var->uses.n == 1) {
-        forv_Vec(SymExpr, lhs, sym->var->defs) {
-          if (CallExpr* call = toCallExpr(lhs->parentExpr))
-            if (call->parentSymbol && call->isPrimitive(PRIMITIVE_MOVE))
-              call->remove();
-        }
-      }
-    }
-  }
-}
+// static void
+// removeActual(Expr* actual) {
+//   if (SymExpr* sym = toSymExpr(actual)) {
+//     if (sym->var->isCompilerTemp) {
+//       if (sym->var->uses.n == 1) {
+//         forv_Vec(SymExpr, lhs, sym->var->defs) {
+//           if (CallExpr* call = toCallExpr(lhs->parentExpr))
+//             if (call->parentSymbol && call->isPrimitive(PRIMITIVE_MOVE))
+//               call->remove();
+//         }
+//       }
+//     }
+//   }
+// }
 
 
 static Type*
@@ -3068,7 +3265,8 @@ pruneResolvedTree() {
     if (type->defPoint && type->defPoint->parentSymbol)
       if (!type->hasPragma("ref"))
         if (ClassType* ct = toClassType(type->type))
-          if (!resolvedFns.set_in(ct->defaultConstructor)) {
+          if (!resolvedFns.set_in(ct->defaultConstructor) &&
+              !resolvedFns.set_in(ct->defaultTypeConstructor)) {
             if (ct->symbol->hasPragma("object class"))
               dtObject = NULL;
             ct->symbol->defPoint->remove();
@@ -3078,7 +3276,8 @@ pruneResolvedTree() {
     if (type->defPoint && type->defPoint->parentSymbol)
       if (type->hasPragma("ref"))
         if (ClassType* ct = toClassType(getValueType(type->type)))
-          if (!resolvedFns.set_in(ct->defaultConstructor)) {
+          if (!resolvedFns.set_in(ct->defaultConstructor) &&
+              !resolvedFns.set_in(ct->defaultTypeConstructor)) {
             if (ct->symbol->hasPragma("object class"))
               dtObject = NULL;
             type->defPoint->remove();
@@ -3144,14 +3343,14 @@ pruneResolvedTree() {
         SymExpr* sym = toSymExpr(call->get(2));
         if (sym && toTypeSymbol(sym->var))
           call->remove();
-      } else if (call->isNamed("_init")) {
-        // Special handling of class init to avoid infinite recursion
-        if (ClassType* ct = toClassType(call->typeInfo())) {
-          if (ct->defaultValue) {
-            removeActual(call->get(1));
-            call->replace(new CallExpr(PRIMITIVE_CAST, ct->symbol, gNil));
-          }
-        }
+//       } else if (call->isNamed("_init")) {
+//         // Special handling of class init to avoid infinite recursion
+//         if (ClassType* ct = toClassType(call->typeInfo())) {
+//           if (ct->defaultValue) {
+//             removeActual(call->get(1));
+//             call->replace(new CallExpr(PRIMITIVE_CAST, ct->symbol, gNil));
+//           }
+//         }
       } else if (FnSymbol* fn = call->isResolved()) {
         // Remove method token actuals
         for (int i = fn->numFormals(); i >= 1; i--) {
@@ -3211,13 +3410,13 @@ pruneResolvedTree() {
           formal->isTypeVariable = false;
         }
       }
-    }
-    if (fn->retTag == RET_TYPE) {
-      VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
-      if (ret->type->symbol->hasPragma("array")) {
-        ret->type = buildArrayTypeInfo(ret->type);
-        fn->retType = ret->type;
-        fn->retTag = RET_VALUE;
+      if (fn->retTag == RET_TYPE) {
+        VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
+        if (ret->type->symbol->hasPragma("array")) {
+          ret->type = buildArrayTypeInfo(ret->type);
+          fn->retType = ret->type;
+          fn->retTag = RET_VALUE;
+        }
       }
     }
   }
@@ -3263,6 +3462,21 @@ pruneResolvedTree() {
         call->getStmtExpr()->insertBefore(new DefExpr(dom));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, dom, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, _value, _value->type->getField("dom"))));
         move->replace(new CallExpr(PRIMITIVE_SET_MEMBER, lhs->var, lhs->var->type->getField("dom"), dom));
+      } else if (call->parentSymbol && call->isNamed("_init")) {
+
+        //
+        // special handling of tuple constructor to avoid
+        // initialization of array based on an array type symbol
+        // rather than a runtime array type
+        //
+        // this code added during the introduction of the new keyword;
+        // it should be removed when possible
+        //
+        if (!strcmp("_construct__tuple", call->parentSymbol->name))
+          if (SymExpr* se = toSymExpr(call->get(1)))
+            if (se->var->type->symbol->hasPragma("array"))
+              call->parentExpr->remove();
+
       }
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -3384,15 +3598,11 @@ fixTypeNames(ClassType* ct) {
 
 
 static void
-setFieldTypes(FnSymbol* fn) {
-  ClassType* ct = toClassType(fn->retType);
-  if (!ct)
-    INT_FATAL(fn, "Constructor has no class type");
+setScalarPromotionType(ClassType* ct) {
   for_fields(field, ct) {
     if (!strcmp(field->name, "_promotionType"))
       ct->scalarPromotionType = field->type;
   }
-  fixTypeNames(ct);
 }
 
 

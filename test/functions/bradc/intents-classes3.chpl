@@ -4,7 +4,7 @@ class pair {
   var b: real;
 }
 
-var a: pair = pair();
+var a: pair = new pair();
 
 def callin(in x: pair) {
   writeln("in callin, x is: ", x.a, " ", x.b);
@@ -13,7 +13,7 @@ def callin(in x: pair) {
   } else {
     writeln("a and x differ on the way in");
   }
-  x = pair();
+  x = new pair();
   x.a = 11;
   x.b = 3.4;
   if (x == a) {
@@ -32,7 +32,7 @@ def callout(out x: pair) {
   } else {
     writeln("a and x differ on the way in");
   }
-  x = pair();
+  x = new pair();
   x.a = 12;
   x.b = 4.5;
   if (x == a) {
@@ -51,7 +51,7 @@ def callinout(inout x: pair) {
   } else {
     writeln("a and x differ on the way in");
   }
-  x = pair();
+  x = new pair();
   x.a = 13;
   x.b = 5.6;
   if (x == a) {

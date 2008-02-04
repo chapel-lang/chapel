@@ -24,7 +24,7 @@ label _1
 }
 
 def foo() {
-  var c = C();
+  var c = new C();
   var s : list of int;
   c = next_foo(c);
   while c != nil {

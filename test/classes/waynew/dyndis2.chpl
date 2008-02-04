@@ -34,7 +34,7 @@ class contain {
 
   def xxx() {
     var something: somedata(int);
-    something = somedata( int, 10);
+    something = new somedata( int, 10);
     for e in objs do
        e.jam( 99, something);
   }
@@ -42,10 +42,10 @@ class contain {
 
 
 def main () {
-  var a : aclass(int) = aclass(int);
-  var b : bclass(bool) = bclass(bool);
+  var a : aclass(int) = new aclass(int);
+  var b : bclass(bool) = new bclass(bool);
 
-  var c: contain = contain();
+  var c: contain = new contain();
   c.objs.append(b);
   c.objs.append(a);
   c.xxx();

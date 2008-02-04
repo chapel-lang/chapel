@@ -13,7 +13,7 @@ def stack.empty
   return top == nil;
 
 def stack.push(v : eltType) {
-  top = stack_elt(eltType, v, top);
+  top = new stack_elt(eltType, v, top);
 }
 
 def stack.pop() : eltType {

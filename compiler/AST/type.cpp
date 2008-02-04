@@ -17,6 +17,7 @@ Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   symbol(NULL),
   defaultValue(init_defaultVal),
   defaultConstructor(NULL),
+  defaultTypeConstructor(NULL),
   isGeneric(false),
   instantiatedFrom(NULL),
   instantiatedWith(NULL),
@@ -311,8 +312,14 @@ void ClassType::addDeclarations(Expr* expr, bool tail) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         methods.add(fn);
-        fn->_this = new ArgSymbol(INTENT_BLANK, "this", this);
-        fn->insertFormalAtHead(new DefExpr(fn->_this));
+        if (fn->_this) {
+          // must be constructor of nested class
+          fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", this);
+          fn->insertFormalAtHead(new DefExpr(fn->_outer));
+        } else {
+          fn->_this = new ArgSymbol(INTENT_BLANK, "this", this);
+          fn->insertFormalAtHead(new DefExpr(fn->_this));
+        }
         fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
         fn->isMethod = true;
       }

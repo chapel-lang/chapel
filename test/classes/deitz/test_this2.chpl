@@ -3,16 +3,16 @@ class F {
 }
 
 class D {
-  var f : F = F();
+  var f : F = new F();
   def this() var : F
     return f;
 }
 
 class C {
-  var d : D = D();
+  var d : D = new D();
 }
 
-var c : C = C();
+var c : C = new C();
 
 writeln(c);
 writeln(c.d);

@@ -23,10 +23,10 @@ def displayshoe (item:shoe) {
   item.display();
 }
 
-var shoe1:shoe = shoe(9.5,"brown");
-var shoe2:pumps = shoe(8.0,"navy");
+var shoe1:shoe = new shoe(9.5,"brown");
+var shoe2:pumps = new shoe(8.0,"navy");
 shoe2.heel = 1.0;
-var shoe3:boots = pumps(7.0,"white",3.0);
+var shoe3:boots = new pumps(7.0,"white",3.0);
 displayshoe(shoe1);
 displayshoe(shoe2);
 displayshoe(shoe3);

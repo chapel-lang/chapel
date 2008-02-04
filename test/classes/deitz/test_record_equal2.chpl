@@ -2,8 +2,8 @@ record A {
   var i : int;
 }
 
-var a1 : A = A();
-var a2 : A = A();
+var a1 : A = new A();
+var a2 : A = new A();
 a1.i = 1;
 a2.i = 2;
 

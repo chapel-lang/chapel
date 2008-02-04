@@ -7,12 +7,12 @@ class C {
 }
 
 class D {
-  var c = C();
+  var c = new C();
   def bar() {
     c.foo() = 2;
     writeln(c.foo());
   }
 }
 
-var d = D();
+var d = new D();
 d.bar();

@@ -16,12 +16,12 @@ def BinaryTree.postOrder(): eltType {
 }
 
 var bt =
-  BinaryTree(int, 1,
-    BinaryTree(int, 2,
-      BinaryTree(int, 3),
-      BinaryTree(int, 4)),
-    BinaryTree(int, 5,
-      BinaryTree(int, 6),
-      BinaryTree(int, 7)));
+  new BinaryTree(int, 1,
+    new BinaryTree(int, 2,
+      new BinaryTree(int, 3),
+      new BinaryTree(int, 4)),
+    new BinaryTree(int, 5,
+      new BinaryTree(int, 6),
+      new BinaryTree(int, 7)));
 
 writeln(bt.postOrder());

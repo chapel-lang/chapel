@@ -222,7 +222,7 @@ def createRandomGraph() {
   // create a random number stream
   //
   use Random;
-  var myRandNums = RandomStream(seed=314159265);
+  var myRandNums = new RandomStream(seed=314159265);
 
   //
   // allocate all the vertices and assign them labels and random weights

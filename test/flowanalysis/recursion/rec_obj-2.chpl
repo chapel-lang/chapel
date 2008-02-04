@@ -10,8 +10,8 @@ def print(c : Cons) {
   }
 }
 
-var a = Cons(1, Cons(2, nil));
-var b = Cons(1.0, Cons(2.0, nil));
+var a = new Cons(1, new Cons(2, nil));
+var b = new Cons(1.0, new Cons(2.0, nil));
 
 print(a);
 print(b);

@@ -60,10 +60,10 @@ module declareGlobals {
 
     // separate int and string subgraps that
     // share the above two domains
-    var intg = Subgraph(wtype=int,
+    var intg = new Subgraph(wtype=int,
                         VertexD=>VertexD,
                         ParEdgeD=>ParEdgeD);
-    var strg = Subgraph(wtype=string,
+    var strg = new Subgraph(wtype=string,
                         VertexD=>VertexD,
                         ParEdgeD=>ParEdgeD);
 
@@ -199,7 +199,7 @@ def genScalData(totVertices, maxCliqueSize, maxParalEdges,
 
   use Random only RandomNumbers;
   var random_numbers = RandomNumbers();
-  var fedges = Edges();
+  var fedges = new Edges();
   with fedges;
   maxIntWeight = maxIntWeightP;
 
@@ -350,7 +350,7 @@ def binsearch(x : [?lo..?hi] , y]) {
 
 def computeGraph(edges , totVertices, maxParalEdges, 
                       maxIntWeight ) : Graph {
-  var G = Graph();
+  var G = new Graph();
   G:Numbers = edges;
 
   with G only VertexD, ParEdgeD, intg, strg;
@@ -486,7 +486,7 @@ def cutClusters(G, cutBoxSize, alpha) {
 
   var intVertexRemap = cutClustersCommon( G.intg, cutBoxSize, alpha );
   var strVertexRemap = cutClustersCommon( G.strg, cutBoxSize, alpha );
-  var cutG = Graph.copy(G);
+  var cutG = new Graph.copy(G);
 
   def remap(oldg, newg, vertexRemap) {
     var map: [G.VertexD];

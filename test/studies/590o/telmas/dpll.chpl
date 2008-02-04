@@ -93,7 +93,7 @@ class IGNode {
 		this.dlevel = dl;
 		this.value = v;
 		this.isdecision = dv;
-		this.antecedents = List(IGNode);
+		this.antecedents = new List(IGNode);
 	} 	
 	
 	// initialize this node using the information stored in a given node
@@ -150,13 +150,13 @@ class Assignment {
 	
 	// make an implication edge from the source to the target, as a result of a deduction
 	def make_edge(from_node : IGNode, to_node : IGNode) {
-		var ans = to_node.antecedents;
+		var ans = new to_node.antecedents;
 		ans.insert(from_node);
 	}
 	
 	// assign a variable
 	def assign(x : int, v : bool, dv : bool) : IGNode {
-		var node = IGNode();
+		var node = new IGNode();
 		
 		assert(values(x) == nil, "Variables must be unassigned.");
 		
@@ -193,7 +193,7 @@ class Assignment {
 	// replace the old node with a new node with the complement value
 	def reassign(x : int, v : bool) {
 		var node : IGNode();
-		var newnode = IGNode();
+		var newnode = new IGNode();
 		
 		node = values(x);
 		newnode.initwith(node);
@@ -562,7 +562,7 @@ def compute_causes(node : IGNode, causes : List(IGNode)) {
  ***************************************************/
 def compute_conflict_clause(A : Assignment, clause : Clause) : List(IGNode) {
 	var node : IGNode;
-	var causes = List(IGNode);
+	var causes = new List(IGNode);
 	
 	forall ltr in clause {
 		node = A(ltr);
@@ -593,7 +593,7 @@ def atomic_add_clause(clause : Clause) {
  ***************************************************/
 def add_conflict_lemma(causes : List(IGNode)) : Clause {
 	var varid : int; 
-	var clause = Clause();
+	var clause = new Clause();
 	
 	clause.init();
 	forall node in causes {
@@ -701,7 +701,7 @@ def fork_search (A : Assignment, dvar : int) {
 	var newnode : IGNode;
 	
 	if alloc_proc() {
-		newA = Assignment();
+		newA = new Assignment();
 		newA.init(A);
 		
 		// decide the complement of dvar
@@ -806,15 +806,15 @@ def main() {
 	var A : Assignment;
 	
 	if STAT then
-		stats = Statistics();
+		stats = new Statistics();
 		
-	timer = Timer();
+	timer = new Timer();
 	
 	parse();
 	
 	alloc_proc(); // allocate for this proc
 	
-	A = Assignment();
+	A = new Assignment();
 	A.init();
 	
 	timer.start();
@@ -854,7 +854,7 @@ def parse() {
 	var clause : Clause;
 	var c : int;
 	
-	var inputfile = file(FILENAME);
+	var inputfile = new file(FILENAME);
 	
 	inputfile.open();
 	
@@ -876,7 +876,7 @@ def parse() {
 	
 	c = 1;
 	while c <= nc {
-		clause = Clause();
+		clause = new Clause();
 		clause.init();
 		
 		inputfile.read(ltr);
@@ -985,7 +985,7 @@ class List {
   // Insert value into the front of the list
   //
   def insert(value: eltType) {
-    head = Node(eltType, value, head);
+    head = new Node(eltType, value, head);
   }
 
   //

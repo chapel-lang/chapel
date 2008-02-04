@@ -17,6 +17,6 @@ def bar(c: C) {
   c.foo();
 }
 
-bar(C(x=3));
-bar(D(t=int, x=1, y=4));
-bar(D(t=real, x=2, y=4.0));
+bar(new C(x=3));
+bar(new D(t=int, x=1, y=4));
+bar(new D(t=real, x=2, y=4.0));

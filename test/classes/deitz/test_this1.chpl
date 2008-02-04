@@ -3,12 +3,12 @@ class D {
 }
 
 class C {
-  var d : D = D();
+  var d : D = new D();
   def this() var : D
     return d;
 }
 
-var c : C = C();
+var c : C = new C();
 
 writeln(c);
 writeln(c.d);

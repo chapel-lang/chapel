@@ -3,7 +3,7 @@ class C {
 
   def foo(dim: rank*int) {
     writeln("In other foo()");
-    var x = C();
+    var x = new C();
     return x;
   }
 
@@ -16,7 +16,7 @@ class C {
   }
 }
 
-var myC = C(rank=2);
+var myC = new C(rank=2);
 
 
 myC.foo(1);

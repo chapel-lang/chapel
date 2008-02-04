@@ -11,6 +11,6 @@ def f(a : D) {
   return 1;
 }
 
-var b = D();
+var b = new D();
 
 writeln(f(b));

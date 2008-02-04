@@ -500,11 +500,16 @@ record _square_tuple {
 }
 
 def _build_domain(x ...?size) where size > 1
-  return _square_tuple(size, x);
+  return new _square_tuple(size, x);
 
-pragma "inline" def _build_tuple(x ...?size) {
+pragma "inline" def _build_tuple(x ...?size)
   if size == 1 then
     return x(1);
   else
     return x;
-}
+
+pragma "inline" def _build_tuple(type t ...?size) type
+  return t;
+
+pragma "inline" def _build_tuple_always(x ...?size)
+  return x;

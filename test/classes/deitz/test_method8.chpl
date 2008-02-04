@@ -5,7 +5,7 @@ class foo {
   }
 }
 
-var f : foo = foo();
+var f : foo = new foo();
 
 f.x = 12;
 f.bar(13);

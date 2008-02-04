@@ -71,7 +71,7 @@ def main() {
 }
 
 def initStreamVectors() {
-  var randlist = RandomStream(seed);
+  var randlist = new RandomStream(seed);
 
   randlist.fillRandom(A);
   randlist.fillRandom(B);
@@ -89,7 +89,7 @@ def computeStreamResults() {
 
 
 def checkSTREAMresults() {
-  var randlist = RandomStream(seed);
+  var randlist = new RandomStream(seed);
 
   var Aref, Bref, Cref, error : [VecDomain] elemType;
 

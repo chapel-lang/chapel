@@ -479,7 +479,7 @@ static void build_record_cast_function(ClassType* ct) {
   VarSymbol* tmp = new VarSymbol("_tmp");
   fn->insertAtTail(new DefExpr(ret));
   fn->insertAtTail(new DefExpr(tmp));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_init", t)));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, t)));
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("=", tmp, arg)));
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ret, tmp));
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, ret));
@@ -548,7 +548,7 @@ static void build_record_init_function(ClassType* ct) {
     if (formal->isTypeVariable || formal->intent == INTENT_PARAM) {
       call->insertAtTail(new NamedExpr(formal->name, new CallExpr(".", arg, new_StringSymbol(formal->name))));
     } else if (!formal->defaultExpr) {
-      call->insertAtTail(new NamedExpr(formal->name, new CallExpr("_init", new CallExpr(".", arg, new_StringSymbol(formal->name)))));
+      call->insertAtTail(new NamedExpr(formal->name, new CallExpr(PRIMITIVE_INIT, new CallExpr(".", arg, new_StringSymbol(formal->name)))));
     }
   }
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));

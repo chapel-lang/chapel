@@ -11,9 +11,9 @@ class D {
     var p: P;
 }
 
-var d = D();
+var d = new D();
 
-// OK: d.p = C(5):P;
-d.p = C(5);
+// OK: d.p = new C(5):P;
+d.p = new C(5);
 
 writeln(d.p.f());

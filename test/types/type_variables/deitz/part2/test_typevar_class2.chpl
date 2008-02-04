@@ -6,9 +6,9 @@ class foo {
   }
 }
 
-var f : foo(t=int) = foo(t=int);
+var f : foo(t=int) = new foo(t=int);
 
-var f2 : foo(t=string) = foo(t=string);
+var f2 : foo(t=string) = new foo(t=string);
 
 f.x = 2;
 

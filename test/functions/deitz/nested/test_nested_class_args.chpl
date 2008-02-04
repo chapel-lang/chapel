@@ -7,7 +7,7 @@ def bar() {
   def foo(c: C) {
     writeln((c, x));
   }
-  foo(C(x));
+  foo(new C(x));
 }
 
 bar();

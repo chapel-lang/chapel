@@ -2,6 +2,6 @@ class C {
   var A: [1..3] C;
 }
 
-var c = C();
+var c = new C();
 
 writeln(c);

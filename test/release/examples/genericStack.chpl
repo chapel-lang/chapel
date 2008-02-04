@@ -26,7 +26,7 @@ record ListStack {
 
   // push method: add an item to the top of the stack
   def push(item: itemType) {
-    top = MyNode(itemType, item, top);
+    top = new MyNode(itemType, item, top);
   }
 
   // pop method: remove an item from the top of the stack
@@ -80,8 +80,8 @@ record ArrayStack {
 
 
 var D: domain(2) = [1..4, 1..4];
-testStacks(ListStack(string), ListStack(index(D)));
-testStacks(ArrayStack(string), ArrayStack(index(D)));
+testStacks(new ListStack(string), new ListStack(index(D)));
+testStacks(new ArrayStack(string), new ArrayStack(index(D)));
 
 
 def testStacks(stack1, stack2) {

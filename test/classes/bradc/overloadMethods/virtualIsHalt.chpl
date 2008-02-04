@@ -26,7 +26,7 @@ class E : C {
 }
 
 
-var myD = D(2, int, false);
+var myD = new D(2, int, false);
 
 myD.ranges(1) = 1..10;
 myD.ranges(2) = 1..20;
@@ -37,6 +37,6 @@ var r2 = myD.bbox(2);
 writeln("r1 = ", r1);
 writeln("r2 = ", r2);
 
-var myE = E(myD);
+var myE = new E(myD);
 
 writeln(myE.rowRange);

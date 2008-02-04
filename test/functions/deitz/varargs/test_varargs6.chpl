@@ -6,6 +6,6 @@ class C {
   }
 }
 
-var c = C();
+var c = new C();
 
 writeln(c(1,2,3));

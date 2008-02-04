@@ -19,5 +19,5 @@ def displaypants (item:pants) {
   item.display();
 }
 
-var pant1:jeans = jeans(size = 6, color = "dark wash",rise = "low rise");
+var pant1:jeans = new jeans(size = 6, color = "dark wash",rise = "low rise");
 displaypants(pant1);

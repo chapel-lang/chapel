@@ -15,5 +15,5 @@ class C {
 }
 
 
-var c = C(2,int);
+var c = new C(2,int);
 writeln("c.A is: ", c.A);

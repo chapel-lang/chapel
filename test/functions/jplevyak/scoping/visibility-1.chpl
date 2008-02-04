@@ -9,7 +9,7 @@ def f(x : foo) { return 2; }
   {
     def f(x : foo) { return 4; }
   }
-  var x = foo();
+  var x = new foo();
   writeln(x.f());
   writeln(f(x));
 }

@@ -6,7 +6,7 @@ class dog {
   }
 }
 
-var d : dog = dog();
+var d : dog = new dog();
 
 d.weight = 38.5;
 d.paws = 4;

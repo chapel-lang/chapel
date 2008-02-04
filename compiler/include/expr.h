@@ -7,7 +7,6 @@
 #include "symbol.h"
 #include "primitive.h"
 
-class Stmt;
 class FnSymbol;
 
 #define IS_EXPR(e)                                          \

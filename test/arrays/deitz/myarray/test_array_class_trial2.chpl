@@ -16,7 +16,7 @@ class array1d {
   }
 }
 
-var a : array1d(int) = array1d(int);
+var a : array1d(int) = new array1d(int);
 
 a(1) = 4;
 a(2) = 3;

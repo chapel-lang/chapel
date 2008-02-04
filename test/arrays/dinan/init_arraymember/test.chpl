@@ -7,6 +7,6 @@ class C {
   var x = f();
 }
 
-var c = C();
+var c = new C();
 
 writeln(c.x);

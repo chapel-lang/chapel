@@ -12,6 +12,6 @@ def R.bar() {
     yield i;
 }
 
-var r = R(1..5);
+var r = new R(1..5);
 for i in r.bar() do
   writeln(i);

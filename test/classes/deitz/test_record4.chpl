@@ -3,6 +3,6 @@ record point {
   var y : real = 4.5;
 }
 
-var p : point = point();
+var p : point = new point();
 
 writeln("p { ", p.x, ", ", p.y, " }");

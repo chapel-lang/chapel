@@ -1,4 +1,4 @@
-var f : file = file(filename = "_test_cannotOpenMe.txt");
+var f : file = new file(filename = "_test_cannotOpenMe.txt");
 
 writeln(f.filename);
 writeln(f.mode);

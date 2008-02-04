@@ -15,7 +15,7 @@ class CSR {
 
   def buildSparseDomain(param rank:int, type idxType, 
                         parentDom: BaseArithmeticDomain) {
-    return CSRDomain(rank=rank, idxType=idxType, 
+    return new CSRDomain(rank=rank, idxType=idxType, 
                                     parentDom=parentDom);
   }
 }
@@ -52,10 +52,10 @@ class CSRDomain: BaseSparseArithmeticDomain {
   def setIndices(x);
 
   def buildArray(type eltType)
-    return CSRArray(eltType, rank, idxType, dom=this);
+    return new CSRArray(eltType, rank, idxType, dom=this);
 
   def buildEmptyDomain()
-    return CSRDomain(rank=rank, idxType=idxType, parentDom=parentDom);
+    return new CSRDomain(rank=rank, idxType=idxType, parentDom=parentDom);
 
   def these() {
     var cursorRow = rowRange.low;

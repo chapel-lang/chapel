@@ -11,7 +11,7 @@ class Edges {
   with Numbers;
 }
 
-var x = Edges();
+var x = new Edges();
 
 x.totVertices = 5;
 

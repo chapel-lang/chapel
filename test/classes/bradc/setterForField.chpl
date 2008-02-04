@@ -8,7 +8,7 @@ class C {
   }
 }
 
-var myC = C(x = 2);
+var myC = new C(x = 2);
 writeln("myC is: ", myC);
 
 myC.x = 3;

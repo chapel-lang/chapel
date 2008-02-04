@@ -12,10 +12,10 @@ class D: C {
   }
 }
 
-var c = C();
+var c = new C();
 c.foo(1);
 c.foo(2);
 
-c = D();
+c = new D();
 c.foo(1);
 c.foo(2);

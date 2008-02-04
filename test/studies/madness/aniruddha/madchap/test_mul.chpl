@@ -31,7 +31,7 @@ def main() {
 
         writeln("\nMultiplying F",i,"*F",i," ...");
         var H2 = F1 * F1;
-        H2.f = Square(fcn[i]):AFcn;
+        H2.f = new Square(fcn[i]):AFcn;
         H2.f = fcn[i];
         if verbose then H2.summarize();
 

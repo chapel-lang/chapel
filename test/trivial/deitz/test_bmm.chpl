@@ -80,7 +80,7 @@ def main() {
   0x8040201008040201;
 
   var D = [0..1000:uint(64), 0..1000:uint(64)];
-  var time = Timer();
+  var time = new Timer();
   var x: uint(64);
 
   for (i,j) in D do

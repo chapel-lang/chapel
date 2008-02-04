@@ -6,7 +6,7 @@ record Numbers {
   var maxIntWeight : int;
 }
 
-var x = Numbers();
+var x = new Numbers();
 
 with x;
 

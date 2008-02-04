@@ -9,6 +9,6 @@ class TestRandom {
   }
 }
 
-var randlist = TestRandom();
+var randlist = new TestRandom();
 
 randlist.showseed();

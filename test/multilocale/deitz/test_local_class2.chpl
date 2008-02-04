@@ -3,10 +3,10 @@ class C {
 }
 
 def main {
-  var c = C(18);
+  var c = new C(18);
   _debugWriteln(localeID(), " ", c.x);
   on Locales(1) {
-    c = C(19);
+    c = new C(19);
     _debugWriteln(localeID(), " ", c.x);
   }
   _debugWriteln(localeID(), " ", c.x);

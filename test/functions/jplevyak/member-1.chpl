@@ -7,7 +7,7 @@ def f(x : foo) {
   return 20 + x.i;
 }
 
-var a = foo();
+var a = new foo();
 a.i = 1;
 
 writeln(f(a));

@@ -8,7 +8,7 @@ config const MAX_ITER  = 1000000;
 var givenBoard: [1..9, 1..9] int;  // The given board
 var initBoard:  [1..9, 1..9] int;  // The initialized board
 
-var myRand = RandomStream();
+var myRand = new RandomStream();
 
 
 // Return a random number on the range [1, n]
@@ -56,7 +56,7 @@ def costFcn(board: [] int): int {
 
 
 def main() {
-  var boardData = file(inputfile, path='./', mode='r');
+  var boardData = new file(inputfile, path='./', mode='r');
 
   // Read the board from the input file
   boardData.open();

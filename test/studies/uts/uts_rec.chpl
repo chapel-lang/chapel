@@ -72,7 +72,7 @@ class TreeNode {
 
     forall i in childDom {
       if debug then writeln("  + (", depth, ", ", i, ")");
-      children[i]    = TreeNode(depth+1);
+      children[i]    = new TreeNode(depth+1);
       rng_spawn(hash[1], children[i].hash[1], i-1);
     }
 
@@ -287,7 +287,7 @@ def main {
   var counted, created: int;
   var root: TreeNode;
   
-  root = TreeNode(0);
+  root = new TreeNode(0);
   rng_init(root.hash[1], SEED:int);
 
   uts_showSearchParams();

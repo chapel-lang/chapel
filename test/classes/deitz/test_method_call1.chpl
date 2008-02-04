@@ -11,7 +11,7 @@ class bar {
   }
 }
 
-var b = bar();
+var b = new bar();
 
 foo();
 b.foo();

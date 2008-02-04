@@ -25,7 +25,7 @@ def main() {
   var myB: int;
   myB = b(3);
   writeln("b(3) is: ", myB);
-  var myE: e = e();
+  var myE: e = new e();
   var myG: int;
   myG = myE.g(8);
   writeln("e.g(8) is: ", myG);

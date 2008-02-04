@@ -3,8 +3,8 @@ record foo {
   var f : real;
 }
 
-var x : foo = foo();
-var y : foo = foo();
+var x : foo = new foo();
+var y : foo = new foo();
 
 x.f = 2.2;
 

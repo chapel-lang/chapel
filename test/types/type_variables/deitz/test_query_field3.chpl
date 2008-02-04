@@ -11,6 +11,6 @@ def foo(c: C(tt=?tt, ?t)) {
   writeln((y, yy));
 }
 
-var c = C(int, real);
+var c = new C(int, real);
 writeln(c);
 foo(c);

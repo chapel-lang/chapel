@@ -188,12 +188,13 @@ isDefinedAllPaths(Expr* expr, Symbol* ret) {
 static void
 checkReturnPaths(FnSymbol* fn) {
   if (fn->fnTag == FN_ITERATOR ||
-      fn->fnTag == FN_CONSTRUCTOR ||
       !strcmp(fn->name, "=") ||
       !strcmp(fn->name, "_build_array_type") ||
       fn->retType == dtVoid ||
       fn->retTag == RET_TYPE ||
       fn->isExtern ||
+      fn->hasPragma("default constructor") ||
+      fn->hasPragma("type constructor") ||
       fn->hasPragma("auto ii"))
     return;
   Symbol* ret = fn->getReturnSymbol();

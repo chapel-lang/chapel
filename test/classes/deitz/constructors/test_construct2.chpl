@@ -9,5 +9,5 @@ class C {
   }
 }
 
-var c = C(true);
+var c = new C(true);
 writeln(c);

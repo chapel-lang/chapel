@@ -9,7 +9,7 @@ union foo {
   }
 }
 
-var x : foo = foo();
+var x : foo = new foo();
 
 x.i = -1;
 

@@ -14,8 +14,8 @@ def D.foo(z: int = 3) {
   writeln((this, z));
 }
 
-var c: C = D(x=4, y=5);
-var d: D = D(x=6, y=7);
+var c: C = new D(x=4, y=5);
+var d: D = new D(x=6, y=7);
 
 c.foo();
 d.foo();

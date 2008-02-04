@@ -13,13 +13,13 @@ def main() {
 
     writeln("Mad Chapel -- Multiplication Test\n");
 
-    var fcn  : [1..4] AFcn = (Fn_Test1():AFcn,  Fn_Test2():AFcn,  Fn_Test3():AFcn, Fn_Unity():AFcn);
+    var fcn  : [1..4] AFcn = (new Fn_Test1():AFcn,  new Fn_Test2():AFcn,  new Fn_Test3():AFcn, new Fn_Unity():AFcn);
 
     for i in fcn.domain {
         writeln("** Testing function ", i);
-        var F1 = Function(k=5, thresh=1e-5, f=fcn[i], autorefine=false);
-        var F2 = Function(k=5, thresh=1e-5, f=fcn[i]);
-        var G = Function(k=5, thresh=1e-5, f=Fn_Unity());
+        var F1 = new Function(k=5, thresh=1e-5, f=fcn[i], autorefine=false);
+        var F2 = new Function(k=5, thresh=1e-5, f=fcn[i]);
+        var G = new Function(k=5, thresh=1e-5, f=new Fn_Unity());
 
         writeln("\nMultiplying F", i, "*Unity ...");
         var H1 = F1 * G;
@@ -31,7 +31,7 @@ def main() {
 
         writeln("\nMultiplying F",i,"*F",i," ...");
         var H2 = F1 * F1;
-        H2.f = Square(fcn[i]):AFcn;
+        H2.f = new Square(fcn[i]):AFcn;
         H2.f = fcn[i];
         if verbose then H2.summarize();
 

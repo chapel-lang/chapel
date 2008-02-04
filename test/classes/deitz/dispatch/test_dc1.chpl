@@ -14,19 +14,19 @@ var c: C;
 var d: D;
 var e: E;
 
-c = C();
+c = new C();
 d = c:D;
 if d then writeln(d); else writeln("nil value");
 e = c:E;
 if e then writeln(e); else writeln("nil value");
 
-c = D();
+c = new D();
 d = c:D;
 if d then writeln(d); else writeln("nil value");
 e = c:E;
 if e then writeln(e); else writeln("nil value");
 
-c = E();
+c = new E();
 d = c:D;
 if d then writeln(d); else writeln("nil value");
 e = c:E;

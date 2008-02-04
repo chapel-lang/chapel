@@ -17,6 +17,6 @@ def foo(cOrD:C) {
   writeType(cOrD);
 }
 
-var myD = D();
+var myD = new D();
 
 foo(myD);

@@ -34,7 +34,7 @@ class List {
   // Insert value into the front of the list
   //
   def insert(value: eltType) {
-    head = Node(eltType, value, head);
+    head = new Node(eltType, value, head);
   }
 
   //
@@ -99,10 +99,10 @@ class List {
 def main() {
   use Random;
 
-  var lst = List(int);
+  var lst = new List(int);
   var rnd = if useClockSeed 
-              then RandomStream()
-              else RandomStream(seed = randomSeed);
+              then new RandomStream()
+              else new RandomStream(seed = randomSeed);
   const maxValue = 100;
 
   //

@@ -3,6 +3,6 @@ class foo {
   var f : real;
 }
 
-var x : foo = foo();
+var x : foo = new foo();
 
 writeln("x: (", x.i, ", ", x.f, ")");

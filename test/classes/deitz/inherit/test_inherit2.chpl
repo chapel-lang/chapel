@@ -10,7 +10,7 @@ def foo(c : C) {
   writeln(c.x);
 }
 
-var c : C = C(), d : D = D();
+var c : C = new C(), d : D = new D();
 
 writeln(c);
 writeln(d);

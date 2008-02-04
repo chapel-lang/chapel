@@ -6,5 +6,5 @@ class D: C {
   var x: int;
 }
 
-var d = D();
+var d = new D();
 writeln(d.x);

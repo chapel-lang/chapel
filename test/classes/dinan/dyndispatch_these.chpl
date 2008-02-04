@@ -14,8 +14,8 @@ class B:A {
   }
 }
 
-var a = A(4);
-var b = B(4);
+var a = new A(4);
+var b = new B(4);
 
 writeln("A:");
 for i in a do writeln(i);

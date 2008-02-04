@@ -67,12 +67,12 @@ def gen() {
       forall kat in 1..iat {
         const lattop = if (kat==iat) then jat else kat;
         forall lat in 1..lattop {
-          yield blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1), bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), bas_info(lat,1), bas_info(lat,2));
+          yield new blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1), bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), bas_info(lat,1), bas_info(lat,2));
         }
       }
     }
   }
-  yield blockIndices(0,0,0,0,0,0,0,0);
+  yield new blockIndices(0,0,0,0,0,0,0,0);
 }
 
 def buildjk_atom4(bI) {

@@ -35,7 +35,7 @@ def main() {
 // height variable to control the recursion.
 //
 def buildTree(height: uint = treeHeight, id: int = 1): node {
-  var newNode = node(id);
+  var newNode = new node(id);
 
   if height > 1 {
     cobegin {

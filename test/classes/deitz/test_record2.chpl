@@ -3,7 +3,7 @@ record foo {
   var f : real;
 }
 
-var x : foo = foo();
+var x : foo = new foo();
 
 x.i = -1;
 

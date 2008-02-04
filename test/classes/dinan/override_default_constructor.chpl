@@ -6,6 +6,6 @@ class Foo {
   }
 }
 
-var bar = Foo(5);
+var bar = new Foo(5);
 
 writeln(bar.x);

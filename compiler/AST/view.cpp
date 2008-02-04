@@ -90,7 +90,7 @@ list_ast(BaseAST* ast, int indent = 0) {
       if (e->var)
         list_sym(e->var, false);
       else
-        printf("%s", e->unresolved);
+        printf("%s ", e->unresolved);
     }
   }
 

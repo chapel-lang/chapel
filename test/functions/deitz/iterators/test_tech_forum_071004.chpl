@@ -21,7 +21,7 @@ class IC {
 }
 
 def fun_string_chars(s: string) {
-  var ic = IC(cursor=1, s=s);
+  var ic = new IC(cursor=1, s=s);
   ic.next();
   return ic;
 }
@@ -44,7 +44,7 @@ def IC.next() {
 
 
 def special_fun_string_chars(s: string) {
-  var ic = IC(cursor=1, s=s);
+  var ic = new IC(cursor=1, s=s);
   ic.i = 1;
   ic.limit = length(ic.s);
   ic.cursor = ic.i <= ic.limit;

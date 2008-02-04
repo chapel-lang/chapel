@@ -46,7 +46,7 @@ const probSizes:  [Class] int = (32, 64, 256, 256, 512, 1024),
 // it's a configuration constant, it may be set on the executable's
 // command-line.  The default is to run class S.
 
-config const probClass: classVals = S;
+config const probClass: classVals = new S;
 
 
 // the problem size.  By default, the problem size will be the same in
@@ -333,7 +333,7 @@ def rprj3(S, R) {
   const w: coeff = (0.5, 0.25, 0.125, 0.0625);
   const w3d: [(i,j,k) in Stencil] real = w((i!=0) + (j!=0) + (k!=0));
 
-  const SD = S.Domain,
+  const SD = new S.Domain,
         Rstr = R.stride;
 
   S = [ijk in SD] sum reduce [off in Stencil] (w3d(off) * R(ijk + Rstr*off));
@@ -366,9 +366,9 @@ def interp(R, S) {
   const IStn: [(i,j,k) in IDom] domain(3) = [i..0, j..0, k..0];
   const w: [ijk in IDom] real = 1.0 / IStn.numIndices();
 
-  const SD = S.Domain(),
+  const SD = new S.Domain(),
         Rstr = R.stride,
-        Sstr = S.stride;
+        Sstr = new S.stride;
 
   forall ioff in IDom {
     [ijk in SD] R(ijk + Rstr*ioff) 
@@ -393,7 +393,7 @@ def norm2u3(R) {
 // initCValues() sets the c values for the psinv() stencil
 
 def initCValues(probClass) {
-  if (probClass == A || probClass == S || probClass == W) {
+  if (probClass == A || probClass == new S || probClass == W) {
     return (-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0);
   } else {
     return (-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0);
