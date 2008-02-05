@@ -892,6 +892,8 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             fprintf(outfile, "%s", getValueType(call->get(1)->typeInfo()->getField("addr")->type)->symbol->cname);
             fprintf(outfile, ", ");
+            if (isUnionType(getValueType(call->get(1)->typeInfo()->getField("addr")->type)))
+              fprintf(outfile, "_u.");
             call->get(2)->codegen(outfile);
             fprintf(outfile, ")");
           } else {
@@ -922,6 +924,8 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             fprintf(outfile, "%s*", getValueType(call->get(1)->typeInfo()->getField("addr")->type)->symbol->cname);
             fprintf(outfile, ", ");
+            if (isUnionType(getValueType(call->get(1)->typeInfo()->getField("addr")->type)))
+              fprintf(outfile, "_u.");
             call->get(2)->codegen(outfile);
             fprintf(outfile, ")");
             break;
@@ -967,6 +971,18 @@ void CallExpr::codegen(FILE* outfile) {
             help_codegen_fn(outfile, "_ARRAY_GET_VALUE", call->get(1), call->get(2));
           }
           break;
+        }
+        if (call->isPrimitive(PRIMITIVE_UNION_GETID)) {
+          if (call->get(1)->typeInfo()->symbol->hasPragma("wide")) {
+            fprintf(outfile, "_COMM_WIDE_GET_OFF(int64_t, ");
+            get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            fprintf(outfile, "%s", getValueType(call->get(1)->typeInfo()->getField("addr")->type)->symbol->cname);
+            fprintf(outfile, ", _uid)");
+            break;
+          }
         }
         if (call->isPrimitive(PRIMITIVE_GETCID)) {
           if (call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
@@ -1339,16 +1355,30 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_UNION_SETID:
-      get(1)->codegen(outfile);
-      fprintf(outfile, "._uid = ");
-      get(2)->codegen(outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide")) {
+        fprintf(outfile, "_COMM_WIDE_PUT_OFF(int64_t, ");
+        get(1)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ", %s, _uid)", getValueType(get(1)->typeInfo()->getField("addr")->type)->symbol->cname);
+      } else {
+        get(1)->codegen(outfile);
+        if (get(1)->typeInfo()->symbol->hasPragma("ref"))
+          fprintf(outfile, "->");
+        else
+          fprintf(outfile, ".");
+        fprintf(outfile, "_uid = ");
+        get(2)->codegen(outfile);
+      }
       break;
     case PRIMITIVE_UNION_GETID:
       fprintf(outfile, "(");
       get(1)->codegen(outfile);
-      fprintf(outfile, "._uid == ");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ")");
+      if (get(1)->typeInfo()->symbol->hasPragma("ref"))
+        fprintf(outfile, "->");
+      else
+        fprintf(outfile, ".");
+      fprintf(outfile, "_uid)");
       break;
     case PRIMITIVE_GET_MEMBER:
     {
@@ -1387,6 +1417,8 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ", ");
         fprintf(outfile, "%s", getValueType(get(1)->typeInfo()->getField("addr")->type)->symbol->cname);
         fprintf(outfile, ", ");
+        if (isUnionType(getValueType(get(1)->typeInfo()->getField("addr")->type)))
+          fprintf(outfile, "_u.");
         get(2)->codegen(outfile);
         fprintf(outfile, ")");
       } else {

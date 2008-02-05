@@ -685,6 +685,13 @@ bool isRecordType(Type* t) {
   return false;
 }
 
+bool isUnionType(Type* t) {
+  ClassType* ct = toClassType(t);
+  if (ct && ct->classTag == CLASS_UNION)
+    return true;
+  return false;
+}
+
 bool isReference(Type* t) {
   return !t->refType;
 }

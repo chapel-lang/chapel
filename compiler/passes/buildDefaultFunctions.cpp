@@ -172,7 +172,15 @@ static void build_getter(ClassType* ct, Symbol *field) {
     fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
   }
   if (ct->classTag == CLASS_UNION)
-    fn->insertAtTail(new CondStmt(new SymExpr(fn->setter->sym), new CallExpr(PRIMITIVE_UNION_SETID, _this, new_IntSymbol(field->id)), new CondStmt(new CallExpr("!", new CallExpr(PRIMITIVE_UNION_GETID, _this, new_IntSymbol(field->id))), new CallExpr("halt", new_StringSymbol("illegal union access")))));
+    fn->insertAtTail(
+      new CondStmt(
+        new SymExpr(fn->setter->sym),
+        new CallExpr(PRIMITIVE_UNION_SETID, _this, new_IntSymbol(field->id)),
+        new CondStmt(
+          new CallExpr("!=", 
+            new CallExpr(PRIMITIVE_UNION_GETID, _this),
+              new_IntSymbol(field->id)),
+          new CallExpr("halt", new_StringSymbol("illegal union access")))));
   if (field->isTypeVariable || field->hasPragma("super class"))
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   else
@@ -502,7 +510,14 @@ static void build_union_assignment_function(ClassType* ct) {
   fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, arg1, new_IntSymbol(0)));
   for_fields(tmp, ct)
     if (!tmp->isTypeVariable)
-      fn->insertAtTail(new CondStmt(new CallExpr(PRIMITIVE_UNION_GETID, arg2, new_IntSymbol(tmp->id)), new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name)))));
+      fn->insertAtTail(
+        new CondStmt(
+          new CallExpr("==",
+            new CallExpr(PRIMITIVE_UNION_GETID, arg2),
+            new_IntSymbol(tmp->id)),
+          new CallExpr("=",
+            new CallExpr(".", arg1, new_StringSymbol(tmp->name)),
+            new CallExpr(".", arg2, new_StringSymbol(tmp->name)))));
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, arg1));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
@@ -763,7 +778,7 @@ static void buildDefaultWriteFunction(ClassType* ct) {
       writeFieldBlock->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(" = ")));
       writeFieldBlock->insertAtTail(new CallExpr(buildDot(fileArg, "write"), 
                                                  buildDot(fn->_this, tmp->name)));
-      cond = new CondStmt(new CallExpr(PRIMITIVE_UNION_GETID, fn->_this, new_IntSymbol(tmp->id)), writeFieldBlock, cond);
+      cond = new CondStmt(new CallExpr("==", new CallExpr(PRIMITIVE_UNION_GETID, fn->_this), new_IntSymbol(tmp->id)), writeFieldBlock, cond);
     }
     fn->insertAtTail(cond);
   } else {

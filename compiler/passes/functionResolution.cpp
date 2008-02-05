@@ -152,7 +152,8 @@ resolveFormals(FnSymbol* fn) {
       if (formal->intent == INTENT_INOUT ||
           formal->intent == INTENT_OUT ||
           (formal == fn->_this &&
-           (isRecordType(formal->type) || fn->hasPragma("ref this")))) {
+           (isUnionType(formal->type) ||
+            isRecordType(formal->type) || fn->hasPragma("ref this")))) {
         makeRefType(formal->type);
         formal->type = formal->type->refType;
       }
