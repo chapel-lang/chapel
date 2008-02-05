@@ -1,0 +1,6 @@
+bug: simple read of sync fails
+
+It appears that a naked read of a sync variable
+causes an internal error in the compiler -- this
+should be legal, right?  (or at least generate
+a useful error message)
