@@ -873,7 +873,11 @@ endif
 grep "$futuremarker" $logfile |& $tee -a $logfile.summary
 
 set successes = `grep "$successmarker" $logfile | wc -l`
-set failures = `grep "$errormarker" $logfile | wc -l`
+
+# count failures from the summary file rather than the log file because
+# it's already have its suppressions removed => better count
+set failures = `grep "$errormarker" $logfile.summary | wc -l`
+
 if ($testfutures == 0 && $testfuturesonly == 0) then
     echo \[\Summary: \#Successes = $successes \| \#Failures = $failures\] |& $tee -a $logfile.summary
 else
