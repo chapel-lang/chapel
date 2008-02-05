@@ -21,6 +21,8 @@ differing memory sizes on different platforms
 [Error matching program output for memory/shannon/printMemTable2]
 
 garbage collection broken due to super field changes
+-- behavior changed with Steve's "new" checkin -- started
+timing out
 ----------------------------------------------------
 classes/diten/allocateManyObjects
 
@@ -29,6 +31,13 @@ classes/diten/allocateManyObjects
 =============================
 baseline-specific regressions
 =============================
+
+??? -- started failing after Steve's "new" checkin
+--------------------------------------------------
+[Error matching compiler output for
+classes/deitz/test_constructor_ambiguity2]
+[Error matching compiler output for classes/diten/class_nest_simple]
+[Error matching compiler output for classes/diten/nesting_with_inheritance]
 
 
 
@@ -105,6 +114,12 @@ than codegen and having it be constructed like any other field.
 -----------------------------------------------------------------------
 [Error matching compiler output for classes/deitz/test_empty_record]
 [Error matching compiler output for functions/jplevyak/scoping/visibility-1]
+
+
+Times out for unknown reasons
+-----------------------------
+[Error: Timed out executing program parallel/cobegin/waynew/while]
+
 
 
 ===========================
@@ -190,6 +205,10 @@ negative floating point 0.0 not supported
 ========================
 gasnet-specific failures
 ========================
+
+fluctuates between passing and failing -- race in output
+--------------------------------------------------------
+[Error matching program output for multilocale/deitz/test_on_begin1]
 
 ??? -- many C compilation errors
 --------------------------------
