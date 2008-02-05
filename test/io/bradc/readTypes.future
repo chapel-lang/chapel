@@ -1,0 +1,7 @@
+bug: varargs type function considered to return type?
+
+This test yields an "illegal assignment of type to value"
+error, which seems to imply that a varargs type function
+is returning a type rather than a value.  Once this test
+is working, the four functions listed here should be
+moved to ChapelIO.chpl (adding them now breaks other tests).
