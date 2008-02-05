@@ -32,10 +32,13 @@ classes/diten/allocateManyObjects
 baseline-specific regressions
 =============================
 
-??? -- started failing after Steve's "new" checkin
---------------------------------------------------
+seg fault in compiler
+---------------------
 [Error matching compiler output for
 classes/deitz/test_constructor_ambiguity2]
+
+mixing declarations and code in generated code
+----------------------------------------------
 [Error matching compiler output for classes/diten/class_nest_simple]
 [Error matching compiler output for classes/diten/nesting_with_inheritance]
 
