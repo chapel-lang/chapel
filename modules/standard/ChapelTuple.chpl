@@ -135,14 +135,14 @@ def _tuple.writeThis(f: Writer) {
   f.write(")");
 }
 
-pragma "inline" def _cast(type t, x: _tuple) where (t == complex(64)) & (x.size == 2) {
+pragma "inline" def _cast(type t, x: _tuple) where (t == complex(64)) && (x.size == 2) {
   var c: complex(64);
   c.re = x(1):real(32);
   c.im = x(2):real(32);
   return c;
 }
 
-pragma "inline" def _cast(type t, x: _tuple) where (t == complex(128)) & (x.size == 2) {
+pragma "inline" def _cast(type t, x: _tuple) where (t == complex(128)) && (x.size == 2) {
   var c: complex(128);
   c.re = x(1):real(64);
   c.im = x(2):real(64);

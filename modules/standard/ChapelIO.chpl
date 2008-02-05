@@ -345,7 +345,7 @@ def _ddata.writeThis(f: Writer) {
   f.write(this(size-1));
 }
 
-def format(fmt: string, x:?t) where _isIntegralType(t) | _isFloatType(t) {
+def format(fmt: string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
   if fmt.substring(1) == "#" {
     var fmt2 = _getoutputformat(fmt);
     if _isImagType(t) then
@@ -364,7 +364,7 @@ def format(fmt: string, x:?t) where _isComplexType(t) {
     return __primitive("_format", fmt, x);
 }
 
-def format(fmt: string, x: ?t) where !(_isIntegralType(t) | _isFloatType(t) | _isComplexType(t)) {
+def format(fmt: string, x: ?t) where !(_isIntegralType(t) || _isFloatType(t) || _isComplexType(t)) {
   return __primitive("_format", fmt, x);
 }
 

@@ -3,7 +3,7 @@
 //
 
 // reimplementation note: one bitPop routine when numBits is a parameter
-def bitPop(i: integral) where (i.type == int(64)) | (i.type == uint(64)) {
+def bitPop(i: integral) where (i.type == int(64)) || (i.type == uint(64)) {
   const u1 = 10540996613548315209:uint(64);
   const u3 = 13176245766935394011:uint(64);
   const u7 = 9349719599003471367:uint(64);
@@ -12,7 +12,7 @@ def bitPop(i: integral) where (i.type == int(64)) | (i.type == uint(64)) {
   return ((((tmp + (tmp >> 3)) & u7) + ((tmp >> 6) & u7)) % 511):int;
 }
 
-def bitPop(i: integral) where (i.type == int(32)) | (i.type == uint(32)) {
+def bitPop(i: integral) where (i.type == int(32)) || (i.type == uint(32)) {
   const u1 = 10540996613548315209:uint(32);
   const u3 = 13176245766935394011:uint(32);
   const u7 = 9349719599003471367:uint(32);
@@ -21,7 +21,7 @@ def bitPop(i: integral) where (i.type == int(32)) | (i.type == uint(32)) {
   return ((((tmp + (tmp >> 3)) & u7) + ((tmp >> 6) & u7)) % 511):int;
 }
 
-def bitPop(i: integral) where (i.type == int(16)) | (i.type == uint(16)) {
+def bitPop(i: integral) where (i.type == int(16)) || (i.type == uint(16)) {
   const u1 = 10540996613548315209:uint(16);
   const u3 = 13176245766935394011:uint(16);
   const u7 = 9349719599003471367:uint(16);
@@ -30,7 +30,7 @@ def bitPop(i: integral) where (i.type == int(16)) | (i.type == uint(16)) {
   return ((((tmp + (tmp >> 3)) & u7) + ((tmp >> 6) & u7)) % 511):int;
 }
 
-def bitPop(i: integral) where (i.type == int(8)) | (i.type == uint(8)) {
+def bitPop(i: integral) where (i.type == int(8)) || (i.type == uint(8)) {
   const u1 = 10540996613548315209:uint(8);
   const u3 = 13176245766935394011:uint(8);
   const u7 = 9349719599003471367:uint(8);

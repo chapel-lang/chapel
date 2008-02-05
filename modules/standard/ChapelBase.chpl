@@ -868,13 +868,13 @@ pragma "inline" def _cast(type t, x: string) where _isPrimitiveType(t)
 pragma "inline" def _cast(type t, x: enumerated) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x) where t:object & x:t
+pragma "inline" def _cast(type t, x) where t:object && x:t
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x) where t:object & x:_nilType
+pragma "inline" def _cast(type t, x) where t:object && x:_nilType
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x) where x:object & t:x & (x.type != t)
+pragma "inline" def _cast(type t, x) where x:object && t:x & (x.type != t)
   return __primitive("dynamic_cast", t, x);
 
 pragma "inline" def _cast(type t, x:_nilType) where t == _nilType
@@ -945,7 +945,7 @@ pragma "inline" def _cast(type t, x: complex(?w)) where t == string {
   return re + op + im + "i";
 }
 
-pragma "inline" def _cast(type t, x: complex(?w)) where _isRealType(t) | _isIntegralType(t) {
+pragma "inline" def _cast(type t, x: complex(?w)) where _isRealType(t) || _isIntegralType(t) {
   var y: t;
   y = x.re:t;
   return y;
@@ -957,7 +957,7 @@ pragma "inline" def _cast(type t, x: complex(?w)) where _isRealType(t) | _isInte
 pragma "inline" def _cast(type t, x: imag(?w)) where t == string
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: imag(?w)) where _isRealType(t) | _isIntegralType(t)
+pragma "inline" def _cast(type t, x: imag(?w)) where _isRealType(t) || _isIntegralType(t)
   return 0:t;
 
 pragma "inline" def _cast(type t, x: imag(?w)) where t == bool
