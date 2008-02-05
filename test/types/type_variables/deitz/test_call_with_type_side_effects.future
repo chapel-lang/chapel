@@ -1,3 +1,0 @@
-bug: type expression executes
-
-Constructor is used solely as type and should not execute.
