@@ -583,6 +583,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
           update_symbols(fn->body, &update);
           if (fn->where) {
             VarSymbol* var = new VarSymbol(arg->name);
+            var->isTypeVariable = arg->isTypeVariable;
             fn->where->insertAtHead(
                                     new CallExpr(PRIMITIVE_MOVE, var, tupleCall->copy()));
             fn->where->insertAtHead(new DefExpr(var));
