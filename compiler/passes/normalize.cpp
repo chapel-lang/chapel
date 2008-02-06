@@ -131,10 +131,9 @@ static void insertHeapAccess(SymExpr* se, bool global = false) {
     VarSymbol* tmp = new VarSymbol("_tmp");
     tmp->isCompilerTemp = true;
     tmp->isExprTemp = true;
-    se->replace(new SymExpr(tmp));
     stmt->insertBefore(new DefExpr(tmp));
     stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
-    call->insertAtTail(se);
+    se->replace(new SymExpr(tmp)); call->insertAtTail(se);
   }
 }
 
