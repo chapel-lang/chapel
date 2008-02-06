@@ -250,22 +250,6 @@ compiler output error - incorrect line number
 --------------------------------
    trivial/deitz/test_type_sizes
 
- program output error - unions and references
---------------------------------
-   classes/bradc/writeunion-workaround
-   classes/bradc/writeunion
-   classes/bradc/unions/assign
-   classes/bradc/unions/assign1a
-   classes/bradc/unions/stringunion
-   classes/bradc/unions/twounions
-   classes/bradc/unions/writeunion
-   classes/deitz/test_union1
-   classes/deitz/test_union2
-   classes/deitz/test_union3
-   classes/deitz/test_union4
-   classes/deitz/test_union_method1
-   classes/deitz/test_union_method2
-   classes/deitz/test_union_method3
 
 
 ========================
