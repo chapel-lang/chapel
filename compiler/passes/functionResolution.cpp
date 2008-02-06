@@ -1537,6 +1537,8 @@ resolveCall(CallExpr* call) {
     call->getStmtExpr()->insertBefore(noop);
     for (int i = 1; i <= size; i++) {
       VarSymbol* tmp = new VarSymbol("_expand_temp");
+      tmp->isCompilerTemp = true;
+      tmp->canType = true;
       DefExpr* def = new DefExpr(tmp);
       call->getStmtExpr()->insertBefore(def);
       CallExpr* e = new CallExpr(sym->copy(), new_IntSymbol(i));
