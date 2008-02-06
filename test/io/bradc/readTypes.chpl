@@ -8,25 +8,16 @@ var (a,b) = read(int, real);
 writeln("a is: ", a);
 writeln("b is: ", b);
 
-/*
-def file.readln(type t ...?numTypes) where numTypes > 1 {
-  var tupleVal: t;
-  for param i in 1..numTypes-1 do
-    tupleVal(i) = this.read(t(i));
-  tupleVal(numTypes) = this.readln(t(numTypes));
-  return tupleVal;
-}
+var (c,d) = stdin.readln(int, real);
 
-def file.read(type t ...?numTypes) where numTypes > 1 {
-  var tupleVal: t;
-  for param i in 1..numTypes do
-    tupleVal(i) = this.read(t(i));
-  return tupleVal;
-}
+writeln("c is: ", c);
+writeln("d is: ", d);
 
-def readln(type t ...?numTypes) where numTypes > 1
-  return stdin.readln((...t));
+var (e,f) = readln(int, real);
 
-def read(type t ...?numTypes) where numTypes > 1
-  return stdin.read((...t));
-*/
+writeln("e is: ", e);
+writeln("f is: ", f);
+
+var g = readln(int);
+
+writeln("g is: ", g);
