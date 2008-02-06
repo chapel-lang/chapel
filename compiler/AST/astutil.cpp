@@ -447,4 +447,12 @@ prune() {
       }
     }
   }
+  //
+  // change symbols with dead types to void (important for baseline)
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = toDefExpr(ast))
+      if (def->parentSymbol && def->sym->type && isClassType(def->sym->type) && !isTypeSymbol(def->sym) && !types.set_in(def->sym->type->symbol))
+        def->sym->type = dtVoid;
+  }
 }

@@ -1,4 +1,4 @@
-class outer {
+class myouter {
   var a = 3;
 
   class inner {
@@ -15,6 +15,6 @@ class outer {
 }
 
 def main() {
-  var outside: outer = new outer();
+  var outside: myouter = new myouter();
   outside.foo();
 }

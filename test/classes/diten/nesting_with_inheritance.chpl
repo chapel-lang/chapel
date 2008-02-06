@@ -6,7 +6,7 @@ class baseclass {
   }
 }
 
-class outer {
+class myouter {
   var y: int;
   var x: int;
   class nested : baseclass {
@@ -23,5 +23,5 @@ class outer {
   }
 }
 
-var outervar = new outer();
+var outervar = new myouter();
 outervar.runit();
