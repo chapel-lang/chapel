@@ -28,22 +28,6 @@ classes/diten/allocateManyObjects
 
 
 
-=============================
-baseline-specific regressions
-=============================
-
-seg fault in compiler
----------------------
-[Error matching compiler output for
-classes/deitz/test_constructor_ambiguity2]
-
-mixing declarations and code in generated code
-----------------------------------------------
-[Error matching compiler output for classes/diten/class_nest_simple]
-[Error matching compiler output for classes/diten/nesting_with_inheritance]
-
-
-
 ===============================
 CHPL_THREADS = none regressions
 ===============================
@@ -213,22 +197,11 @@ fluctuates between passing and failing -- race in output
 --------------------------------------------------------
 [Error matching program output for multilocale/deitz/test_on_begin1]
 
-??? -- many C compilation errors
---------------------------------
-[Error matching compiler output for classes/diten/allocateManyObjects] 
-
-??? -- some C compilation errors
---------------------------------
-[Error matching compiler output for classes/diten/allocateManyObjects] 
-
 gdb doesn't work with GASNet yet
 --------------------------------
 [Error: Timed out executing program execflags/bradc/gdbddash/declint2] 
 [Error: Timed out executing program execflags/bradc/gdbddash/declint] 
 [Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] 
-
-gasnet global variable support regressions:
--------------------------------------------
 
 compiler output error - incorrect line number        
 --------------------------------
