@@ -721,26 +721,13 @@ mv $logtmp $logfile
 
 
 
-if ($testfuturesonly == 1) then
-    setenv CHPL_TEST_FUTURES 2
-else
-    if ($testfutures == 1) then
-        setenv CHPL_TEST_FUTURES 1
-    else
-        setenv CHPL_TEST_FUTURES 0
-    endif
-endif
-
-if ($testnotests == 1) then
-    setenv CHPL_TEST_NOTESTS 1
-else
-    setenv CHPL_TEST_NOTESTS 0
-endif
-
 #
-# test all of the tests that the user listed (if any)
+# test all of the tests that the user listed (if any).
 #
 
+# For this mode, test futures, non-futures, and notests
+setenv CHPL_TEST_FUTURES 1
+setenv CHPL_TEST_NOTESTS 1
 foreach test ($testlist)
     set basedir = `dirname $test`
     set testname = `basename $test`
@@ -775,9 +762,29 @@ foreach test ($testlist)
     popd >& /dev/null
 end
 
+
 #
 # test all of the directories that the user specified
 #
+
+# for this mode, only test futures and notests as specified
+# by the command-line flags
+if ($testfuturesonly == 1) then
+    setenv CHPL_TEST_FUTURES 2
+else
+    if ($testfutures == 1) then
+        setenv CHPL_TEST_FUTURES 1
+    else
+        setenv CHPL_TEST_FUTURES 0
+    endif
+endif
+
+if ($testnotests == 1) then
+    setenv CHPL_TEST_NOTESTS 1
+else
+    setenv CHPL_TEST_NOTESTS 0
+endif
+
 
 foreach absdir ($absdirs)
     # if specified to start in a specific directory, start there
