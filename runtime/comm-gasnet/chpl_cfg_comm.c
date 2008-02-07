@@ -259,7 +259,7 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
   }
 }
 
-void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size) {
+void  _chpl_comm_get(void* addr, int32_t locale, const void* raddr, int32_t size) {
   PRINTF("_chpl_comm_read");
   if (_localeID == locale) {
     bcopy(raddr, addr, size);

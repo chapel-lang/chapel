@@ -291,7 +291,7 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size) {
+void  _chpl_comm_get(void *addr, int32_t locale, const void* raddr, int32_t size) {
   // this should be an ARMCI get call
 
   _chpl_msg(2, "Called _chpl_comm_get() on: %d\n", _localeID);

@@ -845,9 +845,14 @@ void CallExpr::codegen(FILE* outfile) {
       }
       if (CallExpr* call = toCallExpr(get(2))) {
         if (call->isPrimitive(PRIMITIVE_GET_REF)) {
-          if (call->get(1)->typeInfo()->symbol->hasPragma("wide")) {
-            fprintf(outfile, "_COMM_WIDE_GET(");
-            fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
+          if (call->get(1)->typeInfo()->symbol->hasPragma("wide") ||
+              call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+            if (get(1)->typeInfo() != dtString) {
+              fprintf(outfile, "_COMM_WIDE_GET(");
+              fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
+            } else {
+              fprintf(outfile, "_COMM_WIDE_GET_STRING(");
+            }
             get(1)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(1)->codegen(outfile);
@@ -1024,7 +1029,11 @@ void CallExpr::codegen(FILE* outfile) {
       }
       if (get(1)->typeInfo()->symbol->hasPragma("wide class") &&
           !get(2)->typeInfo()->symbol->hasPragma("wide class")) {
-        fprintf(outfile, "_SET_WIDE_CLASS(");
+        if (get(2)->typeInfo() != dtString) {
+          fprintf(outfile, "_SET_WIDE_CLASS(");
+        } else {
+          fprintf(outfile, "_SET_WIDE_STRING(");
+        }
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(2)->codegen(outfile);

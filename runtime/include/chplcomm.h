@@ -22,8 +22,16 @@ typedef void (*func_p)(void*);
 #define _WIDE_CLASS_EQ(wide1, wide2) \
   (((wide1).locale == (wide2).locale) && ((wide1).addr == (wide2).addr))
 
+#define _SET_WIDE_STRING(wide, str) \
+  do { \
+    const char* astring = str; \
+    (wide).locale = _localeID; \
+    (wide).addr = astring; \
+    (wide).size = strlen(astring) + 1; \
+  } while (0)
+
 #define _WIDE_CLASS_NE(wide1, wide2) \
-  (((wide1).locale != (wide2).locale) && ((wide1).addr != (wide2).addr))
+  (((wide1).locale != (wide2).locale) || ((wide1).addr != (wide2).addr))
 
 #define _WIDE_CLASS_CAST(wide1, type, wide2) \
   (wide1).locale = (wide2).locale; (wide1).addr = (type)((wide2).addr)
@@ -65,6 +73,15 @@ typedef void (*func_p)(void*);
 
 #define _COMM_WIDE_GET(type, local, wide)                               \
   _chpl_comm_get(&(local), (wide).locale, (wide).addr, sizeof(type))
+
+#define _COMM_WIDE_GET_STRING(local, wide)                                \
+  do {                                                                    \
+    char* allocation = _chpl_malloc((wide).size,                          \
+                                    sizeof(char),                         \
+                                    "wide_get_string", -1, "<internal>"); \
+    _chpl_comm_get(allocation, (wide).locale, (wide).addr, (wide).size);  \
+    local = allocation;                                                   \
+  } while (0)
 
 #define _COMM_WIDE_GET_OFF(type, local, wide, stype, sfield)            \
   _chpl_comm_get(&(local),                                              \
@@ -261,7 +278,7 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size);
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size);
+void  _chpl_comm_get(void *addr, int32_t locale, const void* raddr, int32_t size);
 
 //
 // remote fork should launch a thread on locale that runs function f

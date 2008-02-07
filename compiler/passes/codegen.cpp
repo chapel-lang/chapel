@@ -503,6 +503,8 @@ codegen_config(FILE* outfile) {
           type = type->getField("addr")->type;
         if (type->symbol->hasPragma("heap"))
           type = type->getField("_val")->type;
+        if (type->symbol->hasPragma("wide class"))
+          type = type->getField("addr")->type;
         fprintf(outfile, type->symbol->name);
         fprintf(outfile, "\", \"%s\");\n", var->getModule()->name);
       }

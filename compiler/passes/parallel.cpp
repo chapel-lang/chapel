@@ -168,6 +168,11 @@ buildWideClass(Type* type) {
   theProgram->block->insertAtTail(new DefExpr(wts));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", type)));
+  //
+  // Strings need an extra field in their wide class to hold their length
+  //
+  if (type == dtString)
+    wide->fields.insertAtTail(new DefExpr(new VarSymbol("size", dtInt[INT_SIZE_32])));
   wideClassMap.put(type, wide);
 
   //
@@ -230,7 +235,7 @@ insertWideReferences(void) {
       buildWideClass(ct);
     }
   }
-
+  buildWideClass(dtString);
   //
   // change all classes into wide classes
   //
@@ -253,8 +258,12 @@ insertWideReferences(void) {
         if (Type* wide = wideClassMap.get(fn->retType))
           fn->retType = wide;
       } else if (!isTypeSymbol(def->sym)) {
-        if (Type* wide = wideClassMap.get(def->sym->type))
+        if (Type* wide = wideClassMap.get(def->sym->type)) {
+          if (toArgSymbol(def->sym))
+            if (def->parentSymbol->isExtern)
+              continue; // don't change extern function's arguments
           def->sym->type = wide;
+        }
       }
     }
   }
@@ -314,6 +323,48 @@ insertWideReferences(void) {
       }
     }
   }
+
+  //
+  // Special case string literals passed to functions, set member primitives
+  // and array element initializers by pushing them into temps first.
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (SymExpr* se = toSymExpr(ast)) {
+      if (se->var->type == dtString) {
+        if (VarSymbol* var = toVarSymbol(se->var)) {
+          if (var->immediate) {
+            if (CallExpr* call = toCallExpr(se->parentExpr)) {
+              if (call->isResolved() && !call->isResolved()->isExtern) {
+                if (Type* type = actual_to_formal(se)->typeInfo()) {
+                  VarSymbol* tmp = new VarSymbol("tmp", type);
+                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  se->replace(new SymExpr(tmp));
+                  call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, se));
+                }
+              } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+                if (SymExpr* wide = toSymExpr(call->get(2))) {
+                  Type* type = wide->var->type;
+                  VarSymbol* tmp = new VarSymbol("tmp", type);
+                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  se->replace(new SymExpr(tmp));
+                  call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, se));
+                }
+              } else if (call->isPrimitive(PRIMITIVE_ARRAY_SET_FIRST)) {
+                if (SymExpr* wide = toSymExpr(call->get(3))) {
+                  Type* type = wide->var->type;
+                  VarSymbol* tmp = new VarSymbol("tmp", wideClassMap.get(type));
+                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  se->replace(new SymExpr(tmp));
+                  call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, se));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
 
   //
   // insert wide class temps for nil
@@ -430,6 +481,25 @@ insertWideReferences(void) {
           //
           call->replace(call->get(1)->remove());
           move->insertAfter(new CallExpr(PRIMITIVE_PRIVATE_BROADCAST, lhs->var));
+        }
+      }
+    }
+  }
+
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->primitive) {
+        if (call->primitive->tag == PRIMITIVE_UNKNOWN || call->primitive->tag == PRIMITIVE_CAST) {
+          for_actuals(actual, call) {
+            if (actual->typeInfo()->symbol->hasPragma("wide class")) {
+              if (actual->typeInfo()->getField("addr")->typeInfo() == dtString) {
+                VarSymbol* tmp = new VarSymbol("tmp", actual->typeInfo()->getField("addr")->typeInfo());
+                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, actual->copy())));
+                actual->replace(new SymExpr(tmp));
+              }
+            }
+          }
         }
       }
     }
