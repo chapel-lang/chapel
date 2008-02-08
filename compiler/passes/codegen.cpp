@@ -181,7 +181,9 @@ static void codegen_header(void) {
     }
   }
 
-  forv_Vec(BaseAST, ast, gAsts) {
+  Vec<BaseAST*> postorderAsts;
+  collect_asts_postorder(&postorderAsts);
+  forv_Vec(BaseAST, ast, postorderAsts) {
     if (CallExpr* call = toCallExpr(ast))
       if (FnSymbol* fn = call->isResolved())
         if (fn->hasPragma("c for loop increment"))
