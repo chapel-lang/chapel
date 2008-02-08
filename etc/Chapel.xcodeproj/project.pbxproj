@@ -180,7 +180,7 @@
 		F721A0BD0D454AAE00A6B43F /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 12;
-			dstPath = "$SRCROOT/lib/darwin/gnu/threads-pthreads/comm-none";
+			dstPath = "$SRCROOT/../lib/darwin/gnu/threads-pthreads/comm-none";
 			dstSubfolderSpec = 0;
 			files = (
 				F721A0BE0D454AB400A6B43F /* libchpl.a in CopyFiles */,
@@ -190,7 +190,7 @@
 		F721A1F00D45661000A6B43F /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = $SRCROOT/bin/darwin;
+			dstPath = $SRCROOT/../bin/darwin;
 			dstSubfolderSpec = 0;
 			files = (
 				F721A1F10D45662700A6B43F /* chpl in CopyFiles */,
@@ -309,14 +309,10 @@
 		F76B61E80D53D2B5005C6869 /* chpl_cfg_comm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm.c; path = "../runtime/comm-armci/chpl_cfg_comm.c"; sourceTree = SOURCE_ROOT; };
 		F76B61F40D53D4CE005C6869 /* chplfp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplfp.h; path = ../runtime/include/cygwin/chplfp.h; sourceTree = SOURCE_ROOT; };
 		F76B61F50D53D4CE005C6869 /* chplsys.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplsys.h; path = ../runtime/include/cygwin/chplsys.h; sourceTree = SOURCE_ROOT; };
-		F76B62070D53D6C8005C6869 /* stdint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stdint.h; path = ../runtime/include/freebsd/stdint.h; sourceTree = SOURCE_ROOT; };
 		F76B620C0D53D75E005C6869 /* chplfp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplfp.h; path = ../runtime/include/x1/chplfp.h; sourceTree = SOURCE_ROOT; };
 		F76B62120D53D890005C6869 /* chpl_md.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_md.h; path = ../runtime/include/sunos/chpl_md.h; sourceTree = SOURCE_ROOT; };
 		F76B62130D53D890005C6869 /* chplfp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplfp.h; path = ../runtime/include/sunos/chplfp.h; sourceTree = SOURCE_ROOT; };
-		F76B62140D53D890005C6869 /* stdint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stdint.h; path = ../runtime/include/sunos/stdint.h; sourceTree = SOURCE_ROOT; };
 		F76B62280D53EA83005C6869 /* chpl_md.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_md.h; path = "../runtime/include/comp-cray-mta/chpl_md.h"; sourceTree = SOURCE_ROOT; };
-		F76B62290D53EA83005C6869 /* inttypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = inttypes.h; path = "../runtime/include/comp-cray-mta/inttypes.h"; sourceTree = SOURCE_ROOT; };
-		F76B622A0D53EA83005C6869 /* stdint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stdint.h; path = "../runtime/include/comp-cray-mta/stdint.h"; sourceTree = SOURCE_ROOT; };
 		F79B20160D46AC8B003A01E6 /* cast_code.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cast_code.cpp; path = ../compiler/ifa/cast_code.cpp; sourceTree = "<group>"; };
 		F7FAC4F90D4537A700C02B67 /* libchpl.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libchpl.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7FAC5010D45384C00C02B67 /* arg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = arg.c; path = ../runtime/src/arg.c; sourceTree = SOURCE_ROOT; };
@@ -381,6 +377,7 @@
 			isa = PBXGroup;
 			children = (
 				08FB7795FE84155DC02AAC07 /* Source */,
+				F7B66D0F0D59738D00A53F3E /* Other sources */,
 				C6859E8C029090F304C91782 /* Documentation */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
 				F731D5D80D510E84009F6897 /* COPYRIGHT */,
@@ -628,8 +625,6 @@
 			isa = PBXGroup;
 			children = (
 				F76B62280D53EA83005C6869 /* chpl_md.h */,
-				F76B62290D53EA83005C6869 /* inttypes.h */,
-				F76B622A0D53EA83005C6869 /* stdint.h */,
 				F76B61800D53AC0C005C6869 /* chpl_cfg_threads.c */,
 				F76B61850D53AC56005C6869 /* chpl_cfg_threads.h */,
 			);
@@ -672,14 +667,6 @@
 			name = Cygwin;
 			sourceTree = "<group>";
 		};
-		F76B61FA0D53D56A005C6869 /* FreeBSD */ = {
-			isa = PBXGroup;
-			children = (
-				F76B62070D53D6C8005C6869 /* stdint.h */,
-			);
-			name = FreeBSD;
-			sourceTree = "<group>";
-		};
 		F76B61FD0D53D576005C6869 /* X1 */ = {
 			isa = PBXGroup;
 			children = (
@@ -711,9 +698,15 @@
 			children = (
 				F76B62120D53D890005C6869 /* chpl_md.h */,
 				F76B62130D53D890005C6869 /* chplfp.h */,
-				F76B62140D53D890005C6869 /* stdint.h */,
 			);
 			name = SunOS;
+			sourceTree = "<group>";
+		};
+		F7B66D0F0D59738D00A53F3E /* Other sources */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "Other sources";
 			sourceTree = "<group>";
 		};
 		F7FAC5230D45389000C02B67 /* Runtime */ = {
@@ -742,7 +735,6 @@
 				F76B62020D53D636005C6869 /* POSIX threads */,
 				F76B618A0D53ACA3005C6869 /* MTA */,
 				F76B61EF0D53D470005C6869 /* Cygwin */,
-				F76B61FA0D53D56A005C6869 /* FreeBSD */,
 				F76B62170D53D894005C6869 /* SunOS */,
 				F76B61FD0D53D576005C6869 /* X1 */,
 			);
@@ -855,11 +847,11 @@
 				"$(OBJECT_FILE_DIR_$(CURRENT_VARIANT))/$NATIVE_ARCH/main.o",
 			);
 			outputPaths = (
-				"$SRCROOT/lib/darwin/gnu/threads-pthreads/comm-none/main.o",
+				"$SRCROOT/../lib/darwin/gnu/threads-pthreads/comm-none/main.o",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "dir=`eval echo \\$\\{OBJECT_FILE_DIR_${CURRENT_VARIANT}}`\nfiles=`for arch in $ARCHS; do echo $dir/$arch/main.o; done`\nset -x\nlipo -create -output $SRCROOT/lib/darwin/gnu/threads-pthreads/comm-none/main.o $files";
+			shellScript = "dir=`eval echo \\$\\{OBJECT_FILE_DIR_${CURRENT_VARIANT}}`\nfiles=`for arch in $ARCHS; do echo $dir/$arch/main.o; done`\nset -x\nlipo -create -output $SRCROOT/../lib/darwin/gnu/threads-pthreads/comm-none/main.o $files";
 			showEnvVarsInLog = 0;
 		};
 		F731D6300D51217B009F6897 /* ShellScript */ = {
@@ -1092,7 +1084,7 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				HEADER_SEARCH_PATHS = "";
-				INSTALL_PATH = "/lib/darwin/gnu/threads-pthreads/comm-none";
+				INSTALL_PATH = "/../lib/darwin/gnu/threads-pthreads/comm-none";
 				OTHER_CFLAGS = (
 					"-Wall",
 					"-Wpointer-arith",
@@ -1120,7 +1112,7 @@
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_MODEL_TUNING = G5;
 				HEADER_SEARCH_PATHS = "";
-				INSTALL_PATH = "/lib/darwin/gnu/threads-pthreads/comm-none";
+				INSTALL_PATH = "/../lib/darwin/gnu/threads-pthreads/comm-none";
 				OTHER_CFLAGS = (
 					"-Wall",
 					"-Wpointer-arith",
