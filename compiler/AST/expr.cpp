@@ -1815,7 +1815,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_HEAP_BROADCAST_GLOBAL_VARS:
-      fprintf(outfile, "_chpl_comm_broadcast_global_vars(");
+      fprintf(outfile, "_COMM_BROADCAST_GLOBAL_VARS(");
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
       break;

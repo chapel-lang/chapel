@@ -138,6 +138,10 @@ typedef void (*func_p)(void*);
                    sizeof(((stype)(&imm))->sfield));                    \
   } while (0)
 
+#define _COMM_BROADCAST_GLOBAL_VARS(numGlobals)                 \
+  _chpl_comm_barrier("barrier before broadcasting globals");    \
+  _chpl_comm_broadcast_global_vars(numGlobals)
+
 //
 // given the program arguments, returns whether the invocation of
 // main() is the original invocation by the user (1) or a recursive
@@ -215,9 +219,6 @@ void _chpl_comm_rollcall(void);
 // addresses on all other locales are the same as on locale 0.
 //
 // This function is called collectively.
-//
-// It is necessary to barrier across all locales when this functions
-// is called.
 //
 void _chpl_comm_broadcast_global_vars(int numGlobals);
 

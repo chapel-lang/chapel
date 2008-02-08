@@ -210,7 +210,6 @@ void _chpl_comm_rollcall(void) {
 
 void _chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
-  _chpl_comm_barrier("barrier before broadcasting globals");
   for (i = 1; i < _numLocales; i++) {
     for (i = 0; i < numGlobals; i++) {
       _chpl_comm_get(_global_vars_registry[i],
