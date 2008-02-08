@@ -1793,7 +1793,8 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "_chpl_gc_cleanup()");
       break;
     case PRIMITIVE_GET_LOCALE:
-      if (get(1)->typeInfo()->symbol->hasPragma("wide")) {
+      if (get(1)->typeInfo()->symbol->hasPragma("wide") ||
+          get(1)->typeInfo()->symbol->hasPragma("wide class")) {
         fprintf(outfile, "(");
         get(1)->codegen(outfile);
         fprintf(outfile, ").locale");

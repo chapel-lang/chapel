@@ -850,6 +850,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   static int uid = 1;
   BlockStmt* block = build_chpl_stmt();
   FnSymbol* fn = new FnSymbol(astr("_on_fn_", istr(uid++)));
+  fn->addPragma("on");
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
   fn->insertFormalAtTail(arg);
   fn->retType = dtVoid;

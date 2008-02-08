@@ -117,6 +117,14 @@ static void insertHeapAllocate(CallExpr* move, bool global = false) {
 
 
 static void insertHeapAccess(SymExpr* se, bool global = false) {
+
+  //
+  // take locale of heap class, not of accessed value
+  //
+  if (CallExpr* parent = toCallExpr(se->parentExpr))
+    if (parent->isPrimitive(PRIMITIVE_GET_LOCALE))
+      return;
+  
   currentLineno = se->lineno;
   currentFilename = se->filename;
   CallExpr* call =
@@ -141,16 +149,16 @@ static void insertHeapAccess(SymExpr* se, bool global = false) {
 //
 // change local variables and arguments into _heap classes if they
 // should be allocated on the heap; do this for local variables and
-// arguments accessed in begin-statements
+// arguments accessed in begin- or on-statements
 //
 static void heapAllocateLocals() {
   Vec<Symbol*> heapSet; // set of symbols that should be heap allocated
 
   compute_sym_uses();
 
-  // for each nested begin function
+  // for each nested begin and on function
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->hasPragma("begin")) {
+    if (fn->hasPragma("begin") || fn->hasPragma("on")) {
 
       Vec<BaseAST*> asts;
       collect_asts(&asts, fn);
