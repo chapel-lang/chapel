@@ -1,0 +1,5 @@
+bug: parameter in begin statement that is also used as default value of another parameter results in unknown type
+
+This is due to having the first parameter allocated on the heap, and then trying
+to access the value on the heap.  When evaluating default values, it should not
+try to access objects on the heap.
