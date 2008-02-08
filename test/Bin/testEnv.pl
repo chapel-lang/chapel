@@ -1,0 +1,46 @@
+#!/usr/bin/perl
+
+$envfile = $ARGV[0];
+
+open ENVFILE, "$envfile" or die "can't open $envfile $!";
+my @envlist = <ENVFILE>;
+close (ENVFILE);
+
+$skiptest = 0;
+
+foreach my $envsetting (@envlist) {
+    chomp($envsetting);
+    
+    if ($envsetting =~ m/^\s*$/) {
+        # blank
+    } elsif ($envsetting =~ m/\#(.*)/) {
+        # comment
+    } elsif ($envsetting =~ m/(\w*)\s*(.)=\s*(\w*)/) {
+#        print "checking whether $1 $2= $3\n";
+        if ($2 eq "=") {
+            if ($ENV{$1} eq $3) {
+#                print "yep\n";
+                $skiptest = 1;
+            } else {
+#                print "nope\n";
+            }
+        } elsif ($2 eq "!") {
+            if ($ENV{$1} eq $3) {
+#                print "nope\n";
+            } else {
+#                print "yep\n";
+                $skiptest = 1;
+            }
+        } else {
+#            print "ERROR: badly formatted line: $envsetting\n";
+            exit(1);
+        }
+    } else {
+#        print "ERROR: badly formatted line: $envsetting\n";
+        exit(1);
+    }
+}
+
+print "$skiptest\n";
+
+exit(0);

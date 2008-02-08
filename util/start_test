@@ -277,6 +277,22 @@
 #    contain any .chpl files...).  This may also be selected for
 #    a single test, foo.chpl, by creating a foo.notest file.
 #
+#  - if the subdirectory contains a SKIPIF file, the contents of
+#    the file will be checked to determine whether or not the
+#    directory's tests should be skipped.  The current format of
+#    the SKIPIF file is as follows:
+#      # ...          : a line starting with a # is a comment
+#      <blank>        : a blank line is skipped
+#      <var> == <val> : checks to see if envvar "var" is "val"
+#      <var> != <val> : checks to see if envvar "var" is not "val"
+#    All of the lines of the "==" and "!=" form are logically
+#    or'd together, and if any of them are true, the test is
+#    skipped.
+#    Planned extensions to this capability:
+#    - ability to specify these tests for a single file
+#    - ability to test for things like "compopts contains <val>"
+#    - ability to logically-and filters together
+#
 #  - if the subdirectory contains a NOEXEC file, any executables
 #    built in that directory will not attempt to be executed.
 #    Rather, only the compiler output will be diffed against the
@@ -829,6 +845,14 @@ foreach absdir ($absdirs)
         if (-e ./NUMLOCALES && $CHPL_COMM == "none") then
             echo \[Skipping NUMLOCALES directory: $dir \] |& $tee -a $logfile
             continue
+        endif
+
+        if (-e ./SKIPIF) then
+            set skiptest = `$testdir/Bin/testEnv.pl ./SKIPIF`
+            if ($skiptest == 1) then
+                echo "[Skipping directory based on SKIPIF environment settings]"
+                continue
+            endif
         endif
 
 	if ((! -e ./NOTEST && ($numtests != 0 || -x ./sub_test) && \
