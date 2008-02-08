@@ -26,7 +26,7 @@ uint64_t _bytesPerLocale(void) {
   int mib[2] = {CTL_HW, HW_PHYSMEM}, membytes;
   size_t len = sizeof(membytes);
   sysctl(mib, 2, &membytes, &len, NULL, 0);
-  return (uint64_t)membytes;
+  return membytes;
 #else
   uint64_t numPages = sysconf(_SC_PHYS_PAGES);
   uint64_t pageSize = chplGetPageSize();
@@ -46,12 +46,12 @@ int32_t _coresPerLocale(void) {
     _printInternalError("query of number of cores failed");
   // If the call to sysctlbyname() above failed to modify numcores for some reason,
   // return just 1 to be safe.
-  return numcores ? (int32_t)numcores : 1;
+  return numcores ? numcores : 1;
 #elif defined __MTA__
   int mib[2] = {CTL_HW, HW_NCPU}, numcores;
   size_t len = sizeof(numcores);
   sysctl(mib, 2, &numcores, &len, NULL, 0);
-  return (int32_t)numcores;
+  return numcores;
 #else
   int32_t numcores = (int32_t)sysconf(_SC_NPROCESSORS_ONLN);
   return numcores;
@@ -63,7 +63,8 @@ int32_t _maxThreads(void) {
 #ifdef __MTA__
   return _coresPerLocale() * 100;
 #else
-  int32_t maxThreads = _coresPerLocale() - 1;
-  return maxThreads <= 3 ? 3 : maxThreads;
+  const int minMaxThreads = 64; // smallest value for maxThreads on any platform
+  int maxThreads = _coresPerLocale() - 1;
+  return maxThreads < minMaxThreads ? minMaxThreads : maxThreads;
 #endif
 }
