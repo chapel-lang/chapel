@@ -147,6 +147,20 @@ static void insertHeapAccess(SymExpr* se, bool global = false) {
 
 
 //
+// return true if expr is in function's where block
+//
+static bool inWhere(FnSymbol* fn, Expr* expr) {
+  if (expr == fn->where)
+    return true;
+  if (expr->parentExpr)
+    return inWhere(fn, expr->parentExpr);
+  if (expr->parentSymbol && expr->parentSymbol != fn)
+    return inWhere(fn, expr->parentSymbol->defPoint);
+  return false;
+}
+
+
+//
 // change local variables and arguments into _heap classes if they
 // should be allocated on the heap; do this for local variables and
 // arguments accessed in begin- or on-statements
@@ -232,8 +246,14 @@ static void heapAllocateLocals() {
         insertHeapAccess(se);
       }
       forv_Vec(SymExpr, se, sym->uses) {
-        se->var = tmp;
-        insertHeapAccess(se);
+
+        // disable insertion of heap access on arguments accessed in
+        // where clauses
+        if (!inWhere(fn, se)) {
+
+          se->var = tmp;
+          insertHeapAccess(se);
+        }
       }
     }
   }
