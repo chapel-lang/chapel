@@ -256,12 +256,14 @@ insertWideReferences(void) {
 
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (Type* wide = wideClassMap.get(fn->retType))
-          fn->retType = wide;
+          if (!fn->isExtern)
+            fn->retType = wide;
       } else if (!isTypeSymbol(def->sym)) {
         if (Type* wide = wideClassMap.get(def->sym->type)) {
-          if (toArgSymbol(def->sym))
-            if (def->parentSymbol->isExtern)
+          if (def->parentSymbol->isExtern) {
+            if (toArgSymbol(def->sym))
               continue; // don't change extern function's arguments
+          }
           def->sym->type = wide;
         }
       }
@@ -364,6 +366,32 @@ insertWideReferences(void) {
       }
     }
   }
+
+
+  //
+  // Turn calls to extern functions involving wide classes into moves
+  // of the wide class into a non-wide type and then use that in the call.
+  // After the call, copy the value back into the wide class.
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->isResolved() && call->isResolved()->isExtern) {
+        for_alist(arg, call->argList) {
+          SymExpr* sym = toSymExpr(arg);
+          INT_ASSERT(sym);
+          if (sym->typeInfo()->symbol->hasPragma("wide class") ||
+              sym->typeInfo()->symbol->hasPragma("wide")) {
+            VarSymbol* var = new VarSymbol("tmp", sym->typeInfo()->getField("addr")->type);
+            call->insertBefore(new DefExpr(var));
+            call->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_GET_REF, sym->copy())));
+            call->insertAfter(new CallExpr(PRIMITIVE_MOVE, sym->copy(), var));
+            sym->replace(new SymExpr(var));
+          }
+        }
+      }
+    }
+  }
+
 
 
   //

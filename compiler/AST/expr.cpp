@@ -1872,7 +1872,11 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "(");
     else if (formal->requiresCPtr())
       fprintf(outfile, "&(");
+    if (fn->isExtern && actual->typeInfo() == dtString)
+      fprintf(outfile, "((char*)");
     actual->codegen(outfile);
+    if (fn->isExtern && actual->typeInfo() == dtString)
+      fprintf(outfile, ")");
     if (fn->isExtern && formal->type->symbol->hasPragma("wide"))
       fprintf(outfile, ").addr");
     else if (formal->requiresCPtr())
