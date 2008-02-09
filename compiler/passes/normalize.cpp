@@ -174,6 +174,10 @@ static void heapAllocateLocals() {
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->hasPragma("begin") || fn->hasPragma("on")) {
 
+      if (fn->hasPragma("no heap allocation"))
+        // Variables in cobegins and coforalls don't need to be on the heap!
+        continue;
+
       Vec<BaseAST*> asts;
       collect_asts(&asts, fn);
 

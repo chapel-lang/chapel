@@ -866,11 +866,13 @@ buildOnStmt(Expr* expr, Expr* stmt) {
 
 
 BlockStmt*
-buildBeginStmt(Expr* stmt) {
+buildBeginStmt(Expr* stmt, bool allocateOnHeap) {
   static int uid = 1;
   BlockStmt* block = build_chpl_stmt();
   FnSymbol* fn = new FnSymbol(astr("_begin_fn_", istr(uid++)));
   fn->addPragma("begin");
+  if (!allocateOnHeap)
+    fn->addPragma("no heap allocation");
   fn->retType = dtVoid;
   fn->insertAtTail(stmt);
   block->insertAtTail(new DefExpr(fn));
@@ -881,19 +883,29 @@ buildBeginStmt(Expr* stmt) {
 
 BlockStmt*
 buildCobeginStmt(Expr* stmt) {
-  static int uid = 1;
+  VarSymbol* ss = new VarSymbol("_ss");
+  ss->isCompilerTemp = true;
+
   BlockStmt* block = toBlockStmt(stmt);
   INT_ASSERT(block);
-  BlockStmt* cobegin = new BlockStmt();
-  cobegin->blockTag = BLOCK_COBEGIN;
   for_alist(stmt, block->body) {
-    FnSymbol* fn = new FnSymbol(astr("_cobegin_fn_", istr(uid++)));    
-    stmt->insertBefore(new DefExpr(fn));
-    fn->retType = dtVoid;
-    fn->insertAtTail(stmt->remove());
-    cobegin->insertAtTail(new CallExpr(fn));
+    VarSymbol* me = new VarSymbol("_me");
+    me->isCompilerTemp = true;
+    BlockStmt* beginBlk = new BlockStmt();
+    beginBlk->insertAtHead(stmt->copy());
+    beginBlk->insertAtTail(new CallExpr("=",
+                             new CallExpr(".", me,
+                               new_StringSymbol("v")), gTrue));
+    BlockStmt* body = buildBeginStmt(beginBlk, false);
+    body->insertAtHead(new CallExpr(PRIMITIVE_MOVE, me, new CallExpr("_pushSyncStack", ss)));
+    body->insertAtHead(new DefExpr(me));
+    body->insertAtTail(new CallExpr("=", ss, me));
+    stmt->insertBefore(body);
+    stmt->remove();
   }
-  block->insertAtTail(cobegin);
+  block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, ss, new CallExpr(PRIMITIVE_INIT, new SymExpr("_syncStack"))));
+  block->insertAtHead(new DefExpr(ss));
+  block->insertAtTail(new CallExpr("_waitSyncStack", ss));
   return block;
 }
 
