@@ -21,7 +21,7 @@ uts-deq-seq: uts_deq.chpl sha1_rng.chpl dequeue.chpl brg_sha1.c brg_sha1.h
 
 test:
 	@$(MAKE) CHPL=$(CHPL) all > /dev/null
-	./uts-rec -nl 1 -stestMode=true $(TESTTREE) --maxThreads=5
+	./uts-rec -nl 1 -stestMode=true $(TESTTREE)
 	./uts-rec-seq -nl 1 -stestMode=true $(TESTTREE)
 	./uts-deq -nl 1 -stestMode=true $(TESTTREE)
 	./uts-deq-seq -nl 1 -stestMode=true $(TESTTREE)
