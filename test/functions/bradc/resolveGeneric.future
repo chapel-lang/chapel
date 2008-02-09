@@ -1,0 +1,6 @@
+bug: compiler indexes list out of bounds
+
+I'm not certain whether this test should work as-is,
+but it's turning up an internal error in the compiler.
+Please kick it back to me once the internal error gets
+resolved (bradc).
