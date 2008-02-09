@@ -95,6 +95,21 @@ class RandomStream {
       x(i).im = getNext();
     }
   }
+
+  /*  BLC: Would like to add something like this, but should
+      really add a warning if the range is greater than max(int(64))
+      or a real's precision something to deal with the possible
+      accuracy issues...
+  def fillRandom(x: [], 
+		 minval: x.eltType = min(x.eltType),
+		 maxval: x.eltType = max(x.eltType))
+               where _isIntegralType(x.eltType) {
+    const numVals = maxval:real - minval:real + 1;
+    for i in x.domain {
+      x(i) = (minval + (getNext() * numVals)): x.eltType;
+    }
+  }
+  */
 }
 
 
