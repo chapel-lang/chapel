@@ -193,15 +193,17 @@ negative floating point 0.0 not supported
 gasnet-specific failures
 ========================
 
+regressions based on string-based external interoperability (should be fixed)
+-----------------------------------------------------------------------------
+[Error matching compiler output for link/deitz/test_link1]
+[Error matching compiler output for link/deitz/test_link2]
+[Error matching make output for studies/madness/Makefile]
+[Error matching make output for studies/madness/dinan/mad_chapel/Makefile]
+[Error matching make output for studies/madness/marybeth/Makefile]
+
 fluctuates between passing and failing -- race in output
 --------------------------------------------------------
 [Error matching program output for multilocale/deitz/test_on_begin1]
-
-gdb doesn't work with GASNet yet
---------------------------------
-[Error: Timed out executing program execflags/bradc/gdbddash/declint2] 
-[Error: Timed out executing program execflags/bradc/gdbddash/declint] 
-[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] 
 
 compiler output error - incorrect line number        
 --------------------------------
@@ -235,6 +237,23 @@ lg2/exp2
 [Error matching program output for modules/standard/math/lg2] 
 
 
+========================
+cygwin-specific failures
+========================
+
+running with gdb causes pthread_mutex failure message
+-----------------------------------------------------
+[Error matching program output for execflags/bradc/gdbddash/declint]
+
+print occurs in 0 seconds!?  Timers not working?
+------------------------------------------------
+[Error matching program output for spec/marybeth/use]
+
+some sort of race/deadlock
+--------------------------
+[Error: Timed out executing program parallel/sync/figueroa/ReadMethods]
+
+
 
 =======================
 x1/x2-specific failures
@@ -247,12 +266,12 @@ too many threads
 [Error matching program output for release/examples/quicksort] 
 [Error matching program output for release/examples/tree] 
 
-I/O precision error?
---------------------
+non-IEEE error
+--------------
 [Error matching program output for release/examples/fileIO] 
 
-apsim error
------------
+strange error -- X1 compiler? apsim?
+------------------------------------
 [Error matching program output for release/examples/genericStack] 
 
 
