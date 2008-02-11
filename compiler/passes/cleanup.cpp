@@ -326,14 +326,21 @@ static void build_type_constructor(ClassType* ct) {
                                       new_StringSymbol(field->name),
                                       new CallExpr(PRIMITIVE_INIT, arg)));
     } else {
-      if (exprType)
-        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                      new_StringSymbol(field->name),
-                                      new CallExpr(PRIMITIVE_INIT, exprType->copy())));
-      else if (init)
+      if (exprType) {
+        CallExpr* callExprType = toCallExpr(exprType);
+        if (callExprType && callExprType->isNamed("_build_sparse_subdomain_type"))
+          fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+                                        new_StringSymbol(field->name),
+                                        exprType->copy()));
+        else
+          fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+                                        new_StringSymbol(field->name),
+                                        new CallExpr(PRIMITIVE_INIT, exprType->copy())));
+      } else if (init) {
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
                                       new_StringSymbol(field->name),
                                       new CallExpr("_copy", init->copy())));
+      }
     }
   }
 

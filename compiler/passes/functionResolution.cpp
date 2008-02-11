@@ -1726,8 +1726,18 @@ insertFormalTemps(FnSymbol* fn) {
       if (formal->intent == INTENT_OUT) {
         if (formal->defaultExpr && formal->defaultExpr->typeInfo() != dtNil)
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, formal->defaultExpr->copy()));
-        else
-          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, formal)));
+        else {
+          VarSymbol* refTmp = new VarSymbol("_tmp");
+          VarSymbol* typeTmp = new VarSymbol("_tmp");
+          typeTmp->isCompilerTemp = true;
+          typeTmp->canType = true;
+          refTmp->isCompilerTemp = true;
+          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, typeTmp)));
+          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, typeTmp, new CallExpr(PRIMITIVE_TYPEOF, refTmp)));
+          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, refTmp, new CallExpr(PRIMITIVE_GET_REF, formal)));
+          fn->insertAtHead(new DefExpr(refTmp));
+          fn->insertAtHead(new DefExpr(typeTmp));
+        }
       } else if (formal->intent == INTENT_INOUT || formal->intent == INTENT_IN)
         fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_copy", formal)));
       else
@@ -1978,6 +1988,10 @@ preFold(Expr* expr) {
       result = new SymExpr(base->var->type->getField(field)->type->symbol);
       call->replace(result);
     } else if (call->isPrimitive(PRIMITIVE_INIT)) {
+      SymExpr* se = toSymExpr(call->get(1));
+      INT_ASSERT(se);
+      if (!se->var->isTypeVariable)
+        USR_FATAL_CONT(call, "invalid type specification");
       Type* type = call->get(1)->typeInfo();
       if (type ->symbol->hasPragma("ref"))
         type = getValueType(type);
@@ -3307,7 +3321,10 @@ pruneResolvedTree() {
         // Remove Noops
         call->remove();
       } else if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
-        if (!call->get(1)->typeInfo()->symbol->hasPragma("array")) {
+        Type* type = call->get(1)->typeInfo();
+        if (type->symbol->hasPragma("ref"))
+          type = getValueType(type);
+        if (!type->symbol->hasPragma("array")) {
           // Remove move(x, PRIMITIVE_TYPEOF(y)) calls -- useless after this
           CallExpr* parentCall = toCallExpr(call->parentExpr);
           if (parentCall && parentCall->isPrimitive(PRIMITIVE_MOVE) && 
@@ -3459,13 +3476,19 @@ pruneResolvedTree() {
         SymExpr* rhs = toSymExpr(call->get(1));
         INT_ASSERT(lhs);
         INT_ASSERT(rhs);
-        VarSymbol* _value = new VarSymbol("_tmp", rhs->var->type->getField("_value")->type);
+        Type* rhsType = rhs->var->type;
+        if (rhsType->symbol->hasPragma("ref"))
+          rhsType = getValueType(rhsType);
+        Type* lhsType = lhs->var->type;
+        if (lhsType->symbol->hasPragma("ref"))
+          lhsType = getValueType(lhsType);
+        VarSymbol* _value = new VarSymbol("_tmp", rhsType->getField("_value")->type);
         call->getStmtExpr()->insertBefore(new DefExpr(_value));
-        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, _value, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, rhs->var, rhs->var->type->getField("_value"))));
+        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, _value, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, rhs->var, rhsType->getField("_value"))));
         VarSymbol* dom = new VarSymbol("_tmp", _value->type->getField("dom")->type);
         call->getStmtExpr()->insertBefore(new DefExpr(dom));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, dom, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, _value, _value->type->getField("dom"))));
-        move->replace(new CallExpr(PRIMITIVE_SET_MEMBER, lhs->var, lhs->var->type->getField("dom"), dom));
+        move->replace(new CallExpr(PRIMITIVE_SET_MEMBER, lhs->var, lhsType->getField("dom"), dom));
       } else if (call->parentSymbol && call->isNamed("_init")) {
 
         //

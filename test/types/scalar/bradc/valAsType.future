@@ -1,4 +1,0 @@
-bug: values permitted in type contexts
-
-This test shows that we still permit values to be used
-in type contexts.

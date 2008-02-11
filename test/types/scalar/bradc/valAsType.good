@@ -1,1 +1,2 @@
-valAsType:1: error: value used as type specifier
+valAsType.chpl:1: error: invalid type specification
+valAsType.chpl:2: error: invalid type specification
