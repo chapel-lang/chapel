@@ -2,4 +2,4 @@
 
 cd $CHPL_HOME
 rm -f ~/$1.patch
-cvs -q diff -c > ~/$1.patch
+svn diff --no-diff-deleted > ~/$1.patch
