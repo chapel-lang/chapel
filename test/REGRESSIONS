@@ -14,6 +14,12 @@
 linux and general regressions
 =============================
 
+started failing unpredictably at time of cobegin rewrite checkin
+----------------------------------------------------------------
+[Error: Timed out executing program users/shetag/fock/fock-1-latest]
+[Error: Timed out executing program users/shetag/fock/fock-2]
+
+
 differing memory sizes on different platforms
 ---------------------------------------------
 [Error matching program output for memory/shannon/memstatPrint]
@@ -27,10 +33,29 @@ timing out
 classes/diten/allocateManyObjects
 
 
+=============================
+baseline-specific regressions
+=============================
+
+C compilation error when inlining is turned off
+(also fauses failure for opt -no-inline tests)
+-----------------------------------------------
+[Error matching compiler output for release/examples/quicksort]
+
+
+
 
 ===============================
 CHPL_THREADS = none regressions
 ===============================
+
+Need requeuable tasks for this to work
+--------------------------------------
+[Error matching program output for
+parallel/coforall/bradc/manyThreads-folded]
+[Error matching program output for
+parallel/coforall/bradc/manyThreads-revorder]
+
 
 Write doesn't seem to be locked properly
 ----------------------------------------
@@ -240,6 +265,11 @@ lg2/exp2
 ========================
 cygwin-specific failures
 ========================
+
+some sort of sig_send/wait/cond_init problem
+(see also compilation error for baseline)
+--------------------------------------------
+[Error matching compiler output for release/examples/quicksort]
 
 running with gdb causes pthread_mutex failure message
 -----------------------------------------------------
