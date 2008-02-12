@@ -424,6 +424,11 @@ void codegen_makefile(fileinfo* mainfile) {
   if (optimizeCCode) {
     fprintf(makefile.fptr, " $(OPT_CFLAGS)");
   }
+  if (fFastFlag) {
+    fprintf(makefile.fptr, " $(FAST_GEN_CFLAGS)");
+  } else {
+    fprintf(makefile.fptr, " $(SAFE_GEN_CFLAGS)");
+  }
   fprintf(makefile.fptr, " %s\n", ccflags);
   fprintf(makefile.fptr, "COMP_GEN_LFLAGS =");
   fprintf(makefile.fptr, " %s\n", ldflags);

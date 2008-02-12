@@ -28,6 +28,7 @@ bool ignore_warnings = false;
 int trace_level = 0;
 int fcg = 0;
 bool fBaseline = false;
+bool fFastFlag = false;
 bool fNoCopyPropagation = false;
 bool fNoScalarReplaceArrayWrappers = false;
 bool fNoScalarReplacement = false;
@@ -183,6 +184,25 @@ static void turnOffChecks(ArgumentState* arg, char* unused) {
   fNoBoundsChecks = true;
 }
 
+static void setFastFlag(ArgumentState* arg, char* unused) {
+  //
+  // Enable all compiler optimizations, disable all runtime checks
+  //
+  fBaseline = false;
+  fNoCopyPropagation = false;
+  fNoScalarReplaceArrayWrappers = false;
+  fNoScalarReplacement = false;
+  fNoSingleLoopIteratorOpt = false;
+  fNoExpandIteratorsInlineOpt = false;
+  fNoLiveVariablesIteratorClassOpt = false;
+  fNoFlowAnalysis = false;
+  fNoInline = false;
+  fNoBoundsChecks = true;
+  fNoNilChecks = true;
+  fNoChecks = true;
+  optimizeCCode = true;
+}
+
 
 static void setHelpTrue(ArgumentState* arg, char* unused) {
   printHelp = true;
@@ -216,6 +236,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable almost all optimizations", "F", &fBaseline, "CHPL_BASELINE", NULL},
+ {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, NULL, setFastFlag},
  {"local", ' ', NULL, "Compile program for a single locale", "N", &fLocal, "CHPL_LOCAL", NULL},
  {"no-copy-propagation", ' ', NULL, "Disable copy propagation", "F", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"no-expand-iterators-inline-opt", ' ', NULL, "Disable the expansion of iterators inlined around loop bodies", "F", &fNoExpandIteratorsInlineOpt, "CHPL_DISABLE_EXPAND_ITERATORS_INLINE_OPT", NULL},
