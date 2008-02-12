@@ -31,7 +31,7 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
 
   def buildEmptyDomain() {
     // why would this ever be nil?  See comment in SingleLocaleArithmetic.chpl,
-    // or the CVSLOG message of 09/19/07 10:28:04 and then complain to Steve :)
+    // or the commit message of 09/19/07 10:28:04 and then complain to Steve :)
     if this != nil then
       return new SingleLocaleSparseDomain(rank=rank, idxType=idxType, parentDom=parentDom);
     else
