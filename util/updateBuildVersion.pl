@@ -12,7 +12,6 @@ $LAST_RELEASE_BUILD_NUM = 13146;
 # compared to how we normally count BUILD_VERSIONS
 #
 
-$chplhome = $ENV{'CHPL_HOME'};
 $chplroot = $ARGV[0];
 
 if ($chplroot eq "") {
@@ -29,11 +28,8 @@ if (-r "$build_version_file") {
     $last_build_version = "!!!";
 }
 
-if (defined $ENV{'CHPL_DEVELOPER'} &&
-    defined $ENV{'CHPL_HOME'} &&
-    -e "$chplhome/.svn") {
-
-    $revline = `svn info $ENV{'CHPL_HOME'} | grep Revision`;
+if (defined $ENV{'CHPL_DEVELOPER'}) {
+    $revline = `svn info https://gemelli.cs.washington.edu/repos/chapel | grep Revision`;
     chomp($revline);
 
     if ($revline =~ m/Revision: (\d*)/) {
