@@ -80,6 +80,13 @@ OPTIONS
   --baseline        Turns off almost all optimizations and generates naive C
                     code with many temporary variables.
 
+  --fast            Turns off all runtime checks and ensures that most
+                    compiler optimizations are enabled. This option
+                    implicitly undoes any previous usage of --baseline,
+                    --no-copy-propagation, --no-single-loop-iterator-opt,
+                    --no-expand-iterators-inline-opt, --no-flow-analysis,
+                    and --no-inline. This option implies --no-checks.
+ 
   --[no]-local      Optimize compilation of code for single locale
                     execution, changing on blocks to normal blocks and
                     optimizing away all remote references.  When
@@ -189,7 +196,7 @@ OPTIONS
 
   --explain-call <call>[:<module>][:<line>]   Helps explain the function
                      resolution process for the named function by printing 
-                     out the visible and candidiate functions. Specifying 
+                     out the visible and candidate functions. Specifying 
                      a module name and/or line number can focus the
                      explanation to those calls within a specific module
                      or at a particular line number.
@@ -237,7 +244,7 @@ ENVIRONMENT
                       $CHPL_TARGET_PLATFORM)
 
   CHPL_COMM           Specifies the communication layer to use for
-                      inter-locale data tranfers (defaults to 'none')
+                      inter-locale data transfers (defaults to 'none')
 
   See $CHPL_HOME/doc/README.chplenv for further information about 
   general environment variable settings and legal values.
