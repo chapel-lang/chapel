@@ -1,5 +1,5 @@
 
-all: $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)
+all: $(PRETARGETS) $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)
 
 clean: $(CLEANSUBDIRS) echocompilerdir
 	rm -f $(CLEAN_TARGS)

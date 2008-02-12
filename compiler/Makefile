@@ -6,7 +6,6 @@ COMPILER_ROOT=.
 COMPILER_SUBDIR = .
 
 
-
 #
 # subdirectories and false subdirectory-oriented targets to force recursion
 #
@@ -25,6 +24,12 @@ SUBDIRS = \
 # include standard header for compiler
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
+
+#
+# the location of the BUILD_VERSION file
+#
+BUILD_VERSION_FILE = $(CHAPEL_ROOT)/BUILD_VERSION
+
 
 
 #
@@ -58,6 +63,7 @@ CHPL_OBJS = \
 
 EXECS = $(CHPL)
 
+PRETARGETS = $(BUILD_VERSION_FILE)
 TARGETS = $(CHPL)
 
 
@@ -71,6 +77,9 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 #
 # target-based rules
 #
+
+$(BUILD_VERSION_FILE): FORCE
+	@$(CHAPEL_ROOT)/util/updateBuildVersion.pl $(CHAPEL_ROOT)
 
 $(CHPL): $(CHPL_BIN_DIR) $(CHPL_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
