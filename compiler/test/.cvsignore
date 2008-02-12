@@ -1,8 +1,0 @@
-cygwin
-darwin
-freebsd
-linux
-linux64
-sunos
-test_lib
-*.test.cpp

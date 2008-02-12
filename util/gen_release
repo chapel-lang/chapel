@@ -19,8 +19,6 @@ print "Checking out the sources...\n";
 system("cd $tmpdir && svn export -q $svnroot");
 
 
-$cvsignores = ".cvsignore";
-
 # explicit files to include
 @files = (
        "AGREEMENT",
@@ -117,7 +115,7 @@ foreach $dir (@complete_dirs) {
     @filelist = `find chapel/$dir`;
     foreach $fullpath (@filelist) {
         chomp $fullpath;
-        next if ((-d $fullpath) || ($fullpath =~ /$cvsignores/));
+        next if (-d $fullpath);
         # print "$fullpath\n";
         push @tarfiles, $fullpath;
     }

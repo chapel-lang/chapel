@@ -20,8 +20,6 @@ system("cd $tmpdir && svn export -q $svnroot");
 system("cd $tmpdir/chapel/etc/emacs && rm */*.orig.el");
 
 
-$cvsignores = ".cvsignore";
-
 # explicit files to include
 @files = (
     "README",
@@ -67,7 +65,7 @@ foreach $editor (@complete_dirs) {
     @filelist = `find etc/$editor`;
     foreach $fullpath (@filelist) {
         chomp $fullpath;
-        next if ((-d $fullpath) || ($fullpath =~ /$cvsignores/));
+        next if (-d $fullpath);
         # print "$fullpath\n";
         push @tarfiles, $fullpath;
     }

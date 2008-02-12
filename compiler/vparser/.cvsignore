@@ -1,8 +1,0 @@
-*.g.d_parser.cpp
-cast_code.cpp
-cygwin
-darwin
-freebsd
-linux
-linux64
-sunos
