@@ -630,6 +630,8 @@ buildSingleLoopMethods(FnSymbol* fn,
     }
     insertGetMember(ii->getNextCursor, local, nextIterator, field);
     if (isRecordType(local->type)) {
+      if (!isArgSymbol(local))
+        insertGetMember(ii->getHeadCursor, headMap.get(local), headIterator, field);
       insertSetMember(ii->getHeadCursor, headIterator, field, headMap.get(local));
       insertSetMember(ii->getNextCursor, nextIterator, field, local);
       insertSetMember(ii->getZipCursor1, zip1Iterator, field, zip1Map.get(local));
