@@ -1,8 +1,0 @@
-# IMPORTANT NOTE: in the first line below, replace REPLACE_ME_FIRST
-# with the location of your installation
-
-setenv CHPL_HOME REPLACE_ME_FIRST/chapel   
-
-setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/platform.pl`
-
-set path = ($CHPL_HOME/bin/$CHPL_HOST_PLATFORM $path)
