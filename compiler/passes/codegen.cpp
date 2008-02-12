@@ -95,7 +95,6 @@ static void codegen_header(void) {
   Vec<TypeSymbol*> typeSymbols;
   Vec<FnSymbol*> fnSymbols;
   Vec<VarSymbol*> varSymbols;
-  ChainHashMap<const char*, StringHashFns, int> globalNames;
 
   // reserved C words that require renaming to compile
   cnames.put("abs", 1);
@@ -163,88 +162,113 @@ static void codegen_header(void) {
   cnames.put("trunc", 1);
 
   //
-  // put global variables into varSymbols vector
-  // mangle names of global variables as necessary
-  // build set of global variable names
+  // mangle type names if they clash with other types
+  //
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    legalizeCName(ts);
+    if (!ts->isExtern && cnames.get(ts->cname))
+      ts->cname = astr("_", ts->cname, "_", istr(ts->id));
+    cnames.put(ts->cname, 1);
+    typeSymbols.add(ts);
+  }
+
+  //
+  // mangle field names if they clash with types or other fields in
+  // the same class
+  //
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    if (ClassType* ct = toClassType(ts->type)) {
+      Vec<const char*> fieldSet;
+      for_fields(field, ct) {
+        legalizeCName(field);
+        if (fieldSet.set_in(field->cname))
+          field->cname = astr("_", field->cname, "_", istr(field->id));
+        fieldSet.set_add(field->cname);
+      }
+    }
+  }
+
+  //
+  // mangle global variable names if they class with types or other
+  // global variables
   //
   forv_Vec(BaseAST, ast, gAsts) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (VarSymbol* var = toVarSymbol(def->sym)) {
         if (var->defPoint && toModuleSymbol(var->defPoint->parentSymbol)) {
-          varSymbols.add(var);
+          legalizeCName(var);
           if (!var->isExtern && cnames.get(var->cname))
             var->cname = astr("_", var->cname, "_", istr(var->id));
           cnames.put(var->cname, 1);
-          globalNames.put(var->cname, 1);
+          varSymbols.add(var);
         }
       }
     }
   }
 
-  Vec<BaseAST*> postorderAsts;
-  collect_asts_postorder(&postorderAsts);
-  forv_Vec(BaseAST, ast, postorderAsts) {
-    if (CallExpr* call = toCallExpr(ast))
-      if (FnSymbol* fn = call->isResolved())
-        if (fn->hasPragma("c for loop increment"))
-          call->remove();
+  //
+  // mangle function names if they clash with types, global variables,
+  // or other functions
+  //
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn == chpl_main)
+      fn->cname = astr("_chpl_main");
+    legalizeCName(fn);
+    if (!fn->isExtern && cnames.get(fn->cname))
+      fn->cname = astr("_", fn->cname, "_", istr(fn->id));
+    cnames.put(fn->cname, 1);
+    fnSymbols.add(fn);
+  }
 
-    if (DefExpr* def = toDefExpr(ast)) {
-      Symbol* sym = def->sym;
+  //
+  // mangle formal argument names if they clash with types, global
+  // variables, functions, or earlier formal arguments in the same
+  // function
+  //
+  forv_Vec(FnSymbol, fn, gFns) {
+    Vec<const char*> formalSet;
+    for_formals(formal, fn) {
+      legalizeCName(formal);
+      if (cnames.get(formal->cname) || formalSet.set_in(formal->cname))
+        formal->cname = astr("_", formal->cname, "_", istr(formal->id));
+      formalSet.set_add(formal->cname);
+    }
+  }
 
-      if (sym->name == sym->cname)
-        sym->cname = astr(sym->name);
+  //
+  // mangle local variable names if they clash with types, global
+  // variables, functions, formal arguments of their function, or
+  // other local variables in the same function
+  //
+  forv_Vec(FnSymbol, fn, gFns) {
+    Vec<const char*> local;
 
-      if (sym == chpl_main)
-        sym->cname = astr("_chpl_main");
+    for_formals(formal, fn) {
+      local.set_add(formal->cname);
+    }
 
-      if (VarSymbol* vs = toVarSymbol(ast))
-        if (vs->immediate)
-          continue;
+    Vec<BaseAST*> asts;
+    collect_asts(&asts, fn->body);
+    forv_Vec(BaseAST, ast, asts) {
 
-      legalizeCName(sym);
+      // remove special calls for C-style for loops
+      if (CallExpr* call = toCallExpr(ast))
+        if (FnSymbol* fn = call->isResolved())
+          if (fn->hasPragma("c for loop increment"))
+            call->remove();
 
-      // mangle symbol that is neither field nor formal if the symbol's
-      // name has already been encountered
-      if (!toArgSymbol(sym) &&
-          !toClassType(sym->parentScope->astParent) &&
-          !sym->isExtern &&
-          !(toVarSymbol(sym) && sym->defPoint && toModuleSymbol(sym->defPoint->parentSymbol)) &&
-          cnames.get(sym->cname))
-        sym->cname = astr("_", sym->cname, "_", istr(sym->id));
+      if (DefExpr* def = toDefExpr(ast)) {
+        Symbol* sym = def->sym;
 
-      //
-      // mangle formal argument names if they clash with global variables
-      //
-      if (toArgSymbol(sym) && globalNames.get(sym->cname))
-        sym->cname = astr("_", sym->cname, "_", istr(sym->id));
+        if (VarSymbol* vs = toVarSymbol(ast))
+          if (vs->immediate)
+            continue;
 
-      cnames.put(sym->cname, 1);
-    
-      if (TypeSymbol* typeSymbol = toTypeSymbol(sym)) {
-        typeSymbols.add(typeSymbol);
+        legalizeCName(sym);
 
-        // mangle field names if necessary
-        if (ClassType* ct = toClassType(typeSymbol->type)) {
-          ChainHashMap<const char*, StringHashFns, int> field_names;
-          for_fields(field, ct) {
-            if (field_names.get(field->cname))
-              field->cname = astr("_", field->cname, "_", istr(field->id));
-            field_names.put(field->cname, 1);
-          }
-        }
-
-      } else if (FnSymbol* fnSymbol = toFnSymbol(sym)) {
-
-        // mangle arguments if necessary
-        ChainHashMap<const char*, StringHashFns, int> formal_names;
-        for_formals(formal, fnSymbol) {
-          if (formal_names.get(formal->cname))
-            formal->cname = astr("_", formal->cname, "_", istr(formal->id));
-          formal_names.put(formal->cname, 1);
-        }
-
-        fnSymbols.add(fnSymbol);
+        if (cnames.get(sym->cname) || local.set_in(sym->cname))
+          sym->cname = astr("_", sym->cname, "_", istr(sym->id));
+        local.set_add(sym->cname);
       }
     }
   }
