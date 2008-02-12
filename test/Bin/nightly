@@ -268,12 +268,8 @@ delete($ENV{'CHPL_HOME'});
 #
 # checkout sources
 #
-$uwusername = $ENV{'CHPL_UW_CVS_USERNAME'};
-if ($uwusername eq "") {
-    $uwusername = $user;
-}
-$cvsroot = ":pserver:$uwusername\@gemelli.cs.washington.edu:2403/gemelli3/chapelroot";
-mysystem("cd $tmpdir && cvs -d $cvsroot checkout nightly", "cvs checkout", 1, 1);
+$svnroot = "https://gemelli.cs.washington.edu/repos/chapel";
+mysystem("cd $tmpdir && svn export -q $svnroot", "svn checkout", 1, 1);
 
 
 #

@@ -9,8 +9,6 @@ unsetenv CHPL_NIGHTLY_STATDIR
 unsetenv CHPL_DEVELOPER
 unsetenv CHPL_HOST_PLATFORM
 unsetenv CHPL_TARGET_PLATFORM
-unsetenv CHPL_UW_CVS_USERNAME
-unsetenv CVSROOT
 unsetenv CHPLDEVTMP
 
 set mymake = $argv[1]

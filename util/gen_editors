@@ -11,21 +11,16 @@ if ($basetmpdir eq "") {
 if ($basetmpdir eq "") {
     $basetmpdir = "/tmp";
 }
-$uwusername = $ENV{'CHPL_UW_CVS_USERNAME'};
-if ($uwusername eq "") {
-    $uwusername = $user;
-}
 $tmpdir = "$basetmpdir/chapel-editors.$user.$pid.deleteme";
 $chapeldir = "$tmpdir/etc";
-$cvsroot = ":pserver:$uwusername\@gemelli.cs.washington.edu:2403/gemelli3/chapelroot";
+$svnroot = "https://gemelli.cs.washington.edu/repos/chapel";
 system("mkdir $tmpdir > /dev/null");
 print "Checking out the sources...\n";
-system("cd $tmpdir && cvs -q -d $cvsroot checkout nightly > /dev/null");
+system("cd $tmpdir && svn export -q $svnroot");
 system("cd $tmpdir/chapel/etc/emacs && rm */*.orig.el");
 
 
-#$ignores = "CVS|Bin|Logs|Samples|Share|OUTPUT|RCS";
-$cvsignores = "CVS|RCS|.cvsignore";
+$cvsignores = ".cvsignore";
 
 # explicit files to include
 @files = (

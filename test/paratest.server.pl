@@ -44,7 +44,7 @@
 $debug = 0;                            # turn on debug output
 $verbose = 0;                          # more verbose output
 
-$dirs_to_ignore = "CVS|Bin|Logs|Samples|Share|OUTPUT|RCS";
+$dirs_to_ignore = "Bin|Logs|Samples|Share|OUTPUT|RCS";
 
 $logdir = "Logs";                      # dir under test to store logs
 $synchdir = "$logdir/.synch";          # where to store temporary metadata

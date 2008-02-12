@@ -16,11 +16,12 @@ if (@ARGV) {
 
 if (@ARGV) {
     $statdate = shift @ARGV;
-    $cvsdate = "$statdate 00:00:01";
+    $svndateraw = `date +%F -d$statdate`; chomp($svndateraw);
 } else {
     $statdate = `date +%D`; chomp($statdate);
-    $cvsdate = $statdate;
+    $svndateraw = `date +%F`; chomp($svndateraw);
 }
+$svndate = "{$svndateraw}";
 
 if ($printusage == 1) {
     print "nightly [-debug|-cron] {date}\n";
@@ -64,7 +65,7 @@ mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
 # checkout sources
 #
 
-mysystem("cd $tmpdir && cvs -d :pserver:bradc\@gemelli.cs.washington.edu:2403/gemelli3/chapelroot checkout -D \"$cvsdate\" nightly", "cvs checkout", 1, 1);
+mysystem("cd $tmpdir && svn export -q -r '$svndate' https://gemelli.cs.washington.edu/repos/chapel", "svn checkout", 1, 1);
 
 $allcppfiles = "`find -name '*.cpp'` `find -name '*.c'` `find -name '*.h'`";
 $compdir = "$tmpdir/chapel/compiler";

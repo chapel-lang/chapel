@@ -20,7 +20,7 @@ if (@ARGV) {
 if ($cron) {
     `rm -rf /tmp/opt_testing`;
     `mkdir /tmp/opt_testing`;
-    `cd /tmp/opt_testing && cvs checkout nightly >& /dev/null`;
+    `cd /tmp/opt_testing && svn export -q https://gemelli.cs.washington.edu/repos/chapel >& /dev/null`;
     `cd /tmp/opt_testing/chapel && make all >& /dev/null`;
     $home = "/tmp/opt_testing/chapel/test";
     $ENV{'CHPL_HOME'} = "/tmp/opt_testing/chapel";

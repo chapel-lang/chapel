@@ -81,7 +81,7 @@
 # (e.g. --compopts).
 #
 # The -compiler option allows the user to specify the compiler to test
-# if it is something other than the obvious one in the current CVS
+# if it is something other than the obvious one in the current SVN
 # structure.  This lets one run other people's compilers, old copies
 # of compilers, etc.
 #
@@ -350,9 +350,9 @@
 #    override the timeout just for itself by supplying a timeout
 #    value in a foo.timeout file.
 #
-#  - subdirectory-specific .cvsignore files can also be very 
-#    helpful so that files generated during testing won't clutter
-#    the results of a cvs -nq update command.
+#  - using subdirectory-specific svn:ignore properties can also be
+#    very helpful so that files generated during testing won't
+#    clutter the results of a svn status command.
 #
 # An alternate way of setting up a subdirectory for testing is to
 # use a Makefile-driven test.  This is most useful for tests that
@@ -815,7 +815,7 @@ foreach absdir ($absdirs)
     #   Take off : with sed
     #
     if ($recurse == 1) then
-        set dirs = `ls -R |& grep ":" | grep -v "\.:" | grep -v "Permission denied" | grep -v "CVS" | grep -v Bin | grep -v Logs | grep -v Samples | grep -v Share | grep -v perfdat | sed 's/://g'`
+        set dirs = `ls -R |& grep ":" | grep -v "\.:" | grep -v "Permission denied" | grep -v Bin | grep -v Logs | grep -v Samples | grep -v Share | grep -v perfdat | sed 's/://g'`
     # gotta add ./ on in case explicit start directories were specified
         set dirs = (./ $dirs)
     else
