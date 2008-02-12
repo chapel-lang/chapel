@@ -3,12 +3,12 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.commonrules
 
 depend: $(DEPENDSUBDIRS) echoruntimedir $(RUNTIME_OBJ_DIR_STAMP) $(DEPEND_DEPS)
 	@echo Updating subdir dependences...
-	@rm -f $(CVS_DEPENDS).tmp
-	@echo > $(CVS_DEPENDS).tmp
+	@rm -f $(SVN_DEPENDS).tmp
+	@echo > $(SVN_DEPENDS).tmp
 	@$(MAKE) filedepend
 	$(OTHER_DEPEND_RULES)
-	@mv -f $(CVS_DEPENDS).tmp $(CVS_DEPENDS)
+	@mv -f $(SVN_DEPENDS).tmp $(SVN_DEPENDS)
 
-CVS_DEPS= $(CVS_SRCS:%.c=%.depend)
+SVN_DEPS= $(SVN_SRCS:%.c=%.depend)
 
-filedepend: $(CVS_DEPS)
+filedepend: $(SVN_DEPS)

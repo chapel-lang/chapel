@@ -27,14 +27,14 @@ echoruntimedir:
 # dependences and misc. stuff
 #
 
--include $(CVS_DEPENDS)
+-include $(SVN_DEPENDS)
 
 #
 # pattern-based rules
 #
 
 %.depend: %.c $(RUNTIME_OBJ_DIR_STAMP)
-	@$(CMAKEDEPEND) $(RUNTIME_CFLAGS) $< | sed s/$*\\\.o/\\\$(RUNTIME_OBJ_DIR_SAFESLASH)\\\/$*\\\.o/ >> $(CVS_DEPENDS).tmp
+	@$(CMAKEDEPEND) $(RUNTIME_CFLAGS) $< | sed s/$*\\\.o/\\\$(RUNTIME_OBJ_DIR_SAFESLASH)\\\/$*\\\.o/ >> $(SVN_DEPENDS).tmp
 
 $(RUNTIME_OBJ_DIR)/%.o: %.c $(RUNTIME_OBJ_DIR_STAMP)
 	@if [ `grep "chplrt.h" $< | wc -l` -ne 1 ]; then echo "PROBLEM:  $< does not include 'chplrt.h'."; exit 1; fi

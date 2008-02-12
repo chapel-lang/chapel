@@ -70,7 +70,7 @@ CLOBBER_TARGS = \
 # platform-specific subdirectory targets
 #
 
-CVS_DEPENDS = ./$(OBJ_SUBDIR)/Makefile.cvs.depend
+SVN_DEPENDS = ./$(OBJ_SUBDIR)/Makefile.svn.depend
 
 
 

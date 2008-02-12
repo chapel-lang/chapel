@@ -27,14 +27,14 @@ echocompilerdir:
 # dependences and misc. stuff
 #
 
--include $(CVS_DEPENDS)
+-include $(SVN_DEPENDS)
 
 #
 # pattern-based rules
 #
 
 %.depend: %.cpp $(OBJ_SUBDIR_MADE)
-	@$(MAKEDEPEND) $(COMP_CFLAGS) $< | sed s/$*\\\.o/\\\$(OBJ_SUBDIR_SAFESLASH)\\\/$*\\\.o/ >> $(CVS_DEPENDS).tmp
+	@$(MAKEDEPEND) $(COMP_CFLAGS) $< | sed s/$*\\\.o/\\\$(OBJ_SUBDIR_SAFESLASH)\\\/$*\\\.o/ >> $(SVN_DEPENDS).tmp
 
 $(OBJ_SUBDIR)/%.o: %.cpp $(OBJ_SUBDIR_MADE)
 	$(CXX) -c $(COMP_CXXFLAGS) -o $@ $<

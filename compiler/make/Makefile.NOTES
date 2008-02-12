@@ -21,7 +21,7 @@ In recursive Makefile structure...
    yet.  Either the make depend will complain that they don't exist
    or, if the -MG flag is used, it will assume that they live in the
    current directory, which may or may not be accurate.  This seems
-   to imply that we should check dependences into the CVS tree.  Ugh.
+   to imply that we should check dependences into the SVN tree.  Ugh.
 
    Alternatively, you can use the -MP flag, which sets up a fake
    dependence for the header file and makes the problem go away,

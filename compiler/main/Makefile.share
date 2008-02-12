@@ -6,8 +6,8 @@ MAIN_SRCS = \
         runtime.cpp \
 	version.cpp \
 
-CVS_SRCS = $(MAIN_SRCS)
-SRCS = $(CVS_SRCS)
+SVN_SRCS = $(MAIN_SRCS)
+SRCS = $(SVN_SRCS)
 
 MAIN_OBJS = \
 	$(MAIN_SRCS:%.cpp=$(MAIN_OBJDIR)/%.$(OBJ_SUFFIX))

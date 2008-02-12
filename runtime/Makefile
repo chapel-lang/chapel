@@ -28,7 +28,7 @@ include src/Makefile.include
 include threads-$(CHPL_MAKE_THREADS)/Makefile.include
 include comm-$(CHPL_MAKE_COMM)/Makefile.include
 
-CVS_SRCS = 
+SVN_SRCS = 
 
 RUNTIME_OBJS = \
 	$(COMMON_OBJS) \

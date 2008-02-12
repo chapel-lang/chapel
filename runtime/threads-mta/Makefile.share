@@ -1,8 +1,8 @@
 THREADS_SRCS = \
 	chpl_cfg_threads.c
 
-CVS_SRCS = $(THREADS_SRCS)
-SRCS = $(CVS_SRCS)
+SVN_SRCS = $(THREADS_SRCS)
+SRCS = $(SVN_SRCS)
 
 THREADS_OBJS = \
 	$(THREADS_SRCS:%.c=$(THREADS_OBJDIR)/%.o)

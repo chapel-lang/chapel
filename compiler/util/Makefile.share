@@ -5,8 +5,8 @@ UTIL_SRCS = \
 	stringutil.cpp \
 	timer.cpp
 
-CVS_SRCS = $(UTIL_SRCS)
-SRCS = $(CVS_SRCS)
+SVN_SRCS = $(UTIL_SRCS)
+SRCS = $(SVN_SRCS)
 
 UTIL_OBJS = \
 	$(UTIL_SRCS:%.cpp=$(UTIL_OBJDIR)/%.$(OBJ_SUFFIX))

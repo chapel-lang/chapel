@@ -48,7 +48,7 @@ CLOBBER_TARGS = \
 # platform-specific subdirectory targets
 #
 
-CVS_DEPENDS = ./$(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)/Makefile.cvs.depend
+SVN_DEPENDS = ./$(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)/Makefile.svn.depend
 
 
 

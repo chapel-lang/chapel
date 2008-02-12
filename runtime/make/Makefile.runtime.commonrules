@@ -5,7 +5,7 @@ clean: $(CLEANSUBDIRS) echoruntimedir
 	rm -f $(CLEAN_TARGS)
 
 cleandeps: $(CLEANSUBDIRDEPS) echoruntimedir
-	rm -f $(CVS_DEPENDS)
+	rm -f $(SVN_DEPENDS)
 
 clobber: $(CLOBBERSUBDIRS) echoruntimedir
 	rm -rf ./$(CLOBBER_TARGS)

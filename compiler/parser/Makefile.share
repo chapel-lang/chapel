@@ -8,8 +8,8 @@ CXX_C_SRCS = \
 	chapel.tab.c \
 	lex.yy.c \
 
-CVS_SRCS = $(PARSER_SRCS)
-SRCS = $(CVS_SRCS) $(CXX_C_SRCS)
+SVN_SRCS = $(PARSER_SRCS)
+SRCS = $(SVN_SRCS) $(CXX_C_SRCS)
 
 PARSER_OBJS = \
 	$(CXX_C_SRCS:%.c=$(PARSER_OBJDIR)/%.$(OBJ_SUFFIX)) \

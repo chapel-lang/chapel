@@ -45,7 +45,7 @@ include parser/Makefile.include
 include passes/Makefile.include
 include util/Makefile.include
 
-CVS_SRCS = 
+SVN_SRCS = 
 
 CHPL_BIN_DIR = ../bin/$(CHPL_MAKE_PLATFORM)
 CHPL = $(CHPL_BIN_DIR)/chpl$(EXE_SUFFIX)

@@ -1,8 +1,8 @@
 COMM_SRCS = \
 	chpl_cfg_comm.c \
 
-CVS_SRCS = $(COMM_SRCS)
-SRCS = $(CVS_SRCS)
+SVN_SRCS = $(COMM_SRCS)
+SRCS = $(SVN_SRCS)
 
 COMM_OBJS = \
 	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)

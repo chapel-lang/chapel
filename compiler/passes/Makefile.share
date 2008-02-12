@@ -19,8 +19,8 @@ PASSES_SRCS = \
         semanticChecks.cpp \
         verify.cpp
 
-CVS_SRCS = $(PASSES_SRCS)
-SRCS = $(CVS_SRCS)
+SVN_SRCS = $(PASSES_SRCS)
+SRCS = $(SVN_SRCS)
 
 PASSES_OBJS = \
 	$(PASSES_SRCS:%.cpp=$(PASSES_OBJDIR)/%.$(OBJ_SUFFIX))
