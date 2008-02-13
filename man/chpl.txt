@@ -86,6 +86,8 @@ OPTIONS
                     --no-copy-propagation, --no-single-loop-iterator-opt,
                     --no-expand-iterators-inline-opt, --no-flow-analysis,
                     and --no-inline. This option implies --no-checks.
+                    Use of this option may affect IEEE floating point
+                    conformance.
  
   --[no]-local      Optimize compilation of code for single locale
                     execution, changing on blocks to normal blocks and
