@@ -1,0 +1,4 @@
+bug: spin-waiting for a variable to be changed by a remote begin fails
+
+This test causes gasnet to crash with a congestion error, leaving a hung
+process that needs to be manually killed.
