@@ -537,9 +537,7 @@ codegen_config(FILE* outfile) {
     }
   }
 
-  fprintf(outfile, "if (askedToParseArgs()) {\n");
-  fprintf(outfile, "  parseConfigArgs();\n");
-  fprintf(outfile, "}\n");
+  fprintf(outfile, "parseConfigArgs();\n");
 
   fprintf(outfile, "}\n");
 }

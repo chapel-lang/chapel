@@ -64,15 +64,6 @@ void addToConfigList(const char* currentArg, configSource argSource) {
 }
 
 
-int askedToParseArgs(void) {
-  int answer = 0;
-  if (firstArg != NULL) {
-    answer = 1;
-  }
-  return answer;
-}
-
-
 static void parseModVarName(char* modVarName, const char** moduleName, 
                             char** varName) {
   char* dot = strrchr(modVarName, '.');

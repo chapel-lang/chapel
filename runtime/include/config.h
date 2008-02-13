@@ -9,7 +9,6 @@
 typedef enum { fdash, sdash, ddash } configSource;
 
 void addToConfigList(const char* currentArg, configSource argSource);
-int askedToParseArgs(void);
 void parseConfigArgs(void);
 void printHelpMessage(void);
 void initConfigVarTable(void);

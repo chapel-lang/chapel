@@ -15,13 +15,17 @@
 
 int main(int argc, char* argv[]) {
   // Was this version of main invoked by the user, or by the comm layer?
-  if (_chpl_comm_user_invocation(argc, argv)) {
+  int userInvocation = _chpl_comm_user_invocation(argc, argv);
+
+  if (userInvocation) {
     //
     // If it's the user, parse the arguments to determine the number
     // of locales.
     //
     int32_t execNumLocales;
     parseArgs(argc, argv);
+    initMemTable();
+    CreateConfigVarTable();
 
     execNumLocales = getArgNumLocales();
     //
@@ -66,8 +70,10 @@ int main(int argc, char* argv[]) {
   maxThreads = 3;
 
   _chpl_comm_barrier("about to leave comm init code");
-  initMemTable();            // get ready to start tracking memory
-  CreateConfigVarTable();    // get ready to start tracking config vars
+  if (!userInvocation) {
+    initMemTable();            // get ready to start tracking memory
+    CreateConfigVarTable();    // get ready to start tracking config vars
+  }
   initChplThreads();         // initialize the threads layer
   _initModuleGuards();       // initialize _run_mod_firsttime vars
   _heapAllocateGlobals();    // allocate global vars on heap for multilocale
