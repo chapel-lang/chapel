@@ -1,14 +1,13 @@
 # USAGE: the intent of this file is to keep track of current
 # regressions and to keep notes about why they are failing.  Since
 # linux is our main platform, linux regressions are listed first, and
-# will typically apply to all other platforms as well.  Variations on
-# linux (linux with valgrind and linux64) are listed next.  Other
-# platforms follow, listed alphabetically.  Regressions that are not
-# found on linux should be listed under the platforms in question.
-# Formatting for each entry can be loose, but should roughly follow
-# the format of test name(s), followed by a description of why that
-# test is failing, followed by an indication of whose court the
-# regression is in.
+# are typically assumed to apply to all other platforms as well.
+# Other platforms/settings that are currently causing regressions are
+# listed afterwards in no particular order.  Formatting for each entry
+# can be loose, but should roughly follow the format of brief note on
+# why the test is failing followed by a list of tests that are failing
+# for that reason.  If someone owns a particular regression, their
+# name can be added to the description as well.
 
 =============================
 linux and general regressions
@@ -31,18 +30,6 @@ garbage collection broken due to super field changes
 timing out
 ----------------------------------------------------
 classes/diten/allocateManyObjects
-
-
-=============================
-baseline-specific regressions
-=============================
-
-C compilation error when inlining is turned off
-(also fauses failure for opt -no-inline tests)
------------------------------------------------
-[Error matching compiler output for release/examples/quicksort]
-
-
 
 
 ===============================
@@ -241,14 +228,18 @@ compiler output error - incorrect line number
    parallel/cobegin/bradc/varsEscape-workaround
    release/examples/iterators
 
- program output error - undiagnosed nil dereference
---------------------------------
+compiler error -- alist indexing error for primitive get on non-wide tuples
+---------------------------------------------------------------------------
    arrays/deitz/test_array_dot_type
    arrays/deitz/part2/test_array_init
 
  program output error - sizeof primitive of heap class
 --------------------------------
    trivial/deitz/test_type_sizes
+
+race condition based on sleep -- replace with sync var once implemented
+-----------------------------------------------------------------------
+[Error matching program output for stress/deitz/test_10k_begins]
 
 
 
