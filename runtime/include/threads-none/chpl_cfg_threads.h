@@ -65,11 +65,4 @@ typedef _chpl_sync_aux_t _chpl_single_aux_t;
       (x)->single_aux = false; \
      } while (0)
 
-
-// thread-related - used in comm-gasnet
-typedef int _chpl_thread_t;                // bogus thread handle
-
-#define _chpl_thread_create(thread, attr, fun, arg) \
-  (*fun)(arg)
-
 #endif

@@ -57,6 +57,14 @@ int main(int argc, char* argv[]) {
     parseArgs(argc, argv);
   }
   _chpl_comm_rollcall();
+
+  //
+  // Set up maxThreads to allow threads to initialize modules; this
+  // will be changed when the config const maxThreads is set when the
+  // base module is initialized.
+  //
+  maxThreads = 3;
+
   _chpl_comm_barrier("about to leave comm init code");
   initMemTable();            // get ready to start tracking memory
   CreateConfigVarTable();    // get ready to start tracking config vars

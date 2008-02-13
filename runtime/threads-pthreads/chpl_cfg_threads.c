@@ -6,6 +6,7 @@
 #include "error.h"
 #include <pthread.h>
 #include <stdint.h>
+#include <stdio.h>
 
 
 typedef struct {
@@ -227,7 +228,7 @@ int _chpl_cobegin (int                      nthreads,
   int               t, retv = 0;
   void             *fn_retv;                         // drop?
   struct {                                   // temporary work space
-    _chpl_thread_t thread;                   // thread handle for join/wait
+    pthread_t thread;                   // thread handle for join/wait
     int            error;                    // to store fork error code
   } twrk[nthreads];
 
@@ -280,7 +281,7 @@ static void _chpl_begin_helper (_chpl_createarg_t *);
 // Returns true if next task from task pool was launched successfully, false otherwise.
 static _chpl_bool
 launch_next_task(void) {
-  _chpl_thread_t      thread;
+  pthread_t      thread;
   struct task_pool *task = task_pool_head;
   if (pthread_create(&thread, NULL, (_chpl_threadfp_t) _chpl_begin_helper, task->nt))
     return false;
@@ -324,7 +325,7 @@ _chpl_begin_helper (_chpl_createarg_t *nt) {
 // thread.  Also we only expect one thread to fork with a begin block.
 int
 _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a) {
-  _chpl_thread_t      thread;
+  pthread_t      thread;
   _chpl_createarg_t  *nt;
 
   if (_chpl_get_serial()) {

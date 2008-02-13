@@ -94,11 +94,4 @@ typedef struct {
       (x)->single_aux.is_full = false; \
      } while (0)
 
-
-// thread-related - used in comm-gasnet
-typedef pthread_t _chpl_thread_t;          // thread handle
-
-#define _chpl_thread_create(thread, attr, fun, arg) \
-  pthread_create(thread, attr, fun, arg)
-
 #endif

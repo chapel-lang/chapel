@@ -29,8 +29,4 @@ typedef struct {
 #define _chpl_single_write_EF(x,y,lineno,filename) writeef(&((x)->value), (y))
 #define _chpl_single_reset(x) purge(&((x)->value))
 
-// thread-related - used in comm-gasnet
-#define _chpl_thread_create(thread, attr, fun, arg) \
-  (*fun)(arg)
-
 #endif

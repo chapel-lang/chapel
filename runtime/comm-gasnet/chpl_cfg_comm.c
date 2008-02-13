@@ -13,7 +13,7 @@
 
 #ifdef _DIST_DEBUG
 #define PRINTF(_s)                                                      \
-  printf("%d:%s\n", _chpl_comm_locale_id(), _s);                        \
+  printf("%d:%s\n", _localeID, _s);                                     \
   fflush(stdout)
 #else
 #define PRINTF(_s)
@@ -78,12 +78,11 @@ void _AM_fork_nb_wrapper(dist_fork_t *i) {
 void _AM_fork_nb(gasnet_token_t token, 
                  void   *buf,
                  size_t  nbytes) {
-  _chpl_thread_t    t;
   dist_fork_t *fork_info;
 
   fork_info = (dist_fork_t*) _chpl_malloc(nbytes, sizeof(char), "", 0, 0);
   bcopy(buf, fork_info, nbytes);
-  _chpl_thread_create(&t, NULL, (_chpl_threadfp_t)_AM_fork_nb_wrapper, (void*)fork_info);
+  _chpl_begin((_chpl_threadfp_t)_AM_fork_nb_wrapper, (_chpl_threadarg_t)fork_info);
 }
 
 
@@ -98,7 +97,7 @@ void _AM_fork_wrapper(dist_fork_t *i) {
                                       SIGNAL, 
                                       &(i->ack), 
                                       sizeof(i->ack)));
-  _chpl_free(i, 0, 0);
+  //  _chpl_free(i, 0, 0);
 }
 
 
@@ -106,14 +105,13 @@ void _AM_fork_wrapper(dist_fork_t *i) {
 void _AM_fork(gasnet_token_t  token, 
        void    *buf,
        size_t   nbytes) {
-  _chpl_thread_t     t;
   dist_fork_t *fork_info;
 
   PRINTF("_AM_fork");
 
   fork_info = (dist_fork_t*) _chpl_malloc(nbytes, sizeof(char), "", 0, 0);
   bcopy(buf, fork_info, nbytes);
-  _chpl_thread_create(&t, NULL, (_chpl_threadfp_t)_AM_fork_wrapper, (void*)fork_info);
+  _chpl_begin((_chpl_threadfp_t)_AM_fork_wrapper, (_chpl_threadarg_t)fork_info);
 }
 
 
