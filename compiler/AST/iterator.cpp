@@ -192,6 +192,32 @@ insertSetMember(BaseAST* ast, Symbol* ic, Symbol* f, BaseAST* v) {
 }
 
 
+//
+// initialize temp to default value (recursive for records)
+//
+static void
+insertSetMemberInits(FnSymbol* fn, Symbol* var) {
+  Type* type = var->type;
+  if (type->symbol->hasPragma("ref"))
+    type = getValueType(type);
+  if (type->defaultValue) {
+    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, type->defaultValue));
+  } else {
+    ClassType* ct = toClassType(type);
+    INT_ASSERT(ct);
+    for_fields(field, ct) {
+      if (field->type->refType) { // skips array types (how to handle arrays?)
+        Symbol* tmp = new VarSymbol("_tmp", field->type->refType);
+        tmp->isCompilerTemp = true;
+        fn->insertAtTail(new DefExpr(tmp));
+        fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, var, field)));
+        insertSetMemberInits(fn, tmp);
+      }
+    }
+  }
+}
+
+
 static void
 buildGetNextCursor(FnSymbol* fn,
                    Vec<BaseAST*>& asts,
@@ -624,14 +650,17 @@ buildSingleLoopMethods(FnSymbol* fn,
 
       local = newlocal;
     } else {
+      if (isRecordType(local->type)) {
+        insertGetMember(ii->getHeadCursor, headMap.get(local), headIterator, field);
+        insertGetMember(ii->getNextCursor, local, nextIterator, field);
+        insertGetMember(ii->getZipCursor1, zip1Map.get(local), zip1Iterator, field);
+      }
       insertGetMember(ii->getZipCursor2, zip2Map.get(local), zip2Iterator, field);
       insertGetMember(ii->getZipCursor3, zip3Map.get(local), zip3Iterator, field);
       insertGetMember(ii->getZipCursor4, zip4Map.get(local), zip4Iterator, field);
     }
     insertGetMember(ii->getNextCursor, local, nextIterator, field);
     if (isRecordType(local->type)) {
-      if (!isArgSymbol(local))
-        insertGetMember(ii->getHeadCursor, headMap.get(local), headIterator, field);
       insertSetMember(ii->getHeadCursor, headIterator, field, headMap.get(local));
       insertSetMember(ii->getNextCursor, nextIterator, field, local);
       insertSetMember(ii->getZipCursor1, zip1Iterator, field, zip1Map.get(local));
@@ -864,8 +893,14 @@ void lowerIterator(FnSymbol* fn) {
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, t1, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->classType->symbol, new_StringSymbol("iterator class"))));
   forv_Vec(Symbol, local, locals) {
     Symbol* field = local2field.get(local);
-    if (toArgSymbol(local)) {
+    if (toArgSymbol(local))
       insertSetMember(fn, t1, field, local);
+    else if (isRecordType(local->type)) {
+      Symbol* tmp = new VarSymbol("_tmp", field->type->refType);
+      tmp->isCompilerTemp = true;
+      fn->insertAtTail(new DefExpr(tmp));
+      fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, t1, field)));
+      insertSetMemberInits(fn, tmp);
     }
   }
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));

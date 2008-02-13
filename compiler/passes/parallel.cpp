@@ -409,17 +409,7 @@ insertWideReferences(void) {
                 call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, se));
               }
             }
-          }
-        }
-      }
-    }
-  }
-
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (SymExpr* se = toSymExpr(ast)) {
-      if (se->var == gNil) {
-        if (CallExpr* call = toCallExpr(se->parentExpr)) {
-          if (call->isPrimitive(PRIMITIVE_MOVE)) {
+          } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
             if (Type* wtype = call->get(1)->typeInfo()) {
               if (wtype->symbol->hasPragma("wide")) {
                 if (Type* wctype = wtype->getField("addr")->type->getField("_val")->type) {
@@ -432,11 +422,22 @@ insertWideReferences(void) {
                 }
               }
             }
+          } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+            if (Type* wctype = call->get(2)->typeInfo()) {
+              if (wctype->symbol->hasPragma("wide class")) {
+                VarSymbol* tmp = new VarSymbol("_tmp", wctype);
+                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                se->replace(new SymExpr(tmp));
+                call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, se));
+              }
+            }
           }
         }
       }
     }
   }
+
+
 
   //
   // insert cast temps if lhs type does not match cast type
