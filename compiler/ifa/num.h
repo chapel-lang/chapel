@@ -1,6 +1,3 @@
-/* -*-Mode: c++;-*-
-*/
-
 #ifndef _num_h_
 #define _num_h_
 

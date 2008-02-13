@@ -1,5 +1,3 @@
-/* -*-Mode: c++;-*-
-*/
 #ifndef _misc_H_
 #define _misc_H_
 

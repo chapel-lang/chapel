@@ -1,5 +1,3 @@
-/* -*-Mode: c++;-*-
-*/
 #ifndef _driver_H_
 #define _driver_H_
 

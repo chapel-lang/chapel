@@ -1,6 +1,3 @@
-/* -*-Mode: c++;-*-
-*/
-
 #ifndef _log_H_
 #define _log_H_
 

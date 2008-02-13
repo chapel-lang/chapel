@@ -1,5 +1,3 @@
-/* -*-Mode: c++;-*-
-*/
 #ifndef _chpl_H
 #define _chpl_H_
 
