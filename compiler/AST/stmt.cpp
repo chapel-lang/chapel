@@ -82,79 +82,6 @@ void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
 
 
 static void
-codegenCobegin( FILE* outfile, AList* body) {
-  int num_stmts = body->length();
-
-  // if the cobegin is empty, exit early to avoid declaring 0-length
-  // arrays which some compilers (PGI) don't like
-  if (num_stmts == 0) {
-    fprintf(outfile, "/* empty cobegin at */\n");
-    return;
-  }
-  // For now, assume all statements will be forked.
-
-  // gen code for the function pointer array
-  fprintf (outfile, "_chpl_threadfp_t fpv[%d] = {\n", num_stmts);
-  int stmt_cnt = 0;
-  for_alist(stmt, *body) {
-    if (CallExpr *cexpr=toCallExpr(stmt)) {
-      if (SymExpr *sexpr=toSymExpr(cexpr->baseExpr)) {
-        fprintf (outfile, "(_chpl_threadfp_t)%s", sexpr->var->cname);
-      } else {
-        INT_FATAL(stmt, "cobegin codegen - call expr not a SymExpr");
-      } 
-    } else {
-      INT_FATAL(stmt, "cobegin codegen - statement not a CallExpr");
-    }
-    stmt_cnt++;
-    if (stmt_cnt < num_stmts) {
-      fprintf (outfile, ",\n");
-    }
-  }
-  fprintf (outfile, "};\n");
-      
-  // ok, walk through again and gen code for the argument array
-  fprintf (outfile, "_chpl_threadarg_t av[%d] = {\n", num_stmts);
-  stmt_cnt = 0;
-  for_alist(stmt, *body) {
-    if (CallExpr *cexpr=toCallExpr(stmt)) {
-      Expr *actuals = cexpr->get(1);
-      // pass exactly one class object containing ptrs to locals
-      fprintf (outfile, "(_chpl_threadarg_t)");
-      if (actuals) {
-        /*
-          FnSymbol *fnsym = cexpr->findFnSymbol();
-          DefExpr  *formals = fnsym->formals->first();
-          if (toArgSymbol(formals->sym)->requiresCPtr()) {
-          fprintf (outfile, "&");
-          }
-        */
-        fprintf (outfile, "(");
-        actuals->codegen (outfile);
-        fprintf (outfile, ")");
-      } else {
-        fprintf (outfile, "NULL");
-      }
-    }
-    stmt_cnt++;
-    if (stmt_cnt < num_stmts) {
-      fprintf (outfile, ",\n");
-    }
-  }
-  fprintf (outfile, "};\n");
-
-#if 0      
-  fprintf (outfile, "_chpl_cobegin_wkspace_t wksp[%d];\n", num_stmts);
-  fprintf (outfile, "_chpl_cobegin (%d, %s, %s, %s);\n",
-           num_stmts, "fpv", "av", "wksp");
-#endif
-  fprintf (outfile, "_chpl_cobegin (%d, %s, %s);\n",
-           num_stmts, "fpv", "av");
-
-}
-
-
-static void
 codegenBegin( FILE* outfile, AList* body) {
   // Body should be one function call that we fork.
   if (body->length() != 1)
@@ -222,9 +149,7 @@ void BlockStmt::codegen(FILE* outfile) {
   if (this != getFunction()->body)
     fprintf(outfile, "{\n");
 
-  if (blockTag == BLOCK_COBEGIN) {
-    codegenCobegin(outfile, &body);
-  } else if (blockTag == BLOCK_BEGIN) {
+  if (blockTag == BLOCK_BEGIN) {
     codegenBegin(outfile, &body);
   } else if (blockTag == BLOCK_ON) {
     if (CallExpr* call = toCallExpr(body.only())) {

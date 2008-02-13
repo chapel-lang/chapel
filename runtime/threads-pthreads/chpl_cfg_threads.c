@@ -222,44 +222,6 @@ void _chpl_set_serial(_chpl_bool state) {
 }
 
 
-int _chpl_cobegin (int                      nthreads,
-                   _chpl_threadfp_t        *fp,
-                   _chpl_threadarg_t       *a) {
-  int               t, retv = 0;
-  void             *fn_retv;                         // drop?
-  struct {                                   // temporary work space
-    pthread_t thread;                   // thread handle for join/wait
-    int            error;                    // to store fork error code
-  } twrk[nthreads];
-
-  if (_chpl_get_serial()) {
-    for (t=0; t<nthreads; t++) {
-      (*fp[t])(a[t]);
-    }
-  } else {
-    // fork pthreads
-    for (t=0; t<nthreads; t++) {
-      if ((twrk[t].error = pthread_create(&(twrk[t].thread), 
-                                          NULL, 
-                                          fp[t], 
-                                          a[t]))) {
-        _printInternalError("too many threads");
-      }
-      retv |= twrk[t].error;
-    }
-
-    // wait on those fork'd
-    for (t=0; t<nthreads; t++) {
-      if (!twrk[t].error) {                // if we fork'd successfully
-        twrk[t].error = pthread_join(twrk[t].thread, (void*) &fn_retv);
-        retv |= twrk[t].error;
-      }
-    }
-  }
-  return retv;
-}
-
-
 // Appends the given task to the end of the task pool.
 static void
 add_to_task_pool (_chpl_createarg_t *nt) {
@@ -321,8 +283,6 @@ _chpl_begin_helper (_chpl_createarg_t *nt) {
 }
 
 
-// Similar to _chpl_cobegin above, be we do not wait on the forked
-// thread.  Also we only expect one thread to fork with a begin block.
 int
 _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a) {
   pthread_t      thread;

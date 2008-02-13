@@ -89,18 +89,6 @@ void _chpl_set_serial(_chpl_bool state) {
 }
 
 int
-_chpl_cobegin(int                      nthreads,
-              _chpl_threadfp_t        *fp,
-              _chpl_threadarg_t       *a) {
-  int t;
-
-  for (t=0; t<nthreads; t++) {
-    (*fp[t])(a[t]);
-  }
-  return 0;
-}
-
-int
 _chpl_begin(_chpl_threadfp_t fp, _chpl_threadarg_t a) {
   (*fp)(a);
   return 0;

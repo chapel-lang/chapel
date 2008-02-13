@@ -413,7 +413,6 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
       case BLOCK_ATOMIC: fprintf(html_file, "atomic"); break;
       case BLOCK_ON: fprintf(html_file, "on"); break;
       case BLOCK_BEGIN: fprintf(html_file, "begin"); break;
-      case BLOCK_COBEGIN: fprintf(html_file, "cobegin"); break;
       case BLOCK_DO_WHILE: fprintf(html_file, "do while"); break;
       case BLOCK_FOR: fprintf(html_file, "for"); break;
       case BLOCK_FORALL: fprintf(html_file, "forall"); break;

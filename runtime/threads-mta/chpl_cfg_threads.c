@@ -179,61 +179,6 @@ void _chpl_set_serial(_chpl_bool state) {
 }
 
 
-int _chpl_cobegin (int                      nthreads,
-                   _chpl_threadfp_t        *fps,
-                   _chpl_threadarg_t       *args) {
-  int               t;
-
-  if (_chpl_get_serial())
-    for (t=0; t<nthreads; t++)
-      (*fps[t])(args[t]);
-
-  else {
-    int64_t can_exit, *can_exit_p = &can_exit;
-    int64_t begin_cnt = 0, *begin_cnt_p = &begin_cnt;
-
-    // create threads
-    for (t=0; t<nthreads; t++, fps++, args++) {
-
-      int_fetch_add(begin_cnt_p, 1);       // assume begin will succeed
-      purge(can_exit_p);
-#ifdef MTA_DEBUG
-      fprintf(stderr, "About to create future no. %d\n", t);
-#endif
-      future (fps, args, begin_cnt_p, can_exit_p, t) {
-        int prev_count;
-#ifdef MTA_DEBUG
-        fprintf(stderr, "Inside future no. %d\n", t);
-#endif
-        (**fps)(*args);
-#ifdef MTA_DEBUG
-        fprintf(stderr, "About to exit future no. %d\n", t);
-#endif
-        // decrement begin thread count and see if we can signal Chapel exit
-        prev_count = int_fetch_add(begin_cnt_p, -1);
-#ifdef MTA_DEBUG
-        fprintf(stderr, "prev_count = %d\n", prev_count);
-#endif
-        if (prev_count == 1)               // i.e., begin_cnt is now zero
-          writeef(can_exit_p, 1);          // mark this variable full
-      }
-#ifdef MTA_DEBUG
-      fprintf(stderr, "Finished creating future no. %d\n", t);
-#endif
-    }
-#ifdef MTA_DEBUG
-    fprintf(stderr, "Finished creating all futures!\n");
-#endif
-
-    readfe(can_exit_p);      // block until all threads have finished executing
-  }
-
-  return 0;
-}
-
-
-// Similar to _chpl_cobegin above, be we do not wait on the launched
-// thread.  Also we only expect one thread to launch with a begin block.
 int
 _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t arg) {
 

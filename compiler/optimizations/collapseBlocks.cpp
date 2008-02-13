@@ -13,7 +13,6 @@ void collapseBlocks(BlockStmt* block) {
     if (BlockStmt* block = toBlockStmt(expr)) {
       if (block->list &&
           !block->loopInfo &&
-          block->blockTag != BLOCK_COBEGIN &&
           block->blockTag != BLOCK_ON &&
           block->blockTag != BLOCK_BEGIN) {
         for_alist(expr, block->body)

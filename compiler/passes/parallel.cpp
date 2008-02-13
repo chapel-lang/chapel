@@ -106,7 +106,7 @@ bundleArgs(BlockStmt* block) {
       } else
         newb->insertAtTail(new CallExpr(wrap_fn, tempc));
 
-      if (block->blockTag == BLOCK_BEGIN || block->blockTag == BLOCK_COBEGIN)
+      if (block->blockTag == BLOCK_BEGIN)
         wrap_fn->insertAtHead(new CallExpr(PRIMITIVE_THREAD_INIT));
         
       // translate the original cobegin function
@@ -153,8 +153,7 @@ parallel(void) {
 
   forv_Vec(BlockStmt, block, blocks) {
     if (block->blockTag == BLOCK_ON ||
-        block->blockTag == BLOCK_BEGIN ||
-        block->blockTag == BLOCK_COBEGIN)
+        block->blockTag == BLOCK_BEGIN)
       bundleArgs(block);
   }
 }

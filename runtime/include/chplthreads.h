@@ -51,13 +51,6 @@ void    _chpl_set_serial(_chpl_bool);      // set dynamic serial state true or f
 typedef void* (*_chpl_threadfp_t)(void*);  // function pointer
 typedef void* _chpl_threadarg_t;           // function argument
 
-// Fork and wait on nthreads.  Used to implement Chapel's cobegin statement.
-// Return aggregate thread join error.
-int
-_chpl_cobegin (int,                        // number of threads
-               _chpl_threadfp_t *,         // ptrs to functions to fork
-               _chpl_threadarg_t *);       // function args
-
 // Fork one thread.  Do not wait.  Used to implement Chapel's begin statement.
 // Return thread creation error.
 int
