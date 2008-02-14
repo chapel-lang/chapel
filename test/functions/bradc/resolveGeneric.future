@@ -1,3 +1,7 @@
+error message: using a type as a function
+
+was:
+
 bug: compiler indexes list out of bounds
 
 I'm not certain whether this test should work as-is,
