@@ -1,0 +1,1 @@
+bug: An undefined variable used in a class member init causes a crash
