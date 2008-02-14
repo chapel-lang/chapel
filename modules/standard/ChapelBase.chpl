@@ -556,7 +556,12 @@ def _copy(r: _ref) return _copy(__primitive("get ref", r));
 pragma "inline" pragma "ref"
 def _pass(r: _ref) return r;
 
-// Returns whether an object of type t occupies a 64-bit word on MTA
+// Returns whether an object of type t occupies a 64-bit word on Cray's MTA/XMT
+// (The definition of this function should be target dependent.  This would avoid
+// the need to write C macros in the runtime that essentially duplicate
+// the functionality of the read/write methods of the _syncvar and _singlevar classes
+// for targets that don't have particularly fast ways of achieving this functionality
+// for simple base types.)
 def isSimpleSyncBaseType (type t) param {
   if t == int(64) || t == uint(64) || t == int(32) || t == uint(32)
       || t == int(16) || t == uint(16) || t == int(8) || t == uint(8)
@@ -570,8 +575,10 @@ pragma "no default functions"
 pragma "no object"
 class _syncvar {
   type base_type;
-  var  value: base_type;       // actual data
-  pragma "omit from constructor" var  sync_aux: _sync_aux_t; // data structure for locking, signaling, etc.
+  var  value: base_type;       // actual data - may need to be declared specially on some targets!
+  pragma "omit from constructor" var sync_aux: _sync_aux_t; // data structure for locking, signaling, etc.
+  // Ideally, the definition of this class should be target and base_type dependent,
+  // since not all targets need to have a sync_aux field if base_type is sufficiently simple.
 
   def initialize() {
     __primitive("init_sync_aux", this);
@@ -726,8 +733,10 @@ pragma "no default functions"
 pragma "no object"
 class _singlevar {
   type base_type;
-  var  value: base_type;     // actual data
-  pragma "omit from constructor" var  single_aux: _single_aux_t; // data structure for locking, signaling, etc.
+  var  value: base_type;     // actual data - may need to be declared specially on some targets!
+  pragma "omit from constructor" var single_aux: _single_aux_t; // data structure for locking, signaling, etc.
+  // Ideally, the definition of this class should be target and base_type dependent,
+  // since not all targets need to have a single_aux field if base_type is sufficiently simple.
 
   def initialize() {
     __primitive("init_single_aux", this);
