@@ -896,11 +896,13 @@ void lowerIterator(FnSymbol* fn) {
     if (toArgSymbol(local))
       insertSetMember(fn, t1, field, local);
     else if (isRecordType(local->type)) {
-      Symbol* tmp = new VarSymbol("_tmp", field->type->refType);
-      tmp->isCompilerTemp = true;
-      fn->insertAtTail(new DefExpr(tmp));
-      fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, t1, field)));
-      insertSetMemberInits(fn, tmp);
+      if (field->type->refType) { // skips array types (how to handle arrays?)
+        Symbol* tmp = new VarSymbol("_tmp", field->type->refType);
+        tmp->isCompilerTemp = true;
+        fn->insertAtTail(new DefExpr(tmp));
+        fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, t1, field)));
+        insertSetMemberInits(fn, tmp);
+      }
     }
   }
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
