@@ -13,12 +13,6 @@
 linux and general regressions
 =============================
 
-started failing unpredictably at time of cobegin rewrite checkin
-----------------------------------------------------------------
-[Error: Timed out executing program users/shetag/fock/fock-1-latest]
-[Error: Timed out executing program users/shetag/fock/fock-2]
-
-
 differing memory sizes on different platforms
 ---------------------------------------------
 [Error matching program output for memory/shannon/memstatPrint]
@@ -30,6 +24,30 @@ garbage collection broken due to super field changes
 timing out
 ----------------------------------------------------
 classes/diten/allocateManyObjects
+
+
+====================
+baseline regressions
+====================
+
+seg fault in inserting member inits for iterators
+-------------------------------------------------
+[Error matching compiler output for
+functions/iterators/bradc/arrayInIterator]
+[Error matching compiler output for npb/cg/bradc/cg-dense]
+[Error matching compiler output for
+npb/cg/bradc/cg-makea1-small-sparse-countInds]
+[Error matching compiler output for npb/cg/bradc/cg-makea1-small-sparse]
+[Error matching compiler output for npb/cg/bradc/cg-makea1-small]
+[Error matching compiler output for npb/cg/bradc/cg-makea1-sparse-sort]
+[Error matching compiler output for npb/cg/bradc/cg-makea1]
+[Error matching compiler output for npb/cg/bradc/cg-makea2-small-sparse]
+[Error matching compiler output for npb/cg/bradc/cg-makea2]
+[Error matching compiler output for npb/cg/bradc/cg-makea3]
+[Error matching compiler output for npb/cg/bradc/cg-printa]
+[Error matching compiler output for npb/cg/bradc/cg-sparse]
+[Error matching compiler output for
+performance/compiler/bradc/cg-sparse-timecomp]
 
 
 ===============================
@@ -106,6 +124,18 @@ parallel/begin/deitz/test_global_for_begin]
 intel-specific regressions
 ==========================
 
+Warning about use before set -- error #592 -- cause unknown
+-----------------------------------------------------------
+[Error matching compiler output for arrays/bradc/arrOfDom/arrOfDom]
+[Error matching compiler output for modules/bradc/ra-paramWidth]
+[Error matching compiler output for
+modules/standard/Schedules/bradc/schedules]
+[Error matching compiler output for release/examples/hpcc/ra]
+[Error matching compiler output for spec/marybeth/iterator2]
+[Error matching compiler output for studies/hpcc/RA/ra-hpcc06]
+[Error matching compiler output for studies/hpcc/RA/ra-seq]
+
+
 Warning about using a variable before its value is set -- error #592
 caused by records with no fields and the constructor that gets created
 for them -- could be cleaned up by moving the fake record field earlier
@@ -120,19 +150,6 @@ Times out for unknown reasons
 [Error: Timed out executing program parallel/cobegin/waynew/while]
 
 
-
-===========================
-darwin-specific regressions
-===========================
-
-gdb on the Mac is not 6.4 (assumed for good --gdb support)
-----------------------------------------------------------
-[Error matching program output for execflags/bradc/gdbddash/declint2]
-[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
-[Error matching program output for execflags/bradc/gdbddash/declint]
-
-
-       
 ==============================
 pathscale-specific regressions
 ==============================
@@ -205,6 +222,15 @@ negative floating point 0.0 not supported
 gasnet-specific failures
 ========================
 
+nondeterministic failures, potentially due to Brad's moving memory
+initialization earlier in bootstrap code?
+------------------------------------------------------------------
+[Error matching program output for memory/shannon/memmaxExceedsLineno2]
+[Error matching program output for memory/shannon/reallocWithoutMalloc]
+[Error matching program output for memory/shannon/memmaxExceeds]
+[Error matching program output for memory/shannon/reallocZeroSize]
+
+
 regressions based on string-based external interoperability (should be fixed)
 -----------------------------------------------------------------------------
 [Error matching compiler output for link/deitz/test_link1]
@@ -274,6 +300,11 @@ some sort of race/deadlock
 --------------------------
 [Error: Timed out executing program parallel/sync/figueroa/ReadMethods]
 
+???
+---
+[Error matching program output for stress/deitz/test_10k_cobegins]
+[Error matching program output for stress/deitz/test_10k_coforall]
+
 
 
 =======================
@@ -286,10 +317,6 @@ too many threads
 [Error matching program output for release/examples/prodCons] 
 [Error matching program output for release/examples/quicksort] 
 [Error matching program output for release/examples/tree] 
-
-non-IEEE error
---------------
-[Error matching program output for release/examples/fileIO] 
 
 strange error -- X1 compiler? apsim?
 ------------------------------------
@@ -306,25 +333,23 @@ part of Steve's set of currently expected GASNet regressions (?)
 [Error matching compiler output for release/examples/iterators]
 
 
-=====================================================
---no-expand-iterators-inline-opt specific regressions
-=====================================================
-
-result of turning on more aggressive warnings for generated code --
-"variable may be uninitialized" in declaration of Locales array
-----------------------------------------------------------------
-[Error matching compiler output for release/examples/hpcc/ra]
-
-
 ============================
 mta/xmt-specific regressions
 ============================
+
+use before value set warning
+----------------------------
+[Error matching program output for release/examples/hpcc/ra]
 
 internal MTA C compiler error
 -----------------------------
 [Error matching compiler output for release/examples/blockLU]
 [Error matching compiler output for release/examples/norm]
 [Error matching compiler output for release/examples/reductions]
+
+unreachable line causes compiler warning
+----------------------------------------
+[Error matching program output for release/examples/arrays]
 
 small full/empty sizes
 ----------------------
@@ -333,10 +358,6 @@ small full/empty sizes
 sparse code not running correctly
 ---------------------------------
 [Error matching program output for release/examples/sparse]
-
-unreachable line causes compiler warning
-----------------------------------------
-[Error matching program output for release/examples/arrays]
 
 timeout
 -------
