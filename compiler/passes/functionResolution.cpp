@@ -1980,6 +1980,8 @@ preFold(Expr* expr) {
 
     SymExpr* base = toSymExpr(call->baseExpr);
     if (base && isVarSymbol(base->var) && base->var->isTypeVariable) {
+      if (call->numActuals() == 0)
+        USR_FATAL(call, "illegal call of type");
       long index;
       if (!get_int(call->get(1), &index))
         USR_FATAL(call, "illegal type index expression");
