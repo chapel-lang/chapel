@@ -1,6 +1,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "passes.h"
+#include "stmt.h"
 #include "symbol.h"
 
 //
@@ -100,4 +101,43 @@ void insertLineNumbers() {
       insertLineNumber(call);
     }
   }
+
+  // pass line number and filename arguments to functions that are
+  // forked via the argument class
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr * call = toCallExpr(ast)) {
+      if (BlockStmt* block = toBlockStmt(call->parentExpr)) {
+        if ((call->numActuals() > 2 && block->blockTag == BLOCK_ON) ||
+            (call->numActuals() > 1 && block->blockTag == BLOCK_BEGIN)) {
+          Expr* filename = call->argList.tail->remove();
+          Expr* lineno = call->argList.tail->remove();
+          Expr* argClass = call->argList.tail;
+          ClassType* ct = toClassType(argClass->typeInfo());
+          VarSymbol* linenoField = new VarSymbol("_ln", lineno->typeInfo());
+          ct->fields.insertAtTail(new DefExpr(linenoField));
+          VarSymbol* filenameField = new VarSymbol("_fn", filename->typeInfo());
+          ct->fields.insertAtTail(new DefExpr(filenameField));
+          block->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, argClass->copy(), linenoField, lineno));
+          block->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, argClass->copy(), filenameField, filename));
+          FnSymbol* fn = call->isResolved();
+          DefExpr* filenameFormal = toDefExpr(fn->formals.tail);
+          filenameFormal->remove();
+          DefExpr* linenoFormal = toDefExpr(fn->formals.tail);
+          linenoFormal->remove();
+          DefExpr* argClassFormal = toDefExpr(fn->formals.tail);
+          VarSymbol* filenameLocal = new VarSymbol("_fn", filename->typeInfo());
+          VarSymbol* linenoLocal = new VarSymbol("_ln", lineno->typeInfo());
+          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, filenameLocal, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, argClassFormal->sym, filenameField)));
+          fn->insertAtHead(new DefExpr(filenameLocal));
+          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, linenoLocal, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, argClassFormal->sym, linenoField)));
+          fn->insertAtHead(new DefExpr(linenoLocal));
+          ASTMap update;
+          update.put(filenameFormal->sym, filenameLocal);
+          update.put(linenoFormal->sym, linenoLocal);
+          update_symbols(fn->body, &update);
+        }
+      }
+    }
+  }
+
 }

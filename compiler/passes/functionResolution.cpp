@@ -2611,6 +2611,29 @@ postFold(Expr* expr) {
       buildArrayMap.put(call, build->isResolved());
     } else if (call->isPrimitive(PRIMITIVE_ARRAY_INIT) ||
                call->isPrimitive(PRIMITIVE_LOOP_C_FOR) ||
+               call->isPrimitive(PRIMITIVE_SYNC_INIT) ||
+               call->isPrimitive(PRIMITIVE_SYNC_LOCK) ||
+               call->isPrimitive(PRIMITIVE_SYNC_UNLOCK) ||
+               call->isPrimitive(PRIMITIVE_SYNC_WAIT_FULL) ||
+               call->isPrimitive(PRIMITIVE_SYNC_WAIT_EMPTY) ||
+               call->isPrimitive(PRIMITIVE_SYNC_SIGNAL_FULL) ||
+               call->isPrimitive(PRIMITIVE_SYNC_SIGNAL_EMPTY) ||
+               call->isPrimitive(PRIMITIVE_SINGLE_INIT) ||
+               call->isPrimitive(PRIMITIVE_SINGLE_LOCK) ||
+               call->isPrimitive(PRIMITIVE_SINGLE_WAIT_FULL) ||
+               call->isPrimitive(PRIMITIVE_SINGLE_SIGNAL_FULL) ||
+               call->isPrimitive(PRIMITIVE_WRITEEF) ||
+               call->isPrimitive(PRIMITIVE_WRITEFF) ||
+               call->isPrimitive(PRIMITIVE_WRITEXF) ||
+               call->isPrimitive(PRIMITIVE_SYNC_RESET) ||
+               call->isPrimitive(PRIMITIVE_READFF) ||
+               call->isPrimitive(PRIMITIVE_READFE) ||
+               call->isPrimitive(PRIMITIVE_READXX) ||
+               call->isPrimitive(PRIMITIVE_SYNC_ISFULL) ||
+               call->isPrimitive(PRIMITIVE_SINGLE_WRITEEF) ||
+               call->isPrimitive(PRIMITIVE_SINGLE_RESET) ||
+               call->isPrimitive(PRIMITIVE_SINGLE_READFF) ||
+               call->isPrimitive(PRIMITIVE_SINGLE_ISFULL) ||
                (call->primitive && 
                 (!strncmp("_fscan", call->primitive->name, 6) ||
                  !strcmp("_readToEndOfLine", call->primitive->name) ||

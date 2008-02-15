@@ -289,17 +289,21 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
 
   PRINTF("_chpl_comm_fork");
 
-  info_size = sizeof(dist_fork_t) - sizeof(void*) + arg_size;
-  info = (dist_fork_t*) _chpl_malloc(info_size, sizeof(char), "", 0, 0);
+  if (_localeID == locale) {
+    (*f)(arg);
+  } else {
+    info_size = sizeof(dist_fork_t) - sizeof(void*) + arg_size;
+    info = (dist_fork_t*) _chpl_malloc(info_size, sizeof(char), "", 0, 0);
 
-  info->caller = _localeID;
-  info->ack = &done;
-  info->fun = f;
-  info->arg_size = arg_size;
-  if (arg_size)
-    bcopy(arg, &(info->arg), arg_size);
+    info->caller = _localeID;
+    info->ack = &done;
+    info->fun = f;
+    info->arg_size = arg_size;
+    if (arg_size)
+      bcopy(arg, &(info->arg), arg_size);
 
-  done = 0;
-  GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK, info, info_size));
-  GASNET_BLOCKUNTIL(1==done);
+    done = 0;
+    GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK, info, info_size));
+    GASNET_BLOCKUNTIL(1==done);
+  }
 }

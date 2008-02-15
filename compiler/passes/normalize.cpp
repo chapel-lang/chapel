@@ -147,15 +147,15 @@ static void insertHeapAccess(SymExpr* se, bool global = false) {
 
 
 //
-// return true if expr is in function's where block
+// return true if expr is in function's body
 //
-static bool inWhere(FnSymbol* fn, Expr* expr) {
-  if (expr == fn->where)
+static bool inBody(FnSymbol* fn, Expr* expr) {
+  if (expr == fn->body)
     return true;
   if (expr->parentExpr)
-    return inWhere(fn, expr->parentExpr);
+    return inBody(fn, expr->parentExpr);
   if (expr->parentSymbol && expr->parentSymbol != fn)
-    return inWhere(fn, expr->parentSymbol->defPoint);
+    return inBody(fn, expr->parentSymbol->defPoint);
   return false;
 }
 
@@ -173,10 +173,6 @@ static void heapAllocateLocals() {
   // for each nested begin and on function
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->hasPragma("begin") || fn->hasPragma("on")) {
-
-      if (fn->hasPragma("no heap allocation"))
-        // Variables in cobegins and coforalls don't need to be on the heap!
-        continue;
 
       Vec<BaseAST*> asts;
       collect_asts(&asts, fn);
@@ -251,13 +247,13 @@ static void heapAllocateLocals() {
       }
       forv_Vec(SymExpr, se, sym->uses) {
 
-        // disable insertion of heap access on arguments accessed in
-        // where clauses
-        if (!inWhere(fn, se)) {
+        // disable insertion of heap access on arguments accessed
+        // outside of the function's body
+        if (!inBody(fn, se))
+          continue;
 
-          se->var = tmp;
-          insertHeapAccess(se);
-        }
+        se->var = tmp;
+        insertHeapAccess(se);
       }
     }
   }

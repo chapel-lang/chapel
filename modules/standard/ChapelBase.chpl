@@ -613,15 +613,19 @@ def _init(sv: sync) {
 //  isFull - query whether it is full
 
 // This is the default read on sync vars. Wait for full, set and signal empty.
-def _syncvar.readFE() {
+def _syncvar.readFE(): base_type {
   var ret: base_type;
-  if (isSimpleSyncBaseType(base_type)) {
-    ret = value;                        // Force the Chapel compiler to create a temporary!
-    __primitive("read_FE", ret, this);  // This primitive modifies the value of ret!
-  } else {
-    __primitive("sync_wait_full_and_lock", this);
-    ret = value;
-    __primitive("sync_mark_and_signal_empty", this);
+  on Locales(0) {
+    var localRet: base_type;
+    if (isSimpleSyncBaseType(base_type)) {
+      localRet = value;                        // Force the Chapel compiler to create a temporary!
+      __primitive("read_FE", localRet, this);  // This primitive modifies the value of localRet!
+    } else {
+      __primitive("sync_wait_full_and_lock", this);
+      localRet = value;
+      __primitive("sync_mark_and_signal_empty", this);
+    }
+    ret = localRet;
   }
   return ret;
 }
@@ -629,13 +633,17 @@ def _syncvar.readFE() {
 // Wait for full, set and signal full.
 def _syncvar.readFF() {
   var ret: base_type;
-  if (isSimpleSyncBaseType(base_type)) {
-    ret = value;                        // Force the Chapel compiler to create a temporary!
-    __primitive("read_FF", ret, this);  // This primitive modifies the value of ret!
-  } else {
-    __primitive("sync_wait_full_and_lock", this);
-    ret = value;
-    __primitive("sync_mark_and_signal_full", this); // in case others are waiting
+  on Locales(0) {
+    var localRet: base_type;
+    if (isSimpleSyncBaseType(base_type)) {
+      localRet = value;                        // Force the Chapel compiler to create a temporary!
+      __primitive("read_FF", localRet, this);  // This primitive modifies the value of localRet!
+    } else {
+      __primitive("sync_wait_full_and_lock", this);
+      localRet = value;
+      __primitive("sync_mark_and_signal_full", this); // in case others are waiting
+    }
+    ret = localRet;
   }
   return ret;
 }
@@ -643,25 +651,31 @@ def _syncvar.readFF() {
 // Ignore F/E.  Read value.  No state change or signals.
 def _syncvar.readXX() {
   var ret: base_type;
-  if (isSimpleSyncBaseType(base_type)) {
-    ret = value;                        // Force the Chapel compiler to create a temporary!
-    __primitive("read_XX", ret, this);  // This primitive modifies the value of ret!
-  } else {
-    __primitive("sync_lock", this);
-    ret = value;
-    __primitive("sync_unlock", this);
+  on Locales(0) {
+    var localRet: base_type;
+    if (isSimpleSyncBaseType(base_type)) {
+      localRet = value;                        // Force the Chapel compiler to create a temporary!
+      __primitive("read_XX", localRet, this);  // This primitive modifies the value of localRet!
+    } else {
+      __primitive("sync_lock", this);
+      localRet = value;
+      __primitive("sync_unlock", this);
+    }
+    ret = localRet;
   }
   return ret;
 }
 
 // This is the default write on sync vars. Wait for empty, set and signal full.
 def _syncvar.writeEF(val:base_type) {
-  if (isSimpleSyncBaseType(base_type)) {
-    __primitive("write_EF", this, val);
-  } else {
-    __primitive("sync_wait_empty_and_lock", this);
-    value = val;
-    __primitive("sync_mark_and_signal_full", this);
+  on Locales(0) {
+    if (isSimpleSyncBaseType(base_type)) {
+      __primitive("write_EF", this, val);
+    } else {
+      __primitive("sync_wait_empty_and_lock", this);
+      value = val;
+      __primitive("sync_mark_and_signal_full", this);
+    }
   }
 }
 
@@ -672,41 +686,51 @@ def =(sv: sync, val:sv.base_type) {
 
 // Wait for full, set and signal full.
 def _syncvar.writeFF(val:base_type) {
-  if (isSimpleSyncBaseType(base_type)) {
-    __primitive("write_FF", this, val);
-  } else {
-    __primitive("sync_wait_full_and_lock", this);
-    value = val;
-    __primitive("sync_mark_and_signal_full", this);
+  on Locales(0) {
+    if (isSimpleSyncBaseType(base_type)) {
+      __primitive("write_FF", this, val);
+    } else {
+      __primitive("sync_wait_full_and_lock", this);
+      value = val;
+      __primitive("sync_mark_and_signal_full", this);
+    }
   }
 }
 
 // Ignore F/E, set and signal full.
 def _syncvar.writeXF(val:base_type) {
-  if (isSimpleSyncBaseType(base_type)) {
-    __primitive("write_XF", this, val);
-  } else {
-    __primitive("sync_lock", this);
-    value = val;
-    __primitive("sync_mark_and_signal_full", this);
+  on Locales(0) {
+    if (isSimpleSyncBaseType(base_type)) {
+      __primitive("write_XF", this, val);
+    } else {
+      __primitive("sync_lock", this);
+      value = val;
+      __primitive("sync_mark_and_signal_full", this);
+    }
   }
 }
 
 // Ignore F/E, set to zero or default value and signal empty.
 def _syncvar.reset() {
-  if (isSimpleSyncBaseType(base_type)) {
-    // Reset this's value to zero.
-    __primitive("sync_reset", this);
-  } else {
-    const default_value: base_type;
-    __primitive("sync_lock", this);
-    value = default_value;
-    __primitive("sync_mark_and_signal_empty", this);
+  on Locales(0) {
+    if (isSimpleSyncBaseType(base_type)) {
+      // Reset this's value to zero.
+      __primitive("sync_reset", this);
+    } else {
+      const default_value: base_type;
+      __primitive("sync_lock", this);
+      value = default_value;
+      __primitive("sync_mark_and_signal_empty", this);
+    }
   }
 }
 
 def _syncvar.isFull {
-  return __primitive("sync_is_full", this, isSimpleSyncBaseType(base_type));
+  var b: bool;
+  on Locales(0) {
+    b = __primitive("sync_is_full", this, isSimpleSyncBaseType(base_type));
+  }
+  return b;
 }
 
 
@@ -763,15 +787,19 @@ def _init(sv: single) {
 // Wait for full. Set and signal full.
 def _singlevar.readFF() {
   var ret: base_type;
-  if (isSimpleSyncBaseType(base_type)) {
-    ret = value;                               // Force the Chapel compiler to create a temporary!
-    __primitive("single_read_FF", ret, this);  // This primitive modifies the value of ret!
-  } else if (__primitive("single_is_full", this, isSimpleSyncBaseType(base_type))) {
-    ret = value;
-  } else {
-    __primitive("single_wait_full", this);
-    ret = value;
-    __primitive("single_mark_and_signal_full", this); // in case others are waiting
+  on Locales(0) {
+    var localRet: base_type;
+    if (isSimpleSyncBaseType(base_type)) {
+      localRet = value;                               // Force the Chapel compiler to create a temporary!
+      __primitive("single_read_FF", localRet, this);  // This primitive modifies the value of localRet!
+    } else if (__primitive("single_is_full", this, isSimpleSyncBaseType(base_type))) {
+      localRet = value;
+    } else {
+      __primitive("single_wait_full", this);
+      localRet = value;
+      __primitive("single_mark_and_signal_full", this); // in case others are waiting
+    }
+    ret = localRet;
   }
   return ret;
 }
@@ -779,15 +807,17 @@ def _singlevar.readFF() {
 
 // Can only write once.  Otherwise, it is an error.
 def _singlevar.writeEF(val:base_type) {
-  if (isSimpleSyncBaseType(base_type)) {
-    __primitive("single_write_EF", this, val);
-  } else {
-    __primitive("single_lock", this);
-    if (__primitive("single_is_full", this, isSimpleSyncBaseType(base_type))) {
-      halt("single var already defined");
+  on Locales(0) {
+    if (isSimpleSyncBaseType(base_type)) {
+      __primitive("single_write_EF", this, val);
+    } else {
+      __primitive("single_lock", this);
+      if (__primitive("single_is_full", this, isSimpleSyncBaseType(base_type))) {
+        halt("single var already defined");
+      }
+      value = val;
+      __primitive("single_mark_and_signal_full", this);
     }
-    value = val;
-    __primitive("single_mark_and_signal_full", this);
   }
 }
 
