@@ -303,27 +303,27 @@ def verify() {
   var rerr : real, ierr : real;
   for iter in 1..niter {
     select problem_class {
-      when S {
+      when classes.S {
         rerr = (sums(iter).re - vdata_s(iter).re) / vdata_s(iter).re;
         ierr = (sums(iter).im - vdata_s(iter).im) / vdata_s(iter).im;
       }
-      when W {
+      when classes.W {
         rerr = (sums(iter).re - vdata_w(iter).re) / vdata_w(iter).re;
         ierr = (sums(iter).im - vdata_w(iter).im) / vdata_w(iter).im;
       }
-      when A {
+      when classes.A {
         rerr = (sums(iter).re - vdata_a(iter).re) / vdata_a(iter).re;
         ierr = (sums(iter).im - vdata_a(iter).im) / vdata_a(iter).im;
       }
-      when B {
+      when classes.B {
         rerr = (sums(iter).re - vdata_b(iter).re) / vdata_b(iter).re;
         ierr = (sums(iter).im - vdata_b(iter).im) / vdata_b(iter).im;
       }
-      when C {
+      when classes.C {
         rerr = (sums(iter).re - vdata_c(iter).re) / vdata_c(iter).re;
         ierr = (sums(iter).im - vdata_c(iter).im) / vdata_c(iter).im;
       }
-      when D {
+      when classes.D {
         rerr = (sums(iter).re - vdata_d(iter).re) / vdata_d(iter).re;
         ierr = (sums(iter).im - vdata_d(iter).im) / vdata_d(iter).im;
       }

@@ -1,4 +1,4 @@
-def foo(type t, x: range(t, bounded, ?stridable) ... ?k) {
+def foo(type t, x: range(t, BoundedRangeType.bounded, ?stridable) ... ?k) {
   writeln(x);
 }
 

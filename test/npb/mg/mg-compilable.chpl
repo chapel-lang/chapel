@@ -39,36 +39,36 @@ implement these as funs for the time being: */
 
 def probSize(c: classVals) {
   select (c) {
-    when S do return 32;
-    when W do return 64;
-    when A do return 256;
-    when B do return 256;
-    when C do return 512;
-    when D do return 1024;
+    when classVals.S do return 32;
+    when classVals.W do return 64;
+    when classVals.A do return 256;
+    when classVals.B do return 256;
+    when classVals.C do return 512;
+    when classVals.D do return 1024;
     otherwise return 256;
   }
 }
 
 def iterations(c: classVals) {
   select (c) {
-    when S do return 4;
-    when W do return 40;
-    when A do return 4;
-    when B do return 20;
-    when C do return 20;
-    when D do return 50;
+    when classVals.S do return 4;
+    when classVals.W do return 40;
+    when classVals.A do return 4;
+    when classVals.B do return 20;
+    when classVals.C do return 20;
+    when classVals.D do return 50;
     otherwise return 4;
   }
 }
 
 def checksum(c: classVals) {
   select (c) {
-    when S do return 0.0000530770700573;
-    when W do return 0.00000000000000000250391406439;
-    when A do return 0.000002433365309;
-    when B do return 0.00000180056440132;
-    when C do return 0.000000570674826298;
-    when D do return 0.000000000158327506043;
+    when classVals.S do return 0.0000530770700573;
+    when classVals.W do return 0.00000000000000000250391406439;
+    when classVals.A do return 0.000002433365309;
+    when classVals.B do return 0.00000180056440132;
+    when classVals.C do return 0.000000570674826298;
+    when classVals.D do return 0.000000000158327506043;
     otherwise return 0.0;
   }
 }
@@ -78,7 +78,7 @@ def checksum(c: classVals) {
 // it's a configuration constant, it may be set on the executable's
 // command-line.  The default is to run class S.
 
-config const Class: classVals = new S;
+config const Class: classVals = classVals.S;
 
 
 // the problem size.  By default, the problem size will be the same in
@@ -456,7 +456,7 @@ def norm2u3(R) {
 // initCValues() sets the c values for the psinv() stencil
 
 def initCValues(Class) {
-  if (Class == A || Class == new S || Class == W) {
+  if (Class == classVals.A || Class == classVals.S || Class == classVals.W) {
     return (-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0);
   } else {
     return (-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0);

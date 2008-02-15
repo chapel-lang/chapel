@@ -1,17 +1,17 @@
 enum dessert {cake, cookie, pie, pudding};
-var favorite: dessert = pie;
+var favorite: dessert = dessert.pie;
 
 writeDessert(stdout, favorite);
 
 def writeDessert(f: file, val: dessert) {
   select (val) {
-    when (cake) do 
+    when (dessert.cake) do 
       f.write("cake");
-    when (cookie) do
+    when (dessert.cookie) do
       f.write("cookie");
-    when (pie) do
+    when (dessert.pie) do
       f.write("pie");
-    when (pudding) do
+    when (dessert.pudding) do
       f.write("pudding");
     otherwise
       halt("Not valid!");

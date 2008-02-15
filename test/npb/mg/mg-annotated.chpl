@@ -46,7 +46,7 @@ const probSizes:  [Class] int = (32, 64, 256, 256, 512, 1024),
 // it's a configuration constant, it may be set on the executable's
 // command-line.  The default is to run class S.
 
-config const probClass: classVals = new S;
+config const probClass: classVals = classVals.S;
 
 
 // the problem size.  By default, the problem size will be the same in
@@ -393,7 +393,7 @@ def norm2u3(R) {
 // initCValues() sets the c values for the psinv() stencil
 
 def initCValues(probClass) {
-  if (probClass == A || probClass == new S || probClass == W) {
+  if (probClass == classVals.A || probClass == classVals.S || probClass == classVals.W) {
     return (-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0);
   } else {
     return (-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0);

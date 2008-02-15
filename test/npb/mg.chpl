@@ -30,7 +30,7 @@ const probSize: [S..O] int = (32, 64, 256, 256, 512, 1024, 256),
                                   0.0);
 
 
-config const Class: classVals = S;
+config const Class: classVals = classVals.S;
 
 
 config const n = probSize(Class);

@@ -137,13 +137,16 @@ void PrimitiveType::verify() {
 
 EnumType::EnumType() :
   Type(TYPE_ENUM, NULL),
-  constants()
+  constants(),
+  enumScope(NULL)
 {
   constants.parent = this;
 }
 
 
 EnumType::~EnumType() {
+  if (enumScope)
+    delete enumScope;
 }
 
 

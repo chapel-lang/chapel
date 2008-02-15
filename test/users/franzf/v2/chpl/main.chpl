@@ -71,11 +71,11 @@ def main() {
         }    
     
         //  benchmark computation
-        startTime = getCurrentTime(microseconds);
+        startTime = getCurrentTime(TimeUnits.microseconds);
         for i in 1..NUMRUNS {
             fft(N, Y, X);
         }
-        execTime = (getCurrentTime(microseconds) - startTime)/NUMRUNS;
+        execTime = (getCurrentTime(TimeUnits.microseconds) - startTime)/NUMRUNS;
 	if (printTimings) then
           writeln("fft_", N, ": ", execTime, "us = ", ops / execTime, " Mflop/s");
 	else

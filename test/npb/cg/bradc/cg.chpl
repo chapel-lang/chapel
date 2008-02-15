@@ -1,10 +1,10 @@
 enum classVals {S, W, A, B, C, D, O};
 
 
-config var probClass = S;
+config var probClass = classVals.S;
 
 
-const Class: domain(classVals) = [S..O];
+const Class: domain(classVals) = [classVals.S..classVals.O];
 const probSizes:   [Class] = ( 1400, 7000, 14000, 75000, 150000, 150000, 1400 ),
       nonZeroes:   [Class] = ( 7, 8, 11, 13, 15, 21, 7 ),
       shifts:      [Class] = ( 10, 12, 20, 60, 110, 500, 10 ),

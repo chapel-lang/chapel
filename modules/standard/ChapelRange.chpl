@@ -8,7 +8,7 @@ enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
 
 record range {
   type eltType = int;                            // element type
-  param boundedType: BoundedRangeType = bounded; // bounded or not
+  param boundedType: BoundedRangeType = BoundedRangeType.bounded; // bounded or not
   param stridable: bool = false;                 // range can be strided
   var _low: eltType = 1;                         // lower bound
   var _high: eltType = 0;                        // upper bound
@@ -28,13 +28,13 @@ record range {
 // syntax function for bounded ranges
 //
 def _build_range(low: int, high: int)
-  return new range(int, bounded, false, low, high);
+  return new range(int, BoundedRangeType.bounded, false, low, high);
 def _build_range(low: uint, high: uint)
-  return new range(uint, bounded, false, low, high);
+  return new range(uint, BoundedRangeType.bounded, false, low, high);
 def _build_range(low: int(64), high: int(64))
-  return new range(int(64), bounded, false, low, high);
+  return new range(int(64), BoundedRangeType.bounded, false, low, high);
 def _build_range(low: uint(64), high: uint(64))
-  return new range(uint(64), bounded, false, low, high);
+  return new range(uint(64), BoundedRangeType.bounded, false, low, high);
 
 
 //
@@ -65,7 +65,7 @@ def _build_open_interval_upper(r: range)
 def by(r : range, i : int) {
   if i == 0 then
     halt("range cannot be strided by zero");
-  if r.boundedType == boundedNone then
+  if r.boundedType == BoundedRangeType.boundedNone then
     halt("unbounded range cannot be strided");
   var result = new range(r.eltType, r.boundedType, true, r.low, r.high, r.stride*i);
   if r.low > r.high then
@@ -85,14 +85,14 @@ def by(r : range, i : int) {
 // return true if this range has a low bound
 //
 def range._hasLow() param
-  return boundedType == bounded || boundedType == boundedLow;
+  return boundedType == BoundedRangeType.bounded || boundedType == BoundedRangeType.boundedLow;
 
 
 //
 // return true if this range has a high bound
 //
 def range._hasHigh() param
-  return boundedType == bounded || boundedType == boundedHigh;
+  return boundedType == BoundedRangeType.bounded || boundedType == BoundedRangeType.boundedHigh;
 
 
 //
@@ -152,13 +152,13 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
     param low = r1._hasLow() || r2._hasLow();
     param high = r1._hasHigh() || r2._hasHigh();
     if low && high then
-      return bounded;
+      return BoundedRangeType.bounded;
     else if low then
-      return boundedLow;
+      return BoundedRangeType.boundedLow;
     else if high then
-      return boundedHigh;
+      return BoundedRangeType.boundedHigh;
     else
-      return boundedNone;
+      return BoundedRangeType.boundedNone;
   }
 
   //
@@ -218,12 +218,12 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
 // default iterator optimized for unit stride
 //
 def range.these() {
-  if boundedType != bounded {
+  if boundedType != BoundedRangeType.bounded {
     if stridable {
-      if boundedType == boundedLow then
+      if boundedType == BoundedRangeType.boundedLow then
         if stride < 0 then
           halt("iteration over range with negative stride but no high bound");
-      if boundedType == boundedHigh then
+      if boundedType == BoundedRangeType.boundedHigh then
         if stride > 0 then
           halt("iteration over range with positive stride but no low bound");
       var i = if stride > 0 then low else high;
@@ -232,7 +232,7 @@ def range.these() {
         i = i + stride:eltType;
       }
     } else {
-      if boundedType == boundedHigh then
+      if boundedType == BoundedRangeType.boundedHigh then
         halt("iteration over range with positive stride but no low bound");
       var i = low;
       while true {
@@ -261,7 +261,7 @@ def range.these() {
 // returns the number of elements in this range
 //
 def range.length {
-  if boundedType != bounded then
+  if boundedType != BoundedRangeType.bounded then
     compilerError("unbounded range has infinite length");
   if stride > 0 then
     return (high - low) / stride:eltType + 1;
@@ -275,21 +275,21 @@ def range.length {
 //
 def range.member(i: eltType) {
   if stridable {
-    if boundedType == bounded {
+    if boundedType == BoundedRangeType.bounded {
       return i >= low && i <= high && (i - low) % abs(stride):eltType == 0;
-    } else if boundedType == boundedLow {
+    } else if boundedType == BoundedRangeType.boundedLow {
       return i >= low && (i - low) % abs(stride):eltType == 0;
-    } else if boundedType == boundedHigh {
+    } else if boundedType == BoundedRangeType.boundedHigh {
       return i <= high && (high - i) % abs(stride):eltType == 0;
     } else {
       return true;
     }
   } else {
-    if boundedType == bounded {
+    if boundedType == BoundedRangeType.bounded {
       return i >= low && i <= high;
-    } else if boundedType == boundedLow {
+    } else if boundedType == BoundedRangeType.boundedLow {
       return i >= low;
-    } else if boundedType == boundedHigh {
+    } else if boundedType == BoundedRangeType.boundedHigh {
       return i <= high;
     } else {
       return true;
@@ -304,9 +304,9 @@ def range.member(i: eltType) {
 // valid
 //
 def range.boundsCheck(other: range(?e,?b,?s)) {
-  if other.boundedType == boundedNone then
+  if other.boundedType == BoundedRangeType.boundedNone then
     return true;
-  var boundedOther: range(e,bounded,s);
+  var boundedOther: range(e,BoundedRangeType.bounded,s);
   if other._hasLow() then
     boundedOther._low = other.low;
   else
@@ -352,7 +352,7 @@ def range.translate(i: eltType)
 // return an interior portion of this range
 //
 def range.interior(i: eltType) {
-  if boundedType != bounded then
+  if boundedType != BoundedRangeType.bounded then
     compilerError("interior is not supported on unbounded ranges");
   if i == 0 then
     return this;
@@ -367,7 +367,7 @@ def range.interior(i: eltType) {
 // return an exterior portion of this range
 //
 def range.exterior(i: eltType) {
-  if boundedType != bounded then
+  if boundedType != BoundedRangeType.bounded then
     compilerError("exterior is not supported on unbounded ranges");
   if i == 0 then
     return this;
@@ -423,7 +423,7 @@ def /(i:integral, r: range(?e,?b,?s))
 // return a substring of a string with a range of indices
 //
 pragma "inline" def string.substring(s: range) {
-  if s.boundedType != bounded then
+  if s.boundedType != BoundedRangeType.bounded then
     compilerError("substring indexing undefined on unbounded ranges");
   if s.stride != 1 then
     return __primitive("string_strided_select", this, s.low, s.high, s.stride);

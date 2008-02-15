@@ -8,7 +8,7 @@ class CMODomain: BaseDomain {
   param rank : int;
   type idxType;
   param stridable: bool;
-  var ranges : rank*range(idxType,bounded,stridable);
+  var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
   def getIndices() return ranges;
 
@@ -75,7 +75,7 @@ class CMODomain: BaseDomain {
     return ranges(d);
 
   def bbox(d: int) {
-    const r: range(idxType,bounded,false) = ranges(d);
+    const r: range(idxType,BoundedRangeType.bounded,false) = ranges(d);
     return r;
   }
 
@@ -290,7 +290,7 @@ class CMOArray:BaseArray {
 
   def checkSlice(d) {
     for param i in 1..rank {
-      if d(i).boundedType == bounded then
+      if d(i).boundedType == BoundedRangeType.bounded then
         if !dom.dim(i).member(d(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", d(i));
     }
@@ -318,7 +318,7 @@ class CMOArray:BaseArray {
 
     for param i in 1..args.size do
       if isRange(args(i)) then
-        if args(i).boundedType == bounded then
+        if args(i).boundedType == BoundedRangeType.bounded then
           if !dom.dim(i).member(args(i)) then
             halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }

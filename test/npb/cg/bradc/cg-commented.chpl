@@ -33,7 +33,7 @@ const probSizes:   [Class] int = ( 1400, 7000, 14000, 75000, 150000, 150000 ),
 //
 // the problem class for this run (S by default, override on command-line)
 //
-config const probClass = S;
+config const probClass = classVals.S;
 
 //
 // the problem parameters defined using the class by default, overridable

@@ -7,7 +7,7 @@ class C {
 
 class D : C {
   param rank: int;
-  var ranges : rank*range(int, bounded, false);
+  var ranges : rank*range(int, BoundedRangeType.bounded, false);
 
   def initialize() {
     for i in 1..rank do

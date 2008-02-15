@@ -16,7 +16,7 @@ class Node {
   var id: int;
   var name: string;
   var pos: position = new position(-1,-1);
-  var color : colors = WHITE;
+  var color : colors = colors.WHITE;
   var pred : Node = nil;
   var disc,fini : int = -1;
 
@@ -38,15 +38,15 @@ class Edge {
   var src: Node;
   var dst: Node;
   var reversed: bool = false;
-  var kind: edgeKind = GRAPH;
+  var kind: edgeKind = edgeKind.GRAPH;
   def writeThis(w: Writer){
     var ec:string;
     select(kind) {
-    when GRAPH do ec = "--->";
-    when TREE do ec = "===>";
-    when CROSS do ec = "+++>";
-    when SELF do ec = "self";
-    when BACK {
+    when edgeKind.GRAPH do ec = "--->";
+    when edgeKind.TREE do ec = "===>";
+    when edgeKind.CROSS do ec = "+++>";
+    when edgeKind.SELF do ec = "self";
+    when edgeKind.BACK {
       if(reversed){
 	ec = "<---";
       } else {
@@ -260,7 +260,7 @@ class Graph {
 
   def recompute_slack(){
     forall e in edges do{
-      if(e.kind == BACK){
+      if(e.kind == edgeKind.BACK){
 	slack(e.id) = curRank(e.src.id) - curRank(e.dst.id);
       } else {
 	slack(e.id) = curRank(e.dst.id) - curRank(e.src.id);
@@ -425,12 +425,12 @@ class Graph {
 
   def adjacentNodes(u:Node): Node {
     for edge in inEdges[u.id] do {
-      if(edge.kind == BACK){
+      if(edge.kind == edgeKind.BACK){
 	yield edge.src;
       }
     }
     for edge in outEdges[u.id] do {
-	if(edge.kind != BACK){
+	if(edge.kind != edgeKind.BACK){
 	  yield edge.dst;
 	}
       }
@@ -446,7 +446,7 @@ class Graph {
 
   def whiteNodes() : Node {
     forall n in nodes do {
-      if( n.color == WHITE) then yield n;
+      if( n.color == colors.WHITE) then yield n;
     }
   }
 }
@@ -454,7 +454,7 @@ class Graph {
 def DFS(G){
   G.time = 0;
   for u in G.nodes do {
-      if( u.color == WHITE ) {
+      if( u.color == colors.WHITE ) {
 	writeln("Starting at ",u);
 	DFS_VISIT(G,u);
       }
@@ -462,27 +462,27 @@ def DFS(G){
 }
 
   def DFS_VISIT(G:Graph, u:Node){
-    u.color = GRAY;
+    u.color = colors.GRAY;
     G.time += 1;
     u.disc = G.time;
     for e in G.edgesOut(u) do {
 	writeln("\t",e);
 	var v = e.dst;
-	if(v.color == WHITE){
+	if(v.color == colors.WHITE){
 	  v.pred = u;
-	  e.kind = TREE;
+	  e.kind = edgeKind.TREE;
 	  writeln("\tVisiting ",v);
           DFS_VISIT(G,v);
-	} else if (v.color == GRAY){
-	  e.kind = BACK;
+	} else if (v.color == colors.GRAY){
+	  e.kind = edgeKind.BACK;
 	  e.reversed = true;
 	  writeln("Found back edge ", e);
-	} else if (v.color == BLACK){
-	  e.kind = CROSS;
+	} else if (v.color == colors.BLACK){
+	  e.kind = edgeKind.CROSS;
 	  writeln("Found cross edge ", e);
 	}
     }
-    u.color = BLACK;
+    u.color = colors.BLACK;
     u.fini = G.time;
     G.time += 1;
   }

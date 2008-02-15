@@ -28,7 +28,7 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   type idxType;
   param stridable: bool;
   var dist: SingleLocaleDistribution;
-  var ranges : rank*range(idxType,bounded,stridable);
+  var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
   def getIndices() return ranges;
 
@@ -90,7 +90,7 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     return ranges(d);
 
   def bbox(d: int) {
-    const r: range(idxType,bounded,false) = ranges(d);
+    const r: range(idxType,BoundedRangeType.bounded,false) = ranges(d);
     return r;
   }
 

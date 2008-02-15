@@ -1,7 +1,7 @@
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours };
 
 // returns time elapsed since midnight
-def getCurrentTime(unit: TimeUnits = seconds)
+def getCurrentTime(unit: TimeUnits = TimeUnits.seconds)
   return _convert_microseconds(unit, __primitive("_now_time"));
 
 // returns (year, month, day) as a tuple of 3 ints
@@ -44,7 +44,7 @@ record Timer {
     }
   }
 
-  def elapsed(unit: TimeUnits = seconds) {
+  def elapsed(unit: TimeUnits = TimeUnits.seconds) {
     if running {
       var time2: _timervalue;
       time2 = __primitive("_now_timer", time2);
@@ -68,11 +68,11 @@ def _diff_timer(t1: _timervalue, t2: _timervalue) {
 // converts microseconds to another unit
 def _convert_microseconds(unit: TimeUnits, us: real) {
   select unit {
-    when microseconds do return us;
-    when milliseconds do return us / 1.0e+3;
-    when seconds do return us / 1.0e+6;
-    when minutes do return us / 60.0e+6;
-    when hours do return us / 3600.0e+6;
+    when TimeUnits.microseconds do return us;
+    when TimeUnits.milliseconds do return us / 1.0e+3;
+    when TimeUnits.seconds do return us / 1.0e+6;
+    when TimeUnits.minutes do return us / 60.0e+6;
+    when TimeUnits.hours do return us / 3600.0e+6;
   }
   halt("internal error in module Time");
   // will never get here, but to avoid warnings:

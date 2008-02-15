@@ -15,7 +15,7 @@ const probSizes:   [Class] int = ( 1400, 7000, 14000, 75000, 150000, 150000 ),
                                         17.130235054029,  22.712745482631,
                                         28.973605592845,  52.5145321058 );
 
-config const probClass = S;
+config const probClass = classVals.S;
 
 config const n = probSizes(probClass),
              nonzer = nonZeroes(probClass),

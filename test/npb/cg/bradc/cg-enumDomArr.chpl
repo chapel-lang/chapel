@@ -1,7 +1,7 @@
 enum classVals {S, W, A, B, C, D, O};
 
 
-config var probClass = S;
+config var probClass = classVals.S;
 
 
 const Class: domain(classVals);

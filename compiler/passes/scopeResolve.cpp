@@ -91,6 +91,42 @@ resolveGotoLabel(GotoStmt* gotoStmt) {
 }
 
 
+static void resolveEnumeratedTypes() {
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->isNamed(".")) {
+        if (SymExpr* first = toSymExpr(call->get(1))) {
+          if (SymExpr* second = toSymExpr(call->get(2))) {
+            if (!first->unresolved) {
+              if (EnumType* type = toEnumType(first->var->type)) {
+                VarSymbol* var = toVarSymbol(second->var);
+                const char* name;
+                if (var) {
+                  if (var->immediate &&
+                      var->immediate->const_kind == CONST_KIND_STRING) {
+                    name = var->immediate->v_string;
+                    INT_ASSERT(name);
+                  }
+                } else {
+                  name = second->unresolved;
+                }
+                for_alist(constant, type->constants) {
+                  DefExpr* def = toDefExpr(constant);
+                  INT_ASSERT(def);
+                  if (!strcmp(def->sym->name, name)) {
+                    call->replace(new SymExpr(def->sym));
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
 void scopeResolve(void) {
   //
   // resolve type of this for methods
@@ -275,6 +311,9 @@ void scopeResolve(void) {
       resolveGotoLabel(gs);
     }
   }
+
+  resolveEnumeratedTypes();
+
   forv_Vec(TypeSymbol, type, gTypes) {
     if (toUserType(type->type)) {
       type->defPoint->remove();

@@ -6,6 +6,6 @@
 
 enum people {Brad, David, MaryBeth, Samuel, Steve};
 
-config const me = Brad;
+config const me = people.Brad;
 
 writeln("For this run of the program, I am ", me);

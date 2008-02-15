@@ -12,8 +12,8 @@ config param astring2: string = "hi";
 //config param acomplex2: complex = 3.14+2.72i;
 config param aimag1 = 3.4i;
 config param aimag2: imag = 3.4i;
-config param acolor1 = blue;
-config param acolor2: color = blue;
+config param acolor1 = color.blue;
+config param acolor2: color = color.blue;
 
 def main() {
   writeln(abool1);

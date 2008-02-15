@@ -162,6 +162,23 @@ static void codegen_header(void) {
   cnames.put("trunc", 1);
 
   //
+  // change enum constant names into EnumTypeName_constantName
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (EnumType* enumType = toEnumType(ast)) {
+      const char* enumName = enumType->symbol->cname;
+      for_enums(constant, enumType) {
+        Symbol* sym = constant->sym;
+        sym->cname = astr(enumName, "_", sym->cname);
+        if (cnames.get(sym->cname))
+          sym->cname = astr("_", sym->cname, "_", istr(sym->id));
+        cnames.put(sym->cname, 1);
+      }
+    }
+  }
+
+
+  //
   // mangle type names if they clash with other types
   //
   forv_Vec(TypeSymbol, ts, gTypes) {

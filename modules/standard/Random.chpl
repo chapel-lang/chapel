@@ -14,7 +14,7 @@ use Time;
 
 class SeedGeneratorClass {
   def clockMS {
-    return getCurrentTime(unit=microseconds):int(64);
+    return getCurrentTime(unit=TimeUnits.microseconds):int(64);
   }
 }
 

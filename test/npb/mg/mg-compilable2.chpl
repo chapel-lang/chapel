@@ -53,7 +53,7 @@ const checksum: [S..O] real  = (0.0000530770700573,
 // it's a configuration constant, it may be set on the executable's
 // command-line.  The default is to run class S.
 
-config const Class: classVals = new S;
+config const Class: classVals = classVals.S;
 
 
 // the problem size.  By default, the problem size will be the same in
@@ -419,7 +419,7 @@ def norm2u3(R) {
 // initCValues() sets the c values for the psinv() stencil
 
 def initCValues(Class) {
-  if (Class == A || Class == new S || Class == W) {
+  if (Class == classVals.A || Class == classVals.S || Class == classVals.W) {
     return (-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0);
   } else {
     return (-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0);

@@ -92,14 +92,14 @@ def main() {
     x |= oldBitMatMultOr(i, j);
   }
   time.stop();
-  if printTiming then writeln("old: ", time.elapsed(milliseconds));
+  if printTiming then writeln("old: ", time.elapsed(TimeUnits.milliseconds));
   time.clear();
   time.start();
   for (i, j) in D {
     x |= newBitMatMultOr(i, j);
   }
   time.stop();
-  if printTiming then writeln("new: ", time.elapsed(milliseconds));
+  if printTiming then writeln("new: ", time.elapsed(TimeUnits.milliseconds));
   writeln(x);
   writeln((newBitMatMultOr(987151324, 234907813), oldBitMatMultOr(987151324, 234907813)));
 }

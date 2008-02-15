@@ -10,7 +10,7 @@ const probSizes:   [Class] int = ( 1400, 7000, 14000, 75000, 150000, 150000 ),
       nonZeroes:   [Class] int = ( 7, 8, 11, 13, 15, 21 ),
       shifts:      [Class] int = ( 10, 12, 20, 60, 110, 500 );
 
-config const probClass = S;
+config const probClass = classVals.S;
 
 config const n = probSizes(probClass),
              nonzer = nonZeroes(probClass),

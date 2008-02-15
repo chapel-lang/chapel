@@ -1,18 +1,18 @@
 enum classVals { S, W, A, B, C, D, O };
 
-var DClass: domain(1) = S..O;
+var DClass: domain(1) = classVals.S..classVals.O;
 
 var probSize: [DClass] int;
 
-probSize(S) = 123;
-probSize(W) = 456;
-probSize(A) = 789;
-probSize(B) = 012;
-probSize(C) = 345;
-probSize(D) = 678;
-probSize(O) = 901;
+probSize(classVals.S) = 123;
+probSize(classVals.W) = 456;
+probSize(classVals.A) = 789;
+probSize(classVals.B) = 012;
+probSize(classVals.C) = 345;
+probSize(classVals.D) = 678;
+probSize(classVals.O) = 901;
 
-writeln("probSize(S) = ", probSize(S));
+writeln("probSize(S) = ", probSize(classVals.S));
 for i in DClass {   // vvvv  BLC: can I get rid of this cast?
   writeln("probSize(", i:classVals, ") = ", probSize(i):"%3d");
 }

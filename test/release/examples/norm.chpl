@@ -27,10 +27,10 @@ module Norm {
   // vector norms
   def norm(x: [], p: normType) where x.rank == 1 {
     select (p) {
-      when norm1 do return + reduce abs(x);
-      when norm2 do return sqrt(+ reduce (abs(x)*abs(x)));
-      when normInf do return max reduce abs(x);
-      when normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
+      when normType.norm1 do return + reduce abs(x);
+      when normType.norm2 do return sqrt(+ reduce (abs(x)*abs(x)));
+      when normType.normInf do return max reduce abs(x);
+      when normType.normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
       otherwise halt("Unexpected norm type");
     }
   }
@@ -38,16 +38,16 @@ module Norm {
   // matrix norms
   def norm(x: [?D], p: normType) where x.rank == 2 {
     select (p) {
-      when norm1 do
+      when normType.norm1 do
         return max reduce [j in D.dim(2)] (+ reduce abs(x[D.dim(1), j]));
 
-      when norm2 do
+      when normType.norm2 do
         halt("Haven't implemented 2-norm for 2D arrays yet");
 
-      when normInf do
+      when normType.normInf do
         return max reduce [i in D.dim(1)] (+ reduce abs(x[i, D.dim(2)]));
 
-      when normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
+      when normType.normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
 
       otherwise halt("Unexpected norm type");
     }
@@ -62,8 +62,8 @@ module Norm {
   //  default norms
   def norm(x: []) {
     select (x.rank) {
-      when 1 do return norm(x, norm2);
-      when 2 do return norm(x, normFrob);
+      when 1 do return norm(x, normType.norm2);
+      when 2 do return norm(x, normType.normFrob);
       otherwise compilerError("Norms not implemented for array ranks > 2D");
     }
   }
@@ -77,11 +77,11 @@ module TestNorm {
     var testType = if (arr.rank == 1) then "vector" else "matrix";
     writeln("Test of ", testType, " norms.  Array = ");
     writeln(arr);
-    writeln("1-norm = ", norm(arr, norm1));
+    writeln("1-norm = ", norm(arr, normType.norm1));
     if (arr.rank == 1) then
-      writeln("2-norm = " , norm(arr, norm2));
-    writeln("infinity norm = ", norm(arr, normInf));
-    writeln("frobenius norm = ", norm(arr, normFrob));
+      writeln("2-norm = " , norm(arr, normType.norm2));
+    writeln("infinity norm = ", norm(arr, normType.normInf));
+    writeln("frobenius norm = ", norm(arr, normType.normFrob));
     writeln("default norm = ", norm(arr));
     writeln();
   }

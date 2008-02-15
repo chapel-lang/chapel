@@ -9,7 +9,7 @@ var count:int;
 var pi, startTime, totalTime: real;
 var rs = new RandomStream(seed);
 
-startTime = getCurrentTime(microseconds);
+startTime = getCurrentTime(TimeUnits.microseconds);
 
 // Find random points on the complex plane in (0..1+i)
 // and count how many are outside the unit circle.
@@ -20,7 +20,7 @@ pi = 4 * (n-count):real(64) / n;
 
 // Write out the results
 writeln(pi);
-totalTime = (getCurrentTime(microseconds) - startTime) / 1000000;
+totalTime = (getCurrentTime(TimeUnits.microseconds) - startTime) / 1000000;
 if (verbose) then
   writeln("Calculation took: ", totalTime, " seconds");
 

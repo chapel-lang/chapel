@@ -1564,11 +1564,13 @@ top_level_expr:
 | expr TDOTDOT expr
     { $$ = new CallExpr("_build_range", $1, $3); }
 | expr TDOTDOT
-    { $$ = new CallExpr("_build_range", new SymExpr("boundedLow"), $1); }
+    { $$ = new CallExpr("_build_range", new CallExpr(".", new SymExpr("BoundedRangeType"), new_StringSymbol("boundedLow")), $1); }
 | TDOTDOT expr
-    { $$ = new CallExpr("_build_range", new SymExpr("boundedHigh"), $2); }
+    { $$ = new CallExpr("_build_range", new CallExpr(".", new SymExpr("BoundedRangeType"), new_StringSymbol("boundedHigh")), $2); }
 | TDOTDOT
-    { $$ = new CallExpr("_build_range", new SymExpr("boundedNone")); }
+    {
+      $$ = new CallExpr("_build_range", new CallExpr(".", new SymExpr("BoundedRangeType"), new_StringSymbol("boundedNone")));
+    }
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr("+", $2); }
 | TMINUS expr %prec TUMINUS

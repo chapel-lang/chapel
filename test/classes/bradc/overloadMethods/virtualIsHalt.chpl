@@ -11,10 +11,10 @@ class D : C {
   type dim_type;
   param stridable: bool;
 
-  var ranges: rank*range(dim_type, bounded, stridable);
+  var ranges: rank*range(dim_type, BoundedRangeType.bounded, stridable);
 
   def bbox(d: int) {
-    const r: range(dim_type, bounded, false) = ranges(d);
+    const r: range(dim_type, BoundedRangeType.bounded, false) = ranges(d);
     return r;
   }
 }

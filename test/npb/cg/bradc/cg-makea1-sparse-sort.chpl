@@ -3,7 +3,7 @@ use CGMakeA, Sort;
 enum classVals {S, W, A, B, C, D, O};
 
 
-config const probClass = S;
+config const probClass = classVals.S;
 
 const Class: domain(classVals);
 const probSizes:   [Class] int = ( 1400, 7000, 14000, 75000, 150000, 150000, 1400 ),

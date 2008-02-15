@@ -29,7 +29,7 @@ def _build_array(dom, type eltType)
 def _build_domain(x: _domain)
   return x;
 
-def _build_domain(ranges: range(?eltType,bounded,?stridable) ...?rank) {
+def _build_domain(ranges: range(?eltType,BoundedRangeType.bounded,?stridable) ...?rank) {
   for param i in 2..rank do
     if eltType(1) != eltType(2) then
       compilerError("domain has mixed dimensional type");

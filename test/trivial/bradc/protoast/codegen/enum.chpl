@@ -1,6 +1,6 @@
 enum classVals { S, W, A, B, C, D, O };
 
-var x: classVals = B;
+var x: classVals = classVals.B;
 
 writeln("x is: ", x);
 

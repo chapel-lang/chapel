@@ -73,6 +73,7 @@ class Type : public BaseAST {
 class EnumType : public Type {
  public:
   AList constants; // EnumSymbols
+  SymScope* enumScope;
 
   EnumType();
   ~EnumType();

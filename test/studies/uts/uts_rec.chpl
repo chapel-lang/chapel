@@ -30,8 +30,8 @@ config const nonLeafProb: real = 0.10;  // Probability of a non-leaf (binomial)
 config const nonLeafBF:    int = 4;     // Non-leaf branching factor (binomial)
 config const shiftDepth:  real = 0.5;   // Depth at which hybrid trees go from Geo=>Bin
 
-config const distrib: NodeDistrib = Geometric;
-config const geoDist: GeoDistrib  = GeoFixed;
+config const distrib: NodeDistrib = NodeDistrib.Geometric;
+config const geoDist: GeoDistrib  = GeoDistrib.GeoFixed;
 config const testMode             = false;
 
 config const MAX_THREADS:  int = 20;
@@ -56,13 +56,13 @@ class TreeNode {
   // Generate this node's children
   def genChildren(): int {
     select distrib {
-      when Geometric do 
+      when NodeDistrib.Geometric do 
         nChildren = numGeoChildren(geoDist);
-      when Binomial do
+      when NodeDistrib.Binomial do
         nChildren = numBinChildren();
-      when Hybrid do
+      when NodeDistrib.Hybrid do
         nChildren = numHybridChildren();
-      when Constant do
+      when NodeDistrib.Constant do
         nChildren = numConstChildren();
     }
 
@@ -117,11 +117,11 @@ class TreeNode {
       select shape {
       
         // Expected size is polynomial in depth
-        when GeoPoly do
+        when GeoDistrib.GeoPoly do
           b_i = B_0 * (depth ** (-log(B_0:real)/log(MAX_DEPTH:real)));
         
         // Expected size is cyclic
-        when GeoCyclic {
+        when GeoDistrib.GeoCyclic {
           if (depth > 5 * MAX_DEPTH) then
             b_i = 0.0;
           else
@@ -129,11 +129,11 @@ class TreeNode {
         }
 
         // Expected size is the same at all nodes up to max depth
-        when GeoFixed do
+        when GeoDistrib.GeoFixed do
           b_i = if (depth < MAX_DEPTH) then B_0 else 0;
  
         // Expected size decreases linearly in b_i
-        when GeoLinear do 
+        when GeoDistrib.GeoLinear do 
           b_i =  B_0 * (1.0 - depth:real / MAX_DEPTH:real);
         
       }
@@ -164,13 +164,13 @@ def uts_showSearchParams() {
   writeln("Tree shape parameters:");
   writeln("  root branching factor b_0 = ", B_0, ", root seed = ", SEED);
     
-  if (distrib == Geometric || distrib == Hybrid) then
+  if (distrib == NodeDistrib.Geometric || distrib == NodeDistrib.Hybrid) then
     writeln("  Geo. params: Max_Depth = ", MAX_DEPTH, ", shape function = ", geoDist);
 
-  if (distrib == Binomial || distrib == Hybrid) then
+  if (distrib == NodeDistrib.Binomial || distrib == NodeDistrib.Hybrid) then
     writeln("  Bin. params: nonLeafProb=", nonLeafProb, " nonLeafBF=", nonLeafBF);
 
-  if (distrib == Hybrid) then
+  if (distrib == NodeDistrib.Hybrid) then
     writeln("  Hybrid params: shiftDepth=", shiftDepth);
 
   writeln("Random number generator: ", rng_getName());

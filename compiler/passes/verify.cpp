@@ -21,9 +21,12 @@ verify_ast(BaseAST* ast,
     parentExpr = NULL;
     if (FnSymbol* fn = toFnSymbol(sym))
       parentScope = fn->argScope;
-    if (TypeSymbol* type = toTypeSymbol(sym))
+    if (TypeSymbol* type = toTypeSymbol(sym)) {
       if (ClassType* ct = toClassType(type->type))
         parentScope = ct->structScope;
+      else if (EnumType* et = toEnumType(type->type))
+        parentScope = et->enumScope;
+    }
   }
 
   if (Expr* expr = toExpr(ast)) {

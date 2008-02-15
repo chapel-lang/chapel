@@ -244,6 +244,8 @@ void parent_insert_help(BaseAST* parent, Expr* ast) {
       parentScope = mod->block->blkScope;
     else if (ClassType* ct = toClassType(type))
       parentScope = ct->structScope;
+    else if (EnumType* et = toEnumType(type))
+      parentScope = et->enumScope;
     else
       parentScope = type->symbol->parentScope;
   } else if (parent)
@@ -299,9 +301,14 @@ void insert_help(BaseAST* ast,
       if (TypeSymbol* typeSym = toTypeSymbol(def_expr->sym)) {
         if (ClassType* type = toClassType(typeSym->type)) {
           if (type->structScope)
-            INT_FATAL(typeSym, "Unexpected scope in FnSymbol");
+            INT_FATAL(typeSym, "Unexpected scope in TypeSymbol");
           type->structScope = new SymScope(type, parentScope);
           parentScope = type->structScope;
+        } else if (EnumType* type = toEnumType(typeSym->type)) {
+          if (type->enumScope)
+            INT_FATAL(typeSym, "Unexpected scope in TypeSymbol");
+          type->enumScope = new SymScope(type, parentScope);
+          parentScope = type->enumScope;
         }
       }
     }
@@ -352,6 +359,11 @@ void remove_help(BaseAST* ast) {
           if (type->structScope) {
             delete type->structScope;
             type->structScope = NULL;
+          }
+        } else if (EnumType* type = toEnumType(typeSym->type)) {
+          if (type->enumScope) {
+            delete type->enumScope;
+            type->enumScope = NULL;
           }
         }
       }

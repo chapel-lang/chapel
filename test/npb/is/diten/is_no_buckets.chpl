@@ -3,7 +3,7 @@ use Time;
 
 enum classVals {S, W, A, B, C};
 
-config const probClass = S;
+config const probClass = classVals.S;
 config const seed = 314159265;
 config const printTime = false;
 
@@ -63,11 +63,11 @@ def main() {
   // all data and code pages and respective tables
   rank(1);
 
-  if (probClass != S) then writeln("   iteration");
+  if (probClass != classVals.S) then writeln("   iteration");
 
   time.start();
   for i in 1..Imax {
-    if (probClass != S) then writeln("        ", i);
+    if (probClass != classVals.S) then writeln("        ", i);
     rank(i);
   }
   time.stop();
@@ -78,9 +78,9 @@ def main() {
   writeln(" Size            = ", probSize);
   writeln(" Iterations      = ", Imax);
   if printTime {
-    writeln(" Time in seconds = ", time.elapsed(seconds));
+    writeln(" Time in seconds = ", time.elapsed(TimeUnits.seconds));
     writeln(" Mop/s total     = ",
-            (Imax*probSize)/time.elapsed(seconds)/1000000);
+            (Imax*probSize)/time.elapsed(TimeUnits.seconds)/1000000);
   }
   if (passedVerifications == (Imax+1) * 5 + 1) then
     writeln(" Verification    = SUCCESSFUL");
@@ -92,23 +92,23 @@ def main() {
 def setupPartialVerify() {
   // Would like to use an array over an enumerated domain of arrays instead
   select probClass {
-    when S do {
+    when classVals.S do {
       testIndexArray = S_testIndexArray;
       testRankArray  = S_testRankArray;
     }
-    when W do {
+    when classVals.W do {
       testIndexArray = W_testIndexArray;
       testRankArray  = W_testRankArray; 
     }
-    when A do {
+    when classVals.A do {
       testIndexArray = A_testIndexArray;
       testRankArray  = A_testRankArray; 
     }
-    when B do {
+    when classVals.B do {
       testIndexArray = B_testIndexArray;
       testRankArray  = B_testRankArray; 
     }
-    when C do {
+    when classVals.C do {
       testIndexArray = C_testIndexArray;
       testRankArray  = C_testRankArray; 
     }
@@ -133,7 +133,7 @@ def partialVerification(iteration: int) {
   for i in 0..4 {
     var k = keyArray(testIndexArray(i));
     select probClass {
-      when S do {
+      when classVals.S do {
         if (i <= 2) {
           if (ranks(k-1) != testRankArray(i)+iteration) {
             writeln("Failed partial verification: iteration ",
@@ -150,7 +150,7 @@ def partialVerification(iteration: int) {
           }
         }
       }
-      when W do {
+      when classVals.W do {
         if (i < 2) {
           if (ranks(k-1) != testRankArray(i) + (iteration-2)) {
             writeln("Failed partial verification: iteration ",
@@ -167,7 +167,7 @@ def partialVerification(iteration: int) {
           }
         }
       }
-      when A do {
+      when classVals.A do {
         if (i <= 2) {
           if (ranks(k-1) != testRankArray(i) + (iteration-1)) {
             writeln("Failed partial verification: iteration ",
@@ -184,7 +184,7 @@ def partialVerification(iteration: int) {
           }
         }
       }
-      when B do {
+      when classVals.B do {
         if (i == 1 || i == 2 || i == 4) {
           if (ranks(k-1) != testRankArray(i) + iteration) {
             writeln("Failed partial verification: iteration ",
@@ -201,7 +201,7 @@ def partialVerification(iteration: int) {
           }
         }
       }
-      when C do {
+      when classVals.C do {
         if (i <= 2) {
           if (ranks(k-1) != testRankArray(i) + iteration) {
             writeln("Failed partial verification: iteration ",

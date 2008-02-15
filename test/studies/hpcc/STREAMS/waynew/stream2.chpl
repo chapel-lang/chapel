@@ -36,11 +36,11 @@ var A, B, C: [1..vectorSize] elemType;
 def main() {
   param HLINE = "-------------------------------------------------------------";
 
-  var bytes: [COPY..TRIAD] elemType;
-  bytes[COPY]  = 2 * elemSizeInBytes;
-  bytes[ADD]   = 2 * elemSizeInBytes;
-  bytes[SCALE] = 3 * elemSizeInBytes;
-  bytes[TRIAD] = 3 * elemSizeInBytes;
+  var bytes: [tests.COPY..tests.TRIAD] elemType;
+  bytes[tests.COPY]  = 2 * elemSizeInBytes;
+  bytes[tests.ADD]   = 2 * elemSizeInBytes;
+  bytes[tests.SCALE] = 3 * elemSizeInBytes;
+  bytes[tests.TRIAD] = 3 * elemSizeInBytes;
 
   writeln( HLINE);
   writeln( "This system uses ", elemSizeInBytes, " bytes per 64-bit real.");
@@ -58,39 +58,39 @@ def main() {
   A = 2.0 * A;
 
   var clock: Timer;
-  var time: [COPY..TRIAD, 1..numIters] real;
+  var time: [tests.COPY..tests.TRIAD, 1..numIters] real;
   clock.start();
   for i in 1..numIters {
-    time[COPY, i] = clock.elapsed();
+    time[tests.COPY, i] = clock.elapsed();
     C = A;
-    time[COPY, i] = clock.elapsed() - time[COPY, i];
+    time[tests.COPY, i] = clock.elapsed() - time[tests.COPY, i];
 
-    time[SCALE, i] = clock.elapsed();
+    time[tests.SCALE, i] = clock.elapsed();
     B = scalar * C;
-    time[SCALE, i] = clock.elapsed() - time[SCALE, i];
+    time[tests.SCALE, i] = clock.elapsed() - time[tests.SCALE, i];
 
-    time[ADD, i] = clock.elapsed();
+    time[tests.ADD, i] = clock.elapsed();
     C = A + B;
-    time[ADD, i] = clock.elapsed() - time[ADD, i];
+    time[tests.ADD, i] = clock.elapsed() - time[tests.ADD, i];
 
-    time[TRIAD, i] = clock.elapsed();
+    time[tests.TRIAD, i] = clock.elapsed();
     A = B + scalar * C;
-    time[TRIAD, i] = clock.elapsed() - time[TRIAD, i];
+    time[tests.TRIAD, i] = clock.elapsed() - time[tests.TRIAD, i];
   }
 
   if (checkSTREAMresults()) {
     writeln("Solution Failed!");
   }
 
-  var avgtime, sumtime, mintime, maxtime: [COPY..TRIAD] real;
-  for test in COPY..TRIAD {
+  var avgtime, sumtime, mintime, maxtime: [tests.COPY..tests.TRIAD] real;
+  for test in tests.COPY..tests.TRIAD {
     sumtime[test] = + reduce time[test, 2..numIters];
     mintime[test] = min reduce time[test, 2..numIters];
     maxtime[test] = max reduce time[test, 2..numIters];
   }
 
   writeln( "Function\tRate (GB/s)\tAvg time\tMin time\tMax time");
-  for test in COPY..TRIAD {
+  for test in tests.COPY..tests.TRIAD {
     var curGBs = mintime[test];
     curGBs *= 1.0e-9 * bytes[test] * vectorSize;
     avgtime[test] = sumtime[test]/(numIters-1);  // skipped the 1st iteration

@@ -8,7 +8,7 @@ def foo(i : int) {
   writeln("It's an int");
 }
 
-var m : month = jan;
+var m : month = month.jan;
 var i : int = m;
 
 writeln("The first month is ", m, " or, as an int, ", i);

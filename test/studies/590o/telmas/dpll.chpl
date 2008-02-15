@@ -41,7 +41,7 @@ var clauses_lock : sync bool;
 enum sat_result {SAT, UNSAT, UNKNOWN};
 
 // result of the search. when any processor finds out the solution, it is set. 
-var glb_sat : sat_result = UNKNOWN;
+var glb_sat : sat_result = sat_result.UNKNOWN;
 var glb_model : Assignment; // the complete assignment if the formula is satisfiable
 
 var numProcs : sync int = 0; // current number of processors assigned a search branch
@@ -455,7 +455,7 @@ def check_sat(A : Assignment) : bool {
 	var issat = true;
 	
 	// first check the global variable
-	if glb_sat != UNKNOWN then
+	if glb_sat != sat_result.UNKNOWN then
 		return true;
 	
 	forall c in domClss do {
@@ -469,7 +469,7 @@ def check_sat(A : Assignment) : bool {
 	}
 	
 	if issat == true {
-		glb_sat = SAT;
+		glb_sat = sat_result.SAT;
 		glb_model = A;	
 	}
 	
@@ -824,7 +824,7 @@ def main() {
 	timer.stop();
 	
 	write("Result: ");
-	if glb_sat == SAT then
+	if glb_sat == sat_result.SAT then
 		writeln("SAT");
 	else
 		writeln("UNSAT");

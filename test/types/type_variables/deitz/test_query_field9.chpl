@@ -1,4 +1,4 @@
-def foo(x: range(?eltType,bounded,?stridable)) {
+def foo(x: range(?eltType,BoundedRangeType.bounded,?stridable)) {
   writeln(x);
 }
 
