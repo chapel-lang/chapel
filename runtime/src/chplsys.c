@@ -63,8 +63,8 @@ int32_t _maxThreads(void) {
 #ifdef __MTA__
   return _coresPerLocale() * 100;
 #else
-  const int minMaxThreads = 64; // smallest value for maxThreads on any platform
-  int maxThreads = _coresPerLocale() - 1;
-  return maxThreads < minMaxThreads ? minMaxThreads : maxThreads;
+  // A value of zero means that the number of simultaneous live threads
+  // should be limited only by the system's ability to create more threads.
+  return 0;
 #endif
 }

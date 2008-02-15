@@ -13,30 +13,30 @@
 //
 // task: a function and an argument to the function
 //
-typedef struct _chpl_task_struct* _chpl_task_p;
+typedef struct _chpl_task_struct* task_p;
 typedef struct _chpl_task_struct {
   _chpl_threadfp_t  fun;
   _chpl_threadarg_t arg;
-} _chpl_task_t;
+} task_t;
 
 //
 // task pool: linked list of tasks
 //
-typedef struct _chpl_pool_struct* _chpl_pool_p;
+typedef struct _chpl_pool_struct* task_pool_p;
 typedef struct _chpl_pool_struct {
-  _chpl_task_p task;
-  _chpl_pool_p next;
-} _chpl_pool_t;
+  task_p task;
+  task_pool_p next;
+} task_pool_t;
 
 
-static _chpl_mutex_t   _chpl_threading_lock; // critical section lock
-static _chpl_condvar_t _chpl_wakeup_signal;  // signal a waiting thread
-static _chpl_condvar_t _chpl_exit_signal;    // local threads completed
-static pthread_key_t   _chpl_serial;         // per-thread serial state
-static _chpl_pool_p    _chpl_pool_head;      // head of task pool
-static _chpl_pool_p    _chpl_pool_tail;      // tail of task pool
-static int             _chpl_running_cnt;    // number of running threads 
-static int             _chpl_threads_cnt;    // number of threads
+static _chpl_mutex_t   threading_lock; // critical section lock
+static _chpl_condvar_t wakeup_signal;  // signal a waiting thread
+static _chpl_condvar_t exit_signal;    // local threads completed
+static pthread_key_t   serial_key;     // per-thread serial state
+static task_pool_p     task_pool_head; // head of task pool
+static task_pool_p     task_pool_tail; // tail of task pool
+static int             running_cnt;    // number of running threads 
+static int             threads_cnt;    // number of threads
 
 // Condition variables
 
@@ -166,24 +166,24 @@ void _chpl_init_single_aux(_chpl_single_aux_t *s) {
 
 // Threads
 
-static void _chpl_serial_delete(_chpl_bool *p) {
+static void serial_delete(_chpl_bool *p) {
   if (NULL != p) {
     _chpl_free(p, 0, 0);
   }
 }
 
 void initChplThreads() {
-  _chpl_mutex_init(&_chpl_threading_lock);
-  _chpl_running_cnt = 0;                     // only main thread running
-  _chpl_threads_cnt = 0;
-  _chpl_pool_head = _chpl_pool_tail = NULL;
-  pthread_cond_init(&_chpl_exit_signal, NULL);
+  _chpl_mutex_init(&threading_lock);
+  running_cnt = 0;                     // only main thread running
+  threads_cnt = 0;
+  task_pool_head = task_pool_tail = NULL;
+  pthread_cond_init(&exit_signal, NULL);
 
   _chpl_mutex_init(&_memtrack_lock);
   _chpl_mutex_init(&_memstat_lock);
   _chpl_mutex_init(&_memtrace_lock);
 
-  if (pthread_key_create(&_chpl_serial, (void(*)(void*))_chpl_serial_delete))
+  if (pthread_key_create(&serial_key, (void(*)(void*))serial_delete))
     _printInternalError("serial key not created");
   _chpl_thread_init();
 }
@@ -191,15 +191,15 @@ void initChplThreads() {
 
 void exitChplThreads() {
   // begin critical section
-  _chpl_mutex_lock(&_chpl_threading_lock);
-  if (_chpl_running_cnt > 0 || _chpl_pool_head) {
+  _chpl_mutex_lock(&threading_lock);
+  if (running_cnt > 0 || task_pool_head) {
     // block until everyone else is finished
-    pthread_cond_wait(&_chpl_exit_signal, &_chpl_threading_lock);
+    pthread_cond_wait(&exit_signal, &threading_lock);
   }
-  _chpl_mutex_unlock(&_chpl_threading_lock);
+  _chpl_mutex_unlock(&threading_lock);
   // end critical section
 
-  pthread_key_delete(_chpl_serial);
+  pthread_key_delete(serial_key);
 }
 
 
@@ -213,18 +213,18 @@ uint64_t _chpl_thread_id(void) {
 
 _chpl_bool _chpl_get_serial(void) {
   _chpl_bool *p;
-  p = (_chpl_bool*) pthread_getspecific(_chpl_serial);
+  p = (_chpl_bool*) pthread_getspecific(serial_key);
   return p == NULL ? false : *p;
 }
 
 void _chpl_set_serial(_chpl_bool state) {
   _chpl_bool *p;
-  p = (_chpl_bool*) pthread_getspecific(_chpl_serial);
+  p = (_chpl_bool*) pthread_getspecific(serial_key);
   if (p == NULL) {
     if (state) {
       p = (_chpl_bool*) _chpl_alloc(sizeof(_chpl_bool), "serial flag", 0, 0);
       *p = state;
-      if (pthread_setspecific(_chpl_serial, p))
+      if (pthread_setspecific(serial_key, p))
         _printInternalError("serial state not created");
     }
   }
@@ -236,25 +236,25 @@ void _chpl_set_serial(_chpl_bool state) {
 // appends the given task to the end of the task pool
 //
 static void
-add_to_task_pool (_chpl_task_p task) {
-  _chpl_pool_p pool;
+add_to_task_pool (task_p task) {
+  task_pool_p pool;
 
-  pool = (_chpl_pool_p)_chpl_malloc(1, sizeof(_chpl_pool_t), "task pool entry", 0, 0);
+  pool = (task_pool_p)_chpl_malloc(1, sizeof(task_pool_t), "task pool entry", 0, 0);
   pool->task = task;
   pool->next = NULL;
 
   // begin critical section
-  _chpl_mutex_lock(&_chpl_threading_lock);
+  _chpl_mutex_lock(&threading_lock);
 
-  if (_chpl_pool_tail) {
-    _chpl_pool_tail->next = pool;
+  if (task_pool_tail) {
+    task_pool_tail->next = pool;
   } else {
-    _chpl_pool_head = pool;
+    task_pool_head = pool;
   }
-  _chpl_pool_tail = pool;
+  task_pool_tail = pool;
 
   // end critical section
-  _chpl_mutex_unlock(&_chpl_threading_lock);
+  _chpl_mutex_unlock(&threading_lock);
 }
 
 
@@ -263,48 +263,48 @@ add_to_task_pool (_chpl_task_p task) {
 // tasks, and runs those as they become available
 //
 static void
-_chpl_begin_helper (_chpl_task_p task) {
-  _chpl_pool_p pool;
+_chpl_begin_helper (task_p task) {
+  task_pool_p pool;
 
   while (1) {
     (*task->fun)(task->arg);
     _chpl_free(task, 0, 0);
 
     // begin critical section
-    _chpl_mutex_lock(&_chpl_threading_lock);
+    _chpl_mutex_lock(&threading_lock);
 
     //
     // finished task; decrement running count
     //
-    _chpl_running_cnt--;
+    running_cnt--;
 
     //
     // signal exit if there are no other running threads and no tasks
     // in the task pool
     //
-    if (_chpl_running_cnt == 0 && !_chpl_pool_head)
-      pthread_cond_signal(&_chpl_exit_signal);
+    if (running_cnt == 0 && !task_pool_head)
+      pthread_cond_signal(&exit_signal);
 
     //
     // wait for a task to be added to the task pool
     //
-    while (!_chpl_pool_head) {
-      pthread_cond_wait(&_chpl_wakeup_signal, &_chpl_threading_lock);
+    while (!task_pool_head) {
+      pthread_cond_wait(&wakeup_signal, &threading_lock);
     }
 
     //
     // start new task; increment running count and remove task from
     // pool
     //
-    _chpl_running_cnt++;
-    pool = _chpl_pool_head;
-    if (_chpl_pool_tail == _chpl_pool_head)
-      _chpl_pool_tail = _chpl_pool_head = NULL;
+    running_cnt++;
+    pool = task_pool_head;
+    if (task_pool_tail == task_pool_head)
+      task_pool_tail = task_pool_head = NULL;
     else
-      _chpl_pool_head = _chpl_pool_head->next;
+      task_pool_head = task_pool_head->next;
 
     // end critical section
-    _chpl_mutex_unlock(&_chpl_threading_lock);
+    _chpl_mutex_unlock(&threading_lock);
 
     //
     // reset task pointer and serial state
@@ -323,41 +323,41 @@ _chpl_begin_helper (_chpl_task_p task) {
 static void
 launch_next_task(void) {
   pthread_t      thread;
-  _chpl_pool_p pool;
+  task_pool_p pool;
 
   // begin critical section
-  _chpl_mutex_lock(&_chpl_threading_lock);
+  _chpl_mutex_lock(&threading_lock);
 
-  if (_chpl_pool_head && _chpl_threads_cnt > _chpl_running_cnt) {
+  if (task_pool_head && threads_cnt > running_cnt) {
     //
     // signal thread to wake up and grab new task if a task exists in
     // the pool and there is a waiting thread
     //
-    pthread_cond_signal(&_chpl_wakeup_signal);
+    pthread_cond_signal(&wakeup_signal);
 
-  } else if (_chpl_pool_head && _chpl_running_cnt < maxThreads) {
+  } else if (task_pool_head && (maxThreads == 0 || running_cnt < maxThreads)) {
     //
     // start a new thread if a task exists in the pool, there are no
     // waiting threads, and the number of running threads is less than
     // the maximum
     //
-    pool = _chpl_pool_head;
+    pool = task_pool_head;
     if (pthread_create(&thread, NULL, (_chpl_threadfp_t)_chpl_begin_helper, pool->task)) {
       char msg[256];
-      sprintf(msg, "pthread_create failed with %d running threads", _chpl_running_cnt);
+      sprintf(msg, "pthread_create failed with %d running threads", running_cnt);
       _printInternalError(msg);
     }
-    _chpl_threads_cnt++;
-    _chpl_running_cnt++;
+    threads_cnt++;
+    running_cnt++;
     pthread_detach(thread);
-    if (_chpl_pool_tail == _chpl_pool_head)
-      _chpl_pool_tail = _chpl_pool_head = NULL;
-    else _chpl_pool_head = _chpl_pool_head->next;
+    if (task_pool_tail == task_pool_head)
+      task_pool_tail = task_pool_head = NULL;
+    else task_pool_head = task_pool_head->next;
     _chpl_free(pool, 0, 0);
   }
 
   // end critical section
-  _chpl_mutex_unlock(&_chpl_threading_lock);
+  _chpl_mutex_unlock(&threading_lock);
 }
 
 
@@ -366,12 +366,12 @@ launch_next_task(void) {
 //
 int
 _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a) {
-  _chpl_task_p task;
+  task_p task;
 
   if (_chpl_get_serial()) {
     (*fp)(a);
   } else {
-    task = (_chpl_task_p)_chpl_malloc(1, sizeof(_chpl_task_t), "_chpl_begin helper arg", 0, 0);
+    task = (task_p)_chpl_malloc(1, sizeof(task_t), "_chpl_begin helper arg", 0, 0);
     task->fun = fp;
     task->arg = a;
     add_to_task_pool(task);
