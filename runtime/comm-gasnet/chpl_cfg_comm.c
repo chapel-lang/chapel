@@ -208,11 +208,11 @@ void _chpl_comm_rollcall(void) {
 
 void _chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
-  for (i = 1; i < _numLocales; i++) {
+  if (_localeID != 0) {
     for (i = 0; i < numGlobals; i++) {
       _chpl_comm_get(_global_vars_registry[i],
-                     0, _global_vars_registry[i],
-                     sizeof(void*));
+          0, _global_vars_registry[i],
+          sizeof(void*));
     }
   }
 }

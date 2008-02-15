@@ -140,7 +140,8 @@ typedef void (*func_p)(void*);
 
 #define _COMM_BROADCAST_GLOBAL_VARS(numGlobals)                 \
   _chpl_comm_barrier("barrier before broadcasting globals");    \
-  _chpl_comm_broadcast_global_vars(numGlobals)
+  _chpl_comm_broadcast_global_vars(numGlobals);                 \
+  _chpl_comm_barrier("barrier after broadcasting globals");
 
 //
 // given the program arguments, returns whether the invocation of
