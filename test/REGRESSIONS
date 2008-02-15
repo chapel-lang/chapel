@@ -287,8 +287,9 @@ some sort of race/deadlock
 x1/x2-specific failures
 =======================
 
-too many threads
-----------------
+the x1/x1 simulator does not support pthreads; running on the hardware
+does, though
+----------------------------------------------------------------------
 [Error matching program output for release/examples/hpcc/ra] 
 [Error matching program output for release/examples/prodCons] 
 [Error matching program output for release/examples/quicksort] 
