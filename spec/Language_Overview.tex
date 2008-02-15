@@ -409,7 +409,7 @@ enumerated types see~\rsec{Enumerated_Types}.
 \begin{example}
 \begin{chapel}
 enum day {sun, mon, tue, wed, thu, fri, sat};
-var d: day = wed;
+var d = day.wed;
 
 writeln(d, " is day number ", d:int, " of the week");
 \end{chapel}
