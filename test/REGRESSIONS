@@ -26,30 +26,6 @@ timing out
 classes/diten/allocateManyObjects
 
 
-====================
-baseline regressions
-====================
-
-seg fault in inserting member inits for iterators
--------------------------------------------------
-[Error matching compiler output for
-functions/iterators/bradc/arrayInIterator]
-[Error matching compiler output for npb/cg/bradc/cg-dense]
-[Error matching compiler output for
-npb/cg/bradc/cg-makea1-small-sparse-countInds]
-[Error matching compiler output for npb/cg/bradc/cg-makea1-small-sparse]
-[Error matching compiler output for npb/cg/bradc/cg-makea1-small]
-[Error matching compiler output for npb/cg/bradc/cg-makea1-sparse-sort]
-[Error matching compiler output for npb/cg/bradc/cg-makea1]
-[Error matching compiler output for npb/cg/bradc/cg-makea2-small-sparse]
-[Error matching compiler output for npb/cg/bradc/cg-makea2]
-[Error matching compiler output for npb/cg/bradc/cg-makea3]
-[Error matching compiler output for npb/cg/bradc/cg-printa]
-[Error matching compiler output for npb/cg/bradc/cg-sparse]
-[Error matching compiler output for
-performance/compiler/bradc/cg-sparse-timecomp]
-
-
 ===============================
 CHPL_THREADS = none regressions
 ===============================
