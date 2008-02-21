@@ -13,6 +13,12 @@
 linux and general regressions
 =============================
 
+getting pthread_create exceeds threadMax error -- should be warning -- test
+will probably not be portable due to differing system thread limits....
+---------------------------------------------------------------------------
+[Error: Timed out executing program parallel/coforall/figueroa/ManyThreads]
+
+
 differing memory sizes on different platforms
 ---------------------------------------------
 [Error matching program output for memory/shannon/memstatPrint]
@@ -114,6 +120,7 @@ intel-specific regressions
 Sometimes works/sometimes fails
 -------------------------------
 [Error: Timed out executing program parallel/coforall/figueroa/ManyThreads]
+[Error matching program output for parallel/begin/waynew/simple2]
 
 
 Warning about use before set -- error #592 -- cause unknown
@@ -322,15 +329,10 @@ use before value set warning
 ----------------------------
 [Error matching program output for release/examples/hpcc/ra]
 
-internal MTA C compiler error
------------------------------
-[Error matching compiler output for release/examples/blockLU]
-[Error matching compiler output for release/examples/norm]
-[Error matching compiler output for release/examples/reductions]
-
-unreachable line causes compiler warning
+       unreachable line causes compiler warning
 ----------------------------------------
 [Error matching program output for release/examples/arrays]
+[Error matching program output for release/examples/blockLU]
 
 small full/empty sizes
 ----------------------
