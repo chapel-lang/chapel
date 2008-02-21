@@ -1,0 +1,1 @@
+--instantiate-max 512 --main-module test_likepy AnalyticFcn.chpl FTree.chpl MRA.chpl Quadrature.chpl Tensor.chpl TwoScale.chpl MadAnalytics.chpl

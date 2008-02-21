@@ -1,0 +1,14 @@
+bug: nil dereference/valgrind error in record w/ associative domain/array fields
+
+This is a copy of Aniruddha's madness code from the previous directory
+that demonstrates that a record copy of an associative array field
+whose elements are records with arithmetic arrays in the context of
+an iterator causes a bad memory reference when running under valgrind;
+a nil pointer dereference when running without.
+
+After being unable to whittle this down to a smaller case, am guessing
+that it's likely to be a bug in the associative domain/array code related
+to buildEmptyDomain and/or getIndices/setIndices, but am not yet sure.
+Am planning to use this as an excuse to rewrite associative domains/arrays
+to not use _ddata fields...
+
