@@ -96,6 +96,7 @@ block-level-statement:
   empty-statement
   cobegin-statement
   begin-statement
+  end-statement
   serial-statement
   atomic-statement
   on-statement
@@ -476,8 +477,8 @@ If a break-statement is encountered, control will be transferred to
 after the loop.  If a continue-statement is encountered, control will
 be transferred to the end of the loop, but still inside the loop.
 Break-statements cannot be used in parallel loops.  Neither break- nor
-continue-statements can be used in cobegin-, coforall-, or
-begin-statements.
+continue-statements can be used in cobegin-, coforall-, begin-, or
+end-statements.
 
 \subsection{The Use Statement}
 \label{The_Use_Statement}

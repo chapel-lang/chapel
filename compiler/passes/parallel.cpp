@@ -141,8 +141,63 @@ bundleArgs(BlockStmt* block) {
 }
 
 
+static void
+insertEndCount(FnSymbol* fn,
+               Type* endCountType,
+               Vec<FnSymbol*>& queue,
+               Map<FnSymbol*,Symbol*>& endCountMap) {
+  if (fn == chpl_main) {
+    VarSymbol* var = new VarSymbol("_endCount", endCountType);
+    var->isCompilerTemp = true;
+    fn->insertAtHead(new DefExpr(var));
+    endCountMap.put(fn, var);
+    queue.add(fn);
+  } else {
+    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_endCount", endCountType);
+    fn->insertFormalAtTail(arg);
+    VarSymbol* var = new VarSymbol("_endCount", endCountType);
+    var->isCompilerTemp = true;
+    fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, arg));
+    fn->insertAtHead(new DefExpr(var));
+    endCountMap.put(fn, var);
+    queue.add(fn);
+  }
+}
+
+
 void
 parallel(void) {
+  compute_call_sites();
+
+  Vec<FnSymbol*> queue;
+  Map<FnSymbol*,Symbol*> endCountMap;
+
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr * call = toCallExpr(ast)) {
+      if (call->isPrimitive(PRIMITIVE_GET_END_COUNT)) {
+        FnSymbol* pfn = call->getFunction();
+        if (!endCountMap.get(pfn))
+          insertEndCount(pfn, call->typeInfo(), queue, endCountMap);
+        call->replace(new SymExpr(endCountMap.get(pfn)));
+      } else if (call->isPrimitive(PRIMITIVE_SET_END_COUNT)) {
+        FnSymbol* pfn = call->getFunction();
+        if (!endCountMap.get(pfn))
+          insertEndCount(pfn, call->get(1)->typeInfo(), queue, endCountMap);
+        call->replace(new CallExpr(PRIMITIVE_MOVE, endCountMap.get(pfn), call->get(1)->remove()));
+      }
+    }
+  }
+
+  forv_Vec(FnSymbol, fn, queue) {
+    forv_Vec(CallExpr, call, *fn->calledBy) {
+      Type* endCountType = endCountMap.get(fn)->type;
+      FnSymbol* pfn = call->getFunction();
+      if (!endCountMap.get(pfn))
+        insertEndCount(pfn, endCountType, queue, endCountMap);
+      call->insertAtTail(endCountMap.get(pfn));
+    }
+  }
+
   compute_sym_uses();
 
   Vec<BlockStmt*> blocks;
@@ -152,8 +207,7 @@ parallel(void) {
   }
 
   forv_Vec(BlockStmt, block, blocks) {
-    if (block->blockTag == BLOCK_ON ||
-        block->blockTag == BLOCK_BEGIN)
+    if (block->blockTag == BLOCK_ON || block->blockTag == BLOCK_BEGIN)
       bundleArgs(block);
   }
 }

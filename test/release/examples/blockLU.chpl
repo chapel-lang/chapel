@@ -158,11 +158,11 @@ def blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 // not necessary.
 
 def generateBlockLURanges(D:domain(2), blksize) {
-  const end = D.dim(1).high;
+  const high = D.dim(1).high;
 
   for i in D.dim(1) by blksize {
-    const hi = min(i + blksize-1, end);
-    yield (i..end, i..hi, hi+1..end); 
+    const hi = min(i + blksize-1, high);
+    yield (i..high, i..hi, hi+1..high); 
   }
 }
 

@@ -50,6 +50,7 @@ Expr* build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base);
 
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(Expr* stmt, bool allocateOnHeap = true);
+BlockStmt* buildEndStmt(Expr* stmt);
 BlockStmt* buildCobeginStmt(Expr* stmt);
 void createInitFn(ModuleSymbol* mod);
 CallExpr* buildPreDecIncWarning(Expr* expr, char sign);

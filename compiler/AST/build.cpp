@@ -875,8 +875,25 @@ buildBeginStmt(Expr* stmt, bool allocateOnHeap) {
     fn->addPragma("no heap allocation");
   fn->retType = dtVoid;
   fn->insertAtTail(stmt);
+  fn->insertAtTail(new CallExpr("_downEndCount"));
   block->insertAtTail(new DefExpr(fn));
+  block->insertAtTail(new CallExpr("_upEndCount"));
   block->insertAtTail(new BlockStmt(new CallExpr(fn), BLOCK_BEGIN));
+  return block;
+}
+
+
+BlockStmt*
+buildEndStmt(Expr* stmt) {
+  BlockStmt* block = build_chpl_stmt();
+  VarSymbol* endCountSave = new VarSymbol("_endCountSave");
+  endCountSave->isCompilerTemp = true;
+  block->insertAtTail(new DefExpr(endCountSave));
+  block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, endCountSave, new CallExpr(PRIMITIVE_GET_END_COUNT)));
+  block->insertAtTail(new CallExpr(PRIMITIVE_SET_END_COUNT, new CallExpr("_endCountAlloc")));
+  block->insertAtTail(stmt);
+  block->insertAtTail(new CallExpr("_waitEndCount"));
+  block->insertAtTail(new CallExpr(PRIMITIVE_SET_END_COUNT, endCountSave));
   return block;
 }
 

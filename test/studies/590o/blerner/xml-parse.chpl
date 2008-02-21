@@ -59,8 +59,8 @@ def main {
   }
 }
 
-def hasIndex(start, end, indices) {
-  return || reduce ([i in indices] (i >= start && i <= end));
+def hasIndex(start, stop, indices) {
+  return || reduce ([i in indices] (i >= start && i <= stop));
 }
 
 def hasSpace(str) {
@@ -91,13 +91,13 @@ def processTag(i,j) {
     writeln("Not a legitimate tag or PCdata");
     return;
   }
-  var end = max reduce ([x in StartIndices] if x < j then x);
-  if (end == i && sourceText.substring[j-1] == "/" && sourceText.substring[i+1] != " ") {
+  var stop = max reduce ([x in StartIndices] if x < j then x);
+  if (stop == i && sourceText.substring[j-1] == "/" && sourceText.substring[i+1] != " ") {
     /* at a self-closing tag? */
     var name : string = "";
-    for end in [i+2..j-2] do
-      if sourceText.substring[end] == ' ' {
-        name = sourceText.substring[i+1..end-1];
+    for stop in [i+2..j-2] do
+      if sourceText.substring[stop] == ' ' {
+        name = sourceText.substring[i+1..stop-1];
         break;
       }
     var elt = new XmlTag(j-i+1, name);
@@ -105,19 +105,19 @@ def processTag(i,j) {
     writeln("Self-closed : ", elt.name);
     return;
   }
-  if (sourceText.substring[end+1] != "/") then {
+  if (sourceText.substring[stop+1] != "/") then {
     /* are we at an end tag? */
     parsedElements(i,j) = nil;
     writeln("Not ending with end tag");
     return;
   }
-  if (j - end < 3) {
+  if (j - stop < 3) {
     /* is this an empty tag? */
     parsedElements(i,j) = nil;
     writeln("Empty tag");
     return;
   }
-  var tagName = sourceText.substring[end+2..j-1];
+  var tagName = sourceText.substring[stop+2..j-1];
   var tagLen = length(tagName);
   if (hasSpace(tagName)) {
     parsedElements(i,j) = nil;
@@ -134,10 +134,10 @@ def processTag(i,j) {
   var start = min reduce ([x in EndIndices] if x > i then x);
   var elt = new XmlTag(j-i+1, tagName);
   start = min reduce ([x in StartIndices] if x > start then x);
-  while (start < end) {
+  while (start < stop) {
     var item : XmlElement = nil;
     for e in EndIndices do
-      if e > start && e < end &&
+      if e > start && e < stop &&
         item == nil && parsedElements(start, e) != nil {
         item = parsedElements(start,e);
         break;

@@ -141,11 +141,11 @@ def blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 // not necessary.
 
 def generateBlockLURanges(D:domain(2), blksize) {
-  const end = D.dim(1).high;
+  const stop = D.dim(1).high;
 
   for i in D.dim(1) by blksize {
-    const hi = min(i + blksize-1, end);
-    yield (i..end, i..hi, hi+1..end); 
+    const hi = min(i + blksize-1, stop);
+    yield (i..stop, i..hi, hi+1..stop); 
   }
 }
 
@@ -258,11 +258,11 @@ def blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
 
 def GenerateCholBlocks(D:range,blksize) {
   var start = D.low;
-  var end = D.high;
+  var stop = D.high;
   var hi: int;
 
   for i in D by blksize {
-    hi = min(i+blksize-1,end);
-    yield (start..i-1,i..hi,hi+1..end);
+    hi = min(i+blksize-1,stop);
+    yield (start..i-1,i..hi,hi+1..stop);
   }
 }

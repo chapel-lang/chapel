@@ -177,20 +177,20 @@ def rightBlockLU(A: [?D], blk) where (D.rank == 2) {
 // not necessary.
 
 def generateBlockLURanges(D:domain(2), blksize) {
-  const end = D.dim(1).high;
+  const stop = D.dim(1).high;
   const endcol = D.dim(2).high;
 
   for i in D.dim(1) by blksize {
-    const hi = min(i + blksize-1, end);
-    yield (i..end, i..hi, hi+1..end, hi+1..endcol); 
+    const hi = min(i + blksize-1, stop);
+    yield (i..stop, i..hi, hi+1..stop, hi+1..endcol); 
   }
 }
 
 def blkIter(indRange, blksize) {
-  const end = indRange.high;
+  const stop = indRange.high;
  
   for i in indRange by blksize {
-    const hi = min(i+blksize-1, end);
+    const hi = min(i+blksize-1, stop);
     yield i..hi;
   }
 }

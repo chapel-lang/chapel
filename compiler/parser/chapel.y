@@ -106,6 +106,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TDISTRIBUTED
 %token TDO
 %token TDOMAIN
+%token TEND
 %token TENUM
 %token TEXTERN
 %token TFOR
@@ -624,6 +625,13 @@ block_stmt:
         $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_NORMAL));
       else
         $$ = buildBeginStmt($2);
+    }
+| TEND stmt
+    {
+      if (fSerial)
+        $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_NORMAL));
+      else
+        $$ = buildEndStmt($2);
     }
 ;
 

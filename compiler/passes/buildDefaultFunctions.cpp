@@ -269,9 +269,15 @@ static void build_chpl_main(void) {
   } else if (chpl_main->getModule() != chpl_main->defPoint->parentSymbol)
     USR_FATAL(chpl_main, "Main function must be defined at module scope");
   currentLineno = -1;
+  VarSymbol* endCount = new VarSymbol("_endCount");
+  endCount->isCompilerTemp = true;
   chpl_main->insertAtHead(new CallExpr(chpl_main->getModule()->initFn));
   chpl_main->insertAtHead(new CallExpr("_startTrackingMem"));
+  chpl_main->insertAtHead(new CallExpr(PRIMITIVE_SET_END_COUNT, endCount));
+  chpl_main->insertAtHead(new CallExpr(PRIMITIVE_MOVE, endCount, new CallExpr("_endCountAlloc")));
+  chpl_main->insertAtHead(new DefExpr(endCount));
   chpl_main->insertAtHead(new CallExpr(theProgram->initFn));
+  chpl_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
 }
 
 

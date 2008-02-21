@@ -220,6 +220,20 @@ returnInfoGetMemberRef(CallExpr* call) {
   return NULL;
 }
 
+static Type*
+returnInfoEndCount(CallExpr* call) {
+  static Type* endCountType = NULL;
+  if (endCountType == NULL) {
+    forv_Vec(TypeSymbol, ts, gTypes) {
+      if (!strcmp(ts->name, "_EndCount")) {
+        endCountType = ts->type;
+        break;
+      }
+    }
+  }
+  return endCountType;
+}
+
 HashMap<const char *, StringHashFns, PrimitiveOp *> primitives_map;
 
 PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
@@ -340,6 +354,9 @@ initPrimitive() {
   prim_def(PRIMITIVE_SINGLE_RESET, "single_reset", returnInfoVoid, true);
   prim_def(PRIMITIVE_SINGLE_READFF, "single_read_FF", returnInfoFirst, true, true);
   prim_def(PRIMITIVE_SINGLE_ISFULL, "single_is_full", returnInfoBool, true);
+
+  prim_def(PRIMITIVE_GET_END_COUNT, "get end count", returnInfoEndCount);
+  prim_def(PRIMITIVE_SET_END_COUNT, "set end count", returnInfoVoid, true);
 
   prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc, true, true);
   prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", returnInfoVoid, true, true);

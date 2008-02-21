@@ -119,12 +119,12 @@ def blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
 
 def IterateByBlocks(D:range,blksize) {
   var start = D.low;
-  var end = D.high;
+  var stop = D.high;
   var hi: int;
 
   for i in D by blksize {
-    hi = min(i+blksize-1,end);
-    yield (start..i-1,i..hi,hi+1..end);
+    hi = min(i+blksize-1,stop);
+    yield (start..i-1,i..hi,hi+1..stop);
   }
 }
 

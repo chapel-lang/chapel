@@ -116,23 +116,23 @@ def Block(D:range,blksize,upper) {
 // This iterator defines the subdomains used in each iteration
 // of blocked Cholesky.  
   var start = D.low;
-  var end = D.high;
+  var stop = D.high;
   var hi: int;
 
   for i in D by blksize {
-    hi = min(i+blksize-1,end);
+    hi = min(i+blksize-1,stop);
     if upper {
       var D1 = [start..i-1,i..hi];
-      var D2 = [start..i-1,hi+1..end];     
+      var D2 = [start..i-1,hi+1..stop];     
       var D3 = [i..hi,i..hi];
-      var D4 = [i..hi,hi+1..end];
+      var D4 = [i..hi,hi+1..stop];
       yield (D1, D2, D3, D4);
     }
     else {
       var D1 = [i..hi,start..i-1];
-      var D2 = [hi+1..end,start..i-1];     
+      var D2 = [hi+1..stop,start..i-1];     
       var D3 = [i..hi,i..hi];
-      var D4 = [hi+1..end,i..hi];
+      var D4 = [hi+1..stop,i..hi];
       yield (D1, D2, D3, D4);
     }
   

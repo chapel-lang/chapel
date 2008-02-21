@@ -832,6 +832,50 @@ def =(sv: single, value:sv.base_type) {
 }
 
 //
+// data structures for naive implementation of end
+//
+
+class _EndCount {
+  var i: sync int(64) = 0;
+  var b: sync bool = true;
+}
+
+def _endCountAlloc() return new _EndCount();
+
+def _upEndCount(e: _EndCount) {
+  var i = e.i;
+  e.i = i + 1;
+  if i == 0 then
+    e.b.reset();
+}
+
+def _downEndCount(e: _EndCount) {
+  var i = e.i;
+  e.i = i - 1;
+  if i == 1 then
+    e.b = true;
+}
+
+def _waitEndCount(e: _EndCount) {
+  e.b.readFE();
+}
+
+def _upEndCount() {
+  var e = __primitive("get end count");
+  _upEndCount(e);
+}
+
+def _downEndCount() {
+  var e = __primitive("get end count");
+  _downEndCount(e);
+}
+
+def _waitEndCount() {
+  var e = __primitive("get end count");
+  _waitEndCount(e);
+}
+
+//
 // casts
 //
 def _isPrimitiveType(type t) param return
