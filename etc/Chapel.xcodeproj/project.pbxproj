@@ -313,6 +313,31 @@
 		F76B62120D53D890005C6869 /* chpl_md.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_md.h; path = ../runtime/include/sunos/chpl_md.h; sourceTree = SOURCE_ROOT; };
 		F76B62130D53D890005C6869 /* chplfp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplfp.h; path = ../runtime/include/sunos/chplfp.h; sourceTree = SOURCE_ROOT; };
 		F76B62280D53EA83005C6869 /* chpl_md.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_md.h; path = "../runtime/include/comp-cray-mta/chpl_md.h"; sourceTree = SOURCE_ROOT; };
+		F77216480D6D436200DE6EF6 /* BitOps.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = BitOps.chpl; path = ../modules/standard/BitOps.chpl; sourceTree = SOURCE_ROOT; };
+		F77216490D6D436200DE6EF6 /* ChapelArray.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChapelArray.chpl; path = ../modules/standard/ChapelArray.chpl; sourceTree = SOURCE_ROOT; };
+		F772164A0D6D436200DE6EF6 /* ChapelBase.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChapelBase.chpl; path = ../modules/standard/ChapelBase.chpl; sourceTree = SOURCE_ROOT; };
+		F772164B0D6D436200DE6EF6 /* ChapelIO.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChapelIO.chpl; path = ../modules/standard/ChapelIO.chpl; sourceTree = SOURCE_ROOT; };
+		F772164C0D6D436200DE6EF6 /* ChapelLocale.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChapelLocale.chpl; path = ../modules/standard/ChapelLocale.chpl; sourceTree = SOURCE_ROOT; };
+		F772164D0D6D436200DE6EF6 /* ChapelRange.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChapelRange.chpl; path = ../modules/standard/ChapelRange.chpl; sourceTree = SOURCE_ROOT; };
+		F772164E0D6D436200DE6EF6 /* ChapelReduce.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChapelReduce.chpl; path = ../modules/standard/ChapelReduce.chpl; sourceTree = SOURCE_ROOT; };
+		F772164F0D6D436200DE6EF6 /* ChapelStandard.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChapelStandard.chpl; path = ../modules/standard/ChapelStandard.chpl; sourceTree = SOURCE_ROOT; };
+		F77216500D6D436200DE6EF6 /* ChapelTuple.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChapelTuple.chpl; path = ../modules/standard/ChapelTuple.chpl; sourceTree = SOURCE_ROOT; };
+		F77216510D6D436200DE6EF6 /* ChapelUtil.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChapelUtil.chpl; path = ../modules/standard/ChapelUtil.chpl; sourceTree = SOURCE_ROOT; };
+		F77216520D6D436200DE6EF6 /* DistCSR.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = DistCSR.chpl; path = ../modules/standard/DistCSR.chpl; sourceTree = SOURCE_ROOT; };
+		F77216530D6D436200DE6EF6 /* List.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = List.chpl; path = ../modules/standard/List.chpl; sourceTree = SOURCE_ROOT; };
+		F77216540D6D436200DE6EF6 /* Math.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Math.chpl; path = ../modules/standard/Math.chpl; sourceTree = SOURCE_ROOT; };
+		F77216550D6D436200DE6EF6 /* Memory.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Memory.chpl; path = ../modules/standard/Memory.chpl; sourceTree = SOURCE_ROOT; };
+		F77216560D6D436200DE6EF6 /* Random.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Random.chpl; path = ../modules/standard/Random.chpl; sourceTree = SOURCE_ROOT; };
+		F77216570D6D436200DE6EF6 /* Schedules.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Schedules.chpl; path = ../modules/standard/Schedules.chpl; sourceTree = SOURCE_ROOT; };
+		F77216580D6D436200DE6EF6 /* Search.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Search.chpl; path = ../modules/standard/Search.chpl; sourceTree = SOURCE_ROOT; };
+		F77216590D6D436200DE6EF6 /* SingleLocaleArithmetic.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = SingleLocaleArithmetic.chpl; path = ../modules/standard/SingleLocaleArithmetic.chpl; sourceTree = SOURCE_ROOT; };
+		F772165A0D6D436200DE6EF6 /* SingleLocaleAssociative.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = SingleLocaleAssociative.chpl; path = ../modules/standard/SingleLocaleAssociative.chpl; sourceTree = SOURCE_ROOT; };
+		F772165B0D6D436200DE6EF6 /* SingleLocaleEnum.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = SingleLocaleEnum.chpl; path = ../modules/standard/SingleLocaleEnum.chpl; sourceTree = SOURCE_ROOT; };
+		F772165C0D6D436200DE6EF6 /* SingleLocaleOpaque.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = SingleLocaleOpaque.chpl; path = ../modules/standard/SingleLocaleOpaque.chpl; sourceTree = SOURCE_ROOT; };
+		F772165D0D6D436200DE6EF6 /* SingleLocaleSparse.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = SingleLocaleSparse.chpl; path = ../modules/standard/SingleLocaleSparse.chpl; sourceTree = SOURCE_ROOT; };
+		F772165E0D6D436200DE6EF6 /* Sort.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Sort.chpl; path = ../modules/standard/Sort.chpl; sourceTree = SOURCE_ROOT; };
+		F772165F0D6D436200DE6EF6 /* Time.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Time.chpl; path = ../modules/standard/Time.chpl; sourceTree = SOURCE_ROOT; };
+		F77216600D6D436200DE6EF6 /* Types.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Types.chpl; path = ../modules/standard/Types.chpl; sourceTree = SOURCE_ROOT; };
 		F79B20160D46AC8B003A01E6 /* cast_code.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cast_code.cpp; path = ../compiler/ifa/cast_code.cpp; sourceTree = "<group>"; };
 		F7FAC4F90D4537A700C02B67 /* libchpl.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libchpl.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7FAC5010D45384C00C02B67 /* arg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = arg.c; path = ../runtime/src/arg.c; sourceTree = SOURCE_ROOT; };
@@ -705,6 +730,31 @@
 		F7B66D0F0D59738D00A53F3E /* Other sources */ = {
 			isa = PBXGroup;
 			children = (
+				F77216480D6D436200DE6EF6 /* BitOps.chpl */,
+				F77216490D6D436200DE6EF6 /* ChapelArray.chpl */,
+				F772164A0D6D436200DE6EF6 /* ChapelBase.chpl */,
+				F772164B0D6D436200DE6EF6 /* ChapelIO.chpl */,
+				F772164C0D6D436200DE6EF6 /* ChapelLocale.chpl */,
+				F772164D0D6D436200DE6EF6 /* ChapelRange.chpl */,
+				F772164E0D6D436200DE6EF6 /* ChapelReduce.chpl */,
+				F772164F0D6D436200DE6EF6 /* ChapelStandard.chpl */,
+				F77216500D6D436200DE6EF6 /* ChapelTuple.chpl */,
+				F77216510D6D436200DE6EF6 /* ChapelUtil.chpl */,
+				F77216520D6D436200DE6EF6 /* DistCSR.chpl */,
+				F77216530D6D436200DE6EF6 /* List.chpl */,
+				F77216540D6D436200DE6EF6 /* Math.chpl */,
+				F77216550D6D436200DE6EF6 /* Memory.chpl */,
+				F77216560D6D436200DE6EF6 /* Random.chpl */,
+				F77216570D6D436200DE6EF6 /* Schedules.chpl */,
+				F77216580D6D436200DE6EF6 /* Search.chpl */,
+				F77216590D6D436200DE6EF6 /* SingleLocaleArithmetic.chpl */,
+				F772165A0D6D436200DE6EF6 /* SingleLocaleAssociative.chpl */,
+				F772165B0D6D436200DE6EF6 /* SingleLocaleEnum.chpl */,
+				F772165C0D6D436200DE6EF6 /* SingleLocaleOpaque.chpl */,
+				F772165D0D6D436200DE6EF6 /* SingleLocaleSparse.chpl */,
+				F772165E0D6D436200DE6EF6 /* Sort.chpl */,
+				F772165F0D6D436200DE6EF6 /* Time.chpl */,
+				F77216600D6D436200DE6EF6 /* Types.chpl */,
 			);
 			name = "Other sources";
 			sourceTree = "<group>";
