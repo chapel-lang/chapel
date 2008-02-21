@@ -31,7 +31,6 @@ typedef struct _chpl_pool_struct {
 
 static _chpl_mutex_t   threading_lock; // critical section lock
 static _chpl_condvar_t wakeup_signal;  // signal a waiting thread
-static _chpl_condvar_t exit_signal;    // local threads completed
 static pthread_key_t   serial_key;     // per-thread serial state
 static task_pool_p     task_pool_head; // head of task pool
 static task_pool_p     task_pool_tail; // tail of task pool
@@ -177,7 +176,6 @@ void initChplThreads() {
   running_cnt = 0;                     // only main thread running
   threads_cnt = 0;
   task_pool_head = task_pool_tail = NULL;
-  pthread_cond_init(&exit_signal, NULL);
 
   _chpl_mutex_init(&_memtrack_lock);
   _chpl_mutex_init(&_memstat_lock);
@@ -190,15 +188,6 @@ void initChplThreads() {
 
 
 void exitChplThreads() {
-  // begin critical section
-  _chpl_mutex_lock(&threading_lock);
-  if (running_cnt > 0 || task_pool_head) {
-    // block until everyone else is finished
-    pthread_cond_wait(&exit_signal, &threading_lock);
-  }
-  _chpl_mutex_unlock(&threading_lock);
-  // end critical section
-
   pthread_key_delete(serial_key);
 }
 
@@ -277,13 +266,6 @@ _chpl_begin_helper (task_p task) {
     // finished task; decrement running count
     //
     running_cnt--;
-
-    //
-    // signal exit if there are no other running threads and no tasks
-    // in the task pool
-    //
-    if (running_cnt == 0 && !task_pool_head)
-      pthread_cond_signal(&exit_signal);
 
     //
     // wait for a task to be added to the task pool
