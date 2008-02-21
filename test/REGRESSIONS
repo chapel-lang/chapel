@@ -26,6 +26,17 @@ timing out
 classes/diten/allocateManyObjects
 
 
+
+=============================
+valgrind-specific regressions
+=============================
+
+???
+---
+[Error matching program output for parallel/coforall/bradc/manyThreads-inorder]
+
+
+
 ===============================
 CHPL_THREADS = none regressions
 ===============================
@@ -99,6 +110,11 @@ parallel/begin/deitz/test_global_for_begin]
 ==========================
 intel-specific regressions
 ==========================
+
+Sometimes works/sometimes fails
+-------------------------------
+[Error: Timed out executing program parallel/coforall/figueroa/ManyThreads]
+
 
 Warning about use before set -- error #592 -- cause unknown
 -----------------------------------------------------------
@@ -198,22 +214,10 @@ negative floating point 0.0 not supported
 gasnet-specific failures
 ========================
 
-nondeterministic failures, potentially due to Brad's moving memory
-initialization earlier in bootstrap code?
-------------------------------------------------------------------
-[Error matching program output for memory/shannon/memmaxExceedsLineno2]
-[Error matching program output for memory/shannon/reallocWithoutMalloc]
-[Error matching program output for memory/shannon/memmaxExceeds]
-[Error matching program output for memory/shannon/reallocZeroSize]
+fails because it relies on sync vars that aren't on locale 0
+------------------------------------------------------------
+[Error matching program output for multilocale/diten/nestedOn]
 
-
-regressions based on string-based external interoperability (should be fixed)
------------------------------------------------------------------------------
-[Error matching compiler output for link/deitz/test_link1]
-[Error matching compiler output for link/deitz/test_link2]
-[Error matching make output for studies/madness/Makefile]
-[Error matching make output for studies/madness/dinan/mad_chapel/Makefile]
-[Error matching make output for studies/madness/marybeth/Makefile]
 
 fluctuates between passing and failing -- race in output
 --------------------------------------------------------
