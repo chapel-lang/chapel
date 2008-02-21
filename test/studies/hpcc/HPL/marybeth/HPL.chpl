@@ -8,7 +8,7 @@ config var writeAccuracyInfo = false;
 
 def main() {
   var TEST = new HPLparams(inFileName=inputfile);
-  var outfile = new file(TEST.outFileName, path='./', mode='w');
+  var outfile = new file(TEST.outFileName, path='./', mode=FileAccessMode.write);
   outfile.open();
 
 //for p in TEST.P {

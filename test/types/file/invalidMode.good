@@ -1,1 +1,1 @@
-invalidMode.chpl:4: error: halt reached - ***Error: Unable to open "./anyFile.txt": Invalid argument***
+invalidMode.chpl:2: error: unresolved enumerated type symbol "q"

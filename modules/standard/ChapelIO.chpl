@@ -3,13 +3,56 @@
 //  chapel-level implementations of read, write, writeln
 //  chapel-level implementations of assert, halt
 
-const stdin  = new file("stdin", "r", "/dev", _get_stdin());
-const stdout = new file("stdout", "w", "/dev", _get_stdout());
-const stderr = new file("stderr", "w", "/dev", _get_stderr());
+enum FileAccessMode { read, write };
+
+//
+// Functions on _file primitive type, the C file pointer type
+//
+
+pragma "inline" def _fflush(fp: _file) return __primitive("fflush", fp);
+
+pragma "inline" def _handleRuntimeError(s: string) {
+  __primitive("_printError", s);
+}
+
+pragma "inline" def _get_errno() return __primitive("get_errno");
+pragma "inline" def _get_eof() return __primitive("get_eof");
+pragma "inline" def _get_stdin() return __primitive("get_stdin");
+pragma "inline" def _get_stdout() return __primitive("get_stdout");
+pragma "inline" def _get_stderr() return __primitive("get_stderr");
+pragma "inline" def _get_nullfile() return __primitive("get_nullfile");
+
+pragma "inline" def _copy(x: _file) return x;
+pragma "inline" def =(a: _file, b: _file) return b;
+pragma "inline" def ==(a: _file, b: _file) return __primitive("==", a, b);
+pragma "inline" def !=(a: _file, b: _file) return __primitive("!=", a, b);
+
+pragma "inline" def _fopen(filename: string, mode: FileAccessMode) {
+  var modestring: string;
+  select mode {
+    when FileAccessMode.read  do modestring = "r";
+    when FileAccessMode.write do modestring = "w";
+  }
+  return __primitive("fopen", filename, modestring);
+}
+
+pragma "inline" def _fclose(fp: _file)
+  return __primitive("fclose", fp);
+
+pragma "inline" def fprintf(fp: _file, fmt: string, val)
+  return __primitive("fprintf", fp, fmt, val);
+
+pragma "inline" def _readLitChar(fp: _file, val: string, ignoreWhiteSpace: bool)
+  return __primitive("_fscan_literal", fp, val, ignoreWhiteSpace);
+
+
+const stdin  = new file("stdin", FileAccessMode.read, "/dev", _get_stdin());
+const stdout = new file("stdout", FileAccessMode.write, "/dev", _get_stdout());
+const stderr = new file("stderr", FileAccessMode.write, "/dev", _get_stderr());
 
 class file: Writer {
   var filename : string = "";
-  var mode : string = "r";
+  var mode : FileAccessMode = FileAccessMode.read;
   var path : string = ".";
   var _fp : _file;
   var _lock : sync uint(64);    // for serializing output
@@ -19,7 +62,7 @@ class file: Writer {
       halt("***Error: It is not necessary to open \"", filename, "\"***");
 
     var fullFilename = path + "/" + filename;
-    _fp = _fopen(fullFilename, mode);            
+    _fp = _fopen(fullFilename, mode);
 
     if _fp == _get_nullfile() then
       halt("***Error: Unable to open \"", fullFilename, "\": ", _get_errno(), "***");
@@ -214,7 +257,7 @@ def string.writeThis(f: Writer) {
 def file.writeIt(s: string) {
   if !isOpen then
     _fopenError(this, isRead = false);
-  if mode != "w" then
+  if mode != FileAccessMode.write then
     _fmodeError(this, isRead = false);
   var returnVal = fprintf(_fp, "%s", s);
   if returnVal < 0 then

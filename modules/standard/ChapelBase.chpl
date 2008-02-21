@@ -493,8 +493,6 @@ pragma "inline" def exit(status: int) {
   __primitive("_chpl_exit_any", status);
 }
 
-pragma "inline" def _fflush(fp: _file) return __primitive("fflush", fp);
-
 def init_elts(x, s, type t) {
   for i in 1..s {
     var y: t;
@@ -825,39 +823,6 @@ def =(sv: single, value:sv.base_type) {
   sv.writeEF(value);
   return sv;
 }
-
-
-//
-// Functions on _file primitive type, the C file pointer type
-//
-pragma "inline" def _handleRuntimeError(s: string) {
-  __primitive("_printError", s);
-}
-
-pragma "inline" def _get_errno() return __primitive("get_errno");
-pragma "inline" def _get_eof() return __primitive("get_eof");
-pragma "inline" def _get_stdin() return __primitive("get_stdin");
-pragma "inline" def _get_stdout() return __primitive("get_stdout");
-pragma "inline" def _get_stderr() return __primitive("get_stderr");
-pragma "inline" def _get_nullfile() return __primitive("get_nullfile");
-
-pragma "inline" def _copy(x: _file) return x;
-pragma "inline" def =(a: _file, b: _file) return b;
-pragma "inline" def ==(a: _file, b: _file) return __primitive("==", a, b);
-pragma "inline" def !=(a: _file, b: _file) return __primitive("!=", a, b);
-
-pragma "inline" def _fopen(filename: string, mode: string)
-  return __primitive("fopen", filename, mode);
-
-pragma "inline" def _fclose(fp: _file)
-  return __primitive("fclose", fp);
-
-pragma "inline" def fprintf(fp: _file, fmt: string, val)
-  return __primitive("fprintf", fp, fmt, val);
-
-pragma "inline" def _readLitChar(fp: _file, val: string, ignoreWhiteSpace: bool)
-  return __primitive("_fscan_literal", fp, val, ignoreWhiteSpace);
-
 
 //
 // casts

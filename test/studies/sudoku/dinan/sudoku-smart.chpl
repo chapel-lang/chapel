@@ -246,7 +246,7 @@ def costFcn(board: [] int): int {
 
 
 def main() {
-  var boardData = new file(inputfile, path='./', mode='r');
+  var boardData = new file(inputfile, path='./', mode=FileAccessMode.read);
 
   // Read the board from the input file
   boardData.open();

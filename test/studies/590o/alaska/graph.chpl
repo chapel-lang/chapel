@@ -492,8 +492,8 @@ def DFS(G){
 // This function reads a new graph returns
 //
 def readGraph(filename) {
-  // Create an input file with the specified filename in read ("r") mode
-  var infile = new file(filename, "r");
+  // Create an input file with the specified filename in read (FileAccessMode.read) mode
+  var infile = new file(filename, FileAccessMode.read);
 
   // Open the file
   infile.open();

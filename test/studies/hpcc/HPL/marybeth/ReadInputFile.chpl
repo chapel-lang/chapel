@@ -57,7 +57,7 @@ record HPLparams {
   var memAlign: int;
 
   def initialize() {
-     var infile = new file(inFileName, path='./', mode='r');
+     var infile = new file(inFileName, path='./', mode=FileAccessMode.read);
 
      infile.open();
      infile.readln();

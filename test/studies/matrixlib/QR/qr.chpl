@@ -123,7 +123,7 @@ def norm(X: [?D]) {
 def main() {
 
   // Open the input file, read in the array size, ensure it's square
-  var infile = new file(inputfile, path='./', mode='r');
+  var infile = new file(inputfile, path='./', mode=FileAccessMode.read);
   infile.open();
   const m = infile.read(int),
         n = infile.read(int);

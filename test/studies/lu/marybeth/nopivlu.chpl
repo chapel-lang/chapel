@@ -34,7 +34,7 @@ def initA(A,filename:string){
 // Very expensive, but easy way to permute the matrix
 // so that pivoting isn't needed.
 
-var Adat = new file(filename,path='./',mode='r');
+var Adat = new file(filename,path='./',mode=FileAccessMode.read);
 var P, temp: [A.domain] real;
 
 Adat.open();

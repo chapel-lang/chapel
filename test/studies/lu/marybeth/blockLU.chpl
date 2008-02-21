@@ -4,7 +4,7 @@ use MatrixOps;
 config const inputfile = "Amagic10.dat";
 
 def main() {
-  var Adat = new file(inputfile,path='./',mode='r');
+  var Adat = new file(inputfile,path='./',mode=FileAccessMode.read);
   Adat.open();
 
   const n = readSize(Adat);

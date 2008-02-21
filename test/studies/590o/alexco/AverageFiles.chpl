@@ -30,8 +30,8 @@ def main {
 // this function writes a square array out to a file
 //
 def writeSquareArray(n, X, filename) {
-  // Create an output file with the specified filename in write ("w") mode
-  var outfile = new file(filename, "w");
+  // Create an output file with the specified filename in write (FileAccessMode.write) mode
+  var outfile = new file(filename, FileAccessMode.write);
 
   // Open the file
   outfile.open();
@@ -51,8 +51,8 @@ def writeSquareArray(n, X, filename) {
 // This function reads a new array out of a file and returns it
 //
 def readArray(filename) {
-  // Create an input file with the specified filename in read ("r") mode
-  var infile = new file(filename, "r");
+  // Create an input file with the specified filename in read (FileAccessMode.read) mode
+  var infile = new file(filename, FileAccessMode.read);
 
   // Open the file
   infile.open();

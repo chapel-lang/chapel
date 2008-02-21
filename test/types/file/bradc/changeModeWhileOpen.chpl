@@ -1,7 +1,7 @@
-var f = new file(filename = "f.out", mode = "w");
+var f = new file(filename = "f.out", mode = FileAccessMode.write);
 
 f.open();
-f.mode = "r";
+f.mode = FileAccessMode.read;
 f.close();
 
 writeln("Should never get here!\n");

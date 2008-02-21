@@ -8,7 +8,7 @@ var TableSpace: domain(2) = [1..9, 1..9];
 var Table: [TableSpace] int;
 
 //...then read the values from the puzzle into it
-var infile: file = new file(infilename, "r");
+var infile: file = new file(infilename, FileAccessMode.read);
 infile.open();
 
 for ij in TableSpace {

@@ -17,8 +17,8 @@ the file.
 The \chpl{path} field is a \chpl{string} that contains the path of the
 file.
 \item
-The \chpl{mode} field is a \chpl{string} that indicates whether the
-file is being read or written.
+The \chpl{mode} field is a \chpl{FileAccessMode} enum value that indicates
+whether the file is being read or written.
 \item
 The \chpl{style} field can be set to \chpl{text} or \chpl{binary} to
 specify that reading from or writing to the file should be done with
@@ -26,12 +26,12 @@ text or binary formats.
 \end{itemize}
 These fields can be modified any time that the file is closed.
 
-The \chpl{mode} field supports the following strings:
+The \chpl{mode} field supports the following \chpl{FileAccessMode} values:
 \begin{itemize}
 \item
-\chpl{"r"} The file can be read.
+\chpl{FileAccessMode.read} The file can be read.
 \item
-\chpl{"w"} The file can be written.
+\chpl{FileAccessMode.write} The file can be written.
 \end{itemize}
 
 The file type supports the following methods:

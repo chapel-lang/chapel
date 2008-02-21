@@ -1,4 +1,4 @@
-var f = new file(filename = "f.out", mode = "w");
+var f = new file(filename = "f.out", mode = FileAccessMode.write);
 
 f.open();
 f.filename = "g.out";

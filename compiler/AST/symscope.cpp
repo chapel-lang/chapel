@@ -227,9 +227,13 @@ SymScope::lookup(const char* name, Vec<SymScope*>* alreadyVisited, bool returnMo
       }
     }
   }
+  symbols.set_to_vec();
   if (symbols.n > 1) {
-    if (!toFnSymbol(symbols.v[0]))
-      USR_FATAL(symbols.v[0], "Symbol %s multiply defined", name);
+    forv_Vec(Symbol, sym, symbols) {
+      if (!toFnSymbol(sym)) {
+        USR_FATAL(sym, "Symbol %s multiply defined", name);
+      }
+    }
   }
   if (symbols.n == 0) {
     return NULL;

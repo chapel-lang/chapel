@@ -2,7 +2,7 @@ var myFirstInt: int = 999;
 var myFirstFloat: real = 99.9;
 var mySecondInt: int;
 
-var f: file = new file(filename = "freadIntFloat.txt", mode = "r");
+var f: file = new file(filename = "freadIntFloat.txt", mode = FileAccessMode.read);
 
 f.open();
 f.read(myFirstInt, myFirstFloat, mySecondInt);

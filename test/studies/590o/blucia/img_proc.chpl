@@ -38,7 +38,7 @@ def aawindow(W:range,H:range,filter_width:int,filter_height:int){
 
 def main() {
 
-  var infile = new file(inputfile,path='./',mode='r');
+  var infile = new file(inputfile,path='./',mode=FileAccessMode.read);
   infile.open();
   const m = infile.read(int),
         n = infile.read(int);
@@ -53,7 +53,7 @@ def main() {
   }
   infile.close();
   
-  var finfile = new file(filterfile,path='./',mode='r');
+  var finfile = new file(filterfile,path='./',mode=FileAccessMode.read);
   finfile.open();
   
   const fx = finfile.read(int), fy = finfile.read(int); 

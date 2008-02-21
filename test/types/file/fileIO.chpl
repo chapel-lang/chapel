@@ -20,7 +20,7 @@ if (numErrors > 0) {
 
 
 def writeArray(n, X, filename) {
-  var outfile = new file(filename, "w");
+  var outfile = new file(filename, FileAccessMode.write);
   outfile.open();
   outfile.writeln(n, " ", n);
   outfile.writeln(X);
@@ -31,7 +31,7 @@ def writeArray(n, X, filename) {
 def readArray(filename) {
   var m, n: int;
 
-  var infile = new file(filename, "r");
+  var infile = new file(filename, FileAccessMode.read);
   infile.open();
   infile.read(m, n);
 

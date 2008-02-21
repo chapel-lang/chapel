@@ -8,13 +8,13 @@ class myClass {
 
 var a: myClass = new myClass(x = 1, y = 2.3);
 var myInt: int = 9;
-var myFile: file = new file(filename = "_test_freadToClassDataMember.txt", mode = "w");
+var myFile: file = new file(filename = "_test_freadToClassDataMember.txt", mode = FileAccessMode.write);
 
 myFile.open();
 myFile.writeln(myInt);
 myFile.close();
 
-myFile.mode = "r";
+myFile.mode = FileAccessMode.read;
 myFile.open();
 myFile.read(a.x);
 myFile.close();

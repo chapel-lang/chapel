@@ -685,7 +685,7 @@ def gl_getWeights(k: int) {
  */
 def hg_readCoeffs(inputfile) {
     var max_k: int;
-    var coeffData = new file(inputfile, path='./', mode='r');
+    var coeffData = new file(inputfile, path='./', mode=FileAccessMode.read);
 
     coeffData.open();
     coeffData.read(max_k);

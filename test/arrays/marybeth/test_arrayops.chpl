@@ -24,7 +24,7 @@ def maxIndex(A:[?D]) {
   
 def initA(A,filename:string){
 
-  var Adat = new file(filename,path='./',mode='r');
+  var Adat = new file(filename,path='./',mode=FileAccessMode.read);
 
   Adat.open();
   for ij in A.domain {
