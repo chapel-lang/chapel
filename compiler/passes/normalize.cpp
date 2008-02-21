@@ -117,14 +117,6 @@ static void insertHeapAllocate(CallExpr* move, bool global = false) {
 
 
 static void insertHeapAccess(SymExpr* se, bool global = false) {
-
-  //
-  // take locale of heap class, not of accessed value
-  //
-  if (CallExpr* parent = toCallExpr(se->parentExpr))
-    if (parent->isPrimitive(PRIMITIVE_GET_LOCALE))
-      return;
-  
   currentLineno = se->lineno;
   currentFilename = se->filename;
   CallExpr* call =

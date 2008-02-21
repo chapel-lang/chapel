@@ -25,6 +25,8 @@ refNecessary(SymExpr* se) {
           return true;
       } else if (call->isPrimitive(PRIMITIVE_RETURN)) {
         return true;
+      } else if (call->isPrimitive(PRIMITIVE_GET_LOCALE)) {
+        return true;
       }
     }
   }

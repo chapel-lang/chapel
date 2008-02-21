@@ -95,6 +95,9 @@ typedef void (*func_p)(void*);
   (local).locale = (wide).locale;                                       \
   (local).addr = (type)((wide).addr)
 
+#define _COMM_WIDE_GET_LOCALE(local, wide)                              \
+  _chpl_comm_get(&(local), (wide).locale, (wide).addr, sizeof(int32_t)) \
+
 #define _COMM_WIDE_CLASS_GET_OFF(type, local, wide, stype, sfield)      \
   _chpl_comm_get(&(local),                                              \
                  (wide).locale,                                         \

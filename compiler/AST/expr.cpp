@@ -844,6 +844,31 @@ void CallExpr::codegen(FILE* outfile) {
         break;
       }
       if (CallExpr* call = toCallExpr(get(2))) {
+        if (call->isPrimitive(PRIMITIVE_GET_LOCALE)) {
+          if (call->get(1)->typeInfo()->symbol->hasPragma("wide")) {
+            if (getValueType(call->get(1)->typeInfo()->getField("addr")->type)->symbol->hasPragma("wide class")) {
+              fprintf(outfile, "_COMM_WIDE_GET_LOCALE(");
+              get(1)->codegen(outfile);
+              fprintf(outfile, ", ");
+              call->get(1)->codegen(outfile);
+              fprintf(outfile, ")");
+            } else {
+              get(1)->codegen(outfile);
+              fprintf(outfile, " = (");
+              call->get(1)->codegen(outfile);
+              fprintf(outfile, ").locale");
+            }
+          } else if (call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+            get(1)->codegen(outfile);
+            fprintf(outfile, " = (");
+            call->get(1)->codegen(outfile);
+            fprintf(outfile, ").locale");
+          } else {
+            get(1)->codegen(outfile);
+            fprintf(outfile, " = _localeID");
+          }
+          break;
+        }
         if (call->isPrimitive(PRIMITIVE_GET_REF)) {
           if (call->get(1)->typeInfo()->symbol->hasPragma("wide") ||
               call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
@@ -1793,13 +1818,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "_chpl_gc_cleanup()");
       break;
     case PRIMITIVE_GET_LOCALE:
-      if (get(1)->typeInfo()->symbol->hasPragma("wide") ||
-          get(1)->typeInfo()->symbol->hasPragma("wide class")) {
-        fprintf(outfile, "(");
-        get(1)->codegen(outfile);
-        fprintf(outfile, ").locale");
-      } else
-        fprintf(outfile, "_localeID");
+      INT_FATAL(this, "handled in move");
       break;
     case PRIMITIVE_LOCALE_ID:
       fprintf(outfile, "_localeID");
