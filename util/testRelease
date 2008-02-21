@@ -104,17 +104,17 @@ $teststatus = mysystem("cd $tmpdir/chapel && testReleaseHelp `$chplhome/util/chp
 if ($teststatus == 0) {
     $failures = `grep Error $tmpdir/chapel/examples/Logs/testReleaseHelp.log | wc -l`; chomp($failures);
     if ($failures == "0") {
-        $shortstatus = "passed";
+        $shortstatus = "Passed";
     } else {
-        $shortstatus = "tests failed";
+        $shortstatus = "Failed: Tests";
     }
 } else {
-    $shortstatus = "something failed";
+    $shortstatus = "Failed: Something";
 }
 if ($debug == 1) {
-    $mailsubject = "Dbug Release Test ($platform): $shortstatus";
+    $mailsubject = "Dbug Release $shortstatus ($platform)";
 } else {
-    $mailsubject = "Cron Release Test ($platform): $shortstatus";
+    $mailsubject = "Cron Release $shortstatus ($platform)";
 }
     
 if ($debug == 1) {
@@ -159,10 +159,10 @@ sub mysystem {
 
 	if ($mailmsg != 0) {
             if ($debug == 1) {
-                $mailsubject = "Chapel: Debug Results ($platform): Failure notice";
+                $mailsubject = "Dbug Release Failed ($platform)";
                 $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
             } else {
-                $mailsubject = "Chapel: Nightly Results ($platform): Failure notice";
+                $mailsubject = "Cron Release Failed ($platform)";
                 $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
             }
 
