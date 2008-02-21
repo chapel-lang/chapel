@@ -844,7 +844,8 @@ BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
   if (fLocal) {
     BlockStmt* block = new BlockStmt(stmt, BLOCK_NORMAL);
-    block->insertAtHead(expr);
+    // should we evaluate the expression for side effects?
+    //    block->insertAtHead(expr);
     return build_chpl_stmt(block);
   }
   static int uid = 1;
