@@ -97,7 +97,7 @@ void _AM_fork_wrapper(dist_fork_t *i) {
                                       SIGNAL, 
                                       &(i->ack), 
                                       sizeof(i->ack)));
-  //  _chpl_free(i, 0, 0);
+  _chpl_free(i, 0, 0);
 }
 
 
@@ -181,6 +181,18 @@ char** _chpl_comm_create_argcv(int32_t numLocales, int argc, char* argv[],
   return commArgv;
 }
 
+
+static void polling(void* x) {
+  GASNET_BLOCKUNTIL(false);
+  /*
+  while (true) {
+    usleep(2000);
+    GASNET_Safe(gasnet_AMPoll());
+  }
+  */
+}
+
+
 static int gasnet_init_called = 0;
 
 void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
@@ -195,6 +207,22 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
                               sizeof(ftable)/sizeof(gasnet_handlerentry_t),
                               0,   // share everything
                               0));
+
+    //
+    // start polling thread
+    // this should call a special function in the threading interface
+    // but remember that we have not yet initialized chapel threads!
+    //
+    if (1) {
+      pthread_t thread;
+      int status;
+
+      status = pthread_create(&thread, NULL, (_chpl_threadfp_t)polling, 0);
+      if (status)
+        _printInternalError("unable to start polling thread for gasnet");
+      pthread_detach(thread);
+    }
+
   } else {
     setenv("CHPL_COMM_USE_GDB", "true", 1);
     _chpl_comm_init(argc_p, argv_p, 0);
