@@ -167,8 +167,6 @@ void beautify(fileinfo* origfile) {
   int new_line, indent;
   int zline;
   char zname[1024];
-  int current_line;
-  int total_lines;
   int old_depth;
   char* znptr;
   fileinfo* tmpfile;
@@ -186,8 +184,6 @@ void beautify(fileinfo* origfile) {
 
   new_line = TRUE;
   indent = TRUE;
-  total_lines = 0;
-  current_line = 0;
   while (fgets(line, sizeof(line), inputfile)) {
     cp = line;
     if (new_line == TRUE) {
@@ -203,18 +199,24 @@ void beautify(fileinfo* origfile) {
         if (znptr != NULL) {
           strcpy(zname,znptr+1);
         }
-        
-        total_lines = max(total_lines, zline);
+        continue;
       }
     }
     else {
       indent = FALSE;
     }
 
+    if (cp[0] != '\0') {
+      if (zline >= 0 && new_line == TRUE) {
+        fprintf(outputfile, ZLINEFORMAT, zline, zname);
+      }
+    }
+
     if (cp[strlen(cp)-1] == '\n')
       new_line = TRUE;
-    else
+    else {
       new_line = FALSE;
+    }
 
     switch (cp[0]) {
     case '\0':
@@ -224,10 +226,6 @@ void beautify(fileinfo* origfile) {
       /*** assumes there is no open curly braces follow on the line ***/
       old_depth = depth;
       update_state(cp);         /* update state first */
-      if (zline >= 0) {
-        fprintf(outputfile, ZLINEFORMAT, zline, zname);
-        current_line++;
-      }
       for (i = 0; i < 2*(old_depth-1)+justify; i++) {
         fprintf(outputfile, " ");
       }
@@ -239,23 +237,13 @@ void beautify(fileinfo* origfile) {
       else
         i = 0;
 
-      if (strncmp(cp, ZLINEINPUT, ZLINEINPUTLEN)) { /* don't output ZLINE comments */
-        if (zline >= 0) {
-          fprintf(outputfile, ZLINEFORMAT, zline, zname);
-          current_line++;
-        }
-        if ((indent == TRUE) && (cp[0] != '#'))
-          for (i = 0; i < 2*depth+justify; i++)
-            fprintf(outputfile, " ");
-        else {}                         /* don't indent pre-processor stmts*/
-        fprintf(outputfile, "%s", cp);  /* output line */
-      } else {                          /* ignore ZLINE lines in line count */
-        current_line--;
-      }
+      if ((indent == TRUE) && (cp[0] != '#'))
+        for (i = 0; i < 2*depth+justify; i++)
+          fprintf(outputfile, " ");
+      fprintf(outputfile, "%s", cp);  /* output line */
 
       update_state(cp);         /* update state */
     }
-    current_line++;
   }
 
   closefile(tmpfile);
