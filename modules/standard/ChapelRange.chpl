@@ -263,10 +263,10 @@ def range.these() {
 def range.length {
   if boundedType != BoundedRangeType.bounded then
     compilerError("unbounded range has infinite length");
-  if stride > 0 then
-    return (high - low) / stride:eltType + 1;
-  else
-    return (low - high) / stride:eltType + 1;
+  const retVal = if stride > 0
+               then (high - low) / stride:eltType + 1
+               else (low - high) / stride:eltType + 1;
+  return if (retVal < 0) then 0 else retVal;
 }
 
 
