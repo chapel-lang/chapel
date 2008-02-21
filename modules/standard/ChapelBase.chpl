@@ -394,6 +394,13 @@ pragma "inline" def >>(param a: uint(32), param b: integral) param return __prim
 pragma "inline" def >>(param a: uint(64), param b: integral) param return __primitive(">>", a, b);
 
 //
+// These functions are to handle symbols at statement level such as
+// the second statement here: var a: sync int = 1; a;
+//
+pragma "inline" def _statementLevelSymbol(a) { return a; }
+pragma "inline" def _statementLevelSymbol(param a) param { return a; }
+
+//
 // _init on primitive types and classes
 //
 pragma "inline" def _init(x: bool) return false;

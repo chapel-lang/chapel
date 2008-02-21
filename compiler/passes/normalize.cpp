@@ -397,6 +397,18 @@ void normalize(BaseAST* base) {
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
+    if (SymExpr* sym = toSymExpr(ast)) {
+      if (sym == sym->getStmtExpr()) {
+        CallExpr* call = new CallExpr("_statementLevelSymbol");
+        sym->insertBefore(call);
+        call->insertAtTail(sym->remove());
+      }
+    }
+  }
+
+  asts.clear();
+  collect_asts_postorder(&asts, base);
+  forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
     if (CallExpr* a = toCallExpr(ast)) {
