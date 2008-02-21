@@ -620,7 +620,7 @@ def _init(sv: sync) {
 // This is the default read on sync vars. Wait for full, set and signal empty.
 def _syncvar.readFE(): base_type {
   var ret: base_type;
-  on Locales(0) {
+  on this {
     var localRet: base_type;
     if (isSimpleSyncBaseType(base_type)) {
       localRet = value;                        // Force the Chapel compiler to create a temporary!
@@ -638,7 +638,7 @@ def _syncvar.readFE(): base_type {
 // Wait for full, set and signal full.
 def _syncvar.readFF() {
   var ret: base_type;
-  on Locales(0) {
+  on this {
     var localRet: base_type;
     if (isSimpleSyncBaseType(base_type)) {
       localRet = value;                        // Force the Chapel compiler to create a temporary!
@@ -656,7 +656,7 @@ def _syncvar.readFF() {
 // Ignore F/E.  Read value.  No state change or signals.
 def _syncvar.readXX() {
   var ret: base_type;
-  on Locales(0) {
+  on this {
     var localRet: base_type;
     if (isSimpleSyncBaseType(base_type)) {
       localRet = value;                        // Force the Chapel compiler to create a temporary!
@@ -673,7 +673,7 @@ def _syncvar.readXX() {
 
 // This is the default write on sync vars. Wait for empty, set and signal full.
 def _syncvar.writeEF(val:base_type) {
-  on Locales(0) {
+  on this {
     if (isSimpleSyncBaseType(base_type)) {
       __primitive("write_EF", this, val);
     } else {
@@ -691,7 +691,7 @@ def =(sv: sync, val:sv.base_type) {
 
 // Wait for full, set and signal full.
 def _syncvar.writeFF(val:base_type) {
-  on Locales(0) {
+  on this {
     if (isSimpleSyncBaseType(base_type)) {
       __primitive("write_FF", this, val);
     } else {
@@ -704,7 +704,7 @@ def _syncvar.writeFF(val:base_type) {
 
 // Ignore F/E, set and signal full.
 def _syncvar.writeXF(val:base_type) {
-  on Locales(0) {
+  on this {
     if (isSimpleSyncBaseType(base_type)) {
       __primitive("write_XF", this, val);
     } else {
@@ -717,7 +717,7 @@ def _syncvar.writeXF(val:base_type) {
 
 // Ignore F/E, set to zero or default value and signal empty.
 def _syncvar.reset() {
-  on Locales(0) {
+  on this {
     if (isSimpleSyncBaseType(base_type)) {
       // Reset this's value to zero.
       __primitive("sync_reset", this);
@@ -732,7 +732,7 @@ def _syncvar.reset() {
 
 def _syncvar.isFull {
   var b: bool;
-  on Locales(0) {
+  on this {
     b = __primitive("sync_is_full", this, isSimpleSyncBaseType(base_type));
   }
   return b;
@@ -792,7 +792,7 @@ def _init(sv: single) {
 // Wait for full. Set and signal full.
 def _singlevar.readFF() {
   var ret: base_type;
-  on Locales(0) {
+  on this {
     var localRet: base_type;
     if (isSimpleSyncBaseType(base_type)) {
       localRet = value;                               // Force the Chapel compiler to create a temporary!
@@ -812,7 +812,7 @@ def _singlevar.readFF() {
 
 // Can only write once.  Otherwise, it is an error.
 def _singlevar.writeEF(val:base_type) {
-  on Locales(0) {
+  on this {
     if (isSimpleSyncBaseType(base_type)) {
       __primitive("single_write_EF", this, val);
     } else {

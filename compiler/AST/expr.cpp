@@ -1506,21 +1506,29 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_SYNC_INIT:
       fprintf( outfile, "_chpl_init_sync_aux(&((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, ")->sync_aux))");
       break;
     case PRIMITIVE_SYNC_LOCK:
       fprintf( outfile, "_chpl_sync_lock(&((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, ")->sync_aux))");
       break;
     case PRIMITIVE_SYNC_UNLOCK:
       fprintf(outfile, "_chpl_sync_unlock(&((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf(outfile, ")->sync_aux))");
       break;
     case PRIMITIVE_SYNC_WAIT_FULL:
       fprintf( outfile, "_chpl_sync_wait_full_and_lock(&((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, ")->sync_aux), ");
       get(2)->codegen(outfile);
       fprintf( outfile, ", ");
@@ -1530,6 +1538,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_SYNC_WAIT_EMPTY:
       fprintf( outfile, "_chpl_sync_wait_empty_and_lock(&((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, ")->sync_aux), ");
       get(2)->codegen(outfile);
       fprintf( outfile, ", ");
@@ -1539,26 +1549,36 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_SYNC_SIGNAL_FULL:
       fprintf(outfile, "_chpl_sync_mark_and_signal_full(&((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf(outfile, ")->sync_aux))");
       break;
     case PRIMITIVE_SYNC_SIGNAL_EMPTY:
       fprintf( outfile, "_chpl_sync_mark_and_signal_empty(&((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, ")->sync_aux))");
       break;
     case PRIMITIVE_SINGLE_INIT:
       fprintf( outfile, "_chpl_init_single_aux(&((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, ")->single_aux))");
       break;
     case PRIMITIVE_SINGLE_LOCK:
       fprintf( outfile, "_chpl_single_lock(&((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, ")->single_aux))");
       break;
     case PRIMITIVE_SINGLE_WAIT_FULL:
       fprintf( outfile, "_chpl_single_wait_full(&((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, ")->single_aux), ");
       get(2)->codegen(outfile);
       fprintf( outfile, ", ");
@@ -1568,11 +1588,15 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_SINGLE_SIGNAL_FULL:
       fprintf(outfile, "_chpl_single_mark_and_signal_full(&((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf(outfile, ")->single_aux))");
       break;
     case PRIMITIVE_WRITEEF:
       fprintf( outfile, "_chpl_write_EF((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, "), ");
       get(2)->codegen( outfile);
       fprintf( outfile, ", ");
@@ -1584,6 +1608,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_WRITEFF:
       fprintf( outfile, "_chpl_write_FF((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, "), ");
       get(2)->codegen( outfile);
       fprintf( outfile, ", ");
@@ -1595,6 +1621,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_WRITEXF:
       fprintf( outfile, "_chpl_write_XF((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, "), ");
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
@@ -1602,6 +1630,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_SYNC_RESET:
       fprintf( outfile, "_chpl_sync_reset((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, "))");
       break;
     case PRIMITIVE_READFE:
@@ -1609,6 +1639,8 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fprintf( outfile, "), (");
       get(2)->codegen( outfile);
+      if (get(2)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, "), ");
       get(3)->codegen( outfile);
       fprintf( outfile, ", ");
@@ -1620,6 +1652,8 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fprintf( outfile, "), (");
       get(2)->codegen( outfile);
+      if (get(2)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, "), ");
       get(3)->codegen( outfile);
       fprintf( outfile, ", ");
@@ -1631,13 +1665,19 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fprintf( outfile, "), (");
       get(2)->codegen( outfile);
+      if (get(2)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, "))");
       break;
     case PRIMITIVE_SYNC_ISFULL:
       fprintf( outfile, "_chpl_sync_is_full(&((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, ")->value), &((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, ")->sync_aux), ");
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
@@ -1645,6 +1685,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_SINGLE_WRITEEF:
       fprintf( outfile, "_chpl_single_write_EF((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, "), ");
       get(2)->codegen( outfile);
       fprintf( outfile, ", ");
@@ -1656,6 +1698,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_SINGLE_RESET:
       fprintf( outfile, "_chpl_single_reset((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, "))");
       break;
     case PRIMITIVE_SINGLE_READFF:
@@ -1663,6 +1707,8 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fprintf( outfile, "), (");
       get(2)->codegen( outfile);
+      if (get(2)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, "), ");
       get(3)->codegen( outfile);
       fprintf( outfile, ", ");
@@ -1672,8 +1718,12 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_SINGLE_ISFULL:
       fprintf( outfile, "_chpl_single_is_full(&((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, ")->value), &((");
       get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf( outfile, ")->single_aux), ");
       get(2)->codegen( outfile);
       fprintf( outfile, ")");

@@ -224,13 +224,6 @@ insertWideReferences(void) {
   forv_Vec(TypeSymbol, ts, gTypes) {
     ClassType* ct = toClassType(ts->type);
     if (ct && ct->classTag == CLASS_CLASS && !ts->hasPragma("ref") && !ts->hasPragma("no wide class")) {
-
-      //
-      // do not yet support remote sync and single variables
-      //
-      if (ts->hasPragma("sync") || ts->hasPragma("single"))
-        continue;
-
       buildWideClass(ct);
     }
   }
