@@ -45,18 +45,17 @@ checkUseBeforeDefs() {
           if (call->isPrimitive(PRIMITIVE_MOVE))
             defined.set_add(toSymExpr(call->get(1))->var);
         } else if (SymExpr* sym = toSymExpr(ast)) {
-          if (CallExpr* call = toCallExpr(sym->parentExpr)) {
-            if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym)
-              continue;
-            if (toModuleSymbol(sym->var))
-              USR_FATAL_CONT(call, "illegal use of module '%s'", sym->var->name);
-            if (call->baseExpr != sym && sym->unresolved) {
-              if (!undeclared.set_in(sym->unresolved)) {
-                if (!toFnSymbol(fn->defPoint->parentSymbol)) {
-                  USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
-                                 sym->unresolved);
-                  undeclared.set_add(sym->unresolved);
-                }
+          CallExpr* call = toCallExpr(sym->parentExpr);
+          if (call && call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym)
+            continue;
+          if (toModuleSymbol(sym->var))
+            USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->var->name);
+          if ((!call || call->baseExpr != sym) && sym->unresolved) {
+            if (!undeclared.set_in(sym->unresolved)) {
+              if (!toFnSymbol(fn->defPoint->parentSymbol)) {
+                USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
+                               sym->unresolved);
+                undeclared.set_add(sym->unresolved);
               }
             }
           }
