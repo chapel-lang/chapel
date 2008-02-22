@@ -1,0 +1,11 @@
+bug: on clause inside iterator
+
+This should be legal.
+
+error message: internal failure SYM0595 chpl Version 0.6.-999
+
+This test has an iterator that yields values in the sequence 0..n on a cyclic
+ordering of locales. The output in .good file was obtained by moving the on
+clause to the loop driven by the iterator. This change is captured as another
+test iteratorWithoutOn.chpl and expectedly the two have matching outputs from
+running with -nl 5.
