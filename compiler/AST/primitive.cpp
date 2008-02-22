@@ -548,7 +548,4 @@ initPrimitive() {
   prim_def("_printError", returnInfoVoid, true, true);
 
   prim_def("_mem_used", returnInfoUInt64, false, true);
-
-  prim_def("sizeof", returnInfoInt32);
-
 }
