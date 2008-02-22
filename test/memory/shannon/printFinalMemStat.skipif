@@ -1,0 +1,3 @@
+# With --no-local, we end up putting things on the heap when evaluating sync
+#   but don't account for this in the .good
+CHPL_COMM == gasnet
