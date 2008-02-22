@@ -6,6 +6,8 @@
 #endif
 #include "chplrt.h"
 #include "chplsys.h"
+#include "chplthreads.h"
+#include "chplcomm.h"
 #include "error.h"
 
 #ifndef chplGetPageSize
@@ -59,12 +61,21 @@ int32_t _coresPerLocale(void) {
 }
 
 
+//
+// returns default values of max threads set according to the
+// communication and threading runtimes; if neither set a max, then 0
+// is returned; otherwise the minimum max is returned.
+//
 int32_t _maxThreads(void) {
-#ifdef __MTA__
-  return _coresPerLocale() * 100;
-#else
-  // A value of zero means that the number of simultaneous live threads
-  // should be limited only by the system's ability to create more threads.
-  return 0;
-#endif
+  int32_t comm_max = _chpl_comm_getMaxThreads();
+  int32_t threads_max = _chpl_threads_getMaxThreads();
+
+  if (comm_max == 0)
+    return threads_max;
+  else if (threads_max == 0)
+    return comm_max;
+  else if (comm_max < threads_max)
+    return comm_max;
+  else
+    return threads_max;
 }

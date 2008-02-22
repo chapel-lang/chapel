@@ -8,6 +8,7 @@
 #include "gasnet.h"
 
 #include <stdint.h>
+#include <signal.h>
 
 /*#define _DIST_DEBUG 1*/
 
@@ -146,6 +147,10 @@ void _AM_ptr_table(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes)
 
 // Chapel interface starts here
 
+int32_t _chpl_comm_getMaxThreads(void) {
+  return 255;
+}
+
 int _chpl_comm_user_invocation(int argc, char* argv[]) {
   return ((argc <= 1) ||
           (argc > 1 && strcmp(argv[1], "__AMUDP_SLAVE_PROCESS__") != 0));
@@ -182,18 +187,15 @@ char** _chpl_comm_create_argcv(int32_t numLocales, int argc, char* argv[],
 }
 
 
+static int exitSignal = 0;
+
 static void polling(void* x) {
-  GASNET_BLOCKUNTIL(false);
-  /*
-  while (true) {
-    usleep(2000);
-    GASNET_Safe(gasnet_AMPoll());
-  }
-  */
+  GASNET_BLOCKUNTIL(exitSignal);
 }
 
-
 static int gasnet_init_called = 0;
+
+static pthread_t polling_thread;
 
 void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
   if (runInGDB == 0) {
@@ -214,13 +216,12 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
     // but remember that we have not yet initialized chapel threads!
     //
     if (1) {
-      pthread_t thread;
       int status;
 
-      status = pthread_create(&thread, NULL, (_chpl_threadfp_t)polling, 0);
+      status = pthread_create(&polling_thread, NULL, (_chpl_threadfp_t)polling, 0);
       if (status)
         _printInternalError("unable to start polling thread for gasnet");
-      pthread_detach(thread);
+      pthread_detach(polling_thread);
     }
 
   } else {
@@ -263,6 +264,8 @@ void _chpl_comm_barrier(const char *msg) {
 
 static void _chpl_comm_exit_common(int status) {
   if (gasnet_init_called) {
+    int localExitSignal = 1;
+    gasnet_put(_localeID, &exitSignal, &localExitSignal, sizeof(int));
     gasnet_exit(status);
   }
 }

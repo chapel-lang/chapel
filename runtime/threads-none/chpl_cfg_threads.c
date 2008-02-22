@@ -77,6 +77,8 @@ void _chpl_init_single_aux(_chpl_single_aux_t *s) {
 
 // Threads
 
+int32_t _chpl_threads_getMaxThreads(void) { return 0; }
+
 void initChplThreads() { }
 void exitChplThreads() { }
 void _chpl_thread_init(void) { }

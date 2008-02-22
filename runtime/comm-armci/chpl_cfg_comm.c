@@ -51,6 +51,11 @@ static int gpc_call_handler(int to, int from, void *hdr, int hlen,
                             int rtype);
 static int ghndl = -1;
 
+int32_t _chpl_comm_getMaxThreads(void) {
+  return 0; // set to 0 assuming ARMCI does not limit the number of
+            // threads that can be running on a process
+}
+
 //
 // given the program arguments, returns whether the invocation of
 // main() is the original invocation by the user (1) or a recursive

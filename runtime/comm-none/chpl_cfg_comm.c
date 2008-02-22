@@ -25,6 +25,10 @@ static int mysystem(const char* command, const char* description,
 
 // Chapel interface
 
+int32_t _chpl_comm_getMaxThreads(void) {
+  return 0;
+}
+
 int _chpl_comm_user_invocation(int argc, char* argv[]) {
   return 1;
 }

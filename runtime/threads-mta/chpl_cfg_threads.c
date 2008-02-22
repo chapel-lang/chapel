@@ -125,6 +125,10 @@ void _chpl_init_single_aux(_chpl_single_aux_t *s) {
 
 // Threads
 
+int32_t _chpl_threads_getMaxThreads(void) {
+  return _coresPerLocale() * 100;
+}
+
 void initChplThreads() {
   _chpl_begin_cnt = 0;                     // only main thread running
   _chpl_can_exit = 1;                      // mark full - no threads created yet

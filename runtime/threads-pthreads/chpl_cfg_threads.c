@@ -171,6 +171,8 @@ static void serial_delete(_chpl_bool *p) {
   }
 }
 
+int32_t _chpl_threads_getMaxThreads(void) { return 0; }
+
 void initChplThreads() {
   _chpl_mutex_init(&threading_lock);
   running_cnt = 0;                     // only main thread running

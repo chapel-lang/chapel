@@ -40,6 +40,13 @@ _chpl_bool _chpl_single_is_full(void *, _chpl_single_aux_t *, _chpl_bool);
 void _chpl_init_single_aux(_chpl_single_aux_t *);
 
 
+//
+// returns the default maximum number of threads that can be handled
+// by this threading layer (initial value of maxThreads); use the
+// sentinel value 0 if the maximum number of threads is unlimited.
+//
+int32_t _chpl_threads_getMaxThreads(void);
+
 // Chapel system thread control
 void    initChplThreads(void);             // main thread init's thread support
 void    exitChplThreads(void);             // called by the main thread
