@@ -1,0 +1,5 @@
+# Because pthreads aren't implemented in the simulator
+release/examples/hpcc/ra
+release/examples/prodCons
+release/examples/quicksort
+release/examples/tree
