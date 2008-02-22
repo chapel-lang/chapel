@@ -10,12 +10,9 @@ run: fft
 
 fft: fft.chpl $(FFTLIB) main.chpl
 	$(CHPL) $(FLAGS) -o fft omega.chpl $(FFTLIB) fft.chpl main.chpl
+c
 
-test: FORCE
-	-@$(CHPL) $(FLAGS) -sprintTimings=false -o fft omega.chpl $(FFTLIB) fft.chpl main.chpl
-	-@./fft -nl 1 --NUMRUNS=$(NUMRUNS)
-
-clean:
+lean:
 	rm -f fft
 
 FORCE:

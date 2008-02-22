@@ -91,4 +91,62 @@ module dequeue {
       return top == nil;
     }
   }
+
+    def main() {
+      { // was deq_testTop.chpl
+        var q = new DeQueue(int);
+
+        for i in [1..10] do
+          q.pushTop(i);
+        
+        for i in [1..10] do
+          writeln(q.popTop(), ", size=", q.size);
+
+        writeln("--");
+        
+        for i in [1..10] do
+          q.pushTop(i);
+        
+        for i in [1..10] do
+          writeln(q.popBottom(), ", size=", q.size);
+        
+        writeln("--");
+        
+        for i in [1..10] do
+          q.pushTop(i);
+        
+        var q2 = q.split(5);
+        
+        for i in [1..5] do
+          writeln(q.popTop(), " ", q2.popTop());
+        
+      }
+      { // was deq_testBottom.chpl
+        var q = new DeQueue(int);
+
+        for i in [1..10] do
+          q.pushBottom(i);
+
+        for i in [1..10] do
+          writeln(q.popTop(), ", size=", q.size);
+
+        writeln("--");
+
+        for i in [1..10] do
+          q.pushBottom(i);
+
+        for i in [1..10] do
+          writeln(q.popBottom(), ", size=", q.size);
+
+        writeln("--");
+
+        for i in [1..10] do
+          q.pushBottom(i);
+
+        var q2 = q.split(5);
+
+        for i in [1..5] do
+          writeln(q.popTop(), " ", q2.popTop());
+      }
+    }
 }

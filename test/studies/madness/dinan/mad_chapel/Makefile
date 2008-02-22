@@ -6,8 +6,6 @@ CHPL_FLAGS  = --instantiate-max 512 --print-passes
 #CHPL_FLAGS += --ccflags "-Wall"
 #CHPL_FLAGS += --no-cg-cpp-lines
 
-TESTFLAGS = --instantiate-max 512 -struncateAtEps=true
-
 SOURCES= AnalyticFcn.chpl  \
          FTree.chpl        \
          MRA.chpl          \
@@ -44,14 +42,6 @@ test_likepy: $(SOURCES) test_likepy.chpl MadAnalytics.chpl
 
 test_showboxes: $(SOURCES) test_showboxes.chpl MadAnalytics.chpl
 	$(CHPL) $(CHPL_FLAGS) --main-module $@ -o $@ $+
-
-test:
-	@$(MAKE) CHPL="$(CHPL)" CHPL_FLAGS="$(TESTFLAGS)" all > /dev/null 2>&1
-	./test_diff -nl 1
-	./test_gaxpy -nl 1
-	./test_mul -nl 1
-	./test_likepy -nl 1
-	./test_showboxes -nl 1
 
 .PHONY: ps
 PSDIR = ps

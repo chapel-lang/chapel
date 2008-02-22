@@ -14,9 +14,5 @@ sudoku-smart: sudoku-smart.chpl
 sudoku-simple: sudoku-simple.chpl
 	$(CHPL) $(CHPLFLAGS) -o $@ $+
 
-test:
-	@$(MAKE) CHPL=$(CHPL) > /dev/null
-	./sudoku-simple -nl 1 easy.dat
-
 clean:
 	rm -f $(TARGETS)

@@ -1,8 +1,6 @@
 CHPL     = chpl
 CHPLFLAGS= -O --no-checks
 
-TESTTREE = -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5
-
 TARGETS  = uts-rec uts-rec-seq uts-deq uts-deq-seq
 
 all: $(TARGETS)
@@ -18,13 +16,6 @@ uts-deq: uts_deq.chpl sha1_rng.chpl dequeue.chpl brg_sha1.c brg_sha1.h
 
 uts-deq-seq: uts_deq.chpl sha1_rng.chpl dequeue.chpl brg_sha1.c brg_sha1.h
 	$(CHPL) $(CHPLFLAGS) -o $@ -sparallel=false --serial $+
-
-test:
-	@$(MAKE) CHPL=$(CHPL) all > /dev/null
-	./uts-rec -nl 1 -stestMode=true $(TESTTREE)
-	./uts-rec-seq -nl 1 -stestMode=true $(TESTTREE)
-	./uts-deq -nl 1 -stestMode=true $(TESTTREE)
-	./uts-deq-seq -nl 1 -stestMode=true $(TESTTREE)
 
 clean:
 	rm -f $(TARGETS)

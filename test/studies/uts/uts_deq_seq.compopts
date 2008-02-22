@@ -1,0 +1,1 @@
+uts_deq.chpl dequeue.chpl -sparallel=false --serial --main-module=uts_deq

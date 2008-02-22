@@ -15,11 +15,6 @@ all: $(TARGET)
 hpl_test: $(SOURCES)
 	$(CHPL) $(CHPL_FLAGS) -o $@ $+
 
-test:
-	@$(MAKE) CHPL="$(CHPL)" CHPL_FLAGS="$(TESTFLAGS)" all > /dev/null 2>&1
-	./hpl_test -nl 1
-	cat $(OUTPUTFILE)
-
 .PHONY: ps
 PSDIR = ps
 ps:

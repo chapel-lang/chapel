@@ -188,44 +188,6 @@ else
     endif
 endif
 
-if (-r ./USEMAKE && $perftest == 0) then
-    if ($testfutures == 2) then
-	echo "[Skipping non-future test: $localdir/Makefile]"
-	exit 0
-    endif
-    set checkfile = make.good
-    set makelog = make.out.tmp
-    set makeutil = `$CHPL_HOME/util/chplmake`
-    set timeout = $globalTimeout
-
-    echo \[Executing: \"$makeutil -B test CHPL=$compiler\"\]
-    $timedexec $timeout "$makeutil -B test CHPL=$compiler" >& $makelog
-    set makestatus = $status
-    if ($makestatus != 0) then
-        if ($makestatus == 222) then
-            echo "[Error: Timed out make for $localdir/Makefile]"
-            exit 0
-        endif
-    endif
-    if ( ! -r $checkfile) then
-        echo \[Error cannot locate make output comparison file $localdir/$checkfile\]
-        echo \[Make output was as follows:\]
-        cat $makelog
-        exit 0
-    endif
-
-    echo \[Executing diff $diffargs $checkfile $makelog\]
-    diff $diffargs $checkfile $makelog
-    set difffailed = $status
-    if ($difffailed == 0) then
-        echo "[Success matching make output for $localdir/Makefile]"
-        rm $makelog
-    else
-        echo "[Error matching make output for $localdir/Makefile]"
-    endif
-    exit 0
-endif
-
 # compile, execute, and compare each source file
 foreach chplsrc ($testsrc)
 
