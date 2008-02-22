@@ -1,20 +1,20 @@
-var a = 0;
-var b = 0;
-var c = 0;
-var d = 0;
+var a: sync int;
+var b: sync int;
+var c: sync int;
+var d: sync int;
 
 def jam_records1 () {
-  while (0==a) {;}   // wait on thread last statement in cobegin
+  a;   // wait on thread last statement in cobegin
   b = 1;
 }
 
 def jam_records2 () {
-  while (0==b) {;}   // wait on thread 1
+  b;   // wait on thread 1
   c = 1;
 }
 
 def jam_records3 () {
-  while (0==c) {;}   // wait on thread 2
+  c;   // wait on thread 2
   d = 1;
 }
 
@@ -25,5 +25,4 @@ cobegin {
   a = 1;
 }
 
-write ("d is ");
-writeln (d);
+writeln("d is ", d);
