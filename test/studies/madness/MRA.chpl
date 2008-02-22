@@ -19,7 +19,6 @@ use FTree;
 use Quadrature;
 use TwoScale;
 use AnalyticFcn;
-use StringConvert;  // FIXME: workaround for formatting reals
 
 config const verbose = false;
 config const debug   = false;
@@ -555,8 +554,8 @@ class Function {
                 ncoeffs += 1;
             }
             if ncoeffs != 0 then
-                writeln("   level ", toString("%2d", n), "   #boxes=",
-                        toString("%4d", ncoeffs), "  norm=", toString("%0.2e", sqrt(sum)));
+                writeln("   level ", format("##", n), "   #boxes=",
+                        format("####", ncoeffs), "  norm=", format("%0.2e", sqrt(sum)));
         }
 
         writeln("difference coefficients:");
@@ -567,8 +566,8 @@ class Function {
                 ncoeffs += 1;
             }
             if ncoeffs != 0 then
-                writeln("   level ", toString("%2d", n), "   #boxes=",
-                        toString("%4d", ncoeffs), "  norm=", toString("%0.2e", sqrt(sum)));
+                writeln("   level ", format("##", n), "   #boxes=",
+                        format("####", ncoeffs), "  norm=", format("%0.2e", sqrt(sum)));
         }
 
         writeln("-----------------------------------------------------\n");
@@ -581,11 +580,11 @@ class Function {
     def evalNPT(npt) {
         for i in 0..npt {
             var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
-            //writeln(" -- ", toString("%0.2f", i/npt:real), ":  F_numeric()=", toString("% 0.5e", Fval),
-            //        "  f_analytic()=", toString("% 0.5e", fval), " err=", toString("% 0.5e", Fval-fval),
+            //writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.5e", Fval),
+            //        "  f_analytic()=", format("% 0.5e", fval), " err=", format("% 0.5e", Fval-fval),
             //        if abs(Fval-fval) > thresh then "  > thresh" else "");
-            writeln(" -- ", toString("%0.2f", i/npt:real), ":  F_numeric()=", toString("% 0.8f", Fval),
-                    "  f_analytic()=", toString("% 0.8f", fval), " err=", toString("% 0.1e", Fval-fval),
+            writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.8f", Fval),
+                    "  f_analytic()=", format("% 0.8f", fval), " err=", format("% 0.1e", Fval-fval),
                     if abs(Fval-fval) > thresh then "  > thresh" else "");
         }
     }

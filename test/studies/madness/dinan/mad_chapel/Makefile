@@ -12,7 +12,6 @@ SOURCES= AnalyticFcn.chpl  \
          Quadrature.chpl   \
          Tensor.chpl       \
          TwoScale.chpl     \
-         StringConvert.chpl
 
 TARGETS= test_diff       \
          test_gaxpy      \
