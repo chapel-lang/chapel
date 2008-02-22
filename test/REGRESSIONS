@@ -31,6 +31,11 @@ timing out
 ----------------------------------------------------
 classes/diten/allocateManyObjects
 
+still race-y?
+-------------
+[Error matching program output for
+studies/590o/bradc/forall-begin-private-indices]
+
 
 
 =============================
@@ -42,10 +47,46 @@ valgrind-specific regressions
 [Error matching program output for parallel/coforall/bradc/manyThreads-inorder]
 
 
+=============================
+baseline-specific regressions
+=============================
+
+to string problems that we should fix with the format flags
+-----------------------------------------------------------
+[Error matching compiler output for
+studies/madness/dinan/mad_chapel/test_diff]
+[Error matching compiler output for
+studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching compiler output for
+studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching compiler output for
+studies/madness/dinan/mad_chapel/test_mul]
+[Error matching compiler output for
+studies/madness/dinan/mad_chapel/test_showboxes]
+[Error matching compiler output for studies/madness/marybeth/test_diff]
+[Error matching compiler output for studies/madness/marybeth/test_gaxpy]
+[Error matching compiler output for studies/madness/marybeth/test_likepy]
+[Error matching compiler output for studies/madness/marybeth/test_mul]
+[Error matching compiler output for studies/madness/marybeth/test_showboxes]
+[Error matching compiler output for studies/madness/test_diff]
+[Error matching compiler output for studies/madness/test_gaxpy]
+[Error matching compiler output for studies/madness/test_likepy]
+[Error matching compiler output for studies/madness/test_mul]
+[Error matching compiler output for studies/madness/test_showboxes]
+
+???
+---
+[Error matching program output for studies/sudoku/dinan/sudoku]
+
 
 ===============================
 CHPL_THREADS = none regressions
 ===============================
+
+???
+---
+[Error matching program output for parallel/end/deitz/test_end3]
+[Error matching program output for parallel/single/diten/simpleSingleAccess]
 
 Need requeuable tasks for this to work
 --------------------------------------
@@ -53,7 +94,6 @@ Need requeuable tasks for this to work
 parallel/coforall/bradc/manyThreads-folded]
 [Error matching program output for
 parallel/coforall/bradc/manyThreads-revorder]
-
 
 Write doesn't seem to be locked properly
 ----------------------------------------
@@ -153,8 +193,8 @@ Times out for unknown reasons
 pathscale-specific regressions
 ==============================
 
-globals are not volatile:
--------------------------
+globals are not volatile (?)
+----------------------------
 [Error: Timed out executing program parallel/begin/waynew/simple2] 
 [Error: Timed out executing program parallel/cobegin/waynew/depend] 
 [Error: Timed out executing program parallel/cobegin/waynew/while] -- intermittent
@@ -185,11 +225,18 @@ exp2/log2/other math fns not supported
 
 numeric stability issues
 ------------------------
-[Error matching make output for studies/madness/Makefile] 
-[Error matching make output for studies/madness/dinan/mad_chapel/Makefile] 
-[Error matching make output for studies/madness/marybeth/Makefile] 
-[Error matching program output for studies/madness/marybeth/futures/MRAfail] 
-
+[Error matching program output for
+studies/madness/dinan/mad_chapel/test_diff]
+[Error matching program output for
+studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching program output for
+studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching program output for studies/madness/marybeth/test_diff]
+[Error matching program output for studies/madness/marybeth/test_gaxpy]
+[Error matching program output for studies/madness/marybeth/test_likepy]
+[Error matching program output for studies/madness/test_diff]
+[Error matching program output for studies/madness/test_gaxpy]
+[Error matching program output for studies/madness/test_likepy]
 
 
 ========================
@@ -221,14 +268,10 @@ negative floating point 0.0 not supported
 gasnet-specific failures
 ========================
 
-fails because it relies on sync vars that aren't on locale 0
-------------------------------------------------------------
-[Error matching program output for multilocale/diten/nestedOn]
-
-
-fluctuates between passing and failing -- race in output
---------------------------------------------------------
-[Error matching program output for multilocale/deitz/test_on_begin1]
+compiler error -- alist indexing error for primitive get on non-wide tuples
+---------------------------------------------------------------------------
+   arrays/deitz/test_array_dot_type
+   arrays/deitz/part2/test_array_init
 
 compiler output error - incorrect line number        
 --------------------------------
@@ -241,18 +284,16 @@ compiler output error - incorrect line number
    parallel/cobegin/bradc/varsEscape-workaround
    release/examples/iterators
 
-compiler error -- alist indexing error for primitive get on non-wide tuples
----------------------------------------------------------------------------
-   arrays/deitz/test_array_dot_type
-   arrays/deitz/part2/test_array_init
-
- program output error - sizeof primitive of heap class
---------------------------------
-   trivial/deitz/test_type_sizes
-
-race condition based on sleep -- replace with sync var once implemented
+race condition based on sleep? -- replace with sync var once implemented
 -----------------------------------------------------------------------
 [Error matching program output for stress/deitz/test_10k_begins]
+
+warnings in generated code
+--------------------------
+[Error matching compiler output for studies/uts/uts_deq]
+[Error matching compiler output for studies/uts/uts_deq_seq]
+[Error matching compiler output for studies/uts/uts_rec]
+[Error matching compiler output for studies/uts/uts_rec_seq]
 
 
 
@@ -275,23 +316,9 @@ some sort of sig_send/wait/cond_init problem
 --------------------------------------------
 [Error matching compiler output for release/examples/quicksort]
 
-running with gdb causes pthread_mutex failure message
------------------------------------------------------
-[Error matching program output for execflags/bradc/gdbddash/declint]
-
 print occurs in 0 seconds!?  Timers not working?
 ------------------------------------------------
 [Error matching program output for spec/marybeth/use]
-
-some sort of race/deadlock
---------------------------
-[Error: Timed out executing program parallel/sync/figueroa/ReadMethods]
-
-???
----
-[Error matching program output for stress/deitz/test_10k_cobegins]
-[Error matching program output for stress/deitz/test_10k_coforall]
-
 
 
 =======================
