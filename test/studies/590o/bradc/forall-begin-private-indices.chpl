@@ -21,11 +21,13 @@ def main {
   }
 
   var A: [AllPairs] real;
-  for (x,y) in [StartIndices, EndIndices] {
-    begin {
-      if (x <= y) {
-         A[x, y] = x + y/10.0;
-      }	 
+  end {
+    for (x,y) in [StartIndices, EndIndices] {
+      begin {
+        if (x <= y) {
+          A[x, y] = x + y/10.0;
+        }	 
+      }
     }
   }
   writeln("A is:\n", A);
