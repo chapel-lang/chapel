@@ -16,7 +16,6 @@ extern char* _default_format_write_complex128;
 #define _default_string_length             256
 
 #define get_errno() (strerror(errno))
-#define get_eof() (EOF)
 #define get_stdin() (stdin)
 #define get_stdout() (stdout)
 #define get_stderr() (stderr)

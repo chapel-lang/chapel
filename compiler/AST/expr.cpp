@@ -1903,6 +1903,9 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_INT_ERROR:
       fprintf(outfile, "_printInternalError(\"compiler generated error\")");
       break;
+    case PRIMITIVE_GET_ERRNO:
+      fprintf(outfile, "get_errno()");
+      break;
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "Impossible");
       break;

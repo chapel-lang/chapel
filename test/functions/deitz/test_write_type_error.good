@@ -1,5 +1,5 @@
 test_write_type_error.chpl:2: error: unresolved call 'writeln(type int)'
-$CHPL_HOME/modules/standard/ChapelIO.chpl:306: note: candidates are: Writer.writeln(args ...?n)
-$CHPL_HOME/modules/standard/ChapelIO.chpl:309: note:                 Writer.writeln()
-$CHPL_HOME/modules/standard/ChapelIO.chpl:318: note:                 writeln(args ...?n)
-$CHPL_HOME/modules/standard/ChapelIO.chpl:322: note:                 writeln()
+$CHPL_HOME/modules/standard/ChapelIO.chpl:294: note: candidates are: Writer.writeln(args ...?n)
+$CHPL_HOME/modules/standard/ChapelIO.chpl:297: note:                 Writer.writeln()
+$CHPL_HOME/modules/standard/ChapelIO.chpl:306: note:                 writeln(args ...?n)
+$CHPL_HOME/modules/standard/ChapelIO.chpl:310: note:                 writeln()

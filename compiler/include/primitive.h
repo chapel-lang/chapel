@@ -139,6 +139,8 @@ enum PrimitiveTag {
 
   PRIMITIVE_BUILD_ARRAY,
 
+  PRIMITIVE_GET_ERRNO,
+
   NUM_KNOWN_PRIMS
 };
 

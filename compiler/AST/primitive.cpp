@@ -518,8 +518,7 @@ initPrimitive() {
   prim_def("get_stdout", returnInfoFile);
   prim_def("get_stderr", returnInfoFile);
   prim_def("get_nullfile", returnInfoFile);
-  prim_def("get_errno", returnInfoString);
-  prim_def("get_eof", returnInfoInt32);
+  prim_def(PRIMITIVE_GET_ERRNO, "get_errno", returnInfoString);
 
   prim_def("_init_timer", returnInfoVoid, true);
   prim_def("_now_timer", returnInfoTimer, true);
