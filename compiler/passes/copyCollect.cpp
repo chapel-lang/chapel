@@ -33,7 +33,8 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
     for_formals(formal, fn) {
       if (ClassType* ct = toClassType(formal->type)) {
         if (ct->classTag == CLASS_CLASS) {
-          if (!ct->symbol->hasPragma("ref")) {
+          if (!ct->symbol->hasPragma("ref") &&
+              !ct->symbol->hasPragma("no object")) {
             addToRootSet(fn, new SymExpr(formal));
             totalRoots++;
           }
@@ -47,7 +48,8 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
       if (DefExpr* def = toDefExpr(expr)) {
         if (ClassType* ct = toClassType(def->sym->type)) {
           if (ct->classTag == CLASS_CLASS) {
-            if (!ct->symbol->hasPragma("ref")) {
+            if (!ct->symbol->hasPragma("ref") &&
+                !ct->symbol->hasPragma("no object")) {
               addToRootSet(fn, new SymExpr(def->sym));
               totalRoots++;
             }
@@ -67,7 +69,8 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
       if (DefExpr* def = toDefExpr(ast)) {
         if (ClassType* ct = toClassType(def->sym->type)) {
           if (ct->classTag == CLASS_CLASS) {
-            if (!ct->symbol->hasPragma("ref")) {
+            if (!ct->symbol->hasPragma("ref") &&
+                !ct->symbol->hasPragma("no object")) {
               addToRootSet(fn, new SymExpr(def->sym));
               totalRoots++;
             }
@@ -84,7 +87,8 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
     for_fields(field, ct) {
       if (ClassType* classfield = toClassType(field->type)) {
         if (classfield->classTag == CLASS_CLASS) {
-          if (!classfield->symbol->hasPragma("ref")) {
+          if (!classfield->symbol->hasPragma("ref") &&
+              !classfield->symbol->hasPragma("no object")) {
             VarSymbol* tmp = new VarSymbol("_tmp", field->type);
             fn->insertAtHead(new DefExpr(tmp));
             fn->insertAtHead(
@@ -121,7 +125,8 @@ static void buildRootSetForModule(ModuleSymbol* module) {
       if (toVarSymbol(def->sym)) {
         if (ClassType* ct = toClassType(def->sym->type)) {
           if (ct->classTag == CLASS_CLASS) {
-            if (!ct->symbol->hasPragma("ref")) {
+            if (!ct->symbol->hasPragma("ref") &&
+                !ct->symbol->hasPragma("no object")) {
               addToRootSet(chpl_main, new SymExpr(def->sym), true);
               totalRoots++;
             }

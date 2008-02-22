@@ -17,6 +17,7 @@ static int max(int a, int b) {
 }
 
 static void setOrder(Map<ClassType*,int>& order, int& maxOrder, ClassType* ct);
+static void codegen_cid2offsets_help(FILE* outfile, ClassType* ct);
 
 static int
 getOrder(Map<ClassType*,int>& order, int& maxOrder,
@@ -438,6 +439,27 @@ static void codegen_header(void) {
   beautify(&header);
 }
 
+static void codegen_cid2offsets_help(FILE* outfile, ClassType* ct) {
+  for_fields(field, ct) {
+    if (ClassType* innerct = toClassType(field->type)) {
+      if (!innerct->symbol->hasPragma("ref") &&
+          !innerct->symbol->hasPragma("no object")) {
+        if (innerct->classTag == CLASS_CLASS) {
+          if (field->hasPragma("super class")) {
+            codegen_cid2offsets_help(outfile, innerct);
+          } else {
+            fprintf(outfile, "(size_t)&((_");
+            ct->symbol->codegen(outfile);
+            fprintf(outfile, "*)NULL)->");
+            field->codegen(outfile);
+            fprintf(outfile, ", ");
+          }
+        }
+      }
+    }
+  }
+}
+
 
 static void
 codegen_cid2offsets(FILE* outfile) {
@@ -448,7 +470,7 @@ codegen_cid2offsets(FILE* outfile) {
   // corresponding to the class with that cid.
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = toClassType(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma("ref")) {
+      if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma("ref") && !ct->symbol->hasPragma("no object")) {
         fprintf(outfile, "size_t _");
         ct->symbol->codegen(outfile);
         fprintf(outfile, "_offsets[] = { sizeof(_");
@@ -460,24 +482,14 @@ codegen_cid2offsets(FILE* outfile) {
               fprintf(outfile, "(size_t)-1,"); // Special token for arrays of classes
               fprintf(outfile, "(size_t)&((_");
               ct->symbol->codegen(outfile);
-              fprintf(outfile, "*)NULL)->size,");
+              fprintf(outfile, "*)0)->size,");
               fprintf(outfile, "(size_t)&((_");
               ct->symbol->codegen(outfile);
-              fprintf(outfile, "*)NULL)->_data,");
+              fprintf(outfile, "*)0)->_data,");
             }
           }
         }
-        for_fields(field, ct) {
-          if (ClassType* innerct = toClassType(field->type)) {
-            if (innerct->classTag == CLASS_CLASS) {
-              fprintf(outfile, "(size_t)&((_");
-              ct->symbol->codegen(outfile);
-              fprintf(outfile, "*)NULL)->");
-              field->codegen(outfile);
-              fprintf(outfile, ", ");
-            }
-          }
-        }
+        codegen_cid2offsets_help(outfile, ct);
         fprintf(outfile, "0 };\n");
       }
     }
@@ -488,7 +500,7 @@ codegen_cid2offsets(FILE* outfile) {
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = toClassType(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS && !isReference(ct)) {
+      if (ct->classTag == CLASS_CLASS && !isReference(ct) && !ct->symbol->hasPragma("no object")) {
         fprintf(outfile, "case %s%s:\n", "_e_", ct->symbol->cname);
         fprintf(outfile, "offsets = _");
         ct->symbol->codegen(outfile);
@@ -513,7 +525,7 @@ codegen_cid2size(FILE* outfile) {
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = toClassType(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS && !isReference(ct)) {
+      if (ct->classTag == CLASS_CLASS && !isReference(ct) && !ct->symbol->hasPragma("no object")) {
         fprintf(outfile, "case %s%s:\n", "_e_", ct->symbol->cname);
         fprintf(outfile, "size = sizeof(_");
         ct->symbol->codegen(outfile);

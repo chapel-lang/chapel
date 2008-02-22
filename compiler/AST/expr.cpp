@@ -1747,7 +1747,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
 
       // target: void* _chpl_alloc(size_t size, char* description);
-      if (!fCopyCollect) {
+      if (!fCopyCollect || typeInfo()->symbol->hasPragma("no object")) {
         fprintf( outfile, "_chpl_alloc(sizeof(");
       } else {
         fprintf( outfile, "_chpl_gc_malloc(1, sizeof(");
