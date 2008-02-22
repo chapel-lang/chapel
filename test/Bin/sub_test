@@ -220,6 +220,14 @@ foreach chplsrc ($testsrc)
         continue
     endif
 
+    if (-r ./$execfile.skipif && $CHPL_TEST_SINGLES == 0) then
+        set skiptest = `$testdir/Bin/testEnv.pl ./$execfile.skipif`
+        if ($skiptest == 1) then
+            echo "[Skipping $execfile.skipif based on .skipif environment settings]"
+            continue
+        endif
+    endif
+
     if (-r ./$execfile.catfiles) then
         set catfiles = "$globalCatfiles `cat ./$execfile.catfiles`"
     else

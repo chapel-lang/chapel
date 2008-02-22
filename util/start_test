@@ -286,9 +286,12 @@
 #      <var> != <val> : checks to see if envvar "var" is not "val"
 #    All of the lines of the "==" and "!=" form are logically
 #    or'd together, and if any of them are true, the test is
-#    skipped.
+#    skipped.  As with other options, a SKIPIF condition can
+#    be placed on a file-by-file basis using a <testname>.skipif
+#    file.  Tests that are explicitly named on the start_test
+#    command line will be tested regardless of any .skipif files.
+#
 #    Planned extensions to this capability:
-#    - ability to specify these tests for a single file
 #    - ability to test for things like "compopts contains <val>"
 #    - ability to logically-and filters together
 #
@@ -713,6 +716,7 @@ mv $logtmp $logfile
 # For this mode, test futures, non-futures, and notests
 setenv CHPL_TEST_FUTURES 1
 setenv CHPL_TEST_NOTESTS 1
+setenv CHPL_TEST_SINGLES 1
 foreach test ($testlist)
     set basedir = `dirname $test`
     set testname = `basename $test`
@@ -751,6 +755,8 @@ end
 #
 # test all of the directories that the user specified
 #
+
+setenv CHPL_TEST_SINGLES 0
 
 # for this mode, only test futures and notests as specified
 # by the command-line flags
@@ -877,13 +883,9 @@ set successes = `grep "$successmarker" $logfile | wc -l`
 # count failures from the summary file rather than the log file because
 # it's already have its suppressions removed => better count
 set failures = `grep "$errormarker" $logfile.summary | wc -l`
+set futures = `grep "$futuremarker" $logfile | wc -l`
 
-if ($testfutures == 0 && $testfuturesonly == 0) then
-    echo \[\Summary: \#Successes = $successes \| \#Failures = $failures\] |& $tee -a $logfile.summary
-else
-    set futures = `grep "$futuremarker" $logfile | wc -l`
-    echo \[\Summary: \#Successes = $successes \| \#Failures = $failures \| \#Futures = $futures\] |& $tee -a $logfile.summary
-endif
+echo \[\Summary: \#Successes = $successes \| \#Failures = $failures \| \#Futures = $futures\] |& $tee -a $logfile.summary
 
 echo \[END\] |& $tee -a $logfile.summary
 cat $logfile.summary >> $logfile
