@@ -11,20 +11,12 @@
 #include <stdio.h>
 
 //
-// task: a function and an argument to the function
-//
-typedef struct _chpl_task_struct* task_p;
-typedef struct _chpl_task_struct {
-  _chpl_threadfp_t  fun;
-  _chpl_threadarg_t arg;
-} task_t;
-
-//
 // task pool: linked list of tasks
 //
 typedef struct _chpl_pool_struct* task_pool_p;
 typedef struct _chpl_pool_struct {
-  task_p task;
+  _chpl_threadfp_t  fun;  // function to call for task
+  _chpl_threadarg_t arg;  // argument to the function
   task_pool_p next;
 } task_pool_t;
 
@@ -226,45 +218,19 @@ void _chpl_set_serial(_chpl_bool state) {
 
 
 //
-// appends the given task to the end of the task pool
-//
-static void
-add_to_task_pool (task_p task) {
-  task_pool_p pool;
-
-  pool = (task_pool_p)_chpl_malloc(1, sizeof(task_pool_t), "task pool entry", 0, 0);
-  pool->task = task;
-  pool->next = NULL;
-
-  // begin critical section
-  _chpl_mutex_lock(&threading_lock);
-
-  if (task_pool_tail) {
-    task_pool_tail->next = pool;
-  } else {
-    task_pool_head = pool;
-  }
-  task_pool_tail = pool;
-
-  // end critical section
-  _chpl_mutex_unlock(&threading_lock);
-}
-
-
-//
 // thread wrapper function runs the user function, waits for more
 // tasks, and runs those as they become available
 //
 static void
-_chpl_begin_helper (task_p task) {
-  task_pool_p pool;
+_chpl_begin_helper (task_pool_p task) {
 
   while (1) {
     (*task->fun)(task->arg);
-    _chpl_free(task, 0, 0);
 
     // begin critical section
     _chpl_mutex_lock(&threading_lock);
+
+    _chpl_free(task, 0, 0);  // make sure task_pool_head no longer points to this task!
 
     //
     // finished task; decrement running count
@@ -279,71 +245,45 @@ _chpl_begin_helper (task_p task) {
     }
 
     //
-    // start new task; increment running count and remove task from
-    // pool
+    // start new task; increment running count and remove task from pool
     //
     running_cnt++;
-    pool = task_pool_head;
-    if (task_pool_tail == task_pool_head)
-      task_pool_tail = task_pool_head = NULL;
-    else
-      task_pool_head = task_pool_head->next;
+    task = task_pool_head;
+    task_pool_head = task_pool_head->next;
+    if (task_pool_head == NULL)  // task pool is now empty
+      task_pool_tail = NULL;
 
     // end critical section
     _chpl_mutex_unlock(&threading_lock);
 
     //
-    // reset task pointer and serial state
+    // reset serial state
     //
-    task = pool->task;
-    _chpl_free(pool, 0, 0);
     _chpl_set_serial(false);
   }
 }
 
 
 //
-// run task in task pool in an existing thread if one is waiting or in
-// a new thread if the number of maximum threads has not yet been reached
+// run task in a new thread
+// assumes at least one task is in the pool and threading_lock has already been acquired!
 //
 static void
 launch_next_task(void) {
-  pthread_t      thread;
-  task_pool_p pool;
-
-  // begin critical section
-  _chpl_mutex_lock(&threading_lock);
-
-  if (task_pool_head && threads_cnt > running_cnt) {
-    //
-    // signal thread to wake up and grab new task if a task exists in
-    // the pool and there is a waiting thread
-    //
-    pthread_cond_signal(&wakeup_signal);
-
-  } else if (task_pool_head && (maxThreads == 0 || running_cnt < maxThreads)) {
-    //
-    // start a new thread if a task exists in the pool, there are no
-    // waiting threads, and the number of running threads is less than
-    // the maximum
-    //
-    pool = task_pool_head;
-    if (pthread_create(&thread, NULL, (_chpl_threadfp_t)_chpl_begin_helper, pool->task)) {
-      char msg[256];
-      sprintf(msg, "pthread_create failed with %d running threads", running_cnt);
-      _printInternalError(msg);
-    }
+  pthread_t   thread;
+  task_pool_p task = task_pool_head;
+  if (pthread_create(&thread, NULL, (_chpl_threadfp_t)_chpl_begin_helper, task)) {
+    char msg[256];
+    sprintf(msg, "pthread_create failed with %d running threads", running_cnt);
+    _printInternalError(msg);
+  } else {
     threads_cnt++;
     running_cnt++;
     pthread_detach(thread);
-    if (task_pool_tail == task_pool_head)
-      task_pool_tail = task_pool_head = NULL;
-    else task_pool_head = task_pool_head->next;
-    _chpl_free(pool, 0, 0);
+    task_pool_head = task_pool_head->next;
+    if (task_pool_head == NULL)  // task pool is now empty
+      task_pool_tail = NULL;
   }
-
-  // end critical section
-  _chpl_mutex_unlock(&threading_lock);
 }
 
 
@@ -352,16 +292,37 @@ launch_next_task(void) {
 //
 int
 _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a) {
-  task_p task;
 
   if (_chpl_get_serial()) {
     (*fp)(a);
   } else {
-    task = (task_p)_chpl_malloc(1, sizeof(task_t), "_chpl_begin helper arg", 0, 0);
+    // create a task from the given function pointer and arguments
+    // and append it to the end of the task pool
+    task_pool_p task = (task_pool_p)_chpl_malloc(1, sizeof(task_pool_t), "task pool entry", 0, 0);
     task->fun = fp;
     task->arg = a;
-    add_to_task_pool(task);
-    launch_next_task();
+    task->next = NULL;
+
+    // begin critical section
+    _chpl_mutex_lock(&threading_lock);
+
+    if (task_pool_tail) {
+      task_pool_tail->next = task;
+    } else {
+      task_pool_head = task;
+    }
+    task_pool_tail = task;
+
+    // if there is an idle thread, send it a signal to wake up and grab a new task
+    if (threads_cnt > running_cnt)
+      pthread_cond_signal(&wakeup_signal);
+    // otherwise, try to launch task in a new thread
+    // if the maximum number threads has not yet been reached
+    else if (maxThreads == 0 || running_cnt < maxThreads)
+      launch_next_task();
+
+    // end critical section
+    _chpl_mutex_unlock(&threading_lock);
   }
   return 0;
 }
