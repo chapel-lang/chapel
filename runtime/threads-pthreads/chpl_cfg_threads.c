@@ -158,7 +158,7 @@ void _chpl_init_single_aux(_chpl_single_aux_t *s) {
 // Threads
 
 static void serial_delete(_chpl_bool *p) {
-  if (NULL != p) {
+  if (p != NULL) {
     _chpl_free(p, 0, 0);
   }
 }
@@ -273,9 +273,18 @@ launch_next_task(void) {
   pthread_t   thread;
   task_pool_p task = task_pool_head;
   if (pthread_create(&thread, NULL, (_chpl_threadfp_t)_chpl_begin_helper, task)) {
-    char msg[256];
-    sprintf(msg, "pthread_create failed with %d running threads", running_cnt);
-    _chpl_internal_error(msg);
+    static _Bool warning_issued = false;
+    if (!warning_issued) {
+      char msg[256];
+      if (maxThreads)
+        sprintf(msg, "maxThreads is %d, but unable to create more than %d threads",
+                maxThreads, threads_cnt);
+      else
+        sprintf(msg, "maxThreads is unbounded, but unable to create more than %d threads",
+                threads_cnt);
+      _chpl_warning(msg, 0, 0);
+      warning_issued = true;
+    }
   } else {
     threads_cnt++;
     running_cnt++;
@@ -318,7 +327,8 @@ _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a) {
       pthread_cond_signal(&wakeup_signal);
     // otherwise, try to launch task in a new thread
     // if the maximum number threads has not yet been reached
-    else if (maxThreads == 0 || running_cnt < maxThreads)
+    // take the main thread into account (but not when counting idle threads above)
+    else if (maxThreads == 0 || threads_cnt + 1 < maxThreads)
       launch_next_task();
 
     // end critical section
