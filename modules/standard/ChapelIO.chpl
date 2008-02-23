@@ -360,20 +360,20 @@ def _tuple2string(t) {
 
 def assert(test: bool) {
   if !test then
-    __primitive("_printError", "assert failed");
+    __primitive("_chpl_error", "assert failed");
 }
 
 def assert(test: bool, args ...?numArgs) {
   if !test then
-    __primitive("_printError", "assert failed - "+_tuple2string(args));
+    __primitive("_chpl_error", "assert failed - "+_tuple2string(args));
 }
 
 def halt() {
-  __primitive("_printError", "halt reached");
+  __primitive("_chpl_error", "halt reached");
 }
 
 def halt(args ...?numArgs) {
-  __primitive("_printError", "halt reached - "+_tuple2string(args));
+  __primitive("_chpl_error", "halt reached - "+_tuple2string(args));
 }
 
 def _debugWrite(args: string ...?n) {

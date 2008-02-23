@@ -15,9 +15,9 @@ static int mysystem(const char* command, const char* description,
   int status = system(command);
 
   if (status == -1) {
-    _printError("system() fork failed", 0, "(command-line)");
+    _chpl_error("system() fork failed", 0, "(command-line)");
   } else if (status != 0 && !ignorestatus) {
-    _printError(description, 0, "(command-line)");
+    _chpl_error(description, 0, "(command-line)");
   }
 
   return status;
@@ -39,7 +39,7 @@ int _chpl_comm_default_num_locales(void) {
 
 void _chpl_comm_verify_num_locales(int32_t proposedNumLocales) {
   if (proposedNumLocales != 1) {
-    _printError("Only 1 locale may be used for CHPL_COMM layer 'none'", 0, 0);
+    _chpl_error("Only 1 locale may be used for CHPL_COMM layer 'none'", 0, 0);
   }
 }
 

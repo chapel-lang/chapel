@@ -544,7 +544,7 @@ initPrimitive() {
   prim_def("_memtest_reallocOutOfMemory", returnInfoVoid, true, true);
   prim_def("startTrackingMem", returnInfoVoid, true);
 
-  prim_def("_printError", returnInfoVoid, true, true);
+  prim_def("_chpl_error", returnInfoVoid, true, true);
 
   prim_def("_mem_used", returnInfoUInt64, false, true);
 }

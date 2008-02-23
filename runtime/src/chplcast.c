@@ -21,7 +21,7 @@ static int scanningNCounts(void) {
     } else if (numitems == 2) {
       answer = 1;
     } else {
-      _printInternalError("Misassumption in scanningNCounts()");
+      _chpl_internal_error("Misassumption in scanningNCounts()");
     }
   }
   return answer;
@@ -105,7 +105,7 @@ _chpl_bool _string_to_chpl_bool(const char* str, int lineno, const char* filenam
       _glom_strings(3, 
                     "Unexpected value when converting from string to bool: '",
                     str, "'");
-    _printError(message, lineno, filename);
+    _chpl_error(message, lineno, filename);
     return false;
   }
 }
@@ -209,7 +209,7 @@ _define_string_to_imag_precise(imag, 64, "%lf")
         } else if (numitems == 8) {                                     \
           numitems = 4;                                                 \
         } else if (numitems != 0) {                                     \
-          _printInternalError("Unexpected case in define_string_to_complex_precise"); \
+          _chpl_internal_error("Unexpected case in define_string_to_complex_precise"); \
         }                                                               \
       }                                                                 \
       if (numitems == 1) {                                              \
@@ -277,7 +277,7 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
       } else {                                                          \
         message = "Empty string when converting from string to " #base "(" #width ")"; \
       }                                                                 \
-      _printError(message, lineno, filename);                           \
+      _chpl_error(message, lineno, filename);                           \
     }                                                                   \
     return val;                                                         \
   }
@@ -312,7 +312,7 @@ _define_string_to_type(uint, 64)
       } else {                                                          \
         message = "Empty string when converting from string to " #base "(" #width ")"; \
       }                                                                 \
-      _printError(message, lineno, filename);                           \
+      _chpl_error(message, lineno, filename);                           \
     }                                                                   \
     return val;                                                         \
   }

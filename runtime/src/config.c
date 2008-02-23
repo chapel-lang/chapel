@@ -115,7 +115,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
           setConfigBuffer[stringLength] = '\0';
           message = _glom_strings(2, "Found end of file while reading string: ",
                                   equalsSign + 1);
-          _printError(message, 0, 0);
+          _chpl_error(message, 0, 0);
           break;
         }
       case '\n':
@@ -124,7 +124,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
           setConfigBuffer[stringLength] = '\0';
           message = _glom_strings(2, "Found newline while reading string: ", 
                                   equalsSign + 1);
-          _printError(message, 0, 0);
+          _chpl_error(message, 0, 0);
           break;
         }
       default:
@@ -135,7 +135,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
             sprintf(dsl, "%d", _default_string_length);
             message = _glom_strings(2, "String exceeds the maximum "
                                           "string length of ", dsl);
-            _printError(message, 0, 0);
+            _chpl_error(message, 0, 0);
           }
           setConfigBuffer[stringLength] = nextChar;
           stringLength++;
@@ -191,7 +191,7 @@ static void parseSingleArg(char* currentArg, configSource argSource) {
                               "       Use '--help' for a list of configuration variables\n"
                               "       and '-s<module>.", varName, "' to resolve the ambiguity.");
     }
-    _printError(message, 0, 0);
+    _chpl_error(message, 0, 0);
   }
 
   if (equalsSign && *value) {
@@ -200,7 +200,7 @@ static void parseSingleArg(char* currentArg, configSource argSource) {
     char* message;
     message = _glom_strings(3, "Configuration variable '", varName, 
                             "' is missing its initialization value");
-    _printError(message, 0, 0);
+    _chpl_error(message, 0, 0);
   }
 }
 
@@ -210,7 +210,7 @@ static void parseFileArgs(char* currentArg) {
   FILE* argFile = fopen(argFilename, "r");
   if (!argFile) {
     char* message = _glom_strings(2, "Unable to open ", argFilename);
-    _printError(message, 0, 0);
+    _chpl_error(message, 0, 0);
   } 
   while (!feof(argFile)) {
     int numScans = 0;
@@ -356,11 +356,11 @@ void initSetValue(char* varName, char* value, const char* moduleName) {
   configVarType* configVar;
   if  (*varName == '\0') {
     const char* message = "No variable name given";
-    _printError(message, 0, 0);
+    _chpl_error(message, 0, 0);
   }
   configVar = lookupConfigVar(varName, moduleName);
   if (configVar == NULL || configVar == ambiguousConfigVar) {
-    _printInternalError("unknown config var case not handled appropriately");
+    _chpl_internal_error("unknown config var case not handled appropriately");
   }
   configVar->setValue = _glom_strings(1, value);
 }
@@ -371,7 +371,7 @@ char* lookupSetValue(const char* varName, const char* moduleName) {
   if (strcmp(moduleName, "") == 0) {
     const char* message = "Attempted to lookup value with the module name an "
       "empty string";
-    _printInternalError(message);
+    _chpl_internal_error(message);
   }
 
   configVar = lookupConfigVar(varName, moduleName);

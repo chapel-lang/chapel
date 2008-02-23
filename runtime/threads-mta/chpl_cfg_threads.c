@@ -179,7 +179,7 @@ void _chpl_set_serial(_chpl_bool state) {
     *p = state;
     mta_register_task_data(p);
   } else
-    _printInternalError("out of memory while creating serial state");
+    _chpl_internal_error("out of memory while creating serial state");
 }
 
 

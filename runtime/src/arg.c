@@ -107,13 +107,13 @@ static int64_t getIntArg(char* valueString, const char* memFlag) {
   if (!valueString || strcmp(valueString, "") == 0) {
     message = _glom_strings(3, "The ", memFlag, " flag is missing "
                                   "its int input");
-    _printError(message, 0, 0);
+    _chpl_error(message, 0, 0);
   }
   numScans = sscanf(valueString, _default_format_read_int64"%c", 
                     &value, &extraChars);
   if (numScans != 1) {
     message = _glom_strings(2, valueString, " is not of int type");
-    _printError(message, 0, 0);
+    _chpl_error(message, 0, 0);
   }
   return value; 
 }
@@ -124,7 +124,7 @@ static char* getStringArg(char* valueString, const char* memFlag) {
   if (!valueString || strcmp(valueString, "") == 0) {
     message = _glom_strings(3, "The ", memFlag, " flag is missing "
                                   "its string input");
-    _printError(message, 0, 0);
+    _chpl_error(message, 0, 0);
   }
   return valueString;
 }
@@ -134,7 +134,7 @@ static void exitIfEqualsSign(char* equalsSign, const char* memFlag) {
   if (equalsSign) {
     char* message = _glom_strings(3, "The ", memFlag, " flag takes no "
                                   "argument");
-    _printError(message, 0, 0);
+    _chpl_error(message, 0, 0);
   }
 }
 
@@ -215,7 +215,7 @@ static int parseMemFlag(const char* memFlag) {
 
 static void unexpectedArg(const char* currentArg) {
   char* message = _glom_strings(3, "Unexpected flag:  \"", currentArg, "\"");
-  _printError(message, 0, 0);
+  _chpl_error(message, 0, 0);
 }
 
 
@@ -229,10 +229,10 @@ static void parseNumLocales(const char* numPtr) {
     char* message = _glom_strings(3, "\"", numPtr, 
                                   "\" is not a valid number of locales"
                                   );
-    _printError(message, 0, 0);
+    _chpl_error(message, 0, 0);
   }
   if (_argNumLocales < 1) {
-    _printError("Number of locales must be greater than 0", 0, 0);
+    _chpl_error("Number of locales must be greater than 0", 0, 0);
   }
 }
 
@@ -254,7 +254,7 @@ void parseArgs(int argc, char* argv[]) {
     if (argLength < 2) {
       const char* message = _glom_strings(3, "\"", currentArg, 
                                           "\" is not a valid argument");
-      _printError(message, 0, 0);
+      _chpl_error(message, 0, 0);
     }
 
     switch (currentArg[0]) {
@@ -288,7 +288,7 @@ void parseArgs(int argc, char* argv[]) {
           if (argLength < 3) {
             char* message = _glom_strings(3, "\"", currentArg, 
                                           "\" is not a valid argument");
-            _printError(message, 0, 0);
+            _chpl_error(message, 0, 0);
           }
           addToConfigList(currentArg + 2, ddash);
           break;
@@ -315,7 +315,7 @@ void parseArgs(int argc, char* argv[]) {
           if (currentArg[3] == '\0') {
             i++;
             if (i >= argc) {
-              _printError("-nl flag is missing <numLocales> argument", 0, 0);
+              _chpl_error("-nl flag is missing <numLocales> argument", 0, 0);
             }
             currentArg = argv[i];
             numPtr = currentArg;
@@ -335,7 +335,7 @@ void parseArgs(int argc, char* argv[]) {
           if (argLength < 3) {
             char* message = _glom_strings(3, "\"", currentArg, 
                                           "\" is not a valid argument");
-            _printError(message, 0, 0);
+            _chpl_error(message, 0, 0);
           }
           if (strncmp(currentArg+2, "numLocales", 10) == 0) {
             if (currentArg[12] == '=') {

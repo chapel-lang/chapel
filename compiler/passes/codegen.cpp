@@ -510,7 +510,7 @@ codegen_cid2offsets(FILE* outfile) {
     }
   }
   fprintf(outfile, "default:\n");
-  fprintf(outfile, "_printError(\"Bad cid in cid2offsets\", 0, 0);\n");
+  fprintf(outfile, "_chpl_error(\"Bad cid in cid2offsets\", 0, 0);\n");
   fprintf(outfile, "break;\n");
   fprintf(outfile, "}\n");
   fprintf(outfile, "return offsets;\n");
@@ -535,7 +535,7 @@ codegen_cid2size(FILE* outfile) {
     }
   }
   fprintf(outfile, "default:\n");
-  fprintf(outfile, "_printError(\"Bad cid in cid2size\", 0, 0);\n");
+  fprintf(outfile, "_chpl_error(\"Bad cid in cid2size\", 0, 0);\n");
   fprintf(outfile, "break;\n");
   fprintf(outfile, "}\n");
   fprintf(outfile, "return size;\n");

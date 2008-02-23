@@ -48,7 +48,7 @@ _string _format(_string format, ...) {
 
   va_start(ap, format);
   if (!vsnprintf(z, 127, format, ap))
-    _printError("overflow encountered in format", 0, 0);
+    _chpl_error("overflow encountered in format", 0, 0);
   return string_copy(z, 0, 0);
 }
 
@@ -72,7 +72,7 @@ string_strided_select(_string x, int low, int high, int stride, int32_t lineno, 
   _string src = stride > 0 ? x + low - 1 : x + high - 1;
   int size = high - low >= 0 ? high - low : 0;
   if (low < 1 || low > length || high > length) {
-    _printError("string index out of bounds", lineno, filename);
+    _chpl_error("string index out of bounds", lineno, filename);
   }
   result = _chpl_malloc(size + 2, sizeof(char), "_chpl_string_strided_select temp", lineno, filename);
   dst = result;
@@ -100,7 +100,7 @@ _string
 string_index(_string x, int i, int32_t lineno, _string filename) {
   char buffer[2];
   if (i-1 < 0 || i-1 >= string_length(x))
-    _printError("string index out of bounds", lineno, filename);
+    _chpl_error("string index out of bounds", lineno, filename);
   sprintf(buffer, "%c", x[i-1]);
   return _glom_strings(1, buffer);
 }

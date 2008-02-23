@@ -35,8 +35,8 @@
   ret = fncall;                                       \
   if (ret != MPI_SUCCESS) {                           \
     MPI_Error_string(ret, errmsg, &len);              \
-    _printInternalError("MPI error:");                \
-    _printInternalError(errmsg);                      \
+    _chpl_internal_error("MPI error:");                \
+    _chpl_internal_error(errmsg);                      \
     MPI_Abort(MPI_COMM_WORLD, ret);                   \
   }                                                   \
 }
@@ -81,7 +81,7 @@ int _chpl_comm_user_invocation(int argc, char* argv[]) {
 //
 int _chpl_comm_default_num_locales(void) {
   // This is probably a good default for ARMCI:
-  _printError("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
+  _chpl_error("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
   return 0;
 }
 
@@ -171,7 +171,7 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
   int nprocs, me;
 
   if (runInGDB) {
-    _printError("--gdb not yet implemented for ARMCI", runInGDB, "<command-line>");
+    _chpl_error("--gdb not yet implemented for ARMCI", runInGDB, "<command-line>");
   }
 
   MPI_SAFE(MPI_Init(argc_p, argv_p));
@@ -327,7 +327,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   _chpl_msg(2, "Called _chpl_comm_fork() on: %d\n", _localeID);
 
   if (ghndl == -1) {
-    _printInternalError("ARMCI GPC handler function not registered");
+    _chpl_internal_error("ARMCI GPC handler function not registered");
     return;
   }
 
@@ -345,7 +345,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   ret = ARMCI_Gpc_exec(ghndl, locale, &header, sizeof(f), arg, arg_size,
                        rheader, rhlen, rdata, rdlen, NULL /* &nbh */);
   if (ret != 0) {
-    _printInternalError("ARMCI_Gpc_exec() failed");
+    _chpl_internal_error("ARMCI_Gpc_exec() failed");
     _chpl_free(rheader, __LINE__, __FILE__);
     _chpl_free(rdata, __LINE__, __FILE__);
     return;

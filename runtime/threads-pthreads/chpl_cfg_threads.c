@@ -35,7 +35,7 @@ static _chpl_condvar_p _chpl_condvar_new(void) {
   _chpl_condvar_p cv;
   cv = (_chpl_condvar_p) _chpl_alloc(sizeof(_chpl_condvar_t), "condition var", 0, 0);
   if (pthread_cond_init(cv, NULL))
-    _printInternalError("pthread_cond_init() failed");
+    _chpl_internal_error("pthread_cond_init() failed");
   return cv;
 }
 
@@ -45,7 +45,7 @@ static _chpl_condvar_p _chpl_condvar_new(void) {
 static void _chpl_mutex_init(_chpl_mutex_p mutex) {
   // WAW: how to explicitly specify blocking-type?
   if (pthread_mutex_init(mutex, NULL))
-    _printInternalError("pthread_mutex_init() failed");
+    _chpl_internal_error("pthread_mutex_init() failed");
 }
 
 static _chpl_mutex_p _chpl_mutex_new(void) {
@@ -58,13 +58,13 @@ static _chpl_mutex_p _chpl_mutex_new(void) {
 int _chpl_mutex_lock(_chpl_mutex_p mutex) {
   int return_value;
   if ((return_value = pthread_mutex_lock(mutex)))
-    _printInternalError("pthread_mutex_lock() failed");
+    _chpl_internal_error("pthread_mutex_lock() failed");
   return return_value;
 }
 
 void _chpl_mutex_unlock(_chpl_mutex_p mutex) {
   if (pthread_mutex_unlock(mutex))
-    _printInternalError("pthread_mutex_unlock() failed");
+    _chpl_internal_error("pthread_mutex_unlock() failed");
 }
 
 
@@ -82,7 +82,7 @@ int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, int32_t lineno, _string f
   int return_value = _chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
     if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
-      _printInternalError("pthread_cond_wait() failed");
+      _chpl_internal_error("pthread_cond_wait() failed");
   }
   return return_value;
 }
@@ -91,7 +91,7 @@ int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, int32_t lineno, _string 
   int return_value = _chpl_mutex_lock(s->lock);
   while (return_value == 0 && s->is_full) {
     if ((return_value = pthread_cond_wait(s->signal_empty, s->lock)))
-      _printInternalError("pthread_cond_wait() failed");
+      _chpl_internal_error("pthread_cond_wait() failed");
   }
   return return_value;
 }
@@ -100,14 +100,14 @@ void _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *s) {
   s->is_full = true;
   _chpl_sync_unlock(s);
   if (pthread_cond_signal(s->signal_full))
-    _printInternalError("pthread_cond_signal() failed");
+    _chpl_internal_error("pthread_cond_signal() failed");
 }
 
 void _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *s) {
   s->is_full = false;
   _chpl_sync_unlock(s);
   if (pthread_cond_signal(s->signal_empty))
-    _printInternalError("pthread_cond_signal() failed");
+    _chpl_internal_error("pthread_cond_signal() failed");
 }
 
 _chpl_bool _chpl_sync_is_full(void *val_ptr, _chpl_sync_aux_t *s, _chpl_bool simple_sync_var) {
@@ -132,7 +132,7 @@ int _chpl_single_wait_full(_chpl_single_aux_t *s, int32_t lineno, _string filena
   int return_value = _chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
     if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
-      _printInternalError("invalid mutex in _chpl_single_wait_full");
+      _chpl_internal_error("invalid mutex in _chpl_single_wait_full");
   }
   return return_value;
 }
@@ -141,7 +141,7 @@ void _chpl_single_mark_and_signal_full(_chpl_single_aux_t *s) {
   s->is_full = true;
   _chpl_mutex_unlock(s->lock);
   if (pthread_cond_signal(s->signal_full))
-    _printInternalError("pthread_cond_signal() failed");
+    _chpl_internal_error("pthread_cond_signal() failed");
 }
 
 _chpl_bool _chpl_single_is_full(void *val_ptr, _chpl_single_aux_t *s, _chpl_bool simple_single_var) {
@@ -168,7 +168,7 @@ int32_t _chpl_threads_getMaxThreads(void) { return 0; }
 void initChplThreads() {
   _chpl_mutex_init(&threading_lock);
   if (pthread_cond_init(&wakeup_signal, NULL))
-    _printInternalError("pthread_cond_init() failed in");
+    _chpl_internal_error("pthread_cond_init() failed in");
   running_cnt = 0;                     // only main thread running
   threads_cnt = 0;
   task_pool_head = task_pool_tail = NULL;
@@ -178,7 +178,7 @@ void initChplThreads() {
   _chpl_mutex_init(&_memtrace_lock);
 
   if (pthread_key_create(&serial_key, (void(*)(void*))serial_delete))
-    _printInternalError("serial key not created");
+    _chpl_internal_error("serial key not created");
   _chpl_thread_init();
 }
 
@@ -210,7 +210,7 @@ void _chpl_set_serial(_chpl_bool state) {
       p = (_chpl_bool*) _chpl_alloc(sizeof(_chpl_bool), "serial flag", 0, 0);
       *p = state;
       if (pthread_setspecific(serial_key, p))
-        _printInternalError("serial state not created");
+        _chpl_internal_error("serial state not created");
     }
   }
   else *p = state;
@@ -275,7 +275,7 @@ launch_next_task(void) {
   if (pthread_create(&thread, NULL, (_chpl_threadfp_t)_chpl_begin_helper, task)) {
     char msg[256];
     sprintf(msg, "pthread_create failed with %d running threads", running_cnt);
-    _printInternalError(msg);
+    _chpl_internal_error(msg);
   } else {
     threads_cnt++;
     running_cnt++;

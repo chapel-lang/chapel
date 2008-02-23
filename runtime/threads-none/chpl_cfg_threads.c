@@ -19,14 +19,14 @@ int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *s, int32_t lineno, _string f
   if (*s)
     return 0;
   else {
-    _printError("sync var empty (running in single-threaded mode)", lineno, filename);
+    _chpl_error("sync var empty (running in single-threaded mode)", lineno, filename);
     return 1;
   }
 }
 
 int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *s, int32_t lineno, _string filename) {
   if (*s) {
-    _printError("sync var full (running in single-threaded mode)", lineno, filename);
+    _chpl_error("sync var full (running in single-threaded mode)", lineno, filename);
     return 1;
   }
   else return 0;
@@ -57,7 +57,7 @@ int _chpl_single_wait_full(_chpl_single_aux_t *s, int32_t lineno, _string filena
   if (*s)
     return 0;
   else {
-    _printError("single var empty (running in single-threaded mode)", lineno, filename);
+    _chpl_error("single var empty (running in single-threaded mode)", lineno, filename);
     return 1;
   }
 }
@@ -87,7 +87,7 @@ uint64_t _chpl_thread_id(void) { return 0; }
 _chpl_bool _chpl_get_serial(void) { return true; }
 void _chpl_set_serial(_chpl_bool state) {
   if (!state)
-    _printError("cannot set serial state to false when running in single-threaded mode", 0, 0);
+    _chpl_error("cannot set serial state to false when running in single-threaded mode", 0, 0);
 }
 
 int

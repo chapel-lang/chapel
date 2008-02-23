@@ -16,13 +16,13 @@
 
 uint64_t _bytesPerLocale(void) {
 #ifdef NO_BYTES_PER_LOCALE
-  _printInternalError("sorry- bytesPerLocale not supported on this platform");
+  _chpl_internal_error("sorry- bytesPerLocale not supported on this platform");
   return 0;
 #elif defined __APPLE__
   uint64_t membytes;
   size_t len = sizeof(membytes);
   if (sysctlbyname("hw.memsize", &membytes, &len, NULL, 0)) 
-    _printInternalError("query of physical memory failed");
+    _chpl_internal_error("query of physical memory failed");
   return membytes;
 #elif defined __MTA__
   int mib[2] = {CTL_HW, HW_PHYSMEM}, membytes;
@@ -45,7 +45,7 @@ int32_t _coresPerLocale(void) {
   uint64_t numcores = 0;
   size_t len = sizeof(numcores);
   if (sysctlbyname("hw.physicalcpu", &numcores, &len, NULL, 0))
-    _printInternalError("query of number of cores failed");
+    _chpl_internal_error("query of number of cores failed");
   // If the call to sysctlbyname() above failed to modify numcores for some reason,
   // return just 1 to be safe.
   return numcores ? numcores : 1;
