@@ -695,6 +695,16 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map,
     return cached;
 
   FnSymbol* wrapper = build_empty_wrapper(this);
+
+  //
+  // stopgap: important for, for example, --no-local on
+  // test/parallel/cobegin/bradc/varsEscape-workaround.chpl; when
+  // function resolution is out-of-order, disabling this for
+  // unspecified return types may not be necessary
+  //
+  if (hasPragma("specified return type")) // iterators?
+    wrapper->retType = retType;
+
   wrapper->cname = astr("_coerce_wrap_", cname);
   CallExpr* call = new CallExpr(this);
   call->square = isSquare;
