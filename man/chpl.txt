@@ -85,15 +85,18 @@ OPTIONS
                     implicitly undoes any previous usage of --baseline,
                     --no-copy-propagation, --no-single-loop-iterator-opt,
                     --no-expand-iterators-inline-opt, --no-flow-analysis,
-                    and --no-inline. This option implies --no-checks.
-                    Use of this option may affect IEEE floating point
-                    conformance.
+                    and --no-inline. This option implies --no-checks
+                    and --no-ieee-float.
  
   --[no]-local      Optimize compilation of code for single locale
                     execution, changing on blocks to normal blocks and
-                    optimizing away all remote references.  When
+                    optimizing away all remote references. When
                     CHPL_COMM is set to "none," this optimization is
                     on by default; otherwise it is off.
+
+  --[no]-ieee-float   Enable optimizations that may affect IEEE floating
+                    point conformance. The default is --ieee-float,
+                    disabling this sort of optimization.
 
   --no-copy-propagation   Turns off the compiler's copy propagation 
                     optimization which is on by default.
@@ -263,5 +266,5 @@ BUGS
 AUTHORS
   See $CHPL_HOME/CONTRIBUTORS for a list of contributors and authors.
 COPYRIGHT
-  Copyright (c) 2004-2008 Cray Inc.  (See $CHPL_HOME/LICENSE for more
+  Copyright (c) 2004-2008 Cray Inc. (See $CHPL_HOME/LICENSE for more
   details)

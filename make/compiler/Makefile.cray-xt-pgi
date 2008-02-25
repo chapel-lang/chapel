@@ -2,6 +2,6 @@
 
 XT_GEN_CFLAGS = 
 XT_COMP_CFLAGS = --diag_suppress550
-SAFE_GEN_CFLAGS = -Kieee
+IEEE_FLOAT_GEN_CFLAGS = -Kieee
 
 include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xt

@@ -40,6 +40,7 @@ extern bool fPrintDispatch;
 extern bool fShortNames;
 extern bool fSerial;
 extern bool fLocal;
+extern bool fieeefloat;
 
 extern int debugParserLevel;
 extern bool no_codegen;

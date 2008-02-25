@@ -43,6 +43,7 @@ bool fNoInline = false;
 bool fShortNames = false;
 bool fSerial = false;
 bool fLocal = false;
+bool fieeefloat = true;
 bool report_inlining = false;
 char chplhome[FILENAME_MAX] = ".";
 char chplmake[256] = "";
@@ -200,6 +201,7 @@ static void setFastFlag(ArgumentState* arg, char* unused) {
   fNoBoundsChecks = true;
   fNoNilChecks = true;
   fNoChecks = true;
+  fieeefloat = false;
   optimizeCCode = true;
 }
 
@@ -238,6 +240,7 @@ static ArgumentDescription arg_desc[] = {
  {"baseline", ' ', NULL, "Disable almost all optimizations", "F", &fBaseline, "CHPL_BASELINE", NULL},
  {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, NULL, setFastFlag},
  {"local", ' ', NULL, "Compile program for a single locale", "N", &fLocal, "CHPL_LOCAL", NULL},
+ {"ieee-float", ' ', NULL, "Enable non-ieee compliant optimizations", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
  {"no-copy-propagation", ' ', NULL, "Disable copy propagation", "F", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"no-expand-iterators-inline-opt", ' ', NULL, "Disable the expansion of iterators inlined around loop bodies", "F", &fNoExpandIteratorsInlineOpt, "CHPL_DISABLE_EXPAND_ITERATORS_INLINE_OPT", NULL},
  {"no-flow-analysis", ' ', NULL, "Disable optimizations requiring flow analysis", "F", &fNoFlowAnalysis, "CHPL_NO_FLOW_ANALYSIS", NULL},

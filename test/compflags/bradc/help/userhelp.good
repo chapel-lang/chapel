@@ -12,6 +12,8 @@ Optimization Control Options:
       --baseline                         Disable almost all optimizations
       --fast                             Use fast default settings
       --[no-]local                       Compile program for a single locale
+      --[no-]ieee-float                  Enable non-ieee compliant
+                                         optimizations
       --no-copy-propagation              Disable copy propagation
       --no-expand-iterators-inline-opt   Disable the expansion of iterators
                                          inlined around loop bodies
