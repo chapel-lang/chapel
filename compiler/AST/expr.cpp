@@ -1086,6 +1086,14 @@ void CallExpr::codegen(FILE* outfile) {
         break;
       }
       if (get(1)->typeInfo()->symbol->hasPragma("ref") &&
+          get(2)->typeInfo()->symbol->hasPragma("wide")) {
+        get(1)->codegen(outfile);
+        fprintf(outfile, " = ");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ".addr");
+        break;
+      }
+      if (get(1)->typeInfo()->symbol->hasPragma("ref") &&
           !get(2)->typeInfo()->symbol->hasPragma("ref"))
         fprintf(outfile, "(*");
       get(1)->codegen(outfile);
@@ -1942,18 +1950,18 @@ void CallExpr::codegen(FILE* outfile) {
       first_actual = false;
     else
       fprintf(outfile, ", ");
-    if (fn->isExtern && formal->type->symbol->hasPragma("wide"))
+    if (fn->isExtern && actual->typeInfo()->symbol->hasPragma("wide"))
       fprintf(outfile, "(");
-    else if (formal->requiresCPtr())
+    else if (formal->requiresCPtr() && !actual->typeInfo()->symbol->hasPragma("ref"))
       fprintf(outfile, "&(");
     if (fn->isExtern && actual->typeInfo() == dtString)
       fprintf(outfile, "((char*)");
     actual->codegen(outfile);
     if (fn->isExtern && actual->typeInfo() == dtString)
       fprintf(outfile, ")");
-    if (fn->isExtern && formal->type->symbol->hasPragma("wide"))
+    if (fn->isExtern && actual->typeInfo()->symbol->hasPragma("wide"))
       fprintf(outfile, ").addr");
-    else if (formal->requiresCPtr())
+    else if (formal->requiresCPtr() && !actual->typeInfo()->symbol->hasPragma("ref"))
       fprintf(outfile, ")");
   }
   fprintf(outfile, ")");

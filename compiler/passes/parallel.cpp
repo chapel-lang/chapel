@@ -427,10 +427,13 @@ insertWideReferences(void) {
           INT_ASSERT(sym);
           if (sym->typeInfo()->symbol->hasPragma("wide class") ||
               sym->typeInfo()->symbol->hasPragma("wide")) {
-            VarSymbol* var = new VarSymbol("tmp", sym->typeInfo()->getField("addr")->type);
-            call->insertBefore(new DefExpr(var));
-            call->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_GET_REF, sym->copy())));
-            call->insertAfter(new CallExpr(PRIMITIVE_MOVE, sym->copy(), var));
+            VarSymbol* var = new VarSymbol("_tmp", sym->typeInfo()->getField("addr")->type);
+            call->getStmtExpr()->insertBefore(new DefExpr(var));
+            if (var->type->symbol->hasPragma("ref"))
+              call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, sym->copy()));
+            else
+              call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_GET_REF, sym->copy())));
+            call->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_MOVE, sym->copy(), var));
             sym->replace(new SymExpr(var));
           }
         }
