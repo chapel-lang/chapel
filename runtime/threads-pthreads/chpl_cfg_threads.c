@@ -6,6 +6,7 @@
 #include "chplthreads.h"
 #include "chplmem.h"
 #include "error.h"
+#include <inttypes.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -277,7 +278,7 @@ launch_next_task(void) {
     if (!warning_issued) {
       char msg[256];
       if (maxThreads)
-        sprintf(msg, "maxThreads is %d, but unable to create more than %d threads",
+        sprintf(msg, "maxThreads is %"PRId32", but unable to create more than %d threads",
                 maxThreads, threads_cnt);
       else
         sprintf(msg, "maxThreads is unbounded, but unable to create more than %d threads",
