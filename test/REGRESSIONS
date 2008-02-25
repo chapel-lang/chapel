@@ -13,10 +13,9 @@
 linux and general regressions
 =============================
 
-getting pthread_create exceeds threadMax error -- should be warning -- test
-will probably not be portable due to differing system thread limits....
----------------------------------------------------------------------------
-[Error: Timed out executing program parallel/coforall/figueroa/ManyThreads]
+by definition gets different answers on different platforms
+-----------------------------------------------------------
+[Error matching program output for parallel/coforall/figueroa/ManyThreads]
 
 
 differing memory sizes on different platforms
@@ -25,54 +24,10 @@ differing memory sizes on different platforms
 [Error matching program output for memory/shannon/printFinalMemStat]
 [Error matching program output for memory/shannon/printMemTable2]
 
-garbage collection broken due to super field changes
--- behavior changed with Steve's "new" checkin -- started
-timing out
-----------------------------------------------------
-classes/diten/allocateManyObjects
-
-still race-y?
--------------
-[Error matching program output for
-studies/590o/bradc/forall-begin-private-indices]
-
-
-
-=============================
-valgrind-specific regressions
-=============================
-
-???
----
-[Error matching program output for parallel/coforall/bradc/manyThreads-inorder]
-
 
 =============================
 baseline-specific regressions
 =============================
-
-to string problems that we should fix with the format flags
------------------------------------------------------------
-[Error matching compiler output for
-studies/madness/dinan/mad_chapel/test_diff]
-[Error matching compiler output for
-studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching compiler output for
-studies/madness/dinan/mad_chapel/test_likepy]
-[Error matching compiler output for
-studies/madness/dinan/mad_chapel/test_mul]
-[Error matching compiler output for
-studies/madness/dinan/mad_chapel/test_showboxes]
-[Error matching compiler output for studies/madness/marybeth/test_diff]
-[Error matching compiler output for studies/madness/marybeth/test_gaxpy]
-[Error matching compiler output for studies/madness/marybeth/test_likepy]
-[Error matching compiler output for studies/madness/marybeth/test_mul]
-[Error matching compiler output for studies/madness/marybeth/test_showboxes]
-[Error matching compiler output for studies/madness/test_diff]
-[Error matching compiler output for studies/madness/test_gaxpy]
-[Error matching compiler output for studies/madness/test_likepy]
-[Error matching compiler output for studies/madness/test_mul]
-[Error matching compiler output for studies/madness/test_showboxes]
 
 ???
 ---
@@ -148,7 +103,7 @@ parallel/begin/deitz/test_coforall_sugar3]
 parallel/begin/deitz/test_global_for_begin]
 [Error: Timed out executing program parallel/begin/waynew/simple2]
 [Error: Timed out executing program parallel/cobegin/bradc/exitone]
-[Error: Timed out executing program parallel/cobegin/waynew/depend]
+[Error matching program output parallel/cobegin/waynew/depend]
 [Error: Timed out executing program parallel/cobegin/waynew/while]
 [Error: Timed out executing program parallel/coforall/figueroa/ManyThreads]
 
@@ -284,10 +239,6 @@ compiler output error - incorrect line number
    parallel/cobegin/bradc/varsEscape-workaround
    release/examples/iterators
 
-race condition based on sleep? -- replace with sync var once implemented
------------------------------------------------------------------------
-[Error matching program output for stress/deitz/test_10k_begins]
-
 warnings in generated code
 --------------------------
 [Error matching compiler output for studies/uts/uts_deq]
@@ -324,14 +275,6 @@ print occurs in 0 seconds!?  Timers not working?
 =======================
 x1/x2-specific failures
 =======================
-
-the x1/x1 simulator does not support pthreads; running on the hardware
-does, though
-----------------------------------------------------------------------
-[Error matching program output for release/examples/hpcc/ra] 
-[Error matching program output for release/examples/prodCons] 
-[Error matching program output for release/examples/quicksort] 
-[Error matching program output for release/examples/tree] 
 
 strange error -- X1 compiler? apsim?
 ------------------------------------
