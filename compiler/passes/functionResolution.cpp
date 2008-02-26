@@ -1129,9 +1129,11 @@ static CallExpr*
 userCall(CallExpr* call) {
   if (developer)
     return call;
-  if (call->getModule()->modTag == MOD_STANDARD) {
+  if (call->getFunction()->isCompilerTemp ||
+      call->getModule()->modTag == MOD_STANDARD) {
     for (int i = callStack.n-1; i >= 0; i--) {
-      if (callStack.v[i]->getModule()->modTag != MOD_STANDARD)
+      if (!callStack.v[i]->getFunction()->isCompilerTemp &&
+          callStack.v[i]->getModule()->modTag != MOD_STANDARD)
         return callStack.v[i];
     }
   }
@@ -1633,7 +1635,7 @@ resolveCall(CallExpr* call) {
     Type* rhsType = rhs->typeInfo();
 
     if (rhsType == dtVoid)
-      USR_FATAL(rhs, "illegal use of function that does not return a value");
+      USR_FATAL(userCall(call), "illegal use of function that does not return a value");
 
     if (lhs->type == dtUnknown || lhs->type == dtNil)
       lhs->type = rhsType;

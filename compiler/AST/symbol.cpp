@@ -697,6 +697,11 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map,
   FnSymbol* wrapper = build_empty_wrapper(this);
 
   //
+  // mark as compiler temp for error message reporting
+  //
+  wrapper->isCompilerTemp = true;
+
+  //
   // stopgap: important for, for example, --no-local on
   // test/parallel/cobegin/bradc/varsEscape-workaround.chpl; when
   // function resolution is out-of-order, disabling this for
