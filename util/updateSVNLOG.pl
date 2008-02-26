@@ -25,7 +25,18 @@ if ($completelog == 0) {
     }
 }
 
-$revline = `svn info $chplhome | grep Revision`;
+#
+# if set to 1, this will only update to match the user's local version;
+# currently the default is to update to match the latest version that's
+# committed
+#
+$update_to_users_local_version = 0;
+
+if ($update_to_users_local_version == 0) {
+    $svninfoflags = "-rHEAD";
+}
+
+$revline = `svn info $svninfoflags $chplhome | grep Revision`;
 chomp($revline);
 
 if ($revline =~ m/Revision: (\d*)/) {
