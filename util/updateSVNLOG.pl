@@ -53,6 +53,7 @@ if ($completelog == 1) {
     if ($revnum eq $currentrevnum) {
         print "SVNLOG is already up-to-date\n";
     } else {
+        $revnum += 1;
         print "SVNLOG being updated from $revnum to $currentrevnum\n";
         `cd $chplhome && svn log --verbose --incremental -r$revnum:$currentrevnum >> SVNLOG`;
     }
