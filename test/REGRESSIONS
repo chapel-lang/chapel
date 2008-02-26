@@ -13,9 +13,9 @@
 linux and general regressions
 =============================
 
-by definition gets different answers on different platforms
------------------------------------------------------------
-[Error matching program output for parallel/coforall/figueroa/ManyThreads]
+.prediff file didn't have execute permissions
+---------------------------------------------
+[Error matching program output for parallel/coforall/figueroa/TooManyThreads]
 
 
 differing memory sizes on different platforms
@@ -32,80 +32,6 @@ baseline-specific regressions
 ???
 ---
 [Error matching program output for studies/sudoku/dinan/sudoku]
-
-
-===============================
-CHPL_THREADS = none regressions
-===============================
-
-???
----
-[Error matching program output for parallel/end/deitz/test_end3]
-[Error matching program output for parallel/single/diten/simpleSingleAccess]
-
-Need requeuable tasks for this to work
---------------------------------------
-[Error matching program output for
-parallel/coforall/bradc/manyThreads-folded]
-[Error matching program output for
-parallel/coforall/bradc/manyThreads-revorder]
-
-Write doesn't seem to be locked properly
-----------------------------------------
-[Error matching program output for classes/diten/allocateManyObjects]
-
-Inherently multithreaded?  Needs re-queueing ability
-----------------------------------------------------
-[Error matching program output for users/shetag/fock/fock-1-latest]
-[Error matching program output for users/shetag/fock/fock-3-blc]
-
-Assumes something about timing?
--------------------------------
-[Error matching program output for parallel/begin/deitz/test_begin3]
-[Error matching program output for parallel/begin/deitz/test_begin4]
-[Error matching program output for parallel/begin/deitz/test_begin5]
-[Error matching program output for parallel/begin/deitz/test_heap_begin]
-[Error matching program output for parallel/serial/deitz/test_serial1]
-[Error matching program output for parallel/serial/waynew/begin1a]
-[Error matching program output for parallel/serial/waynew/cobegin1a]
-
-Uncategorized as of yet
------------------------
-[Error matching program output for
-parallel/single/figueroa/ReadWriteMethods]
-[Error matching program output for parallel/single/waynew/class0]
-[Error matching program output for parallel/single/waynew/class1]
-[Error matching program output for parallel/single/waynew/simple1-int64]
-[Error matching program output for parallel/single/waynew/simple1]
-[Error matching program output for parallel/single/waynew/simple2]
-[Error matching program output for parallel/single/waynew/simple3]
-[Error matching program output for parallel/single/waynew/simple4]
-[Error matching program output for parallel/sync/bradc/fib_sync]
-[Error matching program output for parallel/sync/deitz/test_sync_in_generic]
-[Error matching program output for parallel/sync/figueroa/ReadMethods]
-[Error matching program output for parallel/sync/figueroa/WriteMethods]
-[Error matching program output for parallel/sync/waynew/class1]
-[Error matching program output for parallel/sync/waynew/class2]
-[Error matching program output for parallel/sync/waynew/record1]
-[Error matching program output for parallel/sync/waynew/record2]
-[Error matching program output for parallel/sync/waynew/simple1]
-[Error matching program output for parallel/sync/waynew/simple2]
-[Error matching program output for release/examples/prodCons]
-[Error matching program output for studies/590o/blerner/xml-parse]
-[Error matching program output for users/shetag/fock/fock-1-begin-blc]
-[Error matching program output for users/shetag/fock/fock-1]
-[Error matching program output for users/shetag/fock/fock-orig]
-[Error: Timed out executing program
-parallel/begin/deitz/test_begin_error_lineno]
-[Error: Timed out executing program
-parallel/begin/deitz/test_coforall_sugar3]
-[Error: Timed out executing program
-parallel/begin/deitz/test_global_for_begin]
-[Error: Timed out executing program parallel/begin/waynew/simple2]
-[Error: Timed out executing program parallel/cobegin/bradc/exitone]
-[Error matching program output parallel/cobegin/waynew/depend]
-[Error: Timed out executing program parallel/cobegin/waynew/while]
-[Error: Timed out executing program parallel/coforall/figueroa/ManyThreads]
 
 
 ==========================
@@ -217,37 +143,6 @@ negative floating point 0.0 not supported
 [Error matching program output for execflags/bradc/gdbddash/declint2] 
 
 
-
-
-========================
-gasnet-specific failures
-========================
-
-compiler error -- alist indexing error for primitive get on non-wide tuples
----------------------------------------------------------------------------
-   arrays/deitz/test_array_dot_type
-   arrays/deitz/part2/test_array_init
-
-compiler output error - incorrect line number        
---------------------------------
-   classes/bradc/overloadMethods/v2NoReturnValueButType
-
- compiler output error - recursive function return type
---------------------------------
-   classes/deitz/tree
-   functions/deitz/iterators/tree
-   parallel/cobegin/bradc/varsEscape-workaround
-   release/examples/iterators
-
-warnings in generated code
---------------------------
-[Error matching compiler output for studies/uts/uts_deq]
-[Error matching compiler output for studies/uts/uts_deq_seq]
-[Error matching compiler output for studies/uts/uts_rec]
-[Error matching compiler output for studies/uts/uts_rec_seq]
-
-
-
 ========================
 xt-gnu specific failures
 ========================
@@ -315,3 +210,77 @@ sparse code not running correctly
 timeout
 -------
 [Error: Timed out executing program release/examples/quicksort]
+
+
+===============================
+CHPL_THREADS = none regressions
+===============================
+
+???
+---
+[Error matching program output for parallel/end/deitz/test_end3]
+[Error matching program output for parallel/single/diten/simpleSingleAccess]
+
+Need requeuable tasks for this to work
+--------------------------------------
+[Error matching program output for
+parallel/coforall/bradc/manyThreads-folded]
+[Error matching program output for
+parallel/coforall/bradc/manyThreads-revorder]
+
+Write doesn't seem to be locked properly
+----------------------------------------
+[Error matching program output for classes/diten/allocateManyObjects]
+
+Inherently multithreaded?  Needs re-queueing ability
+----------------------------------------------------
+[Error matching program output for users/shetag/fock/fock-1-latest]
+[Error matching program output for users/shetag/fock/fock-3-blc]
+
+Assumes something about timing?
+-------------------------------
+[Error matching program output for parallel/begin/deitz/test_begin3]
+[Error matching program output for parallel/begin/deitz/test_begin4]
+[Error matching program output for parallel/begin/deitz/test_begin5]
+[Error matching program output for parallel/begin/deitz/test_heap_begin]
+[Error matching program output for parallel/serial/deitz/test_serial1]
+[Error matching program output for parallel/serial/waynew/begin1a]
+[Error matching program output for parallel/serial/waynew/cobegin1a]
+
+Uncategorized as of yet
+-----------------------
+[Error matching program output for
+parallel/single/figueroa/ReadWriteMethods]
+[Error matching program output for parallel/single/waynew/class0]
+[Error matching program output for parallel/single/waynew/class1]
+[Error matching program output for parallel/single/waynew/simple1-int64]
+[Error matching program output for parallel/single/waynew/simple1]
+[Error matching program output for parallel/single/waynew/simple2]
+[Error matching program output for parallel/single/waynew/simple3]
+[Error matching program output for parallel/single/waynew/simple4]
+[Error matching program output for parallel/sync/bradc/fib_sync]
+[Error matching program output for parallel/sync/deitz/test_sync_in_generic]
+[Error matching program output for parallel/sync/figueroa/ReadMethods]
+[Error matching program output for parallel/sync/figueroa/WriteMethods]
+[Error matching program output for parallel/sync/waynew/class1]
+[Error matching program output for parallel/sync/waynew/class2]
+[Error matching program output for parallel/sync/waynew/record1]
+[Error matching program output for parallel/sync/waynew/record2]
+[Error matching program output for parallel/sync/waynew/simple1]
+[Error matching program output for parallel/sync/waynew/simple2]
+[Error matching program output for release/examples/prodCons]
+[Error matching program output for studies/590o/blerner/xml-parse]
+[Error matching program output for users/shetag/fock/fock-1-begin-blc]
+[Error matching program output for users/shetag/fock/fock-1]
+[Error matching program output for users/shetag/fock/fock-orig]
+[Error: Timed out executing program
+parallel/begin/deitz/test_begin_error_lineno]
+[Error: Timed out executing program
+parallel/begin/deitz/test_coforall_sugar3]
+[Error: Timed out executing program
+parallel/begin/deitz/test_global_for_begin]
+[Error: Timed out executing program parallel/begin/waynew/simple2]
+[Error: Timed out executing program parallel/cobegin/bradc/exitone]
+[Error matching program output parallel/cobegin/waynew/depend]
+[Error: Timed out executing program parallel/cobegin/waynew/while]
+[Error: Timed out executing program parallel/coforall/figueroa/ManyThreads]
