@@ -12,9 +12,9 @@ class E: C {
 
 def f(b: bool) {
   if b then
-    return D();
+    return new D();
   else
-    return E();
+    return new E();
 }
 
 writeln(f(false), f(true));

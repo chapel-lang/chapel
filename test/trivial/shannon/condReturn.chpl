@@ -3,7 +3,7 @@ class C {
 }
 
 def buildC() {
-  return C();
+  return new C();
 }
 
 def foo(x: int ...?numargs) {
