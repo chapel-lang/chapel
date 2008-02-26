@@ -28,7 +28,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 #
 # the location of the BUILD_VERSION file
 #
-BUILD_VERSION_FILE = $(CHAPEL_ROOT)/BUILD_VERSION
+BUILD_VERSION_FILE = $(COMPILER_ROOT)/main/BUILD_VERSION
 
 
 

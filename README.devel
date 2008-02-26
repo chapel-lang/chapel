@@ -15,7 +15,6 @@ same place for developers and end users:
 ./
   README           : the end user's main README
   README.files     : the end user's guide to the directory structure
-  BUILD_VERSION    : the build version of the compiler; reset to 0 for releases
   CHANGES          : the end user's list of changes since the previous release
   CONTRIBUTORS     : the end user's list of contributors to Chapel
   COPYRIGHT        : the end user's copyright information for Chapel

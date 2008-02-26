@@ -20,7 +20,7 @@ if ($chplroot eq "") {
     exit(1);
 }
 
-$build_version_file = "$chplroot/BUILD_VERSION";
+$build_version_file = "$chplroot/compiler/main/BUILD_VERSION";
 
 if (-r "$build_version_file") {
     $last_build_version = `cat $build_version_file`;

@@ -5,7 +5,7 @@
 #define MINOR_VERSION 6
 
 static const int BUILD_VERSION =
-#include "../../BUILD_VERSION"
+#include "BUILD_VERSION"
 ;
 
 #endif
