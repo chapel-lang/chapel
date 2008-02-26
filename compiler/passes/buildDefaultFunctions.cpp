@@ -635,45 +635,47 @@ static void buildDefaultReadFunction(ClassType* ct) {
   fn->insertFormalAtTail(arg);
   fn->retType = dtVoid;
 
+  BlockStmt* body = new BlockStmt();
   Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace");
-  fn->insertAtTail(new DefExpr(ignoreWhiteSpace, new SymExpr(gTrue)));
+  body->insertAtTail(new DefExpr(ignoreWhiteSpace, new SymExpr(gTrue)));
   Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead");
-  fn->insertAtTail(new DefExpr(matchingCharWasRead, new_IntSymbol((int64)0)));
+  body->insertAtTail(new DefExpr(matchingCharWasRead, new_IntSymbol((int64)0)));
   Expr* fileArgFP = buildDot(fn->_this, "_fp");
   CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringSymbol("{"), ignoreWhiteSpace);
-  fn->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));
+  body->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));
   CallExpr* notRead = new CallExpr("==", matchingCharWasRead, new_IntSymbol(0));
   Expr* readError = new CallExpr("halt", new_StringSymbol("Read of the class failed: "), new CallExpr(PRIMITIVE_GET_ERRNO));
   CondStmt* readErrorCond = new CondStmt(notRead, readError);
-  fn->insertAtTail(readErrorCond);
+  body->insertAtTail(readErrorCond);
   bool first = true;
   for_fields(tmp, ct) {
     if (tmp->isTypeVariable || tmp->hasPragma("super class"))
       continue;
     if (!first) {
       CallExpr* readComma = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol(","), ignoreWhiteSpace);
-      fn->insertAtTail(new CallExpr("=", matchingCharWasRead, readComma));
-      fn->insertAtTail(readErrorCond->copy());
+      body->insertAtTail(new CallExpr("=", matchingCharWasRead, readComma));
+      body->insertAtTail(readErrorCond->copy());
     }  
     Symbol* fieldName = new VarSymbol("fieldName");
-    fn->insertAtTail(new DefExpr(fieldName, new_StringSymbol("")));
+    body->insertAtTail(new DefExpr(fieldName, new_StringSymbol("")));
     CallExpr* readFieldName = new CallExpr(buildDot(fn->_this, "read"), fieldName);
-    fn->insertAtTail(readFieldName);
+    body->insertAtTail(readFieldName);
     Symbol* name = new_StringSymbol(tmp->name);
     Expr* confirmFieldName = new CallExpr("!=", fieldName, name);
     CondStmt* fieldNameCond = new CondStmt(confirmFieldName, readError->copy());
-    fn->insertAtTail(fieldNameCond);
+    body->insertAtTail(fieldNameCond);
     CallExpr* readEqualSign = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol("="), ignoreWhiteSpace);
-    fn->insertAtTail(new CallExpr("=", matchingCharWasRead, readEqualSign));
-    fn->insertAtTail(readErrorCond->copy());
+    body->insertAtTail(new CallExpr("=", matchingCharWasRead, readEqualSign));
+    body->insertAtTail(readErrorCond->copy());
     CallExpr* argName = new CallExpr(".", arg, name);
     CallExpr* readValue = new CallExpr(buildDot(fn->_this, "read"), argName);
-    fn->insertAtTail(readValue);
+    body->insertAtTail(readValue);
     first = false;
   }
   CallExpr* readCloseBrace = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol("}"), ignoreWhiteSpace);
-  fn->insertAtTail(new CallExpr("=", matchingCharWasRead, readCloseBrace));
-  fn->insertAtTail(readErrorCond->copy());
+  body->insertAtTail(new CallExpr("=", matchingCharWasRead, readCloseBrace));
+  body->insertAtTail(readErrorCond->copy());
+  fn->insertAtTail(buildOnStmt(new SymExpr(fn->_this), body));
 
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);

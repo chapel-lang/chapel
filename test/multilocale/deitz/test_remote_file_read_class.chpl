@@ -15,7 +15,7 @@ f.close();
 
 f.mode = FileAccessMode.read;
 
-var d: C;
+var d = new C();
 
 on Locales(1) {
   f.open();

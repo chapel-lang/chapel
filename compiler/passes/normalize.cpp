@@ -226,7 +226,7 @@ static void heapAllocateLocals() {
     // replace arguments 'a' with heap-allocated temporaries
     //   insert definition at beginning of function 't = _heap(a)'
     //   replace all accesses 'a' with 't._val'
-    if (isArgSymbol(sym)) {
+    if (ArgSymbol* arg = toArgSymbol(sym)) {
       FnSymbol* fn = sym->getFunction();
       VarSymbol* tmp = new VarSymbol("_tmp");
       tmp->isCompilerTemp = true;
@@ -244,6 +244,13 @@ static void heapAllocateLocals() {
           continue;
 
         se->var = tmp;
+        insertHeapAccess(se);
+      }
+
+      // write back to arguments of out or inout intent
+      if (arg->intent == INTENT_OUT || arg->intent == INTENT_INOUT) {
+        SymExpr* se = new SymExpr(tmp);
+        fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, arg, new CallExpr(PRIMITIVE_GET_REF, se)));
         insertHeapAccess(se);
       }
     }
