@@ -365,7 +365,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_ISSUBTYPE, "is_subtype", returnInfoBool);
   prim_def(PRIMITIVE_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIMITIVE_DYNAMIC_CAST, "dynamic_cast", returnInfoCast);
-  prim_def(PRIMITIVE_TYPEOF, "typeof", returnInfoFirst);
+  prim_def(PRIMITIVE_TYPEOF, "typeof", returnInfoFirstDeref);
   prim_def(PRIMITIVE_USE, "use", returnInfoVoid, true);
   prim_def(PRIMITIVE_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
   prim_def(PRIMITIVE_TUPLE_AND_EXPAND, "and_expand_tuple", returnInfoVoid);

@@ -3517,7 +3517,9 @@ pruneResolvedTree() {
         VarSymbol* dom = new VarSymbol("_tmp", _value->type->getField("dom")->type);
         call->getStmtExpr()->insertBefore(new DefExpr(dom));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, dom, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, _value, _value->type->getField("dom"))));
-        move->replace(new CallExpr(PRIMITIVE_SET_MEMBER, lhs->var, lhsType->getField("dom"), dom));
+        Symbol* domField = lhsType->getField("dom");
+        INT_ASSERT(domField);
+        move->replace(new CallExpr(PRIMITIVE_SET_MEMBER, lhs->var, domField, dom));
       } else if (call->parentSymbol && call->isNamed("_init")) {
 
         //
@@ -3543,9 +3545,14 @@ pruneResolvedTree() {
           block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, fn->getFormal(1), fn->getFormal(1)->type->getField("_value"))));
           VarSymbol* var = new VarSymbol("_tmp", fn->retType);
           block->insertAtTail(new DefExpr(var));
-          block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, var->type->getField("dom"), tmp));
-          if (fn->formals.length() > 1)
-            block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, var->type->getField("elt"), fn->getFormal(2)));
+          Symbol* domField = var->type->getField("dom");
+          INT_ASSERT(domField);
+          block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, domField, tmp));
+          if (fn->formals.length() > 1) {
+            Symbol* eltField = var->type->getField("elt");
+            INT_ASSERT(domField);
+            block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, eltField, fn->getFormal(2)));
+          }
           block->insertAtTail(new CallExpr(PRIMITIVE_RETURN, var));
           fn->body->replace(block);
         }
