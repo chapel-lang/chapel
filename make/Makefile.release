@@ -1,3 +1,9 @@
+#
+# include standard stuff to let each platform define its own ECHO command
+#
+CHAPEL_ROOT = ..
+include $(CHAPEL_ROOT)/make/Makefile.base
+
 RELCHPLDIR = .
 RELCOMPDIR = compiler
 RELRTDIR = runtime
@@ -7,14 +13,13 @@ RELCOPYRIGHT = .COPYRIGHT
 PREPEND = util/prepend
 ADDCOPYRIGHT = $(PREPEND) $(RELCOPYRIGHT)
 
-
 addcopyrights: $(PREPEND) FORCE
-	@echo "/**************************************************************************" > $(RELCOPYRIGHT)
-	@echo -n "  " >> $(RELCOPYRIGHT)
+	@$(ECHO) "/**************************************************************************" > $(RELCOPYRIGHT)
+	@$(ECHO) -n "  " >> $(RELCOPYRIGHT)
 	@cat COPYRIGHT >> $(RELCOPYRIGHT)
-	@echo "**************************************************************************/" >> $(RELCOPYRIGHT)
-	@echo >> $(RELCOPYRIGHT)
-	@echo >> $(RELCOPYRIGHT)
+	@$(ECHO) "**************************************************************************/" >> $(RELCOPYRIGHT)
+	@$(ECHO) >> $(RELCOPYRIGHT)
+	@$(ECHO) >> $(RELCOPYRIGHT)
 	@find $(RELCOMPDIR) -name "*.c" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELCOMPDIR) -name "*.cpp" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELCOMPDIR) -name "*.h" -exec $(ADDCOPYRIGHT) {} \;
@@ -23,27 +28,27 @@ addcopyrights: $(PREPEND) FORCE
 	@find $(RELCOMPDIR) -name "*.g" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELRTDIR) -name "*.c" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELRTDIR) -name "*.h" -exec $(ADDCOPYRIGHT) {} \;
-	@echo -n "# " > $(RELCOPYRIGHT)
+	@$(ECHO) -n "# " > $(RELCOPYRIGHT)
 	@cat COPYRIGHT >> $(RELCOPYRIGHT)
-	@echo >> $(RELCOPYRIGHT)
-	@echo >> $(RELCOPYRIGHT)
+	@$(ECHO) >> $(RELCOPYRIGHT)
+	@$(ECHO) >> $(RELCOPYRIGHT)
 	@find $(RELCHPLDIR) -maxdepth 1 -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELCOMPDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELRTDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELMAKEDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
-	@echo -n "// " > $(RELCOPYRIGHT)
+	@$(ECHO) -n "// " > $(RELCOPYRIGHT)
 	@cat COPYRIGHT >> $(RELCOPYRIGHT)
-	@echo >> $(RELCOPYRIGHT)
-	@echo >> $(RELCOPYRIGHT)
+	@$(ECHO) >> $(RELCOPYRIGHT)
+	@$(ECHO) >> $(RELCOPYRIGHT)
 	@find $(RELMODDIR) -name "*.chpl" -exec $(ADDCOPYRIGHT) {} \;
 	@rm $(RELCOPYRIGHT)
 	@rm $(PREPEND)
 
 $(PREPEND):
-	@echo "#!/bin/sh" > $@
-	@echo "cp \$$2 /tmp/prepend.tmp.deleteme" >> $@
-	@echo "cat \$$1 /tmp/prepend.tmp.deleteme > \$$2" >> $@
-	@echo "rm /tmp/prepend.tmp.deleteme" >> $@
+	@$(ECHO) "#!/bin/sh" > $@
+	@$(ECHO) "cp \$$2 /tmp/prepend.tmp.deleteme" >> $@
+	@$(ECHO) "cat \$$1 /tmp/prepend.tmp.deleteme > \$$2" >> $@
+	@$(ECHO) "rm /tmp/prepend.tmp.deleteme" >> $@
 	@chmod ugo+x $@
 
 FORCE:
