@@ -22,7 +22,6 @@ system("cd $tmpdir && svn export -q $svnroot");
 # explicit files to include
 @files = (
        "AGREEMENT",
-       "BUILD_VERSION",
        "CHANGES",
        "CONTRIBUTORS",
        "COPYRIGHT", 
@@ -104,7 +103,7 @@ foreach $dir (@code_dirs) {
         chomp $fullpath;
         $file = $fullpath;
         $file =~ s/(\S+\/)+//g;
-        if ($file =~ /(\.(h|cpp|c|y|lex)$)|Makefile|README/) {
+        if ($file =~ /(\.(h|cpp|c|y|lex)$)|Makefile|README|BUILD_VERSION/) {
             # print "$fullpath\n";
             push @tarfiles, $fullpath;
         }
