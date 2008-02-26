@@ -1,6 +1,0 @@
-bug: incorrect declaration of type function
-
-In this test, the user has declared the test as const,
-but is returning types from it.  This should result
-in an error in the declaration of the type function,
-but it does not.

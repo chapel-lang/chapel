@@ -1615,22 +1615,31 @@ resolveCall(CallExpr* call) {
       lhs = se->var;
     INT_ASSERT(lhs);
 
+    FnSymbol* fn = toFnSymbol(call->parentSymbol);
+
+    if (lhs->isTypeVariable && !isTypeExpr(rhs)) {
+      if (!fn || fn->_this == lhs) { // ignore type constructor
+        if (lhs == fn->getReturnSymbol()) {
+          USR_FATAL(call, "illegal return of value where type is expected");
+        } else {
+          USR_FATAL(call, "illegal assignment of value to type");
+        }
+      }
+    }
+
+    if (!lhs->isTypeVariable && !lhs->canType && isTypeExpr(rhs)) {
+      if (lhs == fn->getReturnSymbol()) {
+        USR_FATAL(call, "illegal return of type where value is expected");
+      } else {
+        USR_FATAL(call, "illegal assignment of type to value");
+      }
+    }
+
     // do not resolve function return type yet
     // except for constructors
-    FnSymbol* fn = toFnSymbol(call->parentSymbol);
     if (fn && fn->getReturnSymbol() == lhs && fn->_this != lhs)
       if (fn->retType == dtUnknown)
         return;
-
-    //
-    // should this be moved up to check returns of type functions??
-    //
-    if (lhs->isTypeVariable && !isTypeExpr(rhs))
-      if (!fn || fn->_this == lhs) // ignore type constructor
-        USR_FATAL(call, "illegal assignment of value to type");
-
-    if (!lhs->isTypeVariable && !lhs->canType && isTypeExpr(rhs))
-      USR_FATAL(call, "illegal assignment of type to value");
 
     Type* rhsType = rhs->typeInfo();
 
@@ -2406,6 +2415,8 @@ postFold(Expr* expr) {
           USR_FATAL(call, "param function does not resolve to a param symbol");
         }
       }
+      if (fn->canType && fn->getReturnSymbol()->isTypeVariable)
+        fn->retTag = RET_TYPE;
       if (fn->retTag == RET_TYPE) {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
         if (!ret->type->symbol->hasPragma("array")) {

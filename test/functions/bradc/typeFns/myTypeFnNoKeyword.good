@@ -1,1 +1,2 @@
-myTypeFnConstKeyword:1: error: function declared const but returns types
+myTypeFnNoKeyword.chpl:1: In function 'myint':
+myTypeFnNoKeyword.chpl:1: error: illegal return of type where value is expected

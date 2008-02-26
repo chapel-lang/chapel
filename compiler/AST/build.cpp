@@ -195,8 +195,10 @@ FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
   tmp1->isCompilerTemp = true;
   tmp2->isCompilerTemp = true;
   tmp1->canParam = true;
+  tmp2->canType = true;
 
   ifFn->canParam = true;
+  ifFn->canType = true;
   ifFn->insertAtHead(new DefExpr(tmp1));
   ifFn->insertAtHead(new DefExpr(tmp2));
   ifFn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, new SymExpr(tmp1), e));

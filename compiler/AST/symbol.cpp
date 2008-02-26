@@ -627,6 +627,7 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->global = global;
   copy->isCompilerTemp = isCompilerTemp;
   copy->canParam = canParam;
+  copy->canType = canType;
   return copy;
 }
 
