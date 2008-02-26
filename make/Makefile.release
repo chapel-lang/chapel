@@ -1,7 +1,16 @@
 #
+# Copyright (c) 2004-2008 Cray Inc.  (See LICENSE file for more details)
+#
+
+#
+
+# Copyright (c) 2004-2008 Cray Inc.  (See LICENSE file for more details)
+
+
+#
 # include standard stuff to let each platform define its own ECHO command
 #
-CHAPEL_ROOT = ..
+CHAPEL_ROOT = .
 include $(CHAPEL_ROOT)/make/Makefile.base
 
 RELCHPLDIR = .
@@ -13,7 +22,7 @@ RELCOPYRIGHT = .COPYRIGHT
 PREPEND = util/prepend
 ADDCOPYRIGHT = $(PREPEND) $(RELCOPYRIGHT)
 
-addcopyrights: $(PREPEND) FORCE
+all: $(PREPEND) FORCE
 	@$(ECHO) "/**************************************************************************" > $(RELCOPYRIGHT)
 	@$(ECHO) -n "  " >> $(RELCOPYRIGHT)
 	@cat COPYRIGHT >> $(RELCOPYRIGHT)
@@ -28,9 +37,10 @@ addcopyrights: $(PREPEND) FORCE
 	@find $(RELCOMPDIR) -name "*.g" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELRTDIR) -name "*.c" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELRTDIR) -name "*.h" -exec $(ADDCOPYRIGHT) {} \;
-	@$(ECHO) -n "# " > $(RELCOPYRIGHT)
+	@$(ECHO) "#" > $(RELCOPYRIGHT)
+	@$(ECHO) -n "# " >> $(RELCOPYRIGHT)
 	@cat COPYRIGHT >> $(RELCOPYRIGHT)
-	@$(ECHO) >> $(RELCOPYRIGHT)
+	@$(ECHO) "#" >> $(RELCOPYRIGHT)
 	@$(ECHO) >> $(RELCOPYRIGHT)
 	@find $(RELCHPLDIR) -maxdepth 1 -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELCOMPDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
