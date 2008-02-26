@@ -21,7 +21,7 @@ var phi_initialized = false;
  */
 def hg_readCoeffs(inputfile) {
     var max_k: int;
-    var coeffData = new file(inputfile, path='./', mode='r');
+    var coeffData = new file(inputfile);
 
     coeffData.open();
     coeffData.read(max_k);
