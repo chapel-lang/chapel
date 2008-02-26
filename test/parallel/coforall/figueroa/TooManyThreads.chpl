@@ -1,27 +1,26 @@
 use Time;
 
-config const numThreads = 8000;
-var total: sync int = 0;
-var seed = getCurrentTime() : uint;
+config const numThreads = 15000;
+var total: int,
+    count: int = numThreads,
+     done: sync bool,
+    ready: sync bool;
 
 def foo (x) {
 
-  def RandomNumber (y) {
-    const multiplier: int(64) = 16807,
-          modulus: int(64) = 2147483647;
-    // The following calculation must be done in at least 46-bit arithmetic!
-    seed = (seed * multiplier % modulus) : uint;
-    return (seed-1) / (modulus-2) : real;
+  if ready {
+    total += x;
+    count -= 1;
+    if count == 0 then done = true;
+    ready = true;
   }
-
-  var delay = RandomNumber (x) * 10.0;
-  //writeln (x, ": sleeping for ", delay, " seconds");
-  if delay < 9.0 then sleep (delay : uint + 4);
-  else for i in 1..(delay*100000.0) : int do
-    delay = RandomNumber (x) * 4.0;
-  total += x;
+    
 }
 
-coforall i in 1..numThreads do
-  foo (i);
-writeln ("total is ", total);
+writeln ("need a short nap ...");
+begin
+  coforall i in 1..numThreads do
+    foo (i);
+sleep (10);
+ready = true;
+if done then writeln ("total is ", total);
