@@ -1,5 +1,7 @@
 use Time;
 
+var s1, s2, s3: sync int;
+
 def one() {
   writeln("one");
 }
@@ -14,10 +16,10 @@ def three() {
 
 serial (2==9) {
   cobegin {
-    begin {sleep(3); three();}
-    begin {sleep(2); two();}
-    begin {sleep(1); one();}
-    begin writeln("zero");
+    begin { s3; three();}
+    begin { s2; two(); s3 = 1; }
+    begin { s1; one(); s2 = 1; }
+    begin { writeln("zero"); s1 = 1; }
   }
 }
 
