@@ -13,8 +13,8 @@
 linux and general regressions
 =============================
 
-.prediff file didn't have execute permissions
----------------------------------------------
+on some platforms, this test reveals some sort of out-of-memory issue
+---------------------------------------------------------------------
 [Error matching program output for parallel/coforall/figueroa/TooManyThreads]
 
 
@@ -174,16 +174,6 @@ x1/x2-specific failures
 strange error -- X1 compiler? apsim?
 ------------------------------------
 [Error matching program output for release/examples/genericStack] 
-
-
-
-===============================
---no-local-specific regressions
-===============================
-
-part of Steve's set of currently expected GASNet regressions (?)
-----------------------------------------------------------------
-[Error matching compiler output for release/examples/iterators]
 
 
 ============================
