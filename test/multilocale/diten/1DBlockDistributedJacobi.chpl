@@ -12,8 +12,11 @@ class DistribArray {
   const arrSize: int;
   const localSize:int = arrSize / numLocales;
   var internalArr: [0..numLocales-1] DistribArrayNode(arrType);
+  var isLocalize = false;
 
   def initialize() {
+    if isLocalize then return;
+
     for i in 0..numLocales-1 {
       on Locales(i) {
         if (i != numLocales-1) {
@@ -24,6 +27,18 @@ class DistribArray {
         }
       }
     }
+  }
+
+  def localize() {
+    var localArrays: [0..numLocales-1] DistribArray(arrType);
+    for loc in [0..numLocales-1] {
+      on Locales(loc) {
+        var x = new DistribArray(arrType, arrSize, localSize, isLocalize=true);
+        [i in 0..numLocales-1] x.internalArr(i) = internalArr(i);
+        localArrays(loc) = x;
+      }
+    }
+    return localArrays;
   }
 
   def element(indexNum: int) var {
@@ -74,17 +89,18 @@ class DistribArray {
 }
 
 def main {
-  var A = new DistribArray(real, size);
-  var B = new DistribArray(real, size);
   var delta: real;
-
-  A.element(0) = 1.0;
+  var localAs => (new DistribArray(real, size)).localize();
+  var localBs => (new DistribArray(real, size)).localize();
+  localAs(0).element(0) = 1.0;
 
   do {
     delta = 0.0;
-    coforall loc in A.getLocales() {
+    coforall loc in localAs(0).getLocales() {
       on Locales(loc) {
         var localDelta: real;
+        var A = localAs(loc);
+        var B = localBs(loc);
         for i in A.getLocalIndices() {
           if (i == 0) {
             // Pin the low end at 1.0
@@ -99,10 +115,9 @@ def main {
         delta = max(delta, localDelta);
       }
     }
-    
-    A.copy(B);
+    localAs <=> localBs;
   } while (delta > epsilon);
 
-  write(A);
+  write(localAs(0));
 }
 
