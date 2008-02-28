@@ -425,6 +425,30 @@ element types as well.
 \end{protobody}
 
 \begin{protohead}
+def RandomStream.skipToNth(in n: integral)
+\end{protohead}
+\begin{protobody}
+Skips ahead or back to the \chpl{n}-th value in the
+random stream.  The value of n is assumed to be positive, such that
+\chpl{n}~==~1 represents the initial value in the stream.
+\end{protobody}
+
+\begin{protohead}
+def RandomStream.getNext(): real
+\end{protohead}
+\begin{protobody}
+Returns the next value in the random stream as a real.
+\end{protobody}
+
+\begin{protohead}
+def RandomStream.getNth(n: integral): real
+\end{protohead}
+\begin{protobody}
+Returns the \chpl{n}-th value in the random stream as a real.  Equivalent to
+calling \chpl{skipToNth(n)} followed by \chpl{getNext()}.
+\end{protobody}
+
+\begin{protohead}
 SeedGenerator
 \end{protohead}
 \begin{protobody}

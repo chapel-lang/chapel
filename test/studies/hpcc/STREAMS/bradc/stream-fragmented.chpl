@@ -84,9 +84,9 @@ def printConfiguration() {
 def initVectors(B, C, ProblemSpace) {
   var randlist = new RandomStream(seed);
 
-  randlist.getNth(B.domain.low + 1);
+  randlist.skipToNth(B.domain.low);
   randlist.fillRandom(B);
-  randlist.getNth(ProblemSpace.numIndices + C.domain.low + 1);
+  randlist.skipToNth(ProblemSpace.numIndices + C.domain.low);
   randlist.fillRandom(C);
 
   if (printArrays) {

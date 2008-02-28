@@ -66,11 +66,12 @@ class RandomStream {
     return randlc(cursorVal);
   }
 
-  // n is assumed to be 1..
-  def getNth(in n : int) {
+  def skipToNth(in n: integral) {
+    if (n <= 0) then 
+      halt("RandomStream.skipToNth() can only be called with positive values");
+    initCursorVal();
     n -= 1;
     var t = arand;
-    initCursorVal();
     var retval = arand;
     while (n != 0) {
       const i = n / 2;
@@ -79,6 +80,13 @@ class RandomStream {
       retval = randlc(t, t);
       n = i;
     }
+  }
+
+  // n is assumed to be 1..
+  def getNth(n : integral) {
+    if (n <= 0) then 
+      halt("RandomStream.getNth() can only be called with a positive value");
+    skipToNth(n);
     return getNext();
   }
 
