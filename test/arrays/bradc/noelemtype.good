@@ -1,1 +1,1 @@
-noelemtype.chpl:5: error: array declaration has no element type
+noelemtype.chpl:5: error: invalid type specification

@@ -1,1 +1,1 @@
-no_element_type_error.chpl:2: error: array declaration has no element type
+no_element_type_error.chpl:2: error: invalid type specification

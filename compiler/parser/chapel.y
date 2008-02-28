@@ -122,7 +122,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TMODULE
 %token TNEW
 %token TNIL
-%token TOF
 %token TON
 %token TOPAQUE
 %token TORDERED
@@ -216,19 +215,22 @@ Is this "while x"(i); or "while x(i)";?
 %type <pexpr> when_stmt
 %type <pblockstmt> when_stmt_ls
 
-%type <pexpr> opt_type opt_formal_type array_type opt_elt_type top_level_type
-%type <pexpr> type anon_record_type tuple_type type_binding_expr opt_domain
-%type <pexpr> composable_type variable_type parenop_type memberaccess_type
+%type <pexpr> opt_type opt_formal_type array_type
+%type <pexpr> type anon_record_type type_binding_expr opt_domain
 %type <ptype> class_tag
 %type <pet> enum_ls
 
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
 %type <pexpr> tuple_paren_expr expr expr_list_item opt_expr
 %type <pexpr> literal where distributed_expr
-%type <pexpr> variable_expr top_level_expr alias_expr
-%type <pexpr> reduction opt_init_expr opt_init_type var_arg_expr type_expr
-%type <palist> expr_ls nonempty_expr_ls opt_inherit_expr_ls type_ls type_expr_ls
+%type <pexpr> variable_expr stmt_level_expr alias_expr formal_level_type
+%type <pexpr> reduction opt_init_expr opt_init_type var_arg_expr
+%type <palist> expr_ls nonempty_expr_ls opt_inherit_expr_ls
 %type <pdefexpr> formal enum_item
+
+%type <pexpr> formal_type_expr formal_tuple_paren_expr formal_parenop_expr
+%type <pexpr> formal_memberaccess_expr formal_expr_list_item
+%type <palist> formal_expr_ls nonempty_formal_expr_ls
 
 %type <pfnsym> fn_decl_stmt_inner formal_ls opt_formal_ls
 
@@ -260,7 +262,7 @@ Is this "while x"(i); or "while x(i)";?
 %left TCOLON TNOTCOLON
 %right TUPLUS TUMINUS TBNOT
 %right TMINUSMINUS TPLUSPLUS
-%right TEXP
+%right TEXP TOF
 %left TLP TLSBR
 %left TDOT
 
@@ -400,7 +402,7 @@ continue_stmt:
 
 
 expr_stmt:
-  top_level_expr TSEMI
+  stmt_level_expr TSEMI
     { $$ = build_chpl_stmt($1); }
 ;
 
@@ -961,7 +963,7 @@ enum_item:
 
 
 typedef_decl_stmt_inner:
-  pragma_ls identifier TASSIGN top_level_type
+  pragma_ls identifier TASSIGN type
     {
       UserType* newtype = new UserType($4);
       TypeSymbol* typeSym = new TypeSymbol($2, newtype);
@@ -970,7 +972,7 @@ typedef_decl_stmt_inner:
       DefExpr* def_expr = new DefExpr(typeSym);
       $$ = build_chpl_stmt(def_expr);
     }
-| pragma_ls identifier TASSIGN top_level_type TCOMMA typedef_decl_stmt_inner
+| pragma_ls identifier TASSIGN type TCOMMA typedef_decl_stmt_inner
     {
       UserType* newtype = new UserType($4);
       TypeSymbol* typeSym = new TypeSymbol($2, newtype);
@@ -991,7 +993,7 @@ typedef_decl_stmt:
 opt_init_type:
   /* nothing */
     { $$ = NULL; }
-| TASSIGN top_level_type
+| TASSIGN type
     { $$ = $2; }
 ;
 
@@ -1030,7 +1032,7 @@ var_decl_stmt:
     }
 ;
 
-
+ 
 var_decl_stmt_inner_ls:
   var_decl_stmt_inner
     { $$ = $1; }
@@ -1104,80 +1106,11 @@ tuple_var_decl_stmt_inner_ls:
 /** TYPES ********************************************************************/
 
 
-type_ls:
-  type
-    { $$ = new AList($1); }
-| type_ls TCOMMA type
-    { $1->insertAtTail($3); }
-;
-
-
-tuple_type:
-  TLP type_ls TRP
-    {
-      CallExpr* call = new CallExpr("_tuple", new_IntSymbol($2->length()));
-      for_alist(expr, *$2) {
-        call->insertAtTail(expr->remove());
-      }
-      $$ = call;
-    }
-;
-
-
 anon_record_type:
   TRECORD TLCBR class_body_stmt_ls TRCBR
     {
       $$ = build_class(astr("_anon_record", istr(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
     }
-;
-
-
-variable_type:
-  identifier
-    { $$ = new SymExpr($1); }
-;
-
-
-type_expr:
-  expr_list_item
-| TQUESTION identifier
-    { $$ = new DefExpr(new VarSymbol($2)); }
-| identifier TASSIGN TQUESTION identifier
-    { $$ = new NamedExpr($1, new DefExpr(new VarSymbol($4))); }
-;
-
-
-type_expr_ls:
-  /* nothing */
-    { $$ = new AList(); }
-| type_expr
-    { $$ = new AList($1); }
-| type_expr_ls TCOMMA type_expr
-    { $1->insertAtTail($3); }
-;
-
-
-parenop_type:
-  composable_type TLP type_expr_ls TRP
-    { $$ = new CallExpr($1, $3); }
-;
-
-
-memberaccess_type:
-  composable_type TDOT identifier
-    { $$ = new CallExpr(".", $1, new_StringSymbol($3)); }
-| composable_type TDOT TTYPE
-    { $$ = new CallExpr(PRIMITIVE_TYPEOF, $1); }
-| composable_type TDOT TDOMAIN
-    { $$ = new CallExpr(".", $1, new_StringSymbol("dom")); }
-;
-
-
-composable_type:
-  literal
-| variable_type
-| parenop_type
-| memberaccess_type
 ;
 
 
@@ -1189,18 +1122,8 @@ distributed_expr: /* not supported in one-locale implementation */
 ;
 
 
-opt_elt_type:
-  /* nothing */
-    { $$ = NULL; }
-| type
-    { $$ = $1; }
-;
-
-
 array_type:
-  TLSBR nonempty_expr_ls TRSBR opt_elt_type
-    { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
-| TLSBR nonempty_expr_ls TIN expr TRSBR type
+  TLSBR nonempty_expr_ls TIN expr TRSBR type
     { 
       if ($2->length() != 1)
         USR_FATAL($4, "invalid index expression");
@@ -1208,26 +1131,23 @@ array_type:
                         new CallExpr("_build_domain", $4), $6, $2->only()->remove(),
                         new CallExpr("_build_domain", $4->copy()));
     }
-| TLSBR TRSBR opt_elt_type
+| TLSBR nonempty_expr_ls TRSBR type
+    { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
+| TLSBR TRSBR type
     { $$ = new CallExpr("_build_array_type", gNil, $3); }
-| TLSBR TQUESTION identifier TRSBR opt_elt_type
+| TLSBR TQUESTION identifier TRSBR type
     { $$ = new CallExpr("_build_array_type", new DefExpr(new VarSymbol($3)), $5); }
 ;
 
 
-top_level_type:
-  type
-| composable_type TSTAR type %prec TSTAR  
-    { $$ = new CallExpr("_tuple", $1, $3); }
+type:
+  stmt_level_expr
+| formal_level_type
 ;
 
 
-type:
-  composable_type %prec TSTARTUPLE
-| anon_record_type
-| tuple_type
-| composable_type TOF type  
-    { $$ = new CallExpr($1, new NamedExpr("eltType", $3)); }
+formal_level_type:
+  anon_record_type
 | array_type
 | TDOMAIN TLP expr_ls TRP distributed_expr
     {
@@ -1237,8 +1157,6 @@ type:
     }
 | TSUBDOMAIN TLP expr_ls TRP
     { $$ = new CallExpr("_build_subdomain_type", $3); }
-| TDOMAIN
-    { $$ = new SymExpr("_domain"); }
 | TDOMAIN TLP TOPAQUE TRP distributed_expr
     { $$ = new CallExpr("_build_opaque_domain_type", $5); }
 | TSPARSE TSUBDOMAIN TLP expr_ls TRP distributed_expr
@@ -1247,22 +1165,10 @@ type:
       call->insertAtTail($4);
       $$ = call;
     }
-| TINDEX TLP expr_ls TRP
-    { $$ = new CallExpr("_build_index_type", $3); }
-| TINDEX TLP TOPAQUE TRP
-    { $$ = new SymExpr("_OpaqueIndex"); }
 | TSINGLE type
     { $$ = new CallExpr( "_singlevar", $2); }
 | TSYNC type
     { $$ = new CallExpr( "_syncvar", $2); }
-| TSINGLE
-    { $$ = new SymExpr( "_singlevar"); }
-| TSYNC
-    { $$ = new SymExpr( "_syncvar"); }
-| TPRIMITIVE TLP expr_ls TRP
-    {
-      $$ = build_primitive_call($3);
-    }
 ;
 
 
@@ -1291,17 +1197,122 @@ opt_domain:
 opt_type:
   /* nothing */
     { $$ = NULL; }
-| TCOLON top_level_type
+| TCOLON type
     { $$ = $2; }
 ;
 
 
 opt_formal_type:
-  opt_type
+  /* nothing */
+    { $$ = NULL; }
+| TCOLON formal_type_expr
+    { $$ = $2; }
+| TCOLON formal_level_type
+    { $$ = $2; }
 | TCOLON TQUESTION identifier
     {
       $$ = new DefExpr(new VarSymbol($3));
     }
+| TCOLON TDOMAIN
+    { $$ = new SymExpr("_domain"); }
+| TCOLON TSINGLE
+    { $$ = new SymExpr( "_singlevar"); }
+| TCOLON TSYNC
+    { $$ = new SymExpr( "_syncvar"); }
+| TCOLON TLSBR nonempty_expr_ls TRSBR
+    { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $3)); }
+| TCOLON TLSBR TRSBR
+    { $$ = new CallExpr("_build_array_type", gNil); }
+| TCOLON TLSBR TQUESTION identifier TRSBR
+    { $$ = new CallExpr("_build_array_type", new DefExpr(new VarSymbol($4))); }
+;
+
+
+formal_type_expr:
+  formal_tuple_paren_expr
+| formal_parenop_expr
+| formal_memberaccess_expr
+| formal_type_expr TSTAR formal_type_expr
+    { $$ = new CallExpr("*", $1, $3); }
+| formal_type_expr TOF formal_type_expr
+    { $$ = new CallExpr($1, new NamedExpr("eltType", $3)); }
+| variable_expr
+| literal
+;
+
+
+formal_expr_ls:
+  /* nothing */
+    { $$ = new AList(); }
+| nonempty_formal_expr_ls
+;
+
+
+nonempty_formal_expr_ls:
+  pragma_ls formal_expr_list_item
+    { $2->addPragmas($1); delete $1; $$ = new AList($2); }
+| nonempty_formal_expr_ls TCOMMA pragma_ls formal_expr_list_item
+    { $4->addPragmas($3); delete $3; $1->insertAtTail($4); }
+;
+
+
+formal_expr_list_item:
+  identifier TASSIGN formal_expr_list_item
+    { $$ = new NamedExpr($1, $3); }
+| TQUESTION identifier // should only be in formals
+    { $$ = new DefExpr(new VarSymbol($2)); }
+| expr
+;
+
+
+formal_tuple_paren_expr:
+  TLP nonempty_formal_expr_ls TRP 
+    { 
+      if ($2->length() == 1) {
+        $$ = $2->get(1);
+        $$->remove();
+      } else {
+        $$ = new CallExpr("_build_tuple", $2);
+      }
+    }
+;
+
+
+formal_parenop_expr:
+  formal_type_expr TLP formal_expr_ls TRP
+    { $$ = new CallExpr($1, $3); }
+| formal_type_expr TLSBR formal_expr_ls TRSBR
+    {
+      CallExpr* call = new CallExpr($1, $3);
+      call->square = true;
+      $$ = call;
+    }
+| TPRIMITIVE TLP formal_expr_ls TRP
+    {
+      $$ = build_primitive_call($3);
+    }
+| TCOMPILERERROR TLP formal_expr_ls TRP
+    {
+      $$ = new CallExpr(PRIMITIVE_ERROR, $3);
+    }
+| TINDEX TLP TOPAQUE TRP
+    { $$ = new SymExpr("_OpaqueIndex"); }
+| TINDEX TLP expr_ls TRP
+    { $$ = new CallExpr("_build_index_type", $3); }
+;
+
+formal_memberaccess_expr:
+  formal_type_expr TDOT identifier
+    {
+      if (!strcmp("locale", $3))
+        $$ = new CallExpr(PRIMITIVE_GET_LOCALE, $1);
+      else
+        $$ = new CallExpr(".", $1, new_StringSymbol($3));
+    }
+| formal_type_expr TDOT TTYPE
+    { $$ = new CallExpr(PRIMITIVE_TYPEOF, $1); }
+| formal_type_expr TDOT TDOMAIN
+    { $$ = new CallExpr(".", $1, new_StringSymbol("_dom")); }
 ;
 
 
@@ -1402,6 +1413,10 @@ parenop_expr:
     {
       $$ = new CallExpr(PRIMITIVE_ERROR, $3);
     }
+| TINDEX TLP TOPAQUE TRP
+    { $$ = new SymExpr("_OpaqueIndex"); }
+| TINDEX TLP expr_ls TRP
+    { $$ = new CallExpr("_build_index_type", $3); }
 ;
 
 
@@ -1458,8 +1473,11 @@ opt_expr:
 ;
 
 
+
+
+
 expr:
-  top_level_expr
+  stmt_level_expr
 | TLSBR nonempty_expr_ls TIN expr TRSBR expr %prec TRSBR
     {
       if ($2->length() != 1)
@@ -1554,7 +1572,7 @@ expr:
 ;
 
 
-top_level_expr: 
+stmt_level_expr: 
   lvalue
 | TNEW parenop_expr
     { $$ = new CallExpr(PRIMITIVE_NEW, $2); }
@@ -1564,10 +1582,8 @@ top_level_expr:
     { $$ = new SymExpr(gNil); }
 | TLET var_decl_stmt_inner_ls TIN expr
     { $$ = new CallExpr(new DefExpr(build_let_expr($2, $4))); }
-| TINDEX TLP expr_ls TRP
-    { $$ = new CallExpr("_build_index_type", $3); }
 | reduction %prec TREDUCE
-| expr TCOLON type
+| expr TCOLON expr
     { $$ = new CallExpr("_cast", $3, $1); }
 | expr TDOTDOT expr
     { $$ = new CallExpr("_build_range", $1, $3); }
@@ -1579,6 +1595,8 @@ top_level_expr:
     {
       $$ = new CallExpr("_build_range", new CallExpr(".", new SymExpr("BoundedRangeType"), new_StringSymbol("boundedNone")));
     }
+| expr TOF expr
+    { $$ = new CallExpr($1, new NamedExpr("eltType", $3)); }
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr("+", $2); }
 | TMINUS expr %prec TUMINUS
@@ -1650,7 +1668,7 @@ reduction:
     { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_bor"), $3))); }
 | TBXOR TREDUCE expr
     { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_bxor"), $3))); }
-|  expr TSCAN expr
+| expr TSCAN expr
     { $$ = new CallExpr(new DefExpr(build_reduce($1, $3, true))); }
 | TPLUS TSCAN expr
     { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_sum"), $3, true))); }

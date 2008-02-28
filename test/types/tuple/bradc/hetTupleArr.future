@@ -1,8 +1,0 @@
-bug: first-class homogeneous tuple types
-
-This is similar to homogTupleArr, except that it uses
-heterogeneous tuple syntax, which is working much better.
-In fact, the one test that fails here is the one that
-uses an array element type that is a homogeneous tuple
-of heterogeneous tuples.  See homogTupleArr.future for
-more details.

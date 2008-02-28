@@ -35,8 +35,12 @@ def *(param p: int, type t) type {
     else
       return _fill(p, ((...x), x(1)));
   }
-  var x: (t);
+  var x: _build_tuple(t);
   return _fill(p, x);
+}
+
+def *(p: int, type t) type {
+  compilerError("tuple size must be static");
 }
 
 pragma "tuple" record _tuple {

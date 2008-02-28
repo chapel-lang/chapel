@@ -2004,7 +2004,7 @@ preFold(Expr* expr) {
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
       if (!se->var->isTypeVariable)
-        USR_FATAL_CONT(call, "invalid type specification");
+        USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->typeInfo();
       if (type ->symbol->hasPragma("ref"))
         type = getValueType(type);
