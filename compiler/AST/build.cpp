@@ -361,24 +361,17 @@ BlockStmt* build_for_block(BlockTag tag,
   checkIndices(indices);
 
   if (tag == BLOCK_COFORALL) {
-    VarSymbol* ss = new VarSymbol("_ss");
-    ss->isCompilerTemp = true;
-    VarSymbol* me = new VarSymbol("_me");
-    me->isCompilerTemp = true;
-
+    VarSymbol* coforallCount = new VarSymbol("_coforallCount");
+    coforallCount->isCompilerTemp = true;
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->insertAtHead(body);
-    beginBlk->insertAtTail(new CallExpr("=",
-                             new CallExpr(".", me,
-                               new_StringSymbol("v")), gTrue));
+    beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
     body = buildBeginStmt(beginBlk);
     BlockStmt* block = build_for_block(BLOCK_FOR, indices, iterator, body);
-    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, ss, new CallExpr(PRIMITIVE_INIT, new SymExpr("_syncStack"))));
-    block->insertAtHead(new DefExpr(ss));
-    body->insertBefore(new DefExpr(me));
-    body->insertBefore(new CallExpr(PRIMITIVE_MOVE, me, new CallExpr("_pushSyncStack", ss)));
-    body->insertAfter(new CallExpr("=", ss, me));
-    block->insertAtTail(new CallExpr("_waitSyncStack", ss));
+    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
+    block->insertAtHead(new DefExpr(coforallCount));
+    body->insertBefore(new CallExpr("_upEndCount", coforallCount));
+    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
     return block;
   }
   body = new BlockStmt(body);
@@ -903,29 +896,22 @@ buildEndStmt(Expr* stmt) {
 
 BlockStmt*
 buildCobeginStmt(Expr* stmt) {
-  VarSymbol* ss = new VarSymbol("_ss");
-  ss->isCompilerTemp = true;
-
+  VarSymbol* cobeginCount = new VarSymbol("_cobeginCount");
+  cobeginCount->isCompilerTemp = true;
   BlockStmt* block = toBlockStmt(stmt);
   INT_ASSERT(block);
   for_alist(stmt, block->body) {
-    VarSymbol* me = new VarSymbol("_me");
-    me->isCompilerTemp = true;
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->insertAtHead(stmt->copy());
-    beginBlk->insertAtTail(new CallExpr("=",
-                             new CallExpr(".", me,
-                               new_StringSymbol("v")), gTrue));
+    beginBlk->insertAtTail(new CallExpr("_downEndCount", cobeginCount));
     BlockStmt* body = buildBeginStmt(beginBlk, false);
-    body->insertAtHead(new CallExpr(PRIMITIVE_MOVE, me, new CallExpr("_pushSyncStack", ss)));
-    body->insertAtHead(new DefExpr(me));
-    body->insertAtTail(new CallExpr("=", ss, me));
+    body->insertAtHead(new CallExpr("_upEndCount", cobeginCount));
     stmt->insertBefore(body);
     stmt->remove();
   }
-  block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, ss, new CallExpr(PRIMITIVE_INIT, new SymExpr("_syncStack"))));
-  block->insertAtHead(new DefExpr(ss));
-  block->insertAtTail(new CallExpr("_waitSyncStack", ss));
+  block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, cobeginCount, new CallExpr("_endCountAlloc")));
+  block->insertAtHead(new DefExpr(cobeginCount));
+  block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));
   return block;
 }
 

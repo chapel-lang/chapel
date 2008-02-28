@@ -739,22 +739,6 @@ def _syncvar.isFull {
 }
 
 
-//
-// coforall idiom sugar support
-//
-class _syncStack {
-  var v: sync bool;
-  var next: _syncStack;
-}
-def _pushSyncStack(s: _syncStack) return new _syncStack(next=s);
-def _waitSyncStack(in s: _syncStack) {
-  while s != nil {
-    s.v.readFE();
-    s = s.next;
-  }
-}
-
-
 // single variable support
 pragma "sync"
 pragma "single"
