@@ -1,0 +1,4 @@
+bug: Index variable in param for loop with parallel construct
+
+The compiler dies when trying heap allocate the param index variable for use
+in a parallel construct.
