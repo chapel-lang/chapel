@@ -79,7 +79,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 #
 
 $(BUILD_VERSION_FILE): FORCE
-	@$(CHAPEL_ROOT)/util/updateBuildVersion.pl $(CHAPEL_ROOT)
+	@$(CHAPEL_ROOT)/util/updateBuildVersion.pl $(CHAPEL_ROOT)/compiler/main
 
 $(CHPL): $(CHPL_BIN_DIR) $(CHPL_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)

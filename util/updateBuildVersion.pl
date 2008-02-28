@@ -13,14 +13,14 @@ $LAST_RELEASE_BUILD_NUM = 13146;
 #
 
 $chplhome = $ENV{'CHPL_HOME'};
-$chplroot = $ARGV[0];
+$build_version_file_dir = $ARGV[0];
 
-if ($chplroot eq "") {
+if ($build_version_file_dir eq "") {
     print "usage: computeBuildVersion.pl <directory to place BUILD_VERSION";
     exit(1);
 }
 
-$build_version_file = "$chplroot/compiler/main/BUILD_VERSION";
+$build_version_file = "$build_version_file_dir/BUILD_VERSION";
 
 if (-r "$build_version_file") {
     $last_build_version = `cat $build_version_file`;
