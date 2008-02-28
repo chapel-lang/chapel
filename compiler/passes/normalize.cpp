@@ -185,11 +185,13 @@ static void heapAllocateLocals() {
             heapSet.set_add(se->var);
 
           // collect symbols defined in outer functions
-          if (isVarSymbol(se->var) &&
-              se->var->defPoint &&
-              !defSet.set_in(se->var->defPoint) &&
-              isFnSymbol(se->var->defPoint->parentSymbol))
-            heapSet.set_add(se->var);
+          if (VarSymbol* var = toVarSymbol(se->var))
+            if (var->defPoint &&
+                !defSet.set_in(var->defPoint) &&
+                isFnSymbol(var->defPoint->parentSymbol) &&
+                !var->isParam &&
+                !var->hasPragma("private"))
+              heapSet.set_add(var);
         }
       }
     }
@@ -202,6 +204,17 @@ static void heapAllocateLocals() {
     //   replace first definition 'v = ...' with 'v = _heap(...)'
     //   replace all other accesses 'v' with 'v._val'
     if (isVarSymbol(sym)) {
+
+      // disable for index of parameter for loops
+      bool disable = false;
+      forv_Vec(SymExpr, se, sym->uses) {
+        if (CallExpr* parent = toCallExpr(se->parentExpr))
+          if (parent->isPrimitive(PRIMITIVE_LOOP_PARAM))
+            disable = true;
+      }
+      if (disable)
+        continue;
+
       bool first = true;
       forv_Vec(SymExpr, se, sym->defs) {
 
