@@ -10,7 +10,7 @@ class D: C {
   def foo() { writeln("D: ", this); }
 }
 
-var s: list of C = makeList( new C(1), new D(2,3), new C(4), new D(5,6) );
+var s: list(C) = makeList( new C(1), new D(2,3), new C(4), new D(5,6) );
 
 writeln(s);
 

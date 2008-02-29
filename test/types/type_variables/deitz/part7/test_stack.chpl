@@ -30,7 +30,7 @@ def stack.writeThis(f : Writer) {
   }
 }
 
-var s : stack of string;
+var s : stack(string);
 s.push("hello");
 s.push("world");
 writeln(s);

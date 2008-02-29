@@ -6,10 +6,10 @@ record foo {
   }
 }
 
-var f : foo of string;
+var f : foo(string);
 f.x = "hello world";
 writeln(f.x);
 
-var g : foo of int;
+var g : foo(int);
 g.x = 2;
 writeln(g.x);

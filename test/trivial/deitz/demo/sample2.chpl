@@ -5,7 +5,7 @@ const n = length(phrase);
 
 var encoded = phrase.substring(1..n by 2) + phrase.substring(2..n by 2);
 
-var decoder : list of int;
+var decoder : list(int);
 for i in 1..n/2 do
   decoder.concat(makeList(i, n/2 + n % 2 + i));
 if n % 2 == 1 { 

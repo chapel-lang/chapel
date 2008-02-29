@@ -456,7 +456,7 @@ class BaseArray {
 
 
 class BaseDomain {
-  var _arrs: list of BaseArray;
+  var _arrs: list(BaseArray);
 
   def member(ind) : bool {
     halt("membership test not supported for this domain type");

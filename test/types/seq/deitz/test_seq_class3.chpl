@@ -4,7 +4,7 @@ class C {
   var x: int;
 }
 
-var s: list of C;
+var s: list(C);
 
 writeln(s);
 

@@ -5,7 +5,7 @@ record R {
   var y : int;
 }
 
-var s : list of R;
+var s : list(R);
 
 s.append(new R(1, 2));
 

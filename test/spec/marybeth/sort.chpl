@@ -17,7 +17,7 @@
 // 
 //  [i in D] y(i) = x(i):real;
 //
-//  var order: list of int = insertionSort(x);
+//  var order: list(int) = insertionSort(x);
 //
 //  writeln(order);
 //  writeln(x(order));
@@ -26,7 +26,7 @@
 //}
 //
 //def insertionSort(x) {
-//  var order: list of int;
+//  var order: list(int);
 //
 //  for i in x.domain {
 //    var val = x(i);

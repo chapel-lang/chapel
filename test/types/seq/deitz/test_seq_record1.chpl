@@ -7,6 +7,6 @@ record R {
 
 var r : R = new R(1, 2.3);
 
-var s : list of R = makeList( r );
+var s : list(R) = makeList( r );
 
 writeln(s);

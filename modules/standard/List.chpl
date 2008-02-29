@@ -60,7 +60,7 @@ record list {
 }
 
 def makeList(x ...?k) {
-  var s: list of x(1).type;
+  var s: list(x(1).type);
   for param i in 1..k do
     s.append(x(i));
   return s;

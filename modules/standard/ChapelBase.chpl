@@ -1286,5 +1286,3 @@ pragma "inline" def <=(a: uint(64), param b: int(64))
   if b < 0 then _throwOpError("<="); else return __primitive("<=", a, b:uint(64));
 pragma "inline" def <=(param a: int(64), b: uint(64))
   if a < 0 then _throwOpError("<="); else return __primitive("<=", a:uint(64), b);
-
-

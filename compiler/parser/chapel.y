@@ -262,7 +262,7 @@ Is this "while x"(i); or "while x(i)";?
 %left TCOLON TNOTCOLON
 %right TUPLUS TUMINUS TBNOT
 %right TMINUSMINUS TPLUSPLUS
-%right TEXP TOF
+%right TEXP
 %left TLP TLSBR
 %left TDOT
 
@@ -1234,8 +1234,6 @@ formal_type_expr:
 | formal_memberaccess_expr
 | formal_type_expr TSTAR formal_type_expr
     { $$ = new CallExpr("*", $1, $3); }
-| formal_type_expr TOF formal_type_expr
-    { $$ = new CallExpr($1, new NamedExpr("eltType", $3)); }
 | variable_expr
 | literal
 ;
@@ -1595,8 +1593,6 @@ stmt_level_expr:
     {
       $$ = new CallExpr("_build_range", new CallExpr(".", new SymExpr("BoundedRangeType"), new_StringSymbol("boundedNone")));
     }
-| expr TOF expr
-    { $$ = new CallExpr($1, new NamedExpr("eltType", $3)); }
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr("+", $2); }
 | TMINUS expr %prec TUMINUS

@@ -1,10 +1,10 @@
 use List;
 
-def foo(s : list of string) {
+def foo(s : list(string)) {
   writeln("foo called on a sequence of strings: ", s);
 }
 
-def foo(s : list of int) {
+def foo(s : list(int)) {
   writeln("foo called on a sequence of ints: ", s);
 }
 

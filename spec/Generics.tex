@@ -321,23 +321,6 @@ and \chpl{2}.
 All methods bound to generic classes or records are generic over the
 implicit \chpl{this} argument and any other argument that is generic.
 
-\subsubsection{The {\em eltType} Type}
-\label{The_eltType_Type}
-\index{eltType@\chpl{eltType}}
-
-The common idiom of parameterizing a collection-oriented data type by
-a single element type has special syntactic support given by
-\begin{syntax}
-of-type:
-  type-specifier `of' type-specifier
-\end{syntax}
-This syntax is a short-hand for passing the second type by name
-\chpl{eltType} as the only argument to the first type.  Given the
-definition of \chpl{Node} in the example
-in~\rsec{Type_Aliases_in_Generic_Types}, one can specify the type
-\chpl{Node(real)} or \chpl{Node(eltType=real)} by writing \chpl{Node
-of real}.
-
 \subsection{Where Expressions}
 \label{Where_Expressions}
 \index{where@\chpl{where}}

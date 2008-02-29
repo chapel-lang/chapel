@@ -25,7 +25,7 @@ label _1
 
 def foo() {
   var c = next_foo(new C());
-  var s : list of c.result.type;
+  var s : list(c.result.type);
   while c != nil {
     s.append(c.result);
     c = next_foo(c);

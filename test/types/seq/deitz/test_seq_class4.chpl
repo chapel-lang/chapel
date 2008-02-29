@@ -8,7 +8,7 @@ class D: C {
   var y: int;
 }
 
-var s: list of C;
+var s: list(C);
 
 s.append(new D(1, 2));
 s.append(new C(3));

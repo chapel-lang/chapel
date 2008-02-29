@@ -2,7 +2,7 @@ use List;
 
 module M1 {
   class C {
-    var s: list of int;
+    var s: list(int);
   }
 }
 
