@@ -1,17 +1,19 @@
-var a = 0;
+var a: sync int;
 var b = 0;
 
 cobegin {
   {
     b = 1;
-    while (a==0) {
+    while (a < 3) {
       b = 2;
     }
   }
   a = 1;
+  a += 1;
+  a += 1;
 }
 
-if (b==1 || b==2) then {
+if (b==2) then {
   writeln ("b is good");
 } else {
   writeln ("b is bad");
