@@ -5,7 +5,8 @@ use HPCCProblemSize;
 
 
 param numVectors = 3;
-type elemType = real(64);
+type elemType = real(64),
+     indexType = int(64);
 
 config const m = computeProblemSize(elemType, numVectors),
              alpha = 3.0;
@@ -24,14 +25,14 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const ProblemSpace: domain(1, int(64)) = [1..m];
+  const ProblemSpace: domain(1, indexType) = [1..m];
 
   const allExecTime: [LocalesDomain] [1..numTrials] real;
   const allValidAnswer: [LocalesDomain] bool;
   
   coforall loc in Locales {
     on loc {
-      const MyProblemSpace: domain(1, int(64)) 
+      const MyProblemSpace: domain(1, indexType) 
                           = BlockPartition(ProblemSpace, localeID(), numLocales);
 
       var A, B, C: [MyProblemSpace] elemType;
