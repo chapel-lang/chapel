@@ -1,27 +1,20 @@
-config const debugSync = false;
-
 var myTurn$: [LocalesDomain] sync bool;
 myTurn$(0) = true;
 
+
 def waitForTurn() {
-  if (debugSync) then _debugWriteln(localeID(), " waiting for turn");
   const tmp = myTurn$(localeID()); // BUG: tmp should not be required
-  if (debugSync) then _debugWriteln(localeID(), " got for turn");
 }
 
 
 def passTurn() {
-  if (debugSync) then _debugWriteln(localeID(), " passing turn");
   myTurn$((localeID() + 1) % numLocales) = true;
-  if (debugSync) then _debugWriteln(localeID(), " passed turn");
   if (localeID() == 0) then {
-    if (debugSync) then _debugWriteln(localeID(), " waiting for turn to come back around");
     const tmp = myTurn$(localeID()); // BUG: tmp should not be required
-    if (debugSync) then _debugWriteln(localeID(), " resetting self");
     myTurn$(localeID()) = true;
-    if (debugSync) then _debugWriteln(localeID(), " exiting passTurn");
   }
 }
+
 
 def writelnFragArray(startStr, X, endStr) {
   if (localeID() == 0) {

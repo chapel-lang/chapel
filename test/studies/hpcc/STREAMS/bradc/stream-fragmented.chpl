@@ -20,8 +20,6 @@ config const printParams = true,
              printArrays = false,
              printStats = true;
 
-config const debug = false;
-
 
 def main() {
   printConfiguration();
@@ -33,15 +31,8 @@ def main() {
   
   coforall loc in Locales {
     on loc {
-      const MyProblemSpace: domain(1, int(64)) = BlockPartition(ProblemSpace, 
-                                                                localeID(), 
-                                                                numLocales);
-
-      if debug {
-        waitForTurn();
-        writeln(localeID(), " (", loc, "): ", MyProblemSpace);
-        passTurn();
-      }
+      const MyProblemSpace: domain(1, int(64)) 
+                          = BlockPartition(ProblemSpace, localeID(), numLocales);
 
       var A, B, C: [MyProblemSpace] elemType;
 
@@ -57,17 +48,10 @@ def main() {
     }
   }
 
-  if debug then writeln("allExecTime = ", allExecTime);
-  
   const execTime: [t in 1..numTrials] real 
                 = max reduce [loc in LocalesDomain] allExecTime(loc)(t);
 
-  if debug then writeln("execTime = ", execTime);
-  if debug then writeln("allValidAnswer = ", allValidAnswer);
-
   const validAnswer = & reduce allValidAnswer;
-
-  if debug then writeln("validAnswer = ", validAnswer);
 
   printResults(validAnswer, execTime);
 }
