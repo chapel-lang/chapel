@@ -712,7 +712,7 @@ void cleanup(void) {
             indices->remove();
             iter->remove();
             if (def->init) {
-              BlockStmt *forblk = build_for_expr(indices, iter, def->init->copy());
+              BlockStmt *forblk = buildForLoopExpr(indices, iter, def->init->copy());
             
               FnSymbol *forall_init = new FnSymbol("_forallinit");
               forall_init->fnTag = FN_ITERATOR;

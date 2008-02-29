@@ -8,17 +8,24 @@
 #include "type.h"
 
 
-Expr* buildDot(BaseAST* base, const char* member) {
-  return new CallExpr(".", base, new_StringSymbol(member));
+Expr* buildDotExpr(BaseAST* base, const char* member) {
+  if (!strcmp("locale", member))
+    return new CallExpr(PRIMITIVE_GET_LOCALE, base);
+  else
+    return new CallExpr(".", base, new_StringSymbol(member));
 }
 
 
-Expr* buildLogicalAnd(BaseAST* left, BaseAST* right) {
+Expr* buildDotExpr(const char* base, const char* member) {
+  return buildDotExpr(new SymExpr(base), member);
+}
+
+
+Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
   VarSymbol* lvar = new VarSymbol("tmp");
   lvar->isCompilerTemp = true;
   lvar->canParam = true;
-  FnSymbol* ifFn = build_if_expr(new CallExpr("_cond_test",
-                                   new CallExpr("isTrue", lvar)),
+  FnSymbol* ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
                                  new CallExpr("isTrue", right),
                                  new SymExpr(gFalse));
   ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr(PRIMITIVE_ERROR, new_StringSymbol("cannot promote short-circuiting && operator"))));
@@ -28,12 +35,11 @@ Expr* buildLogicalAnd(BaseAST* left, BaseAST* right) {
 }
 
 
-Expr* buildLogicalOr(BaseAST* left, BaseAST* right) {
+Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
   VarSymbol* lvar = new VarSymbol("tmp");
   lvar->isCompilerTemp = true;
   lvar->canParam = true;
-  FnSymbol* ifFn = build_if_expr(new CallExpr("_cond_test",
-                                   new CallExpr("isTrue", lvar)),
+  FnSymbol* ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
                                  new SymExpr(gTrue),
                                  new CallExpr("isTrue", right));
   ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr(PRIMITIVE_ERROR, new_StringSymbol("cannot promote short-circuiting || operator"))));
@@ -43,27 +49,28 @@ Expr* buildLogicalOr(BaseAST* left, BaseAST* right) {
 }
 
 
-BlockStmt* build_chpl_stmt(AList* stmts) {
+BlockStmt* buildChapelStmt(AList* stmts) {
   BlockStmt* block = new BlockStmt(stmts);
   block->blockTag = BLOCK_SCOPELESS;
   return block;
 }
 
 
-BlockStmt* build_chpl_stmt(BaseAST* ast) {
+BlockStmt* buildChapelStmt(BaseAST* ast) {
   BlockStmt* block = NULL;
   if (!ast)
     block = new BlockStmt();
   else if (Expr* a = toExpr(ast))
     block = new BlockStmt(a);
   else
-    INT_FATAL(ast, "Illegal argument to build_chpl_stmt");
+    INT_FATAL(ast, "Illegal argument to buildChapelStmt");
   block->blockTag = BLOCK_SCOPELESS;
   return block;
 }
 
 
-void build_tuple_var_decl(Expr* base, BlockStmt* decls, Expr* insertPoint) {
+static void
+buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
   int count = 1;
   for_alist(expr, decls->body) {
     if (DefExpr* def = toDefExpr(expr)) {
@@ -74,10 +81,10 @@ void build_tuple_var_decl(Expr* base, BlockStmt* decls, Expr* insertPoint) {
         def->remove();
       }
     } else if (BlockStmt* blk = toBlockStmt(expr)) {
-      build_tuple_var_decl(new CallExpr(base, new_IntSymbol(count)),
-                           blk, insertPoint);
+      buildTupleVarDeclHelp(new CallExpr(base, new_IntSymbol(count)),
+                            blk, insertPoint);
     } else {
-      INT_FATAL(expr, "Unexpected expression in build_tuple_var_decl");
+      INT_FATAL(expr, "unexpected expression in buildTupleVarDeclHelp");
     }
     count++;
   }
@@ -85,24 +92,40 @@ void build_tuple_var_decl(Expr* base, BlockStmt* decls, Expr* insertPoint) {
 }
 
 
-DefExpr*
-buildLabelStmt(const char* name) {
-  return new DefExpr(new LabelSymbol(name));
+BlockStmt*
+buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
+  VarSymbol* tmp = new VarSymbol("_tuple_tmp");
+  tmp->isCompilerTemp = true;
+  int count = 1;
+  for_alist(expr, tupleBlock->body) {
+    if (DefExpr* def = toDefExpr(expr)) {
+      if (strcmp(def->sym->name, "_")) {
+        def->init = new CallExpr(tmp, new_IntSymbol(count));
+      } else {
+        def->remove();
+      }
+    } else if (BlockStmt* blk = toBlockStmt(expr)) {
+      buildTupleVarDeclHelp(new CallExpr(tmp, new_IntSymbol(count)), blk, expr);
+    }
+    count++;
+  }
+  tupleBlock->insertAtHead(new DefExpr(tmp, init, type));
+  return tupleBlock;
 }
 
 
-static bool stmtIsGlob(Expr* stmt) {
-  if (BlockStmt* block = toBlockStmt(stmt)) {
-    if (block->length() != 1)
-      return false;
-    stmt = block->body.only();
-  }
-  if (DefExpr* def = toDefExpr(stmt))
-    if (toFnSymbol(def->sym) ||
-        toModuleSymbol(def->sym) ||
-        toTypeSymbol(def->sym))
-      return true;
-  return false;
+BlockStmt*
+buildLabelStmt(const char* name, Expr* stmt) {
+  BlockStmt* block = buildChapelStmt(stmt);
+  block->insertAtHead(new DefExpr(new LabelSymbol(name)));
+  block->insertAtTail(new DefExpr(new LabelSymbol(astr("_post", name))));
+  return block;
+}
+
+
+BlockStmt*
+buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
+  return buildChapelStmt(new CondStmt(new CallExpr("_cond_test", condExpr), thenExpr, elseExpr));
 }
 
 
@@ -136,34 +159,35 @@ void createInitFn(ModuleSymbol* mod) {
     mod->initFn->insertAtTail(new CallExpr("=", mod->guard, gFalse));
   }
 
+  //
+  // move module-level statements into module's init function
+  //
   for_alist(stmt, mod->block->body) {
-    if (1 || !stmtIsGlob(stmt)) {
-      if (BlockStmt* block = toBlockStmt(stmt)) {
-        if (block->length() == 1) {
-          if (DefExpr* def = toDefExpr(block->body.only())) {
-            if (toModuleSymbol(def->sym)) {
-              // Don't move module definitions into the init function
-              continue;
-            }
-          }
-        }
-      }
-      stmt->remove();
-      mod->initFn->insertAtTail(stmt);
-    }
+
+    //
+    // except for module definitions
+    //
+    if (BlockStmt* block = toBlockStmt(stmt))
+      if (block->length() == 1)
+        if (DefExpr* def = toDefExpr(block->body.only()))
+          if (toModuleSymbol(def->sym))
+            continue;
+
+    stmt->remove();
+    mod->initFn->insertAtTail(stmt);
   }
   mod->block->insertAtHead(new DefExpr(mod->initFn));
 }
 
 
-ModuleSymbol* build_module(const char* name, ModTag type, BlockStmt* block) {
+ModuleSymbol* buildModule(const char* name, ModTag type, BlockStmt* block) {
   ModuleSymbol* mod = new ModuleSymbol(name, type, block);
   createInitFn(mod);
   return mod;
 }
 
 
-CallExpr* build_primitive_call(AList* exprs) {
+CallExpr* buildPrimitiveExpr(AList* exprs) {
   if (exprs->length() == 0)
     INT_FATAL("primitive has no name");
   Expr* expr = exprs->get(1);
@@ -181,7 +205,7 @@ CallExpr* build_primitive_call(AList* exprs) {
 }
 
 
-FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
+FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
   static int uid = 1;
 
   if (!e2)
@@ -201,7 +225,7 @@ FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
   ifFn->canType = true;
   ifFn->insertAtHead(new DefExpr(tmp1));
   ifFn->insertAtHead(new DefExpr(tmp2));
-  ifFn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, new SymExpr(tmp1), e));
+  ifFn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, new SymExpr(tmp1), new CallExpr("_cond_test", e)));
   ifFn->insertAtTail(new CondStmt(
     new SymExpr(tmp1),
     new CallExpr(PRIMITIVE_MOVE,
@@ -219,17 +243,17 @@ FnSymbol* build_if_expr(Expr* e, Expr* e1, Expr* e2) {
 }
 
 
-FnSymbol* build_let_expr(BlockStmt* decls, Expr* expr) {
+CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(astr("_let_fn", istr(uid++)));
   fn->addPragma("inline");
   fn->insertAtTail(decls);
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, expr));
-  return fn;
+  return new CallExpr(new DefExpr(fn));
 }
 
 
-static void build_loop_labels(BlockStmt* body) {
+static void addLoopLabelsToBlock(BlockStmt* body) {
   static int uid = 1;
   body->pre_loop = new LabelSymbol(astr("_pre_loop", istr(uid)));
   body->post_loop = new LabelSymbol(astr("_post_loop", istr(uid)));
@@ -237,15 +261,16 @@ static void build_loop_labels(BlockStmt* body) {
 }
 
 
-BlockStmt* build_while_do_block(Expr* cond, BlockStmt* body) {
+BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
+  cond = new CallExpr("_cond_test", cond);
   VarSymbol* condVar = new VarSymbol("_cond");
   condVar->isCompilerTemp = true;
   body = new BlockStmt(body);
   body->blockTag = BLOCK_WHILE_DO;
   body->loopInfo = new CallExpr(PRIMITIVE_LOOP_WHILEDO, condVar);
   body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
-  build_loop_labels(body);
-  BlockStmt* stmts = build_chpl_stmt();
+  addLoopLabelsToBlock(body);
+  BlockStmt* stmts = buildChapelStmt();
   stmts->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(new DefExpr(condVar));
   stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
@@ -255,7 +280,8 @@ BlockStmt* build_while_do_block(Expr* cond, BlockStmt* body) {
 }
 
 
-BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body) {
+BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body) {
+  cond = new CallExpr("_cond_test", cond);
   VarSymbol* condVar = new VarSymbol("_cond");
   condVar->isCompilerTemp = true;
 
@@ -272,8 +298,8 @@ BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body) {
   body = new BlockStmt(body);
   body->blockTag = BLOCK_DO_WHILE;
   body->loopInfo = new CallExpr(PRIMITIVE_LOOP_DOWHILE, condVar);
-  build_loop_labels(body);
-  BlockStmt* stmts = build_chpl_stmt();
+  addLoopLabelsToBlock(body);
+  BlockStmt* stmts = buildChapelStmt();
   stmts->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(new DefExpr(condVar));
   stmts->insertAtTail(body);
@@ -282,7 +308,7 @@ BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body) {
 }
 
 
-BlockStmt* build_serial_block(Expr* cond, BlockStmt* body) {
+BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body) {
   cond = new CallExpr("_cond_test", cond);
   if (fSerial) {
     body->insertAtHead(cond);
@@ -302,15 +328,15 @@ BlockStmt* build_serial_block(Expr* cond, BlockStmt* body) {
 
 // builds body of for expression iterator
 BlockStmt*
-build_for_expr(BaseAST* indices, Expr* iterator, Expr* expr, Expr* cond) {
+buildForLoopExpr(BaseAST* indices, Expr* iterator, Expr* expr, Expr* cond) {
   Expr* stmt = new CallExpr(PRIMITIVE_YIELD, expr);
   if (cond)
-    stmt = new CondStmt(cond, stmt);
-  stmt = new BlockStmt(build_for_block(BLOCK_FORALL,
+    stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
+  stmt = new BlockStmt(buildForLoopStmt(BLOCK_FORALL,
                                        indices,
                                        iterator,
                                        new BlockStmt(stmt)));
-  return build_chpl_stmt(stmt);
+  return buildChapelStmt(stmt);
 }
 
 
@@ -360,11 +386,24 @@ checkIndices(BaseAST* indices) {
 }
 
 
-BlockStmt* build_for_block(BlockTag tag,
+BlockStmt* buildForLoopStmt(BlockTag tag,
                            BaseAST* indices,
                            Expr* iterator,
                            BlockStmt* body) {
+
+  //
+  // insert temporary index when elided by user
+  //
+  if (!indices)
+    indices = new SymExpr("_elided_index");
+
   checkIndices(indices);
+
+  if (fSerial &&
+      (tag == BLOCK_FORALL ||
+       tag == BLOCK_ORDERED_FORALL ||
+       tag == BLOCK_COFORALL))
+    tag = BLOCK_FOR;
 
   if (tag == BLOCK_COFORALL) {
     VarSymbol* coforallCount = new VarSymbol("_coforallCount");
@@ -373,7 +412,7 @@ BlockStmt* build_for_block(BlockTag tag,
     beginBlk->insertAtHead(body);
     beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
     body = buildBeginStmt(beginBlk);
-    BlockStmt* block = build_for_block(BLOCK_FOR, indices, iterator, body);
+    BlockStmt* block = buildForLoopStmt(BLOCK_FOR, indices, iterator, body);
     block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
     block->insertAtHead(new DefExpr(coforallCount));
     body->insertBefore(new CallExpr("_upEndCount", coforallCount));
@@ -382,8 +421,8 @@ BlockStmt* build_for_block(BlockTag tag,
   }
   body = new BlockStmt(body);
   body->blockTag = tag;
-  BlockStmt* stmts = build_chpl_stmt();
-  build_loop_labels(body);
+  BlockStmt* stmts = buildChapelStmt();
+  addLoopLabelsToBlock(body);
 
   CallExpr* icall = toCallExpr(iterator);
   if (icall && icall->isPrimitive(PRIMITIVE_LOOP_C_FOR)) {
@@ -444,7 +483,7 @@ insertBeforeCompilerTemp(Expr* stmt, Expr* expr) {
 }
 
 
-BlockStmt* build_param_for(const char* index, Expr* range, BlockStmt* stmts) {
+BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmts) {
   BlockStmt* block = new BlockStmt(stmts, BLOCK_PARAM_FOR);
   BlockStmt* outer = new BlockStmt(block);
   VarSymbol* indexVar = new VarSymbol(index);
@@ -466,13 +505,13 @@ BlockStmt* build_param_for(const char* index, Expr* range, BlockStmt* stmts) {
   Symbol* highVar = insertBeforeCompilerTemp(block, high);
   Symbol* strideVar = insertBeforeCompilerTemp(block, stride);
   block->loopInfo = new CallExpr(PRIMITIVE_LOOP_PARAM, indexVar, lowVar, highVar, strideVar);
-  return build_chpl_stmt(outer);
+  return buildChapelStmt(outer);
 }
 
 
 BlockStmt*
 buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs) {
-  BlockStmt* stmt = build_chpl_stmt();
+  BlockStmt* stmt = buildChapelStmt();
 
   VarSymbol* ltmp = new VarSymbol("_ltmp");
   ltmp->isCompilerTemp = true;
@@ -531,29 +570,29 @@ buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs) {
 }
 
 
-BlockStmt* buildLogicalAndAssignment(Expr* lhs, Expr* rhs) {
-  BlockStmt* stmt = build_chpl_stmt();
+BlockStmt* buildLogicalAndExprAssignment(Expr* lhs, Expr* rhs) {
+  BlockStmt* stmt = buildChapelStmt();
   VarSymbol* ltmp = new VarSymbol("_ltmp");
   ltmp->isCompilerTemp = true;
   stmt->insertAtTail(new DefExpr(ltmp));
   stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp, new CallExpr(PRIMITIVE_SET_REF, lhs)));
-  stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalAnd(ltmp, rhs)));
+  stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalAndExpr(ltmp, rhs)));
   return stmt;
 }
 
 
-BlockStmt* buildLogicalOrAssignment(Expr* lhs, Expr* rhs) {
-  BlockStmt* stmt = build_chpl_stmt();
+BlockStmt* buildLogicalOrExprAssignment(Expr* lhs, Expr* rhs) {
+  BlockStmt* stmt = buildChapelStmt();
   VarSymbol* ltmp = new VarSymbol("_ltmp");
   ltmp->isCompilerTemp = true;
   stmt->insertAtTail(new DefExpr(ltmp));
   stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp, new CallExpr(PRIMITIVE_SET_REF, lhs)));
-  stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalOr(ltmp, rhs)));
+  stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalOrExpr(ltmp, rhs)));
   return stmt;
 }
 
 
-CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
+BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
   CondStmt* otherwise = NULL;
   CondStmt* top = NULL;
   CondStmt* condStmt = NULL;
@@ -561,10 +600,10 @@ CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
   for_alist(stmt, whenstmts->body) {
     CondStmt* when = toCondStmt(stmt);
     if (!when)
-      INT_FATAL("error in build_select");
+      INT_FATAL("error in buildSelectStmt");
     CallExpr* conds = toCallExpr(when->condExpr);
     if (!conds || !conds->isPrimitive(PRIMITIVE_WHEN))
-      INT_FATAL("error in build_select");
+      INT_FATAL("error in buildSelectStmt");
     if (conds->numActuals() == 0) {
       if (otherwise)
         USR_FATAL(selectCond, "Select has multiple otherwise clauses");
@@ -576,7 +615,7 @@ CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
         if (!expr)
           expr = new CallExpr("==", selectCond->copy(), whenCond);
         else
-          expr = buildLogicalOr(expr, new CallExpr("==",
+          expr = buildLogicalOrExpr(expr, new CallExpr("==",
                                                    selectCond->copy(),
                                                    whenCond));
       }
@@ -595,25 +634,25 @@ CondStmt* build_select(Expr* selectCond, BlockStmt* whenstmts) {
       USR_FATAL(selectCond, "Select has no when clauses");
     condStmt->elseStmt = otherwise->thenStmt;
   }
-  return top;
+  return buildChapelStmt(top);
 }
 
 
-BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
+BlockStmt* buildTypeSelectStmt(AList* exprs, BlockStmt* whenstmts) {
   static int uid = 1;
   int caseId = 1;
   FnSymbol* fn = NULL;
-  BlockStmt* stmts = build_chpl_stmt();
-  BlockStmt* newWhenStmts = build_chpl_stmt();
+  BlockStmt* stmts = buildChapelStmt();
+  BlockStmt* newWhenStmts = buildChapelStmt();
   bool has_otherwise = false;
 
   for_alist(stmt, whenstmts->body) {
     CondStmt* when = toCondStmt(stmt);
     if (!when)
-      INT_FATAL("error in build_select");
+      INT_FATAL("error in buildSelectStmt");
     CallExpr* conds = toCallExpr(when->condExpr);
     if (!conds || !conds->isPrimitive(PRIMITIVE_WHEN))
-      INT_FATAL("error in build_select");
+      INT_FATAL("error in buildSelectStmt");
     if (conds->numActuals() == 0) {
       if (has_otherwise)
         USR_FATAL(conds, "Type select statement has multiple otherwise clauses");
@@ -660,12 +699,12 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
   stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE,
                                    tmp,
                                    new CallExpr(fn->name, exprs)));
-  stmts->insertAtTail(build_select(new SymExpr(tmp), newWhenStmts));
+  stmts->insertAtTail(buildSelectStmt(new SymExpr(tmp), newWhenStmts));
   return stmts;
 }
 
 
-CallExpr* buildReduceScan(Expr* op, Expr* data, bool isScan) {
+CallExpr* buildReduceScanExpr(Expr* op, Expr* data, bool isScan) {
   if (SymExpr* sym = toSymExpr(op)) {
     if (sym->unresolved) {
       if (!strcmp(sym->unresolved, "max"))
@@ -743,11 +782,11 @@ setVarSymbolAttributes(BlockStmt* stmts, bool isConfig, bool isParam, bool isCon
 
 
 DefExpr*
-build_class(const char* name, Type* type, BlockStmt* decls) {
+buildClassDefExpr(const char* name, Type* type, BlockStmt* decls) {
   ClassType* ct = toClassType(type);
 
   if (!ct) {
-    INT_FATAL(type, "build_class called on non ClassType");
+    INT_FATAL(type, "buildClassDefExpr called on non ClassType");
   }
 
   TypeSymbol* sym = new TypeSymbol(name, ct);
@@ -758,7 +797,7 @@ build_class(const char* name, Type* type, BlockStmt* decls) {
 
 
 DefExpr*
-build_arg(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable) {
+buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable) {
   ArgSymbol* argSymbol = new ArgSymbol(tag, ident, dtUnknown, init, variable);
   if (argSymbol->intent == INTENT_TYPE) {
     type = NULL;
@@ -775,14 +814,14 @@ build_arg(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variab
 /* Destructure tuple function arguments.  Add to the function's where clause
    to match the shape of the tuple being destructured. */
 Expr*
-build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
+buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
   static int uid = 1;
   int count = 0;
   bool outermost = false;
   Expr* where = NULL;
 
   if (!base) {
-    /* This is the top-level call to build_tuple_arg */
+    /* This is the top-level call to buildTupleArg */
     Expr* tupleType = new SymExpr("_tuple");
     ArgSymbol* argSymbol = new ArgSymbol(INTENT_BLANK,
                                          astr("_tuple_arg_tmp",
@@ -807,15 +846,15 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
       }
     } else if (BlockStmt* subtuple = toBlockStmt(expr)) {
       /* newClause is:
-         (& IS_TUPLE(base(count)) (build_tuple_arg's where clause)) */
-      Expr* newClause = buildLogicalAnd(
+         (& IS_TUPLE(base(count)) (buildTupleArg's where clause)) */
+      Expr* newClause = buildLogicalAndExpr(
                           new CallExpr(PRIMITIVE_IS_TUPLE,
                             new CallExpr(base->copy(),
                               new_IntSymbol(count))),
-                          build_tuple_arg(fn, subtuple,
+                          buildTupleArg(fn, subtuple,
                             new CallExpr(base, new_IntSymbol(count))));
       if (where) {
-        where = buildLogicalAnd(where, newClause);
+        where = buildLogicalAndExpr(where, newClause);
       } else {
         where = newClause;
       }
@@ -826,7 +865,7 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
                                       new CallExpr(".", base->copy(),
                                                    new_StringSymbol("size")));
   if (where) {
-    where = buildLogicalAnd(sizeClause, where);
+    where = buildLogicalAndExpr(sizeClause, where);
   } else {
     where = sizeClause;
   }
@@ -835,7 +874,7 @@ build_tuple_arg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
     /* Only the top-level call to this function should modify the actual
        function where clause. */
     if (fn->where) {
-      where = buildLogicalAnd(fn->where->body.head->remove(), where);
+      where = buildLogicalAndExpr(fn->where->body.head->remove(), where);
       fn->where->body.insertAtHead(where);
     } else {
       fn->where = new BlockStmt(where);
@@ -851,10 +890,10 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     BlockStmt* block = new BlockStmt(stmt, BLOCK_NORMAL);
     // should we evaluate the expression for side effects?
     //    block->insertAtHead(expr);
-    return build_chpl_stmt(block);
+    return buildChapelStmt(block);
   }
   static int uid = 1;
-  BlockStmt* block = build_chpl_stmt();
+  BlockStmt* block = buildChapelStmt();
   FnSymbol* fn = new FnSymbol(astr("_on_fn_", istr(uid++)));
   fn->addPragma("on");
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
@@ -873,8 +912,10 @@ buildOnStmt(Expr* expr, Expr* stmt) {
 
 BlockStmt*
 buildBeginStmt(Expr* stmt, bool allocateOnHeap) {
+  if (fSerial)
+    return buildChapelStmt(new BlockStmt(stmt, BLOCK_NORMAL));
   static int uid = 1;
-  BlockStmt* block = build_chpl_stmt();
+  BlockStmt* block = buildChapelStmt();
   FnSymbol* fn = new FnSymbol(astr("_begin_fn_", istr(uid++)));
   fn->addPragma("begin");
   if (!allocateOnHeap)
@@ -891,7 +932,9 @@ buildBeginStmt(Expr* stmt, bool allocateOnHeap) {
 
 BlockStmt*
 buildEndStmt(Expr* stmt) {
-  BlockStmt* block = build_chpl_stmt();
+  if (fSerial)
+    return buildChapelStmt(new BlockStmt(stmt, BLOCK_NORMAL));
+  BlockStmt* block = buildChapelStmt();
   VarSymbol* endCountSave = new VarSymbol("_endCountSave");
   endCountSave->isCompilerTemp = true;
   block->insertAtTail(new DefExpr(endCountSave));
@@ -906,6 +949,8 @@ buildEndStmt(Expr* stmt) {
 
 BlockStmt*
 buildCobeginStmt(Expr* stmt) {
+  if (fSerial)
+    return buildChapelStmt(stmt);
   VarSymbol* cobeginCount = new VarSymbol("_cobeginCount");
   cobeginCount->isCompilerTemp = true;
   BlockStmt* block = toBlockStmt(stmt);
@@ -923,6 +968,21 @@ buildCobeginStmt(Expr* stmt) {
   block->insertAtHead(new DefExpr(cobeginCount));
   block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));
   return block;
+}
+
+
+BlockStmt*
+buildAtomicStmt(Expr* stmt) {
+  static bool atomic_warning = false;
+
+  if (!atomic_warning) {
+    atomic_warning = true;
+    USR_WARN(stmt, "atomic keyword is ignored (not implemented)");
+  }
+  if (fSerial)
+    return buildChapelStmt(new BlockStmt(stmt, BLOCK_NORMAL));
+  else
+    return buildChapelStmt(new BlockStmt(stmt, BLOCK_ATOMIC));
 }
 
 

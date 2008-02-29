@@ -512,7 +512,7 @@ void initPrimitiveTypes(void) {
   dtVoid = createPrimitiveType ("void", "void");
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
-  DefExpr* objectDef = build_class("object", new ClassType(CLASS_CLASS), new BlockStmt());
+  DefExpr* objectDef = buildClassDefExpr("object", new ClassType(CLASS_CLASS), new BlockStmt());
   objectDef->sym->addPragma("object class");
   objectDef->sym->addPragma("no object");
   dtObject = objectDef->sym->type;

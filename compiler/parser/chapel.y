@@ -51,7 +51,6 @@ Is this "while x"(i); or "while x(i)";?
 
   static int anon_record_uid = 1;
   static int iterator_uid = 1;
-  static bool atomic_warning = false;
   int captureTokens;
   char captureString[1024];
 
@@ -186,9 +185,9 @@ Is this "while x"(i); or "while x(i)";?
 
 %type <b> is_config
  
-%type <pt> formal_tag
+%type <pt> intent_tag
 
-%type <retTag> ret_class
+%type <retTag> ret_tag
 
 %type <pch> identifier fn_identifier opt_identifier
 %type <pch> pragma
@@ -216,13 +215,13 @@ Is this "while x"(i); or "while x(i)";?
 %type <pblockstmt> when_stmt_ls
 
 %type <pexpr> opt_type opt_formal_type array_type
-%type <pexpr> type anon_record_type type_binding_expr opt_domain
+%type <pexpr> type anon_record_type type_binding_part opt_domain
 %type <ptype> class_tag
 %type <pet> enum_ls
 
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
-%type <pexpr> tuple_paren_expr expr expr_list_item opt_expr
-%type <pexpr> literal where distributed_expr
+%type <pexpr> tuple_paren_expr expr expr_list_item opt_return_part
+%type <pexpr> literal opt_where_part distributed_expr
 %type <pexpr> variable_expr stmt_level_expr alias_expr formal_level_type
 %type <pexpr> reduction opt_init_expr opt_init_type var_arg_expr
 %type <palist> expr_ls nonempty_expr_ls opt_inherit_expr_ls
@@ -343,6 +342,27 @@ non_empty_stmt:
 ;
 
 
+class_body_stmt_ls:
+  /* nothing */
+    { $$ = new BlockStmt(); }
+| class_body_stmt_ls pragma_ls class_body_stmt
+    {
+      $3->body.first()->addPragmas($2);
+      delete $2;
+      $1->insertAtTail($3);
+    }
+;
+
+
+class_body_stmt:
+  fn_decl_stmt
+| class_decl_stmt
+| enum_decl_stmt
+| typevar_decl_stmt
+| var_decl_stmt
+;
+
+
 parsed_block_single_stmt:
   empty_stmt
 | label_stmt
@@ -369,97 +389,93 @@ parsed_block_stmt:
 
 empty_stmt:
   TSEMI
-    { $$ = build_chpl_stmt(new BlockStmt()); }
+    { $$ = buildChapelStmt(new BlockStmt()); }
 ;
 
 
 label_stmt:
   TLABEL identifier stmt
-    {
-      $$ = build_chpl_stmt($3);
-      $$->insertAtTail(buildLabelStmt(astr("_post", $2)));
-      $$->insertAtHead(buildLabelStmt($2));
-    }
+    { $$ = buildLabelStmt($2, $3); }
 ;
 
 
 goto_stmt:
   TGOTO identifier TSEMI
-    { $$ = build_chpl_stmt(new GotoStmt(GOTO_NORMAL, $2)); }
+    { $$ = buildChapelStmt(new GotoStmt(GOTO_NORMAL, $2)); }
 ;
 
 
 break_stmt:
   TBREAK opt_identifier TSEMI
-    { $$ = build_chpl_stmt(new GotoStmt(GOTO_BREAK, $2)); }
+    { $$ = buildChapelStmt(new GotoStmt(GOTO_BREAK, $2)); }
 ;
 
 
 continue_stmt:
   TCONTINUE opt_identifier TSEMI
-    { $$ = build_chpl_stmt(new GotoStmt(GOTO_CONTINUE, $2)); }
+    { $$ = buildChapelStmt(new GotoStmt(GOTO_CONTINUE, $2)); }
 ;
 
 
 expr_stmt:
   stmt_level_expr TSEMI
-    { $$ = build_chpl_stmt($1); }
+    { $$ = buildChapelStmt($1); }
 ;
 
 
 if_stmt:
   TIF expr parsed_block_stmt            %prec TNOELSE
-    { $$ = build_chpl_stmt(new CondStmt(new CallExpr("_cond_test", $2), $3)); }
+    { $$ = buildIfStmt($2, $3); }
 | TIF expr TTHEN stmt                   %prec TNOELSE
-    { $$ = build_chpl_stmt(new CondStmt(new CallExpr("_cond_test", $2), $4)); }
+    { $$ = buildIfStmt($2, $4); }
 | TIF expr parsed_block_stmt TELSE stmt
-    { $$ = build_chpl_stmt(new CondStmt(new CallExpr("_cond_test", $2), $3, $5)); }
+    { $$ = buildIfStmt($2, $3, $5); }
 | TIF expr TTHEN stmt TELSE stmt
-    { $$ = build_chpl_stmt(new CondStmt(new CallExpr("_cond_test", $2), $4, $6)); }
+    { $$ = buildIfStmt($2, $4, $6); }
 ;
 
 
 for_stmt:
   TFOR TPARAM identifier TIN expr TDO stmt
-    { $$ = build_param_for($3, $5, $7); }
+    { $$ = buildParamForLoopStmt($3, $5, $7); }
 | TFOR TPARAM identifier TIN expr parsed_block_stmt
-    { $$ = build_param_for($3, $5, $6); }
+    { $$ = buildParamForLoopStmt($3, $5, $6); }
 
 | TFOR expr TIN expr parsed_block_stmt
-    { $$ = build_for_block(BLOCK_FOR, $2, $4, $5); }
+    { $$ = buildForLoopStmt(BLOCK_FOR, $2, $4, $5); }
 | TFOR expr TIN expr TDO stmt
-    { $$ = build_for_block(BLOCK_FOR, $2, $4, new BlockStmt($6)); }
+    { $$ = buildForLoopStmt(BLOCK_FOR, $2, $4, new BlockStmt($6)); }
 | TFOR expr parsed_block_stmt
-    { $$ = build_for_block(BLOCK_FOR, new SymExpr("_dummy"), $2, $3); }
+    { $$ = buildForLoopStmt(BLOCK_FOR, NULL, $2, $3); }
 | TFOR expr TDO stmt
-    { $$ = build_for_block(BLOCK_FOR, new SymExpr("_dummy"), $2, new BlockStmt($4)); }
+    { $$ = buildForLoopStmt(BLOCK_FOR, NULL, $2, new BlockStmt($4)); }
 
 | TFORALL expr TIN expr parsed_block_stmt
-    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_FORALL, $2, $4, $5); }
+    { $$ = buildForLoopStmt(BLOCK_FORALL, $2, $4, $5); }
 | TFORALL expr TIN expr TDO stmt
-    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_FORALL, $2, $4, new BlockStmt($6)); }
+    { $$ = buildForLoopStmt(BLOCK_FORALL, $2, $4, new BlockStmt($6)); }
 | TFORALL expr parsed_block_stmt
-    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_FORALL, new SymExpr("_dummy"), $2, $3); }
+    { $$ = buildForLoopStmt(BLOCK_FORALL, NULL, $2, $3); }
 | TFORALL expr TDO stmt
-    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_FORALL, new SymExpr("_dummy"), $2, new BlockStmt($4)); }
+    { $$ = buildForLoopStmt(BLOCK_FORALL, NULL, $2, new BlockStmt($4)); }
 
 | TORDERED TFORALL expr TIN expr parsed_block_stmt
-    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_ORDERED_FORALL, $3, $5, $6); }
+    { $$ = buildForLoopStmt(BLOCK_ORDERED_FORALL, $3, $5, $6); }
 | TORDERED TFORALL expr TIN expr TDO stmt
-    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_ORDERED_FORALL, $3, $5, new BlockStmt($7)); }
+    { $$ = buildForLoopStmt(BLOCK_ORDERED_FORALL, $3, $5, new BlockStmt($7)); }
 | TORDERED TFORALL expr parsed_block_stmt
-    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_ORDERED_FORALL, new SymExpr("_dummy"), $3, $4); }
+    { $$ = buildForLoopStmt(BLOCK_ORDERED_FORALL, NULL, $3, $4); }
 | TORDERED TFORALL expr TDO stmt
-    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_ORDERED_FORALL, new SymExpr("_dummy"), $3, new BlockStmt($5)); }
+    { $$ = buildForLoopStmt(BLOCK_ORDERED_FORALL, NULL, $3, new BlockStmt($5)); }
 
 | TCOFORALL expr TIN expr parsed_block_stmt
-    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_COFORALL, $2, $4, $5); }
+    { $$ = buildForLoopStmt(BLOCK_COFORALL, $2, $4, $5); }
 | TCOFORALL expr TIN expr TDO stmt
-    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_COFORALL, $2, $4, new BlockStmt($6)); }
+    { $$ = buildForLoopStmt(BLOCK_COFORALL, $2, $4, new BlockStmt($6)); }
 | TCOFORALL expr parsed_block_stmt
-    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_COFORALL, new SymExpr("_dummy"), $2, $3); }
+    { $$ = buildForLoopStmt(BLOCK_COFORALL, NULL, $2, $3); }
 | TCOFORALL expr TDO stmt
-    { $$ = build_for_block((fSerial) ? BLOCK_FOR : BLOCK_COFORALL, new SymExpr("_dummy"), $2, new BlockStmt($4)); }
+    { $$ = buildForLoopStmt(BLOCK_COFORALL, NULL, $2, new BlockStmt($4)); }
 ;
 
 
@@ -468,44 +484,46 @@ expr_for_stmt:
     {
       if ($2->length() != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = build_for_block(BLOCK_FORALL, $2->only()->remove(), $4, new BlockStmt($6));
+      $$ = buildForLoopStmt(BLOCK_FORALL, $2->only()->remove(), $4, new BlockStmt($6));
     }
 | TLSBR nonempty_expr_ls TRSBR non_empty_stmt
     {
-      $$ = build_for_block(BLOCK_FORALL, new SymExpr("_dummy"), $2->only()->remove(), new BlockStmt($4));
+      if ($2->length() != 1)
+        USR_FATAL($4, "invalid loop expression");
+      $$ = buildForLoopStmt(BLOCK_FORALL, NULL, $2->only()->remove(), new BlockStmt($4));
     }
 ;
 
 
 while_do_stmt:
   TWHILE expr TDO stmt
-    { $$ = build_while_do_block(new CallExpr("_cond_test", $2), new BlockStmt($4)); }
+    { $$ = buildWhileDoLoopStmt($2, new BlockStmt($4)); }
 | TWHILE expr parsed_block_stmt
-    { $$ = build_while_do_block(new CallExpr("_cond_test", $2), $3); }
+    { $$ = buildWhileDoLoopStmt($2, $3); }
 ;
 
 
 do_while_stmt:
 TDO stmt TWHILE expr TSEMI
-    { $$ = build_do_while_block(new CallExpr("_cond_test", $4), $2); }
+    { $$ = buildDoWhileLoopStmt($4, $2); }
 ;
 
 
 type_select_stmt:
   TTYPE TSELECT nonempty_expr_ls TLCBR when_stmt_ls TRCBR
-    { $$ = build_type_select($3, $5); }
+    { $$ = buildTypeSelectStmt($3, $5); }
 ;
 
 
 select_stmt:
   TSELECT expr TLCBR when_stmt_ls TRCBR
-    { $$ = build_chpl_stmt(build_select($2, $4)); }
+    { $$ = buildChapelStmt(buildSelectStmt($2, $4)); }
 ;
 
 
 when_stmt_ls:
   /* nothing */
-    { $$ = build_chpl_stmt(); }
+    { $$ = buildChapelStmt(); }
 | when_stmt_ls when_stmt
     { $1->insertAtTail($2); }
 ; 
@@ -522,20 +540,27 @@ when_stmt:
 
 
 return_stmt:
-  TRETURN opt_expr TSEMI
-    { $$ = build_chpl_stmt(new CallExpr(PRIMITIVE_RETURN, $2)); }
+  TRETURN opt_return_part TSEMI
+    { $$ = buildChapelStmt(new CallExpr(PRIMITIVE_RETURN, $2)); }
 ;
 
 
 yield_stmt:
-  TYIELD opt_expr TSEMI
-    { $$ = build_chpl_stmt(new CallExpr(PRIMITIVE_YIELD, $2)); }
+  TYIELD opt_return_part TSEMI
+    { $$ = buildChapelStmt(new CallExpr(PRIMITIVE_YIELD, $2)); }
+;
+
+
+opt_return_part:
+  /* nothing */
+    { $$ = new SymExpr(gVoid); }
+| expr
 ;
 
 
 assign_stmt:
   lvalue TASSIGN expr TSEMI
-    { $$ = build_chpl_stmt(new CallExpr("=", $1, $3)); }
+    { $$ = buildChapelStmt(new CallExpr("=", $1, $3)); }
 | lvalue TASSIGNPLUS expr TSEMI
     { $$ = buildCompoundAssignment("+", $1, $3); }
 | lvalue TASSIGNMINUS expr TSEMI
@@ -555,54 +580,29 @@ assign_stmt:
 | lvalue TASSIGNBXOR expr TSEMI
     { $$ = buildCompoundAssignment("^", $1, $3); }
 | lvalue TASSIGNLAND expr TSEMI
-    { $$ = buildLogicalAndAssignment($1, $3); }
+    { $$ = buildLogicalAndExprAssignment($1, $3); }
 | lvalue TASSIGNLOR expr TSEMI
-    { $$ = buildLogicalOrAssignment($1, $3); }
+    { $$ = buildLogicalOrExprAssignment($1, $3); }
 | lvalue TASSIGNSR expr TSEMI
     { $$ = buildCompoundAssignment(">>", $1, $3); }
 | lvalue TASSIGNSL expr TSEMI
     { $$ = buildCompoundAssignment("<<", $1, $3); }
 | lvalue TSWAP expr TSEMI
-    { $$ = build_chpl_stmt(new CallExpr("_chpl_swap", $1, $3)); }
+    { $$ = buildChapelStmt(new CallExpr("_chpl_swap", $1, $3)); }
 ;
 
 
 block_stmt:
   TLCBR stmt_ls TRCBR
-    { $$ = build_chpl_stmt($2); }
+    { $$ = buildChapelStmt($2); }
 | TCOBEGIN TLCBR stmt_ls TRCBR
-    {
-      if (fSerial)
-        $$ = build_chpl_stmt($3);
-      else {
-        $$ = buildCobeginStmt($3);
-      }
-    }
+    { $$ = buildCobeginStmt($3); }
 | TATOMIC stmt
-    {
-      if (!atomic_warning) {
-        atomic_warning = true;
-        USR_WARN($2, "atomic keyword is ignored (not implemented)");
-      }
-      if (fSerial)
-        $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_NORMAL));
-      else
-        $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_ATOMIC));
-    }
+    { $$ = buildAtomicStmt($2); }
 | TBEGIN stmt
-    {
-      if (fSerial)
-        $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_NORMAL));
-      else
-        $$ = buildBeginStmt($2);
-    }
+    { $$ = buildBeginStmt($2); }
 | TEND stmt
-    {
-      if (fSerial)
-        $$ = build_chpl_stmt(new BlockStmt($2, BLOCK_NORMAL));
-      else
-        $$ = buildEndStmt($2);
-    }
+    { $$ = buildEndStmt($2); }
 ;
 
 
@@ -616,33 +616,12 @@ on_stmt:
 
 serial_stmt:
   TSERIAL expr parsed_block_stmt
-    { $$ = build_serial_block($2, $3); }
+    { $$ = buildSerialStmt($2, $3); }
 ;
 
 
 
 /** DECLARATION STATEMENTS ***************************************************/
-
-
-class_body_stmt_ls:
-  /* nothing */
-    { $$ = new BlockStmt(); }
-| class_body_stmt_ls pragma_ls class_body_stmt
-    {
-      $3->body.first()->addPragmas($2);
-      delete $2;
-      $1->insertAtTail($3);
-    }
-;
-
-
-class_body_stmt:
-  fn_decl_stmt
-| class_decl_stmt
-| enum_decl_stmt
-| typevar_decl_stmt
-| var_decl_stmt
-;
 
 
 use_stmt:
@@ -653,7 +632,7 @@ use_stmt:
 
 use_stmt_ls:
   lvalue
-    { $$ = build_chpl_stmt(new CallExpr(PRIMITIVE_USE, $1)); }
+    { $$ = buildChapelStmt(new CallExpr(PRIMITIVE_USE, $1)); }
 | use_stmt_ls TCOMMA lvalue
     {
       $1->insertAtTail(new CallExpr(PRIMITIVE_USE, $3));
@@ -664,9 +643,7 @@ use_stmt_ls:
 
 mod_decl_stmt:
   TMODULE identifier TLCBR stmt_ls TRCBR
-    {
-      $$ = build_chpl_stmt(new DefExpr(build_module($2, MOD_USER, $4)));
-    }
+    { $$ = buildChapelStmt(new DefExpr(buildModule($2, MOD_USER, $4))); }
 ;
 
 
@@ -681,12 +658,12 @@ formal_ls:
 | TLP tuple_var_decl_stmt_inner_ls TRP
     {
       $$ = new FnSymbol("_");
-      build_tuple_arg($$, $2, NULL);
+      buildTupleArg($$, $2, NULL);
     }
 | formal_ls TCOMMA formal
     { $1->insertFormalAtTail($3); }
 | formal_ls TCOMMA TLP tuple_var_decl_stmt_inner_ls TRP
-    { build_tuple_arg($1, $4, NULL); }
+    { buildTupleArg($1, $4, NULL); }
 ;
 
 
@@ -700,7 +677,7 @@ opt_formal_ls:
 fn_decl_stmt_inner:
   fn_identifier opt_formal_ls
     { $$ = $2; $$->name = astr($1); $$->cname = $$->name; }
-| type_binding_expr TDOT identifier opt_formal_ls
+| type_binding_part TDOT identifier opt_formal_ls
     {
       $$ = $4;
       $$->name = astr($3);
@@ -712,7 +689,7 @@ fn_decl_stmt_inner:
 ;
 
 
-ret_class:
+ret_tag:
 /* none */
     { $$ = RET_VALUE; }
 | TCONST
@@ -737,7 +714,7 @@ fn_decl_stmt:
       captureTokens = 0;
       $3->userString = astr(captureString);
     }
-  ret_class opt_type where parsed_block_stmt
+  ret_tag opt_type opt_where_part parsed_block_stmt
     {
       $3->retTag = $5;
       if ($5 == RET_VAR)
@@ -746,7 +723,7 @@ fn_decl_stmt:
       if ($7)
         $3->where = new BlockStmt($7);
       $3->insertAtTail($8);
-      $$ = build_chpl_stmt(new DefExpr($3));
+      $$ = buildChapelStmt(new DefExpr($3));
     }
 ;
 
@@ -760,7 +737,7 @@ extern_fn_decl_stmt:
         fn->retExprType = $4;
       else
         fn->retType = dtVoid;
-      $$ = build_chpl_stmt(new DefExpr(fn));
+      $$ = buildChapelStmt(new DefExpr(fn));
     }
 ;
 
@@ -778,18 +755,14 @@ var_arg_expr:
 
 
 formal:
-  formal_tag identifier opt_formal_type opt_init_expr
-    {
-      $$ = build_arg($1, $2, $3, $4, NULL);
-    }
-| formal_tag identifier opt_formal_type var_arg_expr
-    {
-      $$ = build_arg($1, $2, $3, NULL, $4);
-    }
+  intent_tag identifier opt_formal_type opt_init_expr
+    { $$ = buildArgDefExpr($1, $2, $3, $4, NULL); }
+| intent_tag identifier opt_formal_type var_arg_expr
+    { $$ = buildArgDefExpr($1, $2, $3, NULL, $4); }
 ;
 
 
-formal_tag:
+intent_tag:
   /* nothing */
     { $$ = INTENT_BLANK; }
 | TIN
@@ -854,7 +827,7 @@ fn_identifier:
 ;
 
 
-where:
+opt_where_part:
   /* nothing */
     { $$ = NULL; }
 | TWHERE expr
@@ -862,7 +835,7 @@ where:
 ;
 
 
-type_binding_expr:
+type_binding_part:
   variable_expr
   /* | parenop_expr */;
 
@@ -870,9 +843,9 @@ type_binding_expr:
 class_decl_stmt:
   class_tag identifier opt_inherit_expr_ls TLCBR class_body_stmt_ls TRCBR
     {
-      DefExpr* def = build_class($2, $1, $5);
+      DefExpr* def = buildClassDefExpr($2, $1, $5);
       toClassType(toTypeSymbol(def->sym)->type)->inherits.insertAtTail($3);
-      $$ = build_chpl_stmt(def);
+      $$ = buildChapelStmt(def);
     }
 ;
 
@@ -901,7 +874,7 @@ enum_decl_stmt:
       EnumType* pdt = $4;
       TypeSymbol* pst = new TypeSymbol($2, pdt);
       $4->symbol = pst;
-      $$ = build_chpl_stmt(new DefExpr(pst));
+      $$ = buildChapelStmt(new DefExpr(pst));
     }
 ;
 
@@ -936,7 +909,7 @@ typedef_decl_stmt_inner:
       UserType* newtype = new UserType($3);
       TypeSymbol* typeSym = new TypeSymbol($1, newtype);
       DefExpr* def_expr = new DefExpr(typeSym);
-      $$ = build_chpl_stmt(def_expr);
+      $$ = buildChapelStmt(def_expr);
     }
 | identifier TASSIGN type TCOMMA typedef_decl_stmt_inner
     {
@@ -968,7 +941,7 @@ typevar_decl_stmt:
       VarSymbol* var = new VarSymbol($2);
       var->isTypeVariable = true;
       DefExpr* def = new DefExpr(var, $3);
-      $$ = build_chpl_stmt(def);
+      $$ = buildChapelStmt(def);
     }
 ;
 
@@ -1019,47 +992,24 @@ var_decl_stmt_inner:
   identifier opt_type opt_init_expr
     {
       VarSymbol* var = new VarSymbol($1);
-      $$ = build_chpl_stmt(new DefExpr(var, $3, $2));
+      $$ = buildChapelStmt(new DefExpr(var, $3, $2));
     }
 | identifier opt_domain alias_expr
     {
       VarSymbol* var = new VarSymbol($1);
-      $$ = build_chpl_stmt(new DefExpr(var, $3, $2));
+      $$ = buildChapelStmt(new DefExpr(var, $3, $2));
       var->isUserAlias = true;
     }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
-    {
-      VarSymbol* tmp = new VarSymbol("_tuple_tmp");
-      tmp->isCompilerTemp = true;
-      int count = 1;
-      for_alist(expr, $2->body) {
-        if (DefExpr* def = toDefExpr(expr)) {
-          if (strcmp(def->sym->name, "_")) {
-            def->init = new CallExpr(tmp, new_IntSymbol(count));
-          } else {
-            def->remove();
-          }
-        } else if (BlockStmt* blk = toBlockStmt(expr)) {
-          build_tuple_var_decl(new CallExpr(tmp, new_IntSymbol(count)),
-                               blk, expr);
-        }
-        count++;
-      }
-      $2->insertAtHead(new DefExpr(tmp, $5, $4));
-      $$ = $2;
-    }
+    { $$ = buildTupleVarDeclStmt($2, $4, $5); }
 ;
 
 
 tuple_var_decl_stmt_inner_ls:
   identifier
-    {
-      $$ = build_chpl_stmt(new DefExpr(new VarSymbol($1)));
-    }
+    { $$ = buildChapelStmt(new DefExpr(new VarSymbol($1))); }
 | TLP tuple_var_decl_stmt_inner_ls TRP
-    { 
-      $$ = build_chpl_stmt($2);
-    }
+    { $$ = buildChapelStmt($2); }
 | tuple_var_decl_stmt_inner_ls TCOMMA identifier
     {
       $1->insertAtTail(new DefExpr(new VarSymbol($3)));
@@ -1079,7 +1029,7 @@ tuple_var_decl_stmt_inner_ls:
 anon_record_type:
   TRECORD TLCBR class_body_stmt_ls TRCBR
     {
-      $$ = build_class(astr("_anon_record", istr(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
+      $$ = buildClassDefExpr(astr("_anon_record", istr(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
     }
 ;
 
@@ -1255,14 +1205,6 @@ formal_parenop_expr:
       call->square = true;
       $$ = call;
     }
-| TPRIMITIVE TLP formal_expr_ls TRP
-    {
-      $$ = build_primitive_call($3);
-    }
-| TCOMPILERERROR TLP formal_expr_ls TRP
-    {
-      $$ = new CallExpr(PRIMITIVE_ERROR, $3);
-    }
 | TINDEX TLP TOPAQUE TRP
     { $$ = new SymExpr("_OpaqueIndex"); }
 | TINDEX TLP expr_ls TRP
@@ -1271,16 +1213,11 @@ formal_parenop_expr:
 
 formal_memberaccess_expr:
   formal_type_expr TDOT identifier
-    {
-      if (!strcmp("locale", $3))
-        $$ = new CallExpr(PRIMITIVE_GET_LOCALE, $1);
-      else
-        $$ = new CallExpr(".", $1, new_StringSymbol($3));
-    }
+    { $$ = buildDotExpr($1, $3); }
 | formal_type_expr TDOT TTYPE
     { $$ = new CallExpr(PRIMITIVE_TYPEOF, $1); }
 | formal_type_expr TDOT TDOMAIN
-    { $$ = new CallExpr(".", $1, new_StringSymbol("_dom")); }
+    { $$ = buildDotExpr($1, "_dom"); }
 ;
 
 
@@ -1374,13 +1311,9 @@ parenop_expr:
       $$ = call;
     }
 | TPRIMITIVE TLP expr_ls TRP
-    {
-      $$ = build_primitive_call($3);
-    }
+    { $$ = buildPrimitiveExpr($3); }
 | TCOMPILERERROR TLP expr_ls TRP
-    {
-      $$ = new CallExpr(PRIMITIVE_ERROR, $3);
-    }
+    { $$ = new CallExpr(PRIMITIVE_ERROR, $3); }
 | TINDEX TLP TOPAQUE TRP
     { $$ = new SymExpr("_OpaqueIndex"); }
 | TINDEX TLP expr_ls TRP
@@ -1390,16 +1323,11 @@ parenop_expr:
 
 memberaccess_expr:
   lvalue TDOT identifier
-    {
-      if (!strcmp("locale", $3))
-        $$ = new CallExpr(PRIMITIVE_GET_LOCALE, $1);
-      else
-        $$ = new CallExpr(".", $1, new_StringSymbol($3));
-    }
+    { $$ = buildDotExpr($1, $3); }
 | lvalue TDOT TTYPE
     { $$ = new CallExpr(PRIMITIVE_TYPEOF, $1); }
 | lvalue TDOT TDOMAIN
-    { $$ = new CallExpr(".", $1, new_StringSymbol("_dom")); }
+    { $$ = buildDotExpr($1, "_dom"); }
 ;
 
 
@@ -1434,13 +1362,6 @@ lvalue:
 ;
 
 
-opt_expr:
-  /* nothing */
-    { $$ = new SymExpr(gVoid); }
-| expr
-;
-
-
 expr:
   stmt_level_expr
 | TLSBR nonempty_expr_ls TIN expr TRSBR expr %prec TRSBR
@@ -1450,7 +1371,7 @@ expr:
       FnSymbol* forall_iterator =
         new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
       forall_iterator->fnTag = FN_ITERATOR;
-      forall_iterator->insertAtTail(build_for_expr($2->only()->remove(), $4, $6));
+      forall_iterator->insertAtTail(buildForLoopExpr($2->only()->remove(), $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
 | TLSBR nonempty_expr_ls TRSBR expr %prec TRSBR
@@ -1459,7 +1380,7 @@ expr:
         USR_FATAL($4, "invalid loop expression");
       FnSymbol* forall_iterator =
         new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
-      forall_iterator->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2->only()->remove(), $4));
+      forall_iterator->insertAtTail(buildForLoopExpr(NULL, $2->only()->remove(), $4));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
 | TLSBR nonempty_expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
@@ -1467,15 +1388,15 @@ expr:
       if ($2->length() != 1)
         USR_FATAL($4, "invalid index expression");
       FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
-      forif_fn->insertAtTail(build_for_expr($2->only()->remove(), $4, $9, new CallExpr("_cond_test", $7)));
+      forif_fn->insertAtTail(buildForLoopExpr($2->only()->remove(), $4, $9, $7));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
 | TLSBR nonempty_expr_ls TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
       if ($2->length() != 1)
-        USR_FATAL($5, "invalid index expression");
+        USR_FATAL($5, "invalid loop expression");
       FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
-      forif_fn->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2->only()->remove(), $7, new CallExpr("_cond_test", $5)));
+      forif_fn->insertAtTail(buildForLoopExpr(NULL, $2->only()->remove(), $7, $5));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
 | TFOR expr TIN expr TDO expr %prec TRSBR
@@ -1483,26 +1404,26 @@ expr:
       FnSymbol* forall_iterator =
         new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
       forall_iterator->fnTag = FN_ITERATOR;
-      forall_iterator->insertAtTail(build_for_expr($2, $4, $6));
+      forall_iterator->insertAtTail(buildForLoopExpr($2, $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
 | TFOR expr TDO expr %prec TRSBR
     {
       FnSymbol* forall_iterator =
         new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
-      forall_iterator->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2, $4));
+      forall_iterator->insertAtTail(buildForLoopExpr(NULL, $2, $4));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
 | TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
     {
       FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
-      forif_fn->insertAtTail(build_for_expr($2, $4, $9, new CallExpr("_cond_test", $7)));
+      forif_fn->insertAtTail(buildForLoopExpr($2, $4, $9, $7));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
 | TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
     {
       FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
-      forif_fn->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2, $7, new CallExpr("_cond_test", $5)));
+      forif_fn->insertAtTail(buildForLoopExpr(NULL, $2, $7, $5));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
 | TFORALL expr TIN expr TDO expr %prec TRSBR
@@ -1510,30 +1431,30 @@ expr:
       FnSymbol* forall_iterator =
         new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
       forall_iterator->fnTag = FN_ITERATOR;
-      forall_iterator->insertAtTail(build_for_expr($2, $4, $6));
+      forall_iterator->insertAtTail(buildForLoopExpr($2, $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
 | TFORALL expr TDO expr %prec TRSBR
     {
       FnSymbol* forall_iterator =
         new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
-      forall_iterator->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2, $4));
+      forall_iterator->insertAtTail(buildForLoopExpr(NULL, $2, $4));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
 | TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
     {
       FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
-      forif_fn->insertAtTail(build_for_expr($2, $4, $9, new CallExpr("_cond_test", $7)));
+      forif_fn->insertAtTail(buildForLoopExpr($2, $4, $9, $7));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
 | TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
     {
       FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
-      forif_fn->insertAtTail(build_for_expr(new SymExpr("_dummy"), $2, $7, new CallExpr("_cond_test", $5)));
+      forif_fn->insertAtTail(buildForLoopExpr(NULL, $2, $7, $5));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
 | TIF expr TTHEN expr TELSE expr
-    { $$ = new CallExpr(new DefExpr(build_if_expr(new CallExpr("_cond_test", $2), $4, $6))); }
+    { $$ = new CallExpr(new DefExpr(buildIfExpr($2, $4, $6))); }
 ;
 
 
@@ -1546,20 +1467,18 @@ stmt_level_expr:
 | TNIL
     { $$ = new SymExpr(gNil); }
 | TLET var_decl_stmt_inner_ls TIN expr
-    { $$ = new CallExpr(new DefExpr(build_let_expr($2, $4))); }
+    { $$ = buildLetExpr($2, $4); }
 | reduction %prec TREDUCE
 | expr TCOLON expr
     { $$ = new CallExpr("_cast", $3, $1); }
 | expr TDOTDOT expr
     { $$ = new CallExpr("_build_range", $1, $3); }
 | expr TDOTDOT
-    { $$ = new CallExpr("_build_range", new CallExpr(".", new SymExpr("BoundedRangeType"), new_StringSymbol("boundedLow")), $1); }
+    { $$ = new CallExpr("_build_range", buildDotExpr("BoundedRangeType", "boundedLow"), $1); }
 | TDOTDOT expr
-    { $$ = new CallExpr("_build_range", new CallExpr(".", new SymExpr("BoundedRangeType"), new_StringSymbol("boundedHigh")), $2); }
+    { $$ = new CallExpr("_build_range", buildDotExpr("BoundedRangeType", "boundedHigh"), $2); }
 | TDOTDOT
-    {
-      $$ = new CallExpr("_build_range", new CallExpr(".", new SymExpr("BoundedRangeType"), new_StringSymbol("boundedNone")));
-    }
+    { $$ = new CallExpr("_build_range", buildDotExpr("BoundedRangeType", "boundedNone")); }
 | TPLUS expr %prec TUPLUS
     { $$ = new CallExpr("+", $2); }
 | TMINUS expr %prec TUMINUS
@@ -1605,9 +1524,9 @@ stmt_level_expr:
 | expr TBXOR expr
     { $$ = new CallExpr("^", $1, $3); }
 | expr TAND expr
-    { $$ = buildLogicalAnd($1, $3); }
+    { $$ = buildLogicalAndExpr($1, $3); }
 | expr TOR expr
-    { $$ = buildLogicalOr($1, $3); }
+    { $$ = buildLogicalOrExpr($1, $3); }
 | expr TEXP expr
     { $$ = new CallExpr("**", $1, $3); }
 | expr TBY expr
@@ -1617,37 +1536,37 @@ stmt_level_expr:
 
 reduction:
   expr TREDUCE expr
-    { $$ = buildReduceScan($1, $3); }
+    { $$ = buildReduceScanExpr($1, $3); }
 | TPLUS TREDUCE expr
-    { $$ = buildReduceScan(new SymExpr("_sum"), $3); }
+    { $$ = buildReduceScanExpr(new SymExpr("_sum"), $3); }
 | TSTAR TREDUCE expr
-    { $$ = buildReduceScan(new SymExpr("_prod"), $3); }
+    { $$ = buildReduceScanExpr(new SymExpr("_prod"), $3); }
 | TAND TREDUCE expr
-    { $$ = buildReduceScan(new SymExpr("_land"), $3); }
+    { $$ = buildReduceScanExpr(new SymExpr("_land"), $3); }
 | TOR TREDUCE expr
-    { $$ = buildReduceScan(new SymExpr("_lor"), $3); }
+    { $$ = buildReduceScanExpr(new SymExpr("_lor"), $3); }
 | TBAND TREDUCE expr
-    { $$ = buildReduceScan(new SymExpr("_band"), $3); }
+    { $$ = buildReduceScanExpr(new SymExpr("_band"), $3); }
 | TBOR TREDUCE expr
-    { $$ = buildReduceScan(new SymExpr("_bor"), $3); }
+    { $$ = buildReduceScanExpr(new SymExpr("_bor"), $3); }
 | TBXOR TREDUCE expr
-    { $$ = buildReduceScan(new SymExpr("_bxor"), $3); }
+    { $$ = buildReduceScanExpr(new SymExpr("_bxor"), $3); }
 | expr TSCAN expr
-    { $$ = buildReduceScan($1, $3, true); }
+    { $$ = buildReduceScanExpr($1, $3, true); }
 | TPLUS TSCAN expr
-    { $$ = buildReduceScan(new SymExpr("_sum"), $3, true); }
+    { $$ = buildReduceScanExpr(new SymExpr("_sum"), $3, true); }
 | TSTAR TSCAN expr
-    { $$ = buildReduceScan(new SymExpr("_prod"), $3, true); }
+    { $$ = buildReduceScanExpr(new SymExpr("_prod"), $3, true); }
 | TAND TSCAN expr
-    { $$ = buildReduceScan(new SymExpr("_land"), $3, true); }
+    { $$ = buildReduceScanExpr(new SymExpr("_land"), $3, true); }
 | TOR TSCAN expr
-    { $$ = buildReduceScan(new SymExpr("_lor"), $3, true); }
+    { $$ = buildReduceScanExpr(new SymExpr("_lor"), $3, true); }
 | TBAND TSCAN expr
-    { $$ = buildReduceScan(new SymExpr("_band"), $3, true); }
+    { $$ = buildReduceScanExpr(new SymExpr("_band"), $3, true); }
 | TBOR TSCAN expr
-    { $$ = buildReduceScan(new SymExpr("_bor"), $3, true); }
+    { $$ = buildReduceScanExpr(new SymExpr("_bor"), $3, true); }
 | TBXOR TSCAN expr
-    { $$ = buildReduceScan(new SymExpr("_bxor"), $3, true); }
+    { $$ = buildReduceScanExpr(new SymExpr("_bxor"), $3, true); }
 ;
 
 

@@ -371,7 +371,7 @@ static void build_enum_cast_function(EnumType* et) {
     // Generate a select statement with when clauses for each of the
     // enumeration constants, and an otherwise clause that calls halt.
     long count = 0;
-    BlockStmt* whenstmts = build_chpl_stmt();
+    BlockStmt* whenstmts = buildChapelStmt();
     for_enums(constant, et) {
       if (!get_int(constant->init, &count)) {
         count++;
@@ -390,7 +390,7 @@ static void build_enum_cast_function(EnumType* et) {
                    new BlockStmt(new CallExpr("halt",
                                  new_StringSymbol(errorString))));
     whenstmts->insertAtTail(otherwise);
-    fn->insertAtTail(build_select(new SymExpr(arg2), whenstmts));
+    fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
   }
   DefExpr* def = new DefExpr(fn);
   et->symbol->defPoint->insertBefore(def);
@@ -640,7 +640,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
   body->insertAtTail(new DefExpr(ignoreWhiteSpace, new SymExpr(gTrue)));
   Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead");
   body->insertAtTail(new DefExpr(matchingCharWasRead, new_IntSymbol((int64)0)));
-  Expr* fileArgFP = buildDot(fn->_this, "_fp");
+  Expr* fileArgFP = buildDotExpr(fn->_this, "_fp");
   CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringSymbol("{"), ignoreWhiteSpace);
   body->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));
   CallExpr* notRead = new CallExpr("==", matchingCharWasRead, new_IntSymbol(0));
@@ -658,7 +658,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
     }  
     Symbol* fieldName = new VarSymbol("fieldName");
     body->insertAtTail(new DefExpr(fieldName, new_StringSymbol("")));
-    CallExpr* readFieldName = new CallExpr(buildDot(fn->_this, "read"), fieldName);
+    CallExpr* readFieldName = new CallExpr(buildDotExpr(fn->_this, "read"), fieldName);
     body->insertAtTail(readFieldName);
     Symbol* name = new_StringSymbol(tmp->name);
     Expr* confirmFieldName = new CallExpr("!=", fieldName, name);
@@ -668,7 +668,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
     body->insertAtTail(new CallExpr("=", matchingCharWasRead, readEqualSign));
     body->insertAtTail(readErrorCond->copy());
     CallExpr* argName = new CallExpr(".", arg, name);
-    CallExpr* readValue = new CallExpr(buildDot(fn->_this, "read"), argName);
+    CallExpr* readValue = new CallExpr(buildDotExpr(fn->_this, "read"), argName);
     body->insertAtTail(readValue);
     first = false;
   }
@@ -703,7 +703,7 @@ static void buildDefaultReadFunction(EnumType* et) {
 
   Symbol* valString = new VarSymbol("valString");
   fn->insertAtTail(new DefExpr(valString, new_StringSymbol("")));
-  fn->insertAtTail(new CallExpr(buildDot(fn->_this, "read"), valString));
+  fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "read"), valString));
   Expr* elseStmt = new CallExpr("halt", 
                                 new_StringSymbol("***Error: Not of "), 
                                 new_StringSymbol(et->symbol->name), 
@@ -734,18 +734,18 @@ static bool buildWriteSuperClass(ArgSymbol* fileArg, FnSymbol* fn, Expr* dot, Ty
     if (tmp->isTypeVariable)
       continue;
     if (tmp->hasPragma("super class")) {
-      printedSomething = buildWriteSuperClass(fileArg, fn, buildDot(dot, tmp->name), ct->dispatchParents.v[0], first);
+      printedSomething = buildWriteSuperClass(fileArg, fn, buildDotExpr(dot, tmp->name), ct->dispatchParents.v[0], first);
       if (printedSomething)
         first = false;
       continue;
     }
     if (!first) {
-      fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(", ")));
+      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(", ")));
     }
-    fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(tmp->name)));
-    fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(" = ")));
-    fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"),
-                                    buildDot(dot->copy(), tmp->name)));
+    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(tmp->name)));
+    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(" = ")));
+    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"),
+                                    buildDotExpr(dot->copy(), tmp->name)));
     first = false;
     printedSomething = true;
   }
@@ -766,26 +766,26 @@ static void buildDefaultWriteFunction(ClassType* ct) {
 
   if (ct->classTag == CLASS_CLASS) {
     BlockStmt* fwriteNil = new BlockStmt();
-    fwriteNil->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol("nil")));
+    fwriteNil->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol("nil")));
     fwriteNil->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
     fn->insertAtTail(new CondStmt(new CallExpr("==", fn->_this, gNil),
                                     fwriteNil));
   }
 
   if (ct->classTag == CLASS_CLASS) {
-    fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol("{")));
+    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol("{")));
   } else {
-    fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol("(")));
+    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol("(")));
   }
 
   if (ct->classTag == CLASS_UNION) {
     CondStmt* cond = NULL;
     for_fields(tmp, ct) {
       BlockStmt* writeFieldBlock = new BlockStmt();
-      writeFieldBlock->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(tmp->name)));
-      writeFieldBlock->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(" = ")));
-      writeFieldBlock->insertAtTail(new CallExpr(buildDot(fileArg, "write"), 
-                                                 buildDot(fn->_this, tmp->name)));
+      writeFieldBlock->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(tmp->name)));
+      writeFieldBlock->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(" = ")));
+      writeFieldBlock->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), 
+                                                 buildDotExpr(fn->_this, tmp->name)));
       cond = new CondStmt(new CallExpr("==", new CallExpr(PRIMITIVE_UNION_GETID, fn->_this), new_IntSymbol(tmp->id)), writeFieldBlock, cond);
     }
     fn->insertAtTail(cond);
@@ -796,26 +796,26 @@ static void buildDefaultWriteFunction(ClassType* ct) {
         continue;
       if (tmp->hasPragma("super class")) {
         bool printedSomething =
-          buildWriteSuperClass(fileArg, fn, buildDot(fn->_this, tmp->name), fn->_this->type->dispatchParents.v[0]);
+          buildWriteSuperClass(fileArg, fn, buildDotExpr(fn->_this, tmp->name), fn->_this->type->dispatchParents.v[0]);
         if (printedSomething)
           first = false;
         continue;
       }
       if (!first) {
-        fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(", ")));
+        fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(", ")));
       }
-      fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(tmp->name)));
-      fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(" = ")));
-      fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), 
-                                      buildDot(fn->_this, tmp->name)));
+      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(tmp->name)));
+      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(" = ")));
+      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), 
+                                      buildDotExpr(fn->_this, tmp->name)));
       first = false;
     }
   }
 
   if (ct->classTag == CLASS_CLASS) {
-    fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol("}")));
+    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol("}")));
   } else {
-    fn->insertAtTail(new CallExpr(buildDot(fileArg, "write"), new_StringSymbol(")")));
+    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(")")));
   }
 
   DefExpr* def = new DefExpr(fn);
