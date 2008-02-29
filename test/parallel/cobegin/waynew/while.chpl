@@ -8,13 +8,15 @@ cobegin {
       b = 2;
     }
   }
-  a = 1;
-  a += 1;
-  a += 1;
+  {
+    a = 1;
+    a = 2;
+    a = 3;
+  }
 }
 
 if (b==2) then {
   writeln ("b is good");
 } else {
-  writeln ("b is bad");
+  writeln ("b is bad: ", b);
 }
