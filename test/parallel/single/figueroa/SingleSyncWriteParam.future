@@ -1,0 +1,5 @@
+bug: value of a sync/single var accessed normally when the arg of a write method
+
+The value of a sync or single variable is accessed as if it were not a sync or
+single variable when it is the argument of another single variable's write
+method, i.e., it's value is not retrieved using readFE or readFF, respectively.
