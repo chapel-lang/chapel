@@ -820,17 +820,13 @@ var_arg_expr:
 
 
 formal:
-  formal_tag pragma_ls identifier opt_formal_type opt_init_expr
+  formal_tag identifier opt_formal_type opt_init_expr
     {
-      $$ = build_arg($1, $3, $4, $5, NULL);
-      $$->sym->addPragmas($2);
-      delete $2;
+      $$ = build_arg($1, $2, $3, $4, NULL);
     }
-| formal_tag pragma_ls identifier opt_formal_type var_arg_expr
+| formal_tag identifier opt_formal_type var_arg_expr
     {
-      $$ = build_arg($1, $3, $4, NULL, $5);
-      $$->sym->addPragmas($2);
-      delete $2;
+      $$ = build_arg($1, $2, $3, NULL, $4);
     }
 ;
 
@@ -896,12 +892,10 @@ type_binding_expr:
 
 
 class_decl_stmt:
-  class_tag pragma_ls identifier opt_inherit_expr_ls TLCBR class_body_stmt_ls TRCBR
+  class_tag identifier opt_inherit_expr_ls TLCBR class_body_stmt_ls TRCBR
     {
-      DefExpr* def = build_class($3, $1, $6);
-      def->sym->addPragmas($2);
-      delete $2;
-      toClassType(toTypeSymbol(def->sym)->type)->inherits.insertAtTail($4);
+      DefExpr* def = build_class($2, $1, $5);
+      toClassType(toTypeSymbol(def->sym)->type)->inherits.insertAtTail($3);
       $$ = build_chpl_stmt(def);
     }
 ;
@@ -926,13 +920,11 @@ opt_inherit_expr_ls:
 
 
 enum_decl_stmt:
-  TENUM pragma_ls identifier TLCBR enum_ls TRCBR TSEMI
+  TENUM identifier TLCBR enum_ls TRCBR TSEMI
     {
-      EnumType* pdt = $5;
-      TypeSymbol* pst = new TypeSymbol($3, pdt);
-      $5->symbol = pst;
-      pst->addPragmas($2);
-      delete $2;
+      EnumType* pdt = $4;
+      TypeSymbol* pst = new TypeSymbol($2, pdt);
+      $4->symbol = pst;
       $$ = build_chpl_stmt(new DefExpr(pst));
     }
 ;
@@ -963,24 +955,20 @@ enum_item:
 
 
 typedef_decl_stmt_inner:
-  pragma_ls identifier TASSIGN type
+  identifier TASSIGN type
     {
-      UserType* newtype = new UserType($4);
-      TypeSymbol* typeSym = new TypeSymbol($2, newtype);
-      typeSym->addPragmas($1);
-      delete $1;
+      UserType* newtype = new UserType($3);
+      TypeSymbol* typeSym = new TypeSymbol($1, newtype);
       DefExpr* def_expr = new DefExpr(typeSym);
       $$ = build_chpl_stmt(def_expr);
     }
-| pragma_ls identifier TASSIGN type TCOMMA typedef_decl_stmt_inner
+| identifier TASSIGN type TCOMMA typedef_decl_stmt_inner
     {
-      UserType* newtype = new UserType($4);
-      TypeSymbol* typeSym = new TypeSymbol($2, newtype);
-      typeSym->addPragmas($1);
-      delete $1;
+      UserType* newtype = new UserType($3);
+      TypeSymbol* typeSym = new TypeSymbol($1, newtype);
       DefExpr* def_expr = new DefExpr(typeSym);
-      $6->insertAtTail(def_expr);
-      $$ = $6;
+      $5->insertAtTail(def_expr);
+      $$ = $5;
     }
 ;
 
@@ -999,13 +987,11 @@ opt_init_type:
 
 
 typevar_decl_stmt:
-  TTYPE pragma_ls identifier opt_init_type TSEMI
+  TTYPE identifier opt_init_type TSEMI
     {
-      VarSymbol* var = new VarSymbol($3);
+      VarSymbol* var = new VarSymbol($2);
       var->isTypeVariable = true;
-      var->addPragmas($2);
-      delete $2;
-      DefExpr* def = new DefExpr(var, $4);
+      DefExpr* def = new DefExpr(var, $3);
       $$ = build_chpl_stmt(def);
     }
 ;
@@ -1247,10 +1233,10 @@ formal_expr_ls:
 
 
 nonempty_formal_expr_ls:
-  pragma_ls formal_expr_list_item
-    { $2->addPragmas($1); delete $1; $$ = new AList($2); }
-| nonempty_formal_expr_ls TCOMMA pragma_ls formal_expr_list_item
-    { $4->addPragmas($3); delete $3; $1->insertAtTail($4); }
+  formal_expr_list_item
+    { $$ = new AList($1); }
+| nonempty_formal_expr_ls TCOMMA formal_expr_list_item
+    { $1->insertAtTail($3); }
 ;
 
 
@@ -1325,10 +1311,10 @@ expr_ls:
 
 
 nonempty_expr_ls:
-  pragma_ls expr_list_item
-    { $2->addPragmas($1); delete $1; $$ = new AList($2); }
-| nonempty_expr_ls TCOMMA pragma_ls expr_list_item
-    { $4->addPragmas($3); delete $3; $1->insertAtTail($4); }
+  expr_list_item
+    { $$ = new AList($1); }
+| nonempty_expr_ls TCOMMA expr_list_item
+    { $1->insertAtTail($3); }
 ;
 
 
