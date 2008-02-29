@@ -535,73 +535,41 @@ yield_stmt:
 
 assign_stmt:
   lvalue TASSIGN expr TSEMI
-    {
-      $$ = build_chpl_stmt(new CallExpr("=", $1, $3));
-    }
+    { $$ = build_chpl_stmt(new CallExpr("=", $1, $3)); }
 | lvalue TASSIGNPLUS expr TSEMI
-    {
-      $$ = buildCompoundAssignment("+", $1, $3);
-    }
+    { $$ = buildCompoundAssignment("+", $1, $3); }
 | lvalue TASSIGNMINUS expr TSEMI
-    {
-      $$ = buildCompoundAssignment("-", $1, $3);
-    }
+    { $$ = buildCompoundAssignment("-", $1, $3); }
 | lvalue TASSIGNMULTIPLY expr TSEMI
-    {
-      $$ = buildCompoundAssignment("*", $1, $3);
-    }
+    { $$ = buildCompoundAssignment("*", $1, $3); }
 | lvalue TASSIGNDIVIDE expr TSEMI
-    {
-      $$ = buildCompoundAssignment("/", $1, $3);
-    }
+    { $$ = buildCompoundAssignment("/", $1, $3); }
 | lvalue TASSIGNMOD expr TSEMI
-    {
-      $$ = buildCompoundAssignment("%", $1, $3);
-    }
+    { $$ = buildCompoundAssignment("%", $1, $3); }
 | lvalue TASSIGNEXP expr TSEMI
-    {
-      $$ = buildCompoundAssignment("**", $1, $3);
-    }
+    { $$ = buildCompoundAssignment("**", $1, $3); }
 | lvalue TASSIGNBAND expr TSEMI
-    {
-      $$ = buildCompoundAssignment("&", $1, $3);
-    }
+    { $$ = buildCompoundAssignment("&", $1, $3); }
 | lvalue TASSIGNBOR expr TSEMI
-    {
-      $$ = buildCompoundAssignment("|", $1, $3);
-    }
+    { $$ = buildCompoundAssignment("|", $1, $3); }
 | lvalue TASSIGNBXOR expr TSEMI
-    {
-      $$ = buildCompoundAssignment("^", $1, $3);
-    }
+    { $$ = buildCompoundAssignment("^", $1, $3); }
 | lvalue TASSIGNLAND expr TSEMI
-    {
-      $$ = buildLogicalAndAssignment($1, $3);
-    }
+    { $$ = buildLogicalAndAssignment($1, $3); }
 | lvalue TASSIGNLOR expr TSEMI
-    {
-      $$ = buildLogicalOrAssignment($1, $3);
-    }
+    { $$ = buildLogicalOrAssignment($1, $3); }
 | lvalue TASSIGNSR expr TSEMI
-    {
-      $$ = buildCompoundAssignment(">>", $1, $3);
-    }
+    { $$ = buildCompoundAssignment(">>", $1, $3); }
 | lvalue TASSIGNSL expr TSEMI
-    {
-      $$ = buildCompoundAssignment("<<", $1, $3);
-    }
+    { $$ = buildCompoundAssignment("<<", $1, $3); }
 | lvalue TSWAP expr TSEMI
-    {
-      $$ = build_chpl_stmt(new CallExpr("_chpl_swap", $1, $3));
-    }
+    { $$ = build_chpl_stmt(new CallExpr("_chpl_swap", $1, $3)); }
 ;
 
 
 block_stmt:
   TLCBR stmt_ls TRCBR
-    {
-      $$ = build_chpl_stmt($2);
-    }
+    { $$ = build_chpl_stmt($2); }
 | TCOBEGIN TLCBR stmt_ls TRCBR
     {
       if (fSerial)
@@ -640,25 +608,15 @@ block_stmt:
 
 on_stmt:
   TON expr TDO stmt
-    {
-      $$ = buildOnStmt($2, $4);
-    }
+    { $$ = buildOnStmt($2, $4); }
 | TON expr parsed_block_stmt
-    {
-      $$ = buildOnStmt($2, $3);
-    }
+    { $$ = buildOnStmt($2, $3); }
 ;
 
 
 serial_stmt:
   TSERIAL expr parsed_block_stmt
-    {
-      if (fSerial) {
-        $3->insertAtHead(new CallExpr("_cond_test", $2));
-        $$ = $3;
-      } else
-        $$ = build_serial_block(new CallExpr("_cond_test", $2), $3);
-    }
+    { $$ = build_serial_block($2, $3); }
 ;
 
 
@@ -828,6 +786,24 @@ formal:
     {
       $$ = build_arg($1, $2, $3, NULL, $4);
     }
+;
+
+
+formal_tag:
+  /* nothing */
+    { $$ = INTENT_BLANK; }
+| TIN
+    { $$ = INTENT_IN; }
+| TINOUT
+    { $$ = INTENT_INOUT; }
+| TOUT
+    { $$ = INTENT_OUT; }
+| TCONST
+    { $$ = INTENT_CONST; }
+| TPARAM
+    { $$ = INTENT_PARAM; }
+| TTYPE
+    { $$ = INTENT_TYPE; }
 ;
 
 
@@ -1016,6 +992,14 @@ var_decl_stmt:
       backPropagateInitsTypes($3);
       $$ = $3;
     }
+;
+
+
+is_config:
+  /* nothing */
+    { $$ = false; }
+| TCONFIG
+    { $$ = true; }
 ;
 
  
@@ -1457,9 +1441,6 @@ opt_expr:
 ;
 
 
-
-
-
 expr:
   stmt_level_expr
 | TLSBR nonempty_expr_ls TIN expr TRSBR expr %prec TRSBR
@@ -1633,67 +1614,40 @@ stmt_level_expr:
     { $$ = new CallExpr("by", $1, $3); }
 ;
 
+
 reduction:
   expr TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce($1, $3))); }
+    { $$ = buildReduceScan($1, $3); }
 | TPLUS TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_sum"), $3))); }
+    { $$ = buildReduceScan(new SymExpr("_sum"), $3); }
 | TSTAR TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_prod"), $3))); }
+    { $$ = buildReduceScan(new SymExpr("_prod"), $3); }
 | TAND TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_land"), $3))); }
+    { $$ = buildReduceScan(new SymExpr("_land"), $3); }
 | TOR TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_lor"), $3))); }
+    { $$ = buildReduceScan(new SymExpr("_lor"), $3); }
 | TBAND TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_band"), $3))); }
+    { $$ = buildReduceScan(new SymExpr("_band"), $3); }
 | TBOR TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_bor"), $3))); }
+    { $$ = buildReduceScan(new SymExpr("_bor"), $3); }
 | TBXOR TREDUCE expr
-    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_bxor"), $3))); }
+    { $$ = buildReduceScan(new SymExpr("_bxor"), $3); }
 | expr TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_reduce($1, $3, true))); }
+    { $$ = buildReduceScan($1, $3, true); }
 | TPLUS TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_sum"), $3, true))); }
+    { $$ = buildReduceScan(new SymExpr("_sum"), $3, true); }
 | TSTAR TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_prod"), $3, true))); }
+    { $$ = buildReduceScan(new SymExpr("_prod"), $3, true); }
 | TAND TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_land"), $3, true))); }
+    { $$ = buildReduceScan(new SymExpr("_land"), $3, true); }
 | TOR TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_lor"), $3, true))); }
+    { $$ = buildReduceScan(new SymExpr("_lor"), $3, true); }
 | TBAND TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_band"), $3, true))); }
+    { $$ = buildReduceScan(new SymExpr("_band"), $3, true); }
 | TBOR TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_bor"), $3, true))); }
+    { $$ = buildReduceScan(new SymExpr("_bor"), $3, true); }
 | TBXOR TSCAN expr
-    { $$ = new CallExpr(new DefExpr(build_reduce(new SymExpr("_bxor"), $3, true))); }
-;
-
-
-/** TAGS *********************************************************************/
-
-formal_tag:
-  /* nothing */
-    { $$ = INTENT_BLANK; }
-| TIN
-    { $$ = INTENT_IN; }
-| TINOUT
-    { $$ = INTENT_INOUT; }
-| TOUT
-    { $$ = INTENT_OUT; }
-| TCONST
-    { $$ = INTENT_CONST; }
-| TPARAM
-    { $$ = INTENT_PARAM; }
-| TTYPE
-    { $$ = INTENT_TYPE; }
-;
-
-
-is_config:
-  /* nothing */
-    { $$ = false; }
-| TCONFIG
-    { $$ = true; }
+    { $$ = buildReduceScan(new SymExpr("_bxor"), $3, true); }
 ;
 
 

@@ -283,14 +283,20 @@ BlockStmt* build_do_while_block(Expr* cond, BlockStmt* body) {
 
 
 BlockStmt* build_serial_block(Expr* cond, BlockStmt* body) {
-  BlockStmt *sbody = new BlockStmt();
-  sbody->blockTag = BLOCK_SERIAL;
-  VarSymbol *serial_state = new VarSymbol("_tmp_serial_state");
-  sbody->insertAtTail(new DefExpr(serial_state, new CallExpr(PRIMITIVE_GET_SERIAL)));
-  sbody->insertAtTail(new CondStmt(cond, new CallExpr(PRIMITIVE_SET_SERIAL, gTrue)));
-  sbody->insertAtTail(body);
-  sbody->insertAtTail(new CallExpr(PRIMITIVE_SET_SERIAL, serial_state));
-  return sbody;
+  cond = new CallExpr("_cond_test", cond);
+  if (fSerial) {
+    body->insertAtHead(cond);
+    return body;
+  } else {
+    BlockStmt *sbody = new BlockStmt();
+    sbody->blockTag = BLOCK_SERIAL;
+    VarSymbol *serial_state = new VarSymbol("_tmp_serial_state");
+    sbody->insertAtTail(new DefExpr(serial_state, new CallExpr(PRIMITIVE_GET_SERIAL)));
+    sbody->insertAtTail(new CondStmt(cond, new CallExpr(PRIMITIVE_SET_SERIAL, gTrue)));
+    sbody->insertAtTail(body);
+    sbody->insertAtTail(new CallExpr(PRIMITIVE_SET_SERIAL, serial_state));
+    return sbody;
+  }
 }
 
 
@@ -659,8 +665,8 @@ BlockStmt* build_type_select(AList* exprs, BlockStmt* whenstmts) {
 }
 
 
-FnSymbol* build_reduce(Expr* red, Expr* data, bool scan) {
-  if (SymExpr* sym = toSymExpr(red)) {
+CallExpr* buildReduceScan(Expr* op, Expr* data, bool isScan) {
+  if (SymExpr* sym = toSymExpr(op)) {
     if (sym->unresolved) {
       if (!strcmp(sym->unresolved, "max"))
         sym->unresolved = astr("_max");
@@ -684,15 +690,19 @@ FnSymbol* build_reduce(Expr* red, Expr* data, bool scan) {
       new CallExpr(PRIMITIVE_MOVE, eltType,
         new CallExpr(PRIMITIVE_TYPEOF,
           new CallExpr(
-            new CallExpr(".", new CallExpr("_getIterator", tmp), new_StringSymbol("getValue")),
+            new CallExpr(".",
+              new CallExpr("_getIterator", tmp),
+              new_StringSymbol("getValue")),
             new CallExpr(
-              new CallExpr(".", new CallExpr("_getIterator", tmp), new_StringSymbol("getHeadCursor")))))),
+              new CallExpr(".",
+                new CallExpr("_getIterator", tmp),
+                new_StringSymbol("getHeadCursor")))))),
       BLOCK_TYPE));
   fn->insertAtTail(
     new CallExpr(PRIMITIVE_RETURN,
-      new CallExpr(scan ? "_scan" : "_reduce",
-        new CallExpr(PRIMITIVE_NEW, new CallExpr(red, eltType)), tmp)));
-  return fn;
+      new CallExpr(isScan ? "_scan" : "_reduce",
+        new CallExpr(PRIMITIVE_NEW, new CallExpr(op, eltType)), tmp)));
+  return new CallExpr(new DefExpr(fn));
 }
 
 

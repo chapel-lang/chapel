@@ -37,7 +37,8 @@ BlockStmt* buildLogicalAndAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalOrAssignment(Expr* lhs, Expr* rhs);
 CondStmt* build_select(Expr* s, BlockStmt* whenstmts);
 BlockStmt* build_type_select(AList* s, BlockStmt* whenstmts);
-FnSymbol* build_reduce(Expr* red, Expr *data, bool scan=false);
+
+CallExpr* buildReduceScan(Expr* op, Expr* data, bool isScan=false);
 
 void backPropagateInitsTypes(BlockStmt* stmts);
 void setVarSymbolAttributes(BlockStmt* stmts,
