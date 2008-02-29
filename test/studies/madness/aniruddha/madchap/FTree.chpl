@@ -8,7 +8,6 @@
     indexing into the tree to be sure you don't create coeffs when you don't
     mean to.
  */
-config const numLocs = 3;
 
 // FIXME: The Coeff record works around arrays of arrays.  Ideally, nodes
 //        should be a mapping from indices onto :[coeffDom] real.
@@ -122,18 +121,18 @@ class FTree {
     const order    : int;
     const coeffDom = [0..order-1];
     
-    const locDom = [0..numLocs);
-    var nodes    : [locDom] LocTree;
+    //var nodes    : domain(1) distributed(Block) = [Locales.domain] LocTree;
+    var nodes    : [Locales.domain] LocTree;
 
     def initialize() {
         if order == 0 then
             halt("FTree must be initialized with an order > 0");
 
-        [loc in locDom] nodes[loc] = new LocTree(coeffDom);
+        [loc in nodes.domain] nodes[loc] = new LocTree(coeffDom);
     }
 
     def mapNodeToLoc(lvl, idx) {
-        return (lvl+idx)%numLocs; 
+        return (lvl+idx)%numLocales; 
     }
     
     def this((lvl, idx)) var {
@@ -246,7 +245,7 @@ def main() {
     
     for (i, j) in [1..3, 2..4] do f[(i, j)] = (i, j);
   
-    for loc in 0..numLocs-1 {
+    for loc in Locales.domain {
         writeln("\n\ntree on loc ", loc, " = ");
         for data in f[loc] do
             writeln(data);
@@ -267,7 +266,7 @@ def main() {
     writeln("\n\nf.remove((3, 4))"); 
     f.remove((3, 4));
 
-    for loc in 0..numLocs-1 {
+    for loc in Locales.domain {
         writeln("\n\ntree on loc ", loc, " = ");
         for data in f[loc] do
             writeln(data);
