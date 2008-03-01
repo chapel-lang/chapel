@@ -1,0 +1,20 @@
+error message: old constructor syntax results in confusing message
+
+The error message I currently get for this test is:
+
+typeInsteadOfNew.chpl:10: error: unresolved type specifier 'C(domain(1,int(64),0))'
+typeInsteadOfNew.chpl:5: note: candidates are: C()
+
+I'm wondering if there's something clearer we could say here -- in
+particular, the following seems confusing:
+
+- the message refers to a type specifier, but it seems like I didn't
+  type one.
+
+- the error message lists a 0-argument constructor as an option, but
+  it doesn't seem like there is one (the default constructor should
+  have arguments, e.g.)
+
+
+I put a candidate error message in the .good file which more clearly
+describes the problem, but I'm open to other suggestions as well.
