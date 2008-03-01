@@ -1,0 +1,9 @@
+error message: this() function resolving to domain's this() function (?)
+
+In this test, the this() method that I've provided is incorrect
+in that it tries to index into an array indexed using int(32)'s
+with an int(64) value -- clearly a problem on my part.  The
+strange thing is that the error message I get seems to believe
+that I've indexed into a domain -- I'm not seeing why this
+would happen (and in any case, it seems like we should generate
+a better error message for the user here).
