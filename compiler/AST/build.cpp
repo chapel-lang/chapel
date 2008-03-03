@@ -413,11 +413,9 @@ BlockStmt* buildForLoopStmt(BlockTag tag,
     beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
     body = buildBeginStmt(beginBlk, false);
     BlockStmt* block = buildForLoopStmt(BLOCK_FOR, indices, iterator, body);
-    block->insertAtHead(new CallExpr("_upEndCount", coforallCount));
     block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
     block->insertAtHead(new DefExpr(coforallCount));
     body->insertBefore(new CallExpr("_upEndCount", coforallCount));
-    block->insertAtTail(new CallExpr("_downEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
     return block;
   }
