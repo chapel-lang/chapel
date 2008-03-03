@@ -411,7 +411,7 @@ BlockStmt* buildForLoopStmt(BlockTag tag,
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->insertAtHead(body);
     beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-    body = buildBeginStmt(beginBlk);
+    body = buildBeginStmt(beginBlk, false);
     BlockStmt* block = buildForLoopStmt(BLOCK_FOR, indices, iterator, body);
     block->insertAtHead(new CallExpr("_upEndCount", coforallCount));
     block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
@@ -920,13 +920,19 @@ buildBeginStmt(Expr* stmt, bool allocateOnHeap) {
   BlockStmt* block = buildChapelStmt();
   FnSymbol* fn = new FnSymbol(astr("_begin_fn_", istr(uid++)));
   fn->addPragma("begin");
-  if (!allocateOnHeap)
-    fn->addPragma("no heap allocation");
   fn->retType = dtVoid;
   fn->insertAtTail(stmt);
+  if (!allocateOnHeap) {
+    fn->addPragma("no heap allocation");
+  }
+
+  // only do this when not allocateOnHeap (not in cobegin/coforall)
+  // but this doesn't work:
+  // parallel/sync/deitz/test_sync_in_class_simple3.chpl for example
   fn->insertAtTail(new CallExpr("_downEndCount"));
-  block->insertAtTail(new DefExpr(fn));
   block->insertAtTail(new CallExpr("_upEndCount"));
+
+  block->insertAtTail(new DefExpr(fn));
   block->insertAtTail(new BlockStmt(new CallExpr(fn), BLOCK_BEGIN));
   return block;
 }
