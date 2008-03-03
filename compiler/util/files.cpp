@@ -435,6 +435,11 @@ void codegen_makefile(fileinfo* mainfile) {
   fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
   fprintf(makefile.fptr, "TMPBINNAME = %s\n", intExeFilename);
   fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n", chplhome);
+  fprintf(makefile.fptr, "TAGS_COMMAND = ");
+  if (developer && saveCDir[0] && !printCppLineno) {
+    fprintf(makefile.fptr, "-@which etags > /dev/null 2>&1 && cd %s && etags *.c *.h", saveCDir);
+  }
+  fprintf(makefile.fptr, "\n");
   fprintf(makefile.fptr, "CHPLSRC = \\\n");
   fprintf(makefile.fptr, "\t%s \\\n\n", mainfile->pathname);
   genCFiles(makefile.fptr);
