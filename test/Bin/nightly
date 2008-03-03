@@ -132,7 +132,7 @@ $comm = `$utildir/comm.pl`; chomp($comm);
 
 $fullplatform = "$targetplatform:$targetcompiler:$comm:$threads";
 if ($hostplatform ne $targetplatform) {
-    $fullplatform = "$fullplatform::$hostplatform";
+    $fullplatform = "$fullplatform\:\:$hostplatform";
     if ($hostcompiler ne $targetcompiler) {
         $fullplatform = "$fullplatform:$hostcompiler";
     }
