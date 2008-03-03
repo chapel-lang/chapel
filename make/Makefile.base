@@ -96,6 +96,15 @@ endif
 #
 # default tools
 # 
+ifndef CHPL_TAGS_UTIL
+ifeq ($(CHPL_EDITOR),vim)
+CHPL_TAGS_UTIL = ctags
+CHPL_TAGS_FLAGS = -w
+else
+CHPL_TAGS_UTIL = etags
+endif
+endif
+
 
 #
 # echo to use with the -n option

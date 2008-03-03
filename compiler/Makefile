@@ -83,7 +83,7 @@ $(BUILD_VERSION_FILE): FORCE
 
 $(CHPL): $(CHPL_BIN_DIR) $(CHPL_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
-	-@(which etags > /dev/null 2>&1 && echo "Updating TAGS..." && etags $(ALL_SRCS) */*.h) || echo "etags not available"
+	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) */*.h) || echo "$(CHPL_TAGS_UTIL) not available"
 	-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
 
 $(CHPL_BIN_DIR):
