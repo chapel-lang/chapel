@@ -1078,7 +1078,9 @@ static const char* toString(FnSymbol* fn) {
     }
   } else
     str = astr(fn->name);
-  if (!fn->noParens)
+  
+  if (!fn->noParens &&
+      !(!strncmp("_type_construct_", fn->name, 16) && fn->numFormals() == 0))
     str = astr(str, "(");
   bool first = false;
   for (int i = start; i < fn->numFormals(); i++) {
@@ -1105,7 +1107,8 @@ static const char* toString(FnSymbol* fn) {
     if (arg->variableExpr)
       str = astr(str, " ...");
   }
-  if (!fn->noParens)
+  if (!fn->noParens &&
+      !(!strncmp("_type_construct_", fn->name, 16) && fn->numFormals() == 0))
     str = astr(str, ")");
   if (developer)
     str = astr(str, " [", istr(fn->id), "]");
@@ -1201,6 +1204,10 @@ printResolutionError(const char* error,
         printed_one = true;
       }
     }
+    if (candidates.n == 1 &&
+        candidates.v[0]->numFormals() == 0
+        && !strncmp("_type_construct_", info->name, 16))
+      USR_PRINT(call, "did you forget the 'new' keyword?");
     USR_STOP();
   }
 }
