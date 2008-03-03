@@ -57,7 +57,7 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.rules
 $(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 	$(AR) -rc $@ $(RUNTIME_OBJS)
 	$(RANLIB) $@
-	-@(which etags > /dev/null 2>&1 && echo "Updating TAGS..." && etags -o TAGS $(RUNTIME_SRCS) include/*.h include/threads-$(CHPL_MAKE_THREADS)/*.h include/comm-$(CHPL_MAKE_COMM)/*.h) || echo "etags not available"
+	-@(which etags > /dev/null 2>&1 && echo "Updating TAGS..." && etags -o TAGS $(ALL_SRCS) include/*.h include/threads-$(CHPL_MAKE_THREADS)/*.h include/comm-$(CHPL_MAKE_COMM)/*.h) || echo "etags not available"
 
 $(RUNTIME_DIR)/main.o: src/$(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)/main.o
 	cp $< $@
