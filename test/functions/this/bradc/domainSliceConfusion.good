@@ -1,2 +1,2 @@
-myD = {x = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0}
-myD = {x = 1.1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0}
+domainSliceConfusion.chpl:8: In function 'this':
+domainSliceConfusion.chpl:9: error: unresolved access of '[domain(1,int,0)] real' by '(int(64))'

@@ -76,13 +76,13 @@ def _build_index_type(d: _domain) type
 // integers and ranges; that is, it is a valid argument list for rank
 // change
 //
-def _validRankChangeArgs(args) param {
-  def _validRankChangeArg(r: range(?e,?b,?s)) param return true;
-  def _validRankChangeArg(i: integral) param return true;
-  def _validRankChangeArg(x) param return false;
+def _validRankChangeArgs(args, type idxType) param {
+  def _validRankChangeArg(type idxType, r: range(?e,?b,?s)) param return true;
+  def _validRankChangeArg(type idxType, i: idxType) param return true;
+  def _validRankChangeArg(type idxType, x) param return false;
 
   def help(param dim: int) param {
-    if !_validRankChangeArg(args(dim)) then
+    if !_validRankChangeArg(idxType, args(dim)) then
       return false;
     else if dim < args.size then
       return help(dim+1);
@@ -148,7 +148,7 @@ record _domain {
   def this(ranges: range(?eltType,?boundedType,?stridable) ...rank)
     return new _domain(rank, _value.slice(_any_stridable(ranges), ranges));
 
-  def this(args ...rank) where _validRankChangeArgs(args) {
+  def this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = _any_stridable(ranges);
     return new _domain(rank, _value.rankChange(rank, stridable, args));
@@ -353,7 +353,7 @@ record _array {
   }
 
   pragma "valid var"
-  def this(args ...rank) var where _validRankChangeArgs(args) {
+  def this(args ...rank) var where _validRankChangeArgs(args, idxType) {
     if boundsChecking then
       _value.checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
