@@ -20,7 +20,7 @@ def main() {
     writeln("\nDumping the boxes at each level:");
     for lvl in 0..F.max_level { 
         write("\n **",lvl,": ");
-        for (n, l) in F.sumC.idx_iter(lvl) do
+        for (n, l) in F.sumC.index_iter(lvl) do
             write(" [",n,", ",l,"]");
     }
 }
