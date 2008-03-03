@@ -139,6 +139,14 @@ if ($hostplatform ne $targetplatform) {
 }
 
 #
+# set mail options
+#
+$mailer = $ENV{'CHPL_MAILER'};
+if ($mailer eq "") {
+    $mailer = "Mail";
+}
+
+#
 # directory variables
 #
 if ($debug == 1) {
@@ -249,14 +257,6 @@ $prevsummary = "$cronlogdir/last-$fullplatform-$threechars.log.sorted";
 #
 ensureSummaryExists($prevsummary);
 
-
-#
-# set mail options
-#
-$mailer = $ENV{'CHPL_MAILER'};
-if ($mailer eq "") {
-    $mailer = "Mail";
-}
 
 $somethingfailed = 0;
 
