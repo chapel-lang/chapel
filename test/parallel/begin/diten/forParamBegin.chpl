@@ -1,5 +1,5 @@
 for param i in 1..5 {
-  end {
+  sync {
     begin {
       write(i);
     }

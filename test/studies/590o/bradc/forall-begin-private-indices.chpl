@@ -21,7 +21,7 @@ def main {
   }
 
   var A: [AllPairs] real;
-  end {
+  sync {
     for (x,y) in [StartIndices, EndIndices] {
       begin {
         if (x <= y) {

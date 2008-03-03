@@ -939,7 +939,7 @@ buildBeginStmt(Expr* stmt, bool allocateOnHeap) {
 
 
 BlockStmt*
-buildEndStmt(Expr* stmt) {
+buildSyncStmt(Expr* stmt) {
   if (fSerial)
     return buildChapelStmt(new BlockStmt(stmt, BLOCK_NORMAL));
   BlockStmt* block = buildChapelStmt();

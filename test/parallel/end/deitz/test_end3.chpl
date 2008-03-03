@@ -10,6 +10,6 @@ def foo() {
   }
 }
 
-end foo();
+sync foo();
 
 writeln("3. hello, world");

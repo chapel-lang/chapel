@@ -1,6 +1,6 @@
 use Time;
 
-end {
+sync {
   begin {
     sleep(1);
     writeln("1. hello, world");

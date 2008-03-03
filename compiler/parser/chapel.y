@@ -105,7 +105,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TDISTRIBUTED
 %token TDO
 %token TDOMAIN
-%token TEND
 %token TENUM
 %token TEXTERN
 %token TFOR
@@ -199,7 +198,7 @@ Is this "while x"(i); or "while x(i)";?
 %type <pblockstmt> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
 %type <pblockstmt> expr_stmt if_stmt expr_for_stmt for_stmt while_do_stmt do_while_stmt serial_stmt
 %type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt class_body_stmt
-%type <pblockstmt> type_select_stmt on_stmt non_empty_stmt use_stmt_ls
+%type <pblockstmt> type_select_stmt on_stmt non_empty_stmt use_stmt_ls sync_stmt
 
 %type <pblockstmt> typedef_decl_stmt typedef_decl_stmt_inner fn_decl_stmt class_decl_stmt mod_decl_stmt extern_fn_decl_stmt
 %type <pblockstmt> typevar_decl_stmt enum_decl_stmt use_stmt
@@ -336,6 +335,7 @@ non_empty_stmt:
 | typedef_decl_stmt
 | var_decl_stmt
 | on_stmt
+| sync_stmt
 | serial_stmt
 | error
     { printf("syntax error"); exit(1); }
@@ -601,8 +601,6 @@ block_stmt:
     { $$ = buildAtomicStmt($2); }
 | TBEGIN stmt
     { $$ = buildBeginStmt($2); }
-| TEND stmt
-    { $$ = buildEndStmt($2); }
 ;
 
 
@@ -611,6 +609,12 @@ on_stmt:
     { $$ = buildOnStmt($2, $4); }
 | TON expr parsed_block_stmt
     { $$ = buildOnStmt($2, $3); }
+;
+
+
+sync_stmt:
+  TSYNC stmt
+    { $$ = buildSyncStmt($2); }
 ;
 
 

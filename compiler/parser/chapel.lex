@@ -74,7 +74,6 @@ distributed     processToken(TDISTRIBUTED);
 do              processToken(TDO);
 domain          processToken(TDOMAIN);
 else            processToken(TELSE);
-end             processToken(TEND);
 enum            processToken(TENUM);
 _extern         processToken(TEXTERN);
 for             processToken(TFOR);

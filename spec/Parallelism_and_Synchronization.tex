@@ -13,7 +13,7 @@ parallel-statement:
   cobegin-statement
   coforall-statement
   begin-statement
-  end-statement
+  sync-statement
   serial-statement
   atomic-statement
 
@@ -238,25 +238,25 @@ The following statements cannot be contained in begin-statements:
 break-statements, continue-statements, yield-statements, and
 return-statements.
 
-\subsection{The End Statement}
-\label{End}
-\index{end@\chpl{end}}
+\subsection{The Sync Statement}
+\label{Sync_Statement}
+\index{sync@\chpl{sync}}
 
-The end statement is a join of all dynamically encountered begins from
-within a statement.  The syntax for the end statement is given by
+The sync statement is a join of all dynamically encountered begins from
+within a statement.  The syntax for the sync statement is given by
 \begin{syntax}
-end-statement:
-  `end' statement
+sync-statement:
+  `sync' statement
 \end{syntax}
 
-The following statements cannot be contained in end-statements:
+The following statements cannot be contained in sync-statements:
 break-statements, continue-statements, yield-statements, and
 return-statements.
 
 \begin{example}
-The end statement
+The sync statement
 \begin{chapel}
-end {
+sync {
   begin stmt1();
   begin stmt2();
 }

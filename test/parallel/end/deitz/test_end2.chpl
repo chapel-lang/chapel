@@ -7,7 +7,7 @@ def foo() {
   }
 }
 
-end {
+sync {
   foo();
 }
 
