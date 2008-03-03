@@ -53,6 +53,7 @@ static FnSymbol* instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call);
 
 static void setScalarPromotionType(ClassType* ct);
 static void fixTypeNames(ClassType* ct);
+static void insertReturnTemps();
 
 static int explainLine;
 static ModuleSymbol* explainModule;
@@ -2682,7 +2683,20 @@ postFold(Expr* expr) {
       }
     }
   }
-
+/*
+  if (toSymExpr(result) || toCallExpr(result)) {
+    if (Type* type = result->typeInfo()) {
+      if (type->symbol && type->symbol->hasPragma("sync")) {
+        if (result == result->getStmtExpr()) {
+          CallExpr* call = toCallExpr(result);
+          if (!call || (!call->isPrimitive(PRIMITIVE_MOVE) && !call->isPrimitive(PRIMITIVE_RETURN))) {
+            fprintf(stderr, "place to break\n");
+          }
+        }
+      }
+    }
+  }
+*/
   if (CondStmt* cond = toCondStmt(result->parentExpr)) {
     if (cond->condExpr == result) {
       if (Expr* expr = cond->fold_cond_stmt()) {
@@ -3270,6 +3284,7 @@ resolve() {
     delete ddf.get(key);
   }
 
+  insertReturnTemps(); // must be done before pruneResolvedTree is called.
   pruneResolvedTree();
 }
 
@@ -3310,6 +3325,40 @@ buildArrayTypeInfo(Type* type) {
   cache.put(type, ct);
   ct->symbol->pragmas.add("_ArrayTypeInfo");
   return ct;
+}
+
+
+static void insertReturnTemps() {
+  //
+  // Insert return temps for functions that return values if no
+  // variable captures the result. If the value is a sync var or a
+  // reference to a sync var, pass it through the _statementLevelSymbol
+  // function to get the semantics of reading a sync var.
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->parentSymbol) {
+        if (FnSymbol* fn = call->isResolved()) {
+          if (fn->retType != dtVoid) {
+            CallExpr* parent = toCallExpr(call->parentExpr);
+            if (!parent && !isDefExpr(call->parentExpr)) { // no use
+              VarSymbol* tmp = new VarSymbol("_dummy", fn->retType);
+              DefExpr* def = new DefExpr(tmp);
+              call->insertBefore(def);
+              if ((getValueType(fn->retType) && getValueType(fn->retType)->symbol->hasPragma("sync")) || fn->retType->symbol->hasPragma("sync")) {
+                CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
+                call->insertBefore(sls);
+                resolveCall(sls);
+                INT_ASSERT(sls->isResolved());
+                resolveFns(sls->isResolved());
+              }
+              def->insertAfter(new CallExpr(PRIMITIVE_MOVE, tmp, call->remove()));
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 
@@ -3594,28 +3643,6 @@ pruneResolvedTree() {
               field->isParameter() ||
               !strcmp(field->name, "_promotionType"))
             field->defPoint->remove();
-        }
-      }
-    }
-  }
-
-  //
-  // Insert return temps for functions that return values if no
-  // variable captures the result.
-  //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->parentSymbol) {
-        if (FnSymbol* fn = call->isResolved()) {
-          if (fn->retType != dtVoid) {
-            CallExpr* parent = toCallExpr(call->parentExpr);
-            if (!parent && !isDefExpr(call->parentExpr)) { // no use
-              VarSymbol* tmp = new VarSymbol("_dummy", fn->retType);
-              DefExpr* def = new DefExpr(tmp);
-              call->insertBefore(def);
-              def->insertAfter(new CallExpr(PRIMITIVE_MOVE, tmp, call->remove()));
-            }
-          }
         }
       }
     }

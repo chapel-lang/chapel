@@ -1,8 +1,0 @@
-bug: simple read of "array of sync var" element doesn't empty
-
-This is similar to the bug from simplereadSync.chpl except that the
-fix that worked there doesn't seem to work for simplereadSync.chpl.
-
-When this test is working, please let Brad know and/or update
-studes/hpcc/common/bradc/hpccMultilocale.chpl to remove the
-tmp variables used to empty sync vars.

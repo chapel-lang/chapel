@@ -3,14 +3,14 @@ myTurn$(0) = true;
 
 
 def waitForTurn() {
-  const tmp = myTurn$(localeID()); // BUG: tmp should not be required
+  myTurn$(localeID());
 }
 
 
 def passTurn() {
   myTurn$((localeID() + 1) % numLocales) = true;
   if (localeID() == 0) then {
-    const tmp = myTurn$(localeID()); // BUG: tmp should not be required
+    myTurn$(localeID());
     myTurn$(localeID()) = true;
   }
 }

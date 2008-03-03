@@ -1,0 +1,4 @@
+bug: Can't create a tuple of sync variables
+
+Tuples of sync variables cause C warnings about making pointers from integers.
+If you compile without C warnings, it hangs at the tuple's creation.

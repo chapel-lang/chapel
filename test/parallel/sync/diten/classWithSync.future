@@ -1,3 +1,0 @@
-bug: simple read of "class's sync var field" doesn't empty
-
-This is similar to the bug from ../bradc/simplereadSyncArrElem.chpl.
