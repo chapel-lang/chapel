@@ -39,7 +39,9 @@ def main() {
     const startTime = getCurrentTime();
     // TODO: Want    A = B + alpha * C;
 
-    /* TODO: OR EVEN:
+    /* TODO OR EVEN: -- but this fails due to "detupled indices drop
+       references to var iterators bug
+       
     forall (a, b, c) in (A, B, C) {
       a = b + alpha * c;
     }
@@ -106,3 +108,5 @@ def printResults(successful, execTimes) {
     writeln("Performance (GB/s) = ", GBPerSec);
   }
 }
+
+// TODO: Check diff with main stream.chpl to see what differs

@@ -40,7 +40,9 @@ class Block1DDom {
     return new Block1DArr(elemType, this);
   }
 
-  def dom {
+  // one would really want to call this .domain (or rename the
+  // methods in the ChapelArray classes), but you can't.
+  def dom { 
     return whole;
   }
 
