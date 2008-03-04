@@ -729,7 +729,8 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map,
         if ((this->numFormals() > 0) &&
             (mt = toDefExpr(this->formals.get(1))) &&
             (mt->sym->type == dtMethodToken) &&
-            (_this == this->getFormal(2))) {
+            (_this == this->getFormal(2)) &&
+            (formal == this->getFormal(2))) {
           // call->insertAtTail( new CallExpr( "readXX", wrapper_formal));
           call->insertAtTail(new CallExpr("value", gMethodToken, wrapper_formal));
         } else {
