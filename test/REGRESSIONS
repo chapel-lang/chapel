@@ -34,6 +34,19 @@ baseline-specific regressions
 [Error matching program output for studies/sudoku/dinan/sudoku]
 
 
+
+===========================
+gasnet-specific regressions
+===========================
+
+???
+---
+[Error matching compiler output for classes/diten/allocateManyObjects]
+[Error matching program output for
+multilocale/diten/1DBlockDistributedJacobi]
+[Error matching program output for
+parallel/serial/figueroa/MultiLocaleSerial]
+
 ==========================
 intel-specific regressions
 ==========================
@@ -41,7 +54,6 @@ intel-specific regressions
 Sometimes works/sometimes fails
 -------------------------------
 [Error: Timed out executing program parallel/coforall/figueroa/ManyThreads]
-[Error matching program output for parallel/begin/waynew/simple2]
 
 
 Warning about use before set -- error #592 -- cause unknown
@@ -76,7 +88,6 @@ pathscale-specific regressions
 
 globals are not volatile (?)
 ----------------------------
-[Error: Timed out executing program parallel/begin/waynew/simple2] 
 [Error: Timed out executing program parallel/cobegin/waynew/depend] 
 [Error: Timed out executing program parallel/cobegin/waynew/while] -- intermittent
 
@@ -180,14 +191,14 @@ strange error -- X1 compiler? apsim?
 mta/xmt-specific regressions
 ============================
 
-use before value set warning
-----------------------------
-[Error matching program output for release/examples/hpcc/ra]
-
-       unreachable line causes compiler warning
+unreachable line causes compiler warning
 ----------------------------------------
 [Error matching program output for release/examples/arrays]
 [Error matching program output for release/examples/blockLU]
+
+use before value set warning
+----------------------------
+[Error matching program output for release/examples/hpcc/ra]
 
 small full/empty sizes
 ----------------------
