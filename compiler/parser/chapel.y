@@ -910,18 +910,18 @@ enum_item:
 typedef_decl_stmt_inner:
   identifier TASSIGN type
     {
-      UserType* newtype = new UserType($3);
-      TypeSymbol* typeSym = new TypeSymbol($1, newtype);
-      DefExpr* def_expr = new DefExpr(typeSym);
-      $$ = buildChapelStmt(def_expr);
+      VarSymbol* var = new VarSymbol($1);
+      var->isTypeVariable = true;
+      DefExpr* def = new DefExpr(var, $3);
+      $$ = buildChapelStmt(def);
     }
 | identifier TASSIGN type TCOMMA typedef_decl_stmt_inner
     {
-      UserType* newtype = new UserType($3);
-      TypeSymbol* typeSym = new TypeSymbol($1, newtype);
-      DefExpr* def_expr = new DefExpr(typeSym);
-      $5->insertAtTail(def_expr);
-      $$ = $5;
+      VarSymbol* var = new VarSymbol($1);
+      var->isTypeVariable = true;
+      DefExpr* def = new DefExpr(var, $3);
+      $5->insertAtTail(def);
+      $$ = buildChapelStmt($5);
     }
 ;
 

@@ -47,7 +47,6 @@ void printStatistics(const char* pass) {
   decl_counters(LabelSymbol, SYMBOL_LABEL);
   decl_counters(PrimitiveType, TYPE_PRIMITIVE);
   decl_counters(EnumType, TYPE_ENUM);
-  decl_counters(UserType, TYPE_USER);
   decl_counters(ClassType, TYPE_CLASS);
   forv_Vec(BaseAST, ast, gAsts) {
     switch (ast->astTag) {
@@ -67,7 +66,6 @@ void printStatistics(const char* pass) {
       case_counters(LabelSymbol, SYMBOL_LABEL);
       case_counters(PrimitiveType, TYPE_PRIMITIVE);
       case_counters(EnumType, TYPE_ENUM);
-      case_counters(UserType, TYPE_USER);
       case_counters(ClassType, TYPE_CLASS);
     default: break;
     }
@@ -88,7 +86,6 @@ void printStatistics(const char* pass) {
   calc_counters(LabelSymbol, SYMBOL_LABEL);
   calc_counters(PrimitiveType, TYPE_PRIMITIVE);
   calc_counters(EnumType, TYPE_ENUM);
-  calc_counters(UserType, TYPE_USER);
   calc_counters(ClassType, TYPE_CLASS);
   int nStmt = nCondStmt + nBlockStmt + nGotoStmt;
   int kStmt = kCondStmt + kBlockStmt + kGotoStmt;
@@ -96,8 +93,8 @@ void printStatistics(const char* pass) {
   int kExpr = kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
-  int nType = nPrimitiveType+nEnumType+nUserType+nClassType;
-  int kType = kPrimitiveType+kEnumType+kUserType+kClassType;
+  int nType = nPrimitiveType+nEnumType+nClassType;
+  int kType = kPrimitiveType+kEnumType+kClassType;
 
   fprintf(stderr, "  %d asts (%dk)\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType);
 
@@ -132,14 +129,14 @@ void printStatistics(const char* pass) {
             kSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Type %9d  Prim  %9d  Enum %9d  User  %9d  Class %9d\n",
-            nType, nPrimitiveType, nEnumType, nUserType, nClassType);
+    fprintf(stderr, "  Type %9d  Prim  %9d  Enum %9d  Class %9d\n",
+            nType, nPrimitiveType, nEnumType, nClassType);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Type %9dK Prim  %9dK Enum %9dK User  %9dK Class %9dK\n",
-            kType, kPrimitiveType, kEnumType, kUserType, kClassType);
+    fprintf(stderr, "  Type %9dK Prim  %9dK Enum %9dK Class %9dK\n",
+            kType, kPrimitiveType, kEnumType, kClassType);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Type %6dK Prim  %6dK Enum %6dK User  %6dK Class %6dK\n",
-            kType, kPrimitiveType, kEnumType, kUserType, kClassType);
+    fprintf(stderr, "  Type %6dK Prim  %6dK Enum %6dK Class %6dK\n",
+            kType, kPrimitiveType, kEnumType, kClassType);
   last_asts = gAsts.n;
 }
 
@@ -407,7 +404,6 @@ const char* astTagName[BASE+1] = {
   "Type",
   "PrimitiveType",
   "EnumType",
-  "UserType",
   "ClassType",
 
   "BaseAST"
@@ -481,9 +477,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
     break;
   case TYPE_ENUM:
     AST_ADD_LIST(EnumType, constants);
-    break;
-  case TYPE_USER:
-    AST_ADD_CHILD(UserType, typeExpr);
     break;
   case TYPE_CLASS:
     AST_ADD_LIST(ClassType, fields);

@@ -52,7 +52,6 @@ enum AstTag {
   TYPE,
   TYPE_PRIMITIVE,
   TYPE_ENUM,
-  TYPE_USER,
   TYPE_CLASS,
 
   BASE
@@ -170,7 +169,6 @@ void registerModule(ModuleSymbol* mod);
 
 #define isPrimitiveType(ast) ((ast) && (ast)->astTag == TYPE_PRIMITIVE)
 #define isEnumType(ast)      ((ast) && (ast)->astTag == TYPE_ENUM)
-#define isUserType(ast)      ((ast) && (ast)->astTag == TYPE_USER)
 #define isClassType(ast)     ((ast) && (ast)->astTag == TYPE_CLASS)
 
 //
@@ -198,7 +196,6 @@ void registerModule(ModuleSymbol* mod);
 #define toType(ast)          (isType(ast)          ? ((Type*)(ast))          : NULL)
 #define toPrimitiveType(ast) (isPrimitiveType(ast) ? ((PrimitiveType*)(ast)) : NULL)
 #define toEnumType(ast)      (isEnumType(ast)      ? ((EnumType*)(ast))      : NULL)
-#define toUserType(ast)      (isUserType(ast)      ? ((UserType*)(ast))      : NULL)
 #define toClassType(ast)     (isClassType(ast)     ? ((ClassType*)(ast))     : NULL)
 
 #endif

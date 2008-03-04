@@ -87,17 +87,6 @@ class EnumType : public Type {
 };
 
 
-class UserType : public Type {
- public:
-  Expr* typeExpr;
-
-  UserType(Expr* init_typeExpr);
-  virtual void verify(); 
-  COPY_DEF(UserType);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-};
-
-
 enum ClassTag {
   CLASS_CLASS,
   CLASS_RECORD,

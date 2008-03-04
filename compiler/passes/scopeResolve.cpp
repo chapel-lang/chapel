@@ -125,6 +125,15 @@ static void resolveEnumeratedTypes() {
 }
 
 
+static bool
+isTypeAlias(Symbol* sym) {
+  return
+    isVarSymbol(sym) &&
+    sym->isTypeVariable &&
+    isFnSymbol(sym->defPoint->parentSymbol);
+}
+    
+
 void scopeResolve(void) {
   //
   // resolve type of this for methods
@@ -197,31 +206,27 @@ void scopeResolve(void) {
             break;
         }
 
-        FnSymbol* fn = toFnSymbol(sym);
-        TypeSymbol* type = toTypeSymbol(sym);
         if (sym) {
-          if (!fn) {
+          if (!isFnSymbol(sym)) {
             symExpr->var = sym;
             symExpr->unresolved = NULL;
           }
-          if (type)
-            if (UserType* ut = toUserType(type->type)) {
-              ASTMap map;
-              Expr* e = ut->typeExpr->copy(&map);
+          if (isTypeAlias(sym)) {
+            ASTMap map;
+            Expr* init = sym->defPoint->init->copy(&map);
 
-              // detect recursively defined type aliases
-              Vec<BaseAST*> asts;
-              map.get_values(asts);
-              forv_Vec(BaseAST, ast, asts) {
-                if (SymExpr* se = toSymExpr(ast))
-                  if (TypeSymbol* ts = toTypeSymbol(se->var))
-                    if (isUserType(ts->type))
-                      USR_FATAL(se, "type alias is recursive");
-              }
-
-              symExpr->replace(e);
-              continue;
+            // detect recursively defined type aliases
+            Vec<BaseAST*> asts;
+            map.get_values(asts);
+            forv_Vec(BaseAST, ast, asts) {
+              if (SymExpr* se = toSymExpr(ast))
+                if (isTypeAlias(se->var))
+                  USR_FATAL(se, "type alias is recursive");
             }
+
+            symExpr->replace(init);
+            continue;
+          }
         }
 
         // Apply 'this' and 'outer' in methods where necessary
@@ -312,9 +317,9 @@ void scopeResolve(void) {
 
   resolveEnumeratedTypes();
 
-  forv_Vec(TypeSymbol, type, gTypes) {
-    if (toUserType(type->type)) {
-      type->defPoint->remove();
-    }
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = toDefExpr(ast))
+      if (isTypeAlias(def->sym))
+        def->remove();
   }
 }

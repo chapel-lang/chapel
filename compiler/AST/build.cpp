@@ -722,7 +722,7 @@ CallExpr* buildReduceScanExpr(Expr* op, Expr* data, bool isScan) {
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, data));
   VarSymbol* eltType = new VarSymbol("_tmp");
   eltType->isCompilerTemp = true;
-  eltType->isTypeVariable = true;
+  eltType->canType = true;
   fn->insertAtTail(new DefExpr(eltType));
   fn->insertAtTail(
     new BlockStmt(

@@ -217,39 +217,6 @@ bool EnumType::implementedUsingCVals(void) {
 }
 
 
-UserType::UserType(Expr* init_typeExpr) :
-  Type(TYPE_USER, NULL),
-  typeExpr(init_typeExpr)
-{}
-
-
-void UserType::verify() {
-  Type::verify();
-  if (astTag != TYPE_USER) {
-    INT_FATAL(this, "Bad UserType::astTag");
-  }
-}
-
-
-UserType*
-UserType::copyInner(ASTMap* map) {
-  UserType* copy = new UserType(COPY_INT(typeExpr));
-  copy->addSymbol(symbol);
-  return copy;
-}
-
-
-void UserType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defaultValue) {
-    defaultValue = toSymbol(new_ast);
-  } else if (old_ast == typeExpr) {
-    typeExpr = toExpr(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in Type::replaceChild");
-  }
-}
-
-
 ClassType::ClassType(ClassTag initClassTag) :
   Type(TYPE_CLASS, NULL),
   classTag(initClassTag),
