@@ -1174,11 +1174,11 @@ instantiate_tuple_hash( FnSymbol* fn) {
     for (int i=1; i<ct->fields.length(); i++) {
       CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i)); 
       if (first) {
-        call =  new CallExpr( "_indefinite_hash", field_access);
+        call =  new CallExpr( "_associative_hash", field_access);
         first = false;
       } else {
         call = new CallExpr( "^", 
-                             new CallExpr( "_indefinite_hash",
+                             new CallExpr( "_associative_hash",
                                            field_access),
                              new CallExpr( "<<",
                                            call,

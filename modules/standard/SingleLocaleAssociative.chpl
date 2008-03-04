@@ -3,35 +3,11 @@ use List;
 param _MIN_SIZE = 0;
 param _MAX_SIZE = 26;
 
-var _ps : _ddata(int) = new _ddata(int, 27);
-_ps.init();
-_ps(_MIN_SIZE) = 23;
-_ps(1) = 53;
-_ps(2) = 97;
-_ps(3) = 193;
-_ps(4) = 389;
-_ps(5) = 769;
-_ps(6) = 1543;
-_ps(7) = 3079;
-_ps(8) = 6151;
-_ps(9) = 12289;
-_ps(10) = 24593;
-_ps(11) = 49157;
-_ps(12) = 98317;
-_ps(13) = 196613;
-_ps(14) = 393241;
-_ps(15) = 786433;
-_ps(16) = 1572869;
-_ps(17) = 3145739;
-_ps(18) = 6291469;
-_ps(19) = 12582917;
-_ps(20) = 25165843;
-_ps(21) = 50331653;
-_ps(22) = 100663319;
-_ps(23) = 201326611;
-_ps(24) = 402653189;
-_ps(25) = 805306457;
-_ps(_MAX_SIZE) = 1610612741;
+var _ps : [0..26] int = (23, 53, 97, 193, 389, 769, 1543, 3079, 6151, 12289, 
+                         24593, 49157, 98317, 196613, 393241, 786433, 1572869, 
+                         3145739, 6291469, 12582917, 25165843, 50331653, 
+                         100663319, 201326611, 402653189, 805306457, 
+                         1610612741);
 
 
 
@@ -54,9 +30,11 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   var _arrs2: list(BaseArray);    // WAW: unfortunately redundant list
   var num_inds: int;
   var size: int = 0;
-  var table: _ddata(int);
-  var inds: _ddata(_ind_data_t(idxType));
-  var free_inds: _stack(int);
+  var tableDom = [0.._ps(0)-1];
+  var table: [tableDom] int = _EMPTY;
+  var indsDom = [0.._ps(0)/2];
+  var inds: [indsDom] _ind_data_t(idxType);
+  var free_inds: _stack(int) = new _stack(int);
 
   def getIndices()
     return this; // stopgap measure given old implementation
@@ -67,16 +45,6 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
   def buildEmptyDomain()
     return new SingleLocaleAssociativeDomain(rank=rank,idxType=idxType);
-
-  // compiler-internal routines
-
-  def initialize() {
-    table = new _ddata(int, _ps(size));
-    table.init( _EMPTY);
-    inds = new _ddata(_ind_data_t(idxType), _ps(size)/2);
-    inds.init();
-    free_inds = new _stack(int);
-  }
 
   def these() {
     var i = 0;
@@ -93,17 +61,16 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   // internal routines
 
   def _half() {
+    param debug = false;
     if (size > _MIN_SIZE) {
       var new_len = _ps(size-1);
 
-      var new_table = new _ddata(int, new_len);
-      new_table.init(_EMPTY);
+      var new_tableDom = [0..new_len-1];
+      var new_table: [new_tableDom] int = _EMPTY;
 
-      var new_inds = new _ddata(_ind_data_t(idxType), new_len/2);
-      new_inds.init();
-      var old_map: _ddata(int);
-      old_map = new _ddata( int, num_inds);
-      old_map.init();
+      var new_indsDom = [0..new_len/2-1];
+      var new_inds: [new_indsDom] _ind_data_t(idxType);
+      var old_map: [0..num_inds-1] int;
       var inds_count = 0;
       var inds_pos = 0;
       while inds_count<num_inds {
@@ -111,7 +78,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
         if (ind.valid) {
           old_map(inds_count) = table( _map(ind.data));
           new_inds(inds_count) = ind;
-          new_table( _map(ind.data, new_table, new_inds)) = inds_count;
+          new_table( _map(ind.data, false, new_table, new_inds)) = inds_count;
           inds_count += 1;
         }
         inds_pos += 1;
@@ -121,7 +88,13 @@ class SingleLocaleAssociativeDomain: BaseDomain {
         ia._resize( new_len/2, old_map);
       }
 
+      if debug then writeln("Assigning tableDom");
+      tableDom = new_tableDom;
+      if debug then writeln("Done");
       table = new_table;
+      if debug then writeln("Assigning indsDom");
+      indsDom = new_indsDom;
+      if debug then writeln("Done");
       inds = new_inds;
       size -= 1;
       free_inds.empty();
@@ -129,22 +102,24 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   }
 
   def _double() {
+    param debug = false;
     if (size < _MAX_SIZE) {
       var new_len = _ps(size+1);
 
-      var new_table = new _ddata( int, new_len);
-      new_table.init( _EMPTY);
-      var new_inds = new _ddata( _ind_data_t(idxType), new_len/2);
-      new_inds.init();
-      var old_map: _ddata(int);
-      old_map = new _ddata( int, inds.size);
-      old_map.init();
-      for inds_pos in 0..inds.size-1 {  
+      var new_tableDom = [0..new_len-1];
+      var new_table: [new_tableDom] int = _EMPTY;
+      var new_indsDom = [0..new_len/2-1];
+      var new_inds: [new_indsDom] _ind_data_t(idxType);
+      var old_map: [inds.domain] int; // note: avoiding using indsDom here
+                                      // because it causes all old_map arrays
+                                      // to be reallocated whenever indsDom is
+                                      // assigned ... :P  (BLC)
+      for inds_pos in indsDom {
         var ind = inds(inds_pos);
         if (ind.valid) {                 // should be dense
           old_map(inds_pos) = table( _map(ind.data));
           new_inds(inds_pos) = ind;
-          new_table( _map( ind.data, new_table, new_inds)) = inds_pos;
+          new_table( _map( ind.data, false, new_table, new_inds)) = inds_pos;
         } else {
           halt( "doubling without being full");
         }
@@ -154,24 +129,28 @@ class SingleLocaleAssociativeDomain: BaseDomain {
         ia._resize( new_len/2, old_map);
       }
 
+      if debug then writeln("Assigning tableDom (double)");
+      tableDom = new_tableDom;
+      if debug then writeln("Done");
       table = new_table;
+      if debug then writeln("Assigning indsDom (double)");
+      indsDom = new_indsDom;
+      if debug then writeln("Done");
       inds = new_inds;
       size += 1;
       free_inds.empty();
     } else {
-      halt( "cannot double indefinite domain");
+      halt( "cannot double associative domain");
     }
   }
 
-  def _map(ind: idxType, 
-           itable: _ddata(int) = table, 
-           iinds: _ddata(_ind_data_t(idxType)) = inds,
-           deletedOK: bool = false): int {
+  def _map(ind: idxType, deletedOK: bool = false,
+           itable, iinds): int { // was: itable = table, iinds = inds; see below
     param debug = false;
-    if debug then writeln("itable.size = ", itable.size);
-    const base = _indefinite_hash(ind);
-    for probe in 0..itable.size {
-      var i = ((base + probe**2) % itable.size):int(32);
+    if debug then writeln("itable.domain = ", itable.domain);
+    const base = _associative_hash(ind);
+    for probe in itable.domain {
+      var i = ((base + probe**2) % itable.numElements):int(32);
       if debug then writeln("Trying i = ", i);
       var table_i = itable(i);
       if debug then writeln("table_i = ", table_i);
@@ -189,6 +168,39 @@ class SingleLocaleAssociativeDomain: BaseDomain {
         otherwise {
           if debug then writeln("iinds(table_i).data = ", iinds(table_i).data);
           if iinds(table_i).data==ind then
+            return i;
+        }
+      }
+    }
+    return _NOPLACE;
+  }
+
+  // This version of _map is redundant with the previous, but
+  // put here in order to avoid the array copies that are currently
+  // inserted when default arguments of type array are used.
+  def _map(ind: idxType, deletedOK: bool = false): int {
+    param debug = false;
+    if debug then writeln("table.domain = ", table.domain);
+    const base = _associative_hash(ind);
+    for probe in table.domain {
+      var i = ((base + probe**2) % table.numElements):int(32);
+      if debug then writeln("Trying i = ", i);
+      var table_i = table(i);
+      if debug then writeln("table_i = ", table_i);
+      select (table_i) {
+        when _EMPTY {
+          if debug then writeln("EMPTY");
+          return i;
+        }
+        when _DELETED {
+          if debug then writeln("DELETED");
+          if deletedOK then
+            return i;
+          if debug then writeln("...but not OK");
+        }
+        otherwise {
+          if debug then writeln("inds(table_i).data = ", inds(table_i).data);
+          if inds(table_i).data==ind then
             return i;
         }
       }
@@ -239,7 +251,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
       if (free_inds.length > 0) {      // recycle
         ind_pos = free_inds.pop();            
       } else {
-        if (num_inds == inds.size) {
+        if (num_inds == inds.numElements) {
           _double();
         }
         ind_pos = num_inds;
@@ -263,6 +275,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
         table(ind_pos) = _DELETED;
         
         for ia in _arrs2 do
+
           ia._purge( table_i);
       } else {
         halt("index not in domain: ", ind);
@@ -348,12 +361,8 @@ class SingleLocaleAssociativeArray: BaseArray {
   type eltType;
   type idxType;
   var dom : SingleLocaleAssociativeDomain(rank=1,idxType=idxType);
-  var data : _ddata(eltType);
-
-  def initialize() {
-    data = new _ddata( eltType, _ps(0)/2);
-    data.init();
-  }
+  var dataDom = [0.._ps(0)/2];
+  var data : [dataDom] eltType;
 
   // This method is unsatisfactory -- see bradc's commit entries of
   // 01/02/08 around 14:30 for details
@@ -362,12 +371,13 @@ class SingleLocaleAssociativeArray: BaseArray {
     data( ind) = d;
   }
 
-  def _resize( length: int, old_map: _ddata(int)) {
-    var new_data: _ddata(eltType) = new _ddata( eltType, length);
-    new_data.init();
-    for i in 0..old_map.size-1 {
+  def _resize( length: int, old_map) {
+    var new_dataDom = [0..length-1];
+    var new_data: [new_dataDom] eltType;
+    for i in old_map.domain {
       new_data(i) = data(old_map(i));
     }
+    dataDom = new_dataDom;
     data = new_data;
   }
 
@@ -395,7 +405,7 @@ class SingleLocaleAssociativeArray: BaseArray {
       var td = d._value;
       var inds_count = 0;
       var inds_pos = 0;
-      while (inds_pos < dom.num_inds) && (inds_count < dom.inds.size) {
+      while (inds_pos < dom.num_inds) && (inds_count < dom.inds.numElements) {
 	var ind = dom.inds(inds_count);
 	if ind.valid {
 	  var i = td._map( ind.data);
@@ -449,7 +459,7 @@ def _gen_key(i: int(64)): int(64) {
 }
 
 pragma "inline"
-def _indefinite_hash(b: bool): int(64) {
+def _associative_hash(b: bool): int(64) {
   if (b) 
     return 17;
   else
@@ -457,28 +467,28 @@ def _indefinite_hash(b: bool): int(64) {
 }
 
 pragma "inline"
-def _indefinite_hash(i: int(64)): int(64) {
+def _associative_hash(i: int(64)): int(64) {
   return _gen_key(i);
 }
 
 pragma "inline"
-def _indefinite_hash(u: uint(64)): int(64) {
+def _associative_hash(u: uint(64)): int(64) {
   return _gen_key(u:int(64));
 }
 
 pragma "inline"
-def _indefinite_hash(f: real): int(64) {
+def _associative_hash(f: real): int(64) {
   return _gen_key(__primitive( "real2int", f));
 }
 
 pragma "inline"
-def _indefinite_hash(c: complex): int(64) {
+def _associative_hash(c: complex): int(64) {
   return _gen_key(c.re:int ^ c.im:int); 
 }
 
 // Use djb2 (Dan Bernstein in comp.lang.c.
 pragma "inline"
-def _indefinite_hash(x : string): int(64) {
+def _associative_hash(x : string): int(64) {
   var hash: int(64) = 0;
   for c in 1..length(x) {
     hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
@@ -487,6 +497,6 @@ def _indefinite_hash(x : string): int(64) {
 }
 
 pragma "inline"
-def _indefinite_hash(o: object): int(64) {
+def _associative_hash(o: object): int(64) {
   return _gen_key(__primitive( "object2int", o));
 }

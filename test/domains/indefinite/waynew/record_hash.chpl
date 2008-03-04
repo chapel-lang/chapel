@@ -17,12 +17,12 @@ var r6 = new R(1, 0, 1);
 writeln( r6);
 
 
-var h1 = _indefinite_hash( r1);
-var h2 = _indefinite_hash( r2);
-var h3 = _indefinite_hash( r3);
-var h4 = _indefinite_hash( r4);
-var h5 = _indefinite_hash( r5);
-var h6 = _indefinite_hash( r6);
+var h1 = _associative_hash( r1);
+var h2 = _associative_hash( r2);
+var h3 = _associative_hash( r3);
+var h4 = _associative_hash( r4);
+var h5 = _associative_hash( r5);
+var h6 = _associative_hash( r6);
 
 
 if (h1==h2 || h1==h3 || h1==h4 || h1==h5 || h1==h6 ||

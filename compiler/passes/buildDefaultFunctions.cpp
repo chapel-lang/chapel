@@ -583,10 +583,10 @@ static void build_record_init_function(ClassType* ct) {
 
 
 static void build_record_hash_function(ClassType *ct) {
-  if (function_exists("_indefinite_hash", 1, ct->symbol->name))
+  if (function_exists("_associative_hash", 1, ct->symbol->name))
     return;
 
-  FnSymbol *fn = new FnSymbol("_indefinite_hash");
+  FnSymbol *fn = new FnSymbol("_associative_hash");
   fn->addPragma("inline");
   ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "r", ct);
   fn->insertFormalAtTail(arg);
@@ -599,11 +599,11 @@ static void build_record_hash_function(ClassType *ct) {
     for_fields(field, ct) {
       CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg); 
       if (first) {
-        call = new CallExpr("_indefinite_hash", field_access);
+        call = new CallExpr("_associative_hash", field_access);
         first = false;
       } else {
         call = new CallExpr("^", 
-                            new CallExpr("_indefinite_hash",
+                            new CallExpr("_associative_hash",
                                          field_access),
                             new CallExpr("<<",
                                          call,

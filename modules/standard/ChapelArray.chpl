@@ -445,7 +445,7 @@ class BaseArray {
     halt("purging not supported for this array type");
   }
 
-  def _resize( length: int, old_map: _ddata(int)) {
+  def _resize( length: int, old_map) {
     halt("resizing not supported for this array type");
   }
 
