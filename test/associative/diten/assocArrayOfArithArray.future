@@ -1,0 +1,3 @@
+bug: Associative array of Arithmetic array
+
+This test passes with a compiler older than revision 13599.
