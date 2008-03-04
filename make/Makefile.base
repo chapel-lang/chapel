@@ -100,8 +100,12 @@ ifndef CHPL_TAGS_UTIL
 ifeq ($(CHPL_EDITOR),vim)
 CHPL_TAGS_UTIL = ctags
 CHPL_TAGS_FLAGS = -w
+CHPL_TAGS_FILE = tags
+CHPL_TAGS_APPEND_FLAG = -a
 else
 CHPL_TAGS_UTIL = etags
+CHPL_TAGS_FILE = TAGS
+CHPL_TAGS_APPEND_FLAG = -a
 endif
 endif
 

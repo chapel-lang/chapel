@@ -1,5 +1,5 @@
 COMM_OBJDIR = $(RUNTIME_ROOT)/comm-none/$(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)
 
-ALL_SRCS += comm-none/*.c
+ALL_SRCS += $(CURDIR)/comm-none/*.c
 
 include $(RUNTIME_ROOT)/comm-none/Makefile.share
