@@ -8,7 +8,6 @@
 #include "error.h"
 #include <inttypes.h>
 #include <pthread.h>
-#include <stdint.h>
 #include <stdio.h>
 
 //
@@ -18,6 +17,7 @@ typedef struct _chpl_pool_struct* task_pool_p;
 typedef struct _chpl_pool_struct {
   _chpl_threadfp_t  fun;  // function to call for task
   _chpl_threadarg_t arg;  // argument to the function
+  _Bool             serial_state; // whether new threads can be created while executing fun
   task_pool_p next;
 } task_pool_t;
 
@@ -158,7 +158,7 @@ void _chpl_init_single_aux(_chpl_single_aux_t *s) {
 
 // Threads
 
-static void serial_delete(_chpl_bool *p) {
+static void serial_delete(_Bool *p) {
   if (p != NULL) {
     _chpl_free(p, 0, 0);
   }
@@ -198,20 +198,24 @@ uint64_t _chpl_thread_id(void) {
 
 
 _chpl_bool _chpl_get_serial(void) {
-  _chpl_bool *p;
-  p = (_chpl_bool*) pthread_getspecific(serial_key);
+  _Bool *p;
+  p = (_Bool*) pthread_getspecific(serial_key);
   return p == NULL ? false : *p;
 }
 
 void _chpl_set_serial(_chpl_bool state) {
-  _chpl_bool *p;
-  p = (_chpl_bool*) pthread_getspecific(serial_key);
+  _Bool *p;
+  p = (_Bool*) pthread_getspecific(serial_key);
   if (p == NULL) {
     if (state) {
-      p = (_chpl_bool*) _chpl_alloc(sizeof(_chpl_bool), "serial flag", 0, 0);
+      p = (_Bool*) _chpl_alloc(sizeof(_Bool), "serial flag", 0, 0);
       *p = state;
-      if (pthread_setspecific(serial_key, p))
-        _chpl_internal_error("serial state not created");
+      if (pthread_setspecific(serial_key, p)) {
+        if (pthread_key_create(&serial_key, (void(*)(void*))serial_delete))
+          _chpl_internal_error("serial key not created");
+        else if (pthread_setspecific(serial_key, p))
+          _chpl_internal_error("serial state not created");
+      }
     }
   }
   else *p = state;
@@ -225,7 +229,12 @@ void _chpl_set_serial(_chpl_bool state) {
 static void
 _chpl_begin_helper (task_pool_p task) {
 
-  while (1) {
+  while (true) {
+    //
+    // reset serial state
+    //
+    _chpl_set_serial(task->serial_state);
+
     (*task->fun)(task->arg);
 
     // begin critical section
@@ -256,11 +265,6 @@ _chpl_begin_helper (task_pool_p task) {
 
     // end critical section
     _chpl_mutex_unlock(&threading_lock);
-
-    //
-    // reset serial state
-    //
-    _chpl_set_serial(false);
   }
 }
 
@@ -301,7 +305,12 @@ launch_next_task(void) {
 // interface function with begin-statement
 //
 int
-_chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a) {
+_chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a, _Bool serial_state) {
+
+  // The thread that receives a request from another locale to start a new thread
+  // (due to an on statement) always has the serial state set to false, causing
+  // the specified task to always be placed in the task pool, rather than executed
+  // immediately.
 
   if (_chpl_get_serial()) {
     (*fp)(a);
@@ -311,6 +320,7 @@ _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t a) {
     task_pool_p task = (task_pool_p)_chpl_malloc(1, sizeof(task_pool_t), "task pool entry", 0, 0);
     task->fun = fp;
     task->arg = a;
+    task->serial_state = serial_state;
     task->next = NULL;
 
     // begin critical section

@@ -10,15 +10,15 @@
 #include <stdint.h>
 #include <signal.h>
 
-/*#define _DIST_DEBUG 1*/
+/*#define CHPL_DIST_DEBUG 1*/
 
-#ifdef _DIST_DEBUG
+#ifdef CHPL_DIST_DEBUG
 #define PRINTF(_s)                                                      \
   printf("%d:%s\n", _localeID, _s);                                     \
   fflush(stdout)
 #else
 #define PRINTF(_s)
-#endif // _DIST_DEBUG
+#endif // CHPL_DIST_DEBUG
 
 /* The following macros were taken from the GasNet test.h distribution */
 #define GASNET_Safe(fncall) do {                                        \
@@ -50,9 +50,10 @@ typedef struct {
 typedef struct {
   int     caller;
   int    *ack;
+  _Bool   serial_state; // whether the current thread is allowed to spawn new threads
   func_p  fun;
   int     arg_size;
-  void   *arg;      // variable-sized data here
+  char    arg[0];       // variable-sized data here
 } dist_fork_t;
 
 void _AM_fork_nb(gasnet_token_t token, void *buf, size_t nbytes);
@@ -83,12 +84,13 @@ void _AM_fork_nb(gasnet_token_t token,
 
   fork_info = (dist_fork_t*) _chpl_malloc(nbytes, sizeof(char), "", 0, 0);
   bcopy(buf, fork_info, nbytes);
-  _chpl_begin((_chpl_threadfp_t)_AM_fork_nb_wrapper, (_chpl_threadarg_t)fork_info);
+  _chpl_begin((_chpl_threadfp_t)_AM_fork_nb_wrapper, (_chpl_threadarg_t)fork_info,
+              fork_info->serial_state);
 }
 
 
 void _AM_fork_wrapper(dist_fork_t *i) {
-  PRINTF("_AM_fork_wrapper");
+  PRINTF(__func__);
 
   if (i->arg_size)
     (*(i->fun))(&(i->arg));
@@ -108,11 +110,12 @@ void _AM_fork(gasnet_token_t  token,
        size_t   nbytes) {
   dist_fork_t *fork_info;
 
-  PRINTF("_AM_fork");
+  PRINTF(__func__);
 
   fork_info = (dist_fork_t*) _chpl_malloc(nbytes, sizeof(char), "", 0, 0);
   bcopy(buf, fork_info, nbytes);
-  _chpl_begin((_chpl_threadfp_t)_AM_fork_wrapper, (_chpl_threadarg_t)fork_info);
+  _chpl_begin((_chpl_threadfp_t)_AM_fork_wrapper, (_chpl_threadarg_t)fork_info,
+              fork_info->serial_state);
 }
 
 
@@ -122,14 +125,14 @@ void _AM_signal(gasnet_token_t  token,
                 size_t   nbytes) {
   int **done = (int**)buf;
 
-  PRINTF("_AM_signal");
+  PRINTF(__func__);
   **done = 1;
 }
 
 
 // AM reply to return a pointer value
 void _AM_ptr_ret(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes) {
-  PRINTF("_AM_ptr_ret");
+  PRINTF(__func__);
   *(ret_info->val_addr) = ret_info->val;
   *(ret_info->done) = 1;
 }
@@ -137,7 +140,7 @@ void _AM_ptr_ret(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes) {
 
 // AM get global table ptr handler, small sized, receiver side
 void _AM_ptr_table(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes) {
-  PRINTF("_AM_ptr_table");
+  PRINTF(__func__);
   // ret_info = (global_ret_int_t*) buf;
   // ret_info->val = (void*) globals_table;
 
@@ -300,12 +303,13 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   dist_fork_t *info;
   int           info_size;
 
-  PRINTF("_chpl_comm_fork_nb");
+  PRINTF(__func__);
 
-  info_size = sizeof(dist_fork_t) - sizeof(void*) + arg_size;
+  info_size = sizeof(dist_fork_t) + arg_size;
   info = (dist_fork_t*) _chpl_malloc(info_size, sizeof(char), "", 0, 0);
 
   info->caller = _localeID;
+  info->serial_state = _chpl_get_serial();
   info->fun = f;
   info->arg_size = arg_size;
   bcopy(arg, &(info->arg), arg_size);
@@ -318,16 +322,17 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   int          info_size;
   int          done;
 
-  PRINTF("_chpl_comm_fork");
+  PRINTF(__func__);
 
   if (_localeID == locale) {
     (*f)(arg);
   } else {
-    info_size = sizeof(dist_fork_t) - sizeof(void*) + arg_size;
+    info_size = sizeof(dist_fork_t) + arg_size;
     info = (dist_fork_t*) _chpl_malloc(info_size, sizeof(char), "", 0, 0);
 
     info->caller = _localeID;
     info->ack = &done;
+    info->serial_state = _chpl_get_serial();
     info->fun = f;
     info->arg_size = arg_size;
     if (arg_size)

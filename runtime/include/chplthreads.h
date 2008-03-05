@@ -64,6 +64,10 @@ typedef void* _chpl_threadarg_t;           // function argument
 // Return thread creation error.
 int
 _chpl_begin (_chpl_threadfp_t,             // function to fork
-             _chpl_threadarg_t);           // function arg
+             _chpl_threadarg_t,            // function arg
+             _Bool);                       // serial state (must be "false" except when
+                                           // called from a comm lib such as gasnet;
+                                           // otherwise, serial state is that of the
+                                           // thread executing _chpl_begin)
 
 #endif  // _chplthreads_h_

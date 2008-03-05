@@ -184,7 +184,7 @@ void _chpl_set_serial(_chpl_bool state) {
 
 
 int
-_chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t arg) {
+_chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t arg, _Bool serial_state) {
 
   if (_chpl_get_serial())
     (*fp)(arg);
