@@ -1,0 +1,4 @@
+semantic: No such thing as a remote domain?
+
+A domain declared on locale 0 and accessed from an "on Locales(1)" has a
+locale id of 1, but when accessed back on locale 0, its id is 0. Is this right?
