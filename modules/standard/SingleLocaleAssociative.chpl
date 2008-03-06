@@ -3,14 +3,6 @@ use List;
 param _MIN_SIZE = 0;
 param _MAX_SIZE = 26;
 
-var _ps : [0..26] int = (23, 53, 97, 193, 389, 769, 1543, 3079, 6151, 12289, 
-                         24593, 49157, 98317, 196613, 393241, 786433, 1572869, 
-                         3145739, 6291469, 12582917, 25165843, 50331653, 
-                         100663319, 201326611, 402653189, 805306457, 
-                         1610612741);
-
-
-
 param _EMPTY   = -1;
 param _DELETED = -2;
 param _NOPLACE = -3;
@@ -28,6 +20,14 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   param rank: int;
   type idxType;
   var _arrs2: list(BaseArray);    // WAW: unfortunately redundant list
+
+  const _ps : [0..26] int = (23, 53, 97, 193, 389, 769, 1543, 3079, 6151, 12289,
+                             24593, 49157, 98317, 196613, 393241, 786433, 
+                             1572869, 3145739, 6291469, 12582917, 25165843, 
+                             50331653, 100663319, 201326611, 402653189, 
+                             805306457, 1610612741);
+
+
   var num_inds: int;
   var size: int = 0;
   var tableDom = [0.._ps(0)-1];
@@ -35,6 +35,10 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   var indsDom = [0.._ps(0)/2];
   var inds: [indsDom] _ind_data_t(idxType);
   var free_inds: _stack(int) = new _stack(int);
+
+
+
+
 
   def getIndices()
     return this; // stopgap measure given old implementation
@@ -361,6 +365,13 @@ class SingleLocaleAssociativeArray: BaseArray {
   type eltType;
   type idxType;
   var dom : SingleLocaleAssociativeDomain(rank=1,idxType=idxType);
+
+  const _ps : [0..26] int = (23, 53, 97, 193, 389, 769, 1543, 3079, 6151, 12289,
+                             24593, 49157, 98317, 196613, 393241, 786433, 
+                             1572869, 3145739, 6291469, 12582917, 25165843, 
+                             50331653, 100663319, 201326611, 402653189, 
+                             805306457, 1610612741);
+
   var dataDom = [0.._ps(0)/2];
   var data : [dataDom] eltType;
 
