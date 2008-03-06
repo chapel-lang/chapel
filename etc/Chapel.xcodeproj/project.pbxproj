@@ -299,6 +299,97 @@
 		F721A2380D458F6800A6B43F /* chpl_cfg_threads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_cfg_threads.h; path = "../runtime/include/threads-pthreads/chpl_cfg_threads.h"; sourceTree = SOURCE_ROOT; };
 		F731D5D80D510E84009F6897 /* COPYRIGHT */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 4; name = COPYRIGHT; path = ../COPYRIGHT; sourceTree = SOURCE_ROOT; };
 		F731D5D90D510E84009F6897 /* LICENSE */ = {isa = PBXFileReference; explicitFileType = sourcecode; fileEncoding = 4; name = LICENSE; path = ../LICENSE; sourceTree = SOURCE_ROOT; };
+		F7665EF00D7F3C1E00A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../Makefile; sourceTree = SOURCE_ROOT; };
+		F7665EF50D7F3C6500A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../make/Makefile; sourceTree = SOURCE_ROOT; };
+		F7665EF60D7F3C6500A55EBF /* Makefile.base */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.base; path = ../make/Makefile.base; sourceTree = SOURCE_ROOT; };
+		F7665EF70D7F3C6500A55EBF /* Makefile.comm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.comm; path = ../make/Makefile.comm; sourceTree = SOURCE_ROOT; };
+		F7665EF80D7F3C6500A55EBF /* Makefile.compiler */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.compiler; path = ../make/Makefile.compiler; sourceTree = SOURCE_ROOT; };
+		F7665EF90D7F3C6500A55EBF /* Makefile.platform */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.platform; path = ../make/Makefile.platform; sourceTree = SOURCE_ROOT; };
+		F7665EFA0D7F3C6500A55EBF /* Makefile.release */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.release; path = ../make/Makefile.release; sourceTree = SOURCE_ROOT; };
+		F7665EFB0D7F3C6500A55EBF /* Makefile.threads */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.threads; path = ../make/Makefile.threads; sourceTree = SOURCE_ROOT; };
+		F7665EFE0D7F3CA300A55EBF /* Makefile.cray-mta */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.cray-mta"; path = "../make/compiler/Makefile.cray-mta"; sourceTree = SOURCE_ROOT; };
+		F7665EFF0D7F3CA300A55EBF /* Makefile.cray-vec */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.cray-vec"; path = "../make/compiler/Makefile.cray-vec"; sourceTree = SOURCE_ROOT; };
+		F7665F000D7F3CA300A55EBF /* Makefile.cray-xt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.cray-xt"; path = "../make/compiler/Makefile.cray-xt"; sourceTree = SOURCE_ROOT; };
+		F7665F010D7F3CA300A55EBF /* Makefile.cray-xt-gnu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.cray-xt-gnu"; path = "../make/compiler/Makefile.cray-xt-gnu"; sourceTree = SOURCE_ROOT; };
+		F7665F020D7F3CA300A55EBF /* Makefile.cray-xt-pathscale */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.cray-xt-pathscale"; path = "../make/compiler/Makefile.cray-xt-pathscale"; sourceTree = SOURCE_ROOT; };
+		F7665F030D7F3CA300A55EBF /* Makefile.cray-xt-pgi */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.cray-xt-pgi"; path = "../make/compiler/Makefile.cray-xt-pgi"; sourceTree = SOURCE_ROOT; };
+		F7665F040D7F3CA300A55EBF /* Makefile.gnu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.gnu; path = ../make/compiler/Makefile.gnu; sourceTree = SOURCE_ROOT; };
+		F7665F050D7F3CA300A55EBF /* Makefile.intel */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.intel; path = ../make/compiler/Makefile.intel; sourceTree = SOURCE_ROOT; };
+		F7665F060D7F3CA300A55EBF /* Makefile.pathscale */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.pathscale; path = ../make/compiler/Makefile.pathscale; sourceTree = SOURCE_ROOT; };
+		F7665F070D7F3CA300A55EBF /* Makefile.pgi */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.pgi; path = ../make/compiler/Makefile.pgi; sourceTree = SOURCE_ROOT; };
+		F7665F0A0D7F3CD500A55EBF /* Makefile.cygwin */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.cygwin; path = ../make/platform/Makefile.cygwin; sourceTree = SOURCE_ROOT; };
+		F7665F0B0D7F3CD500A55EBF /* Makefile.darwin */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.darwin; path = ../make/platform/Makefile.darwin; sourceTree = SOURCE_ROOT; };
+		F7665F0C0D7F3CD500A55EBF /* Makefile.linux64_32 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.linux64_32; path = ../make/platform/Makefile.linux64_32; sourceTree = SOURCE_ROOT; };
+		F7665F0D0D7F3CD500A55EBF /* Makefile.sunos */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.sunos; path = ../make/platform/Makefile.sunos; sourceTree = SOURCE_ROOT; };
+		F7665F100D7F3D0400A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../compiler/Makefile; sourceTree = SOURCE_ROOT; };
+		F7665F130D7F3D9E00A55EBF /* Makefile.compiler.commonrules */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.compiler.commonrules; path = ../compiler/make/Makefile.compiler.commonrules; sourceTree = SOURCE_ROOT; };
+		F7665F140D7F3D9E00A55EBF /* Makefile.compiler.foot */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.compiler.foot; path = ../compiler/make/Makefile.compiler.foot; sourceTree = SOURCE_ROOT; };
+		F7665F150D7F3D9E00A55EBF /* Makefile.compiler.head */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.compiler.head; path = ../compiler/make/Makefile.compiler.head; sourceTree = SOURCE_ROOT; };
+		F7665F160D7F3D9E00A55EBF /* Makefile.compiler.rules */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.compiler.rules; path = ../compiler/make/Makefile.compiler.rules; sourceTree = SOURCE_ROOT; };
+		F7665F170D7F3D9E00A55EBF /* Makefile.compiler.subdirrules */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.compiler.subdirrules; path = ../compiler/make/Makefile.compiler.subdirrules; sourceTree = SOURCE_ROOT; };
+		F7665F180D7F3D9E00A55EBF /* Makefile.NOTES */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.NOTES; path = ../compiler/make/Makefile.NOTES; sourceTree = SOURCE_ROOT; };
+		F7665F1B0D7F3DC600A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../compiler/adt/Makefile; sourceTree = SOURCE_ROOT; };
+		F7665F1C0D7F3DC600A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = ../compiler/adt/Makefile.include; sourceTree = SOURCE_ROOT; };
+		F7665F1D0D7F3DC600A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = ../compiler/adt/Makefile.share; sourceTree = SOURCE_ROOT; };
+		F7665F200D7F3DF100A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../compiler/AST/Makefile; sourceTree = SOURCE_ROOT; };
+		F7665F210D7F3DF100A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = ../compiler/AST/Makefile.include; sourceTree = SOURCE_ROOT; };
+		F7665F220D7F3DF100A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = ../compiler/AST/Makefile.share; sourceTree = SOURCE_ROOT; };
+		F7665F250D7F3E0D00A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../compiler/backend/Makefile; sourceTree = SOURCE_ROOT; };
+		F7665F260D7F3E0D00A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = ../compiler/backend/Makefile.include; sourceTree = SOURCE_ROOT; };
+		F7665F270D7F3E0D00A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = ../compiler/backend/Makefile.share; sourceTree = SOURCE_ROOT; };
+		F7665F280D7F3E4B00A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../compiler/ifa/Makefile; sourceTree = SOURCE_ROOT; };
+		F7665F290D7F3E4B00A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = ../compiler/ifa/Makefile.include; sourceTree = SOURCE_ROOT; };
+		F7665F2A0D7F3E4B00A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = ../compiler/ifa/Makefile.share; sourceTree = SOURCE_ROOT; };
+		F7665F2B0D7F3E7500A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../compiler/ifa/make_prims/Makefile; sourceTree = SOURCE_ROOT; };
+		F7665F2E0D7F3EC600A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../compiler/main/Makefile; sourceTree = SOURCE_ROOT; };
+		F7665F2F0D7F3EC600A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = ../compiler/main/Makefile.include; sourceTree = SOURCE_ROOT; };
+		F7665F300D7F3EC600A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = ../compiler/main/Makefile.share; sourceTree = SOURCE_ROOT; };
+		F7665F310D7F3EE600A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../compiler/optimizations/Makefile; sourceTree = SOURCE_ROOT; };
+		F7665F320D7F3EE600A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = ../compiler/optimizations/Makefile.include; sourceTree = SOURCE_ROOT; };
+		F7665F330D7F3EE600A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = ../compiler/optimizations/Makefile.share; sourceTree = SOURCE_ROOT; };
+		F7665F340D7F3F1C00A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../compiler/parser/Makefile; sourceTree = SOURCE_ROOT; };
+		F7665F350D7F3F1C00A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = ../compiler/parser/Makefile.include; sourceTree = SOURCE_ROOT; };
+		F7665F360D7F3F1C00A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = ../compiler/parser/Makefile.share; sourceTree = SOURCE_ROOT; };
+		F7665F370D7F3F3900A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../compiler/passes/Makefile; sourceTree = SOURCE_ROOT; };
+		F7665F380D7F3F3900A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = ../compiler/passes/Makefile.include; sourceTree = SOURCE_ROOT; };
+		F7665F390D7F3F3900A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = ../compiler/passes/Makefile.share; sourceTree = SOURCE_ROOT; };
+		F7665F3A0D7F3F7600A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../compiler/util/Makefile; sourceTree = SOURCE_ROOT; };
+		F7665F3B0D7F3F7600A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = ../compiler/util/Makefile.include; sourceTree = SOURCE_ROOT; };
+		F7665F3C0D7F3F7600A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = ../compiler/util/Makefile.share; sourceTree = SOURCE_ROOT; };
+		F7665F3D0D7F684C00A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../runtime/Makefile; sourceTree = SOURCE_ROOT; };
+		F7665F3E0D7F686C00A55EBF /* Makefile.NOTES */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.NOTES; path = ../runtime/make/Makefile.NOTES; sourceTree = SOURCE_ROOT; };
+		F7665F3F0D7F686C00A55EBF /* Makefile.runtime.commonrules */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.runtime.commonrules; path = ../runtime/make/Makefile.runtime.commonrules; sourceTree = SOURCE_ROOT; };
+		F7665F400D7F686C00A55EBF /* Makefile.runtime.foot */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.runtime.foot; path = ../runtime/make/Makefile.runtime.foot; sourceTree = SOURCE_ROOT; };
+		F7665F410D7F686C00A55EBF /* Makefile.runtime.head */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.runtime.head; path = ../runtime/make/Makefile.runtime.head; sourceTree = SOURCE_ROOT; };
+		F7665F420D7F686C00A55EBF /* Makefile.runtime.rules */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.runtime.rules; path = ../runtime/make/Makefile.runtime.rules; sourceTree = SOURCE_ROOT; };
+		F7665F430D7F686C00A55EBF /* Makefile.runtime.subdirrules */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.runtime.subdirrules; path = ../runtime/make/Makefile.runtime.subdirrules; sourceTree = SOURCE_ROOT; };
+		F7665F440D7F688800A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/comm-armci/Makefile"; sourceTree = SOURCE_ROOT; };
+		F7665F450D7F688800A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/comm-armci/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F7665F460D7F688800A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/comm-armci/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F7665F470D7F689E00A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/comm-gasnet/Makefile"; sourceTree = SOURCE_ROOT; };
+		F7665F480D7F689E00A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/comm-gasnet/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F7665F490D7F689E00A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/comm-gasnet/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F7665F4A0D7F68BE00A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/comm-none/Makefile"; sourceTree = SOURCE_ROOT; };
+		F7665F4B0D7F68BE00A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/comm-none/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F7665F4C0D7F68BE00A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/comm-none/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F7665F4D0D7F68D900A55EBF /* Makefile.comm-gasnet */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.comm-gasnet"; path = "../runtime/etc/Makefile.comm-gasnet"; sourceTree = SOURCE_ROOT; };
+		F7665F4E0D7F68D900A55EBF /* Makefile.comm-none */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.comm-none"; path = "../runtime/etc/Makefile.comm-none"; sourceTree = SOURCE_ROOT; };
+		F7665F4F0D7F68D900A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = ../runtime/etc/Makefile.include; sourceTree = SOURCE_ROOT; };
+		F7665F500D7F68D900A55EBF /* Makefile.threads-mta */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.threads-mta"; path = "../runtime/etc/Makefile.threads-mta"; sourceTree = SOURCE_ROOT; };
+		F7665F510D7F68D900A55EBF /* Makefile.threads-none */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.threads-none"; path = "../runtime/etc/Makefile.threads-none"; sourceTree = SOURCE_ROOT; };
+		F7665F520D7F68D900A55EBF /* Makefile.threads-pthreads */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.threads-pthreads"; path = "../runtime/etc/Makefile.threads-pthreads"; sourceTree = SOURCE_ROOT; };
+		F7665F530D7F693100A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../runtime/src/Makefile; sourceTree = SOURCE_ROOT; };
+		F7665F540D7F693100A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = ../runtime/src/Makefile.include; sourceTree = SOURCE_ROOT; };
+		F7665F550D7F693100A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = ../runtime/src/Makefile.share; sourceTree = SOURCE_ROOT; };
+		F7665F560D7F694B00A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/threads-mta/Makefile"; sourceTree = SOURCE_ROOT; };
+		F7665F570D7F694B00A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/threads-mta/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F7665F580D7F694B00A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/threads-mta/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F7665F590D7F697100A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/threads-none/Makefile"; sourceTree = SOURCE_ROOT; };
+		F7665F5A0D7F697100A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/threads-none/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F7665F5B0D7F697100A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/threads-none/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F7665F5C0D7F698700A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/threads-pthreads/Makefile"; sourceTree = SOURCE_ROOT; };
+		F7665F5D0D7F698700A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/threads-pthreads/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F7665F5E0D7F698700A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/threads-pthreads/Makefile.share"; sourceTree = SOURCE_ROOT; };
 		F76B61800D53AC0C005C6869 /* chpl_cfg_threads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_threads.c; path = "../runtime/threads-mta/chpl_cfg_threads.c"; sourceTree = SOURCE_ROOT; };
 		F76B61850D53AC56005C6869 /* chpl_cfg_threads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_cfg_threads.h; path = "../runtime/include/threads-mta/chpl_cfg_threads.h"; sourceTree = SOURCE_ROOT; };
 		F76B61CD0D53B15D005C6869 /* chpl_cfg_threads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_cfg_threads.h; path = "../runtime/include/threads-none/chpl_cfg_threads.h"; sourceTree = SOURCE_ROOT; };
@@ -646,6 +737,136 @@
 			name = "Header files";
 			sourceTree = "<group>";
 		};
+		F7665EE80D7F3B8400A55EBF /* Standard Modules */ = {
+			isa = PBXGroup;
+			children = (
+				F77216480D6D436200DE6EF6 /* BitOps.chpl */,
+				F77216490D6D436200DE6EF6 /* ChapelArray.chpl */,
+				F772164A0D6D436200DE6EF6 /* ChapelBase.chpl */,
+				F772164B0D6D436200DE6EF6 /* ChapelIO.chpl */,
+				F772164C0D6D436200DE6EF6 /* ChapelLocale.chpl */,
+				F772164D0D6D436200DE6EF6 /* ChapelRange.chpl */,
+				F772164E0D6D436200DE6EF6 /* ChapelReduce.chpl */,
+				F772164F0D6D436200DE6EF6 /* ChapelStandard.chpl */,
+				F77216500D6D436200DE6EF6 /* ChapelTuple.chpl */,
+				F77216510D6D436200DE6EF6 /* ChapelUtil.chpl */,
+				F77216520D6D436200DE6EF6 /* DistCSR.chpl */,
+				F77216530D6D436200DE6EF6 /* List.chpl */,
+				F77216540D6D436200DE6EF6 /* Math.chpl */,
+				F77216550D6D436200DE6EF6 /* Memory.chpl */,
+				F77216560D6D436200DE6EF6 /* Random.chpl */,
+				F77216570D6D436200DE6EF6 /* Schedules.chpl */,
+				F77216580D6D436200DE6EF6 /* Search.chpl */,
+				F77216590D6D436200DE6EF6 /* SingleLocaleArithmetic.chpl */,
+				F772165A0D6D436200DE6EF6 /* SingleLocaleAssociative.chpl */,
+				F772165B0D6D436200DE6EF6 /* SingleLocaleEnum.chpl */,
+				F772165C0D6D436200DE6EF6 /* SingleLocaleOpaque.chpl */,
+				F772165D0D6D436200DE6EF6 /* SingleLocaleSparse.chpl */,
+				F772165E0D6D436200DE6EF6 /* Sort.chpl */,
+				F772165F0D6D436200DE6EF6 /* Time.chpl */,
+				F77216600D6D436200DE6EF6 /* Types.chpl */,
+			);
+			name = "Standard Modules";
+			sourceTree = "<group>";
+		};
+		F7665EED0D7F3BB000A55EBF /* Makefiles */ = {
+			isa = PBXGroup;
+			children = (
+				F7665EF00D7F3C1E00A55EBF /* Makefile */,
+				F7665EF50D7F3C6500A55EBF /* Makefile */,
+				F7665EF60D7F3C6500A55EBF /* Makefile.base */,
+				F7665EF70D7F3C6500A55EBF /* Makefile.comm */,
+				F7665EF80D7F3C6500A55EBF /* Makefile.compiler */,
+				F7665EF90D7F3C6500A55EBF /* Makefile.platform */,
+				F7665EFA0D7F3C6500A55EBF /* Makefile.release */,
+				F7665EFB0D7F3C6500A55EBF /* Makefile.threads */,
+				F7665EFE0D7F3CA300A55EBF /* Makefile.cray-mta */,
+				F7665EFF0D7F3CA300A55EBF /* Makefile.cray-vec */,
+				F7665F000D7F3CA300A55EBF /* Makefile.cray-xt */,
+				F7665F010D7F3CA300A55EBF /* Makefile.cray-xt-gnu */,
+				F7665F020D7F3CA300A55EBF /* Makefile.cray-xt-pathscale */,
+				F7665F030D7F3CA300A55EBF /* Makefile.cray-xt-pgi */,
+				F7665F040D7F3CA300A55EBF /* Makefile.gnu */,
+				F7665F050D7F3CA300A55EBF /* Makefile.intel */,
+				F7665F060D7F3CA300A55EBF /* Makefile.pathscale */,
+				F7665F070D7F3CA300A55EBF /* Makefile.pgi */,
+				F7665F0A0D7F3CD500A55EBF /* Makefile.cygwin */,
+				F7665F0B0D7F3CD500A55EBF /* Makefile.darwin */,
+				F7665F0C0D7F3CD500A55EBF /* Makefile.linux64_32 */,
+				F7665F0D0D7F3CD500A55EBF /* Makefile.sunos */,
+				F7665F100D7F3D0400A55EBF /* Makefile */,
+				F7665F130D7F3D9E00A55EBF /* Makefile.compiler.commonrules */,
+				F7665F140D7F3D9E00A55EBF /* Makefile.compiler.foot */,
+				F7665F150D7F3D9E00A55EBF /* Makefile.compiler.head */,
+				F7665F160D7F3D9E00A55EBF /* Makefile.compiler.rules */,
+				F7665F170D7F3D9E00A55EBF /* Makefile.compiler.subdirrules */,
+				F7665F180D7F3D9E00A55EBF /* Makefile.NOTES */,
+				F7665F1B0D7F3DC600A55EBF /* Makefile */,
+				F7665F1C0D7F3DC600A55EBF /* Makefile.include */,
+				F7665F1D0D7F3DC600A55EBF /* Makefile.share */,
+				F7665F200D7F3DF100A55EBF /* Makefile */,
+				F7665F210D7F3DF100A55EBF /* Makefile.include */,
+				F7665F220D7F3DF100A55EBF /* Makefile.share */,
+				F7665F250D7F3E0D00A55EBF /* Makefile */,
+				F7665F260D7F3E0D00A55EBF /* Makefile.include */,
+				F7665F270D7F3E0D00A55EBF /* Makefile.share */,
+				F7665F280D7F3E4B00A55EBF /* Makefile */,
+				F7665F290D7F3E4B00A55EBF /* Makefile.include */,
+				F7665F2A0D7F3E4B00A55EBF /* Makefile.share */,
+				F7665F2B0D7F3E7500A55EBF /* Makefile */,
+				F7665F2E0D7F3EC600A55EBF /* Makefile */,
+				F7665F2F0D7F3EC600A55EBF /* Makefile.include */,
+				F7665F300D7F3EC600A55EBF /* Makefile.share */,
+				F7665F310D7F3EE600A55EBF /* Makefile */,
+				F7665F320D7F3EE600A55EBF /* Makefile.include */,
+				F7665F330D7F3EE600A55EBF /* Makefile.share */,
+				F7665F340D7F3F1C00A55EBF /* Makefile */,
+				F7665F350D7F3F1C00A55EBF /* Makefile.include */,
+				F7665F360D7F3F1C00A55EBF /* Makefile.share */,
+				F7665F370D7F3F3900A55EBF /* Makefile */,
+				F7665F380D7F3F3900A55EBF /* Makefile.include */,
+				F7665F390D7F3F3900A55EBF /* Makefile.share */,
+				F7665F3A0D7F3F7600A55EBF /* Makefile */,
+				F7665F3B0D7F3F7600A55EBF /* Makefile.include */,
+				F7665F3C0D7F3F7600A55EBF /* Makefile.share */,
+				F7665F3D0D7F684C00A55EBF /* Makefile */,
+				F7665F3E0D7F686C00A55EBF /* Makefile.NOTES */,
+				F7665F3F0D7F686C00A55EBF /* Makefile.runtime.commonrules */,
+				F7665F400D7F686C00A55EBF /* Makefile.runtime.foot */,
+				F7665F410D7F686C00A55EBF /* Makefile.runtime.head */,
+				F7665F420D7F686C00A55EBF /* Makefile.runtime.rules */,
+				F7665F430D7F686C00A55EBF /* Makefile.runtime.subdirrules */,
+				F7665F440D7F688800A55EBF /* Makefile */,
+				F7665F450D7F688800A55EBF /* Makefile.include */,
+				F7665F460D7F688800A55EBF /* Makefile.share */,
+				F7665F470D7F689E00A55EBF /* Makefile */,
+				F7665F480D7F689E00A55EBF /* Makefile.include */,
+				F7665F490D7F689E00A55EBF /* Makefile.share */,
+				F7665F4A0D7F68BE00A55EBF /* Makefile */,
+				F7665F4B0D7F68BE00A55EBF /* Makefile.include */,
+				F7665F4C0D7F68BE00A55EBF /* Makefile.share */,
+				F7665F4D0D7F68D900A55EBF /* Makefile.comm-gasnet */,
+				F7665F4E0D7F68D900A55EBF /* Makefile.comm-none */,
+				F7665F4F0D7F68D900A55EBF /* Makefile.include */,
+				F7665F500D7F68D900A55EBF /* Makefile.threads-mta */,
+				F7665F510D7F68D900A55EBF /* Makefile.threads-none */,
+				F7665F520D7F68D900A55EBF /* Makefile.threads-pthreads */,
+				F7665F530D7F693100A55EBF /* Makefile */,
+				F7665F540D7F693100A55EBF /* Makefile.include */,
+				F7665F550D7F693100A55EBF /* Makefile.share */,
+				F7665F560D7F694B00A55EBF /* Makefile */,
+				F7665F570D7F694B00A55EBF /* Makefile.include */,
+				F7665F580D7F694B00A55EBF /* Makefile.share */,
+				F7665F590D7F697100A55EBF /* Makefile */,
+				F7665F5A0D7F697100A55EBF /* Makefile.include */,
+				F7665F5B0D7F697100A55EBF /* Makefile.share */,
+				F7665F5C0D7F698700A55EBF /* Makefile */,
+				F7665F5D0D7F698700A55EBF /* Makefile.include */,
+				F7665F5E0D7F698700A55EBF /* Makefile.share */,
+			);
+			name = Makefiles;
+			sourceTree = "<group>";
+		};
 		F76B618A0D53ACA3005C6869 /* MTA */ = {
 			isa = PBXGroup;
 			children = (
@@ -730,31 +951,8 @@
 		F7B66D0F0D59738D00A53F3E /* Other sources */ = {
 			isa = PBXGroup;
 			children = (
-				F77216480D6D436200DE6EF6 /* BitOps.chpl */,
-				F77216490D6D436200DE6EF6 /* ChapelArray.chpl */,
-				F772164A0D6D436200DE6EF6 /* ChapelBase.chpl */,
-				F772164B0D6D436200DE6EF6 /* ChapelIO.chpl */,
-				F772164C0D6D436200DE6EF6 /* ChapelLocale.chpl */,
-				F772164D0D6D436200DE6EF6 /* ChapelRange.chpl */,
-				F772164E0D6D436200DE6EF6 /* ChapelReduce.chpl */,
-				F772164F0D6D436200DE6EF6 /* ChapelStandard.chpl */,
-				F77216500D6D436200DE6EF6 /* ChapelTuple.chpl */,
-				F77216510D6D436200DE6EF6 /* ChapelUtil.chpl */,
-				F77216520D6D436200DE6EF6 /* DistCSR.chpl */,
-				F77216530D6D436200DE6EF6 /* List.chpl */,
-				F77216540D6D436200DE6EF6 /* Math.chpl */,
-				F77216550D6D436200DE6EF6 /* Memory.chpl */,
-				F77216560D6D436200DE6EF6 /* Random.chpl */,
-				F77216570D6D436200DE6EF6 /* Schedules.chpl */,
-				F77216580D6D436200DE6EF6 /* Search.chpl */,
-				F77216590D6D436200DE6EF6 /* SingleLocaleArithmetic.chpl */,
-				F772165A0D6D436200DE6EF6 /* SingleLocaleAssociative.chpl */,
-				F772165B0D6D436200DE6EF6 /* SingleLocaleEnum.chpl */,
-				F772165C0D6D436200DE6EF6 /* SingleLocaleOpaque.chpl */,
-				F772165D0D6D436200DE6EF6 /* SingleLocaleSparse.chpl */,
-				F772165E0D6D436200DE6EF6 /* Sort.chpl */,
-				F772165F0D6D436200DE6EF6 /* Time.chpl */,
-				F77216600D6D436200DE6EF6 /* Types.chpl */,
+				F7665EE80D7F3B8400A55EBF /* Standard Modules */,
+				F7665EED0D7F3BB000A55EBF /* Makefiles */,
 			);
 			name = "Other sources";
 			sourceTree = "<group>";
@@ -873,12 +1071,15 @@
 /* Begin PBXProject section */
 		08FB7793FE84155DC02AAC07 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+			};
 			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "Chapel" */;
 			compatibilityVersion = "Xcode 3.0";
 			hasScannedForEncodings = 1;
 			mainGroup = 08FB7794FE84155DC02AAC07 /* Chapel */;
 			projectDirPath = "";
-			projectRoot = "";
+			projectRoot = ..;
 			targets = (
 				F721A2000D45885700A6B43F /* Compiler and Runtime */,
 				8DD76F620486A84900D96B5E /* Chapel */,
@@ -916,10 +1117,11 @@
 			outputPaths = (
 				"$(DERIVED_FILE_DIR)/COPYRIGHT",
 				"$(DERIVED_FILE_DIR)/LICENSE",
+				"$(DERIVED_FILE_DIR)/BUILD_VERSION",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -x\nfor file in $SCRIPT_INPUT_FILE_0 $SCRIPT_INPUT_FILE_1; do\ncat $file | sed s/\\\"/\\\\\\\\\\\"/g | sed s/\\^/\\\"/g | sed s/\\$/\\\\\\\\n\\\"/g >$DERIVED_FILES_DIR/`basename $file`\ndone";
+			shellScript = "set -x\nfor file in $SCRIPT_INPUT_FILE_0 $SCRIPT_INPUT_FILE_1; do\ncat $file | sed s/\\\"/\\\\\\\\\\\"/g | sed s/\\^/\\\"/g | sed s/\\$/\\\\\\\\n\\\"/g >$DERIVED_FILES_DIR/`basename $file`\ndone\ncd .. && CHPL_DEVELOPER=true CHPL_HOME=`pwd` util/updateBuildVersion.pl \"$DERIVED_FILES_DIR\"";
 		};
 /* End PBXShellScriptBuildPhase section */
 
