@@ -379,6 +379,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true);
 
   prim_def(PRIMITIVE_ERROR, "error", returnInfoVoid, true);
+  prim_def(PRIMITIVE_WARNING, "warning", returnInfoVoid, true);
   prim_def(PRIMITIVE_WHEN, "when case expressions", returnInfoVoid);
 
   prim_def(PRIMITIVE_LOOP_PARAM, "param loop", returnInfoVoid);

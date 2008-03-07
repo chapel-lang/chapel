@@ -2707,6 +2707,42 @@ postFold(Expr* expr) {
   return result;
 }
 
+
+static void handleCompilerMsgs(CallExpr* call) {
+  CallExpr* from = NULL;
+  for (int i = callStack.n-1; i >= 0; i--) {
+    from = callStack.v[i];
+    if (from->lineno > 0 && from->getModule()->modTag != MOD_STANDARD)
+      break;
+  }
+  const char* str = "";
+  for_actuals(actual, call) {
+    if (SymExpr* sym = toSymExpr(actual)) {
+      if (VarSymbol* var = toVarSymbol(sym->var)) {
+        if (var->immediate &&
+            var->immediate->const_kind == CONST_KIND_STRING) {
+          str = astr(str, var->immediate->v_string);
+          continue;
+        }
+      }
+      if (sym->var->isTypeVariable) {
+        str = astr(str, sym->var->type->symbol->name);
+        continue;
+      }
+    }
+    if (CallExpr* call = toCallExpr(actual)) {
+      if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
+        str = astr(str, call->get(1)->typeInfo()->symbol->name);
+      }
+    }
+  }
+  if (call->isPrimitive(PRIMITIVE_ERROR)) {
+    USR_FATAL(from, "%s", str);
+  } else {
+    USR_WARN(from, "%s", str);
+  }
+}
+
 static void
 resolveBody(Expr* body) {
   for_exprs_postorder(expr, body) {
@@ -2717,35 +2753,9 @@ resolveBody(Expr* body) {
         makeRefType(type);
     expr = preFold(expr);
     if (CallExpr* call = toCallExpr(expr)) {
-      if (call->isPrimitive(PRIMITIVE_ERROR)) {
-        CallExpr* from = NULL;
-        for (int i = callStack.n-1; i >= 0; i--) {
-          from = callStack.v[i];
-          if (from->lineno > 0 && from->getModule()->modTag != MOD_STANDARD)
-            break;
-        }
-        const char* str = "";
-        for_actuals(actual, call) {
-          if (SymExpr* sym = toSymExpr(actual)) {
-            if (VarSymbol* var = toVarSymbol(sym->var)) {
-              if (var->immediate &&
-                  var->immediate->const_kind == CONST_KIND_STRING) {
-                str = astr(str, var->immediate->v_string);
-                continue;
-              }
-            }
-            if (sym->var->isTypeVariable) {
-              str = astr(str, sym->var->type->symbol->name);
-              continue;
-            }
-          }
-          if (CallExpr* call = toCallExpr(actual)) {
-            if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
-              str = astr(str, call->get(1)->typeInfo()->symbol->name);
-            }
-          }
-        }
-        USR_FATAL(from, "%s", str);
+      if (call->isPrimitive(PRIMITIVE_ERROR) ||
+          call->isPrimitive(PRIMITIVE_WARNING)) {
+        handleCompilerMsgs(call);
       }
       callStack.add(call);
       resolveCall(call);

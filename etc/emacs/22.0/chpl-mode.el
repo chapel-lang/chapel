@@ -125,7 +125,7 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-block-stmt-2-kwds
   "Statement keywords followed by a paren sexp and then by a substatement."
-  chpl '("select" "while"))  ; putting "if" "for" "forall" here causes
+  chpl '("compilerError" "compilerWarning" "select" "while"))  ; putting "if" "for" "forall" here causes
                             ; weird indentation since parens not required
 
 

@@ -1917,6 +1917,9 @@ void CallExpr::codegen(FILE* outfile) {
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "Impossible");
       break;
+    case PRIMITIVE_WARNING:
+      fprintf(outfile, "/* compilerWarning was here */");
+      break;
     }
     if (getStmtExpr() && getStmtExpr() == this)
       fprintf(outfile, ";\n");

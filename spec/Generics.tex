@@ -343,27 +343,81 @@ the call foo(3) resolves to the first definition because when the
 second function is instantiated the where clause evaluates to false.
 \end{example}
 
-\subsection{User-Defined Compiler Errors}
+\subsection{User-Defined Compiler Diagnostics}
 \label{User_Defined_Compiler_Errors}
+\index{compiler diagnostics!user-defined}
 \index{compiler errors!user-defined}
+\index{compiler warnings!user-defined}
+\index{compilerError}
+\index{compilerWarning}
 
-The special compiler error statement given by
+The special compiler diagnostic statements given by
 \begin{syntax}
-compiler-error-statement:
+compiler-diagnostic-statement:
   `compilerError' ( expression-list ) ;
+  `compilerWarning' ( expression-list ) ;
 
 expression-list:
   expression
   expression , expression-list
 \end{syntax}
-invokes a compiler error if the function that the statement is located
-within may be called when the program is executed and the statement is
+generate a compiler diagnostic of the indicated severity 
+if the function containing the statement may be called 
+when the program is executed and the statement is
 not eliminated by parameter folding.
 
-The compiler error is defined by the expression list which can contain
-string literals and types.  The error points to the spot in the Chapel
-program where the function containing
-the \sntx{compiler-error-statement} is called from.
+The compiler diagnostic is defined by the expression list which can
+contain string literals and types.  The diagnostic points to the spot
+in the Chapel program from which the function containing the
+\sntx{compiler-diagnostic-statement} is called.  Compilation typically
+halts if a \chpl{compilerError} is encountered whereas it will
+continue after encountering a \chpl{compilerWarning}.
+
+\begin{example}
+The following code shows an example of using user-defined compiler
+diagnostics to generate warnings and errors:
+
+\begin{chapel}
+def foo(x, y) {
+  if (x.type != y.type) then
+    compilerError("foo() called with non-matching types: ", 
+                  x.type, " != ", y.type);
+  writeln("In 2-argument foo...");
+}
+
+def foo(x) {
+  compilerWarning("1-argument version of foo called");
+  writeln("In generic foo!");
+}
+\end{chapel}
+
+The first routine generates a compiler error whenever the compiler
+encounters a call to it where the two arguments have different types.
+It prints out an error message indicating the types of the arguments.
+The second routine generates a compiler warning whenver the compiler
+encounters a call to it.
+
+Thus, if the program foo.chpl contained the following calls:
+
+\begin{numberedchapel}
+foo(3.4);
+foo("hi");
+foo(1, 2);
+foo(1.2, 3.4);
+foo("hi", "bye");
+foo(1, 2.3);
+foo("hi", 2.3);
+\end{numberedchapel}
+
+\noindent compiling the program would generate output like:
+
+\begin{commandline}
+foo.chpl:1: warning: 1-argument version of foo called with type: real
+foo.chpl:2: warning: 1-argument version of foo called with type: string
+foo.chpl:6: error: foo() called with non-matching types: int != real
+\end{commandline}
+
+\end{example}
 
 \subsection{Example: A Generic Stack}
 \label{Example_Generic_Stack}

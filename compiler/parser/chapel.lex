@@ -66,6 +66,7 @@ class           processToken(TCLASS);
 cobegin         processToken(TCOBEGIN);
 coforall        processToken(TCOFORALL);
 compilerError   processToken(TCOMPILERERROR);
+compilerWarning processToken(TCOMPILERWARNING);
 config          processToken(TCONFIG);
 const           processToken(TCONST);
 continue        processToken(TCONTINUE);

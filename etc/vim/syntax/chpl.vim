@@ -251,7 +251,7 @@ endif
 
 " Chapel extentions
 syn keyword chplStatement	goto break return continue 
-syn keyword chplStatement	new this these use module yield compilerError
+syn keyword chplStatement	new this these use module yield compilerError compilerWarning
 syn keyword chplIntent		param type in out inout
 syn keyword chplStorageClass    const config var
 syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool file string

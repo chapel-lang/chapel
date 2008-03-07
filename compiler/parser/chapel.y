@@ -98,6 +98,7 @@ Is this "while x"(i); or "while x(i)";?
 %token TCOBEGIN
 %token TCOFORALL
 %token TCOMPILERERROR
+%token TCOMPILERWARNING
 %token TCONFIG
 %token TCONST
 %token TCONTINUE
@@ -1318,6 +1319,8 @@ parenop_expr:
     { $$ = buildPrimitiveExpr($3); }
 | TCOMPILERERROR TLP expr_ls TRP
     { $$ = new CallExpr(PRIMITIVE_ERROR, $3); }
+| TCOMPILERWARNING TLP expr_ls TRP
+    { $$ = new CallExpr(PRIMITIVE_WARNING, $3); }
 | TINDEX TLP TOPAQUE TRP
     { $$ = new SymExpr("_OpaqueIndex"); }
 | TINDEX TLP expr_ls TRP
