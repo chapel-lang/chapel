@@ -61,11 +61,6 @@ int32_t _coresPerLocale(void) {
 }
 
 
-//
-// returns default values of max threads set according to the
-// communication and threading runtimes; if neither set a max, then 0
-// is returned; otherwise the minimum max is returned.
-//
 int32_t _maxThreads(void) {
   int32_t comm_max = _chpl_comm_getMaxThreads();
   int32_t threads_max = _chpl_threads_getMaxThreads();
@@ -74,8 +69,19 @@ int32_t _maxThreads(void) {
     return threads_max;
   else if (threads_max == 0)
     return comm_max;
-  else if (comm_max < threads_max)
+  else
+    return comm_max < threads_max ? comm_max : threads_max;
+}
+
+
+int32_t _maxThreadsLimit(void) {
+  int32_t comm_max = _chpl_comm_maxThreadsLimit();
+  int32_t threads_max = _chpl_threads_maxThreadsLimit();
+
+  if (comm_max == 0)
+    return threads_max;
+  else if (threads_max == 0)
     return comm_max;
   else
-    return threads_max;
+    return comm_max < threads_max ? comm_max : threads_max;
 }

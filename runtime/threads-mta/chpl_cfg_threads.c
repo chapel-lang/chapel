@@ -8,10 +8,6 @@
 #include <stdint.h>
 #include <machine/runtime.h>
 
-#ifdef MTA_DEBUG
-#include <stdio.h>
-#endif
-
 
 // The global vars are to synchronize with threads created with 
 // begin's which are not joined.  We need to wait on them before the
@@ -129,6 +125,10 @@ int32_t _chpl_threads_getMaxThreads(void) {
   return _coresPerLocale() * 100;
 }
 
+int32_t _chpl_threads_maxThreadsLimit(void) {
+  return _coresPerLocale() * 104;
+}
+
 void initChplThreads() {
   _chpl_begin_cnt = 0;                     // only main thread running
   _chpl_can_exit = 1;                      // mark full - no threads created yet
@@ -200,19 +200,12 @@ _chpl_begin (_chpl_threadfp_t fp, _chpl_threadarg_t arg, _Bool serial_state) {
     future (fp, arg, init_begin_cnt) {
       int64_t         begin_cnt;
 
-#ifdef MTA_DEBUG
-      fprintf(stderr, "Inside future no. %d\n", init_begin_cnt);
-#endif
       (*fp)(arg);
 
       // decrement begin thread count and see if we can signal Chapel exit
       begin_cnt = int_fetch_add(&_chpl_begin_cnt, -1);
       if (begin_cnt == 1)   // i.e., _chpl_begin_cnt is now zero
         _chpl_can_exit = 1; // mark this variable as being full
-#ifdef MTA_DEBUG
-      fprintf(stderr, "About to exit future no. %d; begin_cnt = %d\n",
-              init_begin_cnt, begin_cnt);
-#endif
     }
   }
 

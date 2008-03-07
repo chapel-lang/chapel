@@ -409,6 +409,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_PRIVATE_BROADCAST, "_private_broadcast", returnInfoVoid, true, true);
 
   prim_def(PRIMITIVE_MAX_THREADS, "_maxThreads", returnInfoInt32);
+  prim_def(PRIMITIVE_MAX_THREADS_LIMITS, "_maxThreadsLimit", returnInfoInt32);
 
   prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
@@ -546,6 +547,7 @@ initPrimitive() {
   prim_def("startTrackingMem", returnInfoVoid, true);
 
   prim_def("_chpl_error", returnInfoVoid, true, true);
+  prim_def("_chpl_warning", returnInfoVoid, true, true);
 
   prim_def("_mem_used", returnInfoUInt64, false, true);
 }

@@ -147,11 +147,19 @@ typedef void (*func_p)(void*);
   _chpl_comm_barrier("barrier after broadcasting globals");
 
 //
-// returns the default maximum number of threads that can be handled
-// by this communication layer (initial value of maxThreads); use the
-// sentinel value 0 if the maximum number of threads is unlimited.
+// returns the default maximum number of threads that can be handled by this
+// communication layer (initial value of maxThreads); use the sentinel value 0
+// if the maximum number of threads is limited only by the system's available
+// resources.
 //
 int32_t _chpl_comm_getMaxThreads(void);
+
+//
+// returns the upper limit on the maximum number of threads that can be handled
+// by this communication layer; use the sentinel value 0 if the maximum number
+// of threads is limited only by the system's available resources.
+//
+int32_t _chpl_comm_maxThreadsLimit(void);
 
 //
 // given the program arguments, returns whether the invocation of

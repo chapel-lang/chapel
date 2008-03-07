@@ -1908,6 +1908,9 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_MAX_THREADS:
       fprintf(outfile, "_maxThreads()");
       break;
+    case PRIMITIVE_MAX_THREADS_LIMITS:
+      fprintf(outfile, "_maxThreadsLimit()");
+      break;
     case PRIMITIVE_INT_ERROR:
       fprintf(outfile, "_chpl_internal_error(\"compiler generated error\")");
       break;

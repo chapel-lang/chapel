@@ -134,7 +134,8 @@ enum PrimitiveTag {
   PRIMITIVE_HEAP_BROADCAST_GLOBAL_VARS,
   PRIMITIVE_PRIVATE_BROADCAST,
 
-  PRIMITIVE_MAX_THREADS,  // return maximum number of threads
+  PRIMITIVE_MAX_THREADS,         // return maximum number of threads
+  PRIMITIVE_MAX_THREADS_LIMITS,  // return upper limit on the maximum number of threads
 
   PRIMITIVE_INT_ERROR,
 

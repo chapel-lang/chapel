@@ -29,6 +29,10 @@ int32_t _chpl_comm_getMaxThreads(void) {
   return 0;
 }
 
+int32_t _chpl_comm_maxThreadsLimit(void) {
+  return 0;
+}
+
 int _chpl_comm_user_invocation(int argc, char* argv[]) {
   return 1;
 }

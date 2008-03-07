@@ -154,6 +154,10 @@ int32_t _chpl_comm_getMaxThreads(void) {
   return 255;
 }
 
+int32_t _chpl_comm_maxThreadsLimit(void) {
+  return 255;
+}
+
 int _chpl_comm_user_invocation(int argc, char* argv[]) {
   return ((argc <= 1) ||
           (argc > 1 && strcmp(argv[1], "__AMUDP_SLAVE_PROCESS__") != 0));

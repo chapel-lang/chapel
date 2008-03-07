@@ -3,6 +3,16 @@ config const numLocales: int = __primitive("_chpl_comm_default_num_locales");
 
 // the maximum number of threads that can be live at any given time
 config const maxThreads: int = __primitive("_maxThreads");
+const maxThreadsLimit: int = __primitive("_maxThreadsLimit");
+if maxThreadsLimit != 0 {
+  if (maxThreads > maxThreadsLimit) then
+    __primitive("_chpl_warning",
+                "specified value of " + maxThreads
+                  + " for maxThreads is too high; limit is " + maxThreadsLimit);
+  else if (maxThreads == 0) then
+    __primitive("_chpl_warning",
+                "maxThreads is unbounded; however, the limit is " + maxThreadsLimit);
+}
 
 def _throwOpError(param op: string) {
     compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");

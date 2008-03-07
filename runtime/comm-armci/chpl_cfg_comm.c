@@ -56,6 +56,11 @@ int32_t _chpl_comm_getMaxThreads(void) {
             // threads that can be running on a process
 }
 
+int32_t _chpl_comm_maxThreadsLimit(void) {
+  return 0; // set to 0 assuming ARMCI does not limit the number of
+            // threads that can be running on a process
+}
+
 //
 // given the program arguments, returns whether the invocation of
 // main() is the original invocation by the user (1) or a recursive
