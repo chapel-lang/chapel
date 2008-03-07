@@ -3,6 +3,7 @@
 $chplhome = $ENV{'CHPL_HOME'};
 if ($chplhome eq "") {
     print "Error: CHPL_HOME must be set to use updateSVNLOG.pl\n";
+    exit(0);
 }
 
 $svnlogfile = "$chplhome/SVNLOG";
