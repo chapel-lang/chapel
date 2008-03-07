@@ -39,7 +39,7 @@ pragma "inline" def ==(a: int(64), b: int(64)) return __primitive("==", a, b);
 pragma "inline" def ==(a: uint(32), b: uint(32)) return __primitive("==", a, b);
 pragma "inline" def ==(a: uint(64), b: uint(64)) return __primitive("==", a, b);
 pragma "inline" def ==(a: real(?w), b: real(w)) return __primitive("==", a, b);
-pragma "inline" def ==(a: string, b: string) return __primitive("string_equal", a, b);
+pragma "inline" def ==(a: string, b: string) return (__primitive("_string_compare", a, b) == 0);
 pragma "inline" def ==(a: object, b: object) return __primitive("ptr_eq", a, b);
 
 pragma "inline" def !=(a: bool, b: bool) return __primitive("!=", a, b);
@@ -48,7 +48,7 @@ pragma "inline" def !=(a: int(64), b: int(64)) return __primitive("!=", a, b);
 pragma "inline" def !=(a: uint(32), b: uint(32)) return __primitive("!=", a, b);
 pragma "inline" def !=(a: uint(64), b: uint(64)) return __primitive("!=", a, b);
 pragma "inline" def !=(a: real(?w), b: real(w)) return __primitive("!=", a, b);
-pragma "inline" def !=(a: string, b: string) return !(a == b);
+pragma "inline" def !=(a: string, b: string) return (__primitive("_string_compare", a, b) != 0);
 pragma "inline" def !=(a: object, b: object) return __primitive("ptr_neq", a, b);
 
 pragma "inline" def ==(param a: bool, param b: bool) param return __primitive("==", a, b);
@@ -72,24 +72,28 @@ pragma "inline" def <=(a: int(64), b: int(64)) return __primitive("<=", a, b);
 pragma "inline" def <=(a: uint(32), b: uint(32)) return __primitive("<=", a, b);
 pragma "inline" def <=(a: uint(64), b: uint(64)) return __primitive("<=", a, b);
 pragma "inline" def <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
+pragma "inline" def <=(a: string, b: string) return (__primitive("_string_compare", a, b) <= 0);
 
 pragma "inline" def >=(a: int(32), b: int(32)) return __primitive(">=", a, b);
 pragma "inline" def >=(a: int(64), b: int(64)) return __primitive(">=", a, b);
 pragma "inline" def >=(a: uint(32), b: uint(32)) return __primitive(">=", a, b);
 pragma "inline" def >=(a: uint(64), b: uint(64)) return __primitive(">=", a, b);
 pragma "inline" def >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
+pragma "inline" def >=(a: string, b: string) return (__primitive("_string_compare", a, b) >= 0);
 
 pragma "inline" def <(a: int(32), b: int(32)) return __primitive("<", a, b);
 pragma "inline" def <(a: int(64), b: int(64)) return __primitive("<", a, b);
 pragma "inline" def <(a: uint(32), b: uint(32)) return __primitive("<", a, b);
 pragma "inline" def <(a: uint(64), b: uint(64)) return __primitive("<", a, b);
 pragma "inline" def <(a: real(?w), b: real(w)) return __primitive("<", a, b);
+pragma "inline" def <(a: string, b: string) return (__primitive("_string_compare", a, b) < 0);
 
 pragma "inline" def >(a: int(32), b: int(32)) return __primitive(">", a, b);
 pragma "inline" def >(a: int(64), b: int(64)) return __primitive(">", a, b);
 pragma "inline" def >(a: uint(32), b: uint(32)) return __primitive(">", a, b);
 pragma "inline" def >(a: uint(64), b: uint(64)) return __primitive(">", a, b);
 pragma "inline" def >(a: real(?w), b: real(w)) return __primitive(">", a, b);
+pragma "inline" def >(a: string, b: string) return (__primitive("_string_compare", a, b) > 0);
 
 pragma "inline" def <=(param a: int(32), param b: int(32)) param return __primitive("<=", a, b);
 pragma "inline" def <=(param a: int(64), param b: int(64)) param return __primitive("<=", a, b);

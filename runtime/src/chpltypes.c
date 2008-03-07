@@ -115,13 +115,8 @@ string_contains(_string x, _string y) {
 }
 
 
-_chpl_bool
-string_equal(_string x, _string y) {
-  if (!strcmp(x, y)) {
-    return true;
-  } else {
-    return false;
-  }
+int32_t _string_compare(_string x, _string y) {
+  return (int32_t)strcmp(x, y);
 }
 
 

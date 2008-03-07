@@ -921,6 +921,18 @@ def >=(a: imag(128), b: imag(128)): bool
 The result of \chpl{a >= b} is true if \chpl{a} is greater than or
 equal to \chpl{b}; otherwise the result is false.
 
+The ordered comparison operators are predefined over strings as follows:
+\begin{chapel}
+def <(a: string, b: string): bool
+def >(a: string, b: string): bool
+def <=(a: string, b: string): bool
+def >=(a: string, b: string): bool
+\end{chapel}
+Comparisons between strings are defined based on the ordering of the
+character set used to represent the string, which is applied
+elementwise to the strings' characters in order.
+
+
 \subsubsection{Equality Comparison Operators}
 \label{Equality_Comparison_Operators}
 \index{==@\chpl{==}}

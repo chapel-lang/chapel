@@ -502,7 +502,7 @@ initPrimitive() {
   prim_def("string_copy", returnInfoString, true, true);
   prim_def("string_index", returnInfoString, true, true);
   prim_def("string_concat", returnInfoString, true, true);
-  prim_def("string_equal", returnInfoBool, true);
+  prim_def("_string_compare", returnInfoBool, true);
   prim_def("string_select", returnInfoString, true, true);
   prim_def("string_strided_select", returnInfoString, true, true);
   prim_def("string_length", returnInfoInt32);

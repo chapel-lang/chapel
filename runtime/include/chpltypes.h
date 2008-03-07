@@ -80,7 +80,7 @@ _string string_concat(_string x, _string y, int32_t lineno, _string filename);
 _string string_index(_string x, int i, int32_t lineno, _string filename);
 _string string_select(_string x, int low, int high, int32_t lineno, _string filename);
 _string string_strided_select(_string x, int low, int high, int stride, int32_t lineno, _string filename);
-_chpl_bool string_equal(_string x, _string y);
+int32_t _string_compare(_string x, _string y);
 int64_t string_length(_string x);
 
 int64_t real2int( _real64 f);       // return the raw bytes of the float
