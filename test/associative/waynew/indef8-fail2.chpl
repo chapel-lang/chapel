@@ -1,3 +1,5 @@
+use printHelp;
+
 var id1: domain(int);
 var id2: domain(int);
 var A: [id1] real;
@@ -12,9 +14,8 @@ id2 += 4;
 A[2] = 1.2;
 A[3] = 3.4;
 B[1] = 5.6;
-writeln( A);
-writeln( B);
+writelnSortedByDom(A);
+writelnSortedByDom(B);
 B = A;
-writeln( B);
-
-
+writelnSorted(B); // can't write sorted by domain because we can't anticipate
+                  // the order that B's elements will be in

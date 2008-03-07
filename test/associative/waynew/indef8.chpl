@@ -1,3 +1,5 @@
+use printHelp;
+
 var idomain: domain(int);
 var A: [idomain] real;
 var B: [idomain] real;
@@ -9,9 +11,7 @@ idomain += 4;
 A[3] = 1.2;
 A[4] = 3.4;
 B[1] = 5.6;
-writeln( A);
-writeln( B);
+writelnSortedByDom(A);
+writelnSortedByDom(B);
 B = A;
-writeln( B);
-
-
+writelnSortedByDom(B);

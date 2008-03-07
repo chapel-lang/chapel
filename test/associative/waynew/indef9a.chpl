@@ -1,3 +1,5 @@
+use printHelp;
+
 // Test the resizing via add (_double) and domain assignment (_double and
 // _half).
 
@@ -18,11 +20,11 @@ for i in N/4..N {
   B[i] = i + 0.2;
 }
 
-writeln( id1);
-writeln( A);
-writeln( id2);
-writeln( B);
+writelnSorted( id1);
+writelnSortedByDom( A);
+writelnSorted( id2);
+writelnSortedByDom( B);
 
 id2 = id1;
 
-writeln( B);
+writelnSortedByDom( B);

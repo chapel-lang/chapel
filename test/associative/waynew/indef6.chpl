@@ -1,12 +1,14 @@
+use printHelp;
+
 param SIZE = 10;
 
 var idomain: domain(int);
 var A: [idomain] real;
 
 def jam() {
-  writeln( idomain);
+  writelnSorted(idomain);
   writeln( "numIndices = ", idomain.numIndices);
-  writeln( A);
+  writelnSortedByDom(A);
   writeln( "numElements = ", A.numElements);
 }
 

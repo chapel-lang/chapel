@@ -16,4 +16,4 @@ while B(tmp) == 0 {
   tmp = A(tmp);
 }
 
-writeln(B);
+writeln(B.sorted());

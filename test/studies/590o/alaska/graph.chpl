@@ -33,6 +33,10 @@ class Node {
   }
 }
 
+def <(x: Node, y: Node) {
+  return x.name < y.name;
+}
+
 class Edge {
   var id: int;
   var src: Node;
@@ -60,6 +64,14 @@ class Edge {
   def these() {
     if( src != nil) then yield src;
     if( dst != nil) then yield dst;
+  }
+}
+
+def <(x: Edge, y: Edge) {
+  if (x.src.name == y.src.name) {
+    return (x.dst.name < y.dst.name);
+  } else {
+    return (x.src.name < y.src.name);
   }
 }
 
@@ -546,14 +558,14 @@ def readGraph(filename) {
   var N: domain(1) = [1..ND.numIndices];
   var E: domain(1) = [1..ED.numIndices];
 
-  var X: [N] Node = NameMap.these();
-  var Y: [E] Edge = EdgeMap.these();
+  var X: [N] Node = NameMap.sorted();
+  var Y: [E] Edge = EdgeMap.sorted();
 
   [ i in N ] X(i).id = i;
   [ i in E ] Y(i).id = i;
 
-  writeln(ND);
-  writeln(NameMap);
+  writeln(ND.sorted());
+  writeln(NameMap.sorted());
   writeln("Y = ",Y);
 
   infile.close();
@@ -561,7 +573,6 @@ def readGraph(filename) {
   // Return the Graph
   return new Graph(N,E,X,Y);
 }
-
 
 
 //

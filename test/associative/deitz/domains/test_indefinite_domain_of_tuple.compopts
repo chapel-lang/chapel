@@ -1,0 +1,1 @@
+../../common/printHelp.chpl --main-module=test_indefinite_domain_of_tuple

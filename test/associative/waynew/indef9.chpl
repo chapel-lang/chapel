@@ -1,3 +1,5 @@
+use printHelp;
+
 // Test that domain assignment resizes+copies arrays correctly.
 
 param N = 40;
@@ -37,7 +39,7 @@ for i in N..2*N {
   B[i] = i + 0.2;
 }
 
-writeln( B);
+writelnSortedByDom( B);
 writeln( "B[", N/2, "]=", B[N/2]);
 
 

@@ -1,11 +1,11 @@
 use List;
 class SingleLocaleEnumDomain: BaseDomain {
-  param rank: int;
+  param rank = 1;
   type idxType;
-  var adomain: SingleLocaleAssociativeDomain(rank=rank, idxType=idxType);
+  var adomain: SingleLocaleAssociativeDomain(idxType=idxType);
 
   def initialize() {
-    adomain = new SingleLocaleAssociativeDomain(rank=rank, idxType=idxType);
+    adomain = new SingleLocaleAssociativeDomain(idxType=idxType);
     var enumTuple = _enum_enumerate(idxType);
     for param i in 1..enumTuple.size do
       adomain.add(enumTuple(i));
@@ -18,8 +18,9 @@ class SingleLocaleEnumDomain: BaseDomain {
   }
 
   def these() {
-    for i in adomain do
-      yield i;
+    var enumTuple = _enum_enumerate(idxType);
+    for param i in 1..enumTuple.size do
+      yield enumTuple(i);
   }
 
   def member(ind: idxType) {
@@ -31,7 +32,7 @@ class SingleLocaleEnumDomain: BaseDomain {
   }
 
   def buildEmptyDomain()
-    return new SingleLocaleEnumDomain(rank=rank, idxType=idxType);
+    return new SingleLocaleEnumDomain(idxType=idxType);
 
   def buildArray(type eltType) {
     var ia = new SingleLocaleEnumArray(eltType, idxType, dom=this);
@@ -40,26 +41,39 @@ class SingleLocaleEnumDomain: BaseDomain {
 }
 
 def SingleLocaleEnumDomain.writeThis(f: Writer) {
-  adomain.writeThis(f);
+  var enumTuple = _enum_enumerate(idxType);
+  f.write("[");
+  if (enumTuple.size > 1) {
+    f.write(enumTuple(1));
+    for param i in 2..enumTuple.size do
+      f.write(", ", enumTuple(i));
+  }
+  f.write("]");
 }
 
 def SingleLocaleEnumArray.writeThis(f: Writer) {
-  anarray.writeThis(f);
+  var enumTuple = _enum_enumerate(idxType);
+  if (enumTuple.size > 1) {
+    f.write(anarray(enumTuple(1)));
+    for param i in 2..enumTuple.size do
+      f.write(" ", anarray(enumTuple(i)));
+  }
 }
 
 class SingleLocaleEnumArray: BaseArray {
   type eltType;
   type idxType;
 
-  var dom: SingleLocaleEnumDomain(rank=1, idxType=idxType);
+  var dom: SingleLocaleEnumDomain(idxType=idxType);
   var anarray = new SingleLocaleAssociativeArray(eltType, idxType, dom.adomain);
 
   def this(ind : idxType) var : eltType
     return anarray(ind);
 
   def these() {
-    for e in anarray do
-      yield e;
+    var enumTuple = _enum_enumerate(idxType);
+    for param i in 1..enumTuple.size do
+      yield anarray(enumTuple(i));
   }
 
   def numElements {
@@ -67,6 +81,8 @@ class SingleLocaleEnumArray: BaseArray {
   }
 
   def tupleInit(b: _tuple) {
-    anarray.tupleInit(b);
+    var enumTuple = _enum_enumerate(idxType);
+    for param i in 1..enumTuple.size do
+      anarray.this(enumTuple(i)) = b(i);
   }
 }

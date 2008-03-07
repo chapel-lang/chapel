@@ -12,11 +12,11 @@ var a: [D] int = s;
 var b: [E] int = s;
 
 writeln("(a.domain, s)");
-for (i, j) in (a.domain, s) {
+for (i, j) in (a.domain.sorted(), s) {
   writeln(i, " ", j);
 }
 writeln("(s, a.domain)");
-for (j, i) in (s, a.domain) {
+for (j, i) in (s, a.domain.sorted()) {
   writeln(i, " ", j);
 }
 writeln("(b.domain, s)");

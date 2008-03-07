@@ -22,7 +22,7 @@ def main() {
     
     for lvl in 0..F.max_level { 
         write("\n **",lvl,": ");
-        for (n, l) in F.sumC.index_iter() do
+        for (n, l) in F.sumC.indices.sorted() do
             if n == lvl then write(" [",n,", ",l,"]");
     }
 }

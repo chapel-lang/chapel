@@ -1,457 +1,409 @@
-use List;
+use Sort /* only QuickSort */;
 
-param _MIN_SIZE = 0;
-param _MAX_SIZE = 26;
-
-param _EMPTY   = -1;
-param _DELETED = -2;
-param _NOPLACE = -3;
+// TODO: make the domain parameterized by this?
+// TODO: make int(64) the default index type here and in arithemtic domains
+type _chpl_table_index_type = int(32);
 
 
+/* These declarations could/should both be nested within
+   SingleLocaleAssociativeDomain? */
+enum _chpl_hash_status { empty, full, deleted };
 
-record _ind_data_t {
-  type itype;
-  var  data: itype;
-  var  valid: bool;
+record _chpl_TableEntry {
+  type idxType;
+  var status: _chpl_hash_status = _chpl_hash_status.empty;
+  var idx: idxType;
 }
 
 
 class SingleLocaleAssociativeDomain: BaseDomain {
-  param rank: int;
   type idxType;
-  var _arrs2: list(BaseArray);    // WAW: unfortunately redundant list
 
-  const _ps : [0..26] int = (23, 53, 97, 193, 389, 769, 1543, 3079, 6151, 12289,
-                             24593, 49157, 98317, 196613, 393241, 786433, 
-                             1572869, 3145739, 6291469, 12582917, 25165843, 
-                             50331653, 100663319, 201326611, 402653189, 
-                             805306457, 1610612741);
-
-
-  var num_inds: int;
-  var size: int = 0;
-  var tableDom = [0.._ps(0)-1];
-  var table: [tableDom] int = _EMPTY;
-  var indsDom = [0.._ps(0)/2];
-  var inds: [indsDom] _ind_data_t(idxType);
-  var free_inds: _stack(int) = new _stack(int);
+  // TODO: move this out of here once the initializers can refer to global
+  // variables (see David's future of 03/07/08)
+  const _primes : [0..26] _chpl_table_index_type 
+                = (23, 53, 97, 193, 389, 769, 1543, 3079, 6151, 12289, 24593, 
+                   49157, 98317, 196613, 393241, 786433, 1572869, 3145739, 
+                   6291469, 12582917, 25165843, 50331653, 100663319, 201326611,
+                   402653189, 805306457, 1610612741);
 
 
 
+  // The guts of the associative domain
+  var numEntries: _chpl_table_index_type = 0;
+  var tableSizeNum = 0;
+  var tableSize = _primes(tableSizeNum);
+  var tableDom = [0..tableSize-1];
+  var table: [tableDom] _chpl_TableEntry(idxType);
 
 
-  def getIndices()
-    return this; // stopgap measure given old implementation
+  // Temporary arrays for side computations:
+  // TODO: Slosh back and forth between two tables rather than copying back
+  // TODO: This ugly [0..-1] domain appears several times in the code --
+  //       replace with a named constant/param?
+  var tmpDom = [0..-1:_chpl_table_index_type];
+  var tmpTable: [tmpDom] _chpl_TableEntry(idxType);
+  var tmpDom2 = [0..-1:_chpl_table_index_type];
+  var tmpTable2: [tmpDom2] idxType;
 
-  def setIndices(b: SingleLocaleAssociativeDomain) {
-    oldAssignHelper(this, b);
-  }
+  // BLC: Didn't want to have this, but _wrapDomain requires it
+  param rank = 1;
+  
 
-  def buildEmptyDomain()
-    return new SingleLocaleAssociativeDomain(rank=rank,idxType=idxType);
-
-  def these() {
-    var i = 0;
-    var numFound = 0;
-    while numFound < num_inds {
-      if (inds(i).valid) {
-        numFound += 1;
-        yield inds(i).data;
-      }
-      i += 1;
-    }
-  }
-
-  // internal routines
-
-  def _half() {
-    param debug = false;
-    if (size > _MIN_SIZE) {
-      var new_len = _ps(size-1);
-
-      var new_tableDom = [0..new_len-1];
-      var new_table: [new_tableDom] int = _EMPTY;
-
-      var new_indsDom = [0..new_len/2-1];
-      var new_inds: [new_indsDom] _ind_data_t(idxType);
-      var old_map: [0..num_inds-1] int;
-      var inds_count = 0;
-      var inds_pos = 0;
-      while inds_count<num_inds {
-        var ind = inds(inds_pos);
-        if (ind.valid) {
-          old_map(inds_count) = table( _map(ind.data));
-          new_inds(inds_count) = ind;
-          new_table( _map(ind.data, false, new_table, new_inds)) = inds_count;
-          inds_count += 1;
-        }
-        inds_pos += 1;
-      }
-
-      for ia in _arrs2 {
-        ia._resize( new_len/2, old_map);
-      }
-
-      if debug then writeln("Assigning tableDom");
-      tableDom = new_tableDom;
-      if debug then writeln("Done");
-      table = new_table;
-      if debug then writeln("Assigning indsDom");
-      indsDom = new_indsDom;
-      if debug then writeln("Done");
-      inds = new_inds;
-      size -= 1;
-      free_inds.empty();
-    }
-  }
-
-  def _double() {
-    param debug = false;
-    if (size < _MAX_SIZE) {
-      var new_len = _ps(size+1);
-
-      var new_tableDom = [0..new_len-1];
-      var new_table: [new_tableDom] int = _EMPTY;
-      var new_indsDom = [0..new_len/2-1];
-      var new_inds: [new_indsDom] _ind_data_t(idxType);
-      var old_map: [inds.domain] int; // note: avoiding using indsDom here
-                                      // because it causes all old_map arrays
-                                      // to be reallocated whenever indsDom is
-                                      // assigned ... :P  (BLC)
-      for inds_pos in indsDom {
-        var ind = inds(inds_pos);
-        if (ind.valid) {                 // should be dense
-          old_map(inds_pos) = table( _map(ind.data));
-          new_inds(inds_pos) = ind;
-          new_table( _map( ind.data, false, new_table, new_inds)) = inds_pos;
-        } else {
-          halt( "doubling without being full");
-        }
-      }
-
-      for ia in _arrs2 {
-        ia._resize( new_len/2, old_map);
-      }
-
-      if debug then writeln("Assigning tableDom (double)");
-      tableDom = new_tableDom;
-      if debug then writeln("Done");
-      table = new_table;
-      if debug then writeln("Assigning indsDom (double)");
-      indsDom = new_indsDom;
-      if debug then writeln("Done");
-      inds = new_inds;
-      size += 1;
-      free_inds.empty();
-    } else {
-      halt( "cannot double associative domain");
-    }
-  }
-
-  def _map(ind: idxType, deletedOK: bool = false,
-           itable, iinds): int { // was: itable = table, iinds = inds; see below
-    param debug = false;
-    if debug then writeln("itable.domain = ", itable.domain);
-    const base = _associative_hash(ind);
-    for probe in itable.domain {
-      var i = ((base + probe**2) % itable.numElements):int(32);
-      if debug then writeln("Trying i = ", i);
-      var table_i = itable(i);
-      if debug then writeln("table_i = ", table_i);
-      select (table_i) {
-        when _EMPTY {
-          if debug then writeln("EMPTY");
-          return i;
-        }
-        when _DELETED {
-          if debug then writeln("DELETED");
-          if deletedOK then
-            return i;
-          if debug then writeln("...but not OK");
-        }
-        otherwise {
-          if debug then writeln("iinds(table_i).data = ", iinds(table_i).data);
-          if iinds(table_i).data==ind then
-            return i;
-        }
-      }
-    }
-    return _NOPLACE;
-  }
-
-  // This version of _map is redundant with the previous, but
-  // put here in order to avoid the array copies that are currently
-  // inserted when default arguments of type array are used.
-  def _map(ind: idxType, deletedOK: bool = false): int {
-    param debug = false;
-    if debug then writeln("table.domain = ", table.domain);
-    const base = _associative_hash(ind);
-    for probe in table.domain {
-      var i = ((base + probe**2) % table.numElements):int(32);
-      if debug then writeln("Trying i = ", i);
-      var table_i = table(i);
-      if debug then writeln("table_i = ", table_i);
-      select (table_i) {
-        when _EMPTY {
-          if debug then writeln("EMPTY");
-          return i;
-        }
-        when _DELETED {
-          if debug then writeln("DELETED");
-          if deletedOK then
-            return i;
-          if debug then writeln("...but not OK");
-        }
-        otherwise {
-          if debug then writeln("inds(table_i).data = ", inds(table_i).data);
-          if inds(table_i).data==ind then
-            return i;
-        }
-      }
-    }
-    return _NOPLACE;
-  }
-
-  def _get_index(ind : idxType) {
-    var i = _map(ind);
-    if (table(i) < 0) then
-      halt("array index out of bounds: ", ind);
-    if (i >= 0) then
-      return table(i);
-    else
-      halt( "index not found: ", ind);
-    // will never get here, but to avoid compiler warnings:
-    return 0;
+  //
+  // Standard Internal Domain Interface
+  //
+  def buildEmptyDomain() {
+    return new SingleLocaleAssociativeDomain(idxType=idxType);
   }
 
   def buildArray(type eltType) {
-    var ia = new SingleLocaleAssociativeArray(eltType, idxType, dom=this); 
-    _arrs2.append(ia);
-    return ia;
+    if (this == nil) then
+      return new SingleLocaleAssociativeArray(eltType, idxType, dom=new SingleLocaleAssociativeDomain(idxType=idxType)); 
+    else 
+      return new SingleLocaleAssociativeArray(eltType, idxType, dom=this); 
   }
 
-  // public routines
+  def getIndices()
+    return this;
 
-  def clear() {
-    // BLC: implemented this for simplicity, not performance
-    while (numIndices != 0) do
-      removeOne();
+  def setIndices(b: SingleLocaleAssociativeDomain) {
+    // store cache of old domain/arrays
+    _backupArrays();
+    tmpDom = tableDom;
+    tmpTable = table;
 
-    def removeOne() {
-      // Since it's not safe to iterate over a hash table while you're
-      // removing stuff from it, we only do one iteration at a time
-      for i in these() {
-        remove(i);
-        return;
+    // clear out old table
+    numEntries = 0;
+    tableDom = [0..-1:_chpl_table_index_type];
+
+    // choose new table size
+    for primeNum in _primes.domain {
+      if (b.numEntries * 2 < _primes(primeNum)) {
+        tableSizeNum = primeNum;
+        break;
       }
     }
-  }
+    tableSize = _primes(tableSizeNum);
+    tableDom = [0..tableSize-1];
 
-  def add(ind : idxType) {
-    var hash = _map(ind, deletedOK = true);
-    var ind_pos = table(hash);
-    if (ind_pos==_EMPTY || ind_pos==_DELETED) {
-
-      if (free_inds.length > 0) {      // recycle
-        ind_pos = free_inds.pop();            
-      } else {
-        if (num_inds == inds.numElements) {
-          _double();
-        }
-        ind_pos = num_inds;
-        hash = _map(ind, deletedOK = true);
-      }
-      table(hash) = ind_pos;
-      inds(ind_pos).data = ind;
-      inds(ind_pos).valid = true;
-      num_inds += 1;
-    } // else, already in domain
-  }
-
-  def remove( ind: idxType) {
-    var ind_pos = _map(ind);
-    if (ind_pos >= 0) {
-      var table_i = table(ind_pos);
-      if (table_i >= 0) {
-        inds(table_i).valid = false;
-        num_inds -= 1;
-        free_inds.push( table_i);
-        table(ind_pos) = _DELETED;
-        
-        for ia in _arrs2 do
-
-          ia._purge( table_i);
-      } else {
-        halt("index not in domain: ", ind);
+    // add indices and copy array data over
+    for idx in b {
+      const newSlotNum = add(idx);
+      const (foundit, slot) = _findFilledSlotInTmp(idx);
+      if (foundit) {
+        _preserveArrayElement(oldslot=slot, newslot=newSlotNum);
       }
     }
-
-    if (size > _MIN_SIZE) then
-      if (num_inds < _ps(size-1)/2) {  // downsize?
-        _half();
-      }
+    tmpDom = [0..-1:_chpl_table_index_type];
+    tmpDom2 = [0..-1:_chpl_table_index_type];
+    _removeArrayBackups();
   }
-
-
-  def member( ind: idxType) {
-    const mapind = _map(ind);
-    if (mapind >= 0) {
-      var ind_pos = table(mapind);
-      return (ind_pos >= 0);
+  
+  def writeThis(f: Writer) {
+    var first = true;
+    f.write("[");
+    for slot in _fullSlots() {
+      if first then 
+        first = false; 
+      else 
+        f.write(", ");
+      f.write(table(slot).idx);
     }
-    return false;
+    f.write("]");
   }
+
+  //
+  // Standard user domain interface
+  //
 
   def numIndices {
-    return num_inds;
-  }
-}
-
-
-def oldAssignHelper(a: SingleLocaleAssociativeDomain, b: SingleLocaleAssociativeDomain) {
-  var indices: list(a.idxType);
-  var inds_count = 0;
-  var inds_pos = 0;
-  var total_inds = a.num_inds;
-  while inds_count<total_inds {
-    var ind = a.inds( inds_pos);
-    if (ind.valid) {
-      indices.append(ind.data);
-      inds_count += 1;
-    }
-    inds_pos += 1;
+    return numEntries;
   }
 
-  for ind in indices {
-    if (!b.member(ind)) {
-      a.remove( ind);
+  def these() {
+    for slot in _fullSlots() {
+      yield table(slot).idx;
     }
   }
 
-  inds_count = 0;
-  inds_pos = 0;
-  total_inds = b.num_inds;
-  while inds_count<total_inds {
-    var ind = b.inds( inds_pos);
-    if (ind.valid) {
-      if (!a.member(ind.data)) {
-        a.add( ind.data);
+  //
+  // Associative Domain Interface
+  //
+  def clear() {
+    for slot in tableDom {
+      table(slot).status = _chpl_hash_status.empty;
+    }
+    numEntries = 0;
+  }
+
+  def member(idx: idxType): bool {
+    return _findFilledSlot(idx)(1);
+  }
+
+  def add(idx: idxType): index(tableDom) {
+    if ((numEntries+1)*2 > tableSize) {
+      _grow();
+    }
+    const (foundSlot, slotNum) = _findEmptySlot(idx);
+    if (foundSlot) {
+      table(slotNum).status = _chpl_hash_status.full;
+      table(slotNum).idx = idx;
+      numEntries += 1;
+    } else {
+      if (slotNum < 0) {
+        halt("couldn't add ", idx, " -- ", numEntries, " / ", tableSize, " taken");
+        return -1;
       }
-      inds_count += 1;
+      // otherwise, re-adding an index that's already in there
     }
-    inds_pos += 1;
+    return slotNum;
   }
-}
 
-
-def SingleLocaleAssociativeDomain.writeThis(f: Writer) {
-  f.write("[");
-  var inds_count = 0;
-  var inds_pos = 0;
-  while inds_count<num_inds {
-    var ind = inds( inds_pos);
-    if (ind.valid) {
-      f.write(ind.data);
-      inds_count += 1;
-      if (inds_count<num_inds) then f.write(", ");
+  def remove(idx: idxType) {
+    // TODO: shrink table if less than 1/4 full
+    const (foundSlot, slotNum) = _findFilledSlot(idx);
+    if (foundSlot) {
+      table(slotNum).status = _chpl_hash_status.deleted;
+      numEntries -= 1;
+    } else {
+      halt("index not in domain: ", idx);
     }
-    inds_pos += 1;
   }
-  f.write("]");
+
+  def sorted() {
+    _createSortedTmpTable2();
+    for ind in tmpTable2 do
+      yield ind;
+    _destroySortedTmpTable2();
+  }
+
+  //
+  // Internal interface (private)
+  //
+  def _createSortedTmpTable2() {
+    // TODO: should assert that tmpDom2 is non-empty to avoid conflicting
+    // calls? Or not -- to support early exit from iterator?
+    tmpDom2 = [0..numEntries-1];
+    var count: _chpl_table_index_type = 0;
+    for slot in _fullSlots() {
+      tmpTable2(count) = table(slot).idx;
+      count += 1;
+    }
+    QuickSort(tmpTable2);
+  }
+
+  def _destroySortedTmpTable2() {
+    tmpDom2 = [0..-1:_chpl_table_index_type];
+  }
+
+  def _grow() {
+    // back up the arrays
+    _backupArrays();
+
+    // copy the table (TODO: could use swap between two versions)
+    tmpDom = tableDom;
+    tmpTable = table;
+
+    // grow original table
+    tableDom = [0..-1:_chpl_table_index_type]; // non-preserving resize
+    numEntries = 0; // reset, because the adds below will re-set this
+    tableSizeNum += 1;
+    tableSize = _primes(tableSizeNum);
+    tableDom = [0..tableSize-1];
+
+    // insert old data into newly resized table
+    for slot in _fullSlotsInTmp() {
+      const newslot = add(tmpTable(slot).idx);
+      _preserveArrayElement(oldslot=slot, newslot=newslot);
+    }
+    
+    // deallocate tmpTable
+    tmpDom = [0..-1:_chpl_table_index_type];
+    _removeArrayBackups();
+  }
+
+  def _findFilledSlot(idx: idxType): (bool, index(tableDom)) {
+    for slotNum in _lookForSlots(idx) {
+      const slotStatus = table(slotNum).status;
+      if (slotStatus == _chpl_hash_status.empty) {
+        return (false, -1);
+      } else if (slotStatus == _chpl_hash_status.full) {
+        if (table(slotNum).idx == idx) {
+          return (true, slotNum);
+        }
+      }
+    }
+    return (false, -1);
+  }
+
+  // This is redundant with the above, but implemented this way to avoid
+  // using default array arguments which are currently resulting in copies
+  def _findFilledSlotInTmp(idx: idxType): (bool, index(tableDom)) {
+    for slotNum in _lookForSlotsInTmp(idx) {
+      const slotStatus = tmpTable(slotNum).status;
+      if (slotStatus == _chpl_hash_status.empty) {
+        return (false, -1);
+      } else if (slotStatus == _chpl_hash_status.full) {
+        if (tmpTable(slotNum).idx == idx) {
+          return (true, slotNum);
+        }
+      }
+    }
+    return (false, -1);
+  }
+
+  def _findEmptySlot(idx: idxType): (bool, index(tableDom)) {
+    for slotNum in _lookForSlots(idx) {
+      const slotStatus = table(slotNum).status;
+      if (slotStatus == _chpl_hash_status.empty ||
+          slotStatus == _chpl_hash_status.deleted) {
+        return (true, slotNum);
+      } else if (table(slotNum).idx == idx) {
+        return (false, slotNum);
+      }
+    }
+    return (false, -1);
+  }
+    
+  def _lookForSlots(idx: idxType) {
+    const baseSlot = _associative_hash_wrapper(idx);
+    for probe in 0..tableSize/2 {
+      const tmp = baseSlot + probe**2;
+      const tmp2 = (baseSlot + probe**2)&tableSize;
+      yield (baseSlot + probe**2)%tableSize;
+    }
+  }
+
+  // TODO: Remove this and the other inTmp thing
+  def _lookForSlotsInTmp(idx: idxType) {
+    const baseSlot = _associative_hash_wrapper(idx);
+    for probe in 0..(tmpTable.domain.high+1)/2 {
+      yield (baseSlot + probe**2)%(tmpTable.domain.high+1);
+    }
+  }
+
+  def _fullSlots() {
+    for slot in tableDom {
+      if table(slot).status == _chpl_hash_status.full then
+        yield slot;
+    }
+  }
+
+  // TODO: Remove this and the other inTmp things
+  def _fullSlotsInTmp() {
+    for slot in tmpDom {
+      if tmpTable(slot).status == _chpl_hash_status.full then
+        yield slot;
+    }
+  }
 }
 
 
 class SingleLocaleAssociativeArray: BaseArray {
   type eltType;
   type idxType;
-  var dom : SingleLocaleAssociativeDomain(rank=1,idxType=idxType);
+  var dom : SingleLocaleAssociativeDomain(idxType=idxType);
 
-  const _ps : [0..26] int = (23, 53, 97, 193, 389, 769, 1543, 3079, 6151, 12289,
-                             24593, 49157, 98317, 196613, 393241, 786433, 
-                             1572869, 3145739, 6291469, 12582917, 25165843, 
-                             50331653, 100663319, 201326611, 402653189, 
-                             805306457, 1610612741);
+  var data : [dom.tableDom] eltType;
 
-  var dataDom = [0.._ps(0)/2];
-  var data : [dataDom] eltType;
+  var tmpDom = [0..-1:_chpl_table_index_type];
+  var tmpTable: [tmpDom] eltType;
 
-  // This method is unsatisfactory -- see bradc's commit entries of
-  // 01/02/08 around 14:30 for details
-  def _purge( ind: int) {
-    var d: eltType;
-    data( ind) = d;
-  }
+  //
+  // Standard internal array interface
+  // 
 
-  def _resize( length: int, old_map) {
-    var new_dataDom = [0..length-1];
-    var new_data: [new_dataDom] eltType;
-    for i in old_map.domain {
-      new_data(i) = data(old_map(i));
-    }
-    dataDom = new_dataDom;
-    data = new_data;
-  }
-
-  def this(ind : idxType) var : eltType
-    return data(dom._get_index(ind));
-
-  def these() var {
-    var i = 0;
-    var numFound = 0;
-    while numFound < dom.num_inds {
-      if (dom.inds(i).valid) {
-        numFound += 1;
-        yield data(i);
-      }
-      i += 1;
-    }
-  }
-
-  // WAW: hack due to domain-array interface. The array is not reallocated
-  // here. Values of indices not in the new domain are reset. The 
-  // domain assignment will perform the reallocation of each array that
-  // maps to it.
   def reallocate(d: _domain) {
-    if (d._value.type == dom.type) {
-      var td = d._value;
-      var inds_count = 0;
-      var inds_pos = 0;
-      while (inds_pos < dom.num_inds) && (inds_count < dom.inds.numElements) {
-	var ind = dom.inds(inds_count);
-	if ind.valid {
-	  var i = td._map( ind.data);
-	  if (i < 0) then {
-	    _purge( dom.table(dom._map( ind.data)));
-	  }
-	  inds_pos += 1;
-	}
-	inds_count += 1;
-      }
-    }
+    // reallocation is done in the setIndices function
   }
 
+
+  //
+  // Standard array interface
+  //
   def numElements {
     return dom.numIndices;
   }
 
-  def tupleInit(b: _tuple) {
-    for param i in 1..b.size do
-      data(i-1) = b(i);
+  def this(idx : idxType) var : eltType {
+    const (found, slotNum) = dom._findFilledSlot(idx);
+    if (found) then
+      return data(slotNum);
+    else {
+      halt("array index out of bounds: ", idx);
+      return data(0);
+    }
+  }
+
+  def these() var {
+    for slot in dom._fullSlots() {
+      yield data(slot);
+    }
+  }
+
+  def writeThis(f: Writer) {
+    var first = true;
+    for slot in dom._fullSlots() {
+      if (first) then
+        first = false;
+      else
+        f.write(" ");
+      f.write(data(slot));
+    }
+  }
+
+
+  //
+  // Associative array interface
+  //
+
+  def sorted() {
+    _createSortedTmpTable();
+    for elem in tmpTable do
+      yield elem;
+    _destroySortedTmpTable();
+  }
+
+
+  //
+  // Internal associative array interface
+  //
+
+  def _backupArray() {
+    tmpDom = dom.tableDom;
+    tmpTable = data;
+  }
+
+  def _removeArrayBackup() {
+    tmpDom = [0..-1:_chpl_table_index_type];
+  }
+
+  def _preserveArrayElement(oldslot, newslot) {
+    data(newslot) = tmpTable(oldslot);
+  }
+
+  // private internal interface
+
+  def _createSortedTmpTable() {
+    tmpDom = [0..numElements-1];
+    var count: _chpl_table_index_type = 0;
+    for slot in dom._fullSlots() {
+      tmpTable(count) = data(slot);
+      count += 1;
+    }
+    QuickSort(tmpTable);
+  }
+
+  def _destroySortedTmpTable() {
+    tmpDom = [0..-1:_chpl_table_index_type];
   }
 }
 
-def SingleLocaleAssociativeArray.writeThis(f: Writer) {
-  var inds_count = 0;
-  var inds_pos = 0;
-  while inds_count<dom.num_inds {
-    var ind = dom.inds(inds_pos);
-    if (ind.valid) {
-      f.write(data(inds_pos));
-      inds_count += 1;
-      if (inds_count < dom.num_inds) then f.write(" ");
-    }
-    inds_pos += 1;
-  }
+
+def _associative_hash_wrapper(x): _chpl_table_index_type {
+  const hash = _associative_hash(x); 
+  return (hash & max(_chpl_table_index_type)): _chpl_table_index_type;
 }
 
 
@@ -466,15 +418,15 @@ def _gen_key(i: int(64)): int(64) {
   key = key ^ (key >> 15);
   key += ~(key << 27);
   key = key ^ (key >> 31);
-  return key & 0x7fffffffffffffff;  // YAH, make non-negative
+  return (key & max(int(64))): int(64);  // YAH, make non-negative
 }
 
 pragma "inline"
 def _associative_hash(b: bool): int(64) {
   if (b) 
-    return 17;
+    return 0;
   else
-    return 31;
+    return 1;
 }
 
 pragma "inline"
@@ -494,7 +446,7 @@ def _associative_hash(f: real): int(64) {
 
 pragma "inline"
 def _associative_hash(c: complex): int(64) {
-  return _gen_key(c.re:int ^ c.im:int); 
+  return _gen_key(__primitive("real2int", c.re) ^ __primitive("real2int", c.im)); 
 }
 
 // Use djb2 (Dan Bernstein in comp.lang.c.

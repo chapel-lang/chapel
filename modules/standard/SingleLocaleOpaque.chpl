@@ -65,6 +65,11 @@ class SingleLocaleOpaqueArray: BaseArray {
       yield e;
   }
 
+  def sorted() {
+    for e in anarray.sorted() do
+      yield e;
+  }
+
   def numElements {
     return anarray.numElements;
   }

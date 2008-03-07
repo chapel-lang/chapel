@@ -20,6 +20,22 @@ Name(c1) = "z basis coordinate";
 Name(c2) = "y basis coordinate";
 Name(c3) = "x basis coordinate";
 
-for coord in D {
+for coord in D.sorted() {
   writeln("coord ", coord, " is called ", Name(coord));
+}
+
+def <(a: Coord, b: Coord) {
+  if (a.x == b.x) {
+    if (a.y == b.y) {
+      if (a.z == b.z) {
+        return false;
+      } else {
+        return (a.z < b.z);
+      }
+    } else {
+      return (a.y < b.y);
+    }
+  } else {
+    return (a.x < b.x);
+  }
 }

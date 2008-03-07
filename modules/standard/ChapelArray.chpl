@@ -255,6 +255,14 @@ record _domain {
 
   def getIndices()
     return _value.getIndices();
+
+  // associative array interface
+
+  def sorted() {
+    for i in _value.sorted() {
+      yield i;
+    }
+  }
 }
 
 def _isDomain(x: _domain) param return true;
@@ -378,8 +386,18 @@ record _array {
     return new _array(x.idxType, eltType, rank, x);
   }
 
+  // sparse array interface
+
   def IRV var {
     return _value.IRV;
+  }
+
+  // associative array interface
+
+  def sorted() {
+    for i in _value.sorted() {
+      yield i;
+    }
   }
 }
 
@@ -452,6 +470,19 @@ class BaseArray {
   def sparseShiftArray(shiftrange, initrange) {
     halt("sparseGrowDomain not supported for non-sparse arrays");
   }
+
+  // methods for associative arrays
+  def _backupArray() {
+    halt("_backupArray() not supported for non-associative arrays");
+  }
+
+  def _removeArrayBackup() {
+    halt("_removeArrayBackup() not supported for non-associative arrays");
+  }
+
+  def _preserveArrayElement(oldslot, newslot) {
+    halt("_preserveArrayElement() not supported for non-associative arrays");
+  }
 }
 
 
@@ -461,6 +492,22 @@ class BaseDomain {
   def member(ind) : bool {
     halt("membership test not supported for this domain type");
     return false;
+  }
+
+  // used for associative domains/arrays
+  def _backupArrays() {
+    for arr in _arrs do
+      arr._backupArray();
+  }
+
+  def _removeArrayBackups() {
+    for arr in _arrs do
+      arr._removeArrayBackup();
+  }
+
+  def _preserveArrayElement(oldslot, newslot) {
+    for arr in _arrs do
+      arr._preserveArrayElement(oldslot, newslot);
   }
 }
 

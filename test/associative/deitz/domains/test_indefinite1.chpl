@@ -1,3 +1,5 @@
+use printHelp;
+
 record R {
   var x: int;
 }
@@ -9,4 +11,8 @@ d += new R(3);
 d += new R(4);
 d += new R(5);
 
-writeln(d);
+writelnSorted(d);
+
+def <(x1: R, x2: R) {
+  return x1.x < x2.x;
+}

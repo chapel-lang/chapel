@@ -10,7 +10,7 @@ class SingleLocaleDistribution {
     return new SingleLocaleEnumDomain(rank=1, idxType=idxType);
 
   def buildDomain(type idxType)
-    return new SingleLocaleAssociativeDomain(rank=1, idxType=idxType);
+    return new SingleLocaleAssociativeDomain(idxType=idxType);
 
   def buildSparseDomain(param rank:int, type idxType,
                         parentDom: BaseArithmeticDomain)
