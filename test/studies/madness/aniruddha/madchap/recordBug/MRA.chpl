@@ -15,6 +15,7 @@
     Harrison <harrisonrj@ornl.gov>, et al.
  */
 
+use Math;
 use Tensor;
 use FTree;
 use Quadrature;
@@ -425,64 +426,7 @@ class Function {
      */
     def norm2() {
         if compressed then reconstruct();
-        writeln("----");
-        writeln("FTree.order = ", sumC.order);
-        writeln("FTree.coeffDom = ", sumC.coeffDom);
-        writeln("FTree.locDom = ", sumC.locDom);
-        writeln("----");
-        for i in sumC.locDom {
-          writeln("FTree.nodes(", i, ").coeffDom = ", sumC.nodes(i).coeffDom);
-          writeln("FTree.nodes(", i, ").locIndices = ", sumC.nodes(i).locIndices);
-          writeln("FTree.nodes(", i, ").locNodes = ", sumC.nodes(i).locNodes);
-          writeln("FTree.nodes(", i, ").zeroes = ", sumC.nodes(i).zeroes);
-        }
-        writeln("\n\n\nYAY!!!\n\n\n");
-        for n in sumC.nodes {
-          writeln("n.coeffDom = ", n.coeffDom);
-          writeln("n.locIndices = ", n.locIndices);
-          writeln("n.locNodes = ", n.locNodes);
-          writeln("n.zeroes = ", n.zeroes);
-          
-        }
-        writeln("\n\n\nYAY 1.5!!!\n\n\n");
-
-        for n in sumC.nodes {
-          //          writeln("Got a new n: ", n);
-          for d in n.locNodes {
-            writeln("d is: ", d);
-          }
-          writeln("Ready for the next n");
-        }
-
-        writeln("\n\n\nYAY 1.75!!!\n\n\n");
-
-        for n in sumC.nodes {
-          //          writeln("Got a new n: ", n);
-          for d in n.locNodes {
-            writeln("d.data is: ", d.data);
-          }
-          writeln("Ready for the next n");
-        }
-
-        writeln("\n\n\nYAY 1.80!!!\n\n\n");
-
-        for n in sumC.nodes {
-          //          writeln("Got a new n: ", n);
-          for d in n {
-            writeln("d is: ", d);
-          }
-          writeln("Ready for the next n");
-        }
-
-        writeln("\n\n\nYAY 1.87!!!\n\n\n");
-
-        for i in sumC {
-          writeln("i is: ", i, "\n------\n");
-        }
-        writeln("\n\n\nYAY2!!!\n\n\n");
-        const tmp = sqrt(+ reduce [i in sumC] normf(i)**2);
-        writeln("\n\n\nYAY3!!!\n\n\n");
-        return tmp;
+        return sqrt(+ reduce [i in sumC] normf(i)**2);
     }
 
 
@@ -612,8 +556,8 @@ class Function {
                 ncoeffs += 1;
             }
             if ncoeffs != 0 then
-                writeln("   level ", toString("%2d", n), "   #boxes=",
-                        toString("%4d", ncoeffs), "  norm=", toString("%0.2e", sqrt(sum)));
+                writeln("   level ", format("##", n), "   #boxes=",
+                        format("####", ncoeffs), "  norm=", format("%0.2e", sqrt(sum)));
         }
 
         writeln("difference coefficients:");
@@ -624,8 +568,8 @@ class Function {
                 ncoeffs += 1;
             }
             if ncoeffs != 0 then
-                writeln("   level ", toString("%2d", n), "   #boxes=",
-                        toString("%4d", ncoeffs), "  norm=", toString("%0.2e", sqrt(sum)));
+                writeln("   level ", format("##", n), "   #boxes=",
+                        format("####", ncoeffs), "  norm=", format("%0.2e", sqrt(sum)));
         }
 
         writeln("-----------------------------------------------------\n");
@@ -638,11 +582,11 @@ class Function {
     def evalNPT(npt) {
         for i in 0..npt {
             var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
-            //writeln(" -- ", toString("%0.2f", i/npt:real), ":  F_numeric()=", toString("% 0.5e", Fval),
-            //        "  f_analytic()=", toString("% 0.5e", fval), " err=", toString("% 0.5e", Fval-fval),
+            //writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.5e", Fval),
+            //        "  f_analytic()=", format("% 0.5e", fval), " err=", format("% 0.5e", Fval-fval),
             //        if abs(Fval-fval) > thresh then "  > thresh" else "");
-            writeln(" -- ", toString("%0.2f", i/npt:real), ":  F_numeric()=", toString("% 0.8f", Fval),
-                    "  f_analytic()=", toString("% 0.8f", fval), " err=", toString("% 0.1e", Fval-fval),
+            writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.8f", Fval),
+                    "  f_analytic()=", format("% 0.8f", fval), " err=", format("% 0.1e", Fval-fval),
                     if abs(Fval-fval) > thresh then "  > thresh" else "");
         }
     }
