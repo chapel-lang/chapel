@@ -122,11 +122,11 @@ void _chpl_init_single_aux(_chpl_single_aux_t *s) {
 // Threads
 
 int32_t _chpl_threads_getMaxThreads(void) {
-  return _coresPerLocale() * 100;
+  return chpl_coresPerLocale() * 100;
 }
 
 int32_t _chpl_threads_maxThreadsLimit(void) {
-  return _coresPerLocale() * 104;
+  return chpl_coresPerLocale() * 104;
 }
 
 void initChplThreads() {
@@ -179,7 +179,7 @@ void _chpl_set_serial(_chpl_bool state) {
     *p = state;
     mta_register_task_data(p);
   } else
-    _chpl_internal_error("out of memory while creating serial state");
+    chpl_internal_error("out of memory while creating serial state");
 }
 
 

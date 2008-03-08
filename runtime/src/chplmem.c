@@ -93,7 +93,7 @@ void setMemtrack(void) {
 
 void setMemthreshold(int64_t value) {
   if (!memlog) {
-    _chpl_error("--memthreshold useless when used without --memtrace", 0, 0);
+    chpl_error("--memthreshold useless when used without --memtrace", 0, 0);
   }
   memthresholdValue = value;
 }
@@ -106,7 +106,7 @@ void setMemtrace(char* memlogname) {
     if (!memlog) {
       char* message = _glom_strings(3, "Unable to open \"", memlogname, 
                                     "\"");
-      _chpl_error(message, 0, 0);
+      chpl_error(message, 0, 0);
     }
   } 
 }
@@ -124,7 +124,7 @@ static void increaseMemStat(size_t chunk, int32_t lineno, _string filename) {
   if (memmaxValue && (totalMem > memmaxValue)) {
     const char* message = "Exceeded memory limit";
     _chpl_mutex_unlock(&_memstat_lock);
-    _chpl_error(message, lineno, filename);
+    chpl_error(message, lineno, filename);
   }
   updateMaxMem();
 }
@@ -155,7 +155,7 @@ uint64_t _mem_used(int32_t lineno, _string filename) {
   uint64_t u;
   alreadyPrintingStat = 1; /* hack: don't want to print final stats */
   if (!memstat)
-    _chpl_error("memoryUsed() only works with the --memstat flag", lineno, filename);
+    chpl_error("memoryUsed() only works with the --memstat flag", lineno, filename);
   u = (uint64_t)totalMem;
   return u;
 }
@@ -169,7 +169,7 @@ void printMemStat(int32_t lineno, _string filename) {
     _chpl_mutex_unlock(&_memstat_lock);
   } else {
     const char* message = "printMemStat() only works with the --memstat flag";
-    _chpl_error(message, lineno, filename);
+    chpl_error(message, lineno, filename);
   }
 }
 
@@ -200,7 +200,7 @@ void printMemTable(int64_t threshold, int32_t lineno, _string filename) {
   if (!memtrack) {
     const char* message = "The printMemTable function only works with the "
       "--memtrack flag";
-    _chpl_error(message, lineno, filename);
+    chpl_error(message, lineno, filename);
   }
 
   fprintf(stdout, "\n");
@@ -269,7 +269,7 @@ static void installMemory(void* memAlloc, size_t number, size_t size,
     if (!memEntry) {
       char* message = _glom_strings(3, "Out of memory allocating table entry "
                                     "for \"", description, "\"");
-      _chpl_error(message, 0, 0);
+      chpl_error(message, 0, 0);
     }
 
     hashValue = hash(memAlloc);
@@ -289,7 +289,7 @@ static void installMemory(void* memAlloc, size_t number, size_t size,
     if (!memEntry->description) {
       char* message = _glom_strings(3, "Out of memory allocating table entry "
                                     "for \"", description, "\"");
-      _chpl_error(message, 0, 0);
+      chpl_error(message, 0, 0);
     }
     strcpy(memEntry->description, description);
     memEntry->memAlloc = memAlloc;
@@ -321,7 +321,7 @@ static memTableEntry* removeBucketEntry(void* address) {
     }
   }
   if (deletedBucket == NULL) {
-    _chpl_internal_error("Hash table entry has disappeared unexpectedly!");
+    chpl_internal_error("Hash table entry has disappeared unexpectedly!");
   }
   return deletedBucket;
 }
@@ -368,7 +368,7 @@ static void removeMemory(void* memAlloc, int32_t lineno, _string filename) {
     free(thisBucketEntry);
   } else {
     const char* message = "Attempting to free memory that wasn't allocated";
-    _chpl_error(message, lineno, filename);
+    chpl_error(message, lineno, filename);
   }
 }
 
@@ -379,7 +379,7 @@ confirm(void* memAlloc, const char* description, int32_t lineno,
   if (!memAlloc) {
     char message[1024];
     sprintf(message, "Out of memory allocating \"%s\"", description);
-    _chpl_error(message, lineno, filename);
+    chpl_error(message, lineno, filename);
   }
 }
 
@@ -506,7 +506,7 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
       char* message;
       message = _glom_strings(3, "Attempting to realloc memory for ",
                               description, " that wasn't allocated");
-      _chpl_error(message, lineno, filename);
+      chpl_error(message, lineno, filename);
     }
   }
   moreMemAlloc = realloc(memAlloc, newChunk);

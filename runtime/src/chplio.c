@@ -9,12 +9,12 @@
 
 static void _fscan_error_check(int err, int32_t lineno, _string filename) {
   if (err == EOF)
-    _chpl_error("read failed: eof", lineno, filename);
+    chpl_error("read failed: eof", lineno, filename);
   else if (err < 0)
-    _chpl_error(string_concat("read failed: ", strerror(errno), lineno, filename),
+    chpl_error(string_concat("read failed: ", strerror(errno), lineno, filename),
                 lineno, filename);
   else if (err == 0)
-    _chpl_error("read failed: value not read", lineno, filename);
+    chpl_error("read failed: value not read", lineno, filename);
 }
 
 _string _fscan_string(FILE* fp, int32_t lineno, _string filename) {
@@ -26,7 +26,7 @@ _string _fscan_string(FILE* fp, int32_t lineno, _string filename) {
   _fscan_error_check(err, lineno, filename);
   if (strlen(result) == (_default_string_length - 1)) {
     sprintf(dsl, "%d", _default_string_length);
-    _chpl_error(string_concat("maximum string length is ", dsl, lineno, filename),
+    chpl_error(string_concat("maximum string length is ", dsl, lineno, filename),
                 lineno, filename);
   }
   return _glom_strings(1, result);

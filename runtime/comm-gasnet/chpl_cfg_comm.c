@@ -165,7 +165,7 @@ int _chpl_comm_user_invocation(int argc, char* argv[]) {
 
 
 int _chpl_comm_default_num_locales(void) {
-  _chpl_error("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
+  chpl_error("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
   return 0;
 }
 
@@ -227,7 +227,7 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
 
       status = pthread_create(&polling_thread, NULL, (_chpl_threadfp_t)polling, 0);
       if (status)
-        _chpl_internal_error("unable to start polling thread for gasnet");
+        chpl_internal_error("unable to start polling thread for gasnet");
       pthread_detach(polling_thread);
     }
 
@@ -238,7 +238,7 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
 }
 
 void _chpl_comm_rollcall(void) {
-  _chpl_msg(2, "executing on locale %d of %d locale(s)\n", _localeID, 
+  chpl_msg(2, "executing on locale %d of %d locale(s)\n", _localeID, 
             _numLocales);
 }
 

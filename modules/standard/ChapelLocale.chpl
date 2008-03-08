@@ -14,7 +14,7 @@ def locale.writeThis(f: Writer) {
 const Locales: [loc in LocalesDomain] locale = new locale(id = loc);
 
 def locale.numCores {
-  /* on this do */ return __primitive("_coresPerLocale");
+  /* on this do */ return __primitive("chpl_coresPerLocale");
   // what does it even mean to have a return in an on statement?  I
   // would prefer not to do this; certainly we do not migrate the
   // calling site.  This should probably be rewritten to call the

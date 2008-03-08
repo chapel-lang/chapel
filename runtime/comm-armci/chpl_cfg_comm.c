@@ -35,8 +35,8 @@
   ret = fncall;                                       \
   if (ret != MPI_SUCCESS) {                           \
     MPI_Error_string(ret, errmsg, &len);              \
-    _chpl_internal_error("MPI error:");                \
-    _chpl_internal_error(errmsg);                      \
+    chpl_internal_error("MPI error:");                \
+    chpl_internal_error(errmsg);                      \
     MPI_Abort(MPI_COMM_WORLD, ret);                   \
   }                                                   \
 }
@@ -70,7 +70,7 @@ int _chpl_comm_user_invocation(int argc, char* argv[]) {
   // This will probably need to look for a special argument that was
   // inserted during the user invocation call to chpl_comm_init()
 
-  _chpl_msg(2, "Called _chpl_comm_user_invocation() on: %d\n", _localeID);
+  chpl_msg(2, "Called _chpl_comm_user_invocation() on: %d\n", _localeID);
   // For now return always false ... ? -- danich 10/23/07
   return 0;
 }
@@ -86,7 +86,7 @@ int _chpl_comm_user_invocation(int argc, char* argv[]) {
 //
 int _chpl_comm_default_num_locales(void) {
   // This is probably a good default for ARMCI:
-  _chpl_error("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
+  chpl_error("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
   return 0;
 }
 
@@ -129,7 +129,7 @@ char** _chpl_comm_create_argcv(int32_t execNumLocales, int argc, char* argv[],
   char **commArgv;
   int i;
 
-  _chpl_msg(2, "Called _chpl_comm_create_argcv() on: %d\n", _localeID);
+  chpl_msg(2, "Called _chpl_comm_create_argcv() on: %d\n", _localeID);
 
   *commArgc = argc;
   commArgv = _chpl_malloc((*commArgc) + 1, sizeof(char *), "ARMCI argv", __LINE__, __FILE__);
@@ -176,7 +176,7 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
   int nprocs, me;
 
   if (runInGDB) {
-    _chpl_error("--gdb not yet implemented for ARMCI", runInGDB, "<command-line>");
+    chpl_error("--gdb not yet implemented for ARMCI", runInGDB, "<command-line>");
   }
 
   MPI_SAFE(MPI_Init(argc_p, argv_p));
@@ -197,12 +197,12 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
 // a final comm layer stub before barrier synching and calling into
 // the user code.  It is recommended that a debugging message be
 // printed here indicating that each locale has started using
-// _chpl_msg() and a verbosity level of 2 (which will cause it to be
+// chpl_msg() and a verbosity level of 2 (which will cause it to be
 // displayed using the -v flag).
 //
 void _chpl_comm_rollcall(void) {
   // Something like the following should work:
-  _chpl_msg(2, "executing on locale %d of %d locale(s)\n", _localeID, 
+  chpl_msg(2, "executing on locale %d of %d locale(s)\n", _localeID, 
             _numLocales);
 }
 
@@ -213,7 +213,7 @@ void _chpl_comm_rollcall(void) {
 // for debugging to determine where the barrier is being called.
 //
 void _chpl_comm_barrier(const char *msg) {
-  _chpl_msg(2, "Called _chpl_comm_barrier(\"%s\") on: %d\n", msg, _localeID);
+  chpl_msg(2, "Called _chpl_comm_barrier(\"%s\") on: %d\n", msg, _localeID);
 
   // Insert ARMCI barrier between all processes here
   ARMCI_Barrier();
@@ -222,23 +222,23 @@ void _chpl_comm_barrier(const char *msg) {
 
 static void _chpl_comm_exit_common(int status)
 {
-  _chpl_msg(2, "Called _chpl_comm_exit_common() on: %d\n", _localeID);
+  chpl_msg(2, "Called _chpl_comm_exit_common() on: %d\n", _localeID);
 
   if (armci_init_called) {
-    _chpl_msg(2, "Before ARMCI_Gpc_release() on: %d %d\n", _localeID, ghndl);
+    chpl_msg(2, "Before ARMCI_Gpc_release() on: %d %d\n", _localeID, ghndl);
 
     if (ghndl != -1)
       ARMCI_Gpc_release(ghndl);
 
-    _chpl_msg(2, "After ARMCI_Gpc_release() on: %d\n", _localeID);
+    chpl_msg(2, "After ARMCI_Gpc_release() on: %d\n", _localeID);
 
     ARMCI_Finalize();
 
-    _chpl_msg(2, "After ARMCI_Finalize() on: %d\n", _localeID);
+    chpl_msg(2, "After ARMCI_Finalize() on: %d\n", _localeID);
 
     MPI_SAFE(MPI_Finalize());
 
-    _chpl_msg(2, "After MPI_Finalize() on: %d\n", _localeID);
+    chpl_msg(2, "After MPI_Finalize() on: %d\n", _localeID);
   }
 } /* _chpl_comm_exit_common */
 
@@ -284,7 +284,7 @@ void _chpl_comm_exit_any(int status) {
 void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
   // this should be an ARMCI put call
 
-  _chpl_msg(2, "Called _chpl_comm_put() on: %d\n", _localeID);
+  chpl_msg(2, "Called _chpl_comm_put() on: %d\n", _localeID);
 
   if (_localeID == locale)
     memmove(raddr, addr, size);
@@ -304,7 +304,7 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
 void  _chpl_comm_get(void *addr, int32_t locale, const void* raddr, int32_t size) {
   // this should be an ARMCI get call
 
-  _chpl_msg(2, "Called _chpl_comm_get() on: %d\n", _localeID);
+  chpl_msg(2, "Called _chpl_comm_get() on: %d\n", _localeID);
 
   if (_localeID == locale)
     memmove(addr, raddr, size);
@@ -329,10 +329,10 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   int rdlen;
   int i;
 
-  _chpl_msg(2, "Called _chpl_comm_fork() on: %d\n", _localeID);
+  chpl_msg(2, "Called _chpl_comm_fork() on: %d\n", _localeID);
 
   if (ghndl == -1) {
-    _chpl_internal_error("ARMCI GPC handler function not registered");
+    chpl_internal_error("ARMCI GPC handler function not registered");
     return;
   }
 
@@ -344,19 +344,19 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
 
   /* ARMCI_Gpc_init_handle(&nbh); */
 
-  _chpl_msg(2, "Trying to execute on locale: %d from locale: %d\n", locale, _localeID);
-  _chpl_msg(2, "f: %p, arg: %p, arg_size: %d\n", f, arg, arg_size);
+  chpl_msg(2, "Trying to execute on locale: %d from locale: %d\n", locale, _localeID);
+  chpl_msg(2, "f: %p, arg: %p, arg_size: %d\n", f, arg, arg_size);
 
   ret = ARMCI_Gpc_exec(ghndl, locale, &header, sizeof(f), arg, arg_size,
                        rheader, rhlen, rdata, rdlen, NULL /* &nbh */);
   if (ret != 0) {
-    _chpl_internal_error("ARMCI_Gpc_exec() failed");
+    chpl_internal_error("ARMCI_Gpc_exec() failed");
     _chpl_free(rheader, __LINE__, __FILE__);
     _chpl_free(rdata, __LINE__, __FILE__);
     return;
   }
 
-  _chpl_msg(2, "After ARMCI_Gpc_exec()\n");
+  chpl_msg(2, "After ARMCI_Gpc_exec()\n");
 
   /* ARMCI_Gpc_wait(&nbh); */
 
@@ -370,7 +370,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
 void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   // Not sure how to implement this for ARMCI
 
-  _chpl_msg(2, "Called _chpl_comm_fork_nb() on: %d\n", _localeID);
+  chpl_msg(2, "Called _chpl_comm_fork_nb() on: %d\n", _localeID);
 }
 
 int gpc_call_handler(int to, int from, void *hdr, int hlen,
@@ -382,9 +382,9 @@ int gpc_call_handler(int to, int from, void *hdr, int hlen,
   func_p f;
 
   f = *(func_p *)hdr;
-  _chpl_msg(2, "Received callback on locale: %d %p\n", _localeID, f);
+  chpl_msg(2, "Received callback on locale: %d %p\n", _localeID, f);
 
-  _chpl_msg(2, "hlen: %d, data: %p, dlen: %d, rhdr: %p, rhlen: %d, rdata: %p, rdlen: %d\n",
+  chpl_msg(2, "hlen: %d, data: %p, dlen: %d, rhdr: %p, rhlen: %d, rdata: %p, rdlen: %d\n",
             hlen, data, dlen, rhdr, rhlen, rdata, rdlen);
 
   f(data);

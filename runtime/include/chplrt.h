@@ -9,7 +9,7 @@ extern void _initModuleGuards(void);
 #define _CHECK_NIL(x, lineno, filename)                                 \
   do {                                                                  \
     if (x == nil)                                                       \
-      _chpl_error("attempt to dereference nil", lineno, filename);      \
+      chpl_error("attempt to dereference nil", lineno, filename);      \
   } while (0)
 
 #define _timervalue struct timeval
@@ -35,7 +35,7 @@ _real64 _now_time(void);
 #define _WIDE_ARRAY_INIT(x, type, size, lineno, filename)              \
   do {                                                                 \
     if (x.locale != _localeID)                                         \
-      _chpl_error("array vector data is not local", lineno, filename); \
+      chpl_error("array vector data is not local", lineno, filename); \
     _ARRAY_INIT((x).addr, type, size, lineno, filename);               \
   } while (0)
 

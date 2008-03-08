@@ -408,9 +408,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_HEAP_BROADCAST_GLOBAL_VARS, "_heap_broadcast_global_vars", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_PRIVATE_BROADCAST, "_private_broadcast", returnInfoVoid, true, true);
 
-  prim_def(PRIMITIVE_MAX_THREADS, "_maxThreads", returnInfoInt32);
-  prim_def(PRIMITIVE_MAX_THREADS_LIMITS, "_maxThreadsLimit", returnInfoInt32);
-
   prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
   prim_def(PRIMITIVE_BUILD_ARRAY, "build_array", returnInfoFirst);
@@ -531,8 +528,10 @@ initPrimitive() {
   prim_def("_now_day", returnInfoInt32, true);
   prim_def("_now_time", returnInfoReal64, true);
 
-  prim_def("_bytesPerLocale", returnInfoUInt64);
-  prim_def("_coresPerLocale", returnInfoInt32);
+  prim_def("chpl_bytesPerLocale", returnInfoUInt64);
+  prim_def("chpl_coresPerLocale", returnInfoInt32);
+  prim_def("chpl_maxThreads", returnInfoInt32);
+  prim_def("chpl_maxThreadsLimit", returnInfoInt32);
 
   prim_def("_memtest_printMemTable", returnInfoVoid, true, true);
   prim_def("_memtest_printMemStat", returnInfoVoid, true, true);
@@ -546,8 +545,8 @@ initPrimitive() {
   prim_def("_memtest_reallocOutOfMemory", returnInfoVoid, true, true);
   prim_def("startTrackingMem", returnInfoVoid, true);
 
-  prim_def("_chpl_error", returnInfoVoid, true, true);
-  prim_def("_chpl_warning", returnInfoVoid, true, true);
+  prim_def("chpl_error", returnInfoVoid, true, true);
+  prim_def("chpl_warning", returnInfoVoid, true, true);
 
   prim_def("_mem_used", returnInfoUInt64, false, true);
 }

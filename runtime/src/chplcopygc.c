@@ -117,7 +117,7 @@ void* _chpl_gc_malloc(size_t number, size_t size, const char* description,
       // For now, throw an error
       char message[1024];
       sprintf(message, "Out of memory allocating \"%s\"", description);
-      _chpl_error(message, lineno, filename);
+      chpl_error(message, lineno, filename);
     } else {
       current = _from_space->current;
       _from_space->current += chunk;

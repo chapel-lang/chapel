@@ -226,7 +226,7 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB);
 // a final comm layer stub before barrier synching and calling into
 // the user code.  It is recommended that a debugging message be
 // printed here indicating that each locale has started using
-// _chpl_msg() and a verbosity level of 2 (which will cause it to be
+// chpl_msg() and a verbosity level of 2 (which will cause it to be
 // displayed using the -v flag).
 //
 void _chpl_comm_rollcall(void);

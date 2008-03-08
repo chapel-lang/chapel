@@ -15,9 +15,9 @@ static int mysystem(const char* command, const char* description,
   int status = system(command);
 
   if (status == -1) {
-    _chpl_error("system() fork failed", 0, "(command-line)");
+    chpl_error("system() fork failed", 0, "(command-line)");
   } else if (status != 0 && !ignorestatus) {
-    _chpl_error(description, 0, "(command-line)");
+    chpl_error(description, 0, "(command-line)");
   }
 
   return status;
@@ -43,7 +43,7 @@ int _chpl_comm_default_num_locales(void) {
 
 void _chpl_comm_verify_num_locales(int32_t proposedNumLocales) {
   if (proposedNumLocales != 1) {
-    _chpl_error("Only 1 locale may be used for CHPL_COMM layer 'none'", 0, 0);
+    chpl_error("Only 1 locale may be used for CHPL_COMM layer 'none'", 0, 0);
   }
 }
 
@@ -76,7 +76,7 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
 }
 
 void _chpl_comm_rollcall(void) {
-  _chpl_msg(2, "executing on a single locale\n");
+  chpl_msg(2, "executing on a single locale\n");
 }
 
 void _chpl_comm_broadcast_global_vars(int numGlobals) { }

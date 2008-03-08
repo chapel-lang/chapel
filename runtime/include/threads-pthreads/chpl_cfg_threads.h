@@ -46,28 +46,28 @@ typedef struct {
   do {if (_chpl_sync_wait_empty_and_lock(&((x)->sync_aux),lineno,filename) == 0) { \
         (x)->value = (y); \
         _chpl_sync_mark_and_signal_full(&((x)->sync_aux));} \
-      else _chpl_internal_error("invalid mutex in _chpl_write_EF"); \
+      else chpl_internal_error("invalid mutex in _chpl_write_EF"); \
      } while (0)
 
 #define _chpl_write_FF(x,y,lineno,filename) \
   do {if (_chpl_sync_wait_full_and_lock(&((x)->sync_aux),lineno,filename) == 0) { \
         (x)->value = (y); \
         _chpl_sync_mark_and_signal_full(&((x)->sync_aux));} \
-      else _chpl_internal_error("invalid mutex in _chpl_write_FF"); \
+      else chpl_internal_error("invalid mutex in _chpl_write_FF"); \
      } while (0)
 
 #define _chpl_write_XF(x,y) \
   do {if (_chpl_sync_lock(&((x)->sync_aux)) == 0) { \
         (x)->value = (y); \
         _chpl_sync_mark_and_signal_full(&((x)->sync_aux));} \
-      else _chpl_internal_error("invalid mutex in _chpl_write_XF"); \
+      else chpl_internal_error("invalid mutex in _chpl_write_XF"); \
      } while (0)
 
 #define _chpl_sync_reset(x)  \
   do {if (_chpl_sync_lock(&((x)->sync_aux)) == 0) { \
         (x)->value = 0; \
         _chpl_sync_mark_and_signal_empty(&((x)->sync_aux));} \
-      else _chpl_internal_error("invalid mutex in _chpl_sync_reset"); \
+      else chpl_internal_error("invalid mutex in _chpl_sync_reset"); \
      } while (0)
 
 
@@ -82,11 +82,11 @@ typedef struct {
 #define _chpl_single_write_EF(x,y,lineno,filename) \
   do {if (_chpl_single_lock(&((x)->single_aux)) == 0) { \
         if (_chpl_single_is_full(&((x)->value),&((x)->single_aux),true)) \
-          _chpl_error("single var already defined", lineno, filename); \
+          chpl_error("single var already defined", lineno, filename); \
         else { \
           (x)->value = (y); \
           _chpl_single_mark_and_signal_full(&((x)->single_aux));}} \
-      else _chpl_internal_error("invalid mutex in _chpl_single_write_EF"); \
+      else chpl_internal_error("invalid mutex in _chpl_single_write_EF"); \
      } while (0)
 
 #define _chpl_single_reset(x) \

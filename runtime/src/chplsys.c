@@ -14,15 +14,15 @@
 #define chplGetPageSize() sysconf(_SC_PAGE_SIZE)
 #endif
 
-uint64_t _bytesPerLocale(void) {
+uint64_t chpl_bytesPerLocale(void) {
 #ifdef NO_BYTES_PER_LOCALE
-  _chpl_internal_error("sorry- bytesPerLocale not supported on this platform");
+  chpl_internal_error("sorry- bytesPerLocale not supported on this platform");
   return 0;
 #elif defined __APPLE__
   uint64_t membytes;
   size_t len = sizeof(membytes);
   if (sysctlbyname("hw.memsize", &membytes, &len, NULL, 0)) 
-    _chpl_internal_error("query of physical memory failed");
+    chpl_internal_error("query of physical memory failed");
   return membytes;
 #elif defined __MTA__
   int mib[2] = {CTL_HW, HW_PHYSMEM}, membytes;
@@ -38,14 +38,14 @@ uint64_t _bytesPerLocale(void) {
 }
 
 
-int32_t _coresPerLocale(void) {
+int32_t chpl_coresPerLocale(void) {
 #ifdef NO_CORES_PER_LOCALE
   return 1;
 #elif defined __APPLE__
   uint64_t numcores = 0;
   size_t len = sizeof(numcores);
   if (sysctlbyname("hw.physicalcpu", &numcores, &len, NULL, 0))
-    _chpl_internal_error("query of number of cores failed");
+    chpl_internal_error("query of number of cores failed");
   // If the call to sysctlbyname() above failed to modify numcores for some reason,
   // return just 1 to be safe.
   return numcores ? numcores : 1;
@@ -61,7 +61,7 @@ int32_t _coresPerLocale(void) {
 }
 
 
-int32_t _maxThreads(void) {
+int32_t chpl_maxThreads(void) {
   int32_t comm_max = _chpl_comm_getMaxThreads();
   int32_t threads_max = _chpl_threads_getMaxThreads();
 
@@ -74,7 +74,7 @@ int32_t _maxThreads(void) {
 }
 
 
-int32_t _maxThreadsLimit(void) {
+int32_t chpl_maxThreadsLimit(void) {
   int32_t comm_max = _chpl_comm_maxThreadsLimit();
   int32_t threads_max = _chpl_threads_maxThreadsLimit();
 
