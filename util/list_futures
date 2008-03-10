@@ -1,5 +1,9 @@
 #!/usr/bin/perl
 
+$home = $ENV{'CHPL_HOME'};
+
+die "CHPL_HOME must be set" unless $home;
+
 $printusage = 0;
 
 $username = "";
@@ -25,13 +29,13 @@ if ($username ne "") {
 }
 
 
-@fnames = `find \* | grep \'\\\.future\$\'`;
+@fnames = `find $home/test -name *.future`;
 
 foreach $fname (@fnames) {
   chomp $fname;
   $worker = `head -n 1 $fname`;
   chomp $worker;
-  $fname =~ s/(.*)\.future$/$1/;
+  $fname =~ s/.*test\/(.*)\.future$/test\/$1/;
   if (index($worker, $username) != -1) {
       push @output, "$worker [$fname]\n";
   }
