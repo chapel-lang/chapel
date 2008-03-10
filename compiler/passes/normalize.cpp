@@ -839,7 +839,6 @@ static void hack_resolve_types(Expr* expr) {
           SymExpr* se = toSymExpr(arg->defaultExpr);
           if (!se || se->var != gNil) {
             def->exprType = arg->defaultExpr->copy();
-            arg->initUsingCopy = true;
             FnSymbol* fn = def->getFunction();
             insert_help(def->exprType, def, fn, fn->argScope);
           }

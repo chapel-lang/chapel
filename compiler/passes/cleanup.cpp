@@ -519,7 +519,6 @@ static void build_constructor(ClassType* ct) {
     if (init) {
       if (!field->isTypeVariable && !exprType) {
         exprType = init->copy();
-        arg->initUsingCopy = true;
       }
     } else if (exprType && !field->isTypeVariable && !field->isParam) {
       CallExpr* callExprType = toCallExpr(exprType);
@@ -527,7 +526,6 @@ static void build_constructor(ClassType* ct) {
         init = exprType->copy();
       else
         init = new CallExpr(PRIMITIVE_INIT, exprType->copy());
-      arg->initUsingCopy = true;
     }
     if (hasType && !field->isTypeVariable && !field->isParam) {
       CallExpr* callExprType = toCallExpr(exprType);
