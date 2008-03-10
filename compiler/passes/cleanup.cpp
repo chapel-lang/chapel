@@ -529,6 +529,11 @@ static void build_constructor(ClassType* ct) {
         init = new CallExpr(PRIMITIVE_INIT, exprType->copy());
       arg->initUsingCopy = true;
     }
+    if (hasType && !field->isTypeVariable && !field->isParam) {
+      CallExpr* callExprType = toCallExpr(exprType);
+      if (!callExprType || !callExprType->isNamed("_build_sparse_subdomain_type"))
+        init = new CallExpr("_createFieldDefault", exprType->copy(), init);
+    }
     arg->defaultExpr = init;
     arg->isTypeVariable = field->isTypeVariable;
     if (!exprType && arg->type == dtUnknown)

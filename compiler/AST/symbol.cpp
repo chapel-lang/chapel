@@ -794,13 +794,14 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
       call->insertAtTail(wrapper_formal);
       if (Symbol* value = paramMap->get(formal))
         paramMap->put(wrapper_formal, value);
-    } else if (Symbol* sym = paramMap->get(formal)) {
+    } else if (paramMap->get(formal)) {
       // handle instantiated param formals
-      call->insertAtTail(sym);
+      call->insertAtTail(paramMap->get(formal));
     } else {
       const char* temp_name = astr("_default_temp_", formal->name);
       VarSymbol* temp = new VarSymbol(temp_name);
       temp->isCompilerTemp = true;
+      temp->canParam = true;
       if (formal->isTypeVariable)
         temp->isTypeVariable = true;
       copy_map.put(formal, temp);
@@ -811,9 +812,14 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
       if (SymExpr* symExpr = toSymExpr(temp_init))
         if (symExpr->var == gNil)
           temp_init = NULL;
-      if (formal->initUsingCopy) {
+      if (temp_init) { // formal->initUsingCopy) {
         wrapper->insertAtTail(new DefExpr(temp));
-        wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, temp_init));
+        if (formal->intent == INTENT_INOUT) {
+          wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, new CallExpr("_copy", temp_init)));
+          temp->isExprTemp = false;
+          temp->canParam = false;
+        } else
+          wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, temp_init));
       } else {
         if (formal->defPoint->exprType)
           temp_type = formal->defPoint->exprType->copy();
@@ -845,7 +851,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
   }
   defPoint->insertAfter(new DefExpr(wrapper));
 
-  reset_file_info(wrapper->defPoint, lineno, filename);
+  //  reset_file_info(wrapper->defPoint, lineno, filename);
 
   // Make the line numbers match the numbers from the formals they map to
   for_formals(formal, this) {

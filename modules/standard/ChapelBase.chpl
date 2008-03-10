@@ -437,7 +437,6 @@ pragma "inline" def _copy(type t) {
 
 pragma "inline" def _pass(a) return _copy(a);
 
-
 //
 // _cond_test function supports statement bool conversions and sync
 //   variables in conditional statements; and checks for errors
@@ -1068,6 +1067,31 @@ pragma "inline" def _chpl_swap(inout x, inout y) {
 }
 
 pragma "c for loop increment" def _cfor_inc(inout i, s) {
+}
+
+pragma "inline" def _createFieldDefault(type t, init) {
+  var x: t;
+  x = init;
+  return x;
+}
+
+pragma "inline" def _createFieldDefault(type t, param init) {
+  var x: t;
+  x = init;
+  return x;
+}
+
+pragma "inline" def _createFieldDefault(type t, init: _nilType) {
+  var x: t;
+  return x;
+}
+
+pragma "inline" def _createFieldDefault(type t, init: sync) {
+  return init;
+}
+
+pragma "inline" def _createFieldDefault(type t, init: single) {
+  return init;
 }
 
 pragma "inline" def _set_field(x, y) {

@@ -1720,6 +1720,7 @@ insertFormalTemps(FnSymbol* fn) {
       !strcmp(fn->name, "_init") ||
       !strcmp(fn->name, "_copy") ||
       !strcmp(fn->name, "=") ||
+      !strcmp(fn->name, "_createFieldDefault") ||
       !strcmp(fn->name, "_set_field") ||
       fn->hasPragma("ref"))
     return;

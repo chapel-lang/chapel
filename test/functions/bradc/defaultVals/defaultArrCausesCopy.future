@@ -1,7 +1,0 @@
-bug: default array arguments result in a copy
-
-This test demonstrates that if an array formal takes a default
-argument and that default argument is an array, a copy of the
-array is created and passed in rather than a reference to the
-original array.  I believe that this is a mistake and not the
-intended semantics.
