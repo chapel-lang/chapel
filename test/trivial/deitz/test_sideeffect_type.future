@@ -1,0 +1,3 @@
+bug: side effect in type evaluation
+
+I don't think we should executed code used to specify types.
