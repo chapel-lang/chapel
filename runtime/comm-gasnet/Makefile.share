@@ -11,8 +11,26 @@ GASNET_INSTALL = $(RUNTIME_ROOT)/../third-party/gasnet/install/$(CHPL_MAKE_PLATF
 
 include $(GASNET_INSTALL)/include/udp-conduit/udp-par.mak
 
-INCL_CFLAGS += -I$(GASNET_INSTALL)/include -I$(GASNET_INSTALL)/include/udp-conduit
+# 
+# The following lines try to combine GASNet's favorite C compiler
+# flags with ours.  Unfortunately, we have to override several of our
+# own favorites as follows:
+#
+# -Wno-missing-prototypes must be used because
+# gasneti_linkconfig_idiotcheck isn't prototyped before it's used (boo)
+# and is static, so we can't prototype it for them (awwww).
+#
+# -Wno-strict-prototypes has to be used because most GASNet prototypes
+# aren't strict.
+#
+# -std=c99 doesn't work because setenv() is no longer supported by C99,
+# and it's currently our best way of conveyinng to GASNet to use gdb when
+# it launches the child tasks.  We use -std=gnu89 instead because with
+# our compilers it's what you'd get if you weren't specifying a standard
+# at all.
+#
+RUNTIME_CFLAGS += $(GASNET_CFLAGS) -I$(GASNET_INSTALL)/include -I$(GASNET_INSTALL)/include/udp-conduit -std=gnu89
 
-CC = $(GASNET_CC)
-CPP = $(GASNET_CC)
-RUNTIME_CFLAGS = $(GASNET_CFLAGS) $(INCL_CFLAGS)
+ifdef CHPL_DEVELOPER
+RUNTIME_CFLAGS += -Wno-strict-prototypes -Wno-missing-prototypes -std=gnu89
+endif

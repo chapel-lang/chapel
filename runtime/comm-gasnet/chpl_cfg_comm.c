@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "chplrt.h"
 #include "chplcomm.h"
 #include "chplmem.h"
@@ -56,30 +57,17 @@ typedef struct {
   char    arg[0];       // variable-sized data here
 } dist_fork_t;
 
-void _AM_fork_nb(gasnet_token_t token, void *buf, size_t nbytes);
-void _AM_fork(gasnet_token_t token, void *buf, size_t nbytes);
-void _AM_signal(gasnet_token_t token, void *buf, size_t nbytes);
-void _AM_ptr_table(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes);
-void _AM_ptr_ret(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes);
 
-gasnet_handlerentry_t ftable[] = {
-  {FORK, _AM_fork},           // fork remote thread asynchronously
-  {FORK_NB, _AM_fork_nb},     // fork remote thread synchronously
-  {SIGNAL, _AM_signal},       // set remote (int) condition
-  {PTR_TABLE, _AM_ptr_table}, // get address of global global ptr table
-  {PTR_RET, _AM_ptr_ret}      // reply, return pointer value
-};
-
-void _AM_fork_nb_wrapper(dist_fork_t *i) {
+static void _AM_fork_nb_wrapper(dist_fork_t *i) {
   (*(i->fun))(&(i->arg));
   _chpl_free(i, 0, 0);
 }
 
 
 // AM non-blocking fork handler, medium sized, receiver side
-void _AM_fork_nb(gasnet_token_t token, 
-                 void   *buf,
-                 size_t  nbytes) {
+static void _AM_fork_nb(gasnet_token_t token, 
+                        void   *buf,
+                        size_t  nbytes) {
   dist_fork_t *fork_info;
 
   fork_info = (dist_fork_t*) _chpl_malloc(nbytes, sizeof(char), "", 0, 0);
@@ -89,7 +77,7 @@ void _AM_fork_nb(gasnet_token_t token,
 }
 
 
-void _AM_fork_wrapper(dist_fork_t *i) {
+static void _AM_fork_wrapper(dist_fork_t *i) {
   PRINTF(__func__);
 
   if (i->arg_size)
@@ -105,9 +93,9 @@ void _AM_fork_wrapper(dist_fork_t *i) {
 
 
 // AM sfork handler, medium sized, receiver side
-void _AM_fork(gasnet_token_t  token, 
-       void    *buf,
-       size_t   nbytes) {
+static void _AM_fork(gasnet_token_t  token, 
+                     void    *buf,
+                     size_t   nbytes) {
   dist_fork_t *fork_info;
 
   PRINTF(__func__);
@@ -120,9 +108,9 @@ void _AM_fork(gasnet_token_t  token,
 
 
 // AM signal handler, medium sized, receiver side
-void _AM_signal(gasnet_token_t  token, 
-                void    *buf,
-                size_t   nbytes) {
+static void _AM_signal(gasnet_token_t  token, 
+                       void    *buf,
+                       size_t   nbytes) {
   int **done = (int**)buf;
 
   PRINTF(__func__);
@@ -131,7 +119,7 @@ void _AM_signal(gasnet_token_t  token,
 
 
 // AM reply to return a pointer value
-void _AM_ptr_ret(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes) {
+static void _AM_ptr_ret(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes) {
   PRINTF(__func__);
   *(ret_info->val_addr) = ret_info->val;
   *(ret_info->done) = 1;
@@ -139,13 +127,21 @@ void _AM_ptr_ret(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes) {
 
 
 // AM get global table ptr handler, small sized, receiver side
-void _AM_ptr_table(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes) {
+static void _AM_ptr_table(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes) {
   PRINTF(__func__);
   // ret_info = (global_ret_int_t*) buf;
   // ret_info->val = (void*) globals_table;
 
   GASNET_Safe(gasnet_AMReplyMedium0(token, PTR_RET, ret_info, sizeof(_AM_ptr_ret_t)));
 }
+
+gasnet_handlerentry_t ftable[] = {
+  {FORK, _AM_fork},           // fork remote thread asynchronously
+  {FORK_NB, _AM_fork_nb},     // fork remote thread synchronously
+  {SIGNAL, _AM_signal},       // set remote (int) condition
+  {PTR_TABLE, _AM_ptr_table}, // get address of global global ptr table
+  {PTR_RET, _AM_ptr_ret}      // reply, return pointer value
+};
 
 
 // Chapel interface starts here
@@ -205,35 +201,32 @@ static int gasnet_init_called = 0;
 static pthread_t polling_thread;
 
 void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
-  if (runInGDB == 0) {
-    gasnet_init(argc_p, argv_p);
-    gasnet_init_called = 1;
-
-    _localeID = gasnet_mynode();
-    _numLocales = gasnet_nodes();
-
-    GASNET_Safe(gasnet_attach(ftable, 
-                              sizeof(ftable)/sizeof(gasnet_handlerentry_t),
-                              0,   // share everything
-                              0));
-
-    //
-    // start polling thread
-    // this should call a special function in the threading interface
-    // but remember that we have not yet initialized chapel threads!
-    //
-    if (1) {
-      int status;
-
-      status = pthread_create(&polling_thread, NULL, (_chpl_threadfp_t)polling, 0);
-      if (status)
-        chpl_internal_error("unable to start polling thread for gasnet");
-      pthread_detach(polling_thread);
-    }
-
-  } else {
+  if (runInGDB) {
     setenv("CHPL_COMM_USE_GDB", "true", 1);
-    _chpl_comm_init(argc_p, argv_p, 0);
+  }
+  gasnet_init(argc_p, argv_p);
+  gasnet_init_called = 1;
+
+  _localeID = gasnet_mynode();
+  _numLocales = gasnet_nodes();
+
+  GASNET_Safe(gasnet_attach(ftable, 
+                            sizeof(ftable)/sizeof(gasnet_handlerentry_t),
+                            0,   // share everything
+                            0));
+
+  //
+  // start polling thread
+  // this should call a special function in the threading interface
+  // but remember that we have not yet initialized chapel threads!
+  //
+  if (1) {
+    int status;
+
+    status = pthread_create(&polling_thread, NULL, (_chpl_threadfp_t)polling, 0);
+    if (status)
+      chpl_internal_error("unable to start polling thread for gasnet");
+    pthread_detach(polling_thread);
   }
 }
 
@@ -299,7 +292,7 @@ void  _chpl_comm_get(void* addr, int32_t locale, const void* raddr, int32_t size
   if (_localeID == locale) {
     bcopy(raddr, addr, size);
   } else {
-    gasnet_get(addr, locale, raddr, size); // dest, node, src, size
+    gasnet_get(addr, locale, (void*)raddr, size); // dest, node, src, size
   }
 }
 
