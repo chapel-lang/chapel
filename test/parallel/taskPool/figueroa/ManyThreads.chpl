@@ -1,6 +1,10 @@
+// This test is intended to ensure that a warning message is emitted when
+// the specified value of maxThreads is higher than the system supports
+// (256 for gasnet, for example).
+
 use Time;
 
-config const numThreads = 8000;
+config const numThreads = 3000;
 var total: sync int = 0;
 var seed = getCurrentTime() : uint;
 
@@ -15,9 +19,8 @@ def foo (x) {
   }
 
   var delay = RandomNumber (x) * 4.0;
-  //writeln (x, ": sleeping for ", delay, " seconds");
   if delay < 2.0 then sleep (delay : uint);
-  else for i in 1..(delay*100000.0) : int do
+  else for i in 1..(delay*10000.0) : int do
     delay = RandomNumber (x) * 4.0;
   total += x;
 }
