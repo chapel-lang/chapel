@@ -95,7 +95,6 @@
 		F721A2230D458E3300A6B43F /* chplmem.h in Headers */ = {isa = PBXBuildFile; fileRef = F7FAC5480D4539E400C02B67 /* chplmem.h */; };
 		F721A2240D458E3400A6B43F /* chplmem_tests.h in Headers */ = {isa = PBXBuildFile; fileRef = F7FAC5490D4539E400C02B67 /* chplmem_tests.h */; };
 		F721A2250D458E3500A6B43F /* chplrt.h in Headers */ = {isa = PBXBuildFile; fileRef = F7FAC54A0D4539E400C02B67 /* chplrt.h */; };
-		F721A2260D458E3500A6B43F /* chplsys.h in Headers */ = {isa = PBXBuildFile; fileRef = F7FAC5700D45411200C02B67 /* chplsys.h */; };
 		F721A2270D458E3700A6B43F /* chplsys.h in Headers */ = {isa = PBXBuildFile; fileRef = F7FAC54B0D4539E400C02B67 /* chplsys.h */; };
 		F721A2280D458E3800A6B43F /* chplthreads.h in Headers */ = {isa = PBXBuildFile; fileRef = F7FAC54C0D4539E400C02B67 /* chplthreads.h */; };
 		F721A2290D458E3900A6B43F /* chpltypes.h in Headers */ = {isa = PBXBuildFile; fileRef = F7FAC54D0D4539E400C02B67 /* chpltypes.h */; };
@@ -468,7 +467,6 @@
 		F7FAC54F0D4539E400C02B67 /* error.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = error.h; path = ../runtime/include/error.h; sourceTree = "<group>"; };
 		F7FAC5500D4539E400C02B67 /* gdb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gdb.h; path = ../runtime/include/gdb.h; sourceTree = "<group>"; };
 		F7FAC5510D4539E400C02B67 /* stdchpl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stdchpl.h; path = ../runtime/include/stdchpl.h; sourceTree = "<group>"; };
-		F7FAC5700D45411200C02B67 /* chplsys.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplsys.h; path = ../runtime/include/darwin/chplsys.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -726,7 +724,6 @@
 				F7FAC5490D4539E400C02B67 /* chplmem_tests.h */,
 				F7FAC54A0D4539E400C02B67 /* chplrt.h */,
 				F7FAC54B0D4539E400C02B67 /* chplsys.h */,
-				F7FAC5700D45411200C02B67 /* chplsys.h */,
 				F7FAC54C0D4539E400C02B67 /* chplthreads.h */,
 				F7FAC54D0D4539E400C02B67 /* chpltypes.h */,
 				F7FAC54E0D4539E400C02B67 /* config.h */,
@@ -1009,7 +1006,6 @@
 				F721A2230D458E3300A6B43F /* chplmem.h in Headers */,
 				F721A2240D458E3400A6B43F /* chplmem_tests.h in Headers */,
 				F721A2250D458E3500A6B43F /* chplrt.h in Headers */,
-				F721A2260D458E3500A6B43F /* chplsys.h in Headers */,
 				F721A2270D458E3700A6B43F /* chplsys.h in Headers */,
 				F721A2280D458E3800A6B43F /* chplthreads.h in Headers */,
 				F721A2290D458E3900A6B43F /* chpltypes.h in Headers */,
