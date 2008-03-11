@@ -1,0 +1,5 @@
+bug: enum in class scope
+
+It appears that declaring an enum in a class scope is not supported.
+If this is intentional, the error message should be improved and
+this should be refiled as an error message test.
