@@ -1,0 +1,4 @@
+bug: arrays of arrays in classes
+
+This is similar to genericArrayInClass-arith.future but it
+uses the other non-arithmetic array types.

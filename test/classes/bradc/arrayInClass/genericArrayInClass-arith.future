@@ -1,4 +1,4 @@
-bug: arrays of arithmetic arrays in classes
+bug: arrays of arrays in classes
 
 It appears that arrays of arithmetic arrays in classes do
 not currently work -- a bogus domain value is passed into

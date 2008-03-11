@@ -1,39 +1,29 @@
 // declare class types
 
 class ArithC {
-  type t;
-
-  var x: [1..3] t;
+  var x: [1..3] [1..3] real;
 }
 
 class AssocC {
-  type t;
-
   var assocDom: domain(string);
-  var x: [assocDom] t;
+  var x: [assocDom] [1..3] real;
 }
 
 class OpaqueC {
-  type t;
-
   var opaqueDom: domain(opaque);
-  var x: [opaqueDom] t;
+  var x: [opaqueDom] [1..3] real;
 }
 
 class SparseC {
-  type t;
-  
   var sparseDom: sparse subdomain([1..3]);
-  var x: [sparseDom] t;
+  var x: [sparseDom] [1..3] real;
 }
 
 enum probClass {S, W, A, B, C};
 
 class EnumC {
-  type t;
-  
   var enumDom: domain(probClass);
-  var x: [enumDom] t;
+  var x: [enumDom] [1..3] real;
 }
 
 // generic print routine
@@ -46,29 +36,26 @@ def foo(C) {
 
 // declare class instances
 
-const vecDom = [1..3];
-type vec = [vecDom] real;
-
-var myArithC = new ArithC(vec);
-var myAssocC = new AssocC(vec);
-var myOpaqueC = new OpaqueC(vec);
-var mySparseC = new SparseC(vec);
-var myEnumC = new EnumC(vec);
+var myArithC = new ArithC();
+var myAssocC = new AssocC();
+var myOpaqueC = new OpaqueC();
+var mySparseC = new SparseC();
+var myEnumC = new EnumC();
 
 // initialize class instances
 
-[i in myArithC.x.domain] [j in vecDom] myArithC.x(i)(j) = i + j/10.0;
+[i in myArithC.x.domain] [j in 1..3] myArithC.x(i)(j) = i + j/10.0;
 
 myAssocC.assocDom += "two";
-[j in vecDom] myAssocC.x("two")(j) = 2 + j/10.0;
+[j in 1..3] myAssocC.x("two")(j) = 2 + j/10.0;
 
 const newInd = myOpaqueC.opaqueDom.create();
-[j in vecDom] myOpaqueC.x(newInd)(j) = 2 + j/10.0;
+[j in 1..3] myOpaqueC.x(newInd)(j) = 2 + j/10.0;
 
 mySparseC.sparseDom += 2;
-[j in vecDom] mySparseC.x(2)(j) = 2 + j/10.0;
+[j in 1..3] mySparseC.x(2)(j) = 2 + j/10.0;
 
-[i in myEnumC.x.domain] [j in vecDom] myEnumC.x(i)(j) = i:int + j:real/10.0;
+[i in myEnumC.x.domain] [j in 1..3] myEnumC.x(i) = i:int + j:real/10.0;
 
 // check class instances
 
