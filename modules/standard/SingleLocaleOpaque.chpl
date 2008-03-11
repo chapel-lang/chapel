@@ -60,7 +60,7 @@ class SingleLocaleOpaqueArray: BaseArray {
   def this(ind : idxType) var : eltType
     return anarray(ind);
 
-  def these() {
+  def these() var {
     for e in anarray do
       yield e;
   }

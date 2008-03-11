@@ -70,7 +70,7 @@ class SingleLocaleEnumArray: BaseArray {
   def this(ind : idxType) var : eltType
     return anarray(ind);
 
-  def these() {
+  def these() var {
     var enumTuple = _enum_enumerate(idxType);
     for param i in 1..enumTuple.size do
       yield anarray(enumTuple(i));
