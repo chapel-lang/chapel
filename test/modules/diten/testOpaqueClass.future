@@ -1,0 +1,5 @@
+bug: calling the writeln function injects class symbols
+
+This test should have the same behavior as testOpaqueClass2.chpl - a compiler
+error saying that C.a is unresolved. the call to writeln(c) in main causes
+c.a to become visible.

@@ -1,4 +1,4 @@
-bug: can't call method of class defined in different module
+semantic: can't call method of class defined in different module
 
 Function in one module uses another module and returns a class defined in that
 module. Methods from the returned class aren't found because the call site

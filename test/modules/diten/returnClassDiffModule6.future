@@ -1,4 +1,4 @@
-bug: can't access field in class
+semantic: can't access field in class defined in unused module
 
 A class defined in one module, returned from a function that uses that module
 is kept in a var that doesn't use that module. From that var, the class fields
