@@ -55,7 +55,7 @@ const newInd = myOpaqueC.opaqueDom.create();
 mySparseC.sparseDom += 2;
 [j in 1..3] mySparseC.x(2)(j) = 2 + j/10.0;
 
-[i in myEnumC.x.domain] [j in 1..3] myEnumC.x(i) = i:int + j:real/10.0;
+[i in myEnumC.x.domain] [j in 1..3] myEnumC.x(i)(j) = i:int + j:real/10.0;
 
 // check class instances
 
