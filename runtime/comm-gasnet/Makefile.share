@@ -29,8 +29,11 @@ include $(GASNET_INSTALL)/include/udp-conduit/udp-par.mak
 # our compilers it's what you'd get if you weren't specifying a standard
 # at all.
 #
-RUNTIME_CFLAGS += $(GASNET_CFLAGS) -I$(GASNET_INSTALL)/include -I$(GASNET_INSTALL)/include/udp-conduit -std=gnu89
+# -O0 needs to be used because GASNet generates an error if client code
+# compiled -O3 is linked to GASNet compiled with debugging enabled
+#
+RUNTIME_CFLAGS += $(GASNET_CFLAGS) -I$(GASNET_INSTALL)/include -I$(GASNET_INSTALL)/include/udp-conduit -std=gnu89 -O0
 
 ifdef CHPL_DEVELOPER
-RUNTIME_CFLAGS += -Wno-strict-prototypes -Wno-missing-prototypes -std=gnu89
+RUNTIME_CFLAGS += -Wno-strict-prototypes -Wno-missing-prototypes
 endif
