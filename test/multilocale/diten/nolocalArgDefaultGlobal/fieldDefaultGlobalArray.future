@@ -1,3 +1,4 @@
+bug: unnormalized formal type
 bug: Using a global as a function argument's default value
 
 Default values that access globals and whose access looks like a function call
