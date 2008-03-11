@@ -95,7 +95,7 @@ _define_string_to_int_precise(uint, 32, 1)
 _define_string_to_bigint_precise(uint, 64, 1, "%" SCNu64)
 
 
-_chpl_bool _string_to_chpl_bool(const char* str, int lineno, const char* filename) {
+chpl_bool _string_to_chpl_bool(const char* str, int lineno, const char* filename) {
   if (_string_compare(str, "true") == 0) {
     return true;
   } else if (_string_compare(str, "false") == 0) {

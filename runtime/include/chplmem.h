@@ -7,9 +7,9 @@
 #include "chpltypes.h"
 #include "chplthreads.h"
 
-extern _chpl_mutex_t _memtrack_lock;
-extern _chpl_mutex_t _memstat_lock;
-extern _chpl_mutex_t _memtrace_lock;
+extern chpl_mutex_t _memtrack_lock;
+extern chpl_mutex_t _memstat_lock;
+extern chpl_mutex_t _memtrace_lock;
 
 void initMemTable(void);
 void printMemTable(int64_t threshold, int32_t lineno, _string filename);

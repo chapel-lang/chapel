@@ -87,12 +87,12 @@ codegenBegin( FILE* outfile, AList* body) {
   if (body->length() != 1)
     INT_FATAL("begin codegen - expect only one function call");
 
-  fprintf( outfile, "_chpl_begin( ");
+  fprintf( outfile, "chpl_begin( ");
   for_alist(stmt, *body) {
     if (CallExpr *cexpr=toCallExpr(stmt)) {
       if (SymExpr *sexpr=toSymExpr(cexpr->baseExpr)) {
-        fprintf (outfile, "(_chpl_threadfp_t) %s, ", sexpr->var->cname);
-        fprintf (outfile, "(_chpl_threadarg_t) ");
+        fprintf (outfile, "(chpl_threadfp_t) %s, ", sexpr->var->cname);
+        fprintf (outfile, "(chpl_threadarg_t) ");
         if (Expr *actuals = cexpr->get(1)) {
           actuals->codegen (outfile);
         } else {

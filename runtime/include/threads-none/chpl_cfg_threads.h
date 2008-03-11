@@ -2,10 +2,10 @@
 #define _chpl_cfg_threads_h_
 
 // bogus mutex type (no mutexes)
-typedef int _chpl_mutex_t;
+typedef int chpl_mutex_t;
 
-typedef _chpl_bool _chpl_sync_aux_t;       // only needs to store the full/empty bit
-typedef _chpl_sync_aux_t _chpl_single_aux_t;
+typedef chpl_bool chpl_sync_aux_t;       // only needs to store the full/empty bit
+typedef chpl_sync_aux_t chpl_single_aux_t;
 
 
 #define _chpl_read_FE(x,y,lineno,filename) \

@@ -63,7 +63,7 @@ int32_t chpl_coresPerLocale(void) {
 
 int32_t chpl_maxThreads(void) {
   int32_t comm_max = _chpl_comm_getMaxThreads();
-  int32_t threads_max = _chpl_threads_getMaxThreads();
+  int32_t threads_max = chpl_threads_getMaxThreads();
 
   if (comm_max == 0)
     return threads_max;
@@ -76,7 +76,7 @@ int32_t chpl_maxThreads(void) {
 
 int32_t chpl_maxThreadsLimit(void) {
   int32_t comm_max = _chpl_comm_maxThreadsLimit();
-  int32_t threads_max = _chpl_threads_maxThreadsLimit();
+  int32_t threads_max = chpl_threads_maxThreadsLimit();
 
   if (comm_max == 0)
     return threads_max;

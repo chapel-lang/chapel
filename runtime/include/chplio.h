@@ -28,7 +28,7 @@ int32_t _fscan_int32(FILE* fp, int32_t lineno, _string filename);
 uint32_t _fscan_uint32(FILE* fp, int32_t lineno, _string filename);
 _real64 _fscan_real64(FILE* fp, int32_t lineno, _string filename);
 
-_chpl_bool _fscan_literal(FILE* fp, _string val, _chpl_bool ignoreWhiteSpace,
+chpl_bool _fscan_literal(FILE* fp, _string val, chpl_bool ignoreWhiteSpace,
                           int32_t lineno, _string filename);
 
 void _readToEndOfLine(FILE* fp);

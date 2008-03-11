@@ -485,7 +485,7 @@ void initPrimitiveTypes(void) {
   dtObject = objectDef->sym->type;
   dtValue = createPrimitiveType("value", "_chpl_value");
 
-  dtBool = createPrimitiveType ("bool", "_chpl_bool");
+  dtBool = createPrimitiveType ("bool", "chpl_bool");
 
   // Inititalize the outermost module
   theProgram = new ModuleSymbol("_Program", MOD_STANDARD, new BlockStmt());
@@ -561,9 +561,9 @@ void initPrimitiveTypes(void) {
   dtTimer = createPrimitiveType("_timervalue", "_timervalue");
   CREATE_DEFAULT_SYMBOL(dtTimer, gTimer, "_new_timer()");
 
-  dtSyncVarAuxFields = createPrimitiveType( "_sync_aux_t", "_chpl_sync_aux_t");
+  dtSyncVarAuxFields = createPrimitiveType( "_sync_aux_t", "chpl_sync_aux_t");
   CREATE_DEFAULT_SYMBOL (dtSyncVarAuxFields, gSyncVarAuxFields, "NULL");
-  dtSingleVarAuxFields = createPrimitiveType( "_single_aux_t", "_chpl_single_aux_t");
+  dtSingleVarAuxFields = createPrimitiveType( "_single_aux_t", "chpl_single_aux_t");
   CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "NULL");
 
   dtAny = createPrimitiveType ("_any", "_any");

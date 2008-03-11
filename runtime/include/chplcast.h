@@ -26,7 +26,7 @@ uint16_t _string_to_uint16_t(const char* str, int lineno, const char* filename);
 uint32_t _string_to_uint32_t(const char* str, int lineno, const char* filename);
 uint64_t _string_to_uint64_t(const char* str, int lineno, const char* filename);
 
-_chpl_bool _string_to_chpl_bool(const char* str, int lineno, const char* filename);
+chpl_bool _string_to_chpl_bool(const char* str, int lineno, const char* filename);
 
 _real32 _string_to_real32_precise(const char* str, int* invalid, char* invalidCh);
 _real64 _string_to_real64_precise(const char* str, int* invalid, char* invalidCh);
@@ -56,6 +56,6 @@ _string _real32_to_string(_real32 x);
 _string _real64_to_string(_real64 x);
 _string _imag32_to_string(_imag32 x);
 _string _imag64_to_string(_imag64 x);
-#define _chpl_bool_to_string(x) ((x) ? "true" : "false")
+#define chpl_bool_to_string(x) ((x) ? "true" : "false")
 
 #endif

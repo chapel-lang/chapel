@@ -4,18 +4,18 @@
 #include <stdint.h>
 
 // mutex type
-typedef int _chpl_mutex_t;
+typedef int chpl_mutex_t;
 
 typedef struct {
   sync int64_t is_full;      // also serves as lock - need to acquire before accessing corresponding _syncvar
   sync int64_t signal_full;  // wait for full; signal this when full
   sync int64_t signal_empty; // wait for empty; signal this when empty
-} _chpl_sync_aux_t;
+} chpl_sync_aux_t;
 
 typedef struct {
   sync int64_t is_full;      // also serves as lock - need to acquire before writing to corresponding _singlevar
   sync int64_t signal_full;  // wait for full; signal this when full
-} _chpl_single_aux_t;
+} chpl_single_aux_t;
 
 #define _chpl_read_FE(x,y,lineno,filename) (x) = readfe(&((y)->value))
 #define _chpl_read_FF(x,y,lineno,filename) (x) = readff(&((y)->value))

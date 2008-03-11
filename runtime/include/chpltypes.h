@@ -19,7 +19,7 @@
 #define UINT32( i) (i ## UL)
 #define UINT64( i) (i ## ULL)
 
-typedef char _chpl_bool;
+typedef char chpl_bool;
 // It is tempting to #undef true and false and then #define them just to be sure
 // they expand correctly, but future versions of the C standard may not allow this!
 #ifndef false
@@ -75,7 +75,7 @@ _string _format(_string format, ...)
 
 char* _glom_strings(int numstrings, ...);
 
-_chpl_bool string_contains(_string x, _string y);
+chpl_bool string_contains(_string x, _string y);
 _string string_concat(_string x, _string y, int32_t lineno, _string filename);
 _string string_index(_string x, int i, int32_t lineno, _string filename);
 _string string_select(_string x, int low, int high, int32_t lineno, _string filename);

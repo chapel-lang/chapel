@@ -10,34 +10,34 @@ extern int32_t maxThreads;
 
 
 // Mutexes
-// (These are only needed in chplmem.c - perhaps _chpl_sync_lock and _chpl_sync_unlock
+// (These are only needed in chplmem.c - perhaps chpl_sync_lock and chpl_sync_unlock
 // should be used instead?)
 
-typedef _chpl_mutex_t  *_chpl_mutex_p;
+typedef chpl_mutex_t  *chpl_mutex_p;
 
-int _chpl_mutex_lock(_chpl_mutex_p);
-void _chpl_mutex_unlock(_chpl_mutex_p);
+int chpl_mutex_lock(chpl_mutex_p);
+void chpl_mutex_unlock(chpl_mutex_p);
 
 
 // Sync variables
 
-int _chpl_sync_lock(_chpl_sync_aux_t *);
-void _chpl_sync_unlock(_chpl_sync_aux_t *);
-int _chpl_sync_wait_full_and_lock(_chpl_sync_aux_t *, int32_t, _string);
-int _chpl_sync_wait_empty_and_lock(_chpl_sync_aux_t *, int32_t, _string);
-void _chpl_sync_mark_and_signal_full(_chpl_sync_aux_t *);     // also unlocks
-void _chpl_sync_mark_and_signal_empty(_chpl_sync_aux_t *);    // also unlocks
-_chpl_bool _chpl_sync_is_full(void *, _chpl_sync_aux_t *, _chpl_bool);
-void _chpl_init_sync_aux(_chpl_sync_aux_t *);
+int chpl_sync_lock(chpl_sync_aux_t *);
+void chpl_sync_unlock(chpl_sync_aux_t *);
+int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *, int32_t, _string);
+int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *, int32_t, _string);
+void chpl_sync_mark_and_signal_full(chpl_sync_aux_t *);     // also unlocks
+void chpl_sync_mark_and_signal_empty(chpl_sync_aux_t *);    // also unlocks
+chpl_bool chpl_sync_is_full(void *, chpl_sync_aux_t *, chpl_bool);
+void chpl_init_sync_aux(chpl_sync_aux_t *);
 
 
 // Single variables
 
-int _chpl_single_lock(_chpl_single_aux_t *);
-int _chpl_single_wait_full(_chpl_single_aux_t *, int32_t, _string);
-void _chpl_single_mark_and_signal_full(_chpl_single_aux_t *); // also unlocks
-_chpl_bool _chpl_single_is_full(void *, _chpl_single_aux_t *, _chpl_bool);
-void _chpl_init_single_aux(_chpl_single_aux_t *);
+int chpl_single_lock(chpl_single_aux_t *);
+int chpl_single_wait_full(chpl_single_aux_t *, int32_t, _string);
+void chpl_single_mark_and_signal_full(chpl_single_aux_t *); // also unlocks
+chpl_bool chpl_single_is_full(void *, chpl_single_aux_t *, chpl_bool);
+void chpl_init_single_aux(chpl_single_aux_t *);
 
 
 //
@@ -46,36 +46,36 @@ void _chpl_init_single_aux(_chpl_single_aux_t *);
 // if the maximum number of threads is limited only by the system's available
 // resources.
 //
-int32_t _chpl_threads_getMaxThreads(void);
+int32_t   chpl_threads_getMaxThreads(void);
 
 //
 // returns the upper limit on the maximum number of threads that can be handled
 // by this threading layer; use the sentinel value 0 if the maximum number of
 // threads is limited only by the system's available resources.
 //
-int32_t _chpl_threads_maxThreadsLimit(void);
+int32_t   chpl_threads_maxThreadsLimit(void);
 
 // Chapel system thread control
-void    initChplThreads(void);             // main thread init's thread support
-void    exitChplThreads(void);             // called by the main thread
+void      initChplThreads(void);           // main thread init's thread support
+void      exitChplThreads(void);           // called by the main thread
 
-uint64_t _chpl_thread_id(void);            // return caller's thread id
-void    _chpl_thread_init(void);           // setup per-thread state
-_chpl_bool   _chpl_get_serial(void);       // set dynamic serial state
-void    _chpl_set_serial(_chpl_bool);      // set dynamic serial state true or false
+uint64_t  chpl_thread_id(void);            // return caller's thread id
+void      chpl_thread_init(void);          // setup per-thread state
+chpl_bool chpl_get_serial(void);           // set dynamic serial state
+void      chpl_set_serial(chpl_bool);      // set dynamic serial state true or false
 
 
-typedef void* (*_chpl_threadfp_t)(void*);  // function pointer
-typedef void* _chpl_threadarg_t;           // function argument
+typedef void* (*chpl_threadfp_t)(void*);   // function pointer
+typedef void* chpl_threadarg_t;            // function argument
 
 // Fork one thread.  Do not wait.  Used to implement Chapel's begin statement.
 // Return thread creation error.
 int
-_chpl_begin (_chpl_threadfp_t,             // function to fork
-             _chpl_threadarg_t,            // function arg
-             _Bool);                       // serial state (must be "false" except when
+chpl_begin (chpl_threadfp_t,               // function to fork
+            chpl_threadarg_t,              // function arg
+            _Bool);                        // serial state (must be "false" except when
                                            // called from a comm lib such as gasnet;
                                            // otherwise, serial state is that of the
-                                           // thread executing _chpl_begin)
+                                           // thread executing chpl_begin)
 
 #endif  // _chplthreads_h_

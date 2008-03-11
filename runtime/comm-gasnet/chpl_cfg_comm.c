@@ -72,7 +72,7 @@ static void _AM_fork_nb(gasnet_token_t token,
 
   fork_info = (dist_fork_t*) _chpl_malloc(nbytes, sizeof(char), "", 0, 0);
   bcopy(buf, fork_info, nbytes);
-  _chpl_begin((_chpl_threadfp_t)_AM_fork_nb_wrapper, (_chpl_threadarg_t)fork_info,
+  chpl_begin((chpl_threadfp_t)_AM_fork_nb_wrapper, (chpl_threadarg_t)fork_info,
               fork_info->serial_state);
 }
 
@@ -102,7 +102,7 @@ static void _AM_fork(gasnet_token_t  token,
 
   fork_info = (dist_fork_t*) _chpl_malloc(nbytes, sizeof(char), "", 0, 0);
   bcopy(buf, fork_info, nbytes);
-  _chpl_begin((_chpl_threadfp_t)_AM_fork_wrapper, (_chpl_threadarg_t)fork_info,
+  chpl_begin((chpl_threadfp_t)_AM_fork_wrapper, (chpl_threadarg_t)fork_info,
               fork_info->serial_state);
 }
 
@@ -223,7 +223,7 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
   if (1) {
     int status;
 
-    status = pthread_create(&polling_thread, NULL, (_chpl_threadfp_t)polling, 0);
+    status = pthread_create(&polling_thread, NULL, (chpl_threadfp_t)polling, 0);
     if (status)
       chpl_internal_error("unable to start polling thread for gasnet");
     pthread_detach(polling_thread);
@@ -306,7 +306,7 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   info = (dist_fork_t*) _chpl_malloc(info_size, sizeof(char), "", 0, 0);
 
   info->caller = _localeID;
-  info->serial_state = _chpl_get_serial();
+  info->serial_state = chpl_get_serial();
   info->fun = f;
   info->arg_size = arg_size;
   bcopy(arg, &(info->arg), arg_size);
@@ -329,7 +329,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
 
     info->caller = _localeID;
     info->ack = &done;
-    info->serial_state = _chpl_get_serial();
+    info->serial_state = chpl_get_serial();
     info->fun = f;
     info->arg_size = arg_size;
     if (arg_size)
