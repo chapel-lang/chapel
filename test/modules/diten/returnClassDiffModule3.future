@@ -1,0 +1,1 @@
+bug: symbols from 'use'd module nearer in scope than function args
