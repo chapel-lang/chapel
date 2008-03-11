@@ -1,185 +1,352 @@
-- Records/classes with array members of recursive types do not work
-bug: A record containing an array of records causes internal error [arrays/dinan/array_of_records]
-bug: Compiler produces a generic error when compiling non-generic recursive classes [classes/dinan/array_of_recursive_classes]
-
-- Arrays sliced with unbounded ranges are not bounds-checked
-bug: array slicing with unbounded dimensions should be bounds-checked [arrays/bradc/slices/sliceUnboundedOOB]
-
-- nested var iterators can cause problems
-bug: nested var iterator [functions/deitz/nested/test_nested_var_iterator]
-bug: captured ref [functions/deitz/nested/test_nested_var_iterator2]
-
-- symbol resolution for external modules is sometimes incorrect
-bug: class hides module [modules/deitz/test_module_use4]
-bug: module use defines symbol conflict [modules/deitz/test_module_use_conflict]
-bug: mutual module uses [modules/deitz/test_module_mutual_use]
-bug: using conflicting symbols [modules/deitz/test_use_error]
-feature request: compiler should warn about shadowing variables via use statement [modules/figueroa/DuplicateConfigVars/DuplicateConfigVars]
-
-- Rank-change slicing a domain down to 0 dimensions causes problems
-bug: degenerate domain slicing [domains/bradc/slices/sliceAllDegenerate]
-
-- Where clauses in dynamic dispatch situations may not work properly
-bug: dynamic dispatch with where clauses [classes/deitz/dispatch/test_generic_where]
-
-- Reductions/scans involving identifiers named 'r' can produce incorrect results
-bug: reductions involving variables named "r" can produce incorrect results. [reductions/diten/reduction_name_collision]
-bug: scans involving variables named "r" can produce incorrect results. [reductions/diten/scan_name_collision]
-
-- General expressions can (incorrectly) be used as type expressions
-bug: side effect in type expression [types/type_variables/deitz/test_call_with_type_side_effects]
+==========================================================
+vvv Brad considers these highest priority for release v0.7
 
 
-* Class fields of array type specified using a type alias don't work
-bug: array fields via type aliases [arrays/jplevyak/simple-4]
-
-* Array promotion/forall expressions evaluate to 1D arrays
-bug: array type inference [arrays/bradc/inferArrayType]
-bug: array type inference [sparse/bradc/inferSparseArrayType]
-bug: array type inference [reductions/bradc/minmaxlocscan-shape]
-
-* Associative domains of explicit heterogeneous tuple types don't work
-bug: associative domain of het tuple type [domains/indefinite/waynew/tuple_domain]
-
-* Class fields initialized with conditional expressions fail to compile
-bug: conditional expression in class member initialization [classes/marybeth/test-init]
-
-* Class fields of array types that are initialized can cause compile error
-bug: initialized arrays in classes [classes/bradc/arrayInClass/genericArrayWithInit]
-
-* Promoting var functions can result in a compilation error
-bug: promoted var function [arrays/deitz/promotion/test_scalar_promote10]
-
-- No error message generated when constructors/initializers call methods
-error message: constructor calling method [users/shetag/classWithArray/initArrWithFn]
-
-- Varargs functions cannot query both element type and number of elements
-bug: when querying the type of the tuple in a variable length [types/tuple/marybeth/norm_vararg]
-
-- Var functions currently cannot return array slices
-bug: var fn returns slice [test/functions/deitz/test_var_function_return_slice]
-
-* Const arrays can currently be assigned -- should result in a compiler error
-error message: assigning const arrays [arrays/bradc/constArray]
-
-* Mixing dimensional index types in a domain specification yields poor errors
-error message: domain dimensional type [arrays/deitz/test_domain_mixed_dim_types]
-
-* Reductions and scans can cause naming collisions
-bug: reductions involving variables named "r" can produce incorrect results. [reductions/reduction_name_collision]
-bug: scans involving variables named "r" can produce incorrect results. [reductions/diten/scan_name_collision]
-
-* Many error messages continue to be incorrect/confusing/unhelpful
-error message: formal argument missing parameterized tuple type [types/tuple/deitz/test_param_tuple_arg1-error]
-error message: formal array argument w/ query domain element type [arrays/bradc/errors/badArrArgErrMsg]
-error message: iterator sugaring [arrays/bradc/slices/icError]
-error message: iterator sugaring [arrays/marybeth/test_arrayops]
-error message: iterator sugaring [domains/marybeth/test_compare_range]
-error message: internal/impossible candidate functions [sparse/bradc/denseIRV]
+Steve should revisit
+--------------------
+unimplemented feature: task pool to avoid exhausting thread resources [test/parallel/cobegin/deitz/test_many_threads]
 
 
-* Actual arguments passed by inout intent are not always checked for legality
-error message: inout [functions/jplevyak/intent-8-error]
-error message: inout [trivial/deitz/test_coerce_inout]
+Brad should revisit
+-------------------
+???: nondeterministic output [test/studies/590o/telmas/dpll]
+feature request: more tasks [test/parallel/coforall/bradc/tooManyThreads-folded]
+feature request: more tasks [test/parallel/coforall/bradc/tooManyThreads-revorder]
 
 
-* Analysis to find return statements along all paths in a function is incomplete
-error message: returns along all control paths [functions/deitz/test_return1]
-
-* Constructors are not particularly well-supported
-bug: nested class construction [classes/deitz/nested/test_nested1]
-bug: nested class construction [classes/deitz/nested/test_nested2]
-bug: nested class construction [classes/deitz/test_type_in_class1]
-error message: type assignment in constructors [reductions/bradc/manual/threeclasstypes-construct]
-unimplemented feature: constructing generic classes [reductions/bradc/manual/threeclasstypes-construct2]
-unimplemented feature: constructing generic classes [reductions/bradc/manual/threeclasstypes]
+multilocale issues
+------------------
+bug: accessing localeID() in on in serial block [test/multilocale/diten/serialon]
+bug: on clause inside iterator [test/users/shetag/iteratorWithOn]
+bug: spin-waiting for a variable to be changed by a remote begin fails [test/multilocale/diten/beginInOn]
+multilocale: var declaration in on statement [test/multilocale/deitz/test_on_var_decl1]
+semantic: No such thing as a remote domain? [test/multilocale/diten/remoteDomainIsLocal]
 
 
-* Subclassing uninstantiated generic classes should be prohibited but is not
-error message: uninstantiated generic parent [classes/jplevyak/inherit-1]
-error message: uninstantiated generic parent [classes/jplevyak/inherit-2-fixed]
-error message: uninstantiated generic parent [classes/jplevyak/inherit-2]
-error message: uninstantiated generic parent [types/type_variables/deitz/part5/inherit_instantiate2]
-error message: uninstantiated generic parent [types/type_variables/deitz/part5/inherit_instantiate4]
+^^^ Brad considers these highest priority for release v0.7
+==========================================================
+vvv Brad considers these high priority for release v0.7
 
 
-* Requested features
-feature request: command line config value range check [execflags/bradc/int32configBad]
-feature request: formal array argument bounds query [studies/hpcc/FFT/bradc/twiddles-advanced]
-feature request: formal array argument with indefinite reindexing [studies/hpcc/FFT/bradc/twiddles-advanced2]
-feature request: general support for homogenous tuple types [types/tuple/bradc/hetTupleArr]
-feature request: general support for homogenous tuple types [types/tuple/bradc/homogTupleArr]
-feature request: help prints config var default values [execflags/shannon/configs/help/configVarDefaultValue]
-feature request: private members [types/seq/bradc/length.modify]
-feature request: uint stride [studies/hpcc/RA/bradc/ra-bradc-strideduintdomain]
-feature request: promotion is less specific than generic [functions/bradc/resolution/arrayVsPromotion]
-feature request: promotion is less specific than generic [functions/bradc/resolution/rangeVsPromotion]
+arrays of arrays in classes
+---------------------------
+bug: arrays of arrays in classes [test/classes/bradc/arrayInClass/arrayOfArithInClass]
+bug: arrays of arrays in classes [test/classes/bradc/arrayInClass/genericArrayInClass-arith]
+bug: arrays of arrays in classes [test/classes/bradc/arrayInClass/genericArrayInClass-otharrs]
+bug: arrays of arrays in classes [test/associative/diten/assocArrayOfArithArray]
+bug: arrays of arrays in classes [test/multilocale/diten/assocArrayOfRemoteArithArray]
+bug: arrays of arrays in classes [test/users/shetag/assocArrayOfArithArrayInClass]
+bug: opaque domains/arrays can lead to seg fault [test/arrays/opaque/bradc/opaque-segfaults]
 
 
-* Semantic futures
-semantic: direct module access for un-use-d module [trivial/deitz/test_module_access1]
-semantic: global use before def [functions/bradc/useBeforeDef/useBeforeDef2]
-semantic: global use before def [functions/bradc/useBeforeDef/useBeforeDef]
-semantic: global use before def [studies/blas/marybeth/saxpy2]
-semantic: params in classes [classes/bradc/paramInClass/weirdParamInit3]
-semantic: explicitly typing fields in tuple arguments [types/tuple/diten/tuple_destructure_arg_types.chpl]
+default argument issues
+-----------------------
+bug: conditional expression in formal default expression [test/functions/deitz/test_default_conditional]
+bug: unnormalized formal type [test/functions/deitz/test_unnormalized_formal_type]
+bug: unnormalized formal type [test/multilocale/diten/nolocalArgDefaultGlobal/defaultValueGlobalTuple]
+bug: unnormalized formal type [test/multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalArray]
+bug: unnormalized formal type [test/multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalTuple]
+bug: unnormalized formal type [test/multilocale/diten/nolocalArgDefaultGlobal/recordFieldDefaultGlobalTuple]
 
 
-* 32-bit math routines are unimplemented, causing coercion to 64-bit versions
-unimplemented feature: 32-bit math routines [modules/standard/math/bradc/sin32bit]
+class constructor/member initializer issues
+-------------------------------------------
+bug: conditional expression in class body [test/classes/marybeth/test-init]
+bug: constructor method called in class body [test/classes/deitz/nested/test_nested1]
+bug: constructor method called in class body [test/classes/deitz/nested/test_nested2]
+bug: constructor method called in class body [test/classes/deitz/test_type_in_class1]
+bug: forall array type in class body [test/classes/bradc/arrayInClass/arrayInClassRecord2]
+bug: forall array type in class body [test/classes/bradc/arrayInClass/arrayInClassRecord3]
+bug: forall array type in class body [test/classes/bradc/arrayInClass/arrayInClassRecord]
+bug: method called in class body [test/classes/deitz/test_method_in_constructor2]
+bug: method called in class body [test/classes/deitz/test_method_in_constructor]
+bug: method called in class body [test/users/shetag/classWithArray/initArrWithFn]
+bug: sync array in class deadlocks in constructor [test/parallel/sync/bradc/syncArrInClass]
+bug: sync array in class deadlocks in constructor [test/users/shetag/fock/fock-3]
+bug: user-defined generic constructors [test/classes/dinan/generic_constructor]
+bug: user-defined generic constructors [test/reductions/bradc/manual/threeclasstypes-construct2]
+error message: use before def in class body [test/classes/dinan/circular_init_unbroken]
+error message: use before def in class body [test/classes/dinan/use_of_uninitialized_field]
+semantic: multiple assignments to const fields in constructors [test/classes/dinan/user_def_unique_constructor_const_multipleassign]
 
 
-* Arrays of arrays are not implemented
-unimplemented feature: array of array [arrays/bradc/workarounds/arrayOfArray2]
-unimplemented feature: array of array [arrays/bradc/workarounds/arrayOfArray]
-unimplemented feature: array of array [arrays/bradc/workarounds/arrayOfSpsArray2]
-unimplemented feature: array of array [arrays/bradc/workarounds/arrayOfSpsArray]
-unimplemented feature: array of array [arrays/deitz/part2/test_array_of_array1]
-unimplemented feature: array of arrays [arrays/deitz/test_array_of_array2]
-
-* Whole-array assignment to sync arrays does not work
-unimplemented feature: array of syncs [users/shetag/syncarr]
-
-* read()s of whole arrays are not working
-unimplemented feature: array reads [types/file/fileIO]
-
-
-* Configuration variables of tuple types
-unimplemented feature: configs of tuples (string-to-value) [execflags/bradc/tupleConfig]
-
-* Configuration variable of complex type, bad value on command line
-error message: [execflags/diten/configComplex]
+scoping issues
+--------------
+bug: array sized by external module config [test/functions/bradc/resolveConfig]
+bug: calling the writeln function injects class symbols [test/modules/diten/testOpaqueClass]
+bug: symbols from 'use'd module nearer in scope than function args [test/modules/diten/returnClassDiffModule3]
+bug: enum in class scope [test/classes/bradc/enumInClass]
+bug: nested method shadows local var [test/classes/deitz/test_secondary_method4]
+bug: symbols defined in used module should be at outer scope than formals. [test/modules/diten/moduleShadowFormal]
+semantic: external class member visibility [test/modules/diten/returnClassDiffModule6]
+semantic: external class member visibility [test/modules/diten/returnClassDiffModule]
+semantic: external class member visibility [test/modules/diten/returnClassDiffModule2]
+semantic: cobegin scope [test/parallel/cobegin/bradc/varsEscape]
+semantic: warning for module use shadowing variable in outer scope [test/modules/figueroa/DuplicateConfigVars/DuplicateConfigVars]
+semantic: variable of type not visible at definition point [test/modules/diten/returnRecordDiffModule]
 
 
-* Array arguments cannot have both their domain and element types queried
-unimplemented feature: query formal array domain and element type [functions/bradc/querydomelem]
-
-* Short-circuiting functions and conditional expressions cannot be promoted
-unimplemented feature: short-circuiting promotion [arrays/bradc/promote-shortcircuit]
-unimplemented feature: short-circuiting promotion [studies/beer/bradc/beer-promoted-infer]
+^^^ Brad considers these high priority for release v0.7
+=========================================================
+vvv Brad considers these medium priority for release v0.7
 
 
-* If there are insufficient threads to spawn a task, the program halts
-unimplemented feature: task pool to avoid exhausting thread resources [parallel/cobegin/deitz/test_many_threads]
+tuple issues
+------------
+sync var tuples:
+  bug: Can't create a tuple of sync variables [test/parallel/sync/diten/tupleOfSync]
+zippered iteration tuples:
+  bug: detupled indices drop references to var iterators [test/functions/deitz/iterators/test_var_iterator2]
+  bug: detupled indices drop references to var iterators [test/functions/iterators/bradc/zipIteratorsRef]
+ref vs. copy semantics:
+  semantic: arrays in tuples [test/types/tuple/bradc/tupleOfArray]
+  semantic: arrays in tuples [test/types/tuple/deitz/test_tuple_of_array]
+cast-to-tuple:
+  semantic: expand value into tuple [test/types/tuple/marybeth/tuplecast]
 
-* Compiler and runtime errors don't always report useful line numbers
-runtime error: line number in out-of-memory [memory/shannon/memmaxExceedsLineno2]
 
-* Zipper iteration over var iterators is not yet supported
-unimplemented feature: zipper reference iterators [test/functions/deitz/iterators/test_var_iterator2]
+reference preservation
+----------------------
+bug: nested var iterator [test/functions/deitz/nested/test_nested_var_iterator2]
+bug: nested var iterator [test/functions/deitz/nested/test_nested_var_iterator]
 
-* Slicing strided domains and arrays is not implemented
-unimplemented feature: slicing strided domains/arrays [domains/bradc/slices/sliceStridedDomain]
-unimplemented feature: slicing strided domains/arrays [arrays/bradc/slices/sliceStridedArray]
 
-* Sparse domains/arrays can't be sliced or used to slice dense domains/arrays
-unimplemented feature: slicing sparse domain with dense [sparse/bradc/sliceWithDense]
+out-of-order resolution issues
+------------------------------
+bug: out-of-order resolution [test/modules/deitz/test_late_use]
+bug: out-of-order resolution [test/modules/deitz/test_module_mutual_use]
 
-* a mechanism for controlling the precision/width of scalar values
-feature request: output formatting [io/bradc/formatoutput]
 
-* User-level initialize() routines are not yet supported
-unimplemented feature: module initializers [modules/bradc/initialize]
+execution of types (?)
+----------------------
+bug: fields initialized more than once [test/classes/diten/record_initialize]
+bug: side effect in type evaluation [test/trivial/deitz/test_sideeffect_type]
 
-* 1D sparse arrays can't be accessed in programs using domains of other rank
-bug: sparse 1D access in presence of multidimensional domain [sparse/bradc/sparse1Daccess]
+
+constness issues
+----------------
+bug: const domains modifiable via function calls [test/domains/bradc/assignConstDom2]
+bug: const domains modifiable via function calls [test/domains/bradc/assignConstDom]
+error message: const arrays [test/arrays/bradc/constArray]
+error message: const arrays [test/functions/bradc/retConstness/modifyReturnedArray]
+error message: const fields [test/classes/deitz/test_const_field_error]
+error message: const records [test/functions/bradc/retConstness/modifyReturnedRecord]
+
+
+associative domain iteration
+----------------------------
+semantic: remove during associative domain iteration [test/associative/deitz/arrays/test_indefinite_remove]
+
+
+arrays of sparse domains
+------------------------
+unimplemented feature: arrays of sparse domains [test/arrays/bradc/arrOfDom/arrOfDom4]
+unimplemented feature: arrays of sparse domains [test/users/jglewis/bfs_102207/driver_breadth_first_search]
+
+
+sparse features
+---------------
+unimplemented feature: sparse domain assignment [test/sparse/bradc/sparseDomAssign]
+
+
+error messages
+--------------
+error message: array method candidates [test/sparse/bradc/denseIRV]
+error message: assign type to value error message [test/classes/deitz/test_type_to_value_error]
+error message: config vars of non-primitive types [test/execflags/bradc/tupleConfig]
+error message: constructor error  [test/reductions/bradc/manual/threeclasstypes-construct]
+error message: iterator class error [test/arrays/deitz/promotion/test_scalar_promote10]
+error message: iterator class error [test/arrays/marybeth/test_arrayops]
+error message: iterator class error [test/domains/marybeth/test_compare_range]
+error message: nil opaque bounds checking [test/arrays/opaque/bradc/nilAccess]
+error message: rank mismatches not flagged [test/arrays/bradc/rankMismatch]
+error message: trying to iterate over an array type [test/arrays/bradc/iterateOverArrayType]
+error message: use before def in module use statement [test/modules/figueroa/SymbolShadowing/SymbolShadowing]
+error message: use before def of argument [test/functions/bradc/minmaxDefaultArgs1a]
+
+
+domains and integer types
+-------------------------
+feature request: assign (param) int domain to int64 domain [test/domains/bradc/assignIntDomainToInt64]
+semantic: uint stride [test/studies/hpcc/RA/bradc/ra-bradc-strideduintdomain]
+
+
+^^^ Brad considers these medium priority for release v0.7
+=========================================================
+vvv Brad considers these lower priority for release v0.7
+
+
+iterator issues
+---------------
+bug: array shape preserved in promotion [test/arrays/bradc/inferArrayType]
+bug: array shape preserved in scan [test/reductions/bradc/minmaxlocscan-shape]
+bug: sparse array shape preserved in forall expr [test/sparse/bradc/inferSparseArrayType]
+
+
+array type syntax
+-----------------
+bug: tuple type of array type [test/arrays/deitz/test_tuple_of_array]
+unimplemented feature: anonymous array types [test/classes/bradc/arrayInClass/genericClassArray-anon]
+semantic: omitted array element type [test/arrays/dinan/no_element_type]
+
+
+
+inheritance issues
+------------------
+bug: nested class not accessible to subclass  [test/classes/diten/nesting_with_inheritance2]
+
+
+param function issues
+---------------------
+bug: param function w/ multiple returns [test/functions/deitz/test_param_function_with_multiple_returns]
+
+
+anonymous record type issues
+----------------------------
+bug: passing anonymous record type to function [test/classes/deitz/test_anon_record3]
+
+
+query arguments
+---------------
+bug: query formal array domain and element type [test/functions/bradc/querydomelem]
+feature request: queries in formal arguments skip value fields [test/functions/bradc/queryTypesParamsOnly]
+feature request: query component types of tuple argument [test/types/tuple/dinan/pining_for_lisp]
+semantic: query syntax for array bounds of formal argument [test/studies/hpcc/FFT/bradc/twiddles-advanced]
+
+
+recursive record types
+----------------------
+bug: recursive record of array of record [test/arrays/dinan/array_of_records]
+
+
+setter/getter features
+----------------------
+bug: return const in var function if setter is false [test/functions/bradc/varFns/retConstFromGetter]
+bug: return const in var function if setter is false [test/functions/dinan/const_getter]
+
+
+slicing features
+----------------
+bug: slice sparse domain by dense domain [test/sparse/bradc/sliceWithDense]
+bug: slice strided domain by unstrided domain [test/domains/bradc/slices/sliceStridedDomain]
+
+
+generic inheritance
+-------------------
+error message: uninstantiated generic parent [test/classes/jplevyak/inherit-2-fixed]
+error message: uninstantiated generic parent [test/classes/jplevyak/inherit-2]
+error message: uninstantiated generic parent [test/types/type_variables/deitz/part5/inherit_instantiate4]
+semantic: Need a way to inherit from a generic class. [test/classes/jplevyak/inherit-1]
+semantic: Need a way to inherit from a generic class. [test/types/type_variables/deitz/part5/inherit_instantiate2]
+
+
+advanced domain construction
+----------------------------
+feature request: building domains from other domains [test/studies/590o/blerner/domainsFromDomains-sparse]
+feature request: building domains from other domains [test/studies/590o/blerner/domainsFromDomains]
+
+
+config var requests
+-------------------
+feature request: command line config value range check [test/execflags/bradc/int32configBad]
+feature request: fill array with random integers [test/modules/standard/Random/bradc/randInts]
+feature request: help prints config var default values [test/execflags/shannon/configs/help/configVarDefaultValue]
+
+
+help method
+-----------
+feature request: module help method [test/execflags/bradc/moduleHelp]
+
+
+cast-based formatting
+---------------------
+feature request: output formatting [test/io/bradc/formatoutput]
+
+
+private
+-------
+feature request: private fields [test/classes/deitz/test_private_field]
+feature request: private variables in modules [test/modules/figueroa/PrivateSymbols/PrivateSymbols]
+
+
+reindexing
+----------
+feature request: reindexing with unbounded domains [test/arrays/dinan/indef_reindex]
+semantic: reindexing array argument with unbounded domains  [test/studies/hpcc/FFT/bradc/twiddles-advanced2]
+
+
+array return types
+------------------
+semantic: array return types [test/functions/dinan/array_return_from_recursive]
+
+
+short-circuiting semantics (Brad owes response)
+-----------------------------------------------
+semantic: condition/&&/|| promotion [test/arrays/bradc/promote-shortcircuit]
+semantic: condition/&&/|| promotion [test/studies/beer/bradc/beer-promoted-infer]
+
+.domain semantics
+-----------------
+semantic: domain sharing via .domain [test/domains/bradc/arrayLinkage]
+
+
+type specifiers on loop indices
+-------------------------------
+semantic: explicit type on indices [test/trivial/bradc/specifyIndexType]
+
+
+param coercion
+--------------
+semantic: implicit real parameter coercion [test/types/scalar/bradc/initReal32]
+
+
+module initialization
+---------------------
+semantic: module variable access for unused module [test/trivial/deitz/test_module_access1]
+
+
+range snapping
+--------------
+semantic: should ranges be snapped? [test/types/range/deitz/test_range_division]
+
+
+formal argument destructuring
+-----------------------------
+semantic: specifying component types of tuple arguments [test/types/tuple/diten/tuple_destructure_arg_types]
+
+
+function resolution
+-------------------
+semantic: two promotions less specific than generic+promotion [test/functions/bradc/resolution/arrayVsPromotion-deitz]
+
+
+main's return type
+------------------
+semantic: what should main's return type be? [test/trivial/bradc/entrypoint/mainReturns]
+
+
+I/O
+---
+unimplemented feature: array reads [test/types/file/fileIO]
+
+
+arrays of forall arrays
+-----------------------
+unimplemented feature: arrays of forall arrays [test/studies/590o/wk3/02arrOfArr-irregular]
+
+
+80-bit reals
+------------
+unimplemented feature: extended-precision floating-point math functions [test/modules/standard/math/figueroa/extended-precision_math_functions]
+
+
+memory
+------
+unimplemented feature: memory collection and memoryUsed() [test/arrays/deitz/test_descriptor_frees]
+
+
+dynamic dispatch on iterators
+-----------------------------
+unimplemented feature: overriding iterators [test/classes/dinan/dyndispatch_these]
+
+

@@ -2,7 +2,7 @@ class Foo {
   type x_t;
   var  x;
 
-  def Foo(type x_t, i:t, j:t) {
+  def Foo(type x_t, i:x_t, j:x_t) {
     x = i+j;
   }
 }

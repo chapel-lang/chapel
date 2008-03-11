@@ -1,3 +1,7 @@
-bug: Associative array of Arithmetic array
+bug: arrays of arrays in classes
 
 This test passes with a compiler older than revision 13599.
+
+The reason it stopped working is that associative domains/arrays now
+use arithmetic arrays to store their internals, so this test relies
+on arrays of arrays within classes to work, but they do not.
