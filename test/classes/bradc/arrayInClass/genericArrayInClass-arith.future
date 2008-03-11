@@ -1,0 +1,10 @@
+bug: arrays of arithmetic arrays in classes
+
+It appears that arrays of arithmetic arrays in classes do
+not currently work -- a bogus domain value is passed into
+the domain/array initialization routines at some point.
+
+This is currently why associative domains/arrays of arrays
+do not work -- since they are implemented with an array
+within a class, making the element type of the array
+relies on this same behavior.

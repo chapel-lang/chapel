@@ -1,0 +1,8 @@
+unimplemented feature: anonymous array types
+
+This test shows that anonymous array types are not
+currently distinguished from forall expressions.
+I believe that it's Steve intention to support this,
+although it could also be argued that this is a case
+where the language should syntactically distinguish
+between these cases better.
