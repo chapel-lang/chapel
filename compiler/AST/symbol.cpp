@@ -789,7 +789,10 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
         wrapper->_this = wrapper_formal;
       copy_map.put(formal, wrapper_formal);
       wrapper->insertFormalAtTail(wrapper_formal);
-      call->insertAtTail(wrapper_formal);
+      if (formal->type->symbol->hasPragma("ref"))
+        call->insertAtTail(new CallExpr(PRIMITIVE_SET_REF, wrapper_formal));
+      else
+        call->insertAtTail(wrapper_formal);
       if (Symbol* value = paramMap->get(formal))
         paramMap->put(wrapper_formal, value);
     } else if (paramMap->get(formal)) {
