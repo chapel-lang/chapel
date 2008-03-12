@@ -319,6 +319,9 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
 
   if (exprType && exprType->parentSymbol)
     INT_FATAL(this, "DefExpr initialized with exprType already in tree");
+
+  if (isArgSymbol(sym) && (exprType || init))
+    INT_FATAL(this, "DefExpr of ArgSymbol cannot have either exprType or init");
 }
 
 
@@ -332,6 +335,8 @@ void DefExpr::verify() {
   }
   if (toFnSymbol(sym) && (exprType || init))
     INT_FATAL(this, "Bad FnSymbol::defPoint");
+  if (toArgSymbol(sym) && (exprType || init))
+    INT_FATAL(this, "Bad ArgSymbol::defPoint");
 }
 
 

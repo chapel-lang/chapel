@@ -835,19 +835,19 @@ static void hack_resolve_types(Expr* expr) {
   if (DefExpr* def = toDefExpr(expr)) {
     if (ArgSymbol* arg = toArgSymbol(def->sym)) {
       if (arg->type == dtUnknown || arg->type == dtAny) {
-        if (!arg->isTypeVariable && !def->exprType && arg->defaultExpr) {
+        if (!arg->isTypeVariable && !arg->typeExpr && arg->defaultExpr) {
           SymExpr* se = toSymExpr(arg->defaultExpr);
           if (!se || se->var != gNil) {
-            def->exprType = arg->defaultExpr->copy();
+            arg->typeExpr = arg->defaultExpr->copy();
             FnSymbol* fn = def->getFunction();
-            insert_help(def->exprType, def, fn, fn->argScope);
+            insert_help(arg->typeExpr, NULL, arg, fn->argScope);
           }
         }
-        if (def->exprType) {
-          Type* type = def->exprType->typeInfo();
+        if (arg->typeExpr) {
+          Type* type = arg->typeExpr->typeInfo();
           if (type != dtUnknown && type != dtAny) {
             arg->type = type;
-            def->exprType->remove();
+            arg->typeExpr->remove();
           }
         }
       }
@@ -893,17 +893,15 @@ static void fixup_array_formals(FnSymbol* fn) {
       if (call->isNamed("_build_array_type")) {
         SymExpr* sym = toSymExpr(call->get(1));
         DefExpr* def = toDefExpr(call->get(1));
-        DefExpr* parent = toDefExpr(call->parentExpr);
+        ArgSymbol* arg = toArgSymbol(call->parentSymbol);
         if (call->numActuals() == 1)
-          if (!parent || !toArgSymbol(parent->sym) ||
-              parent->exprType != call)
+          if (!arg || arg->typeExpr != call)
             USR_FATAL(call, "array declaration has no element type");
         if (def || (sym && sym->var == gNil) || call->numActuals() == 1) {
-          if (!parent || !toArgSymbol(parent->sym)
-              || parent->exprType != call)
+          if (!arg || arg->typeExpr != call)
             USR_FATAL(call, "array with empty or queried domain can "
                       "only be used as a formal argument type");
-          parent->exprType->replace(new SymExpr(chpl_array));
+          arg->typeExpr->replace(new SymExpr(chpl_array));
           if (!fn->where) {
             fn->where = new BlockStmt(new SymExpr(gTrue));
             insert_help(fn->where, NULL, fn, fn->argScope);
@@ -912,52 +910,53 @@ static void fixup_array_formals(FnSymbol* fn) {
           if (call->numActuals() == 2)
             expr->replace(new CallExpr("&", expr->copy(),
                             new CallExpr("==", call->get(2)->remove(),
-                              new CallExpr(".", parent->sym, new_StringSymbol("eltType")))));
+                              new CallExpr(".", arg, new_StringSymbol("eltType")))));
           if (def) {
             forv_Vec(BaseAST, ast, all_asts) {
               if (SymExpr* sym = toSymExpr(ast)) {
                 if (sym->var == def->sym)
-                  sym->replace(new CallExpr(".", parent->sym, new_StringSymbol("_dom")));
+                  sym->replace(new CallExpr(".", arg, new_StringSymbol("_dom")));
               }
             }
           } else if (!sym || sym->var != gNil) {
-            VarSymbol* tmp = new VarSymbol(astr("_reindex_", parent->sym->name));
+            VarSymbol* tmp = new VarSymbol(astr("_reindex_", arg->name));
             forv_Vec(BaseAST, ast, all_asts) {
               if (SymExpr* sym = toSymExpr(ast)) {
-                if (sym->var == parent->sym)
+                if (sym->var == arg)
                   sym->var = tmp;
               }
             }
-            fn->insertAtHead(new CondStmt(
-              new CallExpr("!=", dtNil->symbol, parent->sym),
-              new CallExpr(PRIMITIVE_MOVE, tmp,
-                new CallExpr(new CallExpr(".", parent->sym,
-                                          new_StringSymbol("reindex")),
-                             call->get(1)->copy())),
-              new CallExpr(PRIMITIVE_MOVE, tmp, gNil)));
-            //            fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
+            fn->insertAtHead(
+              new CondStmt(
+                new CallExpr("!=", dtNil->symbol, arg),
+                new CallExpr(PRIMITIVE_MOVE, tmp,
+                  new CallExpr(new CallExpr(".", arg,
+                                 new_StringSymbol("reindex")),
+                               call->get(1)->copy())),
+                new CallExpr(PRIMITIVE_MOVE, tmp, gNil)));
             fn->insertAtHead(new DefExpr(tmp));
           }
         } else {  //// DUPLICATED CODE ABOVE AND BELOW
-          DefExpr* parent = toDefExpr(call->parentExpr);
-          if (parent && toArgSymbol(parent->sym) && parent->exprType == call) {
-            parent->exprType->replace(new SymExpr(chpl_array));
-            VarSymbol* tmp = new VarSymbol(astr("_reindex_", parent->sym->name));
-            forv_Vec(BaseAST, ast, all_asts) {
-              if (SymExpr* sym = toSymExpr(ast)) {
-                if (sym->var == parent->sym)
-                  sym->var = tmp;
+          if (ArgSymbol* arg = toArgSymbol(call->parentSymbol)) {
+            if (arg->typeExpr == call) {
+              arg->typeExpr->replace(new SymExpr(chpl_array));
+              VarSymbol* tmp = new VarSymbol(astr("_reindex_", arg->name));
+              forv_Vec(BaseAST, ast, all_asts) {
+                if (SymExpr* sym = toSymExpr(ast)) {
+                  if (sym->var == arg)
+                    sym->var = tmp;
+                }
               }
+              fn->insertAtHead(
+                new CondStmt(
+                  new CallExpr("!=", dtNil->symbol, arg),
+                  new CallExpr(PRIMITIVE_MOVE, tmp,
+                    new CallExpr(new CallExpr(".", arg,
+                                   new_StringSymbol("reindex")),
+                                 call->get(1)->copy())),
+                  new CallExpr(PRIMITIVE_MOVE, tmp, gNil)));
+              fn->insertAtHead(new DefExpr(tmp));
             }
-            fn->insertAtHead(new CondStmt(
-              new CallExpr("!=", dtNil->symbol, parent->sym),
-              new CallExpr(PRIMITIVE_MOVE, tmp,
-                new CallExpr(new CallExpr(".", parent->sym,
-                                          new_StringSymbol("reindex")),
-                             call->get(1)->copy())),
-              new CallExpr(PRIMITIVE_MOVE, tmp, gNil)));
-            //            fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, parent->sym));
-            fn->insertAtHead(new DefExpr(tmp));
           }
         }
       }
@@ -1083,7 +1082,7 @@ add_to_where_clause(ArgSymbol* formal, Expr* expr, ArgSymbol* arg) {
 static void
 fixup_query_formals(FnSymbol* fn) {
   for_formals(formal, fn) {
-    if (DefExpr* def = toDefExpr(formal->defPoint->exprType)) {
+    if (DefExpr* def = toDefExpr(formal->typeExpr)) {
       Vec<BaseAST*> asts;
       collect_asts(&asts, fn);
       forv_Vec(BaseAST, ast, asts) {
@@ -1093,9 +1092,9 @@ fixup_query_formals(FnSymbol* fn) {
           }
         }
       }
-      formal->defPoint->exprType->remove();
+      formal->typeExpr->remove();
       formal->type = dtAny;
-    } else if (CallExpr* call = toCallExpr(formal->defPoint->exprType)) {
+    } else if (CallExpr* call = toCallExpr(formal->typeExpr)) {
       // clone query primitive types
       if (call->numActuals() == 1) {
         if (DefExpr* def = toDefExpr(call->get(1))) {
@@ -1176,7 +1175,7 @@ fixup_query_formals(FnSymbol* fn) {
             }
           }
         }
-        formal->defPoint->exprType->remove();
+        formal->typeExpr->remove();
         formal->type = ts->type;
       }
     }

@@ -60,7 +60,7 @@ void collect_top_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
   Vec<BaseAST*> next_asts;
   get_ast_children(ast, next_asts);
   forv_Vec(BaseAST, next_ast, next_asts) {
-    if (!toSymbol(next_ast))
+    if (!isSymbol(next_ast) || isArgSymbol(next_ast))
       collect_top_asts(asts, next_ast);
   }
   asts->add(ast);

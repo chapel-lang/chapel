@@ -687,8 +687,8 @@ fn_decl_stmt_inner:
       $$ = $4;
       $$->name = astr($3);
       $$->cname = $$->name;
-      $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown);
-      $$->insertFormalAtHead(new DefExpr($$->_this, NULL, $1));
+      $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown, $1);
+      $$->insertFormalAtHead(new DefExpr($$->_this));
       $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
     }
 ;

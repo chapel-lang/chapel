@@ -116,6 +116,7 @@ class VarSymbol : public Symbol {
 class ArgSymbol : public Symbol {
  public:
   IntentTag intent;
+  Expr* typeExpr;
   Expr* defaultExpr;
   Expr* variableExpr;
   bool isGeneric;
@@ -123,7 +124,9 @@ class ArgSymbol : public Symbol {
   bool instantiatedParam;
 
   ArgSymbol(IntentTag iIntent, const char* iName, Type* iType,
-            Expr* iDefaultExpr = NULL, Expr* iVariableExpr = NULL);
+            Expr* iTypeExpr = NULL, Expr* iDefaultExpr = NULL,
+            Expr* iVariableExpr = NULL);
+
   virtual void verify(); 
   COPY_DEF(ArgSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

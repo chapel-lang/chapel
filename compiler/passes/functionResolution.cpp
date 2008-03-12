@@ -145,7 +145,10 @@ resolveFormals(FnSymbol* fn) {
 
     for_formals(formal, fn) {
       if (formal->type == dtUnknown)
-        formal->type = resolve_type_expr(formal->defPoint->exprType);
+        formal->type = resolve_type_expr(formal->typeExpr);
+
+      if (formal->type != dtUnknown)
+        formal->typeExpr->remove();
 
       //
       // change type of this on record methods to reference type
@@ -1097,7 +1100,7 @@ static const char* toString(FnSymbol* fn) {
     if (arg->isTypeVariable)
       str = astr(str, "type ", arg->name);
     else if (arg->type == dtUnknown) {
-      if (SymExpr* sym = toSymExpr(arg->defPoint->exprType))
+      if (SymExpr* sym = toSymExpr(arg->typeExpr))
         str = astr(str, arg->name, ": ", sym->var->name);
       else
         str = astr(str, arg->name);
@@ -2709,7 +2712,7 @@ postFold(Expr* expr) {
 }
 
 
-static void handleCompilerMsgs(CallExpr* call) {
+static void issueCompilerError(CallExpr* call) {
   CallExpr* from = NULL;
   for (int i = callStack.n-1; i >= 0; i--) {
     from = callStack.v[i];
@@ -2756,7 +2759,7 @@ resolveBody(Expr* body) {
     if (CallExpr* call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIMITIVE_ERROR) ||
           call->isPrimitive(PRIMITIVE_WARNING)) {
-        handleCompilerMsgs(call);
+        issueCompilerError(call);
       }
       callStack.add(call);
       resolveCall(call);
@@ -3510,8 +3513,8 @@ pruneResolvedTree() {
         if (formal->defaultExpr)
           formal->defaultExpr->remove();
         // Remove formal type expressions
-        if (formal->defPoint->exprType)
-          formal->defPoint->exprType->remove();
+        if (formal->typeExpr)
+          formal->typeExpr->remove();
         // Remove method token formals
         if (formal->type == dtMethodToken)
           formal->defPoint->remove();

@@ -97,22 +97,24 @@ static void
 printDevelErrorHeader(BaseAST* ast) {
   if (!err_print) {
     if (Expr* expr = toExpr(ast)) {
-      if (FnSymbol* fn = toFnSymbol(expr->parentSymbol)) {
-        if (fn != err_fn) {
+      Symbol* parent = expr->parentSymbol;
+      if (isArgSymbol(parent))
+        parent = parent->defPoint->parentSymbol;
+      FnSymbol* fn = toFnSymbol(parent);
+      if (fn && fn != err_fn) {
+        err_fn = fn;
+        while ((fn = toFnSymbol(err_fn->defPoint->parentSymbol))) {
+          if (fn == fn->getModule()->initFn)
+            break;
           err_fn = fn;
-          while ((fn = toFnSymbol(err_fn->defPoint->parentSymbol))) {
-            if (fn == fn->getModule()->initFn)
-              break;
-            err_fn = fn;
-          }
-          if (err_fn->getModule()->initFn != err_fn &&
-              !err_fn->isCompilerTemp &&
-              err_fn->filename && err_fn->lineno) {
-            fprintf(stderr, "%s:%d: In %s '%s':\n",
-                    err_fn->filename, err_fn->lineno, 
-                    (err_fn->fnTag == FN_ITERATOR ? "iterator" : "function"), 
-                    err_fn->name);
-          }
+        }
+        if (err_fn->getModule()->initFn != err_fn &&
+            !err_fn->isCompilerTemp &&
+            err_fn->filename && err_fn->lineno) {
+          fprintf(stderr, "%s:%d: In %s '%s':\n",
+                  err_fn->filename, err_fn->lineno, 
+                  (err_fn->fnTag == FN_ITERATOR ? "iterator" : "function"), 
+                  err_fn->name);
         }
       }
     }

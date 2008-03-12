@@ -396,10 +396,11 @@ bool VarSymbol::isImmediate() {
 
 
 ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName, 
-                     Type* iType, Expr* iDefaultExpr,
-                     Expr* iVariableExpr) :
+                     Type* iType, Expr* iTypeExpr,
+                     Expr* iDefaultExpr, Expr* iVariableExpr) :
   Symbol(SYMBOL_ARG, iName, iType),
   intent(iIntent),
+  typeExpr(iTypeExpr),
   defaultExpr(iDefaultExpr),
   variableExpr(iVariableExpr),
   isGeneric(false),
@@ -421,7 +422,7 @@ void ArgSymbol::verify() {
 
 ArgSymbol*
 ArgSymbol::copyInner(ASTMap* map) {
-  ArgSymbol *ps = new ArgSymbol(intent, name, type,
+  ArgSymbol *ps = new ArgSymbol(intent, name, type, COPY_INT(typeExpr),
                                 COPY_INT(defaultExpr), COPY_INT(variableExpr));
   ps->isGeneric = isGeneric;
   ps->cname = cname;
@@ -437,6 +438,8 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     defaultExpr = toExpr(new_ast);
   else if (old_ast == variableExpr)
     variableExpr = toExpr(new_ast);
+  else if (old_ast == typeExpr)
+    typeExpr = toExpr(new_ast);
   else
     type->replaceChild(old_ast, new_ast);
 }
@@ -1091,7 +1094,7 @@ instantiate_tuple(FnSymbol* fn) {
   Expr* last = fn->body->body.last();
   for (int i = 1; i <= size; i++) {
     const char* name = astr("x", istr(i));
-    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, new SymExpr(gNil));
+    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, NULL, new SymExpr(gNil));
     if (tuple)
       arg->isTypeVariable = true;
     fn->insertFormalAtTail(arg);

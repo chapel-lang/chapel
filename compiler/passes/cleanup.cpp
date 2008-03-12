@@ -311,12 +311,13 @@ static void build_type_constructor(ClassType* ct) {
       if (init)
         arg->defaultExpr = init->copy();
 
+      if (exprType)
+        arg->typeExpr = exprType->copy();
+
       if (!exprType && arg->type == dtUnknown)
         arg->type = dtAny;
       
       DefExpr* def = new DefExpr(arg);
-      if (exprType)
-        def->exprType = exprType->copy();
       fn->insertFormalAtTail(def);
       if (field->isParam || field->isTypeVariable)
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
@@ -449,7 +450,7 @@ static void build_constructor(ClassType* ct) {
                          new CallExpr(PRIMITIVE_CHPL_ALLOC, fn->_this,
                            new_StringSymbol(astr("instance of class ", ct->symbol->name)))));
     } else {
-      meme = new ArgSymbol(INTENT_BLANK, "meme", ct, new SymExpr(gNil));
+      meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL, new SymExpr(gNil));
       meme->addPragma("is meme");
       BlockStmt* allocate = new BlockStmt();
       allocate->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
@@ -533,10 +534,11 @@ static void build_constructor(ClassType* ct) {
         init = new CallExpr("_createFieldDefault", exprType->copy(), init);
     }
     arg->defaultExpr = init;
+    arg->typeExpr = exprType;
     arg->isTypeVariable = field->isTypeVariable;
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
-    DefExpr* def = new DefExpr(arg, NULL, exprType);
+    DefExpr* def = new DefExpr(arg);
     fn->insertFormalAtTail(def);
 
     if (!ct->symbol->hasPragma("heap") && !ct->symbol->hasPragma("ref") && !arg->isTypeVariable && arg->intent != INTENT_PARAM) {
@@ -741,12 +743,12 @@ void cleanup(void) {
         SymExpr *s = toSymExpr(arg->defaultExpr);
         if (!fn->instantiatedFrom &&
             s && 
-            !arg->defPoint->exprType &&
+            !arg->typeExpr &&
             !arg->isTypeVariable) {
           if (s->unresolved || s->var->type != dtNil) {
-            arg->defPoint->exprType = new CallExpr(PRIMITIVE_TYPEOF,
-                                                   arg->defaultExpr->copy());
-            insert_help(arg->defPoint->exprType, arg->defPoint, arg, fn->argScope);
+            arg->typeExpr = new CallExpr(PRIMITIVE_TYPEOF,
+                                         arg->defaultExpr->copy());
+            insert_help(arg->typeExpr, NULL, arg, fn->argScope);
             arg->type = dtUnknown;
           }
         }

@@ -454,6 +454,7 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
   case SYMBOL_VAR:
     break;
   case SYMBOL_ARG:
+    AST_ADD_CHILD(ArgSymbol, typeExpr);
     AST_ADD_CHILD(ArgSymbol, defaultExpr);
     AST_ADD_CHILD(ArgSymbol, variableExpr);
     break;

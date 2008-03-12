@@ -679,10 +679,8 @@ BlockStmt* buildTypeSelectStmt(AList* exprs, BlockStmt* whenstmts) {
       int lid = 1;
       for_actuals(expr, conds) {
         fn->insertFormalAtTail(
-          new DefExpr(
-            new ArgSymbol(INTENT_BLANK,
-                          astr("_t", istr(lid++)),
-                          dtUnknown), NULL, expr->copy()));
+          new DefExpr(new ArgSymbol(INTENT_BLANK, astr("_t", istr(lid++)),
+                                    dtUnknown, expr->copy())));
       }
       fn->retTag = RET_PARAM;
       fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(caseId)));
@@ -798,16 +796,16 @@ buildClassDefExpr(const char* name, Type* type, BlockStmt* decls) {
 
 DefExpr*
 buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable) {
-  ArgSymbol* argSymbol = new ArgSymbol(tag, ident, dtUnknown, init, variable);
-  if (argSymbol->intent == INTENT_TYPE) {
+  ArgSymbol* arg = new ArgSymbol(tag, ident, dtUnknown, type, init, variable);
+  if (arg->intent == INTENT_TYPE) {
     type = NULL;
-    argSymbol->intent = INTENT_BLANK;
-    argSymbol->isGeneric = false;
-    argSymbol->isTypeVariable = true;
-    argSymbol->type = dtAny;
+    arg->intent = INTENT_BLANK;
+    arg->isGeneric = false;
+    arg->isTypeVariable = true;
+    arg->type = dtAny;
   } else if (!type && !init)
-    argSymbol->type = dtAny;
-  return new DefExpr(argSymbol, NULL, type);
+    arg->type = dtAny;
+  return new DefExpr(arg);
 }
 
 
@@ -824,12 +822,11 @@ buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
     /* This is the top-level call to buildTupleArg */
     Expr* tupleType = new SymExpr("_tuple");
     ArgSymbol* argSymbol = new ArgSymbol(INTENT_BLANK,
-                                         astr("_tuple_arg_tmp",
-                                                   istr(uid++)),
-                                         dtUnknown , NULL, NULL);
+                                         astr("_tuple_arg_tmp", istr(uid++)),
+                                         dtUnknown, tupleType);
     argSymbol->isCompilerTemp = true;
     argSymbol->canParam = true;
-    fn->insertFormalAtTail(new DefExpr(argSymbol, NULL, tupleType));
+    fn->insertFormalAtTail(new DefExpr(argSymbol));
     base = new SymExpr(argSymbol);
     outermost = true;
   }
