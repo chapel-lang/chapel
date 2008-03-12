@@ -3594,12 +3594,27 @@ pruneResolvedTree() {
         VarSymbol* _value = new VarSymbol("_tmp", rhsType->getField("_value")->type);
         call->getStmtExpr()->insertBefore(new DefExpr(_value));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, _value, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, rhs->var, rhsType->getField("_value"))));
+        // Query domain and copy over
         VarSymbol* dom = new VarSymbol("_tmp", _value->type->getField("dom")->type);
         call->getStmtExpr()->insertBefore(new DefExpr(dom));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, dom, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, _value, _value->type->getField("dom"))));
         Symbol* domField = lhsType->getField("dom");
         INT_ASSERT(domField);
-        move->replace(new CallExpr(PRIMITIVE_SET_MEMBER, lhs->var, domField, dom));
+        CallExpr* domFieldAssign = new CallExpr(PRIMITIVE_SET_MEMBER, lhs->var, domField, dom);
+        move->replace(domFieldAssign);
+
+        // Query element type and check whether it is an array of arrays
+        // If so, we need to copy its eltType into the runtime array type's elt
+        Symbol* eltTypeField = _value->type->getField("eltType");
+        Type* eltTypeType = eltTypeField->type;
+        if (eltTypeType->symbol->hasPragma("array")) {
+          VarSymbol* eltType = new VarSymbol("_tmp", buildArrayTypeInfo(eltTypeType));
+          domFieldAssign->getStmtExpr()->insertBefore(new DefExpr(eltType));
+          domFieldAssign->insertBefore(new CallExpr(PRIMITIVE_MOVE, eltType, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, _value, eltTypeField)));
+          Symbol* eltField = lhsType->getField("elt");
+          INT_ASSERT(eltField);
+          domFieldAssign->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, lhs->var, eltField, eltType));
+        }
       } else if (call->parentSymbol && call->isNamed("_init")) {
 
         //
