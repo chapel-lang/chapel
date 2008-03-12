@@ -13,9 +13,10 @@
 linux and general regressions
 =============================
 
-on some platforms, this test reveals some sort of out-of-memory issue
----------------------------------------------------------------------
-[Error matching program output for parallel/coforall/figueroa/TooManyThreads]
+???
+---
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
+[Error matching program output for parallel/taskPool/figueroa/ManyThreads]
 
 
 differing memory sizes on different platforms
@@ -25,6 +26,16 @@ differing memory sizes on different platforms
 [Error matching program output for memory/shannon/printMemTable2]
 
 
+nondeterminism in test
+----------------------
+[Error matching program output for release/examples/opaque]
+
+
+some sort of undiagnosed race
+-----------------------------
+[Error: Timed out executing program studies/590o/blerner/xml-parse]
+
+
 =============================
 baseline-specific regressions
 =============================
@@ -32,6 +43,8 @@ baseline-specific regressions
 ???
 ---
 [Error matching program output for studies/sudoku/dinan/sudoku]
+[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
 
 
 
@@ -46,6 +59,16 @@ gasnet-specific regressions
 multilocale/diten/1DBlockDistributedJacobi]
 [Error matching program output for
 parallel/serial/figueroa/MultiLocaleSerial]
+
+race condition of some sort
+---------------------------
+[Error matching program output for
+studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching program output for
+studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for
+studies/madness/aniruddha/madchap/test_mul]
+
 
 ==========================
 intel-specific regressions
