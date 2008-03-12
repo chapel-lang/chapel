@@ -28,17 +28,6 @@ semantic: No such thing as a remote domain? [test/multilocale/diten/remoteDomain
 vvv Brad considers these high priority for release v0.7
 
 
-arrays of arrays in classes
----------------------------
-bug: arrays of arrays in classes [test/classes/bradc/arrayInClass/arrayOfArithInClass]
-bug: arrays of arrays in classes [test/classes/bradc/arrayInClass/genericArrayInClass-arith]
-bug: arrays of arrays in classes [test/classes/bradc/arrayInClass/genericArrayInClass-otharrs]
-bug: arrays of arrays in classes [test/associative/diten/assocArrayOfArithArray]
-bug: arrays of arrays in classes [test/multilocale/diten/assocArrayOfRemoteArithArray]
-bug: arrays of arrays in classes [test/users/shetag/assocArrayOfArithArrayInClass]
-bug: opaque domains/arrays can lead to seg fault [test/arrays/opaque/bradc/opaque-segfaults]
-
-
 default argument issues
 -----------------------
 bug: conditional expression in formal default expression [test/functions/deitz/test_default_conditional]
@@ -89,6 +78,11 @@ semantic: variable of type not visible at definition point [test/modules/diten/r
 ^^^ Brad considers these high priority for release v0.7
 =========================================================
 vvv Brad considers these medium priority for release v0.7
+
+
+opaque issues
+-------------
+error message: nil opaque bounds checking [test/arrays/opaque/bradc/nilAccess]
 
 
 tuple issues
@@ -158,7 +152,6 @@ error message: constructor error  [test/reductions/bradc/manual/threeclasstypes-
 error message: iterator class error [test/arrays/deitz/promotion/test_scalar_promote10]
 error message: iterator class error [test/arrays/marybeth/test_arrayops]
 error message: iterator class error [test/domains/marybeth/test_compare_range]
-error message: nil opaque bounds checking [test/arrays/opaque/bradc/nilAccess]
 error message: rank mismatches not flagged [test/arrays/bradc/rankMismatch]
 error message: trying to iterate over an array type [test/arrays/bradc/iterateOverArrayType]
 error message: use before def in module use statement [test/modules/figueroa/SymbolShadowing/SymbolShadowing]

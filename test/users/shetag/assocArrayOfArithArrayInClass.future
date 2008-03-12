@@ -1,7 +1,0 @@
-bug: arrays of arrays in classes
-
-bradc: This is just another instance of arrays of arrays within
-classes not working -- the new associative array implementation
-uses an array of the element type (which in this test is an
-array) within the class that is used to implement it.
-

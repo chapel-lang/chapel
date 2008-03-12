@@ -1,3 +1,0 @@
-bug: arrays of arrays in classes
-
-Similar to genericArrayInClass-arith.chpl, but with no generics.
