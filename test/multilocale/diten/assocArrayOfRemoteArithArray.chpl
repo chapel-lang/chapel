@@ -1,8 +1,8 @@
 config var size = 5;
 def main {
   var D: domain(locale);
-  for loc in LocalesDomain {
-    D += Locales(loc);
+  for loc in Locales {
+    D += loc;
   }
   // A is an associative array indexed by locales of arithmetic arrays of reals
   // A lives entirely on Locales(0).
@@ -13,5 +13,7 @@ def main {
         A(loc)(i) = loc.id + i / 10.0;
     }
   }
-  writeln(A);
+  for loc in Locales {
+    writeln(A(loc));
+  }
 }
