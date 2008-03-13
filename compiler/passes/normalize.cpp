@@ -355,28 +355,11 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
-  collect_asts_postorder(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol* fn = toFnSymbol(ast)) {
-      currentLineno = fn->lineno;
-      currentFilename = fn->filename;
-      if (!fn->hasPragma("type constructor") &&
-          !fn->hasPragma("default constructor"))
-        fixup_array_formals(fn);
-      fixup_query_formals(fn);
-
-      // functions (not methods) without parentheses are resolved
-      // during scope resolution
-      if (fn->noParens && !fn->isMethod)
-        fn->visible = false;
-
-    }
-  }
-
-  asts.clear();
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = toFnSymbol(ast)) {
+      if (fn->noParens && !fn->isMethod)
+        fn->visible = false;
       normalize_returns(fn);
     }
   }
