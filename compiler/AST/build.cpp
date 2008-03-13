@@ -387,9 +387,9 @@ checkIndices(BaseAST* indices) {
 
 
 BlockStmt* buildForLoopStmt(BlockTag tag,
-                           BaseAST* indices,
-                           Expr* iterator,
-                           BlockStmt* body) {
+                            BaseAST* indices,
+                            Expr* iterator,
+                            BlockStmt* body) {
 
   //
   // insert temporary index when elided by user
@@ -401,24 +401,9 @@ BlockStmt* buildForLoopStmt(BlockTag tag,
 
   if (fSerial &&
       (tag == BLOCK_FORALL ||
-       tag == BLOCK_ORDERED_FORALL ||
-       tag == BLOCK_COFORALL))
+       tag == BLOCK_ORDERED_FORALL))
     tag = BLOCK_FOR;
 
-  if (tag == BLOCK_COFORALL) {
-    VarSymbol* coforallCount = new VarSymbol("_coforallCount");
-    coforallCount->isCompilerTemp = true;
-    BlockStmt* beginBlk = new BlockStmt();
-    beginBlk->insertAtHead(body);
-    beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-    body = buildBeginStmt(beginBlk, false);
-    BlockStmt* block = buildForLoopStmt(BLOCK_FOR, indices, iterator, body);
-    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
-    block->insertAtHead(new DefExpr(coforallCount));
-    body->insertBefore(new CallExpr("_upEndCount", coforallCount));
-    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
-    return block;
-  }
   body = new BlockStmt(body);
   body->blockTag = tag;
   BlockStmt* stmts = buildChapelStmt();
@@ -469,6 +454,34 @@ BlockStmt* buildForLoopStmt(BlockTag tag,
   stmts->insertAtTail(body);
   stmts->insertAtTail(new DefExpr(body->post_loop));
   return stmts;
+}
+
+
+BlockStmt* buildCoforallLoopStmt(BaseAST* indices, Expr* iterator, BlockStmt* body) {
+
+  if (fSerial)
+    return buildForLoopStmt(BLOCK_FOR, indices, iterator, body);
+
+  //
+  // insert temporary index when elided by user
+  //
+  if (!indices)
+    indices = new SymExpr("_elided_index");
+
+  checkIndices(indices);
+
+  VarSymbol* coforallCount = new VarSymbol("_coforallCount");
+  coforallCount->isCompilerTemp = true;
+  BlockStmt* beginBlk = new BlockStmt();
+  beginBlk->insertAtHead(body);
+  beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
+  body = buildBeginStmt(beginBlk, false);
+  BlockStmt* block = buildForLoopStmt(BLOCK_FOR, indices, iterator, body);
+  block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
+  block->insertAtHead(new DefExpr(coforallCount));
+  body->insertBefore(new CallExpr("_upEndCount", coforallCount));
+  block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
+  return block;
 }
 
 

@@ -470,13 +470,13 @@ for_stmt:
     { $$ = buildForLoopStmt(BLOCK_ORDERED_FORALL, NULL, $3, new BlockStmt($5)); }
 
 | TCOFORALL expr TIN expr parsed_block_stmt
-    { $$ = buildForLoopStmt(BLOCK_COFORALL, $2, $4, $5); }
+    { $$ = buildCoforallLoopStmt($2, $4, $5); }
 | TCOFORALL expr TIN expr TDO stmt
-    { $$ = buildForLoopStmt(BLOCK_COFORALL, $2, $4, new BlockStmt($6)); }
+    { $$ = buildCoforallLoopStmt($2, $4, new BlockStmt($6)); }
 | TCOFORALL expr parsed_block_stmt
-    { $$ = buildForLoopStmt(BLOCK_COFORALL, NULL, $2, $3); }
+    { $$ = buildCoforallLoopStmt(NULL, $2, $3); }
 | TCOFORALL expr TDO stmt
-    { $$ = buildForLoopStmt(BLOCK_COFORALL, NULL, $2, new BlockStmt($4)); }
+    { $$ = buildCoforallLoopStmt(NULL, $2, new BlockStmt($4)); }
 ;
 
 

@@ -25,6 +25,9 @@ CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
 BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
+BlockStmt* buildCoforallLoopStmt(BaseAST* indices,
+                                 Expr* iterator,
+                                 BlockStmt* body);
 BlockStmt* buildForLoopStmt(BlockTag tag,
                             BaseAST* indices,
                             Expr* iterator,
