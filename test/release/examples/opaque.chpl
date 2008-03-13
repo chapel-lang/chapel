@@ -59,6 +59,20 @@ for person in People do
 writeln();
 
 //
+// To help with this ordering issue, opaque domains support an
+// iterator named "sorted()" which pre-sorts the values and
+// traverses them in order.  Needless to say, this costs extra
+// time and space, so is meant only as a convenience.
+//
+
+writeln("Name (sorted) is: ", Name.sorted());
+writeln();
+
+for name in Name.sorted() do
+  writeln("Name (in sorted order) is: ", name);
+writeln();
+
+//
 // Now let's say we want to use this opaque domain to describe a graph.
 // In order to do this, we need to store opaque indices for each index
 // in the domain.  For example, let's assume that Barry is the father of
