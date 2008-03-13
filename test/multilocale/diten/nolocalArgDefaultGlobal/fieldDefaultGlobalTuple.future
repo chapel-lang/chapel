@@ -1,7 +1,0 @@
-bug: unnormalized formal type
-bug: Using a global as a function argument's default value
-
-Default values that access globals and whose access looks like a function call
-cause a seg fault in function resolution in --no-local compilations. When
-a call to _heapAccess inserted in normalize is being flattened into a temp,
-there is a problem because formals aren't full statements.

@@ -400,13 +400,19 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
                      Expr* iDefaultExpr, Expr* iVariableExpr) :
   Symbol(SYMBOL_ARG, iName, iType),
   intent(iIntent),
-  typeExpr(iTypeExpr),
+  typeExpr(NULL),
   defaultExpr(iDefaultExpr),
   variableExpr(iVariableExpr),
   isGeneric(false),
   instantiatedFrom(NULL),
   instantiatedParam(false)
 {
+  if (!iTypeExpr)
+    typeExpr = NULL;
+  else if (BlockStmt* block = toBlockStmt(iTypeExpr))
+    typeExpr = block;
+  else
+    typeExpr = new BlockStmt(iTypeExpr, BLOCK_SCOPELESS);
   if (intent == INTENT_PARAM)
     isGeneric = true;
 }
@@ -439,7 +445,7 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   else if (old_ast == variableExpr)
     variableExpr = toExpr(new_ast);
   else if (old_ast == typeExpr)
-    typeExpr = toExpr(new_ast);
+    typeExpr = toBlockStmt(new_ast);
   else
     type->replaceChild(old_ast, new_ast);
 }

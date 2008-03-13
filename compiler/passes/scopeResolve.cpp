@@ -140,7 +140,7 @@ void scopeResolve(void) {
   //
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->_this && fn->_this->type == dtUnknown) {
-      if (SymExpr* sym = toSymExpr(toArgSymbol(fn->_this)->typeExpr)) {
+      if (SymExpr* sym = toSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
         if (!sym->var) {
           TypeSymbol* ts = toTypeSymbol(sym->lookup(sym->unresolved));
           sym->var = ts;

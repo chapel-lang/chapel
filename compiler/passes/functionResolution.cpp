@@ -78,6 +78,7 @@ static FnSymbol* resolve_call(CallInfo* info);
 static Type* resolve_type_expr(Expr* expr);
 
 static void resolveCall(CallExpr* call);
+static void resolveBody(Expr* body);
 static void resolveFns(FnSymbol* fn);
 
 static bool canDispatch(Type* actualType,
@@ -144,8 +145,10 @@ resolveFormals(FnSymbol* fn) {
     done.set_add(fn);
 
     for_formals(formal, fn) {
-      if (formal->type == dtUnknown)
-        formal->type = resolve_type_expr(formal->typeExpr);
+      if (formal->type == dtUnknown) {
+        resolveBody(formal->typeExpr);
+        formal->type = formal->typeExpr->body.tail->typeInfo();
+      }
 
       if (formal->type != dtUnknown)
         formal->typeExpr->remove();
@@ -1100,7 +1103,10 @@ static const char* toString(FnSymbol* fn) {
     if (arg->isTypeVariable)
       str = astr(str, "type ", arg->name);
     else if (arg->type == dtUnknown) {
-      if (SymExpr* sym = toSymExpr(arg->typeExpr))
+      SymExpr* sym = NULL;
+      if (arg->typeExpr)
+        sym = toSymExpr(arg->typeExpr->body.tail);
+      if (sym)
         str = astr(str, arg->name, ": ", sym->var->name);
       else
         str = astr(str, arg->name);
@@ -2795,6 +2801,9 @@ resolveFns(FnSymbol* fn) {
   resolvedFns.set_add(fn);
 
   if (fn->isExtern)
+    return;
+
+  if (fn->hasPragma("auto ii"))
     return;
 
 //   if (fn->hasPragma("default constructor"))

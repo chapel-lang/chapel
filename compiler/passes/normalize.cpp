@@ -400,7 +400,7 @@ void normalize(BaseAST* base) {
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* sym = toSymExpr(ast)) {
-      if (sym == sym->getStmtExpr()) {
+      if (sym == sym->getStmtExpr() && isFnSymbol(sym->parentSymbol)) {
         CallExpr* call = new CallExpr("_statementLevelSymbol");
         sym->insertBefore(call);
         call->insertAtTail(sym->remove());
@@ -821,13 +821,13 @@ static void hack_resolve_types(Expr* expr) {
         if (!arg->isTypeVariable && !arg->typeExpr && arg->defaultExpr) {
           SymExpr* se = toSymExpr(arg->defaultExpr);
           if (!se || se->var != gNil) {
-            arg->typeExpr = arg->defaultExpr->copy();
+            arg->typeExpr = new BlockStmt(arg->defaultExpr->copy(), BLOCK_SCOPELESS);
             FnSymbol* fn = def->getFunction();
             insert_help(arg->typeExpr, NULL, arg, fn->argScope);
           }
         }
-        if (arg->typeExpr) {
-          Type* type = arg->typeExpr->typeInfo();
+        if (arg->typeExpr && arg->typeExpr->body.length() == 1) {
+          Type* type = arg->typeExpr->body.only()->typeInfo();
           if (type != dtUnknown && type != dtAny) {
             arg->type = type;
             arg->typeExpr->remove();
@@ -878,13 +878,13 @@ static void fixup_array_formals(FnSymbol* fn) {
         DefExpr* def = toDefExpr(call->get(1));
         ArgSymbol* arg = toArgSymbol(call->parentSymbol);
         if (call->numActuals() == 1)
-          if (!arg || arg->typeExpr != call)
+          if (!arg || !arg->typeExpr || arg->typeExpr->body.tail != call)
             USR_FATAL(call, "array declaration has no element type");
         if (def || (sym && sym->var == gNil) || call->numActuals() == 1) {
-          if (!arg || arg->typeExpr != call)
+          if (!arg || !arg->typeExpr || arg->typeExpr->body.tail != call)
             USR_FATAL(call, "array with empty or queried domain can "
                       "only be used as a formal argument type");
-          arg->typeExpr->replace(new SymExpr(chpl_array));
+          arg->typeExpr->replace(new BlockStmt(new SymExpr(chpl_array), BLOCK_SCOPELESS));
           if (!fn->where) {
             fn->where = new BlockStmt(new SymExpr(gTrue));
             insert_help(fn->where, NULL, fn, fn->argScope);
@@ -921,8 +921,8 @@ static void fixup_array_formals(FnSymbol* fn) {
           }
         } else {  //// DUPLICATED CODE ABOVE AND BELOW
           if (ArgSymbol* arg = toArgSymbol(call->parentSymbol)) {
-            if (arg->typeExpr == call) {
-              arg->typeExpr->replace(new SymExpr(chpl_array));
+            if (arg->typeExpr && arg->typeExpr->body.tail == call) {
+              arg->typeExpr->replace(new BlockStmt(new SymExpr(chpl_array), BLOCK_SCOPELESS));
               VarSymbol* tmp = new VarSymbol(astr("_reindex_", arg->name));
               forv_Vec(BaseAST, ast, all_asts) {
                 if (SymExpr* sym = toSymExpr(ast)) {
@@ -1065,7 +1065,9 @@ add_to_where_clause(ArgSymbol* formal, Expr* expr, ArgSymbol* arg) {
 static void
 fixup_query_formals(FnSymbol* fn) {
   for_formals(formal, fn) {
-    if (DefExpr* def = toDefExpr(formal->typeExpr)) {
+    if (!formal->typeExpr)
+      continue;
+    if (DefExpr* def = toDefExpr(formal->typeExpr->body.tail)) {
       Vec<BaseAST*> asts;
       collect_asts(&asts, fn);
       forv_Vec(BaseAST, ast, asts) {
@@ -1077,7 +1079,7 @@ fixup_query_formals(FnSymbol* fn) {
       }
       formal->typeExpr->remove();
       formal->type = dtAny;
-    } else if (CallExpr* call = toCallExpr(formal->typeExpr)) {
+    } else if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
       // clone query primitive types
       if (call->numActuals() == 1) {
         if (DefExpr* def = toDefExpr(call->get(1))) {

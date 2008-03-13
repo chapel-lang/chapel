@@ -312,7 +312,7 @@ static void build_type_constructor(ClassType* ct) {
         arg->defaultExpr = init->copy();
 
       if (exprType)
-        arg->typeExpr = exprType->copy();
+        arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_SCOPELESS);
 
       if (!exprType && arg->type == dtUnknown)
         arg->type = dtAny;
@@ -534,7 +534,7 @@ static void build_constructor(ClassType* ct) {
         init = new CallExpr("_createFieldDefault", exprType->copy(), init);
     }
     arg->defaultExpr = init;
-    arg->typeExpr = exprType;
+    arg->typeExpr = new BlockStmt(exprType, BLOCK_SCOPELESS);
     arg->isTypeVariable = field->isTypeVariable;
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
@@ -746,8 +746,12 @@ void cleanup(void) {
             !arg->typeExpr &&
             !arg->isTypeVariable) {
           if (s->unresolved || s->var->type != dtNil) {
-            arg->typeExpr = new CallExpr(PRIMITIVE_TYPEOF,
-                                         arg->defaultExpr->copy());
+            arg->typeExpr =
+              new BlockStmt(
+                new CallExpr(PRIMITIVE_TYPEOF,
+                             arg->defaultExpr->copy()),
+                BLOCK_SCOPELESS);
+
             insert_help(arg->typeExpr, NULL, arg, fn->argScope);
             arg->type = dtUnknown;
           }
@@ -770,7 +774,7 @@ void cleanup(void) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
     if (BlockStmt* block = toBlockStmt(ast)) {
-      if (block->blockTag == BLOCK_SCOPELESS)
+      if (block->blockTag == BLOCK_SCOPELESS && block->list)
         flatten_scopeless_block(block);
     } else if (CallExpr* call = toCallExpr(ast)) {
       if (call->isNamed("_build_tuple"))

@@ -116,7 +116,7 @@ class VarSymbol : public Symbol {
 class ArgSymbol : public Symbol {
  public:
   IntentTag intent;
-  Expr* typeExpr;
+  BlockStmt* typeExpr;
   Expr* defaultExpr;
   Expr* variableExpr;
   bool isGeneric;

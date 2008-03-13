@@ -413,6 +413,7 @@ pragma "inline" def >>(param a: uint(64), param b: integral) param return __prim
 //
 pragma "inline" def _statementLevelSymbol(a) { return a; }
 pragma "inline" def _statementLevelSymbol(param a) param { return a; }
+pragma "inline" def _statementLevelSymbol(type a) type { return a; }
 
 //
 // _init on primitive types and classes
