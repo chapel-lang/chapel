@@ -2,48 +2,44 @@ use Sort /* only QuickSort */;
 
 // TODO: make the domain parameterized by this?
 // TODO: make int(64) the default index type here and in arithemtic domains
-type _chpl_table_index_type = int(32);
+type chpl_table_index_type = int(32);
 
 
 /* These declarations could/should both be nested within
    SingleLocaleAssociativeDomain? */
-enum _chpl_hash_status { empty, full, deleted };
+enum chpl_hash_status { empty, full, deleted };
 
-record _chpl_TableEntry {
+record chpl_TableEntry {
   type idxType;
-  var status: _chpl_hash_status = _chpl_hash_status.empty;
+  var status: chpl_hash_status = chpl_hash_status.empty;
   var idx: idxType;
 }
+
+const chpl_primes : [0..26] chpl_table_index_type 
+                  = (23, 53, 97, 193, 389, 769, 1543, 3079, 6151, 12289, 24593, 
+                     49157, 98317, 196613, 393241, 786433, 1572869, 3145739, 
+                     6291469, 12582917, 25165843, 50331653, 100663319, 
+                     201326611, 402653189, 805306457, 1610612741);
 
 
 class SingleLocaleAssociativeDomain: BaseDomain {
   type idxType;
 
-  // TODO: move this out of here once the initializers can refer to global
-  // variables (see David's future of 03/07/08)
-  const _primes : [0..26] _chpl_table_index_type 
-                = (23, 53, 97, 193, 389, 769, 1543, 3079, 6151, 12289, 24593, 
-                   49157, 98317, 196613, 393241, 786433, 1572869, 3145739, 
-                   6291469, 12582917, 25165843, 50331653, 100663319, 201326611,
-                   402653189, 805306457, 1610612741);
-
-
-
   // The guts of the associative domain
-  var numEntries: _chpl_table_index_type = 0;
+  var numEntries: chpl_table_index_type = 0;
   var tableSizeNum = 0;
-  var tableSize = _primes(tableSizeNum);
+  var tableSize = chpl_primes(tableSizeNum);
   var tableDom = [0..tableSize-1];
-  var table: [tableDom] _chpl_TableEntry(idxType);
+  var table: [tableDom] chpl_TableEntry(idxType);
 
 
   // Temporary arrays for side computations:
   // TODO: Slosh back and forth between two tables rather than copying back
   // TODO: This ugly [0..-1] domain appears several times in the code --
   //       replace with a named constant/param?
-  var tmpDom = [0..-1:_chpl_table_index_type];
-  var tmpTable: [tmpDom] _chpl_TableEntry(idxType);
-  var tmpDom2 = [0..-1:_chpl_table_index_type];
+  var tmpDom = [0..-1:chpl_table_index_type];
+  var tmpTable: [tmpDom] chpl_TableEntry(idxType);
+  var tmpDom2 = [0..-1:chpl_table_index_type];
   var tmpTable2: [tmpDom2] idxType;
 
   // BLC: Didn't want to have this, but _wrapDomain requires it
@@ -75,28 +71,28 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
     // clear out old table
     numEntries = 0;
-    tableDom = [0..-1:_chpl_table_index_type];
+    tableDom = [0..-1:chpl_table_index_type];
 
     // choose new table size
-    for primeNum in _primes.domain {
-      if (b.numEntries * 2 < _primes(primeNum)) {
+    for primeNum in chpl_primes.domain {
+      if (b.numEntries * 2 < chpl_primes(primeNum)) {
         tableSizeNum = primeNum;
         break;
       }
     }
-    tableSize = _primes(tableSizeNum);
+    tableSize = chpl_primes(tableSizeNum);
     tableDom = [0..tableSize-1];
 
     // add indices and copy array data over
     for idx in b {
       const newSlotNum = add(idx);
-      const (foundit, slot) = _findFilledSlotInTmp(idx);
+      const (foundit, slot) = _findFilledSlot(idx, tmpTable);
       if (foundit) {
         _preserveArrayElement(oldslot=slot, newslot=newSlotNum);
       }
     }
-    tmpDom = [0..-1:_chpl_table_index_type];
-    tmpDom2 = [0..-1:_chpl_table_index_type];
+    tmpDom = [0..-1:chpl_table_index_type];
+    tmpDom2 = [0..-1:chpl_table_index_type];
     _removeArrayBackups();
   }
   
@@ -132,7 +128,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   //
   def clear() {
     for slot in tableDom {
-      table(slot).status = _chpl_hash_status.empty;
+      table(slot).status = chpl_hash_status.empty;
     }
     numEntries = 0;
   }
@@ -147,7 +143,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     }
     const (foundSlot, slotNum) = _findEmptySlot(idx);
     if (foundSlot) {
-      table(slotNum).status = _chpl_hash_status.full;
+      table(slotNum).status = chpl_hash_status.full;
       table(slotNum).idx = idx;
       numEntries += 1;
     } else {
@@ -164,7 +160,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     // TODO: shrink table if less than 1/4 full
     const (foundSlot, slotNum) = _findFilledSlot(idx);
     if (foundSlot) {
-      table(slotNum).status = _chpl_hash_status.deleted;
+      table(slotNum).status = chpl_hash_status.deleted;
       numEntries -= 1;
     } else {
       halt("index not in domain: ", idx);
@@ -185,7 +181,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     // TODO: should assert that tmpDom2 is non-empty to avoid conflicting
     // calls? Or not -- to support early exit from iterator?
     tmpDom2 = [0..numEntries-1];
-    var count: _chpl_table_index_type = 0;
+    var count: chpl_table_index_type = 0;
     for slot in _fullSlots() {
       tmpTable2(count) = table(slot).idx;
       count += 1;
@@ -194,7 +190,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   }
 
   def _destroySortedTmpTable2() {
-    tmpDom2 = [0..-1:_chpl_table_index_type];
+    tmpDom2 = [0..-1:chpl_table_index_type];
   }
 
   def _grow() {
@@ -206,46 +202,30 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     tmpTable = table;
 
     // grow original table
-    tableDom = [0..-1:_chpl_table_index_type]; // non-preserving resize
+    tableDom = [0..-1:chpl_table_index_type]; // non-preserving resize
     numEntries = 0; // reset, because the adds below will re-set this
     tableSizeNum += 1;
-    tableSize = _primes(tableSizeNum);
+    tableSize = chpl_primes(tableSizeNum);
     tableDom = [0..tableSize-1];
 
     // insert old data into newly resized table
-    for slot in _fullSlotsInTmp() {
+    for slot in _fullSlots(tmpTable) {
       const newslot = add(tmpTable(slot).idx);
       _preserveArrayElement(oldslot=slot, newslot=newslot);
     }
     
     // deallocate tmpTable
-    tmpDom = [0..-1:_chpl_table_index_type];
+    tmpDom = [0..-1:chpl_table_index_type];
     _removeArrayBackups();
   }
 
-  def _findFilledSlot(idx: idxType): (bool, index(tableDom)) {
-    for slotNum in _lookForSlots(idx) {
-      const slotStatus = table(slotNum).status;
-      if (slotStatus == _chpl_hash_status.empty) {
+  def _findFilledSlot(idx: idxType, tab = table): (bool, index(tableDom)) {
+    for slotNum in _lookForSlots(idx, tab.domain.high+1) {
+      const slotStatus = tab(slotNum).status;
+      if (slotStatus == chpl_hash_status.empty) {
         return (false, -1);
-      } else if (slotStatus == _chpl_hash_status.full) {
-        if (table(slotNum).idx == idx) {
-          return (true, slotNum);
-        }
-      }
-    }
-    return (false, -1);
-  }
-
-  // This is redundant with the above, but implemented this way to avoid
-  // using default array arguments which are currently resulting in copies
-  def _findFilledSlotInTmp(idx: idxType): (bool, index(tableDom)) {
-    for slotNum in _lookForSlotsInTmp(idx) {
-      const slotStatus = tmpTable(slotNum).status;
-      if (slotStatus == _chpl_hash_status.empty) {
-        return (false, -1);
-      } else if (slotStatus == _chpl_hash_status.full) {
-        if (tmpTable(slotNum).idx == idx) {
+      } else if (slotStatus == chpl_hash_status.full) {
+        if (tab(slotNum).idx == idx) {
           return (true, slotNum);
         }
       }
@@ -256,8 +236,8 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   def _findEmptySlot(idx: idxType): (bool, index(tableDom)) {
     for slotNum in _lookForSlots(idx) {
       const slotStatus = table(slotNum).status;
-      if (slotStatus == _chpl_hash_status.empty ||
-          slotStatus == _chpl_hash_status.deleted) {
+      if (slotStatus == chpl_hash_status.empty ||
+          slotStatus == chpl_hash_status.deleted) {
         return (true, slotNum);
       } else if (table(slotNum).idx == idx) {
         return (false, slotNum);
@@ -266,34 +246,16 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     return (false, -1);
   }
     
-  def _lookForSlots(idx: idxType) {
+  def _lookForSlots(idx: idxType, numSlots = tableSize) {
     const baseSlot = _associative_hash_wrapper(idx);
-    for probe in 0..tableSize/2 {
-      const tmp = baseSlot + probe**2;
-      const tmp2 = (baseSlot + probe**2)&tableSize;
-      yield (baseSlot + probe**2)%tableSize;
+    for probe in 0..numSlots/2 {
+      yield (baseSlot + probe**2)%numSlots;
     }
   }
 
-  // TODO: Remove this and the other inTmp thing
-  def _lookForSlotsInTmp(idx: idxType) {
-    const baseSlot = _associative_hash_wrapper(idx);
-    for probe in 0..(tmpTable.domain.high+1)/2 {
-      yield (baseSlot + probe**2)%(tmpTable.domain.high+1);
-    }
-  }
-
-  def _fullSlots() {
-    for slot in tableDom {
-      if table(slot).status == _chpl_hash_status.full then
-        yield slot;
-    }
-  }
-
-  // TODO: Remove this and the other inTmp things
-  def _fullSlotsInTmp() {
-    for slot in tmpDom {
-      if tmpTable(slot).status == _chpl_hash_status.full then
+  def _fullSlots(tab = table) {
+    for slot in tab.domain {
+      if tab(slot).status == chpl_hash_status.full then
         yield slot;
     }
   }
@@ -307,7 +269,7 @@ class SingleLocaleAssociativeArray: BaseArray {
 
   var data : [dom.tableDom] eltType;
 
-  var tmpDom = [0..-1:_chpl_table_index_type];
+  var tmpDom = [0..-1:chpl_table_index_type];
   var tmpTable: [tmpDom] eltType;
 
   //
@@ -376,7 +338,7 @@ class SingleLocaleAssociativeArray: BaseArray {
   }
 
   def _removeArrayBackup() {
-    tmpDom = [0..-1:_chpl_table_index_type];
+    tmpDom = [0..-1:chpl_table_index_type];
   }
 
   def _preserveArrayElement(oldslot, newslot) {
@@ -387,7 +349,7 @@ class SingleLocaleAssociativeArray: BaseArray {
 
   def _createSortedTmpTable() {
     tmpDom = [0..numElements-1];
-    var count: _chpl_table_index_type = 0;
+    var count: chpl_table_index_type = 0;
     for slot in dom._fullSlots() {
       tmpTable(count) = data(slot);
       count += 1;
@@ -396,14 +358,14 @@ class SingleLocaleAssociativeArray: BaseArray {
   }
 
   def _destroySortedTmpTable() {
-    tmpDom = [0..-1:_chpl_table_index_type];
+    tmpDom = [0..-1:chpl_table_index_type];
   }
 }
 
 
-def _associative_hash_wrapper(x): _chpl_table_index_type {
+def _associative_hash_wrapper(x): chpl_table_index_type {
   const hash = _associative_hash(x); 
-  return (hash & max(_chpl_table_index_type)): _chpl_table_index_type;
+  return (hash & max(chpl_table_index_type)): chpl_table_index_type;
 }
 
 
