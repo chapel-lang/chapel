@@ -819,9 +819,11 @@ static void hack_resolve_types(Expr* expr) {
     if (ArgSymbol* arg = toArgSymbol(def->sym)) {
       if (arg->type == dtUnknown || arg->type == dtAny) {
         if (!arg->isTypeVariable && !arg->typeExpr && arg->defaultExpr) {
-          SymExpr* se = toSymExpr(arg->defaultExpr);
+          SymExpr* se = NULL;
+          if (arg->defaultExpr->body.length() == 1)
+            se = toSymExpr(arg->defaultExpr->body.tail);
           if (!se || se->var != gNil) {
-            arg->typeExpr = new BlockStmt(arg->defaultExpr->copy(), BLOCK_SCOPELESS);
+            arg->typeExpr = arg->defaultExpr->copy();
             FnSymbol* fn = def->getFunction();
             insert_help(arg->typeExpr, NULL, arg, fn->argScope);
           }

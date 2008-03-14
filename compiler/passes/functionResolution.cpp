@@ -451,8 +451,8 @@ computeGenericSubs(ASTMap &subs,
         if (subs.n)
           break;
 
-        resolve_type_expr(formal->defaultExpr);
-        if (SymExpr* se = toSymExpr(formal->defaultExpr)) {
+        resolveBody(formal->defaultExpr);
+        if (SymExpr* se = toSymExpr(formal->defaultExpr->body.tail)) {
           if (se->var->isParameter())
             subs.put(formal, se->var);
         } else
@@ -487,7 +487,8 @@ computeGenericSubs(ASTMap &subs,
         if (subs.n)
           break;
 
-        Type* defaultType = resolve_type_expr(formal->defaultExpr);
+        resolveBody(formal->defaultExpr);
+        Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
         if (canInstantiate(defaultType, formal->type) ||
             defaultType == gNil->type) { // constructor default
           subs.put(formal, defaultType);
@@ -1753,9 +1754,11 @@ insertFormalTemps(FnSymbol* fn) {
       ArgSymbol* formal = toArgSymbol(e->key);
       VarSymbol* tmp = toVarSymbol(e->value);
       if (formal->intent == INTENT_OUT) {
-        if (formal->defaultExpr && formal->defaultExpr->typeInfo() != dtNil)
-          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, formal->defaultExpr->copy()));
-        else {
+        if (formal->defaultExpr && formal->defaultExpr->body.tail->typeInfo() != dtNil) {
+          BlockStmt* defaultExpr = formal->defaultExpr->copy();
+          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, defaultExpr->body.tail->remove()));
+          fn->insertAtHead(defaultExpr);
+        } else {
           VarSymbol* refTmp = new VarSymbol("_tmp");
           VarSymbol* typeTmp = new VarSymbol("_tmp");
           typeTmp->isCompilerTemp = true;

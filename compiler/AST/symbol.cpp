@@ -401,7 +401,7 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   Symbol(SYMBOL_ARG, iName, iType),
   intent(iIntent),
   typeExpr(NULL),
-  defaultExpr(iDefaultExpr),
+  defaultExpr(NULL),
   variableExpr(iVariableExpr),
   isGeneric(false),
   instantiatedFrom(NULL),
@@ -413,6 +413,12 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
     typeExpr = block;
   else
     typeExpr = new BlockStmt(iTypeExpr, BLOCK_SCOPELESS);
+  if (!iDefaultExpr)
+    defaultExpr = NULL;
+  else if (BlockStmt* block = toBlockStmt(iDefaultExpr))
+    defaultExpr = block;
+  else
+    defaultExpr = new BlockStmt(iDefaultExpr, BLOCK_SCOPELESS);
   if (intent == INTENT_PARAM)
     isGeneric = true;
 }
@@ -440,12 +446,12 @@ ArgSymbol::copyInner(ASTMap* map) {
 
 
 void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defaultExpr)
-    defaultExpr = toExpr(new_ast);
+  if (old_ast == typeExpr)
+    typeExpr = toBlockStmt(new_ast);
+  else if (old_ast == defaultExpr)
+    defaultExpr = toBlockStmt(new_ast);
   else if (old_ast == variableExpr)
     variableExpr = toExpr(new_ast);
-  else if (old_ast == typeExpr)
-    typeExpr = toBlockStmt(new_ast);
   else
     type->replaceChild(old_ast, new_ast);
 }
@@ -815,22 +821,24 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
       if (formal->isTypeVariable)
         temp->isTypeVariable = true;
       copy_map.put(formal, temp);
-      Expr* temp_init = NULL;
-      if (formal->intent != INTENT_OUT)
-        temp_init = formal->defaultExpr->copy();
-      if (SymExpr* symExpr = toSymExpr(temp_init))
-        if (symExpr->var == gNil)
-          temp_init = NULL;
-      if (temp_init) {
+      if (formal->intent == INTENT_OUT ||
+          !formal->defaultExpr ||
+          (formal->defaultExpr->body.length() == 1 &&
+           isSymExpr(formal->defaultExpr->body.tail) &&
+           toSymExpr(formal->defaultExpr->body.tail)->var == gNil)) {
+        // use default value for type as default value for formal argument
+        wrapper->insertAtTail(new DefExpr(temp, NULL, new SymExpr(formal->type->symbol)));
+      } else {
         wrapper->insertAtTail(new DefExpr(temp));
-        if (formal->intent == INTENT_INOUT) {
-          wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, new CallExpr("_copy", temp_init)));
+        BlockStmt* defaultExpr = formal->defaultExpr->copy();
+        wrapper->insertAtTail(defaultExpr);
+        if (formal->intent != INTENT_INOUT) {
+          wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, defaultExpr->body.tail->remove()));
+        } else {
+          wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, new CallExpr("_copy", defaultExpr->body.tail->remove())));
           temp->isExprTemp = false;
           temp->canParam = false;
-        } else
-          wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, temp_init));
-      } else {
-        wrapper->insertAtTail(new DefExpr(temp, NULL, new SymExpr(formal->type->symbol)));
+        }
       }
       call->insertAtTail(temp);
     }
@@ -1050,10 +1058,10 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
         if (cloneFormal->defaultExpr)
           cloneFormal->defaultExpr->remove();
         if (Symbol* sym = paramMap->get(cloneFormal))
-          cloneFormal->defaultExpr = new SymExpr(sym);
+          cloneFormal->defaultExpr = new BlockStmt(new SymExpr(sym));
         else
-          cloneFormal->defaultExpr = new SymExpr(gNil);
-        cloneFormal->defaultExpr->parentSymbol = cloneFormal;
+          cloneFormal->defaultExpr = new BlockStmt(new SymExpr(gNil));
+        insert_help(cloneFormal->defaultExpr, NULL, cloneFormal, cloneFormal->parentScope);
       }
     }
   }

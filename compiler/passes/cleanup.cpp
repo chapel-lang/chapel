@@ -309,7 +309,7 @@ static void build_type_constructor(ClassType* ct) {
         arg->isTypeVariable = true;
 
       if (init)
-        arg->defaultExpr = init->copy();
+        arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
 
       if (exprType)
         arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_SCOPELESS);
@@ -533,8 +533,10 @@ static void build_constructor(ClassType* ct) {
       if (!callExprType || !callExprType->isNamed("_build_sparse_subdomain_type"))
         init = new CallExpr("_createFieldDefault", exprType->copy(), init);
     }
-    arg->defaultExpr = init;
-    arg->typeExpr = new BlockStmt(exprType, BLOCK_SCOPELESS);
+    if (init)
+      arg->defaultExpr = new BlockStmt(init, BLOCK_SCOPELESS);
+    if (exprType)
+      arg->typeExpr = new BlockStmt(exprType, BLOCK_SCOPELESS);
     arg->isTypeVariable = field->isTypeVariable;
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
