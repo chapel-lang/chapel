@@ -301,19 +301,17 @@ launch_next_task(void) {
   }
 }
 
+extern int32_t _localeID;   // unique ID for each locale: 0, 1, 2, ...
 
 //
 // interface function with begin-statement
 //
 int
-chpl_begin (chpl_threadfp_t fp, chpl_threadarg_t a, _Bool serial_state) {
-
-  // The thread that receives a request from another locale to start a new thread
-  // (due to an on statement) always has the serial state set to false, causing
-  // the specified task to always be placed in the task pool, rather than executed
-  // immediately.
-
-  if (chpl_get_serial()) {
+chpl_begin (chpl_threadfp_t fp,
+            chpl_threadarg_t a,
+            chpl_bool ignore_serial,  // always add task to pool
+            chpl_bool serial_state) {
+  if (!ignore_serial && chpl_get_serial()) {
     (*fp)(a);
   } else {
     // create a task from the given function pointer and arguments

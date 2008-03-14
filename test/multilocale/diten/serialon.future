@@ -1,4 +1,0 @@
-bug: accessing localeID() in on in serial block
-
-Accessing localeID() in an on statement in a serial block causes a GASNet
-assertion failure.

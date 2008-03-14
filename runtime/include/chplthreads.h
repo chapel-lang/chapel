@@ -71,11 +71,16 @@ typedef void* chpl_threadarg_t;            // function argument
 // Fork one thread.  Do not wait.  Used to implement Chapel's begin statement.
 // Return thread creation error.
 int
-chpl_begin (chpl_threadfp_t,               // function to fork
-            chpl_threadarg_t,              // function arg
-            _Bool);                        // serial state (must be "false" except when
-                                           // called from a comm lib such as gasnet;
-                                           // otherwise, serial state is that of the
-                                           // thread executing chpl_begin)
+chpl_begin (chpl_threadfp_t,  // function to fork
+            chpl_threadarg_t, // function arg
+            chpl_bool,        // ignore_serial = force spawning task
+                              // regardless of serial state; as in the
+                              // case of calling for on-statement
+                              // implementation
+            chpl_bool);       // serial state (must be "false" except
+                              // when called from a comm lib such as
+                              // gasnet; otherwise, serial state is
+                              // that of the thread executing
+                              // chpl_begin)
 
 #endif  // _chplthreads_h_
