@@ -816,7 +816,6 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
         temp->isTypeVariable = true;
       copy_map.put(formal, temp);
       Expr* temp_init = NULL;
-      Expr* temp_type = NULL;
       if (formal->intent != INTENT_OUT)
         temp_init = formal->defaultExpr->copy();
       if (SymExpr* symExpr = toSymExpr(temp_init))
@@ -831,23 +830,12 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
         } else
           wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, temp_init));
       } else {
-        if (formal->defPoint->exprType)
-          temp_type = formal->defPoint->exprType->copy();
-        else if (formal->type != dtUnknown && !formal->type->isGeneric)
-          temp_type = new SymExpr(formal->type->symbol);
-        else if (formal->type->symbol->hasPragma("sync") ||
-                 formal->type->symbol->hasPragma("ref"))
-          temp_type = new CallExpr(PRIMITIVE_INIT, formal->type->symbol);
-        if (temp->isTypeVariable && temp_init)
-          temp_init = new CallExpr(PRIMITIVE_TYPEOF, temp_init);
-        wrapper->insertAtTail(new DefExpr(temp, temp_init, temp_type));
+        wrapper->insertAtTail(new DefExpr(temp, NULL, new SymExpr(formal->type->symbol)));
       }
       call->insertAtTail(temp);
     }
   }
   update_symbols(wrapper->body, &copy_map);
-  //if (isMethod)
-    //call = make_method_call_partial(call);
   if (returns_void(this)) {
     wrapper->insertAtTail(call);
   } else if (fnTag != FN_ITERATOR) {
@@ -860,8 +848,6 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
     wrapper->fnTag = FN_ITERATOR;
   }
   defPoint->insertAfter(new DefExpr(wrapper));
-
-  //  reset_file_info(wrapper->defPoint, lineno, filename);
 
   // Make the line numbers match the numbers from the formals they map to
   for_formals(formal, this) {
@@ -1640,9 +1626,6 @@ static bool
 hasGenericArgs(FnSymbol* fn) {
   for_formals(formal, fn) {
     if (formal->type->isGeneric)
-      return true;
-    if (formal->defPoint->exprType &&
-        formal->defPoint->exprType->typeInfo()->isGeneric)
       return true;
     if (formal->intent == INTENT_PARAM)
       return true;

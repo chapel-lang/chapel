@@ -735,31 +735,6 @@ void cleanup(void) {
     }
   }
 
-  forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
-    currentFilename = ast->filename;
-    if (FnSymbol *fn = toFnSymbol(ast)) {
-      for_formals(arg, fn) {
-        SymExpr *s = toSymExpr(arg->defaultExpr);
-        if (!fn->instantiatedFrom &&
-            s && 
-            !arg->typeExpr &&
-            !arg->isTypeVariable) {
-          if (s->unresolved || s->var->type != dtNil) {
-            arg->typeExpr =
-              new BlockStmt(
-                new CallExpr(PRIMITIVE_TYPEOF,
-                             arg->defaultExpr->copy()),
-                BLOCK_SCOPELESS);
-
-            insert_help(arg->typeExpr, NULL, arg, fn->argScope);
-            arg->type = dtUnknown;
-          }
-        }
-      }
-    }
-  }
-
   asts.clear();
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
