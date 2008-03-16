@@ -145,8 +145,8 @@ void chpl_set_serial(chpl_bool new_state) {
 }
 
 int
-chpl_begin(chpl_threadfp_t fp, chpl_threadarg_t a, _Bool serial_state) {
-  if (chpl_get_serial()) {
+chpl_begin(chpl_threadfp_t fp, chpl_threadarg_t a, chpl_bool ignore_serial, chpl_bool serial_state) {
+  if (!ignore_serial && chpl_get_serial()) {
     (*fp)(a);
   } else {
     // create a task from the given function pointer and arguments
