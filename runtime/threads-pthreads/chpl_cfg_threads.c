@@ -2,13 +2,14 @@
 // Pthread implementation of Chapel threading interface
 //
 
-#include "chplrt.h"
-#include "chplthreads.h"
-#include "chplmem.h"
-#include "error.h"
 #include <inttypes.h>
 #include <pthread.h>
 #include <stdio.h>
+#include "chplcomm.h"
+#include "chplmem.h"
+#include "chplrt.h"
+#include "chplthreads.h"
+#include "error.h"
 
 //
 // task pool: linked list of tasks
@@ -300,8 +301,6 @@ launch_next_task(void) {
       task_pool_tail = NULL;
   }
 }
-
-extern int32_t _localeID;   // unique ID for each locale: 0, 1, 2, ...
 
 //
 // interface function with begin-statement
