@@ -1,1 +1,0 @@
-bug: symbols defined in used module should be at outer scope than formals.
