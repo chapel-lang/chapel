@@ -241,6 +241,15 @@ static void destructure_tuple(CallExpr* call) {
 }
 
 
+static bool
+isSparseDomain(Expr* exprType) {
+  if (CallExpr* callExprType = toCallExpr(exprType))
+    if (callExprType->isNamed("_build_sparse_subdomain_type"))
+      return true;
+  return false;
+}
+
+
 static void build_type_constructor(ClassType* ct) {
   if (ct->defaultTypeConstructor)
     return;
@@ -248,9 +257,7 @@ static void build_type_constructor(ClassType* ct) {
   currentLineno = ct->lineno;
   currentFilename = ct->filename;
 
-  const char* name = astr("_type_construct_", ct->symbol->name);
-
-  FnSymbol* fn = new FnSymbol(name);
+  FnSymbol* fn = new FnSymbol(astr("_type_construct_", ct->symbol->name));
   fn->addPragma("type constructor");
   ct->defaultTypeConstructor = fn;
   fn->cname = astr("_type_construct_", ct->symbol->cname);
@@ -259,10 +266,8 @@ static void build_type_constructor(ClassType* ct) {
 
   if (ct->symbol->hasPragma("ref"))
     fn->addPragma("ref");
-
   if (ct->symbol->hasPragma("heap"))
     fn->addPragma("heap");
-
   if (ct->symbol->hasPragma("tuple")) {
     fn->addPragma("tuple");
     fn->addPragma("inline");
@@ -271,76 +276,70 @@ static void build_type_constructor(ClassType* ct) {
   fn->_this = new VarSymbol("this", ct);
   fn->insertAtTail(new DefExpr(fn->_this));
 
-
   Vec<const char*> fieldNamesSet;
   for_fields(tmp, ct) {
+    currentLineno = tmp->lineno;
+    currentFilename = tmp->filename;
+    if (VarSymbol* field = toVarSymbol(tmp)) {
 
-    VarSymbol* field = toVarSymbol(tmp);
+      if (field->hasPragma("super class"))
+        continue;
 
-    if (!field)
-      continue;
-    if (field->hasPragma("super class"))
-      continue;
+      Expr* exprType = field->defPoint->exprType;
+      Expr* init = field->defPoint->init;
+      if (!strcmp(field->name, "_promotionType") ||
+          field->hasPragma("omit from constructor")) {
+        fn->insertAtTail(
+          new BlockStmt(
+            new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+              new_StringSymbol(field->name),
+              new CallExpr(PRIMITIVE_INIT, exprType->remove())),
+            BLOCK_TYPE));
+      } else {
+        fieldNamesSet.set_add(field->name);
 
-    if ((!strcmp(field->name, "_promotionType")) ||
-        (field->hasPragma("omit from constructor"))) {
-      Expr* exprType = field->defPoint->exprType->remove();
-      fn->insertAtTail(
-        new BlockStmt(
-          new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-            new_StringSymbol(field->name),
-            new CallExpr(PRIMITIVE_INIT, exprType)), BLOCK_TYPE));
-      continue;
-    }
+        //
+        // if formal is generic
+        //
+        if (field->isTypeVariable || field->isParam || (!exprType && !init)) {
+          ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
+          fn->insertFormalAtTail(arg);
 
-    fieldNamesSet.set_add(field->name);
+          if (field->isParam)
+            arg->intent = INTENT_PARAM;
+          else
+            arg->isTypeVariable = true;
 
-    //
-    // if formal is generic
-    //
-    Expr* exprType = field->defPoint->exprType;
-    Expr* init = field->defPoint->init;
-    if (field->isTypeVariable || field->isParam ||
-        (!exprType && !init)) {
-      ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
-      if (field->isParam)
-        arg->intent = INTENT_PARAM;
-      else
-        arg->isTypeVariable = true;
+          if (init)
+            arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
 
-      if (init)
-        arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
+          if (exprType)
+            arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_SCOPELESS);
 
-      if (exprType)
-        arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_SCOPELESS);
+          if (!exprType && arg->type == dtUnknown)
+            arg->type = dtAny;
 
-      if (!exprType && arg->type == dtUnknown)
-        arg->type = dtAny;
-      
-      DefExpr* def = new DefExpr(arg);
-      fn->insertFormalAtTail(def);
-      if (field->isParam || field->isTypeVariable)
-        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                      new_StringSymbol(field->name), arg));
-      else
-        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                      new_StringSymbol(field->name),
-                                      new CallExpr(PRIMITIVE_INIT, arg)));
-    } else {
-      if (exprType) {
-        CallExpr* callExprType = toCallExpr(exprType);
-        if (callExprType && callExprType->isNamed("_build_sparse_subdomain_type"))
-          fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+          if (field->isParam || field->isTypeVariable)
+            fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
+                                          new_StringSymbol(field->name), arg));
+          else
+            fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
+                                          new_StringSymbol(field->name),
+                                          new CallExpr(PRIMITIVE_INIT, arg)));
+        } else if (exprType) {
+          if (isSparseDomain(exprType))
+            fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
+                                          new_StringSymbol(field->name),
+                                          exprType->copy()));
+          else
+            fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
+                                          new_StringSymbol(field->name),
+                                          new CallExpr(PRIMITIVE_INIT, exprType->copy())));
+        } else if (init) {
+          fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
                                         new_StringSymbol(field->name),
-                                        exprType->copy()));
-        else
-          fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                        new_StringSymbol(field->name),
-                                        new CallExpr(PRIMITIVE_INIT, exprType->copy())));
-      } else if (init) {
-        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                      new_StringSymbol(field->name),
-                                      new CallExpr("_copy", init->copy())));
+                                        new CallExpr("_copy", init->copy())));
+        }
       }
     }
   }
@@ -349,17 +348,18 @@ static void build_type_constructor(ClassType* ct) {
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
   fn->retType = ct;
 
+  //
+  // insert implicit uses of 'this' in constructor
+  //
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn->body);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* se = toSymExpr(ast))
-      if (!se->var)
-        if (fieldNamesSet.set_in(se->unresolved))
-          se->replace(new CallExpr(".", fn->_this, new_StringSymbol(se->unresolved)));
+      if (!se->var && fieldNamesSet.set_in(se->unresolved))
+        se->replace(buildDotExpr(fn->_this, se->unresolved));
   }
 
-  ClassType *outerType =
-    toClassType(ct->symbol->defPoint->parentSymbol->type);
+  ClassType *outerType = toClassType(ct->symbol->defPoint->parentSymbol->type);
   if (outerType) {
     // Create an "outer" pointer to the outer class in the inner class
     VarSymbol* outer = new VarSymbol("outer");
@@ -389,61 +389,41 @@ static void build_constructor(ClassType* ct) {
 
   if (ct->symbol->hasPragma("sync"))
     ct->defaultValue = NULL;
-  const char* name;
-  name = astr("_construct_", ct->symbol->name);
-  FnSymbol* fn = new FnSymbol(name);
+
+  FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
   fn->addPragma("default constructor");
   ct->defaultConstructor = fn;
   fn->cname = astr("_construct_", ct->symbol->cname);
   fn->isCompilerTemp = true; // compiler inserted
+
   if (ct->symbol->hasPragma("ref"))
     fn->addPragma("ref");
-
   if (ct->symbol->hasPragma("heap"))
     fn->addPragma("heap");
-
   if (ct->symbol->hasPragma("tuple")) {
     fn->addPragma("tuple");
     fn->addPragma("inline");
   }
-  ArgSymbol* meme = NULL;
+
   fn->_this = new VarSymbol("this", ct);
-  CallExpr* typeConstructorCall = new CallExpr(ct->symbol);
-  fn->insertAtTail(new DefExpr(fn->_this)); // , NULL, typeConstructorCall));
+  fn->insertAtTail(new DefExpr(fn->_this));
 
   Map<VarSymbol*,ArgSymbol*> fieldArgMap;
   for_fields(tmp, ct) {
-    VarSymbol* field = toVarSymbol(tmp);
-    if (!field || field->hasPragma("super class") ||
-        !strcmp(field->name, "_promotionType") ||
-        !strcmp(field->name, "outer") ||
-        field->hasPragma("omit from constructor"))
-      continue;
-
-    currentLineno = field->lineno;
-    currentFilename = field->filename;
-
-    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
-    fieldArgMap.put(field, arg);
-
-    Expr* exprType = field->defPoint->exprType;
-    Expr* init = field->defPoint->init;
-    if (field->isTypeVariable || field->isParam)
-      typeConstructorCall->insertAtTail(arg);
-    else if (!exprType && !init)
-      typeConstructorCall->insertAtTail(new CallExpr(PRIMITIVE_TYPEOF, arg));
+    currentLineno = tmp->lineno;
+    currentFilename = tmp->filename;
+    if (VarSymbol* field = toVarSymbol(tmp)) {
+      if (!field->hasPragma("super class") &&
+          !field->hasPragma("omit from constructor") &&
+          strcmp(field->name, "_promotionType") &&
+          strcmp(field->name, "outer")) {
+        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
+        fieldArgMap.put(field, arg);
+      }
+    }
   }
 
-//   VarSymbol* typeTmp = new VarSymbol("_tmp");
-//   typeTmp->isCompilerTemp = true;
-//   typeTmp->canType = true;
-//   fn->insertAtTail(new DefExpr(typeTmp));
-//   BlockStmt* block = new BlockStmt();
-//   block->blockTag = BLOCK_TYPE;
-//   block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, typeTmp, new CallExpr(PRIMITIVE_TYPEOF, fn->_this)));
-//   // block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this, new CallExpr(PRIMITIVE_INIT, typeTmp)));
-//   fn->insertAtTail(block);
-
+  ArgSymbol* meme = NULL;
   if (ct->classTag == CLASS_CLASS) {
     if (ct->symbol->hasPragma("ref") || ct->symbol->hasPragma("sync")) {
       fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
@@ -458,9 +438,9 @@ static void build_constructor(ClassType* ct) {
                                  new_StringSymbol(astr("instance of class ", ct->symbol->name)))));
       allocate->insertAtTail(new CallExpr(PRIMITIVE_SETCID, fn->_this));
       CondStmt* cond = new CondStmt(
-        new CallExpr(PRIMITIVE_PTR_EQUAL, new SymExpr(gNil), new SymExpr(meme)),
+        new CallExpr(PRIMITIVE_PTR_EQUAL, gNil, meme),
         allocate,
-        new CallExpr(PRIMITIVE_MOVE, fn->_this, new SymExpr(meme)));
+        new CallExpr(PRIMITIVE_MOVE, fn->_this, meme));
       fn->insertAtTail(cond);
       if (ct->dispatchParents.n > 0) {
         if (!ct->dispatchParents.v[0]->defaultConstructor) {
@@ -486,8 +466,6 @@ static void build_constructor(ClassType* ct) {
                          fn->_this, new_StringSymbol("super"))));
       }
     }
-  } else {
-
   }
 
   if (ct->classTag == CLASS_UNION)
@@ -522,15 +500,13 @@ static void build_constructor(ClassType* ct) {
         exprType = init->copy();
       }
     } else if (exprType && !field->isTypeVariable && !field->isParam) {
-      CallExpr* callExprType = toCallExpr(exprType);
-      if (callExprType && callExprType->isNamed("_build_sparse_subdomain_type"))
+      if (isSparseDomain(exprType))
         init = exprType->copy();
       else
         init = new CallExpr(PRIMITIVE_INIT, exprType->copy());
     }
     if (hasType && !field->isTypeVariable && !field->isParam) {
-      CallExpr* callExprType = toCallExpr(exprType);
-      if (!callExprType || !callExprType->isNamed("_build_sparse_subdomain_type"))
+      if (!isSparseDomain(exprType))
         init = new CallExpr("_createFieldDefault", exprType->copy(), init);
     }
     if (init)
@@ -540,16 +516,14 @@ static void build_constructor(ClassType* ct) {
     arg->isTypeVariable = field->isTypeVariable;
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
-    DefExpr* def = new DefExpr(arg);
-    fn->insertFormalAtTail(def);
+    fn->insertFormalAtTail(arg);
 
     if (!ct->symbol->hasPragma("heap") && !ct->symbol->hasPragma("ref") && !arg->isTypeVariable && arg->intent != INTENT_PARAM) {
       if (hasType) {
         VarSymbol* tmp = new VarSymbol("_tmp");
         fn->insertAtTail(new DefExpr(tmp));
         Expr* init = NULL;
-        CallExpr* callExprType = toCallExpr(exprType);
-        if (callExprType && callExprType->isNamed("_build_sparse_subdomain_type"))
+        if (isSparseDomain(exprType))
           init = exprType->copy();
         else
           init = new CallExpr(PRIMITIVE_INIT, exprType->copy());
@@ -569,65 +543,65 @@ static void build_constructor(ClassType* ct) {
     }
   }
 
+  if (meme)
+    fn->insertFormalAtTail(meme);
+
+  //
+  // insert implicit uses of 'this' in constructor
+  //
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn->body);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* se = toSymExpr(ast))
-      if (!se->var)
-        if (fieldNamesSet.set_in(se->unresolved))
-          se->replace(new CallExpr(".", fn->_this, new_StringSymbol(se->unresolved)));
+      if (!se->var && fieldNamesSet.set_in(se->unresolved))
+        se->replace(buildDotExpr(fn->_this, se->unresolved));
   }
 
   currentLineno = ct->lineno;
   currentFilename = ct->filename;
 
-  ClassType *outerType =
-    toClassType(ct->symbol->defPoint->parentSymbol->type);
+  ClassType *outerType = toClassType(ct->symbol->defPoint->parentSymbol->type);
   if (outerType) {
-    // Create an "outer" pointer to the outer class in the inner class
-    //    VarSymbol* outer = new VarSymbol("outer");
-
-
     // Remove the DefPoint for this constructor, add it to the outer
     // class's method list.
     outerType->addDeclarations(fn->defPoint->remove(), true);
 
     // Save the pointer to the outer class
-    //    ct->fields.insertAtTail(new DefExpr(outer));
     fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER,
                                   fn->_this,
                                   new_StringSymbol("outer"),
                                   fn->_outer));
-    //    ct->outer = outer;
   }
 
-  bool hasReturn = false;
+  //
+  // insert call to initialize method if one is defined; make the
+  // constructor return the result of the initialize method if it
+  // returns a value (otherwise return this)
+  //
+  bool insertedReturn = false;
   forv_Vec(FnSymbol, method, ct->methods) {
     if (method && !strcmp(method->name, "initialize")) {
       if (method->numFormals() == 2) {
+        CallExpr* init = new CallExpr("initialize", gMethodToken, fn->_this);
         Vec<BaseAST*> asts;
         collect_asts(&asts, method);
         forv_Vec(BaseAST, ast, asts) {
           if (CallExpr* call = toCallExpr(ast)) {
             if (call->isPrimitive(PRIMITIVE_RETURN)) {
-              SymExpr* se = toSymExpr(call->get(1));
-              if (!se || se->var != gVoid)
-                hasReturn = true;
+              if (call->get(1) && call->get(1)->typeInfo() != dtVoid) {
+                init = new CallExpr(PRIMITIVE_RETURN, init);
+                insertedReturn = true;
+                break;
+              }
             }
           }
         }
-        if (hasReturn)
-          fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr("initialize", gMethodToken, fn->_this)));
-        else
-          fn->insertAtTail(new CallExpr("initialize", gMethodToken, fn->_this));
+        fn->insertAtTail(init);
         break;
       }
     }
   }
-  if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma("ref") && !ct->symbol->hasPragma("sync")) {
-    fn->insertFormalAtTail(new DefExpr(meme));
-  }
-  if (!hasReturn)
+  if (!insertedReturn)
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, fn->_this));
 }
 
