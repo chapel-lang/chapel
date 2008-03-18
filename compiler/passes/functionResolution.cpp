@@ -1738,11 +1738,14 @@ insertFormalTemps(FnSymbol* fn) {
   for_formals(formal, fn) {
     if (formalRequiresTemp(formal)) {
       VarSymbol* tmp = new VarSymbol(astr("_formal_tmp_", formal->name));
+      Type* formalType = formal->type;
+      if (formalType->symbol->hasPragma("ref"))
+        formalType = getValueType(formalType);
       if ((formal->intent == INTENT_BLANK ||
            formal->intent == INTENT_CONST) &&
-          !formal->type->symbol->hasPragma("domain") &&
-          !formal->type->symbol->hasPragma("sync") &&
-          !formal->type->symbol->hasPragma("array"))
+          !formalType->symbol->hasPragma("domain") &&
+          !formalType->symbol->hasPragma("sync") &&
+          !formalType->symbol->hasPragma("array"))
         tmp->isConst = true;
       tmp->isCompilerTemp = true;
       formals2vars.put(formal, tmp);
