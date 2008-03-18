@@ -24,10 +24,10 @@ typedef void (*func_p)(void*);
 
 #define _SET_WIDE_STRING(wide, str) \
   do { \
-    const char* astring = str; \
+    const char* chpl_macro_tmp = str; \
     (wide).locale = _localeID; \
-    (wide).addr = astring; \
-    (wide).size = strlen(astring) + 1; \
+    (wide).addr = chpl_macro_tmp; \
+    (wide).size = strlen(chpl_macro_tmp) + 1; \
   } while (0)
 
 #define _WIDE_CLASS_NE(wide1, wide2) \
@@ -38,8 +38,8 @@ typedef void (*func_p)(void*);
 
 #define _WIDE_CLASS_DYNAMIC_CAST(wide1, type, cond, wide2)              \
   do {                                                                  \
-    _class_id _tmp;                                                     \
-    _COMM_WIDE_CLASS_GET_OFF(_class_id, _tmp, wide2, object, _cid);     \
+    _class_id chpl_macro_tmp;                                           \
+    _COMM_WIDE_CLASS_GET_OFF(_class_id, chpl_macro_tmp, wide2, object, _cid); \
     (wide1).locale = (wide2).locale;                                    \
     (wide1).addr = (cond) ? (type)((wide2).addr) : NULL;                \
   } while (0)
@@ -59,28 +59,28 @@ typedef void (*func_p)(void*);
 
 #define _COMM_WIDE_ARRAY_GET(type, wide_type, local, cls, ind, stype, sfield, etype) \
   do {                                                                  \
-    wide_type wide;                                                     \
-    _COMM_SET_WIDE_REF_WIDE_ARRAY(type, wide, cls, ind, stype, sfield, etype); \
-    _COMM_WIDE_GET(etype, local, wide);                                 \
+    wide_type chpl_macro_tmp;                                           \
+    _COMM_SET_WIDE_REF_WIDE_ARRAY(type, chpl_macro_tmp, cls, ind, stype, sfield, etype); \
+    _COMM_WIDE_GET(etype, local, chpl_macro_tmp);                       \
   } while (0)
 
 #define _COMM_WIDE_ARRAY_SET(type, wide_type, cls, ind, stype, sfield, etype, val) \
   do {                                                                  \
-    wide_type wide;                                                     \
-    _COMM_SET_WIDE_REF_WIDE_ARRAY(type, wide, cls, ind, stype, sfield, etype); \
-    _COMM_WIDE_PUT(etype, wide, val);                                    \
+    wide_type chpl_macro_tmp;                                           \
+    _COMM_SET_WIDE_REF_WIDE_ARRAY(type, chpl_macro_tmp, cls, ind, stype, sfield, etype); \
+    _COMM_WIDE_PUT(etype, chpl_macro_tmp, val);                         \
   } while (0)
 
 #define _COMM_WIDE_GET(type, local, wide)                               \
   _chpl_comm_get(&(local), (wide).locale, (wide).addr, sizeof(type))
 
-#define _COMM_WIDE_GET_STRING(local, wide)                                \
-  do {                                                                    \
-    char* allocation = _chpl_malloc((wide).size,                          \
-                                    sizeof(char),                         \
-                                    "wide_get_string", -1, "<internal>"); \
-    _chpl_comm_get(allocation, (wide).locale, (wide).addr, (wide).size);  \
-    local = allocation;                                                   \
+#define _COMM_WIDE_GET_STRING(local, wide)                              \
+  do {                                                                  \
+    char* chpl_macro_tmp = _chpl_malloc((wide).size,                    \
+                                        sizeof(char),                   \
+                                        "wide_get_string", -1, "<internal>"); \
+    _chpl_comm_get(chpl_macro_tmp, (wide).locale, (wide).addr, (wide).size); \
+    local = chpl_macro_tmp;                                             \
   } while (0)
 
 #define _COMM_WIDE_GET_OFF(type, local, wide, stype, sfield)            \
@@ -108,37 +108,37 @@ typedef void (*func_p)(void*);
 
 #define _COMM_WIDE_CLASS_GET_CID(local, wide, cid, stype)               \
   do {                                                                  \
-    _class_id _cid_tmp;                                                 \
-    _COMM_WIDE_CLASS_GET_OFF(_class_id, _cid_tmp, wide, stype, _cid);   \
-    local = _cid_tmp == cid;                                            \
+    _class_id chpl_macro_tmp;                                           \
+    _COMM_WIDE_CLASS_GET_OFF(_class_id, chpl_macro_tmp, wide, stype, _cid); \
+    local = chpl_macro_tmp == cid;                                      \
   } while (0)
 
 #define _COMM_WIDE_PUT(type, wide, local)                               \
   do {                                                                  \
-    type _imm = local;                                                  \
-    _chpl_comm_put(&_imm, (wide).locale, (wide).addr, sizeof(type));    \
+    type chpl_macro_tmp2 = local;                                       \
+    _chpl_comm_put(&chpl_macro_tmp2, (wide).locale, (wide).addr, sizeof(type)); \
   } while (0)
 
 #define _COMM_WIDE_PUT_OFF(type, wide, local, stype, sfield)            \
   do {                                                                  \
-    type imm = local;                                                   \
-    _chpl_comm_put(&imm,                                                \
+    type chpl_macro_tmp = local;                                        \
+    _chpl_comm_put(&chpl_macro_tmp,                                     \
                    (wide).locale,                                       \
                    (char*)((wide).addr) +                               \
-                   ((char*)(&(((stype*)(&imm))->sfield)) -              \
-                    (char*)(&imm)),                                     \
-                   sizeof(((stype*)(&imm))->sfield));                   \
+                   ((char*)(&(((stype*)(&chpl_macro_tmp))->sfield)) -   \
+                    (char*)(&chpl_macro_tmp)),                          \
+                   sizeof(((stype*)(&chpl_macro_tmp))->sfield));        \
   } while (0)
 
 #define _COMM_WIDE_CLASS_PUT_OFF(type, wide, local, stype, sfield)      \
   do {                                                                  \
-    type imm = local;                                                   \
-    _chpl_comm_put(&imm,                                                \
+    type chpl_macro_tmp = local;                                        \
+    _chpl_comm_put(&chpl_macro_tmp,                                     \
                    (wide).locale,                                       \
                    (char*)((wide).addr) +                               \
-                   ((char*)(&(((stype)(&imm))->sfield)) -               \
-                    (char*)(&imm)),                                     \
-                   sizeof(((stype)(&imm))->sfield));                    \
+                   ((char*)(&(((stype)(&chpl_macro_tmp))->sfield)) -    \
+                    (char*)(&chpl_macro_tmp)),                          \
+                   sizeof(((stype)(&chpl_macro_tmp))->sfield));         \
   } while (0)
 
 #define _COMM_BROADCAST_GLOBAL_VARS(numGlobals)                 \
