@@ -346,7 +346,8 @@ void normalize(BaseAST* base) {
       currentLineno = fn->lineno;
       currentFilename = fn->filename;
       if (!fn->hasPragma("type constructor") &&
-          !fn->hasPragma("default constructor"))
+          !fn->hasPragma("default constructor") &&
+          !fn->isWrapper)
         fixup_array_formals(fn);
       clone_parameterized_primitive_methods(fn);
       fixup_query_formals(fn);

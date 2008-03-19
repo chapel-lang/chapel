@@ -495,9 +495,10 @@ static void build_constructor(ClassType* ct) {
     Expr* init = field->defPoint->init->remove();
 
     bool hasType = exprType;
+    bool hasInit = init;
     if (init) {
       if (!field->isTypeVariable && !exprType) {
-        exprType = init->copy();
+        exprType = new CallExpr(PRIMITIVE_TYPEOF, init->copy());
       }
     } else if (exprType && !field->isTypeVariable && !field->isParam) {
       if (isSparseDomain(exprType))
@@ -509,38 +510,21 @@ static void build_constructor(ClassType* ct) {
       if (!isSparseDomain(exprType))
         init = new CallExpr("_createFieldDefault", exprType->copy(), init);
     }
-    if (init)
-      arg->defaultExpr = new BlockStmt(init, BLOCK_SCOPELESS);
+    if (init) {
+      if (hasInit)
+        arg->defaultExpr = new BlockStmt(init, BLOCK_SCOPELESS);
+      else
+        arg->defaultExpr = new BlockStmt(new SymExpr(gNil));
+    }
     if (exprType)
       arg->typeExpr = new BlockStmt(exprType, BLOCK_SCOPELESS);
     arg->isTypeVariable = field->isTypeVariable;
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
     fn->insertFormalAtTail(arg);
-
-    if (!ct->symbol->hasPragma("heap") && !ct->symbol->hasPragma("ref") && !arg->isTypeVariable && arg->intent != INTENT_PARAM) {
-      if (hasType) {
-        VarSymbol* tmp = new VarSymbol("_tmp");
-        fn->insertAtTail(new DefExpr(tmp));
-        Expr* init = NULL;
-        if (isSparseDomain(exprType))
-          init = exprType->copy();
-        else
-          init = new CallExpr(PRIMITIVE_INIT, exprType->copy());
-        fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, init));
-        fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_set_field", tmp, arg)));
-        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                      new_StringSymbol(arg->name), tmp));
-      } else {
-        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                      new_StringSymbol(arg->name),
-                                      new CallExpr("_copy", arg)));
-      }
-    } else {
-      fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
-                                    new_StringSymbol(arg->name),
-                                    arg));
-    }
+    fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+                                  new_StringSymbol(arg->name),
+                                  arg));
   }
 
   if (meme)

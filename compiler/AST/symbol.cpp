@@ -799,14 +799,18 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
   ASTMap copy_map;
   for_formals(formal, this) {
     if (!defaults->in(formal)) {
-      Symbol* wrapper_formal = formal->copy();
+      ArgSymbol* wrapper_formal = formal->copy();
       if (_this == formal)
         wrapper->_this = wrapper_formal;
       copy_map.put(formal, wrapper_formal);
       wrapper->insertFormalAtTail(wrapper_formal);
       if (formal->type->symbol->hasPragma("ref"))
         call->insertAtTail(new CallExpr(PRIMITIVE_SET_REF, wrapper_formal));
-      else
+      else if (this->hasPragma("default constructor") && wrapper_formal->typeExpr) {
+        BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
+        wrapper->insertAtTail(typeExpr);
+        call->insertAtTail(new CallExpr("_createFieldDefault", typeExpr->body.tail->remove(), wrapper_formal));
+      } else
         call->insertAtTail(wrapper_formal);
       if (Symbol* value = paramMap->get(formal))
         paramMap->put(wrapper_formal, value);
@@ -827,7 +831,13 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
            isSymExpr(formal->defaultExpr->body.tail) &&
            toSymExpr(formal->defaultExpr->body.tail)->var == gNil)) {
         // use default value for type as default value for formal argument
-        wrapper->insertAtTail(new DefExpr(temp, NULL, new SymExpr(formal->type->symbol)));
+        if (formal->typeExpr) {
+          BlockStmt* typeExpr = formal->typeExpr->copy();
+          wrapper->insertAtTail(typeExpr);
+          wrapper->insertAtTail(new DefExpr(temp, NULL, typeExpr->body.tail->remove()));
+        } else {
+          wrapper->insertAtTail(new DefExpr(temp, NULL, new SymExpr(formal->type->symbol)));
+        }
       } else {
         wrapper->insertAtTail(new DefExpr(temp));
         BlockStmt* defaultExpr = formal->defaultExpr->copy();

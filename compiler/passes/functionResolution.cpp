@@ -150,9 +150,6 @@ resolveFormals(FnSymbol* fn) {
         formal->type = formal->typeExpr->body.tail->typeInfo();
       }
 
-      if (formal->type != dtUnknown)
-        formal->typeExpr->remove();
-
       //
       // change type of this on record methods to reference type
       //
@@ -1731,7 +1728,6 @@ insertFormalTemps(FnSymbol* fn) {
       !strcmp(fn->name, "_copy") ||
       !strcmp(fn->name, "=") ||
       !strcmp(fn->name, "_createFieldDefault") ||
-      !strcmp(fn->name, "_set_field") ||
       fn->hasPragma("ref"))
     return;
   ASTMap formals2vars;
