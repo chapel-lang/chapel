@@ -794,6 +794,8 @@ static void buildDefaultWriteFunction(ClassType* ct) {
     for_fields(tmp, ct) {
       if (tmp->isTypeVariable)
         continue;
+      if (!strcmp("outer", tmp->name))
+        continue;
       if (tmp->hasPragma("super class")) {
         bool printedSomething =
           buildWriteSuperClass(fileArg, fn, buildDotExpr(fn->_this, tmp->name), fn->_this->type->dispatchParents.v[0]);

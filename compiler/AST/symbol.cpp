@@ -794,14 +794,28 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
   if (fnTag != FN_ITERATOR)
     wrapper->retType = retType;
   wrapper->cname = astr("_default_wrap_", cname);
+  ASTMap copy_map;
+  if (hasPragma("default constructor")) {
+    wrapper->_this = this->_this->copy();
+    copy_map.put(this->_this, wrapper->_this);
+    wrapper->insertAtTail(new DefExpr(wrapper->_this));
+    if (defaults->v[defaults->n-1]->hasPragma("is meme")) {
+      wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, wrapper->_this,
+                              new CallExpr(PRIMITIVE_CHPL_ALLOC, wrapper->_this,
+                                new_StringSymbol(astr("instance of class ",
+                                                    retType->symbol->name)))));
+      wrapper->insertAtTail(new CallExpr(PRIMITIVE_SETCID, wrapper->_this));
+    }
+  }
   CallExpr* call = new CallExpr(this);
   call->square = isSquare;
-  ASTMap copy_map;
   for_formals(formal, this) {
     if (!defaults->in(formal)) {
       ArgSymbol* wrapper_formal = formal->copy();
       if (_this == formal)
         wrapper->_this = wrapper_formal;
+      if (formal->hasPragma("is meme"))
+        wrapper->_this->defPoint->insertAfter(new CallExpr(PRIMITIVE_MOVE, wrapper->_this, wrapper_formal));
       copy_map.put(formal, wrapper_formal);
       wrapper->insertFormalAtTail(wrapper_formal);
       if (formal->type->symbol->hasPragma("ref"))
@@ -817,6 +831,14 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
       call->insertAtTail(paramMap->get(formal));
+    } else if (formal->hasPragma("is meme")) {
+
+      //
+      // hack: why is the type of meme set to dtNil?
+      //
+      formal->type = wrapper->_this->type;
+
+      call->insertAtTail(wrapper->_this);
     } else {
       const char* temp_name = astr("_default_temp_", formal->name);
       VarSymbol* temp = new VarSymbol(temp_name);

@@ -1250,7 +1250,7 @@ resolve_call(CallInfo* info) {
 
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
 
-    if (call->methodTag && !visibleFn->noParens)
+    if (call->methodTag && !visibleFn->noParens && !visibleFn->hasPragma("type constructor"))
       continue;
     addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
                  &info->actualTypes, &info->actualSyms, &info->actualNames,
@@ -1681,7 +1681,7 @@ resolveCall(CallExpr* call) {
       }
     }
     if (rhsType == dtUnknown)
-      INT_FATAL(call, "Unable to resolve type");
+      USR_FATAL(call, "unable to resolve type");
 
     ClassType* ct = toClassType(lhsType);
     if (rhsType == dtNil && lhsType != dtNil && (!ct || ct->classTag != CLASS_CLASS))
