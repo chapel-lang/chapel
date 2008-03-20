@@ -1284,6 +1284,7 @@ count_instantiate_with_recursion(Type* t) {
 static Type*
 getNewSubType(FnSymbol* fn, Type* t, BaseAST* key) {
   if (t->symbol->hasPragma( "sync") &&
+      strcmp(fn->name, "_construct__tuple") &&
       !fn->hasPragma("heap") &&
       !fn->hasPragma("ref")) {
     if (!fn->hasPragma("sync") ||
@@ -1302,8 +1303,9 @@ getNewSubType(FnSymbol* fn, Type* t, BaseAST* key) {
         return getNewSubType(fn, nt, key);
       }
     }
-  } else if (!fn->hasPragma("tuple") &&
-             t->symbol->hasPragma("ref") && !fn->hasPragma("ref")) {
+  } else if (t->symbol->hasPragma("ref") &&
+             !fn->hasPragma("ref") &&
+             !fn->hasPragma("tuple")) {
     // instantiation of a formal of ref type loses ref
     return getNewSubType(fn, getValueType(t), key);
   }
