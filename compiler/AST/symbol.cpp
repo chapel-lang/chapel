@@ -785,6 +785,21 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map,
 }
 
 
+//
+// return true if formal matches name of a subsequent formal
+//
+static bool
+isShadowedField(ArgSymbol* formal) {
+  DefExpr* tmp = toDefExpr(formal->defPoint->next);
+  while (tmp) {
+    if (!strcmp(tmp->sym->name, formal->name))
+      return true;
+    tmp = toDefExpr(tmp->next);
+  }
+  return false;
+}
+
+
 FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
                                     Map<Symbol*,Symbol*>* paramMap,
                                     bool isSquare) {
@@ -795,7 +810,11 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
     wrapper->retType = retType;
   wrapper->cname = astr("_default_wrap_", cname);
   ASTMap copy_map;
-  if (hasPragma("default constructor")) {
+  bool specializeDefaultConstructor =
+    hasPragma("default constructor") &&
+    !_this->type->symbol->hasPragma("sync") &&
+    !_this->type->symbol->hasPragma("ref");
+  if (specializeDefaultConstructor) {
     wrapper->_this = this->_this->copy();
     copy_map.put(this->_this, wrapper->_this);
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
@@ -820,7 +839,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
       wrapper->insertFormalAtTail(wrapper_formal);
       if (formal->type->symbol->hasPragma("ref"))
         call->insertAtTail(new CallExpr(PRIMITIVE_SET_REF, wrapper_formal));
-      else if (this->hasPragma("default constructor") && wrapper_formal->typeExpr) {
+      else if (specializeDefaultConstructor && wrapper_formal->typeExpr) {
         BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
         wrapper->insertAtTail(typeExpr);
         call->insertAtTail(new CallExpr("_createFieldDefault", typeExpr->body.tail->remove(), wrapper_formal));
@@ -828,6 +847,11 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
         call->insertAtTail(wrapper_formal);
       if (Symbol* value = paramMap->get(formal))
         paramMap->put(wrapper_formal, value);
+      if (specializeDefaultConstructor && strcmp(name, "_construct__tuple"))
+        if (!formal->isTypeVariable && !paramMap->get(formal) && formal->type != dtMethodToken)
+          if (wrapper->_this->type->getField(formal->name)->defPoint->parentSymbol == wrapper->_this->type->symbol)
+            if (!isShadowedField(formal))
+              wrapper->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, wrapper->_this, new_StringSymbol(formal->name), wrapper_formal));
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
       call->insertAtTail(paramMap->get(formal));
@@ -873,6 +897,11 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
         }
       }
       call->insertAtTail(temp);
+      if (specializeDefaultConstructor && strcmp(name, "_construct__tuple"))
+        if (!formal->isTypeVariable)
+          if (wrapper->_this->type->getField(formal->name)->defPoint->parentSymbol == wrapper->_this->type->symbol)
+            if (!isShadowedField(formal))
+              wrapper->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, wrapper->_this, new_StringSymbol(formal->name), temp));
     }
   }
   update_symbols(wrapper->body, &copy_map);

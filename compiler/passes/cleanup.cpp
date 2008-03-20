@@ -202,6 +202,15 @@ static void normalize_nested_function_expressions(DefExpr* def) {
       (!strncmp("_reduce_scan", def->sym->name, 12)) ||
       (!strncmp("_forif_fn", def->sym->name, 9))) {
     Expr* stmt = def->getStmtExpr();
+    if (!stmt) {
+      if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
+        if (ClassType* ct = toClassType(ts->type)) {
+          def->replace(new SymExpr(def->sym->name));
+          ct->addDeclarations(def, true);
+          return;
+        }
+      }
+    }
     def->replace(new SymExpr(def->sym->name));
     stmt->insertBefore(def);
   }
@@ -498,7 +507,7 @@ static void build_constructor(ClassType* ct) {
     bool hasInit = init;
     if (init) {
       if (!field->isTypeVariable && !exprType) {
-        exprType = new CallExpr(PRIMITIVE_TYPEOF, init->copy());
+        exprType = new CallExpr(PRIMITIVE_TYPEOF, new CallExpr("_copy", init->copy()));
       }
     } else if (exprType && !field->isTypeVariable && !field->isParam) {
       if (isSparseDomain(exprType))
@@ -509,6 +518,9 @@ static void build_constructor(ClassType* ct) {
     if (hasType && !field->isTypeVariable && !field->isParam) {
       if (!isSparseDomain(exprType))
         init = new CallExpr("_createFieldDefault", exprType->copy(), init);
+    }
+    if (!hasType && !field->isTypeVariable && !field->isParam) {
+      init = new CallExpr("_copy", init);
     }
     if (init) {
       if (hasInit)
@@ -669,27 +681,23 @@ void cleanup(void) {
     currentFilename = ast->filename;
     if (CallExpr *call = toCallExpr(ast)) {
       if (call->isNamed("_build_array_type") && call->numActuals() == 4) {
-        if (call->getStmtExpr()) {
-          if (DefExpr *def = toDefExpr(call->getStmtExpr())) {
-            CallExpr *tinfo = toCallExpr(def->exprType);
-            Expr *indices = tinfo->get(3);
-            Expr *iter = tinfo->get(4);
-            indices->remove();
-            iter->remove();
-            if (def->init) {
-              BlockStmt *forblk = buildForLoopExpr(indices, iter, def->init->copy());
+        if (DefExpr *def = toDefExpr(call->parentExpr)) {
+          CallExpr *tinfo = toCallExpr(def->exprType);
+          Expr *indices = tinfo->get(3);
+          Expr *iter = tinfo->get(4);
+          indices->remove();
+          iter->remove();
+          if (def->init) {
+            BlockStmt *forblk = buildForLoopExpr(indices, iter, def->init->copy());
             
-              FnSymbol *forall_init = new FnSymbol("_forallinit");
-              forall_init->fnTag = FN_ITERATOR;
-              forall_init->insertAtTail(forblk);
-              def->insertBefore(new DefExpr(forall_init));
-              def->init->replace(new CallExpr(forall_init));
-            }
-          } else {
-            INT_FATAL(call, "missing parent def expr");
+            FnSymbol *forall_init = new FnSymbol("_forallinit");
+            forall_init->fnTag = FN_ITERATOR;
+            forall_init->insertAtTail(forblk);
+            def->insertBefore(new DefExpr(forall_init));
+            def->init->replace(new CallExpr(forall_init));
           }
         } else {
-          INT_FATAL(call, "missing parent stmt");
+          USR_FATAL(call, "unhandled case of array type loop expression");
         }
       }
     }

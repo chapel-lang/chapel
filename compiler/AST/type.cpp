@@ -273,33 +273,39 @@ ClassType::copyInner(ASTMap* map) {
 }
 
 
-void ClassType::addDeclarations(Expr* expr, bool tail) {
-  Vec<BaseAST*> asts;
-
-  collect_top_asts(&asts, expr);
-
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        methods.add(fn);
-        if (fn->_this) {
-          // must be constructor of nested class
-          fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", this);
-          fn->insertFormalAtHead(new DefExpr(fn->_outer));
-        } else {
-          fn->_this = new ArgSymbol(INTENT_BLANK, "this", this);
-          fn->insertFormalAtHead(new DefExpr(fn->_this));
-        }
-        fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-        fn->isMethod = true;
-      }
-      if (def->parentSymbol || def->list)
-        def->remove();
-      if (tail)
-        fields.insertAtTail(def);
-      else
-        fields.insertAtHead(def);
+static void
+addDeclaration(ClassType* ct, DefExpr* def, bool tail) {
+  if (FnSymbol* fn = toFnSymbol(def->sym)) {
+    ct->methods.add(fn);
+    if (fn->_this) {
+      // must be constructor of nested class
+      fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", ct);
+      fn->insertFormalAtHead(new DefExpr(fn->_outer));
+    } else {
+      fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+      fn->insertFormalAtHead(new DefExpr(fn->_this));
     }
+    fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+    fn->isMethod = true;
+  }
+  if (def->parentSymbol || def->list)
+    def->remove();
+  if (tail)
+    ct->fields.insertAtTail(def);
+  else
+    ct->fields.insertAtHead(def);
+}
+
+
+void ClassType::addDeclarations(Expr* expr, bool tail) {
+  if (DefExpr* def = toDefExpr(expr)) {
+    addDeclaration(this, def, tail);
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    for_alist(expr, block->body) {
+      addDeclarations(expr, tail);
+    }
+  } else {
+    INT_FATAL(expr, "unexpected case");
   }
 }
 
