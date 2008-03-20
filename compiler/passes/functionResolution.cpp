@@ -2438,7 +2438,7 @@ postFold(Expr* expr) {
       if (fn->canType && fn->getReturnSymbol()->isTypeVariable)
         fn->retTag = RET_TYPE;
       if (fn->retTag == RET_TYPE) {
-        VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
+        Symbol* ret = fn->getReturnSymbol();
         if (!ret->type->symbol->hasPragma("array")) {
           result = new SymExpr(ret->type->symbol);
           expr->replace(result);
@@ -3556,7 +3556,7 @@ pruneResolvedTree() {
       }
       if (fn->retTag == RET_TYPE) {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
-        if (ret->type->symbol->hasPragma("array")) {
+        if (ret && ret->type->symbol->hasPragma("array")) {
           ret->type = buildArrayTypeInfo(ret->type);
           fn->retType = ret->type;
           fn->retTag = RET_VALUE;

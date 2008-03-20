@@ -42,9 +42,11 @@ void buildDefaultFunctions(void) {
     if (TypeSymbol* type = toTypeSymbol(ast)) {
       if (ClassType* ct = toClassType(type->type)) {
         for_fields(field, ct) {
-          VarSymbol *cfield = toVarSymbol(field);
-          // if suppress for cobegin created arg classes
-          if (cfield && strcmp(field->name, "_promotionType")) {
+          if (isVarSymbol(field)) {
+            if (strcmp(field->name, "_promotionType")) {
+              build_getter(ct, field);
+            }
+          } else if (isEnumType(field->type)) {
             build_getter(ct, field);
           }
         }
@@ -181,7 +183,11 @@ static void build_getter(ClassType* ct, Symbol *field) {
             new CallExpr(PRIMITIVE_UNION_GETID, _this),
               new_IntSymbol(field->id)),
           new CallExpr("halt", new_StringSymbol("illegal union access")))));
-  if (field->isTypeVariable || field->hasPragma("super class"))
+  if (isTypeSymbol(field) && isEnumType(field->type)) {
+    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, field));
+    // better flatten enumerated types now
+    ct->symbol->defPoint->insertBefore(field->defPoint->remove());
+  } else if (field->isTypeVariable || field->hasPragma("super class"))
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   else
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
