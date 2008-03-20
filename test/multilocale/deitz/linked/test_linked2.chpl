@@ -1,4 +1,4 @@
-class C {
+record C {
   var x: int;
 }
 
