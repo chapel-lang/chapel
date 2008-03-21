@@ -9,7 +9,7 @@
 #
 
 $comm = $ENV{'CHPL_COMM'};
-if ($comm eq "gasnet") {
+#if ($comm eq "gasnet") {
   $conduit = $ARGV[0];
   $segment = $ENV{'CHPL_GASNET_SEGMENT'};
   $alignment = $ENV{'CHPL_GASNET_FORCE_ALIGNED'};
@@ -42,7 +42,7 @@ if ($comm eq "gasnet") {
   if ($devel ne "" && $devel ne "false") {
     $cfgOpts = "$cfgOpts --enable-debug"
   }
-}
+#}
 
 print "$cfgOpts\n";
 exit(0);
