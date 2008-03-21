@@ -1,6 +1,0 @@
-error message: use before def of argument
-
-Because of our scope resolution rules, the min "function" refers to
-the min formal argument, so this should be an error.  The current
-message is poor -- should be more like a use-before-def of the
-argument.

@@ -44,6 +44,9 @@ checkUseBeforeDefs() {
         if (CallExpr* call = toCallExpr(ast)) {
           if (call->isPrimitive(PRIMITIVE_MOVE))
             defined.set_add(toSymExpr(call->get(1))->var);
+        } else if (DefExpr* def = toDefExpr(ast)) {
+          if (isArgSymbol(def->sym))
+            defined.set_add(def->sym);
         } else if (SymExpr* sym = toSymExpr(ast)) {
           CallExpr* call = toCallExpr(sym->parentExpr);
           if (call && call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym)
@@ -59,7 +62,7 @@ checkUseBeforeDefs() {
               }
             }
           }
-          if (toVarSymbol(sym->var)) {
+          if (isVarSymbol(sym->var) || isArgSymbol(sym->var)) {
             if (sym->var->defPoint &&
                 (sym->var->defPoint->parentSymbol == fn ||
                  (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
