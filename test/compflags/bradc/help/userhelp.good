@@ -8,10 +8,13 @@ Code Size Options:
       --count-tokens                     Count tokens
       --print-code-size                  Print code size statistics
 
+Parallelism Control Options:
+      --[no-]local                       Constrain execution to one locale
+      --[no-]serial                      Serialize parallel concepts
+
 Optimization Control Options:
       --baseline                         Disable almost all optimizations
       --fast                             Use fast default settings
-      --[no-]local                       Compile program for a single locale
       --[no-]ieee-float                  Enable non-ieee compliant
                                          optimizations
       --no-copy-propagation              Disable copy propagation
@@ -22,7 +25,6 @@ Optimization Control Options:
       --no-inline                        Do not inline functions
       --no-single-loop-iterator-opt      Disable the optimization of iterators
                                          composed of a single loop
-      --serial                           Serialize program
 
 Run-time Semantic Check Options:
       --no-checks                        Disable all following checks

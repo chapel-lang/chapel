@@ -16,6 +16,19 @@
 
 FILE* html_index_file = NULL;
 
+// make --local on by default if CHPL_COMM is unset or none
+static bool setDefaultFLocal(void) {
+  char* chpl_comm = getenv("CHPL_COMM");
+  return (chpl_comm == NULL || !strcmp(chpl_comm, "none"));
+}
+
+// make --serial on by default if CHPL_THREADS is set to none
+static bool setDefaultFSerial(void) {
+  char* chpl_threads = getenv("CHPL_THREADS");
+  return (chpl_threads != NULL && !strcmp(chpl_threads, "none"));
+}
+
+
 int fdump_html = 0;
 static char libraryFilename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
@@ -41,8 +54,8 @@ bool fNoNilChecks = false;
 bool fNoChecks = false;
 bool fNoInline = false;
 bool fShortNames = false;
-bool fSerial = false;
-bool fLocal = false;
+bool fSerial = setDefaultFSerial();
+bool fLocal = setDefaultFLocal();
 bool fieeefloat = true;
 bool report_inlining = false;
 char chplhome[FILENAME_MAX] = ".";
@@ -236,17 +249,19 @@ static ArgumentDescription arg_desc[] = {
  {"count-tokens", ' ', NULL, "Count tokens", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
  {"print-code-size", ' ', NULL, "Print code size statistics", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
 
+ {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
+ {"local", ' ', NULL, "Constrain execution to one locale", "N", &fLocal, "CHPL_LOCAL", NULL},
+ {"serial", ' ', NULL, "Serialize parallel concepts", "N", &fSerial, "CHPL_SERIAL", NULL},
+
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable almost all optimizations", "F", &fBaseline, "CHPL_BASELINE", NULL},
  {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, NULL, setFastFlag},
- {"local", ' ', NULL, "Compile program for a single locale", "N", &fLocal, "CHPL_LOCAL", NULL},
  {"ieee-float", ' ', NULL, "Enable non-ieee compliant optimizations", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
  {"no-copy-propagation", ' ', NULL, "Disable copy propagation", "F", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"no-expand-iterators-inline-opt", ' ', NULL, "Disable the expansion of iterators inlined around loop bodies", "F", &fNoExpandIteratorsInlineOpt, "CHPL_DISABLE_EXPAND_ITERATORS_INLINE_OPT", NULL},
  {"no-flow-analysis", ' ', NULL, "Disable optimizations requiring flow analysis", "F", &fNoFlowAnalysis, "CHPL_NO_FLOW_ANALYSIS", NULL},
  {"no-inline", ' ', NULL, "Do not inline functions", "F", &fNoInline, NULL, NULL},
  {"no-single-loop-iterator-opt", ' ', NULL, "Disable the optimization of iterators composed of a single loop", "F", &fNoSingleLoopIteratorOpt, "CHPL_DISABLE_SINGLE_LOOP_ITERATOR_OPT", NULL},
- {"serial", ' ', NULL, "Serialize program", "F", &fSerial, "CHPL_SERIAL", NULL},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
