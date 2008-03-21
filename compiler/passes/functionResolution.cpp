@@ -1174,7 +1174,10 @@ printResolutionError(const char* error,
       USR_FATAL(call, "invalid tuple");
     }
   } else if (!strcmp("=", info->name)) {
-    if (info->actualTypes.v[1] == dtNil) {
+    if (info->actualSyms.v[0] && !info->actualSyms.v[0]->isTypeVariable &&
+        info->actualSyms.v[1] && info->actualSyms.v[1]->isTypeVariable) {
+      USR_FATAL(call, "illegal assignment of type to value");
+    } else if (info->actualTypes.v[1] == dtNil) {
       USR_FATAL(call, "type mismatch in assignment of nil to %s",
                 toString(info->actualTypes.v[0]));
     } else {
