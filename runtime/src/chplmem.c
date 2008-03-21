@@ -487,14 +487,12 @@ void* _chpl_calloc(size_t number, size_t size, const char* description,
     memAlloc = calloc(number, size);
     confirm(memAlloc, description, lineno, filename);
   } else if (whichMalloc == 2) {
-    int i;
     memAlloc = _chpl_malloc(number, size, description, lineno, filename);
     confirm(memAlloc, description, lineno, filename);
-    for (i=0; i < number*size; i++) {
-      *(char*)memAlloc = 0;
-    }
+    memset(memAlloc, 0, number*size);
   } else {
     chpl_error("bad malloc type", lineno, filename);
+    memAlloc = NULL; // to avoid warnings
   }
 
   if (memtrace) {
