@@ -1,0 +1,3 @@
+bug: destructured tuple variable declaration of 1-tuple
+
+Should this ignore the parentheses.  Should we ignore the parentheses on types?
