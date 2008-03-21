@@ -16,7 +16,6 @@ feature request: more tasks [test/parallel/coforall/bradc/tooManyThreads-revorde
 
 multilocale issues
 ------------------
-bug: accessing localeID() in on in serial block [test/multilocale/diten/serialon]
 bug: on clause inside iterator [test/users/shetag/iteratorWithOn]
 bug: spin-waiting for a variable to be changed by a remote begin fails [test/multilocale/diten/beginInOn]
 multilocale: var declaration in on statement [test/multilocale/deitz/test_on_var_decl1]
@@ -28,30 +27,8 @@ semantic: No such thing as a remote domain? [test/multilocale/diten/remoteDomain
 vvv Brad considers these high priority for release v0.7
 
 
-default argument issues
------------------------
-bug: conditional expression in formal default expression [test/functions/deitz/test_default_conditional]
-bug: unnormalized formal type [test/functions/deitz/test_unnormalized_formal_type]
-bug: unnormalized formal type [test/multilocale/diten/nolocalArgDefaultGlobal/defaultValueGlobalTuple]
-bug: unnormalized formal type [test/multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalArray]
-bug: unnormalized formal type [test/multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalTuple]
-bug: unnormalized formal type [test/multilocale/diten/nolocalArgDefaultGlobal/recordFieldDefaultGlobalTuple]
-
-
 class constructor/member initializer issues
 -------------------------------------------
-bug: conditional expression in class body [test/classes/marybeth/test-init]
-bug: constructor method called in class body [test/classes/deitz/nested/test_nested1]
-bug: constructor method called in class body [test/classes/deitz/nested/test_nested2]
-bug: constructor method called in class body [test/classes/deitz/test_type_in_class1]
-bug: forall array type in class body [test/classes/bradc/arrayInClass/arrayInClassRecord2]
-bug: forall array type in class body [test/classes/bradc/arrayInClass/arrayInClassRecord3]
-bug: forall array type in class body [test/classes/bradc/arrayInClass/arrayInClassRecord]
-bug: method called in class body [test/classes/deitz/test_method_in_constructor2]
-bug: method called in class body [test/classes/deitz/test_method_in_constructor]
-bug: method called in class body [test/users/shetag/classWithArray/initArrWithFn]
-bug: sync array in class deadlocks in constructor [test/parallel/sync/bradc/syncArrInClass]
-bug: sync array in class deadlocks in constructor [test/users/shetag/fock/fock-3]
 bug: user-defined generic constructors [test/classes/dinan/generic_constructor]
 bug: user-defined generic constructors [test/reductions/bradc/manual/threeclasstypes-construct2]
 error message: use before def in class body [test/classes/dinan/circular_init_unbroken]
@@ -66,7 +43,6 @@ bug: calling the writeln function injects class symbols [test/modules/diten/test
 bug: symbols from 'use'd module nearer in scope than function args [test/modules/diten/returnClassDiffModule3]
 bug: enum in class scope [test/classes/bradc/enumInClass]
 bug: nested method shadows local var [test/classes/deitz/test_secondary_method4]
-bug: symbols defined in used module should be at outer scope than formals. [test/modules/diten/moduleShadowFormal]
 semantic: external class member visibility [test/modules/diten/returnClassDiffModule6]
 semantic: external class member visibility [test/modules/diten/returnClassDiffModule]
 semantic: external class member visibility [test/modules/diten/returnClassDiffModule2]
