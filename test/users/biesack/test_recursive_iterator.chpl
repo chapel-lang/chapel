@@ -24,7 +24,7 @@ module missing_return_bug {
       otherwise;
     }
     // uncomment the following to fix the compiler error
-    return -1;
+    // return -1;
   }
   def main() {
     var leaf0 = node(0,1), leaf2 = node(2,3), leaf3 = node(4,5),
