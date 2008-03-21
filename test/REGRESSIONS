@@ -23,16 +23,10 @@ differing memory sizes on different platforms
 ---------------------------------------------
 [Error matching program output for memory/shannon/memstatPrint]
 [Error matching program output for memory/shannon/printFinalMemStat]
-[Error matching program output for memory/shannon/printMemTable2]
 
 
-nondeterminism in test
-----------------------
-[Error matching program output for release/examples/opaque]
-
-
-some sort of undiagnosed race
------------------------------
+some sort of undiagnosed race -- seems more likely to be in our code than his
+-----------------------------------------------------------------------------
 [Error: Timed out executing program studies/590o/blerner/xml-parse]
 
 
@@ -43,8 +37,7 @@ baseline-specific regressions
 ???
 ---
 [Error matching program output for studies/sudoku/dinan/sudoku]
-[Error matching program output for studies/madness/common/test_likepy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching compiler output for trivial/deitz/test_type_expr_stmt]
 
 
 
@@ -54,14 +47,17 @@ gasnet-specific regressions
 
 ???
 ---
+[Error matching compiler output for parallel/sync/diten/tupleOfSync]
+[Error matching program output for multilocale/deitz/linked/test_linked3]
 [Error matching compiler output for classes/diten/allocateManyObjects]
 [Error matching program output for
 multilocale/diten/1DBlockDistributedJacobi]
 [Error matching program output for
 parallel/serial/figueroa/MultiLocaleSerial]
 
-race condition of some sort
----------------------------
+
+race condition of some sort?
+----------------------------
 [Error matching program output for
 studies/madness/aniruddha/madchap/test_gaxpy]
 [Error matching program output for
@@ -73,6 +69,98 @@ studies/madness/aniruddha/madchap/test_mul]
 ==========================
 intel-specific regressions
 ==========================
+
+New associative domain/array implementation results in compiler warnings
+related to default array argument value (apparently)
+------------------------------------------------------------------------
+[Error matching compiler output for arrays/deitz/domains/test_domain_arg2]
+[Error matching compiler output for arrays/deitz/domains/test_domain_arg3]
+[Error matching compiler output for arrays/deitz/opaque/test_opaque2]
+[Error matching compiler output for arrays/deitz/opaque/test_opaque3]
+[Error matching compiler output for
+arrays/deitz/test_array_of_associative_arrays]
+[Error matching compiler output for
+arrays/deitz/test_array_of_associative_domains]
+[Error matching compiler output for arrays/opaque/bradc/opaque-segfaults]
+[Error matching compiler output for arrays/opaque/bradc/opaqueIterate]
+[Error matching compiler output for associative/bradc/assocRecord]
+[Error matching compiler output for associative/bradc/clear]
+[Error matching compiler output for
+associative/deitz/arrays/test_indefinite1]
+[Error matching compiler output for
+associative/deitz/arrays/test_indefinite2]
+[Error matching compiler output for
+associative/deitz/arrays/test_indefinite3]
+[Error matching compiler output for
+associative/deitz/arrays/test_indefinite4]
+[Error matching compiler output for
+associative/deitz/arrays/test_indefinite5]
+[Error matching compiler output for
+associative/deitz/arrays/test_indefinite6]
+[Error matching compiler output for
+associative/deitz/arrays/test_indefinite7]
+[Error matching compiler output for
+associative/deitz/arrays/test_indefinite8]
+[Error matching compiler output for
+associative/deitz/domains/test_indefinite1]
+[Error matching compiler output for
+associative/deitz/domains/test_indefinite_domain_of_tuple]
+[Error matching compiler output for
+associative/deitz/domains/test_indefinite_remove2]
+[Error matching compiler output for
+associative/deitz/domains/test_indefinite_remove]
+[Error matching compiler output for
+associative/diten/assocArrayOfArithArray]
+[Error matching compiler output for associative/waynew/indef6]
+[Error matching compiler output for associative/waynew/indef7]
+[Error matching compiler output for associative/waynew/indef8-fail2]
+[Error matching compiler output for associative/waynew/indef8]
+[Error matching compiler output for associative/waynew/indef9]
+[Error matching compiler output for associative/waynew/indef9a]
+[Error matching compiler output for associative/waynew/tuple_domain_named]
+[Error matching compiler output for
+classes/bradc/arrayInClass/arrayOfArithInClass]
+[Error matching compiler output for
+classes/bradc/arrayInClass/genericArrayInClass-arith]
+[Error matching compiler output for
+classes/bradc/arrayInClass/genericArrayInClass-otharrs]
+[Error matching compiler output for
+classes/bradc/arrayInClass/genericArrayInClass-real]
+[Error matching compiler output for
+classes/bradc/arrayInClass/genericClassArray-named]
+[Error matching compiler output for domains/dinan/assoc_array_access_oob]
+[Error matching compiler output for domains/dinan/assoc_domain_remove_oob]
+[Error matching compiler output for npb/cg/bradc/cg-makea1-sparse-sort]
+[Error matching compiler output for npb/cg/bradc/cg-printa]
+[Error matching compiler output for npb/cg/bradc/cg-sparse]
+[Error matching compiler output for
+performance/compiler/bradc/cg-sparse-timecomp]
+[Error matching compiler output for release/examples/opaque]
+[Error matching compiler output for studies/590o/alaska/graph]
+[Error matching compiler output for studies/590o/bradc/intset]
+[Error matching compiler output for studies/590o/kfm/solver-blc]
+[Error matching compiler output for studies/590o/kfm/solver]
+[Error matching compiler output for
+studies/madness/aniruddha/madchap/recordBug/test_likepy]
+[Error matching compiler output for studies/madness/common/test_diff]
+[Error matching compiler output for studies/madness/common/test_gaxpy]
+[Error matching compiler output for studies/madness/common/test_likepy]
+[Error matching compiler output for studies/madness/common/test_showboxes]
+[Error matching compiler output for
+studies/madness/dinan/mad_chapel/test_diff]
+[Error matching compiler output for
+studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching compiler output for
+studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching compiler output for
+studies/madness/dinan/mad_chapel/test_showboxes]
+[Error matching compiler output for types/enum/diten/enumDom]
+[Error matching compiler output for users/shetag/assocDomOfRecord]
+[Error matching compiler output for users/shetag/assocInRecord]
+[Error matching compiler output for users/shetag/assoc]
+[Error matching compiler output for users/shetag/assocarr]
+[Error matching program output for
+memory/shannon/outofmemory/mallocOutOfMemory]
 
 Sometimes works/sometimes fails
 -------------------------------
@@ -191,11 +279,6 @@ lg2/exp2
 cygwin-specific failures
 ========================
 
-some sort of sig_send/wait/cond_init problem
-(see also compilation error for baseline)
---------------------------------------------
-[Error matching compiler output for release/examples/quicksort]
-
 print occurs in 0 seconds!?  Timers not working?
 ------------------------------------------------
 [Error matching program output for spec/marybeth/use]
@@ -205,9 +288,10 @@ print occurs in 0 seconds!?  Timers not working?
 x1/x2-specific failures
 =======================
 
-strange error -- X1 compiler? apsim?
-------------------------------------
-[Error matching program output for release/examples/genericStack] 
+compiler warning
+----------------
+[Error matching program output for release/examples/opaque]
+
 
 
 ============================
