@@ -404,6 +404,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_GET_LOCALE, "_get_locale", returnInfoInt32);
   prim_def(PRIMITIVE_LOCALE_ID, "_localeID", returnInfoInt32);
 
+  prim_def(PRIMITIVE_ALLOC_GVR, "alloc_global_vars_registry", returnInfoVoid);
   prim_def(PRIMITIVE_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_HEAP_BROADCAST_GLOBAL_VARS, "_heap_broadcast_global_vars", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_PRIVATE_BROADCAST, "_private_broadcast", returnInfoVoid, true, true);

@@ -7,6 +7,7 @@
 #include "chplcomm.h"
 #include "chplexit.h"
 #include "error.h"
+#include "chplmem.h"
 
 // Helper functions
 
@@ -78,6 +79,8 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
 void _chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single locale\n");
 }
+
+void _chpl_comm_set_malloc_type(void) { whichMalloc = 1; }
 
 void _chpl_comm_broadcast_global_vars(int numGlobals) { }
 

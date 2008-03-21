@@ -4,3 +4,7 @@
 #
 #
 CHPL_MAKE_COMM = $(shell $(CHAPEL_ROOT)/util/comm.pl)
+
+ifeq ($(CHPL_MAKE_COMM), gasnet)
+  CHPL_GASNET_CONDUIT = udp
+endif

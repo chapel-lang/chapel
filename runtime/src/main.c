@@ -16,6 +16,7 @@
 int main(int argc, char* argv[]) {
   // Was this version of main invoked by the user, or by the comm layer?
   int userInvocation = _chpl_comm_user_invocation(argc, argv);
+  _chpl_comm_set_malloc_type();
 
   if (userInvocation) {
     //
@@ -48,7 +49,6 @@ int main(int argc, char* argv[]) {
     {
       int commArgc;
       char** commArgv;
-
       commArgv = _chpl_comm_create_argcv(execNumLocales, argc, argv, &commArgc);
       _chpl_comm_init(&commArgc, &commArgv, _runInGDB());
     }
@@ -58,9 +58,7 @@ int main(int argc, char* argv[]) {
     // layer parse the arguments first, then the Chapel runtime
     //
     _chpl_comm_init(&argc, &argv, 0);
-    parseArgs(argc, argv);
   }
-  _chpl_comm_rollcall();
 
   //
   // Set up maxThreads to allow threads to initialize modules; this
@@ -70,13 +68,15 @@ int main(int argc, char* argv[]) {
   maxThreads = 3;
 
   _chpl_comm_barrier("about to leave comm init code");
+  _heapAllocateGlobals();    // allocate global vars on heap for multilocale
+  parseArgs(argc, argv);
+  _chpl_comm_rollcall();
   if (!userInvocation) {
     initMemTable();            // get ready to start tracking memory
     CreateConfigVarTable();    // get ready to start tracking config vars
   }
   initChplThreads();         // initialize the threads layer
   _initModuleGuards();       // initialize _run_mod_firsttime vars
-  _heapAllocateGlobals();    // allocate global vars on heap for multilocale
 
   if (_localeID == 0)        // have locale #0 run the user's main function
     _chpl_main();

@@ -1891,6 +1891,10 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_NUM_LOCALES:
       fprintf(outfile, "_chpl_comm_default_num_locales()");
       break;
+    case PRIMITIVE_ALLOC_GVR:
+      fprintf(outfile, "broadcastingGlobalsStarted = 1;\n");
+      fprintf(outfile, "_global_vars_registry = _chpl_malloc(%d, sizeof(void*), \"allocate global vars registry\", 0, 0)", numGlobalsOnHeap);
+      break;
     case PRIMITIVE_HEAP_REGISTER_GLOBAL_VAR:
       fprintf(outfile, "_HEAP_REGISTER_GLOBAL_VAR(");
       get(1)->codegen(outfile);

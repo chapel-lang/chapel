@@ -136,6 +136,7 @@ void initChplThreads() {
   chpl_mutex_init(&_memtrack_lock);
   chpl_mutex_init(&_memstat_lock);
   chpl_mutex_init(&_memtrace_lock);
+  chpl_mutex_init(&_malloc_lock);
 
   chpl_thread_init();
 }

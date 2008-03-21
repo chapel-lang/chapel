@@ -430,10 +430,7 @@ static void codegen_header(void) {
     varSymbol->codegenDef(outfile);
   }
 
-  if (numGlobalsOnHeap > 0)
-    fprintf(outfile, "\nchar* _global_vars_registry[%d];\n", numGlobalsOnHeap);
-  else
-    fprintf(outfile, "\nchar* _global_vars_registry[1];\n");
+  fprintf(outfile, "\nchar** _global_vars_registry;\n");
 
   closeCFile(&header);
   beautify(&header);

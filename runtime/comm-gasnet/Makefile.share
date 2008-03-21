@@ -9,7 +9,7 @@ COMM_OBJS = \
 
 GASNET_INSTALL = $(RUNTIME_ROOT)/../third-party/gasnet/install/$(CHPL_MAKE_PLATFORM)
 
-include $(GASNET_INSTALL)/include/udp-conduit/udp-par.mak
+include $(GASNET_INSTALL)/include/$(CHPL_GASNET_CONDUIT)-conduit/$(CHPL_GASNET_CONDUIT)-par.mak
 
 # 
 # The following lines try to combine GASNet's favorite C compiler
@@ -32,7 +32,7 @@ include $(GASNET_INSTALL)/include/udp-conduit/udp-par.mak
 # -O0 needs to be used because GASNet generates an error if client code
 # compiled -O3 is linked to GASNet compiled with debugging enabled
 #
-RUNTIME_CFLAGS += $(GASNET_CFLAGS) -I$(GASNET_INSTALL)/include -I$(GASNET_INSTALL)/include/udp-conduit -std=gnu89 -O0
+RUNTIME_CFLAGS += $(GASNET_CFLAGS) -I$(GASNET_INSTALL)/include -I$(GASNET_INSTALL)/include/$(CHPL_GASNET_CONDUIT)-conduit -std=gnu89 -O0
 
 ifdef CHPL_DEVELOPER
 RUNTIME_CFLAGS += -Wno-strict-prototypes -Wno-missing-prototypes

@@ -1,8 +1,8 @@
 GASNET_INSTALL = $(CHAPEL_ROOT)/third-party/gasnet/install/$(CHPL_MAKE_PLATFORM)
 
-include $(GASNET_INSTALL)/include/udp-conduit/udp-par.mak
+include $(GASNET_INSTALL)/include/$(CHPL_GASNET_CONDUIT)-conduit/$(CHPL_GASNET_CONDUIT)-par.mak
 
-CC = $(GASNET_CC) $(GASNET_CFLAGS) -I$(GASNET_INSTALL)/include -I$(GASNET_INSTALL)/include/udp-conduit
+CC = $(GASNET_CC) $(GASNET_CFLAGS) -I$(GASNET_INSTALL)/include -I$(GASNET_INSTALL)/include/$(CHPL_GASNET_CONDUIT)-conduit
 LD = $(GASNET_LD) $(GASNET_LFLAGS)
 
 LIBS += $(GASNET_LIBS)

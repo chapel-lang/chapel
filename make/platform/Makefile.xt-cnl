@@ -1,0 +1,3 @@
+ifeq ($(CHPL_COMM), gasnet)
+  CHPL_GASNET_CONDUIT = portals
+endif

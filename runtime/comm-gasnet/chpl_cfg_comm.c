@@ -58,6 +58,8 @@ typedef struct {
 } dist_fork_t;
 
 
+gasnet_seginfo_t seginfo_table[1024];
+
 static void _AM_fork_nb_wrapper(dist_fork_t *i) {
   (*(i->fun))(&(i->arg));
   _chpl_free(i, 0, 0);
@@ -209,12 +211,18 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
 
   _localeID = gasnet_mynode();
   _numLocales = gasnet_nodes();
-
   GASNET_Safe(gasnet_attach(ftable, 
                             sizeof(ftable)/sizeof(gasnet_handlerentry_t),
-                            0,   // share everything
+                            gasnet_getMaxLocalSegmentSize(),
                             0));
+#if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
+  GASNET_Safe(gasnet_getSegmentInfo(seginfo_table, 1024));
 
+  meminfo.head    = (char*)seginfo_table[_localeID].addr;
+  meminfo.current = (char*)seginfo_table[_localeID].addr;
+  meminfo.tail    = ((char*)seginfo_table[_localeID].addr) +
+                    seginfo_table[_localeID].size;
+#endif
   //
   // start polling thread
   // this should call a special function in the threading interface
@@ -235,22 +243,64 @@ void _chpl_comm_rollcall(void) {
             _numLocales);
 }
 
+void _chpl_comm_set_malloc_type(void) {
+#if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
+  whichMalloc = 2;
+#else
+  whichMalloc = 1;
+#endif
+}
+
 void _chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
   if (_localeID != 0) {
     for (i = 0; i < numGlobals; i++) {
-      _chpl_comm_get(_global_vars_registry[i],
-          0, _global_vars_registry[i],
-          sizeof(void*));
+#if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
+      _chpl_comm_get(_global_vars_registry[i], 0,
+                     &((void**)seginfo_table[0].addr)[i], sizeof(void*));
+#else
+      _chpl_comm_get(_global_vars_registry[i], 0,
+                     &_global_vars_registry[i], sizeof(void*));
+#endif
     }
   }
 }
+
+#if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
+typedef struct __broadcast_private_helper {
+  void* addr;
+  void* raddr;
+  int locale;
+  size_t size;
+} _broadcast_private_helper;
+
+static void _broadcastPrivateHelperFn(void* arg);
+
+static void _broadcastPrivateHelperFn(void* arg) {
+  _broadcast_private_helper* bph = (_broadcast_private_helper*)arg;
+  _chpl_comm_get(bph->addr, bph->locale, bph->raddr, bph->size);
+}
+#endif
 
 void _chpl_comm_broadcast_private(void* addr, int size) {
   int i;
   for (i = 0; i < _numLocales; i++) {
     if (i != _localeID) {
+#if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
+      /* For each private constant, copy it to the heap, fork to each locale,
+         and read it off the remote heap into its final non-heap location. Ick.
+      */
+      void* heapAddr = _chpl_malloc(1, size, "broadcast private", 0, 0);
+      _broadcast_private_helper bph;
+      bph.addr = addr;
+      bph.raddr = heapAddr;
+      bph.locale = _localeID;
+      bph.size = size;
+      bcopy(addr, heapAddr, size);
+      _chpl_comm_fork(i, _broadcastPrivateHelperFn, &bph, sizeof(_broadcast_private_helper));
+#else
       _chpl_comm_put(addr, i, addr, size);
+#endif
     }
   }
 }
@@ -265,7 +315,10 @@ void _chpl_comm_barrier(const char *msg) {
 static void _chpl_comm_exit_common(int status) {
   if (gasnet_init_called) {
     int localExitSignal = 1;
-    gasnet_put(_localeID, &exitSignal, &localExitSignal, sizeof(int));
+    // DITEN: Is it required by GASNet to do a gasnet_put instead of a normal
+    // assignment? exitSignal is always on the current locale.
+    //gasnet_put(_localeID, &exitSignal, &localExitSignal, sizeof(int));
+    exitSignal = localExitSignal;
     gasnet_exit(status);
   }
 }

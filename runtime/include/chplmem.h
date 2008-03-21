@@ -7,9 +7,20 @@
 #include "chpltypes.h"
 #include "chplthreads.h"
 
+typedef struct {
+  char* head;
+  char* current;
+  char* tail;
+} _chpl_meminfo_t;
+
+extern _chpl_meminfo_t meminfo;
+extern int broadcastingGlobalsStarted;
+extern int whichMalloc;
+
 extern chpl_mutex_t _memtrack_lock;
 extern chpl_mutex_t _memstat_lock;
 extern chpl_mutex_t _memtrace_lock;
+extern chpl_mutex_t _malloc_lock;
 
 void initMemTable(void);
 void printMemTable(int64_t threshold, int32_t lineno, _string filename);

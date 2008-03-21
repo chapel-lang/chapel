@@ -130,6 +130,7 @@ enum PrimitiveTag {
   PRIMITIVE_LOCALE_ID,    // return locale id
   PRIMITIVE_NUM_LOCALES,  // return number of locales
 
+  PRIMITIVE_ALLOC_GVR,    // allocate space for global vars registry
   PRIMITIVE_HEAP_REGISTER_GLOBAL_VAR,
   PRIMITIVE_HEAP_BROADCAST_GLOBAL_VARS,
   PRIMITIVE_PRIVATE_BROADCAST,

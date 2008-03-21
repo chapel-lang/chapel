@@ -179,6 +179,7 @@ void initChplThreads() {
   chpl_mutex_init(&_memtrack_lock);
   chpl_mutex_init(&_memstat_lock);
   chpl_mutex_init(&_memtrace_lock);
+  chpl_mutex_init(&_malloc_lock);
 
   if (pthread_key_create(&serial_key, (void(*)(void*))serial_delete))
     chpl_internal_error("serial key not created");

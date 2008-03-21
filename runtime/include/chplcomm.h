@@ -9,12 +9,17 @@ extern int32_t _localeID;   // unique ID for each locale: 0, 1, 2, ...
 extern int32_t _numLocales; // number of locales
 
 extern void _heapAllocateGlobals(void);
-extern char* _global_vars_registry[];
+extern char** _global_vars_registry;
 
 typedef void (*func_p)(void*);
 
 #define _HEAP_REGISTER_GLOBAL_VAR(i, wide) \
-  (wide).locale = 0; _global_vars_registry[i] = (char*)(&((wide).addr))
+  (wide).locale = 0; \
+  if (_localeID == 0) { \
+    _global_vars_registry[i] = (char*)((wide).addr); \
+  } else { \
+    _global_vars_registry[i] = (char*)(&((wide).addr)); \
+  }
 
 #define _SET_WIDE_CLASS(wide, cls) \
   (wide).locale = _localeID; (wide).addr = cls
@@ -22,12 +27,18 @@ typedef void (*func_p)(void*);
 #define _WIDE_CLASS_EQ(wide1, wide2) \
   (((wide1).locale == (wide2).locale) && ((wide1).addr == (wide2).addr))
 
-#define _SET_WIDE_STRING(wide, str) \
-  do { \
-    const char* chpl_macro_tmp = str; \
-    (wide).locale = _localeID; \
-    (wide).addr = chpl_macro_tmp; \
-    (wide).size = strlen(chpl_macro_tmp) + 1; \
+#define _SET_WIDE_STRING(wide, str)                                \
+  do {                                                             \
+    const char* chpl_macro_tmp = str;                              \
+    size_t chpl_macro_len = strlen(chpl_macro_tmp) + 1;            \
+    (wide).locale = _localeID;                                     \
+    if (chpl_macro_tmp >= meminfo.head && chpl_macro_tmp <= meminfo.tail) {  \
+      (wide).addr = chpl_macro_tmp;                                \
+    } else {                                                       \
+      (wide).addr = _chpl_malloc(chpl_macro_len, sizeof(char), "set wide string", 0, 0); \
+      strncpy((char*)(wide).addr, chpl_macro_tmp, chpl_macro_len); \
+   }                                                               \
+    (wide).size = chpl_macro_len;                                  \
   } while (0)
 
 #define _WIDE_CLASS_NE(wide1, wide2) \
@@ -249,6 +260,11 @@ void _chpl_comm_broadcast_global_vars(int numGlobals);
 // Assumes global variables have the same addresses across locales.
 //
 void _chpl_comm_broadcast_private(void* addr, int size);
+
+//
+// Decide which function to use for _chpl_malloc calls.
+//
+void _chpl_comm_set_malloc_type(void);
 
 //
 // barrier for synchronization between all processes; currently only
