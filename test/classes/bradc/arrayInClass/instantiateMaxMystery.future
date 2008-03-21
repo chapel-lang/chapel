@@ -1,7 +1,0 @@
-performance: too many instantiations?
-
-Is it correct that instantiate-max should be required for a code
-like this?  If so, this test can be removed.  If not, this is
-a placeholder to investigate the root causes.
-
-

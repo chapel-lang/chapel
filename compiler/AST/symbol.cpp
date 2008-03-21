@@ -1366,9 +1366,10 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
   if (instantiatedTo == NULL)
     instantiatedTo = new Vec<FnSymbol*>();
   if (instantiatedTo->n >= instantiation_limit &&
-      // disable error on functions in base module
+      // disable error on functions in base and tuple modules
       //  because folding is done via instantiation
-      //  caution: be careful developing in the base module
+      //  caution: be careful developing in the base and tuple modules
+      tupleModule != getModule() &&
       baseModule != getModule()) {
     if (hasPragma("type constructor")) {
       USR_FATAL_CONT(retType, "Type '%s' has been instantiated too many times",
