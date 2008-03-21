@@ -61,6 +61,7 @@ bool report_inlining = false;
 char chplhome[FILENAME_MAX] = ".";
 char chplmake[256] = "";
 char fExplainCall[256] = "";
+char fExplainInstantiation[256] = "";
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
 bool fWarnPromotion = false;
@@ -287,6 +288,7 @@ static ArgumentDescription arg_desc[] = {
  {"chplhome", ' ', "<directory>", "Over-ride $CHPL_HOME", "P", chplhome, "CHPL_HOME", NULL},
  {"devel", ' ', NULL, "Compile as developer", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
+ {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"main-module", ' ', "<module>", "Specify module where main is located", "S256", mainModuleName, NULL, NULL},
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},

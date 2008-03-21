@@ -51,6 +51,8 @@ Miscellaneous Options:
       --[no-]devel                       Compile as developer
       --explain-call <call>[:<module>][:<line>]
                                          Explain resolution of call
+      --explain-instantiation <function|type>[:<module>][:<line>]
+                                         Explain instantiation of type
       --instantiate-max <max>            Limit number of instantiations
       --main-module <module>             Specify module where main is located
       --no-warnings                      Disable output of warnings

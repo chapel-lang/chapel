@@ -55,8 +55,10 @@ static void setScalarPromotionType(ClassType* ct);
 static void fixTypeNames(ClassType* ct);
 static void insertReturnTemps();
 
-static int explainLine;
-static ModuleSymbol* explainModule;
+static int explainCallLine;
+static ModuleSymbol* explainCallModule;
+static int explainInstantiationLine;
+static ModuleSymbol* explainInstantiationModule;
 
 static Vec<CallExpr*> inits;
 static Vec<FnSymbol*> resolvedFns;
@@ -1128,9 +1130,23 @@ static bool
 explainCallMatch(CallExpr* call) {
   if (!call->isNamed(fExplainCall))
     return false;
-  if (explainModule && explainModule != call->getModule())
+  if (explainCallModule && explainCallModule != call->getModule())
     return false;
-  if (explainLine != -1 && explainLine != call->lineno)
+  if (explainCallLine != -1 && explainCallLine != call->lineno)
+    return false;
+  return true;
+}
+
+
+static bool
+explainInstantiationMatch(FnSymbol* fn) {
+  if (strcmp(fn->name, fExplainInstantiation) &&
+      (strncmp(fn->name, "_construct_", 11) ||
+       strcmp(fn->name+11, fExplainInstantiation)))
+    return false;
+  if (explainInstantiationModule && explainInstantiationModule != fn->defPoint->getModule())
+    return false;
+  if (explainInstantiationLine != -1 && explainInstantiationLine != fn->defPoint->lineno)
     return false;
   return true;
 }
@@ -1238,7 +1254,7 @@ resolve_call(CallInfo* info) {
   else
     visibleFns.add(call->isResolved());
 
-  if (explainLine && explainCallMatch(call)) {
+  if (explainCallLine && explainCallMatch(call)) {
     USR_PRINT(call, "call: %s", toString(info));
     if (visibleFns.n == 0)
       USR_PRINT(call, "no visible functions found");
@@ -1260,7 +1276,7 @@ resolve_call(CallInfo* info) {
                  call);
   }
 
-  if (explainLine && explainCallMatch(call)) {
+  if (explainCallLine && explainCallMatch(call)) {
     if (candidateFns.n == 0)
       USR_PRINT(call, "no candidates found");
     bool first = true;
@@ -1286,7 +1302,7 @@ resolve_call(CallInfo* info) {
                                  &actualFormals);
   }
 
-  if (best && explainLine && explainCallMatch(call)) {
+  if (best && explainCallLine && explainCallMatch(call)) {
     USR_PRINT(best, "best candidate is: %s", toString(best));
   }
 
@@ -3132,11 +3148,11 @@ build_ddf() {
 
 
 void
-resolve() {
-  explainLine = 0;
-  if (strcmp(fExplainCall, "")) {
+parseExplainFlag(char* flag, int* line, ModuleSymbol** module) {
+  *line = 0;
+  if (strcmp(flag, "")) {
     char *token, *str1 = NULL, *str2 = NULL;
-    token = strstr(fExplainCall, ":");
+    token = strstr(flag, ":");
     if (token) {
       *token = '\0';
       str1 = token+1;
@@ -3150,20 +3166,27 @@ resolve() {
       if (str2 || !atoi(str1)) {
         forv_Vec(ModuleSymbol, mod, allModules) {
           if (!strcmp(mod->name, str1)) {
-            explainModule = mod;
+            *module = mod;
             break;
           }
         }
-        if (!explainModule)
+        if (!*module)
           USR_FATAL("invalid module name '%s' passed to --explain-call flag", str1);
       } else
-        explainLine = atoi(str1);
+        *line = atoi(str1);
       if (str2)
-        explainLine = atoi(str2);
+        *line = atoi(str2);
     }
-    if (explainLine == 0)
-      explainLine = -1;
+    if (*line == 0)
+      *line = -1;
   }
+}
+
+
+void
+resolve() {
+  parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
+  parseExplainFlag(fExplainInstantiation, &explainInstantiationLine, &explainInstantiationModule);
 
   // call _nilType nil so as to not confuse the user
   dtNil->symbol->name = gNil->name;
@@ -3761,6 +3784,7 @@ setScalarPromotionType(ClassType* ct) {
 
 static FnSymbol*
 instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call) {
+  static Vec<FnSymbol*> reportSet;  // do not report cached instantiations
   static Vec<FnSymbol*> whereStack;
   FnSymbol* ifn = fn->instantiate_generic(subs, &paramMap, call);
   ifn->isExtern = fn->isExtern; // preserve extern-ness of instantiated fn
@@ -3790,6 +3814,53 @@ instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call) {
       return NULL;
     if (strcmp(symExpr->var->name, "true"))
       USR_FATAL(ifn->where, "illegal where clause");
+  }
+
+  if (!ifn->isGeneric &&
+      explainInstantiationLine &&
+      explainInstantiationMatch(fn) &&
+      !reportSet.set_in(ifn)) {
+    char msg[1024] = "";
+    if (!strncmp(fn->name, "_construct_", 11))
+      sprintf(msg, "instantiated %s(", fn->_this->type->symbol->name);
+    else
+      sprintf(msg, "instantiated %s(", fn->name);
+    bool first = true;
+    for_formals(formal, ifn) {
+      form_Map(ASTMapElem, e, ifn->substitutions) {
+        ArgSymbol* arg = toArgSymbol(e->key);
+        if (!strcmp(formal->name, arg->name)) {
+          if (!strcmp(arg->name, "meme")) // do not show meme argument
+            continue;
+          if (first)
+            first = false;
+          else
+            sprintf(msg, "%s, ", msg);
+          INT_ASSERT(arg);
+          if (strcmp(ifn->name, "_construct__tuple"))
+            sprintf(msg, "%s%s = ", msg, arg->name);
+          if (Type* t = toType(e->value))
+            sprintf(msg, "%s%s", msg, t->symbol->name);
+          else if (Symbol* s = toSymbol(e->value)) {
+            VarSymbol* vs = toVarSymbol(s);
+            if (vs && vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
+              sprintf(msg, "%s%lld", msg, vs->immediate->int_value());
+            else if (vs && vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
+              sprintf(msg, "%s\"%s\"", msg, vs->immediate->v_string);
+            else
+              sprintf(msg, "%s%s", msg, s->name);
+          } else
+            INT_ASSERT("unexpected case using --explain-instantiation");
+        }
+      }
+    }
+    sprintf(msg, "%s)", msg);
+    if (callStack.n) {
+      USR_PRINT(callStack.v[callStack.n-1], msg);
+    } else {
+      USR_PRINT(fn, msg);
+    }
+    reportSet.set_add(ifn);
   }
   return ifn;
 }

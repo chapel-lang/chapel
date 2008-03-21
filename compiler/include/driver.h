@@ -34,6 +34,7 @@ extern bool report_inlining;
 extern char chplhome[FILENAME_MAX];
 extern char chplmake[256];
 extern char fExplainCall[256];
+extern char fExplainInstantiation[256];
 
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
