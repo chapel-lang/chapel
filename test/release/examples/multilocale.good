@@ -1,0 +1,9 @@
+running this example on 4 locales
+hello locale 0
+hello locale 1
+hello locale 2
+hello locale 3
+node with data = 0.0 on locale 0
+node with data = 1.0 on locale 1
+node with data = 2.0 on locale 2
+node with data = 3.0 on locale 3
