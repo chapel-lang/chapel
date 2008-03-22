@@ -81,35 +81,6 @@ void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
-static void
-codegenBegin( FILE* outfile, AList* body) {
-  // Body should be one function call that we fork.
-  if (body->length() != 1)
-    INT_FATAL("begin codegen - expect only one function call");
-
-  fprintf( outfile, "chpl_begin( ");
-  for_alist(stmt, *body) {
-    if (CallExpr *cexpr=toCallExpr(stmt)) {
-      if (SymExpr *sexpr=toSymExpr(cexpr->baseExpr)) {
-        fprintf (outfile, "(chpl_threadfp_t) %s, ", sexpr->var->cname);
-        fprintf (outfile, "(chpl_threadarg_t) ");
-        if (Expr *actuals = cexpr->get(1)) {
-          actuals->codegen (outfile);
-        } else {
-          fprintf( outfile, "NULL");
-        }
-        fprintf (outfile, ", false, false");
-      } else {
-        INT_FATAL(stmt, "cobegin codegen - call expr not a SymExpr");
-      } 
-    } else {
-      INT_FATAL(stmt, "cobegin codegen - statement not a CallExpr");
-    }
-  }
-  fprintf (outfile, ");\n");
-}
-
-
 void BlockStmt::codegen(FILE* outfile) {
   codegenStmt(outfile, this);
 
@@ -150,25 +121,7 @@ void BlockStmt::codegen(FILE* outfile) {
   if (this != getFunction()->body)
     fprintf(outfile, "{\n");
 
-  if (blockTag == BLOCK_BEGIN) {
-    codegenBegin(outfile, &body);
-  } else if (blockTag == BLOCK_ON) {
-    if (CallExpr* call = toCallExpr(body.only())) {
-      fprintf(outfile, "_chpl_comm_fork(");
-      call->get(1)->codegen(outfile);
-      fprintf(outfile, ", (func_p)");
-      call->baseExpr->codegen(outfile);
-      fprintf(outfile, ", ");
-      call->get(2)->codegen(outfile);
-      fprintf(outfile, ", sizeof(_");
-      call->get(2)->typeInfo()->symbol->codegen(outfile);
-      fprintf(outfile, "));\n");
-    } else {
-      INT_FATAL(this, "invalid on block");
-    }
-  } else {
-    body.codegen(outfile, "");
-  }
+  body.codegen(outfile, "");
 
   if (loopInfo && loopInfo->isPrimitive(PRIMITIVE_LOOP_DOWHILE)) {
     fprintf(outfile, "} while (");

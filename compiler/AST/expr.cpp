@@ -1935,6 +1935,36 @@ void CallExpr::codegen(FILE* outfile) {
   FnSymbol* fn = isResolved();
   INT_ASSERT(fn);
 
+  if (fn->hasPragma("begin block")) {
+    fprintf( outfile, "chpl_begin( ");
+    if (SymExpr *sexpr=toSymExpr(baseExpr)) {
+      fprintf (outfile, "(chpl_threadfp_t) %s, ", sexpr->var->cname);
+      fprintf (outfile, "(chpl_threadarg_t) ");
+      if (Expr *actuals = get(1)) {
+        actuals->codegen (outfile);
+      } else {
+        fprintf( outfile, "NULL");
+      }
+      fprintf (outfile, ", false, false");
+    } else {
+      INT_FATAL(this, "cobegin codegen - call expr not a SymExpr");
+    } 
+    fprintf (outfile, ");\n");
+    return;
+  }
+  else if (fn->hasPragma("on block")) {
+    fprintf(outfile, "_chpl_comm_fork(");
+    get(1)->codegen(outfile);
+    fprintf(outfile, ", (func_p)");
+    baseExpr->codegen(outfile);
+    fprintf(outfile, ", ");
+    get(2)->codegen(outfile);
+    fprintf(outfile, ", sizeof(_");
+    get(2)->typeInfo()->symbol->codegen(outfile);
+    fprintf(outfile, "));\n");
+    return;
+  }
+
   if (!strcmp(fn->cname, "_data_construct")) {
     if (numActuals() == 0) {
       fprintf(outfile, "0");

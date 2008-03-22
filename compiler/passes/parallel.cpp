@@ -106,8 +106,10 @@ bundleArgs(BlockStmt* block) {
       } else
         newb->insertAtTail(new CallExpr(wrap_fn, tempc));
 
-      if (block->blockTag == BLOCK_BEGIN)
+      if (block->blockTag == BLOCK_BEGIN) {
+        wrap_fn->addPragma("begin block");
         wrap_fn->insertAtHead(new CallExpr(PRIMITIVE_THREAD_INIT));
+      }
         
       // translate the original cobegin function
       CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);

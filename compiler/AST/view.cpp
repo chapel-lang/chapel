@@ -411,8 +411,6 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
       fprintf(html_file, "{");
       switch( b->blockTag) {
       case BLOCK_ATOMIC: fprintf(html_file, "atomic"); break;
-      case BLOCK_ON: fprintf(html_file, "on"); break;
-      case BLOCK_BEGIN: fprintf(html_file, "begin"); break;
       case BLOCK_DO_WHILE: fprintf(html_file, "do while"); break;
       case BLOCK_FOR: fprintf(html_file, "for"); break;
       case BLOCK_FORALL: fprintf(html_file, "forall"); break;
@@ -512,6 +510,12 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
       } else if (NamedExpr* e = toNamedExpr(expr)) {
         fprintf(html_file, "(%s = ", e->name);
       } else if (CallExpr* e = toCallExpr(expr)) {
+        if (e->isResolved()) {
+          if (e->isResolved()->hasPragma("begin block"))
+            fprintf(html_file, "begin ");
+          else if (e->isResolved()->hasPragma("on block"))
+            fprintf(html_file, "on ");
+        }
         fprintf(html_file, "(%d ", e->id);
         if (!e->primitive) {
           fprintf(html_file, "<B>call</B> ");
