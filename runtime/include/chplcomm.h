@@ -32,7 +32,7 @@ typedef void (*func_p)(void*);
     const char* chpl_macro_tmp = str;                              \
     size_t chpl_macro_len = strlen(chpl_macro_tmp) + 1;            \
     (wide).locale = _localeID;                                     \
-    if (chpl_macro_tmp >= meminfo.head && chpl_macro_tmp <= meminfo.tail) {  \
+    if (chpl_macro_tmp >= chpl_meminfo.head && chpl_macro_tmp <= chpl_meminfo.tail) {  \
       (wide).addr = chpl_macro_tmp;                                \
     } else {                                                       \
       (wide).addr = _chpl_malloc(chpl_macro_len, sizeof(char), "set wide string", 0, 0); \

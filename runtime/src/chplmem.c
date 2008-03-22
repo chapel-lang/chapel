@@ -27,7 +27,7 @@ typedef struct _memTableEntry { /* table entry */
 
 } memTableEntry;
 
-_chpl_meminfo_t meminfo = {0};
+_chpl_meminfo_t chpl_meminfo = {0};
 int broadcastingGlobalsStarted = 0;
 int whichMalloc = 0;
 
@@ -438,7 +438,7 @@ static void* _chpl_malloc2(size_t number, size_t size, const char* description,
                            int32_t lineno, _string filename) {
   size_t chunk = number*size;
   void* memAlloc;
-  if (broadcastingGlobalsStarted == 0 && meminfo.head == NULL) {
+  if (broadcastingGlobalsStarted == 0 && chpl_meminfo.head == NULL) {
     //
     // This branch is taken by the original process that launches the
     // sub-processes in a multi-locale program. It should never be taken
@@ -448,12 +448,12 @@ static void* _chpl_malloc2(size_t number, size_t size, const char* description,
     confirm(memAlloc, description, lineno, filename);
   } else {
     chpl_mutex_lock(&_malloc_lock);
-    if (broadcastingGlobalsStarted == 0 || meminfo.head == NULL) {
+    if (broadcastingGlobalsStarted == 0 || chpl_meminfo.head == NULL) {
       chpl_error("_chpl_malloc called before properly initialized", lineno, filename);
     }
-    memAlloc = meminfo.current;
-    meminfo.current += chunk;
-    if (meminfo.current > meminfo.tail) {
+    memAlloc = chpl_meminfo.current;
+    chpl_meminfo.current += chunk;
+    if (chpl_meminfo.current > chpl_meminfo.tail) {
       chpl_error("_chpl_malloc out of memory", lineno, filename);
     }
     chpl_mutex_unlock(&_malloc_lock);

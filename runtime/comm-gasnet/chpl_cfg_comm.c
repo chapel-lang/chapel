@@ -215,12 +215,12 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
                             sizeof(ftable)/sizeof(gasnet_handlerentry_t),
                             gasnet_getMaxLocalSegmentSize(),
                             0));
-#if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
+#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
   GASNET_Safe(gasnet_getSegmentInfo(seginfo_table, 1024));
 
-  meminfo.head    = (char*)seginfo_table[_localeID].addr;
-  meminfo.current = (char*)seginfo_table[_localeID].addr;
-  meminfo.tail    = ((char*)seginfo_table[_localeID].addr) +
+  chpl_meminfo.head    = (char*)seginfo_table[_localeID].addr;
+  chpl_meminfo.current = (char*)seginfo_table[_localeID].addr;
+  chpl_meminfo.tail    = ((char*)seginfo_table[_localeID].addr) +
                     seginfo_table[_localeID].size;
 #endif
   //
@@ -244,7 +244,7 @@ void _chpl_comm_rollcall(void) {
 }
 
 void _chpl_comm_set_malloc_type(void) {
-#if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
+#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
   whichMalloc = 2;
 #else
   whichMalloc = 1;
@@ -255,7 +255,7 @@ void _chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
   if (_localeID != 0) {
     for (i = 0; i < numGlobals; i++) {
-#if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
+#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
       _chpl_comm_get(_global_vars_registry[i], 0,
                      &((void**)seginfo_table[0].addr)[i], sizeof(void*));
 #else
@@ -266,7 +266,7 @@ void _chpl_comm_broadcast_global_vars(int numGlobals) {
   }
 }
 
-#if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
+#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
 typedef struct __broadcast_private_helper {
   void* addr;
   void* raddr;
@@ -286,7 +286,7 @@ void _chpl_comm_broadcast_private(void* addr, int size) {
   int i;
   for (i = 0; i < _numLocales; i++) {
     if (i != _localeID) {
-#if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
+#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
       /* For each private constant, copy it to the heap, fork to each locale,
          and read it off the remote heap into its final non-heap location. Ick.
       */

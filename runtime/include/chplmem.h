@@ -13,7 +13,7 @@ typedef struct {
   char* tail;
 } _chpl_meminfo_t;
 
-extern _chpl_meminfo_t meminfo;
+extern _chpl_meminfo_t chpl_meminfo;
 extern int broadcastingGlobalsStarted;
 extern int whichMalloc;
 
