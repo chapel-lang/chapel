@@ -3147,7 +3147,7 @@ build_ddf() {
 }
 
 
-void
+static void
 parseExplainFlag(char* flag, int* line, ModuleSymbol** module) {
   *line = 0;
   if (strcmp(flag, "")) {
@@ -3850,7 +3850,7 @@ instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call) {
             else
               sprintf(msg, "%s%s", msg, s->name);
           } else
-            INT_ASSERT("unexpected case using --explain-instantiation");
+            INT_FATAL("unexpected case using --explain-instantiation");
         }
       }
     }
