@@ -213,7 +213,7 @@ OPTIONS
   --explain-instantiation <function|type>[:<module>][:<line>]   Lists
                      all of the instantiations of a function or type.
                      The location of one of possibly many points of
-                     instantiation is shown.  Specifying a module name
+                     instantiation is shown. Specifying a module name
                      and/or line number can focus the explanation to
                      those calls within a specific module or at a
                      particular line number.
