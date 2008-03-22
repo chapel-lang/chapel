@@ -20,4 +20,7 @@ armci: FORCE
 gasnet: FORCE
 	cd gasnet && $(MAKE)
 
+mpich1: FORCE
+	cd mpich1 && $(MAKE)
+
 FORCE:
