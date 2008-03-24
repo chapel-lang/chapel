@@ -2,6 +2,172 @@
 Release Changes List
 ====================
 
+***STOPPED AT 2008-03-24 12:33:35***
+
+TODO: type expression normalization?
+
+===========
+version 0.7
+===========
+
+Fourth preliminary release of Chapel Compiler, March 31, 2008
+
+High-Level Themes:
+------------------
+- multi-locale task parallelism
+- improved task parallel correctness, features, thread management
+- improved stability of core features
+- target audience: HPCS mission partners, select HPC/academic/industry users
+
+
+Changes to Chapel Language:
+---------------------------
+- added "new" keyword to invoke class/record constructors
+  e.g., "class C { ... }  var myC = C(...);" => "... var myC = new C(...);"
+- added support for functions with type varargs
+  e.g., def foo(type t ...?numTypes) { ... }
+- added support for vararg read()/readln() functions that return a tuple value
+  e.g., "read(int, float, string);" returns an (int, float, string) value
+- enumerated types now require the type to be named before a component symbol
+  e.g., "enum myEnum {A, B, C}; var x = B;" => "... var x = myEnum.B;"
+- changed a file's mode from a string to an enumeration
+  e.g., file(..., "r") => file(..., FileAccessMode.read)  (TODO: rename/shorten???)
+- new understanding of memory model (TODO: worth mentioning???)
+- added "sync" statement to join dynamic parallelism
+  e.g., sync { /* create parallelism */ }  // waits here for parallelism to end
+- _debugWriteln()  (TODO: mention???  rename?? ignore for now??)
+  e.g., _debugWriteln(localeID(), "x = ", x);
+- removed the "of" keyword
+- removed the "ordered" keyword and concept
+- added support for a compilerWarning() call similar to compilerError()
+  e.g., compilerWarning("I didn't expect this function to be called");
+- added string inequality comparison operators
+  e.g., ..."hi" >= "bye"...
+- added a sorted() iterator to associative domains/arrays and opaque arrays
+  e.g., var table: domain(string); ...  for entry in table.sorted() do ...
+
+Newly Implemented Features:
+---------------------------
+- execution using multiple locales (see: TODO???)
+- use of on clauses taking locale/lvalue expressions to generate remote tasks
+  e.g., "on Locales(i) do ...",  "var x = ...;  ...  on x do ..."
+- use of <expression>.locale to query the locale on which an lvalue lives
+  e.g., "var x = ...;  ... x.locale ..."
+- task pool to support the creation of more tasks than executing threads
+  (see README.threads for more details) <-- TODO
+- removed support for real(128), imag(128), complex(256) for the time being
+- strengthened distinction between type specifiers and constructor calls
+- enumerated and opaque arrays now support iteration
+- added support for calling methods within class constructors
+- improved support for member initializer expressions within classes
+- added support for tuples of sync variables
+- added support for declaring enumerations within classes
+
+Portability of code base:
+-------------------------
+- removed a number of warnings specific to particular compilers/platforms
+
+Semantic Changes:
+-----------------
+- Chapel now parses types in the same way that it parses general expressions
+- in a type context, (int) is no longer a 1-tuple of type int; use 1*int instead
+
+Syntactic/Naming Changes:
+-------------------------
+- renamed opaque domain's .new() method to .create() -- (TODO: revert???)
+
+Documentation:
+--------------
+- new README.multilocale file explaining execution on multiple locales (TODO ???)
+- rewrote "Parallelism and Synchronization" chapter of the language spec.
+- TODO: add other new READMEs here
+
+Example Codes:
+--------------
+- added a multilocale.chpl example to show multi-locale execution
+- made automatied testing of opaque.chpl deterministic
+- added "new" keyword to tests that create class instances
+- for tests that use files, changed access mode from string to FileAccessMode (TODO: keep???)
+- added enumeration qualifier to norm.chpl's normType enumerated type
+- changed blockLU's input data to improve stability across compilers
+- changed opaque.chpl test to use new .create() method (TODO: revert???)
+
+Standard Modules:
+-----------------
+- added a skipToNth() method to the RandomStream class
+
+Compiler Flags:
+---------------
+- changed flags to have a --no-... variation (see chpl man page for details):
+  --local => --[no-]local where the default is based on CHPL_COMM
+  --serial => --[no-]serial where the default is based on CHPL_THREADS
+- added new flags (see chpl man page for details):
+  --[no-]ieee-float controls the strictness of IEEE floating point operations
+  --fast flag turns on optimizations & disables runtime checks and IEEE floats
+  --explain-instantiation describes the instantations of functions/types
+
+Generated Code Flags:
+---------------------
+- added a config const "maxThreads" to limit number of threads to use (see ???TODO???)
+- made GASNet executions support the --gdb flag
+- renamed some identifiers to avoid initial underscores -- more remain
+- changed integer type aliases to use stdint.h types
+
+Bug Fixes/New Semantic Checks (for old semantics):
+--------------------------------------------------
+- improved composability of forall expressions and coforall statements
+- fixed ability to specify C source files with paths
+- improved checks preventing the use of types in value contexts and vice-versa
+- fixed a bug in which standalone reads of sync vars did not consume full/empty
+  e.g., "myflag$;" is now equivalent to "myflag$.readEF();"
+- fixed the implementation of .length for degenerate ranges
+- fixed a bug with the --cpp-line flag for long generated C lines
+- removed incorrect copies that were inserted for certain default argument types
+- fixed several bugs in the implementation of associative/opaque domains/arrays
+- fixed support for arrays of arrays and arrays of syncs within classes
+- removed instantiation limit error messages generated by tuples
+
+Error Message Improvements:
+---------------------------
+- improved error messages for generic type specifiers
+
+Compiler Analysis and Optimizations/Performance of Generated Code:
+------------------------------------------------------------------
+(none in this release)
+
+Compiler Performance and Cleanup:
+---------------------------------
+- reduced memory footprint of certain compiler IR classes
+
+Generated Code:
+---------------
+- added support for wide references and wide classes
+- improved line number reporting for certain functions
+- turned up C compilation warning levels for developers
+- changed implementation of subclasses
+- improved name mangling policy
+
+Testing System:
+---------------
+- added support for listing any number of tests and directories on command-line
+- removed -onetest and -startdir flags
+- allowed start_test to be run from any directory
+- removed support for Makefile-driven testing
+- removed start_clean script
+- added "skipif" support for skipping a test or directory based on env vars
+
+Internal:
+---------
+- improved unification/normalization of AST classes and primitives
+- removed unnecessary primitives, types, symbols
+- improved runtime TAGS file and added TAGS file for generated code
+- converted from CVS to SVN
+- unified implementation of cobegin to use begins
+- use endCounts to implement cobegins/coforalls rather than syncStacks
+- changed places in code where pragmas can occur
+- made --ccwarnings into --[no-]ccwarnings where the default is based on --devel
+
+
 ===========
 version 0.6
 ===========
