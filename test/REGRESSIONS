@@ -34,10 +34,9 @@ some sort of undiagnosed race -- seems more likely to be in our code than his
 baseline-specific regressions
 =============================
 
-???
+out of memory allocating iterator classes
 ---
 [Error matching program output for studies/sudoku/dinan/sudoku]
-[Error matching compiler output for trivial/deitz/test_type_expr_stmt]
 
 
 
