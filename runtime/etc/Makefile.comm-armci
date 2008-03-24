@@ -1,0 +1,4 @@
+ARMCI_INSTALL = $(CHAPEL_ROOT)/third-party/armci/armci-1-3
+MPI_INSTALL = $(CHAPEL_ROOT)/third-party/mpich1/install/linux
+
+LIBS += -L$(ARMCI_INSTALL)/lib/LINUX -L$(MPI_INSTALL)/lib -larmci -lmpich
