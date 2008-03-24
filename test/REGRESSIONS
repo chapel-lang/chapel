@@ -48,22 +48,21 @@ gasnet-specific regressions
 ???
 ---
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
+
+record with domain cross-locale copy results in a nil dereference 
+-- esp. for --no-inline
+-----------------------------------------------------------------
 [Error matching program output for multilocale/deitz/linked/test_linked3]
-[Error matching compiler output for classes/diten/allocateManyObjects]
-[Error matching program output for
-multilocale/diten/1DBlockDistributedJacobi]
-[Error matching program output for
-parallel/serial/figueroa/MultiLocaleSerial]
-
-
-race condition of some sort?
-----------------------------
 [Error matching program output for
 studies/madness/aniruddha/madchap/test_gaxpy]
 [Error matching program output for
 studies/madness/aniruddha/madchap/test_likepy]
 [Error matching program output for
 studies/madness/aniruddha/madchap/test_mul]
+
+garbage collection doesn't work with multithreaded
+--------------------------------------------------
+[Error matching compiler output for classes/diten/allocateManyObjects]
 
 
 ==========================
@@ -162,10 +161,6 @@ studies/madness/dinan/mad_chapel/test_showboxes]
 [Error matching program output for
 memory/shannon/outofmemory/mallocOutOfMemory]
 
-Sometimes works/sometimes fails
--------------------------------
-[Error: Timed out executing program parallel/coforall/figueroa/ManyThreads]
-
 
 Warning about use before set -- error #592 -- cause unknown
 -----------------------------------------------------------
@@ -186,11 +181,6 @@ than codegen and having it be constructed like any other field.
 -----------------------------------------------------------------------
 [Error matching compiler output for classes/deitz/test_empty_record]
 [Error matching compiler output for functions/jplevyak/scoping/visibility-1]
-
-
-Times out for unknown reasons
------------------------------
-[Error: Timed out executing program parallel/cobegin/waynew/while]
 
 
 ==============================
