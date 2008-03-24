@@ -7,8 +7,17 @@ SRCS = $(SVN_SRCS)
 COMM_OBJS = \
 	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
 
-ARMCI_INSTALL = $(RUNTIME_ROOT)/../third-party/armci/install/$(CHPL_MAKE_PLATFORM)
+ARMCI_INSTALL = $(RUNTIME_ROOT)/../third-party/armci/armci-1-3
+MPI_INSTALL = $(RUNTIME_ROOT)/../third-party/mpich1/install/linux
 
-INCL_CFLAGS += -I$(ARMCI_INSTALL)/include -I$(MPI_INCLUDE)
+INCL_CFLAGS += -I$(ARMCI_INSTALL)/src -I$(MPI_INSTALL)/include
 
-RUNTIME_CFLAGS = $(INCL_CFLAGS) -DARMCI_ENABLE_GPC_CALLS
+#
+# -Wno-strict-prototypes is required below because armci.h doesn't use
+# strict prototypes
+#
+RUNTIME_CFLAGS += $(INCL_CFLAGS) -DARMCI_ENABLE_GPC_CALLS 
+
+ifdef CHPL_DEVELOPER
+RUNTIME_CFLAGS += -Wno-strict-prototypes
+endif

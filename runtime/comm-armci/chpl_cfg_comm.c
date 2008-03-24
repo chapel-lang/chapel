@@ -2,12 +2,14 @@
 #include <armci.h>
 #include <gpc.h>
 
-#include "chplrt.h"
+#include <stdint.h>
+#include <string.h>
+
 #include "chplcomm.h"
 #include "chplmem.h"
+#include "chplrt.h"
 #include "error.h"
 
-#include <stdint.h>
 
 // Undefine this symbol to deactivate extra runtime error checking
 #define _ARMCI_DEBUG
@@ -19,7 +21,7 @@
                                                       \
   ret = fncall;                                       \
   if (ret != 0)                                       \
-    ARMCI_Error("ARMCI function call error", ret); \
+    ARMCI_Error((char*)"ARMCI function call error", ret);       \
 }
 #else
 #define ARMCI_SAFE(fncall) fncall
@@ -309,7 +311,7 @@ void  _chpl_comm_get(void *addr, int32_t locale, const void* raddr, int32_t size
   if (_localeID == locale)
     memmove(addr, raddr, size);
   else {
-    ARMCI_SAFE(ARMCI_Get(raddr, addr, size, locale));
+    ARMCI_SAFE(ARMCI_Get((void*)raddr, addr, size, locale));
   }
 }
 
@@ -322,12 +324,11 @@ void  _chpl_comm_get(void *addr, int32_t locale, const void* raddr, int32_t size
 void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   // Not sure how to implement this for ARMCI
   int ret;
-  gpc_hdl_t nbh;
+  //  gpc_hdl_t nbh;
   void *header, *rheader;
   int rhlen;
   void *rdata;
   int rdlen;
-  int i;
 
   chpl_msg(2, "Called _chpl_comm_fork() on: %d\n", _localeID);
 

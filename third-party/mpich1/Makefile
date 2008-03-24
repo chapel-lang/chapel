@@ -9,8 +9,6 @@ MPICH1_BUILD_DIR = $(MPICH1_INSTALL_DIR)/build
 MPICH1_VERSION = 1.2.7p1
 MPICH1_SUBDIR = $(MPICH1_ABS_DIR)/mpich-$(MPICH1_VERSION)
 
-#MPICH1_CONFIGURE_OPTIONS = $(shell $(CHAPEL_ROOT)/util/commConfigureOpts.pl $(CHPL_MPICH1_CONDUIT))
-
 default: all
 
 all: mpich1
@@ -24,10 +22,10 @@ clobber: FORCE
 mpich1-config: FORCE
 	mkdir -p $(MPICH1_BUILD_DIR)
 	cd $(MPICH1_BUILD_DIR) && $(MPICH1_SUBDIR)/configure --prefix=$(MPICH1_INSTALL_DIR)
-# $(MPICH1_CONFIGURE_OPTIONS)
 
 mpich1-build: FORCE
 	cd $(MPICH1_BUILD_DIR) && $(MAKE)
+	cd $(MPICH1_BUILD_DIR) && $(MAKE) install
 
 mpich1: mpich1-config mpich1-build
 
