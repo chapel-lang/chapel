@@ -12,5 +12,7 @@ all: FORCE
 
 clean: FORCE
 	cd $(ARMCI_DIR) && $(MAKE) clean
+	-cd $(ARMCI_DIR) && rm -r lib
+	-cd $(ARMCI_DIR)/src && rm LINUX.MPI.stamp
 
 FORCE:
