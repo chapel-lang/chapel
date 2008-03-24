@@ -3697,6 +3697,13 @@ pruneResolvedTree() {
         def->sym->type = buildArrayTypeInfo(def->sym->type);
         def->sym->isTypeVariable = false;
       }
+    } else if (SymExpr* se = toSymExpr(ast)) {
+
+      // remove dead type expressions
+      if (se->getStmtExpr() == se)
+        if (se->var->isTypeVariable)
+          se->remove();
+
     }
   }
 
