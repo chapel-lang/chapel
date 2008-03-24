@@ -19,127 +19,116 @@
 // multiple args through the limitation of one arg in the runtime's
 // thread creation interface. 
 static void
-bundleArgs(BlockStmt* block) {
-  currentLineno = block->lineno;
-  currentFilename = block->filename;
-  ModuleSymbol* mod = block->getModule();
-  BlockStmt *newb = new BlockStmt();
-  newb->blockTag = block->blockTag;
-  for_alist(expr, block->body) {
-    CallExpr* fcall = toCallExpr(expr);
-    if (!fcall || !fcall->isResolved()) {
-      block->insertBefore(expr->remove());
+bundleArgs(CallExpr* fcall) {
+  currentLineno = fcall->lineno;
+  currentFilename = fcall->filename;
+  ModuleSymbol* mod = fcall->getModule();
+  FnSymbol* fn = fcall->isResolved();
+
+  // create a new class to capture refs to locals
+  ClassType* ctype = new ClassType( CLASS_CLASS);
+  TypeSymbol* new_c = new TypeSymbol( astr("_class_locals", 
+                                           fn->name),
+                                      ctype);
+  new_c->addPragma("no object");
+  new_c->addPragma("no wide class");
+
+  // add the function args as fields in the class
+  int i = 1;
+  bool first = true;
+  for_actuals(arg, fcall) {
+    if (fn->hasPragma("on") && first) {
+      first = false;
       continue;
-    } else {
-      FnSymbol* fn = fcall->isResolved();
-
-      // create a new class to capture refs to locals
-      ClassType* ctype = new ClassType( CLASS_CLASS);
-      TypeSymbol* new_c = new TypeSymbol( astr("_class_locals", 
-                                               fn->name),
-                                          ctype);
-      new_c->addPragma("no object");
-      new_c->addPragma("no wide class");
-
-      // add the function args as fields in the class
-      int i = 1;
-      bool first = true;
-      for_actuals(arg, fcall) {
-        if (block->blockTag == BLOCK_ON && first) {
-          first = false;
-          continue;
-        }
-        SymExpr *s = toSymExpr(arg);
-        Symbol  *var = s->var; // arg or var
-        var->isConcurrent = true;
-        VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->type);
-        ctype->fields.insertAtTail(new DefExpr(field));
-        i++;
-      }
-      mod->block->insertAtHead(new DefExpr(new_c));
-        
-      // create the class variable instance and allocate it
-      VarSymbol *tempc = new VarSymbol( astr( "_args_for", 
-                                              fn->name),
-                                        ctype);
-      block->insertBefore( new DefExpr( tempc));
-      CallExpr *tempc_alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC,
-                                            ctype->symbol,
-                                            new_StringSymbol( astr( "instance of class ", ctype->symbol->name)));
-      block->insertBefore( new CallExpr( PRIMITIVE_MOVE,
+    }
+    SymExpr *s = toSymExpr(arg);
+    Symbol  *var = s->var; // arg or var
+    var->isConcurrent = true;
+    VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->type);
+    ctype->fields.insertAtTail(new DefExpr(field));
+    i++;
+  }
+  mod->block->insertAtHead(new DefExpr(new_c));
+    
+  // create the class variable instance and allocate it
+  VarSymbol *tempc = new VarSymbol( astr( "_args_for", 
+                                          fn->name),
+                                    ctype);
+  fcall->insertBefore( new DefExpr( tempc));
+  CallExpr *tempc_alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC,
+                                        ctype->symbol,
+                                        new_StringSymbol( astr( "instance of class ", ctype->symbol->name)));
+  fcall->insertBefore( new CallExpr( PRIMITIVE_MOVE,
                                      tempc,
                                      tempc_alloc));
-      
-      // set the references in the class instance
-      i = 1;
-      first = true;
-      for_actuals(arg, fcall) {
-        if (block->blockTag == BLOCK_ON && first) {
-          first = false;
-          continue;
-        }
-        SymExpr *s = toSymExpr(arg);
-        Symbol  *var = s->var; // var or arg
-        CallExpr *setc=new CallExpr(PRIMITIVE_SET_MEMBER,
-                                    tempc,
-                                    ctype->getField(i),
-                                    var);
-        block->insertBefore( setc);
-        i++;
-      }
-      
-      // create wrapper-function that uses the class instance
-
-      FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
-      DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
-      if (block->blockTag == BLOCK_ON) {
-        wrap_fn->addPragma("on block");
-        ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
-        wrap_fn->insertFormalAtTail(locale);
-      }
-      ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
-      wrap_fn->insertFormalAtTail( wrap_c);
-
-      mod->block->insertAtTail(new DefExpr(wrap_fn));
-      if (block->blockTag == BLOCK_ON) {
-        newb->insertAtTail(new CallExpr(wrap_fn, fcall->get(1)->remove(), tempc));
-      } else
-        newb->insertAtTail(new CallExpr(wrap_fn, tempc));
-
-      if (block->blockTag == BLOCK_BEGIN) {
-        wrap_fn->addPragma("begin block");
-        wrap_fn->insertAtHead(new CallExpr(PRIMITIVE_THREAD_INIT));
-      }
-        
-      // translate the original cobegin function
-      CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
-      if (block->blockTag == BLOCK_ON)
-        new_cofn->insertAtTail(new_IntSymbol(0)); // bogus actual
-      for_fields(field, ctype) {  // insert args
-
-        VarSymbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->isCompilerTemp = true;
-        wrap_fn->insertAtTail(new DefExpr(tmp));
-        wrap_fn->insertAtTail(
-          new CallExpr(PRIMITIVE_MOVE, tmp,
-            new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, wrap_c, field)));
-        new_cofn->insertAtTail(tmp);
-      }
-      
-      wrap_fn->retType = dtVoid;
-      fcall->remove();                     // rm orig. call
-      wrap_fn->insertAtTail(new_cofn);     // add new call
-      if (block->blockTag == BLOCK_ON)
-        block->insertAfter(new CallExpr(PRIMITIVE_CHPL_FREE, tempc));
-      else
-        wrap_fn->insertAtTail(new CallExpr(PRIMITIVE_CHPL_FREE, wrap_c));
-
-      fcall_def->remove();                 // move orig. def
-      mod->block->insertAtTail(fcall_def); // to top-level
-      normalize(wrap_fn);
+  
+  // set the references in the class instance
+  i = 1;
+  first = true;
+  for_actuals(arg, fcall) {
+    if (fn->hasPragma("on") && first) {
+      first = false;
+      continue;
     }
+    SymExpr *s = toSymExpr(arg);
+    Symbol  *var = s->var; // var or arg
+    CallExpr *setc=new CallExpr(PRIMITIVE_SET_MEMBER,
+                                tempc,
+                                ctype->getField(i),
+                                var);
+    fcall->insertBefore( setc);
+    i++;
   }
-  block->replace(newb);
+  
+  // create wrapper-function that uses the class instance
+
+  FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
+  DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
+  if (fn->hasPragma("on")) {
+    wrap_fn->addPragma("on block");
+    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
+    wrap_fn->insertFormalAtTail(locale);
+  }
+  ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
+  wrap_fn->insertFormalAtTail( wrap_c);
+
+  mod->block->insertAtTail(new DefExpr(wrap_fn));
+  if (fn->hasPragma("on")) {
+    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), tempc));
+  } else
+    fcall->insertBefore(new CallExpr(wrap_fn, tempc));
+
+  if (fn->hasPragma("begin")) {
+    wrap_fn->addPragma("begin block");
+    wrap_fn->insertAtHead(new CallExpr(PRIMITIVE_THREAD_INIT));
+  }
+    
+  // translate the original cobegin function
+  CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
+  if (fn->hasPragma("on"))
+    new_cofn->insertAtTail(new_IntSymbol(0)); // bogus actual
+  for_fields(field, ctype) {  // insert args
+
+    VarSymbol* tmp = new VarSymbol("_tmp", field->type);
+    tmp->isCompilerTemp = true;
+    wrap_fn->insertAtTail(new DefExpr(tmp));
+    wrap_fn->insertAtTail(
+      new CallExpr(PRIMITIVE_MOVE, tmp,
+        new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, wrap_c, field)));
+    new_cofn->insertAtTail(tmp);
+  }
+  
+  wrap_fn->retType = dtVoid;
+  wrap_fn->insertAtTail(new_cofn);     // add new call
+  if (fn->hasPragma("on"))
+    fcall->insertAfter(new CallExpr(PRIMITIVE_CHPL_FREE, tempc));
+  else
+    wrap_fn->insertAtTail(new CallExpr(PRIMITIVE_CHPL_FREE, wrap_c));
+
+  fcall->remove();                     // rm orig. call
+  fcall_def->remove();                 // move orig. def
+  mod->block->insertAtTail(fcall_def); // to top-level
+  normalize(wrap_fn);
 }
 
 
@@ -202,15 +191,16 @@ parallel(void) {
 
   compute_sym_uses();
 
-  Vec<BlockStmt*> blocks;
+  Vec<CallExpr*> calls;
   forv_Vec(BaseAST, ast, gAsts) {
-    if (BlockStmt* block = toBlockStmt(ast))
-      blocks.add(block);
+    if (CallExpr* call = toCallExpr(ast))
+      calls.add(call);
   }
 
-  forv_Vec(BlockStmt, block, blocks) {
-    if (block->blockTag == BLOCK_ON || block->blockTag == BLOCK_BEGIN)
-      bundleArgs(block);
+  forv_Vec(CallExpr, call, calls) {
+    if (call->isResolved() && (call->isResolved()->hasPragma("on") ||
+                               call->isResolved()->hasPragma("begin")))
+      bundleArgs(call);
   }
 }
 

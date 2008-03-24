@@ -106,9 +106,9 @@ void insertLineNumbers() {
   // forked via the argument class
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr * call = toCallExpr(ast)) {
-      if (BlockStmt* block = toBlockStmt(call->parentExpr)) {
-        if ((call->numActuals() > 2 && block->blockTag == BLOCK_ON) ||
-            (call->numActuals() > 1 && block->blockTag == BLOCK_BEGIN)) {
+      if (call->isResolved()) {
+        if ((call->numActuals() > 2 && call->isResolved()->hasPragma("on block")) ||
+            (call->numActuals() > 1 && call->isResolved()->hasPragma("begin block"))) {
           Expr* filename = call->argList.tail->remove();
           Expr* lineno = call->argList.tail->remove();
           Expr* argClass = call->argList.tail;
@@ -117,8 +117,8 @@ void insertLineNumbers() {
           ct->fields.insertAtTail(new DefExpr(linenoField));
           VarSymbol* filenameField = new VarSymbol("_fn", filename->typeInfo());
           ct->fields.insertAtTail(new DefExpr(filenameField));
-          block->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, argClass->copy(), linenoField, lineno));
-          block->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, argClass->copy(), filenameField, filename));
+          call->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, argClass->copy(), linenoField, lineno));
+          call->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, argClass->copy(), filenameField, filename));
           FnSymbol* fn = call->isResolved();
           DefExpr* filenameFormal = toDefExpr(fn->formals.tail);
           filenameFormal->remove();

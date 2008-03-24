@@ -12,9 +12,7 @@ void collapseBlocks(BlockStmt* block) {
   forv_Vec(Expr, expr, exprs) {
     if (BlockStmt* block = toBlockStmt(expr)) {
       if (block->list &&
-          !block->loopInfo &&
-          block->blockTag != BLOCK_ON &&
-          block->blockTag != BLOCK_BEGIN) {
+          !block->loopInfo) {
         for_alist(expr, block->body)
           block->insertBefore(expr->remove());
         block->remove();

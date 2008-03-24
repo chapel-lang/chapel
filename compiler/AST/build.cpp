@@ -915,7 +915,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   block->insertAtTail(new DefExpr(tmp));
   block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, new CallExpr(PRIMITIVE_GET_LOCALE, expr))));
   block->insertAtTail(new DefExpr(fn));
-  block->insertAtTail(new BlockStmt(new CallExpr(fn, tmp), BLOCK_ON));
+  block->insertAtTail(new CallExpr(fn, tmp));
   return block;
 }
 
@@ -941,7 +941,7 @@ buildBeginStmt(Expr* stmt, bool allocateOnHeap) {
   block->insertAtTail(new CallExpr("_upEndCount"));
 
   block->insertAtTail(new DefExpr(fn));
-  block->insertAtTail(new BlockStmt(new CallExpr(fn), BLOCK_BEGIN));
+  block->insertAtTail(new CallExpr(fn));
   return block;
 }
 
