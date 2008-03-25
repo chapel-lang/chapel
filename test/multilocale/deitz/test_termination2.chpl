@@ -1,18 +1,20 @@
 use Time;
 
 def main {
+  var s1, s2: sync bool;
   on Locales(1) {
     begin {
-      sleep(2);
+      s1;
       on Locales(0) {
         begin {
-          sleep(4);
+          s2;
           _debugWriteln("executing on locale ", localeID());
         }
       }
-      sleep(2);
       _debugWriteln("executing on locale ", localeID());
+      s2 = true;
     }
   }
   _debugWriteln("executing on locale ", localeID());
+  s1 = true;
 }
