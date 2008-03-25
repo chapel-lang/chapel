@@ -139,7 +139,9 @@ class SingleLocaleAssociativeDomain: BaseDomain {
 
   def add(idx: idxType): index(tableDom) {
     if ((numEntries+1)*2 > tableSize) {
-      _grow();
+      // TODO: should also make sure that we don't exceed the maximum table
+      // size
+      _resize(grow=true);
     }
     const (foundSlot, slotNum) = _findEmptySlot(idx);
     if (foundSlot) {
@@ -157,13 +159,15 @@ class SingleLocaleAssociativeDomain: BaseDomain {
   }
 
   def remove(idx: idxType) {
-    // TODO: shrink table if less than 1/4 full
     const (foundSlot, slotNum) = _findFilledSlot(idx);
     if (foundSlot) {
       table(slotNum).status = chpl_hash_status.deleted;
       numEntries -= 1;
     } else {
       halt("index not in domain: ", idx);
+    }
+    if (numEntries*8 < tableSize && tableSizeNum > 0) {
+      _resize(grow=false);
     }
   }
 
@@ -193,7 +197,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     tmpDom2 = [0..-1:chpl_table_index_type];
   }
 
-  def _grow() {
+  def _resize(grow:bool) {
     // back up the arrays
     _backupArrays();
 
@@ -204,7 +208,7 @@ class SingleLocaleAssociativeDomain: BaseDomain {
     // grow original table
     tableDom = [0..-1:chpl_table_index_type]; // non-preserving resize
     numEntries = 0; // reset, because the adds below will re-set this
-    tableSizeNum += 1;
+    tableSizeNum += if grow then 1 else -1;
     tableSize = chpl_primes(tableSizeNum);
     tableDom = [0..tableSize-1];
 
