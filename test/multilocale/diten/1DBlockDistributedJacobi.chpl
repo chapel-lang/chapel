@@ -49,7 +49,7 @@ class DistribArray {
 
   def getLocales() {
     // One could imagine not distributing it across all locales
-    [i in LocalesDomain] yield i;
+    for i in LocalesDomain do yield i;
   }
   
   def getLocalIndices() {
@@ -76,11 +76,11 @@ class DistribArray {
     if (b.arrSize != arrSize) then
       halt("Bad sizes in DistribArray.copy");
 
-    forall loc in getLocales() {
+    for loc in getLocales() { // sjd: changed to for
       on Locales(loc) {
         // hope that most indices match locale between the arrays
         // With this DistribArray class, they are.
-        forall i in getLocalIndices() {
+        for i in getLocalIndices() { // sjd: changed to for
           this.element(i) = b.element(i);
         }
       }
