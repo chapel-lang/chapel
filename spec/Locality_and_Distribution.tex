@@ -6,9 +6,8 @@ exploit locality by defining the affinity of data and computation.
 This is accomplished by associating both data objects and computations
 with abstract {\em locales}. To provide a higher-level mechanism,
 Chapel allows a mapping from domains to locales to be specified. This
-mapping is called a {\em distribution} and it guides that placement of
-variables associated with arrays and the placement of subcomputations
-defined over the domain.
+mapping is called a {\em distribution} and it guides the placement of
+elements within arrays and the placement of computations over domains.
 
 \index{local}
 \index{remote}
@@ -42,6 +41,14 @@ over locales are the equality and inequality comparison operators.
 The locale type supports the following methods:
 
 \begin{protohead}
+def locale.id: int;
+\end{protohead}
+\begin{protobody}
+Returns a unique integer for each locale, from 0 to the number of
+locales.
+\end{protobody}
+
+\begin{protohead}
 def locale.numCores: int;
 \end{protohead}
 \begin{protobody}
@@ -60,42 +67,76 @@ value of the specified return type.
 
 \subsubsection{Predefined Locales Array}
 \label{Predefined_Locales_Array}
-\index{Global@\chpl{Global}}
 \index{Locales@\chpl{Locales}}
 \index{numLocales@\chpl{numLocales}}
 \index{execution environment}
 
-Chapel provides a predefined environment  
-that stores information about the locales used during program
-execution.  This {\em execution environment} contains 
-definitions for the \chpl{Locales} array, \chpl{numLocales}, and \chpl{Global}:
+Chapel provides a predefined environment that stores information about
+the locales used during program execution.  This {\em execution
+environment} contains definitions for the array of locales
+(\chpl{Locales}), a domain for that array (\chpl{LocaleSpace}), and
+the number of locales (\chpl{numLocales}).
 \begin{chapel}
 config const numLocales: int;
-const Locales: [0..numLocales-1] locale;
-const Global: locale;
+const LocaleSpace: domain(1) = [0..numLocales-1];
+const Locales: [LocaleSpace] locale;
 \end{chapel}
-The constants \chpl{numLocales} and \chpl{Global} and the constant
-\chpl{Locales} array are fixed when the program begins execution.  
-The variable \chpl{Global} holds a special value of \chpl{locale} type 
-that can be distinct from the values stored in \chpl{Locales}.  This value is 
-used to denote an object or computation that has no defined affinity.
-
 When a program starts, a single computation is executing.  It is
 running on the locale given by \chpl{Locales(0)}.
 
-\subsubsection{Querying the Locale of a Variable}
+\subsubsection{Querying the Locale of an Expression}
 \label{Querying_the_Locale_of_a_Variable}
 \index{locale@\chpl{locale}}
 
-Every variable \chpl{v} is associated with some locale which can be
-queried using the following syntax:
+The locale associated with expressions that are lvalues or of class or
+locale type can be queried using the following syntax:
 \begin{syntax}
 locale-access-expression:
-  variable-expression . `locale'
+  locale-access-sub-expression . `locale'
+
+locale-access-sub-expression:
+  lvalue-expression
+  class-expression
+  locale-expression
+
+class-expression:
+  expression
+
+locale-expression:
+  expression
 \end{syntax}
-When the \sntx{expression} is a class type, the locale is where the
-object is located rather than where the \sntx{expression} may be
-located.
+When the left operand to the locale query is an lvalue, the access
+returns the locale on which that lvalue exists.  When it is of class
+type (whether or not it is also an lvalue), the access returns the
+locale on which the class object exists.  When it is of locale type,
+the access returns the expression itself.
+
+\begin{example}
+Given some class C, the code
+\begin{chapel}
+on Locales(0) {
+  var x: int;
+  var c: C;
+  on Locales(1) {
+    on Locales(2) {
+      c = new C();
+    }
+    writeln(x.locale);
+    writeln(c.locale);
+  }
+}
+\end{chapel}
+results in the output
+\begin{chapel}
+0
+2
+\end{chapel}
+The variable \chpl{x} is a value.  It is declared and exists
+on \chpl{Locales(0)}.  The variable \chpl{c} is a reference.  The
+reference exists on \chpl{Locales(0)} but the object itself exists
+on \chpl{Locales(2)}.  The locale access returns the locale where the
+object exists.
+\end{example}
 
 \subsection{Specifying Locales for Computation}
 \label{Specifying_Locales_for_Computation}
@@ -113,39 +154,19 @@ The on statement controls on which locale a computation or data should
 be placed.  The syntax of the on statement is given by
 \begin{syntax}
 on-statement:
-  `on' expression `do' statement
-  `on' expression block-level-statement
+  `on' locale-access-sub-expression `do' statement
+  `on' locale-access-sub-expression block-level-statement
 \end{syntax}
-If the \sntx{expression} is a value of \chpl{locale} type,
-the \sntx{statement} or \sntx{block-level-statement} is executed on
-the locale specified directly by the expression.  Otherwise, the
-expression must be a variable and the locale is taken to be the locale
-where the variable is located.  Execution continues after
+The expression must be a legal expression for accessing a locale.
+See~\rsec{Querying_the_Locale_of_a_Variable} for details.  Execution
+of the statement occurs on the locale given by
+the \sntx{locale-access-sub-expression}.  Execution continues after
 the \chpl{on-statement} after execution of the \sntx{statement}
-or \sntx{block-level-statement} completes.
-
-\index{Global@\chpl{Global}}
-If the locale that the \sntx{expression} refers to is equal
-to \chpl{Global}, then the locale is unspecified and is determined by
-the runtime and/or compiler.
-
-\begin{example}
-A common idiom is to use \chpl{on} in conjunction with \chpl{forall}
-to access an array decomposed over multiple locales.  The code
-\begin{chapel}
-forall i in D do on A(i) {
-  // some computation
-}
-\end{chapel}
-executes each iteration of the forall loop on the locale where the
-element of \chpl{A(i)} is located.
-\end{example}
+completes.
 
 By default, when new variables and data objects are created, they are
 created in the locale where the computation is running.  This locale
-can be changed by using the \chpl{on} keyword.  Variables can be
-defined within an \sntx{on-statement} to define them on a particular
-locale.
+can be changed by using the \chpl{on} keyword.
 
 The following statements may not be lexically enclosed in
 on-statements: yield-statements and return-statements.
@@ -187,6 +208,19 @@ be overridden by explicitly using \chpl{on} in the body of the loop or
 by reordering the product of iteration.
 \end{openissue}
 
+\subsubsection{Remote Variable Declarations}
+\label{remote_variable_declarations}
+
+Variables can be defined within an \sntx{on-statement} to define them
+on a particular locale such that the scope of the variables is outside
+the \sntx{on-statement}.  This is accomplished using a similar syntax
+but omitting the \chpl{do} keyword and braces.  The syntax is given
+by:
+\begin{syntax}
+remote-variable-declaration-statement:
+  `on' locale-access-sub-expression variable-declaration-statement
+\end{syntax}
+
 \subsection{Distributions}
 \label{Distributions}
 \index{distributions}
@@ -199,9 +233,9 @@ distribution}.
 
 \index{domains!distributed}
 A domain for which a distribution is specified is referred to as a
-{\em distributed domain}.  A domain supports a method, \chpl{locale},
-that maps index values in the domain to locales that correspond to the
-domain's distribution.
+{\em distributed domain}.
+%A domain supports a method, \chpl{locale}, that maps index values in
+%the domain to locales that correspond to the domain's distribution.
 
 Iteration over a distributed domain implicitly executes the control
 computation in the domain of the associated locale.  Similarly, when
