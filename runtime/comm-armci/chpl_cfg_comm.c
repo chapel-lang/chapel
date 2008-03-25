@@ -208,6 +208,17 @@ void _chpl_comm_rollcall(void) {
             _numLocales);
 }
 
+void _chpl_comm_broadcast_global_vars(int numGlobals) {
+  chpl_error("_chpl_comm_broadcast_global_vars() not yet implemented", 0, NULL);
+}
+
+void _chpl_comm_set_malloc_type(void) {
+  chpl_error("_chpl_comm_set_malloc_type() not yet implemented", 0, NULL);
+}
+
+void _chpl_comm_broadcast_private(void* addr, int size) {
+  chpl_error("_chpl_comm_broadcast_private() not yet implemented", 0, NULL);
+}
 
 //
 // barrier for synchronization between all processes; currently only
