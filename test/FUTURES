@@ -19,7 +19,6 @@ multilocale issues
 bug: on clause inside iterator [test/users/shetag/iteratorWithOn]
 bug: spin-waiting for a variable to be changed by a remote begin fails [test/multilocale/diten/beginInOn]
 multilocale: var declaration in on statement [test/multilocale/deitz/test_on_var_decl1]
-semantic: No such thing as a remote domain? [test/multilocale/diten/remoteDomainIsLocal]
 
 
 ^^^ Brad considers these highest priority for release v0.7
