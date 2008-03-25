@@ -22,6 +22,11 @@ MEMORY FLAGS:
 
 CONFIG VARS:
 ============
-    second: int (configured to 111)
-      last: int (configured to 222)
-  multiple: int (configured to 333)
+Built-in config vars:
+  numLocales: int (configured to 1)
+  maxThreads: int
+
+varNameQMark config vars:
+      second: int (configured to 111)
+        last: int (configured to 222)
+    multiple: int (configured to 333)

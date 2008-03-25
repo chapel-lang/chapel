@@ -22,6 +22,11 @@ MEMORY FLAGS:
 
 CONFIG VARS:
 ============
-  x: int (configured to 111)
-  y: string (configured to i wanted to see it work again)
-  z: real (configured to 99.9)
+Built-in config vars:
+  numLocales: int (configured to 1)
+  maxThreads: int
+
+configVar-Dash config vars:
+           x: int (configured to 111)
+           y: string (configured to i wanted to see it work again)
+           z: real (configured to 99.9)

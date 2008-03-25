@@ -22,6 +22,11 @@ MEMORY FLAGS:
 
 CONFIG VARS:
 ============
-  Thursday: string (configured to night)
-  Possible: string (configured to snow)
-     ofOne: string
+Built-in config vars:
+  numLocales: int (configured to 1)
+  maxThreads: int
+
+configVarHelp config vars:
+    Thursday: string (configured to night)
+    Possible: string (configured to snow)
+       ofOne: string

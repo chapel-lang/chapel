@@ -22,9 +22,13 @@ MEMORY FLAGS:
 
 CONFIG VARS:
 ============
-module1's config vars:
-  x: int (configured to 999)
+Built-in config vars:
+  numLocales: int (configured to 1)
+  maxThreads: int
 
-module2's config vars:
-  x: int
-  z: real (configured to 8888.88)
+module1 config vars:
+           x: int (configured to 999)
+
+module2 config vars:
+           x: int
+           z: real (configured to 8888.88)

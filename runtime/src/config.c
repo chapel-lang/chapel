@@ -13,7 +13,7 @@
 
 typedef struct _configVarType { /* table entry */
   char* varName;
-  char* moduleName;
+  const char* moduleName;
   char* defaultValue;
   char* setValue;
 
@@ -260,7 +260,7 @@ static unsigned hash(const char* varName) {
 void printConfigVarTable(void) {
   configVarType* configVar = NULL; 
   int longestName = 0;
-  char* moduleName = NULL;
+  const char* moduleName = NULL;
   int foundUserConfigs = 0;
   int foundMultipleModules = 0;
   int thisName;
@@ -269,7 +269,6 @@ void printConfigVarTable(void) {
        configVar != NULL;
        configVar = configVar->nextInstalled) {
 
-    if (strncmp(configVar->moduleName, "Chapel", 6) != 0) {
       if (foundUserConfigs == 0) {
         foundUserConfigs = 1;
         moduleName = configVar->moduleName;
@@ -282,7 +281,6 @@ void printConfigVarTable(void) {
       if (longestName < thisName)  {
         longestName = thisName;
       }
-    }
   }
 
   moduleName = NULL;
@@ -294,15 +292,14 @@ void printConfigVarTable(void) {
          configVar != NULL; 
          configVar = configVar->nextInstalled) {
 
-      if (strncmp(configVar->moduleName, "Chapel", 6) != 0) {
         if (foundMultipleModules) {
           if (moduleName == NULL) {
             moduleName = configVar->moduleName;
-            fprintf(stdout, "%s's config vars:\n", configVar->moduleName);
+            fprintf(stdout, "%s config vars:\n", configVar->moduleName);
           }
           if (strcmp(configVar->moduleName, moduleName) != 0) {
             fprintf(stdout, "\n");
-            fprintf(stdout, "%s's config vars:\n", configVar->moduleName);
+            fprintf(stdout, "%s config vars:\n", configVar->moduleName);
             moduleName = configVar->moduleName;
           }
         }
@@ -313,7 +310,6 @@ void printConfigVarTable(void) {
         }
         fprintf(stdout, "\n");
       }
-    }
   }
   _chpl_exit_any(0);
 }
@@ -366,12 +362,22 @@ void initSetValue(char* varName, char* value, const char* moduleName) {
 }
 
 
+// a weak test, but the same one we've been using for some time
+static int isInternalModuleName(const char* name) {
+  return (strncmp(name, "Chapel", 6) == 0);
+}
+
+
+
 char* lookupSetValue(const char* varName, const char* moduleName) {
   configVarType* configVar;
   if (strcmp(moduleName, "") == 0) {
     const char* message = "Attempted to lookup value with the module name an "
       "empty string";
     chpl_internal_error(message);
+  }
+  if (isInternalModuleName(moduleName)) {
+    moduleName = "Built-in";
   }
 
   configVar = lookupConfigVar(varName, moduleName);
@@ -401,6 +407,10 @@ void installConfigVar(const char* varName, const char* value,
   }
   lastInTable = configVar;
   configVar->varName = _glom_strings(1, varName);
-  configVar->moduleName = _glom_strings(1, moduleName);
+  if (isInternalModuleName(moduleName)) {
+    configVar->moduleName = "Built-in";
+  } else {
+    configVar->moduleName = _glom_strings(1, moduleName);
+  }
   configVar->defaultValue = _glom_strings(1, value);
 } 

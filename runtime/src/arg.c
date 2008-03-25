@@ -323,7 +323,7 @@ void parseArgs(int argc, char* argv[]) {
             numPtr = &(currentArg[3]);
           }
           parseNumLocales(numPtr);
-          sprintf(numLocalesBuffer, "ChapelBase.numLocales=%" PRId32, _argNumLocales);
+          sprintf(numLocalesBuffer, "Built-in.numLocales=%" PRId32, _argNumLocales);
           addToConfigList(numLocalesBuffer, sdash);
           break;
         }

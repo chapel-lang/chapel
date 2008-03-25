@@ -22,4 +22,9 @@ MEMORY FLAGS:
 
 CONFIG VARS:
 ============
+Built-in config vars:
+   numLocales: int (configured to 1)
+   maxThreads: int
+
+varNameEnumQM config vars:
   gingerbread: ingredients (configured to nutmeg)

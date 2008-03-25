@@ -20,3 +20,7 @@ MEMORY FLAGS:
   --memtrace=<filename>  : write memory trace to filename
   --memthreshold=<n>     : filter memtrace for sizes >= 'n' bytes
 
+CONFIG VARS:
+============
+  numLocales: int (configured to 1)
+  maxThreads: int
