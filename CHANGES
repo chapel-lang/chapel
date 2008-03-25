@@ -19,7 +19,6 @@ High-Level Themes:
 - improved stability of core features
 - target audience: HPCS mission partners, select HPC/academic/industry users
 
-
 Changes to Chapel Language:
 ---------------------------
 - added "new" keyword to invoke class/record constructors
@@ -85,7 +84,7 @@ Documentation:
 Example Codes:
 --------------
 - added a multilocale.chpl example to show multi-locale execution
-- made automatied testing of opaque.chpl deterministic
+- made automated testing of opaque.chpl deterministic
 - added "new" keyword to tests that create class instances
 - for tests that use files, changed access mode from string to FileAccessMode (TODO: keep???)
 - added enumeration qualifier to norm.chpl's normType enumerated type
