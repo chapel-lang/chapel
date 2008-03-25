@@ -849,7 +849,7 @@ void CallExpr::codegen(FILE* outfile) {
         break;
       }
       if (CallExpr* call = toCallExpr(get(2))) {
-        if (call->isPrimitive(PRIMITIVE_GET_LOCALE)) {
+        if (call->isPrimitive(PRIMITIVE_GET_LOCALEID)) {
           if (call->get(1)->typeInfo()->symbol->hasPragma("wide")) {
             if (getValueType(call->get(1)->typeInfo()->getField("addr")->type)->symbol->hasPragma("wide class")) {
               fprintf(outfile, "_COMM_WIDE_GET_LOCALE(");
@@ -1882,7 +1882,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_GC_CLEANUP:
       fprintf(outfile, "_chpl_gc_cleanup()");
       break;
-    case PRIMITIVE_GET_LOCALE:
+    case PRIMITIVE_GET_LOCALEID:
       INT_FATAL(this, "handled in move");
       break;
     case PRIMITIVE_LOCALE_ID:

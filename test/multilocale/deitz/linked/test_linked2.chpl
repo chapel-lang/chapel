@@ -15,4 +15,4 @@ var d = new D();
 writeln(d);
 writeln(d.cs);
 for i in 0..numLocales-1 do
-  writeln(d.cs[i].locale);
+  writeln(d.cs[i].locale.id);

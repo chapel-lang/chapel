@@ -5,14 +5,14 @@ class C {
 def main {
   var D: real;
   writeln(D);
-  writeln(D.locale);
+  writeln(D.locale.id);
   on Locales(1) {
     var D: real;
-    writeln(D.locale);
+    writeln(D.locale.id);
     on Locales(0) {
-      writeln(D.locale);
+      writeln(D.locale.id);
     }
   }
-  writeln(D.locale);
+  writeln(D.locale.id);
   writeln(D);
 }

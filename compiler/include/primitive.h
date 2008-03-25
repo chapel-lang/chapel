@@ -126,7 +126,7 @@ enum PrimitiveTag {
 
   PRIMITIVE_LOGICAL_FOLDER, // Help fold logical && and ||
 
-  PRIMITIVE_GET_LOCALE,   // return locale on which an expression exists
+  PRIMITIVE_GET_LOCALEID,   // return locale on which an expression exists
   PRIMITIVE_LOCALE_ID,    // return locale id
   PRIMITIVE_NUM_LOCALES,  // return number of locales
 

@@ -8,11 +8,11 @@ on Locales(1) {
   c = new C();
 }
 
-_debugWriteln(localeID(), " c.locale = ", c.locale);
-_debugWriteln(localeID(), " c.x.locale = ", c.x.locale);
+_debugWriteln(localeID(), " c.locale.id = ", c.locale.id);
+_debugWriteln(localeID(), " c.x.locale.id = ", c.x.locale.id);
 
 def C.foo() {
-  _debugWriteln(localeID(), " this.locale = ", this.locale);
+  _debugWriteln(localeID(), " this.locale.id = ", this.locale.id);
 }
 
 c.foo();
@@ -20,7 +20,7 @@ c.foo();
 def C.goo() {
   on Locales(1) do
     foo();
-  _debugWriteln(localeID(), " this.locale = ", this.locale);
+  _debugWriteln(localeID(), " this.locale.id = ", this.locale.id);
 }
 
 c.goo();
@@ -31,8 +31,8 @@ on Locales(1) do
 def bar() {
   var d: C;
   d = c;
-  _debugWriteln(localeID(), " d.locale = ", d.locale);
-  _debugWriteln(localeID(), " d.x.locale = ", d.x.locale);
+  _debugWriteln(localeID(), " d.locale.id = ", d.locale.id);
+  _debugWriteln(localeID(), " d.x.locale.id = ", d.x.locale.id);
 }
 
 bar();

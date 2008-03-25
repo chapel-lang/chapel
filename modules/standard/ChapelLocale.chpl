@@ -36,3 +36,7 @@ def locale.numCores {
 }
 
 def localeID() return __primitive("_localeID");
+
+def chpl_int_to_locale(id) {
+  return Locales(id);
+}

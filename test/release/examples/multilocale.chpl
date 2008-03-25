@@ -62,10 +62,10 @@ var head = recursiveBuild();
 
 //
 // walk over the linked list and output each node and the locale on
-// which it exists using .locale to determine the locale
+// which it exists using .locale.id to determine the locale
 //
 var tmp = head;
 while tmp {
-  writeln("node with data = ", tmp.data, " on locale ", tmp.locale);
+  writeln("node with data = ", tmp.data, " on locale ", tmp.locale.id);
   tmp = tmp.next;
 }

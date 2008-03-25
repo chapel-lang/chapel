@@ -9,7 +9,7 @@ def main() {
     var i = 0;
     cobegin {
       while (s != "done") { i += 1; } 
-      on Locales(s.locale) {
+      on s.locale {
         s = "done";
       }
     }

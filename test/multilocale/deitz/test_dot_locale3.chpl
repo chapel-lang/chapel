@@ -12,9 +12,9 @@ on Locales(1) {
 
 c1.next = c2;
 
-writeln(c1.locale);
-writeln(c1.data.locale);
-writeln(c2.locale);
-writeln(c2.data.locale);
-writeln(c1.next.locale);
-writeln(c1.next.data.locale);
+writeln(c1.locale.id);
+writeln(c1.data.locale.id);
+writeln(c2.locale.id);
+writeln(c2.data.locale.id);
+writeln(c1.next.locale.id);
+writeln(c1.next.data.locale.id);

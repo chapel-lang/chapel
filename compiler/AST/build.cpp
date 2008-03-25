@@ -83,7 +83,8 @@ checkControlFlow(Expr* expr, const char* context) {
 
 Expr* buildDotExpr(BaseAST* base, const char* member) {
   if (!strcmp("locale", member))
-    return new CallExpr(PRIMITIVE_GET_LOCALE, base);
+    return new CallExpr("chpl_int_to_locale", 
+                        new CallExpr(PRIMITIVE_GET_LOCALEID, base));
   else
     return new CallExpr(".", base, new_StringSymbol(member));
 }
@@ -989,7 +990,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   Symbol* tmp = new VarSymbol("_tmp");
   tmp->isCompilerTemp = true;
   block->insertAtTail(new DefExpr(tmp));
-  block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, new CallExpr(PRIMITIVE_GET_LOCALE, expr))));
+  block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, new CallExpr(PRIMITIVE_GET_LOCALEID, expr))));
   block->insertAtTail(new DefExpr(fn));
   block->insertAtTail(new CallExpr(fn, tmp));
   return block;

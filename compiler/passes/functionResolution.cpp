@@ -2284,7 +2284,7 @@ preFold(Expr* expr) {
         result = call->get(1)->remove();
         call->replace(result);
       }
-    } else if (call->isPrimitive(PRIMITIVE_GET_LOCALE)) {
+    } else if (call->isPrimitive(PRIMITIVE_GET_LOCALEID)) {
       Type* type = call->get(1)->typeInfo();
 
       //

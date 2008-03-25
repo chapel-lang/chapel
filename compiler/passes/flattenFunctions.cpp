@@ -64,7 +64,7 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
                 //
                 // let GET_LOCALE work apply to the reference
                 //
-                (call && call->isPrimitive(PRIMITIVE_GET_LOCALE))) {
+                (call && call->isPrimitive(PRIMITIVE_GET_LOCALEID))) {
 
               se->var = arg;
             } else if (call && call->isPrimitive(PRIMITIVE_SET_REF)) {
