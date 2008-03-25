@@ -123,7 +123,6 @@ Is this "while x"(i); or "while x(i)";?
 %token TNIL
 %token TON
 %token TOPAQUE
-%token TORDERED
 %token TOTHERWISE
 %token TOUT
 %token TPARAM
@@ -459,15 +458,6 @@ for_stmt:
     { $$ = buildForLoopStmt(BLOCK_FORALL, NULL, $2, $3); }
 | TFORALL expr TDO stmt
     { $$ = buildForLoopStmt(BLOCK_FORALL, NULL, $2, new BlockStmt($4)); }
-
-| TORDERED TFORALL expr TIN expr parsed_block_stmt
-    { $$ = buildForLoopStmt(BLOCK_ORDERED_FORALL, $3, $5, $6); }
-| TORDERED TFORALL expr TIN expr TDO stmt
-    { $$ = buildForLoopStmt(BLOCK_ORDERED_FORALL, $3, $5, new BlockStmt($7)); }
-| TORDERED TFORALL expr parsed_block_stmt
-    { $$ = buildForLoopStmt(BLOCK_ORDERED_FORALL, NULL, $3, $4); }
-| TORDERED TFORALL expr TDO stmt
-    { $$ = buildForLoopStmt(BLOCK_ORDERED_FORALL, NULL, $3, new BlockStmt($5)); }
 
 | TCOFORALL expr TIN expr parsed_block_stmt
     { $$ = buildCoforallLoopStmt($2, $4, $5); }

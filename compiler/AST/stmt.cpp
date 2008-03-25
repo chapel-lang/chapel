@@ -166,8 +166,7 @@ BlockStmt::isLoop(void) {
     blockTag == BLOCK_WHILE_DO ||
     blockTag == BLOCK_DO_WHILE ||
     blockTag == BLOCK_FOR ||
-    blockTag == BLOCK_FORALL ||
-    blockTag == BLOCK_ORDERED_FORALL;
+    blockTag == BLOCK_FORALL;
 }
 
 

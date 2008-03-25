@@ -147,15 +147,14 @@ can be changed by using the \chpl{on} keyword.  Variables can be
 defined within an \sntx{on-statement} to define them on a particular
 locale.
 
-\subsubsection{On and Iterators}
-\label{On_and_Iterators}
-\index{iterators!on@\chpl{on}}
+The following statements may not be lexically enclosed in
+on-statements: yield-statements and return-statements.
 
-When a loop iterates over an iterator, on-statements inside the
-iterator control where the corresponding loop body is executed.
-
-\begin{example}
-An iterator over a distributed tree might include an iterator over the
+\begin{openissue}
+It may be worthwhile to allow yields in on-statments such that when a
+loop iterates over an iterator, on-statements inside the iterator
+control where the corresponding loop body is executed.  For example,
+an iterator over a distributed tree might include an iterator over the
 nodes as defined in the following code:
 \begin{chapel}
 class Tree {
@@ -172,8 +171,8 @@ class Tree {
 }
 \end{chapel}
 Given this code and a binary tree of type \chpl{Tree} stored in
-variable \chpl{tree}, then we can use the nodes iterator to iterate
-over the tree with the following code:
+variable \chpl{tree}, then we can use the \chpl{nodes} iterator to
+iterate over the tree with the following code:
 \begin{chapel}
 forall t in tree.nodes {
   // body executed on t as specified in nodes
@@ -186,7 +185,7 @@ keyword is used.  In the case of zipper or tensor product iteration,
 the location of execution is taken from the first iterator.  This can
 be overridden by explicitly using \chpl{on} in the body of the loop or
 by reordering the product of iteration.
-\end{example}
+\end{openissue}
 
 \subsection{Distributions}
 \label{Distributions}

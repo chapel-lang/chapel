@@ -80,6 +80,15 @@ The following statements may not be lexically enclosed in
 begin-statements: break-statements, continue-statements,
 yield-statements, and return-statements.
 
+\begin{openissue}
+It is undecided whether yield-statement should be allowed inside the
+following parallel statements (begin, cobegin, coforall, and forall).
+The design of parallel iterators is currently ongoing.  If simple
+iterators with yield-statements in parallel statements are allowed,
+there would be an issue on how such iterators could be zippered.  This
+issue is a high priority and there are a number of ideas on the table.
+\end{openissue}
+
 \subsubsection{Single Variables}
 \label{Single_Variables}
 \index{synchronization variables!single@\chpl{single}}
@@ -339,6 +348,11 @@ The following statements may not be lexically enclosed in
 cobegin-statements: break-statements, continue-statements,
 yield-statements, and return-statements.
 
+\begin{openissue}
+Whether to allow yield-statements in cobegin-statements is an open
+issue; see note in~\rsec{Begin}.
+\end{openissue}
+
 \begin{example}
 The cobegin-statement
 \begin{chapel}
@@ -391,6 +405,11 @@ loop only after each iteration has been completely evaluated.
 The following statements may not be lexically enclosed in
 coforall-statements: break-statements, continue-statements,
 yield-statements, and return-statements.
+
+\begin{openissue}
+Whether to allow yield-statements in coforall-statements is an open
+issue; see note in~\rsec{Begin}.
+\end{openissue}
 
 \begin{example}
 The coforall-statement
@@ -535,10 +554,16 @@ not guaranteed.  The compiler and runtime determine the actual
 concurrency based on the specification of the iterator of the loop.
 
 Control continues with the statement following the forall loop only
-after each iteration has been completely evaluated.  Control transfers
-out of a loop body via \chpl{break}, \chpl{continue},
-and \chpl{return} are not permitted.  Control can be transferred out
-of the loop via a \chpl{yield} statement.
+after each iteration has been completely evaluated.
+
+The following statements may not be lexically enclosed in
+forall-statements: break-statements, continue-statements,
+yield-statements, and return-statements.
+
+\begin{openissue}
+Whether to allow yield-statements in forall-statements is an open
+issue; see note in~\rsec{Begin}.
+\end{openissue}
 
 \begin{example}
 In the code

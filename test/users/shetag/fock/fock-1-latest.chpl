@@ -58,11 +58,11 @@ def producer() {
 }
 
 def genBlocks() {
-  forall iat in 1..natom {
-    forall jat in 1..iat {
-      forall kat in 1..iat {
+  for iat in 1..natom { // sjd: changed forall to for because of yield
+    for jat in 1..iat { // sjd: changed forall to for because of yield
+      for kat in 1..iat { // sjd: changed forall to for because of yield
         const lattop = if (kat==iat) then jat else kat;
-        forall lat in 1..lattop {
+        for lat in 1..lattop { // sjd: changed forall to for because of yield
           yield new blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1),
                              bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), 
                              bas_info(lat,1), bas_info(lat,2));
@@ -70,7 +70,7 @@ def genBlocks() {
       }
     }
   }
-  forall loc in 1..numLocs do
+  for loc in 1..numLocs do // sjd: changed forall to for because of yield
     yield new blockIndices(0,0,0,0,0,0,0,0);
 }
 

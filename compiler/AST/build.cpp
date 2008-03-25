@@ -1,4 +1,5 @@
 #include "build.h"
+#include "astutil.h"
 #include "baseAST.h"
 #include "expr.h"
 #include "runtime.h"
@@ -6,6 +7,78 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+
+
+static void
+checkControlFlow(Expr* expr, const char* context) {
+  Vec<const char*> labelSet; // all labels in expr argument
+  Vec<BaseAST*> loopSet;     // all asts in a loop in expr argument
+  Vec<BaseAST*> innerFnSet;  // all asts in a function in expr argument
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, expr);
+
+  //
+  // compute labelSet and loopSet
+  //
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (LabelSymbol* ls = toLabelSymbol(def->sym))
+        labelSet.set_add(ls->name);
+      else if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        if (!innerFnSet.set_in(fn)) {
+          Vec<BaseAST*> innerAsts;
+          collect_asts(&innerAsts, fn);
+          forv_Vec(BaseAST, ast, innerAsts) {
+            innerFnSet.set_add(ast);
+          }
+        }
+      }
+    } else if (BlockStmt* block = toBlockStmt(ast)) {
+      if ((block->blockTag == BLOCK_DO_WHILE) ||
+          (block->blockTag == BLOCK_FOR) ||
+          (block->blockTag == BLOCK_PARAM_FOR) ||
+          (block->blockTag == BLOCK_WHILE_DO)) {
+        if (!loopSet.set_in(block)) {
+          Vec<BaseAST*> loopAsts;
+          collect_asts(&loopAsts, block);
+          forv_Vec(BaseAST, ast, loopAsts) {
+            loopSet.set_add(ast);
+          }
+        }
+      }
+    }
+  }
+
+  //
+  // check for illegal control flow
+  //
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (innerFnSet.set_in(call))
+        continue; // yield or return is in nested function/iterator
+      if (call->isPrimitive(PRIMITIVE_RETURN)) {
+        USR_FATAL_CONT(call, "return is not allowed in %s", context);
+      } else if (call->isPrimitive(PRIMITIVE_YIELD)) {
+        USR_FATAL_CONT(call, "yield is not allowed in %s", context);
+      }
+    } else if (GotoStmt* gs = toGotoStmt(ast)) {
+      if (gs->label && labelSet.set_in(gs->label->getName()))
+        continue; // break or continue target is in scope
+      if (!gs->label && loopSet.set_in(gs))
+        continue; // break or continue loop is in scope
+      if (!strcmp(context, "on statement")) {
+        USR_PRINT(gs, "the following error is a current limitation");
+      }
+      if (gs->gotoTag == GOTO_BREAK) {
+        USR_FATAL_CONT(gs, "break is not allowed in %s", context);
+      } else if (gs->gotoTag == GOTO_CONTINUE) {
+        USR_FATAL_CONT(gs, "continue is not allowed in %s", context);
+      } else {
+        USR_FATAL_CONT(gs, "illegal 'goto' usage; goto is deprecated anyway");
+      }
+    }
+  }
+}
 
 
 Expr* buildDotExpr(BaseAST* base, const char* member) {
@@ -332,7 +405,7 @@ buildForLoopExpr(BaseAST* indices, Expr* iterator, Expr* expr, Expr* cond) {
   Expr* stmt = new CallExpr(PRIMITIVE_YIELD, expr);
   if (cond)
     stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
-  stmt = new BlockStmt(buildForLoopStmt(BLOCK_FORALL,
+  stmt = new BlockStmt(buildForLoopStmt(BLOCK_FOR,
                                        indices,
                                        iterator,
                                        new BlockStmt(stmt)));
@@ -391,6 +464,9 @@ BlockStmt* buildForLoopStmt(BlockTag tag,
                             Expr* iterator,
                             BlockStmt* body) {
 
+  if (tag == BLOCK_FORALL)
+    checkControlFlow(body, "forall statement");
+
   //
   // insert temporary index when elided by user
   //
@@ -399,9 +475,7 @@ BlockStmt* buildForLoopStmt(BlockTag tag,
 
   checkIndices(indices);
 
-  if (fSerial &&
-      (tag == BLOCK_FORALL ||
-       tag == BLOCK_ORDERED_FORALL))
+  if (fSerial && tag == BLOCK_FORALL)
     tag = BLOCK_FOR;
 
   body = new BlockStmt(body);
@@ -458,6 +532,7 @@ BlockStmt* buildForLoopStmt(BlockTag tag,
 
 
 BlockStmt* buildCoforallLoopStmt(BaseAST* indices, Expr* iterator, BlockStmt* body) {
+  checkControlFlow(body, "coforall statement");
 
   if (fSerial)
     return buildForLoopStmt(BLOCK_FOR, indices, iterator, body);
@@ -896,6 +971,7 @@ buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
 
 BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
+  checkControlFlow(stmt, "on statement");
   if (fLocal) {
     BlockStmt* block = new BlockStmt(stmt, BLOCK_NORMAL);
     // should we evaluate the expression for side effects?
@@ -922,6 +998,8 @@ buildOnStmt(Expr* expr, Expr* stmt) {
 
 BlockStmt*
 buildBeginStmt(Expr* stmt, bool allocateOnHeap) {
+  if (allocateOnHeap) // cobegin and coforall already checked
+    checkControlFlow(stmt, "begin statement");
   if (fSerial)
     return buildChapelStmt(new BlockStmt(stmt, BLOCK_NORMAL));
   static int uid = 1;
@@ -948,6 +1026,7 @@ buildBeginStmt(Expr* stmt, bool allocateOnHeap) {
 
 BlockStmt*
 buildSyncStmt(Expr* stmt) {
+  checkControlFlow(stmt, "sync statement");
   if (fSerial)
     return buildChapelStmt(new BlockStmt(stmt, BLOCK_NORMAL));
   BlockStmt* block = buildChapelStmt();
@@ -965,6 +1044,7 @@ buildSyncStmt(Expr* stmt) {
 
 BlockStmt*
 buildCobeginStmt(Expr* stmt) {
+  checkControlFlow(stmt, "cobegin statement");
   if (fSerial)
     return buildChapelStmt(stmt);
   VarSymbol* cobeginCount = new VarSymbol("_cobeginCount");

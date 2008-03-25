@@ -449,7 +449,7 @@ class Graph {
   }
 
   def edgesOut(u:Node) : Edge {
-    forall e in edges do {
+    for e in edges do {
       if ((e.src == u && !e.reversed) || (e.dst == u && e.reversed)){
 	yield e;
       }
@@ -457,7 +457,7 @@ class Graph {
   }
 
   def whiteNodes() : Node {
-    forall n in nodes do {
+    for n in nodes do {
       if( n.color == colors.WHITE) then yield n;
     }
   }

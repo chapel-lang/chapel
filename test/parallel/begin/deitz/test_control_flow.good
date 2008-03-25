@@ -1,0 +1,4 @@
+test_control_flow.chpl:3: error: return is not allowed in begin statement
+test_control_flow.chpl:6: error: return is not allowed in cobegin statement
+test_control_flow.chpl:7: error: return is not allowed in cobegin statement
+test_control_flow.chpl:10: error: break is not allowed in coforall statement

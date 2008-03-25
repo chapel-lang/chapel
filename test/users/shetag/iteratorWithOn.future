@@ -1,4 +1,4 @@
-bug: on clause inside iterator
+unimplemented feature: yield in on statement
 
 This should be legal.
 

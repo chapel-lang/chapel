@@ -56,14 +56,14 @@ def producer() {
 }
 
 def genBlocks() {
-  forall iat in 1..natom do
-    forall (jat, kat) in [1..iat, 1..iat] {
+  for iat in 1..natom do // sjd: changed forall to for because of yield
+    for (jat, kat) in [1..iat, 1..iat] { // sjd: changed forall to for because of yield
       const lattop = if (kat==iat) then jat 
                                    else kat;
-      forall lat in 1..lattop do
+      for lat in 1..lattop do // sjd: changed forall to for because of yield
         yield new blockIndices(iat, jat, kat, lat);
     }
-  forall loc in 1..numConsumers do
+  for loc in 1..numConsumers do // sjd: changed forall to for because of yield
     yield nil;
 }
 

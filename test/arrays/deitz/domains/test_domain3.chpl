@@ -48,7 +48,7 @@ class mydomain {
       when 2 do high = info1.high;
       when 3 do high = info2.high;
     }
-    forall i in low..high {
+    for i in low..high { // changed from forall to avoid error
       yield i;
     }
   }
