@@ -2311,6 +2311,20 @@ preFold(Expr* expr) {
         result = new CallExpr("id", gMethodToken, call->get(1)->remove());
         call->replace(result);
       }
+
+      //
+      // if .locale is applied to an expression of array or domain
+      // wrapper type, apply .locale to the _value field of the
+      // wrapper
+      //
+      if (type->symbol->hasPragma("array") ||
+          type->symbol->hasPragma("domain")) {
+        VarSymbol* tmp = new VarSymbol("_tmp");
+        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        result = new CallExpr("_value", gMethodToken, call->get(1)->remove());
+        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, result));
+        call->insertAtTail(tmp);
+      }
     }
   }
   return result;
