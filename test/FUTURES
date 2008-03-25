@@ -122,7 +122,6 @@ unimplemented feature: sparse domain assignment [test/sparse/bradc/sparseDomAssi
 error messages
 --------------
 error message: array method candidates [test/sparse/bradc/denseIRV]
-error message: assign type to value error message [test/classes/deitz/test_type_to_value_error]
 error message: config vars of non-primitive types [test/execflags/bradc/tupleConfig]
 error message: constructor error  [test/reductions/bradc/manual/threeclasstypes-construct]
 error message: iterator class error [test/arrays/deitz/promotion/test_scalar_promote10]
