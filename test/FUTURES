@@ -12,7 +12,6 @@ feature request: more tasks [test/parallel/coforall/bradc/tooManyThreads-revorde
 multilocale issues
 ------------------
 bug: on clause inside iterator [test/users/shetag/iteratorWithOn]
-bug: spin-waiting for a variable to be changed by a remote begin fails [test/multilocale/diten/beginInOn]
 multilocale: var declaration in on statement [test/multilocale/deitz/test_on_var_decl1]
 
 
