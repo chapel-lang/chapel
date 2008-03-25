@@ -2,11 +2,6 @@
 vvv Brad considers these highest priority for release v0.7
 
 
-Steve should revisit
---------------------
-unimplemented feature: task pool to avoid exhausting thread resources [test/parallel/cobegin/deitz/test_many_threads]
-
-
 Brad should revisit
 -------------------
 ???: nondeterministic output [test/studies/590o/telmas/dpll]
@@ -317,3 +312,6 @@ dynamic dispatch on iterators
 unimplemented feature: overriding iterators [test/classes/dinan/dyndispatch_these]
 
 
+repooling task pool
+-------------------
+unimplemented feature: task pool with repooling on waits
