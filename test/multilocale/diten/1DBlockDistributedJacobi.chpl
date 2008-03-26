@@ -76,11 +76,11 @@ class DistribArray {
     if (b.arrSize != arrSize) then
       halt("Bad sizes in DistribArray.copy");
 
-    for loc in getLocales() { // sjd: changed to for
+    forall loc in getLocales() {
       on Locales(loc) {
         // hope that most indices match locale between the arrays
         // With this DistribArray class, they are.
-        for i in getLocalIndices() { // sjd: changed to for
+        forall i in getLocalIndices() {
           this.element(i) = b.element(i);
         }
       }
