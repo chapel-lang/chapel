@@ -1,4 +1,4 @@
-var myTurn$: [LocalesDomain] sync bool;
+var myTurn$: [LocaleSpace] sync bool;
 myTurn$(0) = true;
 
 

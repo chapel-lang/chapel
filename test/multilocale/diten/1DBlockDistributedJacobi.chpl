@@ -11,13 +11,13 @@ class DistribArray {
   type arrType;
   const arrSize: int;
   const localSize:int = arrSize / numLocales;
-  var internalArr: [LocalesDomain] DistribArrayNode(arrType);
+  var internalArr: [LocaleSpace] DistribArrayNode(arrType);
   var isLocalize = false;
 
   def initialize() {
     if isLocalize then return;
 
-    for loc in LocalesDomain {
+    for loc in LocaleSpace {
       on Locales(loc) {
         if (loc != numLocales-1) {
           internalArr(loc) = new DistribArrayNode(arrType, localSize);
@@ -30,11 +30,11 @@ class DistribArray {
   }
 
   def localize() {
-    var localArrays: [LocalesDomain] DistribArray(arrType);
-    for loc in LocalesDomain {
+    var localArrays: [LocaleSpace] DistribArray(arrType);
+    for loc in LocaleSpace {
       on Locales(loc) {
         var x = new DistribArray(arrType, arrSize, localSize, isLocalize=true);
-        [i in LocalesDomain] x.internalArr(i) = internalArr(i);
+        [i in LocaleSpace] x.internalArr(i) = internalArr(i);
         localArrays(loc) = x;
       }
     }
@@ -49,7 +49,7 @@ class DistribArray {
 
   def getLocales() {
     // One could imagine not distributing it across all locales
-    for i in LocalesDomain do yield i;
+    for i in LocaleSpace do yield i;
   }
   
   def getLocalIndices() {

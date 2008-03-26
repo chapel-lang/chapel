@@ -1,8 +1,9 @@
 enum MemUnits {Bytes, KB, MB, GB};
 
 def locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) {
+  var bytesInLocale: uint(64);
 
-  /*on this do*/ const bytesInLocale: uint(64) = __primitive("chpl_bytesPerLocale");
+  on this do bytesInLocale = __primitive("chpl_bytesPerLocale");
 
   var retVal: retType;
   select (unit) {

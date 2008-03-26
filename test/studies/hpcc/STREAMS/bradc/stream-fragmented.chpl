@@ -27,8 +27,8 @@ def main() {
 
   const ProblemSpace: domain(1, indexType) = [1..m];
 
-  const allExecTime: [LocalesDomain] [1..numTrials] real;
-  const allValidAnswer: [LocalesDomain] bool;
+  const allExecTime: [LocaleSpace] [1..numTrials] real;
+  const allValidAnswer: [LocaleSpace] bool;
   
   coforall loc in Locales {
     on loc {
@@ -50,7 +50,7 @@ def main() {
   }
 
   const execTime: [t in 1..numTrials] real 
-                = max reduce [loc in LocalesDomain] allExecTime(loc)(t);
+                = max reduce [loc in LocaleSpace] allExecTime(loc)(t);
 
   const validAnswer = & reduce allValidAnswer;
 

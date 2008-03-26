@@ -18,11 +18,11 @@ class Block1DDom {
   // parameterize this by indexType and/or locIndexType
   const whole: domain(1, indexType);
   //  SHOULD BE: const locDom: [i in LocalesDom] domain(1, indexType) = new LocBlockDom(whole);
-  // TODO: Move LocalesDomain into a member variable (throughout code)
-  var locDom: [LocalesDomain] LocBlock1DDom;
+  // TODO: Move LocaleSpace into a member variable (throughout code)
+  var locDom: [LocaleSpace] LocBlock1DDom;
 
   def initialize() {
-    [i in LocalesDomain] locDom(i) = new LocBlock1DDom(i, whole);
+    [i in LocaleSpace] locDom(i) = new LocBlock1DDom(i, whole);
   }
 
   def these() {
@@ -31,8 +31,8 @@ class Block1DDom {
         yield ind;
   }
 
-  def ind2loc(ind: indexType): index(LocalesDomain) {
-    return ((ind-low)/numIndices): index(LocalesDomain);
+  def ind2loc(ind: indexType): index(LocaleSpace) {
+    return ((ind-low)/numIndices): index(LocaleSpace);
   }
 
 
@@ -62,7 +62,7 @@ class Block1DDom {
 
 class LocBlock1DDom {
   // parameterize this by indexType and/or locIndexType
-  const localeID: index(LocalesDomain);
+  const localeID: index(LocaleSpace);
   var myBlock: domain(1, indexType);
 
   def LocBlock1DDom(_localeID, Whole: domain(1, indexType)) {
@@ -92,10 +92,10 @@ class LocBlock1DDom {
 class Block1DArr {
   type elemType;
   var dom: Block1DDom;
-  var locArr: [LocalesDomain] LocBlock1DArr(elemType);
+  var locArr: [LocaleSpace] LocBlock1DArr(elemType);
 
   def initialize() {
-    [i in LocalesDomain] locArr(i) = new LocBlock1DArr(elemType, dom.locDom(i));
+    [i in LocaleSpace] locArr(i) = new LocBlock1DArr(elemType, dom.locDom(i));
   }
 
   def this(i: indexType) var {
@@ -103,7 +103,7 @@ class Block1DArr {
   }
 
   def these() var {
-    for loc in LocalesDomain {
+    for loc in LocaleSpace {
       for elem in locArr(loc) {
         yield elem;
       }
@@ -112,7 +112,7 @@ class Block1DArr {
 
   def writeThis(x: Writer) {
     var first = true;
-    for loc in LocalesDomain {
+    for loc in LocaleSpace {
       if (locArr(loc).numElements >= 1) {
         if (first) {
           first = false;

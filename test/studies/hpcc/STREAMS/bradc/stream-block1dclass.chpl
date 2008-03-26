@@ -69,7 +69,7 @@ def initVectors(B, C) {
   var randlist = new RandomStream(seed);
 
   // TODO: should write a fillRandom() implementation that does this
-  coforall loc in LocalesDomain {
+  coforall loc in LocaleSpace {
     // TODO: Need to clean this up to use more normal method names
     randlist.skipToNth(B.locArr(loc).locDom.low);
     randlist.fillRandom(B.locArr(loc).myElems);
