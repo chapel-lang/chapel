@@ -6,7 +6,7 @@ on Locales(0) {
     on Locales(2) {
       c = new C();
     }
-    writeln(x.locale);
-    writeln(c.locale);
+    writeln(x.locale.id);
+    writeln(c.locale.id);
   }
 }
