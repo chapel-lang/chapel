@@ -89,7 +89,7 @@ class DistribArray {
 }
 
 def main {
-  var delta: real;
+  var delta: sync real;
   var localAs => (new DistribArray(real, size)).localize();
   var localBs => (new DistribArray(real, size)).localize();
   localAs(0).element(0) = 1.0;
@@ -112,7 +112,8 @@ def main {
           }
           localDelta = max(localDelta, abs(B.element(i) - A.element(i)));
         }
-        delta = max(delta, localDelta);
+        var deltaTmp = delta;
+        delta = max(deltaTmp, localDelta);
       }
     }
     localAs <=> localBs;
