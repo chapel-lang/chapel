@@ -2313,7 +2313,7 @@ preFold(Expr* expr) {
         SymExpr* se = toSymExpr(call->get(1));
         ClassType* ct = toClassType(type);
         if (se->var->isExprTemp && (!ct || ct->classTag != CLASS_CLASS))
-          USR_FATAL_CONT(se, "expression must be an lvalue, locale, or class");
+          USR_WARN(se, "accessing the locale of a local expression");
       }
 
       //

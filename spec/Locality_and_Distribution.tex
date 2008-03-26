@@ -88,28 +88,16 @@ running on the locale given by \chpl{Locales(0)}.
 \label{Querying_the_Locale_of_a_Variable}
 \index{locale@\chpl{locale}}
 
-The locale associated with expressions that are lvalues or of class or
-locale type can be queried using the following syntax:
+The locale associated with an expression (where the expression is
+stored) is queried using the following syntax:
 \begin{syntax}
 locale-access-expression:
-  locale-access-sub-expression . `locale'
-
-locale-access-sub-expression:
-  lvalue-expression
-  class-expression
-  locale-expression
-
-class-expression:
-  expression
-
-locale-expression:
-  expression
+  expression . `locale'
 \end{syntax}
-When the left operand to the locale query is an lvalue, the access
-returns the locale on which that lvalue exists.  When it is of class
-type (whether or not it is also an lvalue), the access returns the
-locale on which the class object exists.  When it is of locale type,
-the access returns the expression itself.
+When the expression is a class, the access returns the locale on which
+the class object exists rather than the reference to the class.  If
+the expression is a value, it is considered local.  The implementation
+may warn about this behavior.
 
 \begin{example}
 Given some class C, the code
@@ -131,9 +119,9 @@ results in the output
 0
 2
 \end{chapel}
-The variable \chpl{x} is a value.  It is declared and exists
-on \chpl{Locales(0)}.  The variable \chpl{c} is a reference.  The
-reference exists on \chpl{Locales(0)} but the object itself exists
+The variable \chpl{x} is declared and exists on \chpl{Locales(0)}.
+The variable \chpl{c} is a class reference.  The reference exists
+on \chpl{Locales(0)} but the object itself exists
 on \chpl{Locales(2)}.  The locale access returns the locale where the
 object exists.
 \end{example}
@@ -154,19 +142,18 @@ The on statement controls on which locale a computation or data should
 be placed.  The syntax of the on statement is given by
 \begin{syntax}
 on-statement:
-  `on' locale-access-sub-expression `do' statement
-  `on' locale-access-sub-expression block-level-statement
+  `on' expression `do' statement
+  `on' expression block-level-statement
 \end{syntax}
-The expression must be a legal expression for accessing a locale.
-See~\rsec{Querying_the_Locale_of_a_Variable} for details.  Execution
-of the statement occurs on the locale given by
-the \sntx{locale-access-sub-expression}.  Execution continues after
-the \chpl{on-statement} after execution of the \sntx{statement}
-completes.
+The locale of the expression is automatically queried as described
+in~\rsec{Querying_the_Locale_of_a_Variable}.  Execution of the
+statement occurs on this specified locale and then continues after
+the \chpl{on-statement}.
 
 By default, when new variables and data objects are created, they are
 created in the locale where the computation is running.  This locale
-can be changed by using the \chpl{on} keyword.
+can be changed by using the \chpl{on} keyword as discussed
+in~\rsec{remote_variable_declarations}.
 
 The following statements may not be lexically enclosed in
 on-statements: yield-statements and return-statements.
@@ -218,7 +205,7 @@ but omitting the \chpl{do} keyword and braces.  The syntax is given
 by:
 \begin{syntax}
 remote-variable-declaration-statement:
-  `on' locale-access-sub-expression variable-declaration-statement
+  `on' expression variable-declaration-statement
 \end{syntax}
 
 \subsection{Distributions}
