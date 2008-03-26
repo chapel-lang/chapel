@@ -60,13 +60,6 @@ int main(int argc, char* argv[]) {
     _chpl_comm_init(&argc, &argv, 0);
   }
 
-  //
-  // Set up maxThreads to allow threads to initialize modules; this
-  // will be changed when the config const maxThreads is set when the
-  // base module is initialized.
-  //
-  maxThreads = 3;
-
   _chpl_comm_barrier("about to leave comm init code");
   _heapAllocateGlobals();    // allocate global vars on heap for multilocale
   parseArgs(argc, argv);
