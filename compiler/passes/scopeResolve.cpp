@@ -186,6 +186,12 @@ void scopeResolve(void) {
         if (!sym)
           sym = symExpr->parentScope->lookup(name, NULL, true);
 
+        if (sym && sym->hasPragma("here")) {
+          symExpr->replace(new CallExpr("chpl_int_to_locale",
+                             new CallExpr(PRIMITIVE_LOCALE_ID)));
+          continue;
+        }
+
         bool handleFunctionWithoutParens = false;
         for (Symbol* tmp = sym; tmp; tmp = tmp->overloadNext) {
           if (FnSymbol* fn = toFnSymbol(tmp)) {

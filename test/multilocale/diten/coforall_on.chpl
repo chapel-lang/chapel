@@ -10,20 +10,20 @@ def main() {
       select i {
         when 0 {
           while (!r.a) {}
-          r.s = "Hello from locale " + localeID();
+          r.s = "Hello from locale " + here.id;
         }
         when 1 {
           while (!r.b) {}
-          _debugWriteln(localeID());
+          _debugWriteln(here.id);
           r.c = true;
         }
         when 2 {
-          _debugWriteln(localeID());
+          _debugWriteln(here.id);
           r.b = true;
         }
         when 3 {
           while (!r.c) {}
-          _debugWriteln(localeID());
+          _debugWriteln(here.id);
           r.a = true;
         }
         otherwise {

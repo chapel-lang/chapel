@@ -9,4 +9,4 @@ def g() {
 }
 
 for i in g() do
-  _debugWriteln(localeID(), ":i=", i);
+  _debugWriteln(here.id, ":i=", i);

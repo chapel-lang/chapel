@@ -7,15 +7,15 @@ def main {
 
 def foo() {
   var x: int = 17;
-  _debugWriteln(localeID(), " x=", x);
+  _debugWriteln(here.id, " x=", x);
   x += 1;
   on Locales(1) {
     begin {
       sleep(2);
-      _debugWriteln(localeID(), " x=", x);
+      _debugWriteln(here.id, " x=", x);
       x += 1;
-      _debugWriteln(localeID(), " x=", x);
+      _debugWriteln(here.id, " x=", x);
     }
   }
-  _debugWriteln(localeID(), " x=", x);
+  _debugWriteln(here.id, " x=", x);
 }

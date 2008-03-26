@@ -15,13 +15,13 @@ writeln("running this example on ", numLocales, " locales");
 
 //
 // loop over the locales and use the on-statement to execute code on
-// every locale; the localeID() function returns a unique integer from
-// 0 to numLocales-1 that corresponds to the locale the program is
-// running on.
+// every locale; the predefined constant 'here' corresponds to the
+// locale the program is currently running and 'here.id' contains a
+// unique integer between 0 and numLocales-1.
 //
 for i in 0..numLocales-1 {
   on Locales(i) {
-    writeln("hello locale ", localeID());
+    writeln("hello locale ", here.id);
   }
 }
 
@@ -42,14 +42,14 @@ def recursiveBuild(): Node {
   // construct a new node and initialize its data field to the ID of
   // the current locale
   //
-  var node = new Node(localeID());
+  var node = new Node(here.id);
 
   //
   // if we are not the last locale, then on the next locale,
   // recursively call this function to construct the next node
   //
-  if localeID() < numLocales-1 then
-    on Locales(localeID()+1) do
+  if here.id < numLocales-1 then
+    on Locales(here.id+1) do
       node.next = recursiveBuild();
 
   //

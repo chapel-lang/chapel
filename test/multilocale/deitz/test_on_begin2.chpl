@@ -5,10 +5,10 @@ def foo() {
   on Locales(1) {
     begin {
       sleep(2);
-      _debugWriteln(localeID(), " x=", x);
+      _debugWriteln(here.id, " x=", x);
     }
   }
-  _debugWriteln(localeID(), " x=", x);
+  _debugWriteln(here.id, " x=", x);
 }
 
 foo();

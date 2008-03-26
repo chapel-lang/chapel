@@ -27,6 +27,7 @@ class locale {
 }
 
 const Locales: [loc in LocaleSpace] locale = new locale(id = loc);
+pragma "here" const here: locale;
 
 doneCreatingLocales$ = true;
 
@@ -35,8 +36,6 @@ def locale.numCores {
   on this do numCores = __primitive("chpl_coresPerLocale");
   return numCores;
 }
-
-def localeID() return __primitive("_localeID");
 
 def chpl_int_to_locale(id) {
   return Locales(id);

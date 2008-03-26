@@ -3,30 +3,30 @@ myTurn$(0) = true;
 
 
 def waitForTurn() {
-  myTurn$(localeID());
+  myTurn$(here.id);
 }
 
 
 def passTurn() {
-  myTurn$((localeID() + 1) % numLocales) = true;
-  if (localeID() == 0) then {
-    myTurn$(localeID());
-    myTurn$(localeID()) = true;
+  myTurn$((here.id + 1) % numLocales) = true;
+  if (here.id == 0) then {
+    myTurn$(here.id);
+    myTurn$(here.id) = true;
   }
 }
 
 
 def writelnFragArray(startStr, X, endStr) {
-  if (localeID() == 0) {
+  if (here.id == 0) {
     write(startStr);
   }
   waitForTurn();
-  if (localeID() != 0 && X.numElements != 0) {
+  if (here.id != 0 && X.numElements != 0) {
     write(" ");
   }
   write(X);
   passTurn();
-  if (localeID() == 0) {
+  if (here.id == 0) {
     writeln(endStr);
   }
 }

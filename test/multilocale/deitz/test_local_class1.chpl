@@ -4,11 +4,11 @@ class C {
 
 def main {
   var c = new C();
-  _debugWriteln(localeID(), " ", c.x);
+  _debugWriteln(here.id, " ", c.x);
   c.x = 18;
   on Locales(1) {
-    _debugWriteln(localeID(), " ", c.x);
+    _debugWriteln(here.id, " ", c.x);
     c.x = 19;
   }
-  _debugWriteln(localeID(), " ", c.x);
+  _debugWriteln(here.id, " ", c.x);
 }

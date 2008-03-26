@@ -1,12 +1,12 @@
 def main {
   var x: int = 17;
-  _debugWriteln(localeID(), " x=", x);
+  _debugWriteln(here.id, " x=", x);
   x += 1;
-  _debugWriteln(localeID(), " x.locale.id=", x.locale.id);
+  _debugWriteln(here.id, " x.locale.id=", x.locale.id);
   on Locales(1) {
-    _debugWriteln(localeID(), " x=", x);
+    _debugWriteln(here.id, " x=", x);
     x += 1;
-    _debugWriteln(localeID(), " x.locale.id=", x.locale.id);
+    _debugWriteln(here.id, " x.locale.id=", x.locale.id);
   }
-  _debugWriteln(localeID(), " x=", x);
+  _debugWriteln(here.id, " x=", x);
 }

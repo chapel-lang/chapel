@@ -84,6 +84,27 @@ const Locales: [LocaleSpace] locale;
 When a program starts, a single computation is executing.  It is
 running on the locale given by \chpl{Locales(0)}.
 
+\subsubsection{The {\em here} Locale}
+\label{here}
+\index{here@\chpl{here}}
+
+A predefined constant locale \chpl{here} can be used anywhere in a
+Chapel program.  It refers to the locale that the current computation
+is running on.
+
+\begin{example}
+The code
+\begin{chapel}
+on Locales(1) {
+  writeln(here.id);
+}
+\end{chapel}
+results in the output \chpl{1} because the \chpl{writeln} statement is
+executed on locale 1.
+\end{example}
+
+The identifier \chpl{here} is not a keyword and can be overridden.
+
 \subsubsection{Querying the Locale of an Expression}
 \label{Querying_the_Locale_of_a_Variable}
 \index{locale@\chpl{locale}}

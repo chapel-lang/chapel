@@ -54,7 +54,7 @@ class DistribArray {
   
   def getLocalIndices() {
     // Get the indices that live on this locale
-    var myID = localeID();
+    var myID = here.id;
     var size = if myID == numLocales-1
                  then arrSize-localSize*(numLocales-1)
                  else localSize;

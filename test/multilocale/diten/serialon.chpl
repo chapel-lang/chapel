@@ -1,7 +1,7 @@
 var n: single int;
 serial true {
   on Locales(1) {
-    n = localeID();
+    n = here.id;
   }
 }
 

@@ -8,13 +8,13 @@ def main {
       on Locales(0) {
         begin {
           s2;
-          _debugWriteln("executing on locale ", localeID());
+          _debugWriteln("executing on locale ", here.id);
         }
       }
-      _debugWriteln("executing on locale ", localeID());
+      _debugWriteln("executing on locale ", here.id);
       s2 = true;
     }
   }
-  _debugWriteln("executing on locale ", localeID());
+  _debugWriteln("executing on locale ", here.id);
   s1 = true;
 }

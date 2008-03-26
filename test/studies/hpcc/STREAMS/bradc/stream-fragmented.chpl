@@ -33,7 +33,7 @@ def main() {
   coforall loc in Locales {
     on loc {
       const MyProblemSpace: domain(1, indexType) 
-                          = BlockPartition(ProblemSpace, localeID(), numLocales);
+                          = BlockPartition(ProblemSpace, here.id, numLocales);
 
       var A, B, C: [MyProblemSpace] elemType;
 
@@ -42,10 +42,10 @@ def main() {
       for trial in 1..numTrials {
         const startTime = getCurrentTime();
         A = B + alpha * C;
-        allExecTime(localeID())(trial) = getCurrentTime() - startTime;
+        allExecTime(here.id)(trial) = getCurrentTime() - startTime;
       }
 
-      allValidAnswer(localeID()) = verifyResults(A, B, C);
+      allValidAnswer(here.id) = verifyResults(A, B, C);
     }
   }
 
