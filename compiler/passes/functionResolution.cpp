@@ -2301,12 +2301,25 @@ preFold(Expr* expr) {
         }
       }
 
+      if (type->symbol->hasPragma("ref"))
+        type = getValueType(type);
+
+      //
+      // ensure .locale (and on) are applied to lvalues or classes
+      // (locale type is a class)
+      //
+      if (call->argList.length() > 0) { // if because of replace for
+                                        // integral parameters
+        SymExpr* se = toSymExpr(call->get(1));
+        ClassType* ct = toClassType(type);
+        if (se->var->isExprTemp && (!ct || ct->classTag != CLASS_CLASS))
+          USR_FATAL_CONT(se, "expression must be an lvalue, locale, or class");
+      }
+
       //
       // if .locale is applied to an expression of locale type,
       // replace this primitive with an access of the id field
       //
-      if (type->symbol->hasPragma("ref"))
-        type = getValueType(type);
       if (type->symbol->hasPragma("locale")) {
         result = new CallExpr("id", gMethodToken, call->get(1)->remove());
         call->replace(result);

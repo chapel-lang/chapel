@@ -1,0 +1,2 @@
+test_dot_locale_error.chpl:9: error: expression must be an lvalue, locale, or class
+test_dot_locale_error.chpl:13: error: expression must be an lvalue, locale, or class
