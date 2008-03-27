@@ -55,6 +55,7 @@ static void printHelpTable(void) {
     {"-h, --help", "print this message", 'g'},
     {"-nl <n>", "run program using n locales", 'g'},
     {"", "(equivalent to setting the numLocales config const)", 'g'},
+    {"-q, --quiet", "run program in quiet mode", 'g'},
     {"-v, --verbose", "run program in verbose mode", 'g'},
     {"--gdb", "run program in gdb", 'g'},
 
@@ -277,6 +278,10 @@ void parseArgs(int argc, char* argv[]) {
             verbosity=2;
             break;
           }
+          if (strcmp(flag, "quiet") == 0) {
+            verbosity = 0;
+            break;
+          }
           if (strncmp(flag, "numLocales", 10) == 0) {
             if (flag[10] == '=') {
               parseNumLocales(&(flag[11]));
@@ -328,6 +333,14 @@ void parseArgs(int argc, char* argv[]) {
           break;
         }
         unexpectedArg(currentArg);
+        break;
+
+      case 'q':
+        if (currentArg[2] == '\0') {
+          verbosity = 0;
+        } else {
+          unexpectedArg(currentArg);
+        }
         break;
 
       case 's':

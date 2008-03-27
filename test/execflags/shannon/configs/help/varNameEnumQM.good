@@ -4,6 +4,7 @@ FLAGS:
   -h, --help             : print this message
   -nl <n>                : run program using n locales
                            (equivalent to setting the numLocales config const)
+  -q, --quiet            : run program in quiet mode
   -v, --verbose          : run program in verbose mode
   --gdb                  : run program in gdb
 

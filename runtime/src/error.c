@@ -9,8 +9,12 @@
 int verbosity = 1;
 
 void chpl_warning(const char* message, int32_t lineno, _string filename) {
+  // squash warnings if --quiet flag is used
+  if (verbosity == 0) {
+    return;
+  }
   fflush(stdout);
-  if (lineno)
+  if (lineno > 0)
     fprintf(stderr, "%s:%" PRId32 ": warning: %s\n", filename, lineno, message);
   else if (filename)
     fprintf(stderr, "%s: warning: %s\n", filename, message);
@@ -20,7 +24,7 @@ void chpl_warning(const char* message, int32_t lineno, _string filename) {
 
 void chpl_error(const char* message, int32_t lineno, _string filename) {
   fflush(stdout);
-  if (lineno)
+  if (lineno > 0)
     fprintf(stderr, "%s:%" PRId32 ": error: %s\n", filename, lineno, message);
   else if (filename)
     fprintf(stderr, "%s: error: %s\n", filename, message);
