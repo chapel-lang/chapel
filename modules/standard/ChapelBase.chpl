@@ -808,6 +808,27 @@ def _singlevar.readFF() {
 }
 
 
+// Ignore F/E.  Read value.  No state change or signals.
+def _singlevar.readXX() {
+  var ret: base_type;
+  on this {
+    var localRet: base_type;
+    if (isSimpleSyncBaseType(base_type)) {
+      localRet = value;                               // Force the Chapel compiler to create a temporary!
+      __primitive("single_read_XX", localRet, this);  // This primitive modifies the value of localRet!
+    } else if (__primitive("single_is_full", this, isSimpleSyncBaseType(base_type))) {
+      localRet = value;
+    } else {
+      __primitive("single_lock", this);
+      localRet = value;
+      __primitive("single_unlock", this);
+    }
+    ret = localRet;
+  }
+  return ret;
+}
+
+
 // Can only write once.  Otherwise, it is an error.
 def _singlevar.writeEF(val:base_type) {
   on this {
@@ -827,6 +848,14 @@ def _singlevar.writeEF(val:base_type) {
 def =(sv: single, value:sv.base_type) {
   sv.writeEF(value);
   return sv;
+}
+
+def _singlevar.isFull {
+  var b: bool;
+  on this {
+    b = __primitive("single_is_full", this, isSimpleSyncBaseType(base_type));
+  }
+  return b;
 }
 
 //

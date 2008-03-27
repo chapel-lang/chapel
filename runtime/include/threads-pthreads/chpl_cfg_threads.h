@@ -79,6 +79,12 @@ typedef struct {
         chpl_single_mark_and_signal_full(&((y)->single_aux));} \
      } while (0)
 
+#define _chpl_single_read_XX(x,y) \
+  do {if (chpl_single_lock(&((x)->single_aux)) == 0) { \
+        (x) = (y)->value; \
+        chpl_single_unlock(&((y)->single_aux));} \
+     } while (0)
+
 #define _chpl_single_write_EF(x,y,lineno,filename) \
   do {if (chpl_single_lock(&((x)->single_aux)) == 0) { \
         if (chpl_single_is_full(&((x)->value),&((x)->single_aux),true)) \

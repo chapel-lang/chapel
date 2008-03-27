@@ -26,6 +26,7 @@ typedef struct {
 #define _chpl_sync_reset(x) purge(&((x)->value))
 
 #define _chpl_single_read_FF(x,y,lineno,filename) (x) = readff(&((y)->value))
+#define _chpl_single_read_XX(x,y) (x) = readxx(&((y)->value))
 #define _chpl_single_write_EF(x,y,lineno,filename) writeef(&((x)->value), (y))
 #define _chpl_single_reset(x) purge(&((x)->value))
 

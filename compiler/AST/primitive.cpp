@@ -338,6 +338,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_SYNC_SIGNAL_EMPTY, "sync_mark_and_signal_empty", returnInfoVoid, true);
   prim_def(PRIMITIVE_SINGLE_INIT, "init_single_aux", returnInfoVoid, true);
   prim_def(PRIMITIVE_SINGLE_LOCK, "single_lock", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SINGLE_UNLOCK, "single_unlock", returnInfoVoid, true);
   prim_def(PRIMITIVE_SINGLE_WAIT_FULL, "single_wait_full", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_SINGLE_SIGNAL_FULL, "single_mark_and_signal_full", returnInfoVoid, true);
 
@@ -353,6 +354,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_SINGLE_WRITEEF, "single_write_EF", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_SINGLE_RESET, "single_reset", returnInfoVoid, true);
   prim_def(PRIMITIVE_SINGLE_READFF, "single_read_FF", returnInfoFirst, true, true);
+  prim_def(PRIMITIVE_SINGLE_READXX, "single_read_XX", returnInfoFirst, true);
   prim_def(PRIMITIVE_SINGLE_ISFULL, "single_is_full", returnInfoBool, true);
 
   prim_def(PRIMITIVE_GET_END_COUNT, "get end count", returnInfoEndCount);

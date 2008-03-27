@@ -1587,6 +1587,13 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ".addr");
       fprintf( outfile, ")->single_aux))");
       break;
+    case PRIMITIVE_SINGLE_UNLOCK:
+      fprintf( outfile, "chpl_single_unlock(&((");
+      get(1)->codegen( outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
+      fprintf( outfile, ")->single_aux))");
+      break;
     case PRIMITIVE_SINGLE_WAIT_FULL:
       fprintf( outfile, "chpl_single_wait_full(&((");
       get(1)->codegen( outfile);
@@ -1727,6 +1734,15 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ", ");
       get(4)->codegen( outfile);
       fprintf( outfile, ")");
+      break;
+    case PRIMITIVE_SINGLE_READXX:
+      fprintf( outfile, "_chpl_single_read_XX((");
+      get(1)->codegen( outfile);
+      fprintf( outfile, "), (");
+      get(2)->codegen( outfile);
+      if (get(2)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
+      fprintf( outfile, "))");
       break;
     case PRIMITIVE_SINGLE_ISFULL:
       fprintf( outfile, "chpl_single_is_full(&((");

@@ -52,6 +52,8 @@ typedef chpl_sync_aux_t chpl_single_aux_t;
       else chpl_error("single var not yet defined (running in single-threaded mode)", lineno, filename); \
      } while (0)
 
+#define _chpl_single_read_XX(x,y) (x) = (y)->value
+
 #define _chpl_single_write_EF(x,y,lineno,filename) \
   do {if ((x)->single_aux) \
         chpl_error("single var already defined", lineno, filename); \
