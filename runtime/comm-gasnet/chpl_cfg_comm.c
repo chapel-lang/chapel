@@ -157,14 +157,22 @@ int32_t _chpl_comm_maxThreadsLimit(void) {
 }
 
 int _chpl_comm_user_invocation(int argc, char* argv[]) {
+#if defined(GASNET_CONDUIT_PORTALS)
+  return false;
+#else
   return ((argc <= 1) ||
           (argc > 1 && strcmp(argv[1], "__AMUDP_SLAVE_PROCESS__") != 0));
+#endif
 }
 
 
 int _chpl_comm_default_num_locales(void) {
+#if defined(GASNET_CONDUIT_PORTALS)
+  return _numLocales;
+#else
   chpl_error("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
   return 0;
+#endif
 }
 
 
@@ -208,7 +216,6 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
   }
   gasnet_init(argc_p, argv_p);
   gasnet_init_called = 1;
-
   _localeID = gasnet_mynode();
   _numLocales = gasnet_nodes();
   GASNET_Safe(gasnet_attach(ftable, 
@@ -274,30 +281,33 @@ typedef struct __broadcast_private_helper {
   size_t size;
 } _broadcast_private_helper;
 
-static void _broadcastPrivateHelperFn(void* arg);
+void _broadcastPrivateHelperFn(struct __broadcast_private_helper* arg);
 
-static void _broadcastPrivateHelperFn(void* arg) {
-  _broadcast_private_helper* bph = (_broadcast_private_helper*)arg;
-  _chpl_comm_get(bph->addr, bph->locale, bph->raddr, bph->size);
+void _broadcastPrivateHelperFn(struct __broadcast_private_helper* arg) {
+  _chpl_comm_get(arg->addr, arg->locale, arg->raddr, arg->size);
 }
+
 #endif
 
 void _chpl_comm_broadcast_private(void* addr, int size) {
   int i;
+#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
+  /* For each private constant, copy it to the heap, fork to each locale,
+     and read it off the remote heap into its final non-heap location. Ick.
+   */
+  void* heapAddr = _chpl_malloc(1, size, "broadcast private", 0, 0);
+  _broadcast_private_helper bph;
+
+  bcopy(addr, heapAddr, size);
+  bph.addr = addr;
+  bph.raddr = heapAddr;
+  bph.locale = _localeID;
+  bph.size = size;
+#endif
   for (i = 0; i < _numLocales; i++) {
     if (i != _localeID) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-      /* For each private constant, copy it to the heap, fork to each locale,
-         and read it off the remote heap into its final non-heap location. Ick.
-      */
-      void* heapAddr = _chpl_malloc(1, size, "broadcast private", 0, 0);
-      _broadcast_private_helper bph;
-      bph.addr = addr;
-      bph.raddr = heapAddr;
-      bph.locale = _localeID;
-      bph.size = size;
-      bcopy(addr, heapAddr, size);
-      _chpl_comm_fork(i, _broadcastPrivateHelperFn, &bph, sizeof(_broadcast_private_helper));
+      _chpl_comm_fork(i, (func_p)_broadcastPrivateHelperFn, &bph, sizeof(_broadcast_private_helper));
 #else
       _chpl_comm_put(addr, i, addr, size);
 #endif
@@ -378,7 +388,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
     (*f)(arg);
   } else {
     info_size = sizeof(dist_fork_t) + arg_size;
-    info = (dist_fork_t*) _chpl_malloc(info_size, sizeof(char), "", 0, 0);
+    info = (dist_fork_t*) _chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork", 0, 0);
 
     info->caller = _localeID;
     info->ack = &done;

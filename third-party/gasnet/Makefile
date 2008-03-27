@@ -1,5 +1,6 @@
 CHAPEL_ROOT = ../..
 CHAPEL_SUBDIR = third-party/gasnet
+CHPL_MAKE_HOST_TARGET = --target
 include $(CHAPEL_ROOT)/make/Makefile.base
 
 GASNET_ABS_DIR = $(shell pwd)
@@ -20,6 +21,19 @@ clean: FORCE
 
 clobber: FORCE
 	rm -r $(GASNET_INSTALL_DIR)
+ifeq ($(CHPL_GASNET_CONDUIT), portals)
+
+gasnet-config: FORCE
+	mkdir -p $(GASNET_BUILD_DIR)
+	-cd $(GASNET_SUBDIR) && echo "n" | ./Bootstrap
+	cp --update $(GASNET_SUBDIR)/other/contrib/cross-configure-crayxt-linux $(GASNET_SUBDIR)
+	cd $(GASNET_BUILD_DIR) && $(GASNET_SUBDIR)/cross-configure-crayxt-linux --prefix=$(GASNET_INSTALL_DIR) $(GASNET_CONFIGURE_OPTIONS)
+
+gasnet-build: FORCE
+	cd $(GASNET_BUILD_DIR) && $(MAKE) all
+	cd $(GASNET_BUILD_DIR) && $(MAKE) install
+	cp -fr $(GASNET_BUILD_DIR)/patched-headers $(GASNET_INSTALL_DIR)
+else
 
 gasnet-config: FORCE
 	mkdir -p $(GASNET_BUILD_DIR)
@@ -29,6 +43,7 @@ gasnet-config: FORCE
 gasnet-build: FORCE
 	cd $(GASNET_BUILD_DIR) && $(MAKE) all
 	cd $(GASNET_BUILD_DIR) && $(MAKE) install
+endif
 
 gasnet: gasnet-config gasnet-build
 

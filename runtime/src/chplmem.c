@@ -438,6 +438,7 @@ static void* _chpl_malloc2(size_t number, size_t size, const char* description,
                            int32_t lineno, _string filename) {
   size_t chunk = number*size;
   void* memAlloc;
+  chunk = chunk + (16 - (chunk % 16)); // 16 byte aligned.
   if (broadcastingGlobalsStarted == 0 && chpl_meminfo.head == NULL) {
     //
     // This branch is taken by the original process that launches the
