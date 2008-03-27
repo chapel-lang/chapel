@@ -41,6 +41,8 @@ static chpl_condvar_p chpl_condvar_new(void) {
   return cv;
 }
 
+static void schedule_next_task(void);
+
 
 // Mutex
 
@@ -264,12 +266,22 @@ chpl_begin_helper (task_pool_p task) {
     task = task_pool_head;
     task_pool_head = task_pool_head->next;
     if (task_pool_head == NULL)  // task pool is now empty
-      task_pool_tail = NULL;
+      task_pool_tail = NULL; 
+    else
+      // schedule another task if one is waiting; this must be done in
+      // case, for example, 2 signals were performed by chpl_begin()
+      // back-to-back before any thread was woken up from the
+      // pthread_cond_wait just above.  In that case, the thread which
+      // does eventually wake up is responsible for making sure the other
+      // signal is handled (either by an existing thread or by creating
+      // a new thread)
+      schedule_next_task();
 
     // end critical section
     chpl_mutex_unlock(&threading_lock);
   }
 }
+
 
 
 //
@@ -303,6 +315,24 @@ launch_next_task(void) {
   }
 }
 
+
+// Schedule a next task either by signaling an existing thread or by
+// launching a new thread if one is available
+static void schedule_next_task(void) {
+  // if there is an idle thread, send it a signal to wake up and grab
+  // a new task
+  if (threads_cnt > running_cnt)
+    pthread_cond_signal(&wakeup_signal);
+  // otherwise, try to launch task in a new thread
+  // if the maximum number threads has not yet been reached
+  // take the main thread into account (but not when counting idle
+  // threads above)
+  else while (task_pool_head != NULL && 
+              (maxThreads == 0 || threads_cnt + 1 < maxThreads))
+    launch_next_task();
+}
+
+
 //
 // interface function with begin-statement
 //
@@ -332,14 +362,7 @@ chpl_begin (chpl_threadfp_t fp,
     }
     task_pool_tail = task;
 
-    // if there is an idle thread, send it a signal to wake up and grab a new task
-    if (threads_cnt > running_cnt)
-      pthread_cond_signal(&wakeup_signal);
-    // otherwise, try to launch task in a new thread
-    // if the maximum number threads has not yet been reached
-    // take the main thread into account (but not when counting idle threads above)
-    else if (maxThreads == 0 || threads_cnt + 1 < maxThreads)
-      launch_next_task();
+    schedule_next_task();
 
     // end critical section
     chpl_mutex_unlock(&threading_lock);
