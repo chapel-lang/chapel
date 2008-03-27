@@ -34,31 +34,14 @@ class Node {      // node class for a linked list
   var next: Node; // reference to next node in linked list
 }
 
-//
-// recursive function to build the linked list
-//
-def recursiveBuild(): Node {
-  //
-  // construct a new node and initialize its data field to the ID of
-  // the current locale
-  //
-  var node = new Node(here.id);
-
-  //
-  // if we are not the last locale, then on the next locale,
-  // recursively call this function to construct the next node
-  //
-  if here.id < numLocales-1 then
-    on Locales(here.id+1) do
-      node.next = recursiveBuild();
-
-  //
-  // return the head of the linked list
-  //
-  return node;
+var head = new Node(0);
+var tmp = head;
+for i in 1..numLocales-1 {
+  on Locales(i) {
+    tmp.next = new Node(i);
+    tmp = tmp.next;
+  }
 }
-
-var head = recursiveBuild();
 
 //
 // walk over the linked list and output each node and the locale on
@@ -69,3 +52,4 @@ while tmp {
   writeln("node with data = ", tmp.data, " on locale ", tmp.locale.id);
   tmp = tmp.next;
 }
+

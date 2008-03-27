@@ -23,13 +23,14 @@ typedef struct _chpl_pool_struct {
 } task_pool_t;
 
 
-static chpl_mutex_t    threading_lock; // critical section lock
-static chpl_condvar_t  wakeup_signal;  // signal a waiting thread
-static pthread_key_t   serial_key;     // per-thread serial state
-static task_pool_p     task_pool_head; // head of task pool
-static task_pool_p     task_pool_tail; // tail of task pool
-static int             running_cnt;    // number of running threads 
-static int             threads_cnt;    // number of threads
+static chpl_mutex_t   threading_lock; // critical section lock
+static chpl_condvar_t wakeup_signal;  // signal a waiting thread
+static pthread_key_t  serial_key;     // per-thread serial state
+static task_pool_p    task_pool_head; // head of task pool
+static task_pool_p    task_pool_tail; // tail of task pool
+static int            waking_cnt;     // number of threads signaled to wakeup
+static int            running_cnt;    // number of running threads 
+static int            threads_cnt;    // number of threads (total)
 
 // Condition variables
 
@@ -175,6 +176,7 @@ void initChplThreads() {
   if (pthread_cond_init(&wakeup_signal, NULL))
     chpl_internal_error("pthread_cond_init() failed in");
   running_cnt = 0;                     // only main thread running
+  waking_cnt = 0;
   threads_cnt = 0;
   task_pool_head = task_pool_tail = NULL;
 
@@ -263,6 +265,7 @@ chpl_begin_helper (task_pool_p task) {
     // start new task; increment running count and remove task from pool
     //
     running_cnt++;
+    waking_cnt--;
     task = task_pool_head;
     task_pool_head = task_pool_head->next;
     if (task_pool_head == NULL)  // task pool is now empty
@@ -321,15 +324,19 @@ launch_next_task(void) {
 static void schedule_next_task(void) {
   // if there is an idle thread, send it a signal to wake up and grab
   // a new task
-  if (threads_cnt > running_cnt)
+  if (threads_cnt > running_cnt + waking_cnt) {
+    waking_cnt++;
     pthread_cond_signal(&wakeup_signal);
+
+  //
   // otherwise, try to launch task in a new thread
   // if the maximum number threads has not yet been reached
   // take the main thread into account (but not when counting idle
   // threads above)
-  else while (task_pool_head != NULL && 
-              (maxThreads == 0 || threads_cnt + 1 < maxThreads))
+  //
+  } else if (maxThreads == 0 || threads_cnt + 1 < maxThreads) {
     launch_next_task();
+  }
 }
 
 
