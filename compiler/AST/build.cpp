@@ -970,6 +970,22 @@ buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
 }
 
 
+static Expr* buildOnExpr(Expr* expr) {
+  // If the on <x> expression is a primitive_on_locale_num, we just want
+  // to strip off the primitive and have the naked integer value be the
+  // locale ID.
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isPrimitive(PRIMITIVE_ON_LOCALE_NUM)) {
+      return call->get(1);
+    }
+  }
+
+  // Otherwise, we need to wrap the expression in a primitive to query
+  // the locale ID of the expression
+  return new CallExpr(PRIMITIVE_GET_LOCALEID, expr);
+}
+
+
 BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
   checkControlFlow(stmt, "on statement");
@@ -990,7 +1006,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   Symbol* tmp = new VarSymbol("_tmp");
   tmp->isCompilerTemp = true;
   block->insertAtTail(new DefExpr(tmp));
-  block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, new CallExpr(PRIMITIVE_GET_LOCALEID, expr))));
+  block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, buildOnExpr(expr))));
   block->insertAtTail(new DefExpr(fn));
   block->insertAtTail(new CallExpr(fn, tmp));
   return block;

@@ -26,8 +26,15 @@ class locale {
   }
 }
 
-const Locales: [loc in LocaleSpace] locale = new locale(id = loc);
 pragma "here" const here: locale;
+
+def chpl_setupLocale(id) {
+  var hereTmp: locale;  // eventually, we'd like to make this assign the real "here"
+  on __primitive("chpl_on_locale_num", id) do hereTmp = new locale(id);
+  return hereTmp;
+}
+
+const Locales: [loc in LocaleSpace] locale = chpl_setupLocale(loc);
 
 doneCreatingLocales$ = true;
 

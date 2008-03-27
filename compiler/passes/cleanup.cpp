@@ -91,7 +91,7 @@ process_import_expr(CallExpr* call) {
     USR_FATAL(call, "Cannot find module");
   if (mod == theProgram)
     USR_FATAL(call, "Cannot use module %s", mod->name);
-  call->getStmtExpr()->insertBefore(new CondStmt(new SymExpr(mod->guard), buildOnStmt(new SymExpr(new_IntSymbol(0)), new CallExpr(mod->initFn))));
+  call->getStmtExpr()->insertBefore(new CondStmt(new SymExpr(mod->guard), buildOnStmt(new CallExpr(PRIMITIVE_ON_LOCALE_NUM, new SymExpr(new_IntSymbol(0))), new CallExpr(mod->initFn))));
   call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, mod->guard, gFalse));
   if (call->getFunction() == call->getModule()->initFn)
     call->getModule()->block->blkScope->addModuleUse(mod);

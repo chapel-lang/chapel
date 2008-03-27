@@ -1857,6 +1857,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_BUILD_ARRAY:
     case PRIMITIVE_GET_END_COUNT:
     case PRIMITIVE_SET_END_COUNT:
+    case PRIMITIVE_ON_LOCALE_NUM:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
     case PRIMITIVE_GC_CC_INIT:

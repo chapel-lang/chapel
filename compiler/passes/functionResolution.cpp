@@ -2287,20 +2287,6 @@ preFold(Expr* expr) {
     } else if (call->isPrimitive(PRIMITIVE_GET_LOCALEID)) {
       Type* type = call->get(1)->typeInfo();
 
-      //
-      // if .locale is applied to an integral parameter,
-      // replace this primitive with that parameter
-      //
-      if (is_int_type(type) || is_uint_type(type)) {
-        if (SymExpr* se = toSymExpr(call->get(1))) {
-          VarSymbol* var = toVarSymbol(se->var);
-          if ((var && var->immediate) || paramMap.get(se->var)) {
-            result = se->remove();
-            call->replace(result);
-          }
-        }
-      }
-
       if (type->symbol->hasPragma("ref"))
         type = getValueType(type);
 
@@ -2308,22 +2294,10 @@ preFold(Expr* expr) {
       // ensure .locale (and on) are applied to lvalues or classes
       // (locale type is a class)
       //
-      if (call->argList.length() > 0) { // if because of replace for
-                                        // integral parameters
-        SymExpr* se = toSymExpr(call->get(1));
-        ClassType* ct = toClassType(type);
-        if (se->var->isExprTemp && (!ct || ct->classTag != CLASS_CLASS))
-          USR_WARN(se, "accessing the locale of a local expression");
-      }
-
-      //
-      // if .locale is applied to an expression of locale type,
-      // replace this primitive with an access of the id field
-      //
-      if (type->symbol->hasPragma("locale")) {
-        result = new CallExpr("id", gMethodToken, call->get(1)->remove());
-        call->replace(result);
-      }
+      SymExpr* se = toSymExpr(call->get(1));
+      ClassType* ct = toClassType(type);
+      if (se->var->isExprTemp && (!ct || ct->classTag != CLASS_CLASS))
+        USR_WARN(se, "accessing the locale of a local expression");
 
       //
       // if .locale is applied to an expression of array or domain
