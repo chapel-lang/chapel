@@ -1,0 +1,5 @@
+error message: bad line numbers for compilerWarning
+
+For some reason, this test reports very strange line numbers for
+the compilerWarning.  Maybe due to the code being in the module
+initialization?
