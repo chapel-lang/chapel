@@ -604,3 +604,11 @@ def reshape(A: [], D: domain) {
     B(i) = a;
   return B;
 }
+
+// This should go away once distributions are implemented
+def distributed_warning(d) {
+  if (numLocales > 1) {
+    __primitive("chpl_warning", "'distributed' domains/arrays are not yet distributed across multiple locales");
+  }
+  return d;
+}

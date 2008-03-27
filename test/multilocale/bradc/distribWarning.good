@@ -1,0 +1,2 @@
+distribWarning.chpl:1: warning: 'distributed' domains/arrays are not yet distributed across multiple locales
+Running program

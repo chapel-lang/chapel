@@ -1033,7 +1033,8 @@ distributed_expr: /* not supported in one-locale implementation */
   /* nothing */
     { $$ = new CallExpr(PRIMITIVE_NEW, new CallExpr(defaultDistribution)); }
 | TDISTRIBUTED TLP expr TRP
-    { $$ = $3; }
+  // This should return to $$ = $3 once distributions are implemented
+    { $$ = new CallExpr("distributed_warning", $3); }
 ;
 
 
