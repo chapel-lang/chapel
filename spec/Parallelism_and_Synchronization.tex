@@ -232,10 +232,11 @@ single variable remains full when this method completes.
 \index{readXX@\chpl{readXX}}
 \begin{protohead}
 def sync $t$.readXX(): t
+def single $t$.readXX(): t
 \end{protohead}
 \begin{protobody}
-Returns the value of the sync variable.  This method is non-blocking
-and the state of the sync variable is unchanged when this method
+Returns the value of the sync or single variable.  This method is non-blocking
+and the state of the sync or single variable is unchanged when this method
 completes.
 \end{protobody}
 
@@ -284,10 +285,11 @@ variable is set to empty when this method completes.
 \index{isFull@\chpl{isFull}}
 \begin{protohead}
 def sync $t$.isFull: bool
+def single $t$.isFull: bool
 \end{protohead}
 \begin{protobody}
-Returns \chpl{true} if the sync variable is full and \chpl{false}
-otherwise.  This method is non-blocking and the state of the sync
+Returns \chpl{true} if the sync or single variable is full and \chpl{false}
+otherwise.  This method is non-blocking and the state of the sync or single
 variable is unchanged when this method completes.
 \end{protobody}
 
