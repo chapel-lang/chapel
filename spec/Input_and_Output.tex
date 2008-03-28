@@ -82,6 +82,12 @@ lines.  After all arguments of the \chpl{readln} call are read, an
 end-of-line character is expected to be read, ignoring any additional 
 input between the last argument read and the end-of-line character.
 
+The \chpl{read} and \chpl{readln} functions are also defined to take
+an arbitrary number of types as arguments.  In this case, the
+semantics are the same except that the value returned is a tuple of
+the values that were read.  If only one type is read, the value is not
+returned in a tuple, but is returned directly.
+
 These functions are wrappers for the methods on files described next.
 
 \begin{example}
@@ -167,8 +173,10 @@ advancing the file pointer to the next line after the last argument
 is read.
 
 The \chpl{file} type also supports overloaded methods \chpl{read}
-and \chpl{readln} that have a single generic type argument.  These methods
-read a single value of the specified type from the file and returns it.
+and \chpl{readln} that take an arbitrary number of types as arguments.
+These methods read values of the specified types from the file and
+return them in a tuple.  If only one type is read, the value is not
+returned in a tuple, but is returned directly.
 
 \begin{example}
 The following line of code reads a value of type \chpl{int} from

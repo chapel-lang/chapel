@@ -590,8 +590,10 @@ advantages to making this a runtime error?
 \label{Variable_Length_Argument_Lists}
 \index{functions!variable number of arguments}
 
-Functions can be defined to take a variable number of arguments.  This
-allows the call site to pass a different number of actual arguments.
+Functions can be defined to take a variable number of arguments where
+those arguments can have any intent or can be types.  A variable
+number of parameters is not supported.  This allows the call site to
+pass a different number of actual arguments.
 
 If the variable argument expression is an identifier prepended by a
 question mark, the number of arguments is variable.  Alternatively,
