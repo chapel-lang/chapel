@@ -24,9 +24,6 @@ typedef void (*func_p)(void*);
 #define _SET_WIDE_CLASS(wide, cls) \
   (wide).locale = _localeID; (wide).addr = cls
 
-#define _WIDE_CLASS_EQ(wide1, wide2) \
-  (((wide1).locale == (wide2).locale) && ((wide1).addr == (wide2).addr))
-
 #define _SET_WIDE_STRING(wide, str)                                \
   do {                                                             \
     const char* chpl_macro_tmp = str;                              \
@@ -41,8 +38,13 @@ typedef void (*func_p)(void*);
     (wide).size = chpl_macro_len;                                  \
   } while (0)
 
-#define _WIDE_CLASS_NE(wide1, wide2) \
-  (((wide1).locale != (wide2).locale) || ((wide1).addr != (wide2).addr))
+#define _WIDE_CLASS_EQ(wide1, wide2)                                    \
+  ((((wide1).addr == 0) && ((wide2).addr == 0)) ||                      \
+   (((wide1).locale == (wide2).locale) && ((wide1).addr == (wide2).addr)))
+
+#define _WIDE_CLASS_NE(wide1, wide2)                                    \
+  (((wide1).addr != (wide2).addr) ||                                    \
+   (((wide1).addr != 0) && ((wide1).locale != (wide2).locale)))
 
 #define _WIDE_CLASS_CAST(wide1, type, wide2) \
   (wide1).locale = (wide2).locale; (wide1).addr = (type)((wide2).addr)
