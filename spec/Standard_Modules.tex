@@ -693,7 +693,7 @@ in the range 1 to 31.
 \end{protobody}
 
 \begin{protohead}
-def getCurrentTime(unit: TimeUnits = seconds): real
+def getCurrentTime(unit: TimeUnits = TimeUnits.seconds): real
 \end{protohead}
 \begin{protobody}
 Returns the elapsed time since midnight in the units specified.
@@ -707,7 +707,7 @@ Clears the elapsed time stored in the Timer.
 \end{protobody}
 
 \begin{protohead}
-def Timer.elapsed(unit: TimeUnits = seconds): real
+def Timer.elapsed(unit: TimeUnits = TimeUnits.seconds): real
 \end{protohead}
 \begin{protobody}
 Returns the cumulative elapsed time, in the units specified, between

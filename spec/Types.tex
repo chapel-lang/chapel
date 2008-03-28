@@ -224,11 +224,33 @@ enum-type:
   identifier
 \end{syntax}
 
-An enumerated type defines a set of named constants.  These are
-associated with parameters of integral type.  Each enumerated type is
-a distinct type. If the \sntx{init-part} is omitted, the
-\sntx{enum-constant} has an integral value one higher than the previous
-\sntx{enum-constant} in the enum, with the first having the value \chpl{1}.
+An enumerated type defines a set of named constants that can be
+specified in a program as a member access on the enumerated type.
+These are associated with parameters of integral type.  Each
+enumerated type is a distinct type. If the \sntx{init-part} is
+omitted, the \sntx{enum-constant} has an integral value one higher
+than the previous \sntx{enum-constant} in the enum, with the first
+having the value \chpl{1}.
+
+\begin{example}
+The code
+\begin{chapel}
+enum color { red, white, blue } ;
+\end{chapel}
+defines an enumerated type with three constants.  The function
+\begin{chapel}
+def rhyme(c: color) {
+  select c {
+    when color.red do writeln("red rhymes with head");
+    when color.white do writeln("white rhymes with spite");
+    when color.blue do writeln("blue rhymes with spew");
+  }
+}
+\end{chapel}
+outputs a rhyme for any given color.  Note that enumerated constants
+must be prefixed by the enumerated type and a dot.
+\end{example}
+
 
 \subsection{Class Types}
 

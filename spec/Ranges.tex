@@ -68,7 +68,7 @@ of range type that can represent ranges of 64-bit integers, with both
 high and low bounds specified, and the ability to have a stride other
 than 1.
 \begin{chapel}
-var r: range(int(64), bounded, stridable=true);
+var r: range(int(64), BoundedType.bounded, stridable=true);
 \end{chapel}
 \end{example}
 
@@ -102,8 +102,8 @@ The element type of the range type is determined by the type of the
 low and high bound.  It is either \chpl{int}, \chpl{uint},
 \chpl{int(64)}, or \chpl{uint(64)}.  The type is determined by
 conceptually adding the low and high bounds together.  The boundedness
-of such a range is \chpl{bounded}.  The stridability of the range is
-\chpl{false}.
+of such a range is \chpl{BoundedType.bounded}.  The stridability of
+the range is \chpl{false}.
 
 \subsubsection{Unbounded Range Literals}
 \label{Unbounded_Ranges}
@@ -117,8 +117,9 @@ unbounded-range-literal:
   ..
 \end{syntax}
 
-The first form results in a \chpl{boundedLow} range, the second in a
-\chpl{boundedHigh} range, and the third in a \chpl{boundedNone} range.
+The first form results in a \chpl{BoundedType.boundedLow} range, the
+second in a \chpl{BoundedType.boundedHigh} range, and the third in
+a \chpl{BoundedType.boundedNone} range.
 
 Unbounded ranges can be iterated over with zipper iteration and their
 shape conforms to the shape of the other iterators they are being
