@@ -123,7 +123,7 @@ Bug Fixes/New Semantic Checks (for old semantics):
 - fixed ability to specify C source files with paths
 - improved checks preventing the use of types in value contexts and vice-versa
 - fixed a bug in which standalone reads of sync vars did not consume full/empty
-  e.g., "myflag$;" is now equivalent to "myflag$.readEF();"
+  e.g., "myflag$;" is now equivalent to "myflag$.readFE();"
 - fixed the implementation of .length for degenerate ranges
 - fixed a bug with the --cpp-line flag for long generated C lines
 - removed incorrect copies that were inserted for certain default argument types
@@ -150,7 +150,7 @@ Compiler Performance and Cleanup:
 
 Generated Code:
 ---------------
-- added support for wide references and wide classes
+- added support for remote references and remote classes
 - improved line number reporting for certain functions
 - turned up C compilation warning levels for developers
 - changed implementation of subclasses
@@ -171,7 +171,7 @@ Internal:
 - removed unnecessary primitives, types, symbols
 - improved runtime TAGS file and added TAGS file for generated code
 - converted from CVS to SVN
-- unified implementation of cobegin to use begins
+- unified implementation of cobegin/coforall to use begins
 - use endCounts to implement cobegins/coforalls rather than syncStacks
 - changed places in code where pragmas can occur
 - made --ccwarnings into --[no-]ccwarnings where the default is based on --devel
