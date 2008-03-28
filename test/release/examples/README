@@ -19,6 +19,7 @@ demonstrate various Chapel features:
      iterators.chpl         : sample iterators
      jacobi.chpl            : Jacobi iteration
      linkedList.chpl        : generic linked list example
+     multilocale.chpl       : demonstration of multi-locale concepts
      norm.chpl              : sample module for computing array norms
      opaque.chpl            : tutorial for Chapel opaque arrays
      prodCons.chpl          : producer-consumer example using circular buffer
@@ -77,4 +78,5 @@ Other files
   *.execopts      : "
   *.good          : "
   *.notest        : "
+  *.numlocales    : "
   *.perfkeys      : "

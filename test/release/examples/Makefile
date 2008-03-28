@@ -14,6 +14,7 @@ TARGETS = \
 	iterators \
 	jacobi \
 	linkedList \
+	multilocale \
 	norm \
 	opaque \
 	prodCons \

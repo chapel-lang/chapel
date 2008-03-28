@@ -17,6 +17,7 @@ genericStack  : generic classes; nested classes; array reallocation
 iterators     : iterators of various styles
 jacobi        : 2D domains and arrays; stencil operations; reductions
 linkedList    : nested generic classes; iterators, writeThis methods
+multilocale   : multiple locales, on clauses, multi-locale task parallelism
 norm          : reductions; function overloading and where clauses; modules
 opaque        : opaque domains and arrays; graph-based data structures
 prodCons      : synchronization variables; task parallelism using cobegin
@@ -61,6 +62,7 @@ genericStack   |       |   x   |       |   x   |       |       |       |
 iterators      |       |   x   |       |       |       |       |       |
 jacobi         |       |   *   |       |       |       |       |       |
 linkedList     |       |   x   |       |       |   *   |       |       |
+multilocale    |       |   x   |       |       |       |       |       |
 norm           |       |   x   |       |   x   |       |       |       |
 opaque         |       |   x   |       |       |       |       |       |
 prodCons       |       |   x   |       |       |       |       |       |
@@ -99,6 +101,7 @@ genericStack   |       |       |       |   x   |       |       |       |
 iterators      |       |       |       |       |   *   |       |       |
 jacobi         |       |       |   x   |       |       |   x   |       |
 linkedList     |       |   *   |   x   |   x   |   x   |   x   |   *   |
+multilocale    |       |   x   |       |   x   |       |   x   |       |
 norm           |   *   |       |   x   |   x   |       |       |       |
 opaque         |       |   x   |       |   x   |       |   x   |       |
 prodCons       |       |       |   x   |   x   |   x   |   x   |       |
@@ -139,6 +142,7 @@ genericStack   |   x   |       |   *   |   *   |   *   |   x   |       |
 iterators      |   x   |   x   |       |   x   |       |   x   |       |
 jacobi         |       |   x   |       |       |       |   x   |       |
 linkedList     |       |       |       |   *   |   *   |   x   |       |
+multilocale    |       |       |       |   x   |       |   x   |       |
 norm           |       |       |       |       |       |   x   |   x   |
 opaque         |   x   |       |       |       |       |   x   |       |
 prodCons       |       |       |       |       |       |   x   |       |
@@ -177,6 +181,7 @@ genericStack   |   x   |       |       |       |       |       |   x   |   x
 iterators      |       |       |       |       |       |       |       |
 jacobi         |   x   |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |    
+multilocale    |   x   |       |       |       |       |       |       |
 norm           |   x   |       |       |       |       |       |       |
 opaque         |       |       |       |       |   *   |       |   x   |   x
 prodCons       |   x   |       |       |       |       |       |       |
@@ -216,6 +221,7 @@ genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |   *   |       |   *   |       |   *   |       |       |
 linkedList     |       |       |       |       |       |       |       |
+multilocale    |       |       |       |       |       |       |       |
 norm           |   x   |   x   |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
@@ -242,7 +248,7 @@ key:
 -------------------------------------------------------------------------------
                |                Task Parallel Features
                |
-test           | begin | cobeg | srial | sync  | atomc | xxxxx | xxxxx | xxxxx
+test           | begin | cobeg | cofor | srial | sync  | atomc | xxxxx | 
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
@@ -254,26 +260,67 @@ genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |
+multilocale    |       |       |   *   |   *   |       |       |       |
 norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
-prodCons       |       |   *   |       |   *   |       |       |       |
-quicksort      |       |   *   |   *   |       |       |       |       |
+prodCons       |       |   *   |       |       |   *   |       |       |
+quicksort      |       |   *   |       |   *   |       |       |       |
 reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 tree           |       |   x   |       |       |       |       |       |
 hpcc/stream    |       |       |       |       |       |       |       |
-hpcc/ra        |       |       |       |       |   x   |       |       |
+hpcc/ra        |       |       |       |       |       |   x   |       |
 hpcc/fft       |       |       |       |       |       |       |       |
 -------------------------------------------------------------------------------
 key:
   begin = uses begin statements
   cobeg = uses cobegin statements
+  cofor = uses coforall statements
   srial = uses the serial statement
   sync  = uses sync variables
   atomc = uses atomic blocks
 -------------------------------------------------------------------------------
 
+
+
+
+-------------------------------------------------------------------------------
+               |              Locality Features
+               |
+test           | nmloc | locle | LocSp | Lcles |  on   | .locl | xxxxx | xxxxx
+---------------+-------+-------+-------+-------+-------+-------+-------+-------
+hello          |       |       |       |       |       |       |       |
+hello-module   |       |       |       |       |       |       |       |
+arrays         |       |       |       |       |       |       |       |
+beer           |       |       |       |       |       |       |       |
+blockLU        |       |       |       |       |       |       |       |
+fileIO         |       |       |       |       |       |       |       |
+genericStack   |       |       |       |       |       |       |       |
+iterators      |       |       |       |       |       |       |       |
+jacobi         |       |       |       |       |       |       |       |
+linkedList     |       |       |       |       |       |       |       |
+multilocale    |   *   |   *   |   *   |   *   |   *   |       |       |
+norm           |       |       |       |       |       |       |       |
+opaque         |       |       |       |       |       |       |       |
+prodCons       |       |       |       |       |       |       |       |
+quicksort      |       |       |       |       |       |       |       |
+reductions     |       |       |       |       |       |       |       |
+slices         |       |       |       |       |       |       |       |
+sparse         |       |       |       |       |       |       |       |
+tree           |       |       |       |       |       |       |       |
+hpcc/stream    |       |       |       |       |       |       |       |
+hpcc/ra        |       |       |       |       |       |       |       |
+hpcc/fft       |       |       |       |       |       |       |       |
+-------------------------------------------------------------------------------
+key:
+  nmloc = uses the numLocales constant
+  locle = uses the locale type
+  LocSp = uses the LocaleSpace domain
+  Lcles = uses the Locales array
+  on    = uses on clauses
+  .locl = uses .locale queries on expressions
+-------------------------------------------------------------------------------
 
 
 
@@ -292,6 +339,7 @@ genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |
+multilocale    |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
