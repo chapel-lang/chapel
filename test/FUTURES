@@ -5,8 +5,6 @@ vvv Brad considers these highest priority for release v0.7
 Brad should revisit
 -------------------
 ???: nondeterministic output [test/studies/590o/telmas/dpll]
-feature request: more tasks [test/parallel/coforall/bradc/tooManyThreads-folded]
-feature request: more tasks [test/parallel/coforall/bradc/tooManyThreads-revorder]
 
 
 multilocale issues

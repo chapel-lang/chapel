@@ -20,7 +20,6 @@ out-of-memory problems
 
 maxThreads warning issue
 ------------------------
-[Error matching program output for parallel/coforall/bradc/manyThreads-inorder]
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
 
 
