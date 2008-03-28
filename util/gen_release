@@ -53,7 +53,8 @@ system("cd $tmpdir && svn export -q $svnroot");
     "examples",
     "make",
     "modules",
-    "runtime"
+    "runtime",
+    "third-party/gasnet"
 );
 
 
