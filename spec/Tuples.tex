@@ -8,15 +8,19 @@ specification of a light-weight record with anonymous fields.
 \subsection{Tuple Expressions}
 \label{Tuple_Expressions}
 
-A tuple expression is a comma-separated list of expressions that is
-enclosed in parentheses.  The number of expressions is the size of the
-tuple and the types of the expressions determine the component types
-of the tuple.
+A tuple expression is a comma-separated list of at least two
+expressions that is enclosed in parentheses.  The number of
+expressions is the size of the tuple and the types of the expressions
+determine the component types of the tuple.  A single expression in
+parentheses is a \sntx{parenthesized-expression} discussed
+in~\rsec{Parenthesized_Expressions}.  A 1-tuple expression can be
+created by defining a function that takes a variable number of
+arguments as described in~\rsec{Variable_Length_Argument_Lists}.
 
 The syntax of a tuple expression is given by:
 \begin{syntax}
 tuple-expression:
-  ( expression-list )
+  ( expression , expression-list )
 
 expression-list:
   expression
@@ -36,12 +40,12 @@ defines a variable \chpl{x} that is a 2-tuple containing the values
 \label{Tuple_Type_Definitions}
 \index{tuples!types}
 
-A tuple type is a comma-separated list of types.  The number of types
-in the list defines the size of the tuple, which is part of the
-tuple's type.  The syntax of a tuple type is given by:
+A tuple type is a comma-separated list of at least two types.  The
+number of types in the list defines the size of the tuple, which is
+part of the tuple's type.  The syntax of a tuple type is given by:
 \begin{syntax}
 tuple-type:
-  ( type-list )
+  ( type-specifier , type-list )
   homogeneous-tuple-type
 
 type-list:
@@ -49,14 +53,19 @@ type-list:
   type-specifier , type-list
 \end{syntax}
 
-The \sntx{homogeneous-tuple-type} is a special kind of tuple where the
-components all have the same types.  They are defined
-in~\rsec{Homogeneous_Tuples}.
-
 \begin{example}
 Given a tuple expression \chpl{(1, 2)}, the type of the tuple value is
 \chpl{(int, int)}, referred to as a 2-tuple of integers.
 \end{example}
+
+The \sntx{homogeneous-tuple-type} specifies a tuple type where all of
+the type components are identical.  This special syntax is described
+in~\rsec{Homogeneous_Tuples}.
+
+If one type is delimited by parentheses, the parentheses are ignored.
+Specifying a 1-tuple type can be accomplished using the syntax for
+homogeneous tuples in~\rsec{Homogeneous_Tuples} by specifying 1 for
+the integral parameter.
 
 \subsection{Tuple Assignment}
 \label{Tuple_Assignment}
@@ -193,7 +202,7 @@ integer to it as an argument.
 The result of indexing a tuple by integer $k$ is the value of the
 $k$th component.  If the tuple is not homogeneous, the tuple can only
 be indexed by an integer parameter.  This ensures that the type of the
-indexing expression is known at compile-time.
+indexing expression is statically known.
 
 \subsection{Formal Arguments of Tuple Type}
 \label{Formal_Arguments_of_Tuple_Type}

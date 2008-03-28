@@ -605,17 +605,32 @@ arguments.
 \begin{example}
 The code
 \begin{chapel}
-def mywriteln(x: int ...?k) {
+def mywriteln(x ...?k) {
   for param i in 1..k do
     writeln(x(i));
 }
 \end{chapel}
-defines a function called \chpl{mywriteln} that takes a variable
-number of arguments and then writes them out on separate lines.  The
-parameter for-loop~(\rsec{Parameter_For_Loops}) is unrolled by the
-compiler so that \chpl{i} is a parameter, rather than a variable.
-This function can be made generic~(\rsec{Generics}) to take arguments
-of different types by eliding the type.
+defines a generic function called \chpl{mywriteln} that takes a
+variable number of arguments of any type and then writes them out on
+separate lines.  The parameter for-loop~(\rsec{Parameter_For_Loops})
+is unrolled by the compiler so that \chpl{i} is a parameter, rather
+than a variable.  This needs to be a parameter for-loop because the
+expression \chpl{x(i)} will have a different type on each iteration.
+The type of \chpl{x} can be specified in the formal argument list to
+ensure that the actuals all have the same type.
+\end{example}
+
+\begin{example}
+The function
+\begin{chapel}
+def tuple(x ...?k) return x;
+\end{chapel}
+creates a generic function that returns tuples.  When passed two or
+more actuals in a call, it is equivalent to building a tuple so the
+expressions \chpl{tuple(1, 2)} and \chpl{(1, 2)} are equivalent.  When
+passed one actual, it builds a 1-tuple which is different than the
+evaluation of the parenthesized expression.  Thus the
+expressions \chpl{tuple(1)} and \chpl{(1)} are not equivalent.
 \end{example}
 
 A tuple of variables arguments can be passed to a function that takes

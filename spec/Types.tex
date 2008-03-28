@@ -130,6 +130,11 @@ and \chpl{real(64)}.
 
 Arithmetic over real values follows the IEEE 754 standard.
 
+\begin{rationale}
+There is an expectation of future support for real(128) and/or
+real(80) depending on a platform's native support for those types
+\end{rationale}
+
 \subsubsection{Complex Types}
 \label{Complex_Types}
 \index{complex@\chpl{complex}}
@@ -142,6 +147,11 @@ real numbers.  The default complex type, \chpl{complex}, is 128 bits;
 it consists of two 64-bit real numbers.  The complex types that are
 supported are machine-dependent, but usually
 include \chpl{complex(64)} and \chpl{complex(128)}.
+
+\begin{rationale}
+There is an expectation of future support for complex(256) and/or
+complex(160) depending on a platform's native support for those types
+\end{rationale}
 
 The real and imaginary components can be accessed via the methods
 \chpl{re} and \chpl{im}.  The type of these components is real.
@@ -160,6 +170,11 @@ The imaginary types can be parameterized by the number of bits used to
 represent them.  The default imaginary type, \chpl{imag}, is 64 bits.
 The imaginary types that are supported are machine-dependent, but
 usually include \chpl{imag(32)} and \chpl{imag(64)}.
+
+\begin{rationale}
+There is an expectation of future support for imag(128) and/or
+imag(80) depending on a platform's native support for those types
+\end{rationale}
 
 \begin{rationale}
 The imaginary type is included to avoid numeric instabilities and

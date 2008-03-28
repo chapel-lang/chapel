@@ -14,6 +14,7 @@ expression:
   query-expression
   cast-expression
   lvalue-expression
+  parenthesized-expression
   unary-expression
   binary-expression
   let-expression
@@ -68,6 +69,18 @@ expression is given by:
 variable-expression:
   identifier
 \end{syntax}
+
+\subsection{Parenthesized Expressions}
+\label{Parenthesized_Expressions}
+
+A \sntx{parenthesized-expression} is an expression that is delimited
+by parentheses as given by:
+\begin{syntax}
+parenthesized-expression:
+  ( expression )
+\end{syntax}
+Such an expression evaluates to the expression.  The parentheses is
+ignored and has only syntactic effect.
 
 \subsection{Call Expressions}
 \label{Call_Expressions}
