@@ -47,7 +47,7 @@ for i in 1..numLocales-1 {
 // walk over the linked list and output each node and the locale on
 // which it exists using .locale.id to determine the locale
 //
-var tmp = head;
+tmp = head;
 while tmp {
   writeln("node with data = ", tmp.data, " on locale ", tmp.locale.id);
   tmp = tmp.next;
