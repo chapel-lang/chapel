@@ -5,8 +5,8 @@ Chapel Compiler Release: top-level README
 This is a preliminary release of the Chapel compiler, intended for use
 by a small audience for evaluation and feedback purposes.  See the
 LICENSE file for information about legal usage, and please also keep
-in mind any user agreement that you have made regarding the intended
-use of this release.
+in mind the user agreement that you have made regarding this release,
+available for your reference in the AGREEMENT file.
 
 
 -----------
@@ -79,3 +79,5 @@ For more detailed information about...      refer to...
   ...calling C routines from Chapel          ...doc/README.extern
   ...formatting value-to-string conversions  ...doc/README.format
   ...notes for Cygwin users                  ...doc/README.cygwin
+  ...third-party software that we use        ...third-party/README
+  ...the GASNet communication library        ...third-party/gasnet/README

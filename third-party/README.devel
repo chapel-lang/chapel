@@ -1,0 +1,13 @@
+=============================================
+Chapel third-party directory : for developers
+=============================================
+
+This directory contains the following subdirectories, which we
+currently do not make available to users:
+
+armci/   : PNNL's ARMCI library for one-sided communication
+mpich1/  : MPICH version 1 implementation of MPI
+txt2man/ : a shell script utility for converting text files to man pages
+
+Licensing information for each package should be available in its
+separate directory.

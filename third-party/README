@@ -1,0 +1,19 @@
+============================
+Chapel third-party directory
+============================
+
+This directory is designed to hold sources that were not developed by
+the Chapel team and which are released under distinct licenses from
+Chapel itself.  Current subdirectories include:
+
+gasnet/
+  Summary: the Berkeley GASNet library for one-sided communication
+           which we use as a communication layer to implement Chapel's
+           support for multi-locale/distributed-memory systems.
+
+  License: GASNet is made available under a BSD-style license, which
+           can be found in gasnet/GASNet-<version>/license.txt
+
+  Contact: For more information, please refer to: http://gasnet.cs.berkeley.edu
+
+  See also: gasnet/README

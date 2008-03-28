@@ -31,6 +31,8 @@ system("cd $tmpdir && svn export -q $svnroot");
        "README.files",
        "STATUS",
        "man/man1/chpl.1",
+       "third-party/Makefile",
+       "third-party/README",
        "util/chplmake",
        "util/comm.pl",
        "util/commConfigureOpts.pl",

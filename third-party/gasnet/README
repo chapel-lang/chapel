@@ -1,0 +1,31 @@
+=========================
+GASNet for Chapel release
+=========================
+
+This version of GASNet is being released with Chapel version 0.7 and
+is based on GASNet version 1.10.0 obtained from UC Berkeley at:
+http://gasnet.cs.berkeley.edu.  We have changed the version number to
+1.10.0-chpl-v0.7 in order to distinguish our copy from the official
+sources as requested by the Berkeley GASNet group.
+
+The only modification to the source code that we made was to add
+support for launching an xterm window running gdb in the udp active
+messages layer if the environment variable CHPL_COMM_USE_GDB is set
+(which the Chapel runtime does if a generated executable is run with
+the --gdb flag).  Our modification is not particularly elegant, but it
+should be innocuous for non-Chapel developers, and has been
+exceedingly useful for the Chapel development team.
+
+Any problems that seem to be related to GASNet should be directed
+first to the Chapel team at chapel_bugs@cray.com, as the cause is most
+likely due to Chapel's use of GASNet and not the GASNet library
+itself.
+
+The structure of this directory is as follows:
+
+./
+  Makefile        : a Makefile to help build GASNet for Chapel's use
+  README          : this file
+  GASNet-1.10.0/  : the official GASNet release, with the above modifications
+  install/        : built versions of GASNet go here under subdirectories:
+    $CHPL_TARGET_PLATFORM-$CHPL_TARGET_COMPILER/
