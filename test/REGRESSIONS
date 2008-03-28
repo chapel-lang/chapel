@@ -13,9 +13,14 @@
 linux and general regressions
 =============================
 
-???
----
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
+out-of-memory problems
+----------------------
+[Error matching program output for stress/deitz/test_10k_cobegins]
+[Error matching program output for stress/deitz/test_10k_coforall]
+
+maxThreads warning issue
+------------------------
+[Error matching program output for parallel/coforall/bradc/manyThreads-inorder]
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
 
 
@@ -23,11 +28,6 @@ differing memory sizes on different platforms
 ---------------------------------------------
 [Error matching program output for memory/shannon/memstatPrint]
 [Error matching program output for memory/shannon/printFinalMemStat]
-
-
-some sort of undiagnosed race -- seems more likely to be in our code than his
------------------------------------------------------------------------------
-[Error: Timed out executing program studies/590o/blerner/xml-parse]
 
 
 =============================
@@ -51,8 +51,6 @@ gasnet-specific regressions
 record with domain cross-locale copy results in a nil dereference 
 -- esp. for --no-inline
 -----------------------------------------------------------------
-[Error matching program output for multilocale/deitz/linked/test_linked3]
-[Error matching program output for
 studies/madness/aniruddha/madchap/test_gaxpy]
 [Error matching program output for
 studies/madness/aniruddha/madchap/test_likepy]
