@@ -628,10 +628,12 @@ def _pass(r: _ref) return r;
 // for targets that don't have particularly fast ways of achieving this functionality
 // for simple base types.)
 def isSimpleSyncBaseType (type t) param {
-  if t == int(64) || t == uint(64) || t == int(32) || t == uint(32)
-      || t == int(16) || t == uint(16) || t == int(8) || t == uint(8)
-      || t == real(32) || t == real(64) || t == imag(32) || t == imag(64)
-    return true;
+  if CHPL_THREADS == chpl_threads_values.mta
+    if t == int(64) || t == uint(64) || t == int(32) || t == uint(32)
+        || t == int(16) || t == uint(16) || t == int(8) || t == uint(8)
+        || t == real(32) || t == real(64) || t == imag(32) || t == imag(64)
+        return true;
+    else return false;
   else return false;
 }
 
@@ -682,10 +684,9 @@ def _syncvar.readFE(): base_type {
   var ret: base_type;
   on this {
     var localRet: base_type;
-    if (isSimpleSyncBaseType(base_type)) {
-      localRet = value;                        // Force the Chapel compiler to create a temporary!
-      __primitive("read_FE", localRet, this);  // This primitive modifies the value of localRet!
-    } else {
+    if isSimpleSyncBaseType(base_type) then
+      localRet = __primitive("read_FE", localRet, this);
+    else {
       __primitive("sync_wait_full_and_lock", this);
       localRet = value;
       __primitive("sync_mark_and_signal_empty", this);
@@ -700,10 +701,9 @@ def _syncvar.readFF() {
   var ret: base_type;
   on this {
     var localRet: base_type;
-    if (isSimpleSyncBaseType(base_type)) {
-      localRet = value;                        // Force the Chapel compiler to create a temporary!
-      __primitive("read_FF", localRet, this);  // This primitive modifies the value of localRet!
-    } else {
+    if isSimpleSyncBaseType(base_type) then
+      localRet = __primitive("read_FF", localRet, this);
+    else {
       __primitive("sync_wait_full_and_lock", this);
       localRet = value;
       __primitive("sync_mark_and_signal_full", this); // in case others are waiting
@@ -718,10 +718,9 @@ def _syncvar.readXX() {
   var ret: base_type;
   on this {
     var localRet: base_type;
-    if (isSimpleSyncBaseType(base_type)) {
-      localRet = value;                        // Force the Chapel compiler to create a temporary!
-      __primitive("read_XX", localRet, this);  // This primitive modifies the value of localRet!
-    } else {
+    if isSimpleSyncBaseType(base_type) then
+      localRet = __primitive("read_XX", localRet, this);
+    else {
       __primitive("sync_lock", this);
       localRet = value;
       __primitive("sync_unlock", this);
@@ -734,9 +733,9 @@ def _syncvar.readXX() {
 // This is the default write on sync vars. Wait for empty, set and signal full.
 def _syncvar.writeEF(val:base_type) {
   on this {
-    if (isSimpleSyncBaseType(base_type)) {
+    if isSimpleSyncBaseType(base_type) then
       __primitive("write_EF", this, val);
-    } else {
+    else {
       __primitive("sync_wait_empty_and_lock", this);
       value = val;
       __primitive("sync_mark_and_signal_full", this);
@@ -752,9 +751,9 @@ def =(sv: sync, val:sv.base_type) {
 // Wait for full, set and signal full.
 def _syncvar.writeFF(val:base_type) {
   on this {
-    if (isSimpleSyncBaseType(base_type)) {
+    if isSimpleSyncBaseType(base_type) then
       __primitive("write_FF", this, val);
-    } else {
+    else {
       __primitive("sync_wait_full_and_lock", this);
       value = val;
       __primitive("sync_mark_and_signal_full", this);
@@ -765,9 +764,9 @@ def _syncvar.writeFF(val:base_type) {
 // Ignore F/E, set and signal full.
 def _syncvar.writeXF(val:base_type) {
   on this {
-    if (isSimpleSyncBaseType(base_type)) {
+    if isSimpleSyncBaseType(base_type) then
       __primitive("write_XF", this, val);
-    } else {
+    else {
       __primitive("sync_lock", this);
       value = val;
       __primitive("sync_mark_and_signal_full", this);
@@ -778,10 +777,10 @@ def _syncvar.writeXF(val:base_type) {
 // Ignore F/E, set to zero or default value and signal empty.
 def _syncvar.reset() {
   on this {
-    if (isSimpleSyncBaseType(base_type)) {
+    if isSimpleSyncBaseType(base_type) then
       // Reset this's value to zero.
       __primitive("sync_reset", this);
-    } else {
+    else {
       const default_value: base_type;
       __primitive("sync_lock", this);
       value = default_value;
@@ -838,12 +837,11 @@ def _singlevar.readFF() {
   var ret: base_type;
   on this {
     var localRet: base_type;
-    if (isSimpleSyncBaseType(base_type)) {
-      localRet = value;                               // Force the Chapel compiler to create a temporary!
-      __primitive("single_read_FF", localRet, this);  // This primitive modifies the value of localRet!
-    } else if (__primitive("single_is_full", this, isSimpleSyncBaseType(base_type))) {
+    if isSimpleSyncBaseType(base_type) then
+      localRet = __primitive("single_read_FF", localRet, this);
+    else if this.isFull then
       localRet = value;
-    } else {
+    else {
       __primitive("single_wait_full", this);
       localRet = value;
       __primitive("single_mark_and_signal_full", this); // in case others are waiting
@@ -859,12 +857,11 @@ def _singlevar.readXX() {
   var ret: base_type;
   on this {
     var localRet: base_type;
-    if (isSimpleSyncBaseType(base_type)) {
-      localRet = value;                               // Force the Chapel compiler to create a temporary!
-      __primitive("single_read_XX", localRet, this);  // This primitive modifies the value of localRet!
-    } else if (__primitive("single_is_full", this, isSimpleSyncBaseType(base_type))) {
+    if isSimpleSyncBaseType(base_type) then
+      localRet = __primitive("single_read_XX", localRet, this);
+    else if this.isFull then
       localRet = value;
-    } else {
+    else {
       __primitive("single_lock", this);
       localRet = value;
       __primitive("single_unlock", this);
@@ -878,13 +875,12 @@ def _singlevar.readXX() {
 // Can only write once.  Otherwise, it is an error.
 def _singlevar.writeEF(val:base_type) {
   on this {
-    if (isSimpleSyncBaseType(base_type)) {
+    if isSimpleSyncBaseType(base_type) then
       __primitive("single_write_EF", this, val);
-    } else {
+    else {
       __primitive("single_lock", this);
-      if (__primitive("single_is_full", this, isSimpleSyncBaseType(base_type))) {
+      if this.isFull then
         halt("single var already defined");
-      }
       value = val;
       __primitive("single_mark_and_signal_full", this);
     }
@@ -1376,3 +1372,4 @@ pragma "inline" def <=(a: uint(64), param b: int(64))
   if b < 0 then _throwOpError("<="); else return __primitive("<=", a, b:uint(64));
 pragma "inline" def <=(param a: int(64), b: uint(64))
   if a < 0 then _throwOpError("<="); else return __primitive("<=", a:uint(64), b);
+

@@ -343,17 +343,17 @@ initPrimitive() {
   prim_def(PRIMITIVE_SINGLE_SIGNAL_FULL, "single_mark_and_signal_full", returnInfoVoid, true);
 
   // sync/single var support
-  prim_def(PRIMITIVE_WRITEEF, "write_EF", returnInfoVoid, true, true);
-  prim_def(PRIMITIVE_WRITEFF, "write_FF", returnInfoVoid, true, true);
+  prim_def(PRIMITIVE_WRITEEF, "write_EF", returnInfoVoid, true);
+  prim_def(PRIMITIVE_WRITEFF, "write_FF", returnInfoVoid, true);
   prim_def(PRIMITIVE_WRITEXF, "write_XF", returnInfoVoid, true);
   prim_def(PRIMITIVE_SYNC_RESET, "sync_reset", returnInfoVoid, true);
-  prim_def(PRIMITIVE_READFE, "read_FE", returnInfoFirst, true, true);
-  prim_def(PRIMITIVE_READFF, "read_FF", returnInfoFirst, true, true);
+  prim_def(PRIMITIVE_READFE, "read_FE", returnInfoFirst, true);
+  prim_def(PRIMITIVE_READFF, "read_FF", returnInfoFirst, true);
   prim_def(PRIMITIVE_READXX, "read_XX", returnInfoFirst, true);
   prim_def(PRIMITIVE_SYNC_ISFULL, "sync_is_full", returnInfoBool, true);
-  prim_def(PRIMITIVE_SINGLE_WRITEEF, "single_write_EF", returnInfoVoid, true, true);
+  prim_def(PRIMITIVE_SINGLE_WRITEEF, "single_write_EF", returnInfoVoid, true);
   prim_def(PRIMITIVE_SINGLE_RESET, "single_reset", returnInfoVoid, true);
-  prim_def(PRIMITIVE_SINGLE_READFF, "single_read_FF", returnInfoFirst, true, true);
+  prim_def(PRIMITIVE_SINGLE_READFF, "single_read_FF", returnInfoFirst, true);
   prim_def(PRIMITIVE_SINGLE_READXX, "single_read_XX", returnInfoFirst, true);
   prim_def(PRIMITIVE_SINGLE_ISFULL, "single_is_full", returnInfoBool, true);
 

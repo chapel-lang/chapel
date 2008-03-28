@@ -17,17 +17,17 @@ typedef struct {
   sync int64_t signal_full;  // wait for full; signal this when full
 } chpl_single_aux_t;
 
-#define _chpl_read_FE(x,y,lineno,filename) (x) = readfe(&((y)->value))
-#define _chpl_read_FF(x,y,lineno,filename) (x) = readff(&((y)->value))
-#define _chpl_read_XX(x,y) (x) = readxx(&((y)->value))
-#define _chpl_write_EF(x,y,lineno,filename) writeef(&((x)->value), (y))
-#define _chpl_write_FF(x,y,lineno,filename) writeff(&((x)->value), (y))
-#define _chpl_write_XF(x,y) writexf(&((x)->value), (y))
-#define _chpl_sync_reset(x) purge(&((x)->value))
+#define chpl_read_FE(x) readfe(&((x)->value))
+#define chpl_read_FF(x) readff(&((x)->value))
+#define chpl_read_XX(x) readxx(&((x)->value))
+#define chpl_write_EF(x,y) writeef(&((x)->value), (y))
+#define chpl_write_FF(x,y) writeff(&((x)->value), (y))
+#define chpl_write_XF(x,y) writexf(&((x)->value), (y))
+#define chpl_sync_reset(x) purge(&((x)->value))
 
-#define _chpl_single_read_FF(x,y,lineno,filename) (x) = readff(&((y)->value))
-#define _chpl_single_read_XX(x,y) (x) = readxx(&((y)->value))
-#define _chpl_single_write_EF(x,y,lineno,filename) writeef(&((x)->value), (y))
-#define _chpl_single_reset(x) purge(&((x)->value))
+#define chpl_single_read_FF(x) readff(&((x)->value))
+#define chpl_single_read_XX(x) readxx(&((x)->value))
+#define chpl_single_write_EF(x,y) writeef(&((x)->value), (y))
+#define chpl_single_reset(x) purge(&((x)->value))
 
 #endif
