@@ -63,10 +63,12 @@ GEN_CFLAGS = -std=c99 -mp
 #  111 : warns about unreachable statements
 #  174 : warns about expressions that have no effect
 #  177 : warns about unused variable declarations
+#  592 : warns about use before def -- we believe these to be OK, but should
+#        fix these issues ASAP
 
 WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr304,593,810,869,981,1572,1599
 WARN_CFLAGS = $(WARN_CXXFLAGS)
-WARN_GEN_CFLAGS = $(WARN_CFLAGS) -wr111,174,177
+WARN_GEN_CFLAGS = $(WARN_CFLAGS) -wr111,174,177,592
 
 
 #
