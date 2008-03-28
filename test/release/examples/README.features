@@ -300,7 +300,7 @@ genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |
-multilocale    |   *   |   *   |   *   |   *   |   *   |       |       |
+multilocale    |   *   |   *   |   *   |   *   |   *   |   *   |       |
 norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
