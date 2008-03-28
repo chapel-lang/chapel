@@ -258,6 +258,14 @@ void _chpl_comm_set_malloc_type(void) {
 #endif
 }
 
+void _chpl_comm_alloc_registry(int numGlobals) {
+#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
+  _global_vars_registry = _chpl_malloc(numGlobals, sizeof(void*), "allocate global vars registry", 0, 0);
+#else
+  _global_vars_registry = _global_vars_registry_static;
+#endif
+}
+
 void _chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
   if (_localeID != 0) {

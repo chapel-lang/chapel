@@ -10,6 +10,7 @@ extern int32_t _numLocales; // number of locales
 
 extern void _heapAllocateGlobals(void);
 extern char** _global_vars_registry;
+extern char* _global_vars_registry_static[];
 
 typedef void (*func_p)(void*);
 
@@ -243,6 +244,12 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB);
 // displayed using the -v flag).
 //
 void _chpl_comm_rollcall(void);
+
+//
+// allocate _global_vars_registry or make it point to
+// _global_vars_registry_static depending on the communication layer
+//
+void _chpl_comm_alloc_registry(int numGlobals);
 
 //
 // _global_vars_registry is an array of pointers to addresses; on

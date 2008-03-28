@@ -4,14 +4,14 @@ const LocaleSpace: domain(1) = [0..numLocales-1];
 
 // BLC: This should be a single, but there's currently no way to
 // query a single variable in a non-blocking manner
-var doneCreatingLocales$: sync bool;
+var doneCreatingLocales: bool;
 
 pragma "locale"
 class locale {
   const chpl_id: int;
 
-  def locale(id = -1) {
-    if (doneCreatingLocales$.isFull) {
+  def locale(id: int = -1) {
+    if doneCreatingLocales {
       halt("locales cannot be created");
     }
     chpl_id = id;
@@ -36,7 +36,7 @@ def chpl_setupLocale(id) {
 
 const Locales: [loc in LocaleSpace] locale = chpl_setupLocale(loc);
 
-doneCreatingLocales$ = true;
+doneCreatingLocales = true;
 
 def locale.numCores {
   var numCores: int;

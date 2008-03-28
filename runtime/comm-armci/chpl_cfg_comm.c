@@ -208,6 +208,11 @@ void _chpl_comm_rollcall(void) {
             _numLocales);
 }
 
+void _chpl_comm_alloc_registry(int numGlobals) {
+  chpl_error("_chpl_comm_alloc_registry() not yet implemented", 0, NULL);
+  _global_vars_registry = _chpl_malloc(numGlobals, sizeof(void*), "allocate global vars registry", 0, 0);
+}
+
 void _chpl_comm_broadcast_global_vars(int numGlobals) {
   chpl_error("_chpl_comm_broadcast_global_vars() not yet implemented", 0, NULL);
 }
