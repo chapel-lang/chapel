@@ -39,42 +39,47 @@ void addLibInfo(const char* libName) {
 }
 
 
-static void createTmpDir(void) {
-  const char* commandExplanation;
-
-  if (strcmp(saveCDir, "") == 0) {
-    const char* tmpdirprefix = "/tmp/chpl-";
-    const char* tmpdirsuffix = ".deleteme";
-
-    pid_t mypid = getpid();
-#ifdef DEBUGTMPDIR
-    mypid = 0;
-#endif
-
-    char mypidstr[MAX_CHARS_PER_PID];
-    snprintf(mypidstr, MAX_CHARS_PER_PID, "-%d", (int)mypid);
-
-    struct passwd* passwdinfo = getpwuid(geteuid());
-    const char* userid;
-    if (passwdinfo == NULL) {
-      userid = "anon";
-    } else {
-      userid = passwdinfo->pw_name;
-    }
-
-    tmpdirname = astr(tmpdirprefix, userid, mypidstr, tmpdirsuffix);
-
-    intDirName = tmpdirname;
-    commandExplanation = "making temporary directory";
-  } else {
-    intDirName = saveCDir;
-    commandExplanation = "ensuring --savec directory exists";
-  }
-
+static void ensureDirExists(const char* dirname,
+                            const char* explanation) {
   const char* mkdircommand = "mkdir -p ";
-  const char* command = astr(mkdircommand, intDirName);
+  const char* command = astr(mkdircommand, dirname);
 
-  mysystem(command, commandExplanation);
+  mysystem(command, explanation);
+}
+
+
+static void ensureTmpDirExists(void) {
+  if (saveCDir[0] == '\0') {
+    if (tmpdirname == NULL) {
+      const char* tmpdirprefix = "/tmp/chpl-";
+      const char* tmpdirsuffix = ".deleteme";
+      
+      pid_t mypid = getpid();
+#ifdef DEBUGTMPDIR
+      mypid = 0;
+#endif
+      
+      char mypidstr[MAX_CHARS_PER_PID];
+      snprintf(mypidstr, MAX_CHARS_PER_PID, "-%d", (int)mypid);
+      
+      struct passwd* passwdinfo = getpwuid(geteuid());
+      const char* userid;
+      if (passwdinfo == NULL) {
+        userid = "anon";
+      } else {
+        userid = passwdinfo->pw_name;
+      }
+      
+      tmpdirname = astr(tmpdirprefix, userid, mypidstr, tmpdirsuffix);
+      intDirName = tmpdirname;
+      ensureDirExists(intDirName, "making temporary directory");
+    }
+  } else {
+    if (intDirName != saveCDir) {
+      intDirName = saveCDir;
+      ensureDirExists(saveCDir, "ensuring --savec directory exists");
+    }
+  }
 }
 
 
@@ -108,9 +113,7 @@ void deleteTmpDir(void) {
 static const char* genIntFilename(const char* filename) {
   const char* slash = "/";
 
-  if (intDirName == NULL) {
-    createTmpDir();    
-  }
+  ensureTmpDirExists();    
 
   const char* newfilename = astr(intDirName, slash, filename);
 
@@ -183,12 +186,12 @@ void closeCFile(fileinfo* fi) {
 }
 
 
-fileinfo* openTmpFile(const char* tmpfilename) {
+fileinfo* openTmpFile(const char* tmpfilename, const char* mode) {
   fileinfo* newfile = (fileinfo*)malloc(sizeof(fileinfo));
 
   newfile->filename = astr(tmpfilename);
   newfile->pathname = genIntFilename(tmpfilename);
-  openfile(newfile, "w");
+  openfile(newfile, mode);
 
   return newfile;
 }
@@ -317,16 +320,28 @@ const char* createGDBFile(int argc, char* argv[]) {
 }
 
 
+static char* mysystem_getresult(const char* command, const char* description, 
+                                int ignorestatus) {
+  const char* systemFilename = "system.out.tmp";
+  const char* fullSystemFilename = genIntFilename(systemFilename);
+  char* result = (char*)malloc(256*sizeof(char));
+  mysystem(astr(command, " > ", fullSystemFilename), description, ignorestatus);
+  fileinfo* systemFile = openTmpFile(systemFilename, "r");
+  fscanf(systemFile->fptr, "%s", result);
+  closefile(systemFile);
+  return result;
+}
+
+
+char* runUtilScript(const char* script) {
+  return mysystem_getresult(astr(chplhome, "/util/", script), 
+                            astr("running $CHPL_HOME/util/", script), 0);
+}
+
+
 void makeBinary(void) {
   if (chplmake[0] == '\0') {
-    const char* tmpMakeNameFile = astr(intDirName, "/chplmake.out");
-    const char* command = astr(chplhome, "/util/chplmake > ", tmpMakeNameFile);
-    mysystem(command, "querying default make");
-    FILE* makeNameFile = openfile(tmpMakeNameFile, "r");
-    if (fscanf(makeNameFile, "%s", chplmake) != 1) {
-      INT_FATAL("Unable to read make utility name");
-    }
-    closefile(makeNameFile);
+    strncpy(chplmake, runUtilScript("chplmake"), 256);
   }
   const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
   const char* command = astr(astr(chplmake, " "), makeflags, intDirName, 
@@ -454,3 +469,4 @@ void codegen_makefile(fileinfo* mainfile) {
   genCFileBuildRules(makefile.fptr);
   closeCFile(&makefile);
 }
+

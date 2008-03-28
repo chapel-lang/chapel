@@ -16,18 +16,48 @@
 
 FILE* html_index_file = NULL;
 
+
+char chplhome[FILENAME_MAX] = "";
+
+static void ensure_chplhome_set(void) {
+  if (chplhome[0] == '\0') {
+    const char* chpl_home = getenv("CHPL_HOME");
+    if (chpl_home == NULL) {
+      strcpy(chplhome, ".");
+    } else {
+      strncpy(chplhome, chpl_home, FILENAME_MAX);
+    }
+  }
+}
+
+
+static char* get_CHPL_THREADS(void) {
+  ensure_chplhome_set();
+  static char* CHPL_THREADS = NULL;
+  if (CHPL_THREADS == NULL) {
+    CHPL_THREADS = runUtilScript("threads.pl");
+  }
+  return CHPL_THREADS;
+}
+
+static char* get_CHPL_COMM(void) {
+  ensure_chplhome_set();
+  static char* CHPL_COMM = NULL;
+  if (CHPL_COMM == NULL) {
+    CHPL_COMM = runUtilScript("comm.pl");
+  }
+  return CHPL_COMM;
+}
+
 // make --local on by default if CHPL_COMM is unset or none
 static bool setDefaultFLocal(void) {
-  char* chpl_comm = getenv("CHPL_COMM");
-  return (chpl_comm == NULL || !strcmp(chpl_comm, "none"));
+  return (!strcmp(get_CHPL_COMM(), "none"));
 }
 
 // make --serial on by default if CHPL_THREADS is set to none
 static bool setDefaultFSerial(void) {
-  char* chpl_threads = getenv("CHPL_THREADS");
-  return (chpl_threads != NULL && !strcmp(chpl_threads, "none"));
+  return (!strcmp(get_CHPL_THREADS(), "none"));
 }
-
 
 int fdump_html = 0;
 static char libraryFilename[FILENAME_MAX] = "";
@@ -58,7 +88,6 @@ bool fSerial = setDefaultFSerial();
 bool fLocal = setDefaultFLocal();
 bool fieeefloat = true;
 bool report_inlining = false;
-char chplhome[FILENAME_MAX] = ".";
 char chplmake[256] = "";
 char fExplainCall[256] = "";
 char fExplainInstantiation[256] = "";
@@ -168,6 +197,23 @@ static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
     // arg_unused was just name
     configParamMap.put(astr(name), "");
   }
+}
+
+
+
+
+static void setBuiltinConfigParams(void) {
+  ensure_chplhome_set();
+/* See comment at the top of ChapelBase.chpl to learn why these are
+   commented out:
+
+  configParamMap.put(astr("CHPL_HOST_PLATFORM"), runUtilScript("platform.pl --host"));
+  configParamMap.put(astr("CHPL_TARGET_PLATFORM"), runUtilScript("platform.pl --target"));
+  configParamMap.put(astr("CHPL_HOST_COMPILER"), runUtilScript("compiler.pl --host"));
+  configParamMap.put(astr("CHPL_TARGET_COMPILER"), runUtilScript("compiler.pl --target"));
+*/
+  configParamMap.put(astr("CHPL_THREADS"), get_CHPL_THREADS());
+  configParamMap.put(astr("CHPL_COMM"), get_CHPL_COMM());
 }
 
 
@@ -391,6 +437,7 @@ compile_all(void) {
 int main(int argc, char *argv[]) {
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
+  setBuiltinConfigParams();
   process_args(&arg_state, argc, argv);
   startCatchingSignals();
   printStuff();

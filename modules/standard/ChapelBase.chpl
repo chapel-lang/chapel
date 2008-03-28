@@ -1,3 +1,49 @@
+/* Let's not do these ones for now -- really want to use parameter
+   strings since (1) the values have hyphens in them and (2) we don't
+   want to have to hard-code all possible settings here in the
+   modules.  But param string comparisons don't get folded out yet, so
+   we're not ready for this.
+
+enum chpl_platform_values {unset, cygwin, darwin, linux, linux64, linux64_32,
+                           mta, sunos, x1, xmt, xt_cnl};
+config param CHPL_HOST_PLATFORM: chpl_platform_values = chpl_platform_values.unset;
+config param CHPL_TARGET_PLATFORM: chpl_platform_values = chpl_platform_values.unset;
+if (CHPL_HOST_PLATFORM == chpl_platform_values.unset) {
+  compilerWarning("CHPL_HOST_PLATFORM not set");
+}
+if (CHPL_TARGET_PLATFORM == chpl_platform_values.unset) {
+  compilerWarning("CHPL_TARGET_PLATFORM not set");
+}
+
+enum chpl_compiler_values {unset, cray_mta, cray_vec, cray_xt_gnu, 
+                           cray_xt_pathscale, cray_xt_pgi, intel, gnu, 
+                           pathscale, pgi};
+config param CHPL_HOST_COMPILER: chpl_compiler_values = chpl_compiler_values.unset;
+config param CHPL_TARGET_COMPILER: chpl_compiler_values = chpl_compiler_values.unset;
+if (CHPL_HOST_COMPILER == chpl_compiler_values.unset) {
+  compilerWarning("CHPL_HOST_COMPILER not set");
+}
+if (CHPL_TARGET_COMPILER == chpl_compiler_values.unset) {
+  compilerWarning("CHPL_TARGET_COMPILER not set");
+}
+*/
+
+// We'd really like to store all of these choices as strings, but
+// param folding on string comparison is not yet supported.
+
+enum chpl_threads_values {unset, mta, none, pthreads};
+config param CHPL_THREADS: chpl_threads_values = chpl_threads_values.unset;
+if (CHPL_THREADS == chpl_threads_values.unset) {
+  compilerWarning("CHPL_THREADS not set");
+}
+
+enum chpl_comm_values {unset, armci, gasnet, none};
+config param CHPL_COMM: chpl_comm_values = chpl_comm_values.unset;
+if (CHPL_COMM == chpl_comm_values.unset) {
+  compilerWarning("CHPL_COMM not set");
+}
+
+
 // the number of locales on which to run the program
 config const numLocales: int = __primitive("_chpl_comm_default_num_locales");
 

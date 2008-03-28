@@ -22,7 +22,7 @@ void deleteTmpDir(void);
 void openCFile(fileinfo* fi, const char* name, const char* ext = NULL);
 void closeCFile(fileinfo* fi);
 
-fileinfo* openTmpFile(const char* tmpfilename);
+fileinfo* openTmpFile(const char* tmpfilename, const char* mode = "w");
 
 void openfile(fileinfo* thefile, const char* mode);
 void closefile(fileinfo* thefile);
@@ -39,5 +39,7 @@ void genIncludeCommandLineHeaders(FILE* outfile);
 const char* createGDBFile(int argc, char* argv[]);
 
 void makeBinary(void);
+
+char* runUtilScript(const char* script);
 
 #endif
