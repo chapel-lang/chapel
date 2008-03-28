@@ -78,6 +78,7 @@ Documentation:
 - rewrote "Parallelism and Synchronization" chapter of the language spec.
 - refreshed the "Locality and Distribution" chapter of the language spec.
 - made other updates to the language spec. to reflect changes in this file
+- updated HPCC documents to reflect "new" keyword and enumerated type qualifiers
 - TODO: add other new READMEs here
 
 Example Codes:
@@ -86,7 +87,7 @@ Example Codes:
 - made automated testing of opaque.chpl deterministic
 - added "new" keyword to tests that create class instances
 - for tests that use files, changed access mode from string to enum
-- added enumeration qualifier to norm.chpl's normType enumerated type
+- added enumeration type qualifiers to uses of enumerated types
 - changed blockLU's input data to improve stability across compilers
 - changed opaque.chpl test to use new .create() method
 
