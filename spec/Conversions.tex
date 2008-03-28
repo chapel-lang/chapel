@@ -36,23 +36,20 @@ statement~(\rsec{Implicit_Statement_Bool_Conversions}).
 The implicit numeric conversions are as follows:
 \begin{itemize}
 \item From \chpl{bool} to \chpl{int(8)}, \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(8)}, \chpl{uint(16)}, \chpl{uint(32)}, \chpl{uint(64)}, or \chpl{string}
-\item From \chpl{int(8)} to \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{int(16)} to \chpl{int(32)}, \chpl{int(64)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{int(32)} to \chpl{int(64)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{int(64)} to \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{uint(8)} to \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(16)}, \chpl{uint(32)}, \chpl{uint(64)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{uint(16)} to \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(32)}, \chpl{uint(64)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{uint(32)} to \chpl{int(64)}, \chpl{uint(64)}, \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{uint(64)} to \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{real(32)} to \chpl{real(64)}, \chpl{real(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{real(64)} to \chpl{real(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{real(128)} to \chpl{complex(256)} or \chpl{string}
-\item From \chpl{imag(32)} to \chpl{imag(64)}, \chpl{imag(128)}, \chpl{complex(64)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{imag(64)} to \chpl{imag(128)}, \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{imag(128)} to \chpl{complex(256)} or \chpl{string}
-\item From \chpl{complex(64)} to \chpl{complex(128)}, \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{complex(128)} to \chpl{complex(256)}, or \chpl{string}
-\item From \chpl{complex(256)} to \chpl{string}
+\item From \chpl{int(8)} to \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{real(64)}, \chpl{complex(128)}, or \chpl{string}
+\item From \chpl{int(16)} to \chpl{int(32)}, \chpl{int(64)}, \chpl{real(64)}, \chpl{complex(128)}, or \chpl{string}
+\item From \chpl{int(32)} to \chpl{int(64)}, \chpl{real(64)}, \chpl{complex(128)}, or \chpl{string}
+\item From \chpl{int(64)} to \chpl{real(64)}, \chpl{complex(128)}, or \chpl{string}
+\item From \chpl{uint(8)} to \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(16)}, \chpl{uint(32)}, \chpl{uint(64)}, \chpl{real(64)}, \chpl{complex(128)}, or \chpl{string}
+\item From \chpl{uint(16)} to \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(32)}, \chpl{uint(64)}, \chpl{real(64)}, \chpl{complex(128)}, or \chpl{string}
+\item From \chpl{uint(32)} to \chpl{int(64)}, \chpl{uint(64)}, \chpl{real(64)}, \chpl{complex(128)}, or \chpl{string}
+\item From \chpl{uint(64)} to \chpl{real(64)}, \chpl{complex(128)}, or \chpl{string}
+\item From \chpl{real(32)} to \chpl{real(64)}, \chpl{complex(64)}, \chpl{complex(128)}, or \chpl{string}
+\item From \chpl{real(64)} to \chpl{complex(128)} or \chpl{string}
+\item From \chpl{imag(32)} to \chpl{imag(64)}, \chpl{complex(64)}, \chpl{complex(128)}, or \chpl{string}
+\item From \chpl{imag(64)} to \chpl{complex(128)} or \chpl{string}
+\item From \chpl{complex(64)} to \chpl{complex(128)} or \chpl{string}
+\item From \chpl{complex(128)} to \chpl{string}
 \end{itemize}
 
 The implicit numeric conversions do not result in any loss of

@@ -332,10 +332,8 @@ def +(a: uint(32)): uint(32)
 def +(a: uint(64)): uint(64)
 def +(a: real(32)): real(32)
 def +(a: real(64)): real(64)
-def +(a: real(128)): real(128)
 def +(a: imag(32)): imag(32)
 def +(a: imag(64)): imag(64)
-def +(a: imag(128)): imag(128)
 def +(a: complex(32)): complex(32)
 def +(a: complex(64)): complex(64)
 def +(a: complex(128)): complex(128)
@@ -353,10 +351,8 @@ def -(a: int(64)): int(64)
 def -(a: uint(64))
 def -(a: real(32)): real(32)
 def -(a: real(64)): real(64)
-def -(a: real(128)): real(128)
 def -(a: imag(32)): imag(32)
 def -(a: imag(64)): imag(64)
-def -(a: imag(128)): imag(128)
 def -(a: complex(32)): complex(32)
 def -(a: complex(64)): complex(64)
 def -(a: complex(128)): complex(128)
@@ -387,36 +383,27 @@ def +(a: int(64), b: uint(64))
 
 def +(a: real(32), b: real(32)): real(32)
 def +(a: real(64), b: real(64)): real(64)
-def +(a: real(128), b: real(128)): real(128)
 
 def +(a: imag(32), b: imag(32)): imag(32)
 def +(a: imag(64), b: imag(64)): imag(64)
-def +(a: imag(128), b: imag(128)): imag(128)
 
 def +(a: complex(64), b: complex(64)): complex(64)
 def +(a: complex(128), b: complex(128)): complex(128)
-def +(a: complex(256), b: complex(256)): complex(256)
 
 def +(a: real(32), b: imag(32)): complex(64)
 def +(a: imag(32), b: real(32)): complex(64)
 def +(a: real(64), b: imag(64)): complex(128)
 def +(a: imag(64), b: real(64)): complex(128)
-def +(a: real(128), b: imag(128)): complex(256)
-def +(a: imag(128), b: real(128)): complex(256)
 
 def +(a: real(32), b: complex(64)): complex(64)
 def +(a: complex(64), b: real(32)): complex(64)
 def +(a: real(64), b: complex(128)): complex(128)
 def +(a: complex(128), b: real(64)): complex(128)
-def +(a: real(128), b: complex(256)): complex(256)
-def +(a: complex(256), b: real(128)): complex(256)
 
 def +(a: imag(32), b: complex(64)): complex(64)
 def +(a: complex(64), b: imag(32)): complex(64)
 def +(a: imag(64), b: complex(128)): complex(128)
 def +(a: complex(128), b: imag(64)): complex(128)
-def +(a: imag(128), b: complex(256)): complex(256)
-def +(a: complex(256), b: imag(128)): complex(256)
 \end{chapel}
 For each of these definitions that return a value, the result is the
 sum of the two operands.
@@ -444,36 +431,27 @@ def -(a: int(64), b: uint(64))
 
 def -(a: real(32), b: real(32)): real(32)
 def -(a: real(64), b: real(64)): real(64)
-def -(a: real(128), b: real(128)): real(128)
 
 def -(a: imag(32), b: imag(32)): imag(32)
 def -(a: imag(64), b: imag(64)): imag(64)
-def -(a: imag(128), b: imag(128)): imag(128)
 
 def -(a: complex(64), b: complex(64)): complex(64)
 def -(a: complex(128), b: complex(128)): complex(128)
-def -(a: complex(256), b: complex(256)): complex(256)
 
 def -(a: real(32), b: imag(32)): complex(64)
 def -(a: imag(32), b: real(32)): complex(64)
 def -(a: real(64), b: imag(64)): complex(128)
 def -(a: imag(64), b: real(64)): complex(128)
-def -(a: real(128), b: imag(128)): complex(256)
-def -(a: imag(128), b: real(128)): complex(256)
 
 def -(a: real(32), b: complex(64)): complex(64)
 def -(a: complex(64), b: real(32)): complex(64)
 def -(a: real(64), b: complex(128)): complex(128)
 def -(a: complex(128), b: real(64)): complex(128)
-def -(a: real(128), b: complex(256)): complex(256)
-def -(a: complex(256), b: real(128)): complex(256)
 
 def -(a: imag(32), b: complex(64)): complex(64)
 def -(a: complex(64), b: imag(32)): complex(64)
 def -(a: imag(64), b: complex(128)): complex(128)
 def -(a: complex(128), b: imag(64)): complex(128)
-def -(a: imag(128), b: complex(256)): complex(256)
-def -(a: complex(256), b: imag(128)): complex(256)
 \end{chapel}
 For each of these definitions that return a value, the result is the
 value obtained by subtracting the second operand from the first
@@ -502,36 +480,27 @@ def *(a: int(64), b: uint(64))
 
 def *(a: real(32), b: real(32)): real(32)
 def *(a: real(64), b: real(64)): real(64)
-def *(a: real(128), b: real(128)): real(128)
 
 def *(a: imag(32), b: imag(32)): real(32)
 def *(a: imag(64), b: imag(64)): real(64)
-def *(a: imag(128), b: imag(128)): real(128)
 
 def *(a: complex(64), b: complex(64)): complex(64)
 def *(a: complex(128), b: complex(128)): complex(128)
-def *(a: complex(256), b: complex(256)): complex(256)
 
 def *(a: real(32), b: imag(32)): imag(32)
 def *(a: imag(32), b: real(32)): imag(32)
 def *(a: real(64), b: imag(64)): imag(64)
 def *(a: imag(64), b: real(64)): imag(64)
-def *(a: real(128), b: imag(128)): imag(128)
-def *(a: imag(128), b: real(128)): imag(128)
 
 def *(a: real(32), b: complex(64)): complex(64)
 def *(a: complex(64), b: real(32)): complex(64)
 def *(a: real(64), b: complex(128)): complex(128)
 def *(a: complex(128), b: real(64)): complex(128)
-def *(a: real(128), b: complex(256)): complex(256)
-def *(a: complex(256), b: real(128)): complex(256)
 
 def *(a: imag(32), b: complex(64)): complex(64)
 def *(a: complex(64), b: imag(32)): complex(64)
 def *(a: imag(64), b: complex(128)): complex(128)
 def *(a: complex(128), b: imag(64)): complex(128)
-def *(a: imag(128), b: complex(256)): complex(256)
-def *(a: complex(256), b: imag(128)): complex(256)
 \end{chapel}
 For each of these definitions that return a value, the result is the
 product of the two operands.
@@ -560,36 +529,27 @@ def /(a: int(64), b: uint(64))
 
 def /(a: real(32), b: real(32)): real(32)
 def /(a: real(64), b: real(64)): real(64)
-def /(a: real(128), b: real(128)): real(128)
 
 def /(a: imag(32), b: imag(32)): real(32)
 def /(a: imag(64), b: imag(64)): real(64)
-def /(a: imag(128), b: imag(128)): real(128)
 
 def /(a: complex(64), b: complex(64)): complex(64)
 def /(a: complex(128), b: complex(128)): complex(128)
-def /(a: complex(256), b: complex(256)): complex(256)
 
 def /(a: real(32), b: imag(32)): imag(32)
 def /(a: imag(32), b: real(32)): imag(32)
 def /(a: real(64), b: imag(64)): imag(64)
 def /(a: imag(64), b: real(64)): imag(64)
-def /(a: real(128), b: imag(128)): imag(128)
-def /(a: imag(128), b: real(128)): imag(128)
 
 def /(a: real(32), b: complex(64)): complex(64)
 def /(a: complex(64), b: real(32)): complex(64)
 def /(a: real(64), b: complex(128)): complex(128)
 def /(a: complex(128), b: real(64)): complex(128)
-def /(a: real(128), b: complex(256)): complex(256)
-def /(a: complex(256), b: real(128)): complex(256)
 
 def /(a: imag(32), b: complex(64)): complex(64)
 def /(a: complex(64), b: imag(32)): complex(64)
 def /(a: imag(64), b: complex(128)): complex(128)
 def /(a: complex(128), b: imag(64)): complex(128)
-def /(a: imag(128), b: complex(256)): complex(256)
-def /(a: complex(256), b: imag(128)): complex(256)
 \end{chapel}
 For each of these definitions that return a value, the result is the
 quotient of the two operands.
@@ -641,7 +601,6 @@ def **(a: int(64), b: uint(64))
 
 def **(a: real(32), b: real(32)): real(32)
 def **(a: real(64), b: real(64)): real(64)
-def **(a: real(128), b: real(128)): real(128)
 \end{chapel}
 For each of these definitions that return a value, the result is the
 value of the first operand raised to the power of the second operand.
@@ -852,7 +811,8 @@ overloading~(\rsec{Function_Overloading}.
 \label{Ordered_Comparison_Operators}
 
 \index{<@\chpl{<}}
-The ``less than'' comparison operators are predefined as follows:
+The ``less than'' comparison operators are predefined over numeric
+types as follows:
 \begin{chapel}
 def <(a: int(32), b: int(32)): bool
 def <(a: int(64), b: int(64)): bool
@@ -860,16 +820,15 @@ def <(a: uint(32), b: uint(32)): bool
 def <(a: uint(64), b: uint(64)): bool
 def <(a: real(32), b: real(32)): bool
 def <(a: real(64), b: real(64)): bool
-def <(a: real(128), b: real(128)): bool
 def <(a: imag(32), b: imag(32)): bool
 def <(a: imag(64), b: imag(64)): bool
-def <(a: imag(128), b: imag(128)): bool
 \end{chapel}
 The result of \chpl{a < b} is true if \chpl{a} is less than \chpl{b};
 otherwise the result is false.
 
 \index{>@\chpl{>}}
-The ``greater than'' comparison operators are predefined as follows:
+The ``greater than'' comparison operators are predefined over numeric
+types as follows:
 \begin{chapel}
 def >(a: int(32), b: int(32)): bool
 def >(a: int(64), b: int(64)): bool
@@ -877,17 +836,15 @@ def >(a: uint(32), b: uint(32)): bool
 def >(a: uint(64), b: uint(64)): bool
 def >(a: real(32), b: real(32)): bool
 def >(a: real(64), b: real(64)): bool
-def >(a: real(128), b: real(128)): bool
 def >(a: imag(32), b: imag(32)): bool
 def >(a: imag(64), b: imag(64)): bool
-def >(a: imag(128), b: imag(128)): bool
 \end{chapel}
 The result of \chpl{a > b} is true if \chpl{a} is greater
 than \chpl{b}; otherwise the result is false.
 
 \index{<=@\chpl{<=}}
-The ``less than or equal to'' comparison operators are predefined as
-follows:
+The ``less than or equal to'' comparison operators are predefined over
+numeric types as follows:
 \begin{chapel}
 def <=(a: int(32), b: int(32)): bool
 def <=(a: int(64), b: int(64)): bool
@@ -895,17 +852,15 @@ def <=(a: uint(32), b: uint(32)): bool
 def <=(a: uint(64), b: uint(64)): bool
 def <=(a: real(32), b: real(32)): bool
 def <=(a: real(64), b: real(64)): bool
-def <=(a: real(128), b: real(128)): bool
 def <=(a: imag(32), b: imag(32)): bool
 def <=(a: imag(64), b: imag(64)): bool
-def <=(a: imag(128), b: imag(128)): bool
 \end{chapel}
 The result of \chpl{a <= b} is true if \chpl{a} is less than or equal
 to \chpl{b}; otherwise the result is false.
 
 \index{>=@\chpl{>=}}
 The ``greater than or equal to'' comparison operators are predefined
-as follows:
+over numeric types as follows:
 \begin{chapel}
 def >=(a: int(32), b: int(32)): bool
 def >=(a: int(64), b: int(64)): bool
@@ -913,10 +868,8 @@ def >=(a: uint(32), b: uint(32)): bool
 def >=(a: uint(64), b: uint(64)): bool
 def >=(a: real(32), b: real(32)): bool
 def >=(a: real(64), b: real(64)): bool
-def >=(a: real(128), b: real(128)): bool
 def >=(a: imag(32), b: imag(32)): bool
 def >=(a: imag(64), b: imag(64)): bool
-def >=(a: imag(128), b: imag(128)): bool
 \end{chapel}
 The result of \chpl{a >= b} is true if \chpl{a} is greater than or
 equal to \chpl{b}; otherwise the result is false.
@@ -930,7 +883,7 @@ def >=(a: string, b: string): bool
 \end{chapel}
 Comparisons between strings are defined based on the ordering of the
 character set used to represent the string, which is applied
-elementwise to the strings' characters in order.
+elementwise to the string's characters in order.
 
 
 \subsubsection{Equality Comparison Operators}
@@ -947,13 +900,10 @@ def ==(a: uint(32), b: uint(32)): bool
 def ==(a: uint(64), b: uint(64)): bool
 def ==(a: real(32), b: real(32)): bool
 def ==(a: real(64), b: real(64)): bool
-def ==(a: real(128), b: real(128)): bool
 def ==(a: imag(32), b: imag(32)): bool
 def ==(a: imag(64), b: imag(64)): bool
-def ==(a: imag(128), b: imag(128)): bool
 def ==(a: complex(64), b: complex(64)): bool
 def ==(a: complex(128), b: complex(128)): bool
-def ==(a: complex(256), b: complex(256)): bool
 \end{chapel}
 The result of \chpl{a == b} is true if \chpl{a} and \chpl{b} contain
 the same value; otherwise the result is false.  The result of \chpl{a
