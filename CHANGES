@@ -58,7 +58,6 @@ Newly Implemented Features:
 - improved support for member initializer expressions within classes
 - added support for tuples of sync variables
 - added support for declaring enumerations within classes
-- numLocales and physicalMemory now work on remote locales
 
 Portability of code base:
 -------------------------
@@ -68,13 +67,10 @@ Semantic Changes:
 -----------------
 - Chapel now parses types in the same way that it parses general expressions
 - in a type context, (int) is no longer a 1-tuple of type int; use 1*int instead
-- .locale used to return a locale's unique ID; now it returns a locale type
 
 Syntactic/Naming Changes:
 -------------------------
 - renamed opaque domain's .new() method to .create()
-- renamed the Locales array's domain from LocalesDomain to LocaleSpace
-- removed the (undocumented) localeID() function -- use here.id instead
 
 Documentation:
 --------------
