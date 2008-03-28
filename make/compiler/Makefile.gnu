@@ -37,6 +37,11 @@ RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
 GEN_CFLAGS = -std=c99
 
 #
+# a hacky flag necessary currently due to our use of setenv in the runtime code
+#
+SUPPORT_SETENV_CFLAGS = -std=gnu89
+
+#
 # Flags for turning on warnings for C++/C code
 #
 WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings

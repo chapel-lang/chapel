@@ -27,12 +27,13 @@ include $(GASNET_INSTALL)/include/$(CHPL_GASNET_CONDUIT)-conduit/$(CHPL_GASNET_C
 # and it's currently our best way of conveyinng to GASNet to use gdb when
 # it launches the child tasks.  We use -std=gnu89 instead because with
 # our compilers it's what you'd get if you weren't specifying a standard
-# at all.
+# at all -- this is set using SUPPORT_SETENV_CFLAGS so as not to encode
+# gcc-specific flags into this Makefile
 #
 # -O0 needs to be used because GASNet generates an error if client code
 # compiled -O3 is linked to GASNet compiled with debugging enabled
 #
-RUNTIME_CFLAGS += $(GASNET_CFLAGS) -I$(GASNET_INSTALL)/include -I$(GASNET_INSTALL)/include/$(CHPL_GASNET_CONDUIT)-conduit -std=gnu89 -O0
+RUNTIME_CFLAGS += $(GASNET_CFLAGS) -I$(GASNET_INSTALL)/include -I$(GASNET_INSTALL)/include/$(CHPL_GASNET_CONDUIT)-conduit $(SUPPORT_SETENV_CFLAGS) -O0
 
 ifdef CHPL_DEVELOPER
 RUNTIME_CFLAGS += -Wno-strict-prototypes -Wno-missing-prototypes
