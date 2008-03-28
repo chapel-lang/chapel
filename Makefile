@@ -23,6 +23,9 @@ manhelp: FORCE
 runtime: FORCE
 	cd runtime && $(MAKE)
 
+third-party: FORCE
+	cd third-party && $(MAKE)
+
 test: FORCE
 	cd test && start_test
 

@@ -7,7 +7,7 @@ SRCS = $(SVN_SRCS)
 COMM_OBJS = \
 	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
 
-GASNET_INSTALL = $(RUNTIME_ROOT)/../third-party/gasnet/install/$(CHPL_MAKE_PLATFORM)
+GASNET_INSTALL = $(RUNTIME_ROOT)/../third-party/gasnet/install/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_COMPILER)
 
 include $(GASNET_INSTALL)/include/$(CHPL_GASNET_CONDUIT)-conduit/$(CHPL_GASNET_CONDUIT)-par.mak
 

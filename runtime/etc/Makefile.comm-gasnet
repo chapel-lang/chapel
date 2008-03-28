@@ -1,4 +1,4 @@
-GASNET_INSTALL = $(CHAPEL_ROOT)/third-party/gasnet/install/$(CHPL_MAKE_PLATFORM)
+GASNET_INSTALL = $(CHAPEL_ROOT)/third-party/gasnet/install/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_COMPILER)
 
 include $(GASNET_INSTALL)/include/$(CHPL_GASNET_CONDUIT)-conduit/$(CHPL_GASNET_CONDUIT)-par.mak
 
