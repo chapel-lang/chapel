@@ -33,6 +33,7 @@ system("cd $tmpdir && svn export -q $svnroot");
        "man/man1/chpl.1",
        "util/chplmake",
        "util/comm.pl",
+       "util/commConfigureOpts.pl",
        "util/compiler.pl",
        "util/platform.pl",
        "util/setchplenv.bash",
