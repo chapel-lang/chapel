@@ -1,5 +1,5 @@
 {
-   new-os-upgrade-breaks-getpwuid
+   getpwuid-is-a-pain
    Memcheck:Param
    socketcall.send(msg)
    fun:send
@@ -8,186 +8,28 @@
    fun:__nscd_getpwuid_r
    fun:getpwuid_r@@GLIBC_2.1.2
    fun:getpwuid
-   fun:_Z12createTmpDirv
+   fun:_Z18ensureTmpDirExistsv
    fun:_Z14genIntFilenamePKc
-   fun:_Z9openCFileP8fileinfoPKcS2_
-   fun:_Z7codegenv
-   fun:_Z7runPassPKcPFvvE
-   fun:_Z9runPassesv
+   fun:_Z18mysystem_getresultPKcS0_i
+   fun:_Z13runUtilScriptPKc
+   fun:_Z16get_CHPL_THREADSv
+   fun:_Z17setDefaultFSerialv
 }
 
 {
-   new-os-upgrade-breaks-getpwuid-2
+   getpwuid-is-a-pain3
    Memcheck:Param
-   socketcall.send(msg)
+   socketcall.sendto(msg)
    fun:send
+   fun:get_mapping
    fun:__nscd_get_map_ref
    fun:nscd_getpw_r
    fun:__nscd_getpwuid_r
-   fun:getpwuid_r@@GLIBC_2.1.2
+   fun:getpwuid_r@@GLIBC_2.2.5
    fun:getpwuid
-   fun:_Z12createTmpDirv
-   fun:_Z9openCFileP8fileinfoPKcS2_
-   fun:_Z7codegenv
-   fun:_Z7runPassPKcPFvvE
-   fun:_Z9runPassesv
-   fun:main
-}
-
-{
-   new-os-upgrade-breaks-getpwuid-3
-   Memcheck:Param
-   socketcall.send(msg)
-   fun:send
-   fun:__nscd_get_map_ref
-   fun:nscd_getpw_r
-   fun:__nscd_getpwuid_r
-   fun:getpwuid_r@@GLIBC_2.1.2
-   fun:getpwuid
-   fun:_Z12createTmpDirv
-   fun:_Z13createGDBFileiPPKc
-   fun:main
-}
-
-{
-   new-os-upgrade-breaks-getpwuid-4
-   Memcheck:Param
-   socketcall.send(msg)
-   fun:send
-   fun:__nscd_get_map_ref
-   fun:nscd_getpw_r
-   fun:__nscd_getpwuid_r
-   fun:getpwuid_r@@GLIBC_2.1.2
-   fun:getpwuid
-   fun:_Z12createTmpDirv
+   fun:_Z18ensureTmpDirExistsv
    fun:_Z14genIntFilenamePKc
-   fun:_Z13createGDBFileiPPc
-   fun:_Z16runCompilerInGDBiPPc
-   fun:main
+   fun:_Z18mysystem_getresultPKcS0_i
+   fun:_Z13runUtilScriptPKc
+   fun:_Z16get_CHPL_THREADSv
 }
-
-{
-   linux64-also-breaks-getpwuid
-   Memcheck:Param
-   socketcall.sendto(msg)
-   fun:send
-   fun:get_mapping
-   fun:__nscd_get_map_ref
-   fun:nscd_getpw_r
-   fun:__nscd_getpwuid_r
-   fun:getpwuid_r@@GLIBC_2.2.5
-   fun:getpwuid
-   fun:_Z12createTmpDirv
-   fun:_Z14genIntFilenamePKc
-   fun:_Z9openCFileP8fileinfoPKcS2_
-   fun:_Z7codegenv
-   fun:_Z7runPassPKcPFvvE
-}
-
-{
-   linux64-also-breaks-getpwuid-2
-   Memcheck:Param
-   socketcall.sendto(msg)
-   fun:send
-   fun:get_mapping
-   fun:__nscd_get_map_ref
-   fun:nscd_getpw_r
-   fun:__nscd_getpwuid_r
-   fun:getpwuid_r@@GLIBC_2.2.5
-   fun:getpwuid
-   fun:_Z12createTmpDirv
-   fun:_Z14genIntFilenamePKc
-   fun:_Z9openCFileP8fileinfoPKcS2_
-   fun:_Z7codegenv
-   fun:_Z7runPassPKcPFvvE
-}
-
-{
-   linux64-also-breaks-getpwuid-3
-   Memcheck:Param
-   socketcall.sendto(msg)
-   fun:send
-   fun:get_mapping
-   fun:__nscd_get_map_ref
-   fun:nscd_getpw_r
-   fun:__nscd_getpwuid_r
-   fun:getpwuid_r@@GLIBC_2.2.5
-   fun:getpwuid
-   fun:_Z12createTmpDirv
-   fun:_Z9openCFileP8fileinfoPKcS2_
-   fun:_Z7codegenv
-   fun:_Z7runPassPKcPFvvE
-   fun:_Z9runPassesv
-}
-
-{
-   linux64-also-breaks-getpwuid-4-compflags-bradc-gdbddash-declint-only
-   Memcheck:Param
-   socketcall.sendto(msg)
-   fun:send
-   fun:get_mapping
-   fun:__nscd_get_map_ref
-   fun:nscd_getpw_r
-   fun:__nscd_getpwuid_r
-   fun:getpwuid_r@@GLIBC_2.2.5
-   fun:getpwuid
-   fun:_Z12createTmpDirv
-   fun:_Z13createGDBFileiPPc
-   fun:main
-}
-
-{
-   linux64-also-breaks-getpwuid-5-compflags-bradc-gdbddash-declint-only
-   Memcheck:Param
-   socketcall.sendto(msg)
-   fun:send
-   fun:get_mapping
-   fun:__nscd_get_map_ref
-   fun:nscd_getpw_r
-   fun:__nscd_getpwuid_r
-   fun:getpwuid_r@@GLIBC_2.2.5
-   fun:getpwuid
-   fun:_Z12createTmpDirv
-   fun:_Z14genIntFilenamePKc
-   fun:_Z13createGDBFileiPPc
-   fun:_Z16runCompilerInGDBiPPc
-   fun:main
-}
-
-{
-   linux64-also-breaks-getpwuid-6-compflags-bradc-gdbddash-declint-only
-   Memcheck:Param
-   socketcall.sendto(msg)
-   fun:send
-   fun:get_mapping
-   fun:__nscd_get_map_ref
-   fun:nscd_getpw_r
-   fun:__nscd_getpwuid_r
-   fun:getpwuid_r@@GLIBC_2.2.5
-   fun:getpwuid
-   fun:_Z12createTmpDirv
-   fun:_Z14genIntFilenamePc
-   fun:_Z13createGDBFileiPPc
-   fun:_Z16runCompilerInGDBiPPc
-   fun:main
-}
-
-{
-   linux64-breaks-getpwuid-7-multilocale-numlocales-bradc-setusingdashs
-   Memcheck:Param
-   socketcall.sendto(msg)
-   fun:__sendto_nocancel
-   fun:__netlink_sendreq
-   fun:__netlink_request
-   fun:getifaddrs
-   fun:clntudp_call
-   fun:__ypclnt_call
-   fun:do_ypcall
-   fun:do_ypcall_tr
-   fun:yp_match
-   fun:_nss_nis_getpwuid_r
-   fun:getpwuid_r@@GLIBC_2.2.5
-   fun:getpwuid
-}
-
-
