@@ -431,7 +431,8 @@ static void codegen_header(void) {
   }
 
   fprintf(outfile, "\nchar** _global_vars_registry;\n");
-  fprintf(outfile, "\nchar* _global_vars_registry_static[%d];\n", numGlobalsOnHeap);
+  fprintf(outfile, "\nchar* _global_vars_registry_static[%d];\n", 
+          (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
 
   closeCFile(&header);
   beautify(&header);
