@@ -82,7 +82,9 @@ void _chpl_comm_rollcall(void) {
 
 void _chpl_comm_set_malloc_type(void) { whichMalloc = 1; }
 
-void _chpl_comm_alloc_registry(int numGlobals) { }
+void _chpl_comm_alloc_registry(int numGlobals) { 
+  _global_vars_registry = _global_vars_registry_static;
+}
 
 void _chpl_comm_broadcast_global_vars(int numGlobals) { }
 
