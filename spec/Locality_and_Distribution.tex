@@ -2,20 +2,20 @@
 \label{Locality_and_Distribution}
 
 Chapel provides high-level abstractions that allow programmers to
-exploit locality by defining the affinity of data and computation.
-This is accomplished by associating both data objects and computations
-with abstract {\em locales}. To provide a higher-level mechanism,
-Chapel allows a mapping from domains to locales to be specified. This
-mapping is called a {\em distribution} and it guides the placement of
-elements within arrays and the placement of computations over domains.
+exploit locality by defining the affinity of data and tasks.  This is
+accomplished by associating both data objects and tasks with abstract
+{\em locales}. To provide a higher-level mechanism, Chapel allows a
+mapping from domains to locales to be specified. This mapping is
+called a {\em distribution} and it guides the placement of elements
+within arrays and the placement of tasks over domains.
 
 \index{local}
 \index{remote}
 Throughout this section, the term {\em local} refers to data that is
-associated with the locale that a computation is running on and {\em
-remote} refers to data that is not. We assume that there is some
-execution overhead associated with accessing data that may be remote
-compared to data known to be local.
+associated with the locale that a task is running on and {\em remote}
+refers to data that is not. We assume that there is some execution
+overhead associated with accessing data that may be remote compared to
+data known to be local.
 
 \subsection{Locales}
 \label{Locales}
@@ -30,9 +30,9 @@ be accessed uniformly.
 \index{locale@\chpl{locale}}
 
 The identifier \chpl{locale} is a primitive type that abstracts a
-locale as described above.  Both data and computations can be
-associated with a value of locale type. The only operators defined
-over locales are the equality and inequality comparison operators.
+locale as described above.  Both data and tasks can be associated with
+a value of locale type. The only operators defined over locales are
+the equality and inequality comparison operators.
 
 \subsubsection{Locale Methods}
 \label{Locale_Methods}
@@ -81,16 +81,16 @@ config const numLocales: int;
 const LocaleSpace: domain(1) = [0..numLocales-1];
 const Locales: [LocaleSpace] locale;
 \end{chapel}
-When a program starts, a single computation is executing.  It is
-running on the locale given by \chpl{Locales(0)}.
+When a program starts, a single task is executing.  It is running on
+the locale given by \chpl{Locales(0)}.
 
 \subsubsection{The {\em here} Locale}
 \label{here}
 \index{here@\chpl{here}}
 
 A predefined constant locale \chpl{here} can be used anywhere in a
-Chapel program.  It refers to the locale that the current computation
-is running on.
+Chapel program.  It refers to the locale that the current task is
+running on.
 
 \begin{example}
 The code
@@ -147,20 +147,20 @@ on \chpl{Locales(2)}.  The locale access returns the locale where the
 object exists.
 \end{example}
 
-\subsection{Specifying Locales for Computation}
-\label{Specifying_Locales_for_Computation}
+\subsection{Invoking Remote Tasks}
+\label{Specifying_Locales}
 
-When execution is proceeding on some locale, a computation can be
-associated with a different locale in two ways: via distributions as
-discussed in~\rsec{Distributions} or with an \sntx{on-statement} as
-discussed below.
+When execution is proceeding on some locale, a task can be associated
+with a different locale in two ways: via distributions as discussed
+in~\rsec{Distributions} or with an \sntx{on-statement} as discussed
+below.
 
 \subsubsection{On}
 \label{On}
 \index{on@\chpl{on}}
 
-The on statement controls on which locale a computation or data should
-be placed.  The syntax of the on statement is given by
+The on statement controls on which locale tasks should be executed or
+data should be placed.  The syntax of the on statement is given by
 \begin{syntax}
 on-statement:
   `on' expression `do' statement
@@ -172,8 +172,8 @@ statement occurs on this specified locale and then continues after
 the \chpl{on-statement}.
 
 By default, when new variables and data objects are created, they are
-created in the locale where the computation is running.  This locale
-can be changed by using the \chpl{on} keyword as discussed
+created in the locale where the task is running.  This locale can be
+changed by using the \chpl{on} keyword as discussed
 in~\rsec{remote_variable_declarations}.
 
 The following statements may not be lexically enclosed in
@@ -245,13 +245,13 @@ A domain for which a distribution is specified is referred to as a
 %A domain supports a method, \chpl{locale}, that maps index values in
 %the domain to locales that correspond to the domain's distribution.
 
-Iteration over a distributed domain implicitly executes the control
-computation in the domain of the associated locale.  Similarly, when
+Iteration over a distributed domain implicitly executes the controlled
+task in the domain of the associated locale.  Similarly, when
 iterating over the elements of an array defined over a distributed
-domain, the controlled computations are determined by the distribution
-of the domain.  If there are conflicting distributions in product
-iterations, the locale of the computation is taken to be the first
-component in the product.
+domain, the controlled tasks are determined by the distribution of the
+domain.  If there are conflicting distributions in product iterations,
+the locale of a task is taken to be the first component in the
+product.
 
 \begin{example}
 If \chpl{D} is a distributed domain, then in the code

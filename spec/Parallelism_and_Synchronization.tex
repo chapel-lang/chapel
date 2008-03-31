@@ -20,8 +20,8 @@ parallel-expression:
 
 In addition, some operations on arrays and domains, as well as
 invocations of promotion, are executed in parallel.  To avoid any
-unintended implications, the term \emph{computation} will be used to
-refer to distinct, concurrently executing portions of the program.
+unintended implications, the term \emph{task} will be used to refer to
+distinct, concurrently executing portions of the program.
 
 This section is divided into five parts:
 \begin{itemize}
@@ -50,7 +50,7 @@ Chapel provides a simple construct, the begin-statement, to introduce
 concurrency into a program in an unstructured way.  In addition,
 Chapel introduces two types, \chpl{single} and \chpl{sync}, for
 synchronization.  The use of and assignment to variables of these
-types implicitly control the execution order of a computation.  Such
+types implicitly control the execution order of a task.  Such
 variables are well-suited for producer-consumer data sharing.
 Additional functions on synchronization variable are provided such
 that other traditional synchronization primitives, such as semaphores
@@ -66,11 +66,11 @@ this section.
 \label{Begin}
 \index{begin@\chpl{begin}}
 
-The begin-statement spawns a computation to execute a statement.
-Control continues concurrently with the statement following the
+The begin-statement spawns a task to execute a statement.  Control
+continues concurrently with the statement following the
 begin-statement. The begin-statement is thus an unstructured way to
-create a new computation that is executed only for its
-side-effects. The syntax for the begin statement is given by
+create a new task that is executed only for its side-effects. The
+syntax for the begin statement is given by
 \begin{syntax}
 begin-statement:
   `begin' statement
@@ -96,12 +96,11 @@ issue is a high priority and there are a number of ideas on the table.
 
 A single (assignment) variable can only be assigned once during its
 lifetime.  A use of a single variable before it is assigned causes the
-computation's execution to suspend until the variable is
-assigned.  Otherwise, the use proceeds as with normal variables and the
-computation continues.  After a single assignment variable is
-assigned, all computations with pending uses resume in an unspecified
-order.  A single variable is specified with a single type given by the
-following syntax:
+task's execution to suspend until the variable is assigned.
+Otherwise, the use proceeds as with normal variables and the task
+continues.  After a single assignment variable is assigned, all tasks
+with pending uses resume in an unspecified order.  A single variable
+is specified with a single type given by the following syntax:
 \begin{syntax}
 single-type:
   `single' type-specifier
@@ -127,10 +126,9 @@ class Tree {
   }
 }
 \end{chapel}
-the single variable \chpl{x} is assigned by an asynchronous
-computation created with the begin statement.  The computation
-returning the sum waits on the reading of \chpl{x} until it has been
-assigned.
+the single variable \chpl{x} is assigned by an asynchronous task
+created with the begin statement.  The task returning the sum waits on
+the reading of \chpl{x} until it has been assigned.
 \end{example}
 
 \index{single types!records and classes}
@@ -158,23 +156,22 @@ type of the actual.
 
 A sync variable generalizes the single assignment variable to permit
 multiple assignments to the variable.  A sync variable is logically
-either {\em full} or {\em empty}.  When it is empty, computations that
+either {\em full} or {\em empty}.  When it is empty, tasks that
 attempt to read that variable are suspended until the variable becomes
 full by the next assignment to it, which atomically changes the state
 to full.  When the variable is full, a read of that variable consumes
 the value and atomically transitions the state to empty.  If there is
-more than one computation waiting on a sync variable, one is
+more than one task waiting on a sync variable, one is
 non-deterministically selected to use the variable and resume
-execution.  The other computations continue to wait for the next
-assignment.
+execution.  The other tasks continue to wait for the next assignment.
 
-If a computation attempts to assign to a sync variable that is full,
-the computation is suspended and the assignment is delayed.  When the
-sync variable becomes empty, the computation is resumed and the
-assignment proceeds, transitioning the state back to full.  If there
-are multiple computations attempting such an assignment, one is
-non-deterministically selected to proceed and the other assignments
-continue to wait until the sync variable is emptied again.
+If a task attempts to assign to a sync variable that is full, the task
+is suspended and the assignment is delayed.  When the sync variable
+becomes empty, the task is resumed and the assignment proceeds,
+transitioning the state back to full.  If there are multiple tasks
+attempting such an assignment, one is non-deterministically selected
+to proceed and the other assignments continue to wait until the sync
+variable is emptied again.
 
 A sync variable is specified with a sync type given by the following
 syntax:
@@ -325,12 +322,12 @@ implicit use of these methods.
 
 Chapel provides two constructs, the cobegin- and coforall-statements,
 to introduce concurrency in a more structured way.  These constructs
-spawn multiple computations but do not continue until the computations
-have completed.  In addition, Chapel provides two constructs, the
-sync- and serial-statements, to suppress parallelism and insert
-synchronization.  All four of these constructs can be implemented
-through judicious uses of the unstructured task-parallel constructs
-described in the previous section.
+spawn multiple tasks but do not continue until the tasks have
+completed.  In addition, Chapel provides two constructs, the sync- and
+serial-statements, to suppress parallelism and insert synchronization.
+All four of these constructs can be implemented through judicious uses
+of the unstructured task-parallel constructs described in the previous
+section.
 
 \subsubsection{The Cobegin Statement}
 \label{Cobegin}
@@ -343,8 +340,8 @@ cobegin-statement:
   `cobegin' block-statement
 \end{syntax}
 Each statement within the block statement is executed concurrently and
-is considered a separate computation.  Control continues when all of
-the computations have finished.
+is considered a separate task.  Control continues when all of the
+tasks have finished.
 
 The following statements may not be lexically enclosed in
 cobegin-statements: break-statements, continue-statements,
@@ -442,11 +439,11 @@ sb;
 \end{chapel}
 Each call to \chpl{body()} is executed concurrently because it is in a
 begin-statement.  The sync variable \chpl{si} is used to keep track of
-the number of executing computations plus one for the loop that does
-the spawning.  When this variable reaches zero, then single variable
-is used to signal that all of the computations have completed.  Thus
-control does not continue past the last line until all of the
-computations have completed.
+the number of executing tasks plus one for the loop that does the
+spawning.  When this variable reaches zero, then single variable is
+used to signal that all of the tasks have completed.  Thus control
+does not continue past the last line until all of the tasks have
+completed.
 \end{example}
 
 \subsubsection{The Sync Statement}
@@ -499,11 +496,11 @@ serial-statement:
 where the expression evaluates to a bool type.  Independent of that
 value, the \sntx{block-level-statement} is evaluated. If the
 expression is true, any dynamically encountered forall loop or cobegin
-statement is executed serially within the current computation.  Any
+statement is executed serially within the current task.  Any
 dynamically encountered begin-statement is executed serially with the
-current computation; no new computation is spawned.  Control continues
-to the statement following the begin-statement after the
-begin-statement finishes.
+current task; no new task is spawned.  Control continues to the
+statement following the begin-statement after the begin-statement
+finishes.
 
 \begin{example}
 In the code
@@ -532,7 +529,7 @@ suppressing parallelism.
 Chapel provides two explicit data-parallel constructs: the
 forall-statement and the forall-expression.  In addition, promotion
 over arrays, domains, ranges, and iterators results in data-parallel
-computations.
+tasks.
 
 \subsubsection{The Forall Loop}
 \label{Forall}
@@ -576,8 +573,8 @@ forall i in 1..N do
 the user has stated that the element-wise assignments can execute
 concurrently.  This loop may be performed serially, with maximum
 concurrency where each loop body iteration instance is executed in a
-separate computation, or somewhere in between.  This loop can also be
-written as
+separate task, or somewhere in between.  This loop can also be written
+as
 \begin{chapel}
 [i in 1..N] a(i) = b(i);
 \end{chapel}
@@ -678,15 +675,15 @@ atomic {
   }
 }
 \end{chapel}
-Inside the atomic statement is a sequential implementation of
-removing a particular object denoted by \chpl{obj} from a singly
-linked list.  This is an operation that is well-defined, assuming only
-one computation is attempting it at a time. The atomic statement
-ensures that, for example, the value of \chpl{head} does not change
-after it is first in the first comparison and subsequently read to
-initialize \chpl{last}. The variables eventually owned by this
-computation are \chpl{found}, \chpl{head}, \chpl{obj}, and the various
-\chpl{next} fields on examined objects.
+Inside the atomic statement is a sequential implementation of removing
+a particular object denoted by \chpl{obj} from a singly linked list.
+This is an operation that is well-defined, assuming only one task is
+attempting it at a time. The atomic statement ensures that, for
+example, the value of \chpl{head} does not change after it is first in
+the first comparison and subsequently read to
+initialize \chpl{last}. The variables eventually owned by this task
+are \chpl{found}, \chpl{head}, \chpl{obj}, and the various \chpl{next}
+fields on examined objects.
 \end{example}
 
 The effect of an atomic statement is dynamic.

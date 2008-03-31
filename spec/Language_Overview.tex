@@ -1187,16 +1187,15 @@ as determined by the compiler and runtime library.
 \paragraph{Task Parallelism}
 The Chapel language also supports parallelism where different types of
 operations are being executed concurrently with different data sets.
-In this case, computations are spawned through the use of the \chpl{begin}
-or \chpl{co-begin} statements.  Synchronization between these computations
-is managed through the use of \chpl{sync} and
-\chpl{single} variables.
+In this case, tasks are spawned through the use of the \chpl{begin}
+or \chpl{co-begin} statements.  Synchronization between these tasks is
+managed through the use of \chpl{sync} and \chpl{single} variables.
 
-The \chpl{begin} statement spawns a computation to execute a
-statement. Control continues simultaneously with the statement following
-the begin statement.  A begin statement cannot contain break,
-yield, or return statements.  For more information about the \chpl{begin}
-statement see~\rsec{Begin}. 
+The \chpl{begin} statement spawns a task to execute a
+statement. Control continues simultaneously with the statement
+following the begin statement.  A begin statement cannot contain
+break, yield, or return statements.  For more information about
+the \chpl{begin} statement see~\rsec{Begin}.
 
 The \chpl{cobegin} statement is used to create parallelism within
 a block statement.  All statements within the block statement
@@ -1227,7 +1226,7 @@ easier way.  For more details about the \chpl{coforall} loop statement
 see~\rsec{Coforall}.
 
 \begin{example}
-If three consumer computations needed to be started, a \chpl{cobegin}
+If three consumer tasks needed to be started, a \chpl{cobegin}
 statement could be used.
 \begin{chapel}
 cobegin {
@@ -1246,15 +1245,15 @@ coforall i in 1..3 do
 \end{example}
 
 \paragraph{Synchronization Variables}
-Synchronization between computations is managed through \chpl{sync}
+Synchronization between tasks is managed through \chpl{sync}
 and \chpl{single} variables.  Sync variables have a {\em full} or {\em
 empty} state associated with them that is modified when read and
-written to and control access to these variables between threads of
-computation.  Single variables are similar to sync variables, but they
-are assigned once.  Using a single variable before it is assigned,
-suspends the computation until another task assigns a value to it.
-For more information about synchronization variables
-see~\rsec{Sync_Variables} and~\rsec{Single_Variables}.
+written to and control access to these variables between tasks.
+Single variables are similar to sync variables, but they are assigned
+once.  Using a single variable before it is assigned, suspends the
+task until another task assigns a value to it.  For more information
+about synchronization variables see~\rsec{Sync_Variables}
+and~\rsec{Single_Variables}.
 \begin{chapel}
 var x: single int;
 var y: sync real;
@@ -1282,8 +1281,8 @@ array \chpl{Locales} where each entry is of the \chpl{locale} type.
 User-defined variables of \chpl{locale} type can be declared to store
 entries from this \chpl{Locales} array or the entries can be accessed
 directly to indicate where data should be reside in memory or where
-computations should be executed.  For more information about locales,
-see~\rsec{Locales} and~\rsec{Specifying_Locales_for_Computation}.
+tasks should be executed.  For more information about locales,
+see~\rsec{Locales} and~\rsec{Specifying_Locales}.
 
 Chapel manages the distribution of data through the use of domains
 and distributions.  A distribution is a mapping of a domain's indices to 
@@ -1291,8 +1290,8 @@ locales.  When a domain is declared with a distribution, then any iteration
 over that domain or its associated arrays will execute in parallel across the 
 locales according to how the data is distributed.
 
-The \chpl{on} statement controls on which locale a computation or data
-should be placed.
+The \chpl{on} statement controls on which locale a task should be
+executed or data should be placed.
 
 For more information about locality and distributions 
 see~\rsec{Locality_and_Distribution}.
