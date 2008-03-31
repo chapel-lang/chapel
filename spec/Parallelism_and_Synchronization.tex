@@ -19,9 +19,9 @@ parallel-expression:
 \end{syntax}
 
 In addition, some operations on arrays and domains, as well as
-invocations of promotion, are executed in parallel.  To avoid any
-unintended implications, the term \emph{task} will be used to refer to
-distinct, concurrently executing portions of the program.
+invocations of promotion, are executed in parallel.  The
+term \emph{task} is used to refer to a distinct context of execution
+that may be running concurrently.
 
 This section is divided into five parts:
 \begin{itemize}
@@ -46,19 +46,14 @@ describes the memory consistency model.
 \subsection{Unstructured Task-Parallel Constructs}
 \label{unstructured_task_parallelism}
 
-Chapel provides a simple construct, the begin-statement, to introduce
-concurrency into a program in an unstructured way.  In addition,
-Chapel introduces two types, \chpl{single} and \chpl{sync}, for
-synchronization.  The use of and assignment to variables of these
-types implicitly control the execution order of a task.  Such
-variables are well-suited for producer-consumer data sharing.
-Additional functions on synchronization variable are provided such
-that other traditional synchronization primitives, such as semaphores
-and mutexes, can be constructed.
+Chapel provides a simple construct, the begin-statement, to spawn
+tasks, thus introducing concurrency into a program in an unstructured
+way.  In addition, Chapel introduces two type qualifiers, \chpl{sync}
+and \chpl{single}, for synchronization of tasks.
 
 More structured ways to achieve concurrency are discussed
 in~\rsec{structured_task_parallelism}.  These structured ways to
-introduce concurrency may be easier-to-use in many common cases.  They
+introduce concurrency may be easier to use in many common cases.  They
 can be implemented using only the unstructured constructs described in
 this section.
 
@@ -66,20 +61,36 @@ this section.
 \label{Begin}
 \index{begin@\chpl{begin}}
 
-The begin-statement spawns a task to execute a statement.  Control
-continues concurrently with the statement following the
-begin-statement. The begin-statement is thus an unstructured way to
-create a new task that is executed only for its side-effects. The
-syntax for the begin statement is given by
+The begin-statement spawns a task to execute a statement.  The
+begin-statement is thus an unstructured way to create a new task that
+is executed only for its side-effects.  The syntax for the begin
+statement is given by
 \begin{syntax}
 begin-statement:
   `begin' statement
 \end{syntax}
+Control continues concurrently with the statement following the
+begin-statement.
+
+\begin{example}
+The code
+\begin{chapel}
+begin writeln("output from spawned task");
+writeln("output from main task");
+\end{chapel}
+executes two \chpl{writeln} statements that output the strings to the
+terminal, but the ordering is purposely unspecified.  There is no
+guarantee as to which statement will execute first.  When the
+begin-statement is executed, a new task is created that will execute
+the \chpl{writeln} statement within it.  However, execution will
+continue immediately with the next statement.
+In~\rsec{Sync_Variables}, this same example will be synchronized so
+that the output from the spawned task always happens second.
+\end{example}
 
 The following statements may not be lexically enclosed in
 begin-statements: break-statements, continue-statements,
 yield-statements, and return-statements.
-
 \begin{openissue}
 It is undecided whether yield-statement should be allowed inside the
 following parallel statements (begin, cobegin, coforall, and forall).
@@ -89,81 +100,24 @@ there would be an issue on how such iterators could be zippered.  This
 issue is a high priority and there are a number of ideas on the table.
 \end{openissue}
 
-\subsubsection{Single Variables}
-\label{Single_Variables}
-\index{synchronization variables!single@\chpl{single}}
-\index{single@\chpl{single}}
-
-A single (assignment) variable can only be assigned once during its
-lifetime.  A use of a single variable before it is assigned causes the
-task's execution to suspend until the variable is assigned.
-Otherwise, the use proceeds as with normal variables and the task
-continues.  After a single assignment variable is assigned, all tasks
-with pending uses resume in an unspecified order.  A single variable
-is specified with a single type given by the following syntax:
-\begin{syntax}
-single-type:
-  `single' type-specifier
-\end{syntax}
-
-\begin{example}
-In the code
-\begin{chapel}
-class Tree {
-  var is_leaf : bool;
-  var left    : Tree;
-  var right   : Tree;
-  var value   : int;
-
-  def sum() {
-    if (is_leaf) then 
-       return value;
-
-    var x : single int;
-    begin x = left.sum();
-    var y = right.sum();
-    return x+y;
-  }
-}
-\end{chapel}
-the single variable \chpl{x} is assigned by an asynchronous task
-created with the begin statement.  The task returning the sum waits on
-the reading of \chpl{x} until it has been assigned.
-\end{example}
-
-\index{single types!records and classes}
-\paragraph{Single Records and Classes}
-If the base type of a single type is a class or a record, the single
-semantics only apply to the class or record, not to its individual
-fields or methods.  A record or class type may have fields of single
-type to get single semantics on individual field accesses.
-
-\index{single types!formal arguments}
-\paragraph{Formal Arguments of Single Type}
-If an argument is a single type, the actual is passed by reference and
-the argument itself is a valid lvalue.  The unqualified
-type \chpl{single} can also be used to specify a generic formal
-argument.  In this case, the actual must be a single variable and it
-is passed by reference.  For generic formal arguments of any type, an
-actual that is \chpl{single} is ``read'' before being passed to the
-function and the generic formal argument's type is set to the base
-type of the actual.
-
 \subsubsection{Sync Variables}
 \label{Sync_Variables}
 \index{synchronization variables!sync@\chpl{sync}}
 \index{sync@\chpl{sync}}
 
-A sync variable generalizes the single assignment variable to permit
-multiple assignments to the variable.  A sync variable is logically
-either {\em full} or {\em empty}.  When it is empty, tasks that
-attempt to read that variable are suspended until the variable becomes
-full by the next assignment to it, which atomically changes the state
-to full.  When the variable is full, a read of that variable consumes
-the value and atomically transitions the state to empty.  If there is
-more than one task waiting on a sync variable, one is
-non-deterministically selected to use the variable and resume
-execution.  The other tasks continue to wait for the next assignment.
+The use of and assignment to variables of \chpl{sync} type implicitly
+control the execution order of a task, making them well-suited to
+producer-consumer data sharing.
+
+A sync variable is logically either {\em full} or {\em empty}.  When
+it is empty, tasks that attempt to read that variable are suspended
+until the variable becomes full by the next assignment to it, which
+atomically changes the state to full.  When the variable is full, a
+read of that variable consumes the value and atomically transitions
+the state to empty.  If there is more than one task waiting on a sync
+variable, one is non-deterministically selected to use the variable
+and resume execution.  The other tasks continue to wait for the next
+assignment.
 
 If a task attempts to assign to a sync variable that is full, the task
 is suspended and the assignment is delayed.  When the sync variable
@@ -180,23 +134,99 @@ sync-type:
   `sync' type-specifier
 \end{syntax}
 
+\begin{example}
+The code
+\begin{chapel}
+var finishedMainOutput$\mbox{{\bf \$}}$: sync bool;
+begin {
+  finishedMainOutput$\mbox{{\bf \$}}$;
+  writeln("output from spawned task");
+}
+writeln("output from main task");
+finishedMainOutput$\mbox{{\bf \$}}$ = true;
+\end{chapel}
+modifies the example in~\rsec{Begin}.  When the read of the sync
+variable is encountered in the spawned task, the task waits until the
+sync variable is assigned in the main task.
+\end{example}
+
+\begin{example}
+Sync variables are useful for tallying data from multiple tasks as
+well.  A sync variable of type \chpl{int} is read and then written
+during an update so the full-empty semantics make these updates atomic
+when used in a stylized way.  The code
+\begin{chapel}
+var count$\mbox{{\bf \$}}$: int;
+begin count$\mbox{{\bf \$}}$ += 1;
+begin count$\mbox{{\bf \$}}$ += 1;
+begin count$\mbox{{\bf \$}}$ += 1;
+\end{chapel}
+spawns three tasks to increment \chpl{count$\mbox{{\bf \$}}$}.
+If \chpl{count$\mbox{{\bf \$}}$} was not a sync variable, this code
+would be unsafe because between the points at which one task
+reads \chpl{count$\mbox{{\bf \$}}$} and
+writes \chpl{count$\mbox{{\bf \$}}$}, another task may increment it.
+\end{example}
+
 \index{sync types!records and classes}
-\paragraph{Sync Records and Classes}
 If the base type of a sync type is a class or a record, the sync
 semantics only apply to the class or record, not to its individual
 fields or methods.  A record or class type may have fields of sync
 type to get sync semantics on individual field accesses.
 
 \index{sync types!formal arguments}
-\paragraph{Formal Arguments of Sync Type}
-If an argument is a sync type, the actual is passed by reference and
-the argument itself is a valid lvalue.  The unqualified
+If a formal argument is a sync type, the actual is passed by reference
+and the argument itself is a valid lvalue.  The unqualified
 type \chpl{sync} can also be used to specify a generic formal
-argument.  In this case, the actual must be a sync variable and it
-is passed by reference.  For generic formal arguments of any type, an
-actual that is \chpl{sync} is ``read'' before being passed to the
-function and the generic formal argument's type is set to the base
-type of the actual.
+argument.  In this case, the actual must be a sync variable and it is
+passed by reference.
+
+For generic formal arguments with unspecified types, an actual that
+is \chpl{sync} is ``read'' before being passed to the function and the
+generic formal argument's type is set to the base type of the actual.
+
+\subsubsection{Single Variables}
+\label{Single_Variables}
+\index{synchronization variables!single@\chpl{single}}
+\index{single@\chpl{single}}
+
+A single (assignment) variable specializes sync variables by
+restricting the number of times it can be assigned to no more than one
+during its lifetime.  A use of a single variable before it is assigned
+causes the task's execution to suspend until the variable is assigned.
+Otherwise, the use proceeds as with normal variables and the task
+continues.  After a single assignment variable is assigned, all tasks
+with pending uses resume in an unspecified order.  A single variable
+is specified with a single type given by the following syntax:
+\begin{syntax}
+single-type:
+  `single' type-specifier
+\end{syntax}
+
+\begin{example}
+In the code
+\begin{chapel}
+class Tree {
+  var isLeaf: bool;
+  var left, right: Tree;
+  var value: int;
+
+  def sum() {
+    if (isLeaf) then 
+       return value;
+
+    var x$\mbox{{\bf \$}}$: single int;
+    begin x$\mbox{{\bf \$}}$ = left.sum();
+    var y = right.sum();
+    return x$\mbox{{\bf \$}}$+y;
+  }
+}
+\end{chapel}
+the single variable \chpl{x$\mbox{{\bf \$}}$} is assigned by an
+asynchronous task created with the begin statement.  The task
+returning the sum waits on the reading of \chpl{x$\mbox{{\bf \$}}$}
+until it has been assigned.
+\end{example}
 
 \subsubsection{Predefined Single and Sync Methods}
 \label{Functions_on_Synchronization_Variables}
@@ -207,7 +237,7 @@ type.
 
 \index{readFE@\chpl{readFE}}
 \begin{protohead}
-def sync $t$.readFE(): t
+def (sync t).readFE(): t
 \end{protohead}
 \begin{protobody}
 Wait for full, leave empty, and return the value of the sync variable.
@@ -217,8 +247,8 @@ sync variable is set to empty when this method completes.
 
 \index{readFF@\chpl{readFF}}
 \begin{protohead}
-def sync $t$.readFF(): t
-def single $t$.readFF(): t
+def (sync t).readFF(): t
+def (single t).readFF(): t
 \end{protohead}
 \begin{protobody}
 Returns the value of the sync or single variable.  This method blocks
@@ -228,8 +258,8 @@ single variable remains full when this method completes.
 
 \index{readXX@\chpl{readXX}}
 \begin{protohead}
-def sync $t$.readXX(): t
-def single $t$.readXX(): t
+def (sync t).readXX(): t
+def (single t).readXX(): t
 \end{protohead}
 \begin{protobody}
 Returns the value of the sync or single variable.  This method is non-blocking
@@ -239,8 +269,8 @@ completes.
 
 \index{writeEF@\chpl{writeEF}}
 \begin{protohead}
-def sync $t$.writeEF(v: t)
-def single $t$.writeEF(v: t)
+def (sync t).writeEF(v: t)
+def (single t).writeEF(v: t)
 \end{protohead}
 \begin{protobody}
 Assigns \chpl{v} to the value of the sync or single variable.  This
@@ -251,7 +281,7 @@ completes.
 
 \index{writeFF@\chpl{writeFF}}
 \begin{protohead}
-def sync $t$.writeFF(v: t)
+def (sync t).writeFF(v: t)
 \end{protohead}
 \begin{protobody}
 Assigns \chpl{v} to the value of the sync variable.  This method
@@ -261,7 +291,7 @@ variable remains full when this method completes.
 
 \index{writeXF@\chpl{writeXF}}
 \begin{protohead}
-def sync $t$.writeXF(v: t)
+def (sync t).writeXF(v: t)
 \end{protohead}
 \begin{protobody}
 Assigns \chpl{v} to the value of the sync variable.  This method is
@@ -271,7 +301,7 @@ this method completes.
 
 \index{reset@\chpl{reset}}
 \begin{protohead}
-def sync $t$.reset()
+def (sync t).reset()
 \end{protohead}
 \begin{protobody}
 Assigns the default value of type \chpl{t} to the value of the sync
@@ -281,8 +311,8 @@ variable is set to empty when this method completes.
 
 \index{isFull@\chpl{isFull}}
 \begin{protohead}
-def sync $t$.isFull: bool
-def single $t$.isFull: bool
+def (sync t).isFull: bool
+def (single t).isFull: bool
 \end{protohead}
 \begin{protobody}
 Returns \chpl{true} if the sync or single variable is full and \chpl{false}
@@ -290,32 +320,36 @@ otherwise.  This method is non-blocking and the state of the sync or single
 variable is unchanged when this method completes.
 \end{protobody}
 
+\begin{rationale}
+In general, these methods are provided such that other traditional
+synchronization primitives, such as semaphores and mutexes, can be
+constructed.
+
+In addition, the implicitly-invoked \chpl{readFE} and \chpl{writeEF}
+methods (which can arguably be categorized as unnecessary due to the
+implicit invocation) are provided to support programmers who wish to
+make the semantics of these operations more explicit.  It might be
+desirable to have a compiler option that disables the implicit
+application of these methods.
+\end{rationale}
+
 \begin{example}
 Given the following declarations
 \begin{chapel}
-var x: single int;
+var x$\mbox{{\bf \$}}$: single int;
 var y: int;
 \end{chapel}
 the code
 \begin{chapel}
-x = 5;
-y = x;
+x$\mbox{{\bf \$}}$ = 5;
+y = x$\mbox{{\bf \$}}$;
 \end{chapel}
 is equivalent to
 \begin{chapel}
-x.writeEF(5);
-y = x.readFF();
+x$\mbox{{\bf \$}}$.writeEF(5);
+y = x$\mbox{{\bf \$}}$.readFF();
 \end{chapel}
 \end{example}
-
-\begin{rationale}
-Although the \chpl{readFE}, \chpl{readFF}, and \chpl{writeEF} methods
-are implicitly called when referencing or assigning to sync or single
-variables, making these methods available supports programmers who
-wish to make the semantics of these operations more explicit.  It
-might be desirable to have a compiler option that disables the
-implicit use of these methods.
-\end{rationale}
 
 \subsection{Structured Task-Parallel Constructs}
 \label{structured_task_parallelism}
@@ -364,16 +398,15 @@ cobegin {
 is equivalent to the following code that uses only begin-statements
 and single variables to introduce concurrency and synchronize:
 \begin{chapel}
-var s1, s2, s3: single bool;
-begin { stmt1(); s1 = true; }
-begin { stmt2(); s2 = true; }
-begin { stmt3(); s3 = true; }
-s1; s2; s3;
+var s1$\mbox{{\bf \$}}$, s2$\mbox{{\bf \$}}$, s3$\mbox{{\bf \$}}$: single bool;
+begin { stmt1(); s1$\mbox{{\bf \$}}$ = true; }
+begin { stmt2(); s2$\mbox{{\bf \$}}$ = true; }
+begin { stmt3(); s3$\mbox{{\bf \$}}$ = true; }
+s1$\mbox{{\bf \$}}$; s2$\mbox{{\bf \$}}$; s3$\mbox{{\bf \$}}$;
 \end{chapel}
 Each begin-statement is executed concurrently but control does not
-continue passed the final line above until each of the single
-variables is written thereby ensuring that each of the functions has
-finished.
+continue past the final line above until each of the single variables
+is written, thereby ensuring that each of the functions has finished.
 \end{example}
 
 \subsubsection{The Coforall Loop}
@@ -392,14 +425,8 @@ The semantics of the \chpl{coforall} loop are identical to
 a \chpl{cobegin} statement where each iteration of the \chpl{coforall}
 loop is equivalent to a separate statement in a \chpl{cobegin} block.
 
-The semantics of the \chpl{coforall} loop are also identical to
-the \chpl{forall} loop except that each iteration is guaranteed to run
-concurrently.  It thus has potentially higher overhead than a forall
-loop, but in cases where concurrency is required for correctness, it
-is essential.
-
 Control continues with the statement following the \chpl{coforall}
-loop only after each iteration has been completely evaluated.
+loop only after all iterations have been completely evaluated.
 
 The following statements may not be lexically enclosed in
 coforall-statements: break-statements, continue-statements,
@@ -421,29 +448,30 @@ is equivalent to the following code that uses only begin-statements
 and sync and single variables to introduce concurrency and
 synchronize:
 \begin{chapel}
-var si: sync int = 1;
-var sb: single bool;
+var runningCount$\mbox{{\bf \$}}$: sync int = 1;
+var finished$\mbox{{\bf \$}}$: single bool;
 for i in iterator() {
-  si += 1;
+  runningCount$\mbox{{\bf \$}}$ += 1;
   begin {
     body();
-    var i = si;
-    si = i-1;
-    if i == 0 then sb = true;
+    var tmp = runningCount$\mbox{{\bf \$}}$;
+    runningCount$\mbox{{\bf \$}}$ = tmp-1;
+    if tmp == 1 then finished$\mbox{{\bf \$}}$ = true;
   }
 }
-var i = si;
-si = i-1;
-if i == 0 then sb = true;
-sb;
+var tmp = runningCount$\mbox{{\bf \$}}$;
+runningCount$\mbox{{\bf \$}}$ = tmp-1;
+if tmp == 1 then finished$\mbox{{\bf \$}}$ = true;
+finished$\mbox{{\bf \$}}$;
 \end{chapel}
-Each call to \chpl{body()} is executed concurrently because it is in a
-begin-statement.  The sync variable \chpl{si} is used to keep track of
-the number of executing tasks plus one for the loop that does the
-spawning.  When this variable reaches zero, then single variable is
-used to signal that all of the tasks have completed.  Thus control
-does not continue past the last line until all of the tasks have
-completed.
+Each call to \chpl{body()} executes concurrently because it is in a
+begin-statement.  The sync
+variable \chpl{runningCount$\mbox{{\bf \$}}$} is used to keep track of
+the number of executing tasks plus one for the main task.  When this
+variable reaches zero, the single
+variable \chpl{finished$\mbox{{\bf \$}}$} is used to signal that all
+of the tasks have completed.  Thus control does not continue past the
+last line until all of the tasks have completed.
 \end{example}
 
 \subsubsection{The Sync Statement}
@@ -457,10 +485,35 @@ given by
 sync-statement:
   `sync' statement
 \end{syntax}
-
 The following statements may not be lexically enclosed in
 sync-statements: break-statements, continue-statements,
 yield-statements, and return-statements.
+
+\begin{example}
+The sync statement can be used to wait for many dynamically spawned
+tasks.  Given the \chpl{Tree} class defined in the example
+in~\rsec{Single_Variables} and an instance of this class
+called \chpl{tree}, the code
+\begin{chapel}
+def concurrentUpdate(tree: Tree) {
+  if requiresUpdate(tree) then
+    begin update(tree);
+  if !tree.isLeaf {
+    searchAndUpdate(tree.left);
+    searchAndUpdate(tree.right);
+  }
+}
+
+sync searchAndUpdate(tree);
+\end{chapel}
+defines a function \chpl{concurrentUpdate} that recursively walks over
+a tree and spawns a new task to update a node if the
+function \chpl{requiresUpdate} evaluates to true.
+(Both \chpl{requiresUpdate} and \chpl{update} are omitted as
+irrelevant.)  The call to \chpl{searchAndUpdate} is made within
+a \chpl{sync} statement to ensure that each of the spawned update
+tasks finishes before execution continues.
+\end{example}
 
 \begin{example}
 The sync statement
@@ -487,41 +540,67 @@ latter code will not.
 \label{Serial}
 \index{serial@\chpl{serial}}
 
-The \chpl{serial} statement can be used to dynamically control the
-degree of parallelism.  The syntax is:
+The \chpl{serial} statement can be used to dynamically disable
+parallelism.  The syntax is:
 \begin{syntax}
 serial-statement:
   `serial' expression block-level-statement
 \end{syntax}
 where the expression evaluates to a bool type.  Independent of that
 value, the \sntx{block-level-statement} is evaluated. If the
-expression is true, any dynamically encountered forall loop or cobegin
-statement is executed serially within the current task.  Any
-dynamically encountered begin-statement is executed serially with the
-current task; no new task is spawned.  Control continues to the
-statement following the begin-statement after the begin-statement
-finishes.
+expression is true, any dynamically encountered code that would result
+in new tasks is executed without spawning any new tasks.  In effect,
+execution is serialized.
 
 \begin{example}
-In the code
+Given the \chpl{Tree} class defined in the example
+in~\rsec{Single_Variables} and an instance of this class
+called \chpl{tree}, the code
 \begin{chapel}
-forall i in walk(root) do
-  work(i);
-
-def walk(n: node) {
-  yield n;
-  serial n.depth > 4 forall c in 0..n.numOfChildren {
-      yield n.child[c];
+def concurrentUpdate(tree: Tree, depth: int = 1) {
+  if requiresUpdate(tree) then
+    update(tree);
+  if !tree.isLeaf {
+    serial depth > 4 cobegin {
+      concurrentSearch(tree.left, depth+1);
+      concurrentSearch(tree.right, depth+1);
+    }
   }
 }
 \end{chapel}
-the serial statement inhibits concurrent execution on the tree for
-nodes that are deeper than four levels in the tree.
+defines a function \chpl{concurrentUpdate} that recursively walks over
+a tree using cobegin-statements to update the left and right subtrees
+in parallel.  The serial statement inhibits concurrent execution on
+the tree for nodes that are deeper than four levels in the tree.  This
+constrains the number of tasks that will be used for the update.
 \end{example}
 
-There is an expectation that functions that may be executed in a
-serial context are cloned to avoid the overhead of testing and
-suppressing parallelism.
+\begin{example}
+The code
+\begin{chapel}
+serial true {
+  begin stmt1();
+  cobegin {
+    stmt2();
+    stmt3();
+  }
+  coforall i in iterator() do stmt4();
+  forall i in iterator() do stmt5();
+}
+\end{chapel}
+is equivalent to
+\begin{chapel}
+stmt1();
+{
+  stmt2();
+  stmt3();
+}
+for i in iterator() do stmt4();
+for i in iterator() do stmt5();
+\end{chapel}
+because the expression evaluated to determine whether to serialize
+always evaluates to true.
+\end{example}
 
 \subsection{Data-Parallel Constructs}
 \label{data_parallelism}
@@ -549,8 +628,14 @@ The second form of the loop is a syntactic convenience.
 The forall loop evaluates the loop body once for each element in
 the \sntx{iterator-expression}.  Each instance of the forall loop's
 statement may be executed concurrently with each other, but this is
-not guaranteed.  The compiler and runtime determine the actual
+not guaranteed.  The definition of the iterator determines the actual
 concurrency based on the specification of the iterator of the loop.
+
+This differs from the semantics of the \chpl{coforall} loop, discussed
+in~\rsec{Coforall}, where each iteration is guaranteed to run
+concurrently.  The \chpl{coforall} loop thus has potentially higher
+overhead than a forall loop, but in cases where concurrency is
+required for correctness, it is essential.
 
 Control continues with the statement following the forall loop only
 after each iteration has been completely evaluated.
@@ -594,25 +679,13 @@ forall-expression:
   [loop-control-part] expression
 \end{syntax}
 
-A forall expression is semantically equivalent to an iterator that
-yields the expressions.
-
 \begin{example}
 The code
 \begin{chapel}
-[i in S] f(i);
+writeln(+ reduce [i in 1..10] i**2);
 \end{chapel}
-is equivalent to
-\begin{chapel}
-ff();
-\end{chapel}
-where \chpl{ff} is defined as
-\begin{chapel}
-def ff() {
-  for i in S do
-    yield f(i);
-}
-\end{chapel}
+applies a reduction to a forall-expression that evaluates the square
+of the indices in the range \chpl{1..10}.
 \end{example}
 
 \subsubsection{Filtering Predicates in Forall Expressions}
@@ -642,12 +715,13 @@ order and serially with respect to other atomic statements, and no
 variable assignment is visible until the statement has completely
 executed.
 
+\begin{openissue}
 This definition of an atomic statement is sometimes called {\em strong
 atomicity} because the semantics are atomic to the entire program.
 {\em Weak atomicity} is defined so that an atomic statement is atomic
-only with respect to other atomic statements.  If the performance
-implications of strong atomicity are not tolerable, the semantics of
-atomic transactions may be revisited, and could become weaker.
+only with respect to other atomic statements.  Chapel semantics are
+still under design.
+\end{openissue}
 
 The syntax for the atomic statement is given by:
 \begin{syntax}
@@ -663,15 +737,16 @@ atomic {
   if head == obj {
     found = true;
     head = obj.next;
-  } else  {
+  } else {
     var last = head;
     while last != null {
-    if last.next == obj {
-      found = true;
-      last.next = obj.next;
-      break;
+      if last.next == obj {
+        found = true;
+        last.next = obj.next;
+        break;
+      }
+      last = last.next;
     }
-    last = last.next;
   }
 }
 \end{chapel}
@@ -701,4 +776,52 @@ atomic found = head.remove(obj);
 \label{Memory_Consistency}
 \index{memory consistency model}
 
-This section is forthcoming.
+\begin{openissue}
+This section is largely forthcoming.
+\end{openissue}
+
+We have been greatly helped in the design of Chapel's memory
+consistency model by discussions in and readings for a seminar at the
+University of Washington run by Dan Grossman and Luis Ceze as well as
+the following paper: {\bf Jeremy Mason, William Pugh, and Sarita
+V. Adve.}  {\bf The Java memory model.}  In {\bf Proceedings of the
+32nd Symposium on Principles of Programming Languages}.  2005.
+
+The Chapel memory consistency model is defined for programs that are
+{\em data-race-free}.  Programs that are {\em data-race-free} are
+sequentially consistent.  Otherwise, the program is incorrect and no
+guarantees are made.  In this design choice, Chapel differs from Java
+because the set of dynamic security concerns is different.
+
+Writing and reading \chpl{sync} and \chpl{single} variables as well as
+executing atomic-statements are the only ways in Chapel to correctly
+synchronize a program.  It is an error to write to the same memory
+location or read from and write to the same memory location in two
+different tasks without any intervening synchronization.
+
+\begin{example}
+This has the direct consequence that one task cannot spin-wait on a
+variable while another task writes to that variable.  The behavior of
+the following code is undefined:
+\begin{chapel}
+var x: int;
+cobegin {
+  while x != 1 do ;  // spin wait
+  x = 1;
+}
+\end{chapel}
+While codes are more efficient in most cases if one avoids
+spin-waiting altogether, this code could be rewritten with defined
+behavior as follows:
+\begin{chapel}
+var x$\mbox{{\bf \$}}$: sync int;
+cobegin {
+  while x$\mbox{{\bf \$}}$.readXX() != 1 do ;  // spin wait
+  x$\mbox{{\bf \$}}$.writeXF(1);
+}
+\end{chapel}
+In this code, the first statement in the cobegin-statement executes a
+loop until the variable is set to one.  The second statement in the
+cobegin-statement sets the variable to one.  Neither of these
+statements block.
+\end{example}
