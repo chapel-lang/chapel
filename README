@@ -69,10 +69,12 @@ For more detailed information about...      refer to...
   ...using the compiler                      ...doc/README.compiling
   ...executing Chapel programs               ...doc/README.executing
   ...executing programs on multiple locales  ...doc/README.multilocale
-  ...changes since the last release          ...CHANGES
-  ...implementation status                   ...STATUS
-  ...reporting bugs                          ...doc/README.bugs
   ...example Chapel programs                 ...examples/README
+  ...reporting bugs                          ...doc/README.bugs
+  ...notes for Cygwin users                  ...doc/README.cygwin
+  ...notes for Cray XT (UNICOS/lc) users     ...doc/README.xt-cnl
+  ...implementation status                   ...STATUS
+  ...changes since the last release          ...CHANGES
   ...an overview of the Chapel language      ...doc/chapelLanguageSpec.pdf, Ch5
   ...a quick reference for Chapel syntax     ...doc/quickReference.pdf
   ...a tutorial using three HPCC benchmarks  ...doc/hpccTutorial.pdf
@@ -81,7 +83,5 @@ For more detailed information about...      refer to...
   ...using non-default C/C++ compilers, make ...doc/README.chplenv
   ...calling C routines from Chapel          ...doc/README.extern
   ...formatting value-to-string conversions  ...doc/README.format
-  ...notes for Cygwin users                  ...doc/README.cygwin
-  ...notes for Cray XT (UNICOS/lc) users     ...doc/README.xt-cnl
   ...third-party software that we use        ...third-party/README
   ...the GASNet communication library        ...third-party/gasnet/README

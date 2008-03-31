@@ -70,19 +70,23 @@ have any troubles, please let us know at chapel_info@cray.com.
        resulting binary as you would for any other XT program.
 
 
-   (b) For CHPL_COMM == "gasnet" execution on the XT, Chapel programs
-       must currently be launched with the "aprun" command, and the
-       Chapel command-line should not include any of the normal Chapel
-       options to set the number of locales (e.g., -nl #,
-       --numLocales=#, or -snumLocales=#).  For example, a Chapel
-       program that would typically be launched using:
+   (b) For interactive CHPL_COMM == "gasnet" execution on the XT,
+       Chapel programs must currently be launched using with the
+       "aprun" command, and the Chapel command-line should not include
+       any of the traditional options to specify the number of locales
+       (e.g., -nl #, --numLocales=#, or -snumLocales=#).  For example,
+       a Chapel program that would typically be launched using:
 
          ./myChapelProg -nl 4 --delta=0.001 --n=100
 
-       would be run on the XT using:
+       would be launched interactively on the XT using:
 
          aprun -n 4 ./myChapelProg --delta=0.001 --n=100
 
        In future releases, we intend to wrap this aprun command so
        that XT launch does not require any special treatment compared
        to other multi-locale Chapel runs.
+
+       At the time of this release, we do not yet have experience
+       launching Chapel programs using the non-interactive scheduler.
+       Consult the alps and aprun man pages for details.

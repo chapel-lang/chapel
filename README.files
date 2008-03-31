@@ -20,7 +20,7 @@ contain.
   bin/
     $CHPL_HOST_PLATFORM/ : location of the compiler (chpl) once it's been built
   compiler/         : source code for the compiler
-  doc/              : additional user documentation and READMEs
+  doc/              : additional documentation and READMEs
   examples/         : example Chapel codes
     hpcc/           : source code for HPC Challenge benchmarks
   lib/
@@ -31,5 +31,6 @@ contain.
   make/             : Makefile settings for various compilers and platforms
   man/              : man pages for the Chapel compiler (chpl)
   modules/          : standard and internal Chapel modules
-  runtime/          : source code for the runtime
+  runtime/          : source code for Chapel's runtime libraries
+  third-party/      : third-party software used by Chapel
   util/             : utility scripts

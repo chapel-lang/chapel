@@ -4,6 +4,7 @@ Chapel doc README
 
 This directory contains the following documentation:
 
+  README             : this file
   README.bugs        : how to report bugs or suggestions to the Chapel team
   README.building    : information about building the Chapel compiler
   README.chplenv     : setting up your environment to use Chapel
