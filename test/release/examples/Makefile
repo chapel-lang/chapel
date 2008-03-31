@@ -23,6 +23,7 @@ TARGETS = \
 	slices \
 	sparse \
 	tree \
+	varargs \
 
 
 default: all hpcc

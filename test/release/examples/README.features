@@ -26,6 +26,7 @@ reductions    : minloc, maxloc, + and && array reductions
 slices        : array slicing and reindexing; iterators
 sparse        : sparse domains and arrays; operations on them
 tree          : unbounded task parallelism using cobegin
+varargs       : variable argument functions, tuples
 hpcc/stream   : whole-array operators; standard modules; time/random routines
 hpcc/ra       : iterators; atomic statements
 hpcc/fft      : array slicing; iterators; complex and imaginary values
@@ -71,6 +72,7 @@ reductions     |       |   x   |       |       |       |       |       |
 slices         |       |   *   |       |       |       |       |       |
 sparse         |       |   x   |       |       |       |       |       |
 tree           |       |   x   |       |       |       |       |       |
+varargs        |       |   x   |       |       |       |       |       |
 hpcc/stream    |       |   x   |       |   x   |       |       |       |
 hpcc/ra        |       |   x   |       |   x   |       |       |       |
 hpcc/fft       |       |   x   |       |   x   |       |       |       |
@@ -110,6 +112,7 @@ reductions     |       |   *   |       |       |       |   x   |       |
 slices         |       |       |   x   |   x   |   x   |   x   |       |
 sparse         |       |       |       |   x   |   x   |   x   |       |
 tree           |       |       |   x   |   x   |       |   x   |       |
+varargs        |       |       |       |   x   |       |       |       |
 hpcc/stream    |   x   |   x   |   x   |   x   |       |   x   |       |
 hpcc/ra        |   *   |   x   |   x   |   x   |   x   |   x   |       |
 hpcc/fft       |   x   |   x   |   x   |   x   |   x   |   x   |       |
@@ -151,6 +154,7 @@ reductions     |       |       |       |       |       |   x   |       |
 slices         |       |       |       |       |       |   *   |       |
 sparse         |       |       |       |       |       |   x   |       |
 tree           |       |       |       |   x   |       |   x   |       |
+varargs        |       |   x   |       |       |       |   x   |   x   |
 hpcc/stream    |       |       |       |       |       |   x   |   x   |
 hpcc/ra        |       |       |       |       |       |   x   |   x   |
 hpcc/fft       |       |   x   |       |       |       |   x   |   *   |
@@ -190,6 +194,7 @@ reductions     |   x   |       |       |       |       |       |       |
 slices         |   x   |       |       |       |       |       |       |
 sparse         |   x   |   *   |       |       |       |       |       |   x
 tree           |       |       |       |       |       |       |       |
+varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |   x   |       |       |       |       |       |       |
 hpcc/ra        |   x   |       |       |       |       |       |       |
 hpcc/fft       |   x   |       |       |       |       |       |       |
@@ -230,6 +235,7 @@ reductions     |       |   *   |   *   |       |   x   |       |       |
 slices         |   *   |   *   |   x   |   x   |       |       |       |
 sparse         |   x   |       |       |       |   x   |       |       |
 tree           |       |       |       |       |       |       |       |
+varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |   x   |   *   |       |       |   x   |       |       |
 hpcc/ra        |   x   |       |       |       |   x   |       |       |
 hpcc/fft       |   x   |   x   |   x   |       |   x   |       |       |
@@ -269,6 +275,7 @@ reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 tree           |       |   x   |       |       |       |       |       |
+varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |       |       |       |       |       |       |       |
 hpcc/ra        |       |       |       |       |       |   x   |       |
 hpcc/fft       |       |       |       |       |       |       |       |
@@ -309,6 +316,7 @@ reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
+varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |       |       |       |       |       |       |       |
 hpcc/ra        |       |       |       |       |       |       |       |
 hpcc/fft       |       |       |       |       |       |       |       |
@@ -348,6 +356,7 @@ reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
+varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |       |       |       |       |       |       |       |
 hpcc/ra        |       |       |       |       |       |       |       |
 hpcc/fft       |       |       |       |       |       |       |       |

@@ -28,6 +28,7 @@ demonstrate various Chapel features:
      slices.chpl            : examples of array slicing and reindexing
      sparse.chpl            : sparse domain/array tutorial example
      tree.chpl              : constructs and walks a tree in parallel
+     varargs.chpl           : demonstration of variable argument functions
 
 The hpcc subdirectory contains Chapel versions of three HPC Challenge
 benchmarks:
