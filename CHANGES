@@ -35,7 +35,7 @@ Changes to Chapel Language:
 - removed the "ordered" keyword and concept
 - added support for a compilerWarning() call similar to compilerError()
   e.g., compilerWarning("I didn't expect this function to be called");
-- added string inequality comparison operators
+- added string relational operators
   e.g., ..."hi" >= "bye"...
 - added a sorted() iterator to associative domains/arrays and opaque arrays
   e.g., var table: domain(string); ...  for entry in table.sorted() do ...

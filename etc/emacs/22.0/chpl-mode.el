@@ -3,7 +3,7 @@
 ;; Author:     2007 Steven T Balensiefer
 ;; Maintainer: Chapel group <chapel_info@cray.com>
 ;; Created:    December 2002
-;; Version:    0.6
+;; Version:    0.7
 ;; Keywords:   Chapel languages oop
 
 ;; This program is free software; you can redistribute it and/or modify
