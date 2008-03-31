@@ -1,8 +1,8 @@
-[The following license applies to the software developed specifically
-for the Chapel release including its compiler, runtime, standard
-modules, and testing system.  Software in the etc/ and third-party/
-directories may be re-released under their own licensing agreements.
-Please see the README files in those directories for further details]
+[The following license applies to software contained within the
+following directories: compiler/, runtime/, modules/, util/,
+examples/, and make/.  Software packages in the etc/ and third-party/
+directories are redistributed under their own licensing agreements.
+Please see the README files in those directories for further details.]
 
 Copyright (c) 2004-2008 Cray Inc.
 
