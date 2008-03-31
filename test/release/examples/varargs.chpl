@@ -45,7 +45,7 @@ anyTypeWriteln(1, 2.0, 3.14 + 2.72i);
 // default values for each type.
 //
 def defaultValues(type args...?n) {
-  var val: (args);
+  var val: args;
   return val;
 }
 
