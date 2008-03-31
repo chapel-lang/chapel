@@ -91,6 +91,10 @@ system("cd chapel && mv doc doctmp");
 system("cd chapel && mv doctmp/release doc");
 system("cd chapel && rm -r doctmp");
 
+print "Removing runtime directories that are not ready for release...\n";
+system("cd chapel/runtime && rm -r comm-armci");
+system("cd chapel/runtime/include && rm -r comm-armci");
+
 foreach $file (@files) {
     $dfile = "chapel/$file";
     if (!(-e $dfile)) {

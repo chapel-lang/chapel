@@ -45,9 +45,11 @@ Quick Start
    util/setchplenv.* script for your shell, please mail a copy of it
    to us at chapel_info@cray.com for inclusion in our next release).
 
+
 4) Compile an example program using:
 
         chpl -o hello examples/hello.chpl
+
 
 5) Execute the resulting executable:
 

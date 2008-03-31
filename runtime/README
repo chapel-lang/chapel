@@ -1,0 +1,23 @@
+============================================
+Chapel Runtime Directory Structure and Files
+============================================
+
+This directory contains the source code for Chapel's runtime library
+routines.  Note that make-ing this directory will only build it for
+the current (or inferred) values of $CHPL_COMM and $CHPL_THREADS.
+Multiple versions of the runtime can coexist simultaneously, but each
+must be explicitly built.
+
+The directory structure of the runtime/ directory is as follows:
+
+./
+  Makefile          : Makefile for the runtime
+  README            : this file
+  comm-gasnet/      : source code for GASNet communication layer
+  comm-none/        : source code for no communication layer (1 locale only)
+  etc/              : Makefiles for compiler-generated code
+  include/          : header files for the runtime
+  make/             : Makefiles for the runtime sources
+  src/              : source code for the runtime
+  threads-none/     : source code for no threading package
+  threads-pthreads/ : source code for interfacing with pthreads
