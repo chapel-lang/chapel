@@ -1,0 +1,88 @@
+========================
+Using Chapel on Cray XTs
+========================
+
+The following information is assembled to help users get up and
+running on a Cray XT running UNICOS/lc as easily as possible.  If you
+have any troubles, please let us know at chapel_info@cray.com.
+
+
+1) Set CHPL_HOME, CHPL_HOST_PLATFORM, your path, and MANPATH as usual.
+   See README.chplenv for details.
+
+
+2) Set CHPL_TARGET_PLATFORM to xt-cnl.  For example:
+
+     setenv CHPL_TARGET_PLATFORM xt-cnl
+
+
+3) Ensure that you have one of the following Programming Environment
+   modules loaded, based on which C compiler you want to use to
+   compile Chapel's generated code:
+
+     - PrgEnv-gnu
+     - PrgEnv-pathscale
+     - PrgEnv-pgi
+
+
+4) If you want to perform multi-locale (multiple compute node) runs,
+   take the following additional steps:
+
+   (a) Set CHPL_COMM to gasnet.  For example:
+
+         setenv CHPL_COMM gasnet
+
+   (b) Build the GASNet libraries.  GASNet is a one-sided
+       communication layer developed at UC Berkeley that currently
+       serves as the foundation for our multi-locale implementation
+       (future releases are expected to also support an option to run
+       over PNNL's ARMCI library).  Do this by changing to your
+       chapel/ directory and making the third-party directory.  For
+       example:
+
+         cd $CHPL_HOME
+         gmake third-party
+
+       Note that this step currently builds GASNet in debug mode which
+       will have a major detrimental impact on performance (along with
+       the lack of several obvious optimizations on Chapel's part).
+       At the time of this release, we have not yet had a chance to
+       experiment with executing Chapel over GASNet in non-debug mode.
+
+       For more information on GASNet, please refer to:
+         - $CHPL_HOME/third-party/gasnet/README
+         - $CHPL_HOME/third-party/README
+
+
+5) Make the Chapel compiler and runtime:
+
+     cd $CHPL_HOME
+     gmake
+
+
+6) Compile your Chapel programs as usual.  See README.compiling for
+   details.
+
+
+7) Execute the resulting Chapel program as follows:
+
+   (a) For executables created using CHPL_COMM == "none", execute the
+       resulting binary as you would for any other XT program.
+
+
+   (b) For CHPL_COMM == "gasnet" execution on the XT, Chapel programs
+       must currently be launched with the "aprun" command, and the
+       Chapel command-line should not include any of the normal Chapel
+       options to set the number of locales (e.g., -nl #,
+       --numLocales=#, or -snumLocales=#).  For example, a Chapel
+       program that would typically be launched using:
+
+         ./myChapelProg -nl 4 --delta=0.001 --n=100
+
+       would be run on the XT using:
+
+         aprun -n 4 ./myChapelProg --delta=0.001 --n=100
+
+       In future releases, we intend to wrap this aprun command so
+       that XT launch does not require any special treatment compared
+       to other multi-locale Chapel runs.

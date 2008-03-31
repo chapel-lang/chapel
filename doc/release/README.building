@@ -25,14 +25,22 @@ If everything works as intended, you ought to see:
 
    $CHPL_HOME/lib/$CHPL_TARGET_PLATFORM/$CHPL_TARGET_COMPILER/threads-$CHPL_THREADS/comm-$CHPL_COMM/
 
-Otherwise, if you get an error or failure during the make process,
-please let us know about it at: chapel_bugs@cray.com (as well as
-information about your system as described in README.bugs and any
-workaround that you come up with).
+If you get an error or failure during the make process, please let us
+know about it at: chapel_bugs@cray.com (as well as information about
+your system as described in README.bugs and any workaround that you
+come up with).
 
+Note that each make command only builds the compiler and runtime for
+the current set of CHPL_ environment variables defined by (and
+inferred for) your environment.  Thus, while the directory structure
+above supports the ability to have multiple versions of the compiler
+and runtime built concurrently, only one version will be built for
+each make command.  To support additional host/target platforms,
+host/target compilers, or threading/communication layers, you will
+need to reset your environment variables and re-make.
 
-You should now be able to run the compiler and display its help
-message using:
+After a successful build, you should be able to run the compiler and
+display its help message using:
 
         chpl --help
 
@@ -52,13 +60,12 @@ Other UNIX-based environments ought to work (subject to the
 assumptions in README.prereqs), but may not be supported by our
 current Makefile structure.  See the section below on
 platform-specific settings for more information on adding support for
-another UNIX-compatible environment.
+additional UNIX-compatible environments.
 
 Note that a single Chapel installation can simultaneously support
 Chapel for multiple platforms and compiler options because all
-platform-specific files and executables are stored in subdirectories
-named by $CHPL_HOST_PLATFORM, $CHPL_TARGET_PLATFORM, and
-$CHPL_TARGET_COMPILER.
+platform-specific binary files and executables are stored in
+subdirectories named by CHPL environment variables.
 
 
 ----------------
@@ -93,7 +100,7 @@ $CHPL_TARGET_COMPILER for the runtime sources and generated code.
 Refer to README.chplenv for more information about these variables and
 their default settings.
 
-In addition, any architecture-specific settings are specified in
+In addition, any architecture-specific settings are defined in
 $CHPL_HOME/make/platform/Makefile.<platform>, where <platform> refers
 to $CHPL_HOST_PLATFORM for the compiler sources and
 $CHPL_TARGET_PLATFORM for the runtime sources and generated code.
@@ -103,9 +110,9 @@ settings.
 If you try making the compiler and runtime for an unknown platform, it
 will assume that you want to use gcc/g++ to compile the code and that
 you require no platform-specific settings.  You can add support for a
-new build environment by creating Makefile.<compiler> and
+new build environment by creating Makefile.<compiler> and/or
 Makefile.<platform> files and setting your environment variables to
-refer to those files.  If you do develop new build environment
-support, we encourage you to send this back to us at:
-chapel_info@cray.com
+refer to those files.  If you do develop new build environment support
+that you would like to contribute back to the community, we encourage
+you to send your changes back to us at: chapel_info@cray.com
 

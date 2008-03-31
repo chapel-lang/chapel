@@ -47,58 +47,61 @@ or:
      ./beer -snumBottles=6
 
 
+-----------------------------
+Setting the Number of Locales
+-----------------------------
+
+For multi-locale Chapel executions, the number of locales on which to
+execute a program is specified on the executable's command-line.  This
+can be set either using the -nl flag, or by assigning to the built-in
+numLocales configuration constant using the normal mechanisms.  So, to
+execute on four locales, one could use:
+
+    ./a.out -nl 4
+or: ./a.out --numLocales=4
+or: ./a.out -snumLocales=4
+
+For users running with $CHPL_COMM == none (the default), only one
+locale can be used.  See $CHPL_HOME/doc/README.multilocale for more
+information about executing on multiple locales.
+
+
+-----------------------------------------
+Controlling the amount of non-user output
+-----------------------------------------
+
+The compiler-generated executable supports "verbose" and "quiet" modes
+that control the amount of Chapel-generated information printed by the
+executable.
+
+Using the --verbose flag (-v for short) will print out extra
+information.  In the current implementation, it causes each locale to
+print out a message when it starts executing.
+
+Using the --quiet flag (-q for short) causes run-time warnings that
+are printed by default to be suppressed.
+
+
 --------------
 Running in gdb
 --------------
 
-The compiler-generated executable also has a --gdb flag that can be
-used to launch the program within a gdb session.  For best results,
-make sure that your program has been compiled using the chpl
-compiler's -g flag.
+The compiler-generated executable has a --gdb flag that can be used to
+launch the program within a gdb session.  For best results, make sure
+that your program has been compiled using the chpl compiler's -g flag.
 
 The utility of this feature depends greatly on your familiarity with
 the Chapel generated code.  However, if your program is crashing or
 running into a runtime error, you can often determine where that is
-taking place by looking at a stack trace after the crash.  In
-addition, scalar Chapel variables can often be inspected using 
-"p <name>" (or "p _<name><TAB>" in cases where the compiler has had to
-rename the variable).
+taking place by looking at a stack trace within gdb.  In addition,
+scalar Chapel variables can often be inspected using "p <name>" 
+(or "p _<name><TAB>" in cases where the compiler has renamed the 
+variable).
 
 Over time, we plan to improve our ability to debug the generated C
 code for a Chapel program.  If you find yourself debugging the
 generated code a lot and need help or have requests for better
 support, please let us know so that we can prioritize accordingly.
-
-
------------------------------
-Setting the Number of Locales
------------------------------
-
-We have added support for the ability to specify the number of locales
-on which to execute the program, which can be set using the -nl flag,
-or by assigning the built-in numLocales configuration constant using
-the normal mechanisms.  So, to execute on one locale, the user could
-use:
-
-    ./a.out -nl 1
-or: ./a.out --numLocales=1
-or: ./a.out -snumLocales=1
-
-For users running with $CHPL_COMM == none (the default for current
-users), only one locale can be used.  Chapel's multi-locale execution
-is currently under development, and we expect to have a prototype
-available in the next release.
-
-
------------------------
-Running in Verbose Mode
------------------------
-
-The compiler-generated executable supports a --verbose flag (-v for
-short) that will print out extra information not explicitly specified
-in the user's code.  Currently, this flag is only used to indicate the
-number of locales being used for program execution, but in the future
-we expect it to have broader impact.
 
 
 -------------------------
@@ -125,7 +128,7 @@ The flags are as follows:
                          program and the high-water mark.
 
   --memtrack            : causes all memory events to be tracked using 
-                          a hash table at runtime in order to find
+                          a hash table at run-time in order to find
                           memory errors such as freeing a pointer that
                           is not currently allocated.  The table can
                           be printed out during execution using a call

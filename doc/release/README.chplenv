@@ -3,8 +3,8 @@ Setting up your environment for Chapel
 ======================================
 
 To get started with Chapel, there are four environment settings that
-are strongly recommended for effective use of the release, and a
-few other optional settings that are useful for cross-compiling or
+are strongly recommended for effective use of the release, and a few
+other optional settings that are useful for cross-compiling or
 overriding the default settings.
 
 
@@ -20,7 +20,7 @@ Recommended Settings
 
 
 2) Set the CHPL_HOST_PLATFORM environment variable to represent the
-   platform on which you're working.  The best way to determine this
+   platform on which you're working.  The simplest way to set this
    value is by running the $CHPL_HOME/util/platform.pl script.  For
    example:
 
@@ -29,7 +29,7 @@ Recommended Settings
    This value is used to read platform-specific settings from
    Makefiles and to create subdirectories for storing
    platform-specific files during the build process.  The strings for
-   our currently-supported platforms are as follows:
+   our currently-supported host platforms are as follows:
 
         cygwin  : Cygwin (Windows) platforms
         darwin  : Macintosh OS X platforms
@@ -39,11 +39,11 @@ Recommended Settings
 
    The Chapel Makefiles and sources are designed to work for any
    UNIX-compatible environment that supports a GNU-compatible make
-   utility.  The list above represents those platforms that we access
+   utility.  The list above represents the platforms that we access
    and test frequently.  We are interested in making our code
    framework portable to other platforms -- if you are working on a
-   platform other than the ones listed above, please contact us at:
-   chapel_info@cray.com
+   platform other than the ones listed above, please refer to the
+   README.building file and/or contact us at: chapel_info@cray.com
 
 
 3) Set your path to include the directory
@@ -60,18 +60,18 @@ Recommended Settings
 
 
 The setchplenv.* scripts in the $CHPL_HOME/util/ directory contain
-lines that set up these variables for various shells when they are
-sourced from the $CHPL_HOME directory.  Frequent Chapel users can
-insert these lines into their shell's dotfile by hard-coding the
-definition of $CHPL_HOME and removing the check to see that the script
-is being run from the chapel/ directory.
+commands that set these variables up for various shells when they are
+sourced from the $CHPL_HOME directory.  Frequent Chapel users will
+likely want to copy these lines into their shell dotfile(s) by
+hard-coding the definition of $CHPL_HOME and removing the check to
+ensure that the script is being invoked from the chapel/ directory.
 
 
 -----------------
 Optional Settings
 -----------------
 
-1) If you are cross-compiling for a platform other than
+1) If you are cross-compiling for a platform other than your
    $CHPL_HOST_PLATFORM, set the CHPL_TARGET_PLATFORM environment
    variable to describe that platform.  Currently supported
    cross-compilation target platforms include:
@@ -90,8 +90,8 @@ Optional Settings
    used to build the sources.  CHPL_HOST_COMPILER is the compiler used
    to build the Chapel compiler itself to run on CHPL_HOST_PLATFORM.
    CHPL_TARGET_COMPILER is the compiler used to build the runtime
-   libraries and generated code for CHPL_TARGET_PLATFORM.  Current
-   values and defaults are as follows:
+   libraries and generated code for CHPL_TARGET_PLATFORM.  Currently
+   supported values are as follows:
 
         cray-mta          : the Cray compiler for multithreaded architectures
         cray-vec          : the Cray compiler for vector architectures
@@ -100,17 +100,17 @@ Optional Settings
         cray-xt-pgi       : the Cray XT compiler using the PGI backend
         intel             : the Intel compiler suite -- icc and icpc
         gnu               : the GNU compiler suite -- gcc and g++
-	pathscale         : the Pathscale compiler suite -- pathCC and pathcc
-	pgi               : the PGI compiler suite -- pgCC and pgcc
+	pathscale         : the Pathscale compiler suite -- pathcc and pathCC
+	pgi               : the PGI compiler suite -- pgcc and pgCC
 
-   If not set, these variables each default to a value based on the
+   The defaults for these variables depend on the value of the
    corresponding platform variable:
 
         platform      compiler
         --------      --------
         mta, xmt  ->  cray-mta
         x1        ->  cray-vec
-        xt-cnl    ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-*-xc module)
+        xt-cnl    ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
         other     ->  gnu
 
 
@@ -151,19 +151,14 @@ Optional Settings
    communication.  Current options are:
 
         none   : only supports single-locale execution
-        armci  : use the PNNL ARMCI-based runtime
         gasnet : use the Berkeley GASNet-based runtime
 
-   If unset, CHPL_COMM defaults to "none".  
-
-   STATUS NOTE: multi-locale parallelism is not a supported feature in
-   this release, therefore, use settings other than "none" at your own
-   risk.
+   If unset, CHPL_COMM defaults to "none".
 
 
-----------------------------
-Command Line Option Defaults
-----------------------------
+-------------------------------------
+Compiler Command Line Option Defaults
+-------------------------------------
 
 Most of the compiler's command line options support setting a default
 value for the option via an environment variable.  To see a list of

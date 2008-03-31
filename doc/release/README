@@ -6,13 +6,14 @@ This directory contains the following documentation:
 
   README.bugs        : how to report bugs or suggestions to the Chapel team
   README.building    : information about building the Chapel compiler
-  README.chplenv     : setting up your shell environment to use Chapel
+  README.chplenv     : setting up your environment to use Chapel
   README.compiling   : how to use the Chapel compiler to compile code
-  README.cygwin      : notes for Cygwin users
   README.executing   : execution options for Chapel programs
+  README.multilocale : how to execute Chapel on multiple locales
+  README.xt-cnl      : notes for Cray XT (UNICOS/lc) users
+  README.cygwin      : notes for Cygwin users
   README.extern      : technical note on interfacing with external C routines
   README.format      : technical note on controlling value-to-string formatting
-  README.multilocale : how to execute Chapel on multiple locales
   README.prereqs     : prerequisites for using Chapel
 
   chapelLanguageSpec.pdf : the current draft of the Chapel language
@@ -23,9 +24,9 @@ This directory contains the following documentation:
                      Random Access, and FFT in Chapel
 
   hpccTutorial.pdf : a companion paper to the previous that provides a
-                     detailed walkthrough of our Chapel
-                     implementations of the HPCC benchmarks to serve
-                     as a tutorial to Chapel and our implementations
+                     detailed walkthrough of our implementations of
+                     the HPCC benchmarks to serve as a tutorial to
+                     Chapel and the codes themselves
 
   quickReference.pdf : a one-sheet, tri-fold overview of Chapel syntax
                        for quick reference
@@ -35,13 +36,13 @@ This directory contains the following documentation:
 For more Information
 --------------------
 
-For further information about Chapel, please refer to the pre-print of
-"Parallel Programmability and the Chapel Language" (to appear in an
-upcoming special issue of IJHPCA on High Productivity Programming
-Languages and Models), available at:
+For additional information about Chapel, please refer to:
 
-  http://www.highproductivity.org/HPPLM/final-chamberlain.pdf
+* "Parallel Programmability and the Chapel Language" by Bradford
+  L. Chamberlain, David Callahan, and Hans P. Zima, published in the
+  International Journal of High Performance Computing Applications,
+  August 2007, 21(3): 291-312.
 
-Or the other papers and materials available at our website:
+* Our website:
 
   http://chapel.cs.washington.edu

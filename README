@@ -68,8 +68,9 @@ For more detailed information about...      refer to...
   ...setting up your environment             ...doc/README.chplenv
   ...using the compiler                      ...doc/README.compiling
   ...executing Chapel programs               ...doc/README.executing
-  ...implementation status                   ...STATUS
+  ...executing programs on multiple locales  ...doc/README.multilocale
   ...changes since the last release          ...CHANGES
+  ...implementation status                   ...STATUS
   ...reporting bugs                          ...doc/README.bugs
   ...example Chapel programs                 ...examples/README
   ...an overview of the Chapel language      ...doc/chapelLanguageSpec.pdf, Ch5
@@ -81,5 +82,6 @@ For more detailed information about...      refer to...
   ...calling C routines from Chapel          ...doc/README.extern
   ...formatting value-to-string conversions  ...doc/README.format
   ...notes for Cygwin users                  ...doc/README.cygwin
+  ...notes for Cray XT (UNICOS/lc) users     ...doc/README.xt-cnl
   ...third-party software that we use        ...third-party/README
   ...the GASNet communication library        ...third-party/gasnet/README

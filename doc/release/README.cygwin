@@ -2,9 +2,9 @@
 Cygwin notes
 ============
 
-* For best results on Cygwin, please unpack the release in a directory
-  whose path contains no spaces.  For example, unpacking the release
-  in your root directory (c:/) to create c:/chapel works very well.
+* For best results on Cygwin, unpack the release in a directory whose
+  path contains no spaces.  For example, unpacking the release in your
+  root directory (c:/) to create c:/chapel works very well.
   Currently, our compiler-generated Makefiles break when the compiler
   and runtime have an absolute path containing spaces.  If any Cygwin
   experts have tips on addressing this issue in a portable way, please
@@ -25,7 +25,7 @@ Cygwin notes
 
 
 * For best results, avoid using WinZip to unpack the release -- doing
-  so may cause text files such as Makefiles to have their linefeeds
+  so can cause text files such as Makefiles to have their linefeeds
   converted into carriage return/linefeed combinations, which can
   break the build process.  For best results, use Cygwin's gunzip and
   tar utilities to unpack the release in the traditional way:

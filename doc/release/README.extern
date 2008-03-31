@@ -5,8 +5,8 @@ Initial support for calling C routines from Chapel
 This README describes some initial support that we have added to the
 compiler for calling from Chapel to C.  This mechanism should be
 considered a stopgap technology until we have developed and
-implemented a more robust story, which is why it's being defined in
-this README rather than the language specification.
+implemented more robust concepts, which is why it's described in this
+README rather than the language specification.
 
 
 How to call a C routine from Chapel
@@ -25,24 +25,24 @@ How to call a C routine from Chapel
    C functions which return values that you wish to refer to within
    your Chapel program must have those return types declared (the
    Chapel compiler cannot infer the return type as it does with Chapel
-   functions since it does not have access to the C source code).  To
-   make the function above return a C "double", it would be declared:
+   functions since it does not analyze the C source code).  To make
+   the function above return a C "double", it would be declared:
 
        _extern def foo(): real;
 
    All C types must be expressed in terms of their Chapel equivalents.
    This can cause portability issues in certain cases due to the fact
-   that C types don't have well-defined widths.  For example, if
+   that C types don't have well-defined sizes.  For example, if
    function foo returns a C "int", that type could correspond to a
-   Chapel int(32) or int(64) (or other int size?) depending on your C
-   compiler and platform.  The burden of making types match is on the
-   user, though mismatches will typically be reported during Chapel's
-   C compilation step.
+   Chapel int(32) or an int(64) or possibly some other int size
+   depending on your C compiler and platform.  The burden of making
+   types match is on the user, though any mismatches ought to be
+   flagged during Chapel's C compilation step.
 
-   Similarly, functions that take argument must have those arguments
-   declared.  Types of function arguments may be omitted in which case
-   the types will be inferred based on the Chapel callsite.  For
-   example, the following Chapel code:
+   Similarly, external functions that expect arguments must declare
+   those arguments.  Types of function arguments may be omitted, in
+   which case the types will be inferred based on the Chapel callsite.
+   For example, the following Chapel code:
 
        _extern def foo(x: int, y): real;
 
@@ -50,21 +50,22 @@ How to call a C routine from Chapel
 
        foo(a, b);
 
-   Would imply that function foo takes two 32-bit integer values
-   (likely an "int" or "short" in most C implementations) and returns
-   a 64-bit real (double).
+   Would imply that external function foo takes two 32-bit integer
+   values (likely an "int" or "short" in most C implementations) and
+   returns a 64-bit real (double).
 
    Note that Chapel C strings can be passed to C functions, though
    warnings can occur during C compilation due to mismatches between
-   the const-ness of the char*'s.
+   the const-ness of the char*'s used to implement the strings.
 
    More interesting types like records and classes are currently
    difficult to pass to C effectively.  Use at your own risk.
-   Similarly, C types that don't have a Chapel equivalent (e.g.,
-   size_t) are difficult to interface with currently.
+   Similarly, C types that don't have a direct Chapel equivalent
+   (e.g., size_t) are currently difficult to interface with in a
+   portable manner.
 
    C varargs functions can be declared using Chapel's varargs ("...")
-   syntax.  For example, the following declaration prototype's C's
+   syntax.  For example, the following declaration prototypes C's
    printf function:
 
        _extern def printf(fmt: string, vals...?numvals): int;
@@ -79,7 +80,7 @@ How to call a C routine from Chapel
 
    On your Chapel compile command line, list the header files that
    contain the external C routine prototypes, as well as the source
-   (.c) or object (.o) files that contain their implementation.  For
+   (.c) or object (.o) files that contain their definition.  For
    example, if the foo() function defined above was defined in foo.h
    and foo.c, it could be added to the compilation using either:
 
@@ -100,7 +101,8 @@ or:    chpl foo.h foo.o myProgram.chpl (if foo.c had already been compiled)
 
    * During Chapel's link step, any .o files created by this C compile
      step will be linked to the .o files listed on the compiler's
-     command-line.
+     command-line as well as the compiler-generated code and runtime
+     libraries.
 
 
 Future Directions
@@ -108,6 +110,6 @@ Future Directions
 
 The current implementation was implemented as a quick hack to give
 users access to C in limited ways.  Over time, we will be developing a
-stronger story for calling between C and Chapel.  If the features
+stronger story for making calls between C and Chapel.  If the features
 above are insufficient for your needs in the near-term, please let us
-know.
+know at: chapel_info@cray.com.
