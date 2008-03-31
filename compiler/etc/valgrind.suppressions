@@ -8,16 +8,10 @@
    fun:__nscd_getpwuid_r
    fun:getpwuid_r@@GLIBC_2.1.2
    fun:getpwuid
-   fun:_Z18ensureTmpDirExistsv
-   fun:_Z14genIntFilenamePKc
-   fun:_Z18mysystem_getresultPKcS0_i
-   fun:_Z13runUtilScriptPKc
-   fun:_Z16get_CHPL_THREADSv
-   fun:_Z17setDefaultFSerialv
 }
 
 {
-   getpwuid-is-a-pain3
+   getpwuid-is-a-pain2
    Memcheck:Param
    socketcall.sendto(msg)
    fun:send
@@ -27,9 +21,4 @@
    fun:__nscd_getpwuid_r
    fun:getpwuid_r@@GLIBC_2.2.5
    fun:getpwuid
-   fun:_Z18ensureTmpDirExistsv
-   fun:_Z14genIntFilenamePKc
-   fun:_Z18mysystem_getresultPKcS0_i
-   fun:_Z13runUtilScriptPKc
-   fun:_Z16get_CHPL_THREADSv
 }
