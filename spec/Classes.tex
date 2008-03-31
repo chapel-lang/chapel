@@ -19,8 +19,9 @@ class-type:
   identifier ( named-expression-list )
 \end{syntax}
 For non-generic classes, the class name is sufficient to specify the
-type.  For generic classes, the generic fields must be specified and a
-call to the constructor is used to specify the type.
+type.  For generic classes, the generic fields must be ``passed'' to
+the class name.  This is similar to a constructor call except without
+the \chpl{new} keyword.
 
 \subsection{Class Declarations}
 \label{Class_Declarations}
@@ -57,8 +58,9 @@ The body of a class declaration consists of a sequence of statements
 where each of the statements either defines a variable (called a
 field), a function (called a method), or a type.
 
-If a class contains a type alias or a parameter, the class is generic.
-Generic classes are described in~\rsec{Generics}.
+If a class contains a variable without a specified type or
+initialization expression, a type alias or a parameter, the class is
+generic.  Generic classes are described in~\rsec{Generics}.
 
 \subsection{Class Assignment}
 \label{Class_Assignment}
@@ -241,8 +243,9 @@ class ThreeArray {
 
 A class constructor is defined by declaring a method with the same
 name as the class.  The constructor is used to create instances of the
-class.  When the constructor is called, memory is allocated to store a
-class instance.
+class and must be called by preceding a call to it with the \chpl{new}
+keyword.  When the constructor is called, memory is allocated to store
+a class instance.
 
 \subsubsection{The Default Constructor}
 \label{The_Default_Constructor}
@@ -266,10 +269,10 @@ class C {
 then instances of the class can be created by calling the default
 constructor as follows:
 \begin{itemize}
-\item The call \chpl{C()} is equivalent to \chpl{C(0,3.14,"Hello, World!")}.
-\item The call \chpl{C(2)} is equivalent to \chpl{C(2,3.14,"Hello, World!")}.
-\item The call \chpl{C(z="")} is equivalent to \chpl{C(0,3.14,"")}.
-\item The call \chpl{C(0,0.0,"")} is equivalent to \chpl{C(0,0.0,"")}.
+\item The call \chpl{new C()} is equivalent to \chpl{C(0,3.14,"Hello, World!")}.
+\item The call \chpl{new C(2)} is equivalent to \chpl{C(2,3.14,"Hello, World!")}.
+\item The call \chpl{new C(z="")} is equivalent to \chpl{C(0,3.14,"")}.
+\item The call \chpl{new C(0,0.0,"")} is equivalent to \chpl{C(0,0.0,"")}.
 \end{itemize}
 \end{example}
 

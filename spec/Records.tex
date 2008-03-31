@@ -52,6 +52,14 @@ value classes.  They do not need to be reclaimed since the data is
 recovered when the variable goes out of scope.  Records do not support
 dynamic dispatch and are assigned by value.
 
+Note that even though records do not allocate storage, the \chpl{new}
+keyword is still required to construct an instance.
+\begin{rationale}
+The \chpl{new} keyword disambiguates types from values given the close
+relationship between constructors and type specifiers for classes and
+records.
+\end{rationale}
+
 \subsubsection{Records as Value Classes}
 \label{Records_as_Value_Classes}
 

@@ -234,7 +234,7 @@ class Node {
   var next: Node(eltType);
 }
 \end{chapel}
-The call \chpl{Node(real, 3.14)} creates a node in the linked list
+The call \chpl{new Node(real, 3.14)} creates a node in the linked list
 that contains the value \chpl{3.14}.  The \chpl{next} field is set to
 nil.  The type specifier \chpl{Node} is a generic type and cannot be
 used to define a variable.  The type specifier \chpl{Node(real)}
@@ -270,7 +270,7 @@ class IntegerTuple {
   var data: size*int;
 }
 \end{chapel}
-The call \chpl{IntegerTuple(3)} creates an instance of the
+The call \chpl{new IntegerTuple(3)} creates an instance of the
 \chpl{IntegerTuple} class that is instantiated over parameter
 \chpl{3}.  The field \chpl{data} becomes a 3-tuple of integers.  The
 type of this class instance is \chpl{IntegerTuple(3)}.  The type
@@ -289,7 +289,8 @@ the default constructor that has no specified type and no default
 value.  This makes the default constructor generic.  When the default
 constructor is instantiated, the type is instantiated where the type
 of the field becomes the type of the actual argument passed to the
-default constructor.
+default constructor.  When specifying the type of the class or record,
+the type of this field should be ``passed'' to the specifier.
 
 \begin{example}
 The following code defines another class called \chpl{Node} that
@@ -304,14 +305,15 @@ class Node {
 }
 \end{chapel}
 A node with integer element type can be defined in the call to the
-constructor.  The call \chpl{Node(1)} defines a node with the value
-\chpl{1}.  The code
+constructor.  The call \chpl{new Node(1)} defines a node with the
+value \chpl{1}.  The code
 \begin{chapel}
-var list = Node(1);
-list.next = Node(2);
+var list = new Node(1);
+list.next = new Node(2);
 \end{chapel}
 defines a two-element list with nodes containing the values \chpl{1}
-and \chpl{2}.
+and \chpl{2}.  The type of each class could be specified
+as \chpl{Node(int)}.
 \end{example}
 
 \subsubsection{Generic Methods}
@@ -434,7 +436,7 @@ record Stack {
   var top: MyNode(itemType); // top node on stack linked list
 
   def push(item: itemType) {
-    top = MyNode(itemType, item, top);
+    top = new MyNode(itemType, item, top);
   }
 
   def pop() {

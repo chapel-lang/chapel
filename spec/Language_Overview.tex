@@ -508,7 +508,7 @@ class circle {
     return pi*(radius**2);
   }
 }
-var x = circle(radius=1.0);
+var x = new circle(radius=1.0);
 var y = x;
 
 y.radius = 2.0;
@@ -546,7 +546,7 @@ record point {
     return max(abs(x),abs(y));
   }
 }
-var p = point(0.0,1.0);
+var p = new point(0.0,1.0);
 var q = p;
 
 q.x = 2.0;
@@ -1036,7 +1036,7 @@ values read from the file \chpl{inMatrix.dat}.
 \begin{chapel}
 var A: [D] real;
 
-var inputFile = file("inMatrix.dat");
+var inputFile = new file("inMatrix.dat");
 inputFile.open();
 for (i, j) in D do inputFile.read(A(i,j));
 inputFile.close();
@@ -1073,7 +1073,7 @@ class circle {
   }
 }
 
-var x = circle(1.0);
+var x = new circle(1.0);
 writeln(x);
 
 writeln("Writing a variable of domain type:");
@@ -1120,7 +1120,7 @@ class circle {
   }
 }
 
-var x = circle(1.0);
+var x = new circle(1.0);
 writeln(x);
 \end{chapel}
 

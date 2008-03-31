@@ -1,14 +1,15 @@
 \sekshun{Input and Output}
 \label{Input_and_Output}
 
-Chapel provides a built-in \chpl{file} type to handle input and output
-to files using functions and methods called \chpl{read}, \chpl{readln}, 
+Chapel provides a built-in \chpl{file} class to handle input and
+output to files using functions and methods
+called \chpl{read}, \chpl{readln},
 \chpl{write}, and \chpl{writeln}.
 
 \subsection{The {\em file} type}
 \index{file type}
 
-The file type contains the following fields:
+The file class contains the following fields:
 \begin{itemize}
 \item
 The \chpl{filename} field is a \chpl{string} that contains the name of
@@ -151,7 +152,7 @@ class C: Writer {
   }
 }
 
-var c = C();
+var c = new C();
 c.write(41, 32, 23, 14);
 writeln(c);
 \end{chapel}
