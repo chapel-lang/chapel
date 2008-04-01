@@ -5,8 +5,8 @@ Chapel provides high-level abstractions that allow programmers to
 exploit locality by defining the affinity of data and tasks.  This is
 accomplished by associating both data objects and tasks with abstract
 {\em locales}. To provide a higher-level mechanism, Chapel allows a
-mapping from domains to locales to be specified. This mapping is
-called a {\em distribution} and it guides the placement of elements
+mapping from domain indices to locales to be specified. This mapping
+is called a {\em distribution} and it guides the placement of elements
 within arrays and the placement of tasks over domains.
 
 \index{local}
@@ -21,9 +21,15 @@ data known to be local.
 \label{Locales}
 \index{locales}
 
-A locale abstracts a processor or node in a parallel computer system,
-or the basic component in the computer system where local memory can
-be accessed uniformly.
+A \emph{locale} is a portion of the target parallel architecture that
+has processing and storage capabilities.  Chapel implementations
+should typically define locales for a target architecture such that
+tasks running within a locale have roughly uniform access to values
+stored in the locale's local memory and longer latencies for accessing
+the memories of other locales.  As an example, a cluster of multicore
+nodes or SMPs would typically define each node to be a locale.  In
+contrast a pure shared memory machine would be defined as a single
+locale.
 
 \subsubsection{The Locale Type}
 \label{The_Locale_Type}
@@ -45,7 +51,7 @@ def locale.id: int;
 \end{protohead}
 \begin{protobody}
 Returns a unique integer for each locale, from 0 to the number of
-locales.
+locales less one.
 \end{protobody}
 
 \begin{protohead}
@@ -73,16 +79,44 @@ value of the specified return type.
 
 Chapel provides a predefined environment that stores information about
 the locales used during program execution.  This {\em execution
-environment} contains definitions for the array of locales
-(\chpl{Locales}), a domain for that array (\chpl{LocaleSpace}), and
-the number of locales (\chpl{numLocales}).
+environment} contains definitions for the array of locales on which
+the program is executing (\chpl{Locales}), a domain for that array
+(\chpl{LocaleSpace}), and the number of locales (\chpl{numLocales}).
 \begin{chapel}
 config const numLocales: int;
 const LocaleSpace: domain(1) = [0..numLocales-1];
 const Locales: [LocaleSpace] locale;
 \end{chapel}
-When a program starts, a single task is executing.  It is running on
-the locale given by \chpl{Locales(0)}.
+When a Chapel program starts, a single task executes \chpl{main}
+on \chpl{Locales(0)}.
+
+Note that the Locales array is typically defined such that distinct
+elements refer to distinct resources on the target parallel
+architecture.  In particular, the Locales array itself should not be
+used in an oversubscribed manner in which a single processor resource
+is represented by multiple locale values (except during development).
+Oversubscription should instead be handled by creating an aggregate of
+locale values and referring to it in place of the Locales array.
+
+\begin{rationale}
+This design choice encourages clarity in the program's source text and
+enables more opportunities for optimization.
+
+For development purposes, oversubscription is still very useful and
+this should be supported by Chapel implementations to allow
+development on smaller machines.
+\end{rationale}
+
+\begin{example}
+The code
+\begin{chapel}
+const MyLocales: [loc in 0..numLocales*4] locale = Locales(loc%numLocales);
+on MyLocales(i) ...
+\end{chapel}
+defines a new array \chpl{MyLocales} that is four times the size of
+the \chpl{Locales} array.  Each locale is added to
+the \chpl{MyLocales} array four times in a round-robin fashion.
+\end{example}
 
 \subsubsection{The {\em here} Locale}
 \label{here}
@@ -118,33 +152,40 @@ locale-access-expression:
 When the expression is a class, the access returns the locale on which
 the class object exists rather than the reference to the class.  If
 the expression is a value, it is considered local.  The implementation
-may warn about this behavior.
+may warn about this behavior.  If the expression is a locale, it is
+returned directly.
 
 \begin{example}
-Given some class C, the code
+Given a class C and a record R, the code
 \begin{chapel}
-on Locales(0) {
+on Locales(1) {
   var x: int;
   var c: C;
-  on Locales(1) {
-    on Locales(2) {
+  var r: R;
+  on Locales(2) {
+    on Locales(3) {
       c = new C();
+      r = new R();
     }
     writeln(x.locale);
     writeln(c.locale);
+    writeln(r.locale);
   }
 }
 \end{chapel}
 results in the output
 \begin{chapel}
-0
-2
+1
+3
+1
 \end{chapel}
 The variable \chpl{x} is declared and exists on \chpl{Locales(0)}.
 The variable \chpl{c} is a class reference.  The reference exists
-on \chpl{Locales(0)} but the object itself exists
-on \chpl{Locales(2)}.  The locale access returns the locale where the
-object exists.
+on \chpl{Locales(1)} but the object itself exists
+on \chpl{Locales(3)}.  The locale access returns the locale where the
+object exists.  Lastly, the variable \chpl{r} is a record and has
+value semantics.  It exists on \chpl{Locales(1)} even though it is
+assigned a value on a remote locale.
 \end{example}
 
 \subsection{Invoking Remote Tasks}
@@ -155,7 +196,7 @@ with a different locale in two ways: via distributions as discussed
 in~\rsec{Distributions} or with an \sntx{on-statement} as discussed
 below.
 
-\subsubsection{On}
+\subsubsection{The On Statement}
 \label{On}
 \index{on@\chpl{on}}
 
@@ -170,11 +211,6 @@ The locale of the expression is automatically queried as described
 in~\rsec{Querying_the_Locale_of_a_Variable}.  Execution of the
 statement occurs on this specified locale and then continues after
 the \chpl{on-statement}.
-
-By default, when new variables and data objects are created, they are
-created in the locale where the task is running.  This locale can be
-changed by using the \chpl{on} keyword as discussed
-in~\rsec{remote_variable_declarations}.
 
 The following statements may not be lexically enclosed in
 on-statements: yield-statements and return-statements.
@@ -191,10 +227,10 @@ class Tree {
   def nodes {
     on this yield this;
     if left then
-      forall t in left.nodes do
+      for t in left.nodes do
         yield t;
     if right then
-      forall t in right.nodes do
+      for t in right.nodes do
         yield t;
   }
 }
@@ -203,7 +239,7 @@ Given this code and a binary tree of type \chpl{Tree} stored in
 variable \chpl{tree}, then we can use the \chpl{nodes} iterator to
 iterate over the tree with the following code:
 \begin{chapel}
-forall t in tree.nodes {
+for t in tree.nodes {
   // body executed on t as specified in nodes
 }
 \end{chapel}
@@ -219,8 +255,10 @@ by reordering the product of iteration.
 \subsubsection{Remote Variable Declarations}
 \label{remote_variable_declarations}
 
-Variables can be defined within an \sntx{on-statement} to define them
-on a particular locale such that the scope of the variables is outside
+By default, when new variables and data objects are created, they are
+created in the locale where the task is running.  Variables can be
+defined within an \sntx{on-statement} to define them on a particular
+locale such that the scope of the variables is outside
 the \sntx{on-statement}.  This is accomplished using a similar syntax
 but omitting the \chpl{do} keyword and braces.  The syntax is given
 by:
@@ -232,6 +270,10 @@ remote-variable-declaration-statement:
 \subsection{Distributions}
 \label{Distributions}
 \index{distributions}
+
+\begin{openissue}
+This section is largely forthcoming.
+\end{openissue}
 
 A mapping from domain index values to locales is called a {\em
 distribution}.
