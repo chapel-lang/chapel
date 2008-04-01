@@ -22,11 +22,26 @@ maxThreads warning issue
 ------------------------
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
 
+output differs on different machines
+------------------------------------
+[Error matching program output for release/examples/taskParallel]
 
 differing memory sizes on different platforms
 ---------------------------------------------
 [Error matching program output for memory/shannon/memstatPrint]
 [Error matching program output for memory/shannon/printFinalMemStat]
+
+
+========================
+opt-specific regressions
+========================
+
+--no-copy-propagation
+--no-expand-iterators-inline-opt
+--no-scalar-replace-array-wrappers
+--no-local
+-----------------------------------
+[Error matching program output for release/examples/taskParallel]
 
 
 =============================
@@ -296,6 +311,7 @@ use before value set warning
 small full/empty sizes
 ----------------------
 [Error matching program output for release/examples/prodCons]
+[Error matching program output for release/examples/taskParallel]
 
 sparse code not running correctly
 ---------------------------------
