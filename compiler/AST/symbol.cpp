@@ -835,23 +835,37 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
         wrapper->_this = wrapper_formal;
       if (formal->hasPragma("is meme"))
         wrapper->_this->defPoint->insertAfter(new CallExpr(PRIMITIVE_MOVE, wrapper->_this, wrapper_formal));
-      copy_map.put(formal, wrapper_formal);
       wrapper->insertFormalAtTail(wrapper_formal);
-      if (formal->type->symbol->hasPragma("ref"))
-        call->insertAtTail(new CallExpr(PRIMITIVE_SET_REF, wrapper_formal));
-      else if (specializeDefaultConstructor && wrapper_formal->typeExpr) {
+      Symbol* temp;
+      if (formal->type->symbol->hasPragma("ref")) {
+        temp = new VarSymbol("_tmp");
+        temp->isCompilerTemp = true;
+        temp->canParam = true;
+        if (formal->isTypeVariable)
+          temp->isTypeVariable = true;
+        wrapper->insertAtTail(new DefExpr(temp));
+        wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, new CallExpr(PRIMITIVE_SET_REF, wrapper_formal)));
+      } else if (specializeDefaultConstructor && wrapper_formal->typeExpr) {
+        temp = new VarSymbol("_tmp");
+        temp->isCompilerTemp = true;
+        temp->canParam = true;
+        if (formal->isTypeVariable)
+          temp->isTypeVariable = true;
+        wrapper->insertAtTail(new DefExpr(temp));
         BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
         wrapper->insertAtTail(typeExpr);
-        call->insertAtTail(new CallExpr("_createFieldDefault", typeExpr->body.tail->remove(), wrapper_formal));
+        wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, new CallExpr("_createFieldDefault", typeExpr->body.tail->remove(), wrapper_formal)));
       } else
-        call->insertAtTail(wrapper_formal);
+        temp = wrapper_formal;
+      copy_map.put(formal, temp);
+      call->insertAtTail(temp);
       if (Symbol* value = paramMap->get(formal))
         paramMap->put(wrapper_formal, value);
       if (specializeDefaultConstructor && strcmp(name, "_construct__tuple"))
         if (!formal->isTypeVariable && !paramMap->get(formal) && formal->type != dtMethodToken)
           if (wrapper->_this->type->getField(formal->name)->defPoint->parentSymbol == wrapper->_this->type->symbol)
             if (!isShadowedField(formal))
-              wrapper->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, wrapper->_this, new_StringSymbol(formal->name), wrapper_formal));
+              wrapper->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, wrapper->_this, new_StringSymbol(formal->name), temp));
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
       call->insertAtTail(paramMap->get(formal));
