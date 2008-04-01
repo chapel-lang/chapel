@@ -183,6 +183,9 @@ buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
     }
     count++;
   }
+  if (count == 2) {
+    USR_FATAL(tupleBlock, "tuple variable declaration has only one component");
+  }
   tupleBlock->insertAtHead(new DefExpr(tmp, init, type));
   return tupleBlock;
 }

@@ -1,1 +1,1 @@
-1
+test_de_1_tuple_var_decl.chpl:1: error: tuple variable declaration has only one component
