@@ -2,8 +2,6 @@
 Release Changes List
 ====================
 
-***STOPPED AT 2008-03-28 10:55:41***  TODO: remove this
-
 ===========
 version 0.7
 ===========
@@ -44,13 +42,13 @@ Changes to Chapel Language:
 
 Newly Implemented Features:
 ---------------------------
-- execution using multiple locales (see: TODO???)
+- execution using multiple locales (see: doc/README.multilocale)
 - use of on clauses taking locale/lvalue expressions to generate remote tasks
   e.g., "on Locales(i) do ...",  "var x = ...;  ...  on x do ..."
 - use of <expression>.locale to query the locale on which an lvalue lives
   e.g., "var x = ...;  ... x.locale ..."
 - task pool to support the creation of more tasks than executing threads
-  (see README.threads for more details) <-- TODO
+  (see doc/README.threads for more details)
 - removed support for real(128), imag(128), complex(256) for the time being
 - strengthened distinction between type specifiers and constructor calls
 - enumerated and opaque arrays now support iteration
@@ -71,25 +69,35 @@ Semantic Changes:
 Syntactic/Naming Changes:
 -------------------------
 - renamed opaque domain's .new() method to .create()
+- renamed the (undocumented) Locales domain from LocalesDomain to LocaleSpace
 
 Documentation:
 --------------
-- new README.multilocale file explaining execution on multiple locales (TODO ???)
-- rewrote "Parallelism and Synchronization" chapter of the language spec.
-- refreshed the "Locality and Distribution" chapter of the language spec.
-- made other updates to the language spec. to reflect changes in this file
+- new README files in the doc/ directory:
+  - README.multilocale file explains how to execute using multiple locales
+  - README.threads explains how tasks are implemented using threads
+- language specification revisions:
+  - greatly improved the "Parallelism and Synchronization" chapter
+  - greatly improved the "Locality and Distribution" chapter
+  - made other updates to reflect other changes mentioned in this file
+  - removed most of the language overview section, believing it needs updating
+- updated the quick reference document to include locality concepts
 - updated HPCC documents to reflect "new" keyword and enumerated type qualifiers
-- TODO: add other new READMEs here
+- generally refreshed the README, CHANGES, STATUS files
 
 Example Codes:
 --------------
-- added a multilocale.chpl example to show multi-locale execution
-- made automated testing of opaque.chpl deterministic
-- added "new" keyword to tests that create class instances
-- for tests that use files, changed access mode from string to enum
-- added enumeration type qualifiers to uses of enumerated types
+- added new example codes:
+  - multilocale.chpl to serve as a multi-locale execution tutorial
+  - taskParallel.chpl to serve as an introduction to task-parallel concepts
+  - varargs.chpl to demonstrate the user of variable argument functions
+- updated existing examples:
+  - added "new" keyword to tests that create class instances
+  - for tests that use files, changed access mode from string to enum
+  - added enumeration type qualifiers to uses of enumerated types
+  - changed opaque.chpl test to rename the opaque domain .create() method
 - changed blockLU's input data to improve stability across compilers
-- changed opaque.chpl test to use new .create() method
+- made automated testing of opaque.chpl deterministic
 
 Standard Modules:
 -----------------
@@ -107,7 +115,8 @@ Compiler Flags:
 
 Generated Code Flags:
 ---------------------
-- added a config const "maxThreads" to limit number of threads to use (see ???TODO???)
+- added a config const "maxThreads" to limit the number of threads 
+  (see doc/README.threads for more information)
 - made GASNet executions support the --gdb flag
 - renamed some identifiers to avoid initial underscores -- more remain
 - changed integer type aliases to use stdint.h types
