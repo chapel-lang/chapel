@@ -30,8 +30,6 @@ scoping issues
 --------------
 bug: array sized by external module config [test/functions/bradc/resolveConfig]
 bug: calling the writeln function injects class symbols [test/modules/diten/testOpaqueClass]
-bug: symbols from 'use'd module nearer in scope than function args [test/modules/diten/returnClassDiffModule3]
-bug: enum in class scope [test/classes/bradc/enumInClass]
 bug: nested method shadows local var [test/classes/deitz/test_secondary_method4]
 semantic: external class member visibility [test/modules/diten/returnClassDiffModule6]
 semantic: external class member visibility [test/modules/diten/returnClassDiffModule]

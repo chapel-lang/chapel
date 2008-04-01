@@ -22,7 +22,8 @@ Unimplemented Features:
 
 Bugs:
 - Identifiers in the generated code may exceed a back-end compiler's limit
-- With the PGI back-end compiler, -0.0 floats may not be stored correctly
+- Using a PGI back-end compiler, float values of -0.0 may not work as expected
+
 
 --------------------------------
 Variables, Types and Expressions
@@ -33,7 +34,6 @@ Unimplemented Features:
 Bugs:
 - Const arrays, records, and fields can currently be modified -- these
   should result in a compiler error
-- In some contexts, value expressions can be used as type specifiers
 
 
 -------
@@ -55,28 +55,22 @@ Unimplemented Features:
 - Array arguments cannot have both their domain and element types queried
 
 Bugs:
-- type functions not correctly declared as such do not generate an error
 - programs requiring non-linear function resolution may not work properly
+- param functions with multiple return statements may not work well
+
 
 ----------------------------
 Classes, Records, and Unions
 ----------------------------
 
 Unimplemented Features:
-- Constructors are not particularly well-supported
-  - chained constructors for derived classes are not implemented
-  - constructing nested classes does not work consistently
-  Workaround: try using the default constructor and initialize() function
 - Multiple inheritance is not supported
-- Shadowing base class fields does not work well
-- Garbage collection is only supported at a preliminary level
 - Type select on unions is not implemented
+- Garbage collection is only supported at a preliminary level (see below)
 
 Bugs:
-- Class fields initialized with conditional expressions fail to compile
-- Constructors/initializers can't reliably call methods
-- Fields may be initialized more than once
-- Array fields declared using [<ind> in <domain>] syntax do not work
+- const fields can be assigned multiple times in constructors
+- record field initializers may incorrectly be evaluated more than once
 
 
 -----------------------------
@@ -84,11 +78,12 @@ Tuples, Ranges, and Iterators
 -----------------------------
 
 Unimplemented Features:
-- Zipper iteration over var iterators is not yet supported
 - Iterators may not be overridden in subclasses
 
 Bugs:
-- nested var iterators can cause problems
+- Nested var iterators do not work correctly
+- Zippered iteration over var iterators does not work correctly
+- Tuples of sync variables may not work for $CHPL_COMM == gasnet
 
 
 ------------------
@@ -96,13 +91,13 @@ Arrays and Domains
 ------------------
 
 Unimplemented Features:
-- Array promotion/forall expressions evaluate to 1D arrays
+- Array promotion/forall expressions always evaluate to 1D arrays
     e.g., foo(A) where A promotes foo() should result in an array of type:
           [A.domain] foo(A(i)).type but instead results in a 1D array
     e.g., [i in D] foo(i) should result in an array of type: [D] foo(i).type
           but instead results in a 1D array
 - Arrays of arrays where the inner arrays vary in size are not supported
-- Arrays of sparse subdomains are not implemented
+- Arrays of sparse domains are not implemented
 - Strided domains sliced by unstrided domains are not handled correctly
 - Sparse domains/arrays are incomplete:
   - can't be sliced nor used to slice dense domains/arrays
@@ -112,9 +107,7 @@ Unimplemented Features:
 - subdomain(D) index subset checking is not implemented
 
 Bugs:
-- Degenerate arrays with fewer than 0 elements may cause allocation error
-- Opaque/associative arrays may be buggy when reallocated
-- Constant domains can incorrectly be modified if passed to functions
+- Constant domains can be modified illegally if passed to functions
 - Records with array members of recursive types do not work
 
 
@@ -123,7 +116,8 @@ Generics
 --------
 
 Unimplemented Features:
-- constructors for generic classes cause problems
+- User constructors for generic classes are not well-supported
+  Workaround: try using the default constructor and initialize() function
 
 Bugs:
 - Subclassing uninstantiated generic classes should be prohibited but is not
@@ -136,23 +130,17 @@ Parallelism and Synchronization
 Unimplemented Features:
 - Atomic statements are not implemented
 - Data parallel concepts that should generate parallelism are run serially
-    e.g., forall loops, promoted calls, reductions, scans
-- Tasks are not pooled, so a program halts if there are insufficient threads
+  e.g., forall loops, promoted calls, reductions, scans
 
 Bugs:
-- globals are not flagged as volatile; causes deadlock for some C compilers
-- detupled indices in coforall statements are not privatized
-  Workaround: write:
-                coforall (i,j) in ... { ... }
-              as:
-                coforall ij in ... { const (i,j) = ij; ... }
+
 
 --------------------
 Reductions and Scans
 --------------------
 
 Unimplemented Features:
-- User-defined reductions and scans are not implemented
+- User-defined reductions and scans are not yet implemented
 
 Bugs:
 
@@ -162,8 +150,9 @@ Locality and Distributions
 --------------------------
 
 Unimplemented Features:
-- Executing general code using multiple locales is not supported
-- Distributed domains/arrays are not yet supported
+- On statement var declarations are not yet supported
+    e.g., on Locales(1) var x: real;
+- Multi-locale distributed domains/arrays are not yet supported
 
 Bugs:
 
@@ -178,9 +167,9 @@ Unimplemented Features:
 
 Bugs:
 - read()s of whole arrays are not working
-  e.g., read(A);
+    e.g., read(A);
   Workaround: use a loop and read in the elements one at a time
-  e.g., for i in A.domain read(A(i));
+    e.g., for i in A.domain read(A(i));
 
 
 -----------------
