@@ -142,8 +142,8 @@ Optional Settings
         mta, xmt  ->  mta
         other     ->  pthreads
 
-   STATUS NOTE: The mta and none threading options are not officially
-   supported in this release, so use at your own risk.
+   See README.threads for more information about executing using the
+   various CHPL_THREADS options.
 
 
 5) Optionally, set the CHPL_COMM environment variable to indicate what
@@ -153,7 +153,9 @@ Optional Settings
         none   : only supports single-locale execution
         gasnet : use the Berkeley GASNet-based runtime
 
-   If unset, CHPL_COMM defaults to "none".
+   If unset, CHPL_COMM defaults to "none".  See README.multilocale for
+   more information on executing Chapel programs using multiple
+   locales.
 
 
 -------------------------------------

@@ -69,6 +69,7 @@ For more detailed information about...      refer to...
   ...using the compiler                      ...doc/README.compiling
   ...executing Chapel programs               ...doc/README.executing
   ...executing programs on multiple locales  ...doc/README.multilocale
+  ...how Chapel tasks are mapped to threads  ...doc/README.threads
   ...example Chapel programs                 ...examples/README
   ...reporting bugs                          ...doc/README.bugs
   ...notes for Cygwin users                  ...doc/README.cygwin

@@ -66,6 +66,17 @@ locale can be used.  See $CHPL_HOME/doc/README.multilocale for more
 information about executing on multiple locales.
 
 
+------------------------------
+Limiting the number of threads
+------------------------------
+
+For multi-tasking Chapel executions, a built-in configuration constant
+named maxThreads is used to control the maximum number of threads that
+may be used per locale to implement the program.  See README.threads
+for more information on the role of this variable in creating threads
+and executing tasks.
+
+
 -----------------------------------------
 Controlling the amount of non-user output
 -----------------------------------------

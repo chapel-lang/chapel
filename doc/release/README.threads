@@ -1,0 +1,116 @@
+===========================
+Chapel programs and threads
+===========================
+
+Chapel programs create new tasks via the use of begin, cobegin, and
+coforall constructs.  Tasks are computations that can conceptually
+execute in parallel, though they may or may not in practice.  Tasks
+are executed using threads, where the implementation of these threads
+may vary depending on the target platform ($CHPL_TARGET_PLATFORM) and
+threading package ($CHPL_THREADS) selected by the user.  For a brief
+introduction to these variables, refer to README.chplenv.  This
+document describes the currently-supported threading options --
+pthreads, none, and mta -- in more detail.
+
+
+------------------------
+CHPL_THREADS == pthreads
+------------------------
+
+POSIX threads (or pthreads) is the default thread implementation for
+all platforms other than the Cray MTA and XMT.  It is attractive in
+its portability, though it may be somewhat heavier-weight on some
+platforms than necessary for Chapel's purposes.
+
+In the current implementation, Chapel tasks are mapped to pthreads
+such that each task is executed by a single thread and is run to
+completion before giving up that thread.  Pthreads are pooled by
+default so that rather than creating and destroying threads over a
+program's lifetime, threads are created and then kept around to
+execute other tasks later.
+
+The number of threads per locale used to implement a Chapel program is
+controlled by a configuration constant named maxThreads.  If
+maxThreads has a value of 0, the Chapel program will create as many
+threads as are necessary to execute the program, up to any
+system-defined limits (the program will generate a runtime warning if
+it ever tries to create a thread and the system prevents it from
+occurring).
+
+If maxThreads has a non-zero value, that value specifies the maximum
+number of threads (per locale) that will be created to execute the
+Chapel program.  If the system has stricter constraints on maxThreads
+than this value, a warning will be generated when no more threads can
+be created.
+
+The user can set maxThreads just like any other configuration
+variable, using --maxThreads=# or -smaxThreads=# on the generated
+executable's command-line.
+
+If not set by the user, maxThreads typically defaults to 0 (an
+unbounded number of threads).  The main exception to this is when
+executing programs compiled using CHPL_COMM = gasnet, in which case
+maxThreads is set to 256 due to assumptions made in the GASNet
+implementation (there are ways to work around this assumption --
+please contact us at chapel_info@cray.com if you need to do so).
+
+When the maximum number of threads (specified by maxThreads or the
+system limit) has been reached, any additional tasks are added to a
+task pool in the Chapel runtime, waiting for a thread to become
+available.  When an existing thread completes execution of its task,
+it will go to the task pool to select a new task for execution.
+
+Generally speaking, the Chapel program can make no assumptions about
+the scheduling of threads or the mapping of tasks to threads, apart
+from those semantics defined by the language specification.
+
+The value of maxThreads can have a major impact on performance.  For
+programs with low inter-task dependences and high computational
+intensity, setting maxThreads equal to the number of cores on each
+locale can lead to near-optimal performance.  However, for programs
+with lots of fine-grain synchronization in which tasks frequently
+block on synchronization/single variables, maxThreads can often exceed
+the number of cores without an adverse effect on performance since
+blocked threads do not consume the CPU's cycles.  
+
+Note that setting maxThreads too low can also result in program
+deadlock.  For example, for programs written with an assumption that a
+larger number of tasks are executing concurrently, setting maxThreads
+too low can result in deadlock if there are not enough threads to
+implement all of the required tasks.
+
+If you have further questions about thread and task scheduling, please
+contact chapel_info@cray.com.
+
+
+------------------
+CHPL_THREADS = mta
+------------------
+
+Setting CHPL_THREADS to mta only makes sense when targeting the Cray
+MTA or XMT platforms.  These platforms have hardware support for
+multiple threads, and Chapel tasks are mapped to these hardware thread
+contexts by compiling them down to the "future" construct supported by
+the platform's dialect of C.
+
+This thread setting has been implemented, but has not yet been
+extensively tested or debugged, so users with access to an MTA or XMT
+are left to their own devices.  We'd be curious to hear about any
+experiences you have at chapel_info@cray.com.
+
+
+-------------------
+CHPL_THREADS = none
+-------------------
+
+Setting CHPL_THREADS to "none" indicates that you do not have (or do
+not wish to use) a threading layer to implement Chapel tasks.  By
+default, this is equivalent to using the Chapel compiler's --serial
+flag, which has the effect of (i) ignoring begin keywords, 
+(ii) converting begins into traditional block statements, and 
+(iii) converting coforall loops into for loops.  In other words, it
+removes all constructs that introduce new tasks and executes those
+tasks serially.  This can be over-ridden using the --no-serial
+compiler flag, which will use a single thread to execute tasks added
+to a task pool, similar to the behavior described in the pthreads
+section above.

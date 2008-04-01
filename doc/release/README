@@ -11,6 +11,7 @@ This directory contains the following documentation:
   README.compiling   : how to use the Chapel compiler to compile code
   README.executing   : execution options for Chapel programs
   README.multilocale : how to execute Chapel on multiple locales
+  README.threads     : explains how Chapel tasks are implemented using threads
   README.xt-cnl      : notes for Cray XT (UNICOS/lc) users
   README.cygwin      : notes for Cygwin users
   README.extern      : technical note on interfacing with external C routines
