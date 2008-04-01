@@ -101,7 +101,7 @@ def player(num) {
 
     // This begin statement implements the attention span the player has.
     begin {
-      var delay = RandomNumber() * 10.0 + 2.0;
+      var delay = RandomNumber() * 10.0 + 3.0;
       sleep (delay : uint);
       // If this is the first person to get tired, he announces he's tired.
       if notTired {
@@ -144,7 +144,7 @@ def referee () {
   cobegin {
 
     begin {
-      var delay = RandomNumber() * 10.0 + 2.0;
+      var delay = RandomNumber() * 10.0 + 3.0;
       sleep (delay : uint);
       // If the referee is the first person to get tired, she so announces.
       if notTired {
