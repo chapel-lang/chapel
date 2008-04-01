@@ -34,6 +34,8 @@ Unimplemented Features:
 Bugs:
 - Const arrays, records, and fields can currently be modified -- these
   should result in a compiler error
+- Const variables may incorrectly be modified when compiling using the
+  --no-local flag or CHPL_COMM == gasnet
 
 
 -------
