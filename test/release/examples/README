@@ -27,6 +27,7 @@ demonstrate various Chapel features:
      reductions.chpl        : applies several array reductions on a 2D array
      slices.chpl            : examples of array slicing and reindexing
      sparse.chpl            : sparse domain/array tutorial example
+     taskParallel.chpl      : introduces task parallel language concepts
      tree.chpl              : constructs and walks a tree in parallel
      varargs.chpl           : demonstration of variable argument functions
 

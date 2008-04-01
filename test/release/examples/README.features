@@ -25,6 +25,7 @@ quicksort     : bounded task parallelism using cobegin and serial
 reductions    : minloc, maxloc, + and && array reductions
 slices        : array slicing and reindexing; iterators
 sparse        : sparse domains and arrays; operations on them
+taskParallel  : begin, cobegin, coforall, sync statements, sync variables
 tree          : unbounded task parallelism using cobegin
 varargs       : variable argument functions, tuples
 hpcc/stream   : whole-array operators; standard modules; time/random routines
@@ -71,6 +72,7 @@ quicksort      |       |   x   |       |   *   |       |       |       |
 reductions     |       |   x   |       |       |       |       |       |
 slices         |       |   *   |       |       |       |       |       |
 sparse         |       |   x   |       |       |       |       |       |
+taskParallel   |       |   x   |       |       |       |       |       |
 tree           |       |   x   |       |       |       |       |       |
 varargs        |       |   x   |       |       |       |       |       |
 hpcc/stream    |       |   x   |       |   x   |       |       |       |
@@ -91,7 +93,7 @@ key:
 -------------------------------------------------------------------------------
                |              High-level program structure
                |
-test           | modls | stdmd | main  | funcs | iters | confg | these | xxxxx
+test           | modls | stdmd | main  | funcs | iters | confg | these | vrarg
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |   *   |       |   *   |       |       |   *   |       |
@@ -111,8 +113,9 @@ quicksort      |       |   *   |       |   x   |       |   x   |       |
 reductions     |       |   *   |       |       |       |   x   |       |
 slices         |       |       |   x   |   x   |   x   |   x   |       |
 sparse         |       |       |       |   x   |   x   |   x   |       |
+taskParallel   |       |   x   |       |   x   |       |       |       |
 tree           |       |       |   x   |   x   |       |   x   |       |
-varargs        |       |       |       |   x   |       |       |       |
+varargs        |       |       |       |   x   |       |       |   *   |
 hpcc/stream    |   x   |   x   |   x   |   x   |       |   x   |       |
 hpcc/ra        |   *   |   x   |   x   |   x   |   x   |   x   |       |
 hpcc/fft       |   x   |   x   |   x   |   x   |   x   |   x   |       |
@@ -125,6 +128,7 @@ key:
   iters = uses iterators
   confg = uses configuration variables for program parameters
   these = uses a these iterator to make a class iteratable
+  vrarg = uses varargs functions
 -------------------------------------------------------------------------------
 
 
@@ -133,7 +137,7 @@ key:
 -------------------------------------------------------------------------------
                |                         Basic Types
                |
-test           | strng | tuple | recrd | class | gener | infer | query | xxxxx
+test           | strng | tuple | recrd | class | gener | infer | query | enum
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |   x   |       |       |       |       |   x   |       |
@@ -146,13 +150,14 @@ iterators      |   x   |   x   |       |   x   |       |   x   |       |
 jacobi         |       |   x   |       |       |       |   x   |       |
 linkedList     |       |       |       |   *   |   *   |   x   |       |
 multilocale    |       |       |       |   x   |       |   x   |       |
-norm           |       |       |       |       |       |   x   |   x   |
+norm           |       |       |       |       |       |   x   |   x   |   x
 opaque         |   x   |       |       |       |       |   x   |       |
 prodCons       |       |       |       |       |       |   x   |       |
 quicksort      |       |       |       |       |       |   x   |       |
 reductions     |       |       |       |       |       |   x   |       |
 slices         |       |       |       |       |       |   *   |       |
 sparse         |       |       |       |       |       |   x   |       |
+taskParallel   |       |       |       |       |       |   x   |       |   x
 tree           |       |       |       |   x   |       |   x   |       |
 varargs        |       |   x   |       |       |       |   x   |   x   |
 hpcc/stream    |       |       |       |       |       |   x   |   x   |
@@ -167,6 +172,7 @@ key:
   gener = uses generic classes/records
   infer = uses type inference
   query = uses argument query expressions
+  enum  = uses user-defined enumerated types
 -------------------------------------------------------------------------------
 
 
@@ -193,6 +199,7 @@ quicksort      |   x   |       |       |       |       |       |       |
 reductions     |   x   |       |       |       |       |       |       |
 slices         |   x   |       |       |       |       |       |       |
 sparse         |   x   |   *   |       |       |       |       |       |   x
+taskParallel   |   x   |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |   x   |       |       |       |       |       |       |
@@ -234,6 +241,7 @@ quicksort      |       |       |   x   |       |       |       |       |
 reductions     |       |   *   |   *   |       |   x   |       |       |
 slices         |   *   |   *   |   x   |   x   |       |       |       |
 sparse         |   x   |       |       |       |   x   |       |       |
+taskParallel   |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |   x   |   *   |       |       |   x   |       |       |
@@ -254,7 +262,7 @@ key:
 -------------------------------------------------------------------------------
                |                Task Parallel Features
                |
-test           | begin | cobeg | cofor | srial | sync  | atomc | xxxxx | 
+test           | begin | cobeg | cofor | srial | sync  | atomc | sncst | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
@@ -274,6 +282,7 @@ quicksort      |       |   *   |       |   *   |       |       |       |
 reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
+taskParallel   |   *   |   *   |   *   |       |   *   |       |   *   |
 tree           |       |   x   |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |       |       |       |       |       |       |       |
@@ -287,6 +296,7 @@ key:
   srial = uses the serial statement
   sync  = uses sync variables
   atomc = uses atomic blocks
+  sncst = uses the sync statement
 -------------------------------------------------------------------------------
 
 
@@ -315,6 +325,7 @@ quicksort      |       |       |       |       |       |       |       |
 reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
+taskParallel   |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |       |       |       |       |       |       |       |
@@ -355,6 +366,7 @@ quicksort      |       |       |       |       |       |       |       |
 reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
+taskParallel   |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |       |       |       |       |       |       |       |

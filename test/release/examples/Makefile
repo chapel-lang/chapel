@@ -22,6 +22,7 @@ TARGETS = \
 	reductions \
 	slices \
 	sparse \
+	taskParallel \
 	tree \
 	varargs \
 
