@@ -1,14 +1,2 @@
-A = 
-1.0 0.0 0.0
-0.0 1.0 0.0
-0.0 0.0 1.0
-0.0 0.0 0.0
-0.0 0.0 0.0
-B = 
-1.0 1.0 1.0 1.0 1.0 1.0 1.0
-1.0 1.0 1.0 1.0 1.0 1.0 1.0
-1.0 1.0 1.0 1.0 1.0 1.0 1.0
-1.0 1.0 1.0 1.0 1.0 1.0 1.0
-1.0 1.0 1.0 1.0 1.0 1.0 1.0
-1.0 1.0 1.0 1.0 1.0 1.0 1.0
-1.0 1.0 1.0 1.0 1.0 1.0 1.0
+test_compare_range.chpl:14: In function 'initMatrix':
+test_compare_range.chpl:20: error: iterator or promoted expression used in if or while condition

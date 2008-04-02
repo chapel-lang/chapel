@@ -499,7 +499,11 @@ pragma "inline" def _cond_test(param x: bool) param return x;
 pragma "inline" def _cond_test(param x: integral) param return x != 0;
 
 pragma "inline" def _cond_test(x) {
-  compilerError("illegal type '", x.type, "' used in if or while condition");
+  compilerError("type '", x.type, "' used in if or while condition");
+}
+
+pragma "inline" def _cond_test(x: _iteratorClass) {
+  compilerError("iterator or promoted expression used in if or while condition");
 }
 
 def _cond_invalid(x: object) param return false;

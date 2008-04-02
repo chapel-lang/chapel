@@ -980,6 +980,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map,
 FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
                                       bool square) {
   FnSymbol* wrapper = build_empty_wrapper(this);
+  wrapper->addPragma("promotion wrapper");
   wrapper->cname = astr("_promotion_wrap_", cname);
   CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
   CallExpr* iterator = new CallExpr(square ? "_build_domain" : "_build_tuple");

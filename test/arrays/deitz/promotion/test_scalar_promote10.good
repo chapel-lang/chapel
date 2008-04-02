@@ -1,1 +1,1 @@
-error indexing into iterator invocation
+test_scalar_promote10.chpl:9: error: illegal access of iterator or promoted expression

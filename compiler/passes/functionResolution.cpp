@@ -1046,7 +1046,10 @@ static const char* toString(CallInfo* info) {
       str = astr(str, info->actualNames.v[i], "=");
     VarSymbol* var = toVarSymbol(info->actualSyms.v[i]);
     char buff[512];
-    if (info->actualSyms.v[i] && info->actualSyms.v[i]->isTypeVariable)
+    if (info->actualTypes.v[i]->symbol->hasPragma("iterator class") &&
+        info->actualTypes.v[i]->defaultConstructor->hasPragma("promotion wrapper"))
+      str = astr(str, "promoted expression");
+    else if (info->actualSyms.v[i] && info->actualSyms.v[i]->isTypeVariable)
       str = astr(str, "type ", toString(info->actualTypes.v[i]));
     else if (var && var->immediate) {
       sprint_imm(buff, *var->immediate);
@@ -1202,10 +1205,13 @@ printResolutionError(const char* error,
                 toString(info->actualTypes.v[0]));
     }
   } else if (!strcmp("this", info->name)) {
-    USR_FATAL_CONT(call, "%s access of '%s' by '%s'", error,
-                   toString(info->actualTypes.v[1]),
-                   toString(info));
-    USR_STOP();
+    if (info->actualTypes.v[1]->symbol->hasPragma("iterator class")) {
+      USR_FATAL(call, "illegal access of iterator or promoted expression");
+    } else {
+      USR_FATAL(call, "%s access of '%s' by '%s'", error,
+                toString(info->actualTypes.v[1]),
+                toString(info));
+    }
   } else {
     const char* entity = "call";
     if (!strncmp("_type_construct_", info->name, 16))
@@ -2673,6 +2679,7 @@ postFold(Expr* expr) {
                call->isPrimitive(PRIMITIVE_SYNC_SIGNAL_EMPTY) ||
                call->isPrimitive(PRIMITIVE_SINGLE_INIT) ||
                call->isPrimitive(PRIMITIVE_SINGLE_LOCK) ||
+               call->isPrimitive(PRIMITIVE_SINGLE_UNLOCK) ||
                call->isPrimitive(PRIMITIVE_SINGLE_WAIT_FULL) ||
                call->isPrimitive(PRIMITIVE_SINGLE_SIGNAL_FULL) ||
                call->isPrimitive(PRIMITIVE_WRITEEF) ||
@@ -2686,6 +2693,7 @@ postFold(Expr* expr) {
                call->isPrimitive(PRIMITIVE_SINGLE_WRITEEF) ||
                call->isPrimitive(PRIMITIVE_SINGLE_RESET) ||
                call->isPrimitive(PRIMITIVE_SINGLE_READFF) ||
+               call->isPrimitive(PRIMITIVE_SINGLE_READXX) ||
                call->isPrimitive(PRIMITIVE_SINGLE_ISFULL) ||
                (call->primitive && 
                 (!strncmp("_fscan", call->primitive->name, 6) ||

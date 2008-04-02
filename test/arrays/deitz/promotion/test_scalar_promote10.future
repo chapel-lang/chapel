@@ -1,8 +1,0 @@
-error message: iterator class error
-
-A better error message to say that you cannot index into an interator.
-This can be captured in a temporary array though.
-
-deitz
-
-promoted setters of setters don't work, need ref type?
