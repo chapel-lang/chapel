@@ -1131,7 +1131,7 @@ fixup_query_formals(FnSymbol* fn) {
         if (!ts)
           USR_FATAL(base, "illegal queried type expression");
         Vec<ArgSymbol*> args;
-        for_formals(arg, ts->type->defaultConstructor) {
+        for_formals(arg, ts->type->defaultTypeConstructor) {
           args.add(arg);
         }
         for_actuals(actual, call) {
