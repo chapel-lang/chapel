@@ -2595,6 +2595,19 @@ postFold(Expr* expr) {
       }
       result = (is_tuple) ? new SymExpr(gTrue) : new SymExpr(gFalse);
       call->replace(result);
+    } else if (call->isPrimitive(PRIMITIVE_STRING_COMPARE)) {
+      SymExpr* lhs = toSymExpr(call->get(1));
+      SymExpr* rhs = toSymExpr(call->get(2));
+      if (lhs->var->isParameter() && rhs->var->isParameter()) {
+        VarSymbol* lhsvar = toVarSymbol(lhs->var);
+        VarSymbol* rhsvar = toVarSymbol(rhs->var);
+        INT_ASSERT(lhsvar && rhsvar);
+        INT_ASSERT(lhsvar->immediate->const_kind == CONST_KIND_STRING &&
+                   rhsvar->immediate->const_kind == CONST_KIND_STRING);
+        int comparison = strcmp(lhsvar->immediate->v_string, rhsvar->immediate->v_string);
+        result = new SymExpr(new_IntSymbol(comparison));
+        call->replace(result);
+      }
     } else if (call->isPrimitive(PRIMITIVE_UNARY_MINUS)) {
       FOLD_CALL1(P_prim_minus);
     } else if (call->isPrimitive(PRIMITIVE_UNARY_PLUS)) {

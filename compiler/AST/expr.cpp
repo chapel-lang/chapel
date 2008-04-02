@@ -1842,6 +1842,23 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_ON_LOCALE_NUM:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
+    case PRIMITIVE_STRING_COMPARE:
+      fprintf(outfile, "%s(", primitive->name);
+      bool firstActual;
+      firstActual = true;
+      for_actuals(actual, this) {
+        if (firstActual)
+          firstActual = false;
+        else
+          fprintf(outfile, ", ");
+        if (actual->typeInfo()->symbol->hasPragma("ref"))
+          fprintf(outfile, "*");
+        actual->codegen(outfile);
+        if (actual->typeInfo()->symbol->hasPragma("wide class"))
+          fprintf(outfile, ".addr");
+      }
+      fprintf(outfile, ")");
+      break;
     case PRIMITIVE_GC_CC_INIT:
       fprintf(outfile, "_chpl_gc_init(");
       get(1)->codegen(outfile);
