@@ -95,6 +95,11 @@ int chpl_single_lock(chpl_single_aux_t *s) {
   return 0;
 }
 
+void chpl_single_unlock(chpl_single_aux_t *s) {
+  int64_t is_full = readxx(&(s->is_full));
+  writeef(&(s->is_full), is_full);  // mark full
+}
+
 int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, _string filename) {
   while (!readxx(&(s->is_full)))
     readff(&(s->signal_full));

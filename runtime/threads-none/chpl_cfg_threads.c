@@ -96,6 +96,8 @@ void chpl_init_sync_aux(chpl_sync_aux_t *s) {
 
 int chpl_single_lock(chpl_single_aux_t *s) { return s == NULL; }
 
+void chpl_single_unlock(chpl_single_aux_t *s) { }
+
 int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, _string filename) {
   // while blocked, try running tasks from the task pool
   while (!*s && launch_next_task())

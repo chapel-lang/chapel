@@ -133,6 +133,10 @@ int chpl_single_lock(chpl_single_aux_t *s) {
   return chpl_mutex_lock(s->lock);
 }
 
+void chpl_single_unlock(chpl_single_aux_t *s) {
+  chpl_mutex_unlock(s->lock);
+}
+
 int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, _string filename) {
   int return_value = chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {

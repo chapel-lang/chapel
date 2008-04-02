@@ -1,4 +1,0 @@
-feature request: isFull and readXX() on single variables
-
-It seems reasonable to be able to access single variables
-in these two non-blocking ways.

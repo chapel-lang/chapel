@@ -34,6 +34,7 @@ void chpl_init_sync_aux(chpl_sync_aux_t *);
 // Single variables
 
 int chpl_single_lock(chpl_single_aux_t *);
+void chpl_single_unlock(chpl_single_aux_t *);
 int chpl_single_wait_full(chpl_single_aux_t *, int32_t, _string);
 void chpl_single_mark_and_signal_full(chpl_single_aux_t *); // also unlocks
 chpl_bool chpl_single_is_full(void *, chpl_single_aux_t *, chpl_bool);
