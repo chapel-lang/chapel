@@ -1,5 +1,0 @@
-bug: string parameter comparisons are not folded
-
-It appears that string parameter comparisons are not
-folded (and presumably they should be?  If not, a
-warning might be useful).
