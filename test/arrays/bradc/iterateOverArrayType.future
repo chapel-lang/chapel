@@ -1,9 +1,0 @@
-error message: trying to iterate over an array type
-
-Due to a thinko, this code tried to iterate over an array
-type rather than a domain or array.  The error message
-reveals too much about the internals of the compiler:
-
-iterateOverArrayType.chpl:5: error: unresolved call '_getIterator(type [domain(1,int,0)] real)'
-$CHPL_HOME/modules/standard/ChapelBase.chpl:1019: note: candidates are: _getIterator(ic: _iteratorClass)
-$CHPL_HOME/modules/standard/ChapelBase.chpl:1022: note:                 _getIterator(x)

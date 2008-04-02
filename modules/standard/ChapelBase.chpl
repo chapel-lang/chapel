@@ -1104,6 +1104,10 @@ pragma "inline" def _getIterator(ic: _iteratorClass)
 pragma "inline" def _getIterator(x)
   return x.these();
 
+def _getIterator(type t) {
+  compilerError("cannot iterate over a type");
+}
+
 def =(ic: _iteratorClass, xs) {
   pragma "internal var" var xsic;
   __primitive("move", xsic, _getIterator(xs));
