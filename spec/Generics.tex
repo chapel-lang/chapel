@@ -375,6 +375,12 @@ the \sntx{compiler-diagnostic-statement} is called.  Compilation halts
 if a \chpl{compilerError} is encountered whereas it will continue
 after encountering a \chpl{compilerWarning}.
 
+Note that when a variable function is called in a context where the
+implicit \chpl{setter} argument is true or false, both versions of the
+variable function are resolved by the compiler.  Consequently,
+the \chpl{setter} argument cannot be effectively used to guard a
+compiler diagnostic statements.
+
 \begin{example}
 The following code shows an example of using user-defined compiler
 diagnostics to generate warnings and errors:
