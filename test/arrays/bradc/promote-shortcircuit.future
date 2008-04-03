@@ -1,8 +1,0 @@
-semantic: condition/&&/|| promotion
-
-unimplemented feature: short-circuiting promotion
-
-This test tries to use short-circuiting promotion to
-do what seems like a legal operation.  It does not
-currently work due to lack of support for promotion
-over short-circuiting operators.

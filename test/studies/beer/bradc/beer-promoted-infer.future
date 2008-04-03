@@ -1,7 +1,0 @@
-semantic: condition/&&/|| promotion
-
-unimplemented feature: short-circuiting promotion
-
-This relies on promotion over conditional expressions which
-isn't currently supported for reasons similar to lack of
-support for promotion of short-circuiting operators.

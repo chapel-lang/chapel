@@ -1,2 +1,2 @@
 beer-promoted-infer.chpl:53: In function 'describeBottles':
-beer-promoted-infer.chpl:54: error: illegal type '[domain(1,int,0)] int' used in if or while condition
+beer-promoted-infer.chpl:54: error: type '[domain(1,int,0)] int' used in if or while condition
