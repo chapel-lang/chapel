@@ -1205,7 +1205,10 @@ printResolutionError(const char* error,
                 toString(info->actualTypes.v[0]));
     }
   } else if (!strcmp("this", info->name)) {
-    if (info->actualTypes.v[1]->symbol->hasPragma("iterator class")) {
+    Type* type = info->actualTypes.v[1];
+    if (type->symbol->hasPragma("ref"))
+      type = getValueType(type);
+    if (type->symbol->hasPragma("iterator class")) {
       USR_FATAL(call, "illegal access of iterator or promoted expression");
     } else {
       USR_FATAL(call, "%s access of '%s' by '%s'", error,
