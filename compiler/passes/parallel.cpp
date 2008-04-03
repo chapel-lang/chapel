@@ -563,7 +563,13 @@ insertWideReferences(void) {
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->primitive) {
-        if (call->primitive->tag == PRIMITIVE_UNKNOWN || call->primitive->tag == PRIMITIVE_CAST || call->isPrimitive(PRIMITIVE_STRING_COMPARE)) {
+        if (call->primitive->tag == PRIMITIVE_UNKNOWN ||
+            call->isPrimitive(PRIMITIVE_CAST) ||
+            call->isPrimitive(PRIMITIVE_STRING_COMPARE) ||
+            call->isPrimitive(PRIMITIVE_STRING_CONTAINS) ||
+            call->isPrimitive(PRIMITIVE_STRING_CONCAT) ||
+            call->isPrimitive(PRIMITIVE_STRING_LENGTH) ||
+            call->isPrimitive(PRIMITIVE_STRING_ASCII)) {
           for_actuals(actual, call) {
             if (actual->typeInfo()->symbol->hasPragma("wide class")) {
               if (actual->typeInfo()->getField("addr")->typeInfo() == dtString) {
