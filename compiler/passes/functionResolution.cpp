@@ -2598,6 +2598,7 @@ postFold(Expr* expr) {
     } else if (call->isPrimitive(PRIMITIVE_STRING_COMPARE)) {
       SymExpr* lhs = toSymExpr(call->get(1));
       SymExpr* rhs = toSymExpr(call->get(2));
+      INT_ASSERT(lhs && rhs);
       if (lhs->var->isParameter() && rhs->var->isParameter()) {
         VarSymbol* lhsvar = toVarSymbol(lhs->var);
         VarSymbol* rhsvar = toVarSymbol(rhs->var);
@@ -2606,6 +2607,61 @@ postFold(Expr* expr) {
                    rhsvar->immediate->const_kind == CONST_KIND_STRING);
         int comparison = strcmp(lhsvar->immediate->v_string, rhsvar->immediate->v_string);
         result = new SymExpr(new_IntSymbol(comparison));
+        call->replace(result);
+      }
+    } else if (call->isPrimitive(PRIMITIVE_STRING_CONCAT)) {
+      SymExpr* lhs = toSymExpr(call->get(1));
+      SymExpr* rhs = toSymExpr(call->get(2));
+      INT_ASSERT(lhs && rhs);
+      if (lhs->var->isParameter() && rhs->var->isParameter()) {
+        VarSymbol* lhsvar = toVarSymbol(lhs->var);
+        VarSymbol* rhsvar = toVarSymbol(rhs->var);
+        const char* concat;
+        INT_ASSERT(lhsvar && rhsvar);
+        INT_ASSERT(lhsvar->immediate->const_kind == CONST_KIND_STRING &&
+                   rhsvar->immediate->const_kind == CONST_KIND_STRING);
+        concat = astr(lhsvar->immediate->v_string, rhsvar->immediate->v_string);
+        result = new SymExpr(new_StringSymbol(concat));
+        call->replace(result);
+      }
+    } else if (call->isPrimitive(PRIMITIVE_STRING_LENGTH)) {
+      SymExpr* str = toSymExpr(call->get(1));
+      INT_ASSERT(str);
+      if (str->var->isParameter()) {
+        VarSymbol* strvar = toVarSymbol(str->var);
+        size_t len;
+        INT_ASSERT(strvar);
+        INT_ASSERT(strvar->immediate->const_kind == CONST_KIND_STRING);
+        len = strlen(strvar->immediate->v_string);
+        result = new SymExpr(new_IntSymbol(len, INT_SIZE_64));
+        call->replace(result);
+      }
+    } else if (call->isPrimitive(PRIMITIVE_STRING_ASCII)) {
+      SymExpr* str = toSymExpr(call->get(1));
+      INT_ASSERT(str);
+      if (str->var->isParameter()) {
+        VarSymbol* strvar = toVarSymbol(str->var);
+        int value;
+        INT_ASSERT(strvar);
+        INT_ASSERT(strvar->immediate->const_kind == CONST_KIND_STRING);
+        value = (int)strvar->immediate->v_string[0];
+        result = new SymExpr(new_IntSymbol(value, INT_SIZE_32));
+        call->replace(result);
+      }
+    } else if (call->isPrimitive(PRIMITIVE_STRING_CONTAINS)) {
+      SymExpr* lhs = toSymExpr(call->get(1));
+      SymExpr* rhs = toSymExpr(call->get(2));
+      INT_ASSERT(lhs && rhs);
+      if (lhs->var->isParameter() && rhs->var->isParameter()) {
+        VarSymbol* lhsvar = toVarSymbol(lhs->var);
+        VarSymbol* rhsvar = toVarSymbol(rhs->var);
+        bool contains;
+        INT_ASSERT(lhsvar && rhsvar);
+        INT_ASSERT(lhsvar->immediate->const_kind == CONST_KIND_STRING &&
+                   rhsvar->immediate->const_kind == CONST_KIND_STRING);
+        contains = strstr(lhsvar->immediate->v_string,
+                          rhsvar->immediate->v_string);
+        result = new SymExpr(contains ? gTrue : gFalse);
         call->replace(result);
       }
     } else if (call->isPrimitive(PRIMITIVE_UNARY_MINUS)) {

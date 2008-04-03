@@ -237,6 +237,7 @@ pragma "inline" def +(param a: int(32), param b: int(32)) param return __primiti
 pragma "inline" def +(param a: int(64), param b: int(64)) param return __primitive("+", a, b);
 pragma "inline" def +(param a: uint(32), param b: uint(32)) param return __primitive("+", a, b);
 pragma "inline" def +(param a: uint(64), param b: uint(64)) param return __primitive("+", a, b);
+pragma "inline" def +(param a: string, param b: string) param return __primitive("string_concat", a, b);
 
 pragma "inline" def -(param a: int(32), param b: int(32)) param return __primitive("-", a, b);
 pragma "inline" def -(param a: int(64), param b: int(64)) param return __primitive("-", a, b);
@@ -541,8 +542,11 @@ pragma "inline" def _r2i(a: real(?w)) return __primitive("cast", imag(w), a);
 pragma "inline" def ascii(a: string) return __primitive("ascii", a);
 pragma "inline" def length(a: string) return __primitive("string_length", a);
 pragma "inline" def string.substring(i: int) return __primitive("string_index", this, i);
-
 pragma "inline" def _string_contains(a: string, b: string) return __primitive("string_contains", a, b);
+
+pragma "inline" def ascii(param a: string) param return __primitive("ascii", a);
+pragma "inline" def length(param a: string) param return __primitive("string_length", a);
+pragma "inline" def _string_contains(param a: string, param b: string) param return __primitive("string_contains", a, b);
 
 //
 // identity functions (for reductions)
