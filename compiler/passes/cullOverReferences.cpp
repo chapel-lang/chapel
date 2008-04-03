@@ -44,33 +44,6 @@ isDerefType(Type* type) {
 
 // removes references that are not necessary
 void cullOverReferences() {
-  Map<FnSymbol*,FnSymbol*> refMap; // reference fun to value fun
-
-  //
-  // make value functions from reference functions
-  //
-  forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->retTag == RET_VAR) {
-      FnSymbol* copy = fn->copy();
-      copy->retTag = RET_VALUE;
-      fn->defPoint->insertBefore(new DefExpr(copy));
-      VarSymbol* ret = new VarSymbol("ret", getValueType(fn->retType));
-      INT_ASSERT(ret->type);
-      CallExpr* call = toCallExpr(copy->body->body.last());
-      if (!call || !call->isPrimitive(PRIMITIVE_RETURN))
-        INT_FATAL(fn, "function is not normal");
-      SymExpr* se = toSymExpr(call->get(1));
-      if (!se)
-        INT_FATAL(fn, "function is not normal");
-      call->insertBefore(new DefExpr(ret));
-      call->insertBefore(new CallExpr(PRIMITIVE_MOVE, ret,
-                           new CallExpr(PRIMITIVE_GET_REF, se->var)));
-      se->var = ret;
-      copy->retType = ret->type;
-      refMap.put(fn, copy);
-    }
-  }
-
   //
   // change "setter" to true or false depending on whether the symbol
   // appears in reference or value functions
@@ -100,7 +73,7 @@ void cullOverReferences() {
       // change call of reference function to value function
       //
       if (FnSymbol* fn = call->isResolved()) {
-        if (FnSymbol* copy = refMap.get(fn)) {
+        if (FnSymbol* copy = fn->valueFunction) {
           if (CallExpr* move = toCallExpr(call->parentExpr)) {
             INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
             SymExpr* se = toSymExpr(move->get(1));

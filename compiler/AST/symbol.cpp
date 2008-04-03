@@ -571,7 +571,8 @@ FnSymbol::FnSymbol(const char* initName) :
   basicBlocks(NULL),
   calledBy(NULL),
   isWrapper(false),
-  userString(NULL)
+  userString(NULL),
+  valueFunction(NULL)
 {
   substitutions.clear();
   gFns.add(this);

@@ -2905,8 +2905,47 @@ resolveFns(FnSymbol* fn) {
   if (fn->hasPragma("auto ii"))
     return;
 
-//   if (fn->hasPragma("default constructor"))
-//     fn->_this->type = dtUnknown;
+  //
+  // build value function for var functions
+  //
+  if (fn->retTag == RET_VAR) {
+    if (fn->fnTag != FN_ITERATOR) {
+      FnSymbol* copy = fn->copy();
+      copy->visible = false;
+      copy->retTag = RET_VALUE;
+      fn->defPoint->insertBefore(new DefExpr(copy));
+      fn->valueFunction = copy;
+      Symbol* ret = copy->getReturnSymbol();
+      Vec<BaseAST*> asts;
+      collect_asts(&asts, copy);
+      forv_Vec(BaseAST, ast, asts) {
+        if (SymExpr* se = toSymExpr(ast)) {
+          if (se->var == copy->setter->sym)
+            se->var = gFalse;
+          else if (se->var == ret) {
+            if (CallExpr* move = toCallExpr(se->parentExpr))
+              if (move->isPrimitive(PRIMITIVE_MOVE))
+                if (CallExpr* call = toCallExpr(move->get(2)))
+                  if (call->isPrimitive(PRIMITIVE_SET_REF))
+                    call->primitive = primitives[PRIMITIVE_GET_REF];
+          }
+        }
+      }
+      resolveFns(copy);
+    }
+
+    Vec<BaseAST*> asts;
+    collect_asts(&asts, fn);
+    forv_Vec(BaseAST, ast, asts) {
+      if (SymExpr* se = toSymExpr(ast)) {
+        if (se->var == fn->setter->sym) {
+          se->var = gTrue;
+          if (fn->fnTag == FN_ITERATOR)
+            USR_WARN(fn, "setter argument is not supported in iterators");
+        }
+      }
+    }
+  }
 
   insertFormalTemps(fn);
 

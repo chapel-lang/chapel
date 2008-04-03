@@ -185,6 +185,8 @@ class FnSymbol : public Symbol {
   Vec<CallExpr*>* calledBy;
   bool isWrapper;
   const char* userString;
+  FnSymbol* valueFunction; // pointer to value function (created in
+                           // resolve and used in cullOverReferences)
 
   FnSymbol(const char* initName);
   ~FnSymbol();
