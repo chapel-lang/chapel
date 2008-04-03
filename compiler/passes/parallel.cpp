@@ -557,10 +557,13 @@ insertWideReferences(void) {
     }
   }
 
+  //
+  // dereference wide string actual argument to primitive
+  //
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->primitive) {
-        if (call->primitive->tag == PRIMITIVE_UNKNOWN || call->primitive->tag == PRIMITIVE_CAST) {
+        if (call->primitive->tag == PRIMITIVE_UNKNOWN || call->primitive->tag == PRIMITIVE_CAST || call->isPrimitive(PRIMITIVE_STRING_COMPARE)) {
           for_actuals(actual, call) {
             if (actual->typeInfo()->symbol->hasPragma("wide class")) {
               if (actual->typeInfo()->getField("addr")->typeInfo() == dtString) {
