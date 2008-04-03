@@ -96,7 +96,6 @@ def player(num) {
   // terminated.  The sync statement is similar to a cobegin
   // statement, but compare how the behavior of the referee is
   // implemented to see how it differs from a cobegin statement.
-
   sync {
 
     // This begin statement implements the attention span the player has.
@@ -123,6 +122,13 @@ def player(num) {
       choice(num) = rockPaperScissors;
     }
   }
+
+  // In order to ensure that the referee doesn't hang waiting for a player to
+  // make a choice (which could happen if for some reason there were a very large
+  // delay before the while loop above starts executing), set the state of
+  // choice to full.  The reason the writeXF method is used here is that
+  // the state of choice is unknown at this point: it could be full or empty.
+  choice(num).writeXF(chooseBetweenRockPaperScissors());
 
   // Once the begin and while statements above finish executing, the player
   // once again agrees with the person who got tired first (which may have been
@@ -181,6 +187,13 @@ def referee () {
       determineWinner (player1, player2);
     }
   }
+
+  // In order to ensure that none of the players hang waiting for the referee
+  // to be ready (which could happen if for some reason there were a very large
+  // delay before the while loop above starts executing), set the state of
+  // refereeReady to full.  The reason the writeXF method is used here is that
+  // the state of refereeReady is unknown at this point: it could be full or empty.
+  refereeReady.writeXF(false);
 
   // Once the while statement above finishes executing and the begin
   // statement is launched, the referee once again agrees with the
