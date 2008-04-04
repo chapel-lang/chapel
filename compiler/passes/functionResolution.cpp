@@ -3700,6 +3700,8 @@ pruneResolvedTree() {
           formal->isTypeVariable = false;
         }
       }
+      if (fn->where)
+        fn->where->remove();
       if (fn->retTag == RET_TYPE) {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
         if (ret && ret->type->symbol->hasPragma("array")) {
