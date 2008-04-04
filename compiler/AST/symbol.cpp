@@ -56,31 +56,15 @@ checkMapCache(Vec<Inst*>* cache, FnSymbol* fn, ASTMap* substitutions) {
       return inst->newFn;
   return NULL;
 }
-/*
-static void
-removeMapCache(Vec<Inst*>* cache, FnSymbol* fn, ASTMap* substitutions) {
-  forv_Vec(Inst, inst, *cache)
-    if (inst->oldFn == fn && subs_match(substitutions, inst->subs))
-      inst->newFn = NULL;
-}
-*/
+
 static void
 addMapCache(Vec<Inst*>* cache, FnSymbol* oldFn, FnSymbol* newFn, ASTMap* subs) {
-//   if (oldFn->id == 34813) {
-//     printf("%d -> %d ", oldFn->id, newFn->id);
-//     form_Map(ASTMapElem, e, *subs) {
-//       if (Type* t = toType(e->value))
-//         printf("%s [%d] ", t->symbol->name, e->value->id);
-//       else
-//         printf("(not a type) [%d] ", e->value->id);
-//     }
-//     printf("\n");
-//   }
   cache->add(new Inst(oldFn, newFn, subs));
 }
 
 static Vec<Inst*> icache; // instantiation cache
 static Vec<Inst*> cw_cache; // coercion wrappers cache
+static Vec<Inst*> pw_cache; // promotion wrappers cache
 /*** ASTMap Cache ^^^ ***/
 
 
@@ -980,6 +964,16 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map,
 
 FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
                                       bool square) {
+  // return cached if we already created this coercion wrapper
+  ASTMap map;
+  Vec<Symbol*> keys;
+  promotion_subs->get_keys(keys);
+  forv_Vec(Symbol*, key, keys)
+    map.put(key, promotion_subs->get(key));
+  map.put(this, (Symbol*)square); // add value of square to cache
+  if (FnSymbol* cached = checkMapCache(&pw_cache, this, &map))
+    return cached;
+
   FnSymbol* wrapper = build_empty_wrapper(this);
   wrapper->addPragma("promotion wrapper");
   wrapper->cname = astr("_promotion_wrap_", cname);
@@ -1027,6 +1021,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
   defPoint->insertBefore(new DefExpr(wrapper));
   clear_file_info(wrapper->defPoint);
   normalize(wrapper);
+  addMapCache(&pw_cache, this, wrapper, &map);
   return wrapper;
 }
 
