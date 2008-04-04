@@ -31,11 +31,9 @@ VarSymbol *gBoundsChecking = NULL;
 /*** ASTMap Cache vvv ***/
 class Inst {
  public:
-  Inst(FnSymbol* iOldFn, FnSymbol* iNewFn, ASTMap* iSubs) :
-    oldFn(iOldFn), newFn(iNewFn), subs(new ASTMap(*iSubs)) { }
-  FnSymbol* oldFn;
+  Inst(FnSymbol* iNewFn, ASTMap* iSubs) : newFn(iNewFn), subs(*iSubs) { }
   FnSymbol* newFn;
-  ASTMap* subs;
+  ASTMap subs;
 };
 
 static bool 
@@ -50,21 +48,33 @@ subs_match(ASTMap* s1, ASTMap* s2) {
 }
 
 static FnSymbol*
-checkMapCache(Vec<Inst*>* cache, FnSymbol* fn, ASTMap* substitutions) {
-  forv_Vec(Inst, inst, *cache)
-    if (inst->oldFn == fn && subs_match(substitutions, inst->subs))
-      return inst->newFn;
+checkMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache, FnSymbol* oldFn, ASTMap* subs) {
+  if (Vec<Inst*>* lines = cache.get(oldFn)) {
+    forv_Vec(Inst, inst, *lines) {
+      if (subs_match(subs, &inst->subs)) {
+        return inst->newFn;
+      }
+    }
+  }
   return NULL;
 }
 
 static void
-addMapCache(Vec<Inst*>* cache, FnSymbol* oldFn, FnSymbol* newFn, ASTMap* subs) {
-  cache->add(new Inst(oldFn, newFn, subs));
+addMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache,
+            FnSymbol* oldFn, FnSymbol* newFn, ASTMap* subs) {
+  Vec<Inst*>* lines = cache.get(oldFn);
+  if (lines) {
+    lines->add(new Inst(newFn, subs));
+  } else {
+    lines = new Vec<Inst*>();
+    lines->add(new Inst(newFn, subs));
+    cache.put(oldFn, lines);
+  }
 }
 
-static Vec<Inst*> icache; // instantiation cache
-static Vec<Inst*> cw_cache; // coercion wrappers cache
-static Vec<Inst*> pw_cache; // promotion wrappers cache
+static Map<FnSymbol*,Vec<Inst*>*> icache; // instantiation cache
+static Map<FnSymbol*,Vec<Inst*>*> cw_cache; // coercion wrappers cache
+static Map<FnSymbol*,Vec<Inst*>*> pw_cache; // promotion wrappers cache
 /*** ASTMap Cache ^^^ ***/
 
 
@@ -690,7 +700,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map,
                            Map<ArgSymbol*,bool>* coercions,
                            bool isSquare) {
   // return cached if we already created this coercion wrapper
-  if (FnSymbol* cached = checkMapCache(&cw_cache, this, coercion_map))
+  if (FnSymbol* cached = checkMapCache(cw_cache, this, coercion_map))
     return cached;
 
   FnSymbol* wrapper = build_empty_wrapper(this);
@@ -765,7 +775,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map,
   defPoint->insertAfter(new DefExpr(wrapper));
   reset_file_info(wrapper->defPoint, lineno, filename);
   normalize(wrapper);
-  addMapCache(&cw_cache, this, wrapper, coercion_map);
+  addMapCache(cw_cache, this, wrapper, coercion_map);
   return wrapper;
 }
 
@@ -971,7 +981,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
   forv_Vec(Symbol*, key, keys)
     map.put(key, promotion_subs->get(key));
   map.put(this, (Symbol*)square); // add value of square to cache
-  if (FnSymbol* cached = checkMapCache(&pw_cache, this, &map))
+  if (FnSymbol* cached = checkMapCache(pw_cache, this, &map))
     return cached;
 
   FnSymbol* wrapper = build_empty_wrapper(this);
@@ -1021,7 +1031,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
   defPoint->insertBefore(new DefExpr(wrapper));
   clear_file_info(wrapper->defPoint);
   normalize(wrapper);
-  addMapCache(&pw_cache, this, wrapper, &map);
+  addMapCache(pw_cache, this, wrapper, &map);
   return wrapper;
 }
 
@@ -1072,7 +1082,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
   form_Map(ASTMapElem, e, *generic_subs)
     copyGenericSub(clone->substitutions, root, fn, e->key, e->value);
 
-  addMapCache(&icache, root, clone, &clone->substitutions);
+  addMapCache(icache, root, clone, &clone->substitutions);
   fn->defPoint->insertBefore(new DefExpr(clone));
 
   // add parameter instantiations to parameter map for function resolution
@@ -1361,7 +1371,7 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
 //         printf("(not a type) [%x->%d] ", (unsigned int)e->key, e->value->id);
 //     }
 //   }
-  if (FnSymbol* cached = checkMapCache(&icache, root, &all_substitutions)) {
+  if (FnSymbol* cached = checkMapCache(icache, root, &all_substitutions)) {
 //     if (root->id == 53713) printf("cached\n");
     return cached;
   }
