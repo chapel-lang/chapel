@@ -234,6 +234,11 @@ returnInfoEndCount(CallExpr* call) {
   return endCountType;
 }
 
+static Type*
+returnInfoTaskList(CallExpr* call) {
+  return dtTaskList;
+}
+
 HashMap<const char *, StringHashFns, PrimitiveOp *> primitives_map;
 
 PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
@@ -359,6 +364,9 @@ initPrimitive() {
 
   prim_def(PRIMITIVE_GET_END_COUNT, "get end count", returnInfoEndCount);
   prim_def(PRIMITIVE_SET_END_COUNT, "set end count", returnInfoVoid, true);
+
+  prim_def(PRIMITIVE_INIT_TASK_LIST, "init to NULL", returnInfoTaskList);
+  prim_def(PRIMITIVE_PROCESS_TASK_LIST, "process task list", returnInfoVoid, true);
 
   prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc, true, true);
   prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", returnInfoVoid, true, true);

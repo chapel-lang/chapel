@@ -572,6 +572,9 @@ void initPrimitiveTypes(void) {
   dtSingleVarAuxFields = createPrimitiveType( "_single_aux_t", "chpl_single_aux_t");
   CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "NULL");
 
+  dtTaskList = createPrimitiveType( "_task_list", "chpl_task_list_p");
+  CREATE_DEFAULT_SYMBOL (dtTaskList, gTaskList, "NULL");
+
   dtAny = createPrimitiveType ("_any", "_any");
   dtAny->isGeneric = true;
   dtIntegral = createPrimitiveType ("integral", "integral");

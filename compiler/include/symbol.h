@@ -294,4 +294,6 @@ extern VarSymbol *gBoundsChecking;
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
 
+extern Symbol *gTaskList;
+
 #endif

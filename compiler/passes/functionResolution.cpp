@@ -1744,7 +1744,8 @@ formalRequiresTemp(ArgSymbol* formal) {
       (formal == toFnSymbol(formal->defPoint->parentSymbol)->_outer) ||
       formal->isTypeVariable ||
       formal->instantiatedParam ||
-      formal->type == dtMethodToken)
+      formal->type == dtMethodToken ||
+      formal->hasPragma("no formal tmp"))
     return false;
   return true;
 }

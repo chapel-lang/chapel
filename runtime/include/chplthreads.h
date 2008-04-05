@@ -69,6 +69,16 @@ void      chpl_set_serial(chpl_bool);      // set dynamic serial state true or f
 typedef void* (*chpl_threadfp_t)(void*);   // function pointer
 typedef void* chpl_threadarg_t;            // function argument
 
+typedef struct chpl_task_list *chpl_task_list_p;
+struct chpl_task_list {
+  chpl_threadfp_t fun;
+  chpl_threadarg_t arg;
+  chpl_task_list_p next;
+};
+
+void chpl_add_to_task_list (chpl_threadfp_t, chpl_threadarg_t, chpl_task_list_p *);
+void chpl_process_task_list (chpl_task_list_p);
+
 // Fork one thread.  Do not wait.  Used to implement Chapel's begin statement.
 // Return thread creation error.
 int

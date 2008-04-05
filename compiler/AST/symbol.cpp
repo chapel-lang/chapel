@@ -23,6 +23,7 @@ Symbol *gFile = NULL;
 Symbol *gTimer = NULL;
 Symbol *gSyncVarAuxFields = NULL;
 Symbol *gSingleVarAuxFields = NULL;
+Symbol *gTaskList = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
@@ -1530,7 +1531,7 @@ void FnSymbol::codegenHeader(FILE* outfile) {
   } else {
     bool first = true;
     for_formals(formal, this) {
-      if (formal->defPoint == formals.head && hasPragma("on block"))
+      if (formal->defPoint == formals.head && (hasPragma("on block") || hasPragma("cobegin block")))
         continue; // do not print locale argument for on blocks
       if (!first) {
         fprintf(outfile, ", ");

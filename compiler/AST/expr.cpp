@@ -1723,6 +1723,14 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
       break;
+    case PRIMITIVE_PROCESS_TASK_LIST:
+      fprintf( outfile, "chpl_process_task_list(");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ")");
+      break;
+    case PRIMITIVE_INIT_TASK_LIST:
+      fprintf( outfile, "NULL");
+      break;
     case PRIMITIVE_CHPL_ALLOC: {
       bool is_struct = false;
 
@@ -1965,6 +1973,25 @@ void CallExpr::codegen(FILE* outfile) {
       INT_FATAL(this, "cobegin codegen - call expr not a SymExpr");
     } 
     fprintf (outfile, ");\n");
+    return;
+  }
+  else if (fn->hasPragma("cobegin block")) {
+    fputs("chpl_add_to_task_list( ", outfile);
+    if (SymExpr *sexpr=toSymExpr(baseExpr)) {
+      fprintf(outfile, "(chpl_threadfp_t) %s, ", sexpr->var->cname);
+      fputs("(chpl_threadarg_t) ", outfile);
+      if (Expr *actuals = get(2)) {
+        actuals->codegen (outfile);
+      } else {
+        fputs("NULL", outfile);
+      }
+      fputs(", &(", outfile);
+      get(1)->codegen(outfile);
+      fputc(')', outfile);
+    } else {
+      INT_FATAL(this, "cobegin codegen - call expr not a SymExpr");
+    } 
+    fputs(");\n", outfile);
     return;
   }
   else if (fn->hasPragma("on block")) {
