@@ -16,8 +16,8 @@ const t = new taskpool(poolSize);
 
 def buildjk() {
   cobegin {
-    coforall loc in LocaleSpace do
-      on Locales(loc) do consumer();
+    coforall loc in LocaleSpace on Locales(loc) do
+      consumer();
     producer();
   }
 

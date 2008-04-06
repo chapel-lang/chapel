@@ -1,4 +1,4 @@
-fock-dyn-prog-cntr.chpl:95: warning: atomic keyword is ignored (not implemented)
+fock-dyn-prog-cntr.chpl:94: warning: atomic keyword is ignored (not implemented)
 fock-dyn-prog-cntr.chpl:10: warning: 'distributed' domains/arrays are not yet distributed across multiple locales
 
 1st row of coulomb matrix:-
