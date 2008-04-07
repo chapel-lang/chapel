@@ -295,9 +295,6 @@ scalarReplaceVars(FnSymbol* fn) {
 
 void
 scalarReplace() {
-  if (fBaseline)
-    return;
-
   if (!fNoScalarReplacement) {
     forv_Vec(FnSymbol, fn, gFns) {
       scalarReplaceVars(fn);

@@ -93,8 +93,8 @@ OPTIONS
 
   Optimization Control Options
 
-  --baseline        Turns off almost all optimizations and generates naive C
-                    code with many temporary variables.
+  --baseline        Turns off all optimizations in the Chapel compiler and
+                    generates naive C code with many temporaries.
 
   --fast            Turns off all runtime checks and ensures that most
                     compiler optimizations are enabled. This option
@@ -104,32 +104,39 @@ OPTIONS
                     and --no-inline. This option implies --no-checks
                     and --no-ieee-float.
  
-  --[no]-ieee-float   Enable optimizations that may affect IEEE floating
-                    point conformance. The default is --ieee-float,
-                    disabling this sort of optimization.
+  --[no]-ieee-float   Enables optimizations that may affect IEEE
+                    floating point conformance. The default is
+                    --ieee-float, disabling this sort of optimization.
 
-  --no-copy-propagation   Turns off the compiler's copy propagation 
-                    optimization which is on by default.
+  --[no-]copy-propagation   Disables copy propagation.
 
-  --no-expand-iterators-inline-opt   By default, the compiler optimizes
-                    the invocation of an iterator in a loop header by
-                    inlining the iterator's definition around the loop 
-                    body. This option turns off this optimization.
+  --[no-]dead-code-elimination   Disables dead code elimination.
 
-  --no-flow-analysis   Disables optimizations that require a flow
+  --[no-]flow-analysis   Disables optimizations that require a flow
                     analysis, e.g., global copy propagation and dead
                     code elimination.
 
-  --no-inline       Disables function inlining.
+  --[no-]inline     Disables function inlining.
 
-  --no-scalar-replacement    Disable scalar replacement of records and
+  --[no-]inline-iterators   Disables iterator inlining. When possible,
+                    the compiler optimizes the invocation of an
+                    iterator in a loop header by inlining the
+                    iterator's definition around the loop body. This
+                    flag turns off this optimization.
+
+  --[no-]live-analysis   Disables live variable analysis, which is
+                    currently only used to optimize iterators that are
+                    not inlined.
+
+  --[no-]optimize-single-loop-iterators   By default, the compiler
+                    aggressively optimizes iterators that are defined
+                    in terms of a single loop. This flag turns off
+                    this optimization.
+
+  --[no-]scalar-replacement   Disables scalar replacement of records and
                     classes for some compiler-generated data
                     structures that support language features such as
                     tuples and iterators.
-
-  --no-single-loop-iterator-opt   By default, the compiler aggressively
-                    optimizes iterators that are defined in terms of a 
-                    single loop. This option turns off this optimization.
 
   Run-time Semantic Check Options
 

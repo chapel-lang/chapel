@@ -109,9 +109,6 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
 //
 void
 inlineFunctions(void) {
-  if (fBaseline)
-    return;
-
   if (fNoInline) {
     forv_Vec(FnSymbol, fn, gFns) {
       collapseBlocks(fn->body);

@@ -590,28 +590,33 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
 
 
 void copyPropagation(void) {
-  if (fBaseline)
-    return;
   forv_Vec(FnSymbol, fn, gFns) {
-    if (!fNoCopyPropagation)
+    if (!fNoCopyPropagation) {
       localCopyPropagation(fn);
-    deadVariableElimination(fn);
-    deadExpressionElimination(fn);
+      if (!fNoDeadCodeElimination) {
+        deadVariableElimination(fn);
+        deadExpressionElimination(fn);
+      }
+    }
     if (!fNoCopyPropagation && !fNoFlowAnalysis) {
       globalCopyPropagation(fn);
-      deadVariableElimination(fn);
-      deadExpressionElimination(fn);
+      if (!fNoDeadCodeElimination) {
+        deadVariableElimination(fn);
+        deadExpressionElimination(fn);
+      }
     }
   }
 }
 
 
 void refPropagation() {
-  if (fBaseline)
-    return;
   forv_Vec(FnSymbol, fn, gFns) {
-    singleAssignmentRefPropagation(fn);
-    deadVariableElimination(fn);
-    deadExpressionElimination(fn);
+    if (!fNoCopyPropagation) {
+      singleAssignmentRefPropagation(fn);
+      if (!fNoDeadCodeElimination) {
+        deadVariableElimination(fn);
+        deadExpressionElimination(fn);
+      }
+    }
   }
 }

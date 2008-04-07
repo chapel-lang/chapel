@@ -13,19 +13,22 @@ Parallelism Control Options:
       --[no-]serial                      Serialize parallel concepts
 
 Optimization Control Options:
-      --baseline                         Disable almost all optimizations
+      --baseline                         Disable all optimizations at Chapel
+                                         level
       --fast                             Use fast default settings
       --[no-]ieee-float                  Enable non-ieee compliant
                                          optimizations
-      --no-copy-propagation              Disable copy propagation
-      --no-expand-iterators-inline-opt   Disable the expansion of iterators
-                                         inlined around loop bodies
-      --no-flow-analysis                 Disable optimizations requiring flow
+      --[no-]copy-propagation            Disable copy propagation
+      --[no-]dead-code-elimination       Disable dead code elimination
+      --[no-]flow-analysis               Disable optimizations requiring flow
                                          analysis
-      --no-inline                        Do not inline functions
-      --no-scalar-replacement            Disable scalar replacement
-      --no-single-loop-iterator-opt      Disable the optimization of iterators
+      --[no-]inline                      Disable inlining functions
+      --[no-]inline-iterators            Disable inlining of iterators
+      --[no-]live-analysis               Disable live variable analysis
+      --[no-]optimize-single-loop-iterators
+                                         Disable optimization of iterators
                                          composed of a single loop
+      --[no-]scalar-replacement          Disable scalar replacement
 
 Run-time Semantic Check Options:
       --no-checks                        Disable all following checks

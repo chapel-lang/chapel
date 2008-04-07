@@ -1853,7 +1853,7 @@ static void fold_param_for(CallExpr* loop) {
 }
 
 static bool
-canExpandIterator(FnSymbol* iterator) {
+canInlineIterator(FnSymbol* iterator) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, iterator);
   int count = 0;
@@ -1881,8 +1881,8 @@ expand_for_loop(CallExpr* call) {
   VarSymbol* iterator = toVarSymbol(se2->var);
   if (!index || !iterator)
     INT_FATAL(call, "bad for loop primitive");
-  if (!fNoExpandIteratorsInlineOpt) {
-    if (canExpandIterator(iterator->type->defaultConstructor)) {
+  if (!fNoInlineIterators) {
+    if (canInlineIterator(iterator->type->defaultConstructor)) {
       result = call;
       call->primitive = primitives[PRIMITIVE_LOOP_INLINE];
       return result;

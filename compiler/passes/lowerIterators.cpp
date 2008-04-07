@@ -63,12 +63,13 @@ void lowerIterators() {
       }
     }
   }
-  if (!fBaseline) {
-    forv_Vec(FnSymbol, fn, gFns) {
-      if (fn->fnTag == FN_ITERATOR) {
-        collapseBlocks(fn->body);
-        removeUnnecessaryGotos(fn);
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->fnTag == FN_ITERATOR) {
+      collapseBlocks(fn->body);
+      removeUnnecessaryGotos(fn);
+      if (!fNoCopyPropagation)
         localCopyPropagation(fn);
+      if (!fNoDeadCodeElimination) {
         deadVariableElimination(fn);
         deadExpressionElimination(fn);
       }

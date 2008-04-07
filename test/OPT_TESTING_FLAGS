@@ -1,11 +1,12 @@
 --no-copy-propagation
---no-expand-iterators-inline-opt
+--no-dead-code-elimination
 --no-flow-analysis
 --no-inline
---no-single-loop-iterator-opt
---no-live-variables-iterator-class-opt
---no-single-loop-iterator-opt --no-expand-iterators-inline-opt
+--no-inline-iterators
+--no-live-analysis
+--no-optimize-single-loop-iterators
 --no-scalar-replacement
+--no-optimize-single-loop-iterators --no-inline-iterators
 --no-scalar-replacement --no-inline
 --no-local
 --no-local --baseline

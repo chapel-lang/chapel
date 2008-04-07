@@ -153,11 +153,11 @@ void deadCodeElimination(FnSymbol* fn) {
 }
 
 void deadCodeElimination() {
-  if (fBaseline)
-    return;
-  forv_Vec(FnSymbol, fn, gFns) {
-    if (!fNoFlowAnalysis)
-      deadCodeElimination(fn);
-    deadVariableElimination(fn);
+  if (!fNoDeadCodeElimination) {
+    forv_Vec(FnSymbol, fn, gFns) {
+      if (!fNoFlowAnalysis)
+        deadCodeElimination(fn);
+      deadVariableElimination(fn);
+    }
   }
 }

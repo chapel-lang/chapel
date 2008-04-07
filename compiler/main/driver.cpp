@@ -73,10 +73,11 @@ int fcg = 0;
 bool fBaseline = false;
 bool fFastFlag = false;
 bool fNoCopyPropagation = false;
+bool fNoDeadCodeElimination = false;
 bool fNoScalarReplacement = false;
-bool fNoSingleLoopIteratorOpt = false;
-bool fNoExpandIteratorsInlineOpt = false;
-bool fNoLiveVariablesIteratorClassOpt = false;
+bool fNoOptimizeSingleLoopIterators = false;
+bool fNoInlineIterators = false;
+bool fNoLiveAnalysis = false;
 bool fNoFlowAnalysis = false;
 bool fNoBoundsChecks = false;
 bool fNoNilChecks = false;
@@ -249,20 +250,35 @@ static void setFastFlag(ArgumentState* arg, char* unused) {
   // Enable all compiler optimizations, disable all runtime checks
   //
   fBaseline = false;
+  fieeefloat = false;
   fNoCopyPropagation = false;
-  fNoScalarReplacement = false;
-  fNoSingleLoopIteratorOpt = false;
-  fNoExpandIteratorsInlineOpt = false;
-  fNoLiveVariablesIteratorClassOpt = false;
+  fNoDeadCodeElimination = false;
   fNoFlowAnalysis = false;
   fNoInline = false;
+  fNoInlineIterators = false;
+  fNoOptimizeSingleLoopIterators = false;
+  fNoLiveAnalysis = false;
+  fNoScalarReplacement = false;
+  fNoChecks = true;
   fNoBoundsChecks = true;
   fNoNilChecks = true;
-  fNoChecks = true;
-  fieeefloat = false;
   optimizeCCode = true;
 }
 
+static void setBaselineFlag(ArgumentState* arg, char* unused) {
+  //
+  // disable all chapel compiler optimizations
+  //
+  fBaseline = true;
+  fNoCopyPropagation = true;
+  fNoDeadCodeElimination = true;
+  fNoFlowAnalysis = true;
+  fNoInline = true;
+  fNoInlineIterators = true;
+  fNoLiveAnalysis = true;
+  fNoOptimizeSingleLoopIterators = true;
+  fNoScalarReplacement = true;
+}
 
 static void setHelpTrue(ArgumentState* arg, char* unused) {
   printHelp = true;
@@ -299,15 +315,17 @@ static ArgumentDescription arg_desc[] = {
  {"serial", ' ', NULL, "Serialize parallel concepts", "N", &fSerial, "CHPL_SERIAL", NULL},
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
- {"baseline", ' ', NULL, "Disable almost all optimizations", "F", &fBaseline, "CHPL_BASELINE", NULL},
+ {"baseline", ' ', NULL, "Disable all optimizations at Chapel level", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
  {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, NULL, setFastFlag},
  {"ieee-float", ' ', NULL, "Enable non-ieee compliant optimizations", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
- {"no-copy-propagation", ' ', NULL, "Disable copy propagation", "F", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
- {"no-expand-iterators-inline-opt", ' ', NULL, "Disable the expansion of iterators inlined around loop bodies", "F", &fNoExpandIteratorsInlineOpt, "CHPL_DISABLE_EXPAND_ITERATORS_INLINE_OPT", NULL},
- {"no-flow-analysis", ' ', NULL, "Disable optimizations requiring flow analysis", "F", &fNoFlowAnalysis, "CHPL_NO_FLOW_ANALYSIS", NULL},
- {"no-inline", ' ', NULL, "Do not inline functions", "F", &fNoInline, NULL, NULL},
- {"no-scalar-replacement", ' ', NULL, "Disable scalar replacement", "F", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
- {"no-single-loop-iterator-opt", ' ', NULL, "Disable the optimization of iterators composed of a single loop", "F", &fNoSingleLoopIteratorOpt, "CHPL_DISABLE_SINGLE_LOOP_ITERATOR_OPT", NULL},
+ {"copy-propagation", ' ', NULL, "Disable copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
+ {"dead-code-elimination", ' ', NULL, "Disable dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},
+ {"flow-analysis", ' ', NULL, "Disable optimizations requiring flow analysis", "n", &fNoFlowAnalysis, "CHPL_NO_FLOW_ANALYSIS", NULL},
+ {"inline", ' ', NULL, "Disable inlining functions", "n", &fNoInline, NULL, NULL},
+ {"inline-iterators", ' ', NULL, "Disable inlining of iterators", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
+ {"live-analysis", ' ', NULL, "Disable live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
+ {"optimize-single-loop-iterators", ' ', NULL, "Disable optimization of iterators composed of a single loop", "n", &fNoOptimizeSingleLoopIterators, "CHPL_DISABLE_OPTIMIZE_SINGLE_LOOP_ITERATORS", NULL},
+ {"scalar-replacement", ' ', NULL, "Disable scalar replacement", "n", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
@@ -364,7 +382,6 @@ static ArgumentDescription arg_desc[] = {
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"ignore-errors", ' ', NULL, "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"no-codegen", ' ', NULL, "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
- {"no-live-variables-iterator-class-opt", ' ', NULL, "Do not use live variable analysis for iterator class construction", "F", &fNoLiveVariablesIteratorClassOpt, "CHPL_DISABLE_LIVE_VARIABLE_ITERATOR_CLASS_OPT", NULL},
  {"nostdincs", ' ', NULL, "Don't use standard modules", "T", &fNoStdIncs, "CHPL_NOSTDINCS", NULL},
  {"test-int-sizes", ' ', NULL, "Test compiler's internal integer sizes", "F", &testIntSizes, "CHPL_TEST_INT_SIZES", verifyIntSizes},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
