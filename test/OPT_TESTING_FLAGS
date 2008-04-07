@@ -6,7 +6,16 @@
 --no-live-analysis
 --no-optimize-single-loop-iterators
 --no-scalar-replacement
+--baseline --copy-propagation
+--baseline --dead-code-elimination
+--baseline --flow-analysis
+--baseline --inline
+--baseline --inline-iterators
+--baseline --live-analysis
+--baseline --optimize-single-loop-iterators
+--baseline --scalar-replacement
 --no-optimize-single-loop-iterators --no-inline-iterators
+--no-optimize-single-loop-iterators --no-inline-iterators --no-live-analysis
 --no-scalar-replacement --no-inline
 --no-local
---no-local --baseline
+--baseline --no-local
