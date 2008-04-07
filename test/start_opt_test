@@ -10,37 +10,33 @@
 #
 
 if (@ARGV) {
-    $flag = shift @ARGV;
-    if ($flag eq "--cron" || $flag eq "-cron") {
-        $cron = 1;
-    } else {
-        die "usage: start_opt_test [--cron]\n";
-    }
+  $flag = shift @ARGV;
+  if ($flag eq "--cron" || $flag eq "-cron") {
+    $cron = 1;
+  } elsif ($flag eq "--all" || $flag eq "-all") {
+    $all = 1;
+  } else {
+    die "usage: start_opt_test [--cron]\n";
+  }
 }
 
 if ($cron) {
-    `rm -rf /tmp/opt_testing`;
-    `mkdir /tmp/opt_testing`;
-    `cd /tmp/opt_testing && svn export -q https://gemelli.cs.washington.edu/repos/chapel >& /dev/null`;
-    `cd /tmp/opt_testing/chapel && make all >& /dev/null`;
-    $home = "/tmp/opt_testing/chapel/test";
-    $ENV{'CHPL_HOME'} = "/tmp/opt_testing/chapel";
+  `rm -rf /tmp/opt_testing`;
+  `mkdir /tmp/opt_testing`;
+  `cd /tmp/opt_testing && svn export -q https://gemelli.cs.washington.edu/repos/chapel >& /dev/null`;
+  `cd /tmp/opt_testing/chapel && make all >& /dev/null`;
+  $home = "/tmp/opt_testing/chapel/test";
+  $ENV{'CHPL_HOME'} = "/tmp/opt_testing/chapel";
 } else {
-    $home = ".";
+  $home = ".";
 }
 
 @OPTS = `cat $home/OPT_TESTING_FLAGS`;
 
-$dir = "release/examples";
-
-if ($cron) {
-  $date = `date`;
-  if ($date =~ m/Sat/) {
-    $dir = ".";
-  }
-  if ($date =~ m/Sun/) {
-    exit 0;
-  }
+if ($all) {
+  $dir = ".";
+} else {
+  $dir = "release/examples";
 }
 
 `rm -f .opt_testing.tmp`;
