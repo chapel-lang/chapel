@@ -32,16 +32,66 @@ differing memory sizes on different platforms
 [Error matching program output for memory/shannon/printFinalMemStat]
 
 
-========================
-opt-specific regressions
-========================
+=============================
+valgrind-specific regressions
+=============================
 
---no-copy-propagation
---no-expand-iterators-inline-opt
---no-scalar-replace-array-wrappers
---no-local
------------------------------------
+
+failing nondeterministically (e.g., 04/03/08)
+---------------------------------------------
+[Error matching program output for stress/deitz/test_10k_begins]
+[Error matching program output for parallel/begin/dinan/mvm_coforall]
+
+failing nondeterministically (e.g., 04/04/08)
+---------------------------------------------
+[Error: didn't find expected suppression memory/shannon/outofmemory/mallocOutOfMemory]
+
+chpl_process_task_list has invalid read
+---------------------------------------
+[Error matching program output for parallel/begin/deitz/test_begin_cobegin1]
+[Error matching program output for parallel/begin/deitz/test_begin_cobegin2]
+[Error matching program output for parallel/begin/deitz/test_string_cat]
+[Error matching program output for parallel/begin/dinan/mvm_coforall]
+[Error matching program output for parallel/begin/waynew/simple2]
+[Error matching program output for parallel/cobegin/bradc/arrayargs]
+[Error matching program output for parallel/cobegin/bradc/exitone]
+[Error matching program output for
+parallel/cobegin/bradc/varsEscape-workaround]
+[Error matching program output for
+parallel/cobegin/deitz/test_array_cobegin]
+[Error matching program output for parallel/cobegin/waynew/cobegin.simple0]
+[Error matching program output for parallel/cobegin/waynew/cobegin.simple1]
+[Error matching program output for parallel/cobegin/waynew/cobegin.simple2]
+[Error matching program output for parallel/cobegin/waynew/depend]
+[Error matching program output for parallel/cobegin/waynew/locals]
+[Error matching program output for parallel/cobegin/waynew/while]
+[Error matching program output for parallel/cobegin/waynew/writeln]
+[Error matching program output for parallel/serial/deitz/test_serial1]
+[Error matching program output for parallel/serial/waynew/cobegin1a]
+[Error matching program output for parallel/serial/waynew/cobegin1b]
+[Error matching program output for parallel/single/diten/simpleSingleAccess]
+[Error matching program output for parallel/single/waynew/simple4]
+[Error matching program output for parallel/sync/bradc/fib_sync]
+[Error matching program output for parallel/sync/waynew/if2]
+[Error matching program output for parallel/syncStmt/bradc/cobeginSync]
+[Error matching program output for release/examples/prodCons]
+[Error matching program output for release/examples/quicksort]
 [Error matching program output for release/examples/taskParallel]
+[Error matching program output for release/examples/tree]
+[Error matching program output for stress/deitz/test_10k_cobegins]
+[Error matching program output for users/shetag/ccs]
+[Error matching program output for users/shetag/fock/fock-0]
+[Error matching program output for users/shetag/fock/fock-1-begin-blc]
+[Error matching program output for users/shetag/fock/fock-1-latest]
+[Error matching program output for users/shetag/fock/fock-1]
+[Error matching program output for users/shetag/fock/fock-2]
+[Error matching program output for users/shetag/fock/fock-3-blc]
+[Error matching program output for users/shetag/fock/fock-3]
+[Error matching program output for users/shetag/fock/fock-orig]
+[Error matching program output for users/shetag/shareIterator-blc-register]
+[Error matching program output for users/shetag/shareIterator-blc-release]
+[Error matching program output for users/shetag/shareIterator-blc]
+
 
 
 =============================
@@ -61,15 +111,6 @@ gasnet-specific regressions
 ???
 ---
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
-
-record with domain cross-locale copy results in a nil dereference 
--- esp. for --no-inline
------------------------------------------------------------------
-studies/madness/aniruddha/madchap/test_gaxpy]
-[Error matching program output for
-studies/madness/aniruddha/madchap/test_likepy]
-[Error matching program output for
-studies/madness/aniruddha/madchap/test_mul]
 
 garbage collection doesn't work with multithreaded
 --------------------------------------------------
@@ -198,10 +239,9 @@ than codegen and having it be constructed like any other field.
 pathscale-specific regressions
 ==============================
 
-globals are not volatile (?)
-----------------------------
-[Error: Timed out executing program parallel/cobegin/waynew/depend] 
-[Error: Timed out executing program parallel/cobegin/waynew/while] -- intermittent
+???
+---
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 
 ??? -- gdb incompatability?
 ---------------------------
@@ -220,6 +260,51 @@ weird math function interaction
 ==========================
 sunos-specific regressions
 ==========================
+
+core dump in new task parallel creation functions (?)
+-----------------------------------------------------
+[Error matching program output for parallel/begin/deitz/test_begin_cobegin1]
+[Error matching program output for parallel/begin/deitz/test_begin_cobegin2]
+[Error matching program output for parallel/begin/deitz/test_string_cat]
+[Error matching program output for parallel/begin/waynew/simple2]
+[Error matching program output for parallel/cobegin/bradc/arrayargs]
+[Error matching program output for parallel/cobegin/bradc/exitone]
+[Error matching program output for
+parallel/cobegin/bradc/varsEscape-workaround]
+[Error matching program output for
+parallel/cobegin/deitz/test_array_cobegin]
+[Error matching program output for parallel/cobegin/waynew/cobegin.simple0]
+[Error matching program output for parallel/cobegin/waynew/cobegin.simple1]
+[Error matching program output for parallel/cobegin/waynew/cobegin.simple2]
+[Error matching program output for parallel/cobegin/waynew/depend]
+[Error matching program output for parallel/cobegin/waynew/locals]
+[Error matching program output for parallel/cobegin/waynew/while]
+[Error matching program output for parallel/cobegin/waynew/writeln]
+[Error matching program output for parallel/serial/deitz/test_serial1]
+[Error matching program output for parallel/serial/waynew/cobegin1a]
+[Error matching program output for parallel/serial/waynew/cobegin1b]
+[Error matching program output for parallel/single/diten/simpleSingleAccess]
+[Error matching program output for parallel/single/waynew/simple4]
+[Error matching program output for parallel/sync/bradc/fib_sync]
+[Error matching program output for parallel/sync/waynew/if2]
+[Error matching program output for parallel/syncStmt/bradc/cobeginSync]
+[Error matching program output for release/examples/prodCons]
+[Error matching program output for release/examples/quicksort]
+[Error matching program output for release/examples/taskParallel]
+[Error matching program output for release/examples/tree]
+[Error matching program output for users/shetag/ccs]
+[Error matching program output for users/shetag/fock/fock-0]
+[Error matching program output for users/shetag/fock/fock-1-begin-blc]
+[Error matching program output for users/shetag/fock/fock-1-latest]
+[Error matching program output for users/shetag/fock/fock-1]
+[Error matching program output for users/shetag/fock/fock-2]
+[Error matching program output for users/shetag/fock/fock-3-blc]
+[Error matching program output for users/shetag/fock/fock-3]
+[Error matching program output for users/shetag/fock/fock-orig]
+[Error matching program output for users/shetag/shareIterator-blc-register]
+[Error matching program output for users/shetag/shareIterator-blc-release]
+[Error matching program output for users/shetag/shareIterator-blc]
+
 
 exp2/log2/other math fns not supported
 --------------------------------------
