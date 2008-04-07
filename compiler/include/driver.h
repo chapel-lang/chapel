@@ -26,7 +26,6 @@ extern bool fNoFlowAnalysis;
 extern bool fNoInline;
 extern bool fNoLiveVariablesIteratorClassOpt;
 extern bool fNoNilChecks;
-extern bool fNoScalarReplaceArrayWrappers;
 extern bool fNoScalarReplacement;
 extern bool fNoSingleLoopIteratorOpt;
 

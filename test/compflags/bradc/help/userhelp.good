@@ -23,6 +23,7 @@ Optimization Control Options:
       --no-flow-analysis                 Disable optimizations requiring flow
                                          analysis
       --no-inline                        Do not inline functions
+      --no-scalar-replacement            Disable scalar replacement
       --no-single-loop-iterator-opt      Disable the optimization of iterators
                                          composed of a single loop
 

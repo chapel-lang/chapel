@@ -293,106 +293,14 @@ scalarReplaceVars(FnSymbol* fn) {
   }
 }
 
-
-//
-// eliminates a record type with a single field
-//
-static void scalarReplaceArrayDomainWrapper(ClassType* ct) {
-  ct->symbol->defPoint->remove();
-  ct->refType->symbol->defPoint->remove();
-
-  Symbol* field = ct->getField("_value");
-  ClassType* fct = toClassType(field->type);
-
-  //
-  // update substitution map back pointers
-  //  important for ddata for which this substitution is looked at later
-  //
-  forv_Vec(TypeSymbol, ts, gTypes) {
-    form_Map(ASTMapElem, e, ts->type->substitutions) {
-      if (e->value == ct)
-        e->value = fct;
-    }
-  }
-
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->parentSymbol) {
-        if (call->isPrimitive(PRIMITIVE_CHPL_ALLOC)) {
-          if (call->typeInfo() == ct)
-            call->getStmtExpr()->remove();
-          else if (call->typeInfo() == ct->refType)
-            call->getStmtExpr()->remove();
-        } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
-          if (call->get(2)->typeInfo() == fct &&
-              (call->get(1)->typeInfo() == ct ||
-               call->get(1)->typeInfo() == ct->refType))
-            call->replace(call->get(1)->remove());
-        } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
-          if (call->get(2)->typeInfo() == fct) {
-            if (call->get(1)->typeInfo() == ct->refType)
-              call->replace(new CallExpr(PRIMITIVE_GET_REF, call->get(1)->remove()));
-            else if (call->get(1)->typeInfo() == ct)
-              call->replace(call->get(1)->remove());
-          } else if (call->get(1)->typeInfo() == ct->refType ||
-                     call->get(1)->typeInfo() == ct) {
-            SymExpr* se = toSymExpr(call->get(2));
-            INT_ASSERT(se);
-            Symbol* newField = fct->getField(se->var->name);
-            call->get(2)->replace(new SymExpr(newField));
-          }
-        } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
-          if (call->get(1)->typeInfo() == ct || call->get(1)->typeInfo() == ct->refType) {
-            Expr* rhs = call->get(3)->remove();
-            Expr* lhs = call->get(1)->remove();
-            call->replace(new CallExpr(PRIMITIVE_MOVE, lhs, rhs));
-          }
-        }
-      }
-    }
-  }
-
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (def->parentSymbol) {
-        if (def->sym->type == ct) {
-          def->sym->type = fct;
-        } else if (def->sym->type == ct->refType) {
-          if (fct->refType)
-            def->sym->type = fct->refType;
-          else
-            def->sym->type = fct;
-        }
-        if (FnSymbol* fn = toFnSymbol(def->sym)) {
-          if (fn->retType == ct) {
-            fn->retType = fct;
-          } else if (fn->retType == ct->refType) {
-            if (fct->refType)
-              fn->retType = fct->refType;
-            else
-              fn->retType = fct;
-          }
-        }
-      }
-    }
-  }
-}
-
-void scalarReplace() {
+void
+scalarReplace() {
   if (fBaseline)
     return;
 
   if (!fNoScalarReplacement) {
     forv_Vec(FnSymbol, fn, gFns) {
       scalarReplaceVars(fn);
-    }
-  }
-
-  if (0 && !fNoScalarReplaceArrayWrappers) {
-    forv_Vec(TypeSymbol, ts, gTypes) {
-      if (ts->hasPragma("domain") || ts->hasPragma("array")) {
-        scalarReplaceArrayDomainWrapper(toClassType(ts->type));
-      }
     }
   }
 }

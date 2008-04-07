@@ -122,6 +122,11 @@ OPTIONS
 
   --no-inline       Disables function inlining.
 
+  --no-scalar-replacement    Disable scalar replacement of records and
+                    classes for some compiler-generated data
+                    structures that support language features such as
+                    tuples and iterators.
+
   --no-single-loop-iterator-opt   By default, the compiler aggressively
                     optimizes iterators that are defined in terms of a 
                     single loop. This option turns off this optimization.
