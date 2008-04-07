@@ -128,6 +128,7 @@ class CallExpr : public Expr {
   FnSymbol* findFnSymbol(void);
   Type* typeInfo(void);
   bool isPrimitive(PrimitiveTag primitiveTag);
+  bool isPrimitive(const char* primitiveName);
 };
 
 

@@ -1850,38 +1850,6 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_ON_LOCALE_NUM:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
-    case PRIMITIVE_STRING_COMPARE:
-    case PRIMITIVE_STRING_CONCAT:
-    case PRIMITIVE_STRING_CONTAINS: {
-      bool firstActual;
-      fprintf(outfile, "%s(", primitive->name);
-      firstActual = true;
-      for_actuals(actual, this) {
-        if (firstActual)
-          firstActual = false;
-        else
-          fprintf(outfile, ", ");
-        if (actual->typeInfo()->symbol->hasPragma("ref"))
-          fprintf(outfile, "*");
-        actual->codegen(outfile);
-        if (actual->typeInfo()->symbol->hasPragma("wide class"))
-          fprintf(outfile, ".addr");
-      }
-      fprintf(outfile, ")");
-      break;
-    }
-    case PRIMITIVE_STRING_ASCII:
-    case PRIMITIVE_STRING_LENGTH: {
-      Expr* actual = get(1);
-      fprintf(outfile, "%s(", primitive->name);
-      if (actual->typeInfo()->symbol->hasPragma("ref"))
-        fprintf(outfile, "*");
-      actual->codegen(outfile);
-      if (actual->typeInfo()->symbol->hasPragma("wide class"))
-        fprintf(outfile, ".addr");
-      fprintf(outfile, ")");
-      break;
-    }
     case PRIMITIVE_GC_CC_INIT:
       fprintf(outfile, "_chpl_gc_init(");
       get(1)->codegen(outfile);
@@ -2053,6 +2021,11 @@ void CallExpr::codegen(FILE* outfile) {
 
 bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) {
   return primitive && primitive->tag == primitiveTag;
+}
+
+
+bool CallExpr::isPrimitive(const char* primitiveName) {
+  return primitive && !strcmp(primitive->name, primitiveName);
 }
 
 

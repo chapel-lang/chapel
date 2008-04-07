@@ -507,11 +507,11 @@ initPrimitive() {
   prim_def("_fscan_real64", returnInfoReal64, true, true);
   prim_def("_readToEndOfLine", returnInfoVoid, true);
   prim_def("_format", returnInfoString);
-  prim_def(PRIMITIVE_STRING_COMPARE, "_string_compare", returnInfoInt32, true);
-  prim_def(PRIMITIVE_STRING_CONTAINS, "string_contains", returnInfoBool, true);
-  prim_def(PRIMITIVE_STRING_CONCAT, "string_concat", returnInfoString, true, true);
-  prim_def(PRIMITIVE_STRING_LENGTH, "string_length", returnInfoInt32);
-  prim_def(PRIMITIVE_STRING_ASCII, "ascii", returnInfoInt32);
+  prim_def("_string_compare", returnInfoInt32, true);
+  prim_def("string_contains", returnInfoBool, true);
+  prim_def("string_concat", returnInfoString, true, true);
+  prim_def("string_length", returnInfoInt32);
+  prim_def("ascii", returnInfoInt32);
   prim_def("string_index", returnInfoString, true, true);
   prim_def("string_copy", returnInfoString, true, true);
   prim_def("string_select", returnInfoString, true, true);
