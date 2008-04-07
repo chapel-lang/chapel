@@ -5,7 +5,8 @@
 #             OPT_TESTING_FLAGS
 #
 # -cron: check out a new copy of chapel, make it, run tests as above,
-#        and mail results to chapel_cronmail@cray.com
+#        and mail results to chapel_cronmail@cray.com ; on Saturdays
+#        run tests on every directory and on Sundays, do nothing
 #
 
 if (@ARGV) {
@@ -30,6 +31,18 @@ if ($cron) {
 
 @OPTS = `cat $home/OPT_TESTING_FLAGS`;
 
+$dir = "release/examples";
+
+if ($cron) {
+  $date = `date`;
+  if ($date =~ m/Sat/) {
+    $dir = ".";
+  }
+  if ($date =~ m/Sun/) {
+    exit 0;
+  }
+}
+
 `rm -f .opt_testing.tmp`;
 
 foreach $opt (@OPTS) {
@@ -37,7 +50,7 @@ foreach $opt (@OPTS) {
     system("echo \"\" | tee -a $home/.opt_testing.tmp");
     system("echo \"OPTIMIZATION FLAGS: $opt\" | tee -a $home/.opt_testing.tmp");
     system("echo \"\" | tee -a $home/.opt_testing.tmp");
-    system("cd $home && ../util/start_test release/examples --compopts \"$opt\" | tee -a .opt_testing.tmp");
+    system("cd $home && ../util/start_test $dir --compopts \"$opt\" | tee -a .opt_testing.tmp");
 }
 
 @lines = `cat $home/.opt_testing.tmp`;
