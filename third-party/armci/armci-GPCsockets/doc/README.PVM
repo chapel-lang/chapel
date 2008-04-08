@@ -1,0 +1,41 @@
+
+Regarding to the group used in PVM, a global variable is defined
+in armci.h and a extra optional function, ARMCI_PVM_Init, 
+can be used to pass a PVM group to ARMCI. 
+
+On CrayT3E: the default group is the global group which is (char *)NULL
+            It is the only working group.
+
+On Workstations: the default group is "mp_working_group". User can set
+                 the group name by calling the ARMCI_PVM_init (defined
+                 in message.c) and passing the group name to the library.
+
+Differencies between Cray and  Unix Workstations
+
+1. Linker libraries:
+   On Cray: -lpvm3
+   On Unix Workstations:  -lgpvm3 -lpvm3
+            also need the group lib
+
+2. Groups
+   On Cray: There is a default global group, which can be referred to
+            (char *)NULL, or PVMALL)
+   On Unix Workstations:  There is no default group.
+
+3. Obtaining PE number.
+   On Cray: pvm_get_PE(get_mytid())  to obtain their own PE number.
+   On Unix Workstations:  pvm_getinst(group, mytid)  standard.
+
+4. Running the program
+   On Cray: PVM daemon should not be started.
+            The pvm_spawn is not called. The number of process is 
+                controlled at compile time, or by using the run
+                command mpprun.
+                mpprun -n 4 test.x
+            So there is no need to initialize the PVM in the test.c
+   On Unix Workstations:  Must run PVM daemon first
+	    % pvm and then quit
+            Call pvm_spawn to creat other processes.
+            In test.c, there is a initialization routine and the 
+                format to run is test.x <nproc>
+

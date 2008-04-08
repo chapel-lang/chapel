@@ -1,0 +1,3 @@
+This directory contains example programs using ARMCI
+At present time, SPLASH-2 LU factorization on top of ARMCI
+is included (lu.c).

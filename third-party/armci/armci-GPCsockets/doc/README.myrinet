@@ -1,0 +1,120 @@
+The following instructions describe how to setup Myrinet and build
+ARMCI to run over Myrinet using the Myricom GM interface and MPICH/GM.
+
+Notes: 
+ - any other message-passing library is not supported
+ - This code was tested and is supported only on Linux Intel & Sparc
+   and Solaris/sparc platforms. If you have other configuration
+   please try if it works, otherwise please send a message to 
+   <parsoft-support@emsl.pnl.gov>
+
+1. Installation of Myrinet and the GM library (must have root privilege)
+
+   * To build gm on linux smp nodes, run configure with the following 
+     options. For details, refer to README-linux.
+	--enable-linux-smp
+	--enable-linux-modversions
+     then run make
+
+   * Install the driver,
+     cd binary
+     ./GM_INSTAll
+
+   * Run mapper
+     cd sbin
+     mapper active.args
+
+   * Check the configuration
+     gm_board_info
+
+     It lists the driver information and routing table.
+
+2. Setting up the environment
+
+   * Note: We strongly recommend using GM version 1.2 or higher
+   * ARMCI on top of GM requires the following environment variables to 
+     be set (Examples are taken on colony cluster of PNNL, using csh)
+   
+     setenv TARGET LINUX
+     setenv GM_HOME /home/myrinet/gm-1.2/gm
+     setenv GM_INCLUDE $GM_HOME/include
+     setenv GM_LIB $GM_HOME/lib
+     setenv ARMCI_NETWORK GM
+
+   * For MPICH-GM the following additional environment variables need to be set
+     (again using examples of colony cluster of PNNL and csh)
+
+     setenv MPI_LOC /home/myrinet/mpich-1.2/mpich-gm
+     setenv MPI_LIB $MPI_LOC/build/LINUX/ch_gm/lib
+     setenv MPI_INCLUDE $MPI_LOC/include
+     set path = ($MPI_LOC/bin $MPI_LOC/build/LINUX/ch_gm/bin $path)
+     setenv LIBMPI -lmpich
+
+     However, if you prefer to use MPICH compiler wrappers mpicc, mpif77 etc
+     these definitions are not needed. Also, since the default name for
+     the MPI library assumed by armci is -lmpi, you would need to 
+     set LIBMPI="" or "-lmpich".
+
+     -- without PBS
+
+        set a $HOME/.gmpi/conf file like this:
+        # .gmpi/conf file begin
+        # first the number of nodes in the file
+        8
+        # the list of (node,port) that make the MPI World
+        nb26.colony.emsl.pnnl.gov 2
+        nb26.colony.emsl.pnnl.gov 4
+        nb27.colony.emsl.pnnl.gov 2
+        nb27.colony.emsl.pnnl.gov 4
+        nb28.colony.emsl.pnnl.gov 2
+        nb28.colony.emsl.pnnl.gov 4
+        nb29.colony.emsl.pnnl.gov 2
+        nb29.colony.emsl.pnnl.gov 4
+        # .gmpi/conf file end
+
+    -- with PBS
+
+       node files are created dynamically, but should have the same 
+       format as the default .gmpi/conf
+
+       IT IS REQUIRED THAT MPI TASKS RUNNING ON THE SAME SMP NODE
+       BE NUMBERED CONSECUTIVELY 
+
+    GM Port Usage:
+
+    The current ARMCI implementation uses two GM ports. 
+    If STATIC_PORTS is defined, they are called
+        ARMCI_GM_SERVER_RCV_PORT
+        ARMCI_GM_SERVER_SND_PORT
+    The default port numbers are 5 and 6, set in the file armci/src/myrinet.h. 
+    Users can choose different ports by editing the definition, depending on 
+    the system settings and at least not conflicting with the ports used by MPI.
+
+    If STATIC_PORTS is NOT defined, ARMCI will search for first two available
+    ports on up to two myrinet boards. 
+
+3. Test run 
+
+   Go to armci/src and make test.x
+
+   Using mpich-gm: run it as regular mpi programs (make sure the mpirun
+   is come from mpich-gm. many systems have multiple mpi installed)
+
+   mpirun -np #procs test.x
+
+   This will read the default .gmpi/conf
+
+4. Contact info and bug report
+   email: parsoft-support@emsl.pnl.gov
+
+5. Other issues:
+
+GM does not allow fork. This system call is normally used on Unix
+in ARMCI to test how big a shared memory segment can be allocated.
+This test is diabled under Myrinet/GM. It means that ARMCI can
+use only shared memory segments predefined _SHMMAX in shmem.c 
+for a particular platform. If you increase that limit in the system,
+_SHMMAX must be accordingly modiefied and ARMCI recompiled. 
+
+The current port or ARMCI to GM is not fully optimized yet.
+

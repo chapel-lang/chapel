@@ -1,0 +1,214 @@
+*README*                                       Last change: 2005 Jan 11
+
+                                   ARMCI
+                   Aggregate Remote Memory Copy Interface
+             http://www.emsl.pnl.gov:2080/docs/parsoft/armci
+
+ This document lists the platforms supported by ARMCI and operating system
+ configuration/settings for these platform. Additional limited documentation
+ is available at ./doc/armci.pdf. Test programs test.c and perf.c are in ./src
+ directory. SPLASH LU benchmark it in ./examples directory.
+ Contact info for bugs, questions etc. email: parsoft-support@emsl.pnl.gov
+
+ Index
+    1. Supported Platforms
+    2. General Settings
+    3. Building ARMCI on SGI.
+    4. Building ARMCI on IBM.
+    5. Building ARMCI on CRAY.
+    6. Building ARMCI on other platforms
+    7. Platform specific issues/tuning
+
+=============================================================================
+
+ 1. Supported Platforms                       *supported-platforms*
+   1. shared-memory systems: SUN Solaris, SGI, SGI Altix, IBM, Linux, DEC,
+      HP, Cray SV1, Cray X1, and Windows NT/95/2000
+   2. distributed-memory systems: Cray T3E, IBM SP(TARGET=LAPI),
+      FUJITSU VX/VPP.
+   3. clusters of workstations (over Myrinet, Quadrics, Infiniband, sockets, VIA)
+
+=============================================================================
+
+ 2. General Settings                          *general-settings*
+
+      ARMCI can run with MPI(default),PVM and TCGMSG message-passing libraries.
+    It has been tested with MPI vendor implementations in addition to MPICH and
+    WMPI(NT). It also has been tested with PVM 3.4 on SGI and with Cray PVM on
+    Cray T3E only(doc/README.PVM). ARMCI has been tested with TCGMSG by 
+    developers of the NWChem package on many platforms. GNU make is REQUIRED on
+    Unix. For command line build on Windows, microsoft nmake instead of GNU
+    make should be used. For building ARMCI on any supported platform, the
+    environment variables described in the following paragraphs might need to
+    be set.
+
+      TARGET is a environment variable that ARMCI expects to be set for any
+    supported target environment. TARGET can be set to LINUX(on many systems
+    that run LINUX os),HPUX(for systems running HP-UX os), SOLARIS(for sun
+    systems running solaris),IBM(to run on machines running IBM's AIX os),
+    LAPI(for running on IBM SP using LAPI), FUJITSU,FUJITSU-VPP,CRAY-SV1
+    CRAY-YMP,CRAY-T3E,DECOSF(TRUE64),CYGWIN,INTERIX,
+    HITACHI(for hitachi sr8000),SGI(for SGI machines running IRIX),NEC.
+    As a general rule, on availability, 64-bit versions can usually be built
+    by appending to 64 to TARGET name (ex: HPUX64, SOLARIS64, 
+    LINUX64(alpha,Itanium64), IBM64, LAPI64, FUJITSU64).
+
+      A variable MSG_COMMS can be set to specify the message-passing library.
+    Value of MSG_COMMS can be one of MPI,PVM,TCGMSG. If the message passing
+    library's include/library path is not in the default include/library path
+    it also has to be specified by setting the <VAR>_INCLUDE and <VAR>_LIB
+    environment variables where <VAR> can be one of MPI, PVM and TCG based
+    on which of the message passing libraries is being used. Alternatively
+    when using MPI "make CC=<my_mpicc_path>/mpicc" might do the trick.
+    mpicc is a c compiler wrapper that many implementations of MPI provide.
+
+      ARMCI_NETWORK environment variable must be used to build ARMCI to
+    work properly on clusters with Myrinet (GM), Giganet cLAN (VIA), or
+    Quadrics (Elan3/Elan4). This is accomplished by specifying the
+    communication protocol appropriate for such a network. The recognized
+    options for ARMCI_NETWORK are:
+          MELLANOX
+          OPENIB (For Infiniband OpenIB)
+          GM (For Myrinet network)
+          ELAN4 (for Quadrics Elan4 network)
+          QUADRICS or ELAN3 (for Elan3)
+          BGMLMPI (FOr IBM BlueGene/L)
+          PORTALS
+          VIA
+          SOCKETS
+    SOCKETS is the assumed default for clusters connected with Ethernet.
+    This protocol might also work on other networks however, the performance
+    might be sub-optimal and on Myrinet it could even hang (GM does not work
+    with fork and the standard version of ARMCI uses fork).
+
+      After setting the above variables, a make in ./src builds ARMCI, the
+    library after building goes into armci/lib/$TARGET directory. In the 
+    src directory, type "make test.x" to build a test program.
+      The default setup assumes that you have a Fortran compiler available
+    in addition to the C compiler. Fortran code is used for fast memory copy
+    ARMCI can also be built w/o Fortran compiler available, but performance of
+    some operations might not be as good. Platform specific details for some
+    platforms are given in the following sections.
+
+
+============================================================================
+
+ 3. Building on SGI                            *building-on-SGI*
+
+   For running on SGI machines running the irix os, three target settings are
+   available.
+   1. TARGET=SGI generates a MIPS-4 64-bit code with 32-bit address space
+      when compiling on any R8000 based machines and a 32 bit MPIS-2 code
+      on any non-R8000 machines.
+   2. Use TARGET=SGI64 For generating a 64 bit code with 64-bit address space.
+   3. TARGET=SGI_N32 generates a 32bit code with a 32bit address space.
+
+   By default,SGI_N32 generates a MIPS3 code and SGI64 generates a MIPS4 code.
+
+   There is a possibility of conflict between the SGI's implementation
+   of MPI (but not others, MPICH for example) and ARMCI in their use of the
+   SGI specific inter-processor communication facility called arena.
+
+============================================================================
+
+ 4. Building on IBM                            *building-on-IBM*
+
+   1. Running on IBM without LAPI.
+      On IBM's running AIX, target can be set to IBM or IBM64 to run 32/64
+      bit versions of the code.
+
+   2. Running on the IBM-SP.
+      TARGET on IBM-SP can be set to LAPI (LAPI64 for 64 bit object). 
+      POE environment variable settings for the parallel environment PSSP 3.1:
+
+      1. ARMCI applications like any other LAPI-based codes must define
+         MP_MSG_API=lapi  or MP_MSG_API=mpi,lapi (when using ARMCI and MPI)
+      2. The LAPI-based implementation of ARMCI cannot be used on the very old
+         SP-2 systems because LAPI did not support
+         the TB2 switch used in those models.  If in doubt which switch you got
+         use odmget command: odmget -q name=css0 CuDv
+      3. For AIX versions 4.3.1 and later, environment variable
+         AIXTHREAD_SCOPE=S must be set to assure correct operation of LAPI
+         (IBM should  do it in PSSP by default).
+      4. Under AIX 4.3.3 and later  an additional environment variable is
+         required(RT_GRQ=ON) to restore the original thread scheduling that 
+         LAPI relies on.
+
+===========================================================================
+
+ 5. Building on CRAY                           *building-on-CRAY* 
+
+   1. TARGET environment variable is also used by cc on CRAY. It has to be set
+      to CRAY-SV1 on SV1, CRAY-YMP on YMP, CRAY-T3E on T3E. ARMCI on CRAY'S 
+      hence uses the same values to this environment variable as cc requires.
+
+   2. On CRAY-T3E, ARMCI can be run with either of the CRAY Message Passing
+      Libraries(PVM and MPI). For more information on running with PVM look at
+      docs/README.PVM. If running with PVM, MSG_COMMS has to be set to PVM.
+
+============================================================================
+
+ 6. building on other platforms                 *building-on-other-platforms* 
+   On other platforms, only setting required is the TARGET environment
+   environment variable. Optionally, MSG_COMMS and related environment can
+   be set as described in the General Settings section.
+
+=============================================================================
+
+ 7. Platform specific issues/tuning           *platform-specific-issues*
+
+   1. The Linux kernel has traditionally fairly small limit for the shared
+      memory segment size (SHMMAX). In kernels 2.2.x it is 32MB on
+      Intel, 16MB on Sun Ultra, and 4MB on Alpha processors. There are two
+      ways to increase this limit: 
+       a)rebuild the kernel after changing SHMMAX in
+         /usr/src/linux/include/asm-i386/shmparam.h, for example, setting 
+         SHMMAX as 0x8000000 (128MB) 
+       b)A system admin can increase the limit without rebuilding the
+         kernel, for example: echo "134217728" >/proc/sys/kernel/shmmax 
+
+   2. SUN
+      Solaris by default provides only 1MB limit for the largest shared memory
+      segment. You need to increase this value to do any useful work withARMCI.
+      For example to make SHMMAX= 2GB, add either of the lines to /etc/system:
+      set shmsys:shminfo_shmmax=0x80000000 /* hexidecimal */ 
+      set shmsys:shminfo_shmmax=2147483648 /* decimal     */ 
+      After rebooting, you should be able to take advantage of the increased
+      shared memory limits.
+
+
+   3. Compaq/DEC
+      Tru64 is another example of an OS with a pitifully small size of the
+      shared memory region limit. Here are instruction on how to modify shared
+      memory max segment size to 256MB on  the Tru64 UNIX Version 4.0F:
+      1) create a file called /etc/sysconfig.shmmax 
+         cat > /etc/sysconfig.shmmax << EOF 
+         ipc:
+         shm-max = 268435456
+         EOF
+         You can check if the file created is OK by typing: 
+         /sbin/sysconfigdb -l -t /etc/sysconfig.shmmax
+      2) Modify kernel values: sysconfigdb -a -f /etc/sysconfig.shmmax ipc 
+      3) Reboot
+      4) To check new values: /sbin/sysconfig -q ipc|egrep shm-max 
+
+
+   4. HP-UX
+      In most HP-UX/11 installations, the default limit  for the largest shared
+      memory segment is 64MB. A system administrator should be able to
+
+
+   5. Issues related to Myrinet
+       a)On Linux/x86 clusters with Myrinet, the release of GM 1.4 leads
+         to hangs in ARMCI and GA. This problem has been solved  in GM
+         1.4.1pre6 which is available on the Myricom ftp site. Versions
+         1.2, 1.3, 1.4pre48 of GM do not have that problem. 
+       b)With MPICH/GM versions >1.2.3, the GM version 1.4.1pre14 or
+         higher must be used.
+   6. Polling mode in GM and VIA
+       a)When ARMCI is run with GM or VIA as the network, defining the
+         variable ARMCI_POLLING_RECV would use polling instead of blocking
+         to receive data.
+=============================================================================
+=============================================================================
+ vim:tw=78:ts=8:ft=help:norl:
