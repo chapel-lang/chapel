@@ -158,6 +158,7 @@ void deadCodeElimination() {
       if (!fNoFlowAnalysis)
         deadCodeElimination(fn);
       deadVariableElimination(fn);
+      deadExpressionElimination(fn);
     }
   }
 }

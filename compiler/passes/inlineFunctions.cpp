@@ -92,7 +92,8 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
   removeUnnecessaryGotos(fn);
   if (!fNoCopyPropagation)
     localCopyPropagation(fn);
-  deadVariableElimination(fn);
+  if (!fNoDeadCodeElimination)
+    deadVariableElimination(fn);
   deadExpressionElimination(fn);
   forv_Vec(CallExpr, call, *fn->calledBy) {
     inlineCall(call);
@@ -113,6 +114,7 @@ inlineFunctions(void) {
     forv_Vec(FnSymbol, fn, gFns) {
       collapseBlocks(fn->body);
       removeUnnecessaryGotos(fn);
+      deadExpressionElimination(fn);
     }
     return;
   }
