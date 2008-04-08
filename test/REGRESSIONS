@@ -32,6 +32,52 @@ differing memory sizes on different platforms
 [Error matching program output for memory/shannon/printFinalMemStat]
 
 
+
+===================
+opts-specific tests
+===================
+
+??? (--baseline --dead-code-elimination)
+----------------------------------------
+[Error matching compiler output for release/examples/arrays]
+[Error matching compiler output for release/examples/beer]
+[Error matching compiler output for release/examples/blockLU]
+[Error matching compiler output for release/examples/fileIO]
+[Error matching compiler output for release/examples/genericStack]
+[Error matching compiler output for release/examples/hello-module]
+[Error matching compiler output for release/examples/hello]
+[Error matching compiler output for release/examples/iterators]
+[Error matching compiler output for release/examples/jacobi]
+[Error matching compiler output for release/examples/linkedList]
+[Error matching compiler output for release/examples/norm]
+[Error matching compiler output for release/examples/opaque]
+[Error matching compiler output for release/examples/prodCons]
+[Error matching compiler output for release/examples/quicksort]
+[Error matching compiler output for release/examples/reductions]
+[Error matching compiler output for release/examples/slices]
+[Error matching compiler output for release/examples/sparse]
+[Error matching compiler output for release/examples/taskParallel]
+[Error matching compiler output for release/examples/tree]
+[Error matching compiler output for release/examples/varargs]
+[Error matching compiler output for release/examples/hpcc/fft]
+[Error matching compiler output for release/examples/hpcc/ra]
+[Error matching compiler output for release/examples/hpcc/stream]
+[Summary: #Successes = 0 | #Failures = 23 | #Futures = 0]
+
+
+???
+--baseline --copy-propagation
+--baseline --flow-analysis
+--baseline --inline
+--baseline --live-analysis
+--baseline --optimize-single-loop-iterators
+--baseline --scalar-replacement
+--no-optimize-single-loop-iterators --no-inline-iterators --no-live-analysis
+--baseline --no-local
+----------------------------------------------------------------------------
+[Error matching program output for release/examples/sparse]
+
+
 =============================
 valgrind-specific regressions
 =============================
@@ -98,8 +144,18 @@ parallel/cobegin/deitz/test_array_cobegin]
 baseline-specific regressions
 =============================
 
-out of memory allocating iterator classes
+???
 ---
+[Error matching program output for arrays/deitz/test_plus_assign_iter]
+[Error matching program output for npb/is/diten/is]
+[Error matching program output for npb/is/diten/is_mt]
+[Error matching program output for npb/is/diten/is_no_buckets]
+[Error matching program output for puzzles/deitz/histogram]
+[Error matching program output for release/examples/sparse]
+
+
+out of memory allocating iterator classes
+-----------------------------------------
 [Error matching program output for studies/sudoku/dinan/sudoku]
 
 
@@ -260,51 +316,6 @@ weird math function interaction
 ==========================
 sunos-specific regressions
 ==========================
-
-core dump in new task parallel creation functions (?)
------------------------------------------------------
-[Error matching program output for parallel/begin/deitz/test_begin_cobegin1]
-[Error matching program output for parallel/begin/deitz/test_begin_cobegin2]
-[Error matching program output for parallel/begin/deitz/test_string_cat]
-[Error matching program output for parallel/begin/waynew/simple2]
-[Error matching program output for parallel/cobegin/bradc/arrayargs]
-[Error matching program output for parallel/cobegin/bradc/exitone]
-[Error matching program output for
-parallel/cobegin/bradc/varsEscape-workaround]
-[Error matching program output for
-parallel/cobegin/deitz/test_array_cobegin]
-[Error matching program output for parallel/cobegin/waynew/cobegin.simple0]
-[Error matching program output for parallel/cobegin/waynew/cobegin.simple1]
-[Error matching program output for parallel/cobegin/waynew/cobegin.simple2]
-[Error matching program output for parallel/cobegin/waynew/depend]
-[Error matching program output for parallel/cobegin/waynew/locals]
-[Error matching program output for parallel/cobegin/waynew/while]
-[Error matching program output for parallel/cobegin/waynew/writeln]
-[Error matching program output for parallel/serial/deitz/test_serial1]
-[Error matching program output for parallel/serial/waynew/cobegin1a]
-[Error matching program output for parallel/serial/waynew/cobegin1b]
-[Error matching program output for parallel/single/diten/simpleSingleAccess]
-[Error matching program output for parallel/single/waynew/simple4]
-[Error matching program output for parallel/sync/bradc/fib_sync]
-[Error matching program output for parallel/sync/waynew/if2]
-[Error matching program output for parallel/syncStmt/bradc/cobeginSync]
-[Error matching program output for release/examples/prodCons]
-[Error matching program output for release/examples/quicksort]
-[Error matching program output for release/examples/taskParallel]
-[Error matching program output for release/examples/tree]
-[Error matching program output for users/shetag/ccs]
-[Error matching program output for users/shetag/fock/fock-0]
-[Error matching program output for users/shetag/fock/fock-1-begin-blc]
-[Error matching program output for users/shetag/fock/fock-1-latest]
-[Error matching program output for users/shetag/fock/fock-1]
-[Error matching program output for users/shetag/fock/fock-2]
-[Error matching program output for users/shetag/fock/fock-3-blc]
-[Error matching program output for users/shetag/fock/fock-3]
-[Error matching program output for users/shetag/fock/fock-orig]
-[Error matching program output for users/shetag/shareIterator-blc-register]
-[Error matching program output for users/shetag/shareIterator-blc-release]
-[Error matching program output for users/shetag/shareIterator-blc]
-
 
 exp2/log2/other math fns not supported
 --------------------------------------
