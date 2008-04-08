@@ -100,4 +100,33 @@ void lowerIterators() {
       }
     }
   }
+
+  //
+  // make _getIterator(ic: _iteratorClass) implement a shallow copy to
+  // avoid clashing during simultaneous iterations of the same
+  // iterator class
+  //
+  // see functions/deitz/iterators/test_generic_use_twice2.chpl
+  //
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->hasPragma("iterator class copy")) {
+      BlockStmt* block = new BlockStmt();
+      ArgSymbol* ic = fn->getFormal(1);
+      INT_ASSERT(ic);
+      ClassType* ct = toClassType(ic->type);
+      INT_ASSERT(ct);
+      VarSymbol* cp = new VarSymbol("ic_copy", ct);
+      cp->isCompilerTemp = true;
+      block->insertAtTail(new DefExpr(cp));
+      block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cp, new CallExpr(PRIMITIVE_CHPL_ALLOC, ct->symbol, new_StringSymbol("iterator class copy"))));
+      for_fields(field, ct) {
+        VarSymbol* tmp = new VarSymbol("_tmp", field->type);
+        block->insertAtTail(new DefExpr(tmp));
+        block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, field)));
+        block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, cp, field, tmp));
+      }
+      block->insertAtTail(new CallExpr(PRIMITIVE_RETURN, cp));
+      fn->body->replace(block);
+    }
+  }
 }

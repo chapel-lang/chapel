@@ -1102,7 +1102,7 @@ pragma "inline" def _cast(type t, x: imag(?w)) where t == bool
   return if x != 0i then true else false;
 
 // handle default iterators
-pragma "inline" def _getIterator(ic: _iteratorClass)
+pragma "inline" pragma "iterator class copy" def _getIterator(ic: _iteratorClass)
   return ic;
 
 pragma "inline" def _getIterator(x)
