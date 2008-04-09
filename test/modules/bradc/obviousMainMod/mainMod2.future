@@ -1,0 +1,10 @@
+feature request
+
+Specifying the --main-module flag when all but one of the
+user modules are obviously inert seems annoying to me.  I
+think the reason we decided not to support this was because
+variable initializers are executable, but it seems like a
+module consisting only of records, classes, and unions at
+the top level should not be a candidate for the main module by
+default (unless we change the language definition to support
+static class constructors?).
