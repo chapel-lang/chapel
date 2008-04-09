@@ -70,8 +70,8 @@ bool ignore_errors = false;
 bool ignore_warnings = false;
 int trace_level = 0;
 int fcg = 0;
-bool fBaseline = false;
-bool fFastFlag = false;
+static bool fBaseline = false;
+static bool fFastFlag = false;
 bool fNoCopyPropagation = false;
 bool fNoDeadCodeElimination = false;
 bool fNoScalarReplacement = false;
@@ -311,29 +311,29 @@ static ArgumentDescription arg_desc[] = {
  {"print-code-size", ' ', NULL, "Print code size statistics", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
- {"local", ' ', NULL, "Constrain execution to one locale", "N", &fLocal, "CHPL_LOCAL", NULL},
- {"serial", ' ', NULL, "Serialize parallel concepts", "N", &fSerial, "CHPL_SERIAL", NULL},
+ {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", NULL},
+ {"serial", ' ', NULL, "[Don't] Serialize parallel concepts", "N", &fSerial, "CHPL_SERIAL", NULL},
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
- {"baseline", ' ', NULL, "Disable all optimizations at Chapel level", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
+ {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
  {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, NULL, setFastFlag},
- {"ieee-float", ' ', NULL, "Enable non-ieee compliant optimizations", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
- {"copy-propagation", ' ', NULL, "Disable copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
- {"dead-code-elimination", ' ', NULL, "Disable dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},
- {"flow-analysis", ' ', NULL, "Disable optimizations requiring flow analysis", "n", &fNoFlowAnalysis, "CHPL_NO_FLOW_ANALYSIS", NULL},
- {"inline", ' ', NULL, "Disable inlining functions", "n", &fNoInline, NULL, NULL},
- {"inline-iterators", ' ', NULL, "Disable inlining of iterators", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
- {"live-analysis", ' ', NULL, "Disable live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
- {"optimize-single-loop-iterators", ' ', NULL, "Disable optimization of iterators composed of a single loop", "n", &fNoOptimizeSingleLoopIterators, "CHPL_DISABLE_OPTIMIZE_SINGLE_LOOP_ITERATORS", NULL},
- {"scalar-replacement", ' ', NULL, "Disable scalar replacement", "n", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
+ {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
+ {"copy-propagation", ' ', NULL, "Enable [disable] copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
+ {"dead-code-elimination", ' ', NULL, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},
+ {"flow-analysis", ' ', NULL, "Enable [disable] optimizations requiring flow analysis", "n", &fNoFlowAnalysis, "CHPL_NO_FLOW_ANALYSIS", NULL},
+ {"inline", ' ', NULL, "Enable [disable] function inlining", "n", &fNoInline, NULL, NULL},
+ {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
+ {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
+ {"optimize-single-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeSingleLoopIterators, "CHPL_DISABLE_OPTIMIZE_SINGLE_LOOP_ITERATORS", NULL},
+ {"scalar-replacement", ' ', NULL, "Enable [disable] scalar replacement", "n", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
- {"bounds-checks", ' ', NULL, "Disable bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
- {"nil-checks", ' ', NULL, "Disable nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
+ {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
+ {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
 
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
- {"cpp-lines", ' ', NULL, "Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
+ {"cpp-lines", ' ', NULL, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
  {"short-names", ' ', NULL, "Use short names", "F", &fShortNames, "CHPL_SHORT_NAMES", NULL},
 
@@ -343,13 +343,13 @@ static ArgumentDescription arg_desc[] = {
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
  {"make", ' ', "<make utility>", "Make utility for generated code", "S256", &chplmake, "CHPL_MAKE", NULL},
- {"debug", 'g', NULL, "Allow debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
- {"optimize", 'O', NULL, "Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
+ {"debug", 'g', NULL, "[Don't] Support debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
+ {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
 
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
  {"chplhome", ' ', "<directory>", "Over-ride $CHPL_HOME", "P", chplhome, "CHPL_HOME", NULL},
- {"devel", ' ', NULL, "Compile as developer", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
+ {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
@@ -367,7 +367,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
  {"", ' ', NULL, "Debug Output", NULL, NULL, NULL, NULL},
- {"cc-warnings", ' ', NULL, "Give warnings for generated code", "N", &ccwarnings, "CHPL_CC_WARNINGS", NULL},
+ {"cc-warnings", ' ', NULL, "[Don't] Give warnings for generated code", "N", &ccwarnings, "CHPL_CC_WARNINGS", NULL},
  {"html", 't', NULL, "Dump IR in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
  {"log", 'd', "[a|i|F|d|s]", "Specify debug logs", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},

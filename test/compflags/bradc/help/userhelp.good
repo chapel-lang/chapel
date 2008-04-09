@@ -9,34 +9,35 @@ Code Size Options:
       --print-code-size                  Print code size statistics
 
 Parallelism Control Options:
-      --[no-]local                       Constrain execution to one locale
-      --[no-]serial                      Serialize parallel concepts
+      --[no-]local                       Target one [many] locale[s]
+      --[no-]serial                      [Don't] Serialize parallel concepts
 
 Optimization Control Options:
-      --baseline                         Disable all optimizations at Chapel
-                                         level
+      --baseline                         Disable all Chapel optimizations
       --fast                             Use fast default settings
-      --[no-]ieee-float                  Enable non-ieee compliant
-                                         optimizations
-      --[no-]copy-propagation            Disable copy propagation
-      --[no-]dead-code-elimination       Disable dead code elimination
-      --[no-]flow-analysis               Disable optimizations requiring flow
+      --[no-]ieee-float                  Generate code that is strict [lax]
+                                         with respect to IEEE compliance
+      --[no-]copy-propagation            Enable [disable] copy propagation
+      --[no-]dead-code-elimination       Enable [disable] dead code
+                                         elimination
+      --[no-]flow-analysis               Enable [disable] optimizations
+                                         requiring flow analysis
+      --[no-]inline                      Enable [disable] function inlining
+      --[no-]inline-iterators            Enable [disable] iterator inlining
+      --[no-]live-analysis               Enable [disable] live variable
                                          analysis
-      --[no-]inline                      Disable inlining functions
-      --[no-]inline-iterators            Disable inlining of iterators
-      --[no-]live-analysis               Disable live variable analysis
       --[no-]optimize-single-loop-iterators
-                                         Disable optimization of iterators
-                                         composed of a single loop
-      --[no-]scalar-replacement          Disable scalar replacement
+                                         Enable [disable] optimization of
+                                         iterators composed of a single loop
+      --[no-]scalar-replacement          Enable [disable] scalar replacement
 
 Run-time Semantic Check Options:
       --no-checks                        Disable all following checks
-      --[no-]bounds-checks               Disable bounds checking
-      --[no-]nil-checks                  Disable nil checking
+      --[no-]bounds-checks               Enable [disable] bounds checking
+      --[no-]nil-checks                  Enable [disable] nil checking
 
 C Code Generation Options:
-      --[no-]cpp-lines                   Generate #line annotations
+      --[no-]cpp-lines                   [Don't] Generate #line annotations
       --savec <directory>                Save generated C code in directory
       --short-names                      Use short names
 
@@ -46,13 +47,14 @@ C Code Compilation Options:
   -l, --lib-linkage <library>            C library linkage
   -L, --lib-search-path <directory>      C library search path
       --make <make utility>              Make utility for generated code
-  -g, --[no-]debug                       Allow debugging of generated C code
-  -O, --[no-]optimize                    Optimize generated C code
+  -g, --[no-]debug                       [Don't] Support debugging of
+                                         generated C code
+  -O, --[no-]optimize                    [Don't] Optimize generated C code
   -o, --output <filename>                Name output executable
 
 Miscellaneous Options:
       --chplhome <directory>             Over-ride $CHPL_HOME
-      --[no-]devel                       Compile as developer
+      --[no-]devel                       Compile as a developer [user]
       --explain-call <call>[:<module>][:<line>]
                                          Explain resolution of call
       --explain-instantiation <function|type>[:<module>][:<line>]

@@ -17,8 +17,6 @@ extern int fNoStdIncs;
 extern int trace_level;
 
 // optimization control flags
-extern bool fBaseline;
-extern bool fFastFlag;
 extern bool fNoBoundsChecks;
 extern bool fNoCopyPropagation;
 extern bool fNoDeadCodeElimination;
