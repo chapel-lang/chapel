@@ -207,11 +207,11 @@ insertSetMemberInits(FnSymbol* fn, Symbol* var) {
     INT_ASSERT(ct);
     for_fields(field, ct) {
       if (field->type->refType) { // skips array types (how to handle arrays?)
-        Symbol* tmp = new VarSymbol("_tmp", field->type->refType);
+        Symbol* tmp = new VarSymbol("_tmp", field->type);
         tmp->isCompilerTemp = true;
         fn->insertAtTail(new DefExpr(tmp));
-        fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, var, field)));
         insertSetMemberInits(fn, tmp);
+        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, field, tmp));
       }
     }
   }
@@ -899,11 +899,11 @@ void lowerIterator(FnSymbol* fn) {
       insertSetMember(fn, t1, field, local);
     } else if (isRecordType(local->type)) {
       if (field->type->refType) { // skips array types (how to handle arrays?)
-        Symbol* tmp = new VarSymbol("_tmp", field->type->refType);
+        Symbol* tmp = new VarSymbol("_tmp", field->type);
         tmp->isCompilerTemp = true;
         fn->insertAtTail(new DefExpr(tmp));
-        fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, t1, field)));
         insertSetMemberInits(fn, tmp);
+        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, t1, field, tmp));
       }
     } else if (field->type->symbol->hasPragma("ref")) {
       // do not initialize references
