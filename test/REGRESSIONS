@@ -92,52 +92,9 @@ failing nondeterministically (e.g., 04/04/08)
 ---------------------------------------------
 [Error: didn't find expected suppression memory/shannon/outofmemory/mallocOutOfMemory]
 
-chpl_process_task_list has invalid read
----------------------------------------
-[Error matching program output for parallel/begin/deitz/test_begin_cobegin1]
-[Error matching program output for parallel/begin/deitz/test_begin_cobegin2]
-[Error matching program output for parallel/begin/deitz/test_string_cat]
+???
+---
 [Error matching program output for parallel/begin/dinan/mvm_coforall]
-[Error matching program output for parallel/begin/waynew/simple2]
-[Error matching program output for parallel/cobegin/bradc/arrayargs]
-[Error matching program output for parallel/cobegin/bradc/exitone]
-[Error matching program output for
-parallel/cobegin/bradc/varsEscape-workaround]
-[Error matching program output for
-parallel/cobegin/deitz/test_array_cobegin]
-[Error matching program output for parallel/cobegin/waynew/cobegin.simple0]
-[Error matching program output for parallel/cobegin/waynew/cobegin.simple1]
-[Error matching program output for parallel/cobegin/waynew/cobegin.simple2]
-[Error matching program output for parallel/cobegin/waynew/depend]
-[Error matching program output for parallel/cobegin/waynew/locals]
-[Error matching program output for parallel/cobegin/waynew/while]
-[Error matching program output for parallel/cobegin/waynew/writeln]
-[Error matching program output for parallel/serial/deitz/test_serial1]
-[Error matching program output for parallel/serial/waynew/cobegin1a]
-[Error matching program output for parallel/serial/waynew/cobegin1b]
-[Error matching program output for parallel/single/diten/simpleSingleAccess]
-[Error matching program output for parallel/single/waynew/simple4]
-[Error matching program output for parallel/sync/bradc/fib_sync]
-[Error matching program output for parallel/sync/waynew/if2]
-[Error matching program output for parallel/syncStmt/bradc/cobeginSync]
-[Error matching program output for release/examples/prodCons]
-[Error matching program output for release/examples/quicksort]
-[Error matching program output for release/examples/taskParallel]
-[Error matching program output for release/examples/tree]
-[Error matching program output for stress/deitz/test_10k_cobegins]
-[Error matching program output for users/shetag/ccs]
-[Error matching program output for users/shetag/fock/fock-0]
-[Error matching program output for users/shetag/fock/fock-1-begin-blc]
-[Error matching program output for users/shetag/fock/fock-1-latest]
-[Error matching program output for users/shetag/fock/fock-1]
-[Error matching program output for users/shetag/fock/fock-2]
-[Error matching program output for users/shetag/fock/fock-3-blc]
-[Error matching program output for users/shetag/fock/fock-3]
-[Error matching program output for users/shetag/fock/fock-orig]
-[Error matching program output for users/shetag/shareIterator-blc-register]
-[Error matching program output for users/shetag/shareIterator-blc-release]
-[Error matching program output for users/shetag/shareIterator-blc]
-
 
 
 =============================
