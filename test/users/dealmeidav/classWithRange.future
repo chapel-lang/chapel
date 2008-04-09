@@ -1,0 +1,5 @@
+bug: ranges in classes
+
+It seems that default types for ranges don't work when they're
+within a class.
+
