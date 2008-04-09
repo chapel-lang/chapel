@@ -1,4 +1,4 @@
 ARMCI_INSTALL = $(CHAPEL_ROOT)/third-party/armci/armci-GPCsockets
-MPI_INSTALL = $(CHAPEL_ROOT)/third-party/mpich1/install/linux
+MPI_INSTALL = $(CHAPEL_ROOT)/third-party/mpich1/install/sunos
 
-LIBS += -L$(ARMCI_INSTALL)/lib/LINUX -L$(MPI_INSTALL)/lib -larmci -lmpich
+LIBS += -L$(ARMCI_INSTALL)/lib/SOLARIS -L$(MPI_INSTALL)/lib -larmci -lmpich -lsocket -lnsl -lrt
