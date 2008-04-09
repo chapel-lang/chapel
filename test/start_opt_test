@@ -8,6 +8,9 @@
 #        and mail results to chapel_cronmail@cray.com ; on Saturdays
 #        run tests on every directory and on Sundays, do nothing
 #
+# -all: run tests on almost all test/ subdirectories, not just
+#       release/examples
+#
 
 if (@ARGV) {
   $flag = shift @ARGV;
@@ -34,7 +37,7 @@ if ($cron) {
 @OPTS = `cat $home/OPT_TESTING_FLAGS`;
 
 if ($all) {
-  $dir = ".";
+  $dir = "arrays associative classes dispatch domains expressions functions modules npb parallel puzzles reductions release/examples sparse spec statements studies types users";
 } else {
   $dir = "release/examples";
 }
