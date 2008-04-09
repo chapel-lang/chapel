@@ -23,7 +23,8 @@ unifyClassInstances(Symbol* sym) {
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
           forv_Vec(SymExpr, se, sym->uses) {
             se->var = rhs->var;
-            rhs->var->uses.add(se);
+            if (rhs->var != gNil)
+              rhs->var->uses.add(se);
           }
           call->remove();
           sym->defPoint->remove();

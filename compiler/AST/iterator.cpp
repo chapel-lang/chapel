@@ -895,9 +895,9 @@ void lowerIterator(FnSymbol* fn) {
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, t1, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->classType->symbol, new_StringSymbol("iterator class"))));
   forv_Vec(Symbol, local, locals) {
     Symbol* field = local2field.get(local);
-    if (toArgSymbol(local))
+    if (toArgSymbol(local)) {
       insertSetMember(fn, t1, field, local);
-    else if (isRecordType(local->type)) {
+    } else if (isRecordType(local->type)) {
       if (field->type->refType) { // skips array types (how to handle arrays?)
         Symbol* tmp = new VarSymbol("_tmp", field->type->refType);
         tmp->isCompilerTemp = true;
@@ -905,6 +905,10 @@ void lowerIterator(FnSymbol* fn) {
         fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, t1, field)));
         insertSetMemberInits(fn, tmp);
       }
+    } else if (field->type->symbol->hasPragma("ref")) {
+      // do not initialize references
+    } else if (field->type->defaultValue) {
+      insertSetMember(fn, t1, field, field->type->defaultValue);
     }
   }
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));

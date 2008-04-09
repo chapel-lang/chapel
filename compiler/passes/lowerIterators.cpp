@@ -120,10 +120,12 @@ void lowerIterators() {
       block->insertAtTail(new DefExpr(cp));
       block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cp, new CallExpr(PRIMITIVE_CHPL_ALLOC, ct->symbol, new_StringSymbol("iterator class copy"))));
       for_fields(field, ct) {
-        VarSymbol* tmp = new VarSymbol("_tmp", field->type);
-        block->insertAtTail(new DefExpr(tmp));
-        block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, field)));
-        block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, cp, field, tmp));
+        if (!field->type->symbol->hasPragma("ref")) {
+          VarSymbol* tmp = new VarSymbol("_tmp", field->type);
+          block->insertAtTail(new DefExpr(tmp));
+          block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, field)));
+          block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, cp, field, tmp));
+        }
       }
       block->insertAtTail(new CallExpr(PRIMITIVE_RETURN, cp));
       fn->body->replace(block);
