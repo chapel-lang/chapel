@@ -103,7 +103,7 @@ process_import_expr(CallExpr* call) {
 //
 // Compute dispatchParents and dispatchChildren vectors; add base
 // class fields to subclasses; identify cyclic or illegal class or
-// record hierarchies.
+// record hierarchies; add dummy field to empty records and unions
 //
 static void
 add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
@@ -724,9 +724,8 @@ void cleanup(void) {
         destructure_tuple(call);
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (TypeSymbol* ts = toTypeSymbol(def->sym)) {
-        if (ClassType* ct = toClassType(ts->type)) {
+        if (ClassType* ct = toClassType(ts->type))
           add_class_to_hierarchy(ct);
-        }
       } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
         flatten_primary_methods(fn);
         change_cast_in_where(fn);
@@ -739,6 +738,16 @@ void cleanup(void) {
     currentFilename = ast->filename;
     if (TypeSymbol* ts = toTypeSymbol(ast)) {
       if (ClassType* ct = toClassType(ts->type)) {
+
+        //
+        // add field to empty records and unions
+        //
+        if (ct->classTag != CLASS_CLASS && ct->fields.isEmpty())
+          ct->fields.insertAtHead(
+            new DefExpr(
+              new VarSymbol("emptyRecordPlaceholder"),
+              new SymExpr(new_IntSymbol(0))));
+
         build_type_constructor(ct);
         build_constructor(ct);
         if (ct->defaultConstructor->isMethod) {

@@ -345,7 +345,6 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, " */");
   }
   fprintf(outfile, " {\n");
-  bool printedSomething = false; // BLC: this is to avoid empty structs, illegal in C
   if (symbol->hasPragma("object class") && classTag == CLASS_CLASS) {
     if (fCopyCollect) {
       fprintf(outfile, "union {\n");
@@ -355,27 +354,19 @@ void ClassType::codegenDef(FILE* outfile) {
     } else {
       fprintf(outfile, "_class_id _cid;\n");
     }
-    printedSomething = true;
   } else if (classTag == CLASS_UNION) {
     fprintf(outfile, "int64_t _uid;\n");
     fprintf(outfile, "union {\n");
   }
   for_fields(field, this) {
     field->codegenDef(outfile);
-    printedSomething = true;
   }
   if (classTag == CLASS_UNION) {
-    if (!printedSomething)
-      fprintf(outfile, "int _emptyUnionPlaceholder;\n");
     fprintf(outfile, "} _u;\n");
-    printedSomething = true;
   }
   if (symbol->hasPragma("data class")) {
     toType(substitutions.v[0].value)->symbol->codegen(outfile);
     fprintf(outfile, "* _data;\n");
-  }
-  if (!printedSomething) {
-    fprintf(outfile, "int _emptyStructPlaceholder;\n");
   }
   fprintf(outfile, "} ");
   if (classTag == CLASS_CLASS)
