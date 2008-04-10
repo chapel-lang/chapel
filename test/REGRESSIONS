@@ -38,15 +38,6 @@ opts-specific tests
 ===================
 
 ???
---no-dead-code-elimination
---no-flow-analysis
---no-inline-iterators
---no-live-analysis
---------------------------
-[Error matching compiler output for release/examples/hpcc/ra]
-
-
-???
 --baseline --copy-propagation
 --baseline --dead-code-elimination
 --baseline --flow-analysis
@@ -73,10 +64,6 @@ failing nondeterministically (e.g., 04/03/08)
 failing nondeterministically (e.g., 04/04/08)
 ---------------------------------------------
 [Error: didn't find expected suppression memory/shannon/outofmemory/mallocOutOfMemory]
-
-???
----
-[Error matching program output for parallel/begin/dinan/mvm_coforall]
 
 
 =============================
@@ -111,110 +98,9 @@ garbage collection doesn't work with multithreaded
 intel-specific regressions
 ==========================
 
-New associative domain/array implementation results in compiler warnings
-related to default array argument value (apparently)
-------------------------------------------------------------------------
-[Error matching compiler output for arrays/deitz/domains/test_domain_arg2]
-[Error matching compiler output for arrays/deitz/domains/test_domain_arg3]
-[Error matching compiler output for arrays/deitz/opaque/test_opaque2]
-[Error matching compiler output for arrays/deitz/opaque/test_opaque3]
-[Error matching compiler output for
-arrays/deitz/test_array_of_associative_arrays]
-[Error matching compiler output for
-arrays/deitz/test_array_of_associative_domains]
-[Error matching compiler output for arrays/opaque/bradc/opaque-segfaults]
-[Error matching compiler output for arrays/opaque/bradc/opaqueIterate]
-[Error matching compiler output for associative/bradc/assocRecord]
-[Error matching compiler output for associative/bradc/clear]
-[Error matching compiler output for
-associative/deitz/arrays/test_indefinite1]
-[Error matching compiler output for
-associative/deitz/arrays/test_indefinite2]
-[Error matching compiler output for
-associative/deitz/arrays/test_indefinite3]
-[Error matching compiler output for
-associative/deitz/arrays/test_indefinite4]
-[Error matching compiler output for
-associative/deitz/arrays/test_indefinite5]
-[Error matching compiler output for
-associative/deitz/arrays/test_indefinite6]
-[Error matching compiler output for
-associative/deitz/arrays/test_indefinite7]
-[Error matching compiler output for
-associative/deitz/arrays/test_indefinite8]
-[Error matching compiler output for
-associative/deitz/domains/test_indefinite1]
-[Error matching compiler output for
-associative/deitz/domains/test_indefinite_domain_of_tuple]
-[Error matching compiler output for
-associative/deitz/domains/test_indefinite_remove2]
-[Error matching compiler output for
-associative/deitz/domains/test_indefinite_remove]
-[Error matching compiler output for
-associative/diten/assocArrayOfArithArray]
-[Error matching compiler output for associative/waynew/indef6]
-[Error matching compiler output for associative/waynew/indef7]
-[Error matching compiler output for associative/waynew/indef8-fail2]
-[Error matching compiler output for associative/waynew/indef8]
-[Error matching compiler output for associative/waynew/indef9]
-[Error matching compiler output for associative/waynew/indef9a]
-[Error matching compiler output for associative/waynew/tuple_domain_named]
-[Error matching compiler output for
-classes/bradc/arrayInClass/arrayOfArithInClass]
-[Error matching compiler output for
-classes/bradc/arrayInClass/genericArrayInClass-arith]
-[Error matching compiler output for
-classes/bradc/arrayInClass/genericArrayInClass-otharrs]
-[Error matching compiler output for
-classes/bradc/arrayInClass/genericArrayInClass-real]
-[Error matching compiler output for
-classes/bradc/arrayInClass/genericClassArray-named]
-[Error matching compiler output for domains/dinan/assoc_array_access_oob]
-[Error matching compiler output for domains/dinan/assoc_domain_remove_oob]
-[Error matching compiler output for npb/cg/bradc/cg-makea1-sparse-sort]
-[Error matching compiler output for npb/cg/bradc/cg-printa]
-[Error matching compiler output for npb/cg/bradc/cg-sparse]
-[Error matching compiler output for
-performance/compiler/bradc/cg-sparse-timecomp]
-[Error matching compiler output for release/examples/opaque]
-[Error matching compiler output for studies/590o/alaska/graph]
-[Error matching compiler output for studies/590o/bradc/intset]
-[Error matching compiler output for studies/590o/kfm/solver-blc]
-[Error matching compiler output for studies/590o/kfm/solver]
-[Error matching compiler output for
-studies/madness/aniruddha/madchap/recordBug/test_likepy]
-[Error matching compiler output for studies/madness/common/test_diff]
-[Error matching compiler output for studies/madness/common/test_gaxpy]
-[Error matching compiler output for studies/madness/common/test_likepy]
-[Error matching compiler output for studies/madness/common/test_showboxes]
-[Error matching compiler output for
-studies/madness/dinan/mad_chapel/test_diff]
-[Error matching compiler output for
-studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching compiler output for
-studies/madness/dinan/mad_chapel/test_likepy]
-[Error matching compiler output for
-studies/madness/dinan/mad_chapel/test_showboxes]
-[Error matching compiler output for types/enum/diten/enumDom]
-[Error matching compiler output for users/shetag/assocDomOfRecord]
-[Error matching compiler output for users/shetag/assocInRecord]
-[Error matching compiler output for users/shetag/assoc]
-[Error matching compiler output for users/shetag/assocarr]
-[Error matching program output for
-memory/shannon/outofmemory/mallocOutOfMemory]
-
-
-Warning about use before set -- error #592 -- cause unknown
------------------------------------------------------------
-[Error matching compiler output for arrays/bradc/arrOfDom/arrOfDom]
-[Error matching compiler output for modules/bradc/ra-paramWidth]
-[Error matching compiler output for
-modules/standard/Schedules/bradc/schedules]
-[Error matching compiler output for release/examples/hpcc/ra]
-[Error matching compiler output for spec/marybeth/iterator2]
-[Error matching compiler output for studies/hpcc/RA/ra-hpcc06]
-[Error matching compiler output for studies/hpcc/RA/ra-seq]
-
+#592 -- use before def
+----------------------
+[Error matching compiler output for classes/bradc/arrayInClass/arrayInClassRecord2]
 
 Warning about using a variable before its value is set -- error #592
 caused by records with no fields and the constructor that gets created
@@ -317,24 +203,20 @@ print occurs in 0 seconds!?  Timers not working?
 [Error matching program output for spec/marybeth/use]
 
 
-=======================
-x1/x2-specific failures
-=======================
-
-compiler warning
-----------------
-[Error matching program output for release/examples/opaque]
-
-mysterious timeout (04/09/08)
------------------------------
-[Error matching program output for release/examples/reductions]
-[Error matching program output for release/examples/sparse]
-[Error matching program output for release/examples/varargs]
-
-
 ============================
 mta/xmt-specific regressions
 ============================
+
+data alignment trap (05/10/08)
+------------------------------
+[Error matching program output for release/examples/fileIO]
+[Error matching program output for release/examples/genericStack]
+[Error matching program output for release/examples/iterators]
+[Error matching program output for release/examples/jacobi]
+[Error matching program output for release/examples/norm]
+[Error matching program output for release/examples/reductions]
+[Error matching program output for release/examples/slices]
+
 
 mysterious timeout (04/09/08)
 -----------------------------
@@ -346,11 +228,6 @@ unreachable line causes compiler warning
 ----------------------------------------
 [Error matching program output for release/examples/arrays]
 [Error matching program output for release/examples/blockLU]
-
-use before value set warning
-----------------------------
-[Error matching program output for release/examples/hpcc/ra]
-[Error matching program output for release/examples/opaque]
 
 small full/empty sizes
 ----------------------
