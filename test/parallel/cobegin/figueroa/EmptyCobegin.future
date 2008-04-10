@@ -1,0 +1,1 @@
+error message: the compiler should warn if a cobegin has fewer than 2 statements
