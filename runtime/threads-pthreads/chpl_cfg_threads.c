@@ -2,14 +2,20 @@
 // Pthread implementation of Chapel threading interface
 //
 
-#include <inttypes.h>
-#include <pthread.h>
-#include <stdio.h>
+#ifdef __OPTIMIZE__
+// Turn assert() into a no op if the C compiler defines the macro above.
+#define NDEBUG
+#endif
+
 #include "chplcomm.h"
 #include "chplmem.h"
 #include "chplrt.h"
 #include "chplthreads.h"
 #include "error.h"
+#include <stdio.h>
+#include <assert.h>
+#include <pthread.h>
+#include <inttypes.h>
 
 //
 // task pool: linked list of tasks
@@ -379,4 +385,33 @@ chpl_begin (chpl_threadfp_t fp,
     chpl_mutex_unlock(&threading_lock);
   }
   return 0;
+}
+
+void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg, chpl_task_list_p *task_list) {
+  chpl_task_list_p task = (chpl_task_list_p)_chpl_malloc(1, sizeof(struct chpl_task_list), "task list entry", 0, 0);
+  task->fun = fun;
+  task->arg = arg;
+  if (*task_list) {
+    task->next = (*task_list)->next;
+    (*task_list)->next = task;
+  }
+  else task->next = task;
+  *task_list = task;
+}
+
+void chpl_process_task_list (chpl_task_list_p task_list) {
+  // task_list points to the last entry on the list; task_list->next is actually
+  // the first element on the list.
+  chpl_task_list_p task = task_list, next_task;
+  // The following line should not be needed, since cobegins should contain more
+  // than one statement.
+  if (task_list == NULL) return;
+  assert (task);
+  next_task = task->next;
+  do {
+    task = next_task;
+    chpl_begin (task->fun, task->arg, false, false);
+    next_task = task->next;
+    _chpl_free (task, 0, 0);
+  } while (task != task_list);
 }

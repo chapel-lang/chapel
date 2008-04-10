@@ -70,6 +70,12 @@ typedef void* (*chpl_threadfp_t)(void*);   // function pointer
 typedef void* chpl_threadarg_t;            // function argument
 
 typedef struct chpl_task_list *chpl_task_list_p;
+
+// This struct is intended for use in a circular linked list where the pointer
+// to the list actually points to the tail of the list, i.e., the last entry
+// inserted into the list, making it easier to append items to the end of the list.
+// Since it is part of a circular list, the last entry will, of course,
+// point to the first entry in the list.
 struct chpl_task_list {
   chpl_threadfp_t fun;
   chpl_threadarg_t arg;

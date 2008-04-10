@@ -168,3 +168,9 @@ chpl_begin(chpl_threadfp_t fp, chpl_threadarg_t a, chpl_bool ignore_serial, chpl
   }
   return 0;
 }
+
+void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg, chpl_task_list_p *task_list) {
+  chpl_begin (fun, arg, false, false);
+}
+
+void chpl_process_task_list (chpl_task_list_p task_list) { }
