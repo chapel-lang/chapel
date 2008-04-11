@@ -29,14 +29,14 @@ _real64 _now_time(void);
 #define _ARRAY_GET_VALUE(x, i) ((x)->_data[i])
 #define _ARRAY_SET(x, i, v) ((x)->_data[i] = v)
 
-#define _ARRAY_INIT(x, type, size, lineno, filename) \
-  (x)->_data = _chpl_malloc(size, sizeof(type), "_data", lineno, filename)
+#define _ARRAY_ALLOC(x, type, size, lineno, filename) \
+  (x)->_data = (size == 0) ? 0x0 : _chpl_malloc(size, sizeof(type), "_data", lineno, filename)
 
-#define _WIDE_ARRAY_INIT(x, type, size, lineno, filename)              \
+#define _WIDE_ARRAY_ALLOC(x, type, size, lineno, filename)              \
   do {                                                                 \
     if (x.locale != _localeID)                                         \
       chpl_error("array vector data is not local", lineno, filename); \
-    _ARRAY_INIT((x).addr, type, size, lineno, filename);               \
+    _ARRAY_ALLOC((x).addr, type, size, lineno, filename);               \
   } while (0)
 
 #define _ARRAY_FREE_ELTS(x, i, call) \

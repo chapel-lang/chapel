@@ -408,12 +408,29 @@ static void printToMemLog(size_t number, size_t size, const char* description,
 }
 
 
+static size_t computeChunkSize(size_t number, size_t size, int zeroOK, 
+                               int32_t lineno, _string filename) {
+  size_t chunk = number * size;
+  long long bigChunk = (long long)number * (long long)size;
+  if (bigChunk != chunk) {
+    chpl_error("Attempting to allocate > max(size_t) bytes of memory", lineno,
+               filename);
+  }
+  if (chunk == 0 && zeroOK == 0) {
+    chpl_internal_error("Attempting to allocate 0 bytes of memory");
+  }
+  return chunk;
+}
+
+
 static void* _chpl_malloc1(size_t number, size_t size,
                            const char* description,
                            int32_t lineno, _string filename) {
-  size_t chunk = number * size;
-  void* memAlloc = malloc(chunk);
-  confirm(memAlloc, description, lineno, filename);
+  size_t chunk = computeChunkSize(number, size, 0, lineno, filename);
+  void* memAlloc = (chunk) ? malloc(chunk) : 0x0;
+  if (chunk != 0) {
+    confirm(memAlloc, description, lineno, filename);
+  }
 
   if (memtrace) {
     chpl_mutex_lock(&_memtrace_lock);
@@ -436,7 +453,7 @@ static void* _chpl_malloc1(size_t number, size_t size,
 
 static void* _chpl_malloc2(size_t number, size_t size, const char* description,
                            int32_t lineno, _string filename) {
-  size_t chunk = number*size;
+  size_t chunk = computeChunkSize(number, size, 0, lineno, filename);
   void* memAlloc;
   chunk = chunk + (16 - (chunk % 16)); // 16 byte aligned.
   if (broadcastingGlobalsStarted == 0 && chpl_meminfo.head == NULL) {
@@ -557,7 +574,7 @@ void _chpl_free(void* memAlloc, int32_t lineno, _string filename) {
 
 void* _chpl_realloc(void* memAlloc, size_t number, size_t size, 
                     const char* description, int32_t lineno, _string filename) {
-  size_t newChunk = number * size;
+  size_t newChunk = computeChunkSize(number, size, 1, lineno, filename);
   memTableEntry* memEntry = NULL;
   void* moreMemAlloc;
   if (whichMalloc == 2) {

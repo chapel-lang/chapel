@@ -824,13 +824,13 @@ void CallExpr::codegen(FILE* outfile) {
       } else
         help_codegen_fn(outfile, "_ARRAY_SET", get(1), get(2), get(3));
       break;
-    case PRIMITIVE_ARRAY_INIT:
+    case PRIMITIVE_ARRAY_ALLOC:
       if (get(1)->typeInfo()->symbol->hasPragma("wide class")) {
-        help_codegen_fn(outfile, "_WIDE_ARRAY_INIT", get(1),
+        help_codegen_fn(outfile, "_WIDE_ARRAY_ALLOC", get(1),
                         get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value,
                         get(3), get(4), get(5));
       } else {
-        help_codegen_fn(outfile, "_ARRAY_INIT", get(1),
+        help_codegen_fn(outfile, "_ARRAY_ALLOC", get(1),
                         get(1)->typeInfo()->substitutions.v[0].value,
                         get(3), get(4), get(5));
       }
@@ -1731,7 +1731,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_INIT_TASK_LIST:
       fprintf( outfile, "NULL");
       break;
-    case PRIMITIVE_CHPL_ALLOC: {
+    case PRIMITIVE_CHPL_ALLOC:
+    case PRIMITIVE_CHPL_ALLOC_PERMIT_ZERO: {
       bool is_struct = false;
 
       // if Chapel class or record
@@ -1751,7 +1752,10 @@ void CallExpr::codegen(FILE* outfile) {
 
       // target: void* _chpl_alloc(size_t size, char* description);
       if (!fCopyCollect || typeInfo()->symbol->hasPragma("no object")) {
-        fprintf( outfile, "_chpl_alloc(sizeof(");
+        fprintf(outfile, "%s(sizeof(",
+                (primitive->tag == PRIMITIVE_CHPL_ALLOC ?
+                 "_chpl_alloc" : 
+                 "_CHPL_ALLOC_PERMIT_ZERO"));
       } else {
         fprintf( outfile, "_chpl_gc_malloc(1, sizeof(");
       }

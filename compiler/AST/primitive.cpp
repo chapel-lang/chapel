@@ -369,6 +369,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_PROCESS_TASK_LIST, "process task list", returnInfoVoid, true);
 
   prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc, true, true);
+  prim_def(PRIMITIVE_CHPL_ALLOC_PERMIT_ZERO, "chpl_alloc_permit_zero",
+           returnInfoChplAlloc, true, true);
   prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", returnInfoBool);
   prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", returnInfoBool);
@@ -380,7 +382,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
   prim_def(PRIMITIVE_TUPLE_AND_EXPAND, "and_expand_tuple", returnInfoVoid);
 
-  prim_def(PRIMITIVE_ARRAY_INIT, "array_init", returnInfoVoid, true, true);
+  prim_def(PRIMITIVE_ARRAY_ALLOC, "array_alloc", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_ARRAY_FREE, "array_free", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_ARRAY_FREE_ELTS, "array_free_elts", returnInfoVoid, true);
   prim_def(PRIMITIVE_ARRAY_GET, "array_get", returnInfoArrayIndex);

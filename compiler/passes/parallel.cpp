@@ -55,7 +55,7 @@ bundleArgs(CallExpr* fcall) {
                                           fn->name),
                                     ctype);
   fcall->insertBefore( new DefExpr( tempc));
-  CallExpr *tempc_alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC,
+  CallExpr *tempc_alloc = new CallExpr( PRIMITIVE_CHPL_ALLOC_PERMIT_ZERO,
                                         ctype->symbol,
                                         new_StringSymbol( astr( "instance of class ", ctype->symbol->name)));
   fcall->insertBefore( new CallExpr( PRIMITIVE_MOVE,

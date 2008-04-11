@@ -2719,7 +2719,7 @@ postFold(Expr* expr) {
       block->remove();
       wrapDomainMap.put(domainValueType, wrap->isResolved());
       buildArrayMap.put(call, build->isResolved());
-    } else if (call->isPrimitive(PRIMITIVE_ARRAY_INIT) ||
+    } else if (call->isPrimitive(PRIMITIVE_ARRAY_ALLOC) ||
                call->isPrimitive(PRIMITIVE_LOOP_C_FOR) ||
                call->isPrimitive(PRIMITIVE_SYNC_INIT) ||
                call->isPrimitive(PRIMITIVE_SYNC_LOCK) ||
@@ -3583,7 +3583,7 @@ pruneResolvedTree() {
             call->replace(call->get(1)->remove());
           }
         }
-      } else if (call->isPrimitive(PRIMITIVE_ARRAY_INIT)) {
+      } else if (call->isPrimitive(PRIMITIVE_ARRAY_ALLOC)) {
         // Capture array types for allocation before runtime array
         // types are inserted
         //        call->get(2)->replace(new SymExpr(call->get(2)->typeInfo()->symbol));
