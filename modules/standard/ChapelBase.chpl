@@ -1,45 +1,28 @@
-/* Let's not do these ones for now -- really want to use parameter
-   strings since (1) the values have hyphens in them and (2) we don't
-   want to have to hard-code all possible settings here in the
-   modules.  But param string comparisons don't get folded out yet, so
-   we're not ready for this.
-
-enum chpl_platform_values {unset, cygwin, darwin, linux, linux64, linux64_32,
-                           mta, sunos, x1, xmt, xt_cnl};
-config param CHPL_HOST_PLATFORM: chpl_platform_values = chpl_platform_values.unset;
-config param CHPL_TARGET_PLATFORM: chpl_platform_values = chpl_platform_values.unset;
-if (CHPL_HOST_PLATFORM == chpl_platform_values.unset) {
+config param CHPL_HOST_PLATFORM: string = "unset";
+config param CHPL_TARGET_PLATFORM: string = "unset";
+if (CHPL_HOST_PLATFORM == "unset") {
   compilerWarning("CHPL_HOST_PLATFORM not set");
 }
-if (CHPL_TARGET_PLATFORM == chpl_platform_values.unset) {
+if (CHPL_TARGET_PLATFORM == "unset") {
   compilerWarning("CHPL_TARGET_PLATFORM not set");
 }
 
-enum chpl_compiler_values {unset, cray_mta, cray_vec, cray_xt_gnu, 
-                           cray_xt_pathscale, cray_xt_pgi, intel, gnu, 
-                           pathscale, pgi};
-config param CHPL_HOST_COMPILER: chpl_compiler_values = chpl_compiler_values.unset;
-config param CHPL_TARGET_COMPILER: chpl_compiler_values = chpl_compiler_values.unset;
-if (CHPL_HOST_COMPILER == chpl_compiler_values.unset) {
+config param CHPL_HOST_COMPILER: string = "unset";
+config param CHPL_TARGET_COMPILER: string = "unset";
+if (CHPL_HOST_COMPILER == "unset") {
   compilerWarning("CHPL_HOST_COMPILER not set");
 }
-if (CHPL_TARGET_COMPILER == chpl_compiler_values.unset) {
+if (CHPL_TARGET_COMPILER == "unset") {
   compilerWarning("CHPL_TARGET_COMPILER not set");
 }
-*/
 
-// We'd really like to store all of these choices as strings, but
-// param folding on string comparison is not yet supported.
-
-enum chpl_threads_values {unset, mta, none, pthreads};
-config param CHPL_THREADS: chpl_threads_values = chpl_threads_values.unset;
-if (CHPL_THREADS == chpl_threads_values.unset) {
+config param CHPL_THREADS: string = "unset";
+if (CHPL_THREADS == "unset") {
   compilerWarning("CHPL_THREADS not set");
 }
 
-enum chpl_comm_values {unset, armci, gasnet, none};
-config param CHPL_COMM: chpl_comm_values = chpl_comm_values.unset;
-if (CHPL_COMM == chpl_comm_values.unset) {
+config param CHPL_COMM: string = "unset";
+if (CHPL_COMM == "unset") {
   compilerWarning("CHPL_COMM not set");
 }
 
@@ -642,7 +625,7 @@ def _pass(r: _ref) return r;
 // for targets that don't have particularly fast ways of achieving this functionality
 // for simple base types.)
 def isSimpleSyncBaseType (type t) param {
-  if CHPL_THREADS == chpl_threads_values.mta
+  if CHPL_THREADS == "mta"
     if t == int(64) || t == uint(64) || t == int(32) || t == uint(32)
         || t == int(16) || t == uint(16) || t == int(8) || t == uint(8)
         || t == real(32) || t == real(64) || t == imag(32) || t == imag(64)

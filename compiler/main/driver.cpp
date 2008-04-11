@@ -204,14 +204,10 @@ static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
 
 static void setBuiltinConfigParams(void) {
   ensure_chplhome_set();
-/* See comment at the top of ChapelBase.chpl to learn why these are
-   commented out:
-
   configParamMap.put(astr("CHPL_HOST_PLATFORM"), runUtilScript("platform.pl --host"));
   configParamMap.put(astr("CHPL_TARGET_PLATFORM"), runUtilScript("platform.pl --target"));
   configParamMap.put(astr("CHPL_HOST_COMPILER"), runUtilScript("compiler.pl --host"));
   configParamMap.put(astr("CHPL_TARGET_COMPILER"), runUtilScript("compiler.pl --target"));
-*/
   configParamMap.put(astr("CHPL_THREADS"), get_CHPL_THREADS());
   configParamMap.put(astr("CHPL_COMM"), get_CHPL_COMM());
 }
