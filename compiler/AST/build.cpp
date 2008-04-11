@@ -1076,12 +1076,16 @@ buildCobeginStmt(Expr* stmt) {
   checkControlFlow(stmt, "cobegin statement");
   if (fSerial)
     return buildChapelStmt(stmt);
+  BlockStmt* block = toBlockStmt(stmt);
+  INT_ASSERT(block);
+  if (block->length() < 2) {
+    USR_WARN(stmt, "cobegin has no effect if it contains fewer than 2 statements");
+    return buildChapelStmt(stmt);
+  }
   VarSymbol* cobeginCount = new VarSymbol("_cobeginCount");
   cobeginCount->isCompilerTemp = true;
   VarSymbol* cobeginTaskList = new VarSymbol("_cobeginTaskList");
   cobeginTaskList->isCompilerTemp = true;
-  BlockStmt* block = toBlockStmt(stmt);
-  INT_ASSERT(block);
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->insertAtHead(stmt->copy());

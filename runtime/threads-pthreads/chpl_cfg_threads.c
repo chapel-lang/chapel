@@ -403,9 +403,8 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
   // task_list points to the last entry on the list; task_list->next is actually
   // the first element on the list.
   chpl_task_list_p task = task_list, next_task;
-  // The following line should not be needed, since cobegins should contain more
-  // than one statement.
-  if (task_list == NULL) return;
+  // This function is not expected to be called if a cobegin contains fewer
+  // than two statements.
   assert (task);
   next_task = task->next;
   do {

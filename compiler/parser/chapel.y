@@ -80,6 +80,8 @@ Is this "while x"(i); or "while x(i)";?
   DefExpr* pdefexpr;
   BlockStmt* pblockstmt;
 
+  int lineno;
+
   Type* ptype;
   EnumType* pet;
 
@@ -209,6 +211,8 @@ Is this "while x"(i); or "while x(i)";?
 %type <pblockstmt> parsed_block_single_stmt
 
 %type <pblockstmt> parsed_block_stmt block_stmt
+
+%type <lineno> cobegin
 
 %type <pexpr> when_stmt
 %type <pblockstmt> when_stmt_ls
@@ -586,12 +590,21 @@ assign_stmt:
 block_stmt:
   TLCBR stmt_ls TRCBR
     { $$ = buildChapelStmt($2); }
-| TCOBEGIN TLCBR stmt_ls TRCBR
-    { $$ = buildCobeginStmt($3); }
+| cobegin TLCBR stmt_ls TRCBR
+    {
+      $3->lineno = $1;
+      $$ = buildCobeginStmt($3);
+    }
 | TATOMIC stmt
     { $$ = buildAtomicStmt($2); }
 | TBEGIN stmt
     { $$ = buildBeginStmt($2); }
+;
+
+
+cobegin:
+  TCOBEGIN
+    { $$ = yystartlineno; /* capture line number in case there is a need to issue a warning */ }
 ;
 
 
