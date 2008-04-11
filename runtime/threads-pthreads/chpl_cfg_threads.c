@@ -7,7 +7,9 @@
 #define NDEBUG
 #endif
 
+#include <signal.h>
 #include "chplcomm.h"
+#include "chplexit.h"
 #include "chplmem.h"
 #include "chplrt.h"
 #include "chplthreads.h"
@@ -37,6 +39,27 @@ static task_pool_p    task_pool_tail; // tail of task pool
 static int            waking_cnt;     // number of threads signaled to wakeup
 static int            running_cnt;    // number of running threads 
 static int            threads_cnt;    // number of threads (total)
+static pthread_key_t  lock_report_key;
+
+
+int blockreport = 0; // report locations of blocked threads on SIGINT
+
+typedef struct _lockReport {
+  const char* filename;
+  int lineno;
+  int maybeLocked;
+  struct _lockReport* next;
+} lockReport;
+
+
+lockReport* lockReportHead = NULL;
+lockReport* lockReportTail = NULL;
+
+static void traverseLockedThreads(int sig);
+static void setBlockingLocation(int lineno, _string filename);
+static void unsetBlockingLocation(void);
+static void initializeLockReportForThread(void);
+
 
 // Condition variables
 
@@ -90,20 +113,26 @@ void chpl_sync_unlock(chpl_sync_aux_t *s) {
 }
 
 int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string filename) {
-  int return_value = chpl_mutex_lock(s->lock);
+  int return_value;
+  setBlockingLocation(lineno, filename);
+  return_value = chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
     if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
       chpl_internal_error("pthread_cond_wait() failed");
   }
+  unsetBlockingLocation();
   return return_value;
 }
 
 int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string filename) {
-  int return_value = chpl_mutex_lock(s->lock);
+  int return_value;
+  setBlockingLocation(lineno, filename);
+  return_value = chpl_mutex_lock(s->lock);
   while (return_value == 0 && s->is_full) {
     if ((return_value = pthread_cond_wait(s->signal_empty, s->lock)))
       chpl_internal_error("pthread_cond_wait() failed");
   }
+  unsetBlockingLocation();
   return return_value;
 }
 
@@ -144,11 +173,14 @@ void chpl_single_unlock(chpl_single_aux_t *s) {
 }
 
 int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, _string filename) {
-  int return_value = chpl_mutex_lock(s->lock);
+  int return_value;
+  setBlockingLocation(lineno, filename);
+  return_value = chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
     if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
       chpl_internal_error("invalid mutex in chpl_single_wait_full");
   }
+  unsetBlockingLocation();
   return return_value;
 }
 
@@ -197,6 +229,14 @@ void initChplThreads() {
 
   if (pthread_key_create(&serial_key, (void(*)(void*))serial_delete))
     chpl_internal_error("serial key not created");
+  if (pthread_key_create(&lock_report_key, NULL))
+    chpl_internal_error("lock report key not created");
+
+  if (blockreport) {
+    initializeLockReportForThread(); // this is for the main thread
+    signal(SIGINT, traverseLockedThreads);
+  }
+
   chpl_thread_init();
 }
 
@@ -240,12 +280,82 @@ void chpl_set_serial(chpl_bool state) {
 
 
 //
+// This signal handler walks over a linked list with one node per thread.
+// If a thread is waiting on a sync or single variable, it sets its
+// maybeLocked field first. When the signal is caught, print the locations
+// of all threads that have the maybeLocked field set.
+//
+static void traverseLockedThreads(int sig) {
+  lockReport* rep;
+  if (!blockreport)
+    return;
+  signal(sig, SIG_IGN);
+  rep = lockReportHead;
+  while (rep != NULL) {
+    if (rep->maybeLocked && rep->lineno > 0 && rep->filename) {
+      fprintf(stderr, "Waiting at: %s:%d\n", rep->filename, rep->lineno);
+    }
+    rep = rep->next;
+  }
+  _chpl_exit_any(1);
+}
+
+
+static void setBlockingLocation(int lineno, _string filename) {
+  lockReport* lockRprt;
+  if (!blockreport)
+    return;
+  lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
+  lockRprt->filename = filename;
+  lockRprt->lineno = lineno;
+  lockRprt->maybeLocked = 1;
+}
+
+
+static void unsetBlockingLocation() {
+  lockReport* lockRprt;
+  if (!blockreport)
+    return;
+  lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
+  lockRprt->maybeLocked = 0;
+}
+
+
+//
+// This function should be called exactly once per pthread (not task!),
+// including the main thread. It should be called before the first task
+// this thread was created to do is started.
+//
+static void initializeLockReportForThread() {
+  lockReport* newLockReport;
+  if (!blockreport)
+    return;
+  newLockReport = _chpl_malloc(1, sizeof(lockReport), "lockReport", 0, 0);
+  newLockReport->next = NULL;
+  newLockReport->maybeLocked = 0;
+  pthread_setspecific(lock_report_key, newLockReport);
+
+  // Begin critical section
+  chpl_mutex_lock(&threading_lock);
+  if (lockReportHead) {
+    lockReportTail->next = newLockReport;
+    lockReportTail = newLockReport;
+  } else {
+    lockReportHead = newLockReport;
+    lockReportTail = newLockReport;
+  }
+  // End critical section
+  chpl_mutex_unlock(&threading_lock);
+}
+
+
+//
 // thread wrapper function runs the user function, waits for more
 // tasks, and runs those as they become available
 //
 static void
 chpl_begin_helper (task_pool_p task) {
-
+  initializeLockReportForThread();
   while (true) {
     //
     // reset serial state

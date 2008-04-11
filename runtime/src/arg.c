@@ -9,6 +9,7 @@
 #include "chplio.h"
 #include "chplmem.h"
 #include "chplrt.h"
+#include "chplthreads.h"
 #include "config.h"
 #include "error.h"
 #include "gdb.h"
@@ -57,6 +58,7 @@ static void printHelpTable(void) {
     {"", "(equivalent to setting the numLocales config const)", 'g'},
     {"-q, --quiet", "run program in quiet mode", 'g'},
     {"-v, --verbose", "run program in verbose mode", 'g'},
+    {"-b, --blockreport", "report location of blocked threads on SIGINT", 'g'},
     {"--gdb", "run program in gdb", 'g'},
 
     {"-s, --<cfgVar>=<val>", "set the value of a config var", 'c'},    
@@ -278,6 +280,10 @@ void parseArgs(int argc, char* argv[]) {
             verbosity=2;
             break;
           }
+          if (strcmp(flag, "blockreport") == 0) {
+            blockreport = 1;
+            break;
+          }
           if (strcmp(flag, "quiet") == 0) {
             verbosity = 0;
             break;
@@ -366,7 +372,13 @@ void parseArgs(int argc, char* argv[]) {
           unexpectedArg(currentArg);
         }
         break;
-
+      case 'b':
+        if (currentArg[2] == '\0') {
+          blockreport = 1;
+        } else {
+          unexpectedArg(currentArg);
+        }
+        break;
       default:
         unexpectedArg(currentArg);
       }

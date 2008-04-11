@@ -8,6 +8,7 @@
 
 extern int32_t maxThreads;
 
+extern int32_t blockreport;
 
 // Mutexes
 // (These are only needed in chplmem.c - perhaps chpl_sync_lock and chpl_sync_unlock
