@@ -42,8 +42,6 @@ static int            threads_cnt;    // number of threads (total)
 static pthread_key_t  lock_report_key;
 
 
-int blockreport = 0; // report locations of blocked threads on SIGINT
-
 typedef struct _lockReport {
   const char* filename;
   int lineno;

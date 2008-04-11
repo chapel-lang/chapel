@@ -16,6 +16,7 @@
 
 
 static int gdbFlag = 0;
+int32_t blockreport = 0; // report locations of blocked threads on SIGINT
 
 int _runInGDB(void) {
   return gdbFlag;

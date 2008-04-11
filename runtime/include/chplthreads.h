@@ -1,14 +1,13 @@
 #ifndef _chplthreads_h_
 #define _chplthreads_h_
 
-#include "chpl_cfg_threads.h"
 #include <stdint.h>
+#include "arg.h"
+#include "chpl_cfg_threads.h"
 
 // Defined in the generated Chapel code:
 
 extern int32_t maxThreads;
-
-extern int32_t blockreport;
 
 // Mutexes
 // (These are only needed in chplmem.c - perhaps chpl_sync_lock and chpl_sync_unlock
