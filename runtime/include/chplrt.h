@@ -30,7 +30,7 @@ _real64 _now_time(void);
 #define _ARRAY_SET(x, i, v) ((x)->_data[i] = v)
 
 #define _ARRAY_ALLOC(x, type, size, lineno, filename) \
-  (x)->_data = (size == 0) ? 0x0 : _chpl_malloc(size, sizeof(type), "_data", lineno, filename)
+  (x)->_data = (size == 0) ? (void*)(0x0) : _chpl_malloc(size, sizeof(type), "_data", lineno, filename)
 
 #define _WIDE_ARRAY_ALLOC(x, type, size, lineno, filename)              \
   do {                                                                 \
