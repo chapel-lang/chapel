@@ -372,13 +372,6 @@ set user = `whoami`
 #
 unsetenv CHPL_DEVELOPER
 
-#
-# set target platform for use by skipif files
-#
-if ($?CHPL_TARGET_PLATFORM == 0) then
-    setenv CHPL_TARGET_PLATFORM $CHPL_HOST_PLATFORM
-endif
-
 # Commented this out, because it only seems useful in shared environments:
 ## Make sure that other testers can modify what another 
 ## tester does
@@ -393,6 +386,34 @@ if ($?CHPL_HOME) then
 else
     echo "Error: CHPL_HOME must be set in order to run start_test"
     exit 1
+endif
+
+#
+# Set standard CHPL_* environment variables for use by skipif files,
+# if they are not
+#
+if ($?CHPL_HOST_PLATFORM == 0) then
+    setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/platform.pl --host`
+endif
+
+if ($?CHPL_TARGET_PLATFORM == 0) then
+    setenv CHPL_TARGET_PLATFORM `$CHPL_HOME/util/platform.pl --target`
+endif
+
+if ($?CHPL_HOST_COMPILER == 0) then
+    setenv CHPL_HOST_COMPILER `$CHPL_HOME/util/compiler.pl --host`
+endif
+
+if ($?CHPL_TARGET_COMPILER == 0) then
+    setenv CHPL_TARGET_COMPILER `$CHPL_HOME/util/compiler.pl --target`
+endif
+
+if ($?CHPL_THREADS == 0) then
+    setenv CHPL_THREADS `$CHPL_HOME/util/threads.pl`
+endif
+
+if ($?CHPL_COMM == 0) then
+    setenv CHPL_COMM `$CHPL_HOME/util/comm.pl`
 endif
 
 set testdir = "$CHPL_HOME/test"
