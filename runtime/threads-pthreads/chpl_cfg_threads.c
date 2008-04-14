@@ -285,9 +285,10 @@ void chpl_set_serial(chpl_bool state) {
 //
 static void traverseLockedThreads(int sig) {
   lockReport* rep;
-  if (!blockreport)
-    return;
   signal(sig, SIG_IGN);
+  if (!blockreport)
+    return; // Error: this should only be called as a signal handler
+            // and it should only be handled if blockreport is on
   rep = lockReportHead;
   while (rep != NULL) {
     if (rep->maybeLocked && rep->lineno > 0 && rep->filename) {

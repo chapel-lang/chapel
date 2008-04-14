@@ -3498,6 +3498,7 @@ static void insertReturnTemps() {
               if ((getValueType(fn->retType) && getValueType(fn->retType)->symbol->hasPragma("sync")) || fn->retType->symbol->hasPragma("sync")) {
                 CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
                 call->insertBefore(sls);
+                reset_file_info(sls, call->lineno, call->filename);
                 resolveCall(sls);
                 INT_ASSERT(sls->isResolved());
                 resolveFns(sls->isResolved());

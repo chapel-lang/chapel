@@ -408,6 +408,7 @@ void normalize(BaseAST* base) {
         CallExpr* call = new CallExpr("_statementLevelSymbol");
         sym->insertBefore(call);
         call->insertAtTail(sym->remove());
+        reset_file_info(call, sym->lineno, sym->filename);
       }
     }
   }
