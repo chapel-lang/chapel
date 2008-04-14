@@ -372,6 +372,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_CHPL_ALLOC_PERMIT_ZERO, "chpl_alloc_permit_zero",
            returnInfoChplAlloc, true, true);
   prim_def(PRIMITIVE_CHPL_FREE, "chpl_free", returnInfoVoid, true, true);
+  prim_def(PRIMITIVE_INIT_FIELDS, "chpl_init_record", returnInfoVoid, true);
   prim_def(PRIMITIVE_PTR_EQUAL, "ptr_eq", returnInfoBool);
   prim_def(PRIMITIVE_PTR_NOTEQUAL, "ptr_neq", returnInfoBool);
   prim_def(PRIMITIVE_ISSUBTYPE, "is_subtype", returnInfoBool);

@@ -821,6 +821,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
                                                     retType->symbol->name)))));
       wrapper->insertAtTail(new CallExpr(PRIMITIVE_SETCID, wrapper->_this));
     }
+    wrapper->insertAtTail(new CallExpr(PRIMITIVE_INIT_FIELDS, wrapper->_this));
   }
   CallExpr* call = new CallExpr(this);
   call->square = isSquare;

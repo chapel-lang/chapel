@@ -95,6 +95,7 @@ enum PrimitiveTag {
   PRIMITIVE_CHPL_ALLOC,
   PRIMITIVE_CHPL_ALLOC_PERMIT_ZERO,  // chpl_alloc wrapper that permits size 0
   PRIMITIVE_CHPL_FREE,               // only for variables on heap?
+  PRIMITIVE_INIT_FIELDS, // initialize fields of a temporary record
   PRIMITIVE_PTR_EQUAL,
   PRIMITIVE_PTR_NOTEQUAL,
   PRIMITIVE_CAST,

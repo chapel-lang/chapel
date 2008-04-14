@@ -3513,6 +3513,30 @@ static void insertReturnTemps() {
 
 
 //
+// insert code to initialize a class or record
+//
+static void
+initializeClass(Expr* stmt, Symbol* sym) {
+  ClassType* ct = toClassType(sym->type);
+  INT_ASSERT(ct);
+  for_fields(field, ct) {
+    if (!field->hasPragma("super class")) {
+      if (field->type->defaultValue) {
+        stmt->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, sym, field, field->type->defaultValue));
+      } else if (isRecordType(field->type)) {
+        VarSymbol* tmp = new VarSymbol("_tmp", field->type);
+        tmp->isCompilerTemp = true;
+        stmt->insertBefore(new DefExpr(tmp));
+        initializeClass(stmt, tmp);
+        stmt->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, sym, field, tmp));
+      }
+    }
+  }
+}
+
+
+
+//
 // pruneResolvedTree -- prunes and cleans the AST after all of the
 // function calls and types have been resolved
 //
@@ -3822,12 +3846,12 @@ pruneResolvedTree() {
     }
   }
 
-  //
-  // Insert reference temps for function arguments that expect them.
-  //
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->parentSymbol && call->isResolved()) {
+        //
+        // Insert reference temps for function arguments that expect them.
+        //
         for_formals_actuals(formal, actual, call) {
           if (formal->type == actual->typeInfo()->refType) {
             currentLineno = call->lineno;
@@ -3839,6 +3863,9 @@ pruneResolvedTree() {
             call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, actual)));
           }
         }
+      } else if (call->isPrimitive(PRIMITIVE_INIT_FIELDS)) {
+        initializeClass(call, toSymExpr(call->get(1))->var);
+        call->remove();
       }
     }
   }
