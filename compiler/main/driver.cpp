@@ -23,7 +23,7 @@ static void ensure_chplhome_set(void) {
   if (chplhome[0] == '\0') {
     const char* chpl_home = getenv("CHPL_HOME");
     if (chpl_home == NULL) {
-      strcpy(chplhome, ".");
+      USR_FATAL("$CHPL_HOME must be set to run chpl");
     } else {
       strncpy(chplhome, chpl_home, FILENAME_MAX);
     }
@@ -161,7 +161,6 @@ compute_program_name_loc(char* orig_argv0, const char** name, const char** loc) 
     *name = lastslash+1;
     *loc = argv0;
   }
-  snprintf(chplhome, FILENAME_MAX, "%s", astr(*loc, "/../.."));
 }
 
 
@@ -344,7 +343,6 @@ static ArgumentDescription arg_desc[] = {
  {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
 
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
- {"chplhome", ' ', "<directory>", "Over-ride $CHPL_HOME", "P", chplhome, "CHPL_HOME", NULL},
  {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
