@@ -8,7 +8,6 @@ COMMON_SRCS = \
 	chplmem.c \
 	chplmem_tests.c \
 	chplsys.c \
-	chplthreads.c \
 	chpltypes.c \
 	config.c \
 	error.c \
