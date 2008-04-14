@@ -1,7 +1,0 @@
-bug: a race condition in cobegins
-
-This test deadlocks while running nested cobegins.
-
-Also, I expected that at most 15 threads would be started for this test,
-instead the enough threads are created that the warning about not being able
-to create more is issued.
