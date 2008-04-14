@@ -85,6 +85,10 @@ out of memory allocating iterator classes
 gasnet-specific regressions
 ===========================
 
+frees of 0x0 cause complaints when memory is being tracked
+----------------------------------------------------------
+[Error matching program output for classes/dinan/array_passed_to_constructor]
+
 ???
 ---
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
@@ -154,6 +158,11 @@ studies/madness/dinan/mad_chapel/test_likepy]
 ========================
 pgi-specific regressions
 ========================
+
+Accidentally introduced a 0x0 -> void* implicit conversion assumption
+---------------------------------------------------------------------
+EVERYTHING
+
 
 Some sort of offset type mismatch -- likely caused by long identifiers
 ----------------------------------------------------------------------
@@ -238,14 +247,6 @@ timeout
 ===============================
 CHPL_THREADS = none regressions
 ===============================
-
-regressions due to empty cobegin warning (04/11/2008)
------------------------------------------------------
-[Error matching program output for parallel/cobegin/bradc/emptyCobegin]
-[Error matching program output for parallel/cobegin/figueroa/EmptyCobegin]
-[Error matching program output for parallel/cobegin/waynew/locals]
-[Error matching program output for users/shetag/ccs]
-
 
 ???
 ---
