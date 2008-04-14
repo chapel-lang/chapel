@@ -368,22 +368,21 @@ chpl_begin_helper (task_pool_p task) {
     _chpl_free(task, 0, 0);  // make sure task_pool_head no longer points to this task!
 
     //
-    // finished task; decrement running count
-    //
-    running_cnt--;
-
-    //
     // wait for a task to be added to the task pool
     //
-    while (!task_pool_head) {
-      pthread_cond_wait(&wakeup_signal, &threading_lock);
+    if (!task_pool_head) {
+      running_cnt--;
+      do {
+        pthread_cond_wait(&wakeup_signal, &threading_lock);
+      } while (!task_pool_head);
+      running_cnt++;
     }
+
+    waking_cnt--;
 
     //
     // start new task; increment running count and remove task from pool
     //
-    running_cnt++;
-    waking_cnt--;
     task = task_pool_head;
     task_pool_head = task_pool_head->next;
     if (task_pool_head == NULL)  // task pool is now empty
@@ -396,7 +395,7 @@ chpl_begin_helper (task_pool_p task) {
       // does eventually wake up is responsible for making sure the other
       // signal is handled (either by an existing thread or by creating
       // a new thread)
-      schedule_next_task();
+      pthread_cond_signal(&wakeup_signal);
 
     // end critical section
     chpl_mutex_unlock(&threading_lock);
