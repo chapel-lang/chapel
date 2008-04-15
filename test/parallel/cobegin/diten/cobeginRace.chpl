@@ -6,7 +6,7 @@ var done: single bool;
 
 def timeout(n: uint) {
   use Time;
-  begin { sleep(n); exit(1); }
+  begin { sleep(n); writeln("Timeout"); exit(1); }
   begin { done; exit(0); }
 }
 
