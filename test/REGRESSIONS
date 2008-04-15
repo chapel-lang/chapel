@@ -32,6 +32,14 @@ differing memory sizes on different platforms
 [Error matching program output for memory/shannon/printFinalMemStat]
 
 
+==================
+mac-specific tests
+==================
+
+??? (never worked)
+------------------
+[Error matching program output for parallel/cobegin/diten/cobeginRace]
+
 
 ===================
 opts-specific tests
@@ -85,10 +93,6 @@ out of memory allocating iterator classes
 gasnet-specific regressions
 ===========================
 
-frees of 0x0 cause complaints when memory is being tracked
-----------------------------------------------------------
-[Error matching program output for classes/dinan/array_passed_to_constructor]
-
 ???
 ---
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
@@ -96,15 +100,6 @@ frees of 0x0 cause complaints when memory is being tracked
 garbage collection doesn't work with multithreaded
 --------------------------------------------------
 [Error matching compiler output for classes/diten/allocateManyObjects]
-
-
-==========================
-intel-specific regressions
-==========================
-
-#592 -- use before def
-----------------------
-[Error matching compiler output for classes/bradc/arrayInClass/arrayInClassRecord2]
 
 
 ==============================
@@ -132,6 +127,11 @@ weird math function interaction
 ==========================
 sunos-specific regressions
 ==========================
+
+??? (never worked)
+------------------
+[Error matching program output for parallel/cobegin/diten/cobeginRace]
+
 
 exp2/log2/other math fns not supported
 --------------------------------------
@@ -199,6 +199,15 @@ lg2/exp2
 cygwin-specific failures
 ========================
 
+pthread issues (started when test was enabled)
+----------------------------------------------
+[Error matching program output for parallel/cobegin/diten/cobeginRace]
+
+pthread issues (started on 4/11/2008)
+-------------------------------------
+[release/examples/quicksort]
+
+
 print occurs in 0 seconds!?  Timers not working?
 ------------------------------------------------
 [Error matching program output for spec/marybeth/use]
@@ -210,6 +219,8 @@ mta/xmt-specific regressions
 
 data alignment trap (05/10/08)
 ------------------------------
+[Error matching program output for release/examples/arrays]
+[Error matching program output for release/examples/blockLU]
 [Error matching program output for release/examples/fileIO]
 [Error matching program output for release/examples/genericStack]
 [Error matching program output for release/examples/iterators]
@@ -217,7 +228,7 @@ data alignment trap (05/10/08)
 [Error matching program output for release/examples/norm]
 [Error matching program output for release/examples/reductions]
 [Error matching program output for release/examples/slices]
-
+also sparse...
 
 mysterious timeout (04/09/08)
 -----------------------------
