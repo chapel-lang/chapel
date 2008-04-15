@@ -12,7 +12,7 @@ def timeout(n: uint) {
 
 timeout(30); // exit after 30 seconds or when done is set.
 
-for i in 1..100000 {
+for i in 1..20000 {
   cobegin {
     cobegin { bar(); foo(); }
     cobegin { bar(); foo(); }
