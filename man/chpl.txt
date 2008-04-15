@@ -99,9 +99,11 @@ OPTIONS
   --fast            Turns off all runtime checks and ensures that most
                     compiler optimizations are enabled. This option
                     implicitly undoes any previous usage of --baseline,
-                    --no-copy-propagation, --no-single-loop-iterator-opt,
-                    --no-expand-iterators-inline-opt, and --no-inline.
-                    This option implies --no-checks and --no-ieee-float.
+                    --no-copy-propagation, --no-dead-code-elimination,
+                    --no-inline, --no-inline-iterators, --no-live-analysis,
+                    --no-optimize-loop-iterators and
+                    --no-scalar-replacement. This option implies
+                    --no-checks and --no-ieee-float.
  
   --[no]-ieee-float   Enables optimizations that may affect IEEE
                     floating point conformance. The default is
