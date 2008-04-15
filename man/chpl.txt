@@ -6,21 +6,21 @@ SYNOPSIS
        [--print-passes] [--print-commands]
        [flags...] [source-files...]
 DESCRIPTION
-  chpl converts one or more Chapel source files into an executable.
-  It does this by compiling Chapel to ISO C code and then invoking the
-  platform's C compiler to create the executable. However, most users
-  will not need to be aware of the use of C as an intermediate format
-  during compilation.
+  The chpl compiler converts one or more Chapel source files into an 
+  executable. It does this by compiling Chapel to ISO C code and then 
+  invoking the target platform's C compiler to create the executable.
+  However, most users will not need to be aware of the use of C as an 
+  intermediate format during compilation.
 
   The current implementation of chpl supports the creation of multiple
-  threads on a single locale and uses POSIX threads (pthreads) to
-  implement its parallelism. Future versions of the compiler will
-  support distributed memory architectures.
+  threads on multiple locales. It uses POSIX threads (pthreads) to
+  implement user-level tasks on each locale and GASNet to implement
+  communication and coordination between locales.
 
   This version of chpl focuses primarily on demonstrating Chapel
   language features in order to support experimentation with the
   language and generate user feedback. The performance and memory
-  utilization of the generated code is known to be suboptimal and
+  utilization of the generated code are known to be suboptimal and
   should not be considered representative of Chapel's potential.
   Future versions of the compiler will continue to result in improved
   performance.
@@ -262,7 +262,8 @@ ENVIRONMENT
   CHPL_TARGET_COMPILER  Specifies the compiler suite that should be used
                       to build the generated C code for a Chapel program
                       and the Chapel runtime (defaults to a best guess 
-                      based on $CHPL_TARGET_PLATFORM)
+                      based on $CHPL_HOST_PLATFORM, $CHPL_TARGET_PLATFORM,
+                      and $CHPL_HOST_COMPILER)
 
   CHPL_THREADS        Specifies the thread layer to use for implementing
                       tasks (defaults to a best guess based on 
