@@ -75,10 +75,9 @@ static bool fFastFlag = false;
 bool fNoCopyPropagation = false;
 bool fNoDeadCodeElimination = false;
 bool fNoScalarReplacement = false;
-bool fNoOptimizeSingleLoopIterators = false;
+bool fNoOptimizeLoopIterators = false;
 bool fNoInlineIterators = false;
 bool fNoLiveAnalysis = false;
-bool fNoFlowAnalysis = false;
 bool fNoBoundsChecks = false;
 bool fNoNilChecks = false;
 bool fNoChecks = false;
@@ -248,10 +247,9 @@ static void setFastFlag(ArgumentState* arg, char* unused) {
   fieeefloat = false;
   fNoCopyPropagation = false;
   fNoDeadCodeElimination = false;
-  fNoFlowAnalysis = false;
   fNoInline = false;
   fNoInlineIterators = false;
-  fNoOptimizeSingleLoopIterators = false;
+  fNoOptimizeLoopIterators = false;
   fNoLiveAnalysis = false;
   fNoScalarReplacement = false;
   fNoChecks = true;
@@ -267,11 +265,10 @@ static void setBaselineFlag(ArgumentState* arg, char* unused) {
   fBaseline = true;
   fNoCopyPropagation = true;
   fNoDeadCodeElimination = true;
-  fNoFlowAnalysis = true;
   fNoInline = true;
   fNoInlineIterators = true;
   fNoLiveAnalysis = true;
-  fNoOptimizeSingleLoopIterators = true;
+  fNoOptimizeLoopIterators = true;
   fNoScalarReplacement = true;
 }
 
@@ -315,11 +312,10 @@ static ArgumentDescription arg_desc[] = {
  {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
  {"copy-propagation", ' ', NULL, "Enable [disable] copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"dead-code-elimination", ' ', NULL, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},
- {"flow-analysis", ' ', NULL, "Enable [disable] optimizations requiring flow analysis", "n", &fNoFlowAnalysis, "CHPL_NO_FLOW_ANALYSIS", NULL},
  {"inline", ' ', NULL, "Enable [disable] function inlining", "n", &fNoInline, NULL, NULL},
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
- {"optimize-single-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeSingleLoopIterators, "CHPL_DISABLE_OPTIMIZE_SINGLE_LOOP_ITERATORS", NULL},
+ {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
  {"scalar-replacement", ' ', NULL, "Enable [disable] scalar replacement", "n", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},

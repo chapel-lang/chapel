@@ -20,14 +20,11 @@ Optimization Control Options:
       --[no-]copy-propagation            Enable [disable] copy propagation
       --[no-]dead-code-elimination       Enable [disable] dead code
                                          elimination
-      --[no-]flow-analysis               Enable [disable] optimizations
-                                         requiring flow analysis
       --[no-]inline                      Enable [disable] function inlining
       --[no-]inline-iterators            Enable [disable] iterator inlining
       --[no-]live-analysis               Enable [disable] live variable
                                          analysis
-      --[no-]optimize-single-loop-iterators
-                                         Enable [disable] optimization of
+      --[no-]optimize-loop-iterators     Enable [disable] optimization of
                                          iterators composed of a single loop
       --[no-]scalar-replacement          Enable [disable] scalar replacement
 

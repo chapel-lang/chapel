@@ -155,8 +155,7 @@ void deadCodeElimination(FnSymbol* fn) {
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
     forv_Vec(FnSymbol, fn, gFns) {
-      if (!fNoFlowAnalysis)
-        deadCodeElimination(fn);
+      deadCodeElimination(fn);
       deadVariableElimination(fn);
       deadExpressionElimination(fn);
     }

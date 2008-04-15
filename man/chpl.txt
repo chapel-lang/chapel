@@ -100,9 +100,8 @@ OPTIONS
                     compiler optimizations are enabled. This option
                     implicitly undoes any previous usage of --baseline,
                     --no-copy-propagation, --no-single-loop-iterator-opt,
-                    --no-expand-iterators-inline-opt, --no-flow-analysis,
-                    and --no-inline. This option implies --no-checks
-                    and --no-ieee-float.
+                    --no-expand-iterators-inline-opt, and --no-inline.
+                    This option implies --no-checks and --no-ieee-float.
  
   --[no]-ieee-float   Enables optimizations that may affect IEEE
                     floating point conformance. The default is
@@ -111,10 +110,6 @@ OPTIONS
   --[no-]copy-propagation   Disables copy propagation.
 
   --[no-]dead-code-elimination   Disables dead code elimination.
-
-  --[no-]flow-analysis   Disables optimizations that require a flow
-                    analysis, e.g., global copy propagation and dead
-                    code elimination.
 
   --[no-]inline     Disables function inlining.
 

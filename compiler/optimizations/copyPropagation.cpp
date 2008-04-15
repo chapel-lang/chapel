@@ -598,7 +598,7 @@ void copyPropagation(void) {
         deadExpressionElimination(fn);
       }
     }
-    if (!fNoCopyPropagation && !fNoFlowAnalysis) {
+    if (!fNoCopyPropagation) {
       globalCopyPropagation(fn);
       if (!fNoDeadCodeElimination) {
         deadVariableElimination(fn);

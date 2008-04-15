@@ -21,12 +21,11 @@ extern bool fNoBoundsChecks;
 extern bool fNoCopyPropagation;
 extern bool fNoDeadCodeElimination;
 extern bool fNoInlineIterators;
-extern bool fNoFlowAnalysis;
 extern bool fNoInline;
 extern bool fNoLiveAnalysis;
 extern bool fNoNilChecks;
 extern bool fNoScalarReplacement;
-extern bool fNoOptimizeSingleLoopIterators;
+extern bool fNoOptimizeLoopIterators;
 
 extern bool report_inlining;
 extern char chplhome[FILENAME_MAX];
