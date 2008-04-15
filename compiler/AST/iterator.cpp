@@ -828,9 +828,10 @@ addLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn) {
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     forv_Vec(Expr, expr, bb->exprs) {
       if (DefExpr* def = toDefExpr(expr)) {
-        if (toVarSymbol(def->sym)) {
-          syms.add(def->sym);
-        }
+        if (VarSymbol* var = toVarSymbol(def->sym))
+          if (!var->type->symbol->hasPragma("ref") || var->hasPragma("index var"))
+            // do not add references except for indices
+            syms.add(var);
       }
     }
   }
@@ -854,11 +855,11 @@ void lowerIterator(FnSymbol* fn) {
 
   for_formals(formal, fn)
     locals.add(formal);
-  locals.add(fn->getReturnSymbol());
   if (fNoLiveAnalysis || fNoFlowAnalysis)
     addLocalVariables(locals, fn);
   else
     addLocalVariablesLiveAtYields(locals, fn);
+  locals.add_exclusive(fn->getReturnSymbol());
 
   int i = 0;
   forv_Vec(Symbol, local, locals) {

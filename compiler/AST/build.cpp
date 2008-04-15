@@ -442,8 +442,11 @@ destructureIndices(BlockStmt* block,
       var->isCompilerTemp = true;
       block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, init));
       block->insertAtHead(new DefExpr(var));
-    } else
+      var->addPragma("index var");
+    } else {
       block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, sym->var, init));
+      sym->var->addPragma("index var");
+    }
   }
 }
 
