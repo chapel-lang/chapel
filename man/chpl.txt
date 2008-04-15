@@ -123,10 +123,9 @@ OPTIONS
                     currently only used to optimize iterators that are
                     not inlined.
 
-  --[no-]optimize-single-loop-iterators   By default, the compiler
-                    aggressively optimizes iterators that are defined
-                    in terms of a single loop. This flag turns off
-                    this optimization.
+  --[no-]optimize-loop-iterators   By default, the compiler aggressively
+                    optimizes iterators that are defined in terms of a
+                    single loop. This flag turns off this optimization.
 
   --[no-]scalar-replacement   Disables scalar replacement of records and
                     classes for some compiler-generated data
