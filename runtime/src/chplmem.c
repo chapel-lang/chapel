@@ -539,6 +539,7 @@ void _chpl_free(void* memAlloc, int32_t lineno, _string filename) {
   if (whichMalloc == 2)
     return;
 
+  if (memAlloc != (void*)0x0) {
   if (memtrace) {
     chpl_mutex_lock(&_memtrace_lock);
     if (memtrack) {
@@ -568,6 +569,8 @@ void _chpl_free(void* memAlloc, int32_t lineno, _string filename) {
     removeMemory(memAlloc, lineno, filename);
     chpl_mutex_unlock(&_memtrack_lock);
   }
+  }
+
   free(memAlloc);
 }
 
