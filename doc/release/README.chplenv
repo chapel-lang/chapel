@@ -103,8 +103,8 @@ Optional Settings
 	pathscale         : the Pathscale compiler suite -- pathcc and pathCC
 	pgi               : the PGI compiler suite -- pgcc and pgCC
 
-   The defaults for these variables depend on the value of the
-   corresponding platform variable:
+   The default for CHPL_HOST_COMPILER depends on the value of the
+   CHPL_HOST_PLATFORM environment variable:
 
         platform      compiler
         --------      --------
@@ -112,6 +112,11 @@ Optional Settings
         x1        ->  cray-vec
         xt-cnl    ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
         other     ->  gnu
+
+   The default for CHPL_TARGET_COMPILER is CHPL_HOST_COMPILER if it is
+   set and CHPL_HOST_PLATFORM and CHPL_TARGET_PLATFORM are the same.
+   Otherwise, it will default to a value based on CHPL_TARGET_PLATFORM
+   according to the preceding table.
 
 
 3) Optionally, set the CHPL_MAKE environment variable to indicate the

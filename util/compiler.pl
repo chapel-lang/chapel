@@ -4,14 +4,16 @@ use File::Basename;
 
 $utildirname = dirname($0);
 
-$flag = $ARGV[0];
+my $flag = $ARGV[0];
 
 if ($flag eq "" || $flag eq "--host") {
     $preset_compiler=$ENV{'CHPL_HOST_COMPILER'};
 } elsif ($flag eq "--target") {
     $preset_compiler=$ENV{'CHPL_TARGET_COMPILER'};
     if ($preset_compiler eq "") {
-        $preset_compiler=$ENV{'CHPL_HOST_COMPILER'};
+	if ('$utildirname/platform.pl --host' eq '$utildirname/platform.pl --target') {
+	    $preset_compiler=$ENV{'CHPL_HOST_COMPILER'};
+	}
     }
 }
 
