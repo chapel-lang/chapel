@@ -21,6 +21,7 @@ out-of-memory problems
 maxThreads warning issue
 ------------------------
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 
 output differs on different machines
 ------------------------------------
@@ -32,41 +33,33 @@ differing memory sizes on different platforms
 [Error matching program output for memory/shannon/printFinalMemStat]
 
 
-==================
-mac-specific tests
-==================
-
-??? (never worked)
-------------------
-[Error matching program output for parallel/cobegin/diten/cobeginRace]
-
-
 ===================
 opts-specific tests
 ===================
 
-???
---baseline --copy-propagation
---baseline --dead-code-elimination
---baseline --flow-analysis
---baseline --inline
---baseline --live-analysis
---baseline --optimize-single-loop-iterators
---baseline --scalar-replacement
---no-optimize-single-loop-iterators --no-inline-iterators --no-live-analysis
---baseline --no-local
-----------------------------------------------------------------------------
-[Error matching program output for release/examples/sparse]
+--no-live-analysis
+--baseline --inline-iterators
+-----------------------------
+[Error matching program output for release/examples/hpcc/fft]
+
+--baseline --inline-iterators
+-----------------------------
+[Error matching program output for release/examples/hpcc/stream]
 
 
 =============================
 valgrind-specific regressions
 =============================
 
+??? (never worked)
+------------------
+[Error matching program output for parallel/cobegin/diten/cobeginRace]
+
 
 failing nondeterministically (e.g., 04/03/08)
 ---------------------------------------------
 [Error matching program output for stress/deitz/test_10k_begins]
+[Error matching program output for stress/deitz/test_10k_cobegins]
 [Error matching program output for parallel/begin/dinan/mvm_coforall]
 
 failing nondeterministically (e.g., 04/04/08)
@@ -77,11 +70,6 @@ failing nondeterministically (e.g., 04/04/08)
 =============================
 baseline-specific regressions
 =============================
-
-???
----
-[Error matching program output for release/examples/sparse]
-
 
 out of memory allocating iterator classes
 -----------------------------------------
@@ -106,10 +94,6 @@ garbage collection doesn't work with multithreaded
 pathscale-specific regressions
 ==============================
 
-???
----
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
-
 ??? -- gdb incompatability?
 ---------------------------
 [Error matching program output for execflags/bradc/gdbddash/declint2] 
@@ -127,11 +111,6 @@ weird math function interaction
 ==========================
 sunos-specific regressions
 ==========================
-
-??? (never worked)
-------------------
-[Error matching program output for parallel/cobegin/diten/cobeginRace]
-
 
 exp2/log2/other math fns not supported
 --------------------------------------
@@ -159,11 +138,6 @@ studies/madness/dinan/mad_chapel/test_likepy]
 pgi-specific regressions
 ========================
 
-Accidentally introduced a 0x0 -> void* implicit conversion assumption
----------------------------------------------------------------------
-EVERYTHING
-
-
 Some sort of offset type mismatch -- likely caused by long identifiers
 ----------------------------------------------------------------------
 [Error matching compiler output for arrays/deitz/test_major_nesting_of_arrays] 
@@ -188,6 +162,11 @@ negative floating point 0.0 not supported
 ========================
 xt-gnu specific failures
 ========================
+
+???
+---
+[Error matching program output for execflags/bradc/gdbddash/declint2]
+
 
 lg2/exp2
 --------
