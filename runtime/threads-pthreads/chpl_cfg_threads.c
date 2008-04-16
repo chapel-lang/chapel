@@ -7,7 +7,6 @@
 #define NDEBUG
 #endif
 
-#include <signal.h>
 #include "chplcomm.h"
 #include "chplexit.h"
 #include "chplmem.h"
@@ -15,6 +14,8 @@
 #include "chplthreads.h"
 #include "error.h"
 #include <stdio.h>
+#include <string.h>
+#include <signal.h>
 #include <assert.h>
 #include <pthread.h>
 #include <inttypes.h>
@@ -39,6 +40,7 @@ static task_pool_p    task_pool_tail; // tail of task pool
 static int            waking_cnt;     // number of threads signaled to wakeup
 static int            running_cnt;    // number of running threads 
 static int            threads_cnt;    // number of threads (total)
+static chpl_mutex_t   report_lock;    // critical section lock
 static pthread_key_t  lock_report_key;
 
 
@@ -57,7 +59,7 @@ static void traverseLockedThreads(int sig);
 static void setBlockingLocation(int lineno, _string filename);
 static void unsetBlockingLocation(void);
 static void initializeLockReportForThread(void);
-
+static _string idleThreadName = "|idle|";
 
 // Condition variables
 
@@ -228,8 +230,10 @@ void initChplThreads() {
   if (pthread_key_create(&lock_report_key, NULL))
     chpl_internal_error("lock report key not created");
 
-  if (blockreport)
+  if (blockreport) {
+    chpl_mutex_init(&report_lock);
     signal(SIGINT, traverseLockedThreads);
+  }
 
   chpl_thread_init();
 }
@@ -290,8 +294,11 @@ static void traverseLockedThreads(int sig) {
             // and it should only be handled if blockreport is on
   rep = lockReportHead;
   while (rep != NULL) {
-    if (rep->maybeLocked && rep->lineno > 0 && rep->filename) {
-      fprintf(stderr, "Waiting at: %s:%d\n", rep->filename, rep->lineno);
+    if (rep->maybeLocked) {
+      if (rep->lineno > 0 && rep->filename)
+        fprintf(stderr, "Waiting at: %s:%d\n", rep->filename, rep->lineno);
+      else if (rep->lineno == 0 && !strcmp(rep->filename, idleThreadName))
+        fprintf(stderr, "Waiting for more work\n");
     }
     rep = rep->next;
   }
@@ -335,7 +342,7 @@ static void initializeLockReportForThread() {
   pthread_setspecific(lock_report_key, newLockReport);
 
   // Begin critical section
-  chpl_mutex_lock(&threading_lock);
+  chpl_mutex_lock(&report_lock);
   if (lockReportHead) {
     lockReportTail->next = newLockReport;
     lockReportTail = newLockReport;
@@ -344,7 +351,7 @@ static void initializeLockReportForThread() {
     lockReportTail = newLockReport;
   }
   // End critical section
-  chpl_mutex_unlock(&threading_lock);
+  chpl_mutex_unlock(&report_lock);
 }
 
 
@@ -375,8 +382,12 @@ chpl_begin_helper (task_pool_p task) {
     //
     // wait for a task to be added to the task pool
     //
-    while (!task_pool_head)
+    while (!task_pool_head) {
+      setBlockingLocation(0, idleThreadName);
       pthread_cond_wait(&wakeup_signal, &threading_lock);
+      if (task_pool_head)
+        unsetBlockingLocation();
+    }
 
     if (waking_cnt > 0)
       waking_cnt--;
