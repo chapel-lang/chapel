@@ -115,7 +115,6 @@
 		F7FAC5160D45384C00C02B67 /* chplmem.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5070D45384C00C02B67 /* chplmem.c */; };
 		F7FAC5170D45384C00C02B67 /* chplmem_tests.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5080D45384C00C02B67 /* chplmem_tests.c */; };
 		F7FAC5180D45384C00C02B67 /* chplsys.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5090D45384C00C02B67 /* chplsys.c */; };
-		F7FAC5190D45384C00C02B67 /* chplthreads.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC50A0D45384C00C02B67 /* chplthreads.c */; };
 		F7FAC51A0D45384C00C02B67 /* chpltypes.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC50B0D45384C00C02B67 /* chpltypes.c */; };
 		F7FAC51B0D45384C00C02B67 /* config.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC50C0D45384C00C02B67 /* config.c */; };
 		F7FAC51C0D45384C00C02B67 /* error.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC50D0D45384C00C02B67 /* error.c */; };
@@ -439,7 +438,6 @@
 		F7FAC5070D45384C00C02B67 /* chplmem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplmem.c; path = ../runtime/src/chplmem.c; sourceTree = SOURCE_ROOT; };
 		F7FAC5080D45384C00C02B67 /* chplmem_tests.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplmem_tests.c; path = ../runtime/src/chplmem_tests.c; sourceTree = SOURCE_ROOT; };
 		F7FAC5090D45384C00C02B67 /* chplsys.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplsys.c; path = ../runtime/src/chplsys.c; sourceTree = SOURCE_ROOT; };
-		F7FAC50A0D45384C00C02B67 /* chplthreads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplthreads.c; path = ../runtime/src/chplthreads.c; sourceTree = SOURCE_ROOT; };
 		F7FAC50B0D45384C00C02B67 /* chpltypes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpltypes.c; path = ../runtime/src/chpltypes.c; sourceTree = SOURCE_ROOT; };
 		F7FAC50C0D45384C00C02B67 /* config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = config.c; path = ../runtime/src/config.c; sourceTree = SOURCE_ROOT; };
 		F7FAC50D0D45384C00C02B67 /* error.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = error.c; path = ../runtime/src/error.c; sourceTree = SOURCE_ROOT; };
@@ -966,7 +964,6 @@
 				F7FAC5070D45384C00C02B67 /* chplmem.c */,
 				F7FAC5080D45384C00C02B67 /* chplmem_tests.c */,
 				F7FAC5090D45384C00C02B67 /* chplsys.c */,
-				F7FAC50A0D45384C00C02B67 /* chplthreads.c */,
 				F7FAC50B0D45384C00C02B67 /* chpltypes.c */,
 				F7FAC50C0D45384C00C02B67 /* config.c */,
 				F7FAC50D0D45384C00C02B67 /* error.c */,
@@ -1202,7 +1199,6 @@
 				F7FAC5160D45384C00C02B67 /* chplmem.c in Sources */,
 				F7FAC5170D45384C00C02B67 /* chplmem_tests.c in Sources */,
 				F7FAC5180D45384C00C02B67 /* chplsys.c in Sources */,
-				F7FAC5190D45384C00C02B67 /* chplthreads.c in Sources */,
 				F7FAC51A0D45384C00C02B67 /* chpltypes.c in Sources */,
 				F7FAC51B0D45384C00C02B67 /* config.c in Sources */,
 				F7FAC51C0D45384C00C02B67 /* error.c in Sources */,
