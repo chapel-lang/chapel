@@ -46,10 +46,7 @@ def *(p: int, type t) type {
 pragma "tuple" record _tuple {
   param size : int;
 
-  pragma "inline" pragma "tuple get" def this(param i : int) var
-    return 0;
-
-  def this(i : int) var {
+  def this(i : int) var {  // for homogeneous tuples
     for param j in 1..size do
       if i == j then
         return this(j);

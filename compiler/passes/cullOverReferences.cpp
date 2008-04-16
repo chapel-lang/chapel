@@ -20,6 +20,12 @@ refNecessary(SymExpr* se) {
       } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (refNecessary(toSymExpr(call->get(1))))
           return true;
+      } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+        CallExpr* move = toCallExpr(call->parentExpr);
+        INT_ASSERT(move);
+        INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
+        if (refNecessary(toSymExpr(move->get(1))))
+          return true;
       } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
         if (!call->get(2)->typeInfo()->refType)
           return true;
@@ -45,33 +51,11 @@ isDerefType(Type* type) {
 // removes references that are not necessary
 void cullOverReferences() {
   //
-  // change "setter" to true or false depending on whether the symbol
-  // appears in reference or value functions
+  // change call of reference function to value function
   //
-  Map<Symbol*,FnSymbol*> setterMap;
-  forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->setter)
-      setterMap.put(fn->setter->sym, fn);
-  }
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (SymExpr* se = toSymExpr(ast)) {
-      if (FnSymbol* fn = setterMap.get(se->var)) {
-        VarSymbol* tmp = new VarSymbol("_tmp", dtBool);
-        tmp->isCompilerTemp = true;
-        se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-        se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, fn->retTag == RET_VAR ? gTrue : gFalse));
-        se->var = tmp;
-      }
-    }
-  }
-
   compute_sym_uses();
-
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      //
-      // change call of reference function to value function
-      //
       if (FnSymbol* fn = call->isResolved()) {
         if (FnSymbol* copy = fn->valueFunction) {
           if (CallExpr* move = toCallExpr(call->parentExpr)) {

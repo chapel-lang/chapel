@@ -1207,21 +1207,6 @@ instantiate_tuple(FnSymbol* fn) {
   fn->removePragma("tuple");
 }
 
-static FnSymbol*
-instantiate_tuple_get(FnSymbol* fn) {
-  VarSymbol* var = toVarSymbol(fn->substitutions.get(fn->instantiatedFrom->getFormal(3)));
-  if (!var || var->immediate->const_kind != NUM_KIND_INT)
-    return fn;
-  int64 index = var->immediate->int_value();
-  if (index <= 0 || index >= toClassType(fn->_this->type)->fields.length()) {
-    fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_ERROR, new_StringSymbol(astr("tuple index out-of-bounds error (", istr(index), ")")))));
-  } else {
-    const char* name = astr("x", istr(index));
-    fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER, fn->_this, new_StringSymbol(name)))));
-  }
-  normalize(fn);
-  return fn;
-}
 
 static FnSymbol*
 instantiate_tuple_copy(FnSymbol* fn) {
@@ -1494,9 +1479,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
 
   } else {
     newfn = instantiate_function(this, generic_substitutions, NULL, paramMap, call);
-
-    if (hasPragma("tuple get"))
-      newfn = instantiate_tuple_get(newfn);
 
     if (hasPragma("tuple copy"))
       newfn = instantiate_tuple_copy(newfn);

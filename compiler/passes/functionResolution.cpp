@@ -2055,22 +2055,27 @@ preFold(Expr* expr) {
         //
         // resolve tuple indexing by an integral parameter
         //
-//         Type* t = base->var->type;
-//         if (t->symbol->hasPragma("ref"))
-//           t = getValueType(t);
-//         if (t->symbol->hasPragma("tuple")) {
-//           if (call->numActuals() != 3)
-//             USR_FATAL(call, "illegal tuple indexing expression");
-//           if (!is_int_type(call->get(3)->typeInfo()))
-//             USR_FATAL(call, "tuple indexing expression is not of integral type");
-//           long index;
-//           if (get_int(call->get(3), &index)) {
-//             char field[8];
-//             sprintf(field, "x%ld", index);
-//             result = new CallExpr(PRIMITIVE_GET_MEMBER, base->var, new_StringSymbol(field));
-//             call->replace(result);
-//           }
-//         }
+        Type* t = base->var->type;
+        if (t->symbol->hasPragma("ref"))
+          t = getValueType(t);
+        if (t->symbol->hasPragma("tuple")) {
+          if (call->numActuals() != 3)
+            USR_FATAL(call, "illegal tuple indexing expression");
+          Type* indexType = call->get(3)->typeInfo();
+          if (indexType->symbol->hasPragma("ref"))
+            indexType = getValueType(indexType);
+          if (!is_int_type(indexType))
+            USR_FATAL(call, "tuple indexing expression is not of integral type");
+          long index;
+          if (get_int(call->get(3), &index)) {
+            char field[8];
+            sprintf(field, "x%ld", index);
+            if (index <= 0 || index >= toClassType(t)->fields.length())
+              USR_FATAL(call, "tuple index out-of-bounds error (%ld)", index);
+            result = new CallExpr(PRIMITIVE_GET_MEMBER, base->var, new_StringSymbol(field));
+            call->replace(result);
+          }
+        }
       }
     } else if (call->isPrimitive(PRIMITIVE_INIT)) {
       SymExpr* se = toSymExpr(call->get(1));
