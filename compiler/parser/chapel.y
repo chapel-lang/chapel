@@ -1076,7 +1076,10 @@ type:
 
 
 formal_level_type:
-  anon_record_type
+  TOPAQUE
+{ /* $$ = build_opaque_type_expr(); */
+  $$ = new SymExpr("opaque"); }
+| anon_record_type
 | array_type
 | TDOMAIN TLP expr_ls TRP distributed_expr
     {

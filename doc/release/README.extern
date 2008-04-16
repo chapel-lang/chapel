@@ -30,19 +30,32 @@ How to call a C routine from Chapel
 
        _extern def foo(): real;
 
+   Similarly, external functions that expect arguments must declare
+   those arguments.
+
    All C types must be expressed in terms of their Chapel equivalents.
    This can cause portability issues in certain cases due to the fact
    that C types don't have well-defined sizes.  For example, if
    function foo returns a C "int", that type could correspond to a
    Chapel int(32) or an int(64) or possibly some other int size
-   depending on your C compiler and platform.  The burden of making
-   types match is on the user, though any mismatches ought to be
-   flagged during Chapel's C compilation step.
+   depending on your C compiler and platform.  Similarly, scalar C
+   types that don't have a direct Chapel equivalent (e.g., size_t) are
+   currently difficult to interface with in a portable manner.  The
+   burden of making types match is on the user, though any problematic
+   mismatches ought to be flagged during Chapel's C compilation step.
 
-   Similarly, external functions that expect arguments must declare
-   those arguments.  Types of function arguments may be omitted, in
-   which case the types will be inferred based on the Chapel callsite.
-   For example, the following Chapel code:
+   Note that Chapel C strings can be passed to C functions, though
+   warnings can occur during C compilation due to mismatches between
+   the const-ness of the char*'s used to implement the strings.
+
+   More interesting types like records and classes are currently
+   difficult to pass to C effectively.  See the description in the
+   next section about "opaque" types for one way of dealing with
+   these.
+
+   Types of function arguments may be omitted, in which case the types
+   will be inferred based on the Chapel callsite.  For example, the
+   following Chapel code:
 
        _extern def foo(x: int, y): real;
 
@@ -54,15 +67,16 @@ How to call a C routine from Chapel
    values (likely an "int" or "short" in most C implementations) and
    returns a 64-bit real (double).
 
-   Note that Chapel C strings can be passed to C functions, though
-   warnings can occur during C compilation due to mismatches between
-   the const-ness of the char*'s used to implement the strings.
+   External function arguments can be declared with default arguments
+   in which case the default argument will be supplied by the Chapel
+   compiler if it is omitted at the callsite.  For example:
 
-   More interesting types like records and classes are currently
-   difficult to pass to C effectively.  Use at your own risk.
-   Similarly, C types that don't have a direct Chapel equivalent
-   (e.g., size_t) are currently difficult to interface with in a
-   portable manner.
+       _extern def foo(x: int, y = 1.2): real;
+
+       foo(0);
+
+   Would cause external function foo() to be called with the arguments
+   0 and 1.2.
 
    C varargs functions can be declared using Chapel's varargs ("...")
    syntax.  For example, the following declaration prototypes C's
@@ -103,6 +117,34 @@ or:    chpl foo.h foo.o myProgram.chpl (if foo.c had already been compiled)
      step will be linked to the .o files listed on the compiler's
      command-line as well as the compiler-generated code and runtime
      libraries.
+
+
+Opaque Types
+------------
+
+You can refer to external C types that cannot be described in Chapel
+using the "opaque" keyword.  As the name implies, these types are
+opaque as far as Chapel is concerned and cannot be used for operations
+other than argument passing and assignment (to/from other similarly
+opaque types).
+
+For example, Chapel could be used to call an external C function that
+returns a pointer to a malloc'ed struct as follows:
+
+    _extern def returnStructPtr(): opaque;
+
+    var structPtr: opaque = returnStructPtr();
+
+However, because structPtr's type is opaque, it cannot be used for
+much apart from assigning it to other opaque variables of matching
+underlying type, or passing it back to an external C routine that
+expects a pointer-to-struct of that type:
+
+    _extern def operateOnStructPtr(ptr: opaque);
+
+    var copyOfStructPtr = structPtr;
+
+    operateOnStructPtr(structPtr);
 
 
 Future Directions

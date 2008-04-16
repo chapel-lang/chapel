@@ -20,6 +20,7 @@ Symbol *gUnspecified = NULL;
 Symbol *gMethodToken = NULL;
 Symbol *gVoid = NULL;
 Symbol *gFile = NULL;
+Symbol *gOpaque = NULL;
 Symbol *gTimer = NULL;
 Symbol *gSyncVarAuxFields = NULL;
 Symbol *gSingleVarAuxFields = NULL;

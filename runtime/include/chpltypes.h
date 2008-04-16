@@ -8,6 +8,7 @@
 
 #define _chpl_object void*
 #define _chpl_value void*
+#define chpl_opaque void*
 
 // macros for specifying the correct C constant type
 #define INT8( i)   (i)

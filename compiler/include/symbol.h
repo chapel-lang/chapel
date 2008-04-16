@@ -286,6 +286,7 @@ extern Symbol *gUnspecified;
 extern Symbol *gMethodToken;
 extern Symbol *gVoid;
 extern Symbol *gFile;
+extern Symbol *gOpaque;
 extern Symbol *gTimer;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;

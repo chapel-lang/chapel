@@ -156,6 +156,7 @@ TYPE_EXTERN PrimitiveType* dtComplex[COMPLEX_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtString;
 TYPE_EXTERN PrimitiveType* dtSymbol;
 TYPE_EXTERN PrimitiveType* dtFile; 
+TYPE_EXTERN PrimitiveType* dtOpaque;
 TYPE_EXTERN PrimitiveType* dtTimer; 
 TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;

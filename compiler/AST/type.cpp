@@ -555,6 +555,9 @@ void initPrimitiveTypes(void) {
   dtFile = createPrimitiveType ("_file", "_cfile");
   CREATE_DEFAULT_SYMBOL(dtFile, gFile, "0");
 
+  dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
+  CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "NULL");
+
   dtTimer = createPrimitiveType("_timervalue", "_timervalue");
   CREATE_DEFAULT_SYMBOL(dtTimer, gTimer, "_new_timer()");
 
