@@ -69,8 +69,6 @@ static chpl_condvar_p chpl_condvar_new(void) {
   return cv;
 }
 
-static void schedule_next_task(void);
-
 
 // Mutex
 
@@ -230,10 +228,8 @@ void initChplThreads() {
   if (pthread_key_create(&lock_report_key, NULL))
     chpl_internal_error("lock report key not created");
 
-  if (blockreport) {
-    initializeLockReportForThread(); // this is for the main thread
+  if (blockreport)
     signal(SIGINT, traverseLockedThreads);
-  }
 
   chpl_thread_init();
 }
@@ -244,7 +240,10 @@ void exitChplThreads() {
 }
 
 
-void chpl_thread_init(void) {}  // No need to do anything!
+void chpl_thread_init(void) {
+  if (blockreport)
+    initializeLockReportForThread();
+}
 
 
 uint64_t chpl_thread_id(void) {
@@ -296,6 +295,7 @@ static void traverseLockedThreads(int sig) {
     }
     rep = rep->next;
   }
+  exitChplThreads();
   _chpl_exit_any(1);
 }
 
@@ -354,7 +354,6 @@ static void initializeLockReportForThread() {
 //
 static void
 chpl_begin_helper (task_pool_p task) {
-  initializeLockReportForThread();
   while (true) {
     //
     // reset serial state
@@ -369,26 +368,28 @@ chpl_begin_helper (task_pool_p task) {
     _chpl_free(task, 0, 0);  // make sure task_pool_head no longer points to this task!
 
     //
+    // finished task; decrement running count
+    //
+    running_cnt--;
+
+    //
     // wait for a task to be added to the task pool
     //
-    if (!task_pool_head) {
-      running_cnt--;
-      do {
-        pthread_cond_wait(&wakeup_signal, &threading_lock);
-      } while (!task_pool_head);
-      running_cnt++;
-    }
+    while (!task_pool_head)
+      pthread_cond_wait(&wakeup_signal, &threading_lock);
 
-    waking_cnt--;
+    if (waking_cnt > 0)
+      waking_cnt--;
 
     //
     // start new task; increment running count and remove task from pool
     //
+    running_cnt++;
     task = task_pool_head;
     task_pool_head = task_pool_head->next;
     if (task_pool_head == NULL)  // task pool is now empty
       task_pool_tail = NULL; 
-    else
+    else if (waking_cnt > 0)
       // schedule another task if one is waiting; this must be done in
       // case, for example, 2 signals were performed by chpl_begin()
       // back-to-back before any thread was woken up from the
@@ -413,19 +414,19 @@ static void
 launch_next_task(void) {
   pthread_t   thread;
   task_pool_p task = task_pool_head;
-  if (pthread_create(&thread, NULL, (chpl_threadfp_t)chpl_begin_helper, task)) {
-    static _Bool warning_issued = false;
-    if (!warning_issued) {
-      char msg[256];
-      if (maxThreads)
-        sprintf(msg, "maxThreads is %"PRId32", but unable to create more than %d threads",
-                maxThreads, threads_cnt);
-      else
-        sprintf(msg, "maxThreads is unbounded, but unable to create more than %d threads",
-                threads_cnt);
-      chpl_warning(msg, 0, 0);
-      warning_issued = true;
-    }
+  static _Bool warning_issued = false;
+  if (warning_issued)  // If thread creation failed previously, don't try again!
+    return;
+  else if (pthread_create(&thread, NULL, (chpl_threadfp_t)chpl_begin_helper, task)) {
+    char msg[256];
+    if (maxThreads)
+      sprintf(msg, "maxThreads is %"PRId32", but unable to create more than %d threads",
+              maxThreads, threads_cnt);
+    else
+      sprintf(msg, "maxThreads is unbounded, but unable to create more than %d threads",
+              threads_cnt);
+    chpl_warning(msg, 0, 0);
+    warning_issued = true;
   } else {
     threads_cnt++;
     running_cnt++;
@@ -437,24 +438,50 @@ launch_next_task(void) {
 }
 
 
-// Schedule a next task either by signaling an existing thread or by
-// launching a new thread if one is available
-static void schedule_next_task(void) {
+// Schedule one or more tasks either by signaling an existing thread or by
+// launching new threads if available
+static void schedule_next_task(int howMany) {
   // if there is an idle thread, send it a signal to wake up and grab
   // a new task
   if (threads_cnt > running_cnt + waking_cnt) {
-    waking_cnt++;
+    // increment waking_cnt by the number of idle threads
+    int idle_cnt = threads_cnt - running_cnt - waking_cnt;
+    if (idle_cnt >= howMany) {
+      waking_cnt += howMany;
+      howMany = 0;
+    } else {
+      waking_cnt += idle_cnt;
+      howMany -= idle_cnt;
+    }
     pthread_cond_signal(&wakeup_signal);
+  }
 
   //
-  // otherwise, try to launch task in a new thread
+  // try to launch each remaining task in a new thread
   // if the maximum number threads has not yet been reached
   // take the main thread into account (but not when counting idle
   // threads above)
   //
-  } else if (maxThreads == 0 || threads_cnt + 1 < maxThreads) {
+  for (; howMany && (maxThreads == 0 || threads_cnt + 1 < maxThreads); howMany--)
     launch_next_task();
-  }
+}
+
+
+// create a task from the given function pointer and arguments
+// and append it to the end of the task pool
+// assumes threading_lock has already been acquired!
+static void add_to_task_pool (chpl_threadfp_t fp, chpl_threadarg_t a, _Bool serial) {
+  task_pool_p task = (task_pool_p)_chpl_malloc(1, sizeof(task_pool_t), "task pool entry", 0, 0);
+  task->fun = fp;
+  task->arg = a;
+  task->serial_state = serial;
+  task->next = NULL;
+
+  if (task_pool_tail)
+    task_pool_tail->next = task;
+  else
+    task_pool_head = task;
+  task_pool_tail = task;
 }
 
 
@@ -469,25 +496,12 @@ chpl_begin (chpl_threadfp_t fp,
   if (!ignore_serial && chpl_get_serial()) {
     (*fp)(a);
   } else {
-    // create a task from the given function pointer and arguments
-    // and append it to the end of the task pool
-    task_pool_p task = (task_pool_p)_chpl_malloc(1, sizeof(task_pool_t), "task pool entry", 0, 0);
-    task->fun = fp;
-    task->arg = a;
-    task->serial_state = serial_state;
-    task->next = NULL;
-
     // begin critical section
     chpl_mutex_lock(&threading_lock);
 
-    if (task_pool_tail) {
-      task_pool_tail->next = task;
-    } else {
-      task_pool_head = task;
-    }
-    task_pool_tail = task;
+    add_to_task_pool (fp, a, serial_state);
 
-    schedule_next_task();
+    schedule_next_task(1);
 
     // end critical section
     chpl_mutex_unlock(&threading_lock);
@@ -511,14 +525,34 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
   // task_list points to the last entry on the list; task_list->next is actually
   // the first element on the list.
   chpl_task_list_p task = task_list, next_task;
+  int task_cnt = 0;
+  _Bool serial = chpl_get_serial();
   // This function is not expected to be called if a cobegin contains fewer
   // than two statements.
   assert (task);
-  next_task = task->next;
+  next_task = task->next;  // next_task now points to the head of the list
+
+  // begin critical section
+  if (!serial)
+    chpl_mutex_lock(&threading_lock);
+
   do {
     task = next_task;
-    chpl_begin (task->fun, task->arg, false, false);
+    if (serial)
+      (*task->fun)(task->arg);
+    else
+      add_to_task_pool (task->fun, task->arg, serial);
+
     next_task = task->next;
     _chpl_free (task, 0, 0);
+    task_cnt++;
+
   } while (task != task_list);
+
+  // end critical section
+  if (!serial) {
+    schedule_next_task(task_cnt);
+    chpl_mutex_unlock(&threading_lock);
+  }
+
 }
