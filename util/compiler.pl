@@ -11,7 +11,7 @@ if ($flag eq "" || $flag eq "--host") {
 } elsif ($flag eq "--target") {
     $preset_compiler=$ENV{'CHPL_TARGET_COMPILER'};
     if ($preset_compiler eq "") {
-	if ('$utildirname/platform.pl --host' eq '$utildirname/platform.pl --target') {
+	if (`$utildirname/platform.pl --host` eq `$utildirname/platform.pl --target`) {
 	    $preset_compiler=$ENV{'CHPL_HOST_COMPILER'};
 	}
     }
