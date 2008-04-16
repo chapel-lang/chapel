@@ -6,7 +6,6 @@ COMMON_SRCS = \
 	chplexit.c \
 	chplio.c \
 	chplmem.c \
-	chplmem_tests.c \
 	chplsys.c \
 	chpltypes.c \
 	config.c \

@@ -1,1 +1,1 @@
-mallocOutOfMemory.chpl:1: error: Out of memory allocating "malloc test"
+mallocOutOfMemory.chpl:5: error: Out of memory allocating "malloc test"

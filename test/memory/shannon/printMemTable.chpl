@@ -1,3 +1,5 @@
+_extern def printMemTable(thresh=1000, lineno=-1, filename="");
+
 config var n : int = 20;
 config var epsilon : real = 0.00001;
 config var verbose : bool = false;
@@ -42,7 +44,7 @@ while (delta > epsilon) {
   }
 }
 
-_chpl_memtest_printMemTable();
+printMemTable();
 
 writeln("Jacobi computation complete.");
 writeln("Delta is ", delta, " (< epsilon = ", epsilon, ")");

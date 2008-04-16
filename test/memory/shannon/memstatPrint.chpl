@@ -1,28 +1,15 @@
+_extern def _chpl_malloc(number, size, description, lineno=-1, filename=""): opaque;
+_extern def printMemStat(lineno=0, filename="");
+
 config var print: bool = false;
 
-class C {
-  var a: int(64);
-  var b: int(64);
-  var c: int(64);
-  var d: int(64);
-  var e: int(64);
-  var f: int(64);
-  var g: int(64);
-}
+printMemStat();
+_chpl_malloc(1, 64, "64 bytes");
+printMemStat();
+_chpl_malloc(1, 64, "64 bytes");
+printMemStat();
+_chpl_malloc(1, 64, "64 bytes");
+printMemStat();
+_chpl_malloc(1, 64, "64 bytes");
+printMemStat();
 
-_chpl_memtest_printMemStat();
-var c = new C();
-_chpl_memtest_printMemStat();
-var d = new C();
-_chpl_memtest_printMemStat();
-var e = new C();
-_chpl_memtest_printMemStat();
-var f = new C();
-_chpl_memtest_printMemStat();
-
-if print {
-  writeln(c);
-  writeln(d);
-  writeln(e);
-  writeln(f);
-}

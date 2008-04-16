@@ -1,1 +1,1 @@
-_chpl_memtest_freedMalloc();
+use freedMalloc;

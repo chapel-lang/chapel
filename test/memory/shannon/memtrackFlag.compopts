@@ -1,0 +1,1 @@
+freedMalloc.chpl --main-module=memtrackFlag

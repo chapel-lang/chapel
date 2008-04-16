@@ -178,10 +178,6 @@ lg2/exp2
 cygwin-specific failures
 ========================
 
-pthread issues (started when test was enabled)
-----------------------------------------------
-[Error matching program output for parallel/cobegin/diten/cobeginRace]
-
 pthread issues (started on 4/11/2008)
 -------------------------------------
 [release/examples/quicksort]
