@@ -1437,36 +1437,6 @@ resolveCall(CallExpr* call) {
 
     resolveDefaultGenericType(call);
 
-    if (SymExpr* sym = toSymExpr(call->baseExpr)) {
-      if (toVarSymbol(sym->var) ||
-          toArgSymbol(sym->var)) {
-        Expr* base = call->baseExpr;
-        base->replace(new SymExpr("this"));
-        call->insertAtHead(base);
-        call->insertAtHead(gMethodToken);
-      }
-    }
-
-    if (CallExpr* base = toCallExpr(call->baseExpr)) {
-      if (base->partialTag) {
-        for_actuals_backward(actual, base) {
-          actual->remove();
-          call->insertAtHead(actual);
-        }
-        base->replace(base->baseExpr->remove());
-      } else {
-        VarSymbol* this_temp = new VarSymbol("this_temp");
-        this_temp->isCompilerTemp = true;
-        base->replace(new SymExpr("this"));
-        CallExpr* move = new CallExpr(PRIMITIVE_MOVE, this_temp, base);
-        call->insertAtHead(new SymExpr(this_temp));
-        call->insertAtHead(gMethodToken);
-        call->getStmtExpr()->insertBefore(new DefExpr(this_temp));
-        call->getStmtExpr()->insertBefore(move);
-        resolveCall(move);
-      }
-    }
-
     CallInfo info(call);
 
     FnSymbol* resolvedFn = resolve_call(&info);
@@ -2038,17 +2008,70 @@ preFold(Expr* expr) {
       }
     }
 
-    SymExpr* base = toSymExpr(call->baseExpr);
-    if (base && isVarSymbol(base->var) && base->var->isTypeVariable) {
-      if (call->numActuals() == 0)
-        USR_FATAL(call, "illegal call of type");
-      long index;
-      if (!get_int(call->get(1), &index))
-        USR_FATAL(call, "illegal type index expression");
-      char field[8];
-      sprintf(field, "x%ld", index);
-      result = new SymExpr(base->var->type->getField(field)->type->symbol);
-      call->replace(result);
+    if (SymExpr* sym = toSymExpr(call->baseExpr)) {
+      if (toVarSymbol(sym->var) || toArgSymbol(sym->var)) {
+        Expr* base = call->baseExpr;
+        base->replace(new SymExpr("this"));
+        call->insertAtHead(base);
+        call->insertAtHead(gMethodToken);
+      }
+    }
+
+    if (CallExpr* base = toCallExpr(call->baseExpr)) {
+      if (base->partialTag) {
+        for_actuals_backward(actual, base) {
+          actual->remove();
+          call->insertAtHead(actual);
+        }
+        base->replace(base->baseExpr->remove());
+      } else {
+        VarSymbol* this_temp = new VarSymbol("this_temp");
+        this_temp->isCompilerTemp = true;
+        base->replace(new SymExpr("this"));
+        CallExpr* move = new CallExpr(PRIMITIVE_MOVE, this_temp, base);
+        call->insertAtHead(new SymExpr(this_temp));
+        call->insertAtHead(gMethodToken);
+        call->getStmtExpr()->insertBefore(new DefExpr(this_temp));
+        call->getStmtExpr()->insertBefore(move);
+        result = move;
+        return result;
+      }
+    }
+
+    if (call->isNamed("this")) {
+      SymExpr* base = toSymExpr(call->get(2));
+      INT_ASSERT(base);
+      if (isVarSymbol(base->var) && base->var->isTypeVariable) {
+        if (call->numActuals() == 2)
+          USR_FATAL(call, "illegal call of type");
+        long index;
+        if (!get_int(call->get(3), &index))
+          USR_FATAL(call, "illegal type index expression");
+        char field[8];
+        sprintf(field, "x%ld", index);
+        result = new SymExpr(base->var->type->getField(field)->type->symbol);
+        call->replace(result);
+      } else if (base && (isVarSymbol(base->var) || isArgSymbol(base->var))) {
+        //
+        // resolve tuple indexing by an integral parameter
+        //
+//         Type* t = base->var->type;
+//         if (t->symbol->hasPragma("ref"))
+//           t = getValueType(t);
+//         if (t->symbol->hasPragma("tuple")) {
+//           if (call->numActuals() != 3)
+//             USR_FATAL(call, "illegal tuple indexing expression");
+//           if (!is_int_type(call->get(3)->typeInfo()))
+//             USR_FATAL(call, "tuple indexing expression is not of integral type");
+//           long index;
+//           if (get_int(call->get(3), &index)) {
+//             char field[8];
+//             sprintf(field, "x%ld", index);
+//             result = new CallExpr(PRIMITIVE_GET_MEMBER, base->var, new_StringSymbol(field));
+//             call->replace(result);
+//           }
+//         }
+      }
     } else if (call->isPrimitive(PRIMITIVE_INIT)) {
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
@@ -2072,39 +2095,6 @@ preFold(Expr* expr) {
       } else {
         inits.add(call);
       }
-//         } else {
-//           call->get(1)->replace(new SymExpr(type->symbol));
-//         }
-//       }
-      /*
-      if (SymExpr* sym = toSymExpr(call->get(1))) {
-        TypeSymbol* ts = toTypeSymbol(sym->var);
-        if (!ts && sym->var->isTypeVariable)
-          ts = sym->var->type->symbol;
-        if (ts && ts->hasPragma("iterator class")) {
-          result = new CallExpr(ts->type->defaultConstructor);
-          call->replace(result);
-        } else if (ts && !ts->hasPragma("array")) {
-          if (ts->hasPragma("ref"))
-            ts = getValueType(ts->type)->symbol;
-          if (ts->type->defaultValue == gNil) {
-            result = new CallExpr("_cast", ts, ts->type->defaultValue);
-            call->replace(result);
-          } else if (ts->type->defaultValue) {
-            result = new SymExpr(ts->type->defaultValue);
-            call->replace(result);
-          } else if (ts->type->defaultConstructor) {
-            result = new CallExpr(ts->type->defaultConstructor);
-            call->replace(result);
-          } else if (ts->type->defaultTypeConstructor) {
-            //            INT_FATAL(ts, "build default constructor from type constructor");
-          } else
-            INT_FATAL(ts, "type has neither defaultValue nor defaultTypeConstructor");
-        } else {
-          INT_FATAL("ahh!");
-        }
-      }
-      */
     } else if (call->isNamed("_copy")) {
       if (call->numActuals() == 1) {
         if (SymExpr* symExpr = toSymExpr(call->get(1))) {
@@ -2211,31 +2201,6 @@ preFold(Expr* expr) {
           }
         }
       }
-
-      //
-      // handle tuple types in expression contexts
-      //   see test/types/tuple/deitz/test_tuple_type3.chpl
-      //
-//       if (SymExpr* se = toSymExpr(call->get(2))) {
-//         if (se->var->isTypeVariable) {
-//           CallExpr* move = toCallExpr(call->parentExpr);
-//           INT_ASSERT(move);
-//           for (int i = 2; i <= call->numActuals(); i++) {
-//             Expr* actual = call->get(i);
-//             VarSymbol* tmp = new VarSymbol("_tmp");
-//             tmp->isCompilerTemp = true;
-//             tmp->canParam = true;
-//             move->insertBefore(new DefExpr(tmp));
-//             actual->replace(new SymExpr(tmp));
-//             CallExpr* init = new CallExpr("_init", actual);
-//             move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, init));
-//             if (result == expr)
-//               result = init;
-//           }
-//           result = preFold(result);
-//         }
-//       }
-
     } else if (call->isPrimitive(PRIMITIVE_LOOP_PARAM)) {
       fold_param_for(call);
     } else if (call->isPrimitive(PRIMITIVE_LOOP_FOR) &&
