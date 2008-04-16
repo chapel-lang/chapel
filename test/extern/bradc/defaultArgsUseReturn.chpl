@@ -1,0 +1,5 @@
+_extern def printReturnReal(x = 1.1): real;
+
+var y = printReturnReal();
+writeln("y is: ", y);
+
