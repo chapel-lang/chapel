@@ -548,16 +548,6 @@ initPrimitive() {
   prim_def("chpl_maxThreads", returnInfoInt32);
   prim_def("chpl_maxThreadsLimit", returnInfoInt32);
 
-  prim_def("_memtest_printMemTable", returnInfoVoid, true, true);
-  prim_def("_memtest_printMemStat", returnInfoVoid, true, true);
-  prim_def("_memtest_resetMemStat", returnInfoVoid, true, true);
-  prim_def("_memtest_allocAndFree", returnInfoVoid, true, true);
-  prim_def("_memtest_freedMalloc", returnInfoVoid, true, true);
-  prim_def("_memtest_freedWithoutMalloc", returnInfoVoid, true, true);
-  prim_def("_memtest_reallocWithoutMalloc", returnInfoVoid, true, true);
-  prim_def("_memtest_reallocZeroSize", returnInfoVoid, true, true);
-  prim_def("_memtest_mallocOutOfMemory", returnInfoVoid, true, true);
-  prim_def("_memtest_reallocOutOfMemory", returnInfoVoid, true, true);
   prim_def("startTrackingMem", returnInfoVoid, true);
 
   prim_def("chpl_error", returnInfoVoid, true, true);
