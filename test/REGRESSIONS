@@ -13,24 +13,10 @@
 linux and general regressions
 =============================
 
-out-of-memory problems
-----------------------
-[Error matching program output for stress/deitz/test_10k_cobegins]
-[Error matching program output for stress/deitz/test_10k_coforall]
-
 maxThreads warning issue
 ------------------------
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
 [Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
-
-output differs on different machines
-------------------------------------
-[Error matching program output for release/examples/taskParallel]
-
-differing memory sizes on different platforms
----------------------------------------------
-[Error matching program output for memory/shannon/memstatPrint]
-[Error matching program output for memory/shannon/printFinalMemStat]
 
 
 ===================
@@ -80,6 +66,13 @@ out of memory allocating iterator classes
 ===========================
 gasnet-specific regressions
 ===========================
+
+failing for various reasons
+---------------------------
+[Error matching compiler output for memory/shannon/reallocZeroSize]
+[Error matching program output for memory/shannon/allocAndFree]
+[Error matching program output for memory/shannon/freedMalloc]
+[Error matching program output for memory/shannon/freedWithoutMalloc]
 
 ???
 ---
