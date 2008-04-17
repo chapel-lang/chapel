@@ -30,6 +30,7 @@ system("cd $tmpdir && svn export -q $svnroot");
        "README",
        "README.files",
        "STATUS",
+       "compiler/passes/reservedSymbolNames",
        "man/man1/chpl.1",
        "third-party/Makefile",
        "third-party/README",
