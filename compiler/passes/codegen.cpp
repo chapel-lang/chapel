@@ -97,70 +97,8 @@ static void codegen_header(void) {
   Vec<FnSymbol*> fnSymbols;
   Vec<VarSymbol*> varSymbols;
 
-  // reserved C words that require renaming to compile
-  cnames.put("abs", 1);
-  cnames.put("cos", 1);
-  cnames.put("sin", 1);
-  cnames.put("tan", 1);
-  cnames.put("acos", 1);
-  cnames.put("asin", 1);
-  cnames.put("atan", 1);
-  cnames.put("floor", 1);
-  cnames.put("sqrt", 1);
-  cnames.put("conjg", 1);
-  cnames.put("exit", 1);
-  cnames.put("_init", 1);
-  cnames.put("stdin", 1);
-  cnames.put("close", 1);
-  cnames.put("fwrite", 1);
-  cnames.put("fread", 1);
-  cnames.put("main", 1);
-  cnames.put("open", 1);
-  cnames.put("printf", 1);
-  cnames.put("quad", 1);
-  cnames.put("read", 1);
-  cnames.put("sleep", 1);
-  cnames.put("stderr", 1);
-  cnames.put("stdout", 1);
-  cnames.put("write", 1);
-  cnames.put("y1", 1); // this is ridiculous...
-  cnames.put("log2", 1);
-  cnames.put("remove", 1);
-  cnames.put("fprintf", 1);
-  cnames.put("fscanf", 1);
-  cnames.put("clone", 1);
-  cnames.put("new", 1);
-  cnames.put("register", 1);
-  cnames.put("signal", 1);
-  cnames.put("ceil", 1);
-  cnames.put("acosh", 1);
-  cnames.put("asinh", 1);
-  cnames.put("atan2", 1);
-  cnames.put("atanh", 1);
-  cnames.put("cbrt", 1);
-  cnames.put("cosh", 1);
-  cnames.put("erf", 1);
-  cnames.put("erfc", 1);
-  cnames.put("exp", 1);
-  cnames.put("exp2", 1);
-  cnames.put("expm1", 1);
-  cnames.put("lgamma", 1);
-  cnames.put("log10", 1);
-  cnames.put("log1p", 1);
-  cnames.put("log", 1);
-  cnames.put("rint", 1);
-  cnames.put("sinh", 1);
-  cnames.put("tanh", 1);
-  cnames.put("ascii", 1);
-  cnames.put("isnan", 1);
-  cnames.put("random", 1);
-  cnames.put("truncate", 1);
-  cnames.put("int", 1);
-  cnames.put("time", 1);
-  cnames.put("nearbyint", 1);
-  cnames.put("round", 1);
-  cnames.put("tgamma", 1);
-  cnames.put("trunc", 1);
+  // reserved symbol names that require renaming to compile
+#include "reservedSymbolNames.h"
 
   //
   // change enum constant names into EnumTypeName_constantName

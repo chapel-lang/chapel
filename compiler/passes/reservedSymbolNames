@@ -1,0 +1,96 @@
+  // reserved words in C but not in Chapel
+  auto
+  case
+  char
+  default
+  double
+  extern
+  float
+  goto
+  inline
+  int
+  long
+  register
+  restrict
+  short
+  signed
+  sizeof
+  static
+  struct
+  switch
+  typedef
+  unsigned
+  void
+  volatile
+  // all symbol names beginning with _ followed by an uppercase letter
+  // need to be mangled; this should be done with custom code
+
+  abs
+  cos
+  sin
+  tan
+  acos
+  asin
+  atan
+  floor
+  sqrt
+  conjg
+  exit
+  _init
+  stdin
+  close
+  fwrite
+  fread
+  main
+  open
+  printf
+  quad
+  read
+  sleep
+  stderr
+  stdout
+  write
+  y1 // this is ridiculous...
+  log2
+  remove
+  fprintf
+  fscanf
+  clone
+  new
+  register
+  signal
+  ceil
+  acosh
+  asinh
+  atan2
+  atanh
+  cbrt
+  cosh
+  erf
+  erfc
+  exp
+  exp2
+  expm1
+  lgamma
+  log10
+  log1p
+  log
+  rint
+  sinh
+  tanh
+  ascii
+  isnan
+  random
+  truncate
+  int
+  time
+  nearbyint
+  round
+  tgamma
+  trunc
+
+  // additional reserved words in the MTA/XMT compiler
+  ; const char *CHPL_THREADS = configParamMap.get(astr("CHPL_THREADS"))
+  ; if (CHPL_THREADS && !strcmp(CHPL_THREADS, astr("mta"))) {
+  purge
+  task }
