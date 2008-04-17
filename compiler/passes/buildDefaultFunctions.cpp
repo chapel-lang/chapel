@@ -542,6 +542,8 @@ static void build_record_copy_function(ClassType* ct) {
   if (function_exists("_copy", 1, ct->symbol->name))
     return;
 
+  INT_ASSERT(!ct->symbol->hasPragma("tuple"));
+
   FnSymbol* fn = new FnSymbol("_copy");
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   fn->insertFormalAtTail(arg);
@@ -555,10 +557,6 @@ static void build_record_copy_function(ClassType* ct) {
   ct->symbol->defPoint->insertBefore(def);
   reset_file_info(def, ct->symbol->lineno, ct->symbol->filename);
   normalize(fn);
-  if (ct->symbol->hasPragma("tuple")) {
-    fn->addPragma("tuple copy");
-    fn->addPragma("inline");
-  }
 }
 
 

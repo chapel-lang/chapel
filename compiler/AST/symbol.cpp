@@ -1209,21 +1209,6 @@ instantiate_tuple(FnSymbol* fn) {
 
 
 static FnSymbol*
-instantiate_tuple_copy(FnSymbol* fn) {
-  if (fn->numFormals() != 1)
-    INT_FATAL(fn, "tuple copy function has more than one argument");
-  ArgSymbol* arg = fn->getFormal(1);
-  ClassType* ct = toClassType(arg->type);
-  CallExpr* call = new CallExpr("_build_tuple_always");
-  for (int i = 1; i < ct->fields.length(); i++)
-    call->insertAtTail(new CallExpr(arg, new_IntSymbol(i)));
-  fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, call)));
-  normalize(fn);
-  return fn;
-}
-
-
-static FnSymbol*
 instantiate_tuple_init(FnSymbol* fn) {
   if (fn->numFormals() != 1)
     INT_FATAL(fn, "tuple init function has more than one argument");
@@ -1479,9 +1464,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
 
   } else {
     newfn = instantiate_function(this, generic_substitutions, NULL, paramMap, call);
-
-    if (hasPragma("tuple copy"))
-      newfn = instantiate_tuple_copy(newfn);
 
     if (hasPragma("tuple init"))
       newfn = instantiate_tuple_init(newfn);

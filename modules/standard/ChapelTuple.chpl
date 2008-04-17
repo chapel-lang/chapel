@@ -43,6 +43,8 @@ def *(p: int, type t) type {
   compilerError("tuple size must be static");
 }
 
+pragma "inline" def _copy(x: _tuple) return _build_tuple_always((...x));
+
 pragma "tuple" record _tuple {
   param size : int;
 
