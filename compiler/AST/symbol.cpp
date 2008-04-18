@@ -425,6 +425,10 @@ void ArgSymbol::verify() {
   if (astTag != SYMBOL_ARG) {
     INT_FATAL(this, "Bad ArgSymbol::astTag");
   }
+  if (typeExpr && typeExpr->parentSymbol != this)
+    INT_FATAL(this, "Bad ArgSymbol::typeExpr::parentSymbol");
+  if (defaultExpr && defaultExpr->parentSymbol != this)
+    INT_FATAL(this, "Bad ArgSymbol::defaultExpr::parentSymbol");
 }
 
 
@@ -606,6 +610,12 @@ void FnSymbol::verify() {
   }
   if (formals.parent != this)
     INT_FATAL(this, "Bad AList::parent in FnSymbol");
+  if (where && where->parentSymbol != this)
+    INT_FATAL(this, "Bad FnSymbol::where::parentSymbol");
+  if (retExprType && retExprType->parentSymbol != this)
+    INT_FATAL(this, "Bad FnSymbol::retExprType::parentSymbol");
+  if (body && body->parentSymbol != this)
+    INT_FATAL(this, "Bad FnSymbol::body::parentSymbol");
 }
 
 
@@ -1751,6 +1761,8 @@ void ModuleSymbol::verify() {
   if (astTag != SYMBOL_MODULE) {
     INT_FATAL(this, "Bad ModuleSymbol::astTag");
   }
+  if (block && block->parentSymbol != this)
+    INT_FATAL(this, "Bad ModuleSymbol::block::parentSymbol");
 }
 
 

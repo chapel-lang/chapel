@@ -59,6 +59,12 @@ void BlockStmt::verify() {
   }
   if (body.parent != this)
     INT_FATAL(this, "Bad AList::parent in BlockStmt");
+  for_alist(expr, body) {
+    if (expr->parentExpr != this)
+      INT_FATAL(this, "Bad BlockStmt::body::parentExpr");
+  }
+  if (loopInfo && loopInfo->parentExpr != this)
+    INT_FATAL(this, "Bad BlockStmt::loopInfo::parentExpr");
 }
 
 
@@ -250,6 +256,16 @@ void CondStmt::verify() {
   if (elseStmt && elseStmt->list) {
     INT_FATAL(this, "CondStmt::elseStmt is a list");
   }
+
+  if (condExpr && condExpr->parentExpr != this)
+    INT_FATAL(this, "Bad CondStmt::condExpr::parentExpr");
+
+  if (thenStmt && thenStmt->parentExpr != this)
+    INT_FATAL(this, "Bad CondStmt::thenStmt::parentExpr");
+
+  if (elseStmt && elseStmt->parentExpr != this)
+    INT_FATAL(this, "Bad CondStmt::elseStmt::parentExpr");
+
 }
 
 
@@ -333,6 +349,9 @@ void GotoStmt::verify() {
     INT_FATAL(this, "GotoStmt has no label");
   if (label->list)
     INT_FATAL(this, "GotoStmt::label is a list");
+
+  if (label && label->parentExpr != this)
+    INT_FATAL(this, "Bad GotoStmt::label::parentExpr");
 }
 
 

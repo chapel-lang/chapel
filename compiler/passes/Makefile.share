@@ -16,8 +16,7 @@ PASSES_SRCS = \
         normalize.cpp \
 	scalarReplace.cpp \
         scopeResolve.cpp \
-        semanticChecks.cpp \
-        verify.cpp
+        semanticChecks.cpp
 
 SVN_SRCS = $(PASSES_SRCS)
 SRCS = $(SVN_SRCS)

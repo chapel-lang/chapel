@@ -48,6 +48,8 @@ void Expr::verify() {
       INT_FATAL(this, "Expr is in list but does not point at it");
   if (!parentSymbol)
     INT_FATAL(this, "Expr::parentSymbol is NULL");
+  if (parentExpr && parentExpr->parentSymbol != parentSymbol)
+    INT_FATAL(this, "Bad Expr::parentSymbol");
 }
 
 
@@ -337,6 +339,10 @@ void DefExpr::verify() {
     INT_FATAL(this, "Bad FnSymbol::defPoint");
   if (toArgSymbol(sym) && (exprType || init))
     INT_FATAL(this, "Bad ArgSymbol::defPoint");
+  if (init && init->parentExpr != this)
+    INT_FATAL(this, "Bad DefExpr::init::parentExpr");
+  if (exprType && exprType->parentExpr != this)
+    INT_FATAL(this, "Bad DefExpr::exprType::parentExpr");
 }
 
 
@@ -571,6 +577,10 @@ void CallExpr::verify() {
       INT_FATAL(this, "Return is in middle of function.");
     if (!sym)
       INT_FATAL(this, "Return does not return a symbol.");
+  }
+  for_actuals(actual, this) {
+    if (actual->parentExpr != this)
+      INT_FATAL(this, "Bad CallExpr::argList::parentExpr");
   }
 }
 
@@ -2046,6 +2056,8 @@ void NamedExpr::verify() {
   if (astTag != EXPR_NAMED) {
     INT_FATAL(this, "Bad NamedExpr::astTag");
   }
+  if (actual && actual->parentExpr != this)
+    INT_FATAL(this, "Bad NamedExpr::actual::parentExpr");
 }
 
 

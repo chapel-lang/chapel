@@ -157,6 +157,10 @@ void EnumType::verify() {
   }
   if (constants.parent != this)
     INT_FATAL(this, "Bad AList::parent in EnumType");
+  for_alist(expr, constants) {
+    if (expr->parentSymbol != symbol)
+      INT_FATAL(this, "Bad EnumType::constants::parentSymbol");
+  }
 }
 
 
@@ -253,6 +257,14 @@ void ClassType::verify() {
     INT_FATAL(this, "Bad ClassType::classTag");
   if (fields.parent != this || inherits.parent != this)
     INT_FATAL(this, "Bad AList::parent in ClassType");
+  for_alist(expr, fields) {
+    if (expr->parentSymbol != symbol)
+      INT_FATAL(this, "Bad ClassType::fields::parentSymbol");
+  }
+  for_alist(expr, inherits) {
+    if (expr->parentSymbol != symbol)
+      INT_FATAL(this, "Bad ClassType::inherits::parentSymbol");
+  }
 }
 
 
