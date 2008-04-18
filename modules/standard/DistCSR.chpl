@@ -49,7 +49,7 @@ class CSRDomain: BaseSparseArithmeticDomain {
   def numIndices return nnz;
 
   def getIndices() return 0;
-  def setIndices(x);
+  def setIndices(x) { }
 
   def buildArray(type eltType)
     return new CSRArray(eltType, rank, idxType, dom=this);

@@ -697,8 +697,6 @@ fn_decl_stmt:
 
 function_body_stmt:
   block_stmt
-| empty_stmt
-  { $$ = new BlockStmt($1); }
 | return_stmt
   { $$ = new BlockStmt($1); }
 ;

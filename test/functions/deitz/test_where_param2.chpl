@@ -1,5 +1,5 @@
 def foo(param i : int) 
-  where i == 1;
+  where i == 1
 {
 // this syntax is nolonger legal
 //  where i == 1;
@@ -7,7 +7,7 @@ def foo(param i : int)
 }
 
 def foo(param i : int) 
-  where i == 2;
+  where i == 2
 {
 // this syntax is nolonger legal
 //  where i == 2;

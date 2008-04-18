@@ -288,9 +288,9 @@ def file.unlockWrite() {
 }
 
 class Writer {
-  def writeIt(s: string);
+  def writeIt(s: string) { }
   def lockWrite() return false;
-  def unlockWrite();
+  def unlockWrite() { }
   def write(args ...?n) {
     var need_release: bool;
     need_release = lockWrite();
