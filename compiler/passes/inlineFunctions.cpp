@@ -51,30 +51,13 @@ inlineCall(CallExpr* call) {
   FnSymbol* fn = call->isResolved();
 
   //
-  // insert temporary symbols for all actuals that require one and
   // calculate a map from actual symbols to formal symbols
-  //
-  // sjd: do we need these temporaries given those we insert inside a
-  //      function during resolution to maintain copy semantics
   //
   ASTMap map;
   for_formals_actuals(formal, actual, call) {
-    if (SymExpr* se = toSymExpr(actual)) {
-        map.put(formal, se->var);
-    } else {
-
-      //
-      // try to eliminate temporaries
-      //
-      if (formal->requiresCPtr())
-        INT_FATAL(actual, "illegal reference actual encountered in inlining");
-      VarSymbol* temp = new VarSymbol("_tmp", actual->typeInfo());
-      temp->isCompilerTemp = true;
-      stmt->insertBefore(new DefExpr(temp));
-      stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, temp, actual->remove()));
-      map.put(formal, temp);
-
-    }
+    SymExpr* se = toSymExpr(actual);
+    INT_ASSERT(se);
+    map.put(formal, se->var);
   }
 
   //
