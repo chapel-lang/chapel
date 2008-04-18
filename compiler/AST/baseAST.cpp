@@ -26,10 +26,10 @@ static int uid = 1;
 void printStatistics(const char* pass) {
   static int last_asts = -1;
 
-  fprintf(stderr, "%s\n", pass);
-
-  if (last_asts == gAsts.n)
+  if (last_asts == gAsts.n) {
+    fprintf(stderr, "%23s%s\n", "", pass);
     return;
+  }
 
   decl_counters(CondStmt, STMT_COND);
   decl_counters(BlockStmt, STMT_BLOCK);
@@ -96,46 +96,46 @@ void printStatistics(const char* pass) {
   int nType = nPrimitiveType+nEnumType+nClassType;
   int kType = kPrimitiveType+kEnumType+kClassType;
 
-  fprintf(stderr, "  %d asts (%dk)\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType);
+  fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Stmt %9d  Cond %9d  Block %9d  Goto  %9d\n",
+    fprintf(stderr, "    Stmt %9d  Cond %9d  Block %9d  Goto  %9d\n",
             nStmt, nCondStmt, nBlockStmt, nGotoStmt);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Stmt %9dK Cond %9dK Block %9dK Goto  %9dK\n",
+    fprintf(stderr, "    Stmt %9dK Cond %9dK Block %9dK Goto  %9dK\n",
             kStmt, kCondStmt, kBlockStmt, kGotoStmt);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Stmt %6dK Cond %6dK Block %6dK Goto  %6dK\n",
+    fprintf(stderr, "    Stmt %6dK Cond %6dK Block %6dK Goto  %6dK\n",
             kStmt, kCondStmt, kBlockStmt, kGotoStmt);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Expr %9d  Sym   %9d  Def  %9d  Call  %9d  Named %9d\n",
+    fprintf(stderr, "    Expr %9d  Sym  %9d  Def  %9d  Call  %9d  Named %9d\n",
             nExpr, nSymExpr, nDefExpr, nCallExpr, nNamedExpr);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Expr %9dK Sym   %9dK Def  %9dK Call  %9dK Named %9dK\n",
+    fprintf(stderr, "    Expr %9dK Sym  %9dK Def  %9dK Call  %9dK Named %9dK\n",
             kExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Expr %6dK Sym   %6dK Def  %6dK Call  %6dK Named %6dK\n",
+    fprintf(stderr, "    Expr %6dK Sym  %6dK Def  %6dK Call  %6dK Named %6dK\n",
             kExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
+    fprintf(stderr, "    Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
             nSymbol, nModuleSymbol, nVarSymbol, nArgSymbol, nTypeSymbol, nFnSymbol, nEnumSymbol, nLabelSymbol);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Sym  %9dK Mod  %9dK Var   %9dK Arg   %9dK Type %9dK Fn %9dK Enum %9dK Label %9dK\n",
+    fprintf(stderr, "    Sym  %9dK Mod  %9dK Var   %9dK Arg   %9dK Type %9dK Fn %9dK Enum %9dK Label %9dK\n",
             kSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Sym  %6dK Mod  %6dK Var   %6dK Arg   %6dK Type %6dK Fn %6dK Enum %6dK Label %6dK\n",
+    fprintf(stderr, "    Sym  %6dK Mod  %6dK Var   %6dK Arg   %6dK Type %6dK Fn %6dK Enum %6dK Label %6dK\n",
             kSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Type %9d  Prim  %9d  Enum %9d  Class %9d\n",
+    fprintf(stderr, "    Type %9d  Prim  %9d  Enum %9d  Class %9d\n",
             nType, nPrimitiveType, nEnumType, nClassType);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Type %9dK Prim  %9dK Enum %9dK Class %9dK\n",
+    fprintf(stderr, "    Type %9dK Prim  %9dK Enum %9dK Class %9dK\n",
             kType, kPrimitiveType, kEnumType, kClassType);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "  Type %6dK Prim  %6dK Enum %6dK Class %6dK\n",
+    fprintf(stderr, "    Type %6dK Prim  %6dK Enum %6dK Class %6dK\n",
             kType, kPrimitiveType, kEnumType, kClassType);
   last_asts = gAsts.n;
 }

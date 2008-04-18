@@ -363,7 +363,7 @@ static ArgumentDescription arg_desc[] = {
  {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
  {"parser-debug", 'D', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"print-dispatch", ' ', NULL, "Print dynamic dispatch table", "F", &fPrintDispatch, NULL, NULL},
- {"print-statistics", ' ', "[n|k]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
+ {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
 
  {"", ' ', NULL, "Misc. Developer Flags", NULL, NULL, NULL, NULL},
