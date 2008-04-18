@@ -553,5 +553,5 @@ initPrimitive() {
   prim_def("chpl_error", returnInfoVoid, true, true);
   prim_def("chpl_warning", returnInfoVoid, true, true);
 
-  prim_def("_mem_used", returnInfoUInt64, false, true);
+  prim_def("mem_used", returnInfoUInt64, false, true);
 }

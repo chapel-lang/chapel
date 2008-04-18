@@ -134,7 +134,7 @@ char** _chpl_comm_create_argcv(int32_t execNumLocales, int argc, char* argv[],
   chpl_msg(2, "Called _chpl_comm_create_argcv() on: %d\n", _localeID);
 
   *commArgc = argc;
-  commArgv = _chpl_malloc((*commArgc) + 1, sizeof(char *), "ARMCI argv", __LINE__, __FILE__);
+  commArgv = chpl_malloc((*commArgc) + 1, sizeof(char *), "ARMCI argv", __LINE__, __FILE__);
   for (i = 0; i < argc; i++)
     commArgv[i] = argv[i];
   commArgv[argc] = NULL;
@@ -210,7 +210,7 @@ void _chpl_comm_rollcall(void) {
 
 void _chpl_comm_alloc_registry(int numGlobals) {
   chpl_error("_chpl_comm_alloc_registry() not yet implemented", 0, NULL);
-  _global_vars_registry = _chpl_malloc(numGlobals, sizeof(void*), "allocate global vars registry", 0, 0);
+  _global_vars_registry = chpl_malloc(numGlobals, sizeof(void*), "allocate global vars registry", 0, 0);
 }
 
 void _chpl_comm_broadcast_global_vars(int numGlobals) {
@@ -355,8 +355,8 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
 
   header = f;
   rhlen = sizeof(f);
-  rheader = _chpl_malloc(sizeof(f), sizeof(char), "GPC exec remote header", __LINE__, __FILE__);
-  rdata = _chpl_malloc(arg_size, sizeof(char), "GPC exec remote data", __LINE__, __FILE__);
+  rheader = chpl_malloc(sizeof(f), sizeof(char), "GPC exec remote header", __LINE__, __FILE__);
+  rdata = chpl_malloc(arg_size, sizeof(char), "GPC exec remote data", __LINE__, __FILE__);
   rdlen = arg_size;
 
   /* ARMCI_Gpc_init_handle(&nbh); */
@@ -368,8 +368,8 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
                        rheader, rhlen, rdata, rdlen, NULL /* &nbh */);
   if (ret != 0) {
     chpl_internal_error("ARMCI_Gpc_exec() failed");
-    _chpl_free(rheader, __LINE__, __FILE__);
-    _chpl_free(rdata, __LINE__, __FILE__);
+    chpl_free(rheader, __LINE__, __FILE__);
+    chpl_free(rdata, __LINE__, __FILE__);
     return;
   }
 
@@ -377,8 +377,8 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
 
   /* ARMCI_Gpc_wait(&nbh); */
 
-  _chpl_free(rheader, __LINE__, __FILE__);
-  _chpl_free(rdata, __LINE__, __FILE__);
+  chpl_free(rheader, __LINE__, __FILE__);
+  chpl_free(rdata, __LINE__, __FILE__);
 }
 
 //

@@ -27,7 +27,7 @@ typedef struct _memTableEntry { /* table entry */
 
 } memTableEntry;
 
-_chpl_meminfo_t chpl_meminfo = {0};
+chpl_meminfo_t chpl_meminfo = {0};
 int broadcastingGlobalsStarted = 0;
 int whichMalloc = 0;
 
@@ -156,7 +156,7 @@ void startTrackingMem(void) {
 
 static int alreadyPrintingStat = 0;
 
-uint64_t _mem_used(int32_t lineno, _string filename) {
+uint64_t mem_used(int32_t lineno, _string filename) {
   uint64_t u;
   alreadyPrintingStat = 1; /* hack: don't want to print final stats */
   if (!memstat)
@@ -423,7 +423,7 @@ static size_t computeChunkSize(size_t number, size_t size, int zeroOK,
 }
 
 
-static void* _chpl_malloc1(size_t number, size_t size,
+static void* chpl_malloc1(size_t number, size_t size,
                            const char* description,
                            int32_t lineno, _string filename) {
   size_t chunk = computeChunkSize(number, size, 0, lineno, filename);
@@ -451,7 +451,7 @@ static void* _chpl_malloc1(size_t number, size_t size,
 }
 
 
-static void* _chpl_malloc2(size_t number, size_t size, const char* description,
+static void* chpl_malloc2(size_t number, size_t size, const char* description,
                            int32_t lineno, _string filename) {
   size_t chunk = computeChunkSize(number, size, 0, lineno, filename);
   void* memAlloc;
@@ -462,17 +462,17 @@ static void* _chpl_malloc2(size_t number, size_t size, const char* description,
     // sub-processes in a multi-locale program. It should never be taken
     // by a process that has a localeID.
     //
-    memAlloc = _chpl_malloc1(number, size, description, lineno, filename);
+    memAlloc = chpl_malloc1(number, size, description, lineno, filename);
     confirm(memAlloc, description, lineno, filename);
   } else {
     chpl_mutex_lock(&_malloc_lock);
     if (broadcastingGlobalsStarted == 0 || chpl_meminfo.head == NULL) {
-      chpl_error("_chpl_malloc called before properly initialized", lineno, filename);
+      chpl_error("chpl_malloc called before properly initialized", lineno, filename);
     }
     memAlloc = chpl_meminfo.current;
     chpl_meminfo.current += chunk;
     if (chpl_meminfo.current > chpl_meminfo.tail) {
-      chpl_error("_chpl_malloc out of memory", lineno, filename);
+      chpl_error("chpl_malloc out of memory", lineno, filename);
     }
     chpl_mutex_unlock(&_malloc_lock);
   }
@@ -480,15 +480,15 @@ static void* _chpl_malloc2(size_t number, size_t size, const char* description,
 }
 
 
-void* _chpl_malloc(size_t number, size_t size, const char* description,
+void* chpl_malloc(size_t number, size_t size, const char* description,
                    int32_t lineno, _string filename) {
   void* memAlloc;
   switch (whichMalloc) {
     case 1:
-      memAlloc = _chpl_malloc1(number, size, description, lineno, filename);
+      memAlloc = chpl_malloc1(number, size, description, lineno, filename);
       break;
     case 2:
-      memAlloc = _chpl_malloc2(number, size, description, lineno, filename);
+      memAlloc = chpl_malloc2(number, size, description, lineno, filename);
       break;
     default:
       memAlloc = NULL;
@@ -498,14 +498,14 @@ void* _chpl_malloc(size_t number, size_t size, const char* description,
 }
 
 
-void* _chpl_calloc(size_t number, size_t size, const char* description, 
+void* chpl_calloc(size_t number, size_t size, const char* description, 
                    int32_t lineno, _string filename) {
   void* memAlloc;
   if (whichMalloc == 1) {
     memAlloc = calloc(number, size);
     confirm(memAlloc, description, lineno, filename);
   } else if (whichMalloc == 2) {
-    memAlloc = _chpl_malloc(number, size, description, lineno, filename);
+    memAlloc = chpl_malloc(number, size, description, lineno, filename);
     confirm(memAlloc, description, lineno, filename);
     memset(memAlloc, 0, number*size);
   } else {
@@ -535,7 +535,7 @@ void* _chpl_calloc(size_t number, size_t size, const char* description,
 }
 
 
-void _chpl_free(void* memAlloc, int32_t lineno, _string filename) {
+void chpl_free(void* memAlloc, int32_t lineno, _string filename) {
   if (whichMalloc == 2)
     return;
 
@@ -575,7 +575,7 @@ void _chpl_free(void* memAlloc, int32_t lineno, _string filename) {
 }
 
 
-void* _chpl_realloc(void* memAlloc, size_t number, size_t size, 
+void* chpl_realloc(void* memAlloc, size_t number, size_t size, 
                     const char* description, int32_t lineno, _string filename) {
   size_t newChunk = computeChunkSize(number, size, 1, lineno, filename);
   memTableEntry* memEntry = NULL;
@@ -584,7 +584,7 @@ void* _chpl_realloc(void* memAlloc, size_t number, size_t size,
     chpl_error("realloc is not compatible with this malloc", lineno, filename);
   }
   if (!newChunk) {
-    _chpl_free(memAlloc, lineno, filename);
+    chpl_free(memAlloc, lineno, filename);
     return NULL;
   }
   if (memtrack) {

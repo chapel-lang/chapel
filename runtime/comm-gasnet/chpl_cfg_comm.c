@@ -62,7 +62,7 @@ gasnet_seginfo_t seginfo_table[1024];
 
 static void _AM_fork_nb_wrapper(dist_fork_t *i) {
   (*(i->fun))(&(i->arg));
-  _chpl_free(i, 0, 0);
+  chpl_free(i, 0, 0);
 }
 
 
@@ -72,7 +72,7 @@ static void _AM_fork_nb(gasnet_token_t token,
                         size_t  nbytes) {
   dist_fork_t *fork_info;
 
-  fork_info = (dist_fork_t*) _chpl_malloc(nbytes, sizeof(char), "", 0, 0);
+  fork_info = (dist_fork_t*) chpl_malloc(nbytes, sizeof(char), "", 0, 0);
   bcopy(buf, fork_info, nbytes);
   chpl_begin((chpl_threadfp_t)_AM_fork_nb_wrapper, (chpl_threadarg_t)fork_info,
              true, fork_info->serial_state);
@@ -90,7 +90,7 @@ static void _AM_fork_wrapper(dist_fork_t *i) {
                                       SIGNAL, 
                                       &(i->ack), 
                                       sizeof(i->ack)));
-  _chpl_free(i, 0, 0);
+  chpl_free(i, 0, 0);
 }
 
 
@@ -102,7 +102,7 @@ static void _AM_fork(gasnet_token_t  token,
 
   PRINTF(__func__);
 
-  fork_info = (dist_fork_t*) _chpl_malloc(nbytes, sizeof(char), "", 0, 0);
+  fork_info = (dist_fork_t*) chpl_malloc(nbytes, sizeof(char), "", 0, 0);
   bcopy(buf, fork_info, nbytes);
   chpl_begin((chpl_threadfp_t)_AM_fork_wrapper, (chpl_threadarg_t)fork_info,
              true, fork_info->serial_state);
@@ -187,7 +187,7 @@ char** _chpl_comm_create_argcv(int32_t numLocales, int argc, char* argv[],
   int i;
   sprintf(numLocalesString, "%d", numLocales);
   *commArgc = argc+1;
-  commArgv = _chpl_malloc((*commArgc)+1, sizeof(char*), "GASNet argv", 
+  commArgv = chpl_malloc((*commArgc)+1, sizeof(char*), "GASNet argv", 
                           __LINE__, __FILE__);
   commArgv[0] = argv[0];
   commArgv[1] = numLocalesString;
@@ -260,7 +260,7 @@ void _chpl_comm_set_malloc_type(void) {
 
 void _chpl_comm_alloc_registry(int numGlobals) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-  _global_vars_registry = _chpl_malloc(numGlobals, sizeof(void*), "allocate global vars registry", 0, 0);
+  _global_vars_registry = chpl_malloc(numGlobals, sizeof(void*), "allocate global vars registry", 0, 0);
 #else
   _global_vars_registry = _global_vars_registry_static;
 #endif
@@ -303,7 +303,7 @@ void _chpl_comm_broadcast_private(void* addr, int size) {
   /* For each private constant, copy it to the heap, fork to each locale,
      and read it off the remote heap into its final non-heap location. Ick.
    */
-  void* heapAddr = _chpl_malloc(1, size, "broadcast private", 0, 0);
+  void* heapAddr = chpl_malloc(1, size, "broadcast private", 0, 0);
   _broadcast_private_helper bph;
 
   bcopy(addr, heapAddr, size);
@@ -374,7 +374,7 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   PRINTF(__func__);
 
   info_size = sizeof(dist_fork_t) + arg_size;
-  info = (dist_fork_t*) _chpl_malloc(info_size, sizeof(char), "", 0, 0);
+  info = (dist_fork_t*) chpl_malloc(info_size, sizeof(char), "", 0, 0);
 
   info->caller = _localeID;
   info->serial_state = chpl_get_serial();
@@ -396,7 +396,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
     (*f)(arg);
   } else {
     info_size = sizeof(dist_fork_t) + arg_size;
-    info = (dist_fork_t*) _chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork", 0, 0);
+    info = (dist_fork_t*) chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork", 0, 0);
 
     info->caller = _localeID;
     info->ack = &done;

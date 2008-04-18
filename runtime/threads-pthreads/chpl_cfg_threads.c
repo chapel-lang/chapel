@@ -65,7 +65,7 @@ static _string idleThreadName = "|idle|";
 
 static chpl_condvar_p chpl_condvar_new(void) {
   chpl_condvar_p cv;
-  cv = (chpl_condvar_p) _chpl_alloc(sizeof(chpl_condvar_t), "condition var", 0, 0);
+  cv = (chpl_condvar_p) chpl_alloc(sizeof(chpl_condvar_t), "condition var", 0, 0);
   if (pthread_cond_init(cv, NULL))
     chpl_internal_error("pthread_cond_init() failed");
   return cv;
@@ -82,7 +82,7 @@ static void chpl_mutex_init(chpl_mutex_p mutex) {
 
 static chpl_mutex_p chpl_mutex_new(void) {
   chpl_mutex_p m;
-  m = (chpl_mutex_p) _chpl_alloc(sizeof(chpl_mutex_t), "mutex", 0, 0);
+  m = (chpl_mutex_p) chpl_alloc(sizeof(chpl_mutex_t), "mutex", 0, 0);
   chpl_mutex_init(m);
   return m;
 }
@@ -204,7 +204,7 @@ void chpl_init_single_aux(chpl_single_aux_t *s) {
 
 static void serial_delete(_Bool *p) {
   if (p != NULL) {
-    _chpl_free(p, 0, 0);
+    chpl_free(p, 0, 0);
   }
 }
 
@@ -240,6 +240,9 @@ void initChplThreads() {
 
 
 void exitChplThreads() {
+  _Bool debug = false;
+  if (debug)
+    fprintf(stderr, "A total of %d threads were created; waking_cnt = %d\n", threads_cnt, waking_cnt);
   pthread_key_delete(serial_key);
 }
 
@@ -266,7 +269,7 @@ void chpl_set_serial(chpl_bool state) {
   p = (_Bool*) pthread_getspecific(serial_key);
   if (p == NULL) {
     if (state) {
-      p = (_Bool*) _chpl_alloc(sizeof(_Bool), "serial flag", 0, 0);
+      p = (_Bool*) chpl_alloc(sizeof(_Bool), "serial flag", 0, 0);
       *p = state;
       if (pthread_setspecific(serial_key, p)) {
         if (pthread_key_create(&serial_key, (void(*)(void*))serial_delete))
@@ -336,7 +339,7 @@ static void initializeLockReportForThread() {
   lockReport* newLockReport;
   if (!blockreport)
     return;
-  newLockReport = _chpl_malloc(1, sizeof(lockReport), "lockReport", 0, 0);
+  newLockReport = chpl_malloc(1, sizeof(lockReport), "lockReport", 0, 0);
   newLockReport->next = NULL;
   newLockReport->maybeLocked = 0;
   pthread_setspecific(lock_report_key, newLockReport);
@@ -361,6 +364,7 @@ static void initializeLockReportForThread() {
 //
 static void
 chpl_begin_helper (task_pool_p task) {
+
   while (true) {
     //
     // reset serial state
@@ -372,7 +376,7 @@ chpl_begin_helper (task_pool_p task) {
     // begin critical section
     chpl_mutex_lock(&threading_lock);
 
-    _chpl_free(task, 0, 0);  // make sure task_pool_head no longer points to this task!
+    chpl_free(task, 0, 0);  // make sure task_pool_head no longer points to this task!
 
     //
     // finished task; decrement running count
@@ -482,7 +486,7 @@ static void schedule_next_task(int howMany) {
 // and append it to the end of the task pool
 // assumes threading_lock has already been acquired!
 static void add_to_task_pool (chpl_threadfp_t fp, chpl_threadarg_t a, _Bool serial) {
-  task_pool_p task = (task_pool_p)_chpl_malloc(1, sizeof(task_pool_t), "task pool entry", 0, 0);
+  task_pool_p task = (task_pool_p)chpl_malloc(1, sizeof(task_pool_t), "task pool entry", 0, 0);
   task->fun = fp;
   task->arg = a;
   task->serial_state = serial;
@@ -521,7 +525,7 @@ chpl_begin (chpl_threadfp_t fp,
 }
 
 void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg, chpl_task_list_p *task_list) {
-  chpl_task_list_p task = (chpl_task_list_p)_chpl_malloc(1, sizeof(struct chpl_task_list), "task list entry", 0, 0);
+  chpl_task_list_p task = (chpl_task_list_p)chpl_malloc(1, sizeof(struct chpl_task_list), "task list entry", 0, 0);
   task->fun = fun;
   task->arg = arg;
   if (*task_list) {
@@ -555,7 +559,7 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
       add_to_task_pool (task->fun, task->arg, serial);
 
     next_task = task->next;
-    _chpl_free (task, 0, 0);
+    chpl_free (task, 0, 0);
     task_cnt++;
 
   } while (task != task_list);

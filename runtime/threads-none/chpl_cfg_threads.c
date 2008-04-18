@@ -33,7 +33,7 @@ launch_next_task(void) {
     chpl_set_serial(task->serial_state);
 
     (*task->fun)(task->arg);
-    _chpl_free(task, 0, 0);
+    chpl_free(task, 0, 0);
 
     return true;
   } else {
@@ -153,7 +153,7 @@ chpl_begin(chpl_threadfp_t fp, chpl_threadarg_t a, chpl_bool ignore_serial, chpl
   } else {
     // create a task from the given function pointer and arguments
     // and append it to the end of the task pool for later execution
-    task_pool_p task = (task_pool_p)_chpl_malloc(1, sizeof(task_pool_t), "task pool entry", 0, 0);
+    task_pool_p task = (task_pool_p)chpl_malloc(1, sizeof(task_pool_t), "task pool entry", 0, 0);
     task->fun = fp;
     task->arg = a;
     task->serial_state = serial_state;

@@ -33,7 +33,7 @@ typedef void (*func_p)(void*);
     if (chpl_macro_tmp >= chpl_meminfo.head && chpl_macro_tmp <= chpl_meminfo.tail) {  \
       (wide).addr = chpl_macro_tmp;                                \
     } else {                                                       \
-      (wide).addr = _chpl_malloc(chpl_macro_len, sizeof(char), "set wide string", 0, 0); \
+      (wide).addr = chpl_malloc(chpl_macro_len, sizeof(char), "set wide string", 0, 0); \
       strncpy((char*)(wide).addr, chpl_macro_tmp, chpl_macro_len); \
    }                                                               \
     (wide).size = chpl_macro_len;                                  \
@@ -90,7 +90,7 @@ typedef void (*func_p)(void*);
 
 #define _COMM_WIDE_GET_STRING(local, wide)                              \
   do {                                                                  \
-    char* chpl_macro_tmp = _chpl_malloc((wide).size,                    \
+    char* chpl_macro_tmp = chpl_malloc((wide).size,                    \
                                         sizeof(char),                   \
                                         "wide_get_string", -1, "<internal>"); \
     _chpl_comm_get(chpl_macro_tmp, (wide).locale, (wide).addr, (wide).size); \
@@ -271,7 +271,7 @@ void _chpl_comm_broadcast_global_vars(int numGlobals);
 void _chpl_comm_broadcast_private(void* addr, int size);
 
 //
-// Decide which function to use for _chpl_malloc calls.
+// Decide which function to use for chpl_malloc calls.
 //
 void _chpl_comm_set_malloc_type(void);
 

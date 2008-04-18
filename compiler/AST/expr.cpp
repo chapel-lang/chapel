@@ -1760,12 +1760,12 @@ void CallExpr::codegen(FILE* outfile) {
       } 
       fprintf( outfile, ")");
 
-      // target: void* _chpl_alloc(size_t size, char* description);
+      // target: void* chpl_alloc(size_t size, char* description);
       if (!fCopyCollect || typeInfo()->symbol->hasPragma("no object")) {
         fprintf(outfile, "%s(sizeof(",
                 (primitive->tag == PRIMITIVE_CHPL_ALLOC ?
-                 "_chpl_alloc" : 
-                 "_CHPL_ALLOC_PERMIT_ZERO"));
+                 "chpl_alloc" : 
+                 "CHPL_ALLOC_PERMIT_ZERO"));
       } else {
         fprintf( outfile, "_chpl_gc_malloc(1, sizeof(");
       }
@@ -1781,7 +1781,7 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIMITIVE_CHPL_FREE: {
-      fprintf(outfile, "_chpl_free(");
+      fprintf(outfile, "chpl_free(");
       get(1)->codegen(outfile);
       fprintf(outfile, ", ");
       get(2)->codegen(outfile);

@@ -30,7 +30,7 @@ _real64 _now_time(void);
 #define _ARRAY_SET(x, i, v) ((x)->_data[i] = v)
 
 #define _ARRAY_ALLOC(x, type, size, lineno, filename) \
-  (x)->_data = (size == 0) ? (void*)(0x0) : _chpl_malloc(size, sizeof(type), "_data", lineno, filename)
+  (x)->_data = (size == 0) ? (void*)(0x0) : chpl_malloc(size, sizeof(type), "_data", lineno, filename)
 
 #define _WIDE_ARRAY_ALLOC(x, type, size, lineno, filename)              \
   do {                                                                 \
@@ -43,7 +43,7 @@ _real64 _now_time(void);
   for(i = 0; i < (x)->size; i++) call
 
 #define _ARRAY_FREE(x, lineno, filename) \
-  _chpl_free((x)->_data, lineno, filename)
+  chpl_free((x)->_data, lineno, filename)
 
 #define _noop(x)
 

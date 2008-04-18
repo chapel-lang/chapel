@@ -11,9 +11,9 @@ typedef struct {
   char* head;
   char* current;
   char* tail;
-} _chpl_meminfo_t;
+} chpl_meminfo_t;
 
-extern _chpl_meminfo_t chpl_meminfo;
+extern chpl_meminfo_t chpl_meminfo;
 extern int broadcastingGlobalsStarted;
 extern int whichMalloc;
 
@@ -35,17 +35,17 @@ void setMemtrack(void);
 void setMemthreshold(int64_t value);
 void setMemtrace(char* memLogname);
 
-#define _CHPL_ALLOC_PERMIT_ZERO(s,d,l,f) ((s == 0) ? 0x0 : _chpl_alloc(s,d,l,f))
-#define _chpl_alloc(size, description, lineno, filename) \
-  _chpl_malloc(1, size, description, lineno, filename)
-void* _chpl_malloc(size_t number, size_t size, const char* description,
+#define CHPL_ALLOC_PERMIT_ZERO(s,d,l,f) ((s == 0) ? 0x0 : chpl_alloc(s,d,l,f))
+#define chpl_alloc(size, description, lineno, filename) \
+  chpl_malloc(1, size, description, lineno, filename)
+void* chpl_malloc(size_t number, size_t size, const char* description,
                    int32_t lineno, _string filename);
-void* _chpl_calloc(size_t number, size_t size, const char* description,
+void* chpl_calloc(size_t number, size_t size, const char* description,
                    int32_t lineno, _string filename);
-void* _chpl_realloc(void* ptr, size_t number, size_t size, 
+void* chpl_realloc(void* ptr, size_t number, size_t size, 
                     const char* description, int32_t lineno, _string filename);
-void  _chpl_free(void* ptr, int32_t lineno, _string filename);
+void  chpl_free(void* ptr, int32_t lineno, _string filename);
 
-uint64_t _mem_used(int32_t lineno, _string filename);
+uint64_t mem_used(int32_t lineno, _string filename);
 
 #endif
