@@ -156,7 +156,7 @@ well.  A sync variable of type \chpl{int} is read and then written
 during an update so the full-empty semantics make these updates atomic
 when used in a stylized way.  The code
 \begin{chapel}
-var count$\mbox{{\bf \$}}$: int;
+var count$\mbox{{\bf \$}}$: sync int;
 begin count$\mbox{{\bf \$}}$ += 1;
 begin count$\mbox{{\bf \$}}$ += 1;
 begin count$\mbox{{\bf \$}}$ += 1;
@@ -544,13 +544,14 @@ The \chpl{serial} statement can be used to dynamically disable
 parallelism.  The syntax is:
 \begin{syntax}
 serial-statement:
-  `serial' expression block-level-statement
+  `serial' expression `do' statement
+  `serial' expression block-statement
 \end{syntax}
 where the expression evaluates to a bool type.  Independent of that
-value, the \sntx{block-level-statement} is evaluated. If the
-expression is true, any dynamically encountered code that would result
-in new tasks is executed without spawning any new tasks.  In effect,
-execution is serialized.
+value, the \sntx{statement} is evaluated. If the expression is true,
+any dynamically encountered code that would result in new tasks is
+executed without spawning any new tasks.  In effect, execution is
+serialized.
 
 \begin{example}
 Given the \chpl{Tree} class defined in the example
@@ -561,7 +562,7 @@ def concurrentUpdate(tree: Tree, depth: int = 1) {
   if requiresUpdate(tree) then
     update(tree);
   if !tree.isLeaf {
-    serial depth > 4 cobegin {
+    serial depth > 4 do cobegin {
       concurrentSearch(tree.left, depth+1);
       concurrentSearch(tree.right, depth+1);
     }

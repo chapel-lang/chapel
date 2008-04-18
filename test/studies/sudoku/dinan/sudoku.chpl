@@ -103,7 +103,7 @@ def main() {
   var spots: [1..nSpots] (int, int);
 
   var spotsUsed = 1;
-  for ij in givenBoard.domain
+  for ij in givenBoard.domain do
     if givenBoard(ij) == 0 {
       spots[spotsUsed] = ij;
       spotsUsed += 1;

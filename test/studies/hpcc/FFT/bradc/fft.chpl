@@ -251,7 +251,7 @@ def cftmd2(span, A, W) {
   const n = A.domain.dim(1).length;
 
   cftmd0(span, A, W);
-  if (m2 >= n) return;
+  if (m2 >= n) then return;
   if (m2 >= n / 8) {
     cftmd21(span, A, W);
     return;

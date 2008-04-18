@@ -15,7 +15,7 @@ Functions are declared with the following syntax:
 \begin{syntax}
 function-declaration-statement:
   `def' function-name argument-list[OPT] var-param-clause[OPT]
-    return-type[OPT] where-clause[OPT] block-level-statement
+    return-type[OPT] where-clause[OPT] function-body
 
 function-name:
   identifier
@@ -59,6 +59,11 @@ return-type:
 
 where-clause:
   `where' expression
+
+function-body:
+  block-statement
+  empty-statement
+  return-statement
 \end{syntax}
 
 Operator overloading is supported in Chapel on the operators listed

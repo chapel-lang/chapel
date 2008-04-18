@@ -17,7 +17,7 @@ begin {
   var j: int;
   j = 0;
   while (j < ITERATIONS) {
-    for w in 1..WAIT;
+    for w in 1..WAIT do;
     r = c.s;
     writeln( "2: got ", r);
     j += 1;

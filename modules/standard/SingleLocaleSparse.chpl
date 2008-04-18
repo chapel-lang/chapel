@@ -157,7 +157,7 @@ class SingleLocaleSparseArray: BaseArray {
   }
 
   def these() var {
-    for e in data[1..dom.nnz] yield e;
+    for e in data[1..dom.nnz] do yield e;
   }
 
   def IRV var {

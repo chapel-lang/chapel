@@ -26,7 +26,7 @@ begin {
 var k: int;
 k = 0;
 while (k < ITERATIONS) {
-  for w in 1..WAIT;
+  for w in 1..WAIT do;
   c.s = k;
   k += 1;
 }

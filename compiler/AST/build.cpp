@@ -1061,7 +1061,7 @@ buildSyncStmt(Expr* stmt) {
   checkControlFlow(stmt, "sync statement");
   if (fSerial)
     return buildChapelStmt(new BlockStmt(stmt, BLOCK_NORMAL));
-  BlockStmt* block = buildChapelStmt();
+  BlockStmt* block = new BlockStmt();
   VarSymbol* endCountSave = new VarSymbol("_endCountSave");
   endCountSave->isCompilerTemp = true;
   block->insertAtTail(new DefExpr(endCountSave));
@@ -1079,6 +1079,10 @@ buildCobeginStmt(Expr* stmt) {
   checkControlFlow(stmt, "cobegin statement");
   BlockStmt* block = toBlockStmt(stmt);
   INT_ASSERT(block);
+  if (block->blockTag == BLOCK_SCOPELESS) {
+    block = toBlockStmt(block->body.only());
+    INT_ASSERT(block);
+  }
   if (block->length() < 2) {
     USR_WARN(stmt, "cobegin has no effect if it contains fewer than 2 statements");
     return buildChapelStmt(stmt);

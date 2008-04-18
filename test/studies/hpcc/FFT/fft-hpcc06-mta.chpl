@@ -247,7 +247,7 @@ def cftmd2(span, A, W) {
         numElems = A.numElements;
 
   cftmd0(span, A, W);
-  if (m2 >= numElems) return;
+  if (m2 >= numElems) then return;
   if (m2 >= numElems / 8) {
     cftmd21(span, A, W);
     return;

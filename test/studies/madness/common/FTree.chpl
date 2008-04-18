@@ -114,7 +114,7 @@ class FTree {
     /** Unordered iterator over all coefficients
      */
     def these() {
-        for n in nodes yield n.data;
+        for n in nodes do yield n.data;
     }
 
     /** Unordered iterator over all boxes in a particular level.

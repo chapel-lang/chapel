@@ -26,10 +26,10 @@ def leaves(tree : Node) : int {
     when NodeType.branch do {
       const node = tree:Branch;
       if (node.left != nil) {
-        for leaf in leaves(node.left) yield leaf;
+        for leaf in leaves(node.left) do yield leaf;
       }
       if (node.right != nil) {
-        for leaf in leaves(node.right) yield leaf;
+        for leaf in leaves(node.right) do yield leaf;
       }
     }
     otherwise;

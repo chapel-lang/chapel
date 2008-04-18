@@ -1,6 +1,6 @@
 
 def g(x) {
- if (x > 19)
+ if (x > 19) then
    return x;
   return g(x + 1);
 }

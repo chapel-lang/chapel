@@ -65,7 +65,7 @@ def hasIndex(start, stop, indices) {
 
 def hasSpace(str) {
   for i in [1..length(str)] do
-     if str.substring(i) == " " return true;
+     if str.substring(i) == " " then return true;
   return false;
 }
 

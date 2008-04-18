@@ -7,7 +7,7 @@ def R {
       R;
       A(i,j) = 0;
     }
-    if A(i,j)-k == -9 return;
+    if A(i,j)-k == -9 { return; }
   }
   writeln(A);
   exit(0);

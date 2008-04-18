@@ -11,7 +11,7 @@ def print(c : Cons) {
 }
 
 def reverse_internal(c, e) {
-  if (c != nil)
+  if (c != nil) then
     return reverse_internal(c.cdr, new Cons(c.car, e));
   else
     return e;

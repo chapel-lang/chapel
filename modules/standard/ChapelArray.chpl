@@ -104,7 +104,7 @@ def _getRankChangeRanges(args) {
   def collectRanges(param dim: int) {
     if dim > args.size then
       compilerError("domain slice requires a range in at least one dimension");
-    if isRange(args(dim))
+    if isRange(args(dim)) then
       return collectRanges(dim+1, _tupleize(args(dim)));
     else
       return collectRanges(dim+1);

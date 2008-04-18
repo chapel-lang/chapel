@@ -87,7 +87,7 @@ def pqsort(pdepth: int,
   // the array; if pdepth is 0, start serializing; note: once
   // serialization is turned on, it is never turned off
   //
-  serial pdepth == 0 cobegin {
+  serial pdepth == 0 do cobegin {
     pqsort(pdepth-1, arr, low, pivotLoc-1);
     pqsort(pdepth-1, arr, pivotLoc+1, high);
   }

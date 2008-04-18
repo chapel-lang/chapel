@@ -1,5 +1,5 @@
 def blockByCol(m,n) {
-  for i in 1..n by 2 yield [1..n, i..i+1];
+  for i in 1..n by 2 do yield [1..n, i..i+1];
 }  
 
 const n = 4;

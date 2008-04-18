@@ -6,7 +6,7 @@ var a: [1..3] int;
 for i in 1..3 {
   j = i;
   begin {
-    if (i < 3) while a(i+1) == 0 do sleep(1);
+    if (i < 3) then while a(i+1) == 0 do sleep(1);
     a(i) = i + j;
   }
 }

@@ -78,36 +78,6 @@ variables~(\rsec{Local_Variables}).
 The statements within a block are executed serially unless the block
 is in a cobegin statement~(\rsec{Cobegin}).
 
-\subsection{Block Level Statements}
-\label{Block_Level_Statements}
-
-\index{block level statement}
-A block level statement is a category of statement that is sometimes
-called for by the language syntax. A block level statement is given by
-\begin{syntax}
-block-level-statement:
-  block-statement
-  conditional-statement
-  select-statement
-  while-do-statement
-  for-statement
-  param-for-statement
-  return-statement
-  yield-statement
-  type-select-statement
-  empty-statement
-  cobegin-statement
-  begin-statement
-  sync-statement
-  serial-statement
-  atomic-statement
-  on-statement
-\end{syntax}
-
-Block level statements are part of the language to avoid the excessive
-and unnecessary use of curly brackets.  For example, function bodies
-are not required to be blocks, but must be block level statements.
-
 \subsection{Expression Statements}
 \label{Expression_Statements}
 
@@ -231,7 +201,7 @@ type. The syntax for a conditional statement is given by
 \begin{syntax}
 conditional-statement:
   `if' expression `then' statement else-part[OPT]
-  `if' expression block-level-statement else-part[OPT]
+  `if' expression block-statement else-part[OPT]
 
 else-part:
   `else' statement
@@ -277,7 +247,7 @@ when-statements:
 
 when-statement:
   `when' expression-list `do' statement
-  `when' expression-list block-level-statement
+  `when' expression-list block-statement
   `otherwise' statement
 
 expression-list:
@@ -311,7 +281,7 @@ while-do loop is given by:
 \begin{syntax}
 while-do-statement:
   `while' expression `do' statement
-  `while' expression block-level-statement
+  `while' expression block-statement
 \end{syntax}
 The syntax of the do-while loop is given by:
 \begin{syntax}
@@ -364,7 +334,7 @@ loop-control-part:
 
 loop-body-part:
   `do' statement
-  block-level-statement
+  block-statement
 
 index-expression:
   expression
@@ -446,7 +416,7 @@ param-iterator-expression:
 
 param-for-statement:
   `for' `param' identifier `in' param-iterator-expression `do' statement
-  `for' `param' identifier `in' param-iterator-expression block-level-statement
+  `for' `param' identifier `in' param-iterator-expression block-statement
 \end{syntax}
 Parameter for loops are restricted to iteration over range literals
 with an optional by expression where the bounds and stride must be
@@ -535,7 +505,7 @@ type-when-statements:
 
 type-when-statement:
   `when' type-list `do' statement
-  `when' type-list block-level-statement
+  `when' type-list block-statement
   `otherwise' statement
 
 expression-list:

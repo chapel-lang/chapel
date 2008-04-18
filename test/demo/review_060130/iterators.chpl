@@ -9,15 +9,17 @@ forall (i,j) in d do
 
 writeln(a);
 
-def rmo(d : domain(2)) : (int,int)
+def rmo(d : domain(2)) : (int,int) {
   for i in d.dim(1) do
     for j in d.dim(2) do
       yield (i,j);
+}
 
-def cmo(d : domain(2)) : (int,int)
+def cmo(d : domain(2)) : (int,int) {
   for j in d.dim(2) do
     for i in d.dim(1) do
       yield (i,j);
+}
 
 for i in rmo(d) do
   writeln(a(i));

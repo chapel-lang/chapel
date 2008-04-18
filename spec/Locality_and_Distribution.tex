@@ -205,7 +205,7 @@ data should be placed.  The syntax of the on statement is given by
 \begin{syntax}
 on-statement:
   `on' expression `do' statement
-  `on' expression block-level-statement
+  `on' expression block-statement
 \end{syntax}
 The locale of the expression is automatically queried as described
 in~\rsec{Querying_the_Locale_of_a_Variable}.  Execution of the
@@ -225,7 +225,7 @@ nodes as defined in the following code:
 class Tree {
   var left, right: Tree;
   def nodes {
-    on this yield this;
+    on this do yield this;
     if left then
       for t in left.nodes do
         yield t;

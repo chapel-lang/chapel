@@ -27,21 +27,23 @@ class file: Writer {
   var _fp : _file;
   var _lock : sync uint(64);    // for serializing output
 
-  def open() on this {
-    if this == stdin || this == stdout || this == stderr then
-      halt("***Error: It is not necessary to open \"", filename, "\"***");
+  def open() {
+    on this {
+      if this == stdin || this == stdout || this == stderr then
+        halt("***Error: It is not necessary to open \"", filename, "\"***");
 
-    var fullFilename = path + "/" + filename;
+      var fullFilename = path + "/" + filename;
 
-    var modestring: string;
-    select mode {
-      when FileAccessMode.read  do modestring = "r";
-      when FileAccessMode.write do modestring = "w";
+      var modestring: string;
+      select mode {
+        when FileAccessMode.read  do modestring = "r";
+        when FileAccessMode.write do modestring = "w";
+      }
+      _fp = __primitive("fopen", filename, modestring);
+
+      if _fp == __primitive("get_nullfile") then
+        halt("***Error: Unable to open \"", fullFilename, "\": ", __primitive("get_errno"), "***");
     }
-    _fp = __primitive("fopen", filename, modestring);
-
-    if _fp == __primitive("get_nullfile") then
-      halt("***Error: Unable to open \"", fullFilename, "\": ", __primitive("get_errno"), "***");
   }
 
   def _checkFileStateChangeLegality(state) {
@@ -77,22 +79,24 @@ class file: Writer {
     return openStatus;
   }
   
-  def close() on this {
-    if (this == stdin || this == stdout || this == stderr) {
-      halt("***Error: You may not close \"", filename, "\"***");
+  def close() {
+    on this {
+      if (this == stdin || this == stdout || this == stderr) {
+        halt("***Error: You may not close \"", filename, "\"***");
+      }
+      if (_fp == __primitive("get_nullfile")) {
+        var fullFilename = path + "/" + filename;
+        halt("***Error: Trying to close \"", fullFilename, 
+             "\" which isn't open***");
+      }
+      var returnVal: int = __primitive("fclose", _fp);
+      if (returnVal < 0) {
+        var fullFilename = path + "/" + filename;
+        halt("***Error: The close of \"", fullFilename, "\" failed: ", 
+             __primitive("get_errno"), "***");
+      }
+      _fp = __primitive("get_nullfile");
     }
-    if (_fp == __primitive("get_nullfile")) {
-      var fullFilename = path + "/" + filename;
-      halt("***Error: Trying to close \"", fullFilename, 
-           "\" which isn't open***");
-    }
-    var returnVal: int = __primitive("fclose", _fp);
-    if (returnVal < 0) {
-      var fullFilename = path + "/" + filename;
-      halt("***Error: The close of \"", fullFilename, "\" failed: ", 
-           __primitive("get_errno"), "***");
-    }
-    _fp = __primitive("get_nullfile");
   }
 }
 
@@ -103,8 +107,8 @@ def file.writeThis(f: Writer) {
   f.write(")");
 }
 
-def file.flush() on this {
-  __primitive("fflush", _fp);
+def file.flush() {
+  on this do __primitive("fflush", _fp);
 }
 
 def _checkOpen(f: file, isRead: bool) {
@@ -120,10 +124,12 @@ def _checkOpen(f: file, isRead: bool) {
   }
 }
 
-def file.readln() on this {
-  if !isOpen then
-    _checkOpen(this, isRead=true);
-  __primitive("_readToEndOfLine",_fp);
+def file.readln() {
+  on this {
+    if !isOpen then
+      _checkOpen(this, isRead=true);
+    __primitive("_readToEndOfLine",_fp);
+  }
 }
 
 def file.readln(inout list ...?n) {
@@ -244,14 +250,16 @@ def string.writeThis(f: Writer) {
   f.writeIt(this);
 }
 
-def file.writeIt(s: string) on this {
-  if !isOpen then
-    _checkOpen(this, isRead = false);
-  if mode != FileAccessMode.write then
-    halt("***Error: ", path, "/", filename, " not open for writing***");
-  var status = __primitive("fprintf", _fp, "%s", s);
-  if status < 0 then
-    halt("***Error: Write failed: ", __primitive("get_errno"), "***");
+def file.writeIt(s: string) {
+  on this {
+    if !isOpen then
+      _checkOpen(this, isRead = false);
+    if mode != FileAccessMode.write then
+      halt("***Error: ", path, "/", filename, " not open for writing***");
+    var status = __primitive("fprintf", _fp, "%s", s);
+    if status < 0 then
+      halt("***Error: Write failed: ", __primitive("get_errno"), "***");
+  }
 }
 
 class StringClass: Writer {

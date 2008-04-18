@@ -14,31 +14,6 @@ type -- type, parsed as an expression
 NOTES
 *****
 
-What is parsed_block_stmt?
-
-  In many cases, to facilitate parsing, a block statement or a
-statement that would cause no ambiguities if it too were in that
-context, are required.  For example,
-
-  function name(formals) : type ...
-  if (expr) ...
-  while (expr) ...
-
-  Here "..." a block statement is required.  However, some other
-statements are also allowed.  These are marked by requiring, instead
-of a block statement, a parsed_block_stmt, which includes block_stmt.
-Parsed block statements include return statements so for example
-
-  function name(formals) : type return x;
-
-is allowed.
-
-Here is an example of the ambiguity:
-
-  while x(i);
-
-Is this "while x"(i); or "while x(i)";?
-
 ***/
 
 
@@ -80,7 +55,6 @@ Is this "while x"(i); or "while x(i)";?
   DefExpr* pdefexpr;
   BlockStmt* pblockstmt;
 
-  int lineno;
 
   Type* ptype;
   EnumType* pet;
@@ -208,11 +182,8 @@ Is this "while x"(i); or "while x(i)";?
 %type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
 %type <pblockstmt> var_decl_stmt_inner tuple_var_decl_stmt_inner_ls
 
-%type <pblockstmt> parsed_block_single_stmt
-
-%type <pblockstmt> parsed_block_stmt block_stmt
-
-%type <lineno> cobegin
+%type <pblockstmt> block_stmt function_body_stmt
+%type <pblockstmt> begin_stmt cobegin_stmt atomic_stmt
 
 %type <pexpr> when_stmt
 %type <pblockstmt> when_stmt_ls
@@ -341,6 +312,9 @@ non_empty_stmt:
 | on_stmt
 | sync_stmt
 | serial_stmt
+| begin_stmt
+| cobegin_stmt
+| atomic_stmt
 | error
     { printf("syntax error"); exit(1); }
 ;
@@ -364,30 +338,6 @@ class_body_stmt:
 | enum_decl_stmt
 | typevar_decl_stmt
 | var_decl_stmt
-;
-
-
-parsed_block_single_stmt:
-  empty_stmt
-| label_stmt
-| goto_stmt
-| break_stmt
-| continue_stmt
-| if_stmt
-| select_stmt
-| for_stmt
-| while_do_stmt
-| return_stmt
-| yield_stmt
-| on_stmt
-| serial_stmt
-;
-
-
-parsed_block_stmt:
-  parsed_block_single_stmt
-    { $$ = new BlockStmt($1); }
-| block_stmt
 ;
 
 
@@ -428,11 +378,11 @@ expr_stmt:
 
 
 if_stmt:
-  TIF expr parsed_block_stmt            %prec TNOELSE
+  TIF expr block_stmt                   %prec TNOELSE
     { $$ = buildIfStmt($2, $3); }
 | TIF expr TTHEN stmt                   %prec TNOELSE
     { $$ = buildIfStmt($2, $4); }
-| TIF expr parsed_block_stmt TELSE stmt
+| TIF expr block_stmt TELSE stmt
     { $$ = buildIfStmt($2, $3, $5); }
 | TIF expr TTHEN stmt TELSE stmt
     { $$ = buildIfStmt($2, $4, $6); }
@@ -442,32 +392,32 @@ if_stmt:
 for_stmt:
   TFOR TPARAM identifier TIN expr TDO stmt
     { $$ = buildParamForLoopStmt($3, $5, $7); }
-| TFOR TPARAM identifier TIN expr parsed_block_stmt
+| TFOR TPARAM identifier TIN expr block_stmt
     { $$ = buildParamForLoopStmt($3, $5, $6); }
 
-| TFOR expr TIN expr parsed_block_stmt
+| TFOR expr TIN expr block_stmt
     { $$ = buildForLoopStmt(BLOCK_FOR, $2, $4, $5); }
 | TFOR expr TIN expr TDO stmt
     { $$ = buildForLoopStmt(BLOCK_FOR, $2, $4, new BlockStmt($6)); }
-| TFOR expr parsed_block_stmt
+| TFOR expr block_stmt
     { $$ = buildForLoopStmt(BLOCK_FOR, NULL, $2, $3); }
 | TFOR expr TDO stmt
     { $$ = buildForLoopStmt(BLOCK_FOR, NULL, $2, new BlockStmt($4)); }
 
-| TFORALL expr TIN expr parsed_block_stmt
+| TFORALL expr TIN expr block_stmt
     { $$ = buildForLoopStmt(BLOCK_FORALL, $2, $4, $5); }
 | TFORALL expr TIN expr TDO stmt
     { $$ = buildForLoopStmt(BLOCK_FORALL, $2, $4, new BlockStmt($6)); }
-| TFORALL expr parsed_block_stmt
+| TFORALL expr block_stmt
     { $$ = buildForLoopStmt(BLOCK_FORALL, NULL, $2, $3); }
 | TFORALL expr TDO stmt
     { $$ = buildForLoopStmt(BLOCK_FORALL, NULL, $2, new BlockStmt($4)); }
 
-| TCOFORALL expr TIN expr parsed_block_stmt
+| TCOFORALL expr TIN expr block_stmt
     { $$ = buildCoforallLoopStmt($2, $4, $5); }
 | TCOFORALL expr TIN expr TDO stmt
     { $$ = buildCoforallLoopStmt($2, $4, new BlockStmt($6)); }
-| TCOFORALL expr parsed_block_stmt
+| TCOFORALL expr block_stmt
     { $$ = buildCoforallLoopStmt(NULL, $2, $3); }
 | TCOFORALL expr TDO stmt
     { $$ = buildCoforallLoopStmt(NULL, $2, new BlockStmt($4)); }
@@ -493,7 +443,7 @@ expr_for_stmt:
 while_do_stmt:
   TWHILE expr TDO stmt
     { $$ = buildWhileDoLoopStmt($2, new BlockStmt($4)); }
-| TWHILE expr parsed_block_stmt
+| TWHILE expr block_stmt
     { $$ = buildWhileDoLoopStmt($2, $3); }
 ;
 
@@ -527,7 +477,7 @@ when_stmt_ls:
 when_stmt:
   TWHEN nonempty_expr_ls TDO stmt
     { $$ = new CondStmt(new CallExpr(PRIMITIVE_WHEN, $2), $4); }
-| TWHEN nonempty_expr_ls parsed_block_stmt
+| TWHEN nonempty_expr_ls block_stmt
     { $$ = new CondStmt(new CallExpr(PRIMITIVE_WHEN, $2), $3); }
 | TOTHERWISE stmt
     { $$ = new CondStmt(new CallExpr(PRIMITIVE_WHEN), $2); }
@@ -590,28 +540,35 @@ assign_stmt:
 block_stmt:
   TLCBR stmt_ls TRCBR
     { $$ = buildChapelStmt($2); }
-| cobegin TLCBR stmt_ls TRCBR
-    {
-      $3->lineno = $1;
-      $$ = buildCobeginStmt($3);
-    }
-| TATOMIC stmt
-    { $$ = buildAtomicStmt($2); }
-| TBEGIN stmt
-    { $$ = buildBeginStmt($2); }
 ;
 
 
-cobegin:
-  TCOBEGIN
-    { $$ = yystartlineno; /* capture line number in case there is a need to issue a warning */ }
+cobegin_stmt:
+  TCOBEGIN block_stmt
+    {
+      $2->lineno = yystartlineno; /* capture line number in case there
+                                   * is a need to issue a warning */
+      $$ = buildCobeginStmt($2);
+    }
+;
+
+
+atomic_stmt:
+  TATOMIC stmt
+    { $$ = buildAtomicStmt($2); }
+;
+
+
+begin_stmt:
+  TBEGIN stmt
+    { $$ = buildBeginStmt($2); }
 ;
 
 
 on_stmt:
   TON expr TDO stmt
     { $$ = buildOnStmt($2, $4); }
-| TON expr parsed_block_stmt
+| TON expr block_stmt
     { $$ = buildOnStmt($2, $3); }
 ;
 
@@ -623,8 +580,10 @@ sync_stmt:
 
 
 serial_stmt:
-  TSERIAL expr parsed_block_stmt
+  TSERIAL expr block_stmt
     { $$ = buildSerialStmt($2, $3); }
+| TSERIAL expr TDO stmt
+    { $$ = buildSerialStmt($2, $4); }
 ;
 
 
@@ -722,7 +681,7 @@ fn_decl_stmt:
       captureTokens = 0;
       $3->userString = astr(captureString);
     }
-  ret_tag opt_type opt_where_part parsed_block_stmt
+  ret_tag opt_type opt_where_part function_body_stmt
     {
       $3->retTag = $5;
       if ($5 == RET_VAR)
@@ -735,6 +694,14 @@ fn_decl_stmt:
     }
 ;
 
+
+function_body_stmt:
+  block_stmt
+| empty_stmt
+  { $$ = new BlockStmt($1); }
+| return_stmt
+  { $$ = new BlockStmt($1); }
+;
 
 extern_fn_decl_stmt:
   TEXTERN TDEF fn_decl_stmt_inner opt_type TSEMI

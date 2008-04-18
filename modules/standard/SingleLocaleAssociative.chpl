@@ -389,7 +389,7 @@ def _gen_key(i: int(64)): int(64) {
 
 pragma "inline"
 def _associative_hash(b: bool): int(64) {
-  if (b) 
+  if (b) then
     return 0;
   else
     return 1;

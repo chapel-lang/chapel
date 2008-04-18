@@ -156,12 +156,12 @@ def IterSyrk(D, upper) {
   const cols = D.dim(2);
 
   if (upper) then
-    for j in cols
-      for (i,k) in [cols(..j), rows]
+    for j in cols do
+      for (i,k) in [cols(..j), rows] do
         yield ((i,j), (k,i), (k,j));
   else
-    for j in rows
-      for (k,i) in [cols, rows(j..)]
+    for j in rows do
+      for (k,i) in [cols, rows(j..)] do
         yield((i,j), (j,k), (i,k));
 }  
 
@@ -170,7 +170,7 @@ def IterChol(D,upper) {
 // the non-blocked cholesky factorization of the current 
 // diagonal block of A.
   const rows = D.dim(1);
-  for j in rows 
+  for j in rows do
     if upper then
       yield((j,j), rows(..(j-1)), j..j, rows((j+1)..));
     else
@@ -182,14 +182,14 @@ def IterGemm(D1, D2, upper) {
 //  of A2 = G1*G2, with the correct transposes for either
 //  the lower or upper triangular case.
   if upper then
-    for i in D1.dim(2) 
-      for k in D1.dim(1)
-        for j in D2.dim(2)
+    for i in D1.dim(2) do
+      for k in D1.dim(1) do
+        for j in D2.dim(2) do
           yield ((i,j), (k,i), (k,j));
   else
-    for j in D1.dim(1)
-      for k in D1.dim(2)
-        for i in D2.dim(1)
+    for j in D1.dim(1) do
+      for k in D1.dim(2) do
+        for i in D2.dim(1) do
           yield ((i,j), (j,k), (i,k));
 }  
 
@@ -203,12 +203,12 @@ def IterTrsm(D, upper) {
   const Dcols = D.dim(2);
 
   if upper then 
-    for j in Dcols
-      for i in Drows 
+    for j in Dcols do
+      for i in Drows do
         yield((i,i), (i,j), Drows(..i-1), Drows(..i-1), i..i, j..j);
   else
-    for i in Drows
-      for j in Dcols
+    for i in Drows do
+      for j in Dcols do
         yield ((j,j), (i,j), j..j, i..i, Dcols(..j-1), Dcols(..j-1));
 }
 
@@ -242,7 +242,7 @@ def writeCholFactor(A:[?D],fac:string) {
 
   if (fac == "U") {
     for i in D.dim(1) {
-      for j in i..D.high(1){
+      for j in i..D.high(1) {
         G(i,j) = A(i,j);
       }
     }

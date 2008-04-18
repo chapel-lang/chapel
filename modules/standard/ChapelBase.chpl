@@ -180,7 +180,12 @@ pragma "inline" def +(param a: uint(64)) param return a;
 
 pragma "inline" def -(param a: int(32)) param return __primitive("u-", a);
 pragma "inline" def -(param a: int(64)) param return __primitive("u-", a);
-pragma "inline" def -(param a: uint(64)) param if (a:int(64) < 0) then  compilerError("illegal use of '-' on operand of type ", a.type); else return -(a:int(64));
+pragma "inline" def -(param a: uint(64)) param {
+  if (a:int(64) < 0) then
+    compilerError("illegal use of '-' on operand of type ", a.type);
+  else
+    return -(a:int(64));
+}
 
 //
 // binary + and - on primitive types
@@ -625,10 +630,10 @@ def _pass(r: _ref) return r;
 // for targets that don't have particularly fast ways of achieving this functionality
 // for simple base types.)
 def isSimpleSyncBaseType (type t) param {
-  if CHPL_THREADS == "mta"
+  if CHPL_THREADS == "mta" then
     if t == int(64) || t == uint(64) || t == int(32) || t == uint(32)
         || t == int(16) || t == uint(16) || t == int(8) || t == uint(8)
-        || t == real(32) || t == real(64) || t == imag(32) || t == imag(64)
+        || t == real(32) || t == real(64) || t == imag(32) || t == imag(64) then
         return true;
     else return false;
   else return false;
@@ -1166,16 +1171,20 @@ pragma "inline" def +(a: uint(64), b: int(64)) { _throwOpError("+"); }
 pragma "inline" def +(a: int(64), b: uint(64)) { _throwOpError("+"); }
 
 // param/param
-pragma "inline" def +(param a: uint(64), param b: int(64)) param
+pragma "inline" def +(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("+"); else return __primitive("+", a, b: uint(64));
-pragma "inline" def +(param a: int(64), param b: uint(64)) param 
+}
+pragma "inline" def +(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("+"); else return __primitive("+", a:uint(64), b);
+}
 
 // non-param/param and param/non-param
-pragma "inline" def +(a: uint(64), param b: int(64))
+pragma "inline" def +(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("+"); else return __primitive("+", a, b:uint(64));
-pragma "inline" def +(param a: int(64), b: uint(64))
+}
+pragma "inline" def +(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("+"); else return __primitive("+", a:uint(64), b);
+}
 
 
 // non-param/non-param
@@ -1183,16 +1192,20 @@ pragma "inline" def -(a: uint(64), b: int(64)) { _throwOpError("-"); }
 pragma "inline" def -(a: int(64), b: uint(64)) { _throwOpError("-"); }
 
 // param/param
-pragma "inline" def -(param a: uint(64), param b: int(64)) param
+pragma "inline" def -(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("-"); else return __primitive("-", a, b: uint(64));
-pragma "inline" def -(param a: int(64), param b: uint(64)) param 
+}
+pragma "inline" def -(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("-"); else return __primitive("-", a:uint(64), b);
+}
 
 // non-param/param and param/non-param
-pragma "inline" def -(a: uint(64), param b: int(64))
+pragma "inline" def -(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("-"); else return __primitive("-", a, b:uint(64));
-pragma "inline" def -(param a: int(64), b: uint(64))
+}
+pragma "inline" def -(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("-"); else return __primitive("-", a:uint(64), b);
+}
 
 
 // non-param/non-param
@@ -1200,16 +1213,20 @@ pragma "inline" def *(a: uint(64), b: int(64)) { _throwOpError("*"); }
 pragma "inline" def *(a: int(64), b: uint(64)) { _throwOpError("*"); }
 
 // param/param
-pragma "inline" def *(param a: uint(64), param b: int(64)) param
+pragma "inline" def *(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("*"); else return __primitive("*", a, b: uint(64));
-pragma "inline" def *(param a: int(64), param b: uint(64)) param 
+}
+pragma "inline" def *(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("*"); else return __primitive("*", a:uint(64), b);
+}
 
 // non-param/param and param/non-param
-pragma "inline" def *(a: uint(64), param b: int(64))
+pragma "inline" def *(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("*"); else return __primitive("*", a, b:uint(64));
-pragma "inline" def *(param a: int(64), b: uint(64))
+}
+pragma "inline" def *(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("*"); else return __primitive("*", a:uint(64), b);
+}
 
 
 // non-param/non-param
@@ -1217,16 +1234,20 @@ pragma "inline" def /(a: uint(64), b: int(64)) { _throwOpError("/"); }
 pragma "inline" def /(a: int(64), b: uint(64)) { _throwOpError("/"); }
 
 // param/param
-pragma "inline" def /(param a: uint(64), param b: int(64)) param
+pragma "inline" def /(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("/"); else return __primitive("/", a, b: uint(64));
-pragma "inline" def /(param a: int(64), param b: uint(64)) param 
+}
+pragma "inline" def /(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("/"); else return __primitive("/", a:uint(64), b);
+}
 
 // non-param/param and param/non-param
-pragma "inline" def /(a: uint(64), param b: int(64))
+pragma "inline" def /(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("/"); else return __primitive("/", a, b:uint(64));
-pragma "inline" def /(param a: int(64), b: uint(64))
+}
+pragma "inline" def /(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("/"); else return __primitive("/", a:uint(64), b);
+}
 
 
 // non-param/non-param
@@ -1234,16 +1255,20 @@ pragma "inline" def **(a: uint(64), b: int(64)) { _throwOpError("**"); }
 pragma "inline" def **(a: int(64), b: uint(64)) { _throwOpError("**"); }
 
 // param/param
-pragma "inline" def **(param a: uint(64), param b: int(64)) param
+pragma "inline" def **(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("**"); else return __primitive("**", a, b: uint(64));
-pragma "inline" def **(param a: int(64), param b: uint(64)) param 
+}
+pragma "inline" def **(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("**"); else return __primitive("**", a:uint(64), b);
+}
 
 // non-param/param and param/non-param
-pragma "inline" def **(a: uint(64), param b: int(64))
+pragma "inline" def **(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("**"); else return __primitive("**", a, b:uint(64));
-pragma "inline" def **(param a: int(64), b: uint(64))
+}
+pragma "inline" def **(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("**"); else return __primitive("**", a:uint(64), b);
+}
 
 
 // non-param/non-param
@@ -1251,16 +1276,20 @@ pragma "inline" def %(a: uint(64), b: int(64)) { _throwOpError("%"); }
 pragma "inline" def %(a: int(64), b: uint(64)) { _throwOpError("%"); }
 
 // param/param
-pragma "inline" def %(param a: uint(64), param b: int(64)) param
+pragma "inline" def %(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("%"); else return __primitive("%", a, b: uint(64));
-pragma "inline" def %(param a: int(64), param b: uint(64)) param 
+}
+pragma "inline" def %(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("%"); else return __primitive("%", a:uint(64), b);
+}
 
 // non-param/param and param/non-param
-pragma "inline" def %(a: uint(64), param b: int(64))
+pragma "inline" def %(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("%"); else return __primitive("%", a, b:uint(64));
-pragma "inline" def %(param a: int(64), b: uint(64))
+}
+pragma "inline" def %(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("%"); else return __primitive("%", a:uint(64), b);
+}
 
 
 // non-param/non-param
@@ -1268,16 +1297,20 @@ pragma "inline" def ==(a: uint(64), b: int(64)) { _throwOpError("=="); }
 pragma "inline" def ==(a: int(64), b: uint(64)) { _throwOpError("=="); }
 
 // param/param
-pragma "inline" def ==(param a: uint(64), param b: int(64)) param
+pragma "inline" def ==(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("=="); else return __primitive("==", a, b: uint(64));
-pragma "inline" def ==(param a: int(64), param b: uint(64)) param 
+}
+pragma "inline" def ==(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("=="); else return __primitive("==", a:uint(64), b);
+}
 
 // non-param/param and param/non-param
-pragma "inline" def ==(a: uint(64), param b: int(64))
+pragma "inline" def ==(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("=="); else return __primitive("==", a, b:uint(64));
-pragma "inline" def ==(param a: int(64), b: uint(64))
+}
+pragma "inline" def ==(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("=="); else return __primitive("==", a:uint(64), b);
+}
 
 
 // non-param/non-param
@@ -1285,16 +1318,20 @@ pragma "inline" def !=(a: uint(64), b: int(64)) { _throwOpError("!="); }
 pragma "inline" def !=(a: int(64), b: uint(64)) { _throwOpError("!="); }
 
 // param/param
-pragma "inline" def !=(param a: uint(64), param b: int(64)) param
+pragma "inline" def !=(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("!="); else return __primitive("!=", a, b: uint(64));
-pragma "inline" def !=(param a: int(64), param b: uint(64)) param 
+}
+pragma "inline" def !=(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("!="); else return __primitive("!=", a:uint(64), b);
+}
 
 // non-param/param and param/non-param
-pragma "inline" def !=(a: uint(64), param b: int(64))
+pragma "inline" def !=(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("!="); else return __primitive("!=", a, b:uint(64));
-pragma "inline" def !=(param a: int(64), b: uint(64))
+}
+pragma "inline" def !=(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("!="); else return __primitive("!=", a:uint(64), b);
+}
 
 
 // non-param/non-param
@@ -1302,16 +1339,20 @@ pragma "inline" def >(a: uint(64), b: int(64)) { _throwOpError(">"); }
 pragma "inline" def >(a: int(64), b: uint(64)) { _throwOpError(">"); }
 
 // param/param
-pragma "inline" def >(param a: uint(64), param b: int(64)) param
+pragma "inline" def >(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError(">"); else return __primitive(">", a, b: uint(64));
-pragma "inline" def >(param a: int(64), param b: uint(64)) param 
+}
+pragma "inline" def >(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError(">"); else return __primitive(">", a:uint(64), b);
+}
 
 // non-param/param and param/non-param
-pragma "inline" def >(a: uint(64), param b: int(64))
+pragma "inline" def >(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError(">"); else return __primitive(">", a, b:uint(64));
-pragma "inline" def >(param a: int(64), b: uint(64))
+}
+pragma "inline" def >(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError(">"); else return __primitive(">", a:uint(64), b);
+}
 
 
 // non-param/non-param
@@ -1319,16 +1360,20 @@ pragma "inline" def <(a: uint(64), b: int(64)) { _throwOpError("<"); }
 pragma "inline" def <(a: int(64), b: uint(64)) { _throwOpError("<"); }
 
 // param/param
-pragma "inline" def <(param a: uint(64), param b: int(64)) param
+pragma "inline" def <(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("<"); else return __primitive("<", a, b: uint(64));
-pragma "inline" def <(param a: int(64), param b: uint(64)) param 
+}
+pragma "inline" def <(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("<"); else return __primitive("<", a:uint(64), b);
+}
 
 // non-param/param and param/non-param
-pragma "inline" def <(a: uint(64), param b: int(64))
-  if b < 0 then _throwOpError("<"); else if b == 0 then return false; else return __primitive("<", a, b:uint(64));
-pragma "inline" def <(param a: int(64), b: uint(64))
+pragma "inline" def <(a: uint(64), param b: int(64)) {
+  if b < 0 then _throwOpError("<"); else return __primitive("<", a, b:uint(64));
+}
+pragma "inline" def <(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("<"); else return __primitive("<", a:uint(64), b);
+}
 
 
 // non-param/non-param
@@ -1336,16 +1381,20 @@ pragma "inline" def >=(a: uint(64), b: int(64)) { _throwOpError(">="); }
 pragma "inline" def >=(a: int(64), b: uint(64)) { _throwOpError(">="); }
 
 // param/param
-pragma "inline" def >=(param a: uint(64), param b: int(64)) param
+pragma "inline" def >=(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError(">="); else return __primitive(">=", a, b: uint(64));
-pragma "inline" def >=(param a: int(64), param b: uint(64)) param 
+}
+pragma "inline" def >=(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError(">="); else return __primitive(">=", a:uint(64), b);
+}
 
 // non-param/param and param/non-param
-pragma "inline" def >=(a: uint(64), param b: int(64))
-  if b < 0 then _throwOpError(">="); else if b == 0 then return true; else return __primitive(">=", a, b:uint(64));
-pragma "inline" def >=(param a: int(64), b: uint(64))
+pragma "inline" def >=(a: uint(64), param b: int(64)) {
+  if b < 0 then _throwOpError(">="); else return __primitive(">=", a, b:uint(64));
+}
+pragma "inline" def >=(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError(">="); else return __primitive(">=", a:uint(64), b);
+}
 
 
 // non-param/non-param
@@ -1353,14 +1402,19 @@ pragma "inline" def <=(a: uint(64), b: int(64)) { _throwOpError("<="); }
 pragma "inline" def <=(a: int(64), b: uint(64)) { _throwOpError("<="); }
 
 // param/param
-pragma "inline" def <=(param a: uint(64), param b: int(64)) param
+pragma "inline" def <=(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("<="); else return __primitive("<=", a, b: uint(64));
-pragma "inline" def <=(param a: int(64), param b: uint(64)) param 
+}
+pragma "inline" def <=(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("<="); else return __primitive("<=", a:uint(64), b);
+}
 
 // non-param/param and param/non-param
-pragma "inline" def <=(a: uint(64), param b: int(64))
+pragma "inline" def <=(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("<="); else return __primitive("<=", a, b:uint(64));
-pragma "inline" def <=(param a: int(64), b: uint(64))
+}
+pragma "inline" def <=(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("<="); else return __primitive("<=", a:uint(64), b);
+}
+
 
