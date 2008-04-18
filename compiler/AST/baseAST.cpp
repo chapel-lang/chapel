@@ -25,6 +25,14 @@ static int uid = 1;
 
 void printStatistics(const char* pass) {
   static int last_asts = -1;
+  static int maxK = -1, maxN = -1;
+
+  if (!strcmp(pass, "makeBinary")) {
+    if (strstr(fPrintStatistics, "m")) {
+      fprintf(stderr, "Maximum # of ASTS: %d\n", maxN);
+      fprintf(stderr, "Maximum Size (KB): %d\n", maxK);
+    }
+  }
 
   if (last_asts == gAsts.n) {
     fprintf(stderr, "%23s%s\n", "", pass);
@@ -97,6 +105,12 @@ void printStatistics(const char* pass) {
   int kType = kPrimitiveType+kEnumType+kClassType;
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
+
+  if (nStmt+nExpr+nSymbol+nType > maxN)
+    maxN = nStmt+nExpr+nSymbol+nType;
+
+  if (kStmt+kExpr+kSymbol+kType > maxK)
+    maxK = kStmt+kExpr+kSymbol+kType;
 
   if (strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Stmt %9d  Cond %9d  Block %9d  Goto  %9d\n",
