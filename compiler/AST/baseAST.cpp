@@ -123,13 +123,13 @@ void printStatistics(const char* pass) {
             kStmt, kCondStmt, kBlockStmt, kGotoStmt);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9d  Sym  %9d  Def  %9d  Call  %9d  Named %9d\n",
+    fprintf(stderr, "    Expr %9d  Sym  %9d  Def   %9d  Call  %9d  Named %9d\n",
             nExpr, nSymExpr, nDefExpr, nCallExpr, nNamedExpr);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9dK Sym  %9dK Def  %9dK Call  %9dK Named %9dK\n",
+    fprintf(stderr, "    Expr %9dK Sym  %9dK Def   %9dK Call  %9dK Named %9dK\n",
             kExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %6dK Sym  %6dK Def  %6dK Call  %6dK Named %6dK\n",
+    fprintf(stderr, "    Expr %6dK Sym  %6dK Def   %6dK Call  %6dK Named %6dK\n",
             kExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
 
   if (strstr(fPrintStatistics, "n"))
