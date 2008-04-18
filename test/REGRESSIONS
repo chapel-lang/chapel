@@ -18,6 +18,11 @@ maxThreads warning issue
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
 [Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 
+maxThreads warning issues (seems like too may threads are being created?)
+-------------------------------------------------------------------------
+[Error matching program output for users/shetag/fock/fock-1-latest]
+[Error matching program output for users/shetag/fock/fock-3]
+
 
 ===================
 opts-specific tests
