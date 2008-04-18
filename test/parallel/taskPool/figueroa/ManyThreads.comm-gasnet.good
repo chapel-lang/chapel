@@ -1,2 +1,2 @@
-warning: specified value of 600 for maxThreads is too high; limit is 255
+warning: specified value of 300 for maxThreads is too high; limit is 255
 total is 4501500
