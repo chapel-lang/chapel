@@ -21,7 +21,7 @@ writeln("running this example on ", numLocales, " locales");
 // to the locale the program is currently running and 'here.id'
 // contains a unique integer between 0 and numLocales-1.
 //
-for loc in Locales on loc {
+for loc in Locales do on loc {
   writeln("hello locale ", here.id);
 }
 
@@ -39,7 +39,7 @@ class Node {
 //
 var head = new Node(0);
 var current = head;
-for i in 1..numLocales-1 on Locales(i) {
+for i in 1..numLocales-1 do on Locales(i) {
   current.next = new Node(i);
   current = current.next;
 }
@@ -92,7 +92,7 @@ var A: [LocaleSpace] int(64);
 var timer: Timer;
 if benchmark then
   timer.start();
-serial !parallelize coforall loc in Locales on loc {
+serial !parallelize do coforall loc in Locales do on loc {
   A(here.id) = slowFibonacci(startFibonacci);
 }
 if benchmark {

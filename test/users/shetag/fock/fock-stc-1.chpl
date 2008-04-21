@@ -18,7 +18,7 @@ def buildjk() {
       for (jat, kat) in [1..iat, 1..iat] {
         const lattop = if (kat==iat) then jat else kat;
         for lat in 1..lattop {
-          on Locales(loc) begin buildjk_atom4(new blockIndices(iat, jat, kat, lat));
+          on Locales(loc) do begin buildjk_atom4(new blockIndices(iat, jat, kat, lat));
           loc = (loc+1)%numLocales;
         }
       }
