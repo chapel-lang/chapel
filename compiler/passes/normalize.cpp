@@ -135,7 +135,8 @@ static void insertHeapAccess(SymExpr* se, bool global = false) {
     tmp->isExprTemp = true;
     stmt->insertBefore(new DefExpr(tmp));
     stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
-    se->replace(new SymExpr(tmp)); call->insertAtTail(se);
+    se->replace(new SymExpr(tmp));
+    call->insertAtTail(se);
   }
 }
 
@@ -162,12 +163,11 @@ static bool inBody(FnSymbol* fn, Expr* expr) {
 static void heapAllocateLocals() {
   Vec<Symbol*> heapSet; // set of symbols that should be heap allocated
 
-  compute_sym_uses();
-
   // for each nested begin and on function
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->hasPragma("begin") || fn->hasPragma("on")) {
 
+      // collect asts in fn
       Vec<BaseAST*> asts;
       collect_asts(&asts, fn);
 
@@ -184,21 +184,32 @@ static void heapAllocateLocals() {
         if (SymExpr* se = toSymExpr(ast)) {
 
           // collect arguments
-          if (isArgSymbol(se->var))
+          if (isArgSymbol(se->var)) {
             heapSet.set_add(se->var);
+            se->var->defs.clear();
+            se->var->uses.clear();
+          }
 
           // collect symbols defined in outer functions
-          if (VarSymbol* var = toVarSymbol(se->var))
+          if (VarSymbol* var = toVarSymbol(se->var)) {
             if (var->defPoint &&
                 !defSet.set_in(var->defPoint) &&
                 isFnSymbol(var->defPoint->parentSymbol) &&
                 !var->isParam &&
-                !var->hasPragma("private"))
+                !var->hasPragma("private")) {
               heapSet.set_add(var);
+              var->defs.clear();
+              var->uses.clear();
+            }
+          }
         }
       }
     }
   }
+
+  Vec<BaseAST*> asts;
+  collect_asts(&asts);
+  compute_sym_uses(heapSet, asts);
 
   // for each symbol that should be heap allocated
   forv_Vec(Symbol, sym, heapSet) {
@@ -287,12 +298,16 @@ static void heapAllocateGlobals() {
   if (fLocal)
     return;
 
-  compute_sym_uses();
+  Vec<Symbol*> heapSet; // set of symbols that should be heap allocated
+  Vec<Symbol*> heapVec; // vec of symbols that should be heap allocated
+  Vec<BaseAST*> asts;
+
+  collect_asts(&asts);
 
   //
   // collect all global variables less parameters and compiler temps
   //
-  forv_Vec(BaseAST, ast, gAsts) {
+  forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (VarSymbol* var = toVarSymbol(def->sym)) {
         if (var->defPoint && toModuleSymbol(var->defPoint->parentSymbol)) {
@@ -303,6 +318,21 @@ static void heapAllocateGlobals() {
           if (var->isParam || var->hasPragma("private"))
             continue;
 
+          heapVec.add(var);
+          heapSet.set_add(var);
+          var->defs.clear();
+          var->uses.clear();
+        }
+      }
+    }
+  }
+
+  compute_sym_uses(heapSet, asts);
+
+  forv_Vec(Symbol, var, heapVec) {
+    {
+      {
+        {
           bool first = true;
           forv_Vec(SymExpr, se, var->defs) {
 

@@ -103,25 +103,10 @@ void compute_call_sites() {
 }
 
 
-void compute_sym_uses(BaseAST* base) {
-  Vec<DefExpr*> def_set;
-  Vec<BaseAST*> asts;
-  if (base == NULL)
-    collect_asts(&asts);
-  else
-    collect_asts(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* a = toDefExpr(ast)) {
-      if (a->sym->astTag == SYMBOL_VAR || a->sym->astTag == SYMBOL_ARG) {
-        def_set.set_add(a);
-        a->sym->uses.clear();
-        a->sym->defs.clear();
-      }
-    }
-  }
+void compute_sym_uses(Vec<Symbol*>& symbolSet, Vec<BaseAST*>& asts) {
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* a = toSymExpr(ast)) {
-      if (a->var && a->var->defPoint && def_set.set_in(a->var->defPoint)) {
+      if (a->parentSymbol && a->var && symbolSet.set_in(a->var)) {
         if (CallExpr* call = toCallExpr(a->parentExpr)) {
           if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == a) {
             a->var->defs.add(a);
@@ -143,6 +128,45 @@ void compute_sym_uses(BaseAST* base) {
       }
     }
   }
+}
+
+
+void compute_sym_uses(FnSymbol* fn) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn);
+  Vec<Symbol*> symbolSet;
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+        def->sym->defs.clear();
+        def->sym->uses.clear();
+        symbolSet.set_add(def->sym);
+      }
+    }
+  }
+  compute_sym_uses(symbolSet, asts);
+}
+
+
+void compute_sym_uses(Vec<Symbol*>& symbolSet) {
+  compute_sym_uses(symbolSet, gAsts);
+}
+
+
+void compute_sym_uses() {
+  Vec<Symbol*> symbolSet;
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (def->parentSymbol) {
+        if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+          def->sym->defs.clear();
+          def->sym->uses.clear();
+          symbolSet.set_add(def->sym);
+        }
+      }
+    }
+  }
+  compute_sym_uses(symbolSet, gAsts);
 }
 
 

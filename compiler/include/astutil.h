@@ -32,8 +32,26 @@ void reset_file_info(BaseAST* baseAST, int lineno, const char* filename);
 // compute call sites FnSymbol::calls
 void compute_call_sites();
 
-// compute all SymExprs for a Symbol and store in Symbol::uses
-void compute_sym_uses(BaseAST* ast = NULL);
+//
+// compute Symbol::uses and Symbol::defs
+//
+void compute_sym_uses();
+// builds the vectors for every variable/argument in the entire
+// program
+
+void compute_sym_uses(FnSymbol* fn);
+// builds the vectors for every variable/argument in 'fn' and looks
+// for uses and defs only in 'fn'
+
+void compute_sym_uses(Vec<Symbol*>& set);
+// builds the vectors for every variable/argument in 'set' and looks
+// for uses and defs in the entire program; the vectors should be
+// cleared before calling this variant
+
+void compute_sym_uses(Vec<Symbol*>& set, Vec<BaseAST*>& asts);
+// builds the vectors for every variable/argument in 'set' and looks
+// for uses and defs only in 'asts'; the vectors should be cleared
+// before calling this variant
 
 // clear type and retTypes
 void clear_type_info(BaseAST* baseAST);
