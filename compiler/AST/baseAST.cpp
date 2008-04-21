@@ -228,6 +228,44 @@ void
 verify() {
   forv_Vec(BaseAST, ast, gAsts)
     ast->verify();
+
+  if (fExtraVerification) {
+    //
+    // verify gAsts and collect_asts are identical
+    //
+    Vec<Expr*> set;
+    Vec<BaseAST*> vAsts;
+    collect_asts(&vAsts);
+
+    forv_Vec(BaseAST, ast, gAsts) {
+      if (Expr* expr = toExpr(ast)) {
+        set.set_add(expr);
+      }
+    }
+    forv_Vec(BaseAST, ast, vAsts) {
+      if (Expr* expr = toExpr(ast)) {
+        if (!set.set_in(expr)) {
+          INT_FATAL(expr, "collected expr %d is not in gAsts", expr->id);
+        }
+      }
+    }
+
+    set.set_clear();
+
+    forv_Vec(BaseAST, ast, vAsts) {
+      if (Expr* expr = toExpr(ast)) {
+        set.set_add(expr);
+      }
+    }
+
+    forv_Vec(BaseAST, ast, gAsts) {
+      if (Expr* expr = toExpr(ast)) {
+        if (!set.set_in(expr)) {
+          INT_FATAL(expr, "expr %d in gAsts is not collected", expr->id);
+        }
+      }
+    }
+  }
 }
 
 

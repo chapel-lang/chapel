@@ -17,3 +17,4 @@
 --no-scalar-replacement --no-inline
 --no-local
 --baseline --no-local
+--extra-verification

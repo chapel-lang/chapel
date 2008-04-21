@@ -63,6 +63,7 @@ int fdump_html = 0;
 static char libraryFilename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
+bool fExtraVerification = false;
 bool no_codegen = false;
 int debugParserLevel = 0;
 bool developer = false;
@@ -371,6 +372,7 @@ static ArgumentDescription arg_desc[] = {
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDistribution, "CHPL_DEFAULT_DISTRIBUTION", NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"ignore-errors", ' ', NULL, "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
+ {"extra-verification", ' ', NULL, "Do extra verification between passes", "F", &fExtraVerification, "CHPL_EXTRA_VERIFICATION", NULL},
  {"no-codegen", ' ', NULL, "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"nostdincs", ' ', NULL, "Don't use standard modules", "T", &fNoStdIncs, "CHPL_NOSTDINCS", NULL},
  {"test-int-sizes", ' ', NULL, "Test compiler's internal integer sizes", "F", &testIntSizes, "CHPL_TEST_INT_SIZES", verifyIntSizes},
