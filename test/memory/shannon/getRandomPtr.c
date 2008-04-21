@@ -1,8 +1,8 @@
 #include "getRandomPtr.h"
 
-long cantFreeMe = 13;
+long cCantFreeMe = 13;
 
 void* getRandomPtr() {
-  return (void*)&cantFreeMe;
+  return (void*)&cCantFreeMe;
 }
 
