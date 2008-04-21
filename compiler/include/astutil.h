@@ -11,11 +11,7 @@ class ArgSymbol;
 class CallExpr;
 class Expr;
 
-void scopeResolve(Symbol* sym);
 void normalize(BaseAST* ast);
-
-// collect FnSymbols in the AST and return them in vectors
-void collect_functions(Vec<FnSymbol*>* functions);
 
 // collect Stmts and Exprs in the AST and return them in vectors
 void collect_asts(Vec<BaseAST*>* asts);
@@ -52,9 +48,6 @@ void compute_sym_uses(Vec<Symbol*>& set, Vec<BaseAST*>& asts);
 // builds the vectors for every variable/argument in 'set' and looks
 // for uses and defs only in 'asts'; the vectors should be cleared
 // before calling this variant
-
-// clear type and retTypes
-void clear_type_info(BaseAST* baseAST);
 
 // update symbols in ast with map
 void update_symbols(BaseAST* ast, ASTMap* map);

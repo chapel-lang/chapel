@@ -103,13 +103,10 @@ addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars) {
 void flattenFunctions(void) {
   compute_call_sites();
 
-  Vec<FnSymbol*> all_functions;
-  collect_functions(&all_functions);
-
   Vec<FnSymbol*> all_nested_functions;
   Map<FnSymbol*,Vec<Symbol*>*> args_map;
-  forv_Vec(FnSymbol, fn, all_functions) {
-    if (toFnSymbol(fn->defPoint->parentSymbol)) {
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (isFnSymbol(fn->defPoint->parentSymbol)) {
       all_nested_functions.add_exclusive(fn);
       Vec<Symbol*>* uses = new Vec<Symbol*>();
       findOuterVars(fn, uses);

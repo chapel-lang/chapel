@@ -9,14 +9,6 @@
 #include "type.h"
 
 
-void collect_functions(Vec<FnSymbol*>* fns) {
-  Vec<BaseAST*> asts;
-  collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts)
-    if (FnSymbol* a = toFnSymbol(ast))
-      fns->add(a);
-}
-
 void collect_stmts(Vec<Expr*>* exprs, Expr* expr) {
   exprs->add(expr);
   if (expr->astTag == STMT_BLOCK || expr->astTag == STMT_COND) {
@@ -167,24 +159,6 @@ void compute_sym_uses() {
     }
   }
   compute_sym_uses(symbolSet, gAsts);
-}
-
-
-void clear_type_info(BaseAST* base) {
-  Vec<BaseAST*> asts;
-  collect_asts(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* defExpr = toDefExpr(ast)) {
-      defExpr->sym->type = dtUnknown;
-
-      if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
-        for_formals(tmp, fn) {
-          tmp->type = dtUnknown;
-        }
-        fn->retType = dtUnknown;
-      }
-    }
-  }
 }
 
 
