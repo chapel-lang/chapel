@@ -12,14 +12,14 @@
 #       release/examples
 #
 
-if (@ARGV) {
+while (@ARGV) {
   $flag = shift @ARGV;
   if ($flag eq "--cron" || $flag eq "-cron") {
     $cron = 1;
   } elsif ($flag eq "--all" || $flag eq "-all") {
     $all = 1;
   } else {
-    die "usage: start_opt_test [--cron]\n";
+    die "usage: start_opt_test [--cron] [--all]\n";
   }
 }
 
