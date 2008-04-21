@@ -40,6 +40,6 @@ const char* createGDBFile(int argc, char* argv[]);
 
 void makeBinary(void);
 
-char* runUtilScript(const char* script);
+const char* runUtilScript(const char* script);
 
 #endif

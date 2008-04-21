@@ -90,7 +90,7 @@
   trunc
 
   // additional reserved words in the MTA/XMT compiler
-  ; const char *CHPL_THREADS = configParamMap.get(astr("CHPL_THREADS"))
-  ; if (CHPL_THREADS && !strcmp(CHPL_THREADS, astr("mta"))) {
+  ;
+  ; if (!strcmp(CHPL_THREADS, "mta")) {
   purge
   task }

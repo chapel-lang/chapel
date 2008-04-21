@@ -17,47 +17,14 @@
 FILE* html_index_file = NULL;
 
 
-char chplhome[FILENAME_MAX] = "";
+char CHPL_HOME[FILENAME_MAX] = "";
 
-static void ensure_chplhome_set(void) {
-  if (chplhome[0] == '\0') {
-    const char* chpl_home = getenv("CHPL_HOME");
-    if (chpl_home == NULL) {
-      USR_FATAL("$CHPL_HOME must be set to run chpl");
-    } else {
-      strncpy(chplhome, chpl_home, FILENAME_MAX);
-    }
-  }
-}
-
-
-static char* get_CHPL_THREADS(void) {
-  ensure_chplhome_set();
-  static char* CHPL_THREADS = NULL;
-  if (CHPL_THREADS == NULL) {
-    CHPL_THREADS = runUtilScript("threads.pl");
-  }
-  return CHPL_THREADS;
-}
-
-static char* get_CHPL_COMM(void) {
-  ensure_chplhome_set();
-  static char* CHPL_COMM = NULL;
-  if (CHPL_COMM == NULL) {
-    CHPL_COMM = runUtilScript("comm.pl");
-  }
-  return CHPL_COMM;
-}
-
-// make --local on by default if CHPL_COMM is unset or none
-static bool setDefaultFLocal(void) {
-  return (!strcmp(get_CHPL_COMM(), "none"));
-}
-
-// make --serial on by default if CHPL_THREADS is set to none
-static bool setDefaultFSerial(void) {
-  return (!strcmp(get_CHPL_THREADS(), "none"));
-}
+const char* CHPL_HOST_PLATFORM = NULL;
+const char* CHPL_TARGET_PLATFORM = NULL;
+const char* CHPL_HOST_COMPILER = NULL;
+const char* CHPL_TARGET_COMPILER = NULL;
+const char* CHPL_THREADS = NULL;
+const char* CHPL_COMM = NULL;
 
 int fdump_html = 0;
 static char libraryFilename[FILENAME_MAX] = "";
@@ -84,8 +51,8 @@ bool fNoNilChecks = false;
 bool fNoChecks = false;
 bool fNoInline = false;
 bool fShortNames = false;
-bool fSerial = setDefaultFSerial();
-bool fLocal = setDefaultFLocal();
+bool fSerial;  // initialized in setupDependentDefaults() below
+bool fLocal;   // initialized in setupDependentDefaults() below
 bool fieeefloat = true;
 bool report_inlining = false;
 char chplmake[256] = "";
@@ -122,6 +89,46 @@ static bool printSettingsHelp = false;
 static bool printLicense = false;
 static bool printVersion = false;
 static bool testIntSizes = false;
+
+
+static void setupChplHome(void) {
+  const char* chpl_home = getenv("CHPL_HOME");
+  if (chpl_home == NULL) {
+    USR_FATAL("$CHPL_HOME must be set to run chpl");
+  } else {
+    strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
+  }
+}
+
+const char* setupEnvVar(const char* varname, const char* script) {
+  const char* val = runUtilScript(script);
+  configParamMap.put(astr(varname), val);
+  return val;
+}
+
+#define SETUP_ENV_VAR(varname, script)          \
+  varname = setupEnvVar(#varname, script);
+
+//
+// Can't rely on a variable initialization order for globals, so any
+// variables that need to be initialized in a particular order go here
+//
+static void setupOrderedGlobals(void) {
+  // Set up CHPL_HOME first
+  setupChplHome();
+  
+  // Then CHPL_* variables
+  SETUP_ENV_VAR(CHPL_HOST_PLATFORM, "platform.pl --host");
+  SETUP_ENV_VAR(CHPL_TARGET_PLATFORM, "platform.pl --target");
+  SETUP_ENV_VAR(CHPL_HOST_COMPILER, "compiler.pl --host");
+  SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "compiler.pl --target");
+  SETUP_ENV_VAR(CHPL_THREADS, "threads.pl");
+  SETUP_ENV_VAR(CHPL_COMM, "comm.pl");
+
+  // These depend on the environment variables being set
+  fLocal = !strcmp(CHPL_COMM, "none");
+  fSerial = !strcmp(CHPL_THREADS, "none"); 
+}
 
 
 static void setChapelDebug(ArgumentState* arg_state, char* arg_unused) {
@@ -199,17 +206,6 @@ static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
 }
 
 
-
-
-static void setBuiltinConfigParams(void) {
-  ensure_chplhome_set();
-  configParamMap.put(astr("CHPL_HOST_PLATFORM"), runUtilScript("platform.pl --host"));
-  configParamMap.put(astr("CHPL_TARGET_PLATFORM"), runUtilScript("platform.pl --target"));
-  configParamMap.put(astr("CHPL_HOST_COMPILER"), runUtilScript("compiler.pl --host"));
-  configParamMap.put(astr("CHPL_TARGET_COMPILER"), runUtilScript("compiler.pl --target"));
-  configParamMap.put(astr("CHPL_THREADS"), get_CHPL_THREADS());
-  configParamMap.put(astr("CHPL_COMM"), get_CHPL_COMM());
-}
 
 
 static void verifySaveCDir(ArgumentState* arg, char* unused) {
@@ -439,11 +435,10 @@ compile_all(void) {
   runPasses();
 }
 
-
 int main(int argc, char *argv[]) {
+  setupOrderedGlobals();
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
-  setBuiltinConfigParams();
   process_args(&arg_state, argc, argv);
   startCatchingSignals();
   printStuff();

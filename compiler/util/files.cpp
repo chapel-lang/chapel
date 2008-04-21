@@ -320,8 +320,9 @@ const char* createGDBFile(int argc, char* argv[]) {
 }
 
 
-static char* mysystem_getresult(const char* command, const char* description, 
-                                int ignorestatus) {
+static const char* mysystem_getresult(const char* command, 
+                                      const char* description,
+                                      int ignorestatus) {
   const char* systemFilename = "system.out.tmp";
   const char* fullSystemFilename = genIntFilename(systemFilename);
   char* result = (char*)malloc(256*sizeof(char));
@@ -329,12 +330,12 @@ static char* mysystem_getresult(const char* command, const char* description,
   fileinfo* systemFile = openTmpFile(systemFilename, "r");
   fscanf(systemFile->fptr, "%s", result);
   closefile(systemFile);
-  return result;
+  return astr(result);  // canonicalize
 }
 
 
-char* runUtilScript(const char* script) {
-  return mysystem_getresult(astr(chplhome, "/util/", script), 
+const char* runUtilScript(const char* script) {
+  return mysystem_getresult(astr(CHPL_HOME, "/util/", script), 
                             astr("running $CHPL_HOME/util/", script), 0);
 }
 
@@ -449,7 +450,7 @@ void codegen_makefile(fileinfo* mainfile) {
   fprintf(makefile.fptr, " %s\n", ldflags);
   fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
   fprintf(makefile.fptr, "TMPBINNAME = %s\n", intExeFilename);
-  fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n", chplhome);
+  fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n", CHPL_HOME);
   fprintf(makefile.fptr, "TAGS_COMMAND = ");
   if (developer && saveCDir[0] && !printCppLineno) {
     fprintf(makefile.fptr, "-@which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && cd %s && cp $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) . && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(CHPL_TAGS_APPEND_FLAG) *.c *.h", saveCDir);

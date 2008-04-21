@@ -12,7 +12,7 @@
 static ModuleSymbol* parseStandardModule(const char* name) {
   static const char* modulePath = NULL;
   if (modulePath == NULL) {
-    modulePath = astr(chplhome, "/modules/standard/");
+    modulePath = astr(CHPL_HOME, "/modules/standard/");
   }
   return ParseFile(astr(modulePath, name), MOD_STANDARD);
 }
