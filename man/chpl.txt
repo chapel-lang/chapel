@@ -78,7 +78,8 @@ OPTIONS
   Parallelism Control Options
 
   --[no]-local      Compile code for single/[multi-] locale execution,
-                    changing on blocks to normal blocks and optimizing
+                    changing on blocks to normal blocks, evaluating the
+                    locale expression for side effects, and optimizing
                     away all remote references in the code. When $CHPL_COMM
                     is set to "none", --local is the default; otherwise
                     --no-local is.

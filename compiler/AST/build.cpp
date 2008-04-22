@@ -995,10 +995,11 @@ static Expr* buildOnExpr(Expr* expr) {
 BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
   checkControlFlow(stmt, "on statement");
+  CallExpr* onExpr = new CallExpr(PRIMITIVE_GET_REF, buildOnExpr(expr));
   if (fLocal) {
     BlockStmt* block = new BlockStmt(stmt, BLOCK_NORMAL);
     // should we evaluate the expression for side effects?
-    //    block->insertAtHead(expr);
+    block->insertAtHead(onExpr);
     return buildChapelStmt(block);
   }
   static int uid = 1;
@@ -1012,7 +1013,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   Symbol* tmp = new VarSymbol("_tmp");
   tmp->isCompilerTemp = true;
   block->insertAtTail(new DefExpr(tmp));
-  block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, buildOnExpr(expr))));
+  block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, onExpr));
   block->insertAtTail(new DefExpr(fn));
   block->insertAtTail(new CallExpr(fn, tmp));
   return block;
