@@ -100,7 +100,7 @@ static void setupChplHome(void) {
   }
 }
 
-const char* setupEnvVar(const char* varname, const char* script) {
+static const char* setupEnvVar(const char* varname, const char* script) {
   const char* val = runUtilScript(script);
   configParamMap.put(astr(varname), val);
   return val;
