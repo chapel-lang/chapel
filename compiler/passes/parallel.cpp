@@ -196,8 +196,6 @@ parallel(void) {
     }
   }
 
-  compute_sym_uses();
-
   Vec<CallExpr*> calls;
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast))
