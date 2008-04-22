@@ -72,26 +72,6 @@ out of memory allocating iterator classes
 gasnet-specific regressions
 ===========================
 
-failed due to new parser rules
-------------------------------
-[Error matching compiler output for multilocale/bradc/remoteReal]
-[Error matching compiler output for multilocale/bradc/remoteString]
-[Error matching compiler output for
-parallel/serial/figueroa/MultiLocaleSerial]
-[Error matching compiler output for release/examples/multilocale]
-[Error matching compiler output for users/shetag/fock/fock-dyn-prog-cntr]
-[Error matching compiler output for users/shetag/fock/fock-dyn-prog-pool]
-[Error matching compiler output for users/shetag/fock/fock-stc-1]
-[Error matching compiler output for users/shetag/fock/fock-stc]
-
-
-failing for various reasons (bradc)
------------------------------------
-[Error matching compiler output for memory/shannon/reallocZeroSize]
-[Error matching program output for memory/shannon/allocAndFree]
-[Error matching program output for memory/shannon/freedMalloc]
-[Error matching program output for memory/shannon/freedWithoutMalloc]
-
 ???
 ---
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
