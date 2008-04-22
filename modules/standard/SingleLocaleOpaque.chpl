@@ -78,3 +78,7 @@ class SingleLocaleOpaqueArray: BaseArray {
     anarray.tupleInit(b);
   }
 }
+
+def SingleLocaleOpaqueDomain.remove(idx: idxType) {
+  adomain.remove(idx);
+}
