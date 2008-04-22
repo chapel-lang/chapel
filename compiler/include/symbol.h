@@ -297,4 +297,6 @@ extern Symbol *gSingleVarAuxFields;
 
 extern Symbol *gTaskList;
 
+void freeWrapperAndInstantiationCaches();
+
 #endif

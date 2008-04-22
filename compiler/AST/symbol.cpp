@@ -74,6 +74,20 @@ addMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache,
   }
 }
 
+static void
+freeASTMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache) {
+  Vec<FnSymbol*> keys;
+  cache.get_keys(keys);
+  forv_Vec(FnSymbol, key, keys) {
+    Vec<Inst*>* insts = cache.get(key);
+    forv_Vec(Inst, inst, *insts) {
+      delete inst;
+    }
+    delete insts;
+  }
+  cache.set_clear();
+}
+
 static Map<FnSymbol*,Vec<Inst*>*> icache; // instantiation cache
 static Map<FnSymbol*,Vec<Inst*>*> cw_cache; // coercion wrappers cache
 static Map<FnSymbol*,Vec<Inst*>*> pw_cache; // promotion wrappers cache
@@ -115,6 +129,23 @@ add_dwcache(FnSymbol* newFn, FnSymbol* oldFn, Vec<Symbol*>* defaults) {
   dwcache.add(new DWCacheItem(oldFn, newFn, defaults));
 }
 /*** Default Wrapper Cache ^^^ ***/
+
+
+void
+freeWrapperAndInstantiationCaches() {
+
+  //
+  // delete default wrapper cache
+  //
+  forv_Vec(DWCacheItem, item, dwcache) {
+    delete item;
+  }
+  dwcache.clear();
+
+  freeASTMapCache(icache);
+  freeASTMapCache(cw_cache);
+  freeASTMapCache(pw_cache);
+}
 
 
 Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :

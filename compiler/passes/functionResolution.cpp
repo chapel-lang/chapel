@@ -3406,6 +3406,8 @@ resolve() {
 
   insertReturnTemps(); // must be done before pruneResolvedTree is called.
   pruneResolvedTree();
+
+  freeWrapperAndInstantiationCaches();
 }
 
 

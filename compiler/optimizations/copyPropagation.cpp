@@ -77,17 +77,14 @@ removeAvailable(AvailableMap& available,
 }
 
 
-// This isn't used, but I am too scared to delete it. -BLC
-//
-// static void
-// freeAvailable(AvailableMap& available,
-//               ReverseAvailableMap& reverseAvailable) {
-//   Vec<Symbol*> values;
-//   reverseAvailable.get_keys(values);
-//   forv_Vec(Symbol, value, values) {
-//     delete reverseAvailable.get(value);
-//   }
-// }
+static void
+freeReverseAvailable(ReverseAvailableMap& reverseAvailable) {
+  Vec<Symbol*> values;
+  reverseAvailable.get_keys(values);
+  forv_Vec(Symbol, value, values) {
+    delete reverseAvailable.get(value);
+  }
+}
 
 
 static void
@@ -183,6 +180,7 @@ void localCopyPropagation(FnSymbol* fn) {
     AvailableMap available;
     ReverseAvailableMap reverseAvailable;
     localCopyPropagationCore(bb, available, reverseAvailable, useSet, defSet);
+    freeReverseAvailable(reverseAvailable);
   }
 }
 
@@ -435,6 +433,7 @@ void globalCopyPropagation(FnSymbol* fn) {
     }
     if (proceed)
       localCopyPropagationCore(bb, available, reverseAvailable, useSet, defSet);
+    freeReverseAvailable(reverseAvailable);
   }
 
   forv_Vec(Vec<bool>, copy, COPY)

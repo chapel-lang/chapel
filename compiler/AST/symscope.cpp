@@ -115,12 +115,12 @@ SymScope::lookupLocal(const char* name, Vec<SymScope*>* alreadyVisited, bool ret
 
 
 static void buildBreadthFirstUseTree(Vec<ModuleSymbol*>* current, Vec<Vec<ModuleSymbol*>*> &queue, Vec<ModuleSymbol*>* alreadySeen = NULL) {
-  Vec<ModuleSymbol*>* next = new Vec<ModuleSymbol*>;
   if (!alreadySeen) {
     Vec<ModuleSymbol*> seen;
     return buildBreadthFirstUseTree(current, queue, &seen);
   }
   queue.add(current);
+  Vec<ModuleSymbol*>* next = new Vec<ModuleSymbol*>;
   forv_Vec(ModuleSymbol, module, *current) {
     Vec<ModuleSymbol*>* modules = module->block->blkScope->getModuleUses();
     if (modules) {
@@ -134,6 +134,8 @@ static void buildBreadthFirstUseTree(Vec<ModuleSymbol*>* current, Vec<Vec<Module
   }
   if (next->n > 0) {
     buildBreadthFirstUseTree(next, queue, alreadySeen);
+  } else {
+    delete next;
   }
 }
 
@@ -167,7 +169,7 @@ SymScope::lookup(const char* name, Vec<SymScope*>* alreadyVisited, bool returnMo
     }
   }
   if (symbols.n == 0 && scanModuleUses) {
-    Vec<ModuleSymbol*>* modules = getModuleUses();  
+    Vec<ModuleSymbol*>* modules = getModuleUses();
     if (modules && modules->n > 0) {
       Vec<Vec<ModuleSymbol*>*> moduleQueue;
       buildBreadthFirstUseTree(modules, moduleQueue);
