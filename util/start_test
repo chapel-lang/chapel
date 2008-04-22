@@ -606,6 +606,7 @@ if ($comm != "none") then
 endif
 
 set invocationDir = "$cwd"
+setenv CHPL_TEST_INVOKE_DIR "$invocationDir"
 
 echo \[Starting Chapel regression tests - $datestr\] |& $tee $logtmp
 echo \[starting directory: \"$invocationDir\"] |& $tee -a $logtmp

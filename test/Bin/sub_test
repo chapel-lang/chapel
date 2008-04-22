@@ -75,9 +75,13 @@ endif
 
 # build a string representing the local directory
 # strip off $testdir
-set sedstr = `echo $testdir | sed 's/\//\\\//g'`
+set sedstr = `echo $CHPL_TEST_INVOKE_DIR | sed 's/\//\\\//g'`
 set sedstr = "s/$sedstr\///"
-set localdir = `echo $cwd | sed $sedstr`
+if ($cwd == $CHPL_TEST_INVOKE_DIR) then
+    set localdir = "."
+else
+    set localdir = `echo $cwd | sed $sedstr`
+endif
 
 echo \[Starting subtest - `date`\]
 echo \[pwd: \"`pwd`\"\]
