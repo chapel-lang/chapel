@@ -53,9 +53,7 @@ void SymScope::undefine(Symbol* sym) {
   Symbol* tmp = table.get(sym->name);
   if (tmp == sym) {
     tmp = sym->overloadNext;
-    table.del(sym->name);
-    if (tmp)
-      table.put(sym->name, tmp);
+    table.put(sym->name, tmp);
   } else {
     if (!sym->overloadPrev)
       INT_FATAL(sym, "Symbol not found in scope from which deleted");

@@ -207,7 +207,7 @@ static FnSymbol* chpl_main_exists(void) {
   FnSymbol* match = NULL;
   if (strlen(mainModuleName) != 0) {
     SymScope* progScope = theProgram->block->blkScope;
-    ModuleSymbol* module = toModuleSymbol(progScope->table.get(mainModuleName));
+    ModuleSymbol* module = toModuleSymbol(progScope->table.get(astr(mainModuleName)));
     if (!module)
       USR_FATAL("Couldn't find module %s", mainModuleName);
     Vec<FnSymbol*>* mainfns = module->block->blkScope->visibleFunctions.get(astr("main"));
@@ -260,7 +260,7 @@ static void build_chpl_main(void) {
       normalize(chpl_main);
     } else if (strlen(mainModuleName) != 0) { 
       SymScope* progScope = theProgram->block->blkScope;
-      ModuleSymbol* module = toModuleSymbol(progScope->table.get(mainModuleName));
+      ModuleSymbol* module = toModuleSymbol(progScope->table.get(astr(mainModuleName)));
       if (!module)
         USR_FATAL("Couldn't find module %s at program scope", mainModuleName);
       chpl_main = new FnSymbol("main");

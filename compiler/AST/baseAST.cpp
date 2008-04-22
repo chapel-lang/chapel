@@ -401,8 +401,8 @@ FnSymbol* BaseAST::getFunction() {
 
 Symbol* BaseAST::lookup(const char* name) {
   if (ModuleSymbol* a = toModuleSymbol(this))
-    return a->block->blkScope->lookup(name);
-  return parentScope->lookup(name);
+    return a->block->blkScope->lookup(astr(name));
+  return parentScope->lookup(astr(name));
 }
 
 Symbol* BaseAST::lookup(BaseAST* ast) {
@@ -417,7 +417,7 @@ Symbol* BaseAST::lookup(BaseAST* ast) {
 }
 
 TypeSymbol* BaseAST::lookupType(const char* name) {
-  return toTypeSymbol(lookup(name));
+  return toTypeSymbol(lookup(astr(name)));
 }
 
 TypeSymbol* BaseAST::lookupType(BaseAST* ast) {
@@ -425,7 +425,7 @@ TypeSymbol* BaseAST::lookupType(BaseAST* ast) {
 }
 
 VarSymbol* BaseAST::lookupVar(const char* name) {
-  return toVarSymbol(lookup(name));
+  return toVarSymbol(lookup(astr(name)));
 }
 
 VarSymbol* BaseAST::lookupVar(BaseAST* ast) {

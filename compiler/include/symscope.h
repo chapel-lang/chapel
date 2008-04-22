@@ -8,7 +8,7 @@ class SymScope {
   BaseAST* astParent; // back pointer to AST
   SymScope* parent;
   Map<const char*,Vec<FnSymbol*>*> visibleFunctions;
-  ChainHashMap<const char*, StringHashFns, Symbol*> table;
+  Map<const char*,Symbol*> table;
 
   SymScope(BaseAST* iastParent, SymScope* iparent);
   ~SymScope();
