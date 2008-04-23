@@ -3527,10 +3527,6 @@ pruneResolvedTree() {
           }
   }
 
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(defMap, useMap);
-
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts);
   forv_Vec(BaseAST, ast, asts) {
@@ -3623,6 +3619,7 @@ pruneResolvedTree() {
 
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
+      Vec<BaseAST*> asts;
       for_formals(formal, fn) {
         // Remove formal default values
         if (formal->defaultExpr)
@@ -3639,17 +3636,17 @@ pruneResolvedTree() {
           VarSymbol* tmp = new VarSymbol("_removed_formal_tmp", formal->type);
           tmp->isCompilerTemp = true;
           fn->insertAtHead(new DefExpr(tmp));
-          for_uses(se, useMap, formal) {
-            // why? because dereference is inserted on type formals
-            // that are coerced; see note in coercion_wrapper
-            if (CallExpr* call = toCallExpr(se->parentExpr))
-              if (call->isPrimitive(PRIMITIVE_GET_REF))
-                se->getStmtExpr()->remove();
-
-            se->var = tmp;
-          }
-          for_defs(se, defMap, formal) {
-            se->var = tmp;
+          if (asts.n == 0)
+            collect_asts(&asts, fn->body);
+          forv_Vec(BaseAST, ast, asts) {
+            if (SymExpr* se = toSymExpr(ast)) {
+              if (se->var == formal) {
+                if (CallExpr* call = toCallExpr(se->parentExpr))
+                  if (call->isPrimitive(PRIMITIVE_GET_REF))
+                    se->getStmtExpr()->remove();
+                se->var = tmp;
+              }
+            }
           }
         }
         if (formal->isTypeVariable &&
@@ -3824,8 +3821,6 @@ pruneResolvedTree() {
       }
     }
   }
-
-  freeDefUseMaps(defMap, useMap);
 }
 
 
