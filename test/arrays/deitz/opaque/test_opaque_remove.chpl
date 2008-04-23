@@ -5,7 +5,6 @@ def main(){
   A[Idx] = 2;
   writeln(A);
   Dom.create();
-  writeln(A);
   Dom.remove(Idx);
   writeln(A);
 }
