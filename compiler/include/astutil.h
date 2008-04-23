@@ -9,6 +9,7 @@ class FnSymbol;
 class VarSymbol;
 class ArgSymbol;
 class CallExpr;
+class SymExpr;
 class Expr;
 
 void normalize(BaseAST* ast);
@@ -29,25 +30,71 @@ void reset_file_info(BaseAST* baseAST, int lineno, const char* filename);
 void compute_call_sites();
 
 //
-// compute Symbol::uses and Symbol::defs
+// build defMap and useMap such that defMap is a map from symbols to
+// their defs and useMap is a map from symbols to their uses; these
+// vectors are built differently depending on the other arguments
 //
-void compute_sym_uses();
+void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
 // builds the vectors for every variable/argument in the entire
 // program
 
-void compute_sym_uses(FnSymbol* fn);
+void buildDefUseMaps(FnSymbol* fn,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
 // builds the vectors for every variable/argument in 'fn' and looks
 // for uses and defs only in 'fn'
 
-void compute_sym_uses(Vec<Symbol*>& set);
-// builds the vectors for every variable/argument in 'set' and looks
-// for uses and defs in the entire program; the vectors should be
-// cleared before calling this variant
+void buildDefUseMaps(Vec<Symbol*>& symSet,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+// builds the vectors for every variable/argument in 'symSet' and
+// looks for uses and defs in the entire program
 
-void compute_sym_uses(Vec<Symbol*>& set, Vec<BaseAST*>& asts);
-// builds the vectors for every variable/argument in 'set' and looks
-// for uses and defs only in 'asts'; the vectors should be cleared
-// before calling this variant
+void buildDefUseMaps(Vec<Symbol*>& symSet,
+                     Vec<BaseAST*>& asts,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+// builds the vectors for every variable/argument in 'symSet' and
+// looks for uses and defs only in 'asts'
+
+//
+// add a def to a defMap or a use to a useMap
+//
+void addDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, SymExpr* def);
+void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use);
+
+
+//
+// free memory consumed by defMap and useMap
+//
+void freeDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                    Map<Symbol*,Vec<SymExpr*>*>& useMap);
+
+//
+// stylized loops over defs and uses: to loop over the defs/uses
+// (SymExprs) stored in the map defMap/useMap for a symbol sym, use
+// for_defs/for_uses and the resulting declared variable def/use will
+// contain the defs/uses
+//
+#define for_defs(def, defMap, sym)                \
+  for_uses(def, defMap, sym)
+
+#define for_uses(use, useMap, sym)                \
+  if (Vec<SymExpr*>* macro_vec = useMap.get(sym)) \
+    forv_Vec(SymExpr, use, *macro_vec)
+
+//
+// build useSet and defSet for a vector of symbols 'syms' where the
+// uses and defs are restricted to 'fn' such that the set useSet
+// contains all of the uses of the symbols in 'syms' that occur in
+// 'fn' and the set defSet contains all of the defs of the symbols in
+// 'syms' that occur in 'fn'
+//
+void buildDefUseSets(Vec<Symbol*>& syms,
+                     FnSymbol* fn,
+                     Vec<SymExpr*>& defSet,
+                     Vec<SymExpr*>& useSet);
 
 // update symbols in ast with map
 void update_symbols(BaseAST* ast, ASTMap* map);

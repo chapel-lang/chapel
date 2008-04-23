@@ -32,7 +32,7 @@ liveVariableAnalysis(FnSymbol* fn,
   printLocalsVector(locals, localMap);
 #endif
 
-  buildDefUseSets(fn, locals, useSet, defSet);
+  buildDefUseSets(locals, fn, defSet, useSet);
 
   //
   // USE(i): the set of variables that are used in basic block i

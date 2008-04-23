@@ -3411,26 +3411,6 @@ resolve() {
 }
 
 
-//
-// remove arguments to calls; handle temporary normalization by
-// recursively removing temporaries.
-//
-// static void
-// removeActual(Expr* actual) {
-//   if (SymExpr* sym = toSymExpr(actual)) {
-//     if (sym->var->isCompilerTemp) {
-//       if (sym->var->uses.n == 1) {
-//         forv_Vec(SymExpr, lhs, sym->var->defs) {
-//           if (CallExpr* call = toCallExpr(lhs->parentExpr))
-//             if (call->parentSymbol && call->isPrimitive(PRIMITIVE_MOVE))
-//               call->remove();
-//         }
-//       }
-//     }
-//   }
-// }
-
-
 static Type*
 buildArrayTypeInfo(Type* type) {
   static Map<Type*,Type*> cache;
@@ -3547,7 +3527,9 @@ pruneResolvedTree() {
           }
   }
 
-  compute_sym_uses();
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(defMap, useMap);
 
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts);
@@ -3657,8 +3639,7 @@ pruneResolvedTree() {
           VarSymbol* tmp = new VarSymbol("_removed_formal_tmp", formal->type);
           tmp->isCompilerTemp = true;
           fn->insertAtHead(new DefExpr(tmp));
-          forv_Vec(SymExpr, se, formal->uses) {
-
+          for_uses(se, useMap, formal) {
             // why? because dereference is inserted on type formals
             // that are coerced; see note in coercion_wrapper
             if (CallExpr* call = toCallExpr(se->parentExpr))
@@ -3667,8 +3648,9 @@ pruneResolvedTree() {
 
             se->var = tmp;
           }
-          forv_Vec(SymExpr, se, formal->defs)
+          for_defs(se, defMap, formal) {
             se->var = tmp;
+          }
         }
         if (formal->isTypeVariable &&
             formal->type->symbol->hasPragma("array")) {
@@ -3842,6 +3824,8 @@ pruneResolvedTree() {
       }
     }
   }
+
+  freeDefUseMaps(defMap, useMap);
 }
 
 

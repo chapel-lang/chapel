@@ -512,7 +512,9 @@ insertWideReferences(void) {
   //
   // initialize global variables across locales
   //
-  compute_sym_uses(); // for "ack!!" below
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(defMap, useMap); // for "ack!!" below
 
   Vec<Symbol*> heapVars;
   forv_Vec(BaseAST, ast, gAsts) {
@@ -531,9 +533,11 @@ insertWideReferences(void) {
         //
         if (lhs->var->isCompilerTemp) {
           if (CallExpr* move2 = toCallExpr(move->next)) {
-            if (lhs->var->defs.n == 1 &&
-                lhs->var->uses.n == 1 &&
-                lhs->var->uses.v[0] == move2->get(2)) {
+            Vec<SymExpr*>* defs = defMap.get(lhs->var);
+            Vec<SymExpr*>* uses = useMap.get(lhs->var);
+            if (defs && defs->n == 1 &&
+                uses && uses->n == 1 &&
+                uses->v[0] == move2->get(2)) {
               move2->get(2)->replace(call->remove());
               move->remove();
               move = move2;
@@ -562,6 +566,8 @@ insertWideReferences(void) {
       }
     }
   }
+
+  freeDefUseMaps(defMap, useMap);
 
   //
   // dereference wide string actual argument to primitive

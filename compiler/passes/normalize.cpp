@@ -186,8 +186,6 @@ static void heapAllocateLocals() {
           // collect arguments
           if (isArgSymbol(se->var)) {
             heapSet.set_add(se->var);
-            se->var->defs.clear();
-            se->var->uses.clear();
           }
 
           // collect symbols defined in outer functions
@@ -198,8 +196,6 @@ static void heapAllocateLocals() {
                 !var->isParam &&
                 !var->hasPragma("private")) {
               heapSet.set_add(var);
-              var->defs.clear();
-              var->uses.clear();
             }
           }
         }
@@ -209,7 +205,9 @@ static void heapAllocateLocals() {
 
   Vec<BaseAST*> asts;
   collect_asts(&asts);
-  compute_sym_uses(heapSet, asts);
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(heapSet, asts, defMap, useMap);
 
   // for each symbol that should be heap allocated
   forv_Vec(Symbol, sym, heapSet) {
@@ -221,7 +219,7 @@ static void heapAllocateLocals() {
 
       // disable for index of parameter for loops
       bool disable = false;
-      forv_Vec(SymExpr, se, sym->uses) {
+      for_uses(se, useMap, sym) {
         if (CallExpr* parent = toCallExpr(se->parentExpr))
           if (parent->isPrimitive(PRIMITIVE_LOOP_PARAM))
             disable = true;
@@ -230,7 +228,7 @@ static void heapAllocateLocals() {
         continue;
 
       bool first = true;
-      forv_Vec(SymExpr, se, sym->defs) {
+      for_defs(se, defMap, sym) {
 
         // ack!! this is troublesome: we're assuming that the first
         // definition in the defs vector is the initial definition
@@ -245,7 +243,7 @@ static void heapAllocateLocals() {
           insertHeapAccess(se);
         }
       }
-      forv_Vec(SymExpr, se, sym->uses) {
+      for_uses(se, useMap, sym) {
         insertHeapAccess(se);
       }
     }
@@ -259,11 +257,11 @@ static void heapAllocateLocals() {
       tmp->isCompilerTemp = true;
       fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_heapAlloc", sym)));
       fn->insertAtHead(new DefExpr(tmp));
-      forv_Vec(SymExpr, se, sym->defs) {
+      for_defs(se, defMap, sym) {
         se->var = tmp;
         insertHeapAccess(se);
       }
-      forv_Vec(SymExpr, se, sym->uses) {
+      for_uses(se, useMap, sym) {
 
         // disable insertion of heap access on arguments accessed
         // outside of the function's body
@@ -282,6 +280,8 @@ static void heapAllocateLocals() {
       }
     }
   }
+
+  freeDefUseMaps(defMap, useMap);
 }
 
 
@@ -320,21 +320,21 @@ static void heapAllocateGlobals() {
 
           heapVec.add(var);
           heapSet.set_add(var);
-          var->defs.clear();
-          var->uses.clear();
         }
       }
     }
   }
 
-  compute_sym_uses(heapSet, asts);
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(heapSet, asts, defMap, useMap);
 
   forv_Vec(Symbol, var, heapVec) {
     {
       {
         {
           bool first = true;
-          forv_Vec(SymExpr, se, var->defs) {
+          for_defs(se, defMap, var) {
 
             // ack!! this is troublesome: we're assuming that the first
             // definition in the defs vector is the initial definition
@@ -349,14 +349,15 @@ static void heapAllocateGlobals() {
               insertHeapAccess(se, true);
             }
           }
-          forv_Vec(SymExpr, se, var->uses) {
+          for_uses(se, useMap, var) {
             insertHeapAccess(se, true);
           }
-
         }
       }
     }
   }
+
+  freeDefUseMaps(defMap, useMap);
 }
 
 

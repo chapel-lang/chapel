@@ -222,7 +222,9 @@ static void
 buildGetNextCursor(FnSymbol* fn,
                    Vec<BaseAST*>& asts,
                    Map<Symbol*,Symbol*>& local2field,
-                   Vec<Symbol*>& locals) {
+                   Vec<Symbol*>& locals,
+                   Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                   Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   IteratorInfo* ii = fn->iteratorInfo;
   Symbol *iterator, *cursor, *t1;
 
@@ -277,19 +279,19 @@ buildGetNextCursor(FnSymbol* fn,
     if (isRecordType(local->type)) {
       insertSetMember(ii->getNextCursor, iterator, field, local);
     } else {
-      forv_Vec(SymExpr, se, local->defs) {
+      for_defs(se, defMap, local) {
         if (toCallExpr(se->parentExpr))
           insertSetMember(se, iterator, field, local);
       }
 
       // update based on indirect writes via references
-      forv_Vec(SymExpr, se, local->uses) {
+      for_uses(se, useMap, local) {
         if (CallExpr* ref = toCallExpr(se->parentExpr))
           if (ref->isPrimitive(PRIMITIVE_SET_REF))
             if (CallExpr* move = toCallExpr(ref->parentExpr))
               if (move->isPrimitive(PRIMITIVE_MOVE))
                 if (SymExpr* lhs = toSymExpr(move->get(1)))
-                  forv_Vec(SymExpr, se, lhs->var->defs) {
+                  for_defs(se, defMap, lhs->var) {
                     if (toCallExpr(se->parentExpr))
                       insertSetMember(se, iterator, field, local);
                   }
@@ -467,7 +469,9 @@ buildSingleLoopMethods(FnSymbol* fn,
                        Map<Symbol*,Symbol*>& local2field,
                        Vec<Symbol*>& locals,
                        Symbol* value,
-                       CallExpr* yield) {
+                       CallExpr* yield,
+                       Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                       Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   IteratorInfo* ii = fn->iteratorInfo;
   BlockStmt* loop = toBlockStmt(yield->parentExpr);
 
@@ -668,7 +672,7 @@ buildSingleLoopMethods(FnSymbol* fn,
       insertSetMember(ii->getZipCursor3, zip3Iterator, field, zip3Map.get(local));
       insertSetMember(ii->getZipCursor4, zip4Iterator, field, zip4Map.get(local));
     } else {
-      forv_Vec(SymExpr, se, local->defs) {
+      for_defs(se, defMap, local) {
         if (toCallExpr(se->parentExpr))
           insertSetMember(se, nextIterator, field, local);
         SymExpr* se2;
@@ -690,13 +694,13 @@ buildSingleLoopMethods(FnSymbol* fn,
       }
 
       // update based on indirect writes via references
-      forv_Vec(SymExpr, se, local->uses) {
+      for_uses(se, useMap, local) {
         if (CallExpr* ref = toCallExpr(se->parentExpr))
           if (ref->isPrimitive(PRIMITIVE_SET_REF))
             if (CallExpr* move = toCallExpr(ref->parentExpr))
               if (move->isPrimitive(PRIMITIVE_MOVE))
                 if (SymExpr* lhs = toSymExpr(move->get(1)))
-                  forv_Vec(SymExpr, se, lhs->var->defs) {
+                  for_defs(se, defMap, lhs->var) {
                     if (toCallExpr(se->parentExpr))
                       insertSetMember(se, nextIterator, field, local);
                     SymExpr* se2;
@@ -846,7 +850,9 @@ void lowerIterator(FnSymbol* fn) {
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, fn);
 
-  compute_sym_uses(fn);
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(fn, defMap, useMap);
 
   // make fields for all local variables and arguments
   // optimization note: only variables live at yield points are required
@@ -877,9 +883,9 @@ void lowerIterator(FnSymbol* fn) {
   INT_ASSERT(value);
   CallExpr* yield = isSingleLoopIterator(fn, asts);
   if (!fNoOptimizeLoopIterators && yield) {
-    buildSingleLoopMethods(fn, asts, local2field, locals, value, yield);
+    buildSingleLoopMethods(fn, asts, local2field, locals, value, yield, defMap, useMap);
   } else {
-    buildGetNextCursor(fn, asts, local2field, locals);
+    buildGetNextCursor(fn, asts, local2field, locals, defMap, useMap);
     buildGetHeadCursor(fn);
     buildIsValidCursor(fn);
     buildGetValue(fn, value);
@@ -914,4 +920,6 @@ void lowerIterator(FnSymbol* fn) {
   }
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
+
+  freeDefUseMaps(defMap, useMap);
 }

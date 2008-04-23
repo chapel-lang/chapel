@@ -95,70 +95,147 @@ void compute_call_sites() {
 }
 
 
-void compute_sym_uses(Vec<Symbol*>& symbolSet, Vec<BaseAST*>& asts) {
-  forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* a = toSymExpr(ast)) {
-      if (a->parentSymbol && a->var && symbolSet.set_in(a->var)) {
-        if (CallExpr* call = toCallExpr(a->parentExpr)) {
-          if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == a) {
-            a->var->defs.add(a);
-            continue;
-          } else if (call->isResolved()) {
-            ArgSymbol* arg = actual_to_formal(a);
-            if (arg->intent == INTENT_REF ||
-                arg->intent == INTENT_INOUT ||
-                arg->type->symbol->hasPragma("array") || // pass by reference
-                arg->type->symbol->hasPragma("domain")) { // pass by reference
-              a->var->defs.add(a); // also use
-            } else if (arg->intent == INTENT_OUT) {
-              a->var->defs.add(a);
-              continue;
-            }
-          }
-        }
-        a->var->uses.add(a);
-      }
-    }
-  }
-}
-
-
-void compute_sym_uses(FnSymbol* fn) {
-  Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
-  Vec<Symbol*> symbolSet;
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
-        def->sym->defs.clear();
-        def->sym->uses.clear();
-        symbolSet.set_add(def->sym);
-      }
-    }
-  }
-  compute_sym_uses(symbolSet, asts);
-}
-
-
-void compute_sym_uses(Vec<Symbol*>& symbolSet) {
-  compute_sym_uses(symbolSet, gAsts);
-}
-
-
-void compute_sym_uses() {
-  Vec<Symbol*> symbolSet;
+void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+  Vec<Symbol*> symSet;
   forv_Vec(BaseAST, ast, gAsts) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (def->parentSymbol) {
         if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
-          def->sym->defs.clear();
-          def->sym->uses.clear();
-          symbolSet.set_add(def->sym);
+          symSet.set_add(def->sym);
         }
       }
     }
   }
-  compute_sym_uses(symbolSet, gAsts);
+  buildDefUseMaps(symSet, gAsts, defMap, useMap);
+}
+
+
+void buildDefUseMaps(FnSymbol* fn,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn);
+  Vec<Symbol*> symSet;
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+        symSet.set_add(def->sym);
+      }
+    }
+  }
+  buildDefUseMaps(symSet, asts, defMap, useMap);
+}
+
+
+void buildDefUseMaps(Vec<Symbol*>& symSet,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+  buildDefUseMaps(symSet, gAsts, defMap, useMap);
+}
+
+
+static void addUseOrDef(Map<Symbol*,Vec<SymExpr*>*>& ses, SymExpr* se) {
+  Vec<SymExpr*>* sev = ses.get(se->var);
+  if (sev) {
+    sev->add(se);
+  } else {
+    sev = new Vec<SymExpr*>();
+    sev->add(se);
+    ses.put(se->var, sev);
+  }
+}
+
+
+void addDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, SymExpr* def) {
+  addUseOrDef(defMap, def);
+}
+
+
+void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use) {
+  addUseOrDef(useMap, use);
+}
+
+
+//
+// return & 1 is true if se is a def
+// return & 2 is true if se is a use
+//
+static int isDefAndOrUse(SymExpr* se) {
+  if (CallExpr* call = toCallExpr(se->parentExpr)) {
+    if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == se) {
+      return 1;
+    } else if (call->isResolved()) {
+      ArgSymbol* arg = actual_to_formal(se);
+      if (arg->intent == INTENT_REF ||
+          arg->intent == INTENT_INOUT ||
+          arg->type->symbol->hasPragma("array") || // pass by reference
+          arg->type->symbol->hasPragma("domain")) { // pass by reference
+        return 3;
+        // also use; do not "continue"
+      } else if (arg->intent == INTENT_OUT) {
+        return 1;
+      }
+    }
+  }
+  return 2;
+}
+
+
+void buildDefUseMaps(Vec<Symbol*>& symSet,
+                     Vec<BaseAST*>& asts,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+  forv_Vec(BaseAST, ast, asts) {
+    if (SymExpr* se = toSymExpr(ast)) {
+      if (se->parentSymbol && se->var && symSet.set_in(se->var)) {
+        int result = isDefAndOrUse(se);
+        if (result & 1)
+          addDef(defMap, se);
+        if (result & 2)
+          addUse(useMap, se);
+      }
+    }
+  }
+}
+
+typedef Map<Symbol*,Vec<SymExpr*>*> SymbolToVecSymExprMap;
+typedef MapElem<Symbol*,Vec<SymExpr*>*> SymbolToVecSymExprMapElem;
+
+void freeDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                    Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+  form_Map(SymbolToVecSymExprMapElem, e, defMap) {
+    delete e->value;
+  }
+  defMap.clear();
+  form_Map(SymbolToVecSymExprMapElem, e, useMap) {
+    delete e->value;
+  }
+  useMap.clear();
+}
+
+
+void buildDefUseSets(Vec<Symbol*>& syms,
+                     FnSymbol* fn,
+                     Vec<SymExpr*>& defSet,
+                     Vec<SymExpr*>& useSet) {
+  Vec<BaseAST*> asts;
+  collect_asts(&asts, fn);
+  Vec<Symbol*> symSet;
+  forv_Vec(Symbol, sym, syms) {
+    symSet.set_add(sym);
+  }
+  forv_Vec(BaseAST, ast, asts) {
+    if (SymExpr* se = toSymExpr(ast)) {
+      if (se->parentSymbol && se->var && symSet.set_in(se->var)) {
+        int result = isDefAndOrUse(se);
+        if (result & 1)
+          defSet.set_add(se);
+        if (result & 2)
+          useSet.set_add(se);
+      }
+    }
+  }
 }
 
 

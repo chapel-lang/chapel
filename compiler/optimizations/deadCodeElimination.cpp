@@ -10,26 +10,35 @@
 // Removes local variables that are only targets for moves, but are
 // never used anywhere.
 //
-static bool isDeadVariable(Symbol* var) {
+static bool isDeadVariable(Symbol* var,
+                           Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                           Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   if (isReference(var->type)) {
-    return var->uses.n == 0 && var->defs.n <= 1;
+    Vec<SymExpr*>* uses = useMap.get(var);
+    Vec<SymExpr*>* defs = defMap.get(var);
+    return (!uses || uses->n == 0) && (!defs || defs->n <= 1);
   } else {
-    return var->uses.n == 0;
+    Vec<SymExpr*>* uses = useMap.get(var);
+    return !uses || uses->n == 0;
   }
 }
 
-static void deadVariableEliminationHelp(FnSymbol* fn, Symbol* var) {
+static void deadVariableEliminationHelp(FnSymbol* fn,
+                                        Symbol* var,
+                                        Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                                        Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   if (var->astTag == SYMBOL_VAR &&
       var->defPoint &&
       var->defPoint->parentSymbol == fn &&
-      isDeadVariable(var)) {
-    forv_Vec(SymExpr, se, var->defs) {
+      isDeadVariable(var, defMap, useMap)) {
+    for_defs(se, defMap, var) {
       CallExpr* call = toCallExpr(se->parentExpr);
       if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
           call->remove();
-          rhs->var->uses.n--;
-          deadVariableEliminationHelp(fn, rhs->var);
+          if (Vec<SymExpr*>* uses = useMap.get(var))
+            uses->n--;
+          deadVariableEliminationHelp(fn, rhs->var, defMap, useMap);
         } else {
           call->replace(call->get(2)->remove());
         }
@@ -43,12 +52,15 @@ static void deadVariableEliminationHelp(FnSymbol* fn, Symbol* var) {
 void deadVariableElimination(FnSymbol* fn) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn);
-  compute_sym_uses(fn);
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(fn, defMap, useMap);
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
-      deadVariableEliminationHelp(fn, def->sym);
+      deadVariableEliminationHelp(fn, def->sym, defMap, useMap);
     }
   }
+  freeDefUseMaps(defMap, useMap);
 }
 
 //

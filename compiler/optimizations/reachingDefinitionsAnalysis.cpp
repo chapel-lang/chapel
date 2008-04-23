@@ -16,9 +16,68 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
   Vec<Symbol*> locals;
   Map<Symbol*,int> localMap;
   buildLocalsVectorMap(fn, locals, localMap);
+  buildDefUseSets(locals, fn, defSet, useSet);
 
-  buildDefUseSets(fn, locals, useSet, defSet);
-  buildDefsVectorMap(locals, defs, defMap);
+//   Vec<SymExpr*> ndefs;
+//   Map<SymExpr*,int> ndefMap;
+
+//   buildDefsVectorMap(locals, ndefs, ndefMap);
+
+  int i = 0;
+  forv_Vec(Symbol, sym, locals) {
+    forv_Vec(SymExpr, se, defSet) {
+      if (se && se->var == sym) {
+        defs.add(se);
+        defMap.put(se, i++);
+      }
+    }
+  }
+
+//   bool dd = false;
+
+//   if (ndefs.n != defs.n) {
+//     dd = true;
+//   } else {
+//     forv_Vec(SymExpr, nse, ndefs) {
+//       bool good = false;
+//       forv_Vec(SymExpr, se, defs) {
+//         if (se == nse) {
+//           good = true;
+//           break;
+//         }
+//       }
+//       if (!good) {
+//         dd = true;
+//         break;
+//       }
+//     }
+
+//     forv_Vec(SymExpr, se, defs) {
+//       bool good = false;
+//       forv_Vec(SymExpr, nse, ndefs) {
+//         if (se == nse) {
+//           good = true;
+//           break;
+//         }
+//       }
+//       if (!good) {
+//         dd = true;
+//         break;
+//       }
+//     }
+//   }
+
+//   if (dd) {
+//     printf("difference detected\n");
+//     printf("old:\n");
+//     forv_Vec(SymExpr, se, defs) {
+//       printf("%s[%d]\n", se->var->name, se->var->id);
+//     }
+//     printf("new:\n");
+//     forv_Vec(SymExpr, se, ndefs) {
+//       printf("%s[%d]\n", se->var->name, se->var->id);
+//     }
+//   }
 
   Vec<Vec<bool>*> KILL;
   Vec<Vec<bool>*> GEN;
@@ -167,7 +226,6 @@ freeDefUseChains(Map<SymExpr*,Vec<SymExpr*>*>& DU,
   forv_Vec(SymExpr, key, keys) {
     delete DU.get(key);
   }
-
   keys.clear();
   UD.get_keys(keys);
   forv_Vec(SymExpr, key, keys) {

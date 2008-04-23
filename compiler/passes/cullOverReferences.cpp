@@ -6,10 +6,13 @@
 #include "symscope.h"
 
 static bool
-refNecessary(SymExpr* se) {
-  if (se->var->defs.n > 1)
+refNecessary(SymExpr* se,
+             Map<Symbol*,Vec<SymExpr*>*>& defMap,
+             Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+  Vec<SymExpr*>* defs = defMap.get(se->var);
+  if (defs && defs->n > 1)
     return true;
-  forv_Vec(SymExpr, use, se->var->uses) {
+  for_uses(use, useMap, se->var) {
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
       if (call->isResolved()) {
         ArgSymbol* formal = actual_to_formal(use);
@@ -18,13 +21,13 @@ refNecessary(SymExpr* se) {
         if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT)
           return true;
       } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
-        if (refNecessary(toSymExpr(call->get(1))))
+        if (refNecessary(toSymExpr(call->get(1)), defMap, useMap))
           return true;
       } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
         CallExpr* move = toCallExpr(call->parentExpr);
         INT_ASSERT(move);
         INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
-        if (refNecessary(toSymExpr(move->get(1))))
+        if (refNecessary(toSymExpr(move->get(1)), defMap, useMap))
           return true;
       } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
         if (!call->get(2)->typeInfo()->refType)
@@ -53,7 +56,9 @@ void cullOverReferences() {
   //
   // change call of reference function to value function
   //
-  compute_sym_uses();
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(defMap, useMap);
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (FnSymbol* fn = call->isResolved()) {
@@ -62,7 +67,7 @@ void cullOverReferences() {
             INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
             SymExpr* se = toSymExpr(move->get(1));
             INT_ASSERT(se);
-            if (!refNecessary(se)) {
+            if (!refNecessary(se, defMap, useMap)) {
               VarSymbol* tmp = new VarSymbol("_tmp", copy->retType);
               move->insertBefore(new DefExpr(tmp));
               move->insertAfter(new CallExpr(PRIMITIVE_MOVE, se->var,
@@ -79,6 +84,7 @@ void cullOverReferences() {
       }
     }
   }
+  freeDefUseMaps(defMap, useMap);
 
   //
   // remove references to array and domain wrapper records

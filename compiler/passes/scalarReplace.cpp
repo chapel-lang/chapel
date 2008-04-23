@@ -15,16 +15,19 @@
 #include "symscope.h"
 
 static bool
-unifyClassInstances(Symbol* sym) {
+unifyClassInstances(Symbol* sym,
+                    Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                    Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   bool change = false;
-  if (sym->defs.n == 1) {
-    if (CallExpr* call = toCallExpr(sym->defs.v[0]->parentExpr)) {
+  Vec<SymExpr*>* defs = defMap.get(sym);
+  if (defs && defs->n == 1) {
+    if (CallExpr* call = toCallExpr(defs->v[0]->parentExpr)) {
       if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
-          forv_Vec(SymExpr, se, sym->uses) {
+          for_uses(se, useMap, sym) {
             se->var = rhs->var;
             if (rhs->var != gNil)
-              rhs->var->uses.add(se);
+              addUse(useMap, se);
           }
           call->remove();
           sym->defPoint->remove();
@@ -37,7 +40,9 @@ unifyClassInstances(Symbol* sym) {
 }
 
 static void
-scalarReplaceClassVar(ClassType* ct, Symbol* sym) {
+scalarReplaceClassVar(ClassType* ct, Symbol* sym,
+                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   Map<Symbol*,int> field2id; // field to number map
   int nfields = 0;           // number of fields
 
@@ -65,20 +70,20 @@ scalarReplaceClassVar(ClassType* ct, Symbol* sym) {
   // expand uses of symbols of structural type with multiple symbols
   // structural field types
   //
-  forv_Vec(SymExpr, se, sym->uses) {
+  for_uses(se, useMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
         int id = field2id.get(member->var);
         SymExpr* use = new SymExpr(syms.v[id]);
         call->replace(new CallExpr(PRIMITIVE_SET_REF, use));
-        syms.v[id]->uses.add(use);
+        addUse(useMap, use);
       } else if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
         SymExpr* member = toSymExpr(call->get(2));
         int id = field2id.get(member->var);
         SymExpr* use = new SymExpr(syms.v[id]);
         call->replace(use);
-        syms.v[id]->uses.add(use);
+        addUse(useMap, use);
       } else if (call && call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
         int id = field2id.get(member->var);
@@ -87,7 +92,7 @@ scalarReplaceClassVar(ClassType* ct, Symbol* sym) {
         call->get(1)->remove();
         SymExpr* def = new SymExpr(syms.v[id]);
         call->insertAtHead(def);
-        syms.v[id]->defs.add(def);
+        addDef(defMap, def);
         if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)
           call->insertAtTail(new CallExpr(PRIMITIVE_SET_REF, call->get(2)->remove()));
       }
@@ -96,15 +101,18 @@ scalarReplaceClassVar(ClassType* ct, Symbol* sym) {
 }
 
 static bool
-scalarReplaceClassVars(ClassType* ct, Symbol* sym) {
+scalarReplaceClassVars(ClassType* ct, Symbol* sym,
+                       Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                       Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   bool change = false;
-  if (sym->defs.n == 1) {
-    if (CallExpr* call = toCallExpr(sym->defs.v[0]->parentExpr)) {
+  Vec<SymExpr*>* defs = defMap.get(sym);
+  if (defs && defs->n == 1) {
+    if (CallExpr* call = toCallExpr(defs->v[0]->parentExpr)) {
       if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
           if (rhs->isPrimitive(PRIMITIVE_CHPL_ALLOC)) {
             change = true;
-            forv_Vec(SymExpr, se, sym->uses) {
+            for_uses(se, useMap, sym) {
               if (se->parentSymbol) {
                 CallExpr* call = toCallExpr(se->parentExpr);
                 if (!call ||
@@ -117,7 +125,7 @@ scalarReplaceClassVars(ClassType* ct, Symbol* sym) {
             }
             if (change) {
               call->remove();
-              scalarReplaceClassVar(ct, sym);
+              scalarReplaceClassVar(ct, sym, defMap, useMap);
             }
           }
         }
@@ -128,7 +136,9 @@ scalarReplaceClassVars(ClassType* ct, Symbol* sym) {
 }
 
 static void
-scalarReplaceRecordVar(ClassType* ct, Symbol* sym) {
+scalarReplaceRecordVar(ClassType* ct, Symbol* sym,
+                       Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                       Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   Map<Symbol*,int> field2id; // field to number map
   int nfields = 0;           // number of fields
 
@@ -156,7 +166,7 @@ scalarReplaceRecordVar(ClassType* ct, Symbol* sym) {
   // expand uses of symbols of structural type with multiple symbols
   // structural field types
   //
-  forv_Vec(SymExpr, se, sym->defs) {
+  for_defs(se, defMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (call && call->isPrimitive(PRIMITIVE_MOVE)) {
         SymExpr* rhs = toSymExpr(call->get(2));
@@ -166,15 +176,15 @@ scalarReplaceRecordVar(ClassType* ct, Symbol* sym) {
           call->insertBefore(
             new CallExpr(PRIMITIVE_MOVE, use,
               new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, rhsCopy, field)));
-          use->var->uses.add(use);
-          rhsCopy->var->uses.add(rhsCopy);
+          addUse(useMap, use);
+          addUse(useMap, rhsCopy);
         }
         call->remove();
       }
     }
   }
 
-  forv_Vec(SymExpr, se, sym->uses) {
+  for_uses(se, useMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (call && call->isPrimitive(PRIMITIVE_MOVE)) {
         SymExpr* lhs = toSymExpr(call->get(1));
@@ -183,8 +193,8 @@ scalarReplaceRecordVar(ClassType* ct, Symbol* sym) {
           SymExpr* use = new SymExpr(syms.v[field2id.get(field)]);
           call->insertBefore(
             new CallExpr(PRIMITIVE_SET_MEMBER, lhsCopy, field, use));
-          use->var->uses.add(use);
-          lhsCopy->var->uses.add(lhsCopy);
+          addUse(useMap, use);
+          addUse(useMap, lhsCopy);
         }
         call->remove();
       } else if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
@@ -192,13 +202,13 @@ scalarReplaceRecordVar(ClassType* ct, Symbol* sym) {
         int id = field2id.get(member->var);
         SymExpr* use = new SymExpr(syms.v[id]);
         call->replace(new CallExpr(PRIMITIVE_SET_REF, use));
-        syms.v[id]->uses.add(use);
+        addUse(useMap, use);
       } else if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
         SymExpr* member = toSymExpr(call->get(2));
         int id = field2id.get(member->var);
         SymExpr* use = new SymExpr(syms.v[id]);
         call->replace(use);
-        syms.v[id]->uses.add(use);
+        addUse(useMap, use);
       } else if (call && call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
         int id = field2id.get(member->var);
@@ -207,7 +217,7 @@ scalarReplaceRecordVar(ClassType* ct, Symbol* sym) {
         call->get(1)->remove();
         SymExpr* def = new SymExpr(syms.v[id]);
         call->insertAtHead(def);
-        syms.v[id]->defs.add(def);
+        addDef(defMap, def);
         if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)
           call->insertAtTail(new CallExpr(PRIMITIVE_SET_REF, call->get(2)->remove()));
       }
@@ -216,16 +226,18 @@ scalarReplaceRecordVar(ClassType* ct, Symbol* sym) {
 }
 
 static bool
-scalarReplaceRecordVars(ClassType* ct, Symbol* sym) {
+scalarReplaceRecordVars(ClassType* ct, Symbol* sym,
+                        Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                        Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   bool change = true;
-  forv_Vec(SymExpr, se, sym->defs) {
+  for_defs(se, defMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr))
       if (call->isPrimitive(PRIMITIVE_MOVE))
         if (toSymExpr(call->get(2)))
           continue;
     change = false;
   }
-  forv_Vec(SymExpr, se, sym->uses) {
+  for_uses(se, useMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr))
       if ((call->isPrimitive(PRIMITIVE_SET_MEMBER) && call->get(1) == se) ||
           call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
@@ -235,7 +247,7 @@ scalarReplaceRecordVars(ClassType* ct, Symbol* sym) {
     change = false;
   }
   if (change) {
-    scalarReplaceRecordVar(ct, sym);
+    scalarReplaceRecordVar(ct, sym, defMap, useMap);
   }
   return change;
 }
@@ -249,14 +261,14 @@ scalarReplaceVars(FnSymbol* fn) {
     Vec<BaseAST*> asts;
     collect_asts(&asts, fn);
 
-    Vec<DefExpr*> defs;
+    Vec<DefExpr*> defVec;
     forv_Vec(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast)) {
         if (def->sym->astTag == SYMBOL_VAR &&
             toFnSymbol(def->parentSymbol)) {
           TypeSymbol* ts = def->sym->type->symbol;
           if (ts->hasPragma("iterator class") || ts->hasPragma("tuple"))
-            defs.add(def);
+            defVec.add(def);
         }
       }
       if (CallExpr* call = toCallExpr(ast)) {
@@ -271,26 +283,29 @@ scalarReplaceVars(FnSymbol* fn) {
         }
       }
     }
-    compute_sym_uses(fn);
+    Map<Symbol*,Vec<SymExpr*>*> defMap;
+    Map<Symbol*,Vec<SymExpr*>*> useMap;
+    buildDefUseMaps(fn, defMap, useMap);
     change = false;
-    forv_Vec(DefExpr, def, defs) {
+    forv_Vec(DefExpr, def, defVec) {
       ClassType* ct = toClassType(def->sym->type);
       if (ct->symbol->hasPragma("iterator class")) {
-        change |= unifyClassInstances(def->sym);
+        change |= unifyClassInstances(def->sym, defMap, useMap);
       }
     }
 
     //
     // NOTE - reenable scalar replacement
     //
-    forv_Vec(DefExpr, def, defs) {
+    forv_Vec(DefExpr, def, defVec) {
       ClassType* ct = toClassType(def->sym->type);
       if (ct->symbol->hasPragma("iterator class")) {
-        change |= scalarReplaceClassVars(ct, def->sym);
+        change |= scalarReplaceClassVars(ct, def->sym, defMap, useMap);
       } else if (ct->symbol->hasPragma("tuple")) {
-        change |= scalarReplaceRecordVars(ct, def->sym);
+        change |= scalarReplaceRecordVars(ct, def->sym, defMap, useMap);
       }
     }
+    freeDefUseMaps(defMap, useMap);
   }
 }
 

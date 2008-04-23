@@ -145,7 +145,6 @@ localCopyPropagationCore(BasicBlock* bb,
 //
 void localCopyPropagation(FnSymbol* fn) {
   buildBasicBlocks(fn);
-  compute_sym_uses(fn);
 
   //
   // locals: a vector of local variables in function fn that are
@@ -162,19 +161,12 @@ void localCopyPropagation(FnSymbol* fn) {
   }
 
   //
-  // useSet: a set of SymExprs that are uses of local variables
   // defSet: a set of SymExprs that are defs of local variables
+  // useSet: a set of SymExprs that are uses of local variables
   //
-  Vec<SymExpr*> useSet;
   Vec<SymExpr*> defSet;
-  forv_Vec(Symbol, local, locals) {
-    forv_Vec(SymExpr, se, local->defs) {
-      defSet.set_add(se);
-    } 
-    forv_Vec(SymExpr, se, local->uses) {
-      useSet.set_add(se);
-    }
-  }
+  Vec<SymExpr*> useSet;
+  buildDefUseSets(locals, fn, defSet, useSet);
 
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     AvailableMap available;
@@ -211,8 +203,6 @@ void globalCopyPropagation(FnSymbol* fn) {
   if (fn->basicBlocks->n <= 1)
     return;
 
-  compute_sym_uses(fn);
-
   //
   // locals: a vector of local variables in function fn that are
   // candidates for copy propagation
@@ -228,19 +218,12 @@ void globalCopyPropagation(FnSymbol* fn) {
   }
 
   //
-  // useSet: a set of SymExprs that are uses of local variables
   // defSet: a set of SymExprs that are defs of local variables
+  // useSet: a set of SymExprs that are uses of local variables
   //
-  Vec<SymExpr*> useSet;
   Vec<SymExpr*> defSet;
-  forv_Vec(Symbol, local, locals) {
-    forv_Vec(SymExpr, se, local->defs) {
-      defSet.set_add(se);
-    } 
-    forv_Vec(SymExpr, se, local->uses) {
-      useSet.set_add(se);
-    }
-  }
+  Vec<SymExpr*> useSet;
+  buildDefUseSets(locals, fn, defSet, useSet);
 
   //
   // _LHS: left-hand side of copy
@@ -451,9 +434,9 @@ void globalCopyPropagation(FnSymbol* fn) {
 
 
 static CallExpr*
-findRefDef(VarSymbol* var) {
+findRefDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, Symbol* var) {
   CallExpr* ret = NULL;
-  forv_Vec(SymExpr, def, var->defs) {
+  for_defs(def, defMap, var) {
     if (CallExpr* call = toCallExpr(def->parentExpr)) {
       if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (isReference(call->get(2)->typeInfo())) {
@@ -470,32 +453,42 @@ findRefDef(VarSymbol* var) {
 
 
 void singleAssignmentRefPropagation(FnSymbol* fn) {
-  compute_sym_uses(fn);
   Vec<BaseAST*> asts;
   collect_asts(&asts, fn);
 
+  Vec<Symbol*> refSet;
+  Vec<Symbol*> refVec;
   forv_Vec(BaseAST, ast, asts) {
     if (VarSymbol* var = toVarSymbol(ast)) {
       if (isReference(var->type)) {
-        if (CallExpr* move = findRefDef(var)) {
-          if (SymExpr* rhs = toSymExpr(move->get(2))) {
-            if (isReference(rhs->var->type)) {
-              forv_Vec(SymExpr, se, var->uses) {
-                if (se->parentExpr) {
-                  SymExpr* rhsCopy = rhs->copy();
-                  se->replace(rhsCopy);
-                  rhsCopy->var->uses.add(rhsCopy);
-                }
+        refVec.add(var);
+        refSet.set_add(var);
+      }
+    }
+  }
+
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(refSet, asts, defMap, useMap);
+
+  forv_Vec(Symbol, var, refVec) {
+    if (var) {
+      if (CallExpr* move = findRefDef(defMap, var)) {
+        if (SymExpr* rhs = toSymExpr(move->get(2))) {
+          if (isReference(rhs->var->type)) {
+            for_uses(se, useMap, var) {
+              if (se->parentExpr) {
+                SymExpr* rhsCopy = rhs->copy();
+                se->replace(rhsCopy);
+                addUse(useMap, rhsCopy);
               }
-              forv_Vec(SymExpr, se, var->defs) {
-                CallExpr* parent = toCallExpr(se->parentExpr);
-                if (parent == move)
-                  continue;
-                if (parent) {
-                  SymExpr* rhsCopy = rhs->copy();
-                  se->replace(rhsCopy);
-                  rhsCopy->var->defs.add(rhsCopy);
-                }
+            }
+            for_defs(se, defMap, var) {
+              CallExpr* parent = toCallExpr(se->parentExpr);
+              if (parent && parent != move) {
+                SymExpr* rhsCopy = rhs->copy();
+                se->replace(rhsCopy);
+                addDef(defMap, rhsCopy);
               }
             }
           }
@@ -504,87 +497,84 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
     }
   }
 
-  compute_sym_uses(fn);
-  asts.clear();
-  collect_asts(&asts, fn);
-  forv_Vec(BaseAST, ast, asts) {
-    if (VarSymbol* var = toVarSymbol(ast)) {
-      if (isReference(var->type)) {
-        if (CallExpr* move = findRefDef(var)) {
-          if (CallExpr* rhs = toCallExpr(move->get(2))) {
-            if (rhs->isPrimitive(PRIMITIVE_SET_REF)) {
-              bool stillAlive = false;
-              forv_Vec(SymExpr, se, var->uses) {
-                CallExpr* parent = toCallExpr(se->parentExpr);
-                if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
-                  parent->replace(rhs->get(1)->copy());
-                } else if (parent &&
-                           (parent->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
-                            parent->isPrimitive(PRIMITIVE_GET_MEMBER))) {
-                  parent->get(1)->replace(rhs->get(1)->copy());
-                } else if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
-                  parent->get(2)->replace(rhs->copy());
-                } else
-                  stillAlive = true;
-              }
-              forv_Vec(SymExpr, se, var->defs) {
-                CallExpr* parent = toCallExpr(se->parentExpr);
-                if (parent == move)
-                  continue;
-                if (parent && parent->isPrimitive(PRIMITIVE_MOVE))
-                  parent->get(1)->replace(rhs->get(1)->copy());
-                else
-                  stillAlive = true;
-              }
-              if (!stillAlive) {
-                var->defPoint->remove();
-                var->defs.v[0]->getStmtExpr()->remove();
-              }
-            } else if (rhs->isPrimitive(PRIMITIVE_GET_MEMBER)) {
-              bool stillAlive = false;
-              forv_Vec(SymExpr, se, var->uses) {
-                CallExpr* parent = toCallExpr(se->parentExpr);
-                if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
-                  parent->replace(new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
+  forv_Vec(Symbol, var, refVec) { // ack! note: order matters
+    if (var) {
+      if (CallExpr* move = findRefDef(defMap, var)) {
+        if (CallExpr* rhs = toCallExpr(move->get(2))) {
+          if (rhs->isPrimitive(PRIMITIVE_SET_REF)) {
+            bool stillAlive = false;
+            for_uses(se, useMap, var) {
+              CallExpr* parent = toCallExpr(se->parentExpr);
+              if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
+                parent->replace(rhs->get(1)->copy());
+              } else if (parent &&
+                         (parent->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
+                          parent->isPrimitive(PRIMITIVE_GET_MEMBER))) {
+                parent->get(1)->replace(rhs->get(1)->copy());
+              } else if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
+                parent->get(2)->replace(rhs->copy());
+              } else
+                stillAlive = true;
+            }
+            for_defs(se, defMap, var) {
+              CallExpr* parent = toCallExpr(se->parentExpr);
+              if (parent == move)
+                continue;
+              if (parent && parent->isPrimitive(PRIMITIVE_MOVE))
+                parent->get(1)->replace(rhs->get(1)->copy());
+              else
+                stillAlive = true;
+            }
+            if (!stillAlive) {
+              var->defPoint->remove();
+              defMap.get(var)->v[0]->getStmtExpr()->remove();
+            }
+          } else if (rhs->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+            bool stillAlive = false;
+            for_uses(se, useMap, var) {
+              CallExpr* parent = toCallExpr(se->parentExpr);
+              if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
+                parent->replace(new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
+                                             rhs->get(1)->copy(),
+                                             rhs->get(2)->copy()));
+              } else if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
+                parent->get(2)->replace(rhs->copy());
+              } else
+                stillAlive = true;
+            }
+            for_defs(se, defMap, var) {
+              CallExpr* parent = toCallExpr(se->parentExpr);
+              if (parent == move)
+                continue;
+              if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
+                if (SymExpr* se = toSymExpr(parent->get(2))) {
+                  parent->replace(new CallExpr(PRIMITIVE_SET_MEMBER,
                                                rhs->get(1)->copy(),
-                                               rhs->get(2)->copy()));
-                } else if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
-                  parent->get(2)->replace(rhs->copy());
-                } else
-                  stillAlive = true;
-              }
-              forv_Vec(SymExpr, se, var->defs) {
-                CallExpr* parent = toCallExpr(se->parentExpr);
-                if (parent == move)
-                  continue;
-                if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
-                  if (SymExpr* se = toSymExpr(parent->get(2))) {
-                    parent->replace(new CallExpr(PRIMITIVE_SET_MEMBER,
-                                                 rhs->get(1)->copy(),
-                                                 rhs->get(2)->copy(),
-                                                 se->remove()));
-                  } else {
-                    VarSymbol* tmp = new VarSymbol("_tmp", parent->get(2)->typeInfo());
-                    parent->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                    parent->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, parent->get(2)->remove()));
-                    parent->replace(new CallExpr(PRIMITIVE_SET_MEMBER,
-                                                 rhs->get(1)->copy(),
-                                                 rhs->get(2)->copy(),
-                                                 tmp));
-                  }
-                } else
-                  stillAlive = true;
-              }
-              if (!stillAlive) {
-                var->defPoint->remove();
-                var->defs.v[0]->getStmtExpr()->remove();
-              }
+                                               rhs->get(2)->copy(),
+                                               se->remove()));
+                } else {
+                  VarSymbol* tmp = new VarSymbol("_tmp", parent->get(2)->typeInfo());
+                  parent->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  parent->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, parent->get(2)->remove()));
+                  parent->replace(new CallExpr(PRIMITIVE_SET_MEMBER,
+                                               rhs->get(1)->copy(),
+                                               rhs->get(2)->copy(),
+                                               tmp));
+                }
+              } else
+                stillAlive = true;
+            }
+            if (!stillAlive) {
+              var->defPoint->remove();
+              defMap.get(var)->v[0]->getStmtExpr()->remove();
             }
           }
         }
       }
     }
   }
+
+  freeDefUseMaps(defMap, useMap);
 }
 
 

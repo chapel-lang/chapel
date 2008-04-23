@@ -25,15 +25,6 @@ void buildLocalsVectorMap(FnSymbol* fn,
                           Vec<Symbol*>& locals,
                           Map<Symbol*,int>& localMap);
 
-void buildDefsVectorMap(Vec<Symbol*>& locals,
-                        Vec<SymExpr*>& defs,
-                        Map<SymExpr*,int>& defMap);
-
-void buildDefUseSets(FnSymbol* fn,
-                     Vec<Symbol*>& locals,
-                     Vec<SymExpr*>& useSet,
-                     Vec<SymExpr*>& defSet);
-
 void backwardFlowAnalysis(FnSymbol* fn,
                           Vec<Vec<bool>*>& GEN,
                           Vec<Vec<bool>*>& KILL,

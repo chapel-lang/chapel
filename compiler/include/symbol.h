@@ -60,8 +60,6 @@ class Symbol : public BaseAST {
   bool canType;        // can be a type (determined during resolution)
   bool isConcurrent;   // can be accessed concurrently
   bool isExtern;       // external to Chapel, implemented in C
-  Vec<SymExpr*> defs;
-  Vec<SymExpr*> uses;
   Vec<const char*> pragmas;
 
   Symbol(AstTag astTag, const char* init_name, Type* init_type = dtUnknown);

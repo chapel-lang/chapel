@@ -141,35 +141,8 @@ void buildLocalsVectorMap(FnSymbol* fn,
   }
 }
 
-void buildDefsVectorMap(Vec<Symbol*>& locals,
-                        Vec<SymExpr*>& defs,
-                        Map<SymExpr*,int>& defMap) {
-  int i = 0;
-  forv_Vec(Symbol, local, locals) {
-    forv_Vec(SymExpr, se, local->defs) {
-      defs.add(se);
-      defMap.put(se, i++);
-    }
-  }
-}
-
-void buildDefUseSets(FnSymbol* fn,
-                     Vec<Symbol*>& locals,
-                     Vec<SymExpr*>& useSet,
-                     Vec<SymExpr*>& defSet) {
-  compute_sym_uses(fn);
-  forv_Vec(Symbol, local, locals) {
-    forv_Vec(SymExpr, se, local->defs) {
-      defSet.set_add(se);
-    } 
-    forv_Vec(SymExpr, se, local->uses) {
-      useSet.set_add(se);
-    }
-  }
-}
 
 //#define DEBUG_FLOW
-
 void backwardFlowAnalysis(FnSymbol* fn,
                           Vec<Vec<bool>*>& GEN,
                           Vec<Vec<bool>*>& KILL,
