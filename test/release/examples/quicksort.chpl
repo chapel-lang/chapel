@@ -8,7 +8,7 @@ use Random, Time; // for random number generation and the Timer class
 
 var timer: Timer; // to time the sort
 
-config var n: int = 2**20;      // the size of the array to be sorted
+config var n: int = 2**15;      // the size of the array to be sorted
 config var pdepth: int = 1;     // the recursive depth to serialize
                                 //  use --pdepth=-1 for unlimited threads
 config var verbose: int = 0;    // print out this many elements in array
