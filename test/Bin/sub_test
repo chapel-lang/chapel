@@ -250,15 +250,7 @@ foreach chplsrc ($testsrc)
         set numlocales = "$globalNumlocales"
     endif
 
-    if ($numlocales != "0" && $numlocales != "1") then
-        if ($CHPL_COMM == "none") then
-            echo "numlocales = $numlocales"
-            echo \[Skipping numlocales test: $localdir/$execfile\]
-            continue
-        endif
-    endif
-
-    if ($numlocales == "0") then
+    if ($numlocales == "0" || $CHPL_COMM == "none") then
         set numlocexecopts = ""
     else
         set numlocexecopts = "-nl $numlocales"

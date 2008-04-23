@@ -845,12 +845,6 @@ foreach absdir ($absdirs)
 
 	set numtests = `(ls *.{chpl,v} |& grep -v "No match" | wc -l)`
 
-
-        if (-e ./NUMLOCALES && $CHPL_COMM == "none") then
-            echo \[Skipping NUMLOCALES directory: $dir \] |& $tee -a $logfile
-            continue
-        endif
-
         if (-e ./SKIPIF) then
             set skiptest = `$testdir/Bin/testEnv.pl ./SKIPIF`
             if ($skiptest == 1) then
