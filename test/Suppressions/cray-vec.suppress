@@ -1,4 +1,3 @@
 # Because pthreads aren't implemented in the simulator
 release/examples/prodCons
-release/examples/quicksort
 release/examples/taskParallel
