@@ -79,8 +79,10 @@ class Function {
         // initial refinement of analytic function f(x)
         if f != nil {
             if debug then writeln("  performing initial refinement of f(x)");
-            for l in 0..2**initial_level-1 do
-                refine(new Node(initial_level, l));
+            for l in 0..2**initial_level-1 {
+                const node = new Node(initial_level, l);
+                on Locales(node.loc) do refine(node);
+            }
         }
 
         if debug then writeln("done.");
@@ -552,7 +554,7 @@ class Function {
         writeln("sum coefficients:");
         for n in 0..max_level {
             var sum = 0.0, ncoeffs = 0;
-            for box in sumC.coeff_iter(n) {
+            for box in sumC.coeffs_iter(n) {
                 sum     += normf(box)**2;
                 ncoeffs += 1;
             }
@@ -564,7 +566,7 @@ class Function {
         writeln("difference coefficients:");
         for n in 0..max_level {
             var sum = 0.0, ncoeffs = 0;
-            for box in diffC.coeff_iter(n) {
+            for box in diffC.coeffs_iter(n) {
                 sum     += normf(box)**2;
                 ncoeffs += 1;
             }

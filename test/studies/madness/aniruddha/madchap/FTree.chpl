@@ -53,13 +53,6 @@ record Node {
 const rootNode = new Node(0, 0);
 const emptyNode = new Node(-1, -1);
 
-// FIXME: The Coeff record works around arrays of arrays.  Ideally, nodes
-//        should be a mapping from indices onto :[coeffDom] real.
-record Coeff {
-    var dom  : domain(1);
-    var data : [dom] real;
-}
-
 // The empty vector, returned when there are no Coeffs.
 var None: [0..-1] real;
 
@@ -68,11 +61,10 @@ def isNone(x) {
     return x.numElements == 0;
 }
 
-record LocTree {
+class LocTree {
     const coeffDom : domain(1);
-    var nodes      : domain(Node);       // Indexed by 2-tuples of integers
-    var coeffs     : [nodes] Coeff;      // Associative Mapping: (:int, :int)
-                                         // => Coeff
+    var nodes      : domain(Node);
+    var coeffs     : [nodes] [coeffDom] real;
 
     var zeroes     : [coeffDom] real;    // Return zeroes from this() when
                                          // reading something that has not yet
@@ -92,23 +84,22 @@ record LocTree {
         if !nodes.member(node) {
             if setter {
               nodes += node;
-              coeffs[node] = new Coeff(coeffDom);
             } else {
               // This is a getter so it shouldn't be modifying what
               // we return, should be safe to return the zero vector.
-              // FIXME: Zeroes should really be a const, but can'ti
+              // FIXME: Zeroes should really be a const, but can't
               //        return const from a var fcn.
               return zeroes;
             }
         }
 
-        return coeffs[node].data;
+        return coeffs[node];
     }
   
     /** Access an element in the associative domain.  If it doesn't exist,
         return None.
      */
-    def peek(node) var {
+    def peek(node: Node) var {
         if has_coeffs(node) then
             return this(node);
         else
@@ -119,7 +110,7 @@ record LocTree {
      */
     def these() {
         for c in coeffs do 
-            yield c.data;
+            yield c;
     }
     
     /** Unordered iterator over all boxes in a particular level.
@@ -129,21 +120,21 @@ record LocTree {
         A sparse array or an array of associative arrays may be more conducive
         to this type of iteration vs. the associative domain used here.
      */
-    def coeff_iter(lvl: int) {
+    def coeffs_iter(lvl: int) {
         for i in nodes do
-            if i.lvl == lvl then yield coeffs[i].data;
+            if i.lvl == lvl then yield coeffs[i];
     }
 
     /** Check if there are coefficients in box (lvl, idx)
      */
-    def has_coeffs(node) {
+    def has_coeffs(node: Node) {
         return nodes.member(node);
     }
 
     /** Remove an element from the associative domain.  If the element
         does not exist, it is ignored.
      */
-    def remove(node) {
+    def remove(node: Node) {
         if nodes.member(node) then nodes.remove(node);
     }
 
@@ -156,57 +147,61 @@ record LocTree {
         for i in nodes do
             yield i;
     }
+
+    def copy(t: LocTree) {
+        t.nodes = nodes;
+        t.coeffs = coeffs; 
+    }
 }
 
 class FTree {
     const order    : int;
     const coeffDom = [0..order-1];
     
-    var tree    : [Locales.domain] LocTree;
-    //const tree    : [loc in Locales.domain] LocTree = new LocTree(coeffDom);
+    var tree       : [LocaleSpace] LocTree;
 
     def initialize() {
         if order == 0 then
             halt("FTree must be initialized with an order > 0");
 
-        coforall loc in Locales.domain do
+        coforall loc in LocaleSpace do
             on Locales(loc) do tree[loc] = new LocTree(coeffDom);
     }
 
     def this(node: Node) var {
-        const t => tree[node.loc];
+        const t = tree[node.loc];
         return t[node];
     }
 
     def this(loc: int) {
-        for data in tree[loc] do
-            yield data;
+        for coeffs in tree[loc] do
+            yield coeffs;
     }
 
     def these() {
         for t in tree do
-            for data in t do
-                yield data;
+            for coeffs in t do
+                yield coeffs;
     }
 
-    def coeff_iter(lvl) {
+    def coeffs_iter(lvl: int) {
         for t in tree do
-            for data in t.coeff_iter(lvl) do
-                yield data;
+            for coeffs in t.coeffs_iter(lvl) do
+                yield coeffs;
     }
     
     def peek(node: Node) var {
-        const t => tree[node.loc];
+        const t = tree[node.loc];
         return t.peek(node);
     }
 
     def has_coeffs(node: Node) {
-        const t => tree[node.loc];
+        const t = tree[node.loc];
         return t.has_coeffs(node);
     }
 
     def remove(node: Node) {
-        const t => tree[node.loc];
+        const t = tree[node.loc];
         t.remove(node);
     }
     
@@ -214,11 +209,12 @@ class FTree {
      */
     def copy() {
         const f = new FTree(order);
-        f.tree = tree;
+        for loc in LocaleSpace do
+            tree[loc].copy(f.tree[loc]);
         return f;
     }
 
-    def node_iter(lvl) {
+    def node_iter(lvl: int) {
         for t in tree do
             for i in t.node_iter(lvl) do
                 yield i;
@@ -239,10 +235,10 @@ def main() {
         f[node] = (i, j);
     }
 
-    for loc in Locales.domain {
+    for loc in LocaleSpace {
         writeln("\n\ntree on loc ", loc, " = ");
-        for data in f[loc] do
-            writeln(data);
+        for coeffs in f[loc] do
+            writeln(coeffs);
     }
 
     var node = new Node(4, 5);
@@ -263,15 +259,15 @@ def main() {
     writeln("\n\nf.remove((3, 4))");
     f.remove(node);
 
-    for loc in Locales.domain {
+    for loc in LocaleSpace {
         writeln("\n\ntree on loc ", loc, " = ");
-        for data in f[loc] do
-            writeln(data);
+        for coeffs in f[loc] do
+            writeln(coeffs);
     }
 
     writeln("\n\nentire tree = ");
-    for data in f do
-        writeln(data);
+    for coeffs in f do
+        writeln(coeffs);
 
     writeln("\n\nentire tree = ");
     writeln(f);
@@ -289,9 +285,9 @@ def main() {
     writeln(f1);
 
     for lvl in 1..3 {
-        writeln("\n\ndata on lvl ", lvl, " = ");
-        for data in f.coeff_iter(lvl) do
-            writeln(data);
+        writeln("\n\ncoeffs on lvl ", lvl, " = ");
+        for coeffs in f.coeffs_iter(lvl) do
+            writeln(coeffs);
     }
 
     for lvl in 1..3 {
