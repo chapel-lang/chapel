@@ -23,10 +23,6 @@ potentially nondeterministic maxThreads warning issues?
 [Error matching program output for users/shetag/fock/fock-1-latest]
 [Error matching program output for users/shetag/fock/fock-3]
 
-nondeterministic test (should now be fixed)
--------------------------------------------
-[Error matching program output for arrays/deitz/opaque/test_opaque_remove]
-
 extremely rare race condition in module initialization
 ------------------------------------------------------
 [Error matching program output for modules/diten/useInBegin]
@@ -205,10 +201,9 @@ lg2/exp2
 x1-specific failures
 ====================
 
-deadlock?
----------
-[Error: Timed out executing program release/examples/multilocale]
-
+quicksort suppressed but shouldn't be
+-------------------------------------
+[Error: didn't find expected suppression release/examples/quicksort]
 
 compilation timing out (started 4/19/08)
 ----------------------------------------
@@ -218,11 +213,6 @@ compilation timing out (started 4/19/08)
 ========================
 cygwin-specific failures
 ========================
-
-pthread issues (started on 4/11/2008)
--------------------------------------
-[release/examples/quicksort]
-
 
 print occurs in 0 seconds!?  Timers not working?
 ------------------------------------------------
@@ -270,10 +260,6 @@ small full/empty sizes
 sparse code not running correctly
 ---------------------------------
 [Error matching program output for release/examples/sparse]
-
-timeout
--------
-[Error: Timed out executing program release/examples/quicksort]
 
 
 ===============================
