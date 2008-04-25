@@ -201,10 +201,6 @@ lg2/exp2
 x1-specific failures
 ====================
 
-quicksort suppressed but shouldn't be
--------------------------------------
-[Error: didn't find expected suppression release/examples/quicksort]
-
 compilation timing out (started 4/19/08)
 ----------------------------------------
 [Error: Timed out compilation for release/examples/hpcc/fft]
