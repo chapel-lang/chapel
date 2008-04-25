@@ -25,4 +25,5 @@ def main() {
         for (n, l) in arrNodeCoord do
             write(" [",n,", ",l,"]");
     }
+    writeln();
 }
