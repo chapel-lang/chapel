@@ -3516,15 +3516,20 @@ pruneResolvedTree() {
           }
   }
   forv_Vec(TypeSymbol, type, gTypes) {
-    if (type->defPoint && type->defPoint->parentSymbol)
-      if (type->hasPragma("ref"))
-        if (ClassType* ct = toClassType(getValueType(type->type)))
+    if (type->defPoint && type->defPoint->parentSymbol) {
+      if (type->hasPragma("ref")) {
+        if (ClassType* ct = toClassType(getValueType(type->type))) {
           if (!resolvedFns.set_in(ct->defaultConstructor) &&
               !resolvedFns.set_in(ct->defaultTypeConstructor)) {
             if (ct->symbol->hasPragma("object class"))
               dtObject = NULL;
             type->defPoint->remove();
           }
+        }
+        if (type->type->defaultTypeConstructor->defPoint->parentSymbol)
+          type->type->defaultTypeConstructor->defPoint->remove();
+      }
+    }
   }
 
   Vec<BaseAST*> asts;

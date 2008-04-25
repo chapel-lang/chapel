@@ -7,6 +7,9 @@ void removeUnusedLabels(FnSymbol* fn);
 void localCopyPropagation(FnSymbol* fn);
 void localReferencePropagation(FnSymbol* fn);
 void globalCopyPropagation(FnSymbol* fn);
+void eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                                        Map<Symbol*,Vec<SymExpr*>*>& useMap,
+                                        Symbol* var);
 void singleAssignmentRefPropagation(FnSymbol* fn);
 void deadVariableElimination(FnSymbol* fn);
 void deadExpressionElimination(FnSymbol* fn);
