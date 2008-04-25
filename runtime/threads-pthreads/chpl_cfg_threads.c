@@ -539,17 +539,20 @@ void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg, chpl_task
 void chpl_process_task_list (chpl_task_list_p task_list) {
   // task_list points to the last entry on the list; task_list->next is actually
   // the first element on the list.
-  chpl_task_list_p task = task_list, next_task;
+  chpl_task_list_p task = task_list, first_task = NULL, next_task;
   int task_cnt = 0;
   _Bool serial = chpl_get_serial();
   // This function is not expected to be called if a cobegin contains fewer
   // than two statements.
-  assert (task);
+  assert (task && task->next != task);
   next_task = task->next;  // next_task now points to the head of the list
 
   // begin critical section
-  if (!serial)
+  if (!serial) {
+    first_task = next_task;
+    next_task = next_task->next;
     chpl_mutex_lock(&threading_lock);
+  }
 
   do {
     task = next_task;
@@ -568,6 +571,11 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
   if (!serial) {
     schedule_next_task(task_cnt);
     chpl_mutex_unlock(&threading_lock);
+
+    // Execute the first task on the list, since it has to run to completion
+    // before continuing beyond the cobegin it's in.
+    (*first_task->fun)(first_task->arg);
+    chpl_free (first_task, 0, 0);
   }
 
 }
