@@ -25,4 +25,5 @@ def main() {
         for (n, l) in F.sumC.indices.sorted() do
             if n == lvl then write(" [",n,", ",l,"]");
     }
+    writeln();
 }
