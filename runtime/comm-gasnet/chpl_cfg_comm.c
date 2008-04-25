@@ -211,6 +211,11 @@ static int gasnet_init_called = 0;
 static pthread_t polling_thread;
 
 void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
+  int needPollingThread = 1;
+#if defined(GASNET_CONDUIT_PORTALS)
+  needPollingThread = 0;
+#endif
+
   if (runInGDB) {
     setenv("CHPL_COMM_USE_GDB", "true", 1);
   }
@@ -235,7 +240,7 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
   // this should call a special function in the threading interface
   // but remember that we have not yet initialized chapel threads!
   //
-  if (1) {
+  if (needPollingThread) {
     int status;
 
     status = pthread_create(&polling_thread, NULL, (chpl_threadfp_t)polling, 0);
