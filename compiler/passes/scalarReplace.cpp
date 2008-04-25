@@ -33,6 +33,9 @@ static Map<ClassType*,Vec<Symbol*>*> typeVarMap;
 static Map<Symbol*,Vec<SymExpr*>*> defMap;
 static Map<Symbol*,Vec<SymExpr*>*> useMap;
 
+typedef Map<ClassType*,Vec<Symbol*>*> ClassTypeToVecSymbolMap;
+typedef MapElem<ClassType*,Vec<Symbol*>*> ClassTypeToVecSymbolMapElem;
+
 //
 // compute topological order for types; this functions assumes that
 // there are no cycles and that the typeOrder map is initialized to -1
@@ -454,7 +457,10 @@ scalarReplace() {
     typeVec.clear();
     varSet.clear();
     typeOrder.clear();
-    typeVarMap.clear();  /// TODO: plug memory leak
+    form_Map(ClassTypeToVecSymbolMapElem, e, typeVarMap) {
+      delete e->value;
+    }
+    typeVarMap.clear();
     freeDefUseMaps(defMap, useMap);
   }
 }
