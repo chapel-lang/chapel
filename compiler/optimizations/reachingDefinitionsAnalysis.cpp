@@ -18,66 +18,32 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
   buildLocalsVectorMap(fn, locals, localMap);
   buildDefUseSets(locals, fn, defSet, useSet);
 
-//   Vec<SymExpr*> ndefs;
-//   Map<SymExpr*,int> ndefMap;
-
-//   buildDefsVectorMap(locals, ndefs, ndefMap);
-
+  //
+  // compute defs and defMap in an order such that defs of the same
+  // variable are adjacent (this is important!); use localDefsMap to
+  // make this linear; localDefsMap is like the defMap computed by
+  // buildDefUseMaps, but is computed from the defSet in this more
+  // efficient manner
+  //
+  Map<Symbol*,Vec<SymExpr*>*> localDefsMap;
+  forv_Vec(Symbol, sym, locals) {
+    localDefsMap.put(sym, new Vec<SymExpr*>());
+  }
+  forv_Vec(SymExpr, se, defSet) {
+    if (se)
+      localDefsMap.get(se->var)->add(se);
+  }
   int i = 0;
   forv_Vec(Symbol, sym, locals) {
-    forv_Vec(SymExpr, se, defSet) {
-      if (se && se->var == sym) {
-        defs.add(se);
-        defMap.put(se, i++);
-      }
+    Vec<SymExpr*>* symDefs = localDefsMap.get(sym);
+    forv_Vec(SymExpr, se, *symDefs) {
+      defs.add(se);
+      defMap.put(se, i++);
     }
   }
-
-//   bool dd = false;
-
-//   if (ndefs.n != defs.n) {
-//     dd = true;
-//   } else {
-//     forv_Vec(SymExpr, nse, ndefs) {
-//       bool good = false;
-//       forv_Vec(SymExpr, se, defs) {
-//         if (se == nse) {
-//           good = true;
-//           break;
-//         }
-//       }
-//       if (!good) {
-//         dd = true;
-//         break;
-//       }
-//     }
-
-//     forv_Vec(SymExpr, se, defs) {
-//       bool good = false;
-//       forv_Vec(SymExpr, nse, ndefs) {
-//         if (se == nse) {
-//           good = true;
-//           break;
-//         }
-//       }
-//       if (!good) {
-//         dd = true;
-//         break;
-//       }
-//     }
-//   }
-
-//   if (dd) {
-//     printf("difference detected\n");
-//     printf("old:\n");
-//     forv_Vec(SymExpr, se, defs) {
-//       printf("%s[%d]\n", se->var->name, se->var->id);
-//     }
-//     printf("new:\n");
-//     forv_Vec(SymExpr, se, ndefs) {
-//       printf("%s[%d]\n", se->var->name, se->var->id);
-//     }
-//   }
+  forv_Vec(Symbol, sym, locals) {
+    delete localDefsMap.get(sym);
+  }
 
   Vec<Vec<bool>*> KILL;
   Vec<Vec<bool>*> GEN;
