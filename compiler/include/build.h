@@ -18,7 +18,7 @@ BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
 ModuleSymbol* buildModule(const char* name, ModTag type, BlockStmt* block);
-CallExpr* buildPrimitiveExpr(AList* exprs);
+CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
@@ -41,7 +41,7 @@ BlockStmt* buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalAndExprAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalOrExprAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildSelectStmt(Expr* s, BlockStmt* whenstmts);
-BlockStmt* buildTypeSelectStmt(AList* s, BlockStmt* whenstmts);
+BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 
 CallExpr* buildReduceScanExpr(Expr* op, Expr* data, bool isScan=false);
 

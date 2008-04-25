@@ -53,6 +53,7 @@ NOTES
 
   Expr* pexpr;
   DefExpr* pdefexpr;
+  CallExpr* pcallexpr;
   BlockStmt* pblockstmt;
 
 
@@ -63,8 +64,6 @@ NOTES
   FnSymbol* pfnsym;
   ModuleSymbol* pmodsym;
   EnumSymbol* penumsym;
-
-  AList* palist;
 }
 
 %token TATOMIC
@@ -198,12 +197,13 @@ NOTES
 %type <pexpr> literal opt_where_part distributed_expr
 %type <pexpr> variable_expr stmt_level_expr alias_expr formal_level_type
 %type <pexpr> reduction opt_init_expr opt_init_type var_arg_expr
-%type <palist> expr_ls nonempty_expr_ls opt_inherit_expr_ls
 %type <pdefexpr> formal enum_item
 
 %type <pexpr> formal_type_expr formal_tuple_paren_expr formal_parenop_expr
 %type <pexpr> formal_memberaccess_expr formal_expr_list_item
-%type <palist> formal_expr_ls nonempty_formal_expr_ls
+
+%type <pcallexpr> opt_inherit_expr_ls expr_ls nonempty_expr_ls
+%type <pcallexpr> formal_expr_ls nonempty_formal_expr_ls
 
 %type <pfnsym> fn_decl_stmt_inner formal_ls opt_formal_ls
 
@@ -427,15 +427,15 @@ for_stmt:
 expr_for_stmt:
   TLSBR nonempty_expr_ls TIN expr TRSBR stmt
     {
-      if ($2->length() != 1)
+      if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForLoopStmt(BLOCK_FORALL, $2->only()->remove(), $4, new BlockStmt($6));
+      $$ = buildForLoopStmt(BLOCK_FORALL, $2->get(1)->remove(), $4, new BlockStmt($6));
     }
 | TLSBR nonempty_expr_ls TRSBR non_empty_stmt
     {
-      if ($2->length() != 1)
+      if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid loop expression");
-      $$ = buildForLoopStmt(BLOCK_FORALL, NULL, $2->only()->remove(), new BlockStmt($4));
+      $$ = buildForLoopStmt(BLOCK_FORALL, NULL, $2->get(1)->remove(), new BlockStmt($4));
     }
 ;
 
@@ -817,7 +817,8 @@ class_decl_stmt:
   class_tag identifier opt_inherit_expr_ls TLCBR class_body_stmt_ls TRCBR
     {
       DefExpr* def = buildClassDefExpr($2, $1, $5);
-      toClassType(toTypeSymbol(def->sym)->type)->inherits.insertAtTail($3);
+      ClassType* ct = toClassType(toTypeSymbol(def->sym)->type);
+      ct->inherits.insertAtTail($3);
       $$ = buildChapelStmt(def);
     }
 ;
@@ -835,7 +836,7 @@ class_tag:
 
 opt_inherit_expr_ls:
   /* nothing */
-    { $$ = new AList(); }
+    { $$ = new CallExpr(PRIMITIVE_ACTUALS_LIST); }
 | TCOLON nonempty_expr_ls
     { $$ = $2; }
 ;
@@ -1019,10 +1020,10 @@ distributed_expr: /* not supported in one-locale implementation */
 array_type:
   TLSBR nonempty_expr_ls TIN expr TRSBR type
     { 
-      if ($2->length() != 1)
+      if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid index expression");
       $$ = new CallExpr("_build_array_type",
-                        new CallExpr("_build_domain", $4), $6, $2->only()->remove(),
+                        new CallExpr("_build_domain", $4), $6, $2->get(1)->remove(),
                         new CallExpr("_build_domain", $4->copy()));
     }
 | TLSBR nonempty_expr_ls TRSBR type
@@ -1138,14 +1139,14 @@ formal_type_expr:
 
 formal_expr_ls:
   /* nothing */
-    { $$ = new AList(); }
+    { $$ = new CallExpr(PRIMITIVE_ACTUALS_LIST); }
 | nonempty_formal_expr_ls
 ;
 
 
 nonempty_formal_expr_ls:
   formal_expr_list_item
-    { $$ = new AList($1); }
+    { $$ = new CallExpr(PRIMITIVE_ACTUALS_LIST, $1); }
 | nonempty_formal_expr_ls TCOMMA formal_expr_list_item
     { $1->insertAtTail($3); }
 ;
@@ -1163,7 +1164,7 @@ formal_expr_list_item:
 formal_tuple_paren_expr:
   TLP nonempty_formal_expr_ls TRP 
     { 
-      if ($2->length() == 1) {
+      if ($2->argList.length() == 1) {
         $$ = $2->get(1);
         $$->remove();
       } else {
@@ -1203,14 +1204,14 @@ formal_memberaccess_expr:
 
 expr_ls:
   /* nothing */
-    { $$ = new AList(); }
+    { $$ = new CallExpr(PRIMITIVE_ACTUALS_LIST); }
 | nonempty_expr_ls
 ;
 
 
 nonempty_expr_ls:
   expr_list_item
-    { $$ = new AList($1); }
+    { $$ = new CallExpr(PRIMITIVE_ACTUALS_LIST, $1); }
 | nonempty_expr_ls TCOMMA expr_list_item
     { $1->insertAtTail($3); }
 ;
@@ -1268,7 +1269,7 @@ opt_identifier:
 tuple_paren_expr:
   TLP nonempty_expr_ls TRP 
     { 
-      if ($2->length() == 1) {
+      if ($2->argList.length() == 1) {
         $$ = $2->get(1);
         $$->remove();
       } else {
@@ -1325,7 +1326,7 @@ non_tuple_lvalue:
     { $$ = new CallExpr("_build_domain", $2); }
 | TLSBR nonempty_expr_ls TRP
     {
-      if ($2->length() == 1) {
+      if ($2->argList.length() == 1) {
         $$ = new CallExpr("_build_open_interval_upper", $2);
       } else {
         $$ = new CallExpr("_build_open_interval_upper",
@@ -1345,37 +1346,37 @@ expr:
   stmt_level_expr
 | TLSBR nonempty_expr_ls TIN expr TRSBR expr %prec TRSBR
     {
-      if ($2->length() != 1)
+      if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid index expression");
       FnSymbol* forall_iterator =
         new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
       forall_iterator->fnTag = FN_ITERATOR;
-      forall_iterator->insertAtTail(buildForLoopExpr($2->only()->remove(), $4, $6));
+      forall_iterator->insertAtTail(buildForLoopExpr($2->get(1)->remove(), $4, $6));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
 | TLSBR nonempty_expr_ls TRSBR expr %prec TRSBR
     {
-      if ($2->length() != 1)
+      if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid loop expression");
       FnSymbol* forall_iterator =
         new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
-      forall_iterator->insertAtTail(buildForLoopExpr(NULL, $2->only()->remove(), $4));
+      forall_iterator->insertAtTail(buildForLoopExpr(NULL, $2->get(1)->remove(), $4));
       $$ = new CallExpr(new DefExpr(forall_iterator));
     }
 | TLSBR nonempty_expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
-      if ($2->length() != 1)
+      if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid index expression");
       FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
-      forif_fn->insertAtTail(buildForLoopExpr($2->only()->remove(), $4, $9, $7));
+      forif_fn->insertAtTail(buildForLoopExpr($2->get(1)->remove(), $4, $9, $7));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
 | TLSBR nonempty_expr_ls TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
-      if ($2->length() != 1)
+      if ($2->argList.length() != 1)
         USR_FATAL($5, "invalid loop expression");
       FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
-      forif_fn->insertAtTail(buildForLoopExpr(NULL, $2->only()->remove(), $7, $5));
+      forif_fn->insertAtTail(buildForLoopExpr(NULL, $2->get(1)->remove(), $7, $5));
       $$ = new CallExpr(new DefExpr(forif_fn));
     }
 | TFOR expr TIN expr TDO expr %prec TRSBR

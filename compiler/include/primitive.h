@@ -5,6 +5,7 @@
 
 enum PrimitiveTag {
   PRIMITIVE_UNKNOWN = 0,    // use for any primitives not in this list
+  PRIMITIVE_ACTUALS_LIST,
   PRIMITIVE_NOOP,
   PRIMITIVE_MOVE,
   PRIMITIVE_INIT,

@@ -1839,6 +1839,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen(outfile);
       fprintf(outfile, ")) : NULL)");
       break;
+    case PRIMITIVE_ACTUALS_LIST:
     case PRIMITIVE_NEW:
     case PRIMITIVE_INIT:
     case PRIMITIVE_ISSUBTYPE:

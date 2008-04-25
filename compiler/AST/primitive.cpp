@@ -276,6 +276,7 @@ void
 initPrimitive() {
   primitives[PRIMITIVE_UNKNOWN] = NULL;
 
+  prim_def(PRIMITIVE_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIMITIVE_NOOP, "noop", returnInfoVoid);
   prim_def(PRIMITIVE_MOVE, "move", returnInfoMove);
   prim_def(PRIMITIVE_INIT, "init", returnInfoFirstDeref);

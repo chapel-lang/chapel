@@ -264,8 +264,9 @@ ModuleSymbol* buildModule(const char* name, ModTag type, BlockStmt* block) {
 }
 
 
-CallExpr* buildPrimitiveExpr(AList* exprs) {
-  if (exprs->length() == 0)
+CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
+  INT_ASSERT(exprs->isPrimitive(PRIMITIVE_ACTUALS_LIST));
+  if (exprs->argList.length() == 0)
     INT_FATAL("primitive has no name");
   Expr* expr = exprs->get(1);
   expr->remove();
@@ -733,13 +734,15 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
 }
 
 
-BlockStmt* buildTypeSelectStmt(AList* exprs, BlockStmt* whenstmts) {
+BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
   static int uid = 1;
   int caseId = 1;
   FnSymbol* fn = NULL;
   BlockStmt* stmts = buildChapelStmt();
   BlockStmt* newWhenStmts = buildChapelStmt();
   bool has_otherwise = false;
+
+  INT_ASSERT(exprs->isPrimitive(PRIMITIVE_ACTUALS_LIST));
 
   for_alist(stmt, whenstmts->body) {
     CondStmt* when = toCondStmt(stmt);
@@ -754,7 +757,7 @@ BlockStmt* buildTypeSelectStmt(AList* exprs, BlockStmt* whenstmts) {
       has_otherwise = true;
       fn = new FnSymbol(astr("_typeselect", istr(uid)));
       int lid = 1;
-      for_alist(expr, *exprs) {
+      for_actuals(expr, exprs) {
         fn->insertFormalAtTail(
           new DefExpr(
             new ArgSymbol(INTENT_BLANK,
@@ -768,7 +771,7 @@ BlockStmt* buildTypeSelectStmt(AList* exprs, BlockStmt* whenstmts) {
         when->thenStmt->copy()));
       stmts->insertAtTail(new DefExpr(fn));
     } else {
-      if (conds->numActuals() != exprs->length())
+      if (conds->numActuals() != exprs->argList.length())
         USR_FATAL(when, "Type select statement requires number of selectors to be equal to number of when conditions");
       fn = new FnSymbol(astr("_typeselect", istr(uid)));
       int lid = 1;
