@@ -7,22 +7,22 @@
 //
 // task pool: linked list of tasks
 //
-typedef struct _chpl_pool_struct* task_pool_p;
-typedef struct _chpl_pool_struct {
+typedef struct chpl_pool_struct* chpl_task_pool_p;
+typedef struct chpl_pool_struct {
   chpl_threadfp_t  fun;          // function to call for task
   chpl_threadarg_t arg;          // argument to the function
   _Bool            serial_state; // whether new threads can be created while executing fun
-  task_pool_p next;
+  chpl_task_pool_p next;
 } task_pool_t;
 
-static task_pool_p     task_pool_head; // head of task pool
-static task_pool_p     task_pool_tail; // tail of task pool
+static chpl_task_pool_p     task_pool_head; // head of task pool
+static chpl_task_pool_p     task_pool_tail; // tail of task pool
 
 static _Bool
 launch_next_task(void) {
   if (task_pool_head) {
     // retrieve the first task from the task pool
-    task_pool_p task = task_pool_head;
+    chpl_task_pool_p task = task_pool_head;
     task_pool_head = task_pool_head->next;
     if (task_pool_head == NULL)  // task pool is now empty
       task_pool_tail = NULL;
@@ -153,7 +153,7 @@ chpl_begin(chpl_threadfp_t fp, chpl_threadarg_t a, chpl_bool ignore_serial, chpl
   } else {
     // create a task from the given function pointer and arguments
     // and append it to the end of the task pool for later execution
-    task_pool_p task = (task_pool_p)chpl_malloc(1, sizeof(task_pool_t), "task pool entry", 0, 0);
+    chpl_task_pool_p task = (chpl_task_pool_p)chpl_alloc(sizeof(task_pool_t), "task pool entry", 0, 0);
     task->fun = fp;
     task->arg = a;
     task->serial_state = serial_state;
