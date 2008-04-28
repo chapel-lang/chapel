@@ -105,7 +105,6 @@ class BaseAST {
   virtual Type* typeInfo(void);
 
   const char* stringLoc(void);
-  void printLoc(FILE* outfile);
 
   void addPragma(const char* str);
   void addPragmas(Vec<const char*>* srcPragmas);
@@ -117,15 +116,10 @@ class BaseAST {
   Symbol* lookup(const char*);
   Symbol* lookup(BaseAST*);
   TypeSymbol* lookupType(const char*);
-  TypeSymbol* lookupType(BaseAST*);
   VarSymbol* lookupVar(const char*);
-  VarSymbol* lookupVar(BaseAST*);
 };
 
 #define forv_BaseAST(_p, _v) forv_Vec(BaseAST, _p, _v)
-
-int compar_baseast(const void *ai, const void *aj);
-// for use with qsort
 
 void get_ast_children(BaseAST *a, Vec<BaseAST *> &asts);
 

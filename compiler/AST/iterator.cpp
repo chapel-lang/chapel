@@ -82,7 +82,7 @@ void prototypeIteratorClass(FnSymbol* fn) {
 
   ii->getValue = buildEmptyIteratorMethod("getValue", ii->classType);
   if (fn->retTag == RET_VAR && fn->retType->refType)
-    ii->getValue->retType = fn->retType->refType;
+    ii->getValue->retType = fn->retType->refType; // unexecuted none/gasnet on 4/25/08
   else
     ii->getValue->retType = fn->retType;
   ii->getValue->insertFormalAtTail(
@@ -199,7 +199,7 @@ static void
 insertSetMemberInits(FnSymbol* fn, Symbol* var) {
   Type* type = var->type;
   if (type->symbol->hasPragma("ref"))
-    type = getValueType(type);
+    type = getValueType(type); // unexecuted none/gasnet on 4/25/08
   if (type->defaultValue) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, type->defaultValue));
   } else {

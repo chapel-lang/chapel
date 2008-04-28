@@ -14,7 +14,7 @@ class AList {
   BaseAST* parent;
 
   // constructors
-  AList(Expr* elem = NULL);
+  AList();
 
   // checks for length
   bool isEmpty(void);
@@ -30,11 +30,9 @@ class AList {
 
   // add element(s) at beginning of list
   void insertAtHead(Expr* new_ast);
-  void insertAtHead(AList* new_ast);
 
   // add element(s) at end of list
   void insertAtTail(Expr* new_ast);
-  void insertAtTail(AList* new_ast);
 
   // codegen list
   void codegen(FILE* outfile, const char* separator = ", ");

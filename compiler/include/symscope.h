@@ -30,7 +30,6 @@ class SymScope {
   void print();
   void print(bool number, int indent);
 
-  void codegen(FILE* outfile);
   void codegenFunctions(FILE* outfile);
 
   void addVisibleFunction(FnSymbol* fn);

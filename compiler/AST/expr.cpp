@@ -86,11 +86,13 @@ Type* Expr::typeInfo(void) {
 
 
 bool Expr::isConstant(void) {
+  INT_FATAL(this, "Illegal call to Expr::isConstant()");
   return false;
 }
 
 
 bool Expr::isParameter(void){
+  INT_FATAL(this, "Illegal call to Expr::isParameter()");
   return false;
 }
 
@@ -233,8 +235,7 @@ SymExpr::verify() {
   if (var && unresolved)
     INT_FATAL(this, "SymExpr::var and SymExpr::unresolved are set");
   if (var && var->defPoint && !var->defPoint->parentSymbol)
-    if (var->astTag != SYMBOL_MODULE)
-      INT_FATAL(this, "SymExpr::var::defPoint is not in AST");
+    INT_FATAL(this, "SymExpr::var::defPoint is not in AST");
 }
 
 
@@ -416,11 +417,6 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
 }
 
 
-static void callExprHelper(CallExpr* call, AList* arg) {
-  call->insertAtTail(arg);
-}
-
-
 CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
                    BaseAST* arg3, BaseAST* arg4) :
   Expr(EXPR_CALL),
@@ -497,67 +493,6 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
 }
 
 
-CallExpr::CallExpr(BaseAST* base, AList* args) :
-  Expr(EXPR_CALL),
-  baseExpr(NULL),
-  argList(),
-  primitive(NULL),
-  partialTag(false),
-  methodTag(false),
-  square(false)
-{
-  if (Symbol* b = toSymbol(base)) {
-    baseExpr = new SymExpr(b);
-  } else if (Expr* b = toExpr(base)) {
-    baseExpr = b;
-  } else {
-    INT_FATAL(this, "Bad baseExpr in CallExpr constructor");
-  }
-  callExprHelper(this, args);
-  argList.parent = this;
-}
-
-
-CallExpr::CallExpr(PrimitiveOp *prim, AList* args) :
-  Expr(EXPR_CALL),
-  baseExpr(NULL),
-  argList(),
-  primitive(prim),
-  partialTag(false),
-  methodTag(false),
-  square(false)
-{
-  callExprHelper(this, args);
-  argList.parent = this;
-}
-
-CallExpr::CallExpr(PrimitiveTag prim, AList* args) :
-  Expr(EXPR_CALL),
-  baseExpr(NULL),
-  argList(),
-  primitive(primitives[prim]),
-  partialTag(false),
-  methodTag(false),
-  square(false)
-{
-  callExprHelper(this, args);
-  argList.parent = this;
-}
-
-CallExpr::CallExpr(const char* name, AList* args) :
-  Expr(EXPR_CALL),
-  baseExpr(new SymExpr(name)),
-  argList(),
-  primitive(NULL),
-  partialTag(false),
-  methodTag(false),
-  square(false)
-{
-  callExprHelper(this, args);
-  argList.parent = this;
-}
-
-
 CallExpr::~CallExpr() { }
 
 
@@ -629,18 +564,6 @@ CallExpr::insertAtTail(BaseAST* ast) {
 }
 
 
-void
-CallExpr::insertAtHead(AList* ast) {
-  argList.insertAtHead(ast);
-}
-
-
-void
-CallExpr::insertAtTail(AList* ast) {
-  argList.insertAtTail(ast);
-}
-
-
 FnSymbol* CallExpr::isResolved(void) {
   SymExpr* base = toSymExpr(baseExpr);
   return base ? toFnSymbol(base->var) : NULL;
@@ -667,14 +590,10 @@ Expr* CallExpr::get(int index) {
 
 FnSymbol* CallExpr::findFnSymbol(void) {
   FnSymbol* fn = NULL;
-  if (SymExpr* variable = toSymExpr(baseExpr)) {
+  if (SymExpr* variable = toSymExpr(baseExpr))
     fn = toFnSymbol(variable->var);
-    if (!fn && !variable->var)
-      return NULL;
-  }
-  if (!fn) {
+  if (!fn)
     INT_FATAL(this, "Cannot find FnSymbol in CallExpr");
-    }
   return fn;
 }
 
@@ -711,32 +630,22 @@ help_codegen_fn(FILE* outfile, const char* name, BaseAST* ast1 = NULL,
                 BaseAST* ast2 = NULL, BaseAST* ast3 = NULL,
                 BaseAST* ast4 = NULL, BaseAST* ast5 = NULL) {
   fprintf(outfile, "%s(", name);
-  if (!ast1->typeInfo()->refType)
-    fprintf(outfile, "*");
   if (ast1)
     ast1->codegen(outfile);
   if (ast2) {
     fprintf(outfile, ", ");
-    if (!ast2->typeInfo()->refType)
-      fprintf(outfile, "*");
     ast2->codegen(outfile);
   }
   if (ast3) {
     fprintf(outfile, ", ");
-    if (!ast3->typeInfo()->refType)
-      fprintf(outfile, "*");
     ast3->codegen(outfile);
   }
   if (ast4) {
     fprintf(outfile, ", ");
-    if (!ast4->typeInfo()->refType)
-      fprintf(outfile, "*");
     ast4->codegen(outfile);
   }
   if (ast5) {
     fprintf(outfile, ", ");
-    if (!ast5->typeInfo()->refType)
-      fprintf(outfile, "*");
     ast5->codegen(outfile);
   }
   fprintf(outfile, ")");
@@ -1397,10 +1306,7 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     case PRIMITIVE_GETCID:
-      if (get(1)->typeInfo() == dtNil) {
-        fprintf(outfile, "(0)");
-        break;
-      }
+      INT_ASSERT(get(1)->typeInfo() != dtNil);
       fprintf(outfile, "(((object)");
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
@@ -1442,7 +1348,7 @@ void CallExpr::codegen(FILE* outfile) {
       bool isSuper = false;
       if (SymExpr* sym = toSymExpr(get(2)))
         if (sym->var->hasPragma("super class"))
-          isSuper = true;
+          isSuper = true; // unexecuted none/gasnet on 4/25/08
       if (!get(2)->typeInfo()->symbol->hasPragma("ref") && !isSuper)
         fprintf(outfile, "(&(");
       codegen_member(outfile, get(1), get(2));
@@ -1494,22 +1400,6 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ", ");
       get(3)->codegen(outfile);
       fprintf(outfile, ")");
-      break;
-    case PRIMITIVE_GET_REAL:
-      fprintf(outfile, "&(");
-      get(1)->codegen(outfile);
-      if (!get(1)->typeInfo()->refType)
-        fprintf(outfile, "->re)");
-      else
-        fprintf(outfile, ".re)");
-      break;
-    case PRIMITIVE_GET_IMAG:
-      fprintf(outfile, "&(");
-      get(1)->codegen(outfile);
-      if (!get(1)->typeInfo()->refType)
-        fprintf(outfile, "->im)");
-      else
-        fprintf(outfile, ".im)");
       break;
     case PRIMITIVE_THREAD_INIT: {
       fprintf( outfile, "chpl_thread_init()");
@@ -1864,6 +1754,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_SET_END_COUNT:
     case PRIMITIVE_ON_LOCALE_NUM:
     case PRIMITIVE_INIT_FIELDS:
+    case PRIMITIVE_GET_REAL:
+    case PRIMITIVE_GET_IMAG:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
     case PRIMITIVE_GC_CC_INIT:
@@ -1992,6 +1884,7 @@ void CallExpr::codegen(FILE* outfile) {
   }
 
   if (!strcmp(fn->cname, "_data_construct")) {
+    INT_FATAL("unexecuted none/gasnet on 4/25/08");
     if (numActuals() == 0) {
       fprintf(outfile, "0");
       if (getStmtExpr() && getStmtExpr() == this)
@@ -2004,6 +1897,7 @@ void CallExpr::codegen(FILE* outfile) {
   fprintf(outfile, "(");
 
   if (!strcmp(fn->cname, "_data_construct")) {
+    INT_FATAL("unexecuted none/gasnet on 4/25/08");
     ClassType* ct = toClassType(fn->retType);
     toDefExpr(ct->fields.get(2))->sym->type->codegen(outfile);
     fprintf(outfile, ", ");

@@ -123,13 +123,6 @@ Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
 }
 
 
-BlockStmt* buildChapelStmt(AList* stmts) {
-  BlockStmt* block = new BlockStmt(stmts);
-  block->blockTag = BLOCK_SCOPELESS;
-  return block;
-}
-
-
 BlockStmt* buildChapelStmt(BaseAST* ast) {
   BlockStmt* block = NULL;
   if (!ast)
@@ -152,7 +145,7 @@ buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
         def->init = new CallExpr(base->copy(), new_IntSymbol(count));
         insertPoint->insertBefore(def->remove());
       } else {
-        def->remove();
+        def->remove(); // unexecuted none/gasnet on 4/25/08
       }
     } else if (BlockStmt* blk = toBlockStmt(expr)) {
       buildTupleVarDeclHelp(new CallExpr(base, new_IntSymbol(count)),
@@ -949,6 +942,7 @@ buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
                           buildTupleArg(fn, subtuple,
                             new CallExpr(base, new_IntSymbol(count))));
       if (where) {
+        // unexecuted none/gasnet on 4/25/08
         where = buildLogicalAndExpr(where, newClause);
       } else {
         where = newClause;

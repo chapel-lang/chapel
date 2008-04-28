@@ -77,7 +77,7 @@ SymScope::lookupLocal(const char* name, Vec<SymScope*>* alreadyVisited, bool ret
   }
 
   if (alreadyVisited->set_in(this))
-    return NULL;
+    return NULL; // unexecuted none/gasnet on 4/25/08
 
   alreadyVisited->set_add(this);
 
@@ -98,7 +98,7 @@ SymScope::lookupLocal(const char* name, Vec<SymScope*>* alreadyVisited, bool ret
     ModuleSymbol* mod = astParent->getModule();
     sym = mod->initFn->body->blkScope->lookupLocal(name, alreadyVisited, returnModules);
     if (sym && (!toModuleSymbol(sym) || returnModules))
-      return sym;
+      return sym; // unexecuted none/gasnet on 4/25/08
   }
 
   Vec<ModuleSymbol*>* modUses = getModuleUses();
@@ -317,17 +317,6 @@ void SymScope::print(bool number, int indent) {
 }
 
 
-void SymScope::codegen(FILE* outfile) {
-  Vec<Symbol*> symbols;
-  table.get_values(symbols);
-  forv_Vec(Symbol, sym, symbols) {
-    for (Symbol* tmp = sym; tmp; tmp = tmp->overloadNext)
-      if (!toTypeSymbol(tmp))
-        tmp->codegenDef(outfile);
-  }
-}
-
-
 static int compareLineno(const void* v1, const void* v2) {
   FnSymbol* fn1 = *(FnSymbol**)v1;
   FnSymbol* fn2 = *(FnSymbol**)v2;
@@ -406,7 +395,7 @@ void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
   if (astParent) {
     if (FnSymbol* fn = toFnSymbol(astParent)) {
       if (fn->visiblePoint && fn->visiblePoint->parentScope)
-        fn->visiblePoint->parentScope->getVisibleFunctions(allVisibleFunctions, name, true);
+        fn->visiblePoint->parentScope->getVisibleFunctions(allVisibleFunctions, name, true); // unexecuted none/gasnet on 4/25/08
       if (fn->instantiationPoint) {
         fn->instantiationPoint->getVisibleFunctions(allVisibleFunctions, name, true);
         return;

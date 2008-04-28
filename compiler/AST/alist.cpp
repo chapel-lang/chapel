@@ -7,14 +7,11 @@
 #include "symscope.h"
 
 
-AList::AList(Expr* elem) :
+AList::AList() :
   head(NULL),
   tail(NULL),
   parent(NULL)
-{
-  if (elem)
-    insertAtTail(elem);
-}
+{ }
 
 
 bool AList::isEmpty(void) {
@@ -98,14 +95,6 @@ void AList::insertAtHead(Expr* new_ast) {
 }
 
 
-void AList::insertAtHead(AList* new_ast) {
-  for_alist_backward(elem, *new_ast) {
-    elem->remove();
-    insertAtHead(elem);
-  }
-}
-
-
 void AList::insertAtTail(Expr* new_ast) {
   if (new_ast->parentSymbol)
     INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtTail");
@@ -133,14 +122,6 @@ void AList::insertAtTail(Expr* new_ast) {
     new_ast->list = this;
   }
   parent_insert_help(parent, new_ast);
-}
-
-
-void AList::insertAtTail(AList* new_ast) {
-  for_alist(elem, *new_ast) {
-    elem->remove();
-    insertAtTail(elem);
-  }
 }
 
 

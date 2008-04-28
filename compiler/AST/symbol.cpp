@@ -222,15 +222,6 @@ bool Symbol::isParameter(){
 }
 
 
-bool Symbol::isThis(void) {
-  FnSymbol *f = toFnSymbol(defPoint->parentSymbol);
-  if (!f || !f->_this)
-    return 0;
-  else
-    return f->_this == this;
-}
-
-
 void Symbol::codegen(FILE* outfile) {
   fprintf(outfile, "%s", cname);
 }
@@ -246,11 +237,6 @@ void Symbol::codegenPrototype(FILE* outfile) { }
 
 FnSymbol* Symbol::getFnSymbol(void) {
   return NULL;
-}
-
-
-Symbol* Symbol::getSymbol(void) {
-  return this;
 }
 
 
@@ -873,7 +859,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
       if (_this == formal)
         wrapper->_this = wrapper_formal;
       if (formal->hasPragma("is meme"))
-        wrapper->_this->defPoint->insertAfter(new CallExpr(PRIMITIVE_MOVE, wrapper->_this, wrapper_formal));
+        wrapper->_this->defPoint->insertAfter(new CallExpr(PRIMITIVE_MOVE, wrapper->_this, wrapper_formal)); // unexecuted none/gasnet on 4/25/08
       wrapper->insertFormalAtTail(wrapper_formal);
       Symbol* temp;
       if (formal->type->symbol->hasPragma("ref")) {
@@ -881,7 +867,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
         temp->isCompilerTemp = true;
         temp->canParam = true;
         if (formal->isTypeVariable)
-          temp->isTypeVariable = true;
+          temp->isTypeVariable = true; // unexecuted none/gasnet on 4/25/08
         wrapper->insertAtTail(new DefExpr(temp));
         wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, new CallExpr(PRIMITIVE_SET_REF, wrapper_formal)));
       } else if (specializeDefaultConstructor && wrapper_formal->typeExpr) {
@@ -889,7 +875,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
         temp->isCompilerTemp = true;
         temp->canParam = true;
         if (formal->isTypeVariable)
-          temp->isTypeVariable = true;
+          temp->isTypeVariable = true; // unexecuted none/gasnet on 4/25/08
         wrapper->insertAtTail(new DefExpr(temp));
         BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
         wrapper->insertAtTail(typeExpr);
@@ -1273,6 +1259,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
   ClassType  *ct = toClassType(arg->type);
   CallExpr *ret;
   if (ct->fields.length() < 0) {
+    // unexecuted none/gasnet on 4/25/08
     ret = new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(0, INT_SIZE_64));
   } else {
     CallExpr *call = NULL;
@@ -1552,8 +1539,7 @@ void FnSymbol::codegenHeader(FILE* outfile) {
 
 
 void FnSymbol::codegenPrototype(FILE* outfile) {
-  if (isExtern)
-    fprintf(outfile, "extern ");
+  INT_ASSERT(!isExtern);
   codegenHeader(outfile);
   fprintf(outfile, ";\n");
 }
@@ -1643,18 +1629,6 @@ FnSymbol::getReturnSymbol() {
 }
 
 
-Symbol*
-FnSymbol::getReturnLabel() {
-  CallExpr* ret = toCallExpr(body->body.last());
-  if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
-    INT_FATAL(this, "function is not normal");
-  if (DefExpr* def = toDefExpr(ret->prev))
-    if (Symbol* sym = toLabelSymbol(def->sym))
-      return sym;
-  return NULL;
-}
-
-
 void
 FnSymbol::insertBeforeReturn(Expr* ast) {
   CallExpr* ret = toCallExpr(body->body.last());
@@ -1674,18 +1648,6 @@ FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
   if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(this, "function is not normal");
   ret->insertBefore(ast);
-}
-
-
-void
-FnSymbol::insertAtHead(AList* ast) {
-  body->insertAtHead(ast);
-}
-
-
-void
-FnSymbol::insertAtTail(AList* ast) {
-  body->insertAtTail(ast);
 }
 
 

@@ -38,7 +38,7 @@ returnInfoInt64(CallExpr* call) {
 }
 
 static Type*
-returnInfoUInt32(CallExpr* call) {
+returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return dtUInt[INT_SIZE_32];
 }
 
@@ -89,6 +89,7 @@ static Type*
 returnInfoCast(CallExpr* call) {
   Type* t = call->get(1)->typeInfo();
   if (t->isGeneric) {
+    // unexecuted none/gasnet on 4/25/08
     if (SymExpr* sym = toSymExpr(call->get(1)))
       if (sym->var->isTypeVariable)
         return dtUnknown;
@@ -119,6 +120,7 @@ returnInfoRef(CallExpr* call) {
 
 static Type*
 returnInfoMove(CallExpr* call) {
+  // unexecuted none/gasnet on 4/25/08
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
   if (t1 == dtUnknown || t1 == dtNil)

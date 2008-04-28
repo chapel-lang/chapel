@@ -305,25 +305,15 @@ void parent_insert_help(BaseAST* parent, Expr* ast) {
     parentSymbol = symbol;
     if (FnSymbol* fn = toFnSymbol(symbol))
       parentScope = fn->argScope;
-    else if (ModuleSymbol* mod = toModuleSymbol(symbol))
-      parentScope = mod->block->blkScope;
-    else if (ClassType* ct = toClassType(symbol->type))
-      parentScope = ct->structScope;
     else
-      parentScope = symbol->parentScope;
+      INT_FATAL(symbol, "FnSymbol expected in parent_insert_help");
   } else if (Type* type = toType(parent)) {
     parentSymbol = type->symbol;
-    if (FnSymbol* fn = toFnSymbol(type->symbol))
-      parentScope = fn->argScope;
-    else if (ModuleSymbol* mod = toModuleSymbol(symbol))
-      parentScope = mod->block->blkScope;
-    else if (ClassType* ct = toClassType(type))
+    if (ClassType* ct = toClassType(type))
       parentScope = ct->structScope;
-    else if (EnumType* et = toEnumType(type))
-      parentScope = et->enumScope;
     else
-      parentScope = type->symbol->parentScope;
-  } else if (parent)
+      INT_FATAL(symbol, "ClassType expected in parent_insert_help");
+  } else
     INT_FATAL(ast, "major error in parent_insert_help");
   insert_help(ast, parentExpr, parentSymbol, parentScope);
 }
@@ -443,10 +433,7 @@ void remove_help(BaseAST* ast) {
         }
       }
       if (ModuleSymbol* mod = toModuleSymbol(defExpr->sym)) {
-        if (mod->block->blkScope) {
-          delete mod->block->blkScope;
-          mod->block->blkScope = NULL;
-        }
+        INT_ASSERT(!mod->block->blkScope);
       }
     }
   }

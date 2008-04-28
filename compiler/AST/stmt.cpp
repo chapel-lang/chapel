@@ -17,20 +17,6 @@ void codegenStmt(FILE* outfile, Expr* stmt) {
 }
 
 
-BlockStmt::BlockStmt(AList* init_body, BlockTag init_blockTag) :
-  Expr(STMT_BLOCK),
-  blockTag(init_blockTag),
-  body(),
-  loopInfo(NULL),
-  blkScope(NULL),
-  pre_loop(NULL),
-  post_loop(NULL)
-{
-  body.parent = this;
-  body.insertAtTail(init_body);
-}
-
-
 BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
   Expr(STMT_BLOCK),
   blockTag(init_blockTag),
@@ -105,20 +91,14 @@ void BlockStmt::codegen(FILE* outfile) {
       fprintf(outfile, "for (");
       loopInfo->get(1)->codegen(outfile);
       fprintf(outfile, " = ");
-      if (loopInfo->get(2)->typeInfo()->symbol->hasPragma("ref"))
-        fprintf(outfile, "*");
       loopInfo->get(2)->codegen(outfile);
       fprintf(outfile, "; ");
       loopInfo->get(1)->codegen(outfile);
       fprintf(outfile, " <= ");
-      if (loopInfo->get(3)->typeInfo()->symbol->hasPragma("ref"))
-        fprintf(outfile, "*");
       loopInfo->get(3)->codegen(outfile);
       fprintf(outfile, "; ");
       loopInfo->get(1)->codegen(outfile);
       fprintf(outfile, " += ");
-      if (loopInfo->get(4)->typeInfo()->symbol->hasPragma("ref"))
-        fprintf(outfile, "*");
       loopInfo->get(4)->codegen(outfile);
       fprintf(outfile, ") ");
     }
@@ -150,18 +130,6 @@ BlockStmt::insertAtHead(Expr* ast) {
 
 void
 BlockStmt::insertAtTail(Expr* ast) {
-  body.insertAtTail(ast);
-}
-
-
-void
-BlockStmt::insertAtHead(AList* ast) {
-  body.insertAtHead(ast);
-}
-
-
-void
-BlockStmt::insertAtTail(AList* ast) {
   body.insertAtTail(ast);
 }
 
@@ -300,14 +268,6 @@ void CondStmt::codegen(FILE* outfile) {
     fprintf(outfile, " else ");
     elseStmt->codegen(outfile);
   }
-}
-
-
-GotoStmt::GotoStmt(GotoTag init_gotoTag) :
-  Expr(STMT_GOTO),
-  label(new SymExpr(gNil)),
-  gotoTag(init_gotoTag)
-{
 }
 
 

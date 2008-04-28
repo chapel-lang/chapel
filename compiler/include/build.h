@@ -12,7 +12,6 @@ Expr* buildDotExpr(const char* base, const char* member);
 Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right);
 Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right);
 
-BlockStmt* buildChapelStmt(AList* stmts);
 BlockStmt* buildChapelStmt(BaseAST* ast = NULL);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);

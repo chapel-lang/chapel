@@ -32,7 +32,6 @@ class BlockStmt : public Expr {
   LabelSymbol* post_loop;
   Vec<ModuleSymbol*> modUses; // modules used via use statement
 
-  BlockStmt(AList* init_body, BlockTag init_blockTag = BLOCK_NORMAL);
   BlockStmt(Expr* init_body = NULL, BlockTag init_blockTag = BLOCK_NORMAL);
   virtual ~BlockStmt();
   virtual void verify();
@@ -42,8 +41,6 @@ class BlockStmt : public Expr {
 
   void insertAtHead(Expr* ast);
   void insertAtTail(Expr* ast);
-  void insertAtHead(AList* ast);
-  void insertAtTail(AList* ast);
 
   bool isLoop(void);
   int length(void);
@@ -78,7 +75,6 @@ class GotoStmt : public Expr {
   SymExpr* label;
   GotoTag gotoTag;
 
-  GotoStmt(GotoTag init_gotoTag);
   GotoStmt(GotoTag init_gotoTag, const char* init_label);
   GotoStmt(GotoTag init_gotoTag, Symbol* init_label);
   GotoStmt(GotoTag init_gotoTag, SymExpr* init_label);

@@ -334,11 +334,6 @@ const char* BaseAST::stringLoc(void) {
 }
 
 
-void BaseAST::printLoc(FILE* outfile) {
-  fprintf(outfile, "%s:%d", filename, lineno);
-}
-
-
 void BaseAST::addPragma(const char* str) {
   if (DefExpr* defExpr = toDefExpr(this)) {
     defExpr->sym->addPragma(str);
@@ -420,26 +415,8 @@ TypeSymbol* BaseAST::lookupType(const char* name) {
   return toTypeSymbol(lookup(astr(name)));
 }
 
-TypeSymbol* BaseAST::lookupType(BaseAST* ast) {
-  return toTypeSymbol(lookup(ast));
-}
-
 VarSymbol* BaseAST::lookupVar(const char* name) {
   return toVarSymbol(lookup(astr(name)));
-}
-
-VarSymbol* BaseAST::lookupVar(BaseAST* ast) {
-  return toVarSymbol(lookup(ast));
-}
-
-int compar_baseast(const void *ai, const void *aj) {
-  BaseAST *i = *(BaseAST**)ai;
-  BaseAST *j = *(BaseAST**)aj;
-  if (i->id > j->id)
-    return 1;
-  else if (i->id < j->id)
-    return -1;
-  return 0;
 }
 
 const char* astTagName[BASE+1] = {

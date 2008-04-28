@@ -73,13 +73,11 @@ class Symbol : public BaseAST {
 
   virtual bool isConstant(void);
   virtual bool isParameter(void);
-  bool isThis(void);
 
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
   virtual FnSymbol* getFnSymbol(void);
-  virtual Symbol* getSymbol(void);
   virtual bool isImmediate();
 
   const char* hasPragma(const char* str);
@@ -210,9 +208,6 @@ class FnSymbol : public Symbol {
   void insertAtHead(Expr* ast);
   void insertAtTail(Expr* ast);
 
-  void insertAtHead(AList* ast);
-  void insertAtTail(AList* ast);
-
   void insertBeforeReturn(Expr* ast);
   void insertBeforeReturnAfterLabel(Expr* ast);
 
@@ -220,7 +215,6 @@ class FnSymbol : public Symbol {
   void insertFormalAtTail(BaseAST* ast);
 
   Symbol* getReturnSymbol();
-  Symbol* getReturnLabel();
 
   int numFormals();
   ArgSymbol* getFormal(int i); // return ith formal

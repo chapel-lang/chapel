@@ -85,37 +85,6 @@ void Type::codegenDef(FILE* outfile) {
 void Type::codegenPrototype(FILE* outfile) { }
 
 
-void Type::codegenDefaultFormat(FILE* outfile, bool isRead) {
-  fprintf(outfile, "_default_format");
-  if (isRead) {
-    fprintf(outfile, "_read");
-  } else {
-    fprintf(outfile, "_write");
-  }
-  this->codegen(outfile);
-}
-
-
-bool Type::implementedUsingCVals(void) {
-  if (this == dtBool ||
-      this == dtInt[INT_SIZE_8]  ||
-      this == dtInt[INT_SIZE_16] ||
-      this == dtInt[INT_SIZE_32] ||
-      this == dtInt[INT_SIZE_64] ||
-      this == dtUInt[INT_SIZE_1]  ||
-      this == dtUInt[INT_SIZE_8]  ||
-      this == dtUInt[INT_SIZE_16] ||
-      this == dtUInt[INT_SIZE_32] ||
-      this == dtUInt[INT_SIZE_64] ||
-      this == dtReal[FLOAT_SIZE_32] ||
-      this == dtReal[FLOAT_SIZE_64]) {
-    return true;
-  } else {
-    return false;
- }
-}
-
-
 Symbol* Type::getField(const char* name) {
   INT_FATAL(this, "getField not called on ClassType");
   return NULL;
@@ -202,22 +171,6 @@ void EnumType::codegenDef(FILE* outfile) {
   fprintf(outfile, "} ");
   symbol->codegen(outfile);
   fprintf(outfile, ";\n");
-}
-
-
-void EnumType::codegenDefaultFormat(FILE* outfile, bool isRead) {
-  fprintf(outfile, "_default_format");
-  if (isRead) {
-    fprintf(outfile, "_read");
-  } else {
-    fprintf(outfile, "_write");
-  }
-  fprintf(outfile, "_enum");
-}
-
-
-bool EnumType::implementedUsingCVals(void) {
-  return true;
 }
 
 
@@ -331,12 +284,6 @@ void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 
-bool
-ClassType::isNominalType() {
-  return classTag == CLASS_CLASS;
-}
-
-
 void ClassType::codegenDef(FILE* outfile) {
   fprintf(outfile, "typedef struct __");
   symbol->codegen(outfile);
@@ -395,11 +342,6 @@ void ClassType::codegenPrototype(FILE* outfile) {
   else if (classTag == CLASS_CLASS)
     fprintf(outfile, "typedef struct __%s *%s;\n",
             symbol->cname, symbol->cname);
-}
-
-
-bool ClassType::implementedUsingCVals(void) {
-  return false;
 }
 
 

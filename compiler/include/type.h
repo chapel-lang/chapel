@@ -60,9 +60,6 @@ class Type : public BaseAST {
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
-  virtual void codegenDefaultFormat(FILE* outfile, bool isRead);
-
-  virtual bool implementedUsingCVals(void);
 
   virtual Symbol* getField(const char* name);
 };
@@ -82,8 +79,6 @@ class EnumType : public Type {
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   void codegenDef(FILE* outfile);
-  void codegenDefaultFormat(FILE* outfile, bool isRead);
-  bool implementedUsingCVals(void);
 };
 
 
@@ -110,12 +105,8 @@ class ClassType : public Type {
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  bool isNominalType();
-
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
-
-  virtual bool implementedUsingCVals(void);
 
   virtual Symbol* getField(const char* name);
   virtual Symbol* getField(int i);
