@@ -640,7 +640,7 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
       // don't lock unnecessarily
       if (!task->completed) {
         chpl_threadfp_t  task_to_run_fun = NULL;
-        chpl_threadarg_t task_to_run_arg;
+        chpl_threadarg_t task_to_run_arg = NULL;
 
         // begin critical section
         chpl_mutex_lock(&threading_lock);
