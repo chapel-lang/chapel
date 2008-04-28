@@ -77,6 +77,23 @@ compareTypesByOrder(const void* v1, const void* v2) {
 }
 
 static bool
+removeIdentityDefs(Symbol* sym) {
+  bool change = false;
+
+  for_defs(def, defMap, sym) {
+    CallExpr* move = toCallExpr(def->parentExpr);
+    if (move && move->isPrimitive(PRIMITIVE_MOVE)) {
+      SymExpr* rhs = toSymExpr(move->get(2));
+      if (rhs && def->var == rhs->var) {
+        move->remove();
+        change = true;
+      }
+    }
+  }
+  return change;
+}
+
+static bool
 removeUnusedClassInstance(Symbol* sym) {
   bool change = false;
   bool unused = !useMap.get(sym) || useMap.get(sym)->n == 0;
@@ -341,7 +358,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
 
 static void
 debugScalarReplacementFailure(Symbol* var) {
-  printf("failed to scalar replace %s\n", var->cname);
+  printf("failed to scalar replace %s[%d]\n", var->cname, var->id);
   printf("defs:\n");
   for_defs(def, defMap, var) {
     if (def->parentSymbol)
@@ -437,6 +454,7 @@ scalarReplace() {
         do {
           change = false;
           forv_Vec(Symbol, var, *varVec) {
+            change |= removeIdentityDefs(var);
             change |= removeUnusedClassInstance(var);
             change |= unifyClassInstances(var);
           }
