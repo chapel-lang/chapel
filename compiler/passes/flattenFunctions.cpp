@@ -174,18 +174,4 @@ void flattenFunctions(void) {
     if (FnSymbol* fn = toFnSymbol(ts->defPoint->parentSymbol))
       fn->defPoint->insertBefore(ts->defPoint->remove());
   }
-
-  //
-  // remove unnecessary PRIMITIVE_SET_REF calls
-  //   due to replacement of outer variables with reference arguments
-  //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->parentSymbol && call->isPrimitive(PRIMITIVE_SET_REF)) {
-        if (call->get(1)->typeInfo()->symbol->hasPragma("ref"))
-          call->replace(call->get(1)->remove());
-      }
-    }
-  }
 }
-

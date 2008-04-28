@@ -76,10 +76,8 @@ void cullOverReferences() {
               SymExpr* base = toSymExpr(call->baseExpr);
               base->var = copy;
             }
-          } else {
-            SymExpr* base = toSymExpr(call->baseExpr);
-            base->var = copy;
-          }
+          } else
+            INT_FATAL("unexpected case");
         }
       }
     }
