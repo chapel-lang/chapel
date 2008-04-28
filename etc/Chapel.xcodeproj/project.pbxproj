@@ -75,7 +75,6 @@
 		F721A1690D455FDE00A6B43F /* scalarReplace.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1560D455FDE00A6B43F /* scalarReplace.cpp */; };
 		F721A16A0D455FDE00A6B43F /* scopeResolve.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1570D455FDE00A6B43F /* scopeResolve.cpp */; };
 		F721A16B0D455FDE00A6B43F /* semanticChecks.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1580D455FDE00A6B43F /* semanticChecks.cpp */; };
-		F721A16C0D455FDE00A6B43F /* verify.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1590D455FDE00A6B43F /* verify.cpp */; };
 		F721A1770D45603C00A6B43F /* files.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1720D45603C00A6B43F /* files.cpp */; };
 		F721A1780D45603C00A6B43F /* misc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1730D45603C00A6B43F /* misc.cpp */; };
 		F721A1790D45603C00A6B43F /* mysystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1740D45603C00A6B43F /* mysystem.cpp */; };
@@ -252,7 +251,6 @@
 		F721A1560D455FDE00A6B43F /* scalarReplace.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = scalarReplace.cpp; path = ../compiler/passes/scalarReplace.cpp; sourceTree = SOURCE_ROOT; };
 		F721A1570D455FDE00A6B43F /* scopeResolve.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = scopeResolve.cpp; path = ../compiler/passes/scopeResolve.cpp; sourceTree = SOURCE_ROOT; };
 		F721A1580D455FDE00A6B43F /* semanticChecks.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = semanticChecks.cpp; path = ../compiler/passes/semanticChecks.cpp; sourceTree = SOURCE_ROOT; };
-		F721A1590D455FDE00A6B43F /* verify.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = verify.cpp; path = ../compiler/passes/verify.cpp; sourceTree = SOURCE_ROOT; };
 		F721A1720D45603C00A6B43F /* files.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = files.cpp; path = ../compiler/util/files.cpp; sourceTree = SOURCE_ROOT; };
 		F721A1730D45603C00A6B43F /* misc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = misc.cpp; path = ../compiler/util/misc.cpp; sourceTree = SOURCE_ROOT; };
 		F721A1740D45603C00A6B43F /* mysystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mysystem.cpp; path = ../compiler/util/mysystem.cpp; sourceTree = SOURCE_ROOT; };
@@ -645,7 +643,6 @@
 				F721A1560D455FDE00A6B43F /* scalarReplace.cpp */,
 				F721A1570D455FDE00A6B43F /* scopeResolve.cpp */,
 				F721A1580D455FDE00A6B43F /* semanticChecks.cpp */,
-				F721A1590D455FDE00A6B43F /* verify.cpp */,
 			);
 			name = passes;
 			sourceTree = "<group>";
@@ -1172,7 +1169,6 @@
 				F721A1690D455FDE00A6B43F /* scalarReplace.cpp in Sources */,
 				F721A16A0D455FDE00A6B43F /* scopeResolve.cpp in Sources */,
 				F721A16B0D455FDE00A6B43F /* semanticChecks.cpp in Sources */,
-				F721A16C0D455FDE00A6B43F /* verify.cpp in Sources */,
 				F721A1770D45603C00A6B43F /* files.cpp in Sources */,
 				F721A1780D45603C00A6B43F /* misc.cpp in Sources */,
 				F721A1790D45603C00A6B43F /* mysystem.cpp in Sources */,
