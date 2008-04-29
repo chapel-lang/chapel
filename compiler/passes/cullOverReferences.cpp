@@ -14,11 +14,14 @@ refNecessary(SymExpr* se,
     return true;
   for_uses(use, useMap, se->var) {
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
-      if (call->isResolved()) {
+      if (FnSymbol* fn = call->isResolved()) {
         ArgSymbol* formal = actual_to_formal(use);
         if (formal->defPoint->getFunction()->_this == formal)
           return true;
         if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT)
+          return true;
+        if (formal->type->symbol->hasPragma("ref") &&
+            fn->hasPragma("allow ref"))
           return true;
       } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (refNecessary(toSymExpr(call->get(1)), defMap, useMap))

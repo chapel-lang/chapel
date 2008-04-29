@@ -20,16 +20,17 @@ pragma "inline" def _getZipCursor1TupleHelp(t: _tuple, param i: int) {
   }
 }
 
+pragma "expand tuples with values"
 pragma "inline" def _getValueTupleHelp(ic: _tuple, c: _tuple, param i: int) {
   if i == ic.size-2 {
-    return (ic(i).getValue(c(i)), ic(i+1).getValue(c(i+1)));
+    return _build_tuple_always_allow_ref(ic(i).getValue(c(i)), ic(i+1).getValue(c(i+1)));
   } else {
-    return (ic(i).getValue(c(i)), (..._getValueTupleHelp(ic, c, i+1)));
+    return _build_tuple_always_allow_ref(ic(i).getValue(c(i)), (..._getValueTupleHelp(ic, c, i+1)));
   }
 }
 
 def *(param p: int, type t) type {
-  def _fill(param p: uint, x: _tuple) {
+  def _fill(param p: int, x: _tuple) {
     if x.size == p then
       return x;
     else
@@ -56,6 +57,7 @@ pragma "tuple" record _tuple {
     return this(1);
   }
 
+  pragma "expand tuples with values"
   def these() {
     if size == 1 {
       for i in this(1) {
@@ -86,9 +88,9 @@ pragma "tuple" record _tuple {
                 halt("zippered iterations have non-equal lengths");
         }
         if ic.size == 2 then
-          yield (i, ic(1).getValue(c(1)));
+          yield _build_tuple_always_allow_ref(i, ic(1).getValue(c(1)));
         else
-          yield (i, (..._getValueTupleHelp(ic, c, 1)));
+          yield _build_tuple_always_allow_ref(i, (..._getValueTupleHelp(ic, c, 1)));
         for param i in 1..ic.size-1 do
           c(i) = ic(i).getZipCursor3(c(i));
       }
@@ -511,6 +513,9 @@ pragma "inline" def _build_tuple(x ...?size) {
   else
     return x;
 }
+
+pragma "inline" pragma "allow ref" def _build_tuple_always_allow_ref(x ...?size)
+  return x;
 
 pragma "inline" def _build_tuple(type t ...?size) type
   return t;

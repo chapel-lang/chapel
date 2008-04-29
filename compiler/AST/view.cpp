@@ -375,7 +375,7 @@ html_print_symbol(FILE* html_file, int pass, Symbol* sym, bool def) {
 
 static void
 html_print_fnsymbol( FILE* html_file, int pass, FnSymbol* fn) {
-  if (fn->_this) {
+  if (fn->_this && fn->_this->defPoint) {
     html_print_symbol( html_file, pass, fn->_this->type->symbol, false);
     fprintf(html_file, " . ");
   }

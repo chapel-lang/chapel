@@ -1,3 +1,0 @@
-bug: detupled indices drop references to var iterators
-
-When a reference iterator is iterated over in a zipper context, the index cannot be assigned.

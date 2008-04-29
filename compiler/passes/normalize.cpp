@@ -529,8 +529,10 @@ static void normalize_returns(FnSymbol* fn) {
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_SET_REF, ret_expr)));
       else if (fn->retExprType)
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr("=", retval, ret_expr)));
-      else
+      else if (!fn->isWrapper)
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_GET_REF, ret_expr)));
+      else
+        ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_expr));
     }
     if (fn->fnTag == FN_ITERATOR) {
       if (!retval)

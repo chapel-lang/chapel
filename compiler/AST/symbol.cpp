@@ -1210,16 +1210,8 @@ instantiate_tuple(FnSymbol* fn) {
     if (tuple)
       arg->isTypeVariable = true;
     fn->insertFormalAtTail(arg);
-    if (tuple) {
-      VarSymbol* tmp = new VarSymbol("_tmp");
-      last->insertBefore(new DefExpr(tmp));
-      last->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, arg)));
-      last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
-                                      new_StringSymbol(name), tmp));
-    } else {
-      last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
-                                      new_StringSymbol(name), arg));
-    }
+    last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
+                                    new_StringSymbol(name), arg));
     if (tuple)
       tuple->fields.insertAtTail(new DefExpr(new VarSymbol(name)));
 //     if (typeConstructorCall) {
@@ -1232,6 +1224,7 @@ instantiate_tuple(FnSymbol* fn) {
 //     }
   }
   fn->removePragma("tuple");
+  fn->addPragma("allow ref");
 }
 
 
@@ -1327,6 +1320,7 @@ getNewSubType(FnSymbol* fn, Type* t, BaseAST* key) {
     }
   } else if (t->symbol->hasPragma("ref") &&
              !fn->hasPragma("ref") &&
+             !fn->hasPragma("allow ref") &&
              !fn->hasPragma("tuple")) {
     // instantiation of a formal of ref type loses ref
     return getNewSubType(fn, getValueType(t), key);

@@ -1,8 +1,0 @@
-bug: detupled indices drop references to var iterators
-
-(or, in my own words: zippering iterators drops reference semantics
-of values being yielded)
-
-This is similar to Steve's functions/deitz/iterators/test_var_iterator2
-test, but it took me awhile to determine that, and I figured might as
-well add another test of it to increase the value of fixing it.  :)

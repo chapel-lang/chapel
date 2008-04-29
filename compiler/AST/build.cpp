@@ -817,14 +817,15 @@ CallExpr* buildReduceScanExpr(Expr* op, Expr* data, bool isScan) {
     new BlockStmt(
       new CallExpr(PRIMITIVE_MOVE, eltType,
         new CallExpr(PRIMITIVE_TYPEOF,
-          new CallExpr(
-            new CallExpr(".",
-              new CallExpr("_getIterator", tmp),
-              new_StringSymbol("getValue")),
+          new CallExpr("_copy",
             new CallExpr(
               new CallExpr(".",
                 new CallExpr("_getIterator", tmp),
-                new_StringSymbol("getHeadCursor")))))),
+                new_StringSymbol("getValue")),
+              new CallExpr(
+                new CallExpr(".",
+                  new CallExpr("_getIterator", tmp),
+                    new_StringSymbol("getHeadCursor"))))))),
       BLOCK_TYPE));
   fn->insertAtTail(
     new CallExpr(PRIMITIVE_RETURN,

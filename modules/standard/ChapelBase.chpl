@@ -621,7 +621,7 @@ def _init(r: _ref) return _init(__primitive("get ref", r));
 pragma "inline" pragma "ref"
 def _copy(r: _ref) return _copy(__primitive("get ref", r));
 pragma "inline" pragma "ref"
-def _pass(r: _ref) return r;
+def _pass(r: _ref) var return r;
 
 // Returns whether an object of type t occupies a 64-bit word on Cray's MTA/XMT
 // (The definition of this function should be target dependent.  This would avoid

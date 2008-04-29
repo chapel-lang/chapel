@@ -1556,7 +1556,13 @@ resolveCall(CallExpr* call) {
       tmp->canType = true;
       DefExpr* def = new DefExpr(tmp);
       call->getStmtExpr()->insertBefore(def);
-      CallExpr* e = new CallExpr(sym->copy(), new_IntSymbol(i));
+      CallExpr* e = NULL;
+      if (!call->parentSymbol->hasPragma("expand tuples with values")) {
+        e = new CallExpr(sym->copy(), new_IntSymbol(i));
+      } else {
+        e = new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, sym->copy(),
+                         new_StringSymbol(astr("x", istr(i))));
+      }
       CallExpr* move = new CallExpr(PRIMITIVE_MOVE, tmp, e);
       call->getStmtExpr()->insertBefore(move);
       call->insertBefore(new SymExpr(tmp));
@@ -1727,6 +1733,7 @@ insertFormalTemps(FnSymbol* fn) {
       !strcmp(fn->name, "_copy") ||
       !strcmp(fn->name, "=") ||
       !strcmp(fn->name, "_createFieldDefault") ||
+      fn->hasPragma("allow ref") ||
       fn->hasPragma("ref"))
     return;
   ASTMap formals2vars;
@@ -2072,7 +2079,10 @@ preFold(Expr* expr) {
             sprintf(field, "x%ld", index);
             if (index <= 0 || index >= toClassType(t)->fields.length())
               USR_FATAL(call, "tuple index out-of-bounds error (%ld)", index);
-            result = new CallExpr(PRIMITIVE_GET_MEMBER, base->var, new_StringSymbol(field));
+            if (toClassType(t)->getField(field)->type->symbol->hasPragma("ref"))
+              result = new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, base->var, new_StringSymbol(field));
+            else
+              result = new CallExpr(PRIMITIVE_GET_MEMBER, base->var, new_StringSymbol(field));
             call->replace(result);
           }
         }
