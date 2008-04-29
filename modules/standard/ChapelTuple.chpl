@@ -22,9 +22,9 @@ pragma "inline" def _getZipCursor1TupleHelp(t: _tuple, param i: int) {
 
 pragma "inline" def _getValueTupleHelp(ic: _tuple, c: _tuple, param i: int) {
   if i == ic.size-2 {
-    return (ic(1).getValue(c(1)), ic(2).getValue(c(2)));
+    return (ic(i).getValue(c(i)), ic(i+1).getValue(c(i+1)));
   } else {
-    return (ic(1).getValue(c(1)), (..._getValueTupleHelp(ic, c, i+1)));
+    return (ic(i).getValue(c(i)), (..._getValueTupleHelp(ic, c, i+1)));
   }
 }
 
