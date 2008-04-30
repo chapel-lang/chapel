@@ -33,10 +33,9 @@ extremely rare race condition in module initialization
 valgrind-specific regressions
 =============================
 
-??? (never worked)
-------------------
+does this fail nondeterministically?  (fixed itself 4/29/08)
+------------------------------------------------------------
 [Error matching program output for parallel/cobegin/diten/cobeginRace]
-
 
 failing nondeterministically (e.g., 04/03/08)
 ---------------------------------------------
@@ -52,6 +51,13 @@ failing nondeterministically (e.g., 04/04/08)
 ==========================
 intel-specific regressions
 ==========================
+
+use before def error (started 4/30/2008)
+----------------------------------------
+[Error matching compiler output for
+studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching compiler output for
+studies/madness/aniruddha/madchap/test_likepy]
 
 pointless comparisons with unsigneds
 ------------------------------------
@@ -75,6 +81,130 @@ studies/hpcc/RA/bradc/ra-bradc-domainPromote]
 baseline-specific regressions
 =============================
 
+compiler seg fault (started failing 4/30/2008)
+----------------------------------------------
+[Error matching compiler output for npb/cg/bradc/cg-makea1-sparse-sort]
+[Error matching compiler output for npb/cg/bradc/cg-printa]
+[Error matching compiler output for npb/cg/bradc/cg-sparse]
+[Error matching compiler output for
+performance/compiler/bradc/cg-sparse-timecomp]
+[Error matching program output for arrays/bradc/enumIterate]
+[Error matching program output for arrays/bradc/enumarray2]
+[Error matching program output for arrays/deitz/domains/test_domain_arg2]
+[Error matching program output for arrays/deitz/domains/test_domain_arg3]
+[Error matching program output for arrays/deitz/opaque/test_opaque2]
+[Error matching program output for arrays/deitz/opaque/test_opaque3]
+[Error matching program output for arrays/deitz/opaque/test_opaque_remove]
+[Error matching program output for
+arrays/deitz/test_array_of_associative_arrays]
+[Error matching program output for
+arrays/deitz/test_array_of_associative_domains]
+[Error matching program output for arrays/opaque/bradc/opaque-segfaults]
+[Error matching program output for arrays/opaque/bradc/opaqueIterate]
+[Error matching program output for associative/bradc/assocRecord]
+[Error matching program output for associative/bradc/clear]
+[Error matching program output for
+associative/deitz/arrays/test_indefinite1]
+[Error matching program output for
+associative/deitz/arrays/test_indefinite2]
+[Error matching program output for
+associative/deitz/arrays/test_indefinite3]
+[Error matching program output for
+associative/deitz/arrays/test_indefinite4]
+[Error matching program output for
+associative/deitz/arrays/test_indefinite5]
+[Error matching program output for
+associative/deitz/arrays/test_indefinite6]
+[Error matching program output for
+associative/deitz/arrays/test_indefinite7]
+[Error matching program output for
+associative/deitz/arrays/test_indefinite8]
+[Error matching program output for
+associative/deitz/domains/test_indefinite1]
+[Error matching program output for
+associative/deitz/domains/test_indefinite_domain_of_tuple]
+[Error matching program output for
+associative/deitz/domains/test_indefinite_remove2]
+[Error matching program output for
+associative/deitz/domains/test_indefinite_remove]
+[Error matching program output for associative/diten/assocArrayOfArithArray]
+[Error matching program output for associative/waynew/add_remove2]
+[Error matching program output for associative/waynew/add_remove]
+[Error matching program output for associative/waynew/indef1]
+[Error matching program output for associative/waynew/indef2]
+[Error matching program output for associative/waynew/indef4]
+[Error matching program output for associative/waynew/indef6]
+[Error matching program output for associative/waynew/indef7]
+[Error matching program output for associative/waynew/indef8-fail2]
+[Error matching program output for associative/waynew/indef8]
+[Error matching program output for associative/waynew/indef9]
+[Error matching program output for associative/waynew/indef9a]
+[Error matching program output for associative/waynew/tuple_index2]
+[Error matching program output for associative/waynew/tuple_index]
+[Error matching program output for
+classes/bradc/arrayInClass/arrayOfArithInClass]
+[Error matching program output for
+classes/bradc/arrayInClass/genericArrayInClass-arith]
+[Error matching program output for
+classes/bradc/arrayInClass/genericArrayInClass-otharrs]
+[Error matching program output for
+classes/bradc/arrayInClass/genericArrayInClass-real]
+[Error matching program output for
+classes/bradc/arrayInClass/genericClassArray-named]
+[Error matching program output for domains/deitz/test_enum_domain1]
+[Error matching program output for
+multilocale/diten/oneOrMoreLocales/assocArrayOfRemoteArithArray]
+[Error matching program output for npb/cg/bradc/cg-dense]
+[Error matching program output for npb/cg/bradc/cg-enumDomArr]
+[Error matching program output for
+npb/cg/bradc/cg-makea1-small-sparse-countInds]
+[Error matching program output for npb/cg/bradc/cg-makea1-small-sparse]
+[Error matching program output for npb/cg/bradc/cg-makea1-small]
+[Error matching program output for npb/cg/bradc/cg-makea1]
+[Error matching program output for npb/cg/bradc/cg-makea2-small-sparse]
+[Error matching program output for npb/cg/bradc/cg-makea2]
+[Error matching program output for npb/cg/bradc/cg-makea3]
+[Error matching program output for npb/is/diten/is]
+[Error matching program output for npb/is/diten/is_mt]
+[Error matching program output for npb/is/diten/is_no_buckets]
+[Error matching program output for puzzles/deitz/digits3]
+[Error matching program output for release/examples/opaque]
+[Error matching program output for studies/590o/alaska/graph]
+[Error matching program output for studies/590o/bradc/intset]
+[Error matching program output for studies/590o/kfm/solver-blc]
+[Error matching program output for studies/590o/kfm/solver]
+[Error matching program output for
+studies/madness/aniruddha/madchap/recordBug/test_likepy]
+[Error matching program output for
+studies/madness/aniruddha/madchap/test_diff]
+[Error matching program output for
+studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching program output for
+studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for
+studies/madness/aniruddha/madchap/test_mul]
+[Error matching program output for
+studies/madness/aniruddha/madchap/test_showboxes]
+[Error matching program output for studies/madness/common/test_diff]
+[Error matching program output for studies/madness/common/test_gaxpy]
+[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for studies/madness/common/test_mul]
+[Error matching program output for studies/madness/common/test_showboxes]
+[Error matching program output for
+studies/madness/dinan/mad_chapel/test_diff]
+[Error matching program output for
+studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching program output for
+studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching program output for
+studies/madness/dinan/mad_chapel/test_mul]
+[Error matching program output for
+studies/madness/dinan/mad_chapel/test_showboxes]
+[Error matching program output for types/enum/diten/enumDom]
+[Error matching program output for users/shetag/assocDomOfRecord]
+[Error matching program output for users/shetag/assoc]
+[Error matching program output for users/shetag/assocarr]
+
 out of memory allocating iterator classes
 -----------------------------------------
 [Error matching program output for studies/sudoku/dinan/sudoku]
@@ -83,6 +213,14 @@ out of memory allocating iterator classes
 ===========================
 gasnet-specific regressions
 ===========================
+
+use-before-init errors in C code (4/30/2008)
+--------------------------------------------
+[Error matching compiler output for performance/deitz/test_cgapb]
+[Error matching compiler output for studies/sudoku/dinan/sudoku-simple]
+[Error matching compiler output for studies/sudoku/dinan/sudoku-simpler]
+[Error matching compiler output for studies/sudoku/dinan/sudoku-smart]
+[Error matching compiler output for studies/sudoku/dinan/sudoku]
 
 ???
 ---
@@ -105,6 +243,17 @@ opts-specific tests
 --baseline --inline-iterators
 -----------------------------
 [Error matching program output for release/examples/hpcc/stream]
+
+(started regressing 4/30/2008)
+--baseline --copy-propagation
+--baseline --dead-code-elimination
+--baseline --inline
+--baseline --optimize-loop-iterators
+--baseline --scalar-replacement
+--no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
+--baseline --no-local
+---------------------------------------------------------------------
+[Error matching program output for release/examples/opaque]
 
 --no-copy-propagation
 ---------------------
