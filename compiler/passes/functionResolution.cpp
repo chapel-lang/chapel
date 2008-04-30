@@ -1721,6 +1721,8 @@ formalRequiresTemp(ArgSymbol* formal) {
       formal->isTypeVariable ||
       formal->instantiatedParam ||
       formal->type == dtMethodToken ||
+      (formal->type->symbol->hasPragma("ref") &&
+       formal->intent == INTENT_BLANK) ||
       formal->hasPragma("no formal tmp"))
     return false;
   return true;
