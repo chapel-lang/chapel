@@ -481,15 +481,16 @@ record _square_tuple {
   param size: int;
   var tuple;
 
+  pragma "expand tuples with values"
   def these_help(param dim: int) {
     if dim == size - 1 {
       for i in tuple(dim) do
         for j in tuple(size) do
-          yield (i, j);
+          yield _build_tuple_always_allow_ref(i, j);
     } else {
       for i in tuple(dim) do
         for j in these_help(dim+1) do
-          yield (i, (...j));
+          yield _build_tuple_always_allow_ref(i, (...j));
     }
   }
 
