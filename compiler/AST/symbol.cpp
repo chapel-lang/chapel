@@ -15,6 +15,7 @@
 FnSymbol *chpl_main = NULL;
 
 Symbol *gNil = NULL;
+Symbol *gNilRef = NULL;
 Symbol *gUnknown = NULL;
 Symbol *gUnspecified = NULL;
 Symbol *gMethodToken = NULL;

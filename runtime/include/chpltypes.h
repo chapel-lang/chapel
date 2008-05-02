@@ -6,6 +6,9 @@
 #define nil 0
 #define _nilType void*
 
+#define nilRef 0
+#define _nilRefType void*
+
 #define _chpl_object void*
 #define _chpl_value void*
 #define chpl_opaque void*

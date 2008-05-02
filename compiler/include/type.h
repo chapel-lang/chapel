@@ -131,6 +131,9 @@ TYPE_EXTERN Type* dtIntegral;
 TYPE_EXTERN Type* dtNumeric;
 TYPE_EXTERN Type* dtEnumerated;
 TYPE_EXTERN PrimitiveType* dtNil;
+TYPE_EXTERN PrimitiveType* dtNilRef; // used to initialize references
+                                     // to nil as opposed to assigning
+                                     // the dereferenced reference nil
 TYPE_EXTERN PrimitiveType* dtUnknown;
 TYPE_EXTERN PrimitiveType* dtVoid;
 TYPE_EXTERN Type* dtObject;

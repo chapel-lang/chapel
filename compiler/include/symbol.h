@@ -273,6 +273,7 @@ extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 extern StringChainHash uniqueStringHash;
 
 extern Symbol *gNil;
+extern Symbol *gNilRef;
 extern Symbol *gUnknown;
 extern Symbol *gUnspecified;
 extern Symbol *gMethodToken;

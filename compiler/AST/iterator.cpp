@@ -207,9 +207,12 @@ insertSetMemberInits(FnSymbol* fn, Symbol* var) {
     INT_ASSERT(ct);
     for_fields(field, ct) {
       if (field->type->symbol->hasPragma("ref")) {
+        if (getValueType(field->type)->symbol->hasPragma("array"))
+          continue; // skips array types
         Symbol* tmp = new VarSymbol("_tmp", field->type);
         tmp->isCompilerTemp = true;
         fn->insertAtTail(new DefExpr(tmp));
+        fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, gNilRef));
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, field, tmp));
       } else if (field->type->refType) { // skips array types (how to handle arrays?) ( sjd later: really? )
         Symbol* tmp = new VarSymbol("_tmp", field->type);

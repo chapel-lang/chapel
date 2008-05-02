@@ -447,7 +447,7 @@ insertWideReferences(void) {
   //
   forv_Vec(BaseAST, ast, gAsts) {
     if (SymExpr* se = toSymExpr(ast)) {
-      if (se->var == gNil) {
+      if (se->var == gNil || se->var == gNilRef) {
         if (CallExpr* call = toCallExpr(se->parentExpr)) {
           if (call->isResolved()) {
             if (Type* type = actual_to_formal(se)->typeInfo()) {
@@ -473,7 +473,8 @@ insertWideReferences(void) {
             }
           } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
             if (Type* wctype = call->get(2)->typeInfo()) {
-              if (wctype->symbol->hasPragma("wide class")) {
+              if (wctype->symbol->hasPragma("wide class") ||
+                  wctype->symbol->hasPragma("wide")) {
                 VarSymbol* tmp = new VarSymbol("_tmp", wctype);
                 call->getStmtExpr()->insertBefore(new DefExpr(tmp));
                 se->replace(new SymExpr(tmp));

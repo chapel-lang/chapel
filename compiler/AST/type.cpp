@@ -423,6 +423,10 @@ void initPrimitiveTypes(void) {
   rootScope  = new SymScope(NULL, NULL);
   dtNil = createPrimitiveType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
+
+  dtNilRef = createPrimitiveType ("_nilRefType", "_nilRefType");
+  CREATE_DEFAULT_SYMBOL (dtNilRef, gNilRef, "nilRef");
+  dtNilRef->symbol->addPragma("ref");
   
   dtUnknown = createPrimitiveType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
