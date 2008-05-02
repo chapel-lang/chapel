@@ -52,13 +52,6 @@ failing nondeterministically (e.g., 04/04/08)
 intel-specific regressions
 ==========================
 
-use before def error (started 4/30/2008)
-----------------------------------------
-[Error matching compiler output for
-studies/madness/aniruddha/madchap/test_gaxpy]
-[Error matching compiler output for
-studies/madness/aniruddha/madchap/test_likepy]
-
 pointless comparisons with unsigneds
 ------------------------------------
 [Error matching compiler output for arrays/deitz/test_array_uint64]
@@ -80,14 +73,6 @@ studies/hpcc/RA/bradc/ra-bradc-domainPromote]
 ===========================
 gasnet-specific regressions
 ===========================
-
-use-before-init errors in C code (4/30/2008)
---------------------------------------------
-[Error matching compiler output for performance/deitz/test_cgapb]
-[Error matching compiler output for studies/sudoku/dinan/sudoku-simple]
-[Error matching compiler output for studies/sudoku/dinan/sudoku-simpler]
-[Error matching compiler output for studies/sudoku/dinan/sudoku-smart]
-[Error matching compiler output for studies/sudoku/dinan/sudoku]
 
 ???
 ---
