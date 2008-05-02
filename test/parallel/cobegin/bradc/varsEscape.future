@@ -31,3 +31,37 @@ should be able to do live range analysis to destroy
 the variable early if memory is an issue, and the fact
 that warnings will be generated if the variable name
 conflicts with one in the enclosing scope.
+
+
+Notes from 04/30/08 meeting
+---------------------------
+* seems inconsistent with definition of curly brackets
+  to change this.  Introduce a second type of compound
+  statement that doesn't open a new scope?
+
+* similarity here to desire in some cases to have an
+  on clause not open up a scope -- if one wanted a
+  complex on clause that just introduced new variables
+  remotely, e.g.
+
+  - both of the above might have an implementation challenge
+    in that we currently implement these early on by pushing
+    them into a function -- that would be harder to do
+
+* in generic programming instances, the annoyingness
+  of specifying types can be worse (or maybe even
+  impossible if the functions return array types)
+
+* support an expression-level cobegin?
+
+  const (lnodes, rnodes) = cobegin (left.countNodes(), right.countNodes());
+
+* what if we supported a type-less, init-less const as long as
+  it only had a single static assignment?
+
+    const lnodes, rnodes;
+    cobegin {
+      lnodes = left.countNodes();
+      rnodes = right.countNodes();
+    }
+    return lnodes + rnodes + 1;

@@ -1,5 +1,23 @@
 semantic: expand value into tuple
 
+Notes from 04/30/08 meeting
+---------------------------
+* con: we can write this using a fill function today.
+
+* pro: may want other similar cases; casting scalar
+       to array; casting value to string to get
+       formatting.  Argue that for these simple
+       cases a cast is more intuitive for someone
+       who's facile with the language than looking
+       up a function with a vague name (and more
+       convenient than defining it themselves).
+
+       That said, fine with retiring this for today
+       and waiting until the need returns again.
+
+Previously:
+-----------
+
 sjd: I proposed doing this by writing
 
   (x...3)

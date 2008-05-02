@@ -6,3 +6,37 @@ them to a function.  I think Steve's got a good intuition
 based on recent 590o email discussions, but wanted to capture
 this test and question while I had code showing it off.
 
+Notes from 04/30/08 meeting
+---------------------------
+* originally we called tuples lightweight records which would
+  imply that arrays would be copied into a tuple
+
+* this seems at odds with our argument passing concepts and
+  our philosophy of not inserting array temps when possible
+
+* so, perhaps constructing a tuple should more closely follow
+  argument-passing semantics -- domains and arrays should not
+  be copied;  while tuple assignment would result in a copy.
+  This somehow seems intuitive/clean.
+
+* A proposal:
+
+  f((A, B))           -- pass by reference
+
+  f(A, B)             -- pass by reference
+
+  var t = (A,B);      -- generates a copy
+  f(t);
+
+  var t = A, t2 = B;  -- generates a copy
+  f(t, t2);
+
+* Some of us balked at case III above (t = (A,B))
+  because intuitively it seemed as though it was
+  unfortunate to get a copy there; however, it's
+  hard to argue that this is inconsistent, esp.
+  if we want tuple assignment semantics to support
+  things like (A,B) = (C,D) to mean A = C and B = D.
+  It was suggested that extending our => notion of
+  creating a name/alias for something might be the
+  better way to do this.  E.g., var t => (A,B);

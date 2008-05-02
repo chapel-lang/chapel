@@ -1,1 +1,14 @@
 semantic: can we support 'setter' in var-iterators?
+
+Notes from 04/30/08 meeting
+---------------------------
+* the challenge here is that if an iterator is captured into 
+  index variables, the uses of those variables are far enough
+  from the iterator that it can be difficult to judge whether
+  the iterator is used in gett or setter mode.  For this reason,
+  Steve suggests "no, it cannot be."
+
+* Decided to keep this around and defer until we have more
+  experience with zippered parallel iterators, sparse, etc.
+  and maybe make a better call on the reference semantics
+  of index variables in iterator invocations.
