@@ -496,31 +496,29 @@ prune() {
   pruneVisit(chpl_main, fns, types);
   forv_Vec(FnSymbol, fn, gFns) {
     if (!fns.set_in(fn)) {
-      //      printf("removing %s\n", fn->cname);
       fn->defPoint->remove();
     }
   }
   forv_Vec(TypeSymbol, ts, gTypes) {
     if (!types.set_in(ts)) {
       if (toClassType(ts->type)) {
-        //        printf("removing %s\n", ts->cname);
+        //
+        // do not delete class/record references
+        //
+        if (ts->hasPragma("ref") &&
+            toClassType(ts->type->getField("_val")->type))
+          continue;
 
-//         //
-//         // do not delete class/record references
-//         //
-//         if (ts->hasPragma("ref") &&
-//             toClassType(ts->type->getField("_val")->type))
-//           continue;
-
-//         //
-//         // delete reference type if type is not used
-//         //
-//         if (ts->type->refType)
-//           ts->type->refType->symbol->defPoint->remove();
+        //
+        // delete reference type only if type is not used
+        //
+        if (ts->type->refType)
+          ts->type->refType->symbol->defPoint->remove();
         ts->defPoint->remove();
       }
     }
   }
+
   //
   // change symbols with dead types to void (important for baseline)
   //
