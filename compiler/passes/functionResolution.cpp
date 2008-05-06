@@ -1249,6 +1249,112 @@ printResolutionError(const char* error,
 }
 
 
+class VisibleFunctionBlock {
+ public:
+  Map<const char*,Vec<FnSymbol*>*> visibleFunctions;
+  VisibleFunctionBlock() { }
+};
+
+static Map<BlockStmt*,VisibleFunctionBlock*> visibleFunctionMap;
+static int nVisibleFunctions = 0; // for incremental build
+
+static BlockStmt*
+getBlock(Expr* expr) {
+  if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
+    if (block->blockTag == BLOCK_SCOPELESS)
+      return getBlock(block);
+    else
+      return block;
+  } else if (expr->parentExpr) {
+    return getBlock(expr->parentExpr);
+  } else {
+    return getBlock(expr->parentSymbol->defPoint);
+  }
+}
+
+static void buildVisibleFunctionMap() {
+  for (int i = nVisibleFunctions; i < gFns.n; i++) {
+    FnSymbol* fn = gFns.v[i];
+    if (fn->visible) {
+      BlockStmt* block =
+        (fn->global) ? theProgram->block : getBlock(fn->defPoint);
+      VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
+      if (!vfb) {
+        vfb = new VisibleFunctionBlock();
+        visibleFunctionMap.put(block, vfb);
+      }
+      Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(fn->name);
+      if (!fns) {
+        fns = new Vec<FnSymbol*>();
+        vfb->visibleFunctions.put(fn->name, fns);
+      }
+      fns->add(fn);
+    }
+  }
+  nVisibleFunctions = gFns.n;
+}
+
+static void
+getVisibleFunctions(BlockStmt* block,
+                    const char* name,
+                    Vec<FnSymbol*>& visibleFns,
+                    Vec<BlockStmt*>* visited = NULL) {
+  if (!visited) {
+    Vec<BlockStmt*> visited;
+    getVisibleFunctions(block, name, visibleFns, &visited);
+    return;
+  }
+
+  if (visited->set_in(block))
+    return;
+  visited->set_add(block);
+
+  VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
+  if (vfb) {
+    Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name);
+    if (fns) {
+      visibleFns.append(*fns);
+    }
+  }
+
+  forv_Vec(ModuleSymbol, module, block->modUses) {
+    getVisibleFunctions(module->block, name, visibleFns, visited);
+  }
+
+  if (CondStmt* parent = toCondStmt(block->parentExpr)) {
+    BlockStmt* block = toBlockStmt(parent->parentExpr);
+    INT_ASSERT(block);
+    getVisibleFunctions(block, name, visibleFns, visited);
+  } else if (BlockStmt* parent = toBlockStmt(block->parentExpr)) {
+    getVisibleFunctions(parent, name, visibleFns, visited);
+  } else if (FnSymbol* parent = toFnSymbol(block->parentSymbol)) {
+    if (parent->instantiationPoint) {
+      FnSymbol* tmp = parent;
+      while (tmp && tmp->instantiationPoint) {
+        parent = tmp;
+        tmp = toFnSymbol(tmp->instantiationPoint->astParent);
+      }
+      if (BlockStmt* block = toBlockStmt(parent->instantiationPoint->astParent))
+        getVisibleFunctions(block, name, visibleFns, visited);
+    }
+    BlockStmt* block = toBlockStmt(parent->defPoint->parentExpr);
+    INT_ASSERT(block);
+    getVisibleFunctions(block, name, visibleFns, visited);
+  } else if (ArgSymbol* parent = toArgSymbol(block->parentSymbol)) {
+    if (parent->defPoint) {
+      BlockStmt* block = toBlockStmt(parent->defPoint->parentSymbol->defPoint->parentExpr);
+      INT_ASSERT(block);
+      getVisibleFunctions(block, name, visibleFns, visited);
+    }
+  } else if (ModuleSymbol* parent = toModuleSymbol(block->parentSymbol)) {
+    if (parent->defPoint) {
+      BlockStmt* block = toBlockStmt(parent->defPoint->parentExpr);
+      INT_ASSERT(block);
+      getVisibleFunctions(block, name, visibleFns, visited);
+    }
+  }
+}
+
 static FnSymbol*
 resolve_call(CallInfo* info) {
   CallExpr* call = info->call;
@@ -1258,9 +1364,16 @@ resolve_call(CallInfo* info) {
   Vec<FnSymbol*> candidateFns;
   Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
 
-  if (!call->isResolved())
-    call->parentScope->getVisibleFunctions(&visibleFns, info->name);
-  else
+  //
+  // update visible function map as necessary
+  //
+  if (gFns.n != nVisibleFunctions)
+    buildVisibleFunctionMap();
+
+  if (!call->isResolved()) {
+    BlockStmt* block = getBlock(call);
+    getVisibleFunctions(block, info->name, visibleFns);
+  } else
     visibleFns.add(call->isResolved());
 
   if (explainCallLine && explainCallMatch(call)) {
@@ -3420,6 +3533,17 @@ resolve() {
   pruneResolvedTree();
 
   freeWrapperAndInstantiationCaches();
+
+  Vec<VisibleFunctionBlock*> vfbs;
+  visibleFunctionMap.get_values(vfbs);
+  forv_Vec(VisibleFunctionBlock, vfb, vfbs) {
+    Vec<Vec<FnSymbol*>*> vfns;
+    vfb->visibleFunctions.get_values(vfns);
+    forv_Vec(Vec<FnSymbol*>, vfn, vfns) {
+      delete vfn;
+    }
+    delete vfb;
+  }
 }
 
 
@@ -3891,6 +4015,7 @@ instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call) {
   static Vec<FnSymbol*> reportSet;  // do not report cached instantiations
   static Vec<FnSymbol*> whereStack;
   FnSymbol* ifn = fn->instantiate_generic(subs, &paramMap, call);
+
   ifn->isExtern = fn->isExtern; // preserve extern-ness of instantiated fn
   if (!ifn->isGeneric && ifn->where) {
     forv_Vec(FnSymbol, where, whereStack) {

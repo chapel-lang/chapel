@@ -12,22 +12,10 @@ SymScope::SymScope(BaseAST* iastParent, SymScope* iparent) :
 { }
 
 
-SymScope::~SymScope() {
-  Vec<const char*> keys;
-  visibleFunctions.get_keys(keys);
-  forv_Vec(const char, key, keys) {
-    delete visibleFunctions.get(key);
-  }
-}
+SymScope::~SymScope() {}
 
 
 void SymScope::define(Symbol* sym) {
-  if (FnSymbol* fn = toFnSymbol(sym)) {
-    if (fn->global)
-      theProgram->block->blkScope->addVisibleFunction(fn);
-    else
-      addVisibleFunction(fn);
-  }
   Symbol* tmp = table.get(sym->name);
   if (tmp) {
     sym->overloadNext = tmp->overloadNext;
@@ -46,10 +34,6 @@ void SymScope::define(Symbol* sym) {
 
 
 void SymScope::undefine(Symbol* sym) {
-  if (FnSymbol* fn = toFnSymbol(sym)) {
-    theProgram->block->blkScope->removeVisibleFunction(fn);
-    removeVisibleFunction(fn);
-  }
   Symbol* tmp = table.get(sym->name);
   if (tmp == sym) {
     tmp = sym->overloadNext;
@@ -345,65 +329,4 @@ void SymScope::codegenFunctions(FILE* outfile) {
   forv_Vec(FnSymbol, fn, fns) {
     fn->codegenDef(outfile);
   }
-}
-
-
-void SymScope::addVisibleFunction(FnSymbol* fn) {
-  if (!fn->visible)
-    return;
-  Vec<FnSymbol*>* fs = visibleFunctions.get(fn->name);
-  if (!fs) fs = new Vec<FnSymbol*>;
-  fs->add(fn);
-  visibleFunctions.put(fn->name, fs);
-}
-
-
-void SymScope::removeVisibleFunction(FnSymbol* fn) {
-  if (!fn->visible)
-    return;
-  Vec<FnSymbol*>* fs = visibleFunctions.get(fn->name);
-  if (!fs) return;
-  for (int i = 0; i < fs->n; i++) {
-    if (fs->v[i] == fn) {
-      fs->v[i] = NULL;
-    }
-  }
-}
-
-
-void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
-                                   const char* name,
-                                   bool recursed) {
-
-  // to avoid infinite loop because of cyclic module uses
-  static Vec<SymScope*> visited;
-  if (!recursed)
-    visited.clear();
-  if (visited.set_in(this))
-    return;
-  visited.set_add(this);
-
-  Vec<FnSymbol*>* fs = visibleFunctions.get(name);
-  if (fs)
-    allVisibleFunctions->append(*fs);
-  Vec<ModuleSymbol*>* modUses = getModuleUses();
-  if (modUses) {
-    forv_Vec(ModuleSymbol, module, *modUses) {
-      module->block->blkScope->getVisibleFunctions(allVisibleFunctions, name, true);
-    }
-  }
-  if (astParent) {
-    if (FnSymbol* fn = toFnSymbol(astParent)) {
-      if (fn->instantiationPoint) {
-        fn->instantiationPoint->getVisibleFunctions(allVisibleFunctions, name, true);
-        return;
-      }
-    }
-    if (astParent->getModule()->block == astParent) {
-      ModuleSymbol* mod = astParent->getModule();
-      mod->initFn->body->blkScope->getVisibleFunctions(allVisibleFunctions, name, true);
-    }
-  }
-  if (parent)
-    parent->getVisibleFunctions(allVisibleFunctions, name, true);
 }

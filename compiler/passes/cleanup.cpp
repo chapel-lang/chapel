@@ -179,16 +179,6 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
 }
 
 
-static BlockStmt*
-getBlock(Expr* stmt) {
-  if (BlockStmt* block = toBlockStmt(stmt)) {
-    if (block->blkScope)
-      return block;
-  }
-  return getBlock(stmt->parentExpr);
-}
-
-
 //
 // Moves expressions that are parsed as nested function definitions
 // into their own statement; during parsing, these are embedded in

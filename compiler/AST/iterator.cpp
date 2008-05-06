@@ -31,7 +31,7 @@ static FnSymbol*
 buildEmptyIteratorMethod(const char* name, ClassType* ct) {
   FnSymbol* fn = new FnSymbol(name);
   fn->copyPragmas(fn);
-  fn->addPragma("auto ii");
+  fn->addPragma("auto ii"); 
   fn->global = true;
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
@@ -89,6 +89,7 @@ void prototypeIteratorClass(FnSymbol* fn) {
     new ArgSymbol(INTENT_BLANK, "cursor", cursorType));
 
   FnSymbol* eltType = new FnSymbol("eltType");
+  eltType->global = true;
   eltType->copyPragmas(fn);
   eltType->addPragma("auto ii");
   eltType->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));

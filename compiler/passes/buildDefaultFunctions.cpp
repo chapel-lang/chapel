@@ -206,15 +206,16 @@ static void build_getter(ClassType* ct, Symbol *field) {
 static FnSymbol* chpl_main_exists(void) {
   FnSymbol* match = NULL;
   if (strlen(mainModuleName) != 0) {
-    SymScope* progScope = theProgram->block->blkScope;
-    ModuleSymbol* module = toModuleSymbol(progScope->table.get(astr(mainModuleName)));
+    ModuleSymbol* module = NULL;
+    forv_Vec(ModuleSymbol, mod, allModules) {
+      if (!strcmp(mainModuleName, mod->name))
+        module = mod;
+    }
     if (!module)
       USR_FATAL("Couldn't find module %s", mainModuleName);
-    Vec<FnSymbol*>* mainfns = module->block->blkScope->visibleFunctions.get(astr("main"));
-    if (!mainfns)
-      return NULL;
-    forv_Vec(FnSymbol, fn, *mainfns) {
-      if (!fn->numFormals()) {
+
+    forv_Vec(FnSymbol, fn, gFns) {
+      if (!strcmp("main", fn->name) && !fn->numFormals() && fn->getModule() == module) {
         if (!match) {
           match = fn;
         } else {

@@ -7,7 +7,6 @@ class SymScope {
  public:
   BaseAST* astParent; // back pointer to AST
   SymScope* parent;
-  Map<const char*,Vec<FnSymbol*>*> visibleFunctions;
   Map<const char*,Symbol*> table;
 
   SymScope(BaseAST* iastParent, SymScope* iparent);
@@ -31,11 +30,6 @@ class SymScope {
   void print(bool number, int indent);
 
   void codegenFunctions(FILE* outfile);
-
-  void addVisibleFunction(FnSymbol* fn);
-  void removeVisibleFunction(FnSymbol* fn);
-  void getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions, const char* name,
-                           bool recursed = false);
 }; 
 
 #endif
