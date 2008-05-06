@@ -24,7 +24,6 @@ static void apply_getters_setters(FnSymbol* fn);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
 static void fix_def_expr(VarSymbol* var);
-static void tag_global(FnSymbol* fn);
 static void fixup_array_formals(FnSymbol* fn);
 static void clone_parameterized_primitive_methods(FnSymbol* fn);
 static void fixup_query_formals(FnSymbol* fn);
@@ -458,14 +457,6 @@ void normalize(BaseAST* base) {
   asts.clear();
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol *fn = toFnSymbol(ast)) {
-      tag_global(fn);
-    }
-  }
-
-  asts.clear();
-  collect_asts_postorder(&asts, base);
-  forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
     if (Expr* a = toExpr(ast)) {
@@ -873,33 +864,6 @@ static void hack_resolve_types(Expr* expr) {
             arg->typeExpr->remove();
           }
         }
-      }
-    }
-  }
-}
-
-
-static void tag_global(FnSymbol* fn) {
-  if (!fn->global && !fn->isWrapper) {
-    if (ClassType* ct = toClassType(fn->_this)) {
-      if (ct->classTag == CLASS_CLASS &&
-          !ct->symbol->hasPragma("ref") &&
-          !ct->symbol->hasPragma("domain") &&
-          !ct->symbol->hasPragma("array")) {
-        fn->global = true;
-      }
-    }
-    if (fn->global) {
-      fn->parentScope->removeVisibleFunction(fn);
-      theProgram->block->blkScope->addVisibleFunction(fn);
-      if (toFnSymbol(fn->defPoint->parentSymbol)) {
-        ModuleSymbol* mod = fn->getModule();
-        Expr* def = fn->defPoint;
-        CallExpr* noop = new CallExpr(PRIMITIVE_NOOP);
-        def->insertBefore(noop);
-        fn->visiblePoint = noop;
-        def->remove();
-        mod->block->insertAtTail(def);
       }
     }
   }

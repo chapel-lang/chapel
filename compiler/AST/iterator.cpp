@@ -91,7 +91,6 @@ void prototypeIteratorClass(FnSymbol* fn) {
   FnSymbol* eltType = new FnSymbol("eltType");
   eltType->copyPragmas(fn);
   eltType->addPragma("auto ii");
-  eltType->global = true;
   eltType->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   eltType->_this = new ArgSymbol(INTENT_BLANK, "this", ii->classType);
   eltType->insertFormalAtTail(eltType->_this);

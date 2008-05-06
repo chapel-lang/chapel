@@ -394,8 +394,6 @@ void SymScope::getVisibleFunctions(Vec<FnSymbol*>* allVisibleFunctions,
   }
   if (astParent) {
     if (FnSymbol* fn = toFnSymbol(astParent)) {
-      if (fn->visiblePoint && fn->visiblePoint->parentScope)
-        fn->visiblePoint->parentScope->getVisibleFunctions(allVisibleFunctions, name, true); // unexecuted none/gasnet on 4/25/08
       if (fn->instantiationPoint) {
         fn->instantiationPoint->getVisibleFunctions(allVisibleFunctions, name, true);
         return;

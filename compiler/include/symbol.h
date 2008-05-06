@@ -168,15 +168,11 @@ class FnSymbol : public Symbol {
   FnSymbol *instantiatedFrom;
   ASTMap substitutions;
   Vec<FnSymbol *> *instantiatedTo;
-  CallExpr* visiblePoint; // global functions copied out see local functions
   SymScope* instantiationPoint; // point of instantiation
   bool visible; // included in visible function list for dispatch
                 // compiler generated functions are not visible, e.g.,
                 // instantiated functions and wrappers
-  bool global; // function is globally visible e.g. class argument
-               // WAW: temporary hack to get iterator-created methods
-               // visible
-
+  bool global;
   Vec<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
   bool isWrapper;

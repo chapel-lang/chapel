@@ -582,7 +582,6 @@ FnSymbol::FnSymbol(const char* initName) :
   isMethod(false),
   instantiatedFrom(NULL),
   instantiatedTo(NULL),
-  visiblePoint(NULL),
   instantiationPoint(NULL),
   visible(true),
   global(false),

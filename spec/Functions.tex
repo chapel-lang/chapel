@@ -435,10 +435,6 @@ A function is a visible function to a function call if the name of the
 function is the same as the name of the function call and the function
 is defined or used in a lexical outer scope.
 
-\index{class methods!and visibility}
-Additionally, class methods are considered globally visible and so are
-always visible regardless of the location of their definition.
-
 \subsubsection{Determining Candidate Functions}
 \label{Determining_Candidate_Functions}
 \index{functions!candidates}
@@ -576,20 +572,13 @@ Nesting of functions may be done to arbitrary degrees, i.e., a
 function can be nested in a nested function.
 
 Nested functions are only visible to function calls within the scope
-in which they are defined.  Class methods are exceptions; such methods
-are globally visible.
+in which they are defined.
 
 \subsubsection{Accessing Outer Variables}
 \label{Accessing_Outer_Variables}
 
 Nested functions may refer to variables defined in the function in
-which they are nested.  If the function is a class method, it is a
-compiler error to refer to a variable in the outer function.
-
-\begin{rationale}
-It may be too strict to make this a compiler error.  Are there
-advantages to making this a runtime error?
-\end{rationale}
+which they are nested.
 
 \subsection{Variable Length Argument Lists}
 \label{Variable_Length_Argument_Lists}
