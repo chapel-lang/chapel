@@ -3,7 +3,7 @@
 use File::Basename;
 
 $found_test = 0;
-$command .= "chpl ";
+$command = "chpl ";
 while (@ARGV) {
     $arg = shift @ARGV;
     if ($arg =~ m/.chpl$/) {
@@ -48,4 +48,4 @@ while (@ARGV) {
 die "no test specified" unless $found_test == 1;
 
 print "$command\n";
-system $command;
+exec $command;
