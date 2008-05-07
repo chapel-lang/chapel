@@ -84,17 +84,22 @@ static void
 flattenGlobalFunctions() {
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(expr, mod->initFn->body->body) {
-      if (DefExpr* def = toDefExpr(expr))
+      if (DefExpr* def = toDefExpr(expr)) {
         if ((toVarSymbol(def->sym) && !def->sym->isCompilerTemp) ||
             toTypeSymbol(def->sym) ||
-            toFnSymbol(def->sym))
-//           if (!((!strncmp("_anon_record", def->sym->name, 12)) ||
-//                 (!strncmp("_forallexpr", def->sym->name, 11)) ||
-//                 (!strncmp("_let_fn", def->sym->name, 7)) ||
-//                 (!strncmp("_if_fn", def->sym->name, 6)) ||
-//                 (!strncmp("_reduce_scan", def->sym->name, 12)) ||
-//                 (!strncmp("_forif_fn", def->sym->name, 9))))
+            toFnSymbol(def->sym)) {
+          FnSymbol* fn = toFnSymbol(def->sym);
+          if (!fn ||                    // always flatten non-functions
+              fn->numFormals() != 0 || // always flatten methods
+              !((!strncmp("_forallexpr", def->sym->name, 11)) ||
+                (!strncmp("_let_fn", def->sym->name, 7)) ||
+                (!strncmp("_if_fn", def->sym->name, 6)) ||
+                (!strncmp("_reduce_scan", def->sym->name, 12)) ||
+                (!strncmp("_forif_fn", def->sym->name, 9)))) {
             mod->block->insertAtTail(def->remove());
+          }
+        }
+      }
     }
   }
 }
