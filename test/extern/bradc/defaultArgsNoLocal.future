@@ -1,6 +1,0 @@
-feature request: extern functions w/ default args and return values
-
-For some reason, this works with --local, but not with --no-local.
-My guess is that it is related to the same wrapper problem as
-defaultArgsUseReturn.future and that fixing that will fix this,
-but I wanted to file it just in case that wasn't the case.
