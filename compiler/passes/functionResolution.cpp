@@ -1257,19 +1257,35 @@ class VisibleFunctionBlock {
 
 static Map<BlockStmt*,VisibleFunctionBlock*> visibleFunctionMap;
 static int nVisibleFunctions = 0; // for incremental build
+static Map<BlockStmt*,BlockStmt*> visibilityBlockCache;
 
+//
+// return the innermost block for searching for visible functions
+//
 static BlockStmt*
-getBlock(Expr* expr) {
+getVisibilityBlock(Expr* expr) {
   if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
     if (block->blockTag == BLOCK_SCOPELESS)
-      return getBlock(block);
+      return getVisibilityBlock(block);
     else
       return block;
   } else if (expr->parentExpr) {
-    return getBlock(expr->parentExpr);
+    return getVisibilityBlock(expr->parentExpr);
   } else {
-    return getBlock(expr->parentSymbol->defPoint);
+    FnSymbol* fn = toFnSymbol(expr->parentSymbol);
+    if (fn && fn->instantiationPoint) {
+      if (BlockStmt* block = toBlockStmt(fn->instantiationPoint->astParent))
+        return block;
+      else if (Expr* expr = toExpr(fn->instantiationPoint->astParent))
+        return getVisibilityBlock(expr);
+      else if (Symbol* sym = toSymbol(fn->instantiationPoint->astParent))
+        return getVisibilityBlock(sym->defPoint);
+      else
+        INT_FATAL(fn->instantiationPoint->astParent, "unexpected case");
+    } else
+      return getVisibilityBlock(expr->parentSymbol->defPoint);
   }
+  return NULL;
 }
 
 static void buildVisibleFunctionMap() {
@@ -1277,7 +1293,7 @@ static void buildVisibleFunctionMap() {
     FnSymbol* fn = gFns.v[i];
     if (fn->visible) {
       BlockStmt* block =
-        (fn->global) ? theProgram->block : getBlock(fn->defPoint);
+        (fn->global) ? theProgram->block : getVisibilityBlock(fn->defPoint);
       VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
       if (!vfb) {
         vfb = new VisibleFunctionBlock();
@@ -1294,23 +1310,28 @@ static void buildVisibleFunctionMap() {
   nVisibleFunctions = gFns.n;
 }
 
-static void
+static BlockStmt*
 getVisibleFunctions(BlockStmt* block,
                     const char* name,
                     Vec<FnSymbol*>& visibleFns,
                     Vec<BlockStmt*>* visited = NULL) {
-  if (!visited) {
+  if (!visited) { // first call only
     Vec<BlockStmt*> visited;
     getVisibleFunctions(block, name, visibleFns, &visited);
-    return;
+    return NULL;
   }
 
-  if (visited->set_in(block))
-    return;
+  if (visited->set_in(block)) {
+    INT_ASSERT(isModuleSymbol(block->parentSymbol));
+    return NULL;
+  }
   visited->set_add(block);
+
+  bool canSkipThisBlock = true;
 
   VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
   if (vfb) {
+    canSkipThisBlock = false; // cannot skip if this block defines functions
     Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name);
     if (fns) {
       visibleFns.append(*fns);
@@ -1318,41 +1339,27 @@ getVisibleFunctions(BlockStmt* block,
   }
 
   forv_Vec(ModuleSymbol, module, block->modUses) {
+    canSkipThisBlock = false; // cannot skip if this block uses modules
     getVisibleFunctions(module->block, name, visibleFns, visited);
   }
 
-  if (CondStmt* parent = toCondStmt(block->parentExpr)) {
-    BlockStmt* block = toBlockStmt(parent->parentExpr);
-    INT_ASSERT(block);
-    getVisibleFunctions(block, name, visibleFns, visited);
-  } else if (BlockStmt* parent = toBlockStmt(block->parentExpr)) {
-    getVisibleFunctions(parent, name, visibleFns, visited);
-  } else if (FnSymbol* parent = toFnSymbol(block->parentSymbol)) {
-    if (parent->instantiationPoint) {
-      FnSymbol* tmp = parent;
-      while (tmp && tmp->instantiationPoint) {
-        parent = tmp;
-        tmp = toFnSymbol(tmp->instantiationPoint->astParent);
-      }
-      if (BlockStmt* block = toBlockStmt(parent->instantiationPoint->astParent))
-        getVisibleFunctions(block, name, visibleFns, visited);
-    }
-    BlockStmt* block = toBlockStmt(parent->defPoint->parentExpr);
-    INT_ASSERT(block);
-    getVisibleFunctions(block, name, visibleFns, visited);
-  } else if (ArgSymbol* parent = toArgSymbol(block->parentSymbol)) {
-    if (parent->defPoint) {
-      BlockStmt* block = toBlockStmt(parent->defPoint->parentSymbol->defPoint->parentExpr);
-      INT_ASSERT(block);
-      getVisibleFunctions(block, name, visibleFns, visited);
-    }
-  } else if (ModuleSymbol* parent = toModuleSymbol(block->parentSymbol)) {
-    if (parent->defPoint) {
-      BlockStmt* block = toBlockStmt(parent->defPoint->parentExpr);
-      INT_ASSERT(block);
-      getVisibleFunctions(block, name, visibleFns, visited);
-    }
+  //
+  // visibilityBlockCache contains blocks that can be skipped
+  //
+  if (BlockStmt* next = visibilityBlockCache.get(block)) {
+    getVisibleFunctions(next, name, visibleFns, visited);
+    return (canSkipThisBlock) ? next : block;
   }
+
+  if (block != theProgram->block) {
+    BlockStmt* next = getVisibilityBlock(block);
+    BlockStmt* cache = getVisibleFunctions(next, name, visibleFns, visited);
+    if (cache)
+      visibilityBlockCache.put(block, cache);
+    return (canSkipThisBlock) ? cache : block;
+  }
+
+  return NULL;
 }
 
 static FnSymbol*
@@ -1371,8 +1378,7 @@ resolve_call(CallInfo* info) {
     buildVisibleFunctionMap();
 
   if (!call->isResolved()) {
-    BlockStmt* block = getBlock(call);
-    getVisibleFunctions(block, info->name, visibleFns);
+    getVisibleFunctions(getVisibilityBlock(call), info->name, visibleFns);
   } else
     visibleFns.add(call->isResolved());
 
@@ -3544,6 +3550,8 @@ resolve() {
     }
     delete vfb;
   }
+  visibleFunctionMap.clear();
+  visibilityBlockCache.clear();
 }
 
 
