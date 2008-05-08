@@ -168,7 +168,7 @@ class FnSymbol : public Symbol {
   FnSymbol *instantiatedFrom;
   ASTMap substitutions;
   Vec<FnSymbol *> *instantiatedTo;
-  SymScope* instantiationPoint; // point of instantiation
+  BlockStmt* instantiationPoint; // point of instantiation
   bool visible; // included in visible function list for dispatch
                 // compiler generated functions are not visible, e.g.,
                 // instantiated functions and wrappers

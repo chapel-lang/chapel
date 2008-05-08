@@ -1262,7 +1262,7 @@ static Map<BlockStmt*,BlockStmt*> visibilityBlockCache;
 //
 // return the innermost block for searching for visible functions
 //
-static BlockStmt*
+BlockStmt*
 getVisibilityBlock(Expr* expr) {
   if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
     if (block->blockTag == BLOCK_SCOPELESS)
@@ -1273,16 +1273,9 @@ getVisibilityBlock(Expr* expr) {
     return getVisibilityBlock(expr->parentExpr);
   } else {
     FnSymbol* fn = toFnSymbol(expr->parentSymbol);
-    if (fn && fn->instantiationPoint) {
-      if (BlockStmt* block = toBlockStmt(fn->instantiationPoint->astParent))
-        return block;
-      else if (Expr* expr = toExpr(fn->instantiationPoint->astParent))
-        return getVisibilityBlock(expr);
-      else if (Symbol* sym = toSymbol(fn->instantiationPoint->astParent))
-        return getVisibilityBlock(sym->defPoint);
-      else
-        INT_FATAL(fn->instantiationPoint->astParent, "unexpected case");
-    } else
+    if (fn && fn->instantiationPoint)
+      return fn->instantiationPoint;
+    else
       return getVisibilityBlock(expr->parentSymbol->defPoint);
   }
   return NULL;

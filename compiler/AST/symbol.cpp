@@ -1090,6 +1090,8 @@ copyGenericSub(ASTMap& subs, FnSymbol* root, FnSymbol* fn, BaseAST* key, BaseAST
   subs.put(key, value);
 }
 
+extern BlockStmt* getVisibilityBlock(Expr* expr);
+
 static FnSymbol*
 instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
                      Map<Symbol*,Symbol*>* paramMap, CallExpr* call) {
@@ -1100,7 +1102,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
   clone->visible = false;
   clone->instantiatedFrom = fn;
   if (call)
-    clone->instantiationPoint = call->parentScope;
+    clone->instantiationPoint = getVisibilityBlock(call);
 
   FnSymbol* root = fn;
   while (root->instantiatedFrom && root->numFormals() == root->instantiatedFrom->numFormals())
