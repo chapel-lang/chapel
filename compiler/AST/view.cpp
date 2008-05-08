@@ -302,7 +302,7 @@ void nprint_view_noline(BaseAST* ast) {
 }
 
 
-BaseAST* ast(int id) {
+BaseAST* aid(int id) {
   forv_Vec(BaseAST, a, gAsts)
     if (a->id == id)
       return a;
@@ -311,7 +311,7 @@ BaseAST* ast(int id) {
 
 
 void iprint_view(int id) {
-  nprint_view(ast(id));
+  nprint_view(aid(id));
 }
 
 

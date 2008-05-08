@@ -3,7 +3,7 @@
 
 #include "baseAST.h"
 
-extern BaseAST* ast(int id);
+extern BaseAST* aid(int id);
 extern void print_view(BaseAST* ast);
 extern void print_view_noline(BaseAST* ast);
 extern void iprint_view(int id);
