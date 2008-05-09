@@ -8,6 +8,7 @@ class Type;
 class FnSymbol;
 class VarSymbol;
 class ArgSymbol;
+class BlockStmt;
 class CallExpr;
 class SymExpr;
 class Expr;
@@ -109,5 +110,9 @@ void insert_help(BaseAST* ast,
                  SymScope* parentScope);
 
 ArgSymbol* actual_to_formal( Expr *a);
+
+// move to resolve include when function resolution is in own
+// directory
+BlockStmt* getVisibilityBlock(Expr* expr);
 
 #endif
