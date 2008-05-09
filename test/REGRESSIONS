@@ -33,6 +33,12 @@ extremely rare race condition in module initialization
 valgrind-specific regressions
 =============================
 
+internal error stuff?
+---------------------
+[Error matching program output for parallel/taskPool/figueroa/ManyThreads]
+[Error matching program output for
+parallel/taskPool/figueroa/TooManyThreads]
+
 does this fail nondeterministically?  (fixed itself 4/29/08)
 ------------------------------------------------------------
 [Error matching program output for parallel/cobegin/diten/cobeginRace]
@@ -46,28 +52,6 @@ failing nondeterministically (e.g., 04/03/08)
 failing nondeterministically (e.g., 04/04/08)
 ---------------------------------------------
 [Error: didn't find expected suppression memory/shannon/outofmemory/mallocOutOfMemory]
-
-
-==========================
-intel-specific regressions
-==========================
-
-pointless comparisons with unsigneds
-------------------------------------
-[Error matching compiler output for arrays/deitz/test_array_uint64]
-[Error matching compiler output for modules/bradc/ra-paramWidth]
-[Error matching compiler output for release/examples/hpcc/ra]
-[Error matching compiler output for
-studies/hpcc/RA/bradc/ra-bradc-domainPromote]
-[Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc]
-[Error matching compiler output for studies/hpcc/RA/marybeth/ra-test-dist]
-[Error matching compiler output for studies/hpcc/RA/marybeth/ra2]
-[Error matching compiler output for studies/hpcc/RA/marybeth/ra3]
-[Error matching compiler output for studies/hpcc/RA/ra-hpcc06]
-[Error matching compiler output for studies/hpcc/RA/ra-seq]
-[Error matching compiler output for types/scalar/bradc/uintZeroComparisons2]
-[Error matching compiler output for types/scalar/bradc/uintZeroComparisons]
-[Error matching compiler output for types/seq/deitz/test_aseq3]
 
 
 ===========================
@@ -96,17 +80,12 @@ opts-specific tests
 -----------------------------
 [Error matching program output for release/examples/hpcc/stream]
 
---no-copy-propagation
----------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main]
-[Error: Timed out compilation for users/franzf/v1/chpl/main]
-[Summary: #Successes = 1969 | #Failures = 2 | #Futures = 0]
-
 --no-dead-code-elimination
 --------------------------
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
+[Summary: #Successes = 1975 | #Failures = 3 | #Futures = 0]
 
 --no-live-analysis
 ------------------
@@ -117,6 +96,10 @@ opts-specific tests
 [Error matching program output for arrays/deitz/test_plus_assign_iter]
 [Error matching program output for arrays/waynew/init1]
 [Error matching program output for arrays/waynew/init2]
+[Error matching program output for associative/waynew/indef8-fail2]
+[Error matching program output for associative/waynew/indef8]
+[Error matching program output for
+classes/bradc/arrayInClass/genericArrayInClass-otharrs]
 [Error matching program output for domains/deitz/test_domain_reassign3]
 [Error matching program output for functions/deitz/test_square2]
 [Error matching program output for
@@ -135,6 +118,17 @@ functions/deitz/iterators/test_iterator_local_vars_same_name]
 [Error matching program output for studies/hpcc/FFT/marybeth/fft-test-even]
 [Error matching program output for studies/hpcc/FFT/marybeth/fft]
 [Error matching program output for studies/hpcc/FFT/marybeth/fft2d]
+[Error matching program output for
+studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching program output for
+studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for studies/madness/common/test_gaxpy]
+[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for
+studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching program output for
+studies/madness/dinan/mad_chapel/test_likepy]
+[Summary: #Successes = 1945 | #Failures = 33 | #Futures = 0]
 
 --baseline --inline-iterators
 -----------------------------
@@ -149,6 +143,10 @@ functions/deitz/iterators/test_iterator_local_vars_same_name]
 [Error matching program output for arrays/deitz/part1/test_array_assign3]
 [Error matching program output for arrays/waynew/init1]
 [Error matching program output for arrays/waynew/init2]
+[Error matching program output for associative/waynew/indef8-fail2]
+[Error matching program output for associative/waynew/indef8]
+[Error matching program output for 
+classes/bradc/arrayInClass/genericArrayInClass-otharrs]
 [Error matching program output for domains/deitz/test_domain_reassign3]
 [Error matching program output for functions/deitz/test_square2]
 [Error matching program output for
@@ -199,6 +197,8 @@ studies/madness/aniruddha/madchap/test_gaxpy]
 studies/madness/aniruddha/madchap/test_likepy]
 [Error matching program output for
 studies/madness/aniruddha/madchap/test_mul]
+[Error matching program output for
+studies/madness/aniruddha/madchap/test_showboxes]
 [Error matching program output for studies/madness/common/test_diff]
 [Error matching program output for studies/madness/common/test_gaxpy]
 [Error matching program output for studies/madness/common/test_likepy]
@@ -224,11 +224,13 @@ studies/madness/dinan/mad_chapel/test_mul]
 [Error matching program output for users/shetag/fock/fock-orig]
 [Error matching program output for users/shetag/fock/fock-stc-1]
 [Error matching program output for users/shetag/fock/fock-stc]
+[Summary: #Successes = 1902 | #Failures = 76 | #Futures = 0]
 
 --no-local
 ----------
 [Error matching compiler output for classes/diten/allocateManyObjects]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
+[Summary: #Successes = 1976 | #Failures = 2 | #Futures = 0]
 
 --baseline --no-local
 ---------------------
@@ -252,6 +254,7 @@ studies/madness/dinan/mad_chapel/test_mul]
 [Error matching program output for types/file/freadComplex]
 [Error matching compiler output for types/tuple/deitz/test_destruct_nested]
 [Error matching compiler output for types/tuple/deitz/test_htuple3]
+[Error matching program output for types/tuple/deitz/test_tuple_of_array2]
 [Error matching compiler output for types/tuple/deitz/test_tuple_of_tuples]
 [Error matching compiler output for types/tuple/deitz/test_tuple_simple1]
 [Error matching compiler output for types/tuple/deitz/test_tuple_simple1a]
@@ -261,6 +264,7 @@ studies/madness/dinan/mad_chapel/test_mul]
 [Error matching compiler output for types/tuple/jplevyak/destruct-2]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
+[Summary: #Successes = 1948 | #Failures = 30 | #Futures = 0]
 
 
 ==============================
@@ -324,6 +328,7 @@ Some sort of offset type mismatch -- likely caused by long identifiers
 
 long identifiers
 ----------------
+[Error matching program output for types/tuple/deitz/test_128int]
 [Error matching program output for arrays/deitz/test_major_nesting_of_arrays] 
 [Error matching program output for trivial/deitz/test_longToken] 
 
@@ -373,11 +378,6 @@ print occurs in 0 seconds!?  Timers not working?
 ============================
 mta/xmt-specific regressions
 ============================
-
-pointless comparison warnings
------------------------------
-[Error matching program output for release/examples/hpcc/ra]
-
 
 data alignment trap (05/10/08)
 ------------------------------
