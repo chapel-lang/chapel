@@ -1,7 +1,7 @@
 #include "astutil.h"
 #include "expr.h"
+#include "stmt.h"
 #include "passes.h"
-#include "runtime.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "symscope.h"

@@ -268,6 +268,8 @@ extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 extern StringChainHash uniqueStringHash;
 
 extern ModuleSymbol* rootModule;
+extern ModuleSymbol* theProgram;
+extern ModuleSymbol* baseModule;
 extern Symbol *gNil;
 extern Symbol *gNilRef;
 extern Symbol *gUnknown;

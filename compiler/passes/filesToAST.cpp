@@ -7,7 +7,9 @@
 #include "symbol.h"
 #include "countTokens.h"
 #include "yy.h"
-#include "runtime.h"
+
+static ModuleSymbol* fileModule = NULL;
+static ModuleSymbol* domainModule = NULL;
 
 static ModuleSymbol* parseStandardModule(const char* name) {
   static const char* modulePath = NULL;
@@ -20,10 +22,10 @@ static ModuleSymbol* parseStandardModule(const char* name) {
 static void parseStandardModules(void) {
   baseModule = parseStandardModule("ChapelBase.chpl");
   if (!fNoStdIncs) {
-    standardModule = parseStandardModule("ChapelStandard.chpl");
+    parseStandardModule("ChapelStandard.chpl");
     parseStandardModule("ChapelLocale.chpl");
     fileModule = parseStandardModule("ChapelIO.chpl");
-    tupleModule = parseStandardModule("ChapelTuple.chpl");
+    parseStandardModule("ChapelTuple.chpl");
     parseStandardModule("ChapelReduce.chpl");
     parseStandardModule("ChapelRange.chpl");
     domainModule = parseStandardModule("ChapelArray.chpl");
@@ -67,10 +69,8 @@ void parse(void) {
   finishCountingTokens();
 
   if (!fNoStdIncs) {
-    chpl_array = domainModule->lookupType("_array");
-    chpl_stdin = fileModule->lookupVar("stdin");
-    chpl_stdout = fileModule->lookupVar("stdout");
-    chpl_stderr = fileModule->lookupVar("stderr");
-    dtWriter = fileModule->lookupType("Writer")->type;
+    dtArray = toClassType(domainModule->lookupType("_array")->type);
+    dtWriter = toClassType(fileModule->lookupType("Writer")->type);
+    dtChapelFile = toClassType(fileModule->lookupType("file")->type);
   }
 }

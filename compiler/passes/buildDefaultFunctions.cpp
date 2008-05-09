@@ -2,7 +2,6 @@
 #include "build.h"
 #include "expr.h"
 #include "passes.h"
-#include "runtime.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -632,9 +631,8 @@ static void buildDefaultReadFunction(ClassType* ct) {
 
   FnSymbol* fn = new FnSymbol("read");
   fn->cname = astr("_auto_", ct->symbol->name, "_read");
-  TypeSymbol* fileType = toTypeSymbol(fileModule->lookup("file"));
   ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", ct);
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", fileType->type);
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtChapelFile);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
   fn->insertFormalAtTail(arg);
@@ -698,9 +696,8 @@ static void buildDefaultReadFunction(EnumType* et) {
 
   FnSymbol* fn = new FnSymbol("read");
   fn->cname = astr("_auto_", et->symbol->name, "_read");
-  TypeSymbol* fileType = toTypeSymbol(fileModule->lookup("file"));
   ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", et);
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", fileType->type);
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtChapelFile);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
   fn->insertFormalAtTail(arg);

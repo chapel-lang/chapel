@@ -3,7 +3,6 @@
 #include "countTokens.h"
 #include "files.h"
 #include "parser.h"
-#include "runtime.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "symscope.h"

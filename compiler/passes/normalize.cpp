@@ -7,7 +7,6 @@
 #include "build.h"
 #include "expr.h"
 #include "passes.h"
-#include "runtime.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -895,7 +894,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           if (!arg || !arg->typeExpr || arg->typeExpr->body.tail != call)
             USR_FATAL(call, "array with empty or queried domain can "
                       "only be used as a formal argument type");
-          arg->typeExpr->replace(new BlockStmt(new SymExpr(chpl_array), BLOCK_SCOPELESS));
+          arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_SCOPELESS));
           if (!fn->where) {
             fn->where = new BlockStmt(new SymExpr(gTrue));
             insert_help(fn->where, NULL, fn, fn->argScope);
@@ -933,7 +932,7 @@ static void fixup_array_formals(FnSymbol* fn) {
         } else {  //// DUPLICATED CODE ABOVE AND BELOW
           if (ArgSymbol* arg = toArgSymbol(call->parentSymbol)) {
             if (arg->typeExpr && arg->typeExpr->body.tail == call) {
-              arg->typeExpr->replace(new BlockStmt(new SymExpr(chpl_array), BLOCK_SCOPELESS));
+              arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_SCOPELESS));
               VarSymbol* tmp = new VarSymbol(astr("_reindex_", arg->name));
               forv_Vec(BaseAST, ast, all_asts) {
                 if (SymExpr* sym = toSymExpr(ast)) {

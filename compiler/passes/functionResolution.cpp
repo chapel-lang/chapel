@@ -3,7 +3,6 @@
 #include "expr.h"
 #include "iterator.h"
 #include "passes.h"
-#include "runtime.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -1278,7 +1277,6 @@ getVisibilityBlock(Expr* expr) {
     else
       return getVisibilityBlock(expr->parentSymbol->defPoint);
   }
-  return NULL;
 }
 
 static void buildVisibleFunctionMap() {

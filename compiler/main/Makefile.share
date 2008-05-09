@@ -3,8 +3,7 @@ MAIN_SRCS = \
 	driver.cpp \
         log.cpp \
 	runpasses.cpp \
-        runtime.cpp \
-	version.cpp \
+	version.cpp
 
 SVN_SRCS = $(MAIN_SRCS)
 SRCS = $(SVN_SRCS)

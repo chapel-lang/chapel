@@ -156,6 +156,13 @@ TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtTaskList;
 
+//
+// standard module types
+//
+TYPE_EXTERN ClassType* dtArray;
+TYPE_EXTERN ClassType* dtChapelFile;
+TYPE_EXTERN ClassType* dtWriter;
+
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
 

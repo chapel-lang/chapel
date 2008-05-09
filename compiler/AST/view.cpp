@@ -2,7 +2,6 @@
 #include "astutil.h"
 #include "stmt.h"
 #include "expr.h"
-#include "runtime.h"
 #include "symbol.h"
 #include "symscope.h"
 #include "type.h"

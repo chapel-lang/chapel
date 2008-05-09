@@ -4,7 +4,6 @@
 #include "expr.h"
 #include "files.h"
 #include "misc.h"
-#include "runtime.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "symscope.h"
