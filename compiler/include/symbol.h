@@ -65,7 +65,6 @@ class Symbol : public BaseAST {
   Symbol(AstTag astTag, const char* init_name, Type* init_type = dtUnknown);
   virtual ~Symbol();
   virtual void verify(); 
-  void setParentScope(SymScope* init_parentScope);
   virtual bool inTree();
   virtual Type* typeInfo(void);
   COPY_DEF(Symbol);
@@ -268,6 +267,7 @@ int compareSymbol(const void* v1, const void* v2);
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 extern StringChainHash uniqueStringHash;
 
+extern ModuleSymbol* rootModule;
 extern Symbol *gNil;
 extern Symbol *gNilRef;
 extern Symbol *gUnknown;

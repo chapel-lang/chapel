@@ -14,6 +14,7 @@
 
 FnSymbol *chpl_main = NULL;
 
+ModuleSymbol* rootModule = NULL;
 Symbol *gNil = NULL;
 Symbol *gNilRef = NULL;
 Symbol *gUnknown = NULL;
@@ -181,13 +182,8 @@ void Symbol::verify() {
 }
 
 
-void Symbol::setParentScope(SymScope* init_parentScope) {
-  parentScope = init_parentScope;
-}
-
-
 bool Symbol::inTree(void) {
-  if (this == theProgram)
+  if (this == rootModule)
     return true;
   if (defPoint)
     return defPoint->inTree();
@@ -549,16 +545,12 @@ void TypeSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void TypeSymbol::codegenPrototype(FILE* outfile) {
-  if (!hasPragma("defined in runtime")) {
-    type->codegenPrototype(outfile);
-  }
+  type->codegenPrototype(outfile);
 }
 
 
 void TypeSymbol::codegenDef(FILE* outfile) {
-  if (!hasPragma("defined in runtime")) {
-    type->codegenDef(outfile);
-  }
+  type->codegenDef(outfile);
 }
 
 
@@ -1808,8 +1800,8 @@ VarSymbol *new_StringSymbol(const char *str) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol("_literal_string", dtString);
-  theProgram->block->blkScope->define(s);
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtString);
+  rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
@@ -1832,8 +1824,8 @@ VarSymbol *new_IntSymbol(long long int b, IF1_int_type size) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol("_literal_int", dtInt[size]);
-  theProgram->block->blkScope->define(s);
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtInt[size]);
+  rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
@@ -1856,8 +1848,8 @@ VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type size) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s)
     return s;
-  s = new VarSymbol("_literal_uint", dtUInt[size]);
-  theProgram->block->blkScope->define(s);
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtUInt[size]);
+  rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
@@ -1878,7 +1870,7 @@ VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
   if (s)
     return s;
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtReal[size]);
-  theProgram->block->blkScope->define(s);
+  rootModule->block->insertAtTail(new DefExpr(s));
   s->cname = astr(n);
   s->immediate = new Immediate;
   *s->immediate = imm;
@@ -1900,7 +1892,7 @@ VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
   if (s)
     return s;
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtImag[size]);
-  theProgram->block->blkScope->define(s);
+  rootModule->block->insertAtTail(new DefExpr(s));
   s->cname = astr(n);
   s->immediate = new Immediate;
   *s->immediate = imm;
@@ -1928,7 +1920,7 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_co
   if (s)
     return s;
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtComplex[size]);
-  theProgram->block->blkScope->define(s);
+  rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
   s->cname = astr(n);
   *s->immediate = imm;
@@ -1942,6 +1934,7 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
     return s;
   PrimitiveType *t = immediate_type(imm);
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), t);
+  rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
   char str[512];
   const char* ss = str;

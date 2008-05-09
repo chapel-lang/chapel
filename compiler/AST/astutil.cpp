@@ -31,7 +31,7 @@ void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
 }
 
 void collect_asts(Vec<BaseAST*>* asts) {
-  collect_asts(asts, theProgram);
+  collect_asts(asts, rootModule);
 }
 
 void collect_asts_postorder(Vec<BaseAST*>* asts, BaseAST* ast) {
@@ -44,7 +44,7 @@ void collect_asts_postorder(Vec<BaseAST*>* asts, BaseAST* ast) {
 }
 
 void collect_asts_postorder(Vec<BaseAST*>* asts) {
-  collect_asts_postorder(asts, theProgram);
+  collect_asts_postorder(asts, rootModule);
 }
 
 

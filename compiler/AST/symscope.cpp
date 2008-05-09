@@ -23,12 +23,12 @@ void SymScope::define(Symbol* sym) {
     if (tmp->overloadNext)
       tmp->overloadNext->overloadPrev = sym;
     tmp->overloadNext = sym;
-    sym->setParentScope(tmp->parentScope);
+    sym->parentScope = tmp->parentScope;
   } else {
     table.put(sym->name, sym);
     sym->overloadNext = NULL;
     sym->overloadPrev = NULL;
-    sym->setParentScope(this);
+    sym->parentScope = this;
   }
 }
 
@@ -80,9 +80,11 @@ SymScope::lookupLocal(const char* name, Vec<SymScope*>* alreadyVisited, bool ret
 
   if (astParent && astParent->getModule()->block == astParent) {
     ModuleSymbol* mod = astParent->getModule();
-    sym = mod->initFn->body->blkScope->lookupLocal(name, alreadyVisited, returnModules);
-    if (sym && (!toModuleSymbol(sym) || returnModules))
-      return sym; // unexecuted none/gasnet on 4/25/08
+    if (mod != rootModule) {
+      sym = mod->initFn->body->blkScope->lookupLocal(name, alreadyVisited, returnModules);
+      if (sym && (!toModuleSymbol(sym) || returnModules))
+        return sym; // unexecuted none/gasnet on 4/25/08
+    }
   }
 
   Vec<ModuleSymbol*>* modUses = getModuleUses();
@@ -178,36 +180,35 @@ SymScope::lookup(const char* name, Vec<SymScope*>* alreadyVisited, bool returnMo
     }
   }
   if (scanModuleUses && symbols.n == 0) {
-    if (parent) {
-      if (astParent && astParent->getModule()->block == astParent) {
-        ModuleSymbol* mod = astParent->getModule();
+    if (astParent && astParent->getModule()->block == astParent) {
+      ModuleSymbol* mod = astParent->getModule();
+      if (mod != rootModule) {
         sym = mod->initFn->body->blkScope->lookup(name, alreadyVisited, returnModules, scanModuleUses);
         if (sym && (returnModules || !toModuleSymbol(sym)))
           symbols.set_add(sym);
-
+        
         if (symbols.n == 0 && parent) {
           sym = parent->lookup(name, alreadyVisited, returnModules, scanModuleUses);
           if (sym && (returnModules || !toModuleSymbol(sym)))
             symbols.set_add(sym);
         }
-
-      } else {
-        FnSymbol* fn = toFnSymbol(astParent);
-        if (fn && fn->_this && toClassType(fn->_this->type)) {
-          ClassType* ct = toClassType(fn->_this->type);
-          sym = ct->structScope->lookup(name, alreadyVisited, returnModules, scanModuleUses);
-          if (sym && (returnModules || !toModuleSymbol(sym)))
-            symbols.set_add(sym);
-          else {
-            sym = parent->lookup(name, alreadyVisited, returnModules, scanModuleUses);
-            if (sym && (!toModuleSymbol(sym) || returnModules))
-              symbols.set_add(sym);
-          }
-        } else {
+      }
+    } else {
+      FnSymbol* fn = toFnSymbol(astParent);
+      if (fn && fn->_this && toClassType(fn->_this->type)) {
+        ClassType* ct = toClassType(fn->_this->type);
+        sym = ct->structScope->lookup(name, alreadyVisited, returnModules, scanModuleUses);
+        if (sym && (returnModules || !toModuleSymbol(sym)))
+          symbols.set_add(sym);
+        else {
           sym = parent->lookup(name, alreadyVisited, returnModules, scanModuleUses);
           if (sym && (!toModuleSymbol(sym) || returnModules))
             symbols.set_add(sym);
         }
+      } else if (parent) {
+        sym = parent->lookup(name, alreadyVisited, returnModules, scanModuleUses);
+        if (sym && (!toModuleSymbol(sym) || returnModules))
+          symbols.set_add(sym);
       }
     }
   }

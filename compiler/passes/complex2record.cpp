@@ -20,10 +20,9 @@ static ClassType*
 buildComplexRecord(const char* name, Type* real) {
   ClassType* ct = new ClassType(CLASS_RECORD);
   TypeSymbol* ts = new TypeSymbol(name, ct);
-  ts->addPragma("defined in runtime");
   ct->fields.insertAtTail(new DefExpr(new VarSymbol("re", real)));
   ct->fields.insertAtTail(new DefExpr(new VarSymbol("im", real)));
-  theProgram->block->insertAtTail(new DefExpr(ts));
+  rootModule->block->insertAtTail(new DefExpr(ts));
   return ct;
 }
 
@@ -39,14 +38,22 @@ void
 complex2record() {
   ClassType* complex64 = buildComplexRecord("_complex64", dtReal[FLOAT_SIZE_32]);
   ClassType* complex128 = buildComplexRecord("_complex128", dtReal[FLOAT_SIZE_64]);
+
   complex64->refType = dtComplex[COMPLEX_SIZE_64]->refType;
   complex128->refType = dtComplex[COMPLEX_SIZE_128]->refType;
 
+  dtComplex[COMPLEX_SIZE_64]->refType = NULL;
+  dtComplex[COMPLEX_SIZE_128]->refType = NULL;
+
+  dtComplex[COMPLEX_SIZE_64]->symbol->defPoint->remove();
+  dtComplex[COMPLEX_SIZE_128]->symbol->defPoint->remove();
 
   forv_Vec(BaseAST, ast, gAsts) {
     if (DefExpr* def = toDefExpr(ast)) {
-      if (is_complex_type(def->sym->type))
-        def->sym->type = complex2rec(def->sym->type);
+      if (def->parentExpr != rootModule->block)
+        if (!isTypeSymbol(def->sym))
+          if (is_complex_type(def->sym->type))
+            def->sym->type = complex2rec(def->sym->type);
       if (FnSymbol* fn = toFnSymbol(def->sym))
         if (is_complex_type(fn->retType))
           fn->retType = complex2rec(fn->retType);
@@ -61,6 +68,10 @@ complex2record() {
             se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, ct->getField(2), complex2real(se->var->type)->defaultValue));
             se->replace(new SymExpr(tmp));
           }
+        }
+      } else if (TypeSymbol* ts = toTypeSymbol(se->var)) {
+        if (is_complex_type(ts->type)) {
+          se->var = complex2rec(ts->type)->symbol;
         }
       }
     }
@@ -80,6 +91,19 @@ complex2record() {
         if (isReference(ct))
           ct = toClassType(getValueType(ct));
         call->insertAtTail(ct->getField(2));
+      }
+    }
+  }
+
+  //
+  // change arrays of complexes into arrays of new complex records
+  //
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    if (ts->hasPragma("data class")) {
+      if (Type* nt = toType(ts->type->substitutions.v[0].value)) {
+        if (is_complex_type(nt)) {
+          ts->type->substitutions.v[0].value = complex2rec(nt);
+        }
       }
     }
   }

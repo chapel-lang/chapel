@@ -121,9 +121,10 @@ checkParsed(void) {
           def->sym->isCompilerTemp = true;
         if (!def->init && !def->exprType && !def->sym->isCompilerTemp)
           if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
-            USR_FATAL_CONT(def->sym,
-                           "Variable '%s' is not initialized or has no type",
-                           def->sym->name);
+            if (def->parentExpr != rootModule->block)
+              USR_FATAL_CONT(def->sym,
+                             "Variable '%s' is not initialized or has no type",
+                             def->sym->name);
       }
     }
 

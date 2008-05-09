@@ -7,6 +7,7 @@
 #include "files.h"
 #include "mysystem.h"
 #include "passes.h"
+#include "runtime.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -121,11 +122,13 @@ static void codegen_header(void) {
   // mangle type names if they clash with other types
   //
   forv_Vec(TypeSymbol, ts, gTypes) {
-    legalizeCName(ts);
-    if (!ts->isExtern && cnames.get(ts->cname))
-      ts->cname = astr("_", ts->cname, "_", istr(ts->id));
-    cnames.put(ts->cname, 1);
-    typeSymbols.add(ts);
+    if (ts->defPoint->parentExpr != rootModule->block) {
+      legalizeCName(ts);
+      if (!ts->isExtern && cnames.get(ts->cname))
+        ts->cname = astr("_", ts->cname, "_", istr(ts->id));
+      cnames.put(ts->cname, 1);
+      typeSymbols.add(ts);
+    }
   }
 
   //
@@ -133,13 +136,15 @@ static void codegen_header(void) {
   // the same class
   //
   forv_Vec(TypeSymbol, ts, gTypes) {
-    if (ClassType* ct = toClassType(ts->type)) {
-      Vec<const char*> fieldSet;
-      for_fields(field, ct) {
-        legalizeCName(field);
-        if (fieldSet.set_in(field->cname))
-          field->cname = astr("_", field->cname, "_", istr(field->id));
-        fieldSet.set_add(field->cname);
+    if (ts->defPoint->parentExpr != rootModule->block) {
+      if (ClassType* ct = toClassType(ts->type)) {
+        Vec<const char*> fieldSet;
+        for_fields(field, ct) {
+          legalizeCName(field);
+          if (fieldSet.set_in(field->cname))
+            field->cname = astr("_", field->cname, "_", istr(field->id));
+          fieldSet.set_add(field->cname);
+        }
       }
     }
   }
@@ -149,15 +154,14 @@ static void codegen_header(void) {
   // global variables
   //
   forv_Vec(BaseAST, ast, gAsts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (VarSymbol* var = toVarSymbol(def->sym)) {
-        if (var->defPoint && toModuleSymbol(var->defPoint->parentSymbol)) {
-          legalizeCName(var);
-          if (!var->isExtern && cnames.get(var->cname))
-            var->cname = astr("_", var->cname, "_", istr(var->id));
-          cnames.put(var->cname, 1);
-          varSymbols.add(var);
-        }
+    if (VarSymbol* var = toVarSymbol(ast)) {
+      if (var->defPoint->parentExpr != rootModule->block &&
+          toModuleSymbol(var->defPoint->parentSymbol)) {
+        legalizeCName(var);
+        if (!var->isExtern && cnames.get(var->cname))
+          var->cname = astr("_", var->cname, "_", istr(var->id));
+        cnames.put(var->cname, 1);
+        varSymbols.add(var);
       }
     }
   }
@@ -319,9 +323,9 @@ static void codegen_header(void) {
   // codegen remaining types
   fprintf(outfile, "\n/*** Classes ***/\n\n");
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
-    if (ClassType* ct = toClassType(typeSymbol->type))
-      if (ct->classTag != CLASS_CLASS)
-        continue;
+    ClassType* ct = toClassType(typeSymbol->type);
+    if (!ct || ct->classTag != CLASS_CLASS)
+      continue;
     if (toEnumType(typeSymbol->type))
       continue;
     if (typeSymbol->hasPragma("ref"))

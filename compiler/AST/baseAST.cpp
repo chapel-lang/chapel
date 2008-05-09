@@ -155,18 +155,10 @@ void printStatistics(const char* pass) {
   last_asts = gAsts.n;
 }
 
+
 static bool
 isLive(Symbol* sym) {
-  if (sym == theProgram)
-    return true;
-  if (sym->parentScope == rootScope)
-    return true;
-  if (VarSymbol* var = toVarSymbol(sym))
-    if (var->immediate)
-      return true;
-  if (sym->defPoint->parentSymbol)
-    return true;
-  return false;
+  return sym == rootModule || sym->defPoint->parentSymbol;
 }
 
 
@@ -220,7 +212,6 @@ void destroyAst() {
   forv_Vec(BaseAST, ast, gAsts) {
     delete ast;
   }
-  delete rootScope;
 }
 
 
@@ -526,8 +517,6 @@ get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
   }
 }
 
-SymScope* rootScope = NULL;
-
 Vec<ModuleSymbol*> allModules;  // Contains all modules
 Vec<ModuleSymbol*> userModules; // Contains user modules
 
@@ -536,7 +525,8 @@ void registerModule(ModuleSymbol* mod) {
   case MOD_USER:
     userModules.add(mod);
   case MOD_STANDARD:
-    allModules.add(mod);
+    if (strcmp(mod->name, "_root"))
+      allModules.add(mod);
     break;
   default:
     INT_FATAL(mod, "Unable to register module");

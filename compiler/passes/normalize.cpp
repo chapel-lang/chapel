@@ -62,7 +62,7 @@ checkUseBeforeDefs() {
             }
           }
           if (isVarSymbol(sym->var) || isArgSymbol(sym->var)) {
-            if (sym->var->defPoint &&
+            if (sym->var->defPoint->parentExpr != rootModule->block &&
                 (sym->var->defPoint->parentSymbol == fn ||
                  (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
               if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
@@ -313,17 +313,19 @@ static void heapAllocateGlobals() {
   //
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
-      if (VarSymbol* var = toVarSymbol(def->sym)) {
-        if (var->defPoint && toModuleSymbol(var->defPoint->parentSymbol)) {
+      if (def->parentExpr != rootModule->block) {
+        if (VarSymbol* var = toVarSymbol(def->sym)) {
+          if (var->defPoint && toModuleSymbol(var->defPoint->parentSymbol)) {
 
-          //
-          // do not change parameters and private global variables
-          //
-          if (var->isParam || var->hasPragma("private"))
-            continue;
+            //
+            // do not change parameters and private global variables
+            //
+            if (var->isParam || var->hasPragma("private"))
+              continue;
 
-          heapVec.add(var);
-          heapSet.set_add(var);
+            heapVec.add(var);
+            heapSet.set_add(var);
+          }
         }
       }
     }

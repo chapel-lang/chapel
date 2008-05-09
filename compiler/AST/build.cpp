@@ -232,7 +232,8 @@ void createInitFn(ModuleSymbol* mod) {
   //
   // move module-level statements into module's init function
   //
-  for_alist(stmt, mod->block->body) {
+  if (mod != theProgram) {
+    for_alist(stmt, mod->block->body) {
 
     //
     // except for module definitions
@@ -245,6 +246,7 @@ void createInitFn(ModuleSymbol* mod) {
 
     stmt->remove();
     mod->initFn->insertAtTail(stmt);
+    }
   }
   mod->block->insertAtHead(new DefExpr(mod->initFn));
 }

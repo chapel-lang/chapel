@@ -263,7 +263,7 @@ insertWideReferences(void) {
         if (fn->retType == dtNil)
           fn->retType = dtObject;
       } else if (!isTypeSymbol(def->sym)) {
-        if (def->sym->type == dtNil)
+        if (def->sym != gNil && def->sym->type == dtNil)
           def->sym->type = dtObject;
       }
     }
@@ -288,11 +288,19 @@ insertWideReferences(void) {
     if (DefExpr* def = toDefExpr(ast)) {
 
       //
+      // do not widen literals or nil reference
+      //
+      if (VarSymbol* var = toVarSymbol(def->sym))
+        if (var->immediate)
+          continue;
+
+      //
       // do not change class field in wide class type
       //
       if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol))
         if (ts->hasPragma("wide class"))
           continue;
+
       //
       // do not change super class field - it's really a record
       //
@@ -350,11 +358,18 @@ insertWideReferences(void) {
     if (DefExpr* def = toDefExpr(ast)) {
 
       //
+      // do not widen reference nil
+      //
+      if (def->sym == gNilRef)
+        continue;
+
+      //
       // do not change reference field in wide reference type
       //
       if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol))
         if (ts->hasPragma("wide"))
           continue;
+
       //
       // do not change super field - it's really a record
       //

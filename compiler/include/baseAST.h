@@ -126,8 +126,6 @@ void get_ast_children(BaseAST *a, Vec<BaseAST *> &asts);
 extern int currentLineno;
 extern const char* currentFilename;
 
-extern SymScope* rootScope; // contains intrinsics and all modules
-
 extern Vec<ModuleSymbol*> allModules;     // Contains all modules
 extern Vec<ModuleSymbol*> userModules;    // Contains user modules
 

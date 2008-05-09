@@ -382,7 +382,7 @@ createPrimitiveType(const char *name, const char *cname) {
   PrimitiveType* pt = new PrimitiveType(NULL);
   TypeSymbol* ts = new TypeSymbol(name, pt);
   ts->cname = cname;
-  rootScope->define(ts);
+  rootModule->block->insertAtTail(new DefExpr(ts));
   return pt;
 }
 
@@ -412,15 +412,21 @@ createPrimitiveType(const char *name, const char *cname) {
                                   "_chpl_complex" #width "(0.0, 0.0)",         \
                                    0.0, 0.0, COMPLEX_SIZE_ ## width)
 
-#define CREATE_DEFAULT_SYMBOL(primType, gSym, name) \
-  gSym = new VarSymbol (name, primType);            \
-  toVarSymbol(gSym)->isConst = true;                \
-  rootScope->define(gSym);                          \
+#define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
+  gSym = new VarSymbol (name, primType);                \
+  toVarSymbol(gSym)->isConst = true;                    \
+  rootModule->block->insertAtTail(new DefExpr(gSym));   \
   primType->defaultValue = gSym
 
 
 void initPrimitiveTypes(void) {
-  rootScope  = new SymScope(NULL, NULL);
+  // Inititalize the outermost module
+  rootModule = new ModuleSymbol("_root", MOD_STANDARD, new BlockStmt());
+  rootModule->block->blkScope = new SymScope(rootModule->block, NULL);
+
+  theProgram = new ModuleSymbol("_Program", MOD_STANDARD, new BlockStmt());
+  rootModule->block->insertAtTail(new DefExpr(theProgram));
+
   dtNil = createPrimitiveType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
 
@@ -442,11 +448,6 @@ void initPrimitiveTypes(void) {
 
   dtBool = createPrimitiveType ("bool", "chpl_bool");
 
-  // Inititalize the outermost module
-  theProgram = new ModuleSymbol("_Program", MOD_STANDARD, new BlockStmt());
-  theProgram->block->parentScope = rootScope;
-  theProgram->block->blkScope = new SymScope(theProgram->block, rootScope);
-  rootScope->define(theProgram);
   createInitFn(theProgram);
   if (fNoStdIncs)
     theProgram->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE,
@@ -466,8 +467,7 @@ void initPrimitiveTypes(void) {
 
   gTrue = new VarSymbol("true", dtBool);
   gTrue->isConst = true;
-  // SJD: Should intrinsics have DefExprs?
-  rootScope->define(gTrue);
+  rootModule->block->insertAtTail(new DefExpr(gTrue));
   gTrue->immediate = new Immediate;
   gTrue->immediate->v_bool = true;
   gTrue->immediate->const_kind = NUM_KIND_UINT;
@@ -476,7 +476,7 @@ void initPrimitiveTypes(void) {
 
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
   gBoundsChecking->isConst = true;
-  rootScope->define(gBoundsChecking);
+  rootModule->block->insertAtTail(new DefExpr(gBoundsChecking));
   if (fNoBoundsChecks) {
     gBoundsChecking->immediate = new Immediate;
     *gBoundsChecking->immediate = *gFalse->immediate;
@@ -514,18 +514,22 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL(dtFile, gFile, "0");
 
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
-  CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "NULL");
+  CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "_nullOpaque");
+  gOpaque->cname = "NULL";
 
   dtTimer = createPrimitiveType("_timervalue", "_timervalue");
   CREATE_DEFAULT_SYMBOL(dtTimer, gTimer, "_new_timer()");
 
   dtSyncVarAuxFields = createPrimitiveType( "_sync_aux_t", "chpl_sync_aux_t");
-  CREATE_DEFAULT_SYMBOL (dtSyncVarAuxFields, gSyncVarAuxFields, "NULL");
+  CREATE_DEFAULT_SYMBOL (dtSyncVarAuxFields, gSyncVarAuxFields, "_nullSyncVarAuxFields");
+  gSyncVarAuxFields->cname = "NULL";
   dtSingleVarAuxFields = createPrimitiveType( "_single_aux_t", "chpl_single_aux_t");
-  CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "NULL");
+  CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "_nullSingleVarAuxFields");
+  gSingleVarAuxFields->cname = "NULL";
 
   dtTaskList = createPrimitiveType( "_task_list", "chpl_task_list_p");
-  CREATE_DEFAULT_SYMBOL (dtTaskList, gTaskList, "NULL");
+  CREATE_DEFAULT_SYMBOL (dtTaskList, gTaskList, "_nullTaskList");
+  gTaskList->cname = "NULL";
 
   dtAny = createPrimitiveType ("_any", "_any");
   dtAny->isGeneric = true;

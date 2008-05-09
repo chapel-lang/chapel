@@ -1344,7 +1344,7 @@ getVisibleFunctions(BlockStmt* block,
     return (canSkipThisBlock) ? next : block;
   }
 
-  if (block != theProgram->block) {
+  if (block != rootModule->block) {
     BlockStmt* next = getVisibilityBlock(block);
     BlockStmt* cache = getVisibleFunctions(next, name, visibleFns, visited);
     if (cache)
@@ -3654,7 +3654,7 @@ pruneResolvedTree() {
   }
   forv_Vec(TypeSymbol, type, gTypes) {
     if (type->defPoint && type->defPoint->parentSymbol) {
-      if (type->hasPragma("ref")) {
+      if (type->hasPragma("ref") && type->type != dtNilRef) {
         if (ClassType* ct = toClassType(getValueType(type->type))) {
           if (!resolvedFns.set_in(ct->defaultConstructor) &&
               !resolvedFns.set_in(ct->defaultTypeConstructor)) {
