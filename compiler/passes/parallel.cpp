@@ -607,17 +607,22 @@ insertWideReferences(void) {
     }
   }
 
-  VarSymbol* tmp = new VarSymbol("_tmp", dtBool);
+  CallExpr* localeID = new CallExpr(PRIMITIVE_LOCALE_ID);
+  VarSymbol* tmp = new VarSymbol("_tmp", localeID->typeInfo());
+  VarSymbol* tmpBool = new VarSymbol("_tmp", dtBool);
   tmp->isCompilerTemp = true;
+  tmpBool->isCompilerTemp = true;
+
   heapAllocateGlobals->insertAtTail(new DefExpr(tmp));
-  heapAllocateGlobals->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_LOCALE_ID)));
-  heapAllocateGlobals->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_EQUAL, tmp, new_IntSymbol(0))));
+  heapAllocateGlobals->insertAtTail(new DefExpr(tmpBool));
+  heapAllocateGlobals->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, localeID));
+  heapAllocateGlobals->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmpBool, new CallExpr(PRIMITIVE_EQUAL, tmp, new_IntSymbol(0))));
   BlockStmt* block = new BlockStmt();
   forv_Vec(Symbol, sym, heapVars) {
     block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, sym, new CallExpr(PRIMITIVE_CHPL_ALLOC, sym->type->getField("addr")->type->symbol, new_StringSymbol("global var heap allocation"))));
     block->insertAtTail(new CallExpr(PRIMITIVE_SETCID, sym));
   }
-  heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmp), block));
+  heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmpBool), block));
   int i = 0;
   forv_Vec(Symbol, sym, heapVars) {
     heapAllocateGlobals->insertAtTail(new CallExpr(PRIMITIVE_HEAP_REGISTER_GLOBAL_VAR, new_IntSymbol(i++), sym));
