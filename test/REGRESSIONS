@@ -33,6 +33,10 @@ extremely rare race condition in module initialization
 valgrind-specific regressions
 =============================
 
+scalarReplace invalid read
+--------------------------
+*all*
+
 internal error stuff?
 ---------------------
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
@@ -129,6 +133,11 @@ studies/madness/dinan/mad_chapel/test_gaxpy]
 [Error matching program output for
 studies/madness/dinan/mad_chapel/test_likepy]
 [Summary: #Successes = 1945 | #Failures = 33 | #Futures = 0]
+
+--baseline --inline
+-------------------
+[Error: Timed out compilation for users/franzf/v1/chpl/main]
+[Summary: #Successes = 1986 | #Failures = 1 | #Futures = 0]
 
 --baseline --inline-iterators
 -----------------------------
@@ -231,6 +240,18 @@ studies/madness/dinan/mad_chapel/test_mul]
 [Error matching compiler output for classes/diten/allocateManyObjects]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
 [Summary: #Successes = 1976 | #Failures = 2 | #Futures = 0]
+
+--baseline --scalar-replacement
+-------------------------------
+[Error: Timed out compilation for users/shetag/tensor]
+[Error: Timed out compilation for users/shetag/fock/fock-orig]
+[Summary: #Successes = 1985 | #Failures = 2 | #Futures = 0]
+
+--no-local
+----------
+[Error matching compiler output for classes/diten/allocateManyObjects]
+[Error matching compiler output for parallel/sync/diten/tupleOfSync]
+[Summary: #Successes = 1985 | #Failures = 2 | #Futures = 0]
 
 --baseline --no-local
 ---------------------
