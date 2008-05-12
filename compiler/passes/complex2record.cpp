@@ -48,15 +48,7 @@ complex2record() {
   dtComplex[COMPLEX_SIZE_128]->symbol->defPoint->remove();
 
   forv_Vec(BaseAST, ast, gAsts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (def->parentExpr != rootModule->block)
-        if (!isTypeSymbol(def->sym))
-          if (is_complex_type(def->sym->type))
-            def->sym->type = complex2rec(def->sym->type);
-      if (FnSymbol* fn = toFnSymbol(def->sym))
-        if (is_complex_type(fn->retType))
-          fn->retType = complex2rec(fn->retType);
-    } else if (SymExpr* se = toSymExpr(ast)) {
+    if (SymExpr* se = toSymExpr(ast)) {
       if (VarSymbol* var = toVarSymbol(se->var)) {
         if (is_complex_type(var->type)) {
           if (var->immediate) {
@@ -73,6 +65,17 @@ complex2record() {
           se->var = complex2rec(ts->type)->symbol;
         }
       }
+    }
+  }
+
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (!isTypeSymbol(def->sym))
+        if (is_complex_type(def->sym->type))
+          def->sym->type = complex2rec(def->sym->type);
+      if (FnSymbol* fn = toFnSymbol(def->sym))
+        if (is_complex_type(fn->retType))
+          fn->retType = complex2rec(fn->retType);
     }
   }
 
