@@ -37,18 +37,14 @@ def main() {
 
   for trial in 1..numTrials {
     const startTime = getCurrentTime();
-    // TODO: Want    A = B + alpha * C;
+    // TODO: Want:
+    // A = B + alpha * C;
+    // But this doesn't work because we don't support promotion over classes
 
-    /* TODO OR EVEN: -- but this fails due to "detupled indices drop
-       references to var iterators bug
-       
     forall (a, b, c) in (A, B, C) {
       a = b + alpha * c;
     }
-    */
-    forall (i, b, c) in (ProblemSpace, B, C) {
-      A(i) = b + alpha * c;
-    }
+
     execTime(trial) = getCurrentTime() - startTime;
   }  
 

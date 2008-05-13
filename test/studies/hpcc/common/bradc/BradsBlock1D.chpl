@@ -22,7 +22,7 @@ class Block1DDom {
   var locDom: [LocaleSpace] LocBlock1DDom;
 
   def initialize() {
-    [i in LocaleSpace] locDom(i) = new LocBlock1DDom(i, whole);
+    [i in LocaleSpace] locDom(i) = new LocBlock1DDom(whole);
   }
 
   def these() {
@@ -42,9 +42,6 @@ class Block1DDom {
 
   // one would really want to call this .domain (or rename the
   // methods in the ChapelArray classes), but you can't.
-  def dom { 
-    return whole;
-  }
 
   def numIndices {
     return whole.numIndices;
@@ -62,12 +59,10 @@ class Block1DDom {
 
 class LocBlock1DDom {
   // parameterize this by indexType and/or locIndexType
-  const localeID: index(LocaleSpace);
   var myBlock: domain(1, indexType);
 
-  def LocBlock1DDom(_localeID, Whole: domain(1, indexType)) {
-    localeID = _localeID;  // is there a cooler way to do this?
-    myBlock = BlockPartition(Whole, localeID, numLocales);
+  def LocBlock1DDom(Whole: domain(1, indexType)) {
+    myBlock = BlockPartition(Whole, here.id, numLocales);
   }
 
   def these() {
