@@ -254,7 +254,7 @@ syn keyword chplStatement	goto break return continue
 syn keyword chplStatement	new this these use module yield compilerError compilerWarning
 syn keyword chplIntent		param type in out inout
 syn keyword chplStorageClass    const config var
-syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool file string
+syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool file string opaque
 syn keyword chplType            locale sync atomic single function distributed
 syn keyword chplOperator	on reduce scan by
 " syn match chplCast		"\<\(const\|static\|dynamic\|reinterpret\)_cast\s*<"me=e-1

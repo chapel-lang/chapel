@@ -55,7 +55,7 @@
 ;; Define chpl primitive types
 
 (c-lang-defconst c-primitive-type-kwds
-  chpl '("bool" "complex" "domain" "imag" "int" "locale" "range" "real" "string" "subdomain" "uint"))
+  chpl '("bool" "complex" "domain" "imag" "int" "locale" "opaque" "range" "real" "string" "subdomain" "uint"))
 
 ;; Define chpl type modifiers
 (c-lang-defconst c-type-modifier-kwds
