@@ -1402,11 +1402,16 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     // why??? --sjd
     Vec<BaseAST*> values;
     generic_substitutions->get_values(values);
-    forv_Vec(BaseAST, value, values)
-      if (Type* type = toType(value))
-        if (!toPrimitiveType(type))
-          if (!retType->symbol->hasPragma("ref"))
-            defPoint->parentScope->addModuleUse(type->getModule());
+    forv_Vec(BaseAST, value, values) {
+      if (Type* type = toType(value)) {
+        if (!toPrimitiveType(type)) {
+          if (!retType->symbol->hasPragma("ref")) {
+            BlockStmt* block = toBlockStmt(defPoint->parentExpr);
+            block->modUses.add(type->getModule());
+          }
+        }
+      }
+    }
 
     // compute instantiatedWith vector and rename instantiated type
     clone->name = astr(clone->name, "(");

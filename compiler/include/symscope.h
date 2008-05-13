@@ -23,9 +23,6 @@ class SymScope {
                  bool returnModules = true,
                  bool scanModuleUses = true);
 
-  void addModuleUse(ModuleSymbol* mod);
-  Vec<ModuleSymbol*>* getModuleUses();
-
   void print();
   void print(bool number, int indent);
 }; 

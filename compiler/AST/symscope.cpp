@@ -5,6 +5,14 @@
 #include "files.h"
 
 
+static Vec<ModuleSymbol*>*
+getModuleUses(SymScope* scope) {
+  if (BlockStmt* block = toBlockStmt(scope->astParent))
+    return &block->modUses;
+  return NULL;
+}
+
+
 SymScope::SymScope(BaseAST* iastParent, SymScope* iparent) :
   astParent(iastParent),
   parent(iparent)
@@ -86,7 +94,7 @@ SymScope::lookupLocal(const char* name, Vec<SymScope*>* alreadyVisited, bool ret
     }
   }
 
-  Vec<ModuleSymbol*>* modUses = getModuleUses();
+  Vec<ModuleSymbol*>* modUses = getModuleUses(this);
   if (modUses) {
     forv_Vec(ModuleSymbol, module, *modUses) {
       sym = module->block->blkScope->lookup(name, alreadyVisited, returnModules);
@@ -107,7 +115,7 @@ static void buildBreadthFirstUseTree(Vec<ModuleSymbol*>* current, Vec<Vec<Module
   queue.add(current);
   Vec<ModuleSymbol*>* next = new Vec<ModuleSymbol*>;
   forv_Vec(ModuleSymbol, module, *current) {
-    Vec<ModuleSymbol*>* modules = module->block->blkScope->getModuleUses();
+    Vec<ModuleSymbol*>* modules = getModuleUses(module->block->blkScope);
     if (modules) {
       forv_Vec(ModuleSymbol, mod, *modules) {
         if (!alreadySeen->set_in(mod)) {
@@ -154,7 +162,7 @@ SymScope::lookup(const char* name, Vec<SymScope*>* alreadyVisited, bool returnMo
     }
   }
   if (symbols.n == 0 && scanModuleUses) {
-    Vec<ModuleSymbol*>* modules = getModuleUses();
+    Vec<ModuleSymbol*>* modules = getModuleUses(this);
     if (modules && modules->n > 0) {
       Vec<Vec<ModuleSymbol*>*> moduleQueue;
       buildBreadthFirstUseTree(modules, moduleQueue);
@@ -227,21 +235,6 @@ SymScope::lookup(const char* name, Vec<SymScope*>* alreadyVisited, bool returnMo
 }
 
 
-void SymScope::addModuleUse(ModuleSymbol* mod) {
-  Vec<ModuleSymbol*>* modUses = getModuleUses();
-  if (!modUses)
-    INT_FATAL(astParent, "Bad call to addModuleUse");
-  modUses->add(mod);
-}
-
-
-Vec<ModuleSymbol*>* SymScope::getModuleUses() {
-  if (BlockStmt* block = toBlockStmt(astParent))
-    return &block->modUses;
-  return NULL;
-}
-
-
 void SymScope::print() {
   print(false, 0);
 }
@@ -250,7 +243,7 @@ void SymScope::print() {
 void SymScope::print(bool number, int indent) {
   Vec<Symbol*> symbols;
   table.get_values(symbols);
-  if (!symbols.n && (!astParent || !getModuleUses()->n))
+  if (!symbols.n && (!astParent || !getModuleUses(this)->n))
     return;
   for (int i = 0; i < indent; i++)
     printf(" ");
@@ -269,7 +262,7 @@ void SymScope::print(bool number, int indent) {
     printf(" ");
   printf("-----------------------------------------------------------------\n");
   if (astParent) {
-    forv_Vec(ModuleSymbol, mod, *getModuleUses()) {
+    forv_Vec(ModuleSymbol, mod, *getModuleUses(this)) {
       if (mod) {
         for (int i = 0; i < indent; i++)
           printf(" ");

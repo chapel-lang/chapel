@@ -93,9 +93,9 @@ process_import_expr(CallExpr* call) {
   call->getStmtExpr()->insertBefore(new CondStmt(new SymExpr(mod->guard), buildOnStmt(new CallExpr(PRIMITIVE_ON_LOCALE_NUM, new SymExpr(new_IntSymbol(0))), new CallExpr(mod->initFn))));
   call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, mod->guard, gFalse));
   if (call->getFunction() == call->getModule()->initFn)
-    call->getModule()->block->blkScope->addModuleUse(mod);
+    call->getModule()->block->modUses.add(mod);
   else
-    call->parentScope->addModuleUse(mod);
+    getVisibilityBlock(call)->modUses.add(mod);
   call->getStmtExpr()->remove();
 }
 
