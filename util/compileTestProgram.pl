@@ -34,7 +34,7 @@ while (@ARGV) {
         @compopts = split / /, $compopts;
 
         foreach $compopt (@compopts) {
-            if ($compopt =~ m/.chpl$/) {
+            if ($compopt =~ m/\./) {
                 $command .= "$path";
             }
             $command .= "$compopt ";
