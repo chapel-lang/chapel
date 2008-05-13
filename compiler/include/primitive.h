@@ -130,6 +130,7 @@ enum PrimitiveTag {
   PRIMITIVE_GC_CLEANUP,       // Free GC heaps
 
   PRIMITIVE_IS_ENUM,   // True if argument is an enum
+  PRIMITIVE_IS_OPAQUE, // True if argument is an opaque
   PRIMITIVE_IS_TUPLE,  // True if argument is a tuple
 
   PRIMITIVE_LOGICAL_FOLDER, // Help fold logical && and ||

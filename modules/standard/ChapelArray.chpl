@@ -2,11 +2,14 @@ def _build_domain_type(dist, param rank : int, type idxType = int,
                        param stridable = false) type
   return new _domain(rank, dist.buildDomain(rank, idxType, stridable));
 
-def _build_domain_type(dist, type ind) type where !__primitive("isEnumType", ind)
+def _build_domain_type(dist, type ind) type where !__primitive("isEnumType", ind) && !__primitive("isOpaqueType", ind)
   return new _domain(1, dist.buildDomain(ind));
 
 def _build_domain_type(dist, type ind) type where __primitive("isEnumType", ind)
   return new _domain(1, dist.buildEnumDomain(ind));
+
+def _build_domain_type(dist, type ind) type where __primitive("isOpaqueType", ind)
+  return new _domain(1, dist.buildOpaqueDomain());
 
 def _build_subdomain_type(dom) type
   return dom.buildSubdomain();
@@ -70,6 +73,9 @@ def _build_index_type(param rank: int) type
 
 def _build_index_type(d: _domain) type
   return _build_index_type(d.rank, d._value.idxType);
+
+def _build_index_type(type idxType) type where __primitive("isOpaqueType", idxType)
+  return _OpaqueIndex;
 
 //
 // given a tuple args, returns true if the tuple contains only

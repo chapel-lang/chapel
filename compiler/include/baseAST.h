@@ -161,6 +161,7 @@ void registerModule(ModuleSymbol* mod);
 
 #define isPrimitiveType(ast) ((ast) && (ast)->astTag == TYPE_PRIMITIVE)
 #define isEnumType(ast)      ((ast) && (ast)->astTag == TYPE_ENUM)
+#define isOpaqueType(ast)    (ast == dtOpaque)
 #define isClassType(ast)     ((ast) && (ast)->astTag == TYPE_CLASS)
 
 //

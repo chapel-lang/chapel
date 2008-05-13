@@ -97,7 +97,6 @@ NOTES
 %token TNEW
 %token TNIL
 %token TON
-%token TOPAQUE
 %token TOTHERWISE
 %token TOUT
 %token TPARAM
@@ -1042,10 +1041,7 @@ type:
 
 
 formal_level_type:
-  TOPAQUE
-{ /* $$ = build_opaque_type_expr(); */
-  $$ = new SymExpr("opaque"); }
-| anon_record_type
+  anon_record_type
 | array_type
 | TDOMAIN TLP expr_ls TRP distributed_expr
     {
@@ -1055,8 +1051,6 @@ formal_level_type:
     }
 | TSUBDOMAIN TLP expr_ls TRP
     { $$ = new CallExpr("_build_subdomain_type", $3); }
-| TDOMAIN TLP TOPAQUE TRP distributed_expr
-    { $$ = new CallExpr("_build_opaque_domain_type", $5); }
 | TSPARSE TSUBDOMAIN TLP expr_ls TRP distributed_expr
     {
       CallExpr* call = new CallExpr("_build_sparse_subdomain_type", $6);
@@ -1183,8 +1177,6 @@ formal_parenop_expr:
       call->square = true;
       $$ = call;
     }
-| TINDEX TLP TOPAQUE TRP
-    { $$ = new SymExpr("_OpaqueIndex"); }
 | TINDEX TLP expr_ls TRP
     { $$ = new CallExpr("_build_index_type", $3); }
 ;
@@ -1294,8 +1286,6 @@ parenop_expr:
     { $$ = new CallExpr(PRIMITIVE_ERROR, $3); }
 | TCOMPILERWARNING TLP expr_ls TRP
     { $$ = new CallExpr(PRIMITIVE_WARNING, $3); }
-| TINDEX TLP TOPAQUE TRP
-    { $$ = new SymExpr("_OpaqueIndex"); }
 | TINDEX TLP expr_ls TRP
     { $$ = new CallExpr("_build_index_type", $3); }
 ;

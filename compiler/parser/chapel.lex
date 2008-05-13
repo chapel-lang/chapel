@@ -90,7 +90,6 @@ module          processToken(TMODULE);
 new             processToken(TNEW);
 nil             processToken(TNIL);
 on              processToken(TON);
-opaque          processToken(TOPAQUE);
 otherwise       processToken(TOTHERWISE);
 out             processToken(TOUT);
 param           processToken(TPARAM);
