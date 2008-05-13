@@ -28,8 +28,6 @@ class SymScope {
 
   void print();
   void print(bool number, int indent);
-
-  void codegenFunctions(FILE* outfile);
 }; 
 
 #endif

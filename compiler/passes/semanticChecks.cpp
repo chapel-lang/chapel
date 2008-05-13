@@ -69,8 +69,7 @@ check_parsed_vars(VarSymbol* var) {
   if (var->isParameter() && !var->immediate)
     if (!var->defPoint->init &&
         (toFnSymbol(var->defPoint->parentSymbol) ||
-         toModuleSymbol(var->defPoint->parentSymbol)) &&
-        !toFnSymbol(var->defPoint->parentScope->astParent))
+         toModuleSymbol(var->defPoint->parentSymbol)))
       USR_FATAL(var, "Top-level params must be initialized.");
   if (var->isConfig &&
       var->defPoint->parentSymbol != var->getModule()->initFn) {

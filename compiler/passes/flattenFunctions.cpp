@@ -11,15 +11,15 @@
 // third argument not used at call site
 //
 static bool
-isOuterVar(Symbol* sym, FnSymbol* fn, SymScope* scope = NULL) {
-  if (!scope)
-    scope = fn->parentScope;
-  if (scope->astParent == scope->astParent->getModule()->block)
+isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
+  if (!parent)
+    parent = fn->defPoint->parentSymbol;
+  if (!isFnSymbol(parent))
     return false;
-  else if (sym->parentScope == scope)
+  else if (sym->defPoint->parentSymbol == parent)
     return true;
   else
-    return isOuterVar(sym, fn, scope->parent);
+    return isOuterVar(sym, fn, parent->defPoint->parentSymbol);
 }
 
 

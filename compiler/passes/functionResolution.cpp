@@ -844,45 +844,45 @@ build_promotion_wrapper(FnSymbol* fn,
 
 
 static int
-visibility_distance(SymScope* scope, FnSymbol* fn,
-                    int d = 1, Vec<SymScope*>* alreadyVisited = NULL) {
-  Vec<SymScope*> localAlreadyVisited;
+visibility_distance(Expr* expr, FnSymbol* fn,
+                    int d = 1, Vec<BlockStmt*>* alreadyVisited = NULL) {
+  if (BlockStmt* block = toBlockStmt(expr)) {
+    Vec<BlockStmt*> localAlreadyVisited;
 
-  if (!alreadyVisited)
-    alreadyVisited = &localAlreadyVisited;
+    if (!alreadyVisited)
+      alreadyVisited = &localAlreadyVisited;
 
-  if (alreadyVisited->set_in(scope))
-    return 0;
+    if (alreadyVisited->set_in(block))
+      return 0;
 
-  alreadyVisited->set_add(scope);
+    alreadyVisited->set_add(block);
 
-  if (Symbol* sym = scope->lookupLocal(fn->name)) {
-    for (Symbol* tmp = sym; tmp; tmp = tmp->overloadNext) {
-      if (tmp == fn)
-        return d;
-    }
-  }
+    if (fn->defPoint->parentExpr == block)
+      return d;
 
-  if (scope->getModuleUses()) {
-    forv_Vec(ModuleSymbol, module, *scope->getModuleUses()) {
-      int dd = visibility_distance(module->block->blkScope, fn, d, alreadyVisited);
+    forv_Vec(ModuleSymbol, module, block->modUses) {
+      int dd = visibility_distance(module->block, fn, d, alreadyVisited);
       if (dd > 0)
         return dd;
     }
+
+    if (expr->parentExpr)
+      return visibility_distance(expr->parentExpr, fn, d+1, alreadyVisited);
+    else if (expr->parentSymbol->defPoint)
+      return visibility_distance(expr->parentSymbol->defPoint->parentExpr, fn, d+1, alreadyVisited);
+
+    return 0;
+  } else {
+    return visibility_distance(expr->parentExpr, fn, d+1, alreadyVisited);
   }
-
-  if (scope->parent)
-    return visibility_distance(scope->parent, fn, d+1, alreadyVisited);
-
-  return 0;
 }
 
 
 static void
-disambiguate_by_scope(SymScope* scope, Vec<FnSymbol*>* candidateFns) {
+disambiguate_by_scope(Expr* parent, Vec<FnSymbol*>* candidateFns) {
   Vec<int> vds;
   forv_Vec(FnSymbol, fn, *candidateFns) {
-    vds.add(visibility_distance(scope, fn));
+    vds.add(visibility_distance(parent, fn));
   }
   int md = 0;
   for (int i = 0; i < vds.n; i++) {
@@ -1282,7 +1282,7 @@ getVisibilityBlock(Expr* expr) {
 static void buildVisibleFunctionMap() {
   for (int i = nVisibleFunctions; i < gFns.n; i++) {
     FnSymbol* fn = gFns.v[i];
-    if (fn->visible) {
+    if (fn->visible && !isArgSymbol(fn->defPoint->parentSymbol)) {
       BlockStmt* block =
         (fn->global) ? theProgram->block : getVisibilityBlock(fn->defPoint);
       VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
@@ -1415,7 +1415,7 @@ resolve_call(CallInfo* info) {
 
   // use visibility and then look for best again
   if (!best && candidateFns.n > 1) {
-    disambiguate_by_scope(call->parentScope, &candidateFns);
+    disambiguate_by_scope(call->parentExpr, &candidateFns);
     best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
                                  &info->actualTypes, &info->actualSyms,
                                  &actualFormals);

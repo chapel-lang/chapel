@@ -1582,9 +1582,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!toTypeSymbol(def->sym))
-        if (def->sym->parentScope->astParent->getModule()->block !=
-            def->sym->parentScope->astParent)
-          def->sym->codegenDef(outfile);
+        def->sym->codegenDef(outfile);
   }
   body->codegen(outfile);
   fprintf(outfile, "}\n\n");
@@ -1752,8 +1750,30 @@ ModuleSymbol::copyInner(ASTMap* map) {
 }
 
 
+static int compareLineno(const void* v1, const void* v2) {
+  FnSymbol* fn1 = *(FnSymbol**)v1;
+  FnSymbol* fn2 = *(FnSymbol**)v2;
+  if (fn1->lineno > fn2->lineno)
+    return 1;
+  else if (fn1->lineno < fn2->lineno)
+    return -1;
+  else
+    return 0;
+}
+
+
 void ModuleSymbol::codegenDef(FILE* outfile) {
-  block->blkScope->codegenFunctions(outfile);
+  Vec<FnSymbol*> fns;
+  for_alist(expr, block->body) {
+    if (DefExpr* def = toDefExpr(expr))
+      if (FnSymbol* fn = toFnSymbol(def->sym))
+        if (!fn->isExtern)
+          fns.add(fn);
+  }
+  qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
+  forv_Vec(FnSymbol, fn, fns) {
+    fn->codegenDef(outfile);
+  }
 }
 
 

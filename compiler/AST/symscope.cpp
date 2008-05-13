@@ -299,34 +299,3 @@ void SymScope::print(bool number, int indent) {
     printf(" ");
   printf("=================================================================\n");
 }
-
-
-static int compareLineno(const void* v1, const void* v2) {
-  FnSymbol* fn1 = *(FnSymbol**)v1;
-  FnSymbol* fn2 = *(FnSymbol**)v2;
-  if (fn1->lineno > fn2->lineno)
-    return 1;
-  else if (fn1->lineno < fn2->lineno)
-    return -1;
-  else
-    return 0;
-}
-
-
-void SymScope::codegenFunctions(FILE* outfile) {
-  Vec<FnSymbol*> fns;
-  Vec<Symbol*> symbols;
-  table.get_values(symbols);
-  forv_Vec(Symbol, sym, symbols) {
-    for (Symbol* tmp = sym; tmp; tmp = tmp->overloadNext) {
-      if (FnSymbol* fn = toFnSymbol(tmp)) {
-        if (!fn->isExtern)
-          fns.add(fn);
-      }
-    }
-  }
-  qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
-  forv_Vec(FnSymbol, fn, fns) {
-    fn->codegenDef(outfile);
-  }
-}
