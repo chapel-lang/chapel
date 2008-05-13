@@ -11,15 +11,7 @@
 #include <stdint.h>
 #include <signal.h>
 
-/*#define CHPL_DIST_DEBUG 1*/
-
-#ifdef CHPL_DIST_DEBUG
-#define PRINTF(_s)                                                      \
-  printf("%d:%s\n", _localeID, _s);                                     \
-  fflush(stdout)
-#else
-#define PRINTF(_s)
-#endif // CHPL_DIST_DEBUG
+#define CHPL_DIST_DEBUG 0
 
 /* The following macros were taken from the GasNet test.h distribution */
 #define GASNET_Safe(fncall) do {                                        \
@@ -80,8 +72,6 @@ static void _AM_fork_nb(gasnet_token_t token,
 
 
 static void _AM_fork_wrapper(dist_fork_t *i) {
-  PRINTF(__func__);
-
   if (i->arg_size)
     (*(i->fun))(&(i->arg));
   else
@@ -100,8 +90,6 @@ static void _AM_fork(gasnet_token_t  token,
                      size_t   nbytes) {
   dist_fork_t *fork_info;
 
-  PRINTF(__func__);
-
   fork_info = (dist_fork_t*) chpl_malloc(nbytes, sizeof(char), "", 0, 0);
   bcopy(buf, fork_info, nbytes);
   chpl_begin((chpl_threadfp_t)_AM_fork_wrapper, (chpl_threadarg_t)fork_info,
@@ -115,14 +103,12 @@ static void _AM_signal(gasnet_token_t  token,
                        size_t   nbytes) {
   int **done = (int**)buf;
 
-  PRINTF(__func__);
   **done = 1;
 }
 
 
 // AM reply to return a pointer value
 static void _AM_ptr_ret(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes) {
-  PRINTF(__func__);
   *(ret_info->val_addr) = ret_info->val;
   *(ret_info->done) = 1;
 }
@@ -130,7 +116,6 @@ static void _AM_ptr_ret(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nb
 
 // AM get global table ptr handler, small sized, receiver side
 static void _AM_ptr_table(gasnet_token_t token, _AM_ptr_ret_t *ret_info, size_t nbytes) {
-  PRINTF(__func__);
   // ret_info = (global_ret_int_t*) buf;
   // ret_info->val = (void*) globals_table;
 
@@ -329,10 +314,11 @@ void _chpl_comm_broadcast_private(void* addr, int size) {
 }
 
 void _chpl_comm_barrier(const char *msg) {
-  PRINTF(msg);
+#if CHPL_DIST_DEBUG
+  printf("%d: barrier for '%s'\n", _localeID, msg);
+#endif
   gasnet_barrier_notify(0, GASNET_BARRIERFLAG_ANONYMOUS);
   GASNET_Safe(gasnet_barrier_wait(0, GASNET_BARRIERFLAG_ANONYMOUS));
-  PRINTF(msg);
 }
 
 static void _chpl_comm_exit_common(int status) {
@@ -355,19 +341,23 @@ void _chpl_comm_exit_any(int status) {
 }
 
 void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
-  PRINTF("_chpl_comm_write");
   if (_localeID == locale) {
     bcopy(addr, raddr, size);
   } else {
+#if CHPL_DIST_DEBUG
+    printf("%d: remote put to %d\n", _localeID, locale);
+#endif
     gasnet_put(locale, raddr, addr, size); // node, dest, src, size
   }
 }
 
 void  _chpl_comm_get(void* addr, int32_t locale, const void* raddr, int32_t size) {
-  PRINTF("_chpl_comm_read");
   if (_localeID == locale) {
     bcopy(raddr, addr, size);
   } else {
+#if CHPL_DIST_DEBUG
+    printf("%d: remote get from %d\n", _localeID, locale);
+#endif
     gasnet_get(addr, locale, (void*)raddr, size); // dest, node, src, size
   }
 }
@@ -376,7 +366,9 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   dist_fork_t *info;
   int           info_size;
 
-  PRINTF(__func__);
+#if CHPL_DIST_DEBUG
+    printf("%d: remote non-blocking thread creation on %d\n", _localeID, locale);
+#endif
 
   info_size = sizeof(dist_fork_t) + arg_size;
   info = (dist_fork_t*) chpl_malloc(info_size, sizeof(char), "", 0, 0);
@@ -395,11 +387,12 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   int          info_size;
   int          done;
 
-  PRINTF(__func__);
-
   if (_localeID == locale) {
     (*f)(arg);
   } else {
+#if CHPL_DIST_DEBUG
+    printf("%d: remote thread creation on %d\n", _localeID, locale);
+#endif
     info_size = sizeof(dist_fork_t) + arg_size;
     info = (dist_fork_t*) chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork", 0, 0);
 
