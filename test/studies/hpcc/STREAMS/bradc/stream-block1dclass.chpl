@@ -25,7 +25,9 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const ProblemSpace = new Block1DDom([1..m]);
+  const ProblemDist = new Block1DDist([1..m]);
+
+  const ProblemSpace = ProblemDist.newDomain([1..m]);
 
   var A = ProblemSpace.newArray(elemType), 
       B = ProblemSpace.newArray(elemType),
@@ -62,15 +64,16 @@ def printConfiguration() {
 
 
 def initVectors(B, C) {
-  var randlist = new RandomStream(seed);
-
   // TODO: should write a fillRandom() implementation that does this
   coforall loc in LocaleSpace {
-    // TODO: Need to clean this up to use more normal method names
-    randlist.skipToNth(B.locArr(loc).locDom.low);
-    randlist.fillRandom(B.locArr(loc).myElems);
-    randlist.skipToNth(B.numElements + C.locArr(loc).locDom.low);
-    randlist.fillRandom(C.locArr(loc).myElems);
+    on Locales(loc) {
+      var randlist = new RandomStream(seed);
+      // TODO: Need to clean this up to use more normal method names
+      randlist.skipToNth(B.locArr(loc).locDom.low);
+      randlist.fillRandom(B.locArr(loc).myElems);
+      randlist.skipToNth(B.numElements + C.locArr(loc).locDom.low);
+      randlist.fillRandom(C.locArr(loc).myElems);
+    }
   }
 
   if (printArrays) {
