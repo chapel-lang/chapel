@@ -1,0 +1,4 @@
+bug: deadlock in writeThis methods that use on clauses
+
+I'm not yet sure what the cause of this is, but it
+seems to deadlock on multilocale runs.
