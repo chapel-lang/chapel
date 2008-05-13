@@ -1,0 +1,1 @@
+--main-module test_compress ../../AnalyticFcn.chpl ../../FTree.chpl MRA.chpl ../../Quadrature.chpl ../../Tensor.chpl ../../TwoScale.chpl ../../MadAnalytics.chpl

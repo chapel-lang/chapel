@@ -70,6 +70,8 @@ class LocTree {
                                          // reading something that has not yet
                                          // been set.
 
+    var oneAtATime$: sync bool = true;
+
     /** Access an element in the associative domain.  If the element
         doesn't exist it will be created.
 
@@ -81,6 +83,7 @@ class LocTree {
 
      */
     def this(node: Node) var {
+        oneAtATime$;
         if !nodes.member(node) {
             if setter {
               nodes += node;
@@ -89,11 +92,14 @@ class LocTree {
               // we return, should be safe to return the zero vector.
               // FIXME: Zeroes should really be a const, but can't
               //        return const from a var fcn.
+              oneAtATime$ = true;
               return zeroes;
             }
         }
-
-        return coeffs[node];
+       
+        const c => coeffs[node]; 
+        oneAtATime$ = true;
+        return c;
     }
   
     /** Access an element in the associative domain.  If it doesn't exist,
@@ -109,8 +115,10 @@ class LocTree {
     /** Unordered iterator over all coefficients
      */
     def these() {
+        oneAtATime$;
         for c in coeffs do 
             yield c;
+        oneAtATime$ = true;
     }
     
     /** Unordered iterator over all boxes in a particular level.
@@ -121,36 +129,49 @@ class LocTree {
         to this type of iteration vs. the associative domain used here.
      */
     def coeffs_iter(lvl: int) {
+        oneAtATime$;
         for i in nodes do
             if i.lvl == lvl then yield coeffs[i];
+        oneAtATime$ = true;
     }
 
     /** Check if there are coefficients in box (lvl, idx)
      */
     def has_coeffs(node: Node) {
-        return nodes.member(node);
+        oneAtATime$;
+        const b = nodes.member(node);
+        oneAtATime$ = true;
+        return b;
     }
 
     /** Remove an element from the associative domain.  If the element
         does not exist, it is ignored.
      */
     def remove(node: Node) {
+        oneAtATime$;
         if nodes.member(node) then nodes.remove(node);
+        oneAtATime$ = true;
     }
 
     def node_iter(lvl: int) {
+        oneAtATime$;
         for i in nodes do
             if i.lvl == lvl then yield i;
+        oneAtATime$ = true;
     }
 
     def node_iter() {
+        oneAtATime$;
         for i in nodes do
             yield i;
+        oneAtATime$ = true;
     }
 
     def copy(t: LocTree) {
+        oneAtATime$;
         t.nodes = nodes;
         t.coeffs = coeffs; 
+        oneAtATime$ = true;
     }
 }
 
@@ -164,7 +185,7 @@ class FTree {
         if order == 0 then
             halt("FTree must be initialized with an order > 0");
 
-        coforall loc in LocaleSpace do
+        for loc in LocaleSpace do
             on Locales(loc) do tree[loc] = new LocTree(coeffDom);
     }
 
@@ -240,7 +261,7 @@ def main() {
         for coeffs in f[loc] do
             writeln(coeffs);
     }
-
+    
     var node = new Node(4, 5);
     writeln("\n\nf.has_coeffs((4, 5)) = ", f.has_coeffs(node));
     writeln("f.peek((4, 5)) = ", f.peek(node));
@@ -269,9 +290,6 @@ def main() {
     for coeffs in f do
         writeln(coeffs);
 
-    writeln("\n\nentire tree = ");
-    writeln(f);
-
     var f1 = f.copy();
 
     node = new Node(3, 2);
@@ -279,10 +297,12 @@ def main() {
     f.remove(node);
 
     writeln("\n\nentire tree = ");
-    writeln(f);
+    for coeffs in f do
+        writeln(coeffs);
 
     writeln("\n\ntree copy = ");
-    writeln(f1);
+    for coeffs in f1 do
+        writeln(coeffs);
 
     for lvl in 1..3 {
         writeln("\n\ncoeffs on lvl ", lvl, " = ");
