@@ -14,15 +14,17 @@
 linux and general regressions
 =============================
 
-maxThreads warning issue
-------------------------
-[Error matching program output for parallel/taskPool/figueroa/ManyThreads]
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
+new madness precision issue (most platforms other than darwin, cygwin)
+----------------------------------------------------------------------
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 
-potentially nondeterministic maxThreads warning issues?
--------------------------------------------------------
-[Error matching program output for users/shetag/fock/fock-1-latest]
-[Error matching program output for users/shetag/fock/fock-3]
+timeout issue (except on gasnet)
+--------------------------------
+[Error: Timed out executing program
+studies/madness/aniruddha/madchap/test_gaxpy]
+[Error: Timed out executing program
+studies/madness/aniruddha/madchap/test_likepy]
 
 extremely rare race condition in module initialization
 ------------------------------------------------------
@@ -37,8 +39,8 @@ scalarReplace invalid read
 --------------------------
 *all*
 
-internal error stuff?
----------------------
+internal valgrind stuff 'the impossible has happened'
+-----------------------------------------------------
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
 [Error matching program output for
 parallel/taskPool/figueroa/TooManyThreads]
@@ -367,10 +369,13 @@ negative floating point 0.0 not supported
 xt-gnu specific failures
 ========================
 
+maxThreads issues (XTs only)
+----------------------------
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
+
 ???
 ---
 [Error matching program output for execflags/bradc/gdbddash/declint2]
-
 
 lg2/exp2
 --------
@@ -440,6 +445,8 @@ CHPL_THREADS = none regressions
 
 ???
 ---
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
 [Error matching program output for parallel/end/deitz/test_end3]
 [Error matching program output for parallel/single/diten/simpleSingleAccess]
 [Error matching program output for users/shetag/fock/fock-dyn-prog-pool]
