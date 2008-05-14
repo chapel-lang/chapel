@@ -25,7 +25,7 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const ProblemDist = new Block1DDist([1..m]);
+  const ProblemDist = new Block1DDist([1..m], Locales);
 
   const ProblemSpace = ProblemDist.newDomain([1..m]);
 
@@ -65,8 +65,8 @@ def printConfiguration() {
 
 def initVectors(B, C) {
   // TODO: should write a fillRandom() implementation that does this
-  coforall loc in LocaleSpace {
-    on Locales(loc) {
+  coforall loc in B.dom.dist.targetLocs {
+    on loc {
       var randlist = new RandomStream(seed);
       // TODO: Need to clean this up to use more normal method names
       randlist.skipToNth(B.locArr(loc).locDom.low);

@@ -1,67 +1,130 @@
 // TODO: Get rid of this
 type indexType = int(64);
 
-// TODO: move assumptions about Locales/LocaleSpace into a targetLocales
-// field
-
+//
+// The distribution class
+//
 class Block1DDist {
+  //
+  // The bounding box that defines the block distribution
+  //
   const bbox: domain(1, indexType);
 
+  //
+  // the set of target locales to which the indices are mapped
+  //
+  const targetLocs = Locales; // TODO: would like to assert that this is a 1D 
+                              // array of locales and maybe remove the default 
+                              // initializer
+
+  //
+  // an associative domain over the set of target locales
+  //
+  // TODO: Try to write this a different way without using
+  // associative domains/arrays of locales
+  //
+  const targetLocDom: domain(locale) = targetLocs;
+
+  //
+  // Create a new domain over this distribution
+  //
   def newDomain(inds) {
     return new Block1DDom(this, inds);
   }
 
+  //
+  // a helper function for mapping processors to indices
+  //
   def procToData(x, lo)
     return (lo + (x: lo.type) + (x:real != x:int:real));
 
-  def getChunk(inds, localeID) {
+  //
+  // compute what chunk of inds is owned by locale #num (0-based)
+  //
+  def getChunk(inds, num) {
     const lo = bbox.low;
     const hi = bbox.high;
     const numelems = hi - lo + 1;
-    const blo = procToData((numelems: real * localeID) / numLocales, lo);
-    const bhi = procToData((numelems: real * (localeID+1)) / numLocales, lo) - 1;
+    const numchunks = targetLocs.numElements;
+    const blo = procToData((numelems: real * num) / numchunks, lo);
+    const bhi = procToData((numelems: real * (num+1)) / numchunks, lo) - 1;
     return inds[blo..bhi];  // using domain slicing to intersect
-    // In retrospect, I think the above is incorrect -- instead, compute
-    // each locale's piece of R**1 once and then slice that with inds?
+
+    // TODO: In retrospect, I think the above is incorrect -- instead,
+    // compute each locale's piece of R**1 once and then slice that
+    // with inds?
   }
   
-  def ind2loc(ind: indexType): index(LocaleSpace) {
-    return (((ind-bbox.low)*numLocales)/bbox.numIndices): index(LocaleSpace);
+  //
+  // Determine which locale owns a particular index
+  //
+  def ind2loc(ind: indexType) {
+    return targetLocs((((ind-bbox.low)*targetLocs.numElements)/bbox.numIndices):index(targetLocs.domain));
   }
 }
 
 
+//
+// The global domain class
+//
 class Block1DDom {
-  // parameterize this by indexType and/or locIndexType
+  // TODO: parameterize this by indexType and/or locIndexType
+
+  //
+  // a pointer to the parent distribution
+  //
   const dist: Block1DDist;
+
+  //
+  // a domain describing the complete domain
+  //
   const whole: domain(1, indexType);
-  //  SHOULD BE: const locDom: [i in LocalesDom] domain(1, indexType) = new LocBlockDom(whole);
-  // TODO: Move LocaleSpace into a member variable (throughout code)
-  var locDom: [LocaleSpace] LocBlock1DDom;
+
+  //
+  // an associative array of local domain class descriptors -- set up
+  // in initialize() below
+  //
+  // TODO: would like this to be const and initialize in-place,
+  // removing the initialize method
+  //
+  var locDom: [dist.targetLocDom] LocBlock1DDom;
 
   def initialize() {
-    [i in LocaleSpace] on Locales(i) do
-      locDom(i) = new LocBlock1DDom(this, dist.getChunk(whole, here.id));
-    //    [i in LocaleSpace] writeln(i, " owns ", locDom(i));
+    for (loc, locid) in (dist.targetLocs, 0..) do
+      on loc do
+        locDom(loc) = new LocBlock1DDom(this, dist.getChunk(whole, locid));
+    //    [loc in dist.targetLocs] writeln(loc, " owns ", locDom(loc));
   }
 
+  //
+  // the iterator for the domain -- currently sequential
+  //
   def these() {
     for blk in locDom do
-      // Want to do something like:     
+      // May want to do something like:     
       // on blk do
       // But can't currently have yields in on clauses
         for ind in blk do
           yield ind;
   }
 
+  //
+  // the print method for the domain
+  //
   def writeThis(x:Writer) {
     x.write(whole);
   }
 
+  //
+  // how to allocate a new array over this domain
+  //
   def newArray(type elemType) {
     return new Block1DArr(elemType, this);
   }
 
+  //
+  // queries for the number of indices, low, and high bounds
+  //
   def numIndices {
     return whole.numIndices;
   }
@@ -76,23 +139,43 @@ class Block1DDom {
 }
 
 
+//
+// the local domain class
+//
 class LocBlock1DDom {
+  // TODO: parameterize this by indexType and/or locIndexType
+
+  //
+  // a reference to the parent global domain class
+  //
   const wholeDom: Block1DDom;
-  // parameterize this by indexType and/or locIndexType
+
+  //
+  // a local domain describing the indices owned by this locale
+  //
   var myBlock: domain(1, indexType);
 
+  //
+  // iterator over this locale's indices
+  //
   def these() {
-    // Want to do something like:     
+    // May want to do something like:     
     // on this do
     // But can't currently have yields in on clauses
     for ind in myBlock do
       yield ind;
   }
 
+  //
+  // how to write out this locale's indices
+  //
   def writeThis(x:Writer) {
     x.write(myBlock);
   }
 
+  //
+  // queries for this locale's number of indices, low, and high bounds
+  //
   def numIndices {
     return myBlock.numIndices;
   }
@@ -107,23 +190,47 @@ class LocBlock1DDom {
 }
 
 
+//
+// the global array class
+//
 class Block1DArr {
+  //
+  // the array's element type
+  //
   type elemType;
+  
+  //
+  // the global domain descriptor for this array
+  //
   var dom: Block1DDom;
-  var locArr: [LocaleSpace] LocBlock1DArr(elemType);
+
+  //
+  // an associative array of local array classes, indexed by locale
+  //
+  // TODO: would like this to be const and initialize in-place,
+  // removing the initialize method
+  //
+  var locArr: [dom.dist.targetLocDom] LocBlock1DArr(elemType);
 
   def initialize() {
-    [i in LocaleSpace] on Locales(i) do
-      locArr(i) = new LocBlock1DArr(elemType, dom.locDom(i));
+    for loc in dom.dist.targetLocs do
+      on loc do
+        locArr(loc) = new LocBlock1DArr(elemType, dom.locDom(loc));
   }
 
+  //
+  // the global accessor for the array
+  //
   def this(i: indexType) var {
     return locArr(dom.dist.ind2loc(i))(i);
   }
 
+  //
+  // the iterator over the array's elements, currently sequential
+  //
   def these() var {
-    for loc in LocaleSpace {
-      // Want to do something like:     
+    for loc in dom.dist.targetLocs {
+      // May want to do something like:     
       // on this do
       // But can't currently have yields in on clauses
       for elem in locArr(loc) {
@@ -132,12 +239,15 @@ class Block1DArr {
     }
   }
 
+  //
+  // how to print out the whole array, sequentially
+  //
   def writeThis(x: Writer) {
     var first = true;
-    for loc in LocaleSpace {
-      // Would like to do this, but it causes deadlock:
-      //      on Locales(loc) {
-      // See writeThisUsingOn.chpl
+    for loc in dom.dist.targetLocs {
+      // May want to do something like the following:
+      //      on loc {
+      // but it causes deadlock -- see writeThisUsingOn.chpl
         if (locArr(loc).numElements >= 1) {
           if (first) {
             first = false;
@@ -151,36 +261,64 @@ class Block1DArr {
     }
   }
 
+  //
+  // a query for the number of elements in the array
+  //
   def numElements {
     return dom.numIndices;
   }
 }
 
 
+//
+// the local array class
+//
 class LocBlock1DArr {
+  //
+  // the element type
+  //
   type elemType;
+
+  //
+  // a reference to the local domain class for this array and locale
+  //
   const locDom: LocBlock1DDom;
+
+  //
+  // the block of local array data
+  //
   var myElems: [locDom.myBlock] elemType;
 
+  //
+  // the accessor for the local array -- assumes the index is local
+  //
   def this(i: indexType) var {
     return myElems(i);
   }
 
+  //
+  // iterator over the elements owned by this locale
+  //
   def these() var {
     for elem in myElems {
       yield elem;
     }
   }
 
+  //
+  // prints out this locale's piece of the array
+  //
   def writeThis(x: Writer) {
-    // Would like to do this, but it causes deadlock:
-    //    on this.locale do
-    // See writeThisUsingOn.chpl
-      x.write(myElems);
+    // May want to do something like the following:
+    //      on loc {
+    // but it causes deadlock -- see writeThisUsingOn.chpl
+    x.write(myElems);
   }
 
+  //
+  // query for the number of local array elements
+  //
   def numElements {
     return myElems.numElements;
   }
-
 }
