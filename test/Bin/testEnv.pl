@@ -15,7 +15,7 @@ foreach my $envsetting (@envlist) {
         # blank
     } elsif ($envsetting =~ m/\#(.*)/) {
         # comment
-    } elsif ($envsetting =~ m/(\w*)\s*(.)=\s*(\w*)/) {
+    } elsif ($envsetting =~ m/(\w*)\s*(.)=\s*(\S*)/) {
 #        print "checking whether $1 $2= $3\n";
         if ($2 eq "=") {
             if ($ENV{$1} eq $3) {
