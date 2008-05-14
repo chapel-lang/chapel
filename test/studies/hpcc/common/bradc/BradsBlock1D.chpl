@@ -1,14 +1,19 @@
-// TODO: Get rid of this
-type indexType = int(64);
+// TODO: Would using nested classes allow me to avoid so much
+// passing around of globIndexType and locIndexType?
 
 //
 // The distribution class
 //
 class Block1DDist {
   //
+  // The distribution's index type and domain's global index type
+  //
+  type glbIdxType = int(64);
+
+  //
   // The bounding box that defines the block distribution
   //
-  const bbox: domain(1, indexType);
+  const bbox: domain(1, glbIdxType);
 
   //
   // the set of target locales to which the indices are mapped
@@ -29,7 +34,9 @@ class Block1DDist {
   // Create a new domain over this distribution
   //
   def newDomain(inds) {
-    return new Block1DDom(this, inds);
+    // Note that I'm fixing the global and local index types to be the
+    // same, but making this a generic function would fix this
+    return new Block1DDom(glbIdxType, glbIdxType, this, inds);
   }
 
   //
@@ -58,7 +65,7 @@ class Block1DDist {
   //
   // Determine which locale owns a particular index
   //
-  def ind2loc(ind: indexType) {
+  def ind2loc(ind: glbIdxType) {
     return targetLocs((((ind-bbox.low)*targetLocs.numElements)/bbox.numIndices):index(targetLocs.domain));
   }
 }
@@ -68,17 +75,21 @@ class Block1DDist {
 // The global domain class
 //
 class Block1DDom {
-  // TODO: parameterize this by indexType and/or locIndexType
+  //
+  // The index types of the global and local domain portions
+  //
+  type glbIdxType;
+  type lclIdxType;
 
   //
   // a pointer to the parent distribution
   //
-  const dist: Block1DDist;
+  const dist: Block1DDist(glbIdxType);
 
   //
   // a domain describing the complete domain
   //
-  const whole: domain(1, indexType);
+  const whole: domain(1, glbIdxType);
 
   //
   // an associative array of local domain class descriptors -- set up
@@ -87,12 +98,12 @@ class Block1DDom {
   // TODO: would like this to be const and initialize in-place,
   // removing the initialize method
   //
-  var locDom: [dist.targetLocDom] LocBlock1DDom;
+  var locDom: [dist.targetLocDom] LocBlock1DDom(glbIdxType, lclIdxType);
 
   def initialize() {
     for (loc, locid) in (dist.targetLocs, 0..) do
       on loc do
-        locDom(loc) = new LocBlock1DDom(this, dist.getChunk(whole, locid));
+        locDom(loc) = new LocBlock1DDom(glbIdxType, lclIdxType, this, dist.getChunk(whole, locid));
     //    [loc in dist.targetLocs] writeln(loc, " owns ", locDom(loc));
   }
 
@@ -119,7 +130,7 @@ class Block1DDom {
   // how to allocate a new array over this domain
   //
   def newArray(type elemType) {
-    return new Block1DArr(elemType, this);
+    return new Block1DArr(glbIdxType, lclIdxType, elemType, this);
   }
 
   //
@@ -143,17 +154,21 @@ class Block1DDom {
 // the local domain class
 //
 class LocBlock1DDom {
-  // TODO: parameterize this by indexType and/or locIndexType
+  //
+  // The index types of the global and local domain portions
+  //
+  type glbIdxType;
+  type lclIdxType;
 
   //
   // a reference to the parent global domain class
   //
-  const wholeDom: Block1DDom;
+  const wholeDom: Block1DDom(glbIdxType, lclIdxType);
 
   //
   // a local domain describing the indices owned by this locale
   //
-  var myBlock: domain(1, indexType);
+  var myBlock: domain(1, lclIdxType);
 
   //
   // iterator over this locale's indices
@@ -195,6 +210,12 @@ class LocBlock1DDom {
 //
 class Block1DArr {
   //
+  // The index types of the global and local domain portions
+  //
+  type glbIdxType;
+  type lclIdxType;
+
+  //
   // the array's element type
   //
   type elemType;
@@ -202,7 +223,7 @@ class Block1DArr {
   //
   // the global domain descriptor for this array
   //
-  var dom: Block1DDom;
+  var dom: Block1DDom(glbIdxType, lclIdxType);
 
   //
   // an associative array of local array classes, indexed by locale
@@ -210,18 +231,18 @@ class Block1DArr {
   // TODO: would like this to be const and initialize in-place,
   // removing the initialize method
   //
-  var locArr: [dom.dist.targetLocDom] LocBlock1DArr(elemType);
+  var locArr: [dom.dist.targetLocDom] LocBlock1DArr(glbIdxType, lclIdxType, elemType);
 
   def initialize() {
     for loc in dom.dist.targetLocs do
       on loc do
-        locArr(loc) = new LocBlock1DArr(elemType, dom.locDom(loc));
+        locArr(loc) = new LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDom(loc));
   }
 
   //
   // the global accessor for the array
   //
-  def this(i: indexType) var {
+  def this(i: glbIdxType) var {
     return locArr(dom.dist.ind2loc(i))(i);
   }
 
@@ -275,6 +296,12 @@ class Block1DArr {
 //
 class LocBlock1DArr {
   //
+  // The index types of the global and local domain portions
+  //
+  type glbIdxType;
+  type lclIdxType;
+
+  //
   // the element type
   //
   type elemType;
@@ -282,7 +309,7 @@ class LocBlock1DArr {
   //
   // a reference to the local domain class for this array and locale
   //
-  const locDom: LocBlock1DDom;
+  const locDom: LocBlock1DDom(glbIdxType, lclIdxType);
 
   //
   // the block of local array data
@@ -292,7 +319,7 @@ class LocBlock1DArr {
   //
   // the accessor for the local array -- assumes the index is local
   //
-  def this(i: indexType) var {
+  def this(i: lclIdxType) var {
     return myElems(i);
   }
 
