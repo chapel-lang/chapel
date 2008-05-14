@@ -103,7 +103,14 @@ static void makeRefType(Type* type) {
 
   //  DefExpr* def = new DefExpr(new VarSymbol("tmp", type));
   CallInfo info(new CallExpr("_type_construct__ref", type->symbol));
-  chpl_main->insertAtHead(info.call); // add call to AST temporarily
+  // add call to AST temporarily
+  if (type->defaultConstructor) {
+    if (type->defaultConstructor->instantiationPoint)
+      type->defaultConstructor->instantiationPoint->insertAtHead(info.call);
+    else
+      type->symbol->defPoint->insertBefore(info.call);
+  } else
+    chpl_main->insertAtHead(info.call);
   FnSymbol* fn = resolve_call(&info);
   info.call->remove();
   type->refType = toClassType(fn->retType);
@@ -676,7 +683,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
         }
       }
     }
-    fn->defPoint->insertBefore(typeConstructorCall);
+    call->insertBefore(typeConstructorCall);
     resolveCall(typeConstructorCall);
     INT_ASSERT(typeConstructorCall->isResolved());
     resolveFns(typeConstructorCall->isResolved());
@@ -3248,12 +3255,15 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
             if (arg->intent == INTENT_PARAM) {
               INT_FATAL(arg, "unhandled case");
             } else if (arg->type->isGeneric) {
-              if (pfn->getFormal(i))
+              if (pfn->getFormal(i)) {
                 subs.put(arg, pfn->getFormal(i)->type);
+              }
             }
           }
           FnSymbol* icfn = instantiate(cfn, &subs, NULL);
           if (icfn) {
+            icfn->instantiationPoint = ict->defaultTypeConstructor->instantiationPoint;
+            INT_ASSERT(icfn->instantiationPoint);
             resolveFormals(icfn);
             if (signature_match(pfn, icfn)) {
               resolveFns(icfn);
@@ -3279,8 +3289,16 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
             subs.put(arg, pfn->getFormal(i)->type);
           }
         }
-        if (subs.n)
+        if (subs.n) {
           cfn = instantiate(cfn, &subs, NULL);
+          if (cfn) {
+            if (ct->defaultTypeConstructor->instantiationPoint)
+              cfn->instantiationPoint = ct->defaultTypeConstructor->instantiationPoint;
+            else
+              cfn->instantiationPoint = toBlockStmt(ct->defaultTypeConstructor->defPoint->parentExpr);
+            INT_ASSERT(cfn->instantiationPoint);
+          }
+        }
         if (cfn) {
           resolveFormals(cfn);
           if (signature_match(pfn, cfn)) {

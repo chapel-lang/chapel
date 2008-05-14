@@ -5,9 +5,9 @@ module M1 {
     def foo() {
       return a+b;
     }
-    def writeThis(w: Writer) {
-      w.writeln("How does this get found?");
-      w.write("{a = ", a, ", b = ", b, "}");
+    def writeThis(f: Writer) {
+      f.writeln("How does this get found?");
+      f.write("{a = ", a, ", b = ", b, "}");
     }
   }
 }

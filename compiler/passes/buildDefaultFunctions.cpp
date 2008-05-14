@@ -399,7 +399,11 @@ static void build_enum_cast_function(EnumType* et) {
     fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
   }
   DefExpr* def = new DefExpr(fn);
-  et->symbol->defPoint->insertBefore(def);
+  //
+  // these cast functions need to go in the base module because they
+  // are automatically inserted to handle implicit coercions
+  //
+  baseModule->block->insertAtTail(def);
   reset_file_info(def, et->symbol->lineno, et->symbol->filename);
   normalize(fn);
 
@@ -427,7 +431,11 @@ static void build_enum_cast_function(EnumType* et) {
 
   fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
   def = new DefExpr(fn);
-  et->symbol->defPoint->insertBefore(def);
+  //
+  // these cast functions need to go in the base module because they
+  // are automatically inserted to handle implicit coercions
+  //
+  baseModule->block->insertAtTail(def);
   reset_file_info(def, et->symbol->lineno, et->symbol->filename);
   normalize(fn);
 }
@@ -852,7 +860,11 @@ static void buildStringCastFunction(EnumType* et) {
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_StringSymbol("")));
 
   DefExpr* def = new DefExpr(fn);
-  et->symbol->defPoint->insertBefore(def);
+  //
+  // these cast functions need to go in the base module because they
+  // are automatically inserted to handle implicit coercions
+  //
+  baseModule->block->insertAtTail(def);
   reset_file_info(def, et->symbol->lineno, et->symbol->filename);
   normalize(fn);
 }

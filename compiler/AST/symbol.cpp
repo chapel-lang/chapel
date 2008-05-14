@@ -658,6 +658,8 @@ FnSymbol::copyInner(ASTMap* map) {
   copy->isCompilerTemp = isCompilerTemp;
   copy->canParam = canParam;
   copy->canType = canType;
+  copy->instantiatedFrom = instantiatedFrom;
+  copy->instantiationPoint = instantiationPoint;
   return copy;
 }
 
@@ -713,6 +715,7 @@ build_empty_wrapper(FnSymbol* fn) {
       wrapper->setter = fn->setter->copy();
   }
   wrapper->isMethod = fn->isMethod;
+  wrapper->instantiationPoint = fn->instantiationPoint;
   return wrapper;
 }
 
@@ -1397,21 +1400,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
 
     // copy generic class type
     TypeSymbol* clone = retType->symbol->copy();
-
-    // make scope of instantiation "use" module of instantiating types
-    // why??? --sjd
-    Vec<BaseAST*> values;
-    generic_substitutions->get_values(values);
-    forv_Vec(BaseAST, value, values) {
-      if (Type* type = toType(value)) {
-        if (!toPrimitiveType(type)) {
-          if (!retType->symbol->hasPragma("ref")) {
-            BlockStmt* block = toBlockStmt(defPoint->parentExpr);
-            block->modUses.add(type->getModule());
-          }
-        }
-      }
-    }
 
     // compute instantiatedWith vector and rename instantiated type
     clone->name = astr(clone->name, "(");

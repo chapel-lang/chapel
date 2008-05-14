@@ -991,7 +991,7 @@ pragma "inline" def _cast(type t, x: real(?w)) where _isPrimitiveType(t)
 pragma "inline" def _cast(type t, x: string) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: enumerated) where _isPrimitiveType(t)
+pragma "inline" def _cast(type t, x: enumerated) where _isPrimitiveType(t) && t != string
   return __primitive("cast", t, x);
 
 pragma "inline" def _cast(type t, x) where t:object && x:t
