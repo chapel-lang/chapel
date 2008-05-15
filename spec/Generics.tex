@@ -186,9 +186,65 @@ A queried domain may not be modified via the name to which it is bound
 \index{generics!function visibility}
 
 Function visibility in generic functions is altered depending on the
-instantiation.  When resolving function calls made within generic functions,
-the visible functions are taken from any call site at which the generic
-function is instantiated for each particular instantiation.
+instantiation.  When resolving function calls made within generic
+functions, the visible functions are taken from any call site at which
+the generic function is instantiated for each particular
+instantiation.  The specific call site chosen is arbitrary and it is
+referred to as the \emph{point of instantiation}.
+
+\begin{example}
+Consider the following code which defines a generic
+function \chpl{bar}:
+\begin{chapel}
+module M1 {
+  record R {
+    var x: int;
+    def foo() { }
+  }
+}
+
+module M2 {
+  def bar(x) {
+    x.foo();
+  }
+}
+
+module M3 {
+  use M1, M2;
+  def main() {
+    var r: R;
+    bar(r);
+  }
+}
+\end{chapel}
+In the function \chpl{main}, the variable \chpl{r} is declared to be
+of type \chpl{R} defined in module \chpl{M1} and a call is made to the
+generic function \chpl{bar} which is defined in module \chpl{M2}.
+This is the only place where \chpl{bar} is called in this program and
+so it becomes the point of instantiation for \chpl{bar} when the
+argument \chpl{x} is of type \chpl{R}.  Therefore, the call to
+the \chpl{foo} method in \chpl{bar} is resolved by looking for visible
+functions from within \chpl{main} and going through the use of
+module \chpl{M1}.
+\end{example}
+
+If the generic function is only called indirectly through dynamic
+dispatch, the point of instantiation is defined as the point at which
+the derived type (the type of the implicit \chpl{this} argument) is
+defined or instantiated (if the derived type is generic).
+
+\begin{rationale}
+Visible function lookup in Chapel's generic functions is handled
+differently than in C++'s template functions in that there is no split
+between dependent and independent types.
+
+Also, dynamic dispatch and instantiation is handled differently.
+Chapel supports dynamic dispatch over methods that are generic in some
+of its formal arguments.
+
+Note that the Chapel lookup mechanism is still under development and
+discussion.  Comments or questions are appreciated.
+\end{rationale}
 
 \subsection{Generic Types}
 \label{Generic_Types}
