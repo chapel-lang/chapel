@@ -11,14 +11,14 @@ module M1 {
 module M2 {
   def main {
     var c = bar();
-    writeln(baz(c));
+    baz(c);
   }
   def bar() {
     use M1;
     return new C();
   }
-  def baz(a: object) {
+  def baz(o: object) {
     use M1;
-    writeln((a:C).foo());
+    writeln((o:C).foo());
   }
 }
