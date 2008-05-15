@@ -24,25 +24,12 @@ otherwise, seems like it could be retired -- see .future for details
 
 DEFERRED
 --------
-- semantic: can we support 'setter' in var-iterators? [test/functions/deitz/iterators/iterator_uses_setter]
 - semantic: cobegin scope [test/parallel/cobegin/bradc/varsEscape]
 - semantic: implicit real parameter coercion [test/types/scalar/bradc/initReal32]
 
 
-RETIRE .future
-------
-These are OK
-- semantic: can't access field in class defined in unused module [test/modules/diten/returnClassDiffModule6]
-- semantic: can't call method of class defined in different module [test/modules/diten/returnClassDiffModule]
-
-Keep this test around as a placeholder and to generate the error
-(or reclassify as error message if it's not good)
-- semantic: expand value into tuple [test/types/tuple/marybeth/tuplecast]
-
-
-RETIRE & DOCUMENT
------------------
-semantic: domain sharing via .domain [test/domains/bradc/arrayLinkage]
+WORKING (remove .future)
+------------------------
 
 
 

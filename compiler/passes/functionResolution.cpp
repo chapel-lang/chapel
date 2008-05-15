@@ -1183,9 +1183,15 @@ printResolutionError(const char* error,
                      CallInfo* info) {
   CallExpr* call = userCall(info->call);
   if (!strcmp("_cast", info->name)) {
-    USR_FATAL(call, "illegal cast from %s to %s",
-              toString(info->actualTypes.v[1]),
-              toString(info->actualTypes.v[0]));
+    if (!info->actualSyms.v[0]->isTypeVariable) {
+      USR_FATAL(call, "illegal cast to non-type",
+                toString(info->actualTypes.v[1]),
+                toString(info->actualTypes.v[0]));
+    } else {
+      USR_FATAL(call, "illegal cast from %s to %s",
+                toString(info->actualTypes.v[1]),
+                toString(info->actualTypes.v[0]));
+    }
   } else if (info->actualTypes.n == 2 &&
              info->actualTypes.v[0] == dtMethodToken &&
              !strcmp("these", info->name)) {
