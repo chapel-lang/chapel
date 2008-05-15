@@ -359,7 +359,6 @@ negative floating point 0.0 not supported
 -----------------------------------------
 [Error matching program output for types/complex/bradc/negateimaginary3] 
 [Error matching program output for types/complex/bradc/negativeimaginaryliteral] 
-
 ??? -- gdb incompatability?
 ---------------------------
 [Error matching program output for execflags/bradc/gdbddash/declint2] 
@@ -368,10 +367,6 @@ negative floating point 0.0 not supported
 ========================
 xt-gnu specific failures
 ========================
-
-maxThreads issues (XTs only)
-----------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 
 ???
 ---
