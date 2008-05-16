@@ -3419,6 +3419,36 @@ resolve() {
     }
   }
 
+  //
+  // make it so that arguments with types that have default values for
+  // all generic arguments used those defaults
+  //
+  // markedGeneric is used to identify places where the user inserted
+  // '?' (queries) to mark such a type as generic.
+  //
+  forv_Vec(FnSymbol, fn, gFns) {
+    bool unmark = fn->isGeneric;
+    for_formals(formal, fn) {
+      if (formal->type->hasGenericDefaults) {
+        if (!formal->markedGeneric &&
+            formal != fn->_this &&
+            !formal->hasPragma("is meme")) {
+          formal->typeExpr = new BlockStmt(new CallExpr(formal->type->defaultTypeConstructor));
+          insert_help(formal->typeExpr, NULL, formal, fn->argScope);
+          formal->type = dtUnknown;
+        } else {
+          unmark = false;
+        }
+      } else if (formal->type->isGeneric || formal->intent == INTENT_PARAM) {
+        unmark = false;
+      }
+    }
+    if (unmark) {
+      fn->isGeneric = false;
+      INT_ASSERT(false);
+    }
+  }
+
   resolveFns(chpl_main);
 
   // need to handle enumerated types better

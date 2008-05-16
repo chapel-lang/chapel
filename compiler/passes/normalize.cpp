@@ -1173,6 +1173,7 @@ fixup_query_formals(FnSymbol* fn) {
         }
         formal->typeExpr->remove();
         formal->type = ts->type;
+        formal->markedGeneric = true;
       }
     }
   }

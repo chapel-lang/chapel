@@ -415,7 +415,8 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   defaultExpr(NULL),
   variableExpr(iVariableExpr),
   instantiatedFrom(NULL),
-  instantiatedParam(false)
+  instantiatedParam(false),
+  markedGeneric(false)
 {
   if (!iTypeExpr)
     typeExpr = NULL;
@@ -451,6 +452,7 @@ ArgSymbol::copyInner(ASTMap* map) {
   ps->cname = cname;
   ps->instantiatedFrom = instantiatedFrom;
   ps->instantiatedParam = instantiatedParam;
+  ps->markedGeneric = markedGeneric;
   ps->isTypeVariable = isTypeVariable;
   return ps;
 }
@@ -1482,7 +1484,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
   if (newfn->numFormals() > 1 && newfn->getFormal(1)->type == dtMethodToken)
     newfn->getFormal(2)->type->methods.add(newfn);
 
-  //normalize(newfn);
   newfn->tag_generic();
 
   return newfn;
@@ -1657,25 +1658,45 @@ FnSymbol::getFormal(int i) {
 }
 
 
-static bool
+//
+// returns 1 if generic
+// returns 2 if they all have defaults
+//
+static int
 hasGenericArgs(FnSymbol* fn) {
+  bool isGeneric = false;
+  bool hasGenericDefaults = true;
   for_formals(formal, fn) {
-    if (formal->type->isGeneric)
-      return true;
-    if (formal->intent == INTENT_PARAM)
-      return true;
+    if ((formal->type->isGeneric &&
+         (!formal->type->hasGenericDefaults ||
+          formal->markedGeneric ||
+          formal == fn->_this ||
+          formal->hasPragma("is meme"))) ||
+        formal->intent == INTENT_PARAM) {
+      isGeneric = true;
+      if (!formal->defaultExpr)
+        hasGenericDefaults = false;
+    }
   }
-  return false;
+  if (isGeneric && !hasGenericDefaults)
+    return 1;
+  else if (isGeneric && hasGenericDefaults)
+    return 2;
+  else
+    return 0;
 }
 
 
 bool FnSymbol::tag_generic() {
   if (isGeneric)
     return false;
-  if (hasGenericArgs(this)) {
-    isGeneric = 1; 
-    if (retType != dtUnknown && hasPragma("type constructor"))
+  if (int result = hasGenericArgs(this)) {
+    isGeneric = 1;
+    if (retType != dtUnknown && hasPragma("type constructor")) {
       retType->isGeneric = true;
+      if (result == 2)
+        retType->hasGenericDefaults = true;
+    }
     return true;
   }
   return false;

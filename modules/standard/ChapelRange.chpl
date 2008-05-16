@@ -55,14 +55,14 @@ def _build_range(param bt: BoundedRangeType)
 //
 // syntax function for [range)
 //
-def _build_open_interval_upper(r: range)
+def _build_open_interval_upper(r: range(?e,?b,?s))
   return new range(r.eltType, r.boundedType, r.stridable, r.low, r.high-1);
 
 
 //
 // syntax function for by-expressions
 //
-def by(r : range, i : int) {
+def by(r : range(?e,?b,?s), i : int) {
   if i == 0 then
     halt("range cannot be strided by zero");
   if r.boundedType == BoundedRangeType.boundedNone then
@@ -422,7 +422,7 @@ def /(i:integral, r: range(?e,?b,?s))
 //
 // return a substring of a string with a range of indices
 //
-pragma "inline" def string.substring(s: range) {
+pragma "inline" def string.substring(s: range(?e,?b,?st)) {
   if s.boundedType != BoundedRangeType.bounded then
     compilerError("substring indexing undefined on unbounded ranges");
   if s.stride != 1 then

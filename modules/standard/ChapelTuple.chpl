@@ -1,7 +1,7 @@
 def _iteratorUnbounded(x) param
   return false;
 
-def _iteratorUnbounded(r: range) param where r.boundedType != BoundedRangeType.bounded
+def _iteratorUnbounded(r: range(?e,?b,?s)) param where r.boundedType != BoundedRangeType.bounded
   return true;
 
 pragma "inline" def _getIteratorTupleHelp(t: _tuple, param i: int) {

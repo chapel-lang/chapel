@@ -160,6 +160,10 @@ arguments as well.  In the example above, the formal argument's type
 could also be specified as \chpl{Stack(?type)} in which case the
 symbol \chpl{type} is equivalent to \chpl{s.itemType}.
 
+Note that generic types which have default values for all of their
+generic fields, \emph{e.g. range}, are not generic when simply
+specified and require a query to mark the argument as generic.
+
 \index{integral@\chpl{integral}}
 \index{numeric@\chpl{numeric}}
 \index{enumerated@\chpl{enumerated}}

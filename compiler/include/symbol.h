@@ -116,6 +116,7 @@ class ArgSymbol : public Symbol {
   Expr* variableExpr;
   Type* instantiatedFrom;
   bool instantiatedParam;
+  bool markedGeneric;
 
   ArgSymbol(IntentTag iIntent, const char* iName, Type* iType,
             Expr* iTypeExpr = NULL, Expr* iDefaultExpr = NULL,

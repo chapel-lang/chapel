@@ -293,6 +293,7 @@ static void build_record_equality_function(ClassType* ct) {
 
   FnSymbol* fn = new FnSymbol("==");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
+  arg1->markedGeneric = true;
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtAny);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
@@ -318,6 +319,7 @@ static void build_record_inequality_function(ClassType* ct) {
 
   FnSymbol* fn = new FnSymbol("!=");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
+  arg1->markedGeneric = true;
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtAny);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
@@ -341,6 +343,7 @@ static void build_enum_enumerate_function(EnumType* et) {
   // Each enum type has its own _enum_enumerate function.
   FnSymbol* fn = new FnSymbol("_enum_enumerate");
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  //  arg->isGeneric = false;
   arg->isTypeVariable = true;
   fn->insertFormalAtTail(arg);
   fn->where = new BlockStmt(new CallExpr("==", arg, et->symbol));
@@ -364,6 +367,7 @@ static void build_enum_cast_function(EnumType* et) {
   FnSymbol* fn = new FnSymbol("_cast");
   fn->isCompilerTemp = true;
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  //  arg1->isGeneric = false;
   arg1->isTypeVariable = true;
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtIntegral);
   fn->insertFormalAtTail(arg1);
@@ -409,6 +413,7 @@ static void build_enum_cast_function(EnumType* et) {
   fn = new FnSymbol("_cast");
   fn->isCompilerTemp = true;
   arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  //  arg1->isGeneric = false;
   arg1->isTypeVariable = true;
   arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtString);
   fn->insertFormalAtTail(arg1);
@@ -476,6 +481,7 @@ static void build_record_assignment_function(ClassType* ct) {
 
   FnSymbol* fn = new FnSymbol("=");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
+  arg1->markedGeneric = true;
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtAny);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
@@ -551,6 +557,7 @@ static void build_record_copy_function(ClassType* ct) {
 
   FnSymbol* fn = new FnSymbol("_copy");
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+  arg->markedGeneric = true;
   fn->insertFormalAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   for_fields(tmp, ct) {
@@ -572,6 +579,7 @@ static void build_record_init_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("_init");
   fn->addPragma("inline");
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+  arg->markedGeneric = true;
   fn->insertFormalAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   for_formals(formal, ct->defaultConstructor) {
@@ -598,6 +606,7 @@ static void build_record_hash_function(ClassType *ct) {
   FnSymbol *fn = new FnSymbol("_associative_hash");
   fn->addPragma("inline");
   ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "r", ct);
+  arg->markedGeneric = true;
   fn->insertFormalAtTail(arg);
 
   if (ct->fields.length() == 0) {
@@ -637,6 +646,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("read");
   fn->cname = astr("_auto_", ct->symbol->name, "_read");
   ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", ct);
+  arg->markedGeneric = true;
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtChapelFile);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
