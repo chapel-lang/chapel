@@ -26,6 +26,7 @@ NOTES
 
   static int anon_record_uid = 1;
   static int iterator_uid = 1;
+  static int query_uid = 1;
   int captureTokens;
   char captureString[1024];
 
@@ -197,6 +198,7 @@ NOTES
 %type <pexpr> variable_expr stmt_level_expr alias_expr formal_level_type
 %type <pexpr> reduction opt_init_expr opt_init_type var_arg_expr
 %type <pdefexpr> formal enum_item
+%type <pdefexpr> query_expr
 
 %type <pexpr> formal_type_expr formal_tuple_paren_expr formal_parenop_expr
 %type <pexpr> formal_memberaccess_expr formal_expr_list_item
@@ -714,14 +716,25 @@ extern_fn_decl_stmt:
 ;
 
 
+query_expr:
+  TQUESTION identifier
+    {
+      $$ = new DefExpr(new VarSymbol($2));
+    }
+| TQUESTION
+    {
+      $$ = new DefExpr(new VarSymbol(astr("_query_dummy", istr(query_uid++))));
+    }
+;
+
+
 var_arg_expr:
   TDOTDOTDOT expr
     { $$ = $2; }
-| TDOTDOTDOT TQUESTION identifier
+| TDOTDOTDOT query_expr
     {
-      VarSymbol* var = new VarSymbol($3, dtUnknown);
-      var->isParam = true;
-      $$ = new DefExpr(var);
+      toVarSymbol($2->sym)->isParam = true;
+      $$ = $2;
     }
 ;
 
@@ -1029,8 +1042,8 @@ array_type:
     { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
 | TLSBR TRSBR type
     { $$ = new CallExpr("_build_array_type", gNil, $3); }
-| TLSBR TQUESTION identifier TRSBR type
-    { $$ = new CallExpr("_build_array_type", new DefExpr(new VarSymbol($3)), $5); }
+| TLSBR query_expr TRSBR type
+    { $$ = new CallExpr("_build_array_type", $2, $4); }
 ;
 
 
@@ -1101,10 +1114,8 @@ opt_formal_type:
     { $$ = $2; }
 | TCOLON formal_level_type
     { $$ = $2; }
-| TCOLON TQUESTION identifier
-    {
-      $$ = new DefExpr(new VarSymbol($3));
-    }
+| TCOLON query_expr
+    { $$ = $2; }
 | TCOLON TDOMAIN
     { $$ = new SymExpr("_domain"); }
 | TCOLON TSINGLE
@@ -1115,8 +1126,8 @@ opt_formal_type:
     { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $3)); }
 | TCOLON TLSBR TRSBR
     { $$ = new CallExpr("_build_array_type", gNil); }
-| TCOLON TLSBR TQUESTION identifier TRSBR
-    { $$ = new CallExpr("_build_array_type", new DefExpr(new VarSymbol($4))); }
+| TCOLON TLSBR query_expr TRSBR
+    { $$ = new CallExpr("_build_array_type", $3); }
 ;
 
 
@@ -1149,8 +1160,8 @@ nonempty_formal_expr_ls:
 formal_expr_list_item:
   identifier TASSIGN formal_expr_list_item
     { $$ = new NamedExpr($1, $3); }
-| TQUESTION identifier // should only be in formals
-    { $$ = new DefExpr(new VarSymbol($2)); }
+| query_expr
+    { $$ = $1; }
 | expr
 ;
 

@@ -151,12 +151,18 @@ argument type expression.  The syntax of a query expression is given
 by:
 \begin{syntax}
 query-expression:
-  ? identifier
+  ? identifier[OPT]
 \end{syntax}
 Querying is restricted to querying the type of a formal argument, the
 element type of an formal argument that is an array, the domain of a
 formal argument that is an array, the size of a primitive type, or a
 type or parameter field of a formal argument type.
+
+The identifier can be omitted.  This is useful for ensuring the
+genericity of a generic type that defines default values for all of
+its generic fields when specifying a formal argument as discussed
+in~\rsec{Formal_Arguments_of_Generic_Type}.
+
 \begin{example}
 The following code defines a generic function where the type of the
 first parameter is queried and stored in the type alias \chpl{t} and

@@ -55,14 +55,14 @@ def _build_range(param bt: BoundedRangeType)
 //
 // syntax function for [range)
 //
-def _build_open_interval_upper(r: range(?e,?b,?s))
+def _build_open_interval_upper(r: range(?))
   return new range(r.eltType, r.boundedType, r.stridable, r.low, r.high-1);
 
 
 //
 // syntax function for by-expressions
 //
-def by(r : range(?e,?b,?s), i : int) {
+def by(r : range(?), i : int) {
   if i == 0 then
     halt("range cannot be strided by zero");
   if r.boundedType == BoundedRangeType.boundedNone then
@@ -323,7 +323,7 @@ def range.boundsCheck(other: range(?e,?b,?s)) {
 //
 // returns true if every i in other is in this range
 //
-def range.member(other: range(?e,?b,?s))
+def range.member(other: range(?))
   return this(other) == other;
 
 

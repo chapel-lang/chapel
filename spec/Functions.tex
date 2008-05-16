@@ -37,14 +37,14 @@ formal:
 
 formal-type:
   : type-specifier
-  : ? identifier
+  : ? identifier[OPT]
 
 default-expression:
   = expression
 
 variable-argument-expression:
   ... expression
-  ... ? identifier
+  ... ? identifier[OPT]
 
 formal-tag: one of
   `in' `out' `inout' `param' `type'
@@ -621,7 +621,7 @@ ensure that the actuals all have the same type.
 \begin{example}
 The function
 \begin{chapel}
-def tuple(x ...?k) return x;
+def tuple(x ...?) return x;
 \end{chapel}
 creates a generic function that returns tuples.  When passed two or
 more actuals in a call, it is equivalent to building a tuple so the
