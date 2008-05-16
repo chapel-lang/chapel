@@ -593,17 +593,22 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
   chpl_task_list_p task = task_list, next_task;
   _Bool serial = chpl_get_serial();
   // This function is not expected to be called if a cobegin contains fewer
-  // than two statements.
-  assert (task && task->next != task);
+  // than two statements; a coforall, however, may generate just one task,
+  // or even none at all.
+  if (!task)
+    return;
+  assert (task && task->next);
   next_task = task->next;  // next_task now points to the head of the list
 
   if (serial) {
+    _Bool is_last_task;
     do {
       task = next_task;
       (*task->fun)(task->arg);
       next_task = task->next;
+      is_last_task = task == task_list;
       chpl_free (task, 0, 0);
-    } while (task != task_list);
+    } while (!is_last_task);
   }
 
   else {
@@ -611,62 +616,72 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
     chpl_task_list_p first_task = next_task;
     next_task = next_task->next;
 
-    // begin critical section
-    chpl_mutex_lock(&threading_lock);
+    if (first_task != task_list) {
+      // there are at least two tasks in task_list
 
-    do {
-      task = next_task;
-      task->task_pool_entry = add_to_task_pool (task->fun, task->arg, serial, task);
-      next_task = task->next;
-      task_cnt++;
-    } while (task != task_list);
+      // begin critical section
+      chpl_mutex_lock(&threading_lock);
 
-    schedule_next_task(task_cnt);
+      do {
+        task = next_task;
+        task->task_pool_entry = add_to_task_pool (task->fun, task->arg, serial, task);
+        next_task = task->next;
+        task_cnt++;
+      } while (task != task_list);
 
-    // end critical section
-    chpl_mutex_unlock(&threading_lock);
+      schedule_next_task(task_cnt);
+
+      // end critical section
+      chpl_mutex_unlock(&threading_lock);
+    }
 
     // Execute the first task on the list, since it has to run to completion
-    // before continuing beyond the cobegin it's in.
+    // before continuing beyond the cobegin or coforall it's in.
     (*first_task->fun)(first_task->arg);
-    next_task = first_task->next;
-    chpl_free (first_task, 0, 0);
 
-    do {
+    if (first_task == task_list)  // just one task in task_list
+      chpl_free (first_task, 0, 0);
 
-      task = next_task;
-      next_task = task->next;
+    else {
+      next_task = first_task->next;
+      chpl_free (first_task, 0, 0);
 
-      // don't lock unnecessarily
-      if (!task->completed) {
-        chpl_threadfp_t  task_to_run_fun = NULL;
-        chpl_threadarg_t task_to_run_arg = NULL;
+      do {
 
-        // begin critical section
-        chpl_mutex_lock(&threading_lock);
+        task = next_task;
+        next_task = task->next;
 
+        // don't lock unnecessarily
         if (!task->completed) {
-          if (task->task_pool_entry->begun)
-            // task is about to be freed; the completed field should not be accessed!
-            task->task_pool_entry->task_list = NULL;
-          else {
-            task_to_run_fun = task->task_pool_entry->fun;
-            task_to_run_arg = task->task_pool_entry->arg;
-            task->task_pool_entry->begun = true;
-            if (waking_cnt > 0)
-              waking_cnt--;
+          chpl_threadfp_t  task_to_run_fun = NULL;
+          chpl_threadarg_t task_to_run_arg = NULL;
+
+          // begin critical section
+          chpl_mutex_lock(&threading_lock);
+
+          if (!task->completed) {
+            if (task->task_pool_entry->begun)
+              // task is about to be freed; the completed field should not be accessed!
+              task->task_pool_entry->task_list = NULL;
+            else {
+              task_to_run_fun = task->task_pool_entry->fun;
+              task_to_run_arg = task->task_pool_entry->arg;
+              task->task_pool_entry->begun = true;
+              if (waking_cnt > 0)
+                waking_cnt--;
+            }
           }
+
+          // end critical section
+          chpl_mutex_unlock(&threading_lock);
+
+          if (task_to_run_fun)
+            (*task_to_run_fun) (task_to_run_arg);
         }
 
-        // end critical section
-        chpl_mutex_unlock(&threading_lock);
+        chpl_free (task, 0, 0);
 
-        if (task_to_run_fun)
-          (*task_to_run_fun) (task_to_run_arg);
-      }
-
-      chpl_free (task, 0, 0);
-
-    } while (task != task_list);
+      } while (task != task_list);
+    }
   }
 }

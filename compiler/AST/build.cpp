@@ -549,13 +549,18 @@ BlockStmt* buildCoforallLoopStmt(BaseAST* indices, Expr* iterator, BlockStmt* bo
 
   VarSymbol* coforallCount = new VarSymbol("_coforallCount");
   coforallCount->isCompilerTemp = true;
+  VarSymbol* coforallTaskList = new VarSymbol("_coforallTaskList");
+  coforallTaskList->isCompilerTemp = true;
   BlockStmt* beginBlk = new BlockStmt();
   beginBlk->insertAtHead(body);
   beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-  body = buildBeginStmt(beginBlk, false);
+  body = buildBeginStmt(beginBlk, true, coforallTaskList);
   BlockStmt* block = buildForLoopStmt(BLOCK_FOR, indices, iterator, body);
   block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
   block->insertAtHead(new DefExpr(coforallCount));
+  block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallTaskList, new CallExpr(PRIMITIVE_INIT_TASK_LIST)));
+  block->insertAtHead(new DefExpr(coforallTaskList));
+  block->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, coforallTaskList));
   body->insertBefore(new CallExpr("_upEndCount", coforallCount));
   block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
   return block;
@@ -1021,7 +1026,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
 
 BlockStmt*
 buildBeginStmt(Expr* stmt, bool allocateOnHeap, VarSymbol* taskList) {
-  if (allocateOnHeap) // cobegin and coforall already checked
+  if (!taskList) // cobegin and coforall already checked
     checkControlFlow(stmt, "begin statement");
   if (fSerial)
     return buildChapelStmt(new BlockStmt(stmt, BLOCK_NORMAL));
@@ -1087,7 +1092,7 @@ buildCobeginStmt(Expr* stmt) {
     USR_WARN(stmt, "cobegin has no effect if it contains fewer than 2 statements");
     return buildChapelStmt(stmt);
   }
-  if (fSerial)
+  else if (fSerial)
     return buildChapelStmt(stmt);
   VarSymbol* cobeginCount = new VarSymbol("_cobeginCount");
   cobeginCount->isCompilerTemp = true;

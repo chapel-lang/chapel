@@ -168,7 +168,8 @@ static void heapAllocateLocals() {
 
   // for each nested begin and on function
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->hasPragma("begin") || fn->hasPragma("on")) {
+    if (fn->hasPragma("begin") || fn->hasPragma("on")
+        || fn->hasPragma("cobegin") && !fn->hasPragma("no heap allocation")) {
 
       // collect asts in fn
       Vec<BaseAST*> asts;
