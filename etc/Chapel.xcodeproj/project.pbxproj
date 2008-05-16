@@ -45,7 +45,6 @@
 		F721A11A0D455D8800A6B43F /* driver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1140D455D8800A6B43F /* driver.cpp */; };
 		F721A11B0D455D8800A6B43F /* log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1150D455D8800A6B43F /* log.cpp */; };
 		F721A11C0D455D8800A6B43F /* runpasses.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1160D455D8800A6B43F /* runpasses.cpp */; };
-		F721A11D0D455D8800A6B43F /* runtime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1170D455D8800A6B43F /* runtime.cpp */; };
 		F721A11E0D455D8800A6B43F /* version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1180D455D8800A6B43F /* version.cpp */; };
 		F721A12C0D455E3C00A6B43F /* collapseBlocks.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1260D455E3C00A6B43F /* collapseBlocks.cpp */; };
 		F721A12D0D455E3C00A6B43F /* copyPropagation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1270D455E3C00A6B43F /* copyPropagation.cpp */; };
@@ -219,7 +218,6 @@
 		F721A1140D455D8800A6B43F /* driver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = driver.cpp; path = ../compiler/main/driver.cpp; sourceTree = "<group>"; };
 		F721A1150D455D8800A6B43F /* log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = log.cpp; path = ../compiler/main/log.cpp; sourceTree = "<group>"; };
 		F721A1160D455D8800A6B43F /* runpasses.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = runpasses.cpp; path = ../compiler/main/runpasses.cpp; sourceTree = "<group>"; };
-		F721A1170D455D8800A6B43F /* runtime.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = runtime.cpp; path = ../compiler/main/runtime.cpp; sourceTree = "<group>"; };
 		F721A1180D455D8800A6B43F /* version.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = version.cpp; path = ../compiler/main/version.cpp; sourceTree = "<group>"; };
 		F721A1260D455E3C00A6B43F /* collapseBlocks.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = collapseBlocks.cpp; path = ../compiler/optimizations/collapseBlocks.cpp; sourceTree = "<group>"; };
 		F721A1270D455E3C00A6B43F /* copyPropagation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = copyPropagation.cpp; path = ../compiler/optimizations/copyPropagation.cpp; sourceTree = "<group>"; };
@@ -280,7 +278,6 @@
 		F721A1D40D45616800A6B43F /* parser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = parser.h; path = ../compiler/include/parser.h; sourceTree = SOURCE_ROOT; };
 		F721A1D50D45616800A6B43F /* passes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = passes.h; path = ../compiler/include/passes.h; sourceTree = SOURCE_ROOT; };
 		F721A1D60D45616800A6B43F /* primitive.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = primitive.h; path = ../compiler/include/primitive.h; sourceTree = SOURCE_ROOT; };
-		F721A1D70D45616800A6B43F /* runtime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = runtime.h; path = ../compiler/include/runtime.h; sourceTree = SOURCE_ROOT; };
 		F721A1D80D45616800A6B43F /* stmt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stmt.h; path = ../compiler/include/stmt.h; sourceTree = SOURCE_ROOT; };
 		F721A1D90D45616800A6B43F /* stringutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stringutil.h; path = ../compiler/include/stringutil.h; sourceTree = SOURCE_ROOT; };
 		F721A1DA0D45616800A6B43F /* symbol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = symbol.h; path = ../compiler/include/symbol.h; sourceTree = SOURCE_ROOT; };
@@ -589,7 +586,6 @@
 				F721A1140D455D8800A6B43F /* driver.cpp */,
 				F721A1150D455D8800A6B43F /* log.cpp */,
 				F721A1160D455D8800A6B43F /* runpasses.cpp */,
-				F721A1170D455D8800A6B43F /* runtime.cpp */,
 				F721A1180D455D8800A6B43F /* version.cpp */,
 			);
 			name = main;
@@ -686,7 +682,6 @@
 				F721A1D40D45616800A6B43F /* parser.h */,
 				F721A1D50D45616800A6B43F /* passes.h */,
 				F721A1D60D45616800A6B43F /* primitive.h */,
-				F721A1D70D45616800A6B43F /* runtime.h */,
 				F721A1D80D45616800A6B43F /* stmt.h */,
 				F721A1D90D45616800A6B43F /* stringutil.h */,
 				F721A1DA0D45616800A6B43F /* symbol.h */,
@@ -1139,7 +1134,6 @@
 				F721A11A0D455D8800A6B43F /* driver.cpp in Sources */,
 				F721A11B0D455D8800A6B43F /* log.cpp in Sources */,
 				F721A11C0D455D8800A6B43F /* runpasses.cpp in Sources */,
-				F721A11D0D455D8800A6B43F /* runtime.cpp in Sources */,
 				F721A11E0D455D8800A6B43F /* version.cpp in Sources */,
 				F721A12C0D455E3C00A6B43F /* collapseBlocks.cpp in Sources */,
 				F721A12D0D455E3C00A6B43F /* copyPropagation.cpp in Sources */,
