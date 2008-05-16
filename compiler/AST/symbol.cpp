@@ -414,7 +414,6 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   typeExpr(NULL),
   defaultExpr(NULL),
   variableExpr(iVariableExpr),
-  isGeneric(false),
   instantiatedFrom(NULL),
   instantiatedParam(false)
 {
@@ -430,8 +429,6 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
     defaultExpr = block;
   else
     defaultExpr = new BlockStmt(iDefaultExpr, BLOCK_SCOPELESS);
-  if (intent == INTENT_PARAM)
-    isGeneric = true;
 }
 
 
@@ -451,7 +448,6 @@ ArgSymbol*
 ArgSymbol::copyInner(ASTMap* map) {
   ArgSymbol *ps = new ArgSymbol(intent, name, type, COPY_INT(typeExpr),
                                 COPY_INT(defaultExpr), COPY_INT(variableExpr));
-  ps->isGeneric = isGeneric;
   ps->cname = cname;
   ps->instantiatedFrom = instantiatedFrom;
   ps->instantiatedParam = instantiatedParam;
@@ -1161,7 +1157,6 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
         cloneFormal->instantiatedFrom = formal->type;
         cloneFormal->type = toType(value);
       }
-      cloneFormal->isGeneric = false;
       if (!cloneFormal->defaultExpr || formal->isTypeVariable) {
         if (cloneFormal->defaultExpr)
           cloneFormal->defaultExpr->remove();

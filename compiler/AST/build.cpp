@@ -898,7 +898,6 @@ buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* 
   if (arg->intent == INTENT_TYPE) {
     type = NULL;
     arg->intent = INTENT_BLANK;
-    arg->isGeneric = false;
     arg->isTypeVariable = true;
     arg->type = dtAny;
   } else if (!type && !init)

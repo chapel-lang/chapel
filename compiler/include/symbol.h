@@ -114,7 +114,6 @@ class ArgSymbol : public Symbol {
   BlockStmt* typeExpr;
   BlockStmt* defaultExpr;
   Expr* variableExpr;
-  bool isGeneric;
   Type* instantiatedFrom;
   bool instantiatedParam;
 
