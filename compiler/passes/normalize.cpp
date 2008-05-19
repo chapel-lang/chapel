@@ -368,6 +368,19 @@ static void heapAllocateGlobals() {
 
 
 void normalize(void) {
+  // tag iterators
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->isPrimitive(PRIMITIVE_YIELD)) {
+        FnSymbol* fn = toFnSymbol(call->parentSymbol);
+        if (!fn) {
+          USR_FATAL(call, "yield statement must be in a function");
+        }
+        fn->fnTag = FN_ITERATOR;
+      }
+    }
+  }
+
   normalize(theProgram);
   normalized = true;
   checkUseBeforeDefs();
@@ -399,8 +412,6 @@ void normalize(BaseAST* base) {
   collect_asts(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = toFnSymbol(ast)) {
-//       if (fn->noParens && !fn->isMethod)
-//         fn->visible = false;
       normalize_returns(fn);
     }
   }

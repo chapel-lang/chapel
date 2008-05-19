@@ -242,14 +242,9 @@ static void
 addDeclaration(ClassType* ct, DefExpr* def, bool tail) {
   if (FnSymbol* fn = toFnSymbol(def->sym)) {
     ct->methods.add(fn);
-    if (fn->_this) {
-      // must be constructor of nested class
-      fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", ct);
-      fn->insertFormalAtHead(new DefExpr(fn->_outer));
-    } else {
-      fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
-      fn->insertFormalAtHead(new DefExpr(fn->_this));
-    }
+    INT_ASSERT(!fn->_this);
+    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+    fn->insertFormalAtHead(new DefExpr(fn->_this));
     fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
     fn->isMethod = true;
   }

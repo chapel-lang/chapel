@@ -115,8 +115,6 @@ class BaseAST {
 
   Symbol* lookup(const char*);
   Symbol* lookup(BaseAST*);
-  TypeSymbol* lookupType(const char*);
-  VarSymbol* lookupVar(const char*);
 };
 
 #define forv_BaseAST(_p, _v) forv_Vec(BaseAST, _p, _v)

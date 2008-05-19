@@ -88,8 +88,6 @@ process_import_expr(CallExpr* call) {
   ModuleSymbol* mod = getUsedModule(call);
   if (!mod)
     USR_FATAL(call, "Cannot find module");
-  if (mod == theProgram)
-    USR_FATAL(call, "Cannot use module %s", mod->name);
   call->getStmtExpr()->insertBefore(new CondStmt(new SymExpr(mod->guard), buildOnStmt(new CallExpr(PRIMITIVE_ON_LOCALE_NUM, new SymExpr(new_IntSymbol(0))), new CallExpr(mod->initFn))));
   call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, mod->guard, gFalse));
   if (call->getFunction() == call->getModule()->initFn)
@@ -365,7 +363,15 @@ static void build_type_constructor(ClassType* ct) {
 
     // Remove the DefPoint for this constructor, add it to the outer
     // class's method list.
-    outerType->addDeclarations(fn->defPoint->remove(), true);
+    outerType->methods.add(fn);
+    fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", outerType);
+    fn->insertFormalAtHead(new DefExpr(fn->_outer));
+    fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+    fn->isMethod = true;
+    Expr* insertPoint = outerType->symbol->defPoint;
+    while (toTypeSymbol(insertPoint->parentSymbol))
+      insertPoint = insertPoint->parentSymbol->defPoint;
+    insertPoint->insertBefore(fn->defPoint->remove());
 
     // Save the pointer to the outer class
     ct->fields.insertAtTail(new DefExpr(outer));
@@ -549,7 +555,15 @@ static void build_constructor(ClassType* ct) {
   if (outerType) {
     // Remove the DefPoint for this constructor, add it to the outer
     // class's method list.
-    outerType->addDeclarations(fn->defPoint->remove(), true);
+    outerType->methods.add(fn);
+    fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", outerType);
+    fn->insertFormalAtHead(new DefExpr(fn->_outer));
+    fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+    fn->isMethod = true;
+    Expr* insertPoint = outerType->symbol->defPoint;
+    while (toTypeSymbol(insertPoint->parentSymbol))
+      insertPoint = insertPoint->parentSymbol->defPoint;
+    insertPoint->insertBefore(fn->defPoint->remove());
 
     // Save the pointer to the outer class
     fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER,
@@ -650,19 +664,7 @@ void cleanup(void) {
   initializeOuterModules(theProgram);
 
   Vec<BaseAST*> asts;
-
-  // handle "use mod;" where mod is a module
   collect_asts(&asts);
-  forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
-    currentFilename = ast->filename;
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIMITIVE_USE))
-        process_import_expr(call);
-      if (call->isPrimitive(PRIMITIVE_YIELD))
-        call->getFunction()->fnTag = FN_ITERATOR;
-    }
-  }
 
   // handle forall's in array type declaration with initialization
   forv_Vec(BaseAST, ast, asts) {
@@ -680,7 +682,6 @@ void cleanup(void) {
             BlockStmt *forblk = buildForLoopExpr(indices, iter, def->init->copy());
             
             FnSymbol *forall_init = new FnSymbol("_forallinit");
-            forall_init->fnTag = FN_ITERATOR;
             forall_init->insertAtTail(forblk);
             def->insertBefore(new DefExpr(forall_init));
             def->init->replace(new CallExpr(forall_init));
@@ -712,39 +713,44 @@ void cleanup(void) {
       if (call->isNamed("_build_tuple"))
         destructure_tuple(call);
     } else if (DefExpr* def = toDefExpr(ast)) {
-      if (TypeSymbol* ts = toTypeSymbol(def->sym)) {
-        if (ClassType* ct = toClassType(ts->type))
-          add_class_to_hierarchy(ct);
-      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
         flatten_primary_methods(fn);
         change_cast_in_where(fn);
       }
     }
   }
 
+  // handle "use mod;" where mod is a module
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     currentFilename = ast->filename;
-    if (TypeSymbol* ts = toTypeSymbol(ast)) {
-      if (ClassType* ct = toClassType(ts->type)) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->isPrimitive(PRIMITIVE_USE))
+        process_import_expr(call);
+    }
+  }
 
-        //
-        // add field to empty records and unions
-        //
-        if (ct->classTag != CLASS_CLASS && ct->fields.isEmpty())
-          ct->fields.insertAtHead(
-            new DefExpr(
-              new VarSymbol("emptyRecordPlaceholder"),
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    if (ClassType* ct = toClassType(ts->type)) {
+      add_class_to_hierarchy(ct);
+
+      //
+      // add field to empty records and unions
+      //
+      if (ct->classTag != CLASS_CLASS && ct->fields.isEmpty())
+        ct->fields.insertAtHead(
+          new DefExpr(
+            new VarSymbol("emptyRecordPlaceholder"),
               new SymExpr(new_IntSymbol(0))));
+    }
+  }
 
-        build_type_constructor(ct);
-        build_constructor(ct);
-        if (ct->defaultConstructor->isMethod) {
-          // This is a nested class constructor
-          flatten_primary_methods(ct->defaultConstructor);
-          flatten_primary_methods(ct->defaultTypeConstructor);
-        }
-      }
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    if (ClassType* ct = toClassType(ts->type)) {
+      currentLineno = ts->lineno;
+      currentFilename = ts->filename;
+      build_type_constructor(ct);
+      build_constructor(ct);
     }
   }
 }

@@ -58,19 +58,24 @@ void parse(void) {
 
   parseStandardModules();
 
+  if (!fNoStdIncs) {
+    forv_Vec(TypeSymbol, ts, gTypes) {
+      if (!strcmp(ts->name, "_array")) {
+        dtArray = toClassType(ts->type);
+      } else if (!strcmp(ts->name, "Writer")) {
+        dtWriter = toClassType(ts->type);
+      } else if (!strcmp(ts->name, "file")) {
+        dtChapelFile = toClassType(ts->type);
+      }
+    }
+  }
+
   int filenum = 0;
   const char* inputFilename = NULL;
-
   while ((inputFilename = nthFilename(filenum++))) {
     if (isChplSource(inputFilename)) {
       ParseFile(inputFilename, MOD_USER);
     }
   }
   finishCountingTokens();
-
-  if (!fNoStdIncs) {
-    dtArray = toClassType(domainModule->lookupType("_array")->type);
-    dtWriter = toClassType(fileModule->lookupType("Writer")->type);
-    dtChapelFile = toClassType(fileModule->lookupType("file")->type);
-  }
 }

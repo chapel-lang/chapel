@@ -401,14 +401,6 @@ Symbol* BaseAST::lookup(BaseAST* ast) {
   return NULL;
 }
 
-TypeSymbol* BaseAST::lookupType(const char* name) {
-  return toTypeSymbol(lookup(astr(name)));
-}
-
-VarSymbol* BaseAST::lookupVar(const char* name) {
-  return toVarSymbol(lookup(astr(name)));
-}
-
 const char* astTagName[BASE+1] = {
   "Expr",
   "SymExpr",
