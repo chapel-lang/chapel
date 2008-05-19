@@ -5,8 +5,7 @@ use HPCCProblemSize;
 
 
 param numVectors = 3;
-type elemType = real(64),
-     indexType = int(64);
+type elemType = real(64);
 
 config const m = computeProblemSize(elemType, numVectors),
              alpha = 3.0;
@@ -27,7 +26,7 @@ def main() {
 
   const ProblemDist = new Block1DDist(bbox=[1..m], targetLocs=Locales);
 
-  const ProblemSpace = ProblemDist.newDomain([1..m]);
+  const ProblemSpace = ProblemDist.newDomain([1..m], int(64));
 
   var A = ProblemSpace.newArray(elemType), 
       B = ProblemSpace.newArray(elemType),
@@ -48,7 +47,7 @@ def main() {
     }
 
     execTime(trial) = getCurrentTime() - startTime;
-  }  
+  }
 
   const validAnswer = verifyResults(A, B, C);
   printResults(validAnswer, execTime);

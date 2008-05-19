@@ -31,13 +31,77 @@ class Block1DDist {
   const targetLocDom: domain(locale) = targetLocs;
 
   //
-  // Create a new domain over this distribution
+  // an associative array of local distribution class descriptors --
+  // set up in initialize() below
   //
-  def newDomain(inds) {
+  // TODO: would like this to be const and initialize in-place,
+  // removing the initialize method
+  //
+  var locDist: [targetLocDom] LocBlock1DDist(glbIdxType, index(targetLocs.domain));
+
+  def initialize() {
+    for (loc, locid) in (targetLocs, 0..) do
+      on loc do
+        locDist(loc) = new LocBlock1DDist(glbIdxType, locid, this);
+  }
+
+  //
+  // Create a new domain over this distribution with the given index
+  // set (inds) and the given global and local index type (idxType,
+  // locIdxType)
+  //
+  def newDomain(inds, type idxType = glbIdxType, type locIdxType = idxType) {
     // Note that I'm fixing the global and local index types to be the
     // same, but making this a generic function would fix this
-    return new Block1DDom(glbIdxType, glbIdxType, this, inds);
+    return new Block1DDom(idxType, locIdxType, this, inds);
   }
+
+  //
+  // compute what chunk of inds is owned by a given locale -- assumes
+  // it's being called on the locale in question
+  //
+  def getChunk(inds) {
+    // use domain slicing to get the intersection between what the
+    // locale owns and the domain's index set
+    return locDist(here).myChunk[inds.low..inds.high];
+  }
+  
+  //
+  // Determine which locale owns a particular index
+  //
+  def ind2loc(ind: glbIdxType) {
+    return targetLocs((((ind-bbox.low)*targetLocs.numElements)/bbox.numIndices):index(targetLocs.domain));
+  }
+}
+
+//
+// A per-locale local distribution class
+//
+class LocBlock1DDist {
+  // 
+  // The distribution's index type and domain's global index type
+  //
+  type glbIdxType;
+
+  //
+  // The following members store (a) the locale ID as a 0-based
+  // integer; (b) a reference to the global distribution
+  //
+  // TODO: don't really want to store these here; should be able to
+  // make the things it wants access to arguments to a user-defined
+  // constructor instead (but we don't support those for generic
+  // classes well yet).
+  //
+  const locid;
+  const dist: Block1DDist(glbIdxType);
+
+  //
+  // This stores the piece of the global bounding box owned by
+  // the locale.  Note that my original guess that we'd want
+  // to use lclIdxType here is wrong since we're talking about
+  // the section of the global index space owned by the locale.
+  //
+  const myChunk: domain(1, glbIdxType);
 
   //
   // a helper function for mapping processors to indices
@@ -46,27 +110,25 @@ class Block1DDist {
     return (lo + (x: lo.type) + (x:real != x:int:real));
 
   //
-  // compute what chunk of inds is owned by locale #num (0-based)
+  // Compute what chunk of index(1) is owned by the current locale
   //
-  def getChunk(inds, num) {
-    const lo = bbox.low;
-    const hi = bbox.high;
+  def initialize() {
+    const lo = dist.bbox.low;
+    const hi = dist.bbox.high;
     const numelems = hi - lo + 1;
-    const numchunks = targetLocs.numElements;
-    const blo = procToData((numelems: real * num) / numchunks, lo);
-    const bhi = procToData((numelems: real * (num+1)) / numchunks, lo) - 1;
-    return inds[blo..bhi];  // using domain slicing to intersect
-
-    // TODO: In retrospect, I think the above is incorrect -- instead,
-    // compute each locale's piece of R**1 once and then slice that
-    // with inds?
-  }
-  
-  //
-  // Determine which locale owns a particular index
-  //
-  def ind2loc(ind: glbIdxType) {
-    return targetLocs((((ind-bbox.low)*targetLocs.numElements)/bbox.numIndices):index(targetLocs.domain));
+    const numlocs = dist.targetLocs.numElements;
+    var blo = procToData((numelems: real * locid) / numlocs, lo);
+    var bhi = procToData((numelems: real * (locid+1)) / numlocs, lo) - 1;
+    if (locid == 0) then blo = min(glbIdxType);
+    if (locid == numlocs-1) then bhi = max(glbIdxType);
+  /* TODO: Why don't these work instead of the above?
+    const blo = if (locid == 0) then min(glbIdxType)
+                else procToData((numelems: real * locid) / numlocs, lo);
+    const bhi = if (locid == numlocs - 1) then max(glbIdxType)
+                else procToData((numelems: real * (locid+1)) / numlocs, lo) - 1;
+  */
+    myChunk = [blo..bhi];
+    //    writeln("locale ", locid, " owns ", myChunk);
   }
 }
 
@@ -101,9 +163,9 @@ class Block1DDom {
   var locDom: [dist.targetLocDom] LocBlock1DDom(glbIdxType, lclIdxType);
 
   def initialize() {
-    for (loc, locid) in (dist.targetLocs, 0..) do
+    for loc in dist.targetLocs do
       on loc do
-        locDom(loc) = new LocBlock1DDom(glbIdxType, lclIdxType, this, dist.getChunk(whole, locid));
+        locDom(loc) = new LocBlock1DDom(glbIdxType, lclIdxType, this, dist.getChunk(whole));
     //    [loc in dist.targetLocs] writeln(loc, " owns ", locDom(loc));
   }
 
