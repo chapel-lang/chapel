@@ -1,0 +1,4 @@
+bug: conditional expressions in initialize()
+
+Conditional expressions don't seem to work in initialize()
+methods.
