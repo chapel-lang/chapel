@@ -583,7 +583,7 @@ static void build_constructor(ClassType* ct) {
       if (method->numFormals() == 2) {
         CallExpr* init = new CallExpr("initialize", gMethodToken, fn->_this);
         Vec<BaseAST*> asts;
-        collect_asts(&asts, method);
+        collect_top_asts(&asts, method->body);
         forv_Vec(BaseAST, ast, asts) {
           if (CallExpr* call = toCallExpr(ast)) {
             if (call->isPrimitive(PRIMITIVE_RETURN)) {
