@@ -1,5 +1,11 @@
+// TODO: Make these into an official distribution?
+
+// TODO: Fold in leader/follower iterator ideas
+
 // TODO: Would using nested classes allow me to avoid so much
 // passing around of globIndexType and locIndexType?
+
+config param debugBradsBlock1D = false;
 
 //
 // The distribution class
@@ -117,18 +123,13 @@ class LocBlock1DDist {
     const hi = dist.bbox.high;
     const numelems = hi - lo + 1;
     const numlocs = dist.targetLocs.numElements;
-    var blo = procToData((numelems: real * locid) / numlocs, lo);
-    var bhi = procToData((numelems: real * (locid+1)) / numlocs, lo) - 1;
-    if (locid == 0) then blo = min(glbIdxType);
-    if (locid == numlocs-1) then bhi = max(glbIdxType);
-  /* TODO: Why don't these work instead of the above?
     const blo = if (locid == 0) then min(glbIdxType)
                 else procToData((numelems: real * locid) / numlocs, lo);
     const bhi = if (locid == numlocs - 1) then max(glbIdxType)
                 else procToData((numelems: real * (locid+1)) / numlocs, lo) - 1;
-  */
     myChunk = [blo..bhi];
-    //    writeln("locale ", locid, " owns ", myChunk);
+    if debugBradsBlock1D then
+      writeln("locale ", locid, " owns ", myChunk);
   }
 }
 
@@ -166,7 +167,8 @@ class Block1DDom {
     for loc in dist.targetLocs do
       on loc do
         locDom(loc) = new LocBlock1DDom(glbIdxType, lclIdxType, this, dist.getChunk(whole));
-    //    [loc in dist.targetLocs] writeln(loc, " owns ", locDom(loc));
+    if debugBradsBlock1D then
+      [loc in dist.targetLocs] writeln(loc, " owns ", locDom(loc));
   }
 
   //
