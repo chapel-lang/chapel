@@ -395,6 +395,11 @@ static void skip_over_begun_tasks (void) {
 static void
 chpl_begin_helper (chpl_task_pool_p task) {
 
+  // The thread-specific data below should already exist, but for some
+  // unknown reason, it is sometimes missing, so create it if missing.
+  if (pthread_getspecific(lock_report_key) == NULL)
+    initializeLockReportForThread();
+
   while (true) {
     //
     // reset serial state
