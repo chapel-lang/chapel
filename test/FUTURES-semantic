@@ -14,23 +14,10 @@ Implement proposed explicit index type declaration semantics
 - semantic: explicit type on indices [test/trivial/bradc/specifyIndexType2]
 
 
-CHANGE TO BUG?
---------------
-
-Looked like this one ought to work, but results in a "cannot convert int to class" problem;
-otherwise, seems like it could be retired -- see .future for details
-- semantic: assigning type declared in unused module. [test/modules/diten/returnClassDiffModule3]
-
-
 DEFERRED
 --------
 - semantic: cobegin scope [test/parallel/cobegin/bradc/varsEscape]
 - semantic: implicit real parameter coercion [test/types/scalar/bradc/initReal32]
-
-
-WORKING (remove .future)
-------------------------
-
 
 
 TODO
