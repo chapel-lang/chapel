@@ -28,6 +28,10 @@ ifndef CHPL_MAKE_COMM
 include $(CHAPEL_ROOT)/make/Makefile.comm
 endif
 
+ifndef CHPL_MAKE_LAUNCHER
+include $(CHAPEL_ROOT)/make/Makefile.launcher
+endif
+
 
 #
 # default CFLAGS, based on other settings

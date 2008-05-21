@@ -1,16 +1,19 @@
-COMMON_SRCS = \
+COMMON_LAUNCHER_SRCS = \
 	arg.c \
 	chplcast.c \
-	chplcomm.c \
-	chplcopygc.c \
 	chplexit.c \
-	chplio.c \
 	chplmem.c \
-	chplsys.c \
 	chpltypes.c \
 	config.c \
 	error.c \
-        gdb.c \
+	gdb.c \
+
+COMMON_SRCS = \
+	$(COMMON_LAUNCHER_SRCS) \
+	chplcomm.c \
+	chplcopygc.c \
+	chplio.c \
+	chplsys.c \
 
 MAIN_SRCS = \
 	main.c \

@@ -485,6 +485,11 @@ codegen_cid2size(FILE* outfile) {
 
 static void
 codegen_config(FILE* outfile) {
+  fprintf(outfile, "#include \"_config.c\"\n");
+  fileinfo configFile;
+  openCFile(&configFile, "_config.c");
+  outfile = configFile.fptr;
+
   fprintf(outfile, "void CreateConfigVarTable(void) {\n");
   fprintf(outfile, "initConfigVarTable();\n");
 
@@ -509,6 +514,9 @@ codegen_config(FILE* outfile) {
   fprintf(outfile, "parseConfigArgs();\n");
 
   fprintf(outfile, "}\n");
+
+  closeCFile(&configFile);
+  beautify(&configFile);
 }
 
 
