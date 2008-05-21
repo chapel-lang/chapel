@@ -139,6 +139,7 @@ foreach $file (@tarfiles) {
 
 if (defined($ENV{"CHPL_HOME"})) {
     $resultdir = $ENV{"CHPL_HOME"};
+    $resultdir = "$resultdir/tar";
 } else {
     $resultdir = $basetmpdir;
 }

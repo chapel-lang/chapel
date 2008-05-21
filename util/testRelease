@@ -91,7 +91,7 @@ mysystem("$chplhome/util/gen_release", "creating release", 1, 1);
 #
 # copy release to temp directory, unpack, and run tests
 #
-mysystem("cp $chplhome/chapel.tar.gz $tmpdir", "copying release", 1, 1);
+mysystem("cp $chplhome/tar/chapel.tar.gz $tmpdir", "copying release", 1, 1);
 mysystem("cd $tmpdir && gunzip chapel.tar.gz", "unzipping release", 1, 1);
 mysystem("cd $tmpdir && tar xf chapel.tar", "untarring release", 1, 1);
 mysystem("cp $chplhome/util/testReleaseHelp $tmpdir/chapel", "copying testReleaseHelp script", 1, 1);
