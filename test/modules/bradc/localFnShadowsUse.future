@@ -1,0 +1,8 @@
+bug: functions don't shadow module uses as with variables
+
+If foo() was a variable, the local foo() would shadow the
+used M2.foo() because the M2 foo() would be put into a
+"use scope" (my own term) just above M1's scope, but
+adjacent to its lexical scope.  For functions, this same
+thing doesn't seem to be happening.
+
