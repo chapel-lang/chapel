@@ -259,10 +259,13 @@ static void build_chpl_main(void) {
       rootUserModule->block->insertAtTail(new DefExpr(chpl_main));
       normalize(chpl_main);
     } else if (strlen(mainModuleName) != 0) { 
-      SymScope* progScope = theProgram->block->blkScope;
-      ModuleSymbol* module = toModuleSymbol(progScope->table.get(astr(mainModuleName)));
+      ModuleSymbol* module = NULL;
+      forv_Vec(ModuleSymbol, mod, allModules) {
+        if (!strcmp(mod->name, mainModuleName))
+          module = mod;
+      }
       if (!module)
-        USR_FATAL("Couldn't find module %s at program scope", mainModuleName);
+        USR_FATAL("unknown module specified in '--main-module=%s'", mainModuleName);
       chpl_main = new FnSymbol("main");
       chpl_main->retType = dtVoid;
       module->block->insertAtTail(new DefExpr(chpl_main));
