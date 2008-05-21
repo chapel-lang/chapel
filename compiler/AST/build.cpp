@@ -1045,11 +1045,13 @@ buildBeginStmt(Expr* stmt, bool allocateOnHeap, VarSymbol* taskList) {
     fn->addPragma("no heap allocation");
   }
 
-  // only do this when not allocateOnHeap (not in cobegin/coforall)
-  // but this doesn't work:
-  // parallel/sync/deitz/test_sync_in_class_simple3.chpl for example
-  fn->insertAtTail(new CallExpr("_downEndCount"));
-  block->insertAtTail(new CallExpr("_upEndCount"));
+  // no need to call _downEndCount or _upEndCount for tasks created by
+  // cobegins or coforalls, since execution will block until the tasks
+  // they create finish executing
+  if (!taskList) {
+    fn->insertAtTail(new CallExpr("_downEndCount"));
+    block->insertAtTail(new CallExpr("_upEndCount"));
+  }
 
   block->insertAtTail(new DefExpr(fn));
   if (taskList)
