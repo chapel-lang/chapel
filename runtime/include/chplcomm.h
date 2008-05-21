@@ -1,9 +1,13 @@
 #ifndef _chplcomm_h_
 #define _chplcomm_h_
 
+#ifndef LAUNCHER
+
+#include <stdint.h>
+#include "chplcomm_locales.h"
 #include "chpltypes.h"
 #include "chpl_cfg_comm.h"
-#include <stdint.h>
+
 
 extern int32_t _localeID;   // unique ID for each locale: 0, 1, 2, ...
 extern int32_t _numLocales; // number of locales
@@ -183,24 +187,6 @@ int32_t _chpl_comm_maxThreadsLimit(void);
 int _chpl_comm_user_invocation(int argc, char* argv[]);
 
 //
-// Returns the default number of locales to use for this comm layer if
-// the user does not specify a number.  For most comm layers, this
-// should probably print a helpful error and exit rather than
-// defaulting to anything.  For comm layer "none" a default of 1
-// locale makes sense which is why this routine exists.  If the
-// routine returns a value, that value needs to be consistent across
-// multiple calls to the routine.
-//
-int _chpl_comm_default_num_locales(void);
-
-//
-// This routine allows a comm layer to screen the number of locales to
-// be used.  In particular, if a number exceeding some sort of maximum
-// was provided, an error should be reported.
-//
-void _chpl_comm_verify_num_locales(int32_t proposedNumLocales);
-
-//
 // This routine allows a comm layer to process the argc/argv calls
 // provided by main(), and optionally to create a modified version of
 // argc/argv for use with _chpl_comm_init().  It is called in the case
@@ -339,4 +325,11 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size);
 void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size);
 
 
+#else  // LAUNCHER
+
+#define _chpl_comm_barrier(x)
+#define _chpl_comm_exit_all(x) exit(x)
+#define _chpl_comm_exit_any(x) exit(x)
+
+#endif // LAUNCHER
 #endif

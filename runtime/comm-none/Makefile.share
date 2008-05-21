@@ -1,5 +1,6 @@
 COMM_SRCS = \
 	chpl_cfg_comm.c \
+        chpl_cfg_comm_locales.c \
 
 SVN_SRCS = $(COMM_SRCS)
 SRCS = $(SVN_SRCS)

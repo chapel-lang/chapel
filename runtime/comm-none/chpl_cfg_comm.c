@@ -38,16 +38,6 @@ int _chpl_comm_user_invocation(int argc, char* argv[]) {
   return 1;
 }
 
-int _chpl_comm_default_num_locales(void) {
-  return 1;
-}
-
-void _chpl_comm_verify_num_locales(int32_t proposedNumLocales) {
-  if (proposedNumLocales != 1) {
-    chpl_error("Only 1 locale may be used for CHPL_COMM layer 'none'", 0, 0);
-  }
-}
-
 char** _chpl_comm_create_argcv(int32_t numLocales, int argc, char* argv[],
                                int* commArgc) {
   *commArgc = argc;

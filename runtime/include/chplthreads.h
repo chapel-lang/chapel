@@ -1,6 +1,8 @@
 #ifndef _chplthreads_h_
 #define _chplthreads_h_
 
+#ifndef LAUNCHER
+
 #include <stdint.h>
 #include "arg.h"
 #include "chpl_cfg_threads.h"
@@ -89,4 +91,14 @@ chpl_begin (chpl_threadfp_t,  // function to fork
                               // that of the thread executing
                               // chpl_begin)
 
+#else   // LAUNNCHER
+
+#define chpl_mutex_lock(x)
+#define chpl_mutex_unlock(x)
+typedef void chpl_sync_aux_t;
+typedef void chpl_single_aux_t;
+typedef int chpl_mutex_t;
+#define exitChplThreads()
+
+#endif  // LAUNCHER
 #endif  // _chplthreads_h_

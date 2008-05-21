@@ -151,19 +151,6 @@ int _chpl_comm_user_invocation(int argc, char* argv[]) {
 }
 
 
-int _chpl_comm_default_num_locales(void) {
-#if defined(GASNET_CONDUIT_PORTALS)
-  return _numLocales;
-#else
-  chpl_error("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
-  return 0;
-#endif
-}
-
-
-void _chpl_comm_verify_num_locales(int32_t proposedNumLocales) {
-}
-
 static char numLocalesString[64];
 
 char** _chpl_comm_create_argcv(int32_t numLocales, int argc, char* argv[],
