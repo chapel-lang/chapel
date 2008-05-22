@@ -10,7 +10,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "symscope.h"
 
 bool normalized = false;
 Vec<const char*> usedConfigParams;

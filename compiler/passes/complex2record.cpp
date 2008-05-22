@@ -13,7 +13,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "symscope.h"
 
 static ClassType*
 buildComplexRecord(const char* name, Type* real) {

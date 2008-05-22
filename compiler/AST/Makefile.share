@@ -9,7 +9,6 @@ AST_SRCS = \
 	primitive.cpp \
 	stmt.cpp \
 	symbol.cpp \
-        symscope.cpp \
 	type.cpp \
         view.cpp
 

@@ -11,7 +11,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "symscope.h"
 #include "view.h"
 
 static const bool debugScalarReplacement = false;

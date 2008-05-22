@@ -5,7 +5,6 @@
 #include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
-#include "symscope.h"
 
 
 void codegenStmt(FILE* outfile, Expr* stmt) {

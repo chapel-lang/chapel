@@ -5,7 +5,6 @@
 #include "passes.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "symscope.h"
 
 // #define DEBUG_TABLE
 

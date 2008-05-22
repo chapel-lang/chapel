@@ -6,7 +6,6 @@
 #include "misc.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "symscope.h"
 #include "type.h"
 
 

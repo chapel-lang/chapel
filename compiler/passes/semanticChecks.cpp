@@ -4,7 +4,6 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "type.h"
-#include "symscope.h"
 #include "stringutil.h"
 
 

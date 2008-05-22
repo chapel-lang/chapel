@@ -4,7 +4,6 @@
 #include "expr.h"
 #include "passes.h"
 #include "stmt.h"
-#include "symscope.h"
 
 static ClassType* isInnerClass(BaseAST* ast) {
   ClassType *outer = NULL, *inner = NULL;

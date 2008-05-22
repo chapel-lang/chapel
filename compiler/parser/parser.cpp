@@ -5,7 +5,6 @@
 #include "parser.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "symscope.h"
 #include "chapel.tab.h"
 #include "yy.h"
 

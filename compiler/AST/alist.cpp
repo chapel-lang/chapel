@@ -4,7 +4,6 @@
 #include "misc.h"
 #include "stmt.h"
 #include "stringutil.h"
-#include "symscope.h"
 
 
 AList::AList() :

@@ -4,7 +4,6 @@
 #include "passes.h"
 #include "stmt.h"
 #include "symbol.h"
-#include "symscope.h"
 #include "type.h"
 
 

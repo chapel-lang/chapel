@@ -3,7 +3,6 @@
 #include "passes.h"
 #include "stmt.h"
 #include "symbol.h"
-#include "symscope.h"
 
 static bool
 refNecessary(SymExpr* se,
