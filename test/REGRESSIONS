@@ -14,11 +14,6 @@
 linux and general regressions
 =============================
 
-possible maxthreads warnings
-----------------------------
-[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin]
-
-
 new madness precision issue (most platforms other than darwin, cygwin)
 ----------------------------------------------------------------------
 [Error matching program output for
@@ -45,6 +40,7 @@ internal valgrind stuff 'the impossible has happened'
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
 [Error matching program output for
 parallel/taskPool/figueroa/TooManyThreads]
+[Error matching program output for parallel/begin/dinan/mvm_coforall]
 
 does this fail nondeterministically?  (fixed itself 4/29/08)
 ------------------------------------------------------------
