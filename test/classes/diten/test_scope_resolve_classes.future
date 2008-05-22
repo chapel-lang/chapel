@@ -1,5 +1,0 @@
-bug: defining a method for inner class that isn't visible crashes compiler
-
-This tries to define a C.foo() method, but C is an inner class to D and isn't
-in scope. This causes a segfault in scope resolution. It should be an error
-about not finding C.
