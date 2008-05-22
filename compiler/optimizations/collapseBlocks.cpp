@@ -21,6 +21,6 @@ void collapseBlocks(BlockStmt* block) {
   }
   if (fn) {
     fn->body = block;
-    insert_help(block, NULL, fn, fn->argScope);
+    insert_help(block, NULL, fn);
   }
 }

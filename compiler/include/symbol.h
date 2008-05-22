@@ -11,7 +11,6 @@ class SymExpr;
 class DefExpr;
 class Stmt;
 class BlockStmt;
-class SymScope;
 class Immediate;
 class BasicBlock;
 class IteratorInfo;
@@ -50,8 +49,6 @@ class Symbol : public BaseAST {
   const char* cname; // Name of symbol for generating C code
   Type* type;
   DefExpr* defPoint; // Point of definition
-  Symbol* overloadNext;
-  Symbol* overloadPrev;
   bool isUserAlias;    // is a user alias via '=>'
   bool isCompilerTemp;
   bool isExprTemp;
@@ -159,7 +156,6 @@ class FnSymbol : public Symbol {
   bool noParens;
   bool defSetGet;
   IteratorInfo* iteratorInfo;
-  SymScope* argScope;
   bool isGeneric;
   Symbol* _this;
   Symbol* _outer;

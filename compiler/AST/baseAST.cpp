@@ -268,7 +268,6 @@ static void checkid(int id) {
 BaseAST::BaseAST(AstTag type) :
   astTag(type),
   id(uid++),
-  parentScope(NULL),
   filename(yyfilename), 
   lineno(yystartlineno)
 {
@@ -383,23 +382,6 @@ FnSymbol* BaseAST::getFunction() {
   return NULL;
 }
 
-
-Symbol* BaseAST::lookup(const char* name) {
-  if (ModuleSymbol* a = toModuleSymbol(this))
-    return a->block->blkScope->lookup(astr(name));
-  return parentScope->lookup(astr(name));
-}
-
-Symbol* BaseAST::lookup(BaseAST* ast) {
-  if (SymExpr* a = toSymExpr(ast)) {
-    if (a->var)
-      return lookup(a->var->name);
-    else
-      return lookup(a->unresolved);
-  }
-  INT_FATAL(ast, "Bad call to lookup");
-  return NULL;
-}
 
 const char* astTagName[BASE+1] = {
   "Expr",

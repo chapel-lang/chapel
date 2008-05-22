@@ -157,8 +157,6 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   cname(name),
   type(init_type),
   defPoint(NULL),
-  overloadNext(NULL),
-  overloadPrev(NULL),
   isUserAlias(false),
   isCompilerTemp(false),
   isExprTemp(false),
@@ -566,7 +564,6 @@ FnSymbol::FnSymbol(const char* initName) :
   noParens(false),
   defSetGet(false),
   iteratorInfo(NULL),
-  argScope(NULL),
   isGeneric(false),
   _this(NULL),
   _outer(NULL),
@@ -601,8 +598,6 @@ FnSymbol::~FnSymbol() {
   }
   if (calledBy)
     delete calledBy;
-  if (argScope)
-    delete argScope;
 }
 
 
@@ -882,9 +877,12 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
         paramMap->put(wrapper_formal, value);
       if (specializeDefaultConstructor && strcmp(name, "_construct__tuple"))
         if (!formal->isTypeVariable && !paramMap->get(formal) && formal->type != dtMethodToken)
-          if (wrapper->_this->type->getField(formal->name)->defPoint->parentSymbol == wrapper->_this->type->symbol)
-            if (!isShadowedField(formal))
-              wrapper->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, wrapper->_this, new_StringSymbol(formal->name), temp));
+          if (Symbol* field = wrapper->_this->type->getField(formal->name))
+            if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
+              if (!isShadowedField(formal))
+                wrapper->insertAtTail(
+                  new CallExpr(PRIMITIVE_SET_MEMBER, wrapper->_this,
+                               new_StringSymbol(formal->name), temp));
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
       call->insertAtTail(paramMap->get(formal));
@@ -932,9 +930,12 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
       call->insertAtTail(temp);
       if (specializeDefaultConstructor && strcmp(name, "_construct__tuple"))
         if (!formal->isTypeVariable)
-          if (wrapper->_this->type->getField(formal->name)->defPoint->parentSymbol == wrapper->_this->type->symbol)
-            if (!isShadowedField(formal))
-              wrapper->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, wrapper->_this, new_StringSymbol(formal->name), temp));
+          if (Symbol* field = wrapper->_this->type->getField(formal->name))
+            if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
+              if (!isShadowedField(formal))
+                wrapper->insertAtTail(
+                  new CallExpr(PRIMITIVE_SET_MEMBER, wrapper->_this,
+                               new_StringSymbol(formal->name), temp));
     }
   }
   update_symbols(wrapper->body, &copy_map);
@@ -1166,7 +1167,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
           cloneFormal->defaultExpr = new BlockStmt(new SymExpr(sym));
         else
           cloneFormal->defaultExpr = new BlockStmt(new SymExpr(gNil));
-        insert_help(cloneFormal->defaultExpr, NULL, cloneFormal, cloneFormal->parentScope);
+        insert_help(cloneFormal->defaultExpr, NULL, cloneFormal);
       }
     }
   }
@@ -1734,7 +1735,6 @@ ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock)
   initFn(NULL)
 {
   block->parentSymbol = this;
-  block->blkScope = NULL;
   registerModule(this);
 }
 

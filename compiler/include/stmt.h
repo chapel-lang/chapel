@@ -27,7 +27,6 @@ class BlockStmt : public Expr {
   BlockTag blockTag;
   AList body;
   CallExpr* loopInfo;
-  SymScope* blkScope;
   LabelSymbol* pre_loop;
   LabelSymbol* post_loop;
   Vec<ModuleSymbol*> modUses; // modules used via use statement

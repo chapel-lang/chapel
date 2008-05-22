@@ -850,37 +850,52 @@ build_promotion_wrapper(FnSymbol* fn,
 }
 
 
+//
+// d is distance up via parentExpr/parentSymbol
+// md is number of modules used
+//
+//  sjd: not sure this is perfect; can this be computed when visible
+//  functions are grabbed for a negligible cost
+//
 static int
 visibility_distance(Expr* expr, FnSymbol* fn,
-                    int d = 1, Vec<BlockStmt*>* alreadyVisited = NULL) {
+                    Vec<BlockStmt*>& visited,
+                    int& md, int d=1) {
   if (BlockStmt* block = toBlockStmt(expr)) {
-    Vec<BlockStmt*> localAlreadyVisited;
 
-    if (!alreadyVisited)
-      alreadyVisited = &localAlreadyVisited;
-
-    if (alreadyVisited->set_in(block))
+    if (visited.set_in(block))
       return 0;
-
-    alreadyVisited->set_add(block);
+    visited.set_add(block);
 
     if (fn->defPoint->parentExpr == block)
       return d;
 
+    int new_dd = 0;
+    int new_md = 0;
     forv_Vec(ModuleSymbol, module, block->modUses) {
-      int dd = visibility_distance(module->block, fn, d, alreadyVisited);
-      if (dd > 0)
-        return dd;
+      Vec<BlockStmt*> visitedCopy;
+      visitedCopy.copy(visited);
+      int try_md = md + 1;
+      int try_dd = visibility_distance(module->block, fn, visitedCopy, try_md, d);
+      if (try_dd > 0 && (new_md == 0 || try_md < new_md)) {
+        new_md = try_md;
+        new_dd = try_dd;
+      }
+    }
+    if (new_dd > 0 && new_md > 0) {
+      md = new_md;
+      return new_dd;
     }
 
     if (expr->parentExpr)
-      return visibility_distance(expr->parentExpr, fn, d+1, alreadyVisited);
+      return visibility_distance(expr->parentExpr, fn, visited, md, d+1);
     else if (expr->parentSymbol->defPoint)
-      return visibility_distance(expr->parentSymbol->defPoint->parentExpr, fn, d+1, alreadyVisited);
+      return visibility_distance(expr->parentSymbol->defPoint->parentExpr, fn, visited, md, d+1);
 
     return 0;
+
   } else {
-    return visibility_distance(expr->parentExpr, fn, d+1, alreadyVisited);
+    return visibility_distance(expr->parentExpr, fn, visited, md, d+1);
   }
 }
 
@@ -888,21 +903,31 @@ visibility_distance(Expr* expr, FnSymbol* fn,
 static void
 disambiguate_by_scope(Expr* parent, Vec<FnSymbol*>* candidateFns) {
   Vec<int> vds;
+  Vec<int> vmds;
   forv_Vec(FnSymbol, fn, *candidateFns) {
-    vds.add(visibility_distance(parent, fn));
+    Vec<BlockStmt*> visited;
+    int md = 0;
+    vds.add(visibility_distance(parent, fn, visited, md));
+    vmds.add(md);
   }
-  int md = 0;
+  int ld = 0, lmd = 0;
   for (int i = 0; i < vds.n; i++) {
     if (vds.v[i] != 0) {
-      if (md) {
-        if (vds.v[i] < md)
-          md = vds.v[i];
-      } else
-        md = vds.v[i];
+      if (ld) {
+        if (vds.v[i] < ld) {
+          ld = vds.v[i];
+          lmd = vmds.v[i];
+        } else if (vds.v[i] == ld && vmds.v[i] < lmd) {
+          lmd = vmds.v[i];
+        }
+      } else {
+        ld = vds.v[i];
+        lmd = vmds.v[i];
+      }
     }
   }
   for (int i = 0; i < vds.n; i++) {
-    if (vds.v[i] != md)
+    if (vds.v[i] != ld || vmds.v[i] != lmd)
       candidateFns->v[i] = 0;
   }
 }
@@ -3434,7 +3459,7 @@ resolve() {
             formal != fn->_this &&
             !formal->hasPragma("is meme")) {
           formal->typeExpr = new BlockStmt(new CallExpr(formal->type->defaultTypeConstructor));
-          insert_help(formal->typeExpr, NULL, formal, fn->argScope);
+          insert_help(formal->typeExpr, NULL, formal);
           formal->type = dtUnknown;
         } else {
           unmark = false;
@@ -4040,21 +4065,14 @@ fixTypeNames(ClassType* ct) {
   if (is_array_type(ct)) {
     const char* domain_type = ct->getField("dom")->type->symbol->name;
     const char* elt_type = ct->getField("eltType")->type->symbol->name;
-    ct->symbol->defPoint->parentScope->undefine(ct->symbol);
     ct->symbol->name = astr("[", domain_type, "] ", elt_type);
-    ct->symbol->defPoint->parentScope->define(ct->symbol);
   }
   if (ct->instantiatedFrom &&
       !strcmp(ct->instantiatedFrom->symbol->name, "SingleLocaleArithmeticDomain")) {
-    ct->symbol->defPoint->parentScope->undefine(ct->symbol);
     ct->symbol->name = astr("domain", ct->symbol->name+28);
-    ct->symbol->defPoint->parentScope->define(ct->symbol);
   }
   if (ct->symbol->hasPragma("array") || ct->symbol->hasPragma("domain")) {
-    const char* name = ct->getField("_value")->type->symbol->name;
-    ct->symbol->defPoint->parentScope->undefine(ct->symbol);
-    ct->symbol->name = name;
-    ct->symbol->defPoint->parentScope->define(ct->symbol);
+    ct->symbol->name = ct->getField("_value")->type->symbol->name;
   }
 }
 

@@ -55,7 +55,6 @@ void Expr::verify() {
 
 ASTContext Expr::getContext(void) {
   ASTContext context;
-  context.parentScope = parentScope;
   context.parentSymbol = parentSymbol;
   context.parentExpr = parentExpr;
   return context;
@@ -151,7 +150,7 @@ void Expr::replace(Expr* new_ast) {
   }
   ASTContext context = getContext();
   remove_help(this);
-  insert_help(new_ast, context.parentExpr, context.parentSymbol, context.parentScope);
+  insert_help(new_ast, context.parentExpr, context.parentSymbol);
 }
 
 

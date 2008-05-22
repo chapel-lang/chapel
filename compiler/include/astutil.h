@@ -104,10 +104,7 @@ void update_symbols(BaseAST* ast, ASTMap* map);
 void remove_help(BaseAST* ast);
 void parent_insert_help(BaseAST* parent, Expr* ast);
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast);
-void insert_help(BaseAST* ast,
-                 Expr* parentExpr,
-                 Symbol* parentSymbol,
-                 SymScope* parentScope);
+void insert_help(BaseAST* ast, Expr* parentExpr, Symbol* parentSymbol);
 
 ArgSymbol* actual_to_formal( Expr *a);
 

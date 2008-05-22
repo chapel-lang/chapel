@@ -274,15 +274,13 @@ void update_symbols(BaseAST* ast, ASTMap* map) {
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast) {
   Expr* parentExpr = NULL;
   Symbol* parentSymbol = NULL;
-  SymScope* parentScope = NULL;
   if (Expr* expr = toExpr(sibling)) {
     parentExpr = expr->parentExpr;
     parentSymbol = expr->parentSymbol;
-    parentScope = expr->parentScope;
   } else if (sibling)
     INT_FATAL(ast, "major error in sibling_insert_help");
   if (parentSymbol)
-    insert_help(ast, parentExpr, parentSymbol, parentScope);
+    insert_help(ast, parentExpr, parentSymbol);
 }
 
 
@@ -291,98 +289,35 @@ void parent_insert_help(BaseAST* parent, Expr* ast) {
     return;
   Expr* parentExpr = NULL;
   Symbol* parentSymbol = NULL;
-  SymScope* parentScope = NULL;
   if (Expr* expr = toExpr(parent)) {
     parentExpr = expr;
     parentSymbol = expr->parentSymbol;
-    BlockStmt* block = toBlockStmt(expr);
-    if (block && block->blkScope)
-      parentScope = block->blkScope;
-    else
-      parentScope = expr->parentScope;
   } else if (Symbol* symbol = toSymbol(parent)) {
     parentSymbol = symbol;
-    if (FnSymbol* fn = toFnSymbol(symbol))
-      parentScope = fn->argScope;
-    else
-      INT_FATAL(symbol, "FnSymbol expected in parent_insert_help");
   } else if (Type* type = toType(parent)) {
     parentSymbol = type->symbol;
-    if (ClassType* ct = toClassType(type))
-      parentScope = ct->structScope;
-    else
-      INT_FATAL(symbol, "ClassType expected in parent_insert_help");
   } else
     INT_FATAL(ast, "major error in parent_insert_help");
-  insert_help(ast, parentExpr, parentSymbol, parentScope);
+  insert_help(ast, parentExpr, parentSymbol);
 }
 
 
 void insert_help(BaseAST* ast,
                  Expr* parentExpr,
-                 Symbol* parentSymbol,
-                 SymScope* parentScope) {
-  if (ModuleSymbol* mod = toModuleSymbol(ast)) {
-      mod->parentScope = parentScope;
-      parentSymbol = mod;
-      parentExpr = NULL;
-  } else if (Symbol* sym = toSymbol(ast)) {
+                 Symbol* parentSymbol) {
+  if (Symbol* sym = toSymbol(ast)) {
     parentSymbol = sym;
     parentExpr = NULL;
-  }
-
-  if (Expr* expr = toExpr(ast)) {
-    expr->parentScope = parentScope;
+  } else if (Expr* expr = toExpr(ast)) {
     expr->parentSymbol = parentSymbol;
     expr->parentExpr = parentExpr;
-
-    if (BlockStmt* blockStmt = toBlockStmt(expr)) {
-      if (blockStmt->blockTag != BLOCK_SCOPELESS) {
-        if (blockStmt->blkScope &&
-            blockStmt->blkScope->astParent == blockStmt)
-          INT_FATAL(blockStmt, "Unexpected scope in BlockStmt");
-        blockStmt->blkScope = new SymScope(blockStmt, parentScope);
-        parentScope = blockStmt->blkScope;
-      }
-    }
-    if (DefExpr* def_expr = toDefExpr(expr)) {
-      if (ModuleSymbol* mod = toModuleSymbol(def_expr->sym)) {
-        ModuleSymbol* outer = toModuleSymbol(def_expr->parentSymbol);
-        if (!outer)
-          USR_FATAL(mod, "Nested module is not defined at module level");
-        def_expr->parentScope->define(def_expr->sym);
-      } else {
-        if (def_expr->sym) {
-          def_expr->parentScope->define(def_expr->sym);
-        }
-      }
-      if (FnSymbol* fn = toFnSymbol(def_expr->sym)) {
-        if (fn->argScope)
-          INT_FATAL(fn, "Unexpected scope in FnSymbol");
-        fn->argScope = new SymScope(fn, parentScope);
-        parentScope = fn->argScope;
-      }
-      if (TypeSymbol* typeSym = toTypeSymbol(def_expr->sym)) {
-        if (ClassType* type = toClassType(typeSym->type)) {
-          if (type->structScope)
-            INT_FATAL(typeSym, "Unexpected scope in TypeSymbol");
-          type->structScope = new SymScope(type, parentScope);
-          parentScope = type->structScope;
-        } else if (EnumType* type = toEnumType(typeSym->type)) {
-          if (type->enumScope)
-            INT_FATAL(typeSym, "Unexpected scope in TypeSymbol");
-          type->enumScope = new SymScope(type, parentScope);
-          parentScope = type->enumScope;
-        }
-      }
-    }
     parentExpr = expr;
   }
 
   Vec<BaseAST*> asts;
   get_ast_children(ast, asts);
   forv_Vec(BaseAST, ast, asts)
-    insert_help(ast, parentExpr, parentSymbol, parentScope);
+    insert_help(ast, parentExpr, parentSymbol);
 }
 
 
@@ -393,48 +328,8 @@ void remove_help(BaseAST* ast) {
     remove_help(a);
 
   if (Expr* expr = toExpr(ast)) {
-    expr->parentScope = NULL;
     expr->parentSymbol = NULL;
     expr->parentExpr = NULL;
-    if (BlockStmt* block = toBlockStmt(ast)) {
-      if (block->blockTag != BLOCK_SCOPELESS) {
-        if (block->blkScope) {
-          if (block->blkScope->astParent == block) {
-            delete block->blkScope;
-            block->blkScope = NULL;
-          }
-        }
-      }
-    }
-    if (DefExpr* defExpr = toDefExpr(ast)) {
-      if (defExpr->sym) {
-        if (defExpr->sym->parentScope)
-          defExpr->sym->parentScope->undefine(defExpr->sym);
-        defExpr->sym->parentScope = NULL;
-      }
-      if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
-        if (fn->argScope) {
-          delete fn->argScope;
-          fn->argScope = NULL;
-        }
-      }
-      if (TypeSymbol* typeSym = toTypeSymbol(defExpr->sym)) {
-        if (ClassType* type = toClassType(typeSym->type)) {
-          if (type->structScope) {
-            delete type->structScope;
-            type->structScope = NULL;
-          }
-        } else if (EnumType* type = toEnumType(typeSym->type)) {
-          if (type->enumScope) {
-            delete type->enumScope;
-            type->enumScope = NULL;
-          }
-        }
-      }
-      if (ModuleSymbol* mod = toModuleSymbol(defExpr->sym)) {
-        INT_ASSERT(!mod->block->blkScope);
-      }
-    }
   }
 }
 

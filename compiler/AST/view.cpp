@@ -242,27 +242,6 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     printf(")");
 }
 
-static void view_symtab(BaseAST* ast, bool number = false, int indent = 0) {
-  SymScope* scope = NULL;
-  if (BlockStmt* a = toBlockStmt(ast))
-    scope = a->blkScope;
-  else if (ModuleSymbol* a = toModuleSymbol(ast))
-    scope = a->block->blkScope;
-  else if (FnSymbol* a = toFnSymbol(ast))
-    scope = a->argScope;
-  else if (TypeSymbol* a = toTypeSymbol(ast))
-    if (ClassType* ct = toClassType(a->type))
-      scope = ct->structScope;
-
-  if (scope)
-    scope->print(number, indent);
-
-  Vec<BaseAST*> asts;
-  get_ast_children(ast, asts);
-  forv_Vec(BaseAST, ast, asts)
-    view_symtab(ast, number, indent + 2);
-}
-
 void list_view(BaseAST* ast) {
   if (toSymbol(ast))
     printf("%-7d ", ast->id);
@@ -313,16 +292,6 @@ void iprint_view(int id) {
   nprint_view(aid(id));
 }
 
-
-void print_symtab(BaseAST* ast) {
-  view_symtab(ast);
-  fflush(stdout);
-}
-
-void nprint_symtab(BaseAST* ast) {
-  view_symtab(ast, true);
-  fflush(stdout);
-}
 
 void mark_view(BaseAST* ast, int id) {
   view_ast(ast, false, id);

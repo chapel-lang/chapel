@@ -106,17 +106,13 @@ void PrimitiveType::verify() {
 
 EnumType::EnumType() :
   Type(TYPE_ENUM, NULL),
-  constants(),
-  enumScope(NULL)
+  constants()
 {
   constants.parent = this;
 }
 
 
-EnumType::~EnumType() {
-  if (enumScope)
-    delete enumScope;
-}
+EnumType::~EnumType() { }
 
 
 void EnumType::verify() {
@@ -178,7 +174,6 @@ ClassType::ClassType(ClassTag initClassTag) :
   Type(TYPE_CLASS, NULL),
   classTag(initClassTag),
   isIterator(false),
-  structScope(NULL),
   fields(),
   inherits(),
   outer(NULL)
@@ -193,10 +188,7 @@ ClassType::ClassType(ClassTag initClassTag) :
 }
 
 
-ClassType::~ClassType() {
-  if (structScope)
-    delete structScope;
-}
+ClassType::~ClassType() { }
 
 
 void ClassType::verify() {
@@ -417,7 +409,6 @@ createPrimitiveType(const char *name, const char *cname) {
 void initPrimitiveTypes(void) {
   // Inititalize the outermost module
   rootModule = new ModuleSymbol("_root", MOD_STANDARD, new BlockStmt());
-  rootModule->block->blkScope = new SymScope(rootModule->block, NULL);
 
   theProgram = new ModuleSymbol("_Program", MOD_STANDARD, new BlockStmt());
   rootModule->block->insertAtTail(new DefExpr(theProgram));

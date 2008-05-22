@@ -26,7 +26,6 @@ class DefExpr;
 class CallExpr;
 class CondStmt;
 class BlockStmt;
-class SymScope;
 class ClassType;
 
 
@@ -71,7 +70,6 @@ class Type : public BaseAST {
 class EnumType : public Type {
  public:
   AList constants; // EnumSymbols
-  SymScope* enumScope;
 
   EnumType();
   ~EnumType();
@@ -93,7 +91,6 @@ class ClassType : public Type {
  public:
   ClassTag classTag;
   bool isIterator;
-  SymScope* structScope;
   AList fields;
   AList inherits; // used from parsing, sets dispatchParents
   Symbol* outer;  // pointer to an outer class if this is an inner class

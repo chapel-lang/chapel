@@ -9,32 +9,6 @@
 
 
 static void
-check_redefinition(Symbol* sym) {
-  if (sym->isCompilerTemp)
-    return;
-  if (sym->overloadNext) {
-    int count = 0;
-    for (Symbol* tmp = sym; tmp; tmp = tmp->overloadNext) {
-      if (!tmp->getFnSymbol()) {
-        count++;
-      }
-    }
-    if (count >= 2) {
-      const char* redefinitionLocations = "";
-      for (Symbol* tmp = sym->overloadNext; tmp; tmp = tmp->overloadNext) {
-        if (!tmp->getFnSymbol()) {
-          redefinitionLocations =
-            astr(redefinitionLocations, "\n  ", tmp->stringLoc());
-        }
-      }
-      USR_FATAL(sym, "'%s' has multiple definitions, redefined at:%s",
-                sym->name, redefinitionLocations);
-    }
-  }
-}
-
-
-static void
 check_functions(FnSymbol* fn) {
   Vec<BaseAST*> asts;
   Vec<CallExpr*> rets;
@@ -115,19 +89,16 @@ checkParsed(void) {
       if (!strcmp(def->sym->name, "_")) {
         USR_FATAL("Symbol cannot be named \"_\"");
       } else if (toVarSymbol(def->sym)) {
-        if (def->sym->hasPragma("internal var"))
-          def->sym->isCompilerTemp = true;
         if (!def->init && !def->exprType && !def->sym->isCompilerTemp)
           if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
             if (def->parentExpr != rootModule->block)
-              USR_FATAL_CONT(def->sym,
-                             "Variable '%s' is not initialized or has no type",
-                             def->sym->name);
+              if (!def->sym->hasPragma("index var") &&
+                  !def->sym->hasPragma("internal var"))
+                USR_FATAL_CONT(def->sym,
+                               "Variable '%s' is not initialized or has no type",
+                               def->sym->name);
       }
     }
-
-    if (Symbol* sym = toSymbol(ast))
-      check_redefinition(sym);
 
     if (VarSymbol* a = toVarSymbol(ast))
       check_parsed_vars(a);

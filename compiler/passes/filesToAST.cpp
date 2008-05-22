@@ -8,6 +8,7 @@
 #include "countTokens.h"
 #include "yy.h"
 
+static ModuleSymbol* standardModule = NULL;
 static ModuleSymbol* fileModule = NULL;
 static ModuleSymbol* domainModule = NULL;
 
@@ -22,7 +23,7 @@ static ModuleSymbol* parseStandardModule(const char* name) {
 static void parseStandardModules(void) {
   baseModule = parseStandardModule("ChapelBase.chpl");
   if (!fNoStdIncs) {
-    parseStandardModule("ChapelStandard.chpl");
+    standardModule = parseStandardModule("ChapelStandard.chpl");
     parseStandardModule("ChapelLocale.chpl");
     fileModule = parseStandardModule("ChapelIO.chpl");
     parseStandardModule("ChapelTuple.chpl");
@@ -77,5 +78,15 @@ void parse(void) {
       ParseFile(inputFilename, MOD_USER);
     }
   }
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    if (mod != standardModule && mod != theProgram && mod != rootModule) {
+      if (fNoStdIncs)
+        mod->block->modUses.add(baseModule);
+      else {
+        mod->block->modUses.add(standardModule);
+      }
+    }
+  }
+  baseModule->block->modUses.add(rootModule);
   finishCountingTokens();
 }

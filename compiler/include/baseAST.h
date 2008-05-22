@@ -21,7 +21,6 @@ class TypeSymbol;
 class VarSymbol;
 class Type;
 class Expr;
-class SymScope;
 
 extern Vec<BaseAST*> gAsts;
 extern Vec<FnSymbol*> gFns;
@@ -78,7 +77,6 @@ extern const char* astTagName[];
 #define COPY_INT(c) (c ? c->copy(map, true) : NULL)
 
 typedef struct _ASTContext {
-  SymScope* parentScope;
   Symbol* parentSymbol;
   Expr* parentExpr;
 } ASTContext;
@@ -87,8 +85,6 @@ class BaseAST {
  public:
   AstTag astTag;    // BaseAST subclass
   int id;               // Unique ID
-
-  SymScope* parentScope;
 
   const char* filename;       // filename of location
   int lineno;           // line number of location
@@ -112,9 +108,6 @@ class BaseAST {
 
   ModuleSymbol* getModule();
   FnSymbol* getFunction();
-
-  Symbol* lookup(const char*);
-  Symbol* lookup(BaseAST*);
 };
 
 #define forv_BaseAST(_p, _v) forv_Vec(BaseAST, _p, _v)

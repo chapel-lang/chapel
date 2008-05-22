@@ -871,8 +871,7 @@ static void hack_resolve_types(Expr* expr) {
             se = toSymExpr(arg->defaultExpr->body.tail);
           if (!se || se->var != gNil) {
             arg->typeExpr = arg->defaultExpr->copy();
-            FnSymbol* fn = def->getFunction();
-            insert_help(arg->typeExpr, NULL, arg, fn->argScope);
+            insert_help(arg->typeExpr, NULL, arg);
           }
         }
         if (arg->typeExpr && arg->typeExpr->body.length() == 1) {
@@ -909,7 +908,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_SCOPELESS));
           if (!fn->where) {
             fn->where = new BlockStmt(new SymExpr(gTrue));
-            insert_help(fn->where, NULL, fn, fn->argScope);
+            insert_help(fn->where, NULL, fn);
           }
           Expr* expr = fn->where->body.tail;
           if (call->numActuals() == 2)
@@ -1071,7 +1070,7 @@ add_to_where_clause(ArgSymbol* formal, Expr* expr, ArgSymbol* arg) {
   FnSymbol* fn = formal->defPoint->getFunction();
   if (!fn->where) {
     fn->where = new BlockStmt(new SymExpr(gTrue));
-    insert_help(fn->where, NULL, fn, fn->argScope);
+    insert_help(fn->where, NULL, fn);
   }
   Expr* where = fn->where->body.tail;
   Expr* clause;

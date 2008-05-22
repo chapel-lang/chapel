@@ -22,7 +22,6 @@ BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
   blockTag(init_blockTag),
   body(),
   loopInfo(NULL),
-  blkScope(NULL),
   pre_loop(NULL),
   post_loop(NULL)
 {
@@ -32,10 +31,7 @@ BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
 }
 
 
-BlockStmt::~BlockStmt() {
-  if (blkScope && blkScope->astParent == this)
-    delete blkScope;
-}
+BlockStmt::~BlockStmt() { }
 
 
 void BlockStmt::verify() {

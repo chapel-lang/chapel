@@ -434,7 +434,6 @@ destructureIndices(BlockStmt* block,
   } else if (SymExpr* sym = toSymExpr(indices)) {
     if (sym->unresolved) {
       VarSymbol* var = new VarSymbol(sym->unresolved);
-      var->isCompilerTemp = true;
       block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, init));
       block->insertAtHead(new DefExpr(var));
       var->addPragma("index var");
