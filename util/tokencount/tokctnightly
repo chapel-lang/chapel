@@ -35,7 +35,27 @@ if ($printusage == 1) {
 $pid = getpgrp();
 $user = `whoami`;
 chomp($user);
+$debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
+if ($debugmail eq "") {
+    $debugmail = "$user\@cray.com";
+}
 $today = `date +%w-%a`; chomp($today);
+
+
+#
+# set mail options
+#
+$mailer = $ENV{'CHPL_MAILER'};
+if ($mailer eq "") {
+    $mailer = "Mail";
+}
+if ($debug == 1) {
+    $subjectid = "Dbg token count";
+    $recipient = $debugmail;
+} else {
+    $subjectid = "Cron token count";
+    $recipient = "chapel_cronmail\@cray.com";
+}
 
 
 #
@@ -74,28 +94,29 @@ $bindir = "$tmpdir/chapel/bin/$ENV{'CHPL_HOST_PLATFORM'}";
 # remove generated files
 mysystem("cd $compdir && rm -f */*.g.d_parser.cpp vparser/cast_code.cpp analysis/prim_data.h analysis/prim_data.cpp");
 
-mysystem("cd $compdir/AST && $tokctr $allcppfiles > ../AST.ntoks");
-mysystem("cd $compdir/adt && $tokctr $allcppfiles > ../adt.ntoks");
-mysystem("cd $compdir/analysis && $tokctr $allcppfiles > ../analysis.ntoks");
-mysystem("cd $compdir/ifa && $tokctr $allcppfiles > ../ifa.ntoks");
-mysystem("cd $compdir/backend && $tokctr $allcppfiles > ../backend.ntoks");
-mysystem("cd $compdir/include && $tokctr $allcppfiles > ../include.ntoks");
-mysystem("cd $compdir/main && $tokctr $allcppfiles > ../main.ntoks");
-mysystem("cd $compdir/optimizations && $tokctr $allcppfiles > ../opt.ntoks");
-mysystem("cd $compdir/parser && $tokctr $allcppfiles > ../parser.ntoks");
-mysystem("cd $compdir/passes && $tokctr $allcppfiles > ../passes.ntoks");
-mysystem("cd $compdir/symtab && $tokctr $allcppfiles > ../symtab.ntoks");
-mysystem("cd $compdir/traversals && $tokctr $allcppfiles > ../traversals.ntoks");
-mysystem("cd $compdir/util && $tokctr $allcppfiles > ../util.ntoks");
-mysystem("cd $compdir/vparser && $tokctr $allcppfiles > ../vparser.ntoks");
-mysystem("cd $tmpdir/chapel/runtime && $tokctr $allcppfiles > runtime.ntoks");
+mysystem("cd $compdir/AST && $tokctr $allcppfiles > ../AST.ntoks", "counting AST tokens", 0, 1);
+mysystem("cd $compdir/adt && $tokctr $allcppfiles > ../adt.ntoks", "counting adt tokens", 0, 1);
+#mysystem("cd $compdir/analysis && $tokctr $allcppfiles > ../analysis.ntoks", "counting AST tokens", 0, 1);
+mysystem("cd $compdir/ifa && $tokctr $allcppfiles > ../ifa.ntoks", "counting ifa tokens", 0, 1);
+mysystem("cd $compdir/backend && $tokctr $allcppfiles > ../backend.ntoks", "counting backend tokens", 0, 1);
+mysystem("cd $compdir/include && $tokctr $allcppfiles > ../include.ntoks", "counting include tokens", 0, 1);
+mysystem("cd $compdir/main && $tokctr $allcppfiles > ../main.ntoks", "counting main tokens", 0, 1);
+mysystem("cd $compdir/optimizations && $tokctr $allcppfiles > ../opt.ntoks", "counting optimizations tokens", 0, 1);
+mysystem("cd $compdir/parser && $tokctr $allcppfiles > ../parser.ntoks", "counting parser tokens", 0, 1);
+mysystem("cd $compdir/passes && $tokctr $allcppfiles > ../passes.ntoks", "counting passes tokens", 0, 1);
+#mysystem("cd $compdir/symtab && $tokctr $allcppfiles > ../symtab.ntoks", "counting AST tokens", 0, 1);
+#mysystem("cd $compdir/traversals && $tokctr $allcppfiles > ../traversals.ntoks", "counting AST tokens", 0, 1);
+mysystem("cd $compdir/util && $tokctr $allcppfiles > ../util.ntoks", "counting util tokens", 0, 1);
+#mysystem("cd $compdir/vparser && $tokctr $allcppfiles > ../vparser.ntoks", "counting AST tokens", 0, 1);
+mysystem("cd $tmpdir/chapel/runtime && $tokctr $allcppfiles > runtime.ntoks", "counting runtime tokens",0, 1);
 
 mysystem("cd $chapeldir && make comprt", "making compiler", 1, 1);
-mysystem("$bindir/chpl --chplhome $chapeldir --count-tokens $chapeldir/modules/standard/*.chpl >& $compdir/chpcode.ntoks", "counting module tokens", 1, 1);
+$ENV{'CHPL_HOME'} = $chapeldir;
+mysystem("$bindir/chpl --count-tokens $chapeldir/modules/standard/*.chpl >& $compdir/chpcode.ntoks", "counting module tokens", 1, 1);
 
 $asttoks = `cat $compdir/AST.ntoks`; chomp($asttoks);
 $adttoks = `cat $compdir/adt.ntoks`; chomp($adttoks);
-$analysistoks = `cat $compdir/analysis.ntoks`; chomp($analysistoks);
+$analysistoks = 0;
 $ifatoks = `cat $compdir/ifa.ntoks`; chomp($ifatoks);
 $backendtoks = `cat $compdir/backend.ntoks`; chomp($backendtoks);
 $includetoks = `cat $compdir/include.ntoks`; chomp($includetoks);
@@ -103,10 +124,10 @@ $maintoks = `cat $compdir/main.ntoks`; chomp($maintoks);
 $opttoks = `cat $compdir/opt.ntoks`; chomp($opttoks);
 $parsertoks = `cat $compdir/parser.ntoks`; chomp($parsertoks);
 $passestoks = `cat $compdir/passes.ntoks`; chomp($passestoks);
-$symtabtoks = `cat $compdir/symtab.ntoks`; chomp($symtabtoks);
-$traversalstoks = `cat $compdir/traversals.ntoks`; chomp($traversalstoks);
+$symtabtoks = 0;
+$traversalstoks = 0;
 $utiltoks = `cat $compdir/util.ntoks`; chomp($utiltoks);
-$vparsertoks = `cat $compdir/vparser.ntoks`; chomp($vparsertoks);
+$vparsertoks = 0;
 $runtimetoks = `cat $tmpdir/chapel/runtime/runtime.ntoks`; chomp($runtimetoks);
 $chpcodetoks = `cat $compdir/chpcode.ntoks`; chomp($chpcodetoks);
 
@@ -228,10 +249,13 @@ sub mysystem {
 	print "Error $_[1]: $status\n";
 
 	if ($mailmsg != 0) {
+            $mailsubject = "$subjectid Failure";
+            $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
+
+            print "Trying to mail message... using $mailcommand\n";
 	    open(MAIL, $mailcommand);
 	    print MAIL "=== Summary ===================================================\n";
 	    print MAIL "ERROR $_[1]: $status\n";
-	    print MAIL "(workspace left at $tmpdir)\n";
 	    print MAIL "===============================================================\n";
 	    close(MAIL);
 	}
@@ -242,6 +266,7 @@ sub mysystem {
 		`ci -l -m"automated nightly checkin" $statfile`;
 	    }
 	    `cd $statdir && ./makeplot`;
+            mysystem("rm -rf $tmpdir", "removing temp dir", 0, 1);
 	    exit 1;
 	}
     }
