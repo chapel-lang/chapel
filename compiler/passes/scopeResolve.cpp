@@ -6,8 +6,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-// #define DEBUG_TABLE
-
 //
 // The symbolTable maps BaseAST* pointers to entries based on scope
 // definitions.  The following BaseAST subtypes define scopes:
@@ -30,21 +28,21 @@ typedef Map<BaseAST*,SymbolTableEntry*> SymbolTable;
 static SymbolTable symbolTable;
 
 //
-// getEnclosingAST returns the BaseAST that corresponds to the scope
-// where 'ast' exists; 'ast' must be an Expr or a Symbol.  Note that
-// if you pass this a BaseAST that defines a scope, the BaseAST that
-// defines the scope where it exists will be returned.  Thus if a
-// BlockStmt nested in another BlockStmt is passed to getEnclosingAST,
-// the outer BlockStmt will be returned.
+// getScope returns the BaseAST that corresponds to the scope where
+// 'ast' exists; 'ast' must be an Expr or a Symbol.  Note that if you
+// pass this a BaseAST that defines a scope, the BaseAST that defines
+// the scope where it exists will be returned.  Thus if a BlockStmt
+// nested in another BlockStmt is passed to getScope, the outer
+// BlockStmt will be returned.
 //
 static BaseAST*
-getEnclosingAST(BaseAST* ast) {
+getScope(BaseAST* ast) {
   if (Expr* expr = toExpr(ast)) {
     BlockStmt* block = toBlockStmt(expr->parentExpr);
     if (block && block->blockTag != BLOCK_SCOPELESS) {
       return block;
     } else if (expr->parentExpr) {
-      return getEnclosingAST(expr->parentExpr);
+      return getScope(expr->parentExpr);
     } else if (FnSymbol* fn = toFnSymbol(expr->parentSymbol)) {
       return fn;
     } else if (TypeSymbol* ts = toTypeSymbol(expr->parentSymbol)) {
@@ -55,14 +53,14 @@ getEnclosingAST(BaseAST* ast) {
     if (expr->parentSymbol == rootModule)
       return NULL;
     else
-      return getEnclosingAST(expr->parentSymbol->defPoint);
+      return getScope(expr->parentSymbol->defPoint);
   } else if (Symbol* sym = toSymbol(ast)) {
     if (sym == rootModule)
       return NULL;
     else
-      return getEnclosingAST(sym->defPoint);
+      return getScope(sym->defPoint);
   }
-  INT_FATAL(ast, "getEnclosingAST expects an Expr or a Symbol");
+  INT_FATAL(ast, "getScope expects an Expr or a Symbol");
   return NULL;
 }
 
@@ -76,17 +74,17 @@ addToSymbolTable(Vec<BaseAST*>& asts) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (!def->sym->isCompilerTemp) {
-        BaseAST* anchor = getEnclosingAST(def);
-        SymbolTableEntry* entry = symbolTable.get(anchor);
+        BaseAST* scope = getScope(def);
+        SymbolTableEntry* entry = symbolTable.get(scope);
         if (!entry) {
           entry = new SymbolTableEntry();
-          symbolTable.put(anchor, entry);
+          symbolTable.put(scope, entry);
         }
         if (Symbol* sym = entry->get(def->sym->name)) {
           FnSymbol* oldFn = toFnSymbol(sym);
           FnSymbol* newFn = toFnSymbol(def->sym);
-          TypeSymbol* typeAnchor = toTypeSymbol(anchor);
-          if (!typeAnchor || !isClassType(typeAnchor->type)) { // inheritance
+          TypeSymbol* typeScope = toTypeSymbol(scope);
+          if (!typeScope || !isClassType(typeScope->type)) { // inheritance
             if ((!oldFn || (oldFn && !oldFn->_this && oldFn->noParens)) &&
                 (!newFn || (newFn && !newFn->_this && newFn->noParens))) {
               USR_FATAL(sym, "'%s' has multiple definitions, redefined at:\n  %s", sym->name, def->sym->stringLoc());
@@ -103,22 +101,8 @@ addToSymbolTable(Vec<BaseAST*>& asts) {
 }
 
 //
-// print out the table
+// delete the symbol table
 //
-#ifdef DEBUG_TABLE
-static void
-printTableEntry(BaseAST* ast) {
-  if (SymbolTableEntry* entry = symbolTable.get(ast)) {
-    Vec<const char*> keys;
-    entry->get_keys(keys);
-    forv_Vec(const char, key, keys) {
-      Symbol* sym = entry->get(key);
-      printf("%s[%d]\n", sym->name, sym->id);
-    }
-  }
-}
-#endif
-
 static void
 destroyTable() {
   Vec<SymbolTableEntry*> entries;
@@ -157,32 +141,32 @@ buildBreadthFirstUseTree(Vec<ModuleSymbol*>* current,
 
 
 static Symbol*
-newLookup(BaseAST* anchor,
-          const char* name,
-          Vec<BaseAST*>* alreadyVisited = NULL,
-          bool scanModuleUses = true) {
+lookup(BaseAST* scope,
+       const char* name,
+       Vec<BaseAST*>* alreadyVisited = NULL,
+       bool scanModuleUses = true) {
   Vec<BaseAST*> nestedscopes;
   if (!alreadyVisited) {
-    return newLookup(anchor, name, &nestedscopes, scanModuleUses);
+    return lookup(scope, name, &nestedscopes, scanModuleUses);
   }
   if (!scanModuleUses) {
     nestedscopes.copy(*alreadyVisited);
     alreadyVisited = &nestedscopes;
   }
 
-  if (alreadyVisited->set_in(anchor))
+  if (alreadyVisited->set_in(scope))
     return NULL;
-  alreadyVisited->set_add(anchor);
+  alreadyVisited->set_add(scope);
 
   Vec<Symbol*> symbols;
   Symbol* sym = NULL;
-  SymbolTableEntry* entry = symbolTable.get(anchor);
+  SymbolTableEntry* entry = symbolTable.get(scope);
   if (entry)
     sym = entry->get(name);
   if (sym) {
     symbols.set_add(sym);
   }
-  if (TypeSymbol* ts = toTypeSymbol(anchor)) {
+  if (TypeSymbol* ts = toTypeSymbol(scope)) {
     if (ClassType* ct = toClassType(ts->type)) {
       sym = ct->getField(name);
       if (sym)
@@ -190,7 +174,7 @@ newLookup(BaseAST* anchor,
     }
   }
   if (symbols.n == 0 && scanModuleUses) {
-    BlockStmt* block = toBlockStmt(anchor);
+    BlockStmt* block = toBlockStmt(scope);
     Vec<ModuleSymbol*>* modules = (block) ? &block->modUses : NULL;
     if (modules && modules->n > 0) {
       Vec<Vec<ModuleSymbol*>*> moduleQueue;
@@ -198,9 +182,9 @@ newLookup(BaseAST* anchor,
       forv_Vec(Vec<ModuleSymbol*>, layer, moduleQueue) {
         forv_Vec(ModuleSymbol, mod, *layer) {
           if (mod == rootModule)
-            sym = newLookup(mod->block, name, alreadyVisited, false);
+            sym = lookup(mod->block, name, alreadyVisited, false);
           else
-            sym = newLookup(mod->initFn->body, name, alreadyVisited, false);
+            sym = lookup(mod->initFn->body, name, alreadyVisited, false);
           if (sym) {
             symbols.set_add(sym);
           }
@@ -219,34 +203,34 @@ newLookup(BaseAST* anchor,
     }
   }
   if (scanModuleUses && symbols.n == 0) {
-    if (anchor->getModule()->block == anchor) {
-      ModuleSymbol* mod = anchor->getModule();
+    if (scope->getModule()->block == scope) {
+      ModuleSymbol* mod = scope->getModule();
       if (mod == rootModule)
-        sym = newLookup(mod->block, name, alreadyVisited, scanModuleUses);
+        sym = lookup(mod->block, name, alreadyVisited, scanModuleUses);
       else
-        sym = newLookup(mod->initFn->body, name, alreadyVisited, scanModuleUses);
+        sym = lookup(mod->initFn->body, name, alreadyVisited, scanModuleUses);
       if (sym)
         symbols.set_add(sym);
         
-      if (symbols.n == 0 && getEnclosingAST(anchor)) {
-        sym = newLookup(getEnclosingAST(anchor), name, alreadyVisited, scanModuleUses);
+      if (symbols.n == 0 && getScope(scope)) {
+        sym = lookup(getScope(scope), name, alreadyVisited, scanModuleUses);
         if (sym)
           symbols.set_add(sym);
       }
     } else {
-      FnSymbol* fn = toFnSymbol(anchor);
+      FnSymbol* fn = toFnSymbol(scope);
       if (fn && fn->_this && toClassType(fn->_this->type)) {
         ClassType* ct = toClassType(fn->_this->type);
-        sym = newLookup(ct->symbol, name, alreadyVisited, scanModuleUses);
+        sym = lookup(ct->symbol, name, alreadyVisited, scanModuleUses);
         if (sym)
           symbols.set_add(sym);
         else {
-          sym = newLookup(getEnclosingAST(anchor), name, alreadyVisited, scanModuleUses);
+          sym = lookup(getScope(scope), name, alreadyVisited, scanModuleUses);
           if (sym)
             symbols.set_add(sym);
         }
-      } else if (getEnclosingAST(anchor)) {
-        sym = newLookup(getEnclosingAST(anchor), name, alreadyVisited, scanModuleUses);
+      } else if (getScope(scope)) {
+        sym = lookup(getScope(scope), name, alreadyVisited, scanModuleUses);
         if (sym)
           symbols.set_add(sym);
       }
@@ -268,11 +252,11 @@ newLookup(BaseAST* anchor,
 }
 
 
-/*** name_matches_method
- ***   returns true iff function name matches a method name in class
- ***/
+//
+// isMethodName returns true iff 'name' names a method of 'type'
+//
 static bool
-name_matches_method(const char* name, Type* type) {
+isMethodName(const char* name, Type* type) {
   if (!strcmp(name, type->symbol->name))
     return false;
   forv_Vec(Symbol, method, type->methods) {
@@ -280,25 +264,25 @@ name_matches_method(const char* name, Type* type) {
       return true;
   }
   forv_Vec(Type, pt, type->dispatchParents) {
-    if (name_matches_method(name, pt))
+    if (isMethodName(name, pt))
       return true;
   }
   if (ClassType* ct = toClassType(type)) {
     Type *outerType = ct->symbol->defPoint->parentSymbol->type;
     if (ClassType* outer = toClassType(outerType))
-      if (name_matches_method(name, outer))
+      if (isMethodName(name, outer))
         return true;
   }
   return false;
 }
 
 
-/*** name_matches_method_local
- ***   returns true iff function name matches a method name in class
- ***   not including any classes this class is nested in
- ***/
+//
+// isMethodNameLocal returns true iff 'name' names a method of 'type'
+// excluding methods of an outer type
+//
 static bool
-name_matches_method_local(const char* name, Type* type) {
+isMethodNameLocal(const char* name, Type* type) {
   if (!strcmp(name, type->symbol->name))
     return false;
   forv_Vec(Symbol, method, type->methods) {
@@ -306,7 +290,7 @@ name_matches_method_local(const char* name, Type* type) {
       return true;
   }
   forv_Vec(Type, pt, type->dispatchParents) {
-    if (name_matches_method(name, pt))
+    if (isMethodName(name, pt))
       return true;
   }
   return false;
@@ -353,8 +337,8 @@ resolveGotoLabel(GotoStmt* gotoStmt) {
 
 
 //
-// Resolve EnumTypeName.fieldName to the symbol named fieldName in the
-// enumerated type named EnumTypeName.
+// resolves EnumTypeName.fieldName to the symbol named fieldName in
+// the enumerated type named EnumTypeName
 //
 static void resolveEnumeratedTypes() {
   forv_Vec(BaseAST, ast, gAsts) {
@@ -794,7 +778,7 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL) {
   }
 
   if (SymExpr* sym = toSymExpr(expr)) {
-    Symbol* symbol = newLookup(useCall, sym->getName());
+    Symbol* symbol = lookup(useCall, sym->getName());
     mod = toModuleSymbol(symbol);
     if (symbol && !mod) {
       USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
@@ -814,7 +798,7 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL) {
 
     if (!get_string(rhs, &rhsName))
       INT_FATAL(useCall, "Bad use statement in getUsedModule");
-    symbol = newLookup(lhs->block, rhsName);
+    symbol = lookup(lhs->block, rhsName);
     mod = toModuleSymbol(symbol);
     if (symbol && !mod) {
       USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
@@ -884,7 +868,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
   for_alist(expr, ct->inherits) {
     SymExpr* se = toSymExpr(expr);
     INT_ASSERT(se);
-    Symbol* sym = newLookup(expr, se->getName());
+    Symbol* sym = lookup(expr, se->getName());
     TypeSymbol* ts = toTypeSymbol(sym);
     expr->remove();
     if (!ts)
@@ -976,7 +960,7 @@ void scopeResolve(void) {
     if (fn->_this && fn->_this->type == dtUnknown) {
       if (SymExpr* sym = toSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
         if (!sym->var) {
-          TypeSymbol* ts = toTypeSymbol(newLookup(sym, sym->unresolved));
+          TypeSymbol* ts = toTypeSymbol(lookup(sym, sym->unresolved));
 
           if (!ts) {
             USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
@@ -1005,7 +989,7 @@ void scopeResolve(void) {
           (sym1 = toSymExpr(callExpr->get(1)))   &&
           (module = toModuleSymbol(sym1->var))   &&
           (sym2 = toSymExpr(callExpr->get(2)))) {
-        Symbol* new_sym = newLookup(module->block, get_string(sym2));
+        Symbol* new_sym = lookup(module->block, get_string(sym2));
         SymExpr *newSym = new SymExpr(new_sym);
         callExpr->replace(newSym);
       }
@@ -1020,7 +1004,7 @@ void scopeResolve(void) {
         if (!symExpr->parentSymbol)
           continue;
 
-        Symbol* sym = newLookup(symExpr, name); //, NULL, false);
+        Symbol* sym = lookup(symExpr, name); //, NULL, false);
 
         //
         // handle function call without parentheses
@@ -1076,7 +1060,7 @@ void scopeResolve(void) {
                 TypeSymbol* cts =
                   (sym) ? toTypeSymbol(sym->defPoint->parentSymbol) : NULL;
                 if ((cts && isClassType(cts->type)) ||
-                    name_matches_method(name, type)) {
+                    isMethodName(name, type)) {
                   CallExpr* call = toCallExpr(symExpr->parentExpr);
                   if (call && call->baseExpr == symExpr &&
                       call->numActuals() >= 2 &&
@@ -1087,8 +1071,8 @@ void scopeResolve(void) {
                   } else {
                     ClassType* ct = toClassType(type);
                     int nestDepth = 0;
-                    if (name_matches_method(name, type)) {
-                      while (ct && !name_matches_method_local(name, ct)) {
+                    if (isMethodName(name, type)) {
+                      while (ct && !isMethodNameLocal(name, ct)) {
                         // count how many classes out from current depth that
                         // this method is first defined in
                         nestDepth += 1;
