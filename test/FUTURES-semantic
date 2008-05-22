@@ -16,6 +16,7 @@ Implement proposed explicit index type declaration semantics
 
 DEFERRED
 --------
+- semantic: can we support 'setter' in var-iterators? [test/functions/deitz/iterators/iterator_uses_setter]
 - semantic: cobegin scope [test/parallel/cobegin/bradc/varsEscape]
 - semantic: implicit real parameter coercion [test/types/scalar/bradc/initReal32]
 
