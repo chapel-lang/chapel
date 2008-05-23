@@ -408,8 +408,10 @@ createPrimitiveType(const char *name, const char *cname) {
 void initPrimitiveTypes(void) {
   // Inititalize the outermost module
   rootModule = new ModuleSymbol("_root", MOD_STANDARD, new BlockStmt());
+  rootModule->filename = astr("<internal>");
 
   theProgram = new ModuleSymbol("_Program", MOD_STANDARD, new BlockStmt());
+  theProgram->filename = astr("<internal>");
   rootModule->block->insertAtTail(new DefExpr(theProgram));
 
   dtNil = createPrimitiveType ("_nilType", "_nilType");

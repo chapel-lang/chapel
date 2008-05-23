@@ -11,6 +11,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "misc.h"
+#include "yy.h"
 
 static void cleanup_for_exit(void) {
   deleteTmpDir();
@@ -46,9 +47,18 @@ static FnSymbol* err_fn = NULL;
 
 
 static const char* cleanFilename(BaseAST* ast) {
-  if (strstr(ast->filename, "/modules/standard"))
-    return astr("$CHPL_HOME", strstr(ast->filename, "/modules/standard"));
-  return ast->filename;
+  ModuleSymbol* mod = ast->getModule();
+  if (mod) {
+    if (strstr(ast->getModule()->filename, "/modules/standard")) {
+      return astr("$CHPL_HOME", strstr(ast->getModule()->filename, "/modules/standard"));
+    } else {
+      return ast->getModule()->filename;
+    }
+  } else if (strstr(yyfilename, "/modules/standard")) {
+    return astr("$CHPL_HOME", strstr(yyfilename, "/modules/standard"));
+  } else {
+    return yyfilename;
+  }
 }
 
 
@@ -110,9 +120,9 @@ printDevelErrorHeader(BaseAST* ast) {
         }
         if (err_fn->getModule()->initFn != err_fn &&
             !err_fn->isCompilerTemp &&
-            err_fn->filename && err_fn->lineno) {
+            err_fn->lineno) {
           fprintf(stderr, "%s:%d: In %s '%s':\n",
-                  err_fn->filename, err_fn->lineno, 
+                  cleanFilename(err_fn), err_fn->lineno, 
                   (err_fn->fnTag == FN_ITERATOR ? "iterator" : "function"), 
                   err_fn->name);
         }
@@ -121,7 +131,7 @@ printDevelErrorHeader(BaseAST* ast) {
   }
 
 
-  if (ast && ast->filename && ast->lineno)
+  if (ast && ast->lineno)
     fprintf(stderr, "%s:%d: ", cleanFilename(ast), ast->lineno);
 
   fprintf(stderr, err_print ? "note: " : err_fatal ? "error: " : "warning: ");

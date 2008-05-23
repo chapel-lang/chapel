@@ -65,7 +65,6 @@ extern const char* astTagName[];
       map = &localMap;                                                  \
     type* _this = copyInner(map);                                       \
     _this->lineno = lineno;                                             \
-    _this->filename = filename;                                         \
     _this->copyPragmas(this);                                           \
     map->put(this, _this);                                              \
     if (!internal)                                                      \
@@ -86,7 +85,6 @@ class BaseAST {
   AstTag astTag;    // BaseAST subclass
   int id;               // Unique ID
 
-  const char* filename;       // filename of location
   int lineno;           // line number of location
 
   BaseAST(AstTag type = BASE);
@@ -115,7 +113,6 @@ class BaseAST {
 void get_ast_children(BaseAST *a, Vec<BaseAST *> &asts);
 
 extern int currentLineno;
-extern const char* currentFilename;
 
 extern Vec<ModuleSymbol*> allModules;     // Contains all modules
 extern Vec<ModuleSymbol*> userModules;    // Contains user modules

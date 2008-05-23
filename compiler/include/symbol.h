@@ -230,6 +230,7 @@ class ModuleSymbol : public Symbol {
   BlockStmt* block;
   FnSymbol* initFn;
   VarSymbol* guard; // keeps initFn from being run more than once
+  const char* filename;
 
   ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock);
   ~ModuleSymbol();

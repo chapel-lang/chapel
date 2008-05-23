@@ -267,14 +267,12 @@ static void checkid(int id) {
 BaseAST::BaseAST(AstTag type) :
   astTag(type),
   id(uid++),
-  filename(yyfilename), 
   lineno(yystartlineno)
 {
   checkid(id);
   if (lineno == -1) {
-    if (currentLineno && currentFilename) {
+    if (currentLineno) {
       lineno = currentLineno;
-      filename = currentFilename;
     }
   }
   gAsts.add(this);
@@ -317,7 +315,7 @@ const char* BaseAST::stringLoc(void) {
   const int tmpBuffSize = 64;
   char tmpBuff[tmpBuffSize];
 
-  snprintf(tmpBuff, tmpBuffSize, "%s:%d", filename, lineno);
+  snprintf(tmpBuff, tmpBuffSize, "%s:%d", getModule()->filename, lineno);
   return astr(tmpBuff);
 }
 
@@ -410,7 +408,6 @@ const char* astTagName[BASE+1] = {
 };
 
 int currentLineno = 0;
-const char* currentFilename = NULL;
 
 #define AST_ADD_CHILD(_t, _m) if (((_t*)a)->_m) asts.add(((_t*)a)->_m)
 #define AST_ADD_LIST(_t, _m) for_alist(tmp, ((_t*)a)->_m) asts.add(tmp)

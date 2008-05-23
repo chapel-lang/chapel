@@ -20,7 +20,6 @@
 static void
 bundleArgs(CallExpr* fcall) {
   currentLineno = fcall->lineno;
-  currentFilename = fcall->filename;
   ModuleSymbol* mod = fcall->getModule();
   FnSymbol* fn = fcall->isResolved();
 

@@ -153,7 +153,6 @@ void cleanup(void) {
   // handle forall's in array type declaration with initialization
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
-    currentFilename = ast->filename;
     if (CallExpr *call = toCallExpr(ast)) {
       if (call->isNamed("_build_array_type") && call->numActuals() == 4) {
         if (DefExpr *def = toDefExpr(call->parentExpr)) {
@@ -181,7 +180,6 @@ void cleanup(void) {
   collect_asts(&asts);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
-    currentFilename = ast->filename;
     if (DefExpr* def = toDefExpr(ast)) {
       normalize_nested_function_expressions(def);
     }
@@ -189,7 +187,6 @@ void cleanup(void) {
 
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
-    currentFilename = ast->filename;
     if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->blockTag == BLOCK_SCOPELESS && block->list)
         flatten_scopeless_block(block);

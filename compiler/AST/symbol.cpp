@@ -790,7 +790,7 @@ FnSymbol::coercion_wrapper(ASTMap* coercion_map,
   else
     wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   defPoint->insertAfter(new DefExpr(wrapper));
-  reset_file_info(wrapper->defPoint, lineno, filename);
+  reset_line_info(wrapper->defPoint, lineno);
   normalize(wrapper);
   addMapCache(cw_cache, this, wrapper, coercion_map);
   return wrapper;
@@ -955,9 +955,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
   for_formals(formal, this) {
     if (Symbol* sym = toSymbol(copy_map.get(formal))) {
       sym->defPoint->lineno = formal->lineno;
-      sym->defPoint->filename = formal->filename;
       sym->lineno = formal->lineno;
-      sym->filename = formal->filename;
     }
   }
   add_dwcache(wrapper, this, defaults);
@@ -990,7 +988,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map,
   else
     wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   defPoint->insertBefore(new DefExpr(wrapper));
-  clear_file_info(wrapper->defPoint);
+  clear_line_info(wrapper->defPoint);
   normalize(wrapper);
   return wrapper;
 }
@@ -1053,7 +1051,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
     wrapper->removePragma("inline");
   }
   defPoint->insertBefore(new DefExpr(wrapper));
-  clear_file_info(wrapper->defPoint);
+  clear_line_info(wrapper->defPoint);
   normalize(wrapper);
   addMapCache(pw_cache, this, wrapper, &map);
   return wrapper;
@@ -1368,7 +1366,6 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
   //  static int uid = 1;
   FnSymbol* newfn = NULL;
   currentLineno = lineno;
-  currentFilename = filename;
 
   // check for infinite recursion by limiting the number of
   // instantiations of a particular type or function
@@ -1539,9 +1536,9 @@ codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct) {
 
 
 void FnSymbol::codegenDef(FILE* outfile) {
-  if (strcmp(saveCDir, "") && filename) {
-    const char* name = strrchr(filename, '/');
-    name = (!name) ? filename : name + 1;
+  if (strcmp(saveCDir, "") && getModule()->filename) {
+    const char* name = strrchr(getModule()->filename, '/');
+    name = (!name) ? getModule()->filename : name + 1;
     fprintf(outfile, "/* %s:%d */\n", name, lineno);
   }
 
@@ -1731,7 +1728,9 @@ ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock)
   Symbol(SYMBOL_MODULE, iName),
   modTag(iModTag),
   block(iBlock),
-  initFn(NULL)
+  initFn(NULL),
+  guard(NULL),
+  filename(NULL)
 {
   block->parentSymbol = this;
   registerModule(this);

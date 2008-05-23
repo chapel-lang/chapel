@@ -57,18 +57,17 @@ void collect_top_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
 }
 
 
-void reset_file_info(BaseAST* baseAST, int lineno, const char* filename) {
+void reset_line_info(BaseAST* baseAST, int lineno) {
   Vec<BaseAST*> asts;
   collect_asts(&asts, baseAST);
   forv_Vec(BaseAST, ast, asts) {
     ast->lineno = lineno;
-    ast->filename = filename;
   }
 }
 
 
-void clear_file_info(BaseAST* baseAST) {
-  reset_file_info(baseAST, -1, "<internal>");
+void clear_line_info(BaseAST* baseAST) {
+  reset_line_info(baseAST, -1);
 }
 
 

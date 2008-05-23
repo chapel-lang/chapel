@@ -17,7 +17,7 @@ expandIteratorInline(CallExpr* call) {
   ASTMap map;
   BlockStmt* ibody = iterator->body->copy(&map);
   CallExpr* yield = NULL;
-  reset_file_info(ibody, call->lineno, call->filename);
+  reset_line_info(ibody, call->lineno);
   body = toBlockStmt(call->parentExpr);
   call->remove();
   body->replace(ibody);

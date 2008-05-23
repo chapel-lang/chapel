@@ -50,7 +50,6 @@ static VarSymbol* newTemp(FnSymbol* fn, Type* type, const char* name = "_tmp") {
 
 void prototypeIteratorClass(FnSymbol* fn) {
   currentLineno = fn->lineno;
-  currentFilename = fn->filename;
 
   IteratorInfo* ii = new IteratorInfo();
   fn->iteratorInfo = ii;
@@ -854,7 +853,6 @@ void lowerIterator(FnSymbol* fn) {
   IteratorInfo* ii = fn->iteratorInfo;
 
   currentLineno = fn->lineno;
-  currentFilename = fn->filename;
   Vec<BaseAST*> asts;
   collect_asts_postorder(&asts, fn);
 

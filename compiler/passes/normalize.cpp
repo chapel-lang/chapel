@@ -105,7 +105,6 @@ flattenGlobalFunctions() {
 
 static void insertHeapAllocate(CallExpr* move, bool global = false) {
   currentLineno = move->lineno;
-  currentFilename = move->filename;
   VarSymbol* tmp = new VarSymbol("_tmp");
   tmp->isCompilerTemp = true;
   move->insertBefore(new DefExpr(tmp));
@@ -122,7 +121,6 @@ static void insertHeapAllocate(CallExpr* move, bool global = false) {
 
 static void insertHeapAccess(SymExpr* se, bool global = false) {
   currentLineno = se->lineno;
-  currentFilename = se->filename;
   CallExpr* call =
     new CallExpr((global && se->var->isConstant())
                  ? "_heapAccessConstGlobal"
@@ -396,7 +394,6 @@ void normalize(BaseAST* base) {
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = toFnSymbol(ast)) {
       currentLineno = fn->lineno;
-      currentFilename = fn->filename;
       if (!fn->hasPragma("type constructor") &&
           !fn->hasPragma("default constructor") &&
           !fn->isWrapper)
@@ -419,7 +416,6 @@ void normalize(BaseAST* base) {
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
-    currentFilename = ast->filename;
     if (FnSymbol* a = toFnSymbol(ast))
       if (!a->defSetGet)
         apply_getters_setters(a);
@@ -429,7 +425,6 @@ void normalize(BaseAST* base) {
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
-    currentFilename = ast->filename;
     if (SymExpr* a = toSymExpr(ast)) {
       call_constructor_for_class(a);
     }
@@ -439,7 +434,6 @@ void normalize(BaseAST* base) {
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
-    currentFilename = ast->filename;
     if (DefExpr* a = toDefExpr(ast)) {
       if (VarSymbol* var = toVarSymbol(a->sym))
         if (toFnSymbol(a->parentSymbol))
@@ -455,7 +449,7 @@ void normalize(BaseAST* base) {
         CallExpr* call = new CallExpr("_statementLevelSymbol");
         sym->insertBefore(call);
         call->insertAtTail(sym->remove());
-        reset_file_info(call, sym->lineno, sym->filename);
+        reset_line_info(call, sym->lineno);
       }
     }
   }
@@ -464,7 +458,6 @@ void normalize(BaseAST* base) {
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
-    currentFilename = ast->filename;
     if (CallExpr* a = toCallExpr(ast)) {
       insert_call_temps(a);
       fix_user_assign(a);
@@ -475,7 +468,6 @@ void normalize(BaseAST* base) {
   collect_asts_postorder(&asts, base);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
-    currentFilename = ast->filename;
     if (Expr* a = toExpr(ast)) {
       hack_resolve_types(a);
     }
@@ -609,7 +601,6 @@ static void apply_getters_setters(FnSymbol* fn) {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       currentLineno = call->lineno;
-      currentFilename = call->filename;
       if (call->getFunction() != fn) // in a nested function, handle
                                      // later, because it may be a
                                      // getter or a setter
@@ -736,7 +727,8 @@ fix_def_expr(VarSymbol* var) {
       Expr* noop = new CallExpr(PRIMITIVE_NOOP);
       ModuleSymbol* module = var->getModule();
       CallExpr* strToValExpr =
-        new CallExpr("_cast",
+        new CallExpr("_command_line_cast",
+                     new SymExpr(new_StringSymbol(var->name)),
                      new CallExpr(PRIMITIVE_TYPEOF, constTemp),
                      new CallExpr(primitives_map.get("_config_get_value"),
                                   new_StringSymbol(var->name),
@@ -749,10 +741,6 @@ fix_def_expr(VarSymbol* var) {
                          new_StringSymbol(module->name))),
           noop,
           new CallExpr(PRIMITIVE_MOVE, constTemp, strToValExpr)));
-      strToValExpr->filename = astr("<command line setting of '", var->name,
-                                    "'>");
-      strToValExpr->lineno = 0;
-                     
 
       stmt = noop; // insert regular definition code in then block
     } else {

@@ -976,6 +976,9 @@ def _isRealType(type t) param return
 def _isImagType(type t) param return
   (t == imag(32)) | (t == imag(64));
 
+pragma "command line setting"
+def _command_line_cast(param s: string, type t, x) return _cast(t, x);
+
 pragma "inline" def _cast(type t, x: bool) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 

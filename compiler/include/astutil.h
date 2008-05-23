@@ -24,8 +24,8 @@ void collect_top_asts(Vec<BaseAST*>* asts, BaseAST* ast);
 void collect_stmts(Vec<Expr*>* exprs, Expr* expr);
 
 // utility routines for clearing and resetting lineno and filename
-void clear_file_info(BaseAST* baseAST);
-void reset_file_info(BaseAST* baseAST, int lineno, const char* filename);
+void clear_line_info(BaseAST* baseAST);
+void reset_line_info(BaseAST* baseAST, int lineno);
 
 // compute call sites FnSymbol::calls
 void compute_call_sites();

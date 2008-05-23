@@ -44,7 +44,6 @@ static Map<BaseAST*,BaseAST*> copyMap;
 //
 static void
 inlineCall(CallExpr* call) {
-  currentFilename = call->filename;
   currentLineno = call->lineno;
 
   Expr* stmt = call->getStmtExpr();
@@ -71,7 +70,7 @@ inlineCall(CallExpr* call) {
   }
 #endif
 
-  reset_file_info(block, call->lineno, call->filename);
+  reset_line_info(block, call->lineno);
   CallExpr* return_stmt = toCallExpr(block->body.last());
   if (!return_stmt || !return_stmt->isPrimitive(PRIMITIVE_RETURN))
     INT_FATAL(call, "function is not normalized");

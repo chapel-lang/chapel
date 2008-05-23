@@ -1,1 +1,1 @@
-redefineTypeNames2a.chpl:4: error: type alias is recursive
+redefineTypeNames2a.chpl:5: error: type alias is recursive

@@ -16,7 +16,7 @@ BlockStmt* buildChapelStmt(BaseAST* ast = NULL);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
-ModuleSymbol* buildModule(const char* name, ModTag type, BlockStmt* block);
+ModuleSymbol* buildModule(const char* name, ModTag type, BlockStmt* block, const char* filename);
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);

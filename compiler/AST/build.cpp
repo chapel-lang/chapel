@@ -204,7 +204,6 @@ static FnSymbol* initModuleGuards = NULL;
 void createInitFn(ModuleSymbol* mod) {
   static int moduleNumber = 0;
   currentLineno = mod->lineno;
-  currentFilename = mod->filename;
 
   mod->initFn = new FnSymbol(astr("__init_", mod->name));
   mod->initFn->retType = dtVoid;
@@ -251,8 +250,9 @@ void createInitFn(ModuleSymbol* mod) {
 }
 
 
-ModuleSymbol* buildModule(const char* name, ModTag type, BlockStmt* block) {
+ModuleSymbol* buildModule(const char* name, ModTag type, BlockStmt* block, const char* filename) {
   ModuleSymbol* mod = new ModuleSymbol(name, type, block);
+  mod->filename = astr(filename);
   createInitFn(mod);
   return mod;
 }

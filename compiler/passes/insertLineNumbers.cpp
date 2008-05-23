@@ -38,8 +38,23 @@ insertLineNumber(CallExpr* call) {
       (developer == true && strcmp(fn->name, "halt"))) {
     // call is in user code; insert AST line number and filename
     // or developer flag is on and the call is not the halt() call
-    call->insertAtTail(new_IntSymbol(call->lineno));
-    call->insertAtTail(new_StringSymbol(call->filename));
+    if (call->isResolved() &&
+        call->isResolved()->hasPragma("command line setting")) {
+      call->insertAtTail(new_IntSymbol(0));
+      FnSymbol* fn = call->isResolved();
+      INT_ASSERT(fn);
+      INT_ASSERT(fn->substitutions.n);
+      VarSymbol* var = toVarSymbol(fn->substitutions.v[0].value);
+      INT_ASSERT(var);
+      INT_ASSERT(var->immediate);
+      INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
+      call->insertAtTail(new_StringSymbol(astr("<command line setting of '",
+                                               var->immediate->v_string,
+                                               "'>")));
+    } else {
+      call->insertAtTail(new_IntSymbol(call->lineno));
+      call->insertAtTail(new_StringSymbol(call->getModule()->filename));
+    }
   } else if (linenoMap.get(fn)) {
     // call is in non-user code, but the function already has line
     // number and filename arguments
@@ -72,7 +87,6 @@ void insertLineNumbers() {
             call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
           Expr* stmt = call->getStmtExpr();
           currentLineno = stmt->lineno;
-          currentFilename = stmt->filename;
           ClassType* ct = toClassType(call->get(1)->typeInfo());
           if (ct && (ct->classTag == CLASS_CLASS ||
                      ct->symbol->hasPragma("wide class"))) {

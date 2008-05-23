@@ -10,7 +10,7 @@
 void codegenStmt(FILE* outfile, Expr* stmt) {
   if (stmt->lineno > 0) {
     if (printCppLineno) {
-      fprintf(outfile, "/* ZLINE: %d %s */\n", stmt->lineno, stmt->filename);
+      fprintf(outfile, "/* ZLINE: %d %s */\n", stmt->lineno, stmt->getModule()->filename);
     } 
   }
 }

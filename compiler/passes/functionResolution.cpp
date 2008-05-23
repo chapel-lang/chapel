@@ -2972,7 +2972,6 @@ static void
 resolveBody(Expr* body) {
   for_exprs_postorder(expr, body) {
     currentLineno = expr->lineno;
-    currentFilename = expr->filename;
     if (SymExpr* sym = toSymExpr(expr))
       if (Type* type = sym->typeInfo())
         makeRefType(type);
@@ -3668,7 +3667,7 @@ static void insertReturnTemps() {
               if ((getValueType(fn->retType) && getValueType(fn->retType)->symbol->hasPragma("sync")) || fn->retType->symbol->hasPragma("sync")) {
                 CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
                 call->insertBefore(sls);
-                reset_file_info(sls, call->lineno, call->filename);
+                reset_line_info(sls, call->lineno);
                 resolveCall(sls);
                 INT_ASSERT(sls->isResolved());
                 resolveFns(sls->isResolved());
@@ -4030,7 +4029,6 @@ pruneResolvedTree() {
         for_formals_actuals(formal, actual, call) {
           if (formal->type == actual->typeInfo()->refType) {
             currentLineno = call->lineno;
-            currentFilename = call->filename;
             VarSymbol* tmp = new VarSymbol("_tmp", formal->type);
             tmp->isCompilerTemp = true;
             call->getStmtExpr()->insertBefore(new DefExpr(tmp));
