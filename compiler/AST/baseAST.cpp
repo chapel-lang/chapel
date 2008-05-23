@@ -154,50 +154,43 @@ void printStatistics(const char* pass) {
 }
 
 
-static bool
-isLive(Symbol* sym) {
-  return sym == rootModule || sym->defPoint->parentSymbol;
-}
-
-
 void cleanAst() {
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (TypeSymbol* ts = toTypeSymbol(ast)) {
-      for(int i = 0; i < ts->type->methods.n; i++) {
-        FnSymbol* method = ts->type->methods.v[i];
-        if (method && !isLive(method))
-          ts->type->methods.v[i] = NULL;
-      }
-      for(int i = 0; i < ts->type->dispatchChildren.n; i++) {
-        Type* type = ts->type->dispatchChildren.v[i];
-        if (type && !isLive(type->symbol))
-          ts->type->dispatchChildren.v[i] = NULL;
-      }
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    for(int i = 0; i < ts->type->methods.n; i++) {
+      FnSymbol* method = ts->type->methods.v[i];
+      if (method && !method->defPoint->parentSymbol)
+        ts->type->methods.v[i] = NULL;
+    }
+    for(int i = 0; i < ts->type->dispatchChildren.n; i++) {
+      Type* type = ts->type->dispatchChildren.v[i];
+      if (type && !type->symbol->defPoint->parentSymbol)
+        ts->type->dispatchChildren.v[i] = NULL;
     }
   }
   int iasts = 0, ifn = 0, itypes = 0;
   forv_Vec(BaseAST, ast, gAsts) {
-    if (Symbol* sym = toSymbol(ast)) {
-      if (isLive(sym)) {
-        if (sym->astTag == SYMBOL_TYPE)
-          gAsts.v[iasts++] = sym->type;
-        gAsts.v[iasts++] = sym;
+    if (Type* type = toType(ast)) {
+      if (type->symbol->defPoint->parentSymbol) {
+        gAsts.v[iasts++] = type;
       } else {
-        if (sym->astTag == SYMBOL_TYPE)
-          delete sym->type;
+        delete type;
+      }
+    } else if (Symbol* sym = toSymbol(ast)) {
+      if (sym == rootModule || sym->defPoint->parentSymbol) {
+        gAsts.v[iasts++] = sym;
+        if (FnSymbol* fn = toFnSymbol(sym))
+          gFns.v[ifn++] = fn;
+        else if (TypeSymbol* type = toTypeSymbol(sym))
+          gTypes.v[itypes++] = type;
+      } else {
         delete sym;
       }
     } else if (Expr* expr = toExpr(ast)) {
       if (expr->parentSymbol) {
         gAsts.v[iasts++] = ast;
-        if (DefExpr* def = toDefExpr(ast)) {
-          if (FnSymbol* fn = toFnSymbol(def->sym))
-            gFns.v[ifn++] = fn;
-          else if (TypeSymbol* type = toTypeSymbol(def->sym))
-            gTypes.v[itypes++] = type;
-        }
-      } else
+      } else {
         delete expr;
+      }
     }
   }
   gAsts.n = iasts;
