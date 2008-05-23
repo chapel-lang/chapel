@@ -16,12 +16,10 @@ class Expr;
 void normalize(BaseAST* ast);
 
 // collect Stmts and Exprs in the AST and return them in vectors
-void collect_asts(Vec<BaseAST*>* asts);
-void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast);
-void collect_asts_postorder(Vec<BaseAST*>* asts);
-void collect_asts_postorder(Vec<BaseAST*>* asts, BaseAST* ast);
-void collect_top_asts(Vec<BaseAST*>* asts, BaseAST* ast);
-void collect_stmts(Vec<Expr*>* exprs, Expr* expr);
+void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts);
+void collect_asts_postorder(BaseAST*, Vec<BaseAST*>& asts);
+void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts);
+void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts);
 
 // utility routines for clearing and resetting lineno and filename
 void clear_line_info(BaseAST* baseAST);
@@ -101,7 +99,7 @@ void buildDefUseSets(Vec<Symbol*>& syms,
 void update_symbols(BaseAST* ast, ASTMap* map);
 
 // replaces Fixup
-void remove_help(BaseAST* ast);
+void remove_help(BaseAST* ast, int dummy=0); // dummy is never used
 void parent_insert_help(BaseAST* parent, Expr* ast);
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast);
 void insert_help(BaseAST* ast, Expr* parentExpr, Symbol* parentSymbol);

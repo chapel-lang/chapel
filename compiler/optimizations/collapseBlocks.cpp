@@ -8,7 +8,7 @@ void collapseBlocks(BlockStmt* block) {
   if (fn)
     block->remove();
   Vec<Expr*> exprs;
-  collect_stmts(&exprs, block);
+  collect_stmts(block, exprs);
   forv_Vec(Expr, expr, exprs) {
     if (BlockStmt* block = toBlockStmt(expr)) {
       if (block->list &&

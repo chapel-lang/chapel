@@ -804,7 +804,7 @@ addLocalVariablesLiveAtYields(Vec<Symbol*>& syms, FnSymbol* fn) {
           }
         }
         Vec<BaseAST*> asts;
-        collect_asts(&asts, bb->exprs.v[k]);
+        collect_asts(bb->exprs.v[k], asts);
         forv_Vec(BaseAST, ast, asts) {
           if (SymExpr* se = toSymExpr(ast)) {
             if (defSet.set_in(se)) {
@@ -854,7 +854,7 @@ void lowerIterator(FnSymbol* fn) {
 
   currentLineno = fn->lineno;
   Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts, fn);
+  collect_asts_postorder(fn, asts);
 
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;

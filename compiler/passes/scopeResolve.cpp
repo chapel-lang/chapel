@@ -325,7 +325,7 @@ resolveGotoLabel(GotoStmt* gotoStmt) {
     if (gotoStmt->gotoTag == GOTO_BREAK)
       name = astr("_post", name);
     Vec<BaseAST*> asts;
-    collect_asts(&asts, gotoStmt->parentSymbol);
+    collect_asts(gotoStmt->parentSymbol, asts);
     forv_Vec(BaseAST, ast, asts) {
       if (LabelSymbol* ls = toLabelSymbol(ast)) {
         if (!strcmp(ls->name, name))
@@ -489,7 +489,7 @@ static void build_type_constructor(ClassType* ct) {
   // insert implicit uses of 'this' in constructor
   //
   Vec<BaseAST*> asts;
-  collect_asts(&asts, fn->body);
+  collect_asts(fn->body, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* se = toSymExpr(ast))
       if (!se->var && fieldNamesSet.set_in(se->unresolved))
@@ -524,7 +524,7 @@ static void build_type_constructor(ClassType* ct) {
   }
 
   asts.clear();
-  collect_asts(&asts, fn);
+  collect_asts(fn, asts);
   addToSymbolTable(asts);
 }
 
@@ -687,7 +687,7 @@ static void build_constructor(ClassType* ct) {
   // insert implicit uses of 'this' in constructor
   //
   Vec<BaseAST*> asts;
-  collect_asts(&asts, fn->body);
+  collect_asts(fn->body, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* se = toSymExpr(ast))
       if (!se->var && fieldNamesSet.set_in(se->unresolved))
@@ -728,7 +728,7 @@ static void build_constructor(ClassType* ct) {
       if (method->numFormals() == 2) {
         CallExpr* init = new CallExpr("initialize", gMethodToken, fn->_this);
         Vec<BaseAST*> asts;
-        collect_top_asts(&asts, method->body);
+        collect_top_asts(method->body, asts);
         forv_Vec(BaseAST, ast, asts) {
           if (CallExpr* call = toCallExpr(ast)) {
             if (call->isPrimitive(PRIMITIVE_RETURN)) {
@@ -749,7 +749,7 @@ static void build_constructor(ClassType* ct) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, fn->_this));
 
   asts.clear();
-  collect_asts(&asts, fn);
+  collect_asts(fn, asts);
   addToSymbolTable(asts);
 }
 /********* end build constructor ***************/

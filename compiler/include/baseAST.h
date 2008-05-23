@@ -108,10 +108,6 @@ class BaseAST {
   FnSymbol* getFunction();
 };
 
-#define forv_BaseAST(_p, _v) forv_Vec(BaseAST, _p, _v)
-
-void get_ast_children(BaseAST *a, Vec<BaseAST *> &asts);
-
 extern int currentLineno;
 
 extern Vec<ModuleSymbol*> allModules;     // Contains all modules
@@ -178,5 +174,73 @@ void registerModule(ModuleSymbol* mod);
 #define toPrimitiveType(ast) (isPrimitiveType(ast) ? ((PrimitiveType*)(ast)) : NULL)
 #define toEnumType(ast)      (isEnumType(ast)      ? ((EnumType*)(ast))      : NULL)
 #define toClassType(ast)     (isClassType(ast)     ? ((ClassType*)(ast))     : NULL)
+
+
+
+#define AST_CALL_CHILD(_a, _t, _m, call, ...)                           \
+  if (((_t*)_a)->_m) {                                                  \
+    BaseAST* next_ast = ((_t*)_a)->_m;                                  \
+    call(next_ast, __VA_ARGS__);                                        \
+  }
+
+#define AST_CALL_LIST(_a, _t, _m, call, ...)                            \
+  for_alist(next_ast, ((_t*)_a)->_m) {                                  \
+    call(next_ast, __VA_ARGS__);                                        \
+  }
+
+#define AST_CHILDREN_CALL(_a, call, ...)                                \
+  switch (_a->astTag) {                                                 \
+  case EXPR_CALL:                                                       \
+    AST_CALL_CHILD(_a, CallExpr, baseExpr, call, __VA_ARGS__);          \
+    AST_CALL_LIST(_a, CallExpr, argList, call, __VA_ARGS__);            \
+    break;                                                              \
+  case EXPR_NAMED:                                                      \
+    AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);           \
+    break;                                                              \
+  case EXPR_DEF:                                                        \
+    AST_CALL_CHILD(_a, DefExpr, init, call, __VA_ARGS__);               \
+    AST_CALL_CHILD(_a, DefExpr, exprType, call, __VA_ARGS__);           \
+    AST_CALL_CHILD(_a, DefExpr, sym, call, __VA_ARGS__);                \
+    break;                                                              \
+  case STMT_BLOCK:                                                      \
+    AST_CALL_LIST(_a, BlockStmt, body, call, __VA_ARGS__);              \
+    AST_CALL_CHILD(_a, BlockStmt, loopInfo, call, __VA_ARGS__);         \
+    break;                                                              \
+  case STMT_COND:                                                       \
+    AST_CALL_CHILD(_a, CondStmt, condExpr, call, __VA_ARGS__);          \
+    AST_CALL_CHILD(_a, CondStmt, thenStmt, call, __VA_ARGS__);          \
+    AST_CALL_CHILD(_a, CondStmt, elseStmt, call, __VA_ARGS__);          \
+    break;                                                              \
+  case STMT_GOTO:                                                       \
+    AST_CALL_CHILD(_a, GotoStmt, label, call, __VA_ARGS__);             \
+    break;                                                              \
+  case SYMBOL_MODULE:                                                   \
+    AST_CALL_CHILD(_a, ModuleSymbol, block, call, __VA_ARGS__);         \
+    break;                                                              \
+  case SYMBOL_ARG:                                                      \
+    AST_CALL_CHILD(_a, ArgSymbol, typeExpr, call, __VA_ARGS__);         \
+    AST_CALL_CHILD(_a, ArgSymbol, defaultExpr, call, __VA_ARGS__);      \
+    AST_CALL_CHILD(_a, ArgSymbol, variableExpr, call, __VA_ARGS__);     \
+    break;                                                              \
+  case SYMBOL_TYPE:                                                     \
+    AST_CALL_CHILD(_a, Symbol, type, call, __VA_ARGS__);                \
+    break;                                                              \
+  case SYMBOL_FN:                                                       \
+    AST_CALL_LIST(_a, FnSymbol, formals, call, __VA_ARGS__);            \
+    AST_CALL_CHILD(_a, FnSymbol, setter, call, __VA_ARGS__);            \
+    AST_CALL_CHILD(_a, FnSymbol, body, call, __VA_ARGS__);              \
+    AST_CALL_CHILD(_a, FnSymbol, where, call, __VA_ARGS__);             \
+    AST_CALL_CHILD(_a, FnSymbol, retExprType, call, __VA_ARGS__);       \
+    break;                                                              \
+  case TYPE_ENUM:                                                       \
+    AST_CALL_LIST(_a, EnumType, constants, call, __VA_ARGS__);          \
+    break;                                                              \
+  case TYPE_CLASS:                                                      \
+    AST_CALL_LIST(_a, ClassType, fields, call, __VA_ARGS__);            \
+    AST_CALL_LIST(_a, ClassType, inherits, call, __VA_ARGS__);          \
+    break;                                                              \
+  default:                                                              \
+    break;                                                              \
+  }
 
 #endif

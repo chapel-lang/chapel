@@ -63,7 +63,7 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
     for (int i = bb->exprs.n-1; i >= 0; i--) {
       Expr* expr = bb->exprs.v[i];
       Vec<BaseAST*> asts;
-      collect_asts(&asts, expr);
+      collect_asts(expr, asts);
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
           if (defSet.set_in(se)) {
@@ -147,7 +147,7 @@ buildDefUseChains(FnSymbol* fn,
     Vec<bool>* in = IN.v[i];
     forv_Vec(Expr, expr, bb->exprs) {
       Vec<BaseAST*> asts;
-      collect_asts(&asts, expr);
+      collect_asts(expr, asts);
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
           if (useSet.set_in(se)) {

@@ -11,7 +11,7 @@ static void
 check_functions(FnSymbol* fn) {
   Vec<BaseAST*> asts;
   Vec<CallExpr*> rets;
-  collect_asts(&asts, fn);
+  collect_asts(fn, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* ret = toCallExpr(ast))
       if (ret->isPrimitive(PRIMITIVE_RETURN) && ret->parentSymbol == fn)
@@ -78,7 +78,7 @@ check_named_arguments(CallExpr* call) {
 void
 checkParsed(void) {
   Vec<BaseAST*> asts;
-  collect_asts(&asts);
+  collect_asts(rootModule, asts);
   forv_Vec(BaseAST, ast, asts) {
 
     if (CallExpr* call = toCallExpr(ast))

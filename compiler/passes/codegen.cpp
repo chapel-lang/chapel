@@ -206,7 +206,7 @@ static void codegen_header(void) {
     }
 
     Vec<BaseAST*> asts;
-    collect_asts(&asts, fn->body);
+    collect_asts(fn->body, asts);
     forv_Vec(BaseAST, ast, asts) {
 
       // remove special calls for C-style for loops

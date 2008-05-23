@@ -1981,7 +1981,7 @@ static void fold_param_for(CallExpr* loop) {
 static bool
 canInlineIterator(FnSymbol* iterator) {
   Vec<BaseAST*> asts;
-  collect_asts(&asts, iterator);
+  collect_asts(iterator, asts);
   int count = 0;
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast))
@@ -3032,7 +3032,7 @@ resolveFns(FnSymbol* fn) {
       fn->valueFunction = copy;
       Symbol* ret = copy->getReturnSymbol();
       Vec<BaseAST*> asts;
-      collect_asts(&asts, copy);
+      collect_asts(copy, asts);
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
           if (se->var == copy->setter->sym)
@@ -3050,7 +3050,7 @@ resolveFns(FnSymbol* fn) {
     }
 
     Vec<BaseAST*> asts;
-    collect_asts(&asts, fn);
+    collect_asts(fn, asts);
     forv_Vec(BaseAST, ast, asts) {
       if (SymExpr* se = toSymExpr(ast)) {
         if (se->var == fn->setter->sym) {
@@ -3750,7 +3750,7 @@ pruneResolvedTree() {
   }
 
   Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts);
+  collect_asts_postorder(rootModule, asts);
   forv_Vec(BaseAST, ast, asts) {
     Expr* expr = toExpr(ast);
     if (!expr || !expr->parentSymbol)
@@ -3859,7 +3859,7 @@ pruneResolvedTree() {
           tmp->isCompilerTemp = true;
           fn->insertAtHead(new DefExpr(tmp));
           if (asts.n == 0)
-            collect_asts(&asts, fn->body);
+            collect_asts(fn->body, asts);
           forv_Vec(BaseAST, ast, asts) {
             if (SymExpr* se = toSymExpr(ast)) {
               if (se->var == formal) {
@@ -3891,7 +3891,7 @@ pruneResolvedTree() {
   }
 
   asts.clear();
-  collect_asts_postorder(&asts);
+  collect_asts_postorder(rootModule, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->parentSymbol && call->isPrimitive(PRIMITIVE_BUILD_ARRAY)) {

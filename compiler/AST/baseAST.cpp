@@ -224,7 +224,7 @@ verify() {
     //
     Vec<Expr*> set;
     Vec<BaseAST*> vAsts;
-    collect_asts(&vAsts);
+    collect_asts(rootModule, vAsts);
 
     forv_Vec(BaseAST, ast, gAsts) {
       if (Expr* expr = toExpr(ast)) {
@@ -408,83 +408,6 @@ const char* astTagName[BASE+1] = {
 };
 
 int currentLineno = 0;
-
-#define AST_ADD_CHILD(_t, _m) if (((_t*)a)->_m) asts.add(((_t*)a)->_m)
-#define AST_ADD_LIST(_t, _m) for_alist(tmp, ((_t*)a)->_m) asts.add(tmp)
-
-void
-get_ast_children(BaseAST *a, Vec<BaseAST *> &asts) {
-  switch (a->astTag) {
-  case EXPR:
-    break;
-  case EXPR_SYM:
-    break;
-  case EXPR_DEF:
-    AST_ADD_CHILD(DefExpr, init);
-    AST_ADD_CHILD(DefExpr, exprType);
-    AST_ADD_CHILD(DefExpr, sym);
-    break;
-  case EXPR_CALL:
-    AST_ADD_CHILD(CallExpr, baseExpr);
-    AST_ADD_LIST(CallExpr, argList);
-    break;
-  case EXPR_NAMED:
-    AST_ADD_CHILD(NamedExpr, actual);
-    break;
-  case STMT_BLOCK:
-    AST_ADD_LIST(BlockStmt, body);
-    AST_ADD_CHILD(BlockStmt, loopInfo);
-    break;
-  case STMT_COND:
-    AST_ADD_CHILD(CondStmt, condExpr);
-    AST_ADD_CHILD(CondStmt, thenStmt);
-    AST_ADD_CHILD(CondStmt, elseStmt);
-    break;
-  case STMT_GOTO:
-    AST_ADD_CHILD(GotoStmt, label);
-    break;
-  case SYMBOL:
-    break;
-  case SYMBOL_MODULE:
-    AST_ADD_CHILD(ModuleSymbol, block);
-    break;
-  case SYMBOL_VAR:
-    break;
-  case SYMBOL_ARG:
-    AST_ADD_CHILD(ArgSymbol, typeExpr);
-    AST_ADD_CHILD(ArgSymbol, defaultExpr);
-    AST_ADD_CHILD(ArgSymbol, variableExpr);
-    break;
-  case SYMBOL_TYPE:
-    AST_ADD_CHILD(Symbol, type);
-    break;
-  case SYMBOL_FN:
-    AST_ADD_LIST(FnSymbol, formals);
-    AST_ADD_CHILD(FnSymbol, setter);
-    AST_ADD_CHILD(FnSymbol, body);
-    AST_ADD_CHILD(FnSymbol, where);
-    AST_ADD_CHILD(FnSymbol, retExprType);
-    break;
-  case SYMBOL_ENUM:
-    break;
-  case SYMBOL_LABEL:
-    break;
-  case TYPE:
-    break;
-  case TYPE_PRIMITIVE:
-    break;
-  case TYPE_ENUM:
-    AST_ADD_LIST(EnumType, constants);
-    break;
-  case TYPE_CLASS:
-    AST_ADD_LIST(ClassType, fields);
-    AST_ADD_LIST(ClassType, inherits);
-    break;
-  case BASE:
-    INT_FATAL(a, "Unexpected case in get_ast_children (BASE)");
-    break;
-  }
-}
 
 Vec<ModuleSymbol*> allModules;  // Contains all modules
 Vec<ModuleSymbol*> userModules; // Contains user modules

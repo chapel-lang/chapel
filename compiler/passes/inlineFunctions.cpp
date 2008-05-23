@@ -98,7 +98,7 @@ static void
 inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
   inlinedSet.set_add(fn);
   Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
+  collect_asts(fn, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (FnSymbol* fn = call->isResolved()) {

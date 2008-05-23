@@ -51,7 +51,7 @@ static void deadVariableEliminationHelp(FnSymbol* fn,
 
 void deadVariableElimination(FnSymbol* fn) {
   Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
+  collect_asts(fn, asts);
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
   buildDefUseMaps(fn, defMap, useMap);
@@ -68,7 +68,7 @@ void deadVariableElimination(FnSymbol* fn) {
 //
 void deadExpressionElimination(FnSymbol* fn) {
   Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
+  collect_asts(fn, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* expr = toSymExpr(ast)) {
       if (expr->parentExpr && expr == expr->getStmtExpr())
@@ -104,7 +104,7 @@ void deadCodeElimination(FnSymbol* fn) {
     forv_Vec(Expr, expr, bb->exprs) {
       bool essential = false;
       Vec<BaseAST*> asts;
-      collect_asts(&asts, expr);
+      collect_asts(expr, asts);
       forv_Vec(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
           // mark function calls and essential primitives as essential
@@ -137,7 +137,7 @@ void deadCodeElimination(FnSymbol* fn) {
 
   forv_Vec(Expr, expr, workSet) {
     Vec<BaseAST*> asts;
-    collect_asts(&asts, expr);
+    collect_asts(expr, asts);
     forv_Vec(BaseAST, ast, asts) {
       if (SymExpr* se = toSymExpr(ast)) {
         if (Vec<SymExpr*>* defs = UD.get(se)) {

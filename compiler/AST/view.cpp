@@ -104,10 +104,7 @@ list_ast(BaseAST* ast, int indent = 0) {
     if (list_line(expr))
       new_indent = indent+2;
 
-  Vec<BaseAST*> asts;
-  get_ast_children(ast, asts);
-  forv_Vec(BaseAST, ast, asts)
-    list_ast(ast, new_indent);
+  AST_CHILDREN_CALL(ast, list_ast, new_indent);
 
   if (Expr* expr = toExpr(ast)) {
     if (toCallExpr(expr)) {
@@ -232,10 +229,7 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     printf("'");
   }
 
-  Vec<BaseAST*> asts;
-  get_ast_children(ast, asts);
-  forv_Vec(BaseAST, ast, asts)
-    view_ast(ast, number, mark, indent + 2);
+  AST_CHILDREN_CALL(ast, view_ast, number, mark, indent+2);
 
   if (toExpr(ast))
     printf(")");
@@ -371,7 +365,7 @@ html_print_fnsymbol( FILE* html_file, int pass, FnSymbol* fn) {
 }
 
 static void
-html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
+html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
   if (Expr* expr = toExpr(ast)) {
     if (BlockStmt *b=toBlockStmt(expr)) {
       fprintf(html_file, "<DL>\n");
@@ -501,10 +495,7 @@ html_view_ast( FILE* html_file, int pass, BaseAST* ast) {
     }
   }
 
-  Vec<BaseAST*> asts;
-  get_ast_children(ast, asts);
-  forv_Vec(BaseAST, ast, asts)
-    html_view_ast( html_file, pass, ast);
+  AST_CHILDREN_CALL(ast, html_view_ast, html_file, pass);
 
   if (Expr* expr = toExpr(ast)) {
     if (DefExpr* e = toDefExpr(expr)) {
@@ -567,7 +558,7 @@ void html_view(const char* passName) {
     html_print_symbol(html_file, uid, mod, true);
     fprintf(html_file, "</B>\n");
     for_alist(stmt, mod->block->body)
-      html_view_ast( html_file, uid, stmt);
+      html_view_ast(stmt, html_file, uid);
     fprintf(html_file, "</HTML>\n");
     fclose(html_file);
   }

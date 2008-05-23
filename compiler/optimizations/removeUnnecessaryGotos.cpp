@@ -10,7 +10,7 @@
 void removeUnnecessaryGotos(FnSymbol* fn) {
   Vec<BaseAST*> asts;
   Vec<BaseAST*> labels;
-  collect_asts(&asts, fn);
+  collect_asts(fn, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (GotoStmt* gotoStmt = toGotoStmt(ast)) {
       DefExpr* def = toDefExpr(gotoStmt->next);

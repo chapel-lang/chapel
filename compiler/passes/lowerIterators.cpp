@@ -22,7 +22,7 @@ expandIteratorInline(CallExpr* call) {
   call->remove();
   body->replace(ibody);
   Vec<BaseAST*> asts;
-  collect_asts(&asts, ibody);
+  collect_asts(ibody, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIMITIVE_YIELD)) {

@@ -96,7 +96,7 @@ localCopyPropagationCore(BasicBlock* bb,
 
   forv_Vec(Expr, expr, bb->exprs) {
     Vec<BaseAST*> asts;
-    collect_asts(&asts, expr);
+    collect_asts(expr, asts);
 
     //
     // replace uses with available copies
@@ -242,7 +242,7 @@ void globalCopyPropagation(FnSymbol* fn) {
     forv_Vec(Expr, expr, bb->exprs) {
 
       Vec<BaseAST*> asts;
-      collect_asts(&asts, expr);
+      collect_asts(expr, asts);
 
       //
       // invalidate available copies based on defs
@@ -359,7 +359,7 @@ void globalCopyPropagation(FnSymbol* fn) {
     forv_Vec(Expr, expr, bb->exprs) {
 
       Vec<BaseAST*> asts;
-      collect_asts(&asts, expr);
+      collect_asts(expr, asts);
 
       //
       // invalidate available copies based on defs
@@ -559,7 +559,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 
 void singleAssignmentRefPropagation(FnSymbol* fn) {
   Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
+  collect_asts(fn, asts);
 
   Vec<Symbol*> refSet;
   Vec<Symbol*> refVec;

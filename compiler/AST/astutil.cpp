@@ -7,59 +7,41 @@
 #include "type.h"
 
 
-void collect_stmts(Vec<Expr*>* exprs, Expr* expr) {
-  exprs->add(expr);
-  if (expr->astTag == STMT_BLOCK || expr->astTag == STMT_COND) {
-    Vec<BaseAST*> next_asts;
-    get_ast_children(expr, next_asts);
-    forv_Vec(BaseAST, next_ast, next_asts) {
-      if (Expr* expr = toExpr(next_ast))
-        collect_stmts(exprs, expr);
+void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
+  if (Expr* expr = toExpr(ast)) {
+    stmts.add(expr);
+    if (expr->astTag == STMT_BLOCK || expr->astTag == STMT_COND) {
+      AST_CHILDREN_CALL(ast, collect_stmts, stmts);
     }
   }
 }
 
-void collect_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
-  asts->add(ast);
-  Vec<BaseAST*> next_asts;
-  get_ast_children(ast, next_asts);
-  forv_Vec(BaseAST, next_ast, next_asts) {
-    collect_asts(asts, next_ast);
+void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
+  asts.add(ast);
+  AST_CHILDREN_CALL(ast, collect_asts, asts);
+}
+
+void collect_asts_postorder(BaseAST* ast, Vec<BaseAST*>& asts) {
+  AST_CHILDREN_CALL(ast, collect_asts_postorder, asts);
+  asts.add(ast);
+}
+
+static void collect_top_asts_internal(BaseAST* ast, Vec<BaseAST*>& asts) {
+  if (!isSymbol(ast) || isArgSymbol(ast)) {
+    AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
+    asts.add(ast);
   }
 }
 
-void collect_asts(Vec<BaseAST*>* asts) {
-  collect_asts(asts, rootModule);
+void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
+  AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
+  asts.add(ast);
 }
-
-void collect_asts_postorder(Vec<BaseAST*>* asts, BaseAST* ast) {
-  Vec<BaseAST*> next_asts;
-  get_ast_children(ast, next_asts);
-  forv_Vec(BaseAST, next_ast, next_asts) {
-    collect_asts_postorder(asts, next_ast);
-  }
-  asts->add(ast);
-}
-
-void collect_asts_postorder(Vec<BaseAST*>* asts) {
-  collect_asts_postorder(asts, rootModule);
-}
-
-
-void collect_top_asts(Vec<BaseAST*>* asts, BaseAST* ast) {
-  Vec<BaseAST*> next_asts;
-  get_ast_children(ast, next_asts);
-  forv_Vec(BaseAST, next_ast, next_asts) {
-    if (!isSymbol(next_ast) || isArgSymbol(next_ast))
-      collect_top_asts(asts, next_ast);
-  }
-  asts->add(ast);
-}
-
+              
 
 void reset_line_info(BaseAST* baseAST, int lineno) {
   Vec<BaseAST*> asts;
-  collect_asts(&asts, baseAST);
+  collect_asts(baseAST, asts);
   forv_Vec(BaseAST, ast, asts) {
     ast->lineno = lineno;
   }
@@ -112,7 +94,7 @@ void buildDefUseMaps(FnSymbol* fn,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
+  collect_asts(fn, asts);
   Vec<Symbol*> symSet;
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
@@ -217,7 +199,7 @@ void buildDefUseSets(Vec<Symbol*>& syms,
                      Vec<SymExpr*>& defSet,
                      Vec<SymExpr*>& useSet) {
   Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
+  collect_asts(fn, asts);
   Vec<Symbol*> symSet;
   forv_Vec(Symbol, sym, syms) {
     symSet.set_add(sym);
@@ -249,7 +231,7 @@ void buildDefUseSets(Vec<Symbol*>& syms,
 
 void update_symbols(BaseAST* ast, ASTMap* map) {
   Vec<BaseAST*> asts;
-  collect_asts(&asts, ast);
+  collect_asts(ast, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* sym_expr = toSymExpr(ast)) {
       XSUB(sym_expr->var, Symbol);
@@ -311,20 +293,12 @@ void insert_help(BaseAST* ast,
     expr->parentExpr = parentExpr;
     parentExpr = expr;
   }
-
-  Vec<BaseAST*> asts;
-  get_ast_children(ast, asts);
-  forv_Vec(BaseAST, ast, asts)
-    insert_help(ast, parentExpr, parentSymbol);
+  AST_CHILDREN_CALL(ast, insert_help, parentExpr, parentSymbol);
 }
 
 
-void remove_help(BaseAST* ast) {
-  Vec<BaseAST*> asts;
-  get_ast_children(ast, asts);
-  forv_Vec(BaseAST, a, asts)
-    remove_help(a);
-
+void remove_help(BaseAST* ast, int dummy) {
+  AST_CHILDREN_CALL(ast, remove_help, dummy);
   if (Expr* expr = toExpr(ast)) {
     expr->parentSymbol = NULL;
     expr->parentExpr = NULL;
@@ -352,7 +326,7 @@ static void
 pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   types.set_add(ts);
   Vec<BaseAST*> asts;
-  collect_asts(&asts, ts);
+  collect_asts(ts, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (def->sym->type && !types.set_in(def->sym->type->symbol))
@@ -367,7 +341,7 @@ static void
 pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   fns.set_add(fn);
   Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
+  collect_asts(fn, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (FnSymbol* next = call->isResolved())

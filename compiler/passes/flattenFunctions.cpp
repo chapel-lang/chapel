@@ -28,7 +28,7 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
 static void
 findOuterVars(FnSymbol* fn, Vec<Symbol*>* uses) {
   Vec<BaseAST*> asts;
-  collect_asts(&asts, fn);
+  collect_asts(fn, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
@@ -43,7 +43,7 @@ findOuterVars(FnSymbol* fn, Vec<Symbol*>* uses) {
 static void
 addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
   Vec<BaseAST*> asts;
-  collect_asts(&asts, fn->body);
+  collect_asts(fn->body, asts);
   forv_Vec(Symbol, sym, *vars) {
     if (sym) {
       Type* type = sym->type;
@@ -120,7 +120,7 @@ void flattenFunctions(void) {
     change = false;
     forv_Vec(FnSymbol, fn, all_nested_functions) {
       Vec<BaseAST*> asts;
-      collect_top_asts(&asts, fn);
+      collect_top_asts(fn, asts);
       Vec<Symbol*>* uses = args_map.get(fn);
       forv_Vec(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {

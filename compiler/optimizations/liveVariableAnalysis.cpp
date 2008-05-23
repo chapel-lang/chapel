@@ -59,7 +59,7 @@ liveVariableAnalysis(FnSymbol* fn,
     }
     forv_Vec(Expr, expr, bb->exprs) {
       Vec<BaseAST*> asts;
-      collect_asts(&asts, expr);
+      collect_asts(expr, asts);
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
           if (useSet.set_in(se)) {

@@ -1182,7 +1182,7 @@ instantiate_tuple(FnSymbol* fn) {
 //   CallExpr* typeConstructorCall = NULL;
 //   if (!tuple) {
 //     Vec<BaseAST*> asts;
-//     collect_asts(&asts, fn);
+//     collect_asts(fn, asts);
 //     forv_Vec(BaseAST, ast, asts) {
 //       if (CallExpr* call = toCallExpr(ast)) {
 //         if (call->isNamed("_type_construct__tuple")) {
@@ -1546,7 +1546,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
 
   fprintf(outfile, " {\n");
   Vec<BaseAST*> asts;
-  collect_top_asts(&asts, body);
+  collect_top_asts(body, asts);
 
   if (fShortNames) {
     Vec<Symbol*> defSet;

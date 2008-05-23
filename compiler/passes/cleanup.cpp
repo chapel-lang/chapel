@@ -108,7 +108,7 @@ static void flatten_primary_methods(FnSymbol* fn) {
 static void change_cast_in_where(FnSymbol* fn) {
   if (fn->where) {
     Vec<BaseAST*> asts;
-    collect_asts(&asts, fn->where);
+    collect_asts(fn->where, asts);
     forv_Vec(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isNamed("_cast")) {
@@ -148,7 +148,7 @@ void cleanup(void) {
   initializeOuterModules(theProgram);
 
   Vec<BaseAST*> asts;
-  collect_asts(&asts);
+  collect_asts(rootModule, asts);
 
   // handle forall's in array type declaration with initialization
   forv_Vec(BaseAST, ast, asts) {
@@ -177,7 +177,7 @@ void cleanup(void) {
   }
 
   asts.clear();
-  collect_asts(&asts);
+  collect_asts(rootModule, asts);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     if (DefExpr* def = toDefExpr(ast)) {

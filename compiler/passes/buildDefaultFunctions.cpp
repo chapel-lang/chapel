@@ -35,7 +35,7 @@ void buildDefaultFunctions(void) {
   build_chpl_main();
 
   Vec<BaseAST*> asts;
-  collect_asts(&asts);
+  collect_asts(rootModule, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (TypeSymbol* type = toTypeSymbol(ast)) {
       if (ClassType* ct = toClassType(type->type)) {
@@ -137,7 +137,7 @@ static FnSymbol* function_exists(const char* name,
 static void build_getter(ClassType* ct, Symbol *field) {
   if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken->symbol->name, ct->symbol->name)) {
     Vec<BaseAST*> asts;
-    collect_asts(&asts, fn);
+    collect_asts(fn, asts);
     forv_Vec(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isNamed(field->name) && call->numActuals() == 2) {

@@ -36,7 +36,7 @@ checkUseBeforeDefs() {
       Vec<Symbol*> undefined;
       Vec<BaseAST*> asts;
       Vec<Symbol*> defined;
-      collect_asts_postorder(&asts, fn);
+      collect_asts_postorder(fn, asts);
       forv_Vec(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
           if (call->isPrimitive(PRIMITIVE_MOVE))
@@ -170,7 +170,7 @@ static void heapAllocateLocals() {
 
       // collect asts in fn
       Vec<BaseAST*> asts;
-      collect_asts(&asts, fn);
+      collect_asts(fn, asts);
 
       // collect defs of all local variables
       Vec<DefExpr*> defSet;
@@ -205,7 +205,7 @@ static void heapAllocateLocals() {
   }
 
   Vec<BaseAST*> asts;
-  collect_asts(&asts);
+  collect_asts(rootModule, asts);
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
   buildDefUseMaps(heapSet, asts, defMap, useMap);
@@ -303,7 +303,7 @@ static void heapAllocateGlobals() {
   Vec<Symbol*> heapVec; // vec of symbols that should be heap allocated
   Vec<BaseAST*> asts;
 
-  collect_asts(&asts);
+  collect_asts(rootModule, asts);
 
   //
   // collect all global variables less parameters and compiler temps
@@ -390,7 +390,7 @@ void normalize(BaseAST* base) {
   Vec<BaseAST*> asts;
 
   asts.clear();
-  collect_asts( &asts, base);
+  collect_asts(base, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = toFnSymbol(ast)) {
       currentLineno = fn->lineno;
@@ -405,7 +405,7 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
-  collect_asts(&asts, base);
+  collect_asts(base, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = toFnSymbol(ast)) {
       normalize_returns(fn);
@@ -413,7 +413,7 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
-  collect_asts_postorder(&asts, base);
+  collect_asts_postorder(base, asts);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     if (FnSymbol* a = toFnSymbol(ast))
@@ -422,7 +422,7 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
-  collect_asts_postorder(&asts, base);
+  collect_asts_postorder(base, asts);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     if (SymExpr* a = toSymExpr(ast)) {
@@ -431,7 +431,7 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
-  collect_asts_postorder(&asts, base);
+  collect_asts_postorder(base, asts);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     if (DefExpr* a = toDefExpr(ast)) {
@@ -442,7 +442,7 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
-  collect_asts_postorder(&asts, base);
+  collect_asts_postorder(base, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* sym = toSymExpr(ast)) {
       if (sym == sym->getStmtExpr() && isFnSymbol(sym->parentSymbol)) {
@@ -455,7 +455,7 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
-  collect_asts_postorder(&asts, base);
+  collect_asts_postorder(base, asts);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     if (CallExpr* a = toCallExpr(ast)) {
@@ -465,7 +465,7 @@ void normalize(BaseAST* base) {
   }
 
   asts.clear();
-  collect_asts_postorder(&asts, base);
+  collect_asts_postorder(base, asts);
   forv_Vec(BaseAST, ast, asts) {
     currentLineno = ast->lineno;
     if (Expr* a = toExpr(ast)) {
@@ -479,7 +479,7 @@ void normalize(BaseAST* base) {
 static void normalize_returns(FnSymbol* fn) {
   Vec<BaseAST*> asts;
   Vec<CallExpr*> rets;
-  collect_asts(&asts, fn);
+  collect_asts(fn, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* returnStmt = toCallExpr(ast)) {
       if (returnStmt->isPrimitive(PRIMITIVE_RETURN) ||
@@ -597,7 +597,7 @@ static void apply_getters_setters(FnSymbol* fn) {
   // Note:
   //   call(call or )( indicates partial
   Vec<BaseAST*> asts;
-  collect_asts_postorder(&asts, fn);
+  collect_asts_postorder(fn, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       currentLineno = call->lineno;
@@ -876,9 +876,9 @@ static void hack_resolve_types(Expr* expr) {
 
 static void fixup_array_formals(FnSymbol* fn) {
   Vec<BaseAST*> asts;
-  collect_top_asts(&asts, fn);
+  collect_top_asts(fn, asts);
   Vec<BaseAST*> all_asts;
-  collect_asts(&all_asts, fn);
+  collect_asts(fn, all_asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isNamed("_build_array_type")) {
@@ -1077,7 +1077,7 @@ fixup_query_formals(FnSymbol* fn) {
       continue;
     if (DefExpr* def = toDefExpr(formal->typeExpr->body.tail)) {
       Vec<BaseAST*> asts;
-      collect_asts(&asts, fn);
+      collect_asts(fn, asts);
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
           if (se->var == def->sym) {
@@ -1125,7 +1125,7 @@ fixup_query_formals(FnSymbol* fn) {
       }
       if (queried) {
         Vec<BaseAST*> asts;
-        collect_asts(&asts, fn);
+        collect_asts(fn, asts);
         SymExpr* base = toSymExpr(call->baseExpr);
         if (!base)
           USR_FATAL(base, "illegal queried type expression");
