@@ -76,7 +76,7 @@ class Symbol : public BaseAST {
   virtual FnSymbol* getFnSymbol(void);
   virtual bool isImmediate();
 
-  const char* hasPragma(const char* str);
+  bool hasPragma(const char* str);
   void removePragma(const char* str);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)

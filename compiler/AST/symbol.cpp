@@ -235,14 +235,12 @@ FnSymbol* Symbol::getFnSymbol(void) {
 }
 
 
-const char* Symbol::hasPragma(const char* str) {
+bool Symbol::hasPragma(const char* str) {
   forv_Vec(const char, pragma, pragmas) {
     if (!strcmp(pragma, str))
-      return pragma;
+      return true;
   }
-  if (!toModuleSymbol(this) && getModule())
-    return getModule()->hasPragma(str);
-  return NULL;
+  return false;
 }
 
 

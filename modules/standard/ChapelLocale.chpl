@@ -6,7 +6,6 @@ const LocaleSpace: domain(1) = [0..numLocales-1];
 // query a single variable in a non-blocking manner
 var doneCreatingLocales: bool;
 
-pragma "locale"
 class locale {
   const chpl_id: int;
 
