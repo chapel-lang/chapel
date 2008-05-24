@@ -546,19 +546,19 @@
 
 < and & permutations
 =========================
-0
+1
 1
 0
 
 < and ^ permutations
 =========================
-1
+4
 4
 1
 
 < and | permutations
 =========================
-1
+5
 5
 1
 
@@ -642,19 +642,19 @@
 
 <= and & permutations
 =========================
-0
+1
 1
 0
 
 <= and ^ permutations
 =========================
-1
+4
 4
 1
 
 <= and | permutations
 =========================
-1
+5
 5
 1
 
@@ -738,19 +738,19 @@
 
 > and & permutations
 =========================
-1
+0
 0
 1
 
 > and ^ permutations
 =========================
-0
+5
 5
 0
 
 > and | permutations
 =========================
-0
+5
 5
 0
 
@@ -834,19 +834,19 @@
 
 >= and & permutations
 =========================
-1
+0
 0
 1
 
 >= and ^ permutations
 =========================
-0
+5
 5
 0
 
 >= and | permutations
 =========================
-0
+5
 5
 0
 
@@ -936,13 +936,13 @@
 
 == and ^ permutations
 =========================
-0
+5
 5
 0
 
 == and | permutations
 =========================
-0
+5
 5
 0
 
@@ -1032,13 +1032,13 @@
 
 != and ^ permutations
 =========================
-1
+4
 4
 1
 
 != and | permutations
 =========================
-1
+5
 5
 1
 
@@ -1086,13 +1086,13 @@
 
 & and < permutations
 =========================
-1
+0
 1
 0
 
 & and <= permutations
 =========================
-1
+0
 1
 0
 
@@ -1116,7 +1116,7 @@
 
 & and != permutations
 =========================
-1
+0
 1
 0
 
@@ -1140,15 +1140,16 @@
 
 & and && permutations
 =========================
-1
-1
-0
+false
+false
+In rettru
+false
 
 & and || permutations
 =========================
-1
-1
-0
+true
+true
+false
 
 ^ and * permutations
 =========================
@@ -1182,37 +1183,37 @@
 
 ^ and < permutations
 =========================
-1
+3
 1
 3
 
 ^ and <= permutations
 =========================
-1
+3
 1
 3
 
 ^ and > permutations
 =========================
-0
+2
 0
 2
 
 ^ and >= permutations
 =========================
-0
+2
 0
 2
 
 ^ and == permutations
 =========================
-0
+2
 0
 2
 
 ^ and != permutations
 =========================
-1
+3
 1
 3
 
@@ -1236,15 +1237,19 @@
 
 ^ and && permutations
 =========================
-1
-1
-3
+In rettru
+true
+In rettru
+true
+true
 
 ^ and || permutations
 =========================
-1
-1
-3
+In rettru
+true
+In rettru
+true
+false
 
 | and * permutations
 =========================
@@ -1278,37 +1283,37 @@
 
 | and < permutations
 =========================
-1
+3
 1
 3
 
 | and <= permutations
 =========================
-1
+3
 1
 3
 
 | and > permutations
 =========================
-0
+2
 0
 2
 
 | and >= permutations
 =========================
-0
+2
 0
 2
 
 | and == permutations
 =========================
-0
+2
 0
 2
 
 | and != permutations
 =========================
-1
+3
 1
 3
 
@@ -1332,15 +1337,18 @@
 
 | and && permutations
 =========================
-1
-1
-3
+In retfls
+false
+In retfls
+false
+true
 
 | and || permutations
 =========================
-1
-1
-3
+true
+true
+In rettru
+true
 
 && and * permutations
 =========================
@@ -1410,21 +1418,22 @@
 
 && and & permutations
 =========================
-1
-1
-1
+false
+In rettru
+false
+false
 
 && and ^ permutations
 =========================
-1
-4
-1
+false
+true
+false
 
 && and | permutations
 =========================
-1
-5
-1
+false
+true
+false
 
 && and && permutations
 =========================
@@ -1506,31 +1515,31 @@ or and != permutations
 
 or and & permutations
 =========================
-1
-1
-1
+true
+false
+true
 
 or and ^ permutations
 =========================
-1
-4
-1
+true
+false
+true
 
 or and | permutations
 =========================
-1
-5
-1
+true
+true
+true
 
 or and && permutations
 =========================
-1
-1
-1
+false
+false
+false
 
 or and || permutations
 =========================
-1
-1
-1
+false
+false
+false
 

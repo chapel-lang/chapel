@@ -18,6 +18,6 @@ forall (i,j) in ProbDom {
 writeln("A is:\n", A, "\n");
 
 forall ij in ProbDom do
-  B(ij) = (+ reduce W(ij)*A(ij+StencDom)) / 6;
+  B(ij) = + reduce (W(ij)*A(ij+StencDom)) / 6;
 
 writeln("B is:\n", B, "\n");

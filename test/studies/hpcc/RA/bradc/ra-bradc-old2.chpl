@@ -106,7 +106,7 @@ def HPCCstarts(in n:int(64)) { // BLC: unfortunate type specification
   }
 
   var high = 62;    // BLC: magic number -- name?
-  while (n >> high) & 1 == 0 do
+  while ((n >> high) & 1) == 0 do
     high -= 1;
 
   var ran = 0x2: uint(64);

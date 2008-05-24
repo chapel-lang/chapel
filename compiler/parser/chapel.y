@@ -94,6 +94,7 @@ NOTES
 %token TITERATOR
 %token TLABEL
 %token TLET
+%token TMINUSMINUS
 %token TMODULE
 %token TNEW
 %token TNIL
@@ -101,6 +102,7 @@ NOTES
 %token TOTHERWISE
 %token TOUT
 %token TPARAM
+%token TPLUSPLUS
 %token TPRAGMA
 %token TPRIMITIVE
 %token TRECORD
@@ -148,7 +150,6 @@ NOTES
 %token TCOMMA
 %token TDOT
 %token TDOTDOTDOT
-%token TNOTCOLON
 %token TQUESTION
 
 %token TLCBR TRCBR
@@ -213,7 +214,6 @@ NOTES
 %left TNOELSE
 %left TELSE
 %left TCOMMA
-%left TREDUCE TSCAN
 %left TFOR
 %left TFORALL
 %left TIF
@@ -224,21 +224,20 @@ NOTES
 %right TSTARTUPLE
 %left TOR
 %left TAND
-%right TNOT
-%left TEQUAL TNOTEQUAL
-%left TLESSEQUAL TGREATEREQUAL TLESS TGREATER
 %left TBOR
 %left TBXOR
 %left TBAND
+%left TEQUAL TNOTEQUAL
+%left TLESSEQUAL TGREATEREQUAL TLESS TGREATER
 %left TSHIFTLEFT TSHIFTRIGHT
 %left TPLUS TMINUS
+%right TUPLUS TUMINUS 
 %left TSTAR TDIVIDE TMOD
-%left TCOLON TNOTCOLON
-%right TUPLUS TUMINUS TBNOT
-%right TMINUSMINUS TPLUSPLUS
+%right TBNOT TNOT
+%left TREDUCE TSCAN
 %right TEXP
-%left TLP TLSBR
-%left TDOT
+%left TCOLON
+%left TDOT TLP TLSBR
 
 %% 
 
@@ -1461,9 +1460,9 @@ stmt_level_expr:
     { $$ = new CallExpr("+", $2); }
 | TMINUS expr %prec TUMINUS
     { $$ = new CallExpr("-", $2); }
-| TMINUSMINUS expr
+| TMINUSMINUS expr %prec TUMINUS
     { $$ = buildPreDecIncWarning($2, '-'); }
-| TPLUSPLUS expr
+| TPLUSPLUS expr %prec TUPLUS
     { $$ = buildPreDecIncWarning($2, '+'); }
 | TNOT expr
     { $$ = new CallExpr("!", $2); }

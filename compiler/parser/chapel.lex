@@ -166,7 +166,6 @@ yield           processToken(TYIELD);
 
 "**"            processToken(TEXP);
 
-"!:"            processToken(TNOTCOLON);
 ":"             processToken(TCOLON);
 ";"             processToken(TSEMI);
 ","             processToken(TCOMMA);

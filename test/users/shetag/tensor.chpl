@@ -38,7 +38,7 @@ class Vector {
   }
     
   def inner(other) {
-    return + reduce a*other.a;
+    return + reduce (a*other.a);
   }
     
   def gaxpy(alpha,other,beta) {
@@ -146,7 +146,7 @@ class Matrix {
     //Note that v3, of type Vector, wraps an array of type [1..m]. 
     //Comment: Here [1..m] is wrapped inside a Vector, while case 1 above
     //passes [1..m] in directly. Otherwise, the two are identical. 
-    [i in 1..n] r.setitem(i, + reduce a(i,1..m)*v.a);
+    [i in 1..n] r.setitem(i, + reduce (a(i,1..m)*v.a));
   
     //Case 3 -- if v is of type Vector, then this gives a tensor product.
     //tested by m4.mul(v3) from main().  
@@ -171,7 +171,7 @@ class Matrix {
     //Note that v4, of type Vector, wraps an array of type [1..n].
     //Comment: Here [1..n] is wrapped inside a Vector, while case 1 above 
     //passes [1..n] in directly. Otherwise, the two are identical.
-    [i in 1..m] r.setitem(i, + reduce v.a*a(1..n,i));
+    [i in 1..m] r.setitem(i, + reduce (v.a*a(1..n,i)));
 
     //Case 3 -- if v is of type Vector, then this gives a tensor product.
     //tested by m4.rmul(v4) from main().

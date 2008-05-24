@@ -6,7 +6,7 @@ var i2 = 2:int(16);
 var i3 = 3;
 var i4 = 3000000000;
 var i5 = 10000000000000000000;
-var i6 = -1:uint(32);
+var i6 = (-1):uint(32);
 
 printVarInfo(i1, 1);
 printVarInfo(i2, 2);

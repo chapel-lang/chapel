@@ -251,37 +251,43 @@ those listed later.
 \hline
 {\bf operators} & {\bf associativity} & {\bf use} \\
 \hline
-\verb@.@ & left & member access \\
-\verb@() []@ & left & function call, index expression \\
-\verb@**@ & right & exponentiation \\
-unary \verb@+ - ~@ & right & sign and bitwise negation \\
+\verb@. () []@ & left & member access, function call, index expression \\
 \verb@:@ & left & cast\\
-\verb@* / %@ & left & multiply, divide, and modulus \\
-\verb@+ -@ & left & plus and minus \\
-\verb@&@ & left & bitwise and \\
-\verb@^@ & left & bitwise xor \\
+\verb@**@ & right & exponentiation \\
+\verb@reduce scan@ & left & reduction and scan\\
+\verb@! ~@ & right & logical and bitwise negation \\
+\verb@* / %@ & left & multiplication, division, and modulus \\
+unary \verb@+ -@ & right & positive identity and negation \\
+\verb@+ -@ & left & addition and subtraction \\
 \verb@<< >>@ & left & shift left and shift right \\
-\verb@|@ & left & bitwise or \\
 \verb@<= >= < >@ & left & ordered comparison \\
 \verb@== !=@ & left & equality comparison \\
-\verb@!@ & right & logical negation \\
-\verb@&&@ & left & logical and \\
-\verb@||@ & left & logical or \\
-\verb@..@ & left & ranges \\
-\verb@in@ & left & forall expressions \\
+\verb@&@ & left & bitwise/logical and \\
+\verb@^@ & left & bitwise/logical xor \\
+\verb@|@ & left & bitwise/logical or \\
+\verb@&&@ & left & short-circuiting logical and \\
+\verb@||@ & left & short-circuiting logical or \\
+\verb@..@ & left & range construction \\
+\verb@in@ & left & forall expression \\
 \verb@by@ & left & striding ranges and domains \\
-\verb@if@ & left & conditional expressions \\
-\verb@reduce scan@ & left & reductions and scans\\
+\verb@if...then...[else]@ & left & conditional expressions \\
+\verb@forall...in@ & left & parallel iteration expressions \\
+\verb@for...in@ & left & serial iteration expressions \\
 \verb@,@ & left & comma separated expressions \\
 \hline
 \end{tabular}
 \end{center}
 
 \begin{rationale}
-In determining the relative precedence of exponentiation, unary plus
-and minus, and casts, we encountered a circularity in intuition.  The
-following three examples show our intuition about how these
-expressions should be parenthesized:
+In general, our operator precedence is based on that of the C family
+of languages including C++, Java, Perl, and C\#.  We comment on a few
+of the differences and unique factors here.
+
+We find that there is tension between the relative precedence of
+exponentiation, unary minus/plus, and casts.  The following three
+expressions show our intuition for how these expressions should be
+parenthesized.
+
 \begin{center}
 \begin{tabular}{lcl}
 \chpl{-2**4} & wants & \chpl{-(2**4)} \\
@@ -289,16 +295,85 @@ expressions should be parenthesized:
 \chpl{2:uint**4:uint} & wants & \chpl{(2:uint)**(4:uint)} \\
 \end{tabular}
 \end{center}
-Following this, we would make exponentiation take precedence over
-unary plus and minus, unary plus and minus take precedence over casts,
-and casts take precedence over exponentiation.  Assuming that a
-precedence wheel is more complicated than a precedence table, we
-dropped a want to give
+
+Trying to support all three of these cases results in a
+circularity---exponentiation wants precedence over unary minus, unary
+minus wants precedence over casts, and casts want precedence over
+exponentiation.  We chose to break the circularity by making unary
+minus have a lower precedence.  This means that for the second case
+above:
+
+
 \begin{center}
 \begin{tabular}{lcl}
-\chpl{2:uint**4:uint} & needs & \chpl{((2:uint)**4):uint} \\
+\chpl{-2:uint} & requires & \chpl{(-2):uint} \\
 \end{tabular}
 \end{center}
+
+We also chose to depart from the C family of languages by making unary
+plus/minus have lower precedence than binary multiplication, division,
+and modulus as in Fortran.  We have found very few cases that
+distinguish between these cases.  An interesting one is:
+
+\begin{center}
+\begin{tabular}{l}
+\chpl{const minint = min(int(32));}\\
+\chpl{...-minint/2...}
+\end{tabular}
+\end{center}
+
+Intuitively, this should result in a positive value, yet C's
+precedence rules results in a negative value due to asymmetry in
+modern integer representations.  If we learn of cases that argue in
+favor of the C approach, we would likely reverse this decision in
+order to more closely match C.
+
+We were tempted to diverge from the C precedence rules for the binary
+bitwise operators to make them bind less tightly than comparisons.
+This would allow us to interpret:
+
+\begin{center}
+\begin{tabular}{lcl}
+\chpl{a | b == 0} & as & \chpl{(a | b) == 0} \\
+\end{tabular}
+\end{center}
+
+However, given that no other popular modern language has made this
+change, we felt it unwise to stray from the pack.  The typical
+rationale for the C ordering is to allow these operators to be used as
+non-short-circuiting logical operations.
+
+One final area of note is the precedence of reductions.  Two common
+cases tend to argue for making reductions very low or very high in the
+precedence table:
+
+\begin{center}
+\begin{tabular}{lcl}
+\chpl{max reduce A - min reduce A} & wants & \chpl{(max reduce A) - (min reduce A)} \\
+\chpl{max reduce A * B} & wants & \chpl{max reduce (A * B)} \\
+\end{tabular}
+\end{center}
+
+The first statement would require reductions to have a higher
+precedence than the arithmetic operators while the second would
+require them to be lower.  We opted to make reductions have high
+precedence due to the argument that they tend to resemble unary
+operators.  Thus, to support our intuition:
+
+\begin{center}
+\begin{tabular}{lcl}
+\chpl{max reduce A * B} & requires & \chpl{max reduce (A * B)} \\
+\end{tabular}
+\end{center}
+
+This choice also has the (arguably positive) effect of making the
+unparenthesized version of this statement result in an aggregate value
+if A and B are both aggregates---the reduction of A results in a
+scalar which promotes when being multiplied by B, resulting in an
+aggregate.  Our intuition is that users who forget the parenthesis
+will quickly learn of their error when the resulting expression is not
+a scalar as expected.
+
 \end{rationale}
 
 \subsection{Operator Expressions}

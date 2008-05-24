@@ -348,6 +348,8 @@ pragma "inline" def !(a: bool) return __primitive("!", a);
 pragma "inline" def isTrue(a: bool) return a;
 pragma "inline" def isTrue(param a: bool) param return a;
 
+def isTrue(a: integral) { compilerError("short-circuiting logical operators not supported on integers"); }
+
 pragma "inline" def !(param a: bool) param return __primitive("!", a);
 
 //
@@ -1065,7 +1067,7 @@ pragma "inline" def _cast(type t, x: complex(?w)) where t == string {
     return "nan";
   var re = x.re:string, op = " + ", im = x.im:string;
   if x.im < 0 {
-    im = -x.im:string;
+    im = (-x.im):string;
     op = " - ";
   } else if im == "-0.0" {
     im = "0.0";

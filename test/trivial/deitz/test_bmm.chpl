@@ -48,7 +48,7 @@ def oldBitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
   for i in 0..7:uint(64) {
     var left = (x & (0xFF:uint(64) << (i*8))) >> (i*8);
     for param j in 0..7:uint(64) {
-      if (0 != left & ((yTranspose & (0xFF:uint(64) << (j*8))) >> (j*8))) then
+      if (0 != (left & ((yTranspose & (0xFF:uint(64) << (j*8))) >> (j*8)))) then
         result |= 1:uint(64) << (i*8 + j):uint(64);
     }
   }

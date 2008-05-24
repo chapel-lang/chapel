@@ -55,7 +55,7 @@ def HPCC_starts(n:int(64)):uint(64) {
   }
 
   i = 62;
-  while (n2 >> i) & 1 == 0 do i -= 1;
+  while (((n2 >> i) & 1) == 0) do i -= 1;
 
   ran = 0x2;
   while (i > 0) do {

@@ -12,6 +12,6 @@ writeln ("i=", i);
 writeln ("ui=", ui);
 
 i = -23;
-ui = -23:uint;
+ui = (-23):uint;
 writeln ("i=", i);
 writeln ("ui=", ui);

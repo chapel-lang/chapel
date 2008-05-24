@@ -68,7 +68,7 @@ def getNthRandom(in n:int(64)) {
   }
 
   var high = 62;    // BLC: magic number -- name?
-  while (n >> high) & 1 == 0 do
+  while ((n >> high) & 1) == 0 do
     high -= 1;
 
   var ran = 0x2: tableElem;

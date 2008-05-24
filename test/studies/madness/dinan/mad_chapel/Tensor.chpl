@@ -56,5 +56,5 @@ def normf(A) where A.rank == 1 {
 
 // Inner product of A and B
 def inner(A, B) where A.rank == 1 && B.rank == 1 {
-    return + reduce A*B;
+    return + reduce (A*B);
 }
