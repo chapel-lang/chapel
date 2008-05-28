@@ -35,6 +35,7 @@
 		F721A0EF0D455BE300A6B43F /* primitive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A0E20D455BE300A6B43F /* primitive.cpp */; };
 		F721A0F00D455BE300A6B43F /* stmt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A0E30D455BE300A6B43F /* stmt.cpp */; };
 		F721A0F10D455BE300A6B43F /* symbol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A0E40D455BE300A6B43F /* symbol.cpp */; };
+		F721A0F20D455BE300A6B43F /* symscope.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A0E50D455BE300A6B43F /* symscope.cpp */; };
 		F721A0F30D455BE300A6B43F /* type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A0E60D455BE300A6B43F /* type.cpp */; };
 		F721A0F40D455BE300A6B43F /* view.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A0E70D455BE300A6B43F /* view.cpp */; };
 		F721A1020D455C5E00A6B43F /* beautify.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A1010D455C5E00A6B43F /* beautify.cpp */; };
@@ -102,8 +103,6 @@
 		F721A2390D458F6800A6B43F /* chpl_cfg_threads.h in Headers */ = {isa = PBXBuildFile; fileRef = F721A2380D458F6800A6B43F /* chpl_cfg_threads.h */; };
 		F731D5D00D510AE2009F6897 /* chapel.lex in Sources */ = {isa = PBXBuildFile; fileRef = F721A1370D455F3C00A6B43F /* chapel.lex */; };
 		F731D6130D51181B009F6897 /* chapel.y in Sources */ = {isa = PBXBuildFile; fileRef = F721A1380D455F3C00A6B43F /* chapel.y */; };
-		F7A4FD2A0DE7AA9300CDE656 /* chpl_cfg_comm_locales.c in Sources */ = {isa = PBXBuildFile; fileRef = F7A4FD290DE7AA9300CDE656 /* chpl_cfg_comm_locales.c */; };
-		F7A4FD390DE7AB8D00CDE656 /* chplcomm_locales.h in Headers */ = {isa = PBXBuildFile; fileRef = F7A4FD380DE7AB8D00CDE656 /* chplcomm_locales.h */; };
 		F7FAC5100D45384C00C02B67 /* arg.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5010D45384C00C02B67 /* arg.c */; };
 		F7FAC5110D45384C00C02B67 /* chplcast.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5020D45384C00C02B67 /* chplcast.c */; };
 		F7FAC5120D45384C00C02B67 /* chplcomm.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5030D45384C00C02B67 /* chplcomm.c */; };
@@ -209,6 +208,7 @@
 		F721A0E20D455BE300A6B43F /* primitive.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = primitive.cpp; path = ../compiler/AST/primitive.cpp; sourceTree = "<group>"; };
 		F721A0E30D455BE300A6B43F /* stmt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = stmt.cpp; path = ../compiler/AST/stmt.cpp; sourceTree = "<group>"; };
 		F721A0E40D455BE300A6B43F /* symbol.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = symbol.cpp; path = ../compiler/AST/symbol.cpp; sourceTree = "<group>"; };
+		F721A0E50D455BE300A6B43F /* symscope.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = symscope.cpp; path = ../compiler/AST/symscope.cpp; sourceTree = "<group>"; };
 		F721A0E60D455BE300A6B43F /* type.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = type.cpp; path = ../compiler/AST/type.cpp; sourceTree = "<group>"; };
 		F721A0E70D455BE300A6B43F /* view.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = view.cpp; path = ../compiler/AST/view.cpp; sourceTree = "<group>"; };
 		F721A1010D455C5E00A6B43F /* beautify.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = beautify.cpp; path = ../compiler/backend/beautify.cpp; sourceTree = "<group>"; };
@@ -281,6 +281,7 @@
 		F721A1D80D45616800A6B43F /* stmt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stmt.h; path = ../compiler/include/stmt.h; sourceTree = SOURCE_ROOT; };
 		F721A1D90D45616800A6B43F /* stringutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stringutil.h; path = ../compiler/include/stringutil.h; sourceTree = SOURCE_ROOT; };
 		F721A1DA0D45616800A6B43F /* symbol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = symbol.h; path = ../compiler/include/symbol.h; sourceTree = SOURCE_ROOT; };
+		F721A1DB0D45616800A6B43F /* symscope.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = symscope.h; path = ../compiler/include/symscope.h; sourceTree = SOURCE_ROOT; };
 		F721A1DC0D45616800A6B43F /* timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = timer.h; path = ../compiler/include/timer.h; sourceTree = SOURCE_ROOT; };
 		F721A1DD0D45616800A6B43F /* type.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = type.h; path = ../compiler/include/type.h; sourceTree = SOURCE_ROOT; };
 		F721A1DE0D45616800A6B43F /* vec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vec.h; path = ../compiler/include/vec.h; sourceTree = SOURCE_ROOT; };
@@ -421,10 +422,6 @@
 		F772165F0D6D436200DE6EF6 /* Time.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Time.chpl; path = ../modules/standard/Time.chpl; sourceTree = SOURCE_ROOT; };
 		F77216600D6D436200DE6EF6 /* Types.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Types.chpl; path = ../modules/standard/Types.chpl; sourceTree = SOURCE_ROOT; };
 		F79B20160D46AC8B003A01E6 /* cast_code.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cast_code.cpp; path = ../compiler/ifa/cast_code.cpp; sourceTree = "<group>"; };
-		F7A4FD290DE7AA9300CDE656 /* chpl_cfg_comm_locales.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm_locales.c; path = "../runtime/comm-none/chpl_cfg_comm_locales.c"; sourceTree = SOURCE_ROOT; };
-		F7A4FD2D0DE7AADB00CDE656 /* chpl_cfg_comm_locales.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm_locales.c; path = "../runtime/comm-gasnet/chpl_cfg_comm_locales.c"; sourceTree = SOURCE_ROOT; };
-		F7A4FD320DE7AB1B00CDE656 /* chpl_cfg_comm_locales.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm_locales.c; path = "../runtime/comm-armci/chpl_cfg_comm_locales.c"; sourceTree = SOURCE_ROOT; };
-		F7A4FD380DE7AB8D00CDE656 /* chplcomm_locales.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplcomm_locales.h; path = ../runtime/include/chplcomm_locales.h; sourceTree = SOURCE_ROOT; };
 		F7FAC4F90D4537A700C02B67 /* libchpl.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libchpl.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7FAC5010D45384C00C02B67 /* arg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = arg.c; path = ../runtime/src/arg.c; sourceTree = SOURCE_ROOT; };
 		F7FAC5020D45384C00C02B67 /* chplcast.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplcast.c; path = ../runtime/src/chplcast.c; sourceTree = SOURCE_ROOT; };
@@ -531,6 +528,7 @@
 				F721A0E20D455BE300A6B43F /* primitive.cpp */,
 				F721A0E30D455BE300A6B43F /* stmt.cpp */,
 				F721A0E40D455BE300A6B43F /* symbol.cpp */,
+				F721A0E50D455BE300A6B43F /* symscope.cpp */,
 				F721A0E60D455BE300A6B43F /* type.cpp */,
 				F721A0E70D455BE300A6B43F /* view.cpp */,
 			);
@@ -687,6 +685,7 @@
 				F721A1D80D45616800A6B43F /* stmt.h */,
 				F721A1D90D45616800A6B43F /* stringutil.h */,
 				F721A1DA0D45616800A6B43F /* symbol.h */,
+				F721A1DB0D45616800A6B43F /* symscope.h */,
 				F721A1DC0D45616800A6B43F /* timer.h */,
 				F721A1DD0D45616800A6B43F /* type.h */,
 				F721A1DE0D45616800A6B43F /* vec.h */,
@@ -704,7 +703,6 @@
 				F7FAC5400D4539E400C02B67 /* chplcast.h */,
 				F7FAC5410D4539E400C02B67 /* chplcgfns.h */,
 				F7FAC5420D4539E400C02B67 /* chplcomm.h */,
-				F7A4FD380DE7AB8D00CDE656 /* chplcomm_locales.h */,
 				F7FAC5430D4539E400C02B67 /* chplcopygc.h */,
 				F7FAC5440D4539E400C02B67 /* chplexit.h */,
 				F7FAC5450D4539E400C02B67 /* chplfp.h */,
@@ -876,7 +874,6 @@
 			isa = PBXGroup;
 			children = (
 				F76B61DD0D53D218005C6869 /* chpl_cfg_comm.c */,
-				F7A4FD2D0DE7AADB00CDE656 /* chpl_cfg_comm_locales.c */,
 				F76B61DA0D53D1D6005C6869 /* chpl_cfg_comm.h */,
 			);
 			name = Gasnet;
@@ -886,7 +883,6 @@
 			isa = PBXGroup;
 			children = (
 				F76B61E80D53D2B5005C6869 /* chpl_cfg_comm.c */,
-				F7A4FD320DE7AB1B00CDE656 /* chpl_cfg_comm_locales.c */,
 				F76B61E50D53D29B005C6869 /* chpl_cfg_comm.h */,
 			);
 			name = Armci;
@@ -922,7 +918,6 @@
 			isa = PBXGroup;
 			children = (
 				F7FAC53A0D45391800C02B67 /* chpl_cfg_comm.c */,
-				F7A4FD290DE7AA9300CDE656 /* chpl_cfg_comm_locales.c */,
 				F721A2330D458F1600A6B43F /* chpl_cfg_comm.h */,
 			);
 			name = "Single locale";
@@ -1004,7 +999,6 @@
 				F721A22D0D458E3D00A6B43F /* stdchpl.h in Headers */,
 				F721A2340D458F1600A6B43F /* chpl_cfg_comm.h in Headers */,
 				F721A2390D458F6800A6B43F /* chpl_cfg_threads.h in Headers */,
-				F7A4FD390DE7AB8D00CDE656 /* chplcomm_locales.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1130,6 +1124,7 @@
 				F721A0EF0D455BE300A6B43F /* primitive.cpp in Sources */,
 				F721A0F00D455BE300A6B43F /* stmt.cpp in Sources */,
 				F721A0F10D455BE300A6B43F /* symbol.cpp in Sources */,
+				F721A0F20D455BE300A6B43F /* symscope.cpp in Sources */,
 				F721A0F30D455BE300A6B43F /* type.cpp in Sources */,
 				F721A0F40D455BE300A6B43F /* view.cpp in Sources */,
 				F721A1020D455C5E00A6B43F /* beautify.cpp in Sources */,
@@ -1197,7 +1192,6 @@
 				F7FAC51E0D45384C00C02B67 /* main.c in Sources */,
 				F7FAC5370D45390200C02B67 /* chpl_cfg_threads.c in Sources */,
 				F7FAC53B0D45391800C02B67 /* chpl_cfg_comm.c in Sources */,
-				F7A4FD2A0DE7AA9300CDE656 /* chpl_cfg_comm_locales.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

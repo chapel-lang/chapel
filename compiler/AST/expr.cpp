@@ -1626,11 +1626,6 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fprintf( outfile, ")");
       break;
-    case PRIMITIVE_EXECUTE_TASKS_IN_LIST:
-      fprintf( outfile, "chpl_execute_tasks_in_list(*(");
-      get(1)->codegen( outfile);
-      fprintf( outfile, "), false)");
-      break;
     case PRIMITIVE_INIT_TASK_LIST:
       fprintf( outfile, "NULL");
       break;
@@ -1839,25 +1834,6 @@ void CallExpr::codegen(FILE* outfile) {
   INT_ASSERT(fn);
 
   if (fn->hasPragma("begin block")) {
-    fputs("chpl_add_to_task_list( ", outfile);
-    if (SymExpr *sexpr=toSymExpr(baseExpr)) {
-      fprintf(outfile, "(chpl_threadfp_t) %s, ", sexpr->var->cname);
-      fputs("(chpl_threadarg_t) ", outfile);
-      if (Expr *actuals = get(1)) {
-        actuals->codegen (outfile);
-      } else {
-        fputs("NULL", outfile);
-      }
-      fputs(", &((", outfile);
-      get(1)->codegen(outfile);
-      fputs(")->", outfile);
-      ClassType *bundledArgsType = toClassType(toSymExpr(get(1))->typeInfo());
-      int lastField = bundledArgsType->fields.length();  // this is the _endCount field
-      bundledArgsType->getField(lastField)->codegen(outfile);
-      fputs("->taskList)", outfile);
-    } 
-    fputs(", true);\n", outfile);
-#if 0
     fprintf( outfile, "chpl_begin( ");
     if (SymExpr *sexpr=toSymExpr(baseExpr)) {
       fprintf (outfile, "(chpl_threadfp_t) %s, ", sexpr->var->cname);
@@ -1872,7 +1848,6 @@ void CallExpr::codegen(FILE* outfile) {
       INT_FATAL(this, "cobegin codegen - call expr not a SymExpr");
     } 
     fprintf (outfile, ");\n");
-#endif
     return;
   }
   else if (fn->hasPragma("cobegin block")) {
@@ -1891,7 +1866,7 @@ void CallExpr::codegen(FILE* outfile) {
     } else {
       INT_FATAL(this, "cobegin codegen - call expr not a SymExpr");
     } 
-    fputs(", false);\n", outfile);
+    fputs(");\n", outfile);
     return;
   }
   else if (fn->hasPragma("on block")) {
