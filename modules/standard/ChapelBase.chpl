@@ -911,6 +911,7 @@ def _singlevar.isFull {
 class _EndCount {
   var i: sync int(64) = 0;
   var b: sync bool = true;
+  var taskList: _task_list = _nullTaskList;
 }
 
 def _endCountAlloc() return new _EndCount();
@@ -930,6 +931,7 @@ def _downEndCount(e: _EndCount) {
 }
 
 def _waitEndCount(e: _EndCount) {
+  __primitive("execute tasks in list", e.taskList);
   e.b.readFE();
 }
 

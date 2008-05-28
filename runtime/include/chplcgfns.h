@@ -15,7 +15,7 @@ extern void CreateConfigVarTable(void);
 /* used by copy collection: */
 
 /* If we're not in the generated code, define an enum _class_id; */
-#ifndef _CHPL_GEN_CODE
+#ifndef CHPL_GEN_CODE
 typedef enum { _e_bogus } _class_id;
 #endif
 
