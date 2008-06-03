@@ -47,6 +47,7 @@ struct chpl_task_list {
 
 
 static chpl_mutex_t     threading_lock; // critical section lock
+static chpl_mutex_t     task_list_lock; // critical section lock
 static chpl_condvar_t   wakeup_signal;  // signal a waiting thread
 static pthread_key_t    serial_key;     // per-thread serial state
 static chpl_task_pool_p task_pool_head; // head of task pool
@@ -227,6 +228,7 @@ int32_t chpl_threads_maxThreadsLimit(void) { return 0; }
 
 void initChplThreads() {
   chpl_mutex_init(&threading_lock);
+  chpl_mutex_init(&task_list_lock);
   if (pthread_cond_init(&wakeup_signal, NULL))
     chpl_internal_error("pthread_cond_init() failed in");
   running_cnt = 0;                     // only main thread running
@@ -589,12 +591,18 @@ void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
     else
       task->task_pool_entry = NULL;
 
+    // begin critical section
+    chpl_mutex_lock(&task_list_lock);
+
     if (*task_list) {
       task->next = (*task_list)->next;
       (*task_list)->next = task;
     }
     else task->next = task;
     *task_list = task;
+
+    // end critical section
+    chpl_mutex_unlock(&task_list_lock);
   }
   else {
     // call_chpl_begin should be true here because if task_list_locale !=
@@ -664,7 +672,11 @@ void chpl_execute_tasks_in_list (chpl_task_list_p task_list, chpl_bool skip_firs
         (*task_to_run_fun)(task_to_run_arg);
     }
 
-    chpl_free(task, 0, 0);
+    if (skip_first_task)
+      chpl_free(task, 0, 0);
+    // else memory is leaked, but this avoids problems that may occur if tasks
+    // are subsequently added to the task list after this function has been
+    // called
 
   } while (task != task_list);
 }
