@@ -370,6 +370,7 @@ initPrimitive() {
 
   prim_def(PRIMITIVE_INIT_TASK_LIST, "init to NULL", returnInfoTaskList);
   prim_def(PRIMITIVE_PROCESS_TASK_LIST, "process task list", returnInfoVoid, true);
+  prim_def(PRIMITIVE_EXECUTE_TASKS_IN_LIST, "execute tasks in list", returnInfoVoid, true);
 
   prim_def(PRIMITIVE_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc, true, true);
   prim_def(PRIMITIVE_CHPL_ALLOC_PERMIT_ZERO, "chpl_alloc_permit_zero",

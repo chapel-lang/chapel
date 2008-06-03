@@ -189,9 +189,9 @@ void chpl_set_serial(chpl_bool state) {
 }
 
 
-int
+chpl_task_pool_p
 chpl_begin (chpl_threadfp_t fp, chpl_threadarg_t arg, chpl_bool ignore_serial, 
-            chpl_bool serial_state) {
+            chpl_bool serial_state, chpl_task_list_p task_list_entry) {
 
   if (!ignore_serial && chpl_get_serial())
     (*fp)(arg);
@@ -216,11 +216,15 @@ chpl_begin (chpl_threadfp_t fp, chpl_threadarg_t arg, chpl_bool ignore_serial,
     }
   }
 
-  return 0;
+  return NULL;
 }
 
-void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg, chpl_task_list_p *task_list) {
-  chpl_begin (fun, arg, false, false);
+void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
+                            chpl_task_list_p *task_list, int32_t task_list_locale,
+                            chpl_bool call_chpl_begin) {
+  chpl_begin (fun, arg, false, false, NULL);
 }
+
+void chpl_execute_tasks_in_list (chpl_task_list_p task_list, chpl_bool skip_first_task) { }
 
 void chpl_process_task_list (chpl_task_list_p task_list) { }

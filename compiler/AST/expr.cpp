@@ -1626,6 +1626,11 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fprintf( outfile, ")");
       break;
+    case PRIMITIVE_EXECUTE_TASKS_IN_LIST:
+      fprintf( outfile, "chpl_execute_tasks_in_list(");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ", false)");
+      break;
     case PRIMITIVE_INIT_TASK_LIST:
       fprintf( outfile, "NULL");
       break;
@@ -1834,20 +1839,49 @@ void CallExpr::codegen(FILE* outfile) {
   INT_ASSERT(fn);
 
   if (fn->hasPragma("begin block")) {
-    fprintf( outfile, "chpl_begin( ");
+    fputs("chpl_add_to_task_list( ", outfile);
     if (SymExpr *sexpr=toSymExpr(baseExpr)) {
-      fprintf (outfile, "(chpl_threadfp_t) %s, ", sexpr->var->cname);
-      fprintf (outfile, "(chpl_threadarg_t) ");
+      fprintf(outfile, "(chpl_threadfp_t) %s, ", sexpr->var->cname);
+      fputs("(chpl_threadarg_t) ", outfile);
       if (Expr *actuals = get(1)) {
         actuals->codegen (outfile);
       } else {
-        fprintf( outfile, "NULL");
+        fputs("NULL", outfile);
       }
-      fprintf (outfile, ", false, false");
+      ClassType *bundledArgsType = toClassType(toSymExpr(get(1))->typeInfo());
+      int lastField = bundledArgsType->fields.length();  // this is the _endCount field
+      if (bundledArgsType->getField(lastField)->typeInfo()->symbol->hasPragma("wide class")) {
+        fputs(", (", outfile);
+        get(1)->codegen(outfile);
+        fputs(")->", outfile);
+        bundledArgsType->getField(lastField)->codegen(outfile);
+        fputs(".locale != _localeID ? NULL : &((", outfile);
+        get(1)->codegen(outfile);
+        fputs(")->", outfile);
+        bundledArgsType->getField(lastField)->codegen(outfile);
+        fputs(".addr", outfile);
+      } else {
+        fputs(", &((", outfile);
+        get(1)->codegen(outfile);
+        fputs(")->", outfile);
+        bundledArgsType->getField(lastField)->codegen(outfile);
+      }
+      fputs("->taskList), (", outfile);
+      get(1)->codegen(outfile);
+      fputs(")->", outfile);
+      bundledArgsType->getField(lastField)->codegen(outfile);
+      if (bundledArgsType->getField(lastField)->typeInfo()->symbol->hasPragma("wide class")) {
+        fputs(".locale != _localeID ? INT32_MIN : (", outfile);
+        get(1)->codegen(outfile);
+        fputs(")->", outfile);
+        bundledArgsType->getField(lastField)->codegen(outfile);
+        fputs(".addr", outfile);
+      }
+      fputs("->taskListLocale", outfile);
     } else {
       INT_FATAL(this, "cobegin codegen - call expr not a SymExpr");
     } 
-    fprintf (outfile, ");\n");
+    fputs(", true);\n", outfile);
     return;
   }
   else if (fn->hasPragma("cobegin block")) {
@@ -1866,7 +1900,7 @@ void CallExpr::codegen(FILE* outfile) {
     } else {
       INT_FATAL(this, "cobegin codegen - call expr not a SymExpr");
     } 
-    fputs(");\n", outfile);
+    fputs(", _localeID, false);\n", outfile);
     return;
   }
   else if (fn->hasPragma("on block")) {

@@ -908,9 +908,12 @@ def _singlevar.isFull {
 // data structures for naive implementation of end
 //
 
+pragma "no default functions"
 class _EndCount {
-  var i: sync int(64) = 0;
-  var b: sync bool = true;
+  var i: sync int(64) = 0,
+      b: sync bool = true,
+      taskList: _task_list = _nullTaskList,
+      taskListLocale = taskList.locale.id;
 }
 
 def _endCountAlloc() return new _EndCount();
@@ -930,6 +933,7 @@ def _downEndCount(e: _EndCount) {
 }
 
 def _waitEndCount(e: _EndCount) {
+  __primitive("execute tasks in list", e.taskList);
   e.b.readFE();
 }
 

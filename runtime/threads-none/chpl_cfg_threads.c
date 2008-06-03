@@ -7,7 +7,6 @@
 //
 // task pool: linked list of tasks
 //
-typedef struct chpl_pool_struct* chpl_task_pool_p;
 typedef struct chpl_pool_struct {
   chpl_threadfp_t  fun;          // function to call for task
   chpl_threadarg_t arg;          // argument to the function
@@ -146,8 +145,9 @@ void chpl_set_serial(chpl_bool new_state) {
   serial_state = new_state;
 }
 
-int
-chpl_begin(chpl_threadfp_t fp, chpl_threadarg_t a, chpl_bool ignore_serial, chpl_bool serial_state) {
+chpl_task_pool_p
+chpl_begin(chpl_threadfp_t fp, chpl_threadarg_t a, chpl_bool ignore_serial,
+           chpl_bool serial_state, chpl_task_list_p task_list_entry) {
   if (!ignore_serial && chpl_get_serial()) {
     (*fp)(a);
   } else {
@@ -166,11 +166,15 @@ chpl_begin(chpl_threadfp_t fp, chpl_threadarg_t a, chpl_bool ignore_serial, chpl
     }
     task_pool_tail = task;
   }
-  return 0;
+  return NULL;
 }
 
-void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg, chpl_task_list_p *task_list) {
-  chpl_begin (fun, arg, false, false);
+void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
+                            chpl_task_list_p *task_list, int32_t task_list_locale,
+                            chpl_bool call_chpl_begin) {
+  chpl_begin (fun, arg, false, false, NULL);
 }
+
+void chpl_execute_tasks_in_list (chpl_task_list_p task_list, chpl_bool skip_first_task) { }
 
 void chpl_process_task_list (chpl_task_list_p task_list) { }
