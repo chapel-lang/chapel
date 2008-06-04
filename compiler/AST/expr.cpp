@@ -1631,6 +1631,11 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fprintf( outfile, ", false)");
       break;
+    case PRIMITIVE_FREE_TASK_LIST:
+      fputs( "chpl_free_task_list(", outfile);
+      get(1)->codegen( outfile);
+      fputc( ')', outfile);
+      break;
     case PRIMITIVE_INIT_TASK_LIST:
       fprintf( outfile, "NULL");
       break;
@@ -1867,17 +1872,13 @@ void CallExpr::codegen(FILE* outfile) {
         bundledArgsType->getField(lastField)->codegen(outfile);
       }
       fputs("->taskList), (", outfile);
-      get(1)->codegen(outfile);
-      fputs(")->", outfile);
-      bundledArgsType->getField(lastField)->codegen(outfile);
       if (bundledArgsType->getField(lastField)->typeInfo()->symbol->hasPragma("wide class")) {
-        fputs(".locale != _localeID ? INT32_MIN : (", outfile);
         get(1)->codegen(outfile);
         fputs(")->", outfile);
         bundledArgsType->getField(lastField)->codegen(outfile);
-        fputs(".addr", outfile);
-      }
-      fputs("->taskListLocale", outfile);
+        fputs(".locale", outfile);
+      } else
+        fputs("_localeID)", outfile);
     } else {
       INT_FATAL(this, "cobegin codegen - call expr not a SymExpr");
     } 

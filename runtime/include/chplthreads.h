@@ -80,6 +80,7 @@ void chpl_add_to_task_list (chpl_threadfp_t, chpl_threadarg_t,
 void chpl_process_task_list (chpl_task_list_p);
 void chpl_execute_tasks_in_list (chpl_task_list_p,
                                  chpl_bool); // whether to skip the first task in list
+void chpl_free_task_list (chpl_task_list_p);
 
 // Fork one thread.  Do not wait.  Used to implement Chapel's begin statement.
 // Returns a pointer to the task pool entry.

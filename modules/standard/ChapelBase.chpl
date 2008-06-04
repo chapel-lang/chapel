@@ -912,8 +912,7 @@ pragma "no default functions"
 class _EndCount {
   var i: sync int(64) = 0,
       b: sync bool = true,
-      taskList: _task_list = _nullTaskList,
-      taskListLocale = taskList.locale.id;
+      taskList: _task_list = _nullTaskList;
 }
 
 def _endCountAlloc() return new _EndCount();
@@ -935,6 +934,7 @@ def _downEndCount(e: _EndCount) {
 def _waitEndCount(e: _EndCount) {
   __primitive("execute tasks in list", e.taskList);
   e.b.readFE();
+  __primitive("free task list", e.taskList);
 }
 
 def _upEndCount() {

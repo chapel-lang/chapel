@@ -616,73 +616,6 @@ void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
   }
 }
 
-void chpl_execute_tasks_in_list (chpl_task_list_p task_list, chpl_bool skip_first_task) {
-  // task_list points to the last entry on the list; task_list->next is actually
-  // the first element on the list.
-  chpl_task_list_p task = task_list, next_task;
-  _Bool serial = chpl_get_serial();
-  // This function is not expected to be called if a cobegin contains fewer
-  // than two statements; a coforall, however, may generate just one task,
-  // or even none at all.
-  if (task == NULL)
-    return;
-
-  assert (task->next);
-  next_task = task->next;  // next_task now points to the head of the list
-  if (skip_first_task)
-    next_task = next_task->next;
-
-  // If the serial state is true, the tasks in task_list have already been executed.
-  if (serial) {
-    do {
-      task = next_task;
-      next_task = task->next;
-      chpl_free(task, 0, 0);
-    } while (task != task_list);
-  }
-
-  else do {
-
-    task = next_task;
-    next_task = task->next;
-
-    // don't lock unnecessarily
-    if (!task->completed && task->task_pool_entry) {
-      chpl_threadfp_t  task_to_run_fun = NULL;
-      chpl_threadarg_t task_to_run_arg = NULL;
-
-      // begin critical section
-      chpl_mutex_lock(&threading_lock);
-
-      if (!task->completed) {
-        if (task->task_pool_entry->begun)
-          // task is about to be freed; the completed field should not be accessed!
-          task->task_pool_entry->task_list_entry = NULL;
-        else {
-          task_to_run_fun = task->task_pool_entry->fun;
-          task_to_run_arg = task->task_pool_entry->arg;
-          task->task_pool_entry->begun = true;
-          if (waking_cnt > 0)
-            waking_cnt--;
-        }
-      }
-
-      // end critical section
-      chpl_mutex_unlock(&threading_lock);
-
-      if (task_to_run_fun)
-        (*task_to_run_fun)(task_to_run_arg);
-    }
-
-    if (skip_first_task)
-      chpl_free(task, 0, 0);
-    // else memory is leaked, but this avoids problems that may occur if tasks
-    // are subsequently added to the task list after this function has been
-    // called
-
-  } while (task != task_list);
-}
-
 void chpl_process_task_list (chpl_task_list_p task_list) {
   // task_list points to the last entry on the list; task_list->next is actually
   // the first element on the list.
@@ -740,4 +673,80 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
 
     chpl_free(first_task, 0, 0);
   }
+}
+
+void chpl_execute_tasks_in_list (chpl_task_list_p task_list, chpl_bool skip_first_task) {
+  // task_list points to the last entry on the list; task_list->next is actually
+  // the first element on the list.
+  chpl_task_list_p task = task_list, next_task;
+  // This function is not expected to be called if a cobegin contains fewer
+  // than two statements; a coforall, however, may generate just one task,
+  // or even none at all.
+  if (task == NULL)
+    return;
+
+  assert (task->next);
+  next_task = task->next;  // next_task now points to the head of the list
+  if (skip_first_task)
+    next_task = next_task->next;
+
+  // If the serial state is true, the tasks in task_list have already been executed.
+  if (!chpl_get_serial()) do {
+
+    task = next_task;
+    next_task = task->next;
+
+    // don't lock unnecessarily
+    if (!task->completed && task->task_pool_entry) {
+      chpl_threadfp_t  task_to_run_fun = NULL;
+      chpl_threadarg_t task_to_run_arg = NULL;
+
+      // begin critical section
+      chpl_mutex_lock(&threading_lock);
+
+      if (!task->completed) {
+        if (task->task_pool_entry->begun)
+          // task is about to be freed; the completed field should not be accessed!
+          task->task_pool_entry->task_list_entry = NULL;
+        else {
+          task_to_run_fun = task->task_pool_entry->fun;
+          task_to_run_arg = task->task_pool_entry->arg;
+          task->task_pool_entry->begun = true;
+          if (waking_cnt > 0)
+            waking_cnt--;
+        }
+      }
+
+      // end critical section
+      chpl_mutex_unlock(&threading_lock);
+
+      if (task_to_run_fun)
+        (*task_to_run_fun)(task_to_run_arg);
+    }
+
+    if (skip_first_task)
+      chpl_free(task, 0, 0);
+    // else memory is freed by a subsequent call to chpl_free_task_list()
+
+  } while (task != task_list);
+}
+
+void chpl_free_task_list (chpl_task_list_p task_list) {
+  // task_list points to the last entry on the list; task_list->next is actually
+  // the first element on the list.
+  chpl_task_list_p task = task_list, next_task;
+  // This function is not expected to be called if a cobegin contains fewer
+  // than two statements; a coforall, however, may generate just one task,
+  // or even none at all.
+  if (task == NULL)
+    return;
+
+  assert (task->next);
+  next_task = task->next;  // next_task now points to the head of the list
+
+  do {
+    task = next_task;
+    next_task = task->next;
+    chpl_free(task, 0, 0);
+  } while (task != task_list);
 }
