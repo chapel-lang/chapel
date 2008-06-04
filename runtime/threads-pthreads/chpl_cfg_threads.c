@@ -591,8 +591,9 @@ void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
     else
       task->task_pool_entry = NULL;
 
-    // begin critical section
-    chpl_mutex_lock(&task_list_lock);
+    // begin critical section - not needed for cobegin or coforall statements
+    if (call_chpl_begin)
+      chpl_mutex_lock(&task_list_lock);
 
     if (*task_list) {
       task->next = (*task_list)->next;
@@ -601,8 +602,9 @@ void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
     else task->next = task;
     *task_list = task;
 
-    // end critical section
-    chpl_mutex_unlock(&task_list_lock);
+    // end critical section - not needed for cobegin or coforall statements
+    if (call_chpl_begin)
+      chpl_mutex_unlock(&task_list_lock);
   }
   else {
     // call_chpl_begin should be true here because if task_list_locale !=
