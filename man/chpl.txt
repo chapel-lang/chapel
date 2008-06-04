@@ -106,34 +106,33 @@ OPTIONS
                     --no-scalar-replacement. This option implies
                     --no-checks and --no-ieee-float.
  
-  --[no]-ieee-float   Enables optimizations that may affect IEEE
-                    floating point conformance. The default is
-                    --ieee-float, disabling this sort of optimization.
+  --[no-]ieee-float   Disable [enable] optimizations that may affect IEEE
+                    floating point conformance. The default is --ieee-float,
+                    which will ensures IEEE conformance.
 
-  --[no-]copy-propagation   Disables copy propagation.
+  --[no-]copy-propagation   Enable [disable] copy propagation.
 
-  --[no-]dead-code-elimination   Disables dead code elimination.
+  --[no-]dead-code-elimination   Enable [disable] dead code elimination.
 
-  --[no-]inline     Disables function inlining.
+  --[no-]inline     Enable [disable] function inlining.
 
-  --[no-]inline-iterators   Disables iterator inlining. When possible,
-                    the compiler optimizes the invocation of an
+  --[no-]inline-iterators   Enable [disable] iterator inlining. When
+                    possible, the compiler optimizes the invocation of an
                     iterator in a loop header by inlining the
-                    iterator's definition around the loop body. This
-                    flag turns off this optimization.
+                    iterator's definition around the loop body.
 
-  --[no-]live-analysis   Disables live variable analysis, which is
+  --[no-]live-analysis   Enable [disable] live variable analysis, which is
                     currently only used to optimize iterators that are
                     not inlined.
 
-  --[no-]optimize-loop-iterators   By default, the compiler aggressively
-                    optimizes iterators that are defined in terms of a
-                    single loop. This flag turns off this optimization.
+  --[no-]optimize-loop-iterators   Enable [disable] optimizations to
+                    aggressively optimizes iterators that are defined in terms
+                    of a single loop. By default this is enabled.
 
-  --[no-]scalar-replacement   Disables scalar replacement of records and
-                    classes for some compiler-generated data
-                    structures that support language features such as
-                    tuples and iterators.
+  --[no-]scalar-replacement   Enable [disable] scalar replacement of records
+                    and classes for some compiler-generated data structures
+                    that support language features such as tuples and
+                    iterators.
 
   Run-time Semantic Check Options
 
@@ -143,10 +142,10 @@ OPTIONS
                     achieving performance competitive with hand-coded
                     C or Fortran.
 
-  --[no-]bounds-checks   Turns off dynamic bounds checking within the
+  --[no-]bounds-checks   Enable [disable] dynamic bounds checking within the
                     generated Chapel program.
 
-  --[no-]nil-checks   Turns off dynamic checking for accessing nil
+  --[no-]nil-checks   Enable [disable] dynamic checking for accessing nil
                     object references.
 
 
@@ -192,11 +191,11 @@ OPTIONS
                     option.
 
   -O, --[no-]optimize  Causes the generated C code to be compiled with
-                    optimizations turned on. The specific set of flags
-                    used by this option is platform-dependent; use the
-                    --print-commands option to view the C compiler command 
-                    used. If you would like additional flags to be used
-                    with the C compiler command, use the --ccflags option.
+                    [without] optimizations turned on. The specific set of
+                    flags used by this option is platform-dependent; use the
+                    --print-commands option to view the C compiler command
+                    used. If you would like additional flags to be used with
+                    the C compiler command, use the --ccflags option.
 
   -o, --output <filename>   Specify the name of the compiler-generated
                      executable (defaults to a.out if unspecified).
@@ -206,11 +205,11 @@ OPTIONS
   --chplhome <directory>   Specify the location of the Chapel installation
                      if you need to over-ride the $CHPL_HOME location.
 
-  --[no-]devel       Puts the compiler into developer mode, which takes off
-                     some of the safety belts, changes default behaviors,
-                     and exposes additional undocumented command-line 
-                     options. Use at your own risk and direct any questions
-                     to the Chapel team.
+  --[no-]devel       Puts the compiler into [out of] developer mode, which
+                     takes off some of the safety belts, changes default
+                     behaviors, and exposes additional undocumented
+                     command-line options. Use at your own risk and direct any
+                     questions to the Chapel team.
 
   --explain-call <call>[:<module>][:<line>]   Helps explain the function
                      resolution process for the named function by printing 
