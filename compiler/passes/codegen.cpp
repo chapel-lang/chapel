@@ -148,7 +148,7 @@ static void codegen_header(void) {
   }
 
   //
-  // mangle global variable names if they class with types or other
+  // mangle global variable names if they clash with types or other
   // global variables
   //
   forv_Vec(BaseAST, ast, gAsts) {
@@ -255,7 +255,7 @@ static void codegen_header(void) {
     fprintf(outfile, "  _e_placeholder");
   fprintf(outfile, "\n} _class_id;\n\n");
 
-  fprintf(outfile, "#define _CHPL_GEN_CODE\n");
+  fprintf(outfile, "#define CHPL_GEN_CODE\n");
   fprintf(outfile, "#include \"stdchpl.h\"\n");
   genIncludeCommandLineHeaders(outfile);
   fprintf(outfile, "\n/*** Class Prototypes ***/\n\n");
