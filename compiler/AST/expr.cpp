@@ -651,7 +651,7 @@ help_codegen_fn(FILE* outfile, const char* name, BaseAST* ast1 = NULL,
 
 
 static void codegenWideDynamicCastCheck(FILE* outfile, Type* type) {
-  fprintf(outfile, "chpl_macro_tmp == _e_%s", type->symbol->name);
+  fprintf(outfile, "chpl_macro_tmp == _e_%s", type->symbol->cname);
   forv_Vec(Type, child, type->dispatchChildren) {
     fprintf(outfile, " || ");
     codegenWideDynamicCastCheck(outfile, child);

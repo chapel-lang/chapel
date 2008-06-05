@@ -1009,7 +1009,7 @@ pragma "inline" def _cast(type t, x) where t:object && x:t
 pragma "inline" def _cast(type t, x) where t:object && x:_nilType
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x) where x:object && t:x & (x.type != t)
+pragma "inline" def _cast(type t, x) where x:object && t:x && (x.type != t)
   return __primitive("dynamic_cast", t, x);
 
 pragma "inline" def _cast(type t, x:_nilType) where t == _nilType
