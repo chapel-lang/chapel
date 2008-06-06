@@ -115,10 +115,8 @@ class LocTree {
     /** Unordered iterator over all coefficients
      */
     def these() {
-        oneAtATime$;
         for c in coeffs do 
             yield c;
-        oneAtATime$ = true;
     }
     
     /** Unordered iterator over all boxes in a particular level.
@@ -129,10 +127,8 @@ class LocTree {
         to this type of iteration vs. the associative domain used here.
      */
     def coeffs_iter(lvl: int) {
-        oneAtATime$;
         for i in nodes do
             if i.lvl == lvl then yield coeffs[i];
-        oneAtATime$ = true;
     }
 
     /** Check if there are coefficients in box (lvl, idx)
@@ -154,24 +150,18 @@ class LocTree {
     }
 
     def node_iter(lvl: int) {
-        oneAtATime$;
         for i in nodes do
             if i.lvl == lvl then yield i;
-        oneAtATime$ = true;
     }
 
     def node_iter() {
-        oneAtATime$;
         for i in nodes do
             yield i;
-        oneAtATime$ = true;
     }
 
     def copy(t: LocTree) {
-        oneAtATime$;
         t.nodes = nodes;
         t.coeffs = coeffs; 
-        oneAtATime$ = true;
     }
 }
 
@@ -185,7 +175,7 @@ class FTree {
         if order == 0 then
             halt("FTree must be initialized with an order > 0");
 
-        for loc in LocaleSpace do
+        coforall loc in LocaleSpace do
             on Locales(loc) do tree[loc] = new LocTree(coeffDom);
     }
 
