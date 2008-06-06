@@ -438,6 +438,9 @@ void normalize(BaseAST* base) {
       if (VarSymbol* var = toVarSymbol(a->sym))
         if (toFnSymbol(a->parentSymbol))
           fix_def_expr(var);
+    } else if (CallExpr* a = toCallExpr(ast)) {
+      if (a->isPrimitive(PRIMITIVE_NEW))
+        USR_FATAL(a, "invalid use of 'new'");
     }
   }
 

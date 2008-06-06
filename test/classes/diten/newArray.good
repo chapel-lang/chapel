@@ -1,1 +1,1 @@
-newArray.chpl:4: error: operator 'new' can only be applied to a constructor
+test/classes/diten/newArray.chpl:4: error: invalid use of 'new'
