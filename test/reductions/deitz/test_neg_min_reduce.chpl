@@ -1,1 +1,1 @@
-writeln(- min reduce 1..3);
+writeln(- min reduce (1..3));
