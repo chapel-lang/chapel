@@ -1,0 +1,4 @@
+bug: using 'new' on an array causes an INT_FATAL during codegen
+
+This test should result in a compiler error about using 'new' on a
+non-constructor, but it causes an internal error instead.

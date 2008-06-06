@@ -1,0 +1,1 @@
+newArray.chpl:4: error: operator 'new' can only be applied to a constructor
