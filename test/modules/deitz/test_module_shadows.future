@@ -1,3 +1,0 @@
-bug: nested modules never shadow anything
-
-I think the call to M2 should be reported as an illegal module use.
