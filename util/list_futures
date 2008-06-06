@@ -29,7 +29,7 @@ if ($username ne "") {
 }
 
 
-@fnames = `find $home/test -name *.future`;
+@fnames = `find $home/test -name .svn -prune ! -name .svn -or ! -name .svn ! -name . -name *.future`;
 
 foreach $fname (@fnames) {
   chomp $fname;
