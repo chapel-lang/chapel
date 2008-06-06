@@ -832,7 +832,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
       wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, wrapper->_this,
                               new CallExpr(PRIMITIVE_CHPL_ALLOC, wrapper->_this,
                                 new_StringSymbol(astr("instance of class ",
-                                                    retType->symbol->name)))));
+                                  _this->type->symbol->name)))));
       wrapper->insertAtTail(new CallExpr(PRIMITIVE_SETCID, wrapper->_this));
     }
     wrapper->insertAtTail(new CallExpr(PRIMITIVE_INIT_FIELDS, wrapper->_this));
