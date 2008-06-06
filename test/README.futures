@@ -1,0 +1,9 @@
+This is the current set of categories that are expected for line 1
+of a .future file's description:
+
+bug: this test exhibits a bug in the implementation
+error message: the error message for this test needs clarifying
+feature request: I would like to see this feature in Chapel
+multilocale: shows a problem that only relates to multi-locale executions
+semantic: this test raises a question about Chapel's semantics
+unimplemented feature: this is specified, but not implemented
