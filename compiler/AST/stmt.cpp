@@ -56,6 +56,7 @@ BlockStmt::copyInner(ASTMap* map) {
   for_alist(expr, body)
     _this->insertAtTail(COPY_INT(expr));
   _this->loopInfo = COPY_INT(loopInfo);
+  _this->modUses.copy(modUses);
   return _this;
 }
 

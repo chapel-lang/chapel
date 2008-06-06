@@ -1,4 +1,0 @@
-bug: function argument of class type can't find class method.
-
-In this test, the call to obj.foo() is in a scope where the module that defines
-the class is 'use'd.
