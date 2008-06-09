@@ -271,6 +271,7 @@ class Function {
     def reconstruct(curNode = rootNode) {
         if !compressed then return;
 
+        const (n, _) = curNode();
         if diffC.has_coeffs(curNode) {
             var dc: [0..2*k-1] real;
             dc[0..k-1]   = sumC[curNode];
@@ -287,13 +288,17 @@ class Function {
             sumC[child(2)] = sc[k..2*k-1];
             
             // sub-trees can be done in parallel
-            cobegin {
-                on Locales(child(1).loc) do reconstruct(child(1));
-                on Locales(child(2).loc) do reconstruct(child(2));
+            if ( n+1 < log2(maxThreads) ) then
+                cobegin {
+                    on Locales(child(1).loc) do reconstruct(child(1));
+                    on Locales(child(2).loc) do reconstruct(child(2));
+                }
+            else {
+                reconstruct(child(1));
+                reconstruct(child(2));
             }
         }
         
-        const (n, _) = curNode();
         if n == 0 then compressed = false;
     }
 

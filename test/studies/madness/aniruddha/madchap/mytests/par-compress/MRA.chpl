@@ -242,11 +242,17 @@ class Function {
         // sub-trees can be done in parallel
         const child = curNode.get_children();
 
-        cobegin {	
-            on Locales(child(1).loc) do
-                if !sumC.has_coeffs(child(1)) then compress(child(1));
-            on Locales(child(2).loc) do
-                if !sumC.has_coeffs(child(2)) then compress(child(2));
+        const (n,_) = curNode();
+        if ( n+1 < log2(maxThreads) ) then
+            cobegin {	
+                on Locales(child(1).loc) do
+                    if !sumC.has_coeffs(child(1)) then compress(child(1));
+                on Locales(child(2).loc) do
+                    if !sumC.has_coeffs(child(2)) then compress(child(2));
+            }
+        else {
+            if !sumC.has_coeffs(child(1)) then compress(child(1));
+            if !sumC.has_coeffs(child(2)) then compress(child(2));
         }
 
         var sc: [0..2*k-1] real;
@@ -263,7 +269,6 @@ class Function {
         sumC.remove(child(1));
         sumC.remove(child(2));
 
-        const (n,_) = curNode();
         if n==0 then compressed = true;
     }
 
