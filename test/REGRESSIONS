@@ -14,17 +14,14 @@
 linux and general regressions
 =============================
 
+??? (started 06/07/08)
+----------------------
+[Error matching compiler output for reductions/deitz/test_reduce_range]
+
 new madness precision issue (most platforms other than darwin, cygwin)
 ----------------------------------------------------------------------
 [Error matching program output for
 studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-
-timeout issue (except on gasnet)
---------------------------------
-[Error: Timed out executing program
-studies/madness/aniruddha/madchap/test_gaxpy]
-[Error: Timed out executing program
-studies/madness/aniruddha/madchap/test_likepy]
 
 extremely rare race condition in module initialization
 ------------------------------------------------------
@@ -61,6 +58,13 @@ failing nondeterministically (e.g., 04/04/08)
 gasnet-specific regressions
 ===========================
 
+timeout issue
+-------------
+[Error: Timed out executing program
+studies/madness/aniruddha/madchap/test_gaxpy]
+[Error: Timed out executing program
+studies/madness/aniruddha/madchap/test_likepy]
+
 ???
 ---
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
@@ -70,11 +74,21 @@ garbage collection doesn't work with multithreaded
 [Error matching compiler output for classes/diten/allocateManyObjects]
 
 
+==================
+mac-specific tests
+==================
+
+redeclaration of fls
+--------------------
+[Error matching compiler output for performance/compiler/bradc/compSampler-timecomp]
+[Error matching compiler output for trivial/shannon/compSampler]
+
+
 ===================
 opts-specific tests
 ===================
 
-(Examples)
+(Example runs)
 
 --no-live-analysis
 --baseline --inline-iterators
@@ -85,7 +99,7 @@ opts-specific tests
 -----------------------------
 [Error matching program output for release/examples/hpcc/stream]
 
-(Others)
+(Full run)
 
 --no-dead-code-elimination
 --------------------------
@@ -138,11 +152,6 @@ studies/madness/dinan/mad_chapel/test_gaxpy]
 [Error matching program output for
 studies/madness/dinan/mad_chapel/test_likepy]
 [Summary: #Successes = 1968 | #Failures = 34 | #Futures = 0]
-
---baseline --inline
--------------------
-[Error: Timed out compilation for users/franzf/v1/chpl/main]
-[Summary: #Successes = 1986 | #Failures = 1 | #Futures = 0]
 
 --baseline --inline-iterators
 -----------------------------
@@ -246,18 +255,6 @@ studies/madness/dinan/mad_chapel/test_mul]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
 [Summary: #Successes = 1976 | #Failures = 2 | #Futures = 0]
 
---baseline --scalar-replacement
--------------------------------
-[Error: Timed out compilation for users/shetag/tensor]
-[Error: Timed out compilation for users/shetag/fock/fock-orig]
-[Summary: #Successes = 1985 | #Failures = 2 | #Futures = 0]
-
---no-local
-----------
-[Error matching compiler output for classes/diten/allocateManyObjects]
-[Error matching compiler output for parallel/sync/diten/tupleOfSync]
-[Summary: #Successes = 1985 | #Failures = 2 | #Futures = 0]
-
 --baseline --no-local
 ---------------------
 [Error matching compiler output for arrays/deitz/test_alias1]
@@ -270,27 +267,22 @@ studies/madness/dinan/mad_chapel/test_mul]
 [Error matching compiler output for classes/deitz/infer/infer_field2b]
 [Error matching compiler output for classes/deitz/infer/infer_field2c]
 [Error matching compiler output for classes/diten/allocateManyObjects]
-[Error matching compiler output for domains/roxana/index/test_index_expr1]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
 [Error matching compiler output for studies/590o/alaska/graph]
 [Error matching compiler output for studies/590o/blerner/xml-parse]
+[Error matching program output for
+studies/hpcc/STREAMS/bradc/stream-block1dclass]
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error matching compiler output for studies/uts/dequeue]
 [Error matching compiler output for studies/uts/uts_deq]
 [Error matching compiler output for studies/uts/uts_deq_seq]
 [Error matching program output for types/file/freadComplex]
-[Error matching compiler output for types/tuple/deitz/test_destruct_nested]
-[Error matching compiler output for types/tuple/deitz/test_htuple3]
 [Error matching program output for types/tuple/deitz/test_tuple_of_array2]
-[Error matching compiler output for types/tuple/deitz/test_tuple_of_tuples]
-[Error matching compiler output for types/tuple/deitz/test_tuple_simple1]
-[Error matching compiler output for types/tuple/deitz/test_tuple_simple1a]
-[Error matching compiler output for types/tuple/deitz/test_tuple_simple5]
 [Error matching compiler output for types/tuple/dinan/pining_for_lisp_ver2]
-[Error matching compiler output for types/tuple/diten/tuple_var_decl_nest]
-[Error matching compiler output for types/tuple/jplevyak/destruct-2]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
-[Summary: #Successes = 1948 | #Failures = 30 | #Futures = 0]
+[Summary: #Successes = 2003 | #Failures = 23 | #Futures = 0]
 
 
 ==============================
@@ -346,11 +338,19 @@ studies/madness/dinan/mad_chapel/test_likepy]
 pgi-specific regressions
 ========================
 
+Numerical accuracy issues (started 05/24/08)
+--------------------------------------------
+[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
+[Error matching program output for studies/madness/common/test_diff]
+[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
+
+
 Some sort of offset type mismatch -- likely caused by long identifiers
 ----------------------------------------------------------------------
 [Error matching compiler output for arrays/deitz/test_major_nesting_of_arrays] 
 [Error matching program output for types/tuple/diten/tupleOfTupleOfTupleOfTuple]
-
 
 long identifiers
 ----------------
@@ -375,11 +375,6 @@ xt-gnu specific failures
 ---
 [Error matching program output for execflags/bradc/gdbddash/declint2]
 
-lg2/exp2
---------
-[Error matching program output for functions/dinan/exp2] 
-[Error matching program output for modules/standard/math/lg2] 
-
 
 ====================
 x1-specific failures
@@ -399,9 +394,9 @@ print occurs in 0 seconds!?  Timers not working?
 [Error matching program output for spec/marybeth/use]
 
 
-============================
-mta/xmt-specific regressions
-============================
+=============================
+mta-/xmt-specific regressions
+=============================
 
 data alignment trap (05/10/08)
 ------------------------------
