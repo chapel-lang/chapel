@@ -1,6 +1,6 @@
-unimplemented feature: Code should not error out when calling Random.fillRandom
+semantic: Compiler errors out when calling Random.fillRandom when Random module is not used.
 
 Currently the compiler will error out when calls to Random.fillRandom occur.
-This should not be the case. Also, fillRandom() should work for single and
-multi-dimensional arrays.
+It's debatable whether this type of call should be allowed or not. If nothing
+else it should get a different error message.
 
