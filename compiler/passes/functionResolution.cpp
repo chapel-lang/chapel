@@ -2289,7 +2289,7 @@ preFold(Expr* expr) {
                 if (!is_real_type(dst) && !is_real_type(src) &&
                     !is_imag_type(dst) && !is_imag_type(src) &&
                     !is_complex_type(dst) && !is_complex_type(src) &&
-                    dst != dtString && src != dtString) {
+                    src != dtString) {
                   VarSymbol* typevar = toVarSymbol(dst->defaultValue);
                   EnumType* typeenum = toEnumType(dst);
                   if (typevar) {
