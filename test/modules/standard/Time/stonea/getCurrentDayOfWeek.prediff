@@ -1,0 +1,1 @@
+date +%A > getCurrentDayOfWeek.good
