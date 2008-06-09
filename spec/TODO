@@ -1,0 +1,12 @@
+* Make supported parameter and type queries for ranges, domains, and
+  arrays more explicit in the spec.  Most users are only realizing
+  that this is possible by reading example codes.  Maybe include as
+  part of the "supported functions" sections for these concepts?
+
+* page 100: 1D arrays can be indexed with square brackets or parens;
+  shouldn't any rank array be indexable with either?
+
+* add a description of the scan operator and an example
+
+* refactor/rewrite domain/array chapter (Brad)
+
