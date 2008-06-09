@@ -2616,6 +2616,8 @@ postFold(Expr* expr) {
         if (lhs->var->canParam || lhs->var->isParameter()) {
           if (paramMap.get(lhs->var))
             INT_FATAL(call, "parameter set multiple times");
+          if (VarSymbol* lhsVar = toVarSymbol(lhs->var))
+            INT_ASSERT(!lhsVar->immediate);
           if (SymExpr* rhs = toSymExpr(call->get(2))) {
             if (VarSymbol* rhsVar = toVarSymbol(rhs->var)) {
               if (rhsVar->immediate) {
@@ -2972,12 +2974,32 @@ static void issueCompilerError(CallExpr* call) {
 
 static void
 resolveBody(Expr* body) {
+  FnSymbol* fn = toFnSymbol(body->parentSymbol);
   for_exprs_postorder(expr, body) {
     currentLineno = expr->lineno;
     if (SymExpr* sym = toSymExpr(expr))
       if (Type* type = sym->typeInfo())
         makeRefType(type);
     expr = preFold(expr);
+
+    if (fn && fn->retTag == RET_PARAM) {
+      if (BlockStmt* block = toBlockStmt(expr)) {
+        if (block->loopInfo) {
+          USR_FATAL(expr, "param function cannot contain a non-param loop");
+        }
+        if (isCondStmt(block->parentExpr)) {
+          USR_FATAL(expr, "param function cannot contain a non-param conditional");
+        }
+      }
+      if (paramMap.get(fn->getReturnSymbol())) {
+        CallExpr* call = toCallExpr(fn->body->body.tail);
+        INT_ASSERT(call);
+        INT_ASSERT(call->isPrimitive(PRIMITIVE_RETURN));
+        call->get(1)->replace(new SymExpr(paramMap.get(fn->getReturnSymbol())));
+        return; // param function is resolved
+      }
+    }
+
     if (CallExpr* call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIMITIVE_ERROR) ||
           call->isPrimitive(PRIMITIVE_WARNING)) {

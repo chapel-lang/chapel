@@ -373,6 +373,11 @@ call is used in the declaration of a homogeneous and so is required to
 be a parameter.
 \end{example}.
 
+Parameter functions may not contain control flow that is not resolved
+at compile-time.  This includes loops other than the parameter for
+loop~\rsec{Parameter_For_Loops} and conditionals with a conditional
+expressions that is not a parameter.
+
 \subsection{Function Overloading}
 \label{Function_Overloading}
 \index{functions!overloading}
