@@ -23,6 +23,7 @@ extern _timervalue _default_timer; // hack as a default value
 int32_t _now_year(void);
 int32_t _now_month(void);
 int32_t _now_day(void);
+int32_t _now_dow(void);
 _real64 _now_time(void);
 
 #define _ARRAY_GET(x, i) (&((x)->_data[i]))

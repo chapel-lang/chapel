@@ -547,6 +547,7 @@ initPrimitive() {
   prim_def("_now_year", returnInfoInt32, true);
   prim_def("_now_month", returnInfoInt32, true);
   prim_def("_now_day", returnInfoInt32, true);
+  prim_def("_now_dow", returnInfoInt32, true);
   prim_def("_now_time", returnInfoReal64, true);
 
   prim_def("chpl_bytesPerLocale", returnInfoUInt64);

@@ -1,4 +1,5 @@
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours };
+enum Day { sunday, monday, tuesday, wednesday, thursday, friday, saturday };
 
 // returns time elapsed since midnight
 def getCurrentTime(unit: TimeUnits = TimeUnits.seconds)
@@ -9,6 +10,10 @@ def getCurrentDate()
   return (__primitive("_now_year")+1900,
           __primitive("_now_month")+1,
           __primitive("_now_day"));
+
+def getCurrentDayOfWeek() {
+    return (__primitive("_now_dow")+1):Day;
+}
 
 record Timer {
   var time: _timervalue;

@@ -684,6 +684,14 @@ supplied to routines in this module to specify the desired time units.
 \end{protobody}
 
 \begin{protohead}
+enum Day { sunday, monday, tuesday, wednesday, thursday, friday, saturday };
+\end{protohead}
+\begin{protobody}
+The enumeration Day defines the days of the week.
+\end{protobody}
+
+
+\begin{protohead}
 def getCurrentDate(): (int, int, int)
 \end{protohead}
 \begin{protobody}
@@ -691,6 +699,14 @@ Returns the year, month, and day of the month as integers.  The year
 is the year since 0.  The month is in the range 1 to 12.  The day is
 in the range 1 to 31.
 \end{protobody}
+
+\begin{protohead}
+def getCurrentDayOfWeek(): Day
+\end{protohead}
+\begin{protobody}
+Returns the current day of the week.
+\end{protobody}
+
 
 \begin{protohead}
 def getCurrentTime(unit: TimeUnits = TimeUnits.seconds): real

@@ -175,6 +175,15 @@ int32_t _now_day(void) {
   return now->tm_mday;
 }
 
+int32_t _now_dow(void) {
+  struct tm * now;
+  _timervalue t;
+  gettimeofday(&t, NULL);
+  now = localtime(&t.tv_sec);
+  return now->tm_wday;
+}
+
+
 _real64 _now_time(void) {
   struct tm * now;
   _timervalue t;
