@@ -2987,8 +2987,11 @@ resolveBody(Expr* body) {
         if (block->loopInfo) {
           USR_FATAL(expr, "param function cannot contain a non-param loop");
         }
+      }
+      if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
         if (isCondStmt(block->parentExpr)) {
-          USR_FATAL(expr, "param function cannot contain a non-param conditional");
+          USR_FATAL(block->parentExpr,
+                    "param function cannot contain a non-param conditional");
         }
       }
       if (paramMap.get(fn->getReturnSymbol())) {
