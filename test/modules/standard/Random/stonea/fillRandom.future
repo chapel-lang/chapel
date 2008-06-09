@@ -1,0 +1,6 @@
+unimplemented feature: Code should not error out when calling Random.fillRandom
+
+Currently the compiler will error out when calls to Random.fillRandom occur.
+This should not be the case. Also, fillRandom() should work for single and
+multi-dimensional arrays.
+
