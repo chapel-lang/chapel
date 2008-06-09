@@ -1059,8 +1059,12 @@ static const char* toString(CallInfo* info) {
   } else if (!_this) {
     str = astr(str, info->name);
   }
-  if (!info->call->methodTag)
-    str = astr(str, "(");
+  if (!info->call->methodTag) {
+    if (info->call->square)
+      str = astr(str, "[");
+    else
+      str = astr(str, "(");
+  }
   bool first = false;
   int start = 0;
   if (method)
@@ -1087,8 +1091,12 @@ static const char* toString(CallInfo* info) {
     } else
       str = astr(str, toString(info->actualTypes.v[i]));
   }
-  if (!info->call->methodTag)
-    str = astr(str, ")");
+  if (!info->call->methodTag) {
+    if (info->call->square)
+      str = astr(str, "]");
+    else
+      str = astr(str, ")");
+  }
   return str;
 }
 

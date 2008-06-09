@@ -441,7 +441,7 @@ class SingleLocaleArithmeticArray: BaseArray {
         this(this.dom.dim(1).low + i - 1) = b(i);
     } else {
       var j: rank*int;
-      _tupleInitHelp(this, j, rank, b);
+      _tupleInitHelp(j, rank, b);
     }
   }
 }
