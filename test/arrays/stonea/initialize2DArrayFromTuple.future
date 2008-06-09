@@ -1,4 +1,0 @@
-bug: Compiler error when initializng a 2D array with a tuple of tuples.
-
-If not implemented we should at-least update the error message to something
-more helpful.
