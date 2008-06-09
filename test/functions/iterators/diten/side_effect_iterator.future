@@ -1,0 +1,6 @@
+semantic: Can iterators have side-effects, evaluate them if uncaptured?
+
+This test defines an iterator that has the side-effect of writing 5 lines with
+the numbers 5-1. When the iterator result is captured into an array or loop
+construct, the side-effects happen. When it is uncaptured, the iterator is not
+evaluated, so the side-effects do not happen.
