@@ -77,14 +77,14 @@ OPTIONS
 
   Parallelism Control Options
 
-  --[no]-local      Compile code for single/[multi-] locale execution,
+  --[no-]local      Compile code for single/[multi-] locale execution,
                     changing on blocks to normal blocks, evaluating the
                     locale expression for side effects, and optimizing
                     away all remote references in the code. When $CHPL_COMM
                     is set to "none", --local is the default; otherwise
                     --no-local is.
 
-  --[no]-serial     Compile code for single/[multi-] threaded execution,
+  --[no-]serial     Compile code for single/[multi-] threaded execution,
                     changing forall- and coforall-loops into for loops;
                     changing begin, cobegin, and atomic blocks into regular
                     block statements; and removing the serial keyword,
@@ -108,7 +108,7 @@ OPTIONS
  
   --[no-]ieee-float   Disable [enable] optimizations that may affect IEEE
                     floating point conformance. The default is --ieee-float,
-                    which will ensures IEEE conformance.
+                    which ensures IEEE conformance.
 
   --[no-]copy-propagation   Enable [disable] copy propagation.
 
@@ -126,7 +126,7 @@ OPTIONS
                     not inlined.
 
   --[no-]optimize-loop-iterators   Enable [disable] optimizations to
-                    aggressively optimizes iterators that are defined in terms
+                    aggressively optimize iterators that are defined in terms
                     of a single loop. By default this is enabled.
 
   --[no-]scalar-replacement   Enable [disable] scalar replacement of records
@@ -136,8 +136,8 @@ OPTIONS
 
   Run-time Semantic Check Options
 
-  --no-checks       Turns off all of the runtime semantic checks in 
-                    this section. It is currently typically necessary to
+  --no-checks       Turns on --no-bounds-checks and --no-nil-checks.
+                    Currently, it is typically necessary to
                     use this flag in order to have any hope of
                     achieving performance competitive with hand-coded
                     C or Fortran.
