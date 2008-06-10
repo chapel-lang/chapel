@@ -136,8 +136,8 @@ OPTIONS
 
   Run-time Semantic Check Options
 
-  --no-checks       Turns on --no-bounds-checks and --no-nil-checks.
-                    Currently, it is typically necessary to
+  --no-checks       Turns on --no-bounds-checks, --no-nil-checks and
+                    --no-local-checks. Currently, it is typically necessary to
                     use this flag in order to have any hope of
                     achieving performance competitive with hand-coded
                     C or Fortran.
