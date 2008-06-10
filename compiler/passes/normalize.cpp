@@ -48,9 +48,13 @@ checkUseBeforeDefs() {
           CallExpr* call = toCallExpr(sym->parentExpr);
           if (call && call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym)
             continue;
-          if (toModuleSymbol(sym->var))
-            if (!toFnSymbol(fn->defPoint->parentSymbol))
-              USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->var->name);
+          if (toModuleSymbol(sym->var)) {
+            if (!toFnSymbol(fn->defPoint->parentSymbol)) {
+              SymExpr* prev = toSymExpr(sym->prev);
+              if (!prev || prev->var != gModuleToken)
+                USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->var->name);
+            }
+          }
           if ((!call || call->baseExpr != sym) && sym->unresolved) {
             if (!undeclared.set_in(sym->unresolved)) {
               if (!toFnSymbol(fn->defPoint->parentSymbol)) {
@@ -365,6 +369,28 @@ static void heapAllocateGlobals() {
 }
 
 
+static void
+insertUseForExplicitModuleCalls(void) {
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (SymExpr* se = toSymExpr(ast)) {
+      if (se->parentSymbol && se->var == gModuleToken) {
+        CallExpr* call = toCallExpr(se->parentExpr);
+        INT_ASSERT(call);
+        SymExpr* mse = toSymExpr(call->get(2));
+        INT_ASSERT(mse);
+        ModuleSymbol* mod = toModuleSymbol(mse->var);
+        INT_ASSERT(mod);
+        Expr* stmt = se->getStmtExpr();
+        BlockStmt* block = new BlockStmt();
+        stmt->insertBefore(block);
+        block->insertAtHead(stmt->remove());
+        block->modUses.add(mod);
+      }
+    }
+  }
+}
+
+
 void normalize(void) {
   // tag iterators
   forv_Vec(BaseAST, ast, gAsts) {
@@ -385,6 +411,7 @@ void normalize(void) {
   flattenGlobalFunctions();
   heapAllocateGlobals();
   heapAllocateLocals();
+  insertUseForExplicitModuleCalls();
 }
 
 void normalize(BaseAST* base) {

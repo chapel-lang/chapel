@@ -20,6 +20,7 @@ Symbol *gNilRef = NULL;
 Symbol *gUnknown = NULL;
 Symbol *gUnspecified = NULL;
 Symbol *gMethodToken = NULL;
+Symbol *gModuleToken = NULL;
 Symbol *gVoid = NULL;
 Symbol *gFile = NULL;
 Symbol *gOpaque = NULL;

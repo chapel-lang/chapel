@@ -967,27 +967,53 @@ void scopeResolve(void) {
     }
   }
 
+  Vec<SymExpr*> skipSet;
+
   forv_Vec(BaseAST, ast, gAsts) {
     currentLineno = ast->lineno;
 
-    // Translate M.x where M is a ModuleSymbol into just x
-    // where x is the symbol from module M.
-    if (CallExpr* callExpr = toCallExpr(ast)) {
-      SymExpr *base, *sym1, *sym2;
-      ModuleSymbol *module;
-      if ((base = toSymExpr(callExpr->baseExpr)) &&
-          (base->isNamed("."))                   &&
-          (sym1 = toSymExpr(callExpr->get(1)))   &&
-          (module = toModuleSymbol(sym1->var))   &&
-          (sym2 = toSymExpr(callExpr->get(2)))) {
-        Symbol* new_sym = lookup(module->block, get_string(sym2));
-        SymExpr *newSym = new SymExpr(new_sym);
-        callExpr->replace(newSym);
+    // Translate M.x where M is a ModuleSymbol into just x where x is
+    // the symbol in module M; for functions, insert a "module=" token
+    // that is used to determine visible functions.
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->isNamed(".")) {
+        if (SymExpr* se1 = toSymExpr(call->get(1))) {
+          if (ModuleSymbol* mod = toModuleSymbol(se1->var)) {
+            SymbolTableEntry* entry = symbolTable.get(mod->initFn->body);
+            Symbol* sym = (entry) ? entry->get(get_string(call->get(2))) : 0;
+            if (!sym) {
+              entry = symbolTable.get(mod->block);
+              sym = (entry) ? entry->get(get_string(call->get(2))) : 0;
+            }
+            if (FnSymbol* fn = toFnSymbol(sym)) {
+              if (!fn->_this && fn->noParens) {
+                call->replace(new CallExpr(fn));
+              } else {
+                SymExpr* se = new SymExpr(get_string(call->get(2)));
+                skipSet.set_add(se);
+                call->replace(se);
+                CallExpr* parent = toCallExpr(se->parentExpr);
+                INT_ASSERT(parent);
+                parent->insertAtHead(mod);
+                parent->insertAtHead(gModuleToken);
+              }
+            } else if (sym) {
+              call->replace(new SymExpr(sym));
+            } else {
+              USR_FATAL_CONT(call, "Symbol '%s' undeclared in module '%s'",
+                             get_string(call->get(2)), mod->name);
+            }
+          }
+        }
       }
     }
 
     if (SymExpr* symExpr = toSymExpr(ast)) {
       if (symExpr->unresolved) {
+
+        if (skipSet.set_in(symExpr))
+          continue;
+
         const char* name = symExpr->unresolved;
         if (symExpr->isNamed(".") || !symExpr->parentSymbol)
           continue;

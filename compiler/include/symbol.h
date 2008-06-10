@@ -272,6 +272,7 @@ extern Symbol *gNilRef;
 extern Symbol *gUnknown;
 extern Symbol *gUnspecified;
 extern Symbol *gMethodToken;
+extern Symbol *gModuleToken;
 extern Symbol *gVoid;
 extern Symbol *gFile;
 extern Symbol *gOpaque;

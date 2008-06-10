@@ -1,6 +1,0 @@
-semantic: Compiler errors out when calling Random.fillRandom when Random module is not used.
-
-Currently the compiler will error out when calls to Random.fillRandom occur.
-It's debatable whether this type of call should be allowed or not. If nothing
-else it should get a different error message.
-

@@ -1,5 +1,0 @@
-bug: function resolution with explicit module names
-
-It gets even worse when the two modules mutually include each
-other and both contain calls?  Both functions are called, but
-they are reversed?

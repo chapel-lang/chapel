@@ -122,10 +122,18 @@ module-identifier:
   identifier
 \end{syntax}
 This allows two variables that have the same name to be distinguished
-based on the name of their module.  If code requires using symbols
-that have the same name from two different modules, explicit naming is
-needed to disambiguate between the two symbols.  Explicit naming can
-also be used instead of using a module.
+based on the name of their module.  For functions, the visible
+functions are restricted to the specified module.  For all symbols,
+the symbol must be declared top-level to the specified module.
+
+If code requires using symbols that have the same name from two
+different modules, explicit naming is needed to disambiguate between
+the two symbols.  Explicit naming can also be used instead of using a
+module.
+
+For calls of generic functions, if this call becomes the point of
+instantiation, there is an implicit use of the specified module at
+this call site.
 
 \subsection{Nested Modules}
 \label{Nested_Modules}

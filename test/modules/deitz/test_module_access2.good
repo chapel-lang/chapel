@@ -1,1 +1,1 @@
-error: M.x is undeclared
+test_module_access2.chpl:12: error: Symbol 'x' undeclared in module 'M'

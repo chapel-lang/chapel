@@ -197,6 +197,10 @@ the generic function is instantiated for each particular
 instantiation.  The specific call site chosen is arbitrary and it is
 referred to as the \emph{point of instantiation}.
 
+For function calls that specify the module
+explicitly~(\rsec{Explicit_Naming}), an implicit use of the specified
+module exists at the call site.
+
 \begin{example}
 Consider the following code which defines a generic
 function \chpl{bar}:

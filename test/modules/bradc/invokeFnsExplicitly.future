@@ -1,4 +1,0 @@
-bug: function resolution with explicit module names
-
-It seems that both invocations of foo() are calling M2.foo()
-whereas one should call M1's, the other M2's.

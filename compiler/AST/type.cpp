@@ -527,7 +527,9 @@ void initPrimitiveTypes(void) {
   dtIterator = createPrimitiveType("_iteratorClass", "_iteratorClass");
   dtIterator->isGeneric = true;
   dtMethodToken = createPrimitiveType ("_MT", "_MT");
-  CREATE_DEFAULT_SYMBOL (dtMethodToken, gMethodToken, "_mt");
+  CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
+  dtModuleToken = createPrimitiveType("tmodule=", "tmodule=");
+  CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
   dtEnumerated = createPrimitiveType ("enumerated", "enumerated");
   dtEnumerated->isGeneric = true;
 }

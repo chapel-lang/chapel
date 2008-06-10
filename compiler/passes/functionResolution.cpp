@@ -74,7 +74,7 @@ static Map<FnSymbol*,Vec<FnSymbol*>*> ddf; // map of functions to
 // e.g.  foo(arg1=12, "hi");
 //  types = int, string
 //  names = arg1, NULL
-static FnSymbol* resolve_call(CallInfo* info);
+static FnSymbol* resolve_call(CallInfo* info, BlockStmt* scope = NULL);
 static Type* resolve_type_expr(Expr* expr);
 
 static void resolveCall(CallExpr* call);
@@ -1212,7 +1212,8 @@ userCall(CallExpr* call) {
 static void
 printResolutionError(const char* error,
                      Vec<FnSymbol*>& candidates,
-                     CallInfo* info) {
+                     CallInfo* info,
+                     BlockStmt* scope) {
   CallExpr* call = userCall(info->call);
   if (!strcmp("_cast", info->name)) {
     if (!info->actualSyms.v[0]->isTypeVariable) {
@@ -1264,6 +1265,11 @@ printResolutionError(const char* error,
     if (!strncmp("_type_construct_", info->name, 16))
       entity = "type specifier";
     const char* str = toString(info);
+    if (scope) {
+      ModuleSymbol* mod = toModuleSymbol(scope->parentSymbol);
+      INT_ASSERT(mod);
+      str = astr(mod->name, ".", str);
+    }
     USR_FATAL_CONT(call, "%s %s '%s'", error, entity, str);
     if (candidates.n > 0) {
       if (developer) {
@@ -1399,7 +1405,7 @@ getVisibleFunctions(BlockStmt* block,
 }
 
 static FnSymbol*
-resolve_call(CallInfo* info) {
+resolve_call(CallInfo* info, BlockStmt* scope) {
   CallExpr* call = info->call;
 
   Vec<FnSymbol*> visibleFns;                    // visible functions
@@ -1414,9 +1420,16 @@ resolve_call(CallInfo* info) {
     buildVisibleFunctionMap();
 
   if (!call->isResolved()) {
-    getVisibleFunctions(getVisibilityBlock(call), info->name, visibleFns);
-  } else
+    if (!scope) {
+      getVisibleFunctions(getVisibilityBlock(call), info->name, visibleFns);
+    } else {
+      if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(scope))
+        if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info->name))
+          visibleFns.append(*fns);
+    }
+  } else {
     visibleFns.add(call->isResolved());
+  }
 
   if (explainCallLine && explainCallMatch(call)) {
     USR_PRINT(call, "call: %s", toString(info));
@@ -1460,7 +1473,11 @@ resolve_call(CallInfo* info) {
 
   // use visibility and then look for best again
   if (!best && candidateFns.n > 1) {
-    disambiguate_by_scope(call->parentExpr, &candidateFns);
+    if (scope) {
+      disambiguate_by_scope(scope, &candidateFns);
+    } else {
+      disambiguate_by_scope(getVisibilityBlock(call), &candidateFns);
+    }
     best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
                                  &info->actualTypes, &info->actualSyms,
                                  &actualFormals);
@@ -1471,12 +1488,12 @@ resolve_call(CallInfo* info) {
   }
 
   if (!best && candidateFns.n > 0) {
-    printResolutionError("ambiguous", candidateFns, info);
+    printResolutionError("ambiguous", candidateFns, info, scope);
     best = NULL;
   } else if (call->partialTag && (!best || !best->noParens)) {
     best = NULL;
   } else if (!best) {
-    printResolutionError("unresolved", visibleFns, info);
+    printResolutionError("unresolved", visibleFns, info, scope);
     best = NULL;
   } else {
     best = build_default_wrapper(best, actualFormals, call->square);
@@ -1592,9 +1609,24 @@ resolveCall(CallExpr* call) {
 
     resolveDefaultGenericType(call);
 
+    BlockStmt* scope = NULL;
+    if (call->numActuals() >= 2) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        if (se->var == gModuleToken) {
+          se->remove();
+          se = toSymExpr(call->get(1));
+          INT_ASSERT(se);
+          ModuleSymbol* mod = toModuleSymbol(se->var);
+          INT_ASSERT(mod);
+          se->remove();
+          scope = mod->block;
+        }
+      }
+    }
+
     CallInfo info(call);
 
-    FnSymbol* resolvedFn = resolve_call(&info);
+    FnSymbol* resolvedFn = resolve_call(&info, scope);
 
     if (call->partialTag) {
       if (!resolvedFn)

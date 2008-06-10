@@ -137,6 +137,7 @@ TYPE_EXTERN PrimitiveType* dtVoid;
 TYPE_EXTERN Type* dtObject;
 TYPE_EXTERN PrimitiveType* dtValue;
 TYPE_EXTERN PrimitiveType* dtMethodToken;
+TYPE_EXTERN PrimitiveType* dtModuleToken;
 
 // primitive types
 TYPE_EXTERN PrimitiveType* dtBool;
