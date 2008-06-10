@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <inttypes.h>
+#include <errno.h>
 
 //
 // task pool: linked list of tasks
@@ -55,26 +56,30 @@ static chpl_task_pool_p task_pool_tail; // tail of task pool
 static int              waking_cnt;     // number of threads signaled to wakeup
 static int              running_cnt;    // number of running threads 
 static int              threads_cnt;    // number of threads (total)
+static int              blocked_thread_cnt; // number of threads waiting for something
+static _Bool*           maybe_deadlocked;   // whether all existing threads are blocked
 static chpl_mutex_t     report_lock;    // critical section lock
 static pthread_key_t    lock_report_key;
 
 
-typedef struct _lockReport {
+typedef struct lockReport {
   const char* filename;
   int lineno;
-  int maybeLocked;
-  struct _lockReport* next;
+  _Bool maybeLocked, maybeDeadlocked;
+  struct lockReport* next;
 } lockReport;
 
 
 lockReport* lockReportHead = NULL;
 lockReport* lockReportTail = NULL;
 
-static void traverseLockedThreads(int sig);
-static void setBlockingLocation(int lineno, _string filename);
-static void unsetBlockingLocation(void);
-static void initializeLockReportForThread(void);
+static void  traverseLockedThreads(int sig);
+static _Bool setBlockingLocation(int lineno, _string filename);
+static void  unsetBlockingLocation(void);
+static void  initializeLockReportForThread(void);
 static _string idleThreadName = "|idle|";
+
+static struct timespec delay = { 1, 0 }; // 1 second
 
 // Condition variables
 
@@ -127,10 +132,20 @@ void chpl_sync_unlock(chpl_sync_aux_t *s) {
 
 int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string filename) {
   int return_value;
-  setBlockingLocation(lineno, filename);
+  _Bool last_unblocked_thread = setBlockingLocation(lineno, filename);
   return_value = chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
-    if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
+    if (last_unblocked_thread) {
+      if ((return_value = pthread_cond_timedwait(s->signal_full, s->lock, &delay))
+          == ETIMEDOUT) {
+        lockReport* lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
+        if (lockRprt->maybeDeadlocked)
+          traverseLockedThreads(SIGINT);
+      }
+      unsetBlockingLocation();
+      last_unblocked_thread = setBlockingLocation(lineno, filename);
+    }
+    else if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
       chpl_internal_error("pthread_cond_wait() failed");
   }
   unsetBlockingLocation();
@@ -139,10 +154,20 @@ int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string fil
 
 int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string filename) {
   int return_value;
-  setBlockingLocation(lineno, filename);
+  _Bool last_unblocked_thread = setBlockingLocation(lineno, filename);
   return_value = chpl_mutex_lock(s->lock);
   while (return_value == 0 && s->is_full) {
-    if ((return_value = pthread_cond_wait(s->signal_empty, s->lock)))
+    if (last_unblocked_thread) {
+      if ((return_value = pthread_cond_timedwait(s->signal_empty, s->lock, &delay))
+          == ETIMEDOUT) {
+        lockReport* lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
+        if (lockRprt->maybeDeadlocked)
+          traverseLockedThreads(SIGINT);
+      }
+      unsetBlockingLocation();
+      last_unblocked_thread = setBlockingLocation(lineno, filename);
+    }
+    else if ((return_value = pthread_cond_wait(s->signal_empty, s->lock)))
       chpl_internal_error("pthread_cond_wait() failed");
   }
   unsetBlockingLocation();
@@ -187,10 +212,20 @@ void chpl_single_unlock(chpl_single_aux_t *s) {
 
 int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, _string filename) {
   int return_value;
-  setBlockingLocation(lineno, filename);
+  _Bool last_unblocked_thread = setBlockingLocation(lineno, filename);
   return_value = chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
-    if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
+    if (last_unblocked_thread) {
+      if ((return_value = pthread_cond_timedwait(s->signal_full, s->lock, &delay))
+          == ETIMEDOUT) {
+        lockReport* lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
+        if (lockRprt->maybeDeadlocked)
+          traverseLockedThreads(SIGINT);
+      }
+      unsetBlockingLocation();
+      last_unblocked_thread = setBlockingLocation(lineno, filename);
+    }
+    else if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
       chpl_internal_error("invalid mutex in chpl_single_wait_full");
   }
   unsetBlockingLocation();
@@ -234,6 +269,8 @@ void initChplThreads() {
   running_cnt = 0;                     // only main thread running
   waking_cnt = 0;
   threads_cnt = 0;
+  blocked_thread_cnt = 0;
+  maybe_deadlocked = NULL;
   task_pool_head = task_pool_tail = NULL;
 
   chpl_mutex_init(&_memtrack_lock);
@@ -307,10 +344,9 @@ void chpl_set_serial(chpl_bool state) {
 //
 static void traverseLockedThreads(int sig) {
   lockReport* rep;
+  assert(blockreport); // Error: this should only be called as a signal handler
+                       // and it should only be handled if blockreport is on
   signal(sig, SIG_IGN);
-  if (!blockreport)
-    return; // Error: this should only be called as a signal handler
-            // and it should only be handled if blockreport is on
   rep = lockReportHead;
   while (rep != NULL) {
     if (rep->maybeLocked) {
@@ -326,14 +362,29 @@ static void traverseLockedThreads(int sig) {
 }
 
 
-static void setBlockingLocation(int lineno, _string filename) {
+static _Bool setBlockingLocation(int lineno, _string filename) {
   lockReport* lockRprt;
-  if (!blockreport)
-    return;
-  lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
-  lockRprt->filename = filename;
-  lockRprt->lineno = lineno;
-  lockRprt->maybeLocked = 1;
+  _Bool isLastUnblockedThread = false;
+  if (blockreport) {
+    lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
+    lockRprt->filename = filename;
+    lockRprt->lineno = lineno;
+    lockRprt->maybeLocked = true;
+
+    // Begin critical section
+    chpl_mutex_lock(&report_lock);
+    blocked_thread_cnt++;
+    if (blocked_thread_cnt >= threads_cnt) {
+      isLastUnblockedThread = true;
+      lockRprt->maybeDeadlocked = true;
+      if (maybe_deadlocked)
+        *maybe_deadlocked = false;
+      maybe_deadlocked = &(lockRprt->maybeDeadlocked);
+    }
+    // End critical section
+    chpl_mutex_unlock(&report_lock);
+  }
+  return isLastUnblockedThread;
 }
 
 
@@ -342,7 +393,16 @@ static void unsetBlockingLocation() {
   if (!blockreport)
     return;
   lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
-  lockRprt->maybeLocked = 0;
+  lockRprt->maybeLocked = false;
+
+  // Begin critical section
+  chpl_mutex_lock(&report_lock);
+  blocked_thread_cnt--;
+  if (maybe_deadlocked)
+    *maybe_deadlocked = false;
+  maybe_deadlocked = NULL;
+  // End critical section
+  chpl_mutex_unlock(&report_lock);
 }
 
 
@@ -355,7 +415,8 @@ static void initializeLockReportForThread() {
   lockReport* newLockReport;
   newLockReport = chpl_alloc(sizeof(lockReport), "lockReport", 0, 0);
   newLockReport->next = NULL;
-  newLockReport->maybeLocked = 0;
+  newLockReport->maybeLocked = false;
+  newLockReport->maybeDeadlocked = false;
   pthread_setspecific(lock_report_key, newLockReport);
 
   // Begin critical section
@@ -396,8 +457,10 @@ chpl_begin_helper (chpl_task_pool_p task) {
 
   // The thread-specific data below should already exist, but for some
   // unknown reason, it is sometimes missing, so create it if missing.
-  if (blockreport && pthread_getspecific(lock_report_key) == NULL)
-    initializeLockReportForThread();
+  if (blockreport) {
+    if (pthread_getspecific(lock_report_key) == NULL)
+      initializeLockReportForThread();
+  }
 
   while (true) {
     //
@@ -433,7 +496,7 @@ chpl_begin_helper (chpl_task_pool_p task) {
       skip_over_begun_tasks();
     } while (!task_pool_head);
 
-    assert (task_pool_head && !task_pool_head->begun);
+    assert(task_pool_head && !task_pool_head->begun);
 
     if (waking_cnt > 0)
       waking_cnt--;
@@ -684,8 +747,7 @@ void chpl_execute_tasks_in_list (chpl_task_list_p task_list, chpl_bool skip_firs
   // or even none at all.
   if (task == NULL)
     return;
-
-  assert (task->next);
+  assert(task->next);
   next_task = task->next;  // next_task now points to the head of the list
   if (skip_first_task)
     next_task = next_task->next;
@@ -740,8 +802,7 @@ void chpl_free_task_list (chpl_task_list_p task_list) {
   // or even none at all.
   if (task == NULL)
     return;
-
-  assert (task->next);
+  assert(task->next);
   next_task = task->next;  // next_task now points to the head of the list
 
   do {
