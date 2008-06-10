@@ -1399,6 +1399,22 @@ void CallExpr::codegen(FILE* outfile) {
       get(3)->codegen(outfile);
       fprintf(outfile, ")");
       break;
+    case PRIMITIVE_LOCAL_CHECK:
+      fprintf(outfile, "LOCAL_CHECK(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(3)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_LOCAL_DEREF:
+      fprintf(outfile, "LOCAL_DEREF(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
     case PRIMITIVE_THREAD_INIT: {
       fprintf( outfile, "chpl_thread_init()");
       break;

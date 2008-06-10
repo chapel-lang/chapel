@@ -31,6 +31,7 @@ Optimization Control Options:
 Run-time Semantic Check Options:
       --no-checks                        Disable all following checks
       --[no-]bounds-checks               Enable [disable] bounds checking
+      --[no-]local-checks                Enable [disable] local block checking
       --[no-]nil-checks                  Enable [disable] nil checking
 
 C Code Generation Options:

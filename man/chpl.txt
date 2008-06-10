@@ -145,6 +145,9 @@ OPTIONS
   --[no-]bounds-checks   Enable [disable] dynamic bounds checking within the
                     generated Chapel program.
 
+  --[no-]local-checks  Enable [disable] dynamic checking of the locality of
+                    references within local blocks.
+
   --[no-]nil-checks   Enable [disable] dynamic checking for accessing nil
                     object references.
 

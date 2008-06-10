@@ -52,6 +52,7 @@ DefExpr* buildClassDefExpr(const char* name, Type* type, BlockStmt* decls);
 DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 Expr* buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base);
 
+BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(Expr* stmt, bool allocateOnHeap = true, VarSymbol* = NULL);
 BlockStmt* buildSyncStmt(Expr* stmt);

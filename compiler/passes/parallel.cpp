@@ -237,6 +237,183 @@ buildWideClass(Type* type) {
 
 
 //
+// The argument expr is a use of a wide reference. Insert a check to ensure
+// that it is on the current locale, then drop its wideness by moving the
+// addr field into a non-wide of otherwise the same type. Then, replace its
+// use with the non-wide version.
+//
+static void insertLocalTemp(Expr* expr) {
+  SymExpr* se = toSymExpr(expr);
+  Expr* stmt = expr->getStmtExpr();
+  INT_ASSERT(se && stmt);
+  currentLineno = se->lineno;
+  VarSymbol* var = new VarSymbol(astr("local_", se->var->name),
+                                 se->var->type->getField("addr")->type);
+  if (!fNoLocalChecks) {
+    stmt->insertBefore(new CallExpr(PRIMITIVE_LOCAL_CHECK, se->copy()));
+  }
+  stmt->insertBefore(new DefExpr(var));
+  stmt->insertBefore(new CallExpr(PRIMITIVE_LOCAL_DEREF, se->copy(), var));
+  se->replace(new SymExpr(var));
+}
+
+
+//
+// If call has the potential to cause communication, assert that the wide
+// reference that might cause communication is local and remove its wide-ness
+//
+// The organization of this function follows the order of CallExpr::codegen()
+// leaving out primitives that don't communicate.
+//
+static void localizeCall(CallExpr* call) {
+  if (call->primitive) {
+    switch (call->primitive->tag) {
+    case PRIMITIVE_ARRAY_SET: /* Fallthru */
+    case PRIMITIVE_ARRAY_SET_FIRST:
+      if (call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+        insertLocalTemp(call->get(1));
+      }
+      break;
+    case PRIMITIVE_MOVE:
+      if (CallExpr* rhs = toCallExpr(call->get(2))) {
+        if (rhs->isPrimitive(PRIMITIVE_GET_LOCALEID)) {
+          if (rhs->get(1)->typeInfo()->symbol->hasPragma("wide")) {
+            if (getValueType(rhs->get(1)->typeInfo()->getField("addr")->type)->symbol->hasPragma("wide class")) {
+              insertLocalTemp(rhs->get(1));
+            }
+          }
+        } else if (rhs->isPrimitive(PRIMITIVE_GET_REF)) {
+          if (rhs->get(1)->typeInfo()->symbol->hasPragma("wide") ||
+              rhs->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+            insertLocalTemp(rhs->get(1));
+            if (!rhs->get(1)->typeInfo()->symbol->hasPragma("ref"))
+              rhs->replace(rhs->get(1)->remove());
+          }
+        } else if (rhs->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+          if (rhs->get(1)->typeInfo()->symbol->hasPragma("wide") ||
+              rhs->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+            SymExpr* sym = toSymExpr(rhs->get(2));
+            INT_ASSERT(sym);
+            if (!sym->var->hasPragma("super class")) {
+              insertLocalTemp(rhs->get(1));
+            }
+          }
+        } else if (rhs->isPrimitive(PRIMITIVE_ARRAY_GET) ||
+                   rhs->isPrimitive(PRIMITIVE_ARRAY_GET_VALUE)) {
+          if (rhs->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+            SymExpr* lhs = toSymExpr(call->get(1));
+            Expr* stmt = call->getStmtExpr();
+            INT_ASSERT(lhs && stmt);
+            insertLocalTemp(rhs->get(1));
+            VarSymbol* localVar = new VarSymbol(astr("local_", lhs->var->name),
+                                    lhs->var->type->getField("addr")->type);
+            stmt->insertBefore(new DefExpr(localVar));
+            lhs->replace(new SymExpr(localVar));
+            stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, lhs,
+                                           new SymExpr(localVar)));
+          }
+        } else if (rhs->isPrimitive(PRIMITIVE_UNION_GETID)) {
+          if (rhs->get(1)->typeInfo()->symbol->hasPragma("wide")) {
+            insertLocalTemp(rhs->get(1));
+          }
+        } else if (rhs->isPrimitive(PRIMITIVE_GETCID)) {
+          if (rhs->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+            insertLocalTemp(rhs->get(1));
+          }
+        }
+      } else if (call->get(1)->typeInfo()->symbol->hasPragma("wide") &&
+                 !call->get(2)->typeInfo()->symbol->hasPragma("wide") &&
+                 !call->get(2)->typeInfo()->symbol->hasPragma("ref")) {
+        insertLocalTemp(call->get(1));
+      }
+      break;
+    case PRIMITIVE_DYNAMIC_CAST:
+      if (call->get(2)->typeInfo()->symbol->hasPragma("wide class")) {
+        insertLocalTemp(call->get(2));
+        if (call->get(1)->typeInfo()->symbol->hasPragma("wide class") ||
+            call->get(1)->typeInfo()->symbol->hasPragma("wide")) {
+          toSymExpr(call->get(1))->var->type = call->get(1)->typeInfo()->getField("addr")->type;
+        }
+      }
+    break;
+    case PRIMITIVE_SETCID:
+      if (call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
+        insertLocalTemp(call->get(1));
+      }
+      break;
+    case PRIMITIVE_UNION_SETID:
+      if (call->get(1)->typeInfo()->symbol->hasPragma("wide")) {
+        insertLocalTemp(call->get(1));
+      }
+      break;
+    case PRIMITIVE_SET_MEMBER:
+      if (call->get(1)->typeInfo()->symbol->hasPragma("wide class") ||
+          call->get(1)->typeInfo()->symbol->hasPragma("wide")) {
+        insertLocalTemp(call->get(1));
+      }
+      break;
+    default:
+      break;
+    }
+  }
+}
+
+
+//
+// Do a breadth first search starting from functions generated for local blocks
+// for all function calls in each level of the search, if they directly cause
+// communication, add a local temp that isn't wide. If it is a resolved call,
+// meaning that it isn't a primitive or external function, clone it and add it
+// to the queue of functions to handle at the next iteration of the BFS.
+//
+static void handleLocalBlocks() {
+  Map<FnSymbol*, FnSymbol*> fnMap;
+  Vec<FnSymbol*> localizeFns, next;
+
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->hasPragma("local block"))
+      localizeFns.add(fn);
+  }
+  Vec<FnSymbol*>* localizeFnsP = &localizeFns;
+  Vec<FnSymbol*>* nextP = &next;
+
+  while (localizeFnsP->n > 0) {
+    forv_Vec(FnSymbol, fn, *localizeFnsP) {
+      Vec<BaseAST*> asts;
+      collect_asts(fn->body, asts);
+      forv_Vec(BaseAST, ast, asts) {
+        if (CallExpr* call = toCallExpr(ast)) {
+          localizeCall(call);
+          if (FnSymbol* fn = call->isResolved()) {
+            if (FnSymbol* localFn = fnMap.get(fn)) {
+              call->baseExpr->replace(new SymExpr(localFn));
+            } else {
+              if (!fn->hasPragma("localized")) {
+                FnSymbol* copy = fn->copy();
+                copy->name = astr("_local_", fn->name);
+                copy->cname = astr("_local_", fn->cname);
+                copy->addPragma("localized");
+                fn->defPoint->insertBefore(new DefExpr(copy));
+                fnMap.put(fn, copy);
+                call->baseExpr->replace(new SymExpr(copy));
+                nextP->add(copy);
+              } else {
+                INT_FATAL("localized function should already be in map", fn);
+              }
+            }
+          }
+        }
+      }
+    }
+    Vec<FnSymbol*>* tmp = localizeFnsP;
+    localizeFnsP = nextP;
+    nextP = tmp;
+    nextP->clear();
+  } 
+}
+
+
+//
 // change all classes into wide classes
 // change all references into wide references
 //
@@ -605,6 +782,8 @@ insertWideReferences(void) {
       }
     }
   }
+
+  handleLocalBlocks();
 
   CallExpr* localeID = new CallExpr(PRIMITIVE_LOCALE_ID);
   VarSymbol* tmp = new VarSymbol("_tmp", localeID->typeInfo());

@@ -994,6 +994,19 @@ static Expr* buildOnExpr(Expr* expr) {
 }
 
 
+BlockStmt* buildLocalStmt(Expr* stmt) {
+  static int blockid = 1;
+  FnSymbol* fn = new FnSymbol(astr("_local_stmt_", istr(blockid++)));
+  BlockStmt* block = buildChapelStmt();
+
+  fn->body = new BlockStmt(stmt);
+  fn->addPragma("local block");
+  block->insertAtTail(new DefExpr(fn));
+  block->insertAtTail(new CallExpr(fn));
+  return block;
+}
+
+
 BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
   checkControlFlow(stmt, "on statement");

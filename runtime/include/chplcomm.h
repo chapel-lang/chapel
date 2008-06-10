@@ -18,6 +18,13 @@ extern char* _global_vars_registry_static[];
 
 typedef void (*func_p)(void*);
 
+#define LOCAL_CHECK(wide, lineno, filename) \
+  if ((wide).locale != _here.locale) \
+    chpl_error("cannot access remote data in local block", lineno, filename);
+
+#define LOCAL_DEREF(wide, local) \
+  (local) = (wide).addr
+
 #define _HEAP_REGISTER_GLOBAL_VAR(i, wide) \
   (wide).locale = 0; \
   if (_localeID == 0) { \

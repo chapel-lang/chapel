@@ -1,0 +1,1 @@
+{a = -2, next = {a = 2, next = {a = 3, next = nil}}} {a = -1, next = {a = 3, next = {a = 4, next = nil}}} {a = 0, next = {a = 4, next = {a = 5, next = nil}}} {a = 1, next = {a = 5, next = {a = 6, next = nil}}} {a = 2, next = {a = 6, next = {a = 7, next = nil}}}

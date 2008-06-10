@@ -55,6 +55,9 @@ enum PrimitiveTag {
   PRIMITIVE_GET_REAL,                  // get complex real component
   PRIMITIVE_GET_IMAG,                  // get complex imag component
 
+  PRIMITIVE_LOCAL_CHECK,          // Assert that a wide ref is on this locale
+  PRIMITIVE_LOCAL_DEREF,          // Assign a wide ref addr field to a non-wide
+
   PRIMITIVE_THREAD_INIT,
   PRIMITIVE_THREAD_ID,
   PRIMITIVE_GET_SERIAL,                // get serial state

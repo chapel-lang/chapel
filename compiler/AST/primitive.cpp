@@ -330,6 +330,10 @@ initPrimitive() {
   prim_def(PRIMITIVE_GET_REAL, "complex_get_real", returnInfoComplexField);
   prim_def(PRIMITIVE_GET_IMAG, "complex_get_imag", returnInfoComplexField);
 
+  // local block primitives
+  prim_def(PRIMITIVE_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
+  prim_def(PRIMITIVE_LOCAL_DEREF, "local_deref", returnInfoVoid, true);
+
   // thread primitives
   prim_def(PRIMITIVE_THREAD_INIT, "thread_init", returnInfoVoid, true);
   prim_def(PRIMITIVE_THREAD_ID, "thread_id", returnInfoUInt64, true);  // 64-bit
@@ -393,6 +397,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_ARRAY_FREE_ELTS, "array_free_elts", returnInfoVoid, true);
   prim_def(PRIMITIVE_ARRAY_GET, "array_get", returnInfoArrayIndex);
   prim_def(PRIMITIVE_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndex);
+  // PRIMITIVE_ARRAY_SET is unused by compiler, runtime, modules
   prim_def(PRIMITIVE_ARRAY_SET, "array_set", returnInfoVoid, true);
   prim_def(PRIMITIVE_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true);
 

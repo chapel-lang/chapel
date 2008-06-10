@@ -1,0 +1,1 @@
+localBlock3.chpl:26: error: cannot access remote data in local block

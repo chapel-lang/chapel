@@ -1,0 +1,4 @@
+First local block
+2
+Second local block
+localBlock8.chpl:25: error: cannot access remote data in local block

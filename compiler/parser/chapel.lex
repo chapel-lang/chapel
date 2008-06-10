@@ -86,6 +86,7 @@ index           processToken(TINDEX);
 inout           processToken(TINOUT);
 label           processToken(TLABEL);
 let             processToken(TLET);
+local           processToken(TLOCAL);
 module          processToken(TMODULE);
 new             processToken(TNEW);
 nil             processToken(TNIL);

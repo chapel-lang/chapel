@@ -23,6 +23,7 @@ extern bool fNoDeadCodeElimination;
 extern bool fNoInlineIterators;
 extern bool fNoInline;
 extern bool fNoLiveAnalysis;
+extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoScalarReplacement;
 extern bool fNoOptimizeLoopIterators;

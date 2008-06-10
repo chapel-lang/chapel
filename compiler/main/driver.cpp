@@ -47,6 +47,7 @@ bool fNoOptimizeLoopIterators = false;
 bool fNoInlineIterators = false;
 bool fNoLiveAnalysis = false;
 bool fNoBoundsChecks = false;
+bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fNoChecks = false;
 bool fNoInline = false;
@@ -234,6 +235,7 @@ static void verifyIntSizes(ArgumentState* arg, char* unused) {
 static void turnOffChecks(ArgumentState* arg, char* unused) {
   fNoNilChecks = true;
   fNoBoundsChecks = true;
+  fNoLocalChecks = true;
 }
 
 static void setFastFlag(ArgumentState* arg, char* unused) {
@@ -251,6 +253,7 @@ static void setFastFlag(ArgumentState* arg, char* unused) {
   fNoScalarReplacement = false;
   fNoChecks = true;
   fNoBoundsChecks = true;
+  fNoLocalChecks = true;
   fNoNilChecks = true;
   optimizeCCode = true;
 }
@@ -318,6 +321,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
+ {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
 
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},

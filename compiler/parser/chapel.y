@@ -94,6 +94,7 @@ NOTES
 %token TITERATOR
 %token TLABEL
 %token TLET
+%token TLOCAL
 %token TMINUSMINUS
 %token TMODULE
 %token TNEW
@@ -183,7 +184,7 @@ NOTES
 %type <pblockstmt> var_decl_stmt_inner tuple_var_decl_stmt_inner_ls
 
 %type <pblockstmt> block_stmt function_body_stmt
-%type <pblockstmt> begin_stmt cobegin_stmt atomic_stmt
+%type <pblockstmt> begin_stmt cobegin_stmt atomic_stmt local_stmt
 
 %type <pexpr> when_stmt
 %type <pblockstmt> when_stmt_ls
@@ -315,6 +316,7 @@ non_empty_stmt:
 | begin_stmt
 | cobegin_stmt
 | atomic_stmt
+| local_stmt
 | error
     { printf("syntax error"); exit(1); }
 ;
@@ -570,6 +572,14 @@ on_stmt:
     { $$ = buildOnStmt($2, $4); }
 | TON expr block_stmt
     { $$ = buildOnStmt($2, $3); }
+;
+
+
+local_stmt:
+  TLOCAL stmt
+  {
+    $$ = buildLocalStmt($2);
+  }
 ;
 
 
