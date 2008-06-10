@@ -14,10 +14,6 @@
 linux and general regressions
 =============================
 
-??? (started 06/07/08)
-----------------------
-[Error matching compiler output for reductions/deitz/test_reduce_range]
-
 new madness precision issue (most platforms other than darwin, cygwin)
 ----------------------------------------------------------------------
 [Error matching program output for
