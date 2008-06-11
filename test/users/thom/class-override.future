@@ -1,5 +1,0 @@
-semantic: method reference to member overridden in subclass
-
-Thom suggests that the Chapel semantics for this program differ from
-Java's.  I'm checking this in as a placeholder to double-check that
-this is what we want.
