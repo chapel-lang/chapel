@@ -2,26 +2,34 @@
 #include <armci.h>
 #include <gpc.h>
 
+#include <stdio.h> // for sprintf()
 #include <stdint.h>
 #include <string.h>
+#include <strings.h>
 
 #include "chplcomm.h"
 #include "chplmem.h"
 #include "chplrt.h"
 #include "error.h"
 
+#define MEG (1024 * 1024)
+#define _MAX_ARMCI_MEMSZ (64 * MEG)
 
 // Undefine this symbol to deactivate extra runtime error checking
 #define _ARMCI_DEBUG
 
 #ifdef _ARMCI_DEBUG
-#define ARMCI_SAFE(fncall)                            \
-{                                                     \
-  int ret;                                            \
-                                                      \
-  ret = fncall;                                       \
-  if (ret != 0)                                       \
-    ARMCI_Error((char*)"ARMCI function call error", ret);       \
+#define ARMCI_SAFE(fncall)                                 \
+{                                                          \
+  int ret;                                                 \
+  char buff[256];                                          \
+                                                           \
+  ret = fncall;                                            \
+  if (ret != 0) {                                          \
+    sprintf(buff, "ARMCI function call error: %d %s %d\n", \
+	    ret, __FILE__, __LINE__);                      \
+    ARMCI_Error(buff, ret);                                \
+  }                                                        \
 }
 #else
 #define ARMCI_SAFE(fncall) fncall
@@ -45,6 +53,20 @@
 #else
 #define MPI_SAFE(fncall) fncall
 #endif
+
+typedef struct {
+  int               caller;
+  _Bool             serial_state; // whether the current thread is allowed to spawn new threads
+  func_p            fun;
+  _Bool             block; // whether the fork is blocking or not
+  int               arg_size;
+  char              arg[0];       // variable-sized data here
+} dist_fork_t;
+
+typedef struct {
+  dist_fork_t *info; // Input data
+  int *rhdr; // completion signal data
+} gpc_info_t;
 
 static int gpc_call_handler(int to, int from, void *hdr, int hlen,
                             void *data,  int dlen,
@@ -72,7 +94,6 @@ int _chpl_comm_user_invocation(int argc, char* argv[]) {
   // This will probably need to look for a special argument that was
   // inserted during the user invocation call to chpl_comm_init()
 
-  chpl_msg(2, "Called _chpl_comm_user_invocation() on: %d\n", _localeID);
   // For now return always false ... ? -- danich 10/23/07
   return 0;
 }
@@ -104,8 +125,6 @@ char** _chpl_comm_create_argcv(int32_t execNumLocales, int argc, char* argv[],
   char **commArgv;
   int i;
 
-  chpl_msg(2, "Called _chpl_comm_create_argcv() on: %d\n", _localeID);
-
   *commArgc = argc;
   commArgv = chpl_malloc((*commArgc) + 1, sizeof(char *), "ARMCI argv", __LINE__, __FILE__);
   for (i = 0; i < argc; i++)
@@ -126,6 +145,7 @@ char** _chpl_comm_create_argcv(int32_t execNumLocales, int argc, char* argv[],
 //     argc/argv pair passed to main()
 
 static int armci_init_called = 0;
+static void **globalPtrs = NULL;
 
 //
 void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
@@ -149,6 +169,8 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
   // I believe)
 
   int nprocs, me;
+  void **ptrs;
+  armci_size_t sz;
 
   if (runInGDB) {
     chpl_error("--gdb not yet implemented for ARMCI", runInGDB, "<command-line>");
@@ -163,6 +185,15 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
 
   _localeID = me;
   _numLocales = nprocs;
+
+  globalPtrs = ARMCI_Malloc_local(_numLocales * sizeof(void *));
+  sz = _MAX_ARMCI_MEMSZ;
+
+  ARMCI_SAFE(ARMCI_Malloc(globalPtrs, sz));
+
+  chpl_meminfo.head = (char *)globalPtrs[me];
+  chpl_meminfo.current = (char *)globalPtrs[me];
+  chpl_meminfo.tail = ((char *)globalPtrs[me]) + _MAX_ARMCI_MEMSZ;
 
   ghndl = ARMCI_Gpc_register(gpc_call_handler);
 }
@@ -182,20 +213,51 @@ void _chpl_comm_rollcall(void) {
 }
 
 void _chpl_comm_alloc_registry(int numGlobals) {
-  chpl_error("_chpl_comm_alloc_registry() not yet implemented", 0, NULL);
-  _global_vars_registry = chpl_malloc(numGlobals, sizeof(void*), "allocate global vars registry", 0, 0);
+  _global_vars_registry = chpl_malloc(numGlobals, sizeof(void *), "allocate global vars registry", 0, 0);
 }
 
 void _chpl_comm_broadcast_global_vars(int numGlobals) {
-  chpl_error("_chpl_comm_broadcast_global_vars() not yet implemented", 0, NULL);
+  int i;
+
+  if (_localeID != 0) {
+    for (i = 0; i < numGlobals; i++)
+      _chpl_comm_get(_global_vars_registry[i], 0, &((void **)globalPtrs[0])[i], sizeof(void *));
+  }
 }
 
 void _chpl_comm_set_malloc_type(void) {
-  chpl_error("_chpl_comm_set_malloc_type() not yet implemented", 0, NULL);
+  whichMalloc = 2; // _chpl_malloc() will be allocated from the remotely-accessible memory pool
+}
+
+typedef struct __broadcast_private_helper {
+  void *addr;
+  void *raddr;
+  int locale;
+  size_t size;
+} _broadcast_private_helper;
+
+static void _broadcastPrivateHelperFn(struct __broadcast_private_helper *arg);
+
+void _broadcastPrivateHelperFn(struct __broadcast_private_helper *arg) {
+  _chpl_comm_get(arg->addr, arg->locale, arg->raddr, arg->size);
 }
 
 void _chpl_comm_broadcast_private(void* addr, int size) {
-  chpl_error("_chpl_comm_broadcast_private() not yet implemented", 0, NULL);
+  int i;
+  _broadcast_private_helper bph;
+  void* heapAddr = NULL;
+
+  heapAddr = chpl_malloc(1, size, "broadcast private", 0, 0);
+  bcopy(addr, heapAddr, size);
+  for (i = 0; i < _numLocales; i++)
+    if (i != _localeID) {
+      bph.addr = addr;
+      bph.raddr = heapAddr;
+      bph.locale = _localeID;
+      bph.size = size;
+
+      _chpl_comm_fork(i, (func_p)_broadcastPrivateHelperFn, &bph, sizeof(_broadcast_private_helper));
+    }
 }
 
 //
@@ -204,8 +266,6 @@ void _chpl_comm_broadcast_private(void* addr, int size) {
 // for debugging to determine where the barrier is being called.
 //
 void _chpl_comm_barrier(const char *msg) {
-  chpl_msg(2, "Called _chpl_comm_barrier(\"%s\") on: %d\n", msg, _localeID);
-
   // Insert ARMCI barrier between all processes here
   ARMCI_Barrier();
 }
@@ -213,23 +273,15 @@ void _chpl_comm_barrier(const char *msg) {
 
 static void _chpl_comm_exit_common(int status)
 {
-  chpl_msg(2, "Called _chpl_comm_exit_common() on: %d\n", _localeID);
-
   if (armci_init_called) {
-    chpl_msg(2, "Before ARMCI_Gpc_release() on: %d %d\n", _localeID, ghndl);
+    if (globalPtrs)
+      ARMCI_Free_local(globalPtrs);
 
     if (ghndl != -1)
       ARMCI_Gpc_release(ghndl);
 
-    chpl_msg(2, "After ARMCI_Gpc_release() on: %d\n", _localeID);
-
     ARMCI_Finalize();
-
-    chpl_msg(2, "After ARMCI_Finalize() on: %d\n", _localeID);
-
     MPI_SAFE(MPI_Finalize());
-
-    chpl_msg(2, "After MPI_Finalize() on: %d\n", _localeID);
   }
 } /* _chpl_comm_exit_common */
 
@@ -275,13 +327,10 @@ void _chpl_comm_exit_any(int status) {
 void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
   // this should be an ARMCI put call
 
-  chpl_msg(2, "Called _chpl_comm_put() on: %d\n", _localeID);
-
   if (_localeID == locale)
     memmove(raddr, addr, size);
-  else {
+  else
     ARMCI_SAFE(ARMCI_Put(addr, raddr, size, locale));
-  }
 }
 
 
@@ -295,13 +344,10 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
 void  _chpl_comm_get(void *addr, int32_t locale, const void* raddr, int32_t size) {
   // this should be an ARMCI get call
 
-  chpl_msg(2, "Called _chpl_comm_get() on: %d\n", _localeID);
-
   if (_localeID == locale)
     memmove(addr, raddr, size);
-  else {
+  else
     ARMCI_SAFE(ARMCI_Get((void*)raddr, addr, size, locale));
-  }
 }
 
 //
@@ -310,58 +356,97 @@ void  _chpl_comm_get(void *addr, int32_t locale, const void* raddr, int32_t size
 // notes:
 //   multiple forks to the same locale should be handled concurrently
 //
-void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
-  // Not sure how to implement this for ARMCI
+
+static void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Bool block);
+
+void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Bool block) {
+  const int rhdr_size = sizeof(int);
+
   int ret;
-  //  gpc_hdl_t nbh;
-  void *header, *rheader;
+  void *header;
+  volatile void *rheader;
   int rhlen;
   void *rdata;
   int rdlen;
+  dist_fork_t *info;
+  int info_size;
+  volatile int *done;
 
-  chpl_msg(2, "Called _chpl_comm_fork() on: %d\n", _localeID);
+  if (_localeID == locale) {
+    f(arg);
+    return;
+  }
 
   if (ghndl == -1) {
     chpl_internal_error("ARMCI GPC handler function not registered");
     return;
   }
 
-  header = f;
-  rhlen = sizeof(f);
-  rheader = chpl_malloc(sizeof(f), sizeof(char), "GPC exec remote header", __LINE__, __FILE__);
-  rdata = chpl_malloc(arg_size, sizeof(char), "GPC exec remote data", __LINE__, __FILE__);
+  info_size = sizeof(dist_fork_t) + arg_size;
+  info = (dist_fork_t *)chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork", __LINE__, __FILE__);
+
+  info->caller = _localeID;
+  info->serial_state = chpl_get_serial();
+  info->fun = f;
+  info->arg_size = arg_size;
+  info->block = block;
+  if (arg_size)
+    bcopy(arg, &(info->arg), arg_size);
+
+  if (arg_size > 0)
+    rdata = chpl_malloc(arg_size, sizeof(char), "GPC exec remote data", __LINE__, __FILE__);
+  else
+    rdata = NULL;
   rdlen = arg_size;
 
-  /* ARMCI_Gpc_init_handle(&nbh); */
+  header = chpl_malloc(sizeof(void *), sizeof(char), "GPC exec remote header address",
+		       __LINE__, __FILE__);
+  rheader = chpl_malloc(rhdr_size, sizeof(char), "GPC exec remote header", __LINE__, __FILE__);
+  // must be non-empty  
 
-  chpl_msg(2, "Trying to execute on locale: %d from locale: %d\n", locale, _localeID);
-  chpl_msg(2, "f: %p, arg: %p, arg_size: %d\n", f, arg, arg_size);
+  *(intptr_t *)header = (intptr_t *)rheader;
 
-  ret = ARMCI_Gpc_exec(ghndl, locale, &header, sizeof(f), arg, arg_size,
-                       rheader, rhlen, rdata, rdlen, NULL /* &nbh */);
+  done = rheader;
+  *done = 0;
+
+  ret = ARMCI_Gpc_exec(ghndl, locale, header, sizeof(void *), info, info_size, rheader, rhdr_size,
+		       rdata, rdlen, NULL);
+
   if (ret != 0) {
     chpl_internal_error("ARMCI_Gpc_exec() failed");
+    chpl_free(info, __LINE__, __FILE__);
+    if (rdata)
+      chpl_free(rdata, __LINE__, __FILE__);
+    chpl_free(header, __LINE__, __FILE__);
     chpl_free(rheader, __LINE__, __FILE__);
-    chpl_free(rdata, __LINE__, __FILE__);
     return;
   }
 
-  chpl_msg(2, "After ARMCI_Gpc_exec()\n");
+  while (block && *done == 0)
+    ;
 
-  /* ARMCI_Gpc_wait(&nbh); */
-
+  chpl_free(info, __LINE__, __FILE__);
+  if (rdata) {
+    if (block)
+      bcopy(rdata, arg, rdlen);
+    chpl_free(rdata, __LINE__, __FILE__);
+  }
+  chpl_free(header, __LINE__, __FILE__);
   chpl_free(rheader, __LINE__, __FILE__);
-  chpl_free(rdata, __LINE__, __FILE__);
+}
+
+void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
+  _chpl_comm_fork_common(locale, f, arg, arg_size, true);
 }
 
 //
 // non-blocking fork (not yet used)
 //
 void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
-  // Not sure how to implement this for ARMCI
-
-  chpl_msg(2, "Called _chpl_comm_fork_nb() on: %d\n", _localeID);
+  _chpl_comm_fork_common(locale, f, arg, arg_size, false);
 }
+
+static void *_gpc_thread_handler(void *arg);
 
 int gpc_call_handler(int to, int from, void *hdr, int hlen,
                      void *data,  int dlen,
@@ -369,21 +454,49 @@ int gpc_call_handler(int to, int from, void *hdr, int hlen,
                      void *rdata, int rdlen, int *rdsize,
                      int rtype)
 {
-  func_p f;
+  dist_fork_t *finfo;
+  gpc_info_t *ginfo;
+  intptr_t prhdr;
 
-  f = *(func_p *)hdr;
-  chpl_msg(2, "Received callback on locale: %d %p\n", _localeID, f);
+  finfo = chpl_malloc(dlen, sizeof(char), "Copy of input data", __LINE__, __FILE__);
+  bcopy(data, finfo, dlen);
 
-  chpl_msg(2, "hlen: %d, data: %p, dlen: %d, rhdr: %p, rhlen: %d, rdata: %p, rdlen: %d\n",
-            hlen, data, dlen, rhdr, rhlen, rdata, rdlen);
+  ginfo = chpl_malloc(sizeof(gpc_info_t), sizeof(char), "fork struct", __LINE__, __FILE__);
+  ginfo->info = finfo;
+  prhdr = *(intptr_t *)hdr;
+  ginfo->rhdr = (int *)prhdr;
 
-  f(data);
+  chpl_begin(_gpc_thread_handler, ginfo, true, finfo->serial_state, NULL);
 
-  /* No return header */
-  *rhsize = 0;
-  /* Assumes non-overlapping areas of memory */
-  memcpy(rdata, data, dlen);
-  *rdsize = dlen;
+  /* Small return header */
+  *rhsize = sizeof(int);
+  *rdsize = 0;
 
   return GPC_DONE;
 } /* gpc_call_handler */
+
+void *_gpc_thread_handler(void *arg)
+{
+  gpc_info_t *ginfo;
+  int *done;
+
+  done = ARMCI_Malloc_local(sizeof(int));
+
+  *done = 0;
+  ginfo = (gpc_info_t *)arg;
+
+  if (ginfo->info->arg_size)
+    ginfo->info->fun(ginfo->info->arg);
+  else
+    ginfo->info->fun(NULL);
+
+  *done = 1;
+
+  if (ginfo->info->block)
+    _chpl_comm_put(done, ginfo->info->caller, ginfo->rhdr, sizeof(int));
+
+  ARMCI_Free_local(done);
+
+  chpl_free(ginfo->info, __LINE__, __FILE__);
+  chpl_free(ginfo, __LINE__, __FILE__);
+} /* _gpc_thread_handler */
