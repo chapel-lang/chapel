@@ -1049,10 +1049,6 @@ array_type:
     }
 | TLSBR nonempty_expr_ls TRSBR type
     { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
-| TLSBR TRSBR type
-    { $$ = new CallExpr("_build_array_type", gNil, $3); }
-| TLSBR query_expr TRSBR type
-    { $$ = new CallExpr("_build_array_type", $2, $4); }
 ;
 
 
@@ -1131,12 +1127,22 @@ opt_formal_type:
     { $$ = new SymExpr( "_singlevar"); }
 | TCOLON TSYNC
     { $$ = new SymExpr( "_syncvar"); }
-| TCOLON TLSBR nonempty_expr_ls TRSBR
-    { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $3)); }
+| TCOLON TLSBR TRSBR type
+    { $$ = new CallExpr("_build_array_type", gNil, $4); }
+| TCOLON TLSBR query_expr TRSBR type
+    { $$ = new CallExpr("_build_array_type", $3, $5); }
 | TCOLON TLSBR TRSBR
     { $$ = new CallExpr("_build_array_type", gNil); }
 | TCOLON TLSBR query_expr TRSBR
     { $$ = new CallExpr("_build_array_type", $3); }
+| TCOLON TLSBR nonempty_expr_ls TRSBR
+    { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $3)); }
+| TCOLON TLSBR TRSBR query_expr
+    { $$ = new CallExpr("_build_array_type", gNil, $4); }
+| TCOLON TLSBR query_expr TRSBR query_expr
+    { $$ = new CallExpr("_build_array_type", $3, $5); }
+| TCOLON TLSBR nonempty_expr_ls TRSBR query_expr
+    { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $3), $5); }
 ;
 
 

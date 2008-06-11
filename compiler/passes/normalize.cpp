@@ -906,79 +906,61 @@ static void hack_resolve_types(Expr* expr) {
 
 
 static void fixup_array_formals(FnSymbol* fn) {
-  Vec<BaseAST*> asts;
-  collect_top_asts(fn, asts);
-  Vec<BaseAST*> all_asts;
-  collect_asts(fn, all_asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isNamed("_build_array_type")) {
-        SymExpr* sym = toSymExpr(call->get(1));
-        DefExpr* def = toDefExpr(call->get(1));
-        ArgSymbol* arg = toArgSymbol(call->parentSymbol);
-        if (call->numActuals() == 1)
-          if (!arg || !arg->typeExpr || arg->typeExpr->body.tail != call)
-            USR_FATAL(call, "array declaration has no element type");
-        if (def || (sym && sym->var == gNil) || call->numActuals() == 1) {
-          if (!arg || !arg->typeExpr || arg->typeExpr->body.tail != call)
-            USR_FATAL(call, "array with empty or queried domain can "
-                      "only be used as a formal argument type");
+  for_formals(arg, fn) {
+    if (arg->typeExpr) {
+      CallExpr* call = toCallExpr(arg->typeExpr->body.tail);
+      if (call && call->isNamed("_build_array_type")) {
+        if (ArgSymbol* arg = toArgSymbol(call->parentSymbol)) {
+          bool noDomain = (isSymExpr(call->get(1))) ? toSymExpr(call->get(1))->var == gNil : false;
+          DefExpr* queryDomain = toDefExpr(call->get(1));
+          bool noEltType = (call->numActuals() == 1);
+          DefExpr* queryEltType = (!noEltType) ? toDefExpr(call->get(2)) : NULL;
+
+          Vec<BaseAST*> asts;
+          collect_asts(fn, asts);
+
           arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_SCOPELESS));
           if (!fn->where) {
             fn->where = new BlockStmt(new SymExpr(gTrue));
             insert_help(fn->where, NULL, fn);
           }
           Expr* expr = fn->where->body.tail;
-          if (call->numActuals() == 2)
+          if (queryEltType) {
+            forv_Vec(BaseAST, ast, asts) {
+              if (SymExpr* sym = toSymExpr(ast)) {
+                if (sym->var == queryEltType->sym)
+                  sym->replace(new CallExpr(".", arg, new_StringSymbol("eltType")));
+              }
+            }
+          } else if (!noEltType) {
             expr->replace(new CallExpr("&", expr->copy(),
                             new CallExpr("==", call->get(2)->remove(),
                               new CallExpr(".", arg, new_StringSymbol("eltType")))));
-          if (def) {
-            forv_Vec(BaseAST, ast, all_asts) {
+          }
+          if (queryDomain) {
+            forv_Vec(BaseAST, ast, asts) {
               if (SymExpr* sym = toSymExpr(ast)) {
-                if (sym->var == def->sym)
+                if (sym->var == queryDomain->sym)
                   sym->replace(new CallExpr(".", arg, new_StringSymbol("_dom")));
               }
             }
-          } else if (!sym || sym->var != gNil) {
+          } else if (!noDomain) {
             VarSymbol* tmp = new VarSymbol(astr("_reindex_", arg->name));
-            forv_Vec(BaseAST, ast, all_asts) {
+            forv_Vec(BaseAST, ast, asts) {
               if (SymExpr* sym = toSymExpr(ast)) {
                 if (sym->var == arg)
                   sym->var = tmp;
               }
             }
-            fn->insertAtHead(
-              new CondStmt(
-                new CallExpr("!=", dtNil->symbol, arg),
-                new CallExpr(PRIMITIVE_MOVE, tmp,
-                  new CallExpr(new CallExpr(".", arg,
-                                 new_StringSymbol("reindex")),
-                               call->get(1)->copy())),
-                new CallExpr(PRIMITIVE_MOVE, tmp, gNil)));
+            fn->insertAtHead(new CondStmt(
+                               new CallExpr("!=", dtNil->symbol, arg),
+                               new CallExpr(PRIMITIVE_MOVE, tmp,
+                                 new CallExpr(
+                                   new CallExpr(".", arg,
+                                     new_StringSymbol("reindex")),
+                                   call->get(1)->copy())),
+                               new CallExpr(PRIMITIVE_MOVE, tmp, gNil)));
             fn->insertAtHead(new DefExpr(tmp));
-          }
-        } else {  //// DUPLICATED CODE ABOVE AND BELOW
-          if (ArgSymbol* arg = toArgSymbol(call->parentSymbol)) {
-            if (arg->typeExpr && arg->typeExpr->body.tail == call) {
-              arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_SCOPELESS));
-              VarSymbol* tmp = new VarSymbol(astr("_reindex_", arg->name));
-              forv_Vec(BaseAST, ast, all_asts) {
-                if (SymExpr* sym = toSymExpr(ast)) {
-                  if (sym->var == arg)
-                    sym->var = tmp;
-                }
-              }
-              fn->insertAtHead(
-                new CondStmt(
-                  new CallExpr("!=", dtNil->symbol, arg),
-                  new CallExpr(PRIMITIVE_MOVE, tmp,
-                    new CallExpr(new CallExpr(".", arg,
-                                   new_StringSymbol("reindex")),
-                                 call->get(1)->copy())),
-                  new CallExpr(PRIMITIVE_MOVE, tmp, gNil)));
-              fn->insertAtHead(new DefExpr(tmp));
-            }
           }
         }
       }
