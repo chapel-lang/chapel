@@ -1,0 +1,14 @@
+def idamax(dx : [?D] real) where D.rank==1 : int {
+  writeln("In idamax, dx is: ", dx);
+}
+
+
+def idamax2(dx : [?D]) where D.rank==1 : int {
+  writeln("In idamax2, dx is: ", dx);
+}
+
+
+var A: [1..3] real = (1.0, 2.0, 3.0);
+
+idamax(A);
+idamax2(A);
