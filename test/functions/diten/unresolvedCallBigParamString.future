@@ -1,0 +1,5 @@
+Add a test that overflows an internal buffer
+
+There is a 512 character buffer used to hold an immediate value as a string. A
+long string in a chpl program can overflow it causing a segfault. It is in
+the toString(CallInfo*) function in function resolution.
