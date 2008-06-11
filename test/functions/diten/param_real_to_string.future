@@ -1,0 +1,10 @@
+bug: function with param formal chosen, cannot coerce actual at compile time
+
+The overloaded function foo has two versions. One takes a param string, the
+other a non-param string. A param real is passed to foo, and the param string
+version is chosen. However, a compile time real->string coercion is not
+supported, so the non-param version of foo should be chosen instead.
+
+See Also:
+  param_int_to_complex.chpl
+  param_int_to_real.chpl
