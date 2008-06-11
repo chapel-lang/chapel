@@ -245,7 +245,10 @@ A class constructor is defined by declaring a method with the same
 name as the class.  The constructor is used to create instances of the
 class and must be called by preceding a call to it with the \chpl{new}
 keyword.  When the constructor is called, memory is allocated to store
-a class instance.
+a class instance.  Formals for every generic field must be specified
+in the constructor unless that generic field has a default specified
+in the field declaration.  When instantiated, the generic fields are
+matched up by name.
 
 \subsubsection{The Default Constructor}
 \label{The_Default_Constructor}
@@ -255,7 +258,7 @@ Chapel program that does not define any constructors.  This
 constructor is defined such that it has one argument for every field
 in the class.  Each of the non-generic fields has a default value.
 Actual values for each generic field must be passed to a constructor
-call.
+call if no default is specified.
 
 \begin{example}
 Given the class

@@ -1,5 +1,0 @@
-bug: user-defined generic constructors
-
-Would be nice to be able to write constructors like this --
-something similar is supported for default constructors, so
-it would be nice to do the same at the user level.

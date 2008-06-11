@@ -1202,8 +1202,23 @@ static void change_method_into_constructor(FnSymbol* fn) {
   ClassType* ct = toClassType(fn->getFormal(2)->type);
   if (!ct)
     INT_FATAL(fn, "constructor on non-class type");
-  fn->_this = new VarSymbol("this", ct);
-  fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, fn->_this, new CallExpr(ct->defaultConstructor)));
+  CallExpr* call = new CallExpr(ct->defaultConstructor);
+  for_formals(defaultTypeConstructorArg, ct->defaultTypeConstructor) {
+    ArgSymbol* arg = NULL;
+    for_formals(methodArg, fn) {
+      if (defaultTypeConstructorArg->name == methodArg->name) {
+        arg = methodArg;
+      }
+    }
+    if (!arg) {
+      if (!defaultTypeConstructorArg->defaultExpr)
+        USR_FATAL_CONT(fn, "constructor for class '%s' requires a generic argument called '%s'", ct->symbol->name, defaultTypeConstructorArg->name);
+    } else {
+      call->insertAtTail(new NamedExpr(arg->name, new SymExpr(arg)));
+    }
+  }
+  fn->_this = new VarSymbol("this");
+  fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, fn->_this, call));
   fn->insertAtHead(new DefExpr(fn->_this));
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new SymExpr(fn->_this)));
   ASTMap map;
@@ -1211,14 +1226,6 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals.get(2)->remove();
   fn->formals.get(1)->remove();
   update_symbols(fn, &map);
-  fn->defPoint->remove();
   fn->name = astr(astr("_construct_", fn->name));
-  ct->symbol->defPoint->insertBefore(fn->defPoint);
-  fn->retType = ct;
-  if (ct->defaultConstructor->visible) {
-    Expr* before = ct->defaultConstructor->defPoint->prev;
-    ct->defaultConstructor->defPoint->remove();
-    ct->defaultConstructor->visible = false;
-    before->insertAfter(ct->defaultConstructor->defPoint);
-  }
+  ct->defaultConstructor->visible = false;
 }
