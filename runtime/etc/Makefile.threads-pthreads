@@ -1,1 +1,3 @@
+ifneq ($(CHPL_MAKE_PLATFORM), darwin)
 LIBS += -lpthread
+endif

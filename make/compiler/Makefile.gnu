@@ -36,6 +36,11 @@ COMP_CFLAGS_NONCHPL = -Wno-error
 RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
 GEN_CFLAGS = -std=c99
 
+ifeq ($(CHPL_MAKE_PLATFORM), darwin)
+# the flag below prevents nonstandard functions from polluting the global name space
+GEN_CFLAGS += -D_POSIX_C_SOURCE
+endif
+
 #
 # a hacky flag necessary currently due to our use of setenv in the runtime code
 #
