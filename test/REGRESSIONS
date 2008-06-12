@@ -14,6 +14,8 @@
 linux and general regressions
 =============================
 
+
+
 new madness precision issue (most platforms other than darwin, cygwin)
 ----------------------------------------------------------------------
 [Error matching program output for
@@ -70,14 +72,9 @@ garbage collection doesn't work with multithreaded
 [Error matching compiler output for classes/diten/allocateManyObjects]
 
 
-==================
-mac-specific tests
-==================
-
-redeclaration of fls
---------------------
-[Error matching compiler output for performance/compiler/bradc/compSampler-timecomp]
-[Error matching compiler output for trivial/shannon/compSampler]
+==========================
+darwin-/mac-specific tests
+==========================
 
 
 ===================
