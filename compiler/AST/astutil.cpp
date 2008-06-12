@@ -230,24 +230,21 @@ void buildDefUseSets(Vec<Symbol*>& syms,
   }
 
 void update_symbols(BaseAST* ast, ASTMap* map) {
-  Vec<BaseAST*> asts;
-  collect_asts(ast, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* sym_expr = toSymExpr(ast)) {
-      XSUB(sym_expr->var, Symbol);
-    } else if (DefExpr* defExpr = toDefExpr(ast)) {
-      XSUB(defExpr->sym->type, Type);
-    } else if (VarSymbol* ps = toVarSymbol(ast)) {
-      XSUB(ps->type, Type);
-    } else if (FnSymbol* ps = toFnSymbol(ast)) {
-      XSUB(ps->type, Type);
-      XSUB(ps->retType, Type);
-      XSUB(ps->_this, Symbol);
-      XSUB(ps->_outer, Symbol);
-    } else if (ArgSymbol* ps = toArgSymbol(ast)) {
-      XSUB(ps->type, Type);
-    }
+  if (SymExpr* sym_expr = toSymExpr(ast)) {
+    XSUB(sym_expr->var, Symbol);
+  } else if (DefExpr* defExpr = toDefExpr(ast)) {
+    XSUB(defExpr->sym->type, Type);
+  } else if (VarSymbol* ps = toVarSymbol(ast)) {
+    XSUB(ps->type, Type);
+  } else if (FnSymbol* ps = toFnSymbol(ast)) {
+    XSUB(ps->type, Type);
+    XSUB(ps->retType, Type);
+    XSUB(ps->_this, Symbol);
+    XSUB(ps->_outer, Symbol);
+  } else if (ArgSymbol* ps = toArgSymbol(ast)) {
+    XSUB(ps->type, Type);
   }
+  AST_CHILDREN_CALL(ast, update_symbols, map);
 }
 
 

@@ -594,11 +594,11 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
       newFn->isExtern = fn->isExtern; // preserve externess of expanded varargs fn
       newFn->visible = false;
       fn->defPoint->insertBefore(new DefExpr(newFn));
-      DefExpr* newDef = toDefExpr(map.get(def));
-      newDef->replace(new SymExpr(new_IntSymbol(numCopies)));
+      Symbol* sym = toSymbol(map.get(def->sym));
+      sym->defPoint->replace(new SymExpr(new_IntSymbol(numCopies)));
 
       ASTMap update;
-      update.put(newDef->sym, new_IntSymbol(numCopies));
+      update.put(sym, new_IntSymbol(numCopies));
       update_symbols(newFn, &update);
 
       // add new function to cache

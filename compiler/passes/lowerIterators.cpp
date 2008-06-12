@@ -14,8 +14,7 @@ expandIteratorInline(CallExpr* call) {
   Symbol* index = toSymExpr(call->get(1))->var;
   Symbol* ic = toSymExpr(call->get(2))->var;
   FnSymbol* iterator = ic->type->defaultConstructor;
-  ASTMap map;
-  BlockStmt* ibody = iterator->body->copy(&map);
+  BlockStmt* ibody = iterator->body->copy();
   CallExpr* yield = NULL;
   reset_line_info(ibody, call->lineno);
   body = toBlockStmt(call->parentExpr);

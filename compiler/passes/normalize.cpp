@@ -1029,11 +1029,10 @@ clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                           int width) {
   ASTMap map;
   FnSymbol* newfn = fn->copy(&map);
-  DefExpr* newdef = toDefExpr(map.get(def));
-  Symbol* newsym = newdef->sym;
-  newdef->replace(new SymExpr(new_IntSymbol(width)));
+  Symbol* newsym = toSymbol(map.get(def->sym));
+  newsym->defPoint->replace(new SymExpr(new_IntSymbol(width)));
   Vec<BaseAST*> asts;
-  map.get_values(asts);
+  collect_asts(newfn, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* se = toSymExpr(ast))
       if (se->var == newsym)

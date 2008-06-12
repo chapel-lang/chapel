@@ -1044,12 +1044,11 @@ void scopeResolve(void) {
             symExpr->unresolved = NULL;
           }
           if (isTypeAlias(sym)) {
-            ASTMap map;
-            Expr* init = sym->defPoint->init->copy(&map);
+            Expr* init = sym->defPoint->init->copy();
 
             // detect recursively defined type aliases
             Vec<BaseAST*> asts;
-            map.get_values(asts);
+            collect_asts(init, asts);
             forv_Vec(BaseAST, ast, asts) {
               if (SymExpr* se = toSymExpr(ast))
                 if (isTypeAlias(se->var))
