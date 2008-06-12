@@ -487,62 +487,6 @@ computeActualFormalMap(FnSymbol* fn,
   return true;
 }
 
-//
-// Check if actualType can be coerced to formalType at compile time. This is
-// more restrictive than canCoerce, since, for example, a real(32) cannot be
-// coerced to a real(64) at compile time. 
-//
-static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType) {
-  if (is_int_type(formalType)) {
-    if (actualType == dtBool)
-      return true;
-/*
-    if (toEnumType(actualType))
-      return true;
-*/
-    if (is_int_type(actualType) &&
-        get_width(actualType) < get_width(formalType))
-      return true;
-    if (is_uint_type(actualType) &&
-        get_width(actualType) < get_width(formalType))
-      return true;
-    if (get_width(formalType) < 64)
-      if (VarSymbol* var = toVarSymbol(actualSym))
-        if (var->immediate)
-          if (fits_in_int(get_width(formalType), var->immediate))
-            return true;
-  }
-  if (is_uint_type(formalType)) {
-    if (actualType == dtBool)
-      return true;
-/*
-    if (toEnumType(actualType))
-      return true;
-*/
-    if (is_uint_type(actualType) &&
-        get_width(actualType) < get_width(formalType))
-      return true;
-    if (VarSymbol* var = toVarSymbol(actualSym))
-      if (var->immediate)
-        if (fits_in_uint(get_width(formalType), var->immediate))
-          return true;
-  }
-  if (is_complex_type(formalType)) {
-    if (is_real_type(actualType) &&
-        (get_width(actualType) == get_width(formalType)/2))
-      return true;
-    if (is_imag_type(actualType) &&
-        (get_width(actualType) == get_width(formalType)/2))
-      return true;
-  }
-  if (formalType == dtString) {
-    if (is_int_type(actualType) || is_uint_type(actualType) ||
-        actualType == dtBool /*|| toEnumType(actualType) */)
-      return true;
-  }
-  return false;
-}
-
 
 static void
 computeGenericSubs(ASTMap &subs,
