@@ -20,6 +20,7 @@
 #include <pthread.h>
 #include <inttypes.h>
 #include <errno.h>
+#include <sys/time.h>
 
 //
 // task pool: linked list of tasks
@@ -47,18 +48,18 @@ struct chpl_task_list {
 };
 
 
-static chpl_mutex_t     threading_lock; // critical section lock
-static chpl_mutex_t     task_list_lock; // critical section lock
-static chpl_condvar_t   wakeup_signal;  // signal a waiting thread
-static pthread_key_t    serial_key;     // per-thread serial state
-static chpl_task_pool_p task_pool_head; // head of task pool
-static chpl_task_pool_p task_pool_tail; // tail of task pool
-static int              waking_cnt;     // number of threads signaled to wakeup
-static int              running_cnt;    // number of running threads 
-static int              threads_cnt;    // number of threads (total)
+static chpl_mutex_t     threading_lock;     // critical section lock
+static chpl_mutex_t     task_list_lock;     // critical section lock
+static chpl_condvar_t   wakeup_signal;      // signal a waiting thread
+static pthread_key_t    serial_key;         // per-thread serial state
+static chpl_task_pool_p task_pool_head;     // head of task pool
+static chpl_task_pool_p task_pool_tail;     // tail of task pool
+static int              waking_cnt;         // number of threads signaled to wakeup
+static int              running_cnt;        // number of running threads 
+static int              threads_cnt;        // number of threads (total)
 static int              blocked_thread_cnt; // number of threads waiting for something
 static _Bool*           maybe_deadlocked;   // whether all existing threads are blocked
-static chpl_mutex_t     report_lock;    // critical section lock
+static chpl_mutex_t     report_lock;        // critical section lock
 static pthread_key_t    lock_report_key;
 
 
@@ -78,8 +79,6 @@ static _Bool setBlockingLocation(int lineno, _string filename);
 static void  unsetBlockingLocation(void);
 static void  initializeLockReportForThread(void);
 static _string idleThreadName = "|idle|";
-
-static struct timespec delay = { 1, 0 }; // 1 second
 
 // Condition variables
 
@@ -131,46 +130,54 @@ void chpl_sync_unlock(chpl_sync_aux_t *s) {
 }
 
 int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string filename) {
-  int return_value;
-  _Bool last_unblocked_thread = setBlockingLocation(lineno, filename);
-  return_value = chpl_mutex_lock(s->lock);
+  int return_value = chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
-    if (last_unblocked_thread) {
-      if ((return_value = pthread_cond_timedwait(s->signal_full, s->lock, &delay))
+    if (setBlockingLocation(lineno, filename)) {
+      // all other threads appear to be blocked
+      struct timeval now;
+      struct timespec wakep_time;
+      gettimeofday (&now, NULL);
+      wakep_time.tv_sec = now.tv_sec + 2;
+      wakep_time.tv_nsec = 0;
+      if ((return_value = pthread_cond_timedwait(s->signal_full, s->lock, &wakep_time))
           == ETIMEDOUT) {
         lockReport* lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
-        if (lockRprt->maybeDeadlocked)
+        if (lockRprt->maybeDeadlocked) {
+          fprintf(stderr, "Program is deadlocked!\n");
           traverseLockedThreads(SIGINT);
+        }
       }
-      unsetBlockingLocation();
-      last_unblocked_thread = setBlockingLocation(lineno, filename);
     }
     else if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
       chpl_internal_error("pthread_cond_wait() failed");
+    unsetBlockingLocation();
   }
-  unsetBlockingLocation();
   return return_value;
 }
 
 int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string filename) {
-  int return_value;
-  _Bool last_unblocked_thread = setBlockingLocation(lineno, filename);
-  return_value = chpl_mutex_lock(s->lock);
+  int return_value = chpl_mutex_lock(s->lock);
   while (return_value == 0 && s->is_full) {
-    if (last_unblocked_thread) {
-      if ((return_value = pthread_cond_timedwait(s->signal_empty, s->lock, &delay))
+    if (setBlockingLocation(lineno, filename)) {
+      // all other threads appear to be blocked
+      struct timeval now;
+      struct timespec wakep_time;
+      gettimeofday (&now, NULL);
+      wakep_time.tv_sec = now.tv_sec + 2;
+      wakep_time.tv_nsec = 0;
+      if ((return_value = pthread_cond_timedwait(s->signal_empty, s->lock, &wakep_time))
           == ETIMEDOUT) {
         lockReport* lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
-        if (lockRprt->maybeDeadlocked)
+        if (lockRprt->maybeDeadlocked) {
+          fprintf(stderr, "Program is deadlocked!\n");
           traverseLockedThreads(SIGINT);
+        }
       }
-      unsetBlockingLocation();
-      last_unblocked_thread = setBlockingLocation(lineno, filename);
     }
     else if ((return_value = pthread_cond_wait(s->signal_empty, s->lock)))
       chpl_internal_error("pthread_cond_wait() failed");
+    unsetBlockingLocation();
   }
-  unsetBlockingLocation();
   return return_value;
 }
 
@@ -211,24 +218,28 @@ void chpl_single_unlock(chpl_single_aux_t *s) {
 }
 
 int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, _string filename) {
-  int return_value;
-  _Bool last_unblocked_thread = setBlockingLocation(lineno, filename);
-  return_value = chpl_mutex_lock(s->lock);
+  int return_value = chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
-    if (last_unblocked_thread) {
-      if ((return_value = pthread_cond_timedwait(s->signal_full, s->lock, &delay))
+    if (setBlockingLocation(lineno, filename)) {
+      // all other threads appear to be blocked
+      struct timeval now;
+      struct timespec wakep_time;
+      gettimeofday (&now, NULL);
+      wakep_time.tv_sec = now.tv_sec + 2;
+      wakep_time.tv_nsec = 0;
+      if ((return_value = pthread_cond_timedwait(s->signal_full, s->lock, &wakep_time))
           == ETIMEDOUT) {
         lockReport* lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
-        if (lockRprt->maybeDeadlocked)
+        if (lockRprt->maybeDeadlocked) {
+          fprintf(stderr, "Program is deadlocked!\n");
           traverseLockedThreads(SIGINT);
+        }
       }
-      unsetBlockingLocation();
-      last_unblocked_thread = setBlockingLocation(lineno, filename);
     }
     else if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
       chpl_internal_error("invalid mutex in chpl_single_wait_full");
+    unsetBlockingLocation();
   }
-  unsetBlockingLocation();
   return return_value;
 }
 
@@ -374,7 +385,7 @@ static _Bool setBlockingLocation(int lineno, _string filename) {
     // Begin critical section
     chpl_mutex_lock(&report_lock);
     blocked_thread_cnt++;
-    if (blocked_thread_cnt >= threads_cnt) {
+    if (blocked_thread_cnt > threads_cnt) {
       isLastUnblockedThread = true;
       lockRprt->maybeDeadlocked = true;
       if (maybe_deadlocked)
