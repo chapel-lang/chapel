@@ -1,6 +1,0 @@
-bug: passing param int to param complex succeeds
-
-This test should be an error: unresolved function, since int->complex casts
-don't happen at compile time. Instead the function is called successfully. If
-the formal is used within the body of the function it causes an error about an
-unresolved type at the use.

@@ -52,6 +52,7 @@ static FnSymbol* instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call);
 static void setScalarPromotionType(ClassType* ct);
 static void fixTypeNames(ClassType* ct);
 static void insertReturnTemps();
+static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType);
 
 static int explainCallLine;
 static ModuleSymbol* explainCallModule;
@@ -85,7 +86,8 @@ static bool canDispatch(Type* actualType,
                         Symbol* actualSym,
                         Type* formalType,
                         FnSymbol* fn = NULL,
-                        bool* require_scalar_promotion = NULL);
+                        bool* require_scalar_promotion = NULL,
+                        bool paramCoerce = false);
 
 static void pruneResolvedTree();
 
@@ -324,11 +326,60 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   return false;
 }
 
+//
+// Check if actualType can be coerced to formalType at compile time. This is
+// more restrictive than canCoerce, since, for example, a real(32) cannot be
+// coerced to a real(64) at compile time. 
+//
+static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType) {
+  if (is_int_type(formalType)) {
+    if (actualType == dtBool)
+      return true;
+    if (is_int_type(actualType) &&
+        get_width(actualType) < get_width(formalType))
+      return true;
+    if (is_uint_type(actualType) &&
+        get_width(actualType) < get_width(formalType))
+      return true;
+    if (get_width(formalType) < 64)
+      if (VarSymbol* var = toVarSymbol(actualSym))
+        if (var->immediate)
+          if (fits_in_int(get_width(formalType), var->immediate))
+            return true;
+  }
+  if (is_uint_type(formalType)) {
+    if (actualType == dtBool)
+      return true;
+    if (is_uint_type(actualType) &&
+        get_width(actualType) < get_width(formalType))
+      return true;
+    if (VarSymbol* var = toVarSymbol(actualSym))
+      if (var->immediate)
+        if (fits_in_uint(get_width(formalType), var->immediate))
+          return true;
+  }
+  if (is_complex_type(formalType)) {
+    if (is_real_type(actualType) &&
+        (get_width(actualType) == get_width(formalType)/2))
+      return true;
+    if (is_imag_type(actualType) &&
+        (get_width(actualType) == get_width(formalType)/2))
+      return true;
+  }
+  if (formalType == dtString) {
+    if (is_int_type(actualType) || is_uint_type(actualType) ||
+        actualType == dtBool)
+      return true;
+  }
+  return false;
+}
+
+
 // Returns true iff the actualType can dispatch to the formalType.
 // The function symbol is used to avoid scalar promotion on =.
 // param is set if the actual is a parameter (compile-time constant).
 static bool
-canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion) {
+canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion, bool paramCoerce) {
   if (require_scalar_promotion)
     *require_scalar_promotion = false;
   if (actualType == formalType)
@@ -341,7 +392,9 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
         return true;
   if (actualType->refType == formalType)
     return true;
-  if (canCoerce(actualType, actualSym, formalType, fn, require_scalar_promotion))
+  if (!paramCoerce && canCoerce(actualType, actualSym, formalType, fn, require_scalar_promotion))
+    return true;
+  if (paramCoerce && canParamCoerce(actualType, actualSym, formalType))
     return true;
   forv_Vec(Type, parent, actualType->dispatchParents) {
     if (parent == formalType || canDispatch(parent, actualSym, formalType, fn, require_scalar_promotion)) {
@@ -432,6 +485,62 @@ computeActualFormalMap(FnSymbol* fn,
     }
   }
   return true;
+}
+
+//
+// Check if actualType can be coerced to formalType at compile time. This is
+// more restrictive than canCoerce, since, for example, a real(32) cannot be
+// coerced to a real(64) at compile time. 
+//
+static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType) {
+  if (is_int_type(formalType)) {
+    if (actualType == dtBool)
+      return true;
+/*
+    if (toEnumType(actualType))
+      return true;
+*/
+    if (is_int_type(actualType) &&
+        get_width(actualType) < get_width(formalType))
+      return true;
+    if (is_uint_type(actualType) &&
+        get_width(actualType) < get_width(formalType))
+      return true;
+    if (get_width(formalType) < 64)
+      if (VarSymbol* var = toVarSymbol(actualSym))
+        if (var->immediate)
+          if (fits_in_int(get_width(formalType), var->immediate))
+            return true;
+  }
+  if (is_uint_type(formalType)) {
+    if (actualType == dtBool)
+      return true;
+/*
+    if (toEnumType(actualType))
+      return true;
+*/
+    if (is_uint_type(actualType) &&
+        get_width(actualType) < get_width(formalType))
+      return true;
+    if (VarSymbol* var = toVarSymbol(actualSym))
+      if (var->immediate)
+        if (fits_in_uint(get_width(formalType), var->immediate))
+          return true;
+  }
+  if (is_complex_type(formalType)) {
+    if (is_real_type(actualType) &&
+        (get_width(actualType) == get_width(formalType)/2))
+      return true;
+    if (is_imag_type(actualType) &&
+        (get_width(actualType) == get_width(formalType)/2))
+      return true;
+  }
+  if (formalType == dtString) {
+    if (is_int_type(actualType) || is_uint_type(actualType) ||
+        actualType == dtBool /*|| toEnumType(actualType) */)
+      return true;
+  }
+  return false;
 }
 
 
@@ -705,7 +814,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
       }
     }
     if (formalActuals.v[j] &&
-        !canDispatch(formalActuals.v[j], formalSyms.v[j], formal->type, fn)) {
+        !canDispatch(formalActuals.v[j], formalSyms.v[j], formal->type, fn, NULL, formal->instantiatedParam)) {
       delete actualFormals;
       return;
     }
