@@ -143,9 +143,11 @@ int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string fil
           == ETIMEDOUT) {
         lockReport* lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
         if (lockRprt->maybeDeadlocked) {
+          fflush(stdout);
           fprintf(stderr, "Program is deadlocked!\n");
           traverseLockedThreads(SIGINT);
         }
+        return_value = 0;
       }
     }
     else if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
@@ -169,9 +171,11 @@ int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string fi
           == ETIMEDOUT) {
         lockReport* lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
         if (lockRprt->maybeDeadlocked) {
+          fflush(stdout);
           fprintf(stderr, "Program is deadlocked!\n");
           traverseLockedThreads(SIGINT);
         }
+        return_value = 0;
       }
     }
     else if ((return_value = pthread_cond_wait(s->signal_empty, s->lock)))
@@ -231,9 +235,11 @@ int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, _string filename
           == ETIMEDOUT) {
         lockReport* lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
         if (lockRprt->maybeDeadlocked) {
+          fflush(stdout);
           fprintf(stderr, "Program is deadlocked!\n");
           traverseLockedThreads(SIGINT);
         }
+        return_value = 0;
       }
     }
     else if ((return_value = pthread_cond_wait(s->signal_full, s->lock)))
