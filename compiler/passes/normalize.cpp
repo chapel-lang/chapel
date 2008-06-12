@@ -920,11 +920,6 @@ static void fixup_array_formals(FnSymbol* fn) {
           collect_asts(fn, asts);
 
           arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_SCOPELESS));
-          if (!fn->where) {
-            fn->where = new BlockStmt(new SymExpr(gTrue));
-            insert_help(fn->where, NULL, fn);
-          }
-          Expr* expr = fn->where->body.tail;
           if (queryEltType) {
             forv_Vec(BaseAST, ast, asts) {
               if (SymExpr* sym = toSymExpr(ast)) {
@@ -933,9 +928,17 @@ static void fixup_array_formals(FnSymbol* fn) {
               }
             }
           } else if (!noEltType) {
-            expr->replace(new CallExpr("&", expr->copy(),
-                            new CallExpr("==", call->get(2)->remove(),
-                              new CallExpr(".", arg, new_StringSymbol("eltType")))));
+            if (!fn->where) {
+              fn->where = new BlockStmt(new SymExpr(gTrue));
+              insert_help(fn->where, NULL, fn);
+            }
+            Expr* oldWhere = fn->where->body.tail;
+            CallExpr* newWhere = new CallExpr("&");
+            oldWhere->replace(newWhere);
+            newWhere->insertAtTail(oldWhere);
+            newWhere->insertAtTail(
+              new CallExpr("==", call->get(2)->remove(),
+                new CallExpr(".", arg, new_StringSymbol("eltType"))));
           }
           if (queryDomain) {
             forv_Vec(BaseAST, ast, asts) {

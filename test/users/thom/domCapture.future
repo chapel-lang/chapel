@@ -1,4 +1,0 @@
-bug: formal with queried domain, specified element type, where clause
-
-The first function results in an internal error.  Note that the second
-doesn't for some reason.
