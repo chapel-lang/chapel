@@ -213,7 +213,7 @@ class Block1DDom {
     when IteratorType.leader {
       //
       // TODO: This currently only results in a single level of
-      // per-locale parallelism
+      // per-locale parallelism -- no per-core parallelism
       //
       // TODO: Really want the parallelism across the target locales
       // to be expressed more independently of the distribution
@@ -234,6 +234,11 @@ class Block1DDom {
       //
       // TODO: Abstract this addition of low into a function?
       //
+      // TODO: Is there some clever way to invoke the leader/follower
+      // iterator on the local blocks in here such that the per-core
+      // parallelism is expressed at that level?  Seems like a nice
+      // natural composition and might help with my fears about how
+      // stencil communication will be done on a per-locale basis.
       for i in followThis {
         yield i + whole.low;
       }
@@ -407,15 +412,31 @@ class Block1DArr {
   // to avoid conflicting with the above which is currently targeted
   // by the compiler.
   //
+  // TODO: Note that this should logically be a var iterator, but
+  // that doesn't seem to work.
+  //
   def newThese(param iterator: IteratorType, followThis) {
     select iterator {
     when IteratorType.solo {
       for i in these() do
         yield i;
     }
+    //
+    // TODO: Note that without some more work/cleverness, I'm expressing
+    // iteration over arrays in terms of the domain.  Seems suboptimal.
+    //
     when IteratorType.leader {
+      for blk in dom.newThese(iterator, followThis) do
+        yield blk;
     }
+    //
+    // TODO: Note that here I'm not only going through the domain indices,
+    // but I'm also going through the global array's accessor.  We really
+    // want to be only working in terms of the local array in the follower.
+    //
     when IteratorType.follower {
+      for i in followThis do 
+        yield this(i + dom.low);
     }
     }
   }
@@ -498,7 +519,7 @@ class LocBlock1DArr {
   // to avoid conflicting with the above which is currently targeted
   // by the compiler.
   //
-  def newThese(param iterator: IteratorType, followThis) {
+  def newThese(param iterator: IteratorType, followThis) var {
     select iterator {
     when IteratorType.solo {
       for i in these() do

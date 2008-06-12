@@ -43,22 +43,32 @@ def main() {
     // A = B + alpha * C;
     //
     // But for now we'll do a manual invocation of leader/follower following
-    // Steve's proposal -- This version leads and follows over domains:
+    // Steve's proposal -- This version leads and follows over arrays:
 
-    coforall block in ProblemSpace.newThese(IteratorType.leader, 0) {
-      //
-      // TODO: This on clause doesn't do what I intended, probably for
-      // good reasons
-      // 
+    coforall block in A.newThese(IteratorType.leader, 0) {
       on block {
         if debugBradsBlock1D then
           writeln("locale ", here, " is being asked to follow ", block);
-        for i in ProblemSpace.newThese(IteratorType.follower, block) {
-          A(i) = B(i) + alpha * C(i);
+        // TODO: Want this
+        //
+        /*
+        for (a, b, c) in (A.newThese(IteratorType.follower, block),
+                          B.newThese(IteratorType.follower, block),
+                          C.newThese(IteratorType.follower, block)) {
+          a = b + alpha * c;
+        */
+        //
+        // but newThese isn't yet var, so instead do this:
+        //
+        for (a, b, c, i) in (A.newThese(IteratorType.follower, block),
+                             B.newThese(IteratorType.follower, block),
+                             C.newThese(IteratorType.follower, block),
+                             ProblemSpace.newThese(IteratorType.follower, block)) {
+          A(i) = b + alpha * c;
         }
       }
     }
-
+          
     execTime(trial) = getCurrentTime() - startTime;
   }
 
