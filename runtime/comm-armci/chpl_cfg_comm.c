@@ -27,7 +27,7 @@
   ret = fncall;                                            \
   if (ret != 0) {                                          \
     sprintf(buff, "ARMCI function call error: %d %s %d\n", \
-	    ret, __FILE__, __LINE__);                      \
+            ret, __FILE__, __LINE__);                      \
     ARMCI_Error(buff, ret);                                \
   }                                                        \
 }
@@ -400,7 +400,7 @@ void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Boo
   rdlen = arg_size;
 
   header = chpl_malloc(sizeof(void *), sizeof(char), "GPC exec remote header address",
-		       __LINE__, __FILE__);
+                       __LINE__, __FILE__);
   rheader = chpl_malloc(rhdr_size, sizeof(char), "GPC exec remote header", __LINE__, __FILE__);
   // must be non-empty  
 
@@ -410,7 +410,7 @@ void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Boo
   *done = 0;
 
   ret = ARMCI_Gpc_exec(ghndl, locale, header, sizeof(void *), info, info_size, rheader, rhdr_size,
-		       rdata, rdlen, NULL);
+                       rdata, rdlen, NULL);
 
   if (ret != 0) {
     chpl_internal_error("ARMCI_Gpc_exec() failed");
