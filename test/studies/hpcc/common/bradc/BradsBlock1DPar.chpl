@@ -7,6 +7,9 @@
 
 config param debugBradsBlock1D = false;
 
+// TODO: This would need to be moved somewhere more standard
+enum IteratorType { solo, leader, follower };
+
 //
 // The distribution class
 //
@@ -43,6 +46,10 @@ class Block1DDist {
   // TODO: would like this to be const and initialize in-place,
   // removing the initialize method
   //
+  // TODO: Remove second generic parameter -- seems confusing and wrong.  Replace
+  // with explicit typing of locid field in LocBlock1DDist class.  Particularly
+  // since I'm passing in a value from 0.. rather than an actual index value.
+  //
   var locDist: [targetLocDom] LocBlock1DDist(glbIdxType, index(targetLocs.domain));
 
   def initialize() {
@@ -69,11 +76,15 @@ class Block1DDist {
   def getChunk(inds) {
     // use domain slicing to get the intersection between what the
     // locale owns and the domain's index set
+
+    // TODO: Could this be written myChunk[inds] ???
     return locDist(here).myChunk[inds.low..inds.high];
   }
   
   //
   // Determine which locale owns a particular index
+  //
+  // TODO: Is this correct if targetLocs doesn't start with 0?
   //
   def ind2loc(ind: glbIdxType) {
     return targetLocs((((ind-bbox.low)*targetLocs.numElements)/bbox.numIndices):index(targetLocs.domain));
@@ -187,7 +198,9 @@ class Block1DDom {
   // this is the parallel iterator for the global domain, following
   // Steve and David's proposals -- I've renamed it for the time being
   // to avoid conflicting with the above which is currently targeted
-  // by the compiler.
+  // by the compiler.  My current assumption is that we would want to
+  // overload these() to serve this purpose in the final language
+  // definition.
   //
   def newThese(param iterator: IteratorType, followThis) {
     select iterator {
@@ -199,7 +212,8 @@ class Block1DDom {
 
     when IteratorType.leader {
       //
-      // TODO: This currently only results in a single level of parallelism
+      // TODO: This currently only results in a single level of
+      // per-locale parallelism
       //
       // TODO: Really want the parallelism across the target locales
       // to be expressed more independently of the distribution
@@ -210,14 +224,20 @@ class Block1DDom {
       //
       // TODO: Need to get an on clause into here somehow
       //
+      // TODO: Abstract this subtraction of low into a function?
+      //
       for blk in locDom.myBlock do
-        yield blk.genFollowBlock();
+        yield blk - whole.low;
     }
     
     when IteratorType.follower {
+      //
+      // TODO: Abstract this addition of low into a function?
+      //
       for i in followThis {
-        yield blk.genFollowInd(i);
+        yield i + whole.low;
       }
+    }
     }
   }
 
@@ -298,6 +318,7 @@ class LocBlock1DDom {
     when IteratorType.leader {
     }
     when IteratorType.follower {
+    }
     }
   }
 
@@ -396,6 +417,7 @@ class Block1DArr {
     }
     when IteratorType.follower {
     }
+    }
   }
 
   //
@@ -485,6 +507,7 @@ class LocBlock1DArr {
     when IteratorType.leader {
     }
     when IteratorType.follower {
+    }
     }
   }
 

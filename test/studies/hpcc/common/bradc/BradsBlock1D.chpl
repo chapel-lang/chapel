@@ -43,6 +43,10 @@ class Block1DDist {
   // TODO: would like this to be const and initialize in-place,
   // removing the initialize method
   //
+  // TODO: Remove second generic parameter -- seems confusing and wrong.  Replace
+  // with explicit typing of locid field in LocBlock1DDist class.  Particularly
+  // since I'm passing in a value from 0.. rather than an actual index value.
+  //
   var locDist: [targetLocDom] LocBlock1DDist(glbIdxType, index(targetLocs.domain));
 
   def initialize() {
@@ -69,11 +73,15 @@ class Block1DDist {
   def getChunk(inds) {
     // use domain slicing to get the intersection between what the
     // locale owns and the domain's index set
+
+    // TODO: Could this be written myChunk[inds] ???
     return locDist(here).myChunk[inds.low..inds.high];
   }
   
   //
   // Determine which locale owns a particular index
+  //
+  // TODO: Is this correct if targetLocs doesn't start with 0?
   //
   def ind2loc(ind: glbIdxType) {
     return targetLocs((((ind-bbox.low)*targetLocs.numElements)/bbox.numIndices):index(targetLocs.domain));
