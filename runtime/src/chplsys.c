@@ -23,7 +23,10 @@ uint64_t chpl_bytesPerLocale(void) {
   size_t len = sizeof(membytes);
   if (sysctlbyname("hw.memsize", &membytes, &len, NULL, 0)) 
     chpl_internal_error("query of physical memory failed");
-  return membytes;
+  // Report no more than 2300 MB of memory, since this appears to be the largest
+  // chunk that can be malloc'ed on Mac OS X, regardless of how much physical
+  // memory there is.
+  return membytes > 0x8fc00000 ? 0x8fc00000 : membytes;
 #elif defined __MTA__
   int mib[2] = {CTL_HW, HW_PHYSMEM}, membytes;
   size_t len = sizeof(membytes);
@@ -46,9 +49,12 @@ int32_t chpl_coresPerLocale(void) {
   size_t len = sizeof(numcores);
   if (sysctlbyname("hw.physicalcpu", &numcores, &len, NULL, 0))
     chpl_internal_error("query of number of cores failed");
-  // If the call to sysctlbyname() above failed to modify numcores for some reason,
-  // return just 1 to be safe.
-  return numcores ? numcores : 1;
+#ifdef __BIG_ENDIAN__
+  // On a PowerPC system, the number of cores is apparently stored in the most
+  // significant 32 bits.
+  numcores = numcores >> 32;
+#endif
+  return numcores;
 #elif defined __MTA__
   int mib[2] = {CTL_HW, HW_NCPU}, numcores;
   size_t len = sizeof(numcores);
