@@ -364,6 +364,7 @@ static void traverseLockedThreads(int sig) {
   assert(blockreport); // Error: this should only be called as a signal handler
                        // and it should only be handled if blockreport is on
   signal(sig, SIG_IGN);
+  fflush(stdout);
   rep = lockReportHead;
   while (rep != NULL) {
     if (rep->maybeLocked) {
@@ -503,11 +504,30 @@ chpl_begin_helper (chpl_task_pool_p task) {
     // wait for a task to be added to the task pool
     //
     do {
-      while (!task_pool_head) {
-        setBlockingLocation(0, idleThreadName);
-        pthread_cond_wait(&wakeup_signal, &threading_lock);
-        if (task_pool_head)
-          unsetBlockingLocation();
+      _Bool timed_out = false;
+      while (!task_pool_head || timed_out) {
+        timed_out = false;
+        if (setBlockingLocation(0, idleThreadName)) {
+          // all other threads appear to be blocked
+          struct timeval now;
+          struct timespec wakep_time;
+          gettimeofday (&now, NULL);
+          wakep_time.tv_sec = now.tv_sec + 2;
+          wakep_time.tv_nsec = 0;
+          if (pthread_cond_timedwait(&wakeup_signal, &threading_lock, &wakep_time)
+              == ETIMEDOUT) {
+            lockReport* lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
+            if (lockRprt->maybeDeadlocked) {
+              fflush(stdout);
+              fprintf(stderr, "Program is deadlocked!\n");
+              traverseLockedThreads(SIGINT);
+            }
+            timed_out = true;
+          }
+        }
+        else
+          pthread_cond_wait(&wakeup_signal, &threading_lock);
+        unsetBlockingLocation();
       }
       // skip over any tasks that have already started executing
       skip_over_begun_tasks();
