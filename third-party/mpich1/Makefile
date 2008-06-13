@@ -17,11 +17,11 @@ clean: FORCE
 	cd $(MPICH1_SUBDIR) && make clean
 
 clobber: FORCE
-	rm -r $(MPICH1_INSTALL_DIR)
+	rm -rf $(MPICH1_INSTALL_DIR)
 
 mpich1-config: FORCE
 	mkdir -p $(MPICH1_BUILD_DIR)
-	cd $(MPICH1_BUILD_DIR) && $(MPICH1_SUBDIR)/configure --prefix=$(MPICH1_INSTALL_DIR)
+	cd $(MPICH1_BUILD_DIR) && $(MPICH1_SUBDIR)/configure --prefix=$(MPICH1_INSTALL_DIR) -rsh=ssh
 
 mpich1-build: FORCE
 	cd $(MPICH1_BUILD_DIR) && $(MAKE)
