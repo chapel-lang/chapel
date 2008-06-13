@@ -30,6 +30,10 @@ extremely rare race condition in module initialization
 valgrind-specific regressions
 =============================
 
+write-after-free in tasklist code (?)
+-------------------------------------
+[Error matching program output for parallel/begin/waynew/simple3]
+
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
