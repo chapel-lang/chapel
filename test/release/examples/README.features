@@ -6,31 +6,32 @@ The following table lists the primary features that each example
 demonstrates:
 
 test             Primary features it was designed to demonstrate
---------------+---------------------------------------------------------------
-hello         : write() function; string literals; unstructured coding
-hello-module  : configuration vars; module structure; main() entry point
-arrays        : arithmetic domains and arrays; slicing; iteration; reallocation
-beer          : 1D domains and arrays; string manipulation; generic functions
-blockLU       : 2D domains and arrays; iterators; domain/array slicing, queries
-fileIO        : file I/O of scalars and arrays
-genericStack  : generic classes; nested classes; array reallocation
-iterators     : iterators of various styles
-jacobi        : 2D domains and arrays; stencil operations; reductions
-linkedList    : nested generic classes; iterators, writeThis methods
-multilocale   : multiple locales, on clauses, multi-locale task parallelism
-norm          : reductions; function overloading and where clauses; modules
-opaque        : opaque domains and arrays; graph-based data structures
-prodCons      : synchronization variables; task parallelism using cobegin
-quicksort     : bounded task parallelism using cobegin and serial
-reductions    : minloc, maxloc, + and && array reductions
-slices        : array slicing and reindexing; iterators
-sparse        : sparse domains and arrays; operations on them
-taskParallel  : begin, cobegin, coforall, sync statements, sync variables
-tree          : unbounded task parallelism using cobegin
-varargs       : variable argument functions, tuples
-hpcc/stream   : whole-array operators; standard modules; time/random routines
-hpcc/ra       : iterators; atomic statements
-hpcc/fft      : array slicing; iterators; complex and imaginary values
+---------------+---------------------------------------------------------------
+hello          : write() function; string literals; unstructured coding
+hello-module   : configuration vars; module structure; main() entry point
+hello-multiloc : coforalls, on clauses, locales
+arrays         : arithmetic domains and arrays; slicing; iteration; reallocation
+beer           : 1D domains and arrays; string manipulation; generic functions
+blockLU        : 2D domains and arrays; iterators; domain/array slicing, queries
+fileIO         : file I/O of scalars and arrays
+genericStack   : generic classes; nested classes; array reallocation
+iterators      : iterators of various styles
+jacobi         : 2D domains and arrays; stencil operations; reductions
+linkedList     : nested generic classes; iterators, writeThis methods
+multilocale    : multiple locales, on clauses, multi-locale task parallelism
+norm           : reductions; function overloading and where clauses; modules
+opaque         : opaque domains and arrays; graph-based data structures
+prodCons       : synchronization variables; task parallelism using cobegin
+quicksort      : bounded task parallelism using cobegin and serial
+reductions     : minloc, maxloc, + and && array reductions
+slices         : array slicing and reindexing; iterators
+sparse         : sparse domains and arrays; operations on them
+taskParallel   : begin, cobegin, coforall, sync statements, sync variables
+tree           : unbounded task parallelism using cobegin
+varargs        : variable argument functions, tuples
+hpcc/stream    : whole-array operators; standard modules; time/random routines
+hpcc/ra        : iterators; atomic statements
+hpcc/fft       : array slicing; iterators; complex and imaginary values
 
 
 --------------
@@ -56,6 +57,7 @@ test           | read  | write | files | halt  | wrths | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |   *   |       |       |       |       |       |
 hello-module   |       |   *   |       |       |       |       |       |
+hello-multiloc |       |   x   |       |       |       |       |       |
 arrays         |       |   x   |       |       |       |       |       |
 beer           |       |   *   |       |       |       |       |       |
 blockLU        |   x   |   x   |   *   |   *   |       |       |       |
@@ -97,6 +99,7 @@ test           | modls | stdmd | main  | funcs | iters | confg | these | vrarg
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |   *   |       |   *   |       |       |   *   |       |
+hello-multiloc |       |       |       |       |       |       |       |
 arrays         |       |       |       |   x   |       |   x   |       |
 beer           |       |       |   x   |   *   |       |   x   |       |
 blockLU        |       |       |   x   |   x   |   x   |   x   |       |
@@ -141,6 +144,7 @@ test           | strng | tuple | recrd | class | gener | infer | query | enum
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |   x   |       |       |       |       |   x   |       |
+hello-multiloc |       |       |       |       |       |       |       |
 arrays         |       |   x   |       |       |       |   x   |   *   |
 beer           |   *   |       |       |       |       |   *   |       |
 blockLU        |   x   |   x   |       |       |       |   x   |   *   |
@@ -183,6 +187,7 @@ test           | arith | spars | enum  | assoc | opque | subdm | index | reall
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+hello-multiloc |       |       |       |       |       |       |       |
 arrays         |   *   |       |       |       |       |       |       |   *
 beer           |   x   |       |       |       |       |       |       |
 blockLU        |   x   |       |       |       |       |       |       |
@@ -225,6 +230,7 @@ test           | frall | prmte | slice | reind | reduc | scan  | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+hello-multiloc |       |       |       |       |       |       |       |
 arrays         |   x   |   *   |   *   |       |       |       |       |
 beer           |   x   |       |       |       |       |       |       |
 blockLU        |   x   |       |   x   |   *   |   x   |       |       |
@@ -266,6 +272,7 @@ test           | begin | cobeg | cofor | srial | sync  | atomc | sncst | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+hello-multiloc |       |       |   x   |       |       |       |       |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
@@ -305,10 +312,11 @@ key:
 -------------------------------------------------------------------------------
                |              Locality Features
                |
-test           | nmloc | locle | LocSp | Lcles |  on   | .locl | xxxxx | xxxxx
+test           | nmloc | locle | LocSp | Lcles |  on   | .locl | here  | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+hello-multiloc |   *   |       |       |   *   |   *   |       |   *   |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
@@ -317,7 +325,7 @@ genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |
-multilocale    |   *   |   *   |   *   |   *   |   *   |   *   |       |
+multilocale    |   *   |   *   |   *   |   *   |   *   |   *   |   *   |
 norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
@@ -339,6 +347,7 @@ key:
   Lcles = uses the Locales array
   on    = uses on clauses
   .locl = uses .locale queries on expressions
+  here  = uses here
 -------------------------------------------------------------------------------
 
 
@@ -350,6 +359,7 @@ test           | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+hello-multiloc |       |       |       |       |       |       |       |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |

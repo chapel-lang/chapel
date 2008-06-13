@@ -6,6 +6,7 @@ CHPL = chpl
 TARGETS = \
 	hello \
 	hello-module \
+	hello-multiloc \
 	arrays \
 	beer \
         blockLU \
