@@ -1,7 +1,7 @@
 " Vim syntax file
 " Language:	Chapel
 " Maintainer:	James Dinan <dinan@cray.com>
-" Last Change:	2007 June 25
+" Last Change:	2008 June 18
 " License:      Vim License
 
 " Much was borrowed from the C and C++ syntax files.  Many thanks to those who
@@ -254,7 +254,7 @@ syn keyword chplStatement	goto break return continue
 syn keyword chplStatement	new this these use module yield compilerError compilerWarning
 syn keyword chplIntent		param type in out inout
 syn keyword chplStorageClass    const config var
-syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool file string opaque
+syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool file string opaque integral numeric enumerated
 syn keyword chplType            locale sync atomic single function distributed
 syn keyword chplOperator	on reduce scan by
 " syn match chplCast		"\<\(const\|static\|dynamic\|reinterpret\)_cast\s*<"me=e-1
