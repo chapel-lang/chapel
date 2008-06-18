@@ -23,10 +23,7 @@ uint64_t chpl_bytesPerLocale(void) {
   size_t len = sizeof(membytes);
   if (sysctlbyname("hw.memsize", &membytes, &len, NULL, 0)) 
     chpl_internal_error("query of physical memory failed");
-  // Report no more than 2300 MB of memory, since this appears to be the largest
-  // chunk that can be malloc'ed on Mac OS X, regardless of how much physical
-  // memory there is.
-  return membytes > 0x8fc00000 ? 0x8fc00000 : membytes;
+  return membytes;
 #elif defined __MTA__
   int mib[2] = {CTL_HW, HW_PHYSMEM}, membytes;
   size_t len = sizeof(membytes);

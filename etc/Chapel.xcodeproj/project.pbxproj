@@ -1313,6 +1313,10 @@
 		F7FAC4FA0D4537A700C02B67 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = (
+					"$(NATIVE_ARCH)",
+					ppc64,
+				);
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -1342,7 +1346,13 @@
 		F7FAC4FB0D4537A700C02B67 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COPY_PHASE_STRIP = YES;
+				ARCHS = (
+					ppc,
+					ppc64,
+					i386,
+					x86_64,
+				);
+				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;

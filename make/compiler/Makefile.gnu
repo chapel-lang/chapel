@@ -37,8 +37,12 @@ RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
 GEN_CFLAGS = -std=c99
 
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
-# the flag below prevents nonstandard functions from polluting the global name space
-GEN_CFLAGS += -D_POSIX_C_SOURCE
+# build 64-bit binaries when on a 64-bit capable PowerPC
+ARCH := $(shell test -x /usr/bin/machine -a `/usr/bin/machine` = ppc970 && echo -arch ppc64)
+RUNTIME_CFLAGS += $(ARCH)
+# the -D_POSIX_C_SOURCE flag prevents nonstandard functions from polluting the global name space
+GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH)
+GEN_LFLAGS += $(ARCH)
 endif
 
 #
