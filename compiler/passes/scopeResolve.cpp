@@ -606,6 +606,7 @@ static void build_constructor(ClassType* ct) {
           if (fieldNamesSet.set_in(superArg->sym->name))
             superArg->sym->name =
               astr("_shadow_", istr(shadowID++), "_", superArg->sym->name);
+          fieldNamesSet.set_add(superArg->sym->name);
           fn->insertFormalAtHead(superArg);
           superCall->insertAtHead(superArg->sym);
         }

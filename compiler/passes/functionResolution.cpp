@@ -3005,20 +3005,7 @@ postFold(Expr* expr) {
       }
     }
   }
-/*
-  if (toSymExpr(result) || toCallExpr(result)) {
-    if (Type* type = result->typeInfo()) {
-      if (type->symbol && type->symbol->hasPragma("sync")) {
-        if (result == result->getStmtExpr()) {
-          CallExpr* call = toCallExpr(result);
-          if (!call || (!call->isPrimitive(PRIMITIVE_MOVE) && !call->isPrimitive(PRIMITIVE_RETURN))) {
-            fprintf(stderr, "place to break\n");
-          }
-        }
-      }
-    }
-  }
-*/
+
   if (CondStmt* cond = toCondStmt(result->parentExpr)) {
     if (cond->condExpr == result) {
       if (Expr* expr = cond->fold_cond_stmt()) {
@@ -3416,7 +3403,7 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
             resolveFormals(icfn);
             if (signature_match(pfn, icfn)) {
               resolveFns(icfn);
-              if (icfn->retType != pfn->retType) {
+              if (!isSubType(icfn->retType, pfn->retType)) {
                 USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
                 USR_FATAL_CONT(icfn, "  overridden by '%s: %s'", toString(icfn), icfn->retType->symbol->name);
                 USR_STOP();
@@ -3452,7 +3439,7 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
           resolveFormals(cfn);
           if (signature_match(pfn, cfn)) {
             resolveFns(cfn);
-            if (cfn->retType != pfn->retType) {
+            if (!isSubType(cfn->retType, pfn->retType)) {
               USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
               USR_FATAL_CONT(cfn, "  overridden by '%s: %s'", toString(cfn), cfn->retType->symbol->name);
               USR_STOP();
@@ -3689,10 +3676,32 @@ resolve() {
                                              call->get(2)->copy(),
                                              type->symbol)));
           if_fn->insertAtTail(new DefExpr(_ret));
+          BlockStmt* trueBlock = new BlockStmt();
+          if (fn->retType == key->retType) {
+            trueBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, _ret, subcall));
+          } else if (isSubType(fn->retType, key->retType)) {
+            // Insert a cast to the overridden method's return type
+            VarSymbol* castTemp = new VarSymbol("_castTemp", fn->retType);
+            VarSymbol* typeTemp = new VarSymbol("_typeTemp", key->retType);
+            castTemp->isCompilerTemp = true;
+            typeTemp->isCompilerTemp = true;
+            trueBlock->insertAtTail(new DefExpr(castTemp));
+            trueBlock->insertAtTail(new DefExpr(typeTemp));
+            trueBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, castTemp,
+                                                 subcall));
+            trueBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, _ret,
+                                                 new CallExpr(PRIMITIVE_CAST,
+                                                              typeTemp,
+                                                              castTemp)));
+          } else {
+            USR_FATAL_CONT(key, "conflicting return type specified for '%s: %s'", toString(key), key->retType->symbol->name);
+            USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->symbol->name);
+            USR_STOP();
+          }
           if_fn->insertAtTail(
             new CondStmt(
               new SymExpr(cid),
-              new CallExpr(PRIMITIVE_MOVE, _ret, subcall),
+              trueBlock,
               new CallExpr(PRIMITIVE_MOVE, _ret, tmp)));
           if_fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, _ret));
           if_fn->retType = key->retType;

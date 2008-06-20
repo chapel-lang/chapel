@@ -1,5 +1,0 @@
-unimplemented feature: return subtype of type returned by overridden method
-
-When a method is overridden by a subclass, the overriding method should be
-able to return a subtype of the overridden method's return type. In this case,
-the subclasses are generic.
