@@ -3682,17 +3682,14 @@ resolve() {
           } else if (isSubType(fn->retType, key->retType)) {
             // Insert a cast to the overridden method's return type
             VarSymbol* castTemp = new VarSymbol("_castTemp", fn->retType);
-            VarSymbol* typeTemp = new VarSymbol("_typeTemp", key->retType);
             castTemp->isCompilerTemp = true;
-            typeTemp->isCompilerTemp = true;
             trueBlock->insertAtTail(new DefExpr(castTemp));
-            trueBlock->insertAtTail(new DefExpr(typeTemp));
             trueBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, castTemp,
                                                  subcall));
             trueBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, _ret,
-                                                 new CallExpr(PRIMITIVE_CAST,
-                                                              typeTemp,
-                                                              castTemp)));
+                                      new CallExpr(PRIMITIVE_CAST,
+                                                   key->retType->symbol,
+                                                   castTemp)));
           } else {
             USR_FATAL_CONT(key, "conflicting return type specified for '%s: %s'", toString(key), key->retType->symbol->name);
             USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->symbol->name);
