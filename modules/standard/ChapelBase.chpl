@@ -1110,15 +1110,8 @@ def _getIterator(type t) {
 }
 
 def =(ic: _iteratorClass, xs) {
-  pragma "internal var" var xsic;
-  __primitive("move", xsic, _getIterator(xs));
-  var xsc = xsic.getZipCursor1();
-  for e in ic {
-    xsc = xsic.getZipCursor2(xsc);
-    e = xsic.getValue(xsc);
-    xsc = xsic.getZipCursor3(xsc);
-  }
-  xsc = xsic.getZipCursor4(xsc);
+  for (e, x) in (ic, xs) do
+    e = x;
   return ic;
 }
 
@@ -1127,10 +1120,6 @@ def =(ic: _iteratorClass, x: ic.eltType) {
     e = x;
   return ic;
 }
-
-  // note: need to verify that rhs can be assigned to lhs; checking
-  // that rt:lt is not sufficient to handle parameter coercions
-
 
 pragma "inline" def _startTrackingMem() { __primitive("startTrackingMem"); }
 

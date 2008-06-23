@@ -39,12 +39,9 @@ void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
 }
               
 
-void reset_line_info(BaseAST* baseAST, int lineno) {
-  Vec<BaseAST*> asts;
-  collect_asts(baseAST, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    ast->lineno = lineno;
-  }
+void reset_line_info(BaseAST* ast, int lineno) {
+  ast->lineno = lineno;
+  AST_CHILDREN_CALL(ast, reset_line_info, lineno);
 }
 
 
@@ -63,11 +60,7 @@ void compute_call_sites() {
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (FnSymbol* fn = call->isResolved()) {
-        if (fn->calledBy) { // yuck, got some functions being called
-                            // that are no longer in the tree, e.g.,
-                            // _INIT_CONFIG
-          fn->calledBy->add(call);
-        }
+        fn->calledBy->add(call);
       }
     }
   }

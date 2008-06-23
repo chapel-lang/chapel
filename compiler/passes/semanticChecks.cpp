@@ -91,8 +91,7 @@ checkParsed(void) {
         if (!def->init && !def->exprType && !def->sym->isCompilerTemp)
           if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
             if (def->parentExpr != rootModule->block)
-              if (!def->sym->hasPragma("index var") &&
-                  !def->sym->hasPragma("internal var"))
+              if (!def->sym->hasPragma("index var"))
                 USR_FATAL_CONT(def->sym,
                                "Variable '%s' is not initialized or has no type",
                                def->sym->name);
