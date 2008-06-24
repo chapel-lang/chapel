@@ -52,13 +52,63 @@ expandIteratorInline(CallExpr* call) {
 }
 
 
+static bool
+canInlineIterator(FnSymbol* iterator) {
+  Vec<BaseAST*> asts;
+  collect_asts(iterator, asts);
+  int count = 0;
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = toCallExpr(ast))
+      if (call->isPrimitive(PRIMITIVE_YIELD))
+        count++;
+  }
+  if (count == 1)
+    return true;
+  return false;
+}
+
+static void
+expand_for_loop(CallExpr* call) {
+  BlockStmt* block = toBlockStmt(call->parentExpr);
+  if (!block || block->loopInfo != call)
+    INT_FATAL(call, "bad for loop primitive");
+  SymExpr* se1 = toSymExpr(call->get(1));
+  SymExpr* se2 = toSymExpr(call->get(2));
+  if (!se1 || !se2)
+    INT_FATAL(call, "bad for loop primitive");
+  VarSymbol* index = toVarSymbol(se1->var);
+  VarSymbol* iterator = toVarSymbol(se2->var);
+  if (!index || !iterator)
+    INT_FATAL(call, "bad for loop primitive");
+  FnSymbol* iter = iterator->type->defaultConstructor;
+  if (!fNoInlineIterators && canInlineIterator(iter)) {
+    expandIteratorInline(call);
+  } else {
+    IteratorInfo* ii = iter->iteratorInfo;
+    VarSymbol* cursor = new VarSymbol("_cursor", ii->getHeadCursor->retType);
+    cursor->isCompilerTemp = true;
+    block->insertBefore(new DefExpr(cursor));
+    block->insertBefore(new CallExpr(PRIMITIVE_MOVE, cursor, new CallExpr(ii->getHeadCursor, iterator)));
+    VarSymbol* cond = new VarSymbol("_cond", dtBool);
+    cond->isCompilerTemp = true;
+    block->insertBefore(new DefExpr(cond));
+    block->insertBefore(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(ii->isValidCursor, iterator, cursor)));
+    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, index, new CallExpr(ii->getValue, iterator, cursor)));
+    block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cursor, new CallExpr(ii->getNextCursor, iterator, cursor)));
+    block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(ii->isValidCursor, iterator, cursor)));
+    call->get(2)->remove();
+    call->get(1)->remove();
+    call->insertAtTail(cond);
+  }
+}
+
+
 void lowerIterators() {
   forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIMITIVE_LOOP_INLINE)) {
-        expandIteratorInline(call);
-      }
-    }
+    if (CallExpr* call = toCallExpr(ast))
+      if (call->isPrimitive(PRIMITIVE_LOOP_FOR))
+        if (call->numActuals() > 1)
+          expand_for_loop(call);
   }
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->fnTag == FN_ITERATOR) {

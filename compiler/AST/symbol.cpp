@@ -1037,7 +1037,7 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
 
   if (isMethod && !noParens)
     actualCall = make_method_call_partial(actualCall);
-  BaseAST* indices = indicesCall;
+  Expr* indices = indicesCall;
   if (indicesCall->numActuals() == 1)
     indices = indicesCall->get(1)->remove();
   if (returns_void(this)) {

@@ -24,14 +24,14 @@ CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
 BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
-BlockStmt* buildCoforallLoopStmt(BaseAST* indices,
+BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
                                  BlockStmt* body);
 BlockStmt* buildForLoopStmt(BlockTag tag,
-                            BaseAST* indices,
+                            Expr* indices,
                             Expr* iterator,
                             BlockStmt* body);
-BlockStmt* buildForLoopExpr(BaseAST* indices,
+BlockStmt* buildForLoopExpr(Expr* indices,
                             Expr* iterator,
                             Expr* expr,
                             Expr* cond = NULL);

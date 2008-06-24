@@ -2071,72 +2071,6 @@ static void fold_param_for(CallExpr* loop) {
   makeNoop(loop);
 }
 
-static bool
-canInlineIterator(FnSymbol* iterator) {
-  Vec<BaseAST*> asts;
-  collect_asts(iterator, asts);
-  int count = 0;
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = toCallExpr(ast))
-      if (call->isPrimitive(PRIMITIVE_YIELD))
-        count++;
-  }
-  if (count == 1)
-    return true;
-  return false;
-}
-
-static Expr*
-expand_for_loop(CallExpr* call) {
-  CallExpr* result;
-  BlockStmt* block = toBlockStmt(call->parentExpr);
-  if (!block || block->loopInfo != call)
-    INT_FATAL(call, "bad for loop primitive");
-  SymExpr* se1 = toSymExpr(call->get(1));
-  SymExpr* se2 = toSymExpr(call->get(2));
-  if (!se1 || !se2)
-    INT_FATAL(call, "bad for loop primitive");
-  VarSymbol* index = toVarSymbol(se1->var);
-  VarSymbol* iterator = toVarSymbol(se2->var);
-  if (!index || !iterator)
-    INT_FATAL(call, "bad for loop primitive");
-  if (!fNoInlineIterators) {
-    if (canInlineIterator(iterator->type->defaultConstructor)) {
-      result = call;
-      call->primitive = primitives[PRIMITIVE_LOOP_INLINE];
-      return result;
-    }
-  }
-  VarSymbol* cursor = new VarSymbol("_cursor");
-  cursor->isCompilerTemp = true;
-  block->insertBefore(new DefExpr(cursor));
-  result = new CallExpr("getHeadCursor", gMethodToken, iterator);
-  result->partialTag = true;
-  block->insertBefore(new CallExpr(PRIMITIVE_MOVE, cursor, new CallExpr(result)));
-  VarSymbol* cond = new VarSymbol("_cond");
-  cond->isCompilerTemp = true;
-  block->insertBefore(new DefExpr(cond));
-  CallExpr* partial = new CallExpr("isValidCursor", gMethodToken, iterator);
-  partial->partialTag = true;
-  block->insertBefore(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(partial, cursor)));
-
-  partial = new CallExpr("getValue", gMethodToken, iterator);
-  partial->partialTag = true;
-  block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, index,
-                                   new CallExpr(partial, cursor)));
-
-  partial = new CallExpr("getNextCursor", gMethodToken, iterator);
-  partial->partialTag = true;
-  block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cursor, new CallExpr(partial, cursor)));
-
-  partial = new CallExpr("isValidCursor", gMethodToken, iterator);
-  partial->partialTag = true;
-  block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(partial, cursor)));
-
-  call->replace(new CallExpr(PRIMITIVE_LOOP_FOR, cond));
-  return result;
-}
-
 
 static Expr* dropUnnecessaryCast(CallExpr* call) {
   // Check for and remove casts to the original type and size
@@ -2460,9 +2394,9 @@ preFold(Expr* expr) {
       }
     } else if (call->isPrimitive(PRIMITIVE_LOOP_PARAM)) {
       fold_param_for(call);
-    } else if (call->isPrimitive(PRIMITIVE_LOOP_FOR) &&
-               call->numActuals() == 2) {
-      result = expand_for_loop(call);
+//     } else if (call->isPrimitive(PRIMITIVE_LOOP_FOR) &&
+//                call->numActuals() == 2) {
+//       result = expand_for_loop(call);
     } else if (call->isPrimitive(PRIMITIVE_LOGICAL_FOLDER)) {
       bool removed = false;
       SymExpr* sym1 = toSymExpr(call->get(1));

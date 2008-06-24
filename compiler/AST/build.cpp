@@ -400,7 +400,7 @@ BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body) {
 
 // builds body of for expression iterator
 BlockStmt*
-buildForLoopExpr(BaseAST* indices, Expr* iterator, Expr* expr, Expr* cond) {
+buildForLoopExpr(Expr* indices, Expr* iterator, Expr* expr, Expr* cond) {
   Expr* stmt = new CallExpr(PRIMITIVE_YIELD, expr);
   if (cond)
     stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
@@ -461,7 +461,7 @@ checkIndices(BaseAST* indices) {
 
 
 BlockStmt* buildForLoopStmt(BlockTag tag,
-                            BaseAST* indices,
+                            Expr* indices,
                             Expr* iterator,
                             BlockStmt* body) {
 
@@ -507,23 +507,20 @@ BlockStmt* buildForLoopStmt(BlockTag tag,
                                       icall->get(4)->copy()));
     }
   } else {
-    iterator = new CallExpr("_getIterator", iterator);
-    VarSymbol* iteratorSym = new VarSymbol("_iterator");
-    iteratorSym->isCompilerTemp = true;
-    stmts->insertAtTail(new DefExpr(iteratorSym));
-    stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iteratorSym, iterator));
-    VarSymbol* index = new VarSymbol("_index");
-    index->isCompilerTemp = true;
-    stmts->insertAtTail(new DefExpr(index));
-    stmts->insertAtTail(new BlockStmt(
-      new CallExpr(PRIMITIVE_MOVE, index, 
-        new CallExpr(
-          new CallExpr(".", iteratorSym, new_StringSymbol("getValue")),
-          new CallExpr(
-            new CallExpr(".", iteratorSym, new_StringSymbol("getHeadCursor"))))),
-      BLOCK_TYPE));
-    destructureIndices(body, indices, new SymExpr(index));
-    body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iteratorSym);
+  iterator = new CallExpr("_getIterator", iterator);
+  VarSymbol* iteratorSym = new VarSymbol("_iterator");
+  iteratorSym->isCompilerTemp = true;
+  stmts->insertAtTail(new DefExpr(iteratorSym));
+  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iteratorSym, iterator));
+  VarSymbol* index = new VarSymbol("_index");
+  index->isCompilerTemp = true;
+  stmts->insertAtTail(new DefExpr(index));
+  stmts->insertAtTail(new BlockStmt(
+    new CallExpr(PRIMITIVE_MOVE, index,
+      new CallExpr(PRIMITIVE_GET_ITERATOR_RETURN, iteratorSym)),
+    BLOCK_TYPE));
+  destructureIndices(body, indices, new SymExpr(index));
+  body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iteratorSym);
   }
   body->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(body);
@@ -532,7 +529,7 @@ BlockStmt* buildForLoopStmt(BlockTag tag,
 }
 
 
-BlockStmt* buildCoforallLoopStmt(BaseAST* indices, Expr* iterator, BlockStmt* body) {
+BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body) {
   checkControlFlow(body, "coforall statement");
 
   if (fSerial)
@@ -823,14 +820,8 @@ CallExpr* buildReduceScanExpr(Expr* op, Expr* data, bool isScan) {
       new CallExpr(PRIMITIVE_MOVE, eltType,
         new CallExpr(PRIMITIVE_TYPEOF,
           new CallExpr("_copy",
-            new CallExpr(
-              new CallExpr(".",
-                new CallExpr("_getIterator", tmp),
-                new_StringSymbol("getValue")),
-              new CallExpr(
-                new CallExpr(".",
-                  new CallExpr("_getIterator", tmp),
-                    new_StringSymbol("getHeadCursor"))))))),
+            new CallExpr(PRIMITIVE_GET_ITERATOR_RETURN,
+              new CallExpr("_getIterator", tmp))))),
       BLOCK_TYPE));
   fn->insertAtTail(
     new CallExpr(PRIMITIVE_RETURN,
