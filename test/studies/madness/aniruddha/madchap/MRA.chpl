@@ -26,80 +26,97 @@ config const verbose = false;
 config const debug   = false;
 
 class Function {
-    const k             = 5;    // use first k Legendre polynomials as the basis in each box
-    const thresh        = 1e-5; // truncation threshold for small wavelet coefficients
-    const f: AFcn       = nil;  // analytic f(x) to project into the numerical represntation
-    const initial_level = 2;    // initial level of refinement
-    const max_level     = 30;   // maximum level of refinement mostly as a sanity check
-    var   autorefine    = true; // automatically refine during multiplication
-    var   compressed    = false;// keep track of what basis we are in
+    const k            : int;  // use first k Legendre polynomials as the basis in each box
+    const thresh       : real; // truncation threshold for small wavelet coefficients
+    const f            : AFcn; // analytic f(x) to project into the numerical represntation
+    const initial_level: int;  // initial level of refinement
+    const max_level    : int;  // maximum level of refinement mostly as a sanity check
+    const autorefine   : bool; // automatically refine during multiplication
+    var   compressed   : bool; // keep track of what basis we are in
 
     // Sum and Difference coefficients
-    var   sumC = new FTree(order=k);
-    var   diffC = new FTree(order=k);
-
-    // FIXME: Ideally all of these matrices should be const as well but they
-    //        can't be presently since they must be assigned in initialize()
+    const sumC : FTree;
+    const diffC: FTree;
 
     // Two-Scale relationship matrices
-    const hgDom = [0..2*k-1, 0..2*k-1];
-    var   hg    : [hgDom] real; // FIXME: hg  =  hg_getCoeffs(k);
-    var   hgT   : [hgDom] real; //        hgT => transpose(hg);
+    const hgDom: domain(2);
+    const hg   : [hgDom] real;
+    const hgT  : [hgDom] real;
 
     // Quadrature coefficients
-    const quadDom   = [0..k-1];
-    var   quad_x    : [quadDom] real; // points
-    var   quad_w    : [quadDom] real; // weights
+    const quadDom: domain(1);
+    const quad_x : [quadDom] real; // points
+    const quad_w : [quadDom] real; // weights
 
-    const quad_phiDom = [0..k-1, 0..k-1];
-    var   quad_phi    : [quad_phiDom] real; // phi[point,i]
-    var   quad_phiT   : [quad_phiDom] real; // phi[point,i] transpose
-    var   quad_phiw   : [quad_phiDom] real; // phi[point,i]*weight[point]
+    const quad_phiDom: domain(2);
+    const quad_phi   : [quad_phiDom] real; // phi[point,i]
+    const quad_phiT  : [quad_phiDom] real; // phi[point,i] transpose
+    const quad_phiw  : [quad_phiDom] real; // phi[point,i]*weight[point]
 
     // blocks of the block tridiagonal derivative operator
-    const dcDom = [0..k-1, 0..k-1];
-    var   rm    : [dcDom] real;
-    var   r0    : [dcDom] real;
-    var   rp    : [dcDom] real;
+    const dcDom: domain(2);
+    const rm   : [dcDom] real;
+    const r0   : [dcDom] real;
+    const rp   : [dcDom] real;
 
-    def initialize() {
+    def Function(k:int=5, thresh:real=1e-5, f:AFcn=nil, initial_level:int=2, 
+                 max_level:int=30, autorefine:bool=true, compressed:bool=false, 
+                 sumC:FTree=new FTree(order=k), diffC:FTree=new FTree(order=k)) {
         if debug then writeln("Creating Function: k=", k, " thresh=", thresh);
-
+        this.k = k;
+        this.thresh = thresh;
+        this.f = f;
+        this.initial_level = initial_level;
+        this.max_level = max_level;
+        this.autorefine = autorefine;
+        this.compressed = compressed;
+        this.sumC = sumC;
+        this.diffC = diffC;
+       
         if debug then writeln("  initializing two-scale relation coefficients");
-        hg  = hg_getCoeffs(k);
-        transposeCopy(hgT, hg);
-
+        init_twoscale(k);
+       
         if debug then writeln("  initializing quadrature coefficients");
         init_quadrature(k);
 
-        // blocks of the block tridiagonal derivative operator
         if debug then writeln("  initializing tridiagonal derivative operator");
-        make_dc_periodic();
+        make_dc_periodic(k);
 
         // initial refinement of analytic function f(x)
         if f != nil {
             if debug then writeln("  performing initial refinement of f(x)");
             for l in 0..2**initial_level-1 {
                 const node = new Node(initial_level, l);
-                on Locales(node.loc) do refine(node);
+                refine(node);
             }
         }
-
+        
         if debug then writeln("done.");
+    }
+
+
+    /** Initialize the two-scale relation coefficient matricies.
+     */
+    def init_twoscale(k) {
+        hgDom = [0..2*k-1, 0..2*k-1];
+        hg = hg_getCoeffs(k);
+        [(i,j) in hgDom] hgT[i,j] = hg[j,i];
     }
 
 
     /** Initialize the quadrature coefficient matricies.
      */
-    def init_quadrature(order: int) {
-        quad_x   = gl_getPoints(k);
-        quad_w   = gl_getWeights(k);
-
+    def init_quadrature(k) {
+        quadDom = [0..k-1];
+        quad_x = gl_getPoints(k);
+        quad_w = gl_getWeights(k);
+        
+        quad_phiDom = [0..k-1, 0..k-1];
         for i in quad_phiDom.dim(1) {
-            var p = phi(quad_x[i], k);
-            quad_phi [i..i, ..] = p;            // FIXME: quad_phi [i, ..] = p;
-            quad_phiw[i..i, ..] = quad_w[i] * p;//        quad_phiw[i, ..] = ...;
-            quad_phiT[.., i..i] = p;
+            const p = phi(quad_x[i], k);
+            quad_phi [i, ..] = p;
+            quad_phiw[i, ..] = quad_w[i] * p;
+            quad_phiT[.., i] = p;
         }
     }
 
@@ -108,7 +125,8 @@ class Function {
         difference derivative operator with periodic boundary
         conditions on either side.
      */
-    def make_dc_periodic() {
+    def make_dc_periodic(k) {
+        dcDom = [0..k-1, 0..k-1];
         var iphase = 1.0;
         for i in dcDom.dim(1) {
             var jphase = 1.0;
@@ -245,8 +263,8 @@ class Function {
         if !sumC.has_coeffs(child(2)) then compress(child(2));
 
         var sc: [0..2*k-1] real;
-        sc[0..k-1]   = sumC(child(1));
-        sc[k..2*k-1] = sumC(child(2));
+        sc[0..k-1]   = sumC[child(1)];
+        sc[k..2*k-1] = sumC[child(2)];
 
         // apply the two scale relationship to get difference coeff
         // in 1d this is O(k^2) flops (in 3d this is O(k^4) flops)
@@ -308,8 +326,8 @@ class Function {
 
         var new_sc = sc*hg;
         const child = curNode.get_children();
-        sumC(child(1)) = new_sc[0..k-1];
-        sumC(child(2)) = new_sc[k..2*k-1];
+        sumC[child(1)] = new_sc[0..k-1];
+        sumC[child(2)] = new_sc[k..2*k-1];
     }
 
     
