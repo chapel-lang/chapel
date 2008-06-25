@@ -1,0 +1,7 @@
+in-line array initialization in class 
+
+In-line initialization of array arrA in class A fails with the
+compiler error:
+inlineArrInitInClass.chpl:4: In iterator '_forallinit':
+inlineArrInitInClass.chpl:4: error: 'arrD' undeclared (first use this
+function)
