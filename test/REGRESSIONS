@@ -14,7 +14,9 @@
 linux and general regressions
 =============================
 
-
+out-of-memory problem (06/25/2008)
+----------------------------------
+[Error matching program output for parallel/begin/dinan/mvm_coforall]
 
 new madness precision issue (most platforms other than darwin, cygwin)
 ----------------------------------------------------------------------
@@ -26,12 +28,36 @@ extremely rare race condition in module initialization
 [Error matching program output for modules/diten/useInBegin]
 
 
+================================
+performance-specific regressions
+================================
+
+out-of-memory problem (06/25/2008)
+----------------------------------
+[Error matching performance keys for release/examples/hpcc/ra]
+
+
+=============================
+baseline-specific regressions
+=============================
+
+line numbers due to unequal zipperings
+--------------------------------------
+[Error matching program output for
+functions/deitz/iterators/test_zip_check1]
+[Error matching program output for
+functions/deitz/iterators/test_zip_check2]
+[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
+[Error matching program output for
+types/range/deitz/test_range_iterate_error]
+
+
 =============================
 valgrind-specific regressions
 =============================
 
-write-after-free in tasklist code (?)
--------------------------------------
+write-after-free in tasklist code (race-y?)
+-------------------------------------------
 [Error matching program output for parallel/begin/waynew/simple3]
 
 internal valgrind stuff 'the impossible has happened'
@@ -60,10 +86,15 @@ failing nondeterministically (e.g., 04/04/08)
 gasnet-specific regressions
 ===========================
 
+times out occasionally (race-y deadlock?) -- e.g., 06/15/2008, 06/18/2008
+-------------------------------------------------------------------------
+[Error: Timed out executing program
+studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
+[Error: Timed out executing program
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+
 timeout issue
 -------------
-[Error: Timed out executing program
-studies/madness/aniruddha/madchap/test_gaxpy]
 [Error: Timed out executing program
 studies/madness/aniruddha/madchap/test_likepy]
 
@@ -74,11 +105,6 @@ studies/madness/aniruddha/madchap/test_likepy]
 garbage collection doesn't work with multithreaded
 --------------------------------------------------
 [Error matching compiler output for classes/diten/allocateManyObjects]
-
-
-==========================
-darwin-/mac-specific tests
-==========================
 
 
 ===================
@@ -96,7 +122,8 @@ opts-specific tests
 -----------------------------
 [Error matching program output for release/examples/hpcc/stream]
 
-(Full run)
+
+(Full run: 164)
 
 --no-dead-code-elimination
 --------------------------
@@ -165,7 +192,7 @@ studies/madness/dinan/mad_chapel/test_likepy]
 [Error matching program output for arrays/waynew/init2]
 [Error matching program output for associative/waynew/indef8-fail2]
 [Error matching program output for associative/waynew/indef8]
-[Error matching program output for 
+[Error matching program output for
 classes/bradc/arrayInClass/genericArrayInClass-otharrs]
 [Error matching program output for domains/deitz/test_domain_reassign3]
 [Error matching program output for functions/deitz/test_square2]
@@ -199,8 +226,12 @@ studies/beer/bradc/beer-promoted-infer-explicit]
 [Error matching program output for studies/hpcc/STREAMS/stream-hpcc06]
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-bradc]
 [Error matching program output for
+studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall]
+[Error matching program output for
 studies/hpcc/STREAMS/bradc/stream-fragmented]
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-slice]
+[Error matching program output for
+studies/hpcc/STREAMS/diten/stream-fragmented-local]
 [Error matching program output for studies/hpcc/STREAMS/marybeth/stream]
 [Error matching program output for studies/hpcc/STREAMS/waynew/stream]
 [Error matching program output for studies/jacobi/bradc/jacobi-slice-brad]
@@ -219,6 +250,8 @@ studies/madness/aniruddha/madchap/test_likepy]
 studies/madness/aniruddha/madchap/test_mul]
 [Error matching program output for
 studies/madness/aniruddha/madchap/test_showboxes]
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error matching program output for studies/madness/common/test_diff]
 [Error matching program output for studies/madness/common/test_gaxpy]
 [Error matching program output for studies/madness/common/test_likepy]
@@ -244,13 +277,19 @@ studies/madness/dinan/mad_chapel/test_mul]
 [Error matching program output for users/shetag/fock/fock-orig]
 [Error matching program output for users/shetag/fock/fock-stc-1]
 [Error matching program output for users/shetag/fock/fock-stc]
-[Summary: #Successes = 1902 | #Failures = 76 | #Futures = 0]
+[Summary: #Successes = 1984 | #Failures = 79 | #Futures = 0]
 
 --no-local
 ----------
 [Error matching compiler output for classes/diten/allocateManyObjects]
+[Error matching compiler output for
+classes/diten/override_with_subclass_ret_type]
+[Error matching compiler output for
+classes/diten/override_with_subclass_ret_type_generic]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
-[Summary: #Successes = 1976 | #Failures = 2 | #Futures = 0]
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Summary: #Successes = 2058 | #Failures = 5 | #Futures = 0]
 
 --baseline --no-local
 ---------------------
@@ -264,11 +303,19 @@ studies/madness/dinan/mad_chapel/test_mul]
 [Error matching compiler output for classes/deitz/infer/infer_field2b]
 [Error matching compiler output for classes/deitz/infer/infer_field2c]
 [Error matching compiler output for classes/diten/allocateManyObjects]
+[Error matching compiler output for
+classes/diten/override_with_subclass_ret_type]
+[Error matching compiler output for
+classes/diten/override_with_subclass_ret_type_generic]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
 [Error matching compiler output for studies/590o/alaska/graph]
 [Error matching compiler output for studies/590o/blerner/xml-parse]
 [Error matching program output for
 studies/hpcc/STREAMS/bradc/stream-block1dclass]
+[Error matching program output for
+studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
+[Error matching program output for
+studies/hpcc/STREAMS/bradc/stream-block1dpar]
 [Error matching program output for
 studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error matching compiler output for studies/uts/dequeue]
@@ -279,7 +326,7 @@ studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error matching compiler output for types/tuple/dinan/pining_for_lisp_ver2]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
-[Summary: #Successes = 2003 | #Failures = 23 | #Futures = 0]
+[Summary: #Successes = 2036 | #Failures = 27 | #Futures = 0]
 
 
 ==============================
@@ -342,7 +389,6 @@ Numerical accuracy issues (started 05/24/08)
 [Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
-
 
 Some sort of offset type mismatch -- likely caused by long identifiers
 ----------------------------------------------------------------------
