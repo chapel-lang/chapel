@@ -89,8 +89,7 @@ static Type*
 returnIteratorType(CallExpr* call) {
   Type* ict = call->get(1)->typeInfo();
   INT_ASSERT(ict->symbol->hasPragma("iterator class"));
-  Type* eltType = ict->defaultConstructor->getReturnSymbol()->type;
-  return eltType;
+  return ict->defaultConstructor->getReturnSymbol()->type;
 }
 
 static Type*

@@ -537,6 +537,10 @@ class _OpaqueIndex { }
 pragma "inline" def _pass(ic: _iteratorClass)
   return ic;
 
+def _iteratorClass.eltType type {
+  return this.getValue(this.getHeadCursor()).type;
+}
+
 def _copy(ic: _iteratorClass) {
   return _ic_copy_help(_ic_copy_recursive(ic));
 
@@ -546,29 +550,18 @@ def _copy(ic: _iteratorClass) {
   }
 
   def _ic_copy_help(ic) {
-    var c = ic.getHeadCursor();
-
-    var capacity = 4, size = 0;
-    var data = new _ddata(ic.getValue(c).type, capacity);
-    data.init();
-
-    while ic.isValidCursor(c) do {
-      if size == capacity {
-        capacity = capacity * 2;
-        var tmp = new _ddata(ic.getValue(c).type, capacity);
-        tmp.init();
-        for i in 0..size-1 do
-          tmp(i) = data(i);
-        data = tmp;
+    var i = 1, size = 4;
+    var D = [1..size];
+    var A: [D] ic.eltType;
+    for e in ic {
+      if i > size {
+        size = size * 2;
+        D = [1..size];
       }
-      data(size) = ic.getValue(c);
-      size = size + 1;
-      c = ic.getNextCursor(c);
+      A(i) = e;
+      i = i + 1;
     }
-
-    var A: [1..size] data.eltType;
-    for i in 0..size-1 do
-      A(i+1) = data(i);
+    D = [1..i-1];
     return A;
   }
 }

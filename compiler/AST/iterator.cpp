@@ -87,20 +87,6 @@ void prototypeIteratorClass(FnSymbol* fn) {
   ii->getValue->insertFormalAtTail(
     new ArgSymbol(INTENT_BLANK, "cursor", cursorType));
 
-  FnSymbol* eltType = new FnSymbol("eltType");
-  eltType->global = true;
-  eltType->copyPragmas(fn);
-  eltType->addPragma("auto ii");
-  eltType->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  eltType->_this = new ArgSymbol(INTENT_BLANK, "this", ii->classType);
-  eltType->insertFormalAtTail(eltType->_this);
-  eltType->noParens = true;
-  if (!ii->getValue->retType->refType)
-    eltType->retType = getValueType(fn->retType);
-  else
-    eltType->retType = fn->retType;
-  fn->defPoint->insertBefore(new DefExpr(eltType));
-
   ii->getZipCursor1 = buildEmptyIteratorMethod("getZipCursor1", ii->classType);
   ii->getZipCursor1->retType = cursorType;
 
