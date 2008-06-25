@@ -1,0 +1,8 @@
+object reference as formal argument in user constructor
+
+error: internal failure MIS0208 chpl Version 0.7.-999
+
+The class B in this test has member "a" reference to class A object.
+The formal argument used to initialize member "a" in class B's user
+constructor has to be explicitly typed i.e. def B(a:A = nil). Removing
+the type i.e. def B(a = nil) causes the compilation to fail.
