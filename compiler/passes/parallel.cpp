@@ -35,7 +35,7 @@ bundleArgs(CallExpr* fcall) {
   int i = 1;
   bool first = true;
   for_actuals(arg, fcall) {
-    if ((fn->hasPragma("on") || fn->hasPragma("cobegin")) && first) {
+    if (fn->hasPragma("on") && first) {
       first = false;
       continue;
     }
@@ -64,7 +64,7 @@ bundleArgs(CallExpr* fcall) {
   i = 1;
   first = true;
   for_actuals(arg, fcall) {
-    if ((fn->hasPragma("on") || fn->hasPragma("cobegin")) && first) {
+    if (fn->hasPragma("on") && first) {
       first = false;
       continue;
     }
@@ -86,23 +86,19 @@ bundleArgs(CallExpr* fcall) {
     wrap_fn->addPragma("on block");
     ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
     wrap_fn->insertFormalAtTail(locale);
-  } else if (fn->hasPragma("cobegin")) {
-    wrap_fn->addPragma("cobegin block");
-    ArgSymbol* task_list = new ArgSymbol(INTENT_BLANK, "_task_list", dtTaskList);
-    wrap_fn->insertFormalAtTail(task_list);
-    FnSymbol* fns = toFnSymbol(fcall_def->sym);
-    fns->getFormal(1)->defPoint->remove(); // remove bogus first formal
+  } else if (fn->hasPragma("cobegin/coforall")) {
+    wrap_fn->addPragma("cobegin/coforall block");
   }
   ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
   wrap_fn->insertFormalAtTail( wrap_c);
 
   mod->block->insertAtTail(new DefExpr(wrap_fn));
-  if (fn->hasPragma("on") || fn->hasPragma("cobegin")) {
+  if (fn->hasPragma("on")) {
     fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), tempc));
   } else
     fcall->insertBefore(new CallExpr(wrap_fn, tempc));
 
-  if (fn->hasPragma("begin") || fn->hasPragma("cobegin")) {
+  if (fn->hasPragma("begin") || fn->hasPragma("cobegin/coforall")) {
     if (fn->hasPragma("begin"))
       wrap_fn->addPragma("begin block");
     wrap_fn->insertAtHead(new CallExpr(PRIMITIVE_THREAD_INIT));
@@ -110,7 +106,7 @@ bundleArgs(CallExpr* fcall) {
     
   // translate the original cobegin function
   CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
-  if (fn->hasPragma("on")/* || fn->hasPragma("cobegin")*/)
+  if (fn->hasPragma("on"))
     new_cofn->insertAtTail(new_IntSymbol(0)); // bogus actual
   for_fields(field, ctype) {  // insert args
 
@@ -203,7 +199,7 @@ parallel(void) {
   forv_Vec(CallExpr, call, calls) {
     if (call->isResolved() && (call->isResolved()->hasPragma("on") ||
                                call->isResolved()->hasPragma("begin") ||
-                               call->isResolved()->hasPragma("cobegin")))
+                               call->isResolved()->hasPragma("cobegin/coforall")))
       bundleArgs(call);
   }
 }

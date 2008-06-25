@@ -1638,14 +1638,24 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
       break;
     case PRIMITIVE_PROCESS_TASK_LIST:
-      fprintf( outfile, "chpl_process_task_list(");
+      fputs( "chpl_process_task_list(", outfile);
       get(1)->codegen( outfile);
-      fprintf( outfile, ")");
+      {
+        ClassType *endCountType = toClassType(toSymExpr(get(1))->typeInfo());
+        if (endCountType->symbol->hasPragma("wide class")) {
+          fputc('.', outfile);
+          endCountType->getField("addr")->codegen(outfile);
+          endCountType = toClassType(endCountType->getField("addr")->typeInfo());
+        }
+        fputs("->", outfile);
+        endCountType->getField("taskList")->codegen(outfile);
+      }
+      fputc( ')', outfile);
       break;
     case PRIMITIVE_EXECUTE_TASKS_IN_LIST:
-      fprintf( outfile, "chpl_execute_tasks_in_list(");
+      fputs( "chpl_execute_tasks_in_list(", outfile);
       get(1)->codegen( outfile);
-      fprintf( outfile, ", false)");
+      fputc( ')', outfile);
       break;
     case PRIMITIVE_FREE_TASK_LIST:
       fputs( "chpl_free_task_list(", outfile);
@@ -1902,22 +1912,50 @@ void CallExpr::codegen(FILE* outfile) {
     fputs(", true);\n", outfile);
     return;
   }
-  else if (fn->hasPragma("cobegin block")) {
+  else if (fn->hasPragma("cobegin/coforall block")) {
     fputs("chpl_add_to_task_list( ", outfile);
     if (SymExpr *sexpr=toSymExpr(baseExpr)) {
       fprintf(outfile, "(chpl_threadfp_t) %s, ", sexpr->var->cname);
       fputs("(chpl_threadarg_t) ", outfile);
-      if (Expr *actuals = get(2)) {
+      if (Expr *actuals = get(1)) {
         actuals->codegen (outfile);
       } else {
         fputs("NULL", outfile);
       }
-      fputs(", &(", outfile);
-      get(1)->codegen(outfile);
-      fputc(')', outfile);
+      ClassType *bundledArgsType = toClassType(toSymExpr(get(1))->typeInfo());
+      int endCountField = 0;
+      for (int i = 1; i <= bundledArgsType->fields.length(); i++) {
+        if (!strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
+                    "_ref(_EndCount)")
+            || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
+                       "_wide__ref__EndCount")) {
+          endCountField = i;
+          break;
+        }
+      }
+      if (endCountField == 0)
+        INT_FATAL(this, "cobegin/codegen codegen - _EndCount field not found");
+      if (bundledArgsType->getField(endCountField)->typeInfo()->symbol->hasPragma("wide")) {
+        fputs(", (", outfile);
+        get(1)->codegen(outfile);
+        fputs(")->", outfile);
+        bundledArgsType->getField(endCountField)->codegen(outfile);
+        fputs(".locale != _localeID ? NULL : &((", outfile);
+        get(1)->codegen(outfile);
+        fputs(")->", outfile);
+        bundledArgsType->getField(endCountField)->codegen(outfile);
+        fputs(".addr->addr", outfile);
+      } else {
+        fputs(", &((*(", outfile);
+        get(1)->codegen(outfile);
+        fputs(")->", outfile);
+        bundledArgsType->getField(endCountField)->codegen(outfile);
+        fputc(')', outfile);
+      }
+      fputs("->taskList)", outfile);
     } else {
       INT_FATAL(this, "cobegin codegen - call expr not a SymExpr");
-    } 
+    }
     fputs(", _localeID, false);\n", outfile);
     return;
   }

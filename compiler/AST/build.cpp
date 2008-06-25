@@ -545,18 +545,14 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
 
   VarSymbol* coforallCount = new VarSymbol("_coforallCount");
   coforallCount->isCompilerTemp = true;
-  VarSymbol* coforallTaskList = new VarSymbol("_coforallTaskList");
-  coforallTaskList->isCompilerTemp = true;
   BlockStmt* beginBlk = new BlockStmt();
   beginBlk->insertAtHead(body);
   beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-  body = buildBeginStmt(beginBlk, true, coforallTaskList);
+  body = buildBeginStmt(beginBlk, true, coforallCount);
   BlockStmt* block = buildForLoopStmt(BLOCK_FOR, indices, iterator, body);
   block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
   block->insertAtHead(new DefExpr(coforallCount));
-  block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallTaskList, new CallExpr(PRIMITIVE_INIT_TASK_LIST)));
-  block->insertAtHead(new DefExpr(coforallTaskList));
-  block->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, coforallTaskList));
+  block->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, coforallCount));
   body->insertBefore(new CallExpr("_upEndCount", coforallCount));
   block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
   return block;
@@ -1035,18 +1031,14 @@ buildBeginStmt(Expr* stmt, bool allocateOnHeap, VarSymbol* taskList) {
   static int uid = 1;
   BlockStmt* block = buildChapelStmt();
   FnSymbol* fn = new FnSymbol(astr("_begin_fn_", istr(uid++)));
-  if (taskList) {
-    fn->addPragma("cobegin");
-    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_task_list", dtTaskList);
-    arg->addPragma("no formal tmp");
-    fn->insertFormalAtTail(arg);
-  } else
+  if (taskList)
+    fn->addPragma("cobegin/coforall");
+  else
     fn->addPragma("begin");
   fn->retType = dtVoid;
   fn->insertAtTail(stmt);
-  if (!allocateOnHeap) {
+  if (!allocateOnHeap)
     fn->addPragma("no heap allocation");
-  }
 
   // no need to call _downEndCount or _upEndCount for tasks created by
   // cobegins or coforalls, since execution will block until the tasks
@@ -1057,10 +1049,7 @@ buildBeginStmt(Expr* stmt, bool allocateOnHeap, VarSymbol* taskList) {
   }
 
   block->insertAtTail(new DefExpr(fn));
-  if (taskList)
-    block->insertAtTail(new CallExpr(fn, taskList));
-  else
-    block->insertAtTail(new CallExpr(fn));
+  block->insertAtTail(new CallExpr(fn));
   return block;
 }
 
@@ -1100,22 +1089,18 @@ buildCobeginStmt(Expr* stmt) {
     return buildChapelStmt(stmt);
   VarSymbol* cobeginCount = new VarSymbol("_cobeginCount");
   cobeginCount->isCompilerTemp = true;
-  VarSymbol* cobeginTaskList = new VarSymbol("_cobeginTaskList");
-  cobeginTaskList->isCompilerTemp = true;
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->insertAtHead(stmt->copy());
     beginBlk->insertAtTail(new CallExpr("_downEndCount", cobeginCount));
-    BlockStmt* body = buildBeginStmt(beginBlk, false, cobeginTaskList);
+    BlockStmt* body = buildBeginStmt(beginBlk, false, cobeginCount);
     block->insertAtHead(new CallExpr("_upEndCount", cobeginCount));
     stmt->insertBefore(body);
     stmt->remove();
   }
   block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, cobeginCount, new CallExpr("_endCountAlloc")));
   block->insertAtHead(new DefExpr(cobeginCount));
-  block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, cobeginTaskList, new CallExpr(PRIMITIVE_INIT_TASK_LIST)));
-  block->insertAtHead(new DefExpr(cobeginTaskList));
-  block->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, cobeginTaskList));
+  block->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, cobeginCount));
   block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));
   return block;
 }

@@ -17,6 +17,7 @@ void normalize(BaseAST* ast);
 
 // collect Stmts and Exprs in the AST and return them in vectors
 void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts);
+void collect_asts_coforall(BaseAST* ast, Vec<BaseAST*>& asts);
 void collect_asts_postorder(BaseAST*, Vec<BaseAST*>& asts);
 void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts);
 void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts);

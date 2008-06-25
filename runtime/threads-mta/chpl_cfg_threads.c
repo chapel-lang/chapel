@@ -227,6 +227,6 @@ void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
 
 void chpl_process_task_list (chpl_task_list_p task_list) { }
 
-void chpl_execute_tasks_in_list (chpl_task_list_p task_list, chpl_bool skip_first_task) { }
+void chpl_execute_tasks_in_list (chpl_task_list_p task_list) { }
 
 void chpl_free_task_list (chpl_task_list_p task_list) { }

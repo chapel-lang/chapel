@@ -54,7 +54,7 @@ Expr* buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base);
 
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
-BlockStmt* buildBeginStmt(Expr* stmt, bool allocateOnHeap = true, VarSymbol* = NULL);
+BlockStmt* buildBeginStmt(Expr* stmt, bool /*allocateOnHeap*/ = true, VarSymbol* = NULL);
 BlockStmt* buildSyncStmt(Expr* stmt);
 BlockStmt* buildCobeginStmt(Expr* stmt);
 BlockStmt* buildAtomicStmt(Expr* stmt);

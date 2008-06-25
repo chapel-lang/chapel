@@ -729,16 +729,12 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
   assert(task->next);
   next_task = task->next;  // next_task now points to the head of the list
 
-  if (serial) {
-    _Bool is_last_task;
+  if (serial)
     do {
       task = next_task;
       (*task->fun)(task->arg);
       next_task = task->next;
-      is_last_task = task == task_list;
-      chpl_free(task, 0, 0);
-    } while (!is_last_task);
-  }
+    } while (task != task_list);
 
   else {
     int task_cnt = 0;
@@ -767,15 +763,11 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
     // Execute the first task on the list, since it has to run to completion
     // before continuing beyond the cobegin or coforall it's in.
     (*first_task->fun)(first_task->arg);
-
-    if (first_task != task_list)  // there are at least two tasks in task_list
-      chpl_execute_tasks_in_list(task_list, true);
-
-    chpl_free(first_task, 0, 0);
+    first_task->completed = true;
   }
 }
 
-void chpl_execute_tasks_in_list (chpl_task_list_p task_list, chpl_bool skip_first_task) {
+void chpl_execute_tasks_in_list (chpl_task_list_p task_list) {
   // task_list points to the last entry on the list; task_list->next is actually
   // the first element on the list.
   chpl_task_list_p task = task_list, next_task;
@@ -786,8 +778,6 @@ void chpl_execute_tasks_in_list (chpl_task_list_p task_list, chpl_bool skip_firs
     return;
   assert(task->next);
   next_task = task->next;  // next_task now points to the head of the list
-  if (skip_first_task)
-    next_task = next_task->next;
 
   // If the serial state is true, the tasks in task_list have already been executed.
   if (!chpl_get_serial()) do {
@@ -804,16 +794,17 @@ void chpl_execute_tasks_in_list (chpl_task_list_p task_list, chpl_bool skip_firs
       chpl_mutex_lock(&threading_lock);
 
       if (!task->completed) {
-        if (task->task_pool_entry->begun)
-          // task is about to be freed; the completed field should not be accessed!
-          task->task_pool_entry->task_list_entry = NULL;
-        else {
+        if (!task->task_pool_entry->begun) {
           task_to_run_fun = task->task_pool_entry->fun;
           task_to_run_arg = task->task_pool_entry->arg;
           task->task_pool_entry->begun = true;
           if (waking_cnt > 0)
             waking_cnt--;
         }
+
+        // task may be freed in chpl_free_task_list()
+        // the completed field should not be accessed!
+        task->task_pool_entry->task_list_entry = NULL;
       }
 
       // end critical section
@@ -822,10 +813,6 @@ void chpl_execute_tasks_in_list (chpl_task_list_p task_list, chpl_bool skip_firs
       if (task_to_run_fun)
         (*task_to_run_fun)(task_to_run_arg);
     }
-
-    if (skip_first_task)
-      chpl_free(task, 0, 0);
-    // else memory is freed by a subsequent call to chpl_free_task_list()
 
   } while (task != task_list);
 }
