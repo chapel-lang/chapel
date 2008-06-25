@@ -17,7 +17,15 @@ char ccflags[256] = "";
 char ldflags[256] = "";
 bool ccwarnings = false;
 
+
+//
+// IF tmpdirname's name CHANGES, IT NEEDS TO CHANGE IN createGDBFile AS WELL
+//
 static const char* tmpdirname = NULL;
+//
+//                 ^^^^^^^^^^
+//
+
 static const char* intDirName = NULL; // directory for intermediates; tmpdir or saveCDir
 
 static const int MAX_CHARS_PER_PID = 32;
@@ -280,24 +288,22 @@ const char* createGDBFile(int argc, char* argv[]) {
     }
   }
   fprintf(gdbfile, "\n");
-  fprintf(gdbfile, "set $_exitcode = 's'\n");
-//   fprintf(gdbfile, "define hook-run\n");
-//   fprintf(gdbfile, "  if ($_exitcode == 'r')\n");
-//   fprintf(gdbfile, "    call cleanup_for_exit()\n");
-//   fprintf(gdbfile, "  end\n");
-//   fprintf(gdbfile, "  set $_exitcode = 'r'\n");
-//   fprintf(gdbfile, "end\n");
+  fprintf(gdbfile, "define hook-run\n");
+  fprintf(gdbfile, "  if (tmpdirname != 0)\n");
+  fprintf(gdbfile, "    call cleanup_for_exit()\n");
+  fprintf(gdbfile, "  end\n");
+  fprintf(gdbfile, "end\n");
   fprintf(gdbfile, "define hook-quit\n");
-  fprintf(gdbfile, "  if ($_exitcode == 'r')\n");
+  fprintf(gdbfile, "  if (tmpdirname != 0)\n");
   fprintf(gdbfile, "    call cleanup_for_exit()\n");
   fprintf(gdbfile, "  end\n");
   fprintf(gdbfile, "end\n");
   fprintf(gdbfile, "define halt\n");
-  fprintf(gdbfile, "  set $_exitcode = 'h'\n");
+  fprintf(gdbfile, "  set tmpdirname = 0\n");
   fprintf(gdbfile, "  quit\n");
   fprintf(gdbfile, "end\n");
   fprintf(gdbfile, "define rerun\n");
-  fprintf(gdbfile, "  set $_exitcode = 'r'\n");
+  fprintf(gdbfile, "  set tmpdirname = 0\n");
   fprintf(gdbfile, "  run\n");
   fprintf(gdbfile, "end\n");
   fprintf(gdbfile, "define view\n");
