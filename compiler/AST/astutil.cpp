@@ -21,14 +21,6 @@ void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_asts, asts);
 }
 
-void collect_asts_coforall(BaseAST* ast, Vec<BaseAST*>& asts) {
-  if (SymExpr* se = toSymExpr(ast))
-    if (VarSymbol* var = toVarSymbol(se->var))
-      if (var->hasPragma("index var"))
-        asts.add(ast);
-  AST_CHILDREN_CALL(ast, collect_asts_coforall, asts);
-}
-
 void collect_asts_postorder(BaseAST* ast, Vec<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_asts_postorder, asts);
   asts.add(ast);

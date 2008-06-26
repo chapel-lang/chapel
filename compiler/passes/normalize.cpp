@@ -175,10 +175,7 @@ static void heapAllocateLocals() {
 
       // collect asts in fn
       Vec<BaseAST*> asts;
-      if (fn->hasPragma("cobegin/coforall"))
-        collect_asts_coforall(fn, asts);
-      else
-        collect_asts(fn, asts);
+      collect_asts(fn, asts);
 
       // collect defs of all local variables
       Vec<DefExpr*> defSet;
@@ -203,7 +200,9 @@ static void heapAllocateLocals() {
                 !defSet.set_in(var->defPoint) &&
                 isFnSymbol(var->defPoint->parentSymbol) &&
                 !var->isParam &&
-                !var->hasPragma("private")) {
+                !var->hasPragma("private") &&
+                // in a coforall, only index variables need to be on the heap
+                (!fn->hasPragma("cobegin/coforall") || var->hasPragma("index var"))) {
               heapSet.set_add(var);
             }
           }
