@@ -14,10 +14,6 @@
 linux and general regressions
 =============================
 
-out-of-memory problem (06/25/2008)
-----------------------------------
-[Error matching program output for parallel/begin/dinan/mvm_coforall]
-
 new madness precision issue (most platforms other than darwin, cygwin)
 ----------------------------------------------------------------------
 [Error matching program output for
@@ -26,15 +22,6 @@ studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 extremely rare race condition in module initialization
 ------------------------------------------------------
 [Error matching program output for modules/diten/useInBegin]
-
-
-================================
-performance-specific regressions
-================================
-
-out-of-memory problem (06/25/2008)
-----------------------------------
-[Error matching performance keys for release/examples/hpcc/ra]
 
 
 =============================
@@ -56,6 +43,12 @@ types/range/deitz/test_range_iterate_error]
 valgrind-specific regressions
 =============================
 
+sprintf overlaps (06/26/2008)
+-----------------------------
+[Error matching compiler output for compflags/bradc/tokenflags/tokentest3]
+[Error matching program output for
+functions/deitz/test_explain_instantiation]
+
 write-after-free in tasklist code (race-y?)
 -------------------------------------------
 [Error matching program output for parallel/begin/waynew/simple3]
@@ -65,16 +58,6 @@ internal valgrind stuff 'the impossible has happened'
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
 [Error matching program output for
 parallel/taskPool/figueroa/TooManyThreads]
-[Error matching program output for parallel/begin/dinan/mvm_coforall]
-
-does this fail nondeterministically?  (fixed itself 4/29/08)
-------------------------------------------------------------
-[Error matching program output for parallel/cobegin/diten/cobeginRace]
-
-failing nondeterministically (e.g., 04/03/08)
----------------------------------------------
-[Error matching program output for stress/deitz/test_10k_begins]
-[Error matching program output for stress/deitz/test_10k_cobegins]
 [Error matching program output for parallel/begin/dinan/mvm_coforall]
 
 failing nondeterministically (e.g., 04/04/08)
@@ -92,6 +75,8 @@ times out occasionally (race-y deadlock?) -- e.g., 06/15/2008, 06/18/2008
 studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
 [Error: Timed out executing program
 studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error: Timed out executing program
+studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
 
 timeout issue
 -------------
