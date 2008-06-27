@@ -115,7 +115,7 @@ class LocBlock1DDist {
   // to use lclIdxType here is wrong since we're talking about
   // the section of the global index space owned by the locale.
   //
-  const myChunk: domain(1, glbIdxType);
+  const myChunk: domain(1, glbIdxType) = computeMyChunk();
 
   //
   // a helper function for mapping processors to indices
@@ -126,7 +126,7 @@ class LocBlock1DDist {
   //
   // Compute what chunk of index(1) is owned by the current locale
   //
-  def initialize() {
+  def computeMyChunk() {
     const lo = dist.bbox.low;
     const hi = dist.bbox.high;
     const numelems = hi - lo + 1;
@@ -135,9 +135,10 @@ class LocBlock1DDist {
                 else procToData((numelems: real * locid) / numlocs, lo);
     const bhi = if (locid == numlocs - 1) then max(glbIdxType)
                 else procToData((numelems: real * (locid+1)) / numlocs, lo) - 1;
-    myChunk = [blo..bhi];
+    const retval = [blo..bhi];
     if debugBradsBlock1D then
-      writeln("locale ", locid, " owns ", myChunk);
+      writeln("locale ", locid, " owns ", retval);
+    return retval;
   }
 }
 
