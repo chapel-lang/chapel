@@ -1,7 +1,6 @@
-// TODO: Have the global class leader/follower iterators defer to the
-// local class leader/followers once we're within a locale?
-
 // TODO: Make these into an official distribution?
+
+// TODO: Fold in leader/follower iterator ideas
 
 // TODO: Would using nested classes allow me to avoid so much
 // passing around of globIndexType and locIndexType?
@@ -178,8 +177,7 @@ class Block1DDom {
   def initialize() {
     for loc in dist.targetLocs do
       on loc do
-        locDom(loc) = new LocBlock1DDom(glbIdxType, lclIdxType, this, 
-                                        dist.getChunk(whole));
+        locDom(loc) = new LocBlock1DDom(glbIdxType, lclIdxType, this, dist.getChunk(whole));
     if debugBradsBlock1D then
       [loc in dist.targetLocs] writeln(loc, " owns ", locDom(loc));
   }
@@ -198,66 +196,53 @@ class Block1DDom {
 
   //
   // this is the parallel iterator for the global domain, following
-  // a variation on Steve and David's proposals -- I've split the
-  // single iterator into multiple iterators, distinguished by where
-  // clauses on their parameter values.  This permits each to only
-  // take the parameters it cares about; permits the leader to be
-  // defined in an inlineable way; and permits the follower for an
-  // array iterator to be a var iterator
-  //
-  // I've named these methods newThese() for the time being
+  // Steve and David's proposals -- I've renamed it for the time being
   // to avoid conflicting with the above which is currently targeted
   // by the compiler.  My current assumption is that we would want to
   // overload these() to serve this purpose in the final language
   // definition.
   //
-  def newThese(param iterator: IteratorType) 
-        where iterator == IteratorType.solo {
-    //
-    // TODO: Should still have this move around between locales even
-    // though it's serial
-    //
-    for i in these() do
-      yield i;
-  }
+  def newThese(param iterator: IteratorType, followThis) {
+    select iterator {
 
-  def newThese(param iterator: IteratorType)
-        where iterator == IteratorType.leader {
-    //
-    // TODO: This currently only results in a single level of
-    // per-locale parallelism -- no per-core parallelism; maybe
-    // approach this by deferring to the local leader/follower
-    // iterators at some point?
-    //
-    // TODO: Really want the parallelism across the target locales
-    // to be expressed more independently of the distribution by
-    // pushing it into the leader iterator
-    //
-    // TODO: And really want to split the inter- and intra-locale
-    // parallelism into two separate stages for communication
-    // optimization and the like
-    //
-    // TODO: Need to get an on clause into here somehow
-    //
-    // TODO: Abstract this subtraction of low into a function?
-    //
-    for blk in locDom.myBlock do
-      yield blk - whole.low;
-  }
+    when IteratorType.solo {
+      for i in these() do
+        yield i;
+    }
 
-
-  def newThese(param iterator: IteratorType, followThis)
-        where iterator == IteratorType.follower {
-    //
-    // TODO: Abstract this addition of low into a function?
-    //
-    // TODO: Is there some clever way to invoke the leader/follower
-    // iterator on the local blocks in here such that the per-core
-    // parallelism is expressed at that level?  Seems like a nice
-    // natural composition and might help with my fears about how
-    // stencil communication will be done on a per-locale basis.
-    for i in followThis {
-      yield i + whole.low;
+    when IteratorType.leader {
+      //
+      // TODO: This currently only results in a single level of
+      // per-locale parallelism -- no per-core parallelism
+      //
+      // TODO: Really want the parallelism across the target locales
+      // to be expressed more independently of the distribution
+      //
+      // TODO: And really want to split the inter- and intra-locale
+      // parallelism into two separate stages for communication
+      // optimization and the like
+      //
+      // TODO: Need to get an on clause into here somehow
+      //
+      // TODO: Abstract this subtraction of low into a function?
+      //
+      for blk in locDom.myBlock do
+        yield blk - whole.low;
+    }
+    
+    when IteratorType.follower {
+      //
+      // TODO: Abstract this addition of low into a function?
+      //
+      // TODO: Is there some clever way to invoke the leader/follower
+      // iterator on the local blocks in here such that the per-core
+      // parallelism is expressed at that level?  Seems like a nice
+      // natural composition and might help with my fears about how
+      // stencil communication will be done on a per-locale basis.
+      for i in followThis {
+        yield i + whole.low;
+      }
+    }
     }
   }
 
@@ -324,21 +309,23 @@ class LocBlock1DDom {
   }
 
   //
-  // this is the parallel iterator for the local domain, see global
-  // domain parallel iterators for general notes on the approach
+  // this is the parallel iterator for the local domain, following
+  // Steve and David's proposals -- I've renamed it for the time being
+  // to avoid conflicting with the above which is currently targeted
+  // by the compiler.
   //
-  def newThese(param iterator: IteratorType) 
-        where iterator == IteratorType.solo {
+  def newThese(param iterator: IteratorType, followThis) {
+    select iterator {
+    when IteratorType.solo {
+      for i in these() do
+        yield i;
+    }
+    when IteratorType.leader {
+    }
+    when IteratorType.follower {
+    }
+    }
   }
-
-  def newThese(param iterator: IteratorType)
-        where iterator == IteratorType.leader {
-  }
-
-  def newThese(param iterator: IteratorType, followThis)
-        where iterator == IteratorType.follower {
-  }
-
 
   //
   // how to write out this locale's indices
@@ -420,32 +407,37 @@ class Block1DArr {
   }
 
   //
-  // this is the parallel iterator for the global array, see th
-  // example for general notes on the approach
+  // this is the parallel iterator for the global array, following
+  // Steve and David's proposals -- I've renamed it for the time being
+  // to avoid conflicting with the above which is currently targeted
+  // by the compiler.
   //
   // TODO: Note that this should logically be a var iterator, but
   // that doesn't seem to work.
   //
-  def newThese(param iterator: IteratorType) 
-        where iterator == IteratorType.solo {
+  def newThese(param iterator: IteratorType, followThis) {
+    select iterator {
+    when IteratorType.solo {
+      for i in these() do
+        yield i;
+    }
     //
-    // TODO: Should still have this move around between locales even
-    // though it's serial
+    // TODO: Note that without some more work/cleverness, I'm expressing
+    // iteration over arrays in terms of the domain.  Seems suboptimal.
     //
-    for i in these() do
-      yield i;
-  }
-
-  def newThese(param iterator: IteratorType)
-        where iterator == IteratorType.leader {
-    for blk in dom.newThese(IteratorType.leader) do
-      yield blk;
-  }
-
-  def newThese(param iterator: IteratorType, followThis) var
-        where iterator == IteratorType.follower {
-    for i in followThis {
-      yield this(i + dom.low);
+    when IteratorType.leader {
+      for blk in dom.newThese(iterator, followThis) do
+        yield blk;
+    }
+    //
+    // TODO: Note that here I'm not only going through the domain indices,
+    // but I'm also going through the global array's accessor.  We really
+    // want to be only working in terms of the local array in the follower.
+    //
+    when IteratorType.follower {
+      for i in followThis do 
+        yield this(i + dom.low);
+    }
     }
   }
 
@@ -522,21 +514,23 @@ class LocBlock1DArr {
   }
 
   //
-  // this is the parallel iterator for the local array, see global
-  // domain parallel iterators for general notes on the approach
+  // this is the parallel iterator for the local array, following
+  // Steve and David's proposals -- I've renamed it for the time being
+  // to avoid conflicting with the above which is currently targeted
+  // by the compiler.
   //
-  def newThese(param iterator: IteratorType) 
-        where iterator == IteratorType.solo {
+  def newThese(param iterator: IteratorType, followThis) var {
+    select iterator {
+    when IteratorType.solo {
+      for i in these() do
+        yield i;
+    }
+    when IteratorType.leader {
+    }
+    when IteratorType.follower {
+    }
+    }
   }
-
-  def newThese(param iterator: IteratorType)
-        where iterator == IteratorType.leader {
-  }
-
-  def newThese(param iterator: IteratorType, followThis)
-        where iterator == IteratorType.follower {
-  }
-
 
   //
   // prints out this locale's piece of the array

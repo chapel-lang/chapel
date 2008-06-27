@@ -45,7 +45,13 @@ def main() {
     // But for now we'll do a manual invocation of leader/follower following
     // Steve's proposal -- This version leads and follows over domains:
 
-    coforall block in ProblemSpace.newThese(IteratorType.leader, 0) {
+    //
+    // TODO: Really want to push this coforall and this on clause into
+    // the leader iterator in order to abstract creation of parallelism
+    // and definition of locality into the leader rather than in the
+    // compiler rewrite.
+    //
+    coforall block in ProblemSpace.newThese(IteratorType.leader) {
       //
       // TODO: This on clause doesn't do what I intended, probably for
       // good reasons
