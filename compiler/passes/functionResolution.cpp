@@ -1975,6 +1975,7 @@ insertFormalTemps(FnSymbol* fn) {
       !strcmp(fn->name, "_copy") ||
       !strcmp(fn->name, "=") ||
       !strcmp(fn->name, "_createFieldDefault") ||
+      !strcmp(fn->name, "chpldev_refToString") ||
       fn->hasPragma("allow ref") ||
       fn->hasPragma("ref"))
     return;

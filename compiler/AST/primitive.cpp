@@ -291,6 +291,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_INIT, "init", returnInfoFirstDeref);
   prim_def(PRIMITIVE_SET_REF, "set ref", returnInfoRef);
   prim_def(PRIMITIVE_GET_REF, "get ref", returnInfoVal);
+  prim_def(PRIMITIVE_REF2STR, "ref to string", returnInfoString);
   prim_def(PRIMITIVE_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIMITIVE_YIELD, "yield", returnInfoFirst, true);
   prim_def(PRIMITIVE_UNARY_MINUS, "u-", returnInfoFirst);

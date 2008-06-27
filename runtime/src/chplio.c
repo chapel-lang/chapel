@@ -86,3 +86,10 @@ void _readToEndOfLine(FILE* fp) {
   char result[_default_string_length];
   fgets(result, _default_string_length-1 , fp);
 }
+
+
+char* chpl_refToString(void* ref) {
+  char buff[17];
+  sprintf(buff, "%p", ref);
+  return _glom_strings(1, buff);
+}
