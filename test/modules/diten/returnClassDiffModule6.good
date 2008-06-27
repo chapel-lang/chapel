@@ -1,3 +1,3 @@
 returnClassDiffModule6.chpl:12: In function 'main':
 returnClassDiffModule6.chpl:14: error: unresolved call 'C.b'
-$CHPL_HOME/modules/standard/ChapelBase.chpl:914: note: candidates are: _EndCount.b
+$CHPL_HOME/modules/standard/ChapelBase.chpl:921: note: candidates are: _EndCount.b

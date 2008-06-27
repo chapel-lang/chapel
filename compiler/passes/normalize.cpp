@@ -404,6 +404,13 @@ void normalize(void) {
         }
         fn->fnTag = FN_ITERATOR;
       }
+      if (call->isPrimitive(PRIMITIVE_CHPL_FREE)) {
+        VarSymbol* tmp = new VarSymbol("_tmp");
+        call->insertBefore(new DefExpr(tmp));
+        call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call->get(1)->remove()));
+        call->insertAtTail(tmp);
+        call->insertBefore(new CallExpr("chpl_destroy", gMethodToken, tmp));
+      }
     }
   }
 

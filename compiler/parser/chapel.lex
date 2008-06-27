@@ -71,6 +71,7 @@ config          processToken(TCONFIG);
 const           processToken(TCONST);
 continue        processToken(TCONTINUE);
 def             processToken(TDEF);
+delete          processToken(TDELETE);
 distributed     processToken(TDISTRIBUTED);
 do              processToken(TDO);
 domain          processToken(TDOMAIN);

@@ -79,6 +79,7 @@ NOTES
 %token TCONST
 %token TCONTINUE
 %token TDEF
+%token TDELETE
 %token TDISTRIBUTED
 %token TDO
 %token TDOMAIN
@@ -178,7 +179,7 @@ NOTES
 %type <pblockstmt> type_select_stmt on_stmt non_empty_stmt use_stmt_ls sync_stmt
 
 %type <pblockstmt> typedef_decl_stmt typedef_decl_stmt_inner fn_decl_stmt class_decl_stmt mod_decl_stmt extern_fn_decl_stmt
-%type <pblockstmt> typevar_decl_stmt enum_decl_stmt use_stmt
+%type <pblockstmt> typevar_decl_stmt enum_decl_stmt use_stmt delete_stmt
 
 %type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
 %type <pblockstmt> var_decl_stmt_inner tuple_var_decl_stmt_inner_ls
@@ -300,6 +301,7 @@ non_empty_stmt:
 | type_select_stmt
 | return_stmt
 | yield_stmt
+| delete_stmt
 | assign_stmt
 | block_stmt
 | use_stmt
@@ -495,6 +497,12 @@ return_stmt:
 yield_stmt:
   TYIELD opt_return_part TSEMI
     { $$ = buildChapelStmt(new CallExpr(PRIMITIVE_YIELD, $2)); }
+;
+
+
+delete_stmt:
+  TDELETE expr TSEMI
+    { $$ = buildChapelStmt(new CallExpr(PRIMITIVE_CHPL_FREE, $2)); }
 ;
 
 
@@ -776,6 +784,8 @@ intent_tag:
 
 fn_identifier:
   identifier
+| TBNOT identifier
+  { $$ = "chpl_destroy"; }
 | TASSIGN 
   { $$ = "="; } 
 | TBAND
