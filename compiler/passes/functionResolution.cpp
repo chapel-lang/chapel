@@ -4183,10 +4183,11 @@ instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call) {
       explainInstantiationMatch(fn) &&
       !reportSet.set_in(ifn)) {
     char msg[1024] = "";
+    int len;
     if (!strncmp(fn->name, "_construct_", 11))
-      sprintf(msg, "instantiated %s(", fn->_this->type->symbol->name);
+      len = sprintf(msg, "instantiated %s(", fn->_this->type->symbol->name);
     else
-      sprintf(msg, "instantiated %s(", fn->name);
+      len = sprintf(msg, "instantiated %s(", fn->name);
     bool first = true;
     for_formals(formal, ifn) {
       form_Map(ASTMapElem, e, ifn->substitutions) {
@@ -4197,26 +4198,26 @@ instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call) {
           if (first)
             first = false;
           else
-            sprintf(msg, "%s, ", msg);
+            len += sprintf(msg+len, ", ");
           INT_ASSERT(arg);
           if (strcmp(ifn->name, "_construct__tuple"))
-            sprintf(msg, "%s%s = ", msg, arg->name);
+            len += sprintf(msg+len, "%s = ", arg->name);
           if (Type* t = toType(e->value))
-            sprintf(msg, "%s%s", msg, t->symbol->name);
+            len += sprintf(msg+len, "%s", t->symbol->name);
           else if (Symbol* s = toSymbol(e->value)) {
             VarSymbol* vs = toVarSymbol(s);
             if (vs && vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
-              sprintf(msg, "%s%lld", msg, vs->immediate->int_value());
+              len += sprintf(msg+len, "%lld", vs->immediate->int_value());
             else if (vs && vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
-              sprintf(msg, "%s\"%s\"", msg, vs->immediate->v_string);
+              len += sprintf(msg+len, "\"%s\"", vs->immediate->v_string);
             else
-              sprintf(msg, "%s%s", msg, s->name);
+              len += sprintf(msg+len, "%s", s->name);
           } else
             INT_FATAL("unexpected case using --explain-instantiation");
         }
       }
     }
-    sprintf(msg, "%s)", msg);
+    len += sprintf(msg+len, ")");
     if (callStack.n) {
       USR_PRINT(callStack.v[callStack.n-1], msg);
     } else {

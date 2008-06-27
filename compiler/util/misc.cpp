@@ -72,7 +72,7 @@ print_user_internal_error() {
   else
     filename_start = err_filename;
   strncpy(error, filename_start, 3);
-  sprintf(error, "%s%04d", error, err_lineno);
+  sprintf(error+3, "%04d", err_lineno);
   for (int i = 0; i < 7; i++) {
     if (error[i] >= 'a' && error[i] <= 'z') {
       error[i] += 'A' - 'a';

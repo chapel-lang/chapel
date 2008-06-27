@@ -10,6 +10,7 @@ bool printTokens = false;
 
 
 #define HIST_SIZE 4096
+#define LINE_SIZE 4096
 
 static int lineTokens = 0;
 static int fileTokens = 0;
@@ -21,7 +22,7 @@ static int codeLines = 0;
 
 static int lineBlank = false;
 static int lineComment = false;
-static char line[4096] = "";
+static char line[LINE_SIZE] = "";
 
 static int fileTokenHist[HIST_SIZE];
 static int totTokenHist[HIST_SIZE];
@@ -157,8 +158,9 @@ void finishCountingTokens(void) {
 void countToken(const char* text) {
   if (countTokens) {
     if (printTokens) {
-      sprintf(line, "%s %s", line, text);
-      if (strlen(line) > 4096) {
+      int start = strlen(line);
+      int attempted = snprintf(&line[start], LINE_SIZE - start, " %s", text);
+      if (attempted >= LINE_SIZE - start) {
         INT_FATAL("line length overflow");
       } 
     }
@@ -209,8 +211,10 @@ void countSingleLineComment(const char* comment) {
     if (!comment) {
       comment = "";
     }
-    sprintf(line, "%s -- %s", line, comment);
-    if (strlen(line) > 4096) {
+    int start = strlen(line);
+    int attempted =
+      snprintf(&line[strlen(line)], LINE_SIZE - start, " // %s", comment);
+    if (attempted >= LINE_SIZE - start) {
       INT_FATAL("line length overflow: %s", line);
     }
   }
@@ -219,8 +223,10 @@ void countSingleLineComment(const char* comment) {
 
 void countMultiLineComment(char* comment) {
   if (printTokens) {
-    sprintf(line, "%s /* %s */", line, comment);
-    if (strlen(line) > 4096) {
+    int start = strlen(line);
+    int attempted =
+      snprintf(&line[strlen(line)], LINE_SIZE - start, " /* %s */", comment);
+    if (attempted >= LINE_SIZE - start) {
       INT_FATAL("line length overflow");
     }
   }
