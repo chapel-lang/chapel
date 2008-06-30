@@ -10,6 +10,7 @@
 #include "misc.h"
 #include "mysystem.h"
 #include "stringutil.h"
+#include "tmpdirname.h"
 
 char executableFilename[FILENAME_MAX] = "a.out";
 char saveCDir[FILENAME_MAX] = "";
@@ -17,14 +18,6 @@ char ccflags[256] = "";
 char ldflags[256] = "";
 bool ccwarnings = false;
 
-
-//
-// IF tmpdirname's name CHANGES, IT NEEDS TO CHANGE IN createGDBFile AS WELL
-//
-static const char* tmpdirname = NULL;
-//
-//                 ^^^^^^^^^^
-//
 
 static const char* intDirName = NULL; // directory for intermediates; tmpdir or saveCDir
 
