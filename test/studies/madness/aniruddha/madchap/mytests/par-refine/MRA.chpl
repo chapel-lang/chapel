@@ -153,7 +153,7 @@ class Function {
         const (n, l) = curNode();
         var h     = 0.5 ** n;
         var scale = sqrt(h);
-        var s  : [0..k-1] real;
+        var s  : [quadDom] real;
 
         for mu in quad_phiDom.dim(1) {
             var x  = (l + quad_x[mu]) * h;
