@@ -1,0 +1,12 @@
+semantic: able to return generic classes?
+
+This future asks the question whether or not it should be legal to
+return an uninstantiated generic class.  
+
+Arguments for: we permit a similar thing to be done for formal
+arguments and it's convenient.  
+
+Arguments against: in the presence of multiple returns, it may be
+difficult/impossible to determine the type of the generic (though
+perhaps we could only report an error in that case?)
+
