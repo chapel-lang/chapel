@@ -34,5 +34,6 @@ chpl_bool _fscan_literal(FILE* fp, _string val, chpl_bool ignoreWhiteSpace,
 void _readToEndOfLine(FILE* fp);
 
 char* chpl_refToString(void* ref);
+char* chpl_wideRefToString(void* wideref);
 
 #endif

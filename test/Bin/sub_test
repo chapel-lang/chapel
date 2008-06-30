@@ -438,7 +438,7 @@ foreach chplsrc ($testsrc)
                     echo "[Error matching performance keys for $localdir/$execfile]"
                 endif
 		rm $execlog
-		rm -f $binfile
+#		rm -f $binfile
             endif
 	else
 	    echo "$futuretest""[Error could not locate executable $binfile for $localdir/$execfile]"

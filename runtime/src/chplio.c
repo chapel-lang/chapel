@@ -89,7 +89,22 @@ void _readToEndOfLine(FILE* fp) {
 
 
 char* chpl_refToString(void* ref) {
-  char buff[17];
+  char buff[32];
   sprintf(buff, "%p", ref);
+  return _glom_strings(1, buff);
+}
+
+
+typedef struct _chpl_wide_voidStar {
+  int32_t locale;
+  void* addr;
+} chpl_wide_voidStar;
+
+
+char* chpl_wideRefToString(void* wideref) {
+  char buff[32];
+  int32_t locale = ((chpl_wide_voidStar*)wideref)->locale;
+  void* ref = ((chpl_wide_voidStar*)wideref)->addr;
+  sprintf(buff, "%" PRId32 ":%p", locale, ref);
   return _glom_strings(1, buff);
 }
