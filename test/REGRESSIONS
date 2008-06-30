@@ -43,12 +43,6 @@ types/range/deitz/test_range_iterate_error]
 valgrind-specific regressions
 =============================
 
-sprintf overlaps (06/26/2008)
------------------------------
-[Error matching compiler output for compflags/bradc/tokenflags/tokentest3]
-[Error matching program output for
-functions/deitz/test_explain_instantiation]
-
 write-after-free in tasklist code (race-y?)
 -------------------------------------------
 [Error matching program output for parallel/begin/waynew/simple3]
@@ -69,6 +63,10 @@ failing nondeterministically (e.g., 04/04/08)
 gasnet-specific regressions
 ===========================
 
+doesn't work with wide references
+---------------------------------
+[Error matching compiler output for trivial/bradc/ref2string]
+
 times out occasionally (race-y deadlock?) -- e.g., 06/15/2008, 06/18/2008
 -------------------------------------------------------------------------
 [Error: Timed out executing program
@@ -77,6 +75,8 @@ studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
 studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error: Timed out executing program
 studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
+[Error: Timed out executing program
+stress/deitz/test_10k_local_coforall_with_remote_update]
 
 timeout issue
 -------------
@@ -108,7 +108,7 @@ opts-specific tests
 [Error matching program output for release/examples/hpcc/stream]
 
 
-(Full run: 164)
+(Full run: 196)
 
 --no-dead-code-elimination
 --------------------------
@@ -116,6 +116,19 @@ opts-specific tests
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
 [Summary: #Successes = 1975 | #Failures = 3 | #Futures = 0]
+
+--no-inline-iterators
+---------------------
+[Error matching program output for
+functions/deitz/iterators/test_zip_check1]
+[Error matching program output for
+functions/deitz/iterators/test_zip_check2]
+[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching program output for
+types/range/deitz/test_range_iterate_error]
+[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
 
 --no-live-analysis
 ------------------
@@ -161,6 +174,45 @@ studies/madness/dinan/mad_chapel/test_gaxpy]
 [Error matching program output for
 studies/madness/dinan/mad_chapel/test_likepy]
 [Summary: #Successes = 1968 | #Failures = 34 | #Futures = 0]
+
+--baseline --copy-propagation
+-----------------------------
+[Error matching program output for
+functions/deitz/iterators/test_zip_check1]
+[Error matching program output for
+functions/deitz/iterators/test_zip_check2]
+[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching program output for
+types/range/deitz/test_range_iterate_error]
+[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
+
+--baseline --dead-code-elimination
+----------------------------------
+[Error matching program output for
+functions/deitz/iterators/test_zip_check1]
+[Error matching program output for
+functions/deitz/iterators/test_zip_check2]
+[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching program output for
+types/range/deitz/test_range_iterate_error]
+[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
+
+--baseline --inline
+-------------------
+[Error matching program output for
+functions/deitz/iterators/test_zip_check1]
+[Error matching program output for
+functions/deitz/iterators/test_zip_check2]
+[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching program output for
+types/range/deitz/test_range_iterate_error]
+[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
 
 --baseline --inline-iterators
 -----------------------------
@@ -226,23 +278,16 @@ studies/jacobi/bradc/jacobi-slice-compiles]
 [Error matching program output for studies/lu/marybeth/nopivlu]
 [Error matching program output for studies/lu/marybeth/pivlu]
 [Error matching program output for
-studies/madness/aniruddha/madchap/test_diff]
-[Error matching program output for
 studies/madness/aniruddha/madchap/test_gaxpy]
 [Error matching program output for
 studies/madness/aniruddha/madchap/test_likepy]
 [Error matching program output for
 studies/madness/aniruddha/madchap/test_mul]
 [Error matching program output for
-studies/madness/aniruddha/madchap/test_showboxes]
-[Error matching program output for
 studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for studies/madness/common/test_diff]
 [Error matching program output for studies/madness/common/test_gaxpy]
 [Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for studies/madness/common/test_mul]
-[Error matching program output for
-studies/madness/dinan/mad_chapel/test_diff]
 [Error matching program output for
 studies/madness/dinan/mad_chapel/test_gaxpy]
 [Error matching program output for
@@ -262,19 +307,80 @@ studies/madness/dinan/mad_chapel/test_mul]
 [Error matching program output for users/shetag/fock/fock-orig]
 [Error matching program output for users/shetag/fock/fock-stc-1]
 [Error matching program output for users/shetag/fock/fock-stc]
-[Summary: #Successes = 1984 | #Failures = 79 | #Futures = 0]
+[Summary: #Successes = 1990 | #Failures = 75 | #Futures = 0]
+
+--baseline --live-analysis
+--------------------------
+[Error matching program output for
+functions/deitz/iterators/test_zip_check1]
+[Error matching program output for
+functions/deitz/iterators/test_zip_check2]
+[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching program output for
+types/range/deitz/test_range_iterate_error]
+[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
+
+--baseline --optimize-loop-iterators
+------------------------------------
+[Error matching program output for
+functions/deitz/iterators/test_zip_check1]
+[Error matching program output for
+functions/deitz/iterators/test_zip_check2]
+[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching program output for
+types/range/deitz/test_range_iterate_error]
+[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
+
+--baseline --scalar-replacement
+-------------------------------
+[Error matching program output for
+functions/deitz/iterators/test_zip_check1]
+[Error matching program output for
+functions/deitz/iterators/test_zip_check2]
+[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching program output for
+types/range/deitz/test_range_iterate_error]
+[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
+
+--no-optimize-loop-iterators --no-inline-iterators
+--------------------------------------------------
+[Error matching program output for
+functions/deitz/iterators/test_zip_check1]
+[Error matching program output for
+functions/deitz/iterators/test_zip_check2]
+[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching program output for
+types/range/deitz/test_range_iterate_error]
+[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
+
+--no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
+---------------------------------------------------------------------
+[Error matching program output for
+functions/deitz/iterators/test_zip_check1]
+[Error matching program output for
+functions/deitz/iterators/test_zip_check2]
+[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching program output for
+types/range/deitz/test_range_iterate_error]
+[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
 
 --no-local
 ----------
 [Error matching compiler output for classes/diten/allocateManyObjects]
-[Error matching compiler output for
-classes/diten/override_with_subclass_ret_type]
-[Error matching compiler output for
-classes/diten/override_with_subclass_ret_type_generic]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
 [Error matching program output for
 studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Summary: #Successes = 2058 | #Failures = 5 | #Futures = 0]
+[Summary: #Successes = 2062 | #Failures = 3 | #Futures = 0]
 
 --baseline --no-local
 ---------------------
@@ -288,13 +394,14 @@ studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error matching compiler output for classes/deitz/infer/infer_field2b]
 [Error matching compiler output for classes/deitz/infer/infer_field2c]
 [Error matching compiler output for classes/diten/allocateManyObjects]
-[Error matching compiler output for
-classes/diten/override_with_subclass_ret_type]
-[Error matching compiler output for
-classes/diten/override_with_subclass_ret_type_generic]
+[Error matching program output for
+functions/deitz/iterators/test_zip_check1]
+[Error matching program output for
+functions/deitz/iterators/test_zip_check2]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
 [Error matching compiler output for studies/590o/alaska/graph]
 [Error matching compiler output for studies/590o/blerner/xml-parse]
+[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
 [Error matching program output for
 studies/hpcc/STREAMS/bradc/stream-block1dclass]
 [Error matching program output for
@@ -307,11 +414,13 @@ studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error matching compiler output for studies/uts/uts_deq]
 [Error matching compiler output for studies/uts/uts_deq_seq]
 [Error matching program output for types/file/freadComplex]
+[Error matching program output for
+types/range/deitz/test_range_iterate_error]
 [Error matching program output for types/tuple/deitz/test_tuple_of_array2]
 [Error matching compiler output for types/tuple/dinan/pining_for_lisp_ver2]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
-[Summary: #Successes = 2036 | #Failures = 27 | #Futures = 0]
+[Summary: #Successes = 2036 | #Failures = 29 | #Futures = 0]
 
 
 ==============================
@@ -334,6 +443,10 @@ weird math function interaction
 ==========================
 sunos-specific regressions
 ==========================
+
+%p results in different format?
+-------------------------------
+[Error matching program output for trivial/bradc/ref2string]
 
 exp2/log2/other math fns not supported
 --------------------------------------
