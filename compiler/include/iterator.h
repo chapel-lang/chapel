@@ -4,14 +4,9 @@
 class IteratorInfo {
 public:
   ClassType* classType;
-  FnSymbol* getHeadCursor;
-  FnSymbol* getNextCursor;
-  FnSymbol* isValidCursor;
+  FnSymbol* advance;
+  FnSymbol* hasMore;
   FnSymbol* getValue;
-  FnSymbol* getZipCursor1;
-  FnSymbol* getZipCursor2;
-  FnSymbol* getZipCursor3;
-  FnSymbol* getZipCursor4;
   IteratorInfo();
 };
 

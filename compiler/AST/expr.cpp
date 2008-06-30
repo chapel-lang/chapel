@@ -695,6 +695,26 @@ codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct, int skip
 }
 
 
+static void
+codegenBasicPrimitive(FILE* outfile, CallExpr* call) {
+  fprintf(outfile, "%s(", call->primitive->name);
+  bool first_actual;
+  first_actual = true;
+  for_actuals(actual, call) {
+    if (first_actual)
+      first_actual = false;
+    else
+      fprintf(outfile, ", ");
+    if (actual->typeInfo()->symbol->hasPragma("ref"))
+      fprintf(outfile, "*");
+    actual->codegen(outfile);
+    if (actual->typeInfo()->symbol->hasPragma("wide class"))
+      fprintf(outfile, ".addr");
+  }
+  fprintf(outfile, ")");
+}
+
+
 void CallExpr::codegen(FILE* outfile) {
   if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(outfile, this);
@@ -702,21 +722,7 @@ void CallExpr::codegen(FILE* outfile) {
   if (primitive) {
     switch (primitive->tag) {
     case PRIMITIVE_UNKNOWN:
-      fprintf(outfile, "%s(", primitive->name);
-      bool first_actual;
-      first_actual = true;
-      for_actuals(actual, this) {
-        if (first_actual)
-          first_actual = false;
-        else
-          fprintf(outfile, ", ");
-        if (actual->typeInfo()->symbol->hasPragma("ref"))
-          fprintf(outfile, "*");
-        actual->codegen(outfile);
-        if (actual->typeInfo()->symbol->hasPragma("wide class"))
-          fprintf(outfile, ".addr");
-      }
-      fprintf(outfile, ")");
+      codegenBasicPrimitive(outfile, this);
       break;
     case PRIMITIVE_ARRAY_GET:
     case PRIMITIVE_ARRAY_GET_VALUE:
@@ -1856,6 +1862,10 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_INT_ERROR:
       fprintf(outfile, "chpl_internal_error(\"compiler generated error\")");
+      break;
+    case PRIMITIVE_RT_ERROR:
+    case PRIMITIVE_RT_WARNING:
+      codegenBasicPrimitive(outfile, this);
       break;
     case PRIMITIVE_GET_ERRNO:
       fprintf(outfile, "get_errno()");

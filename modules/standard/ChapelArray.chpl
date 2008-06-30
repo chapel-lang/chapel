@@ -534,52 +534,6 @@ class BaseSparseArithmeticDomain : BaseArithmeticDomain {
 //
 class _OpaqueIndex { }
 
-pragma "inline" def _pass(ic: _iteratorClass)
-  return ic;
-
-def _iteratorClass.eltType type {
-  return this.getValue(this.getHeadCursor()).type;
-}
-
-def _copy(ic: _iteratorClass) {
-  return _ic_copy_help(_ic_copy_recursive(ic));
-
-  def _ic_copy_recursive(ic) {
-    for e in ic do
-      yield _copy(e);
-  }
-
-  def _ic_copy_help(ic) {
-    var i = 1, size = 4;
-    var D = [1..size];
-    var A: [D] ic.eltType;
-    for e in ic {
-      if i > size {
-        size = size * 2;
-        D = [1..size];
-      }
-      A(i) = e;
-      i = i + 1;
-    }
-    D = [1..i-1];
-    return A;
-  }
-}
-
-//
-// print out iterators
-//
-def _iteratorClass.writeThis(f: Writer) {
-  var first: bool = true;
-  for e in this {
-    if !first then
-      f.write(" ");
-    else
-      first = false;
-    f.write(e);
-  }
-}
-
 //
 // Swap operators for arrays and domains
 //
@@ -610,4 +564,101 @@ def distributed_warning(d) {
     __primitive("chpl_warning", "'distributed' domains/arrays are not yet distributed across multiple locales");
   }
   return d;
+}
+
+//
+// module support for iterators
+//
+def iteratorIndex(ic: _iteratorClass) {
+  ic.advance();
+  return ic.getValue();
+}
+
+pragma "expand tuples with values"
+def iteratorIndex(t: _tuple) {
+  pragma "expand tuples with values"
+  def iteratorIndexHelp(t: _tuple, param dim: int) {
+    if dim == t.size-1 then
+      return _build_tuple_always_allow_ref(iteratorIndex(t(dim)), iteratorIndex(t(dim+1)));
+    else
+      return _build_tuple_always_allow_ref(iteratorIndex(t(dim)), (...iteratorIndexHelp(t, dim+1)));
+  }
+
+  return iteratorIndexHelp(t, 1);
+}
+
+def iteratorIndexType(x) type {
+  return iteratorIndex(x).type;
+}
+
+def _iteratorClass.writeThis(f: Writer) {
+  var first: bool = true;
+  for e in this {
+    if !first then
+      f.write(" ");
+    else
+      first = false;
+    f.write(e);
+  }
+}
+
+def =(ic: _iteratorClass, xs) {
+  for (e, x) in (ic, xs) do
+    e = x;
+  return ic;
+}
+
+def =(ic: _iteratorClass, x: iteratorIndexType(ic)) {
+  for e in ic do
+    e = x;
+  return ic;
+}
+
+pragma "inline" def _pass(ic: _iteratorClass)
+  return ic;
+
+def _copy(ic: _iteratorClass) {
+  return _ic_copy_help(_ic_copy_recursive(ic));
+
+  def _ic_copy_recursive(ic) {
+    for e in ic do
+      yield _copy(e);
+  }
+
+  def _ic_copy_help(ic) {
+    var i = 1, size = 4;
+    var D = [1..size];
+    var A: [D] iteratorIndexType(ic);
+    for e in ic {
+      if i > size {
+        size = size * 2;
+        D = [1..size];
+      }
+      A(i) = e;
+      i = i + 1;
+    }
+    D = [1..i-1];
+    return A;
+  }
+}
+
+pragma "inline" pragma "iterator class copy"
+def _getIterator(ic: _iteratorClass)
+  return ic;
+
+pragma "ref" pragma "inline" def _getIterator(x)
+  return x.these();
+
+def _getIterator(x: _tuple) {
+  def _getIteratorHelp(x: _tuple, param dim: int) {
+    if dim == x.size-1 then
+      return (_getIterator(x(dim)), _getIterator(x(dim+1)));
+    else
+      return (_getIterator(x(dim)), (..._getIteratorHelp(x, dim+1)));
+  }
+  return _getIteratorHelp(x, 1);
+}
+
+def _getIterator(type t) {
+  compilerError("cannot iterate over a type");
 }

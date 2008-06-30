@@ -517,7 +517,7 @@ BlockStmt* buildForLoopStmt(BlockTag tag,
   stmts->insertAtTail(new DefExpr(index));
   stmts->insertAtTail(new BlockStmt(
     new CallExpr(PRIMITIVE_MOVE, index,
-      new CallExpr(PRIMITIVE_GET_ITERATOR_RETURN, iteratorSym)),
+      new CallExpr("iteratorIndex", iteratorSym)),
     BLOCK_TYPE));
   destructureIndices(body, indices, new SymExpr(index));
   body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iteratorSym);
@@ -816,7 +816,7 @@ CallExpr* buildReduceScanExpr(Expr* op, Expr* data, bool isScan) {
       new CallExpr(PRIMITIVE_MOVE, eltType,
         new CallExpr(PRIMITIVE_TYPEOF,
           new CallExpr("_copy",
-            new CallExpr(PRIMITIVE_GET_ITERATOR_RETURN,
+            new CallExpr("iteratorIndex",
               new CallExpr("_getIterator", tmp))))),
       BLOCK_TYPE));
   fn->insertAtTail(

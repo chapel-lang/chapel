@@ -6,4 +6,4 @@ i is: 5 j is: 6
 i is: 6 j is: 7
 i is: 7 j is: 8
 i is: 8 j is: 9
-fft-zip.chpl:1: error: halt reached - zippered iterations have non-equal lengths
+fft-zip.chpl:1: error: zippered iterations have non-equal lengths

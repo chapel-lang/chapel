@@ -571,8 +571,8 @@ initPrimitive() {
 
   prim_def("startTrackingMem", returnInfoVoid, true);
 
-  prim_def("chpl_error", returnInfoVoid, true, true);
-  prim_def("chpl_warning", returnInfoVoid, true, true);
+  prim_def(PRIMITIVE_RT_ERROR, "chpl_error", returnInfoVoid, true, true);
+  prim_def(PRIMITIVE_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
 
   prim_def("mem_used", returnInfoUInt64, false, true);
 }

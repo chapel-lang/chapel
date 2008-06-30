@@ -38,7 +38,7 @@ expandIteratorInline(CallExpr* call) {
     VarSymbol* var = new VarSymbol(formal->name, formal->type);
     // count is used to get the nth field out of the iterator class;
     // it is replaced by the field once the iterator class is created
-    CallExpr* access = new CallExpr(isReference(formal->type) ? PRIMITIVE_GET_MEMBER : PRIMITIVE_GET_MEMBER_VALUE, ic, new_IntSymbol(++count));
+    CallExpr* access = new CallExpr(PRIMITIVE_GET_MEMBER, ic, new_IntSymbol(++count));
     ibody->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, access));
     ibody->insertAtHead(new DefExpr(var));
     forv_Vec(BaseAST, ast, asts) {
@@ -68,6 +68,49 @@ canInlineIterator(FnSymbol* iterator) {
 }
 
 static void
+setupSimultaneousIterators(Vec<Symbol*>& iterators,
+                           Vec<Symbol*>& indices,
+                           Symbol* gIterator,
+                           Symbol* gIndex,
+                           BlockStmt* loop) {
+  if (gIterator->type->symbol->hasPragma("tuple")) {
+    ClassType* iteratorType = toClassType(gIterator->type);
+    ClassType* indexType = toClassType(gIndex->type);
+    for (int i=1; i <= iteratorType->fields.length(); i++) {
+      Symbol* iterator = new VarSymbol("_iterator", iteratorType->getField(i)->type);
+      loop->insertBefore(new DefExpr(iterator));
+      loop->insertBefore(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, gIterator, iteratorType->getField(i))));
+
+      Symbol* index = new VarSymbol("_index", indexType->getField(i)->type);
+      loop->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER, gIndex, indexType->getField(i), index));
+      loop->insertAtHead(new DefExpr(index));
+      setupSimultaneousIterators(iterators, indices, iterator, index, loop);
+    }
+  } else {
+    iterators.add(gIterator);
+    indices.add(gIndex);
+  }
+}
+
+
+static bool
+isBoundedIterator(FnSymbol* fn) {
+  if (fn->_this) {
+    Type* type = fn->_this->type;
+    if (type->symbol->hasPragma("ref"))
+      type = getValueType(type);
+    if (type->symbol->hasPragma("range")) {
+      if (!strcmp(toSymbol(type->substitutions.v[1].value)->name, "bounded"))
+        return true;
+      else
+        return false;
+    }
+  }
+  return true;
+}
+
+
+static void
 expand_for_loop(CallExpr* call) {
   BlockStmt* block = toBlockStmt(call->parentExpr);
   if (!block || block->loopInfo != call)
@@ -80,25 +123,45 @@ expand_for_loop(CallExpr* call) {
   VarSymbol* iterator = toVarSymbol(se2->var);
   if (!index || !iterator)
     INT_FATAL(call, "bad for loop primitive");
-  FnSymbol* iter = iterator->type->defaultConstructor;
-  if (!fNoInlineIterators && canInlineIterator(iter)) {
+
+  if (!fNoInlineIterators &&
+      iterator->type->defaultConstructor->iteratorInfo &&
+      canInlineIterator(iterator->type->defaultConstructor)) {
     expandIteratorInline(call);
   } else {
-    IteratorInfo* ii = iter->iteratorInfo;
-    VarSymbol* cursor = new VarSymbol("_cursor", ii->getHeadCursor->retType);
-    cursor->isCompilerTemp = true;
-    block->insertBefore(new DefExpr(cursor));
-    block->insertBefore(new CallExpr(PRIMITIVE_MOVE, cursor, new CallExpr(ii->getHeadCursor, iterator)));
-    VarSymbol* cond = new VarSymbol("_cond", dtBool);
-    cond->isCompilerTemp = true;
-    block->insertBefore(new DefExpr(cond));
-    block->insertBefore(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(ii->isValidCursor, iterator, cursor)));
-    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, index, new CallExpr(ii->getValue, iterator, cursor)));
-    block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cursor, new CallExpr(ii->getNextCursor, iterator, cursor)));
-    block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(ii->isValidCursor, iterator, cursor)));
+    currentLineno = call->lineno;
+    Vec<Symbol*> iterators;
+    Vec<Symbol*> indices;
+    setupSimultaneousIterators(iterators, indices, iterator, index, block);
+    VarSymbol* firstCond = NULL;
+    for (int i = 0; i < iterators.n; i++) {
+      IteratorInfo* ii = iterators.v[i]->type->defaultConstructor->iteratorInfo;
+      VarSymbol* cond = new VarSymbol("_cond", dtBool);
+      cond->isCompilerTemp = true;
+      block->insertBefore(new CallExpr(ii->advance, iterators.v[i]));
+      block->insertBefore(new DefExpr(cond));
+      block->insertBefore(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(ii->hasMore, iterators.v[i])));
+      block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, indices.v[i], new CallExpr(ii->getValue, iterators.v[i])));
+      block->insertAtTail(new CallExpr(ii->advance, iterators.v[i]));
+      block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(ii->hasMore, iterators.v[i])));
+      if (isBoundedIterator(iterators.v[i]->type->defaultConstructor)) {
+        if (!firstCond) {
+          firstCond = cond;
+        } else {
+          VarSymbol* tmp = new VarSymbol("_tmp", dtBool);
+          block->insertAtHead(new CondStmt(new SymExpr(tmp), new CallExpr(PRIMITIVE_RT_ERROR, new_StringSymbol("zippered iterations have non-equal lengths"))));
+          block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_EQUAL, cond, new_IntSymbol(0))));
+          block->insertAtHead(new DefExpr(tmp));
+          block->insertAfter(new CondStmt(new SymExpr(cond), new CallExpr(PRIMITIVE_RT_ERROR, new_StringSymbol("zippered iterations have non-equal lengths"))));
+        }
+      }
+    }
     call->get(2)->remove();
     call->get(1)->remove();
-    call->insertAtTail(cond);
+    if (firstCond)
+      call->insertAtTail(firstCond);
+    else
+      call->insertAtTail(gTrue);
   }
 }
 
@@ -131,18 +194,19 @@ void lowerIterators() {
   // via a number
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
-          call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+      if (call->parentSymbol && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
         ClassType* ct = toClassType(call->get(1)->typeInfo());
         long num;
         if (get_int(call->get(2), &num)) {
           Symbol* field = ct->getField(num);
           call->get(2)->replace(new SymExpr(field));
-          if (CallExpr* parent = toCallExpr(call->parentExpr))
-            if (parent->isPrimitive(PRIMITIVE_MOVE))
-              if (isReference(parent->get(1)->typeInfo()) &&
-                  isReference(field->type))
-                call->primitive = primitives[PRIMITIVE_GET_MEMBER];
+          CallExpr* parent = toCallExpr(call->parentExpr);
+          INT_ASSERT(parent->isPrimitive(PRIMITIVE_MOVE));
+          Symbol* local = toSymExpr(parent->get(1))->var;
+          if (local->type == field->type)
+            call->primitive = primitives[PRIMITIVE_GET_MEMBER_VALUE];
+          else if (local->type != field->type->refType)
+            INT_FATAL(call, "unexpected case");
         }
       }
     }
@@ -167,12 +231,10 @@ void lowerIterators() {
       block->insertAtTail(new DefExpr(cp));
       block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cp, new CallExpr(PRIMITIVE_CHPL_ALLOC, ct->symbol, new_StringSymbol("iterator class copy"))));
       for_fields(field, ct) {
-        if (!field->type->symbol->hasPragma("ref")) {
-          VarSymbol* tmp = new VarSymbol("_tmp", field->type);
-          block->insertAtTail(new DefExpr(tmp));
-          block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, field)));
-          block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, cp, field, tmp));
-        }
+        VarSymbol* tmp = new VarSymbol("_tmp", field->type);
+        block->insertAtTail(new DefExpr(tmp));
+        block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, field)));
+        block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, cp, field, tmp));
       }
       block->insertAtTail(new CallExpr(PRIMITIVE_RETURN, cp));
       fn->body->replace(block);

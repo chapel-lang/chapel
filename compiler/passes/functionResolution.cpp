@@ -131,14 +131,9 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
     if (fn->fnTag == FN_ITERATOR) {
       prototypeIteratorClass(fn);
       makeRefType(fn->retType);
-      resolvedFns.set_add(fn->iteratorInfo->getHeadCursor);
-      resolvedFns.set_add(fn->iteratorInfo->getNextCursor);
-      resolvedFns.set_add(fn->iteratorInfo->isValidCursor);
+      resolvedFns.set_add(fn->iteratorInfo->advance);
+      resolvedFns.set_add(fn->iteratorInfo->hasMore);
       resolvedFns.set_add(fn->iteratorInfo->getValue);
-      resolvedFns.set_add(fn->iteratorInfo->getZipCursor1);
-      resolvedFns.set_add(fn->iteratorInfo->getZipCursor2);
-      resolvedFns.set_add(fn->iteratorInfo->getZipCursor3);
-      resolvedFns.set_add(fn->iteratorInfo->getZipCursor4);
     }
   }
 }
@@ -1973,6 +1968,10 @@ insertFormalTemps(FnSymbol* fn) {
   if (!strcmp(fn->name, "_pass") ||
       !strcmp(fn->name, "_init") ||
       !strcmp(fn->name, "_copy") ||
+      !strcmp(fn->name, "_getIterator") ||
+      !strcmp(fn->name, "_getIteratorHelp") ||
+      !strcmp(fn->name, "iteratorIndex") ||
+      !strcmp(fn->name, "iteratorIndexHelp") ||
       !strcmp(fn->name, "=") ||
       !strcmp(fn->name, "_createFieldDefault") ||
       !strcmp(fn->name, "chpldev_refToString") ||
@@ -3195,14 +3194,9 @@ resolveFns(FnSymbol* fn) {
   if (fn->fnTag == FN_ITERATOR && !fn->iteratorInfo) {
     prototypeIteratorClass(fn);
     makeRefType(fn->retType);
-    resolvedFns.set_add(fn->iteratorInfo->getHeadCursor);
-    resolvedFns.set_add(fn->iteratorInfo->getNextCursor);
-    resolvedFns.set_add(fn->iteratorInfo->isValidCursor);
+    resolvedFns.set_add(fn->iteratorInfo->advance);
+    resolvedFns.set_add(fn->iteratorInfo->hasMore);
     resolvedFns.set_add(fn->iteratorInfo->getValue);
-    resolvedFns.set_add(fn->iteratorInfo->getZipCursor1);
-    resolvedFns.set_add(fn->iteratorInfo->getZipCursor2);
-    resolvedFns.set_add(fn->iteratorInfo->getZipCursor3);
-    resolvedFns.set_add(fn->iteratorInfo->getZipCursor4);
   }
 
   if (fn->hasPragma("type constructor")) {

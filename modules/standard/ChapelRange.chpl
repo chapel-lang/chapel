@@ -6,6 +6,7 @@
 //
 enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
 
+pragma "range"
 record range {
   type eltType = int;                            // element type
   param boundedType: BoundedRangeType = BoundedRangeType.bounded; // bounded or not

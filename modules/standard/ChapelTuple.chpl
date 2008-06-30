@@ -1,34 +1,3 @@
-def _iteratorUnbounded(x) param
-  return false;
-
-def _iteratorUnbounded(r: range(?)) param where r.boundedType != BoundedRangeType.bounded
-  return true;
-
-pragma "inline" def _getIteratorTupleHelp(t: _tuple, param i: int) {
-  if i == t.size {
-    return (_getIterator(t(i)), 1); // ignore last == 1
-  } else {
-    return (_getIterator(t(i)), (..._getIteratorTupleHelp(t, i+1)));
-  }
-}
-
-pragma "inline" def _getZipCursor1TupleHelp(t: _tuple, param i: int) {
-  if i == t.size-1 {
-    return (t(i).getZipCursor1(), 1); // ignore last == 1
-  } else {
-    return (t(i).getZipCursor1(), (..._getZipCursor1TupleHelp(t, i+1)));
-  }
-}
-
-pragma "expand tuples with values"
-pragma "inline" def _getValueTupleHelp(ic: _tuple, c: _tuple, param i: int) {
-  if i == ic.size-2 {
-    return _build_tuple_always_allow_ref(ic(i).getValue(c(i)), ic(i+1).getValue(c(i+1)));
-  } else {
-    return _build_tuple_always_allow_ref(ic(i).getValue(c(i)), (..._getValueTupleHelp(ic, c, i+1)));
-  }
-}
-
 def *(param p: int, type t) type {
   def _fill(param p: int, x: _tuple) {
     if x.size == p then
@@ -55,53 +24,6 @@ pragma "tuple" record _tuple {
         return this(j);
     halt("tuple indexing out-of-bounds error");
     return this(1);
-  }
-
-  pragma "expand tuples with values"
-  def these() {
-    if size == 1 {
-      for i in this(1) {
-        var t: 1*i.type;
-        t(1) = i;
-        yield t;
-      }
-    } else {
-      var ic = _getIteratorTupleHelp(this, 2);
-      var c = _getZipCursor1TupleHelp(ic, 1);
-      if c.size != ic.size then
-        compilerError("internal size check failure; zipper failed");
-      for i in this(1) {
-        for param i in 1..ic.size-1 do
-          c(i) = ic(i).getZipCursor2(c(i));
-        // _iteratorUnbounded makes it so that we don't insert these
-        // breaks if the first iterator can fully control the loop;
-        // this is important so that the single loop iterator
-        // optimization can fire; the break in the loop disables it
-        if _iteratorUnbounded(this(1)) {
-          for param i in 1..ic.size-1 do
-            if !ic(i).isValidCursor(c(i)) then
-              break;
-        } else if boundsChecking {
-          for param i in 1..ic.size-1 do
-            if !_iteratorUnbounded(this(i+1)) then
-              if !ic(i).isValidCursor(c(i)) then
-                halt("zippered iterations have non-equal lengths");
-        }
-        if ic.size == 2 then
-          yield _build_tuple_always_allow_ref(i, ic(1).getValue(c(1)));
-        else
-          yield _build_tuple_always_allow_ref(i, (..._getValueTupleHelp(ic, c, 1)));
-        for param i in 1..ic.size-1 do
-          c(i) = ic(i).getZipCursor3(c(i));
-      }
-      for param i in 1..ic.size-1 do
-        c(i) = ic(i).getZipCursor4(c(i));
-      if boundsChecking then
-        for param i in 1..ic.size-1 do
-          if !_iteratorUnbounded(this(i+1)) then
-            if ic(i).isValidCursor(c(i)) then
-              halt("zippered iterations have non-equal lengths");
-    }
   }
 }
 

@@ -1105,28 +1105,7 @@ pragma "inline" def _cast(type t, x: imag(?w)) where _isRealType(t) || _isIntegr
 pragma "inline" def _cast(type t, x: imag(?w)) where t == bool
   return if x != 0i then true else false;
 
-// handle default iterators
-pragma "inline" pragma "iterator class copy" def _getIterator(ic: _iteratorClass)
-  return ic;
 
-pragma "inline" def _getIterator(x)
-  return x.these();
-
-def _getIterator(type t) {
-  compilerError("cannot iterate over a type");
-}
-
-def =(ic: _iteratorClass, xs) {
-  for (e, x) in (ic, xs) do
-    e = x;
-  return ic;
-}
-
-def =(ic: _iteratorClass, x: ic.eltType) {
-  for e in ic do
-    e = x;
-  return ic;
-}
 
 pragma "inline" def _startTrackingMem() { __primitive("startTrackingMem"); }
 
