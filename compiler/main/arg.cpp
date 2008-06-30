@@ -52,7 +52,7 @@ Flag types:
 static void 
 bad_flag(char* flag) {
   fprintf(stderr, "Unrecognized flag: '%s' (use '-h' for help)\n", flag);
-  exit(1);
+  clean_exit(1);
 }
 
 
@@ -60,7 +60,7 @@ static void
 missing_arg(char* currentFlag) {
   fprintf(stderr, "Missing argument for flag: '%s' (use '-h' for help)\n", 
           currentFlag);
-  exit(1);
+  clean_exit(1);
 }
 
 
@@ -96,7 +96,7 @@ process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
         default:
           fprintf(stdout, "%s:bad argument description\n", 
                  arg_state->program_name);
-          exit(1);
+          clean_exit(1);
           break;
       }
       **argv += strlen(**argv)-1;
@@ -366,7 +366,7 @@ void usage(ArgumentState* arg_state, int status, bool printEnvHelp,
       printf("\n");
     }
   }
-  exit(status);
+  clean_exit(status);
 }
 
 void

@@ -9,6 +9,7 @@ class IFAAST;
 class Var;
 
 void clean_exit(int status);
+#define exit(x) dont_use_exit_use_clean_exit_instead
 
 void gdbShouldBreakHere(void);  // must be exposed to avoid dead-code alim.
 

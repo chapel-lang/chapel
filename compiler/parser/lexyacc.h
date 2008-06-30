@@ -12,6 +12,13 @@
 #include "type.h"
 #include "yy.h"
 
+// Make sure exit is undefined:
+#ifdef exit
+#undef exit
+#endif
+// And redefine it to call our exit routine:
+#define exit(x) clean_exit(x)
+
 extern int captureTokens;
 extern char captureString[1024];
 

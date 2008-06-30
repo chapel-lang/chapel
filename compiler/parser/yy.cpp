@@ -9,5 +9,5 @@ void yyerror(const char *str) {
     fprintf(stderr, ": near '%s'", yytext);
   }
   fprintf(stderr, "\n");
-  exit(1);
+  clean_exit(1);
 }

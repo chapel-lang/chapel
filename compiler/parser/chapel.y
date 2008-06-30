@@ -320,7 +320,7 @@ non_empty_stmt:
 | atomic_stmt
 | local_stmt
 | error
-    { printf("syntax error"); exit(1); }
+    { printf("syntax error"); clean_exit(1); }
 ;
 
 

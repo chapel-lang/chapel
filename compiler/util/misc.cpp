@@ -22,17 +22,6 @@ static void cleanup_for_exit(void) {
 void gdbShouldBreakHere(void) {
 }
 
-void
-clean_exit(int status) {
-  if (status != 0) {
-    gdbShouldBreakHere();
-  }
-  cleanup_for_exit();
-  deleteStrings();
-  exit(status);
-}
-
-
 // Support for internal errors, adopted from ZPL compiler
 
 static bool exit_immediately = true;
@@ -220,4 +209,20 @@ void startCatchingSignals(void) {
 void stopCatchingSignals(void) {
   signal(SIGINT, SIG_DFL);
   signal(SIGSEGV, SIG_DFL);
+}
+
+
+//
+// Put this last to minimize the amount of code affected by this #undef
+//
+#ifdef exit
+#undef exit
+#endif
+void clean_exit(int status) {
+  if (status != 0) {
+    gdbShouldBreakHere();
+  }
+  cleanup_for_exit();
+  deleteStrings();
+  exit(status);
 }
