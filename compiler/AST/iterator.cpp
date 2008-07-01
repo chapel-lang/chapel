@@ -238,6 +238,10 @@ buildAdvance(FnSymbol* fn,
               INT_ASSERT(loop);
               stmt = loop;
             }
+            if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+              INT_ASSERT(tmp->type->refType);
+              tmp->type = tmp->type->refType;
+            }
             stmt->insertBefore(new DefExpr(tmp));
             if (useSet.set_in(se)) {
               if (tmp->type == field->type->refType)
