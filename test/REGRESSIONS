@@ -14,6 +14,16 @@
 linux and general regressions
 =============================
 
+precision issue, due to user code changing (?) (07/01/08)
+---------------------------------------------------------
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
+
+out-of-bounds errors (07/01/08)
+-------------------------------
+[Error matching program output for users/shetag/fock/fock-3-blc]
+[Error matching program output for users/shetag/fock/fock-dyn-prog-pool]
+
 new madness precision issue (most platforms other than darwin, cygwin)
 ----------------------------------------------------------------------
 [Error matching program output for
@@ -24,20 +34,37 @@ extremely rare race condition in module initialization
 [Error matching program output for modules/diten/useInBegin]
 
 
+================================
+performance-specific regressions
+================================
+
+timeout due to disabled single loop optimizations(?) -- 07/01/08
+----------------------------------------------------------------
+[Error: Timed out executing program
+studies/hpcc/STREAMS/bradc/stream-fragmented]
+
+
 =============================
 baseline-specific regressions
 =============================
 
-line numbers due to unequal zipperings
---------------------------------------
+iterator/tuple problems (07/01/08)
+----------------------------------
 [Error matching program output for
-functions/deitz/iterators/test_zip_check1]
+functions/deitz/iterators/test_instantiate_iterator3]
 [Error matching program output for
-functions/deitz/iterators/test_zip_check2]
-[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
-[Error matching program output for
-types/range/deitz/test_range_iterate_error]
+functions/deitz/iterators/test_instantiate_iterator3a]
+[Error matching program output for trivial/deitz/test_nested_fors]
 
+out-of-bounds indexing errors (07/01/08)
+----------------------------------------
+[Error matching program output for release/examples/blockLU]
+[Error matching program output for studies/lu/marybeth/blockLU]
+[Error matching program output for studies/matrixlib/testBlockLU]
+[Error matching program output for studies/matrixlib/test_overloading]
+[Error matching program output for users/shetag/fock/fock-stc]
+[Error: Timed out executing program
+functions/deitz/iterators/test_tuple_in_iterator]
 
 =============================
 valgrind-specific regressions
@@ -62,10 +89,6 @@ failing nondeterministically (e.g., 04/04/08)
 ===========================
 gasnet-specific regressions
 ===========================
-
-doesn't work with wide references
----------------------------------
-[Error matching compiler output for trivial/bradc/ref2string]
 
 times out occasionally (race-y deadlock?) -- e.g., 06/15/2008, 06/18/2008
 -------------------------------------------------------------------------
@@ -96,16 +119,21 @@ garbage collection doesn't work with multithreaded
 opts-specific tests
 ===================
 
-(Example runs)
+(Example runs: 8)
 
 --no-live-analysis
 --baseline --inline-iterators
 -----------------------------
 [Error matching program output for release/examples/hpcc/fft]
 
---baseline --inline-iterators
------------------------------
-[Error matching program output for release/examples/hpcc/stream]
+--baseline --copy-propagation
+--baseline --dead-code-elimination
+--baseline --live-analysis
+--baseline --optimize-loop-iterators
+--baseline --scalar-replacement
+--baseline --no-local
+-------------------------------
+[Error matching program output for release/examples/blockLU]
 
 
 (Full run: 196)
@@ -447,6 +475,7 @@ sunos-specific regressions
 %p results in different format?
 -------------------------------
 [Error matching program output for trivial/bradc/ref2string]
+[Error matching program output for trivial/bradc/wideref2string]
 
 exp2/log2/other math fns not supported
 --------------------------------------
