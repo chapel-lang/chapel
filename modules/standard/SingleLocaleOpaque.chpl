@@ -26,7 +26,7 @@ class SingleLocaleOpaqueDomain: BaseDomain {
   }
 
   def member(ind: idxType) {
-    adomain.member(ind);
+    return adomain.member(ind);
   }
 
   def numIndices {
