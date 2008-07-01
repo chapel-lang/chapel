@@ -33,21 +33,23 @@ expandIteratorInline(CallExpr* call) {
     }
   }
   body->insertAtHead(new CallExpr(PRIMITIVE_MOVE, index, yield->get(1)));
-  int count = 0;
+  int count = 1;
   for_formals(formal, iterator) {
-    VarSymbol* var = new VarSymbol(formal->name, formal->type);
-    // count is used to get the nth field out of the iterator class;
-    // it is replaced by the field once the iterator class is created
-    CallExpr* access = new CallExpr(PRIMITIVE_GET_MEMBER, ic, new_IntSymbol(++count));
-    ibody->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, access));
-    ibody->insertAtHead(new DefExpr(var));
     forv_Vec(BaseAST, ast, asts) {
       if (SymExpr* se = toSymExpr(ast)) {
         if (se->var == formal) {
-          se->var = var;
+          // count is used to get the nth field out of the iterator class;
+          // it is replaced by the field once the iterator class is created
+          Expr* stmt = se->getStmtExpr();
+          VarSymbol* tmp = new VarSymbol(formal->name, formal->type);
+          tmp->isCompilerTemp = true;
+          stmt->insertBefore(new DefExpr(tmp));
+          stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, ic, new_IntSymbol(count))));
+          se->var = tmp;
         }
       }
     }
+    count++;
   }
 }
 
@@ -196,6 +198,8 @@ void lowerIterators() {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->parentSymbol && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
         ClassType* ct = toClassType(call->get(1)->typeInfo());
+        if (ct->symbol->hasPragma("ref"))
+          ct = toClassType(getValueType(ct));
         long num;
         if (get_int(call->get(2), &num)) {
           Symbol* field = ct->getField(num);
