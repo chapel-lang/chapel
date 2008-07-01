@@ -1,0 +1,34 @@
+set $forcecmd = 0
+define hook-run
+  if ($forcecmd != 777 && tmpdirname != 0)
+    call cleanup_for_exit()
+  end
+  set $forcecmd = 0
+end
+define hook-quit
+  if ($forcecmd != 777 && tmpdirname != 0)
+    call cleanup_for_exit()
+  end
+  set $forcecmd = 0
+end
+define halt
+  set $forcecmd = 1
+  quit
+end
+define rerun
+  set $forcecmd = 1
+  run
+end
+define view
+  call print_view($arg0)
+end
+define iview
+  call iprint_view($arg0)
+end
+define nview
+  call nprint_view($arg0)
+end
+define lview
+  call list_view($arg0)
+end
+break gdbShouldBreakHere

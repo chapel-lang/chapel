@@ -281,39 +281,11 @@ const char* createGDBFile(int argc, char* argv[]) {
     }
   }
   fprintf(gdbfile, "\n");
-  fprintf(gdbfile, "define hook-run\n");
-  fprintf(gdbfile, "  if (tmpdirname != 0)\n");
-  fprintf(gdbfile, "    call cleanup_for_exit()\n");
-  fprintf(gdbfile, "  end\n");
-  fprintf(gdbfile, "end\n");
-  fprintf(gdbfile, "define hook-quit\n");
-  fprintf(gdbfile, "  if (tmpdirname != 0)\n");
-  fprintf(gdbfile, "    call cleanup_for_exit()\n");
-  fprintf(gdbfile, "  end\n");
-  fprintf(gdbfile, "end\n");
-  fprintf(gdbfile, "define halt\n");
-  fprintf(gdbfile, "  set tmpdirname = 0\n");
-  fprintf(gdbfile, "  quit\n");
-  fprintf(gdbfile, "end\n");
-  fprintf(gdbfile, "define rerun\n");
-  fprintf(gdbfile, "  set tmpdirname = 0\n");
-  fprintf(gdbfile, "  run\n");
-  fprintf(gdbfile, "end\n");
-  fprintf(gdbfile, "define view\n");
-  fprintf(gdbfile, "  call print_view($arg0)\n");
-  fprintf(gdbfile, "end\n");
-  fprintf(gdbfile, "define iview\n");
-  fprintf(gdbfile, "  call iprint_view($arg0)\n");
-  fprintf(gdbfile, "end\n");
-  fprintf(gdbfile, "define nview\n");
-  fprintf(gdbfile, "  call nprint_view($arg0)\n");
-  fprintf(gdbfile, "end\n");
-  fprintf(gdbfile, "define lview\n");
-  fprintf(gdbfile, "  call list_view($arg0)\n");
-  fprintf(gdbfile, "end\n");
-  fprintf(gdbfile, "break gdbShouldBreakHere\n");
-
   closefile(gdbfile);
+  mysystem(astr("cat ", CHPL_HOME, "/compiler/etc/gdb.commands >> ", 
+                gdbfilename), 
+           "appending gdb commands", 0);
+
 
   return gdbfilename;
 }
