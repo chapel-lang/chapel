@@ -1,0 +1,14 @@
+error message: name of destructor must match name of class
+
+error message: only one destructor can be defined per class
+
+error message: destructor may not take arguments (I think?)
+
+error message: destructors may not be defined for a record
+
+error message: destructors may not be defined outside a class
+
+error message: class instances that have not been created (using new)
+may not be destroyed
+
+error message: records may not be destroyed
