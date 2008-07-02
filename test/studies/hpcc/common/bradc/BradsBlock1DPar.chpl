@@ -45,13 +45,14 @@ class Block1DDist {
   // set up in initialize() below
   //
   // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method
+  // removing the initialize method; would want to be able to use
+  // an on-clause at the expression list to make this work.
+  // Otherwise, would have to move the allocation into a function
+  // just to get it at the statement level.
+  // (and also to be able to map from an index back to an order in a
+  // domain in order to avoid the need for the zippered iteration?)
   //
-  // TODO: Remove second generic parameter -- seems confusing and wrong.  Replace
-  // with explicit typing of locid field in LocBlock1DDist class.  Particularly
-  // since I'm passing in a value from 0.. rather than an actual index value.
-  //
-  var locDist: [targetLocDom] LocBlock1DDist(glbIdxType, index(targetLocs.domain));
+  var locDist: [targetLocDom] LocBlock1DDist(glbIdxType);
 
   def initialize() {
     for (loc, locid) in (targetLocs, 0..) do
@@ -78,17 +79,18 @@ class Block1DDist {
     // use domain slicing to get the intersection between what the
     // locale owns and the domain's index set
 
-    // TODO: Could this be written myChunk[inds] ???
-    return locDist(here).myChunk[inds.low..inds.high];
+    // TODO: Should this be able to be written as myChunk[inds] ???
+    return locDist(here).myChunk(inds.dim(1));
   }
   
   //
   // Determine which locale owns a particular index
   //
-  // TODO: Is this correct if targetLocs doesn't start with 0?
-  //
   def ind2loc(ind: glbIdxType) {
-    return targetLocs((((ind-bbox.low)*targetLocs.numElements)/bbox.numIndices):index(targetLocs.domain));
+    const indFrom0 = ind - bbox.low;
+    const locFrom0 = (indFrom0 * targetLocs.numElements) / bbox.numIndices;
+    const locInd = locFrom0: index(targetLocs.domain) + targetLocs.domain.low;
+    return targetLocs(locInd);
   }
 }
 
@@ -100,18 +102,6 @@ class LocBlock1DDist {
   // The distribution's index type and domain's global index type
   //
   type glbIdxType;
-
-  //
-  // The following members store (a) the locale ID as a 0-based
-  // integer; (b) a reference to the global distribution
-  //
-  // TODO: don't really want to store these here; should be able to
-  // make the things it wants access to arguments to a user-defined
-  // constructor instead (but we don't support those for generic
-  // classes well yet).
-  //
-  const locid;
-  const dist: Block1DDist(glbIdxType);
 
   //
   // This stores the piece of the global bounding box owned by
@@ -129,8 +119,12 @@ class LocBlock1DDist {
 
   //
   // Compute what chunk of index(1) is owned by the current locale
+  // Arguments:
   //
-  def initialize() {
+  def LocBlock1DDist(type glbIdxType, 
+                     locid: int, // the locale ID as a 0-based integer
+                     dist: Block1DDist(glbIdxType) // reference to glob dist
+                     ) {
     const lo = dist.bbox.low;
     const hi = dist.bbox.high;
     const numelems = hi - lo + 1;
@@ -170,25 +164,29 @@ class Block1DDom {
   // an associative array of local domain class descriptors -- set up
   // in initialize() below
   //
-  // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method
   //
-  var locDom: [dist.targetLocDom] LocBlock1DDom(glbIdxType, lclIdxType);
+  // TODO: would like this to be const and initialize in-place,
+  // removing the initialize method; would want to be able to use
+  // an on-clause at the expression list to make this work.
+  // Otherwise, would have to move the allocation into a function
+  // just to get it at the statement level.
+  //
+  var locDoms: [dist.targetLocDom] LocBlock1DDom(glbIdxType, lclIdxType);
 
   def initialize() {
     for loc in dist.targetLocs do
       on loc do
-        locDom(loc) = new LocBlock1DDom(glbIdxType, lclIdxType, this, 
+        locDoms(loc) = new LocBlock1DDom(glbIdxType, lclIdxType, this, 
                                         dist.getChunk(whole));
     if debugBradsBlock1D then
-      [loc in dist.targetLocs] writeln(loc, " owns ", locDom(loc));
+      [loc in dist.targetLocs] writeln(loc, " owns ", locDoms(loc));
   }
 
   //
   // the iterator for the domain -- currently sequential
   //
   def these() {
-    for blk in locDom do
+    for blk in locDoms do
       // May want to do something like:     
       // on blk do
       // But can't currently have yields in on clauses
@@ -241,8 +239,8 @@ class Block1DDom {
     //
     // TODO: Abstract this subtraction of low into a function?
     //
-    for blk in locDom.myBlock do
-      yield blk - whole.low;
+    for locDom in locDoms do
+      yield locDom.myBlock - whole.low;
   }
 
 
@@ -388,14 +386,17 @@ class Block1DArr {
   // an associative array of local array classes, indexed by locale
   //
   // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method
+  // removing the initialize method; would want to be able to use
+  // an on-clause at the expression list to make this work.
+  // Otherwise, would have to move the allocation into a function
+  // just to get it at the statement level.
   //
   var locArr: [dom.dist.targetLocDom] LocBlock1DArr(glbIdxType, lclIdxType, elemType);
 
   def initialize() {
     for loc in dom.dist.targetLocs do
       on loc do
-        locArr(loc) = new LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDom(loc));
+        locArr(loc) = new LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDoms(loc));
   }
 
   //
@@ -422,9 +423,6 @@ class Block1DArr {
   //
   // this is the parallel iterator for the global array, see th
   // example for general notes on the approach
-  //
-  // TODO: Note that this should logically be a var iterator, but
-  // that doesn't seem to work.
   //
   def newThese(param iterator: IteratorType) 
         where iterator == IteratorType.solo {
