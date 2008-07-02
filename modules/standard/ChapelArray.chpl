@@ -628,7 +628,16 @@ def _copy(ic: _iteratorClass) {
   def _ic_copy_help(ic) {
     var i = 1, size = 4;
     var D = [1..size];
-    var A: [D] iteratorIndexType(ic);
+
+    // note that _getIterator is called in order to copy the iterator
+    // class since for arrays we need to iterate once to get the
+    // element type (at least for now); this also means that if this
+    // iterator has side effects, we will see them; a better way to
+    // handle this may be to get the static type (not initialize the
+    // array) and use a primitive to set the array's element; that may
+    // also handle skyline arrays
+    var A: [D] iteratorIndexType(_getIterator(ic));
+
     for e in ic {
       if i > size {
         size = size * 2;
