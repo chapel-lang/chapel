@@ -1,0 +1,5 @@
+bug: array member declared using forall-initialized domain member
+
+It seems that array forall declaration syntax does not work within
+classes when the domain being iterated over is also a member of the
+class.
