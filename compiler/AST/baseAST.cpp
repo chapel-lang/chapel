@@ -273,7 +273,7 @@ BaseAST::BaseAST(AstTag type) :
 
 
 BaseAST*
-BaseAST::copyInner(ASTMap* map) {
+BaseAST::copyInner(SymbolMap* map) {
   INT_FATAL(this, "copyInner not implemented for BaseAST subclass");
   return NULL;
 }

@@ -4,15 +4,6 @@
 #include "chpl.h"
 #include "stringutil.h"
 
-typedef Map<BaseAST*,BaseAST*> ASTMap;
-typedef MapElem<BaseAST*,BaseAST*> ASTMapElem;
-
-extern void update_symbols(BaseAST* ast, ASTMap* map);
-void cleanAst(void);
-void destroyAst(void);
-
-void printStatistics(const char* pass);
-
 class AList;
 class Symbol;
 class ModuleSymbol;
@@ -22,9 +13,21 @@ class VarSymbol;
 class Type;
 class Expr;
 
+typedef Map<BaseAST*,BaseAST*> ASTMap;
+typedef MapElem<BaseAST*,BaseAST*> ASTMapElem;
+
+typedef Map<Symbol*,Symbol*> SymbolMap;
+typedef MapElem<Symbol*,Symbol*> SymbolMapElem;
+
+extern void update_symbols(BaseAST* ast, SymbolMap* map);
+
 extern Vec<BaseAST*> gAsts;
 extern Vec<FnSymbol*> gFns;
 extern Vec<TypeSymbol*> gTypes;
+
+void cleanAst(void);
+void destroyAst(void);
+void printStatistics(const char* pass);
 
 /**
  **  Note: update AstTag and astTagName together always.
@@ -58,9 +61,22 @@ enum AstTag {
 
 extern const char* astTagName[];
 
-#define COPY_DEF(type)                                                  \
-  virtual type* copy(ASTMap* map = NULL, bool internal = false) {       \
-    ASTMap localMap;                                                    \
+#define DECLARE_COPY(type)                                              \
+  virtual type* copy(SymbolMap* map = NULL, bool internal = false) {    \
+    SymbolMap localMap;                                                 \
+    if (!map)                                                           \
+      map = &localMap;                                                  \
+    type* _this = copyInner(map);                                       \
+    _this->lineno = lineno;                                             \
+    if (!internal)                                                      \
+      update_symbols(_this, map);                                       \
+    return _this;                                                       \
+  }                                                                     \
+  virtual type* copyInner(SymbolMap* map)
+
+#define DECLARE_SYMBOL_COPY(type)                                       \
+  virtual type* copy(SymbolMap* map = NULL, bool internal = false) {    \
+    SymbolMap localMap;                                                 \
     if (!map)                                                           \
       map = &localMap;                                                  \
     type* _this = copyInner(map);                                       \
@@ -71,7 +87,7 @@ extern const char* astTagName[];
       update_symbols(_this, map);                                       \
     return _this;                                                       \
   }                                                                     \
-  virtual type* copyInner(ASTMap* map)
+  virtual type* copyInner(SymbolMap* map)
 
 #define COPY_INT(c) (c ? c->copy(map, true) : NULL)
 
@@ -89,7 +105,7 @@ class BaseAST {
 
   BaseAST(AstTag type = BASE);
   virtual ~BaseAST() { }
-  COPY_DEF(BaseAST);
+  DECLARE_COPY(BaseAST);
 
   virtual void verify(); 
 

@@ -96,7 +96,7 @@ void buildDefUseSets(Vec<Symbol*>& syms,
                      Vec<SymExpr*>& useSet);
 
 // update symbols in ast with map
-void update_symbols(BaseAST* ast, ASTMap* map);
+void update_symbols(BaseAST* ast, SymbolMap* map);
 
 // replaces Fixup
 void remove_help(BaseAST* ast, int dummy=0); // dummy is never used

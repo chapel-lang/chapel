@@ -584,7 +584,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
       if (numCopies <= 0)
         return NULL;
 
-      ASTMap map;
+      Map<Symbol*,Symbol*> map;
       FnSymbol* newFn = fn->copy(&map);
       newFn->isExtern = fn->isExtern; // preserve externess of expanded varargs fn
       newFn->visible = false;
@@ -592,7 +592,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
       Symbol* sym = toSymbol(map.get(def->sym));
       sym->defPoint->replace(new SymExpr(new_IntSymbol(numCopies)));
 
-      ASTMap update;
+      SymbolMap update;
       update.put(sym, new_IntSymbol(numCopies));
       update_symbols(newFn, &update);
 
@@ -638,7 +638,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, tupleCall));
           fn->insertAtHead(new DefExpr(var));
           arg->defPoint->remove();
-          ASTMap update;
+          SymbolMap update;
           update.put(arg, var);
           update_symbols(fn->body, &update);
           if (fn->where) {
@@ -647,7 +647,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
             fn->where->insertAtHead(
                                     new CallExpr(PRIMITIVE_MOVE, var, tupleCall->copy()));
             fn->where->insertAtHead(new DefExpr(var));
-            ASTMap update;
+            SymbolMap update;
             update.put(arg, var);
             update_symbols(fn->where, &update);
           }
@@ -1979,7 +1979,7 @@ insertFormalTemps(FnSymbol* fn) {
       fn->hasPragma("allow ref") ||
       fn->hasPragma("ref"))
     return;
-  ASTMap formals2vars;
+  SymbolMap formals2vars;
   for_formals(formal, fn) {
     if (formalRequiresTemp(formal)) {
       VarSymbol* tmp = new VarSymbol(astr("_formal_tmp_", formal->name));
@@ -1998,9 +1998,9 @@ insertFormalTemps(FnSymbol* fn) {
   }
   if (formals2vars.n > 0) {
     update_symbols(fn->body, &formals2vars);
-    form_Map(ASTMapElem, e, formals2vars) {
+    form_Map(SymbolMapElem, e, formals2vars) {
       ArgSymbol* formal = toArgSymbol(e->key);
-      VarSymbol* tmp = toVarSymbol(e->value);
+      Symbol* tmp = e->value;
       if (formal->intent == INTENT_OUT) {
         if (formal->defaultExpr && formal->defaultExpr->body.tail->typeInfo() != dtNil) {
           BlockStmt* defaultExpr = formal->defaultExpr->copy();
@@ -2057,13 +2057,13 @@ static void fold_param_for(CallExpr* loop) {
   Symbol* index = toSymExpr(index_expr)->var;
   if (stride <= 0) {
     for (int i = high; i >= low; i += stride) {
-      ASTMap map;
+      Map<Symbol*,Symbol*> map;
       map.put(index, new_IntSymbol(i));
       noop->insertBefore(block->copy(&map));
     }
   } else {
     for (int i = low; i <= high; i += stride) {
-      ASTMap map;
+      Map<Symbol*,Symbol*> map;
       map.put(index, new_IntSymbol(i));
       noop->insertBefore(block->copy(&map));
     }

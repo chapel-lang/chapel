@@ -64,7 +64,7 @@ class Symbol : public BaseAST {
   virtual void verify(); 
   virtual bool inTree();
   virtual Type* typeInfo(void);
-  COPY_DEF(Symbol);
+  DECLARE_SYMBOL_COPY(Symbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   virtual bool isConstant(void);
@@ -93,7 +93,7 @@ class VarSymbol : public Symbol {
   VarSymbol(const char* init_name, Type* init_type = dtUnknown);
   ~VarSymbol();
   virtual void verify(); 
-  COPY_DEF(VarSymbol);
+  DECLARE_SYMBOL_COPY(VarSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   bool isConstant(void);
@@ -120,7 +120,7 @@ class ArgSymbol : public Symbol {
             Expr* iVariableExpr = NULL);
 
   virtual void verify(); 
-  COPY_DEF(ArgSymbol);
+  DECLARE_SYMBOL_COPY(ArgSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   bool requiresCPtr(void);
@@ -136,7 +136,7 @@ class TypeSymbol : public Symbol {
  public:
   TypeSymbol(const char* init_name, Type* init_type);
   virtual void verify(); 
-  COPY_DEF(TypeSymbol);
+  DECLARE_SYMBOL_COPY(TypeSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
@@ -179,7 +179,7 @@ class FnSymbol : public Symbol {
   ~FnSymbol();
            
   virtual void verify(); 
-  COPY_DEF(FnSymbol);
+  DECLARE_SYMBOL_COPY(FnSymbol);
   virtual FnSymbol* getFnSymbol(void);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
@@ -218,7 +218,7 @@ class EnumSymbol : public Symbol {
  public:
   EnumSymbol(const char* init_name);
   virtual void verify(); 
-  COPY_DEF(EnumSymbol);
+  DECLARE_SYMBOL_COPY(EnumSymbol);
   void codegenDef(FILE* outfile);
   bool isParameter(void);
 };
@@ -235,7 +235,7 @@ class ModuleSymbol : public Symbol {
   ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock);
   ~ModuleSymbol();
   virtual void verify(); 
-  COPY_DEF(ModuleSymbol);
+  DECLARE_SYMBOL_COPY(ModuleSymbol);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef(FILE* outfile);
 };
@@ -245,7 +245,7 @@ class LabelSymbol : public Symbol {
  public:
   LabelSymbol(const char* init_name);
   virtual void verify(); 
-  COPY_DEF(LabelSymbol);
+  DECLARE_SYMBOL_COPY(LabelSymbol);
   virtual void codegenDef(FILE* outfile);
 };
 

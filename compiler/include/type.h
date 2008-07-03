@@ -52,7 +52,7 @@ class Type : public BaseAST {
   virtual void verify(); 
   virtual bool inTree();
   virtual Type* typeInfo(void);
-  COPY_DEF(Type);
+  DECLARE_COPY(Type);
   void addSymbol(TypeSymbol* newSymbol);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -74,7 +74,7 @@ class EnumType : public Type {
   EnumType();
   ~EnumType();
   virtual void verify(); 
-  COPY_DEF(EnumType);
+  DECLARE_COPY(EnumType);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   void codegenDef(FILE* outfile);
@@ -98,7 +98,7 @@ class ClassType : public Type {
   ClassType(ClassTag initClassTag);
   ~ClassType();
   virtual void verify(); 
-  COPY_DEF(ClassType);
+  DECLARE_COPY(ClassType);
   void addDeclarations(Expr* expr, bool tail = true);
 
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);

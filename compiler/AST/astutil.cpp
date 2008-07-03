@@ -211,31 +211,34 @@ void buildDefUseSets(Vec<Symbol*>& syms,
 }
 
 
-#define XSUB(_x, _t)                               \
-  if (_x) {                                        \
-    if (BaseAST *b = map->get(_x)) {               \
-      if (_t* _y = to##_t(b)) {                    \
-        _x = _y;                                   \
-      } else {                                     \
-        INT_FATAL("Major error in update_symbols"); \
-      }                                            \
-    }                                              \
+#define SUB_SYMBOL(x)                                   \
+  if (x) {                                              \
+    if (Symbol* y = map->get(x)) {                      \
+        x = y;                                          \
+    }                                                   \
   }
 
-void update_symbols(BaseAST* ast, ASTMap* map) {
+#define SUB_TYPE(x)                                     \
+  if (x) {                                              \
+    if (Symbol* y = map->get(x->symbol)) {              \
+      x = y->type;                                      \
+    }                                                   \
+  }
+
+void update_symbols(BaseAST* ast, SymbolMap* map) {
   if (SymExpr* sym_expr = toSymExpr(ast)) {
-    XSUB(sym_expr->var, Symbol);
+    SUB_SYMBOL(sym_expr->var);
   } else if (DefExpr* defExpr = toDefExpr(ast)) {
-    XSUB(defExpr->sym->type, Type);
+    SUB_TYPE(defExpr->sym->type);
   } else if (VarSymbol* ps = toVarSymbol(ast)) {
-    XSUB(ps->type, Type);
+    SUB_TYPE(ps->type);
   } else if (FnSymbol* ps = toFnSymbol(ast)) {
-    XSUB(ps->type, Type);
-    XSUB(ps->retType, Type);
-    XSUB(ps->_this, Symbol);
-    XSUB(ps->_outer, Symbol);
+    SUB_TYPE(ps->type);
+    SUB_TYPE(ps->retType);
+    SUB_SYMBOL(ps->_this);
+    SUB_SYMBOL(ps->_outer);
   } else if (ArgSymbol* ps = toArgSymbol(ast)) {
-    XSUB(ps->type, Type);
+    SUB_TYPE(ps->type);
   }
   AST_CHILDREN_CALL(ast, update_symbols, map);
 }

@@ -34,7 +34,7 @@ class BlockStmt : public Expr {
   BlockStmt(Expr* init_body = NULL, BlockTag init_blockTag = BLOCK_NORMAL);
   virtual ~BlockStmt();
   virtual void verify();
-  COPY_DEF(BlockStmt);
+  DECLARE_COPY(BlockStmt);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   void codegen(FILE* outfile);
 
@@ -55,7 +55,7 @@ class CondStmt : public Expr {
   CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt = NULL);
   Expr* fold_cond_stmt();
   virtual void verify();
-  COPY_DEF(CondStmt);
+  DECLARE_COPY(CondStmt);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
 
   void codegen(FILE* outfile);
@@ -78,7 +78,7 @@ class GotoStmt : public Expr {
   GotoStmt(GotoTag init_gotoTag, Symbol* init_label);
   GotoStmt(GotoTag init_gotoTag, SymExpr* init_label);
   virtual void verify();
-  COPY_DEF(GotoStmt);
+  DECLARE_COPY(GotoStmt);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   void codegen(FILE* outfile);
 };

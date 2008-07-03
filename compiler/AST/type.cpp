@@ -54,7 +54,7 @@ Type* Type::typeInfo(void) {
 
 
 Type*
-Type::copyInner(ASTMap* map) {
+Type::copyInner(SymbolMap* map) {
   INT_FATAL(this, "Illegal call to Type::copy");
   return NULL;
 }
@@ -129,7 +129,7 @@ void EnumType::verify() {
 
 
 EnumType*
-EnumType::copyInner(ASTMap* map) {
+EnumType::copyInner(SymbolMap* map) {
   EnumType* copy = new EnumType();
   for_enums(def, this)
     copy->constants.insertAtTail(COPY_INT(def));
@@ -213,7 +213,7 @@ void ClassType::verify() {
 
 
 ClassType*
-ClassType::copyInner(ASTMap* map) {
+ClassType::copyInner(SymbolMap* map) {
   ClassType* copy_type = new ClassType(classTag);
   copy_type->isIterator = isIterator;
   copy_type->outer = outer;

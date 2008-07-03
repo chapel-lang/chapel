@@ -1040,9 +1040,9 @@ static void
 clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                           DefExpr* def,
                                           int width) {
-  ASTMap map;
+  Map<Symbol*,Symbol*> map;
   FnSymbol* newfn = fn->copy(&map);
-  Symbol* newsym = toSymbol(map.get(def->sym));
+  Symbol* newsym = map.get(def->sym);
   newsym->defPoint->replace(new SymExpr(new_IntSymbol(width)));
   Vec<BaseAST*> asts;
   collect_asts(newfn, asts);
@@ -1236,7 +1236,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, fn->_this, call));
   fn->insertAtHead(new DefExpr(fn->_this));
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new SymExpr(fn->_this)));
-  ASTMap map;
+  SymbolMap map;
   map.put(fn->getFormal(2), fn->_this);
   fn->formals.get(2)->remove();
   fn->formals.get(1)->remove();

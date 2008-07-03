@@ -197,7 +197,7 @@ Type* Symbol::typeInfo(void) {
 
 
 Symbol*
-Symbol::copyInner(ASTMap* map) {
+Symbol::copyInner(SymbolMap* map) {
   INT_FATAL(this, "Illegal call to Symbol::copy");
   return NULL;
 }
@@ -284,7 +284,7 @@ void VarSymbol::verify() {
 
 
 VarSymbol*
-VarSymbol::copyInner(ASTMap* map) {
+VarSymbol::copyInner(SymbolMap* map) {
   VarSymbol* newVarSymbol = new VarSymbol(name, type);
   newVarSymbol->isConfig = isConfig;
   newVarSymbol->isParam = isParam;
@@ -442,7 +442,7 @@ void ArgSymbol::verify() {
 
 
 ArgSymbol*
-ArgSymbol::copyInner(ASTMap* map) {
+ArgSymbol::copyInner(SymbolMap* map) {
   ArgSymbol *ps = new ArgSymbol(intent, name, type, COPY_INT(typeExpr),
                                 COPY_INT(defaultExpr), COPY_INT(variableExpr));
   ps->cname = cname;
@@ -525,7 +525,7 @@ void TypeSymbol::verify() {
 
 
 TypeSymbol*
-TypeSymbol::copyInner(ASTMap* map) {
+TypeSymbol::copyInner(SymbolMap* map) {
   Type* new_type = COPY_INT(type);
   TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
   new_type->addSymbol(new_type_symbol);
@@ -626,7 +626,7 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 
 
 FnSymbol*
-FnSymbol::copyInner(ASTMap* map) {
+FnSymbol::copyInner(SymbolMap* map) {
   FnSymbol* copy = new FnSymbol(name);
   for_formals(formal, this) {
     copy->insertFormalAtTail(COPY_INT(formal->defPoint));
@@ -820,7 +820,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
   if (fnTag != FN_ITERATOR)
     wrapper->retType = retType;
   wrapper->cname = astr("_default_wrap_", cname);
-  ASTMap copy_map;
+  SymbolMap copy_map;
   bool specializeDefaultConstructor =
     hasPragma("default constructor") &&
     !_this->type->symbol->hasPragma("sync") &&
@@ -952,7 +952,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
 
   // Make the line numbers match the numbers from the formals they map to
   for_formals(formal, this) {
-    if (Symbol* sym = toSymbol(copy_map.get(formal))) {
+    if (Symbol* sym = copy_map.get(formal)) {
       sym->defPoint->lineno = formal->lineno;
       sym->lineno = formal->lineno;
     }
@@ -1084,8 +1084,7 @@ copyGenericSub(ASTMap& subs, FnSymbol* root, FnSymbol* fn, BaseAST* key, BaseAST
 static FnSymbol*
 instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
                      Map<Symbol*,Symbol*>* paramMap, CallExpr* call) {
-  ASTMap map;
-
+  Map<Symbol*,Symbol*> map;
   FnSymbol* clone = fn->copy(&map);
   clone->isGeneric = false;
   clone->visible = false;
@@ -1133,12 +1132,11 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
   }
 
   // update body of constructors with a return type substitution
-  ASTMap subs;
   if (newType) {
-    subs.put(fn->retType, newType);
+    SymbolMap subs;
     subs.put(fn->retType->symbol, newType->symbol);
+    update_symbols(clone, &subs);
   }
-  update_symbols(clone, &subs);
 
   for_formals(formal, fn) {
     ArgSymbol* cloneFormal = toArgSymbol(map.get(formal));
@@ -1714,7 +1712,7 @@ void EnumSymbol::verify() {
 
 
 EnumSymbol*
-EnumSymbol::copyInner(ASTMap* map) {
+EnumSymbol::copyInner(SymbolMap* map) {
   return new EnumSymbol(name);
 }
 
@@ -1750,7 +1748,7 @@ void ModuleSymbol::verify() {
 
 
 ModuleSymbol*
-ModuleSymbol::copyInner(ASTMap* map) {
+ModuleSymbol::copyInner(SymbolMap* map) {
   INT_FATAL(this, "Illegal call to ModuleSymbol::copy");
   return NULL;
 }
@@ -1807,7 +1805,7 @@ void LabelSymbol::verify() {
 }
 
 LabelSymbol* 
-LabelSymbol::copyInner(ASTMap* map) {
+LabelSymbol::copyInner(SymbolMap* map) {
   LabelSymbol* copy = new LabelSymbol(name);
   copy->cname = cname;
   return copy;

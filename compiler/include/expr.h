@@ -27,7 +27,7 @@ class Expr : public BaseAST {
 
   Expr(AstTag astTag = EXPR);
   virtual ~Expr() { }
-  COPY_DEF(Expr);
+  DECLARE_COPY(Expr);
   virtual void callReplaceChild(Expr* new_ast);
   virtual void verify();
   virtual ASTContext getContext(void);
@@ -58,7 +58,7 @@ class DefExpr : public Expr {
           BaseAST* initInit = NULL,
           BaseAST* initExprType = NULL);
   virtual void verify(); 
-  COPY_DEF(DefExpr);
+  DECLARE_COPY(DefExpr);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
 
   Type* typeInfo(void);
@@ -73,7 +73,7 @@ class SymExpr : public Expr {
   const char* unresolved;
   SymExpr(Symbol* init_var);
   SymExpr(const char* init_var);
-  COPY_DEF(SymExpr);
+  DECLARE_COPY(SymExpr);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void verify(); 
 
@@ -105,7 +105,7 @@ class CallExpr : public Expr {
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
   ~CallExpr();
   virtual void verify(); 
-  COPY_DEF(CallExpr);
+  DECLARE_COPY(CallExpr);
 
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
 
@@ -132,7 +132,7 @@ class NamedExpr : public Expr {
   Expr* actual;
   NamedExpr(const char* init_name, Expr* init_actual);
   virtual void verify(); 
-  COPY_DEF(NamedExpr);
+  DECLARE_COPY(NamedExpr);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   Type* typeInfo(void);
   void codegen(FILE* outfile);

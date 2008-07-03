@@ -34,7 +34,7 @@ Expr* Expr::getStmtExpr() {
 
 
 Expr*
-Expr::copyInner(ASTMap* map) {
+Expr::copyInner(SymbolMap* map) {
   INT_FATAL(this, "Illegal call to Expr::copy");
   return NULL;
 }
@@ -238,7 +238,7 @@ SymExpr::verify() {
 
 
 SymExpr*
-SymExpr::copyInner(ASTMap* map) {
+SymExpr::copyInner(SymbolMap* map) {
   if (var)
     return new SymExpr(var);
   else
@@ -346,7 +346,7 @@ void DefExpr::verify() {
 
 
 DefExpr*
-DefExpr::copyInner(ASTMap* map) {
+DefExpr::copyInner(SymbolMap* map) {
   return new DefExpr(COPY_INT(sym), COPY_INT(init), COPY_INT(exprType));
 }
 
@@ -519,7 +519,7 @@ void CallExpr::verify() {
 
 
 CallExpr*
-CallExpr::copyInner(ASTMap* map) {
+CallExpr::copyInner(SymbolMap* map) {
   CallExpr *_this = 0;
   if (primitive)
     _this = new CallExpr(primitive);
@@ -2069,7 +2069,7 @@ void NamedExpr::verify() {
 
 
 NamedExpr*
-NamedExpr::copyInner(ASTMap* map) {
+NamedExpr::copyInner(SymbolMap* map) {
   return new NamedExpr(astr(name), COPY_INT(actual));
 }
 

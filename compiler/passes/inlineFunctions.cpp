@@ -7,39 +7,6 @@
 
 
 //
-// copyMap is useful for debugging when trying to determine where an
-// expression or symbol came from; since it may be copied many times
-// when inlining functions inside functions inside functions ..., the
-// copyMap points to the original, a BaseAST that existed before this
-// pass even started.
-//
-// example: If you want to see where a CallExpr, say with id ==
-// 813899, came from before inlining, just trace it back in the
-// copyMap when breaking at the end of inlineFunctions.  You need to
-// break before the next pass because the inlined functions will be
-// deleted.  To trace it back, use the following:
-//
-// (gdb) p copyMap.get(ast(813899))->id
-// 809206
-// (gdb) p copyMap.get(ast(809206))->id
-// 809157
-// (gdb) p copyMap.get(ast(809157))->id
-// 663565
-//
-// Then to see the ast in the original function, use
-//
-// (gdb) lv ast(663565)
-//
-// To make the copyMap active, uncomment the line
-//
-//#define _INLINE_FUNCTIONS_USE_COPY_MAP_
-//
-#ifdef _INLINE_FUNCTIONS_USE_COPY_MAP_
-static Map<BaseAST*,BaseAST*> copyMap;
-#endif
-
-
-//
 // inlines the function called by 'call' at that call site
 //
 static void
@@ -52,7 +19,7 @@ inlineCall(CallExpr* call) {
   //
   // calculate a map from actual symbols to formal symbols
   //
-  ASTMap map;
+  SymbolMap map;
   for_formals_actuals(formal, actual, call) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
@@ -63,12 +30,6 @@ inlineCall(CallExpr* call) {
   // copy function body, inline it at call site, and update return
   //
   BlockStmt* block = fn->body->copy(&map);
-
-#ifdef _INLINE_FUNCTIONS_USE_COPY_MAP_
-  form_Map(ASTMapElem, e, map) {
-    copyMap.put(e->value, e->key);
-  }
-#endif
 
   reset_line_info(block, call->lineno);
   CallExpr* return_stmt = toCallExpr(block->body.last());

@@ -50,7 +50,7 @@ void BlockStmt::verify() {
 
 
 BlockStmt*
-BlockStmt::copyInner(ASTMap* map) {
+BlockStmt::copyInner(SymbolMap* map) {
   BlockStmt* _this = new BlockStmt();
   _this->blockTag = blockTag;
   for_alist(expr, body)
@@ -234,7 +234,7 @@ void CondStmt::verify() {
 
 
 CondStmt*
-CondStmt::copyInner(ASTMap* map) {
+CondStmt::copyInner(SymbolMap* map) {
   return new CondStmt(COPY_INT(condExpr),
                       COPY_INT(thenStmt),
                       COPY_INT(elseStmt));
@@ -312,7 +312,7 @@ void GotoStmt::verify() {
 
 
 GotoStmt*
-GotoStmt::copyInner(ASTMap* map) {
+GotoStmt::copyInner(SymbolMap* map) {
   return new GotoStmt(gotoTag, COPY_INT(label));
 }
 

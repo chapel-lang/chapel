@@ -145,7 +145,7 @@ void insertLineNumbers() {
           fn->insertAtHead(new DefExpr(filenameLocal));
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, linenoLocal, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, argClassFormal->sym, linenoField)));
           fn->insertAtHead(new DefExpr(linenoLocal));
-          ASTMap update;
+          SymbolMap update;
           update.put(filenameFormal->sym, filenameLocal);
           update.put(linenoFormal->sym, linenoLocal);
           update_symbols(fn->body, &update);
