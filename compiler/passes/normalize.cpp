@@ -517,6 +517,8 @@ void normalize(BaseAST* base) {
 
 
 static void normalize_returns(FnSymbol* fn) {
+  currentLineno = fn->lineno;
+
   Vec<BaseAST*> asts;
   Vec<CallExpr*> rets;
   collect_asts(fn, asts);
@@ -562,6 +564,7 @@ static void normalize_returns(FnSymbol* fn) {
   }
   bool label_is_used = false;
   forv_Vec(CallExpr, ret, rets) {
+    currentLineno = ret->lineno;
     if (retval) {
       Expr* ret_expr = ret->get(1);
       ret_expr->remove();

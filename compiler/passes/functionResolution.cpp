@@ -1632,6 +1632,7 @@ isTypeExpr(Expr* expr) {
 //
 static void
 resolveDefaultGenericType(CallExpr* call) {
+  currentLineno = call->lineno;
   for_actuals(actual, call) {
     if (NamedExpr* ne = toNamedExpr(actual))
       actual = ne->actual;
