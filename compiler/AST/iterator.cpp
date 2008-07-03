@@ -426,6 +426,67 @@ addLocalVariablesLiveAtYields(Vec<Symbol*>& syms, FnSymbol* fn) {
 
   forv_Vec(Vec<bool>, out, OUT)
     delete out;
+
+
+  //
+  // If we have live references to local variables, then we need to
+  // make sure that we add these local variables to the iterator class
+  // along with the reference.
+  //
+  // See test/functions/deitz/iterators/test_fock_simplification.chpl
+  // and make sure that the iterator foo is not inlined even though
+  // the iterators for the loops inside this one are inlined.  At the
+  // time of this comment, the two yields kept foo from being
+  // inlined.
+  //
+  Symbol* ret = fn->getReturnSymbol();
+  bool foundRef = false;
+  forv_Vec(Symbol, sym, syms) {
+    if (sym != ret && !isArgSymbol(sym) && sym->type->symbol->hasPragma("ref")) {
+      foundRef = true;
+    }
+  }
+  if (foundRef) {
+    Map<Symbol*,Vec<SymExpr*>*> defMap;
+    Map<Symbol*,Vec<SymExpr*>*> useMap;
+    buildDefUseMaps(fn, defMap, useMap);
+    forv_Vec(Symbol, sym, syms) {
+      if (sym != ret && !isArgSymbol(sym) && sym->type->symbol->hasPragma("ref")) {
+        Vec<SymExpr*>* defs = defMap.get(sym);
+        if (defs->n != 1) {
+          INT_FATAL(sym, "invalid assumption about reference");
+        }
+        CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
+        INT_ASSERT(move);
+        INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
+        SymExpr* se = toSymExpr(move->get(2));
+        CallExpr* call = toCallExpr(move->get(2));
+        if (se) {
+          INT_ASSERT(se->var->type->symbol->hasPragma("ref"));
+          if (se->var->defPoint->parentSymbol == fn) {
+            syms.add_exclusive(se->var);
+          }
+        } else if (call->isPrimitive(PRIMITIVE_SET_REF) ||
+                   call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+                   call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+          SymExpr* rhs = toSymExpr(call->get(1));
+          INT_ASSERT(rhs);
+          syms.add_exclusive(rhs->var);
+        } else if (FnSymbol* fn = call->isResolved()) {
+          for_actuals(actual, call) {
+            SymExpr* se = toSymExpr(actual);
+            INT_ASSERT(se);
+            if (se->var->defPoint->parentSymbol == fn) {
+              syms.add_exclusive(se->var);
+            }
+          }
+        } else {
+          INT_FATAL(sym, "invalid assumption about reference");
+        }
+      }
+    }
+    freeDefUseMaps(defMap, useMap);
+  }
 }
 
 
