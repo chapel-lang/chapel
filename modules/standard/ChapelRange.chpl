@@ -298,6 +298,11 @@ def range.member(i: eltType) {
   }
 }
 
+def range.order(i: eltType) {
+  if (!member(i)) then return (-1):eltType;
+  return (i-low)/abs(stride);
+}
+
 
 //
 // returns true if other is in bounds of this for all specified

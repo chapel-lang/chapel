@@ -965,6 +965,20 @@ Returns whether or not index \chpl{i} is a member of the domain's
 index set.
 \end{protobody}
 
+\begin{protohead}
+def $Domain$.order(i: index($Domain$)): dim_type
+\end{protohead}
+\begin{protobody}
+If \chpl{i} is a member of the domain, returns the ordinal value of
+\chpl{i} using a total ordering of the domain's indices using 0-based
+indexing.  Otherwise, it returns \chpl{(-1):dim_type}.  For arithmetic
+domains, this ordering will be based on a row-major ordering of the
+indices; for other domains, the ordering may be
+implementation-dependent and unstable as elements are added and
+removed from the domain.
+\end{protobody}
+
+
 \subsubsection{Predefined Functions and Methods on Arithmetic Domains}
 
 We expect that this list of predefined functions and methods will
@@ -1011,6 +1025,15 @@ def $Domain$.high: index($Domain$)   // for multidimensional domains
 Returns the high index of the domain as a scalar value for 1D domains
 and as an index value for a multidimensional domain.
 \end{protobody}
+
+\begin{protohead}
+def $Domain$.position(i: index($Domain$)): rank*dim_type
+\end{protohead}
+\begin{protobody}
+Returns a tuple holding the order of index i in each range defining
+the domain.
+\end{protobody}
+
 
 \subsection{Predefined Functions and Methods on Arrays}
 \index{arrays!predefined functions}

@@ -86,6 +86,36 @@ class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
     return true;
   }
 
+  def order(ind: idxType) where rank == 1 {
+    return ranges(1).order(ind);
+  }
+
+  def order(ind: rank*idxType) {
+    var totOrder: idxType;
+    var blk: idxType = 1;
+    for param d in 1..rank by -1 {
+      const orderD = ranges(d).order(ind(d));
+      if (orderD == -1) then return orderD;
+      totOrder += orderD * blk;
+      blk *= ranges(d).length;
+    }
+    return totOrder;
+  }
+
+  def position(ind: idxType) where rank == 1 {
+    var pos: 1*idxType;
+    pos(1) = order(ind);
+    return pos;
+  }
+
+  def position(ind: rank*idxType) {
+    var pos: rank*idxType;
+    for d in 1..rank {
+      pos(d) = ranges(d).order(ind(d));
+    }
+    return pos;
+  }
+
   def dim(d : int)
     return ranges(d);
 

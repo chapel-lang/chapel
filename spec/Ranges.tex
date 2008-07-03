@@ -278,7 +278,7 @@ var r3 = r[1.. by 2];
 \index{ranges!predefined functions}
 
 \begin{protohead}
-def $range$.member(i: this.eltType): bool
+def $range$.member(i: eltType): bool
 \end{protohead}
 \begin{protobody}
 Returns whether or not \chpl{i} is in the range.
@@ -290,3 +290,24 @@ def $range$.member(other: range): bool
 \begin{protobody}
 Returns whether or not every element in other is also in this.
 \end{protobody}
+
+\begin{protohead}
+def $range$.order(i: eltType): eltType
+\end{protohead}
+\begin{protobody}
+If \chpl{i} is a member of the range, returns an integer value giving
+the ordinal value of \chpl{i} within the range using 0-based indexing.
+Otherwise, it returns \chpl{(-1):eltType}.
+\end{protobody}
+
+\begin{example}
+The following calls show the order of index 4 in each of the given
+ranges:
+\begin{chapel}
+(0..10).order(4) == 4
+(1..10).order(4) == 3
+(3..5).order(4) == 1
+(0..10 by 2).order(4) == 2
+(3..5 by 2).order(4) == -1
+\end{chapel}
+\end{example}

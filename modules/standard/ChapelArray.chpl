@@ -217,6 +217,14 @@ record _domain {
     return _value.member(i);
   }
 
+  def order(i) {
+    return _value.order(i);
+  }
+
+  def position(i) {
+    return _value.position(i);
+  }
+
   def expand(i: int ...rank)
     return expand(i);
 
