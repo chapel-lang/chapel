@@ -8,6 +8,9 @@
 
 config param debugBradsBlock1D = false;
 
+// TODO: remove solo?  Make the iterator with no IteratorType argument
+// the leader?
+
 // TODO: This would need to be moved somewhere more standard
 enum IteratorType { solo, leader, follower };
 
@@ -35,10 +38,7 @@ class Block1DDist {
   //
   // an associative domain over the set of target locales
   //
-  // TODO: Try to write this a different way without using
-  // associative domains/arrays of locales
-  //
-  const targetLocDom: domain(locale) = targetLocs;
+  const targetLocDom = targetLocs.domain;
 
   //
   // an associative array of local distribution class descriptors --
@@ -49,16 +49,27 @@ class Block1DDist {
   // an on-clause at the expression list to make this work.
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
-  // (and also to be able to map from an index back to an order in a
-  // domain in order to avoid the need for the zippered iteration?)
   //
-  var locDist: [targetLocDom] LocBlock1DDist(glbIdxType);
+  // WANT:
+  //
+  /*
+  const locDist: [loc in targetLocDom] LocBlock1DDist(glbIdxType)
+                   = on targetLocs(loc) do 
+                       new LocBlock1DDist(glbIdxType, targetLocDom.order(loc), this);
+  */
+  //
+  // but this doesn't work yet because an array forall initializer
+  // apparently can't refer to a local member domain.
+  //
+  const locDist: [targetLocDom] LocBlock1DDist(glbIdxType);
 
   def initialize() {
-    for (loc, locid) in (targetLocs, 0..) do
-      on loc do
-        locDist(loc) = new LocBlock1DDist(glbIdxType, locid, this);
+    for locid in targetLocDom do
+      on targetLocs(locid) do
+        locDist(locid) = new LocBlock1DDist(glbIdxType, locid, this);
   }
+  // end rewrite
+
 
   //
   // Create a new domain over this distribution with the given index
@@ -75,22 +86,26 @@ class Block1DDist {
   // compute what chunk of inds is owned by a given locale -- assumes
   // it's being called on the locale in question
   //
-  def getChunk(inds) {
+  def getChunk(inds, locid) {
     // use domain slicing to get the intersection between what the
     // locale owns and the domain's index set
 
     // TODO: Should this be able to be written as myChunk[inds] ???
-    return locDist(here).myChunk(inds.dim(1));
+    return locDist(locid).myChunk(inds.dim(1));
   }
   
   //
   // Determine which locale owns a particular index
   //
-  def ind2loc(ind: glbIdxType) {
+  def ind2locInd(ind: glbIdxType) {
     const indFrom0 = ind - bbox.low;
     const locFrom0 = (indFrom0 * targetLocs.numElements) / bbox.numIndices;
     const locInd = locFrom0: index(targetLocs.domain) + targetLocs.domain.low;
-    return targetLocs(locInd);
+    return locInd;
+  }
+
+  def ind2loc(ind: glbIdxType) {
+    return targetLocs(ind2locInd(ind));
   }
 }
 
@@ -122,13 +137,14 @@ class LocBlock1DDist {
   // Arguments:
   //
   def LocBlock1DDist(type glbIdxType, 
-                     locid: int, // the locale ID as a 0-based integer
+                     locid: int, // the locale index from the target domain
                      dist: Block1DDist(glbIdxType) // reference to glob dist
                      ) {
     const lo = dist.bbox.low;
     const hi = dist.bbox.high;
     const numelems = hi - lo + 1;
-    const numlocs = dist.targetLocs.numElements;
+    const numlocs = dist.targetLocDom.numIndices;
+    const locid0 = dist.targetLocDom.order(locid); // 0-based locale ID
     const blo = if (locid == 0) then min(glbIdxType)
                 else procToData((numelems: real * locid) / numlocs, lo);
     const bhi = if (locid == numlocs - 1) then max(glbIdxType)
@@ -174,12 +190,12 @@ class Block1DDom {
   var locDoms: [dist.targetLocDom] LocBlock1DDom(glbIdxType, lclIdxType);
 
   def initialize() {
-    for loc in dist.targetLocs do
-      on loc do
-        locDoms(loc) = new LocBlock1DDom(glbIdxType, lclIdxType, this, 
-                                        dist.getChunk(whole));
+    for locid in dist.targetLocDom do
+      on dist.targetLocs(locid) do
+        locDoms(locid) = new LocBlock1DDom(glbIdxType, lclIdxType, this, 
+                                           dist.getChunk(whole, locid));
     if debugBradsBlock1D then
-      [loc in dist.targetLocs] writeln(loc, " owns ", locDoms(loc));
+      [loc in dist.targetLocDom] writeln(loc, " owns ", locDoms(loc));
   }
 
   //
@@ -238,6 +254,9 @@ class Block1DDom {
     // TODO: Need to get an on clause into here somehow
     //
     // TODO: Abstract this subtraction of low into a function?
+    // Note relationship between this operation and the
+    // order/position functions -- any chance for creating similar
+    // support? (esp. given how frequent this seems likely to be?)
     //
     for locDom in locDoms do
       yield locDom.myBlock - whole.low;
@@ -248,6 +267,9 @@ class Block1DDom {
         where iterator == IteratorType.follower {
     //
     // TODO: Abstract this addition of low into a function?
+    // Note relationship between this operation and the
+    // order/position functions -- any chance for creating similar
+    // support? (esp. given how frequent this seems likely to be?)
     //
     // TODO: Is there some clever way to invoke the leader/follower
     // iterator on the local blocks in here such that the per-core
@@ -394,23 +416,23 @@ class Block1DArr {
   var locArr: [dom.dist.targetLocDom] LocBlock1DArr(glbIdxType, lclIdxType, elemType);
 
   def initialize() {
-    for loc in dom.dist.targetLocs do
-      on loc do
-        locArr(loc) = new LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDoms(loc));
+    for locid in dom.dist.targetLocDom do
+      on dom.dist.targetLocs(locid) do
+        locArr(locid) = new LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDoms(locid));
   }
 
   //
   // the global accessor for the array
   //
   def this(i: glbIdxType) var {
-    return locArr(dom.dist.ind2loc(i))(i);
+    return locArr(dom.dist.ind2locInd(i))(i);
   }
 
   //
   // the iterator over the array's elements, currently sequential
   //
   def these() var {
-    for loc in dom.dist.targetLocs {
+    for loc in dom.dist.targetLocDom {
       // May want to do something like:     
       // on this do
       // But can't currently have yields in on clauses
@@ -452,7 +474,7 @@ class Block1DArr {
   //
   def writeThis(x: Writer) {
     var first = true;
-    for loc in dom.dist.targetLocs {
+    for loc in dom.dist.targetLocDom {
       // May want to do something like the following:
       //      on loc {
       // but it causes deadlock -- see writeThisUsingOn.chpl
