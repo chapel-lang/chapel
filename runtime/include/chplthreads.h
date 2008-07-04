@@ -12,8 +12,8 @@
 extern int32_t maxThreads;
 
 // Mutexes
-// (These are only needed in chplmem.c - perhaps chpl_sync_lock and chpl_sync_unlock
-// should be used instead?)
+// (These are only needed in chplmem.c - perhaps chpl_sync_lock and
+// chpl_sync_unlock should be used instead?)
 
 typedef chpl_mutex_t* chpl_mutex_p;
 
@@ -71,11 +71,14 @@ void      chpl_set_serial(chpl_bool);      // set dynamic serial state true or f
 typedef void* (*chpl_threadfp_t)(void*);   // function pointer
 typedef void* chpl_threadarg_t;            // function argument
 
+typedef struct chpl_task*        chpl_task_p;
 typedef struct chpl_task_list*   chpl_task_list_p;
 typedef struct chpl_pool_struct* chpl_task_pool_p;
 
-void chpl_add_to_task_list (chpl_threadfp_t, chpl_threadarg_t,
-                            chpl_task_list_p *, int32_t, // locale where task list resides
+void chpl_add_to_task_list (chpl_threadfp_t  fun,
+                            chpl_threadarg_t arg,
+                            chpl_task_list_p *,
+                            int32_t, // locale where task list resides
                             chpl_bool); // whether to call chpl_begin
 void chpl_process_task_list (chpl_task_list_p);
 void chpl_execute_tasks_in_list (chpl_task_list_p);
@@ -84,8 +87,7 @@ void chpl_free_task_list (chpl_task_list_p);
 // Fork one thread.  Do not wait.  Used to implement Chapel's begin statement.
 // Returns a pointer to the task pool entry.
 chpl_task_pool_p
-chpl_begin (chpl_threadfp_t,   // function to fork
-            chpl_threadarg_t,  // function arg
+chpl_begin (chpl_task_p,
             chpl_bool,         // ignore_serial = force spawning task regardless
                                // of serial state; as in the case of calling
                                // for on-statement implementation
