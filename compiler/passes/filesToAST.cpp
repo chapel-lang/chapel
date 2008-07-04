@@ -31,6 +31,7 @@ static void parseStandardModules(void) {
     parseStandardModule("ChapelRange.chpl");
     domainModule = parseStandardModule("ChapelArray.chpl");
     parseStandardModule("ChapelUtil.chpl");
+    parseStandardModule("ChapelRuntime.chpl");
     parseStandardModule("SingleLocaleArithmetic.chpl");
     parseStandardModule("SingleLocaleAssociative.chpl");
     parseStandardModule("SingleLocaleSparse.chpl");
