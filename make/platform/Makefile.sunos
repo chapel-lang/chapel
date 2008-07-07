@@ -12,3 +12,8 @@ RUNTIME_CFLAGS += -U__STRICT_ANSI__
 # seemingly necessary to get INT64_MAX and the like
 #
 GEN_CFLAGS +=  -U__STRICT_ANSI__
+
+#
+#
+#
+ARMCI_PLATFORM_SPECIFIC_LIBS = -lsocket

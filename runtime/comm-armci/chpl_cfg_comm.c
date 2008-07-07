@@ -169,7 +169,6 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
   // I believe)
 
   int nprocs, me;
-  void **ptrs;
   armci_size_t sz;
 
   if (runInGDB) {
