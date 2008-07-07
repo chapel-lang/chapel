@@ -19,7 +19,7 @@ precision issue, due to user code changing (07/01/08)
 [Error matching program output for
 studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
 
-out-of-bounds errors (07/01/08) -- gasnet, intel, pgi, pathscale
+out-of-bounds errors (07/01/08) -- gasnet
 ----------------------------------------------------------------
 [Error matching program output for users/shetag/fock/fock-3-blc]
 [Error matching program output for users/shetag/fock/fock-dyn-prog-pool]
@@ -100,285 +100,25 @@ opts-specific tests
 (Example runs: 0)
 
 
-(Full run: 196)
+(Full run: 59)
 
 --no-dead-code-elimination
 --------------------------
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
-[Summary: #Successes = 1975 | #Failures = 3 | #Futures = 0]
-
---no-inline-iterators
----------------------
-[Error matching program output for
-functions/deitz/iterators/test_zip_check1]
-[Error matching program output for
-functions/deitz/iterators/test_zip_check2]
-[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for
-types/range/deitz/test_range_iterate_error]
-[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
-
---no-live-analysis
-------------------
-[Error matching program output for arrays/bradc/paulslice]
-[Error matching program output for arrays/bradc/slices/fftSlice]
-[Error matching program output for arrays/bradc/slices/sliceInt64WithInt]
-[Error matching program output for arrays/bradc/slices/sliceStridedArray]
-[Error matching program output for arrays/deitz/test_plus_assign_iter]
-[Error matching program output for arrays/waynew/init1]
-[Error matching program output for arrays/waynew/init2]
-[Error matching program output for associative/waynew/indef8-fail2]
-[Error matching program output for associative/waynew/indef8]
-[Error matching program output for
-classes/bradc/arrayInClass/genericArrayInClass-otharrs]
-[Error matching program output for domains/deitz/test_domain_reassign3]
-[Error matching program output for functions/deitz/test_square2]
-[Error matching program output for
-functions/deitz/iterators/test_iterator_local_vars_same_name]
-[Error matching program output for npb/is/diten/is]
-[Error matching program output for npb/is/diten/is_mt]
-[Error matching program output for npb/is/diten/is_no_buckets]
-[Error matching program output for puzzles/deitz/histogram]
-[Error matching program output for release/examples/hpcc/fft]
-[Error matching program output for studies/cholesky/marybeth/blockCholesky]
-[Error matching program output for studies/hpcc/FFT/fft-candidate-2d]
-[Error matching program output for studies/hpcc/FFT/fft-hpcc06-mta]
-[Error matching program output for studies/hpcc/FFT/fft-hpcc06]
-[Error matching program output for studies/hpcc/FFT/fft-testPow4]
-[Error matching program output for studies/hpcc/FFT/bradc/fft]
-[Error matching program output for studies/hpcc/FFT/marybeth/fft-test-even]
-[Error matching program output for studies/hpcc/FFT/marybeth/fft]
-[Error matching program output for studies/hpcc/FFT/marybeth/fft2d]
-[Error matching program output for
-studies/madness/aniruddha/madchap/test_gaxpy]
-[Error matching program output for
-studies/madness/aniruddha/madchap/test_likepy]
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for studies/madness/common/test_gaxpy]
-[Error matching program output for studies/madness/common/test_likepy]
-[Error matching program output for
-studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching program output for
-studies/madness/dinan/mad_chapel/test_likepy]
-[Summary: #Successes = 1968 | #Failures = 34 | #Futures = 0]
-
---baseline --copy-propagation
------------------------------
-[Error matching program output for
-functions/deitz/iterators/test_zip_check1]
-[Error matching program output for
-functions/deitz/iterators/test_zip_check2]
-[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for
-types/range/deitz/test_range_iterate_error]
-[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
-
---baseline --dead-code-elimination
-----------------------------------
-[Error matching program output for
-functions/deitz/iterators/test_zip_check1]
-[Error matching program output for
-functions/deitz/iterators/test_zip_check2]
-[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for
-types/range/deitz/test_range_iterate_error]
-[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
-
---baseline --inline
--------------------
-[Error matching program output for
-functions/deitz/iterators/test_zip_check1]
-[Error matching program output for
-functions/deitz/iterators/test_zip_check2]
-[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for
-types/range/deitz/test_range_iterate_error]
-[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
-
---baseline --inline-iterators
------------------------------
-[Error matching program output for arrays/bradc/paulslice]
-[Error matching program output for arrays/bradc/slices/fftSlice]
-[Error matching program output for arrays/bradc/slices/sliceInt64WithInt]
-[Error matching program output for arrays/bradc/slices/sliceStridedArray]
-[Error matching program output for arrays/deitz/matrix]
-[Error matching program output for arrays/deitz/test_plus]
-[Error matching program output for arrays/deitz/test_plus_assign_iter]
-[Error matching program output for arrays/deitz/test_plus_seq_temps]
-[Error matching program output for arrays/deitz/part1/test_array_assign3]
-[Error matching program output for arrays/waynew/init1]
-[Error matching program output for arrays/waynew/init2]
-[Error matching program output for associative/waynew/indef8-fail2]
-[Error matching program output for associative/waynew/indef8]
-[Error matching program output for
-classes/bradc/arrayInClass/genericArrayInClass-otharrs]
-[Error matching program output for domains/deitz/test_domain_reassign3]
-[Error matching program output for functions/deitz/test_square2]
-[Error matching program output for
-functions/deitz/iterators/test_iterator_local_vars_same_name]
-[Error matching program output for
-functions/deitz/iterators/temps/test_iterator_temp5]
-[Error matching program output for
-functions/deitz/iterators/temps/test_iterator_temp6]
-[Error matching program output for npb/cg/bradc/cg-dense]
-[Error matching program output for npb/cg/bradc/cg-sparse]
-[Error matching program output for npb/is/diten/is]
-[Error matching program output for npb/is/diten/is_mt]
-[Error matching program output for npb/is/diten/is_no_buckets]
-[Error matching program output for puzzles/deitz/histogram]
-[Error matching program output for release/examples/hpcc/fft]
-[Error matching program output for release/examples/hpcc/stream]
-[Error matching program output for studies/590o/alexco/AverageFiles]
-[Error matching program output for
-studies/beer/bradc/beer-promoted-infer-explicit]
-[Error matching program output for studies/blas/marybeth/saxpy1]
-[Error matching program output for studies/cholesky/marybeth/blockCholesky]
-[Error matching program output for studies/hpcc/FFT/fft-candidate-2d]
-[Error matching program output for studies/hpcc/FFT/fft-hpcc06-mta]
-[Error matching program output for studies/hpcc/FFT/fft-hpcc06]
-[Error matching program output for studies/hpcc/FFT/fft-testPow4]
-[Error matching program output for studies/hpcc/FFT/bradc/fft]
-[Error matching program output for studies/hpcc/FFT/marybeth/fft-test-even]
-[Error matching program output for studies/hpcc/FFT/marybeth/fft]
-[Error matching program output for studies/hpcc/FFT/marybeth/fft2d]
-[Error matching program output for studies/hpcc/STREAMS/stream-hpcc06]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-bradc]
-[Error matching program output for
-studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall]
-[Error matching program output for
-studies/hpcc/STREAMS/bradc/stream-fragmented]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-slice]
-[Error matching program output for
-studies/hpcc/STREAMS/diten/stream-fragmented-local]
-[Error matching program output for studies/hpcc/STREAMS/marybeth/stream]
-[Error matching program output for studies/hpcc/STREAMS/waynew/stream]
-[Error matching program output for studies/jacobi/bradc/jacobi-slice-brad]
-[Error matching program output for
-studies/jacobi/bradc/jacobi-slice-compiles]
-[Error matching program output for studies/lu/marybeth/lu3]
-[Error matching program output for studies/lu/marybeth/nopivlu]
-[Error matching program output for studies/lu/marybeth/pivlu]
-[Error matching program output for
-studies/madness/aniruddha/madchap/test_gaxpy]
-[Error matching program output for
-studies/madness/aniruddha/madchap/test_likepy]
-[Error matching program output for
-studies/madness/aniruddha/madchap/test_mul]
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for studies/madness/common/test_gaxpy]
-[Error matching program output for studies/madness/common/test_likepy]
-[Error matching program output for studies/madness/common/test_mul]
-[Error matching program output for
-studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching program output for
-studies/madness/dinan/mad_chapel/test_likepy]
-[Error matching program output for
-studies/madness/dinan/mad_chapel/test_mul]
-[Error matching program output for users/shetag/tensor]
-[Error matching program output for users/shetag/fock/fock-0]
-[Error matching program output for users/shetag/fock/fock-1-begin-blc]
-[Error matching program output for users/shetag/fock/fock-1-latest]
-[Error matching program output for users/shetag/fock/fock-1]
-[Error matching program output for users/shetag/fock/fock-2]
-[Error matching program output for users/shetag/fock/fock-3-blc]
-[Error matching program output for users/shetag/fock/fock-3]
-[Error matching program output for users/shetag/fock/fock-dyn-prog-cntr]
-[Error matching program output for users/shetag/fock/fock-dyn-prog-pool]
-[Error matching program output for users/shetag/fock/fock-orig]
-[Error matching program output for users/shetag/fock/fock-stc-1]
-[Error matching program output for users/shetag/fock/fock-stc]
-[Summary: #Successes = 1990 | #Failures = 75 | #Futures = 0]
-
---baseline --live-analysis
---------------------------
-[Error matching program output for
-functions/deitz/iterators/test_zip_check1]
-[Error matching program output for
-functions/deitz/iterators/test_zip_check2]
-[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for
-types/range/deitz/test_range_iterate_error]
-[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
-
---baseline --optimize-loop-iterators
-------------------------------------
-[Error matching program output for
-functions/deitz/iterators/test_zip_check1]
-[Error matching program output for
-functions/deitz/iterators/test_zip_check2]
-[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for
-types/range/deitz/test_range_iterate_error]
-[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
-
---baseline --scalar-replacement
--------------------------------
-[Error matching program output for
-functions/deitz/iterators/test_zip_check1]
-[Error matching program output for
-functions/deitz/iterators/test_zip_check2]
-[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for
-types/range/deitz/test_range_iterate_error]
-[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
-
---no-optimize-loop-iterators --no-inline-iterators
---------------------------------------------------
-[Error matching program output for
-functions/deitz/iterators/test_zip_check1]
-[Error matching program output for
-functions/deitz/iterators/test_zip_check2]
-[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for
-types/range/deitz/test_range_iterate_error]
-[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
-
---no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
----------------------------------------------------------------------
-[Error matching program output for
-functions/deitz/iterators/test_zip_check1]
-[Error matching program output for
-functions/deitz/iterators/test_zip_check2]
-[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for
-types/range/deitz/test_range_iterate_error]
-[Summary: #Successes = 2060 | #Failures = 5 | #Futures = 0]
 
 --no-local
 ----------
 [Error matching compiler output for classes/diten/allocateManyObjects]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Summary: #Successes = 2062 | #Failures = 3 | #Futures = 0]
 
 --baseline --no-local
 ---------------------
 [Error matching compiler output for arrays/deitz/test_alias1]
 [Error matching compiler output for arrays/deitz/test_alias2]
 [Error matching compiler output for arrays/dinan/reindex]
+[Error matching program output for arrays/diten/promoteFieldAccessAndMethod]
 [Error matching compiler output for classes/bradc/declClassType1c]
 [Error matching compiler output for classes/bradc/writeclass2a]
 [Error matching compiler output for classes/deitz/infer/infer_field2]
@@ -386,33 +126,19 @@ studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error matching compiler output for classes/deitz/infer/infer_field2b]
 [Error matching compiler output for classes/deitz/infer/infer_field2c]
 [Error matching compiler output for classes/diten/allocateManyObjects]
-[Error matching program output for
-functions/deitz/iterators/test_zip_check1]
-[Error matching program output for
-functions/deitz/iterators/test_zip_check2]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
 [Error matching compiler output for studies/590o/alaska/graph]
 [Error matching compiler output for studies/590o/blerner/xml-parse]
-[Error matching program output for studies/hpcc/FFT/bradc/fft-zip]
-[Error matching program output for
-studies/hpcc/STREAMS/bradc/stream-block1dclass]
-[Error matching program output for
-studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
-[Error matching program output for
-studies/hpcc/STREAMS/bradc/stream-block1dpar]
 [Error matching program output for
 studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error matching compiler output for studies/uts/dequeue]
 [Error matching compiler output for studies/uts/uts_deq]
 [Error matching compiler output for studies/uts/uts_deq_seq]
 [Error matching program output for types/file/freadComplex]
-[Error matching program output for
-types/range/deitz/test_range_iterate_error]
-[Error matching program output for types/tuple/deitz/test_tuple_of_array2]
 [Error matching compiler output for types/tuple/dinan/pining_for_lisp_ver2]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
-[Summary: #Successes = 2036 | #Failures = 29 | #Futures = 0]
+[Summary: #Successes = 2049 | #Failures = 22 | #Futures = 0]
 
 
 ==============================
