@@ -150,7 +150,7 @@ expand_for_loop(CallExpr* call) {
       if (isBoundedIterator(iterators.v[i]->type->defaultConstructor)) {
         if (!firstCond) {
           firstCond = cond;
-        } else {
+        } else if (!fNoBoundsChecks) {
           VarSymbol* tmp = new VarSymbol("_tmp", dtBool);
           block->insertAtHead(new CondStmt(new SymExpr(tmp), new CallExpr(PRIMITIVE_RT_ERROR, new_StringSymbol("zippered iterations have non-equal lengths"))));
           block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_EQUAL, cond, new_IntSymbol(0))));
