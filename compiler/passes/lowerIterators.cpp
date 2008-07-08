@@ -140,11 +140,12 @@ expand_for_loop(CallExpr* call) {
       IteratorInfo* ii = iterators.v[i]->type->defaultConstructor->iteratorInfo;
       VarSymbol* cond = new VarSymbol("_cond", dtBool);
       cond->isCompilerTemp = true;
-      block->insertBefore(new CallExpr(ii->advance, iterators.v[i]));
+      block->insertBefore(new CallExpr(ii->zip1, iterators.v[i]));
       block->insertBefore(new DefExpr(cond));
       block->insertBefore(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(ii->hasMore, iterators.v[i])));
       block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, indices.v[i], new CallExpr(ii->getValue, iterators.v[i])));
-      block->insertAtTail(new CallExpr(ii->advance, iterators.v[i]));
+
+      block->insertAtTail(new CallExpr(ii->zip3, iterators.v[i]));
       block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(ii->hasMore, iterators.v[i])));
       if (isBoundedIterator(iterators.v[i]->type->defaultConstructor)) {
         if (!firstCond) {
@@ -157,6 +158,8 @@ expand_for_loop(CallExpr* call) {
           block->insertAfter(new CondStmt(new SymExpr(cond), new CallExpr(PRIMITIVE_RT_ERROR, new_StringSymbol("zippered iterations have non-equal lengths"))));
         }
       }
+      block->insertAtHead(new CallExpr(ii->zip2, iterators.v[i]));
+      block->insertAfter(new CallExpr(ii->zip4, iterators.v[i]));
     }
     call->get(2)->remove();
     call->get(1)->remove();

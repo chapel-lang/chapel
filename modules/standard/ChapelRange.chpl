@@ -249,10 +249,15 @@ def range.these() {
         i = i + stride:eltType;
       }
     } else {
-      var i: eltType;
-      for __primitive("c for loop", i, low, high, 1) {
+      var i = low;
+      while i <= high {
         yield i;
+        i = i + 1;
       }
+/*       var i: eltType; */
+/*       for __primitive("c for loop", i, low, high, 1) { */
+/*         yield i; */
+/*       } */
     }
   }
 }

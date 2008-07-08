@@ -663,11 +663,11 @@ pragma "inline" pragma "iterator class copy"
 def _getIterator(ic: _iteratorClass)
   return ic;
 
-pragma "ref" pragma "inline" def _getIterator(x)
+pragma "inline" pragma "ref" def _getIterator(x)
   return x.these();
 
-def _getIterator(x: _tuple) {
-  def _getIteratorHelp(x: _tuple, param dim: int) {
+pragma "inline" def _getIterator(x: _tuple) {
+  pragma "inline" def _getIteratorHelp(x: _tuple, param dim: int) {
     if dim == x.size-1 then
       return (_getIterator(x(dim)), _getIterator(x(dim+1)));
     else

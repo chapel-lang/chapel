@@ -7,6 +7,10 @@ public:
   FnSymbol* advance;
   FnSymbol* hasMore;
   FnSymbol* getValue;
+  FnSymbol* zip1;
+  FnSymbol* zip2;
+  FnSymbol* zip3;
+  FnSymbol* zip4;
   IteratorInfo();
 };
 

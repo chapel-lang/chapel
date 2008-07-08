@@ -131,6 +131,10 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
     if (fn->fnTag == FN_ITERATOR) {
       prototypeIteratorClass(fn);
       makeRefType(fn->retType);
+      resolvedFns.set_add(fn->iteratorInfo->zip1);
+      resolvedFns.set_add(fn->iteratorInfo->zip2);
+      resolvedFns.set_add(fn->iteratorInfo->zip3);
+      resolvedFns.set_add(fn->iteratorInfo->zip4);
       resolvedFns.set_add(fn->iteratorInfo->advance);
       resolvedFns.set_add(fn->iteratorInfo->hasMore);
       resolvedFns.set_add(fn->iteratorInfo->getValue);
@@ -3195,6 +3199,10 @@ resolveFns(FnSymbol* fn) {
   if (fn->fnTag == FN_ITERATOR && !fn->iteratorInfo) {
     prototypeIteratorClass(fn);
     makeRefType(fn->retType);
+    resolvedFns.set_add(fn->iteratorInfo->zip1);
+    resolvedFns.set_add(fn->iteratorInfo->zip2);
+    resolvedFns.set_add(fn->iteratorInfo->zip3);
+    resolvedFns.set_add(fn->iteratorInfo->zip4);
     resolvedFns.set_add(fn->iteratorInfo->advance);
     resolvedFns.set_add(fn->iteratorInfo->hasMore);
     resolvedFns.set_add(fn->iteratorInfo->getValue);
