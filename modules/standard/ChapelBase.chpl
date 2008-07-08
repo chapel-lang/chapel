@@ -1118,9 +1118,6 @@ pragma "inline" def _chpl_swap(inout x, inout y) {
   x = t;
 }
 
-pragma "c for loop increment" def _cfor_inc(inout i, s) {
-}
-
 pragma "inline" def _createFieldDefault(type t, init) {
   var x: t;
   x = init;

@@ -254,10 +254,6 @@ def range.these() {
         yield i;
         i = i + 1;
       }
-/*       var i: eltType; */
-/*       for __primitive("c for loop", i, low, high, 1) { */
-/*         yield i; */
-/*       } */
     }
   }
 }

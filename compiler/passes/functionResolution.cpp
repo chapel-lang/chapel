@@ -2888,7 +2888,6 @@ postFold(Expr* expr) {
       wrapDomainMap.put(domainValueType, wrap->isResolved());
       buildArrayMap.put(call, build->isResolved());
     } else if (call->isPrimitive(PRIMITIVE_ARRAY_ALLOC) ||
-               call->isPrimitive(PRIMITIVE_LOOP_C_FOR) ||
                call->isPrimitive(PRIMITIVE_SYNC_INIT) ||
                call->isPrimitive(PRIMITIVE_SYNC_LOCK) ||
                call->isPrimitive(PRIMITIVE_SYNC_UNLOCK) ||

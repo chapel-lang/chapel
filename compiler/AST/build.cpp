@@ -484,29 +484,6 @@ BlockStmt* buildForLoopStmt(BlockTag tag,
   BlockStmt* stmts = buildChapelStmt();
   addLoopLabelsToBlock(body);
 
-  CallExpr* icall = toCallExpr(iterator);
-  if (icall && icall->isPrimitive(PRIMITIVE_LOOP_C_FOR)) {
-    body->loopInfo = icall;
-    if (icall->numActuals() == 4) {
-      VarSymbol* tmp;
-      Expr* actual;
-      tmp = new VarSymbol("_tmp");
-      tmp->isCompilerTemp = true;
-      stmts->insertAtTail(new DefExpr(tmp));
-      actual = icall->get(2);
-      actual->replace(new SymExpr(tmp));
-      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, actual));
-      tmp = new VarSymbol("_tmp");
-      tmp->isCompilerTemp = true;
-      stmts->insertAtTail(new DefExpr(tmp));
-      actual = icall->get(3);
-      actual->replace(new SymExpr(tmp));
-      stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, actual));
-      body->insertAtHead(new CallExpr("_cfor_inc",
-                                      icall->get(1)->copy(),
-                                      icall->get(4)->copy()));
-    }
-  } else {
   iterator = new CallExpr("_getIterator", iterator);
   VarSymbol* iteratorSym = new VarSymbol("_iterator");
   iteratorSym->isCompilerTemp = true;
@@ -521,7 +498,7 @@ BlockStmt* buildForLoopStmt(BlockTag tag,
     BLOCK_TYPE));
   destructureIndices(body, indices, new SymExpr(index));
   body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iteratorSym);
-  }
+
   body->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(body);
   stmts->insertAtTail(new DefExpr(body->post_loop));

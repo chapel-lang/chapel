@@ -418,7 +418,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_LOOP_WHILEDO, "while...do loop", returnInfoVoid);
   prim_def(PRIMITIVE_LOOP_DOWHILE, "do...while loop", returnInfoVoid);
   prim_def(PRIMITIVE_LOOP_FOR, "for loop", returnInfoVoid);
-  prim_def(PRIMITIVE_LOOP_C_FOR, "c for loop", returnInfoVoid);
   prim_def(PRIMITIVE_LOOP_INLINE, "inline loop", returnInfoVoid);
 
   prim_def(PRIMITIVE_GC_CC_INIT, "_chpl_gc_init", returnInfoVoid);

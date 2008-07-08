@@ -208,13 +208,6 @@ static void codegen_header(void) {
     Vec<BaseAST*> asts;
     collect_asts(fn->body, asts);
     forv_Vec(BaseAST, ast, asts) {
-
-      // remove special calls for C-style for loops
-      if (CallExpr* call = toCallExpr(ast))
-        if (FnSymbol* fn = call->isResolved())
-          if (fn->hasPragma("c for loop increment"))
-            call->remove();
-
       if (DefExpr* def = toDefExpr(ast)) {
         Symbol* sym = def->sym;
 
