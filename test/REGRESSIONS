@@ -19,13 +19,8 @@ precision issue, due to user code changing (07/01/08)
 [Error matching program output for
 studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
 
-out-of-bounds errors (07/01/08) -- gasnet
-----------------------------------------------------------------
-[Error matching program output for users/shetag/fock/fock-3-blc]
-[Error matching program output for users/shetag/fock/fock-dyn-prog-pool]
-
-new madness precision issue (most platforms other than darwin, cygwin)
-----------------------------------------------------------------------
+e-00 problem (xt-cnl only at this point)
+----------------------------------------
 [Error matching program output for
 studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 
