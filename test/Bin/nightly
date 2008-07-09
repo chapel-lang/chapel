@@ -301,8 +301,15 @@ if ($hostplatform eq "cygwin") {
 if ($gasnet == 1) {
     mysystem("cd $chapeldir/third-party && $make gasnet", "making GASNet", 1, 1);
 }
-mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 1, 1);
-mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 runtime", "making chapel runtime", 1, 1);
+$makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
+if ($makestat != 0) {
+    mysystem("cd $chapeldir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
+}
+
+$makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 runtime", "making chapel runtime", 0, 1);
+if ($makestat != 0) {
+    mysystem("cd $chapeldir && $make DEBUG=0 runtime", "making chapel runtime", 1, 1);
+}
 
 
 #
