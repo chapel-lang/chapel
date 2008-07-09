@@ -3,18 +3,19 @@
 
 class IteratorInfo {
 public:
-  ClassType* classType;
+  FnSymbol* iterator;
+  ClassType* icType;
   FnSymbol* advance;
-  FnSymbol* hasMore;
-  FnSymbol* getValue;
   FnSymbol* zip1;
   FnSymbol* zip2;
   FnSymbol* zip3;
   FnSymbol* zip4;
+  FnSymbol* hasMore;
+  FnSymbol* getValue;
   IteratorInfo();
 };
 
-void prototypeIteratorClass(FnSymbol* fn);
+void protoIteratorClass(FnSymbol* fn);
 void lowerIterator(FnSymbol* fn);
 
 #endif

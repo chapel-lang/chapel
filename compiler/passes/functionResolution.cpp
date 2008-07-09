@@ -129,7 +129,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
     }
     fn->retExprType->remove();
     if (fn->fnTag == FN_ITERATOR) {
-      prototypeIteratorClass(fn);
+      protoIteratorClass(fn);
       makeRefType(fn->retType);
       resolvedFns.set_add(fn->iteratorInfo->zip1);
       resolvedFns.set_add(fn->iteratorInfo->zip2);
@@ -3196,7 +3196,7 @@ resolveFns(FnSymbol* fn) {
   }
 
   if (fn->fnTag == FN_ITERATOR && !fn->iteratorInfo) {
-    prototypeIteratorClass(fn);
+    protoIteratorClass(fn);
     makeRefType(fn->retType);
     resolvedFns.set_add(fn->iteratorInfo->zip1);
     resolvedFns.set_add(fn->iteratorInfo->zip2);

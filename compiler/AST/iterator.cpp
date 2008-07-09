@@ -11,125 +11,64 @@
 
 
 IteratorInfo::IteratorInfo() :
-  classType(NULL),
+  iterator(NULL),
+  icType(NULL),
   advance(NULL),
-  hasMore(NULL),
-  getValue(NULL),
   zip1(NULL),
   zip2(NULL),
   zip3(NULL),
-  zip4(NULL)
+  zip4(NULL),
+  hasMore(NULL),
+  getValue(NULL)
 {}
 
 
 static FnSymbol*
-buildEmptyIteratorMethod(const char* name, ClassType* ct) {
+protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType) {
   FnSymbol* fn = new FnSymbol(name);
   fn->addPragma("auto ii"); 
+  if (strcmp(name, "advance"))
+    fn->addPragma("inline");
   fn->global = true;
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ii->icType);
+  fn->retType = retType;
   fn->insertFormalAtTail(fn->_this);
+  ii->iterator->defPoint->insertBefore(new DefExpr(fn));
   return fn;
 }
 
 
-static VarSymbol* newTemp(FnSymbol* fn, Type* type, const char* name = "_tmp") {
-  VarSymbol* var = new VarSymbol(name, type);
-  var->isCompilerTemp = true;
-  fn->insertAtHead(new DefExpr(var));
-  return var;
-}
-
-
-void prototypeIteratorClass(FnSymbol* fn) {
+void protoIteratorClass(FnSymbol* fn) {
   currentLineno = fn->lineno;
 
   IteratorInfo* ii = new IteratorInfo();
   fn->iteratorInfo = ii;
+  ii->iterator = fn;
 
-  ii->classType = new ClassType(CLASS_CLASS);
   const char* className = astr("_ic_", fn->name);
   if (fn->_this)
     className = astr(className, "_", fn->_this->type->symbol->cname);
-  TypeSymbol* cts = new TypeSymbol(className, ii->classType);
+  ii->icType = new ClassType(CLASS_CLASS);
+  TypeSymbol* cts = new TypeSymbol(className, ii->icType);
   cts->addPragma("iterator class");
   cts->addPragma("no object");
   if (fn->retTag == RET_VAR)
     cts->addPragma("ref iterator class");
   fn->defPoint->insertBefore(new DefExpr(cts));
 
-  ii->advance = buildEmptyIteratorMethod("advance", ii->classType);
-  ii->advance->retType = dtVoid;
+  ii->advance = protoIteratorMethod(ii, "advance", dtVoid);
+  ii->zip1 = protoIteratorMethod(ii, "zip1", dtVoid);
+  ii->zip2 = protoIteratorMethod(ii, "zip2", dtVoid);
+  ii->zip3 = protoIteratorMethod(ii, "zip3", dtVoid);
+  ii->zip4 = protoIteratorMethod(ii, "zip4", dtVoid);
+  ii->hasMore = protoIteratorMethod(ii, "hasMore", dtInt[INT_SIZE_32]);
+  ii->getValue = protoIteratorMethod(ii, "getValue", fn->retType);
 
-  ii->zip1 = buildEmptyIteratorMethod("zip1", ii->classType);
-  ii->zip1->retType = dtVoid;
-
-  ii->zip2 = buildEmptyIteratorMethod("zip2", ii->classType);
-  ii->zip2->retType = dtVoid;
-
-  ii->zip3 = buildEmptyIteratorMethod("zip3", ii->classType);
-  ii->zip3->retType = dtVoid;
-
-  ii->zip4 = buildEmptyIteratorMethod("zip4", ii->classType);
-  ii->zip4->retType = dtVoid;
-
-  ii->hasMore = buildEmptyIteratorMethod("hasMore", ii->classType);
-  ii->hasMore->retType = dtInt[INT_SIZE_32];
-  ii->hasMore->addPragma("inline");
-
-  ii->getValue = buildEmptyIteratorMethod("getValue", ii->classType);
-  ii->getValue->retType = fn->retType;
-  ii->getValue->addPragma("inline");
-
-  fn->defPoint->insertBefore(new DefExpr(ii->zip1));
-  fn->defPoint->insertBefore(new DefExpr(ii->zip2));
-  fn->defPoint->insertBefore(new DefExpr(ii->zip3));
-  fn->defPoint->insertBefore(new DefExpr(ii->zip4));
-  fn->defPoint->insertBefore(new DefExpr(ii->advance));
-  fn->defPoint->insertBefore(new DefExpr(ii->hasMore));
-  fn->defPoint->insertBefore(new DefExpr(ii->getValue));
-
-  ii->classType->defaultConstructor = fn;
-  ii->classType->scalarPromotionType = fn->retType;
-  fn->retType = ii->classType;
+  ii->icType->defaultConstructor = fn;
+  ii->icType->scalarPromotionType = fn->retType;
+  fn->retType = ii->icType;
   fn->retTag = RET_VALUE;
-}
-
-
-//
-// when ast is a function fn
-//   insert "ic.f = v" or "t = &v; ic.f = t" at tail of fn
-// when ast is an expression expr
-//   insert "ic.f = v" or "t = &v; ic.f = t" after expr
-//
-static void
-insertSetMember(BaseAST* ast, Symbol* ic, Symbol* f, BaseAST* v) {
-  Symbol* local = toSymbol(v);
-  INT_ASSERT(local);
-  
-  if (FnSymbol* fn = toFnSymbol(ast)) {
-    if (local->type == f->type->refType) {
-      Symbol* tmp = newTemp(fn, f->type);
-      fn->insertAtTail(
-        new CallExpr(PRIMITIVE_MOVE, tmp,
-          new CallExpr(PRIMITIVE_GET_REF, local)));
-      fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, ic, f, tmp));
-    } else
-      fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, ic, f, local));
-  } else if (Expr* expr = toExpr(ast)) {
-    if (local->type == f->type->refType) {
-      Symbol* tmp = newTemp(expr->getFunction(), f->type);
-      expr->getStmtExpr()->insertAfter(
-        new CallExpr(PRIMITIVE_SET_MEMBER, ic, f, tmp));
-      expr->getStmtExpr()->insertAfter(
-        new CallExpr(PRIMITIVE_MOVE, tmp,
-          new CallExpr(PRIMITIVE_GET_REF, local)));
-    } else
-      expr->getStmtExpr()->insertAfter(
-        new CallExpr(PRIMITIVE_SET_MEMBER, ic, f, local));
-  } else
-    INT_FATAL(ast, "unexpected case in insertSetMember");
 }
 
 
@@ -181,6 +120,8 @@ insertSetMemberInits(FnSymbol* fn, Symbol* var) {
 //
 static CallExpr*
 isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
+  if (fNoOptimizeLoopIterators)
+    return NULL;
   BlockStmt* singleFor = NULL;
   CallExpr* singleYield = NULL;
   forv_Vec(BaseAST, ast, asts) {
@@ -224,16 +165,17 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
 
 
 static void
-buildAdvance(FnSymbol* fn,
-             Vec<BaseAST*>& asts,
-             Map<Symbol*,Symbol*>& local2field,
-             Vec<Symbol*>& locals,
-             Vec<SymExpr*>& defSet,
-             Vec<SymExpr*>& useSet) {
-  IteratorInfo* ii = fn->iteratorInfo;
-  Symbol* iterator = ii->advance->getFormal(1);
+replaceLocalsWithFields(IteratorInfo* ii,
+                        Vec<BaseAST*>& asts,
+                        Map<Symbol*,Symbol*>& local2field,
+                        Vec<Symbol*>& locals) {
+  FnSymbol* fn = ii->iterator;
+  Symbol* ic = ii->advance->getFormal(1);
 
-  // replace locals with fields
+  Vec<SymExpr*> defSet;
+  Vec<SymExpr*> useSet;
+  buildDefUseSets(locals, fn, defSet, useSet);
+
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* se = toSymExpr(ast)) {
       if (se->parentSymbol && (useSet.set_in(se) || defSet.set_in(se))) {
@@ -241,7 +183,7 @@ buildAdvance(FnSymbol* fn,
         if (call && call->isPrimitive(PRIMITIVE_SET_REF)) {
           Symbol* field = local2field.get(se->var);
           call->primitive = primitives[PRIMITIVE_GET_MEMBER];
-          call->insertAtHead(iterator);
+          call->insertAtHead(ic);
           se->var = field;
         } else {
           Symbol* field = local2field.get(se->var);
@@ -261,22 +203,22 @@ buildAdvance(FnSymbol* fn,
           asts.add(tmp->defPoint);
           if (useSet.set_in(se)) {
             if (tmp->type == field->type->refType)
-              stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, field)));
+              stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, ic, field)));
             else
-              stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, field)));
+              stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, field)));
             if (loop) {
               if (tmp->type == field->type->refType)
-                loop->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, field)));
+                loop->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, ic, field)));
               else
-                loop->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, field)));
+                loop->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, field)));
             }
           }
           if (defSet.set_in(se) ||
               call && call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
             if (loop) {
-              loop->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, tmp));
+              loop->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER, ic, field, tmp));
             } else {
-              stmt->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, tmp));
+              stmt->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, ic, field, tmp));
             }
           }
           se->var = tmp;
@@ -284,102 +226,114 @@ buildAdvance(FnSymbol* fn,
       }
     }
   }
+}
 
-  //
-  // build optimized single loop iterator advance methods (zip*)
-  //
-  CallExpr* yield = isSingleLoopIterator(fn, asts);
-  if (!fNoOptimizeLoopIterators && yield) {
-    BlockStmt* loop = toBlockStmt(yield->parentExpr);
-    INT_ASSERT(loop);
-    Map<Symbol*,Symbol*> map;
-    bool flag;
 
-    map.clear();
-    map.put(iterator, ii->zip1->_this);
-    forv_Vec(BaseAST, ast, asts) {
-      if (DefExpr* def = toDefExpr(ast))
-        if (!isArgSymbol(def->sym))
-          ii->zip1->insertAtTail(def->copy(&map));
-    }
-    for_alist(expr, fn->body->body) {
-      if (expr == loop)
+static void
+buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
+  Symbol* ic = ii->advance->getFormal(1);
+  Map<Symbol*,Symbol*> map;
+  map.put(ic, ii->zip1->_this);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = toDefExpr(ast))
+      if (!isArgSymbol(def->sym))
+        ii->zip1->insertAtTail(def->copy(&map));
+  }
+  for_alist(expr, ii->iterator->body->body) {
+    if (expr == singleLoop)
+      break;
+    if (!isDefExpr(expr))
+      ii->zip1->insertAtTail(expr->copy(&map));
+  }
+  CallExpr* loopInfo = singleLoop->loopInfo->copy(&map);
+  ii->zip1->insertAtTail(new CondStmt(loopInfo->get(1)->remove(),
+                                      new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip1->_this, ii->icType->getField("more"), new_IntSymbol(1)),
+                                      new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip1->_this, ii->icType->getField("more"), new_IntSymbol(0))));
+  ii->zip1->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+}
+
+
+static void
+buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
+  Symbol* ic = ii->advance->getFormal(1);
+  Map<Symbol*,Symbol*> map;
+  map.put(ic, ii->zip2->_this);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = toDefExpr(ast))
+      if (!isArgSymbol(def->sym))
+        ii->zip2->insertAtTail(def->copy(&map));
+  }
+  for_alist(expr, singleLoop->body) {
+    if (CallExpr* call = toCallExpr(expr))
+      if (call->isPrimitive(PRIMITIVE_YIELD))
         break;
-      if (!isDefExpr(expr))
-        ii->zip1->insertAtTail(expr->copy(&map));
-    }
-    CallExpr* loopInfo = loop->loopInfo->copy(&map);
-    ii->zip1->insertAtTail(new CondStmt(loopInfo->get(1)->remove(),
-                                        new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip1->_this, ii->classType->getField("more"), new_IntSymbol(1)),
-                                        new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip1->_this, ii->classType->getField("more"), new_IntSymbol(0))));
+    if (!isDefExpr(expr))
+      ii->zip2->insertAtTail(expr->copy(&map));
+  }
+  ii->zip2->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+}
 
-    map.clear();
-    map.put(iterator, ii->zip2->_this);
-    forv_Vec(BaseAST, ast, asts) {
-      if (DefExpr* def = toDefExpr(ast))
-        if (!isArgSymbol(def->sym))
-          ii->zip2->insertAtTail(def->copy(&map));
-    }
-    for_alist(expr, loop->body) {
-      if (expr == yield)
-        break;
-      if (!isDefExpr(expr))
-        ii->zip2->insertAtTail(expr->copy(&map));
-    }
 
-    {
-      map.clear();
-      map.put(iterator, ii->zip3->_this);
-      flag = true;
-      forv_Vec(BaseAST, ast, asts) {
-        if (DefExpr* def = toDefExpr(ast))
-          if (!isArgSymbol(def->sym))
-            ii->zip3->insertAtTail(def->copy(&map));
-      }
-      for_alist(expr, loop->body) {
-        if (flag) {
-          if (expr == yield)
-            flag = false;
-          continue;
-        }
-        if (!isDefExpr(expr))
-          ii->zip3->insertAtTail(expr->copy(&map));
-      }
-      CallExpr* loopInfo = loop->loopInfo->copy(&map);
-      ii->zip3->insertAtTail(new CondStmt(loopInfo->get(1)->remove(),
-                                          new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip3->_this, ii->classType->getField("more"), new_IntSymbol(1)),
-                                          new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip3->_this, ii->classType->getField("more"), new_IntSymbol(0))));
+static void
+buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
+  Symbol* ic = ii->advance->getFormal(1);
+  Map<Symbol*,Symbol*> map;
+  map.put(ic, ii->zip3->_this);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = toDefExpr(ast))
+      if (!isArgSymbol(def->sym))
+        ii->zip3->insertAtTail(def->copy(&map));
+  }
+  bool flag = true;
+  for_alist(expr, singleLoop->body) {
+    if (flag) {
+      if (CallExpr* call = toCallExpr(expr))
+        if (call->isPrimitive(PRIMITIVE_YIELD))
+          flag = false;
+      continue;
     }
+    if (!isDefExpr(expr))
+      ii->zip3->insertAtTail(expr->copy(&map));
+  }
+  CallExpr* loopInfo = singleLoop->loopInfo->copy(&map);
+  ii->zip3->insertAtTail(new CondStmt(loopInfo->get(1)->remove(),
+                                      new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip3->_this, ii->icType->getField("more"), new_IntSymbol(1)),
+                                      new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip3->_this, ii->icType->getField("more"), new_IntSymbol(0))));
+  ii->zip3->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+}
 
-    map.clear();
-    map.put(iterator, ii->zip4->_this);
-    flag = true;
-    forv_Vec(BaseAST, ast, asts) {
+
+static void
+buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
+  Symbol* ic = ii->advance->getFormal(1);
+  Map<Symbol*,Symbol*> map;
+  map.put(ic, ii->zip4->_this);
+  forv_Vec(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast))
         if (!isArgSymbol(def->sym))
           ii->zip4->insertAtTail(def->copy(&map));
     }
-    for_alist(expr, fn->body->body) {
-      if (flag) {
-        if (expr == loop)
-          flag = false;
-        continue;
-      }
-      if (!isDefExpr(expr) && expr->next)
-        ii->zip4->insertAtTail(expr->copy(&map));
+  bool flag = true;
+  for_alist(expr, ii->iterator->body->body) {
+    if (flag) {
+      if (expr == singleLoop)
+        flag = false;
+      continue;
     }
-  } else {
-    ii->zip1->insertAtTail(new CallExpr(ii->advance, ii->zip1->_this));
-    ii->zip3->insertAtTail(new CallExpr(ii->advance, ii->zip3->_this));
+    if (!isDefExpr(expr) && expr->next)
+      ii->zip4->insertAtTail(expr->copy(&map));
   }
-  ii->zip1->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
-  ii->zip2->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
-  ii->zip3->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
   ii->zip4->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
-  ii->zip1->addPragma("inline");
-  ii->zip2->addPragma("inline");
-  ii->zip3->addPragma("inline");
-  ii->zip4->addPragma("inline");
+}
+
+
+static void
+buildAdvance(FnSymbol* fn,
+             Vec<BaseAST*>& asts,
+             Map<Symbol*,Symbol*>& local2field,
+             Vec<Symbol*>& locals) {
+  IteratorInfo* ii = fn->iteratorInfo;
+  Symbol* ic = ii->advance->getFormal(1);
 
   //
   // build standard iterator advance method (advance)
@@ -397,7 +351,7 @@ buildAdvance(FnSymbol* fn,
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIMITIVE_YIELD)) {
-        call->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, ii->classType->getField("more"), new_IntSymbol(i)));
+        call->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, ic, ii->icType->getField("more"), new_IntSymbol(i)));
         call->insertBefore(new GotoStmt(GOTO_NORMAL, end));
         Symbol* label = new LabelSymbol(astr("_jump_", istr(i)));
         call->insertBefore(new DefExpr(label));
@@ -405,7 +359,7 @@ buildAdvance(FnSymbol* fn,
         call->remove();
         i++;
       } else if (call->isPrimitive(PRIMITIVE_RETURN)) {
-        call->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, ii->classType->getField("more"), new_IntSymbol(0)));
+        call->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, ic, ii->icType->getField("more"), new_IntSymbol(0)));
         call->remove(); // remove old return
       }
     }
@@ -413,41 +367,41 @@ buildAdvance(FnSymbol* fn,
 
   // insert jump table at head of advance
   i = 2;
-  Symbol* t1 = newTemp(ii->advance, dtBool);
+  Symbol* tmp = new VarSymbol("_tmp", dtBool);
+  tmp->isCompilerTemp = true;
   Symbol* more = new VarSymbol("more", dtInt[INT_SIZE_32]);
 
   forv_Vec(Symbol, label, labels) {
-    ii->advance->insertAtHead(new CondStmt(new SymExpr(t1), new GotoStmt(GOTO_NORMAL, label)));
-    ii->advance->insertAtHead(new CallExpr(PRIMITIVE_MOVE, t1, new CallExpr(PRIMITIVE_EQUAL, more, new_IntSymbol(i++))));
+    ii->advance->insertAtHead(new CondStmt(new SymExpr(tmp), new GotoStmt(GOTO_NORMAL, label)));
+    ii->advance->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_EQUAL, more, new_IntSymbol(i++))));
   }
-  ii->advance->insertAtHead(new CallExpr(PRIMITIVE_MOVE, more, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, ii->classType->getField("more"))));
+  ii->advance->insertAtHead(new CallExpr(PRIMITIVE_MOVE, more, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, ii->icType->getField("more"))));
+  ii->advance->insertAtHead(new DefExpr(tmp));
   ii->advance->insertAtHead(new DefExpr(more));
   ii->advance->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
 }
 
 
 static void
-buildHasMore(FnSymbol* fn) {
-  IteratorInfo* ii = fn->iteratorInfo;
+buildHasMore(IteratorInfo* ii) {
   VarSymbol* tmp = new VarSymbol("_tmp", ii->hasMore->retType);
   ii->hasMore->insertAtTail(new DefExpr(tmp));
-  ii->hasMore->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ii->hasMore->getFormal(1), ii->classType->getField("more"))));
+  ii->hasMore->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ii->hasMore->getFormal(1), ii->icType->getField("more"))));
   ii->hasMore->insertAtTail(new CallExpr(PRIMITIVE_RETURN, tmp));
 }
 
 
 static void
-buildGetValue(FnSymbol* fn) {
-  IteratorInfo* ii = fn->iteratorInfo;
+buildGetValue(IteratorInfo* ii) {
   VarSymbol* tmp = new VarSymbol("_tmp", ii->getValue->retType);
   ii->getValue->insertAtTail(new DefExpr(tmp));
-  ii->getValue->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ii->getValue->getFormal(1), ii->classType->getField("value"))));
+  ii->getValue->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ii->getValue->getFormal(1), ii->icType->getField("value"))));
   ii->getValue->insertAtTail(new CallExpr(PRIMITIVE_RETURN, tmp));
 }
 
 
 static void
-addLocalVariablesLiveAtYields(Vec<Symbol*>& syms, FnSymbol* fn, CallExpr* singleLoopYield) {
+addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
   buildBasicBlocks(fn);
 
 #ifdef DEBUG_LIVE
@@ -467,10 +421,6 @@ addLocalVariablesLiveAtYields(Vec<Symbol*>& syms, FnSymbol* fn, CallExpr* single
   Vec<Vec<bool>*> OUT;
   liveVariableAnalysis(fn, locals, localMap, useSet, defSet, OUT);
 
-  BlockStmt* loop = NULL;
-  if (singleLoopYield)
-    loop = toBlockStmt(singleLoopYield->parentExpr);
-
   int i = 0;
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     bool collect = false;
@@ -478,9 +428,9 @@ addLocalVariablesLiveAtYields(Vec<Symbol*>& syms, FnSymbol* fn, CallExpr* single
       CallExpr* call = toCallExpr(expr);
       if (call && call->isPrimitive(PRIMITIVE_YIELD))
         collect = true;
-      if (loop && expr == loop->next)
+      if (singleLoop && expr == singleLoop->next)
         collect = true;
-      if (loop && expr == loop->body.head)
+      if (singleLoop && expr == singleLoop->body.head)
         collect = true;
     }
     if (collect) {
@@ -491,8 +441,8 @@ addLocalVariablesLiveAtYields(Vec<Symbol*>& syms, FnSymbol* fn, CallExpr* single
       for (int k = bb->exprs.n - 1; k >= 0; k--) {
         CallExpr* call = toCallExpr(bb->exprs.v[k]);
         if (call && call->isPrimitive(PRIMITIVE_YIELD) ||
-            loop && bb->exprs.v[k] == loop->next ||
-            loop && bb->exprs.v[k] == loop->body.head) {
+            singleLoop && bb->exprs.v[k] == singleLoop->next ||
+            singleLoop && bb->exprs.v[k] == singleLoop->body.head) {
           for (int j = 0; j < locals.n; j++) {
             if (live.v[j]) {
               syms.add_exclusive(locals.v[j]);
@@ -600,6 +550,54 @@ addAllLocalVariables(Vec<Symbol*>& syms, Vec<BaseAST*>& asts) {
 }
 
 
+static void
+rebuildIterator(IteratorInfo* ii,
+                Map<Symbol*,Symbol*>& local2field,
+                Vec<Symbol*>& locals) {
+  FnSymbol* fn = ii->iterator;
+  for_alist(expr, fn->body->body)
+    expr->remove();
+  fn->defPoint->remove();
+  fn->retType = ii->icType;
+  Symbol* iterator = new VarSymbol("ic", ii->icType);
+  iterator->isCompilerTemp = true;
+  fn->insertAtTail(new DefExpr(iterator));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->icType->symbol, new_StringSymbol("iterator class"))));
+  forv_Vec(Symbol, local, locals) {
+    Symbol* field = local2field.get(local);
+    if (toArgSymbol(local)) {
+      if (local->type == field->type->refType) {
+        Symbol* tmp = new VarSymbol("_tmp", field->type);
+        tmp->isCompilerTemp = true;
+        fn->insertAtTail(new DefExpr(tmp));
+        fn->insertAtTail(
+          new CallExpr(PRIMITIVE_MOVE, tmp,
+            new CallExpr(PRIMITIVE_GET_REF, local)));
+        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, tmp));
+      } else {
+        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, local));
+      }
+    } else if (isRecordType(local->type)) {
+      if (field->type->refType) { // skips array types (how to handle arrays?)
+        Symbol* tmp = new VarSymbol("_tmp", field->type);
+        tmp->isCompilerTemp = true;
+        fn->insertAtTail(new DefExpr(tmp));
+        insertSetMemberInits(fn, tmp);
+        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, tmp));
+      }
+    } else if (field->type->symbol->hasPragma("ref")) {
+      // do not initialize references
+    } else if (field->type->defaultValue) {
+      fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, field->type->defaultValue));
+    }
+  }
+  fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, ii->icType->getField("more"), new_IntSymbol(1)));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, iterator));
+  ii->getValue->defPoint->insertAfter(new DefExpr(fn));
+  fn->addPragma("inline");
+}
+
+
 void lowerIterator(FnSymbol* fn) {
   IteratorInfo* ii = fn->iteratorInfo;
 
@@ -607,8 +605,17 @@ void lowerIterator(FnSymbol* fn) {
   Vec<BaseAST*> asts;
   collect_asts_postorder(fn, asts);
 
-  // make fields for all local variables and arguments
-  // optimization note: only variables live at yield points are required
+  CallExpr* singleLoopYield = isSingleLoopIterator(fn, asts);
+  BlockStmt* singleLoop = NULL;
+  if (singleLoopYield)
+    singleLoop = toBlockStmt(singleLoopYield->parentExpr);
+
+  //
+  // create fields for all local variables and arguments; however, if
+  // live variable analysis is enabled, make fields only for local
+  // variables that are live at places where the iterator methods will
+  // yield control back to the loop body.
+  //
   Map<Symbol*,Symbol*> local2field;
   Vec<Symbol*> locals;
 
@@ -617,8 +624,7 @@ void lowerIterator(FnSymbol* fn) {
   if (fNoLiveAnalysis)
     addAllLocalVariables(locals, asts);
   else {
-    CallExpr* yield = isSingleLoopIterator(fn, asts);
-    addLocalVariablesLiveAtYields(locals, fn, yield);
+    addLiveLocalVariables(locals, fn, singleLoop);
   }
   locals.add_exclusive(fn->getReturnSymbol());
 
@@ -632,46 +638,26 @@ void lowerIterator(FnSymbol* fn) {
       type = getValueType(type);
     Symbol* field = new VarSymbol(fieldName, type);
     local2field.put(local, field);
-    ii->classType->fields.insertAtTail(new DefExpr(field));
+    ii->icType->fields.insertAtTail(new DefExpr(field));
   }
+  ii->icType->fields.insertAtTail(new DefExpr(new VarSymbol("more", dtInt[INT_SIZE_32])));
 
-  ii->classType->fields.insertAtTail(new DefExpr(new VarSymbol("more", dtInt[INT_SIZE_32])));
-
-  Vec<SymExpr*> defSet;
-  Vec<SymExpr*> useSet;
-  buildDefUseSets(locals, fn, defSet, useSet);
-  buildAdvance(fn, asts, local2field, locals, defSet, useSet);
-  buildHasMore(fn);
-  buildGetValue(fn);
-
-  // rebuild iterator function
-
-  for_alist(expr, fn->body->body)
-    expr->remove();
-  fn->defPoint->remove();
-  fn->retType = ii->classType;
-  Symbol* t1 = newTemp(fn, ii->classType);
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, t1, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->classType->symbol, new_StringSymbol("iterator class"))));
-  forv_Vec(Symbol, local, locals) {
-    Symbol* field = local2field.get(local);
-    if (toArgSymbol(local)) {
-      insertSetMember(fn, t1, field, local);
-    } else if (isRecordType(local->type)) {
-      if (field->type->refType) { // skips array types (how to handle arrays?)
-        Symbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->isCompilerTemp = true;
-        fn->insertAtTail(new DefExpr(tmp));
-        insertSetMemberInits(fn, tmp);
-        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, t1, field, tmp));
-      }
-    } else if (field->type->symbol->hasPragma("ref")) {
-      // do not initialize references
-    } else if (field->type->defaultValue) {
-      insertSetMember(fn, t1, field, field->type->defaultValue);
-    }
+  replaceLocalsWithFields(ii, asts, local2field, locals);
+  if (singleLoop) {
+    buildZip1(ii, asts, singleLoop);
+    buildZip2(ii, asts, singleLoop);
+    buildZip3(ii, asts, singleLoop);
+    buildZip4(ii, asts, singleLoop);
+  } else {
+    ii->zip1->insertAtTail(new CallExpr(ii->advance, ii->zip1->_this));
+    ii->zip1->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+    ii->zip2->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+    ii->zip3->insertAtTail(new CallExpr(ii->advance, ii->zip3->_this));
+    ii->zip3->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+    ii->zip4->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
   }
-  fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, t1, ii->classType->getField("more"), new_IntSymbol(1)));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, t1));
-  ii->getValue->defPoint->insertAfter(new DefExpr(fn));
-  fn->addPragma("inline");
+  buildAdvance(fn, asts, local2field, locals);
+  buildHasMore(ii);
+  buildGetValue(ii);
+  rebuildIterator(ii, local2field, locals);
 }
