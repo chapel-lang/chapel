@@ -31,9 +31,15 @@ class Block1DDist {
   //
   // the set of target locales to which the indices are mapped
   //
-  const targetLocs = Locales; // TODO: would like to assert that this is a 1D 
-                              // array of locales and maybe remove the default 
-                              // initializer
+  // TODO: would like to assert that this is a 1D array of locales and
+  // maybe remove the default initializer
+  //
+  // TODO: note that this shares the domain of the initializer
+  // expression, whereas what we really want to do is take a snapshot
+  // of that domain.  Probably need to use a user-defined constructor?
+  // Or support query syntax within a member declaration?
+  //
+  const targetLocs = Locales; 
 
   //
   // an associative domain over the set of target locales
