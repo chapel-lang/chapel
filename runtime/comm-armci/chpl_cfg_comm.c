@@ -364,7 +364,6 @@ void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Boo
   int ret;
   void *header;
   volatile void *rheader;
-  int rhlen;
   void *rdata;
   int rdlen;
   dist_fork_t *info;
@@ -408,8 +407,8 @@ void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Boo
   done = rheader;
   *done = 0;
 
-  ret = ARMCI_Gpc_exec(ghndl, locale, header, sizeof(void *), info, info_size, rheader, rhdr_size,
-                       rdata, rdlen, NULL);
+  ret = ARMCI_Gpc_exec(ghndl, locale, header, sizeof(void *), info, info_size, 
+                       (void*)rheader, rhdr_size, rdata, rdlen, NULL);
 
   if (ret != 0) {
     chpl_internal_error("ARMCI_Gpc_exec() failed");
@@ -417,7 +416,7 @@ void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Boo
     if (rdata)
       chpl_free(rdata, __LINE__, __FILE__);
     chpl_free(header, __LINE__, __FILE__);
-    chpl_free(rheader, __LINE__, __FILE__);
+    chpl_free((void*)rheader, __LINE__, __FILE__);
     return;
   }
 
@@ -431,7 +430,7 @@ void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Boo
     chpl_free(rdata, __LINE__, __FILE__);
   }
   chpl_free(header, __LINE__, __FILE__);
-  chpl_free(rheader, __LINE__, __FILE__);
+  chpl_free((void*)rheader, __LINE__, __FILE__);
 }
 
 void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
@@ -498,4 +497,6 @@ void *_gpc_thread_handler(void *arg)
 
   chpl_free(ginfo->info, __LINE__, __FILE__);
   chpl_free(ginfo, __LINE__, __FILE__);
+
+  return NULL;
 } /* _gpc_thread_handler */
