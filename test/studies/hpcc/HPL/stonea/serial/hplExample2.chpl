@@ -77,7 +77,7 @@ def updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
     var trRows = tr.dim(1);
     var trCols = tr.dim(2);
 
-    assert(tlRows == trRows);
+    assert(tlCols == trRows);
 
     for i in trRows {
         forall j in trCols {
@@ -135,10 +135,10 @@ def LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
         const crntBlkSize = min(blkSize, n-blk+1);
 
         const blockRange     = blk..blk+crntBlkSize-1;
-        const trailingRows   = (blk+crntBlkSize..)(ARows);
-        const unfactoredRows = (blk..)(ARows);
-        const trailingCols   = (blk+crntBlkSize..)(ACols);
-        const unfactoredCols = (blk..)(ACols);
+        const trailingRows   = (blk+crntBlkSize..ARows.high);
+        const unfactoredRows = (blk..ARows.high);
+        const trailingCols   = (blk+crntBlkSize..ACols.high);
+        const unfactoredCols = (blk..ACols.high);
 
         var tl = [blockRange, blockRange];
         var tr = [blockRange, trailingCols];
