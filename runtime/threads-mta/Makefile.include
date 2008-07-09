@@ -1,5 +1,8 @@
-THREADS_OBJDIR = $(RUNTIME_ROOT)/threads-mta/$(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)
+THREADS_SUBDIR = threads-mta
 
-ALL_SRCS += $(CURDIR)/threads-mta/*.c
+THREADS_OBJDIR = $(RUNTIME_ROOT)/$(THREADS_SUBDIR)/$(RUNTIME_OBJDIR)
 
-include $(RUNTIME_ROOT)/threads-mta/Makefile.share
+
+ALL_SRCS += $(CURDIR)/$(THREADS_SUBDIR)/*.c
+
+include $(RUNTIME_ROOT)/$(THREADS_SUBDIRx)/Makefile.share

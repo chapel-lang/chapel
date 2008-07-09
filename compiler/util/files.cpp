@@ -23,7 +23,6 @@ static const char* intDirName = NULL; // directory for intermediates; tmpdir or 
 
 static const int MAX_CHARS_PER_PID = 32;
 
-static const char* intExeFilename;
 static int numLibFlags = 0;
 static const char** libFlag = NULL;
 
@@ -389,18 +388,8 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
 void codegen_makefile(fileinfo* mainfile) {
   fileinfo makefile;
   openCFile(&makefile, "Makefile");
+  const char* tmpDirName = intDirName;
   const char* strippedExeFilename = stripdirectories(executableFilename);
-  intExeFilename = genIntFilename(strippedExeFilename);
-  // BLC: This munging is done so that cp won't complain if the source
-  // and destination are the same file (e.g., a.out and ./a.out)
-  intExeFilename = astr(intExeFilename, ".tmp");
-  // BLC: We generate a TMPBINNAME which is the name that will be used
-  // by the C compiler in creating the executable, and is in the
-  // --savec directory (a /tmp directory by default).  We then copy it
-  // over to BINNAME -- the name given by the user, or a.out by
-  // default -- after linking is done.  As it turns out, this saves a
-  // factor of 5 or so in time in running the test system, as opposed
-  // to specifying BINNAME on the C compiler command line.
   fprintf(makefile.fptr, "COMP_GEN_CFLAGS =");
   if (ccwarnings) {
     fprintf(makefile.fptr, " $(WARN_GEN_CFLAGS)");
@@ -420,7 +409,18 @@ void codegen_makefile(fileinfo* mainfile) {
   fprintf(makefile.fptr, "COMP_GEN_LFLAGS =");
   fprintf(makefile.fptr, " %s\n", ldflags);
   fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
-  fprintf(makefile.fptr, "TMPBINNAME = %s\n", intExeFilename);
+  fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);
+  // BLC: This munging is done so that cp won't complain if the source
+  // and destination are the same file (e.g., a.out and ./a.out)
+  fprintf(makefile.fptr, "TMPBINNAME = $(TMPDIRNAME)/%s.tmp\n", 
+          strippedExeFilename);
+  // BLC: We generate a TMPBINNAME which is the name that will be used
+  // by the C compiler in creating the executable, and is in the
+  // --savec directory (a /tmp directory by default).  We then copy it
+  // over to BINNAME -- the name given by the user, or a.out by
+  // default -- after linking is done.  As it turns out, this saves a
+  // factor of 5 or so in time in running the test system, as opposed
+  // to specifying BINNAME on the C compiler command line.
   fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n", CHPL_HOME);
   fprintf(makefile.fptr, "TAGS_COMMAND = ");
   if (developer && saveCDir[0] && !printCppLineno) {

@@ -18,19 +18,26 @@ CHAPEL_SUBDIR = runtime/$(RUNTIME_SUBDIR)
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHAPEL_ROOT)/make/Makefile.base
 
-INCL_CFLAGS = -I. -I$(RUNTIME_ROOT)/include/threads-$(CHPL_MAKE_THREADS) -I$(RUNTIME_ROOT)/include/comm-$(CHPL_MAKE_COMM) -I$(RUNTIME_ROOT)/include/comp-$(CHPL_MAKE_COMPILER) -I$(RUNTIME_ROOT)/include/$(CHPL_MAKE_PLATFORM) -I$(RUNTIME_ROOT)/include
-RUNTIME_CFLAGS += $(INCL_CFLAGS)
+LAUNCHER_CFLAGS = $(RUNTIME_CFLAGS) -DLAUNCHER
+LAUNCHER_INCLS = -I$(RUNTIME_ROOT)/include
 
-RUNTIME_OBJ_DIR = ./$(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)
+RUNTIME_INCLS = -I. -I$(RUNTIME_ROOT)/include/threads-$(CHPL_MAKE_THREADS) -I$(RUNTIME_ROOT)/include/comm-$(CHPL_MAKE_COMM) -I$(RUNTIME_ROOT)/include/comp-$(CHPL_MAKE_COMPILER) -I$(RUNTIME_ROOT)/include/$(CHPL_MAKE_PLATFORM) -I$(RUNTIME_ROOT)/include
+
+
+RUNTIME_OBJ_DIR = ./$(RUNTIME_OBJDIR)
 RUNTIME_OBJ_DIR_SAFESLASH = $(subst /,\\/, $(RUNTIME_OBJ_DIR))
 RUNTIME_OBJ_DIR_STAMP = $(RUNTIME_OBJ_DIR)/.timestamp
 
+LAUNCHER_OBJ_DIR = ./$(LAUNCHER_OBJDIR)
+LAUNCHER_OBJ_DIR_SAFESLASH = $(subst /,\\/, $(LAUNCHER_OBJ_DIR))
+LAUNCHER_OBJ_DIR_STAMP = $(LAUNCHER_OBJ_DIR)/.timestamp
 
 #
 # clean and clobber targets
 #
 CLEAN_TARGS = \
-	./$(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)/*.o \
+	./$(RUNTIME_OBJ_DIR)/*.o \
+	./$(LAUNCHER_OBJ_DIR)/*.o \
 	core \
 	*.core \
 	*.gmon \
@@ -40,7 +47,7 @@ CLEAN_TARGS = \
 
 CLOBBER_TARGS = \
 	$(CLEAN_TARGS) \
-	./$(CHPL_MAKE_PLATFORM) \
+	./$(GEN_SUBDIR) \
 	*~
 
 
@@ -48,7 +55,7 @@ CLOBBER_TARGS = \
 # platform-specific subdirectory targets
 #
 
-SVN_DEPENDS = ./$(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)/Makefile.svn.depend
+SVN_DEPENDS = ./$(RUNTIME_OBJDIR)/Makefile.svn.depend
 
 
 

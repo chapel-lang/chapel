@@ -6,14 +6,15 @@ RUNTIME_SUBDIR = comm-gasnet
 #
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
-COMM_OBJDIR = $(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)
+COMM_OBJDIR = $(RUNTIME_OBJDIR)
+COMM_LAUNCHER_OBJDIR = $(LAUNCHER_OBJDIR)
 include Makefile.share
 
-TARGETS = $(COMM_OBJS)
+TARGETS = \
+	$(COMM_OBJS) \
+	$(COMM_LAUNCHER_OBJS) \
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
-
-FORCE:
 
 #
 # standard footer

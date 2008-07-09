@@ -83,6 +83,7 @@ printplatform:
 	@echo "CHPL_MAKE_COMPILER    = $(CHPL_MAKE_COMPILER)"
 	@echo "CHPL_MAKE_THREADS     = $(CHPL_MAKE_THREADS)"
 	@echo "CHPL_MAKE_COMM        = $(CHPL_MAKE_COMM)"
+	@echo "CHPL_MAKE_LAUNCHER    = $(CHPL_MAKE_LAUNCHER)"
 
 #
 # OBJ_SUBDIR_MADE creates either a directory or a symbolic link,
@@ -93,7 +94,8 @@ printplatform:
 # is the directory with slashes escaped appropriately for use in
 # Makefile command rules.
 #
-OBJ_SUBDIR = $(CHPL_MAKE_PLATFORM)/$(CHPL_MAKE_COMPILER)
+GEN_SUBDIR = gen
+OBJ_SUBDIR = $(GEN_SUBDIR)/$(CHPL_MAKE_PLATFORM)/$(CHPL_MAKE_COMPILER)
 OBJ_SUBDIR_TIMESTAMP = $(OBJ_SUBDIR)/.timestamp
 OBJ_SUBDIR_MADE = $(OBJ_SUBDIR_TIMESTAMP)
 OBJ_SUBDIR_SAFESLASH = $(subst /,\\/, $(OBJ_SUBDIR))
@@ -111,6 +113,11 @@ $(OBJ_SUBDIR_TIMESTAMP):
 	@ln -s $(CHPLDEVTMP)/chapel-$(USER)$(CURDIR)/$(CHPL_MAKE_PLATFORM) .
 	@-touch $(OBJ_SUBDIR_TIMESTAMP)
 endif
+
+RUNTIME_UNIQUE_SUBDIR = comm-$(CHPL_MAKE_COMM)/threads-$(CHPL_MAKE_THREADS)
+LAUNCHER_UNIQUE_SUBDIR = comm-$(CHPL_MAKE_COMM)/launch-$(CHPL_MAKE_LAUNCHER)
+RUNTIME_OBJDIR = $(OBJ_SUBDIR)/$(RUNTIME_UNIQUE_SUBDIR)
+LAUNCHER_OBJDIR = $(OBJ_SUBDIR)/$(LAUNCHER_UNIQUE_SUBDIR)
 
 
 #

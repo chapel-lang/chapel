@@ -6,14 +6,17 @@ RUNTIME_SUBDIR = src
 #
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
-COMMON_OBJDIR = $(OBJ_SUBDIR)/threads-$(CHPL_MAKE_THREADS)/comm-$(CHPL_MAKE_COMM)
+COMMON_OBJDIR = $(RUNTIME_OBJDIR)
+COMMON_LAUNCHER_OBJDIR = $(LAUNCHER_OBJDIR)
 include Makefile.share
 
-TARGETS = $(COMMON_OBJS) $(MAIN_OBJS)
+TARGETS = \
+	$(COMMON_OBJS) \
+	$(MAIN_OBJS) \
+	$(MAIN_LAUNCHER_OBJS) \
+	$(COMMON_LAUNCHER_OBJS) \
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
-
-FORCE:
 
 #
 # standard footer
@@ -26,4 +29,4 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
 #
 $(RUNTIME_OBJ_DIR)/gdb.o: gdb.c $(RUNTIME_OBJ_DIR_STAMP)
 	@if [ `grep "chplrt.h" $< | wc -l` -ne 1 ]; then echo "PROBLEM:  $< does not include 'chplrt.h'."; exit 1; fi
-	$(CC) -c -g $(RUNTIME_CFLAGS) -o $@ $<
+	$(CC) -c -g $(RUNTIME_CFLAGS) $(RUNTIME_INCLS) -o $@ $<

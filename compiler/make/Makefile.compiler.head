@@ -62,7 +62,7 @@ CLEAN_TARGS = \
 
 CLOBBER_TARGS = \
 	$(CLEAN_TARGS) \
-	./$(CHPL_MAKE_PLATFORM) \
+	./$(GEN_SUBDIR) \
 	*~
 
 
