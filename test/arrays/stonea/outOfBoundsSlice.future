@@ -1,0 +1,6 @@
+feature request: Allow out of bounds slice to produce a degenerate domain rather than a runtime error.
+
+An example of this in a less-trivial code is line 89 of
+$CHPL_HOME/test/studies/hpcc/HPL/stonea/serial/hplExample1.chpl. This is the
+line that states "col[k+1..] /= pivot", but this statement has to be wrapped in
+an if. It would be convienent to not have to explictly write such bound checks.
