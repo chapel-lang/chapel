@@ -467,7 +467,7 @@ addLocalVariablesLiveAtYields(Vec<Symbol*>& syms, FnSymbol* fn, CallExpr* single
   Vec<Vec<bool>*> OUT;
   liveVariableAnalysis(fn, locals, localMap, useSet, defSet, OUT);
 
-  BlockStmt* loop;
+  BlockStmt* loop = NULL;
   if (singleLoopYield)
     loop = toBlockStmt(singleLoopYield->parentExpr);
 
