@@ -1,0 +1,57 @@
+Index: modules/standard/ChapelRange.chpl
+===================================================================
+--- modules/standard/ChapelRange.chpl	(revision 14281)
++++ modules/standard/ChapelRange.chpl	(working copy)
+@@ -37,7 +37,19 @@
+ def _build_range(low: uint(64), high: uint(64))
+   return new range(uint(64), BoundedRangeType.bounded, false, low, high);
+ 
++//
++// syntax for counted ranges
++//
++def _build_counted_range(low: int, high: int)
++  return new range(int, BoundedRangeType.bounded, false, low, low+high-1);
++def _build_counted_range(low: uint, high: uint)
++  return new range(uint, BoundedRangeType.bounded, false, low, low+high-1);
++def _build_counted_range(low: int(64), high: int(64))
++  return new range(int(64), BoundedRangeType.bounded, false, low, low+high-1);
++def _build_counted_range(low: uint(64), high: uint(64))
++  return new range(uint(64), BoundedRangeType.bounded, false, low, low+high-1);
+ 
++
+ //
+ // syntax function for unbounded ranges
+ //
+Index: compiler/parser/chapel.lex
+===================================================================
+--- compiler/parser/chapel.lex	(revision 14281)
++++ compiler/parser/chapel.lex	(working copy)
+@@ -136,6 +136,7 @@
+ 
+ "<=>"           processToken(TSWAP);
+ 
++"#"             processToken(THASH);
+ ".."            processToken(TDOTDOT);
+ "..."           processToken(TDOTDOTDOT);
+ 
+Index: compiler/parser/chapel.y
+===================================================================
+--- compiler/parser/chapel.y	(revision 14281)
++++ compiler/parser/chapel.y	(working copy)
+@@ -222,6 +222,7 @@
+ %left TBY
+ %left TRSBR
+ %left TIN
++%left THASH
+ %left TDOTDOT
+ %right TSTARTUPLE
+ %left TOR
+@@ -1476,6 +1477,8 @@
+     { $$ = new CallExpr("_cast", $3, $1); }
+ | expr TDOTDOT expr
+     { $$ = new CallExpr("_build_range", $1, $3); }
++| expr TDOTDOT THASH expr
++    { $$ = new CallExpr("_build_counted_range", $1, $4); }
+ | expr TDOTDOT
+     { $$ = new CallExpr("_build_range", buildDotExpr("BoundedRangeType", "boundedLow"), $1); }
+ | TDOTDOT expr
