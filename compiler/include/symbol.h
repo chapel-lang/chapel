@@ -161,7 +161,7 @@ class FnSymbol : public Symbol {
   Symbol* _outer;
   bool isMethod;
   FnSymbol *instantiatedFrom;
-  ASTMap substitutions;
+  SymbolMap substitutions;
   Vec<FnSymbol *> *instantiatedTo;
   BlockStmt* instantiationPoint; // point of instantiation
   bool visible; // included in visible function list for dispatch
@@ -185,9 +185,9 @@ class FnSymbol : public Symbol {
 
   FnSymbol* promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs, bool isSquare);
   FnSymbol* order_wrapper(Map<Symbol*,Symbol*>* formals_to_formals, bool isSquare);
-  FnSymbol* coercion_wrapper(ASTMap* coercion_substitutions, Map<ArgSymbol*,bool>* coercions, bool isSquare);
+  FnSymbol* coercion_wrapper(SymbolMap* coercion_substitutions, Map<ArgSymbol*,bool>* coercions, bool isSquare);
   FnSymbol* default_wrapper(Vec<Symbol*>* defaults, Map<Symbol*,Symbol*>* paramMap, bool isSquare);
-  FnSymbol* instantiate_generic(ASTMap* substitutions, 
+  FnSymbol* instantiate_generic(SymbolMap* substitutions, 
                                 Map<Symbol*,Symbol*>* paramMap,
                                 CallExpr* call);
   void codegenHeader(FILE* outfile);

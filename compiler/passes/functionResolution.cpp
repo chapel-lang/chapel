@@ -47,7 +47,7 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
 static Expr* preFold(Expr* expr);
 static Expr* postFold(Expr* expr);
 
-static FnSymbol* instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call);
+static FnSymbol* instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call);
 
 static void setScalarPromotionType(ClassType* ct);
 static void fixTypeNames(ClassType* ct);
@@ -255,7 +255,7 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
     if (actualType->isGeneric) {
       return false;
     } else {
-      Type *base_type = (Type*)(actualType->substitutions.v[0].value);
+      Type *base_type = actualType->substitutions.v[0].value->type;
       return canDispatch(base_type, actualSym, formalType, fn, require_scalar_promotion);
     }
   }
@@ -488,7 +488,7 @@ computeActualFormalMap(FnSymbol* fn,
 
 
 static void
-computeGenericSubs(ASTMap &subs,
+computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
                    Vec<Type*>* formalActuals,
                    Vec<Symbol*>* formalSyms) {
@@ -524,16 +524,16 @@ computeGenericSubs(ASTMap &subs,
 
       if (formalActuals->v[i]) {
         if (canInstantiate(formalActuals->v[i], formal->type)) {
-          subs.put(formal, formalActuals->v[i]);
+          subs.put(formal, formalActuals->v[i]->symbol);
         } else if (Type* st = formalActuals->v[i]->scalarPromotionType) {
           if (canInstantiate(st, formal->type))
-            subs.put(formal, st);
+            subs.put(formal, st->symbol);
         } else if (Type* vt = getValueType(formalActuals->v[i])) {
           if (canInstantiate(vt, formal->type))
-            subs.put(formal, vt);
+            subs.put(formal, vt->symbol);
           else if (Type* st = vt->scalarPromotionType)
             if (canInstantiate(st, formal->type))
-              subs.put(formal, st);
+              subs.put(formal, st->symbol);
         }
       } else if (formal->defaultExpr) {
 
@@ -547,7 +547,7 @@ computeGenericSubs(ASTMap &subs,
         Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
         if (canInstantiate(defaultType, formal->type) ||
             defaultType == gNil->type) { // constructor default
-          subs.put(formal, defaultType);
+          subs.put(formal, defaultType->symbol);
         }
       }
     }
@@ -696,7 +696,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
   }
 
   if (fn->isGeneric) {
-    ASTMap subs;
+    SymbolMap subs;
     computeGenericSubs(subs, fn, &formalActuals, &formalSyms);
     if (subs.n) {
       FnSymbol* inst_fn = instantiate(fn, &subs, call);
@@ -847,7 +847,7 @@ build_coercion_wrapper(FnSymbol* fn,
                        Vec<Type*>* actualTypes,
                        Vec<Symbol*>* actualSyms,
                        bool isSquare) {
-  ASTMap subs;
+  SymbolMap subs;
   Map<ArgSymbol*,bool> coercions;
   int j = -1;
   bool coerce = false;
@@ -1687,7 +1687,7 @@ resolveCall(CallExpr* call) {
       call->partialTag = false;
     }
     if (resolvedFn && resolvedFn->hasPragma("data set error")) {
-      Type* elt_type = toType(resolvedFn->getFormal(1)->type->substitutions.v[0].value);
+      Type* elt_type = resolvedFn->getFormal(1)->type->substitutions.v[0].value->type;
       if (!elt_type)
         INT_FATAL(call, "Unexpected substitution of ddata class");
       USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
@@ -2699,15 +2699,13 @@ postFold(Expr* expr) {
       const char* memberName = get_string(call->get(2));
       Symbol* sym = baseType->getField(memberName);
       if (sym->isParameter()) {
-        Vec<BaseAST*> keys;
+        Vec<Symbol*> keys;
         baseType->substitutions.get_keys(keys);
-        forv_Vec(BaseAST, key, keys) {
-          if (Symbol* var = toSymbol(key)) {
-            if (!strcmp(sym->name, var->name)) {
-              if (Symbol* value = toSymbol(baseType->substitutions.get(key))) {
-                result = new SymExpr(value);
-                call->replace(result);
-              }
+        forv_Vec(Symbol, key, keys) {
+          if (!strcmp(sym->name, key->name)) {
+            if (Symbol* value = baseType->substitutions.get(key)) {
+              result = new SymExpr(value);
+              call->replace(result);
             }
           }
         }
@@ -3318,18 +3316,18 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
       continue;
     if (cfn && possible_signature_match(pfn, cfn)) {
       if (ct->isGeneric) {
-        ASTMap subs;
+        SymbolMap subs;
         Vec<Type*> icts;
         collectInstantiatedClassTypes(icts, ct);
         forv_Vec(Type, ict, icts) {
-          subs.put(cfn->getFormal(2), ict);
+          subs.put(cfn->getFormal(2), ict->symbol);
           for (int i = 3; i <= cfn->numFormals(); i++) {
             ArgSymbol* arg = cfn->getFormal(i);
             if (arg->intent == INTENT_PARAM) {
               INT_FATAL(arg, "unhandled case");
             } else if (arg->type->isGeneric) {
               if (pfn->getFormal(i)) {
-                subs.put(arg, pfn->getFormal(i)->type);
+                subs.put(arg, pfn->getFormal(i)->type->symbol);
               }
             }
           }
@@ -3353,13 +3351,13 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
           }
         }
       } else {
-        ASTMap subs;
+        SymbolMap subs;
         for (int i = 3; i <= cfn->numFormals(); i++) {
           ArgSymbol* arg = cfn->getFormal(i);
           if (arg->intent == INTENT_PARAM) {
             subs.put(arg, paramMap.get(pfn->getFormal(i)));
           } else if (arg->type->isGeneric) {
-            subs.put(arg, pfn->getFormal(i)->type);
+            subs.put(arg, pfn->getFormal(i)->type->symbol);
           }
         }
         if (subs.n) {
@@ -4147,7 +4145,7 @@ setScalarPromotionType(ClassType* ct) {
 
 
 static FnSymbol*
-instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call) {
+instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   static Vec<FnSymbol*> reportSet;  // do not report cached instantiations
   static Vec<FnSymbol*> whereStack;
   FnSymbol* ifn = fn->instantiate_generic(subs, &paramMap, call);
@@ -4193,7 +4191,7 @@ instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call) {
       len = sprintf(msg, "instantiated %s(", fn->name);
     bool first = true;
     for_formals(formal, ifn) {
-      form_Map(ASTMapElem, e, ifn->substitutions) {
+      form_Map(SymbolMapElem, e, ifn->substitutions) {
         ArgSymbol* arg = toArgSymbol(e->key);
         if (!strcmp(formal->name, arg->name)) {
           if (!strcmp(arg->name, "meme")) // do not show meme argument
@@ -4205,16 +4203,15 @@ instantiate(FnSymbol* fn, ASTMap* subs, CallExpr* call) {
           INT_ASSERT(arg);
           if (strcmp(ifn->name, "_construct__tuple"))
             len += sprintf(msg+len, "%s = ", arg->name);
-          if (Type* t = toType(e->value))
-            len += sprintf(msg+len, "%s", t->symbol->name);
-          else if (Symbol* s = toSymbol(e->value)) {
-            VarSymbol* vs = toVarSymbol(s);
-            if (vs && vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
+          if (TypeSymbol* ts = toTypeSymbol(e->value))
+            len += sprintf(msg+len, "%s", ts->name);
+          else if (VarSymbol* vs = toVarSymbol(e->value)) {
+            if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
               len += sprintf(msg+len, "%lld", vs->immediate->int_value());
-            else if (vs && vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
+            else if (vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
               len += sprintf(msg+len, "\"%s\"", vs->immediate->v_string);
             else
-              len += sprintf(msg+len, "%s", s->name);
+              len += sprintf(msg+len, "%s", vs->name);
           } else
             INT_FATAL("unexpected case using --explain-instantiation");
         }

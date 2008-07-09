@@ -13,9 +13,6 @@ class VarSymbol;
 class Type;
 class Expr;
 
-typedef Map<BaseAST*,BaseAST*> ASTMap;
-typedef MapElem<BaseAST*,BaseAST*> ASTMapElem;
-
 typedef Map<Symbol*,Symbol*> SymbolMap;
 typedef MapElem<Symbol*,Symbol*> SymbolMapElem;
 
@@ -258,5 +255,73 @@ void registerModule(ModuleSymbol* mod);
   default:                                                              \
     break;                                                              \
   }
+
+#define AST_ADD_CHILD(_asts, _a, _t, _m)                                \
+  if (((_t*)_a)->_m) {                                                  \
+    _asts.add(((_t*)_a)->_m);                                           \
+  }
+
+#define AST_ADD_LIST(_asts, _a, _t, _m)                                 \
+  for_alist(next_ast, ((_t*)_a)->_m) {                                  \
+    _asts.add(next_ast);                                                \
+  }
+
+#define AST_CHILDREN_PUSH(_asts, _a)                                    \
+  switch (_a->astTag) {                                                 \
+  case EXPR_CALL:                                                       \
+    AST_ADD_CHILD(_asts, _a, CallExpr, baseExpr);                       \
+    AST_ADD_LIST(_asts, _a, CallExpr, argList);                         \
+    break;                                                              \
+  case EXPR_NAMED:                                                      \
+    AST_ADD_CHILD(_asts, _a, NamedExpr, actual);                        \
+    break;                                                              \
+  case EXPR_DEF:                                                        \
+    AST_ADD_CHILD(_asts, _a, DefExpr, init);                            \
+    AST_ADD_CHILD(_asts, _a, DefExpr, exprType);                        \
+    AST_ADD_CHILD(_asts, _a, DefExpr, sym);                             \
+    break;                                                              \
+  case STMT_BLOCK:                                                      \
+    AST_ADD_LIST(_asts, _a, BlockStmt, body);                           \
+    AST_ADD_CHILD(_asts, _a, BlockStmt, loopInfo);                      \
+    break;                                                              \
+  case STMT_COND:                                                       \
+    AST_ADD_CHILD(_asts, _a, CondStmt, condExpr);                       \
+    AST_ADD_CHILD(_asts, _a, CondStmt, thenStmt);                       \
+    AST_ADD_CHILD(_asts, _a, CondStmt, elseStmt);                       \
+    break;                                                              \
+  case STMT_GOTO:                                                       \
+    AST_ADD_CHILD(_asts, _a, GotoStmt, label);                          \
+    break;                                                              \
+  case SYMBOL_MODULE:                                                   \
+    AST_ADD_CHILD(_asts, _a, ModuleSymbol, block);                      \
+    break;                                                              \
+  case SYMBOL_ARG:                                                      \
+    AST_ADD_CHILD(_asts, _a, ArgSymbol, typeExpr);                      \
+    AST_ADD_CHILD(_asts, _a, ArgSymbol, defaultExpr);                   \
+    AST_ADD_CHILD(_asts, _a, ArgSymbol, variableExpr);                  \
+    break;                                                              \
+  case SYMBOL_TYPE:                                                     \
+    AST_ADD_CHILD(_asts, _a, Symbol, type);                             \
+    break;                                                              \
+  case SYMBOL_FN:                                                       \
+    AST_ADD_LIST(_asts, _a, FnSymbol, formals);                         \
+    AST_ADD_CHILD(_asts, _a, FnSymbol, setter);                         \
+    AST_ADD_CHILD(_asts, _a, FnSymbol, body);                           \
+    AST_ADD_CHILD(_asts, _a, FnSymbol, where);                          \
+    AST_ADD_CHILD(_asts, _a, FnSymbol, retExprType);                    \
+    break;                                                              \
+  case TYPE_ENUM:                                                       \
+    AST_ADD_LIST(_asts, _a, EnumType, constants);                       \
+    break;                                                              \
+  case TYPE_CLASS:                                                      \
+    AST_ADD_LIST(_asts, _a, ClassType, fields);                         \
+    AST_ADD_LIST(_asts, _a, ClassType, inherits);                       \
+    break;                                                              \
+  default:                                                              \
+    break;                                                              \
+  }
+
+#define AST_CHILDREN_POP(_asts, _a)             \
+  _a = _asts.pop()                              \
 
 #endif

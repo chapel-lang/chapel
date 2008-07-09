@@ -310,7 +310,7 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "} _u;\n");
   }
   if (symbol->hasPragma("data class")) {
-    toType(substitutions.v[0].value)->symbol->codegen(outfile);
+    toTypeSymbol(substitutions.v[0].value)->codegen(outfile);
     fprintf(outfile, "* _data;\n");
   }
   fprintf(outfile, "} ");

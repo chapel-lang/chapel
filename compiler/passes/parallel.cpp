@@ -499,8 +499,8 @@ insertWideReferences(void) {
   //
   forv_Vec(TypeSymbol, ts, gTypes) {
     if (ts->hasPragma("data class")) {
-      if (Type* nt = wideClassMap.get(toType(ts->type->substitutions.v[0].value))) {
-        ts->type->substitutions.v[0].value = nt;
+      if (Type* nt = wideClassMap.get(toTypeSymbol(ts->type->substitutions.v[0].value)->type)) {
+        ts->type->substitutions.v[0].value = nt->symbol;
       }
     }
   }

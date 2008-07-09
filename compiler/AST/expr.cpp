@@ -734,14 +734,14 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, "_COMM_WIDE_ARRAY_SET(");
 
         fprintf(outfile, "%s, ", get(1)->typeInfo()->getField("addr")->type->symbol->cname);
-        fprintf(outfile, "%s, ", wideRefMap.get(toType(get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->refType)->symbol->cname);
+        fprintf(outfile, "%s, ", wideRefMap.get(toTypeSymbol(get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->type->refType)->symbol->cname);
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(2)->codegen(outfile);
         fprintf(outfile, ", ");
         fprintf(outfile, "%s, ", get(1)->typeInfo()->getField("addr")->type->symbol->cname);
         fprintf(outfile, "_data, ");
-        fprintf(outfile, "%s, ", toType(get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->symbol->cname);
+        fprintf(outfile, "%s, ", toTypeSymbol(get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->cname);
         get(3)->codegen(outfile);
         fprintf(outfile, ")");
       } else
@@ -901,7 +901,7 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             fprintf(outfile, "%s, ", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
             fprintf(outfile, "_data, ");
-            fprintf(outfile, "%s)", toType(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->symbol->cname);
+            fprintf(outfile, "%s)", toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->cname);
           } else {
             get(1)->codegen(outfile);
             fprintf(outfile, " = ");
@@ -913,7 +913,7 @@ void CallExpr::codegen(FILE* outfile) {
           if (call->get(1)->typeInfo()->symbol->hasPragma("wide class")) {
             fprintf(outfile, "_COMM_WIDE_ARRAY_GET(");
             fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
-            fprintf(outfile, "%s, ", wideRefMap.get(toType(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->refType)->symbol->cname);
+            fprintf(outfile, "%s, ", wideRefMap.get(toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->type->refType)->symbol->cname);
             get(1)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(1)->codegen(outfile);
@@ -922,7 +922,7 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             fprintf(outfile, "%s, ", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
             fprintf(outfile, "_data, ");
-            fprintf(outfile, "%s)", toType(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->symbol->cname);
+            fprintf(outfile, "%s)", toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->cname);
           } else {
             get(1)->codegen(outfile);
             fprintf(outfile, " = ");

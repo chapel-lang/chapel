@@ -160,7 +160,7 @@ returnInfoArrayIndex(CallExpr* call) {
     type = type->getField("addr")->type;
   if (!type->substitutions.n)
     INT_FATAL(call, "bad primitive");
-  return toType(type->substitutions.v[0].value)->refType;
+  return toTypeSymbol(type->substitutions.v[0].value)->type->refType;
 }
 
 static Type*

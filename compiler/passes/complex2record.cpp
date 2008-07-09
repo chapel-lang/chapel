@@ -101,9 +101,11 @@ complex2record() {
   //
   forv_Vec(TypeSymbol, ts, gTypes) {
     if (ts->hasPragma("data class")) {
-      if (Type* nt = toType(ts->type->substitutions.v[0].value)) {
-        if (is_complex_type(nt)) {
-          ts->type->substitutions.v[0].value = complex2rec(nt);
+      if (TypeSymbol* nt = toTypeSymbol(ts->type->substitutions.v[0].value)) {
+        if (is_complex_type(nt->type)) {
+          Type* complexType = complex2rec(nt->type);
+          Symbol* complexTypeSymbol = (complexType) ? complexType->symbol : 0;
+          ts->type->substitutions.v[0].value = complexTypeSymbol;
         }
       }
     }

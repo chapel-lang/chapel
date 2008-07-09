@@ -33,27 +33,27 @@ VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
 VarSymbol *gBoundsChecking = NULL;
 
-/*** ASTMap Cache vvv ***/
+/*** FnSymbol + SymbolMap Cache vvv ***/
 class Inst {
  public:
-  Inst(FnSymbol* iNewFn, ASTMap* iSubs) : newFn(iNewFn), subs(*iSubs) { }
+  Inst(FnSymbol* iNewFn, SymbolMap* iSubs) : newFn(iNewFn), subs(*iSubs) { }
   FnSymbol* newFn;
-  ASTMap subs;
+  SymbolMap subs;
 };
 
 static bool 
-subs_match(ASTMap* s1, ASTMap* s2) {
-  form_Map(ASTMapElem, e, *s1)
+subs_match(SymbolMap* s1, SymbolMap* s2) {
+  form_Map(SymbolMapElem, e, *s1)
     if (s2->get(e->key) != e->value)
       return false;
-  form_Map(ASTMapElem, e, *s2)
+  form_Map(SymbolMapElem, e, *s2)
     if (s1->get(e->key) != e->value)
       return false;
   return true;
 }
 
 static FnSymbol*
-checkMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache, FnSymbol* oldFn, ASTMap* subs) {
+checkMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache, FnSymbol* oldFn, SymbolMap* subs) {
   if (Vec<Inst*>* lines = cache.get(oldFn)) {
     forv_Vec(Inst, inst, *lines) {
       if (subs_match(subs, &inst->subs)) {
@@ -66,7 +66,7 @@ checkMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache, FnSymbol* oldFn, ASTMap* subs) 
 
 static void
 addMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache,
-            FnSymbol* oldFn, FnSymbol* newFn, ASTMap* subs) {
+            FnSymbol* oldFn, FnSymbol* newFn, SymbolMap* subs) {
   Vec<Inst*>* lines = cache.get(oldFn);
   if (lines) {
     lines->add(new Inst(newFn, subs));
@@ -78,7 +78,7 @@ addMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache,
 }
 
 static void
-freeASTMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache) {
+freeSymbolMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache) {
   Vec<FnSymbol*> keys;
   cache.get_keys(keys);
   forv_Vec(FnSymbol, key, keys) {
@@ -94,7 +94,7 @@ freeASTMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache) {
 static Map<FnSymbol*,Vec<Inst*>*> icache; // instantiation cache
 static Map<FnSymbol*,Vec<Inst*>*> cw_cache; // coercion wrappers cache
 static Map<FnSymbol*,Vec<Inst*>*> pw_cache; // promotion wrappers cache
-/*** ASTMap Cache ^^^ ***/
+/*** SymbolMap Cache ^^^ ***/
 
 
 /*** Default Wrapper Cache vvv ***/
@@ -145,9 +145,9 @@ freeWrapperAndInstantiationCaches() {
   }
   dwcache.clear();
 
-  freeASTMapCache(icache);
-  freeASTMapCache(cw_cache);
-  freeASTMapCache(pw_cache);
+  freeSymbolMapCache(icache);
+  freeSymbolMapCache(cw_cache);
+  freeSymbolMapCache(pw_cache);
 }
 
 
@@ -712,7 +712,7 @@ build_empty_wrapper(FnSymbol* fn) {
 
 
 FnSymbol*
-FnSymbol::coercion_wrapper(ASTMap* coercion_map,
+FnSymbol::coercion_wrapper(SymbolMap* coercion_map,
                            Map<ArgSymbol*,bool>* coercions,
                            bool isSquare) {
   // return cached if we already created this coercion wrapper
@@ -969,7 +969,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map,
   wrapper->cname = astr("_order_wrap_", cname);
   CallExpr* call = new CallExpr(this);
   call->square = isSquare;
-  ASTMap copy_map;
+  SymbolMap copy_map;
   for_formals(formal, this) {
     Symbol* wrapper_formal = formal->copy();
     if (_this == formal)
@@ -996,7 +996,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map,
 FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
                                       bool square) {
   // return cached if we already created this coercion wrapper
-  ASTMap map;
+  SymbolMap map;
   Vec<Symbol*> keys;
   promotion_subs->get_keys(keys);
   forv_Vec(Symbol*, key, keys)
@@ -1057,61 +1057,47 @@ FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
 }
 
 static void
-copyGenericSub(ASTMap& subs, FnSymbol* root, FnSymbol* fn, BaseAST* key, BaseAST* value) {
+copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbol* value) {
   if (!strcmp("_type_construct__tuple", root->name)) {
-    if (Symbol* sym = toSymbol(key)) {
-      if (sym->name[0] == 'x') {
-        subs.put((BaseAST*)(intptr_t)atoi(sym->name+1), value);
-        return;
-      }
+    if (key->name[0] == 'x') {
+      subs.put(new_IntSymbol(atoi(key->name+1)), value);
+      return;
     }
   }
-  if (toArgSymbol(key)) {
-    if (root != fn) {
-      int i = 1;
-      for_formals(formal, fn) {
-        if (formal == key) {
-          subs.put(root->getFormal(i), value);
-          return;
-        }
-        i++;
+  if (root != fn) {
+    int i = 1;
+    for_formals(formal, fn) {
+      if (formal == key) {
+        subs.put(root->getFormal(i), value);
+        return;
       }
+      i++;
     }
   }
   subs.put(key, value);
 }
 
 static FnSymbol*
-instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
+instantiate_function(FnSymbol *fn, SymbolMap *generic_subs, Type* newType,
                      Map<Symbol*,Symbol*>* paramMap, CallExpr* call) {
   Map<Symbol*,Symbol*> map;
   FnSymbol* clone = fn->copy(&map);
+
   clone->isGeneric = false;
   clone->visible = false;
   clone->instantiatedFrom = fn;
   if (call)
     clone->instantiationPoint = getVisibilityBlock(call);
 
-  FnSymbol* root = fn;
-  while (root->instantiatedFrom && root->numFormals() == root->instantiatedFrom->numFormals())
-    root = root->instantiatedFrom;
-
-  if (fn->instantiatedFrom)
-    form_Map(ASTMapElem, e, fn->substitutions)
-      copyGenericSub(clone->substitutions, root, fn, e->key, e->value);
-  form_Map(ASTMapElem, e, *generic_subs)
-    copyGenericSub(clone->substitutions, root, fn, e->key, e->value);
-
-  addMapCache(icache, root, clone, &clone->substitutions);
   fn->defPoint->insertBefore(new DefExpr(clone));
 
   // add parameter instantiations to parameter map for function resolution
   for (int i = 0; i < generic_subs->n; i++) {
     if (ArgSymbol* arg = toArgSymbol(generic_subs->v[i].key)) {
       if (arg->intent == INTENT_PARAM) {
-        Symbol* key = toSymbol(map.get(arg));
-        Symbol* val = toSymbol(generic_subs->v[i].value);
-        if (!key || !val)
+        Symbol* key = map.get(arg);
+        Symbol* val = generic_subs->v[i].value;
+        if (!key || !val || isTypeSymbol(val))
           INT_FATAL("error building parameter map in instantiation");
         paramMap->put(key, val);
       }
@@ -1123,7 +1109,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
   // argument is later instantiated based on the type of the parameter
   for_formals(arg, fn) {
     if (paramMap->get(arg)) {
-      Symbol* key = toSymbol(map.get(arg));
+      Symbol* key = map.get(arg);
       Symbol* val = paramMap->get(arg);
       if (!key || !val)
         INT_FATAL("error building parameter map in instantiation");
@@ -1141,8 +1127,8 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
   for_formals(formal, fn) {
     ArgSymbol* cloneFormal = toArgSymbol(map.get(formal));
 
-    if (BaseAST* value = generic_subs->get(formal)) {
-      if (formal->intent != INTENT_PARAM && !isType(value)) {
+    if (Symbol* value = generic_subs->get(formal)) {
+      if (formal->intent != INTENT_PARAM && !isTypeSymbol(value)) {
         INT_FATAL(value, "Unexpected generic substitution");
       }
       if (formal->intent == INTENT_PARAM) {
@@ -1152,7 +1138,7 @@ instantiate_function(FnSymbol *fn, ASTMap *generic_subs, Type* newType,
           cloneFormal->type = paramMap->get(cloneFormal)->type;
       } else {
         cloneFormal->instantiatedFrom = formal->type;
-        cloneFormal->type = toType(value);
+        cloneFormal->type = value->type;
       }
       if (!cloneFormal->defaultExpr || formal->isTypeVariable) {
         if (cloneFormal->defaultExpr)
@@ -1284,52 +1270,48 @@ count_instantiate_with_recursion(Type* t) {
 }
 
 
-static Type*
-getNewSubType(FnSymbol* fn, Type* t, BaseAST* key) {
-  if (t->symbol->hasPragma( "sync") &&
+static TypeSymbol*
+getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
+  if (value->hasPragma( "sync") &&
       strcmp(fn->name, "_construct__tuple") &&
       !fn->hasPragma("heap") &&
       !fn->hasPragma("ref")) {
     if (!fn->hasPragma("sync") ||
-        (fn->isMethod && (t->instantiatedFrom != fn->_this->type))) {
+        (fn->isMethod && (value->type->instantiatedFrom != fn->_this->type))) {
       // allow types to be instantiated to sync types
-      Symbol* arg = toSymbol(key);
-      if (!arg || !arg->isTypeVariable) {
+      if (!key->isTypeVariable) {
         // instantiation of a non-type formal of sync type loses sync
 
         // unless sync is explicitly specified as the generic
-        if (Symbol* sym = toSymbol(key))
-          if (sym->type->symbol->hasPragma("sync"))
-            return t;
+        if (key->type->symbol->hasPragma("sync"))
+          return value;
 
-        Type* nt = toType(t->substitutions.v[0].value);
-        return getNewSubType(fn, nt, key);
+        TypeSymbol* nt = toTypeSymbol(value->type->substitutions.v[0].value);
+        return getNewSubType(fn, key, nt);
       }
     }
-  } else if (t->symbol->hasPragma("ref") &&
+  } else if (value->hasPragma("ref") &&
              !fn->hasPragma("ref") &&
              !fn->hasPragma("allow ref") &&
              !fn->hasPragma("tuple")) {
     // instantiation of a formal of ref type loses ref
-    return getNewSubType(fn, getValueType(t), key);
+    return getNewSubType(fn, key, getValueType(value->type)->symbol);
   }
-  return t;
+  return value;
 }
 
 
 FnSymbol*
-FnSymbol::instantiate_generic(ASTMap* generic_substitutions, 
+FnSymbol::instantiate_generic(SymbolMap* generic_substitutions, 
                               Map<Symbol*,Symbol*>* paramMap,
                               CallExpr* call) {
-  Vec<BaseAST*> keys;
-  generic_substitutions->get_keys( keys);
-  forv_Vec(BaseAST, key, keys) {
-    if (Type* t = toType(generic_substitutions->get( key))) {
-      if (t->isGeneric)
+  form_Map(SymbolMapElem, e, *generic_substitutions) {
+    if (TypeSymbol* ts = toTypeSymbol(e->value)) {
+      if (ts->type->isGeneric)
         INT_FATAL(this, "illegal instantiation with a generic type");
-      Type* nt = getNewSubType(this, t, key);
-      if (t != nt)
-        generic_substitutions->put(key, nt);
+      TypeSymbol* nts = getNewSubType(this, e->key, ts);
+      if (ts != nts)
+        e->value = nts;
     }
   }
 
@@ -1338,27 +1320,16 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
   while (root->instantiatedFrom && root->numFormals() == root->instantiatedFrom->numFormals())
     root = root->instantiatedFrom;
 
-  ASTMap all_substitutions;
+  SymbolMap all_substitutions;
   if (instantiatedFrom)
-    form_Map(ASTMapElem, e, substitutions)
-      copyGenericSub(all_substitutions, root, this, e->key, e->value);
-  form_Map(ASTMapElem, e, *generic_substitutions)
+    form_Map(SymbolMapElem, e, substitutions)
+      all_substitutions.put(e->key, e->value);
+  form_Map(SymbolMapElem, e, *generic_substitutions)
     copyGenericSub(all_substitutions, root, this, e->key, e->value);
 
-//   if (root->id == 53713) {
-//     printf("chk %d: ", root->id);
-//     form_Map(ASTMapElem, e, all_substitutions) {
-//       if (Type* t = toType(e->value))
-//         printf("%s [%x->%d] ", t->symbol->name, (unsigned int)e->key, e->value->id);
-//       else
-//         printf("(not a type) [%x->%d] ", (unsigned int)e->key, e->value->id);
-//     }
-//   }
   if (FnSymbol* cached = checkMapCache(icache, root, &all_substitutions)) {
-//     if (root->id == 53713) printf("cached\n");
     return cached;
   }
-//   if (root->id == 53713) printf("\n");
 
   //  static int uid = 1;
   FnSymbol* newfn = NULL;
@@ -1397,8 +1368,8 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
     clone->cname = astr(clone->cname, "_");
     bool first = false;
     for (int i = 0; i < generic_substitutions->n; i++) {
-      if (BaseAST* value = generic_substitutions->v[i].value) {
-        if (Type* type = toType(value)) {
+      if (Symbol* value = generic_substitutions->v[i].value) {
+        if (TypeSymbol* ts = toTypeSymbol(value)) {
           if (!first && !strncmp(clone->name, "_tuple", 6)) {
             clone->name = astr("(");
           }
@@ -1406,26 +1377,26 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
             clone->name = astr(clone->name, ",");
             clone->cname = astr(clone->cname, "_");
           }
-          clone->cname = astr(clone->cname, type->symbol->cname);
-          clone->name = astr(clone->name, type->symbol->name);
+          clone->cname = astr(clone->cname, ts->cname);
+          clone->name = astr(clone->name, ts->name);
           if (!clone->type->instantiatedWith)
             clone->type->instantiatedWith = new Vec<Type*>();
-          clone->type->instantiatedWith->add(type);
+          clone->type->instantiatedWith->add(ts->type);
           first = true;
-        } else if (Symbol* symbol = toSymbol(value)) {
+        } else if (Symbol* sym = toSymbol(value)) {
           if (first) {
             clone->name = astr(clone->name, ",");
             clone->cname = astr(clone->cname, "_");
           }
-          VarSymbol* var = toVarSymbol(symbol);
+          VarSymbol* var = toVarSymbol(sym);
           if (var && var->immediate) {
             char imm[128];
             sprint_imm(imm, *var->immediate);
             clone->name = astr(clone->name, imm);
             clone->cname = astr(clone->cname, imm);
           } else {
-            clone->name = astr(clone->name, symbol->cname);
-            clone->cname = astr(clone->cname, symbol->cname);
+            clone->name = astr(clone->name, sym->cname);
+            clone->cname = astr(clone->cname, sym->cname);
           }
           first = true;
         }
@@ -1452,9 +1423,11 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
       USR_FATAL(clone->type, "recursive type instantiation limit reached");
 
     clone->type->substitutions.map_union(*generic_substitutions);
-
     newfn = instantiate_function(this, generic_substitutions, clone->type,
                                  paramMap, call);
+    addMapCache(icache, root, newfn, &all_substitutions);
+    newfn->substitutions.append(all_substitutions);
+
     clone->type->defaultTypeConstructor = newfn;
     newfn->retType = clone->type;
     if (hasPragma("tuple"))
@@ -1462,6 +1435,9 @@ FnSymbol::instantiate_generic(ASTMap* generic_substitutions,
 
   } else {
     newfn = instantiate_function(this, generic_substitutions, NULL, paramMap, call);
+    addMapCache(icache, root, newfn, &all_substitutions);
+    newfn->substitutions.append(all_substitutions);
+    
 
     if (hasPragma("tuple init"))
       newfn = instantiate_tuple_init(newfn);
