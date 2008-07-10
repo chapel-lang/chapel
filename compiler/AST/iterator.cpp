@@ -167,7 +167,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
 static void
 replaceLocalsWithFields(IteratorInfo* ii,
                         Vec<BaseAST*>& asts,
-                        Map<Symbol*,Symbol*>& local2field,
+                        SymbolMap& local2field,
                         Vec<Symbol*>& locals) {
   FnSymbol* fn = ii->iterator;
   Symbol* ic = ii->advance->getFormal(1);
@@ -232,7 +232,7 @@ replaceLocalsWithFields(IteratorInfo* ii,
 static void
 buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   Symbol* ic = ii->advance->getFormal(1);
-  Map<Symbol*,Symbol*> map;
+  SymbolMap map;
   map.put(ic, ii->zip1->_this);
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
@@ -256,7 +256,7 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 static void
 buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   Symbol* ic = ii->advance->getFormal(1);
-  Map<Symbol*,Symbol*> map;
+  SymbolMap map;
   map.put(ic, ii->zip2->_this);
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
@@ -277,7 +277,7 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 static void
 buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   Symbol* ic = ii->advance->getFormal(1);
-  Map<Symbol*,Symbol*> map;
+  SymbolMap map;
   map.put(ic, ii->zip3->_this);
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
@@ -306,7 +306,7 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 static void
 buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   Symbol* ic = ii->advance->getFormal(1);
-  Map<Symbol*,Symbol*> map;
+  SymbolMap map;
   map.put(ic, ii->zip4->_this);
   forv_Vec(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast))
@@ -330,7 +330,7 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 static void
 buildAdvance(FnSymbol* fn,
              Vec<BaseAST*>& asts,
-             Map<Symbol*,Symbol*>& local2field,
+             SymbolMap& local2field,
              Vec<Symbol*>& locals) {
   IteratorInfo* ii = fn->iteratorInfo;
   Symbol* ic = ii->advance->getFormal(1);
@@ -552,7 +552,7 @@ addAllLocalVariables(Vec<Symbol*>& syms, Vec<BaseAST*>& asts) {
 
 static void
 rebuildIterator(IteratorInfo* ii,
-                Map<Symbol*,Symbol*>& local2field,
+                SymbolMap& local2field,
                 Vec<Symbol*>& locals) {
   FnSymbol* fn = ii->iterator;
   for_alist(expr, fn->body->body)
@@ -616,7 +616,7 @@ void lowerIterator(FnSymbol* fn) {
   // variables that are live at places where the iterator methods will
   // yield control back to the loop body.
   //
-  Map<Symbol*,Symbol*> local2field;
+  SymbolMap local2field;
   Vec<Symbol*> locals;
 
   for_formals(formal, fn)

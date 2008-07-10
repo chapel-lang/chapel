@@ -41,7 +41,7 @@ CallInfo::CallInfo(CallExpr* icall) : call(icall) {
 }
 
 
-Map<Symbol*,Symbol*> paramMap;
+SymbolMap paramMap;
 static Expr* dropUnnecessaryCast(CallExpr* call);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
 static Expr* preFold(Expr* expr);
@@ -588,12 +588,12 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
       if (numCopies <= 0)
         return NULL;
 
-      Map<Symbol*,Symbol*> map;
+      SymbolMap map;
       FnSymbol* newFn = fn->copy(&map);
       newFn->isExtern = fn->isExtern; // preserve externess of expanded varargs fn
       newFn->visible = false;
       fn->defPoint->insertBefore(new DefExpr(newFn));
-      Symbol* sym = toSymbol(map.get(def->sym));
+      Symbol* sym = map.get(def->sym);
       sym->defPoint->replace(new SymExpr(new_IntSymbol(numCopies)));
 
       SymbolMap update;
@@ -820,7 +820,7 @@ build_order_wrapper(FnSymbol* fn,
                     Vec<ArgSymbol*>* actualFormals,
                     bool isSquare) {
   bool order_wrapper_required = false;
-  Map<Symbol*,Symbol*> formals_to_formals;
+  SymbolMap formals_to_formals;
   int i = 0;
   for_formals(formal, fn) {
     i++;
@@ -879,7 +879,7 @@ build_promotion_wrapper(FnSymbol* fn,
   if (!strcmp(fn->name, "="))
     return fn;
   bool promotion_wrapper_required = false;
-  Map<Symbol*,Symbol*> promoted_subs;
+  SymbolMap promoted_subs;
   int j = -1;
   for_formals(formal, fn) {
     j++;
@@ -1722,12 +1722,11 @@ resolveCall(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIMITIVE_TUPLE_AND_EXPAND)) {
     SymExpr* sym = toSymExpr(call->get(1));
-    Symbol* var = toSymbol(sym->var);
     int size = 0;
-    for (int i = 0; i < var->type->substitutions.n; i++) {
-      if (var->type->substitutions.v[i].key) {
-        if (!strcmp("size", toSymbol(var->type->substitutions.v[i].key)->name)) {
-          size = toVarSymbol(var->type->substitutions.v[i].value)->immediate->int_value();
+    for (int i = 0; i < sym->var->type->substitutions.n; i++) {
+      if (sym->var->type->substitutions.v[i].key) {
+        if (!strcmp("size", sym->var->type->substitutions.v[i].key->name)) {
+          size = toVarSymbol(sym->var->type->substitutions.v[i].value)->immediate->int_value();
           break;
         }
       }
@@ -1779,7 +1778,7 @@ resolveCall(CallExpr* call) {
     int size = 0;
     for (int i = 0; i < type->substitutions.n; i++) {
       if (type->substitutions.v[i].key) {
-        if (!strcmp("size", toSymbol(type->substitutions.v[i].key)->name)) {
+        if (!strcmp("size", type->substitutions.v[i].key->name)) {
           size = toVarSymbol(type->substitutions.v[i].value)->immediate->int_value();
           break;
         }
@@ -2061,13 +2060,13 @@ static void fold_param_for(CallExpr* loop) {
   Symbol* index = toSymExpr(index_expr)->var;
   if (stride <= 0) {
     for (int i = high; i >= low; i += stride) {
-      Map<Symbol*,Symbol*> map;
+      SymbolMap map;
       map.put(index, new_IntSymbol(i));
       noop->insertBefore(block->copy(&map));
     }
   } else {
     for (int i = low; i <= high; i += stride) {
-      Map<Symbol*,Symbol*> map;
+      SymbolMap map;
       map.put(index, new_IntSymbol(i));
       noop->insertBefore(block->copy(&map));
     }

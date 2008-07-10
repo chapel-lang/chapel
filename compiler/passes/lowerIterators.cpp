@@ -102,7 +102,7 @@ isBoundedIterator(FnSymbol* fn) {
     if (type->symbol->hasPragma("ref"))
       type = getValueType(type);
     if (type->symbol->hasPragma("range")) {
-      if (!strcmp(toSymbol(type->substitutions.v[1].value)->name, "bounded"))
+      if (!strcmp(type->substitutions.v[1].value->name, "bounded"))
         return true;
       else
         return false;

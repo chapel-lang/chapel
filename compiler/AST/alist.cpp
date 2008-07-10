@@ -69,8 +69,6 @@ void AList::insertAtHead(Expr* new_ast) {
     INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtHead");
   if (new_ast->list)
     INT_FATAL(new_ast, "Argument is in a list in AList::insertAtHead");
-  if (toSymbol(new_ast))
-    INT_FATAL(new_ast, "Argument is a symbol in AList::insertAtHead");
   if (CallExpr* call = toCallExpr(new_ast)) {
     if (call && call->isPrimitive(PRIMITIVE_ACTUALS_LIST)) {
       for_actuals(expr, call) {
@@ -99,8 +97,6 @@ void AList::insertAtTail(Expr* new_ast) {
     INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtTail");
   if (new_ast->prev || new_ast->next)
     INT_FATAL(new_ast, "Argument is in a list in AList::insertAtTail");
-  if (toSymbol(new_ast))
-    INT_FATAL(new_ast, "Argument is a symbol in AList::insertAtTail");
   if (CallExpr* call = toCallExpr(new_ast)) {
     if (call && call->isPrimitive(PRIMITIVE_ACTUALS_LIST)) {
       for_actuals(expr, call) {

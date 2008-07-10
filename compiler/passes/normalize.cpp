@@ -1040,7 +1040,7 @@ static void
 clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                           DefExpr* def,
                                           int width) {
-  Map<Symbol*,Symbol*> map;
+  SymbolMap map;
   FnSymbol* newfn = fn->copy(&map);
   Symbol* newsym = map.get(def->sym);
   newsym->defPoint->replace(new SymExpr(new_IntSymbol(width)));

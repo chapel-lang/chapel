@@ -192,7 +192,7 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   // field in sym and compute fieldMap to map the fields to these new
   // vars
   //
-  Map<Symbol*,Symbol*> fieldMap;
+  SymbolMap fieldMap;
   for_fields(field, ct) {
     Symbol* var = new VarSymbol(astr(sym->name, "_", field->name), field->type);
     fieldMap.put(field, var);
@@ -277,7 +277,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
   // field in sym and compute fieldMap to map the fields to these new
   // vars
   //
-  Map<Symbol*,Symbol*> fieldMap;
+  SymbolMap fieldMap;
   for_fields(field, ct) {
     Symbol* var = new VarSymbol(astr(sym->name, "_", field->name), field->type);
     fieldMap.put(field, var);

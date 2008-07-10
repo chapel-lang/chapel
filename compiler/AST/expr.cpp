@@ -160,8 +160,6 @@ void Expr::insertBefore(Expr* new_ast) {
     INT_FATAL(this, "Cannot call insertBefore on Expr not in a list");
   if (new_ast->list)
     INT_FATAL(new_ast, "Argument is in a list in Expr::insertBefore");
-  if (toSymbol(new_ast))
-    INT_FATAL(new_ast, "Argument is a symbol in Expr::insertBefore");
   new_ast->prev = prev;
   new_ast->next = this;
   new_ast->list = list;
@@ -182,8 +180,6 @@ void Expr::insertAfter(Expr* new_ast) {
     INT_FATAL(this, "Cannot call insertAfter on Expr not in a list");
   if (new_ast->list)
     INT_FATAL(new_ast, "Argument is in a list in Expr::insertAfter");
-  if (toSymbol(new_ast))
-    INT_FATAL(new_ast, "Argument is a symbol in Expr::insertAfter");
   new_ast->prev = this;
   new_ast->next = next;
   new_ast->list = list;

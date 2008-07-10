@@ -812,7 +812,7 @@ isShadowedField(ArgSymbol* formal) {
 
 
 FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
-                                    Map<Symbol*,Symbol*>* paramMap,
+                                    SymbolMap* paramMap,
                                     bool isSquare) {
   if (FnSymbol* cached = check_dwcache(this, defaults))
     return cached;
@@ -963,7 +963,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
 }
 
 
-FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map,
+FnSymbol* FnSymbol::order_wrapper(SymbolMap* order_map,
                                   bool isSquare) {
   FnSymbol* wrapper = build_empty_wrapper(this);
   wrapper->cname = astr("_order_wrap_", cname);
@@ -993,7 +993,7 @@ FnSymbol* FnSymbol::order_wrapper(Map<Symbol*,Symbol*>* order_map,
 }
 
 
-FnSymbol* FnSymbol::promotion_wrapper(Map<Symbol*,Symbol*>* promotion_subs,
+FnSymbol* FnSymbol::promotion_wrapper(SymbolMap* promotion_subs,
                                       bool square) {
   // return cached if we already created this coercion wrapper
   SymbolMap map;
@@ -1079,8 +1079,8 @@ copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbo
 
 static FnSymbol*
 instantiate_function(FnSymbol *fn, SymbolMap *generic_subs, Type* newType,
-                     Map<Symbol*,Symbol*>* paramMap, CallExpr* call) {
-  Map<Symbol*,Symbol*> map;
+                     SymbolMap* paramMap, CallExpr* call) {
+  SymbolMap map;
   FnSymbol* clone = fn->copy(&map);
 
   clone->isGeneric = false;
@@ -1303,7 +1303,7 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
 
 FnSymbol*
 FnSymbol::instantiate_generic(SymbolMap* generic_substitutions, 
-                              Map<Symbol*,Symbol*>* paramMap,
+                              SymbolMap* paramMap,
                               CallExpr* call) {
   form_Map(SymbolMapElem, e, *generic_substitutions) {
     if (TypeSymbol* ts = toTypeSymbol(e->value)) {
@@ -1383,20 +1383,20 @@ FnSymbol::instantiate_generic(SymbolMap* generic_substitutions,
             clone->type->instantiatedWith = new Vec<Type*>();
           clone->type->instantiatedWith->add(ts->type);
           first = true;
-        } else if (Symbol* sym = toSymbol(value)) {
+        } else {
           if (first) {
             clone->name = astr(clone->name, ",");
             clone->cname = astr(clone->cname, "_");
           }
-          VarSymbol* var = toVarSymbol(sym);
+          VarSymbol* var = toVarSymbol(value);
           if (var && var->immediate) {
             char imm[128];
             sprint_imm(imm, *var->immediate);
             clone->name = astr(clone->name, imm);
             clone->cname = astr(clone->cname, imm);
           } else {
-            clone->name = astr(clone->name, sym->cname);
-            clone->cname = astr(clone->cname, sym->cname);
+            clone->name = astr(clone->name, value->cname);
+            clone->cname = astr(clone->cname, value->cname);
           }
           first = true;
         }
