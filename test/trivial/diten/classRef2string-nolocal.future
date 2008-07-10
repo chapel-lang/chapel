@@ -1,0 +1,2 @@
+bug: chpldev_refToString malfunctions with wide class references
+
