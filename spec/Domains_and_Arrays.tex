@@ -542,7 +542,9 @@ In addition to being indexed by indices defined by their arithmetic
 domains, arithmetic arrays can be indexed directly by values of the
 dimensional index type where the number of values is equal to the rank
 of the array.  This has the semantics of first moving the values into
-a tuple and then indexing into the array.
+a tuple and then indexing into the array.  The index represented by
+the tuple must be an element of the array's domain or an out-of-bounds
+error will occur.
 
 \begin{example}
 Given the definition
@@ -557,10 +559,16 @@ equivalent.
 \label{Arithmetic_Array_Slicing}
 \index{arrays!slice}
 
-In addition to slicing an arithmetic array by an arithmetic domain,
-arithmetic arrays also support slicing by ranges directly.  If each
+An arithmetic array can be sliced by any arithmetic domain that is a
+subdomain of the array's defining domain.  If the subdomain
+relationship is not met, an out-of-bounds error will occur.  The
+result is a subarray whose indices are those of the slicing domain and
+whose elements are an alias of the original array's.  If the indices
+in the slicing
+
+Arithmetic arrays also support slicing by ranges directly.  If each
 dimension is indexed by a range, this is equivalent to slicing the
-domain by an arithmetic domain defined by those ranges.
+array by the arithmetic domain defined by those ranges.
 
 For multi-dimensional arithmetic arrays, slicing with a rank change is
 supported by substituting integral values within a dimension's range

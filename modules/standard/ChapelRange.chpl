@@ -317,13 +317,13 @@ def range.boundsCheck(other: range(?e,?b,?s)) {
   if other._hasLow() then
     boundedOther._low = other.low;
   else
-    boundedOther._low = min(low, other.high);
+    boundedOther._low = low;
   if other._hasHigh() then
     boundedOther._high = other.high;
   else
-    boundedOther._high = max(high, other.low);
+    boundedOther._high = high;
   boundedOther._stride = other.stride;
-  return this(boundedOther) == boundedOther;
+  return (boundedOther.length == 0) || (this(boundedOther) == boundedOther);
 }
 
 

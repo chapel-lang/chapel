@@ -2,4 +2,4 @@ A is: 1.0 2.0 3.0
 A[1..] is: 1.0 2.0 3.0
 A[2..] is: 2.0 3.0
 A[3..] is: 3.0
-sliceUnboundedOOB.chpl:6: error: halt reached - array slice out of bounds in dimension 1: 4..
+A[4..] is: 
