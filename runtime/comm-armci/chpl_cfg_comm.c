@@ -402,7 +402,7 @@ void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Boo
   rheader = chpl_malloc(rhdr_size, sizeof(char), "GPC exec remote header", __LINE__, __FILE__);
   // must be non-empty  
 
-  *(intptr_t *)header = (intptr_t *)rheader;
+  *(intptr_t *)header = (intptr_t)rheader;
 
   done = rheader;
   *done = 0;
