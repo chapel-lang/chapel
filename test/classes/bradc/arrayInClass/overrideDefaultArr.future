@@ -1,0 +1,8 @@
+bug: over-riding default array member value
+
+It seems that over-riding a class member's initial value causes problems
+if the member is an inferred-size array.  This code results in:
+
+overrideDefaultArr.chpl:11: error: zippered iterations have non-equal lengths
+
+whereas I think it should work.
