@@ -1138,7 +1138,7 @@ static const char* toString(CallInfo* info) {
       str = astr(str, "type ", toString(info->actualTypes.v[i]));
     else if (var && var->immediate) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
-        str = astr(str, var->immediate->v_string);
+        str = astr(str, "\"", var->immediate->v_string, "\"");
       } else {
         char buff[512];
         sprint_imm(buff, *var->immediate);
