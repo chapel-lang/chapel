@@ -1,2 +1,1 @@
-error_default_field_init.chpl:4: In function '_construct_C':
 error_default_field_init.chpl:7: error: type mismatch in assignment from real to int

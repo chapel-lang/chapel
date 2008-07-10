@@ -1,5 +1,0 @@
-error message: _if_fnXX name shown
-
-If a short-circuiting function is inserted at the top-level
-of the program, its error message is worse than if it's
-within a function.
