@@ -29,16 +29,6 @@ extremely rare race condition in module initialization
 [Error matching program output for modules/diten/useInBegin]
 
 
-================================
-performance-specific regressions
-================================
-
-timeout due to disabled single loop optimizations(?) -- 07/01/08
-----------------------------------------------------------------
-[Error: Timed out executing program
-studies/hpcc/STREAMS/bradc/stream-fragmented]
-
-
 =============================
 valgrind-specific regressions
 =============================
@@ -62,6 +52,19 @@ failing nondeterministically (e.g., 04/04/08)
 ===========================
 gasnet-specific regressions
 ===========================
+
+iterator initialization problem
+-------------------------------
+[Error matching compiler output for performance/compiler/bradc/fft-timecomp]
+[Error matching compiler output for performance/deitz/test_cgapb]
+[Error matching compiler output for studies/sudoku/dinan/sudoku-simple]
+[Error matching compiler output for studies/sudoku/dinan/sudoku-simpler]
+[Error matching compiler output for studies/sudoku/dinan/sudoku-smart]
+[Error matching compiler output for studies/sudoku/dinan/sudoku]
+
+make into a future
+------------------
+[Error matching compiler output for trivial/diten/classRef2string]
 
 times out occasionally (race-y deadlock?) -- e.g., 06/15/2008, 06/18/2008
 -------------------------------------------------------------------------
@@ -148,10 +151,6 @@ exp2 not supported:
 -------------------
 [Error matching program output for functions/dinan/exp2] 
 
-weird math function interaction
--------------------------------
-[Error matching compiler output for modules/standard/math/bradc/math32bits]
-
 
 ==========================
 sunos-specific regressions
@@ -161,6 +160,7 @@ sunos-specific regressions
 -------------------------------
 [Error matching program output for trivial/bradc/ref2string]
 [Error matching program output for trivial/bradc/wideref2string]
+[Error matching program output for trivial/diten/classRef2string]
 
 exp2/log2/other math fns not supported
 --------------------------------------
