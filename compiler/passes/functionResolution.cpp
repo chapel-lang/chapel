@@ -1131,15 +1131,19 @@ static const char* toString(CallInfo* info) {
     if (info->actualNames.v[i])
       str = astr(str, info->actualNames.v[i], "=");
     VarSymbol* var = toVarSymbol(info->actualSyms.v[i]);
-    char buff[512];
     if (info->actualTypes.v[i]->symbol->hasPragma("iterator class") &&
         info->actualTypes.v[i]->defaultConstructor->hasPragma("promotion wrapper"))
       str = astr(str, "promoted expression");
     else if (info->actualSyms.v[i] && info->actualSyms.v[i]->isTypeVariable)
       str = astr(str, "type ", toString(info->actualTypes.v[i]));
     else if (var && var->immediate) {
-      sprint_imm(buff, *var->immediate);
-      str = astr(str, buff);
+      if (var->immediate->const_kind == CONST_KIND_STRING) {
+        str = astr(str, var->immediate->v_string);
+      } else {
+        char buff[512];
+        sprint_imm(buff, *var->immediate);
+        str = astr(str, buff);
+      }
     } else
       str = astr(str, toString(info->actualTypes.v[i]));
   }
