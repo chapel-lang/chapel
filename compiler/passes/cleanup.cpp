@@ -35,6 +35,7 @@ flatten_scopeless_block(BlockStmt* block) {
 static void normalize_nested_function_expressions(DefExpr* def) {
   if ((!strncmp("_anon_record", def->sym->name, 12)) ||
       (!strncmp("_forallexpr", def->sym->name, 11)) ||
+      (!strncmp("_forallinit", def->sym->name, 11)) ||
       (!strncmp("_let_fn", def->sym->name, 7)) ||
       (!strncmp("_if_fn", def->sym->name, 6)) ||
       (!strncmp("_reduce_scan", def->sym->name, 12)) ||
@@ -162,12 +163,11 @@ void cleanup(void) {
           indices->remove();
           iter->remove();
           if (def->init) {
-            BlockStmt *forblk = buildForLoopExpr(indices, iter, def->init->copy());
-            
-            FnSymbol *forall_init = new FnSymbol("_forallinit");
-            forall_init->insertAtTail(forblk);
-            def->insertBefore(new DefExpr(forall_init));
-            def->init->replace(new CallExpr(forall_init));
+            static int uid = 1;
+            FnSymbol *fn = new FnSymbol(astr("_forallinit", istr(uid++)));
+            Expr* init = def->init;
+            def->init->replace(new CallExpr(new DefExpr(fn)));
+            fn->insertAtTail(buildForLoopExpr(indices, iter, init));
           }
         } else {
           USR_FATAL(call, "unhandled case of array type loop expression");
