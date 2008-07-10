@@ -74,6 +74,7 @@ static int gpc_call_handler(int to, int from, void *hdr, int hlen,
                             void *rdata, int rdlen, int *rdsize,
                             int rtype);
 static int ghndl = -1;
+static chpl_mutex_t armci_lock;
 
 int32_t _chpl_comm_getMaxThreads(void) {
   return 0; // set to 0 assuming ARMCI does not limit the number of
@@ -328,8 +329,11 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
 
   if (_localeID == locale)
     memmove(raddr, addr, size);
-  else
+  else {
+    chpl_mutex_lock(&armci_lock);
     ARMCI_SAFE(ARMCI_Put(addr, raddr, size, locale));
+    chpl_mutex_unlock(&armci_lock);
+  }
 }
 
 
@@ -345,8 +349,11 @@ void  _chpl_comm_get(void *addr, int32_t locale, const void* raddr, int32_t size
 
   if (_localeID == locale)
     memmove(addr, raddr, size);
-  else
+  else {
+    chpl_mutex_lock(&armci_lock);
     ARMCI_SAFE(ARMCI_Get((void*)raddr, addr, size, locale));
+    chpl_mutex_unlock(&armci_lock);
+  }
 }
 
 //
@@ -407,8 +414,10 @@ void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Boo
   done = rheader;
   *done = 0;
 
-  ret = ARMCI_Gpc_exec(ghndl, locale, header, sizeof(void *), info, info_size, 
-                       (void*)rheader, rhdr_size, rdata, rdlen, NULL);
+  chpl_mutex_lock(&armci_lock);
+  ret = ARMCI_Gpc_exec(ghndl, locale, header, sizeof(void *), info, info_size, (void *)rheader, rhdr_size,
+                       rdata, rdlen, NULL);
+  chpl_mutex_unlock(&armci_lock);
 
   if (ret != 0) {
     chpl_internal_error("ARMCI_Gpc_exec() failed");
@@ -416,7 +425,7 @@ void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Boo
     if (rdata)
       chpl_free(rdata, __LINE__, __FILE__);
     chpl_free(header, __LINE__, __FILE__);
-    chpl_free((void*)rheader, __LINE__, __FILE__);
+    chpl_free((void *)rheader, __LINE__, __FILE__);
     return;
   }
 
@@ -430,7 +439,7 @@ void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Boo
     chpl_free(rdata, __LINE__, __FILE__);
   }
   chpl_free(header, __LINE__, __FILE__);
-  chpl_free((void*)rheader, __LINE__, __FILE__);
+  chpl_free((void *)rheader, __LINE__, __FILE__);
 }
 
 void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
