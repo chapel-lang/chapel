@@ -386,6 +386,10 @@ void VarSymbol::codegenDef(FILE* outfile) {
     if (ct->classTag == CLASS_CLASS) {
       if (isFnSymbol(defPoint->parentSymbol))
         fprintf(outfile, " = NULL");
+    } else if (ct->symbol->hasPragma("wide") ||
+               ct->symbol->hasPragma("wide class")) {
+      if (isFnSymbol(defPoint->parentSymbol))
+        fprintf(outfile, " = {0,NULL}");
     } else if (fCopyCollect && ct->classTag == CLASS_RECORD) {
       /* If garbage collection is on, zero-initialize records */
       if (isFnSymbol(defPoint->parentSymbol)) {
