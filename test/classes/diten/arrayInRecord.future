@@ -1,0 +1,6 @@
+bug: explicit variable type declaration changes array alias to copy
+
+A variable which is a record containing an array gets an alias to the
+initializer's array if its type is inferred, but a copy of the initializer's
+array if its type is explicit. Both cases should have the same behavior, I'm
+leaning toward a copy. 
