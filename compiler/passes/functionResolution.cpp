@@ -1960,6 +1960,7 @@ formalRequiresTemp(ArgSymbol* formal) {
       formal->intent == INTENT_TYPE ||
       formal->intent == INTENT_REF ||
       !strcmp("this", formal->name) ||
+      formal->hasPragma("is meme") ||
       (formal == toFnSymbol(formal->defPoint->parentSymbol)->_outer) ||
       formal->isTypeVariable ||
       formal->instantiatedParam ||

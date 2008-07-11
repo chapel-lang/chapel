@@ -573,15 +573,15 @@ static void build_constructor(ClassType* ct) {
   }
 
   ArgSymbol* meme = NULL;
-  if (ct->classTag == CLASS_CLASS) {
-    if (ct->symbol->hasPragma("ref") || ct->symbol->hasPragma("sync")) {
-      fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
-                         new CallExpr(PRIMITIVE_CHPL_ALLOC, fn->_this,
-                           new_StringSymbol(astr("instance of class ", ct->symbol->name)))));
-    } else {
-      meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL, new SymExpr(gNil));
-      meme->addPragma("is meme");
-      fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this, meme));
+  if (ct->symbol->hasPragma("ref") || ct->symbol->hasPragma("sync")) {
+    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
+                       new CallExpr(PRIMITIVE_CHPL_ALLOC, fn->_this,
+                         new_StringSymbol(astr("instance of class ", ct->symbol->name)))));
+  } else if (!ct->symbol->hasPragma("tuple")) {
+    meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL, new SymExpr(gNil));
+    meme->addPragma("is meme");
+    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this, meme));
+    if (ct->classTag == CLASS_CLASS) {
       if (ct->dispatchParents.n > 0) {
         if (!ct->dispatchParents.v[0]->defaultConstructor) {
           build_type_constructor(toClassType(ct->dispatchParents.v[0]));

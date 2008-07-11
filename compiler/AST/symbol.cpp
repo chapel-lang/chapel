@@ -834,11 +834,13 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
     copy_map.put(this->_this, wrapper->_this);
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
     if (defaults->v[defaults->n-1]->hasPragma("is meme")) {
-      wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, wrapper->_this,
-                              new CallExpr(PRIMITIVE_CHPL_ALLOC, wrapper->_this,
+      if (!isRecordType(this->_this->type) && !isUnionType(this->_this->type)) {
+        wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, wrapper->_this,
+                                new CallExpr(PRIMITIVE_CHPL_ALLOC, wrapper->_this,
                                 new_StringSymbol(astr("instance of class ",
-                                  _this->type->symbol->name)))));
-      wrapper->insertAtTail(new CallExpr(PRIMITIVE_SETCID, wrapper->_this));
+                                                      _this->type->symbol->name)))));
+        wrapper->insertAtTail(new CallExpr(PRIMITIVE_SETCID, wrapper->_this));
+      }
     }
     wrapper->insertAtTail(new CallExpr(PRIMITIVE_INIT_FIELDS, wrapper->_this));
   }

@@ -32,7 +32,7 @@ def bar((x,y)) {
   x(1) = y;
 }
 
-def baz(x,y) {
+def baz(inout x,y) {
   x.A(1) = y;
 }
 
