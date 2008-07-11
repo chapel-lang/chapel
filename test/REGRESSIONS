@@ -53,19 +53,6 @@ failing nondeterministically (e.g., 04/04/08)
 gasnet-specific regressions
 ===========================
 
-iterator initialization problem
--------------------------------
-[Error matching compiler output for performance/compiler/bradc/fft-timecomp]
-[Error matching compiler output for performance/deitz/test_cgapb]
-[Error matching compiler output for studies/sudoku/dinan/sudoku-simple]
-[Error matching compiler output for studies/sudoku/dinan/sudoku-simpler]
-[Error matching compiler output for studies/sudoku/dinan/sudoku-smart]
-[Error matching compiler output for studies/sudoku/dinan/sudoku]
-
-make into a future
-------------------
-[Error matching compiler output for trivial/diten/classRef2string]
-
 times out occasionally (race-y deadlock?) -- e.g., 06/15/2008, 06/18/2008
 -------------------------------------------------------------------------
 [Error: Timed out executing program
@@ -143,6 +130,10 @@ studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 pathscale-specific regressions
 ==============================
 
+??? (07/11/2008)
+----------------
+[Error matching compiler output for trivial/deitz/test_scope3]
+
 ??? -- gdb incompatability?
 ---------------------------
 [Error matching program output for execflags/bradc/gdbddash/declint2] 
@@ -160,7 +151,7 @@ sunos-specific regressions
 -------------------------------
 [Error matching program output for trivial/bradc/ref2string]
 [Error matching program output for trivial/bradc/wideref2string]
-[Error matching program output for trivial/diten/classRef2string]
+[Error matching program output for trivial/diten/classRef2string-local]
 
 exp2/log2/other math fns not supported
 --------------------------------------
