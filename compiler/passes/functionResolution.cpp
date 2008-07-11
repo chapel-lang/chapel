@@ -154,8 +154,12 @@ resolveFormals(FnSymbol* fn) {
 
     for_formals(formal, fn) {
       if (formal->type == dtUnknown) {
-        resolveBody(formal->typeExpr);
-        formal->type = formal->typeExpr->body.tail->typeInfo();
+        if (!formal->typeExpr) {
+          formal->type = dtObject;
+        } else {
+          resolveBody(formal->typeExpr);
+          formal->type = formal->typeExpr->body.tail->typeInfo();
+        }
       }
 
       //
