@@ -2,9 +2,12 @@
 Chapel Contributors
 ===================
 
+This material is based upon work supported by the Defense Advanced
+Research Projects Agency under its Agreement No. HR0011-07-9-0001 and
+its Contract No. NBCH3039003.
+
 The following people have contributed to the implementation of this
 release and the design of the Chapel language:
-
 
 Cray contributors
 -----------------
@@ -18,13 +21,11 @@ David Iten
 John Plevyak
 Wayne Wong
 
-
 Chapel interns
 --------------
 Robert Bocchino
 James Dinan
 Mackale Joyner
-
 
 Academic/lab contributors
 -------------------------
@@ -36,7 +37,6 @@ Jarek Nieplocha
 Vinod Tipparaju
 Hans Zima
 
-
 Vocal users
 -----------
 Richard Barrett
@@ -46,7 +46,6 @@ Timothy Stitt
 Terry Suitor
 Michele Weiland
 the students and faculty of UW CSE 590o (Fall 2007)
-
 
 Release testing
 ---------------
