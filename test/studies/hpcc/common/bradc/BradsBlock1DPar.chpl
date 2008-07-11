@@ -8,11 +8,8 @@
 
 config param debugBradsBlock1D = false;
 
-// TODO: remove solo?  Make the iterator with no IteratorType argument
-// the leader?
-
 // TODO: This would need to be moved somewhere more standard
-enum IteratorType { solo, leader, follower };
+enum IteratorType { leader, follower };
 
 //
 // The distribution class
@@ -26,29 +23,42 @@ class Block1DDist {
   //
   // The bounding box that defines the block distribution
   //
-  const bbox: domain(1, glbIdxType);
+  const boundingBox: domain(1, glbIdxType);
+
 
   //
-  // the set of target locales to which the indices are mapped
+  // a domain and array describing the set of target locales to which
+  // the indices are mapped
   //
-  // TODO: would like to assert that this is a 1D array of locales and
-  // maybe remove the default initializer
+  const targetLocDom: domain(1);
+  const targetLocs: [targetLocDom] locale;
   //
-  // TODO: note that this shares the domain of the initializer
-  // expression, whereas what we really want to do is take a snapshot
-  // of that domain.  Probably need to use a user-defined constructor?
-  // Or support query syntax within a member declaration?
+  // NOTE: originally I wrote this as:
   //
-  const targetLocs = Locales; 
+  //   const targetLocs = Locales;
+  //   const targetLocDom = targetLocs.domain;
+  //
+  // but this had two interesting problems:
+  //
+  // (1) the capture of the targetLocs array only makes a copy of the
+  //     array, not of its domain, so if someone were to resize the
+  //     LocaleSpace domain outside of the class, this would inadvertantly
+  //     get resized as well.  We really want to make a copy of both the
+  //     domain and array (which I now do in the constructor).
+  //
+  // (2) Initializing targetLocs with Locales prevents us from assigning
+  //     anything other than a numLocales-ary array of locales to it
+  //     which is stricter than I wanted -- I only wanted to restrict
+  //     us to a 1D array of locales.  In our current model, this would
+  //     require us to have some sort of [domain(1)] locale declaration
+  //     to make it work.  Or we could think about whether a model in
+  //     which only the array's static type information is inferred
+  //     for a field?
+
 
   //
-  // an associative domain over the set of target locales
-  //
-  const targetLocDom = targetLocs.domain;
-
-  //
-  // an associative array of local distribution class descriptors --
-  // set up in initialize() below
+  // an array of local distribution class descriptors -- set up in
+  // initialize() below
   //
   // TODO: would like this to be const and initialize in-place,
   // removing the initialize method; would want to be able to use
@@ -56,7 +66,7 @@ class Block1DDist {
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  // WANT:
+  // WANTED:
   //
   /*
   const locDist: [loc in targetLocDom] LocBlock1DDist(glbIdxType)
@@ -68,13 +78,50 @@ class Block1DDist {
   // apparently can't refer to a local member domain.
   //
   const locDist: [targetLocDom] LocBlock1DDist(glbIdxType);
+  //
+  // WORKAROUND: Initialize in the constructor instead
+  //
 
-  def initialize() {
+  def Block1DDist(type glbIdxType = int(64), bbox: domain(1, glbIdxType),
+                  targetLocales: [?targetLocalesDomain] locale) {
+    boundingBox = bbox;
+    targetLocDom = targetLocalesDomain;
+    targetLocs = targetLocales;
+    //
+    // WANT TO DO:
+    /*
+    for locid in targetLocDom do
+      on targetLocs(locid) do
+        locDist(locid) = new LocBlock1DDist(glbIdxType, locid, this);
+    */
+    //
+    // BUT results in a _heapAlloc(type int(64)) call.
+    // WORKAROUND:
+    helpConstruct();
+  }
+  //
+  // WORKAROUND CONTINUED:
+  //
+  def helpConstruct() {
     for locid in targetLocDom do
       on targetLocs(locid) do
         locDist(locid) = new LocBlock1DDist(glbIdxType, locid, this);
   }
-  // end rewrite
+  //
+  // END WORKAROUND
+  //
+
+
+  def writeThis(x:Writer) {
+    x.writeln("BradsBlock1DPar");
+    x.writeln("---------------");
+    x.writeln("distributes: ", boundingBox);
+    x.writeln("across locales: ", targetLocs);
+    x.writeln("indexed via: ", targetLocDom);
+    x.writeln("resulting in: ");
+    for locid in targetLocDom do
+      x.writeln("  [", locid, "] ", locDist(locid));
+  }
 
 
   //
@@ -104,9 +151,9 @@ class Block1DDist {
   // Determine which locale owns a particular index
   //
   def ind2locInd(ind: glbIdxType) {
-    const indFrom0 = ind - bbox.low;
-    const locFrom0 = (indFrom0 * targetLocs.numElements) / bbox.numIndices;
-    const locInd = locFrom0: index(targetLocs.domain) + targetLocs.domain.low;
+    const ind0 = ind - boundingBox.low;
+    const loc0 = (ind0 * targetLocs.numElements) / boundingBox.numIndices;
+    const locInd = loc0: index(targetLocs.domain) + targetLocs.domain.low;
     return locInd;
   }
 
@@ -131,23 +178,21 @@ class LocBlock1DDist {
   // the section of the global index space owned by the locale.
   //
   const myChunk: domain(1, glbIdxType);
-
-  //
-  // a helper function for mapping processors to indices
-  //
-  def procToData(x, lo)
-    return (lo + (x: lo.type) + (x:real != x:int:real));
+  const locid: int;
+  const loc: locale;
 
   //
   // Compute what chunk of index(1) is owned by the current locale
   // Arguments:
   //
   def LocBlock1DDist(type glbIdxType, 
-                     locid: int, // the locale index from the target domain
+                     _locid: int, // the locale index from the target domain
                      dist: Block1DDist(glbIdxType) // reference to glob dist
                      ) {
-    const lo = dist.bbox.low;
-    const hi = dist.bbox.high;
+    locid = _locid;
+    loc = dist.targetLocs(locid);
+    const lo = dist.boundingBox.low;
+    const hi = dist.boundingBox.high;
     const numelems = hi - lo + 1;
     const numlocs = dist.targetLocDom.numIndices;
     const locid0 = dist.targetLocDom.order(locid); // 0-based locale ID
@@ -158,6 +203,16 @@ class LocBlock1DDist {
     myChunk = [blo..bhi];
     if debugBradsBlock1D then
       writeln("locale ", locid, " owns ", myChunk);
+  }
+
+  //
+  // a helper function for mapping processors to indices
+  //
+  def procToData(x, lo)
+    return (lo + (x: lo.type) + (x:real != x:int:real));
+
+  def writeThis(x:Writer) {
+    x.write("locale ", loc.id, " owns chunk: ", myChunk);
   }
 }
 
@@ -183,8 +238,8 @@ class Block1DDom {
   const whole: domain(1, glbIdxType);
 
   //
-  // an associative array of local domain class descriptors -- set up
-  // in initialize() below
+  // an array of local domain class descriptors -- set up in
+  // initialize() below
   //
   //
   // TODO: would like this to be const and initialize in-place,
@@ -231,8 +286,7 @@ class Block1DDom {
   // overload these() to serve this purpose in the final language
   // definition.
   //
-  def newThese(param iterator: IteratorType) 
-        where iterator == IteratorType.solo {
+  def newThese() {
     //
     // TODO: Should still have this move around between locales even
     // though it's serial
@@ -251,13 +305,16 @@ class Block1DDom {
     //
     // TODO: Really want the parallelism across the target locales
     // to be expressed more independently of the distribution by
-    // pushing it into the leader iterator
+    // pushing it into the leader iterator.  Need to get an on clause
+    // into here somehow.  That is:
+    //
+    //   coforall locDom in locDoms do
+    //     on locDom do
+    //       yield locDom.myBlock - whole.low;
     //
     // TODO: And really want to split the inter- and intra-locale
     // parallelism into two separate stages for communication
     // optimization and the like
-    //
-    // TODO: Need to get an on clause into here somehow
     //
     // TODO: Abstract this subtraction of low into a function?
     // Note relationship between this operation and the
@@ -353,8 +410,7 @@ class LocBlock1DDom {
   // this is the parallel iterator for the local domain, see global
   // domain parallel iterators for general notes on the approach
   //
-  def newThese(param iterator: IteratorType) 
-        where iterator == IteratorType.solo {
+  def newThese() {
   }
 
   def newThese(param iterator: IteratorType)
@@ -411,7 +467,7 @@ class Block1DArr {
   var dom: Block1DDom(glbIdxType, lclIdxType);
 
   //
-  // an associative array of local array classes, indexed by locale
+  // an array of local array classes
   //
   // TODO: would like this to be const and initialize in-place,
   // removing the initialize method; would want to be able to use
@@ -452,8 +508,7 @@ class Block1DArr {
   // this is the parallel iterator for the global array, see th
   // example for general notes on the approach
   //
-  def newThese(param iterator: IteratorType) 
-        where iterator == IteratorType.solo {
+  def newThese() {
     //
     // TODO: Should still have this move around between locales even
     // though it's serial
@@ -551,8 +606,7 @@ class LocBlock1DArr {
   // this is the parallel iterator for the local array, see global
   // domain parallel iterators for general notes on the approach
   //
-  def newThese(param iterator: IteratorType) 
-        where iterator == IteratorType.solo {
+  def newThese() {
   }
 
   def newThese(param iterator: IteratorType)

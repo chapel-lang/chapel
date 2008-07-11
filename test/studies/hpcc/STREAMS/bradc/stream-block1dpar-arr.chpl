@@ -24,7 +24,7 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const ProblemDist = new Block1DDist(bbox=[1..m], targetLocs=Locales);
+  const ProblemDist = new Block1DDist(bbox=[1..m], targetLocales=Locales);
 
   const ProblemSpace = ProblemDist.newDomain([1..m], int(64));
 
@@ -40,7 +40,7 @@ def main() {
     const startTime = getCurrentTime();
     // TODO: Ultimately, Want:
     //
-    // A = B + alpha * C;
+    //   A = B + alpha * C;
     //
     // But for now we'll do a manual invocation of leader/follower following
     // Steve's proposal -- This version leads and follows over arrays:
