@@ -1,9 +1,0 @@
-bug: nested var iterator
-
-nested var iterators do not currently keep a reference to variables in the outer function
-
-bug: captured ref
-
-This test shows how the user can capture a reference to a local
-variable and change it via this reference.  It shows a bug in copy
-propagation, which assumes the user cannot capture variables.

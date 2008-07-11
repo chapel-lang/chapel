@@ -1,6 +1,0 @@
-bug: nested var iterator
-
-Added a future of a nested var iterator that attempts to return a
-variable local to the outer function but does not return a reference
-to it.
-

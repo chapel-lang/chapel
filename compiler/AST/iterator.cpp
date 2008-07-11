@@ -634,7 +634,7 @@ void lowerIterator(FnSymbol* fn) {
       ? "value"
       : astr("F", istr(i++), "_", local->name);
     Type* type = local->type;
-    if (type->symbol->hasPragma("ref") && isArgSymbol(local))
+    if (type->symbol->hasPragma("ref") && local == fn->_this)
       type = getValueType(type);
     Symbol* field = new VarSymbol(fieldName, type);
     local2field.put(local, field);
