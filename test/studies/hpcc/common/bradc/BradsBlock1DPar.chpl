@@ -264,7 +264,7 @@ class Block1DDom {
   //
   def these() {
     for blk in locDoms do
-      // May want to do something like:     
+      // TODO: Would want to do something like:     
       // on blk do
       // But can't currently have yields in on clauses
         for ind in blk do
@@ -274,7 +274,7 @@ class Block1DDom {
   //
   // this is the parallel iterator for the global domain, following
   // a variation on Steve and David's proposals -- I've split the
-  // single iterator into multiple iterators, distinguished by where
+  // single iterator into two iterators, distinguished by where
   // clauses on their parameter values.  This permits each to only
   // take the parameters it cares about; permits the leader to be
   // defined in an inlineable way; and permits the follower for an
@@ -286,15 +286,6 @@ class Block1DDom {
   // overload these() to serve this purpose in the final language
   // definition.
   //
-  def newThese() {
-    //
-    // TODO: Should still have this move around between locales even
-    // though it's serial
-    //
-    for i in these() do
-      yield i;
-  }
-
   def newThese(param iterator: IteratorType)
         where iterator == IteratorType.leader {
     //
@@ -410,9 +401,6 @@ class LocBlock1DDom {
   // this is the parallel iterator for the local domain, see global
   // domain parallel iterators for general notes on the approach
   //
-  def newThese() {
-  }
-
   def newThese(param iterator: IteratorType)
         where iterator == IteratorType.leader {
   }
@@ -495,7 +483,7 @@ class Block1DArr {
   //
   def these() var {
     for loc in dom.dist.targetLocDom {
-      // May want to do something like:     
+      // TODO: May want to do something like:     
       // on this do
       // But can't currently have yields in on clauses
       for elem in locArr(loc) {
@@ -508,14 +496,6 @@ class Block1DArr {
   // this is the parallel iterator for the global array, see th
   // example for general notes on the approach
   //
-  def newThese() {
-    //
-    // TODO: Should still have this move around between locales even
-    // though it's serial
-    //
-    for i in these() do
-      yield i;
-  }
 
   def newThese(param iterator: IteratorType)
         where iterator == IteratorType.leader {
@@ -606,9 +586,6 @@ class LocBlock1DArr {
   // this is the parallel iterator for the local array, see global
   // domain parallel iterators for general notes on the approach
   //
-  def newThese() {
-  }
-
   def newThese(param iterator: IteratorType)
         where iterator == IteratorType.leader {
   }
