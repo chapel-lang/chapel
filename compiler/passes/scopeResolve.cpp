@@ -581,16 +581,7 @@ static void build_constructor(ClassType* ct) {
     } else {
       meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL, new SymExpr(gNil));
       meme->addPragma("is meme");
-      BlockStmt* allocate = new BlockStmt();
-      allocate->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
-                               new CallExpr(PRIMITIVE_CHPL_ALLOC, fn->_this,
-                                 new_StringSymbol(astr("instance of class ", ct->symbol->name)))));
-      allocate->insertAtTail(new CallExpr(PRIMITIVE_SETCID, fn->_this));
-      CondStmt* cond = new CondStmt(
-        new CallExpr(PRIMITIVE_PTR_EQUAL, gNil, meme),
-        allocate,
-        new CallExpr(PRIMITIVE_MOVE, fn->_this, meme));
-      fn->insertAtTail(cond);
+      fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this, meme));
       if (ct->dispatchParents.n > 0) {
         if (!ct->dispatchParents.v[0]->defaultConstructor) {
           build_type_constructor(toClassType(ct->dispatchParents.v[0]));
@@ -612,7 +603,7 @@ static void build_constructor(ClassType* ct) {
         }
         VarSymbol* tmp = new VarSymbol("_tmp");
         superCall->insertAtTail(new NamedExpr("meme", new SymExpr(tmp)));
-        cond->insertAfter(superCall);
+        fn->insertAtTail(superCall);
         superCall->insertBefore(new DefExpr(tmp));
         superCall->insertBefore(
           new CallExpr(PRIMITIVE_MOVE, tmp,
