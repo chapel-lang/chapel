@@ -399,16 +399,15 @@ BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body) {
 
 
 // builds body of for expression iterator
-BlockStmt*
+CallExpr*
 buildForLoopExpr(Expr* indices, Expr* iterator, Expr* expr, Expr* cond) {
+  static int uid = 1;
+  FnSymbol* fn = new FnSymbol(astr("_loopexpr", istr(uid++)));
   Expr* stmt = new CallExpr(PRIMITIVE_YIELD, expr);
   if (cond)
     stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
-  stmt = new BlockStmt(buildForLoopStmt(BLOCK_FOR,
-                                       indices,
-                                       iterator,
-                                       new BlockStmt(stmt)));
-  return buildChapelStmt(stmt);
+  fn->insertAtTail(buildForLoopStmt(indices, iterator, new BlockStmt(stmt)));
+  return new CallExpr(new DefExpr(fn));
 }
 
 
@@ -460,13 +459,51 @@ checkIndices(BaseAST* indices) {
 }
 
 
-BlockStmt* buildForLoopStmt(BlockTag tag,
-                            Expr* indices,
+BlockStmt* buildForLoopStmt(Expr* indices,
                             Expr* iterator,
                             BlockStmt* body) {
+  //
+  // insert temporary index when elided by user
+  //
+  if (!indices)
+    indices = new SymExpr("_elided_index");
 
-  if (tag == BLOCK_FORALL)
-    checkControlFlow(body, "forall statement");
+  checkIndices(indices);
+
+  body = new BlockStmt(body);
+  body->blockTag = BLOCK_FOR;
+  BlockStmt* stmts = buildChapelStmt();
+  addLoopLabelsToBlock(body);
+
+  iterator = new CallExpr("_getIterator", iterator);
+  VarSymbol* iteratorSym = new VarSymbol("_iterator");
+  iteratorSym->isCompilerTemp = true;
+  stmts->insertAtTail(new DefExpr(iteratorSym));
+  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iteratorSym, iterator));
+  VarSymbol* index = new VarSymbol("_index");
+  index->isCompilerTemp = true;
+  stmts->insertAtTail(new DefExpr(index));
+  stmts->insertAtTail(new BlockStmt(
+    new CallExpr(PRIMITIVE_MOVE, index,
+      new CallExpr("iteratorIndex", iteratorSym)),
+    BLOCK_TYPE));
+  destructureIndices(body, indices, new SymExpr(index));
+  body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iteratorSym);
+
+  body->insertAtTail(new DefExpr(body->pre_loop));
+  stmts->insertAtTail(body);
+  stmts->insertAtTail(new DefExpr(body->post_loop));
+  return stmts;
+}
+
+
+BlockStmt* buildForallLoopStmt(Expr* indices,
+                               Expr* iterator,
+                               BlockStmt* body) {
+  checkControlFlow(body, "forall statement");
+
+  if (fSerial)
+    return buildForLoopStmt(indices, iterator, body);
 
   //
   // insert temporary index when elided by user
@@ -476,11 +513,8 @@ BlockStmt* buildForLoopStmt(BlockTag tag,
 
   checkIndices(indices);
 
-  if (fSerial && tag == BLOCK_FORALL)
-    tag = BLOCK_FOR;
-
   body = new BlockStmt(body);
-  body->blockTag = tag;
+  body->blockTag = BLOCK_FORALL;
   BlockStmt* stmts = buildChapelStmt();
   addLoopLabelsToBlock(body);
 
@@ -510,7 +544,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
   checkControlFlow(body, "coforall statement");
 
   if (fSerial)
-    return buildForLoopStmt(BLOCK_FOR, indices, iterator, body);
+    return buildForLoopStmt(indices, iterator, body);
 
   //
   // insert temporary index when elided by user
@@ -526,7 +560,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
   beginBlk->insertAtHead(body);
   beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
   body = buildBeginStmt(beginBlk, true, coforallCount);
-  BlockStmt* block = buildForLoopStmt(BLOCK_FOR, indices, iterator, body);
+  BlockStmt* block = buildForLoopStmt(indices, iterator, body);
   block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
   block->insertAtHead(new DefExpr(coforallCount));
   block->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, coforallCount));

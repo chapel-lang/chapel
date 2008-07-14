@@ -27,14 +27,16 @@ BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
                                  BlockStmt* body);
-BlockStmt* buildForLoopStmt(BlockTag tag,
-                            Expr* indices,
+BlockStmt* buildForLoopStmt(Expr* indices,
                             Expr* iterator,
                             BlockStmt* body);
-BlockStmt* buildForLoopExpr(Expr* indices,
-                            Expr* iterator,
-                            Expr* expr,
-                            Expr* cond = NULL);
+BlockStmt* buildForallLoopStmt(Expr* indices,
+                               Expr* iterator,
+                               BlockStmt* body);
+CallExpr* buildForLoopExpr(Expr* indices,
+                           Expr* iterator,
+                           Expr* expr,
+                           Expr* cond = NULL);
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* block);
 BlockStmt* buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalAndExprAssignment(Expr* lhs, Expr* rhs);

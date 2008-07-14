@@ -25,7 +25,6 @@ NOTES
 #include "lexyacc.h" // all #includes here, for make depend
 
   static int anon_record_uid = 1;
-  static int iterator_uid = 1;
   static int query_uid = 1;
   int captureTokens;
   char captureString[1024];
@@ -174,7 +173,7 @@ NOTES
 %type <pblockstmt> class_body_stmt_ls
 
 %type <pblockstmt> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
-%type <pblockstmt> expr_stmt if_stmt expr_for_stmt for_stmt while_do_stmt do_while_stmt serial_stmt
+%type <pblockstmt> expr_stmt if_stmt param_for_stmt for_stmt forall_stmt coforall_stmt while_do_stmt do_while_stmt serial_stmt
 %type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt class_body_stmt
 %type <pblockstmt> type_select_stmt on_stmt non_empty_stmt use_stmt_ls sync_stmt
 
@@ -293,8 +292,10 @@ non_empty_stmt:
 | continue_stmt
 | expr_stmt
 | if_stmt
+| param_for_stmt
 | for_stmt
-| expr_for_stmt
+| forall_stmt
+| coforall_stmt
 | while_do_stmt
 | do_while_stmt
 | select_stmt
@@ -393,31 +394,52 @@ if_stmt:
 ;
 
 
-for_stmt:
+param_for_stmt:
   TFOR TPARAM identifier TIN expr TDO stmt
     { $$ = buildParamForLoopStmt($3, $5, $7); }
 | TFOR TPARAM identifier TIN expr block_stmt
     { $$ = buildParamForLoopStmt($3, $5, $6); }
+;
 
-| TFOR expr TIN expr block_stmt
-    { $$ = buildForLoopStmt(BLOCK_FOR, $2, $4, $5); }
+
+for_stmt:
+  TFOR expr TIN expr block_stmt
+    { $$ = buildForLoopStmt($2, $4, $5); }
 | TFOR expr TIN expr TDO stmt
-    { $$ = buildForLoopStmt(BLOCK_FOR, $2, $4, new BlockStmt($6)); }
+    { $$ = buildForLoopStmt($2, $4, new BlockStmt($6)); }
 | TFOR expr block_stmt
-    { $$ = buildForLoopStmt(BLOCK_FOR, NULL, $2, $3); }
+    { $$ = buildForLoopStmt(NULL, $2, $3); }
 | TFOR expr TDO stmt
-    { $$ = buildForLoopStmt(BLOCK_FOR, NULL, $2, new BlockStmt($4)); }
+    { $$ = buildForLoopStmt(NULL, $2, new BlockStmt($4)); }
+;
 
-| TFORALL expr TIN expr block_stmt
-    { $$ = buildForLoopStmt(BLOCK_FORALL, $2, $4, $5); }
+
+forall_stmt:
+  TFORALL expr TIN expr block_stmt
+    { $$ = buildForallLoopStmt($2, $4, $5); }
 | TFORALL expr TIN expr TDO stmt
-    { $$ = buildForLoopStmt(BLOCK_FORALL, $2, $4, new BlockStmt($6)); }
+    { $$ = buildForallLoopStmt($2, $4, new BlockStmt($6)); }
 | TFORALL expr block_stmt
-    { $$ = buildForLoopStmt(BLOCK_FORALL, NULL, $2, $3); }
+    { $$ = buildForallLoopStmt(NULL, $2, $3); }
 | TFORALL expr TDO stmt
-    { $$ = buildForLoopStmt(BLOCK_FORALL, NULL, $2, new BlockStmt($4)); }
+    { $$ = buildForallLoopStmt(NULL, $2, new BlockStmt($4)); }
+| TLSBR nonempty_expr_ls TIN expr TRSBR stmt
+    {
+      if ($2->argList.length() != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, new BlockStmt($6));
+    }
+| TLSBR nonempty_expr_ls TRSBR non_empty_stmt
+    {
+      if ($2->argList.length() != 1)
+        USR_FATAL($4, "invalid loop expression");
+      $$ = buildForallLoopStmt(NULL, $2->get(1)->remove(), new BlockStmt($4));
+    }
+;
 
-| TCOFORALL expr TIN expr block_stmt
+
+coforall_stmt:
+  TCOFORALL expr TIN expr block_stmt
     { $$ = buildCoforallLoopStmt($2, $4, $5); }
 | TCOFORALL expr TIN expr TDO stmt
     { $$ = buildCoforallLoopStmt($2, $4, new BlockStmt($6)); }
@@ -425,22 +447,6 @@ for_stmt:
     { $$ = buildCoforallLoopStmt(NULL, $2, $3); }
 | TCOFORALL expr TDO stmt
     { $$ = buildCoforallLoopStmt(NULL, $2, new BlockStmt($4)); }
-;
-
-
-expr_for_stmt:
-  TLSBR nonempty_expr_ls TIN expr TRSBR stmt
-    {
-      if ($2->argList.length() != 1)
-        USR_FATAL($4, "invalid index expression");
-      $$ = buildForLoopStmt(BLOCK_FORALL, $2->get(1)->remove(), $4, new BlockStmt($6));
-    }
-| TLSBR nonempty_expr_ls TRSBR non_empty_stmt
-    {
-      if ($2->argList.length() != 1)
-        USR_FATAL($4, "invalid loop expression");
-      $$ = buildForLoopStmt(BLOCK_FORALL, NULL, $2->get(1)->remove(), new BlockStmt($4));
-    }
 ;
 
 
@@ -1374,88 +1380,42 @@ expr:
     {
       if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid index expression");
-      FnSymbol* forall_iterator =
-        new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
-      forall_iterator->insertAtTail(buildForLoopExpr($2->get(1)->remove(), $4, $6));
-      $$ = new CallExpr(new DefExpr(forall_iterator));
+      $$ = buildForLoopExpr($2->get(1)->remove(), $4, $6);
     }
 | TLSBR nonempty_expr_ls TRSBR expr %prec TRSBR
     {
       if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid loop expression");
-      FnSymbol* forall_iterator =
-        new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
-      forall_iterator->insertAtTail(buildForLoopExpr(NULL, $2->get(1)->remove(), $4));
-      $$ = new CallExpr(new DefExpr(forall_iterator));
+      $$ = buildForLoopExpr(NULL, $2->get(1)->remove(), $4);
     }
 | TLSBR nonempty_expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
       if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid index expression");
-      FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
-      forif_fn->insertAtTail(buildForLoopExpr($2->get(1)->remove(), $4, $9, $7));
-      $$ = new CallExpr(new DefExpr(forif_fn));
+      $$ = buildForLoopExpr($2->get(1)->remove(), $4, $9, $7);
     }
 | TLSBR nonempty_expr_ls TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
       if ($2->argList.length() != 1)
         USR_FATAL($5, "invalid loop expression");
-      FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
-      forif_fn->insertAtTail(buildForLoopExpr(NULL, $2->get(1)->remove(), $7, $5));
-      $$ = new CallExpr(new DefExpr(forif_fn));
+      $$ = buildForLoopExpr(NULL, $2->get(1)->remove(), $7, $5);
     }
 | TFOR expr TIN expr TDO expr %prec TRSBR
-    {
-      FnSymbol* forall_iterator =
-        new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
-      forall_iterator->insertAtTail(buildForLoopExpr($2, $4, $6));
-      $$ = new CallExpr(new DefExpr(forall_iterator));
-    }
+    { $$ = buildForLoopExpr($2, $4, $6); }
 | TFOR expr TDO expr %prec TRSBR
-    {
-      FnSymbol* forall_iterator =
-        new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
-      forall_iterator->insertAtTail(buildForLoopExpr(NULL, $2, $4));
-      $$ = new CallExpr(new DefExpr(forall_iterator));
-    }
+    { $$ = buildForLoopExpr(NULL, $2, $4); }
 | TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
-    {
-      FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
-      forif_fn->insertAtTail(buildForLoopExpr($2, $4, $9, $7));
-      $$ = new CallExpr(new DefExpr(forif_fn));
-    }
+    { $$ = buildForLoopExpr($2, $4, $9, $7); }
 | TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
-    {
-      FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
-      forif_fn->insertAtTail(buildForLoopExpr(NULL, $2, $7, $5));
-      $$ = new CallExpr(new DefExpr(forif_fn));
-    }
+    { $$ = buildForLoopExpr(NULL, $2, $7, $5); }
 | TFORALL expr TIN expr TDO expr %prec TRSBR
-    {
-      FnSymbol* forall_iterator =
-        new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
-      forall_iterator->insertAtTail(buildForLoopExpr($2, $4, $6));
-      $$ = new CallExpr(new DefExpr(forall_iterator));
-    }
+    { $$ = buildForLoopExpr($2, $4, $6); }
 | TFORALL expr TDO expr %prec TRSBR
-    {
-      FnSymbol* forall_iterator =
-        new FnSymbol(astr("_forallexpr", istr(iterator_uid++)));
-      forall_iterator->insertAtTail(buildForLoopExpr(NULL, $2, $4));
-      $$ = new CallExpr(new DefExpr(forall_iterator));
-    }
+    { $$ = buildForLoopExpr(NULL, $2, $4); }
 | TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
-    {
-      FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
-      forif_fn->insertAtTail(buildForLoopExpr($2, $4, $9, $7));
-      $$ = new CallExpr(new DefExpr(forif_fn));
-    }
+    { $$ = buildForLoopExpr($2, $4, $9, $7); }
 | TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
-    {
-      FnSymbol* forif_fn = new FnSymbol(astr("_forif_fn", istr(iterator_uid++)));
-      forif_fn->insertAtTail(buildForLoopExpr(NULL, $2, $7, $5));
-      $$ = new CallExpr(new DefExpr(forif_fn));
-    }
+    { $$ = buildForLoopExpr(NULL, $2, $7, $5); }
 | TIF expr TTHEN expr TELSE expr
     { $$ = new CallExpr(new DefExpr(buildIfExpr($2, $4, $6))); }
 ;

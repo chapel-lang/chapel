@@ -951,7 +951,7 @@ FnSymbol* FnSymbol::default_wrapper(Vec<Symbol*>* defaults,
     VarSymbol* index = new VarSymbol("_i");
     index->isCompilerTemp = true;
     wrapper->insertAtTail(new DefExpr(index));
-    wrapper->insertAtTail(buildForLoopExpr(new SymExpr(index), call, new SymExpr(index)));
+    wrapper->insertAtTail(buildForLoopStmt(new SymExpr(index), call, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, index))));
     wrapper->fnTag = FN_ITERATOR;
   }
   defPoint->insertAfter(new DefExpr(wrapper));
@@ -1047,11 +1047,10 @@ FnSymbol* FnSymbol::promotion_wrapper(SymbolMap* promotion_subs,
   if (indicesCall->numActuals() == 1)
     indices = indicesCall->get(1)->remove();
   if (returns_void(this)) {
-    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(BLOCK_FORALL,
-                                         indices, iterator,
-                                         new BlockStmt(actualCall))));
+    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator,
+                                             new BlockStmt(actualCall))));
   } else {
-    wrapper->insertAtTail(buildForLoopExpr(indices, iterator, actualCall));
+    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, actualCall)))));
     wrapper->fnTag = FN_ITERATOR;
     wrapper->removePragma("inline");
   }
