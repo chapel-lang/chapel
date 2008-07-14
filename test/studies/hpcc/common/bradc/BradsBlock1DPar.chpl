@@ -196,10 +196,10 @@ class LocBlock1DDist {
     const numelems = hi - lo + 1;
     const numlocs = dist.targetLocDom.numIndices;
     const locid0 = dist.targetLocDom.order(locid); // 0-based locale ID
-    const blo = if (locid == 0) then min(glbIdxType)
-                else procToData((numelems: real * locid) / numlocs, lo);
-    const bhi = if (locid == numlocs - 1) then max(glbIdxType)
-                else procToData((numelems: real * (locid+1)) / numlocs, lo) - 1;
+    const blo = if (locid0 == 0) then min(glbIdxType)
+                else procToData((numelems: real * locid0) / numlocs, lo);
+    const bhi = if (locid0 == numlocs - 1) then max(glbIdxType)
+                else procToData((numelems: real * (locid0+1)) / numlocs, lo) - 1;
     myChunk = [blo..bhi];
     if debugBradsBlock1D then
       writeln("locale ", locid, " owns ", myChunk);
