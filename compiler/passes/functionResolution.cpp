@@ -159,6 +159,8 @@ resolveFormals(FnSymbol* fn) {
         } else {
           resolveBody(formal->typeExpr);
           formal->type = formal->typeExpr->body.tail->typeInfo();
+          if (formal->type->symbol->hasPragma("ref"))
+            formal->type = getValueType(formal->type);
         }
       }
 
