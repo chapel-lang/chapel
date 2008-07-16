@@ -1,3 +1,0 @@
-bug: Program causes "illegal use of function that does not return a value" compile error except when unrelated call to writeln() is issued.
-
-Commenting out line 577 seems to fix the issue.

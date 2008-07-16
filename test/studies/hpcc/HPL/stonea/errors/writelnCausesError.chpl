@@ -574,7 +574,7 @@ def main() {
 
     dataHat = data;
 
-    writeln("just a line"):
+    writeln("just a line");
 
     LUFactorize(n, dataHat, piv);
     writeln();
