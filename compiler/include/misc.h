@@ -32,7 +32,7 @@ char *get_file_line(char *filename, int lineno);
   if (setupError(__FILE__, __LINE__, true, false, false, false)) printProblem
 
 #define INT_ASSERT(x) \
-  if (!(x)) INT_FATAL("Assertion Error");
+  do {if (!(x)) INT_FATAL("Assertion Error");} while (0)
 
 #define INT_WARN \
   if (setupError(__FILE__, __LINE__, false, false, true, false)) printProblem
