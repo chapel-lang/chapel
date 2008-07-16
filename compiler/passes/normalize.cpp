@@ -424,14 +424,21 @@ void normalize(void) {
 
   forv_Vec(FnSymbol, fn, gFns) {
     if (!strcmp(fn->name, "chpl_destroy")) {
-      // Free the _this argument as the last thing in the destructor.
-      DefExpr *this_arg = toDefExpr(fn->formals.get(2));
-      fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_CHPL_FREE, this_arg->sym));
+      if (fn->formals.length() < 2
+          || toDefExpr(fn->formals.get(1))->sym->typeInfo() != gMethodToken->typeInfo()) {
+        USR_FATAL(fn, "destructors must be methods");
+      } else if (fn->formals.length() > 2) {
+        USR_FATAL(fn, "destructors must not have arguments");
+      } else {
+        // free the _this argument as the last thing in the destructor.
+        DefExpr *this_arg = toDefExpr(fn->formals.get(2));
+        fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_CHPL_FREE, this_arg->sym));
+      }
     }
   }
 }
 
-// The following function is called from multiple places,
+// the following function is called from multiple places,
 // e.g., after generating default or wrapper functions
 void normalize(BaseAST* base) {
   Vec<BaseAST*> asts;
