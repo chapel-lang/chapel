@@ -1,5 +1,0 @@
-bug: ~ and class name are two separate tokens
-
-In destructor definitions, the ~ and class name are currently two separate
-tokens, so whitespace and comments are allowed between them. It should probably
-instead be a special identifier that starts with ~.
