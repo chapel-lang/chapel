@@ -128,6 +128,8 @@ enum PrimitiveTag {
   PRIMITIVE_LOOP_DOWHILE,
   PRIMITIVE_LOOP_FOR,
   PRIMITIVE_LOOP_INLINE, // inline iterator in place of loop
+  PRIMITIVE_TO_LEADER,
+  PRIMITIVE_TO_FOLLOWER,
 
   PRIMITIVE_GC_CC_INIT,       // Initialize heap for copy-collecting
   PRIMITIVE_GC_ADD_ROOT,      // Add a root variable for garbage collection

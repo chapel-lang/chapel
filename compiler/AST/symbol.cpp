@@ -736,7 +736,7 @@ FnSymbol::coercion_wrapper(SymbolMap* coercion_map,
   // function resolution is out-of-order, disabling this for
   // unspecified return types may not be necessary
   //
-  if (hasPragma("specified return type")) // iterators?
+  if (hasPragma("specified return type") && fnTag != FN_ITERATOR)
     wrapper->retType = retType;
 
   wrapper->cname = astr("_coerce_wrap_", cname);
@@ -786,12 +786,17 @@ FnSymbol::coercion_wrapper(SymbolMap* coercion_map,
       call->insertAtTail(wrapper_formal);
     }
   }
-  //if (isMethod && !noParens)
-    //call = make_method_call_partial(call);
-  if (retType == dtVoid || (retType == dtUnknown && returns_void(this)))
+  if (returns_void(this)) {
     wrapper->insertAtTail(call);
-  else
+  } else if (fnTag != FN_ITERATOR) {
     wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
+  } else {
+    VarSymbol* index = new VarSymbol("_i");
+    index->isCompilerTemp = true;
+    wrapper->insertAtTail(new DefExpr(index));
+    wrapper->insertAtTail(buildForLoopStmt(new SymExpr(index), call, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, index))));
+    wrapper->fnTag = FN_ITERATOR;
+  }
   defPoint->insertAfter(new DefExpr(wrapper));
   reset_line_info(wrapper->defPoint, lineno);
   normalize(wrapper);
@@ -988,10 +993,17 @@ FnSymbol* FnSymbol::order_wrapper(SymbolMap* order_map,
   }
   if (isMethod)
     call = make_method_call_partial(call);
-  if (returns_void(this))
+  if (returns_void(this)) {
     wrapper->insertAtTail(call);
-  else
+  } else if (fnTag != FN_ITERATOR) {
     wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
+  } else {
+    VarSymbol* index = new VarSymbol("_i");
+    index->isCompilerTemp = true;
+    wrapper->insertAtTail(new DefExpr(index));
+    wrapper->insertAtTail(buildForLoopStmt(new SymExpr(index), call, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, index))));
+    wrapper->fnTag = FN_ITERATOR;
+  }
   defPoint->insertBefore(new DefExpr(wrapper));
   clear_line_info(wrapper->defPoint);
   normalize(wrapper);

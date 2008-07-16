@@ -1,4 +1,5 @@
 #include "expr.h"
+#include "iterator.h"
 #include "primitive.h"
 #include "type.h"
 
@@ -244,6 +245,30 @@ returnInfoEndCount(CallExpr* call) {
 }
 
 static Type*
+returnInfoLeader(CallExpr* call) {
+  Type* ic = call->get(1)->typeInfo();
+  INT_ASSERT(ic->defaultConstructor);
+  INT_ASSERT(ic->defaultConstructor->iteratorInfo);
+  IteratorInfo* ii = ic->defaultConstructor->iteratorInfo;
+  if (!ii->leader) {
+    USR_FATAL(call, "forall loop applied to non-parallel iterator");
+  }
+  return ii->leader->icType;
+}
+
+static Type*
+returnInfoFollower(CallExpr* call) {
+  Type* ic = call->get(1)->typeInfo();
+  INT_ASSERT(ic->defaultConstructor);
+  INT_ASSERT(ic->defaultConstructor->iteratorInfo);
+  IteratorInfo* ii = ic->defaultConstructor->iteratorInfo;
+  if (!ii->follower) {
+    USR_FATAL(call, "forall loop applied to non-parallel iterator");
+  }
+  return ii->follower->icType;
+}
+
+static Type*
 returnInfoTaskList(CallExpr* call) {
   return dtTaskList;
 }
@@ -419,6 +444,9 @@ initPrimitive() {
   prim_def(PRIMITIVE_LOOP_DOWHILE, "do...while loop", returnInfoVoid);
   prim_def(PRIMITIVE_LOOP_FOR, "for loop", returnInfoVoid);
   prim_def(PRIMITIVE_LOOP_INLINE, "inline loop", returnInfoVoid);
+
+  prim_def(PRIMITIVE_TO_LEADER, "to leader", returnInfoLeader);
+  prim_def(PRIMITIVE_TO_FOLLOWER, "to follower", returnInfoFollower);
 
   prim_def(PRIMITIVE_GC_CC_INIT, "_chpl_gc_init", returnInfoVoid);
   prim_def(PRIMITIVE_GC_ADD_ROOT, "_addRoot", returnInfoVoid);

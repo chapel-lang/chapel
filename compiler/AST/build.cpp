@@ -460,7 +460,7 @@ checkIndices(BaseAST* indices) {
 
 
 BlockStmt* buildForLoopStmt(Expr* indices,
-                            Expr* iterator,
+                            Expr* iteratorExpr,
                             BlockStmt* body) {
   //
   // insert temporary index when elided by user
@@ -475,20 +475,19 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   BlockStmt* stmts = buildChapelStmt();
   addLoopLabelsToBlock(body);
 
-  iterator = new CallExpr("_getIterator", iterator);
-  VarSymbol* iteratorSym = new VarSymbol("_iterator");
-  iteratorSym->isCompilerTemp = true;
-  stmts->insertAtTail(new DefExpr(iteratorSym));
-  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iteratorSym, iterator));
+  VarSymbol* iterator = new VarSymbol("_iterator");
+  iterator->isCompilerTemp = true;
+  stmts->insertAtTail(new DefExpr(iterator));
+  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
   VarSymbol* index = new VarSymbol("_index");
   index->isCompilerTemp = true;
   stmts->insertAtTail(new DefExpr(index));
   stmts->insertAtTail(new BlockStmt(
     new CallExpr(PRIMITIVE_MOVE, index,
-      new CallExpr("iteratorIndex", iteratorSym)),
+      new CallExpr("iteratorIndex", iterator)),
     BLOCK_TYPE));
   destructureIndices(body, indices, new SymExpr(index));
-  body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iteratorSym);
+  body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iterator);
 
   body->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(body);
@@ -498,12 +497,12 @@ BlockStmt* buildForLoopStmt(Expr* indices,
 
 
 BlockStmt* buildForallLoopStmt(Expr* indices,
-                               Expr* iterator,
+                               Expr* iteratorExpr,
                                BlockStmt* body) {
   checkControlFlow(body, "forall statement");
 
-  if (fSerial)
-    return buildForLoopStmt(indices, iterator, body);
+  if (fSerial || !fEnableParallelIterators)
+    return buildForLoopStmt(indices, iteratorExpr, body);
 
   //
   // insert temporary index when elided by user
@@ -513,30 +512,54 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
 
   checkIndices(indices);
 
-  body = new BlockStmt(body);
-  body->blockTag = BLOCK_FORALL;
-  BlockStmt* stmts = buildChapelStmt();
-  addLoopLabelsToBlock(body);
-
-  iterator = new CallExpr("_getIterator", iterator);
-  VarSymbol* iteratorSym = new VarSymbol("_iterator");
-  iteratorSym->isCompilerTemp = true;
-  stmts->insertAtTail(new DefExpr(iteratorSym));
-  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iteratorSym, iterator));
-  VarSymbol* index = new VarSymbol("_index");
-  index->isCompilerTemp = true;
-  stmts->insertAtTail(new DefExpr(index));
-  stmts->insertAtTail(new BlockStmt(
-    new CallExpr(PRIMITIVE_MOVE, index,
-      new CallExpr("iteratorIndex", iteratorSym)),
-    BLOCK_TYPE));
-  destructureIndices(body, indices, new SymExpr(index));
-  body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iteratorSym);
-
-  body->insertAtTail(new DefExpr(body->pre_loop));
-  stmts->insertAtTail(body);
-  stmts->insertAtTail(new DefExpr(body->post_loop));
-  return stmts;
+  BlockStmt* leaderBlock = buildChapelStmt();
+  VarSymbol* iterator = new VarSymbol("_iterator");
+  iterator->isCompilerTemp = true;
+  leaderBlock->insertAtTail(new DefExpr(iterator));
+  leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
+  VarSymbol* leaderIndex = new VarSymbol("_leaderIndex");
+  leaderIndex->isCompilerTemp = true;
+  leaderBlock->insertAtTail(new DefExpr(leaderIndex));
+  VarSymbol* leaderIterator = new VarSymbol("_leaderIterator");
+  leaderIterator->isCompilerTemp = true;
+  leaderBlock->insertAtTail(new DefExpr(leaderIterator));
+  VarSymbol* leaderIndexCopy = new VarSymbol("_leaderIndexCopy");
+  leaderIndexCopy->isCompilerTemp = true;
+  leaderIndexCopy->addPragma("index var");
+  leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leaderIterator, new CallExpr("_toLeader", iterator)));
+  BlockStmt* followerBlock = new BlockStmt();
+  VarSymbol* followerIndex = new VarSymbol("_followerIndex");
+  followerIndex->isCompilerTemp = true;
+  followerBlock->insertAtTail(new DefExpr(followerIndex));
+  VarSymbol* followerIterator = new VarSymbol("_followerIterator");
+  followerIterator->isCompilerTemp = true;
+  followerBlock->insertAtTail(new DefExpr(followerIterator));
+  followerBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, followerIterator, new CallExpr("_toFollower", iterator, leaderIndexCopy)));
+  followerBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, followerIndex, new CallExpr("iteratorIndex", followerIterator)), BLOCK_TYPE));
+  BlockStmt* followerBody = new BlockStmt(body);
+  followerBody->blockTag = BLOCK_FOR;
+  destructureIndices(followerBody, indices, new SymExpr(followerIndex));
+  followerBody->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, followerIndex, followerIterator);
+  followerBlock->insertAtTail(followerBody);
+  BlockStmt* beginBlock = new BlockStmt();
+  beginBlock->insertAtTail(new DefExpr(leaderIndexCopy));
+  beginBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leaderIndexCopy, leaderIndex));
+  VarSymbol* coforallCount = new VarSymbol("_coforallCount");
+  coforallCount->isCompilerTemp = true;
+  leaderBlock->insertAtTail(new DefExpr(coforallCount));
+  leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
+  beginBlock->insertAtTail(new CallExpr("_upEndCount", coforallCount));
+  BlockStmt* beginBody = new BlockStmt(followerBlock);
+  beginBody->insertAtTail(new CallExpr("_downEndCount", coforallCount));
+  beginBlock->insertAtTail(buildBeginStmt(beginBody, true, coforallCount));
+  BlockStmt* leaderBody = new BlockStmt(beginBlock);
+  leaderBody->blockTag = BLOCK_FOR;
+  leaderBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, leaderIndex, new CallExpr("iteratorIndex", leaderIterator)), BLOCK_TYPE));
+  leaderBody->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, leaderIndex, leaderIterator);
+  leaderBlock->insertAtTail(leaderBody);
+  leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, coforallCount));
+  leaderBlock->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
+  return leaderBlock;
 }
 
 

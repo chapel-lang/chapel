@@ -16,6 +16,8 @@ extern int fNoStdIncs;
 
 extern int trace_level;
 
+extern bool fEnableParallelIterators;
+
 // optimization control flags
 extern bool fNoBoundsChecks;
 extern bool fNoCopyPropagation;

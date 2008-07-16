@@ -26,6 +26,7 @@ const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_THREADS = NULL;
 const char* CHPL_COMM = NULL;
 
+bool fEnableParallelIterators = false;
 int fdump_html = 0;
 static char libraryFilename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
@@ -370,6 +371,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Misc. Developer Flags", NULL, NULL, NULL, NULL},
  {"copy-collect", ' ', NULL, "Turn on copying garbage-collection", "F", &fCopyCollect, NULL, NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDistribution, "CHPL_DEFAULT_DISTRIBUTION", NULL},
+ {"enable-parallel-iterators", ' ', NULL, "Enable parallel iterators on 'forall' loops", "F", &fEnableParallelIterators, "CHPL_ENABLE_PARALLEL_ITERATORS", NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"ignore-errors", ' ', NULL, "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"extra-verification", ' ', NULL, "Do extra verification between passes", "F", &fExtraVerification, "CHPL_EXTRA_VERIFICATION", NULL},

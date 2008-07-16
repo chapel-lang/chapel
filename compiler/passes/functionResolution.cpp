@@ -75,10 +75,10 @@ static Map<FnSymbol*,Vec<FnSymbol*>*> ddf; // map of functions to
 // e.g.  foo(arg1=12, "hi");
 //  types = int, string
 //  names = arg1, NULL
-static FnSymbol* resolve_call(CallInfo* info, BlockStmt* scope = NULL);
+static FnSymbol* resolve_call(CallInfo* info, BlockStmt* scope = NULL, bool errorCheck = true);
 static Type* resolve_type_expr(Expr* expr);
 
-static void resolveCall(CallExpr* call);
+static void resolveCall(CallExpr* call, bool errorCheck = true);
 static void resolveBody(Expr* body);
 static void resolveFns(FnSymbol* fn);
 
@@ -119,6 +119,104 @@ static void makeRefType(Type* type) {
 }
 
 
+static FnSymbol*
+protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType) {
+  FnSymbol* fn = new FnSymbol(name);
+  fn->addPragma("auto ii"); 
+  if (strcmp(name, "advance"))
+    fn->addPragma("inline");
+  fn->global = true;
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ii->icType);
+  fn->retType = retType;
+  fn->insertFormalAtTail(fn->_this);
+  ii->iterator->defPoint->insertBefore(new DefExpr(fn));
+  return fn;
+}
+
+
+static void
+protoIteratorClass(FnSymbol* fn) {
+  INT_ASSERT(!fn->iteratorInfo);
+
+  currentLineno = fn->lineno;
+
+  IteratorInfo* ii = new IteratorInfo();
+  fn->iteratorInfo = ii;
+  fn->iteratorInfo->iterator = fn;
+
+  const char* className = astr("_ic_", fn->name);
+  if (fn->_this)
+    className = astr(className, "_", fn->_this->type->symbol->cname);
+  ii->icType = new ClassType(CLASS_CLASS);
+  TypeSymbol* cts = new TypeSymbol(className, ii->icType);
+  cts->addPragma("iterator class");
+  cts->addPragma("no object");
+  if (fn->retTag == RET_VAR)
+    cts->addPragma("ref iterator class");
+  fn->defPoint->insertBefore(new DefExpr(cts));
+
+  ii->advance = protoIteratorMethod(ii, "advance", dtVoid);
+  ii->zip1 = protoIteratorMethod(ii, "zip1", dtVoid);
+  ii->zip2 = protoIteratorMethod(ii, "zip2", dtVoid);
+  ii->zip3 = protoIteratorMethod(ii, "zip3", dtVoid);
+  ii->zip4 = protoIteratorMethod(ii, "zip4", dtVoid);
+  ii->hasMore = protoIteratorMethod(ii, "hasMore", dtInt[INT_SIZE_32]);
+  ii->getValue = protoIteratorMethod(ii, "getValue", fn->retType);
+
+  ii->icType->defaultConstructor = fn;
+  ii->icType->scalarPromotionType = fn->retType;
+  fn->retType = ii->icType;
+  fn->retTag = RET_VALUE;
+
+  makeRefType(fn->retType);
+
+  resolvedFns.set_add(fn->iteratorInfo->zip1);
+  resolvedFns.set_add(fn->iteratorInfo->zip2);
+  resolvedFns.set_add(fn->iteratorInfo->zip3);
+  resolvedFns.set_add(fn->iteratorInfo->zip4);
+  resolvedFns.set_add(fn->iteratorInfo->advance);
+  resolvedFns.set_add(fn->iteratorInfo->hasMore);
+  resolvedFns.set_add(fn->iteratorInfo->getValue);
+
+  for_formals(formal, fn) {
+    if (!strcmp(formal->name, "leader"))
+      return;
+  }
+
+  CallExpr* leaderCall = new CallExpr(fn->name);
+  for_formals(formal, fn) {
+    leaderCall->insertAtTail(formal);
+  }
+  leaderCall->insertAtTail(new NamedExpr("leader", new SymExpr(gTrue)));
+  fn->insertAtHead(leaderCall);
+  resolveCall(leaderCall, false);
+  leaderCall->remove();
+  if (FnSymbol* leader = leaderCall->isResolved()) {
+    resolveFns(leader);
+    ii->leader = leader->iteratorInfo;
+
+    CallExpr* followerCall = new CallExpr(fn->name);
+    for_formals(formal, fn) {
+      followerCall->insertAtTail(formal);
+    }
+    VarSymbol* leaderIndex = new VarSymbol("leaderIndex", leader->iteratorInfo->getValue->retType);
+    followerCall->insertAtTail(new NamedExpr("follower", new SymExpr(leaderIndex)));
+    fn->insertAtHead(new DefExpr(leaderIndex));
+    fn->insertAtHead(followerCall);
+    resolveCall(followerCall, false);
+    followerCall->remove();
+    leaderIndex->defPoint->remove();
+    if (FnSymbol* follower = followerCall->isResolved()) {
+      resolveFns(follower);
+      ii->follower = follower->iteratorInfo;
+    } else {
+      USR_FATAL(leader, "unable to resolve follower iterator");
+    }
+  }
+}
+
+
 static void
 resolveSpecifiedReturnType(FnSymbol* fn) {
   fn->retType = resolve_type_expr(fn->retExprType);
@@ -128,16 +226,8 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
       fn->retType = fn->retType->refType;
     }
     fn->retExprType->remove();
-    if (fn->fnTag == FN_ITERATOR) {
+    if (fn->fnTag == FN_ITERATOR && !fn->iteratorInfo) {
       protoIteratorClass(fn);
-      makeRefType(fn->retType);
-      resolvedFns.set_add(fn->iteratorInfo->zip1);
-      resolvedFns.set_add(fn->iteratorInfo->zip2);
-      resolvedFns.set_add(fn->iteratorInfo->zip3);
-      resolvedFns.set_add(fn->iteratorInfo->zip4);
-      resolvedFns.set_add(fn->iteratorInfo->advance);
-      resolvedFns.set_add(fn->iteratorInfo->hasMore);
-      resolvedFns.set_add(fn->iteratorInfo->getValue);
     }
   }
 }
@@ -1467,7 +1557,7 @@ getVisibleFunctions(BlockStmt* block,
 }
 
 static FnSymbol*
-resolve_call(CallInfo* info, BlockStmt* scope) {
+resolve_call(CallInfo* info, BlockStmt* scope, bool errorCheck) {
   CallExpr* call = info->call;
 
   Vec<FnSymbol*> visibleFns;                    // visible functions
@@ -1550,12 +1640,14 @@ resolve_call(CallInfo* info, BlockStmt* scope) {
   }
 
   if (!best && candidateFns.n > 0) {
-    printResolutionError("ambiguous", candidateFns, info, scope);
+    if (errorCheck)
+      printResolutionError("ambiguous", candidateFns, info, scope);
     best = NULL;
   } else if (call->partialTag && (!best || !best->noParens)) {
     best = NULL;
   } else if (!best) {
-    printResolutionError("unresolved", visibleFns, info, scope);
+    if (errorCheck)
+      printResolutionError("unresolved", visibleFns, info, scope);
     best = NULL;
   } else {
     best = build_default_wrapper(best, actualFormals, call->square);
@@ -1667,7 +1759,7 @@ resolveDefaultGenericType(CallExpr* call) {
 
 
 static void
-resolveCall(CallExpr* call) {
+resolveCall(CallExpr* call, bool errorCheck) {
   if (!call->primitive) {
 
     resolveDefaultGenericType(call);
@@ -1689,7 +1781,10 @@ resolveCall(CallExpr* call) {
 
     CallInfo info(call);
 
-    FnSymbol* resolvedFn = resolve_call(&info, scope);
+    FnSymbol* resolvedFn = resolve_call(&info, scope, errorCheck);
+
+    if (!resolvedFn && !errorCheck)
+      return;
 
     if (call->partialTag) {
       if (!resolvedFn)
@@ -3221,6 +3316,7 @@ resolveFns(FnSymbol* fn) {
   if (fn->fnTag != FN_ITERATOR && fn->retType->symbol->hasPragma("iterator class") &&
       strcmp("_pass", fn->name) && strcmp("_getIterator", fn->name) &&
       strcmp("iteratorIndex", fn->name) && strcmp("iteratorIndexHelp", fn->name) &&
+      strcmp("_toLeader", fn->name) && strcmp("_toFollower", fn->name) && 
       strcmp("_heapAccess", fn->name) &&
       strcmp("=", fn->name) && strcmp("_build_tuple", fn->name) && !fn->isCompilerTemp) {
     CallExpr* retCall = toCallExpr(fn->body->body.tail);
@@ -3240,14 +3336,6 @@ resolveFns(FnSymbol* fn) {
 
   if (fn->fnTag == FN_ITERATOR && !fn->iteratorInfo) {
     protoIteratorClass(fn);
-    makeRefType(fn->retType);
-    resolvedFns.set_add(fn->iteratorInfo->zip1);
-    resolvedFns.set_add(fn->iteratorInfo->zip2);
-    resolvedFns.set_add(fn->iteratorInfo->zip3);
-    resolvedFns.set_add(fn->iteratorInfo->zip4);
-    resolvedFns.set_add(fn->iteratorInfo->advance);
-    resolvedFns.set_add(fn->iteratorInfo->hasMore);
-    resolvedFns.set_add(fn->iteratorInfo->getValue);
   }
 
   if (fn->hasPragma("type constructor")) {

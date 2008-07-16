@@ -1808,6 +1808,16 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_GET_IMAG:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
+    case PRIMITIVE_TO_LEADER:
+      fprintf(outfile, "GET_LEADER(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_TO_FOLLOWER:
+      fprintf(outfile, "GET_FOLLOWER(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
     case PRIMITIVE_GC_CC_INIT:
       fprintf(outfile, "_chpl_gc_init(");
       get(1)->codegen(outfile);

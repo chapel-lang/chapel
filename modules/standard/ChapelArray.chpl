@@ -679,3 +679,26 @@ pragma "inline" def _getIterator(x: _tuple) {
 def _getIterator(type t) {
   compilerError("cannot iterate over a type");
 }
+
+pragma "inline"
+def _toLeader(iterator: _iteratorClass)
+  return __primitive("to leader", iterator);
+
+pragma "inline"
+def _toLeader(x: _tuple)
+  return _toLeader(x(1));
+
+pragma "inline"
+def _toFollower(iterator: _iteratorClass, leaderIndex)
+  return __primitive("to follower", iterator, leaderIndex);
+
+pragma "inline"
+def _toFollower(x: _tuple, leaderIndex) {
+  pragma "inline" def _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
+    if dim == x.size-1 then
+      return (_toFollower(x(dim), leaderIndex), _toFollower(x(dim+1), leaderIndex));
+    else
+      return (_toFollower(x(dim), leaderIndex), (..._toFollowerHelp(x, leaderIndex, dim+1)));
+  }
+  return _toFollowerHelp(x, leaderIndex, 1);
+}

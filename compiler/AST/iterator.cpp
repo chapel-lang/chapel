@@ -19,57 +19,12 @@ IteratorInfo::IteratorInfo() :
   zip3(NULL),
   zip4(NULL),
   hasMore(NULL),
-  getValue(NULL)
+  getValue(NULL),
+  leader(NULL),
+  follower(NULL),
+  iterator2leader(NULL),
+  iterator2follower(NULL)
 {}
-
-
-static FnSymbol*
-protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType) {
-  FnSymbol* fn = new FnSymbol(name);
-  fn->addPragma("auto ii"); 
-  if (strcmp(name, "advance"))
-    fn->addPragma("inline");
-  fn->global = true;
-  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ii->icType);
-  fn->retType = retType;
-  fn->insertFormalAtTail(fn->_this);
-  ii->iterator->defPoint->insertBefore(new DefExpr(fn));
-  return fn;
-}
-
-
-void protoIteratorClass(FnSymbol* fn) {
-  currentLineno = fn->lineno;
-
-  IteratorInfo* ii = new IteratorInfo();
-  fn->iteratorInfo = ii;
-  ii->iterator = fn;
-
-  const char* className = astr("_ic_", fn->name);
-  if (fn->_this)
-    className = astr(className, "_", fn->_this->type->symbol->cname);
-  ii->icType = new ClassType(CLASS_CLASS);
-  TypeSymbol* cts = new TypeSymbol(className, ii->icType);
-  cts->addPragma("iterator class");
-  cts->addPragma("no object");
-  if (fn->retTag == RET_VAR)
-    cts->addPragma("ref iterator class");
-  fn->defPoint->insertBefore(new DefExpr(cts));
-
-  ii->advance = protoIteratorMethod(ii, "advance", dtVoid);
-  ii->zip1 = protoIteratorMethod(ii, "zip1", dtVoid);
-  ii->zip2 = protoIteratorMethod(ii, "zip2", dtVoid);
-  ii->zip3 = protoIteratorMethod(ii, "zip3", dtVoid);
-  ii->zip4 = protoIteratorMethod(ii, "zip4", dtVoid);
-  ii->hasMore = protoIteratorMethod(ii, "hasMore", dtInt[INT_SIZE_32]);
-  ii->getValue = protoIteratorMethod(ii, "getValue", fn->retType);
-
-  ii->icType->defaultConstructor = fn;
-  ii->icType->scalarPromotionType = fn->retType;
-  fn->retType = ii->icType;
-  fn->retTag = RET_VALUE;
-}
 
 
 //
@@ -661,3 +616,4 @@ void lowerIterator(FnSymbol* fn) {
   buildGetValue(ii);
   rebuildIterator(ii, local2field, locals);
 }
+
