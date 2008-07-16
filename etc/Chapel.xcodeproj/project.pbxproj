@@ -176,7 +176,7 @@
 		F721A0BD0D454AAE00A6B43F /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 12;
-			dstPath = "$SRCROOT/../lib/darwin/gnu/threads-pthreads/comm-none";
+			dstPath = "$SRCROOT/../lib/comm-none/threads-pthreads";
 			dstSubfolderSpec = 0;
 			files = (
 				F721A0BE0D454AB400A6B43F /* libchpl.a in CopyFiles */,
@@ -1089,11 +1089,11 @@
 				"$(OBJECT_FILE_DIR_$(CURRENT_VARIANT))/$NATIVE_ARCH/main.o",
 			);
 			outputPaths = (
-				"$SRCROOT/../lib/darwin/gnu/threads-pthreads/comm-none/main.o",
+				"$SRCROOT/../lib/comm-none/threads-pthreads/main.o",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "dir=`eval echo \\$\\{OBJECT_FILE_DIR_${CURRENT_VARIANT}}`\nfiles=`for arch in $ARCHS; do echo $dir/$arch/main.o; done`\nset -x\nlipo -create -output $SRCROOT/../lib/darwin/gnu/threads-pthreads/comm-none/main.o $files";
+			shellScript = "dir=`eval echo \\$\\{OBJECT_FILE_DIR_${CURRENT_VARIANT}}`\nfiles=`for arch in $ARCHS; do echo $dir/$arch/main.o; done`\nset -x\nlipo -create -output $SRCROOT/../lib/comm-none/threads-pthreads/main.o $files";
 			showEnvVarsInLog = 0;
 		};
 		F731D6300D51217B009F6897 /* ShellScript */ = {
