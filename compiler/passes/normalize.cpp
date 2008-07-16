@@ -408,8 +408,8 @@ void normalize(void) {
         VarSymbol* tmp = new VarSymbol("_tmp");
         call->insertBefore(new DefExpr(tmp));
         call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call->get(1)->remove()));
-        call->insertAtTail(tmp);
         call->insertBefore(new CallExpr("chpl_destroy", gMethodToken, tmp));
+        call->remove();
       }
     }
   }
@@ -421,8 +421,18 @@ void normalize(void) {
   heapAllocateGlobals();
   heapAllocateLocals();
   insertUseForExplicitModuleCalls();
+
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (!strcmp(fn->name, "chpl_destroy")) {
+      // Free the _this argument as the last thing in the destructor.
+      DefExpr *this_arg = toDefExpr(fn->formals.get(2));
+      fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_CHPL_FREE, this_arg->sym));
+    }
+  }
 }
 
+// The following function is called from multiple places,
+// e.g., after generating default or wrapper functions
 void normalize(BaseAST* base) {
   Vec<BaseAST*> asts;
 

@@ -455,8 +455,6 @@ pragma "inline" def >>(param a: uint(64), param b: integral) param return __prim
 //
 def object.chpl_destroy() { }
 
-def chpl_destroy(_mt: _MT, x) { compilerError("cannot delete value"); }
-
 //
 // These functions are to handle symbols at statement level such as
 // the second statement here: var a: sync int = 1; a;
