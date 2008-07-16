@@ -73,8 +73,12 @@ def panelSolve(pnl : Panel2D, piv : [1..pnl.rows] int)
     for k in 1..pnl.cols {
         var col => panel[k.., k];
 
-        // The pivot is the element with the largest absolute value.
-        var (pivot, pivotRow) = maxloc reduce(abs(col), col.domain);
+        // The pivot is the element with the largest absolute value.  Note, I
+        // can't assign pivot in the maxloc expression, something like: (pivot,
+        // pivotrow) = maxloc ... because this would assign pivot to the
+        // absolute value of the pivot element, not the actual value.
+        var (_, pivotRow) = maxloc reduce(abs(col), col.domain);
+        var pivot = col[pivotRow];
 
         // Swap the current row with the pivot row
         piv[k] <=> piv[pivotRow];
@@ -374,7 +378,7 @@ def test_LUFactorize(rprt = true) : bool {
     permuteBack(C, piv);
 
     if rprt then write("test_LUFactorize: ");
-    if(& reduce (abs(C - origA(1..randomN, 1..randomN)) <= 0.1)) {
+    if(& reduce (abs(C - origA(1..randomN, 1..randomN)) <= 0.01)) {
         if rprt then writeln("PASSED");
         return true;
     } else {
@@ -412,6 +416,7 @@ def main() {
 
 // Sample output:
 // test_permuteMatrix: PASSED
-// test_panelSolve: 947 PASSED, 53 FAILED
+// test_panelSolve: 1000 PASSED, 0 FAILED
 // test_updateBlockRow: 100 PASSED, 0 FAILED
-// test_LUFactorize: 797 PASSED, 203 FAILED
+// test_LUFactorize: 1000 PASSED, 0 FAILED
+

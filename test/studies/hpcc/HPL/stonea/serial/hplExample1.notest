@@ -1,0 +1,5 @@
+To properly test this you'd need to apply the countedRanges patch. This can
+be done by moving the .patch file to your $CHPL_HOME directory and then
+executing:
+
+patch -p0 < countedRanges.patch

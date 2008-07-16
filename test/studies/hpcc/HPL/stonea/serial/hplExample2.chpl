@@ -2,6 +2,7 @@
 // ranges).
 
 use Random;
+use Norm;
 
 // calculate C = C - A * B.
 def dgemm(
@@ -41,15 +42,21 @@ def panelSolve(
     for k in pnlCols {
         var col = panel[k.., k..k];
 
-        // The pivot is the element with the largest absolute value.
-        var (pivot, pivotRow) =
+        // The pivot is the element with the largest absolute value.  I need to
+        // do this in two steps since if I assign it like (pivot, pivotRow) =
+        // maxloc(...) pivot will be assigned to the absolute value, not the
+        // actual value.
+        var (_, pivotRow) =
             maxloc reduce(abs(A(col)), col.dim(1));
+        var pivot = A[pivotRow, k];
 
         // Swap the current row with the pivot row
         piv[k] <=> piv[pivotRow];
         A[k, ..] <=> A[pivotRow, ..];
         
-        if(pivot == 0) then halt("Matrix can not be factorized");
+        if(pivot == 0) then {
+            halt("Matrix can not be factorized");
+        }
         
         // divide all values below and in the same col as the pivot by
         // the pivot
@@ -130,7 +137,7 @@ def LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
        |------------ 6 ------------|
        |                           |
     */
-    
+
     for blk in 1..n by blkSize {
         const crntBlkSize = min(blkSize, n-blk+1);
 
@@ -145,7 +152,7 @@ def LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
         var bl = [trailingRows, blockRange];
         var br = [trailingRows, trailingCols];
         var l  = [unfactoredRows, blockRange];
-
+        
         // Now that we've sliced and diced A properly do the blocked-LU
         // computation:
         panelSolve(A, l, piv);
@@ -226,24 +233,85 @@ def permuteMatrix(matrix : [?dmn], in vector) {
     matrix = permuted;
 }
 
-def permuteBack(matrix : [?dmn], in vector) {
+def permuteBack(matrix : [?dmn], in piv) {
     // this just does a bubblesort of the permutation vector swapping the
     // rows of the matrix alongside. Yes the performance here will be horrible,
     // not to mention all the data being shuffled around, but this function
     // is in the test system so it's excusable.
 
-    const low  = vector.domain.dim(1).low;
-    const high = vector.domain.dim(1).high;
+    const low  = piv.domain.dim(1).low;
+    const high = piv.domain.dim(1).high;
 
-    for i in vector.domain {
+    for i in piv.domain {
         for j in low..high-1 {
-            if vector[j+1] < vector[j] {
-                vector[j] <=> vector[j+1];
+            if piv[j+1] < piv[j] {
+                piv[j] <=> piv[j+1];
                 matrix[j, ..] <=> matrix[j+1, ..];
             }
         }
     }
 }
+
+def permuteBackVec(vector : [?dmn], in piv) {
+    const low  = piv.domain.dim(1).low;
+    const high = piv.domain.dim(1).high;
+
+    for i in piv.domain {
+        for j in low..high-1 {
+            if piv[j+1] < piv[j] {
+                piv[j] <=> piv[j+1];
+                vector[j] <=> vector[j+1];
+            }
+        }
+    }
+}
+
+
+// matrix-vector multiplication, solve equation A*x-y
+def gaxpyMinus(
+    n : int,
+    m : int,
+    A : [1..n, 1..m],
+    x : [1..m],
+    y : [1..n])
+{
+    var res : [1..n] real;
+
+    for i in 1..n {
+        for j in 1..m {
+            res[i] += A[i,j]*x[j];
+        }
+    }
+
+    for i in 1..n {
+        res[i] -= y[i];
+    }
+
+    return res;
+}
+
+
+def backwardSub(
+    n : int,
+    A : [1..n, 1..n] real,
+    b : [1..n] real)
+{
+    var x : [b.domain] real;
+
+    for i in [b.domain by -1] do {
+        x[i] = b[i];
+
+        for j in [i+1..b.domain.high] do {
+            x[i] -= A[i,j] * x[j];
+        }
+
+        x[i] /= A[i,i];
+    }
+
+    return x;
+}
+
+
 
 def test_permuteMatrix(rprt = true) : bool {
     // test one of the testing functions: permuteMatrix (is this getting a
@@ -368,12 +436,48 @@ def test_updateBlockRow(rprt = true) : bool {
     }
 }
 
+def test_LUFactorizeNorms(
+    n    : int,
+    A    : [1..n, 1..n] real,
+    b    : [1..n] real,
+    AHat : [1..n, 1..n] real,
+    bHat : [1..n] real,
+    piv  : [1..n] int) : bool
+{
+    var x : [1..n] real;
+
+    // use backward substitution to solve the system of equations.
+    x = backwardSub(n, AHat, bHat);
+
+    // calculate residuals (equations at bottom of this page
+    //     http://www.netlib.org/benchmark/hpl/algorithm.html):
+
+    var axmbNorm =
+        norm(gaxpyMinus(n, n, A([1..n, 1..n]), x, b), normType.normInf);
+
+    var a1norm   = norm(A([1..n, 1..n]), normType.norm1);
+    var aInfNorm = norm(A([1..n, 1..n]), normType.normInf);
+    var x1Norm   = norm(x, normType.norm1);
+    var xInfNorm = norm(x, normType.normInf);
+
+    const eps = 1.0e-5;
+
+    var resid1 = axmbNorm / (eps * a1norm * n);
+    var resid2 = axmbNorm / (eps * a1norm * x1Norm);
+    var resid3 = axmbNorm / (eps * aInfNorm * xInfNorm);
+
+    return resid1 <= 1.0 && resid2 <= 1.0 && resid3 <= 1.0;
+}
+
 def test_LUFactorize(rprt = true) : bool {
+    // construct a matrix of random size with random values 
     var rand = new RandomStream();
 
     var randomN : int = (rand.getNext() * 10):int + 1;
     var A : [1..randomN, 1..randomN+1] real;
     fillRandom(A);
+
+    // save a copy
     var origA = A;
 
     var piv : [1..randomN] int;
@@ -384,14 +488,41 @@ def test_LUFactorize(rprt = true) : bool {
     selfMult(randomN, A[1..randomN,1..randomN], C);
     permuteBack(C, piv);
 
-    if rprt then write("test_LUFactorize: ");
-    if(& reduce (abs(C - origA(1..randomN, 1..randomN)) <= 0.01)) {
+    // test using norms
+
+    var arg_n    = randomN;
+    var arg_A    : [1..arg_n, 1..arg_n] real;
+    var arg_b    : [1..arg_n] real;
+    var arg_AHat : [1..arg_n, 1..arg_n] real;
+    var arg_bHat : [1..arg_n] real;
+    var arg_piv  : [1..arg_n] int;
+
+    arg_A = origA[1..randomN, 1..randomN];
+    arg_b = origA[1..randomN, randomN+1];
+    arg_AHat = A[1..randomN, 1..randomN];
+    arg_bHat = A[1..randomN, randomN+1];
+    arg_piv = piv;
+
+
+    if test_LUFactorizeNorms(
+        randomN, arg_A, arg_b, arg_AHat, arg_bHat, arg_piv)
+    {
         if rprt then writeln("PASSED");
         return true;
     } else {
         if rprt then writeln("FAILED");
         return false;
     }
+
+
+/*    if rprt then write("test_LUFactorize: ");
+    if(& reduce (abs(C - origA(1..randomN, 1..randomN)) <= 0.01)) {
+        if rprt then writeln("PASSED");
+        return true;
+    } else {
+        if rprt then writeln("FAILED");
+        return false;
+    }*/
 }
 
 def main() {
@@ -414,14 +545,10 @@ def main() {
         numPassed += test_updateBlockRow(rprt=false);
     writeln(numPassed, " PASSED, ", 100-numPassed, " FAILED");
 
+    numPassed = 0;
     write("test_LUFactorize: ");
     for i in 1..1000 do
         numPassed += test_LUFactorize(rprt=false);
     writeln(numPassed, " PASSED, ", 1000-numPassed, " FAILED");
 }
 
-// Sample output:
-// test_permuteMatrix: PASSED
-// test_panelSolve: 938 PASSED, 62 FAILED
-// test_updateBlockRow: 100 PASSED, 0 FAILED
-// test_LUFactorize: 813 PASSED, 187 FAILED
