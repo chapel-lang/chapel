@@ -28,32 +28,32 @@ char *get_file_line(char *filename, int lineno);
 // results in something like:
 // INTERNAL ERROR in compilerSrc.c (lineno): your text here (usrSrc:usrLineno)
 
-#define INT_FATAL \
-  if (setupError(__FILE__, __LINE__, true, false, false, false)) printProblem
-
 #define INT_ASSERT(x) \
-  do {if (!(x)) INT_FATAL("Assertion Error");} while (0)
+  do { if (!(x)) INT_FATAL("Assertion Error"); } while (0)
+
+#define INT_FATAL \
+  setupError(__FILE__, __LINE__, true, false, false, false, false), printProblem
 
 #define INT_WARN \
-  if (setupError(__FILE__, __LINE__, false, false, true, false)) printProblem
+  setupError(__FILE__, __LINE__, false, false, true, false, false), printProblem
 
 #define USR_FATAL \
-  if (setupError(__FILE__, __LINE__, true, true, false, false)) printProblem
+  setupError(__FILE__, __LINE__, true, true, false, false, false), printProblem
 
 #define USR_FATAL_CONT \
-  if (setupError(__FILE__, __LINE__, true, true, true, false)) printProblem
+  setupError(__FILE__, __LINE__, true, true, true, false, false), printProblem
 
 #define USR_WARN \
-  if (!ignore_warnings && setupError(__FILE__, __LINE__, false, true, true, false)) printProblem
+  setupError(__FILE__, __LINE__, false, true, true, false, ignore_warnings), printProblem
 
 #define USR_PRINT \
-  if (setupError(__FILE__, __LINE__, false, true, true, true)) printProblem
+  setupError(__FILE__, __LINE__, false, true, true, true, false), printProblem
 
 #define USR_STOP \
   check_fatal_errors_encountered
 
-bool setupError(const char* filename, int lineno,
-                bool fatal, bool user, bool cont, bool print);
+void setupError(const char* filename, int lineno,
+                bool fatal, bool user, bool cont, bool print, bool ignore);
 void printProblem(const char* fmt, ...);
 void printProblem(IFAAST* ast, const char* fmt, ...);
 void printProblem(BaseAST* ast, const char* fmt, ...);

@@ -32,6 +32,7 @@ static int err_lineno;
 static int err_fatal;
 static int err_user;
 static int err_print;
+static int err_ignore;
 static FnSymbol* err_fn = NULL;
 
 
@@ -77,18 +78,18 @@ print_user_internal_error() {
 }
 
 
-bool
+void
 setupError(const char *filename, int lineno, bool fatal, bool user, bool cont,
-           bool print) {
+           bool print, bool ignore) {
   err_filename = filename;
   err_lineno = lineno;
   err_fatal = fatal;
   err_user = user;
   err_print = print;
+  err_ignore = ignore;
   exit_immediately = !cont;
   if (err_fatal)
     exit_eventually = true;
-  return true;
 }
 
 
@@ -140,6 +141,9 @@ static void printDevelErrorFooter(void) {
 
 
 void printProblem(const char *fmt, ...) {
+  if (err_ignore)
+    return;
+
   printDevelErrorHeader(NULL);
 
   if (!err_user && !developer)
@@ -162,6 +166,9 @@ void printProblem(const char *fmt, ...) {
 
 
 void printProblem(BaseAST* ast, const char *fmt, ...) {
+  if (err_ignore)
+    return;
+
   printDevelErrorHeader(ast);
 
   if (!err_user && !developer)
