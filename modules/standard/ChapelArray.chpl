@@ -34,7 +34,7 @@ def _build_domain(x: _domain)
 
 def _build_domain(ranges: range(?eltType,BoundedRangeType.bounded,?stridable) ...?rank) {
   for param i in 2..rank do
-    if eltType(1) != eltType(2) then
+    if eltType(1) != eltType(i) then
       compilerError("domain has mixed dimensional type");
   var d: domain(rank, eltType(1), _any_stridable(ranges));
   d.setIndices(ranges);
@@ -44,7 +44,7 @@ def _build_domain(ranges: range(?eltType,BoundedRangeType.bounded,?stridable) ..
 def _wrapDomain(d) return new _domain(d.rank, d);
 
 //
-// computes && reduction over stridable of ranges
+// computes || reduction over stridable of ranges
 //
 def _any_stridable(ranges, param d: int = 1) param {
   if ranges(d).stridable == true then
