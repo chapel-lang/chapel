@@ -1,3 +1,0 @@
-bug: declaring destructor outside class body
-
-Declaring a destructor outside of a class as "def C.~C()" is a syntax error.

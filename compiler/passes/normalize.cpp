@@ -10,6 +10,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include <cctype>
 
 bool normalized = false;
 Vec<const char*> usedConfigParams;
@@ -434,6 +435,12 @@ void normalize(void) {
         DefExpr *this_arg = toDefExpr(fn->formals.get(2));
         fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_CHPL_FREE, this_arg->sym));
       }
+    }
+    // make sure methods don't attempt to overload operators
+    else if (!isalpha(*fn->name) && *fn->name != '_'
+             && fn->formals.length() > 1
+             && toDefExpr(fn->formals.get(1))->sym->typeInfo() == gMethodToken->typeInfo()) {
+      USR_FATAL(fn, "invalid method name");
     }
   }
 }

@@ -19,9 +19,9 @@ NOTES
 
 %{
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include "lexyacc.h" // all #includes here, for make depend
 
   static int anon_record_uid = 1;
@@ -668,7 +668,7 @@ opt_formal_ls:
 fn_decl_stmt_inner:
   fn_identifier opt_formal_ls
     { $$ = $2; $$->name = astr($1); $$->cname = $$->name; }
-| type_binding_part TDOT identifier opt_formal_ls
+| type_binding_part TDOT fn_identifier opt_formal_ls
     {
       $$ = $4;
       $$->name = astr($3);
