@@ -79,17 +79,15 @@ print_user_internal_error() {
 
 
 void
-setupError(const char *filename, int lineno, bool fatal, bool user, bool cont,
-           bool print, bool ignore) {
+setupError(const char *filename, int lineno, int tag) {
   err_filename = filename;
   err_lineno = lineno;
-  err_fatal = fatal;
-  err_user = user;
-  err_print = print;
-  err_ignore = ignore;
-  exit_immediately = !cont;
-  if (err_fatal)
-    exit_eventually = true;
+  err_fatal = tag == 1 || tag == 2 || tag == 3;
+  err_user = tag != 1;
+  err_print = tag == 5;
+  err_ignore = ignore_warnings && tag == 4;
+  exit_immediately = tag == 1 || tag == 2;
+  exit_eventually |= tag == 3;
 }
 
 
@@ -140,7 +138,7 @@ static void printDevelErrorFooter(void) {
 
 
 
-void printProblem(const char *fmt, ...) {
+void handleError(const char *fmt, ...) {
   if (err_ignore)
     return;
 
@@ -165,7 +163,7 @@ void printProblem(const char *fmt, ...) {
 }
 
 
-void printProblem(BaseAST* ast, const char *fmt, ...) {
+void handleError(BaseAST* ast, const char *fmt, ...) {
   if (err_ignore)
     return;
 
@@ -190,7 +188,7 @@ void printProblem(BaseAST* ast, const char *fmt, ...) {
 }
 
 
-void check_fatal_errors_encountered() {
+void exitIfFatalErrorsEncountered() {
   if (exit_eventually && !ignore_errors) {
     clean_exit(1);
   }
@@ -200,6 +198,7 @@ void check_fatal_errors_encountered() {
 static void handleInterrupt(int sig) {
   INT_FATAL("received interrupt");
 }
+
 
 static void handleSegFault(int sig) {
   INT_FATAL("seg fault");

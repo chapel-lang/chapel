@@ -108,7 +108,7 @@ void runPasses(void) {
   PassInfo* pass = passlist+1;  // skip over FIRST
   while (pass->name != NULL) {
     runPass(pass->name, pass->fn);
-    check_fatal_errors_encountered();
+    USR_STOP(); // quit if fatal errors were encountered in pass
     pass++;
   }
   if (fdump_html) {
