@@ -431,9 +431,24 @@ void normalize(void) {
       } else if (fn->formals.length() > 2) {
         USR_FATAL(fn, "destructors must not have arguments");
       } else {
-        // free the _this argument as the last thing in the destructor.
-        DefExpr *this_arg = toDefExpr(fn->formals.get(2));
-        fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_CHPL_FREE, this_arg->sym));
+        // make sure the name of the destructor matches the name of the class
+        const char *dot = strchr(fn->userString, '.');
+        const char *destructorName = dot;
+        while (destructorName && !isalpha(*++destructorName) && *destructorName != '_'
+               && *destructorName != '\0')
+          /* do nothing */;
+        int destructorNameLength = 0;
+        for (const char *p = destructorName; p && (isalpha(*p) || *p == '_');
+             destructorNameLength++, p++)
+          /* do nothing */;
+        if (dot-fn->userString != destructorNameLength
+            || strncmp(fn->userString, destructorName, destructorNameLength))
+          USR_FATAL(fn, "destructor name must match class name");
+        else {
+          // free the _this argument as the last thing in the destructor.
+          DefExpr *this_arg = toDefExpr(fn->formals.get(2));
+          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_CHPL_FREE, this_arg->sym));
+        }
       }
     }
     // make sure methods don't attempt to overload operators
