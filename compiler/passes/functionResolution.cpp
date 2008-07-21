@@ -12,6 +12,7 @@
 class CallInfo {
  public:
   CallExpr*        call;        // call expression
+  BlockStmt*       scope;       // module scope as in M.call
   const char*      name;        // function name
   Vec<Symbol*>     actualSyms;  // symbols of actuals
   Vec<Type*>       actualTypes; // types of actuals
@@ -20,8 +21,21 @@ class CallInfo {
 };
 
 
-CallInfo::CallInfo(CallExpr* icall) : call(icall) {
+CallInfo::CallInfo(CallExpr* icall) : call(icall), scope(NULL) {
   name = toSymExpr(call->baseExpr)->getName();
+  if (call->numActuals() >= 2) {
+    if (SymExpr* se = toSymExpr(call->get(1))) {
+      if (se->var == gModuleToken) {
+        se->remove();
+        se = toSymExpr(call->get(1));
+        INT_ASSERT(se);
+        ModuleSymbol* mod = toModuleSymbol(se->var);
+        INT_ASSERT(mod);
+        se->remove();
+        scope = mod->block;
+      }
+    }
+  }
   for_actuals(actual, call) {
     Type* t = actual->typeInfo();
     if (t == dtUnknown || t->isGeneric)
@@ -62,7 +76,7 @@ static ModuleSymbol* explainInstantiationModule;
 static Vec<CallExpr*> inits;
 static Vec<FnSymbol*> resolvedFns;
 static Vec<FnSymbol*> resolvedFormals;
-Vec<CallExpr*> callStack;
+static Vec<CallExpr*> callStack;
 
 static Map<CallExpr*,FnSymbol*> buildArrayMap;
 static Map<Type*,FnSymbol*> wrapDomainMap;
@@ -75,11 +89,11 @@ static Map<FnSymbol*,Vec<FnSymbol*>*> ddf; // map of functions to
 // e.g.  foo(arg1=12, "hi");
 //  types = int, string
 //  names = arg1, NULL
-static FnSymbol* resolve_call(CallInfo* info, BlockStmt* scope = NULL, bool errorCheck = true);
+static FnSymbol* resolve_call(CallInfo* info, bool errorCheck = true);
 static Type* resolve_type_expr(Expr* expr);
 
 static void resolveCall(CallExpr* call, bool errorCheck = true);
-static void resolveBody(Expr* body);
+static void resolveBlock(Expr* body);
 static void resolveFns(FnSymbol* fn);
 
 static bool canDispatch(Type* actualType,
@@ -102,20 +116,162 @@ static void makeRefType(Type* type) {
   if (type->refType || type->isGeneric || type->symbol->hasPragma("ref"))
     return;
 
-  //  DefExpr* def = new DefExpr(new VarSymbol("tmp", type));
-  CallInfo info(new CallExpr("_type_construct__ref", type->symbol));
-  // add call to AST temporarily
+  CallExpr* call = new CallExpr("_type_construct__ref", type->symbol);
   if (type->defaultConstructor) {
     if (type->defaultConstructor->instantiationPoint)
-      type->defaultConstructor->instantiationPoint->insertAtHead(info.call);
+      type->defaultConstructor->instantiationPoint->insertAtHead(call);
     else
-      type->symbol->defPoint->insertBefore(info.call);
+      type->symbol->defPoint->insertBefore(call);
   } else
-    chpl_main->insertAtHead(info.call);
-  FnSymbol* fn = resolve_call(&info);
-  info.call->remove();
-  type->refType = toClassType(fn->retType);
+    chpl_main->insertAtHead(call);
+  resolveCall(call);
+  call->remove();
+  type->refType = toClassType(call->isResolved()->retType);
   type->refType->getField(1)->type = type;
+}
+
+
+static const char* toString(Type* type) {
+  if (type->symbol->hasPragma("ref"))
+    return getValueType(type)->symbol->name;
+  else
+    return type->symbol->name;
+}
+
+
+static const char* toString(CallInfo* info) {
+  bool method = false;
+  bool _this = false;
+  const char *str = "";
+  if (info->actualTypes.n > 1)
+    if (info->actualTypes.v[0] == dtMethodToken)
+      method = true;
+  if (!strcmp("this", info->name)) {
+    _this = true;
+    method = false;
+  }
+  if (method) {
+    if (info->actualSyms.v[1] && info->actualSyms.v[1]->isTypeVariable)
+      str = astr(str, "type ", toString(info->actualTypes.v[1]), ".");
+    else
+      str = astr(str, toString(info->actualTypes.v[1]), ".");
+  }
+  if (!strncmp("_type_construct_", info->name, 16)) {
+    str = astr(str, info->name+16);
+  } else if (!strncmp("_construct_", info->name, 11)) {
+    str = astr(str, info->name+11);
+  } else if (!_this) {
+    str = astr(str, info->name);
+  }
+  if (!info->call->methodTag) {
+    if (info->call->square)
+      str = astr(str, "[");
+    else
+      str = astr(str, "(");
+  }
+  bool first = false;
+  int start = 0;
+  if (method)
+    start = 2;
+  if (_this)
+    start = 2;
+  for (int i = start; i < info->actualTypes.n; i++) {
+    if (!first)
+      first = true;
+    else
+      str = astr(str, ", ");
+    if (info->actualNames.v[i])
+      str = astr(str, info->actualNames.v[i], "=");
+    VarSymbol* var = toVarSymbol(info->actualSyms.v[i]);
+    if (info->actualTypes.v[i]->symbol->hasPragma("iterator class") &&
+        info->actualTypes.v[i]->defaultConstructor->hasPragma("promotion wrapper"))
+      str = astr(str, "promoted expression");
+    else if (info->actualSyms.v[i] && info->actualSyms.v[i]->isTypeVariable)
+      str = astr(str, "type ", toString(info->actualTypes.v[i]));
+    else if (var && var->immediate) {
+      if (var->immediate->const_kind == CONST_KIND_STRING) {
+        str = astr(str, "\"", var->immediate->v_string, "\"");
+      } else {
+        char buff[512];
+        sprint_imm(buff, *var->immediate);
+        str = astr(str, buff);
+      }
+    } else
+      str = astr(str, toString(info->actualTypes.v[i]));
+  }
+  if (!info->call->methodTag) {
+    if (info->call->square)
+      str = astr(str, "]");
+    else
+      str = astr(str, ")");
+  }
+  return str;
+}
+
+
+static const char* toString(FnSymbol* fn) {
+  if (fn->userString) {
+    if (developer)
+      return astr(fn->userString, " [", istr(fn->id), "]");
+    else
+      return fn->userString;
+  }
+  const char* str;
+  int start = 0;
+  if (fn->instantiatedFrom)
+    fn = fn->instantiatedFrom;
+  if (!strncmp("_type_construct_", fn->name, 16)) {
+    str = astr(fn->name+16);
+  } else if (!strncmp("_construct_", fn->name, 11)) {
+    str = astr(fn->name+11);
+  } else if (fn->isMethod) {
+    if (!strcmp(fn->name, "this")) {
+      str = astr(toString(fn->getFormal(2)->type));
+      start = 1;
+    } else {
+      str = astr(toString(fn->getFormal(2)->type), ".", fn->name);
+      start = 2;
+    }
+  } else
+    str = astr(fn->name);
+  
+  if (!fn->noParens &&
+      !(!strncmp("_type_construct_", fn->name, 16) && fn->numFormals() == 0))
+    str = astr(str, "(");
+  bool first = false;
+  for (int i = start; i < fn->numFormals(); i++) {
+    ArgSymbol* arg = fn->getFormal(i+1);
+    if (arg->hasPragma("is meme"))
+      continue;
+    if (!first)
+      first = true;
+    else
+      str = astr(str, ", ");
+    if (arg->intent == INTENT_PARAM)
+      str = astr(str, "param ");
+    if (arg->isTypeVariable)
+      str = astr(str, "type ", arg->name);
+    else if (arg->type == dtUnknown) {
+      SymExpr* sym = NULL;
+      if (arg->typeExpr)
+        sym = toSymExpr(arg->typeExpr->body.tail);
+      if (sym)
+        str = astr(str, arg->name, ": ", sym->var->name);
+      else
+        str = astr(str, arg->name);
+    } else if (arg->type == dtAny) {
+      str = astr(str, arg->name);
+    } else
+      str = astr(str, arg->name, ": ", toString(arg->type));
+    if (arg->variableExpr)
+      str = astr(str, " ...");
+  }
+  if (!fn->noParens &&
+      !(!strncmp("_type_construct_", fn->name, 16) && fn->numFormals() == 0))
+    str = astr(str, ")");
+  if (developer)
+    str = astr(str, " [", istr(fn->id), "]");
+  return str;
 }
 
 
@@ -247,7 +403,7 @@ resolveFormals(FnSymbol* fn) {
         if (!formal->typeExpr) {
           formal->type = dtObject;
         } else {
-          resolveBody(formal->typeExpr);
+          resolveBlock(formal->typeExpr);
           formal->type = formal->typeExpr->body.tail->typeInfo();
           if (formal->type->symbol->hasPragma("ref"))
             formal->type = getValueType(formal->type);
@@ -603,7 +759,7 @@ computeGenericSubs(SymbolMap &subs,
         if (subs.n)
           break;
 
-        resolveBody(formal->defaultExpr);
+        resolveBlock(formal->defaultExpr);
         if (SymExpr* se = toSymExpr(formal->defaultExpr->body.tail)) {
           if (se->var->isParameter())
             subs.put(formal, se->var);
@@ -639,7 +795,7 @@ computeGenericSubs(SymbolMap &subs,
         if (subs.n)
           break;
 
-        resolveBody(formal->defaultExpr);
+        resolveBlock(formal->defaultExpr);
         Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
         if (canInstantiate(defaultType, formal->type) ||
             defaultType == gNil->type) { // constructor default
@@ -939,18 +1095,15 @@ build_order_wrapper(FnSymbol* fn,
 
 
 static FnSymbol*
-build_coercion_wrapper(FnSymbol* fn,
-                       Vec<Type*>* actualTypes,
-                       Vec<Symbol*>* actualSyms,
-                       bool isSquare) {
+build_coercion_wrapper(FnSymbol* fn, CallInfo* info) {
   SymbolMap subs;
   Map<ArgSymbol*,bool> coercions;
   int j = -1;
   bool coerce = false;
   for_formals(formal, fn) {
     j++;
-    Type* actualType = actualTypes->v[j];
-    Symbol* actualSym = actualSyms->v[j];
+    Type* actualType = info->actualTypes.v[j];
+    Symbol* actualSym = info->actualSyms.v[j];
     if (actualType != formal->type) {
       if (canCoerce(actualType, actualSym, formal->type, fn) || isDispatchParent(actualType, formal->type)) {
         subs.put(formal, actualType->symbol);
@@ -962,16 +1115,16 @@ build_coercion_wrapper(FnSymbol* fn,
     }
   }
   if (coerce)
-    fn = fn->coercion_wrapper(&subs, &coercions, isSquare);
+    fn = fn->coercion_wrapper(&subs, &coercions, info->call->square);
   return fn;  
 }
 
 
 static FnSymbol*
-build_promotion_wrapper(FnSymbol* fn,
-                        Vec<Type*>* actualTypes,
-                        Vec<Symbol*>* actualSyms,
-                        bool isSquare) {
+build_promotion_wrapper(FnSymbol* fn, CallInfo* info) {
+  Vec<Type*>* actualTypes = &info->actualTypes;
+  Vec<Symbol*>* actualSyms = &info->actualSyms;
+  bool isSquare = info->call->square;
   if (!strcmp(fn->name, "="))
     return fn;
   bool promotion_wrapper_required = false;
@@ -990,6 +1143,8 @@ build_promotion_wrapper(FnSymbol* fn,
     }
   }
   if (promotion_wrapper_required) {
+    if (fWarnPromotion)
+      USR_WARN(info->call, "promotion on %s", toString(info));
     fn = fn->promotion_wrapper(&promoted_subs, isSquare);
     resolveFormals(fn);
   }
@@ -1175,150 +1330,6 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
 }
 
 
-static const char* toString(Type* type) {
-  if (type->symbol->hasPragma("ref"))
-    return getValueType(type)->symbol->name;
-  else
-    return type->symbol->name;
-}
-
-
-static const char* toString(CallInfo* info) {
-  bool method = false;
-  bool _this = false;
-  const char *str = "";
-  if (info->actualTypes.n > 1)
-    if (info->actualTypes.v[0] == dtMethodToken)
-      method = true;
-  if (!strcmp("this", info->name)) {
-    _this = true;
-    method = false;
-  }
-  if (method) {
-    if (info->actualSyms.v[1] && info->actualSyms.v[1]->isTypeVariable)
-      str = astr(str, "type ", toString(info->actualTypes.v[1]), ".");
-    else
-      str = astr(str, toString(info->actualTypes.v[1]), ".");
-  }
-  if (!strncmp("_type_construct_", info->name, 16)) {
-    str = astr(str, info->name+16);
-  } else if (!strncmp("_construct_", info->name, 11)) {
-    str = astr(str, info->name+11);
-  } else if (!_this) {
-    str = astr(str, info->name);
-  }
-  if (!info->call->methodTag) {
-    if (info->call->square)
-      str = astr(str, "[");
-    else
-      str = astr(str, "(");
-  }
-  bool first = false;
-  int start = 0;
-  if (method)
-    start = 2;
-  if (_this)
-    start = 2;
-  for (int i = start; i < info->actualTypes.n; i++) {
-    if (!first)
-      first = true;
-    else
-      str = astr(str, ", ");
-    if (info->actualNames.v[i])
-      str = astr(str, info->actualNames.v[i], "=");
-    VarSymbol* var = toVarSymbol(info->actualSyms.v[i]);
-    if (info->actualTypes.v[i]->symbol->hasPragma("iterator class") &&
-        info->actualTypes.v[i]->defaultConstructor->hasPragma("promotion wrapper"))
-      str = astr(str, "promoted expression");
-    else if (info->actualSyms.v[i] && info->actualSyms.v[i]->isTypeVariable)
-      str = astr(str, "type ", toString(info->actualTypes.v[i]));
-    else if (var && var->immediate) {
-      if (var->immediate->const_kind == CONST_KIND_STRING) {
-        str = astr(str, "\"", var->immediate->v_string, "\"");
-      } else {
-        char buff[512];
-        sprint_imm(buff, *var->immediate);
-        str = astr(str, buff);
-      }
-    } else
-      str = astr(str, toString(info->actualTypes.v[i]));
-  }
-  if (!info->call->methodTag) {
-    if (info->call->square)
-      str = astr(str, "]");
-    else
-      str = astr(str, ")");
-  }
-  return str;
-}
-
-
-static const char* toString(FnSymbol* fn) {
-  if (fn->userString) {
-    if (developer)
-      return astr(fn->userString, " [", istr(fn->id), "]");
-    else
-      return fn->userString;
-  }
-  const char* str;
-  int start = 0;
-  if (fn->instantiatedFrom)
-    fn = fn->instantiatedFrom;
-  if (!strncmp("_type_construct_", fn->name, 16)) {
-    str = astr(fn->name+16);
-  } else if (!strncmp("_construct_", fn->name, 11)) {
-    str = astr(fn->name+11);
-  } else if (fn->isMethod) {
-    if (!strcmp(fn->name, "this")) {
-      str = astr(toString(fn->getFormal(2)->type));
-      start = 1;
-    } else {
-      str = astr(toString(fn->getFormal(2)->type), ".", fn->name);
-      start = 2;
-    }
-  } else
-    str = astr(fn->name);
-  
-  if (!fn->noParens &&
-      !(!strncmp("_type_construct_", fn->name, 16) && fn->numFormals() == 0))
-    str = astr(str, "(");
-  bool first = false;
-  for (int i = start; i < fn->numFormals(); i++) {
-    ArgSymbol* arg = fn->getFormal(i+1);
-    if (arg->hasPragma("is meme"))
-      continue;
-    if (!first)
-      first = true;
-    else
-      str = astr(str, ", ");
-    if (arg->intent == INTENT_PARAM)
-      str = astr(str, "param ");
-    if (arg->isTypeVariable)
-      str = astr(str, "type ", arg->name);
-    else if (arg->type == dtUnknown) {
-      SymExpr* sym = NULL;
-      if (arg->typeExpr)
-        sym = toSymExpr(arg->typeExpr->body.tail);
-      if (sym)
-        str = astr(str, arg->name, ": ", sym->var->name);
-      else
-        str = astr(str, arg->name);
-    } else if (arg->type == dtAny) {
-      str = astr(str, arg->name);
-    } else
-      str = astr(str, arg->name, ": ", toString(arg->type));
-    if (arg->variableExpr)
-      str = astr(str, " ...");
-  }
-  if (!fn->noParens &&
-      !(!strncmp("_type_construct_", fn->name, 16) && fn->numFormals() == 0))
-    str = astr(str, ")");
-  if (developer)
-    str = astr(str, " [", istr(fn->id), "]");
-  return str;
-}
-
-
 static bool
 explainCallMatch(CallExpr* call) {
   if (!call->isNamed(fExplainCall))
@@ -1364,8 +1375,7 @@ userCall(CallExpr* call) {
 static void
 printResolutionError(const char* error,
                      Vec<FnSymbol*>& candidates,
-                     CallInfo* info,
-                     BlockStmt* scope) {
+                     CallInfo* info) {
   CallExpr* call = userCall(info->call);
   if (!strcmp("_cast", info->name)) {
     if (!info->actualSyms.v[0]->isTypeVariable) {
@@ -1417,8 +1427,8 @@ printResolutionError(const char* error,
     if (!strncmp("_type_construct_", info->name, 16))
       entity = "type specifier";
     const char* str = toString(info);
-    if (scope) {
-      ModuleSymbol* mod = toModuleSymbol(scope->parentSymbol);
+    if (info->scope) {
+      ModuleSymbol* mod = toModuleSymbol(info->scope->parentSymbol);
       INT_ASSERT(mod);
       str = astr(mod->name, ".", str);
     }
@@ -1508,18 +1518,12 @@ static BlockStmt*
 getVisibleFunctions(BlockStmt* block,
                     const char* name,
                     Vec<FnSymbol*>& visibleFns,
-                    Vec<BlockStmt*>* visited = NULL) {
-  if (!visited) { // first call only
-    Vec<BlockStmt*> visited;
-    getVisibleFunctions(block, name, visibleFns, &visited);
-    return NULL;
-  }
-
-  if (visited->set_in(block)) {
+                    Vec<BlockStmt*>& visited) {
+  if (visited.set_in(block)) {
     INT_ASSERT(isModuleSymbol(block->parentSymbol));
     return NULL;
   }
-  visited->set_add(block);
+  visited.set_add(block);
 
   bool canSkipThisBlock = true;
 
@@ -1557,13 +1561,11 @@ getVisibleFunctions(BlockStmt* block,
 }
 
 static FnSymbol*
-resolve_call(CallInfo* info, BlockStmt* scope, bool errorCheck) {
-  CallExpr* call = info->call;
-
+resolve_call(CallInfo* info, bool errorCheck) {
   Vec<FnSymbol*> visibleFns;                    // visible functions
-
   Vec<FnSymbol*> candidateFns;
   Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
+  CallExpr* call = info->call;
 
   //
   // update visible function map as necessary
@@ -1572,10 +1574,11 @@ resolve_call(CallInfo* info, BlockStmt* scope, bool errorCheck) {
     buildVisibleFunctionMap();
 
   if (!call->isResolved()) {
-    if (!scope) {
-      getVisibleFunctions(getVisibilityBlock(call), info->name, visibleFns);
+    if (!info->scope) {
+      Vec<BlockStmt*> visited;
+      getVisibleFunctions(getVisibilityBlock(call), info->name, visibleFns, visited);
     } else {
-      if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(scope))
+      if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info->scope))
         if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info->name))
           visibleFns.append(*fns);
     }
@@ -1625,8 +1628,8 @@ resolve_call(CallInfo* info, BlockStmt* scope, bool errorCheck) {
 
   // use visibility and then look for best again
   if (!best && candidateFns.n > 1) {
-    if (scope) {
-      disambiguate_by_scope(scope, &candidateFns);
+    if (info->scope) {
+      disambiguate_by_scope(info->scope, &candidateFns);
     } else {
       disambiguate_by_scope(getVisibilityBlock(call), &candidateFns);
     }
@@ -1641,29 +1644,20 @@ resolve_call(CallInfo* info, BlockStmt* scope, bool errorCheck) {
 
   if (!best && candidateFns.n > 0) {
     if (errorCheck)
-      printResolutionError("ambiguous", candidateFns, info, scope);
+      printResolutionError("ambiguous", candidateFns, info);
     best = NULL;
   } else if (call->partialTag && (!best || !best->noParens)) {
     best = NULL;
   } else if (!best) {
     if (errorCheck)
-      printResolutionError("unresolved", visibleFns, info, scope);
+      printResolutionError("unresolved", visibleFns, info);
     best = NULL;
   } else {
     best = build_default_wrapper(best, actualFormals, call->square);
     best = build_order_wrapper(best, actualFormals, call->square);
-    best = build_coercion_wrapper(best, &info->actualTypes, &info->actualSyms, call->square);
-
-    FnSymbol* promoted = build_promotion_wrapper(best, &info->actualTypes, &info->actualSyms, call->square);
-    if (promoted != best) {
-      if (fWarnPromotion) {
-        const char* str = toString(info);
-        USR_WARN(call, "promotion on %s", str);
-      }
-      best = promoted;
-    }
+    best = build_coercion_wrapper(best, info);
+    best = build_promotion_wrapper(best, info);
   }
-
   for (int i = 0; i < candidateActualFormals.n; i++)
     delete candidateActualFormals.v[i];
 
@@ -1719,7 +1713,7 @@ isTypeExpr(Expr* expr) {
   if (SymExpr* sym = toSymExpr(expr)) {
     if (sym->var->isTypeVariable)
       return true;
-    if (toTypeSymbol(sym->var))
+    if (isTypeSymbol(sym->var))
       return true;
   } else if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIMITIVE_TYPEOF))
@@ -1764,24 +1758,9 @@ resolveCall(CallExpr* call, bool errorCheck) {
 
     resolveDefaultGenericType(call);
 
-    BlockStmt* scope = NULL;
-    if (call->numActuals() >= 2) {
-      if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (se->var == gModuleToken) {
-          se->remove();
-          se = toSymExpr(call->get(1));
-          INT_ASSERT(se);
-          ModuleSymbol* mod = toModuleSymbol(se->var);
-          INT_ASSERT(mod);
-          se->remove();
-          scope = mod->block;
-        }
-      }
-    }
-
     CallInfo info(call);
 
-    FnSymbol* resolvedFn = resolve_call(&info, scope, errorCheck);
+    FnSymbol* resolvedFn = resolve_call(&info, errorCheck);
 
     if (!resolvedFn && !errorCheck)
       return;
@@ -3094,13 +3073,13 @@ static void issueCompilerError(CallExpr* call) {
 }
 
 static void
-resolveBody(Expr* body) {
+resolveBlock(Expr* body) {
   FnSymbol* fn = toFnSymbol(body->parentSymbol);
   for_exprs_postorder(expr, body) {
     currentLineno = expr->lineno;
-    if (SymExpr* sym = toSymExpr(expr))
-      if (Type* type = sym->typeInfo())
-        makeRefType(type);
+    if (SymExpr* se = toSymExpr(expr))
+      if (se->var)
+        makeRefType(se->var->type);
     expr = preFold(expr);
 
     if (fn && fn->retTag == RET_PARAM) {
@@ -3212,7 +3191,7 @@ resolveFns(FnSymbol* fn) {
 
   insertFormalTemps(fn);
 
-  resolveBody(fn->body);
+  resolveBlock(fn->body);
 
   if (fn->hasPragma("type constructor")) {
     ClassType* ct = toClassType(fn->retType);
@@ -3663,10 +3642,10 @@ resolve() {
   int num_types;
   do {
     num_types = gTypes.n;
-    Vec<FnSymbol*> keys;
-    ddf.get_keys(keys);
-    forv_Vec(FnSymbol, key, keys) {
-      delete ddf.get(key);
+    Vec<Vec<FnSymbol*>*> values;
+    ddf.get_values(values);
+    forv_Vec(Vec<FnSymbol*>, value, values) {
+      delete value;
     }
     ddf.clear();
     build_ddf();
@@ -3717,7 +3696,6 @@ resolve() {
       resolveFns(fn);
     }
   }
-
 
   Vec<CallExpr*> calls;
   forv_Vec(BaseAST, ast, gAsts) {
@@ -4001,16 +3979,8 @@ pruneResolvedTree() {
       } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
         // Remove types to enable --baseline
         SymExpr* sym = toSymExpr(call->get(2));
-        if (sym && toTypeSymbol(sym->var))
+        if (sym && isTypeSymbol(sym->var))
           call->remove();
-//       } else if (call->isNamed("_init")) {
-//         // Special handling of class init to avoid infinite recursion
-//         if (ClassType* ct = toClassType(call->typeInfo())) {
-//           if (ct->defaultValue) {
-//             removeActual(call->get(1));
-//             call->replace(new CallExpr(PRIMITIVE_CAST, ct->symbol, gNil));
-//           }
-//         }
       } else if (FnSymbol* fn = call->isResolved()) {
         // Remove method token actuals
         for (int i = fn->numFormals(); i >= 1; i--) {
@@ -4301,7 +4271,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
     }
     whereStack.add(ifn);
     resolveFormals(ifn);
-    resolveBody(ifn->where);
+    resolveBlock(ifn->where);
     whereStack.pop();
     SymExpr* symExpr = toSymExpr(ifn->where->body.last());
     if (!symExpr)
