@@ -53,6 +53,18 @@ failing nondeterministically (e.g., 04/04/08)
 gasnet-specific regressions
 ===========================
 
+unable to resolve return types
+------------------------------
+[Error matching compiler output for classes/deitz/tree]
+[Error matching compiler output for functions/deitz/iterators/tree]
+[Error matching compiler output for release/examples/iterators]
+
+memory issues/incompatible types in calls to chpl_free
+------------------------------------------------------
+[Error matching compiler output for classes/diten/test_destroy2]
+[Error matching compiler output for classes/diten/test_destroy]
+[Error matching compiler output for memory/shannon/memtrackFlag]
+
 times out occasionally (race-y deadlock?) -- e.g., 06/15/2008, 06/18/2008
 -------------------------------------------------------------------------
 [Error: Timed out executing program
@@ -82,10 +94,18 @@ garbage collection doesn't work with multithreaded
 opts-specific tests
 ===================
 
-(Example runs: 0)
+(Example runs: 2)
+
+--no-local
+----------
+[Error matching compiler output for release/examples/iterators]
+
+--baseline --no-local
+---------------------
+[Error matching compiler output for release/examples/iterators]
 
 
-(Full run: 59)
+(Full run: 56)
 
 --no-dead-code-elimination
 --------------------------
@@ -93,10 +113,40 @@ opts-specific tests
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
 
+--no-inline-iterators
+---------------------
+[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+
+--no-live-analysis
+------------------
+[Error matching compiler output for npb/cg/bradc/cg-makea1-sparse-sort]
+[Error matching compiler output for npb/cg/bradc/cg-printa]
+[Error matching compiler output for npb/cg/bradc/cg-sparse]
+
+--no-scalar-replacement
+-----------------------
+[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+
+--no-optimize-loop-iterators
+----------------------------
+[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+
+--no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
+---------------------------------------------------------------------
+[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+[Error matching compiler output for npb/cg/bradc/cg-makea1-sparse-sort]
+[Error matching compiler output for npb/cg/bradc/cg-printa]
+[Error matching compiler output for npb/cg/bradc/cg-sparse]
+
 --no-local
 ----------
+[Error matching compiler output for classes/deitz/tree]
 [Error matching compiler output for classes/diten/allocateManyObjects]
+[Error matching compiler output for classes/diten/test_destroy]
+[Error matching compiler output for classes/diten/test_destroy2]
+[Error matching compiler output for functions/deitz/iterators/tree]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
+[Error matching compiler output for release/examples/iterators]
 
 --baseline --no-local
 ---------------------
@@ -106,16 +156,20 @@ opts-specific tests
 [Error matching program output for arrays/diten/promoteFieldAccessAndMethod]
 [Error matching compiler output for classes/bradc/declClassType1c]
 [Error matching compiler output for classes/bradc/writeclass2a]
+[Error matching compiler output for classes/deitz/tree]
 [Error matching compiler output for classes/deitz/infer/infer_field2]
 [Error matching compiler output for classes/deitz/infer/infer_field2a]
 [Error matching compiler output for classes/deitz/infer/infer_field2b]
 [Error matching compiler output for classes/deitz/infer/infer_field2c]
 [Error matching compiler output for classes/diten/allocateManyObjects]
+[Error matching compiler output for classes/diten/test_destroy]
+[Error matching compiler output for classes/diten/test_destroy2]
+[Error matching compiler output for functions/deitz/iterators/tree]
+[Error: Timed out executing program npb/cg/bradc/cg-sparse]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
+[Error matching compiler output for release/examples/iterators]
 [Error matching compiler output for studies/590o/alaska/graph]
 [Error matching compiler output for studies/590o/blerner/xml-parse]
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error matching compiler output for studies/uts/dequeue]
 [Error matching compiler output for studies/uts/uts_deq]
 [Error matching compiler output for studies/uts/uts_deq_seq]
@@ -123,16 +177,12 @@ studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error matching compiler output for types/tuple/dinan/pining_for_lisp_ver2]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
-[Summary: #Successes = 2049 | #Failures = 22 | #Futures = 0]
+[Summary: #Successes = 2089 | #Failures = 27 | #Futures = 0]
 
 
 ==============================
 pathscale-specific regressions
 ==============================
-
-??? (07/11/2008)
-----------------
-[Error matching compiler output for trivial/deitz/test_scope3]
 
 ??? -- gdb incompatability?
 ---------------------------
