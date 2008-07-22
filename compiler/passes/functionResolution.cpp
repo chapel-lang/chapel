@@ -493,8 +493,7 @@ canInstantiate(Type* actualType, Type* formalType) {
     return true;
   if (actualType == formalType)
     return true;
-  if (actualType->instantiatedFrom &&
-      canInstantiate(actualType->instantiatedFrom, formalType))
+  if (actualType->instantiatedFrom && canInstantiate(actualType->instantiatedFrom, formalType))
     return true;
   return false;
 }
@@ -739,6 +738,30 @@ computeActualFormalMap(FnSymbol* fn,
 }
 
 
+//
+// returns the type that a formal type should be instantiated to when
+// instantiated by a given actual type
+//
+static Type*
+getInstantiationType(Type* actualType, Type* formalType) {
+  if (canInstantiate(actualType, formalType)) {
+    return actualType;
+  }
+  if (Type* st = actualType->scalarPromotionType) {
+    if (canInstantiate(st, formalType))
+      return st;
+  }
+  if (Type* vt = getValueType(actualType)) {
+    if (canInstantiate(vt, formalType))
+      return vt;
+    else if (Type* st = vt->scalarPromotionType)
+      if (canInstantiate(st, formalType))
+        return st;
+  }
+  return NULL;
+}
+
+
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
@@ -751,7 +774,7 @@ computeGenericSubs(SymbolMap &subs,
         if (!formal->type->isGeneric ||
             canInstantiate(formalActuals->v[i], formal->type))
           subs.put(formal, formalSyms->v[i]);
-      } else if (formal->defaultExpr) {
+      } else if (!formalActuals->v[i] && formal->defaultExpr) {
 
         // break because default expression may reference generic
         // arguments earlier in formal list; make those substitutions
@@ -760,10 +783,11 @@ computeGenericSubs(SymbolMap &subs,
           break;
 
         resolveBlock(formal->defaultExpr);
-        if (SymExpr* se = toSymExpr(formal->defaultExpr->body.tail)) {
-          if (se->var->isParameter())
-            subs.put(formal, se->var);
-        } else
+        SymExpr* se = toSymExpr(formal->defaultExpr->body.tail);
+        if (se && se->var->isParameter() &&
+            (!formal->type->isGeneric || canInstantiate(se->var->type, formal->type)))
+          subs.put(formal, se->var);
+        else
           INT_FATAL(fn, "unable to handle default parameter");
       }
     } else if (formal->type->isGeneric) {
@@ -775,18 +799,8 @@ computeGenericSubs(SymbolMap &subs,
         USR_FATAL(formal, "invalid generic type specification on class field");
 
       if (formalActuals->v[i]) {
-        if (canInstantiate(formalActuals->v[i], formal->type)) {
-          subs.put(formal, formalActuals->v[i]->symbol);
-        } else if (Type* st = formalActuals->v[i]->scalarPromotionType) {
-          if (canInstantiate(st, formal->type))
-            subs.put(formal, st->symbol);
-        } else if (Type* vt = getValueType(formalActuals->v[i])) {
-          if (canInstantiate(vt, formal->type))
-            subs.put(formal, vt->symbol);
-          else if (Type* st = vt->scalarPromotionType)
-            if (canInstantiate(st, formal->type))
-              subs.put(formal, st->symbol);
-        }
+        if (Type* type = getInstantiationType(formalActuals->v[i], formal->type))
+          subs.put(formal, type->symbol);
       } else if (formal->defaultExpr) {
 
         // break because default expression may reference generic
@@ -797,10 +811,10 @@ computeGenericSubs(SymbolMap &subs,
 
         resolveBlock(formal->defaultExpr);
         Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
-        if (canInstantiate(defaultType, formal->type) ||
-            defaultType == gNil->type) { // constructor default
+        if (defaultType == dtNil)
           subs.put(formal, defaultType->symbol);
-        }
+        else if (Type* type = getInstantiationType(defaultType, formal->type))
+          subs.put(formal, type->symbol);
       }
     }
     i++;
