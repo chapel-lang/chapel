@@ -33,8 +33,6 @@ IteratorInfo::IteratorInfo() :
 static void
 insertSetMemberInits(FnSymbol* fn, Symbol* var) {
   Type* type = var->type;
-  if (type->symbol->hasPragma("ref"))
-    type = getValueType(type); // unexecuted none/gasnet on 4/25/08
   if (type->defaultValue) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, type->defaultValue));
   } else {

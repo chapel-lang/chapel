@@ -95,19 +95,12 @@ returnIteratorType(CallExpr* call) {
 
 static Type*
 returnInfoCast(CallExpr* call) {
-  Type* t = call->get(1)->typeInfo();
-  if (t->isGeneric) {
-    // unexecuted none/gasnet on 4/25/08
-    if (SymExpr* sym = toSymExpr(call->get(1)))
-      if (sym->var->isTypeVariable)
-        return dtUnknown;
-    USR_FATAL(call, "Illegal cast to generic type");
-  }
+  Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
   if (t2->symbol->hasPragma("wide class"))
-    if (wideClassMap.get(t))
-      t = wideClassMap.get(t);
-  return t;
+    if (wideClassMap.get(t1))
+      t1 = wideClassMap.get(t1);
+  return t1;
 }
 
 static Type*
@@ -124,16 +117,6 @@ returnInfoRef(CallExpr* call) {
   if (!t->refType)
     INT_FATAL(call, "invalid attempt to get reference type");
   return t->refType;
-}
-
-static Type*
-returnInfoMove(CallExpr* call) {
-  // unexecuted none/gasnet on 4/25/08
-  Type* t1 = call->get(1)->typeInfo();
-  Type* t2 = call->get(2)->typeInfo();
-  if (t1 == dtUnknown || t1 == dtNil)
-    return t2;
-  return t1;
 }
 
 // NEEDS TO BE FINISHED WHEN PRIMITIVES ARE REDONE
@@ -312,7 +295,7 @@ initPrimitive() {
 
   prim_def(PRIMITIVE_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIMITIVE_NOOP, "noop", returnInfoVoid);
-  prim_def(PRIMITIVE_MOVE, "move", returnInfoMove);
+  prim_def(PRIMITIVE_MOVE, "move", returnInfoVoid);
   prim_def(PRIMITIVE_INIT, "init", returnInfoFirstDeref);
   prim_def(PRIMITIVE_SET_REF, "set ref", returnInfoRef);
   prim_def(PRIMITIVE_GET_REF, "get ref", returnInfoVal);

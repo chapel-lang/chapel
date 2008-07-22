@@ -1358,14 +1358,10 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_GET_MEMBER:
     {
-      bool isSuper = false;
-      if (SymExpr* sym = toSymExpr(get(2)))
-        if (sym->var->hasPragma("super class"))
-          isSuper = true; // unexecuted none/gasnet on 4/25/08
-      if (!get(2)->typeInfo()->symbol->hasPragma("ref") && !isSuper)
+      if (!get(2)->typeInfo()->symbol->hasPragma("ref"))
         fprintf(outfile, "(&(");
       codegen_member(outfile, get(1), get(2));
-      if (!get(2)->typeInfo()->symbol->hasPragma("ref") && !isSuper)
+      if (!get(2)->typeInfo()->symbol->hasPragma("ref"))
         fprintf(outfile, "))");
       break;
     }
@@ -2000,25 +1996,8 @@ void CallExpr::codegen(FILE* outfile) {
     return;
   }
 
-  if (!strcmp(fn->cname, "_data_construct")) {
-    INT_FATAL("unexecuted none/gasnet on 4/25/08");
-    if (numActuals() == 0) {
-      fprintf(outfile, "0");
-      if (getStmtExpr() && getStmtExpr() == this)
-        fprintf(outfile, ";\n");
-      return;
-    }
-  }
-
   baseExpr->codegen(outfile);
   fprintf(outfile, "(");
-
-  if (!strcmp(fn->cname, "_data_construct")) {
-    INT_FATAL("unexecuted none/gasnet on 4/25/08");
-    ClassType* ct = toClassType(fn->retType);
-    toDefExpr(ct->fields.get(2))->sym->type->codegen(outfile);
-    fprintf(outfile, ", ");
-  }
 
   bool first_actual = true;
   for_formals_actuals(formal, actual, this) {
