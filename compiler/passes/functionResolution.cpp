@@ -948,6 +948,37 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
   }
 
   if (fn->isGeneric) {
+
+    //
+    // try to avoid excessive over-instantiation
+    //
+    if (fn->numFormals() == formalActuals.n) {
+      int i = 0;
+      for_formals(formal, fn) {
+        if (!formal->type->isGeneric &&
+            formal->type != dtUnknown &&
+            formalActuals.v[i] &&
+            !canDispatch(formalActuals.v[i], formalSyms.v[i], formal->type, fn, NULL, formal->instantiatedParam)) {
+          delete actualFormals;
+          return;
+        } else if (formal->type->isGeneric &&
+                   formal->type != dtUnknown &&
+                   formalActuals.v[i]) {
+          Type* vt = getValueType(formalActuals.v[i]);
+          Type* st = formalActuals.v[i]->scalarPromotionType;
+          Type* svt = (vt) ? vt->scalarPromotionType : NULL;
+          if (!canInstantiate(formalActuals.v[i], formal->type) &&
+              (!vt || !canInstantiate(vt, formal->type)) &&
+              (!st || !canInstantiate(st, formal->type)) &&
+              (!svt || !canInstantiate(svt, formal->type))) {
+            delete actualFormals;
+            return;
+          }
+        }
+        i++;
+      }
+    }
+
     SymbolMap subs;
     computeGenericSubs(subs, fn, &formalActuals, &formalSyms);
     if (subs.n) {

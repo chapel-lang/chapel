@@ -1473,6 +1473,27 @@ FnSymbol::instantiate_generic(SymbolMap* generic_substitutions,
 
   newfn->tag_generic();
 
+  //
+  // print out instantiated functions and substitutions
+  //
+//   {
+//     const char* filename = strrchr(this->getModule()->filename, '/');
+//     filename = (filename) ? filename + 1 : this->getModule()->filename;
+//     printf("%s:%d: %s(", filename, this->lineno, this->cname);
+//     bool first = true;
+//     form_Map(SymbolMapElem, e, all_substitutions) {
+//       if (!first) printf("; ");
+//       first = false;
+//       printf("%s -> %s", e->key->name, e->value->name);
+//     }
+//     printf(")");
+//     if (call)
+//       printf(" [call = %d, fn = %d]", call->id, newfn->id);
+//     else
+//       printf(" [dynamic, fn = %d]", newfn->id);
+//     printf("\n");
+//   }
+
   return newfn;
 }
 
