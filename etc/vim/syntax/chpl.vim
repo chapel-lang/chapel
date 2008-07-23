@@ -260,7 +260,7 @@ syn keyword chplOperator	on reduce scan by
 " syn match chplCast		"\<\(const\|static\|dynamic\|reinterpret\)_cast\s*<"me=e-1
 " syn match chplCast		"\<\(const\|static\|dynamic\|reinterpret\)_cast\s*$"
 syn keyword chplStructure	class record union enum
-syn keyword chplStructure	def cobegin begin sync function iterator let select where pragma
+syn keyword chplStructure	def cobegin begin local sync function iterator let select where pragma
 " syn keyword chplNumber		NPOS
 syn keyword chplBoolean		true false
 syn keyword chplConditional	if then else
