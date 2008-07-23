@@ -1,0 +1,10 @@
+feature request: querying a (uniform) varargs type
+
+It seems reasonable to permit the type of a homogeneous
+varargs argument list to be queried as we do for other
+argument types.
+
+Note that varargs arguments with a specified element
+type don't seem to be described (well?) in the spec.
+At least I couldn't find it with a quick scan of
+examples and the varargs section.
