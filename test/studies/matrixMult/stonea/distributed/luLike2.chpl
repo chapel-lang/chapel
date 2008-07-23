@@ -50,34 +50,34 @@ def matrixMult_ijk(
 
 def luLikeMultiply(A : [1..n, 1..n] int)
 {
-    var ACopies : [blkSize+1..n, blkSize+1..n] int;
-    var BCopies : [blkSize+1..n, blkSize+1..n] int;
+    var ACopies : [A.domain[blkSize+1..n, blkSize+1..n]] int;
+    var BCopies : [A.domain[blkSize+1..n, blkSize+1..n]] int;
 
     // stamp A across into ACopies,
     forall blkCol in [2..numBlocks] {
-        var aBlkD = [blkSize+1..n,
-                     1..blkSize];
-        var cBlkD = [blkSize+1..n,
-                     (blkCol-1)*blkSize+1..blkCol*blkSize];
-
+        var aBlkD : subdomain(ACopies.domain) =
+            [blkSize+1..n, 1..blkSize];
+        var cBlkD : subdomain(A.domain) =
+            [blkSize+1..n, (blkCol-1)*blkSize+1..blkCol*blkSize];
 
         ACopies[cBlkD] = A[aBlkD];
     }
 
     // stamp B down into BCopies, 
     forall blkRow in [2..numBlocks] {
-        var bBlkD = [1..blkSize,
-                     blkSize+1..n];
-        var cBlkD = [(blkRow-1)*blkSize+1..blkRow*blkSize,
-                     blkSize+1..n];
+        var bBlkD : subdomain(BCopies.domain) = 
+            [1..blkSize, blkSize+1..n];
+        var cBlkD : subdomain(A.domain) =
+            [(blkRow-1)*blkSize+1..blkRow*blkSize, blkSize+1..n];
         
         BCopies[cBlkD] = A[bBlkD];
     }
 
     // do local matrix-multiply on a block-by-block basis
     forall (blkRow,blkCol) in [2..numBlocks, 2..numBlocks] {
-        var region = [(blkRow-1)*blkSize+1..blkRow*blkSize,
-                      (blkCol-1)*blkSize+1..blkCol*blkSize];
+        var region : subdomain(A.domain) =
+            [(blkRow-1)*blkSize+1..blkRow*blkSize,
+             (blkCol-1)*blkSize+1..blkCol*blkSize];
         local {
             matrixMult_ijk(
                 blkSize, blkSize, blkSize,
@@ -107,9 +107,9 @@ def main() {
     writeln("After mult: \n", A);
 
     // Perform the multiplication using a serial algorithm we know works
-    var aRegion   :domain(2) = [1+blkSize..n, 1..1+blkSize-1];
-    var bRegion   :domain(2) = [1..1+blkSize-1, 1+blkSize..n];
-    var solRegion :domain(2) = [1+blkSize..n, 1+blkSize..n];
+    var aRegion   :domain(2) = A.domain[1+blkSize..n, 1..1+blkSize-1];
+    var bRegion   :domain(2) = A.domain[1..1+blkSize-1, 1+blkSize..n];
+    var solRegion :domain(2) = A.domain[1+blkSize..n, 1+blkSize..n];
 
     matrixMult_ijk(
         n-blkSize,
