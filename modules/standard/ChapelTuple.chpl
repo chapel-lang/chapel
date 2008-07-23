@@ -1,13 +1,16 @@
 def *(param p: int, type t) type {
+  var oneTuple: _build_tuple(t);
   def _fill(param p: int, x: _tuple) {
     if x.size == p then
       return x;
+    else if 2*x.size <= p then
+      return _fill(p, ((...x), (...x)));
     else
-      return _fill(p, ((...x), x(1)));
+      return _fill(p, ((...x), (..._fill(p-x.size, oneTuple))));
   }
-  var x: _build_tuple(t);
-  return _fill(p, x);
+  return _fill(p, oneTuple);
 }
+
 
 def *(p: int, type t) type {
   compilerError("tuple size must be static");
