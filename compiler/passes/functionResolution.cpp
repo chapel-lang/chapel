@@ -84,12 +84,6 @@ static Map<Type*,FnSymbol*> wrapDomainMap;
 static Map<FnSymbol*,Vec<FnSymbol*>*> ddf; // map of functions to
                                            // virtual children
 
-// types contains the types of the actuals
-// names contains the name if it is a named argument, otherwise NULL
-// e.g.  foo(arg1=12, "hi");
-//  types = int, string
-//  names = arg1, NULL
-static FnSymbol* resolve_call(CallInfo* info, bool errorCheck = true);
 static Type* resolve_type_expr(Expr* expr);
 
 static void resolveCall(CallExpr* call, bool errorCheck = true);
@@ -1605,109 +1599,6 @@ getVisibleFunctions(BlockStmt* block,
   return NULL;
 }
 
-static FnSymbol*
-resolve_call(CallInfo* info, bool errorCheck) {
-  Vec<FnSymbol*> visibleFns;                    // visible functions
-  Vec<FnSymbol*> candidateFns;
-  Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
-  CallExpr* call = info->call;
-
-  //
-  // update visible function map as necessary
-  //
-  if (gFns.n != nVisibleFunctions)
-    buildVisibleFunctionMap();
-
-  if (!call->isResolved()) {
-    if (!info->scope) {
-      Vec<BlockStmt*> visited;
-      getVisibleFunctions(getVisibilityBlock(call), info->name, visibleFns, visited);
-    } else {
-      if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info->scope))
-        if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info->name))
-          visibleFns.append(*fns);
-    }
-  } else {
-    visibleFns.add(call->isResolved());
-  }
-
-  if (explainCallLine && explainCallMatch(call)) {
-    USR_PRINT(call, "call: %s", toString(info));
-    if (visibleFns.n == 0)
-      USR_PRINT(call, "no visible functions found");
-    bool first = true;
-    forv_Vec(FnSymbol, visibleFn, visibleFns) {
-      USR_PRINT(visibleFn, "%s %s",
-                first ? "visible functions are:" : "                      ",
-                toString(visibleFn));
-      first = false;
-    }
-  }
-
-  forv_Vec(FnSymbol, visibleFn, visibleFns) {
-
-    if (call->methodTag && !visibleFn->noParens && !visibleFn->hasPragma("type constructor"))
-      continue;
-    addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
-                 &info->actualTypes, &info->actualSyms, &info->actualNames,
-                 call);
-  }
-
-  if (explainCallLine && explainCallMatch(call)) {
-    if (candidateFns.n == 0)
-      USR_PRINT(call, "no candidates found");
-    bool first = true;
-    forv_Vec(FnSymbol, candidateFn, candidateFns) {
-      USR_PRINT(candidateFn, "%s %s",
-                first ? "candidates are:" : "               ",
-                toString(candidateFn));
-      first = false;
-    }
-  }
-
-  FnSymbol* best = NULL;
-  Vec<ArgSymbol*>* actualFormals = 0;
-  best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                               &info->actualTypes, &info->actualSyms,
-                               &actualFormals);
-
-  // use visibility and then look for best again
-  if (!best && candidateFns.n > 1) {
-    if (info->scope) {
-      disambiguate_by_scope(info->scope, &candidateFns);
-    } else {
-      disambiguate_by_scope(getVisibilityBlock(call), &candidateFns);
-    }
-    best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                                 &info->actualTypes, &info->actualSyms,
-                                 &actualFormals);
-  }
-
-  if (best && explainCallLine && explainCallMatch(call)) {
-    USR_PRINT(best, "best candidate is: %s", toString(best));
-  }
-
-  if (!best && candidateFns.n > 0) {
-    if (errorCheck)
-      printResolutionError("ambiguous", candidateFns, info);
-    best = NULL;
-  } else if (call->partialTag && (!best || !best->noParens)) {
-    best = NULL;
-  } else if (!best) {
-    if (errorCheck)
-      printResolutionError("unresolved", visibleFns, info);
-    best = NULL;
-  } else {
-    best = build_default_wrapper(best, actualFormals, call->square);
-    best = build_order_wrapper(best, actualFormals, call->square);
-    best = build_coercion_wrapper(best, info);
-    best = build_promotion_wrapper(best, info);
-  }
-  for (int i = 0; i < candidateActualFormals.n; i++)
-    delete candidateActualFormals.v[i];
-
-  return best;
-}
 
 static Type*
 resolve_type_expr(Expr* expr) {
@@ -1805,7 +1696,106 @@ resolveCall(CallExpr* call, bool errorCheck) {
 
     CallInfo info(call);
 
-    FnSymbol* resolvedFn = resolve_call(&info, errorCheck);
+    Vec<FnSymbol*> visibleFns;                    // visible functions
+    Vec<FnSymbol*> candidateFns;
+    Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
+    CallExpr* call = info.call;
+
+    //
+    // update visible function map as necessary
+    //
+    if (gFns.n != nVisibleFunctions)
+      buildVisibleFunctionMap();
+
+    if (!call->isResolved()) {
+      if (!info.scope) {
+        Vec<BlockStmt*> visited;
+        getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns, visited);
+      } else {
+        if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope))
+          if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name))
+            visibleFns.append(*fns);
+      }
+    } else {
+      visibleFns.add(call->isResolved());
+    }
+
+    if (explainCallLine && explainCallMatch(call)) {
+      USR_PRINT(call, "call: %s", toString(&info));
+      if (visibleFns.n == 0)
+        USR_PRINT(call, "no visible functions found");
+      bool first = true;
+      forv_Vec(FnSymbol, visibleFn, visibleFns) {
+        USR_PRINT(visibleFn, "%s %s",
+                  first ? "visible functions are:" : "                      ",
+                  toString(visibleFn));
+        first = false;
+      }
+    }
+
+    forv_Vec(FnSymbol, visibleFn, visibleFns) {
+
+      if (call->methodTag && !visibleFn->noParens && !visibleFn->hasPragma("type constructor"))
+        continue;
+      addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
+                   &info.actualTypes, &info.actualSyms, &info.actualNames,
+                   call);
+    }
+
+    if (explainCallLine && explainCallMatch(call)) {
+      if (candidateFns.n == 0)
+        USR_PRINT(call, "no candidates found");
+      bool first = true;
+      forv_Vec(FnSymbol, candidateFn, candidateFns) {
+        USR_PRINT(candidateFn, "%s %s",
+                  first ? "candidates are:" : "               ",
+                  toString(candidateFn));
+        first = false;
+      }
+    }
+
+    FnSymbol* best = NULL;
+    Vec<ArgSymbol*>* actualFormals = 0;
+    best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
+                                 &info.actualTypes, &info.actualSyms,
+                                 &actualFormals);
+
+    // use visibility and then look for best again
+    if (!best && candidateFns.n > 1) {
+      if (info.scope) {
+        disambiguate_by_scope(info.scope, &candidateFns);
+      } else {
+        disambiguate_by_scope(getVisibilityBlock(call), &candidateFns);
+      }
+      best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
+                                   &info.actualTypes, &info.actualSyms,
+                                   &actualFormals);
+    }
+
+    if (best && explainCallLine && explainCallMatch(call)) {
+      USR_PRINT(best, "best candidate is: %s", toString(best));
+    }
+
+    if (!best && candidateFns.n > 0) {
+      if (errorCheck)
+        printResolutionError("ambiguous", candidateFns, &info);
+      best = NULL;
+    } else if (call->partialTag && (!best || !best->noParens)) {
+      best = NULL;
+    } else if (!best) {
+      if (errorCheck)
+        printResolutionError("unresolved", visibleFns, &info);
+      best = NULL;
+    } else {
+      best = build_default_wrapper(best, actualFormals, call->square);
+      best = build_order_wrapper(best, actualFormals, call->square);
+      best = build_coercion_wrapper(best, &info);
+      best = build_promotion_wrapper(best, &info);
+    }
+    for (int i = 0; i < candidateActualFormals.n; i++)
+      delete candidateActualFormals.v[i];
+
+    FnSymbol* resolvedFn = best;
 
     if (!resolvedFn && !errorCheck)
       return;
@@ -1829,7 +1819,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
       USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
                 toString(resolvedFn->getFormal(1)->type));
     if (!resolvedFn) {
-      INT_FATAL(call, "Error in resolve_call");
+      INT_FATAL(call, "unable to resolve call");
     }
     if (call->parentSymbol) {
       call->baseExpr->replace(new SymExpr(resolvedFn));
@@ -1942,22 +1932,11 @@ resolveCall(CallExpr* call, bool errorCheck) {
     if (parent && parent->isNamed("_type_construct__tuple")) {
       parent->get(1)->replace(new SymExpr(new_IntSymbol(parent->numActuals()-1)));
     }
-  } else if (call->isPrimitive(PRIMITIVE_CAST)) {
-    Type* t= call->get(1)->typeInfo();
-    if (t == dtUnknown)
-      INT_FATAL(call, "Unable to resolve type");
-//     if (t->scalarPromotionType) {
-//       // ignore for now to handle translation of A op= B of arrays
-//       // should be an error in general
-//       //   can't cast to an array type ...
-//       Expr* castee = call->get(2);
-//       castee->remove();
-//       call->replace(castee);
-//       makeNoop(call);
-//       castee->getStmtExpr()->insertBefore(call);
-//     } else {
-      call->get(1)->replace(new SymExpr(t->symbol));
-//    }
+//   } else if (call->isPrimitive(PRIMITIVE_CAST)) {
+//     Type* t= call->get(1)->typeInfo();
+//     if (t == dtUnknown)
+//       INT_FATAL(call, "Unable to resolve type");
+//     call->get(1)->replace(new SymExpr(t->symbol));
   } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
     SymExpr* sym = toSymExpr(call->get(2));
     if (!sym)
@@ -2858,6 +2837,11 @@ postFold(Expr* expr) {
           call->replace(result);
         }
       }
+    } else if (call->isPrimitive(PRIMITIVE_CAST)) {
+      Type* t= call->get(1)->typeInfo();
+      if (t == dtUnknown)
+        INT_FATAL(call, "Unable to resolve type");
+      call->get(1)->replace(new SymExpr(t->symbol));
     } else if (call->isPrimitive(PRIMITIVE_IS_ENUM)) {
       // Replace the "isEnumType" primitive with true if the type is
       // an enum, otherwise with false
