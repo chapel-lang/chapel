@@ -1,9 +1,9 @@
 module HPCCProblemSize {
   use Memory, Types;
 
-  config const memRatio = 4;
-
-  def computeProblemSize(type elemType, numArrays, returnLog2 = false) {
+  def computeProblemSize(
+    type elemType, numArrays, returnLog2 = false, memRatio=4)
+  {
     const totalMem = + reduce Locales.physicalMemory(unit = MemUnits.Bytes),
           memoryTarget = totalMem / memRatio,
           bytesPerIndex = numArrays * numBytes(elemType);
