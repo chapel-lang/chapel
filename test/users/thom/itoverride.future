@@ -1,5 +1,0 @@
-feature request: overriding iterators
-
-Another overriding iterators future by Thom, slightly more complicated
-in that the subclass iterators yield a subclass of what the parent class
-iterators do.

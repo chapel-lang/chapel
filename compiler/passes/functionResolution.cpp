@@ -301,7 +301,6 @@ protoIteratorClass(FnSymbol* fn) {
   ii->icType = new ClassType(CLASS_CLASS);
   TypeSymbol* cts = new TypeSymbol(className, ii->icType);
   cts->addPragma("iterator class");
-  cts->addPragma("no object");
   if (fn->retTag == RET_VAR)
     cts->addPragma("ref iterator class");
   fn->defPoint->insertBefore(new DefExpr(cts));
@@ -328,6 +327,15 @@ protoIteratorClass(FnSymbol* fn) {
   resolvedFns.set_add(fn->iteratorInfo->advance);
   resolvedFns.set_add(fn->iteratorInfo->hasMore);
   resolvedFns.set_add(fn->iteratorInfo->getValue);
+
+  VarSymbol* tmp = new VarSymbol("_tmp", ii->icType);
+  fn->insertAtHead(new DefExpr(tmp));
+  CallExpr* getIteratorCall = new CallExpr("_getIterator", tmp);
+  fn->insertAtHead(getIteratorCall);
+  resolveCall(getIteratorCall);
+  resolveFns(getIteratorCall->isResolved());
+  getIteratorCall->remove();
+  tmp->defPoint->remove();
 
   for_formals(formal, fn) {
     if (!strcmp(formal->name, "leader"))
@@ -3453,46 +3461,16 @@ collectInstantiatedClassTypes(Vec<Type*>& icts, Type* ct) {
 static void
 add_to_ddf(FnSymbol* pfn, ClassType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
-    if (cfn->instantiatedFrom)
-      continue;
-    if (cfn && possible_signature_match(pfn, cfn)) {
-      if (ct->isGeneric) {
+    if (cfn && !cfn->instantiatedFrom && possible_signature_match(pfn, cfn)) {
+      Vec<Type*> types;
+      if (ct->isGeneric)
+        collectInstantiatedClassTypes(types, ct);
+      else
+        types.add(ct);
+      forv_Vec(Type, type, types) {
         SymbolMap subs;
-        Vec<Type*> icts;
-        collectInstantiatedClassTypes(icts, ct);
-        forv_Vec(Type, ict, icts) {
-          subs.put(cfn->getFormal(2), ict->symbol);
-          for (int i = 3; i <= cfn->numFormals(); i++) {
-            ArgSymbol* arg = cfn->getFormal(i);
-            if (arg->intent == INTENT_PARAM) {
-              INT_FATAL(arg, "unhandled case");
-            } else if (arg->type->isGeneric) {
-              if (pfn->getFormal(i)) {
-                subs.put(arg, pfn->getFormal(i)->type->symbol);
-              }
-            }
-          }
-          FnSymbol* icfn = instantiate(cfn, &subs, NULL);
-          if (icfn) {
-            icfn->instantiationPoint = ict->defaultTypeConstructor->instantiationPoint;
-            INT_ASSERT(icfn->instantiationPoint);
-            resolveFormals(icfn);
-            if (signature_match(pfn, icfn)) {
-              resolveFns(icfn);
-              if (!isSubType(icfn->retType, pfn->retType)) {
-                USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
-                USR_FATAL_CONT(icfn, "  overridden by '%s: %s'", toString(icfn), icfn->retType->symbol->name);
-                USR_STOP();
-              }
-              Vec<FnSymbol*>* fns = ddf.get(pfn);
-              if (!fns) fns = new Vec<FnSymbol*>();
-              fns->add(icfn);
-              ddf.put(pfn, fns);
-            }
-          }
-        }
-      } else {
-        SymbolMap subs;
+        if (ct->isGeneric)
+          subs.put(cfn->getFormal(2), type->symbol);
         for (int i = 3; i <= cfn->numFormals(); i++) {
           ArgSymbol* arg = cfn->getFormal(i);
           if (arg->intent == INTENT_PARAM) {
@@ -3501,28 +3479,39 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
             subs.put(arg, pfn->getFormal(i)->type->symbol);
           }
         }
+        FnSymbol* fn = cfn;
         if (subs.n) {
-          cfn = instantiate(cfn, &subs, NULL);
-          if (cfn) {
-            if (ct->defaultTypeConstructor->instantiationPoint)
-              cfn->instantiationPoint = ct->defaultTypeConstructor->instantiationPoint;
+          fn = instantiate(fn, &subs, NULL);
+          if (fn) {
+            if (type->defaultTypeConstructor->instantiationPoint)
+              fn->instantiationPoint = type->defaultTypeConstructor->instantiationPoint;
             else
-              cfn->instantiationPoint = toBlockStmt(ct->defaultTypeConstructor->defPoint->parentExpr);
-            INT_ASSERT(cfn->instantiationPoint);
+              fn->instantiationPoint = toBlockStmt(type->defaultTypeConstructor->defPoint->parentExpr);
+            INT_ASSERT(fn->instantiationPoint);
           }
         }
-        if (cfn) {
-          resolveFormals(cfn);
-          if (signature_match(pfn, cfn)) {
-            resolveFns(cfn);
-            if (!isSubType(cfn->retType, pfn->retType)) {
+        if (fn) {
+          resolveFormals(fn);
+          if (signature_match(pfn, fn)) {
+            resolveFns(fn);
+            if (fn->retType->symbol->hasPragma("iterator class") &&
+                pfn->retType->symbol->hasPragma("iterator class")) {
+              if (!isSubType(fn->retType->defaultConstructor->iteratorInfo->getValue->retType, pfn->retType->defaultConstructor->iteratorInfo->getValue->retType)) {
+                USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->defaultConstructor->iteratorInfo->getValue->retType->symbol->name);
+                USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->defaultConstructor->iteratorInfo->getValue->retType->symbol->name);
+                USR_STOP();
+              } else {
+                pfn->retType->dispatchChildren.add_exclusive(fn->retType);
+                fn->retType->dispatchParents.add_exclusive(pfn->retType);
+              }
+            } else if (!isSubType(fn->retType, pfn->retType)) {
               USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
-              USR_FATAL_CONT(cfn, "  overridden by '%s: %s'", toString(cfn), cfn->retType->symbol->name);
+              USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->symbol->name);
               USR_STOP();
             }
             Vec<FnSymbol*>* fns = ddf.get(pfn);
             if (!fns) fns = new Vec<FnSymbol*>();
-            fns->add(cfn);
+            fns->add(fn);
             ddf.put(pfn, fns);
           }
         }
@@ -3534,8 +3523,9 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
 
 static void
 add_all_children_ddf_help(FnSymbol* fn, ClassType* pt, ClassType* ct) {
-  if (ct->defaultTypeConstructor->instantiatedTo ||
-      resolvedFns.set_in(ct->defaultTypeConstructor))
+  if (ct->defaultTypeConstructor &&
+      (ct->defaultTypeConstructor->instantiatedTo ||
+       resolvedFns.set_in(ct->defaultTypeConstructor)))
     add_to_ddf(fn, ct);
   forv_Vec(Type, t, ct->dispatchChildren) {
     ClassType* ct = toClassType(t);
@@ -3558,13 +3548,13 @@ add_all_children_ddf(FnSymbol* fn, ClassType* pt) {
 static void
 build_ddf() {
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->isWrapper || !resolvedFns.set_in(fn) || fn->noParens)
-      continue;
-    if (fn->numFormals() > 1) {
-      if (fn->getFormal(1)->type == dtMethodToken) {
-        if (ClassType* pt = toClassType(fn->getFormal(2)->type)) {
-          if (pt->classTag == CLASS_CLASS && !pt->isGeneric) {
-            add_all_children_ddf(fn, pt);
+    if (!fn->isWrapper && resolvedFns.set_in(fn) && !fn->noParens) {
+      if (fn->numFormals() > 1) {
+        if (fn->getFormal(1)->type == dtMethodToken) {
+          if (ClassType* pt = toClassType(fn->getFormal(2)->type)) {
+            if (pt->classTag == CLASS_CLASS && !pt->isGeneric) {
+              add_all_children_ddf(fn, pt);
+            }
           }
         }
       }
@@ -3766,9 +3756,7 @@ resolve() {
                                                    key->retType->symbol,
                                                    castTemp)));
           } else {
-            USR_FATAL_CONT(key, "conflicting return type specified for '%s: %s'", toString(key), key->retType->symbol->name);
-            USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->symbol->name);
-            USR_STOP();
+            INT_FATAL(key, "unexpected case; return type mismatch");
           }
           if_fn->insertAtTail(
             new CondStmt(

@@ -1,6 +1,0 @@
-feature request: overriding iterators
-
-It seems natural and useful to be able to override iterators
-in class hierarchies and get traditional dynamic dispatch
-behavior on them.  This test demonstrates a simple example
-of such.

@@ -507,6 +507,10 @@ static void
 rebuildIterator(IteratorInfo* ii,
                 SymbolMap& local2field,
                 Vec<Symbol*>& locals) {
+  if (ii->icType->dispatchParents.n == 0) {
+    ii->icType->dispatchParents.add(dtObject);
+    dtObject->dispatchChildren.add(ii->icType);
+  }
   FnSymbol* fn = ii->iterator;
   for_alist(expr, fn->body->body)
     expr->remove();
@@ -516,6 +520,7 @@ rebuildIterator(IteratorInfo* ii,
   iterator->isCompilerTemp = true;
   fn->insertAtTail(new DefExpr(iterator));
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->icType->symbol, new_StringSymbol("iterator class"))));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, iterator));
   forv_Vec(Symbol, local, locals) {
     Symbol* field = local2field.get(local);
     if (toArgSymbol(local)) {
@@ -580,6 +585,10 @@ void lowerIterator(FnSymbol* fn) {
     addLiveLocalVariables(locals, fn, singleLoop);
   }
   locals.add_exclusive(fn->getReturnSymbol());
+
+  Symbol* super = new VarSymbol("super", dtObject);
+  super->addPragma("super class");
+  ii->icType->fields.insertAtTail(new DefExpr(super));
 
   int i = 0;
   forv_Vec(Symbol, local, locals) {

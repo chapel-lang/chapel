@@ -26,8 +26,10 @@ writeln();
 for i in c2 {
   writeln(i);
 }
+writeln();
 
 for i in d {
   writeln(i);
 }
+writeln();
 

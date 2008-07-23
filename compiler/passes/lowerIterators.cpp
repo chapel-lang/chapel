@@ -113,6 +113,78 @@ isBoundedIterator(FnSymbol* fn) {
 
 
 static void
+getIteratorChildren(Vec<Type*>& children, Type* type) {
+  forv_Vec(Type, child, type->dispatchChildren) {
+    if (child != dtObject) {
+      children.add_exclusive(child);
+      getIteratorChildren(children, child);
+    }
+  }
+}
+
+
+#define ZIP1 1
+#define ZIP2 2
+#define ZIP3 3
+#define ZIP4 4
+#define HASMORE 5
+#define GETVALUE 6
+
+static void
+buildIteratorCallInner(BlockStmt* block, Symbol* ret, int fnid, Symbol* iterator) {
+  IteratorInfo* ii = iterator->type->defaultConstructor->iteratorInfo;
+  FnSymbol* fn = NULL;
+  switch (fnid) {
+  case ZIP1: fn = ii->zip1; break;
+  case ZIP2: fn = ii->zip2; break;
+  case ZIP3: fn = ii->zip3; break;
+  case ZIP4: fn = ii->zip4; break;
+  case HASMORE: fn = ii->hasMore; break;
+  case GETVALUE: fn = ii->getValue; break;
+  }
+  CallExpr* call = new CallExpr(fn, iterator);
+  if (ret) {
+    if (fn->retType == ret->type) {
+      block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ret, call));
+    } else {
+      VarSymbol* tmp = new VarSymbol("_tmp", fn->retType);
+      tmp->isCompilerTemp = true;
+      block->insertAtTail(new DefExpr(tmp));
+      block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, call));
+      block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ret, new CallExpr(PRIMITIVE_CAST, ret->type->symbol, tmp)));
+    }
+  } else {
+    block->insertAtTail(call);
+  }
+}
+
+static BlockStmt*
+buildIteratorCall(Symbol* ret, int fnid, Symbol* iterator, Vec<Type*>& children) {
+  BlockStmt* block = new BlockStmt();
+  BlockStmt* outerBlock = block;
+  forv_Vec(Type, type, children) {
+    VarSymbol* cid = new VarSymbol("_tmp", dtBool);
+    cid->isCompilerTemp = true;
+    block->insertAtTail(new DefExpr(cid));
+    block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cid,
+                          new CallExpr(PRIMITIVE_GETCID,
+                                       iterator, type->symbol)));
+    BlockStmt* thenStmt = new BlockStmt();
+    BlockStmt* elseStmt = new BlockStmt();
+    VarSymbol* childIterator = new VarSymbol("_tmp", type);
+    childIterator->isCompilerTemp = true;
+    thenStmt->insertAtTail(new DefExpr(childIterator));
+    thenStmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, childIterator, new CallExpr(PRIMITIVE_CAST, type->symbol, iterator)));
+    buildIteratorCallInner(thenStmt, ret, fnid, childIterator);
+    block->insertAtTail(new CondStmt(new SymExpr(cid), thenStmt, elseStmt));
+    block = elseStmt;
+  }
+  buildIteratorCallInner(block, ret, fnid, iterator);
+  return outerBlock;
+}
+
+
+static void
 expand_for_loop(CallExpr* call) {
   BlockStmt* block = toBlockStmt(call->parentExpr);
   if (!block || block->loopInfo != call)
@@ -128,7 +200,10 @@ expand_for_loop(CallExpr* call) {
 
   if (!fNoInlineIterators &&
       iterator->type->defaultConstructor->iteratorInfo &&
-      canInlineIterator(iterator->type->defaultConstructor)) {
+      canInlineIterator(iterator->type->defaultConstructor) &&
+      (iterator->type->dispatchChildren.n == 0 ||
+       iterator->type->dispatchChildren.n == 1 &&
+       iterator->type->dispatchChildren.v[0] == dtObject)) {
     expandIteratorInline(call);
   } else {
     currentLineno = call->lineno;
@@ -137,16 +212,19 @@ expand_for_loop(CallExpr* call) {
     setupSimultaneousIterators(iterators, indices, iterator, index, block);
     VarSymbol* firstCond = NULL;
     for (int i = 0; i < iterators.n; i++) {
-      IteratorInfo* ii = iterators.v[i]->type->defaultConstructor->iteratorInfo;
+      Vec<Type*> children;
+      getIteratorChildren(children, iterators.v[i]->type);
       VarSymbol* cond = new VarSymbol("_cond", dtBool);
       cond->isCompilerTemp = true;
-      block->insertBefore(new CallExpr(ii->zip1, iterators.v[i]));
-      block->insertBefore(new DefExpr(cond));
-      block->insertBefore(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(ii->hasMore, iterators.v[i])));
-      block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, indices.v[i], new CallExpr(ii->getValue, iterators.v[i])));
 
-      block->insertAtTail(new CallExpr(ii->zip3, iterators.v[i]));
-      block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cond, new CallExpr(ii->hasMore, iterators.v[i])));
+      block->insertBefore(buildIteratorCall(NULL, ZIP1, iterators.v[i], children));
+
+      block->insertBefore(new DefExpr(cond));
+      block->insertBefore(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
+      block->insertAtHead(buildIteratorCall(indices.v[i], GETVALUE, iterators.v[i], children));
+
+      block->insertAtTail(buildIteratorCall(NULL, ZIP3, iterators.v[i], children));
+      block->insertAtTail(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
       if (isBoundedIterator(iterators.v[i]->type->defaultConstructor)) {
         if (!firstCond) {
           firstCond = cond;
@@ -158,8 +236,8 @@ expand_for_loop(CallExpr* call) {
           block->insertAfter(new CondStmt(new SymExpr(cond), new CallExpr(PRIMITIVE_RT_ERROR, new_StringSymbol("zippered iterations have non-equal lengths"))));
         }
       }
-      block->insertAtHead(new CallExpr(ii->zip2, iterators.v[i]));
-      block->insertAfter(new CallExpr(ii->zip4, iterators.v[i]));
+      block->insertAtHead(buildIteratorCall(NULL, ZIP2, iterators.v[i], children));
+      block->insertAfter(buildIteratorCall(NULL, ZIP4, iterators.v[i], children));
     }
     call->get(2)->remove();
     call->get(1)->remove();
@@ -183,6 +261,7 @@ buildIterator2Leader(IteratorInfo* ii) {
   VarSymbol* leader = new VarSymbol("leader", ii->leader->icType);
   fn->insertAtTail(new DefExpr(leader));
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leader, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->leader->icType->symbol, new_StringSymbol("leader iterator class"))));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, leader));
 
   if (ii->iterator->numFormals() < ii->leader->iterator->numFormals() - 1) {
     USR_FATAL(ii->leader->iterator, "leader iterator has too many formal arguments");
@@ -205,8 +284,8 @@ buildIterator2Leader(IteratorInfo* ii) {
     VarSymbol* tmp = new VarSymbol("_tmp", iteratorFormal->type);
     tmp->isCompilerTemp = true;
     fn->insertAtTail(new DefExpr(tmp));
-    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, ii->icType->getField(j))));
-    fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, leader, ii->leader->icType->getField(i), tmp));
+    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, ii->icType->getField(j+1))));
+    fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, leader, ii->leader->icType->getField(i+1), tmp));
     j++;
   }
 
@@ -232,6 +311,7 @@ buildIterator2Follower(IteratorInfo* ii) {
   VarSymbol* follower = new VarSymbol("follower", ii->follower->icType);
   fn->insertAtTail(new DefExpr(follower));
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, follower, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->follower->icType->symbol, new_StringSymbol("follower iterator class"))));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, follower));
 
   if (ii->iterator->numFormals() < ii->follower->iterator->numFormals() - 1) {
     USR_FATAL(ii->follower->iterator, "follower iterator has too many formal arguments");
@@ -243,7 +323,7 @@ buildIterator2Follower(IteratorInfo* ii) {
   for_formals(followerFormal, ii->follower->iterator) {
     i++;
     if (!strcmp(followerFormal->name, "follower")) {
-      fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, follower, ii->follower->icType->getField(i), leaderIndex));
+      fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, follower, ii->follower->icType->getField(i+1), leaderIndex));
       continue;
     }
     ArgSymbol* iteratorFormal = ii->iterator->getFormal(j);
@@ -256,8 +336,8 @@ buildIterator2Follower(IteratorInfo* ii) {
     VarSymbol* tmp = new VarSymbol("_tmp", iteratorFormal->type);
     tmp->isCompilerTemp = true;
     fn->insertAtTail(new DefExpr(tmp));
-    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, ii->icType->getField(j))));
-    fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, follower, ii->follower->icType->getField(i), tmp));
+    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, ii->icType->getField(j+1))));
+    fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, follower, ii->follower->icType->getField(i+1), tmp));
     j++;
   }
 
@@ -301,7 +381,7 @@ void lowerIterators() {
           ct = toClassType(getValueType(ct));
         long num;
         if (get_int(call->get(2), &num)) {
-          Symbol* field = ct->getField(num);
+          Symbol* field = ct->getField(num+1); // add 1 for super
           call->get(2)->replace(new SymExpr(field));
           CallExpr* parent = toCallExpr(call->parentExpr);
           INT_ASSERT(parent->isPrimitive(PRIMITIVE_MOVE));
@@ -318,39 +398,75 @@ void lowerIterators() {
   //
   // make _getIterator(ic: _iteratorClass) implement a shallow copy to
   // avoid clashing during simultaneous iterations of the same
-  // iterator class
+  // iterator class (copies the dynamic iterator type)
   //
   // see functions/deitz/iterators/test_generic_use_twice2.chpl
   //
+  // also build iterator2leader and iterator2follower functions
+  //
+  Vec<FnSymbol*> getIteratorVec;
+  Map<Type*,FnSymbol*> getIteratorMap;
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->hasPragma("iterator class copy")) {
-      BlockStmt* block = new BlockStmt();
-      ArgSymbol* ic = fn->getFormal(1);
-      INT_ASSERT(ic);
-      ClassType* ct = toClassType(ic->type);
-      INT_ASSERT(ct);
-      VarSymbol* cp = new VarSymbol("ic_copy", ct);
-      cp->isCompilerTemp = true;
-      block->insertAtTail(new DefExpr(cp));
-      block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cp, new CallExpr(PRIMITIVE_CHPL_ALLOC, ct->symbol, new_StringSymbol("iterator class copy"))));
-      for_fields(field, ct) {
-        VarSymbol* tmp = new VarSymbol("_tmp", field->type);
-        block->insertAtTail(new DefExpr(tmp));
-        block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, field)));
-        block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, cp, field, tmp));
-      }
-      block->insertAtTail(new CallExpr(PRIMITIVE_RETURN, cp));
-      fn->body->replace(block);
-    }
-  }
-
-  forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->iteratorInfo) {
+      getIteratorVec.add(fn);
+      getIteratorMap.put(fn->retType, fn);
+    } else if (fn->iteratorInfo) {
       buildIterator2Leader(fn->iteratorInfo);
       buildIterator2Follower(fn->iteratorInfo);
     }
   }
 
+  forv_Vec(FnSymbol, fn, getIteratorVec) {
+    BlockStmt* block = new BlockStmt();
+    BlockStmt* outerBlock = block;
+    ArgSymbol* ic = fn->getFormal(1);
+    INT_ASSERT(ic);
+    ClassType* ct = toClassType(ic->type);
+    INT_ASSERT(ct);
+    VarSymbol* cp = new VarSymbol("ic_copy", ct);
+    cp->isCompilerTemp = true;
+    block->insertAtTail(new DefExpr(cp));
+
+    Vec<Type*> children;
+    getIteratorChildren(children, ic->type);
+
+    forv_Vec(Type, type, children) {
+      VarSymbol* cid = new VarSymbol("_tmp", dtBool);
+      cid->isCompilerTemp = true;
+      block->insertAtTail(new DefExpr(cid));
+      block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cid,
+                            new CallExpr(PRIMITIVE_GETCID,
+                                         ic, type->symbol)));
+      BlockStmt* thenStmt = new BlockStmt();
+      BlockStmt* elseStmt = new BlockStmt();
+      VarSymbol* childIterator = new VarSymbol("_tmp", type);
+      childIterator->isCompilerTemp = true;
+      thenStmt->insertAtTail(new DefExpr(childIterator));
+      thenStmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, childIterator, new CallExpr(PRIMITIVE_CAST, type->symbol, ic)));
+      thenStmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, childIterator, new CallExpr(getIteratorMap.get(type), childIterator)));
+      thenStmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cp, new CallExpr(PRIMITIVE_CAST, ic->type->symbol, childIterator)));
+      block->insertAtTail(new CondStmt(new SymExpr(cid), thenStmt, elseStmt));
+      block = elseStmt;
+    }
+
+    block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cp, new CallExpr(PRIMITIVE_CHPL_ALLOC, ct->symbol, new_StringSymbol("iterator class copy"))));
+    block->insertAtTail(new CallExpr(PRIMITIVE_SETCID, cp));
+    for_fields(field, ct) {
+      if (!field->hasPragma("super class")) {
+        VarSymbol* tmp = new VarSymbol("_tmp", field->type);
+        block->insertAtTail(new DefExpr(tmp));
+        block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, field)));
+        block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, cp, field, tmp));
+      }
+    }
+    outerBlock->insertAtTail(new CallExpr(PRIMITIVE_RETURN, cp));
+    fn->body->replace(outerBlock);
+  }
+
+  //
+  // insert calls to iterator2leader and iterator2follower and make
+  // sure we dynamically dispatch on _getIterator
+  //
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIMITIVE_TO_LEADER)) {
