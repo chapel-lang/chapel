@@ -102,6 +102,7 @@ mysystem("cd $compdir/backend && $tokctr $allcppfiles > ../backend.ntoks", "coun
 mysystem("cd $compdir/include && $tokctr $allcppfiles > ../include.ntoks", "counting include tokens", 0, 1);
 mysystem("cd $compdir/main && $tokctr $allcppfiles > ../main.ntoks", "counting main tokens", 0, 1);
 mysystem("cd $compdir/optimizations && $tokctr $allcppfiles > ../opt.ntoks", "counting optimizations tokens", 0, 1);
+mysystem("cd $compdir/resolution && $tokctr $allcppfiles > ../resolution.ntoks", "counting resolution tokens", 0, 1);
 mysystem("cd $compdir/parser && $tokctr $allcppfiles > ../parser.ntoks", "counting parser tokens", 0, 1);
 mysystem("cd $compdir/passes && $tokctr $allcppfiles > ../passes.ntoks", "counting passes tokens", 0, 1);
 #mysystem("cd $compdir/symtab && $tokctr $allcppfiles > ../symtab.ntoks", "counting AST tokens", 0, 1);
@@ -124,6 +125,7 @@ $maintoks = `cat $compdir/main.ntoks`; chomp($maintoks);
 $opttoks = `cat $compdir/opt.ntoks`; chomp($opttoks);
 $parsertoks = `cat $compdir/parser.ntoks`; chomp($parsertoks);
 $passestoks = `cat $compdir/passes.ntoks`; chomp($passestoks);
+$resolutiontoks = `cat $compdir/resolution.ntoks`; chomp($resolutiontoks);
 $symtabtoks = 0;
 $traversalstoks = 0;
 $utiltoks = `cat $compdir/util.ntoks`; chomp($utiltoks);
@@ -161,6 +163,9 @@ if ($parsertoks == "") {
 }
 if ($passestoks == "") {
     $passestoks = 0;
+}
+if ($resolutiontoks = "") {
+    $resolutiontoks = 0;
 }
 if ($symtabtoks == "") {
     $symtabtoks = 0;
@@ -217,6 +222,8 @@ emit($tot);
 $tot += $chpcodetoks;
 emit($tot);
 $tot += $opttoks;
+emit($tot);
+$tot += $resolutiontoks;
 emit($tot);
 
 `echo -n "\n" >> $statfile`;
