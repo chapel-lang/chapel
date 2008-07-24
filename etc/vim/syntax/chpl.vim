@@ -250,23 +250,23 @@ endif
 "  - Ranges need better support eg: [.., ..)
 
 " Chapel extentions
-syn keyword chplStatement	goto break return continue 
-syn keyword chplStatement	new this these use module yield compilerError compilerWarning
+syn keyword chplStatement	goto break return continue compilerWarning delete
+syn keyword chplStatement	new this these use module yield compilerError
 syn keyword chplIntent		param type in out inout
 syn keyword chplStorageClass    const config var
 syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool file string opaque integral numeric enumerated
-syn keyword chplType            locale sync atomic single function distributed
+syn keyword chplType            locale sync atomic single distributed
 syn keyword chplOperator	on reduce scan by
 " syn match chplCast		"\<\(const\|static\|dynamic\|reinterpret\)_cast\s*<"me=e-1
 " syn match chplCast		"\<\(const\|static\|dynamic\|reinterpret\)_cast\s*$"
 syn keyword chplStructure	class record union enum
-syn keyword chplStructure	def cobegin begin local sync function iterator let select where pragma
+syn keyword chplStructure	def cobegin begin local sync let select where pragma
 " syn keyword chplNumber		NPOS
 syn keyword chplBoolean		true false
 syn keyword chplConditional	if then else
 syn keyword chplConstant	nil
-syn keyword chplRepeat		while for do coforall forall ordered in to downto mod div repeat until serial
-syn keyword chplLabel	        when otherwise
+syn keyword chplRepeat		while for do coforall forall in serial
+syn keyword chplLabel	        when otherwise label
 
 " The minimum and maximum operators in GNU C++
 syn match chplMinMax "[<>]?"

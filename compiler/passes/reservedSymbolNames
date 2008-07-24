@@ -99,6 +99,7 @@
   round
   tgamma
   trunc
+  div
 
   // symbols in stdint.h
   int8_t
