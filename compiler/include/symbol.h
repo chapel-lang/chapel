@@ -183,13 +183,6 @@ class FnSymbol : public Symbol {
   virtual FnSymbol* getFnSymbol(void);
   virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  FnSymbol* promotion_wrapper(SymbolMap* promotion_subs, bool isSquare);
-  FnSymbol* order_wrapper(SymbolMap* formals_to_formals, bool isSquare);
-  FnSymbol* coercion_wrapper(SymbolMap* coercion_substitutions, Map<ArgSymbol*,bool>* coercions, bool isSquare);
-  FnSymbol* default_wrapper(Vec<Symbol*>* defaults, SymbolMap* paramMap, bool isSquare);
-  FnSymbol* instantiate_generic(SymbolMap* substitutions, 
-                                SymbolMap* paramMap,
-                                CallExpr* call);
   void codegenHeader(FILE* outfile);
   void codegenPrototype(FILE* outfile);
   void codegenDef(FILE* outfile);
@@ -285,7 +278,5 @@ extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
 
 extern Symbol *gTaskList;
-
-void freeWrapperAndInstantiationCaches();
 
 #endif

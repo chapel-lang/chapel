@@ -1,8 +1,11 @@
 RESOLUTION_SRCS = \
+	caches.cpp \
 	callInfo.cpp \
 	cullOverReferences.cpp \
+	generics.cpp \
 	functionResolution.cpp \
-	lowerIterators.cpp
+	lowerIterators.cpp \
+	wrappers.cpp
 
 SVN_SRCS = $(RESOLUTION_SRCS)
 SRCS = $(SVN_SRCS)

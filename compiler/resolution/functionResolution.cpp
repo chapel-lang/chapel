@@ -1,9 +1,11 @@
 #include "astutil.h"
 #include "build.h"
+#include "caches.h"
 #include "callInfo.h"
 #include "expr.h"
 #include "iterator.h"
 #include "passes.h"
+#include "resolution.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -15,8 +17,6 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
 static Expr* preFold(Expr* expr);
 static Expr* postFold(Expr* expr);
 
-static FnSymbol* instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call);
-
 static void setScalarPromotionType(ClassType* ct);
 static void fixTypeNames(ClassType* ct);
 static void insertReturnTemps();
@@ -24,13 +24,11 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
 
 static int explainCallLine;
 static ModuleSymbol* explainCallModule;
-static int explainInstantiationLine;
-static ModuleSymbol* explainInstantiationModule;
 
 static Vec<CallExpr*> inits;
 static Vec<FnSymbol*> resolvedFns;
 static Vec<FnSymbol*> resolvedFormals;
-static Vec<CallExpr*> callStack;
+Vec<CallExpr*> callStack;
 
 static Map<CallExpr*,FnSymbol*> buildArrayMap;
 static Map<Type*,FnSymbol*> wrapDomainMap;
@@ -40,16 +38,7 @@ static Map<FnSymbol*,Vec<FnSymbol*>*> ddf; // map of functions to
 
 static Type* resolve_type_expr(Expr* expr);
 
-static void resolveCall(CallExpr* call, bool errorCheck = true);
-static void resolveBlock(Expr* body);
 static void resolveFns(FnSymbol* fn);
-
-static bool canDispatch(Type* actualType,
-                        Symbol* actualSym,
-                        Type* formalType,
-                        FnSymbol* fn = NULL,
-                        bool* require_scalar_promotion = NULL,
-                        bool paramCoerce = false);
 
 static void pruneResolvedTree();
 
@@ -79,7 +68,7 @@ static void makeRefType(Type* type) {
 }
 
 
-static const char* toString(Type* type) {
+const char* toString(Type* type) {
   if (type->symbol->hasPragma("ref"))
     return getValueType(type)->symbol->name;
   else
@@ -87,7 +76,7 @@ static const char* toString(Type* type) {
 }
 
 
-static const char* toString(CallInfo* info) {
+const char* toString(CallInfo* info) {
   bool method = false;
   bool _this = false;
   const char *str = "";
@@ -157,7 +146,7 @@ static const char* toString(CallInfo* info) {
 }
 
 
-static const char* toString(FnSymbol* fn) {
+const char* toString(FnSymbol* fn) {
   if (fn->userString) {
     if (developer)
       return astr(fn->userString, " [", istr(fn->id), "]");
@@ -345,7 +334,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
 }
 
 
-static void
+void
 resolveFormals(FnSymbol* fn) {
   static Vec<FnSymbol*> done;
 
@@ -456,8 +445,8 @@ canInstantiate(Type* actualType, Type* formalType) {
 
 // Returns true iff dispatching the actualType to the formalType
 // results in a coercion.
-static bool
-canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion = NULL) {
+bool
+canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion) {
   if (actualType->symbol->hasPragma( "sync")) {
     if (actualType->isGeneric) {
       return false;
@@ -584,7 +573,7 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
 // Returns true iff the actualType can dispatch to the formalType.
 // The function symbol is used to avoid scalar promotion on =.
 // param is set if the actual is a parameter (compile-time constant).
-static bool
+bool
 canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion, bool paramCoerce) {
   if (require_scalar_promotion)
     *require_scalar_promotion = false;
@@ -618,7 +607,7 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
   return false;
 }
 
-static bool
+bool
 isDispatchParent(Type* t, Type* pt) {
   forv_Vec(Type, p, t->dispatchParents)
     if (p == pt || isDispatchParent(p, pt))
@@ -1032,127 +1021,6 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
 }
 
 
-static FnSymbol*
-build_default_wrapper(FnSymbol* fn,
-                      Vec<ArgSymbol*>* actualFormals,
-                      bool isSquare) {
-  FnSymbol* wrapper = fn;
-  int num_actuals = actualFormals->n;
-  int num_formals = fn->numFormals();
-  if (num_formals > num_actuals) {
-    Vec<Symbol*> defaults;
-    for_formals(formal, fn) {
-      bool used = false;
-      forv_Vec(ArgSymbol, arg, *actualFormals) {
-        if (arg == formal)
-          used = true;
-      }
-      if (!used)
-        defaults.add(formal);
-    }
-    wrapper = fn->default_wrapper(&defaults, &paramMap, isSquare);
-
-    // update actualFormals for use in build_order_wrapper
-    int j = 1;
-    for_formals(formal, fn) {
-      for (int i = 0; i < actualFormals->n; i++) {
-        if (actualFormals->v[i] == formal) {
-          ArgSymbol* newFormal = wrapper->getFormal(j);
-          actualFormals->v[i] = newFormal;
-          j++;
-        }
-      }
-    }
-  }
-  return wrapper;
-}
-
-
-static FnSymbol*
-build_order_wrapper(FnSymbol* fn,
-                    Vec<ArgSymbol*>* actualFormals,
-                    bool isSquare) {
-  bool order_wrapper_required = false;
-  SymbolMap formals_to_formals;
-  int i = 0;
-  for_formals(formal, fn) {
-    i++;
-
-    int j = 0;
-    forv_Vec(ArgSymbol, af, *actualFormals) {
-      j++;
-      if (af == formal) {
-        if (i != j)
-          order_wrapper_required = true;
-        formals_to_formals.put(formal, actualFormals->v[i-1]);
-      }
-    }
-  }
-  if (order_wrapper_required) {
-    fn = fn->order_wrapper(&formals_to_formals, isSquare);
-  }
-  return fn;
-}
-
-
-static FnSymbol*
-build_coercion_wrapper(FnSymbol* fn, CallInfo* info) {
-  SymbolMap subs;
-  Map<ArgSymbol*,bool> coercions;
-  int j = -1;
-  bool coerce = false;
-  for_formals(formal, fn) {
-    j++;
-    Type* actualType = info->actualTypes.v[j];
-    Symbol* actualSym = info->actualSyms.v[j];
-    if (actualType != formal->type) {
-      if (canCoerce(actualType, actualSym, formal->type, fn) || isDispatchParent(actualType, formal->type)) {
-        subs.put(formal, actualType->symbol);
-        coercions.put(formal,true);
-        coerce = true;
-      } else {
-        subs.put(formal, actualType->symbol);
-      }
-    }
-  }
-  if (coerce)
-    fn = fn->coercion_wrapper(&subs, &coercions, info->call->square);
-  return fn;  
-}
-
-
-static FnSymbol*
-build_promotion_wrapper(FnSymbol* fn, CallInfo* info) {
-  Vec<Type*>* actualTypes = &info->actualTypes;
-  Vec<Symbol*>* actualSyms = &info->actualSyms;
-  bool isSquare = info->call->square;
-  if (!strcmp(fn->name, "="))
-    return fn;
-  bool promotion_wrapper_required = false;
-  SymbolMap promoted_subs;
-  int j = -1;
-  for_formals(formal, fn) {
-    j++;
-    Type* actualType = actualTypes->v[j];
-    Symbol* actualSym = actualSyms->v[j];
-    bool require_scalar_promotion = false;
-    if (canDispatch(actualType, actualSym, formal->type, fn, &require_scalar_promotion)){
-      if (require_scalar_promotion) {
-        promotion_wrapper_required = true;
-        promoted_subs.put(formal, actualType->symbol);
-      }
-    }
-  }
-  if (promotion_wrapper_required) {
-    if (fWarnPromotion)
-      USR_WARN(info->call, "promotion on %s", toString(info));
-    fn = fn->promotion_wrapper(&promoted_subs, isSquare);
-    resolveFormals(fn);
-  }
-  return fn;
-}
-
-
 //
 // d is distance up via parentExpr/parentSymbol
 // md is number of modules used
@@ -1338,20 +1206,6 @@ explainCallMatch(CallExpr* call) {
   if (explainCallModule && explainCallModule != call->getModule())
     return false;
   if (explainCallLine != -1 && explainCallLine != call->lineno)
-    return false;
-  return true;
-}
-
-
-static bool
-explainInstantiationMatch(FnSymbol* fn) {
-  if (strcmp(fn->name, fExplainInstantiation) &&
-      (strncmp(fn->name, "_construct_", 11) ||
-       strcmp(fn->name+11, fExplainInstantiation)))
-    return false;
-  if (explainInstantiationModule && explainInstantiationModule != fn->defPoint->getModule())
-    return false;
-  if (explainInstantiationLine != -1 && explainInstantiationLine != fn->defPoint->lineno)
     return false;
   return true;
 }
@@ -1650,7 +1504,7 @@ resolveDefaultGenericType(CallExpr* call) {
 }
 
 
-static void
+void
 resolveCall(CallExpr* call, bool errorCheck) {
   if (!call->primitive) {
 
@@ -3063,7 +2917,7 @@ static void issueCompilerError(CallExpr* call) {
   }
 }
 
-static void
+void
 resolveBlock(Expr* body) {
   FnSymbol* fn = toFnSymbol(body->parentSymbol);
   for_exprs_postorder(expr, body) {
@@ -3517,7 +3371,7 @@ build_ddf() {
 }
 
 
-static void
+void
 parseExplainFlag(char* flag, int* line, ModuleSymbol** module) {
   *line = 0;
   if (strcmp(flag, "")) {
@@ -3556,7 +3410,6 @@ parseExplainFlag(char* flag, int* line, ModuleSymbol** module) {
 void
 resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
-  parseExplainFlag(fExplainInstantiation, &explainInstantiationLine, &explainInstantiationModule);
 
   // call _nilType nil so as to not confuse the user
   dtNil->symbol->name = gNil->name;
@@ -3754,7 +3607,17 @@ resolve() {
   insertReturnTemps(); // must be done before pruneResolvedTree is called.
   pruneResolvedTree();
 
-  freeWrapperAndInstantiationCaches();
+  //
+  // delete default wrapper cache
+  //
+  forv_Vec(DWCacheItem, item, dwcache) {
+    delete item;
+  }
+  dwcache.clear();
+
+  freeSymbolMapCache(icache);
+  freeSymbolMapCache(cw_cache);
+  freeSymbolMapCache(pw_cache);
 
   Vec<VisibleFunctionBlock*> vfbs;
   visibleFunctionMap.get_values(vfbs);
@@ -4216,89 +4079,3 @@ setScalarPromotionType(ClassType* ct) {
       ct->scalarPromotionType = field->type;
   }
 }
-
-
-static FnSymbol*
-instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
-  static Vec<FnSymbol*> reportSet;  // do not report cached instantiations
-  static Vec<FnSymbol*> whereStack;
-  FnSymbol* ifn = fn->instantiate_generic(subs, &paramMap, call);
-
-  ifn->isExtern = fn->isExtern; // preserve extern-ness of instantiated fn
-  if (!ifn->isGeneric && ifn->where) {
-    forv_Vec(FnSymbol, where, whereStack) {
-      if (where == ifn) {
-        USR_FATAL_CONT(ifn->where, "illegal where clause due to infinite instantiation");
-        FnSymbol* printOn = NULL;
-        forv_Vec(FnSymbol, tmp, whereStack) {
-          if (printOn)
-            USR_PRINT(printOn->where, "evaluation of '%s' where clause results in instantiation of '%s'", printOn->name, tmp->name);
-          if (printOn || tmp == where)
-            printOn = tmp;
-        }
-        USR_PRINT(ifn->where, "evaluation of '%s' where clause results in instantiation of '%s'", printOn->name, ifn->name);
-        USR_STOP();
-      }
-    }
-    whereStack.add(ifn);
-    resolveFormals(ifn);
-    resolveBlock(ifn->where);
-    whereStack.pop();
-    SymExpr* symExpr = toSymExpr(ifn->where->body.last());
-    if (!symExpr)
-      USR_FATAL(ifn->where, "illegal where clause");
-    if (!strcmp(symExpr->var->name, "false"))
-      return NULL;
-    if (strcmp(symExpr->var->name, "true"))
-      USR_FATAL(ifn->where, "illegal where clause");
-  }
-
-  if (!ifn->isGeneric &&
-      explainInstantiationLine &&
-      explainInstantiationMatch(fn) &&
-      !reportSet.set_in(ifn)) {
-    char msg[1024] = "";
-    int len;
-    if (!strncmp(fn->name, "_construct_", 11))
-      len = sprintf(msg, "instantiated %s(", fn->_this->type->symbol->name);
-    else
-      len = sprintf(msg, "instantiated %s(", fn->name);
-    bool first = true;
-    for_formals(formal, ifn) {
-      form_Map(SymbolMapElem, e, ifn->substitutions) {
-        ArgSymbol* arg = toArgSymbol(e->key);
-        if (!strcmp(formal->name, arg->name)) {
-          if (!strcmp(arg->name, "meme")) // do not show meme argument
-            continue;
-          if (first)
-            first = false;
-          else
-            len += sprintf(msg+len, ", ");
-          INT_ASSERT(arg);
-          if (strcmp(ifn->name, "_construct__tuple"))
-            len += sprintf(msg+len, "%s = ", arg->name);
-          if (TypeSymbol* ts = toTypeSymbol(e->value))
-            len += sprintf(msg+len, "%s", ts->name);
-          else if (VarSymbol* vs = toVarSymbol(e->value)) {
-            if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
-              len += sprintf(msg+len, "%lld", vs->immediate->int_value());
-            else if (vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
-              len += sprintf(msg+len, "\"%s\"", vs->immediate->v_string);
-            else
-              len += sprintf(msg+len, "%s", vs->name);
-          } else
-            INT_FATAL("unexpected case using --explain-instantiation");
-        }
-      }
-    }
-    len += sprintf(msg+len, ")");
-    if (callStack.n) {
-      USR_PRINT(callStack.v[callStack.n-1], msg);
-    } else {
-      USR_PRINT(fn, msg);
-    }
-    reportSet.set_add(ifn);
-  }
-  return ifn;
-}
-
