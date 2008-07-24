@@ -1,10 +1,13 @@
 OPTIMIZATIONS_SRCS = \
 	collapseBlocks.cpp \
-        copyPropagation.cpp \
+	complex2record.cpp \
+	copyPropagation.cpp \
 	deadCodeElimination.cpp \
+	inlineFunctions.cpp \
 	liveVariableAnalysis.cpp \
 	reachingDefinitionsAnalysis.cpp \
-	removeUnnecessaryGotos.cpp
+	removeUnnecessaryGotos.cpp \
+	scalarReplace.cpp
 
 SVN_SRCS = $(OPTIMIZATIONS_SRCS)
 SRCS = $(SVN_SRCS)

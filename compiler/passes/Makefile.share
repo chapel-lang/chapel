@@ -2,19 +2,16 @@ PASSES_SRCS = \
         buildDefaultFunctions.cpp \
         cleanup.cpp \
 	codegen.cpp \
-        complex2record.cpp \
         copyCollect.cpp \
         cullOverReferences.cpp \
 	filesToAST.cpp \
 	flattenClasses.cpp \
         flattenFunctions.cpp \
         functionResolution.cpp \
-        inlineFunctions.cpp \
 	insertLineNumbers.cpp \
         lowerIterators.cpp \
         parallel.cpp \
         normalize.cpp \
-	scalarReplace.cpp \
         scopeResolve.cpp \
         semanticChecks.cpp
 
