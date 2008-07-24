@@ -145,7 +145,7 @@ void chpl_set_serial(chpl_bool new_state) {
   serial_state = new_state;
 }
 
-chpl_task_pool_p
+void
 chpl_begin(chpl_threadfp_t fp, chpl_threadarg_t a, chpl_bool ignore_serial,
            chpl_bool serial_state, chpl_task_list_p task_list_entry) {
   if (!ignore_serial && chpl_get_serial()) {
@@ -166,7 +166,6 @@ chpl_begin(chpl_threadfp_t fp, chpl_threadarg_t a, chpl_bool ignore_serial,
     }
     task_pool_tail = task;
   }
-  return NULL;
 }
 
 void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,

@@ -189,7 +189,7 @@ void chpl_set_serial(chpl_bool state) {
 }
 
 
-chpl_task_pool_p
+void
 chpl_begin (chpl_threadfp_t fp, chpl_threadarg_t arg, chpl_bool ignore_serial, 
             chpl_bool serial_state, chpl_task_list_p task_list_entry) {
 
@@ -215,8 +215,6 @@ chpl_begin (chpl_threadfp_t fp, chpl_threadarg_t arg, chpl_bool ignore_serial,
         chpl_can_exit = 1; // mark this variable as being full
     }
   }
-
-  return NULL;
 }
 
 void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,

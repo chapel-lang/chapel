@@ -83,7 +83,7 @@ void chpl_free_task_list (chpl_task_list_p);
 
 // Fork one thread.  Do not wait.  Used to implement Chapel's begin statement.
 // Returns a pointer to the task pool entry.
-chpl_task_pool_p
+void
 chpl_begin (chpl_threadfp_t,   // function to fork
             chpl_threadarg_t,  // function arg
             chpl_bool,         // ignore_serial = force spawning task regardless

@@ -42,9 +42,8 @@ typedef struct chpl_pool_struct {
 struct chpl_task_list {
   chpl_threadfp_t fun;
   chpl_threadarg_t arg;
-  chpl_task_pool_p task_pool_entry;
+  volatile chpl_task_pool_p task_pool_entry; // when null, execution of the associated task has begun
   chpl_task_list_p next;
-  _Bool completed;  // whether execution of the associated task has finished
 };
 
 
@@ -491,8 +490,6 @@ chpl_begin_helper (chpl_task_pool_p task) {
     // begin critical section
     chpl_mutex_lock(&threading_lock);
 
-    if (task->task_list_entry)
-      task->task_list_entry->completed = true;
     chpl_free(task, 0, 0);  // make sure task_pool_head no longer points to this task!
 
     //
@@ -543,10 +540,16 @@ chpl_begin_helper (chpl_task_pool_p task) {
     //
     running_cnt++;
     task = task_pool_head;
+    if (task->task_list_entry) {
+      task->task_list_entry->task_pool_entry = NULL;
+      // there is no longer any need to access the corresponding task list entry
+      // so avoid any potential of accessing a node that will eventually be freed
+      task->task_list_entry = NULL;
+    }
     task->begun = true;
     task_pool_head = task_pool_head->next;
     if (task_pool_head == NULL)  // task pool is now empty
-      task_pool_tail = NULL; 
+      task_pool_tail = NULL;
     else if (waking_cnt > 0)
       // schedule another task if one is waiting; this must be done in
       // case, for example, 2 signals were performed by chpl_begin()
@@ -593,6 +596,12 @@ launch_next_task(void) {
     } else {
       threads_cnt++;
       running_cnt++;
+      if (task->task_list_entry) {
+        task->task_list_entry->task_pool_entry = NULL;
+        // there is no longer any need to access the corresponding task list entry
+        // so avoid any potential of accessing a node that will eventually be freed
+        task->task_list_entry = NULL;
+      }
       task->begun = true;
       pthread_detach(thread);
       task_pool_head = task_pool_head->next;
@@ -657,25 +666,32 @@ static chpl_task_pool_p add_to_task_pool (chpl_threadfp_t fp, chpl_threadarg_t a
 //
 // interface function with begin-statement
 //
-chpl_task_pool_p
-chpl_begin (chpl_threadfp_t fp, chpl_threadarg_t a,
-            chpl_bool ignore_serial,  // always add task to pool
-            chpl_bool serial_state, chpl_task_list_p task_list_entry) {
-  chpl_task_pool_p task_pool_entry = NULL;
+void chpl_begin (chpl_threadfp_t fp, chpl_threadarg_t a,
+                 chpl_bool ignore_serial,  // always add task to pool
+                 chpl_bool serial_state, chpl_task_list_p task_list_entry) {
   if (!ignore_serial && chpl_get_serial()) {
     (*fp)(a);
   } else {
+    chpl_task_pool_p task_pool_entry = NULL;
+
     // begin critical section
     chpl_mutex_lock(&threading_lock);
 
     task_pool_entry = add_to_task_pool (fp, a, serial_state, task_list_entry);
+    // this task may begin executing before returning from this function, so the task list
+    // node needs to be updated before there is any possibility of launching this task
+    if (task_list_entry)
+      task_list_entry->task_pool_entry = task_pool_entry;
 
     schedule_next_task(1);
+
+    assert(task_pool_entry->task_list_entry == NULL
+           || (task_pool_entry->task_list_entry == task_list_entry
+               && task_list_entry->task_pool_entry == task_pool_entry));
 
     // end critical section
     chpl_mutex_unlock(&threading_lock);
   }
-  return task_pool_entry;
 }
 
 void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
@@ -685,11 +701,9 @@ void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
     chpl_task_list_p task = (chpl_task_list_p)chpl_alloc(sizeof(struct chpl_task_list), "task list entry", 0, 0);
     task->fun = fun;
     task->arg = arg;
-    task->completed = false;
+    task->task_pool_entry = NULL;
     if (call_chpl_begin)
-      task->task_pool_entry = chpl_begin(fun, arg, false, false, task);
-    else
-      task->task_pool_entry = NULL;
+      chpl_begin(fun, arg, false, false, task);
 
     // begin critical section - not needed for cobegin or coforall statements
     if (call_chpl_begin)
@@ -707,10 +721,9 @@ void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
       chpl_mutex_unlock(&task_list_lock);
   }
   else {
-    // call_chpl_begin should be true here because if task_list_locale !=
-    // _localeID, then this function could not have been called from the
-    // context of a cobegin or coforall statement, which are the only contexts
-    // in which chpl_begin() should not be called.
+    // call_chpl_begin should be true here because if task_list_locale != _localeID, then
+    // this function could not have been called from the context of a cobegin or coforall
+    // statement, which are the only contexts in which chpl_begin() should not be called.
     assert(call_chpl_begin);
     chpl_begin(fun, arg, false, false, NULL);
   }
@@ -750,6 +763,8 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
       do {
         task = next_task;
         task->task_pool_entry = add_to_task_pool (task->fun, task->arg, serial, task);
+        assert(task->task_pool_entry == NULL
+               || task->task_pool_entry->task_list_entry == task);
         next_task = task->next;
         task_cnt++;
       } while (task != task_list);
@@ -763,7 +778,6 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
     // Execute the first task on the list, since it has to run to completion
     // before continuing beyond the cobegin or coforall it's in.
     (*first_task->fun)(first_task->arg);
-    first_task->completed = true;
   }
 }
 
@@ -786,25 +800,24 @@ void chpl_execute_tasks_in_list (chpl_task_list_p task_list) {
     next_task = task->next;
 
     // don't lock unnecessarily
-    if (!task->completed && task->task_pool_entry) {
+    if (task->task_pool_entry) {
       chpl_threadfp_t  task_to_run_fun = NULL;
       chpl_threadarg_t task_to_run_arg = NULL;
 
       // begin critical section
       chpl_mutex_lock(&threading_lock);
 
-      if (!task->completed) {
-        if (!task->task_pool_entry->begun) {
-          task_to_run_fun = task->task_pool_entry->fun;
-          task_to_run_arg = task->task_pool_entry->arg;
-          task->task_pool_entry->begun = true;
-          if (waking_cnt > 0)
-            waking_cnt--;
-        }
-
-        // task may be freed in chpl_free_task_list()
-        // the completed field should not be accessed!
+      if (task->task_pool_entry) {
+        assert(!task->task_pool_entry->begun);
+        task_to_run_fun = task->task_pool_entry->fun;
+        task_to_run_arg = task->task_pool_entry->arg;
+        task->task_pool_entry->begun = true;
         task->task_pool_entry->task_list_entry = NULL;
+        // there is no longer any need to access the corresponding task pool entry
+        // so avoid any potential of accessing a node that will eventually be freed
+        task->task_pool_entry = NULL;
+        if (waking_cnt > 0)
+          waking_cnt--;
       }
 
       // end critical section
