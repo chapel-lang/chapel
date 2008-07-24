@@ -460,13 +460,13 @@ def test_LUFactorizeNorms(
     var x1Norm   = norm(x, normType.norm1);
     var xInfNorm = norm(x, normType.normInf);
 
-    const eps = 1.0e-5;
+    const eps = 2.0e-15;
 
     var resid1 = axmbNorm / (eps * a1norm * n);
     var resid2 = axmbNorm / (eps * a1norm * x1Norm);
     var resid3 = axmbNorm / (eps * aInfNorm * xInfNorm);
 
-    return resid1 <= 1.0 && resid2 <= 1.0 && resid3 <= 1.0;
+    return max(resid1, resid2, resid3) <= 16.0;
 }
 
 def test_LUFactorize(rprt = true) : bool {
