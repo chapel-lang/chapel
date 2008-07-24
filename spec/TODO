@@ -11,3 +11,25 @@
 * refactor/rewrite domain/array chapter (Brad)
 
 * add description of local block
+
+* range chapter: more clearly state the default values of the range's
+  types and parameters (is it currently stated at all?)
+
+* describe how to specify a homogenous varargs type (e.g., x: int...n)?
+
+* add const intents to spec and define blank intents in terms of const
+  intents (and "by reference" for arrays/domains):
+
+  Steve's definition of const intents:
+  - scalars: copy in and disallow modification
+  - classes: copy reference in and disallow modification to reference
+  - records: copy in and disallow modification
+  - domains/arrays: pass by ref and disallow modification
+
+  Brad's mental definition had been the same except:
+  - records: pass by ref and disallow modification
+
+  Joint definition of blank intents:
+  - scalars, classes, records: same as blank:
+  - domains/arrays: pass by ref and allow modification
+
