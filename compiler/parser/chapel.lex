@@ -136,6 +136,7 @@ yield           processToken(TYIELD);
 
 "<=>"           processToken(TSWAP);
 
+"#"             processToken(THASH);
 ".."            processToken(TDOTDOT);
 "..."           processToken(TDOTDOTDOT);
 

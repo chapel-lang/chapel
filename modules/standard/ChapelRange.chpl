@@ -37,6 +37,18 @@ def _build_range(low: int(64), high: int(64))
 def _build_range(low: uint(64), high: uint(64))
   return new range(uint(64), BoundedRangeType.bounded, false, low, high);
 
+//
+// syntax for counted ranges
+//
+def _build_counted_range(low: int, high: int)
+  return new range(int, BoundedRangeType.bounded, false, low, low+high-1);
+def _build_counted_range(low: uint, high: uint)
+  return new range(uint, BoundedRangeType.bounded, false, low, low+high-1);
+def _build_counted_range(low: int(64), high: int(64))
+  return new range(int(64), BoundedRangeType.bounded, false, low, low+high-1);
+def _build_counted_range(low: uint(64), high: uint(64))
+  return new range(uint(64), BoundedRangeType.bounded, false, low, low+high-1);
+
 
 //
 // syntax function for unbounded ranges
