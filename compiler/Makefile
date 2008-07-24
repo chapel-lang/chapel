@@ -18,6 +18,7 @@ SUBDIRS = \
 	optimizations \
 	parser \
 	passes \
+	resolution \
 	util \
 
 #
@@ -43,6 +44,7 @@ include main/Makefile.include
 include optimizations/Makefile.include
 include parser/Makefile.include
 include passes/Makefile.include
+include resolution/Makefile.include
 include util/Makefile.include
 
 SVN_SRCS = 
@@ -58,6 +60,7 @@ CHPL_OBJS = \
 	$(OPTIMIZATIONS_OBJS) \
 	$(PARSER_OBJS) \
 	$(PASSES_OBJS) \
+	$(RESOLUTION_OBJS) \
 	$(SYMTAB_OBJS) \
 	$(UTIL_OBJS) \
 

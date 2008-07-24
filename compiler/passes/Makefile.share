@@ -7,9 +7,7 @@ PASSES_SRCS = \
 	filesToAST.cpp \
 	flattenClasses.cpp \
         flattenFunctions.cpp \
-        functionResolution.cpp \
 	insertLineNumbers.cpp \
-        lowerIterators.cpp \
         parallel.cpp \
         normalize.cpp \
         scopeResolve.cpp \

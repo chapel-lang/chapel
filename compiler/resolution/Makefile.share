@@ -1,0 +1,9 @@
+RESOLUTION_SRCS = \
+	functionResolution.cpp \
+	lowerIterators.cpp
+
+SVN_SRCS = $(RESOLUTION_SRCS)
+SRCS = $(SVN_SRCS)
+
+RESOLUTION_OBJS = \
+	$(RESOLUTION_SRCS:%.cpp=$(RESOLUTION_OBJDIR)/%.$(OBJ_SUFFIX))
