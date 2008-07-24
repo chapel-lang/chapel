@@ -14,7 +14,7 @@ class C {
 var myR = new R();
 var myC = new C();
 
-baz(myR, 19);
+//baz(myR, 19); -- illegal, but not checked: can't modify const record field
 writeln("myR is: ", myR);
 baz(myC, 20);
 writeln("myC is: ", myC);
@@ -27,6 +27,6 @@ def bar((x,y)) {
   x(1) = y;
 }
 
-def baz(inout x,y) {
+def baz(x,y) {
   x.A(1) = y;
 }
