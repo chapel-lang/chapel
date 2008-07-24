@@ -19,11 +19,6 @@ precision issue, due to user code changing (07/01/08)
 [Error matching program output for
 studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
 
-e-00 problem (xt-cnl only at this point)
-----------------------------------------
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-
 extremely rare race condition in module initialization
 ------------------------------------------------------
 [Error matching program output for modules/diten/useInBegin]
@@ -59,10 +54,8 @@ unable to resolve return types
 [Error matching compiler output for functions/deitz/iterators/tree]
 [Error matching compiler output for release/examples/iterators]
 
-memory issues/incompatible types in calls to chpl_free
-------------------------------------------------------
-[Error matching compiler output for classes/diten/test_destroy2]
-[Error matching compiler output for classes/diten/test_destroy]
+memory issues (showed up in chpl_free timeframe)
+------------------------------------------------
 [Error matching compiler output for memory/shannon/memtrackFlag]
 
 times out occasionally (race-y deadlock?) -- e.g., 06/15/2008, 06/18/2008
@@ -88,6 +81,15 @@ studies/madness/aniruddha/madchap/test_likepy]
 garbage collection doesn't work with multithreaded
 --------------------------------------------------
 [Error matching compiler output for classes/diten/allocateManyObjects]
+
+
+=======================
+baseline-specific tests
+=======================
+
+numerical precision issue
+-------------------------
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
 
 
 ===================
