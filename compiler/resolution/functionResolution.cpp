@@ -3607,17 +3607,10 @@ resolve() {
   insertReturnTemps(); // must be done before pruneResolvedTree is called.
   pruneResolvedTree();
 
-  //
-  // delete default wrapper cache
-  //
-  forv_Vec(DWCacheItem, item, dwcache) {
-    delete item;
-  }
-  dwcache.clear();
-
-  freeSymbolMapCache(icache);
-  freeSymbolMapCache(cw_cache);
-  freeSymbolMapCache(pw_cache);
+  freeCache(defaultsCache);
+  freeCache(genericsCache);
+  freeCache(coercionsCache);
+  freeCache(promotionsCache);
 
   Vec<VisibleFunctionBlock*> vfbs;
   visibleFunctionMap.get_values(vfbs);

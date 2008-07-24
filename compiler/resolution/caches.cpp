@@ -4,14 +4,25 @@
 #include "stringutil.h"
 
 
-Map<FnSymbol*,Vec<Inst*>*> icache; // instantiation cache
-Map<FnSymbol*,Vec<Inst*>*> cw_cache; // coercion wrappers cache
-Map<FnSymbol*,Vec<Inst*>*> pw_cache; // promotion wrappers cache
-Vec<DWCacheItem*> dwcache; // default wrappers cache
+SymbolMapCacheEntry::SymbolMapCacheEntry(FnSymbol* ifn, SymbolMap* imap) :
+  fn(ifn), map(*imap) { }
 
 
-static bool 
-subs_match(SymbolMap* s1, SymbolMap* s2) {
+void
+addCache(SymbolMapCache& cache, FnSymbol* oldFn, FnSymbol* fn, SymbolMap* map) {
+  Vec<SymbolMapCacheEntry*>* entries = cache.get(oldFn);
+  if (entries) {
+    entries->add(new SymbolMapCacheEntry(fn, map));
+  } else {
+    entries = new Vec<SymbolMapCacheEntry*>();
+    entries->add(new SymbolMapCacheEntry(fn, map));
+    cache.put(oldFn, entries);
+  }
+}
+
+
+static bool
+isCacheEntryMatch(SymbolMap* s1, SymbolMap* s2) {
   form_Map(SymbolMapElem, e, *s1)
     if (s2->get(e->key) != e->value)
       return false;
@@ -22,26 +33,12 @@ subs_match(SymbolMap* s1, SymbolMap* s2) {
 }
 
 
-void
-addMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache,
-            FnSymbol* oldFn, FnSymbol* newFn, SymbolMap* subs) {
-  Vec<Inst*>* lines = cache.get(oldFn);
-  if (lines) {
-    lines->add(new Inst(newFn, subs));
-  } else {
-    lines = new Vec<Inst*>();
-    lines->add(new Inst(newFn, subs));
-    cache.put(oldFn, lines);
-  }
-}
-
-
 FnSymbol*
-checkMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache, FnSymbol* oldFn, SymbolMap* subs) {
-  if (Vec<Inst*>* lines = cache.get(oldFn)) {
-    forv_Vec(Inst, inst, *lines) {
-      if (subs_match(subs, &inst->subs)) {
-        return inst->newFn;
+checkCache(SymbolMapCache& cache, FnSymbol* oldFn, SymbolMap* map) {
+  if (Vec<SymbolMapCacheEntry*>* entries = cache.get(oldFn)) {
+    forv_Vec(SymbolMapCacheEntry, entry, *entries) {
+      if (isCacheEntryMatch(map, &entry->map)) {
+        return entry->fn;
       }
     }
   }
@@ -50,12 +47,12 @@ checkMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache, FnSymbol* oldFn, SymbolMap* sub
 
 
 void
-freeSymbolMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache) {
+freeCache(SymbolMapCache& cache) {
   Vec<FnSymbol*> keys;
   cache.get_keys(keys);
   forv_Vec(FnSymbol, key, keys) {
-    Vec<Inst*>* insts = cache.get(key);
-    forv_Vec(Inst, inst, *insts) {
+    Vec<SymbolMapCacheEntry*>* insts = cache.get(key);
+    forv_Vec(SymbolMapCacheEntry, inst, *insts) {
       delete inst;
     }
     delete insts;
@@ -64,26 +61,46 @@ freeSymbolMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache) {
 }
 
 
+SymbolVecCacheEntry::SymbolVecCacheEntry(FnSymbol* iOldFn, FnSymbol* iNewFn, Vec<Symbol*>* ivec) :
+  oldFn(iOldFn), newFn(iNewFn), vec(*ivec) { }
+
+
+void
+addCache(SymbolVecCache& cache, FnSymbol* newFn, FnSymbol* oldFn, Vec<Symbol*>* vec) {
+  cache.add(new SymbolVecCacheEntry(oldFn, newFn, vec));
+}
+
+
 static bool 
-dw_match(Vec<Symbol*>* d1, Vec<Symbol*>* d2) {
-  forv_Vec(Symbol, d, *d1)
-    if (!d2->in(d))
+isCacheEntryMatch(Vec<Symbol*>* vec1, Vec<Symbol*>* vec2) {
+  forv_Vec(Symbol, d, *vec1)
+    if (!vec2->in(d))
       return false;
-  forv_Vec(Symbol, d, *d2)
-    if (!d1->in(d))
+  forv_Vec(Symbol, d, *vec2)
+    if (!vec1->in(d))
       return false;
   return true;
 }
 
+
 FnSymbol*
-check_dwcache(FnSymbol* fn, Vec<Symbol*>* defaults) {
-  forv_Vec(DWCacheItem, item, dwcache)
-    if (item->oldFn == fn && dw_match(defaults, item->defaults))
-      return item->newFn;
+checkCache(SymbolVecCache& cache, FnSymbol* fn, Vec<Symbol*>* vec) {
+  forv_Vec(SymbolVecCacheEntry, entry, cache)
+    if (entry->oldFn == fn && isCacheEntryMatch(vec, &entry->vec))
+      return entry->newFn;
   return NULL;
 }
 
+
 void
-add_dwcache(FnSymbol* newFn, FnSymbol* oldFn, Vec<Symbol*>* defaults) {
-  dwcache.add(new DWCacheItem(oldFn, newFn, defaults));
+freeCache(SymbolVecCache& cache) {
+  forv_Vec(SymbolVecCacheEntry, entry, cache)
+    delete entry;
+  cache.clear();
 }
+
+
+SymbolMapCache genericsCache;
+SymbolMapCache coercionsCache;
+SymbolMapCache promotionsCache;
+SymbolVecCache defaultsCache;

@@ -3,33 +3,64 @@
 
 #include "baseAST.h"
 
-class Inst {
+//
+// SymbolMapCache: FnSymbol -> FnSymbol cache based on a SymbolMap
+//
+//   addCache(cache, old_fn, new_fn, map): adds an entry to cache from
+//                                         old_fn to new_fn via map
+//
+//   checkCache(cache, fn, map): returns a function previously added
+//                               via addMapCache if fn matches old_fn
+//                               and the maps contain the same
+//                               key-value pairs (in any order)
+//
+//   freeCache(cache): frees memory associated with cache
+//
+class SymbolMapCacheEntry {
  public:
-  Inst(FnSymbol* iNewFn, SymbolMap* iSubs) : newFn(iNewFn), subs(*iSubs) { }
-  FnSymbol* newFn;
-  SymbolMap subs;
+  SymbolMapCacheEntry(FnSymbol* ifn, SymbolMap* imap);
+  FnSymbol* fn;
+  SymbolMap map;
 };
+typedef Map<FnSymbol*,Vec<SymbolMapCacheEntry*>*> SymbolMapCache;
 
-extern Map<FnSymbol*,Vec<Inst*>*> icache; // instantiation cache
-extern Map<FnSymbol*,Vec<Inst*>*> cw_cache; // coercion wrappers cache
-extern Map<FnSymbol*,Vec<Inst*>*> pw_cache; // promotion wrappers cache
+void addCache(SymbolMapCache& cache, FnSymbol* old, FnSymbol* fn, SymbolMap* map);
+FnSymbol* checkCache(SymbolMapCache& cache, FnSymbol* oldFn, SymbolMap* map);
+void freeCache(SymbolMapCache& cache);
 
-void addMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache, FnSymbol* oldFn, FnSymbol* newFn, SymbolMap* subs);
-FnSymbol* checkMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache, FnSymbol* oldFn, SymbolMap* subs);
-void freeSymbolMapCache(Map<FnSymbol*,Vec<Inst*>*>& cache);
-
-class DWCacheItem {
+//
+// SymbolVecCache: FnSymbol -> FnSymbol cache based on a Vec<Symbol*>
+//
+//   This cache works similarly to the SymbolMapCache above except
+//   instead of a map, the cache is based on a vector.  The cache
+//   entries match if the functions are the same and the vectors
+//   contain the same elements (in any order).
+//
+class SymbolVecCacheEntry {
  public:
-  DWCacheItem(FnSymbol* iOldFn, FnSymbol* iNewFn, Vec<Symbol*>* iDefaults) :
-    oldFn(iOldFn), newFn(iNewFn), defaults(new Vec<Symbol*>(*iDefaults)) { }
+  SymbolVecCacheEntry(FnSymbol* iOldFn, FnSymbol* iNewFn, Vec<Symbol*>* ivec);
   FnSymbol* oldFn;
   FnSymbol* newFn;
-  Vec<Symbol*>* defaults;
+  Vec<Symbol*> vec;
 };
+typedef Vec<SymbolVecCacheEntry*> SymbolVecCache;
 
-extern Vec<DWCacheItem*> dwcache; // default wrappers cache
+void addCache(SymbolVecCache& cache, FnSymbol* newFn, FnSymbol* oldFn, Vec<Symbol*>* vec);
+FnSymbol* checkCache(SymbolVecCache& cache, FnSymbol* fn, Vec<Symbol*>* vec);
+void freeCache(SymbolVecCache& cache);
 
-FnSymbol* check_dwcache(FnSymbol* fn, Vec<Symbol*>* defaults);
-void add_dwcache(FnSymbol* newFn, FnSymbol* oldFn, Vec<Symbol*>* defaults);
+//
+// Caches to avoid creating multiple identical wrappers and
+// instantiating the same functions in the same ways
+//
+// Note that these caches are necessary for correctness, not just
+// performance, because they can impact the types that are created
+// when instantiating constructors and building up the default
+// wrappers for constructors.
+//
+extern SymbolMapCache genericsCache;
+extern SymbolMapCache coercionsCache;
+extern SymbolMapCache promotionsCache;
+extern SymbolVecCache defaultsCache;
 
 #endif

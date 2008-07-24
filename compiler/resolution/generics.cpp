@@ -344,7 +344,7 @@ instantiate_generic(FnSymbol* fn,
   form_Map(SymbolMapElem, e, *generic_substitutions)
     copyGenericSub(all_substitutions, root, fn, e->key, e->value);
 
-  if (FnSymbol* cached = checkMapCache(icache, root, &all_substitutions)) {
+  if (FnSymbol* cached = checkCache(genericsCache, root, &all_substitutions)) {
     return cached;
   }
 
@@ -442,7 +442,7 @@ instantiate_generic(FnSymbol* fn,
     clone->type->substitutions.map_union(*generic_substitutions);
     newfn = instantiate_function(fn, generic_substitutions, clone->type,
                                  paramMap, call);
-    addMapCache(icache, root, newfn, &all_substitutions);
+    addCache(genericsCache, root, newfn, &all_substitutions);
     newfn->substitutions.append(all_substitutions);
 
     clone->type->defaultTypeConstructor = newfn;
@@ -452,7 +452,7 @@ instantiate_generic(FnSymbol* fn,
 
   } else {
     newfn = instantiate_function(fn, generic_substitutions, NULL, paramMap, call);
-    addMapCache(icache, root, newfn, &all_substitutions);
+    addCache(genericsCache, root, newfn, &all_substitutions);
     newfn->substitutions.append(all_substitutions);
     
 

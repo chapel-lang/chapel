@@ -56,7 +56,7 @@ coercion_wrapper(FnSymbol* fn,
                  Map<ArgSymbol*,bool>* coercions,
                  bool isSquare) {
   // return cached if we already created this coercion wrapper
-  if (FnSymbol* cached = checkMapCache(cw_cache, fn, coercion_map))
+  if (FnSymbol* cached = checkCache(coercionsCache, fn, coercion_map))
     return cached;
 
   FnSymbol* wrapper = build_empty_wrapper(fn);
@@ -136,7 +136,7 @@ coercion_wrapper(FnSymbol* fn,
   fn->defPoint->insertAfter(new DefExpr(wrapper));
   reset_line_info(wrapper->defPoint, fn->lineno);
   normalize(wrapper);
-  addMapCache(cw_cache, fn, wrapper, coercion_map);
+  addCache(coercionsCache, fn, wrapper, coercion_map);
   return wrapper;
 }
 
@@ -161,7 +161,7 @@ default_wrapper(FnSymbol* fn,
                 Vec<Symbol*>* defaults,
                 SymbolMap* paramMap,
                 bool isSquare) {
-  if (FnSymbol* cached = check_dwcache(fn, defaults))
+  if (FnSymbol* cached = checkCache(defaultsCache, fn, defaults))
     return cached;
   FnSymbol* wrapper = build_empty_wrapper(fn);
   if (fn->fnTag != FN_ITERATOR)
@@ -306,7 +306,7 @@ default_wrapper(FnSymbol* fn,
       sym->lineno = formal->lineno;
     }
   }
-  add_dwcache(wrapper, fn, defaults);
+  addCache(defaultsCache, wrapper, fn, defaults);
   normalize(wrapper);
   return wrapper;
 }
@@ -360,7 +360,7 @@ FnSymbol* promotion_wrapper(FnSymbol* fn,
   forv_Vec(Symbol*, key, keys)
     map.put(key, promotion_subs->get(key));
   map.put(fn, (Symbol*)square); // add value of square to cache
-  if (FnSymbol* cached = checkMapCache(pw_cache, fn, &map))
+  if (FnSymbol* cached = checkCache(promotionsCache, fn, &map))
     return cached;
 
   FnSymbol* wrapper = build_empty_wrapper(fn);
@@ -409,7 +409,7 @@ FnSymbol* promotion_wrapper(FnSymbol* fn,
   fn->defPoint->insertBefore(new DefExpr(wrapper));
   clear_line_info(wrapper->defPoint);
   normalize(wrapper);
-  addMapCache(pw_cache, fn, wrapper, &map);
+  addCache(promotionsCache, fn, wrapper, &map);
   return wrapper;
 }
 
