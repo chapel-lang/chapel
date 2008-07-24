@@ -444,11 +444,6 @@ void normalize(void) {
         if (dot-fn->userString != destructorNameLength
             || strncmp(fn->userString, destructorName, destructorNameLength))
           USR_FATAL(fn, "destructor name must match class name");
-        else {
-          // free the _this argument as the last thing in the destructor.
-          DefExpr *this_arg = toDefExpr(fn->formals.get(2));
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_CHPL_FREE, this_arg->sym));
-        }
       }
     }
     // make sure methods don't attempt to overload operators
