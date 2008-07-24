@@ -1,4 +1,5 @@
 RESOLUTION_SRCS = \
+	cullOverReferences.cpp \
 	functionResolution.cpp \
 	lowerIterators.cpp
 

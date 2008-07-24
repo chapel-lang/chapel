@@ -3,7 +3,6 @@ PASSES_SRCS = \
         cleanup.cpp \
 	codegen.cpp \
         copyCollect.cpp \
-        cullOverReferences.cpp \
 	filesToAST.cpp \
 	flattenClasses.cpp \
         flattenFunctions.cpp \
