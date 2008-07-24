@@ -68,7 +68,7 @@ of range type that can represent ranges of 64-bit integers, with both
 high and low bounds specified, and the ability to have a stride other
 than 1.
 \begin{chapel}
-var r: range(int(64), BoundedRangeType.bounded, stridable=true);
+var r: range(int(64), BoundedType.bounded, stridable=true);
 \end{chapel}
 \end{example}
 
@@ -81,6 +81,7 @@ Range literals are specified as follows:
 range-literal:
   bounded-range-literal
   unbounded-range-literal
+  counted-range-literal
 \end{syntax}
 
 \subsubsection{Bounded Range Literals}
@@ -102,7 +103,7 @@ The element type of the range type is determined by the type of the
 low and high bound.  It is either \chpl{int}, \chpl{uint},
 \chpl{int(64)}, or \chpl{uint(64)}.  The type is determined by
 conceptually adding the low and high bounds together.  The boundedness
-of such a range is \chpl{BoundedRangeType.bounded}.  The stridability of
+of such a range is \chpl{BoundedType.bounded}.  The stridability of
 the range is \chpl{false}.
 
 \subsubsection{Unbounded Range Literals}
@@ -117,9 +118,9 @@ unbounded-range-literal:
   ..
 \end{syntax}
 
-The first form results in a \chpl{BoundedRangeType.boundedLow} range, the
-second in a \chpl{BoundedRangeType.boundedHigh} range, and the third in
-a \chpl{BoundedRangeType.boundedNone} range.
+The first form results in a \chpl{BoundedType.boundedLow} range, the
+second in a \chpl{BoundedType.boundedHigh} range, and the third in
+a \chpl{BoundedType.boundedNone} range.
 
 Unbounded ranges can be iterated over with zipper iteration and their
 shape conforms to the shape of the other iterators they are being
@@ -139,6 +140,28 @@ have a stride with the same sign.
 Unbounded ranges can also be used to index into ranges, domains,
 arrays, and strings.  In these cases, elided bounds are inherited
 from the bounds of the expression being indexed.
+
+\subsubsection{Counted Range Literals}
+\label{Counted_Ranges}
+\index{ranges!counted}
+
+A counted range is specified by the syntax:
+\begin{syntax}
+counted-range-literal:
+  expression .. # expression
+\end{syntax}
+
+Counted ranges are bounded ranges defined with a lower bound and a count of the
+number of values to span.
+
+\begin{example}
+The code
+\begin{chapel}
+var r = 3..#4;
+writeln(r);
+\end{chapel}
+creates a range r from three that spans four values. The output is "3..6".
+\end{example}
 
 
 \subsection{Range Methods}
