@@ -21,3 +21,7 @@ implementing Chapel's version of the HPL benchmark.  These snapshots are:
         size, get it down so it looks like the more manageble version we'll
         submit for HPCC.  I'm now convinced these tests pass anyway.)
 
+    hplExample4:
+        Modified version of hplExample3 that cleverly uses domain slicing to
+        make for more succinct code.
+
