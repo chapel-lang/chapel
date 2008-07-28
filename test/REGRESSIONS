@@ -19,6 +19,10 @@ precision issue, due to user code changing (07/01/08)
 [Error matching program output for
 studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
 
+nondeterministic failures
+-------------------------
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample2]
+
 extremely rare race condition in module initialization
 ------------------------------------------------------
 [Error matching program output for modules/diten/useInBegin]
@@ -47,6 +51,23 @@ failing nondeterministically (e.g., 04/04/08)
 ===========================
 gasnet-specific regressions
 ===========================
+
+Brad's problem reappeared (forgot that it was --no-local only)
+--------------------------------------------------------------
+[Error matching compiler output for
+studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
+[Error matching compiler output for
+studies/hpcc/STREAMS/bradc/stream-block1dpar]
+[Error matching compiler output for
+studies/hpcc/common/bradc/unit/modifyLocales]
+[Error matching compiler output for
+studies/hpcc/common/bradc/unit/multipleDomains]
+[Error matching program output for
+studies/hpcc/HPL/stonea/serial/hplExample2]
+[Error matching program output for
+studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
+[Error: Timed out executing program
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 
 unable to resolve return types
 ------------------------------
@@ -107,7 +128,7 @@ opts-specific tests
 [Error matching compiler output for release/examples/iterators]
 
 
-(Full run: 56)
+(Full run: 68)
 
 --no-dead-code-elimination
 --------------------------
@@ -144,11 +165,14 @@ opts-specific tests
 ----------
 [Error matching compiler output for classes/deitz/tree]
 [Error matching compiler output for classes/diten/allocateManyObjects]
-[Error matching compiler output for classes/diten/test_destroy]
-[Error matching compiler output for classes/diten/test_destroy2]
 [Error matching compiler output for functions/deitz/iterators/tree]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
 [Error matching compiler output for release/examples/iterators]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1dpar]
+[Error matching compiler output for studies/hpcc/common/bradc/unit/modifyLocales]
+[Error matching compiler output for studies/hpcc/common/bradc/unit/multipleDomains]
+[Summary: #Successes = 2139 | #Failures = 9 | #Futures = 0]
 
 --baseline --no-local
 ---------------------
@@ -164,14 +188,20 @@ opts-specific tests
 [Error matching compiler output for classes/deitz/infer/infer_field2b]
 [Error matching compiler output for classes/deitz/infer/infer_field2c]
 [Error matching compiler output for classes/diten/allocateManyObjects]
-[Error matching compiler output for classes/diten/test_destroy]
-[Error matching compiler output for classes/diten/test_destroy2]
 [Error matching compiler output for functions/deitz/iterators/tree]
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
 [Error matching compiler output for release/examples/iterators]
 [Error matching compiler output for studies/590o/alaska/graph]
 [Error matching compiler output for studies/590o/blerner/xml-parse]
+[Error matching compiler output for
+studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
+[Error matching compiler output for
+studies/hpcc/STREAMS/bradc/stream-block1dpar]
+[Error matching compiler output for
+studies/hpcc/common/bradc/unit/modifyLocales]
+[Error matching compiler output for
+studies/hpcc/common/bradc/unit/multipleDomains]
 [Error matching compiler output for studies/uts/dequeue]
 [Error matching compiler output for studies/uts/uts_deq]
 [Error matching compiler output for studies/uts/uts_deq_seq]
@@ -179,7 +209,7 @@ opts-specific tests
 [Error matching compiler output for types/tuple/dinan/pining_for_lisp_ver2]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
-[Summary: #Successes = 2089 | #Failures = 27 | #Futures = 0]
+[Summary: #Successes = 2120 | #Failures = 29 | #Futures = 0]
 
 
 ==============================
