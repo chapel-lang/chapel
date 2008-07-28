@@ -164,7 +164,7 @@ if ($parsertoks == "") {
 if ($passestoks == "") {
     $passestoks = 0;
 }
-if ($resolutiontoks = "") {
+if ($resolutiontoks == "") {
     $resolutiontoks = 0;
 }
 if ($symtabtoks == "") {
