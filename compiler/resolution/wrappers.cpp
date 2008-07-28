@@ -50,7 +50,7 @@ build_empty_wrapper(FnSymbol* fn) {
 }
 
 
-FnSymbol*
+static FnSymbol*
 coercion_wrapper(FnSymbol* fn,
                  SymbolMap* coercion_map,
                  Map<ArgSymbol*,bool>* coercions,
@@ -312,9 +312,9 @@ default_wrapper(FnSymbol* fn,
 }
 
 
-FnSymbol* order_wrapper(FnSymbol* fn,
-                        SymbolMap* order_map,
-                        bool isSquare) {
+static FnSymbol* order_wrapper(FnSymbol* fn,
+                               SymbolMap* order_map,
+                               bool isSquare) {
   FnSymbol* wrapper = build_empty_wrapper(fn);
   wrapper->cname = astr("_order_wrap_", fn->cname);
   CallExpr* call = new CallExpr(fn);
@@ -350,9 +350,9 @@ FnSymbol* order_wrapper(FnSymbol* fn,
 }
 
 
-FnSymbol* promotion_wrapper(FnSymbol* fn,
-                            SymbolMap* promotion_subs,
-                            bool square) {
+static FnSymbol* promotion_wrapper(FnSymbol* fn,
+                                   SymbolMap* promotion_subs,
+                                   bool square) {
   // return cached if we already created this coercion wrapper
   SymbolMap map;
   Vec<Symbol*> keys;
