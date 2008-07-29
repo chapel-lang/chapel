@@ -54,7 +54,7 @@ the \chpl{locale} type which is defined in~\rsec{The_Locale_Type}.
 The syntax of a primitive type is summarized by the following syntax:
 \begin{syntax}
 primitive-type:
-  `bool'
+  `bool' primitive-type-parameter-part[OPT]
   `int' primitive-type-parameter-part[OPT]
   `uint' primitive-type-parameter-part[OPT]
   `real' primitive-type-parameter-part[OPT]
@@ -73,7 +73,11 @@ primitive-type-parameter-part:
 
 Chapel defines a logical data type designated by the symbol
 \chpl{bool} with the two predefined values \chpl{true} and
-\chpl{false}.
+\chpl{false}.  This default boolean type is stored using an
+implementation-dependent number of bits.  A particular number of bits
+can be specified using a parameter value following the \chpl{bool}
+keyword, such as \chpl{bool(8)} to request an 8-bit boolean value.
+Legal sizes are 8, 16, 32, and 64 bits.
 
 The relational operators return values of \chpl{bool} type and the
 logical operators operate on values of \chpl{bool} type.

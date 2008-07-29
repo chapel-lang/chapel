@@ -1,0 +1,3 @@
+bug: Can't ~ a param boolean
+
+For some reason this case has been disabled in our primitives.

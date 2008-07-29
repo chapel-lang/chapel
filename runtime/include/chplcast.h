@@ -57,5 +57,9 @@ _string _real64_to_string(_real64 x);
 _string _imag32_to_string(_imag32 x);
 _string _imag64_to_string(_imag64 x);
 #define chpl_bool_to_string(x) ((x) ? "true" : "false")
+#define chpl_bool8_to_string(x) chpl_bool_to_string(x)
+#define chpl_bool16_to_string(x) chpl_bool_to_string(x)
+#define chpl_bool32_to_string(x) chpl_bool_to_string(x)
+#define chpl_bool64_to_string(x) chpl_bool_to_string(x)
 
 #endif

@@ -459,10 +459,13 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   if (actualType->symbol->hasPragma("ref"))
     return canDispatch(getValueType(actualType), actualSym, formalType, fn, require_scalar_promotion);
 
+  if (is_bool_type(formalType) && is_bool_type(actualType))
+    return true;
+
   if (is_int_type(formalType)) {
     if (toEnumType(actualType))
       return true;
-    if (actualType == dtBool)
+    if (is_bool_type(actualType))
       return true;
     if (is_int_type(actualType) &&
         get_width(actualType) < get_width(formalType))
@@ -477,7 +480,7 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
             return true;
   }
   if (is_uint_type(formalType)) {
-    if (actualType == dtBool)
+    if (is_bool_type(actualType))
       return true;
     if (is_uint_type(actualType) &&
         get_width(actualType) < get_width(formalType))
@@ -513,7 +516,7 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
     if (is_int_type(actualType) || is_uint_type(actualType) || 
         is_real_type(actualType) || is_imag_type(actualType) ||
         is_complex_type(actualType) ||
-        actualType == dtBool)
+        is_bool_type(actualType))
       return true;
     if (toEnumType(actualType))
       return true;
@@ -527,8 +530,10 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
 // coerced to a real(64) at compile time. 
 //
 static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType) {
+  if (is_bool_type(formalType) && is_bool_type(actualType))
+    return true;
   if (is_int_type(formalType)) {
-    if (actualType == dtBool)
+    if (is_bool_type(actualType))
       return true;
     if (is_int_type(actualType) &&
         get_width(actualType) < get_width(formalType))
@@ -543,7 +548,7 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
             return true;
   }
   if (is_uint_type(formalType)) {
-    if (actualType == dtBool)
+    if (is_bool_type(actualType))
       return true;
     if (is_uint_type(actualType) &&
         get_width(actualType) < get_width(formalType))
@@ -563,7 +568,7 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
   }
   if (formalType == dtString) {
     if (is_int_type(actualType) || is_uint_type(actualType) ||
-        actualType == dtBool)
+        is_bool_type(actualType))
       return true;
   }
   return false;
@@ -609,6 +614,8 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
 
 bool
 isDispatchParent(Type* t, Type* pt) {
+  if (is_bool_type(t) && is_bool_type(pt))
+    return true;
   forv_Vec(Type, p, t->dispatchParents)
     if (p == pt || isDispatchParent(p, pt))
       return true;
@@ -2013,7 +2020,8 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
         Type* src = var->type;
         Type* dst = sym->var->type;
 
-        if ((is_int_type(src) && is_int_type(dst)) ||
+        if ((is_bool_type(src) && is_bool_type(dst)) ||
+            (is_int_type(src) && is_int_type(dst)) ||
             (is_uint_type(src) && is_uint_type(dst)) ||
             (is_real_type(src) && is_real_type(dst)) ||
             (is_imag_type(src) && is_imag_type(dst)) ||
@@ -2062,7 +2070,18 @@ preFold(Expr* expr) {
                     size = (int)var->immediate->uint_value();
                   }
                   TypeSymbol* tsize = NULL;
-                  if (type == dtInt[INT_SIZE_32]->symbol) {
+                  if (type == dtBools[BOOL_SIZE_SYS]->symbol) {
+                    switch (size) {
+                    case 8: tsize = dtBools[BOOL_SIZE_8]->symbol; break;
+                    case 16: tsize = dtBools[BOOL_SIZE_16]->symbol; break;
+                    case 32: tsize = dtBools[BOOL_SIZE_32]->symbol; break;
+                    case 64: tsize = dtBools[BOOL_SIZE_64]->symbol; break;
+                    default:
+                      USR_FATAL( call, "illegal size %d for bool", size);
+                    }
+                    result = new SymExpr(tsize);
+                    call->replace(result);
+                  } else if (type == dtInt[INT_SIZE_32]->symbol) {
                     switch (size) {
                     case 8: tsize = dtInt[INT_SIZE_8]->symbol; break;
                     case 16: tsize = dtInt[INT_SIZE_16]->symbol; break;

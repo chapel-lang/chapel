@@ -376,6 +376,10 @@ createPrimitiveType(const char *name, const char *cname) {
 // Create new primitive type for integers. Specify name for now. Though it will 
 // probably be something like int1, int8, etc. in the end. In that case
 // we can just specify the width (i.e., size).
+#define INIT_PRIMITIVE_BOOL(name, width)                                \
+  dtBools[BOOL_SIZE_##width] = createPrimitiveType(name, "chpl_bool" #width); \
+  dtBools[BOOL_SIZE_##width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_##width)
+
 #define INIT_PRIMITIVE_INT( name, width)                                 \
   dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t"); \
   dtInt[INT_SIZE_ ## width]->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width)
@@ -427,13 +431,13 @@ void initPrimitiveTypes(void) {
   dtVoid = createPrimitiveType ("void", "void");
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
+  dtBool = createPrimitiveType ("bool", "chpl_bool");
+
   DefExpr* objectDef = buildClassDefExpr("object", new ClassType(CLASS_CLASS), new BlockStmt());
   objectDef->sym->addPragma("object class");
   objectDef->sym->addPragma("no object");
   dtObject = objectDef->sym->type;
   dtValue = createPrimitiveType("value", "_chpl_value");
-
-  dtBool = createPrimitiveType ("bool", "chpl_bool");
 
   createInitFn(theProgram);
   if (fNoStdIncs)
@@ -471,6 +475,13 @@ void initPrimitiveTypes(void) {
     gBoundsChecking->immediate = new Immediate;
     *gBoundsChecking->immediate = *gTrue->immediate;
   }
+
+  
+  INIT_PRIMITIVE_BOOL("bool(8)", 8);
+  INIT_PRIMITIVE_BOOL("bool(16)", 16);
+  INIT_PRIMITIVE_BOOL("bool(32)", 32);
+  INIT_PRIMITIVE_BOOL("bool(64)", 64);
+  dtBools[BOOL_SIZE_SYS] = dtBool;
 
   // WAW: could have a loop, but the following unrolling is more explicit.
   INIT_PRIMITIVE_INT( "int(8)", 8);
@@ -535,6 +546,16 @@ void initPrimitiveTypes(void) {
 }
 
 
+bool is_bool_type(Type* t) {
+  return 
+    t == dtBools[BOOL_SIZE_8] ||
+    t == dtBools[BOOL_SIZE_16] ||
+    t == dtBools[BOOL_SIZE_32] ||
+    t == dtBools[BOOL_SIZE_64] ||
+    t == dtBools[BOOL_SIZE_SYS];
+}
+
+
 bool is_int_type(Type *t) {
   return
     t == dtInt[INT_SIZE_8] ||
@@ -580,16 +601,27 @@ bool is_enum_type(Type *t) {
 
 
 int get_width(Type *t) {
-  if (t == dtInt[INT_SIZE_8] || t == dtUInt[INT_SIZE_8])
+  if (t == dtBools[BOOL_SIZE_SYS]) {
+    return 1; 
+    // BLC: This is a lie, but one I'm hoping we can get away with
+    // based on how this function is used
+  }
+  if (t == dtBools[BOOL_SIZE_8] || 
+      t == dtInt[INT_SIZE_8] || 
+      t == dtUInt[INT_SIZE_8])
     return 8;
-  if (t == dtInt[INT_SIZE_16] || t == dtUInt[INT_SIZE_16])
+  if (t == dtBools[BOOL_SIZE_16] || 
+      t == dtInt[INT_SIZE_16] || 
+      t == dtUInt[INT_SIZE_16])
     return 16;
-  if (t == dtInt[INT_SIZE_32] || 
+  if (t == dtBools[BOOL_SIZE_32] ||
+      t == dtInt[INT_SIZE_32] || 
       t == dtUInt[INT_SIZE_32] ||
       t == dtReal[FLOAT_SIZE_32] ||
       t == dtImag[FLOAT_SIZE_32])
     return 32;
-  if (t == dtInt[INT_SIZE_64] || 
+  if (t == dtBools[BOOL_SIZE_64] ||
+      t == dtInt[INT_SIZE_64] || 
       t == dtUInt[INT_SIZE_64] ||
       t == dtReal[FLOAT_SIZE_64] ||
       t == dtImag[FLOAT_SIZE_64] ||

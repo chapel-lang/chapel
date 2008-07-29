@@ -128,9 +128,9 @@ returnInfoNumericUp(CallExpr* call) {
     return t2;
   if (is_real_type(t1) && is_int_type(t2))
     return t1;
-  if (is_int_type(t1) && t2 == dtBool)
+  if (is_int_type(t1) && is_bool_type(t2))
     return t1;
-  if (t1 == dtBool && is_int_type(t2))
+  if (is_bool_type(t1) && is_int_type(t2))
     return t2;
   return t1;
 }

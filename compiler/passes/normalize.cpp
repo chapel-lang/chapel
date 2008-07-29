@@ -1021,6 +1021,15 @@ static void fixup_array_formals(FnSymbol* fn) {
 
 static void clone_parameterized_primitive_methods(FnSymbol* fn) {
   if (toArgSymbol(fn->_this)) {
+    if (fn->_this->type == dtBools[BOOL_SIZE_SYS]) {
+      for (int i=BOOL_SIZE_1; i<BOOL_SIZE_NUM; i++) {
+        if (dtBools[i] && i != BOOL_SIZE_SYS) {
+          FnSymbol* nfn = fn->copy();
+          nfn->_this->type = dtBools[i];
+          fn->defPoint->insertBefore(new DefExpr(nfn));
+        }
+      }
+    }
     if (fn->_this->type == dtInt[INT_SIZE_32]) {
       for (int i=INT_SIZE_1; i<INT_SIZE_NUM; i++) {
         if (dtInt[i] && i != INT_SIZE_32) {
@@ -1153,7 +1162,17 @@ fixup_query_formals(FnSymbol* fn) {
       // clone query primitive types
       if (call->numActuals() == 1) {
         if (DefExpr* def = toDefExpr(call->get(1))) {
-          if (call->isNamed("int") || call->isNamed("uint")) {
+          if (call->isNamed("bool")) {
+            printf("Found call named bool");
+            for (int i=BOOL_SIZE_1; i<BOOL_SIZE_NUM; i++)
+              if (dtBools[i]) {
+                printf("Found match");
+                clone_for_parameterized_primitive_formals(fn, def,
+                                                          get_width(dtBools[i]));
+              }
+            fn->defPoint->remove();
+            return;
+          } else if (call->isNamed("int") || call->isNamed("uint")) {
             for( int i=INT_SIZE_1; i<INT_SIZE_NUM; i++)
               if (dtInt[i])
                 clone_for_parameterized_primitive_formals(fn, def,

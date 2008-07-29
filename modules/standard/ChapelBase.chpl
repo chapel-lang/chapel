@@ -961,14 +961,17 @@ def _waitEndCount() {
 // casts
 //
 def _isPrimitiveType(type t) param return
-  (t == bool) |
+  (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64)) |
   (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
   (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64)) |
   (t == real(32)) | (t == real(64)) |
   (t == string);
 
 def _isSimpleScalarType(type t) param return
-  (t == bool) | _isIntegralType(t) | _isFloatType(t);
+  _isBooleanType(t) | _isIntegralType(t) | _isFloatType(t);
+
+def _isBooleanType(type t) param return
+  (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64));
 
 def _isIntegralType(type t) param return
   (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
@@ -991,6 +994,18 @@ pragma "command line setting"
 def _command_line_cast(param s: string, type t, x) return _cast(t, x);
 
 pragma "inline" def _cast(type t, x: bool) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" def _cast(type t, x: bool(8)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" def _cast(type t, x: bool(16)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" def _cast(type t, x: bool(32)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" def _cast(type t, x: bool(64)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
 pragma "inline" def _cast(type t, x: int(?w)) where _isPrimitiveType(t)
@@ -1100,7 +1115,7 @@ pragma "inline" def _cast(type t, x: imag(?w)) where t == string
 pragma "inline" def _cast(type t, x: imag(?w)) where _isRealType(t) || _isIntegralType(t)
   return 0:t;
 
-pragma "inline" def _cast(type t, x: imag(?w)) where t == bool
+pragma "inline" def _cast(type t, x: imag(?w)) where _isBooleanType(t)
   return if x != 0i then true else false;
 
 

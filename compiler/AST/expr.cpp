@@ -1222,8 +1222,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_LAND_ID: 
       {
         Type *t = get(1)->typeInfo();
-        if (is_arithmetic_type( t) || (t == dtBool)) {
-          if (t == dtBool) {
+        if (is_arithmetic_type( t) || (is_bool_type(t))) {
+          if (is_bool_type(t)) {
             fprintf( outfile, "true");
           } else if (is_int_type( t) || is_uint_type( t)) {
             fprintf( outfile, "1");
@@ -1241,8 +1241,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_LXOR_ID: 
       {
         Type *t = get(1)->typeInfo();
-        if (is_arithmetic_type( t) || (t == dtBool)) {
-          if (t == dtBool) {
+        if (is_arithmetic_type( t) || (is_bool_type(t))) {
+          if (is_bool_type(t)) {
             fprintf( outfile, "false");
           } else if (is_int_type( t) || is_uint_type( t)) {
             fprintf( outfile, "0");
@@ -1268,7 +1268,7 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf( outfile, "_chpl_complex%d( MAX_UINT%d, MAX_UINT%d)", 
                      get_width( t), get_width( t)/2, get_width( t)/2);
           }
-        } else if (t == dtBool) {
+        } else if (is_bool_type(t)) {
           fprintf(outfile, "true");
         } else {
           INT_FATAL( t, "not arithmetic type");
@@ -1289,7 +1289,7 @@ void CallExpr::codegen(FILE* outfile) {
             // WAW: needs fixing?
             fprintf( outfile, "_chpl_complex%d( 0.0, 0.0)", get_width( t));
           }
-        } else if (t == dtBool) {
+        } else if (is_bool_type(t)) {
           fprintf(outfile, "false");
         } else {
           INT_FATAL( t, "not arithmetic type");

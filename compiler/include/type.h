@@ -141,6 +141,7 @@ TYPE_EXTERN PrimitiveType* dtModuleToken;
 
 // primitive types
 TYPE_EXTERN PrimitiveType* dtBool;
+TYPE_EXTERN PrimitiveType* dtBools[BOOL_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtUInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtReal[FLOAT_SIZE_NUM];
@@ -167,6 +168,7 @@ TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
 
 void initPrimitiveTypes(void);
 
+bool is_bool_type(Type*);
 bool is_int_type(Type*);
 bool is_uint_type(Type*);
 bool is_real_type(Type*);

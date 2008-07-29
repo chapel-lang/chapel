@@ -35,7 +35,8 @@ statement~(\rsec{Implicit_Statement_Bool_Conversions}).
 
 The implicit numeric conversions are as follows:
 \begin{itemize}
-\item From \chpl{bool} to \chpl{int(8)}, \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(8)}, \chpl{uint(16)}, \chpl{uint(32)}, \chpl{uint(64)}, or \chpl{string}
+\item From \chpl{bool} to \chpl{bool(k)}, \chpl{int(8)}, \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(8)}, \chpl{uint(16)}, \chpl{uint(32)}, \chpl{uint(64)}, or \chpl{string} for any legal value of $k$
+\item From \chpl{bool(j)} to \chpl{bool}, \chpl{bool(k)}, \chpl{int(8)}, \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(8)}, \chpl{uint(16)}, \chpl{uint(32)}, \chpl{uint(64)}, or \chpl{string} for any legal values of $j$ and $k$
 \item From \chpl{int(8)} to \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{real(64)}, \chpl{complex(128)}, or \chpl{string}
 \item From \chpl{int(16)} to \chpl{int(32)}, \chpl{int(64)}, \chpl{real(64)}, \chpl{complex(128)}, or \chpl{string}
 \item From \chpl{int(32)} to \chpl{int(64)}, \chpl{real(64)}, \chpl{complex(128)}, or \chpl{string}

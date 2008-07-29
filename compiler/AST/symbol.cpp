@@ -905,6 +905,28 @@ VarSymbol *new_StringSymbol(const char *str) {
   return s;
 }
 
+
+VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
+  Immediate imm;
+  switch (size) {
+  case BOOL_SIZE_8  : imm.v_bool = b; break;
+  case BOOL_SIZE_16 : imm.v_bool = b; break;
+  case BOOL_SIZE_32 : imm.v_bool = b; break;
+  case BOOL_SIZE_64 : imm.v_bool = b; break;
+    // case BOOL_SIZE_128: imm.v_bool = b; break;
+  default:
+    INT_FATAL( "unknown BOOL_SIZE");
+  }
+  imm.const_kind = NUM_KIND_UINT;
+  imm.num_index = INT_SIZE_1;
+  VarSymbol *s;
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtBools[size]);
+  rootModule->block->insertAtTail(new DefExpr(s));
+  s->immediate = new Immediate;
+  *s->immediate = imm;
+  return s;
+}
+
 VarSymbol *new_IntSymbol(long long int b, IF1_int_type size) {
   Immediate imm;
   switch (size) {

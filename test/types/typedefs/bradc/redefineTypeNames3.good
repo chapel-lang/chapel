@@ -1,2 +1,2 @@
 redefineTypeNames3.chpl:1: In function 'main':
-redefineTypeNames3.chpl:6: error: unresolved call 'bool(128)'
+redefineTypeNames3.chpl:6: error: illegal size 128 for bool

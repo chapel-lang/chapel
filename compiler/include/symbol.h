@@ -244,6 +244,7 @@ class LabelSymbol : public Symbol {
 
 
 VarSymbol *new_StringSymbol(const char *s);
+VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
 VarSymbol *new_IntSymbol(long long int b, IF1_int_type size=INT_SIZE_32);
 VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type size=INT_SIZE_32);
 VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);

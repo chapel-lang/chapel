@@ -23,7 +23,12 @@
 #define UINT32( i) (i ## UL)
 #define UINT64( i) (i ## ULL)
 
-typedef char chpl_bool;
+typedef _Bool chpl_bool;
+typedef int8_t chpl_bool8;
+typedef int16_t chpl_bool16;
+typedef int32_t chpl_bool32;
+typedef int64_t chpl_bool64;
+
 // It is tempting to #undef true and false and then #define them just to be sure
 // they expand correctly, but future versions of the C standard may not allow this!
 #ifndef false
