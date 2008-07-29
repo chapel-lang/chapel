@@ -54,7 +54,7 @@ class BlockCyclicDom {
   const dist: BlockCyclicDist(idxType);
   const locDoms: [dist.localeDomain] LocBlockCyclicDom(nDims, idxType);
   def initialize() {
-    var blksInDim: nDims*int;
+    var blksInDim: nDims*idxType;
     for i in 1..nDims {
       blksInDim(i) = ceil(whole.dim(i).length:real(64) /
                           dist.blockSize(i)):idxType;
@@ -63,11 +63,15 @@ class BlockCyclicDom {
     for pos in dist.localeDomain {
       var locSize: nDims*idxType;
       
-      for dim in 1..pos.size {
+      for dim in 1..nDims {
+        var remainder: idxType;
         locSize(dim) = dist.blockSize(dim) * (blksInDim(dim) / dist.localeDomain.dim(dim).length);
-        // I believe only rank 0 can have any remainder positions.
-        if pos(dim) == 0 then
-          locSize(dim) += whole.dim(dim).length % dist.blockSize(dim);
+        remainder = whole.dim(dim).length - (locSize(dim) * dist.localeDomain.dim(dim).length);
+        if ((1+pos(dim))*dist.blockSize(dim) <= remainder) {
+          locSize(dim) += dist.blockSize(dim);
+        } else if (remainder - pos(dim)*dist.blockSize(dim) > 0) {
+          locSize(dim) += remainder - pos(dim)*dist.blockSize(dim);
+        }
       }
       on dist.locales(pos) {
         var locRanges: nDims*range(idxType, BoundedRangeType.bounded);
@@ -128,20 +132,23 @@ class LocBlockCyclicArr {
 
 config const m, n = 2;
 
+
 def main {
   var locDom: domain(2) = [0..#m, 0..#n];
   var locs: [locDom] locale;
-  [(i,j) in locDom] locs(i,j) = Locales((i*m + j) % numLocales);
+  var undistributedDom: domain(2) = [1..5, 1..5];
+
+  [(i,j) in locDom] locs(i,j) = Locales((i*n + j) % numLocales);
 
   var dist = new BlockCyclicDist(idxType=int, nDims=2,
                                    blockSize=(2,2), startLoc=(0,0),
                                    localeDomain=locDom, locales=locs);
-  var dom = dist.buildDomain([1..5,1..5]);
+  var dom = dist.buildDomain(undistributedDom);
   var arr = dom.buildArray(int);
-  for (i,j) in [1..5,1..5] {
+  for (i,j) in undistributedDom {
     arr(i,j) = i*10 + j;
   }
-  for (i,j) in [1..5,1..5] {
+  for (i,j) in undistributedDom {
     writeln((i,j), " ", arr(i,j));
     //writeln((i,j), " ", arr(i,j), " ", arr(i,j).locale);
   }
