@@ -169,7 +169,10 @@ record _domain {
 
   def buildArray(type eltType) {
     var x = _value.buildArray(eltType);
-    _value._arrs.append(x);
+    if !_value._locked then {
+      _value._arrs.append(x);
+      _value._locked = false;  // writing to this sync var "unlocks" the lock!
+    }
     return new _array(_value.idxType, eltType, rank, x);
   }
 
@@ -501,7 +504,8 @@ class BaseArray {
 
 
 class BaseDomain {
-  var _arrs: list(BaseArray);
+  var _arrs: list(BaseArray),
+      _locked: sync bool = false;
 
   def member(ind) : bool {
     halt("membership test not supported for this domain type");
