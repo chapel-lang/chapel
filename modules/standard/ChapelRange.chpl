@@ -66,13 +66,6 @@ def _build_range(param bt: BoundedRangeType)
 
 
 //
-// syntax function for [range)
-//
-def _build_open_interval_upper(r: range(?))
-  return new range(r.eltType, r.boundedType, r.stridable, r.low, r.high-1, r.stride);
-
-
-//
 // syntax function for by-expressions
 //
 def by(r : range(?), i : int) {

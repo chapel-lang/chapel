@@ -11,7 +11,7 @@ def bar(): int {
 }
 
 def baz(): int {
-  for i in [0..4) {
+  for i in 0..#4 {
     yield i;
   }
 }

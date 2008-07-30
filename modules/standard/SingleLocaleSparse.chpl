@@ -75,7 +75,7 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
       nnzDom = [1..nnzDomSize];
     }
     // shift indices up
-    for i in [insertPt..nnz) by -1 {
+    for i in insertPt..nnz-1 by -1 {
       indices(i+1) = indices(i);
     }
 

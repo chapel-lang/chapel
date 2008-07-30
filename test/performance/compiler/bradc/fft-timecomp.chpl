@@ -26,10 +26,10 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const TwiddleDom: domain(1) distributed(Block) = [0..m/4);
+  const TwiddleDom: domain(1) distributed(Block) = [0..#m/4];
   var Twiddles: [TwiddleDom] elemType;
 
-  const ProblemDom: domain(1) distributed(Block) = [0..m);
+  const ProblemDom: domain(1) distributed(Block) = [0..#m];
   var Z, z: [ProblemDom] elemType;
 
   initVectors(Twiddles, z);
@@ -72,7 +72,7 @@ def computeTwiddles(Twiddles) {
   Twiddles(0) = 1.0;
   Twiddles(numTwdls/2) = let x = cos(delta * numTwdls/2)
                           in (x, x):elemType;
-  forall i in [1..numTwdls/2) {
+  forall i in 1..#numTwdls/2 {
     const x = cos(delta*i),
           y = sin(delta*i);
     Twiddles(i)            = (x, y):elemType;
@@ -106,25 +106,25 @@ def dfft(A: [?ADom], W) {
           wk3 = (wk1.re - 2 * wk2.im * wk1.im,
                  2 * wk2.im * wk1.re - wk1.im):elemType;
 
-      forall lo in bankStart + [0..str) do
-        butterfly(wk1, wk2, wk3, A[[0..radix)*str + lo]);
+      forall lo in bankStart + 0..#str do
+        butterfly(wk1, wk2, wk3, A[(0..#radix)*str + lo]);
 
       wk1 = W(2*twidIndex+1);
       wk3 = (wk1.re - 2 * wk2.re * wk1.im,
              2 * wk2.re * wk1.re - wk1.im):elemType;
       wk2 *= 1.0i;
 
-      forall lo in bankStart + span + [0..str) do
-        butterfly(wk1, wk2, wk3, A[[0..radix)*str + lo]);
+      forall lo in bankStart + span + (0..#str) do
+        butterfly(wk1, wk2, wk3, A[(0..#radix)*str + lo]);
     }
   }
 
   const str = radix**log4(numElements-1);
   if (str*radix == numElements) then
-    forall lo in [0..str) do
-      butterfly(1.0, 1.0, 1.0, A[[0..radix)*str + lo]);
+    forall lo in 0..#str do
+      butterfly(1.0, 1.0, 1.0, A[(0..#radix)*str + lo]);
   else {
-    forall lo in [0..str) {
+    forall lo in 0..#str {
       const a = A(lo),
             b = A(lo+str);
       A(lo)     = a + b;

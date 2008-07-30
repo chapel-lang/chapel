@@ -14,7 +14,7 @@ initA(A,'Adata.dat');
 writeln("Unfactored Matrix:");
 writeln(A);
 
-for k in [1..n) {
+for k in 1..n-1 {
   const i = k+1..n;
   if (A(k,k) != 0.0) { 
     A(i,k) = A(i,k)/A(k,k);

@@ -3,7 +3,7 @@ def InsertionSort(Data: [?Dom], doublecheck = false) where Dom.rank == 1 {
   for i in Dom {
     const ithVal = Data(i);
     var inserted = false;
-    for j in [lo..i) by -1 {
+    for j in lo..i-1 by -1 {
       if (ithVal < Data(j)) {
         Data(j+1) = Data(j);
       } else {
@@ -18,7 +18,7 @@ def InsertionSort(Data: [?Dom], doublecheck = false) where Dom.rank == 1 {
   }
 
   if (doublecheck) then
-    for i in [Dom) do
+    for i in Dom.low..Dom.high-1 do
       if (Data(i+1) < Data(i)) then
         halt("InsertionSort did not sort properly: ", Data);
 }
@@ -64,7 +64,7 @@ def QuickSort(Data: [?Dom], doublecheck = false) where Dom.rank == 1 {
     //  }
 
   if (doublecheck) then
-    for i in [Dom) do
+    for i in Dom.low..Dom.high do
       if (Data(i+1) < Data(i)) then
         halt("QuickSort did not sort properly: ", Data);
 }

@@ -30,10 +30,10 @@ const m = 2**n,                // probSize
 def main() {
   printConfiguration();
 
-  const TableSpace: domain(1, indexType) distributed(Block) = [0..m);
+  const TableSpace: domain(1, indexType) distributed(Block) = [0..#m];
   var T: [TableSpace] elemType;
 
-  const UpdateSpace: domain(1, indexType) distributed(Block) = [0..N_U);
+  const UpdateSpace: domain(1, indexType) distributed(Block) = [0..#N_U];
 
   const startTime = getCurrentTime();
 

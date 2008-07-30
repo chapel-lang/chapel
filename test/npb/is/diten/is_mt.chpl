@@ -19,7 +19,7 @@ const totalKeys = TotalKeys(probClass);
 const maxKey = MaxKey(probClass);
 const maxIterations = TotalIters(probClass);
 
-const D: domain(1) = [0..totalKeys);
+const D: domain(1) = [0..#totalKeys];
 const E: domain(2) = [0..maxKey-1, 0..nThreads-1];
 
 // The following should be replaced by two enumerated domain arrays of arrays

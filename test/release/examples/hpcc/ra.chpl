@@ -25,10 +25,10 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const TableSpace: domain(1, indexType) distributed(Block) = [0..m);
+  const TableSpace: domain(1, indexType) distributed(Block) = [0..#m];
   var T: [TableSpace] elemType;
 
-  const UpdateSpace: domain(1, indexType) distributed(Block) = [0..N_U);
+  const UpdateSpace: domain(1, indexType) distributed(Block) = [0..#N_U];
 
   const startTime = getCurrentTime();
 
@@ -57,7 +57,7 @@ def verifyResults(T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   if (sequentialVerify) then
-    for r in RAStream([0..N_U)) do
+    for r in RAStream(0..#N_U) do
       T(r & indexMask) ^= r;
   else
     forall i in UpdateSpace {

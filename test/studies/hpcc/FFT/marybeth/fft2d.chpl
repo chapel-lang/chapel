@@ -23,14 +23,14 @@ def main() {
   const N = 1 << logN;
 
   // twiddle domain and arrays
-  const TwiddleDom = [0..N/4);
+  const TwiddleDom = [0..#N/4];
   var Twiddles: [TwiddleDom] complex;
 
   computeTwiddles(Twiddles);
   Twiddles = bitReverseShuffle(Twiddles);
 
   // problem domain and arrays
-  const ProblemDom: domain(1) distributed(Block) = [0..N);
+  const ProblemDom: domain(1) distributed(Block) = [0..#N];
   var Z, z: [ProblemDom] complex;
   var realtemp, imagtemp: [ProblemDom] real;
 
@@ -63,7 +63,7 @@ def computeTwiddles(W) {
   W(0) = 1.0;
   W(n/2) = let cosDeltaN = cos(delta * n/2)
             in (cosDeltaN, cosDeltaN):complex;
-  forall i in [1..n/2) {
+  forall i in 1..n/2-1 {
     const x = cos(delta*i);
     const y = sin(delta*i);
     W(i)     = (x, y):complex;
@@ -125,26 +125,26 @@ def fft2d(A, W, steps, phase) {
   var m, m2, k, k1: int;
   var wk1, wk2, wk3: complex;
 
-  for i in [2..steps) by 2 {
+  for i in 2..steps-1 by 2 {
     m = 4*span;
     m2 = 2*m;
     if (m2 > p) then break;
-    for row in [0..p) {
-      for col in [0..p) by m2 {
+    for row in 0..#p {
+      for col in 0..#p by m2 {
         k = p*row + col;
         k1 = if (phase == 1) then (k/m2) else (col/m2);
         wk2 = W[k1];
         wk1 = W[2*k1];
         wk3 = (wk1.re - 2 * wk2.im * wk1.im,
                  2 * wk2.im * wk1.re - wk1.im):complex;
-        for j in [k..k+span) {
+        for j in k..#span {
           butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
         }
         k = p*row + col + m;
         wk1 = W[2*k1+1];
         wk3 = (wk1.re - 2 * wk2.re * wk1.im,
                2 * wk2.re * wk1.re - wk1.im):complex;
-        for j in [k..k+span) {
+        for j in k..#span {
           butterfly(wk1, (-wk2.im, wk2.re):complex, wk3, A[j..j+3*span by span]);
         }
       }
@@ -152,28 +152,28 @@ def fft2d(A, W, steps, phase) {
     span *= 4;
   }
   if (phase == 1) {
-    for (row, k1) in ([0..p) by 2, 0..) {
+    for (row, k1) in (0..#p by 2, 0..) {
       k = p*row;
       wk2 = W[k1];
       wk1 = W[2*k1];
       wk3 = (wk1.re - 2 * wk2.im * wk1.im,
              2 * wk2.im * wk1.re - wk1.im):complex;
-      for j in [k..k+span) {
+      for j in k..#span {
         butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
       }
       k += p;
       wk1 = W[2*k1+1];
       wk3 = (wk1.re - 2 * wk2.re * wk1.im,
              2 * wk2.re * wk1.re - wk1.im):complex;
-      for j in [k..k+span) {
+      for j in k..#span {
         butterfly(wk1, (-wk2.im, wk2.re):complex, wk3, A[j..j+3*span by span]);
       }
     }
   }
   else {
-    for row in [0..p) {
+    for row in 0..#p {
       k = p*row;
-      for j in [k..k+span) {
+      for j in k..#span {
         butterfly(1.0, 1.0, 1.0, A[j..j+3*span by span]);
       }
     }

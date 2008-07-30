@@ -122,7 +122,7 @@ class FTree {
     const order    : int;
     const coeffDom = [0..order-1];
     
-    const locDom = [0..numLocs);
+    const locDom = [0..#numLocs];
     var nodes    : [locDom] LocTree;
 
     def initialize() {

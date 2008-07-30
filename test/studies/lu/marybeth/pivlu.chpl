@@ -18,7 +18,7 @@ initA(A,'Adata.dat');
 writeln("Unfactored Matrix:");
 writeln(A);
 
-for k in [1..n) {
+for k in 1..n-1 {
   colmax = abs(A(k,k));
   for i in [k+1..n] {
     if (abs(A(i,k)) > colmax) {

@@ -233,7 +233,7 @@ class CMOArray:BaseArray {
       blk(dim) = blk(dim-1) * dom.dim(dim-1).length;
     computeFactoredOffs();
     size = blk(rank) * dom.dim(rank).length;
-    D1 = [0:idxType..size:idxType);
+    D1 = [0:idxType..#size:idxType];
     data = 0:eltType;
   }
 
@@ -275,7 +275,7 @@ class CMOArray:BaseArray {
         halt("extent in dimension ", i, " does not match actual");
     var alias = new CMOArray(eltType, d.rank, d.idxType, d.stridable, true, d, noinit=true);
     //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit=true);
-    alias.D1 = [0:idxType..size:idxType);
+    alias.D1 = [0:idxType..#size:idxType];
     alias.data = data;
     alias.size = size: d.idxType;
     for param i in 1..rank {
@@ -298,7 +298,7 @@ class CMOArray:BaseArray {
 
   def slice(d: CMODomain) {
     var alias = new CMOArray(eltType, rank, idxType, d.stridable, reindexed, d, noinit=true);
-    alias.D1 = [0:idxType..size:idxType);
+    alias.D1 = [0:idxType..#size:idxType];
     alias.data = data;
     alias.size = size;
     alias.blk = blk;
@@ -328,7 +328,7 @@ class CMOArray:BaseArray {
     def isRange(r) param return 0;
     var d = dom.rankChange(newRank, newStridable, irs);
     var alias = new CMOArray(eltType, newRank, idxType, newStridable, true, d, noinit=true);
-    alias.D1 = [0:idxType..size:idxType);
+    alias.D1 = [0:idxType..#size:idxType];
     alias.data = data;
     alias.size = size;
     var i = 1;

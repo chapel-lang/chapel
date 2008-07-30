@@ -34,14 +34,14 @@ def main() {
   const N = 1 << logN;
 
   // twiddle domain and arrays
-  const TwiddleDom = [0..N/4);
+  const TwiddleDom = [0..#N/4];
   var Twiddles: [TwiddleDom] complex;
 
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
   // problem domain and arrays
-  const ProblemDom = [0..N);
+  const ProblemDom = [0..#N];
   var Z, z: [ProblemDom] complex;
 
   // generate pseudo-random input
@@ -73,7 +73,7 @@ def computeTwiddles(W) {
   W(0) = 1.0;
   W(n/2) = let x = cos(delta * n/2)
             in (x, x):complex;
-  forall i in [1..n/2) {
+  forall i in 1..#n/2 {
     const x = cos(delta*i);
     const y = sin(delta*i);
     W(i)     = (x, y):complex;
@@ -111,18 +111,18 @@ def dfft(Z, W) {
     span *= radix;
     lasti = i;
   }
-  for i in [lasti+2..logN) by 2 {
+  for i in lasti+2..logN-1 by 2 {
     cftmd2(span, Z, W);
     span *= radix;
   }
 
   const n = Z.numElements;
   if (radix*span == n) {
-    forall j in [0..span) {
+    forall j in 0..#span {
       butterfly(1.0, 1.0, 1.0, Z[j..j+3*span by span]);
     }
   } else {
-    forall j in [0..span) {
+    forall j in 0..#span {
       var a = Z(j);
       var b = Z(j+span);
       Z(j) = a + b;
@@ -187,7 +187,7 @@ def cft1st(A, W) {
   // BLC: would like to use an indefinite arithmetic array here
   // BLC: would also like to use () on both indices and zipping
   //      together of ranges
-  forall (j,k1) in ([8..n) by 8, 1..) {
+  forall (j,k1) in (8..n-1 by 8, 1..) {
     var wk2 = W(k1);
     var wk1 = W(2*k1);
     var wk3 = (wk1.re - 2* wk2.im * wk1.im, 
@@ -208,11 +208,11 @@ def cftmd0(span, A, W) {
   var wk1r = W(1).re;
   const m = radix*span;
 
-  forall j in [0..span) {
+  forall j in 0..#span {
     butterfly(1.0, 1.0, 1.0, A[j..j+3*span by span]);
   }
 
-  forall j in [m..m+span) {
+  forall j in m..#span {
     butterfly((wk1r, wk1r):complex, 1.0i, (-wk1r, wk1r):complex,
               A[j..j+3*span by span]);
   }
@@ -225,12 +225,12 @@ def cftmd1(span, A, W) {
   const n = A.domain.dim(1).length;
 
   cftmd0(span, A, W);
-  forall (k,k1) in ([m2..n) by m2, 1..) {
+  forall (k,k1) in (m2..n-1 by m2, 1..) {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
     var wk3 = (wk1.re - 2 * wk2.im * wk1.im,
                2 * wk2.im * wk1.re - wk1.im):complex;
-    for j in [k..k+span) {
+    for j in k..#span {
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
     }
 
@@ -238,7 +238,7 @@ def cftmd1(span, A, W) {
     wk3 = (wk1.re - 2 * wk2.re * wk1.im,
            2 * wk2.re * wk1.re - wk1.im):complex;
 
-    for j in [k+m..k+m+span) {
+    for j in k+m..#span {
       butterfly(wk1, wk2*1.0i, wk3, A[j..j+3*span by span]);
     }
   }
@@ -257,8 +257,8 @@ def cftmd2(span, A, W) {
     return;
   }
 
-  forall j in [0..span) {
-    forall (k,k1) in ([m2..n) by m2, 1..) {
+  forall j in 0..#span {
+    forall (k,k1) in (m2..n-1 by m2, 1..) {
       var wk2 = W[k1];
       var wk1 = W[k1 + k1];
       var wk3 = (wk1.re - 2*wk2.im * wk1.im,
@@ -266,7 +266,7 @@ def cftmd2(span, A, W) {
       butterfly(wk1, wk2, wk3, A[j+k..j+k+3*span by span]);
     }
 
-    forall (k,k1) in ([m2..n) by m2, 1..) {
+    forall (k,k1) in (m2..n-1 by m2, 1..) {
       var wk2 = W[k1];
       var wk1 = W[2*k1 + 1];
       var wk3 = (wk1.re - 2*wk2.re * wk1.im,
@@ -284,13 +284,13 @@ def cftmd21(span, A, W) {
   var m = radix*span;
   var m2 = 2*m;
 
-  for (k,k1) in ([m2..n) by m2, 1..) {
+  for (k,k1) in (m2..n-1 by m2, 1..) {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
     var wk3 = (wk1.re - 2*wk2.im * wk1.im,
                2* wk2.im * wk1.re - wk1.im):complex;
 
-    forall j in [k..k+span) {
+    forall j in k..#span {
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
     }
 
@@ -299,7 +299,7 @@ def cftmd21(span, A, W) {
            2*wk2.re * wk1.re - wk1.im):complex;
     wk2 = wk2*1.0i;
 
-    forall j in [k+m..k+m+span) {
+    forall j in k+m..#span {
       butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
     }
   }

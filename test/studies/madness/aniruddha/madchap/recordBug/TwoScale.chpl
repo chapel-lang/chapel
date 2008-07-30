@@ -105,7 +105,7 @@ def phi(x: real, k: int) {
     var order = k-1;
 
     if (!phi_initialized) {
-        phi_norm_space = [0..100);
+        phi_norm_space = [0..#100];
         for n in phi_norm_space do
             phi_norms[n] = sqrt(2.0*n+1);
     }

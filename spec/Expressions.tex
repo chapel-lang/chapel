@@ -20,7 +20,6 @@ expression:
   let-expression
   if-expression
   for-expression
-  open-interval-expression
   parallel-expression
   reduce-expression
   scan-expression
@@ -1142,48 +1141,3 @@ A conditional expression that is immediately enclosed in a for
 expression does not require an else-part.  Such a conditional
 expression filters the evaluated expressions and only returns an
 expression if the condition holds.
-
-\subsection{Open Interval Expressions}
-\label{Open_Interval}
-\index{ranges!open interval}
-
-%% move to section that discusses square tuples and domains when that
-%% section is written.
-
-Chapel's \emph{open interval notation} uses the following syntax:
-\begin{syntax}
-open-interval-expression:
-  [ expression )
-  [ expression-list )
-\end{syntax}
-
-This notation is a loose adaptation of mathematical notation for open
-(upper) intervals in which the upper bound is not included in the
-range.  For an argument range expression characterized by $l$, $h$,
-and $s$, this syntax produces a range characterized by $l$, $h-1$ and
-$s$.  For arithmetic domains or multiple ranges, the result is an
-arithmetic domain where each range defining the arithmetic domain has
-been truncated.
-
-\begin{rationale}
-While this operator is pure syntactic sugar for subtracting one from a
-range's upper bound, it is provided as a concession to C programmers
-and others who prefer 0-based indexing to avoid having to write
-declare ranges (and domains) using \chpl{0..n-1} all the time.  In its
-place, [0..n) can be used.
-
-Open intervals are not supported on lower bounds or on both upper and
-lower bounds due to the syntactic ambiguities that they can result in
-combined with the fact that these cases are not as important as the
-above for 0-based programming.
-\end{rationale}
-
-\begin{openissue}
-This open-interval notation is a contentious issue and thoughts on
-whether this should remain in the language or not are encouraged.  One
-issue is the lack of generality due to the lack of support for lower
-open intervals.  A second issue is the mismatch in parenthesis and
-brackets which generates warnings in some editors and is considered
-aesthetically awkward by many users.  There also remains a question as
-to how much this really simplifies the code.
-\end{openissue}

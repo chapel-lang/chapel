@@ -28,10 +28,10 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const TwiddleDom: domain(1) distributed(Block) = [0..m/4);
+  const TwiddleDom: domain(1) distributed(Block) = [0..#m/4];
   var Twiddles: [TwiddleDom] elemType;
 
-  const ProblemDom: domain(1) distributed(Block) = [0..m);
+  const ProblemDom: domain(1) distributed(Block) = [0..#m];
   var Z, z: [ProblemDom] elemType;
 
   initVectors(Twiddles, z);
@@ -74,7 +74,7 @@ def computeTwiddles(Twiddles) {
   Twiddles(0) = 1.0;
   Twiddles(numTwdls/2) = let x = cos(delta * numTwdls/2)
                           in (x, x):complex;
-  forall i in [1..numTwdls/2) {
+  forall i in 1..numTwdls/2-1 {
     const x = cos(delta*i),
           y = sin(delta*i);
     Twiddles(i)            = (x, y):complex;
@@ -103,7 +103,7 @@ def dfft(A: [?ADom], W) {
   const numElements = A.numElements;
   var span = 1;
 
-  for i in [2..log2(numElements)) by 2 {
+  for i in 2..log2(numElements)-1 by 2 {
     const m = radix*span,
           m2 = 2*m;
 
@@ -113,7 +113,7 @@ def dfft(A: [?ADom], W) {
           wk3 = (wk1.re - 2 * wk2.im * wk1.im,
                  2 * wk2.im * wk1.re - wk1.im):complex;
 
-      forall j in [k..k+span) do
+      forall j in k..#span do
         butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
 
       wk1 = W(2*k1+1);
@@ -121,17 +121,17 @@ def dfft(A: [?ADom], W) {
              2 * wk2.re * wk1.re - wk1.im):complex;
       wk2 *= 1.0i;
 
-      forall j in [k+m..k+m+span) do
+      forall j in k+m..#span do
         butterfly(wk1, wk2, wk3, A[j..j+3*span by span]);
     }
     span *= radix;
   }
 
   if ((span*radix) == numElements) then
-    forall j in [0..span) do
+    forall j in 0..#span do
       butterfly(1.0, 1.0, 1.0, A[j..j+3*span by span]);
   else
-    forall j in [0..span) {
+    forall j in 0..#span {
       const a = A(j),
             b = A(j+span);
       A(j)      = a + b;

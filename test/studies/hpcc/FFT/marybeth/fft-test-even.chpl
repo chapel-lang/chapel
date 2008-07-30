@@ -23,14 +23,14 @@ def main() {
   const N = 1 << logN;
 
   // twiddle domain and arrays
-  const TwiddleDom = [0..N/4);
+  const TwiddleDom = [0..#N/4];
   var Twiddles: [TwiddleDom] complex;
 
   computeTwiddles(Twiddles);
   Twiddles = bitReverseShuffle(Twiddles);
 
   // problem domain and arrays
-  const ProblemDom: domain(1) distributed(Block) = [0..N);
+  const ProblemDom: domain(1) distributed(Block) = [0..#N];
   var Z, z: [ProblemDom] complex;
   var realtemp, imagtemp: [ProblemDom] real;
 
@@ -63,7 +63,7 @@ def computeTwiddles(W) {
   W(0) = 1.0;
   W(n/2) = let cosDeltaN = cos(delta * n/2)
             in (cosDeltaN, cosDeltaN):complex;
-  forall i in [1..n/2) {
+  forall i in 1..n/2-1 {
     const x = cos(delta*i);
     const y = sin(delta*i);
     W(i)     = (x, y):complex;
@@ -116,12 +116,12 @@ def dfft(A: [?AD] complex, W) {
     m2 = 2*m;
     if (m2 > n) then break;
     k1 = 0;
-    forall k in [0..n) by m2 {
+    forall k in 0..#n by m2 {
       var wk2 = W[k1];
       var wk1 = W[2*k1];
       var wk3 = (wk1.re - 2 * wk2.im * wk1.im,
                  2 * wk2.im * wk1.re - wk1.im):complex;
-      for j in [k..k+l) {
+      for j in k..#l {
         butterfly(wk1, wk2, wk3, A[j..j+3*l by l]);
       }
 
@@ -129,7 +129,7 @@ def dfft(A: [?AD] complex, W) {
       wk3 = (wk1.re - 2 * wk2.re * wk1.im,
              2 * wk2.re * wk1.re - wk1.im):complex;
 
-      for j in [k+m..k+m+l) {
+      for j in k+m..#l {
         butterfly(wk1, (-wk2.im, wk2.re):complex, wk3, A[j..j+3*l by l]);
       }
 
@@ -140,11 +140,11 @@ def dfft(A: [?AD] complex, W) {
   }
 
   if ((l << 2) == n) {
-    forall j in [0..l) {
+    forall j in 0..#l {
       butterfly(1.0, 1.0, 1.0, A[j..j+3*l by l]);
     }
   } else {
-    forall j in [0..l) {
+    forall j in 0..#l {
       var a = A(j);
       var b = A(j+l);
       A(j) = a + b;

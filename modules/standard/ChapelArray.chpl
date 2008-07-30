@@ -55,9 +55,6 @@ def _any_stridable(ranges, param d: int = 1) param {
     return false;
 }
 
-def _build_open_interval_upper(x: _domain)
-  return x.buildOpenIntervalUpper();
-
 def _build_index_type(param rank: int, type idxType) type where rank == 1 {
   var x: idxType;
   return x;

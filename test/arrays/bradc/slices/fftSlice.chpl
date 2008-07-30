@@ -4,7 +4,7 @@ config const n: int(64) = 6;
 const m = 2**n;
 
 def main() {
-  const ProblemDom: domain(1, int(64)) = [0..m);
+  const ProblemDom: domain(1, int(64)) = [0..#m];
   var Z: [ProblemDom] complex(128);
 
   dfft(Z);
@@ -18,15 +18,15 @@ def dfft(A: [?ADom]) {
   writeln("ADom is: ", ADom);
   for bankStart in ADom by 2*span {
     writeln("bankStart is: ", bankStart);
-    for lo in bankStart + [0..str) {
+    for lo in bankStart + (0..#str) {
       writeln("lo is: ", lo);
-      var t1 = [0..radix);
+      var t1 = (0..#radix);
       writeln("t1 is: ", t1);
-      var t2 = [0..radix)*str;
+      var t2 = (0..#radix)*str;
       writeln("t2 is: ", t2);
-      var t3 = [0..radix)*str + lo;
+      var t3 = (0..#radix)*str + lo;
       writeln("t3 is: ", t3);
-      var B = A[[0..radix)*str + lo];
+      var B = A[(0..#radix)*str + lo];
       writeln("B is: ", B);
       //      butterfly(wk1, wk2, wk3, A[[0..radix)*str + lo]);
     }
