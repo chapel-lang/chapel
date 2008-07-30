@@ -1,0 +1,1 @@
+bug: Can not use defined class constant or parameter as default value in constructor.
