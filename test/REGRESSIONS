@@ -52,22 +52,16 @@ failing nondeterministically (e.g., 04/04/08)
 gasnet-specific regressions
 ===========================
 
-Brad's problem reappeared (forgot that it was --no-local only)
---------------------------------------------------------------
-[Error matching compiler output for
-studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
-[Error matching compiler output for
-studies/hpcc/STREAMS/bradc/stream-block1dpar]
-[Error matching compiler output for
-studies/hpcc/common/bradc/unit/modifyLocales]
-[Error matching compiler output for
-studies/hpcc/common/bradc/unit/multipleDomains]
-[Error matching program output for
-studies/hpcc/HPL/stonea/serial/hplExample2]
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
-[Error: Timed out executing program
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+new problems related to Brad's bool changes
+-------------------------------------------
+[Error matching compiler output for portability/boolSizes]
+[Error matching compiler output for types/scalar/bradc/overloadbools2]
+[Error matching compiler output for types/scalar/bradc/overloadbools]
+
+
+??? (not obviously bool related, but failed on same night)
+----------------------------------------------------------
+[Error matching program output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
 
 unable to resolve return types
 ------------------------------
