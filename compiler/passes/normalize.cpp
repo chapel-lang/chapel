@@ -434,11 +434,13 @@ void normalize(void) {
         // make sure the name of the destructor matches the name of the class
         const char *dot = strchr(fn->userString, '.');
         const char *destructorName = dot;
-        while (destructorName && !isalpha(*++destructorName) && *destructorName != '_'
+        // class and destructor names cannot start with a digit, but if either
+        // did start with a digit, there would be a syntax error
+        while (destructorName && !isalnum(*++destructorName) && *destructorName != '_'
                && *destructorName != '\0')
           /* do nothing */;
         int destructorNameLength = 0;
-        for (const char *p = destructorName; p && (isalpha(*p) || *p == '_');
+        for (const char *p = destructorName; p && (isalnum(*p) || *p == '_');
              destructorNameLength++, p++)
           /* do nothing */;
         if (dot-fn->userString != destructorNameLength

@@ -1,5 +1,5 @@
-class _Class {
-  def ~_Class () {writeln("inside ~C");}
+class _Class_1 {
+  def ~_Class_1 () {writeln("inside ~C");}
 }
 
-def _Class.~_Class_bar () {writeln("inside ~_Class_bar");}
+def _Class_1.~_Class_1bar () {writeln("inside ~_Class_1bar");}

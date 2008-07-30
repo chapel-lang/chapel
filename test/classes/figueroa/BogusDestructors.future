@@ -1,6 +1,4 @@
-error message: name of destructor must match name of class
-
-error message: only one destructor can be defined per class
+error message: "chpl_destroy" should not appear in the error message
 
 error message: destructors may not be defined for a record
 
