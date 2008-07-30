@@ -1,0 +1,3 @@
+bug: Confusing error message for these decleration without parenthesis.
+
+The code works fine once you add them in.
