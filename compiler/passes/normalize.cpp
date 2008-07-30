@@ -408,9 +408,8 @@ void normalize(void) {
       if (call->isPrimitive(PRIMITIVE_CHPL_FREE)) {
         VarSymbol* tmp = new VarSymbol("_tmp");
         call->insertBefore(new DefExpr(tmp));
-        call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call->get(1)->remove()));
-        call->insertBefore(new CallExpr("chpl_destroy", gMethodToken, tmp));
-        call->remove();
+        call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call->get(1)->copy()));
+        call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
       }
     }
   }
@@ -424,28 +423,21 @@ void normalize(void) {
   insertUseForExplicitModuleCalls();
 
   forv_Vec(FnSymbol, fn, gFns) {
-    if (!strcmp(fn->name, "chpl_destroy")) {
+    if (fn->hasPragma("destructor")) {
       if (fn->formals.length() < 2
           || toDefExpr(fn->formals.get(1))->sym->typeInfo() != gMethodToken->typeInfo()) {
         USR_FATAL(fn, "destructors must be methods");
       } else if (fn->formals.length() > 2) {
         USR_FATAL(fn, "destructors must not have arguments");
       } else {
+        DefExpr* thisDef = toDefExpr(fn->formals.get(2));
+        INT_ASSERT(fn->name[0] == '~' && thisDef);
         // make sure the name of the destructor matches the name of the class
-        const char *dot = strchr(fn->userString, '.');
-        const char *destructorName = dot;
-        // class and destructor names cannot start with a digit, but if either
-        // did start with a digit, there would be a syntax error
-        while (destructorName && !isalnum(*++destructorName) && *destructorName != '_'
-               && *destructorName != '\0')
-          /* do nothing */;
-        int destructorNameLength = 0;
-        for (const char *p = destructorName; p && (isalnum(*p) || *p == '_');
-             destructorNameLength++, p++)
-          /* do nothing */;
-        if (dot-fn->userString != destructorNameLength
-            || strncmp(fn->userString, destructorName, destructorNameLength))
+        if (strcmp(fn->name + 1, thisDef->sym->type->symbol->name)) {
           USR_FATAL(fn, "destructor name must match class name");
+        } else {
+          fn->name = astr("~chpl_destroy");
+        }
       }
     }
     // make sure methods don't attempt to overload operators

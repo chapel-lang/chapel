@@ -1716,14 +1716,11 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIMITIVE_CHPL_FREE: {
-      fprintf(outfile, "chpl_free(");
+      codegenBasicPrimitive(outfile, this);
+      fprintf(outfile, "; ");
       get(1)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(2)->codegen(outfile);
-      fprintf(outfile, ", ");
-      get(3)->codegen(outfile);
-      fprintf(outfile, "); ");
-      get(1)->codegen(outfile);
+      if (get(1)->typeInfo()->symbol->hasPragma("wide class"))
+        fprintf(outfile, ".addr");
       fprintf(outfile, " = NULL");
       break;
     }
