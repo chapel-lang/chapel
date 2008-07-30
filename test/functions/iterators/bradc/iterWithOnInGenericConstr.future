@@ -1,0 +1,6 @@
+bug: attempt to heap allocate type
+
+Apparently, when a generic class is constructed within a generic constructor
+within an on clause (within an iterator?) the compiler tries to heap allocate
+a type when the --no-local flag is on.  Not sure what this means, but this
+is the case that I'm trying to work around in the BradsBlock1DPar.chpl 
