@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
   _initModuleGuards();       // initialize _run_mod_firsttime vars
 
   if (_localeID == 0)        // have locale #0 run the user's main function
-    _chpl_main();
+    chpl_main();
 
   _chpl_exit_all(0);         // have everyone exit
   return 0;                  // should never get here

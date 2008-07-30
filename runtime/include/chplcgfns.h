@@ -7,7 +7,7 @@
 /* This header file is for routines that are in the generated code */
 
 /* used for entry point: */
-extern void _chpl_main(void);
+extern void chpl_main(void);
 
 /* used for config vars: */
 extern void CreateConfigVarTable(void);

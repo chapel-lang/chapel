@@ -100,16 +100,16 @@ static void codegen_header(void) {
 #include "reservedSymbolNames.h"
 
   //
-  // change enum constant names into EnumTypeName_constantName
+  // change enum constant names into EnumTypeName__constantName
   //
   forv_Vec(BaseAST, ast, gAsts) {
     if (EnumType* enumType = toEnumType(ast)) {
       const char* enumName = enumType->symbol->cname;
       for_enums(constant, enumType) {
         Symbol* sym = constant->sym;
-        sym->cname = astr(enumName, "_", sym->cname);
+        sym->cname = astr(enumName, "__", sym->cname);
         if (cnames.get(sym->cname))
-          sym->cname = astr("_", sym->cname, "_", istr(sym->id));
+          sym->cname = astr("chpl__", sym->cname, "_", istr(sym->id));
         cnames.put(sym->cname, 1);
       }
     }
@@ -123,7 +123,7 @@ static void codegen_header(void) {
     if (ts->defPoint->parentExpr != rootModule->block) {
       legalizeCName(ts);
       if (!ts->isExtern && cnames.get(ts->cname))
-        ts->cname = astr("_", ts->cname, "_", istr(ts->id));
+        ts->cname = astr("chpl__", ts->cname, "_", istr(ts->id));
       cnames.put(ts->cname, 1);
       typeSymbols.add(ts);
     }
@@ -140,7 +140,7 @@ static void codegen_header(void) {
         for_fields(field, ct) {
           legalizeCName(field);
           if (fieldSet.set_in(field->cname))
-            field->cname = astr("_", field->cname, "_", istr(field->id));
+            field->cname = astr("chpl__", field->cname, "_", istr(field->id));
           fieldSet.set_add(field->cname);
         }
       }
@@ -157,7 +157,7 @@ static void codegen_header(void) {
           toModuleSymbol(var->defPoint->parentSymbol)) {
         legalizeCName(var);
         if (!var->isExtern && cnames.get(var->cname))
-          var->cname = astr("_", var->cname, "_", istr(var->id));
+          var->cname = astr("chpl__", var->cname, "_", istr(var->id));
         cnames.put(var->cname, 1);
         varSymbols.add(var);
       }
@@ -170,10 +170,10 @@ static void codegen_header(void) {
   //
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn == chpl_main)
-      fn->cname = astr("_chpl_main");
+      fn->cname = astr("chpl_main");
     legalizeCName(fn);
     if (!fn->isExtern && cnames.get(fn->cname))
-      fn->cname = astr("_", fn->cname, "_", istr(fn->id));
+      fn->cname = astr("chpl__", fn->cname, "_", istr(fn->id));
     cnames.put(fn->cname, 1);
     fnSymbols.add(fn);
   }
@@ -188,7 +188,7 @@ static void codegen_header(void) {
     for_formals(formal, fn) {
       legalizeCName(formal);
       if (cnames.get(formal->cname) || formalSet.set_in(formal->cname))
-        formal->cname = astr("_", formal->cname, "_", istr(formal->id));
+        formal->cname = astr("chpl__", formal->cname, "_", istr(formal->id));
       formalSet.set_add(formal->cname);
     }
   }
@@ -218,7 +218,7 @@ static void codegen_header(void) {
         legalizeCName(sym);
 
         if (cnames.get(sym->cname) || local.set_in(sym->cname))
-          sym->cname = astr("_", sym->cname, "_", istr(sym->id));
+          sym->cname = astr("chpl__", sym->cname, "_", istr(sym->id));
         local.set_add(sym->cname);
       }
     }
