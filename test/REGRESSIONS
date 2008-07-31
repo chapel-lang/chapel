@@ -14,6 +14,10 @@
 linux and general regressions
 =============================
 
+Vector/Vector conflict
+----------------------
+[Error matching program output for users/shetag/tensor]
+
 precision issue, due to user code changing (07/01/08)
 -----------------------------------------------------
 [Error matching program output for
@@ -52,16 +56,16 @@ failing nondeterministically (e.g., 04/04/08)
 gasnet-specific regressions
 ===========================
 
+intermittent seg faults
+-----------------------
+[Error matching program output for studies/hpcc/STREAMS/diten/stream-fragmented-local] (07/30/08)
+[Error matching program output for multilocale/diten/oneOrMoreLocales/1DBlockDistributedJacobi] (07/31/08)
+
 new problems related to Brad's bool changes
 -------------------------------------------
 [Error matching compiler output for portability/boolSizes]
 [Error matching compiler output for types/scalar/bradc/overloadbools2]
 [Error matching compiler output for types/scalar/bradc/overloadbools]
-
-
-??? (not obviously bool related, but failed on same night)
-----------------------------------------------------------
-[Error matching program output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
 
 unable to resolve return types
 ------------------------------
