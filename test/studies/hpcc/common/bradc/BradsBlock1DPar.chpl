@@ -1,3 +1,5 @@
+// TODO: Make multidimensional
+
 // TODO: Make this work for a strided domain of locales; for a strided
 // domain implemented using this distribution.
 
@@ -140,7 +142,7 @@ class Block1DDist {
   // Create a new domain over this distribution with the given index
   // set (inds) and global index type (idxType, idxType)
   //
-  // TODO: What would we do if domIdxType did not match idxType?
+  // TODO: What should we do if domIdxType did not match idxType?
   //
   def newDomain(inds, type domIdxType = idxType) where domIdxType == idxType {
     return new Block1DDom(idxType, this, inds);
@@ -195,10 +197,8 @@ class LocBlock1DDist {
   // to use lclIdxType here is wrong since we're talking about
   // the section of the global index space owned by the locale.
   //
-  // TODO: Rename locid -- it's not very clear
-  //
   const myChunk: domain(1, idxType);
-  const locid: int;
+  const localeIdx: int;
   const loc: locale;
 
   //
@@ -206,23 +206,26 @@ class LocBlock1DDist {
   // Arguments:
   //
   def LocBlock1DDist(type idxType, 
-                     _locid: int, // the locale index from the target domain
+                     _localeIdx: int, // the locale index from the target domain
                      dist: Block1DDist(idxType) // reference to glob dist
                      ) {
-    locid = _locid;
-    loc = dist.targetLocs(locid);
+    localeIdx = _localeIdx;
+    loc = dist.targetLocs(localeIdx);
     //
-    // TODO -- assert that "loc == here" at this point for safety?
+    // TODO: Create these assertions for other local classes as well
     //
+    if (loc != here) {
+      halt("Creating a local distribution class on the wrong locale");
+    }
     const lo = dist.boundingBox.low;
     const hi = dist.boundingBox.high;
     const numelems = hi - lo + 1;
     const numlocs = dist.targetLocDom.numIndices;
-    const locid0 = dist.targetLocDom.order(locid); // 0-based locale ID
-    const blo = if (locid0 == 0) then min(idxType)
-                else procToData((numelems: real * locid0) / numlocs, lo);
-    const bhi = if (locid0 == numlocs - 1) then max(idxType)
-                else procToData((numelems: real * (locid0+1)) / numlocs, lo) - 1;
+    const localeIdx0 = dist.targetLocDom.order(localeIdx); // 0-based locale ID
+    const blo = if (localeIdx0 == 0) then min(idxType)
+                else procToData((numelems: real * localeIdx0) / numlocs, lo);
+    const bhi = if (localeIdx0 == numlocs - 1) then max(idxType)
+                else procToData((numelems: real * (localeIdx0+1)) / numlocs, lo) - 1;
     myChunk = [blo..bhi];
     if debugBradsBlock1D then
       writeln(this);
@@ -263,7 +266,6 @@ class Block1DDom {
   // an array of local domain class descriptors -- set up in
   // initialize() below
   //
-  //
   // TODO: would like this to be const and initialize in-place,
   // removing the initialize method; would want to be able to use
   // an on-clause at the expression list to make this work.
@@ -273,10 +275,10 @@ class Block1DDom {
   var locDoms: [dist.targetLocDom] LocBlock1DDom(idxType);
 
   def initialize() {
-    for locid in dist.targetLocDom do
-      on dist.targetLocs(locid) do
-        locDoms(locid) = new LocBlock1DDom(idxType, this, 
-                                           dist.getChunk(whole, locid));
+    for localeIdx in dist.targetLocDom do
+      on dist.targetLocs(localeIdx) do
+        locDoms(localeIdx) = new LocBlock1DDom(idxType, this, 
+                                           dist.getChunk(whole, localeIdx));
     if debugBradsBlock1D then
       [loc in dist.targetLocDom] writeln(loc, " owns ", locDoms(loc));
   }
@@ -409,13 +411,12 @@ class LocBlock1DDom {
   //
   // a local domain describing the indices owned by this locale
   //
-  //
-  // TODO: I used to use a local index type for this, but that would
-  // require a glbIdxType offset in order to get from the global
-  // indices back to the local index type.
-  //
   // TODO: Steve would like to see the strided parameter pushed into
   // the global and local domain classes.
+  //
+  // NOTE: I used to use a local index type for this, but that would
+  // require a glbIdxType offset in order to get from the global
+  // indices back to the local index type.
   //
   var myBlock: domain(1, idxType);
 
@@ -450,10 +451,12 @@ class LocBlock1DDom {
     x.write(myBlock);
   }
 
+
   //
   // queries for this locale's number of indices, low, and high bounds
   //
-  // TODO: Are these used internally only?
+  // TODO: I believe these are only used by the random number generator
+  // in stream -- will they always be required once that is rewritten?
   //
   def numIndices {
     return myBlock.numIndices;
@@ -500,9 +503,9 @@ class Block1DArr {
   var locArr: [dom.dist.targetLocDom] LocBlock1DArr(idxType, elemType);
 
   def initialize() {
-    for locid in dom.dist.targetLocDom do
-      on dom.dist.targetLocs(locid) do
-        locArr(locid) = new LocBlock1DArr(idxType, elemType, dom.locDoms(locid));
+    for localeIdx in dom.dist.targetLocDom do
+      on dom.dist.targetLocs(localeIdx) do
+        locArr(localeIdx) = new LocBlock1DArr(idxType, elemType, dom.locDoms(localeIdx));
   }
 
   //
