@@ -3,9 +3,6 @@
 
 // TODO: Make these into an official distribution?
 
-// TODO: Would using nested classes allow me to avoid so much
-// passing around of globIndexType and locIndexType?
-
 config param debugBradsBlock1D = false;
 
 // TODO: This would need to be moved somewhere more standard
@@ -18,12 +15,12 @@ class Block1DDist {
   //
   // The distribution's index type and domain's global index type
   //
-  type glbIdxType = int(64);
+  type idxType = int(64);
 
   //
   // The bounding box that defines the block distribution
   //
-  const boundingBox: domain(1, glbIdxType);
+  const boundingBox: domain(1, idxType);
 
 
   //
@@ -69,20 +66,20 @@ class Block1DDist {
   // WANTED:
   //
   /*
-  const locDist: [loc in targetLocDom] LocBlock1DDist(glbIdxType)
+  const locDist: [loc in targetLocDom] LocBlock1DDist(idxType)
                    = on targetLocs(loc) do 
-                       new LocBlock1DDist(glbIdxType, targetLocDom.order(loc), this);
+                       new LocBlock1DDist(idxType, targetLocDom.order(loc), this);
   */
   //
   // but this doesn't work yet because an array forall initializer
   // apparently can't refer to a local member domain.
   //
-  const locDist: [targetLocDom] LocBlock1DDist(glbIdxType);
+  const locDist: [targetLocDom] LocBlock1DDist(idxType);
   //
   // WORKAROUND: Initialize in the constructor instead
   //
 
-  def Block1DDist(type glbIdxType = int(64), bbox: domain(1, glbIdxType),
+  def Block1DDist(type idxType = int(64), bbox: domain(1, idxType),
                   targetLocales: [?targetLocalesDomain] locale) {
     boundingBox = bbox;
     targetLocDom = targetLocalesDomain;
@@ -92,7 +89,7 @@ class Block1DDist {
     /*
     for locid in targetLocDom do
       on targetLocs(locid) do
-        locDist(locid) = new LocBlock1DDist(glbIdxType, locid, this);
+        locDist(locid) = new LocBlock1DDist(idxType, locid, this);
     */
     //
     // BUT results in a _heapAlloc(type int(64)) call.
@@ -105,7 +102,7 @@ class Block1DDist {
   def helpConstruct() {
     for locid in targetLocDom do
       on targetLocs(locid) do
-        locDist(locid) = new LocBlock1DDist(glbIdxType, locid, this);
+        locDist(locid) = new LocBlock1DDist(idxType, locid, this);
   }
   //
   // END WORKAROUND
@@ -126,13 +123,12 @@ class Block1DDist {
 
   //
   // Create a new domain over this distribution with the given index
-  // set (inds) and the given global and local index type (idxType,
-  // locIdxType)
+  // set (inds) and global index type (idxType, idxType)
   //
-  def newDomain(inds, type idxType = glbIdxType, type locIdxType = idxType) {
-    // Note that I'm fixing the global and local index types to be the
-    // same, but making this a generic function would fix this
-    return new Block1DDom(idxType, locIdxType, this, inds);
+  // TODO: What would we do if domIdxType did not match idxType?
+  //
+  def newDomain(inds, type domIdxType = idxType) where domIdxType == idxType {
+    return new Block1DDom(idxType, this, inds);
   }
 
   //
@@ -150,14 +146,14 @@ class Block1DDist {
   //
   // Determine which locale owns a particular index
   //
-  def ind2locInd(ind: glbIdxType) {
+  def ind2locInd(ind: idxType) {
     const ind0 = ind - boundingBox.low;
     const loc0 = (ind0 * targetLocs.numElements) / boundingBox.numIndices;
     const locInd = loc0: index(targetLocs.domain) + targetLocs.domain.low;
     return locInd;
   }
 
-  def ind2loc(ind: glbIdxType) {
+  def ind2loc(ind: idxType) {
     return targetLocs(ind2locInd(ind));
   }
 }
@@ -169,7 +165,7 @@ class LocBlock1DDist {
   // 
   // The distribution's index type and domain's global index type
   //
-  type glbIdxType;
+  type idxType;
 
   //
   // This stores the piece of the global bounding box owned by
@@ -177,7 +173,7 @@ class LocBlock1DDist {
   // to use lclIdxType here is wrong since we're talking about
   // the section of the global index space owned by the locale.
   //
-  const myChunk: domain(1, glbIdxType);
+  const myChunk: domain(1, idxType);
   const locid: int;
   const loc: locale;
 
@@ -185,9 +181,9 @@ class LocBlock1DDist {
   // Compute what chunk of index(1) is owned by the current locale
   // Arguments:
   //
-  def LocBlock1DDist(type glbIdxType, 
+  def LocBlock1DDist(type idxType, 
                      _locid: int, // the locale index from the target domain
-                     dist: Block1DDist(glbIdxType) // reference to glob dist
+                     dist: Block1DDist(idxType) // reference to glob dist
                      ) {
     locid = _locid;
     loc = dist.targetLocs(locid);
@@ -196,9 +192,9 @@ class LocBlock1DDist {
     const numelems = hi - lo + 1;
     const numlocs = dist.targetLocDom.numIndices;
     const locid0 = dist.targetLocDom.order(locid); // 0-based locale ID
-    const blo = if (locid0 == 0) then min(glbIdxType)
+    const blo = if (locid0 == 0) then min(idxType)
                 else procToData((numelems: real * locid0) / numlocs, lo);
-    const bhi = if (locid0 == numlocs - 1) then max(glbIdxType)
+    const bhi = if (locid0 == numlocs - 1) then max(idxType)
                 else procToData((numelems: real * (locid0+1)) / numlocs, lo) - 1;
     myChunk = [blo..bhi];
     if debugBradsBlock1D then
@@ -222,20 +218,19 @@ class LocBlock1DDist {
 //
 class Block1DDom {
   //
-  // The index types of the global and local domain portions
+  // The index types of the domain
   //
-  type glbIdxType;
-  type lclIdxType;
+  type idxType;
 
   //
   // a pointer to the parent distribution
   //
-  const dist: Block1DDist(glbIdxType);
+  const dist: Block1DDist(idxType);
 
   //
   // a domain describing the complete domain
   //
-  const whole: domain(1, glbIdxType);
+  const whole: domain(1, idxType);
 
   //
   // an array of local domain class descriptors -- set up in
@@ -248,12 +243,12 @@ class Block1DDom {
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  var locDoms: [dist.targetLocDom] LocBlock1DDom(glbIdxType, lclIdxType);
+  var locDoms: [dist.targetLocDom] LocBlock1DDom(idxType);
 
   def initialize() {
     for locid in dist.targetLocDom do
       on dist.targetLocs(locid) do
-        locDoms(locid) = new LocBlock1DDom(glbIdxType, lclIdxType, this, 
+        locDoms(locid) = new LocBlock1DDom(idxType, this, 
                                            dist.getChunk(whole, locid));
     if debugBradsBlock1D then
       [loc in dist.targetLocDom] writeln(loc, " owns ", locDoms(loc));
@@ -346,7 +341,7 @@ class Block1DDom {
   // how to allocate a new array over this domain
   //
   def newArray(type elemType) {
-    return new Block1DArr(glbIdxType, lclIdxType, elemType, this);
+    return new Block1DArr(idxType, elemType, this);
   }
 
   //
@@ -371,20 +366,19 @@ class Block1DDom {
 //
 class LocBlock1DDom {
   //
-  // The index types of the global and local domain portions
+  // The index type of the domain
   //
-  type glbIdxType;
-  type lclIdxType;
+  type idxType;
 
   //
   // a reference to the parent global domain class
   //
-  const wholeDom: Block1DDom(glbIdxType, lclIdxType);
+  const wholeDom: Block1DDom(idxType);
 
   //
   // a local domain describing the indices owned by this locale
   //
-  var myBlock: domain(1, lclIdxType);
+  var myBlock: domain(1, idxType);
 
   //
   // iterator over this locale's indices
@@ -439,10 +433,9 @@ class LocBlock1DDom {
 //
 class Block1DArr {
   //
-  // The index types of the global and local domain portions
+  // The index type of the domain
   //
-  type glbIdxType;
-  type lclIdxType;
+  type idxType;
 
   //
   // the array's element type
@@ -452,7 +445,7 @@ class Block1DArr {
   //
   // the global domain descriptor for this array
   //
-  var dom: Block1DDom(glbIdxType, lclIdxType);
+  var dom: Block1DDom(idxType);
 
   //
   // an array of local array classes
@@ -463,18 +456,18 @@ class Block1DArr {
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  var locArr: [dom.dist.targetLocDom] LocBlock1DArr(glbIdxType, lclIdxType, elemType);
+  var locArr: [dom.dist.targetLocDom] LocBlock1DArr(idxType, elemType);
 
   def initialize() {
     for locid in dom.dist.targetLocDom do
       on dom.dist.targetLocs(locid) do
-        locArr(locid) = new LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDoms(locid));
+        locArr(locid) = new LocBlock1DArr(idxType, elemType, dom.locDoms(locid));
   }
 
   //
   // the global accessor for the array
   //
-  def this(i: glbIdxType) var {
+  def this(i: idxType) var {
     return locArr(dom.dist.ind2locInd(i))(i);
   }
 
@@ -546,10 +539,9 @@ class Block1DArr {
 //
 class LocBlock1DArr {
   //
-  // The index types of the global and local domain portions
+  // The index type of the domain
   //
-  type glbIdxType;
-  type lclIdxType;
+  type idxType;
 
   //
   // the element type
@@ -559,7 +551,7 @@ class LocBlock1DArr {
   //
   // a reference to the local domain class for this array and locale
   //
-  const locDom: LocBlock1DDom(glbIdxType, lclIdxType);
+  const locDom: LocBlock1DDom(idxType);
 
   //
   // the block of local array data
@@ -569,7 +561,7 @@ class LocBlock1DArr {
   //
   // the accessor for the local array -- assumes the index is local
   //
-  def this(i: lclIdxType) var {
+  def this(i: idxType) var {
     return myElems(i);
   }
 
