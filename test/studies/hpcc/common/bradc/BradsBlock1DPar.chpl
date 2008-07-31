@@ -1,7 +1,17 @@
+// TODO: Make this work for a strided domain of locales; for a strided
+// domain implemented using this distribution.
+
 // TODO: Have the global class leader/follower iterators defer to the
 // local class leader/followers once we're within a locale?
 
 // TODO: Make these into an official distribution?
+
+// TODO: Label which routines are the compiler's interface vs. an
+// internal interface.
+
+// TODO: Label the linkage fields.
+
+// TODO: implement the slicing interface?
 
 config param debugBradsBlock1D = false;
 
@@ -79,8 +89,13 @@ class Block1DDist {
   // WORKAROUND: Initialize in the constructor instead
   //
 
+
+  //
+  // TODO: 0-base the target locales domain in the constructor rather
+  // than whenever it's used for simplicity?
+  //
   def Block1DDist(type idxType = int(64), bbox: domain(1, idxType),
-                  targetLocales: [?targetLocalesDomain] locale) {
+                  targetLocales: [?targetLocalesDomain] locale = Locales) {
     boundingBox = bbox;
     targetLocDom = targetLocalesDomain;
     targetLocs = targetLocales;
@@ -146,6 +161,13 @@ class Block1DDist {
   //
   // Determine which locale owns a particular index
   //
+  // TODO: If targetLocsDom was 0-based, would this function be easier?
+  //
+  // TODO: I jotted down a note during the code review asking whether
+  // targetLocs.numElements and boundingbox.numIndices should be
+  // captured locally, or captured in the default dom/array implementation
+  // or inlined.  Not sure what that point was anymore, though.
+  //
   def ind2locInd(ind: idxType) {
     const ind0 = ind - boundingBox.low;
     const loc0 = (ind0 * targetLocs.numElements) / boundingBox.numIndices;
@@ -173,6 +195,8 @@ class LocBlock1DDist {
   // to use lclIdxType here is wrong since we're talking about
   // the section of the global index space owned by the locale.
   //
+  // TODO: Rename locid -- it's not very clear
+  //
   const myChunk: domain(1, idxType);
   const locid: int;
   const loc: locale;
@@ -187,6 +211,9 @@ class LocBlock1DDist {
                      ) {
     locid = _locid;
     loc = dist.targetLocs(locid);
+    //
+    // TODO -- assert that "loc == here" at this point for safety?
+    //
     const lo = dist.boundingBox.low;
     const hi = dist.boundingBox.high;
     const numelems = hi - lo + 1;
@@ -198,7 +225,7 @@ class LocBlock1DDist {
                 else procToData((numelems: real * (locid0+1)) / numlocs, lo) - 1;
     myChunk = [blo..bhi];
     if debugBradsBlock1D then
-      writeln("locale ", locid, " owns ", myChunk);
+      writeln(this);
   }
 
   //
@@ -280,6 +307,10 @@ class Block1DDom {
   // by the compiler.  My current assumption is that we would want to
   // overload these() to serve this purpose in the final language
   // definition.
+  //
+  // TODO: Steve's question: how would a leader containing an on
+  // clause interact with a loop that used an on clause explicitly
+  // within its body?  How would it be done efficiently?
   //
   def newThese(param iterator: IteratorType)
         where iterator == IteratorType.leader {
@@ -378,6 +409,14 @@ class LocBlock1DDom {
   //
   // a local domain describing the indices owned by this locale
   //
+  //
+  // TODO: I used to use a local index type for this, but that would
+  // require a glbIdxType offset in order to get from the global
+  // indices back to the local index type.
+  //
+  // TODO: Steve would like to see the strided parameter pushed into
+  // the global and local domain classes.
+  //
   var myBlock: domain(1, idxType);
 
   //
@@ -413,6 +452,8 @@ class LocBlock1DDom {
 
   //
   // queries for this locale's number of indices, low, and high bounds
+  //
+  // TODO: Are these used internally only?
   //
   def numIndices {
     return myBlock.numIndices;
@@ -466,6 +507,8 @@ class Block1DArr {
 
   //
   // the global accessor for the array
+  //
+  // TODO: Do we need a global bounds check here or in ind2locind?
   //
   def this(i: idxType) var {
     return locArr(dom.dist.ind2locInd(i))(i);
@@ -582,7 +625,7 @@ class LocBlock1DArr {
         where iterator == IteratorType.leader {
   }
 
-  def newThese(param iterator: IteratorType, followThis)
+  def newThese(param iterator: IteratorType, followThis) var
         where iterator == IteratorType.follower {
   }
 
