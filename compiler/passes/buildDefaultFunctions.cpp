@@ -91,23 +91,24 @@ void buildDefaultFunctions(void) {
 // function_exists returns true iff
 //  function's name matches name
 //  function's number of formals matches numFormals if not -1
-//  function's first formal's type's name matches formalTypeName1 if not NULL
-//  function's second formal's type's name matches formalTypeName2 if not NULL
+//  function's first formal's type matches formalType1 if not NULL
+//  function's second formal's type matches formalType2 if not NULL
+//  function's third formal's type matches formalType3 if not NULL
 
-static bool type_name_match(const char* name, Symbol* sym) {
-  if (!strcmp(name, sym->type->symbol->name))
+static bool type_match(Type* type, Symbol* sym) {
+  if (sym->type == type)
     return true;
-  SymExpr* symExpr = toSymExpr(sym->defPoint->exprType);
-  if (symExpr && !strcmp(name, symExpr->var->name))
+  SymExpr* se = toSymExpr(sym->defPoint->exprType);
+  if (se && se->var->type == type)
     return true;
   return false;
 }
 
 static FnSymbol* function_exists(const char* name,
                                  int numFormals = -1,
-                                 const char* formalTypeName1 = NULL,
-                                 const char* formalTypeName2 = NULL,
-                                 const char* formalTypeName3 = NULL) {
+                                 Type* formalType1 = NULL,
+                                 Type* formalType2 = NULL,
+                                 Type* formalType3 = NULL) {
   forv_Vec(FnSymbol, fn, gFns) {
     if (strcmp(name, fn->name))
       continue;
@@ -116,16 +117,16 @@ static FnSymbol* function_exists(const char* name,
       if (numFormals != fn->numFormals())
         continue;
 
-    if (formalTypeName1)
-      if (!type_name_match(formalTypeName1, fn->getFormal(1)))
+    if (formalType1)
+      if (!type_match(formalType1, fn->getFormal(1)))
         continue;
 
-    if (formalTypeName2)
-      if (!type_name_match(formalTypeName2, fn->getFormal(2)))
+    if (formalType2)
+      if (!type_match(formalType2, fn->getFormal(2)))
         continue;
 
-    if (formalTypeName3)
-      if (!type_name_match(formalTypeName3, fn->getFormal(3)))
+    if (formalType3)
+      if (!type_match(formalType3, fn->getFormal(3)))
         continue;
 
     return fn;
@@ -135,7 +136,7 @@ static FnSymbol* function_exists(const char* name,
 
 
 static void build_getter(ClassType* ct, Symbol *field) {
-  if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken->symbol->name, ct->symbol->name)) {
+  if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken, ct)) {
     Vec<BaseAST*> asts;
     collect_asts(fn, asts);
     forv_Vec(BaseAST, ast, asts) {
@@ -290,7 +291,7 @@ static void build_chpl_main(void) {
 
 
 static void build_record_equality_function(ClassType* ct) {
-  if (function_exists("==", 2, ct->symbol->name))
+  if (function_exists("==", 2, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("==");
@@ -316,7 +317,7 @@ static void build_record_equality_function(ClassType* ct) {
 
 
 static void build_record_inequality_function(ClassType* ct) {
-  if (function_exists("!=", 2, ct->symbol->name))
+  if (function_exists("!=", 2, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("!=");
@@ -446,7 +447,7 @@ static void build_enum_cast_function(EnumType* et) {
 
 
 static void build_enum_init_function(EnumType* et) {
-  if (function_exists("_init", 1, et->symbol->name))
+  if (function_exists("_init", 1, et))
     return;
 
   FnSymbol* fn = new FnSymbol("_init");
@@ -461,7 +462,7 @@ static void build_enum_init_function(EnumType* et) {
 
 
 static void build_enum_assignment_function(EnumType* et) {
-  if (function_exists("=", 2, et->symbol->name))
+  if (function_exists("=", 2, et))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -478,7 +479,7 @@ static void build_enum_assignment_function(EnumType* et) {
 
 
 static void build_record_assignment_function(ClassType* ct) {
-  if (function_exists("=", 2, ct->symbol->name))
+  if (function_exists("=", 2, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -523,7 +524,7 @@ static void build_record_cast_function(ClassType* ct) {
 }
 
 static void build_union_assignment_function(ClassType* ct) {
-  if (function_exists("=", 2, ct->symbol->name))
+  if (function_exists("=", 2, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -552,7 +553,7 @@ static void build_union_assignment_function(ClassType* ct) {
 
 
 static void build_record_copy_function(ClassType* ct) {
-  if (function_exists("_copy", 1, ct->symbol->name))
+  if (function_exists("_copy", 1, ct))
     return;
 
   INT_ASSERT(!ct->symbol->hasPragma("tuple"));
@@ -575,7 +576,7 @@ static void build_record_copy_function(ClassType* ct) {
 
 
 static void build_record_init_function(ClassType* ct) {
-  if (function_exists("_init", 1, ct->symbol->name))
+  if (function_exists("_init", 1, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("_init");
@@ -602,7 +603,7 @@ static void build_record_init_function(ClassType* ct) {
 
 
 static void build_record_hash_function(ClassType *ct) {
-  if (function_exists("_associative_hash", 1, ct->symbol->name))
+  if (function_exists("_associative_hash", 1, ct))
     return;
 
   FnSymbol *fn = new FnSymbol("_associative_hash");
@@ -642,7 +643,7 @@ static void build_record_hash_function(ClassType *ct) {
 
 
 static void buildDefaultReadFunction(ClassType* ct) {
-  if (function_exists("read", 3, dtMethodToken->symbol->name, "file", ct->symbol->name))
+  if (function_exists("read", 3, dtMethodToken, dtChapelFile, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("read");
@@ -708,7 +709,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
 
 
 static void buildDefaultReadFunction(EnumType* et) {
-  if (function_exists("read", 3, dtMethodToken->symbol->name, "file", et->symbol->name))
+  if (function_exists("read", 3, dtMethodToken, dtChapelFile, et))
     return;
 
   FnSymbol* fn = new FnSymbol("read");
@@ -771,7 +772,7 @@ static bool buildWriteSuperClass(ArgSymbol* fileArg, FnSymbol* fn, Expr* dot, Ty
   return printedSomething;
 }
 static void buildDefaultWriteFunction(ClassType* ct) {
-  if (function_exists("writeThis", 3, dtMethodToken->symbol->name, ct->symbol->name, "Writer"))
+  if (function_exists("writeThis", 3, dtMethodToken, ct, dtWriter))
     return;
 
   FnSymbol* fn = new FnSymbol("writeThis");
@@ -849,7 +850,7 @@ static void buildDefaultWriteFunction(ClassType* ct) {
 
 
 static void buildStringCastFunction(EnumType* et) {
-  if (function_exists("_cast", 2, "string", et->symbol->name))
+  if (function_exists("_cast", 2, dtString, et))
     return;
 
   FnSymbol* fn = new FnSymbol("_cast");
