@@ -9,6 +9,12 @@
 
 static void
 check_functions(FnSymbol* fn) {
+  if (!strcmp(fn->name, "this") && fn->noParens)
+    USR_FATAL(fn, "method 'this' must have parentheses");
+
+  if (!strcmp(fn->name, "these") && fn->noParens)
+    USR_FATAL(fn, "method 'these' must have parentheses");
+
   Vec<BaseAST*> asts;
   Vec<CallExpr*> rets;
   collect_asts(fn, asts);
@@ -77,10 +83,7 @@ check_named_arguments(CallExpr* call) {
 
 void
 checkParsed(void) {
-  Vec<BaseAST*> asts;
-  collect_asts(rootModule, asts);
-  forv_Vec(BaseAST, ast, asts) {
-
+  forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast))
       check_named_arguments(call);
 
