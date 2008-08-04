@@ -51,23 +51,30 @@ freeCache(SymbolMapCache& cache) {
   Vec<FnSymbol*> keys;
   cache.get_keys(keys);
   forv_Vec(FnSymbol, key, keys) {
-    Vec<SymbolMapCacheEntry*>* insts = cache.get(key);
-    forv_Vec(SymbolMapCacheEntry, inst, *insts) {
-      delete inst;
+    Vec<SymbolMapCacheEntry*>* entries = cache.get(key);
+    forv_Vec(SymbolMapCacheEntry, entry, *entries) {
+      delete entry;
     }
-    delete insts;
+    delete entries;
   }
   cache.set_clear();
 }
 
 
-SymbolVecCacheEntry::SymbolVecCacheEntry(FnSymbol* iOldFn, FnSymbol* iNewFn, Vec<Symbol*>* ivec) :
-  oldFn(iOldFn), newFn(iNewFn), vec(*ivec) { }
+SymbolVecCacheEntry::SymbolVecCacheEntry(FnSymbol* ifn, Vec<Symbol*>* ivec) :
+  fn(ifn), vec(*ivec) { }
 
 
 void
-addCache(SymbolVecCache& cache, FnSymbol* newFn, FnSymbol* oldFn, Vec<Symbol*>* vec) {
-  cache.add(new SymbolVecCacheEntry(oldFn, newFn, vec));
+addCache(SymbolVecCache& cache, FnSymbol* oldFn, FnSymbol* fn, Vec<Symbol*>* vec) {
+  Vec<SymbolVecCacheEntry*>* entries = cache.get(oldFn);
+  if (entries) {
+    entries->add(new SymbolVecCacheEntry(fn, vec));
+  } else {
+    entries = new Vec<SymbolVecCacheEntry*>();
+    entries->add(new SymbolVecCacheEntry(fn, vec));
+    cache.put(oldFn, entries);
+  }
 }
 
 
@@ -85,18 +92,29 @@ isCacheEntryMatch(Vec<Symbol*>* vec1, Vec<Symbol*>* vec2) {
 
 FnSymbol*
 checkCache(SymbolVecCache& cache, FnSymbol* fn, Vec<Symbol*>* vec) {
-  forv_Vec(SymbolVecCacheEntry, entry, cache)
-    if (entry->oldFn == fn && isCacheEntryMatch(vec, &entry->vec))
-      return entry->newFn;
+  if (Vec<SymbolVecCacheEntry*>* entries = cache.get(fn)) {
+    forv_Vec(SymbolVecCacheEntry, entry, *entries) {
+      if (isCacheEntryMatch(vec, &entry->vec)) {
+        return entry->fn;
+      }
+    }
+  }
   return NULL;
 }
 
 
 void
 freeCache(SymbolVecCache& cache) {
-  forv_Vec(SymbolVecCacheEntry, entry, cache)
-    delete entry;
-  cache.clear();
+  Vec<FnSymbol*> keys;
+  cache.get_keys(keys);
+  forv_Vec(FnSymbol, key, keys) {
+    Vec<SymbolVecCacheEntry*>* entries = cache.get(key);
+    forv_Vec(SymbolVecCacheEntry, entry, *entries) {
+      delete entry;
+    }
+    delete entries;
+  }
+  cache.set_clear();
 }
 
 

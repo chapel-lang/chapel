@@ -38,12 +38,11 @@ void freeCache(SymbolMapCache& cache);
 //
 class SymbolVecCacheEntry {
  public:
-  SymbolVecCacheEntry(FnSymbol* iOldFn, FnSymbol* iNewFn, Vec<Symbol*>* ivec);
-  FnSymbol* oldFn;
-  FnSymbol* newFn;
+  SymbolVecCacheEntry(FnSymbol* fn, Vec<Symbol*>* ivec);
+  FnSymbol* fn;
   Vec<Symbol*> vec;
 };
-typedef Vec<SymbolVecCacheEntry*> SymbolVecCache;
+typedef Map<FnSymbol*,Vec<SymbolVecCacheEntry*>*> SymbolVecCache;
 
 void addCache(SymbolVecCache& cache, FnSymbol* newFn, FnSymbol* oldFn, Vec<Symbol*>* vec);
 FnSymbol* checkCache(SymbolVecCache& cache, FnSymbol* fn, Vec<Symbol*>* vec);

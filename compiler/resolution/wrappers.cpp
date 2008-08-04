@@ -306,7 +306,7 @@ default_wrapper(FnSymbol* fn,
       sym->lineno = formal->lineno;
     }
   }
-  addCache(defaultsCache, wrapper, fn, defaults);
+  addCache(defaultsCache, fn, wrapper, defaults);
   normalize(wrapper);
   return wrapper;
 }
