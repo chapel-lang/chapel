@@ -706,8 +706,16 @@ insertWideReferences(void) {
   Vec<Symbol*> heapVars;
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isNamed("_heapAllocGlobal") ||
-          call->isNamed("_heapAllocConstGlobal")) {
+
+      //
+      // if this is a call to _heapAllocGlobal or
+      // _heapAllocConstGlobal (or a wrapper thereof) but not from
+      // within a wrapper, then this is a global variable
+      //
+      if ((call->isNamed("_heapAllocGlobal") ||
+           call->isNamed("_heapAllocConstGlobal")) &&
+          !toFnSymbol(call->parentSymbol)->isWrapper) {
+
         CallExpr* move = toCallExpr(call->parentExpr);
         INT_ASSERT(move);
         SymExpr* lhs = toSymExpr(move->get(1));
