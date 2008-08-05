@@ -3121,13 +3121,19 @@ resolveFns(FnSymbol* fn) {
       USR_FATAL(fn, "unable to resolve return type");
   }
 
-  for_exprs_postorder(expr, fn->body) {
-    if (CallExpr* call = toCallExpr(expr)) {
-      if (call->isPrimitive(PRIMITIVE_MOVE)) {
-        if (SymExpr* lhs = toSymExpr(call->get(1))) {
-          if (lhs->var == ret) {
+  //
+  // insert casts as necessary
+  //
+  if (fn->retTag != RET_PARAM) {
+    for_exprs_postorder(expr, fn->body) {
+      if (CallExpr* call = toCallExpr(expr)) {
+        if (call->isPrimitive(PRIMITIVE_MOVE)) {
+          if (SymExpr* lhs = toSymExpr(call->get(1))) {
             Expr* rhs = call->get(2);
-            if (rhs->typeInfo() != lhs->var->type) {
+            Type* rhsType = rhs->typeInfo();
+            if (rhsType != lhs->var->type &&
+                rhsType->refType != lhs->var->type &&
+                rhsType != lhs->var->type->refType) {
               rhs->remove();
               Symbol* tmp = NULL;
               if (SymExpr* se = toSymExpr(rhs)) {
