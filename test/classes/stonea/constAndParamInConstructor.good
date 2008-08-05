@@ -1,2 +1,2 @@
-100
-100
+constAndParamInConstructor.chpl:4: In constructor 'Foo':
+constAndParamInConstructor.chpl:4: error: invalid access of class member in constructor header

@@ -110,10 +110,15 @@ printDevelErrorHeader(BaseAST* ast) {
             !err_fn->isCompilerTemp &&
             !err_fn->hasPragma("inline") &&
             err_fn->lineno) {
-          fprintf(stderr, "%s:%d: In %s '%s':\n",
-                  cleanFilename(err_fn), err_fn->lineno, 
-                  (err_fn->fnTag == FN_ITERATOR ? "iterator" : "function"), 
-                  err_fn->name);
+          fprintf(stderr, "%s:%d: In ",
+                  cleanFilename(err_fn), err_fn->lineno);
+          if (!strncmp(err_fn->name, "_construct_", 11)) {
+            fprintf(stderr, "constructor '%s':\n", err_fn->name+11);
+          } else {
+            fprintf(stderr, "%s '%s':\n",
+                    (err_fn->fnTag == FN_ITERATOR ? "iterator" : "function"),
+                    err_fn->name);
+          }
         }
       }
     }

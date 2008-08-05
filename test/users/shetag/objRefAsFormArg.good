@@ -1,2 +1,2 @@
-objRefAsFormArg.chpl:10: In function '_construct_B':
+objRefAsFormArg.chpl:10: In constructor 'B':
 objRefAsFormArg.chpl:11: error: type mismatch in assignment from object to A

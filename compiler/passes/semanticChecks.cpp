@@ -121,6 +121,19 @@ checkNormalized(void) {
           USR_FATAL(formal, "formal argument of iterator cannot have intent");
         }
       }
+    } else if (!strncmp(fn->name, "_construct_", 11) &&
+               !fn->hasPragma("default constructor")) {
+      for_formals(formal, fn) {
+        Vec<BaseAST*> asts;
+        collect_asts(formal, asts);
+        forv_Vec(BaseAST, ast, asts) {
+          if (SymExpr* se = toSymExpr(ast)) {
+            if (se->var == fn->_this) {
+              USR_FATAL(se, "invalid access of class member in constructor header");
+            }
+          }
+        }
+      }
     }
   }
 }
