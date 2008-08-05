@@ -3126,14 +3126,23 @@ resolveFns(FnSymbol* fn) {
       if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (SymExpr* lhs = toSymExpr(call->get(1))) {
           if (lhs->var == ret) {
-            if (SymExpr* rhs = toSymExpr(call->get(2))) {
-              if (rhs->var->type != lhs->var->type) {
-                CallExpr* cast = new CallExpr("_cast", lhs->var->type->symbol, rhs->remove());
-                lhs->insertAfter(cast);
-                resolveCall(cast);
-                if (cast->isResolved())
-                  resolveFns(cast->isResolved());
+            Expr* rhs = call->get(2);
+            if (rhs->typeInfo() != lhs->var->type) {
+              rhs->remove();
+              Symbol* tmp = NULL;
+              if (SymExpr* se = toSymExpr(rhs)) {
+                tmp = se->var;
+              } else {
+                tmp = new VarSymbol("_tmp", rhs->typeInfo());
+                tmp->isCompilerTemp = true;
+                call->insertBefore(new DefExpr(tmp));
+                call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, rhs));
               }
+              CallExpr* cast = new CallExpr("_cast", lhs->var->type->symbol, tmp);
+              call->insertAtTail(cast);
+              resolveCall(cast);
+              if (cast->isResolved())
+                resolveFns(cast->isResolved());
             }
           }
         }
