@@ -191,8 +191,11 @@ static void heapAllocateLocals() {
         if (SymExpr* se = toSymExpr(ast)) {
 
           // collect arguments
-          if (isArgSymbol(se->var)) {
-            heapSet.set_add(se->var);
+          if (ArgSymbol* arg = toArgSymbol(se->var)) {
+            if (!arg->isTypeVariable &&
+                arg->intent != INTENT_PARAM) {
+              heapSet.set_add(se->var);
+            }
           }
 
           // collect symbols defined in outer functions
