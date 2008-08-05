@@ -22,6 +22,8 @@ Cygwin notes
        + perl
      Shells
        + tcsh
+     Utils
+       + diffutils
 
 
 * For best results, avoid using WinZip to unpack the release -- doing
