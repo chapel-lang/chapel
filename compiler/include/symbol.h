@@ -154,7 +154,6 @@ class FnSymbol : public Symbol {
   FnTag fnTag;
   RetTag retTag;
   bool noParens;
-  bool defSetGet;
   IteratorInfo* iteratorInfo;
   bool isGeneric;
   Symbol* _this;

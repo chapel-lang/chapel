@@ -13,7 +13,7 @@ class CallExpr;
 class SymExpr;
 class Expr;
 
-void normalize(BaseAST* ast);
+void normalize(BaseAST* base);
 
 // collect Stmts and Exprs in the AST and return them in vectors
 void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts);

@@ -18,8 +18,8 @@ Vec<const char*> usedConfigParams;
 static void change_method_into_constructor(FnSymbol* fn);
 static void normalize_returns(FnSymbol* fn);
 static void call_constructor_for_class(SymExpr* se);
-static void hack_resolve_types(Expr* expr);
-static void apply_getters_setters(FnSymbol* fn);
+static void hack_resolve_types(ArgSymbol* arg);
+static void applyGetterTransform(Vec<BaseAST*>& asts);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
 static void fix_def_expr(VarSymbol* var);
@@ -417,8 +417,19 @@ void normalize(void) {
     }
   }
 
+  forv_Vec(FnSymbol, fn, gFns) {
+    SET_LINENO(fn);
+    if (!fn->hasPragma("type constructor") &&
+        !fn->hasPragma("default constructor"))
+      fixup_array_formals(fn);
+    clone_parameterized_primitive_methods(fn);
+    fixup_query_formals(fn);
+    change_method_into_constructor(fn);
+  }
+
   normalize(theProgram);
   normalized = true;
+  checkConfigParams();
   checkUseBeforeDefs();
   flattenGlobalFunctions();
   heapAllocateGlobals();
@@ -457,22 +468,6 @@ void normalize(void) {
 void normalize(BaseAST* base) {
   Vec<BaseAST*> asts;
 
-  asts.clear();
-  collect_asts(base, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol* fn = toFnSymbol(ast)) {
-      SET_LINENO(fn);
-      if (!fn->hasPragma("type constructor") &&
-          !fn->hasPragma("default constructor") &&
-          !fn->isWrapper)
-        fixup_array_formals(fn);
-      clone_parameterized_primitive_methods(fn);
-      fixup_query_formals(fn);
-      change_method_into_constructor(fn);
-    }
-  }
-
-  asts.clear();
   collect_asts(base, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = toFnSymbol(ast)) {
@@ -482,68 +477,40 @@ void normalize(BaseAST* base) {
 
   asts.clear();
   collect_asts_postorder(base, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    SET_LINENO(ast);
-    if (FnSymbol* a = toFnSymbol(ast))
-      if (!a->defSetGet)
-        apply_getters_setters(a);
-  }
+  applyGetterTransform(asts);
 
   asts.clear();
   collect_asts_postorder(base, asts);
   forv_Vec(BaseAST, ast, asts) {
-    SET_LINENO(ast);
-    if (SymExpr* a = toSymExpr(ast)) {
-      call_constructor_for_class(a);
-    }
-  }
-
-  asts.clear();
-  collect_asts_postorder(base, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    SET_LINENO(ast);
-    if (DefExpr* a = toDefExpr(ast)) {
-      if (VarSymbol* var = toVarSymbol(a->sym))
-        if (toFnSymbol(a->parentSymbol))
-          fix_def_expr(var);
-    } else if (CallExpr* a = toCallExpr(ast)) {
-      if (a->isPrimitive(PRIMITIVE_NEW))
-        USR_FATAL(a, "invalid use of 'new'");
-    }
-  }
-
-  asts.clear();
-  collect_asts_postorder(base, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* sym = toSymExpr(ast)) {
-      if (sym == sym->getStmtExpr() && isFnSymbol(sym->parentSymbol)) {
+    if (SymExpr* se = toSymExpr(ast)) {
+      if (se == se->getStmtExpr() && isFnSymbol(se->parentSymbol)) {
+        SET_LINENO(se);
         CallExpr* call = new CallExpr("_statementLevelSymbol");
-        sym->insertBefore(call);
-        call->insertAtTail(sym->remove());
-        reset_line_info(call, sym->lineno);
+        se->insertBefore(call);
+        call->insertAtTail(se->remove());
       }
+      call_constructor_for_class(se);
+    } else if (CallExpr* call = toCallExpr(ast)) {
+      if (call->parentSymbol && call->isPrimitive(PRIMITIVE_NEW))
+        USR_FATAL(call, "invalid use of 'new'");
+    } else if (DefExpr* def = toDefExpr(ast)) {
+      if (VarSymbol* var = toVarSymbol(def->sym))
+        if (isFnSymbol(def->parentSymbol))
+          fix_def_expr(var);
     }
   }
 
   asts.clear();
   collect_asts_postorder(base, asts);
   forv_Vec(BaseAST, ast, asts) {
-    SET_LINENO(ast);
     if (CallExpr* a = toCallExpr(ast)) {
       insert_call_temps(a);
       fix_user_assign(a);
+    } else if (DefExpr* def = toDefExpr(ast)) {
+      if (ArgSymbol* arg = toArgSymbol(def->sym))
+        hack_resolve_types(arg);
     }
   }
-
-  asts.clear();
-  collect_asts_postorder(base, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    SET_LINENO(ast);
-    if (Expr* a = toExpr(ast)) {
-      hack_resolve_types(a);
-    }
-  }
-  checkConfigParams();
 }
 
 
@@ -634,6 +601,7 @@ static void call_constructor_for_class(SymExpr* se) {
     CallExpr* call = toCallExpr(se->parentExpr);
     if (call && call->baseExpr == se) {
       if (ClassType* ct = toClassType(ts->type)) {
+        SET_LINENO(call);
         CallExpr* parent = toCallExpr(call->parentExpr);
         CallExpr* parentParent = NULL;
         if (parent)
@@ -655,14 +623,12 @@ static void call_constructor_for_class(SymExpr* se) {
           se->replace(new SymExpr(ct->defaultTypeConstructor->name));
         }
       }
-    } //else if (isClassType(ts->type)) {
-      //se->replace(new CallExpr(se));
-    //}
+    }
   }
 }
 
 
-static void apply_getters_setters(FnSymbol* fn) {
+static void applyGetterTransform(Vec<BaseAST*>& asts) {
   // Most generally:
   //   x.f(a) --> f(_mt, x)(a)
   // which is the same as
@@ -671,16 +637,10 @@ static void apply_getters_setters(FnSymbol* fn) {
   //   x.f --> f(_mt, x)
   // Note:
   //   call(call or )( indicates partial
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(fn, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      SET_LINENO(call);
-      if (call->getFunction() != fn) // in a nested function, handle
-                                     // later, because it may be a
-                                     // getter or a setter
-        continue;
-      if (call->isNamed(".")) { // handle getter
+      if (call->isNamed(".")) {
+        SET_LINENO(call);
         CallExpr* getter = NULL;
         if (SymExpr* symExpr = toSymExpr(call->get(2))) {
           if (VarSymbol* var = toVarSymbol(symExpr->var)) {
@@ -689,12 +649,11 @@ static void apply_getters_setters(FnSymbol* fn) {
                                     gMethodToken, call->get(1)->remove());
             }
           } else if (TypeSymbol* type = toTypeSymbol(symExpr->var)) {
-            getter = new CallExpr(type,
-                                  gMethodToken, call->get(1)->remove());
+            getter = new CallExpr(type, gMethodToken, call->get(1)->remove());
           }
         }
-        if (!getter)
-          INT_FATAL(call, "invalid dot call expression");
+        INT_ASSERT(getter);
+        asts.add(getter);
         getter->methodTag = true;
         call->replace(getter);
         if (CallExpr* parent = toCallExpr(getter->parentExpr))
@@ -727,6 +686,7 @@ static void insert_call_temps(CallExpr* call) {
     if (parentCall->isPrimitive(PRIMITIVE_MOVE))
       return;
 
+  SET_LINENO(call);
   Expr* stmt = call->getStmtExpr();
   VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown);
   tmp->isCompilerTemp = true;
@@ -744,6 +704,7 @@ static void fix_user_assign(CallExpr* call) {
       call->getStmtExpr() == call->parentExpr ||
       !call->isNamed("="))
     return;
+  SET_LINENO(call);
   CallExpr* move = new CallExpr(PRIMITIVE_MOVE, call->get(1)->copy());
   call->replace(move);
   move->insertAtTail(call);
@@ -756,6 +717,8 @@ static void fix_user_assign(CallExpr* call) {
 //
 static void
 fix_def_expr(VarSymbol* var) {
+  SET_LINENO(var);
+
   Expr* type = var->defPoint->exprType;
   Expr* init = var->defPoint->init;
   Expr* stmt = var->defPoint; // insertion point
@@ -923,26 +886,22 @@ static void checkConfigParams() {
 }
 
 
-static void hack_resolve_types(Expr* expr) {
-  if (DefExpr* def = toDefExpr(expr)) {
-    if (ArgSymbol* arg = toArgSymbol(def->sym)) {
-      if (arg->type == dtUnknown || arg->type == dtAny) {
-        if (!arg->isTypeVariable && !arg->typeExpr && arg->defaultExpr) {
-          SymExpr* se = NULL;
-          if (arg->defaultExpr->body.length() == 1)
-            se = toSymExpr(arg->defaultExpr->body.tail);
-          if (!se || se->var != gNil) {
-            arg->typeExpr = arg->defaultExpr->copy();
-            insert_help(arg->typeExpr, NULL, arg);
-          }
-        }
-        if (arg->typeExpr && arg->typeExpr->body.length() == 1) {
-          Type* type = arg->typeExpr->body.only()->typeInfo();
-          if (type != dtUnknown && type != dtAny) {
-            arg->type = type;
-            arg->typeExpr->remove();
-          }
-        }
+static void hack_resolve_types(ArgSymbol* arg) {
+  if (arg->type == dtUnknown || arg->type == dtAny) {
+    if (!arg->isTypeVariable && !arg->typeExpr && arg->defaultExpr) {
+      SymExpr* se = NULL;
+      if (arg->defaultExpr->body.length() == 1)
+        se = toSymExpr(arg->defaultExpr->body.tail);
+      if (!se || se->var != gNil) {
+        arg->typeExpr = arg->defaultExpr->copy();
+        insert_help(arg->typeExpr, NULL, arg);
+      }
+    }
+    if (arg->typeExpr && arg->typeExpr->body.length() == 1) {
+      Type* type = arg->typeExpr->body.only()->typeInfo();
+      if (type != dtUnknown && type != dtAny) {
+        arg->type = type;
+        arg->typeExpr->remove();
       }
     }
   }

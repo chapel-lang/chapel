@@ -447,7 +447,6 @@ FnSymbol::FnSymbol(const char* initName) :
   fnTag(FN_FUNCTION),
   retTag(RET_VALUE),
   noParens(false),
-  defSetGet(false),
   iteratorInfo(NULL),
   isGeneric(false),
   _this(NULL),

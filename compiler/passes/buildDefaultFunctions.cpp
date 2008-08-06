@@ -154,7 +154,6 @@ static void build_getter(ClassType* ct, Symbol *field) {
   }
 
   FnSymbol* fn = new FnSymbol(field->name);
-  fn->defSetGet = true;
   fn->addPragma("inline");
   fn->isCompilerTemp = true;
   if (ct->symbol->hasPragma( "sync")) 
