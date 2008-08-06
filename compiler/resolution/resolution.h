@@ -27,9 +27,9 @@ void resolveFormals(FnSymbol* fn);
 void resolveCall(CallExpr* call, bool errorCheck = true);
 void resolveBlock(Expr* body);
 
-FnSymbol* build_default_wrapper(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals, bool isSquare);
-FnSymbol* build_order_wrapper(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals, bool isSquare);
-FnSymbol* build_coercion_wrapper(FnSymbol* fn, CallInfo* info);
-FnSymbol* build_promotion_wrapper(FnSymbol* fn, CallInfo* info);
+FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals, bool isSquare);
+FnSymbol* orderWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals, bool isSquare);
+FnSymbol* coercionWrap(FnSymbol* fn, CallInfo* info);
+FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info);
 
 #endif

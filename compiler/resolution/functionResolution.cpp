@@ -1610,10 +1610,10 @@ resolveCall(CallExpr* call, bool errorCheck) {
         printResolutionError("unresolved", visibleFns, &info);
       best = NULL;
     } else {
-      best = build_default_wrapper(best, actualFormals, call->square);
-      best = build_order_wrapper(best, actualFormals, call->square);
-      best = build_coercion_wrapper(best, &info);
-      best = build_promotion_wrapper(best, &info);
+      best = defaultWrap(best, actualFormals, call->square);
+      best = orderWrap(best, actualFormals, call->square);
+      best = coercionWrap(best, &info);
+      best = promotionWrap(best, &info);
     }
     for (int i = 0; i < candidateActualFormals.n; i++)
       delete candidateActualFormals.v[i];
