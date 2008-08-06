@@ -23,6 +23,7 @@ buildEmptyWrapper(FnSymbol* fn) {
   }
   wrapper->isMethod = fn->isMethod;
   wrapper->instantiationPoint = fn->instantiationPoint;
+  wrapper->isCompilerTemp = true;
   return wrapper;
 }
 
@@ -82,6 +83,7 @@ buildDefaultWrapper(FnSymbol* fn,
     !fn->_this->type->symbol->hasPragma("sync") &&
     !fn->_this->type->symbol->hasPragma("ref");
   if (specializeDefaultConstructor) {
+    wrapper->isCompilerTemp = false;
     wrapper->_this = fn->_this->copy();
     copy_map.put(fn->_this, wrapper->_this);
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
@@ -319,11 +321,6 @@ buildCoercionWrapper(FnSymbol* fn,
   FnSymbol* wrapper = buildEmptyWrapper(fn);
 
   //
-  // mark as compiler temp for error message reporting
-  //
-  wrapper->isCompilerTemp = true;
-
-  //
   // stopgap: important for, for example, --no-local on
   // test/parallel/cobegin/bradc/varsEscape-workaround.chpl; when
   // function resolution is out-of-order, disabling this for
@@ -337,45 +334,40 @@ buildCoercionWrapper(FnSymbol* fn,
   call->square = isSquare;
   for_formals(formal, fn) {
     SET_LINENO(formal);
-    Symbol* wrapper_formal = formal->copy();
+    Symbol* wrapperFormal = formal->copy();
     if (fn->_this == formal)
-      wrapper->_this = wrapper_formal;
-    wrapper->insertFormalAtTail(wrapper_formal);
+      wrapper->_this = wrapperFormal;
+    wrapper->insertFormalAtTail(wrapperFormal);
     if (coercions->get(formal)) {
       TypeSymbol *ts = toTypeSymbol(coercion_map->get(formal));
       INT_ASSERT(ts);
-      wrapper_formal->type = ts->type;
+      wrapperFormal->type = ts->type;
       if (ts->hasPragma("sync")) {
-        // check if this is a member access
-        DefExpr *mt;
-        if ((fn->numFormals() > 0) &&
-            (mt = toDefExpr(fn->formals.get(1))) &&
-            (mt->sym->type == dtMethodToken) &&
-            (fn->_this == fn->getFormal(2)) &&
-            (formal == fn->getFormal(2))) {
-          call->insertAtTail(new CallExpr("value", gMethodToken, wrapper_formal));
-        } else {
-          if (ts->hasPragma("single"))
-            call->insertAtTail(new CallExpr("readFF", gMethodToken, wrapper_formal));
-          else
-            call->insertAtTail(new CallExpr("readFE", gMethodToken, wrapper_formal));
-        }
+        //
+        // apply readFF or readFE to single or sync actual unless this
+        // is a member access of the sync or single actual
+        //
+        if (fn->numFormals() >= 2 &&
+            fn->getFormal(1)->type == dtMethodToken &&
+            formal == fn->_this)
+          call->insertAtTail(new CallExpr("value", gMethodToken, wrapperFormal));
+        else if (ts->hasPragma("single"))
+          call->insertAtTail(new CallExpr("readFF", gMethodToken, wrapperFormal));
+        else
+          call->insertAtTail(new CallExpr("readFE", gMethodToken, wrapperFormal));
       } else if (ts->hasPragma("ref")) {
-        VarSymbol* tmp = new VarSymbol("_tmp");
-        tmp->isCompilerTemp = true;
-        tmp->canType = true;
-        tmp->canParam = true;
-        wrapper->insertAtTail(new DefExpr(tmp));
-        wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, wrapper_formal)));
-        call->insertAtTail(tmp);
+        //
+        // dereference reference actual
+        //
+        call->insertAtTail(new CallExpr(PRIMITIVE_GET_REF, wrapperFormal));
       } else {
-        call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapper_formal));
+        call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapperFormal));
       }
     } else {
       if (Symbol* actualTypeSymbol = coercion_map->get(formal))
         if (!(formal == fn->_this && fn->hasPragma("ref this")))
-          wrapper_formal->type = actualTypeSymbol->type;
-      call->insertAtTail(wrapper_formal);
+          wrapperFormal->type = actualTypeSymbol->type;
+      call->insertAtTail(wrapperFormal);
     }
   }
   insertWrappedCall(fn, wrapper, call);
