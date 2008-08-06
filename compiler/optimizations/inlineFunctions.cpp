@@ -11,7 +11,7 @@
 //
 static void
 inlineCall(CallExpr* call) {
-  currentLineno = call->lineno;
+  SET_LINENO(call);
 
   Expr* stmt = call->getStmtExpr();
   FnSymbol* fn = call->isResolved();

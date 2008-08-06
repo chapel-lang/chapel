@@ -559,7 +559,7 @@ rebuildIterator(IteratorInfo* ii,
 void lowerIterator(FnSymbol* fn) {
   IteratorInfo* ii = fn->iteratorInfo;
 
-  currentLineno = fn->lineno;
+  SET_LINENO(fn);
   Vec<BaseAST*> asts;
   collect_asts_postorder(fn, asts);
 

@@ -86,7 +86,7 @@ void insertLineNumbers() {
             call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
             call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
           Expr* stmt = call->getStmtExpr();
-          currentLineno = stmt->lineno;
+          SET_LINENO(stmt);
           ClassType* ct = toClassType(call->get(1)->typeInfo());
           if (ct && (ct->classTag == CLASS_CLASS ||
                      ct->symbol->hasPragma("wide class"))) {

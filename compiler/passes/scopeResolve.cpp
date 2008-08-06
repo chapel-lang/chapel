@@ -393,7 +393,7 @@ static void build_type_constructor(ClassType* ct) {
   if (ct->defaultTypeConstructor)
     return;
 
-  currentLineno = ct->lineno;
+  SET_LINENO(ct);
 
   FnSymbol* fn = new FnSymbol(astr("_type_construct_", ct->symbol->name));
   fn->addPragma("type constructor");
@@ -416,7 +416,7 @@ static void build_type_constructor(ClassType* ct) {
 
   Vec<const char*> fieldNamesSet;
   for_fields(tmp, ct) {
-    currentLineno = tmp->lineno;
+    SET_LINENO(tmp);
     if (VarSymbol* field = toVarSymbol(tmp)) {
 
       if (field->hasPragma("super class"))
@@ -533,7 +533,7 @@ static void build_constructor(ClassType* ct) {
   if (ct->defaultConstructor)
     return;
 
-  currentLineno = ct->lineno;
+  SET_LINENO(ct);
 
   if (ct->symbol->hasPragma("sync"))
     ct->defaultValue = NULL;
@@ -559,7 +559,7 @@ static void build_constructor(ClassType* ct) {
   Map<VarSymbol*,ArgSymbol*> fieldArgMap;
   Vec<const char*> fieldNamesSet;
   for_fields(tmp, ct) {
-    currentLineno = tmp->lineno;
+    SET_LINENO(tmp);
     if (VarSymbol* field = toVarSymbol(tmp)) {
       if (!field->hasPragma("super class") &&
           !field->hasPragma("omit from constructor") &&
@@ -629,7 +629,7 @@ static void build_constructor(ClassType* ct) {
     if (!arg)
       continue;
 
-    currentLineno = field->lineno;
+    SET_LINENO(field);
 
     if (field->isParam)
       arg->intent = INTENT_PARAM;
@@ -686,7 +686,7 @@ static void build_constructor(ClassType* ct) {
         se->replace(buildDotExpr(fn->_this, se->unresolved));
   }
 
-  currentLineno = ct->lineno;
+  SET_LINENO(ct);
 
   ClassType *outerType = toClassType(ct->symbol->defPoint->parentSymbol->type);
   if (outerType) {
@@ -907,7 +907,7 @@ void scopeResolve(void) {
 
   // handle "use mod;" where mod is a module
   forv_Vec(BaseAST, ast, gAsts) {
-    currentLineno = ast->lineno;
+    SET_LINENO(ast);
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIMITIVE_USE))
         process_import_expr(call);
@@ -931,7 +931,7 @@ void scopeResolve(void) {
 
   forv_Vec(TypeSymbol, ts, gTypes) {
     if (ClassType* ct = toClassType(ts->type)) {
-      currentLineno = ts->lineno;
+      SET_LINENO(ts);
       build_type_constructor(ct);
       build_constructor(ct);
     }
@@ -962,7 +962,7 @@ void scopeResolve(void) {
   Vec<SymExpr*> skipSet;
 
   forv_Vec(BaseAST, ast, gAsts) {
-    currentLineno = ast->lineno;
+    SET_LINENO(ast);
 
     // Translate M.x where M is a ModuleSymbol into just x where x is
     // the symbol in module M; for functions, insert a "module=" token

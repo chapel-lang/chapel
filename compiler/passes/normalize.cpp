@@ -110,7 +110,7 @@ flattenGlobalFunctions() {
 
 
 static void insertHeapAllocate(CallExpr* move, bool global = false) {
-  currentLineno = move->lineno;
+  SET_LINENO(move);
   VarSymbol* tmp = new VarSymbol("_tmp");
   tmp->isCompilerTemp = true;
   move->insertBefore(new DefExpr(tmp));
@@ -126,7 +126,7 @@ static void insertHeapAllocate(CallExpr* move, bool global = false) {
 
 
 static void insertHeapAccess(SymExpr* se, bool global = false) {
-  currentLineno = se->lineno;
+  SET_LINENO(se);
   CallExpr* call =
     new CallExpr((global && se->var->isConstant())
                  ? "_heapAccessConstGlobal"
@@ -461,7 +461,7 @@ void normalize(BaseAST* base) {
   collect_asts(base, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (FnSymbol* fn = toFnSymbol(ast)) {
-      currentLineno = fn->lineno;
+      SET_LINENO(fn);
       if (!fn->hasPragma("type constructor") &&
           !fn->hasPragma("default constructor") &&
           !fn->isWrapper)
@@ -483,7 +483,7 @@ void normalize(BaseAST* base) {
   asts.clear();
   collect_asts_postorder(base, asts);
   forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
+    SET_LINENO(ast);
     if (FnSymbol* a = toFnSymbol(ast))
       if (!a->defSetGet)
         apply_getters_setters(a);
@@ -492,7 +492,7 @@ void normalize(BaseAST* base) {
   asts.clear();
   collect_asts_postorder(base, asts);
   forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
+    SET_LINENO(ast);
     if (SymExpr* a = toSymExpr(ast)) {
       call_constructor_for_class(a);
     }
@@ -501,7 +501,7 @@ void normalize(BaseAST* base) {
   asts.clear();
   collect_asts_postorder(base, asts);
   forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
+    SET_LINENO(ast);
     if (DefExpr* a = toDefExpr(ast)) {
       if (VarSymbol* var = toVarSymbol(a->sym))
         if (toFnSymbol(a->parentSymbol))
@@ -528,7 +528,7 @@ void normalize(BaseAST* base) {
   asts.clear();
   collect_asts_postorder(base, asts);
   forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
+    SET_LINENO(ast);
     if (CallExpr* a = toCallExpr(ast)) {
       insert_call_temps(a);
       fix_user_assign(a);
@@ -538,7 +538,7 @@ void normalize(BaseAST* base) {
   asts.clear();
   collect_asts_postorder(base, asts);
   forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
+    SET_LINENO(ast);
     if (Expr* a = toExpr(ast)) {
       hack_resolve_types(a);
     }
@@ -548,7 +548,7 @@ void normalize(BaseAST* base) {
 
 
 static void normalize_returns(FnSymbol* fn) {
-  currentLineno = fn->lineno;
+  SET_LINENO(fn);
 
   Vec<BaseAST*> asts;
   Vec<CallExpr*> rets;
@@ -595,7 +595,7 @@ static void normalize_returns(FnSymbol* fn) {
   }
   bool label_is_used = false;
   forv_Vec(CallExpr, ret, rets) {
-    currentLineno = ret->lineno;
+    SET_LINENO(ret);
     if (retval) {
       Expr* ret_expr = ret->get(1);
       ret_expr->remove();
@@ -675,7 +675,7 @@ static void apply_getters_setters(FnSymbol* fn) {
   collect_asts_postorder(fn, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      currentLineno = call->lineno;
+      SET_LINENO(call);
       if (call->getFunction() != fn) // in a nested function, handle
                                      // later, because it may be a
                                      // getter or a setter

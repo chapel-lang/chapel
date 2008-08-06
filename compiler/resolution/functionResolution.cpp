@@ -232,7 +232,7 @@ static void
 protoIteratorClass(FnSymbol* fn) {
   INT_ASSERT(!fn->iteratorInfo);
 
-  currentLineno = fn->lineno;
+  SET_LINENO(fn);
 
   IteratorInfo* ii = new IteratorInfo();
   fn->iteratorInfo = ii;
@@ -1491,7 +1491,7 @@ isTypeExpr(Expr* expr) {
 //
 static void
 resolveDefaultGenericType(CallExpr* call) {
-  currentLineno = call->lineno;
+  SET_LINENO(call);
   for_actuals(actual, call) {
     if (NamedExpr* ne = toNamedExpr(actual))
       actual = ne->actual;
@@ -2940,7 +2940,7 @@ void
 resolveBlock(Expr* body) {
   FnSymbol* fn = toFnSymbol(body->parentSymbol);
   for_exprs_postorder(expr, body) {
-    currentLineno = expr->lineno;
+    SET_LINENO(expr);
     if (SymExpr* se = toSymExpr(expr))
       if (se->var)
         makeRefType(se->var->type);
@@ -4053,7 +4053,7 @@ pruneResolvedTree() {
         //
         for_formals_actuals(formal, actual, call) {
           if (formal->type == actual->typeInfo()->refType) {
-            currentLineno = call->lineno;
+            SET_LINENO(call);
             VarSymbol* tmp = new VarSymbol("_tmp", formal->type);
             tmp->isCompilerTemp = true;
             call->getStmtExpr()->insertBefore(new DefExpr(tmp));

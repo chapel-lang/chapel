@@ -462,7 +462,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         bool stillAlive = false;
         for_uses(se, useMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);
-          currentLineno = se->lineno;
+          SET_LINENO(se);
           if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
@@ -486,7 +486,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         }
         for_defs(se, defMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);
-          currentLineno = se->lineno;
+          SET_LINENO(se);
           if (parent == move)
             continue;
           if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
@@ -505,7 +505,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         bool stillAlive = false;
         for_uses(se, useMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);
-          currentLineno = se->lineno;
+          SET_LINENO(se);
           if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
@@ -524,7 +524,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         }
         for_defs(se, defMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);
-          currentLineno = se->lineno;
+          SET_LINENO(se);
           if (parent == move)
             continue;
           if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {

@@ -19,7 +19,7 @@
 // thread creation interface. 
 static void
 bundleArgs(CallExpr* fcall) {
-  currentLineno = fcall->lineno;
+  SET_LINENO(fcall);
   ModuleSymbol* mod = fcall->getModule();
   FnSymbol* fn = fcall->isResolved();
 
@@ -242,7 +242,7 @@ static void insertLocalTemp(Expr* expr) {
   SymExpr* se = toSymExpr(expr);
   Expr* stmt = expr->getStmtExpr();
   INT_ASSERT(se && stmt);
-  currentLineno = se->lineno;
+  SET_LINENO(se);
   VarSymbol* var = new VarSymbol(astr("local_", se->var->name),
                                  se->var->type->getField("addr")->type);
   if (!fNoLocalChecks) {

@@ -206,7 +206,7 @@ expand_for_loop(CallExpr* call) {
        iterator->type->dispatchChildren.v[0] == dtObject)) {
     expandIteratorInline(call);
   } else {
-    currentLineno = call->lineno;
+    SET_LINENO(call);
     Vec<Symbol*> iterators;
     Vec<Symbol*> indices;
     setupSimultaneousIterators(iterators, indices, iterator, index, block);

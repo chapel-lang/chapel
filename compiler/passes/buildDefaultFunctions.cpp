@@ -241,43 +241,39 @@ static FnSymbol* chpl_main_exists(void) {
 static void build_chpl_main(void) {
   chpl_main = chpl_main_exists();
   if (!chpl_main) {
-    int rootUserModuleCount = 0;
-    ModuleSymbol* rootUserModule = NULL;
-    for_alist(expr, theProgram->block->body) {
-      if (DefExpr* def = toDefExpr(expr)) {
-        if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-          if (mod->modTag == MOD_USER) {
-            rootUserModuleCount++;
-            rootUserModule = mod;
+    ModuleSymbol* mainModule = NULL;
+    if (strlen(mainModuleName) != 0) {
+      forv_Vec(ModuleSymbol, mod, userModules) {
+        if (!strcmp(mod->name, mainModuleName))
+          mainModule = mod;
+      }
+      if (!mainModule)
+        USR_FATAL("unknown module specified in '--main-module=%s'", mainModuleName);
+    } else {
+      for_alist(expr, theProgram->block->body) {
+        if (DefExpr* def = toDefExpr(expr)) {
+          if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
+            if (mod->modTag == MOD_USER) {
+              if (mainModule) {
+                USR_FATAL_CONT("a program with multiple user modules requires a main function");
+                USR_PRINT("alternatively, specify a main module with --main-module");
+                USR_STOP();
+              }
+              mainModule = mod;
+            }
           }
         }
       }
     }
-    if (rootUserModuleCount == 1) {
-      chpl_main = new FnSymbol("main");
-      chpl_main->retType = dtVoid;
-      rootUserModule->block->insertAtTail(new DefExpr(chpl_main));
-      normalize(chpl_main);
-    } else if (strlen(mainModuleName) != 0) { 
-      ModuleSymbol* module = NULL;
-      forv_Vec(ModuleSymbol, mod, allModules) {
-        if (!strcmp(mod->name, mainModuleName))
-          module = mod;
-      }
-      if (!module)
-        USR_FATAL("unknown module specified in '--main-module=%s'", mainModuleName);
-      chpl_main = new FnSymbol("main");
-      chpl_main->retType = dtVoid;
-      module->block->insertAtTail(new DefExpr(chpl_main));
-      normalize(chpl_main);
-    } else if (rootUserModuleCount <= 0) {
-      INT_FATAL("non-positive number of user-modules");
-    } else {
-      USR_FATAL("Code defines multiple modules but no main function.");
-    }
-  } else if (chpl_main->getModule() != chpl_main->defPoint->parentSymbol)
-    USR_FATAL(chpl_main, "Main function must be defined at module scope");
-  currentLineno = -1;
+    SET_LINENO(mainModule);
+    chpl_main = new FnSymbol("main");
+    chpl_main->retType = dtVoid;
+    mainModule->block->insertAtTail(new DefExpr(chpl_main));
+    normalize(chpl_main);
+  } else if (!isModuleSymbol(chpl_main->defPoint->parentSymbol)) {
+    USR_FATAL(chpl_main, "main function must be defined at module scope");
+  }
+  SET_LINENO(chpl_main);
   VarSymbol* endCount = new VarSymbol("_endCount");
   endCount->isCompilerTemp = true;
   chpl_main->insertAtHead(new CallExpr(chpl_main->getModule()->initFn));

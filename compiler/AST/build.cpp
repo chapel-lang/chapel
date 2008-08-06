@@ -203,7 +203,7 @@ static FnSymbol* initModuleGuards = NULL;
 
 void createInitFn(ModuleSymbol* mod) {
   static int moduleNumber = 0;
-  currentLineno = mod->lineno;
+  SET_LINENO(mod);
 
   mod->initFn = new FnSymbol(astr("chpl__init_", mod->name));
   mod->initFn->retType = dtVoid;

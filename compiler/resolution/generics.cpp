@@ -350,7 +350,7 @@ instantiate_generic(FnSymbol* fn,
 
   //  static int uid = 1;
   FnSymbol* newfn = NULL;
-  currentLineno = fn->lineno;
+  SET_LINENO(fn);
 
   // check for infinite recursion by limiting the number of
   // instantiations of a particular type or function

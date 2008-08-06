@@ -154,7 +154,7 @@ void cleanup(void) {
 
   // handle forall's in array type declaration with initialization
   forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
+    SET_LINENO(ast);
     if (CallExpr *call = toCallExpr(ast)) {
       if (call->isNamed("_build_array_type") && call->numActuals() == 4) {
         if (DefExpr *def = toDefExpr(call->parentExpr)) {
@@ -177,14 +177,14 @@ void cleanup(void) {
   asts.clear();
   collect_asts(rootModule, asts);
   forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
+    SET_LINENO(ast);
     if (DefExpr* def = toDefExpr(ast)) {
       normalize_nested_function_expressions(def);
     }
   }
 
   forv_Vec(BaseAST, ast, asts) {
-    currentLineno = ast->lineno;
+    SET_LINENO(ast);
     if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->blockTag == BLOCK_SCOPELESS && block->list)
         flatten_scopeless_block(block);

@@ -71,7 +71,7 @@ buildDefaultWrapper(FnSymbol* fn,
                     bool isSquare) {
   if (FnSymbol* cached = checkCache(defaultsCache, fn, defaults))
     return cached;
-  currentLineno = fn->lineno;
+  SET_LINENO(fn);
   FnSymbol* wrapper = buildEmptyWrapper(fn);
   if (fn->fnTag != FN_ITERATOR)
     wrapper->retType = fn->retType;
@@ -99,7 +99,7 @@ buildDefaultWrapper(FnSymbol* fn,
   CallExpr* call = new CallExpr(fn);
   call->square = isSquare;
   for_formals(formal, fn) {
-    currentLineno = formal->lineno;
+    SET_LINENO(formal);
     if (!defaults->in(formal)) {
       ArgSymbol* wrapper_formal = formal->copy();
       if (fn->_this == formal)
@@ -250,21 +250,21 @@ static FnSymbol*
 buildOrderWrapper(FnSymbol* fn,
                   SymbolMap* order_map,
                   bool isSquare) {
-  currentLineno = fn->lineno;
+  SET_LINENO(fn);
   FnSymbol* wrapper = buildEmptyWrapper(fn);
   wrapper->cname = astr("_order_wrap_", fn->cname);
   CallExpr* call = new CallExpr(fn);
   call->square = isSquare;
   SymbolMap copy_map;
   for_formals(formal, fn) {
-    currentLineno = formal->lineno;
+    SET_LINENO(formal);
     Symbol* wrapper_formal = formal->copy();
     if (fn->_this == formal)
       wrapper->_this = wrapper_formal;
     copy_map.put(formal, wrapper_formal);
   }
   for_formals(formal, fn) {
-    currentLineno = formal->lineno;
+    SET_LINENO(formal);
     wrapper->insertFormalAtTail(copy_map.get(order_map->get(formal)));
     call->insertAtTail(copy_map.get(formal));
   }
@@ -315,7 +315,7 @@ buildCoercionWrapper(FnSymbol* fn,
   if (FnSymbol* cached = checkCache(coercionsCache, fn, coercion_map))
     return cached;
 
-  currentLineno = fn->lineno;
+  SET_LINENO(fn);
   FnSymbol* wrapper = buildEmptyWrapper(fn);
 
   //
@@ -336,7 +336,7 @@ buildCoercionWrapper(FnSymbol* fn,
   CallExpr* call = new CallExpr(fn);
   call->square = isSquare;
   for_formals(formal, fn) {
-    currentLineno = formal->lineno;
+    SET_LINENO(formal);
     Symbol* wrapper_formal = formal->copy();
     if (fn->_this == formal)
       wrapper->_this = wrapper_formal;
@@ -430,7 +430,7 @@ buildPromotionWrapper(FnSymbol* fn,
   if (FnSymbol* cached = checkCache(promotionsCache, fn, &map))
     return cached;
 
-  currentLineno = fn->lineno;
+  SET_LINENO(fn);
   FnSymbol* wrapper = buildEmptyWrapper(fn);
   wrapper->addPragma("promotion wrapper");
   wrapper->cname = astr("_promotion_wrap_", fn->cname);
@@ -439,7 +439,7 @@ buildPromotionWrapper(FnSymbol* fn,
   CallExpr* actualCall = new CallExpr(fn);
   int i = 1;
   for_formals(formal, fn) {
-    currentLineno = formal->lineno;
+    SET_LINENO(formal);
     Symbol* new_formal = formal->copy();
     if (fn->_this == formal)
       wrapper->_this = new_formal;
