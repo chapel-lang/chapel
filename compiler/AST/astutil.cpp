@@ -45,11 +45,6 @@ void reset_line_info(BaseAST* ast, int lineno) {
 }
 
 
-void clear_line_info(BaseAST* baseAST) {
-  reset_line_info(baseAST, -1);
-}
-
-
 void compute_call_sites() {
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->calledBy)

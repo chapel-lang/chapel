@@ -9,19 +9,6 @@
 #include "symbol.h"
 
 
-static CallExpr*
-make_method_call_partial(CallExpr* call) {
-  call->partialTag = true;
-  CallExpr* outer = new CallExpr(call);
-  while (call->numActuals() > 2) {
-    Expr* arg = call->get(3);
-    arg->remove();
-    outer->insertAtTail(arg);
-  }
-  return outer;
-}
-
-
 static FnSymbol*
 buildEmptyWrapper(FnSymbol* fn) {
   FnSymbol* wrapper = new FnSymbol(fn->name);
@@ -36,95 +23,6 @@ buildEmptyWrapper(FnSymbol* fn) {
   }
   wrapper->isMethod = fn->isMethod;
   wrapper->instantiationPoint = fn->instantiationPoint;
-  return wrapper;
-}
-
-
-static FnSymbol*
-buildCoercionWrapper(FnSymbol* fn,
-                     SymbolMap* coercion_map,
-                     Map<ArgSymbol*,bool>* coercions,
-                     bool isSquare) {
-  // return cached if we already created this coercion wrapper
-  if (FnSymbol* cached = checkCache(coercionsCache, fn, coercion_map))
-    return cached;
-
-  FnSymbol* wrapper = buildEmptyWrapper(fn);
-
-  //
-  // mark as compiler temp for error message reporting
-  //
-  wrapper->isCompilerTemp = true;
-
-  //
-  // stopgap: important for, for example, --no-local on
-  // test/parallel/cobegin/bradc/varsEscape-workaround.chpl; when
-  // function resolution is out-of-order, disabling this for
-  // unspecified return types may not be necessary
-  //
-  if (fn->hasPragma("specified return type") && fn->fnTag != FN_ITERATOR)
-    wrapper->retType = fn->retType;
-
-  wrapper->cname = astr("_coerce_wrap_", fn->cname);
-  CallExpr* call = new CallExpr(fn);
-  call->square = isSquare;
-  for_formals(formal, fn) {
-    Symbol* wrapper_formal = formal->copy();
-    if (fn->_this == formal)
-      wrapper->_this = wrapper_formal;
-    wrapper->insertFormalAtTail(wrapper_formal);
-    if (coercions->get(formal)) {
-      TypeSymbol *ts = toTypeSymbol(coercion_map->get(formal));
-      INT_ASSERT(ts);
-      wrapper_formal->type = ts->type;
-      if (ts->hasPragma("sync")) {
-        // check if this is a member access
-        DefExpr *mt;
-        if ((fn->numFormals() > 0) &&
-            (mt = toDefExpr(fn->formals.get(1))) &&
-            (mt->sym->type == dtMethodToken) &&
-            (fn->_this == fn->getFormal(2)) &&
-            (formal == fn->getFormal(2))) {
-          call->insertAtTail(new CallExpr("value", gMethodToken, wrapper_formal));
-        } else {
-          if (ts->hasPragma("single"))
-            call->insertAtTail(new CallExpr("readFF", gMethodToken, wrapper_formal));
-          else
-            call->insertAtTail(new CallExpr("readFE", gMethodToken, wrapper_formal));
-        }
-      } else if (ts->hasPragma("ref")) {
-        VarSymbol* tmp = new VarSymbol("_tmp");
-        tmp->isCompilerTemp = true;
-        tmp->canType = true;
-        tmp->canParam = true;
-        wrapper->insertAtTail(new DefExpr(tmp));
-        wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, wrapper_formal)));
-        call->insertAtTail(tmp);
-      } else {
-        call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapper_formal));
-      }
-    } else {
-      if (Symbol* actualTypeSymbol = coercion_map->get(formal))
-        if (!(formal == fn->_this && fn->hasPragma("ref this")))
-          wrapper_formal->type = actualTypeSymbol->type;
-      call->insertAtTail(wrapper_formal);
-    }
-  }
-  if (fn->getReturnSymbol() == gVoid) {
-    wrapper->insertAtTail(call);
-  } else if (fn->fnTag != FN_ITERATOR) {
-    wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
-  } else {
-    VarSymbol* index = new VarSymbol("_i");
-    index->isCompilerTemp = true;
-    wrapper->insertAtTail(new DefExpr(index));
-    wrapper->insertAtTail(buildForLoopStmt(new SymExpr(index), call, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, index))));
-    wrapper->fnTag = FN_ITERATOR;
-  }
-  fn->defPoint->insertAfter(new DefExpr(wrapper));
-  reset_line_info(wrapper->defPoint, fn->lineno);
-  normalize(wrapper);
-  addCache(coercionsCache, fn, wrapper, coercion_map);
   return wrapper;
 }
 
@@ -144,6 +42,28 @@ isShadowedField(ArgSymbol* formal) {
 }
 
 
+static void
+insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
+  if (fn->getReturnSymbol() == gVoid) {
+    wrapper->insertAtTail(call);
+  } else if (fn->fnTag != FN_ITERATOR) {
+    wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
+  } else {
+    VarSymbol* index = new VarSymbol("_i");
+    index->isCompilerTemp = true;
+    wrapper->insertAtTail(new DefExpr(index));
+    wrapper->insertAtTail(buildForLoopStmt(new SymExpr(index), call, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, index))));
+    wrapper->fnTag = FN_ITERATOR;
+  }
+  fn->defPoint->insertAfter(new DefExpr(wrapper));
+}
+
+
+////
+//// default wrapper code
+////
+
+
 static FnSymbol*
 buildDefaultWrapper(FnSymbol* fn,
                     Vec<Symbol*>* defaults,
@@ -151,6 +71,7 @@ buildDefaultWrapper(FnSymbol* fn,
                     bool isSquare) {
   if (FnSymbol* cached = checkCache(defaultsCache, fn, defaults))
     return cached;
+  currentLineno = fn->lineno;
   FnSymbol* wrapper = buildEmptyWrapper(fn);
   if (fn->fnTag != FN_ITERATOR)
     wrapper->retType = fn->retType;
@@ -178,6 +99,7 @@ buildDefaultWrapper(FnSymbol* fn,
   CallExpr* call = new CallExpr(fn);
   call->square = isSquare;
   for_formals(formal, fn) {
+    currentLineno = formal->lineno;
     if (!defaults->in(formal)) {
       ArgSymbol* wrapper_formal = formal->copy();
       if (fn->_this == formal)
@@ -274,138 +196,19 @@ buildDefaultWrapper(FnSymbol* fn,
     }
   }
   update_symbols(wrapper->body, &copy_map);
-  if (fn->getReturnSymbol() == gVoid) {
-    wrapper->insertAtTail(call);
-  } else if (fn->fnTag != FN_ITERATOR) {
-    wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
-  } else {
-    VarSymbol* index = new VarSymbol("_i");
-    index->isCompilerTemp = true;
-    wrapper->insertAtTail(new DefExpr(index));
-    wrapper->insertAtTail(buildForLoopStmt(new SymExpr(index), call, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, index))));
-    wrapper->fnTag = FN_ITERATOR;
-  }
-  fn->defPoint->insertAfter(new DefExpr(wrapper));
 
-  // Make the line numbers match the numbers from the formals they map to
-  for_formals(formal, fn) {
-    if (Symbol* sym = copy_map.get(formal)) {
-      sym->defPoint->lineno = formal->lineno;
-      sym->lineno = formal->lineno;
-    }
-  }
+  insertWrappedCall(fn, wrapper, call);
+
   addCache(defaultsCache, fn, wrapper, defaults);
   normalize(wrapper);
   return wrapper;
 }
 
 
-static FnSymbol* buildOrderWrapper(FnSymbol* fn,
-                               SymbolMap* order_map,
-                               bool isSquare) {
-  FnSymbol* wrapper = buildEmptyWrapper(fn);
-  wrapper->cname = astr("_order_wrap_", fn->cname);
-  CallExpr* call = new CallExpr(fn);
-  call->square = isSquare;
-  SymbolMap copy_map;
-  for_formals(formal, fn) {
-    Symbol* wrapper_formal = formal->copy();
-    if (fn->_this == formal)
-      wrapper->_this = wrapper_formal;
-    copy_map.put(formal, wrapper_formal);
-  }
-  for_formals(formal, fn) {
-    wrapper->insertFormalAtTail(copy_map.get(order_map->get(formal)));
-    call->insertAtTail(copy_map.get(formal));
-  }
-  if (fn->isMethod)
-    call = make_method_call_partial(call);
-  if (fn->getReturnSymbol() == gVoid) {
-    wrapper->insertAtTail(call);
-  } else if (fn->fnTag != FN_ITERATOR) {
-    wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
-  } else {
-    VarSymbol* index = new VarSymbol("_i");
-    index->isCompilerTemp = true;
-    wrapper->insertAtTail(new DefExpr(index));
-    wrapper->insertAtTail(buildForLoopStmt(new SymExpr(index), call, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, index))));
-    wrapper->fnTag = FN_ITERATOR;
-  }
-  fn->defPoint->insertBefore(new DefExpr(wrapper));
-  clear_line_info(wrapper->defPoint);
-  normalize(wrapper);
-  return wrapper;
-}
-
-
-static FnSymbol* buildPromotionWrapper(FnSymbol* fn,
-                                   SymbolMap* promotion_subs,
-                                   bool square) {
-  // return cached if we already created this coercion wrapper
-  SymbolMap map;
-  Vec<Symbol*> keys;
-  promotion_subs->get_keys(keys);
-  forv_Vec(Symbol*, key, keys)
-    map.put(key, promotion_subs->get(key));
-  map.put(fn, (Symbol*)square); // add value of square to cache
-  if (FnSymbol* cached = checkCache(promotionsCache, fn, &map))
-    return cached;
-
-  FnSymbol* wrapper = buildEmptyWrapper(fn);
-  wrapper->addPragma("promotion wrapper");
-  wrapper->cname = astr("_promotion_wrap_", fn->cname);
-  CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
-  CallExpr* iterator = new CallExpr(square ? "_build_domain" : "_build_tuple");
-  CallExpr* actualCall = new CallExpr(fn);
-  int i = 1;
-  for_formals(formal, fn) {
-    Symbol* new_formal = formal->copy();
-    if (fn->_this == formal)
-      wrapper->_this = new_formal;
-    if (Symbol* sub = promotion_subs->get(formal)) {
-      TypeSymbol* ts = toTypeSymbol(sub);
-      if (!ts)
-        INT_FATAL(fn, "error building promotion wrapper");
-      new_formal->type = ts->type;
-      wrapper->insertFormalAtTail(new_formal);
-      iterator->insertAtTail(new_formal);
-      VarSymbol* index = new VarSymbol(astr("_p_i_", istr(i)));
-      index->isCompilerTemp = true;
-      wrapper->insertAtTail(new DefExpr(index));
-      indicesCall->insertAtTail(index);
-      actualCall->insertAtTail(index);
-    } else {
-      wrapper->insertFormalAtTail(new_formal);
-      actualCall->insertAtTail(new_formal);
-    }
-    i++;
-  }
-
-  if (fn->isMethod && !fn->noParens)
-    actualCall = make_method_call_partial(actualCall);
-  Expr* indices = indicesCall;
-  if (indicesCall->numActuals() == 1)
-    indices = indicesCall->get(1)->remove();
-  if (fn->getReturnSymbol() == gVoid) {
-    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator,
-                                             new BlockStmt(actualCall))));
-  } else {
-    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, actualCall)))));
-    wrapper->fnTag = FN_ITERATOR;
-    wrapper->removePragma("inline");
-  }
-  fn->defPoint->insertBefore(new DefExpr(wrapper));
-  clear_line_info(wrapper->defPoint);
-  normalize(wrapper);
-  addCache(promotionsCache, fn, wrapper, &map);
-  return wrapper;
-}
-
-
 FnSymbol*
 defaultWrap(FnSymbol* fn,
-                      Vec<ArgSymbol*>* actualFormals,
-                      bool isSquare) {
+            Vec<ArgSymbol*>* actualFormals,
+            bool isSquare) {
   FnSymbol* wrapper = fn;
   int num_actuals = actualFormals->n;
   int num_formals = fn->numFormals();
@@ -438,10 +241,43 @@ defaultWrap(FnSymbol* fn,
 }
 
 
+////
+//// order wrapper code
+////
+
+
+static FnSymbol*
+buildOrderWrapper(FnSymbol* fn,
+                  SymbolMap* order_map,
+                  bool isSquare) {
+  currentLineno = fn->lineno;
+  FnSymbol* wrapper = buildEmptyWrapper(fn);
+  wrapper->cname = astr("_order_wrap_", fn->cname);
+  CallExpr* call = new CallExpr(fn);
+  call->square = isSquare;
+  SymbolMap copy_map;
+  for_formals(formal, fn) {
+    currentLineno = formal->lineno;
+    Symbol* wrapper_formal = formal->copy();
+    if (fn->_this == formal)
+      wrapper->_this = wrapper_formal;
+    copy_map.put(formal, wrapper_formal);
+  }
+  for_formals(formal, fn) {
+    currentLineno = formal->lineno;
+    wrapper->insertFormalAtTail(copy_map.get(order_map->get(formal)));
+    call->insertAtTail(copy_map.get(formal));
+  }
+  insertWrappedCall(fn, wrapper, call);
+  normalize(wrapper);
+  return wrapper;
+}
+
+
 FnSymbol*
 orderWrap(FnSymbol* fn,
-                    Vec<ArgSymbol*>* actualFormals,
-                    bool isSquare) {
+          Vec<ArgSymbol*>* actualFormals,
+          bool isSquare) {
   bool order_wrapper_required = false;
   SymbolMap formals_to_formals;
   int i = 0;
@@ -462,6 +298,90 @@ orderWrap(FnSymbol* fn,
     fn = buildOrderWrapper(fn, &formals_to_formals, isSquare);
   }
   return fn;
+}
+
+
+////
+//// coercion wrapper code
+////
+
+
+static FnSymbol*
+buildCoercionWrapper(FnSymbol* fn,
+                     SymbolMap* coercion_map,
+                     Map<ArgSymbol*,bool>* coercions,
+                     bool isSquare) {
+  // return cached if we already created this coercion wrapper
+  if (FnSymbol* cached = checkCache(coercionsCache, fn, coercion_map))
+    return cached;
+
+  currentLineno = fn->lineno;
+  FnSymbol* wrapper = buildEmptyWrapper(fn);
+
+  //
+  // mark as compiler temp for error message reporting
+  //
+  wrapper->isCompilerTemp = true;
+
+  //
+  // stopgap: important for, for example, --no-local on
+  // test/parallel/cobegin/bradc/varsEscape-workaround.chpl; when
+  // function resolution is out-of-order, disabling this for
+  // unspecified return types may not be necessary
+  //
+  if (fn->hasPragma("specified return type") && fn->fnTag != FN_ITERATOR)
+    wrapper->retType = fn->retType;
+
+  wrapper->cname = astr("_coerce_wrap_", fn->cname);
+  CallExpr* call = new CallExpr(fn);
+  call->square = isSquare;
+  for_formals(formal, fn) {
+    currentLineno = formal->lineno;
+    Symbol* wrapper_formal = formal->copy();
+    if (fn->_this == formal)
+      wrapper->_this = wrapper_formal;
+    wrapper->insertFormalAtTail(wrapper_formal);
+    if (coercions->get(formal)) {
+      TypeSymbol *ts = toTypeSymbol(coercion_map->get(formal));
+      INT_ASSERT(ts);
+      wrapper_formal->type = ts->type;
+      if (ts->hasPragma("sync")) {
+        // check if this is a member access
+        DefExpr *mt;
+        if ((fn->numFormals() > 0) &&
+            (mt = toDefExpr(fn->formals.get(1))) &&
+            (mt->sym->type == dtMethodToken) &&
+            (fn->_this == fn->getFormal(2)) &&
+            (formal == fn->getFormal(2))) {
+          call->insertAtTail(new CallExpr("value", gMethodToken, wrapper_formal));
+        } else {
+          if (ts->hasPragma("single"))
+            call->insertAtTail(new CallExpr("readFF", gMethodToken, wrapper_formal));
+          else
+            call->insertAtTail(new CallExpr("readFE", gMethodToken, wrapper_formal));
+        }
+      } else if (ts->hasPragma("ref")) {
+        VarSymbol* tmp = new VarSymbol("_tmp");
+        tmp->isCompilerTemp = true;
+        tmp->canType = true;
+        tmp->canParam = true;
+        wrapper->insertAtTail(new DefExpr(tmp));
+        wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, wrapper_formal)));
+        call->insertAtTail(tmp);
+      } else {
+        call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapper_formal));
+      }
+    } else {
+      if (Symbol* actualTypeSymbol = coercion_map->get(formal))
+        if (!(formal == fn->_this && fn->hasPragma("ref this")))
+          wrapper_formal->type = actualTypeSymbol->type;
+      call->insertAtTail(wrapper_formal);
+    }
+  }
+  insertWrappedCall(fn, wrapper, call);
+  normalize(wrapper);
+  addCache(coercionsCache, fn, wrapper, coercion_map);
+  return wrapper;
 }
 
 
@@ -488,6 +408,74 @@ coercionWrap(FnSymbol* fn, CallInfo* info) {
   if (coerce)
     fn = buildCoercionWrapper(fn, &subs, &coercions, info->call->square);
   return fn;  
+}
+
+
+////
+//// promotion wrapper code
+////
+
+
+static FnSymbol*
+buildPromotionWrapper(FnSymbol* fn,
+                      SymbolMap* promotion_subs,
+                      bool square) {
+  // return cached if we already created this promotion wrapper
+  SymbolMap map;
+  Vec<Symbol*> keys;
+  promotion_subs->get_keys(keys);
+  forv_Vec(Symbol*, key, keys)
+    map.put(key, promotion_subs->get(key));
+  map.put(fn, (Symbol*)square); // add value of square to cache
+  if (FnSymbol* cached = checkCache(promotionsCache, fn, &map))
+    return cached;
+
+  currentLineno = fn->lineno;
+  FnSymbol* wrapper = buildEmptyWrapper(fn);
+  wrapper->addPragma("promotion wrapper");
+  wrapper->cname = astr("_promotion_wrap_", fn->cname);
+  CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
+  CallExpr* iterator = new CallExpr(square ? "_build_domain" : "_build_tuple");
+  CallExpr* actualCall = new CallExpr(fn);
+  int i = 1;
+  for_formals(formal, fn) {
+    currentLineno = formal->lineno;
+    Symbol* new_formal = formal->copy();
+    if (fn->_this == formal)
+      wrapper->_this = new_formal;
+    if (Symbol* sub = promotion_subs->get(formal)) {
+      TypeSymbol* ts = toTypeSymbol(sub);
+      if (!ts)
+        INT_FATAL(fn, "error building promotion wrapper");
+      new_formal->type = ts->type;
+      wrapper->insertFormalAtTail(new_formal);
+      iterator->insertAtTail(new_formal);
+      VarSymbol* index = new VarSymbol(astr("_p_i_", istr(i)));
+      index->isCompilerTemp = true;
+      wrapper->insertAtTail(new DefExpr(index));
+      indicesCall->insertAtTail(index);
+      actualCall->insertAtTail(index);
+    } else {
+      wrapper->insertFormalAtTail(new_formal);
+      actualCall->insertAtTail(new_formal);
+    }
+    i++;
+  }
+
+  Expr* indices = indicesCall;
+  if (indicesCall->numActuals() == 1)
+    indices = indicesCall->get(1)->remove();
+  if (fn->getReturnSymbol() == gVoid) {
+    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(actualCall))));
+  } else {
+    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, actualCall)))));
+    wrapper->fnTag = FN_ITERATOR;
+    wrapper->removePragma("inline");
+  }
+  fn->defPoint->insertBefore(new DefExpr(wrapper));
+  normalize(wrapper);
+  addCache(promotionsCache, fn, wrapper, &map);
+  return wrapper;
 }
 
 
