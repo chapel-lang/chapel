@@ -47,6 +47,20 @@ checkCache(SymbolMapCache& cache, FnSymbol* oldFn, SymbolMap* map) {
 
 
 void
+replaceCache(SymbolMapCache& cache, FnSymbol* oldFn, FnSymbol* fn, SymbolMap* map) {
+  if (Vec<SymbolMapCacheEntry*>* entries = cache.get(oldFn)) {
+    forv_Vec(SymbolMapCacheEntry, entry, *entries) {
+      if (isCacheEntryMatch(map, &entry->map)) {
+        entry->fn = fn;
+        return;
+      }
+    }
+  }
+  INT_FATAL(oldFn, "unable to replace cache entry; entry does not exist");
+}
+
+
+void
 freeCache(SymbolMapCache& cache) {
   Vec<FnSymbol*> keys;
   cache.get_keys(keys);

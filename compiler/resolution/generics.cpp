@@ -95,9 +95,10 @@ copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbo
 
 static FnSymbol*
 instantiate_function(FnSymbol *fn, SymbolMap *generic_subs, Type* newType,
-                     SymbolMap* paramMap, CallExpr* call) {
+                     CallExpr* call) {
   SymbolMap map;
   FnSymbol* clone = fn->copy(&map);
+  //printf("clone: %d %s\n", clone->id, clone->cname);
 
   clone->isGeneric = false;
   clone->visible = false;
@@ -115,7 +116,7 @@ instantiate_function(FnSymbol *fn, SymbolMap *generic_subs, Type* newType,
         Symbol* val = generic_subs->v[i].value;
         if (!key || !val || isTypeSymbol(val))
           INT_FATAL("error building parameter map in instantiation");
-        paramMap->put(key, val);
+        paramMap.put(key, val);
       }
     }
   }
@@ -124,12 +125,12 @@ instantiate_function(FnSymbol *fn, SymbolMap *generic_subs, Type* newType,
   // again; this may happen because the type is omitted and the
   // argument is later instantiated based on the type of the parameter
   for_formals(arg, fn) {
-    if (paramMap->get(arg)) {
+    if (paramMap.get(arg)) {
       Symbol* key = map.get(arg);
-      Symbol* val = paramMap->get(arg);
+      Symbol* val = paramMap.get(arg);
       if (!key || !val)
         INT_FATAL("error building parameter map in instantiation");
-      paramMap->put(key, val);
+      paramMap.put(key, val);
     }
   }
 
@@ -151,7 +152,7 @@ instantiate_function(FnSymbol *fn, SymbolMap *generic_subs, Type* newType,
         cloneFormal->intent = INTENT_BLANK;
         cloneFormal->instantiatedParam = true;
         if (cloneFormal->type->isGeneric)
-          cloneFormal->type = paramMap->get(cloneFormal)->type;
+          cloneFormal->type = paramMap.get(cloneFormal)->type;
       } else {
         cloneFormal->instantiatedFrom = formal->type;
         cloneFormal->type = value->type;
@@ -159,7 +160,7 @@ instantiate_function(FnSymbol *fn, SymbolMap *generic_subs, Type* newType,
       if (!cloneFormal->defaultExpr || formal->isTypeVariable) {
         if (cloneFormal->defaultExpr)
           cloneFormal->defaultExpr->remove();
-        if (Symbol* sym = paramMap->get(cloneFormal))
+        if (Symbol* sym = paramMap.get(cloneFormal))
           cloneFormal->defaultExpr = new BlockStmt(new SymExpr(sym));
         else
           cloneFormal->defaultExpr = new BlockStmt(new SymExpr(gNil));
@@ -178,20 +179,6 @@ instantiate_tuple(FnSymbol* fn) {
   // tuple is NULL for the default constructor
   //
 
-//   CallExpr* typeConstructorCall = NULL;
-//   if (!tuple) {
-//     Vec<BaseAST*> asts;
-//     collect_asts(fn, asts);
-//     forv_Vec(BaseAST, ast, asts) {
-//       if (CallExpr* call = toCallExpr(ast)) {
-//         if (call->isNamed("_type_construct__tuple")) {
-//           typeConstructorCall = call;
-//         }
-//       }
-//     }
-//     INT_ASSERT(typeConstructorCall);
-//   }
-
   int64 size = toVarSymbol(fn->substitutions.v[0].value)->immediate->int_value();
   Expr* last = fn->body->body.last();
   for (int i = 1; i <= size; i++) {
@@ -204,21 +191,13 @@ instantiate_tuple(FnSymbol* fn) {
                                     new_StringSymbol(name), arg));
     if (tuple)
       tuple->fields.insertAtTail(new DefExpr(new VarSymbol(name)));
-//     if (typeConstructorCall) {
-//       VarSymbol* tmp = new VarSymbol("_tmp");
-//       tmp->isCompilerTemp = true;
-//       tmp->canType = true;
-//       typeConstructorCall->getStmtExpr()->insertBefore(new DefExpr(tmp));
-//       typeConstructorCall->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_TYPEOF, arg)));
-//       typeConstructorCall->insertAtTail(tmp);
-//     }
   }
   fn->removePragma("tuple");
   fn->addPragma("allow ref");
 }
 
 
-static FnSymbol*
+static void
 instantiate_tuple_init(FnSymbol* fn) {
   if (fn->numFormals() != 1)
     INT_FATAL(fn, "tuple init function has more than one argument");
@@ -230,11 +209,10 @@ instantiate_tuple_init(FnSymbol* fn) {
     call->insertAtTail(new CallExpr(PRIMITIVE_INIT, new CallExpr(arg, new_IntSymbol(i))));
   fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, call)));
   normalize(fn);
-  return fn;
 }
 
 
-static FnSymbol*
+static void
 instantiate_tuple_hash( FnSymbol* fn) {
   if (fn->numFormals() != 1)
     INT_FATAL(fn, "tuple hash function has more than one argument");
@@ -267,22 +245,6 @@ instantiate_tuple_hash( FnSymbol* fn) {
   }
   fn->body->replace( new BlockStmt( ret));
   normalize(fn);
-  return fn;
-}
-
-
-static int
-count_instantiate_with_recursion(Type* t) {
-  if (t->instantiatedWith) {
-    int high = 0;
-    forv_Vec(Type, s, *t->instantiatedWith) {
-      int count = count_instantiate_with_recursion(s);
-      if (count > high)
-        high = count;
-    }
-    return high + 1;
-  }
-  return 0;
 }
 
 
@@ -317,12 +279,27 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
 }
 
 
-static FnSymbol*
-instantiate_generic(FnSymbol* fn,
-                    SymbolMap* generic_substitutions, 
-                    SymbolMap* paramMap,
-                    CallExpr* call) {
-  form_Map(SymbolMapElem, e, *generic_substitutions) {
+static bool
+evaluateWhereClause(FnSymbol* fn) {
+  if (fn->where) {
+    whereStack.add(fn);
+    resolveFormals(fn);
+    resolveBlock(fn->where);
+    whereStack.pop();
+    SymExpr* se = toSymExpr(fn->where->body.last());
+    if (!se)
+      USR_FATAL(fn->where, "invalid where clause");
+    if (se->var == gFalse)
+      return false;
+    if (se->var != gTrue)
+      USR_FATAL(fn->where, "invalid where clause");
+  }
+  return true;
+}
+
+
+FnSymbol* instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
+  form_Map(SymbolMapElem, e, *subs) {
     if (TypeSymbol* ts = toTypeSymbol(e->value)) {
       if (ts->type->isGeneric)
         INT_FATAL(fn, "illegal instantiation with a generic type");
@@ -334,21 +311,44 @@ instantiate_generic(FnSymbol* fn,
 
   // return cached if we did this instantiation already
   FnSymbol* root = fn;
-  while (root->instantiatedFrom && root->numFormals() == root->instantiatedFrom->numFormals())
+  while (root->instantiatedFrom && root->numFormals() == root->instantiatedFrom->numFormals()) {
     root = root->instantiatedFrom;
-
-  SymbolMap all_substitutions;
-  if (fn->instantiatedFrom)
-    form_Map(SymbolMapElem, e, fn->substitutions)
-      all_substitutions.put(e->key, e->value);
-  form_Map(SymbolMapElem, e, *generic_substitutions)
-    copyGenericSub(all_substitutions, root, fn, e->key, e->value);
-
-  if (FnSymbol* cached = checkCache(genericsCache, root, &all_substitutions)) {
-    return cached;
   }
 
-  //  static int uid = 1;
+  SymbolMap all_subs;
+  if (fn->instantiatedFrom)
+    form_Map(SymbolMapElem, e, fn->substitutions)
+      all_subs.put(e->key, e->value);
+  form_Map(SymbolMapElem, e, *subs)
+    copyGenericSub(all_subs, root, fn, e->key, e->value);
+
+  if (FnSymbol* cached = checkCache(genericsCache, root, &all_subs)) {
+
+    if (cached->where) {
+      forv_Vec(FnSymbol, where, whereStack) {
+        if (where == cached) {
+          USR_FATAL_CONT(cached->where, "illegal where clause due to infinite instantiation");
+          FnSymbol* printOn = NULL;
+          forv_Vec(FnSymbol, tmp, whereStack) {
+            if (printOn)
+              USR_PRINT(printOn->where, "evaluation of '%s' where clause results"
+                        " in instantiation of '%s'", printOn->name, tmp->name);
+            if (printOn || tmp == where)
+              printOn = tmp;
+          }
+          USR_PRINT(cached->where, "evaluation of '%s' where clause results"
+                    " in instantiation of '%s'", printOn->name, cached->name);
+          USR_STOP();
+        }
+      }
+    }
+
+    if (cached != (FnSymbol*)gVoid)
+      return cached;
+    else
+      return NULL;
+  }
+
   FnSymbol* newfn = NULL;
   SET_LINENO(fn);
 
@@ -380,12 +380,12 @@ instantiate_generic(FnSymbol* fn,
     // copy generic class type
     TypeSymbol* clone = fn->retType->symbol->copy();
 
-    // compute instantiatedWith vector and rename instantiated type
+    // rename instantiated type
     clone->name = astr(clone->name, "(");
     clone->cname = astr(clone->cname, "_");
     bool first = false;
-    for (int i = 0; i < generic_substitutions->n; i++) {
-      if (Symbol* value = generic_substitutions->v[i].value) {
+    for (int i = 0; i < subs->n; i++) {
+      if (Symbol* value = subs->v[i].value) {
         if (TypeSymbol* ts = toTypeSymbol(value)) {
           if (!first && !strncmp(clone->name, "_tuple", 6)) {
             clone->name = astr("(");
@@ -396,9 +396,6 @@ instantiate_generic(FnSymbol* fn,
           }
           clone->cname = astr(clone->cname, ts->cname);
           clone->name = astr(clone->name, ts->name);
-          if (!clone->type->instantiatedWith)
-            clone->type->instantiatedWith = new Vec<Type*>();
-          clone->type->instantiatedWith->add(ts->type);
           first = true;
         } else {
           if (first) {
@@ -435,36 +432,23 @@ instantiate_generic(FnSymbol* fn,
 
     clone->type->instantiatedFrom = fn->retType;
 
-    // this shouldn't be hard-coded...  do we even want it?? -SJD
-    if (count_instantiate_with_recursion(clone->type) >= 50)
-      USR_FATAL(clone->type, "recursive type instantiation limit reached");
-
-    clone->type->substitutions.map_union(*generic_substitutions);
-    newfn = instantiate_function(fn, generic_substitutions, clone->type,
-                                 paramMap, call);
-    addCache(genericsCache, root, newfn, &all_substitutions);
-    newfn->substitutions.append(all_substitutions);
+    clone->type->substitutions.map_union(*subs);
+    newfn = instantiate_function(fn, subs, clone->type, call);
 
     clone->type->defaultTypeConstructor = newfn;
     newfn->retType = clone->type;
-    if (fn->hasPragma("tuple"))
-      instantiate_tuple(newfn);
-
   } else {
-    newfn = instantiate_function(fn, generic_substitutions, NULL, paramMap, call);
-    addCache(genericsCache, root, newfn, &all_substitutions);
-    newfn->substitutions.append(all_substitutions);
-    
-
+    newfn = instantiate_function(fn, subs, NULL, call);
     if (fn->hasPragma("tuple init"))
-      newfn = instantiate_tuple_init(newfn);
-
-    if (fn->hasPragma("tuple hash function"))  // finish generating hash function?
-      newfn = instantiate_tuple_hash( newfn);
-
-    if (fn->hasPragma("tuple"))
-      instantiate_tuple(newfn);
+      instantiate_tuple_init(newfn);
+    if (fn->hasPragma("tuple hash function"))
+      instantiate_tuple_hash( newfn);
   }
+
+  newfn->substitutions.append(all_subs);
+
+  if (fn->hasPragma("tuple"))
+    instantiate_tuple(newfn);
 
   fn->instantiatedTo->add(newfn);
 
@@ -472,6 +456,14 @@ instantiate_generic(FnSymbol* fn,
     newfn->getFormal(2)->type->methods.add(newfn);
 
   newfn->tag_generic();
+
+  addCache(genericsCache, root, newfn, &all_subs);
+
+  if (!newfn->isGeneric && evaluateWhereClause(newfn) == false) {
+    //printf("  -- deleted %d\n", newfn->id);
+    replaceCache(genericsCache, root, (FnSymbol*)gVoid, &all_subs);
+    return NULL;
+  }
 
   //
   // print out instantiated functions and substitutions
@@ -481,7 +473,7 @@ instantiate_generic(FnSymbol* fn,
 //     filename = (filename) ? filename + 1 : fn->getModule()->filename;
 //     printf("%s:%d: %s(", filename, fn->lineno, fn->cname);
 //     bool first = true;
-//     form_Map(SymbolMapElem, e, all_substitutions) {
+//     form_Map(SymbolMapElem, e, all_subs) {
 //       if (!first) printf("; ");
 //       first = false;
 //       printf("%s -> %s", e->key->name, e->value->name);
@@ -494,48 +486,12 @@ instantiate_generic(FnSymbol* fn,
 //     printf("\n");
 //   }
 
-  return newfn;
-}
-
-
-FnSymbol*
-instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
-  FnSymbol* ifn = instantiate_generic(fn, subs, &paramMap, call);
-
-  ifn->isExtern = fn->isExtern; // preserve extern-ness of instantiated fn
-  if (!ifn->isGeneric && ifn->where) {
-    forv_Vec(FnSymbol, where, whereStack) {
-      if (where == ifn) {
-        USR_FATAL_CONT(ifn->where, "illegal where clause due to infinite instantiation");
-        FnSymbol* printOn = NULL;
-        forv_Vec(FnSymbol, tmp, whereStack) {
-          if (printOn)
-            USR_PRINT(printOn->where, "evaluation of '%s' where clause results in instantiation of '%s'", printOn->name, tmp->name);
-          if (printOn || tmp == where)
-            printOn = tmp;
-        }
-        USR_PRINT(ifn->where, "evaluation of '%s' where clause results in instantiation of '%s'", printOn->name, ifn->name);
-        USR_STOP();
-      }
-    }
-    whereStack.add(ifn);
-    resolveFormals(ifn);
-    resolveBlock(ifn->where);
-    whereStack.pop();
-    SymExpr* symExpr = toSymExpr(ifn->where->body.last());
-    if (!symExpr)
-      USR_FATAL(ifn->where, "illegal where clause");
-    if (!strcmp(symExpr->var->name, "false"))
-      return NULL;
-    if (strcmp(symExpr->var->name, "true"))
-      USR_FATAL(ifn->where, "illegal where clause");
-  }
-
   if (explainInstantiationLine == -2)
     parseExplainFlag(fExplainInstantiation, &explainInstantiationLine, &explainInstantiationModule);
 
-  if (!ifn->isGeneric && explainInstantiationLine) {
-    explainInstantiation(ifn);
+  if (!newfn->isGeneric && explainInstantiationLine) {
+    explainInstantiation(newfn);
   }
-  return ifn;
+
+  return newfn;
 }

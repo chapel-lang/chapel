@@ -43,7 +43,6 @@ class Type : public BaseAST {
   bool isGeneric;
   bool hasGenericDefaults; // all generic fields have defaults
   Type *instantiatedFrom;
-  Vec<Type*> *instantiatedWith;
   SymbolMap substitutions;
   ClassType* refType;  // pointer to references for non-reference types
 

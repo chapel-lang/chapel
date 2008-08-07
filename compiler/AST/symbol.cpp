@@ -537,6 +537,7 @@ FnSymbol::copyInner(SymbolMap* map) {
   copy->canType = canType;
   copy->instantiatedFrom = instantiatedFrom;
   copy->instantiationPoint = instantiationPoint;
+  copy->isExtern = isExtern;
   return copy;
 }
 

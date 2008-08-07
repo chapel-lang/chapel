@@ -26,6 +26,7 @@ typedef Map<FnSymbol*,Vec<SymbolMapCacheEntry*>*> SymbolMapCache;
 
 void addCache(SymbolMapCache& cache, FnSymbol* old, FnSymbol* fn, SymbolMap* map);
 FnSymbol* checkCache(SymbolMapCache& cache, FnSymbol* oldFn, SymbolMap* map);
+void replaceCache(SymbolMapCache& cache, FnSymbol* old, FnSymbol* fn, SymbolMap* map);
 void freeCache(SymbolMapCache& cache);
 
 //

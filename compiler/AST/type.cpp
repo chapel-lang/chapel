@@ -19,15 +19,11 @@ Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   isGeneric(false),
   hasGenericDefaults(false),
   instantiatedFrom(NULL),
-  instantiatedWith(NULL),
   refType(NULL)
 {}
 
 
-Type::~Type() {
-  if (instantiatedWith)
-    delete instantiatedWith;
-}
+Type::~Type() { }
 
 
 void Type::verify() {
