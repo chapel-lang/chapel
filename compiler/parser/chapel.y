@@ -668,32 +668,27 @@ opt_formal_ls:
 
 fn_decl_stmt_inner:
   fn_identifier opt_formal_ls
-    { $$ = $2; $$->name = astr($1); $$->cname = $$->name; }
-| TBNOT fn_identifier opt_formal_ls
     {
-      $$ = $3;
-      $$->name = astr("~", $2);
-      $$->cname = astr("chpl_destroy_", $2);
-      $$->addPragma("destructor");
+      $$ = $2;
+      $$->name = astr($1);
+      if ($1[0] == '~' && $1[1] != '\0') {
+        $$->cname = astr("chpl__destroy_", &($1[1]));
+        $$->addPragma("destructor");
+      } else
+        $$->cname = $$->name;
     }
 | type_binding_part TDOT fn_identifier opt_formal_ls
     {
       $$ = $4;
       $$->name = astr($3);
-      $$->cname = $$->name;
+      if ($3[0] == '~' && $3[1] != '\0') {
+        $$->cname = astr("chpl__destroy_", &($3[1]));
+        $$->addPragma("destructor");
+      } else
+        $$->cname = $$->name;
       $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown, $1);
       $$->insertFormalAtHead(new DefExpr($$->_this));
       $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-    }
-| type_binding_part TDOT TBNOT fn_identifier opt_formal_ls
-    {
-      $$ = $5;
-      $$->name = astr("~", $4);
-      $$->cname = astr("chpl_destroy_", $4);
-      $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown, $1);
-      $$->insertFormalAtHead(new DefExpr($$->_this));
-      $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-      $$->addPragma("destructor");
     }
 ;
 
@@ -808,6 +803,8 @@ intent_tag:
 
 fn_identifier:
   identifier
+| TBNOT identifier
+    { $$ = astr("~", $2); }
 | TASSIGN 
   { $$ = "="; } 
 | TBAND
