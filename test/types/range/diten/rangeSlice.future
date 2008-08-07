@@ -1,5 +1,0 @@
-bug: strided range slice overflow
-
-When slicing with ranges involving bounds near the boundaries of the range's
-eltType, there can be overflows that cause strange bounds for the resulting
-range.

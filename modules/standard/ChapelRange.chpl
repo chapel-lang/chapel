@@ -101,13 +101,33 @@ def range._hasHigh() param
   return boundedType == BoundedRangeType.bounded || boundedType == BoundedRangeType.boundedHigh;
 
 
+// 
+// Return the number in the range 0 <= result < b that is congruent to a (mod b)
+//
+def mod(a:integral, b:integral) {
+  if (b <= 0) then
+    halt("modulus divisor must be positive");
+  var tmp = a % b:a.type;
+  return if tmp < 0 then b:a.type + tmp else tmp;
+}
+
+
 //
 // align low bound of this range to an alignment; snap up
 //
 def range._alignLow(alignment: eltType) {
-  var s = abs(stride):eltType, d = abs(low-alignment) % s;
+  var s = abs(stride):eltType;
+  // The following is equivalent to var d = abs(alignment - low) % s;
+  // except that it avoids problems with an overflow in the subtraction.
+  // It uses the fact that if a1 == b1 mod n and a2 == b2 mod n then
+  // a1 - a2 == b1 - b2 mod n and the fact that abs(a-b) is a-b if a > b
+  // and is b-a when b >= a.
+  var d = if(alignment > low) then
+    mod(mod(alignment,s):int - mod(low,s):int, s):eltType
+  else
+    mod(mod(low,s):int - mod(alignment, s):int, s):eltType;
   if d != 0 {
-    if low - alignment < 0 then
+    if low < alignment then
       _low += d;
     else
       _low += s - d;
@@ -119,9 +139,15 @@ def range._alignLow(alignment: eltType) {
 // align high bound of this range to an alignment; snap down
 //
 def range._alignHigh(alignment: eltType) {
-  var s = abs(stride):eltType, d = abs(high-alignment) % s;
+  var s = abs(stride):eltType;
+  // See the note about this declaration in range._alignLow. It is like
+  // var d = abs(alignment - high) % s; but avoids overflow problems.
+  var d = if(alignment > high) then
+    mod(mod(alignment,s):int - mod(high,s):int, s):eltType
+  else
+    mod(mod(high,s):int - mod(alignment,s):int,s):eltType;
   if d != 0 {
-    if high - alignment > 0 then
+    if high > alignment then
       _high -= d;
     else
       _high -= s - d;
