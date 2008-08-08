@@ -382,6 +382,10 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   // instantiate function
   //
   SymbolMap map;
+
+  if (newType)
+    map.put(fn->retType->symbol, newType->symbol);
+
   FnSymbol* newFn = fn->copy(&map);
 
   addCache(genericsCache, root, newFn, &all_subs);
@@ -484,15 +488,6 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
     //
     replaceCache(genericsCache, root, (FnSymbol*)gVoid, &all_subs);
     return NULL;
-  }
-
-  //
-  // update body of constructors with a return type substitution
-  //
-  if (newType) {
-    SymbolMap subs;
-    subs.put(fn->retType->symbol, newType->symbol);
-    update_symbols(newFn, &subs);
   }
 
   if (explainInstantiationLine == -2)
