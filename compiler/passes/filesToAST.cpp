@@ -8,7 +8,6 @@
 #include "countTokens.h"
 #include "yy.h"
 
-static ModuleSymbol* standardModule = NULL;
 static ModuleSymbol* fileModule = NULL;
 static ModuleSymbol* domainModule = NULL;
 

@@ -260,6 +260,7 @@ extern StringChainHash uniqueStringHash;
 extern ModuleSymbol* rootModule;
 extern ModuleSymbol* theProgram;
 extern ModuleSymbol* baseModule;
+extern ModuleSymbol* standardModule;
 extern Symbol *gNil;
 extern Symbol *gNilRef;
 extern Symbol *gUnknown;

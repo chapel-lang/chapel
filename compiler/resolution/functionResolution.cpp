@@ -1332,6 +1332,7 @@ class VisibleFunctionBlock {
 static Map<BlockStmt*,VisibleFunctionBlock*> visibleFunctionMap;
 static int nVisibleFunctions = 0; // for incremental build
 static Map<BlockStmt*,BlockStmt*> visibilityBlockCache;
+static Vec<BlockStmt*> standardModuleSet;
 
 //
 // return the innermost block for searching for visible functions
@@ -1358,8 +1359,17 @@ static void buildVisibleFunctionMap() {
   for (int i = nVisibleFunctions; i < gFns.n; i++) {
     FnSymbol* fn = gFns.v[i];
     if (fn->visible && fn->defPoint->parentSymbol && !isArgSymbol(fn->defPoint->parentSymbol)) {
-      BlockStmt* block =
-        (fn->global) ? theProgram->block : getVisibilityBlock(fn->defPoint);
+      BlockStmt* block = NULL;
+      if (fn->global) {
+        block = theProgram->block;
+      } else {
+        block = getVisibilityBlock(fn->defPoint);
+        //
+        // add all functions in standard modules to theProgram
+        //
+        if (standardModuleSet.set_in(block))
+          block = theProgram->block;
+      }
       VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
       if (!vfb) {
         vfb = new VisibleFunctionBlock();
@@ -1381,11 +1391,19 @@ getVisibleFunctions(BlockStmt* block,
                     const char* name,
                     Vec<FnSymbol*>& visibleFns,
                     Vec<BlockStmt*>& visited) {
-  if (visited.set_in(block)) {
-    INT_ASSERT(isModuleSymbol(block->parentSymbol));
+  //
+  // all functions in standard modules are stored in a single block
+  //
+  if (standardModuleSet.set_in(block))
+    block = theProgram->block;
+
+  //
+  // avoid infinite recursion due to modules with mutual uses
+  //
+  if (visited.set_in(block))
     return NULL;
-  }
-  visited.set_add(block);
+  else if (isModuleSymbol(block->parentSymbol))
+    visited.set_add(block);
 
   bool canSkipThisBlock = true;
 
@@ -3441,9 +3459,30 @@ parseExplainFlag(char* flag, int* line, ModuleSymbol** module) {
 }
 
 
+static void
+computeStandardModuleSet() {
+  standardModuleSet.set_add(rootModule->block);
+  standardModuleSet.set_add(theProgram->block);
+
+  Vec<ModuleSymbol*> stack;
+  stack.add(standardModule);
+
+  while (ModuleSymbol* mod = stack.pop()) {
+    forv_Vec(ModuleSymbol, use, mod->block->modUses) {
+      if (!standardModuleSet.set_in(use->block)) {
+        stack.add(use);
+        standardModuleSet.set_add(use->block);
+      }
+    }
+  }
+}
+
+
 void
 resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
+
+  computeStandardModuleSet();
 
   // call _nilType nil so as to not confuse the user
   dtNil->symbol->name = gNil->name;
