@@ -101,29 +101,11 @@ class Block1DDist {
     boundingBox = bbox;
     targetLocDom = targetLocalesDomain;
     targetLocs = targetLocales;
-    //
-    // WANT TO DO:
-    /*
-    for locid in targetLocDom do
-      on targetLocs(locid) do
-        locDist(locid) = new LocBlock1DDist(idxType, locid, this);
-    */
-    //
-    // BUT results in a _heapAlloc(type int(64)) call.
-    // WORKAROUND:
-    helpConstruct();
-  }
-  //
-  // WORKAROUND CONTINUED:
-  //
-  def helpConstruct() {
+
     for locid in targetLocDom do
       on targetLocs(locid) do
         locDist(locid) = new LocBlock1DDist(idxType, locid, this);
   }
-  //
-  // END WORKAROUND
-  //
 
 
   def writeThis(x:Writer) {
