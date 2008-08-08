@@ -436,12 +436,8 @@ void initPrimitiveTypes(void) {
   dtValue = createPrimitiveType("value", "_chpl_value");
 
   createInitFn(theProgram);
-  if (fNoStdIncs)
-    theProgram->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE,
-                                       new SymExpr("ChapelBase")));
-  else
-    theProgram->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE,
-                                       new SymExpr("ChapelStandard")));
+  theProgram->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE,
+                                     new SymExpr("ChapelStandard")));
 
   theProgram->initFn->insertAtHead(objectDef);
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");

@@ -12,7 +12,6 @@ extern Map<const char*, const char*> configParamMap;
 extern int instantiation_limit;
 
 extern int fdump_html;
-extern int fNoStdIncs;
 
 extern int trace_level;
 

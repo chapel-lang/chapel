@@ -22,37 +22,36 @@ static ModuleSymbol* parseStandardModule(const char* name) {
 
 static void parseStandardModules(void) {
   baseModule = parseStandardModule("ChapelBase.chpl");
-  if (!fNoStdIncs) {
-    standardModule = parseStandardModule("ChapelStandard.chpl");
-    parseStandardModule("ChapelLocale.chpl");
-    fileModule = parseStandardModule("ChapelIO.chpl");
-    parseStandardModule("ChapelTuple.chpl");
-    parseStandardModule("ChapelReduce.chpl");
-    parseStandardModule("ChapelRange.chpl");
-    domainModule = parseStandardModule("ChapelArray.chpl");
-    parseStandardModule("ChapelUtil.chpl");
-    parseStandardModule("SingleLocaleArithmetic.chpl");
-    parseStandardModule("SingleLocaleAssociative.chpl");
-    parseStandardModule("SingleLocaleSparse.chpl");
-    parseStandardModule("SingleLocaleEnum.chpl");
-    parseStandardModule("SingleLocaleOpaque.chpl");
 
-    parseStandardModule("Types.chpl");
-    parseStandardModule("Math.chpl");
+  standardModule = parseStandardModule("ChapelStandard.chpl");
+  parseStandardModule("ChapelLocale.chpl");
+  fileModule = parseStandardModule("ChapelIO.chpl");
+  parseStandardModule("ChapelTuple.chpl");
+  parseStandardModule("ChapelReduce.chpl");
+  parseStandardModule("ChapelRange.chpl");
+  domainModule = parseStandardModule("ChapelArray.chpl");
+  parseStandardModule("ChapelUtil.chpl");
+  parseStandardModule("SingleLocaleArithmetic.chpl");
+  parseStandardModule("SingleLocaleAssociative.chpl");
+  parseStandardModule("SingleLocaleSparse.chpl");
+  parseStandardModule("SingleLocaleEnum.chpl");
+  parseStandardModule("SingleLocaleOpaque.chpl");
 
-    parseStandardModule("List.chpl");
-    parseStandardModule("Time.chpl");
-    parseStandardModule("Random.chpl");
-    parseStandardModule("BitOps.chpl");
-    parseStandardModule("Memory.chpl");
-    parseStandardModule("Schedules.chpl");
-    parseStandardModule("Sort.chpl");
-    parseStandardModule("Search.chpl");
-    parseStandardModule("Vector.chpl");
+  parseStandardModule("Types.chpl");
+  parseStandardModule("Math.chpl");
 
-    // standard distributions
-    parseStandardModule("DistCSR.chpl");
-  }
+  parseStandardModule("List.chpl");
+  parseStandardModule("Time.chpl");
+  parseStandardModule("Random.chpl");
+  parseStandardModule("BitOps.chpl");
+  parseStandardModule("Memory.chpl");
+  parseStandardModule("Schedules.chpl");
+  parseStandardModule("Sort.chpl");
+  parseStandardModule("Search.chpl");
+  parseStandardModule("Vector.chpl");
+
+  // standard distributions
+  parseStandardModule("DistCSR.chpl");
 }
 
 void parse(void) {
@@ -60,15 +59,13 @@ void parse(void) {
 
   parseStandardModules();
 
-  if (!fNoStdIncs) {
-    forv_Vec(TypeSymbol, ts, gTypes) {
-      if (!strcmp(ts->name, "_array")) {
-        dtArray = toClassType(ts->type);
-      } else if (!strcmp(ts->name, "Writer")) {
-        dtWriter = toClassType(ts->type);
-      } else if (!strcmp(ts->name, "file")) {
-        dtChapelFile = toClassType(ts->type);
-      }
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    if (!strcmp(ts->name, "_array")) {
+      dtArray = toClassType(ts->type);
+    } else if (!strcmp(ts->name, "Writer")) {
+      dtWriter = toClassType(ts->type);
+    } else if (!strcmp(ts->name, "file")) {
+      dtChapelFile = toClassType(ts->type);
     }
   }
 
@@ -81,11 +78,7 @@ void parse(void) {
   }
   forv_Vec(ModuleSymbol, mod, allModules) {
     if (mod != standardModule && mod != theProgram && mod != rootModule) {
-      if (fNoStdIncs)
-        mod->block->modUses.add(baseModule);
-      else {
-        mod->block->modUses.add(standardModule);
-      }
+      mod->block->modUses.add(standardModule);
     }
   }
   baseModule->block->modUses.add(rootModule);

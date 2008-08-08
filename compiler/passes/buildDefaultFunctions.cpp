@@ -51,14 +51,12 @@ void buildDefaultFunctions(void) {
       }
       if (type->hasPragma("no default functions"))
         continue;
-      if (!fNoStdIncs) {
-        if (EnumType* et = toEnumType(type->type)) {
-          buildDefaultReadFunction(et);
-          buildStringCastFunction(et);
-        } else if (ClassType* ct = toClassType(type->type)) {
-          buildDefaultReadFunction(ct);
-          buildDefaultWriteFunction(ct);
-        }
+      if (EnumType* et = toEnumType(type->type)) {
+        buildDefaultReadFunction(et);
+        buildStringCastFunction(et);
+      } else if (ClassType* ct = toClassType(type->type)) {
+        buildDefaultReadFunction(ct);
+        buildDefaultWriteFunction(ct);
       }
       if (ClassType* ct = toClassType(type->type)) {
         if (ct->classTag == CLASS_RECORD) {
