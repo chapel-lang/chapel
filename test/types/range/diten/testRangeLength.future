@@ -1,0 +1,4 @@
+bug: range.length for a range with uint bounds causes integral overflow
+
+range.length can make an integer overflow, causing an incorrect result when
+the range has a negative stride.
