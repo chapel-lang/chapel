@@ -1357,7 +1357,7 @@ getVisibilityBlock(Expr* expr) {
 static void buildVisibleFunctionMap() {
   for (int i = nVisibleFunctions; i < gFns.n; i++) {
     FnSymbol* fn = gFns.v[i];
-    if (fn->visible && !isArgSymbol(fn->defPoint->parentSymbol)) {
+    if (fn->visible && fn->defPoint->parentSymbol && !isArgSymbol(fn->defPoint->parentSymbol)) {
       BlockStmt* block =
         (fn->global) ? theProgram->block : getVisibilityBlock(fn->defPoint);
       VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
