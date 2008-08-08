@@ -14,10 +14,6 @@
 linux and general regressions
 =============================
 
-Vector/Vector conflict
-----------------------
-[Error matching program output for users/shetag/tensor]
-
 precision issue, due to user code changing (07/01/08)
 -----------------------------------------------------
 [Error matching program output for
