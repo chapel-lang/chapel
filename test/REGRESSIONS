@@ -56,6 +56,10 @@ failing nondeterministically (e.g., 04/04/08)
 gasnet-specific regressions
 ===========================
 
+??? (08/07/08)
+--------------
+[Error matching compiler output for functions/deitz/iterators/test_promote_inout]
+
 intermittent seg faults
 -----------------------
 [Error matching program output for studies/hpcc/STREAMS/diten/stream-fragmented-local] (07/30/08)
@@ -126,7 +130,8 @@ opts-specific tests
 [Error matching compiler output for release/examples/iterators]
 
 
-(Full run: 68)
+(Full run: 77 (but many tensor failures, accounted for elsewhere, so a
+               net improvement))
 
 --no-dead-code-elimination
 --------------------------
@@ -152,6 +157,10 @@ opts-specific tests
 ----------------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
+--baseline --inline
+-------------------
+[Error matching compiler output for users/franzf/v2/chpl/main]
+
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
 ---------------------------------------------------------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
@@ -166,10 +175,6 @@ opts-specific tests
 [Error matching compiler output for functions/deitz/iterators/tree]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
 [Error matching compiler output for release/examples/iterators]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1dpar]
-[Error matching compiler output for studies/hpcc/common/bradc/unit/modifyLocales]
-[Error matching compiler output for studies/hpcc/common/bradc/unit/multipleDomains]
 [Summary: #Successes = 2139 | #Failures = 9 | #Futures = 0]
 
 --baseline --no-local
@@ -192,14 +197,6 @@ opts-specific tests
 [Error matching compiler output for release/examples/iterators]
 [Error matching compiler output for studies/590o/alaska/graph]
 [Error matching compiler output for studies/590o/blerner/xml-parse]
-[Error matching compiler output for
-studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
-[Error matching compiler output for
-studies/hpcc/STREAMS/bradc/stream-block1dpar]
-[Error matching compiler output for
-studies/hpcc/common/bradc/unit/modifyLocales]
-[Error matching compiler output for
-studies/hpcc/common/bradc/unit/multipleDomains]
 [Error matching compiler output for studies/uts/dequeue]
 [Error matching compiler output for studies/uts/uts_deq]
 [Error matching compiler output for studies/uts/uts_deq_seq]
