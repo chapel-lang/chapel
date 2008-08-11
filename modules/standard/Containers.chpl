@@ -4,7 +4,7 @@ class Vector {
         lastIdx  : int,
         dom      : domain(1),
         elements : [dom] eltType;
-    //param MIN_SIZE : uint = 4;
+//    param MIN_SIZE : uint = 4;
 
     
     def Vector(type eltType, cap=4, offset=0) {
@@ -62,9 +62,11 @@ class Vector {
         return elements[idx];
     }
 
-    def these() {
-        for v in elements {
-            yield v;
+    def these() var {
+        const firstIdx = this.low;
+
+        for idx in firstIdx..lastIdx {
+            yield elements[idx];
         }
     }
 
