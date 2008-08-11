@@ -126,8 +126,7 @@ opts-specific tests
 [Error matching compiler output for release/examples/iterators]
 
 
-(Full run: 77 (but many tensor failures, accounted for elsewhere, so a
-               net improvement))
+(Full run: 52, though some spurious hplExample2 and test_refine errors)
 
 --no-dead-code-elimination
 --------------------------
@@ -149,13 +148,9 @@ opts-specific tests
 -----------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
---no-optimize-loop-iterators
-----------------------------
+--no-optimize-loop-iterators --no-inline-iterators
+--------------------------------------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
-
---baseline --inline
--------------------
-[Error matching compiler output for users/franzf/v2/chpl/main]
 
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
 ---------------------------------------------------------------------
@@ -168,25 +163,20 @@ opts-specific tests
 ----------
 [Error matching compiler output for classes/deitz/tree]
 [Error matching compiler output for classes/diten/allocateManyObjects]
+[Error matching compiler output for functions/deitz/iterators/test_promote_inout]
 [Error matching compiler output for functions/deitz/iterators/tree]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
 [Error matching compiler output for release/examples/iterators]
+[Error matching compiler output for types/scalar/bradc/overloadbools]
+[Error matching compiler output for types/scalar/bradc/overloadbools2]
 [Summary: #Successes = 2139 | #Failures = 9 | #Futures = 0]
 
 --baseline --no-local
 ---------------------
-[Error matching compiler output for arrays/deitz/test_alias1]
-[Error matching compiler output for arrays/deitz/test_alias2]
-[Error matching compiler output for arrays/dinan/reindex]
 [Error matching program output for arrays/diten/promoteFieldAccessAndMethod]
-[Error matching compiler output for classes/bradc/declClassType1c]
-[Error matching compiler output for classes/bradc/writeclass2a]
 [Error matching compiler output for classes/deitz/tree]
-[Error matching compiler output for classes/deitz/infer/infer_field2]
-[Error matching compiler output for classes/deitz/infer/infer_field2a]
-[Error matching compiler output for classes/deitz/infer/infer_field2b]
-[Error matching compiler output for classes/deitz/infer/infer_field2c]
 [Error matching compiler output for classes/diten/allocateManyObjects]
+[Error matching compiler output for functions/deitz/iterators/test_promote_inout]
 [Error matching compiler output for functions/deitz/iterators/tree]
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
@@ -197,10 +187,12 @@ opts-specific tests
 [Error matching compiler output for studies/uts/uts_deq]
 [Error matching compiler output for studies/uts/uts_deq_seq]
 [Error matching program output for types/file/freadComplex]
-[Error matching compiler output for types/tuple/dinan/pining_for_lisp_ver2]
+[Error matching compiler output for types/scalar/bradc/overloadbools]
+[Error matching compiler output for types/scalar/bradc/overloadbools2]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
-[Summary: #Successes = 2120 | #Failures = 29 | #Futures = 0]
+[Summary: #Successes = 2152 | #Failures = 19 | #Futures = 0]
+
 
 
 ==============================
