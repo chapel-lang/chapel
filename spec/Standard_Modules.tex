@@ -684,10 +684,10 @@ supplied to routines in this module to specify the desired time units.
 \end{protobody}
 
 \begin{protohead}
-enum Day { sunday, monday, tuesday, wednesday, thursday, friday, saturday };
+enum Day { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday };
 \end{protohead}
 \begin{protobody}
-The enumeration Day defines the days of the week.
+The enumeration Day defines the days of the week, with Sunday defined to be 0.
 \end{protobody}
 
 
