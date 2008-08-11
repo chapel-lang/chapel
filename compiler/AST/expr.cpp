@@ -1930,7 +1930,8 @@ void CallExpr::codegen(FILE* outfile) {
     } else {
       INT_FATAL(this, "cobegin codegen - call expr not a SymExpr");
     } 
-    fputs(", true);\n", outfile);
+    fprintf(outfile, ", true, %d, \"%s\");\n",
+        fn->lineno, fn->getModule()->filename);
     return;
   }
   else if (fn->hasPragma("cobegin/coforall block")) {
@@ -1977,7 +1978,8 @@ void CallExpr::codegen(FILE* outfile) {
     } else {
       INT_FATAL(this, "cobegin codegen - call expr not a SymExpr");
     }
-    fputs(", _localeID, false);\n", outfile);
+    fprintf(outfile, ", _localeID, false, %d, \"%s\");\n",
+        baseExpr->lineno, baseExpr->getModule()->filename);
     return;
   }
   else if (fn->hasPragma("on block")) {

@@ -5,6 +5,7 @@
 #include "chpltypes.h"
 
 extern int32_t blockreport;
+extern int32_t taskreport;
 
 void parseArgs(int argc, char* argv[]);
 int32_t getArgNumLocales(void);

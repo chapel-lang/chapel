@@ -1,0 +1,28 @@
+
+- reports.chpl:3 on ID
+- reports.chpl:7 on ID
+- reports.chpl:7 on ID
+- reports.chpl:7 on ID
+- reports.chpl:7 on ID
+- reports.chpl:7 on ID
+- reports.chpl:7 on ID
+- reports.chpl:7 on ID
+- reports.chpl:7 on ID
+- reports.chpl:7 on ID
+- reports.chpl:7 on ID
+--------------------------------
+Executing tasks:
+Pending tasks:
+Program is deadlocked!
+Task report
+Waiting at: reports.chpl:4
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8

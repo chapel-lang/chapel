@@ -11,6 +11,7 @@ use SingleLocaleSparse;
 use SingleLocaleEnum;
 use SingleLocaleOpaque;
 use ChapelUtil;
+use ChapelRuntime;
 
 use Types;
 use Math;

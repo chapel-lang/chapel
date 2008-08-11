@@ -1,0 +1,10 @@
+In thread
+Program is deadlocked!
+Waiting at: reports.chpl:10
+Waiting at: reports.chpl:6
+- reports.chpl:4 on ID
+Task report
+--------------------------------
+Pending tasks:
+
+Executing tasks:

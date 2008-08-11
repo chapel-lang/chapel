@@ -74,9 +74,14 @@ typedef void* chpl_threadarg_t;            // function argument
 typedef struct chpl_task_list*   chpl_task_list_p;
 typedef struct chpl_pool_struct* chpl_task_pool_p;
 
-void chpl_add_to_task_list (chpl_threadfp_t, chpl_threadarg_t,
-                            chpl_task_list_p *, int32_t, // locale where task list resides
-                            chpl_bool); // whether to call chpl_begin
+void chpl_add_to_task_list (
+    chpl_threadfp_t  fun,             // function to call for task
+    chpl_threadarg_t arg,             // argument to the function
+    chpl_task_list_p *task_list,
+    int32_t task_list_locale,         // locale where task list resides
+    chpl_bool call_chpl_begin,        // whether to call chpl_begin
+    int lineno,
+    _string filename);
 void chpl_process_task_list (chpl_task_list_p);
 void chpl_execute_tasks_in_list (chpl_task_list_p);
 void chpl_free_task_list (chpl_task_list_p);

@@ -1,0 +1,17 @@
+
+- reportsManyThreads.chpl:11 on ID
+- reportsManyThreads.chpl:17 on ID
+- reportsManyThreads.chpl:3 on ID
+- reportsManyThreads.chpl:4 on ID
+- reportsManyThreads.chpl:5 on ID
+--------------------------------
+Executing tasks:
+Pending tasks:
+Program is deadlocked!
+Task report
+Waiting at: reportsManyThreads.chpl:12
+Waiting at: reportsManyThreads.chpl:14
+Waiting at: reportsManyThreads.chpl:18
+Waiting at: reportsManyThreads.chpl:22
+Waiting at: reportsManyThreads.chpl:6
+Waiting at: reportsManyThreads.chpl:8

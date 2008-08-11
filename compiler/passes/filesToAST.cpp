@@ -28,6 +28,7 @@ static void parseStandardModules(void) {
   parseStandardModule("ChapelTuple.chpl");
   parseStandardModule("ChapelReduce.chpl");
   parseStandardModule("ChapelRange.chpl");
+  parseStandardModule("ChapelRuntime.chpl");
   domainModule = parseStandardModule("ChapelArray.chpl");
   parseStandardModule("ChapelUtil.chpl");
   parseStandardModule("SingleLocaleArithmetic.chpl");
@@ -47,7 +48,7 @@ static void parseStandardModules(void) {
   parseStandardModule("Schedules.chpl");
   parseStandardModule("Sort.chpl");
   parseStandardModule("Search.chpl");
-  parseStandardModule("Vector.chpl");
+  parseStandardModule("Containers.chpl");
 
   // standard distributions
   parseStandardModule("DistCSR.chpl");

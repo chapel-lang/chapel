@@ -1,0 +1,12 @@
+
+- reports.chpl:5
+- reports.chpl:5
+- reports.chpl:5 on ID
+- reports.chpl:5 on ID
+--------------------------------
+Executing tasks:
+Pending tasks:
+Program is deadlocked!
+Task report
+Waiting at: reports.chpl:6
+Waiting at: reports.chpl:7

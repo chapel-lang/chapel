@@ -1,0 +1,9 @@
+#!/bin/csh -f
+set testname = $1
+set outfile  = $2
+
+set tmpfile = $outfile.prediff.tmp
+mv $outfile $tmpfile
+
+sed 's/on [0-9]*/on ID/g' $tmpfile > $outfile
+rm $tmpfile

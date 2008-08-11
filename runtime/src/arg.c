@@ -17,6 +17,7 @@
 
 static int gdbFlag = 0;
 int32_t blockreport = 0; // report locations of blocked threads on SIGINT
+int32_t taskreport = 0;  // report thread hierarchy on SIGINT
 
 int _runInGDB(void) {
   return gdbFlag;
@@ -60,6 +61,8 @@ static void printHelpTable(void) {
     {"-q, --quiet", "run program in quiet mode", 'g'},
     {"-v, --verbose", "run program in verbose mode", 'g'},
     {"-b, --blockreport", "report location of blocked threads on SIGINT", 'g'},
+    {"-t, --taskreport",
+     "report list of pending and executing tasks on SIGINT", 'g'},
     {"--gdb", "run program in gdb", 'g'},
 
     {"-s, --<cfgVar>=<val>", "set the value of a config var", 'c'},    
@@ -285,6 +288,10 @@ void parseArgs(int argc, char* argv[]) {
             blockreport = 1;
             break;
           }
+          if (strcmp(flag, "taskreport") == 0) {
+            taskreport = 1;
+            break;
+          }
           if (strcmp(flag, "quiet") == 0) {
             verbosity = 0;
             break;
@@ -376,6 +383,13 @@ void parseArgs(int argc, char* argv[]) {
       case 'b':
         if (currentArg[2] == '\0') {
           blockreport = 1;
+        } else {
+          unexpectedArg(currentArg);
+        }
+        break;
+      case 't':
+        if (currentArg[2] == '\0') {
+            taskreport = 1;
         } else {
           unexpectedArg(currentArg);
         }

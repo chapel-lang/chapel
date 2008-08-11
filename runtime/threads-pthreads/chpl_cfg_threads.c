@@ -22,6 +22,12 @@
 #include <errno.h>
 #include <sys/time.h>
 
+// functions coming from the Chapel runtime module
+void chpldev_taskTable_add(
+    uint64_t threadID, uint32_t lineno, _string filename);
+void chpldev_taskTable_remove(uint64_t threadID);
+void chpldev_taskTable_print(void);
+
 //
 // task pool: linked list of tasks
 //
@@ -32,6 +38,8 @@ typedef struct chpl_pool_struct {
   _Bool            begun;           // whether execution of this task has begun
   chpl_task_list_p task_list_entry; // points to the task list entry, if there is one
   chpl_task_pool_p next;
+  _string filename;
+  int lineno;
 } task_pool_t;
 
 // This struct is intended for use in a circular linked list where the pointer
@@ -44,6 +52,8 @@ struct chpl_task_list {
   chpl_threadarg_t arg;
   volatile chpl_task_pool_p task_pool_entry; // when null, execution of the associated task has begun
   chpl_task_list_p next;
+  _string filename;
+  int lineno;
 };
 
 
@@ -74,6 +84,7 @@ lockReport* lockReportHead = NULL;
 lockReport* lockReportTail = NULL;
 
 static void  traverseLockedThreads(int sig);
+static void  tasksReport(int sig);
 static _Bool setBlockingLocation(int lineno, _string filename);
 static void  unsetBlockingLocation(void);
 static void  initializeLockReportForThread(void);
@@ -304,6 +315,10 @@ void initChplThreads() {
     signal(SIGINT, traverseLockedThreads);
   }
 
+  if (taskreport) {
+    signal(SIGINT, tasksReport);
+  }
+
   chpl_thread_init();
 }
 
@@ -323,7 +338,7 @@ void chpl_thread_init(void) {
 
 
 uint64_t chpl_thread_id(void) {
-  return (intptr_t) pthread_self();
+  return (uintptr_t) pthread_self();
 }
 
 
@@ -374,10 +389,42 @@ static void traverseLockedThreads(int sig) {
     }
     rep = rep->next;
   }
+
+  if(taskreport) {
+    tasksReport(SIGINT);
+  }
+
   exitChplThreads();
   _chpl_exit_any(1);
 }
 
+// called to print thread report
+static void tasksReport(int sig) {
+    chpl_task_pool_p pendingTask = task_pool_head;
+
+    printf("Task report\n");
+    printf("--------------------------------\n");
+
+    // print out pending tasks
+    printf("Pending tasks:\n");
+    while(pendingTask != NULL) {
+        if(! pendingTask->begun) {
+            printf("- %s:%d\n", pendingTask->filename,
+                (int)pendingTask->lineno);
+        }
+        pendingTask = pendingTask->next;
+    }
+    printf("\n");
+    
+    // print out running tasks
+    printf("Executing tasks:\n");
+    chpldev_taskTable_print();
+
+    // be nice and honor the user's wish to interrupt program execution -
+    // kill all threads and exit program
+    exitChplThreads();
+    _chpl_exit_any(1);
+}
 
 static _Bool setBlockingLocation(int lineno, _string filename) {
   lockReport* lockRprt;
@@ -479,6 +526,12 @@ chpl_begin_helper (chpl_task_pool_p task) {
       initializeLockReportForThread();
   }
 
+  // add incoming task to task-table structure in ChapelRuntime
+  chpl_mutex_lock(&threading_lock);
+  chpldev_taskTable_add(
+    chpl_thread_id(), task->lineno, task->filename);
+  chpl_mutex_unlock(&threading_lock);
+
   while (true) {
     //
     // reset serial state
@@ -491,6 +544,8 @@ chpl_begin_helper (chpl_task_pool_p task) {
     chpl_mutex_lock(&threading_lock);
 
     chpl_free(task, 0, 0);  // make sure task_pool_head no longer points to this task!
+
+    chpldev_taskTable_remove(chpl_thread_id());
 
     //
     // finished task; decrement running count
@@ -537,6 +592,9 @@ chpl_begin_helper (chpl_task_pool_p task) {
 
     //
     // start new task; increment running count and remove task from pool
+    // also add to task to task-table (structure in ChapelRuntime that keeps
+    // track of currently running tasks for task-reports on deadlock or 
+    // Ctrl+C.
     //
     running_cnt++;
     task = task_pool_head;
@@ -547,6 +605,7 @@ chpl_begin_helper (chpl_task_pool_p task) {
       task->task_list_entry = NULL;
     }
     task->begun = true;
+    chpldev_taskTable_add(chpl_thread_id(), task->lineno, task->filename);
     task_pool_head = task_pool_head->next;
     if (task_pool_head == NULL)  // task pool is now empty
       task_pool_tail = NULL;
@@ -644,9 +703,17 @@ static void schedule_next_task(int howMany) {
 // create a task from the given function pointer and arguments
 // and append it to the end of the task pool
 // assumes threading_lock has already been acquired!
-static chpl_task_pool_p add_to_task_pool (chpl_threadfp_t fp, chpl_threadarg_t a,
-                                          _Bool serial, chpl_task_list_p task_list_entry) {
+static chpl_task_pool_p add_to_task_pool (
+    chpl_threadfp_t fp,
+    chpl_threadarg_t a,
+   _Bool serial,
+   chpl_task_list_p task_list_entry,
+   _string filename,
+   int lineno)
+{
   chpl_task_pool_p task = (chpl_task_pool_p)chpl_alloc(sizeof(task_pool_t), "task pool entry", 0, 0);
+  task->filename = filename;
+  task->lineno = lineno;
   task->fun = fp;
   task->arg = a;
   task->serial_state = serial;
@@ -677,7 +744,8 @@ void chpl_begin (chpl_threadfp_t fp, chpl_threadarg_t a,
     // begin critical section
     chpl_mutex_lock(&threading_lock);
 
-    task_pool_entry = add_to_task_pool (fp, a, serial_state, task_list_entry);
+    task_pool_entry = add_to_task_pool(fp, a, serial_state, task_list_entry,
+        task_list_entry->filename, task_list_entry->lineno);
     // this task may begin executing before returning from this function, so the task list
     // node needs to be updated before there is any possibility of launching this task
     if (task_list_entry)
@@ -695,10 +763,15 @@ void chpl_begin (chpl_threadfp_t fp, chpl_threadarg_t a,
 }
 
 void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
-                            chpl_task_list_p *task_list, int32_t task_list_locale,
-                            chpl_bool call_chpl_begin) {
+                            chpl_task_list_p *task_list,
+                            int32_t task_list_locale,
+                            chpl_bool call_chpl_begin,
+                            int lineno,
+                            _string filename) {
   if (task_list_locale == _localeID) {
     chpl_task_list_p task = (chpl_task_list_p)chpl_alloc(sizeof(struct chpl_task_list), "task list entry", 0, 0);
+    task->filename = filename;
+    task->lineno = lineno;
     task->fun = fun;
     task->arg = arg;
     task->task_pool_entry = NULL;
@@ -745,7 +818,17 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
   if (serial)
     do {
       task = next_task;
+
+      chpl_mutex_lock(&threading_lock);
+      chpldev_taskTable_add(chpl_thread_id(), task->lineno, task->filename);
+      chpl_mutex_unlock(&threading_lock);
+
       (*task->fun)(task->arg);
+
+      chpl_mutex_lock(&threading_lock);
+      chpldev_taskTable_remove(chpl_thread_id());
+      chpl_mutex_unlock(&threading_lock);
+
       next_task = task->next;
     } while (task != task_list);
 
@@ -762,7 +845,8 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
 
       do {
         task = next_task;
-        task->task_pool_entry = add_to_task_pool (task->fun, task->arg, serial, task);
+        task->task_pool_entry = add_to_task_pool(
+            task->fun, task->arg, serial, task, task->filename, task->lineno);
         assert(task->task_pool_entry == NULL
                || task->task_pool_entry->task_list_entry == task);
         next_task = task->next;
@@ -777,7 +861,16 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
 
     // Execute the first task on the list, since it has to run to completion
     // before continuing beyond the cobegin or coforall it's in.
+     chpl_mutex_lock(&threading_lock);
+     chpldev_taskTable_add(
+        chpl_thread_id(), first_task->lineno, first_task->filename);
+     chpl_mutex_unlock(&threading_lock);
+
     (*first_task->fun)(first_task->arg);
+
+    chpl_mutex_lock(&threading_lock);
+    chpldev_taskTable_remove(chpl_thread_id());
+    chpl_mutex_unlock(&threading_lock);
   }
 }
 
