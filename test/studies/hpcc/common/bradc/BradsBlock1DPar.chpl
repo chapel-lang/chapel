@@ -10,11 +10,6 @@
 
 // TODO: Make these into an official distribution?
 
-// TODO: Label which routines are the compiler's interface vs. an
-// internal interface.
-
-// TODO: Label the linkage fields.
-
 // TODO: implement the slicing interface?
 
 config param debugBradsBlock1D = false;
@@ -26,16 +21,21 @@ enum IteratorType { leader, follower };
 // The distribution class
 //
 class Block1DDist {
+
+  // GENERICS:
+
   //
   // The distribution's index type and domain's global index type
   //
   type idxType = int(64);
 
+
+  // STATE:
+
   //
   // The bounding box that defines the block distribution
   //
   const boundingBox: domain(1, idxType);
-
 
   //
   // a domain and array describing the set of target locales to which
@@ -43,36 +43,18 @@ class Block1DDist {
   //
   const targetLocDom: domain(1);
   const targetLocs: [targetLocDom] locale;
-  //
-  // NOTE: originally I wrote this as:
-  //
-  //   const targetLocs = Locales;
-  //   const targetLocDom = targetLocs.domain;
-  //
-  // but this had two interesting problems:
-  //
-  // (1) the capture of the targetLocs array only makes a copy of the
-  //     array, not of its domain, so if someone were to resize the
-  //     LocaleSpace domain outside of the class, this would inadvertantly
-  //     get resized as well.  We really want to make a copy of both the
-  //     domain and array (which I now do in the constructor).
-  //
-  // (2) Initializing targetLocs with Locales prevents us from assigning
-  //     anything other than a numLocales-ary array of locales to it
-  //     which is stricter than I wanted -- I only wanted to restrict
-  //     us to a 1D array of locales.  In our current model, this would
-  //     require us to have some sort of [domain(1)] locale declaration
-  //     to make it work.  Or we could think about whether a model in
-  //     which only the array's static type information is inferred
-  //     for a field?
 
 
+  // LINKAGE:
+
   //
-  // an array of local distribution class descriptors -- set up in
-  // the class constructor
+  // DOWN: an array of local distribution class descriptors -- set up
+  // in the class constructor
   //
   const locDist: [targetLocDom] LocBlock1DDist(idxType);
 
+
+  // CONSTRUCTORS:
 
   def Block1DDist(type idxType = int(64), bbox: domain(1, idxType),
                   targetLocales: [] locale = Locales) {
@@ -93,6 +75,22 @@ class Block1DDist {
   }
 
 
+  // DISTRIBUTION INTERFACE:
+
+  //
+  // Create a new domain over this distribution with the given index
+  // set (inds) and global index type (idxType, idxType)
+  //
+  // TODO: What should we do if domIdxType did not match idxType?
+  //
+  def newDomain(inds, type domIdxType = idxType) where domIdxType == idxType {
+    return new Block1DDom(idxType, this, whole=inds);
+  }
+
+
+  //
+  // print out the distribution
+  //
   def writeThis(x:Writer) {
     x.writeln("BradsBlock1DPar");
     x.writeln("---------------");
@@ -104,16 +102,15 @@ class Block1DDist {
       x.writeln("  [", locid, "] ", locDist(locid));
   }
 
-
   //
-  // Create a new domain over this distribution with the given index
-  // set (inds) and global index type (idxType, idxType)
+  // convert an index into a locale value
   //
-  // TODO: What should we do if domIdxType did not match idxType?
-  //
-  def newDomain(inds, type domIdxType = idxType) where domIdxType == idxType {
-    return new Block1DDom(idxType, this, inds);
+  def ind2loc(ind: idxType) {
+    return targetLocs(ind2locInd(ind));
   }
+
+
+  // INTERNAL INTERFACE:
 
   //
   // compute what chunk of inds is owned by a given locale -- assumes
@@ -143,20 +140,22 @@ class Block1DDist {
     const locInd = (ind0 * targetLocs.numElements) / boundingBox.numIndices;
     return locInd: index(targetLocDom);
   }
-
-  def ind2loc(ind: idxType) {
-    return targetLocs(ind2locInd(ind));
-  }
 }
 
 //
 // A per-locale local distribution class
 //
 class LocBlock1DDist {
+
+  // GENERICS:
+
   // 
   // The distribution's index type and domain's global index type
   //
   type idxType;
+
+
+  // STATE:
 
   //
   // This stores the piece of the global bounding box owned by
@@ -165,18 +164,26 @@ class LocBlock1DDist {
   // the section of the global index space owned by the locale.
   //
   const myChunk: domain(1, idxType);
-  const localeIdx: int;
-  const loc: locale;
 
   //
-  // Compute what chunk of index(1) is owned by the current locale
-  // Arguments:
+  // The locale owning this class
+  //
+  // TODO: This is only used in the writeThis() class -- can we remove it?
+  //
+  const loc: locale;
+
+
+  // CONSTRUCTORS:
+
+  //
+  // Constructor computes what chunk of index(1) is owned by the
+  // current locale
   //
   def LocBlock1DDist(type idxType, 
                      _localeIdx: int, // the locale index from the target domain
                      dist: Block1DDist(idxType) // reference to glob dist
                      ) {
-    localeIdx = _localeIdx;
+    const localeIdx = _localeIdx;
     loc = dist.targetLocs(localeIdx);
     //
     // TODO: Create these assertions for other local classes as well
@@ -197,12 +204,18 @@ class LocBlock1DDist {
       writeln(this);
   }
 
+
+  // INTERNAL INTERFACE:
+
   //
   // a helper function for mapping processors to indices
   //
   def procToData(x, lo)
     return (lo + (x: lo.type) + (x:real != x:int:real));
 
+  //
+  // print out the local distribution class
+  //
   def writeThis(x:Writer) {
     x.write("locale ", loc.id, " owns chunk: ", myChunk);
   }
@@ -213,23 +226,24 @@ class LocBlock1DDist {
 // The global domain class
 //
 class Block1DDom {
+
+  // GENERICS:
+
   //
   // The index types of the domain
   //
   type idxType;
 
+
+  // LINKAGE:
+
   //
-  // a pointer to the parent distribution
+  // LEFT: a pointer to the parent distribution
   //
   const dist: Block1DDist(idxType);
 
   //
-  // a domain describing the complete domain
-  //
-  const whole: domain(1, idxType);
-
-  //
-  // an array of local domain class descriptors -- set up in
+  // DOWN: an array of local domain class descriptors -- set up in
   // initialize() below
   //
   // TODO: would like this to be const and initialize in-place,
@@ -240,6 +254,17 @@ class Block1DDom {
   //
   var locDoms: [dist.targetLocDom] LocBlock1DDom(idxType);
 
+
+  // STATE:
+
+  //
+  // a domain describing the complete domain
+  //
+  const whole: domain(1, idxType);
+
+
+  // CONSTRUCTORS:
+
   def initialize() {
     for localeIdx in dist.targetLocDom do
       on dist.targetLocs(localeIdx) do
@@ -248,6 +273,9 @@ class Block1DDom {
     if debugBradsBlock1D then
       [loc in dist.targetLocDom] writeln(loc, " owns ", locDoms(loc));
   }
+
+
+  // GLOBAL DOMAIN INTERFACE:
 
   //
   // the iterator for the domain -- currently sequential
@@ -364,15 +392,24 @@ class Block1DDom {
 // the local domain class
 //
 class LocBlock1DDom {
+
+  // GENERICS:
+
   //
   // The index type of the domain
   //
   type idxType;
 
+
+  // LINKAGE:
+
   //
-  // a reference to the parent global domain class
+  // UP: a reference to the parent global domain class
   //
   const wholeDom: Block1DDom(idxType);
+
+
+  // STATE:
 
   //
   // a local domain describing the indices owned by this locale
@@ -385,6 +422,9 @@ class LocBlock1DDom {
   // indices back to the local index type.
   //
   var myBlock: domain(1, idxType);
+
+
+  // LOCAL DOMAIN INTERFACE:
 
   //
   // iterator over this locale's indices
@@ -409,7 +449,6 @@ class LocBlock1DDom {
         where iterator == IteratorType.follower {
   }
 
-
   //
   // how to write out this locale's indices
   //
@@ -417,6 +456,8 @@ class LocBlock1DDom {
     x.write(myBlock);
   }
 
+
+  // INTERNAL INTERFACE:
 
   //
   // queries for this locale's number of indices, low, and high bounds
@@ -442,6 +483,9 @@ class LocBlock1DDom {
 // the global array class
 //
 class Block1DArr {
+
+  // GENERICS:
+
   //
   // The index type of the domain
   //
@@ -451,14 +495,17 @@ class Block1DArr {
   // the array's element type
   //
   type elemType;
+
+
+  // LINKAGE:
   
   //
-  // the global domain descriptor for this array
+  // LEFT: the global domain descriptor for this array
   //
   var dom: Block1DDom(idxType);
 
   //
-  // an array of local array classes
+  // DOWN: an array of local array classes
   //
   // TODO: would like this to be const and initialize in-place,
   // removing the initialize method; would want to be able to use
@@ -468,11 +515,17 @@ class Block1DArr {
   //
   var locArr: [dom.dist.targetLocDom] LocBlock1DArr(idxType, elemType);
 
+
+  // CONSTRUCTORS:
+
   def initialize() {
     for localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
         locArr(localeIdx) = new LocBlock1DArr(idxType, elemType, dom.locDoms(localeIdx));
   }
+
+
+  // GLOBAL ARRAY INTERFACE:
 
   //
   // the global accessor for the array
@@ -549,6 +602,9 @@ class Block1DArr {
 // the local array class
 //
 class LocBlock1DArr {
+
+  // GENERICS:
+
   //
   // The index type of the domain
   //
@@ -559,15 +615,24 @@ class LocBlock1DArr {
   //
   type elemType;
 
+
+  // LINKAGE:
+
   //
-  // a reference to the local domain class for this array and locale
+  // LEFT: a reference to the local domain class for this array and locale
   //
   const locDom: LocBlock1DDom(idxType);
+
+
+  // STATE:
 
   //
   // the block of local array data
   //
   var myElems: [locDom.myBlock] elemType;
+
+
+  // LOCAL ARRAY INTERFACE:
 
   //
   // the accessor for the local array -- assumes the index is local
