@@ -469,13 +469,13 @@ def test_LUFactorizeNorms(
     return max(resid1, resid2, resid3) <= 16.0;
 }
 
-def test_LUFactorize(rprt = true) : bool {
+def test_LUFactorize(rprt = true, seed = -1) : bool {
     // construct a matrix of random size with random values 
-    var rand = new RandomStream();
+    var rand = new RandomStream(seed);
 
     var randomN : int = (rand.getNext() * 10):int + 1;
     var A : [1..randomN, 1..randomN+1] real;
-    fillRandom(A);
+    for idx in A.domain do A[idx] = rand.getNext() * 2.0 - 1.0;
 
     // save a copy
     var origA = A;
@@ -513,16 +513,6 @@ def test_LUFactorize(rprt = true) : bool {
         if rprt then writeln("FAILED");
         return false;
     }
-
-
-/*    if rprt then write("test_LUFactorize: ");
-    if(& reduce (abs(C - origA(1..randomN, 1..randomN)) <= 0.01)) {
-        if rprt then writeln("PASSED");
-        return true;
-    } else {
-        if rprt then writeln("FAILED");
-        return false;
-    }*/
 }
 
 def main() {
@@ -548,7 +538,7 @@ def main() {
     numPassed = 0;
     write("test_LUFactorize: ");
     for i in 1..1000 do
-        numPassed += test_LUFactorize(rprt=false);
+        numPassed += test_LUFactorize(rprt=false, i * 1000);
     writeln(numPassed, " PASSED, ", 1000-numPassed, " FAILED");
 }
 

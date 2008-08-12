@@ -11,6 +11,7 @@ use Norm;
 config const n = 100;
 config const trials = 3;
 config const blkSize = 5;
+config const seed = 31415;
 config const blksHoriz : int = ceil((n+1.0)/blkSize:real):int;
 config const blksVert  : int = ceil(n:real/blkSize:real):int;
 
@@ -336,9 +337,9 @@ def test_LUFactorizeNorms(
 
 def test_LUFactorize(rprt = true) : bool {
     // construct a 100x100 matrix filled with random values
-    //var rand = new RandomStream();
+    var rand = new RandomStream(seed);
     var A : [1..n, 1..n+1] real;
-    fillRandom(A);
+    for idx in A.domain do A[idx] = rand.getNext();
 
     // save a copy
     var origA = A;
