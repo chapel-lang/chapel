@@ -1,9 +1,14 @@
 #!/bin/csh -f
 set testname = $1
 set outfile  = $2
+set tmpfile  = $outfile.prediff.tmp
 
-set tmpfile = $outfile.prediff.tmp
-mv $outfile $tmpfile
+echo "Outfile: " $outfile
+echo "tmpFile: " $tmpfile
 
-sed 's/on [0-9]*/on ID/g' $tmpfile > $outfile
-rm $tmpfile
+# Replace threads IDS with "ID"
+sed 's/on [0-9]*/on ID/g' $outfile > $tmpfile
+
+# Sort output
+sort $tmpfile > $outfile
+
