@@ -13,6 +13,7 @@
 #include "chplrt.h"
 #include "chplthreads.h"
 #include "error.h"
+#include "chplcgfns.h"
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
@@ -21,12 +22,6 @@
 #include <inttypes.h>
 #include <errno.h>
 #include <sys/time.h>
-
-// functions coming from the Chapel runtime module
-void chpldev_taskTable_add(
-    uint64_t threadID, uint32_t lineno, _string filename);
-void chpldev_taskTable_remove(uint64_t threadID);
-void chpldev_taskTable_print(void);
 
 //
 // task pool: linked list of tasks

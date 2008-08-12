@@ -22,4 +22,10 @@ typedef enum { _e_bogus } _class_id;
 extern size_t cid2size(_class_id cid);
 extern size_t* cid2offsets(_class_id cid);
 
+/* Task list functions coming from ChapelRuntime module */
+void chpldev_taskTable_add(
+    uint64_t threadID, uint32_t lineno, _string filename);
+void chpldev_taskTable_remove(uint64_t threadID);
+void chpldev_taskTable_print(void);
+
 #endif
