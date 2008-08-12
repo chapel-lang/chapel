@@ -92,14 +92,17 @@ class Block1DDist {
   //
 
 
-  //
-  // TODO: 0-base the target locales domain in the constructor rather
-  // than whenever it's used for simplicity?
-  //
   def Block1DDist(type idxType = int(64), bbox: domain(1, idxType),
-                  targetLocales: [?targetLocalesDomain] locale = Locales) {
+                  targetLocales: [] locale = Locales) {
     boundingBox = bbox;
-    targetLocDom = targetLocalesDomain;
+    //
+    // 0-base the local capture of the targetLocDom for simplicity
+    // later on
+    //
+    // TODO: Create a helper function to do this for general domains?
+    // (since the k-D case is a bit harder?)
+    //
+    targetLocDom = [0..#targetLocales.numElements];
     targetLocs = targetLocales;
 
     for locid in targetLocDom do
@@ -145,8 +148,6 @@ class Block1DDist {
   //
   // Determine which locale owns a particular index
   //
-  // TODO: If targetLocsDom was 0-based, would this function be easier?
-  //
   // TODO: I jotted down a note during the code review asking whether
   // targetLocs.numElements and boundingbox.numIndices should be
   // captured locally, or captured in the default dom/array implementation
@@ -154,9 +155,8 @@ class Block1DDist {
   //
   def ind2locInd(ind: idxType) {
     const ind0 = ind - boundingBox.low;
-    const loc0 = (ind0 * targetLocs.numElements) / boundingBox.numIndices;
-    const locInd = loc0: index(targetLocs.domain) + targetLocs.domain.low;
-    return locInd;
+    const locInd = (ind0 * targetLocs.numElements) / boundingBox.numIndices;
+    return locInd: index(targetLocDom);
   }
 
   def ind2loc(ind: idxType) {
@@ -203,11 +203,10 @@ class LocBlock1DDist {
     const hi = dist.boundingBox.high;
     const numelems = hi - lo + 1;
     const numlocs = dist.targetLocDom.numIndices;
-    const localeIdx0 = dist.targetLocDom.order(localeIdx); // 0-based locale ID
-    const blo = if (localeIdx0 == 0) then min(idxType)
-                else procToData((numelems: real * localeIdx0) / numlocs, lo);
-    const bhi = if (localeIdx0 == numlocs - 1) then max(idxType)
-                else procToData((numelems: real * (localeIdx0+1)) / numlocs, lo) - 1;
+    const blo = if (localeIdx == 0) then min(idxType)
+                else procToData((numelems: real * localeIdx) / numlocs, lo);
+    const bhi = if (localeIdx == numlocs - 1) then max(idxType)
+                else procToData((numelems: real * (localeIdx+1)) / numlocs, lo) - 1;
     myChunk = [blo..bhi];
     if debugBradsBlock1D then
       writeln(this);
