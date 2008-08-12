@@ -1,3 +1,5 @@
+// TODO: Convert to Steve's leader/follower scheme (implemented in compiler)
+
 // TODO: Make multidimensional
 
 // TODO: Make this work for a strided domain of locales; for a strided
@@ -67,29 +69,9 @@ class Block1DDist {
 
   //
   // an array of local distribution class descriptors -- set up in
-  // initialize() below
-  //
-  // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method; would want to be able to use
-  // an on-clause at the expression list to make this work.
-  // Otherwise, would have to move the allocation into a function
-  // just to get it at the statement level.
-  //
-  // WANTED:
-  //
-  /*
-  const locDist: [loc in targetLocDom] LocBlock1DDist(idxType)
-                   = on targetLocs(loc) do 
-                       new LocBlock1DDist(idxType, targetLocDom.order(loc), this);
-  */
-  //
-  // but this doesn't work yet because an array forall initializer
-  // apparently can't refer to a local member domain.
+  // the class constructor
   //
   const locDist: [targetLocDom] LocBlock1DDist(idxType);
-  //
-  // WORKAROUND: Initialize in the constructor instead
-  //
 
 
   def Block1DDist(type idxType = int(64), bbox: domain(1, idxType),
@@ -99,8 +81,8 @@ class Block1DDist {
     // 0-base the local capture of the targetLocDom for simplicity
     // later on
     //
-    // TODO: Create a helper function to do this for general domains?
-    // (since the k-D case is a bit harder?)
+    // TODO: Create a helper function to create a domain like this for
+    // arbitrary dimensions (since the k-D case is a bit harder?)
     //
     targetLocDom = [0..#targetLocales.numElements];
     targetLocs = targetLocales;
@@ -140,8 +122,9 @@ class Block1DDist {
   def getChunk(inds, locid) {
     // use domain slicing to get the intersection between what the
     // locale owns and the domain's index set
-
+    //
     // TODO: Should this be able to be written as myChunk[inds] ???
+    //
     return locDist(locid).myChunk(inds.dim(1));
   }
   
@@ -151,7 +134,9 @@ class Block1DDist {
   // TODO: I jotted down a note during the code review asking whether
   // targetLocs.numElements and boundingbox.numIndices should be
   // captured locally, or captured in the default dom/array implementation
-  // or inlined.  Not sure what that point was anymore, though.
+  // or inlined.  Not sure what that point was anymore, though.  Maybe
+  // someone else can help me remember it (since it was probably someone
+  // else's suggestion).
   //
   def ind2locInd(ind: idxType) {
     const ind0 = ind - boundingBox.low;
@@ -513,10 +498,9 @@ class Block1DArr {
   }
 
   //
-  // this is the parallel iterator for the global array, see th
+  // this is the parallel iterator for the global array, see the
   // example for general notes on the approach
   //
-
   def newThese(param iterator: IteratorType)
         where iterator == IteratorType.leader {
     for blk in dom.newThese(IteratorType.leader) do
