@@ -131,6 +131,8 @@ enum PrimitiveTag {
   PRIMITIVE_TO_LEADER,
   PRIMITIVE_TO_FOLLOWER,
 
+  PRIMITIVE_DELETE,
+
   PRIMITIVE_GC_CC_INIT,       // Initialize heap for copy-collecting
   PRIMITIVE_GC_ADD_ROOT,      // Add a root variable for garbage collection
   PRIMITIVE_GC_ADD_NULL_ROOT, // Add a root and point it to NULL

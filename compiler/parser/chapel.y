@@ -509,7 +509,7 @@ yield_stmt:
 
 delete_stmt:
   TDELETE expr TSEMI
-    { $$ = buildChapelStmt(new CallExpr(PRIMITIVE_CHPL_FREE, $2)); }
+    { $$ = buildChapelStmt(new CallExpr(PRIMITIVE_DELETE, $2)); }
 ;
 
 

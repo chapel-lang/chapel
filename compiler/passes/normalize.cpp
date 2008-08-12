@@ -398,7 +398,7 @@ insertUseForExplicitModuleCalls(void) {
 
 
 void normalize(void) {
-  // tag iterators
+  // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIMITIVE_YIELD)) {
@@ -408,11 +408,12 @@ void normalize(void) {
         }
         fn->fnTag = FN_ITERATOR;
       }
-      if (call->isPrimitive(PRIMITIVE_CHPL_FREE)) {
+      if (call->isPrimitive(PRIMITIVE_DELETE)) {
         VarSymbol* tmp = new VarSymbol("_tmp");
         call->insertBefore(new DefExpr(tmp));
-        call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call->get(1)->copy()));
+        call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call->get(1)->remove()));
         call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
+        call->remove();
       }
     }
   }
@@ -436,6 +437,8 @@ void normalize(void) {
   heapAllocateLocals();
   insertUseForExplicitModuleCalls();
 
+  // perform some checks on destructors
+  Map<Type*, FnSymbol*> destructors; // used for finding the parent class' destructor later on
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->hasPragma("destructor")) {
       if (fn->formals.length() < 2
@@ -451,6 +454,7 @@ void normalize(void) {
           USR_FATAL(fn, "destructor name must match class name");
         } else {
           fn->name = astr("~chpl_destroy");
+          destructors.put(thisDef->sym->type, fn);
         }
       }
     }
@@ -459,6 +463,24 @@ void normalize(void) {
              && fn->formals.length() > 1
              && toDefExpr(fn->formals.get(1))->sym->typeInfo() == gMethodToken->typeInfo()) {
       USR_FATAL(fn, "invalid method name");
+    }
+  }
+
+  // for each destructor, find out its parent class' destructor, if there is one,
+  // and insert a call to it
+  typedef MapElem<Type*, FnSymbol*> TypeToFnSymbolMapElem;
+  form_Map(TypeToFnSymbolMapElem, t, destructors) {
+    Type *parent = t->key;
+    while (parent->dispatchParents.count()) {
+      INT_ASSERT(parent->dispatchParents.count() <= 1); // multiple inheritance not yet handled!
+      parent = parent->dispatchParents.first();
+      FnSymbol *parentDestructor;
+      if ((parentDestructor = destructors.get(parent))) {
+        DefExpr *thisArg = toDefExpr(t->value->formals.get(2));
+        t->value->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor,
+                                                            gMethodToken, thisArg->sym));
+        break;
+      }
     }
   }
 }

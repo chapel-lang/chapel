@@ -431,6 +431,8 @@ initPrimitive() {
   prim_def(PRIMITIVE_TO_LEADER, "to leader", returnInfoLeader);
   prim_def(PRIMITIVE_TO_FOLLOWER, "to follower", returnInfoFollower);
 
+  prim_def(PRIMITIVE_DELETE, "delete class instance", returnInfoVoid);
+
   prim_def(PRIMITIVE_GC_CC_INIT, "_chpl_gc_init", returnInfoVoid);
   prim_def(PRIMITIVE_GC_ADD_ROOT, "_addRoot", returnInfoVoid);
   prim_def(PRIMITIVE_GC_ADD_NULL_ROOT, "_addNullRoot", returnInfoVoid);

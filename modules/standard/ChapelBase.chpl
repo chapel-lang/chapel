@@ -453,7 +453,7 @@ pragma "inline" def >>(param a: uint(64), param b: integral) param return __prim
 //
 // for delete
 //
-def object.~object() { }
+def object.~object() { __primitive("chpl_free", this); }
 
 //
 // These functions are to handle symbols at statement level such as

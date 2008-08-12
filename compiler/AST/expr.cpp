@@ -1788,6 +1788,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_LOOP_FOR:
     case PRIMITIVE_LOOP_INLINE:
     case PRIMITIVE_YIELD:
+    case PRIMITIVE_DELETE:
     case PRIMITIVE_IS_ENUM:
     case PRIMITIVE_IS_OPAQUE:
     case PRIMITIVE_IS_TUPLE:
