@@ -1,5 +1,6 @@
 #include "astutil.h"
 #include "bb.h"
+#include "bitVec.h"
 #include "expr.h"
 #include "optimizations.h"
 #include "stmt.h"
@@ -25,7 +26,7 @@ liveVariableAnalysis(FnSymbol* fn,
                      Map<Symbol*,int>& localMap,
                      Vec<SymExpr*>& useSet,
                      Vec<SymExpr*>& defSet,
-                     Vec<Vec<bool>*>& OUT) {
+                     Vec<BitVec*>& OUT) {
   buildLocalsVectorMap(fn, locals, localMap);
 
 #ifdef DEBUG_LIVE
@@ -42,21 +43,15 @@ liveVariableAnalysis(FnSymbol* fn,
   // IN(i): the set of variables that are live at entry to basic
   // block i
   //
-  Vec<Vec<bool>*> USE;
-  Vec<Vec<bool>*> DEF;
-  Vec<Vec<bool>*> IN;
+  Vec<BitVec*> USE;
+  Vec<BitVec*> DEF;
+  Vec<BitVec*> IN;
 
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-    Vec<bool>* use = new Vec<bool>();
-    Vec<bool>* def = new Vec<bool>();
-    Vec<bool>* lvin = new Vec<bool>();
-    Vec<bool>* lvout = new Vec<bool>();
-    forv_Vec(Symbol, local, locals) {
-      use->add(false);
-      def->add(false);
-      lvin->add(false);
-      lvout->add(false);
-    }
+    BitVec* use = new BitVec(locals.n);
+    BitVec* def = new BitVec(locals.n);
+    BitVec* lvin = new BitVec(locals.n);
+    BitVec* lvout = new BitVec(locals.n);
     forv_Vec(Expr, expr, bb->exprs) {
       Vec<BaseAST*> asts;
       collect_asts(expr, asts);
@@ -64,8 +59,8 @@ liveVariableAnalysis(FnSymbol* fn,
         if (SymExpr* se = toSymExpr(ast)) {
           if (useSet.set_in(se)) {
             int id = localMap.get(se->var);
-            if (!def->v[id])
-              use->v[id] = true;
+            if (!def->get(id))
+              use->set(id);
           }
         }
       }
@@ -73,8 +68,8 @@ liveVariableAnalysis(FnSymbol* fn,
         if (SymExpr* se = toSymExpr(ast)) {
           if (defSet.set_in(se)) {
             int id = localMap.get(se->var);
-            if (!use->v[id])
-              def->v[id] = true;
+            if (!use->get(id))
+              def->set(id);
           }
         }
       }
@@ -92,12 +87,12 @@ liveVariableAnalysis(FnSymbol* fn,
 
   backwardFlowAnalysis(fn, USE, DEF, IN, OUT);
 
-  forv_Vec(Vec<bool>, use, USE)
+  forv_Vec(BitVec, use, USE)
     delete use;
 
-  forv_Vec(Vec<bool>, def, DEF)
+  forv_Vec(BitVec, def, DEF)
     delete def;
 
-  forv_Vec(Vec<bool>, in, IN)
+  forv_Vec(BitVec, in, IN)
     delete in;
 }

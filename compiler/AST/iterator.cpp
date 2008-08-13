@@ -1,5 +1,6 @@
 #include "astutil.h"
 #include "bb.h"
+#include "bitVec.h"
 #include "expr.h"
 #include "stmt.h"
 #include "iterator.h"
@@ -371,7 +372,7 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
   Map<Symbol*,int> localMap;
   Vec<SymExpr*> useSet;
   Vec<SymExpr*> defSet;
-  Vec<Vec<bool>*> OUT;
+  Vec<BitVec*> OUT;
   liveVariableAnalysis(fn, locals, localMap, useSet, defSet, OUT);
 
   int i = 0;
@@ -387,9 +388,10 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
         collect = true;
     }
     if (collect) {
-      Vec<bool> live;
+      BitVec live(locals.n);
       for (int j = 0; j < locals.n; j++) {
-        live.add(OUT.v[i]->v[j]);
+        if (OUT.v[i]->get(j))
+          live.set(j);
       }
       for (int k = bb->exprs.n - 1; k >= 0; k--) {
         CallExpr* call = toCallExpr(bb->exprs.v[k]);
@@ -397,7 +399,7 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
             singleLoop && bb->exprs.v[k] == singleLoop->next ||
             singleLoop && bb->exprs.v[k] == singleLoop->body.head) {
           for (int j = 0; j < locals.n; j++) {
-            if (live.v[j]) {
+            if (live.get(j)) {
               syms.add_exclusive(locals.v[j]);
             }
           }
@@ -407,10 +409,10 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
         forv_Vec(BaseAST, ast, asts) {
           if (SymExpr* se = toSymExpr(ast)) {
             if (defSet.set_in(se)) {
-              live.v[localMap.get(se->var)] = false;
+              live.unset(localMap.get(se->var));
             }
             if (useSet.set_in(se)) {
-              live.v[localMap.get(se->var)] = true;
+              live.set(localMap.get(se->var));
             }
           }
         }
@@ -427,7 +429,7 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
   printf("\n");
 #endif
 
-  forv_Vec(Vec<bool>, out, OUT)
+  forv_Vec(BitVec, out, OUT)
     delete out;
 
   //

@@ -1,6 +1,8 @@
 #ifndef _OPTIMIZATIONS_H_
 #define _OPTIMIZATIONS_H_
 
+class BitVec;
+
 void collapseBlocks(BlockStmt* block);
 void removeUnnecessaryGotos(FnSymbol* fn);
 void removeUnusedLabels(FnSymbol* fn);
@@ -20,14 +22,7 @@ void liveVariableAnalysis(FnSymbol* fn,
                           Map<Symbol*,int>& localID,
                           Vec<SymExpr*>& useSet,
                           Vec<SymExpr*>& defSet,
-                          Vec<Vec<bool>*>& OUT);
-
-void reachingDefinitionsAnalysis(FnSymbol* fn,
-                                 Vec<SymExpr*>& defs,
-                                 Map<SymExpr*,int>& defMap,
-                                 Vec<SymExpr*>& useSet,
-                                 Vec<SymExpr*>& defSet,
-                                 Vec<Vec<bool>*>& IN);
+                          Vec<BitVec*>& OUT);
 
 void
 buildDefUseChains(FnSymbol* fn,

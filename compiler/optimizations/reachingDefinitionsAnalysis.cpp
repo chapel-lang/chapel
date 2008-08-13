@@ -1,18 +1,19 @@
 #include "astutil.h"
 #include "bb.h"
+#include "bitVec.h"
 #include "expr.h"
 #include "optimizations.h"
 #include "stmt.h"
 #include "view.h"
 
 
-void
+static void
 reachingDefinitionsAnalysis(FnSymbol* fn,
                             Vec<SymExpr*>& defs,
                             Map<SymExpr*,int>& defMap,
                             Vec<SymExpr*>& useSet,
                             Vec<SymExpr*>& defSet,
-                            Vec<Vec<bool>*>& IN) {
+                            Vec<BitVec*>& IN) {
   Vec<Symbol*> locals;
   Map<Symbol*,int> localMap;
   buildLocalsVectorMap(fn, locals, localMap);
@@ -45,21 +46,16 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
     delete localDefsMap.get(sym);
   }
 
-  Vec<Vec<bool>*> KILL;
-  Vec<Vec<bool>*> GEN;
-  Vec<Vec<bool>*> OUT;
+  Vec<BitVec*> KILL;
+  Vec<BitVec*> GEN;
+  Vec<BitVec*> OUT;
 
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     Vec<Symbol*> bbDefSet;
-    Vec<bool>* kill = new Vec<bool>();
-    Vec<bool>* gen = new Vec<bool>();
-    Vec<bool>* in = new Vec<bool>();
-    Vec<bool>* out = new Vec<bool>();
-    forv_Vec(SymExpr, def, defs) {
-      gen->add(false);
-      in->add(false);
-      out->add(false);
-    }
+    BitVec* kill = new BitVec(defs.n);
+    BitVec* gen = new BitVec(defs.n);
+    BitVec* in = new BitVec(defs.n);
+    BitVec* out = new BitVec(defs.n);
     for (int i = bb->exprs.n-1; i >= 0; i--) {
       Expr* expr = bb->exprs.v[i];
       Vec<BaseAST*> asts;
@@ -67,15 +63,17 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
           if (defSet.set_in(se)) {
-            if (!bbDefSet.set_in(se->var))
-              gen->v[defMap.get(se)] = true;
+            if (!bbDefSet.set_in(se->var)) {
+              gen->set(defMap.get(se));
+            }
             bbDefSet.set_add(se->var);
           }
         }
       }
     }
-    forv_Vec(SymExpr, def, defs) {
-      kill->add((bbDefSet.set_in(def->var)) ? true : false);
+    for (int i = 0; i < defs.n; i++) {
+      if (bbDefSet.set_in(defs.v[i]->var))
+        kill->set(i);
     }
     KILL.add(kill);
     GEN.add(gen);
@@ -100,13 +98,13 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
   printf("OUT:\n"); printBitVectorSets(OUT);
 #endif
 
-  forv_Vec(Vec<bool>, gen, GEN)
+  forv_Vec(BitVec, gen, GEN)
     delete gen;
 
-  forv_Vec(Vec<bool>, kill, KILL)
+  forv_Vec(BitVec, kill, KILL)
     delete kill;
 
-  forv_Vec(Vec<bool>, out, OUT)
+  forv_Vec(BitVec, out, OUT)
     delete out;
 }
 
@@ -121,7 +119,7 @@ buildDefUseChains(FnSymbol* fn,
   Map<SymExpr*,int> defMap;
   Vec<SymExpr*> useSet;
   Vec<SymExpr*> defSet;
-  Vec<Vec<bool>*> IN;
+  Vec<BitVec*> IN;
   reachingDefinitionsAnalysis(fn, defs, defMap, useSet, defSet, IN);
 
   //
@@ -144,7 +142,7 @@ buildDefUseChains(FnSymbol* fn,
 
   for (int i = 0; i < fn->basicBlocks->n; i++) {
     BasicBlock* bb = fn->basicBlocks->v[i];
-    Vec<bool>* in = IN.v[i];
+    BitVec* in = IN.v[i];
     forv_Vec(Expr, expr, bb->exprs) {
       Vec<BaseAST*> asts;
       collect_asts(expr, asts);
@@ -155,7 +153,7 @@ buildDefUseChains(FnSymbol* fn,
             for (int j = defsIndexMap.get(se->var); j < defs.n; j++) {
               if (defs.v[j]->var != se->var)
                 break;
-              if (in->v[j]) {
+              if (in->get(j)) {
                 DU.get(defs.v[j])->add(se);
                 UD.get(se)->add(defs.v[j]);
               }
@@ -170,9 +168,9 @@ buildDefUseChains(FnSymbol* fn,
               if (defs.v[j]->var != se->var)
                 break;
               if (defs.v[j] == se)
-                in->v[j] = true;
+                in->set(j);
               else
-                in->v[j] = false;
+                in->unset(j);
             }
           }
         }
@@ -180,7 +178,7 @@ buildDefUseChains(FnSymbol* fn,
     }
   }
 
-  forv_Vec(Vec<bool>, in, IN)
+  forv_Vec(BitVec, in, IN)
     delete in;
 }
 

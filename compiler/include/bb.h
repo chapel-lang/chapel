@@ -3,6 +3,7 @@
 
 #include "chpl.h"
 
+class BitVec;
 class Expr;
 class SymExpr;
 class Stmt;
@@ -26,23 +27,23 @@ void buildLocalsVectorMap(FnSymbol* fn,
                           Map<Symbol*,int>& localMap);
 
 void backwardFlowAnalysis(FnSymbol* fn,
-                          Vec<Vec<bool>*>& GEN,
-                          Vec<Vec<bool>*>& KILL,
-                          Vec<Vec<bool>*>& IN,
-                          Vec<Vec<bool>*>& OUT);
+                          Vec<BitVec*>& GEN,
+                          Vec<BitVec*>& KILL,
+                          Vec<BitVec*>& IN,
+                          Vec<BitVec*>& OUT);
 
 void forwardFlowAnalysis(FnSymbol* fn,
-                         Vec<Vec<bool>*>& GEN,
-                         Vec<Vec<bool>*>& KILL,
-                         Vec<Vec<bool>*>& IN,
-                         Vec<Vec<bool>*>& OUT,
+                         Vec<BitVec*>& GEN,
+                         Vec<BitVec*>& KILL,
+                         Vec<BitVec*>& IN,
+                         Vec<BitVec*>& OUT,
                          bool intersect = true);
 
 void printBasicBlocks(FnSymbol* fn);
 
 void printLocalsVector(Vec<Symbol*> locals, Map<Symbol*,int>& localMap);
 void printDefsVector(Vec<SymExpr*> defs, Map<SymExpr*,int>& defMap);
-void printLocalsVectorSets(Vec<Vec<bool>*>& sets, Vec<Symbol*> locals);
-void printBitVectorSets(Vec<Vec<bool>*>& sets);
+void printLocalsVectorSets(Vec<BitVec*>& sets, Vec<Symbol*> locals);
+void printBitVectorSets(Vec<BitVec*>& sets);
 
 #endif

@@ -1,5 +1,6 @@
 #include "astutil.h"
 #include "bb.h"
+#include "bitVec.h"
 #include "expr.h"
 #include "optimizations.h"
 #include "passes.h"
@@ -177,22 +178,6 @@ void localCopyPropagation(FnSymbol* fn) {
 }
 
 
-#ifdef DEBUG_CP
-static void
-debug_flow_print_set(Vec<Vec<bool>*>& sets) {
-  int i = 0;
-  forv_Vec(Vec<bool>, set, sets) {
-    printf("%d: ", i);
-    for (int j = 0; j < set->n; j++)
-      printf("%d", set->v[j] ? 1 : 0);
-    printf("\n");
-    i++;
-  }
-  printf("\n");
-}
-#endif
-
-
 //
 // Apply global copy propagation to basic blocks of function
 //
@@ -317,25 +302,19 @@ void globalCopyPropagation(FnSymbol* fn) {
   printf("\n");
 #endif
 
-  Vec<Vec<bool>*> COPY;
-  Vec<Vec<bool>*> KILL;
-  Vec<Vec<bool>*> IN;
-  Vec<Vec<bool>*> OUT;
+  Vec<BitVec*> COPY;
+  Vec<BitVec*> KILL;
+  Vec<BitVec*> IN;
+  Vec<BitVec*> OUT;
   j = 0;
   i = 0;
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-    Vec<bool>* copy = new Vec<bool>();
-    Vec<bool>* kill = new Vec<bool>();
-    Vec<bool>* in = new Vec<bool>();
-    Vec<bool>* out = new Vec<bool>();
-    for (int k = 0; k < N.v[fn->basicBlocks->n-1]; k++) {
-      copy->add(false);
-      kill->add(false);
-      in->add(false);
-      out->add(false);
-    }
+    BitVec* copy = new BitVec(N.v[fn->basicBlocks->n-1]);
+    BitVec* kill = new BitVec(N.v[fn->basicBlocks->n-1]);
+    BitVec* in = new BitVec(N.v[fn->basicBlocks->n-1]);
+    BitVec* out = new BitVec(N.v[fn->basicBlocks->n-1]);
     while (j < N.v[i]) {
-      copy->v[j] = true;
+      copy->set(j);
       j++;
     }
     COPY.add(copy);
@@ -346,7 +325,7 @@ void globalCopyPropagation(FnSymbol* fn) {
   }
 
 #ifdef DEBUG_CP
-  printf("COPY:\n"); debug_flow_print_set(COPY);
+  printf("COPY:\n"); printBitVectorSets(COPY);
 #endif
 
   //
@@ -369,12 +348,12 @@ void globalCopyPropagation(FnSymbol* fn) {
           if (invalidateCopies(se, defSet, useSet)) {
             for (int j = 0; j < start; j++) {
               if (LHS.v[j]->var == se->var || RHS.v[j]->var == se->var) {
-                KILL.v[i]->v[j] = true;
+                KILL.v[i]->set(j);
               }
             }
             for (int j = stop; j < LHS.n; j++) {
               if (LHS.v[j]->var == se->var || RHS.v[j]->var == se->var) {
-                KILL.v[i]->v[j] = true;
+                KILL.v[i]->set(j);
               }
             }
           }
@@ -386,22 +365,21 @@ void globalCopyPropagation(FnSymbol* fn) {
   }
 
 #ifdef DEBUG_CP
-  printf("KILL:\n"); debug_flow_print_set(KILL);
+  printf("KILL:\n"); printBitVectorSets(KILL);
 #endif
 
   // initialize IN set
   for (int i = 1; i < fn->basicBlocks->n; i++) {
     for (int j = 0; j < LHS.n; j++) {
-      IN.v[i]->v[j] = true;
+      IN.v[i]->set(j);
     }
   }
 
 #ifdef DEBUG_CP
-  printf("IN:\n"); debug_flow_print_set(IN);
+  printf("IN:\n"); printBitVectorSets(IN);
 #endif
 
   forwardFlowAnalysis(fn, COPY, KILL, IN, OUT, true);
-
 
   for (int i = 0; i < fn->basicBlocks->n; i++) {
     BasicBlock* bb = fn->basicBlocks->v[i];
@@ -409,7 +387,7 @@ void globalCopyPropagation(FnSymbol* fn) {
     ReverseAvailableMap reverseAvailable;
     bool proceed = false;
     for (int j = 0; j < LHS.n; j++) {
-      if (IN.v[i]->v[j]) {
+      if (IN.v[i]->get(j)) {
         makeAvailable(available, reverseAvailable, LHS.v[j]->var, RHS.v[j]->var);
         proceed = true;
       }
@@ -419,16 +397,16 @@ void globalCopyPropagation(FnSymbol* fn) {
     freeReverseAvailable(reverseAvailable);
   }
 
-  forv_Vec(Vec<bool>, copy, COPY)
+  forv_Vec(BitVec, copy, COPY)
     delete copy;
 
-  forv_Vec(Vec<bool>, kill, KILL)
+  forv_Vec(BitVec, kill, KILL)
     delete kill;
 
-  forv_Vec(Vec<bool>, in, IN)
+  forv_Vec(BitVec, in, IN)
     delete in;
 
-  forv_Vec(Vec<bool>, out, OUT)
+  forv_Vec(BitVec, out, OUT)
     delete out;
 }
 

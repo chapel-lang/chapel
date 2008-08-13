@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "astutil.h"
 #include "bb.h"
+#include "bitVec.h"
 #include "expr.h"
 #include "stmt.h"
 #include "view.h"
@@ -144,27 +145,27 @@ void buildLocalsVectorMap(FnSymbol* fn,
 
 //#define DEBUG_FLOW
 void backwardFlowAnalysis(FnSymbol* fn,
-                          Vec<Vec<bool>*>& GEN,
-                          Vec<Vec<bool>*>& KILL,
-                          Vec<Vec<bool>*>& IN,
-                          Vec<Vec<bool>*>& OUT) {
+                          Vec<BitVec*>& GEN,
+                          Vec<BitVec*>& KILL,
+                          Vec<BitVec*>& IN,
+                          Vec<BitVec*>& OUT) {
   bool iterate = true;
   while (iterate) {
     iterate = false;
     int i = 0;
     forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-      for (int j = 0; j < IN.v[i]->n; j++) {
-        bool new_in = (OUT.v[i]->v[j] & !KILL.v[i]->v[j]) | GEN.v[i]->v[j];
-        if (new_in != IN.v[i]->v[j]) {
-          IN.v[i]->v[j] = new_in;
+      for (int j = 0; j < IN.v[i]->ndata; j++) {
+        unsigned new_in = (OUT.v[i]->data[j] & ~KILL.v[i]->data[j]) | GEN.v[i]->data[j];
+        if (new_in != IN.v[i]->data[j]) {
+          IN.v[i]->data[j] = new_in;
           iterate = true;
         }
-        bool new_out = false;
+        unsigned new_out = 0;
         forv_Vec(BasicBlock, bbout, bb->outs) {
-          new_out = new_out | IN.v[bbout->id]->v[j];
+          new_out = new_out | IN.v[bbout->id]->data[j];
         }
-        if (new_out != OUT.v[i]->v[j]) {
-          OUT.v[i]->v[j] = new_out;
+        if (new_out != OUT.v[i]->data[j]) {
+          OUT.v[i]->data[j] = new_out;
           iterate = true;
         }
       }
@@ -179,56 +180,56 @@ void backwardFlowAnalysis(FnSymbol* fn,
 
 
 void forwardFlowAnalysis(FnSymbol* fn,
-                         Vec<Vec<bool>*>& GEN,
-                         Vec<Vec<bool>*>& KILL,
-                         Vec<Vec<bool>*>& IN,
-                         Vec<Vec<bool>*>& OUT,
+                         Vec<BitVec*>& GEN,
+                         Vec<BitVec*>& KILL,
+                         Vec<BitVec*>& IN,
+                         Vec<BitVec*>& OUT,
                          bool intersect) {
   int nbbq = fn->basicBlocks->n; // size of bb queue
   Vec<int> bbq;
-  Vec<bool> bbs;
+  BitVec bbs(nbbq);
   int iq = -1, nq = nbbq-1;      // index to first and last bb in bbq
   for (int i = 0; i < fn->basicBlocks->n; i++) {
     bbq.add(i);
-    bbs.add(true);
+    bbs.set(i);
   }
   while (iq != nq) {
     iq = (iq + 1) % nbbq;
     int i = bbq.v[iq];
-    bbs.v[i] = false;
+    bbs.unset(i);
 #ifdef DEBUG_FLOW
     if (iq == 0) {
-      printf("IN\n"); debug_flow_print_set(IN);
-      printf("OUT\n"); debug_flow_print_set(OUT);
+      printf("IN\n"); printBitVectorSets(IN);
+      printf("OUT\n"); printBitVectorSets(OUT);
     }
 #endif
     BasicBlock* bb = fn->basicBlocks->v[i];
     bool change = false;
-    for (int j = 0; j < IN.v[i]->n; j++) {
+    for (int j = 0; j < IN.v[i]->ndata; j++) {
       if (bb->ins.n > 0) {
-        bool new_in = intersect;
+        unsigned new_in = (intersect) ? (unsigned)(-1) : 0;
         forv_Vec(BasicBlock, bbin, bb->ins) {
           if (intersect)
-            new_in = new_in & OUT.v[bbin->id]->v[j];
+            new_in &= OUT.v[bbin->id]->data[j];
           else
-            new_in = new_in | OUT.v[bbin->id]->v[j];
+            new_in |= OUT.v[bbin->id]->data[j];
         }
-        if (new_in != IN.v[i]->v[j]) {
-          IN.v[i]->v[j] = new_in;
+        if (new_in != IN.v[i]->data[j]) {
+          IN.v[i]->data[j] = new_in;
           change = true;
         }
       }
-      bool new_out = (IN.v[i]->v[j] & !KILL.v[i]->v[j]) | GEN.v[i]->v[j];
-      if (new_out != OUT.v[i]->v[j]) {
-        OUT.v[i]->v[j] = new_out;
+      unsigned new_out = (IN.v[i]->data[j] & ~KILL.v[i]->data[j]) | GEN.v[i]->data[j];
+      if (new_out != OUT.v[i]->data[j]) {
+        OUT.v[i]->data[j] = new_out;
         change = true;
       }
     }
     if (change) {
       forv_Vec(BasicBlock, bbout, bb->outs) {
-        if (!bbs.v[bbout->id]) {
+        if (!bbs.get(bbout->id)) {
           nq = (nq + 1) % nbbq;
-          bbs.v[bbout->id] = true;
+          bbs.set(bbout->id);
           bbq.v[nq] = bbout->id;
         }
       }
@@ -272,12 +273,12 @@ void printDefsVector(Vec<SymExpr*> defs, Map<SymExpr*,int>& defMap) {
   printf("\n");
 }
 
-void printLocalsVectorSets(Vec<Vec<bool>*>& sets, Vec<Symbol*> locals) {
+void printLocalsVectorSets(Vec<BitVec*>& sets, Vec<Symbol*> locals) {
   int i = 0;
-  forv_Vec(Vec<bool>, set, sets) {
+  forv_Vec(BitVec, set, sets) {
     printf("%2d: ", i);
-    for (int j = 0; j < set->n; j++) {
-      if (set->v[j])
+    for (int j = 0; j < set->size; j++) {
+      if (set->get(j))
         printf("%s[%d] ", locals.v[j]->name, locals.v[j]->id);
     }
     printf("\n");
@@ -286,12 +287,12 @@ void printLocalsVectorSets(Vec<Vec<bool>*>& sets, Vec<Symbol*> locals) {
   printf("\n");
 }
 
-void printBitVectorSets(Vec<Vec<bool>*>& sets) {
+void printBitVectorSets(Vec<BitVec*>& sets) {
   int i = 0;
-  forv_Vec(Vec<bool>, set, sets) {
+  forv_Vec(BitVec, set, sets) {
     printf("%2d: ", i);
-    for (int j = 0; j < set->n; j++) {
-      printf("%d", (set->v[j]) ? 1 : 0);
+    for (int j = 0; j < set->size; j++) {
+      printf("%d", (set->get(j)) ? 1 : 0);
       if ((j+1) % 10 == 0) printf(" ");
     }
     printf("\n");

@@ -1,4 +1,5 @@
 ADT_SRCS = \
+	bitVec.cpp \
 	map.cpp \
 	vec.cpp
 
