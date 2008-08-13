@@ -237,6 +237,14 @@ static FnSymbol* chpl_main_exists(void) {
 
 static void build_chpl_main(void) {
   chpl_main = chpl_main_exists();
+
+  if (fRuntime) {
+    if (chpl_main)
+      INT_FATAL(chpl_main, "'main' found when compiling runtime file");
+    if (userModules.n != 1)
+      INT_FATAL("expected one module when compiling runtime file");
+  }
+
   if (!chpl_main) {
     ModuleSymbol* mainModule = NULL;
     if (strlen(mainModuleName) != 0) {
@@ -271,15 +279,17 @@ static void build_chpl_main(void) {
     USR_FATAL(chpl_main, "main function must be defined at module scope");
   }
   SET_LINENO(chpl_main);
-  VarSymbol* endCount = new VarSymbol("_endCount");
-  endCount->isCompilerTemp = true;
   chpl_main->insertAtHead(new CallExpr(chpl_main->getModule()->initFn));
-  chpl_main->insertAtHead(new CallExpr("_startTrackingMem"));
-  chpl_main->insertAtHead(new CallExpr(PRIMITIVE_SET_END_COUNT, endCount));
-  chpl_main->insertAtHead(new CallExpr(PRIMITIVE_MOVE, endCount, new CallExpr("_endCountAlloc")));
-  chpl_main->insertAtHead(new DefExpr(endCount));
+  if (!fRuntime) {
+    VarSymbol* endCount = new VarSymbol("_endCount");
+    endCount->isCompilerTemp = true;
+    chpl_main->insertAtHead(new CallExpr("_startTrackingMem"));
+    chpl_main->insertAtHead(new CallExpr(PRIMITIVE_SET_END_COUNT, endCount));
+    chpl_main->insertAtHead(new CallExpr(PRIMITIVE_MOVE, endCount, new CallExpr("_endCountAlloc")));
+    chpl_main->insertAtHead(new DefExpr(endCount));
+    chpl_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
+  }
   chpl_main->insertAtHead(new CallExpr(theProgram->initFn));
-  chpl_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
 }
 
 

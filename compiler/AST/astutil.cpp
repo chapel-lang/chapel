@@ -348,6 +348,12 @@ prune() {
   Vec<FnSymbol*> fns;
   Vec<TypeSymbol*> types;
   pruneVisit(chpl_main, fns, types);
+  if (fRuntime) {
+    forv_Vec(FnSymbol, fn, gFns) {
+      if (fn->hasPragma("export"))
+        pruneVisit(fn, fns, types);
+    }
+  }
   forv_Vec(FnSymbol, fn, gFns) {
     if (!fns.set_in(fn)) {
       fn->defPoint->remove();

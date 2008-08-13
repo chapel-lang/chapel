@@ -32,6 +32,7 @@ static char libraryFilename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
 bool fExtraVerification = false;
+bool fRuntime = false;
 bool no_codegen = false;
 int debugParserLevel = 0;
 bool developer = false;
@@ -375,6 +376,7 @@ static ArgumentDescription arg_desc[] = {
  {"ignore-errors", ' ', NULL, "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"extra-verification", ' ', NULL, "Do extra verification between passes", "F", &fExtraVerification, "CHPL_EXTRA_VERIFICATION", NULL},
  {"no-codegen", ' ', NULL, "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
+ {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},
  {"test-int-sizes", ' ', NULL, "Test compiler's internal integer sizes", "F", &testIntSizes, "CHPL_TEST_INT_SIZES", verifyIntSizes},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},

@@ -1,5 +1,6 @@
 COMMON_LAUNCHER_SRCS = \
 	arg.c \
+	chapel_code.c \
 	chplcast.c \
 	chplexit.c \
 	chplmem.c \

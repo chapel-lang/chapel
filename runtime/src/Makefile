@@ -30,3 +30,6 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
 $(RUNTIME_OBJ_DIR)/gdb.o: gdb.c $(RUNTIME_OBJ_DIR_STAMP)
 	@if [ `grep "chplrt.h" $< | wc -l` -ne 1 ]; then echo "PROBLEM:  $< does not include 'chplrt.h'."; exit 1; fi
 	$(CC) -c -g $(RUNTIME_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
+
+$(RUNTIME_OBJ_DIR)/chapel_code.o: chapel_code.c $(RUNTIME_OBJ_DIR_STAMP)
+	$(CC) -c -g $(GEN_CFLAGS) $(RUNTIME_INCLS) -o $@ $<

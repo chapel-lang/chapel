@@ -1,4 +1,5 @@
 #include "arg.h"
+#include "chapel_code.h"
 #include "chplcast.h"
 #include "chplcgfns.h"
 #include "chplcomm.h"
@@ -68,6 +69,7 @@ int main(int argc, char* argv[]) {
     initMemTable();            // get ready to start tracking memory
     CreateConfigVarTable();    // get ready to start tracking config vars
   }
+  chpl_init_chapel_code();
   initChplThreads();         // initialize the threads layer
   _initModuleGuards();       // initialize _run_mod_firsttime vars
 

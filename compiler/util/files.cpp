@@ -181,6 +181,16 @@ void openCFile(fileinfo* fi, const char* name, const char* ext) {
 }
 
 
+void openRuntimeFile(fileinfo* fi, const char* name, const char* ext) {
+  if (ext)
+    fi->filename = astr(name, ".", ext);
+  else
+    fi->filename = astr(name);
+  fi->pathname = fi->filename;
+  fi->fptr = fopen(fi->pathname, "w");
+}
+
+
 void closeCFile(fileinfo* fi) {
   fclose(fi->fptr);
 }
@@ -311,6 +321,9 @@ const char* runUtilScript(const char* script) {
 
 
 void makeBinary(void) {
+  if (fRuntime)
+    return;
+
   if (chplmake[0] == '\0') {
     strncpy(chplmake, runUtilScript("chplmake"), 256);
   }

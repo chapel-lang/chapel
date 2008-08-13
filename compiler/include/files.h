@@ -20,6 +20,7 @@ void codegen_makefile(fileinfo* mainfile);
 void deleteTmpDir(void);
 
 void openCFile(fileinfo* fi, const char* name, const char* ext = NULL);
+void openRuntimeFile(fileinfo* fi, const char* name, const char* ext = NULL);
 void closeCFile(fileinfo* fi);
 
 fileinfo* openTmpFile(const char* tmpfilename, const char* mode = "w");

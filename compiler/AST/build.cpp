@@ -208,7 +208,7 @@ void createInitFn(ModuleSymbol* mod) {
   mod->initFn = new FnSymbol(astr("chpl__init_", mod->name));
   mod->initFn->retType = dtVoid;
 
-  if (!initModuleGuards) {
+  if (!fRuntime && !initModuleGuards) {
     initModuleGuards = new FnSymbol("_initModuleGuards");
     theProgram->block->insertAtHead(new DefExpr(initModuleGuards));
     theProgram->initFn->insertAtHead(new CallExpr(initModuleGuards));
@@ -219,7 +219,8 @@ void createInitFn(ModuleSymbol* mod) {
     mod->guard = new VarSymbol(astr("__run_", mod->name, "_firsttime", istr(moduleNumber++)));
     mod->guard->addPragma("private"); // private = separate copy per locale
     theProgram->initFn->insertAtHead(new DefExpr(mod->guard, new SymExpr(gTrue)));
-    initModuleGuards->insertAtTail(new CallExpr(PRIMITIVE_MOVE, mod->guard, gTrue));
+    if (!fRuntime)
+      initModuleGuards->insertAtTail(new CallExpr(PRIMITIVE_MOVE, mod->guard, gTrue));
     mod->initFn->insertAtTail(
       new CondStmt(
         new CallExpr("!", mod->guard),

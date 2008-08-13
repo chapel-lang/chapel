@@ -3529,6 +3529,15 @@ resolve() {
 
   resolveFns(chpl_main);
 
+  if (fRuntime) {
+    forv_Vec(FnSymbol, fn, gFns) {
+      if (fn->hasPragma("export")) {
+        resolveFormals(fn);
+        resolveFns(fn);
+      }
+    }
+  }
+
   // need to handle enumerated types better
   forv_Vec(TypeSymbol, type, gTypes) {
     if (EnumType* et = toEnumType(type->type)) {

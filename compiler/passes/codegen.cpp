@@ -11,6 +11,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 
+static fileinfo runtimeFile;
+
 static int max(int a, int b) {
   return (a >= b) ? a : b;
 }
@@ -172,7 +174,7 @@ static void codegen_header(void) {
     if (fn == chpl_main)
       fn->cname = astr("chpl_main");
     legalizeCName(fn);
-    if (!fn->isExtern && cnames.get(fn->cname))
+    if (!fn->hasPragma("export") && !fn->isExtern && cnames.get(fn->cname))
       fn->cname = astr("chpl__", fn->cname, "_", istr(fn->id));
     cnames.put(fn->cname, 1);
     fnSymbols.add(fn);
@@ -229,8 +231,30 @@ static void codegen_header(void) {
   qsort(fnSymbols.v, fnSymbols.n, sizeof(fnSymbols.v[0]), compareSymbol);
 
   fileinfo header;
-  openCFile(&header, "_chpl_header", "h");
-  FILE* outfile = header.fptr;
+  FILE* outfile;
+  if (fRuntime) {
+    chpl_main->cname = astr("chpl_init_", userModules.v[0]->name);
+    baseModule->initFn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, gVoid)));
+    fileinfo runtimeHeaderFile;
+    openRuntimeFile(&runtimeHeaderFile, userModules.v[0]->name, "h");
+    outfile = runtimeHeaderFile.fptr;
+    fprintf(outfile, "#ifndef _%s_H_\n", userModules.v[0]->name);
+    fprintf(outfile, "#define _%s_H_\n", userModules.v[0]->name);
+    forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
+      if (fnSymbol->hasPragma("export") || fnSymbol == chpl_main)
+        fnSymbol->codegenPrototype(outfile);
+    }
+    fprintf(outfile, "#endif\n");
+    closeCFile(&runtimeHeaderFile);
+    beautify(&runtimeHeaderFile);
+    openRuntimeFile(&runtimeFile, userModules.v[0]->name, "c");
+    outfile = runtimeFile.fptr;
+    fprintf(outfile, "#include \"chplrt.h\"\n");
+  } else {
+    openCFile(&header, "_chpl_header", "h");
+    outfile = header.fptr;
+  }
+
 
   fprintf(outfile, "\n/*** Class ID -- referred to in runtime ***/\n\n");
 
@@ -354,21 +378,33 @@ static void codegen_header(void) {
 
   fprintf(outfile, "\n/*** Function Prototypes ***/\n\n");
   forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
-    if (!fnSymbol->isExtern)
+    if (!fnSymbol->isExtern) {
+      if (fRuntime && fnSymbol != chpl_main && !fnSymbol->hasPragma("export"))
+        fprintf(outfile, "static ");
       fnSymbol->codegenPrototype(outfile);
+    }
   }
 
   fprintf(outfile, "\n/*** Global Variables ***/\n\n");
   forv_Vec(VarSymbol, varSymbol, varSymbols) {
+    if (fRuntime) {
+      if (varSymbol->defPoint->parentSymbol == baseModule)
+        continue;
+      fprintf(outfile, "static ");
+    }
     varSymbol->codegenDef(outfile);
   }
 
-  fprintf(outfile, "\nchar** _global_vars_registry;\n");
-  fprintf(outfile, "\nchar* _global_vars_registry_static[%d];\n", 
-          (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
+  if (!fRuntime) {
+    fprintf(outfile, "\nchar** _global_vars_registry;\n");
+    fprintf(outfile, "\nchar* _global_vars_registry_static[%d];\n", 
+            (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
+  }
 
-  closeCFile(&header);
-  beautify(&header);
+  if (!fRuntime) {
+    closeCFile(&header);
+    beautify(&header);
+  }
 }
 
 static void codegen_cid2offsets_help(FILE* outfile, ClassType* ct) {
@@ -564,11 +600,21 @@ void codegen(void) {
     
     fileinfo modulefile;
     openCFile(&modulefile, filename, "c");
-    currentModule->codegenDef(modulefile.fptr);
+    if (fRuntime) {
+      currentModule->codegenDef(runtimeFile.fptr);
+    } else {
+      currentModule->codegenDef(modulefile.fptr);
+    }
     closeCFile(&modulefile);
     fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
     beautify(&modulefile);
   }
+
+  if (fRuntime) {
+    closeCFile(&runtimeFile);
+    beautify(&runtimeFile);
+  }
+
   fileinfo memoryfile;
   openCFile(&memoryfile, "_memory_management", "c");
   fprintf(mainfile.fptr, "#include \"%s\"\n", memoryfile.filename);
