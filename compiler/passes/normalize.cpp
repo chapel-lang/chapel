@@ -577,7 +577,9 @@ static void normalize_returns(FnSymbol* fn) {
     if (fn->retTag == RET_TYPE)
       retval->isTypeVariable = true;
     if (fn->retExprType && fn->retTag != RET_VAR) {
-      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_INIT, fn->retExprType->copy())));
+      BlockStmt* retExprType = fn->retExprType->copy();
+      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_INIT, retExprType->body.tail->remove())));
+      fn->insertAtHead(retExprType);
       fn->addPragma("specified return type");
     }
     fn->insertAtHead(new DefExpr(retval));

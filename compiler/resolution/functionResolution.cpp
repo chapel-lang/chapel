@@ -320,7 +320,8 @@ protoIteratorClass(FnSymbol* fn) {
 
 static void
 resolveSpecifiedReturnType(FnSymbol* fn) {
-  fn->retType = resolve_type_expr(fn->retExprType);
+  resolveBlock(fn->retExprType);
+  fn->retType = fn->retExprType->body.tail->typeInfo();
   if (fn->retType != dtUnknown) {
     if (fn->retTag == RET_VAR) {
       makeRefType(fn->retType);

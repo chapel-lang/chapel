@@ -551,7 +551,7 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   } else if (old_ast == setter) {
     setter = toDefExpr(new_ast);
   } else if (old_ast == retExprType) {
-    retExprType = toExpr(new_ast);
+    retExprType = toBlockStmt(new_ast);
   } else {
     INT_FATAL(this, "Unexpected case in FnSymbol::replaceChild");
   }

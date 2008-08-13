@@ -149,7 +149,7 @@ class FnSymbol : public Symbol {
   DefExpr* setter; // implicit setter argument to var functions
   Type* retType;
   BlockStmt* where;
-  Expr* retExprType;
+  BlockStmt* retExprType;
   BlockStmt* body;
   FnTag fnTag;
   RetTag retTag;

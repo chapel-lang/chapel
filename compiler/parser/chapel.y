@@ -723,7 +723,8 @@ fn_decl_stmt:
       $3->retTag = $5;
       if ($5 == RET_VAR)
         $3->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
-      $3->retExprType = $6;
+      if ($6)
+        $3->retExprType = new BlockStmt($6, BLOCK_SCOPELESS);
       if ($7)
         $3->where = new BlockStmt($7);
       $3->insertAtTail($8);
@@ -744,7 +745,7 @@ extern_fn_decl_stmt:
       FnSymbol* fn = $3;
       fn->isExtern = true;
       if ($4)
-        fn->retExprType = $4;
+        fn->retExprType = new BlockStmt($4, BLOCK_SCOPELESS);
       else
         fn->retType = dtVoid;
       $$ = buildChapelStmt(new DefExpr(fn));

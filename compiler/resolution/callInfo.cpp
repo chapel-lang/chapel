@@ -29,9 +29,11 @@ CallInfo::CallInfo(CallExpr* icall) : call(icall), scope(NULL) {
     } else {
       actualNames.add(NULL);
     }
-    if (SymExpr* se = toSymExpr(actual))
+    if (SymExpr* se = toSymExpr(actual)) {
       actualSyms.add(se->var);
-    else
+    } else {
+      INT_FATAL("ha");
       actualSyms.add(NULL);
+    }
   }
 }
