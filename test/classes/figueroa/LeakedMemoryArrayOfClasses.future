@@ -1,0 +1,1 @@
+bug: Not all memory in an array is freed even if all its elements are freed

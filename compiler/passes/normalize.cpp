@@ -472,7 +472,8 @@ void normalize(void) {
   form_Map(TypeToFnSymbolMapElem, t, destructors) {
     Type *parent = t->key;
     while (parent->dispatchParents.count()) {
-      INT_ASSERT(parent->dispatchParents.count() <= 1); // multiple inheritance not yet handled!
+      if (parent->dispatchParents.count() > 1)
+        USR_FATAL(t->key, "destructors for classes with multiple inheritance not yet implemented");
       parent = parent->dispatchParents.first();
       FnSymbol *parentDestructor;
       if ((parentDestructor = destructors.get(parent))) {
