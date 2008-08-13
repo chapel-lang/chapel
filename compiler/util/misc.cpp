@@ -144,6 +144,8 @@ static void printDevelErrorFooter(void) {
 
 
 void handleError(const char *fmt, ...) {
+  fflush(stdout);
+  fflush(stderr);
   if (err_ignore)
     return;
 
