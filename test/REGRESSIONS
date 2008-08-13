@@ -25,10 +25,6 @@ precision issue, due to user code changing (07/01/08)
 [Error matching program output for
 studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
 
-nondeterministic failures
--------------------------
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample2]
-
 extremely rare race condition in module initialization
 ------------------------------------------------------
 [Error matching program output for modules/diten/useInBegin]
@@ -66,6 +62,15 @@ parallel/taskPool/figueroa/TooManyThreads]
 failing nondeterministically (e.g., 04/04/08)
 ---------------------------------------------
 [Error: didn't find expected suppression memory/shannon/outofmemory/mallocOutOfMemory]
+
+
+==========================
+intel-specific regressions
+==========================
+
+mixing enumerated and numeric types (08/12-13/08)
+-------------------------------------------------
+[Error matching compiler output for classes/diten/allocateManyObjects]
 
 
 ===========================
@@ -410,6 +415,7 @@ opts-specific tests
 [Error matching program output for release/examples/taskParallel]
 [Error matching program output for release/examples/tree]
 [Error matching program output for release/examples/hpcc/ra]
+[Summary: #Successes = 17 | #Failures = 8 | #Futures = 0]
 
 --baseline --no-local
 ---------------------
@@ -421,6 +427,7 @@ opts-specific tests
 [Error matching program output for release/examples/taskParallel]
 [Error matching program output for release/examples/tree]
 [Error matching program output for release/examples/hpcc/ra]
+[Summary: #Successes = 17 | #Failures = 8 | #Futures = 0]
 
 
 (Full run: 52, though some spurious hplExample2 and test_refine errors)
