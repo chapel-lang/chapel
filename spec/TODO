@@ -33,3 +33,7 @@
   - scalars, classes, records: same as blank:
   - domains/arrays: pass by ref and allow modification
 
+* Does spec talk about declaring methods for types other than
+  classes/records?
+
+* List "by" among the overloaded operators?
