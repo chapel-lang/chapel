@@ -297,7 +297,7 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   intent(iIntent),
   typeExpr(NULL),
   defaultExpr(NULL),
-  variableExpr(iVariableExpr),
+  variableExpr(NULL),
   instantiatedFrom(NULL),
   instantiatedParam(false),
   markedGeneric(false)
@@ -314,6 +314,12 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
     defaultExpr = block;
   else
     defaultExpr = new BlockStmt(iDefaultExpr, BLOCK_SCOPELESS);
+  if (!iVariableExpr)
+    variableExpr = NULL;
+  else if (BlockStmt* block = toBlockStmt(iVariableExpr))
+    variableExpr = block;
+  else
+    variableExpr = new BlockStmt(iVariableExpr, BLOCK_SCOPELESS);
 }
 
 
@@ -326,6 +332,8 @@ void ArgSymbol::verify() {
     INT_FATAL(this, "Bad ArgSymbol::typeExpr::parentSymbol");
   if (defaultExpr && defaultExpr->parentSymbol != this)
     INT_FATAL(this, "Bad ArgSymbol::defaultExpr::parentSymbol");
+  if (variableExpr && variableExpr->parentSymbol != this)
+    INT_FATAL(this, "Bad ArgSymbol::variableExpr::parentSymbol");
 }
 
 
@@ -348,7 +356,7 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   else if (old_ast == defaultExpr)
     defaultExpr = toBlockStmt(new_ast);
   else if (old_ast == variableExpr)
-    variableExpr = toExpr(new_ast);
+    variableExpr = toBlockStmt(new_ast);
   else
     type->replaceChild(old_ast, new_ast);
 }

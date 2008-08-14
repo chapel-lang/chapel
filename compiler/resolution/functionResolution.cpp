@@ -781,9 +781,8 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
 
   bool genericArg = false;
   for_formals(arg, fn) {
-    if (!genericArg && arg->variableExpr &&
-        !toDefExpr(arg->variableExpr))
-      resolve_type_expr(arg->variableExpr);
+    if (!genericArg && arg->variableExpr && !isDefExpr(arg->variableExpr->body.tail))
+      resolveBlock(arg->variableExpr);
 
     //
     // set genericArg to true if a generic argument appears before the
@@ -792,8 +791,11 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
     if (arg->type->isGeneric)
       genericArg = true;
 
+    if (!arg->variableExpr)
+      continue;
+
     // handle unspecified variable number of arguments
-    if (DefExpr* def = toDefExpr(arg->variableExpr)) {
+    if (DefExpr* def = toDefExpr(arg->variableExpr->body.tail)) {
 
       // check for cached stamped out function
       if (Vec<FnSymbol*>* cfns = cache.get(fn)) {
@@ -827,7 +829,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
       cache.put(fn, cfns);
 
       return expandVarArgs(newFn, numActuals);
-    } else if (SymExpr* sym = toSymExpr(arg->variableExpr)) {
+    } else if (SymExpr* sym = toSymExpr(arg->variableExpr->body.tail)) {
 
       // handle specified number of variable arguments
       if (VarSymbol* n_var = toVarSymbol(sym->var)) {
@@ -877,7 +879,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
         }
       }
       
-    } else if (!fn->isGeneric && arg->variableExpr)
+    } else if (!fn->isGeneric)
       INT_FATAL("bad variableExpr");
   }
   return fn;

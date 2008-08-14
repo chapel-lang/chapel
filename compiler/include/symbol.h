@@ -110,7 +110,7 @@ class ArgSymbol : public Symbol {
   IntentTag intent;
   BlockStmt* typeExpr;
   BlockStmt* defaultExpr;
-  Expr* variableExpr;
+  BlockStmt* variableExpr;
   Type* instantiatedFrom;
   bool instantiatedParam;
   bool markedGeneric;
