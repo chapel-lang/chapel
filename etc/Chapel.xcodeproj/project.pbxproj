@@ -124,6 +124,9 @@
 		F7FAC51E0D45384C00C02B67 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC50F0D45384C00C02B67 /* main.c */; };
 		F7FAC5370D45390200C02B67 /* chpl_cfg_threads.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5360D45390200C02B67 /* chpl_cfg_threads.c */; };
 		F7FAC53B0D45391800C02B67 /* chpl_cfg_comm.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC53A0D45391800C02B67 /* chpl_cfg_comm.c */; };
+		F7FDB9410E53AB59006CE064 /* bitVec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7FDB9400E53AB59006CE064 /* bitVec.cpp */; };
+		F7FDB99A0E53B9E1006CE064 /* chapel_code.h in Headers */ = {isa = PBXBuildFile; fileRef = F7FDB9980E53B9E1006CE064 /* chapel_code.h */; };
+		F7FDB9AB0E53BAD8006CE064 /* chapel_code.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FDB9AA0E53BAD8006CE064 /* chapel_code.c */; settings = {COMPILER_FLAGS = "-Wno-unused-function -Wno-unused-variable"; }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -180,7 +183,7 @@
 		F721A0BD0D454AAE00A6B43F /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 12;
-			dstPath = "$SRCROOT/../lib/comm-none/threads-pthreads";
+			dstPath = "$SRCROOT/../lib/darwin/gnu/comm-none/threads-pthreads";
 			dstSubfolderSpec = 0;
 			files = (
 				F721A0BE0D454AB400A6B43F /* libchpl.a in CopyFiles */,
@@ -479,6 +482,15 @@
 		F7FAC54F0D4539E400C02B67 /* error.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = error.h; path = ../runtime/include/error.h; sourceTree = "<group>"; };
 		F7FAC5500D4539E400C02B67 /* gdb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gdb.h; path = ../runtime/include/gdb.h; sourceTree = "<group>"; };
 		F7FAC5510D4539E400C02B67 /* stdchpl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stdchpl.h; path = ../runtime/include/stdchpl.h; sourceTree = "<group>"; };
+		F7FDB9390E53AADF006CE064 /* bitVec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bitVec.h; path = ../compiler/include/bitVec.h; sourceTree = SOURCE_ROOT; };
+		F7FDB9400E53AB59006CE064 /* bitVec.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = bitVec.cpp; path = ../compiler/adt/bitVec.cpp; sourceTree = SOURCE_ROOT; };
+		F7FDB9980E53B9E1006CE064 /* chapel_code.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chapel_code.h; path = ../runtime/include/chapel_code.h; sourceTree = SOURCE_ROOT; };
+		F7FDB9AA0E53BAD8006CE064 /* chapel_code.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chapel_code.c; path = ../runtime/src/chapel_code.c; sourceTree = SOURCE_ROOT; };
+		F7FDB9D10E53C580006CE064 /* chpllaunch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpllaunch.h; path = ../runtime/include/chpllaunch.h; sourceTree = SOURCE_ROOT; };
+		F7FDB9D40E53C5AD006CE064 /* chapel_code.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = chapel_code.chpl; path = ../runtime/src/chapel_code.chpl; sourceTree = SOURCE_ROOT; };
+		F7FDB9D50E53C5AD006CE064 /* main_launcher.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = main_launcher.c; path = ../runtime/src/main_launcher.c; sourceTree = SOURCE_ROOT; };
+		F7FDB9DC0E53C64F006CE064 /* processTokens.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = processTokens.h; path = ../compiler/parser/processTokens.h; sourceTree = SOURCE_ROOT; };
+		F7FDB9E70E53C706006CE064 /* lexyacc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lexyacc.h; path = ../compiler/parser/lexyacc.h; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -559,6 +571,7 @@
 		F721A0CE0D455B1200A6B43F /* adt */ = {
 			isa = PBXGroup;
 			children = (
+				F7FDB9400E53AB59006CE064 /* bitVec.cpp */,
 				F721A0D30D455B8C00A6B43F /* map.cpp */,
 				F721A0D40D455B8C00A6B43F /* vec.cpp */,
 			);
@@ -684,6 +697,7 @@
 				F721A1C20D45616800A6B43F /* baseAST.h */,
 				F721A1C30D45616800A6B43F /* bb.h */,
 				F721A1C40D45616800A6B43F /* beautify.h */,
+				F7FDB9390E53AADF006CE064 /* bitVec.h */,
 				F721A1C50D45616800A6B43F /* build.h */,
 				F73113C50E3EB7E200F62922 /* caches.h */,
 				F73113C60E3EB7E200F62922 /* callInfo.h */,
@@ -695,6 +709,7 @@
 				F721A1CB0D45616800A6B43F /* extern.h */,
 				F721A1CC0D45616800A6B43F /* files.h */,
 				F721A1CD0D45616800A6B43F /* iterator.h */,
+				F7FDB9E70E53C706006CE064 /* lexyacc.h */,
 				F721A1CE0D45616800A6B43F /* list.h */,
 				F721A1CF0D45616800A6B43F /* log.h */,
 				F721A1D00D45616800A6B43F /* map.h */,
@@ -705,6 +720,7 @@
 				F721A1D50D45616800A6B43F /* passes.h */,
 				F731139E0E3EB6A800F62922 /* passlist.h */,
 				F721A1D60D45616800A6B43F /* primitive.h */,
+				F7FDB9DC0E53C64F006CE064 /* processTokens.h */,
 				F73113C70E3EB7E200F62922 /* resolution.h */,
 				F731139F0E3EB6A800F62922 /* runpasses.h */,
 				F721A1D80D45616800A6B43F /* stmt.h */,
@@ -724,6 +740,7 @@
 			isa = PBXGroup;
 			children = (
 				F7FAC53E0D4539E400C02B67 /* arg.h */,
+				F7FDB9980E53B9E1006CE064 /* chapel_code.h */,
 				F7FAC53F0D4539E400C02B67 /* chpl_md.h */,
 				F7FAC5400D4539E400C02B67 /* chplcast.h */,
 				F7FAC5410D4539E400C02B67 /* chplcgfns.h */,
@@ -981,6 +998,9 @@
 		F7B66D0F0D59738D00A53F3E /* Other sources */ = {
 			isa = PBXGroup;
 			children = (
+				F7FDB9D40E53C5AD006CE064 /* chapel_code.chpl */,
+				F7FDB9D10E53C580006CE064 /* chpllaunch.h */,
+				F7FDB9D50E53C5AD006CE064 /* main_launcher.c */,
 				F7665EE80D7F3B8400A55EBF /* Standard Modules */,
 				F7665EED0D7F3BB000A55EBF /* Makefiles */,
 			);
@@ -991,6 +1011,7 @@
 			isa = PBXGroup;
 			children = (
 				F7FAC5010D45384C00C02B67 /* arg.c */,
+				F7FDB9AA0E53BAD8006CE064 /* chapel_code.c */,
 				F7FAC5020D45384C00C02B67 /* chplcast.c */,
 				F7FAC5030D45384C00C02B67 /* chplcomm.c */,
 				F7FAC5040D45384C00C02B67 /* chplcopygc.c */,
@@ -1046,6 +1067,7 @@
 				F721A2340D458F1600A6B43F /* chpl_cfg_comm.h in Headers */,
 				F721A2390D458F6800A6B43F /* chpl_cfg_threads.h in Headers */,
 				F7A4FD390DE7AB8D00CDE656 /* chplcomm_locales.h in Headers */,
+				F7FDB99A0E53B9E1006CE064 /* chapel_code.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1125,11 +1147,11 @@
 				"$(OBJECT_FILE_DIR_$(CURRENT_VARIANT))/$NATIVE_ARCH/main.o",
 			);
 			outputPaths = (
-				"$SRCROOT/../lib/comm-none/threads-pthreads/main.o",
+				"$SRCROOT/../lib/darwin/gnu/comm-none/threads-pthreads/main.o",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "dir=`eval echo \\$\\{OBJECT_FILE_DIR_${CURRENT_VARIANT}}`\nfiles=`for arch in $ARCHS; do echo $dir/$arch/main.o; done`\nset -x\nlipo -create -output $SRCROOT/../lib/comm-none/threads-pthreads/main.o $files";
+			shellScript = "dir=`eval echo \\$\\{OBJECT_FILE_DIR_${CURRENT_VARIANT}}`\nfiles=`for arch in $ARCHS; do echo $dir/$arch/main.o; done`\nset -x\ndstdir=$SRCROOT/../lib/darwin/gnu/comm-none/threads-pthreads\nlipo -create -output $dstdir/main.o $files";
 			showEnvVarsInLog = 0;
 		};
 		F731D6300D51217B009F6897 /* ShellScript */ = {
@@ -1221,6 +1243,7 @@
 				F73113C00E3EB7C000F62922 /* generics.cpp in Sources */,
 				F73113C10E3EB7C000F62922 /* lowerIterators.cpp in Sources */,
 				F73113C20E3EB7C000F62922 /* wrappers.cpp in Sources */,
+				F7FDB9410E53AB59006CE064 /* bitVec.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1244,6 +1267,7 @@
 				F7FAC5370D45390200C02B67 /* chpl_cfg_threads.c in Sources */,
 				F7FAC53B0D45391800C02B67 /* chpl_cfg_comm.c in Sources */,
 				F7A4FD2A0DE7AA9300CDE656 /* chpl_cfg_comm_locales.c in Sources */,
+				F7FDB9AB0E53BAD8006CE064 /* chapel_code.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
