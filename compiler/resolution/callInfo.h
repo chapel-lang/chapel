@@ -13,8 +13,7 @@ class CallInfo {
   CallExpr*        call;        // call expression
   BlockStmt*       scope;       // module scope as in M.call
   const char*      name;        // function name
-  Vec<Symbol*>     actualSyms;  // symbols of actuals
-  Vec<Type*>       actualTypes; // types of actuals
+  Vec<Symbol*>     actuals;     // actual symbols
   Vec<const char*> actualNames; // named arguments
   CallInfo(CallExpr* icall);
 };

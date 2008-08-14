@@ -80,18 +80,18 @@ const char* toString(CallInfo* info) {
   bool method = false;
   bool _this = false;
   const char *str = "";
-  if (info->actualTypes.n > 1)
-    if (info->actualTypes.v[0] == dtMethodToken)
+  if (info->actuals.n > 1)
+    if (info->actuals.v[0]->type == dtMethodToken)
       method = true;
   if (!strcmp("this", info->name)) {
     _this = true;
     method = false;
   }
   if (method) {
-    if (info->actualSyms.v[1] && info->actualSyms.v[1]->isTypeVariable)
-      str = astr(str, "type ", toString(info->actualTypes.v[1]), ".");
+    if (info->actuals.v[1] && info->actuals.v[1]->isTypeVariable)
+      str = astr(str, "type ", toString(info->actuals.v[1]->type), ".");
     else
-      str = astr(str, toString(info->actualTypes.v[1]), ".");
+      str = astr(str, toString(info->actuals.v[1]->type), ".");
   }
   if (!strncmp("_type_construct_", info->name, 16)) {
     str = astr(str, info->name+16);
@@ -112,19 +112,19 @@ const char* toString(CallInfo* info) {
     start = 2;
   if (_this)
     start = 2;
-  for (int i = start; i < info->actualTypes.n; i++) {
+  for (int i = start; i < info->actuals.n; i++) {
     if (!first)
       first = true;
     else
       str = astr(str, ", ");
     if (info->actualNames.v[i])
       str = astr(str, info->actualNames.v[i], "=");
-    VarSymbol* var = toVarSymbol(info->actualSyms.v[i]);
-    if (info->actualTypes.v[i]->symbol->hasPragma("iterator class") &&
-        info->actualTypes.v[i]->defaultConstructor->hasPragma("promotion wrapper"))
+    VarSymbol* var = toVarSymbol(info->actuals.v[i]);
+    if (info->actuals.v[i]->type->symbol->hasPragma("iterator class") &&
+        info->actuals.v[i]->type->defaultConstructor->hasPragma("promotion wrapper"))
       str = astr(str, "promoted expression");
-    else if (info->actualSyms.v[i] && info->actualSyms.v[i]->isTypeVariable)
-      str = astr(str, "type ", toString(info->actualTypes.v[i]));
+    else if (info->actuals.v[i] && info->actuals.v[i]->isTypeVariable)
+      str = astr(str, "type ", toString(info->actuals.v[i]->type));
     else if (var && var->immediate) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
         str = astr(str, "\"", var->immediate->v_string, "\"");
@@ -134,7 +134,7 @@ const char* toString(CallInfo* info) {
         str = astr(str, buff);
       }
     } else
-      str = astr(str, toString(info->actualTypes.v[i]));
+      str = astr(str, toString(info->actuals.v[i]->type));
   }
   if (!info->call->methodTag) {
     if (info->call->square)
@@ -640,8 +640,7 @@ computeActualFormalMap(FnSymbol* fn,
                        Vec<ArgSymbol*>* actualFormals,
                        int num_actuals,
                        int num_formals,
-                       Vec<Type*>* actualTypes,
-                       Vec<Symbol*>* actualSyms,
+                       Vec<Symbol*>* actuals,
                        Vec<const char*>* actualNames) {
   for (int i = 0; i < num_formals; i++) {
     formalActuals->add(NULL);
@@ -658,8 +657,8 @@ computeActualFormalMap(FnSymbol* fn,
         if (!strcmp(actualNames->v[i], formal->name)) {
           match = true;
           actualFormals->v[i] = formal;
-          formalActuals->v[j] = actualTypes->v[i];
-          formalSyms->v[j] = actualSyms->v[i];
+          formalActuals->v[j] = actuals->v[i]->type;
+          formalSyms->v[j] = actuals->v[i];
           break;
         }
       }
@@ -678,8 +677,8 @@ computeActualFormalMap(FnSymbol* fn,
         if (!formalActuals->v[j]) {
           match = true;
           actualFormals->v[i] = formal;
-          formalActuals->v[j] = actualTypes->v[i];
-          formalSyms->v[j] = actualSyms->v[i];
+          formalActuals->v[j] = actuals->v[i]->type;
+          formalSyms->v[j] = actuals->v[i];
           break;
         }
       }
@@ -891,26 +890,22 @@ static void
 addCandidate(Vec<FnSymbol*>* candidateFns,
              Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
              FnSymbol* fn,
-             Vec<Type*>* actualTypes,
-             Vec<Symbol*>* actualSyms,
-             Vec<const char*>* actualNames,
-             CallExpr* call) {
-  fn = expandVarArgs(fn, actualTypes->n);
+             CallInfo& info) {
+  fn = expandVarArgs(fn, info.actuals.n);
 
   if (!fn)
     return;
 
   Vec<ArgSymbol*>* actualFormals = new Vec<ArgSymbol*>();
 
-  int num_actuals = actualTypes->n;
+  int num_actuals = info.actuals.n;
   int num_formals = fn->numFormals();
 
   Vec<Type*> formalActuals;
   Vec<Symbol*> formalSyms;
   bool valid = computeActualFormalMap(fn, &formalActuals, &formalSyms,
                                       actualFormals, num_actuals,
-                                      num_formals, actualTypes,
-                                      actualSyms, actualNames);
+                                      num_formals, &info.actuals, &info.actualNames);
   if (!valid) {
     delete actualFormals;
     return;
@@ -951,9 +946,9 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     SymbolMap subs;
     computeGenericSubs(subs, fn, &formalActuals, &formalSyms);
     if (subs.n) {
-      FnSymbol* inst_fn = instantiate(fn, &subs, call);
+      FnSymbol* inst_fn = instantiate(fn, &subs, info.call);
       if (inst_fn)
-        addCandidate(candidateFns, candidateActualFormals, inst_fn, actualTypes, actualSyms, actualNames, call);
+        addCandidate(candidateFns, candidateActualFormals, inst_fn, info);
     }
     delete actualFormals;
     return;
@@ -986,7 +981,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
         }
       }
     }
-    call->insertBefore(typeConstructorCall);
+    info.call->insertBefore(typeConstructorCall);
     resolveCall(typeConstructorCall);
     INT_ASSERT(typeConstructorCall->isResolved());
     resolveFns(typeConstructorCall->isResolved());
@@ -1117,8 +1112,7 @@ disambiguate_by_scope(Expr* parent, Vec<FnSymbol*>* candidateFns) {
 static FnSymbol*
 disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                       Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
-                      Vec<Type*>* actualTypes,
-                      Vec<Symbol*>* actualSyms,
+                      Vec<Symbol*>* actuals,
                       Vec<ArgSymbol*>** ret_afs) {
   FnSymbol* best = NULL;
   Vec<ArgSymbol*>* actualFormals = 0;
@@ -1143,8 +1137,8 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
             else {
               bool require_scalar_promotion1;
               bool require_scalar_promotion2;
-              canDispatch(actualTypes->v[k], actualSyms->v[k], arg->type, best, &require_scalar_promotion1);
-              canDispatch(actualTypes->v[k], actualSyms->v[k], arg2->type, best, &require_scalar_promotion2);
+              canDispatch(actuals->v[k]->type, actuals->v[k], arg->type, best, &require_scalar_promotion1);
+              canDispatch(actuals->v[k]->type, actuals->v[k], arg2->type, best, &require_scalar_promotion2);
               promotion1 |= require_scalar_promotion1;
               promotion2 |= require_scalar_promotion2;
               if (require_scalar_promotion1 && !require_scalar_promotion2)
@@ -1168,11 +1162,11 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                              arg2->instantiatedFrom==dtAny) {
                     as_good = false;
                   } else {
-                    if (actualTypes->v[k] == arg2->type &&
-                        actualTypes->v[k] != arg->type) {
+                    if (actuals->v[k]->type == arg2->type &&
+                        actuals->v[k]->type != arg->type) {
                       better = true;
-                    } else if (actualTypes->v[k] == arg->type &&
-                               actualTypes->v[k] != arg2->type) {
+                    } else if (actuals->v[k]->type == arg->type &&
+                               actuals->v[k]->type != arg2->type) {
                       as_good = false;
                     } else if (moreSpecific(best, arg2->type, arg->type) && 
                                arg2->type != arg->type) {
@@ -1243,20 +1237,20 @@ printResolutionError(const char* error,
                      CallInfo* info) {
   CallExpr* call = userCall(info->call);
   if (!strcmp("_cast", info->name)) {
-    if (!info->actualSyms.v[0]->isTypeVariable) {
+    if (!info->actuals.v[0]->isTypeVariable) {
       USR_FATAL(call, "illegal cast to non-type",
-                toString(info->actualTypes.v[1]),
-                toString(info->actualTypes.v[0]));
+                toString(info->actuals.v[1]->type),
+                toString(info->actuals.v[0]->type));
     } else {
       USR_FATAL(call, "illegal cast from %s to %s",
-                toString(info->actualTypes.v[1]),
-                toString(info->actualTypes.v[0]));
+                toString(info->actuals.v[1]->type),
+                toString(info->actuals.v[0]->type));
     }
-  } else if (info->actualTypes.n == 2 &&
-             info->actualTypes.v[0] == dtMethodToken &&
+  } else if (info->actuals.n == 2 &&
+             info->actuals.v[0]->type == dtMethodToken &&
              !strcmp("these", info->name)) {
     USR_FATAL(call, "cannot iterate over values of type %s",
-              toString(info->actualTypes.v[1]));
+              toString(info->actuals.v[1]->type));
   } else if (!strcmp("_type_construct__tuple", info->name)) {
     SymExpr* sym = toSymExpr(info->call->get(1));
     if (!sym || !sym->isParameter()) {
@@ -1265,26 +1259,26 @@ printResolutionError(const char* error,
       USR_FATAL(call, "invalid tuple");
     }
   } else if (!strcmp("=", info->name)) {
-    if (info->actualSyms.v[0] && !info->actualSyms.v[0]->isTypeVariable &&
-        info->actualSyms.v[1] && info->actualSyms.v[1]->isTypeVariable) {
+    if (info->actuals.v[0] && !info->actuals.v[0]->isTypeVariable &&
+        info->actuals.v[1] && info->actuals.v[1]->isTypeVariable) {
       USR_FATAL(call, "illegal assignment of type to value");
-    } else if (info->actualTypes.v[1] == dtNil) {
+    } else if (info->actuals.v[1]->type == dtNil) {
       USR_FATAL(call, "type mismatch in assignment of nil to %s",
-                toString(info->actualTypes.v[0]));
+                toString(info->actuals.v[0]->type));
     } else {
       USR_FATAL(call, "type mismatch in assignment from %s to %s",
-                toString(info->actualTypes.v[1]),
-                toString(info->actualTypes.v[0]));
+                toString(info->actuals.v[1]->type),
+                toString(info->actuals.v[0]->type));
     }
   } else if (!strcmp("this", info->name)) {
-    Type* type = info->actualTypes.v[1];
+    Type* type = info->actuals.v[1]->type;
     if (type->symbol->hasPragma("ref"))
       type = getValueType(type);
     if (type->symbol->hasPragma("iterator class")) {
       USR_FATAL(call, "illegal access of iterator or promoted expression");
     } else {
       USR_FATAL(call, "%s access of '%s' by '%s'", error,
-                toString(info->actualTypes.v[1]),
+                toString(info->actuals.v[1]->type),
                 toString(info));
     }
   } else {
@@ -1581,9 +1575,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
 
       if (call->methodTag && !visibleFn->noParens && !visibleFn->hasPragma("type constructor"))
         continue;
-      addCandidate(&candidateFns, &candidateActualFormals, visibleFn,
-                   &info.actualTypes, &info.actualSyms, &info.actualNames,
-                   call);
+      addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
     }
 
     if (explainCallLine && explainCallMatch(call)) {
@@ -1601,8 +1593,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
     FnSymbol* best = NULL;
     Vec<ArgSymbol*>* actualFormals = 0;
     best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                                 &info.actualTypes, &info.actualSyms,
-                                 &actualFormals);
+                                 &info.actuals, &actualFormals);
 
     // use visibility and then look for best again
     if (!best && candidateFns.n > 1) {
@@ -1612,14 +1603,12 @@ resolveCall(CallExpr* call, bool errorCheck) {
         disambiguate_by_scope(getVisibilityBlock(call), &candidateFns);
       }
       best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                                   &info.actualTypes, &info.actualSyms,
-                                   &actualFormals);
+                                   &info.actuals, &actualFormals);
     }
 
     if (best && explainCallLine && explainCallMatch(call)) {
       USR_PRINT(best, "best candidate is: %s", toString(best));
     }
-
     if (!best && candidateFns.n > 0) {
       if (errorCheck)
         printResolutionError("ambiguous", candidateFns, &info);
@@ -1638,15 +1627,16 @@ resolveCall(CallExpr* call, bool errorCheck) {
     }
     for (int i = 0; i < candidateActualFormals.n; i++)
       delete candidateActualFormals.v[i];
-
     FnSymbol* resolvedFn = best;
 
-    if (!resolvedFn && !errorCheck)
+    if (!resolvedFn && !errorCheck) {
       return;
+    }
 
     if (call->partialTag) {
-      if (!resolvedFn)
+      if (!resolvedFn) {
         return;
+      }
       call->partialTag = false;
     }
     if (resolvedFn && resolvedFn->hasPragma("data set error")) {
@@ -1654,7 +1644,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
       if (!elt_type)
         INT_FATAL(call, "Unexpected substitution of ddata class");
       USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
-                toString(info.actualTypes.v[3]), toString(elt_type));
+                toString(info.actuals.v[3]->type), toString(elt_type));
     }
     if (resolvedFn &&
         !strcmp("=", resolvedFn->name) &&
@@ -1682,7 +1672,6 @@ resolveCall(CallExpr* call, bool errorCheck) {
         }
       }
     }
-
   } else if (call->isPrimitive(PRIMITIVE_TUPLE_AND_EXPAND)) {
     SymExpr* sym = toSymExpr(call->get(1));
     int size = 0;
@@ -1776,11 +1765,6 @@ resolveCall(CallExpr* call, bool errorCheck) {
     if (parent && parent->isNamed("_type_construct__tuple")) {
       parent->get(1)->replace(new SymExpr(new_IntSymbol(parent->numActuals()-1)));
     }
-//   } else if (call->isPrimitive(PRIMITIVE_CAST)) {
-//     Type* t= call->get(1)->typeInfo();
-//     if (t == dtUnknown)
-//       INT_FATAL(call, "Unable to resolve type");
-//     call->get(1)->replace(new SymExpr(t->symbol));
   } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
     SymExpr* sym = toSymExpr(call->get(2));
     if (!sym)
@@ -1848,8 +1832,9 @@ resolveCall(CallExpr* call, bool errorCheck) {
     // do not resolve function return type yet
     // except for constructors
     if (fn && fn->getReturnSymbol() == lhs && fn->_this != lhs)
-      if (fn->retType == dtUnknown)
+      if (fn->retType == dtUnknown) {
         return;
+      }
 
     Type* rhsType = rhs->typeInfo();
 

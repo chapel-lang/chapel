@@ -19,21 +19,17 @@ CallInfo::CallInfo(CallExpr* icall) : call(icall), scope(NULL) {
     }
   }
   for_actuals(actual, call) {
-    Type* t = actual->typeInfo();
-    if (t == dtUnknown || t->isGeneric)
-      INT_FATAL(call, "actual type is unknown or generic");
-    actualTypes.add(t);
     if (NamedExpr* named = toNamedExpr(actual)) {
       actualNames.add(named->name);
       actual = named->actual;
     } else {
       actualNames.add(NULL);
     }
-    if (SymExpr* se = toSymExpr(actual)) {
-      actualSyms.add(se->var);
-    } else {
-      INT_FATAL("ha");
-      actualSyms.add(NULL);
-    }
+    SymExpr* se = toSymExpr(actual);
+    INT_ASSERT(se);
+    Type* t = se->var->type;
+    if (t == dtUnknown || t->isGeneric)
+      INT_FATAL(call, "actual type is unknown or generic");
+    actuals.add(se->var);
   }
 }

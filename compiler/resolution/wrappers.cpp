@@ -385,8 +385,8 @@ coercionWrap(FnSymbol* fn, CallInfo* info) {
   bool coerce = false;
   for_formals(formal, fn) {
     j++;
-    Type* actualType = info->actualTypes.v[j];
-    Symbol* actualSym = info->actualSyms.v[j];
+    Type* actualType = info->actuals.v[j]->type;
+    Symbol* actualSym = info->actuals.v[j];
     if (actualType != formal->type) {
       if (canCoerce(actualType, actualSym, formal->type, fn) || isDispatchParent(actualType, formal->type)) {
         subs.put(formal, actualType->symbol);
@@ -473,8 +473,7 @@ buildPromotionWrapper(FnSymbol* fn,
 
 FnSymbol*
 promotionWrap(FnSymbol* fn, CallInfo* info) {
-  Vec<Type*>* actualTypes = &info->actualTypes;
-  Vec<Symbol*>* actualSyms = &info->actualSyms;
+  Vec<Symbol*>* actuals = &info->actuals;
   bool isSquare = info->call->square;
   if (!strcmp(fn->name, "="))
     return fn;
@@ -483,8 +482,8 @@ promotionWrap(FnSymbol* fn, CallInfo* info) {
   int j = -1;
   for_formals(formal, fn) {
     j++;
-    Type* actualType = actualTypes->v[j];
-    Symbol* actualSym = actualSyms->v[j];
+    Type* actualType = actuals->v[j]->type;
+    Symbol* actualSym = actuals->v[j];
     bool require_scalar_promotion = false;
     if (canDispatch(actualType, actualSym, formal->type, fn, &require_scalar_promotion)){
       if (require_scalar_promotion) {
