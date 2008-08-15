@@ -1,0 +1,5 @@
+bug: can't directly declare a variable to have type tuple of array of int
+
+This test gets an error about an iterator returning a type where a value is
+expected because of [1..3] int, but it seems like it should be an array type
+instead.

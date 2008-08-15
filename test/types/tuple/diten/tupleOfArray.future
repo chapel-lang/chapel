@@ -1,0 +1,3 @@
+bug: accessing tuple typed by an alias to an array type
+
+A variable declared to have the type tuple of array of int crashes at runtime.
