@@ -1907,8 +1907,7 @@ formalRequiresTemp(ArgSymbol* formal) {
 
 static void
 insertFormalTemps(FnSymbol* fn) {
-  if (!strcmp(fn->name, "_pass") ||
-      !strcmp(fn->name, "_init") ||
+  if (!strcmp(fn->name, "_init") ||
       !strcmp(fn->name, "_copy") ||
       !strcmp(fn->name, "_getIterator") ||
       !strcmp(fn->name, "_getIteratorHelp") ||
@@ -1961,8 +1960,17 @@ insertFormalTemps(FnSymbol* fn) {
         }
       } else if (formal->intent == INTENT_INOUT || formal->intent == INTENT_IN)
         fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_copy", formal)));
-      else
-        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_pass", formal)));
+      else {
+        TypeSymbol* ts = formal->type->symbol;
+        if (!ts->hasPragma("domain") &&
+            !ts->hasPragma("array") &&
+            !ts->hasPragma("iterator class") &&
+            !ts->hasPragma("ref") &&
+            !ts->hasPragma("sync"))
+          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_copy", formal)));
+        else
+          fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, formal));
+      }
       fn->insertAtHead(new DefExpr(tmp));
       if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT) {
         fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, formal, new CallExpr("=", formal, tmp)));
@@ -3178,7 +3186,7 @@ resolveFns(FnSymbol* fn) {
   // something like that.
   //
   if (fn->fnTag != FN_ITERATOR && fn->retType->symbol->hasPragma("iterator class") &&
-      strcmp("_pass", fn->name) && strcmp("_getIterator", fn->name) &&
+      strcmp("_getIterator", fn->name) &&
       strcmp("iteratorIndex", fn->name) && strcmp("iteratorIndexHelp", fn->name) &&
       strcmp("_toLeader", fn->name) && strcmp("_toFollower", fn->name) && 
       strcmp("_heapAccess", fn->name) &&

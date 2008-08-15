@@ -309,9 +309,6 @@ def =(a: _domain, b) {  // b is iteratable
   return a;
 }
 
-pragma "inline" def _pass(a: _domain)
-  return a;
-
 def _init(a: _domain)
   return a.buildEmptyDomain();
 
@@ -446,10 +443,6 @@ def _copy(a: _array) {
   var b : [a._dom] a.eltType;
   b = a;
   return b;
-}
-
-pragma "inline" def _pass(a: _array) {
-  return a;
 }
 
 def _init(a: _array) {
@@ -622,9 +615,6 @@ def =(ic: _iteratorClass, x: iteratorIndexType(ic)) {
     e = x;
   return ic;
 }
-
-pragma "inline" def _pass(ic: _iteratorClass)
-  return ic;
 
 def _copy(ic: _iteratorClass) {
   return _ic_copy_help(_ic_copy_recursive(ic));

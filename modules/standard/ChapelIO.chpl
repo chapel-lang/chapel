@@ -8,7 +8,6 @@ enum FileAccessMode { read, write };
 //
 // functions on _file primitive type, the C file pointer type
 //
-pragma "inline" def _copy(x: _file) return x;
 pragma "inline" def =(a: _file, b: _file) return b;
 pragma "inline" def ==(a: _file, b: _file) return __primitive("==", a, b);
 pragma "inline" def !=(a: _file, b: _file) return __primitive("!=", a, b);

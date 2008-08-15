@@ -484,8 +484,6 @@ pragma "inline" def _copy(type t) {
   compilerError("illegal assignment of type to value");
 }
 
-pragma "inline" def _pass(a) return _copy(a);
-
 //
 // _cond_test function supports statement bool conversions and sync
 //   variables in conditional statements; and checks for errors
@@ -628,7 +626,6 @@ def _init(r: _ref) return _init(__primitive("get ref", r));
 pragma "inline" pragma "ref"
 def _copy(r: _ref) return _copy(__primitive("get ref", r));
 pragma "inline" pragma "ref"
-def _pass(r: _ref) var return r;
 
 // Returns whether an object of type t occupies a 64-bit word on Cray's MTA/XMT
 // (The definition of this function should be target dependent.  This would avoid
@@ -667,10 +664,6 @@ class _syncvar {
 
 def _copy(sv: sync) {
   return sv.readFE();
-}
-
-def _pass(sv: sync) {
-  return sv;
 }
 
 def _init(sv: sync) {
@@ -830,10 +823,6 @@ class _singlevar {
 
 def _copy(sv: single) {
   return sv.readFF();
-}
-
-def _pass(sv: single) {
-  return sv;
 }
 
 def _init(sv: single) {
