@@ -522,10 +522,12 @@ chpl_begin_helper (chpl_task_pool_p task) {
   }
 
   // add incoming task to task-table structure in ChapelRuntime
-  chpl_mutex_lock(&threading_lock);
-  chpldev_taskTable_add(
-    chpl_thread_id(), task->lineno, task->filename);
-  chpl_mutex_unlock(&threading_lock);
+  if(taskreport) {
+      chpl_mutex_lock(&threading_lock);
+      chpldev_taskTable_add(
+        chpl_thread_id(), task->lineno, task->filename);
+      chpl_mutex_unlock(&threading_lock);
+  }
 
   while (true) {
     //
@@ -540,7 +542,9 @@ chpl_begin_helper (chpl_task_pool_p task) {
 
     chpl_free(task, 0, 0);  // make sure task_pool_head no longer points to this task!
 
-    chpldev_taskTable_remove(chpl_thread_id());
+    if(taskreport) {
+        chpldev_taskTable_remove(chpl_thread_id());
+    }
 
     //
     // finished task; decrement running count
@@ -600,7 +604,9 @@ chpl_begin_helper (chpl_task_pool_p task) {
       task->task_list_entry = NULL;
     }
     task->begun = true;
-    chpldev_taskTable_add(chpl_thread_id(), task->lineno, task->filename);
+    if(taskreport) {
+        chpldev_taskTable_add(chpl_thread_id(), task->lineno, task->filename);
+    }
     task_pool_head = task_pool_head->next;
     if (task_pool_head == NULL)  // task pool is now empty
       task_pool_tail = NULL;
@@ -814,15 +820,19 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
     do {
       task = next_task;
 
-      chpl_mutex_lock(&threading_lock);
-      chpldev_taskTable_add(chpl_thread_id(), task->lineno, task->filename);
-      chpl_mutex_unlock(&threading_lock);
+      if(taskreport) {
+          chpl_mutex_lock(&threading_lock);
+          chpldev_taskTable_add(chpl_thread_id(), task->lineno, task->filename);
+          chpl_mutex_unlock(&threading_lock);
+      }
 
       (*task->fun)(task->arg);
 
-      chpl_mutex_lock(&threading_lock);
-      chpldev_taskTable_remove(chpl_thread_id());
-      chpl_mutex_unlock(&threading_lock);
+      if(taskreport) {
+          chpl_mutex_lock(&threading_lock);
+          chpldev_taskTable_remove(chpl_thread_id());
+          chpl_mutex_unlock(&threading_lock);
+      }
 
       next_task = task->next;
     } while (task != task_list);
@@ -856,16 +866,21 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
 
     // Execute the first task on the list, since it has to run to completion
     // before continuing beyond the cobegin or coforall it's in.
-     chpl_mutex_lock(&threading_lock);
-     chpldev_taskTable_add(
-        chpl_thread_id(), first_task->lineno, first_task->filename);
-     chpl_mutex_unlock(&threading_lock);
+
+    if(taskreport) {
+        chpl_mutex_lock(&threading_lock);
+        chpldev_taskTable_add(
+            chpl_thread_id(), first_task->lineno, first_task->filename);
+        chpl_mutex_unlock(&threading_lock);
+    }
 
     (*first_task->fun)(first_task->arg);
 
-    chpl_mutex_lock(&threading_lock);
-    chpldev_taskTable_remove(chpl_thread_id());
-    chpl_mutex_unlock(&threading_lock);
+    if(taskreport) {
+        chpl_mutex_lock(&threading_lock);
+        chpldev_taskTable_remove(chpl_thread_id());
+        chpl_mutex_unlock(&threading_lock);
+    }
   }
 }
 
