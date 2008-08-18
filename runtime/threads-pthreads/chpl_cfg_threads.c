@@ -708,13 +708,16 @@ static chpl_task_pool_p add_to_task_pool (
     chpl_threadfp_t fp,
     chpl_threadarg_t a,
    _Bool serial,
-   chpl_task_list_p task_list_entry,
-   _string filename,
-   int lineno)
+    chpl_task_list_p task_list_entry)
 {
   chpl_task_pool_p task = (chpl_task_pool_p)chpl_alloc(sizeof(task_pool_t), "task pool entry", 0, 0);
-  task->filename = filename;
-  task->lineno = lineno;
+  if (task_list_entry) {
+    task->filename = task_list_entry->filename;
+    task->lineno = task_list_entry->lineno;
+  } else {  /* Believe this happens only when an on-clause starts the task */
+    task->filename = "<unknown>";
+    task->lineno = 0;
+  }
   task->fun = fp;
   task->arg = a;
   task->serial_state = serial;
@@ -745,8 +748,7 @@ void chpl_begin (chpl_threadfp_t fp, chpl_threadarg_t a,
     // begin critical section
     chpl_mutex_lock(&threading_lock);
 
-    task_pool_entry = add_to_task_pool(fp, a, serial_state, task_list_entry,
-        task_list_entry->filename, task_list_entry->lineno);
+    task_pool_entry = add_to_task_pool(fp, a, serial_state, task_list_entry);
     // this task may begin executing before returning from this function, so the task list
     // node needs to be updated before there is any possibility of launching this task
     if (task_list_entry)
@@ -850,8 +852,8 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
 
       do {
         task = next_task;
-        task->task_pool_entry = add_to_task_pool(
-            task->fun, task->arg, serial, task, task->filename, task->lineno);
+        task->task_pool_entry = add_to_task_pool(task->fun, task->arg, serial, 
+                                                 task);
         assert(task->task_pool_entry == NULL
                || task->task_pool_entry->task_list_entry == task);
         next_task = task->next;
