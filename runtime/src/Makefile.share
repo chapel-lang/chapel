@@ -1,6 +1,5 @@
 COMMON_LAUNCHER_SRCS = \
 	arg.c \
-	chapel_code.c \
 	chplcast.c \
 	chplexit.c \
 	chplmem.c \
@@ -9,7 +8,7 @@ COMMON_LAUNCHER_SRCS = \
 	error.c \
 	gdb.c \
 
-COMMON_SRCS = \
+COMMON_NOGEN_SRCS = \
 	$(COMMON_LAUNCHER_SRCS) \
 	chplcomm.c \
 	chplcopygc.c \
@@ -19,11 +18,26 @@ COMMON_SRCS = \
 MAIN_SRCS = \
 	main.c \
 
+GEN_HEADERS = \
+	chapel_code.h \
+
+GEN_SRCS = \
+	chapel_code.c \
+
+SVN_SRCS = \
+	$(COMMON_NOGEN_SRCS) \
+	$(MAIN_SRCS) \
+
+COMMON_SRCS = \
+	$(GEN_SRCS) \
+	$(COMMON_NOGEN_SRCS)
+
 MAIN_LAUNCHER_SRCS = \
 	main_launcher.c
 
-SVN_SRCS = $(COMMON_SRCS) $(MAIN_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS = $(GEN_SRCS) \
+	$(SVN_SRCS) \
+
 
 COMMON_OBJS = \
 	$(COMMON_SRCS:%.c=$(COMMON_OBJDIR)/%.o)

@@ -42,6 +42,7 @@ CLEAN_TARGS = \
 	*.core \
 	*.gmon \
 	*.a \
+        $(GEN_HEADERS) \
 	$(GEN_SRCS) \
 	$(EXECS)
 

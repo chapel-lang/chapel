@@ -34,6 +34,7 @@ endif
 COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL = -Wno-error
 RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
+RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 GEN_CFLAGS = -std=c99
 
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
@@ -63,5 +64,6 @@ WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused
 ifdef CHPL_DEVELOPER
 COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
+RUNTIME_GEN_CFLAGS += -Wno-unused
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 endif

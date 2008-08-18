@@ -13,7 +13,7 @@
 #include "chplrt.h"
 #include "chplthreads.h"
 #include "error.h"
-#include "chapel_code.h"
+#include "../src/chapel_code.h"
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
