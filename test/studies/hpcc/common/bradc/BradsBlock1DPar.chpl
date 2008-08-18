@@ -122,6 +122,8 @@ class Block1DDist {
     //
     // TODO: Should this be able to be written as myChunk[inds] ???
     //
+    // TODO: Does using David's detupling trick work here?
+    //
     return locDist(locid).myChunk(inds.dim(1));
   }
   
@@ -279,6 +281,10 @@ class Block1DDom {
 
   //
   // the iterator for the domain -- currently sequential
+  //
+  //
+  // TODO: This really should go over the elements in row-major order,
+  // not the block orders.
   //
   def these() {
     for blk in locDoms do
