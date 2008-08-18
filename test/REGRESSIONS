@@ -1,3 +1,4 @@
+
 # USAGE: the intent of this file is to keep track of current
 # regressions and to keep notes about why they are failing.  Since
 # linux is our main platform, linux regressions are listed first, and
@@ -14,11 +15,9 @@
 linux and general regressions
 =============================
 
-out of memory allocating stuff
-------------------------------
-[Error matching program output for stress/deitz/test_10k_begins]
-[Error matching program output for stress/deitz/test_10k_coforall]
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
+???
+---
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5]
 
 precision issue, due to user code changing (07/01/08)
 -----------------------------------------------------
@@ -30,23 +29,9 @@ extremely rare race condition in module initialization
 [Error matching program output for modules/diten/useInBegin]
 
 
-================================
-performance-specific regressions
-================================
-
-??? (08/12/2008)
-----------------
-[Error matching performance keys for studies/hpcc/STREAMS/bradc/stream-fragmented]
-[Error matching performance keys for studies/hpcc/STREAMS/diten/stream-fragmented-local]
-
-
 =============================
 valgrind-specific regressions
 =============================
-
-Got Timeout rather than printing iterations (08/12/2008)
---------------------------------------------------------
-[Error matching program output for parallel/cobegin/diten/cobeginRace]
 
 write-after-free in tasklist code (race-y?)
 -------------------------------------------
@@ -64,30 +49,12 @@ failing nondeterministically (e.g., 04/04/08)
 [Error: didn't find expected suppression memory/shannon/outofmemory/mallocOutOfMemory]
 
 
-==========================
-intel-specific regressions
-==========================
-
-mixing enumerated and numeric types (08/12-13/08)
--------------------------------------------------
-[Error matching compiler output for classes/diten/allocateManyObjects]
-
-
 ===========================
 gasnet-specific regressions
 ===========================
 
-accessing illegal locale id (08/12/2008)
-----------------------------------------
-[Error matching program output for arrays/deitz/test_domain_ref_in_begin]
-[Error matching program output for functions/deitz/iterators/leader_follower/test_leader_follower1]
-[Error matching program output for functions/deitz/iterators/leader_follower/test_leader_follower1a]
-[Error matching program output for functions/deitz/iterators/leader_follower/test_leader_follower2]
-[Error matching program output for functions/deitz/iterators/leader_follower/test_leader_follower2a]
-[Error matching program output for functions/deitz/iterators/parallel_thoughts1]
-[Error matching program output for functions/deitz/iterators/parallel_thoughts2]
-[Error matching program output for functions/diten/parallel_iterator]
-[Error matching program output for modules/diten/useInBegin]
+segfault on GASNet (08/12/2008)
+-------------------------------
 [Error matching program output for multilocale/bradc/configBadValue]
 [Error matching program output for multilocale/bradc/distribWarning]
 [Error matching program output for multilocale/bradc/locales/queryClassField]
@@ -170,124 +137,12 @@ accessing illegal locale id (08/12/2008)
 [Error matching program output for multilocale/gasnet/bradc/257threads]
 [Error matching program output for multilocale/numLocales/bradc/numLocales2]
 [Error matching program output for multilocale/numLocales/bradc/printNumLocalesTwo]
-[Error matching program output for npb/is/diten/is_mt]
-[Error matching program output for parallel/begin/deitz/test_begin2]
-[Error matching program output for parallel/begin/deitz/test_begin3]
-[Error matching program output for parallel/begin/deitz/test_begin4]
-[Error matching program output for parallel/begin/deitz/test_begin5]
-[Error matching program output for parallel/begin/deitz/test_begin6]
-[Error matching program output for parallel/begin/deitz/test_begin7]
-[Error matching program output for parallel/begin/deitz/test_begin8]
-[Error matching program output for parallel/begin/deitz/test_begin9]
-[Error matching program output for parallel/begin/deitz/test_begin]
-[Error matching program output for parallel/begin/deitz/test_begin_cobegin1]
-[Error matching program output for parallel/begin/deitz/test_begin_cobegin2]
-[Error matching program output for parallel/begin/deitz/test_begin_error_lineno]
-[Error matching program output for parallel/begin/deitz/test_begin_in_generic]
-[Error matching program output for parallel/begin/deitz/test_begin_sync]
-[Error matching program output for parallel/begin/deitz/test_coforall_sugar1]
-[Error matching program output for parallel/begin/deitz/test_coforall_sugar2]
-[Error matching program output for parallel/begin/deitz/test_coforall_sugar3]
-[Error matching program output for parallel/begin/deitz/test_global_for_begin]
-[Error matching program output for parallel/begin/deitz/test_heap_begin]
-[Error matching program output for parallel/begin/deitz/test_string_cat]
-[Error matching program output for parallel/begin/dinan/mvm_coforall]
-[Error matching program output for parallel/begin/diten/forParamBegin]
-[Error matching program output for parallel/begin/figueroa/defParamInBegin]
-[Error matching program output for parallel/begin/marybeth/test_forbegin2]
-[Error matching program output for parallel/begin/marybeth/test_forbegin3]
-[Error matching program output for parallel/begin/marybeth/test_forbegin]
-[Error matching program output for parallel/begin/stonea/reportsManyThreads]
-[Error matching program output for parallel/begin/stonea/reports]
-[Error matching program output for parallel/begin/waynew/array1]
-[Error matching program output for parallel/begin/waynew/class1]
-[Error matching program output for parallel/begin/waynew/class2]
-[Error matching program output for parallel/begin/waynew/record1]
-[Error matching program output for parallel/begin/waynew/record2]
-[Error matching program output for parallel/begin/waynew/simple2]
-[Error matching program output for parallel/begin/waynew/simple3]
-[Error matching program output for parallel/begin/waynew/simple]
-[Error matching program output for parallel/begin/waynew/single]
-[Error matching program output for parallel/cobegin/bradc/arrayargs]
-[Error matching program output for parallel/cobegin/bradc/exitone]
-[Error matching program output for parallel/cobegin/bradc/varsEscape-workaround]
-[Error matching program output for parallel/cobegin/deitz/test_array_cobegin]
-[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin]
-[Error matching program output for parallel/cobegin/diten/cobeginRace]
-[Error matching program output for parallel/cobegin/stonea/reports]
-[Error matching program output for parallel/cobegin/waynew/cobegin.simple0]
-[Error matching program output for parallel/cobegin/waynew/cobegin.simple1]
-[Error matching program output for parallel/cobegin/waynew/cobegin.simple2]
-[Error matching program output for parallel/cobegin/waynew/depend]
-[Error matching program output for parallel/cobegin/waynew/locals]
-[Error matching program output for parallel/cobegin/waynew/while]
-[Error matching program output for parallel/cobegin/waynew/writeln]
-[Error matching program output for parallel/coforall/bradc/accessLocArray]
-[Error matching program output for parallel/coforall/bradc/manyThreads-folded]
-[Error matching program output for parallel/coforall/bradc/manyThreads-inorder]
-[Error matching program output for parallel/coforall/bradc/manyThreads-revorder]
-[Error matching program output for parallel/coforall/figueroa/NestedCoforall]
-[Error matching program output for parallel/coforall/stonea/reports]
-[Error matching program output for parallel/serial/deitz/test_serial1]
 [Error matching program output for parallel/serial/figueroa/MultiLocaleSerial]
-[Error matching program output for parallel/serial/waynew/begin1a]
-[Error matching program output for parallel/serial/waynew/cobegin1a]
-[Error matching program output for parallel/serial/waynew/cobegin1b]
-[Error matching program output for parallel/single/diten/simpleSingleAccess]
-[Error matching program output for parallel/single/figueroa/ReadWriteMethods]
-[Error matching program output for parallel/single/figueroa/SingleSyncWriteParam]
-[Error matching program output for parallel/single/waynew/class0]
-[Error matching program output for parallel/single/waynew/class1]
-[Error matching program output for parallel/single/waynew/sarray]
-[Error matching program output for parallel/single/waynew/simple1-int64]
-[Error matching program output for parallel/single/waynew/simple1]
-[Error matching program output for parallel/single/waynew/simple2]
-[Error matching program output for parallel/single/waynew/simple3]
-[Error matching program output for parallel/single/waynew/simple4]
-[Error matching program output for parallel/sync/bradc/fib_sync]
-[Error matching program output for parallel/sync/deitz/test_sync1]
-[Error matching program output for parallel/sync/deitz/test_sync2]
-[Error matching program output for parallel/sync/deitz/test_sync_in_class_simple3]
-[Error matching program output for parallel/sync/deitz/test_sync_in_generic]
-[Error matching program output for parallel/sync/figueroa/ReadMethods]
-[Error matching program output for parallel/sync/figueroa/SingleSyncWriteParam]
-[Error matching program output for parallel/sync/figueroa/WriteMethods]
-[Error matching program output for parallel/sync/waynew/class1]
-[Error matching program output for parallel/sync/waynew/class2]
-[Error matching program output for parallel/sync/waynew/if1]
-[Error matching program output for parallel/sync/waynew/if2]
-[Error matching program output for parallel/sync/waynew/record1]
-[Error matching program output for parallel/sync/waynew/record2]
-[Error matching program output for parallel/sync/waynew/simple1]
-[Error matching program output for parallel/sync/waynew/simple2]
-[Error matching program output for parallel/syncStmt/bradc/beginsync]
-[Error matching program output for parallel/syncStmt/bradc/cobeginSync]
-[Error matching program output for parallel/syncStmt/bradc/coforallSync]
-[Error matching program output for parallel/syncStmt/deitz/test_end1]
-[Error matching program output for parallel/syncStmt/deitz/test_end2]
-[Error matching program output for parallel/syncStmt/deitz/test_end3]
-[Error matching program output for parallel/taskPool/figueroa/ManyThreads]
-[Error matching program output for parallel/taskPool/figueroa/OneThread]
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 [Error matching program output for release/examples/hello-multiloc]
-[Error matching program output for release/examples/hpcc/ra]
 [Error matching program output for release/examples/multilocale]
-[Error matching program output for release/examples/prodCons]
-[Error matching program output for release/examples/quicksort]
-[Error matching program output for release/examples/taskParallel]
-[Error matching program output for release/examples/tree]
-[Error matching program output for stress/deitz/test_10k_begins]
-[Error matching program output for stress/deitz/test_10k_cobegins]
-[Error matching program output for stress/deitz/test_10k_coforall]
-[Error matching program output for stress/deitz/test_10k_local_coforall_with_remote_update]
 [Error matching program output for stress/deitz/test_10k_ons]
 [Error matching program output for stress/deitz/test_10k_remote_coforall]
 [Error matching program output for stress/deitz/test_10k_remote_updates]
-[Error matching program output for studies/590o/blerner/xml-parse]
-[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround2]
-[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround]
-[Error matching program output for studies/590o/bradc/coforall-private-indices]
-[Error matching program output for studies/590o/bradc/forall-begin-private-indices]
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dclass]
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar]
@@ -296,41 +151,22 @@ accessing illegal locale id (08/12/2008)
 [Error matching program output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
 [Error matching program output for studies/hpcc/common/bradc/unit/modifyLocales]
 [Error matching program output for studies/hpcc/common/bradc/unit/multipleDomains]
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
 [Error matching program output for studies/madness/aniruddha/madchap/test_diff]
 [Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
-[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
 [Error matching program output for studies/madness/aniruddha/madchap/test_mul]
 [Error matching program output for studies/madness/aniruddha/madchap/test_showboxes]
 [Error matching program output for studies/matrixMult/stonea/distributed/luLike2]
 [Error matching program output for studies/matrixMult/stonea/distributed/luLike]
 [Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
-[Error matching program output for studies/uts/uts_deq]
-[Error matching program output for studies/uts/uts_rec]
 [Error matching program output for users/agnieszka/multiArrayI10]
 [Error matching program output for users/agnieszka/multiArrayI]
 [Error matching program output for users/agnieszka/test1]
 [Error matching program output for users/agnieszka/test2]
-[Error matching program output for users/rbarrett/twoCoforalls]
-[Error matching program output for users/shetag/ccs]
-[Error matching program output for users/shetag/fock/fock-0]
-[Error matching program output for users/shetag/fock/fock-1-begin-blc]
-[Error matching program output for users/shetag/fock/fock-1-latest]
-[Error matching program output for users/shetag/fock/fock-1]
-[Error matching program output for users/shetag/fock/fock-2]
-[Error matching program output for users/shetag/fock/fock-3-blc]
-[Error matching program output for users/shetag/fock/fock-3]
 [Error matching program output for users/shetag/fock/fock-dyn-prog-cntr]
 [Error matching program output for users/shetag/fock/fock-dyn-prog-pool]
-[Error matching program output for users/shetag/fock/fock-orig]
 [Error matching program output for users/shetag/fock/fock-stc-1]
 [Error matching program output for users/shetag/fock/fock-stc]
 [Error matching program output for users/shetag/iteratorWithoutOn]
-[Error matching program output for users/shetag/shareIterator-blc-register]
-[Error matching program output for users/shetag/shareIterator-blc-release]
-[Error matching program output for users/shetag/shareIterator-blc]
 
 ??? (08/07/08)
 --------------
@@ -366,12 +202,9 @@ studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error: Timed out executing program
 studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
 [Error: Timed out executing program
-stress/deitz/test_10k_local_coforall_with_remote_update]
-
-timeout issue
--------------
 [Error: Timed out executing program
 studies/madness/aniruddha/madchap/test_likepy]
+stress/deitz/test_10k_local_coforall_with_remote_update]
 
 ???
 ---
@@ -386,14 +219,6 @@ garbage collection doesn't work with multithreaded
 baseline-specific tests
 =======================
 
-out-of-memory error (08/12/2008)
---------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
-
-signal 11 (08/12/2008)
-----------------------
-[Error matching program output for parallel/begin/dinan/mvm_coforall]
-
 numerical precision issue
 -------------------------
 [Error matching program output for studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
@@ -407,27 +232,11 @@ opts-specific tests
 
 --no-local
 ----------
-[Error matching program output for release/examples/hello-multiloc]
 [Error matching compiler output for release/examples/iterators]
-[Error matching program output for release/examples/multilocale]
-[Error matching program output for release/examples/prodCons]
-[Error matching program output for release/examples/quicksort]
-[Error matching program output for release/examples/taskParallel]
-[Error matching program output for release/examples/tree]
-[Error matching program output for release/examples/hpcc/ra]
-[Summary: #Successes = 17 | #Failures = 8 | #Futures = 0]
 
 --baseline --no-local
 ---------------------
-[Error matching program output for release/examples/hello-multiloc]
 [Error matching compiler output for release/examples/iterators]
-[Error matching program output for release/examples/multilocale]
-[Error matching program output for release/examples/prodCons]
-[Error matching program output for release/examples/quicksort]
-[Error matching program output for release/examples/taskParallel]
-[Error matching program output for release/examples/tree]
-[Error matching program output for release/examples/hpcc/ra]
-[Summary: #Successes = 17 | #Failures = 8 | #Futures = 0]
 
 
 (Full run: 52, though some spurious hplExample2 and test_refine errors)
@@ -451,6 +260,11 @@ opts-specific tests
 --no-scalar-replacement
 -----------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+
+--baseline --inline
+-------------------
+[Error matching compiler output for users/franzf/v0/chpl/main]
+[Error matching compiler output for users/franzf/v1/chpl/main]
 
 --no-optimize-loop-iterators --no-inline-iterators
 --------------------------------------------------
@@ -480,6 +294,8 @@ opts-specific tests
 [Error matching program output for arrays/diten/promoteFieldAccessAndMethod]
 [Error matching compiler output for classes/deitz/tree]
 [Error matching compiler output for classes/diten/allocateManyObjects]
+[Error matching compiler output for classes/figueroa/DestructorSubclassing1]
+[Error matching compiler output for classes/figueroa/LeakedMemory1]
 [Error matching compiler output for functions/deitz/iterators/test_promote_inout]
 [Error matching compiler output for functions/deitz/iterators/tree]
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
@@ -495,7 +311,7 @@ opts-specific tests
 [Error matching compiler output for types/scalar/bradc/overloadbools2]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
-[Summary: #Successes = 2152 | #Failures = 19 | #Futures = 0]
+[Summary: #Successes = 2152 | #Failures = 21 | #Futures = 0]
 
 
 
@@ -515,10 +331,6 @@ exp2 not supported:
 ==========================
 sunos-specific regressions
 ==========================
-
-out-of-memory error allocating ddata of chpldev_Tasks (08/12/2008)
-------------------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 
 %p results in different format?
 -------------------------------
