@@ -14,6 +14,7 @@ config const blkSize = 5;
 config const seed = 31415;
 config const blksHoriz : int = ceil((n+1.0)/blkSize:real):int;
 config const blksVert  : int = ceil(n:real/blkSize:real):int;
+config const verbose: bool = true;
 var timer = new Timer();
 
 // calculate C = C - A * B.
@@ -316,9 +317,11 @@ def main() {
     var resid2 = axmbNorm / (eps * a1norm * x1Norm);
     var resid3 = axmbNorm / (eps * aInfNorm * xInfNorm);
 
-    writeln("resid1: ", resid1);
-    writeln("resid2: ", resid2);
-    writeln("resid3: ", resid3);
+    if (verbose) {
+      writeln("resid1: ", resid1);
+      writeln("resid2: ", resid2);
+      writeln("resid3: ", resid3);
+    }
     writeln("verification result: ",
         if max(resid1, resid2, resid3) < 16.0 then "PASSED"
         else "FAILED");
