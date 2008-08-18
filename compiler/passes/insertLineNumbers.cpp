@@ -34,12 +34,12 @@ insertLineNumber(CallExpr* call) {
   FnSymbol* fn = call->getFunction();
   ModuleSymbol* mod = fn->getModule();
   if (!strcmp(fn->name, "_heapAllocateGlobals") ||
-      (mod->modTag == MOD_USER && !fn->isCompilerTemp && !fn->hasPragma("inline")) ||
+      (mod->modTag == MOD_USER && !fn->isCompilerTemp && !fn->hasPragma(PRAG_INLINE)) ||
       (developer == true && strcmp(fn->name, "halt"))) {
     // call is in user code; insert AST line number and filename
     // or developer flag is on and the call is not the halt() call
     if (call->isResolved() &&
-        call->isResolved()->hasPragma("command line setting")) {
+        call->isResolved()->hasPragma(PRAG_COMMAND_LINE_SETTING)) {
       call->insertAtTail(new_IntSymbol(0));
       FnSymbol* fn = call->isResolved();
       INT_ASSERT(fn);
@@ -89,7 +89,7 @@ void insertLineNumbers() {
           SET_LINENO(stmt);
           ClassType* ct = toClassType(call->get(1)->typeInfo());
           if (ct && (ct->classTag == CLASS_CLASS ||
-                     ct->symbol->hasPragma("wide class"))) {
+                     ct->symbol->hasPragma(PRAG_WIDE_CLASS))) {
             stmt->insertBefore(
               new CallExpr(PRIMITIVE_CHECK_NIL, call->get(1)->copy()));
           }
@@ -121,8 +121,8 @@ void insertLineNumbers() {
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr * call = toCallExpr(ast)) {
       if (call->isResolved()) {
-        if ((call->numActuals() > 2 && call->isResolved()->hasPragma("on block")) ||
-            (call->numActuals() > 1 && call->isResolved()->hasPragma("begin block"))) {
+        if ((call->numActuals() > 2 && call->isResolved()->hasPragma(PRAG_ON_BLOCK)) ||
+            (call->numActuals() > 1 && call->isResolved()->hasPragma(PRAG_BEGIN_BLOCK))) {
           Expr* filename = call->argList.tail->remove();
           Expr* lineno = call->argList.tail->remove();
           Expr* argClass = call->argList.tail;

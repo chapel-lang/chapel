@@ -171,8 +171,8 @@ static void heapAllocateLocals() {
 
   // for each nested begin and on function
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->hasPragma("begin") || fn->hasPragma("on")
-        || fn->hasPragma("cobegin/coforall") && !fn->hasPragma("no heap allocation")) {
+    if (fn->hasPragma(PRAG_BEGIN) || fn->hasPragma(PRAG_ON)
+        || fn->hasPragma(PRAG_COBEGIN_OR_COFORALL) && !fn->hasPragma(PRAG_NO_HEAP_ALLOCATION)) {
 
       // collect asts in fn
       Vec<BaseAST*> asts;
@@ -204,9 +204,9 @@ static void heapAllocateLocals() {
                 !defSet.set_in(var->defPoint) &&
                 isFnSymbol(var->defPoint->parentSymbol) &&
                 !var->isParam &&
-                !var->hasPragma("private") &&
+                !var->hasPragma(PRAG_PRIVATE) &&
                 // in a coforall, only index variables need to be on the heap
-                (!fn->hasPragma("cobegin/coforall") || var->hasPragma("index var"))) {
+                (!fn->hasPragma(PRAG_COBEGIN_OR_COFORALL) || var->hasPragma(PRAG_INDEX_VAR))) {
               heapSet.set_add(var);
             }
           }
@@ -328,7 +328,7 @@ static void heapAllocateGlobals() {
             //
             // do not change parameters and private global variables
             //
-            if (var->isParam || var->hasPragma("private"))
+            if (var->isParam || var->hasPragma(PRAG_PRIVATE))
               continue;
 
             heapVec.add(var);
@@ -420,8 +420,8 @@ void normalize(void) {
 
   forv_Vec(FnSymbol, fn, gFns) {
     SET_LINENO(fn);
-    if (!fn->hasPragma("type constructor") &&
-        !fn->hasPragma("default constructor"))
+    if (!fn->hasPragma(PRAG_TYPE_CONSTRUCTOR) &&
+        !fn->hasPragma(PRAG_DEFAULT_CONSTRUCTOR))
       fixup_array_formals(fn);
     clone_parameterized_primitive_methods(fn);
     fixup_query_formals(fn);
@@ -440,7 +440,7 @@ void normalize(void) {
   // perform some checks on destructors
   Map<Type*, FnSymbol*> destructors; // used for finding the parent class' destructor later on
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->hasPragma("destructor")) {
+    if (fn->hasPragma(PRAG_DESTRUCTOR)) {
       if (fn->formals.length() < 2
           || toDefExpr(fn->formals.get(1))->sym->typeInfo() != gMethodToken->typeInfo()) {
         USR_FATAL(fn, "destructors must be methods");
@@ -580,7 +580,7 @@ static void normalize_returns(FnSymbol* fn) {
       BlockStmt* retExprType = fn->retExprType->copy();
       fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_INIT, retExprType->body.tail->remove())));
       fn->insertAtHead(retExprType);
-      fn->addPragma("specified return type");
+      fn->addPragma(PRAG_SPECIFIED_RETURN_TYPE);
     }
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, retval));

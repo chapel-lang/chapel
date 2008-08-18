@@ -113,10 +113,6 @@ class BaseAST {
 
   const char* stringLoc(void);
 
-  void addPragma(const char* str);
-  void addPragmas(Vec<const char*>* srcPragmas);
-  void copyPragmas(BaseAST* ast);
-
   ModuleSymbol* getModule();
   FnSymbol* getFunction();
 };

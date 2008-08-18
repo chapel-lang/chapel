@@ -313,30 +313,6 @@ const char* BaseAST::stringLoc(void) {
 }
 
 
-void BaseAST::addPragma(const char* str) {
-  if (DefExpr* defExpr = toDefExpr(this)) {
-    defExpr->sym->addPragma(str);
-  } else if (Symbol* sym = toSymbol(this)) {
-    sym->pragmas.add(str);
-  } else {
-    INT_FATAL(this, "pragma not added");
-  }
-}
-
-
-void BaseAST::addPragmas(Vec<const char*>* srcPragmas) {
-  forv_Vec(const char, srcPragma, *srcPragmas) {
-    addPragma(srcPragma);
-  }
-}
-
-
-void BaseAST::copyPragmas(BaseAST* ast) {
-  if (Symbol* sym = toSymbol(ast))
-    addPragmas(&(sym->pragmas));
-}
-
-
 ModuleSymbol* BaseAST::getModule() {
   if (!this)
     return NULL;

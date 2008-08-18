@@ -458,7 +458,7 @@ def _array.writeThis(f: Writer) {
 }
 
 // this is the class that all array classes are derived from
-pragma "BaseArray"
+pragma "base array"
 class BaseArray {
   def reallocate(d: _domain) {
     halt("reallocating not support for this array type");

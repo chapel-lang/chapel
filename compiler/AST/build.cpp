@@ -217,7 +217,7 @@ void createInitFn(ModuleSymbol* mod) {
   if (strcmp(mod->name, "_Program")) {
     // guard init function so it is not run more than once
     mod->guard = new VarSymbol(astr("__run_", mod->name, "_firsttime", istr(moduleNumber++)));
-    mod->guard->addPragma("private"); // private = separate copy per locale
+    mod->guard->addPragma(PRAG_PRIVATE); // private = separate copy per locale
     theProgram->initFn->insertAtHead(new DefExpr(mod->guard, new SymExpr(gTrue)));
     if (!fRuntime)
       initModuleGuards->insertAtTail(new CallExpr(PRIMITIVE_MOVE, mod->guard, gTrue));
@@ -285,7 +285,7 @@ FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
     USR_FATAL("if-then expressions currently require an else-clause");
 
   FnSymbol* ifFn = new FnSymbol(astr("_if_fn", istr(uid++)));
-  ifFn->addPragma("inline");
+  ifFn->addPragma(PRAG_INLINE);
   VarSymbol* tmp1 = new VarSymbol("_if_tmp1");
   VarSymbol* tmp2 = new VarSymbol("_if_tmp2");
 
@@ -319,7 +319,7 @@ FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(astr("_let_fn", istr(uid++)));
-  fn->addPragma("inline");
+  fn->addPragma(PRAG_INLINE);
   fn->insertAtTail(decls);
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, expr));
   return new CallExpr(new DefExpr(fn));
@@ -436,10 +436,10 @@ destructureIndices(BlockStmt* block,
       VarSymbol* var = new VarSymbol(sym->unresolved);
       block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, init));
       block->insertAtHead(new DefExpr(var));
-      var->addPragma("index var");
+      var->addPragma(PRAG_INDEX_VAR);
     } else {
       block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, sym->var, init));
-      sym->var->addPragma("index var");
+      sym->var->addPragma(PRAG_INDEX_VAR);
     }
   }
 }
@@ -526,7 +526,7 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
   leaderBlock->insertAtTail(new DefExpr(leaderIterator));
   VarSymbol* leaderIndexCopy = new VarSymbol("_leaderIndexCopy");
   leaderIndexCopy->isCompilerTemp = true;
-  leaderIndexCopy->addPragma("index var");
+  leaderIndexCopy->addPragma(PRAG_INDEX_VAR);
   leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leaderIterator, new CallExpr("_toLeader", iterator)));
   BlockStmt* followerBlock = new BlockStmt();
   VarSymbol* followerIndex = new VarSymbol("_followerIndex");
@@ -837,7 +837,7 @@ CallExpr* buildReduceScanExpr(Expr* op, Expr* data, bool isScan) {
   }
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(astr("_reduce_scan", istr(uid++)));
-  fn->addPragma("inline");
+  fn->addPragma(PRAG_INLINE);
   VarSymbol* tmp = new VarSymbol("_tmp");
   tmp->isCompilerTemp = true;
   fn->insertAtTail(new DefExpr(tmp));
@@ -1022,7 +1022,7 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
   BlockStmt* block = buildChapelStmt();
 
   fn->body = new BlockStmt(stmt);
-  fn->addPragma("local block");
+  fn->addPragma(PRAG_LOCAL_BLOCK);
   block->insertAtTail(new DefExpr(fn));
   block->insertAtTail(new CallExpr(fn));
   return block;
@@ -1042,7 +1042,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   static int uid = 1;
   BlockStmt* block = buildChapelStmt();
   FnSymbol* fn = new FnSymbol(astr("_on_fn_", istr(uid++)));
-  fn->addPragma("on");
+  fn->addPragma(PRAG_ON);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
   fn->insertFormalAtTail(arg);
   fn->retType = dtVoid;
@@ -1067,13 +1067,13 @@ buildBeginStmt(Expr* stmt, bool allocateOnHeap, VarSymbol* taskList) {
   BlockStmt* block = buildChapelStmt();
   FnSymbol* fn = new FnSymbol(astr("_begin_fn_", istr(uid++)));
   if (taskList)
-    fn->addPragma("cobegin/coforall");
+    fn->addPragma(PRAG_COBEGIN_OR_COFORALL);
   else
-    fn->addPragma("begin");
+    fn->addPragma(PRAG_BEGIN);
   fn->retType = dtVoid;
   fn->insertAtTail(stmt);
   if (!allocateOnHeap)
-    fn->addPragma("no heap allocation");
+    fn->addPragma(PRAG_NO_HEAP_ALLOCATION);
 
   // no need to call _downEndCount or _upEndCount for tasks created by
   // cobegins or coforalls, since execution will block until the tasks

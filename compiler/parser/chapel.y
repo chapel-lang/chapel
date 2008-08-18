@@ -273,7 +273,8 @@ stmt_ls:
     { $$ = new BlockStmt(); }
 | stmt_ls pragma_ls stmt
     {
-      $3->body.first()->addPragmas($2);
+      if (DefExpr* def = toDefExpr($3->body.first()))
+        def->sym->addPragmas($2);
       delete $2;
       $1->insertAtTail($3);
     }
@@ -331,7 +332,8 @@ class_body_stmt_ls:
     { $$ = new BlockStmt(); }
 | class_body_stmt_ls pragma_ls class_body_stmt
     {
-      $3->body.first()->addPragmas($2);
+      if (DefExpr* def = toDefExpr($3->body.first()))
+        def->sym->addPragmas($2);
       delete $2;
       $1->insertAtTail($3);
     }
@@ -660,7 +662,7 @@ formal_ls:
 
 
 opt_formal_ls:
-  { $$ = new FnSymbol("_"); $$->noParens = true; }
+  { $$ = new FnSymbol("_"); $$->addPragma(PRAG_NO_PARENS); }
 | TLP formal_ls TRP
   { $$ = $2; }
 ;
@@ -673,7 +675,7 @@ fn_decl_stmt_inner:
       $$->name = astr($1);
       if ($1[0] == '~' && $1[1] != '\0') {
         $$->cname = astr("chpl__destroy_", &($1[1]));
-        $$->addPragma("destructor");
+        $$->addPragma(PRAG_DESTRUCTOR);
       } else
         $$->cname = $$->name;
     }
@@ -683,7 +685,7 @@ fn_decl_stmt_inner:
       $$->name = astr($3);
       if ($3[0] == '~' && $3[1] != '\0') {
         $$->cname = astr("chpl__destroy_", &($3[1]));
-        $$->addPragma("destructor");
+        $$->addPragma(PRAG_DESTRUCTOR);
       } else
         $$->cname = $$->name;
       $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown, $1);
@@ -739,11 +741,12 @@ function_body_stmt:
   { $$ = new BlockStmt($1); }
 ;
 
+
 extern_fn_decl_stmt:
   TEXTERN TDEF fn_decl_stmt_inner opt_type TSEMI
     {
       FnSymbol* fn = $3;
-      fn->isExtern = true;
+      fn->addPragma(PRAG_EXTERN);
       if ($4)
         fn->retExprType = new BlockStmt($4, BLOCK_SCOPELESS);
       else

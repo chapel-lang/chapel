@@ -106,8 +106,8 @@ instantiate_tuple(FnSymbol* fn) {
     if (tuple)
       tuple->fields.insertAtTail(new DefExpr(new VarSymbol(name)));
   }
-  fn->removePragma("tuple");
-  fn->addPragma("allow ref");
+  fn->removePragma(PRAG_TUPLE);
+  fn->addPragma(PRAG_ALLOW_REF);
 }
 
 
@@ -164,28 +164,28 @@ instantiate_tuple_hash( FnSymbol* fn) {
 
 static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
-  if (value->hasPragma( "sync") &&
+  if (value->hasPragma(PRAG_SYNC) &&
       strcmp(fn->name, "_construct__tuple") &&
-      !fn->hasPragma("heap") &&
-      !fn->hasPragma("ref")) {
-    if (!fn->hasPragma("sync") ||
+      !fn->hasPragma(PRAG_HEAP) &&
+      !fn->hasPragma(PRAG_REF)) {
+    if (!fn->hasPragma(PRAG_SYNC) ||
         (fn->isMethod && (value->type->instantiatedFrom != fn->_this->type))) {
       // allow types to be instantiated to sync types
       if (!key->isTypeVariable) {
         // instantiation of a non-type formal of sync type loses sync
 
         // unless sync is explicitly specified as the generic
-        if (key->type->symbol->hasPragma("sync"))
+        if (key->type->symbol->hasPragma(PRAG_SYNC))
           return value;
 
         TypeSymbol* nt = toTypeSymbol(value->type->substitutions.v[0].value);
         return getNewSubType(fn, key, nt);
       }
     }
-  } else if (value->hasPragma("ref") &&
-             !fn->hasPragma("ref") &&
-             !fn->hasPragma("allow ref") &&
-             !fn->hasPragma("tuple")) {
+  } else if (value->hasPragma(PRAG_REF) &&
+             !fn->hasPragma(PRAG_REF) &&
+             !fn->hasPragma(PRAG_ALLOW_REF) &&
+             !fn->hasPragma(PRAG_TUPLE)) {
     // instantiation of a formal of ref type loses ref
     return getNewSubType(fn, key, getValueType(value->type)->symbol);
   }
@@ -252,7 +252,7 @@ checkInstantiationLimit(FnSymbol* fn) {
 
   if (fn->instantiatedTo->n >= instantiation_limit &&
       baseModule != fn->getModule()) {
-    if (fn->hasPragma("type constructor")) {
+    if (fn->hasPragma(PRAG_TYPE_CONSTRUCTOR)) {
       USR_FATAL_CONT(fn->retType, "Type '%s' has been instantiated too many times",
                      fn->retType->symbol->name);
     } else {
@@ -359,13 +359,13 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   // copy generic class type if this function is a type constructor
   //
   Type* newType = NULL;
-  if (fn->hasPragma("type constructor")) {
+  if (fn->hasPragma(PRAG_TYPE_CONSTRUCTOR)) {
     INT_ASSERT(isClassType(fn->retType));
     newType = fn->retType->symbol->copy()->type;
     renameInstantiatedType(newType->symbol, subs);
     fn->retType->symbol->defPoint->insertBefore(new DefExpr(newType->symbol));
-    newType->symbol->addPragmas(&fn->pragmas);
-    if (newType->symbol->hasPragma( "sync"))
+    newType->symbol->copyPragmas(fn);
+    if (newType->symbol->hasPragma(PRAG_SYNC))
       newType->defaultValue = NULL;
     newType->substitutions.copy(fn->retType->substitutions);
     newType->dispatchParents.copy(fn->retType->dispatchParents);
@@ -465,14 +465,14 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
     newFn->retType = newType;
   }
 
-  if (fn->hasPragma("tuple init"))
+  if (fn->hasPragma(PRAG_TUPLE_INIT))
     instantiate_tuple_init(newFn);
-  if (fn->hasPragma("tuple hash function"))
+  if (fn->hasPragma(PRAG_TUPLE_HASH_FUNCTION))
     instantiate_tuple_hash(newFn);
 
   newFn->substitutions.append(all_subs);
 
-  if (fn->hasPragma("tuple"))
+  if (fn->hasPragma(PRAG_TUPLE))
     instantiate_tuple(newFn);
 
   fn->instantiatedTo->add(newFn);

@@ -49,7 +49,7 @@ void buildDefaultFunctions(void) {
           }
         }
       }
-      if (type->hasPragma("no default functions"))
+      if (type->hasPragma(PRAG_NO_DEFAULT_FUNCTIONS))
         continue;
       if (EnumType* et = toEnumType(type->type)) {
         buildDefaultReadFunction(et);
@@ -60,8 +60,8 @@ void buildDefaultFunctions(void) {
       }
       if (ClassType* ct = toClassType(type->type)) {
         if (ct->classTag == CLASS_RECORD) {
-          if (!(ct->symbol->hasPragma("domain") ||
-                ct->symbol->hasPragma("array"))) {
+          if (!(ct->symbol->hasPragma(PRAG_DOMAIN) ||
+                ct->symbol->hasPragma(PRAG_ARRAY))) {
             build_record_equality_function(ct);
             build_record_inequality_function(ct);
           }
@@ -152,10 +152,10 @@ static void build_getter(ClassType* ct, Symbol *field) {
   }
 
   FnSymbol* fn = new FnSymbol(field->name);
-  fn->addPragma("inline");
+  fn->addPragma(PRAG_INLINE);
   fn->isCompilerTemp = true;
-  if (ct->symbol->hasPragma( "sync")) 
-    fn->addPragma( "sync");
+  if (ct->symbol->hasPragma(PRAG_SYNC)) 
+    fn->addPragma(PRAG_SYNC);
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(_this);
@@ -163,7 +163,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
     fn->retTag = RET_PARAM;
   else if (field->isTypeVariable)
     fn->retTag = RET_TYPE;
-  else if (field->hasPragma("super class")) {
+  else if (field->hasPragma(PRAG_SUPER_CLASS)) {
     fn->retTag = RET_VALUE;
   } else {
     fn->retTag = RET_VAR;
@@ -183,7 +183,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, field));
     // better flatten enumerated types now
     ct->symbol->defPoint->insertBefore(field->defPoint->remove());
-  } else if (field->isTypeVariable || field->hasPragma("super class"))
+  } else if (field->isTypeVariable || field->hasPragma(PRAG_SUPER_CLASS))
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   else
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
@@ -194,7 +194,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   ct->methods.add(fn);
   fn->isMethod = true;
   fn->cname = astr("_", ct->symbol->cname, "_", fn->cname);
-  fn->noParens = true;
+  fn->addPragma(PRAG_NO_PARENS);
   fn->_this = _this;
 }
 
@@ -559,7 +559,7 @@ static void build_record_copy_function(ClassType* ct) {
   if (function_exists("_copy", 1, ct))
     return;
 
-  INT_ASSERT(!ct->symbol->hasPragma("tuple"));
+  INT_ASSERT(!ct->symbol->hasPragma(PRAG_TUPLE));
 
   FnSymbol* fn = new FnSymbol("_copy");
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
@@ -583,7 +583,7 @@ static void build_record_init_function(ClassType* ct) {
     return;
 
   FnSymbol* fn = new FnSymbol("_init");
-  fn->addPragma("inline");
+  fn->addPragma(PRAG_INLINE);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   arg->markedGeneric = true;
   fn->insertFormalAtTail(arg);
@@ -600,8 +600,8 @@ static void build_record_init_function(ClassType* ct) {
   ct->symbol->defPoint->insertBefore(def);
   reset_line_info(def, ct->symbol->lineno);
   normalize(fn);
-  if (ct->symbol->hasPragma("tuple"))
-    fn->addPragma("tuple init");
+  if (ct->symbol->hasPragma(PRAG_TUPLE))
+    fn->addPragma(PRAG_TUPLE_INIT);
 }
 
 
@@ -610,7 +610,7 @@ static void build_record_hash_function(ClassType *ct) {
     return;
 
   FnSymbol *fn = new FnSymbol("_associative_hash");
-  fn->addPragma("inline");
+  fn->addPragma(PRAG_INLINE);
   ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "r", ct);
   arg->markedGeneric = true;
   fn->insertFormalAtTail(arg);
@@ -640,8 +640,8 @@ static void build_record_hash_function(ClassType *ct) {
   ct->symbol->defPoint->insertBefore(def);
   reset_line_info(def, ct->symbol->lineno);
   normalize(fn);
-  if (ct->symbol->hasPragma("tuple"))
-    fn->addPragma("tuple hash function");
+  if (ct->symbol->hasPragma(PRAG_TUPLE))
+    fn->addPragma(PRAG_TUPLE_HASH_FUNCTION);
 }
 
 
@@ -673,7 +673,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
   body->insertAtTail(readErrorCond);
   bool first = true;
   for_fields(tmp, ct) {
-    if (tmp->isTypeVariable || tmp->hasPragma("super class"))
+    if (tmp->isTypeVariable || tmp->hasPragma(PRAG_SUPER_CLASS))
       continue;
     if (!first) {
       CallExpr* readComma = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol(","), ignoreWhiteSpace);
@@ -756,7 +756,7 @@ static bool buildWriteSuperClass(ArgSymbol* fileArg, FnSymbol* fn, Expr* dot, Ty
   for_fields(tmp, ct) {
     if (tmp->isTypeVariable)
       continue;
-    if (tmp->hasPragma("super class")) {
+    if (tmp->hasPragma(PRAG_SUPER_CLASS)) {
       printedSomething = buildWriteSuperClass(fileArg, fn, buildDotExpr(dot, tmp->name), ct->dispatchParents.v[0], first);
       if (printedSomething)
         first = false;
@@ -819,7 +819,7 @@ static void buildDefaultWriteFunction(ClassType* ct) {
         continue;
       if (!strcmp("outer", tmp->name))
         continue;
-      if (tmp->hasPragma("super class")) {
+      if (tmp->hasPragma(PRAG_SUPER_CLASS)) {
         bool printedSomething =
           buildWriteSuperClass(fileArg, fn, buildDotExpr(fn->_this, tmp->name), fn->_this->type->dispatchParents.v[0]);
         if (printedSomething)

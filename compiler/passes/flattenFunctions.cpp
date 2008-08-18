@@ -47,7 +47,7 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
   forv_Vec(Symbol, sym, *vars) {
     if (sym) {
       Type* type = sym->type;
-      if (!type->symbol->hasPragma("heap")) {
+      if (!type->symbol->hasPragma(PRAG_HEAP)) {
         if (type->refType)
           type = type->refType;
       }
@@ -68,7 +68,7 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
               se->var = arg;
             } else if (call && call->isPrimitive(PRIMITIVE_SET_REF)) {
               call->replace(new SymExpr(arg));
-            } else if (!type->symbol->hasPragma("heap")) {
+            } else if (!type->symbol->hasPragma(PRAG_HEAP)) {
               VarSymbol* tmp = new VarSymbol("_tmp", sym->type);
               se->getStmtExpr()->insertBefore(new DefExpr(tmp));
               se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, arg)));
@@ -86,7 +86,7 @@ static void
 addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars) {
   forv_Vec(Symbol, sym, *vars) {
     if (sym) {
-      if (!isReference(sym->type) && !sym->type->symbol->hasPragma("heap")) {
+      if (!isReference(sym->type) && !sym->type->symbol->hasPragma(PRAG_HEAP)) {
         VarSymbol* tmp = new VarSymbol("_tmp", sym->type->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, sym)));

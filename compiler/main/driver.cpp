@@ -11,6 +11,7 @@
 #include "stringutil.h"
 #include "version.h"
 #include "log.h"
+#include "pragmas.h"
 #include "primitive.h"
 
 
@@ -435,6 +436,7 @@ static void printStuff(void) {
 
 static void
 compile_all(void) {
+  initPragmas();
   initPrimitive();
   initPrimitiveTypes();
   testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);

@@ -48,7 +48,7 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   canParam(false),
   canType(false),
   isConcurrent(false),
-  isExtern(false)
+  pragmas(NUM_PRAGMAS)
 {}
 
 
@@ -120,21 +120,30 @@ FnSymbol* Symbol::getFnSymbol(void) {
 }
 
 
-bool Symbol::hasPragma(const char* str) {
-  forv_Vec(const char, pragma, pragmas) {
-    if (!strcmp(pragma, str))
-      return true;
-  }
-  return false;
+bool Symbol::hasPragma(PragmaTag pt) {
+  return pragmas.get(pt);
 }
 
 
-void Symbol::removePragma(const char* str) {
-  for (int i = 0; i < pragmas.n; i++)
-    if (!strcmp(pragmas.v[i], str))
-      pragmas.v[i] = "";
-  if (!toModuleSymbol(this) && getModule())
-    getModule()->removePragma(str);
+void Symbol::addPragma(PragmaTag pt) {
+  pragmas.set(pt);
+}
+
+
+void Symbol::addPragmas(Vec<const char*>* strs) {
+  forv_Vec(const char, str, *strs) {
+    pragmas.set(str2prag(str));
+  }
+}
+
+
+void Symbol::copyPragmas(Symbol* other) {
+  pragmas.disjunction(other->pragmas);
+}
+
+
+void Symbol::removePragma(PragmaTag pt) {
+  pragmas.unset(pt);
 }
 
 
@@ -181,7 +190,6 @@ VarSymbol::copyInner(SymbolMap* map) {
   newVarSymbol->canParam = canParam;
   newVarSymbol->canType = canType;
   newVarSymbol->isConcurrent = isConcurrent;
-  newVarSymbol->isExtern = isExtern;
   INT_ASSERT(!newVarSymbol->immediate);
   return newVarSymbol;
 }
@@ -261,7 +269,7 @@ void VarSymbol::codegenDef(FILE* outfile) {
   if (0 && isConst) {
     fprintf(outfile, "const ");
   }
-  if (this->hasPragma("super class"))
+  if (this->hasPragma(PRAG_SUPER_CLASS))
     fprintf(outfile, "_");
   type->codegen(outfile);
   fprintf(outfile, " ");
@@ -270,8 +278,8 @@ void VarSymbol::codegenDef(FILE* outfile) {
     if (ct->classTag == CLASS_CLASS) {
       if (isFnSymbol(defPoint->parentSymbol))
         fprintf(outfile, " = NULL");
-    } else if (ct->symbol->hasPragma("wide") ||
-               ct->symbol->hasPragma("wide class")) {
+    } else if (ct->symbol->hasPragma(PRAG_WIDE) ||
+               ct->symbol->hasPragma(PRAG_WIDE_CLASS)) {
       if (isFnSymbol(defPoint->parentSymbol))
         fprintf(outfile, " = {0,NULL}");
     } else if (fCopyCollect && ct->classTag == CLASS_RECORD) {
@@ -376,8 +384,8 @@ bool ArgSymbol::requiresCPtr(void) {
 bool ArgSymbol::isConstant(void) {
   return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
     !isReference(type) &&
-    !type->symbol->hasPragma("array") &&
-    !type->symbol->hasPragma("domain");
+    !type->symbol->hasPragma(PRAG_ARRAY) &&
+    !type->symbol->hasPragma(PRAG_DOMAIN);
 }
 
 
@@ -455,7 +463,6 @@ FnSymbol::FnSymbol(const char* initName) :
   body(new BlockStmt()),
   fnTag(FN_FUNCTION),
   retTag(RET_VALUE),
-  noParens(false),
   iteratorInfo(NULL),
   isGeneric(false),
   _this(NULL),
@@ -499,7 +506,7 @@ void FnSymbol::verify() {
   if (astTag != SYMBOL_FN) {
     INT_FATAL(this, "Bad FnSymbol::astTag");
   }
-  if (normalized && !hasPragma("auto ii")) {
+  if (normalized && !hasPragma(PRAG_AUTO_II)) {
     CallExpr* last = toCallExpr(body->body.last());
     if (!last || !last->isPrimitive(PRIMITIVE_RETURN))
       INT_FATAL(this, "Last statement in normalized function is not a return");
@@ -532,7 +539,6 @@ FnSymbol::copyInner(SymbolMap* map) {
   copy->body = COPY_INT(body);
   copy->fnTag = fnTag;
   copy->retTag = retTag;
-  copy->noParens = noParens;
   copy->retExprType = COPY_INT(retExprType);
   copy->cname = cname;
   copy->isGeneric = isGeneric;
@@ -546,7 +552,6 @@ FnSymbol::copyInner(SymbolMap* map) {
   copy->canType = canType;
   copy->instantiatedFrom = instantiatedFrom;
   copy->instantiationPoint = instantiationPoint;
-  copy->isExtern = isExtern;
   return copy;
 }
 
@@ -576,7 +581,7 @@ void FnSymbol::codegenHeader(FILE* outfile) {
   } else {
     bool first = true;
     for_formals(formal, this) {
-      if (formal->defPoint == formals.head && hasPragma("on block"))
+      if (formal->defPoint == formals.head && hasPragma(PRAG_ON_BLOCK))
         continue; // do not print locale argument for on blocks
       if (!first) {
         fprintf(outfile, ", ");
@@ -590,7 +595,7 @@ void FnSymbol::codegenHeader(FILE* outfile) {
 
 
 void FnSymbol::codegenPrototype(FILE* outfile) {
-  INT_ASSERT(!isExtern);
+  INT_ASSERT(!hasPragma(PRAG_EXTERN));
   codegenHeader(outfile);
   fprintf(outfile, ";\n");
 }
@@ -747,7 +752,7 @@ hasGenericArgs(FnSymbol* fn) {
          (!formal->type->hasGenericDefaults ||
           formal->markedGeneric ||
           formal == fn->_this ||
-          formal->hasPragma("is meme"))) ||
+          formal->hasPragma(PRAG_IS_MEME))) ||
         formal->intent == INTENT_PARAM) {
       isGeneric = true;
       if (!formal->defaultExpr)
@@ -768,7 +773,7 @@ bool FnSymbol::tag_generic() {
     return false;
   if (int result = hasGenericArgs(this)) {
     isGeneric = 1;
-    if (retType != dtUnknown && hasPragma("type constructor")) {
+    if (retType != dtUnknown && hasPragma(PRAG_TYPE_CONSTRUCTOR)) {
       retType->isGeneric = true;
       if (result == 2)
         retType->hasGenericDefaults = true;
@@ -853,7 +858,7 @@ void ModuleSymbol::codegenDef(FILE* outfile) {
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym))
-        if (!fn->isExtern)
+        if (!fn->hasPragma(PRAG_EXTERN))
           fns.add(fn);
   }
   qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);

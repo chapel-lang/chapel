@@ -390,7 +390,7 @@ scalarReplace() {
       ClassType* ct = toClassType(ts->type);
       if (ct) {
         typeOrder.put(ct, -1);
-        if (ts->hasPragma("iterator class") || ts->hasPragma("tuple")) {
+        if (ts->hasPragma(PRAG_ITERATOR_CLASS) || ts->hasPragma(PRAG_TUPLE)) {
           typeVec.add(ct);
           typeVarMap.put(ct, new Vec<Symbol*>());
           if (ClassType* rct = toClassType(ct->refType))

@@ -40,8 +40,8 @@ insertSetMemberInits(FnSymbol* fn, Symbol* var) {
     ClassType* ct = toClassType(type);
     INT_ASSERT(ct);
     for_fields(field, ct) {
-      if (field->type->symbol->hasPragma("ref")) {
-        if (getValueType(field->type)->symbol->hasPragma("array"))
+      if (field->type->symbol->hasPragma(PRAG_REF)) {
+        if (getValueType(field->type)->symbol->hasPragma(PRAG_ARRAY))
           continue; // skips array types
         Symbol* tmp = new VarSymbol("_tmp", field->type);
         tmp->isCompilerTemp = true;
@@ -446,7 +446,7 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
   Symbol* ret = fn->getReturnSymbol();
   bool foundRef = false;
   forv_Vec(Symbol, sym, syms) {
-    if (sym != ret && !isArgSymbol(sym) && sym->type->symbol->hasPragma("ref")) {
+    if (sym != ret && !isArgSymbol(sym) && sym->type->symbol->hasPragma(PRAG_REF)) {
       foundRef = true;
     }
   }
@@ -455,7 +455,7 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
     Map<Symbol*,Vec<SymExpr*>*> useMap;
     buildDefUseMaps(fn, defMap, useMap);
     forv_Vec(Symbol, sym, syms) {
-      if (sym != ret && !isArgSymbol(sym) && sym->type->symbol->hasPragma("ref")) {
+      if (sym != ret && !isArgSymbol(sym) && sym->type->symbol->hasPragma(PRAG_REF)) {
         Vec<SymExpr*>* defs = defMap.get(sym);
         if (defs->n != 1) {
           INT_FATAL(sym, "invalid assumption about reference");
@@ -466,7 +466,7 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
         SymExpr* se = toSymExpr(move->get(2));
         CallExpr* call = toCallExpr(move->get(2));
         if (se) {
-          INT_ASSERT(se->var->type->symbol->hasPragma("ref"));
+          INT_ASSERT(se->var->type->symbol->hasPragma(PRAG_REF));
           if (se->var->defPoint->parentSymbol == fn) {
             syms.add_exclusive(se->var);
           }
@@ -499,7 +499,7 @@ addAllLocalVariables(Vec<Symbol*>& syms, Vec<BaseAST*>& asts) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (VarSymbol* var = toVarSymbol(def->sym))
-        if (!var->type->symbol->hasPragma("ref") || var->hasPragma("index var"))
+        if (!var->type->symbol->hasPragma(PRAG_REF) || var->hasPragma(PRAG_INDEX_VAR))
           syms.add(var);
   }
 }
@@ -545,7 +545,7 @@ rebuildIterator(IteratorInfo* ii,
         insertSetMemberInits(fn, tmp);
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, tmp));
       }
-    } else if (field->type->symbol->hasPragma("ref")) {
+    } else if (field->type->symbol->hasPragma(PRAG_REF)) {
       // do not initialize references
     } else if (field->type->defaultValue) {
       fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, field->type->defaultValue));
@@ -554,7 +554,7 @@ rebuildIterator(IteratorInfo* ii,
   fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, ii->icType->getField("more"), new_IntSymbol(1)));
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, iterator));
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
-  fn->addPragma("inline");
+  fn->addPragma(PRAG_INLINE);
 }
 
 
@@ -589,7 +589,7 @@ void lowerIterator(FnSymbol* fn) {
   locals.add_exclusive(fn->getReturnSymbol());
 
   Symbol* super = new VarSymbol("super", dtObject);
-  super->addPragma("super class");
+  super->addPragma(PRAG_SUPER_CLASS);
   ii->icType->fields.insertAtTail(new DefExpr(super));
 
   int i = 0;
@@ -598,7 +598,7 @@ void lowerIterator(FnSymbol* fn) {
       ? "value"
       : astr("F", istr(i++), "_", local->name);
     Type* type = local->type;
-    if (type->symbol->hasPragma("ref") && local == fn->_this)
+    if (type->symbol->hasPragma(PRAG_REF) && local == fn->_this)
       type = getValueType(type);
     Symbol* field = new VarSymbol(fieldName, type);
     local2field.put(local, field);

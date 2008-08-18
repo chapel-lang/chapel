@@ -3,6 +3,8 @@
 
 #include "alist.h"
 #include "baseAST.h"
+#include "bitVec.h"
+#include "pragmas.h"
 #include "type.h"
 
 extern FnSymbol* chpl_main;
@@ -56,8 +58,7 @@ class Symbol : public BaseAST {
   bool canParam;       // can be a parameter (determined during resolution)
   bool canType;        // can be a type (determined during resolution)
   bool isConcurrent;   // can be accessed concurrently
-  bool isExtern;       // external to Chapel, implemented in C
-  Vec<const char*> pragmas;
+  BitVec pragmas;
 
   Symbol(AstTag astTag, const char* init_name, Type* init_type = dtUnknown);
   virtual ~Symbol();
@@ -76,8 +77,11 @@ class Symbol : public BaseAST {
   virtual FnSymbol* getFnSymbol(void);
   virtual bool isImmediate();
 
-  bool hasPragma(const char* str);
-  void removePragma(const char* str);
+  bool hasPragma(PragmaTag pt);
+  void addPragma(PragmaTag pt);
+  void addPragmas(Vec<const char*>* strs);
+  void copyPragmas(Symbol* other);
+  void removePragma(PragmaTag pt);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
@@ -153,7 +157,6 @@ class FnSymbol : public Symbol {
   BlockStmt* body;
   FnTag fnTag;
   RetTag retTag;
-  bool noParens;
   IteratorInfo* iteratorInfo;
   bool isGeneric;
   Symbol* _this;

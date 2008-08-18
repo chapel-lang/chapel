@@ -6,6 +6,7 @@ AST_SRCS = \
         build.cpp \
 	expr.cpp \
         iterator.cpp \
+	pragmas.cpp \
 	primitive.cpp \
 	stmt.cpp \
 	symbol.cpp \

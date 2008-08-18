@@ -19,8 +19,8 @@ refNecessary(SymExpr* se,
           return true;
         if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT)
           return true;
-        if (formal->type->symbol->hasPragma("ref") &&
-            fn->hasPragma("allow ref"))
+        if (formal->type->symbol->hasPragma(PRAG_REF) &&
+            fn->hasPragma(PRAG_ALLOW_REF))
           return true;
       } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (refNecessary(toSymExpr(call->get(1)), defMap, useMap))
@@ -47,9 +47,9 @@ refNecessary(SymExpr* se,
 
 static bool
 isDerefType(Type* type) {
-  return (type->symbol->hasPragma("array") ||
-          type->symbol->hasPragma("domain") ||
-          type->symbol->hasPragma("iterator class"));
+  return (type->symbol->hasPragma(PRAG_ARRAY) ||
+          type->symbol->hasPragma(PRAG_DOMAIN) ||
+          type->symbol->hasPragma(PRAG_ITERATOR_CLASS));
 }
 
 

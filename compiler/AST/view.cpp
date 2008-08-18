@@ -407,8 +407,8 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
           fprintf(html_file, "<UL CLASS =\"mktree\">\n");
           fprintf(html_file, "<LI>");
           if (DefExpr *def = toDefExpr( ast))
-            if (def->sym->hasPragma( "sync")) {
-              if (def->sym->hasPragma( "single"))
+            if (def->sym->hasPragma(PRAG_SYNC)) {
+              if (def->sym->hasPragma(PRAG_SINGLE))
                 fprintf( html_file, "<B>single</B> ");
               else
                 fprintf( html_file, "<B>sync</B> ");
@@ -420,8 +420,8 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
           fprintf(html_file, "<B>type </B> ");
           html_print_symbol( html_file, pass, e->sym, true);
         } else if (VarSymbol* vs=toVarSymbol(e->sym)) {
-          if (vs->type->symbol->hasPragma("sync")) {
-            if (vs->type->symbol->hasPragma( "single"))
+          if (vs->type->symbol->hasPragma(PRAG_SYNC)) {
+            if (vs->type->symbol->hasPragma(PRAG_SINGLE))
               fprintf( html_file, "<B>single </B>");
             else
               fprintf( html_file, "<B>sync </B>");
@@ -471,9 +471,9 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
         fprintf(html_file, "(%s = ", e->name);
       } else if (CallExpr* e = toCallExpr(expr)) {
         if (e->isResolved()) {
-          if (e->isResolved()->hasPragma("begin block"))
+          if (e->isResolved()->hasPragma(PRAG_BEGIN_BLOCK))
             fprintf(html_file, "begin ");
-          else if (e->isResolved()->hasPragma("on block"))
+          else if (e->isResolved()->hasPragma(PRAG_ON_BLOCK))
             fprintf(html_file, "on ");
         }
         fprintf(html_file, "(%d ", e->id);

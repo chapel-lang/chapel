@@ -9,10 +9,10 @@
 
 static void
 check_functions(FnSymbol* fn) {
-  if (!strcmp(fn->name, "this") && fn->noParens)
+  if (!strcmp(fn->name, "this") && fn->hasPragma(PRAG_NO_PARENS))
     USR_FATAL(fn, "method 'this' must have parentheses");
 
-  if (!strcmp(fn->name, "these") && fn->noParens)
+  if (!strcmp(fn->name, "these") && fn->hasPragma(PRAG_NO_PARENS))
     USR_FATAL(fn, "method 'these' must have parentheses");
 
   Vec<BaseAST*> asts;
@@ -94,7 +94,7 @@ checkParsed(void) {
         if (!def->init && !def->exprType && !def->sym->isCompilerTemp)
           if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
             if (def->parentExpr != rootModule->block)
-              if (!def->sym->hasPragma("index var"))
+              if (!def->sym->hasPragma(PRAG_INDEX_VAR))
                 USR_FATAL_CONT(def->sym,
                                "Variable '%s' is not initialized or has no type",
                                def->sym->name);
@@ -122,7 +122,7 @@ checkNormalized(void) {
         }
       }
     } else if (!strncmp(fn->name, "_construct_", 11) &&
-               !fn->hasPragma("default constructor")) {
+               !fn->hasPragma(PRAG_DEFAULT_CONSTRUCTOR)) {
       for_formals(formal, fn) {
         Vec<BaseAST*> asts;
         collect_asts(formal, asts);
@@ -176,10 +176,10 @@ checkReturnPaths(FnSymbol* fn) {
       !strcmp(fn->name, "_build_array_type") ||
       fn->retType == dtVoid ||
       fn->retTag == RET_TYPE ||
-      fn->isExtern ||
-      fn->hasPragma("default constructor") ||
-      fn->hasPragma("type constructor") ||
-      fn->hasPragma("auto ii"))
+      fn->hasPragma(PRAG_EXTERN) ||
+      fn->hasPragma(PRAG_DEFAULT_CONSTRUCTOR) ||
+      fn->hasPragma(PRAG_TYPE_CONSTRUCTOR) ||
+      fn->hasPragma(PRAG_AUTO_II))
     return;
   Symbol* ret = fn->getReturnSymbol();
   if (VarSymbol* var = toVarSymbol(ret))
@@ -187,7 +187,7 @@ checkReturnPaths(FnSymbol* fn) {
       return;
   int result = isDefinedAllPaths(fn->body, ret);
   if (!(result > 1 ||
-        (!fn->hasPragma("specified return type") && result > 0)))
+        (!fn->hasPragma(PRAG_SPECIFIED_RETURN_TYPE) && result > 0)))
     USR_WARN(fn->body, "control reaches end of function that returns a value");
 }
 

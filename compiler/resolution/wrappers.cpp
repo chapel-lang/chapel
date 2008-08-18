@@ -14,8 +14,9 @@ buildEmptyWrapper(FnSymbol* fn) {
   FnSymbol* wrapper = new FnSymbol(fn->name);
   wrapper->isWrapper = true;
   wrapper->visible = false;
-  wrapper->addPragma("inline");
-  wrapper->noParens = fn->noParens;
+  wrapper->addPragma(PRAG_INLINE);
+  if (fn->hasPragma(PRAG_NO_PARENS))
+    wrapper->addPragma(PRAG_NO_PARENS);
   if (fn->fnTag != FN_ITERATOR) { // getValue is var, not iterator
     wrapper->retTag = fn->retTag;
     if (fn->setter)
@@ -79,15 +80,15 @@ buildDefaultWrapper(FnSymbol* fn,
   wrapper->cname = astr("_default_wrap_", fn->cname);
   SymbolMap copy_map;
   bool specializeDefaultConstructor =
-    fn->hasPragma("default constructor") &&
-    !fn->_this->type->symbol->hasPragma("sync") &&
-    !fn->_this->type->symbol->hasPragma("ref");
+    fn->hasPragma(PRAG_DEFAULT_CONSTRUCTOR) &&
+    !fn->_this->type->symbol->hasPragma(PRAG_SYNC) &&
+    !fn->_this->type->symbol->hasPragma(PRAG_REF);
   if (specializeDefaultConstructor) {
     wrapper->isCompilerTemp = false;
     wrapper->_this = fn->_this->copy();
     copy_map.put(fn->_this, wrapper->_this);
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
-    if (defaults->v[defaults->n-1]->hasPragma("is meme")) {
+    if (defaults->v[defaults->n-1]->hasPragma(PRAG_IS_MEME)) {
       if (!isRecordType(fn->_this->type) && !isUnionType(fn->_this->type)) {
         wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, wrapper->_this,
                                 new CallExpr(PRIMITIVE_CHPL_ALLOC, wrapper->_this,
@@ -106,11 +107,11 @@ buildDefaultWrapper(FnSymbol* fn,
       ArgSymbol* wrapper_formal = formal->copy();
       if (fn->_this == formal)
         wrapper->_this = wrapper_formal;
-      if (formal->hasPragma("is meme"))
+      if (formal->hasPragma(PRAG_IS_MEME))
         wrapper->_this->defPoint->insertAfter(new CallExpr(PRIMITIVE_MOVE, wrapper->_this, wrapper_formal)); // unexecuted none/gasnet on 4/25/08
       wrapper->insertFormalAtTail(wrapper_formal);
       Symbol* temp;
-      if (formal->type->symbol->hasPragma("ref")) {
+      if (formal->type->symbol->hasPragma(PRAG_REF)) {
         temp = new VarSymbol("_tmp");
         temp->isCompilerTemp = true;
         temp->canParam = true;
@@ -145,7 +146,7 @@ buildDefaultWrapper(FnSymbol* fn,
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
       call->insertAtTail(paramMap->get(formal));
-    } else if (formal->hasPragma("is meme")) {
+    } else if (formal->hasPragma(PRAG_IS_MEME)) {
 
       //
       // hack: why is the type of meme set to dtNil?
@@ -326,7 +327,7 @@ buildCoercionWrapper(FnSymbol* fn,
   // function resolution is out-of-order, disabling this for
   // unspecified return types may not be necessary
   //
-  if (fn->hasPragma("specified return type") && fn->fnTag != FN_ITERATOR)
+  if (fn->hasPragma(PRAG_SPECIFIED_RETURN_TYPE) && fn->fnTag != FN_ITERATOR)
     wrapper->retType = fn->retType;
 
   wrapper->cname = astr("_coerce_wrap_", fn->cname);
@@ -342,7 +343,7 @@ buildCoercionWrapper(FnSymbol* fn,
       TypeSymbol *ts = toTypeSymbol(coercion_map->get(formal));
       INT_ASSERT(ts);
       wrapperFormal->type = ts->type;
-      if (ts->hasPragma("sync")) {
+      if (ts->hasPragma(PRAG_SYNC)) {
         //
         // apply readFF or readFE to single or sync actual unless this
         // is a member access of the sync or single actual
@@ -351,11 +352,11 @@ buildCoercionWrapper(FnSymbol* fn,
             fn->getFormal(1)->type == dtMethodToken &&
             formal == fn->_this)
           call->insertAtTail(new CallExpr("value", gMethodToken, wrapperFormal));
-        else if (ts->hasPragma("single"))
+        else if (ts->hasPragma(PRAG_SINGLE))
           call->insertAtTail(new CallExpr("readFF", gMethodToken, wrapperFormal));
         else
           call->insertAtTail(new CallExpr("readFE", gMethodToken, wrapperFormal));
-      } else if (ts->hasPragma("ref")) {
+      } else if (ts->hasPragma(PRAG_REF)) {
         //
         // dereference reference actual
         //
@@ -365,7 +366,7 @@ buildCoercionWrapper(FnSymbol* fn,
       }
     } else {
       if (Symbol* actualTypeSymbol = coercion_map->get(formal))
-        if (!(formal == fn->_this && fn->hasPragma("ref this")))
+        if (!(formal == fn->_this && fn->hasPragma(PRAG_REF_THIS)))
           wrapperFormal->type = actualTypeSymbol->type;
       call->insertAtTail(wrapperFormal);
     }
@@ -424,7 +425,7 @@ buildPromotionWrapper(FnSymbol* fn,
 
   SET_LINENO(fn);
   FnSymbol* wrapper = buildEmptyWrapper(fn);
-  wrapper->addPragma("promotion wrapper");
+  wrapper->addPragma(PRAG_PROMOTION_WRAPPER);
   wrapper->cname = astr("_promotion_wrap_", fn->cname);
   CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
   CallExpr* iterator = new CallExpr(square ? "_build_domain" : "_build_tuple");
@@ -462,7 +463,7 @@ buildPromotionWrapper(FnSymbol* fn,
   } else {
     wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, actualCall)))));
     wrapper->fnTag = FN_ITERATOR;
-    wrapper->removePragma("inline");
+    wrapper->removePragma(PRAG_INLINE);
   }
   fn->defPoint->insertBefore(new DefExpr(wrapper));
   normalize(wrapper);

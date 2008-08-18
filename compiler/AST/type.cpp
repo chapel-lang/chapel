@@ -286,7 +286,7 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, " */");
   }
   fprintf(outfile, " {\n");
-  if (symbol->hasPragma("object class") && classTag == CLASS_CLASS) {
+  if (symbol->hasPragma(PRAG_OBJECT_CLASS) && classTag == CLASS_CLASS) {
     if (fCopyCollect) {
       fprintf(outfile, "union {\n");
       fprintf(outfile, "_class_id _cid;\n");
@@ -305,7 +305,7 @@ void ClassType::codegenDef(FILE* outfile) {
   if (classTag == CLASS_UNION) {
     fprintf(outfile, "} _u;\n");
   }
-  if (symbol->hasPragma("data class")) {
+  if (symbol->hasPragma(PRAG_DATA_CLASS)) {
     toTypeSymbol(substitutions.v[0].value)->codegen(outfile);
     fprintf(outfile, "* _data;\n");
   }
@@ -318,7 +318,7 @@ void ClassType::codegenDef(FILE* outfile) {
 
 
 void ClassType::codegenPrototype(FILE* outfile) {
-  if (symbol->hasPragma("ref"))
+  if (symbol->hasPragma(PRAG_REF))
     fprintf(outfile, "typedef %s *%s;\n", getField(1)->type->symbol->cname,
             symbol->cname);
   else if (classTag == CLASS_CLASS)
@@ -419,7 +419,7 @@ void initPrimitiveTypes(void) {
 
   dtNilRef = createPrimitiveType ("_nilRefType", "_nilRefType");
   CREATE_DEFAULT_SYMBOL (dtNilRef, gNilRef, "nilRef");
-  dtNilRef->symbol->addPragma("ref");
+  dtNilRef->symbol->addPragma(PRAG_REF);
   
   dtUnknown = createPrimitiveType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
@@ -430,8 +430,8 @@ void initPrimitiveTypes(void) {
   dtBool = createPrimitiveType ("bool", "chpl_bool");
 
   DefExpr* objectDef = buildClassDefExpr("object", new ClassType(CLASS_CLASS), new BlockStmt());
-  objectDef->sym->addPragma("object class");
-  objectDef->sym->addPragma("no object");
+  objectDef->sym->addPragma(PRAG_OBJECT_CLASS);
+  objectDef->sym->addPragma(PRAG_NO_OBJECT);
   dtObject = objectDef->sym->type;
   dtValue = createPrimitiveType("value", "_chpl_value");
 
@@ -647,7 +647,7 @@ bool isReference(Type* t) {
 
 Type* getValueType(Type* type) {
   if (ClassType* ct = toClassType(type)) {
-    if (ct->symbol->hasPragma("ref")) {
+    if (ct->symbol->hasPragma(PRAG_REF)) {
       return ct->getField(1)->type;
     }
   }

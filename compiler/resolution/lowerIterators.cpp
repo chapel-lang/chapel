@@ -75,7 +75,7 @@ setupSimultaneousIterators(Vec<Symbol*>& iterators,
                            Symbol* gIterator,
                            Symbol* gIndex,
                            BlockStmt* loop) {
-  if (gIterator->type->symbol->hasPragma("tuple")) {
+  if (gIterator->type->symbol->hasPragma(PRAG_TUPLE)) {
     ClassType* iteratorType = toClassType(gIterator->type);
     ClassType* indexType = toClassType(gIndex->type);
     for (int i=1; i <= iteratorType->fields.length(); i++) {
@@ -99,9 +99,9 @@ static bool
 isBoundedIterator(FnSymbol* fn) {
   if (fn->_this) {
     Type* type = fn->_this->type;
-    if (type->symbol->hasPragma("ref"))
+    if (type->symbol->hasPragma(PRAG_REF))
       type = getValueType(type);
-    if (type->symbol->hasPragma("range")) {
+    if (type->symbol->hasPragma(PRAG_RANGE)) {
       if (!strcmp(type->substitutions.v[1].value->name, "bounded"))
         return true;
       else
@@ -377,7 +377,7 @@ void lowerIterators() {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->parentSymbol && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
         ClassType* ct = toClassType(call->get(1)->typeInfo());
-        if (ct->symbol->hasPragma("ref"))
+        if (ct->symbol->hasPragma(PRAG_REF))
           ct = toClassType(getValueType(ct));
         long num;
         if (get_int(call->get(2), &num)) {
@@ -407,7 +407,7 @@ void lowerIterators() {
   Vec<FnSymbol*> getIteratorVec;
   Map<Type*,FnSymbol*> getIteratorMap;
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->hasPragma("iterator class copy")) {
+    if (fn->hasPragma(PRAG_ITERATOR_CLASS_COPY)) {
       getIteratorVec.add(fn);
       getIteratorMap.put(fn->retType, fn);
     } else if (fn->iteratorInfo) {
@@ -452,7 +452,7 @@ void lowerIterators() {
     block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cp, new CallExpr(PRIMITIVE_CHPL_ALLOC, ct->symbol, new_StringSymbol("iterator class copy"))));
     block->insertAtTail(new CallExpr(PRIMITIVE_SETCID, cp));
     for_fields(field, ct) {
-      if (!field->hasPragma("super class")) {
+      if (!field->hasPragma(PRAG_SUPER_CLASS)) {
         VarSymbol* tmp = new VarSymbol("_tmp", field->type);
         block->insertAtTail(new DefExpr(tmp));
         block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, field)));
