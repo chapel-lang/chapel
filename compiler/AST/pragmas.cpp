@@ -83,7 +83,7 @@ void
 viewPragmas(BaseAST* ast) {
   if (Symbol* sym = toSymbol(ast)) {
     form_Map(PragmaMapElem, e, pragmaMap) {
-      if (sym->pragmas.get(e->value)) {
+      if (sym->pragmas[e->value]) {
         printf("\"%s\"\n", e->key);
       }
     }

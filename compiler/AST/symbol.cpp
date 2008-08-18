@@ -48,7 +48,7 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   canParam(false),
   canType(false),
   isConcurrent(false),
-  pragmas(NUM_PRAGMAS)
+  pragmas()
 {}
 
 
@@ -121,7 +121,7 @@ FnSymbol* Symbol::getFnSymbol(void) {
 
 
 bool Symbol::hasPragma(PragmaTag pt) {
-  return pragmas.get(pt);
+  return pragmas[pt];
 }
 
 
@@ -138,12 +138,12 @@ void Symbol::addPragmas(Vec<const char*>* strs) {
 
 
 void Symbol::copyPragmas(Symbol* other) {
-  pragmas.disjunction(other->pragmas);
+  pragmas |= other->pragmas;
 }
 
 
 void Symbol::removePragma(PragmaTag pt) {
-  pragmas.unset(pt);
+  pragmas.reset(pt);
 }
 
 

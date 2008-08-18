@@ -1,6 +1,7 @@
 #ifndef _SYMBOL_H_
 #define _SYMBOL_H_
 
+#include <bitset>
 #include "alist.h"
 #include "baseAST.h"
 #include "bitVec.h"
@@ -58,7 +59,8 @@ class Symbol : public BaseAST {
   bool canParam;       // can be a parameter (determined during resolution)
   bool canType;        // can be a type (determined during resolution)
   bool isConcurrent;   // can be accessed concurrently
-  BitVec pragmas;
+  std::bitset<NUM_PRAGMAS> pragmas;
+  //  BitVec pragmas;
 
   Symbol(AstTag astTag, const char* init_name, Type* init_type = dtUnknown);
   virtual ~Symbol();
