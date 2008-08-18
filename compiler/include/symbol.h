@@ -52,13 +52,10 @@ class Symbol : public BaseAST {
   const char* cname; // Name of symbol for generating C code
   Type* type;
   DefExpr* defPoint; // Point of definition
-  bool isUserAlias;    // is a user alias via '=>'
   bool isCompilerTemp;
-  bool isExprTemp;
   bool isTypeVariable;
   bool canParam;       // can be a parameter (determined during resolution)
   bool canType;        // can be a type (determined during resolution)
-  bool isConcurrent;   // can be accessed concurrently
   std::bitset<NUM_PRAGMAS> pragmas;
   //  BitVec pragmas;
 

@@ -138,7 +138,7 @@ static void insertHeapAccess(SymExpr* se, bool global = false) {
   } else {
     VarSymbol* tmp = new VarSymbol("_tmp");
     tmp->isCompilerTemp = true;
-    tmp->isExprTemp = true;
+    tmp->addPragma(PRAG_EXPR_TEMP);
     stmt->insertBefore(new DefExpr(tmp));
     stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
     se->replace(new SymExpr(tmp));
@@ -715,7 +715,7 @@ static void insert_call_temps(CallExpr* call) {
   Expr* stmt = call->getStmtExpr();
   VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown);
   tmp->isCompilerTemp = true;
-  tmp->isExprTemp = true;
+  tmp->addPragma(PRAG_EXPR_TEMP);
   tmp->canParam = true;
   tmp->canType = true;
   call->replace(new SymExpr(tmp));
@@ -755,7 +755,7 @@ fix_def_expr(VarSymbol* var) {
   //
   // handle var ... : ... => ...;
   //
-  if (var->isUserAlias) {
+  if (var->hasPragma(PRAG_ARRAY_ALIAS)) {
     CallExpr* partial;
     VarSymbol* arrTemp = new VarSymbol("_arrTmp");
     arrTemp->isCompilerTemp = true;

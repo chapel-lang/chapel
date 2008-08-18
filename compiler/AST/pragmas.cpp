@@ -24,8 +24,9 @@ str2prag(const char* str) {
 void
 initPragmas() {
   definePragma(PRAG_ALLOW_REF, "allow ref");
-  definePragma(PRAG_ARRAY_TYPE_INFO, "array type info");
   definePragma(PRAG_ARRAY, "array");
+  definePragma(PRAG_ARRAY_ALIAS, "array alias");
+  definePragma(PRAG_ARRAY_TYPE_INFO, "array type info");
   definePragma(PRAG_AUTO_II, "auto ii");
   definePragma(PRAG_BASE_ARRAY, "base array");
   definePragma(PRAG_BEGIN, "begin");
@@ -33,6 +34,7 @@ initPragmas() {
   definePragma(PRAG_COBEGIN_OR_COFORALL, "cobegin or coforall");
   definePragma(PRAG_COBEGIN_OR_COFORALL_BLOCK, "cobegin or coforall block");
   definePragma(PRAG_COMMAND_LINE_SETTING, "command line setting");
+  definePragma(PRAG_CONCURRENTLY_ACCESSED, "concurrently accessed");
   definePragma(PRAG_DATA_CLASS, "data class");
   definePragma(PRAG_DATA_SET_ERROR, "data set error");
   definePragma(PRAG_DEFAULT_CONSTRUCTOR, "default constructor");
@@ -40,6 +42,7 @@ initPragmas() {
   definePragma(PRAG_DOMAIN, "domain");
   definePragma(PRAG_EXPAND_TUPLES_WITH_VALUES, "expand tuples with values");
   definePragma(PRAG_EXPORT, "export");
+  definePragma(PRAG_EXPR_TEMP, "expr temp");
   definePragma(PRAG_EXTERN, "extern");
   definePragma(PRAG_HEAP, "heap");
   definePragma(PRAG_INDEX_VAR, "index var");

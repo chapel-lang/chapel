@@ -29,8 +29,9 @@ class BaseAST;
 enum PragmaTag {
   PRAG_UNKNOWN = 0,
   PRAG_ALLOW_REF,
-  PRAG_ARRAY_TYPE_INFO,
   PRAG_ARRAY,
+  PRAG_ARRAY_ALIAS, // array alias declared via => syntax
+  PRAG_ARRAY_TYPE_INFO,
   PRAG_AUTO_II,
   PRAG_BASE_ARRAY,
   PRAG_BEGIN,
@@ -38,6 +39,7 @@ enum PragmaTag {
   PRAG_COBEGIN_OR_COFORALL,
   PRAG_COBEGIN_OR_COFORALL_BLOCK,
   PRAG_COMMAND_LINE_SETTING,
+  PRAG_CONCURRENTLY_ACCESSED, // local variables accessed by multiple threads
   PRAG_DATA_CLASS,
   PRAG_DATA_SET_ERROR,
   PRAG_DEFAULT_CONSTRUCTOR,
@@ -45,6 +47,7 @@ enum PragmaTag {
   PRAG_DOMAIN,
   PRAG_EXPAND_TUPLES_WITH_VALUES,
   PRAG_EXPORT,
+  PRAG_EXPR_TEMP, // temporary that stores the result of an expression
   PRAG_EXTERN, // extern variables, types, and functions
   PRAG_HEAP,
   PRAG_INDEX_VAR,

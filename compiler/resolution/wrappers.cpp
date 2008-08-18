@@ -183,7 +183,7 @@ buildDefaultWrapper(FnSymbol* fn,
           wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, defaultExpr->body.tail->remove()));
         } else {
           wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, new CallExpr("_copy", defaultExpr->body.tail->remove())));
-          temp->isExprTemp = false;
+          INT_ASSERT(!temp->hasPragma(PRAG_EXPR_TEMP));
           temp->canParam = false;
         }
       }

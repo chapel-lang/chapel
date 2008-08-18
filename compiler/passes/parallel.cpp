@@ -41,7 +41,7 @@ bundleArgs(CallExpr* fcall) {
     }
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->var; // arg or var
-    var->isConcurrent = true;
+    var->addPragma(PRAG_CONCURRENTLY_ACCESSED);
     VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->type);
     ctype->fields.insertAtTail(new DefExpr(field));
     i++;

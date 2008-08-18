@@ -1026,7 +1026,7 @@ var_decl_stmt_inner:
     {
       VarSymbol* var = new VarSymbol($1);
       $$ = buildChapelStmt(new DefExpr(var, $3, $2));
-      var->isUserAlias = true;
+      var->addPragma(PRAG_ARRAY_ALIAS);
     }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     { $$ = buildTupleVarDeclStmt($2, $4, $5); }

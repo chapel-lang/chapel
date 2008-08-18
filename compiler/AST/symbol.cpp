@@ -41,13 +41,10 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   cname(name),
   type(init_type),
   defPoint(NULL),
-  isUserAlias(false),
   isCompilerTemp(false),
-  isExprTemp(false),
   isTypeVariable(false),
   canParam(false),
   canType(false),
-  isConcurrent(false),
   pragmas()
 {}
 
@@ -183,13 +180,10 @@ VarSymbol::copyInner(SymbolMap* map) {
   newVarSymbol->isParam = isParam;
   newVarSymbol->isConst = isConst;
   newVarSymbol->cname = cname;
-  newVarSymbol->isUserAlias = isUserAlias;
   newVarSymbol->isCompilerTemp = isCompilerTemp;
-  newVarSymbol->isExprTemp = isExprTemp;
   newVarSymbol->isTypeVariable = isTypeVariable;
   newVarSymbol->canParam = canParam;
   newVarSymbol->canType = canType;
-  newVarSymbol->isConcurrent = isConcurrent;
   INT_ASSERT(!newVarSymbol->immediate);
   return newVarSymbol;
 }

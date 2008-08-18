@@ -1661,7 +1661,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
     for_formals_actuals(formal, actual, call) {
       if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
         if (SymExpr* se = toSymExpr(actual)) {
-          if (se->var->isExprTemp || se->var->isConstant() || se->var->isParameter()) {
+          if (se->var->hasPragma(PRAG_EXPR_TEMP) || se->var->isConstant() || se->var->isParameter()) {
             if (formal->intent == INTENT_OUT) {
               USR_FATAL(se, "non-lvalue actual passed to out argument");
             } else {
@@ -1846,13 +1846,13 @@ resolveCall(CallExpr* call, bool errorCheck) {
     Type* lhsType = lhs->type;
 
     if (isReference(lhsType))
-      lhs->isExprTemp = false;
+      lhs->removePragma(PRAG_EXPR_TEMP);
     if (lhsType->symbol->hasPragma(PRAG_REF_ITERATOR_CLASS))
-      lhs->isExprTemp = false;
+      lhs->removePragma(PRAG_EXPR_TEMP);
     if (CallExpr* call = toCallExpr(rhs)) {
       if (FnSymbol* fn = call->isResolved()) {
         if (fn->hasPragma(PRAG_VALID_VAR))
-          lhs->isExprTemp = false;
+          lhs->removePragma(PRAG_EXPR_TEMP);
         if (rhsType == dtUnknown) {
           USR_FATAL_CONT(fn, "unable to resolve return type of function '%s'", fn->name);
           USR_FATAL(rhs, "called recursively at this point");
@@ -2400,7 +2400,7 @@ preFold(Expr* expr) {
           }
           // check legal lvalue
           if (SymExpr* rhs = toSymExpr(call->get(1))) {
-            if (rhs->var->isExprTemp || rhs->var->isConstant() || rhs->var->isParameter())
+            if (rhs->var->hasPragma(PRAG_EXPR_TEMP) || rhs->var->isConstant() || rhs->var->isParameter())
               USR_FATAL(call, "illegal lvalue in assignment");
           }
         }
@@ -2423,7 +2423,7 @@ preFold(Expr* expr) {
       //
       SymExpr* se = toSymExpr(call->get(1));
       ClassType* ct = toClassType(type);
-      if (se->var->isExprTemp && (!ct || ct->classTag != CLASS_CLASS))
+      if (se->var->hasPragma(PRAG_EXPR_TEMP) && (!ct || ct->classTag != CLASS_CLASS))
         USR_WARN(se, "accessing the locale of a local expression");
 
       //
@@ -2595,7 +2595,7 @@ postFold(Expr* expr) {
         SymExpr* lhs = toSymExpr(call->get(1));
         if (!lhs)
           INT_FATAL(call, "unexpected case");
-        if (lhs->var->isExprTemp || lhs->var->isConstant() || lhs->var->isParameter())
+        if (lhs->var->hasPragma(PRAG_EXPR_TEMP) || lhs->var->isConstant() || lhs->var->isParameter())
           USR_FATAL(call, "illegal lvalue in assignment");
       }
     } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
