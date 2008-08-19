@@ -3302,14 +3302,12 @@ signature_match(FnSymbol* fn, FnSymbol* gn) {
 //
 static void
 collectInstantiatedClassTypes(Vec<Type*>& icts, Type* ct) {
-  if (ct->defaultTypeConstructor->instantiatedTo)
-    forv_Vec(FnSymbol, fn, *ct->defaultTypeConstructor->instantiatedTo) {
-      Type* ict = fn->retType;
-      if (ict->isGeneric)
-        collectInstantiatedClassTypes(icts, ict);
-      else
-        icts.add(ict);
-    }
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    if (ts->type->defaultTypeConstructor)
+      if (ts->type->defaultTypeConstructor->instantiatedFrom ==
+          ct->defaultTypeConstructor)
+        icts.add(ts->type);
+  }
 }
 
 
@@ -3377,25 +3375,16 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
 
 
 static void
-add_all_children_ddf_help(FnSymbol* fn, ClassType* pt, ClassType* ct) {
-  if (ct->defaultTypeConstructor &&
-      (ct->defaultTypeConstructor->instantiatedTo ||
-       resolvedFns.set_in(ct->defaultTypeConstructor)))
-    add_to_ddf(fn, ct);
+add_all_children_ddf(FnSymbol* fn, ClassType* ct) {
   forv_Vec(Type, t, ct->dispatchChildren) {
     ClassType* ct = toClassType(t);
+    if (ct->defaultTypeConstructor &&
+        (ct->defaultTypeConstructor->isGeneric ||
+         resolvedFns.set_in(ct->defaultTypeConstructor))) {
+      add_to_ddf(fn, ct);
+    }
     if (!ct->instantiatedFrom)
-      add_all_children_ddf_help(fn, pt, ct);
-  }
-}
-
-
-static void
-add_all_children_ddf(FnSymbol* fn, ClassType* pt) {
-  forv_Vec(Type, t, pt->dispatchChildren) {
-    ClassType* ct = toClassType(t);
-    if (!ct->instantiatedFrom)
-      add_all_children_ddf_help(fn, pt, ct);
+      add_all_children_ddf(fn, ct);
   }
 }
 

@@ -463,7 +463,6 @@ FnSymbol::FnSymbol(const char* initName) :
   _outer(NULL),
   isMethod(false),
   instantiatedFrom(NULL),
-  instantiatedTo(NULL),
   instantiationPoint(NULL),
   visible(true),
   global(false),
@@ -482,8 +481,6 @@ FnSymbol::FnSymbol(const char* initName) :
 FnSymbol::~FnSymbol() {
   if (iteratorInfo)
     delete iteratorInfo;
-  if (instantiatedTo)
-    delete instantiatedTo;
   if (basicBlocks) {
     forv_Vec(BasicBlock, bb, *basicBlocks) {
       delete bb;

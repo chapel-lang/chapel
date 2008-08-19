@@ -163,7 +163,6 @@ class FnSymbol : public Symbol {
   bool isMethod;
   FnSymbol *instantiatedFrom;
   SymbolMap substitutions;
-  Vec<FnSymbol *> *instantiatedTo;
   BlockStmt* instantiationPoint; // point of instantiation
   bool visible; // included in visible function list for dispatch
                 // compiler generated functions are not visible, e.g.,

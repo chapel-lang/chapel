@@ -247,21 +247,22 @@ checkInfiniteWhereInstantiation(FnSymbol* fn) {
 //
 static void
 checkInstantiationLimit(FnSymbol* fn) {
-  if (fn->instantiatedTo == NULL)
-    fn->instantiatedTo = new Vec<FnSymbol*>();
+  static Map<FnSymbol*,int> instantiationLimitMap;
 
-  if (fn->instantiatedTo->n >= instantiation_limit &&
-      baseModule != fn->getModule()) {
-    if (fn->hasPragma(PRAG_TYPE_CONSTRUCTOR)) {
-      USR_FATAL_CONT(fn->retType, "Type '%s' has been instantiated too many times",
-                     fn->retType->symbol->name);
-    } else {
-      USR_FATAL_CONT(fn, "Function '%s' has been instantiated too many times",
-                     fn->name);
+  if (fn->defPoint->parentSymbol != baseModule) {
+    if (instantiationLimitMap.get(fn) >= instantiation_limit) {
+      if (fn->hasPragma(PRAG_TYPE_CONSTRUCTOR)) {
+        USR_FATAL_CONT(fn->retType, "Type '%s' has been instantiated too many times",
+                       fn->retType->symbol->name);
+      } else {
+        USR_FATAL_CONT(fn, "Function '%s' has been instantiated too many times",
+                       fn->name);
+      }
+      USR_PRINT("  If this is intentional, try increasing"
+                " the instantiation limit from %d", instantiation_limit);
+      USR_STOP();
     }
-    USR_PRINT("  If this is intentional, try increasing"
-              " the instantiation limit from %d", instantiation_limit);
-    USR_STOP();
+    instantiationLimitMap.put(fn, instantiationLimitMap.get(fn)+1);
   }
 }
 
@@ -474,8 +475,6 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
 
   if (fn->hasPragma(PRAG_TUPLE))
     instantiate_tuple(newFn);
-
-  fn->instantiatedTo->add(newFn);
 
   if (newFn->numFormals() > 1 && newFn->getFormal(1)->type == dtMethodToken)
     newFn->getFormal(2)->type->methods.add(newFn);
