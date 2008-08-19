@@ -525,6 +525,10 @@ class BaseArithmeticDomain : BaseDomain {
     halt("bbox not supported for this domain type");
     return 1..0;
   }
+
+  def clear() {
+    compilerError("Illegal assignment to an arithmetic domain");
+  }
 }
 
 
