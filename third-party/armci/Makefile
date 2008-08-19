@@ -5,7 +5,7 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 default: all
 
 all: FORCE
-	cd $(ARMCI_SRC_DIR) && $(MAKE) TARGET=$(ARMCI_TARGET) CC=$(CC) FC=gfortran MSG_COMMS=MPI MPI_INCLUDE=$(CHPL_HOME)/third-party/mpich1/install/$(CHPL_MAKE_PLATFORM)/include MPI_LIB=$(CHPL_HOME)/third-party/mpich1/install/$(CHPL_MAKE_PLATFORM)/lib
+	cd $(ARMCI_SRC_DIR) && $(MAKE) TARGET=$(ARMCI_TARGET) CC=$(CC) FC=gfortran MSG_COMMS=MPI MPI_INCLUDE=$(CHPL_HOME)/third-party/mpich1/install/$(CHPL_MAKE_TARGET_PLATFORM)/include MPI_LIB=$(CHPL_HOME)/third-party/mpich1/install/$(CHPL_MAKE_TARGET_PLATFORM)/lib
 
 clean: FORCE
 	cd $(ARMCI_SRC_DIR) && $(MAKE) clean
