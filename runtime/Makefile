@@ -81,9 +81,6 @@ $(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 $(RUNTIME_DIR)/main.o: src/$(RUNTIME_OBJDIR)/main.o
 	cp $< $@
 
-$(RUNTIME_DIR_TIMESTAMP):
-	mkdir -p $(RUNTIME_DIR)
-	touch $(RUNTIME_DIR_TIMESTAMP)
 
 #
 # launcher rules
@@ -94,10 +91,6 @@ $(LAUNCHER_LIB): $(LAUNCH_LIB_OBJS) $(LAUNCHER_DIR_TIMESTAMP)
 
 $(LAUNCHER_DIR)/main_launcher.o: src/$(LAUNCHER_OBJDIR)/main_launcher.o
 	cp $< $@
-
-$(LAUNCHER_DIR_TIMESTAMP):
-	mkdir -p $(LAUNCHER_DIR)
-	touch $(LAUNCHER_DIR_TIMESTAMP)
 
 
 #
