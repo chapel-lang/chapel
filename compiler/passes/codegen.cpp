@@ -240,6 +240,7 @@ static void codegen_header(void) {
     outfile = runtimeHeaderFile.fptr;
     fprintf(outfile, "#ifndef _%s_H_\n", userModules.v[0]->name);
     fprintf(outfile, "#define _%s_H_\n", userModules.v[0]->name);
+    fprintf(outfile, "#include \"stdchplrt.h\"\n");
     forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
       if (fnSymbol->hasPragma(PRAG_EXPORT) || fnSymbol == chpl_main)
         fnSymbol->codegenPrototype(outfile);
@@ -249,15 +250,14 @@ static void codegen_header(void) {
     beautify(&runtimeHeaderFile);
     openRuntimeFile(&runtimeFile, userModules.v[0]->name, "c");
     outfile = runtimeFile.fptr;
-    fprintf(outfile, "#include \"chplrt.h\"\n");
+    fprintf(outfile, "#include \"chapel_code.h\"\n");
   } else {
     openCFile(&header, "_chpl_header", "h");
     outfile = header.fptr;
   }
-
+  genIncludeCommandLineHeaders(outfile);
 
   fprintf(outfile, "\n/*** Class ID -- referred to in runtime ***/\n\n");
-
   fprintf(outfile, "typedef enum {\n");
   bool comma = false;
   forv_Vec(TypeSymbol, ts, typeSymbols) {
@@ -272,11 +272,12 @@ static void codegen_header(void) {
     fprintf(outfile, "  _e_placeholder");
   fprintf(outfile, "\n} _class_id;\n\n");
 
-  fprintf(outfile, "#define CHPL_GEN_CODE\n");
-  fprintf(outfile, "#include \"stdchpl.h\"\n");
-  genIncludeCommandLineHeaders(outfile);
-  fprintf(outfile, "\n/*** Class Prototypes ***/\n\n");
+  if (!fRuntime) {
+    fprintf(outfile, "#define CHPL_GEN_CODE\n");
+    fprintf(outfile, "#include \"stdchpl.h\"\n");
+  }
 
+  fprintf(outfile, "\n/*** Class Prototypes ***/\n\n");
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
     if (!typeSymbol->hasPragma(PRAG_REF))
       typeSymbol->codegenPrototype(outfile);

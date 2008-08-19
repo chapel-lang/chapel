@@ -7,13 +7,13 @@
 #define NDEBUG
 #endif
 
+#include "../src/chapel_code.h"
 #include "chplcomm.h"
 #include "chplexit.h"
 #include "chplmem.h"
 #include "chplrt.h"
 #include "chplthreads.h"
 #include "error.h"
-#include "../src/chapel_code.h"
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>

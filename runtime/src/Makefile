@@ -34,5 +34,5 @@ $(RUNTIME_OBJ_DIR)/gdb.o: gdb.c $(RUNTIME_OBJ_DIR_STAMP)
 $(RUNTIME_OBJ_DIR)/chapel_code.o: chapel_code.c $(RUNTIME_OBJ_DIR_STAMP) chapel_code.h ../include/stdchpl.h
 	$(CC) -c $(RUNTIME_GEN_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
 
-chapel_code.c chapel_code.h: chapel_code.chpl
+chapel_code.c chapel_code.h: chapel_code.chpl $(CHPL)
 	$(CHPL) $(RUNTIME_CHPL_FLAGS) $<
