@@ -21,7 +21,7 @@ manhelp: FORCE
 	cd man && $(MAKE)
 
 runtime: FORCE
-	cd runtime && $(MAKE)
+	cd runtime && $(MAKE) all
 
 third-party: FORCE
 	cd third-party && $(MAKE)

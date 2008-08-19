@@ -10,11 +10,17 @@ COMMON_OBJDIR = $(RUNTIME_OBJDIR)
 COMMON_LAUNCHER_OBJDIR = $(LAUNCHER_OBJDIR)
 include Makefile.share
 
+ifeq ($(MAKE_LAUNCHER),0)
 TARGETS = \
 	$(COMMON_OBJS) \
 	$(MAIN_OBJS) \
+
+else
+TARGETS = \
 	$(MAIN_LAUNCHER_OBJS) \
 	$(COMMON_LAUNCHER_OBJS) \
+
+endif
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 

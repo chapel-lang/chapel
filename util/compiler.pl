@@ -21,7 +21,7 @@ if ($flag eq "" || $flag eq "--host") {
 if ($preset_compiler eq "") {
     $platform = `$utildirname/platform.pl $flag`;
     chomp($platform);
-    if ($platform eq "mta" || $platform eq "xmt") {
+    if ($platform eq "mta" || $platform eq "xmt" || $platform eq "xmt-sim") {
 	$compiler = "cray-mta";
     } elsif ($platform eq "x1" || $platform eq "x2") {
 	$compiler = "cray-vec";

@@ -15,7 +15,9 @@ endif
 CHAPEL_ROOT = $(RUNTIME_ROOT)/..
 CHAPEL_SUBDIR = runtime/$(RUNTIME_SUBDIR)
 
+ifeq ($(MAKE_LAUNCHER),0)
 CHPL_MAKE_HOST_TARGET = --target
+endif
 include $(CHAPEL_ROOT)/make/Makefile.base
 
 LAUNCHER_CFLAGS = $(RUNTIME_CFLAGS) -DLAUNCHER

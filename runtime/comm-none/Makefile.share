@@ -1,8 +1,8 @@
-LAUNCHER_COMM_SRCS = \
+COMM_LAUNCHER_SRCS = \
         chpl_cfg_comm_locales.c \
 
 COMM_SRCS = \
-	$(LAUNCHER_COMM_SRCS) \
+	$(COMM_LAUNCHER_SRCS) \
 	chpl_cfg_comm.c \
 
 SVN_SRCS = $(COMM_SRCS)
@@ -10,3 +10,7 @@ SRCS = $(SVN_SRCS)
 
 COMM_OBJS = \
 	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
+
+COMM_LAUNCHER_OBJS = \
+	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
+

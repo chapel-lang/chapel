@@ -11,10 +11,8 @@ SRCS = $(SVN_SRCS)
 COMM_OBJS = \
 	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
 
-ifneq ($(CPL_MAKE_LAUNNCHER),none)
 COMM_LAUNCHER_OBJS = \
 	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
-endif
 
 ARMCI_INSTALL = $(RUNTIME_ROOT)/../third-party/armci/armci-GPCsockets
 MPI_INSTALL = $(RUNTIME_ROOT)/../third-party/mpich1/install/linux

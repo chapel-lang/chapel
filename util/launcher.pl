@@ -11,6 +11,7 @@ $preset_launcher=$ENV{'CHPL_LAUNCHER'};
 if ($preset_launcher eq "") {
     $comm = `$utildirname/comm.pl --target`; chomp($comm);
     $substrate = `$utildirname/commSubstrate.pl`; chomp($substrate);
+    $platform = `$utildirname/platform.pl --target`; chomp($platform);
 
     if ($comm eq "armci") {
         if ($substrate eq "mpi") {
@@ -18,6 +19,8 @@ if ($preset_launcher eq "") {
         } else {
             $launcher = "none";
         }
+    } elsif ($platform eq "xmt-sim") {
+	$launcher = "zebra";
     } else {
         $launcher = "none";
     }
