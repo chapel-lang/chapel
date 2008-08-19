@@ -218,7 +218,6 @@ protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType) {
   fn->addPragma(PRAG_AUTO_II); 
   if (strcmp(name, "advance"))
     fn->addPragma(PRAG_INLINE);
-  fn->global = true;
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ii->icType);
   fn->retType = retType;
@@ -810,7 +809,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
 
       SymbolMap map;
       FnSymbol* newFn = fn->copy(&map);
-      newFn->visible = false;
+      newFn->addPragma(PRAG_INVISIBLE_FN);
       fn->defPoint->insertBefore(new DefExpr(newFn));
       Symbol* sym = map.get(def->sym);
       sym->defPoint->replace(new SymExpr(new_IntSymbol(numCopies)));
@@ -1354,9 +1353,9 @@ getVisibilityBlock(Expr* expr) {
 static void buildVisibleFunctionMap() {
   for (int i = nVisibleFunctions; i < gFns.n; i++) {
     FnSymbol* fn = gFns.v[i];
-    if (fn->visible && fn->defPoint->parentSymbol && !isArgSymbol(fn->defPoint->parentSymbol)) {
+    if (!fn->hasPragma(PRAG_INVISIBLE_FN) && fn->defPoint->parentSymbol && !isArgSymbol(fn->defPoint->parentSymbol)) {
       BlockStmt* block = NULL;
-      if (fn->global) {
+      if (fn->hasPragma(PRAG_AUTO_II)) {
         block = theProgram->block;
       } else {
         block = getVisibilityBlock(fn->defPoint);
@@ -2383,7 +2382,7 @@ preFold(Expr* expr) {
         call->replace(result);
       } else {
         FnSymbol* fn = call->getFunction();
-        if (!fn->isWrapper && !fn->hasPragma(PRAG_VALID_VAR)) {
+        if (!fn->hasPragma(PRAG_WRAPPER) && !fn->hasPragma(PRAG_VALID_VAR)) {
           // check legal var function return
           if (CallExpr* move = toCallExpr(call->parentExpr)) {
             if (move->isPrimitive(PRIMITIVE_MOVE)) {
@@ -2591,7 +2590,7 @@ postFold(Expr* expr) {
           expr->replace(result);
         }
       }
-      if (!strcmp("=", fn->name) && !call->getFunction()->isWrapper) {
+      if (!strcmp("=", fn->name) && !call->getFunction()->hasPragma(PRAG_WRAPPER)) {
         SymExpr* lhs = toSymExpr(call->get(1));
         if (!lhs)
           INT_FATAL(call, "unexpected case");
@@ -3030,7 +3029,7 @@ resolveFns(FnSymbol* fn) {
   if (fn->retTag == RET_VAR) {
     if (fn->fnTag != FN_ITERATOR) {
       FnSymbol* copy = fn->copy();
-      copy->visible = false;
+      copy->addPragma(PRAG_INVISIBLE_FN);
       copy->retTag = RET_VALUE;
       fn->defPoint->insertBefore(new DefExpr(copy));
       fn->valueFunction = copy;
@@ -3392,7 +3391,7 @@ add_all_children_ddf(FnSymbol* fn, ClassType* ct) {
 static void
 build_ddf() {
   forv_Vec(FnSymbol, fn, gFns) {
-    if (!fn->isWrapper && resolvedFns.set_in(fn) && !fn->hasPragma(PRAG_NO_PARENS)
+    if (!fn->hasPragma(PRAG_WRAPPER) && resolvedFns.set_in(fn) && !fn->hasPragma(PRAG_NO_PARENS)
         && !fn->hasPragma(PRAG_DESTRUCTOR)) {
       if (fn->numFormals() > 1) {
         if (fn->getFormal(1)->type == dtMethodToken) {

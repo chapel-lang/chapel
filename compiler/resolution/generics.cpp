@@ -394,7 +394,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   //printf("newFn: %d %s\n", newFn->id, newFn->cname);
 
   newFn->isGeneric = false;
-  newFn->visible = false;
+  newFn->addPragma(PRAG_INVISIBLE_FN);
   newFn->instantiatedFrom = fn;
 
   if (call)

@@ -595,7 +595,7 @@ static void normalize_returns(FnSymbol* fn) {
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_SET_REF, ret_expr)));
       else if (fn->retExprType)
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr("=", retval, ret_expr)));
-      else if (!fn->isWrapper && strcmp(fn->name, "iteratorIndex") &&
+      else if (!fn->hasPragma(PRAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
                strcmp(fn->name, "iteratorIndexHelp"))
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_GET_REF, ret_expr)));
       else
@@ -1276,5 +1276,5 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals.get(1)->remove();
   update_symbols(fn, &map);
   fn->name = astr(astr("_construct_", fn->name));
-  ct->defaultConstructor->visible = false;
+  ct->defaultConstructor->addPragma(PRAG_INVISIBLE_FN);
 }

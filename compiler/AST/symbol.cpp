@@ -464,11 +464,8 @@ FnSymbol::FnSymbol(const char* initName) :
   isMethod(false),
   instantiatedFrom(NULL),
   instantiationPoint(NULL),
-  visible(true),
-  global(false),
   basicBlocks(NULL),
   calledBy(NULL),
-  isWrapper(false),
   userString(NULL),
   valueFunction(NULL)
 {
@@ -536,8 +533,6 @@ FnSymbol::copyInner(SymbolMap* map) {
   copy->_this = _this;
   copy->_outer = _outer;
   copy->isMethod = isMethod;
-  copy->visible = visible;
-  copy->global = global;
   copy->isCompilerTemp = isCompilerTemp;
   copy->canParam = canParam;
   copy->canType = canType;

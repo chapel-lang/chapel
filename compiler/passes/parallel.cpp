@@ -717,7 +717,7 @@ insertWideReferences(void) {
       //
       if ((call->isNamed("_heapAllocGlobal") ||
            call->isNamed("_heapAllocConstGlobal")) &&
-          !toFnSymbol(call->parentSymbol)->isWrapper) {
+          !call->parentSymbol->hasPragma(PRAG_WRAPPER)) {
 
         CallExpr* move = toCallExpr(call->parentExpr);
         INT_ASSERT(move);

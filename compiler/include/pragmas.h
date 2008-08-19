@@ -82,8 +82,10 @@ enum PragmaTag {
   PRAG_TUPLE_INIT,
   PRAG_TYPE_CONSTRUCTOR,
   PRAG_VALID_VAR,
+  PRAG_INVISIBLE_FN, // invisible function (not a candidate for resolution)
   PRAG_WIDE,
   PRAG_WIDE_CLASS,
+  PRAG_WRAPPER, // wrapper function
   NUM_PRAGMAS
 };
 

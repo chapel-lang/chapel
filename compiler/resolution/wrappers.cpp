@@ -12,8 +12,8 @@
 static FnSymbol*
 buildEmptyWrapper(FnSymbol* fn) {
   FnSymbol* wrapper = new FnSymbol(fn->name);
-  wrapper->isWrapper = true;
-  wrapper->visible = false;
+  wrapper->addPragma(PRAG_WRAPPER);
+  wrapper->addPragma(PRAG_INVISIBLE_FN);
   wrapper->addPragma(PRAG_INLINE);
   if (fn->hasPragma(PRAG_NO_PARENS))
     wrapper->addPragma(PRAG_NO_PARENS);

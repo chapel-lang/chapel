@@ -77,8 +77,10 @@ initPragmas() {
   definePragma(PRAG_TUPLE_INIT, "tuple init");
   definePragma(PRAG_TYPE_CONSTRUCTOR, "type constructor");
   definePragma(PRAG_VALID_VAR, "valid var");
+  definePragma(PRAG_INVISIBLE_FN, "invisible fn");
   definePragma(PRAG_WIDE, "wide");
   definePragma(PRAG_WIDE_CLASS, "wide class");
+  definePragma(PRAG_WRAPPER, "wrapper");
 }
 
 

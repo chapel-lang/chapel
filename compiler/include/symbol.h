@@ -164,13 +164,8 @@ class FnSymbol : public Symbol {
   FnSymbol *instantiatedFrom;
   SymbolMap substitutions;
   BlockStmt* instantiationPoint; // point of instantiation
-  bool visible; // included in visible function list for dispatch
-                // compiler generated functions are not visible, e.g.,
-                // instantiated functions and wrappers
-  bool global;
   Vec<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
-  bool isWrapper;
   const char* userString;
   FnSymbol* valueFunction; // pointer to value function (created in
                            // resolve and used in cullOverReferences)
