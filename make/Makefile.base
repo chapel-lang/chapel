@@ -118,7 +118,7 @@ LIB_LN_DIR = lib/$(PLAT_RUNTIME_SUBDIR)/$(COMM_LAUNCH_SUBDIR)
 
 CHPL_BIN_DIR = $(CHAPEL_ROOT)/bin/$(CHPL_MAKE_HOST_PLATFORM)
 CHPL = $(CHPL_BIN_DIR)/chpl$(EXE_SUFFIX)
-RUNTIME_CHPL_FLAGS = --runtime --no-checks
+RUNTIME_CHPL_FLAGS = --runtime --no-checks --local
 
 
 #
