@@ -6,7 +6,7 @@ $CHPL_HOME/test/Bin/nightly -cron -examples
 # MTA compile compiler
 setenv CHPL_HOST_PLATFORM $CHPL_TARGET_PLATFORM
 unsetenv CHPL_TARGET_PLATFORM
-$CHPL_HOME/test/Bin/nightly -cron -notest
+$CHPL_HOME/test/Bin/nightly -cron -noruntime
 
 source ~/.chapelcshrc-xmt-cron
 
@@ -16,5 +16,5 @@ $CHPL_HOME/test/Bin/nightly -cron -examples -componly
 # 
 setenv CHPL_HOST_PLATFORM $CHPL_TARGET_PLATFORM
 unsetenv CHPL_TARGET_PLATFORM
-$CHPL_HOME/test/Bin/nightly -cron -notest
+$CHPL_HOME/test/Bin/nightly -cron -noruntime
 

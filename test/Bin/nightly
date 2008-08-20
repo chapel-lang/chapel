@@ -7,6 +7,7 @@ $interpret = 0;
 $printusage = 1;
 $debug = 1;
 $runtests = 1;
+$buildruntime = 1;
 $hello = 0;
 $examples = 0;
 $componly = 0;
@@ -27,6 +28,8 @@ while (@ARGV) {
         $interpret = 1;
     } elsif ($flag eq "-notest") {
         $runtests = 0;
+    } elsif ($flag eq "-noruntime") {
+	$buildruntime = 0;
     } elsif ($flag eq "-hello") {
 	$hello = 1;
     } elsif ($flag eq "-examples") {
@@ -62,6 +65,7 @@ if ($printusage == 1) {
     print "\t-debug       : check out sources and run for individual user (default)\n";
     print "\t-cron        : use for nightly cron runs only\n";
     print "\t-notest      : don't run the tests (check the build only)\n";
+    print "\t-noruntime   : don't build the runtime or run the tests\n";
     print "\t-examples    : run the release/examples tests only\n";
     print "\t-hello       : run the release/examples/hello.chpl test only\n";
     print "\t-valgrind    : run tests in valgrind mode\n";
@@ -192,6 +196,8 @@ if ($performance == 1) {
     $subjectid = " Baseline";
 } elsif ($runtests == 0) {
     $subjectid = " Build-only";
+} elsif ($buildruntime == 0) {
+    $subjectid = " Build-compiler-only";
 } elsif ($componly == 1) {
     $subjectid = " Compile-only";
 } elsif ($valgrind == 1) {
@@ -305,6 +311,24 @@ $makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "maki
 if ($makestat != 0) {
     mysystem("cd $chapeldir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
 }
+
+if ($buildruntime == 0) {
+    $shortstatus = "Passed";
+
+    $mailsubject = "$subjectid $shortstatus ($fullplatform)";
+    $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
+    
+    open(MAIL, $mailcommand);
+    
+    print MAIL "=== Summary ==========================================================\n";
+    print MAIL "Built compiler but not runtime, and did not run tests\n";
+    print MAIL "======================================================================\n";
+    print MAIL "\n";
+    
+    close(MAIL);
+    exit 0;
+}
+
 
 $makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 runtime", "making chapel runtime", 0, 1);
 if ($makestat != 0) {
