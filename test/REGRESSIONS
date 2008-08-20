@@ -53,123 +53,13 @@ failing nondeterministically (e.g., 04/04/08)
 gasnet-specific regressions
 ===========================
 
-segfault on GASNet (08/12/2008)
--------------------------------
-[Error matching program output for multilocale/bradc/configBadValue]
-[Error matching program output for multilocale/bradc/distribWarning]
-[Error matching program output for multilocale/bradc/locales/queryClassField]
-[Error matching program output for multilocale/bradc/locales/queryLocaleLocation]
-[Error matching program output for multilocale/bradc/locales/testOnPrimitive]
-[Error matching program output for multilocale/bradc/needMultiLocales/remoteRealIsLocal-blc]
-[Error matching program output for multilocale/bradc/needMultiLocales/remoteReal]
-[Error matching program output for multilocale/bradc/needMultiLocales/remoteString]
-[Error matching program output for multilocale/bradc/referToLocaleOne]
-[Error matching program output for multilocale/deitz/linked/test_linked1]
-[Error matching program output for multilocale/deitz/linked/test_linked2]
-[Error matching program output for multilocale/deitz/linked/test_linked3]
-[Error matching program output for multilocale/deitz/linked/test_linked3a]
-[Error matching program output for multilocale/deitz/linked/test_linked3b]
-[Error matching program output for multilocale/deitz/linked/test_linked3c]
-[Error matching program output for multilocale/deitz/linked/test_linked3d]
-[Error matching program output for multilocale/deitz/linked/test_linked3e]
-[Error matching program output for multilocale/deitz/linked/test_linked4]
-[Error matching program output for multilocale/deitz/needMultiLocales/privateLimitedDistributedArrayClass1]
-[Error matching program output for multilocale/deitz/needMultiLocales/privateLimitedDistributedArrayClass2]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_begin_then_on]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_dot_locale2]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_dot_locale3]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_dot_locale4]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_dot_locale]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_global_int]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_inout_arg]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_array]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_array_writeln]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_class1]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_class2]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_class3]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_int2]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_int]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_int_begin]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_record2]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_record3]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_record]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_string]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_sync]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_two_ints]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_module_use_locales]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_on_begin1]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_on_begin2]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_on_in_on2]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_on_in_on]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_remote_file_read]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_remote_file_read_class]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_remote_param]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_simple_write]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_termination1]
-[Error matching program output for multilocale/deitz/needMultiLocales/test_termination2]
-[Error matching program output for multilocale/deitz/oneOrMoreLocales/test_dot_locale_error]
-[Error matching program output for multilocale/deitz/oneOrMoreLocales/test_local_int3]
-[Error matching program output for multilocale/deitz/oneOrMoreLocales/test_trivial1]
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock1]
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock2]
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock3]
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock4]
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock5]
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock6]
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock7]
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock8]
-[Error matching program output for multilocale/diten/needMultiLocales/DijkstraTermination]
-[Error matching program output for multilocale/diten/needMultiLocales/beginInOn]
-[Error matching program output for multilocale/diten/needMultiLocales/coforall_on]
-[Error matching program output for multilocale/diten/needMultiLocales/nestedOn]
-[Error matching program output for multilocale/diten/needMultiLocales/remoteArrayOfString]
-[Error matching program output for multilocale/diten/needMultiLocales/remoteDomainIsLocal]
-[Error matching program output for multilocale/diten/needMultiLocales/remoteRealIsLocal]
-[Error matching program output for multilocale/diten/needMultiLocales/remoteString2]
-[Error matching program output for multilocale/diten/needMultiLocales/remoteStringClass]
-[Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
-[Error matching program output for multilocale/diten/needMultiLocales/remoteString]
-[Error matching program output for multilocale/diten/needMultiLocales/serialon]
-[Error matching program output for multilocale/diten/oneOrMoreLocales/1DBlockDistributedJacobi]
-[Error matching program output for multilocale/diten/oneOrMoreLocales/1DNonDistributedJacobi]
-[Error matching program output for multilocale/diten/oneOrMoreLocales/assocArrayOfRemoteArithArray]
-[Error matching program output for multilocale/gasnet/bradc/257threads-quiet]
-[Error matching program output for multilocale/gasnet/bradc/257threads]
-[Error matching program output for multilocale/numLocales/bradc/numLocales2]
-[Error matching program output for multilocale/numLocales/bradc/printNumLocalesTwo]
-[Error matching program output for parallel/serial/figueroa/MultiLocaleSerial]
-[Error matching program output for release/examples/hello-multiloc]
-[Error matching program output for release/examples/multilocale]
-[Error matching program output for stress/deitz/test_10k_ons]
-[Error matching program output for stress/deitz/test_10k_remote_coforall]
-[Error matching program output for stress/deitz/test_10k_remote_updates]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dclass]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented]
-[Error matching program output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
-[Error matching program output for studies/hpcc/common/bradc/unit/modifyLocales]
-[Error matching program output for studies/hpcc/common/bradc/unit/multipleDomains]
-[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
-[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
-[Error matching program output for studies/madness/aniruddha/madchap/test_mul]
-[Error matching program output for studies/madness/aniruddha/madchap/test_showboxes]
-[Error matching program output for studies/matrixMult/stonea/distributed/luLike2]
-[Error matching program output for studies/matrixMult/stonea/distributed/luLike]
-[Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
-[Error matching program output for users/agnieszka/multiArrayI10]
-[Error matching program output for users/agnieszka/multiArrayI]
-[Error matching program output for users/agnieszka/test1]
-[Error matching program output for users/agnieszka/test2]
-[Error matching program output for users/shetag/fock/fock-dyn-prog-cntr]
-[Error matching program output for users/shetag/fock/fock-dyn-prog-pool]
-[Error matching program output for users/shetag/fock/fock-stc-1]
-[Error matching program output for users/shetag/fock/fock-stc]
-[Error matching program output for users/shetag/iteratorWithoutOn]
+GASNet AMUDP poll returns AM_ERR_NOT_INIT
+-----------------------------------------
+[Error matching program output for
+multilocale/bradc/needMultiLocales/remoteReal]
 
-??? (08/07/08)
---------------
+non-lvalue passed to inout intent (08/07/08)
+--------------------------------------------
 [Error matching compiler output for functions/deitz/iterators/test_promote_inout]
 
 intermittent seg faults
@@ -193,8 +83,8 @@ memory issues (showed up in chpl_free timeframe)
 ------------------------------------------------
 [Error matching compiler output for memory/shannon/memtrackFlag]
 
-times out occasionally (race-y deadlock?) -- e.g., 06/15/2008, 06/18/2008
--------------------------------------------------------------------------
+times out occasionally (20x diff -- maybe memory leak related?)
+---------------------------------------------------------------
 [Error: Timed out executing program
 studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
 [Error: Timed out executing program
@@ -202,8 +92,8 @@ studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error: Timed out executing program
 studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
 [Error: Timed out executing program
-[Error: Timed out executing program
 studies/madness/aniruddha/madchap/test_likepy]
+[Error: Timed out executing program
 stress/deitz/test_10k_local_coforall_with_remote_update]
 
 ???
