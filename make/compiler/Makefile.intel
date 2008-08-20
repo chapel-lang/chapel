@@ -81,5 +81,6 @@ SUPPORT_SETENV_CFLAGS = -std=gnu89 -wr10121
 ifdef CHPL_DEVELOPER
 COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
+RUNTIME_GEN_CFLAGS += -Wno-unused
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 endif

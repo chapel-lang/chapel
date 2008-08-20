@@ -382,7 +382,9 @@ static void codegen_header(void) {
     if (!fnSymbol->hasPragma(PRAG_EXTERN)) {
       if (fRuntime && fnSymbol != chpl_main && !fnSymbol->hasPragma(PRAG_EXPORT))
         fprintf(outfile, "static ");
-      fnSymbol->codegenPrototype(outfile);
+      if (!fRuntime || 
+          (!fnSymbol->hasPragma(PRAG_EXPORT) && fnSymbol != chpl_main))
+        fnSymbol->codegenPrototype(outfile);
     }
   }
 
