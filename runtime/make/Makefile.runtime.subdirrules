@@ -5,8 +5,8 @@ depend: $(DEPENDSUBDIRS) echoruntimedir $(RUNTIME_OBJ_DIR_STAMP) $(DEPEND_DEPS)
 	@echo Updating subdir dependences...
 	@rm -f $(SVN_DEPENDS).tmp
 	@echo > $(SVN_DEPENDS).tmp
-	@$(MAKE) filedepend
 	$(OTHER_DEPEND_RULES)
+	@$(MAKE) filedepend
 	@mv -f $(SVN_DEPENDS).tmp $(SVN_DEPENDS)
 
 SVN_DEPS= $(SVN_SRCS:%.c=%.depend)

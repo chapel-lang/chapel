@@ -42,3 +42,6 @@ $(RUNTIME_OBJ_DIR)/chapel_code.o: chapel_code.c $(RUNTIME_OBJ_DIR_STAMP) chapel_
 
 chapel_code.c chapel_code.h: chapel_code.chpl $(CHPL)
 	export CHPL_HOME && CHPL_HOME=$(CHAPEL_ROOT) && $(CHPL) $(RUNTIME_CHPL_FLAGS) $<
+
+OTHER_DEPEND_RULES = \
+	@test -r chapel_code.h || (echo "/* PLACEHOLDER HEADER */" > chapel_code.h && touch chpl_code.chpl)
