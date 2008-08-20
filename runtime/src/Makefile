@@ -41,4 +41,4 @@ $(RUNTIME_OBJ_DIR)/chapel_code.o: chapel_code.c $(RUNTIME_OBJ_DIR_STAMP) chapel_
 	$(CC) -c $(RUNTIME_GEN_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
 
 chapel_code.c chapel_code.h: chapel_code.chpl $(CHPL)
-	CHPL_HOME=$(CHAPEL_ROOT) && $(CHPL) $(RUNTIME_CHPL_FLAGS) $<
+	export CHPL_HOME && CHPL_HOME=$(CHAPEL_ROOT) && $(CHPL) $(RUNTIME_CHPL_FLAGS) $<
