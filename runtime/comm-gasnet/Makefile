@@ -10,7 +10,7 @@ COMM_OBJDIR = $(RUNTIME_OBJDIR)
 COMM_LAUNCHER_OBJDIR = $(LAUNCHER_OBJDIR)
 include Makefile.share
 
-ifeq ($(MAKE_LAUNCHER),0)
+ifneq ($(MAKE_LAUNCHER),1)
 TARGETS = \
 	$(COMM_OBJS) \
 
