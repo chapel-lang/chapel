@@ -4,6 +4,9 @@
 #if defined __APPLE__ || defined __MTA__
 #include <sys/sysctl.h>
 #endif
+#if defined __MTA__
+#include <machine/runtime.h>
+#endif
 #include "chplrt.h"
 #include "chplsys.h"
 #include "chplthreads.h"
@@ -53,9 +56,7 @@ int32_t chpl_coresPerLocale(void) {
 #endif
   return numcores;
 #elif defined __MTA__
-  int mib[2] = {CTL_HW, HW_NCPU}, numcores;
-  size_t len = sizeof(numcores);
-  sysctl(mib, 2, &numcores, &len, NULL, 0);
+  int32_t numcores = mta_get_num_teams();
   return numcores;
 #else
   int32_t numcores = (int32_t)sysconf(_SC_NPROCESSORS_ONLN);

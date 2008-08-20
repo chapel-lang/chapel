@@ -10,7 +10,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int size;
   char baseCommand[256];
   char* command;
-  sprintf(baseCommand, "zebra -fast %s_real", argv[0]);
+  sprintf(baseCommand, "zebra -fast -r %s_real", argv[0]);
 
   size = strlen(baseCommand) + 1;
 
