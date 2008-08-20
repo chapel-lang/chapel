@@ -109,6 +109,8 @@
 		F7A456F30E1AC2BA0033D1FF /* tmpdirname.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7A456F20E1AC2BA0033D1FF /* tmpdirname.cpp */; };
 		F7A4FD2A0DE7AA9300CDE656 /* chpl_cfg_comm_locales.c in Sources */ = {isa = PBXBuildFile; fileRef = F7A4FD290DE7AA9300CDE656 /* chpl_cfg_comm_locales.c */; };
 		F7A4FD390DE7AB8D00CDE656 /* chplcomm_locales.h in Headers */ = {isa = PBXBuildFile; fileRef = F7A4FD380DE7AB8D00CDE656 /* chplcomm_locales.h */; };
+		F7F770250E5A53B200798483 /* pragmas.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7F770240E5A53B200798483 /* pragmas.cpp */; };
+		F7F770B20E5A751A00798483 /* chapel_code.chpl in Sources */ = {isa = PBXBuildFile; fileRef = F7F770950E5A72AD00798483 /* chapel_code.chpl */; };
 		F7FAC5100D45384C00C02B67 /* arg.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5010D45384C00C02B67 /* arg.c */; };
 		F7FAC5110D45384C00C02B67 /* chplcast.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5020D45384C00C02B67 /* chplcast.c */; };
 		F7FAC5120D45384C00C02B67 /* chplcomm.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5030D45384C00C02B67 /* chplcomm.c */; };
@@ -125,8 +127,7 @@
 		F7FAC5370D45390200C02B67 /* chpl_cfg_threads.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5360D45390200C02B67 /* chpl_cfg_threads.c */; };
 		F7FAC53B0D45391800C02B67 /* chpl_cfg_comm.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC53A0D45391800C02B67 /* chpl_cfg_comm.c */; };
 		F7FDB9410E53AB59006CE064 /* bitVec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7FDB9400E53AB59006CE064 /* bitVec.cpp */; };
-		F7FDB99A0E53B9E1006CE064 /* chapel_code.h in Headers */ = {isa = PBXBuildFile; fileRef = F7FDB9980E53B9E1006CE064 /* chapel_code.h */; };
-		F7FDB9AB0E53BAD8006CE064 /* chapel_code.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FDB9AA0E53BAD8006CE064 /* chapel_code.c */; settings = {COMPILER_FLAGS = "-Wno-unused-function -Wno-unused-variable"; }; };
+		F7FDBA3B0E5A4FCE006CE064 /* stdchplrt.h in Headers */ = {isa = PBXBuildFile; fileRef = F7FDBA3A0E5A4FCE006CE064 /* stdchplrt.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -151,6 +152,18 @@
 			);
 			script = "flex -o $DERIVED_FILES_DIR/$INPUT_FILE_BASE.yy.cpp $INPUT_FILE_PATH ";
 		};
+		F7F770900E5A716D00798483 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.chpl";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(DERIVED_FILES_DIR)/$(INPUT_FILE_BASE).c",
+				"$(DERIVED_FILES_DIR)/$(INPUT_FILE_BASE).h",
+			);
+			script = "set -x && cd $DERIVED_FILES_DIR && CHPL_HOME=$SRCROOT/.. $SRCROOT/../bin/darwin/chpl --runtime --no-checks $INPUT_FILE_PATH";
+		};
 /* End PBXBuildRule section */
 
 /* Begin PBXContainerItemProxy section */
@@ -167,6 +180,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = F7FAC4F80D4537A700C02B67;
 			remoteInfo = Runtime;
+		};
+		F7F770DC0E5BAD5E00798483 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8DD76F620486A84900D96B5E /* Chapel */;
+			remoteInfo = Chapel;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -447,6 +467,9 @@
 		F7A4FD2D0DE7AADB00CDE656 /* chpl_cfg_comm_locales.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm_locales.c; path = "../runtime/comm-gasnet/chpl_cfg_comm_locales.c"; sourceTree = SOURCE_ROOT; };
 		F7A4FD320DE7AB1B00CDE656 /* chpl_cfg_comm_locales.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm_locales.c; path = "../runtime/comm-armci/chpl_cfg_comm_locales.c"; sourceTree = SOURCE_ROOT; };
 		F7A4FD380DE7AB8D00CDE656 /* chplcomm_locales.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplcomm_locales.h; path = ../runtime/include/chplcomm_locales.h; sourceTree = SOURCE_ROOT; };
+		F7F770240E5A53B200798483 /* pragmas.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = pragmas.cpp; path = ../compiler/AST/pragmas.cpp; sourceTree = SOURCE_ROOT; };
+		F7F770280E5A53EF00798483 /* pragmas.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = pragmas.h; path = ../compiler/include/pragmas.h; sourceTree = SOURCE_ROOT; };
+		F7F770950E5A72AD00798483 /* chapel_code.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = chapel_code.chpl; path = ../runtime/src/chapel_code.chpl; sourceTree = SOURCE_ROOT; };
 		F7FAC4F90D4537A700C02B67 /* libchpl.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libchpl.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7FAC5010D45384C00C02B67 /* arg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = arg.c; path = ../runtime/src/arg.c; sourceTree = SOURCE_ROOT; };
 		F7FAC5020D45384C00C02B67 /* chplcast.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplcast.c; path = ../runtime/src/chplcast.c; sourceTree = SOURCE_ROOT; };
@@ -484,13 +507,11 @@
 		F7FAC5510D4539E400C02B67 /* stdchpl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stdchpl.h; path = ../runtime/include/stdchpl.h; sourceTree = "<group>"; };
 		F7FDB9390E53AADF006CE064 /* bitVec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bitVec.h; path = ../compiler/include/bitVec.h; sourceTree = SOURCE_ROOT; };
 		F7FDB9400E53AB59006CE064 /* bitVec.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = bitVec.cpp; path = ../compiler/adt/bitVec.cpp; sourceTree = SOURCE_ROOT; };
-		F7FDB9980E53B9E1006CE064 /* chapel_code.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chapel_code.h; path = ../runtime/include/chapel_code.h; sourceTree = SOURCE_ROOT; };
-		F7FDB9AA0E53BAD8006CE064 /* chapel_code.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chapel_code.c; path = ../runtime/src/chapel_code.c; sourceTree = SOURCE_ROOT; };
 		F7FDB9D10E53C580006CE064 /* chpllaunch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpllaunch.h; path = ../runtime/include/chpllaunch.h; sourceTree = SOURCE_ROOT; };
-		F7FDB9D40E53C5AD006CE064 /* chapel_code.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = chapel_code.chpl; path = ../runtime/src/chapel_code.chpl; sourceTree = SOURCE_ROOT; };
 		F7FDB9D50E53C5AD006CE064 /* main_launcher.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = main_launcher.c; path = ../runtime/src/main_launcher.c; sourceTree = SOURCE_ROOT; };
 		F7FDB9DC0E53C64F006CE064 /* processTokens.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = processTokens.h; path = ../compiler/parser/processTokens.h; sourceTree = SOURCE_ROOT; };
 		F7FDB9E70E53C706006CE064 /* lexyacc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lexyacc.h; path = ../compiler/parser/lexyacc.h; sourceTree = SOURCE_ROOT; };
+		F7FDBA3A0E5A4FCE006CE064 /* stdchplrt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stdchplrt.h; path = ../runtime/include/stdchplrt.h; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -559,6 +580,7 @@
 				F721A0DF0D455BE300A6B43F /* build.cpp */,
 				F721A0E00D455BE300A6B43F /* expr.cpp */,
 				F721A0E10D455BE300A6B43F /* iterator.cpp */,
+				F7F770240E5A53B200798483 /* pragmas.cpp */,
 				F721A0E20D455BE300A6B43F /* primitive.cpp */,
 				F721A0E30D455BE300A6B43F /* stmt.cpp */,
 				F721A0E40D455BE300A6B43F /* symbol.cpp */,
@@ -719,6 +741,7 @@
 				F721A1D40D45616800A6B43F /* parser.h */,
 				F721A1D50D45616800A6B43F /* passes.h */,
 				F731139E0E3EB6A800F62922 /* passlist.h */,
+				F7F770280E5A53EF00798483 /* pragmas.h */,
 				F721A1D60D45616800A6B43F /* primitive.h */,
 				F7FDB9DC0E53C64F006CE064 /* processTokens.h */,
 				F73113C70E3EB7E200F62922 /* resolution.h */,
@@ -740,7 +763,6 @@
 			isa = PBXGroup;
 			children = (
 				F7FAC53E0D4539E400C02B67 /* arg.h */,
-				F7FDB9980E53B9E1006CE064 /* chapel_code.h */,
 				F7FAC53F0D4539E400C02B67 /* chpl_md.h */,
 				F7FAC5400D4539E400C02B67 /* chplcast.h */,
 				F7FAC5410D4539E400C02B67 /* chplcgfns.h */,
@@ -760,6 +782,7 @@
 				F7FAC54F0D4539E400C02B67 /* error.h */,
 				F7FAC5500D4539E400C02B67 /* gdb.h */,
 				F7FAC5510D4539E400C02B67 /* stdchpl.h */,
+				F7FDBA3A0E5A4FCE006CE064 /* stdchplrt.h */,
 			);
 			name = "Header files";
 			sourceTree = "<group>";
@@ -998,7 +1021,6 @@
 		F7B66D0F0D59738D00A53F3E /* Other sources */ = {
 			isa = PBXGroup;
 			children = (
-				F7FDB9D40E53C5AD006CE064 /* chapel_code.chpl */,
 				F7FDB9D10E53C580006CE064 /* chpllaunch.h */,
 				F7FDB9D50E53C5AD006CE064 /* main_launcher.c */,
 				F7665EE80D7F3B8400A55EBF /* Standard Modules */,
@@ -1010,8 +1032,8 @@
 		F7FAC5230D45389000C02B67 /* Runtime */ = {
 			isa = PBXGroup;
 			children = (
+				F7F770950E5A72AD00798483 /* chapel_code.chpl */,
 				F7FAC5010D45384C00C02B67 /* arg.c */,
-				F7FDB9AA0E53BAD8006CE064 /* chapel_code.c */,
 				F7FAC5020D45384C00C02B67 /* chplcast.c */,
 				F7FAC5030D45384C00C02B67 /* chplcomm.c */,
 				F7FAC5040D45384C00C02B67 /* chplcopygc.c */,
@@ -1067,7 +1089,7 @@
 				F721A2340D458F1600A6B43F /* chpl_cfg_comm.h in Headers */,
 				F721A2390D458F6800A6B43F /* chpl_cfg_threads.h in Headers */,
 				F7A4FD390DE7AB8D00CDE656 /* chplcomm_locales.h in Headers */,
-				F7FDB99A0E53B9E1006CE064 /* chapel_code.h in Headers */,
+				F7FDBA3B0E5A4FCE006CE064 /* stdchplrt.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1107,8 +1129,10 @@
 				F721A23D0D4590F000A6B43F /* ShellScript */,
 			);
 			buildRules = (
+				F7F770900E5A716D00798483 /* PBXBuildRule */,
 			);
 			dependencies = (
+				F7F770DD0E5BAD5E00798483 /* PBXTargetDependency */,
 			);
 			name = Runtime;
 			productName = Runtime;
@@ -1244,6 +1268,7 @@
 				F73113C10E3EB7C000F62922 /* lowerIterators.cpp in Sources */,
 				F73113C20E3EB7C000F62922 /* wrappers.cpp in Sources */,
 				F7FDB9410E53AB59006CE064 /* bitVec.cpp in Sources */,
+				F7F770250E5A53B200798483 /* pragmas.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1251,6 +1276,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F7F770B20E5A751A00798483 /* chapel_code.chpl in Sources */,
 				F7FAC5100D45384C00C02B67 /* arg.c in Sources */,
 				F7FAC5110D45384C00C02B67 /* chplcast.c in Sources */,
 				F7FAC5120D45384C00C02B67 /* chplcomm.c in Sources */,
@@ -1267,7 +1293,6 @@
 				F7FAC5370D45390200C02B67 /* chpl_cfg_threads.c in Sources */,
 				F7FAC53B0D45391800C02B67 /* chpl_cfg_comm.c in Sources */,
 				F7A4FD2A0DE7AA9300CDE656 /* chpl_cfg_comm_locales.c in Sources */,
-				F7FDB9AB0E53BAD8006CE064 /* chapel_code.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1283,6 +1308,11 @@
 			isa = PBXTargetDependency;
 			target = F7FAC4F80D4537A700C02B67 /* Runtime */;
 			targetProxy = F721A2050D45887200A6B43F /* PBXContainerItemProxy */;
+		};
+		F7F770DD0E5BAD5E00798483 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8DD76F620486A84900D96B5E /* Chapel */;
+			targetProxy = F7F770DC0E5BAD5E00798483 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1405,6 +1435,8 @@
 					"-Wnested-externs",
 					"-Wdeclaration-after-statement",
 					"-Wmissing-format-attribute",
+					"-Wno-unused-function",
+					"-Wno-unused-variable",
 				);
 				PREBINDING = NO;
 				PRODUCT_NAME = chpl;
@@ -1439,6 +1471,8 @@
 					"-Wnested-externs",
 					"-Wdeclaration-after-statement",
 					"-Wmissing-format-attribute",
+					"-Wno-unused-function",
+					"-Wno-unused-variable",
 				);
 				PREBINDING = NO;
 				PRODUCT_NAME = chpl;
