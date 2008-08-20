@@ -50,7 +50,7 @@ static void makeRefType(Type* type) {
   if (!type || type == dtMethodToken || type == dtUnknown)
     return;
 
-  if (type->refType || type->isGeneric || type->symbol->hasPragma(PRAG_REF))
+  if (type->refType || type->symbol->hasPragma(PRAG_GENERIC) || type->symbol->hasPragma(PRAG_REF))
     return;
 
   CallExpr* call = new CallExpr("_type_construct__ref", type->symbol);
@@ -338,7 +338,7 @@ void
 resolveFormals(FnSymbol* fn) {
   static Vec<FnSymbol*> done;
 
-  if (!fn->isGeneric) {
+  if (!fn->hasPragma(PRAG_GENERIC)) {
     if (done.set_in(fn))
       return;
     done.set_add(fn);
@@ -448,7 +448,7 @@ canInstantiate(Type* actualType, Type* formalType) {
 bool
 canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion) {
   if (actualType->symbol->hasPragma(PRAG_SYNC)) {
-    if (actualType->isGeneric) {
+    if (actualType->symbol->hasPragma(PRAG_GENERIC)) {
       return false;
     } else {
       Type *base_type = actualType->substitutions.v[0].value->type;
@@ -671,7 +671,7 @@ computeActualFormalMap(FnSymbol* fn,
       int j = -1;
       for_formals(formal, fn) {
         if (formal->variableExpr)
-          return (fn->isGeneric) ? true : false;
+          return (fn->hasPragma(PRAG_GENERIC)) ? true : false;
         j++;
         if (!formalActuals->v[j]) {
           match = true;
@@ -681,7 +681,7 @@ computeActualFormalMap(FnSymbol* fn,
           break;
         }
       }
-      if (!match && !fn->isGeneric)
+      if (!match && !fn->hasPragma(PRAG_GENERIC))
         return false;
     }
   }
@@ -722,7 +722,7 @@ computeGenericSubs(SymbolMap &subs,
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
       if (formalSyms->v[i] && formalSyms->v[i]->isParameter()) {
-        if (!formal->type->isGeneric ||
+        if (!formal->type->symbol->hasPragma(PRAG_GENERIC) ||
             canInstantiate(formalActuals->v[i], formal->type))
           subs.put(formal, formalSyms->v[i]);
       } else if (!formalActuals->v[i] && formal->defaultExpr) {
@@ -736,12 +736,12 @@ computeGenericSubs(SymbolMap &subs,
         resolveBlock(formal->defaultExpr);
         SymExpr* se = toSymExpr(formal->defaultExpr->body.tail);
         if (se && se->var->isParameter() &&
-            (!formal->type->isGeneric || canInstantiate(se->var->type, formal->type)))
+            (!formal->type->symbol->hasPragma(PRAG_GENERIC) || canInstantiate(se->var->type, formal->type)))
           subs.put(formal, se->var);
         else
           INT_FATAL(fn, "unable to handle default parameter");
       }
-    } else if (formal->type->isGeneric) {
+    } else if (formal->type->symbol->hasPragma(PRAG_GENERIC)) {
 
       //
       // check for field with specified generic type
@@ -786,7 +786,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
     // set genericArg to true if a generic argument appears before the
     // argument with the variable expression
     //
-    if (arg->type->isGeneric)
+    if (arg->type->symbol->hasPragma(PRAG_GENERIC))
       genericArg = true;
 
     if (!arg->variableExpr)
@@ -876,7 +876,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
         }
       }
       
-    } else if (!fn->isGeneric)
+    } else if (!fn->hasPragma(PRAG_GENERIC))
       INT_FATAL("bad variableExpr");
   }
   return fn;
@@ -909,7 +909,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     return;
   }
 
-  if (fn->isGeneric) {
+  if (fn->hasPragma(PRAG_GENERIC)) {
 
     //
     // try to avoid excessive over-instantiation
@@ -917,13 +917,13 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     if (fn->numFormals() == formalActuals.n) {
       int i = 0;
       for_formals(formal, fn) {
-        if (!formal->type->isGeneric &&
+        if (!formal->type->symbol->hasPragma(PRAG_GENERIC) &&
             formal->type != dtUnknown &&
             formalActuals.v[i] &&
             !canDispatch(formalActuals.v[i], formalSyms.v[i], formal->type, fn, NULL, formal->instantiatedParam)) {
           delete actualFormals;
           return;
-        } else if (formal->type->isGeneric &&
+        } else if (formal->type->symbol->hasPragma(PRAG_GENERIC) &&
                    formal->type != dtUnknown &&
                    formalActuals.v[i]) {
           Type* vt = getValueType(formalActuals.v[i]);
@@ -952,7 +952,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     return;
   }
 
-  if (fn->isGeneric)
+  if (fn->hasPragma(PRAG_GENERIC))
     INT_FATAL(fn, "unexpected generic function");
 
   //
@@ -1511,7 +1511,7 @@ resolveDefaultGenericType(CallExpr* call) {
     if (SymExpr* te = toSymExpr(actual)) {
       if (TypeSymbol* ts = toTypeSymbol(te->var)) {
         if (ClassType* ct = toClassType(ts->type)) {
-          if (ct->isGeneric) {
+          if (ct->symbol->hasPragma(PRAG_GENERIC)) {
             CallExpr* cc = new CallExpr(ct->defaultTypeConstructor->name);
             te->replace(cc);
             resolveCall(cc);
@@ -2321,7 +2321,7 @@ preFold(Expr* expr) {
         Type* lt = call->get(1)->typeInfo();
         Type* rt = call->get(2)->typeInfo();
         if (lt != dtUnknown && rt != dtUnknown &&
-            !lt->isGeneric && !rt->isGeneric) {
+            !lt->symbol->hasPragma(PRAG_GENERIC) && !rt->symbol->hasPragma(PRAG_GENERIC)) {
           result = (lt == rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
           call->replace(result);
         }
@@ -2331,7 +2331,7 @@ preFold(Expr* expr) {
         Type* lt = call->get(1)->typeInfo();
         Type* rt = call->get(2)->typeInfo();
         if (lt != dtUnknown && rt != dtUnknown &&
-            !lt->isGeneric && !rt->isGeneric) {
+            !lt->symbol->hasPragma(PRAG_GENERIC) && !rt->symbol->hasPragma(PRAG_GENERIC)) {
           result = (lt != rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
           call->replace(result);
         }
@@ -2674,7 +2674,7 @@ postFold(Expr* expr) {
         if (rt->symbol->hasPragma(PRAG_REF))
           rt = getValueType(rt);
         if (lt != dtUnknown && rt != dtUnknown && lt != dtAny &&
-            rt != dtAny && !lt->isGeneric) {
+            rt != dtAny && !lt->symbol->hasPragma(PRAG_GENERIC)) {
           bool is_true = false;
           if (lt->instantiatedFrom == rt)
             is_true = true;
@@ -2999,7 +2999,7 @@ resolveBlock(Expr* body) {
           !sym->var->isTypeVariable) {
 
         if (ClassType* ct = toClassType(sym->typeInfo())) {
-          if (!ct->isGeneric && !ct->symbol->hasPragma(PRAG_ITERATOR_CLASS)) {
+          if (!ct->symbol->hasPragma(PRAG_GENERIC) && !ct->symbol->hasPragma(PRAG_ITERATOR_CLASS)) {
             resolveFormals(ct->defaultTypeConstructor);
             if (resolvedFormals.set_in(ct->defaultTypeConstructor))
               resolveFns(ct->defaultTypeConstructor);
@@ -3315,19 +3315,19 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
     if (cfn && !cfn->instantiatedFrom && possible_signature_match(pfn, cfn)) {
       Vec<Type*> types;
-      if (ct->isGeneric)
+      if (ct->symbol->hasPragma(PRAG_GENERIC))
         collectInstantiatedClassTypes(types, ct);
       else
         types.add(ct);
       forv_Vec(Type, type, types) {
         SymbolMap subs;
-        if (ct->isGeneric)
+        if (ct->symbol->hasPragma(PRAG_GENERIC))
           subs.put(cfn->getFormal(2), type->symbol);
         for (int i = 3; i <= cfn->numFormals(); i++) {
           ArgSymbol* arg = cfn->getFormal(i);
           if (arg->intent == INTENT_PARAM) {
             subs.put(arg, paramMap.get(pfn->getFormal(i)));
-          } else if (arg->type->isGeneric) {
+          } else if (arg->type->symbol->hasPragma(PRAG_GENERIC)) {
             subs.put(arg, pfn->getFormal(i)->type->symbol);
           }
         }
@@ -3378,7 +3378,7 @@ add_all_children_ddf(FnSymbol* fn, ClassType* ct) {
   forv_Vec(Type, t, ct->dispatchChildren) {
     ClassType* ct = toClassType(t);
     if (ct->defaultTypeConstructor &&
-        (ct->defaultTypeConstructor->isGeneric ||
+        (ct->defaultTypeConstructor->hasPragma(PRAG_GENERIC) ||
          resolvedFns.set_in(ct->defaultTypeConstructor))) {
       add_to_ddf(fn, ct);
     }
@@ -3396,7 +3396,7 @@ build_ddf() {
       if (fn->numFormals() > 1) {
         if (fn->getFormal(1)->type == dtMethodToken) {
           if (ClassType* pt = toClassType(fn->getFormal(2)->type)) {
-            if (pt->classTag == CLASS_CLASS && !pt->isGeneric) {
+            if (pt->classTag == CLASS_CLASS && !pt->symbol->hasPragma(PRAG_GENERIC)) {
               add_all_children_ddf(fn, pt);
             }
           }
@@ -3487,7 +3487,7 @@ resolve() {
   // '?' (queries) to mark such a type as generic.
   //
   forv_Vec(FnSymbol, fn, gFns) {
-    bool unmark = fn->isGeneric;
+    bool unmark = fn->hasPragma(PRAG_GENERIC);
     for_formals(formal, fn) {
       if (formal->type->hasGenericDefaults) {
         if (!formal->markedGeneric &&
@@ -3499,12 +3499,12 @@ resolve() {
         } else {
           unmark = false;
         }
-      } else if (formal->type->isGeneric || formal->intent == INTENT_PARAM) {
+      } else if (formal->type->symbol->hasPragma(PRAG_GENERIC) || formal->intent == INTENT_PARAM) {
         unmark = false;
       }
     }
     if (unmark) {
-      fn->isGeneric = false;
+      fn->removePragma(PRAG_GENERIC);
       INT_ASSERT(false);
     }
   }

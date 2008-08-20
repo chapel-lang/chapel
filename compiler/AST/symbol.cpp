@@ -458,7 +458,6 @@ FnSymbol::FnSymbol(const char* initName) :
   fnTag(FN_FUNCTION),
   retTag(RET_VALUE),
   iteratorInfo(NULL),
-  isGeneric(false),
   _this(NULL),
   _outer(NULL),
   isMethod(false),
@@ -529,7 +528,6 @@ FnSymbol::copyInner(SymbolMap* map) {
   copy->retTag = retTag;
   copy->retExprType = COPY_INT(retExprType);
   copy->cname = cname;
-  copy->isGeneric = isGeneric;
   copy->_this = _this;
   copy->_outer = _outer;
   copy->isMethod = isMethod;
@@ -734,7 +732,7 @@ hasGenericArgs(FnSymbol* fn) {
   bool isGeneric = false;
   bool hasGenericDefaults = true;
   for_formals(formal, fn) {
-    if ((formal->type->isGeneric &&
+    if ((formal->type->symbol->hasPragma(PRAG_GENERIC) &&
          (!formal->type->hasGenericDefaults ||
           formal->markedGeneric ||
           formal == fn->_this ||
@@ -755,12 +753,12 @@ hasGenericArgs(FnSymbol* fn) {
 
 
 bool FnSymbol::tag_generic() {
-  if (isGeneric)
+  if (hasPragma(PRAG_GENERIC))
     return false;
   if (int result = hasGenericArgs(this)) {
-    isGeneric = 1;
+    addPragma(PRAG_GENERIC);
     if (retType != dtUnknown && hasPragma(PRAG_TYPE_CONSTRUCTOR)) {
-      retType->isGeneric = true;
+      retType->symbol->addPragma(PRAG_GENERIC);
       if (result == 2)
         retType->hasGenericDefaults = true;
     }

@@ -157,7 +157,6 @@ class FnSymbol : public Symbol {
   FnTag fnTag;
   RetTag retTag;
   IteratorInfo* iteratorInfo;
-  bool isGeneric;
   Symbol* _this;
   Symbol* _outer;
   bool isMethod;

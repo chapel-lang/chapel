@@ -349,7 +349,6 @@ static void build_enum_enumerate_function(EnumType* et) {
   // Each enum type has its own _enum_enumerate function.
   FnSymbol* fn = new FnSymbol("_enum_enumerate");
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
-  //  arg->isGeneric = false;
   arg->isTypeVariable = true;
   fn->insertFormalAtTail(arg);
   fn->where = new BlockStmt(new CallExpr("==", arg, et->symbol));
@@ -373,7 +372,6 @@ static void build_enum_cast_function(EnumType* et) {
   FnSymbol* fn = new FnSymbol("_cast");
   fn->isCompilerTemp = true;
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
-  //  arg1->isGeneric = false;
   arg1->isTypeVariable = true;
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtIntegral);
   fn->insertFormalAtTail(arg1);
@@ -419,7 +417,6 @@ static void build_enum_cast_function(EnumType* et) {
   fn = new FnSymbol("_cast");
   fn->isCompilerTemp = true;
   arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
-  //  arg1->isGeneric = false;
   arg1->isTypeVariable = true;
   arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtString);
   fn->insertFormalAtTail(arg1);

@@ -40,7 +40,6 @@ class Type : public BaseAST {
   FnSymbol *defaultConstructor;
   FnSymbol *defaultTypeConstructor;
   Vec<FnSymbol*> methods;
-  bool isGeneric;
   bool hasGenericDefaults; // all generic fields have defaults
   Type *instantiatedFrom;
   SymbolMap substitutions;

@@ -312,7 +312,7 @@ FnSymbol*
 instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   form_Map(SymbolMapElem, e, *subs) {
     if (TypeSymbol* ts = toTypeSymbol(e->value)) {
-      if (ts->type->isGeneric)
+      if (ts->type->symbol->hasPragma(PRAG_GENERIC))
         INT_FATAL(fn, "illegal instantiation with a generic type");
       TypeSymbol* nts = getNewSubType(fn, e->key, ts);
       if (ts != nts)
@@ -377,6 +377,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
       INT_FATAL(fn, "generic type has subtypes");
     newType->instantiatedFrom = fn->retType;
     newType->substitutions.map_union(*subs);
+    newType->symbol->removePragma(PRAG_GENERIC);
   }
 
   //
@@ -393,7 +394,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
 
   //printf("newFn: %d %s\n", newFn->id, newFn->cname);
 
-  newFn->isGeneric = false;
+  newFn->removePragma(PRAG_GENERIC);
   newFn->addPragma(PRAG_INVISIBLE_FN);
   newFn->instantiatedFrom = fn;
 
@@ -443,7 +444,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
       if (formal->intent == INTENT_PARAM) {
         newFormal->intent = INTENT_BLANK;
         newFormal->instantiatedParam = true;
-        if (newFormal->type->isGeneric)
+        if (newFormal->type->symbol->hasPragma(PRAG_GENERIC))
           newFormal->type = paramMap.get(newFormal)->type;
       } else {
         newFormal->instantiatedFrom = formal->type;
@@ -481,7 +482,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
 
   newFn->tag_generic();
 
-  if (!newFn->isGeneric && evaluateWhereClause(newFn) == false) {
+  if (!newFn->hasPragma(PRAG_GENERIC) && evaluateWhereClause(newFn) == false) {
     //
     // where clause evaluates to false so cache gVoid as a function
     //
@@ -492,7 +493,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   if (explainInstantiationLine == -2)
     parseExplainFlag(fExplainInstantiation, &explainInstantiationLine, &explainInstantiationModule);
 
-  if (!newFn->isGeneric && explainInstantiationLine) {
+  if (!newFn->hasPragma(PRAG_GENERIC) && explainInstantiationLine) {
     explainInstantiation(newFn);
   }
 

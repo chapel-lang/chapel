@@ -49,6 +49,7 @@ enum PragmaTag {
   PRAG_EXPORT,
   PRAG_EXPR_TEMP, // temporary that stores the result of an expression
   PRAG_EXTERN, // extern variables, types, and functions
+  PRAG_GENERIC, // generic types and functions
   PRAG_HEAP,
   PRAG_INDEX_VAR,
   PRAG_INLINE,

@@ -16,7 +16,6 @@ Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   defaultValue(init_defaultVal),
   defaultConstructor(NULL),
   defaultTypeConstructor(NULL),
-  isGeneric(false),
   hasGenericDefaults(false),
   instantiatedFrom(NULL),
   refType(NULL)
@@ -523,19 +522,19 @@ void initPrimitiveTypes(void) {
   gTaskList->cname = "NULL";
 
   dtAny = createPrimitiveType ("_any", "_any");
-  dtAny->isGeneric = true;
+  dtAny->symbol->addPragma(PRAG_GENERIC);
   dtIntegral = createPrimitiveType ("integral", "integral");
-  dtIntegral->isGeneric = true;
+  dtIntegral->symbol->addPragma(PRAG_GENERIC);
   dtNumeric = createPrimitiveType ("numeric", "numeric");
-  dtNumeric->isGeneric = true;
+  dtNumeric->symbol->addPragma(PRAG_GENERIC);
   dtIterator = createPrimitiveType("_iteratorClass", "_iteratorClass");
-  dtIterator->isGeneric = true;
+  dtIterator->symbol->addPragma(PRAG_GENERIC);
   dtMethodToken = createPrimitiveType ("_MT", "_MT");
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
   dtModuleToken = createPrimitiveType("tmodule=", "tmodule=");
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
   dtEnumerated = createPrimitiveType ("enumerated", "enumerated");
-  dtEnumerated->isGeneric = true;
+  dtEnumerated->symbol->addPragma(PRAG_GENERIC);
 }
 
 

@@ -28,7 +28,7 @@ CallInfo::CallInfo(CallExpr* icall) : call(icall), scope(NULL) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
     Type* t = se->var->type;
-    if (t == dtUnknown || t->isGeneric)
+    if (t == dtUnknown || t->symbol->hasPragma(PRAG_GENERIC))
       INT_FATAL(call, "actual type is unknown or generic");
     actuals.add(se->var);
   }

@@ -44,6 +44,7 @@ initPragmas() {
   definePragma(PRAG_EXPORT, "export");
   definePragma(PRAG_EXPR_TEMP, "expr temp");
   definePragma(PRAG_EXTERN, "extern");
+  definePragma(PRAG_GENERIC, "generic");
   definePragma(PRAG_HEAP, "heap");
   definePragma(PRAG_INDEX_VAR, "index var");
   definePragma(PRAG_INLINE, "inline");
