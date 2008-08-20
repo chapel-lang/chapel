@@ -7,7 +7,7 @@
 #define NDEBUG
 #endif
 
-#include "../src/chapel_code.h"
+#include "chapel_code.h"
 #include "chplcomm.h"
 #include "chplexit.h"
 #include "chplmem.h"
