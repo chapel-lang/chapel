@@ -211,17 +211,17 @@ void globalCopyPropagation(FnSymbol* fn) {
   buildDefUseSets(locals, fn, defSet, useSet);
 
   //
-  // _LHS: left-hand side of copy
-  // _RHS: right-hand side of copy
-  // _N: basic block locations; basic block i contains the copies from
-  //     _N(i-1) to _N(i)
+  // spsLHS: left-hand side of copy
+  // spsRHS: right-hand side of copy
+  // spsN: basic block locations; basic block i contains the copies from
+  //     spsN(i-1) to spsN(i)
   //
   // Compute sparse versions of these vectors; convert to dense and
-  // drop _; these are sparse to zero out invalidated copies
+  // drop sps; these are sparse to zero out invalidated copies
   //
-  Vec<int> _N;
-  Vec<SymExpr*> _LHS;
-  Vec<SymExpr*> _RHS;
+  Vec<int> spsN;
+  Vec<SymExpr*> spsLHS;
+  Vec<SymExpr*> spsRHS;
   int start = 0;
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     forv_Vec(Expr, expr, bb->exprs) {
@@ -235,11 +235,11 @@ void globalCopyPropagation(FnSymbol* fn) {
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
           if (invalidateCopies(se, defSet, useSet)) {
-            for (int i = start; i < _LHS.n; i++) {
-              if (_LHS.v[i]) {
-                if (_LHS.v[i]->var == se->var || _RHS.v[i]->var == se->var) {
-                  _LHS.v[i] = 0;
-                  _RHS.v[i] = 0;
+            for (int i = start; i < spsLHS.n; i++) {
+              if (spsLHS.v[i]) {
+                if (spsLHS.v[i]->var == se->var || spsRHS.v[i]->var == se->var) {
+                  spsLHS.v[i] = 0;
+                  spsRHS.v[i] = 0;
                 }
               }
             }
@@ -257,12 +257,12 @@ void globalCopyPropagation(FnSymbol* fn) {
               if (lhs->var != rhs->var &&
                   defSet.set_in(lhs) &&
                   (useSet.set_in(rhs) || rhs->var->isConstant() || rhs->var->isImmediate())) {
-                _LHS.add(lhs);
-                _RHS.add(rhs);
+                spsLHS.add(lhs);
+                spsRHS.add(rhs);
               }
     }
-    _N.add(_LHS.n);
-    start = _LHS.n;
+    spsN.add(spsLHS.n);
+    start = spsLHS.n;
   }
 
 #ifdef DEBUG_CP
@@ -273,7 +273,7 @@ void globalCopyPropagation(FnSymbol* fn) {
 #endif
 
   //
-  // Turn sparse _LHS, _RHS, _N into dense LHS, RHS, N
+  // Turn sparse spsLHS, spsRHS, spsN into dense LHS, RHS, N
   //
   Vec<int> N;
   Vec<SymExpr*> LHS;
@@ -285,13 +285,13 @@ void globalCopyPropagation(FnSymbol* fn) {
 #ifdef DEBUG_CP
     printf("%d:\n", i);
 #endif
-    while (j < _N.v[i]) {
-      if (_LHS.v[j]) {
+    while (j < spsN.v[i]) {
+      if (spsLHS.v[j]) {
 #ifdef DEBUG_CP
-        list_view(_LHS.v[j]->parentExpr);
+        list_view(spsLHS.v[j]->parentExpr);
 #endif
-        LHS.add(_LHS.v[j]);
-        RHS.add(_RHS.v[j]);
+        LHS.add(spsLHS.v[j]);
+        RHS.add(spsRHS.v[j]);
       }
       j++;
     }
