@@ -344,6 +344,9 @@ $testflags = "-logfile $rawlog";
 if ($ENV{'CHPL_TARGET_PLATFORM'} eq "mta") {
     $testflags = "$testflags -compopts '--ldflags -static'";
 }
+if ($ENV{'CHPL_TARGET_PLATFORM'} eq "xmt-sim") {
+    $testflags = "$testflags -compopts '--savec output'";
+}
 if ($interpret == 1) {
     $testflags = "$testflags -interpret";
 }
