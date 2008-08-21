@@ -125,10 +125,16 @@ buildBreadthFirstUseTree(Vec<ModuleSymbol*>* current,
   queue.add(current);
   Vec<ModuleSymbol*>* next = new Vec<ModuleSymbol*>;
   forv_Vec(ModuleSymbol, module, *current) {
-    forv_Vec(ModuleSymbol, mod, module->block->modUses) {
-      if (!alreadySeen->set_in(mod)) {
-        next->add(mod);
-        alreadySeen->set_add(mod);
+    if (module->block->modUses) {
+      for_actuals(expr, module->block->modUses) {
+        SymExpr* se = toSymExpr(expr);
+        INT_ASSERT(se);
+        ModuleSymbol* mod = toModuleSymbol(se->var);
+        INT_ASSERT(mod);
+        if (!alreadySeen->set_in(mod)) {
+          next->add(mod);
+          alreadySeen->set_add(mod);
+        }
       }
     }
   }
@@ -175,10 +181,20 @@ lookup(BaseAST* scope,
   }
   if (symbols.n == 0 && scanModuleUses) {
     BlockStmt* block = toBlockStmt(scope);
-    Vec<ModuleSymbol*>* modules = (block) ? &block->modUses : NULL;
-    if (modules && modules->n > 0) {
+    
+    Vec<ModuleSymbol*> modules;
+    if (block && block->modUses) {
+      for_actuals(expr, block->modUses) {
+        SymExpr* se = toSymExpr(expr);
+        INT_ASSERT(se);
+        ModuleSymbol* mod = toModuleSymbol(se->var);
+        INT_ASSERT(mod);
+        modules.add(mod);
+      }
+    }
+    if (modules.n) {
       Vec<Vec<ModuleSymbol*>*> moduleQueue;
-      buildBreadthFirstUseTree(modules, moduleQueue);
+      buildBreadthFirstUseTree(&modules, moduleQueue);
       forv_Vec(Vec<ModuleSymbol*>, layer, moduleQueue) {
         forv_Vec(ModuleSymbol, mod, *layer) {
           if (mod == rootModule)
@@ -830,9 +846,9 @@ process_import_expr(CallExpr* call) {
   call->getStmtExpr()->insertBefore(new CondStmt(new SymExpr(mod->guard), buildOnStmt(new CallExpr(PRIMITIVE_ON_LOCALE_NUM, new SymExpr(new_IntSymbol(0))), new CallExpr(mod->initFn))));
   call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, mod->guard, gFalse));
   if (call->getFunction() == call->getModule()->initFn)
-    call->getModule()->block->modUses.add(mod);
+    call->getModule()->block->addUse(mod);
   else
-    getVisibilityBlock(call)->modUses.add(mod);
+    getVisibilityBlock(call)->addUse(mod);
   call->getStmtExpr()->remove();
 }
 

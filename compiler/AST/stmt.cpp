@@ -1,4 +1,5 @@
 #include <string.h>
+#include "astutil.h"
 #include "expr.h"
 #include "files.h"
 #include "misc.h"
@@ -20,7 +21,8 @@ BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
   Expr(STMT_BLOCK),
   blockTag(init_blockTag),
   body(),
-  loopInfo(NULL)
+  loopInfo(NULL),
+  modUses(NULL)
 {
   body.parent = this;
   if (init_body)
@@ -44,6 +46,8 @@ void BlockStmt::verify() {
   }
   if (loopInfo && loopInfo->parentExpr != this)
     INT_FATAL(this, "Bad BlockStmt::loopInfo::parentExpr");
+  if (modUses && modUses->parentExpr != this)
+    INT_FATAL(this, "Bad BlockStmt::loopInfo::parentExpr");
 }
 
 
@@ -54,7 +58,7 @@ BlockStmt::copyInner(SymbolMap* map) {
   for_alist(expr, body)
     _this->insertAtTail(COPY_INT(expr));
   _this->loopInfo = COPY_INT(loopInfo);
-  _this->modUses.copy(modUses);
+  _this->modUses = COPY_INT(modUses);
   return _this;
 }
 
@@ -62,6 +66,8 @@ BlockStmt::copyInner(SymbolMap* map) {
 void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == loopInfo)
     loopInfo = toCallExpr(new_ast);
+  else if (old_ast == modUses)
+    modUses = toCallExpr(new_ast);
   else
     INT_FATAL(this, "Unexpected case in BlockStmt::replaceChild");
 }
@@ -127,6 +133,17 @@ BlockStmt::isLoop(void) {
 int
 BlockStmt::length(void) {
   return body.length();
+}
+
+
+void
+BlockStmt::addUse(ModuleSymbol* mod) {
+  if (!modUses) {
+    modUses = new CallExpr(PRIMITIVE_USED_MODULES_LIST);
+    if (parentSymbol)
+      insert_help(modUses, this, parentSymbol);
+  }
+  modUses->insertAtTail(mod);
 }
 
 

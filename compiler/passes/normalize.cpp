@@ -51,9 +51,11 @@ checkUseBeforeDefs() {
             continue;
           if (toModuleSymbol(sym->var)) {
             if (!toFnSymbol(fn->defPoint->parentSymbol)) {
-              SymExpr* prev = toSymExpr(sym->prev);
-              if (!prev || prev->var != gModuleToken)
-                USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->var->name);
+              if (!call || !call->isPrimitive(PRIMITIVE_USED_MODULES_LIST)) {
+                SymExpr* prev = toSymExpr(sym->prev);
+                if (!prev || prev->var != gModuleToken)
+                  USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->var->name);
+              }
             }
           }
           if ((!call || call->baseExpr != sym) && sym->unresolved) {
@@ -390,7 +392,7 @@ insertUseForExplicitModuleCalls(void) {
         BlockStmt* block = new BlockStmt();
         stmt->insertBefore(block);
         block->insertAtHead(stmt->remove());
-        block->modUses.add(mod);
+        block->addUse(mod);
       }
     }
   }

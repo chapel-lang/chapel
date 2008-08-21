@@ -1046,14 +1046,20 @@ visibility_distance(Expr* expr, FnSymbol* fn,
 
     int new_dd = 0;
     int new_md = 0;
-    forv_Vec(ModuleSymbol, module, block->modUses) {
-      Vec<BlockStmt*> visitedCopy;
-      visitedCopy.copy(visited);
-      int try_md = md + 1;
-      int try_dd = visibility_distance(module->block, fn, visitedCopy, try_md, d);
-      if (try_dd > 0 && (new_md == 0 || try_md < new_md)) {
-        new_md = try_md;
-        new_dd = try_dd;
+    if (block && block->modUses) {
+      for_actuals(expr, block->modUses) {
+        SymExpr* se = toSymExpr(expr);
+        INT_ASSERT(se);
+        ModuleSymbol* mod = toModuleSymbol(se->var);
+        INT_ASSERT(mod);
+        Vec<BlockStmt*> visitedCopy;
+        visitedCopy.copy(visited);
+        int try_md = md + 1;
+        int try_dd = visibility_distance(mod->block, fn, visitedCopy, try_md, d);
+        if (try_dd > 0 && (new_md == 0 || try_md < new_md)) {
+          new_md = try_md;
+          new_dd = try_dd;
+        }
       }
     }
     if (new_dd > 0 && new_md > 0) {
@@ -1411,9 +1417,15 @@ getVisibleFunctions(BlockStmt* block,
     }
   }
 
-  forv_Vec(ModuleSymbol, module, block->modUses) {
-    canSkipThisBlock = false; // cannot skip if this block uses modules
-    getVisibleFunctions(module->block, name, visibleFns, visited);
+  if (block->modUses) {
+    for_actuals(expr, block->modUses) {
+      SymExpr* se = toSymExpr(expr);
+      INT_ASSERT(se);
+      ModuleSymbol* mod = toModuleSymbol(se->var);
+      INT_ASSERT(mod);
+      canSkipThisBlock = false; // cannot skip if this block uses modules
+      getVisibleFunctions(mod->block, name, visibleFns, visited);
+    }
   }
 
   //
@@ -3450,10 +3462,16 @@ computeStandardModuleSet() {
   stack.add(standardModule);
 
   while (ModuleSymbol* mod = stack.pop()) {
-    forv_Vec(ModuleSymbol, use, mod->block->modUses) {
-      if (!standardModuleSet.set_in(use->block)) {
-        stack.add(use);
-        standardModuleSet.set_add(use->block);
+    if (mod->block->modUses) {
+      for_actuals(expr, mod->block->modUses) {
+        SymExpr* se = toSymExpr(expr);
+        INT_ASSERT(se);
+        ModuleSymbol* use = toModuleSymbol(se->var);
+        INT_ASSERT(use);
+        if (!standardModuleSet.set_in(use->block)) {
+          stack.add(use);
+          standardModuleSet.set_add(use->block);
+        }
       }
     }
   }

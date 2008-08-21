@@ -77,9 +77,9 @@ void parse(void) {
   }
   forv_Vec(ModuleSymbol, mod, allModules) {
     if (mod != standardModule && mod != theProgram && mod != rootModule) {
-      mod->block->modUses.add(standardModule);
+      mod->block->addUse(standardModule);
     }
   }
-  baseModule->block->modUses.add(rootModule);
+  baseModule->block->addUse(rootModule);
   finishCountingTokens();
 }

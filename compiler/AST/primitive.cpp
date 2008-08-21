@@ -406,6 +406,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_TYPEOF, "typeof", returnInfoFirstDeref);
   prim_def(PRIMITIVE_GET_ITERATOR_RETURN, "get iterator return", returnIteratorType);
   prim_def(PRIMITIVE_USE, "use", returnInfoVoid, true);
+  prim_def(PRIMITIVE_USED_MODULES_LIST, "used modules list", returnInfoVoid);
   prim_def(PRIMITIVE_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
   prim_def(PRIMITIVE_TUPLE_AND_EXPAND, "and_expand_tuple", returnInfoVoid);
 

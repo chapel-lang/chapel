@@ -20,7 +20,7 @@ class BlockStmt : public Expr {
   BlockTag blockTag;
   AList body;
   CallExpr* loopInfo;
-  Vec<ModuleSymbol*> modUses; // modules used via use statement
+  CallExpr* modUses;  // module uses via PRIMITIVE_USE
 
   BlockStmt(Expr* init_body = NULL, BlockTag init_blockTag = BLOCK_NORMAL);
   virtual ~BlockStmt();
@@ -34,6 +34,8 @@ class BlockStmt : public Expr {
 
   bool isLoop(void);
   int length(void);
+
+  void addUse(ModuleSymbol* mod);
 };
 
 
