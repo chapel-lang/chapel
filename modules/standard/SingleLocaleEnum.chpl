@@ -1,5 +1,5 @@
 use List;
-class SingleLocaleEnumDomain: BaseDomain {
+class SingleLocaleEnumDomain: BaseEnumDomain {
   param rank = 1;
   type idxType;
   var adomain: SingleLocaleAssociativeDomain(idxType=idxType);

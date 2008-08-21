@@ -21,8 +21,7 @@ const chpl_primes : [0..26] chpl_table_index_type
                      6291469, 12582917, 25165843, 50331653, 100663319, 
                      201326611, 402653189, 805306457, 1610612741);
 
-
-class SingleLocaleAssociativeDomain: BaseDomain {
+class SingleLocaleAssociativeDomain: BaseAssociativeDomain {
   type idxType;
 
   // The guts of the associative domain
@@ -131,6 +130,10 @@ class SingleLocaleAssociativeDomain: BaseDomain {
       table(slot).status = chpl_hash_status.empty;
     }
     numEntries = 0;
+  }
+
+  def clearForIteratableAssign() {
+    clear();
   }
 
   def member(idx: idxType): bool {

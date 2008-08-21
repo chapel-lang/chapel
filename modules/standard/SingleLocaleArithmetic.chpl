@@ -23,7 +23,7 @@ class SingleLocaleDistribution {
 
 var Block = new SingleLocaleDistribution();
 
-class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
+class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
   param rank : int;
   type idxType;
   param stridable: bool;

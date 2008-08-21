@@ -1,5 +1,5 @@
 use List;
-class SingleLocaleOpaqueDomain: BaseDomain {
+class SingleLocaleOpaqueDomain: BaseOpaqueDomain {
   param rank: int;
   type idxType = _OpaqueIndex;
   var adomain: SingleLocaleAssociativeDomain(rank=rank, idxType=_OpaqueIndex);

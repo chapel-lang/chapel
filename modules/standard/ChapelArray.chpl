@@ -302,7 +302,7 @@ def =(d: _domain, r: range(?e,?b,?s)) {
 }
 
 def =(a: _domain, b) {  // b is iteratable
-  a.clear();
+  a._value.clearForIteratableAssign();
   for ind in b {
     a.add(ind);
   }
@@ -526,13 +526,57 @@ class BaseArithmeticDomain : BaseDomain {
     return 1..0;
   }
 
+}
+
+class BaseDenseArithmeticDomain : BaseArithmeticDomain {
   def clear() {
+    compilerError("Cannot clear an arithmetic domain");
+  }
+
+  def clearForIteratableAssign() {
     compilerError("Illegal assignment to an arithmetic domain");
   }
 }
 
 
 class BaseSparseArithmeticDomain : BaseArithmeticDomain {
+  def clear() {
+    halt("clear not implemented for this distribution");
+  }
+
+  def clearForIteratableAssign() {
+    clear();
+  }
+}
+
+class BaseAssociativeDomain : BaseDomain {
+  def clear() {
+    halt("clear not implemented for this distribution");
+  }
+
+  def clearForIteratableAssign() {
+    clear();
+  }
+}
+
+class BaseOpaqueDomain : BaseDomain {
+  def clear() {
+    halt("clear not implemented for this distribution");
+  }
+
+  def clearForIteratableAssign() {
+    clear();
+  }
+}
+
+class BaseEnumDomain : BaseDomain {
+  def clear() {
+    compilerError("Cannot clear an enumerated domain");
+  }
+
+  def clearForIteratableAssign() {
+    compilerError("Illegal assignment to an enumerated domain");
+  }
 }
 
 //
