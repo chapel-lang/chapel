@@ -1,0 +1,4 @@
+performance: memory not freed when a slice is passed to a function
+
+All memory associated with the slice should be freed upon returning
+from the called function.
