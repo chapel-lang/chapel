@@ -1,7 +1,7 @@
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.commonrules
 
-depend: $(DEPENDSUBDIRS) echoruntimedir $(RUNTIME_OBJ_DIR_STAMP) $(DEPEND_DEPS)
+depend: $(DEPENDSUBDIRS) echoruntimedir $(DEPEND_STAMP) $(DEPEND_DEPS)
 	@echo Updating subdir dependences...
 	@rm -f $(SVN_DEPENDS).tmp
 	@echo > $(SVN_DEPENDS).tmp

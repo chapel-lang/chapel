@@ -46,4 +46,4 @@ chapel_code.c chapel_code.h: chapel_code.chpl $(CHPL)
 OTHER_DEPEND_RULES = \
 	@test -r chapel_code.h || (echo "/* PLACEHOLDER HEADER */\n\#include \"stdchplrt.h\"" > chapel_code.h; touch chapel_code.chpl); \
 	test -r chapel_code.c || (echo "/* PLACEHOLDER CODE */\n\#include \"chapel_code.h\"" > chapel_code.c;  touch chapel_code.chpl); \
-	$(CMAKEDEPEND) $(RUNTIME_GEN_CFLAGS) $(RUNTIME_INCLS) chapel_code.c | sed s/chapel_code\\\.o/\\\$(RUNTIME_OBJ_DIR_SAFESLASH)\\\/chapel_code\\\.o/ >> $(SVN_DEPENDS).tmp
+	$(CMAKEDEPEND) $(DEPEND_CFLAGS) $(DEPEND_INCLS) chapel_code.c | sed s/chapel_code\\\.o/\\\$(DEPEND_DIR_SAFESLASH)\\\/chapel_code\\\.o/ >> $(SVN_DEPENDS).tmp

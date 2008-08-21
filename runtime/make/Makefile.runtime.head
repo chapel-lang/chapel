@@ -27,12 +27,29 @@ RUNTIME_INCLS = -I. -I$(RUNTIME_ROOT)/include/threads-$(CHPL_MAKE_THREADS) -I$(R
 
 
 RUNTIME_OBJ_DIR = ./$(RUNTIME_OBJDIR)
-RUNTIME_OBJ_DIR_SAFESLASH = $(subst /,\\/, $(RUNTIME_OBJ_DIR))
 RUNTIME_OBJ_DIR_STAMP = $(RUNTIME_OBJ_DIR)/.timestamp
 
 LAUNCHER_OBJ_DIR = ./$(LAUNCHER_OBJDIR)
-LAUNCHER_OBJ_DIR_SAFESLASH = $(subst /,\\/, $(LAUNCHER_OBJ_DIR))
 LAUNCHER_OBJ_DIR_STAMP = $(LAUNCHER_OBJ_DIR)/.timestamp
+
+ifneq ($(MAKE_LAUNCHER),1)
+DEPEND_DIR = $(RUNTIME_OBJ_DIR)
+DEPEND_STAMP = $(RUNTIME_OBJ_DIR_STAMP)
+DEPEND_CFLAGS = $(RUNTIME_GEN_CFLAGS)
+DEPEND_INCLS = $(RUNTIME_INCLS)
+else
+DEPEND_DIR = $(LAUNCHER_OBJ_DIR)
+DEPEND_STAMP = $(LAUNCHER_OBJ_DIR_STAMP)
+DEPEND_CFLAGS = $(LAUNCHER_CFLAGS)
+DEPEND_INCLS = $(LAUNCHER_INCLS)
+endif
+DEPEND_DIR_SAFESLASH = $(subst /,\\/, $(DEPEND_DIR))
+
+#
+# platform-specific subdirectory targets
+#
+SVN_DEPENDS = ./$(DEPEND_DIR)/Makefile.svn.depend
+
 
 #
 # clean and clobber targets
@@ -53,12 +70,6 @@ CLOBBER_TARGS = \
 	./$(GEN_SUBDIR) \
 	*~
 
-
-#
-# platform-specific subdirectory targets
-#
-
-SVN_DEPENDS = ./$(RUNTIME_OBJDIR)/Makefile.svn.depend
 
 
 
