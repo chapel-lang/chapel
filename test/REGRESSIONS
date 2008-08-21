@@ -15,10 +15,6 @@
 linux and general regressions
 =============================
 
-???
----
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5]
-
 precision issue, due to user code changing (07/01/08)
 -----------------------------------------------------
 [Error matching program output for
@@ -53,8 +49,8 @@ failing nondeterministically (e.g., 04/04/08)
 gasnet-specific regressions
 ===========================
 
-GASNet AMUDP poll returns AM_ERR_NOT_INIT
------------------------------------------
+GASNet AMUDP poll occasionally returns AM_ERR_NOT_INIT (08/20/2008)
+-------------------------------------------------------------------
 [Error matching program output for
 multilocale/bradc/needMultiLocales/remoteReal]
 
@@ -310,6 +306,13 @@ compilation timing out (started 4/19/08)
 cygwin-specific failures
 ========================
 
+???
+---
+[Error matching program output for npb/cg/bradc/cg-sparse]
+[Error matching program output for performance/compiler/bradc/cg-sparse-timecomp]
+[Error matching program output for studies/sudoku/dinan/sudoku]
+[Error matching program output for users/jglewis/badGetModule]
+
 print occurs in 0 seconds!?  Timers not working?
 ------------------------------------------------
 [Error matching program output for spec/marybeth/use]
@@ -343,9 +346,27 @@ small full/empty sizes
 [Error matching program output for release/examples/prodCons]
 [Error matching program output for release/examples/taskParallel]
 
-sparse code not running correctly
----------------------------------
+sparse code not running correctly -- getting a halt trying to assign zero value
+-------------------------------------------------------------------------------
 [Error matching program output for release/examples/sparse]
+
+
+===========================================
+xmt-specific regressions (beyond the above)
+===========================================
+
+retry error messages
+--------------------
+[Error matching program output for release/examples/hello-multiloc]
+[Error matching program output for release/examples/multilocale]
+[Error matching program output for release/examples/tree]
+
+simulation timeouts
+-------------------
+[Error: Timed out executing program release/examples/hpcc/ra]
+[Error: Timed out executing program release/examples/quicksort]
+[Error: Timed out executing program release/examples/taskParallel]
+
 
 
 ===============================
