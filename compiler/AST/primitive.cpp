@@ -426,7 +426,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_LOOP_WHILEDO, "while...do loop", returnInfoVoid);
   prim_def(PRIMITIVE_LOOP_DOWHILE, "do...while loop", returnInfoVoid);
   prim_def(PRIMITIVE_LOOP_FOR, "for loop", returnInfoVoid);
-  prim_def(PRIMITIVE_LOOP_INLINE, "inline loop", returnInfoVoid);
 
   prim_def(PRIMITIVE_TO_LEADER, "to leader", returnInfoLeader);
   prim_def(PRIMITIVE_TO_FOLLOWER, "to follower", returnInfoFollower);

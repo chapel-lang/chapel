@@ -33,16 +33,11 @@ checkControlFlow(Expr* expr, const char* context) {
         }
       }
     } else if (BlockStmt* block = toBlockStmt(ast)) {
-      if ((block->blockTag == BLOCK_DO_WHILE) ||
-          (block->blockTag == BLOCK_FOR) ||
-          (block->blockTag == BLOCK_PARAM_FOR) ||
-          (block->blockTag == BLOCK_WHILE_DO)) {
-        if (!loopSet.set_in(block)) {
-          Vec<BaseAST*> loopAsts;
-          collect_asts(block, loopAsts);
-          forv_Vec(BaseAST, ast, loopAsts) {
-            loopSet.set_add(ast);
-          }
+      if (block->isLoop() && !loopSet.set_in(block)) {
+        Vec<BaseAST*> loopAsts;
+        collect_asts(block, loopAsts);
+        forv_Vec(BaseAST, ast, loopAsts) {
+          loopSet.set_add(ast);
         }
       }
     }
@@ -339,7 +334,6 @@ BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
   VarSymbol* condVar = new VarSymbol("_cond");
   condVar->isCompilerTemp = true;
   body = new BlockStmt(body);
-  body->blockTag = BLOCK_WHILE_DO;
   body->loopInfo = new CallExpr(PRIMITIVE_LOOP_WHILEDO, condVar);
   body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
   addLoopLabelsToBlock(body);
@@ -369,7 +363,6 @@ BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body) {
   }
 
   body = new BlockStmt(body);
-  body->blockTag = BLOCK_DO_WHILE;
   body->loopInfo = new CallExpr(PRIMITIVE_LOOP_DOWHILE, condVar);
   addLoopLabelsToBlock(body);
   BlockStmt* stmts = buildChapelStmt();
@@ -388,7 +381,6 @@ BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body) {
     return body;
   } else {
     BlockStmt *sbody = new BlockStmt();
-    sbody->blockTag = BLOCK_SERIAL;
     VarSymbol *serial_state = new VarSymbol("_tmp_serial_state");
     sbody->insertAtTail(new DefExpr(serial_state, new CallExpr(PRIMITIVE_GET_SERIAL)));
     sbody->insertAtTail(new CondStmt(cond, new CallExpr(PRIMITIVE_SET_SERIAL, gTrue)));
@@ -472,7 +464,6 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   checkIndices(indices);
 
   body = new BlockStmt(body);
-  body->blockTag = BLOCK_FOR;
   BlockStmt* stmts = buildChapelStmt();
   addLoopLabelsToBlock(body);
 
@@ -538,7 +529,6 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
   followerBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, followerIterator, new CallExpr("_toFollower", iterator, leaderIndexCopy)));
   followerBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, followerIndex, new CallExpr("iteratorIndex", followerIterator)), BLOCK_TYPE));
   BlockStmt* followerBody = new BlockStmt(body);
-  followerBody->blockTag = BLOCK_FOR;
   destructureIndices(followerBody, indices, new SymExpr(followerIndex));
   followerBody->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, followerIndex, followerIterator);
   followerBlock->insertAtTail(followerBody);
@@ -554,7 +544,6 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
   beginBody->insertAtTail(new CallExpr("_downEndCount", coforallCount));
   beginBlock->insertAtTail(buildBeginStmt(beginBody, true, coforallCount));
   BlockStmt* leaderBody = new BlockStmt(beginBlock);
-  leaderBody->blockTag = BLOCK_FOR;
   leaderBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, leaderIndex, new CallExpr("iteratorIndex", leaderIterator)), BLOCK_TYPE));
   leaderBody->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, leaderIndex, leaderIterator);
   leaderBlock->insertAtTail(leaderBody);
@@ -606,7 +595,7 @@ insertBeforeCompilerTemp(Expr* stmt, Expr* expr) {
 
 
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmts) {
-  BlockStmt* block = new BlockStmt(stmts, BLOCK_PARAM_FOR);
+  BlockStmt* block = new BlockStmt(stmts);
   BlockStmt* outer = new BlockStmt(block);
   VarSymbol* indexVar = new VarSymbol(index);
   block->insertBefore(new DefExpr(indexVar, new_IntSymbol((int64)0)));
@@ -1149,10 +1138,7 @@ buildAtomicStmt(Expr* stmt) {
     atomic_warning = true;
     USR_WARN(stmt, "atomic keyword is ignored (not implemented)");
   }
-  if (fSerial)
-    return buildChapelStmt(new BlockStmt(stmt, BLOCK_NORMAL));
-  else
-    return buildChapelStmt(new BlockStmt(stmt, BLOCK_ATOMIC));
+  return buildChapelStmt(new BlockStmt(stmt));
 }
 
 

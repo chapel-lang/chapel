@@ -118,11 +118,11 @@ BlockStmt::insertAtTail(Expr* ast) {
 
 bool
 BlockStmt::isLoop(void) {
-  return
-    blockTag == BLOCK_WHILE_DO ||
-    blockTag == BLOCK_DO_WHILE ||
-    blockTag == BLOCK_FOR ||
-    blockTag == BLOCK_FORALL;
+  return (loopInfo &&
+          (loopInfo->isPrimitive(PRIMITIVE_LOOP_DOWHILE) ||
+           loopInfo->isPrimitive(PRIMITIVE_LOOP_WHILEDO) ||
+           loopInfo->isPrimitive(PRIMITIVE_LOOP_PARAM) ||
+           loopInfo->isPrimitive(PRIMITIVE_LOOP_FOR)));
 }
 
 

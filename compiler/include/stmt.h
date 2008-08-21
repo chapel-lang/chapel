@@ -10,15 +10,8 @@
 
 enum BlockTag {
   BLOCK_NORMAL,
-  BLOCK_ATOMIC,
-  BLOCK_DO_WHILE,
-  BLOCK_FOR,
-  BLOCK_FORALL,
-  BLOCK_PARAM_FOR,
-  BLOCK_SERIAL,
-  BLOCK_SCOPELESS,
-  BLOCK_TYPE,
-  BLOCK_WHILE_DO
+  BLOCK_SCOPELESS, // does not introduce a new scope
+  BLOCK_TYPE       // deleted after type resolution
 };
 
 

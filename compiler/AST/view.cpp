@@ -367,18 +367,9 @@ html_print_fnsymbol( FILE* html_file, int pass, FnSymbol* fn) {
 static void
 html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
   if (Expr* expr = toExpr(ast)) {
-    if (BlockStmt *b=toBlockStmt(expr)) {
+    if (isBlockStmt(expr)) {
       fprintf(html_file, "<DL>\n");
       fprintf(html_file, "{");
-      switch( b->blockTag) {
-      case BLOCK_ATOMIC: fprintf(html_file, "atomic"); break;
-      case BLOCK_DO_WHILE: fprintf(html_file, "do while"); break;
-      case BLOCK_FOR: fprintf(html_file, "for"); break;
-      case BLOCK_FORALL: fprintf(html_file, "forall"); break;
-      case BLOCK_SERIAL: fprintf(html_file, "serial"); break;
-      default:
-        break;
-      }
     } else if (GotoStmt* s = toGotoStmt(expr)) {
       fprintf(html_file, "<DL>\n");
       switch (s->gotoTag) {

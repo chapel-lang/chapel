@@ -1979,12 +1979,10 @@ insertFormalTemps(FnSymbol* fn) {
 
 static void fold_param_for(CallExpr* loop) {
   BlockStmt* block = toBlockStmt(loop->parentExpr);
-  if (!block || block->blockTag != BLOCK_PARAM_FOR || block->loopInfo != loop)
-    INT_FATAL(loop, "bad param loop primitive");
   SymExpr* lse = toSymExpr(loop->get(2));
   SymExpr* hse = toSymExpr(loop->get(3));
   SymExpr* sse = toSymExpr(loop->get(4));
-  if (!lse || !hse || !sse)
+  if (!block || !lse || !hse || !sse)
     INT_FATAL(loop, "bad param loop primitive");
   VarSymbol* lvar = toVarSymbol(lse->var);
   VarSymbol* hvar = toVarSymbol(hse->var);
