@@ -321,28 +321,25 @@ CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
 }
 
 
-static void addLoopLabelsToBlock(BlockStmt* body) {
-  static int uid = 1;
-  body->pre_loop = new LabelSymbol(astr("_pre_loop", istr(uid)));
-  body->post_loop = new LabelSymbol(astr("_post_loop", istr(uid)));
-  uid++;
-}
-
-
 BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
   cond = new CallExpr("_cond_test", cond);
   VarSymbol* condVar = new VarSymbol("_cond");
   condVar->isCompilerTemp = true;
   body = new BlockStmt(body);
   body->loopInfo = new CallExpr(PRIMITIVE_LOOP_WHILEDO, condVar);
+  LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
+  continueLabel->isCompilerTemp = true;
+  continueLabel->addPragma(PRAG_LABEL_CONTINUE);
+  LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
+  breakLabel->isCompilerTemp = true;
+  breakLabel->addPragma(PRAG_LABEL_BREAK);
+  body->insertAtTail(new DefExpr(continueLabel));
   body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
-  addLoopLabelsToBlock(body);
   BlockStmt* stmts = buildChapelStmt();
-  stmts->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(new DefExpr(condVar));
   stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
   stmts->insertAtTail(body);
-  stmts->insertAtTail(new DefExpr(body->post_loop));
+  stmts->insertAtTail(new DefExpr(breakLabel));
   return stmts;
 }
 
@@ -354,22 +351,25 @@ BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body) {
 
   // make variables declared in the scope of the body visible to
   // expressions in the condition of a do..while block
-  if ((body->length() == 1) &&
-      toBlockStmt(body->body.only())) {
-    BlockStmt* block = toBlockStmt(body->body.only());
-    block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
-  } else {
-    body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
+  if (body->length() == 1 && toBlockStmt(body->body.only())) {
+    body = toBlockStmt(body->body.only());
+    body->remove();
   }
 
-  body = new BlockStmt(body);
-  body->loopInfo = new CallExpr(PRIMITIVE_LOOP_DOWHILE, condVar);
-  addLoopLabelsToBlock(body);
+  LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
+  continueLabel->isCompilerTemp = true;
+  continueLabel->addPragma(PRAG_LABEL_CONTINUE);
+  LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
+  breakLabel->isCompilerTemp = true;
+  breakLabel->addPragma(PRAG_LABEL_BREAK);
+  BlockStmt* block = new BlockStmt(body);
+  block->loopInfo = new CallExpr(PRIMITIVE_LOOP_DOWHILE, condVar);
   BlockStmt* stmts = buildChapelStmt();
-  stmts->insertAtTail(new DefExpr(body->pre_loop));
   stmts->insertAtTail(new DefExpr(condVar));
-  stmts->insertAtTail(body);
-  stmts->insertAtTail(new DefExpr(body->post_loop));
+  stmts->insertAtTail(block);
+  body->insertAtTail(new DefExpr(continueLabel));
+  body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
+  stmts->insertAtTail(new DefExpr(breakLabel));
   return stmts;
 }
 
@@ -465,7 +465,12 @@ BlockStmt* buildForLoopStmt(Expr* indices,
 
   body = new BlockStmt(body);
   BlockStmt* stmts = buildChapelStmt();
-  addLoopLabelsToBlock(body);
+  LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
+  continueLabel->isCompilerTemp = true;
+  continueLabel->addPragma(PRAG_LABEL_CONTINUE);
+  LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
+  breakLabel->isCompilerTemp = true;
+  breakLabel->addPragma(PRAG_LABEL_BREAK);
 
   VarSymbol* iterator = new VarSymbol("_iterator");
   iterator->isCompilerTemp = true;
@@ -481,9 +486,9 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   destructureIndices(body, indices, new SymExpr(index));
   body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iterator);
 
-  body->insertAtTail(new DefExpr(body->pre_loop));
+  body->insertAtTail(new DefExpr(continueLabel));
   stmts->insertAtTail(body);
-  stmts->insertAtTail(new DefExpr(body->post_loop));
+  stmts->insertAtTail(new DefExpr(breakLabel));
   return stmts;
 }
 

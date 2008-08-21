@@ -20,9 +20,7 @@ BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
   Expr(STMT_BLOCK),
   blockTag(init_blockTag),
   body(),
-  loopInfo(NULL),
-  pre_loop(NULL),
-  post_loop(NULL)
+  loopInfo(NULL)
 {
   body.parent = this;
   if (init_body)

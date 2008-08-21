@@ -314,12 +314,32 @@ resolveGotoLabel(GotoStmt* gotoStmt) {
     BlockStmt* loop = find_outer_loop(gotoStmt);
     if (!loop)
       USR_FATAL(gotoStmt, "break or continue is not in a loop");
-    if (gotoStmt->gotoTag == GOTO_BREAK)
-      gotoStmt->label->replace(new SymExpr(loop->post_loop));
-    else if (gotoStmt->gotoTag == GOTO_CONTINUE)
-      gotoStmt->label->replace(new SymExpr(loop->pre_loop));
-    else
-      INT_FATAL(gotoStmt, "Unexpected goto type");
+    if (gotoStmt->gotoTag == GOTO_BREAK) {
+      Symbol* breakLabel = NULL;
+      for (Expr* expr = loop->next; expr; expr = expr->next) {
+        if (DefExpr* def = toDefExpr(expr)) {
+          if (def->sym->hasPragma(PRAG_LABEL_BREAK)) {
+            breakLabel = def->sym;
+            break;
+          }
+        }
+      }
+      INT_ASSERT(breakLabel);
+      gotoStmt->label->replace(new SymExpr(breakLabel));
+    } else if (gotoStmt->gotoTag == GOTO_CONTINUE) {
+      Symbol* continueLabel = NULL;
+      for (Expr* expr = loop->body.tail; expr; expr = expr->prev) {
+        if (DefExpr* def = toDefExpr(expr)) {
+          if (def->sym->hasPragma(PRAG_LABEL_CONTINUE)) {
+            continueLabel = def->sym;
+            break;
+          }
+        }
+      }
+      INT_ASSERT(continueLabel);
+      gotoStmt->label->replace(new SymExpr(continueLabel));
+    } else
+      INT_FATAL(gotoStmt, "unexpected goto type");
   } else if (!gotoStmt->label->var) {
     const char* name = gotoStmt->label->unresolved;
     if (gotoStmt->gotoTag == GOTO_BREAK)

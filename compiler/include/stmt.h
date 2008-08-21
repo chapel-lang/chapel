@@ -20,8 +20,6 @@ class BlockStmt : public Expr {
   BlockTag blockTag;
   AList body;
   CallExpr* loopInfo;
-  LabelSymbol* pre_loop;
-  LabelSymbol* post_loop;
   Vec<ModuleSymbol*> modUses; // modules used via use statement
 
   BlockStmt(Expr* init_body = NULL, BlockTag init_blockTag = BLOCK_NORMAL);
