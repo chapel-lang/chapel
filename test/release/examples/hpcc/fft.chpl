@@ -143,19 +143,22 @@ def genDFTPhases(numElements, radix) {
 }
 
 
-def butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
-  var x0 = A(1) + A(2),
-      x1 = A(1) - A(2),
-      x2 = A(3) + A(4),
-      x3rot = (A(3) - A(4))*1.0i;
+def butterfly(wk1, wk2, wk3, A) {
+  var X: [0..#radix] elemType = A;
+  var x0 = X(0) + X(1),
+      x1 = X(0) - X(1),
+      x2 = X(2) + X(3),
+      x3rot = (X(2) - X(3))*1.0i;
 
-  A(1) = x0 + x2;
+  X(0) = x0 + x2;
   x0 -= x2;
-  A(3) = wk2 * x0;
+  X(2) = wk2 * x0;
   x0 = x1 + x3rot;
-  A(2) = wk1 * x0;
+  X(1) = wk1 * x0;
   x0 = x1 - x3rot;
-  A(4) = wk3 * x0;
+  X(3) = wk3 * x0;
+
+  A = X;
 }
 
 
