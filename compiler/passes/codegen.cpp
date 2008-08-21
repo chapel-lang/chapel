@@ -1,5 +1,6 @@
-#include <ctype.h>
-#include <stdio.h>
+#include <cctype>
+#include <cstring>
+#include <cstdio>
 #include "astutil.h"
 #include "beautify.h"
 #include "driver.h"
@@ -92,6 +93,16 @@ static void legalizeCName(Symbol* sym) {
   }
 }
 
+static inline bool symbol_clashes(const char *symbol_name,
+                                  ChainHashMap<const char*, StringHashFns, int> symbol_map) {
+  if (!strncmp("chpl_", symbol_name, 5) && strcmp("chpl_main", symbol_name) && symbol_name[5] != '_' ||
+      symbol_name[0] == '_' &&
+      symbol_name[1] == '_' || symbol_name[1] >= 'A' && symbol_name[1] <= 'Z')
+    return true;
+  else
+    return symbol_map.get(symbol_name);
+}
+
 static void codegen_header(void) {
   ChainHashMap<const char*, StringHashFns, int> cnames;
   Vec<TypeSymbol*> typeSymbols;
@@ -110,7 +121,7 @@ static void codegen_header(void) {
       for_enums(constant, enumType) {
         Symbol* sym = constant->sym;
         sym->cname = astr(enumName, "__", sym->cname);
-        if (cnames.get(sym->cname))
+        if (symbol_clashes(sym->cname, cnames))
           sym->cname = astr("chpl__", sym->cname, "_", istr(sym->id));
         cnames.put(sym->cname, 1);
       }
@@ -124,7 +135,7 @@ static void codegen_header(void) {
   forv_Vec(TypeSymbol, ts, gTypes) {
     if (ts->defPoint->parentExpr != rootModule->block) {
       legalizeCName(ts);
-      if (!ts->hasPragma(PRAG_EXTERN) && cnames.get(ts->cname))
+      if (!ts->hasPragma(PRAG_EXTERN) && symbol_clashes(ts->cname, cnames))
         ts->cname = astr("chpl__", ts->cname, "_", istr(ts->id));
       cnames.put(ts->cname, 1);
       typeSymbols.add(ts);
@@ -142,7 +153,7 @@ static void codegen_header(void) {
         for_fields(field, ct) {
           legalizeCName(field);
           if (fieldSet.set_in(field->cname))
-            field->cname = astr("chpl__", field->cname, "_", istr(field->id));
+            field->cname = astr(field->cname, "_", istr(field->id));
           fieldSet.set_add(field->cname);
         }
       }
@@ -158,7 +169,7 @@ static void codegen_header(void) {
       if (var->defPoint->parentExpr != rootModule->block &&
           toModuleSymbol(var->defPoint->parentSymbol)) {
         legalizeCName(var);
-        if (!var->hasPragma(PRAG_EXTERN) && cnames.get(var->cname))
+        if (!var->hasPragma(PRAG_EXTERN) && symbol_clashes(var->cname, cnames))
           var->cname = astr("chpl__", var->cname, "_", istr(var->id));
         cnames.put(var->cname, 1);
         varSymbols.add(var);
@@ -174,7 +185,7 @@ static void codegen_header(void) {
     if (fn == chpl_main)
       fn->cname = astr("chpl_main");
     legalizeCName(fn);
-    if (!fn->hasPragma(PRAG_EXPORT) && !fn->hasPragma(PRAG_EXTERN) && cnames.get(fn->cname))
+    if (!fn->hasPragma(PRAG_EXPORT) && !fn->hasPragma(PRAG_EXTERN) && symbol_clashes(fn->cname, cnames))
       fn->cname = astr("chpl__", fn->cname, "_", istr(fn->id));
     cnames.put(fn->cname, 1);
     fnSymbols.add(fn);
@@ -189,7 +200,7 @@ static void codegen_header(void) {
     Vec<const char*> formalSet;
     for_formals(formal, fn) {
       legalizeCName(formal);
-      if (cnames.get(formal->cname) || formalSet.set_in(formal->cname))
+      if (symbol_clashes(formal->cname, cnames) || formalSet.set_in(formal->cname))
         formal->cname = astr("chpl__", formal->cname, "_", istr(formal->id));
       formalSet.set_add(formal->cname);
     }
@@ -219,7 +230,7 @@ static void codegen_header(void) {
 
         legalizeCName(sym);
 
-        if (cnames.get(sym->cname) || local.set_in(sym->cname))
+        if (symbol_clashes(sym->cname, cnames) || local.set_in(sym->cname))
           sym->cname = astr("chpl__", sym->cname, "_", istr(sym->id));
         local.set_add(sym->cname);
       }
