@@ -1,0 +1,19 @@
+bug: seemingly incorrect illegal instantiation with a generic type
+
+If the function clearForIteratableAssign() is removed from the
+SingleLocaleAssociative.chpl file, this test results in:
+
+$CHPL_HOME/modules/standard/SingleLocaleAssociative.chpl:128: error:
+illegal instantiation with a generic type [generics.cpp:316]
+
+Tracing through it, it seems that the associative domain of locales is
+being considered to be a generic type for some reason.  My intuition
+is that it should not be.
+
+Also of interest is that the simpler versions of this test --
+assocLocales.chpl and assocLocales2.chpl work, so the issue is
+something deeper than simply the use of an associative domain of
+locales within a generic class.
+
+Any help diagnosing this would be appreciated.
+
