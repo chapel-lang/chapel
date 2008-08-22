@@ -205,10 +205,6 @@ opts-specific tests
 pathscale-specific regressions
 ==============================
 
-??? -- gdb incompatability?
----------------------------
-[Error matching program output for execflags/bradc/gdbddash/declint2] 
-
 exp2 not supported:
 -------------------
 [Error matching program output for functions/dinan/exp2] 
@@ -258,7 +254,6 @@ pgi-specific regressions
 
 Numerical accuracy issues (started 05/24/08)
 --------------------------------------------
-[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
 [Error matching program output for studies/madness/common/test_diff]
 [Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
@@ -266,14 +261,11 @@ Numerical accuracy issues (started 05/24/08)
 
 Some sort of offset type mismatch -- likely caused by long identifiers
 ----------------------------------------------------------------------
-[Error matching compiler output for arrays/deitz/test_major_nesting_of_arrays] 
 [Error matching program output for types/tuple/diten/tupleOfTupleOfTupleOfTuple]
 
 long identifiers
 ----------------
 [Error matching program output for types/tuple/deitz/test_128int]
-[Error matching program output for arrays/deitz/test_major_nesting_of_arrays] 
-[Error matching program output for trivial/deitz/test_longToken] 
 
 negative floating point 0.0 not supported
 -----------------------------------------
@@ -354,12 +346,6 @@ sparse code not running correctly -- getting a halt trying to assign zero value
 ===========================================
 xmt-specific regressions (beyond the above)
 ===========================================
-
-retry error messages
---------------------
-[Error matching program output for release/examples/hello-multiloc]
-[Error matching program output for release/examples/multilocale]
-[Error matching program output for release/examples/tree]
 
 simulation timeouts
 -------------------
