@@ -37,3 +37,5 @@
   classes/records?
 
 * List "by" among the overloaded operators?
+
+* Document domain operators: translate, interior, exterior, etc.

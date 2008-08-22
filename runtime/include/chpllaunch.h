@@ -4,5 +4,6 @@
 #include "chpltypes.h"
 
 char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales);
+void chpl_launch_cleanup(void);
 
 #endif

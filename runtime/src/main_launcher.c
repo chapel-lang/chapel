@@ -45,5 +45,7 @@ int main(int argc, char* argv[]) {
     system(command);
   }
 
+  chpl_launch_cleanup();
+
   return 0;
 }
