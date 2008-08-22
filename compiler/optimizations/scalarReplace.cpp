@@ -198,7 +198,8 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
     Symbol* var = new VarSymbol(astr(sym->name, "_", field->name), field->type);
     fieldMap.put(field, var);
     sym->defPoint->insertBefore(new DefExpr(var));
-    var->isCompilerTemp = sym->isCompilerTemp;
+    if (sym->hasPragma(PRAG_TEMP))
+      var->addPragma(PRAG_TEMP);
     if (ClassType* fct = toClassType(field->type))
       if (Vec<Symbol*>* varVec = typeVarMap.get(fct))
         varVec->add(var);
@@ -290,7 +291,8 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
     Symbol* var = new VarSymbol(astr(sym->name, "_", field->name), field->type);
     fieldMap.put(field, var);
     sym->defPoint->insertBefore(new DefExpr(var));
-    var->isCompilerTemp = sym->isCompilerTemp;
+    if (sym->hasPragma(PRAG_TEMP))
+      var->addPragma(PRAG_TEMP);
     if (ClassType* fct = toClassType(field->type))
       if (Vec<Symbol*>* varVec = typeVarMap.get(fct))
         varVec->add(var);

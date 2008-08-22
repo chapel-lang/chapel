@@ -73,7 +73,7 @@ static void
 addToSymbolTable(Vec<BaseAST*>& asts) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
-      if (!def->sym->isCompilerTemp) {
+      if (!def->sym->hasPragma(PRAG_TEMP)) {
         BaseAST* scope = getScope(def);
         SymbolTableEntry* entry = symbolTable.get(scope);
         if (!entry) {
@@ -410,7 +410,7 @@ static bool
 isTypeAlias(Symbol* sym) {
   return
     isVarSymbol(sym) &&
-    sym->isTypeVariable &&
+    sym->hasPragma(PRAG_TYPE_VARIABLE) &&
     isFnSymbol(sym->defPoint->parentSymbol);
 }
 
@@ -435,7 +435,7 @@ static void build_type_constructor(ClassType* ct) {
   fn->addPragma(PRAG_TYPE_CONSTRUCTOR);
   ct->defaultTypeConstructor = fn;
   fn->cname = astr("_type_construct_", ct->symbol->cname);
-  fn->isCompilerTemp = true;
+  fn->addPragma(PRAG_TEMP);
   fn->retTag = RET_TYPE;
 
   if (ct->symbol->hasPragma(PRAG_REF))
@@ -474,14 +474,14 @@ static void build_type_constructor(ClassType* ct) {
         //
         // if formal is generic
         //
-        if (field->isTypeVariable || field->isParam || (!exprType && !init)) {
+        if (field->hasPragma(PRAG_TYPE_VARIABLE) || field->hasPragma(PRAG_PARAM) || (!exprType && !init)) {
           ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
           fn->insertFormalAtTail(arg);
 
-          if (field->isParam)
+          if (field->hasPragma(PRAG_PARAM))
             arg->intent = INTENT_PARAM;
           else
-            arg->isTypeVariable = true;
+            arg->addPragma(PRAG_TYPE_VARIABLE);
 
           if (init)
             arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
@@ -492,7 +492,7 @@ static void build_type_constructor(ClassType* ct) {
           if (!exprType && arg->type == dtUnknown)
             arg->type = dtAny;
 
-          if (field->isParam || field->isTypeVariable)
+          if (field->hasPragma(PRAG_PARAM) || field->hasPragma(PRAG_TYPE_VARIABLE))
             fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name), arg));
           else
@@ -578,7 +578,7 @@ static void build_constructor(ClassType* ct) {
   fn->addPragma(PRAG_DEFAULT_CONSTRUCTOR);
   ct->defaultConstructor = fn;
   fn->cname = astr("_construct_", ct->symbol->cname);
-  fn->isCompilerTemp = true; // compiler inserted
+  fn->addPragma(PRAG_TEMP); // compiler inserted
 
   if (ct->symbol->hasPragma(PRAG_REF))
     fn->addPragma(PRAG_REF);
@@ -667,7 +667,7 @@ static void build_constructor(ClassType* ct) {
 
     SET_LINENO(field);
 
-    if (field->isParam)
+    if (field->hasPragma(PRAG_PARAM))
       arg->intent = INTENT_PARAM;
     Expr* exprType = field->defPoint->exprType->remove();
     Expr* init = field->defPoint->init->remove();
@@ -675,20 +675,20 @@ static void build_constructor(ClassType* ct) {
     bool hasType = exprType;
     bool hasInit = init;
     if (init) {
-      if (!field->isTypeVariable && !exprType) {
+      if (!field->hasPragma(PRAG_TYPE_VARIABLE) && !exprType) {
         exprType = new CallExpr(PRIMITIVE_TYPEOF, new CallExpr("_copy", init->copy()));
       }
-    } else if (exprType && !field->isTypeVariable && !field->isParam) {
+    } else if (exprType && !field->hasPragma(PRAG_TYPE_VARIABLE) && !field->hasPragma(PRAG_PARAM)) {
       if (isSparseDomain(exprType))
         init = exprType->copy();
       else
         init = new CallExpr(PRIMITIVE_INIT, exprType->copy());
     }
-    if (hasType && !field->isTypeVariable && !field->isParam) {
+    if (hasType && !field->hasPragma(PRAG_TYPE_VARIABLE) && !field->hasPragma(PRAG_PARAM)) {
       if (!isSparseDomain(exprType))
         init = new CallExpr("_createFieldDefault", exprType->copy(), init);
     }
-    if (!hasType && !field->isTypeVariable && !field->isParam) {
+    if (!hasType && !field->hasPragma(PRAG_TYPE_VARIABLE) && !field->hasPragma(PRAG_PARAM)) {
       init = new CallExpr("_copy", init);
     }
     if (init) {
@@ -699,7 +699,8 @@ static void build_constructor(ClassType* ct) {
     }
     if (exprType)
       arg->typeExpr = new BlockStmt(exprType, BLOCK_SCOPELESS);
-    arg->isTypeVariable = field->isTypeVariable;
+    if (field->hasPragma(PRAG_TYPE_VARIABLE))
+      arg->addPragma(PRAG_TYPE_VARIABLE);
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
     fn->insertFormalAtTail(arg);

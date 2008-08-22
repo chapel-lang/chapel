@@ -88,7 +88,7 @@ const char* toString(CallInfo* info) {
     method = false;
   }
   if (method) {
-    if (info->actuals.v[1] && info->actuals.v[1]->isTypeVariable)
+    if (info->actuals.v[1] && info->actuals.v[1]->hasPragma(PRAG_TYPE_VARIABLE))
       str = astr(str, "type ", toString(info->actuals.v[1]->type), ".");
     else
       str = astr(str, toString(info->actuals.v[1]->type), ".");
@@ -123,7 +123,7 @@ const char* toString(CallInfo* info) {
     if (info->actuals.v[i]->type->symbol->hasPragma(PRAG_ITERATOR_CLASS) &&
         info->actuals.v[i]->type->defaultConstructor->hasPragma(PRAG_PROMOTION_WRAPPER))
       str = astr(str, "promoted expression");
-    else if (info->actuals.v[i] && info->actuals.v[i]->isTypeVariable)
+    else if (info->actuals.v[i] && info->actuals.v[i]->hasPragma(PRAG_TYPE_VARIABLE))
       str = astr(str, "type ", toString(info->actuals.v[i]->type));
     else if (var && var->immediate) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
@@ -186,7 +186,7 @@ const char* toString(FnSymbol* fn) {
       str = astr(str, ", ");
     if (arg->intent == INTENT_PARAM)
       str = astr(str, "param ");
-    if (arg->isTypeVariable)
+    if (arg->hasPragma(PRAG_TYPE_VARIABLE))
       str = astr(str, "type ", arg->name);
     else if (arg->type == dtUnknown) {
       SymExpr* sym = NULL;
@@ -746,7 +746,7 @@ computeGenericSubs(SymbolMap &subs,
       //
       // check for field with specified generic type
       //
-      if (!formal->isTypeVariable && strcmp(formal->name, "outer") && strcmp(formal->name, "meme") && formal->type != dtAny && (fn->hasPragma(PRAG_DEFAULT_CONSTRUCTOR) || fn->hasPragma(PRAG_TYPE_CONSTRUCTOR)))
+      if (!formal->hasPragma(PRAG_TYPE_VARIABLE) && strcmp(formal->name, "outer") && strcmp(formal->name, "meme") && formal->type != dtAny && (fn->hasPragma(PRAG_DEFAULT_CONSTRUCTOR) || fn->hasPragma(PRAG_TYPE_CONSTRUCTOR)))
         USR_FATAL(formal, "invalid generic type specification on class field");
 
       if (formalActuals->v[i]) {
@@ -832,7 +832,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
       if (VarSymbol* n_var = toVarSymbol(sym->var)) {
         if (n_var->type == dtInt[INT_SIZE_32] && n_var->immediate) {
           int n = n_var->immediate->int_value();
-          CallExpr* tupleCall = new CallExpr((arg->isTypeVariable) ? "_type_construct__tuple" : "_construct__tuple");
+          CallExpr* tupleCall = new CallExpr((arg->hasPragma(PRAG_TYPE_VARIABLE)) ? "_type_construct__tuple" : "_construct__tuple");
           for (int i = 0; i < n; i++) {
             DefExpr* new_arg_def = arg->defPoint->copy();
             ArgSymbol* new_arg = toArgSymbol(new_arg_def->sym);
@@ -843,7 +843,8 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
             arg->defPoint->insertBefore(new_arg_def);
           }
           VarSymbol* var = new VarSymbol(arg->name);
-          var->isTypeVariable = arg->isTypeVariable;
+          if (arg->hasPragma(PRAG_TYPE_VARIABLE))
+            var->addPragma(PRAG_TYPE_VARIABLE);
 
           if (arg->intent == INTENT_OUT || arg->intent == INTENT_INOUT) {
             int i = 1;
@@ -865,9 +866,9 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
           update_symbols(fn->body, &update);
           if (fn->where) {
             VarSymbol* var = new VarSymbol(arg->name);
-            var->isTypeVariable = arg->isTypeVariable;
-            fn->where->insertAtHead(
-                                    new CallExpr(PRIMITIVE_MOVE, var, tupleCall->copy()));
+            if (arg->hasPragma(PRAG_TYPE_VARIABLE))
+              var->addPragma(PRAG_TYPE_VARIABLE);
+            fn->where->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, tupleCall->copy()));
             fn->where->insertAtHead(new DefExpr(var));
             SymbolMap update;
             update.put(arg, var);
@@ -1006,11 +1007,11 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
       delete actualFormals;
       return;
     }
-    if (formalSyms.v[j] && formalSyms.v[j]->isTypeVariable && !formal->isTypeVariable) {
+    if (formalSyms.v[j] && formalSyms.v[j]->hasPragma(PRAG_TYPE_VARIABLE) && !formal->hasPragma(PRAG_TYPE_VARIABLE)) {
       delete actualFormals;
       return;
    }
-    if (formalSyms.v[j] && !formalSyms.v[j]->isTypeVariable && formal->isTypeVariable) {
+    if (formalSyms.v[j] && !formalSyms.v[j]->hasPragma(PRAG_TYPE_VARIABLE) && formal->hasPragma(PRAG_TYPE_VARIABLE)) {
       delete actualFormals;
       return;
     }
@@ -1155,9 +1156,9 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                 } else if (arg->type == arg2->type && !arg->instantiatedFrom && arg2->instantiatedFrom) {
                   as_good = false;
                 } else {
-                  if (!arg->isTypeVariable && arg2->isTypeVariable)
+                  if (!arg->hasPragma(PRAG_TYPE_VARIABLE) && arg2->hasPragma(PRAG_TYPE_VARIABLE))
                     as_good = false;
-                  else if (arg->isTypeVariable && !arg2->isTypeVariable)
+                  else if (arg->hasPragma(PRAG_TYPE_VARIABLE) && !arg2->hasPragma(PRAG_TYPE_VARIABLE))
                     better = true;
                   else if (arg->instantiatedFrom==dtAny &&
                       arg2->instantiatedFrom!=dtAny) {
@@ -1223,10 +1224,10 @@ static CallExpr*
 userCall(CallExpr* call) {
   if (developer)
     return call;
-  if (call->getFunction()->isCompilerTemp ||
+  if (call->getFunction()->hasPragma(PRAG_TEMP) ||
       call->getModule()->modTag == MOD_STANDARD) {
     for (int i = callStack.n-1; i >= 0; i--) {
-      if (!callStack.v[i]->getFunction()->isCompilerTemp &&
+      if (!callStack.v[i]->getFunction()->hasPragma(PRAG_TEMP) &&
           callStack.v[i]->getModule()->modTag != MOD_STANDARD)
         return callStack.v[i];
     }
@@ -1241,7 +1242,7 @@ printResolutionError(const char* error,
                      CallInfo* info) {
   CallExpr* call = userCall(info->call);
   if (!strcmp("_cast", info->name)) {
-    if (!info->actuals.v[0]->isTypeVariable) {
+    if (!info->actuals.v[0]->hasPragma(PRAG_TYPE_VARIABLE)) {
       USR_FATAL(call, "illegal cast to non-type",
                 toString(info->actuals.v[1]->type),
                 toString(info->actuals.v[0]->type));
@@ -1263,8 +1264,8 @@ printResolutionError(const char* error,
       USR_FATAL(call, "invalid tuple");
     }
   } else if (!strcmp("=", info->name)) {
-    if (info->actuals.v[0] && !info->actuals.v[0]->isTypeVariable &&
-        info->actuals.v[1] && info->actuals.v[1]->isTypeVariable) {
+    if (info->actuals.v[0] && !info->actuals.v[0]->hasPragma(PRAG_TYPE_VARIABLE) &&
+        info->actuals.v[1] && info->actuals.v[1]->hasPragma(PRAG_TYPE_VARIABLE)) {
       USR_FATAL(call, "illegal assignment of type to value");
     } else if (info->actuals.v[1]->type == dtNil) {
       USR_FATAL(call, "type mismatch in assignment of nil to %s",
@@ -1495,7 +1496,7 @@ makeNoop(CallExpr* call) {
 static bool
 isTypeExpr(Expr* expr) {
   if (SymExpr* sym = toSymExpr(expr)) {
-    if (sym->var->isTypeVariable)
+    if (sym->var->hasPragma(PRAG_TYPE_VARIABLE))
       return true;
     if (isTypeSymbol(sym->var))
       return true;
@@ -1700,17 +1701,17 @@ resolveCall(CallExpr* call, bool errorCheck) {
     VarSymbol* tmp = gTrue;
     for (int i = 1; i <= size; i++) {
       VarSymbol* tmp1 = new VarSymbol("_expand_temp1");
-      tmp1->canParam = true;
-      tmp1->canType = true;
+      tmp1->addPragma(PRAG_MAYBE_PARAM);
+      tmp1->addPragma(PRAG_MAYBE_TYPE);
       VarSymbol* tmp2 = new VarSymbol("_expand_temp2");
-      tmp2->canParam = true;
-      tmp2->canType = true;
+      tmp2->addPragma(PRAG_MAYBE_PARAM);
+      tmp2->addPragma(PRAG_MAYBE_TYPE);
       VarSymbol* tmp3 = new VarSymbol("_expand_temp3");
-      tmp3->canParam = true;
-      tmp3->canType = true;
+      tmp3->addPragma(PRAG_MAYBE_PARAM);
+      tmp3->addPragma(PRAG_MAYBE_TYPE);
       VarSymbol* tmp4 = new VarSymbol("_expand_temp4");
-      tmp4->canParam = true;
-      tmp4->canType = true;
+      tmp4->addPragma(PRAG_MAYBE_PARAM);
+      tmp4->addPragma(PRAG_MAYBE_TYPE);
       call->getStmtExpr()->insertBefore(new DefExpr(tmp1));
       call->getStmtExpr()->insertBefore(new DefExpr(tmp2));
       call->getStmtExpr()->insertBefore(new DefExpr(tmp3));
@@ -1753,8 +1754,8 @@ resolveCall(CallExpr* call, bool errorCheck) {
     call->getStmtExpr()->insertBefore(noop);
     for (int i = 1; i <= size; i++) {
       VarSymbol* tmp = new VarSymbol("_expand_temp");
-      tmp->isCompilerTemp = true;
-      tmp->canType = true;
+      tmp->addPragma(PRAG_TEMP);
+      tmp->addPragma(PRAG_MAYBE_TYPE);
       DefExpr* def = new DefExpr(tmp);
       call->getStmtExpr()->insertBefore(def);
       CallExpr* e = NULL;
@@ -1821,7 +1822,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
 
     FnSymbol* fn = toFnSymbol(call->parentSymbol);
 
-    if (lhs->isTypeVariable && !isTypeExpr(rhs)) {
+    if (lhs->hasPragma(PRAG_TYPE_VARIABLE) && !isTypeExpr(rhs)) {
       if (!fn || fn->_this == lhs) { // ignore type constructor
         if (lhs == fn->getReturnSymbol()) {
           USR_FATAL(call, "illegal return of value where type is expected");
@@ -1831,7 +1832,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
       }
     }
 
-    if (!lhs->isTypeVariable && !lhs->canType && isTypeExpr(rhs)) {
+    if (!lhs->hasPragma(PRAG_TYPE_VARIABLE) && !lhs->hasPragma(PRAG_MAYBE_TYPE) && isTypeExpr(rhs)) {
       if (lhs == fn->getReturnSymbol()) {
         USR_FATAL(call, "illegal return of type where value is expected");
       } else {
@@ -1905,7 +1906,7 @@ formalRequiresTemp(ArgSymbol* formal) {
       !strcmp("this", formal->name) ||
       formal->hasPragma(PRAG_IS_MEME) ||
       (formal == toFnSymbol(formal->defPoint->parentSymbol)->_outer) ||
-      formal->isTypeVariable ||
+      formal->hasPragma(PRAG_TYPE_VARIABLE) ||
       formal->instantiatedParam ||
       formal->type == dtMethodToken ||
       (formal->type->symbol->hasPragma(PRAG_REF) &&
@@ -1941,8 +1942,8 @@ insertFormalTemps(FnSymbol* fn) {
           !formalType->symbol->hasPragma(PRAG_DOMAIN) &&
           !formalType->symbol->hasPragma(PRAG_SYNC) &&
           !formalType->symbol->hasPragma(PRAG_ARRAY))
-        tmp->isConst = true;
-      tmp->isCompilerTemp = true;
+        tmp->addPragma(PRAG_CONST);
+      tmp->addPragma(PRAG_TEMP);
       formals2vars.put(formal, tmp);
     }
   }
@@ -1959,9 +1960,9 @@ insertFormalTemps(FnSymbol* fn) {
         } else {
           VarSymbol* refTmp = new VarSymbol("_tmp");
           VarSymbol* typeTmp = new VarSymbol("_tmp");
-          typeTmp->isCompilerTemp = true;
-          typeTmp->canType = true;
-          refTmp->isCompilerTemp = true;
+          typeTmp->addPragma(PRAG_TEMP);
+          typeTmp->addPragma(PRAG_MAYBE_TYPE);
+          refTmp->addPragma(PRAG_TEMP);
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, typeTmp)));
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, typeTmp, new CallExpr(PRIMITIVE_TYPEOF, refTmp)));
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, refTmp, new CallExpr(PRIMITIVE_GET_REF, formal)));
@@ -2180,7 +2181,7 @@ preFold(Expr* expr) {
         base->replace(base->baseExpr->remove());
       } else {
         VarSymbol* this_temp = new VarSymbol("this_temp");
-        this_temp->isCompilerTemp = true;
+        this_temp->addPragma(PRAG_TEMP);
         base->replace(new SymExpr("this"));
         CallExpr* move = new CallExpr(PRIMITIVE_MOVE, this_temp, base);
         call->insertAtHead(new SymExpr(this_temp));
@@ -2195,7 +2196,7 @@ preFold(Expr* expr) {
     if (call->isNamed("this")) {
       SymExpr* base = toSymExpr(call->get(2));
       INT_ASSERT(base);
-      if (isVarSymbol(base->var) && base->var->isTypeVariable) {
+      if (isVarSymbol(base->var) && base->var->hasPragma(PRAG_TYPE_VARIABLE)) {
         if (call->numActuals() == 2)
           USR_FATAL(call, "illegal call of type");
         long index;
@@ -2237,7 +2238,7 @@ preFold(Expr* expr) {
     } else if (call->isPrimitive(PRIMITIVE_INIT)) {
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
-      if (!se->var->isTypeVariable)
+      if (!se->var->hasPragma(PRAG_TYPE_VARIABLE))
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->typeInfo();
       if (type ->symbol->hasPragma(PRAG_REF))
@@ -2377,7 +2378,7 @@ preFold(Expr* expr) {
           SymExpr* sym = toSymExpr(mvCall->get(1));
           VarSymbol* var = toVarSymbol(sym->var);
           removed = true;
-          var->canParam = true;
+          var->addPragma(PRAG_MAYBE_PARAM);
           result = call->get(2)->remove();
           call->replace(result);
         }
@@ -2567,7 +2568,7 @@ insertValueTemp(Expr* insertPoint, Expr* actual) {
   if (SymExpr* se = toSymExpr(actual)) {
     if (!se->var->type->refType) {
       VarSymbol* tmp = new VarSymbol("tmp", getValueType(se->var->type));
-      tmp->isCompilerTemp = true;
+      tmp->addPragma(PRAG_TEMP);
       insertPoint->insertBefore(new DefExpr(tmp));
       insertPoint->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, se->var)));
       se->var = tmp;
@@ -2580,7 +2581,7 @@ postFold(Expr* expr) {
   Expr* result = expr;
   if (CallExpr* call = toCallExpr(expr)) {
     if (FnSymbol* fn = call->isResolved()) {
-      if (fn->retTag == RET_PARAM || fn->canParam) {
+      if (fn->retTag == RET_PARAM || fn->hasPragma(PRAG_MAYBE_PARAM)) {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
         if (ret && ret->immediate) {
           result = new SymExpr(ret);
@@ -2592,7 +2593,7 @@ postFold(Expr* expr) {
           USR_FATAL(call, "param function does not resolve to a param symbol");
         }
       }
-      if (fn->canType && fn->getReturnSymbol()->isTypeVariable)
+      if (fn->hasPragma(PRAG_MAYBE_TYPE) && fn->getReturnSymbol()->hasPragma(PRAG_TYPE_VARIABLE))
         fn->retTag = RET_TYPE;
       if (fn->retTag == RET_TYPE) {
         Symbol* ret = fn->getReturnSymbol();
@@ -2611,7 +2612,7 @@ postFold(Expr* expr) {
     } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
       bool set = false;
       if (SymExpr* lhs = toSymExpr(call->get(1))) {
-        if (lhs->var->canParam || lhs->var->isParameter()) {
+        if (lhs->var->hasPragma(PRAG_MAYBE_PARAM) || lhs->var->isParameter()) {
           if (paramMap.get(lhs->var))
             INT_FATAL(call, "parameter set multiple times");
           if (VarSymbol* lhsVar = toVarSymbol(lhs->var))
@@ -2635,25 +2636,25 @@ postFold(Expr* expr) {
             USR_FATAL(call, "Initializing parameter '%s' to value not known at compile time", lhs->var->name);
         }
         if (!set) {
-          if (lhs->var->canType) {
+          if (lhs->var->hasPragma(PRAG_MAYBE_TYPE)) {
             if (SymExpr* rhs = toSymExpr(call->get(2))) {
-              if (rhs->var->isTypeVariable)
-                lhs->var->isTypeVariable = true;
+              if (rhs->var->hasPragma(PRAG_TYPE_VARIABLE))
+                lhs->var->addPragma(PRAG_TYPE_VARIABLE);
             }
             if (CallExpr* rhs = toCallExpr(call->get(2))) {
               if (FnSymbol* fn = rhs->isResolved()) {
                 if (fn->retTag == RET_TYPE)
-                  lhs->var->isTypeVariable = true;
+                  lhs->var->addPragma(PRAG_TYPE_VARIABLE);
               }
               if (rhs->isPrimitive(PRIMITIVE_GET_REF)) {
                 if (isTypeExpr(rhs->get(1)))
-                  lhs->var->isTypeVariable = true;
+                  lhs->var->addPragma(PRAG_TYPE_VARIABLE);
               }
             }
           }
           if (CallExpr* rhs = toCallExpr(call->get(2))) {
             if (rhs->isPrimitive(PRIMITIVE_TYPEOF)) {
-              lhs->var->isTypeVariable = true;
+              lhs->var->addPragma(PRAG_TYPE_VARIABLE);
             }
           }
         }
@@ -2836,7 +2837,7 @@ postFold(Expr* expr) {
       SymExpr* se = toSymExpr(call->get(1));
       VarSymbol* elt = new VarSymbol("_tmp", se->var->type->getField("eltType")->type);
       block->insertAtTail(new DefExpr(elt));
-      elt->isTypeVariable = true;
+      elt->addPragma(PRAG_TYPE_VARIABLE);
       Type* domainValueType = se->var->type->getField("_value")->type->getField("dom")->type;
       VarSymbol* dom = new VarSymbol("_tmp", domainValueType);
       block->insertAtTail(new DefExpr(dom));
@@ -2941,7 +2942,7 @@ static void issueCompilerError(CallExpr* call) {
           continue;
         }
       }
-      if (sym->var->isTypeVariable) {
+      if (sym->var->hasPragma(PRAG_TYPE_VARIABLE)) {
         str = astr(str, sym->var->type->symbol->name);
         continue;
       }
@@ -3007,7 +3008,7 @@ resolveBlock(Expr* body) {
       CallExpr* parent = toCallExpr(sym->parentExpr);
       if (!parent ||
           !parent->isPrimitive(PRIMITIVE_ISSUBTYPE) ||
-          !sym->var->isTypeVariable) {
+          !sym->var->hasPragma(PRAG_TYPE_VARIABLE)) {
 
         if (ClassType* ct = toClassType(sym->typeInfo())) {
           if (!ct->symbol->hasPragma(PRAG_GENERIC) && !ct->symbol->hasPragma(PRAG_ITERATOR_CLASS)) {
@@ -3163,7 +3164,7 @@ resolveFns(FnSymbol* fn) {
                 tmp = se->var;
               } else {
                 tmp = new VarSymbol("_tmp", rhs->typeInfo());
-                tmp->isCompilerTemp = true;
+                tmp->addPragma(PRAG_TEMP);
                 call->insertBefore(new DefExpr(tmp));
                 call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, rhs));
               }
@@ -3199,11 +3200,11 @@ resolveFns(FnSymbol* fn) {
       strcmp("iteratorIndex", fn->name) && strcmp("iteratorIndexHelp", fn->name) &&
       strcmp("_toLeader", fn->name) && strcmp("_toFollower", fn->name) && 
       strcmp("_heapAccess", fn->name) &&
-      strcmp("=", fn->name) && strcmp("_build_tuple", fn->name) && !fn->isCompilerTemp) {
+      strcmp("=", fn->name) && strcmp("_build_tuple", fn->name) && !fn->hasPragma(PRAG_TEMP)) {
     CallExpr* retCall = toCallExpr(fn->body->body.tail);
     INT_ASSERT(retCall->isPrimitive(PRIMITIVE_RETURN));
     VarSymbol* tmp = new VarSymbol("_tmp");
-    tmp->isCompilerTemp = true;
+    tmp->addPragma(PRAG_TEMP);
     CallExpr* copy = new CallExpr("_copy", ret);
     CallExpr* move = new CallExpr(PRIMITIVE_MOVE, tmp, copy);
     retCall->insertBefore(new DefExpr(tmp));
@@ -3623,9 +3624,9 @@ resolve() {
           FnSymbol* if_fn = new FnSymbol("_if_fn");
           if_fn->addPragma(PRAG_INLINE);
           VarSymbol* _ret = new VarSymbol("_ret_if_fn_dd", key->retType);
-          _ret->isCompilerTemp = true;
+          _ret->addPragma(PRAG_TEMP);
           VarSymbol* cid = new VarSymbol("tmp", dtBool);
-          cid->isCompilerTemp = true;
+          cid->addPragma(PRAG_TEMP);
           if_fn->insertAtTail(new DefExpr(cid));
           if_fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cid,
                                 new CallExpr(PRIMITIVE_GETCID,
@@ -3638,7 +3639,7 @@ resolve() {
           } else if (isSubType(fn->retType, key->retType)) {
             // Insert a cast to the overridden method's return type
             VarSymbol* castTemp = new VarSymbol("_castTemp", fn->retType);
-            castTemp->isCompilerTemp = true;
+            castTemp->addPragma(PRAG_TEMP);
             trueBlock->insertAtTail(new DefExpr(castTemp));
             trueBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, castTemp,
                                                  subcall));
@@ -3664,7 +3665,7 @@ resolve() {
           subcall->baseExpr->replace(new SymExpr(fn));
           if (SymExpr* se = toSymExpr(subcall->get(2))) {
             VarSymbol* tmp = new VarSymbol("_tmp", type);
-            tmp->isCompilerTemp = true;
+            tmp->addPragma(PRAG_TEMP);
             se->getStmtExpr()->insertBefore(new DefExpr(tmp));
             se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_CAST, type->symbol, se->var)));
             se->replace(new SymExpr(tmp));
@@ -3778,7 +3779,7 @@ initializeClass(Expr* stmt, Symbol* sym) {
         stmt->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, sym, field, field->type->defaultValue));
       } else if (isRecordType(field->type)) {
         VarSymbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->isCompilerTemp = true;
+        tmp->addPragma(PRAG_TEMP);
         stmt->insertBefore(new DefExpr(tmp));
         initializeClass(stmt, tmp);
         stmt->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, sym, field, tmp));
@@ -3881,7 +3882,7 @@ pruneResolvedTree() {
           baseType = getValueType(baseType);
         const char* memberName = get_string(call->get(2));
         Symbol* sym = baseType->getField(memberName);
-        if ((sym->isTypeVariable && !sym->type->symbol->hasPragma(PRAG_ARRAY)) ||
+        if ((sym->hasPragma(PRAG_TYPE_VARIABLE) && !sym->type->symbol->hasPragma(PRAG_ARRAY)) ||
             !strcmp(sym->name, "_promotionType") ||
             sym->isParameter())
           call->getStmtExpr()->remove();
@@ -3897,7 +3898,7 @@ pruneResolvedTree() {
         for (int i = fn->numFormals(); i >= 1; i--) {
           ArgSymbol* formal = fn->getFormal(i);
           if (formal->type == dtMethodToken ||
-              (formal->isTypeVariable &&
+              (formal->hasPragma(PRAG_TYPE_VARIABLE) &&
                !formal->type->symbol->hasPragma(PRAG_ARRAY)))
             call->get(i)->remove();
         }
@@ -3927,11 +3928,11 @@ pruneResolvedTree() {
         // Remove method token formals
         if (formal->type == dtMethodToken)
           formal->defPoint->remove();
-        if (formal->isTypeVariable &&
+        if (formal->hasPragma(PRAG_TYPE_VARIABLE) &&
             !formal->type->symbol->hasPragma(PRAG_ARRAY)) {
           formal->defPoint->remove();
           VarSymbol* tmp = new VarSymbol("_removed_formal_tmp", formal->type);
-          tmp->isCompilerTemp = true;
+          tmp->addPragma(PRAG_TEMP);
           fn->insertAtHead(new DefExpr(tmp));
           if (asts.n == 0)
             collect_asts(fn->body, asts);
@@ -3946,10 +3947,10 @@ pruneResolvedTree() {
             }
           }
         }
-        if (formal->isTypeVariable &&
+        if (formal->hasPragma(PRAG_TYPE_VARIABLE) &&
             formal->type->symbol->hasPragma(PRAG_ARRAY)) {
           formal->type = buildArrayTypeInfo(formal->type);
-          formal->isTypeVariable = false;
+          formal->removePragma(PRAG_TYPE_VARIABLE);
         }
       }
       if (fn->where)
@@ -3973,7 +3974,7 @@ pruneResolvedTree() {
         SymExpr* se = toSymExpr(call->get(1));
         Symbol* eltField = se->var->type->getField("elt");
         VarSymbol* elt = new VarSymbol("_tmp", eltField->type);
-        elt->isTypeVariable = true;
+        elt->addPragma(PRAG_TYPE_VARIABLE);
         call->getStmtExpr()->insertBefore(new DefExpr(elt));
         // BLC: if the field is an array, process it; otherwise, remove it
         if (elt->type->symbol->hasPragma(PRAG_ARRAY_TYPE_INFO))
@@ -4066,16 +4067,16 @@ pruneResolvedTree() {
           fn->body->replace(block);
         }
       } else if (isVarSymbol(def->sym) &&
-                 def->sym->isTypeVariable &&
+                 def->sym->hasPragma(PRAG_TYPE_VARIABLE) &&
                  def->sym->type->symbol->hasPragma(PRAG_ARRAY)) {
         def->sym->type = buildArrayTypeInfo(def->sym->type);
-        def->sym->isTypeVariable = false;
+        def->sym->removePragma(PRAG_TYPE_VARIABLE);
       }
     } else if (SymExpr* se = toSymExpr(ast)) {
 
       // remove dead type expressions
       if (se->getStmtExpr() == se)
-        if (se->var->isTypeVariable)
+        if (se->var->hasPragma(PRAG_TYPE_VARIABLE))
           se->remove();
 
     }
@@ -4086,7 +4087,7 @@ pruneResolvedTree() {
     if (type->defPoint && type->defPoint->parentSymbol) {
       if (ClassType* ct = toClassType(type->type)) {
         for_fields(field, ct) {
-          if (field->isTypeVariable ||
+          if (field->hasPragma(PRAG_TYPE_VARIABLE) ||
               field->isParameter() ||
               !strcmp(field->name, "_promotionType"))
             field->defPoint->remove();
@@ -4105,7 +4106,7 @@ pruneResolvedTree() {
           if (formal->type == actual->typeInfo()->refType) {
             SET_LINENO(call);
             VarSymbol* tmp = new VarSymbol("_tmp", formal->type);
-            tmp->isCompilerTemp = true;
+            tmp->addPragma(PRAG_TEMP);
             call->getStmtExpr()->insertBefore(new DefExpr(tmp));
             actual->replace(new SymExpr(tmp));
             call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, actual)));

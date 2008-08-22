@@ -111,7 +111,7 @@ bundleArgs(CallExpr* fcall) {
   for_fields(field, ctype) {  // insert args
 
     VarSymbol* tmp = new VarSymbol("_tmp", field->type);
-    tmp->isCompilerTemp = true;
+    tmp->addPragma(PRAG_TEMP);
     wrap_fn->insertAtTail(new DefExpr(tmp));
     wrap_fn->insertAtTail(
       new CallExpr(PRIMITIVE_MOVE, tmp,
@@ -140,7 +140,7 @@ insertEndCount(FnSymbol* fn,
                Map<FnSymbol*,Symbol*>& endCountMap) {
   if (fn == chpl_main) {
     VarSymbol* var = new VarSymbol("_endCount", endCountType);
-    var->isCompilerTemp = true;
+    var->addPragma(PRAG_TEMP);
     fn->insertAtHead(new DefExpr(var));
     endCountMap.put(fn, var);
     queue.add(fn);
@@ -148,7 +148,7 @@ insertEndCount(FnSymbol* fn,
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_endCount", endCountType);
     fn->insertFormalAtTail(arg);
     VarSymbol* var = new VarSymbol("_endCount", endCountType);
-    var->isCompilerTemp = true;
+    var->addPragma(PRAG_TEMP);
     fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, arg));
     fn->insertAtHead(new DefExpr(var));
     endCountMap.put(fn, var);
@@ -729,7 +729,7 @@ insertWideReferences(void) {
         // this can happen due to coercion wrappers
         // this is a worrisome fix
         //
-        if (lhs->var->isCompilerTemp) {
+        if (lhs->var->hasPragma(PRAG_TEMP)) {
           if (CallExpr* move2 = toCallExpr(move->next)) {
             Vec<SymExpr*>* defs = defMap.get(lhs->var);
             Vec<SymExpr*>* uses = useMap.get(lhs->var);
@@ -795,8 +795,8 @@ insertWideReferences(void) {
   CallExpr* localeID = new CallExpr(PRIMITIVE_LOCALE_ID);
   VarSymbol* tmp = new VarSymbol("_tmp", localeID->typeInfo());
   VarSymbol* tmpBool = new VarSymbol("_tmp", dtBool);
-  tmp->isCompilerTemp = true;
-  tmpBool->isCompilerTemp = true;
+  tmp->addPragma(PRAG_TEMP);
+  tmpBool->addPragma(PRAG_TEMP);
 
   heapAllocateGlobals->insertAtTail(new DefExpr(tmp));
   heapAllocateGlobals->insertAtTail(new DefExpr(tmpBool));

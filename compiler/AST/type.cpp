@@ -399,7 +399,7 @@ createPrimitiveType(const char *name, const char *cname) {
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
   gSym = new VarSymbol (name, primType);                \
-  toVarSymbol(gSym)->isConst = true;                    \
+  gSym->addPragma(PRAG_CONST);                          \
   rootModule->block->insertAtTail(new DefExpr(gSym));   \
   primType->defaultValue = gSym
 
@@ -449,7 +449,7 @@ void initPrimitiveTypes(void) {
   dtBool->defaultValue = gFalse;
 
   gTrue = new VarSymbol("true", dtBool);
-  gTrue->isConst = true;
+  gTrue->addPragma(PRAG_CONST);
   rootModule->block->insertAtTail(new DefExpr(gTrue));
   gTrue->immediate = new Immediate;
   gTrue->immediate->v_bool = true;
@@ -458,7 +458,7 @@ void initPrimitiveTypes(void) {
   uniqueConstantsHash.put(gTrue->immediate, gTrue);
 
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
-  gBoundsChecking->isConst = true;
+  gBoundsChecking->addPragma(PRAG_CONST);
   rootModule->block->insertAtTail(new DefExpr(gBoundsChecking));
   if (fNoBoundsChecks) {
     gBoundsChecking->immediate = new Immediate;

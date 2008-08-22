@@ -34,7 +34,7 @@ insertLineNumber(CallExpr* call) {
   FnSymbol* fn = call->getFunction();
   ModuleSymbol* mod = fn->getModule();
   if (!strcmp(fn->name, "_heapAllocateGlobals") ||
-      (mod->modTag == MOD_USER && !fn->isCompilerTemp && !fn->hasPragma(PRAG_INLINE)) ||
+      (mod->modTag == MOD_USER && !fn->hasPragma(PRAG_TEMP) && !fn->hasPragma(PRAG_INLINE)) ||
       (developer == true && strcmp(fn->name, "halt"))) {
     // call is in user code; insert AST line number and filename
     // or developer flag is on and the call is not the halt() call

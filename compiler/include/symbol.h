@@ -47,10 +47,6 @@ class Symbol : public BaseAST {
   const char* cname; // Name of symbol for generating C code
   Type* type;
   DefExpr* defPoint; // Point of definition
-  bool isCompilerTemp;
-  bool isTypeVariable;
-  bool canParam;       // can be a parameter (determined during resolution)
-  bool canType;        // can be a type (determined during resolution)
   std::bitset<NUM_PRAGMAS> pragmas;
   //  BitVec pragmas;
 
@@ -82,9 +78,6 @@ class Symbol : public BaseAST {
 
 class VarSymbol : public Symbol {
  public:
-  bool isConfig;
-  bool isParam;
-  bool isConst;
   Immediate   *immediate;
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2

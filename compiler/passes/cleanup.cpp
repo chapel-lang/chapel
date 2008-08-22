@@ -70,7 +70,7 @@ static void destructure_tuple(CallExpr* call) {
     return;
   Expr* stmt = parent->getStmtExpr();
   VarSymbol* temp = new VarSymbol("_tuple_destruct");
-  temp->isCompilerTemp = true;
+  temp->addPragma(PRAG_TEMP);
   stmt->insertBefore(new DefExpr(temp));
   stmt = new CallExpr(PRIMITIVE_MOVE, temp, parent->get(2)->remove());
   parent->replace(stmt);

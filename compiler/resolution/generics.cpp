@@ -99,7 +99,7 @@ instantiate_tuple(FnSymbol* fn) {
     const char* name = astr("x", istr(i));
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, NULL, new SymExpr(gNil));
     if (tuple)
-      arg->isTypeVariable = true;
+      arg->addPragma(PRAG_TYPE_VARIABLE);
     fn->insertFormalAtTail(arg);
     last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
                                     new_StringSymbol(name), arg));
@@ -171,7 +171,7 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
     if (!fn->hasPragma(PRAG_SYNC) ||
         (fn->hasPragma(PRAG_METHOD) && (value->type->instantiatedFrom != fn->_this->type))) {
       // allow types to be instantiated to sync types
-      if (!key->isTypeVariable) {
+      if (!key->hasPragma(PRAG_TYPE_VARIABLE)) {
         // instantiation of a non-type formal of sync type loses sync
 
         // unless sync is explicitly specified as the generic
@@ -450,7 +450,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
         newFormal->instantiatedFrom = formal->type;
         newFormal->type = value->type;
       }
-      if (!newFormal->defaultExpr || formal->isTypeVariable) {
+      if (!newFormal->defaultExpr || formal->hasPragma(PRAG_TYPE_VARIABLE)) {
         if (newFormal->defaultExpr)
           newFormal->defaultExpr->remove();
         if (Symbol* sym = paramMap.get(newFormal))

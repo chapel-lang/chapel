@@ -35,6 +35,8 @@ initPragmas() {
   definePragma(PRAG_COBEGIN_OR_COFORALL_BLOCK, "cobegin or coforall block");
   definePragma(PRAG_COMMAND_LINE_SETTING, "command line setting");
   definePragma(PRAG_CONCURRENTLY_ACCESSED, "concurrently accessed");
+  definePragma(PRAG_CONFIG, "config");
+  definePragma(PRAG_CONST, "const");
   definePragma(PRAG_DATA_CLASS, "data class");
   definePragma(PRAG_DATA_SET_ERROR, "data set error");
   definePragma(PRAG_DEFAULT_CONSTRUCTOR, "default constructor");
@@ -56,6 +58,8 @@ initPragmas() {
   definePragma(PRAG_LABEL_CONTINUE, "label continue");
   definePragma(PRAG_LOCAL_BLOCK, "local block");
   definePragma(PRAG_LOCALIZED, "localized");
+  definePragma(PRAG_MAYBE_PARAM, "maybe param");
+  definePragma(PRAG_MAYBE_TYPE, "maybe type");
   definePragma(PRAG_METHOD, "method");
   definePragma(PRAG_NO_DEFAULT_FUNCTIONS, "no default functions");
   definePragma(PRAG_NO_FORMAL_TMP, "no formal tmp");
@@ -67,6 +71,7 @@ initPragmas() {
   definePragma(PRAG_OMIT_FROM_CONSTRUCTOR, "omit from constructor");
   definePragma(PRAG_ON, "on");
   definePragma(PRAG_ON_BLOCK, "on block");
+  definePragma(PRAG_PARAM, "param");
   definePragma(PRAG_PRIVATE, "private");
   definePragma(PRAG_PROMOTION_WRAPPER, "promotion wrapper");
   definePragma(PRAG_RANGE, "range");
@@ -77,10 +82,12 @@ initPragmas() {
   definePragma(PRAG_SPECIFIED_RETURN_TYPE, "specified return type");
   definePragma(PRAG_SUPER_CLASS, "super class");
   definePragma(PRAG_SYNC, "sync");
+  definePragma(PRAG_TEMP, "temp");
   definePragma(PRAG_TUPLE, "tuple");
   definePragma(PRAG_TUPLE_HASH_FUNCTION, "tuple hash function");
   definePragma(PRAG_TUPLE_INIT, "tuple init");
   definePragma(PRAG_TYPE_CONSTRUCTOR, "type constructor");
+  definePragma(PRAG_TYPE_VARIABLE, "type variable");
   definePragma(PRAG_VALID_VAR, "valid var");
   definePragma(PRAG_INVISIBLE_FN, "invisible fn");
   definePragma(PRAG_WIDE, "wide");

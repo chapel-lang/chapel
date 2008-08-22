@@ -773,7 +773,7 @@ var_arg_expr:
     { $$ = $2; }
 | TDOTDOTDOT query_expr
     {
-      toVarSymbol($2->sym)->isParam = true;
+      $2->sym->addPragma(PRAG_PARAM);
       $$ = $2;
     }
 ;
@@ -935,14 +935,14 @@ typedef_decl_stmt_inner:
   identifier TASSIGN type
     {
       VarSymbol* var = new VarSymbol($1);
-      var->isTypeVariable = true;
+      var->addPragma(PRAG_TYPE_VARIABLE);
       DefExpr* def = new DefExpr(var, $3);
       $$ = buildChapelStmt(def);
     }
 | identifier TASSIGN type TCOMMA typedef_decl_stmt_inner
     {
       VarSymbol* var = new VarSymbol($1);
-      var->isTypeVariable = true;
+      var->addPragma(PRAG_TYPE_VARIABLE);
       DefExpr* def = new DefExpr(var, $3);
       $5->insertAtTail(def);
       $$ = buildChapelStmt($5);
@@ -967,7 +967,7 @@ typevar_decl_stmt:
   TTYPE identifier opt_init_type TSEMI
     {
       VarSymbol* var = new VarSymbol($2);
-      var->isTypeVariable = true;
+      var->addPragma(PRAG_TYPE_VARIABLE);
       DefExpr* def = new DefExpr(var, $3);
       $$ = buildChapelStmt(def);
     }

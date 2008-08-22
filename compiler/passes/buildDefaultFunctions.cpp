@@ -153,7 +153,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
 
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addPragma(PRAG_INLINE);
-  fn->isCompilerTemp = true;
+  fn->addPragma(PRAG_TEMP);
   if (ct->symbol->hasPragma(PRAG_SYNC)) 
     fn->addPragma(PRAG_SYNC);
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
@@ -161,7 +161,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->insertFormalAtTail(_this);
   if (field->isParameter())
     fn->retTag = RET_PARAM;
-  else if (field->isTypeVariable)
+  else if (field->hasPragma(PRAG_TYPE_VARIABLE))
     fn->retTag = RET_TYPE;
   else if (field->hasPragma(PRAG_SUPER_CLASS)) {
     fn->retTag = RET_VALUE;
@@ -183,7 +183,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, field));
     // better flatten enumerated types now
     ct->symbol->defPoint->insertBefore(field->defPoint->remove());
-  } else if (field->isTypeVariable || field->hasPragma(PRAG_SUPER_CLASS))
+  } else if (field->hasPragma(PRAG_TYPE_VARIABLE) || field->hasPragma(PRAG_SUPER_CLASS))
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   else
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
@@ -282,7 +282,7 @@ static void build_chpl_main(void) {
   chpl_main->insertAtHead(new CallExpr(chpl_main->getModule()->initFn));
   if (!fRuntime) {
     VarSymbol* endCount = new VarSymbol("_endCount");
-    endCount->isCompilerTemp = true;
+    endCount->addPragma(PRAG_TEMP);
     chpl_main->insertAtHead(new CallExpr("_startTrackingMem"));
     chpl_main->insertAtHead(new CallExpr(PRIMITIVE_SET_END_COUNT, endCount));
     chpl_main->insertAtHead(new CallExpr(PRIMITIVE_MOVE, endCount, new CallExpr("_endCountAlloc")));
@@ -349,7 +349,7 @@ static void build_enum_enumerate_function(EnumType* et) {
   // Each enum type has its own _enum_enumerate function.
   FnSymbol* fn = new FnSymbol("_enum_enumerate");
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
-  arg->isTypeVariable = true;
+  arg->addPragma(PRAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(arg);
   fn->where = new BlockStmt(new CallExpr("==", arg, et->symbol));
 
@@ -370,9 +370,9 @@ static void build_enum_enumerate_function(EnumType* et) {
 static void build_enum_cast_function(EnumType* et) {
   // integral value to enumerated type cast function
   FnSymbol* fn = new FnSymbol("_cast");
-  fn->isCompilerTemp = true;
+  fn->addPragma(PRAG_TEMP);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
-  arg1->isTypeVariable = true;
+  arg1->addPragma(PRAG_TYPE_VARIABLE);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtIntegral);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
@@ -415,9 +415,9 @@ static void build_enum_cast_function(EnumType* et) {
 
   // string to enumerated type cast function
   fn = new FnSymbol("_cast");
-  fn->isCompilerTemp = true;
+  fn->addPragma(PRAG_TEMP);
   arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
-  arg1->isTypeVariable = true;
+  arg1->addPragma(PRAG_TYPE_VARIABLE);
   arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtString);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
@@ -490,7 +490,7 @@ static void build_record_assignment_function(ClassType* ct) {
   fn->insertFormalAtTail(arg2);
   fn->retType = dtUnknown;
   for_fields(tmp, ct) {
-    if (!tmp->isTypeVariable && !tmp->isParameter() && strcmp(tmp->name, "_promotionType"))
+    if (!tmp->hasPragma(PRAG_TYPE_VARIABLE) && !tmp->isParameter() && strcmp(tmp->name, "_promotionType"))
       fn->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))));
   }
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, arg1));
@@ -504,7 +504,7 @@ static void build_record_assignment_function(ClassType* ct) {
 static void build_record_cast_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("_cast");
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
-  t->isTypeVariable = true;
+  t->addPragma(PRAG_TYPE_VARIABLE);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "arg", dtAny);
   fn->insertFormalAtTail(t);
   fn->insertFormalAtTail(arg);
@@ -535,7 +535,7 @@ static void build_union_assignment_function(ClassType* ct) {
   fn->retType = dtUnknown;
   fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, arg1, new_IntSymbol(0)));
   for_fields(tmp, ct)
-    if (!tmp->isTypeVariable)
+    if (!tmp->hasPragma(PRAG_TYPE_VARIABLE))
       fn->insertAtTail(
         new CondStmt(
           new CallExpr("==",
@@ -586,7 +586,7 @@ static void build_record_init_function(ClassType* ct) {
   fn->insertFormalAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   for_formals(formal, ct->defaultConstructor) {
-    if (formal->isTypeVariable || formal->intent == INTENT_PARAM) {
+    if (formal->hasPragma(PRAG_TYPE_VARIABLE) || formal->intent == INTENT_PARAM) {
       call->insertAtTail(new NamedExpr(formal->name, new CallExpr(".", arg, new_StringSymbol(formal->name))));
     } else if (!formal->defaultExpr) {
       call->insertAtTail(new NamedExpr(formal->name, new CallExpr(PRIMITIVE_INIT, new CallExpr(".", arg, new_StringSymbol(formal->name)))));
@@ -670,7 +670,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
   body->insertAtTail(readErrorCond);
   bool first = true;
   for_fields(tmp, ct) {
-    if (tmp->isTypeVariable || tmp->hasPragma(PRAG_SUPER_CLASS))
+    if (tmp->hasPragma(PRAG_TYPE_VARIABLE) || tmp->hasPragma(PRAG_SUPER_CLASS))
       continue;
     if (!first) {
       CallExpr* readComma = new CallExpr("_readLitChar", fileArgFP->copy(), new_StringSymbol(","), ignoreWhiteSpace);
@@ -751,7 +751,7 @@ static bool buildWriteSuperClass(ArgSymbol* fileArg, FnSymbol* fn, Expr* dot, Ty
   if (!ct)
     return false; // Maybe error out?
   for_fields(tmp, ct) {
-    if (tmp->isTypeVariable)
+    if (tmp->hasPragma(PRAG_TYPE_VARIABLE))
       continue;
     if (tmp->hasPragma(PRAG_SUPER_CLASS)) {
       printedSomething = buildWriteSuperClass(fileArg, fn, buildDotExpr(dot, tmp->name), ct->dispatchParents.v[0], first);
@@ -812,7 +812,7 @@ static void buildDefaultWriteFunction(ClassType* ct) {
   } else {
     bool first = true;
     for_fields(tmp, ct) {
-      if (tmp->isTypeVariable)
+      if (tmp->hasPragma(PRAG_TYPE_VARIABLE))
         continue;
       if (!strcmp("outer", tmp->name))
         continue;
@@ -855,7 +855,7 @@ static void buildStringCastFunction(EnumType* et) {
 
   FnSymbol* fn = new FnSymbol("_cast");
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
-  t->isTypeVariable = true;
+  t->addPragma(PRAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(t);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "this", et);
   fn->insertFormalAtTail(arg);

@@ -91,8 +91,8 @@ Expr* buildDotExpr(const char* base, const char* member) {
 
 Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
   VarSymbol* lvar = new VarSymbol("tmp");
-  lvar->isCompilerTemp = true;
-  lvar->canParam = true;
+  lvar->addPragma(PRAG_TEMP);
+  lvar->addPragma(PRAG_MAYBE_PARAM);
   FnSymbol* ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
                                  new CallExpr("isTrue", right),
                                  new SymExpr(gFalse));
@@ -105,8 +105,8 @@ Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
 
 Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
   VarSymbol* lvar = new VarSymbol("tmp");
-  lvar->isCompilerTemp = true;
-  lvar->canParam = true;
+  lvar->addPragma(PRAG_TEMP);
+  lvar->addPragma(PRAG_MAYBE_PARAM);
   FnSymbol* ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
                                  new SymExpr(gTrue),
                                  new CallExpr("isTrue", right));
@@ -156,7 +156,7 @@ buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
 BlockStmt*
 buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
   VarSymbol* tmp = new VarSymbol("_tuple_tmp");
-  tmp->isCompilerTemp = true;
+  tmp->addPragma(PRAG_TEMP);
   int count = 1;
   for_alist(expr, tupleBlock->body) {
     if (DefExpr* def = toDefExpr(expr)) {
@@ -284,13 +284,13 @@ FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
   VarSymbol* tmp1 = new VarSymbol("_if_tmp1");
   VarSymbol* tmp2 = new VarSymbol("_if_tmp2");
 
-  tmp1->isCompilerTemp = true;
-  tmp2->isCompilerTemp = true;
-  tmp1->canParam = true;
-  tmp2->canType = true;
+  tmp1->addPragma(PRAG_TEMP);
+  tmp2->addPragma(PRAG_TEMP);
+  tmp1->addPragma(PRAG_MAYBE_PARAM);
+  tmp2->addPragma(PRAG_MAYBE_TYPE);
 
-  ifFn->canParam = true;
-  ifFn->canType = true;
+  ifFn->addPragma(PRAG_MAYBE_PARAM);
+  ifFn->addPragma(PRAG_MAYBE_TYPE);
   ifFn->insertAtHead(new DefExpr(tmp1));
   ifFn->insertAtHead(new DefExpr(tmp2));
   ifFn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, new SymExpr(tmp1), new CallExpr("_cond_test", e)));
@@ -324,14 +324,14 @@ CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
 BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
   cond = new CallExpr("_cond_test", cond);
   VarSymbol* condVar = new VarSymbol("_cond");
-  condVar->isCompilerTemp = true;
+  condVar->addPragma(PRAG_TEMP);
   body = new BlockStmt(body);
   body->blockInfo = new CallExpr(PRIMITIVE_BLOCK_WHILEDO_LOOP, condVar);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
-  continueLabel->isCompilerTemp = true;
+  continueLabel->addPragma(PRAG_TEMP);
   continueLabel->addPragma(PRAG_LABEL_CONTINUE);
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
-  breakLabel->isCompilerTemp = true;
+  breakLabel->addPragma(PRAG_TEMP);
   breakLabel->addPragma(PRAG_LABEL_BREAK);
   body->insertAtTail(new DefExpr(continueLabel));
   body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
@@ -347,7 +347,7 @@ BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
 BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body) {
   cond = new CallExpr("_cond_test", cond);
   VarSymbol* condVar = new VarSymbol("_cond");
-  condVar->isCompilerTemp = true;
+  condVar->addPragma(PRAG_TEMP);
 
   // make variables declared in the scope of the body visible to
   // expressions in the condition of a do..while block
@@ -357,10 +357,10 @@ BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body) {
   }
 
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
-  continueLabel->isCompilerTemp = true;
+  continueLabel->addPragma(PRAG_TEMP);
   continueLabel->addPragma(PRAG_LABEL_CONTINUE);
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
-  breakLabel->isCompilerTemp = true;
+  breakLabel->addPragma(PRAG_TEMP);
   breakLabel->addPragma(PRAG_LABEL_BREAK);
   BlockStmt* block = new BlockStmt(body);
   block->blockInfo = new CallExpr(PRIMITIVE_BLOCK_DOWHILE_LOOP, condVar);
@@ -466,18 +466,18 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   body = new BlockStmt(body);
   BlockStmt* stmts = buildChapelStmt();
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
-  continueLabel->isCompilerTemp = true;
+  continueLabel->addPragma(PRAG_TEMP);
   continueLabel->addPragma(PRAG_LABEL_CONTINUE);
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
-  breakLabel->isCompilerTemp = true;
+  breakLabel->addPragma(PRAG_TEMP);
   breakLabel->addPragma(PRAG_LABEL_BREAK);
 
   VarSymbol* iterator = new VarSymbol("_iterator");
-  iterator->isCompilerTemp = true;
+  iterator->addPragma(PRAG_TEMP);
   stmts->insertAtTail(new DefExpr(iterator));
   stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
   VarSymbol* index = new VarSymbol("_index");
-  index->isCompilerTemp = true;
+  index->addPragma(PRAG_TEMP);
   stmts->insertAtTail(new DefExpr(index));
   stmts->insertAtTail(new BlockStmt(
     new CallExpr(PRIMITIVE_MOVE, index,
@@ -511,25 +511,25 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
 
   BlockStmt* leaderBlock = buildChapelStmt();
   VarSymbol* iterator = new VarSymbol("_iterator");
-  iterator->isCompilerTemp = true;
+  iterator->addPragma(PRAG_TEMP);
   leaderBlock->insertAtTail(new DefExpr(iterator));
   leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
   VarSymbol* leaderIndex = new VarSymbol("_leaderIndex");
-  leaderIndex->isCompilerTemp = true;
+  leaderIndex->addPragma(PRAG_TEMP);
   leaderBlock->insertAtTail(new DefExpr(leaderIndex));
   VarSymbol* leaderIterator = new VarSymbol("_leaderIterator");
-  leaderIterator->isCompilerTemp = true;
+  leaderIterator->addPragma(PRAG_TEMP);
   leaderBlock->insertAtTail(new DefExpr(leaderIterator));
   VarSymbol* leaderIndexCopy = new VarSymbol("_leaderIndexCopy");
-  leaderIndexCopy->isCompilerTemp = true;
+  leaderIndexCopy->addPragma(PRAG_TEMP);
   leaderIndexCopy->addPragma(PRAG_INDEX_VAR);
   leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leaderIterator, new CallExpr("_toLeader", iterator)));
   BlockStmt* followerBlock = new BlockStmt();
   VarSymbol* followerIndex = new VarSymbol("_followerIndex");
-  followerIndex->isCompilerTemp = true;
+  followerIndex->addPragma(PRAG_TEMP);
   followerBlock->insertAtTail(new DefExpr(followerIndex));
   VarSymbol* followerIterator = new VarSymbol("_followerIterator");
-  followerIterator->isCompilerTemp = true;
+  followerIterator->addPragma(PRAG_TEMP);
   followerBlock->insertAtTail(new DefExpr(followerIterator));
   followerBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, followerIterator, new CallExpr("_toFollower", iterator, leaderIndexCopy)));
   followerBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, followerIndex, new CallExpr("iteratorIndex", followerIterator)), BLOCK_TYPE));
@@ -541,7 +541,7 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
   beginBlock->insertAtTail(new DefExpr(leaderIndexCopy));
   beginBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leaderIndexCopy, leaderIndex));
   VarSymbol* coforallCount = new VarSymbol("_coforallCount");
-  coforallCount->isCompilerTemp = true;
+  coforallCount->addPragma(PRAG_TEMP);
   leaderBlock->insertAtTail(new DefExpr(coforallCount));
   leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
   beginBlock->insertAtTail(new CallExpr("_upEndCount", coforallCount));
@@ -574,7 +574,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
   checkIndices(indices);
 
   VarSymbol* coforallCount = new VarSymbol("_coforallCount");
-  coforallCount->isCompilerTemp = true;
+  coforallCount->addPragma(PRAG_TEMP);
   BlockStmt* beginBlk = new BlockStmt();
   beginBlk->blockInfo = new CallExpr(PRIMITIVE_BLOCK_COFORALL);
   beginBlk->insertAtHead(body);
@@ -592,8 +592,8 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
 static Symbol*
 insertBeforeCompilerTemp(Expr* stmt, Expr* expr) {
   Symbol* expr_var = new VarSymbol("_tmp");
-  expr_var->isCompilerTemp = true;
-  expr_var->canParam = true;
+  expr_var->addPragma(PRAG_TEMP);
+  expr_var->addPragma(PRAG_MAYBE_PARAM);
   stmt->insertBefore(new DefExpr(expr_var));
   stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, expr_var, expr));
   return expr_var;
@@ -631,15 +631,15 @@ buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = buildChapelStmt();
 
   VarSymbol* ltmp = new VarSymbol("_ltmp");
-  ltmp->isCompilerTemp = true;
-  ltmp->canParam = true;
+  ltmp->addPragma(PRAG_TEMP);
+  ltmp->addPragma(PRAG_MAYBE_PARAM);
   stmt->insertAtTail(new DefExpr(ltmp));
   stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp,
                        new CallExpr(PRIMITIVE_SET_REF, lhs)));
 
   VarSymbol* rtmp = new VarSymbol("_rtmp");
-  rtmp->isCompilerTemp = true;
-  rtmp->canParam = true;
+  rtmp->addPragma(PRAG_TEMP);
+  rtmp->addPragma(PRAG_MAYBE_PARAM);
   stmt->insertAtTail(new DefExpr(rtmp));
   stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, rtmp, rhs));
 
@@ -690,7 +690,7 @@ buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs) {
 BlockStmt* buildLogicalAndExprAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = buildChapelStmt();
   VarSymbol* ltmp = new VarSymbol("_ltmp");
-  ltmp->isCompilerTemp = true;
+  ltmp->addPragma(PRAG_TEMP);
   stmt->insertAtTail(new DefExpr(ltmp));
   stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp, new CallExpr(PRIMITIVE_SET_REF, lhs)));
   stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalAndExpr(ltmp, rhs)));
@@ -701,7 +701,7 @@ BlockStmt* buildLogicalAndExprAssignment(Expr* lhs, Expr* rhs) {
 BlockStmt* buildLogicalOrExprAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = buildChapelStmt();
   VarSymbol* ltmp = new VarSymbol("_ltmp");
-  ltmp->isCompilerTemp = true;
+  ltmp->addPragma(PRAG_TEMP);
   stmt->insertAtTail(new DefExpr(ltmp));
   stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp, new CallExpr(PRIMITIVE_SET_REF, lhs)));
   stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalOrExpr(ltmp, rhs)));
@@ -810,8 +810,8 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
     }
   }
   VarSymbol* tmp = new VarSymbol("_tmp");
-  tmp->isCompilerTemp = true;
-  tmp->canParam = true;
+  tmp->addPragma(PRAG_TEMP);
+  tmp->addPragma(PRAG_MAYBE_PARAM);
   stmts->insertAtHead(new DefExpr(tmp));
   stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE,
                                    tmp,
@@ -834,12 +834,12 @@ CallExpr* buildReduceScanExpr(Expr* op, Expr* data, bool isScan) {
   FnSymbol* fn = new FnSymbol(astr("_reduce_scan", istr(uid++)));
   fn->addPragma(PRAG_INLINE);
   VarSymbol* tmp = new VarSymbol("_tmp");
-  tmp->isCompilerTemp = true;
+  tmp->addPragma(PRAG_TEMP);
   fn->insertAtTail(new DefExpr(tmp));
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, data));
   VarSymbol* eltType = new VarSymbol("_tmp");
-  eltType->isCompilerTemp = true;
-  eltType->canType = true;
+  eltType->addPragma(PRAG_TEMP);
+  eltType->addPragma(PRAG_MAYBE_TYPE);
   fn->insertAtTail(new DefExpr(eltType));
   fn->insertAtTail(
     new BlockStmt(
@@ -882,9 +882,12 @@ setVarSymbolAttributes(BlockStmt* stmts, bool isConfig, bool isParam, bool isCon
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        var->isConfig = isConfig;
-        var->isParam = isParam;
-        var->isConst = isConst;
+        if (isConfig)
+          var->addPragma(PRAG_CONFIG);
+        if (isParam)
+          var->addPragma(PRAG_PARAM);
+        if (isConst)
+          var->addPragma(PRAG_CONST);
         continue;
       }
     }
@@ -914,7 +917,7 @@ buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* 
   if (arg->intent == INTENT_TYPE) {
     type = NULL;
     arg->intent = INTENT_BLANK;
-    arg->isTypeVariable = true;
+    arg->addPragma(PRAG_TYPE_VARIABLE);
     arg->type = dtAny;
   } else if (!type && !init)
     arg->type = dtAny;
@@ -937,8 +940,8 @@ buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
     ArgSymbol* argSymbol = new ArgSymbol(INTENT_BLANK,
                                          astr("_tuple_arg_tmp", istr(uid++)),
                                          dtUnknown, tupleType);
-    argSymbol->isCompilerTemp = true;
-    argSymbol->canParam = true;
+    argSymbol->addPragma(PRAG_TEMP);
+    argSymbol->addPragma(PRAG_MAYBE_PARAM);
     fn->insertFormalAtTail(new DefExpr(argSymbol));
     base = new SymExpr(argSymbol);
     outermost = true;
@@ -1038,7 +1041,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
 
   BlockStmt* block = buildChapelStmt();
   Symbol* tmp = new VarSymbol("_tmp");
-  tmp->isCompilerTemp = true;
+  tmp->addPragma(PRAG_TEMP);
   block->insertAtTail(new DefExpr(tmp));
   block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, onExpr));
   BlockStmt* onBlock = new BlockStmt(stmt);
@@ -1073,7 +1076,7 @@ buildSyncStmt(Expr* stmt) {
     return buildChapelStmt(new BlockStmt(stmt));
   BlockStmt* block = new BlockStmt();
   VarSymbol* endCountSave = new VarSymbol("_endCountSave");
-  endCountSave->isCompilerTemp = true;
+  endCountSave->addPragma(PRAG_TEMP);
   block->insertAtTail(new DefExpr(endCountSave));
   block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, endCountSave, new CallExpr(PRIMITIVE_GET_END_COUNT)));
   block->insertAtTail(new CallExpr(PRIMITIVE_SET_END_COUNT, new CallExpr("_endCountAlloc")));
@@ -1105,7 +1108,7 @@ buildCobeginStmt(BlockStmt* block) {
     return buildChapelStmt(block);
 
   VarSymbol* cobeginCount = new VarSymbol("_cobeginCount");
-  cobeginCount->isCompilerTemp = true;
+  cobeginCount->addPragma(PRAG_TEMP);
 
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();

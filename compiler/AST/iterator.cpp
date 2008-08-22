@@ -44,13 +44,13 @@ insertSetMemberInits(FnSymbol* fn, Symbol* var) {
         if (getValueType(field->type)->symbol->hasPragma(PRAG_ARRAY))
           continue; // skips array types
         Symbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->isCompilerTemp = true;
+        tmp->addPragma(PRAG_TEMP);
         fn->insertAtTail(new DefExpr(tmp));
         fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, gNilRef));
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, field, tmp));
       } else if (field->type->refType) { // skips array types (how to handle arrays?) ( sjd later: really? )
         Symbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->isCompilerTemp = true;
+        tmp->addPragma(PRAG_TEMP);
         fn->insertAtTail(new DefExpr(tmp));
         insertSetMemberInits(fn, tmp);
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, field, tmp));
@@ -322,7 +322,7 @@ buildAdvance(FnSymbol* fn,
   // insert jump table at head of advance
   i = 2;
   Symbol* tmp = new VarSymbol("_tmp", dtBool);
-  tmp->isCompilerTemp = true;
+  tmp->addPragma(PRAG_TEMP);
   Symbol* more = new VarSymbol("more", dtInt[INT_SIZE_32]);
 
   forv_Vec(Symbol, label, labels) {
@@ -519,7 +519,7 @@ rebuildIterator(IteratorInfo* ii,
   fn->defPoint->remove();
   fn->retType = ii->icType;
   Symbol* iterator = new VarSymbol("ic", ii->icType);
-  iterator->isCompilerTemp = true;
+  iterator->addPragma(PRAG_TEMP);
   fn->insertAtTail(new DefExpr(iterator));
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->icType->symbol, new_StringSymbol("iterator class"))));
   fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, iterator));
@@ -528,7 +528,7 @@ rebuildIterator(IteratorInfo* ii,
     if (toArgSymbol(local)) {
       if (local->type == field->type->refType) {
         Symbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->isCompilerTemp = true;
+        tmp->addPragma(PRAG_TEMP);
         fn->insertAtTail(new DefExpr(tmp));
         fn->insertAtTail(
           new CallExpr(PRIMITIVE_MOVE, tmp,
@@ -540,7 +540,7 @@ rebuildIterator(IteratorInfo* ii,
     } else if (isRecordType(local->type)) {
       if (field->type->refType) { // skips array types (how to handle arrays?)
         Symbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->isCompilerTemp = true;
+        tmp->addPragma(PRAG_TEMP);
         fn->insertAtTail(new DefExpr(tmp));
         insertSetMemberInits(fn, tmp);
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, tmp));

@@ -107,7 +107,7 @@ printDevelErrorHeader(BaseAST* ast) {
           err_fn = fn;
         }
         if (err_fn->getModule()->initFn != err_fn &&
-            !err_fn->isCompilerTemp &&
+            !err_fn->hasPragma(PRAG_TEMP) &&
             !err_fn->hasPragma(PRAG_INLINE) &&
             err_fn->lineno) {
           fprintf(stderr, "%s:%d: In ",

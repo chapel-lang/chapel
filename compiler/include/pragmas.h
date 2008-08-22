@@ -40,6 +40,8 @@ enum PragmaTag {
   PRAG_COBEGIN_OR_COFORALL_BLOCK,
   PRAG_COMMAND_LINE_SETTING,
   PRAG_CONCURRENTLY_ACCESSED, // local variables accessed by multiple threads
+  PRAG_CONFIG, // config variable, constant, or parameter
+  PRAG_CONST, // constant
   PRAG_DATA_CLASS,
   PRAG_DATA_SET_ERROR,
   PRAG_DEFAULT_CONSTRUCTOR,
@@ -61,6 +63,8 @@ enum PragmaTag {
   PRAG_LABEL_CONTINUE,
   PRAG_LOCAL_BLOCK,
   PRAG_LOCALIZED,
+  PRAG_MAYBE_PARAM, // symbol can resolve to a param
+  PRAG_MAYBE_TYPE, // symbol can resolve to a type
   PRAG_METHOD, // function that is a method
   PRAG_NO_DEFAULT_FUNCTIONS,
   PRAG_NO_FORMAL_TMP,
@@ -72,6 +76,7 @@ enum PragmaTag {
   PRAG_OMIT_FROM_CONSTRUCTOR,
   PRAG_ON,
   PRAG_ON_BLOCK,
+  PRAG_PARAM, // parameter (compile-time constant)
   PRAG_PRIVATE,
   PRAG_PROMOTION_WRAPPER,
   PRAG_RANGE,
@@ -82,10 +87,12 @@ enum PragmaTag {
   PRAG_SPECIFIED_RETURN_TYPE,
   PRAG_SUPER_CLASS,
   PRAG_SYNC,
+  PRAG_TEMP, // compiler-inserted temporary
   PRAG_TUPLE,
   PRAG_TUPLE_HASH_FUNCTION,
   PRAG_TUPLE_INIT,
   PRAG_TYPE_CONSTRUCTOR,
+  PRAG_TYPE_VARIABLE, // contains a type instead of a value
   PRAG_VALID_VAR,
   PRAG_INVISIBLE_FN, // invisible function (not a candidate for resolution)
   PRAG_WIDE,

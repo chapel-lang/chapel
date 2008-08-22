@@ -50,12 +50,12 @@ check_parsed_vars(VarSymbol* var) {
         (toFnSymbol(var->defPoint->parentSymbol) ||
          toModuleSymbol(var->defPoint->parentSymbol)))
       USR_FATAL(var, "Top-level params must be initialized.");
-  if (var->isConfig &&
+  if (var->hasPragma(PRAG_CONFIG) &&
       var->defPoint->parentSymbol != var->getModule()->initFn) {
     const char *varType = NULL;
-    if (var->isParam)
+    if (var->hasPragma(PRAG_PARAM))
       varType = "parameters";
-    else if (var->isConst)
+    else if (var->hasPragma(PRAG_CONST))
       varType = "constants";
     else
       varType = "variables";
@@ -91,7 +91,7 @@ checkParsed(void) {
       if (!strcmp(def->sym->name, "_")) {
         USR_FATAL("Symbol cannot be named \"_\"");
       } else if (toVarSymbol(def->sym)) {
-        if (!def->init && !def->exprType && !def->sym->isCompilerTemp)
+        if (!def->init && !def->exprType && !def->sym->hasPragma(PRAG_TEMP))
           if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
             if (def->parentExpr != rootModule->block)
               if (!def->sym->hasPragma(PRAG_INDEX_VAR))
@@ -203,7 +203,7 @@ checkResolved(void) {
       for_enums(def, et) {
         if (def->init) {
           SymExpr* sym = toSymExpr(def->init);
-          if (!sym || (!toVarSymbol(sym->var)->isParam &&
+          if (!sym || (!sym->var->hasPragma(PRAG_PARAM) &&
                        !toVarSymbol(sym->var)->immediate))
             USR_FATAL(def, "enumerator '%s' is not an int parameter", def->sym->name);
         }

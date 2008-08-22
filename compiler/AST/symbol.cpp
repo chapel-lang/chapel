@@ -41,10 +41,6 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   cname(name),
   type(init_type),
   defPoint(NULL),
-  isCompilerTemp(false),
-  isTypeVariable(false),
-  canParam(false),
-  canType(false),
   pragmas()
 {}
 
@@ -152,9 +148,6 @@ bool Symbol::isImmediate() {
 VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
   Symbol(SYMBOL_VAR, init_name, init_type),
-  isConfig(false),
-  isParam(false),
-  isConst(false),
   immediate(NULL)
 { }
 
@@ -176,14 +169,7 @@ void VarSymbol::verify() {
 VarSymbol*
 VarSymbol::copyInner(SymbolMap* map) {
   VarSymbol* newVarSymbol = new VarSymbol(name, type);
-  newVarSymbol->isConfig = isConfig;
-  newVarSymbol->isParam = isParam;
-  newVarSymbol->isConst = isConst;
   newVarSymbol->cname = cname;
-  newVarSymbol->isCompilerTemp = isCompilerTemp;
-  newVarSymbol->isTypeVariable = isTypeVariable;
-  newVarSymbol->canParam = canParam;
-  newVarSymbol->canType = canType;
   INT_ASSERT(!newVarSymbol->immediate);
   return newVarSymbol;
 }
@@ -195,12 +181,12 @@ void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 bool VarSymbol::isConstant(void) {
-  return isConst;
+  return hasPragma(PRAG_CONST);
 }
 
 
 bool VarSymbol::isParameter(void){
-  return isParam || immediate;
+  return hasPragma(PRAG_PARAM) || immediate;
 }
 
 
@@ -258,11 +244,6 @@ static void zeroInitializeRecord(FILE* outfile, ClassType* ct) {
 void VarSymbol::codegenDef(FILE* outfile) {
   if (type == dtVoid)
     return;
-  // need to ensure that this can be realized in C as a const, and
-  // move its initializer here if it can be
-  if (0 && isConst) {
-    fprintf(outfile, "const ");
-  }
   if (this->hasPragma(PRAG_SUPER_CLASS))
     fprintf(outfile, "_");
   type->codegen(outfile);
@@ -347,7 +328,6 @@ ArgSymbol::copyInner(SymbolMap* map) {
   ps->instantiatedFrom = instantiatedFrom;
   ps->instantiatedParam = instantiatedParam;
   ps->markedGeneric = markedGeneric;
-  ps->isTypeVariable = isTypeVariable;
   return ps;
 }
 
@@ -404,7 +384,7 @@ void ArgSymbol::codegenDef(FILE* outfile) {
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(SYMBOL_TYPE, init_name, init_type)
 {
-  isTypeVariable = true;
+  addPragma(PRAG_TYPE_VARIABLE);
   if (!type)
     INT_FATAL(this, "TypeSymbol constructor called without type");
   type->addSymbol(this);
@@ -527,9 +507,6 @@ FnSymbol::copyInner(SymbolMap* map) {
   copy->cname = cname;
   copy->_this = _this;
   copy->_outer = _outer;
-  copy->isCompilerTemp = isCompilerTemp;
-  copy->canParam = canParam;
-  copy->canType = canType;
   copy->instantiatedFrom = instantiatedFrom;
   copy->instantiationPoint = instantiationPoint;
   return copy;

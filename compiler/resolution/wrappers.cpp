@@ -25,7 +25,7 @@ buildEmptyWrapper(FnSymbol* fn) {
   if (fn->hasPragma(PRAG_METHOD))
     wrapper->addPragma(PRAG_METHOD);
   wrapper->instantiationPoint = fn->instantiationPoint;
-  wrapper->isCompilerTemp = true;
+  wrapper->addPragma(PRAG_TEMP);
   return wrapper;
 }
 
@@ -53,7 +53,7 @@ insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
     wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   } else {
     VarSymbol* index = new VarSymbol("_i");
-    index->isCompilerTemp = true;
+    index->addPragma(PRAG_TEMP);
     wrapper->insertAtTail(new DefExpr(index));
     wrapper->insertAtTail(buildForLoopStmt(new SymExpr(index), call, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, index))));
     wrapper->addPragma(PRAG_ITERATOR_FN);
@@ -85,7 +85,7 @@ buildDefaultWrapper(FnSymbol* fn,
     !fn->_this->type->symbol->hasPragma(PRAG_SYNC) &&
     !fn->_this->type->symbol->hasPragma(PRAG_REF);
   if (specializeDefaultConstructor) {
-    wrapper->isCompilerTemp = false;
+    wrapper->removePragma(PRAG_TEMP);
     wrapper->_this = fn->_this->copy();
     copy_map.put(fn->_this, wrapper->_this);
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
@@ -114,18 +114,18 @@ buildDefaultWrapper(FnSymbol* fn,
       Symbol* temp;
       if (formal->type->symbol->hasPragma(PRAG_REF)) {
         temp = new VarSymbol("_tmp");
-        temp->isCompilerTemp = true;
-        temp->canParam = true;
-        if (formal->isTypeVariable)
-          temp->isTypeVariable = true; // unexecuted none/gasnet on 4/25/08
+        temp->addPragma(PRAG_TEMP);
+        temp->addPragma(PRAG_MAYBE_PARAM);
+        if (formal->hasPragma(PRAG_TYPE_VARIABLE))
+          temp->addPragma(PRAG_TYPE_VARIABLE); // unexecuted none/gasnet on 4/25/08
         wrapper->insertAtTail(new DefExpr(temp));
         wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, new CallExpr(PRIMITIVE_SET_REF, wrapper_formal)));
       } else if (specializeDefaultConstructor && wrapper_formal->typeExpr) {
         temp = new VarSymbol("_tmp");
-        temp->isCompilerTemp = true;
-        temp->canParam = true;
-        if (formal->isTypeVariable)
-          temp->isTypeVariable = true; // unexecuted none/gasnet on 4/25/08
+        temp->addPragma(PRAG_TEMP);
+        temp->addPragma(PRAG_MAYBE_PARAM);
+        if (formal->hasPragma(PRAG_TYPE_VARIABLE))
+          temp->addPragma(PRAG_TYPE_VARIABLE); // unexecuted none/gasnet on 4/25/08
         wrapper->insertAtTail(new DefExpr(temp));
         BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
         wrapper->insertAtTail(typeExpr);
@@ -137,7 +137,7 @@ buildDefaultWrapper(FnSymbol* fn,
       if (Symbol* value = paramMap->get(formal))
         paramMap->put(wrapper_formal, value);
       if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
-        if (!formal->isTypeVariable && !paramMap->get(formal) && formal->type != dtMethodToken)
+        if (!formal->hasPragma(PRAG_TYPE_VARIABLE) && !paramMap->get(formal) && formal->type != dtMethodToken)
           if (Symbol* field = wrapper->_this->type->getField(formal->name))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
               if (!isShadowedField(formal))
@@ -158,10 +158,10 @@ buildDefaultWrapper(FnSymbol* fn,
     } else {
       const char* temp_name = astr("_default_temp_", formal->name);
       VarSymbol* temp = new VarSymbol(temp_name);
-      temp->isCompilerTemp = true;
-      temp->canParam = true;
-      if (formal->isTypeVariable)
-        temp->isTypeVariable = true;
+      temp->addPragma(PRAG_TEMP);
+      temp->addPragma(PRAG_MAYBE_PARAM);
+      if (formal->hasPragma(PRAG_TYPE_VARIABLE))
+        temp->addPragma(PRAG_TYPE_VARIABLE);
       copy_map.put(formal, temp);
       if (formal->intent == INTENT_OUT ||
           !formal->defaultExpr ||
@@ -185,12 +185,12 @@ buildDefaultWrapper(FnSymbol* fn,
         } else {
           wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, new CallExpr("_copy", defaultExpr->body.tail->remove())));
           INT_ASSERT(!temp->hasPragma(PRAG_EXPR_TEMP));
-          temp->canParam = false;
+          temp->removePragma(PRAG_MAYBE_PARAM);
         }
       }
       call->insertAtTail(temp);
       if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
-        if (!formal->isTypeVariable)
+        if (!formal->hasPragma(PRAG_TYPE_VARIABLE))
           if (Symbol* field = wrapper->_this->type->getField(formal->name))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
               if (!isShadowedField(formal))
@@ -445,7 +445,7 @@ buildPromotionWrapper(FnSymbol* fn,
       wrapper->insertFormalAtTail(new_formal);
       iterator->insertAtTail(new_formal);
       VarSymbol* index = new VarSymbol(astr("_p_i_", istr(i)));
-      index->isCompilerTemp = true;
+      index->addPragma(PRAG_TEMP);
       wrapper->insertAtTail(new DefExpr(index));
       indicesCall->insertAtTail(index);
       actualCall->insertAtTail(index);

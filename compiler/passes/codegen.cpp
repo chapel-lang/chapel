@@ -538,7 +538,7 @@ codegen_config(FILE* outfile) {
   forv_Vec(BaseAST, ast, gAsts) {
     if (DefExpr* def = toDefExpr(ast)) {
       VarSymbol* var = toVarSymbol(def->sym);
-      if (var && var->isConfig) {
+      if (var && var->hasPragma(PRAG_CONFIG)) {
         fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
         Type* type = var->type;
         if (type->symbol->hasPragma(PRAG_WIDE_CLASS))
