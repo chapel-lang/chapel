@@ -169,7 +169,7 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
       !fn->hasPragma(PRAG_HEAP) &&
       !fn->hasPragma(PRAG_REF)) {
     if (!fn->hasPragma(PRAG_SYNC) ||
-        (fn->isMethod && (value->type->instantiatedFrom != fn->_this->type))) {
+        (fn->hasPragma(PRAG_METHOD) && (value->type->instantiatedFrom != fn->_this->type))) {
       // allow types to be instantiated to sync types
       if (!key->isTypeVariable) {
         // instantiation of a non-type formal of sync type loses sync

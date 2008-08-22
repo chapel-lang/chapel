@@ -112,7 +112,7 @@ checkParsed(void) {
 void
 checkNormalized(void) {
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->fnTag == FN_ITERATOR) {
+    if (fn->hasPragma(PRAG_ITERATOR_FN)) {
       for_formals(formal, fn) {
         if (formal->intent == INTENT_IN ||
             formal->intent == INTENT_INOUT ||
@@ -171,7 +171,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret) {
 
 static void
 checkReturnPaths(FnSymbol* fn) {
-  if (fn->fnTag == FN_ITERATOR ||
+  if (fn->hasPragma(PRAG_ITERATOR_FN) ||
       !strcmp(fn->name, "=") ||
       !strcmp(fn->name, "_build_array_type") ||
       fn->retType == dtVoid ||

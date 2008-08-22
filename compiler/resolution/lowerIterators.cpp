@@ -355,7 +355,7 @@ void lowerIterators() {
           expand_for_loop(call);
   }
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->fnTag == FN_ITERATOR) {
+    if (fn->hasPragma(PRAG_ITERATOR_FN)) {
       collapseBlocks(fn->body);
       removeUnnecessaryGotos(fn);
       if (!fNoCopyPropagation)
@@ -367,7 +367,7 @@ void lowerIterators() {
     }
   }
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->fnTag == FN_ITERATOR) {
+    if (fn->hasPragma(PRAG_ITERATOR_FN)) {
       lowerIterator(fn);
     }
   }

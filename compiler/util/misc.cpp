@@ -116,7 +116,7 @@ printDevelErrorHeader(BaseAST* ast) {
             fprintf(stderr, "constructor '%s':\n", err_fn->name+11);
           } else {
             fprintf(stderr, "%s '%s':\n",
-                    (err_fn->fnTag == FN_ITERATOR ? "iterator" : "function"),
+                    (err_fn->hasPragma(PRAG_ITERATOR_FN) ? "iterator" : "function"),
                     err_fn->name);
           }
         }

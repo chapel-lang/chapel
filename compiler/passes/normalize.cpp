@@ -417,7 +417,7 @@ void normalize(void) {
         if (!fn) {
           USR_FATAL(call, "yield statement must be in a function");
         }
-        fn->fnTag = FN_ITERATOR;
+        fn->addPragma(PRAG_ITERATOR_FN);
       }
       if (call->isPrimitive(PRIMITIVE_DELETE)) {
         VarSymbol* tmp = new VarSymbol("_tmp");
@@ -563,7 +563,7 @@ static void normalize_returns(FnSymbol* fn) {
     }
   }
   if (rets.n == 0) {
-    if (fn->fnTag == FN_ITERATOR)
+    if (fn->hasPragma(PRAG_ITERATOR_FN))
       USR_FATAL(fn, "iterator does not yield or return a value");
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
     return;
@@ -612,7 +612,7 @@ static void normalize_returns(FnSymbol* fn) {
       else
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_expr));
     }
-    if (fn->fnTag == FN_ITERATOR) {
+    if (fn->hasPragma(PRAG_ITERATOR_FN)) {
       if (!retval)
         INT_FATAL(ret, "unexpected case");
       if (ret->isPrimitive(PRIMITIVE_RETURN)) {

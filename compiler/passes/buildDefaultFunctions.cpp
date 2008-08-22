@@ -192,7 +192,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   reset_line_info(fn, field->lineno);
   normalize(fn);
   ct->methods.add(fn);
-  fn->isMethod = true;
+  fn->addPragma(PRAG_METHOD);
   fn->cname = astr("_", ct->symbol->cname, "_", fn->cname);
   fn->addPragma(PRAG_NO_PARENS);
   fn->_this = _this;
@@ -701,7 +701,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   ct->methods.add(fn);
-  fn->isMethod = true;
+  fn->addPragma(PRAG_METHOD);
   reset_line_info(def, ct->symbol->lineno);
   normalize(fn);
   ct->methods.add(fn);
@@ -739,7 +739,7 @@ static void buildDefaultReadFunction(EnumType* et) {
   DefExpr* def = new DefExpr(fn);
   et->symbol->defPoint->insertBefore(def);
   et->methods.add(fn);
-  fn->isMethod = true;
+  fn->addPragma(PRAG_METHOD);
   reset_line_info(def, et->symbol->lineno);
   normalize(fn);
   et->methods.add(fn);
@@ -842,7 +842,7 @@ static void buildDefaultWriteFunction(ClassType* ct) {
 
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  fn->isMethod = true;
+  fn->addPragma(PRAG_METHOD);
   reset_line_info(def, ct->symbol->lineno);
   normalize(fn);
   ct->methods.add(fn);

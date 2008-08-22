@@ -17,12 +17,13 @@ buildEmptyWrapper(FnSymbol* fn) {
   wrapper->addPragma(PRAG_INLINE);
   if (fn->hasPragma(PRAG_NO_PARENS))
     wrapper->addPragma(PRAG_NO_PARENS);
-  if (fn->fnTag != FN_ITERATOR) { // getValue is var, not iterator
+  if (!fn->hasPragma(PRAG_ITERATOR_FN)) { // getValue is var, not iterator
     wrapper->retTag = fn->retTag;
     if (fn->setter)
       wrapper->setter = fn->setter->copy();
   }
-  wrapper->isMethod = fn->isMethod;
+  if (fn->hasPragma(PRAG_METHOD))
+    wrapper->addPragma(PRAG_METHOD);
   wrapper->instantiationPoint = fn->instantiationPoint;
   wrapper->isCompilerTemp = true;
   return wrapper;
@@ -48,14 +49,14 @@ static void
 insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
   if (fn->getReturnSymbol() == gVoid) {
     wrapper->insertAtTail(call);
-  } else if (fn->fnTag != FN_ITERATOR) {
+  } else if (!fn->hasPragma(PRAG_ITERATOR_FN)) {
     wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   } else {
     VarSymbol* index = new VarSymbol("_i");
     index->isCompilerTemp = true;
     wrapper->insertAtTail(new DefExpr(index));
     wrapper->insertAtTail(buildForLoopStmt(new SymExpr(index), call, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, index))));
-    wrapper->fnTag = FN_ITERATOR;
+    wrapper->addPragma(PRAG_ITERATOR_FN);
   }
   fn->defPoint->insertAfter(new DefExpr(wrapper));
 }
@@ -75,7 +76,7 @@ buildDefaultWrapper(FnSymbol* fn,
     return cached;
   SET_LINENO(fn);
   FnSymbol* wrapper = buildEmptyWrapper(fn);
-  if (fn->fnTag != FN_ITERATOR)
+  if (!fn->hasPragma(PRAG_ITERATOR_FN))
     wrapper->retType = fn->retType;
   wrapper->cname = astr("_default_wrap_", fn->cname);
   SymbolMap copy_map;
@@ -327,7 +328,7 @@ buildCoercionWrapper(FnSymbol* fn,
   // function resolution is out-of-order, disabling this for
   // unspecified return types may not be necessary
   //
-  if (fn->hasPragma(PRAG_SPECIFIED_RETURN_TYPE) && fn->fnTag != FN_ITERATOR)
+  if (fn->hasPragma(PRAG_SPECIFIED_RETURN_TYPE) && !fn->hasPragma(PRAG_ITERATOR_FN))
     wrapper->retType = fn->retType;
 
   wrapper->cname = astr("_coerce_wrap_", fn->cname);
@@ -462,7 +463,7 @@ buildPromotionWrapper(FnSymbol* fn,
     wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(actualCall))));
   } else {
     wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, actualCall)))));
-    wrapper->fnTag = FN_ITERATOR;
+    wrapper->addPragma(PRAG_ITERATOR_FN);
     wrapper->removePragma(PRAG_INLINE);
   }
   fn->defPoint->insertBefore(new DefExpr(wrapper));

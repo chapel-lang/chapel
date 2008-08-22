@@ -18,11 +18,6 @@ class Immediate;
 class BasicBlock;
 class IteratorInfo;
 
-enum FnTag {
-  FN_FUNCTION,
-  FN_ITERATOR
-};
-
 enum RetTag {
   RET_VALUE,
   RET_VAR,
@@ -154,12 +149,10 @@ class FnSymbol : public Symbol {
   BlockStmt* where;
   BlockStmt* retExprType;
   BlockStmt* body;
-  FnTag fnTag;
   RetTag retTag;
   IteratorInfo* iteratorInfo;
   Symbol* _this;
   Symbol* _outer;
-  bool isMethod;
   FnSymbol *instantiatedFrom;
   SymbolMap substitutions;
   BlockStmt* instantiationPoint; // point of instantiation

@@ -455,12 +455,10 @@ FnSymbol::FnSymbol(const char* initName) :
   where(NULL),
   retExprType(NULL),
   body(new BlockStmt()),
-  fnTag(FN_FUNCTION),
   retTag(RET_VALUE),
   iteratorInfo(NULL),
   _this(NULL),
   _outer(NULL),
-  isMethod(false),
   instantiatedFrom(NULL),
   instantiationPoint(NULL),
   basicBlocks(NULL),
@@ -524,13 +522,11 @@ FnSymbol::copyInner(SymbolMap* map) {
   copy->retType = retType;
   copy->where = COPY_INT(where);
   copy->body = COPY_INT(body);
-  copy->fnTag = fnTag;
   copy->retTag = retTag;
   copy->retExprType = COPY_INT(retExprType);
   copy->cname = cname;
   copy->_this = _this;
   copy->_outer = _outer;
-  copy->isMethod = isMethod;
   copy->isCompilerTemp = isCompilerTemp;
   copy->canParam = canParam;
   copy->canType = canType;

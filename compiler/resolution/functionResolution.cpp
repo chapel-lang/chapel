@@ -161,7 +161,7 @@ const char* toString(FnSymbol* fn) {
     str = astr(fn->name+16);
   } else if (!strncmp("_construct_", fn->name, 11)) {
     str = astr(fn->name+11);
-  } else if (fn->isMethod) {
+  } else if (fn->hasPragma(PRAG_METHOD)) {
     if (!strcmp(fn->name, "this")) {
       str = astr(toString(fn->getFormal(2)->type));
       start = 1;
@@ -327,7 +327,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
       fn->retType = fn->retType->refType;
     }
     fn->retExprType->remove();
-    if (fn->fnTag == FN_ITERATOR && !fn->iteratorInfo) {
+    if (fn->hasPragma(PRAG_ITERATOR_FN) && !fn->iteratorInfo) {
       protoIteratorClass(fn);
     }
   }
@@ -3038,7 +3038,7 @@ resolveFns(FnSymbol* fn) {
   // build value function for var functions
   //
   if (fn->retTag == RET_VAR) {
-    if (fn->fnTag != FN_ITERATOR) {
+    if (!fn->hasPragma(PRAG_ITERATOR_FN)) {
       FnSymbol* copy = fn->copy();
       copy->addPragma(PRAG_INVISIBLE_FN);
       copy->retTag = RET_VALUE;
@@ -3069,7 +3069,7 @@ resolveFns(FnSymbol* fn) {
       if (SymExpr* se = toSymExpr(ast)) {
         if (se->var == fn->setter->sym) {
           se->var = gTrue;
-          if (fn->fnTag == FN_ITERATOR)
+          if (fn->hasPragma(PRAG_ITERATOR_FN))
             USR_WARN(fn, "setter argument is not supported in iterators");
         }
       }
@@ -3194,7 +3194,7 @@ resolveFns(FnSymbol* fn) {
   // functions rather than case them here; perhaps a pragma or
   // something like that.
   //
-  if (fn->fnTag != FN_ITERATOR && fn->retType->symbol->hasPragma(PRAG_ITERATOR_CLASS) &&
+  if (!fn->hasPragma(PRAG_ITERATOR_FN) && fn->retType->symbol->hasPragma(PRAG_ITERATOR_CLASS) &&
       strcmp("_getIterator", fn->name) &&
       strcmp("iteratorIndex", fn->name) && strcmp("iteratorIndexHelp", fn->name) &&
       strcmp("_toLeader", fn->name) && strcmp("_toFollower", fn->name) && 
@@ -3215,7 +3215,7 @@ resolveFns(FnSymbol* fn) {
     fn->retType = tmp->type;
   }
 
-  if (fn->fnTag == FN_ITERATOR && !fn->iteratorInfo) {
+  if (fn->hasPragma(PRAG_ITERATOR_FN) && !fn->iteratorInfo) {
     protoIteratorClass(fn);
   }
 

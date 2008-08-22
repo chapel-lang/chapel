@@ -544,7 +544,7 @@ static void build_type_constructor(ClassType* ct) {
     fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", outerType);
     fn->insertFormalAtHead(new DefExpr(fn->_outer));
     fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-    fn->isMethod = true;
+    fn->addPragma(PRAG_METHOD);
     Expr* insertPoint = outerType->symbol->defPoint;
     while (toTypeSymbol(insertPoint->parentSymbol))
       insertPoint = insertPoint->parentSymbol->defPoint;
@@ -732,7 +732,7 @@ static void build_constructor(ClassType* ct) {
     fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", outerType);
     fn->insertFormalAtHead(new DefExpr(fn->_outer));
     fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-    fn->isMethod = true;
+    fn->addPragma(PRAG_METHOD);
     Expr* insertPoint = outerType->symbol->defPoint;
     while (toTypeSymbol(insertPoint->parentSymbol))
       insertPoint = insertPoint->parentSymbol->defPoint;
@@ -1063,7 +1063,7 @@ void scopeResolve(void) {
 
         // sjd: stopgap to avoid shadowing variables or functions by methods
         if (FnSymbol* fn = toFnSymbol(sym))
-          if (fn->isMethod)
+          if (fn->hasPragma(PRAG_METHOD))
             sym = NULL;
 
         if (sym) {
