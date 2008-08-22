@@ -57,10 +57,10 @@ void buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
     BB_STOP();
   } else {
     if (BlockStmt* s = toBlockStmt(stmt)) {
-      if (s->loopInfo) {
+      if (s->blockInfo) {
         BasicBlock* top = basicBlock;
         BB_RESTART();
-        BB_ADD(s->loopInfo);
+        BB_ADD(s->blockInfo);
         BasicBlock* loopTop = basicBlock;
         for_alist(stmt, s->body) {
           BBB(stmt);

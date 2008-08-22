@@ -215,7 +215,7 @@ void registerModule(ModuleSymbol* mod);
     break;                                                              \
   case STMT_BLOCK:                                                      \
     AST_CALL_LIST(_a, BlockStmt, body, call, __VA_ARGS__);              \
-    AST_CALL_CHILD(_a, BlockStmt, loopInfo, call, __VA_ARGS__);         \
+    AST_CALL_CHILD(_a, BlockStmt, blockInfo, call, __VA_ARGS__);         \
     AST_CALL_CHILD(_a, BlockStmt, modUses, call, __VA_ARGS__);          \
     break;                                                              \
   case STMT_COND:                                                       \
@@ -281,7 +281,7 @@ void registerModule(ModuleSymbol* mod);
     break;                                                              \
   case STMT_BLOCK:                                                      \
     AST_ADD_LIST(_asts, _a, BlockStmt, body);                           \
-    AST_ADD_CHILD(_asts, _a, BlockStmt, loopInfo);                      \
+    AST_ADD_CHILD(_asts, _a, BlockStmt, blockInfo);                      \
     break;                                                              \
   case STMT_COND:                                                       \
     AST_ADD_CHILD(_asts, _a, CondStmt, condExpr);                       \

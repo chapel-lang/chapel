@@ -326,7 +326,7 @@ BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
   VarSymbol* condVar = new VarSymbol("_cond");
   condVar->isCompilerTemp = true;
   body = new BlockStmt(body);
-  body->loopInfo = new CallExpr(PRIMITIVE_LOOP_WHILEDO, condVar);
+  body->blockInfo = new CallExpr(PRIMITIVE_BLOCK_WHILEDO_LOOP, condVar);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   continueLabel->isCompilerTemp = true;
   continueLabel->addPragma(PRAG_LABEL_CONTINUE);
@@ -363,7 +363,7 @@ BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body) {
   breakLabel->isCompilerTemp = true;
   breakLabel->addPragma(PRAG_LABEL_BREAK);
   BlockStmt* block = new BlockStmt(body);
-  block->loopInfo = new CallExpr(PRIMITIVE_LOOP_DOWHILE, condVar);
+  block->blockInfo = new CallExpr(PRIMITIVE_BLOCK_DOWHILE_LOOP, condVar);
   BlockStmt* stmts = buildChapelStmt();
   stmts->insertAtTail(new DefExpr(condVar));
   stmts->insertAtTail(block);
@@ -484,7 +484,7 @@ BlockStmt* buildForLoopStmt(Expr* indices,
       new CallExpr("iteratorIndex", iterator)),
     BLOCK_TYPE));
   destructureIndices(body, indices, new SymExpr(index));
-  body->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, index, iterator);
+  body->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, index, iterator);
 
   body->insertAtTail(new DefExpr(continueLabel));
   stmts->insertAtTail(body);
@@ -535,7 +535,7 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
   followerBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, followerIndex, new CallExpr("iteratorIndex", followerIterator)), BLOCK_TYPE));
   BlockStmt* followerBody = new BlockStmt(body);
   destructureIndices(followerBody, indices, new SymExpr(followerIndex));
-  followerBody->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, followerIndex, followerIterator);
+  followerBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, followerIndex, followerIterator);
   followerBlock->insertAtTail(followerBody);
   BlockStmt* beginBlock = new BlockStmt();
   beginBlock->insertAtTail(new DefExpr(leaderIndexCopy));
@@ -546,11 +546,12 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
   leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
   beginBlock->insertAtTail(new CallExpr("_upEndCount", coforallCount));
   BlockStmt* beginBody = new BlockStmt(followerBlock);
+  beginBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_COFORALL);
   beginBody->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-  beginBlock->insertAtTail(buildBeginStmt(beginBody, true, coforallCount));
+  beginBlock->insertAtTail(beginBody);
   BlockStmt* leaderBody = new BlockStmt(beginBlock);
   leaderBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, leaderIndex, new CallExpr("iteratorIndex", leaderIterator)), BLOCK_TYPE));
-  leaderBody->loopInfo = new CallExpr(PRIMITIVE_LOOP_FOR, leaderIndex, leaderIterator);
+  leaderBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, leaderIndex, leaderIterator);
   leaderBlock->insertAtTail(leaderBody);
   leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, coforallCount));
   leaderBlock->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
@@ -575,14 +576,14 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
   VarSymbol* coforallCount = new VarSymbol("_coforallCount");
   coforallCount->isCompilerTemp = true;
   BlockStmt* beginBlk = new BlockStmt();
+  beginBlk->blockInfo = new CallExpr(PRIMITIVE_BLOCK_COFORALL);
   beginBlk->insertAtHead(body);
   beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-  body = buildBeginStmt(beginBlk, true, coforallCount);
-  BlockStmt* block = buildForLoopStmt(indices, iterator, body);
+  BlockStmt* block = buildForLoopStmt(indices, iterator, beginBlk);
   block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
   block->insertAtHead(new DefExpr(coforallCount));
   block->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, coforallCount));
-  body->insertBefore(new CallExpr("_upEndCount", coforallCount));
+  beginBlk->insertBefore(new CallExpr("_upEndCount", coforallCount));
   block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
   return block;
 }
@@ -620,7 +621,7 @@ BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmt
   Symbol* lowVar = insertBeforeCompilerTemp(block, low);
   Symbol* highVar = insertBeforeCompilerTemp(block, high);
   Symbol* strideVar = insertBeforeCompilerTemp(block, stride);
-  block->loopInfo = new CallExpr(PRIMITIVE_LOOP_PARAM, indexVar, lowVar, highVar, strideVar);
+  block->blockInfo = new CallExpr(PRIMITIVE_BLOCK_PARAM_LOOP, indexVar, lowVar, highVar, strideVar);
   return buildChapelStmt(outer);
 }
 
@@ -994,6 +995,19 @@ buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
 }
 
 
+BlockStmt* buildLocalStmt(Expr* stmt) {
+  static int blockid = 1;
+  FnSymbol* fn = new FnSymbol(astr("_local_stmt_", istr(blockid++)));
+  BlockStmt* block = buildChapelStmt();
+
+  fn->body = new BlockStmt(stmt);
+  fn->addPragma(PRAG_LOCAL_BLOCK);
+  block->insertAtTail(new DefExpr(fn));
+  block->insertAtTail(new CallExpr(fn));
+  return block;
+}
+
+
 static Expr* buildOnExpr(Expr* expr) {
   // If the on <x> expression is a primitive_on_locale_num, we just want
   // to strip off the primitive and have the naked integer value be the
@@ -1010,75 +1024,44 @@ static Expr* buildOnExpr(Expr* expr) {
 }
 
 
-BlockStmt* buildLocalStmt(Expr* stmt) {
-  static int blockid = 1;
-  FnSymbol* fn = new FnSymbol(astr("_local_stmt_", istr(blockid++)));
-  BlockStmt* block = buildChapelStmt();
-
-  fn->body = new BlockStmt(stmt);
-  fn->addPragma(PRAG_LOCAL_BLOCK);
-  block->insertAtTail(new DefExpr(fn));
-  block->insertAtTail(new CallExpr(fn));
-  return block;
-}
-
-
 BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
   checkControlFlow(stmt, "on statement");
+
   CallExpr* onExpr = new CallExpr(PRIMITIVE_GET_REF, buildOnExpr(expr));
+
   if (fLocal) {
-    BlockStmt* block = new BlockStmt(stmt, BLOCK_NORMAL);
-    // should we evaluate the expression for side effects?
-    block->insertAtHead(onExpr);
+    BlockStmt* block = new BlockStmt(stmt);
+    block->insertAtHead(onExpr); // evaluate the expression for side effects
     return buildChapelStmt(block);
   }
-  static int uid = 1;
+
   BlockStmt* block = buildChapelStmt();
-  FnSymbol* fn = new FnSymbol(astr("_on_fn_", istr(uid++)));
-  fn->addPragma(PRAG_ON);
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
-  fn->insertFormalAtTail(arg);
-  fn->retType = dtVoid;
-  fn->insertAtTail(stmt);
   Symbol* tmp = new VarSymbol("_tmp");
   tmp->isCompilerTemp = true;
   block->insertAtTail(new DefExpr(tmp));
   block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, onExpr));
-  block->insertAtTail(new DefExpr(fn));
-  block->insertAtTail(new CallExpr(fn, tmp));
+  BlockStmt* onBlock = new BlockStmt(stmt);
+  onBlock->blockInfo = new CallExpr(PRIMITIVE_BLOCK_ON, tmp);
+  block->insertAtTail(onBlock);
   return block;
 }
 
 
 BlockStmt*
-buildBeginStmt(Expr* stmt, bool allocateOnHeap, VarSymbol* taskList) {
-  if (!taskList) // cobegin and coforall already checked
-    checkControlFlow(stmt, "begin statement");
+buildBeginStmt(Expr* stmt) {
+  checkControlFlow(stmt, "begin statement");
+
   if (fSerial)
-    return buildChapelStmt(new BlockStmt(stmt, BLOCK_NORMAL));
-  static int uid = 1;
+    return buildChapelStmt(new BlockStmt(stmt));
+
   BlockStmt* block = buildChapelStmt();
-  FnSymbol* fn = new FnSymbol(astr("_begin_fn_", istr(uid++)));
-  if (taskList)
-    fn->addPragma(PRAG_COBEGIN_OR_COFORALL);
-  else
-    fn->addPragma(PRAG_BEGIN);
-  fn->retType = dtVoid;
-  fn->insertAtTail(stmt);
-  if (!allocateOnHeap)
-    fn->addPragma(PRAG_NO_HEAP_ALLOCATION);
-
-  // no need to call _downEndCount or _upEndCount for tasks created by
-  // cobegins or coforalls, since execution will block until the tasks
-  // they create finish executing
-  if (!taskList) {
-    fn->insertAtTail(new CallExpr("_downEndCount"));
-    block->insertAtTail(new CallExpr("_upEndCount"));
-  }
-
-  block->insertAtTail(new DefExpr(fn));
-  block->insertAtTail(new CallExpr(fn));
+  block->insertAtTail(new CallExpr("_upEndCount"));
+  BlockStmt* beginBlock = new BlockStmt();
+  beginBlock->blockInfo = new CallExpr(PRIMITIVE_BLOCK_BEGIN);
+  beginBlock->insertAtHead(stmt);
+  beginBlock->insertAtTail(new CallExpr("_downEndCount"));
+  block->insertAtTail(beginBlock);
   return block;
 }
 
@@ -1087,7 +1070,7 @@ BlockStmt*
 buildSyncStmt(Expr* stmt) {
   checkControlFlow(stmt, "sync statement");
   if (fSerial)
-    return buildChapelStmt(new BlockStmt(stmt, BLOCK_NORMAL));
+    return buildChapelStmt(new BlockStmt(stmt));
   BlockStmt* block = new BlockStmt();
   VarSymbol* endCountSave = new VarSymbol("_endCountSave");
   endCountSave->isCompilerTemp = true;
@@ -1102,31 +1085,37 @@ buildSyncStmt(Expr* stmt) {
 
 
 BlockStmt*
-buildCobeginStmt(Expr* stmt) {
-  checkControlFlow(stmt, "cobegin statement");
-  BlockStmt* block = toBlockStmt(stmt);
-  INT_ASSERT(block);
+buildCobeginStmt(BlockStmt* block) {
+  BlockStmt* outer = block;
+
+  checkControlFlow(block, "cobegin statement");
+
   if (block->blockTag == BLOCK_SCOPELESS) {
     block = toBlockStmt(block->body.only());
     INT_ASSERT(block);
+    block->remove();
   }
+
   if (block->length() < 2) {
-    USR_WARN(stmt, "cobegin has no effect if it contains fewer than 2 statements");
-    return buildChapelStmt(stmt);
+    USR_WARN(outer, "cobegin has no effect if it contains fewer than 2 statements");
+    return buildChapelStmt(block);
   }
-  else if (fSerial)
-    return buildChapelStmt(stmt);
+
+  if (fSerial)
+    return buildChapelStmt(block);
+
   VarSymbol* cobeginCount = new VarSymbol("_cobeginCount");
   cobeginCount->isCompilerTemp = true;
+
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();
-    beginBlk->insertAtHead(stmt->copy());
+    beginBlk->blockInfo = new CallExpr(PRIMITIVE_BLOCK_COBEGIN);
+    stmt->insertBefore(beginBlk);
+    beginBlk->insertAtHead(stmt->remove());
     beginBlk->insertAtTail(new CallExpr("_downEndCount", cobeginCount));
-    BlockStmt* body = buildBeginStmt(beginBlk, false, cobeginCount);
     block->insertAtHead(new CallExpr("_upEndCount", cobeginCount));
-    stmt->insertBefore(body);
-    stmt->remove();
   }
+
   block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, cobeginCount, new CallExpr("_endCountAlloc")));
   block->insertAtHead(new DefExpr(cobeginCount));
   block->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, cobeginCount));

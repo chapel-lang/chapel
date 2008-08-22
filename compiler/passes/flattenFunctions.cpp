@@ -100,6 +100,45 @@ addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars) {
 
 
 void flattenFunctions(void) {
+
+  //
+  // convert begin/cobegin/coforall/on blocks into nested functions
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (BlockStmt* block = toBlockStmt(ast)) {
+      SET_LINENO(block);
+      if (block->blockInfo) {
+        FnSymbol* fn = NULL;
+        if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_BEGIN)) {
+          fn = new FnSymbol("begin_fn");
+          fn->addPragma(PRAG_BEGIN);
+        } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COBEGIN)) {
+          fn = new FnSymbol("cobegin_fn");
+          fn->addPragma(PRAG_COBEGIN_OR_COFORALL);
+        } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COFORALL)) {
+          fn = new FnSymbol("coforall_fn");
+          fn->addPragma(PRAG_COBEGIN_OR_COFORALL);
+        } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON)) {
+          fn = new FnSymbol("on_fn");
+          fn->addPragma(PRAG_ON);
+          ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
+          fn->insertFormalAtTail(arg);
+        }
+        if (fn) {
+          CallExpr* call = new CallExpr(fn);
+          if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON))
+            call->insertAtTail(block->blockInfo->get(1)->remove());
+          block->insertBefore(new DefExpr(fn));
+          block->insertBefore(call);
+          block->blockInfo->remove();
+          fn->insertAtTail(block->remove());
+          fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+          fn->retType = dtVoid;
+        }
+      }
+    }
+  }
+
   compute_call_sites();
 
   Vec<FnSymbol*> all_nested_functions;

@@ -51,6 +51,8 @@ initPragmas() {
   definePragma(PRAG_IS_MEME, "is meme");
   definePragma(PRAG_ITERATOR_CLASS, "iterator class");
   definePragma(PRAG_ITERATOR_CLASS_COPY, "iterator class copy");
+  definePragma(PRAG_LABEL_BREAK, "label break");
+  definePragma(PRAG_LABEL_CONTINUE, "label continue");
   definePragma(PRAG_LOCAL_BLOCK, "local block");
   definePragma(PRAG_LOCALIZED, "localized");
   definePragma(PRAG_NO_DEFAULT_FUNCTIONS, "no default functions");

@@ -154,8 +154,8 @@ isDefinedAllPaths(Expr* expr, Symbol* ret) {
     if (call->isNamed("halt"))
       return 1 + isDefinedAllPaths(expr->next, ret);
   } else if (BlockStmt* block = toBlockStmt(expr)) {
-    if (!block->loopInfo ||
-        block->loopInfo->isPrimitive(PRIMITIVE_LOOP_DOWHILE))
+    if (!block->blockInfo ||
+        block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_DOWHILE_LOOP))
       if (int result = isDefinedAllPaths(block->body.head, ret))
         return result;
   } else if (isGotoStmt(expr)) {

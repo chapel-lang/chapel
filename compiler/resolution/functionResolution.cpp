@@ -2007,7 +2007,8 @@ static void fold_param_for(CallExpr* loop) {
   int64 high = hvar->immediate->int_value();
   int64 stride = svar->immediate->int_value();
   Expr* index_expr = loop->get(1);
-  block->blockTag = BLOCK_NORMAL;
+  if (block->blockTag != BLOCK_NORMAL)
+    INT_FATAL("ha");
   loop->remove();
   CallExpr* noop = new CallExpr(PRIMITIVE_NOOP);
   block->insertAfter(noop);
@@ -2362,9 +2363,9 @@ preFold(Expr* expr) {
           }
         }
       }
-    } else if (call->isPrimitive(PRIMITIVE_LOOP_PARAM)) {
+    } else if (call->isPrimitive(PRIMITIVE_BLOCK_PARAM_LOOP)) {
       fold_param_for(call);
-//     } else if (call->isPrimitive(PRIMITIVE_LOOP_FOR) &&
+//     } else if (call->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP) &&
 //                call->numActuals() == 2) {
 //       result = expand_for_loop(call);
     } else if (call->isPrimitive(PRIMITIVE_LOGICAL_FOLDER)) {
@@ -2970,7 +2971,7 @@ resolveBlock(Expr* body) {
 
     if (fn && fn->retTag == RET_PARAM) {
       if (BlockStmt* block = toBlockStmt(expr)) {
-        if (block->loopInfo) {
+        if (block->blockInfo) {
           USR_FATAL(expr, "param function cannot contain a non-param loop");
         }
       }

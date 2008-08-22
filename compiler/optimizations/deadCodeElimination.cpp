@@ -121,7 +121,7 @@ void deadCodeElimination(FnSymbol* fn) {
         if (Expr* sub = toExpr(ast)) {
           exprMap.put(sub, expr);
           if (BlockStmt* block = toBlockStmt(sub->parentExpr))
-            if (block->loopInfo == sub)
+            if (block->blockInfo == sub)
               essential = true;
           if (CondStmt* cond = toCondStmt(sub->parentExpr))
             if (cond->condExpr == sub)

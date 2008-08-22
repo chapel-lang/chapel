@@ -172,44 +172,53 @@ static void heapAllocateLocals() {
   Vec<Symbol*> heapSet; // set of symbols that should be heap allocated
 
   // for each nested begin and on function
-  forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->hasPragma(PRAG_BEGIN) || fn->hasPragma(PRAG_ON)
-        || fn->hasPragma(PRAG_COBEGIN_OR_COFORALL) && !fn->hasPragma(PRAG_NO_HEAP_ALLOCATION)) {
+  forv_Vec(BaseAST, ast, gAsts) {
 
-      // collect asts in fn
-      Vec<BaseAST*> asts;
-      collect_asts(fn, asts);
+    if (BlockStmt* block = toBlockStmt(ast)) {
 
-      // collect defs of all local variables
-      Vec<DefExpr*> defSet;
-      forv_Vec(BaseAST, ast, asts) {
-        if (DefExpr* def = toDefExpr(ast)) {
-          defSet.set_add(def);
-        }
-      }
+      if (block->blockInfo &&
+          (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_BEGIN) ||
+           block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON) ||
+           block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COFORALL))) {
 
-      // collect symbols that should be heap allocated
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
+        // collect asts in block
+        Vec<BaseAST*> asts;
+        collect_asts(block, asts);
 
-          // collect arguments
-          if (ArgSymbol* arg = toArgSymbol(se->var)) {
-            if (!arg->isTypeVariable &&
-                arg->intent != INTENT_PARAM) {
-              heapSet.set_add(se->var);
-            }
+        // collect defs of all local variables
+        Vec<DefExpr*> defSet;
+        forv_Vec(BaseAST, ast, asts) {
+          if (DefExpr* def = toDefExpr(ast)) {
+            defSet.set_add(def);
           }
+        }
 
-          // collect symbols defined in outer functions
-          if (VarSymbol* var = toVarSymbol(se->var)) {
-            if (var->defPoint &&
-                !defSet.set_in(var->defPoint) &&
-                isFnSymbol(var->defPoint->parentSymbol) &&
-                !var->isParam &&
-                !var->hasPragma(PRAG_PRIVATE) &&
-                // in a coforall, only index variables need to be on the heap
-                (!fn->hasPragma(PRAG_COBEGIN_OR_COFORALL) || var->hasPragma(PRAG_INDEX_VAR))) {
-              heapSet.set_add(var);
+        // collect symbols that should be heap allocated
+        forv_Vec(BaseAST, ast, asts) {
+          if (SymExpr* se = toSymExpr(ast)) {
+
+            // collect arguments
+            if (ArgSymbol* arg = toArgSymbol(se->var)) {
+              if (!arg->isTypeVariable &&
+                  arg->intent != INTENT_PARAM) {
+                heapSet.set_add(se->var);
+              }
+            }
+
+            // collect local variables defined outside of block
+            if (VarSymbol* var = toVarSymbol(se->var)) {
+              if (!defSet.set_in(var->defPoint) &&
+                  isFnSymbol(var->defPoint->parentSymbol) &&
+                  !var->isParam &&
+                  !var->hasPragma(PRAG_PRIVATE) &&
+                  // ignore locale tmp for on
+                  (!block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON) ||
+                   se->parentExpr != block->blockInfo) &&
+                  // only index variables for coforall
+                  (!block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COFORALL) ||
+                   var->hasPragma(PRAG_INDEX_VAR))) {
+                heapSet.set_add(var);
+              }
             }
           }
         }
@@ -235,7 +244,7 @@ static void heapAllocateLocals() {
       bool disable = false;
       for_uses(se, useMap, sym) {
         if (CallExpr* parent = toCallExpr(se->parentExpr))
-          if (parent->isPrimitive(PRIMITIVE_LOOP_PARAM))
+          if (parent->isPrimitive(PRIMITIVE_BLOCK_PARAM_LOOP))
             disable = true;
       }
       if (disable)

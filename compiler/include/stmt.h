@@ -19,7 +19,7 @@ class BlockStmt : public Expr {
  public:
   BlockTag blockTag;
   AList body;
-  CallExpr* loopInfo;
+  CallExpr* blockInfo;
   CallExpr* modUses;  // module uses via PRIMITIVE_USE
 
   BlockStmt(Expr* init_body = NULL, BlockTag init_blockTag = BLOCK_NORMAL);

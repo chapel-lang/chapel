@@ -423,10 +423,15 @@ initPrimitive() {
   prim_def(PRIMITIVE_WARNING, "warning", returnInfoVoid, true);
   prim_def(PRIMITIVE_WHEN, "when case expressions", returnInfoVoid);
 
-  prim_def(PRIMITIVE_LOOP_PARAM, "param loop", returnInfoVoid);
-  prim_def(PRIMITIVE_LOOP_WHILEDO, "while...do loop", returnInfoVoid);
-  prim_def(PRIMITIVE_LOOP_DOWHILE, "do...while loop", returnInfoVoid);
-  prim_def(PRIMITIVE_LOOP_FOR, "for loop", returnInfoVoid);
+  prim_def(PRIMITIVE_BLOCK_PARAM_LOOP, "param loop", returnInfoVoid);
+  prim_def(PRIMITIVE_BLOCK_WHILEDO_LOOP, "while...do loop", returnInfoVoid);
+  prim_def(PRIMITIVE_BLOCK_DOWHILE_LOOP, "do...while loop", returnInfoVoid);
+  prim_def(PRIMITIVE_BLOCK_FOR_LOOP, "for loop", returnInfoVoid);
+  prim_def(PRIMITIVE_BLOCK_BEGIN, "begin block", returnInfoVoid);
+  prim_def(PRIMITIVE_BLOCK_COBEGIN, "cobegin block", returnInfoVoid);
+  prim_def(PRIMITIVE_BLOCK_COFORALL, "coforall loop", returnInfoVoid);
+  prim_def(PRIMITIVE_BLOCK_ON, "on block", returnInfoVoid);
+
 
   prim_def(PRIMITIVE_TO_LEADER, "to leader", returnInfoLeader);
   prim_def(PRIMITIVE_TO_FOLLOWER, "to follower", returnInfoFollower);

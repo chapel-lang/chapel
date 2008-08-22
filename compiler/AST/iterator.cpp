@@ -84,9 +84,9 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         if (singleYield) {
           return NULL;
         } else if (BlockStmt* block = toBlockStmt(call->parentExpr)) {
-          if (block->loopInfo &&
-              (block->loopInfo->isPrimitive(PRIMITIVE_LOOP_FOR) ||
-               block->loopInfo->isPrimitive(PRIMITIVE_LOOP_WHILEDO))) {
+          if (block->blockInfo &&
+              (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP) ||
+               block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_WHILEDO_LOOP))) {
             singleYield = call;
           } else {
             return NULL;
@@ -96,11 +96,11 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         }
       }
     } else if (BlockStmt* block = toBlockStmt(ast)) {
-      if (block->loopInfo) {
+      if (block->blockInfo) {
         if (singleFor) {
           return NULL;
-        } else if ((block->loopInfo->isPrimitive(PRIMITIVE_LOOP_FOR) ||
-                    block->loopInfo->isPrimitive(PRIMITIVE_LOOP_WHILEDO)) &&
+        } else if ((block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP) ||
+                    block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_WHILEDO_LOOP)) &&
                    block->parentExpr == fn->body) {
           singleFor = block;
         } else {
@@ -199,8 +199,8 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     if (!isDefExpr(expr))
       ii->zip1->insertAtTail(expr->copy(&map));
   }
-  CallExpr* loopInfo = singleLoop->loopInfo->copy(&map);
-  ii->zip1->insertAtTail(new CondStmt(loopInfo->get(1)->remove(),
+  CallExpr* blockInfo = singleLoop->blockInfo->copy(&map);
+  ii->zip1->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
                                       new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip1->_this, ii->icType->getField("more"), new_IntSymbol(1)),
                                       new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip1->_this, ii->icType->getField("more"), new_IntSymbol(0))));
   ii->zip1->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
@@ -249,8 +249,8 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     if (!isDefExpr(expr))
       ii->zip3->insertAtTail(expr->copy(&map));
   }
-  CallExpr* loopInfo = singleLoop->loopInfo->copy(&map);
-  ii->zip3->insertAtTail(new CondStmt(loopInfo->get(1)->remove(),
+  CallExpr* blockInfo = singleLoop->blockInfo->copy(&map);
+  ii->zip3->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
                                       new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip3->_this, ii->icType->getField("more"), new_IntSymbol(1)),
                                       new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip3->_this, ii->icType->getField("more"), new_IntSymbol(0))));
   ii->zip3->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));

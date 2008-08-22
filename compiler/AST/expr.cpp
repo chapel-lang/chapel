@@ -1783,10 +1783,14 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_TUPLE_AND_EXPAND:
     case PRIMITIVE_ERROR:
     case PRIMITIVE_WHEN:
-    case PRIMITIVE_LOOP_PARAM:
-    case PRIMITIVE_LOOP_WHILEDO:
-    case PRIMITIVE_LOOP_DOWHILE:
-    case PRIMITIVE_LOOP_FOR:
+    case PRIMITIVE_BLOCK_PARAM_LOOP:
+    case PRIMITIVE_BLOCK_WHILEDO_LOOP:
+    case PRIMITIVE_BLOCK_DOWHILE_LOOP:
+    case PRIMITIVE_BLOCK_FOR_LOOP:
+    case PRIMITIVE_BLOCK_BEGIN:
+    case PRIMITIVE_BLOCK_COBEGIN:
+    case PRIMITIVE_BLOCK_COFORALL:
+    case PRIMITIVE_BLOCK_ON:
     case PRIMITIVE_YIELD:
     case PRIMITIVE_DELETE:
     case PRIMITIVE_IS_ENUM:
@@ -2147,7 +2151,7 @@ Expr* getFirstExpr(Expr* expr) {
   case EXPR_DEF:
     return expr;
   case STMT_BLOCK:
-    AST_RET_CHILD(BlockStmt, loopInfo);
+    AST_RET_CHILD(BlockStmt, blockInfo);
     AST_RET_LIST(BlockStmt, body);
     break;
   case STMT_COND:
@@ -2179,7 +2183,7 @@ Expr* getNextExpr(Expr* expr) {
     else if (expr == parent->thenStmt && parent->elseStmt)
       return getFirstExpr(parent->elseStmt);
   } else if (BlockStmt* parent = toBlockStmt(expr->parentExpr)) {
-    if (expr == parent->loopInfo && parent->body.head)
+    if (expr == parent->blockInfo && parent->body.head)
       return getFirstExpr(parent->body.head);
   }
   if (expr->parentExpr)

@@ -187,7 +187,7 @@ buildIteratorCall(Symbol* ret, int fnid, Symbol* iterator, Vec<Type*>& children)
 static void
 expand_for_loop(CallExpr* call) {
   BlockStmt* block = toBlockStmt(call->parentExpr);
-  if (!block || block->loopInfo != call)
+  if (!block || block->blockInfo != call)
     INT_FATAL(call, "bad for loop primitive");
   SymExpr* se1 = toSymExpr(call->get(1));
   SymExpr* se2 = toSymExpr(call->get(2));
@@ -350,7 +350,7 @@ buildIterator2Follower(IteratorInfo* ii) {
 void lowerIterators() {
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast))
-      if (call->isPrimitive(PRIMITIVE_LOOP_FOR))
+      if (call->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP))
         if (call->numActuals() > 1)
           expand_for_loop(call);
   }

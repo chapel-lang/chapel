@@ -111,7 +111,7 @@ enum PrimitiveTag {
   PRIMITIVE_TYPEOF,
   PRIMITIVE_GET_ITERATOR_RETURN,
   PRIMITIVE_USE,
-  PRIMITIVE_USED_MODULES_LIST,
+  PRIMITIVE_USED_MODULES_LIST, // used modules in BlockStmt::modUses
   PRIMITIVE_TUPLE_EXPAND,
   PRIMITIVE_TUPLE_AND_EXPAND,
   PRIMITIVE_ARRAY_FREE,
@@ -124,10 +124,16 @@ enum PrimitiveTag {
   PRIMITIVE_ERROR,
   PRIMITIVE_WARNING,
   PRIMITIVE_WHEN,
-  PRIMITIVE_LOOP_PARAM,
-  PRIMITIVE_LOOP_WHILEDO,
-  PRIMITIVE_LOOP_DOWHILE,
-  PRIMITIVE_LOOP_FOR,
+
+  PRIMITIVE_BLOCK_PARAM_LOOP,   // BlockStmt::blockInfo - param for loop
+  PRIMITIVE_BLOCK_WHILEDO_LOOP, // BlockStmt::blockInfo - while do loop
+  PRIMITIVE_BLOCK_DOWHILE_LOOP, // BlockStmt::blockInfo - do while loop
+  PRIMITIVE_BLOCK_FOR_LOOP,     // BlockStmt::blockInfo - for loop
+  PRIMITIVE_BLOCK_BEGIN,        // BlockStmt::blockInfo - begin block
+  PRIMITIVE_BLOCK_COBEGIN,      // BlockStmt::blockInfo - cobegin block
+  PRIMITIVE_BLOCK_COFORALL,     // BlockStmt::blockInfo - coforall block
+  PRIMITIVE_BLOCK_ON,           // BlockStmt::blockInfo - on block
+
   PRIMITIVE_TO_LEADER,
   PRIMITIVE_TO_FOLLOWER,
 

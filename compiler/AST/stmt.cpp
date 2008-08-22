@@ -21,7 +21,7 @@ BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
   Expr(STMT_BLOCK),
   blockTag(init_blockTag),
   body(),
-  loopInfo(NULL),
+  blockInfo(NULL),
   modUses(NULL)
 {
   body.parent = this;
@@ -44,10 +44,10 @@ void BlockStmt::verify() {
     if (expr->parentExpr != this)
       INT_FATAL(this, "Bad BlockStmt::body::parentExpr");
   }
-  if (loopInfo && loopInfo->parentExpr != this)
-    INT_FATAL(this, "Bad BlockStmt::loopInfo::parentExpr");
+  if (blockInfo && blockInfo->parentExpr != this)
+    INT_FATAL(this, "Bad BlockStmt::blockInfo::parentExpr");
   if (modUses && modUses->parentExpr != this)
-    INT_FATAL(this, "Bad BlockStmt::loopInfo::parentExpr");
+    INT_FATAL(this, "Bad BlockStmt::blockInfo::parentExpr");
 }
 
 
@@ -57,15 +57,15 @@ BlockStmt::copyInner(SymbolMap* map) {
   _this->blockTag = blockTag;
   for_alist(expr, body)
     _this->insertAtTail(COPY_INT(expr));
-  _this->loopInfo = COPY_INT(loopInfo);
+  _this->blockInfo = COPY_INT(blockInfo);
   _this->modUses = COPY_INT(modUses);
   return _this;
 }
 
 
 void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
-  if (old_ast == loopInfo)
-    loopInfo = toCallExpr(new_ast);
+  if (old_ast == blockInfo)
+    blockInfo = toCallExpr(new_ast);
   else if (old_ast == modUses)
     modUses = toCallExpr(new_ast);
   else
@@ -76,16 +76,16 @@ void BlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
 void BlockStmt::codegen(FILE* outfile) {
   codegenStmt(outfile, this);
 
-  if (loopInfo) {
-    if (loopInfo->isPrimitive(PRIMITIVE_LOOP_WHILEDO)) {
+  if (blockInfo) {
+    if (blockInfo->isPrimitive(PRIMITIVE_BLOCK_WHILEDO_LOOP)) {
       fprintf(outfile, "while (");
-      loopInfo->get(1)->codegen(outfile);
+      blockInfo->get(1)->codegen(outfile);
       fprintf(outfile, ") ");
-    } else if (loopInfo->isPrimitive(PRIMITIVE_LOOP_DOWHILE)) {
+    } else if (blockInfo->isPrimitive(PRIMITIVE_BLOCK_DOWHILE_LOOP)) {
       fprintf(outfile, "do ");
-    } else if (loopInfo->isPrimitive(PRIMITIVE_LOOP_FOR)) {
+    } else if (blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP)) {
       fprintf(outfile, "for (;");
-      loopInfo->get(1)->codegen(outfile);
+      blockInfo->get(1)->codegen(outfile);
       fprintf(outfile, ";) ");
     }
   }
@@ -95,9 +95,9 @@ void BlockStmt::codegen(FILE* outfile) {
 
   body.codegen(outfile, "");
 
-  if (loopInfo && loopInfo->isPrimitive(PRIMITIVE_LOOP_DOWHILE)) {
+  if (blockInfo && blockInfo->isPrimitive(PRIMITIVE_BLOCK_DOWHILE_LOOP)) {
     fprintf(outfile, "} while (");
-    loopInfo->get(1)->codegen(outfile);
+    blockInfo->get(1)->codegen(outfile);
     fprintf(outfile, ");\n");
   } else if (this != getFunction()->body) {
     fprintf(outfile, "}");
@@ -122,11 +122,11 @@ BlockStmt::insertAtTail(Expr* ast) {
 
 bool
 BlockStmt::isLoop(void) {
-  return (loopInfo &&
-          (loopInfo->isPrimitive(PRIMITIVE_LOOP_DOWHILE) ||
-           loopInfo->isPrimitive(PRIMITIVE_LOOP_WHILEDO) ||
-           loopInfo->isPrimitive(PRIMITIVE_LOOP_PARAM) ||
-           loopInfo->isPrimitive(PRIMITIVE_LOOP_FOR)));
+  return (blockInfo &&
+          (blockInfo->isPrimitive(PRIMITIVE_BLOCK_DOWHILE_LOOP) ||
+           blockInfo->isPrimitive(PRIMITIVE_BLOCK_WHILEDO_LOOP) ||
+           blockInfo->isPrimitive(PRIMITIVE_BLOCK_PARAM_LOOP) ||
+           blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP)));
 }
 
 
