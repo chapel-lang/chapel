@@ -21,6 +21,8 @@ if ($preset_launcher eq "") {
         }
     } elsif ($platform eq "xmt-sim") {
 	$launcher = "zebra";
+    } elsif ($platform eq "xt-cnl") {
+        $launcher = "aprun";
     } else {
         $launcher = "none";
     }
