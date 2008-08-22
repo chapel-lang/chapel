@@ -132,10 +132,6 @@ class SingleLocaleAssociativeDomain: BaseAssociativeDomain {
     numEntries = 0;
   }
 
-  def clearForIteratableAssign() {
-    clear();
-  }
-
   def member(idx: idxType): bool {
     return _findFilledSlot(idx)(1);
   }

@@ -3314,7 +3314,8 @@ static void
 collectInstantiatedClassTypes(Vec<Type*>& icts, Type* ct) {
   forv_Vec(TypeSymbol, ts, gTypes) {
     if (ts->type->defaultTypeConstructor)
-      if (ts->type->defaultTypeConstructor->instantiatedFrom ==
+      if (!ts->hasPragma(PRAG_GENERIC) &&
+          ts->type->defaultTypeConstructor->instantiatedFrom ==
           ct->defaultTypeConstructor)
         icts.add(ts->type);
   }
