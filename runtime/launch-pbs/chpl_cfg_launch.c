@@ -31,14 +31,14 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   fprintf(pbsFile, "\n");
   fprintf(pbsFile, "cd $PBS_O_WORKDIR\n");
   fprintf(pbsFile, "\n");
-  fprintf(pbsFile, "aprun -n%d -N%d ./%s_real", numLocales, procsPerNode, argv[0]);
+  fprintf(pbsFile, "aprun -n%d -N%d %s_real", numLocales, procsPerNode, argv[0]);
   for (i=1; i<argc; i++) {
     fprintf(pbsFile, " %s", argv[i]);
   }
   fprintf(pbsFile, "\n");
   fclose(pbsFile);
 
-  sprintf(baseCommand, "qsub %s > /dev/null", pbsFilename);
+  sprintf(baseCommand, "qsub -z %s", pbsFilename);
 
   size = strlen(baseCommand) + 1;
 
