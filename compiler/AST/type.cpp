@@ -167,7 +167,6 @@ void EnumType::codegenDef(FILE* outfile) {
 ClassType::ClassType(ClassTag initClassTag) :
   Type(TYPE_CLASS, NULL),
   classTag(initClassTag),
-  isIterator(false),
   fields(),
   inherits(),
   outer(NULL)
@@ -210,7 +209,6 @@ void ClassType::verify() {
 ClassType*
 ClassType::copyInner(SymbolMap* map) {
   ClassType* copy_type = new ClassType(classTag);
-  copy_type->isIterator = isIterator;
   copy_type->outer = outer;
   for_alist(expr, fields)
     copy_type->fields.insertAtTail(COPY_INT(expr));

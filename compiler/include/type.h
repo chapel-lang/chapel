@@ -88,7 +88,6 @@ enum ClassTag {
 class ClassType : public Type {
  public:
   ClassTag classTag;
-  bool isIterator;
   AList fields;
   AList inherits; // used from parsing, sets dispatchParents
   Symbol* outer;  // pointer to an outer class if this is an inner class
