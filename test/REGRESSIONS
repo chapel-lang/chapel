@@ -125,7 +125,7 @@ opts-specific tests
 [Error matching compiler output for release/examples/iterators]
 
 
-(Full run: 52, though some spurious hplExample2 and test_refine errors)
+(Full run: 48, though some spurious test_refine errors)
 
 --no-dead-code-elimination
 --------------------------
@@ -146,11 +146,6 @@ opts-specific tests
 --no-scalar-replacement
 -----------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
-
---baseline --inline
--------------------
-[Error matching compiler output for users/franzf/v0/chpl/main]
-[Error matching compiler output for users/franzf/v1/chpl/main]
 
 --no-optimize-loop-iterators --no-inline-iterators
 --------------------------------------------------
@@ -297,6 +292,10 @@ compilation timing out (started 4/19/08)
 ========================
 cygwin-specific failures
 ========================
+
+occasional process terminations due to pthreads errors (08/25/08)
+-----------------------------------------------------------------
+[Error matching program output for studies/madness/common/test_likepy]
 
 ???
 ---
