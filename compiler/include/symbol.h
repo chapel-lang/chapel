@@ -5,7 +5,7 @@
 #include "alist.h"
 #include "baseAST.h"
 #include "bitVec.h"
-#include "pragmas.h"
+#include "flags.h"
 #include "type.h"
 
 extern FnSymbol* chpl_main;

@@ -1,5 +1,5 @@
 #include "baseAST.h"
-#include "pragmas.h"
+#include "flags.h"
 #include "stringutil.h"
 #include "symbol.h"
 
