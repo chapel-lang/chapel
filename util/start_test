@@ -314,7 +314,8 @@
 #
 #  - also added support for a LASTCOMPOPTS file that contains
 #    compiler options to be added after the source file.  Thus:
-#    ./chpl <-compopts> <COMPOPTS> source.chpl <LASTCOMPOPTS>
+#    ./chpl <-compopts> <COMPOPTS> source.chpl <LASTCOMPOPTS>.
+#    This can be specified on a test by test basis using foo.lastcompopts.
 # 
 #  - if the subdirectory contains a COMPSTDIN file, the contents of
 #    COMPSTDIN will be piped into the execution of the compile step as

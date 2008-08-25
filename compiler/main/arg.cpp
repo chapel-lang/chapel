@@ -49,22 +49,26 @@ Flag types:
   n = --no-... flag, --no version sets to true
 */
 
-static void 
-bad_flag(char* flag) {
+static void bad_flag(char* flag) {
   fprintf(stderr, "Unrecognized flag: '%s' (use '-h' for help)\n", flag);
   clean_exit(1);
 }
 
 
-static void 
-missing_arg(char* currentFlag) {
+static void missing_arg(char* currentFlag) {
   fprintf(stderr, "Missing argument for flag: '%s' (use '-h' for help)\n", 
           currentFlag);
   clean_exit(1);
 }
 
+static void extraneous_arg(char* flag, char* extras) {
+  fprintf(stderr, "Extra characters after flag '%s': '%s' (use 'h' for help)\n",
+          flag, extras);
+  clean_exit(1);
+}
 
-static void 
+
+static void
 process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
   char * arg = NULL;
   ArgumentDescription *desc = arg_state->desc;
@@ -193,15 +197,21 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
           }
         }
       } else {
-        while (*++(*argv))
-          for (i = 0;; i++) {
-            if (!desc[i].name)
-              bad_flag((*argv)-1);
-            if (desc[i].key == **argv) {
-              process_arg(arg_state, i, &argv, (*argv)-1);
-              break;
-            }
+        char singleDashArg = *++(*argv);
+        char errFlag[3] = "-_";
+        errFlag[1] = singleDashArg;
+        for (i = 0;; i++) {
+          if (!desc[i].name) {
+            // Ran off the end of the list of possible options
+            bad_flag(errFlag);
           }
+          if (desc[i].key == singleDashArg) {
+            process_arg(arg_state, i, &argv, (*argv)-1);
+            if (*(*argv+1) != '\0')
+              extraneous_arg(errFlag, *argv+1);
+            break;
+          }
+        }
       }
     } else {
       arg_state->file_argument = (char **)realloc(

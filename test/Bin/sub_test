@@ -94,9 +94,9 @@ else
 endif
 
 if (-r ./LASTCOMPOPTS) then
-    set lastcompopts = `cat ./LASTCOMPOPTS`
+    set globalLastcompopts = `cat ./LASTCOMPOPTS`
 else
-    set lastcompopts = ""
+    set globalLastcompopts = ""
 endif
 
 if (-r ./NUMLOCALES) then
@@ -242,6 +242,12 @@ foreach chplsrc ($testsrc)
 	set compopts = "$globalCompopts `cat ./$execfile.$compoptsuffix`"
     else
         set compopts = "$globalCompopts"
+    endif
+
+    if (-r ./$execfile.lastcompopts) then
+        set lastcompopts = "$globalLastcompopts `cat ./$execfile.lastcompopts`"
+    else
+        set lastcompopts = "$globalLastcompopts"
     endif
 
     if (-r ./$execfile.numlocales) then

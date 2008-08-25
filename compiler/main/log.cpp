@@ -2,6 +2,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include "log.h"
+#include "misc.h"
 
 static char save_dir[FILENAME_MAX];
 static FILE *log_FILE[128];
@@ -18,6 +19,10 @@ void init_logs() {
 void 
 log_flags_arg(ArgumentState *arg_state, char *arg) {
   while (*arg) {
+    if (*arg != LOG_AST) {
+      fprintf(stderr, "Unrecognized log flag: '%c'\n", *arg);
+      clean_exit(1);
+    }
     log_tag[((uint8)*arg)]++;
     arg++;
   }
