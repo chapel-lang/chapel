@@ -136,8 +136,8 @@ static int isDefAndOrUse(SymExpr* se) {
       ArgSymbol* arg = actual_to_formal(se);
       if (arg->intent == INTENT_REF ||
           arg->intent == INTENT_INOUT ||
-          arg->type->symbol->hasPragma(PRAG_ARRAY) || // pass by reference
-          arg->type->symbol->hasPragma(PRAG_DOMAIN)) { // pass by reference
+          arg->type->symbol->hasFlag(FLAG_ARRAY) || // pass by reference
+          arg->type->symbol->hasFlag(FLAG_DOMAIN)) { // pass by reference
         return 3;
         // also use; do not "continue"
       } else if (arg->intent == INTENT_OUT) {
@@ -320,7 +320,7 @@ pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
       if (def->sym->type && !types.set_in(def->sym->type->symbol))
         pruneVisit(def->sym->type->symbol, fns, types);
   }
-  if (ts->hasPragma(PRAG_DATA_CLASS))
+  if (ts->hasFlag(FLAG_DATA_CLASS))
     pruneVisit(toTypeSymbol(ts->type->substitutions.v[0].value), fns, types);
 }
 
@@ -350,7 +350,7 @@ prune() {
   pruneVisit(chpl_main, fns, types);
   if (fRuntime) {
     forv_Vec(FnSymbol, fn, gFns) {
-      if (fn->hasPragma(PRAG_EXPORT))
+      if (fn->hasFlag(FLAG_EXPORT))
         pruneVisit(fn, fns, types);
     }
   }
@@ -365,7 +365,7 @@ prune() {
         //
         // do not delete class/record references
         //
-        if (ts->hasPragma(PRAG_REF) &&
+        if (ts->hasFlag(FLAG_REF) &&
             toClassType(ts->type->getField("_val")->type))
           continue;
 

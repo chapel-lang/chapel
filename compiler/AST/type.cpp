@@ -230,7 +230,7 @@ addDeclaration(ClassType* ct, DefExpr* def, bool tail) {
     fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
     fn->insertFormalAtHead(new DefExpr(fn->_this));
     fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-    fn->addPragma(PRAG_METHOD);
+    fn->addFlag(FLAG_METHOD);
   }
   if (def->parentSymbol || def->list)
     def->remove();
@@ -283,7 +283,7 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, " */");
   }
   fprintf(outfile, " {\n");
-  if (symbol->hasPragma(PRAG_OBJECT_CLASS) && classTag == CLASS_CLASS) {
+  if (symbol->hasFlag(FLAG_OBJECT_CLASS) && classTag == CLASS_CLASS) {
     if (fCopyCollect) {
       fprintf(outfile, "union {\n");
       fprintf(outfile, "_class_id _cid;\n");
@@ -302,7 +302,7 @@ void ClassType::codegenDef(FILE* outfile) {
   if (classTag == CLASS_UNION) {
     fprintf(outfile, "} _u;\n");
   }
-  if (symbol->hasPragma(PRAG_DATA_CLASS)) {
+  if (symbol->hasFlag(FLAG_DATA_CLASS)) {
     toTypeSymbol(substitutions.v[0].value)->codegen(outfile);
     fprintf(outfile, "* _data;\n");
   }
@@ -315,7 +315,7 @@ void ClassType::codegenDef(FILE* outfile) {
 
 
 void ClassType::codegenPrototype(FILE* outfile) {
-  if (symbol->hasPragma(PRAG_REF))
+  if (symbol->hasFlag(FLAG_REF))
     fprintf(outfile, "typedef %s *%s;\n", getField(1)->type->symbol->cname,
             symbol->cname);
   else if (classTag == CLASS_CLASS)
@@ -397,7 +397,7 @@ createPrimitiveType(const char *name, const char *cname) {
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
   gSym = new VarSymbol (name, primType);                \
-  gSym->addPragma(PRAG_CONST);                          \
+  gSym->addFlag(FLAG_CONST);                          \
   rootModule->block->insertAtTail(new DefExpr(gSym));   \
   primType->defaultValue = gSym
 
@@ -416,7 +416,7 @@ void initPrimitiveTypes(void) {
 
   dtNilRef = createPrimitiveType ("_nilRefType", "_nilRefType");
   CREATE_DEFAULT_SYMBOL (dtNilRef, gNilRef, "nilRef");
-  dtNilRef->symbol->addPragma(PRAG_REF);
+  dtNilRef->symbol->addFlag(FLAG_REF);
   
   dtUnknown = createPrimitiveType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
@@ -427,8 +427,8 @@ void initPrimitiveTypes(void) {
   dtBool = createPrimitiveType ("bool", "chpl_bool");
 
   DefExpr* objectDef = buildClassDefExpr("object", new ClassType(CLASS_CLASS), new BlockStmt());
-  objectDef->sym->addPragma(PRAG_OBJECT_CLASS);
-  objectDef->sym->addPragma(PRAG_NO_OBJECT);
+  objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
+  objectDef->sym->addFlag(FLAG_NO_OBJECT);
   dtObject = objectDef->sym->type;
   dtValue = createPrimitiveType("value", "_chpl_value");
 
@@ -447,7 +447,7 @@ void initPrimitiveTypes(void) {
   dtBool->defaultValue = gFalse;
 
   gTrue = new VarSymbol("true", dtBool);
-  gTrue->addPragma(PRAG_CONST);
+  gTrue->addFlag(FLAG_CONST);
   rootModule->block->insertAtTail(new DefExpr(gTrue));
   gTrue->immediate = new Immediate;
   gTrue->immediate->v_bool = true;
@@ -456,7 +456,7 @@ void initPrimitiveTypes(void) {
   uniqueConstantsHash.put(gTrue->immediate, gTrue);
 
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
-  gBoundsChecking->addPragma(PRAG_CONST);
+  gBoundsChecking->addFlag(FLAG_CONST);
   rootModule->block->insertAtTail(new DefExpr(gBoundsChecking));
   if (fNoBoundsChecks) {
     gBoundsChecking->immediate = new Immediate;
@@ -520,19 +520,19 @@ void initPrimitiveTypes(void) {
   gTaskList->cname = "NULL";
 
   dtAny = createPrimitiveType ("_any", "_any");
-  dtAny->symbol->addPragma(PRAG_GENERIC);
+  dtAny->symbol->addFlag(FLAG_GENERIC);
   dtIntegral = createPrimitiveType ("integral", "integral");
-  dtIntegral->symbol->addPragma(PRAG_GENERIC);
+  dtIntegral->symbol->addFlag(FLAG_GENERIC);
   dtNumeric = createPrimitiveType ("numeric", "numeric");
-  dtNumeric->symbol->addPragma(PRAG_GENERIC);
+  dtNumeric->symbol->addFlag(FLAG_GENERIC);
   dtIterator = createPrimitiveType("_iteratorClass", "_iteratorClass");
-  dtIterator->symbol->addPragma(PRAG_GENERIC);
+  dtIterator->symbol->addFlag(FLAG_GENERIC);
   dtMethodToken = createPrimitiveType ("_MT", "_MT");
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
   dtModuleToken = createPrimitiveType("tmodule=", "tmodule=");
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
   dtEnumerated = createPrimitiveType ("enumerated", "enumerated");
-  dtEnumerated->symbol->addPragma(PRAG_GENERIC);
+  dtEnumerated->symbol->addFlag(FLAG_GENERIC);
 }
 
 
@@ -644,7 +644,7 @@ bool isReference(Type* t) {
 
 Type* getValueType(Type* type) {
   if (ClassType* ct = toClassType(type)) {
-    if (ct->symbol->hasPragma(PRAG_REF)) {
+    if (ct->symbol->hasFlag(FLAG_REF)) {
       return ct->getField(1)->type;
     }
   }

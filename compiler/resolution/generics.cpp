@@ -99,15 +99,15 @@ instantiate_tuple(FnSymbol* fn) {
     const char* name = astr("x", istr(i));
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, NULL, new SymExpr(gNil));
     if (tuple)
-      arg->addPragma(PRAG_TYPE_VARIABLE);
+      arg->addFlag(FLAG_TYPE_VARIABLE);
     fn->insertFormalAtTail(arg);
     last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
                                     new_StringSymbol(name), arg));
     if (tuple)
       tuple->fields.insertAtTail(new DefExpr(new VarSymbol(name)));
   }
-  fn->removePragma(PRAG_TUPLE);
-  fn->addPragma(PRAG_ALLOW_REF);
+  fn->removeFlag(FLAG_TUPLE);
+  fn->addFlag(FLAG_ALLOW_REF);
 }
 
 
@@ -164,28 +164,28 @@ instantiate_tuple_hash( FnSymbol* fn) {
 
 static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
-  if (value->hasPragma(PRAG_SYNC) &&
+  if (value->hasFlag(FLAG_SYNC) &&
       strcmp(fn->name, "_construct__tuple") &&
-      !fn->hasPragma(PRAG_HEAP) &&
-      !fn->hasPragma(PRAG_REF)) {
-    if (!fn->hasPragma(PRAG_SYNC) ||
-        (fn->hasPragma(PRAG_METHOD) && (value->type->instantiatedFrom != fn->_this->type))) {
+      !fn->hasFlag(FLAG_HEAP) &&
+      !fn->hasFlag(FLAG_REF)) {
+    if (!fn->hasFlag(FLAG_SYNC) ||
+        (fn->hasFlag(FLAG_METHOD) && (value->type->instantiatedFrom != fn->_this->type))) {
       // allow types to be instantiated to sync types
-      if (!key->hasPragma(PRAG_TYPE_VARIABLE)) {
+      if (!key->hasFlag(FLAG_TYPE_VARIABLE)) {
         // instantiation of a non-type formal of sync type loses sync
 
         // unless sync is explicitly specified as the generic
-        if (key->type->symbol->hasPragma(PRAG_SYNC))
+        if (key->type->symbol->hasFlag(FLAG_SYNC))
           return value;
 
         TypeSymbol* nt = toTypeSymbol(value->type->substitutions.v[0].value);
         return getNewSubType(fn, key, nt);
       }
     }
-  } else if (value->hasPragma(PRAG_REF) &&
-             !fn->hasPragma(PRAG_REF) &&
-             !fn->hasPragma(PRAG_ALLOW_REF) &&
-             !fn->hasPragma(PRAG_TUPLE)) {
+  } else if (value->hasFlag(FLAG_REF) &&
+             !fn->hasFlag(FLAG_REF) &&
+             !fn->hasFlag(FLAG_ALLOW_REF) &&
+             !fn->hasFlag(FLAG_TUPLE)) {
     // instantiation of a formal of ref type loses ref
     return getNewSubType(fn, key, getValueType(value->type)->symbol);
   }
@@ -251,7 +251,7 @@ checkInstantiationLimit(FnSymbol* fn) {
 
   if (fn->defPoint->parentSymbol != baseModule) {
     if (instantiationLimitMap.get(fn) >= instantiation_limit) {
-      if (fn->hasPragma(PRAG_TYPE_CONSTRUCTOR)) {
+      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
         USR_FATAL_CONT(fn->retType, "Type '%s' has been instantiated too many times",
                        fn->retType->symbol->name);
       } else {
@@ -312,7 +312,7 @@ FnSymbol*
 instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   form_Map(SymbolMapElem, e, *subs) {
     if (TypeSymbol* ts = toTypeSymbol(e->value)) {
-      if (ts->type->symbol->hasPragma(PRAG_GENERIC))
+      if (ts->type->symbol->hasFlag(FLAG_GENERIC))
         INT_FATAL(fn, "illegal instantiation with a generic type");
       TypeSymbol* nts = getNewSubType(fn, e->key, ts);
       if (ts != nts)
@@ -360,13 +360,13 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   // copy generic class type if this function is a type constructor
   //
   Type* newType = NULL;
-  if (fn->hasPragma(PRAG_TYPE_CONSTRUCTOR)) {
+  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
     INT_ASSERT(isClassType(fn->retType));
     newType = fn->retType->symbol->copy()->type;
     renameInstantiatedType(newType->symbol, subs);
     fn->retType->symbol->defPoint->insertBefore(new DefExpr(newType->symbol));
-    newType->symbol->copyPragmas(fn);
-    if (newType->symbol->hasPragma(PRAG_SYNC))
+    newType->symbol->copyFlags(fn);
+    if (newType->symbol->hasFlag(FLAG_SYNC))
       newType->defaultValue = NULL;
     newType->substitutions.copy(fn->retType->substitutions);
     newType->dispatchParents.copy(fn->retType->dispatchParents);
@@ -377,7 +377,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
       INT_FATAL(fn, "generic type has subtypes");
     newType->instantiatedFrom = fn->retType;
     newType->substitutions.map_union(*subs);
-    newType->symbol->removePragma(PRAG_GENERIC);
+    newType->symbol->removeFlag(FLAG_GENERIC);
   }
 
   //
@@ -394,8 +394,8 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
 
   //printf("newFn: %d %s\n", newFn->id, newFn->cname);
 
-  newFn->removePragma(PRAG_GENERIC);
-  newFn->addPragma(PRAG_INVISIBLE_FN);
+  newFn->removeFlag(FLAG_GENERIC);
+  newFn->addFlag(FLAG_INVISIBLE_FN);
   newFn->instantiatedFrom = fn;
 
   if (call)
@@ -444,13 +444,13 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
       if (formal->intent == INTENT_PARAM) {
         newFormal->intent = INTENT_BLANK;
         newFormal->instantiatedParam = true;
-        if (newFormal->type->symbol->hasPragma(PRAG_GENERIC))
+        if (newFormal->type->symbol->hasFlag(FLAG_GENERIC))
           newFormal->type = paramMap.get(newFormal)->type;
       } else {
         newFormal->instantiatedFrom = formal->type;
         newFormal->type = value->type;
       }
-      if (!newFormal->defaultExpr || formal->hasPragma(PRAG_TYPE_VARIABLE)) {
+      if (!newFormal->defaultExpr || formal->hasFlag(FLAG_TYPE_VARIABLE)) {
         if (newFormal->defaultExpr)
           newFormal->defaultExpr->remove();
         if (Symbol* sym = paramMap.get(newFormal))
@@ -467,14 +467,14 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
     newFn->retType = newType;
   }
 
-  if (fn->hasPragma(PRAG_TUPLE_INIT))
+  if (fn->hasFlag(FLAG_TUPLE_INIT))
     instantiate_tuple_init(newFn);
-  if (fn->hasPragma(PRAG_TUPLE_HASH_FUNCTION))
+  if (fn->hasFlag(FLAG_TUPLE_HASH_FUNCTION))
     instantiate_tuple_hash(newFn);
 
   newFn->substitutions.append(all_subs);
 
-  if (fn->hasPragma(PRAG_TUPLE))
+  if (fn->hasFlag(FLAG_TUPLE))
     instantiate_tuple(newFn);
 
   if (newFn->numFormals() > 1 && newFn->getFormal(1)->type == dtMethodToken)
@@ -482,7 +482,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
 
   newFn->tag_generic();
 
-  if (!newFn->hasPragma(PRAG_GENERIC) && evaluateWhereClause(newFn) == false) {
+  if (!newFn->hasFlag(FLAG_GENERIC) && evaluateWhereClause(newFn) == false) {
     //
     // where clause evaluates to false so cache gVoid as a function
     //
@@ -493,7 +493,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   if (explainInstantiationLine == -2)
     parseExplainFlag(fExplainInstantiation, &explainInstantiationLine, &explainInstantiationModule);
 
-  if (!newFn->hasPragma(PRAG_GENERIC) && explainInstantiationLine) {
+  if (!newFn->hasFlag(FLAG_GENERIC) && explainInstantiationLine) {
     explainInstantiation(newFn);
   }
 

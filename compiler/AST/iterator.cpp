@@ -40,17 +40,17 @@ insertSetMemberInits(FnSymbol* fn, Symbol* var) {
     ClassType* ct = toClassType(type);
     INT_ASSERT(ct);
     for_fields(field, ct) {
-      if (field->type->symbol->hasPragma(PRAG_REF)) {
-        if (getValueType(field->type)->symbol->hasPragma(PRAG_ARRAY))
+      if (field->type->symbol->hasFlag(FLAG_REF)) {
+        if (getValueType(field->type)->symbol->hasFlag(FLAG_ARRAY))
           continue; // skips array types
         Symbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->addPragma(PRAG_TEMP);
+        tmp->addFlag(FLAG_TEMP);
         fn->insertAtTail(new DefExpr(tmp));
         fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, gNilRef));
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, field, tmp));
       } else if (field->type->refType) { // skips array types (how to handle arrays?) ( sjd later: really? )
         Symbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->addPragma(PRAG_TEMP);
+        tmp->addFlag(FLAG_TEMP);
         fn->insertAtTail(new DefExpr(tmp));
         insertSetMemberInits(fn, tmp);
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, field, tmp));
@@ -322,7 +322,7 @@ buildAdvance(FnSymbol* fn,
   // insert jump table at head of advance
   i = 2;
   Symbol* tmp = new VarSymbol("_tmp", dtBool);
-  tmp->addPragma(PRAG_TEMP);
+  tmp->addFlag(FLAG_TEMP);
   Symbol* more = new VarSymbol("more", dtInt[INT_SIZE_32]);
 
   forv_Vec(Symbol, label, labels) {
@@ -446,7 +446,7 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
   Symbol* ret = fn->getReturnSymbol();
   bool foundRef = false;
   forv_Vec(Symbol, sym, syms) {
-    if (sym != ret && !isArgSymbol(sym) && sym->type->symbol->hasPragma(PRAG_REF)) {
+    if (sym != ret && !isArgSymbol(sym) && sym->type->symbol->hasFlag(FLAG_REF)) {
       foundRef = true;
     }
   }
@@ -455,7 +455,7 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
     Map<Symbol*,Vec<SymExpr*>*> useMap;
     buildDefUseMaps(fn, defMap, useMap);
     forv_Vec(Symbol, sym, syms) {
-      if (sym != ret && !isArgSymbol(sym) && sym->type->symbol->hasPragma(PRAG_REF)) {
+      if (sym != ret && !isArgSymbol(sym) && sym->type->symbol->hasFlag(FLAG_REF)) {
         Vec<SymExpr*>* defs = defMap.get(sym);
         if (defs->n != 1) {
           INT_FATAL(sym, "invalid assumption about reference");
@@ -466,7 +466,7 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
         SymExpr* se = toSymExpr(move->get(2));
         CallExpr* call = toCallExpr(move->get(2));
         if (se) {
-          INT_ASSERT(se->var->type->symbol->hasPragma(PRAG_REF));
+          INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
           if (se->var->defPoint->parentSymbol == fn) {
             syms.add_exclusive(se->var);
           }
@@ -499,7 +499,7 @@ addAllLocalVariables(Vec<Symbol*>& syms, Vec<BaseAST*>& asts) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (VarSymbol* var = toVarSymbol(def->sym))
-        if (!var->type->symbol->hasPragma(PRAG_REF) || var->hasPragma(PRAG_INDEX_VAR))
+        if (!var->type->symbol->hasFlag(FLAG_REF) || var->hasFlag(FLAG_INDEX_VAR))
           syms.add(var);
   }
 }
@@ -519,7 +519,7 @@ rebuildIterator(IteratorInfo* ii,
   fn->defPoint->remove();
   fn->retType = ii->icType;
   Symbol* iterator = new VarSymbol("ic", ii->icType);
-  iterator->addPragma(PRAG_TEMP);
+  iterator->addFlag(FLAG_TEMP);
   fn->insertAtTail(new DefExpr(iterator));
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->icType->symbol, new_StringSymbol("iterator class"))));
   fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, iterator));
@@ -528,7 +528,7 @@ rebuildIterator(IteratorInfo* ii,
     if (toArgSymbol(local)) {
       if (local->type == field->type->refType) {
         Symbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->addPragma(PRAG_TEMP);
+        tmp->addFlag(FLAG_TEMP);
         fn->insertAtTail(new DefExpr(tmp));
         fn->insertAtTail(
           new CallExpr(PRIMITIVE_MOVE, tmp,
@@ -540,12 +540,12 @@ rebuildIterator(IteratorInfo* ii,
     } else if (isRecordType(local->type)) {
       if (field->type->refType) { // skips array types (how to handle arrays?)
         Symbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->addPragma(PRAG_TEMP);
+        tmp->addFlag(FLAG_TEMP);
         fn->insertAtTail(new DefExpr(tmp));
         insertSetMemberInits(fn, tmp);
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, tmp));
       }
-    } else if (field->type->symbol->hasPragma(PRAG_REF)) {
+    } else if (field->type->symbol->hasFlag(FLAG_REF)) {
       // do not initialize references
     } else if (field->type->defaultValue) {
       fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, field->type->defaultValue));
@@ -554,7 +554,7 @@ rebuildIterator(IteratorInfo* ii,
   fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, ii->icType->getField("more"), new_IntSymbol(1)));
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, iterator));
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
-  fn->addPragma(PRAG_INLINE);
+  fn->addFlag(FLAG_INLINE);
 }
 
 
@@ -589,7 +589,7 @@ void lowerIterator(FnSymbol* fn) {
   locals.add_exclusive(fn->getReturnSymbol());
 
   Symbol* super = new VarSymbol("super", dtObject);
-  super->addPragma(PRAG_SUPER_CLASS);
+  super->addFlag(FLAG_SUPER_CLASS);
   ii->icType->fields.insertAtTail(new DefExpr(super));
 
   int i = 0;
@@ -598,7 +598,7 @@ void lowerIterator(FnSymbol* fn) {
       ? "value"
       : astr("F", istr(i++), "_", local->name);
     Type* type = local->type;
-    if (type->symbol->hasPragma(PRAG_REF) && local == fn->_this)
+    if (type->symbol->hasFlag(FLAG_REF) && local == fn->_this)
       type = getValueType(type);
     Symbol* field = new VarSymbol(fieldName, type);
     local2field.put(local, field);

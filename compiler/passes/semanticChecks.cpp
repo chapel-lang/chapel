@@ -9,10 +9,10 @@
 
 static void
 check_functions(FnSymbol* fn) {
-  if (!strcmp(fn->name, "this") && fn->hasPragma(PRAG_NO_PARENS))
+  if (!strcmp(fn->name, "this") && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL(fn, "method 'this' must have parentheses");
 
-  if (!strcmp(fn->name, "these") && fn->hasPragma(PRAG_NO_PARENS))
+  if (!strcmp(fn->name, "these") && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL(fn, "method 'these' must have parentheses");
 
   Vec<BaseAST*> asts;
@@ -50,12 +50,12 @@ check_parsed_vars(VarSymbol* var) {
         (toFnSymbol(var->defPoint->parentSymbol) ||
          toModuleSymbol(var->defPoint->parentSymbol)))
       USR_FATAL(var, "Top-level params must be initialized.");
-  if (var->hasPragma(PRAG_CONFIG) &&
+  if (var->hasFlag(FLAG_CONFIG) &&
       var->defPoint->parentSymbol != var->getModule()->initFn) {
     const char *varType = NULL;
-    if (var->hasPragma(PRAG_PARAM))
+    if (var->hasFlag(FLAG_PARAM))
       varType = "parameters";
-    else if (var->hasPragma(PRAG_CONST))
+    else if (var->hasFlag(FLAG_CONST))
       varType = "constants";
     else
       varType = "variables";
@@ -91,10 +91,10 @@ checkParsed(void) {
       if (!strcmp(def->sym->name, "_")) {
         USR_FATAL("Symbol cannot be named \"_\"");
       } else if (toVarSymbol(def->sym)) {
-        if (!def->init && !def->exprType && !def->sym->hasPragma(PRAG_TEMP))
+        if (!def->init && !def->exprType && !def->sym->hasFlag(FLAG_TEMP))
           if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
             if (def->parentExpr != rootModule->block)
-              if (!def->sym->hasPragma(PRAG_INDEX_VAR))
+              if (!def->sym->hasFlag(FLAG_INDEX_VAR))
                 USR_FATAL_CONT(def->sym,
                                "Variable '%s' is not initialized or has no type",
                                def->sym->name);
@@ -112,7 +112,7 @@ checkParsed(void) {
 void
 checkNormalized(void) {
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->hasPragma(PRAG_ITERATOR_FN)) {
+    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
       for_formals(formal, fn) {
         if (formal->intent == INTENT_IN ||
             formal->intent == INTENT_INOUT ||
@@ -122,7 +122,7 @@ checkNormalized(void) {
         }
       }
     } else if (!strncmp(fn->name, "_construct_", 11) &&
-               !fn->hasPragma(PRAG_DEFAULT_CONSTRUCTOR)) {
+               !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
       for_formals(formal, fn) {
         Vec<BaseAST*> asts;
         collect_asts(formal, asts);
@@ -171,15 +171,15 @@ isDefinedAllPaths(Expr* expr, Symbol* ret) {
 
 static void
 checkReturnPaths(FnSymbol* fn) {
-  if (fn->hasPragma(PRAG_ITERATOR_FN) ||
+  if (fn->hasFlag(FLAG_ITERATOR_FN) ||
       !strcmp(fn->name, "=") ||
       !strcmp(fn->name, "_build_array_type") ||
       fn->retType == dtVoid ||
       fn->retTag == RET_TYPE ||
-      fn->hasPragma(PRAG_EXTERN) ||
-      fn->hasPragma(PRAG_DEFAULT_CONSTRUCTOR) ||
-      fn->hasPragma(PRAG_TYPE_CONSTRUCTOR) ||
-      fn->hasPragma(PRAG_AUTO_II))
+      fn->hasFlag(FLAG_EXTERN) ||
+      fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
+      fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
+      fn->hasFlag(FLAG_AUTO_II))
     return;
   Symbol* ret = fn->getReturnSymbol();
   if (VarSymbol* var = toVarSymbol(ret))
@@ -187,7 +187,7 @@ checkReturnPaths(FnSymbol* fn) {
       return;
   int result = isDefinedAllPaths(fn->body, ret);
   if (!(result > 1 ||
-        (!fn->hasPragma(PRAG_SPECIFIED_RETURN_TYPE) && result > 0)))
+        (!fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE) && result > 0)))
     USR_WARN(fn->body, "control reaches end of function that returns a value");
 }
 
@@ -203,7 +203,7 @@ checkResolved(void) {
       for_enums(def, et) {
         if (def->init) {
           SymExpr* sym = toSymExpr(def->init);
-          if (!sym || (!sym->var->hasPragma(PRAG_PARAM) &&
+          if (!sym || (!sym->var->hasFlag(FLAG_PARAM) &&
                        !toVarSymbol(sym->var)->immediate))
             USR_FATAL(def, "enumerator '%s' is not an int parameter", def->sym->name);
         }

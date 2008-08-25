@@ -100,7 +100,7 @@ complex2record() {
   // change arrays of complexes into arrays of new complex records
   //
   forv_Vec(TypeSymbol, ts, gTypes) {
-    if (ts->hasPragma(PRAG_DATA_CLASS)) {
+    if (ts->hasFlag(FLAG_DATA_CLASS)) {
       if (TypeSymbol* nt = toTypeSymbol(ts->type->substitutions.v[0].value)) {
         if (is_complex_type(nt->type)) {
           Type* complexType = complex2rec(nt->type);

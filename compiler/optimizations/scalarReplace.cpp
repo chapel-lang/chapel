@@ -198,8 +198,8 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
     Symbol* var = new VarSymbol(astr(sym->name, "_", field->name), field->type);
     fieldMap.put(field, var);
     sym->defPoint->insertBefore(new DefExpr(var));
-    if (sym->hasPragma(PRAG_TEMP))
-      var->addPragma(PRAG_TEMP);
+    if (sym->hasFlag(FLAG_TEMP))
+      var->addFlag(FLAG_TEMP);
     if (ClassType* fct = toClassType(field->type))
       if (Vec<Symbol*>* varVec = typeVarMap.get(fct))
         varVec->add(var);
@@ -291,8 +291,8 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
     Symbol* var = new VarSymbol(astr(sym->name, "_", field->name), field->type);
     fieldMap.put(field, var);
     sym->defPoint->insertBefore(new DefExpr(var));
-    if (sym->hasPragma(PRAG_TEMP))
-      var->addPragma(PRAG_TEMP);
+    if (sym->hasFlag(FLAG_TEMP))
+      var->addFlag(FLAG_TEMP);
     if (ClassType* fct = toClassType(field->type))
       if (Vec<Symbol*>* varVec = typeVarMap.get(fct))
         varVec->add(var);
@@ -392,7 +392,7 @@ scalarReplace() {
       ClassType* ct = toClassType(ts->type);
       if (ct) {
         typeOrder.put(ct, -1);
-        if (ts->hasPragma(PRAG_ITERATOR_CLASS) || ts->hasPragma(PRAG_TUPLE)) {
+        if (ts->hasFlag(FLAG_ITERATOR_CLASS) || ts->hasFlag(FLAG_TUPLE)) {
           typeVec.add(ct);
           typeVarMap.put(ct, new Vec<Symbol*>());
           if (ClassType* rct = toClassType(ct->refType))

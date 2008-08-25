@@ -274,7 +274,7 @@ stmt_ls:
 | stmt_ls pragma_ls stmt
     {
       if (DefExpr* def = toDefExpr($3->body.first()))
-        def->sym->addPragmas($2);
+        def->sym->addFlags($2);
       delete $2;
       $1->insertAtTail($3);
     }
@@ -333,7 +333,7 @@ class_body_stmt_ls:
 | class_body_stmt_ls pragma_ls class_body_stmt
     {
       if (DefExpr* def = toDefExpr($3->body.first()))
-        def->sym->addPragmas($2);
+        def->sym->addFlags($2);
       delete $2;
       $1->insertAtTail($3);
     }
@@ -662,7 +662,7 @@ formal_ls:
 
 
 opt_formal_ls:
-  { $$ = new FnSymbol("_"); $$->addPragma(PRAG_NO_PARENS); }
+  { $$ = new FnSymbol("_"); $$->addFlag(FLAG_NO_PARENS); }
 | TLP formal_ls TRP
   { $$ = $2; }
 ;
@@ -675,7 +675,7 @@ fn_decl_stmt_inner:
       $$->name = astr($1);
       if ($1[0] == '~' && $1[1] != '\0') {
         $$->cname = astr("chpl__destroy_", &($1[1]));
-        $$->addPragma(PRAG_DESTRUCTOR);
+        $$->addFlag(FLAG_DESTRUCTOR);
       } else
         $$->cname = $$->name;
     }
@@ -685,7 +685,7 @@ fn_decl_stmt_inner:
       $$->name = astr($3);
       if ($3[0] == '~' && $3[1] != '\0') {
         $$->cname = astr("chpl__destroy_", &($3[1]));
-        $$->addPragma(PRAG_DESTRUCTOR);
+        $$->addFlag(FLAG_DESTRUCTOR);
       } else
         $$->cname = $$->name;
       $$->_this = new ArgSymbol(INTENT_BLANK, "this", dtUnknown, $1);
@@ -746,7 +746,7 @@ extern_fn_decl_stmt:
   TEXTERN TDEF fn_decl_stmt_inner opt_type TSEMI
     {
       FnSymbol* fn = $3;
-      fn->addPragma(PRAG_EXTERN);
+      fn->addFlag(FLAG_EXTERN);
       if ($4)
         fn->retExprType = new BlockStmt($4, BLOCK_SCOPELESS);
       else
@@ -773,7 +773,7 @@ var_arg_expr:
     { $$ = $2; }
 | TDOTDOTDOT query_expr
     {
-      $2->sym->addPragma(PRAG_PARAM);
+      $2->sym->addFlag(FLAG_PARAM);
       $$ = $2;
     }
 ;
@@ -935,14 +935,14 @@ typedef_decl_stmt_inner:
   identifier TASSIGN type
     {
       VarSymbol* var = new VarSymbol($1);
-      var->addPragma(PRAG_TYPE_VARIABLE);
+      var->addFlag(FLAG_TYPE_VARIABLE);
       DefExpr* def = new DefExpr(var, $3);
       $$ = buildChapelStmt(def);
     }
 | identifier TASSIGN type TCOMMA typedef_decl_stmt_inner
     {
       VarSymbol* var = new VarSymbol($1);
-      var->addPragma(PRAG_TYPE_VARIABLE);
+      var->addFlag(FLAG_TYPE_VARIABLE);
       DefExpr* def = new DefExpr(var, $3);
       $5->insertAtTail(def);
       $$ = buildChapelStmt($5);
@@ -967,7 +967,7 @@ typevar_decl_stmt:
   TTYPE identifier opt_init_type TSEMI
     {
       VarSymbol* var = new VarSymbol($2);
-      var->addPragma(PRAG_TYPE_VARIABLE);
+      var->addFlag(FLAG_TYPE_VARIABLE);
       DefExpr* def = new DefExpr(var, $3);
       $$ = buildChapelStmt(def);
     }
@@ -1026,7 +1026,7 @@ var_decl_stmt_inner:
     {
       VarSymbol* var = new VarSymbol($1);
       $$ = buildChapelStmt(new DefExpr(var, $3, $2));
-      var->addPragma(PRAG_ARRAY_ALIAS);
+      var->addFlag(FLAG_ARRAY_ALIAS);
     }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     { $$ = buildTupleVarDeclStmt($2, $4, $5); }

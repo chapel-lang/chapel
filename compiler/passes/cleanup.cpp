@@ -70,7 +70,7 @@ static void destructure_tuple(CallExpr* call) {
     return;
   Expr* stmt = parent->getStmtExpr();
   VarSymbol* temp = new VarSymbol("_tuple_destruct");
-  temp->addPragma(PRAG_TEMP);
+  temp->addFlag(FLAG_TEMP);
   stmt->insertBefore(new DefExpr(temp));
   stmt = new CallExpr(PRIMITIVE_MOVE, temp, parent->get(2)->remove());
   parent->replace(stmt);
@@ -101,8 +101,8 @@ static void flatten_primary_methods(FnSymbol* fn) {
     insertPoint->insertBefore(def);
     if (fn->userString && fn->name != ts->name)
       fn->userString = astr(ts->name, ".", fn->userString);
-    if (ts->hasPragma(PRAG_SYNC))
-      fn->addPragma(PRAG_SYNC);
+    if (ts->hasFlag(FLAG_SYNC))
+      fn->addFlag(FLAG_SYNC);
   }
 }
 

@@ -41,7 +41,7 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   cname(name),
   type(init_type),
   defPoint(NULL),
-  pragmas()
+  flags()
 {}
 
 
@@ -113,30 +113,30 @@ FnSymbol* Symbol::getFnSymbol(void) {
 }
 
 
-bool Symbol::hasPragma(PragmaTag pt) {
-  return pragmas[pt];
+bool Symbol::hasFlag(Flag flag) {
+  return flags[flag];
 }
 
 
-void Symbol::addPragma(PragmaTag pt) {
-  pragmas.set(pt);
+void Symbol::addFlag(Flag flag) {
+  flags.set(flag);
 }
 
 
-void Symbol::addPragmas(Vec<const char*>* strs) {
+void Symbol::addFlags(Vec<const char*>* strs) {
   forv_Vec(const char, str, *strs) {
-    pragmas.set(str2prag(str));
+    flags.set(str2flag(str));
   }
 }
 
 
-void Symbol::copyPragmas(Symbol* other) {
-  pragmas |= other->pragmas;
+void Symbol::copyFlags(Symbol* other) {
+  flags |= other->flags;
 }
 
 
-void Symbol::removePragma(PragmaTag pt) {
-  pragmas.reset(pt);
+void Symbol::removeFlag(Flag flag) {
+  flags.reset(flag);
 }
 
 
@@ -181,12 +181,12 @@ void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 bool VarSymbol::isConstant(void) {
-  return hasPragma(PRAG_CONST);
+  return hasFlag(FLAG_CONST);
 }
 
 
 bool VarSymbol::isParameter(void){
-  return hasPragma(PRAG_PARAM) || immediate;
+  return hasFlag(FLAG_PARAM) || immediate;
 }
 
 
@@ -244,7 +244,7 @@ static void zeroInitializeRecord(FILE* outfile, ClassType* ct) {
 void VarSymbol::codegenDef(FILE* outfile) {
   if (type == dtVoid)
     return;
-  if (this->hasPragma(PRAG_SUPER_CLASS))
+  if (this->hasFlag(FLAG_SUPER_CLASS))
     fprintf(outfile, "_");
   type->codegen(outfile);
   fprintf(outfile, " ");
@@ -253,8 +253,8 @@ void VarSymbol::codegenDef(FILE* outfile) {
     if (ct->classTag == CLASS_CLASS) {
       if (isFnSymbol(defPoint->parentSymbol))
         fprintf(outfile, " = NULL");
-    } else if (ct->symbol->hasPragma(PRAG_WIDE) ||
-               ct->symbol->hasPragma(PRAG_WIDE_CLASS)) {
+    } else if (ct->symbol->hasFlag(FLAG_WIDE) ||
+               ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       if (isFnSymbol(defPoint->parentSymbol))
         fprintf(outfile, " = {0,NULL}");
     } else if (fCopyCollect && ct->classTag == CLASS_RECORD) {
@@ -358,8 +358,8 @@ bool ArgSymbol::requiresCPtr(void) {
 bool ArgSymbol::isConstant(void) {
   return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
     !isReference(type) &&
-    !type->symbol->hasPragma(PRAG_ARRAY) &&
-    !type->symbol->hasPragma(PRAG_DOMAIN);
+    !type->symbol->hasFlag(FLAG_ARRAY) &&
+    !type->symbol->hasFlag(FLAG_DOMAIN);
 }
 
 
@@ -384,7 +384,7 @@ void ArgSymbol::codegenDef(FILE* outfile) {
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(SYMBOL_TYPE, init_name, init_type)
 {
-  addPragma(PRAG_TYPE_VARIABLE);
+  addFlag(FLAG_TYPE_VARIABLE);
   if (!type)
     INT_FATAL(this, "TypeSymbol constructor called without type");
   type->addSymbol(this);
@@ -471,7 +471,7 @@ void FnSymbol::verify() {
   if (astTag != SYMBOL_FN) {
     INT_FATAL(this, "Bad FnSymbol::astTag");
   }
-  if (normalized && !hasPragma(PRAG_AUTO_II)) {
+  if (normalized && !hasFlag(FLAG_AUTO_II)) {
     CallExpr* last = toCallExpr(body->body.last());
     if (!last || !last->isPrimitive(PRIMITIVE_RETURN))
       INT_FATAL(this, "Last statement in normalized function is not a return");
@@ -538,7 +538,7 @@ void FnSymbol::codegenHeader(FILE* outfile) {
   } else {
     bool first = true;
     for_formals(formal, this) {
-      if (formal->defPoint == formals.head && hasPragma(PRAG_ON_BLOCK))
+      if (formal->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
         continue; // do not print locale argument for on blocks
       if (!first) {
         fprintf(outfile, ", ");
@@ -552,7 +552,7 @@ void FnSymbol::codegenHeader(FILE* outfile) {
 
 
 void FnSymbol::codegenPrototype(FILE* outfile) {
-  INT_ASSERT(!hasPragma(PRAG_EXTERN));
+  INT_ASSERT(!hasFlag(FLAG_EXTERN));
   codegenHeader(outfile);
   fprintf(outfile, ";\n");
 }
@@ -705,11 +705,11 @@ hasGenericArgs(FnSymbol* fn) {
   bool isGeneric = false;
   bool hasGenericDefaults = true;
   for_formals(formal, fn) {
-    if ((formal->type->symbol->hasPragma(PRAG_GENERIC) &&
+    if ((formal->type->symbol->hasFlag(FLAG_GENERIC) &&
          (!formal->type->hasGenericDefaults ||
           formal->markedGeneric ||
           formal == fn->_this ||
-          formal->hasPragma(PRAG_IS_MEME))) ||
+          formal->hasFlag(FLAG_IS_MEME))) ||
         formal->intent == INTENT_PARAM) {
       isGeneric = true;
       if (!formal->defaultExpr)
@@ -726,12 +726,12 @@ hasGenericArgs(FnSymbol* fn) {
 
 
 bool FnSymbol::tag_generic() {
-  if (hasPragma(PRAG_GENERIC))
+  if (hasFlag(FLAG_GENERIC))
     return false;
   if (int result = hasGenericArgs(this)) {
-    addPragma(PRAG_GENERIC);
-    if (retType != dtUnknown && hasPragma(PRAG_TYPE_CONSTRUCTOR)) {
-      retType->symbol->addPragma(PRAG_GENERIC);
+    addFlag(FLAG_GENERIC);
+    if (retType != dtUnknown && hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
+      retType->symbol->addFlag(FLAG_GENERIC);
       if (result == 2)
         retType->hasGenericDefaults = true;
     }
@@ -815,7 +815,7 @@ void ModuleSymbol::codegenDef(FILE* outfile) {
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym))
-        if (!fn->hasPragma(PRAG_EXTERN))
+        if (!fn->hasFlag(FLAG_EXTERN))
           fns.add(fn);
   }
   qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);

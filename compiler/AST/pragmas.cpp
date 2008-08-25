@@ -4,104 +4,104 @@
 #include "symbol.h"
 
 
-typedef Map<const char*, int> PragmaMap;
-typedef MapElem<const char*, int> PragmaMapElem;
-static PragmaMap pragmaMap;
+typedef Map<const char*, int> FlagMap;
+typedef MapElem<const char*, int> FlagMapElem;
+static FlagMap flagMap;
 
 
 static void
-definePragma(PragmaTag tag, const char* str) {
-  pragmaMap.put(astr(str), tag);
+defineFlag(Flag tag, const char* str) {
+  flagMap.put(astr(str), tag);
 }
 
 
 int
-str2prag(const char* str) {
-  return pragmaMap.get(astr(str));
+str2flag(const char* str) {
+  return flagMap.get(astr(str));
 }
 
 
 void
-initPragmas() {
-  definePragma(PRAG_ALLOW_REF, "allow ref");
-  definePragma(PRAG_ARRAY, "array");
-  definePragma(PRAG_ARRAY_ALIAS, "array alias");
-  definePragma(PRAG_ARRAY_TYPE_INFO, "array type info");
-  definePragma(PRAG_AUTO_II, "auto ii");
-  definePragma(PRAG_BASE_ARRAY, "base array");
-  definePragma(PRAG_BEGIN, "begin");
-  definePragma(PRAG_BEGIN_BLOCK, "begin block");
-  definePragma(PRAG_COBEGIN_OR_COFORALL, "cobegin or coforall");
-  definePragma(PRAG_COBEGIN_OR_COFORALL_BLOCK, "cobegin or coforall block");
-  definePragma(PRAG_COMMAND_LINE_SETTING, "command line setting");
-  definePragma(PRAG_CONCURRENTLY_ACCESSED, "concurrently accessed");
-  definePragma(PRAG_CONFIG, "config");
-  definePragma(PRAG_CONST, "const");
-  definePragma(PRAG_DATA_CLASS, "data class");
-  definePragma(PRAG_DATA_SET_ERROR, "data set error");
-  definePragma(PRAG_DEFAULT_CONSTRUCTOR, "default constructor");
-  definePragma(PRAG_DESTRUCTOR, "destructor");
-  definePragma(PRAG_DOMAIN, "domain");
-  definePragma(PRAG_EXPAND_TUPLES_WITH_VALUES, "expand tuples with values");
-  definePragma(PRAG_EXPORT, "export");
-  definePragma(PRAG_EXPR_TEMP, "expr temp");
-  definePragma(PRAG_EXTERN, "extern");
-  definePragma(PRAG_GENERIC, "generic");
-  definePragma(PRAG_HEAP, "heap");
-  definePragma(PRAG_INDEX_VAR, "index var");
-  definePragma(PRAG_INLINE, "inline");
-  definePragma(PRAG_INLINE_ITERATOR, "inline iterator");
-  definePragma(PRAG_IS_MEME, "is meme");
-  definePragma(PRAG_ITERATOR_CLASS, "iterator class");
-  definePragma(PRAG_ITERATOR_CLASS_COPY, "iterator class copy");
-  definePragma(PRAG_ITERATOR_FN, "iterator fn");
-  definePragma(PRAG_LABEL_BREAK, "label break");
-  definePragma(PRAG_LABEL_CONTINUE, "label continue");
-  definePragma(PRAG_LOCAL_BLOCK, "local block");
-  definePragma(PRAG_LOCALIZED, "localized");
-  definePragma(PRAG_MAYBE_PARAM, "maybe param");
-  definePragma(PRAG_MAYBE_TYPE, "maybe type");
-  definePragma(PRAG_METHOD, "method");
-  definePragma(PRAG_NO_DEFAULT_FUNCTIONS, "no default functions");
-  definePragma(PRAG_NO_FORMAL_TMP, "no formal tmp");
-  definePragma(PRAG_NO_HEAP_ALLOCATION, "no heap allocation");
-  definePragma(PRAG_NO_OBJECT, "no object");
-  definePragma(PRAG_NO_PARENS, "no parens");
-  definePragma(PRAG_NO_WIDE_CLASS, "no wide class");
-  definePragma(PRAG_OBJECT_CLASS, "object class");
-  definePragma(PRAG_OMIT_FROM_CONSTRUCTOR, "omit from constructor");
-  definePragma(PRAG_ON, "on");
-  definePragma(PRAG_ON_BLOCK, "on block");
-  definePragma(PRAG_PARAM, "param");
-  definePragma(PRAG_PRIVATE, "private");
-  definePragma(PRAG_PROMOTION_WRAPPER, "promotion wrapper");
-  definePragma(PRAG_RANGE, "range");
-  definePragma(PRAG_REF, "ref");
-  definePragma(PRAG_REF_ITERATOR_CLASS, "ref iterator class");
-  definePragma(PRAG_REF_THIS, "ref this");
-  definePragma(PRAG_SINGLE, "single");
-  definePragma(PRAG_SPECIFIED_RETURN_TYPE, "specified return type");
-  definePragma(PRAG_SUPER_CLASS, "super class");
-  definePragma(PRAG_SYNC, "sync");
-  definePragma(PRAG_TEMP, "temp");
-  definePragma(PRAG_TUPLE, "tuple");
-  definePragma(PRAG_TUPLE_HASH_FUNCTION, "tuple hash function");
-  definePragma(PRAG_TUPLE_INIT, "tuple init");
-  definePragma(PRAG_TYPE_CONSTRUCTOR, "type constructor");
-  definePragma(PRAG_TYPE_VARIABLE, "type variable");
-  definePragma(PRAG_VALID_VAR, "valid var");
-  definePragma(PRAG_INVISIBLE_FN, "invisible fn");
-  definePragma(PRAG_WIDE, "wide");
-  definePragma(PRAG_WIDE_CLASS, "wide class");
-  definePragma(PRAG_WRAPPER, "wrapper");
+initFlags() {
+  defineFlag(FLAG_ALLOW_REF, "allow ref");
+  defineFlag(FLAG_ARRAY, "array");
+  defineFlag(FLAG_ARRAY_ALIAS, "array alias");
+  defineFlag(FLAG_ARRAY_TYPE_INFO, "array type info");
+  defineFlag(FLAG_AUTO_II, "auto ii");
+  defineFlag(FLAG_BASE_ARRAY, "base array");
+  defineFlag(FLAG_BEGIN, "begin");
+  defineFlag(FLAG_BEGIN_BLOCK, "begin block");
+  defineFlag(FLAG_COBEGIN_OR_COFORALL, "cobegin or coforall");
+  defineFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK, "cobegin or coforall block");
+  defineFlag(FLAG_COMMAND_LINE_SETTING, "command line setting");
+  defineFlag(FLAG_CONCURRENTLY_ACCESSED, "concurrently accessed");
+  defineFlag(FLAG_CONFIG, "config");
+  defineFlag(FLAG_CONST, "const");
+  defineFlag(FLAG_DATA_CLASS, "data class");
+  defineFlag(FLAG_DATA_SET_ERROR, "data set error");
+  defineFlag(FLAG_DEFAULT_CONSTRUCTOR, "default constructor");
+  defineFlag(FLAG_DESTRUCTOR, "destructor");
+  defineFlag(FLAG_DOMAIN, "domain");
+  defineFlag(FLAG_EXPAND_TUPLES_WITH_VALUES, "expand tuples with values");
+  defineFlag(FLAG_EXPORT, "export");
+  defineFlag(FLAG_EXPR_TEMP, "expr temp");
+  defineFlag(FLAG_EXTERN, "extern");
+  defineFlag(FLAG_GENERIC, "generic");
+  defineFlag(FLAG_HEAP, "heap");
+  defineFlag(FLAG_INDEX_VAR, "index var");
+  defineFlag(FLAG_INLINE, "inline");
+  defineFlag(FLAG_INLINE_ITERATOR, "inline iterator");
+  defineFlag(FLAG_IS_MEME, "is meme");
+  defineFlag(FLAG_ITERATOR_CLASS, "iterator class");
+  defineFlag(FLAG_ITERATOR_CLASS_COPY, "iterator class copy");
+  defineFlag(FLAG_ITERATOR_FN, "iterator fn");
+  defineFlag(FLAG_LABEL_BREAK, "label break");
+  defineFlag(FLAG_LABEL_CONTINUE, "label continue");
+  defineFlag(FLAG_LOCAL_BLOCK, "local block");
+  defineFlag(FLAG_LOCALIZED, "localized");
+  defineFlag(FLAG_MAYBE_PARAM, "maybe param");
+  defineFlag(FLAG_MAYBE_TYPE, "maybe type");
+  defineFlag(FLAG_METHOD, "method");
+  defineFlag(FLAG_NO_DEFAULT_FUNCTIONS, "no default functions");
+  defineFlag(FLAG_NO_FORMAL_TMP, "no formal tmp");
+  defineFlag(FLAG_NO_HEAP_ALLOCATION, "no heap allocation");
+  defineFlag(FLAG_NO_OBJECT, "no object");
+  defineFlag(FLAG_NO_PARENS, "no parens");
+  defineFlag(FLAG_NO_WIDE_CLASS, "no wide class");
+  defineFlag(FLAG_OBJECT_CLASS, "object class");
+  defineFlag(FLAG_OMIT_FROM_CONSTRUCTOR, "omit from constructor");
+  defineFlag(FLAG_ON, "on");
+  defineFlag(FLAG_ON_BLOCK, "on block");
+  defineFlag(FLAG_PARAM, "param");
+  defineFlag(FLAG_PRIVATE, "private");
+  defineFlag(FLAG_PROMOTION_WRAPPER, "promotion wrapper");
+  defineFlag(FLAG_RANGE, "range");
+  defineFlag(FLAG_REF, "ref");
+  defineFlag(FLAG_REF_ITERATOR_CLASS, "ref iterator class");
+  defineFlag(FLAG_REF_THIS, "ref this");
+  defineFlag(FLAG_SINGLE, "single");
+  defineFlag(FLAG_SPECIFIED_RETURN_TYPE, "specified return type");
+  defineFlag(FLAG_SUPER_CLASS, "super class");
+  defineFlag(FLAG_SYNC, "sync");
+  defineFlag(FLAG_TEMP, "temp");
+  defineFlag(FLAG_TUPLE, "tuple");
+  defineFlag(FLAG_TUPLE_HASH_FUNCTION, "tuple hash function");
+  defineFlag(FLAG_TUPLE_INIT, "tuple init");
+  defineFlag(FLAG_TYPE_CONSTRUCTOR, "type constructor");
+  defineFlag(FLAG_TYPE_VARIABLE, "type variable");
+  defineFlag(FLAG_VALID_VAR, "valid var");
+  defineFlag(FLAG_INVISIBLE_FN, "invisible fn");
+  defineFlag(FLAG_WIDE, "wide");
+  defineFlag(FLAG_WIDE_CLASS, "wide class");
+  defineFlag(FLAG_WRAPPER, "wrapper");
 }
 
 
 void
-viewPragmas(BaseAST* ast) {
+viewFlags(BaseAST* ast) {
   if (Symbol* sym = toSymbol(ast)) {
-    form_Map(PragmaMapElem, e, pragmaMap) {
-      if (sym->pragmas[e->value]) {
+    form_Map(FlagMapElem, e, flagMap) {
+      if (sym->flags[e->value]) {
         printf("\"%s\"\n", e->key);
       }
     }

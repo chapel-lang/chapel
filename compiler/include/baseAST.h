@@ -78,7 +78,7 @@ extern const char* astTagName[];
       map = &localMap;                                                  \
     type* _this = copyInner(map);                                       \
     _this->lineno = lineno;                                             \
-    _this->copyPragmas(this);                                           \
+    _this->copyFlags(this);                                           \
     map->put(this, _this);                                              \
     if (!internal)                                                      \
       update_symbols(_this, map);                                       \

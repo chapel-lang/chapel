@@ -33,7 +33,7 @@ getOrder(Map<ClassType*,int>& order, int& maxOrder,
   for_fields(field, ct) {
     if (ClassType* fct = toClassType(field->type)) {
       if (!visit.set_in(fct)) {
-        if (fct->classTag != CLASS_CLASS || fct->symbol->hasPragma(PRAG_REF)) {
+        if (fct->classTag != CLASS_CLASS || fct->symbol->hasFlag(FLAG_REF)) {
           setOrder(order, maxOrder, fct);
           i = max(i, getOrder(order, maxOrder, fct, visit));
         }
@@ -48,7 +48,7 @@ static void
 setOrder(Map<ClassType*,int>& order, int& maxOrder,
          ClassType* ct) {
   if (order.get(ct) || (ct->classTag == CLASS_CLASS &&
-                        !ct->symbol->hasPragma(PRAG_REF)))
+                        !ct->symbol->hasFlag(FLAG_REF)))
     return;
   int i;
   Vec<ClassType*> visit;
@@ -135,7 +135,7 @@ static void codegen_header(void) {
   forv_Vec(TypeSymbol, ts, gTypes) {
     if (ts->defPoint->parentExpr != rootModule->block) {
       legalizeCName(ts);
-      if (!ts->hasPragma(PRAG_EXTERN) && symbol_clashes(ts->cname, cnames))
+      if (!ts->hasFlag(FLAG_EXTERN) && symbol_clashes(ts->cname, cnames))
         ts->cname = astr("chpl__", ts->cname, "_", istr(ts->id));
       cnames.put(ts->cname, 1);
       typeSymbols.add(ts);
@@ -169,7 +169,7 @@ static void codegen_header(void) {
       if (var->defPoint->parentExpr != rootModule->block &&
           toModuleSymbol(var->defPoint->parentSymbol)) {
         legalizeCName(var);
-        if (!var->hasPragma(PRAG_EXTERN) && symbol_clashes(var->cname, cnames))
+        if (!var->hasFlag(FLAG_EXTERN) && symbol_clashes(var->cname, cnames))
           var->cname = astr("chpl__", var->cname, "_", istr(var->id));
         cnames.put(var->cname, 1);
         varSymbols.add(var);
@@ -185,7 +185,7 @@ static void codegen_header(void) {
     if (fn == chpl_main)
       fn->cname = astr("chpl_main");
     legalizeCName(fn);
-    if (!fn->hasPragma(PRAG_EXPORT) && !fn->hasPragma(PRAG_EXTERN) && symbol_clashes(fn->cname, cnames))
+    if (!fn->hasFlag(FLAG_EXPORT) && !fn->hasFlag(FLAG_EXTERN) && symbol_clashes(fn->cname, cnames))
       fn->cname = astr("chpl__", fn->cname, "_", istr(fn->id));
     cnames.put(fn->cname, 1);
     fnSymbols.add(fn);
@@ -253,7 +253,7 @@ static void codegen_header(void) {
     fprintf(outfile, "#define _%s_H_\n", userModules.v[0]->name);
     fprintf(outfile, "#include \"stdchplrt.h\"\n");
     forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
-      if (fnSymbol->hasPragma(PRAG_EXPORT) || fnSymbol == chpl_main)
+      if (fnSymbol->hasFlag(FLAG_EXPORT) || fnSymbol == chpl_main)
         fnSymbol->codegenPrototype(outfile);
     }
     fprintf(outfile, "#endif\n");
@@ -290,7 +290,7 @@ static void codegen_header(void) {
 
   fprintf(outfile, "\n/*** Class Prototypes ***/\n\n");
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
-    if (!typeSymbol->hasPragma(PRAG_REF))
+    if (!typeSymbol->hasFlag(FLAG_REF))
       typeSymbol->codegenPrototype(outfile);
   }
 
@@ -322,7 +322,7 @@ static void codegen_header(void) {
   // codegen reference types
   fprintf(outfile, "/*** Primitive References ***/\n\n");
   forv_Vec(TypeSymbol, ts, typeSymbols) {
-    if (ts->hasPragma(PRAG_REF)) {
+    if (ts->hasFlag(FLAG_REF)) {
       ClassType* ct = toClassType(getValueType(ts->type));
       if (ct && ct->classTag != CLASS_CLASS)
         continue; // references to records and unions codegened below
@@ -335,11 +335,11 @@ static void codegen_header(void) {
   for (int i = 1; i <= maxOrder; i++) {
     forv_Vec(TypeSymbol, ts, typeSymbols) {
       if (ClassType* ct = toClassType(ts->type))
-        if (order.get(ct) == i && !ct->symbol->hasPragma(PRAG_REF))
+        if (order.get(ct) == i && !ct->symbol->hasFlag(FLAG_REF))
           ts->codegenDef(outfile);
     }
     forv_Vec(TypeSymbol, ts, typeSymbols) {
-      if (ts->hasPragma(PRAG_REF))
+      if (ts->hasFlag(FLAG_REF))
         if (ClassType* ct = toClassType(getValueType(ts->type)))
           if (order.get(ct) == i)
             ts->codegenPrototype(outfile);
@@ -355,11 +355,11 @@ static void codegen_header(void) {
       continue;
     if (toEnumType(typeSymbol->type))
       continue;
-    if (typeSymbol->hasPragma(PRAG_REF))
+    if (typeSymbol->hasFlag(FLAG_REF))
       continue;
 
     if (ClassType* ct = toClassType(typeSymbol->type))
-      if (!ct->symbol->hasPragma(PRAG_NO_OBJECT) || ct->symbol->hasPragma(PRAG_OBJECT_CLASS))
+      if (!ct->symbol->hasFlag(FLAG_NO_OBJECT) || ct->symbol->hasFlag(FLAG_OBJECT_CLASS))
         continue;
 
     typeSymbol->codegenDef(outfile);
@@ -390,11 +390,11 @@ static void codegen_header(void) {
 
   fprintf(outfile, "\n/*** Function Prototypes ***/\n\n");
   forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
-    if (!fnSymbol->hasPragma(PRAG_EXTERN)) {
-      if (fRuntime && fnSymbol != chpl_main && !fnSymbol->hasPragma(PRAG_EXPORT))
+    if (!fnSymbol->hasFlag(FLAG_EXTERN)) {
+      if (fRuntime && fnSymbol != chpl_main && !fnSymbol->hasFlag(FLAG_EXPORT))
         fprintf(outfile, "static ");
       if (!fRuntime || 
-          (!fnSymbol->hasPragma(PRAG_EXPORT) && fnSymbol != chpl_main))
+          (!fnSymbol->hasFlag(FLAG_EXPORT) && fnSymbol != chpl_main))
         fnSymbol->codegenPrototype(outfile);
     }
   }
@@ -424,10 +424,10 @@ static void codegen_header(void) {
 static void codegen_cid2offsets_help(FILE* outfile, ClassType* ct) {
   for_fields(field, ct) {
     if (ClassType* innerct = toClassType(field->type)) {
-      if (!innerct->symbol->hasPragma(PRAG_REF) &&
-          !innerct->symbol->hasPragma(PRAG_NO_OBJECT)) {
+      if (!innerct->symbol->hasFlag(FLAG_REF) &&
+          !innerct->symbol->hasFlag(FLAG_NO_OBJECT)) {
         if (innerct->classTag == CLASS_CLASS) {
-          if (field->hasPragma(PRAG_SUPER_CLASS)) {
+          if (field->hasFlag(FLAG_SUPER_CLASS)) {
             codegen_cid2offsets_help(outfile, innerct);
           } else {
             fprintf(outfile, "(size_t)&((_");
@@ -452,13 +452,13 @@ codegen_cid2offsets(FILE* outfile) {
   // corresponding to the class with that cid.
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = toClassType(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS && !ct->symbol->hasPragma(PRAG_REF) && !ct->symbol->hasPragma(PRAG_NO_OBJECT)) {
+      if (ct->classTag == CLASS_CLASS && !ct->symbol->hasFlag(FLAG_REF) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
         fprintf(outfile, "size_t _");
         ct->symbol->codegen(outfile);
         fprintf(outfile, "_offsets[] = { sizeof(_");
         ct->symbol->codegen(outfile);
         fprintf(outfile, "), ");
-        if (typeSym->hasPragma(PRAG_DATA_CLASS)) {
+        if (typeSym->hasFlag(FLAG_DATA_CLASS)) {
           if (ClassType* elementType = toClassType(ct->substitutions.v[0].value)) {
             if (elementType->classTag == CLASS_CLASS) {
               fprintf(outfile, "(size_t)-1,"); // Special token for arrays of classes
@@ -482,7 +482,7 @@ codegen_cid2offsets(FILE* outfile) {
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = toClassType(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS && !isReference(ct) && !ct->symbol->hasPragma(PRAG_NO_OBJECT)) {
+      if (ct->classTag == CLASS_CLASS && !isReference(ct) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
         fprintf(outfile, "case %s%s:\n", "_e_", ct->symbol->cname);
         fprintf(outfile, "offsets = _");
         ct->symbol->codegen(outfile);
@@ -507,7 +507,7 @@ codegen_cid2size(FILE* outfile) {
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = toClassType(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS && !isReference(ct) && !ct->symbol->hasPragma(PRAG_NO_OBJECT)) {
+      if (ct->classTag == CLASS_CLASS && !isReference(ct) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
         fprintf(outfile, "case %s%s:\n", "_e_", ct->symbol->cname);
         fprintf(outfile, "size = sizeof(_");
         ct->symbol->codegen(outfile);
@@ -538,14 +538,14 @@ codegen_config(FILE* outfile) {
   forv_Vec(BaseAST, ast, gAsts) {
     if (DefExpr* def = toDefExpr(ast)) {
       VarSymbol* var = toVarSymbol(def->sym);
-      if (var && var->hasPragma(PRAG_CONFIG)) {
+      if (var && var->hasFlag(FLAG_CONFIG)) {
         fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
         Type* type = var->type;
-        if (type->symbol->hasPragma(PRAG_WIDE_CLASS))
+        if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
           type = type->getField("addr")->type;
-        if (type->symbol->hasPragma(PRAG_HEAP))
+        if (type->symbol->hasFlag(FLAG_HEAP))
           type = type->getField("_val")->type;
-        if (type->symbol->hasPragma(PRAG_WIDE_CLASS))
+        if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
           type = type->getField("addr")->type;
         fprintf(outfile, type->symbol->name);
         fprintf(outfile, "\", \"%s\");\n", var->getModule()->name);

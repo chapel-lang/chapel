@@ -91,7 +91,7 @@ flattenGlobalFunctions() {
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(expr, mod->initFn->body->body) {
       if (DefExpr* def = toDefExpr(expr)) {
-        if ((toVarSymbol(def->sym) && !def->sym->hasPragma(PRAG_TEMP)) ||
+        if ((toVarSymbol(def->sym) && !def->sym->hasFlag(FLAG_TEMP)) ||
             toTypeSymbol(def->sym) ||
             toFnSymbol(def->sym)) {
           FnSymbol* fn = toFnSymbol(def->sym);
@@ -114,7 +114,7 @@ flattenGlobalFunctions() {
 static void insertHeapAllocate(CallExpr* move, bool global = false) {
   SET_LINENO(move);
   VarSymbol* tmp = new VarSymbol("_tmp");
-  tmp->addPragma(PRAG_TEMP);
+  tmp->addFlag(FLAG_TEMP);
   move->insertBefore(new DefExpr(tmp));
   move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, move->get(2)->remove()));
   if (global) {
@@ -139,8 +139,8 @@ static void insertHeapAccess(SymExpr* se, bool global = false) {
     call->insertAtTail(se);
   } else {
     VarSymbol* tmp = new VarSymbol("_tmp");
-    tmp->addPragma(PRAG_TEMP);
-    tmp->addPragma(PRAG_EXPR_TEMP);
+    tmp->addFlag(FLAG_TEMP);
+    tmp->addFlag(FLAG_EXPR_TEMP);
     stmt->insertBefore(new DefExpr(tmp));
     stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
     se->replace(new SymExpr(tmp));
@@ -199,7 +199,7 @@ static void heapAllocateLocals() {
 
             // collect arguments
             if (ArgSymbol* arg = toArgSymbol(se->var)) {
-              if (!arg->hasPragma(PRAG_TYPE_VARIABLE) &&
+              if (!arg->hasFlag(FLAG_TYPE_VARIABLE) &&
                   arg->intent != INTENT_PARAM) {
                 heapSet.set_add(se->var);
               }
@@ -209,14 +209,14 @@ static void heapAllocateLocals() {
             if (VarSymbol* var = toVarSymbol(se->var)) {
               if (!defSet.set_in(var->defPoint) &&
                   isFnSymbol(var->defPoint->parentSymbol) &&
-                  !var->hasPragma(PRAG_PARAM) &&
-                  !var->hasPragma(PRAG_PRIVATE) &&
+                  !var->hasFlag(FLAG_PARAM) &&
+                  !var->hasFlag(FLAG_PRIVATE) &&
                   // ignore locale tmp for on
                   (!block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON) ||
                    se->parentExpr != block->blockInfo) &&
                   // only index variables for coforall
                   (!block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COFORALL) ||
-                   var->hasPragma(PRAG_INDEX_VAR))) {
+                   var->hasFlag(FLAG_INDEX_VAR))) {
                 heapSet.set_add(var);
               }
             }
@@ -277,7 +277,7 @@ static void heapAllocateLocals() {
     if (ArgSymbol* arg = toArgSymbol(sym)) {
       FnSymbol* fn = sym->getFunction();
       VarSymbol* tmp = new VarSymbol("_tmp");
-      tmp->addPragma(PRAG_TEMP);
+      tmp->addFlag(FLAG_TEMP);
       fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_heapAlloc", sym)));
       fn->insertAtHead(new DefExpr(tmp));
       for_defs(se, defMap, sym) {
@@ -339,7 +339,7 @@ static void heapAllocateGlobals() {
             //
             // do not change parameters and private global variables
             //
-            if (var->hasPragma(PRAG_PARAM) || var->hasPragma(PRAG_PRIVATE))
+            if (var->hasFlag(FLAG_PARAM) || var->hasFlag(FLAG_PRIVATE))
               continue;
 
             heapVec.add(var);
@@ -417,7 +417,7 @@ void normalize(void) {
         if (!fn) {
           USR_FATAL(call, "yield statement must be in a function");
         }
-        fn->addPragma(PRAG_ITERATOR_FN);
+        fn->addFlag(FLAG_ITERATOR_FN);
       }
       if (call->isPrimitive(PRIMITIVE_DELETE)) {
         VarSymbol* tmp = new VarSymbol("_tmp");
@@ -431,8 +431,8 @@ void normalize(void) {
 
   forv_Vec(FnSymbol, fn, gFns) {
     SET_LINENO(fn);
-    if (!fn->hasPragma(PRAG_TYPE_CONSTRUCTOR) &&
-        !fn->hasPragma(PRAG_DEFAULT_CONSTRUCTOR))
+    if (!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&
+        !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       fixup_array_formals(fn);
     clone_parameterized_primitive_methods(fn);
     fixup_query_formals(fn);
@@ -451,7 +451,7 @@ void normalize(void) {
   // perform some checks on destructors
   Map<Type*, FnSymbol*> destructors; // used for finding the parent class' destructor later on
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->hasPragma(PRAG_DESTRUCTOR)) {
+    if (fn->hasFlag(FLAG_DESTRUCTOR)) {
       if (fn->formals.length() < 2
           || toDefExpr(fn->formals.get(1))->sym->typeInfo() != gMethodToken->typeInfo()) {
         USR_FATAL(fn, "destructors must be methods");
@@ -563,7 +563,7 @@ static void normalize_returns(FnSymbol* fn) {
     }
   }
   if (rets.n == 0) {
-    if (fn->hasPragma(PRAG_ITERATOR_FN))
+    if (fn->hasFlag(FLAG_ITERATOR_FN))
       USR_FATAL(fn, "iterator does not yield or return a value");
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
     return;
@@ -582,16 +582,16 @@ static void normalize_returns(FnSymbol* fn) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
   } else {
     retval = new VarSymbol(astr("_ret_", fn->name), fn->retType);
-    retval->addPragma(PRAG_TEMP);
+    retval->addFlag(FLAG_TEMP);
     if (fn->retTag == RET_PARAM)
-      retval->addPragma(PRAG_PARAM);
+      retval->addFlag(FLAG_PARAM);
     if (fn->retTag == RET_TYPE)
-      retval->addPragma(PRAG_TYPE_VARIABLE);
+      retval->addFlag(FLAG_TYPE_VARIABLE);
     if (fn->retExprType && fn->retTag != RET_VAR) {
       BlockStmt* retExprType = fn->retExprType->copy();
       fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_INIT, retExprType->body.tail->remove())));
       fn->insertAtHead(retExprType);
-      fn->addPragma(PRAG_SPECIFIED_RETURN_TYPE);
+      fn->addFlag(FLAG_SPECIFIED_RETURN_TYPE);
     }
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, retval));
@@ -606,13 +606,13 @@ static void normalize_returns(FnSymbol* fn) {
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_SET_REF, ret_expr)));
       else if (fn->retExprType)
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr("=", retval, ret_expr)));
-      else if (!fn->hasPragma(PRAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
+      else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
                strcmp(fn->name, "iteratorIndexHelp"))
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_GET_REF, ret_expr)));
       else
         ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_expr));
     }
-    if (fn->hasPragma(PRAG_ITERATOR_FN)) {
+    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
       if (!retval)
         INT_FATAL(ret, "unexpected case");
       if (ret->isPrimitive(PRIMITIVE_RETURN)) {
@@ -725,10 +725,10 @@ static void insert_call_temps(CallExpr* call) {
   SET_LINENO(call);
   Expr* stmt = call->getStmtExpr();
   VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown);
-  tmp->addPragma(PRAG_TEMP);
-  tmp->addPragma(PRAG_EXPR_TEMP);
-  tmp->addPragma(PRAG_MAYBE_PARAM);
-  tmp->addPragma(PRAG_MAYBE_TYPE);
+  tmp->addFlag(FLAG_TEMP);
+  tmp->addFlag(FLAG_EXPR_TEMP);
+  tmp->addFlag(FLAG_MAYBE_PARAM);
+  tmp->addFlag(FLAG_MAYBE_TYPE);
   call->replace(new SymExpr(tmp));
   stmt->insertBefore(new DefExpr(tmp));
   stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
@@ -766,10 +766,10 @@ fix_def_expr(VarSymbol* var) {
   //
   // handle var ... : ... => ...;
   //
-  if (var->hasPragma(PRAG_ARRAY_ALIAS)) {
+  if (var->hasFlag(FLAG_ARRAY_ALIAS)) {
     CallExpr* partial;
     VarSymbol* arrTemp = new VarSymbol("_arrTmp");
-    arrTemp->addPragma(PRAG_TEMP);
+    arrTemp->addFlag(FLAG_TEMP);
     stmt->insertBefore(new DefExpr(arrTemp));
     stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, arrTemp, init->remove()));
     if (!type) {
@@ -786,9 +786,9 @@ fix_def_expr(VarSymbol* var) {
   //
   // insert temporary for constants to assist constant checking
   //
-  if (var->hasPragma(PRAG_CONST)) {
+  if (var->hasFlag(FLAG_CONST)) {
     constTemp = new VarSymbol("_constTmp");
-    constTemp->addPragma(PRAG_TEMP);
+    constTemp->addFlag(FLAG_TEMP);
     stmt->insertBefore(new DefExpr(constTemp));
     stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, constTemp));
   }
@@ -796,8 +796,8 @@ fix_def_expr(VarSymbol* var) {
   //
   // insert code to initialize config variable from the command line
   //
-  if (var->hasPragma(PRAG_CONFIG)) {
-    if (!var->hasPragma(PRAG_PARAM)) {
+  if (var->hasFlag(FLAG_CONFIG)) {
+    if (!var->hasFlag(FLAG_PARAM)) {
       Expr* noop = new CallExpr(PRIMITIVE_NOOP);
       ModuleSymbol* module = var->getModule();
       CallExpr* strToValExpr =
@@ -854,7 +854,7 @@ fix_def_expr(VarSymbol* var) {
     //
     // use cast for parameters to avoid multiple parameter assignments
     //
-    if (init && var->hasPragma(PRAG_PARAM)) {
+    if (init && var->hasFlag(FLAG_PARAM)) {
       stmt->insertAfter(
         new CallExpr(PRIMITIVE_MOVE, var,
           new CallExpr("_cast", type->remove(), init->remove())));
@@ -866,7 +866,7 @@ fix_def_expr(VarSymbol* var) {
     // the initialization expression if it exists
     //
     VarSymbol* typeTemp = new VarSymbol("_typeTmp");
-    typeTemp->addPragma(PRAG_TEMP);
+    typeTemp->addFlag(FLAG_TEMP);
     stmt->insertBefore(new DefExpr(typeTemp));
     CallExpr* callType = toCallExpr(type);
     if (callType && callType->isNamed("_build_sparse_subdomain_type"))
@@ -878,8 +878,8 @@ fix_def_expr(VarSymbol* var) {
           new CallExpr(PRIMITIVE_INIT, type->remove())));
     if (init) {
       VarSymbol* initTemp = new VarSymbol("_tmp");
-      initTemp->addPragma(PRAG_TEMP);
-      initTemp->addPragma(PRAG_MAYBE_PARAM);
+      initTemp->addFlag(FLAG_TEMP);
+      initTemp->addFlag(FLAG_MAYBE_PARAM);
       stmt->insertBefore(new DefExpr(initTemp));
       stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, initTemp, init->remove()));
       stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, constTemp, typeTemp));
@@ -887,7 +887,7 @@ fix_def_expr(VarSymbol* var) {
         new CallExpr(PRIMITIVE_MOVE, typeTemp,
           new CallExpr("=", typeTemp, initTemp)));
     } else {
-      if (constTemp->hasPragma(PRAG_TYPE_VARIABLE))
+      if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
         stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, constTemp, new CallExpr(PRIMITIVE_TYPEOF, typeTemp)));
       else
         stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, constTemp, typeTemp));
@@ -924,7 +924,7 @@ static void checkConfigParams() {
 
 static void hack_resolve_types(ArgSymbol* arg) {
   if (arg->type == dtUnknown || arg->type == dtAny) {
-    if (!arg->hasPragma(PRAG_TYPE_VARIABLE) && !arg->typeExpr && arg->defaultExpr) {
+    if (!arg->hasFlag(FLAG_TYPE_VARIABLE) && !arg->typeExpr && arg->defaultExpr) {
       SymExpr* se = NULL;
       if (arg->defaultExpr->body.length() == 1)
         se = toSymExpr(arg->defaultExpr->body.tail);
@@ -1093,7 +1093,7 @@ clone_for_parameterized_primitive_formals(FnSymbol* fn,
 static void
 replace_query_uses(ArgSymbol* formal, DefExpr* def, ArgSymbol* arg,
                    Vec<BaseAST*>& asts) {
-  if (!arg->hasPragma(PRAG_TYPE_VARIABLE) && arg->intent != INTENT_PARAM)
+  if (!arg->hasFlag(FLAG_TYPE_VARIABLE) && arg->intent != INTENT_PARAM)
     USR_FATAL(def, "query variable is not type or parameter: %s", arg->name);
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* se = toSymExpr(ast)) {
@@ -1115,7 +1115,7 @@ replace_query_uses(ArgSymbol* formal, DefExpr* def, ArgSymbol* arg,
 
 static void
 add_to_where_clause(ArgSymbol* formal, Expr* expr, ArgSymbol* arg) {
-  if (!arg->hasPragma(PRAG_TYPE_VARIABLE) && arg->intent != INTENT_PARAM)
+  if (!arg->hasFlag(FLAG_TYPE_VARIABLE) && arg->intent != INTENT_PARAM)
     USR_FATAL(expr, "type actual is not type or parameter");
   FnSymbol* fn = formal->defPoint->getFunction();
   if (!fn->where) {
@@ -1287,5 +1287,5 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals.get(1)->remove();
   update_symbols(fn, &map);
   fn->name = astr(astr("_construct_", fn->name));
-  ct->defaultConstructor->addPragma(PRAG_INVISIBLE_FN);
+  ct->defaultConstructor->addFlag(FLAG_INVISIBLE_FN);
 }

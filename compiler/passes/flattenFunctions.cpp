@@ -47,7 +47,7 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
   forv_Vec(Symbol, sym, *vars) {
     if (sym) {
       Type* type = sym->type;
-      if (!type->symbol->hasPragma(PRAG_HEAP)) {
+      if (!type->symbol->hasFlag(FLAG_HEAP)) {
         if (type->refType)
           type = type->refType;
       }
@@ -68,7 +68,7 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
               se->var = arg;
             } else if (call && call->isPrimitive(PRIMITIVE_SET_REF)) {
               call->replace(new SymExpr(arg));
-            } else if (!type->symbol->hasPragma(PRAG_HEAP)) {
+            } else if (!type->symbol->hasFlag(FLAG_HEAP)) {
               VarSymbol* tmp = new VarSymbol("_tmp", sym->type);
               se->getStmtExpr()->insertBefore(new DefExpr(tmp));
               se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, arg)));
@@ -86,7 +86,7 @@ static void
 addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars) {
   forv_Vec(Symbol, sym, *vars) {
     if (sym) {
-      if (!isReference(sym->type) && !sym->type->symbol->hasPragma(PRAG_HEAP)) {
+      if (!isReference(sym->type) && !sym->type->symbol->hasFlag(FLAG_HEAP)) {
         VarSymbol* tmp = new VarSymbol("_tmp", sym->type->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, sym)));
@@ -111,16 +111,16 @@ void flattenFunctions(void) {
         FnSymbol* fn = NULL;
         if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_BEGIN)) {
           fn = new FnSymbol("begin_fn");
-          fn->addPragma(PRAG_BEGIN);
+          fn->addFlag(FLAG_BEGIN);
         } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COBEGIN)) {
           fn = new FnSymbol("cobegin_fn");
-          fn->addPragma(PRAG_COBEGIN_OR_COFORALL);
+          fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
         } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COFORALL)) {
           fn = new FnSymbol("coforall_fn");
-          fn->addPragma(PRAG_COBEGIN_OR_COFORALL);
+          fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
         } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON)) {
           fn = new FnSymbol("on_fn");
-          fn->addPragma(PRAG_ON);
+          fn->addFlag(FLAG_ON);
           ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
           fn->insertFormalAtTail(arg);
         }

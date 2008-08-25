@@ -61,7 +61,7 @@ returnInfoReal64(CallExpr* call) {
 static Type*
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
   Type *t = call->get(1)->typeInfo();
-  if (t->symbol->hasPragma(PRAG_REF))
+  if (t->symbol->hasFlag(FLAG_REF))
     t = getValueType(t);
   if (t == dtComplex[COMPLEX_SIZE_64]) {
     return dtReal[FLOAT_SIZE_32]->refType;
@@ -81,7 +81,7 @@ returnInfoFirst(CallExpr* call) {
 static Type*
 returnInfoFirstDeref(CallExpr* call) {
   Type *t = call->get(1)->typeInfo();
-  if (t->symbol->hasPragma(PRAG_REF))
+  if (t->symbol->hasFlag(FLAG_REF))
     t = getValueType(t);
   return t;
 }
@@ -89,7 +89,7 @@ returnInfoFirstDeref(CallExpr* call) {
 static Type*
 returnIteratorType(CallExpr* call) {
   Type* ict = call->get(1)->typeInfo();
-  INT_ASSERT(ict->symbol->hasPragma(PRAG_ITERATOR_CLASS));
+  INT_ASSERT(ict->symbol->hasFlag(FLAG_ITERATOR_CLASS));
   return ict->defaultConstructor->getReturnSymbol()->type;
 }
 
@@ -97,7 +97,7 @@ static Type*
 returnInfoCast(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
-  if (t2->symbol->hasPragma(PRAG_WIDE_CLASS))
+  if (t2->symbol->hasFlag(FLAG_WIDE_CLASS))
     if (wideClassMap.get(t1))
       t1 = wideClassMap.get(t1);
   return t1;
@@ -106,7 +106,7 @@ returnInfoCast(CallExpr* call) {
 static Type*
 returnInfoVal(CallExpr* call) {
   ClassType* ct = toClassType(call->get(1)->typeInfo());
-  if (!ct || !ct->symbol->hasPragma(PRAG_REF))
+  if (!ct || !ct->symbol->hasFlag(FLAG_REF))
     INT_FATAL(call, "attempt to get value type of non-reference type");
   return ct->getField(1)->type;
 }
@@ -140,7 +140,7 @@ returnInfoArrayIndex(CallExpr* call) {
   SymExpr* sym = toSymExpr(call->get(1));
   INT_ASSERT(sym);
   Type* type = sym->var->type;
-  if (type->symbol->hasPragma(PRAG_WIDE_CLASS))
+  if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
     type = type->getField("addr")->type;
   if (!type->substitutions.n)
     INT_FATAL(call, "bad primitive");
@@ -152,7 +152,7 @@ returnInfoChplAlloc(CallExpr* call) {
   SymExpr* sym = toSymExpr(call->get(1));
   INT_ASSERT(sym);
   Type* type = sym->var->type;
-  if (type->symbol->hasPragma(PRAG_WIDE_CLASS))
+  if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
     type = type->getField("addr")->type;
   return type;
 }
@@ -163,7 +163,7 @@ returnInfoGetMember(CallExpr* call) {
   if (!sym1)
     INT_FATAL(call, "bad member primitive");
   ClassType* ct = toClassType(sym1->var->type);
-  if (ct->symbol->hasPragma(PRAG_REF))
+  if (ct->symbol->hasFlag(FLAG_REF))
     ct = toClassType(getValueType(ct));
   if (!ct)
     INT_FATAL(call, "bad member primitive");
@@ -191,7 +191,7 @@ returnInfoGetMemberRef(CallExpr* call) {
   if (!sym1)
     INT_FATAL(call, "bad member primitive");
   ClassType* ct = toClassType(sym1->var->type);
-  if (ct->symbol->hasPragma(PRAG_REF))
+  if (ct->symbol->hasFlag(FLAG_REF))
     ct = toClassType(getValueType(ct));
   if (!ct)
     INT_FATAL(call, "bad member primitive");

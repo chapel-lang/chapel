@@ -19,8 +19,8 @@ refNecessary(SymExpr* se,
           return true;
         if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT)
           return true;
-        if (formal->type->symbol->hasPragma(PRAG_REF) &&
-            fn->hasPragma(PRAG_ALLOW_REF))
+        if (formal->type->symbol->hasFlag(FLAG_REF) &&
+            fn->hasFlag(FLAG_ALLOW_REF))
           return true;
       } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
         if (refNecessary(toSymExpr(call->get(1)), defMap, useMap))
@@ -47,9 +47,9 @@ refNecessary(SymExpr* se,
 
 static bool
 isDerefType(Type* type) {
-  return (type->symbol->hasPragma(PRAG_ARRAY) ||
-          type->symbol->hasPragma(PRAG_DOMAIN) ||
-          type->symbol->hasPragma(PRAG_ITERATOR_CLASS));
+  return (type->symbol->hasFlag(FLAG_ARRAY) ||
+          type->symbol->hasFlag(FLAG_DOMAIN) ||
+          type->symbol->hasFlag(FLAG_ITERATOR_CLASS));
 }
 
 
@@ -88,7 +88,7 @@ void cullOverReferences() {
 
   //
   // remove references to array and domain wrapper records
-  //   this is essential for handling the valid var pragma
+  //   this is essential for handling the valid var flag
   //   and may be worthwhile/necessary otherwise
   //
   forv_Vec(BaseAST, ast, gAsts) {

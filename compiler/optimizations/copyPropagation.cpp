@@ -13,7 +13,7 @@ static bool isCandidateForCopyPropagation(FnSymbol* fn, VarSymbol* var) {
   return
     var != fn->getReturnSymbol() &&
     var->type->refType &&
-    !var->hasPragma(PRAG_CONCURRENTLY_ACCESSED);
+    !var->hasFlag(FLAG_CONCURRENTLY_ACCESSED);
 }
 
 static bool invalidateCopies(SymExpr* se, Vec<SymExpr*>& defSet, Vec<SymExpr*>& useSet) {

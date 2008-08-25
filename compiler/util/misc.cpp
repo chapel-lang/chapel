@@ -107,8 +107,8 @@ printDevelErrorHeader(BaseAST* ast) {
           err_fn = fn;
         }
         if (err_fn->getModule()->initFn != err_fn &&
-            !err_fn->hasPragma(PRAG_TEMP) &&
-            !err_fn->hasPragma(PRAG_INLINE) &&
+            !err_fn->hasFlag(FLAG_TEMP) &&
+            !err_fn->hasFlag(FLAG_INLINE) &&
             err_fn->lineno) {
           fprintf(stderr, "%s:%d: In ",
                   cleanFilename(err_fn), err_fn->lineno);
@@ -116,7 +116,7 @@ printDevelErrorHeader(BaseAST* ast) {
             fprintf(stderr, "constructor '%s':\n", err_fn->name+11);
           } else {
             fprintf(stderr, "%s '%s':\n",
-                    (err_fn->hasPragma(PRAG_ITERATOR_FN) ? "iterator" : "function"),
+                    (err_fn->hasFlag(FLAG_ITERATOR_FN) ? "iterator" : "function"),
                     err_fn->name);
           }
         }

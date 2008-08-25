@@ -63,7 +63,7 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (FnSymbol* fn = call->isResolved()) {
-        if (call->parentSymbol && fn->hasPragma(PRAG_INLINE)) {
+        if (call->parentSymbol && fn->hasFlag(FLAG_INLINE)) {
           if (inlinedSet.set_in(fn))
             INT_FATAL(call, "recursive inlining detected");
           inlineFunction(fn, inlinedSet);
@@ -90,7 +90,7 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
 
 
 //
-// inline all functions with the inline pragma
+// inline all functions with the inline flag
 // remove unnecessary block statements and gotos
 //
 void
@@ -108,12 +108,12 @@ inlineFunctions(void) {
 
   Vec<FnSymbol*> inlinedSet;
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->hasPragma(PRAG_INLINE) && !inlinedSet.set_in(fn))
+    if (fn->hasFlag(FLAG_INLINE) && !inlinedSet.set_in(fn))
       inlineFunction(fn, inlinedSet);
   }
 
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->hasPragma(PRAG_INLINE)) {
+    if (fn->hasFlag(FLAG_INLINE)) {
       fn->defPoint->remove();
     } else {
       collapseBlocks(fn->body);

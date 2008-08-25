@@ -47,8 +47,7 @@ class Symbol : public BaseAST {
   const char* cname; // Name of symbol for generating C code
   Type* type;
   DefExpr* defPoint; // Point of definition
-  std::bitset<NUM_PRAGMAS> pragmas;
-  //  BitVec pragmas;
+  std::bitset<NUM_FLAGS> flags;
 
   Symbol(AstTag astTag, const char* init_name, Type* init_type = dtUnknown);
   virtual ~Symbol();
@@ -67,11 +66,11 @@ class Symbol : public BaseAST {
   virtual FnSymbol* getFnSymbol(void);
   virtual bool isImmediate();
 
-  bool hasPragma(PragmaTag pt);
-  void addPragma(PragmaTag pt);
-  void addPragmas(Vec<const char*>* strs);
-  void copyPragmas(Symbol* other);
-  void removePragma(PragmaTag pt);
+  bool hasFlag(Flag flag);
+  void addFlag(Flag flag);
+  void addFlags(Vec<const char*>* strs);
+  void copyFlags(Symbol* other);
+  void removeFlag(Flag flag);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 

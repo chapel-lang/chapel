@@ -73,7 +73,7 @@ static void
 addToSymbolTable(Vec<BaseAST*>& asts) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
-      if (!def->sym->hasPragma(PRAG_TEMP)) {
+      if (!def->sym->hasFlag(FLAG_TEMP)) {
         BaseAST* scope = getScope(def);
         SymbolTableEntry* entry = symbolTable.get(scope);
         if (!entry) {
@@ -85,12 +85,12 @@ addToSymbolTable(Vec<BaseAST*>& asts) {
           FnSymbol* newFn = toFnSymbol(def->sym);
           TypeSymbol* typeScope = toTypeSymbol(scope);
           if (!typeScope || !isClassType(typeScope->type)) { // inheritance
-            if ((!oldFn || (oldFn && !oldFn->_this && oldFn->hasPragma(PRAG_NO_PARENS))) &&
-                (!newFn || (newFn && !newFn->_this && newFn->hasPragma(PRAG_NO_PARENS)))) {
+            if ((!oldFn || (oldFn && !oldFn->_this && oldFn->hasFlag(FLAG_NO_PARENS))) &&
+                (!newFn || (newFn && !newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))) {
               USR_FATAL(sym, "'%s' has multiple definitions, redefined at:\n  %s", sym->name, def->sym->stringLoc());
             }
           }
-          if (!newFn || (newFn && !newFn->_this && newFn->hasPragma(PRAG_NO_PARENS)))
+          if (!newFn || (newFn && !newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))
             entry->put(def->sym->name, def->sym);
         } else {
           entry->put(def->sym->name, def->sym);
@@ -334,7 +334,7 @@ resolveGotoLabel(GotoStmt* gotoStmt) {
       Symbol* breakLabel = NULL;
       for (Expr* expr = loop->next; expr; expr = expr->next) {
         if (DefExpr* def = toDefExpr(expr)) {
-          if (def->sym->hasPragma(PRAG_LABEL_BREAK)) {
+          if (def->sym->hasFlag(FLAG_LABEL_BREAK)) {
             breakLabel = def->sym;
             break;
           }
@@ -346,7 +346,7 @@ resolveGotoLabel(GotoStmt* gotoStmt) {
       Symbol* continueLabel = NULL;
       for (Expr* expr = loop->body.tail; expr; expr = expr->prev) {
         if (DefExpr* def = toDefExpr(expr)) {
-          if (def->sym->hasPragma(PRAG_LABEL_CONTINUE)) {
+          if (def->sym->hasFlag(FLAG_LABEL_CONTINUE)) {
             continueLabel = def->sym;
             break;
           }
@@ -410,7 +410,7 @@ static bool
 isTypeAlias(Symbol* sym) {
   return
     isVarSymbol(sym) &&
-    sym->hasPragma(PRAG_TYPE_VARIABLE) &&
+    sym->hasFlag(FLAG_TYPE_VARIABLE) &&
     isFnSymbol(sym->defPoint->parentSymbol);
 }
 
@@ -432,19 +432,19 @@ static void build_type_constructor(ClassType* ct) {
   SET_LINENO(ct);
 
   FnSymbol* fn = new FnSymbol(astr("_type_construct_", ct->symbol->name));
-  fn->addPragma(PRAG_TYPE_CONSTRUCTOR);
+  fn->addFlag(FLAG_TYPE_CONSTRUCTOR);
   ct->defaultTypeConstructor = fn;
   fn->cname = astr("_type_construct_", ct->symbol->cname);
-  fn->addPragma(PRAG_TEMP);
+  fn->addFlag(FLAG_TEMP);
   fn->retTag = RET_TYPE;
 
-  if (ct->symbol->hasPragma(PRAG_REF))
-    fn->addPragma(PRAG_REF);
-  if (ct->symbol->hasPragma(PRAG_HEAP))
-    fn->addPragma(PRAG_HEAP);
-  if (ct->symbol->hasPragma(PRAG_TUPLE)) {
-    fn->addPragma(PRAG_TUPLE);
-    fn->addPragma(PRAG_INLINE);
+  if (ct->symbol->hasFlag(FLAG_REF))
+    fn->addFlag(FLAG_REF);
+  if (ct->symbol->hasFlag(FLAG_HEAP))
+    fn->addFlag(FLAG_HEAP);
+  if (ct->symbol->hasFlag(FLAG_TUPLE)) {
+    fn->addFlag(FLAG_TUPLE);
+    fn->addFlag(FLAG_INLINE);
   }
 
   fn->_this = new VarSymbol("this", ct);
@@ -455,13 +455,13 @@ static void build_type_constructor(ClassType* ct) {
     SET_LINENO(tmp);
     if (VarSymbol* field = toVarSymbol(tmp)) {
 
-      if (field->hasPragma(PRAG_SUPER_CLASS))
+      if (field->hasFlag(FLAG_SUPER_CLASS))
         continue;
 
       Expr* exprType = field->defPoint->exprType;
       Expr* init = field->defPoint->init;
       if (!strcmp(field->name, "_promotionType") ||
-          field->hasPragma(PRAG_OMIT_FROM_CONSTRUCTOR)) {
+          field->hasFlag(FLAG_OMIT_FROM_CONSTRUCTOR)) {
         fn->insertAtTail(
           new BlockStmt(
             new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
@@ -474,14 +474,14 @@ static void build_type_constructor(ClassType* ct) {
         //
         // if formal is generic
         //
-        if (field->hasPragma(PRAG_TYPE_VARIABLE) || field->hasPragma(PRAG_PARAM) || (!exprType && !init)) {
+        if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_PARAM) || (!exprType && !init)) {
           ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
           fn->insertFormalAtTail(arg);
 
-          if (field->hasPragma(PRAG_PARAM))
+          if (field->hasFlag(FLAG_PARAM))
             arg->intent = INTENT_PARAM;
           else
-            arg->addPragma(PRAG_TYPE_VARIABLE);
+            arg->addFlag(FLAG_TYPE_VARIABLE);
 
           if (init)
             arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
@@ -492,7 +492,7 @@ static void build_type_constructor(ClassType* ct) {
           if (!exprType && arg->type == dtUnknown)
             arg->type = dtAny;
 
-          if (field->hasPragma(PRAG_PARAM) || field->hasPragma(PRAG_TYPE_VARIABLE))
+          if (field->hasFlag(FLAG_PARAM) || field->hasFlag(FLAG_TYPE_VARIABLE))
             fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name), arg));
           else
@@ -544,7 +544,7 @@ static void build_type_constructor(ClassType* ct) {
     fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", outerType);
     fn->insertFormalAtHead(new DefExpr(fn->_outer));
     fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-    fn->addPragma(PRAG_METHOD);
+    fn->addFlag(FLAG_METHOD);
     Expr* insertPoint = outerType->symbol->defPoint;
     while (toTypeSymbol(insertPoint->parentSymbol))
       insertPoint = insertPoint->parentSymbol->defPoint;
@@ -571,22 +571,22 @@ static void build_constructor(ClassType* ct) {
 
   SET_LINENO(ct);
 
-  if (ct->symbol->hasPragma(PRAG_SYNC))
+  if (ct->symbol->hasFlag(FLAG_SYNC))
     ct->defaultValue = NULL;
 
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
-  fn->addPragma(PRAG_DEFAULT_CONSTRUCTOR);
+  fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
   ct->defaultConstructor = fn;
   fn->cname = astr("_construct_", ct->symbol->cname);
-  fn->addPragma(PRAG_TEMP); // compiler inserted
+  fn->addFlag(FLAG_TEMP); // compiler inserted
 
-  if (ct->symbol->hasPragma(PRAG_REF))
-    fn->addPragma(PRAG_REF);
-  if (ct->symbol->hasPragma(PRAG_HEAP))
-    fn->addPragma(PRAG_HEAP);
-  if (ct->symbol->hasPragma(PRAG_TUPLE)) {
-    fn->addPragma(PRAG_TUPLE);
-    fn->addPragma(PRAG_INLINE);
+  if (ct->symbol->hasFlag(FLAG_REF))
+    fn->addFlag(FLAG_REF);
+  if (ct->symbol->hasFlag(FLAG_HEAP))
+    fn->addFlag(FLAG_HEAP);
+  if (ct->symbol->hasFlag(FLAG_TUPLE)) {
+    fn->addFlag(FLAG_TUPLE);
+    fn->addFlag(FLAG_INLINE);
   }
 
   fn->_this = new VarSymbol("this", ct);
@@ -597,8 +597,8 @@ static void build_constructor(ClassType* ct) {
   for_fields(tmp, ct) {
     SET_LINENO(tmp);
     if (VarSymbol* field = toVarSymbol(tmp)) {
-      if (!field->hasPragma(PRAG_SUPER_CLASS) &&
-          !field->hasPragma(PRAG_OMIT_FROM_CONSTRUCTOR) &&
+      if (!field->hasFlag(FLAG_SUPER_CLASS) &&
+          !field->hasFlag(FLAG_OMIT_FROM_CONSTRUCTOR) &&
           strcmp(field->name, "_promotionType") &&
           strcmp(field->name, "outer")) {
         ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
@@ -609,13 +609,13 @@ static void build_constructor(ClassType* ct) {
   }
 
   ArgSymbol* meme = NULL;
-  if (ct->symbol->hasPragma(PRAG_REF) || ct->symbol->hasPragma(PRAG_SYNC)) {
+  if (ct->symbol->hasFlag(FLAG_REF) || ct->symbol->hasFlag(FLAG_SYNC)) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
                        new CallExpr(PRIMITIVE_CHPL_ALLOC, fn->_this,
                          new_StringSymbol(astr("instance of class ", ct->symbol->name)))));
-  } else if (!ct->symbol->hasPragma(PRAG_TUPLE)) {
+  } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
     meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL, new SymExpr(gNil));
-    meme->addPragma(PRAG_IS_MEME);
+    meme->addFlag(FLAG_IS_MEME);
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this, meme));
     if (ct->classTag == CLASS_CLASS) {
       if (ct->dispatchParents.n > 0) {
@@ -627,7 +627,7 @@ static void build_constructor(ClassType* ct) {
         CallExpr* superCall = new CallExpr(superCtor->name);
         int shadowID = 1;
         for_formals_backward(formal, superCtor) {
-          if (formal->hasPragma(PRAG_IS_MEME))
+          if (formal->hasFlag(FLAG_IS_MEME))
             continue;
           DefExpr* superArg = formal->defPoint->copy();
           if (fieldNamesSet.set_in(superArg->sym->name))
@@ -667,7 +667,7 @@ static void build_constructor(ClassType* ct) {
 
     SET_LINENO(field);
 
-    if (field->hasPragma(PRAG_PARAM))
+    if (field->hasFlag(FLAG_PARAM))
       arg->intent = INTENT_PARAM;
     Expr* exprType = field->defPoint->exprType->remove();
     Expr* init = field->defPoint->init->remove();
@@ -675,20 +675,20 @@ static void build_constructor(ClassType* ct) {
     bool hasType = exprType;
     bool hasInit = init;
     if (init) {
-      if (!field->hasPragma(PRAG_TYPE_VARIABLE) && !exprType) {
+      if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !exprType) {
         exprType = new CallExpr(PRIMITIVE_TYPEOF, new CallExpr("_copy", init->copy()));
       }
-    } else if (exprType && !field->hasPragma(PRAG_TYPE_VARIABLE) && !field->hasPragma(PRAG_PARAM)) {
+    } else if (exprType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
       if (isSparseDomain(exprType))
         init = exprType->copy();
       else
         init = new CallExpr(PRIMITIVE_INIT, exprType->copy());
     }
-    if (hasType && !field->hasPragma(PRAG_TYPE_VARIABLE) && !field->hasPragma(PRAG_PARAM)) {
+    if (hasType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
       if (!isSparseDomain(exprType))
         init = new CallExpr("_createFieldDefault", exprType->copy(), init);
     }
-    if (!hasType && !field->hasPragma(PRAG_TYPE_VARIABLE) && !field->hasPragma(PRAG_PARAM)) {
+    if (!hasType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
       init = new CallExpr("_copy", init);
     }
     if (init) {
@@ -699,8 +699,8 @@ static void build_constructor(ClassType* ct) {
     }
     if (exprType)
       arg->typeExpr = new BlockStmt(exprType, BLOCK_SCOPELESS);
-    if (field->hasPragma(PRAG_TYPE_VARIABLE))
-      arg->addPragma(PRAG_TYPE_VARIABLE);
+    if (field->hasFlag(FLAG_TYPE_VARIABLE))
+      arg->addFlag(FLAG_TYPE_VARIABLE);
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
     fn->insertFormalAtTail(arg);
@@ -733,7 +733,7 @@ static void build_constructor(ClassType* ct) {
     fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", outerType);
     fn->insertFormalAtHead(new DefExpr(fn->_outer));
     fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-    fn->addPragma(PRAG_METHOD);
+    fn->addFlag(FLAG_METHOD);
     Expr* insertPoint = outerType->symbol->defPoint;
     while (toTypeSymbol(insertPoint->parentSymbol))
       insertPoint = insertPoint->parentSymbol->defPoint;
@@ -875,7 +875,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
 
   // make root records inherit from value
   // make root classes inherit from object
-  if (ct->inherits.length() == 0 && !ct->symbol->hasPragma(PRAG_NO_OBJECT)) {
+  if (ct->inherits.length() == 0 && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
     if (ct->classTag == CLASS_RECORD) {
       ct->dispatchParents.add(dtValue);
       dtValue->dispatchChildren.add(ct);
@@ -883,7 +883,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
       ct->dispatchParents.add(dtObject);
       dtObject->dispatchChildren.add(ct);
       VarSymbol* super = new VarSymbol("super", dtObject);
-      super->addPragma(PRAG_SUPER_CLASS);
+      super->addFlag(FLAG_SUPER_CLASS);
       ct->fields.insertAtHead(new DefExpr(super));
     }
   }
@@ -913,7 +913,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     expr->remove();
     if (ct->classTag != CLASS_CLASS) {
       for_fields_backward(field, pt) {
-        if (toVarSymbol(field) && !field->hasPragma(PRAG_SUPER_CLASS)) {
+        if (toVarSymbol(field) && !field->hasFlag(FLAG_SUPER_CLASS)) {
           bool alreadyContainsField = false;
           for_fields(myfield, ct) {
             if (!strcmp(myfield->name, field->name)) {
@@ -928,7 +928,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
       }
     } else {
       VarSymbol* super = new VarSymbol("super", pt);
-      super->addPragma(PRAG_SUPER_CLASS);
+      super->addFlag(FLAG_SUPER_CLASS);
       ct->fields.insertAtHead(new DefExpr(super));
     }
   }
@@ -1015,7 +1015,7 @@ void scopeResolve(void) {
               sym = (entry) ? entry->get(get_string(call->get(2))) : 0;
             }
             if (FnSymbol* fn = toFnSymbol(sym)) {
-              if (!fn->_this && fn->hasPragma(PRAG_NO_PARENS)) {
+              if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {
                 call->replace(new CallExpr(fn));
               } else {
                 SymExpr* se = new SymExpr(get_string(call->get(2)));
@@ -1056,7 +1056,7 @@ void scopeResolve(void) {
         // handle function call without parentheses
         //
         if (FnSymbol* fn = toFnSymbol(sym)) {
-          if (!fn->_this && fn->hasPragma(PRAG_NO_PARENS)) {
+          if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {
             symExpr->replace(new CallExpr(fn));
             continue;
           }
@@ -1064,7 +1064,7 @@ void scopeResolve(void) {
 
         // sjd: stopgap to avoid shadowing variables or functions by methods
         if (FnSymbol* fn = toFnSymbol(sym))
-          if (fn->hasPragma(PRAG_METHOD))
+          if (fn->hasFlag(FLAG_METHOD))
             sym = NULL;
 
         if (sym) {

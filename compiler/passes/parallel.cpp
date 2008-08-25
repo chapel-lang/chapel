@@ -28,20 +28,20 @@ bundleArgs(CallExpr* fcall) {
   TypeSymbol* new_c = new TypeSymbol( astr("_class_locals", 
                                            fn->name),
                                       ctype);
-  new_c->addPragma(PRAG_NO_OBJECT);
-  new_c->addPragma(PRAG_NO_WIDE_CLASS);
+  new_c->addFlag(FLAG_NO_OBJECT);
+  new_c->addFlag(FLAG_NO_WIDE_CLASS);
 
   // add the function args as fields in the class
   int i = 1;
   bool first = true;
   for_actuals(arg, fcall) {
-    if (fn->hasPragma(PRAG_ON) && first) {
+    if (fn->hasFlag(FLAG_ON) && first) {
       first = false;
       continue;
     }
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->var; // arg or var
-    var->addPragma(PRAG_CONCURRENTLY_ACCESSED);
+    var->addFlag(FLAG_CONCURRENTLY_ACCESSED);
     VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->type);
     ctype->fields.insertAtTail(new DefExpr(field));
     i++;
@@ -64,7 +64,7 @@ bundleArgs(CallExpr* fcall) {
   i = 1;
   first = true;
   for_actuals(arg, fcall) {
-    if (fn->hasPragma(PRAG_ON) && first) {
+    if (fn->hasFlag(FLAG_ON) && first) {
       first = false;
       continue;
     }
@@ -82,36 +82,36 @@ bundleArgs(CallExpr* fcall) {
 
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
   DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
-  if (fn->hasPragma(PRAG_ON)) {
-    wrap_fn->addPragma(PRAG_ON_BLOCK);
+  if (fn->hasFlag(FLAG_ON)) {
+    wrap_fn->addFlag(FLAG_ON_BLOCK);
     ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
     wrap_fn->insertFormalAtTail(locale);
-  } else if (fn->hasPragma(PRAG_COBEGIN_OR_COFORALL)) {
-    wrap_fn->addPragma(PRAG_COBEGIN_OR_COFORALL_BLOCK);
+  } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
+    wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
   }
   ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
   wrap_fn->insertFormalAtTail( wrap_c);
 
   mod->block->insertAtTail(new DefExpr(wrap_fn));
-  if (fn->hasPragma(PRAG_ON)) {
+  if (fn->hasFlag(FLAG_ON)) {
     fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), tempc));
   } else
     fcall->insertBefore(new CallExpr(wrap_fn, tempc));
 
-  if (fn->hasPragma(PRAG_BEGIN) || fn->hasPragma(PRAG_COBEGIN_OR_COFORALL)) {
-    if (fn->hasPragma(PRAG_BEGIN))
-      wrap_fn->addPragma(PRAG_BEGIN_BLOCK);
+  if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
+    if (fn->hasFlag(FLAG_BEGIN))
+      wrap_fn->addFlag(FLAG_BEGIN_BLOCK);
     wrap_fn->insertAtHead(new CallExpr(PRIMITIVE_THREAD_INIT));
   }
     
   // translate the original cobegin function
   CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
-  if (fn->hasPragma(PRAG_ON))
+  if (fn->hasFlag(FLAG_ON))
     new_cofn->insertAtTail(new_IntSymbol(0)); // bogus actual
   for_fields(field, ctype) {  // insert args
 
     VarSymbol* tmp = new VarSymbol("_tmp", field->type);
-    tmp->addPragma(PRAG_TEMP);
+    tmp->addFlag(FLAG_TEMP);
     wrap_fn->insertAtTail(new DefExpr(tmp));
     wrap_fn->insertAtTail(
       new CallExpr(PRIMITIVE_MOVE, tmp,
@@ -121,7 +121,7 @@ bundleArgs(CallExpr* fcall) {
 
   wrap_fn->retType = dtVoid;
   wrap_fn->insertAtTail(new_cofn);     // add new call
-  if (fn->hasPragma(PRAG_ON))
+  if (fn->hasFlag(FLAG_ON))
     fcall->insertAfter(new CallExpr(PRIMITIVE_CHPL_FREE, tempc));
   else
     wrap_fn->insertAtTail(new CallExpr(PRIMITIVE_CHPL_FREE, wrap_c));
@@ -140,7 +140,7 @@ insertEndCount(FnSymbol* fn,
                Map<FnSymbol*,Symbol*>& endCountMap) {
   if (fn == chpl_main) {
     VarSymbol* var = new VarSymbol("_endCount", endCountType);
-    var->addPragma(PRAG_TEMP);
+    var->addFlag(FLAG_TEMP);
     fn->insertAtHead(new DefExpr(var));
     endCountMap.put(fn, var);
     queue.add(fn);
@@ -148,7 +148,7 @@ insertEndCount(FnSymbol* fn,
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_endCount", endCountType);
     fn->insertFormalAtTail(arg);
     VarSymbol* var = new VarSymbol("_endCount", endCountType);
-    var->addPragma(PRAG_TEMP);
+    var->addFlag(FLAG_TEMP);
     fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, arg));
     fn->insertAtHead(new DefExpr(var));
     endCountMap.put(fn, var);
@@ -197,9 +197,9 @@ parallel(void) {
   }
 
   forv_Vec(CallExpr, call, calls) {
-    if (call->isResolved() && (call->isResolved()->hasPragma(PRAG_ON) ||
-                               call->isResolved()->hasPragma(PRAG_BEGIN) ||
-                               call->isResolved()->hasPragma(PRAG_COBEGIN_OR_COFORALL)))
+    if (call->isResolved() && (call->isResolved()->hasFlag(FLAG_ON) ||
+                               call->isResolved()->hasFlag(FLAG_BEGIN) ||
+                               call->isResolved()->hasFlag(FLAG_COBEGIN_OR_COFORALL)))
       bundleArgs(call);
   }
 }
@@ -209,7 +209,7 @@ static void
 buildWideClass(Type* type) {
   ClassType* wide = new ClassType(CLASS_RECORD);
   TypeSymbol* wts = new TypeSymbol(astr("_wide_", type->symbol->cname), wide);
-  wts->addPragma(PRAG_WIDE_CLASS);
+  wts->addFlag(FLAG_WIDE_CLASS);
   theProgram->block->insertAtTail(new DefExpr(wts));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", type)));
@@ -225,7 +225,7 @@ buildWideClass(Type* type) {
   //
   ClassType* ref = new ClassType(CLASS_CLASS);
   TypeSymbol* rts = new TypeSymbol(astr("_ref_wide_", type->symbol->cname), ref);
-  rts->addPragma(PRAG_REF);
+  rts->addFlag(FLAG_REF);
   theProgram->block->insertAtTail(new DefExpr(rts));
   ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", type)));
   wide->refType = ref;
@@ -266,37 +266,37 @@ static void localizeCall(CallExpr* call) {
     switch (call->primitive->tag) {
     case PRIMITIVE_ARRAY_SET: /* Fallthru */
     case PRIMITIVE_ARRAY_SET_FIRST:
-      if (call->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE_CLASS)) {
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         insertLocalTemp(call->get(1));
       }
       break;
     case PRIMITIVE_MOVE:
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
         if (rhs->isPrimitive(PRIMITIVE_GET_LOCALEID)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE)) {
-            if (getValueType(rhs->get(1)->typeInfo()->getField("addr")->type)->symbol->hasPragma(PRAG_WIDE_CLASS)) {
+          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+            if (getValueType(rhs->get(1)->typeInfo()->getField("addr")->type)->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               insertLocalTemp(rhs->get(1));
             }
           }
         } else if (rhs->isPrimitive(PRIMITIVE_GET_REF)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE) ||
-              rhs->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE_CLASS)) {
+          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+              rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             insertLocalTemp(rhs->get(1));
-            if (!rhs->get(1)->typeInfo()->symbol->hasPragma(PRAG_REF))
+            if (!rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
               rhs->replace(rhs->get(1)->remove());
           }
         } else if (rhs->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE) ||
-              rhs->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE_CLASS)) {
+          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+              rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             SymExpr* sym = toSymExpr(rhs->get(2));
             INT_ASSERT(sym);
-            if (!sym->var->hasPragma(PRAG_SUPER_CLASS)) {
+            if (!sym->var->hasFlag(FLAG_SUPER_CLASS)) {
               insertLocalTemp(rhs->get(1));
             }
           }
         } else if (rhs->isPrimitive(PRIMITIVE_ARRAY_GET) ||
                    rhs->isPrimitive(PRIMITIVE_ARRAY_GET_VALUE)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE_CLASS)) {
+          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             SymExpr* lhs = toSymExpr(call->get(1));
             Expr* stmt = call->getStmtExpr();
             INT_ASSERT(lhs && stmt);
@@ -309,42 +309,42 @@ static void localizeCall(CallExpr* call) {
                                            new SymExpr(localVar)));
           }
         } else if (rhs->isPrimitive(PRIMITIVE_UNION_GETID)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE)) {
+          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             insertLocalTemp(rhs->get(1));
           }
         } else if (rhs->isPrimitive(PRIMITIVE_GETCID)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE_CLASS)) {
+          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             insertLocalTemp(rhs->get(1));
           }
         }
-      } else if (call->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE) &&
-                 !call->get(2)->typeInfo()->symbol->hasPragma(PRAG_WIDE) &&
-                 !call->get(2)->typeInfo()->symbol->hasPragma(PRAG_REF)) {
+      } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+                 !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+                 !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         insertLocalTemp(call->get(1));
       }
       break;
     case PRIMITIVE_DYNAMIC_CAST:
-      if (call->get(2)->typeInfo()->symbol->hasPragma(PRAG_WIDE_CLASS)) {
+      if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         insertLocalTemp(call->get(2));
-        if (call->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE_CLASS) ||
-            call->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE)) {
+        if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+            call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
           toSymExpr(call->get(1))->var->type = call->get(1)->typeInfo()->getField("addr")->type;
         }
       }
     break;
     case PRIMITIVE_SETCID:
-      if (call->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE_CLASS)) {
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         insertLocalTemp(call->get(1));
       }
       break;
     case PRIMITIVE_UNION_SETID:
-      if (call->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE)) {
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
         insertLocalTemp(call->get(1));
       }
       break;
     case PRIMITIVE_SET_MEMBER:
-      if (call->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE_CLASS) ||
-          call->get(1)->typeInfo()->symbol->hasPragma(PRAG_WIDE)) {
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+          call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
         insertLocalTemp(call->get(1));
       }
       break;
@@ -367,7 +367,7 @@ static void handleLocalBlocks() {
   Vec<FnSymbol*> localizeFns, next;
 
   forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->hasPragma(PRAG_LOCAL_BLOCK))
+    if (fn->hasFlag(FLAG_LOCAL_BLOCK))
       localizeFns.add(fn);
   }
   Vec<FnSymbol*>* localizeFnsP = &localizeFns;
@@ -384,11 +384,11 @@ static void handleLocalBlocks() {
             if (FnSymbol* localFn = fnMap.get(fn)) {
               call->baseExpr->replace(new SymExpr(localFn));
             } else {
-              if (!fn->hasPragma(PRAG_LOCALIZED)) {
+              if (!fn->hasFlag(FLAG_LOCALIZED)) {
                 FnSymbol* copy = fn->copy();
                 copy->name = astr("_local_", fn->name);
                 copy->cname = astr("_local_", fn->cname);
-                copy->addPragma(PRAG_LOCALIZED);
+                copy->addFlag(FLAG_LOCALIZED);
                 fn->defPoint->insertBefore(new DefExpr(copy));
                 fnMap.put(fn, copy);
                 call->baseExpr->replace(new SymExpr(copy));
@@ -450,7 +450,7 @@ insertWideReferences(void) {
   //
   forv_Vec(TypeSymbol, ts, gTypes) {
     ClassType* ct = toClassType(ts->type);
-    if (ct && ct->classTag == CLASS_CLASS && !ts->hasPragma(PRAG_REF) && !ts->hasPragma(PRAG_NO_WIDE_CLASS)) {
+    if (ct && ct->classTag == CLASS_CLASS && !ts->hasFlag(FLAG_REF) && !ts->hasFlag(FLAG_NO_WIDE_CLASS)) {
       buildWideClass(ct);
     }
   }
@@ -472,22 +472,22 @@ insertWideReferences(void) {
       // do not change class field in wide class type
       //
       if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol))
-        if (ts->hasPragma(PRAG_WIDE_CLASS))
+        if (ts->hasFlag(FLAG_WIDE_CLASS))
           continue;
 
       //
       // do not change super class field - it's really a record
       //
-      if (def->sym->hasPragma(PRAG_SUPER_CLASS))
+      if (def->sym->hasFlag(FLAG_SUPER_CLASS))
         continue;
 
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (Type* wide = wideClassMap.get(fn->retType))
-          if (!fn->hasPragma(PRAG_EXTERN))
+          if (!fn->hasFlag(FLAG_EXTERN))
             fn->retType = wide;
       } else if (!isTypeSymbol(def->sym)) {
         if (Type* wide = wideClassMap.get(def->sym->type)) {
-          if (def->parentSymbol->hasPragma(PRAG_EXTERN)) {
+          if (def->parentSymbol->hasFlag(FLAG_EXTERN)) {
             if (toArgSymbol(def->sym))
               continue; // don't change extern function's arguments
           }
@@ -501,7 +501,7 @@ insertWideReferences(void) {
   // change arrays of classes into arrays of wide classes
   //
   forv_Vec(TypeSymbol, ts, gTypes) {
-    if (ts->hasPragma(PRAG_DATA_CLASS)) {
+    if (ts->hasFlag(FLAG_DATA_CLASS)) {
       if (Type* nt = wideClassMap.get(toTypeSymbol(ts->type->substitutions.v[0].value)->type)) {
         ts->type->substitutions.v[0].value = nt->symbol;
       }
@@ -514,10 +514,10 @@ insertWideReferences(void) {
   // build wide reference type for every reference type
   //
   forv_Vec(TypeSymbol, ts, gTypes) {
-    if (ts->hasPragma(PRAG_REF)) {
+    if (ts->hasFlag(FLAG_REF)) {
       ClassType* wide = new ClassType(CLASS_RECORD);
       TypeSymbol* wts = new TypeSymbol(astr("_wide_", ts->cname), wide);
-      wts->addPragma(PRAG_WIDE);
+      wts->addFlag(FLAG_WIDE);
       theProgram->block->insertAtTail(new DefExpr(wts));
       wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
       wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", ts->type)));
@@ -541,13 +541,13 @@ insertWideReferences(void) {
       // do not change reference field in wide reference type
       //
       if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol))
-        if (ts->hasPragma(PRAG_WIDE))
+        if (ts->hasFlag(FLAG_WIDE))
           continue;
 
       //
       // do not change super field - it's really a record
       //
-      if (def->sym->hasPragma(PRAG_SUPER_CLASS))
+      if (def->sym->hasFlag(FLAG_SUPER_CLASS))
         continue;
 
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -570,7 +570,7 @@ insertWideReferences(void) {
         if (VarSymbol* var = toVarSymbol(se->var)) {
           if (var->immediate) {
             if (CallExpr* call = toCallExpr(se->parentExpr)) {
-              if (call->isResolved() && !call->isResolved()->hasPragma(PRAG_EXTERN)) {
+              if (call->isResolved() && !call->isResolved()->hasFlag(FLAG_EXTERN)) {
                 if (Type* type = actual_to_formal(se)->typeInfo()) {
                   VarSymbol* tmp = new VarSymbol("tmp", type);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -609,15 +609,15 @@ insertWideReferences(void) {
   //
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isResolved() && call->isResolved()->hasPragma(PRAG_EXTERN)) {
+      if (call->isResolved() && call->isResolved()->hasFlag(FLAG_EXTERN)) {
         for_alist(arg, call->argList) {
           SymExpr* sym = toSymExpr(arg);
           INT_ASSERT(sym);
-          if (sym->typeInfo()->symbol->hasPragma(PRAG_WIDE_CLASS) ||
-              sym->typeInfo()->symbol->hasPragma(PRAG_WIDE)) {
+          if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+              sym->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             VarSymbol* var = new VarSymbol("_tmp", sym->typeInfo()->getField("addr")->type);
             call->getStmtExpr()->insertBefore(new DefExpr(var));
-            if (var->type->symbol->hasPragma(PRAG_REF))
+            if (var->type->symbol->hasFlag(FLAG_REF))
               call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, sym->copy()));
             else
               call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_GET_REF, sym->copy())));
@@ -640,7 +640,7 @@ insertWideReferences(void) {
         if (CallExpr* call = toCallExpr(se->parentExpr)) {
           if (call->isResolved()) {
             if (Type* type = actual_to_formal(se)->typeInfo()) {
-              if (type->symbol->hasPragma(PRAG_WIDE_CLASS)) {
+              if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
                 VarSymbol* tmp = new VarSymbol("_tmp", type);
                 call->getStmtExpr()->insertBefore(new DefExpr(tmp));
                 se->replace(new SymExpr(tmp));
@@ -649,9 +649,9 @@ insertWideReferences(void) {
             }
           } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
             if (Type* wtype = call->get(1)->typeInfo()) {
-              if (wtype->symbol->hasPragma(PRAG_WIDE)) {
+              if (wtype->symbol->hasFlag(FLAG_WIDE)) {
                 if (Type* wctype = wtype->getField("addr")->type->getField("_val")->type) {
-                  if (wctype->symbol->hasPragma(PRAG_WIDE_CLASS)) {
+                  if (wctype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
                     VarSymbol* tmp = new VarSymbol("_tmp", wctype);
                     call->getStmtExpr()->insertBefore(new DefExpr(tmp));
                     se->replace(new SymExpr(tmp));
@@ -662,8 +662,8 @@ insertWideReferences(void) {
             }
           } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
             if (Type* wctype = call->get(2)->typeInfo()) {
-              if (wctype->symbol->hasPragma(PRAG_WIDE_CLASS) ||
-                  wctype->symbol->hasPragma(PRAG_WIDE)) {
+              if (wctype->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+                  wctype->symbol->hasFlag(FLAG_WIDE)) {
                 VarSymbol* tmp = new VarSymbol("_tmp", wctype);
                 call->getStmtExpr()->insertBefore(new DefExpr(tmp));
                 se->replace(new SymExpr(tmp));
@@ -717,7 +717,7 @@ insertWideReferences(void) {
       //
       if ((call->isNamed("_heapAllocGlobal") ||
            call->isNamed("_heapAllocConstGlobal")) &&
-          !call->parentSymbol->hasPragma(PRAG_WRAPPER)) {
+          !call->parentSymbol->hasFlag(FLAG_WRAPPER)) {
 
         CallExpr* move = toCallExpr(call->parentExpr);
         INT_ASSERT(move);
@@ -729,7 +729,7 @@ insertWideReferences(void) {
         // this can happen due to coercion wrappers
         // this is a worrisome fix
         //
-        if (lhs->var->hasPragma(PRAG_TEMP)) {
+        if (lhs->var->hasFlag(FLAG_TEMP)) {
           if (CallExpr* move2 = toCallExpr(move->next)) {
             Vec<SymExpr*>* defs = defMap.get(lhs->var);
             Vec<SymExpr*>* uses = useMap.get(lhs->var);
@@ -745,7 +745,7 @@ insertWideReferences(void) {
           }
         }
 
-        if (lhs->var->type->symbol->hasPragma(PRAG_WIDE_CLASS)) {
+        if (lhs->var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
 
           //
           // handle global variables on the heap
@@ -776,7 +776,7 @@ insertWideReferences(void) {
         if (call->primitive->tag == PRIMITIVE_UNKNOWN ||
             call->isPrimitive(PRIMITIVE_CAST)) {
           for_actuals(actual, call) {
-            if (actual->typeInfo()->symbol->hasPragma(PRAG_WIDE_CLASS)) {
+            if (actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               if (actual->typeInfo()->getField("addr")->typeInfo() == dtString) {
                 VarSymbol* tmp = new VarSymbol("tmp", actual->typeInfo()->getField("addr")->typeInfo());
                 call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -795,8 +795,8 @@ insertWideReferences(void) {
   CallExpr* localeID = new CallExpr(PRIMITIVE_LOCALE_ID);
   VarSymbol* tmp = new VarSymbol("_tmp", localeID->typeInfo());
   VarSymbol* tmpBool = new VarSymbol("_tmp", dtBool);
-  tmp->addPragma(PRAG_TEMP);
-  tmpBool->addPragma(PRAG_TEMP);
+  tmp->addFlag(FLAG_TEMP);
+  tmpBool->addFlag(FLAG_TEMP);
 
   heapAllocateGlobals->insertAtTail(new DefExpr(tmp));
   heapAllocateGlobals->insertAtTail(new DefExpr(tmpBool));
