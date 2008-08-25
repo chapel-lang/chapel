@@ -8,14 +8,13 @@
 #include "iterator.h"
 
 
-static void
+void
 expandIteratorInline(CallExpr* call) {
   BlockStmt* body;
   Symbol* index = toSymExpr(call->get(1))->var;
   Symbol* ic = toSymExpr(call->get(2))->var;
   FnSymbol* iterator = ic->type->defaultConstructor;
   BlockStmt* ibody = iterator->body->copy();
-  CallExpr* yield = NULL;
   reset_line_info(ibody, call->lineno);
   body = toBlockStmt(call->parentExpr);
   call->remove();
@@ -25,14 +24,14 @@ expandIteratorInline(CallExpr* call) {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIMITIVE_YIELD)) {
-        yield = call;
-        call->replace(body);
+        BlockStmt* bodyCopy = body->copy();
+        call->replace(bodyCopy);
+        bodyCopy->insertAtHead(new CallExpr(PRIMITIVE_MOVE, index, call->get(1)));
       }
       if (call->isPrimitive(PRIMITIVE_RETURN)) // remove return
         call->remove();
     }
   }
-  body->insertAtHead(new CallExpr(PRIMITIVE_MOVE, index, yield->get(1)));
   int count = 1;
   for_formals(formal, iterator) {
     forv_Vec(BaseAST, ast, asts) {
@@ -350,9 +349,10 @@ buildIterator2Follower(IteratorInfo* ii) {
 void lowerIterators() {
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast))
-      if (call->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP))
-        if (call->numActuals() > 1)
-          expand_for_loop(call);
+      if (call->parentSymbol)
+        if (call->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP))
+          if (call->numActuals() > 1)
+            expand_for_loop(call);
   }
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->hasPragma(PRAG_ITERATOR_FN)) {

@@ -4,8 +4,10 @@ def foo(n: int) {
 }
 
 def foo(leader, n: int) {
-  yield 0..n/2-1;
-  yield n/2..n-3;
+  cobegin {
+    yield 0..n/2-1;
+    yield n/2..n-3;
+  }
 }
 
 def foo(follower, n: int) {

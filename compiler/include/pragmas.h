@@ -55,6 +55,7 @@ enum PragmaTag {
   PRAG_HEAP,
   PRAG_INDEX_VAR,
   PRAG_INLINE,
+  PRAG_INLINE_ITERATOR, // iterators that are always inlined, e.g., leaders
   PRAG_IS_MEME,
   PRAG_ITERATOR_CLASS,
   PRAG_ITERATOR_CLASS_COPY,

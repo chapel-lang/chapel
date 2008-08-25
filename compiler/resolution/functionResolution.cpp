@@ -288,12 +288,13 @@ protoIteratorClass(FnSymbol* fn) {
   for_formals(formal, fn) {
     leaderCall->insertAtTail(formal);
   }
-  leaderCall->insertAtTail(new NamedExpr("leader", new SymExpr(gTrue)));
+  leaderCall->insertAtHead(new NamedExpr("leader", new SymExpr(gTrue)));
   fn->insertAtHead(leaderCall);
   resolveCall(leaderCall, false);
   leaderCall->remove();
   if (FnSymbol* leader = leaderCall->isResolved()) {
     resolveFns(leader);
+    leader->addPragma(PRAG_INLINE_ITERATOR);
     ii->leader = leader->iteratorInfo;
 
     CallExpr* followerCall = new CallExpr(fn->name);
@@ -301,7 +302,7 @@ protoIteratorClass(FnSymbol* fn) {
       followerCall->insertAtTail(formal);
     }
     VarSymbol* leaderIndex = new VarSymbol("leaderIndex", leader->iteratorInfo->getValue->retType);
-    followerCall->insertAtTail(new NamedExpr("follower", new SymExpr(leaderIndex)));
+    followerCall->insertAtHead(new NamedExpr("follower", new SymExpr(leaderIndex)));
     fn->insertAtHead(new DefExpr(leaderIndex));
     fn->insertAtHead(followerCall);
     resolveCall(followerCall, false);
@@ -3481,6 +3482,23 @@ computeStandardModuleSet() {
 }
 
 
+static void
+inlineIterators() {
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (BlockStmt* block = toBlockStmt(ast)) {
+      if (block->parentSymbol) {
+        if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP)) {
+          Symbol* iterator = toSymExpr(block->blockInfo->get(2))->var;
+          if (iterator->type->defaultConstructor->hasPragma(PRAG_INLINE_ITERATOR)) {
+            expandIteratorInline(block->blockInfo);
+          }
+        }
+      }
+    }
+  }
+}
+
+
 void
 resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
@@ -3691,6 +3709,8 @@ resolve() {
 
   insertReturnTemps(); // must be done before pruneResolvedTree is called.
   pruneResolvedTree();
+
+  inlineIterators();
 
   freeCache(defaultsCache);
   freeCache(genericsCache);

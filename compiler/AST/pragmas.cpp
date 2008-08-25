@@ -50,6 +50,7 @@ initPragmas() {
   definePragma(PRAG_HEAP, "heap");
   definePragma(PRAG_INDEX_VAR, "index var");
   definePragma(PRAG_INLINE, "inline");
+  definePragma(PRAG_INLINE_ITERATOR, "inline iterator");
   definePragma(PRAG_IS_MEME, "is meme");
   definePragma(PRAG_ITERATOR_CLASS, "iterator class");
   definePragma(PRAG_ITERATOR_CLASS_COPY, "iterator class copy");

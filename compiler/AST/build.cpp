@@ -53,7 +53,9 @@ checkControlFlow(Expr* expr, const char* context) {
       if (call->isPrimitive(PRIMITIVE_RETURN)) {
         USR_FATAL_CONT(call, "return is not allowed in %s", context);
       } else if (call->isPrimitive(PRIMITIVE_YIELD)) {
-        USR_FATAL_CONT(call, "yield is not allowed in %s", context);
+        if (!strcmp(context, "begin statement") ||
+            !strcmp(context, "yield statement"))
+          USR_FATAL_CONT(call, "yield is not allowed in %s", context);
       }
     } else if (GotoStmt* gs = toGotoStmt(ast)) {
       if (gs->label && labelSet.set_in(gs->label->getName()))
@@ -537,24 +539,17 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
   destructureIndices(followerBody, indices, new SymExpr(followerIndex));
   followerBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, followerIndex, followerIterator);
   followerBlock->insertAtTail(followerBody);
+
   BlockStmt* beginBlock = new BlockStmt();
   beginBlock->insertAtTail(new DefExpr(leaderIndexCopy));
   beginBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leaderIndexCopy, leaderIndex));
-  VarSymbol* coforallCount = new VarSymbol("_coforallCount");
-  coforallCount->addPragma(PRAG_TEMP);
-  leaderBlock->insertAtTail(new DefExpr(coforallCount));
-  leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
-  beginBlock->insertAtTail(new CallExpr("_upEndCount", coforallCount));
-  BlockStmt* beginBody = new BlockStmt(followerBlock);
-  beginBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_COFORALL);
-  beginBody->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-  beginBlock->insertAtTail(beginBody);
+  beginBlock->insertAtTail(followerBlock);
+
   BlockStmt* leaderBody = new BlockStmt(beginBlock);
   leaderBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, leaderIndex, new CallExpr("iteratorIndex", leaderIterator)), BLOCK_TYPE));
   leaderBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, leaderIndex, leaderIterator);
   leaderBlock->insertAtTail(leaderBody);
-  leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, coforallCount));
-  leaderBlock->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
+
   return leaderBlock;
 }
 

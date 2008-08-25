@@ -27,4 +27,6 @@ FnSymbol* orderWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals, bool isSquare)
 FnSymbol* coercionWrap(FnSymbol* fn, CallInfo* info);
 FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info);
 
+void expandIteratorInline(CallExpr* call);
+
 #endif
