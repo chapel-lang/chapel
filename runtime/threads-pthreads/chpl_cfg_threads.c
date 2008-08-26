@@ -215,6 +215,12 @@ void chpl_init_sync_aux(chpl_sync_aux_t *s) {
   s->signal_empty = chpl_condvar_new();
 }
 
+void chpl_destroy_sync_aux(chpl_sync_aux_t *s) {
+  chpl_free(s->lock, 0, 0);
+  chpl_free(s->signal_full, 0, 0);
+  chpl_free(s->signal_empty, 0, 0);
+}
+
 
 // Single variables
 

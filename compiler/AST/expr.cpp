@@ -1442,7 +1442,9 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     case PRIMITIVE_SYNC_INIT:
-      fprintf( outfile, "chpl_init_sync_aux(&((");
+    case PRIMITIVE_SYNC_DESTROY:
+      fprintf( outfile, primitive->tag == PRIMITIVE_SYNC_INIT ?
+               "chpl_init_sync_aux(&((" : "chpl_destroy_sync_aux(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");

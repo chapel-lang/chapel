@@ -579,6 +579,7 @@ pragma "data class"
 class _ddata {
   type eltType;
   var size: int;
+  def ~_ddata() { __primitive("array_free", this); }
   pragma "inline" def init() {
     __primitive("array_alloc", this, eltType, size);
     init_elts(this, size, eltType);
@@ -652,6 +653,8 @@ class _syncvar {
   pragma "omit from constructor" var sync_aux: _sync_aux_t; // data structure for locking, signaling, etc.
   // Ideally, the definition of this class should be target and base_type dependent,
   // since not all targets need to have a sync_aux field if base_type is sufficiently simple.
+
+  def ~_syncvar() { __primitive("destroy_sync_aux", this); }
 
   def initialize() {
     __primitive("init_sync_aux", this);

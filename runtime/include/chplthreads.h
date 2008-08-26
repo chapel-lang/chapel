@@ -31,6 +31,7 @@ void chpl_sync_mark_and_signal_full(chpl_sync_aux_t *);     // also unlocks
 void chpl_sync_mark_and_signal_empty(chpl_sync_aux_t *);    // also unlocks
 chpl_bool chpl_sync_is_full(void *, chpl_sync_aux_t *, chpl_bool);
 void chpl_init_sync_aux(chpl_sync_aux_t *);
+void chpl_destroy_sync_aux(chpl_sync_aux_t *);
 
 
 // Single variables

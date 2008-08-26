@@ -90,6 +90,8 @@ void chpl_init_sync_aux(chpl_sync_aux_t *s) {
   *s = false;
 }
 
+void chpl_destroy_sync_aux(chpl_sync_aux_t *s) { }
+
 
 // Single variables
 

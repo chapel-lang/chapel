@@ -87,6 +87,8 @@ void chpl_init_sync_aux(chpl_sync_aux_t *s) {
   purge(&(s->signal_full));
 }
 
+void chpl_destroy_sync_aux(chpl_sync_aux_t *s) { }
+
 
 // Single variables
 

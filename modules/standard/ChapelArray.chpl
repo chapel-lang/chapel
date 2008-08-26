@@ -136,6 +136,8 @@ record _domain {
   var _value;
   var _promotionType: index(rank, _value.idxType);
 
+  def ~_domain() { delete _value; }
+
   def initialize() {
     if _value == nil {
       _value = _value.buildEmptyDomain();
@@ -336,6 +338,8 @@ record _array {
   var _value;
   var _promotionType : eltType;
 
+  def ~_array() { delete _value; }
+
   def _dom
     return new _domain(rank, _value.dom);
 
@@ -496,6 +500,8 @@ class BaseArray {
 class BaseDomain {
   var _arrs: list(BaseArray),
       _locked: sync bool = false;
+
+  def ~BaseDomain() { delete _arrs; delete _locked; }
 
   def member(ind) : bool {
     halt("membership test not supported for this domain type");

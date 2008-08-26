@@ -65,6 +65,7 @@ enum PrimitiveTag {
   PRIMITIVE_SET_SERIAL,                // set serial state to true or false
 
   PRIMITIVE_SYNC_INIT,                
+  PRIMITIVE_SYNC_DESTROY,                
   PRIMITIVE_SYNC_LOCK,                
   PRIMITIVE_SYNC_UNLOCK,
   PRIMITIVE_SYNC_WAIT_FULL,
