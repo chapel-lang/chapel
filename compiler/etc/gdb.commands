@@ -35,7 +35,7 @@ end
 define lview
   call list_view($arg0)
 end
-define pragmas
-  call viewPragmas($arg0)
+define flags
+  call viewFlags($arg0)
 end
 break gdbShouldBreakHere
