@@ -61,7 +61,7 @@ foreach chplsrc ($testsrc)
 
     if (-w ./$execfile) then
 	echo "rm -f ./$execfile"
-	rm -f ./$execfile
+	rm -f ./$execfile ./${execfile}_real
     endif
 
 end		

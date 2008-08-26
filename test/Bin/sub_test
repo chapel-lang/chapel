@@ -392,7 +392,7 @@ foreach chplsrc ($testsrc)
 
             if ( $execstatus == 222) then
                echo "$futuretest""[Error: Timed out executing program $localdir/$execfile]"
-               rm -f $binfile
+               rm -f $binfile ${binfile}_real
                continue
             endif
 
@@ -415,7 +415,7 @@ foreach chplsrc ($testsrc)
 		echo \[Error cannot locate program output comparison file $localdir/$checkfile\]
                 echo \[Execution output was as follows:\]
                 cat $execlog
-		rm -f $binfile
+		rm -f $binfile ${binfile}_real
 		continue
 	    endif
 
@@ -425,10 +425,10 @@ foreach chplsrc ($testsrc)
 	    if ( $difffailed == 0 ) then
 		echo "$futuretest""[Success matching program output for $localdir/$execfile]"
 		rm $execlog
-		rm -f $binfile
+		rm -f $binfile ${binfile}_real
 	    else
 		echo "$futuretest""[Error matching program output for $localdir/$execfile]"
-		rm -f $binfile
+		rm -f $binfile ${binfile}_real
 		continue
 	    endif
             else
@@ -444,7 +444,7 @@ foreach chplsrc ($testsrc)
                     echo "[Error matching performance keys for $localdir/$execfile]"
                 endif
 		rm $execlog
-		rm -f $binfile
+		rm -f $binfile ${binfile}_real
             endif
 	else
 	    echo "$futuretest""[Error could not locate executable $binfile for $localdir/$execfile]"
