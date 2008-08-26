@@ -26,10 +26,10 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const TwiddleDom: domain(1, int(64)) distributed(Block) = [0..#m/4];
+  const TwiddleDom: domain(1, int(64)) distributed(Block) = [0:int(64)..#m/4];
   var Twiddles: [TwiddleDom] elemType;
 
-  const ProblemDom: domain(1, int(64)) distributed(Block) = [0..#m];
+  const ProblemDom: domain(1, int(64)) distributed(Block) = [0:int(64)..#m];
   var Z, z: [ProblemDom] elemType;
 
   initVectors(Twiddles, z);

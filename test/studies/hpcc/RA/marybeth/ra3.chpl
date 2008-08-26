@@ -19,7 +19,7 @@ config const numStreams:int = 1 << 9;
 const bigStep:int = (numUpdates:int)/numStreams;
 config const littleStep = 64;
 
-const TableDomain = [0..#tableSize];
+const TableDomain = [0:uint(64)..#tableSize];
 var Table: [TableDomain] uint(64);
 
 const RandStepsDomain = [0..#64];

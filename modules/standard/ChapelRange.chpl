@@ -37,18 +37,6 @@ def _build_range(low: int(64), high: int(64))
 def _build_range(low: uint(64), high: uint(64))
   return new range(uint(64), BoundedRangeType.bounded, false, low, high);
 
-//
-// syntax for counted ranges
-//
-def _build_counted_range(low: int, high: int)
-  return new range(int, BoundedRangeType.bounded, false, low, low+high-1);
-def _build_counted_range(low: uint, high: uint)
-  return new range(uint, BoundedRangeType.bounded, false, low, low+high-1);
-def _build_counted_range(low: int(64), high: int(64))
-  return new range(int(64), BoundedRangeType.bounded, false, low, low+high-1);
-def _build_counted_range(low: uint(64), high: uint(64))
-  return new range(uint(64), BoundedRangeType.bounded, false, low, low+high-1);
-
 
 //
 // syntax function for unbounded ranges
@@ -82,6 +70,77 @@ def by(r : range(?), i : int) {
     result._alignHigh(result.low);
   return result;
 }
+
+//
+// syntax functions for counted ranges
+//
+def #(r:range(?), i:integral)
+  where r.boundedType == BoundedRangeType.boundedLow {
+  if i < 0 then
+    halt("range cannot have a negative number of elements");
+  if i == 0 then
+    return new range(eltType = r.eltType,
+                     boundedType = BoundedRangeType.bounded,
+                     stridable = r.stridable,
+                     _low = r.low + 1,
+                     _high = r.low,
+                     _stride = r.stride);
+
+  return new range(eltType = r.eltType,
+                   boundedType = BoundedRangeType.bounded,
+                   stridable = r.stridable,
+                   _low = r.low,
+                   _high = r.low + (i-1)*abs(r.stride):r.eltType,
+                   _stride = r.stride);
+}
+
+def #(r:range(?), i:integral)
+  where r.boundedType == BoundedRangeType.boundedHigh {
+  if i < 0 then
+    halt("range cannot have a negative number of elements");
+  if i == 0 then
+    return new range(eltType = r.eltType,
+                   boundedType = BoundedRangeType.bounded,
+                   stridable = r.stridable,
+                   _low = r.high,
+                   _high = r.high - 1,
+                   _stride = r.stride);
+
+  return new range(eltType = r.eltType,
+                   boundedType = BoundedRangeType.bounded,
+                   stridable = r.stridable,
+                   _low = r.high - (i-1)*abs(r.stride):r.eltType,
+                   _high = r.high,
+                   _stride = r.stride);
+}
+
+def #(r:range(?), i:integral)
+  where r.boundedType == BoundedRangeType.bounded {
+  if i < 0 then
+    halt("range cannot have a negative number of elements");
+  if i > r.length then
+    halt("bounded range is too small to access ", i, " elements");
+  if i == 0 then
+    return new range(eltType = r.eltType,
+                     boundedType = BoundedRangeType.bounded,
+                     stridable = r.stridable,
+                     _low = r.high,
+                     _high = r.low,
+                     _stride = r.stride);
+
+  return new range(eltType = r.eltType,
+                   boundedType = BoundedRangeType.bounded,
+                   stridable = r.stridable,
+                   _low = if r.stride < 0 then r.high + (i-1)*r.stride:r.eltType else r.low,
+                   _high = if r.stride < 0 then r.high else r.low + (i-1)*r.stride:r.eltType,
+                   _stride = r.stride);
+}
+
+def #(r:range(?), i:integral)
+  where r.boundedType == BoundedRangeType.boundedNone {
+  halt("cannot use # operator on an unbounded range");
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -218,10 +218,9 @@ NOTES
 %left TFOR
 %left TFORALL
 %left TIF
-%left TBY
+%left TBY THASH
 %left TRSBR
 %left TIN
-%left THASH
 %left TDOTDOT
 %right TSTARTUPLE
 %left TOR
@@ -851,6 +850,8 @@ fn_identifier:
   { $$ = "!"; }
 | TBY
   { $$ = "by"; } 
+| THASH
+  { $$ = "#"; }
 ;
 
 
@@ -1444,8 +1445,6 @@ stmt_level_expr:
     { $$ = new CallExpr("_cast", $3, $1); }
 | expr TDOTDOT expr
     { $$ = new CallExpr("_build_range", $1, $3); }
-| expr TDOTDOT THASH expr
-    { $$ = new CallExpr("_build_counted_range", $1, $4); }
 | expr TDOTDOT
     { $$ = new CallExpr("_build_range", buildDotExpr("BoundedRangeType", "boundedLow"), $1); }
 | TDOTDOT expr
@@ -1504,6 +1503,8 @@ stmt_level_expr:
     { $$ = new CallExpr("**", $1, $3); }
 | expr TBY expr
     { $$ = new CallExpr("by", $1, $3); }
+| expr THASH expr
+    { $$ = new CallExpr("#", $1, $3); }
 ;
 
 
