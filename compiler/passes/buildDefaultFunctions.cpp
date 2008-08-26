@@ -29,6 +29,7 @@ static void buildDefaultReadFunction(EnumType* type);
 static void buildDefaultWriteFunction(ClassType* type);
 static void buildStringCastFunction(EnumType* type);
 
+static void buildDefaultDestructor(ClassType* ct);
 
 
 void buildDefaultFunctions(void) {
@@ -49,6 +50,9 @@ void buildDefaultFunctions(void) {
           }
         }
       }
+      if (ClassType* ct = toClassType(type->type))
+        if (!ct->symbol->hasFlag(FLAG_REF))
+          buildDefaultDestructor(ct);
       if (type->hasFlag(FLAG_NO_DEFAULT_FUNCTIONS))
         continue;
       if (EnumType* et = toEnumType(type->type)) {
@@ -878,3 +882,23 @@ static void buildStringCastFunction(EnumType* et) {
   reset_line_info(def, et->symbol->lineno);
   normalize(fn);
 }
+
+
+static void buildDefaultDestructor(ClassType* ct) {
+  if (function_exists("~chpl_destroy", 2, dtMethodToken, ct))
+    return;
+
+  SET_LINENO(ct->symbol);
+
+  FnSymbol* fn = new FnSymbol("~chpl_destroy");
+  fn->cname = astr("chpl__auto_destroy_", ct->symbol->name);
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  fn->insertFormalAtTail(fn->_this);
+  fn->retType = dtVoid;
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+  fn->addFlag(FLAG_METHOD);
+  ct->methods.add(fn);
+}
+

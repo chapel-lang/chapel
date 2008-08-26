@@ -47,10 +47,17 @@ static void pruneResolvedTree();
 // build reference type
 //
 static void makeRefType(Type* type) {
-  if (!type || type == dtMethodToken || type == dtLeaderToken || type == dtUnknown)
+  if (!type)
     return;
 
-  if (type->refType || type->symbol->hasFlag(FLAG_GENERIC) || type->symbol->hasFlag(FLAG_REF))
+  if (type == dtMethodToken ||
+      type == dtLeaderToken ||
+      type == dtUnknown ||
+      type->symbol->hasFlag(FLAG_REF) ||
+      type->symbol->hasFlag(FLAG_GENERIC))
+    return;
+
+  if (type->refType)
     return;
 
   CallExpr* call = new CallExpr("_type_construct__ref", type->symbol);
@@ -3279,6 +3286,26 @@ resolveFns(FnSymbol* fn) {
       //      resolveFns(fn->retType->defaultConstructor);
       call->remove();
     }
+
+
+    //
+    // resolve destructor
+    //
+    if (ClassType* ct = toClassType(fn->retType)) {
+      if (!ct->destructor &&
+          !ct->symbol->hasFlag(FLAG_REF)) {
+        VarSymbol* tmp = new VarSymbol("_tmp", ct);
+        tmp->addFlag(FLAG_TEMP);
+        CallExpr* call = new CallExpr("~chpl_destroy", gMethodToken, tmp);
+        fn->insertAtHead(new CallExpr(call));
+        fn->insertAtHead(new DefExpr(tmp));
+        resolveCall(call);
+        resolveFns(call->isResolved());
+        ct->destructor = call->isResolved();
+        call->remove();
+        tmp->defPoint->remove();
+      }
+    }
   }
 }
 
@@ -3719,6 +3746,21 @@ resolve() {
   pruneResolvedTree();
 
   inlineIterators();
+
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    if (ts->type->destructor) {
+      INT_ASSERT(ts->type->dispatchParents.n <= 1);
+      if (ts->type->dispatchParents.n == 1) {
+        if (FnSymbol* parentDestructor = ts->type->dispatchParents.v[0]->destructor) {
+          VarSymbol* tmp = new VarSymbol("_tmp", ts->type->dispatchParents.v[0]);
+          tmp->addFlag(FLAG_TEMP);
+          ts->type->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+          ts->type->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_CAST, ts->type->dispatchParents.v[0]->symbol, ts->type->destructor->_this)));
+          ts->type->destructor->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor, tmp));
+        }
+      }
+    }
+  }
 
   freeCache(defaultsCache);
   freeCache(genericsCache);

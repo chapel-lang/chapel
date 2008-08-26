@@ -30,8 +30,6 @@ class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
   var dist: SingleLocaleDistribution;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
-  def ~SingleLocaleArithmeticDomain() { delete dist; }
-
   def getIndices() return ranges;
 
   def setIndices(x) {
@@ -297,7 +295,7 @@ class SingleLocaleArithmeticArray: BaseArray {
   var data : _ddata(eltType);
   var noinit: bool = false;
 
-  def ~SingleLocaleArithmeticArray() { delete dom; delete data; }
+  def ~SingleLocaleArithmeticArray() { delete data; }
 
   def these() var {
     for i in dom do

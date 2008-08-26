@@ -2,7 +2,6 @@ class listNode {
   type eltType;
   var data: eltType;
   var next: listNode(eltType);
-  def ~listNode() { if next != nil then delete next; }
 }
 
 record list {
@@ -11,7 +10,14 @@ record list {
   var last: listNode(eltType);
   var length: int;
 
-  def ~list() { delete first; }
+  def ~list() {
+    var current = first;
+    while (current != nil) {
+      var next = current.next;
+      delete current;
+      current = next;
+    }
+  }
 
   def these() {
     var tmp = first;

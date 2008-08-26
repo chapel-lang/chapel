@@ -16,6 +16,7 @@ Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   defaultValue(init_defaultVal),
   defaultConstructor(NULL),
   defaultTypeConstructor(NULL),
+  destructor(NULL),
   hasGenericDefaults(false),
   instantiatedFrom(NULL),
   refType(NULL)
