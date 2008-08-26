@@ -59,7 +59,7 @@ class Type : public BaseAST {
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
 
-  virtual Symbol* getField(const char* name);
+  virtual Symbol* getField(const char* name, bool fatal=true);
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
@@ -103,7 +103,7 @@ class ClassType : public Type {
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
 
-  virtual Symbol* getField(const char* name);
+  virtual Symbol* getField(const char* name, bool fatal=true);
   virtual Symbol* getField(int i);
 };
 

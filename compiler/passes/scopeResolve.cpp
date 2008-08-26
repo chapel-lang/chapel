@@ -174,7 +174,7 @@ lookup(BaseAST* scope,
   }
   if (TypeSymbol* ts = toTypeSymbol(scope)) {
     if (ClassType* ct = toClassType(ts->type)) {
-      sym = ct->getField(name);
+      sym = ct->getField(name, false);
       if (sym)
         symbols.set_add(sym);
     }
@@ -1125,7 +1125,7 @@ void scopeResolve(void) {
                           (ct->symbol->defPoint->parentSymbol->type);
                       }
                     } else {
-                      while (ct && !ct->getField(name)) {
+                      while (ct && !ct->getField(name, false)) {
                         // count how many classes out from current depth that
                         // this symbol is first defined in
                         nestDepth += 1;

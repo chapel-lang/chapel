@@ -79,7 +79,7 @@ void Type::codegenDef(FILE* outfile) {
 void Type::codegenPrototype(FILE* outfile) { }
 
 
-Symbol* Type::getField(const char* name) {
+Symbol* Type::getField(const char* name, bool fatal) {
   INT_FATAL(this, "getField not called on ClassType");
   return NULL;
 }
@@ -324,7 +324,7 @@ void ClassType::codegenPrototype(FILE* outfile) {
 }
 
 
-Symbol* ClassType::getField(const char* name) {
+Symbol* ClassType::getField(const char* name, bool fatal) {
   Vec<Type*> next, current;
   Vec<Type*>* next_p = &next, *current_p = &current;
   current_p->set_add(this);
@@ -346,7 +346,9 @@ Symbol* ClassType::getField(const char* name) {
     current_p = temp;
     next_p->clear();
   }
-  //INT_FATAL(this, "field '%s' not in class in getField", name);
+  if (fatal) {
+    INT_FATAL(this, "field '%s' not in class in getField", name);
+  }
   return NULL;
 }
 

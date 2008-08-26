@@ -138,7 +138,7 @@ buildDefaultWrapper(FnSymbol* fn,
         paramMap->put(wrapper_formal, value);
       if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && !paramMap->get(formal) && formal->type != dtMethodToken)
-          if (Symbol* field = wrapper->_this->type->getField(formal->name))
+          if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
               if (!isShadowedField(formal))
                 wrapper->insertAtTail(
@@ -191,7 +191,7 @@ buildDefaultWrapper(FnSymbol* fn,
       call->insertAtTail(temp);
       if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE))
-          if (Symbol* field = wrapper->_this->type->getField(formal->name))
+          if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
               if (!isShadowedField(formal))
                 wrapper->insertAtTail(
