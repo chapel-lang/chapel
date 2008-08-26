@@ -47,7 +47,7 @@ static void pruneResolvedTree();
 // build reference type
 //
 static void makeRefType(Type* type) {
-  if (!type || type == dtMethodToken || type == dtUnknown)
+  if (!type || type == dtMethodToken || type == dtLeaderToken || type == dtUnknown)
     return;
 
   if (type->refType || type->symbol->hasFlag(FLAG_GENERIC) || type->symbol->hasFlag(FLAG_REF))
@@ -288,13 +288,12 @@ protoIteratorClass(FnSymbol* fn) {
   for_formals(formal, fn) {
     leaderCall->insertAtTail(formal);
   }
-  leaderCall->insertAtHead(new NamedExpr("leader", new SymExpr(gTrue)));
+  leaderCall->insertAtHead(new NamedExpr("leader", new SymExpr(gLeaderToken)));
   fn->insertAtHead(leaderCall);
   resolveCall(leaderCall, false);
   leaderCall->remove();
   if (FnSymbol* leader = leaderCall->isResolved()) {
     resolveFns(leader);
-    leader->addFlag(FLAG_INLINE_ITERATOR);
     ii->leader = leader->iteratorInfo;
 
     CallExpr* followerCall = new CallExpr(fn->name);
@@ -1910,6 +1909,7 @@ formalRequiresTemp(ArgSymbol* formal) {
       formal->hasFlag(FLAG_TYPE_VARIABLE) ||
       formal->instantiatedParam ||
       formal->type == dtMethodToken ||
+      formal->type == dtLeaderToken ||
       (formal->type->symbol->hasFlag(FLAG_REF) &&
        formal->intent == INTENT_BLANK) ||
       formal->hasFlag(FLAG_NO_FORMAL_TMP))
@@ -3147,6 +3147,14 @@ resolveFns(FnSymbol* fn) {
   }
 
   //
+  // mark leader iterator for early inlining
+  //
+  for_formals(formal, fn) {
+    if (formal->type == dtLeaderToken)
+      fn->addFlag(FLAG_INLINE_ITERATOR);
+  }
+
+  //
   // insert casts as necessary
   //
   if (fn->retTag != RET_PARAM) {
@@ -3914,10 +3922,11 @@ pruneResolvedTree() {
         if (sym && isTypeSymbol(sym->var))
           call->remove();
       } else if (FnSymbol* fn = call->isResolved()) {
-        // Remove method token actuals
+        // Remove method and leader token actuals
         for (int i = fn->numFormals(); i >= 1; i--) {
           ArgSymbol* formal = fn->getFormal(i);
           if (formal->type == dtMethodToken ||
+              formal->type == dtLeaderToken ||
               (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
                !formal->type->symbol->hasFlag(FLAG_ARRAY)))
             call->get(i)->remove();
@@ -3945,8 +3954,9 @@ pruneResolvedTree() {
         // Remove formal type expressions
         if (formal->typeExpr)
           formal->typeExpr->remove();
-        // Remove method token formals
-        if (formal->type == dtMethodToken)
+        // Remove method and leader token formals
+        if (formal->type == dtMethodToken ||
+            formal->type == dtLeaderToken)
           formal->defPoint->remove();
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             !formal->type->symbol->hasFlag(FLAG_ARRAY)) {

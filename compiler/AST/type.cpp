@@ -531,6 +531,8 @@ void initPrimitiveTypes(void) {
   dtIterator->symbol->addFlag(FLAG_GENERIC);
   dtMethodToken = createPrimitiveType ("_MT", "_MT");
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
+  dtLeaderToken = createPrimitiveType("_LT", "_LT");
+  CREATE_DEFAULT_SYMBOL(dtLeaderToken, gLeaderToken, "_lt");
   dtModuleToken = createPrimitiveType("tmodule=", "tmodule=");
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
   dtEnumerated = createPrimitiveType ("enumerated", "enumerated");

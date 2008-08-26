@@ -263,17 +263,15 @@ buildIterator2Leader(IteratorInfo* ii) {
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leader, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->leader->icType->symbol, new_StringSymbol("leader iterator class"))));
   fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, leader));
 
-  if (ii->iterator->numFormals() < ii->leader->iterator->numFormals() - 1) {
+  if (ii->iterator->numFormals() < ii->leader->iterator->numFormals()) {
     USR_FATAL(ii->leader->iterator, "leader iterator has too many formal arguments");
-  } else if (ii->iterator->numFormals() > ii->leader->iterator->numFormals() - 1) {
+  } else if (ii->iterator->numFormals() > ii->leader->iterator->numFormals()) {
     USR_FATAL(ii->leader->iterator, "leader iterator has too few formal arguments");
   }
 
   int i = 0, j = 1;
   for_formals(leaderFormal, ii->leader->iterator) {
     i++;
-    if (!strcmp(leaderFormal->name, "leader"))
-      continue;
     ArgSymbol* iteratorFormal = ii->iterator->getFormal(j);
     if (strcmp(iteratorFormal->name, leaderFormal->name)) {
       USR_FATAL(ii->iterator, "name of argument %d in iterator '%s' does not match leader variant", i, ii->iterator->name);
