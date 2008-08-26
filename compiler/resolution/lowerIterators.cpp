@@ -2,6 +2,7 @@
 #include "expr.h"
 #include "optimizations.h"
 #include "passes.h"
+#include "resolution.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
