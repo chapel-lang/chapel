@@ -88,11 +88,6 @@ extern const char* astTagName[];
 
 #define COPY_INT(c) (c ? c->copy(map, true) : NULL)
 
-typedef struct _ASTContext {
-  Symbol* parentSymbol;
-  Expr* parentExpr;
-} ASTContext;
-
 class BaseAST {
  public:
   AstTag astTag;    // BaseAST subclass

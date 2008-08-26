@@ -18,18 +18,11 @@ Expr::Expr(AstTag astTag) :
 
 
 Expr* Expr::getStmtExpr() {
-  if (!IS_EXPR(this))
-    INT_FATAL(this, "Expr::getStmtExpr() not called on EXPR");
-  if (!parentExpr) {
-    if (toModuleSymbol(parentSymbol))
-      return this;
-    return NULL;
+  for (Expr* expr = this; expr; expr = expr->parentExpr) {
+    if (IS_STMT(expr) || isBlockStmt(expr->parentExpr))
+      return expr;
   }
-  if (parentExpr->astTag == STMT_BLOCK)
-    return this;
-  else if (IS_STMT(parentExpr))
-    return parentExpr;
-  return parentExpr->getStmtExpr();
+  return NULL;
 }
 
 
@@ -49,14 +42,6 @@ void Expr::verify() {
     INT_FATAL(this, "Expr::parentSymbol is NULL");
   if (parentExpr && parentExpr->parentSymbol != parentSymbol)
     INT_FATAL(this, "Bad Expr::parentSymbol");
-}
-
-
-ASTContext Expr::getContext(void) {
-  ASTContext context;
-  context.parentSymbol = parentSymbol;
-  context.parentExpr = parentExpr;
-  return context;
 }
 
 
@@ -147,9 +132,11 @@ void Expr::replace(Expr* new_ast) {
   } else {
     callReplaceChild(new_ast);
   }
-  ASTContext context = getContext();
+
+  Symbol* myParentSymbol = parentSymbol;
+  Expr* myParentExpr = parentExpr;
   remove_help(this);
-  insert_help(new_ast, context.parentExpr, context.parentSymbol);
+  insert_help(new_ast, myParentExpr, myParentSymbol);
 }
 
 

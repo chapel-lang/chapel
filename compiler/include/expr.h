@@ -30,7 +30,6 @@ class Expr : public BaseAST {
   DECLARE_COPY(Expr);
   virtual void callReplaceChild(Expr* new_ast);
   virtual void verify();
-  virtual ASTContext getContext(void);
   virtual bool inTree();
   virtual Type* typeInfo(void);
 
