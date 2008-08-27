@@ -891,6 +891,7 @@ static void buildDefaultDestructor(ClassType* ct) {
   SET_LINENO(ct->symbol);
 
   FnSymbol* fn = new FnSymbol("~chpl_destroy");
+  fn->addFlag(FLAG_DESTRUCTOR);
   fn->cname = astr("chpl__auto_destroy_", ct->symbol->name);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);

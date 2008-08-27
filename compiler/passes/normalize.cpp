@@ -450,7 +450,6 @@ void normalize(void) {
   insertUseForExplicitModuleCalls();
 
   // perform some checks on destructors
-//   Map<Type*, FnSymbol*> destructors; // used for finding the parent class' destructor later on
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
       if (fn->formals.length() < 2
@@ -466,7 +465,6 @@ void normalize(void) {
           USR_FATAL(fn, "destructor name must match class name");
         } else {
           fn->name = astr("~chpl_destroy");
-          //          destructors.put(thisDef->sym->type, fn);
         }
       }
     }
@@ -477,25 +475,6 @@ void normalize(void) {
       USR_FATAL(fn, "invalid method name");
     }
   }
-
-  // for each destructor, find out its parent class' destructor, if there is one,
-  // and insert a call to it
-//   typedef MapElem<Type*, FnSymbol*> TypeToFnSymbolMapElem;
-//   form_Map(TypeToFnSymbolMapElem, t, destructors) {
-//     Type *parent = t->key;
-//     while (parent->dispatchParents.count()) {
-//       if (parent->dispatchParents.count() > 1)
-//         USR_FATAL(t->key, "destructors for classes with multiple inheritance not yet implemented");
-//       parent = parent->dispatchParents.first();
-//       FnSymbol *parentDestructor;
-//       if ((parentDestructor = destructors.get(parent))) {
-//         DefExpr *thisArg = toDefExpr(t->value->formals.get(2));
-//         t->value->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor,
-//                                                             gMethodToken, thisArg->sym));
-//         break;
-//       }
-//     }
-//   }
 }
 
 // the following function is called from multiple places,
