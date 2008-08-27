@@ -49,6 +49,15 @@ failing nondeterministically (e.g., 04/04/08)
 gasnet-specific regressions
 ===========================
 
+incompatible types to chpl_free
+-------------------------------
+[Error matching compiler output for classes/figueroa/DestructorSubclassing1]
+[Error matching compiler output for classes/figueroa/LeakedMemory1]
+
+invalid initializers
+--------------------
+[Error matching compiler output for functions/deitz/iterators/leader_follower/test_leader_follower4]
+
 GASNet AMUDP poll occasionally returns AM_ERR_NOT_INIT (08/20/2008)
 -------------------------------------------------------------------
 [Error matching program output for
@@ -99,6 +108,15 @@ stress/deitz/test_10k_local_coforall_with_remote_update]
 garbage collection doesn't work with multithreaded
 --------------------------------------------------
 [Error matching compiler output for classes/diten/allocateManyObjects]
+
+
+=================
+performance tests
+=================
+
+occasional compilation timeouts (e.g., 08/27/08)
+------------------------------------------------
+[Error: Timed out compilation for users/franzf/v0/chpl/main]
 
 
 =======================
@@ -282,14 +300,6 @@ negative floating point 0.0 not supported
 ========================
 xt-gnu specific failures
 ========================
-
-??? (08/26/08)
---------------
-[Error matching compiler output for
-arrays/deitz/part2/test_array_of_string2]
-[Error matching compiler output for arrays/deitz/part2/test_array_traverse1]
-[Error matching compiler output for arrays/deitz/test_plus_assign_iter]
-[Error matching compiler output for arrays/deitz/test_plus_seq_temps]
 
 ???
 ---
