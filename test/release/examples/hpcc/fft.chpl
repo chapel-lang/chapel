@@ -107,7 +107,7 @@ def dfft(A: [?ADom], W) {
                  2 * wk2.im * wk1.re - wk1.im):elemType;
 
       forall lo in bankStart..#str do
-        butterfly(wk1, wk2, wk3, A[(0..#radix)*str + lo]); // BLC: want strided#
+        butterfly(wk1, wk2, wk3, A[lo.. by str #radix]);
 
       wk1 = W(2*twidIndex+1);
       wk3 = (wk1.re - 2 * wk2.re * wk1.im,
@@ -115,14 +115,14 @@ def dfft(A: [?ADom], W) {
       wk2 *= 1.0i;
 
       forall lo in bankStart+span..#str do
-        butterfly(wk1, wk2, wk3, A[(0..#radix)*str + lo]); // BLC: want strided#
+        butterfly(wk1, wk2, wk3, A[lo.. by str #radix]);
     }
   }
 
   const str = radix**log4(numElements-1);
   if (str*radix == numElements) then
     forall lo in 0..#str do
-      butterfly(1.0, 1.0, 1.0, A[(0..#radix)*str + lo]);
+      butterfly(1.0, 1.0, 1.0, A[lo.. by str #radix]);
   else
     forall lo in 0..#str {
       const a = A(lo),
