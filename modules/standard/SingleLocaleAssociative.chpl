@@ -43,18 +43,21 @@ class SingleLocaleAssociativeDomain: BaseAssociativeDomain {
 
   // BLC: Didn't want to have this, but _wrapDomain requires it
   param rank = 1;
-  
+
+
+  def SingleLocaleAssociativeDomain(type idxType) {
+  }
 
   //
   // Standard Internal Domain Interface
   //
   def buildEmptyDomain() {
-    return new SingleLocaleAssociativeDomain(idxType=idxType);
+    return new SingleLocaleAssociativeDomain(idxType);
   }
 
   def buildArray(type eltType) {
     if (this == nil) then
-      return new SingleLocaleAssociativeArray(eltType, idxType, dom=new SingleLocaleAssociativeDomain(idxType=idxType)); 
+      return new SingleLocaleAssociativeArray(eltType, idxType, dom=new SingleLocaleAssociativeDomain(idxType)); 
     else 
       return new SingleLocaleAssociativeArray(eltType, idxType, dom=this); 
   }
@@ -268,7 +271,7 @@ class SingleLocaleAssociativeDomain: BaseAssociativeDomain {
 class SingleLocaleAssociativeArray: BaseArray {
   type eltType;
   type idxType;
-  var dom : SingleLocaleAssociativeDomain(idxType=idxType);
+  var dom : SingleLocaleAssociativeDomain(idxType);
 
   var data : [dom.tableDom] eltType;
 

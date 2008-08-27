@@ -1,15 +1,57 @@
-def _build_domain_type(dist, param rank : int, type idxType = int,
-                       param stridable = false) type
-  return new _domain(rank, dist.buildDomain(rank, idxType, stridable));
+//
+// Abstract distribution class
+//
 
-def _build_domain_type(dist, type ind) type where !__primitive("isEnumType", ind) && !__primitive("isOpaqueType", ind)
-  return new _domain(1, dist.buildDomain(ind));
+class Distribution {
+  def newDomain(param rank: int, type idxType = int(32), param stridable: bool = false) {
+    halt("arithmetic domains not supported by this distribution");
+    // BOGUS RETURN:
+    return new SingleLocaleArithmeticDomain(rank, idxType, stridable, DefaultDistribution);
+  }
 
-def _build_domain_type(dist, type ind) type where __primitive("isEnumType", ind)
-  return new _domain(1, dist.buildEnumDomain(ind));
+  def newDomain(type idxType) 
+        where !__primitive("isEnumType", idxType)
+           && !__primitive("isOpaqueType", idxType) {
+    halt("associative domains not supported by this distribution");
+    return new SingleLocaleAssociativeDomain(idxType);
+  }
 
-def _build_domain_type(dist, type ind) type where __primitive("isOpaqueType", ind)
-  return new _domain(1, dist.buildOpaqueDomain());
+  def newDomain(type idxType) where __primitive("isEnumType", idxType) {
+    halt("enumerated domains not supported by this distribution");
+    return new SingleLocaleEnumDomain(idxType);
+  }
+
+  def newDomain(type idxType) where __primitive("isOpaqueType", idxType) {
+    halt("opaque domains not supported by this distribution");
+    return new SingleLocaleOpaqueDomain();
+  }
+}
+
+//
+// Arithmetic domain builders:
+//
+def _dist_build_domain(dist: Distribution, param rank: int, type idxType = int(32), param stridable: bool = false) {
+  return new _domain(rank, dist.newDomain(rank, idxType, stridable));
+}
+
+def _dist_build_domain(dist: Distribution, param rank: int, type idxType = int(32), param stridable: bool = false, init) {
+  var D = _dist_build_domain(dist, rank, idxType, stridable);
+  D = init;
+  return D;
+}
+
+//
+// Associative domain builders:
+//
+def _dist_build_domain(dist: Distribution, type idxType) {
+  return new _domain(1, dist.newDomain(idxType));
+}
+
+def _dist_build_domain(dist: Distribution, type idxType, init) {
+  var D = _dist_build_domain(dist, idxType);
+  D = init;
+  return D;
+}
 
 def _build_subdomain_type(dom) type
   return dom.buildSubdomain();
@@ -191,9 +233,6 @@ record _domain {
     var x = _value.buildSubdomain();
     return new _domain(rank, x);
   }
-
-  def buildOpenIntervalUpper()
-    return new _domain(rank, _value.buildOpenIntervalUpper());
 
   def clear() {
     _value.clear();
@@ -544,6 +583,10 @@ class BaseDenseArithmeticDomain : BaseArithmeticDomain {
 
   def clearForIteratableAssign() {
     compilerError("Illegal assignment to an arithmetic domain");
+  }
+
+  def add(x) {
+    compilerError("Cannot add indices to an arithmetic domain");
   }
 }
 

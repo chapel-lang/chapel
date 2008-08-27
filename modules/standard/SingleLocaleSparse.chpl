@@ -12,7 +12,9 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
 
   var indices: [nnzDom] index(rank);
 
-  def initialize() {
+  def SingleLocaleSparseDomain(param rank, type idxType, 
+                               parentDom: BaseArithmeticDomain = nil) {
+    this.parentDom = parentDom;
     nnz = 0;
   }
 
@@ -33,9 +35,9 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
     // why would this ever be nil?  See comment in SingleLocaleArithmetic.chpl,
     // or the commit message of 09/19/07 10:28:04 and then complain to Steve :)
     if this != nil then
-      return new SingleLocaleSparseDomain(rank=rank, idxType=idxType, parentDom=parentDom);
+      return new SingleLocaleSparseDomain(rank, idxType, parentDom);
     else
-      return new SingleLocaleSparseDomain(rank=rank, idxType=idxType);
+      return new SingleLocaleSparseDomain(rank, idxType);
   }
 
   def these() {
@@ -120,7 +122,7 @@ class SingleLocaleSparseArray: BaseArray {
   param rank : int;
   type idxType;
 
-  var dom : SingleLocaleSparseDomain(rank=rank, idxType=idxType);
+  var dom : SingleLocaleSparseDomain(rank, idxType);
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 

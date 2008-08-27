@@ -1065,10 +1065,9 @@ anon_record_type:
 
 distributed_expr: /* not supported in one-locale implementation */
   /* nothing */
-    { $$ = new CallExpr(PRIMITIVE_NEW, new CallExpr(defaultDistribution)); }
+    { $$ = new SymExpr(astr("DefaultDistribution")); }
 | TDISTRIBUTED TLP expr TRP
-  // This should return to $$ = $3 once distributions are implemented
-    { $$ = new CallExpr("distributed_warning", $3); }
+    { $$ = $3; }
 ;
 
 

@@ -1,3 +1,5 @@
+use SingleLocaleArithmetic;
+
 // would like this to be the following, but it breaks about 20 tests:
 //const LocaleSpace: domain(1) distributed(OnePer) = [0..numLocales-1];
 const LocaleSpace: domain(1) = [0..numLocales-1];

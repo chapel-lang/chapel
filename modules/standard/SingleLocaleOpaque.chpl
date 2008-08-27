@@ -1,11 +1,11 @@
 use List;
 class SingleLocaleOpaqueDomain: BaseOpaqueDomain {
-  param rank: int;
+  param rank: int = 1;
   type idxType = _OpaqueIndex;
-  var adomain: SingleLocaleAssociativeDomain(rank=rank, idxType=_OpaqueIndex);
+  var adomain: SingleLocaleAssociativeDomain(idxType=_OpaqueIndex);
 
-  def initialize() {
-    adomain = new SingleLocaleAssociativeDomain(rank=rank, idxType=_OpaqueIndex);
+  def SingleLocaleOpaqueDomain() {
+    adomain = new SingleLocaleAssociativeDomain(_OpaqueIndex);
   }
 
   def create() {
@@ -34,7 +34,7 @@ class SingleLocaleOpaqueDomain: BaseOpaqueDomain {
   }
 
   def buildEmptyDomain()
-    return new SingleLocaleOpaqueDomain(rank=rank, idxType=idxType);
+    return new SingleLocaleOpaqueDomain();
 
   def buildArray(type eltType) {
     var ia = new SingleLocaleOpaqueArray(eltType, idxType, dom=this);

@@ -1,35 +1,48 @@
 use Schedules;
 use List;
 
-class SingleLocaleDistribution {
-  def buildDomain(param rank: int, type idxType, param stridable: bool)
-    return new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                            stridable=stridable, dist=this);
+class DefaultDist: Distribution {
+  var bogus: int;
 
-  def buildEnumDomain(type idxType)
-    return new SingleLocaleEnumDomain(rank=1, idxType=idxType);
+  def newDomain(param rank: int, type idxType = int(32), param stridable: bool = false) {
+    return new SingleLocaleArithmeticDomain(rank, idxType, stridable, this);
+  }
 
-  def buildDomain(type idxType)
-    return new SingleLocaleAssociativeDomain(idxType=idxType);
+  def newDomain(type idxType) where !__primitive("isEnumType", idxType) 
+                                 && !__primitive("isOpaqueType", idxType) {
+    return new SingleLocaleAssociativeDomain(idxType);
+  }
+
+  def newDomain(type idxType) where __primitive("isEnumType", idxType) {
+    return new SingleLocaleEnumDomain(idxType);
+  }
+
+  def newDomain(type idxType) where __primitive("isOpaqueType", idxType) {
+    return new SingleLocaleOpaqueDomain();
+  }
 
   def buildSparseDomain(param rank:int, type idxType,
                         parentDom: BaseArithmeticDomain)
-    return new SingleLocaleSparseDomain(rank=rank, idxType=idxType,
-                                        parentDom=parentDom);
-
-  def buildOpaqueDomain()
-    return new SingleLocaleOpaqueDomain(rank=1);
+    return new SingleLocaleSparseDomain(rank, idxType, parentDom);
 }
 
-var Block = new SingleLocaleDistribution();
+
+var DefaultDistribution: DefaultDist = new DefaultDist();
+var Block = new DefaultDist();
+
 
 class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
   param rank : int;
   type idxType;
   param stridable: bool;
-  var dist: SingleLocaleDistribution;
+  var dist: DefaultDist;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
+  def SingleLocaleArithmeticDomain(param rank, type idxType, param stridable,
+                                   dist = DefaultDistribution) {
+    this.dist = dist;
+  }
+  
   def getIndices() return ranges;
 
   def setIndices(x) {
@@ -38,17 +51,6 @@ class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
     if ranges(1).eltType != x(1).eltType then
       compilerError("index type mismatch in domain assignment");
     ranges = x;
-  }
-
-  def buildOpenIntervalUpper() {
-    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                             stridable=stridable, dist=dist);
-    for param i in 1..rank {
-      if ranges(i)._stride != 1 then
-        halt("syntax [domain-specification) requires a stride of one");
-      x.ranges(i) = ranges(i)._low..ranges(i)._high-1;
-    }
-    return x;
   }
 
   def these_help(param d: int) {
@@ -160,25 +162,20 @@ class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
   }
 
   def buildSubdomain()
-    return new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                            stridable=stridable, dist=dist);
+    return new SingleLocaleArithmeticDomain(rank, idxType, stridable, dist);
 
   def buildEmptyDomain() {
     if this != nil then
-      return new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                              stridable=stridable, dist=dist);
+      return new SingleLocaleArithmeticDomain(rank, idxType, stridable, dist);
     else
       // special case for array fields in classes; see
       // arrays/deitz/part2/test_array_in_class2
-      return new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                              stridable=stridable,
-                                              dist=new SingleLocaleDistribution());
+      return new SingleLocaleArithmeticDomain(rank, idxType, stridable, DefaultDistribution);
 
   }
 
   def slice(param stridable: bool, ranges) {
-    var d = new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                             stridable=stridable, dist=dist);
+    var d = new SingleLocaleArithmeticDomain(rank, idxType, stridable, dist);
     for param i in 1..rank do
       d.ranges(i) = dim(i)(ranges(i));
     return d;
@@ -188,8 +185,7 @@ class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
-    var d = new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                             stridable=stridable, dist=dist);
+    var d = new SingleLocaleArithmeticDomain(rank, idxType, stridable, dist);
     var i = 1;
     for param j in 1..args.size {
       if isRange(args(j)) {
@@ -201,16 +197,14 @@ class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
   }
 
   def translate(off: rank*int) {
-    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=int,
-                                             stridable=stridable, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank, int, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).translate(off(i));
     return x;
   }
 
   def interior(off: rank*int) {
-    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=int,
-                                             stridable=stridable, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank, int, stridable, dist);
     for i in 1..rank do {
       if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
           (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
@@ -222,16 +216,14 @@ class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
   }
 
   def exterior(off: rank*int) {
-    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=int,
-                                             stridable=stridable, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank, int, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).exterior(off(i));
     return x;
   }
 
   def expand(off: rank*int) {
-    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=int,
-                                             stridable=stridable, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank, int, stridable, dist);
     for i in 1..rank do {
       x.ranges(i) = ranges(i).expand(off(i));
       if (x.ranges(i)._low > x.ranges(i)._high) {
@@ -242,8 +234,7 @@ class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
   }  
 
   def expand(off: int) {
-    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=int,
-                                             stridable=stridable, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank, int, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i).expand(off);
     return x;
@@ -260,16 +251,14 @@ class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
   }
 
   def strideBy(str : rank*int) {
-    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                             stridable=true, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank, idxType, true, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str(i);
     return x;
   }
 
   def strideBy(str : int) {
-    var x = new SingleLocaleArithmeticDomain(rank=rank, idxType=idxType,
-                                             stridable=true, dist=dist);
+    var x = new SingleLocaleArithmeticDomain(rank, idxType, true, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str;
     return x;
