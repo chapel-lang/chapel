@@ -279,7 +279,7 @@ buildIterator2Leader(IteratorInfo* ii) {
     if (iteratorFormal->type != leaderFormal->type) {
       USR_FATAL(ii->iterator, "type of argument %d in iterator '%s' does not match leader variant", i, ii->iterator->name);
     }
-    VarSymbol* tmp = new VarSymbol("_tmp", iteratorFormal->type);
+    VarSymbol* tmp = new VarSymbol("_tmp", ii->icType->getField(j+1)->type);
     tmp->addFlag(FLAG_TEMP);
     fn->insertAtTail(new DefExpr(tmp));
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, ii->icType->getField(j+1))));
@@ -331,7 +331,7 @@ buildIterator2Follower(IteratorInfo* ii) {
     if (iteratorFormal->type != followerFormal->type) {
       USR_FATAL(ii->iterator, "type of argument %d in iterator '%s' does not match follower variant", i, ii->iterator->name);
     }
-    VarSymbol* tmp = new VarSymbol("_tmp", iteratorFormal->type);
+    VarSymbol* tmp = new VarSymbol("_tmp", ii->icType->getField(j+1)->type);
     tmp->addFlag(FLAG_TEMP);
     fn->insertAtTail(new DefExpr(tmp));
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, ii->icType->getField(j+1))));
