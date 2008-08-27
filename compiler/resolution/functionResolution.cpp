@@ -3749,14 +3749,37 @@ resolve() {
 
   forv_Vec(TypeSymbol, ts, gTypes) {
     if (ts->type->destructor) {
-      INT_ASSERT(ts->type->dispatchParents.n <= 1);
-      if (ts->type->dispatchParents.n == 1) {
-        if (FnSymbol* parentDestructor = ts->type->dispatchParents.v[0]->destructor) {
-          VarSymbol* tmp = new VarSymbol("_tmp", ts->type->dispatchParents.v[0]);
+      ClassType* ct = toClassType(ts->type);
+      INT_ASSERT(ct);
+
+      //
+      // insert calls to destructors for all 'value' fields
+      //
+      for_fields_backward(field, ct) {
+        if (field->type->destructor) {
+          ClassType* fct = toClassType(field->type);
+          INT_ASSERT(fct);
+          if (fct->classTag != CLASS_CLASS) {
+            VarSymbol* tmp = new VarSymbol("_tmp", fct->refType);
+            tmp->addFlag(FLAG_TEMP);
+            ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+            ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, ct->destructor->_this, field)));
+            ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
+          }
+        }
+      }
+
+      //
+      // insert call to parent destructor
+      //
+      INT_ASSERT(ct->dispatchParents.n <= 1);
+      if (ct->dispatchParents.n == 1) {
+        if (FnSymbol* parentDestructor = ct->dispatchParents.v[0]->destructor) {
+          VarSymbol* tmp = new VarSymbol("_tmp", ct->dispatchParents.v[0]);
           tmp->addFlag(FLAG_TEMP);
-          ts->type->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-          ts->type->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_CAST, ts->type->dispatchParents.v[0]->symbol, ts->type->destructor->_this)));
-          ts->type->destructor->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor, tmp));
+          ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+          ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_CAST, ct->dispatchParents.v[0]->symbol, ct->destructor->_this)));
+          ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor, tmp));
         }
       }
     }
