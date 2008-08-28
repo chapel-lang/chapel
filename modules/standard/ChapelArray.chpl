@@ -344,9 +344,6 @@ def =(a: _domain, b) {  // b is iteratable
   return a;
 }
 
-def _init(a: _domain)
-  return a.buildEmptyDomain();
-
 def _copy(a: _domain) {
   var b: a.buildEmptyDomain().type;
   b.setIndices(a.getIndices());
@@ -483,10 +480,6 @@ def _copy(a: _array) {
   var b : [a._dom] a.eltType;
   b = a;
   return b;
-}
-
-def _init(a: _array) {
-  return a._dom.buildArray(a.eltType);
 }
 
 def _init(type t) where t: _array {

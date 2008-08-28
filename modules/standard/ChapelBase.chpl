@@ -459,18 +459,6 @@ pragma "inline" def _statementLevelSymbol(param a) param { return a; }
 pragma "inline" def _statementLevelSymbol(type a) type { return a; }
 
 //
-// _init on primitive types and classes
-//
-pragma "inline" def _init(x: bool) return false;
-pragma "inline" def _init(x: int(?w)) return 0:int(w);
-pragma "inline" def _init(x: uint(?w)) return 0:uint(w);
-pragma "inline" def _init(x: real(?w)) return 0.0:real(w);
-pragma "inline" def _init(x: imag(?w)) return _r2i(0.0:real(w));
-pragma "inline" def _init(x: complex(?w)) return (0.0:real(w/2), 0.0:real(w/2)):complex;
-pragma "inline" def _init(x: string) return "";
-pragma "inline" def _init(x) return nil:x.type;
-
-//
 // _copy on primitive types and classes
 //
 pragma "inline" def _copy(a) return a;
@@ -618,10 +606,7 @@ class _ref {
 }
 
 pragma "inline" pragma "ref"
-def _init(r: _ref) return _init(__primitive("get ref", r));
-pragma "inline" pragma "ref"
 def _copy(r: _ref) return _copy(__primitive("get ref", r));
-pragma "inline" pragma "ref"
 
 // Returns whether an object of type t occupies a 64-bit word on Cray's MTA/XMT
 // (The definition of this function should be target dependent.  This would avoid
@@ -662,10 +647,6 @@ class _syncvar {
 
 def _copy(sv: sync) {
   return sv.readFE();
-}
-
-def _init(sv: sync) {
-  return _syncvar(sv.value.type); 
 }
 
 // The operations are:
@@ -822,11 +803,6 @@ class _singlevar {
 def _copy(sv: single) {
   return sv.readFF();
 }
-
-def _init(sv: single) {
-  return _singlevar(sv.value.type); 
-}
-
 
 // Wait for full. Set and signal full.
 def _singlevar.readFF() {
