@@ -4,50 +4,45 @@
 
 class Distribution {
   def newDomain(param rank: int, type idxType = int(32), param stridable: bool = false) {
-    halt("arithmetic domains not supported by this distribution");
-    // BOGUS RETURN:
-    return new SingleLocaleArithmeticDomain(rank, idxType, stridable, DefaultDistribution);
+    compilerError("arithmetic domains not supported by this distribution");
   }
 
   def newDomain(type idxType) 
         where !__primitive("isEnumType", idxType)
            && !__primitive("isOpaqueType", idxType) {
-    halt("associative domains not supported by this distribution");
-    return new SingleLocaleAssociativeDomain(idxType);
+    compilerError("associative domains not supported by this distribution");
   }
 
   def newDomain(type idxType) where __primitive("isEnumType", idxType) {
-    halt("enumerated domains not supported by this distribution");
-    return new SingleLocaleEnumDomain(idxType);
+    compilerError("enumerated domains not supported by this distribution");
   }
 
   def newDomain(type idxType) where __primitive("isOpaqueType", idxType) {
-    halt("opaque domains not supported by this distribution");
-    return new SingleLocaleOpaqueDomain();
+    compilerError("opaque domains not supported by this distribution");
   }
 }
 
 //
 // Arithmetic domain builders:
 //
-def _dist_build_domain(dist: Distribution, param rank: int, type idxType = int(32), param stridable: bool = false) {
+def _dist_build_domain(dist, param rank: int, type idxType = int(32), param stridable: bool = false) {
   return new _domain(rank, dist.newDomain(rank, idxType, stridable));
 }
 
-def _dist_build_domain(dist: Distribution, param rank: int, type idxType = int(32), param stridable: bool = false, init) {
+def _dist_build_domain(dist, param rank: int, type idxType = int(32), param stridable: bool = false, init) {
   var D = _dist_build_domain(dist, rank, idxType, stridable);
   D = init;
   return D;
 }
 
 //
-// Associative domain builders:
+// Associative/opaque/enum domain builders:
 //
-def _dist_build_domain(dist: Distribution, type idxType) {
+def _dist_build_domain(dist, type idxType) {
   return new _domain(1, dist.newDomain(idxType));
 }
 
-def _dist_build_domain(dist: Distribution, type idxType, init) {
+def _dist_build_domain(dist, type idxType, init) {
   var D = _dist_build_domain(dist, idxType);
   D = init;
   return D;
@@ -658,14 +653,6 @@ def reshape(A: [], D: domain) {
   for (i,a) in (D,A) do
     B(i) = a;
   return B;
-}
-
-// This should go away once distributions are implemented
-def distributed_warning(d) {
-  if (numLocales > 1) {
-    __primitive("chpl_warning", "'distributed' domains/arrays are not yet distributed across multiple locales");
-  }
-  return d;
 }
 
 //

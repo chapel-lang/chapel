@@ -1,9 +1,10 @@
 use Schedules;
 use List;
 
-class DefaultDist: Distribution {
-  var bogus: int;
+// This should go away once distributions are implemented
 
+
+class DefaultDist: Distribution {
   def newDomain(param rank: int, type idxType = int(32), param stridable: bool = false) {
     return new SingleLocaleArithmeticDomain(rank, idxType, stridable, this);
   }
@@ -22,12 +23,13 @@ class DefaultDist: Distribution {
   }
 
   def buildSparseDomain(param rank:int, type idxType,
-                        parentDom: BaseArithmeticDomain)
+                        parentDom: BaseArithmeticDomain) {
     return new SingleLocaleSparseDomain(rank, idxType, parentDom);
+  }
 }
 
 
-var DefaultDistribution: DefaultDist = new DefaultDist();
+var DefaultDistribution = new DefaultDist();
 var Block = new DefaultDist();
 
 

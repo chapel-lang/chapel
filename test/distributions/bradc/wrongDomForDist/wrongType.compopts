@@ -1,0 +1,2 @@
+DummyArithDist.chpl --main-module wrongType
+
