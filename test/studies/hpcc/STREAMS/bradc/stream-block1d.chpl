@@ -24,7 +24,7 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const ProblemDist = new Block1DDist(bbox=[1..m], targetLocs=Locales);
+  const ProblemDist = new Block1DDist(bbox=[1..m], targetLocales=Locales);
 
   const ProblemSpace: domain(1, int(64)) distributed(ProblemDist) = [1..m];
 
@@ -62,7 +62,8 @@ def printConfiguration() {
 
 def initVectors(B, C) {
   // TODO: should write a fillRandom() implementation that does this
-  coforall loc in B.dom.dist.targetLocs {
+  /* BLC: Can't get this to compile
+  coforall loc in B.domain.dist.targetLocs {
     on loc {
       var randlist = new RandomStream(seed);
       // TODO: Need to clean this up to use more normal method names
@@ -72,6 +73,7 @@ def initVectors(B, C) {
       randlist.fillRandom(C.locArr(loc).myElems);
     }
   }
+  */
 
   if (printArrays) {
     writeln("B is: ", B, "\n");
@@ -83,7 +85,7 @@ def initVectors(B, C) {
 def verifyResults(A, B, C) {
   if (printArrays) then writeln("A is: ", A, "\n");
 
-  const infNorm = max reduce [i in A.dom] abs(A(i) - (B(i) + alpha * C(i)));
+  const infNorm = max reduce [i in A.domain] abs(A(i) - (B(i) + alpha * C(i)));
 
   return (infNorm <= epsilon);
 }
