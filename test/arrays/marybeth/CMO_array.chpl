@@ -1,10 +1,10 @@
-class CMODist {
-  def buildDomain(param rank: int, type dimensional_index_type, param stridable: bool) {
+class CMODist : Distribution {
+  def newDomain(param rank: int, type dimensional_index_type, param stridable: bool) {
     return new CMODomain(rank=rank, idxType=dimensional_index_type, stridable=stridable);
   }
 }
 
-class CMODomain: BaseDomain {
+class CMODomain: BaseDenseArithmeticDomain {
   param rank : int;
   type idxType;
   param stridable: bool;
