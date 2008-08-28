@@ -15,6 +15,14 @@
 linux and general regressions
 =============================
 
+user-defined distributions temporarily disabled (08/28/08)
+----------------------------------------------------------
+[Error matching compiler output for arrays/marybeth/CMO_array]
+
+disabled warning about multilocale distributions not being implemented
+----------------------------------------------------------------------
+[Error matching program output for multilocale/bradc/distribWarning]
+
 precision issue, due to user code changing (07/01/08)
 -----------------------------------------------------
 [Error matching program output for
@@ -319,12 +327,12 @@ compilation timing out (started 4/19/08)
 cygwin-specific failures
 ========================
 
-occasional process terminations due to pthreads errors (e.g., 08/25/08)
------------------------------------------------------------------------
+pthread_cond_init failed errors (e.g., 08/28/08)
+------------------------------------------------
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample1]
 [Error matching program output for studies/madness/common/test_likepy]
-
-???
----
+[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for npb/cg/bradc/cg-sparse]
 [Error matching program output for performance/compiler/bradc/cg-sparse-timecomp]
 [Error matching program output for studies/sudoku/dinan/sudoku]
