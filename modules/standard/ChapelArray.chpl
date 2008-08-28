@@ -7,7 +7,7 @@ class Distribution {
     compilerError("arithmetic domains not supported by this distribution");
   }
 
-  def newDomain(type idxType) 
+  def newDomain(type idxType)
         where !__primitive("isEnumType", idxType)
            && !__primitive("isOpaqueType", idxType) {
     compilerError("associative domains not supported by this distribution");
@@ -61,9 +61,6 @@ def _build_opaque_domain_type(dist) type
   return new _domain(1, dist.buildOpaqueDomain());
 
 def _build_array_type(dom, type eltType) type
-  return dom.buildArray(eltType);
-
-def _build_array(dom, type eltType)
   return dom.buildArray(eltType);
 
 def _build_domain(x: _domain)
