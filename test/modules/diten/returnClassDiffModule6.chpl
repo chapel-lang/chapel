@@ -1,9 +1,9 @@
 module M1 {
   var a = 1;
   class C {
-    var b = 2;
+    var myvar = 2;
     def foo() {
-      return a+b;
+      return a+myvar;
     }
   }
 }
@@ -11,7 +11,7 @@ module M1 {
 module M2 {
   def main {
     var c = bar();
-    writeln(c.b);
+    writeln(c.myvar);
   }
   def bar() {
     use M1;
