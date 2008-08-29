@@ -360,6 +360,14 @@ void DefExpr::codegen(FILE* outfile) {
 static void
 codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
   ClassType* ct = toClassType(base->typeInfo());
+  if (!ct) {
+    SymExpr* se = toSymExpr(base);
+    if (se && se->var == gNil) {
+      INT_FATAL("Trying to codegen a member of nil");
+    } else {
+      INT_FATAL("Got non-class type in codegen_member");
+    }
+  }
   if (SymExpr* mem = toSymExpr(member)) {
     if (mem->var->hasFlag(FLAG_SUPER_CLASS)) {
       fprintf(outfile, "&(");
