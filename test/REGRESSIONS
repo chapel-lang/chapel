@@ -15,14 +15,6 @@
 linux and general regressions
 =============================
 
-user-defined distributions temporarily disabled (08/28/08)
-----------------------------------------------------------
-[Error matching compiler output for arrays/marybeth/CMO_array]
-
-disabled warning about multilocale distributions not being implemented
-----------------------------------------------------------------------
-[Error matching program output for multilocale/bradc/distribWarning]
-
 precision issue, due to user code changing (07/01/08)
 -----------------------------------------------------
 [Error matching program output for
@@ -56,6 +48,10 @@ failing nondeterministically (e.g., 04/04/08)
 ===========================
 gasnet-specific regressions
 ===========================
+
+disabled warning about multilocale distributions not being implemented
+----------------------------------------------------------------------
+[Error matching program output for multilocale/bradc/distribWarning]
 
 incompatible types to chpl_free
 -------------------------------
