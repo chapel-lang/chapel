@@ -44,6 +44,12 @@ class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
                                    dist = DefaultDistribution) {
     this.dist = dist;
   }
+
+  def clear() {
+    var emptyRange: range(idxType, BoundedRangeType.bounded, stridable);
+    for param i in 1..rank do
+      ranges(i) = emptyRange;
+  }
   
   def getIndices() return ranges;
 

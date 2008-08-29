@@ -563,7 +563,7 @@ class BaseArithmeticDomain : BaseDomain {
 
 class BaseDenseArithmeticDomain : BaseArithmeticDomain {
   def clear() {
-    compilerError("Cannot clear an arithmetic domain");
+    halt("clear not implemented for this distribution");
   }
 
   def clearForIteratableAssign() {
