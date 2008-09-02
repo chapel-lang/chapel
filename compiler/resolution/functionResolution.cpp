@@ -2266,7 +2266,7 @@ preFold(Expr* expr) {
       Type* type = call->get(1)->typeInfo();
       if (type ->symbol->hasFlag(FLAG_REF))
         type = getValueType(type);
-      if (type->symbol->hasFlag(FLAG_ARRAY)) {
+      if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         result = new CallExpr("_array_to_runtime_type", call->get(1)->remove());
         call->replace(result);
       }
@@ -2609,7 +2609,7 @@ postFold(Expr* expr) {
         fn->retTag = RET_TYPE;
       if (fn->retTag == RET_TYPE) {
         Symbol* ret = fn->getReturnSymbol();
-        if (!ret->type->symbol->hasFlag(FLAG_ARRAY)) {
+        if (!ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           result = new SymExpr(ret->type->symbol);
           expr->replace(result);
         }
@@ -3603,7 +3603,7 @@ resolve() {
   forv_Vec(TypeSymbol, ts, gTypes) {
     if (ts->defPoint &&
         ts->defPoint->parentSymbol &&
-        ts->hasFlag(FLAG_ARRAY) &&
+        ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
         !ts->hasFlag(FLAG_GENERIC)) {
       VarSymbol* tmp = new VarSymbol("tmp", ts->type);
       ts->type->defaultConstructor->insertAtTail(new DefExpr(tmp));
@@ -3623,7 +3623,7 @@ resolve() {
   forv_Vec(CallExpr, init, inits) {
     if (init->parentSymbol) {
       Type* type = init->get(1)->typeInfo();
-      if (!type->symbol->hasFlag(FLAG_ARRAY)) {
+      if (!type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         if (type->symbol->hasFlag(FLAG_REF))
           type = getValueType(type);
         if (type->defaultValue) {
@@ -3792,7 +3792,7 @@ buildArrayTypeInfo(FnSymbol* fn) {
   ct->fields.insertAtTail(new DefExpr(new VarSymbol("elt", fn->getFormal(2)->type)));
   ct->getField("elt")->addFlag(FLAG_TYPE_VARIABLE);
   theProgram->block->insertAtTail(new DefExpr(ts));
-  ct->symbol->addFlag(FLAG_ARRAY_TYPE_INFO);
+  ct->symbol->addFlag(FLAG_RUNTIME_TYPE_VALUE);
   return ct;
 }
 
@@ -3942,7 +3942,7 @@ pruneResolvedTree() {
           baseType = getValueType(baseType);
         const char* memberName = get_string(call->get(2));
         Symbol* sym = baseType->getField(memberName);
-        if ((sym->hasFlag(FLAG_TYPE_VARIABLE) && !sym->type->symbol->hasFlag(FLAG_ARRAY)) ||
+        if ((sym->hasFlag(FLAG_TYPE_VARIABLE) && !sym->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) ||
             !strcmp(sym->name, "_promotionType") ||
             sym->isParameter())
           call->getStmtExpr()->remove();
@@ -3960,7 +3960,7 @@ pruneResolvedTree() {
           if (formal->type == dtMethodToken ||
               formal->type == dtLeaderToken ||
               (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-               !formal->type->symbol->hasFlag(FLAG_ARRAY)))
+               !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)))
             call->get(i)->remove();
         }
       }
@@ -3981,14 +3981,15 @@ pruneResolvedTree() {
 
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
-      if (!strcmp(fn->name, "_build_array_type")) {
-        INT_ASSERT(fn->retType->symbol->hasFlag(FLAG_ARRAY));
+      if (fn->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+        INT_ASSERT(fn->retType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
         Type* runtimeType = buildArrayTypeInfo(fn);
         runtimeTypeMap.put(fn->retType, runtimeType);
 
         FnSymbol* buildArrayFn = fn->copy();
-        buildArrayFn->name = astr("_build_array");
+        buildArrayFn->name = astr("_buildValueFromRuntimeType");
         buildArrayFn->cname = buildArrayFn->name;
+        buildArrayFn->removeFlag(FLAG_HAS_RUNTIME_TYPE);
         buildArrayFn->getReturnSymbol()->removeFlag(FLAG_TYPE_VARIABLE);
         buildArrayFn->retTag = RET_VALUE;
         fn->defPoint->insertBefore(new DefExpr(buildArrayFn));
@@ -4002,7 +4003,7 @@ pruneResolvedTree() {
         Symbol* domField = var->type->getField("dom");
         block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, domField, fn->getFormal(1)));
         Symbol* eltField = var->type->getField("elt");
-        if (eltField->type->symbol->hasFlag(FLAG_ARRAY))
+        if (eltField->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
           block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, eltField, fn->getFormal(2)));
         block->insertAtTail(new CallExpr(PRIMITIVE_RETURN, var));
         fn->body->replace(block);
@@ -4025,7 +4026,7 @@ pruneResolvedTree() {
             formal->type == dtLeaderToken)
           formal->defPoint->remove();
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-            !formal->type->symbol->hasFlag(FLAG_ARRAY)) {
+            !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           formal->defPoint->remove();
           VarSymbol* tmp = new VarSymbol("_removed_formal_tmp", formal->type);
           tmp->addFlag(FLAG_TEMP);
@@ -4044,9 +4045,9 @@ pruneResolvedTree() {
           }
         }
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-            formal->type->symbol->hasFlag(FLAG_ARRAY)) {
+            formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           FnSymbol* fn = toRuntimeTypeMap.get(formal->type);
-          Type* rt = (fn->retType->symbol->hasFlag(FLAG_ARRAY_TYPE_INFO)) ? fn->retType : runtimeTypeMap.get(fn->retType);
+          Type* rt = (fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ? fn->retType : runtimeTypeMap.get(fn->retType);
           INT_ASSERT(rt);
           formal->type =  rt;
           formal->removeFlag(FLAG_TYPE_VARIABLE);
@@ -4056,9 +4057,9 @@ pruneResolvedTree() {
         fn->where->remove();
       if (fn->retTag == RET_TYPE) {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
-        if (ret && ret->type->symbol->hasFlag(FLAG_ARRAY)) {
+        if (ret && ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           FnSymbol* rtfn = toRuntimeTypeMap.get(ret->type);
-          Type* rt = (rtfn->retType->symbol->hasFlag(FLAG_ARRAY_TYPE_INFO)) ? rtfn->retType : runtimeTypeMap.get(rtfn->retType);
+          Type* rt = (rtfn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ? rtfn->retType : runtimeTypeMap.get(rtfn->retType);
           INT_ASSERT(rt);
           ret->type = rt;
           fn->retType = ret->type;
@@ -4075,7 +4076,7 @@ pruneResolvedTree() {
     if (DefExpr* def = toDefExpr(ast)) {
       if (isVarSymbol(def->sym) &&
           def->sym->hasFlag(FLAG_TYPE_VARIABLE) &&
-          def->sym->type->symbol->hasFlag(FLAG_ARRAY)) {
+          def->sym->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         Type* rt = runtimeTypeMap.get(def->sym->type);
         INT_ASSERT(rt);
         def->sym->type = rt;
@@ -4089,7 +4090,7 @@ pruneResolvedTree() {
       if (call->parentSymbol && call->isPrimitive(PRIMITIVE_INIT)) {
         SymExpr* se = toSymExpr(call->get(1));
         Type* rt = se->var->type;
-        if (rt->symbol->hasFlag(FLAG_ARRAY_TYPE_INFO)) {
+        if (rt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
           SET_LINENO(call);
           FnSymbol* buildArrayFn = buildArrayTypeMap.get(rt);
           INT_ASSERT(buildArrayFn);
@@ -4108,7 +4109,7 @@ pruneResolvedTree() {
             buildArrayCall->insertAtTail(elt);
           }
           call->replace(buildArrayCall);
-        } else if (rt->symbol->hasFlag(FLAG_ARRAY)) {
+        } else if (rt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           //
           // This is probably related to a comment that used to handle
           // this case elsewhere:

@@ -26,7 +26,8 @@ initFlags() {
   defineFlag(FLAG_ALLOW_REF, "allow ref");
   defineFlag(FLAG_ARRAY, "array");
   defineFlag(FLAG_ARRAY_ALIAS, "array alias");
-  defineFlag(FLAG_ARRAY_TYPE_INFO, "array type info");
+  defineFlag(FLAG_HAS_RUNTIME_TYPE, "has runtime type");
+  defineFlag(FLAG_RUNTIME_TYPE_VALUE, "runtime type value");
   defineFlag(FLAG_AUTO_II, "auto ii");
   defineFlag(FLAG_BASE_ARRAY, "base array");
   defineFlag(FLAG_BEGIN, "begin");

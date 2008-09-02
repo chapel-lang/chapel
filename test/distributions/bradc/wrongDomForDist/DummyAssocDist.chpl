@@ -1,5 +1,5 @@
 class MyDist : Distribution {
-  def newDomain(type idxType) {
+  def newAssociativeDomain(type idxType) {
     return new MyDom();
   }
 }

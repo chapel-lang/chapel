@@ -1,5 +1,5 @@
 class CMODist : Distribution {
-  def newDomain(param rank: int, type dimensional_index_type, param stridable: bool) {
+  def newArithmeticDomain(param rank: int, type dimensional_index_type, param stridable: bool) {
     return new CMODomain(rank=rank, idxType=dimensional_index_type, stridable=stridable);
   }
 }

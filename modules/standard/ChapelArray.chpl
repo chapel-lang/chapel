@@ -3,21 +3,19 @@
 //
 
 class Distribution {
-  def newDomain(param rank: int, type idxType = int(32), param stridable: bool = false) {
+  def newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
     compilerError("arithmetic domains not supported by this distribution");
   }
 
-  def newDomain(type idxType)
-        where !__primitive("isEnumType", idxType)
-           && !__primitive("isOpaqueType", idxType) {
+  def newAssociativeDomain(type idxType) {
     compilerError("associative domains not supported by this distribution");
   }
 
-  def newDomain(type idxType) where __primitive("isEnumType", idxType) {
+  def newEnumeratedDomain(type idxType) {
     compilerError("enumerated domains not supported by this distribution");
   }
 
-  def newDomain(type idxType) where __primitive("isOpaqueType", idxType) {
+  def newOpaqueDomain(type idxType) {
     compilerError("opaque domains not supported by this distribution");
   }
 }
@@ -26,7 +24,7 @@ class Distribution {
 // Arithmetic domain builders:
 //
 def _dist_build_domain(dist, param rank: int, type idxType = int(32), param stridable: bool = false) {
-  return new _domain(rank, dist.newDomain(rank, idxType, stridable));
+  return new _domain(rank, dist.newArithmeticDomain(rank, idxType, stridable));
 }
 
 def _dist_build_domain(dist, param rank: int, type idxType = int(32), param stridable: bool = false, init) {
@@ -38,8 +36,16 @@ def _dist_build_domain(dist, param rank: int, type idxType = int(32), param stri
 //
 // Associative/opaque/enum domain builders:
 //
-def _dist_build_domain(dist, type idxType) {
-  return new _domain(1, dist.newDomain(idxType));
+def _dist_build_domain(dist, type idxType) where !__primitive("isEnumType", idxType) && !__primitive("isOpaqueType", idxType) {
+  return new _domain(1, dist.newAssociativeDomain(idxType));
+}
+
+def _dist_build_domain(dist, type idxType) where __primitive("isEnumType", idxType) {
+  return new _domain(1, dist.newEnumeratedDomain(idxType));
+}
+
+def _dist_build_domain(dist, type idxType) where __primitive("isOpaqueType", idxType) {
+  return new _domain(1, dist.newOpaqueDomain(idxType));
 }
 
 def _dist_build_domain(dist, type idxType, init) {
@@ -60,6 +66,7 @@ def _build_sparse_subdomain_type(dist, parentDom)
 def _build_opaque_domain_type(dist) type
   return new _domain(1, dist.buildOpaqueDomain());
 
+pragma "has runtime type"
 def _build_array_type(dom, type eltType) type
   return dom.buildArray(eltType);
 
@@ -365,6 +372,7 @@ def by(a: _domain, b) {
 
 // this is a wrapper class for all arrays
 pragma "array"
+pragma "has runtime type"
 record _array {
   type idxType;
   type eltType;

@@ -31,7 +31,8 @@ enum Flag {
   FLAG_ALLOW_REF,
   FLAG_ARRAY,
   FLAG_ARRAY_ALIAS, // array alias declared via => syntax
-  FLAG_ARRAY_TYPE_INFO,
+  FLAG_HAS_RUNTIME_TYPE, // type that has an associated runtime type
+  FLAG_RUNTIME_TYPE_VALUE, // associated runtime type (value)
   FLAG_AUTO_II,
   FLAG_BASE_ARRAY,
   FLAG_BEGIN,

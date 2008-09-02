@@ -1,5 +1,5 @@
 class MyDist : Distribution {
-  def newDomain(param rank: int, type idxType = int(32), param stridable: bool = false) {
+  def newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
     return new MyDom();
   }
 }

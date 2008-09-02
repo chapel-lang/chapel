@@ -5,20 +5,19 @@ use List;
 
 
 class DefaultDist: Distribution {
-  def newDomain(param rank: int, type idxType = int(32), param stridable: bool = false) {
+  def newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
     return new SingleLocaleArithmeticDomain(rank, idxType, stridable, this);
   }
 
-  def newDomain(type idxType) where !__primitive("isEnumType", idxType) 
-                                 && !__primitive("isOpaqueType", idxType) {
+  def newAssociativeDomain(type idxType) {
     return new SingleLocaleAssociativeDomain(idxType);
   }
 
-  def newDomain(type idxType) where __primitive("isEnumType", idxType) {
+  def newEnumeratedDomain(type idxType) {
     return new SingleLocaleEnumDomain(idxType);
   }
 
-  def newDomain(type idxType) where __primitive("isOpaqueType", idxType) {
+  def newOpaqueDomain(type idxType) {
     return new SingleLocaleOpaqueDomain();
   }
 
