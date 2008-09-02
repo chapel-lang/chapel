@@ -13,7 +13,7 @@ COMM_OBJS = \
 
 COMM_LAUNCHER_OBJS = \
 	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
-
+ifeq ($(MAKE_LAUNCHER), 0)
 include $(GASNET_INSTALL_DIR)/include/$(CHPL_GASNET_CONDUIT)-conduit/$(CHPL_GASNET_CONDUIT)-par.mak
 
 # 
@@ -39,6 +39,7 @@ include $(GASNET_INSTALL_DIR)/include/$(CHPL_GASNET_CONDUIT)-conduit/$(CHPL_GASN
 # compiled -O3 is linked to GASNet compiled with debugging enabled
 #
 RUNTIME_CFLAGS += $(GASNET_CFLAGS) -I$(GASNET_INSTALL_DIR)/include -I$(GASNET_INSTALL_DIR)/include/$(CHPL_GASNET_CONDUIT)-conduit $(SUPPORT_SETENV_CFLAGS) -O0
+endif
 
 ifdef CHPL_DEVELOPER
 RUNTIME_CFLAGS += -Wno-strict-prototypes -Wno-missing-prototypes

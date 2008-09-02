@@ -11,7 +11,7 @@ if ($preset_substrate eq "") {
     $platform = `$utildirname/platform.pl --target`; chomp($platform);
 
     if ($comm eq "gasnet") {
-        if ($platform eq "cray-xt") {
+        if ($platform eq "xt-cnl") {
             $substrate = "portals";
         } else {
             $substrate = "udp";
