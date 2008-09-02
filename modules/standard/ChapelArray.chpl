@@ -63,6 +63,9 @@ def _build_opaque_domain_type(dist) type
 def _build_array_type(dom, type eltType) type
   return dom.buildArray(eltType);
 
+def _array_to_runtime_type(arr: _array) type
+  return _build_array_type(arr.domain, arr.eltType);
+
 def _build_domain(x: _domain)
   return x;
 
@@ -480,10 +483,6 @@ def _copy(a: _array) {
   var b : [a._dom] a.eltType;
   b = a;
   return b;
-}
-
-def _init(type t) where t: _array {
-  return __primitive("build_array", t);
 }
 
 def _array.writeThis(f: Writer) {

@@ -30,11 +30,10 @@ static Vec<FnSymbol*> resolvedFns;
 static Vec<FnSymbol*> resolvedFormals;
 Vec<CallExpr*> callStack;
 
-static Map<CallExpr*,FnSymbol*> buildArrayMap;
-static Map<Type*,FnSymbol*> wrapDomainMap;
-
 static Map<FnSymbol*,Vec<FnSymbol*>*> ddf; // map of functions to
                                            // virtual children
+
+static Map<Type*,FnSymbol*> toRuntimeTypeMap;
 
 static Type* resolve_type_expr(Expr* expr);
 
@@ -2251,10 +2250,7 @@ preFold(Expr* expr) {
       Type* type = call->get(1)->typeInfo();
       if (type ->symbol->hasFlag(FLAG_REF))
         type = getValueType(type);
-      if (type->symbol->hasFlag(FLAG_ARRAY)) {
-        result = new CallExpr("_init", call->get(1)->remove());
-        call->replace(result);
-      } else if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+      if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
         result = new CallExpr(PRIMITIVE_CAST, type->symbol, gNil);
         call->replace(result);
       } else if (type->defaultValue == gNil) {
@@ -2265,6 +2261,14 @@ preFold(Expr* expr) {
         call->replace(result);
       } else {
         inits.add(call);
+      }
+    } else if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
+      Type* type = call->get(1)->typeInfo();
+      if (type ->symbol->hasFlag(FLAG_REF))
+        type = getValueType(type);
+      if (type->symbol->hasFlag(FLAG_ARRAY)) {
+        result = new CallExpr("_array_to_runtime_type", call->get(1)->remove());
+        call->replace(result);
       }
     } else if (call->isNamed("_copy")) {
       if (call->numActuals() == 1) {
@@ -2834,37 +2838,6 @@ postFold(Expr* expr) {
       FOLD_CALL2(P_prim_lsh);
     } else if (call->isPrimitive(PRIMITIVE_RSH)) {
       FOLD_CALL2(P_prim_rsh);
-    } else if (call->isPrimitive(PRIMITIVE_BUILD_ARRAY)) {
-      BlockStmt* block = new BlockStmt();
-
-      // since we are going to remove this block, better not let
-      // buildArray function capture its instantiation point as this
-      // block's scope
-      block->blockTag = BLOCK_SCOPELESS;
-
-      SymExpr* se = toSymExpr(call->get(1));
-      VarSymbol* elt = new VarSymbol("_tmp", se->var->type->getField("eltType")->type);
-      block->insertAtTail(new DefExpr(elt));
-      elt->addFlag(FLAG_TYPE_VARIABLE);
-      Type* domainValueType = se->var->type->getField("_value")->type->getField("dom")->type;
-      VarSymbol* dom = new VarSymbol("_tmp", domainValueType);
-      block->insertAtTail(new DefExpr(dom));
-      CallExpr* wrap = new CallExpr("_wrapDomain", dom);
-      block->insertAtTail(wrap);
-      call->getStmtExpr()->insertBefore(block);
-      resolveCall(wrap);
-      if (!wrap->isResolved())
-        INT_FATAL(call, "unable to build arrays");
-      resolveFns(wrap->isResolved());
-      dom->type = wrap->isResolved()->retType;
-      CallExpr* build = new CallExpr("buildArray", gMethodToken, dom, elt);
-      block->insertAtTail(build);
-      resolveCall(build);
-      if (!build->isResolved())
-        INT_FATAL(call, "unable to build arrays");
-      block->remove();
-      wrapDomainMap.put(domainValueType, wrap->isResolved());
-      buildArrayMap.put(call, build->isResolved());
     } else if (call->isPrimitive(PRIMITIVE_ARRAY_ALLOC) ||
                call->isPrimitive(PRIMITIVE_SYNC_INIT) ||
                call->isPrimitive(PRIMITIVE_SYNC_LOCK) ||
@@ -3627,37 +3600,43 @@ resolve() {
     }
   }
 
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    if (ts->defPoint &&
+        ts->defPoint->parentSymbol &&
+        ts->hasFlag(FLAG_ARRAY) &&
+        !ts->hasFlag(FLAG_GENERIC)) {
+      VarSymbol* tmp = new VarSymbol("tmp", ts->type);
+      ts->type->defaultConstructor->insertAtTail(new DefExpr(tmp));
+      CallExpr* call = new CallExpr("_array_to_runtime_type", tmp);
+      ts->type->defaultConstructor->insertAtTail(call);
+      resolveCall(call);
+      resolveFns(call->isResolved());
+      toRuntimeTypeMap.put(ts->type, call->isResolved());
+      call->remove();
+      tmp->defPoint->remove();
+    }
+  }
+
   //
   // resolve PRIMITIVE_INITs for records
   //
   forv_Vec(CallExpr, init, inits) {
     if (init->parentSymbol) {
       Type* type = init->get(1)->typeInfo();
-      if (type->symbol->hasFlag(FLAG_ARRAY))
-        INT_FATAL(init, "PRIMITIVE_INIT should have been replaced already");
-      if (type->symbol->hasFlag(FLAG_REF))
-        type = getValueType(type);
-      if (type->defaultValue) {
-        INT_FATAL(init, "PRIMITIVE_INIT should have been replaced already");
-      } else {
-        INT_ASSERT(type->defaultConstructor);
-        CallExpr* call = new CallExpr(type->defaultConstructor);
-        init->replace(call);
-        resolveCall(call);
-        if (call->isResolved())
-          resolveFns(call->isResolved());
+      if (!type->symbol->hasFlag(FLAG_ARRAY)) {
+        if (type->symbol->hasFlag(FLAG_REF))
+          type = getValueType(type);
+        if (type->defaultValue) {
+          INT_FATAL(init, "PRIMITIVE_INIT should have been replaced already");
+        } else {
+          INT_ASSERT(type->defaultConstructor);
+          CallExpr* call = new CallExpr(type->defaultConstructor);
+          init->replace(call);
+          resolveCall(call);
+          if (call->isResolved())
+            resolveFns(call->isResolved());
+        }
       }
-    }
-  }
-
-  //
-  // resolve buildArray functions
-  //
-  {
-    Vec<FnSymbol*> fns;
-    buildArrayMap.get_values(fns);
-    forv_Vec(FnSymbol, fn, fns) {
-      resolveFns(fn);
     }
   }
 
@@ -3806,19 +3785,13 @@ resolve() {
 
 
 static Type*
-buildArrayTypeInfo(Type* type) {
-  static Map<Type*,Type*> cache;
-  if (cache.get(type))
-    return cache.get(type);
+buildArrayTypeInfo(FnSymbol* fn) {
   ClassType* ct = new ClassType(CLASS_RECORD);
   TypeSymbol* ts = new TypeSymbol(astr("_ArrayTypeInfo"), ct);
-  Type* elt = type->getField("eltType")->type;
-  if (elt->symbol->hasFlag(FLAG_ARRAY))
-    elt = buildArrayTypeInfo(elt);
-  ct->fields.insertAtTail(new DefExpr(new VarSymbol("elt", elt)));
-  ct->fields.insertAtTail(new DefExpr(new VarSymbol("dom", type->getField("_value")->type->getField("dom")->type)));
+  ct->fields.insertAtTail(new DefExpr(new VarSymbol("dom", fn->getFormal(1)->type)));
+  ct->fields.insertAtTail(new DefExpr(new VarSymbol("elt", fn->getFormal(2)->type)));
+  ct->getField("elt")->addFlag(FLAG_TYPE_VARIABLE);
   theProgram->block->insertAtTail(new DefExpr(ts));
-  cache.put(type, ct);
   ct->symbol->addFlag(FLAG_ARRAY_TYPE_INFO);
   return ct;
 }
@@ -3946,21 +3919,15 @@ pruneResolvedTree() {
         Type* type = call->get(1)->typeInfo();
         if (type->symbol->hasFlag(FLAG_REF))
           type = getValueType(type);
-        if (!type->symbol->hasFlag(FLAG_ARRAY)) {
-          // Remove move(x, PRIMITIVE_TYPEOF(y)) calls -- useless after this
-          CallExpr* parentCall = toCallExpr(call->parentExpr);
-          if (parentCall && parentCall->isPrimitive(PRIMITIVE_MOVE) && 
-              parentCall->get(2) == call) {
-            parentCall->remove();
-          } else {
-            // Replace PRIMITIVE_TYPEOF with argument
-            call->replace(call->get(1)->remove());
-          }
+        // Remove move(x, PRIMITIVE_TYPEOF(y)) calls -- useless after this
+        CallExpr* parentCall = toCallExpr(call->parentExpr);
+        if (parentCall && parentCall->isPrimitive(PRIMITIVE_MOVE) && 
+            parentCall->get(2) == call) {
+          parentCall->remove();
+        } else {
+          // Replace PRIMITIVE_TYPEOF with argument
+          call->replace(call->get(1)->remove());
         }
-      } else if (call->isPrimitive(PRIMITIVE_ARRAY_ALLOC)) {
-        // Capture array types for allocation before runtime array
-        // types are inserted
-        //        call->get(2)->replace(new SymExpr(call->get(2)->typeInfo()->symbol));
       } else if (call->isPrimitive(PRIMITIVE_CAST)) {
         if (call->get(1)->typeInfo() == call->get(2)->typeInfo())
           call->replace(call->get(2)->remove());
@@ -4009,6 +3976,40 @@ pruneResolvedTree() {
     }
   }
 
+  Map<Type*,FnSymbol*> buildArrayTypeMap;
+  Map<Type*,Type*> runtimeTypeMap;
+
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->defPoint && fn->defPoint->parentSymbol) {
+      if (!strcmp(fn->name, "_build_array_type")) {
+        INT_ASSERT(fn->retType->symbol->hasFlag(FLAG_ARRAY));
+        Type* runtimeType = buildArrayTypeInfo(fn);
+        runtimeTypeMap.put(fn->retType, runtimeType);
+
+        FnSymbol* buildArrayFn = fn->copy();
+        buildArrayFn->name = astr("_build_array");
+        buildArrayFn->cname = buildArrayFn->name;
+        buildArrayFn->getReturnSymbol()->removeFlag(FLAG_TYPE_VARIABLE);
+        buildArrayFn->retTag = RET_VALUE;
+        fn->defPoint->insertBefore(new DefExpr(buildArrayFn));
+        buildArrayTypeMap.put(runtimeType, buildArrayFn);
+
+        fn->retType = runtimeType;
+        fn->getReturnSymbol()->type = runtimeType;
+        BlockStmt* block = new BlockStmt();
+        VarSymbol* var = new VarSymbol("_tmp", fn->retType);
+        block->insertAtTail(new DefExpr(var));
+        Symbol* domField = var->type->getField("dom");
+        block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, domField, fn->getFormal(1)));
+        Symbol* eltField = var->type->getField("elt");
+        if (eltField->type->symbol->hasFlag(FLAG_ARRAY))
+          block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, eltField, fn->getFormal(2)));
+        block->insertAtTail(new CallExpr(PRIMITIVE_RETURN, var));
+        fn->body->replace(block);
+      }
+    }
+  }
+
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       Vec<BaseAST*> asts;
@@ -4044,7 +4045,10 @@ pruneResolvedTree() {
         }
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             formal->type->symbol->hasFlag(FLAG_ARRAY)) {
-          formal->type = buildArrayTypeInfo(formal->type);
+          FnSymbol* fn = toRuntimeTypeMap.get(formal->type);
+          Type* rt = (fn->retType->symbol->hasFlag(FLAG_ARRAY_TYPE_INFO)) ? fn->retType : runtimeTypeMap.get(fn->retType);
+          INT_ASSERT(rt);
+          formal->type =  rt;
           formal->removeFlag(FLAG_TYPE_VARIABLE);
         }
       }
@@ -4053,7 +4057,10 @@ pruneResolvedTree() {
       if (fn->retTag == RET_TYPE) {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
         if (ret && ret->type->symbol->hasFlag(FLAG_ARRAY)) {
-          ret->type = buildArrayTypeInfo(ret->type);
+          FnSymbol* rtfn = toRuntimeTypeMap.get(ret->type);
+          Type* rt = (rtfn->retType->symbol->hasFlag(FLAG_ARRAY_TYPE_INFO)) ? rtfn->retType : runtimeTypeMap.get(rtfn->retType);
+          INT_ASSERT(rt);
+          ret->type = rt;
           fn->retType = ret->type;
           fn->retTag = RET_VALUE;
         }
@@ -4063,105 +4070,60 @@ pruneResolvedTree() {
 
   asts.clear();
   collect_asts_postorder(rootModule, asts);
+
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (isVarSymbol(def->sym) &&
+          def->sym->hasFlag(FLAG_TYPE_VARIABLE) &&
+          def->sym->type->symbol->hasFlag(FLAG_ARRAY)) {
+        Type* rt = runtimeTypeMap.get(def->sym->type);
+        INT_ASSERT(rt);
+        def->sym->type = rt;
+        def->sym->removeFlag(FLAG_TYPE_VARIABLE);
+      }
+    }
+  }
+
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      if (call->parentSymbol && call->isPrimitive(PRIMITIVE_BUILD_ARRAY)) {
+      if (call->parentSymbol && call->isPrimitive(PRIMITIVE_INIT)) {
         SymExpr* se = toSymExpr(call->get(1));
-        Symbol* eltField = se->var->type->getField("elt");
-        VarSymbol* elt = new VarSymbol("_tmp", eltField->type);
-        elt->addFlag(FLAG_TYPE_VARIABLE);
-        call->getStmtExpr()->insertBefore(new DefExpr(elt));
-        // BLC: if the field is an array, process it; otherwise, remove it
-        if (elt->type->symbol->hasFlag(FLAG_ARRAY_TYPE_INFO))
-          call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, elt, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, se->var, eltField)));
-        else
-          eltField->defPoint->remove();
-        VarSymbol* dom = new VarSymbol("_tmp", se->var->type->getField("dom")->type);
-        call->getStmtExpr()->insertBefore(new DefExpr(dom));
-        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, dom, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, se->var, se->var->type->getField("dom"))));
-        FnSymbol* wrapper = wrapDomainMap.get(dom->type);
-        VarSymbol* tmp = new VarSymbol("_tmp", wrapper->retType);
-        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(wrapper, dom)));
-        if (elt->type->symbol->hasFlag(FLAG_ARRAY_TYPE_INFO))
-          call->replace(new CallExpr(buildArrayMap.get(call), tmp, elt));
-        else
-          call->replace(new CallExpr(buildArrayMap.get(call), tmp));
-      } else if (call->parentSymbol && call->isPrimitive(PRIMITIVE_TYPEOF)) {
-        // handle ".type" on an array by building a runtime array type
-        CallExpr* move = toCallExpr(call->parentExpr);
-        INT_ASSERT(move);
-        SymExpr* lhs = toSymExpr(move->get(1));
-        SymExpr* rhs = toSymExpr(call->get(1));
-        INT_ASSERT(lhs);
-        INT_ASSERT(rhs);
-        Type* rhsType = rhs->var->type;
-        if (rhsType->symbol->hasFlag(FLAG_REF))
-          rhsType = getValueType(rhsType);
-        Type* lhsType = lhs->var->type;
-        if (lhsType->symbol->hasFlag(FLAG_REF))
-          lhsType = getValueType(lhsType);
-        VarSymbol* _value = new VarSymbol("_tmp", rhsType->getField("_value")->type);
-        call->getStmtExpr()->insertBefore(new DefExpr(_value));
-        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, _value, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, rhs->var, rhsType->getField("_value"))));
-        // Query domain and copy over
-        VarSymbol* dom = new VarSymbol("_tmp", _value->type->getField("dom")->type);
-        call->getStmtExpr()->insertBefore(new DefExpr(dom));
-        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, dom, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, _value, _value->type->getField("dom"))));
-        Symbol* domField = lhsType->getField("dom");
-        CallExpr* domFieldAssign = new CallExpr(PRIMITIVE_SET_MEMBER, lhs->var, domField, dom);
-        move->replace(domFieldAssign);
+        Type* rt = se->var->type;
+        if (rt->symbol->hasFlag(FLAG_ARRAY_TYPE_INFO)) {
+          SET_LINENO(call);
+          FnSymbol* buildArrayFn = buildArrayTypeMap.get(rt);
+          INT_ASSERT(buildArrayFn);
+          CallExpr* buildArrayCall = new CallExpr(buildArrayFn);
 
-        // Query element type and check whether it is an array of arrays
-        // If so, we need to copy its eltType into the runtime array type's elt
-        Symbol* eltTypeField = _value->type->getField("eltType");
-        Type* eltTypeType = eltTypeField->type;
-        if (eltTypeType->symbol->hasFlag(FLAG_ARRAY)) {
-          VarSymbol* eltType = new VarSymbol("_tmp", buildArrayTypeInfo(eltTypeType));
-          domFieldAssign->getStmtExpr()->insertBefore(new DefExpr(eltType));
-          domFieldAssign->insertBefore(new CallExpr(PRIMITIVE_MOVE, eltType, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, _value, eltTypeField)));
-          Symbol* eltField = lhsType->getField("elt");
-          domFieldAssign->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, lhs->var, eltField, eltType));
-        }
-      } else if (call->parentSymbol && call->isNamed("_init")) {
-
-        //
-        // special handling of tuple constructor to avoid
-        // initialization of array based on an array type symbol
-        // rather than a runtime array type
-        //
-        // this code added during the introduction of the new keyword;
-        // it should be removed when possible
-        //
-        if (!strcmp("_construct__tuple", call->parentSymbol->name))
-          if (SymExpr* se = toSymExpr(call->get(1)))
-            if (se->var->type->symbol->hasFlag(FLAG_ARRAY))
-              call->parentExpr->remove();
-
-      }
-    } else if (DefExpr* def = toDefExpr(ast)) {
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        if (!strcmp(fn->name, "_build_array_type")) {
-          BlockStmt* block = new BlockStmt();
-          VarSymbol* tmp = new VarSymbol("_tmp", fn->getFormal(1)->type->getField("_value")->type);
-          block->insertAtTail(new DefExpr(tmp));
-          block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, fn->getFormal(1), fn->getFormal(1)->type->getField("_value"))));
-          VarSymbol* var = new VarSymbol("_tmp", fn->retType);
-          block->insertAtTail(new DefExpr(var));
-          Symbol* domField = var->type->getField("dom");
-          block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, domField, tmp));
-          if (fn->formals.length() > 1) {
-            Symbol* eltField = var->type->getField("elt");
-            block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, eltField, fn->getFormal(2)));
+          VarSymbol* dom = new VarSymbol("_tmp", rt->getField("dom")->type);
+          call->getStmtExpr()->insertBefore(new DefExpr(dom));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, dom, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, se->var, rt->getField("dom"))));
+          buildArrayCall->insertAtTail(dom);
+          if (buildArrayFn->numFormals() == 2) {
+            Symbol* eltField = rt->getField("elt");
+            VarSymbol* elt = new VarSymbol("_tmp", eltField->type);
+            elt->addFlag(FLAG_TYPE_VARIABLE);
+            call->getStmtExpr()->insertBefore(new DefExpr(elt));
+            call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, elt, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, se->var, eltField)));
+            buildArrayCall->insertAtTail(elt);
           }
-          block->insertAtTail(new CallExpr(PRIMITIVE_RETURN, var));
-          fn->body->replace(block);
+          call->replace(buildArrayCall);
+        } else if (rt->symbol->hasFlag(FLAG_ARRAY)) {
+          //
+          // This is probably related to a comment that used to handle
+          // this case elsewhere:
+          //
+          // special handling of tuple constructor to avoid
+          // initialization of array based on an array type symbol
+          // rather than a runtime array type
+          //
+          // this code added during the introduction of the new
+          // keyword; it should be removed when possible
+          //
+          call->getStmtExpr()->remove();
+        } else {
+          INT_FATAL(call, "PRIMITIVE_INIT should have already been handled");
         }
-      } else if (isVarSymbol(def->sym) &&
-                 def->sym->hasFlag(FLAG_TYPE_VARIABLE) &&
-                 def->sym->type->symbol->hasFlag(FLAG_ARRAY)) {
-        def->sym->type = buildArrayTypeInfo(def->sym->type);
-        def->sym->removeFlag(FLAG_TYPE_VARIABLE);
       }
     } else if (SymExpr* se = toSymExpr(ast)) {
 

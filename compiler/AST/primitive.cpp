@@ -463,8 +463,6 @@ initPrimitive() {
 
   prim_def(PRIMITIVE_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
-  prim_def(PRIMITIVE_BUILD_ARRAY, "build_array", returnInfoFirst);
-
   prim_def("_config_has_value", returnInfoBool);
   prim_def("_config_get_value", returnInfoString);
 
