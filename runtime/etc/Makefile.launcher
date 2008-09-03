@@ -1,4 +1,6 @@
 CHPL_MAKE_HOST_TARGET = --host
+MAKE_LAUNCHER = 1
+
 include $(CHAPEL_ROOT)/make/Makefile.base
 
 LD = $(CC)

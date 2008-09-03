@@ -13,7 +13,8 @@ COMM_OBJS = \
 
 COMM_LAUNCHER_OBJS = \
 	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
-ifeq ($(MAKE_LAUNCHER), 0)
+
+ifneq ($(MAKE_LAUNCHER), 1)
 include $(GASNET_INSTALL_DIR)/include/$(CHPL_GASNET_CONDUIT)-conduit/$(CHPL_GASNET_CONDUIT)-par.mak
 
 # 

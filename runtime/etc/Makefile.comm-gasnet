@@ -1,4 +1,4 @@
-ifeq ($(MAKE_LAUNCHER), 0)
+ifneq ($(MAKE_LAUNCHER), 1)
 include $(GASNET_INSTALL_DIR)/include/$(CHPL_GASNET_CONDUIT)-conduit/$(CHPL_GASNET_CONDUIT)-par.mak
 
 CC = $(GASNET_CC) $(GASNET_CFLAGS) -I$(GASNET_INSTALL_DIR)/include -I$(GASNET_INSTALL_DIR)/include/$(CHPL_GASNET_CONDUIT)-conduit
