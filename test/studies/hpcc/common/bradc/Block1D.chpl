@@ -85,12 +85,12 @@ class Block1DDist : Distribution {
   //
   // TODO: What should we do if domIdxType did not match idxType?
   //
-  def newDomain(param rank, type domIdxType, param stridable: bool) 
+  def newArithmeticDomain(param rank: int, type domIdxType, param stridable: bool) 
         where domIdxType != idxType {
     compilerError("Trying to create a domain whose index type does not match the distribution's");
   }
 
-  def newDomain(param rank, type domIdxType, param stridable: bool) 
+  def newArithmeticDomain(param rank: int, type domIdxType, param stridable: bool) 
         where rank != 1 {
     compilerError("Block1D only supports 1D domains currently");
   }
@@ -100,7 +100,7 @@ class Block1DDist : Distribution {
   // initial index set if one exists?  If not, we should rewrite the
   // global domain construction to not do anything with whole...
   //
-  def newDomain(param rank, type idxType, param stridable: bool) {
+  def newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
     return new Block1DDom(idxType=idxType, dist=this);
   }
 
@@ -261,6 +261,10 @@ class Block1DDom: BaseDenseArithmeticDomain {
   //
   param rank = 1;
 
+  //
+  // TODO: use stridable (sjd: this parameter is required)
+  //
+  param stridable: bool = true;
 
   // LINKAGE:
 
