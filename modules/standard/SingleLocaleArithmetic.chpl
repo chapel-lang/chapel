@@ -1,29 +1,21 @@
 use Schedules;
 use List;
 
-// This should go away once distributions are implemented
-
-
 class DefaultDist: Distribution {
-  def newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
+  def newArithmeticDomain(param rank: int, type idxType, param stridable: bool)
     return new SingleLocaleArithmeticDomain(rank, idxType, stridable, this);
-  }
 
-  def newAssociativeDomain(type idxType) {
+  def newAssociativeDomain(type idxType)
     return new SingleLocaleAssociativeDomain(idxType, this);
-  }
 
-  def newEnumeratedDomain(type idxType) {
+  def newEnumeratedDomain(type idxType)
     return new SingleLocaleEnumDomain(idxType, this);
-  }
 
-  def newOpaqueDomain(type idxType) {
+  def newOpaqueDomain(type idxType)
     return new SingleLocaleOpaqueDomain(this);
-  }
 
-  def newSparseDomain(param rank: int, type idxType, dom: _domain) {
+  def newSparseDomain(param rank: int, type idxType, dom: _domain)
     return new SingleLocaleSparseDomain(rank, idxType, this, dom);
-  }
 }
 
 

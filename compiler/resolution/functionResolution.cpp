@@ -2733,11 +2733,6 @@ postFold(Expr* expr) {
       }
       result = (is_enum) ? new SymExpr(gTrue) : new SymExpr(gFalse);
       call->replace(result);
-    } else if (call->isPrimitive(PRIMITIVE_IS_OPAQUE)) {
-      Expr* arg = call->get(1);
-      SymExpr* argSymExpr = toSymExpr(arg);
-      result = (argSymExpr->var->type == dtOpaque) ? new SymExpr(gTrue) : new SymExpr(gFalse);
-      call->replace(result);
     } else if (call->isPrimitive(PRIMITIVE_IS_TUPLE)) {
       bool is_tuple = false;
       if (SymExpr* sym = toSymExpr(call->get(1))) {

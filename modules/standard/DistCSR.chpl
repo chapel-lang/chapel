@@ -1,16 +1,4 @@
 class CSR {
-  def buildDomain(param rank: int, type idxType) {
-    halt("The CSR distribution does not support dense domains");
-  }
-
-  def buildEnumDomain(type idxType) {
-    halt("The CSR distribution does not support enumerated domains");
-  }
-
-  def buildDomain(type idxType) {
-    halt("The CSR distribution does not support associative domains");
-  }
-
   def newSparseDomain(param rank: int, type idxType, dom: _domain) {
     return new CSRDomain(rank=rank, idxType=idxType, dist=this, parentDom=dom);
   }

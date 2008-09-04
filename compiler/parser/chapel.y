@@ -1077,11 +1077,11 @@ array_type:
       if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid index expression");
       $$ = new CallExpr("chpl_buildArrayRuntimeType",
-                        new CallExpr("_build_domain", $4), $6, $2->get(1)->remove(),
-                        new CallExpr("_build_domain", $4->copy()));
+                        new CallExpr("chpl_buildDomainExpr", $4), $6, $2->get(1)->remove(),
+                        new CallExpr("chpl_buildDomainExpr", $4->copy()));
     }
 | TLSBR nonempty_expr_ls TRSBR type
-    { $$ = new CallExpr("chpl_buildArrayRuntimeType", new CallExpr("_build_domain", $2), $4); }
+    { $$ = new CallExpr("chpl_buildArrayRuntimeType", new CallExpr("chpl_buildDomainExpr", $2), $4); }
 ;
 
 
@@ -1133,7 +1133,7 @@ opt_domain:
   /* nothing */
     { $$ = NULL; }
 | TCOLON TLSBR nonempty_expr_ls TRSBR
-    { $$ = new CallExpr("_build_domain", $3); }
+    { $$ = new CallExpr("chpl_buildDomainExpr", $3); }
 ;
 
 
@@ -1169,13 +1169,13 @@ opt_formal_type:
 | TCOLON TLSBR query_expr TRSBR
     { $$ = new CallExpr("chpl_buildArrayRuntimeType", $3); }
 | TCOLON TLSBR nonempty_expr_ls TRSBR
-    { $$ = new CallExpr("chpl_buildArrayRuntimeType", new CallExpr("_build_domain", $3)); }
+    { $$ = new CallExpr("chpl_buildArrayRuntimeType", new CallExpr("chpl_buildDomainExpr", $3)); }
 | TCOLON TLSBR TRSBR query_expr
     { $$ = new CallExpr("chpl_buildArrayRuntimeType", gNil, $4); }
 | TCOLON TLSBR query_expr TRSBR query_expr
     { $$ = new CallExpr("chpl_buildArrayRuntimeType", $3, $5); }
 | TCOLON TLSBR nonempty_expr_ls TRSBR query_expr
-    { $$ = new CallExpr("chpl_buildArrayRuntimeType", new CallExpr("_build_domain", $3), $5); }
+    { $$ = new CallExpr("chpl_buildArrayRuntimeType", new CallExpr("chpl_buildDomainExpr", $3), $5); }
 ;
 
 
@@ -1237,7 +1237,7 @@ formal_parenop_expr:
       $$ = call;
     }
 | TINDEX TLP expr_ls TRP
-    { $$ = new CallExpr("_build_index_type", $3); }
+    { $$ = new CallExpr("chpl_buildIndexType", $3); }
 ;
 
 formal_memberaccess_expr:
@@ -1346,7 +1346,7 @@ parenop_expr:
 | TCOMPILERWARNING TLP expr_ls TRP
     { $$ = new CallExpr(PRIMITIVE_WARNING, $3); }
 | TINDEX TLP expr_ls TRP
-    { $$ = new CallExpr("_build_index_type", $3); }
+    { $$ = new CallExpr("chpl_buildIndexType", $3); }
 ;
 
 
@@ -1372,7 +1372,7 @@ non_tuple_lvalue:
 | parenop_expr
 | memberaccess_expr
 | TLSBR nonempty_expr_ls TRSBR
-    { $$ = new CallExpr("_build_domain", $2); }
+    { $$ = new CallExpr("chpl_buildDomainExpr", $2); }
 ;
 
 

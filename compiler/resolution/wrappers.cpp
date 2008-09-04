@@ -429,7 +429,7 @@ buildPromotionWrapper(FnSymbol* fn,
   wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
   wrapper->cname = astr("_promotion_wrap_", fn->cname);
   CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
-  CallExpr* iterator = new CallExpr(square ? "_build_domain" : "_build_tuple");
+  CallExpr* iterator = new CallExpr(square ? "chpl_buildDomainExpr" : "_build_tuple");
   CallExpr* actualCall = new CallExpr(fn);
   int i = 1;
   for_formals(formal, fn) {

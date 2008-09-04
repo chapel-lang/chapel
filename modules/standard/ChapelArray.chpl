@@ -17,6 +17,10 @@ class Distribution {
   def newOpaqueDomain(type idxType) {
     compilerError("opaque domains not supported by this distribution");
   }
+
+  def newSparseDomain(param rank: int, type idxType, dom: _domain) {
+    compilerError("opaque domains not supported by this distribution");
+  }
 }
 
 
@@ -27,8 +31,7 @@ def chpl_buildDomainRuntimeType(dist, param rank: int, type idxType = int(32),
 
 pragma "has runtime type"
 def chpl_buildDomainRuntimeType(dist, type idxType) type
- where !__primitive("isEnumType", idxType) &&
-       !__primitive("isOpaqueType", idxType)
+ where !__primitive("isEnumType", idxType) && idxType != opaque
   return new _domain(1, dist.newAssociativeDomain(idxType));
 
 pragma "has runtime type"
@@ -38,7 +41,7 @@ def chpl_buildDomainRuntimeType(dist, type idxType) type
 
 pragma "has runtime type"
 def chpl_buildDomainRuntimeType(dist, type idxType) type
- where __primitive("isOpaqueType", idxType)
+ where idxType == opaque
   return new _domain(1, dist.newOpaqueDomain(idxType));
 
 pragma "has runtime type"
@@ -73,10 +76,10 @@ def chpl_buildSubDomainType(dom: _domain) type
 
 
 
-def _build_domain(x: _domain)
+def chpl_buildDomainExpr(x: _domain)
   return x;
 
-def _build_domain(ranges: range(?eltType,BoundedRangeType.bounded,?stridable) ...?rank) {
+def chpl_buildDomainExpr(ranges: range(?eltType,BoundedRangeType.bounded,?stridable) ...?rank) {
   for param i in 2..rank do
     if eltType(1) != eltType(i) then
       compilerError("domain has mixed dimensional type");
@@ -97,23 +100,23 @@ def _any_stridable(ranges, param d: int = 1) param {
     return false;
 }
 
-def _build_index_type(param rank: int, type idxType) type where rank == 1 {
+def chpl_buildIndexType(param rank: int, type idxType) type where rank == 1 {
   var x: idxType;
   return x;
 }
 
-def _build_index_type(param rank: int, type idxType) type where rank > 1 {
+def chpl_buildIndexType(param rank: int, type idxType) type where rank > 1 {
   var x: rank*idxType;
   return x;
 }
 
-def _build_index_type(param rank: int) type
-  return _build_index_type(rank, int);
+def chpl_buildIndexType(param rank: int) type
+  return chpl_buildIndexType(rank, int);
 
-def _build_index_type(d: _domain) type
-  return _build_index_type(d.rank, d._value.idxType);
+def chpl_buildIndexType(d: _domain) type
+  return chpl_buildIndexType(d.rank, d._value.idxType);
 
-def _build_index_type(type idxType) type where __primitive("isOpaqueType", idxType)
+def chpl_buildIndexType(type idxType) type where idxType == opaque
   return _OpaqueIndex;
 
 //
@@ -306,8 +309,8 @@ record _domain {
   }
 }
 
-def _isDomain(x: _domain) param return true;
-def _isDomain(x) param return false;
+def chpl_isDomain(x: _domain) param return true;
+def chpl_isDomain(x) param return false;
 
 def =(a: _domain, b: _domain) {
   for e in a._value._arrs do
@@ -323,8 +326,8 @@ def =(a: _domain, b: _tuple) {
   return a;
 }
 
-def =(d: _domain, r: range(?e,?b,?s)) {
-  d = _build_domain(r);
+def =(d: _domain, r: range(?)) {
+  d = [r];
   return d;
 }
 

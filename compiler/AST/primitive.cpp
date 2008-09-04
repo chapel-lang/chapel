@@ -446,7 +446,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_GC_CLEANUP, "_chpl_gc_cleanup", returnInfoVoid);
 
   prim_def(PRIMITIVE_IS_ENUM, "isEnumType", returnInfoBool);
-  prim_def(PRIMITIVE_IS_OPAQUE, "isOpaqueType", returnInfoBool);
   prim_def(PRIMITIVE_IS_TUPLE, "isTupleType", returnInfoBool);
 
   prim_def(PRIMITIVE_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);

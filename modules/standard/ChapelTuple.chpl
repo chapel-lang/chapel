@@ -430,7 +430,7 @@ record _square_tuple {
   }
 }
 
-def _build_domain(x ...?size) where size > 1
+def chpl_buildDomainExpr(x ...?size) where size > 1
   return new _square_tuple(size, x);
 
 pragma "inline" def _build_tuple(x ...?size) {
