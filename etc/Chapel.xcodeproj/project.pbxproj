@@ -22,6 +22,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		F70EA9EC0E648652006F2EE0 /* flags.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F70EA9EB0E648652006F2EE0 /* flags.cpp */; };
 		F721A0BE0D454AB400A6B43F /* libchpl.a in CopyFiles */ = {isa = PBXBuildFile; fileRef = F7FAC4F90D4537A700C02B67 /* libchpl.a */; };
 		F721A0D50D455B8C00A6B43F /* map.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A0D30D455B8C00A6B43F /* map.cpp */; };
 		F721A0D60D455B8C00A6B43F /* vec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A0D40D455B8C00A6B43F /* vec.cpp */; };
@@ -109,7 +110,6 @@
 		F7A456F30E1AC2BA0033D1FF /* tmpdirname.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7A456F20E1AC2BA0033D1FF /* tmpdirname.cpp */; };
 		F7A4FD2A0DE7AA9300CDE656 /* chpl_cfg_comm_locales.c in Sources */ = {isa = PBXBuildFile; fileRef = F7A4FD290DE7AA9300CDE656 /* chpl_cfg_comm_locales.c */; };
 		F7A4FD390DE7AB8D00CDE656 /* chplcomm_locales.h in Headers */ = {isa = PBXBuildFile; fileRef = F7A4FD380DE7AB8D00CDE656 /* chplcomm_locales.h */; };
-		F7F770250E5A53B200798483 /* pragmas.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7F770240E5A53B200798483 /* pragmas.cpp */; };
 		F7F770B20E5A751A00798483 /* chapel_code.chpl in Sources */ = {isa = PBXBuildFile; fileRef = F7F770950E5A72AD00798483 /* chapel_code.chpl */; };
 		F7FAC5100D45384C00C02B67 /* arg.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5010D45384C00C02B67 /* arg.c */; };
 		F7FAC5110D45384C00C02B67 /* chplcast.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5020D45384C00C02B67 /* chplcast.c */; };
@@ -185,7 +185,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 8DD76F620486A84900D96B5E /* Chapel */;
+			remoteGlobalIDString = 8DD76F620486A84900D96B5E;
 			remoteInfo = Chapel;
 		};
 /* End PBXContainerItemProxy section */
@@ -224,6 +224,8 @@
 
 /* Begin PBXFileReference section */
 		8DD76F6C0486A84900D96B5E /* chpl */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = chpl; sourceTree = BUILT_PRODUCTS_DIR; };
+		F70EA9EB0E648652006F2EE0 /* flags.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = flags.cpp; path = ../compiler/AST/flags.cpp; sourceTree = SOURCE_ROOT; };
+		F70EA9EF0E648687006F2EE0 /* flags.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = flags.h; path = ../compiler/include/flags.h; sourceTree = SOURCE_ROOT; };
 		F719EB150DB6C03900EFB331 /* reservedSymbolNames */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = reservedSymbolNames; path = ../compiler/passes/reservedSymbolNames; sourceTree = SOURCE_ROOT; };
 		F721A0D30D455B8C00A6B43F /* map.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = map.cpp; path = ../compiler/adt/map.cpp; sourceTree = "<group>"; };
 		F721A0D40D455B8C00A6B43F /* vec.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = vec.cpp; path = ../compiler/adt/vec.cpp; sourceTree = "<group>"; };
@@ -467,8 +469,6 @@
 		F7A4FD2D0DE7AADB00CDE656 /* chpl_cfg_comm_locales.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm_locales.c; path = "../runtime/comm-gasnet/chpl_cfg_comm_locales.c"; sourceTree = SOURCE_ROOT; };
 		F7A4FD320DE7AB1B00CDE656 /* chpl_cfg_comm_locales.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm_locales.c; path = "../runtime/comm-armci/chpl_cfg_comm_locales.c"; sourceTree = SOURCE_ROOT; };
 		F7A4FD380DE7AB8D00CDE656 /* chplcomm_locales.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplcomm_locales.h; path = ../runtime/include/chplcomm_locales.h; sourceTree = SOURCE_ROOT; };
-		F7F770240E5A53B200798483 /* pragmas.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = pragmas.cpp; path = ../compiler/AST/pragmas.cpp; sourceTree = SOURCE_ROOT; };
-		F7F770280E5A53EF00798483 /* pragmas.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = pragmas.h; path = ../compiler/include/pragmas.h; sourceTree = SOURCE_ROOT; };
 		F7F770950E5A72AD00798483 /* chapel_code.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = chapel_code.chpl; path = ../runtime/src/chapel_code.chpl; sourceTree = SOURCE_ROOT; };
 		F7FAC4F90D4537A700C02B67 /* libchpl.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libchpl.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7FAC5010D45384C00C02B67 /* arg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = arg.c; path = ../runtime/src/arg.c; sourceTree = SOURCE_ROOT; };
@@ -579,8 +579,8 @@
 				F721A0DE0D455BE300A6B43F /* bb.cpp */,
 				F721A0DF0D455BE300A6B43F /* build.cpp */,
 				F721A0E00D455BE300A6B43F /* expr.cpp */,
+				F70EA9EB0E648652006F2EE0 /* flags.cpp */,
 				F721A0E10D455BE300A6B43F /* iterator.cpp */,
-				F7F770240E5A53B200798483 /* pragmas.cpp */,
 				F721A0E20D455BE300A6B43F /* primitive.cpp */,
 				F721A0E30D455BE300A6B43F /* stmt.cpp */,
 				F721A0E40D455BE300A6B43F /* symbol.cpp */,
@@ -730,6 +730,7 @@
 				F721A1CA0D45616800A6B43F /* expr.h */,
 				F721A1CB0D45616800A6B43F /* extern.h */,
 				F721A1CC0D45616800A6B43F /* files.h */,
+				F70EA9EF0E648687006F2EE0 /* flags.h */,
 				F721A1CD0D45616800A6B43F /* iterator.h */,
 				F7FDB9E70E53C706006CE064 /* lexyacc.h */,
 				F721A1CE0D45616800A6B43F /* list.h */,
@@ -741,7 +742,6 @@
 				F721A1D40D45616800A6B43F /* parser.h */,
 				F721A1D50D45616800A6B43F /* passes.h */,
 				F731139E0E3EB6A800F62922 /* passlist.h */,
-				F7F770280E5A53EF00798483 /* pragmas.h */,
 				F721A1D60D45616800A6B43F /* primitive.h */,
 				F7FDB9DC0E53C64F006CE064 /* processTokens.h */,
 				F73113C70E3EB7E200F62922 /* resolution.h */,
@@ -1268,7 +1268,7 @@
 				F73113C10E3EB7C000F62922 /* lowerIterators.cpp in Sources */,
 				F73113C20E3EB7C000F62922 /* wrappers.cpp in Sources */,
 				F7FDB9410E53AB59006CE064 /* bitVec.cpp in Sources */,
-				F7F770250E5A53B200798483 /* pragmas.cpp in Sources */,
+				F70EA9EC0E648652006F2EE0 /* flags.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
