@@ -127,11 +127,6 @@ class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
   def dim(d : int)
     return ranges(d);
 
-  def bbox(d: int) {
-    const r: range(idxType,BoundedRangeType.bounded,false) = ranges(d);
-    return r;
-  }
-
   def numIndices {
     var sum = 1:idxType;
     for param i in 1..rank do
@@ -169,16 +164,6 @@ class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
 
   def buildSubdomain()
     return new SingleLocaleArithmeticDomain(rank, idxType, stridable, dist);
-
-  def buildEmptyDomain() {
-    if this != nil then
-      return new SingleLocaleArithmeticDomain(rank, idxType, stridable, dist);
-    else
-      // special case for array fields in classes; see
-      // arrays/deitz/part2/test_array_in_class2
-      return new SingleLocaleArithmeticDomain(rank, idxType, stridable, DefaultDistribution);
-
-  }
 
   def slice(param stridable: bool, ranges) {
     var d = new SingleLocaleArithmeticDomain(rank, idxType, stridable, dist);

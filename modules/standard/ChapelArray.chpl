@@ -183,13 +183,6 @@ record _domain {
     delete _value;
   }
 
-  def initialize() {
-    if _value == nil {
-      _value = _value.buildEmptyDomain();
-    }
-    return this;
-  }
-
   def these() {
     for i in _value.these() do
       yield i;
@@ -218,16 +211,6 @@ record _domain {
       _value._locked = false;  // writing to this sync var "unlocks" the lock!
     }
     return new _array(_value.idxType, eltType, rank, x);
-  }
-
-  // buildEmptyDomain is meant to return an uninitialized domain for
-  // the given domain type. For example, it should return the same
-  // sort of thing that var D: domain(2) dist(yourDist); would result
-  // in if you didn't initialize it.  It should be a static method and
-  // not refer to any fields that aren't types and params.
-  def buildEmptyDomain() {
-    var x = _value.buildEmptyDomain();
-    return new _domain(rank, x);
   }
 
   def buildSubdomain() {
@@ -354,7 +337,7 @@ def =(a: _domain, b) {  // b is iteratable
 }
 
 def _copy(a: _domain) {
-  var b: a.buildEmptyDomain().type;
+  var b: a.type;
   b.setIndices(a.getIndices());
   return b;
 }
@@ -560,11 +543,6 @@ class BaseDomain {
 
 
 class BaseArithmeticDomain : BaseDomain {
-  def bbox(d:int) {
-    halt("bbox not supported for this domain type");
-    return 1..0;
-  }
-
 }
 
 class BaseDenseArithmeticDomain : BaseArithmeticDomain {

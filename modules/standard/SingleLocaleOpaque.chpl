@@ -34,9 +34,6 @@ class SingleLocaleOpaqueDomain: BaseOpaqueDomain {
     return adomain.numIndices;
   }
 
-  def buildEmptyDomain()
-    return new SingleLocaleOpaqueDomain(dist);
-
   def buildArray(type eltType) {
     var ia = new SingleLocaleOpaqueArray(eltType, idxType, dom=this);
     return ia;

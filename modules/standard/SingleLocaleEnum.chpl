@@ -32,9 +32,6 @@ class SingleLocaleEnumDomain: BaseEnumDomain {
     return adomain.numIndices;
   }
 
-  def buildEmptyDomain()
-    return new SingleLocaleEnumDomain(idxType, dist);
-
   def buildArray(type eltType) {
     var ia = new SingleLocaleEnumArray(eltType, idxType, dom=this);
     return ia;

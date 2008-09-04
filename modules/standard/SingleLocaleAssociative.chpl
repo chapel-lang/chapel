@@ -50,10 +50,6 @@ class SingleLocaleAssociativeDomain: BaseAssociativeDomain {
   //
   // Standard Internal Domain Interface
   //
-  def buildEmptyDomain() {
-    return new SingleLocaleAssociativeDomain(idxType, dist);
-  }
-
   def buildArray(type eltType) {
     if (this == nil) then
       return new SingleLocaleAssociativeArray(eltType, idxType, dom=new SingleLocaleAssociativeDomain(idxType, dist)); 

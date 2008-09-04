@@ -34,7 +34,7 @@ class CSRDomain: BaseSparseArithmeticDomain {
   var nnzDom = [1..nnzDomSize];
 
   var rowStart: [rowDom] idxType;      // would like index(nnzDom)
-  var colIdx: [nnzDom] idxType;        // would like index(parentDom.bbox(1))
+  var colIdx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
   def initialize() {
     if (rank != 2) then
@@ -50,9 +50,6 @@ class CSRDomain: BaseSparseArithmeticDomain {
 
   def buildArray(type eltType)
     return new CSRArray(eltType, rank, idxType, dom=this);
-
-  def buildEmptyDomain()
-    return new CSRDomain(rank=rank, idxType=idxType, parentDom=parentDom);
 
   def these() {
     var cursorRow = rowRange.low;

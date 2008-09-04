@@ -34,10 +34,6 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
   def buildArray(type eltType)
     return new SingleLocaleSparseArray(eltType, rank, idxType, dom=this);
 
-  def buildEmptyDomain() {
-    return new SingleLocaleSparseDomain(rank, idxType, dist, parentDom);
-  }
-
   def these() {
     for i in 1..nnz {
       yield indices(i);
