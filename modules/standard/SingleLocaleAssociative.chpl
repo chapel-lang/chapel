@@ -24,6 +24,8 @@ const chpl_primes : [0..26] chpl_table_index_type
 class SingleLocaleAssociativeDomain: BaseAssociativeDomain {
   type idxType;
 
+  var dist: DefaultDist;
+
   // The guts of the associative domain
   var numEntries: chpl_table_index_type = 0;
   var tableSizeNum = 0;
@@ -41,23 +43,20 @@ class SingleLocaleAssociativeDomain: BaseAssociativeDomain {
   var tmpDom2 = [0..-1:chpl_table_index_type];
   var tmpTable2: [tmpDom2] idxType;
 
-  // BLC: Didn't want to have this, but _wrapDomain requires it
-  param rank = 1;
-
-
-  def SingleLocaleAssociativeDomain(type idxType) {
+  def SingleLocaleAssociativeDomain(type idxType, dist: DefaultDist) {
+    this.dist = dist;
   }
 
   //
   // Standard Internal Domain Interface
   //
   def buildEmptyDomain() {
-    return new SingleLocaleAssociativeDomain(idxType);
+    return new SingleLocaleAssociativeDomain(idxType, dist);
   }
 
   def buildArray(type eltType) {
     if (this == nil) then
-      return new SingleLocaleAssociativeArray(eltType, idxType, dom=new SingleLocaleAssociativeDomain(idxType)); 
+      return new SingleLocaleAssociativeArray(eltType, idxType, dom=new SingleLocaleAssociativeDomain(idxType, dist)); 
     else 
       return new SingleLocaleAssociativeArray(eltType, idxType, dom=this); 
   }

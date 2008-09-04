@@ -4,7 +4,8 @@ use List;
 class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
   param rank : int;
   type idxType;
-  var parentDom: BaseArithmeticDomain;
+  var parentDom: domain(rank, idxType);
+  var dist: DefaultDist;
   var nnz = 0;  // intention is that user might specify this to avoid reallocs
 
   var nnzDomSize = nnz;
@@ -13,8 +14,10 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
   var indices: [nnzDom] index(rank);
 
   def SingleLocaleSparseDomain(param rank, type idxType, 
-                               parentDom: BaseArithmeticDomain = nil) {
+                               dist: DefaultDist,
+                               parentDom: domain(rank, idxType)) {
     this.parentDom = parentDom;
+    this.dist = dist;
     nnz = 0;
   }
 
@@ -32,12 +35,7 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
     return new SingleLocaleSparseArray(eltType, rank, idxType, dom=this);
 
   def buildEmptyDomain() {
-    // why would this ever be nil?  See comment in SingleLocaleArithmetic.chpl,
-    // or the commit message of 09/19/07 10:28:04 and then complain to Steve :)
-    if this != nil then
-      return new SingleLocaleSparseDomain(rank, idxType, parentDom);
-    else
-      return new SingleLocaleSparseDomain(rank, idxType);
+    return new SingleLocaleSparseDomain(rank, idxType, dist, parentDom);
   }
 
   def these() {
@@ -47,7 +45,7 @@ class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
   }
 
   def dim(d : int) {
-    return parentDom.bbox(d);
+    return parentDom.dim(d);
   }
 
   // private
@@ -129,7 +127,7 @@ class SingleLocaleSparseArray: BaseArray {
   def this(ind: idxType) var where rank == 1 {
     // make sure we're in the dense bounding box
     if boundsChecking then
-      if !((dom.parentDom).member(ind)) then
+      if !(dom.parentDom.member(ind)) then
         halt("array index out of bounds: ", ind);
 
     // lookup the index and return the data or IRV
@@ -145,7 +143,7 @@ class SingleLocaleSparseArray: BaseArray {
   def this(ind: rank*idxType) var {
     // make sure we're in the dense bounding box
     if boundsChecking then
-      if !((dom.parentDom).member(ind)) then
+      if !(dom.parentDom.member(ind)) then
         halt("array index out of bounds: ", ind);
 
     // lookup the index and return the data or IRV

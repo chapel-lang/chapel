@@ -848,14 +848,9 @@ fix_def_expr(VarSymbol* var) {
     VarSymbol* typeTemp = new VarSymbol("_typeTmp");
     typeTemp->addFlag(FLAG_TEMP);
     stmt->insertBefore(new DefExpr(typeTemp));
-    CallExpr* callType = toCallExpr(type);
-    if (callType && callType->isNamed("_build_sparse_subdomain_type"))
-      stmt->insertBefore(
-        new CallExpr(PRIMITIVE_MOVE, typeTemp, type->remove()));
-    else
-      stmt->insertBefore(
-        new CallExpr(PRIMITIVE_MOVE, typeTemp,
-          new CallExpr(PRIMITIVE_INIT, type->remove())));
+    stmt->insertBefore(
+      new CallExpr(PRIMITIVE_MOVE, typeTemp,
+        new CallExpr(PRIMITIVE_INIT, type->remove())));
     if (init) {
       VarSymbol* initTemp = new VarSymbol("_tmp");
       initTemp->addFlag(FLAG_TEMP);
@@ -928,7 +923,7 @@ static void fixup_array_formals(FnSymbol* fn) {
   for_formals(arg, fn) {
     if (arg->typeExpr) {
       CallExpr* call = toCallExpr(arg->typeExpr->body.tail);
-      if (call && call->isNamed("_build_array_type")) {
+      if (call && call->isNamed("chpl_buildArrayRuntimeType")) {
         if (ArgSymbol* arg = toArgSymbol(call->parentSymbol)) {
           bool noDomain = (isSymExpr(call->get(1))) ? toSymExpr(call->get(1))->var == gNil : false;
           DefExpr* queryDomain = toDefExpr(call->get(1));

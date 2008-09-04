@@ -1,11 +1,12 @@
 use List;
 class SingleLocaleEnumDomain: BaseEnumDomain {
-  param rank = 1;
   type idxType;
+  var dist: DefaultDist;
   var adomain: SingleLocaleAssociativeDomain(idxType);
 
-  def SingleLocaleEnumDomain(type idxType) {
-    adomain = new SingleLocaleAssociativeDomain(idxType);
+  def SingleLocaleEnumDomain(type idxType, dist: DefaultDist) {
+    this.dist = dist;
+    adomain = new SingleLocaleAssociativeDomain(idxType, dist);
     var enumTuple = _enum_enumerate(idxType);
     for param i in 1..enumTuple.size do
       adomain.add(enumTuple(i));
@@ -32,7 +33,7 @@ class SingleLocaleEnumDomain: BaseEnumDomain {
   }
 
   def buildEmptyDomain()
-    return new SingleLocaleEnumDomain(idxType);
+    return new SingleLocaleEnumDomain(idxType, dist);
 
   def buildArray(type eltType) {
     var ia = new SingleLocaleEnumArray(eltType, idxType, dom=this);

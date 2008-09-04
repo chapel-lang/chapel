@@ -1,6 +1,4 @@
 class CSR {
-  param stridable: bool = false;
-
   def buildDomain(param rank: int, type idxType) {
     halt("The CSR distribution does not support dense domains");
   }
@@ -13,10 +11,8 @@ class CSR {
     halt("The CSR distribution does not support associative domains");
   }
 
-  def buildSparseDomain(param rank:int, type idxType, 
-                        parentDom: BaseArithmeticDomain) {
-    return new CSRDomain(rank=rank, idxType=idxType, 
-                                    parentDom=parentDom);
+  def newSparseDomain(param rank: int, type idxType, dom: _domain) {
+    return new CSRDomain(rank=rank, idxType=idxType, dist=this, parentDom=dom);
   }
 }
 
@@ -25,12 +21,13 @@ use Search;
 class CSRDomain: BaseSparseArithmeticDomain {
   param rank : int;
   type idxType;
-  var parentDom: BaseArithmeticDomain;
+  var dist: CSR;
+  var parentDom: domain(rank, idxType);
   var nnz = 0;  // intention is that user might specify this to avoid reallocs
   //  type idxType = rank*idxType;
 
-  var rowRange = parentDom.bbox(1);
-  var colRange = parentDom.bbox(2);
+  var rowRange = parentDom.dim(1);
+  var colRange = parentDom.dim(2);
 
   const rowDom = [rowRange.low..rowRange.high+1];
   var nnzDomSize = nnz;

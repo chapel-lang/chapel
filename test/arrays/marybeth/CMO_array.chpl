@@ -8,6 +8,7 @@ class CMODomain: BaseDenseArithmeticDomain {
   param rank : int;
   type idxType;
   param stridable: bool;
+  var dist: CMODist;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
   def getIndices() return ranges;
@@ -21,17 +22,7 @@ class CMODomain: BaseDenseArithmeticDomain {
   }
 
   def buildEmptyDomain()
-    return new CMODomain(rank=rank, idxType=idxType, stridable=stridable);
-
-  def buildOpenIntervalUpper() {
-    var x = new CMODomain(rank=rank, idxType=idxType, stridable=stridable);
-    for param i in 1..rank {
-      if ranges(i)._stride != 1 then
-        halt("syntax [domain-specification) requires a stride of one");
-      x.ranges(i) = ranges(i)._low..ranges(i)._high-1;
-    }
-    return x;
-  }
+    return new CMODomain(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
 
   def these_help(param dim: int) {
     if dim == rank - 1 {
@@ -114,13 +105,13 @@ class CMODomain: BaseDenseArithmeticDomain {
   }
  
   def buildSubdomain() 
-    return new CMODomain(rank=rank, idxType=idxType, stridable=stridable);
+    return new CMODomain(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
 
   def rankChange(param rank: int, param stridable: bool, args) {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
-    var d = new CMODomain(rank=rank, idxType=idxType, stridable=stridable);
+    var d = new CMODomain(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
     var i = 1;
     for param j in 1..args.size {
       if isRange(args(j)) {
@@ -132,14 +123,14 @@ class CMODomain: BaseDenseArithmeticDomain {
   }
 
   def translate(off: rank*int) {
-    var x = new CMODomain(rank=rank, idxType=int, stridable = stridable);
+    var x = new CMODomain(rank=rank, idxType=int, stridable = stridable, dist=dist);
     for i in 1..rank do
       x.ranges(i) = dim(i)._translate(off(i));
     return x;
   }
 
   def interior(off: rank*int) {
-    var x = new CMODomain(rank=rank, idxType=int, stridable=stridable);
+    var x = new CMODomain(rank=rank, idxType=int, stridable=stridable, dist=dist);
     for i in 1..rank do {
       if ((off(i) > 0) && (dim(i)._high+1-dim(i) < dim(i)._low) ||
           (off(i) < 0) && (dim(i)._low-1-dim(i) > dim(i)._high)) {
@@ -151,14 +142,14 @@ class CMODomain: BaseDenseArithmeticDomain {
   }
 
   def exterior(off: rank*int) {
-    var x = new CMODomain(rank=rank, idxType=int, stridable=stridable);
+    var x = new CMODomain(rank=rank, idxType=int, stridable=stridable, dist=dist);
     for i in 1..rank do
       x.ranges(i) = dim(i)._exterior(off(i));
     return x;
   }
 
   def expand(off: rank*int) {
-    var x = new CMODomain(rank=rank, idxType=int, stridable=stridable);
+    var x = new CMODomain(rank=rank, idxType=int, stridable=stridable, dist=dist);
     for i in 1..rank do {
       x.ranges(i) = ranges(i)._expand(off(i));
       if (x.ranges(i)._low > x.ranges(i)._high) {
@@ -169,7 +160,7 @@ class CMODomain: BaseDenseArithmeticDomain {
   }  
 
   def expand(off: int) {
-    var x = new CMODomain(rank=rank, idxType=int, stridable=stridable);
+    var x = new CMODomain(rank=rank, idxType=int, stridable=stridable, dist=dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i)._expand(off);
     return x;
@@ -183,14 +174,14 @@ class CMODomain: BaseDenseArithmeticDomain {
   }
 
   def strideBy(str : rank*int) {
-    var x = new CMODomain(rank=rank, idxType=idxType, stridable=stridable);
+    var x = new CMODomain(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str(i);
     return x;
   }
 
   def strideBy(str : int) {
-    var x = new CMODomain(rank=rank, idxType=idxType, stridable=stridable);
+    var x = new CMODomain(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str;
     return x;
@@ -424,7 +415,7 @@ def CMOArray.writeThis(f: Writer) {
 }
 
 def _intersect(a: CMODomain, b: CMODomain) {
-  var c = new CMODomain(a.rank, a.idxType, stridable=a.stridable);
+  var c = new CMODomain(a.rank, a.idxType, stridable=a.stridable, dist=b.dist);
   for param i in 1..a.rank do
     c.ranges(i) = a.dim(i)(b.dim(i));
   return c;

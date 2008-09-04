@@ -1076,12 +1076,12 @@ array_type:
     { 
       if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = new CallExpr("_build_array_type",
+      $$ = new CallExpr("chpl_buildArrayRuntimeType",
                         new CallExpr("_build_domain", $4), $6, $2->get(1)->remove(),
                         new CallExpr("_build_domain", $4->copy()));
     }
 | TLSBR nonempty_expr_ls TRSBR type
-    { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $2), $4); }
+    { $$ = new CallExpr("chpl_buildArrayRuntimeType", new CallExpr("_build_domain", $2), $4); }
 ;
 
 
@@ -1096,15 +1096,15 @@ formal_level_type:
 | array_type
 | TDOMAIN TLP expr_ls TRP distributed_expr
     {
-      CallExpr* call = new CallExpr("_build_domain_type", $5);
+      CallExpr* call = new CallExpr("chpl_buildDomainRuntimeType", $5);
       call->insertAtTail($3);
       $$ = call;
     }
 | TSUBDOMAIN TLP expr_ls TRP
-    { $$ = new CallExpr("_build_subdomain_type", $3); }
+    { $$ = new CallExpr("chpl_buildSubDomainType", $3); }
 | TSPARSE TSUBDOMAIN TLP expr_ls TRP distributed_expr
     {
-      CallExpr* call = new CallExpr("_build_sparse_subdomain_type", $6);
+      CallExpr* call = new CallExpr("chpl_buildSparseDomainRuntimeType", $6);
       call->insertAtTail($4);
       $$ = call;
     }
@@ -1161,21 +1161,21 @@ opt_formal_type:
 | TCOLON TSYNC
     { $$ = new SymExpr( "_syncvar"); }
 | TCOLON TLSBR TRSBR type
-    { $$ = new CallExpr("_build_array_type", gNil, $4); }
+    { $$ = new CallExpr("chpl_buildArrayRuntimeType", gNil, $4); }
 | TCOLON TLSBR query_expr TRSBR type
-    { $$ = new CallExpr("_build_array_type", $3, $5); }
+    { $$ = new CallExpr("chpl_buildArrayRuntimeType", $3, $5); }
 | TCOLON TLSBR TRSBR
-    { $$ = new CallExpr("_build_array_type", gNil); }
+    { $$ = new CallExpr("chpl_buildArrayRuntimeType", gNil); }
 | TCOLON TLSBR query_expr TRSBR
-    { $$ = new CallExpr("_build_array_type", $3); }
+    { $$ = new CallExpr("chpl_buildArrayRuntimeType", $3); }
 | TCOLON TLSBR nonempty_expr_ls TRSBR
-    { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $3)); }
+    { $$ = new CallExpr("chpl_buildArrayRuntimeType", new CallExpr("_build_domain", $3)); }
 | TCOLON TLSBR TRSBR query_expr
-    { $$ = new CallExpr("_build_array_type", gNil, $4); }
+    { $$ = new CallExpr("chpl_buildArrayRuntimeType", gNil, $4); }
 | TCOLON TLSBR query_expr TRSBR query_expr
-    { $$ = new CallExpr("_build_array_type", $3, $5); }
+    { $$ = new CallExpr("chpl_buildArrayRuntimeType", $3, $5); }
 | TCOLON TLSBR nonempty_expr_ls TRSBR query_expr
-    { $$ = new CallExpr("_build_array_type", new CallExpr("_build_domain", $3), $5); }
+    { $$ = new CallExpr("chpl_buildArrayRuntimeType", new CallExpr("_build_domain", $3), $5); }
 ;
 
 

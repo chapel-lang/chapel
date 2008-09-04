@@ -416,15 +416,6 @@ isTypeAlias(Symbol* sym) {
 
 
 /********* build constructor ***************/
-static bool
-isSparseDomain(Expr* exprType) {
-  if (CallExpr* callExprType = toCallExpr(exprType))
-    if (callExprType->isNamed("_build_sparse_subdomain_type"))
-      return true;
-  return false;
-}
-
-
 static void build_type_constructor(ClassType* ct) {
   if (ct->defaultTypeConstructor)
     return;
@@ -500,12 +491,7 @@ static void build_type_constructor(ClassType* ct) {
                                           new_StringSymbol(field->name),
                                           new CallExpr(PRIMITIVE_INIT, arg)));
         } else if (exprType) {
-          if (isSparseDomain(exprType))
-            fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
-                                          new_StringSymbol(field->name),
-                                          exprType->copy()));
-          else
-            fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
+          fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name),
                                           new CallExpr(PRIMITIVE_INIT, exprType->copy())));
         } else if (init) {
@@ -679,14 +665,10 @@ static void build_constructor(ClassType* ct) {
         exprType = new CallExpr(PRIMITIVE_TYPEOF, new CallExpr("_copy", init->copy()));
       }
     } else if (exprType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
-      if (isSparseDomain(exprType))
-        init = exprType->copy();
-      else
-        init = new CallExpr(PRIMITIVE_INIT, exprType->copy());
+      init = new CallExpr(PRIMITIVE_INIT, exprType->copy());
     }
     if (hasType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
-      if (!isSparseDomain(exprType))
-        init = new CallExpr("_createFieldDefault", exprType->copy(), init);
+      init = new CallExpr("_createFieldDefault", exprType->copy(), init);
     }
     if (!hasType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
       init = new CallExpr("_copy", init);

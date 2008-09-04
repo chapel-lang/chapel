@@ -1,7 +1,6 @@
 //
 // Abstract distribution class
 //
-
 class Distribution {
   def newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
     compilerError("arithmetic domains not supported by this distribution");
@@ -20,58 +19,59 @@ class Distribution {
   }
 }
 
-//
-// Arithmetic domain builders:
-//
-def _dist_build_domain(dist, param rank: int, type idxType = int(32), param stridable: bool = false) {
-  return new _domain(rank, dist.newArithmeticDomain(rank, idxType, stridable));
-}
-
-def _dist_build_domain(dist, param rank: int, type idxType = int(32), param stridable: bool = false, init) {
-  var D = _dist_build_domain(dist, rank, idxType, stridable);
-  D = init;
-  return D;
-}
-
-//
-// Associative/opaque/enum domain builders:
-//
-def _dist_build_domain(dist, type idxType) where !__primitive("isEnumType", idxType) && !__primitive("isOpaqueType", idxType) {
-  return new _domain(1, dist.newAssociativeDomain(idxType));
-}
-
-def _dist_build_domain(dist, type idxType) where __primitive("isEnumType", idxType) {
-  return new _domain(1, dist.newEnumeratedDomain(idxType));
-}
-
-def _dist_build_domain(dist, type idxType) where __primitive("isOpaqueType", idxType) {
-  return new _domain(1, dist.newOpaqueDomain(idxType));
-}
-
-def _dist_build_domain(dist, type idxType, init) {
-  var D = _dist_build_domain(dist, idxType);
-  D = init;
-  return D;
-}
-
-def _build_subdomain_type(dom) type
-  return dom.buildSubdomain();
-
-def _build_sparse_subdomain_type(dist, parentDom)
-  return new _domain(parentDom.rank,
-                     dist.buildSparseDomain(parentDom.rank,
-                                            parentDom._value.idxType,
-                                            parentDom._value));
-
-def _build_opaque_domain_type(dist) type
-  return new _domain(1, dist.buildOpaqueDomain());
 
 pragma "has runtime type"
-def _build_array_type(dom, type eltType) type
+def chpl_buildDomainRuntimeType(dist, param rank: int, type idxType = int(32),
+                       param stridable: bool = false) type
+  return new _domain(rank, dist.newArithmeticDomain(rank, idxType, stridable));
+
+pragma "has runtime type"
+def chpl_buildDomainRuntimeType(dist, type idxType) type
+ where !__primitive("isEnumType", idxType) &&
+       !__primitive("isOpaqueType", idxType)
+  return new _domain(1, dist.newAssociativeDomain(idxType));
+
+pragma "has runtime type"
+def chpl_buildDomainRuntimeType(dist, type idxType) type
+ where __primitive("isEnumType", idxType)
+  return new _domain(1, dist.newEnumeratedDomain(idxType));
+
+pragma "has runtime type"
+def chpl_buildDomainRuntimeType(dist, type idxType) type
+ where __primitive("isOpaqueType", idxType)
+  return new _domain(1, dist.newOpaqueDomain(idxType));
+
+pragma "has runtime type"
+def chpl_buildSparseDomainRuntimeType(dist, dom: _domain) type
+  return new _domain(dom.rank, dist.newSparseDomain(dom.rank, dom._value.idxType, dom));
+
+def chpl_convertValueToRuntimeType(dom: _domain) type
+ where dom._value:BaseDenseArithmeticDomain
+  return chpl_buildDomainRuntimeType(dom._value.dist, dom._value.rank,
+                            dom._value.idxType, dom._value.stridable);
+
+def chpl_convertValueToRuntimeType(dom: _domain) type
+ where dom._value:BaseSparseArithmeticDomain
+  return chpl_buildSparseDomainRuntimeType(dom._value.dist, dom._value.parentDom);
+
+def chpl_convertValueToRuntimeType(dom: _domain) type
+where !dom._value:BaseArithmeticDomain
+  return chpl_buildDomainRuntimeType(dom._value.dist, dom._value.idxType);
+
+
+pragma "has runtime type"
+def chpl_buildArrayRuntimeType(dom: _domain, type eltType) type
   return dom.buildArray(eltType);
 
-def _array_to_runtime_type(arr: _array) type
-  return _build_array_type(arr.domain, arr.eltType);
+def chpl_convertValueToRuntimeType(arr: _array) type
+  return chpl_buildArrayRuntimeType(arr.domain, arr.eltType);
+
+
+// note: the domain of a subdomain is not yet part of the runtime type
+def chpl_buildSubDomainType(dom: _domain) type
+  return chpl_convertValueToRuntimeType(dom);
+
+
 
 def _build_domain(x: _domain)
   return x;
@@ -84,8 +84,6 @@ def _build_domain(ranges: range(?eltType,BoundedRangeType.bounded,?stridable) ..
   d.setIndices(ranges);
   return d;
 }
-
-def _wrapDomain(d) return new _domain(d.rank, d);
 
 //
 // computes || reduction over stridable of ranges
@@ -175,6 +173,7 @@ def _getRankChangeRanges(args) {
 }
 
 pragma "domain"
+pragma "has runtime type"
 record _domain {
   param rank : int;
   var _value;

@@ -10,20 +10,19 @@ class DefaultDist: Distribution {
   }
 
   def newAssociativeDomain(type idxType) {
-    return new SingleLocaleAssociativeDomain(idxType);
+    return new SingleLocaleAssociativeDomain(idxType, this);
   }
 
   def newEnumeratedDomain(type idxType) {
-    return new SingleLocaleEnumDomain(idxType);
+    return new SingleLocaleEnumDomain(idxType, this);
   }
 
   def newOpaqueDomain(type idxType) {
-    return new SingleLocaleOpaqueDomain();
+    return new SingleLocaleOpaqueDomain(this);
   }
 
-  def buildSparseDomain(param rank:int, type idxType,
-                        parentDom: BaseArithmeticDomain) {
-    return new SingleLocaleSparseDomain(rank, idxType, parentDom);
+  def newSparseDomain(param rank: int, type idxType, dom: _domain) {
+    return new SingleLocaleSparseDomain(rank, idxType, this, dom);
   }
 }
 
@@ -40,7 +39,7 @@ class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
   def SingleLocaleArithmeticDomain(param rank, type idxType, param stridable,
-                                   dist = DefaultDistribution) {
+                                   dist) {
     this.dist = dist;
   }
 

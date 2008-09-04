@@ -146,31 +146,6 @@ static void initializeOuterModules(ModuleSymbol* mod) {
 }
 
 
-static void cleanBuildDomainType(CallExpr* call) {
-  // Create a call to _dist_build_domain, copying actuals over
-  CallExpr* newDomainCall = new CallExpr("_dist_build_domain");
-  for_actuals(actual, call) {
-    actual->remove();
-    newDomainCall->insertAtTail(actual);
-  }
-  if (DefExpr* def = toDefExpr(call->parentExpr)) {
-    // If the parent was a DefExpr, move the "type" field into the initializer
-    call->remove();
-    Expr* userInit = def->init;
-    userInit->remove();
-    def->init = newDomainCall;
-    insert_help(def->init, def, def->parentSymbol);
-    if (userInit) {
-      newDomainCall->insertAtTail(new NamedExpr("init", userInit));
-    }
-  } else {
-    // Otherwise, wrap a "typeof" around the new call and replace the call
-    CallExpr* newCall = new CallExpr(PRIMITIVE_TYPEOF, newDomainCall);
-    call->replace(newCall);
-  }
-}
-
-
 void cleanup(void) {
   initializeOuterModules(theProgram);
 
@@ -181,9 +156,7 @@ void cleanup(void) {
   forv_Vec(BaseAST, ast, asts) {
     SET_LINENO(ast);
     if (CallExpr *call = toCallExpr(ast)) {
-      if (call->isNamed("_build_domain_type")) {
-        cleanBuildDomainType(call);
-      } else if (call->isNamed("_build_array_type") && call->numActuals() == 4) {
+      if (call->isNamed("chpl_buildArrayRuntimeType") && call->numActuals() == 4) {
         if (DefExpr *def = toDefExpr(call->parentExpr)) {
           CallExpr *tinfo = toCallExpr(def->exprType);
           Expr *indices = tinfo->get(3);

@@ -173,7 +173,7 @@ static void
 checkReturnPaths(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_ITERATOR_FN) ||
       !strcmp(fn->name, "=") ||
-      !strcmp(fn->name, "_build_array_type") ||
+      !strcmp(fn->name, "chpl_buildArrayRuntimeType") ||
       fn->retType == dtVoid ||
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
