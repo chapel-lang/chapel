@@ -101,7 +101,7 @@ class Block1DDist : Distribution {
   // global domain construction to not do anything with whole...
   //
   def newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
-    return new Block1DDom(idxType=idxType, dist=this);
+    return new Block1DDom(idxType=idxType, dist=this, stridable=stridable);
   }
 
 
@@ -261,10 +261,7 @@ class Block1DDom: BaseDenseArithmeticDomain {
   //
   param rank = 1;
 
-  //
-  // TODO: use stridable (sjd: this parameter is required)
-  //
-  param stridable: bool = true;
+  param stridable: bool; // sjd: added stridable parameter
 
   // LINKAGE:
 
@@ -283,7 +280,7 @@ class Block1DDom: BaseDenseArithmeticDomain {
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  var locDoms: [dist.targetLocDom] LocBlock1DDom(idxType);
+  var locDoms: [dist.targetLocDom] LocBlock1DDom(idxType, stridable);
 
 
   // STATE:
@@ -414,7 +411,7 @@ class Block1DDom: BaseDenseArithmeticDomain {
   // how to allocate a new array over this domain
   //
   def buildArray(type elemType) {
-    return new Block1DArr(idxType, elemType, this);
+    return new Block1DArr(idxType, elemType, stridable, this);
   }
 
   //
@@ -430,30 +427,6 @@ class Block1DDom: BaseDenseArithmeticDomain {
 
   def high {
     return whole.high;
-  }
-
-
-  //
-  // INTERFACE NOTES: These are the routines that I hadn't implemented
-  // myself in BradsBlock1DPar.chpl:
-  //
-  def buildEmptyDomain() {
-    if this != nil then
-      return new Block1DDom(idxType=idxType, dist=dist);
-    else {
-      //
-      // TODO: Add constructors -- now that domains/arrays inherit, it
-      // is really annoying to have arguments match in order to all the
-      // parent classes first.
-      //
-      // TODO: This is a complete hack -- the nil distribution is going
-      // to get us into trouble, and isn't really what we want to do here.
-      // distributions should be creating empty domains
-      //
-      return new Block1DDom(idxType=idxType, 
-                            dist= new Block1DDist(idxType, [1..0:idxType], 
-                                                  Locales));
-    }
   }
 
   //
@@ -496,7 +469,7 @@ class Block1DDom: BaseDenseArithmeticDomain {
     for localeIdx in dist.targetLocDom do
       on dist.targetLocs(localeIdx) do
         if (locDoms(localeIdx) == nil) then
-          locDoms(localeIdx) = new LocBlock1DDom(idxType, this, 
+          locDoms(localeIdx) = new LocBlock1DDom(idxType, stridable, this, 
                                                  dist.getChunk(whole, localeIdx));
         else
           locDoms(localeIdx).myBlock = dist.getChunk(whole, localeIdx);
@@ -519,13 +492,15 @@ class LocBlock1DDom {
   //
   type idxType;
 
+  param stridable: bool; // sjd: added stridable parameter
+
 
   // LINKAGE:
 
   //
   // UP: a reference to the parent global domain class
   //
-  const wholeDom: Block1DDom(idxType, 1);
+  const wholeDom: Block1DDom(idxType, 1, stridable);
 
 
   // STATE:
@@ -615,13 +590,14 @@ class Block1DArr: BaseArray {
   //
   type eltType;
 
+  param stridable: bool; // sjd: added stridable parameter
 
   // LINKAGE:
   
   //
   // LEFT: the global domain descriptor for this array
   //
-  var dom: Block1DDom(idxType, 1);
+  var dom: Block1DDom(idxType, 1, stridable);
 
   //
   // DOWN: an array of local array classes
@@ -632,7 +608,7 @@ class Block1DArr: BaseArray {
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  var locArr: [dom.dist.targetLocDom] LocBlock1DArr(idxType, eltType);
+  var locArr: [dom.dist.targetLocDom] LocBlock1DArr(idxType, eltType, stridable);
 
 
   // CONSTRUCTORS:
@@ -640,7 +616,7 @@ class Block1DArr: BaseArray {
   def initialize() {
     for localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
-        locArr(localeIdx) = new LocBlock1DArr(idxType, eltType, dom.locDoms(localeIdx));
+        locArr(localeIdx) = new LocBlock1DArr(idxType, eltType, stridable, dom.locDoms(localeIdx));
   }
 
 
@@ -736,12 +712,15 @@ class LocBlock1DArr {
   type eltType;
 
 
+  param stridable: bool; // sjd: added stridable parameter
+
+
   // LINKAGE:
 
   //
   // LEFT: a reference to the local domain class for this array and locale
   //
-  const locDom: LocBlock1DDom(idxType);
+  const locDom: LocBlock1DDom(idxType, stridable);
 
 
   // STATE:
