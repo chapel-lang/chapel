@@ -31,7 +31,7 @@ def chpl_buildDomainRuntimeType(dist, param rank: int, type idxType = int(32),
 
 pragma "has runtime type"
 def chpl_buildDomainRuntimeType(dist, type idxType) type
- where !__primitive("isEnumType", idxType) && idxType != opaque
+ where !__primitive("isEnumType", idxType) && idxType != opaque && idxType != _OpaqueIndex
   return new _domain(1, dist.newAssociativeDomain(idxType));
 
 pragma "has runtime type"
@@ -41,8 +41,14 @@ def chpl_buildDomainRuntimeType(dist, type idxType) type
 
 pragma "has runtime type"
 def chpl_buildDomainRuntimeType(dist, type idxType) type
- where idxType == opaque
+ where idxType == _OpaqueIndex
   return new _domain(1, dist.newOpaqueDomain(idxType));
+
+// This function has no 'has runtime type' pragma since the idxType of
+// opaque domains is _OpaqueIndex, not opaque.
+def chpl_buildDomainRuntimeType(dist, type idxType) type
+ where idxType == opaque
+  return chpl_buildDomainRuntimeType(dist, _OpaqueIndex);
 
 pragma "has runtime type"
 def chpl_buildSparseDomainRuntimeType(dist, dom: _domain) type
