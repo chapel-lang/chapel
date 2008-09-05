@@ -6,11 +6,11 @@ use ChapelReduce;
 use ChapelArray;
 use ChapelDistribution;
 use ChapelLocale;
-use SingleLocaleArithmetic;
-use SingleLocaleAssociative;
-use SingleLocaleSparse;
-use SingleLocaleEnum;
-use SingleLocaleOpaque;
+use DefaultArithmetic;
+use DefaultAssociative;
+use DefaultSparse;
+use DefaultEnum;
+use DefaultOpaque;
 use ChapelUtil;
 
 use Types;

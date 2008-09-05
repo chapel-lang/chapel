@@ -28,11 +28,11 @@ static void parseStandardModules(void) {
   parseStandardModule("ChapelArray.chpl");
   parseStandardModule("ChapelDistribution.chpl");
   parseStandardModule("ChapelUtil.chpl");
-  parseStandardModule("SingleLocaleArithmetic.chpl");
-  parseStandardModule("SingleLocaleAssociative.chpl");
-  parseStandardModule("SingleLocaleSparse.chpl");
-  parseStandardModule("SingleLocaleEnum.chpl");
-  parseStandardModule("SingleLocaleOpaque.chpl");
+  parseStandardModule("DefaultArithmetic.chpl");
+  parseStandardModule("DefaultAssociative.chpl");
+  parseStandardModule("DefaultSparse.chpl");
+  parseStandardModule("DefaultEnum.chpl");
+  parseStandardModule("DefaultOpaque.chpl");
 
   parseStandardModule("Types.chpl");
   parseStandardModule("Math.chpl");
