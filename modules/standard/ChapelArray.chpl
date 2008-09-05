@@ -144,7 +144,7 @@ record _domain {
       _value._arrs.append(x);
       _value._locked = false;  // writing to this sync var "unlocks" the lock!
     }
-    return new _array(_value.idxType, eltType, rank, x);
+    return new _array(eltType, rank, x);
   }
 
   def clear() {
@@ -217,7 +217,6 @@ record _domain {
 pragma "array"
 pragma "has runtime type"
 record _array {
-  type idxType;
   type eltType;
   param rank : int;
   var _value;
@@ -231,15 +230,15 @@ record _array {
     return new _domain(rank, _value.dom);
 
   pragma "inline"
-  def this(i: rank*idxType) var where rank > 1
+  def this(i: rank*_value.idxType) var where rank > 1
     return _value(i);
 
   pragma "inline"
-  def this(i: idxType ...rank) var where rank > 1
+  def this(i: _value.idxType ...rank) var where rank > 1
     return _value(i);
 
   pragma "inline"
-  def this(i: idxType) var where rank == 1
+  def this(i: _value.idxType) var where rank == 1
     return _value(i);
 
   //
@@ -259,16 +258,16 @@ record _array {
   def this(ranges: range(?_eltType,?boundedType,?stridable) ...rank) var {
     if boundsChecking then
       _value.checkSlice(ranges);
-    return new _array(idxType, eltType, rank, _value.slice(_dom((...ranges))._value));
+    return new _array(eltType, rank, _value.slice(_dom((...ranges))._value));
   }
 
   pragma "valid var"
-  def this(args ...rank) var where _validRankChangeArgs(args, idxType) {
+  def this(args ...rank) var where _validRankChangeArgs(args, _value.idxType) {
     if boundsChecking then
       _value.checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl_anyStridable(ranges);
-    return new _array(idxType, eltType, rank, _value.rankChange(rank, stridable, args));
+    return new _array(eltType, rank, _value.rankChange(rank, stridable, args));
   }
 
   def these() var {
@@ -280,12 +279,12 @@ record _array {
 
   def reindex(d: _domain) where rank == 1 {
     var x = _value.reindex(d._value);
-    return new _array(x.idxType, eltType, rank, x);
+    return new _array(eltType, rank, x);
   }
 
   def reindex(d: _domain) where rank != 1 {
     var x = _value.reindex(d._value);
-    return new _array(x.idxType, eltType, rank, x);
+    return new _array(eltType, rank, x);
   }
 
   def writeThis(f: Writer) {
