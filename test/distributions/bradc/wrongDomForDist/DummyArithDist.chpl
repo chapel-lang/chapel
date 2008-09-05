@@ -4,7 +4,7 @@ class MyDist : Distribution {
   }
 }
 
-class MyDom : BaseDenseArithmeticDomain {
+class MyDom : BaseArithmeticDomain {
   type idxType = int(32);
   def buildEmptyDomain() {
     return new MyDom();

@@ -4,6 +4,7 @@ use ChapelTuple;
 use ChapelRange;
 use ChapelReduce;
 use ChapelArray;
+use ChapelDistribution;
 use ChapelLocale;
 use SingleLocaleArithmetic;
 use SingleLocaleAssociative;

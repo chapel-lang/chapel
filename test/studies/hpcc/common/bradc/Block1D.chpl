@@ -245,7 +245,7 @@ class LocBlock1DDist {
 //
 // The global domain class
 //
-class Block1DDom: BaseDenseArithmeticDomain {
+class Block1DDom: BaseArithmeticDomain {
 
   // GENERICS:
 

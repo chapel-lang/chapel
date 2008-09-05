@@ -8,9 +8,6 @@
 #include "countTokens.h"
 #include "yy.h"
 
-static ModuleSymbol* fileModule = NULL;
-static ModuleSymbol* domainModule = NULL;
-
 static ModuleSymbol* parseStandardModule(const char* name) {
   static const char* modulePath = NULL;
   if (modulePath == NULL) {
@@ -24,11 +21,12 @@ static void parseStandardModules(void) {
 
   standardModule = parseStandardModule("ChapelStandard.chpl");
   parseStandardModule("ChapelLocale.chpl");
-  fileModule = parseStandardModule("ChapelIO.chpl");
+  parseStandardModule("ChapelIO.chpl");
   parseStandardModule("ChapelTuple.chpl");
   parseStandardModule("ChapelReduce.chpl");
   parseStandardModule("ChapelRange.chpl");
-  domainModule = parseStandardModule("ChapelArray.chpl");
+  parseStandardModule("ChapelArray.chpl");
+  parseStandardModule("ChapelDistribution.chpl");
   parseStandardModule("ChapelUtil.chpl");
   parseStandardModule("SingleLocaleArithmetic.chpl");
   parseStandardModule("SingleLocaleAssociative.chpl");

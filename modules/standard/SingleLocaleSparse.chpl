@@ -1,7 +1,7 @@
 use Search;
 use List;
 
-class SingleLocaleSparseDomain: BaseSparseArithmeticDomain {
+class SingleLocaleSparseDomain: BaseSparseDomain {
   param rank : int;
   type idxType;
   var parentDom: domain(rank, idxType);

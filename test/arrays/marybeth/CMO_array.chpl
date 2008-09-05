@@ -4,7 +4,7 @@ class CMODist : Distribution {
   }
 }
 
-class CMODomain: BaseDenseArithmeticDomain {
+class CMODomain: BaseArithmeticDomain {
   param rank : int;
   type idxType;
   param stridable: bool;

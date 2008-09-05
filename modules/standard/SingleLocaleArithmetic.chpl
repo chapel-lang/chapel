@@ -23,7 +23,7 @@ var DefaultDistribution = new DefaultDist();
 var Block = new DefaultDist();
 
 
-class SingleLocaleArithmeticDomain: BaseDenseArithmeticDomain {
+class SingleLocaleArithmeticDomain: BaseArithmeticDomain {
   param rank : int;
   type idxType;
   param stridable: bool;

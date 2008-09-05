@@ -6,7 +6,7 @@ class CSR {
 
 use Search;
 
-class CSRDomain: BaseSparseArithmeticDomain {
+class CSRDomain: BaseSparseDomain {
   param rank : int;
   type idxType;
   var dist: CSR;

@@ -1,29 +1,6 @@
 //
-// Abstract distribution class
+// Support for domain types
 //
-class Distribution {
-  def newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
-    compilerError("arithmetic domains not supported by this distribution");
-  }
-
-  def newAssociativeDomain(type idxType) {
-    compilerError("associative domains not supported by this distribution");
-  }
-
-  def newEnumeratedDomain(type idxType) {
-    compilerError("enumerated domains not supported by this distribution");
-  }
-
-  def newOpaqueDomain(type idxType) {
-    compilerError("opaque domains not supported by this distribution");
-  }
-
-  def newSparseDomain(param rank: int, type idxType, dom: _domain) {
-    compilerError("opaque domains not supported by this distribution");
-  }
-}
-
-
 pragma "has runtime type"
 def chpl_buildDomainRuntimeType(dist, param rank: int, type idxType = int(32),
                        param stridable: bool = false) type
@@ -45,7 +22,9 @@ def chpl_buildDomainRuntimeType(dist, type idxType) type
   return new _domain(1, dist.newOpaqueDomain(idxType));
 
 // This function has no 'has runtime type' pragma since the idxType of
-// opaque domains is _OpaqueIndex, not opaque.
+// opaque domains is _OpaqueIndex, not opaque.  This function is
+// essentially a wrapper around the function that actually builds up
+// the runtime type.
 def chpl_buildDomainRuntimeType(dist, type idxType) type
  where idxType == opaque
   return chpl_buildDomainRuntimeType(dist, _OpaqueIndex);
@@ -55,19 +34,21 @@ def chpl_buildSparseDomainRuntimeType(dist, dom: _domain) type
   return new _domain(dom.rank, dist.newSparseDomain(dom.rank, dom._value.idxType, dom));
 
 def chpl_convertValueToRuntimeType(dom: _domain) type
- where dom._value:BaseDenseArithmeticDomain
+ where dom._value:BaseArithmeticDomain
   return chpl_buildDomainRuntimeType(dom._value.dist, dom._value.rank,
                             dom._value.idxType, dom._value.stridable);
 
 def chpl_convertValueToRuntimeType(dom: _domain) type
- where dom._value:BaseSparseArithmeticDomain
+ where dom._value:BaseSparseDomain
   return chpl_buildSparseDomainRuntimeType(dom._value.dist, dom._value.parentDom);
 
 def chpl_convertValueToRuntimeType(dom: _domain) type
-where !dom._value:BaseArithmeticDomain
+where !dom._value:BaseArithmeticDomain && !dom._value:BaseSparseDomain
   return chpl_buildDomainRuntimeType(dom._value.dist, dom._value.idxType);
 
-
+//
+// Support for array types
+//
 pragma "has runtime type"
 def chpl_buildArrayRuntimeType(dom: _domain, type eltType) type
   return dom.buildArray(eltType);
@@ -75,13 +56,17 @@ def chpl_buildArrayRuntimeType(dom: _domain, type eltType) type
 def chpl_convertValueToRuntimeType(arr: _array) type
   return chpl_buildArrayRuntimeType(arr.domain, arr.eltType);
 
-
-// note: the domain of a subdomain is not yet part of the runtime type
+//
+// Support for subdomain types
+//
+// Note the domain of a subdomain is not yet part of the runtime type
+//
 def chpl_buildSubDomainType(dom: _domain) type
   return chpl_convertValueToRuntimeType(dom);
 
-
-
+//
+// Support for domain expressions, e.g., [1..3, 1..3]
+//
 def chpl_buildDomainExpr(x: _domain)
   return x;
 
@@ -95,17 +80,8 @@ def chpl_buildDomainExpr(ranges: range(?eltType,BoundedRangeType.bounded,?strida
 }
 
 //
-// computes || reduction over stridable of ranges
+// Support for index types
 //
-def _any_stridable(ranges, param d: int = 1) param {
-  if ranges(d).stridable == true then
-    return true;
-  else if ranges.size > d then
-    return _any_stridable(ranges, d+1);
-  else
-    return false;
-}
-
 def chpl_buildIndexType(param rank: int, type idxType) type where rank == 1 {
   var x: idxType;
   return x;
@@ -126,61 +102,8 @@ def chpl_buildIndexType(type idxType) type where idxType == opaque
   return _OpaqueIndex;
 
 //
-// given a tuple args, returns true if the tuple contains only
-// integers and ranges; that is, it is a valid argument list for rank
-// change
+// Domain wrapper record
 //
-def _validRankChangeArgs(args, type idxType) param {
-  def _validRankChangeArg(type idxType, r: range(?e,?b,?s)) param return true;
-  def _validRankChangeArg(type idxType, i: idxType) param return true;
-  def _validRankChangeArg(type idxType, x) param return false;
-
-  def help(param dim: int) param {
-    if !_validRankChangeArg(idxType, args(dim)) then
-      return false;
-    else if dim < args.size then
-      return help(dim+1);
-    else
-      return true;
-  }
-
-  return help(1);
-}
-
-def _getRankChangeRanges(args) {
-  def isRange(r: range(?e,?b,?s)) param return 1;
-  def isRange(r) param return 0;
-  def _tupleize(x) {
-    var y: 1*x.type;
-    y(1) = x;
-    return y;
-  }
-  def collectRanges(param dim: int) {
-    if dim > args.size then
-      compilerError("domain slice requires a range in at least one dimension");
-    if isRange(args(dim)) then
-      return collectRanges(dim+1, _tupleize(args(dim)));
-    else
-      return collectRanges(dim+1);
-  }
-  def collectRanges(param dim: int, x: _tuple) {
-    if dim > args.size {
-      return x;
-    } else if dim < args.size {
-      if isRange(args(dim)) then
-        return collectRanges(dim+1, ((...x), args(dim)));
-      else
-        return collectRanges(dim+1, x);
-    } else {
-      if isRange(args(dim)) then
-        return ((...x), args(dim));
-      else
-        return x;
-    }
-  }
-  return collectRanges(1);
-}
-
 pragma "domain"
 pragma "has runtime type"
 record _domain {
@@ -306,6 +229,10 @@ record _domain {
   def getIndices()
     return _value.getIndices();
 
+  def writeThis(f: Writer) {
+    f.write(_value);
+  }
+
   // associative array interface
 
   def sorted() {
@@ -315,53 +242,9 @@ record _domain {
   }
 }
 
-def chpl_isDomain(x: _domain) param return true;
-def chpl_isDomain(x) param return false;
-
-def =(a: _domain, b: _domain) {
-  for e in a._value._arrs do
-    e.reallocate(b);
-  a._value.setIndices(b._value.getIndices());
-  return a;
-}
-
-def =(a: _domain, b: _tuple) {
-  for ind in 1..b.size {
-    a.add(b(ind));
-  }
-  return a;
-}
-
-def =(d: _domain, r: range(?)) {
-  d = [r];
-  return d;
-}
-
-def =(a: _domain, b) {  // b is iteratable
-  a._value.clearForIteratableAssign();
-  for ind in b {
-    a.add(ind);
-  }
-  return a;
-}
-
-def _copy(a: _domain) {
-  var b: a.type;
-  b.setIndices(a.getIndices());
-  return b;
-}
-
-def _domain.writeThis(f: Writer) {
-  f.write(_value);
-}
-
-def by(a: _domain, b) {
-  var x = a._value.strideBy(b);
-  return new _domain(a.rank, x);
-}
-
-
-// this is a wrapper class for all arrays
+//
+// Array wrapper record
+//
 pragma "array"
 pragma "has runtime type"
 record _array {
@@ -436,6 +319,10 @@ record _array {
     return new _array(x.idxType, eltType, rank, x);
   }
 
+  def writeThis(f: Writer) {
+    f.write(_value);
+  }
+
   // sparse array interface
 
   def IRV var {
@@ -449,6 +336,116 @@ record _array {
       yield i;
     }
   }
+}
+
+//
+// Helper functions
+//
+
+// computes || reduction over stridable of ranges
+def _any_stridable(ranges, param d: int = 1) param {
+  if ranges(d).stridable == true then
+    return true;
+  else if ranges.size > d then
+    return _any_stridable(ranges, d+1);
+  else
+    return false;
+}
+
+// given a tuple args, returns true if the tuple contains only
+// integers and ranges; that is, it is a valid argument list for rank
+// change
+def _validRankChangeArgs(args, type idxType) param {
+  def _validRankChangeArg(type idxType, r: range(?e,?b,?s)) param return true;
+  def _validRankChangeArg(type idxType, i: idxType) param return true;
+  def _validRankChangeArg(type idxType, x) param return false;
+
+  def help(param dim: int) param {
+    if !_validRankChangeArg(idxType, args(dim)) then
+      return false;
+    else if dim < args.size then
+      return help(dim+1);
+    else
+      return true;
+  }
+
+  return help(1);
+}
+
+def _getRankChangeRanges(args) {
+  def isRange(r: range(?e,?b,?s)) param return 1;
+  def isRange(r) param return 0;
+  def _tupleize(x) {
+    var y: 1*x.type;
+    y(1) = x;
+    return y;
+  }
+  def collectRanges(param dim: int) {
+    if dim > args.size then
+      compilerError("domain slice requires a range in at least one dimension");
+    if isRange(args(dim)) then
+      return collectRanges(dim+1, _tupleize(args(dim)));
+    else
+      return collectRanges(dim+1);
+  }
+  def collectRanges(param dim: int, x: _tuple) {
+    if dim > args.size {
+      return x;
+    } else if dim < args.size {
+      if isRange(args(dim)) then
+        return collectRanges(dim+1, ((...x), args(dim)));
+      else
+        return collectRanges(dim+1, x);
+    } else {
+      if isRange(args(dim)) then
+        return ((...x), args(dim));
+      else
+        return x;
+    }
+  }
+  return collectRanges(1);
+}
+
+//
+// Support for += and -= over domains
+//
+def chpl_isDomain(x: _domain) param return true;
+def chpl_isDomain(x) param return false;
+
+//
+// Assignment of domains and arrays
+//
+def =(a: _domain, b: _domain) {
+  for e in a._value._arrs do
+    e.reallocate(b);
+  a._value.setIndices(b._value.getIndices());
+  return a;
+}
+
+def =(a: _domain, b: _tuple) {
+  for ind in 1..b.size {
+    a.add(b(ind));
+  }
+  return a;
+}
+
+def =(d: _domain, r: range(?)) {
+  d = [r];
+  return d;
+}
+
+def =(a: _domain, b) {  // b is iteratable
+  a._value.clearForIteratableAssign();
+  for ind in b {
+    a.add(ind);
+  }
+  return a;
+}
+
+def _copy(a: _domain) {
+  var b: a.type;
+  b.setIndices(a.getIndices());
+  return b;
 }
 
 pragma "inline" def =(a: _array, b) {
@@ -484,129 +481,11 @@ def _copy(a: _array) {
   return b;
 }
 
-def _array.writeThis(f: Writer) {
-  f.write(_value);
-}
-
-// this is the class that all array classes are derived from
-pragma "base array"
-class BaseArray {
-  def reallocate(d: _domain) {
-    halt("reallocating not support for this array type");
-  }
-
-  // This method is unsatisfactory -- see bradc's commit entries of
-  // 01/02/08 around 14:30 for details
-  def _purge( ind: int) {
-    halt("purging not supported for this array type");
-  }
-
-  def _resize( length: int, old_map) {
-    halt("resizing not supported for this array type");
-  }
-
-  def sparseShiftArray(shiftrange, initrange) {
-    halt("sparseGrowDomain not supported for non-sparse arrays");
-  }
-
-  // methods for associative arrays
-  def _backupArray() {
-    halt("_backupArray() not supported for non-associative arrays");
-  }
-
-  def _removeArrayBackup() {
-    halt("_removeArrayBackup() not supported for non-associative arrays");
-  }
-
-  def _preserveArrayElement(oldslot, newslot) {
-    halt("_preserveArrayElement() not supported for non-associative arrays");
-  }
-}
 
 
-class BaseDomain {
-  var _arrs: list(BaseArray),
-      _locked: sync bool = false;
-
-  def member(ind) : bool {
-    halt("membership test not supported for this domain type");
-    return false;
-  }
-
-  // used for associative domains/arrays
-  def _backupArrays() {
-    for arr in _arrs do
-      arr._backupArray();
-  }
-
-  def _removeArrayBackups() {
-    for arr in _arrs do
-      arr._removeArrayBackup();
-  }
-
-  def _preserveArrayElement(oldslot, newslot) {
-    for arr in _arrs do
-      arr._preserveArrayElement(oldslot, newslot);
-  }
-}
-
-
-class BaseArithmeticDomain : BaseDomain {
-}
-
-class BaseDenseArithmeticDomain : BaseArithmeticDomain {
-  def clear() {
-    halt("clear not implemented for this distribution");
-  }
-
-  def clearForIteratableAssign() {
-    compilerError("Illegal assignment to an arithmetic domain");
-  }
-
-  def add(x) {
-    compilerError("Cannot add indices to an arithmetic domain");
-  }
-}
-
-
-class BaseSparseArithmeticDomain : BaseArithmeticDomain {
-  def clear() {
-    halt("clear not implemented for this distribution");
-  }
-
-  def clearForIteratableAssign() {
-    clear();
-  }
-}
-
-class BaseAssociativeDomain : BaseDomain {
-  def clear() {
-    halt("clear not implemented for this distribution");
-  }
-
-  def clearForIteratableAssign() {
-    clear();
-  }
-}
-
-class BaseOpaqueDomain : BaseDomain {
-  def clear() {
-    halt("clear not implemented for this distribution");
-  }
-
-  def clearForIteratableAssign() {
-    clear();
-  }
-}
-
-class BaseEnumDomain : BaseDomain {
-  def clear() {
-    compilerError("Cannot clear an enumerated domain");
-  }
-
-  def clearForIteratableAssign() {
-    compilerError("Illegal assignment to an enumerated domain");
-  }
+def by(a: _domain, b) {
+  var x = a._value.strideBy(b);
+  return new _domain(a.rank, x);
 }
 
 //
@@ -651,9 +530,11 @@ def iteratorIndex(t: _tuple) {
   pragma "expand tuples with values"
   def iteratorIndexHelp(t: _tuple, param dim: int) {
     if dim == t.size-1 then
-      return _build_tuple_always_allow_ref(iteratorIndex(t(dim)), iteratorIndex(t(dim+1)));
+      return _build_tuple_always_allow_ref(iteratorIndex(t(dim)),
+                                           iteratorIndex(t(dim+1)));
     else
-      return _build_tuple_always_allow_ref(iteratorIndex(t(dim)), (...iteratorIndexHelp(t, dim+1)));
+      return _build_tuple_always_allow_ref(iteratorIndex(t(dim)),
+                                           (...iteratorIndexHelp(t, dim+1)));
   }
 
   return iteratorIndexHelp(t, 1);
@@ -757,9 +638,11 @@ pragma "inline"
 def _toFollower(x: _tuple, leaderIndex) {
   pragma "inline" def _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
     if dim == x.size-1 then
-      return (_toFollower(x(dim), leaderIndex), _toFollower(x(dim+1), leaderIndex));
+      return (_toFollower(x(dim), leaderIndex),
+              _toFollower(x(dim+1), leaderIndex));
     else
-      return (_toFollower(x(dim), leaderIndex), (..._toFollowerHelp(x, leaderIndex, dim+1)));
+      return (_toFollower(x(dim), leaderIndex),
+              (..._toFollowerHelp(x, leaderIndex, dim+1)));
   }
   return _toFollowerHelp(x, leaderIndex, 1);
 }
