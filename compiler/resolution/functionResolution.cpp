@@ -4191,7 +4191,7 @@ fixTypeNames(ClassType* ct) {
   }
   if (ct->instantiatedFrom &&
       !strcmp(ct->instantiatedFrom->symbol->name, "DefaultArithmeticDomain")) {
-    ct->symbol->name = astr("domain", ct->symbol->name+28);
+    ct->symbol->name = astr("domain", ct->symbol->name+23);
   }
   if (ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN)) {
     ct->symbol->name = ct->getField("_value")->type->symbol->name;
