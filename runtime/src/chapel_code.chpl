@@ -3,8 +3,8 @@ use ChapelIO;
 use ChapelTuple;
 use ChapelRange;
 use ChapelArray;
-use SingleLocaleArithmetic;
-use SingleLocaleAssociative;
+use DefaultArithmetic;
+use DefaultAssociative;
 use Containers;
 
 /* The following deals with the task table structure. The task table is
