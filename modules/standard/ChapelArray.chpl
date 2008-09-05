@@ -70,11 +70,14 @@ def chpl_buildSubDomainType(dom: _domain) type
 def chpl_buildDomainExpr(x: _domain)
   return x;
 
-def chpl_buildDomainExpr(ranges: range(?eltType,BoundedRangeType.bounded,?stridable) ...?rank) {
-  for param i in 2..rank do
-    if eltType(1) != eltType(i) then
+def chpl_buildDomainExpr(ranges: range(?) ...?rank) {
+  for param i in 2..rank {
+    if ranges(1).eltType != ranges(i).eltType then
       compilerError("domain has mixed dimensional type");
-  var d: domain(rank, eltType(1), _any_stridable(ranges));
+    if ranges(i).boundedType != BoundedRangeType.bounded then
+      compilerError("domain has dimension of unbounded range");
+  }
+  var d: domain(rank, ranges(1).eltType, chpl_anyStridable(ranges));
   d.setIndices(ranges);
   return d;
 }
@@ -121,16 +124,15 @@ record _domain {
   }
 
   def this(ranges: range(?eltType,?boundedType,?stridable) ...rank)
-    return new _domain(rank, _value.slice(_any_stridable(ranges), ranges));
+    return new _domain(rank, _value.slice(chpl_anyStridable(ranges), ranges));
 
   def this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
     var ranges = _getRankChangeRanges(args);
-    param rank = ranges.size, stridable = _any_stridable(ranges);
+    param rank = ranges.size, stridable = chpl_anyStridable(ranges);
     return new _domain(rank, _value.rankChange(rank, stridable, args));
   }
 
-  def dim(d : int)
-    return _value.dim(d);
+  def dim(d : int) return _value.dim(d);
 
   def dimIter(param d, ind) {
     for i in _value.dimIter(d, ind) do yield i;
@@ -143,11 +145,6 @@ record _domain {
       _value._locked = false;  // writing to this sync var "unlocks" the lock!
     }
     return new _array(_value.idxType, eltType, rank, x);
-  }
-
-  def buildSubdomain() {
-    var x = _value.buildSubdomain();
-    return new _domain(rank, x);
   }
 
   def clear() {
@@ -172,50 +169,22 @@ record _domain {
   def low return _value.low;
   def high return _value.high;
 
-  def member(i) {
-    return _value.member(i);
-  }
+  def member(i) return _value.member(i);
+  def order(i) return _value.order(i);
+  def position(i) return _value.position(i);
 
-  def order(i) {
-    return _value.order(i);
-  }
+  def expand(i: int ...rank) return expand(i);
+  def expand(i: rank*int) return new _domain(rank, _value.expand(i));
+  def expand(i: int) where rank > 1 return new _domain(rank, _value.expand(i));
 
-  def position(i) {
-    return _value.position(i);
-  }
+  def exterior(i: int ...rank) return exterior(i);
+  def exterior(i: rank*int) return new _domain(rank, _value.exterior(i));
 
-  def expand(i: int ...rank)
-    return expand(i);
+  def interior(i: int ...rank) return interior(i);
+  def interior(i: rank*int) return new _domain(rank, _value.interior(i));
 
-  def expand(i: rank*int)
-    return new _domain(rank, _value.expand(i));
-
-  def expand(i: int) where rank > 1
-    return new _domain(rank, _value.expand(i));
-
-  def exterior(i: int ...rank)
-    return exterior(i);
-
-  def exterior(i: rank*int) {
-    var x = _value.exterior(i);
-    return new _domain(rank, x);
-  }
-
-  def interior(i: int ...rank)
-    return interior(i);
-
-  def interior(i: rank*int) {
-    var x = _value.interior(i);
-    return new _domain(rank, x);
-  }
-
-  def translate(i: int ...rank)
-    return translate(i);
-
-  def translate(i: rank*int) {
-    var x = _value.translate(i);
-    return new _domain(rank, x);
-  }
+  def translate(i: int ...rank) return translate(i);
+  def translate(i: rank*int) return new _domain(rank, _value.translate(i));
 
   def subBlocks {
     for d in _value.subBlocks do
@@ -298,7 +267,7 @@ record _array {
     if boundsChecking then
       _value.checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
-    param rank = ranges.size, stridable = _any_stridable(ranges);
+    param rank = ranges.size, stridable = chpl_anyStridable(ranges);
     return new _array(idxType, eltType, rank, _value.rankChange(rank, stridable, args));
   }
 
@@ -343,13 +312,11 @@ record _array {
 //
 
 // computes || reduction over stridable of ranges
-def _any_stridable(ranges, param d: int = 1) param {
-  if ranges(d).stridable == true then
-    return true;
-  else if ranges.size > d then
-    return _any_stridable(ranges, d+1);
-  else
-    return false;
+def chpl_anyStridable(ranges, param d: int = 1) param {
+  for param i in 1..ranges.size do
+    if ranges(i).stridable then
+      return true;
+  return false;
 }
 
 // given a tuple args, returns true if the tuple contains only

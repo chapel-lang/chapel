@@ -154,9 +154,6 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
                                            dom=this);
   }
 
-  def buildSubdomain()
-    return new DefaultArithmeticDomain(rank, idxType, stridable, dist);
-
   def slice(param stridable: bool, ranges) {
     var d = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
     for param i in 1..rank do
