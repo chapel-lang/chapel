@@ -1065,7 +1065,7 @@ anon_record_type:
 
 distributed_expr: /* not supported in one-locale implementation */
   /* nothing */
-    { $$ = new SymExpr(astr("DefaultDistribution")); }
+    { $$ = new SymExpr("defaultDistribution"); }
 | TDISTRIBUTED TLP expr TRP
     { $$ = $3; }
 ;

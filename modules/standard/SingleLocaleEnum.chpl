@@ -1,12 +1,12 @@
 use List;
-class SingleLocaleEnumDomain: BaseEnumDomain {
+class DefaultEnumDomain: BaseEnumDomain {
   type idxType;
-  var dist: DefaultDist;
-  var adomain: SingleLocaleAssociativeDomain(idxType);
+  var dist: DefaultDistribution;
+  var adomain: DefaultAssociativeDomain(idxType);
 
-  def SingleLocaleEnumDomain(type idxType, dist: DefaultDist) {
+  def DefaultEnumDomain(type idxType, dist: DefaultDistribution) {
     this.dist = dist;
-    adomain = new SingleLocaleAssociativeDomain(idxType, dist);
+    adomain = new DefaultAssociativeDomain(idxType, dist);
     var enumTuple = _enum_enumerate(idxType);
     for param i in 1..enumTuple.size do
       adomain.add(enumTuple(i));
@@ -14,7 +14,7 @@ class SingleLocaleEnumDomain: BaseEnumDomain {
 
   def getIndices() return adomain;
 
-  def setIndices(b: SingleLocaleAssociativeDomain) {
+  def setIndices(b: DefaultAssociativeDomain) {
     adomain.setIndices(b);
   }
 
@@ -33,12 +33,12 @@ class SingleLocaleEnumDomain: BaseEnumDomain {
   }
 
   def buildArray(type eltType) {
-    var ia = new SingleLocaleEnumArray(eltType, idxType, dom=this);
+    var ia = new DefaultEnumArray(eltType, idxType, dom=this);
     return ia;
   }
 }
 
-def SingleLocaleEnumDomain.writeThis(f: Writer) {
+def DefaultEnumDomain.writeThis(f: Writer) {
   var enumTuple = _enum_enumerate(idxType);
   f.write("[");
   if (enumTuple.size > 1) {
@@ -49,7 +49,7 @@ def SingleLocaleEnumDomain.writeThis(f: Writer) {
   f.write("]");
 }
 
-def SingleLocaleEnumArray.writeThis(f: Writer) {
+def DefaultEnumArray.writeThis(f: Writer) {
   var enumTuple = _enum_enumerate(idxType);
   if (enumTuple.size > 1) {
     f.write(anarray(enumTuple(1)));
@@ -58,12 +58,12 @@ def SingleLocaleEnumArray.writeThis(f: Writer) {
   }
 }
 
-class SingleLocaleEnumArray: BaseArray {
+class DefaultEnumArray: BaseArray {
   type eltType;
   type idxType;
 
-  var dom: SingleLocaleEnumDomain(idxType=idxType);
-  var anarray = new SingleLocaleAssociativeArray(eltType, idxType, dom.adomain);
+  var dom: DefaultEnumDomain(idxType=idxType);
+  var anarray = new DefaultAssociativeArray(eltType, idxType, dom.adomain);
 
   def this(ind : idxType) var : eltType
     return anarray(ind);

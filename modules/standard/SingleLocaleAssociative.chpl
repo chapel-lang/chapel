@@ -6,7 +6,7 @@ type chpl_table_index_type = int(32);
 
 
 /* These declarations could/should both be nested within
-   SingleLocaleAssociativeDomain? */
+   DefaultAssociativeDomain? */
 enum chpl_hash_status { empty, full, deleted };
 
 record chpl_TableEntry {
@@ -21,10 +21,10 @@ const chpl_primes : [0..26] chpl_table_index_type
                      6291469, 12582917, 25165843, 50331653, 100663319, 
                      201326611, 402653189, 805306457, 1610612741);
 
-class SingleLocaleAssociativeDomain: BaseAssociativeDomain {
+class DefaultAssociativeDomain: BaseAssociativeDomain {
   type idxType;
 
-  var dist: DefaultDist;
+  var dist: DefaultDistribution;
 
   // The guts of the associative domain
   var numEntries: chpl_table_index_type = 0;
@@ -43,7 +43,7 @@ class SingleLocaleAssociativeDomain: BaseAssociativeDomain {
   var tmpDom2 = [0..-1:chpl_table_index_type];
   var tmpTable2: [tmpDom2] idxType;
 
-  def SingleLocaleAssociativeDomain(type idxType, dist: DefaultDist) {
+  def DefaultAssociativeDomain(type idxType, dist: DefaultDistribution) {
     this.dist = dist;
   }
 
@@ -52,15 +52,15 @@ class SingleLocaleAssociativeDomain: BaseAssociativeDomain {
   //
   def buildArray(type eltType) {
     if (this == nil) then
-      return new SingleLocaleAssociativeArray(eltType, idxType, dom=new SingleLocaleAssociativeDomain(idxType, dist)); 
+      return new DefaultAssociativeArray(eltType, idxType, dom=new DefaultAssociativeDomain(idxType, dist)); 
     else 
-      return new SingleLocaleAssociativeArray(eltType, idxType, dom=this); 
+      return new DefaultAssociativeArray(eltType, idxType, dom=this); 
   }
 
   def getIndices()
     return this;
 
-  def setIndices(b: SingleLocaleAssociativeDomain) {
+  def setIndices(b: DefaultAssociativeDomain) {
     // store cache of old domain/arrays
     _backupArrays();
     tmpDom = tableDom;
@@ -263,10 +263,10 @@ class SingleLocaleAssociativeDomain: BaseAssociativeDomain {
 }
 
 
-class SingleLocaleAssociativeArray: BaseArray {
+class DefaultAssociativeArray: BaseArray {
   type eltType;
   type idxType;
-  var dom : SingleLocaleAssociativeDomain(idxType);
+  var dom : DefaultAssociativeDomain(idxType);
 
   var data : [dom.tableDom] eltType;
 

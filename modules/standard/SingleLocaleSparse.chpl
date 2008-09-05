@@ -1,11 +1,11 @@
 use Search;
 use List;
 
-class SingleLocaleSparseDomain: BaseSparseDomain {
+class DefaultSparseDomain: BaseSparseDomain {
   param rank : int;
   type idxType;
   var parentDom: domain(rank, idxType);
-  var dist: DefaultDist;
+  var dist: DefaultDistribution;
   var nnz = 0;  // intention is that user might specify this to avoid reallocs
 
   var nnzDomSize = nnz;
@@ -13,8 +13,8 @@ class SingleLocaleSparseDomain: BaseSparseDomain {
 
   var indices: [nnzDom] index(rank);
 
-  def SingleLocaleSparseDomain(param rank, type idxType, 
-                               dist: DefaultDist,
+  def DefaultSparseDomain(param rank, type idxType, 
+                               dist: DefaultDistribution,
                                parentDom: domain(rank, idxType)) {
     this.parentDom = parentDom;
     this.dist = dist;
@@ -32,7 +32,7 @@ class SingleLocaleSparseDomain: BaseSparseDomain {
 
 
   def buildArray(type eltType)
-    return new SingleLocaleSparseArray(eltType, rank, idxType, dom=this);
+    return new DefaultSparseArray(eltType, rank, idxType, dom=this);
 
   def these() {
     for i in 1..nnz {
@@ -111,12 +111,12 @@ class SingleLocaleSparseDomain: BaseSparseDomain {
 }
 
 
-class SingleLocaleSparseArray: BaseArray {
+class DefaultSparseArray: BaseArray {
   type eltType;
   param rank : int;
   type idxType;
 
-  var dom : SingleLocaleSparseDomain(rank, idxType);
+  var dom : DefaultSparseDomain(rank, idxType);
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 
@@ -172,7 +172,7 @@ class SingleLocaleSparseArray: BaseArray {
 }
 
 
-def SingleLocaleSparseDomain.writeThis(f: Writer) {
+def DefaultSparseDomain.writeThis(f: Writer) {
   if (rank == 1) {
     f.write("[");
     if (nnz >= 1) {
@@ -200,7 +200,7 @@ def SingleLocaleSparseDomain.writeThis(f: Writer) {
 }
 
 
-def SingleLocaleSparseArray.writeThis(f: Writer) {
+def DefaultSparseArray.writeThis(f: Writer) {
   if (rank == 1) {
     if (dom.nnz >= 1) {
       f.write(data(1));

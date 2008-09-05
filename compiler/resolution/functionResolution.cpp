@@ -4190,7 +4190,7 @@ fixTypeNames(ClassType* ct) {
     ct->symbol->name = astr("[", domain_type, "] ", elt_type);
   }
   if (ct->instantiatedFrom &&
-      !strcmp(ct->instantiatedFrom->symbol->name, "SingleLocaleArithmeticDomain")) {
+      !strcmp(ct->instantiatedFrom->symbol->name, "DefaultArithmeticDomain")) {
     ct->symbol->name = astr("domain", ct->symbol->name+28);
   }
   if (ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN)) {

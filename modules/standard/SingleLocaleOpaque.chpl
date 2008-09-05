@@ -1,12 +1,12 @@
 use List;
-class SingleLocaleOpaqueDomain: BaseOpaqueDomain {
+class DefaultOpaqueDomain: BaseOpaqueDomain {
   type idxType = _OpaqueIndex;
-  var dist: DefaultDist;
-  var adomain: SingleLocaleAssociativeDomain(idxType=_OpaqueIndex);
+  var dist: DefaultDistribution;
+  var adomain: DefaultAssociativeDomain(idxType=_OpaqueIndex);
 
-  def SingleLocaleOpaqueDomain(dist: DefaultDist) {
+  def DefaultOpaqueDomain(dist: DefaultDistribution) {
     this.dist = dist;
-    adomain = new SingleLocaleAssociativeDomain(_OpaqueIndex, dist);
+    adomain = new DefaultAssociativeDomain(_OpaqueIndex, dist);
   }
 
   def create() {
@@ -17,7 +17,7 @@ class SingleLocaleOpaqueDomain: BaseOpaqueDomain {
 
   def getIndices() return adomain;
 
-  def setIndices(b: SingleLocaleAssociativeDomain) {
+  def setIndices(b: DefaultAssociativeDomain) {
     adomain.setIndices(b);
   }
 
@@ -35,25 +35,25 @@ class SingleLocaleOpaqueDomain: BaseOpaqueDomain {
   }
 
   def buildArray(type eltType) {
-    var ia = new SingleLocaleOpaqueArray(eltType, idxType, dom=this);
+    var ia = new DefaultOpaqueArray(eltType, idxType, dom=this);
     return ia;
   }
 }
 
-def SingleLocaleOpaqueDomain.writeThis(f: Writer) {
+def DefaultOpaqueDomain.writeThis(f: Writer) {
   adomain.writeThis(f);
 }
 
-def SingleLocaleOpaqueArray.writeThis(f: Writer) {
+def DefaultOpaqueArray.writeThis(f: Writer) {
   anarray.writeThis(f);
 }
 
-class SingleLocaleOpaqueArray: BaseArray {
+class DefaultOpaqueArray: BaseArray {
   type eltType;
   type idxType;
 
-  var dom: SingleLocaleOpaqueDomain(idxType=idxType);
-  var anarray = new SingleLocaleAssociativeArray(eltType, idxType, dom.adomain);
+  var dom: DefaultOpaqueDomain(idxType=idxType);
+  var anarray = new DefaultAssociativeArray(eltType, idxType, dom.adomain);
 
   def this(ind : idxType) var : eltType
     return anarray(ind);
@@ -77,6 +77,6 @@ class SingleLocaleOpaqueArray: BaseArray {
   }
 }
 
-def SingleLocaleOpaqueDomain.remove(idx: idxType) {
+def DefaultOpaqueDomain.remove(idx: idxType) {
   adomain.remove(idx);
 }
