@@ -607,22 +607,24 @@ void lowerIterator(FnSymbol* fn) {
   ii->icType->fields.insertAtTail(new DefExpr(new VarSymbol("more", dtInt[INT_SIZE_32])));
 
   replaceLocalsWithFields(ii, asts, local2field, locals);
-  if (singleLoop) {
-    buildZip1(ii, asts, singleLoop);
-    buildZip2(ii, asts, singleLoop);
-    buildZip3(ii, asts, singleLoop);
-    buildZip4(ii, asts, singleLoop);
-  } else {
-    ii->zip1->insertAtTail(new CallExpr(ii->advance, ii->zip1->_this));
-    ii->zip1->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
-    ii->zip2->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
-    ii->zip3->insertAtTail(new CallExpr(ii->advance, ii->zip3->_this));
-    ii->zip3->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
-    ii->zip4->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+  if (!ii->icType->defaultConstructor->hasFlag(FLAG_INLINE_ITERATOR)) {
+    if (singleLoop) {
+      buildZip1(ii, asts, singleLoop);
+      buildZip2(ii, asts, singleLoop);
+      buildZip3(ii, asts, singleLoop);
+      buildZip4(ii, asts, singleLoop);
+    } else {
+      ii->zip1->insertAtTail(new CallExpr(ii->advance, ii->zip1->_this));
+      ii->zip1->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+      ii->zip2->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+      ii->zip3->insertAtTail(new CallExpr(ii->advance, ii->zip3->_this));
+      ii->zip3->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+      ii->zip4->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+    }
+    buildAdvance(fn, asts, local2field, locals);
+    buildHasMore(ii);
+    buildGetValue(ii);
   }
-  buildAdvance(fn, asts, local2field, locals);
-  buildHasMore(ii);
-  buildGetValue(ii);
   rebuildIterator(ii, local2field, locals);
 }
 

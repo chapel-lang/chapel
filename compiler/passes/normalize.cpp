@@ -207,10 +207,13 @@ static void heapAllocateLocals() {
 
             // collect local variables defined outside of block
             if (VarSymbol* var = toVarSymbol(se->var)) {
+              FnSymbol* fn = toFnSymbol(var->defPoint->parentSymbol);
               if (!defSet.set_in(var->defPoint) &&
-                  isFnSymbol(var->defPoint->parentSymbol) &&
+                  fn && 
                   !var->hasFlag(FLAG_PARAM) &&
                   !var->hasFlag(FLAG_PRIVATE) &&
+                  // ignore returned or yielded locals (as in leaders)
+                  fn->getReturnSymbol() != var &&
                   // ignore locale tmp for on
                   (!block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON) ||
                    se->parentExpr != block->blockInfo) &&
