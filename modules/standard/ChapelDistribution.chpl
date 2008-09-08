@@ -66,12 +66,6 @@ class BaseArithmeticDomain : BaseDomain {
   }
 }
 
-def isArithmeticDomain(d: domain) param {
-  def isArithmeticDomainClass(dc: BaseArithmeticDomain) param return true;
-  def isArithmeticDomainClass(dc) param return false;
-  return isArithmeticDomainClass(d._value);
-}
-
 class BaseSparseDomain : BaseDomain {
   def clear() {
     halt("clear not implemented for this distribution");

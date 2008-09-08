@@ -4,22 +4,22 @@
 pragma "has runtime type"
 def chpl_buildDomainRuntimeType(dist, param rank: int, type idxType = int(32),
                        param stridable: bool = false) type
-  return new _domain(rank, dist.newArithmeticDomain(rank, idxType, stridable));
+  return new _domain(dist.newArithmeticDomain(rank, idxType, stridable));
 
 pragma "has runtime type"
 def chpl_buildDomainRuntimeType(dist, type idxType) type
  where !__primitive("isEnumType", idxType) && idxType != opaque && idxType != _OpaqueIndex
-  return new _domain(1, dist.newAssociativeDomain(idxType));
+  return new _domain(dist.newAssociativeDomain(idxType));
 
 pragma "has runtime type"
 def chpl_buildDomainRuntimeType(dist, type idxType) type
  where __primitive("isEnumType", idxType)
-  return new _domain(1, dist.newEnumeratedDomain(idxType));
+  return new _domain(dist.newEnumeratedDomain(idxType));
 
 pragma "has runtime type"
 def chpl_buildDomainRuntimeType(dist, type idxType) type
  where idxType == _OpaqueIndex
-  return new _domain(1, dist.newOpaqueDomain(idxType));
+  return new _domain(dist.newOpaqueDomain(idxType));
 
 // This function has no 'has runtime type' pragma since the idxType of
 // opaque domains is _OpaqueIndex, not opaque.  This function is
@@ -31,7 +31,7 @@ def chpl_buildDomainRuntimeType(dist, type idxType) type
 
 pragma "has runtime type"
 def chpl_buildSparseDomainRuntimeType(dist, dom: _domain) type
-  return new _domain(dom.rank, dist.newSparseDomain(dom.rank, dom._value.idxType, dom));
+  return new _domain(dist.newSparseDomain(dom.rank, dom._value.idxType, dom));
 
 def chpl_convertValueToRuntimeType(dom: _domain) type
  where dom._value:BaseArithmeticDomain
@@ -104,15 +104,51 @@ def chpl_buildIndexType(d: _domain) type
 def chpl_buildIndexType(type idxType) type where idxType == opaque
   return _OpaqueIndex;
 
+def isArithmeticDomain(d: domain) param {
+  def isArithmeticDomainClass(dc: BaseArithmeticDomain) param return true;
+  def isArithmeticDomainClass(dc) param return false;
+  return isArithmeticDomainClass(d._value);
+}
+
+def isAssociativeDomain(d: domain) param {
+  def isAssociativeDomainClass(dc: BaseAssociativeDomain) param return true;
+  def isAssociativeDomainClass(dc) param return false;
+  return isAssociativeDomainClass(d._value);
+}
+
+def isEnumDomain(d: domain) param {
+  def isEnumDomainClass(dc: BaseEnumDomain) param return true;
+  def isEnumDomainClass(dc) param return false;
+  return isEnumDomainClass(d._value);
+}
+
+def isOpaqueDomain(d: domain) param {
+  def isOpaqueDomainClass(dc: BaseOpaqueDomain) param return true;
+  def isOpaqueDomainClass(dc) param return false;
+  return isOpaqueDomainClass(d._value);
+}
+
+def isSparseDomain(d: domain) param {
+  def isSparseDomainClass(dc: BaseSparseDomain) param return true;
+  def isSparseDomainClass(dc) param return false;
+  return isSparseDomainClass(d._value);
+}
+
 //
 // Domain wrapper record
 //
 pragma "domain"
 pragma "has runtime type"
 record _domain {
-  param rank: int;
   var _value;
   var _promotionType: index(rank, _value.idxType);
+
+  def rank param {
+    if isArithmeticDomain(this) || isSparseDomain(this) then
+      return _value.rank;
+    else
+      return 1;
+  }
 
   def ~_domain() {
     delete _value;
@@ -124,12 +160,12 @@ record _domain {
   }
 
   def this(ranges: range(?) ...rank)
-    return new _domain(rank, _value.slice(chpl_anyStridable(ranges), ranges));
+    return new _domain(_value.slice(chpl_anyStridable(ranges), ranges));
 
   def this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl_anyStridable(ranges);
-    return new _domain(rank, _value.rankChange(rank, stridable, args));
+    return new _domain(_value.rankChange(rank, stridable, args));
   }
 
   def dim(d : int) return _value.dim(d);
@@ -144,7 +180,7 @@ record _domain {
       _value._arrs.append(x);
       _value._locked = false;  // writing to this sync var "unlocks" the lock!
     }
-    return new _array(rank, x);
+    return new _array(x);
   }
 
   def clear() {
@@ -174,17 +210,17 @@ record _domain {
   def position(i) return _value.position(i);
 
   def expand(i: int ...rank) return expand(i);
-  def expand(i: rank*int) return new _domain(rank, _value.expand(i));
-  def expand(i: int) where rank > 1 return new _domain(rank, _value.expand(i));
+  def expand(i: rank*int) return new _domain(_value.expand(i));
+  def expand(i: int) where rank > 1 return new _domain(_value.expand(i));
 
   def exterior(i: int ...rank) return exterior(i);
-  def exterior(i: rank*int) return new _domain(rank, _value.exterior(i));
+  def exterior(i: rank*int) return new _domain(_value.exterior(i));
 
   def interior(i: int ...rank) return interior(i);
-  def interior(i: rank*int) return new _domain(rank, _value.interior(i));
+  def interior(i: rank*int) return new _domain(_value.interior(i));
 
   def translate(i: int ...rank) return translate(i);
-  def translate(i: rank*int) return new _domain(rank, _value.translate(i));
+  def translate(i: rank*int) return new _domain(_value.translate(i));
 
   def subBlocks {
     for d in _value.subBlocks do
@@ -217,12 +253,12 @@ record _domain {
 pragma "array"
 pragma "has runtime type"
 record _array {
-  param rank: int;
   var _value;
   var _promotionType: _value.eltType;
 
   def eltType type return _value.eltType;
-  def _dom return new _domain(rank, _value.dom);
+  def _dom return new _domain(_value.dom);
+  def rank param return this.domain.rank;
 
   def ~_array() {
     delete _value;
@@ -257,7 +293,7 @@ record _array {
   def this(ranges: range(?) ...rank) var {
     if boundsChecking then
       _value.checkSlice(ranges);
-    return new _array(rank, _value.slice(_dom((...ranges))._value));
+    return new _array(_value.slice(_dom((...ranges))._value));
   }
 
   pragma "valid var"
@@ -266,7 +302,7 @@ record _array {
       _value.checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl_anyStridable(ranges);
-    return new _array(rank, _value.rankChange(rank, stridable, args));
+    return new _array(_value.rankChange(rank, stridable, args));
   }
 
   def these() var {
@@ -278,12 +314,12 @@ record _array {
 
   def reindex(d: _domain) where rank == 1 {
     var x = _value.reindex(d._value);
-    return new _array(rank, x);
+    return new _array(x);
   }
 
   def reindex(d: _domain) where rank != 1 {
     var x = _value.reindex(d._value);
-    return new _array(rank, x);
+    return new _array(x);
   }
 
   def writeThis(f: Writer) {
@@ -450,7 +486,7 @@ def _copy(a: _array) {
 
 def by(a: _domain, b) {
   var x = a._value.strideBy(b);
-  return new _domain(a.rank, x);
+  return new _domain(x);
 }
 
 //
