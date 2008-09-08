@@ -110,7 +110,7 @@ def chpl_buildIndexType(type idxType) type where idxType == opaque
 pragma "domain"
 pragma "has runtime type"
 record _domain {
-  param rank : int;
+  param rank: int;
   var _value;
   var _promotionType: index(rank, _value.idxType);
 
@@ -123,7 +123,7 @@ record _domain {
       yield i;
   }
 
-  def this(ranges: range(?eltType,?boundedType,?stridable) ...rank)
+  def this(ranges: range(?) ...rank)
     return new _domain(rank, _value.slice(chpl_anyStridable(ranges), ranges));
 
   def this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
@@ -144,7 +144,7 @@ record _domain {
       _value._arrs.append(x);
       _value._locked = false;  // writing to this sync var "unlocks" the lock!
     }
-    return new _array(eltType, rank, x);
+    return new _array(rank, x);
   }
 
   def clear() {
@@ -217,17 +217,16 @@ record _domain {
 pragma "array"
 pragma "has runtime type"
 record _array {
-  type eltType;
-  param rank : int;
+  param rank: int;
   var _value;
-  var _promotionType : eltType;
+  var _promotionType: _value.eltType;
+
+  def eltType type return _value.eltType;
+  def _dom return new _domain(rank, _value.dom);
 
   def ~_array() {
     delete _value;
   }
-
-  def _dom
-    return new _domain(rank, _value.dom);
 
   pragma "inline"
   def this(i: rank*_value.idxType) var where rank > 1
@@ -255,10 +254,10 @@ record _array {
     return this((...d.getIndices()));
 
   pragma "valid var"
-  def this(ranges: range(?_eltType,?boundedType,?stridable) ...rank) var {
+  def this(ranges: range(?) ...rank) var {
     if boundsChecking then
       _value.checkSlice(ranges);
-    return new _array(eltType, rank, _value.slice(_dom((...ranges))._value));
+    return new _array(rank, _value.slice(_dom((...ranges))._value));
   }
 
   pragma "valid var"
@@ -267,7 +266,7 @@ record _array {
       _value.checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl_anyStridable(ranges);
-    return new _array(eltType, rank, _value.rankChange(rank, stridable, args));
+    return new _array(rank, _value.rankChange(rank, stridable, args));
   }
 
   def these() var {
@@ -279,12 +278,12 @@ record _array {
 
   def reindex(d: _domain) where rank == 1 {
     var x = _value.reindex(d._value);
-    return new _array(eltType, rank, x);
+    return new _array(rank, x);
   }
 
   def reindex(d: _domain) where rank != 1 {
     var x = _value.reindex(d._value);
-    return new _array(eltType, rank, x);
+    return new _array(rank, x);
   }
 
   def writeThis(f: Writer) {
@@ -322,7 +321,7 @@ def chpl_anyStridable(ranges, param d: int = 1) param {
 // integers and ranges; that is, it is a valid argument list for rank
 // change
 def _validRankChangeArgs(args, type idxType) param {
-  def _validRankChangeArg(type idxType, r: range(?e,?b,?s)) param return true;
+  def _validRankChangeArg(type idxType, r: range(?)) param return true;
   def _validRankChangeArg(type idxType, i: idxType) param return true;
   def _validRankChangeArg(type idxType, x) param return false;
 
@@ -339,7 +338,7 @@ def _validRankChangeArgs(args, type idxType) param {
 }
 
 def _getRankChangeRanges(args) {
-  def isRange(r: range(?e,?b,?s)) param return 1;
+  def isRange(r: range(?)) param return 1;
   def isRange(r) param return 0;
   def _tupleize(x) {
     var y: 1*x.type;
