@@ -15,6 +15,10 @@
 linux and general regressions
 =============================
 
+??? (09/04/08)
+--------------
+[Error matching program output for release/examples/varargs]
+
 precision issue, due to user code changing (07/01/08)
 -----------------------------------------------------
 [Error matching program output for
@@ -57,10 +61,6 @@ incompatible types to chpl_free
 -------------------------------
 [Error matching compiler output for classes/figueroa/DestructorSubclassing1]
 [Error matching compiler output for classes/figueroa/LeakedMemory1]
-
-invalid initializers
---------------------
-[Error matching compiler output for functions/deitz/iterators/leader_follower/test_leader_follower4]
 
 GASNet AMUDP poll occasionally returns AM_ERR_NOT_INIT (08/20/2008)
 -------------------------------------------------------------------
@@ -147,7 +147,13 @@ opts-specific tests
 [Error matching compiler output for release/examples/iterators]
 
 
-(Full run: 48, though some spurious test_refine errors)
+(Full run: 54, though some spurious test_refine errors)
+
+
+--no-copy-propagation
+---------------------
+[Error: Timed out compilation for users/franzf/v0/chpl/main]
+[Error: Timed out compilation for users/franzf/v1/chpl/main]
 
 --no-dead-code-elimination
 --------------------------
@@ -169,6 +175,15 @@ opts-specific tests
 -----------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
+--baseline --inline
+-------------------
+[Error: Timed out compilation for users/franzf/v0/chpl/main]
+[Error: Timed out compilation for users/franzf/v1/chpl/main]
+
+--baseline --inline-iterators
+-----------------------------
+[Error matching program output for studies/sudoku/dinan/sudoku]
+
 --no-optimize-loop-iterators --no-inline-iterators
 --------------------------------------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
@@ -184,13 +199,15 @@ opts-specific tests
 ----------
 [Error matching compiler output for classes/deitz/tree]
 [Error matching compiler output for classes/diten/allocateManyObjects]
+[Error matching compiler output for classes/figueroa/DestructorSubclassing1]
+[Error matching compiler output for classes/figueroa/LeakedMemory1]
 [Error matching compiler output for functions/deitz/iterators/test_promote_inout]
 [Error matching compiler output for functions/deitz/iterators/tree]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
 [Error matching compiler output for release/examples/iterators]
 [Error matching compiler output for types/scalar/bradc/overloadbools]
 [Error matching compiler output for types/scalar/bradc/overloadbools2]
-[Summary: #Successes = 2139 | #Failures = 9 | #Futures = 0]
+[Summary: #Successes = 2139 | #Failures = 10 | #Futures = 0]
 
 --baseline --no-local
 ---------------------
@@ -206,6 +223,7 @@ opts-specific tests
 [Error matching compiler output for release/examples/iterators]
 [Error matching compiler output for studies/590o/alaska/graph]
 [Error matching compiler output for studies/590o/blerner/xml-parse]
+[Error matching program output for studies/sudoku/dinan/sudoku]
 [Error matching compiler output for studies/uts/dequeue]
 [Error matching compiler output for studies/uts/uts_deq]
 [Error matching compiler output for studies/uts/uts_deq_seq]
@@ -310,9 +328,9 @@ xt-gnu specific failures
 [Error matching program output for execflags/bradc/gdbddash/declint2]
 
 
-====================
-x1-specific failures
-====================
+========================
+x1-/x2-specific failures
+========================
 
 compilation timing out (started 4/19/08)
 ----------------------------------------
@@ -323,8 +341,8 @@ compilation timing out (started 4/19/08)
 cygwin-specific failures
 ========================
 
-pthread_cond_init failed errors (e.g., 08/28/08)
-------------------------------------------------
+pthread_cond_init failed errors -- possibly memory related? (e.g., 08/28/08)
+----------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample1]
 [Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
