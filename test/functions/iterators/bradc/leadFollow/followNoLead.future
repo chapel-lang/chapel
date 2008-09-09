@@ -1,0 +1,12 @@
+semantic: follow iteration without leader?
+
+This is somewhat similar to parNoSolo.future.  The question is
+whether an iterator ought to be able to serve as a follower if
+it has no leader.  For example, an infinite random stream is
+probably better as a follower than it would be as a leader.
+
+If for some reason we require a leader, it would be nice to
+specialize the error message text to this case and location
+out of the standard modules.  Currently, it is:
+
+$CHPL_HOME/modules/standard/ChapelArray.chpl:636: error: forall loop applied to non-parallel iterator
