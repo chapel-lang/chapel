@@ -303,6 +303,10 @@ protoIteratorClass(FnSymbol* fn) {
   leaderCall->remove();
   if (FnSymbol* leader = leaderCall->isResolved()) {
     resolveFns(leader);
+
+    if (!leader->iteratorInfo)
+      INT_FATAL("leader->iteratorInfo is NULL");
+
     ii->leader = leader->iteratorInfo;
 
     CallExpr* followerCall = new CallExpr(fn->name);
