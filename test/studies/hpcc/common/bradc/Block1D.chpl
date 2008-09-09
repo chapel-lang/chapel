@@ -73,7 +73,7 @@ class Block1DDist : Distribution {
       on targetLocs(locid) do
         locDist(locid) = new LocBlock1DDist(idxType, locid, this);
 
-    writeln("Created a Block1DDist:\n", this);
+    //    writeln("Created a Block1DDist:\n", this);
   }
 
 
@@ -155,7 +155,7 @@ class Block1DDist : Distribution {
   // else's suggestion).
   //
   def ind2locInd(ind: idxType) {
-    writeln("distribution = ", this);
+    //    writeln("distribution = ", this);
     const ind0 = ind - boundingBox.low;
     const locInd = (ind0 * targetLocs.numElements) / boundingBox.numIndices;
     return locInd: index(targetLocDom);
@@ -351,8 +351,7 @@ class Block1DDom: BaseArithmeticDomain {
   // clause interact with a loop that used an on clause explicitly
   // within its body?  How would it be done efficiently?
   //
-  def newThese(param iterator: IteratorType)
-        where iterator == IteratorType.leader {
+  def these(leader) {
     //
     // TODO: This currently only results in a single level of
     // per-locale parallelism -- no per-core parallelism; maybe
@@ -377,13 +376,14 @@ class Block1DDom: BaseArithmeticDomain {
     // order/position functions -- any chance for creating similar
     // support? (esp. given how frequent this seems likely to be?)
     //
-    for locDom in locDoms do
-      yield locDom.myBlock - whole.low;
+    coforall locDom in locDoms do
+      on locDom {
+        writeln("On locale #", here.id, ", yielding: ", locDom.myBlock - whole.low);
+        yield locDom.myBlock - whole.low;
+      }
   }
 
-
-  def newThese(param iterator: IteratorType, followThis)
-        where iterator == IteratorType.follower {
+  def these(follower) {
     //
     // TODO: Abstract this addition of low into a function?
     // Note relationship between this operation and the
@@ -395,7 +395,7 @@ class Block1DDom: BaseArithmeticDomain {
     // parallelism is expressed at that level?  Seems like a nice
     // natural composition and might help with my fears about how
     // stencil communication will be done on a per-locale basis.
-    for i in followThis {
+    for i in follower {
       yield i + whole.low;
     }
   }
@@ -429,6 +429,7 @@ class Block1DDom: BaseArithmeticDomain {
     return whole.high;
   }
 
+
   //
   // INTERFACE NOTES: Could we make setIndices() for an arithmetic
   // domain take a domain rather than something else?
@@ -461,7 +462,7 @@ class Block1DDom: BaseArithmeticDomain {
   //
   // INTERNAL INTERFACE
   //
-  def getDist() {
+  def getDist(): Block1DDist(idxType) {
     return dist;
   }
 
@@ -535,12 +536,12 @@ class LocBlock1DDom {
   // this is the parallel iterator for the local domain, see global
   // domain parallel iterators for general notes on the approach
   //
-  def newThese(param iterator: IteratorType)
-        where iterator == IteratorType.leader {
+  def these(leader) {
+    halt("This is bogus");
+    yield [1..100];
   }
 
-  def newThese(param iterator: IteratorType, followThis)
-        where iterator == IteratorType.follower {
+  def these(follower) {
   }
 
   //
@@ -649,15 +650,15 @@ class Block1DArr: BaseArray {
   // this is the parallel iterator for the global array, see the
   // example for general notes on the approach
   //
-  def newThese(param iterator: IteratorType)
-        where iterator == IteratorType.leader {
-    for blk in dom.newThese(IteratorType.leader) do
+  def these(leader) {
+    coforall locDom in dom.locDoms do
+      on locDom do
+    for blk in dom.these(leader=true) do
       yield blk;
   }
 
-  def newThese(param iterator: IteratorType, followThis) var
-        where iterator == IteratorType.follower {
-    for i in followThis {
+  def these(follower) var {
+    for i in follower {
       yield this(i + dom.low);
     }
   }
@@ -753,12 +754,12 @@ class LocBlock1DArr {
   // this is the parallel iterator for the local array, see global
   // domain parallel iterators for general notes on the approach
   //
-  def newThese(param iterator: IteratorType)
-        where iterator == IteratorType.leader {
+  def these(leader) {
+    halt("This is bogus");
+    yield [1..100];
   }
 
-  def newThese(param iterator: IteratorType, followThis) var
-        where iterator == IteratorType.follower {
+  def these(follower) {
   }
 
 
