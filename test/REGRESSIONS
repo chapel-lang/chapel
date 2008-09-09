@@ -53,6 +53,10 @@ failing nondeterministically (e.g., 04/04/08)
 gasnet-specific regressions
 ===========================
 
+race condition on I/O (e.g., 09/09/08)
+--------------------------------------
+[Error matching program output for studies/hpcc/common/bradc/unit/parBlock1D]
+
 disabled warning about multilocale distributions not being implemented
 ----------------------------------------------------------------------
 [Error matching program output for multilocale/bradc/distribWarning]
@@ -306,7 +310,6 @@ Some sort of offset type mismatch -- likely caused by long identifiers
 
 long identifiers
 ----------------
-[Error matching compiler output for arrays/deitz/test_major_nesting_of_arrays]
 [Error matching program output for trivial/deitz/test_longToken]
 [Error matching program output for types/tuple/deitz/test_128int]
 
