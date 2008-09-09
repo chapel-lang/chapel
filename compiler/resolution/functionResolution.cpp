@@ -3171,42 +3171,6 @@ resolveFns(FnSymbol* fn) {
     }
   }
 
-  //
-  // functions that return iterators should capture those iterators
-  // into an array first; otherwise, we'll run into problems if the
-  // iterator references locals in the function because we are
-  // returning from the iterator
-  //
-  // sjd: note we should probably do this using a function in the
-  // standard modules because there could be multiple return points
-  // with different iterators that we may want to accept OR there
-  // could be a function that returns a tuple of iterators...
-  //
-  //  also, is there a better way to deal with these internal
-  // functions rather than case them here; perhaps a pragma or
-  // something like that.
-  //
-  if (!fn->hasFlag(FLAG_ITERATOR_FN) && fn->retType->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
-      strcmp("_getIterator", fn->name) &&
-      strcmp("iteratorIndex", fn->name) && strcmp("iteratorIndexHelp", fn->name) &&
-      strcmp("_toLeader", fn->name) && strcmp("_toFollower", fn->name) && 
-      strcmp("_heapAccess", fn->name) &&
-      strcmp("=", fn->name) && strcmp("_build_tuple", fn->name) && !fn->hasFlag(FLAG_TEMP)) {
-    CallExpr* retCall = toCallExpr(fn->body->body.tail);
-    INT_ASSERT(retCall->isPrimitive(PRIMITIVE_RETURN));
-    VarSymbol* tmp = new VarSymbol("_tmp");
-    tmp->addFlag(FLAG_TEMP);
-    CallExpr* copy = new CallExpr("_copy", ret);
-    CallExpr* move = new CallExpr(PRIMITIVE_MOVE, tmp, copy);
-    retCall->insertBefore(new DefExpr(tmp));
-    retCall->insertBefore(move);
-    resolveCall(copy);
-    resolveFns(copy->isResolved());
-    resolveCall(move);
-    retCall->get(1)->replace(new SymExpr(tmp));
-    fn->retType = tmp->type;
-  }
-
   if (fn->hasFlag(FLAG_ITERATOR_FN) && !fn->iteratorInfo) {
     protoIteratorClass(fn);
   }

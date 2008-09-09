@@ -176,10 +176,16 @@ static void heapAllocateLocals() {
 
     if (BlockStmt* block = toBlockStmt(ast)) {
 
-      if (block->blockInfo &&
-          (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_BEGIN) ||
-           block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON) ||
-           block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COFORALL))) {
+      bool heapAllocateNestedIteratorLocals = false;
+      if (FnSymbol* fn = toFnSymbol(block->parentSymbol))
+        if (fn->body == block && fn->hasFlag(FLAG_ITERATOR_FN))
+          heapAllocateNestedIteratorLocals = true;
+
+      if (heapAllocateNestedIteratorLocals ||
+          (block->blockInfo &&
+           (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_BEGIN) ||
+            block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON) ||
+            block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COFORALL)))) {
 
         // collect asts in block
         Vec<BaseAST*> asts;
@@ -200,7 +206,9 @@ static void heapAllocateLocals() {
             // collect arguments
             if (ArgSymbol* arg = toArgSymbol(se->var)) {
               if (!arg->hasFlag(FLAG_TYPE_VARIABLE) &&
-                  arg->intent != INTENT_PARAM) {
+                  arg->intent != INTENT_PARAM &&
+                  (!heapAllocateNestedIteratorLocals ||
+                   arg->defPoint->parentSymbol != block->parentSymbol)) {
                 heapSet.set_add(se->var);
               }
             }
@@ -215,10 +223,12 @@ static void heapAllocateLocals() {
                   // ignore returned or yielded locals (as in leaders)
                   fn->getReturnSymbol() != var &&
                   // ignore locale tmp for on
-                  (!block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON) ||
+                  (!block->blockInfo ||
+                   !block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON) ||
                    se->parentExpr != block->blockInfo) &&
                   // only index variables for coforall
-                  (!block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COFORALL) ||
+                  (!block->blockInfo ||
+                   !block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COFORALL) ||
                    var->hasFlag(FLAG_INDEX_VAR))) {
                 heapSet.set_add(var);
               }
