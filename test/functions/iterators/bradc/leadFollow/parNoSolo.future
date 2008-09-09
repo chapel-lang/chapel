@@ -1,0 +1,15 @@
+semantic: parallel iteration without sequential?
+
+This future asks the question whether one should be able to create
+and use leader/follower iterators for a class if no sequential
+iterator is defined.  Currently, you cannot and get a message:
+
+parNoSolo.chpl:15: error: cannot iterate over values of type C
+
+If we want/need to require the sequential error message, this
+can get reclassified as an error message future since it would
+be more accurate to say that we cannot iterate over values of
+type C in parallel without being able to iterate over them
+sequentially.
+
+It seems like it would be nice to permit this, though.
