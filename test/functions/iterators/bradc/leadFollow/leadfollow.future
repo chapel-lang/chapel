@@ -1,6 +1,0 @@
-feature request: leader/follower (and solo) rewrites
-
-This future captures some current thoughts about what leader/follower
-iterators might look like and how the compiler ought to rewrite them.
-Steve suggested I file these for discussion and as a target for him
-to work towards.

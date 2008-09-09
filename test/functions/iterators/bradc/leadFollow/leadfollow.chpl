@@ -5,21 +5,20 @@ config param compilerRewrite = true;
 
 var A: [0..8] real;
 
-def myIter(param flavor: IteratorType) where flavor == IteratorType.solo {
+def myIter() {
   for i in 0..8 {
     yield i;
   }
 }
 
-def myIter(param flavor: IteratorType) where flavor == IteratorType.leader {
+def myIter(leader) {
   yield 0..3;
   yield 4..5;
   yield 6..8;
 }
 
-def myIter(param flavor: IteratorType, followThis)
-  where flavor == IteratorType.follower {
-  for i in followThis {
+def myIter(follower) {
+  for i in follower {
     yield i;
   }
 }
@@ -31,7 +30,7 @@ if compilerRewrite {
 
 } else {
 
-  for i in myIter(IteratorType.solo) do
+  for i in myIter() do
     A(i) = i/10.0;
 
 }
@@ -47,8 +46,8 @@ if compilerRewrite {
 } else {
 
   // TODO: Next step would be to move coforall into leader itself
-  coforall blk in myIter(IteratorType.leader) {
-    for i in myIter(IteratorType.follower, blk) {
+  coforall blk in myIter(leader=true) {
+    for i in myIter(follower=blk) {
       A(i) = i + i/10.0;
     }
   }
