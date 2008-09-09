@@ -1,0 +1,8 @@
+unimplemented feature: leader/follower iterators on domain/array wrappers
+
+This future captures why stream-block1d.chpl isn't working --
+leader/follower iterators that are defined on a set of distribution
+classes do not seem to be propagated to the domain/array wrapper
+records.  Haven't looked into how hard this would be to do yet, am
+just capturing the case.
+
