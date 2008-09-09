@@ -250,15 +250,13 @@ def string.writeThis(f: Writer) {
 }
 
 def file.writeIt(s: string) {
-  on this {
-    if !isOpen then
-      _checkOpen(this, isRead = false);
-    if mode != FileAccessMode.write then
-      halt("***Error: ", path, "/", filename, " not open for writing***");
-    var status = __primitive("fprintf", _fp, "%s", s);
-    if status < 0 then
-      halt("***Error: Write failed: ", __primitive("get_errno"), "***");
-  }
+  if !isOpen then
+    _checkOpen(this, isRead = false);
+  if mode != FileAccessMode.write then
+    halt("***Error: ", path, "/", filename, " not open for writing***");
+  var status = __primitive("fprintf", _fp, "%s", s);
+  if status < 0 then
+    halt("***Error: Write failed: ", __primitive("get_errno"), "***");
 }
 
 class StringClass: Writer {
@@ -291,12 +289,14 @@ class Writer {
   def lockWrite() return false;
   def unlockWrite() { }
   def write(args ...?n) {
-    var need_release: bool;
-    need_release = lockWrite();
-    for param i in 1..n do
-      args(i).writeThis(this);
-    if need_release then
-      unlockWrite();
+    on this {
+      var need_release: bool;
+      need_release = lockWrite();
+      for param i in 1..n do
+        args(i).writeThis(this);
+      if need_release then
+        unlockWrite();
+    }
   }
   def writeln(args ...?n) {
     write((...args), "\n");
