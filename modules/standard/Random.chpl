@@ -32,7 +32,7 @@ class RandomStream {
   const internalSeed = computeInternalSeed();
 
   var sharedCursor = internalSeed:real;
-  var sharedCount = 1;
+  var sharedCount: int(64) = 1;
 
   def computeInternalSeed() {
     var val: int(64) = seed;
