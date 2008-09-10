@@ -29,19 +29,21 @@ class RandomStream {
         t23   = 2.0**23,
         r46   = 0.5**46,
         t46   = 2.0**46;
-  var internalSeed:int(64);
+  const internalSeed = computeInternalSeed();
 
-  var cursorVal: real;
+  var sharedCursor = internalSeed:real;
+  var sharedCount = 1;
 
-  def initialize() {
-    internalSeed = seed;
+  def computeInternalSeed() {
+    var val: int(64) = seed;
     // ensure seed is odd
-    if (internalSeed % 2 == 0) then internalSeed += 1;
-    initCursorVal();
+    if (val % 2 == 0) then val += 1;
+    return val;
   }
 
   def initCursorVal() {
-    cursorVal = internalSeed:real;
+    sharedCursor = internalSeed:real;
+    sharedCount = 1;
   }
 
   def randlc(inout x, a = arand) {
@@ -63,7 +65,8 @@ class RandomStream {
   }
 
   def getNext() {
-    return randlc(cursorVal);
+    sharedCount += 1;
+    return randlc(sharedCursor);
   }
 
   def skipToNth(in n: integral) {
@@ -76,10 +79,11 @@ class RandomStream {
     while (n != 0) {
       const i = n / 2;
       if (2 * i != n) then
-        randlc(cursorVal, t);
+        randlc(sharedCursor, t);
       retval = randlc(t, t);
       n = i;
     }
+    sharedCount = n;
   }
 
   // n is assumed to be 1..
@@ -102,6 +106,45 @@ class RandomStream {
       x(i).re = getNext();
       x(i).im = getNext();
     }
+  }
+
+  def these() {
+    halt("Need support for zipperable unbounded sequential iterators");
+    yield getNext();
+  }
+
+  def these(leader) {
+    halt("Someone's trying to call the leader");
+    yield [1..10];
+  }
+
+  //
+  // TODO: This will only work one time, and needs to start computing
+  //       from the current value of sharedCount rather than assuming
+  //       that the follower's indices are reasonable input for getNth
+  //
+  def these(follower) {
+    // make a local copy of the 'this' random stream class
+    var locStream = new RandomStream(seed);
+    var val = locStream.getNth(follower.low);
+    for i in follower {
+      yield val;
+      val = locStream.getNext();
+    }
+    // 
+    // Update the sharedCount of the original random stream class
+    //
+    // TODO: this needs to be locked to avoid a subtle race
+    //       But really, we'd prefer some sort of setup/teardown for
+    //       followers that gets the indices being iterated over.
+    //       But since we're not really expecting this stream to
+    //       be particularly useful a second time anyway, I didn't
+    //       take this on right now.
+    /*
+    if (follower.high > sharedCount) {
+      sharedCount = follower.high;
+    }
+    */
   }
 
   /*  BLC: Would like to add something like this, but should
