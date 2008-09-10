@@ -155,8 +155,7 @@ record _domain {
   }
 
   def these() {
-    for i in _value.these() do
-      yield i;
+    return _value.these();
   }
 
   def this(ranges: range(?) ...rank)
@@ -306,8 +305,7 @@ record _array {
   }
 
   def these() var {
-    for i in _value.these() do
-      yield i;
+    return _value.these();
   }
 
   def numElements return _dom.numIndices; // assume dom name

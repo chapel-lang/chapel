@@ -2407,8 +2407,10 @@ preFold(Expr* expr) {
         call->replace(result);
       }
     } else if (call->isPrimitive(PRIMITIVE_SET_REF)) {
-      // remove set ref if already a reference
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      // remove set ref if already a reference (or an iterator of references)
+      if ((call->get(1)->typeInfo()->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+           call->get(1)->typeInfo()->defaultConstructor->iteratorInfo->getValue->retType->symbol->hasFlag(FLAG_REF)) ||
+          call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         result = call->get(1)->remove();
         call->replace(result);
       } else {
