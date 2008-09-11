@@ -15,15 +15,6 @@
 linux and general regressions
 =============================
 
-oops -- embedded an int(32) into an int(64) context in Random (09/10/08)
-------------------------------------------------------------------------
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1dclass]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1dpar]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-fragmented]
-[Error matching compiler output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
-
 problem with new "return iterators" change? (09/10/08)
 ------------------------------------------------------
 [Error matching compiler output for users/thom/arrArgIn-function]
@@ -353,6 +344,10 @@ xt-gnu specific failures
 x1-/x2-specific failures
 ========================
 
+use before def in ic_value (09/11/08)
+-------------------------------------
+[Error matching program output for release/examples/opaque]
+
 compilation timing out (started 4/19/08)
 ----------------------------------------
 [Error: Timed out compilation for release/examples/hpcc/fft]
@@ -381,6 +376,10 @@ print occurs in 0 seconds!?  Timers not working?
 =============================
 mta-/xmt-specific regressions
 =============================
+
+use before def in ic_value (09/11/08)
+-------------------------------------
+[Error matching program output for release/examples/opaque]
 
 occasional timeouts? or slowed down during iterator rewrites? (e.g., 07/02/08)
 ------------------------------------------------------------------------------
