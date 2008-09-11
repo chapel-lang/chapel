@@ -154,6 +154,7 @@ record _domain {
     delete _value;
   }
 
+  pragma "inline"
   def these() {
     return _value.these();
   }
@@ -304,6 +305,7 @@ record _array {
     return new _array(_value.rankChange(rank, stridable, args));
   }
 
+  pragma "inline"
   def these() var {
     return _value.these();
   }
