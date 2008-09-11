@@ -209,7 +209,7 @@ static void codegen_header(void) {
   //
   // mangle local variable names if they clash with types, global
   // variables, functions, formal arguments of their function, or
-  // other local variables in the same function
+  // other local variables in the same function; shorten temp names
   //
   forv_Vec(FnSymbol, fn, gFns) {
     Vec<const char*> local;
@@ -220,19 +220,28 @@ static void codegen_header(void) {
 
     Vec<BaseAST*> asts;
     collect_asts(fn->body, asts);
+    int tmpID = 1;
     forv_Vec(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast)) {
-        Symbol* sym = def->sym;
-
-        if (VarSymbol* vs = toVarSymbol(ast))
-          if (vs->immediate)
-            continue;
-
-        legalizeCName(sym);
-
-        if (symbol_clashes(sym->cname, cnames) || local.set_in(sym->cname))
-          sym->cname = astr("chpl__", sym->cname, "_", istr(sym->id));
-        local.set_add(sym->cname);
+        if (def->sym->hasFlag(FLAG_TEMP)) {
+          do {
+            def->sym->cname = astr("T", istr(tmpID++));
+          } while (local.set_in(def->sym->cname) || symbol_clashes(def->sym->cname, cnames));
+          local.set_add(def->sym->cname);
+        }
+      }
+    }
+    forv_Vec(BaseAST, ast, asts) {
+      if (DefExpr* def = toDefExpr(ast)) {
+        if (!def->sym->hasFlag(FLAG_TEMP)) {
+          legalizeCName(def->sym);
+          const char* cname;
+          do {
+            cname = astr("T", istr(tmpID++), "_", def->sym->cname);
+          } while (local.set_in(cname) || symbol_clashes(cname, cnames));
+          def->sym->cname = cname;
+          local.set_add(cname);
+        }
       }
     }
   }

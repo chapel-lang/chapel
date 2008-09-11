@@ -15,11 +15,10 @@ record chpl_TableEntry {
   var idx: idxType;
 }
 
-const chpl_primes : [0..26] chpl_table_index_type 
-                  = (23, 53, 97, 193, 389, 769, 1543, 3079, 6151, 12289, 24593, 
-                     49157, 98317, 196613, 393241, 786433, 1572869, 3145739, 
-                     6291469, 12582917, 25165843, 50331653, 100663319, 
-                     201326611, 402653189, 805306457, 1610612741);
+const chpl__primes = (23, 53, 97, 193, 389, 769, 1543,
+                      3079, 6151, 12289, 24593, 49157, 98317, 196613,
+                      393241, 786433, 1572869, 3145739, 6291469, 12582917, 25165843,
+                      50331653, 100663319, 201326611, 402653189, 805306457, 1610612741);
 
 class DefaultAssociativeDomain: BaseAssociativeDomain {
   type idxType;
@@ -28,8 +27,8 @@ class DefaultAssociativeDomain: BaseAssociativeDomain {
 
   // The guts of the associative domain
   var numEntries: chpl_table_index_type = 0;
-  var tableSizeNum = 0;
-  var tableSize = chpl_primes(tableSizeNum);
+  var tableSizeNum = 1;
+  var tableSize = chpl__primes(tableSizeNum);
   var tableDom = [0..tableSize-1];
   var table: [tableDom] chpl_TableEntry(idxType);
 
@@ -71,13 +70,13 @@ class DefaultAssociativeDomain: BaseAssociativeDomain {
     tableDom = [0..-1:chpl_table_index_type];
 
     // choose new table size
-    for primeNum in chpl_primes.domain {
-      if (b.numEntries * 2 < chpl_primes(primeNum)) {
+    for primeNum in 1..chpl__primes.size {
+      if (b.numEntries * 2 < chpl__primes(primeNum)) {
         tableSizeNum = primeNum;
         break;
       }
     }
-    tableSize = chpl_primes(tableSizeNum);
+    tableSize = chpl__primes(tableSizeNum);
     tableDom = [0..tableSize-1];
 
     // add indices and copy array data over
@@ -163,7 +162,7 @@ class DefaultAssociativeDomain: BaseAssociativeDomain {
     } else {
       halt("index not in domain: ", idx);
     }
-    if (numEntries*8 < tableSize && tableSizeNum > 0) {
+    if (numEntries*8 < tableSize && tableSizeNum > 1) {
       _resize(grow=false);
     }
   }
@@ -206,7 +205,7 @@ class DefaultAssociativeDomain: BaseAssociativeDomain {
     tableDom = [0..-1:chpl_table_index_type]; // non-preserving resize
     numEntries = 0; // reset, because the adds below will re-set this
     tableSizeNum += if grow then 1 else -1;
-    tableSize = chpl_primes(tableSizeNum);
+    tableSize = chpl__primes(tableSizeNum);
     tableDom = [0..tableSize-1];
 
     // insert old data into newly resized table

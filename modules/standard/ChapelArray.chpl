@@ -2,22 +2,22 @@
 // Support for domain types
 //
 pragma "has runtime type"
-def chpl_buildDomainRuntimeType(dist, param rank: int, type idxType = int(32),
+def chpl__buildDomainRuntimeType(dist, param rank: int, type idxType = int(32),
                        param stridable: bool = false) type
   return new _domain(dist.newArithmeticDomain(rank, idxType, stridable));
 
 pragma "has runtime type"
-def chpl_buildDomainRuntimeType(dist, type idxType) type
+def chpl__buildDomainRuntimeType(dist, type idxType) type
  where !__primitive("isEnumType", idxType) && idxType != opaque && idxType != _OpaqueIndex
   return new _domain(dist.newAssociativeDomain(idxType));
 
 pragma "has runtime type"
-def chpl_buildDomainRuntimeType(dist, type idxType) type
+def chpl__buildDomainRuntimeType(dist, type idxType) type
  where __primitive("isEnumType", idxType)
   return new _domain(dist.newEnumeratedDomain(idxType));
 
 pragma "has runtime type"
-def chpl_buildDomainRuntimeType(dist, type idxType) type
+def chpl__buildDomainRuntimeType(dist, type idxType) type
  where idxType == _OpaqueIndex
   return new _domain(dist.newOpaqueDomain(idxType));
 
@@ -25,59 +25,59 @@ def chpl_buildDomainRuntimeType(dist, type idxType) type
 // opaque domains is _OpaqueIndex, not opaque.  This function is
 // essentially a wrapper around the function that actually builds up
 // the runtime type.
-def chpl_buildDomainRuntimeType(dist, type idxType) type
+def chpl__buildDomainRuntimeType(dist, type idxType) type
  where idxType == opaque
-  return chpl_buildDomainRuntimeType(dist, _OpaqueIndex);
+  return chpl__buildDomainRuntimeType(dist, _OpaqueIndex);
 
 pragma "has runtime type"
-def chpl_buildSparseDomainRuntimeType(dist, dom: _domain) type
+def chpl__buildSparseDomainRuntimeType(dist, dom: _domain) type
   return new _domain(dist.newSparseDomain(dom.rank, dom._value.idxType, dom));
 
-def chpl_convertValueToRuntimeType(dom: _domain) type
+def chpl__convertValueToRuntimeType(dom: _domain) type
  where dom._value:BaseArithmeticDomain
-  return chpl_buildDomainRuntimeType(dom._value.dist, dom._value.rank,
+  return chpl__buildDomainRuntimeType(dom._value.dist, dom._value.rank,
                             dom._value.idxType, dom._value.stridable);
 
-def chpl_convertValueToRuntimeType(dom: _domain) type
+def chpl__convertValueToRuntimeType(dom: _domain) type
  where dom._value:BaseSparseDomain
-  return chpl_buildSparseDomainRuntimeType(dom._value.dist, dom._value.parentDom);
+  return chpl__buildSparseDomainRuntimeType(dom._value.dist, dom._value.parentDom);
 
-def chpl_convertValueToRuntimeType(dom: _domain) type
+def chpl__convertValueToRuntimeType(dom: _domain) type
 where !dom._value:BaseArithmeticDomain && !dom._value:BaseSparseDomain
-  return chpl_buildDomainRuntimeType(dom._value.dist, dom._value.idxType);
+  return chpl__buildDomainRuntimeType(dom._value.dist, dom._value.idxType);
 
 //
 // Support for array types
 //
 pragma "has runtime type"
-def chpl_buildArrayRuntimeType(dom: _domain, type eltType) type
+def chpl__buildArrayRuntimeType(dom: _domain, type eltType) type
   return dom.buildArray(eltType);
 
-def chpl_convertValueToRuntimeType(arr: _array) type
-  return chpl_buildArrayRuntimeType(arr.domain, arr.eltType);
+def chpl__convertValueToRuntimeType(arr: _array) type
+  return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
 
 //
 // Support for subdomain types
 //
 // Note the domain of a subdomain is not yet part of the runtime type
 //
-def chpl_buildSubDomainType(dom: _domain) type
-  return chpl_convertValueToRuntimeType(dom);
+def chpl__buildSubDomainType(dom: _domain) type
+  return chpl__convertValueToRuntimeType(dom);
 
 //
 // Support for domain expressions, e.g., [1..3, 1..3]
 //
-def chpl_buildDomainExpr(x: _domain)
+def chpl__buildDomainExpr(x: _domain)
   return x;
 
-def chpl_buildDomainExpr(ranges: range(?) ...?rank) {
+def chpl__buildDomainExpr(ranges: range(?) ...?rank) {
   for param i in 2..rank {
     if ranges(1).eltType != ranges(i).eltType then
       compilerError("domain has mixed dimensional type");
     if ranges(i).boundedType != BoundedRangeType.bounded then
       compilerError("domain has dimension of unbounded range");
   }
-  var d: domain(rank, ranges(1).eltType, chpl_anyStridable(ranges));
+  var d: domain(rank, ranges(1).eltType, chpl__anyStridable(ranges));
   d.setIndices(ranges);
   return d;
 }
@@ -85,23 +85,23 @@ def chpl_buildDomainExpr(ranges: range(?) ...?rank) {
 //
 // Support for index types
 //
-def chpl_buildIndexType(param rank: int, type idxType) type where rank == 1 {
+def chpl__buildIndexType(param rank: int, type idxType) type where rank == 1 {
   var x: idxType;
   return x;
 }
 
-def chpl_buildIndexType(param rank: int, type idxType) type where rank > 1 {
+def chpl__buildIndexType(param rank: int, type idxType) type where rank > 1 {
   var x: rank*idxType;
   return x;
 }
 
-def chpl_buildIndexType(param rank: int) type
-  return chpl_buildIndexType(rank, int);
+def chpl__buildIndexType(param rank: int) type
+  return chpl__buildIndexType(rank, int);
 
-def chpl_buildIndexType(d: _domain) type
-  return chpl_buildIndexType(d.rank, d._value.idxType);
+def chpl__buildIndexType(d: _domain) type
+  return chpl__buildIndexType(d.rank, d._value.idxType);
 
-def chpl_buildIndexType(type idxType) type where idxType == opaque
+def chpl__buildIndexType(type idxType) type where idxType == opaque
   return _OpaqueIndex;
 
 def isArithmeticDomain(d: domain) param {
@@ -159,11 +159,11 @@ record _domain {
   }
 
   def this(ranges: range(?) ...rank)
-    return new _domain(_value.slice(chpl_anyStridable(ranges), ranges));
+    return new _domain(_value.slice(chpl__anyStridable(ranges), ranges));
 
   def this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
     var ranges = _getRankChangeRanges(args);
-    param rank = ranges.size, stridable = chpl_anyStridable(ranges);
+    param rank = ranges.size, stridable = chpl__anyStridable(ranges);
     return new _domain(_value.rankChange(rank, stridable, args));
   }
 
@@ -300,7 +300,7 @@ record _array {
     if boundsChecking then
       _value.checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
-    param rank = ranges.size, stridable = chpl_anyStridable(ranges);
+    param rank = ranges.size, stridable = chpl__anyStridable(ranges);
     return new _array(_value.rankChange(rank, stridable, args));
   }
 
@@ -344,7 +344,7 @@ record _array {
 //
 
 // computes || reduction over stridable of ranges
-def chpl_anyStridable(ranges, param d: int = 1) param {
+def chpl__anyStridable(ranges, param d: int = 1) param {
   for param i in 1..ranges.size do
     if ranges(i).stridable then
       return true;
@@ -408,8 +408,8 @@ def _getRankChangeRanges(args) {
 //
 // Support for += and -= over domains
 //
-def chpl_isDomain(x: _domain) param return true;
-def chpl_isDomain(x) param return false;
+def chpl__isDomain(x: _domain) param return true;
+def chpl__isDomain(x) param return false;
 
 //
 // Assignment of domains and arrays

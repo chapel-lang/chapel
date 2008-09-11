@@ -156,7 +156,7 @@ void cleanup(void) {
   forv_Vec(BaseAST, ast, asts) {
     SET_LINENO(ast);
     if (CallExpr *call = toCallExpr(ast)) {
-      if (call->isNamed("chpl_buildArrayRuntimeType") && call->numActuals() == 4) {
+      if (call->isNamed("chpl__buildArrayRuntimeType") && call->numActuals() == 4) {
         if (DefExpr *def = toDefExpr(call->parentExpr)) {
           CallExpr *tinfo = toCallExpr(def->exprType);
           Expr *indices = tinfo->get(3);

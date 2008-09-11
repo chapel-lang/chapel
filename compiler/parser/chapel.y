@@ -1076,12 +1076,12 @@ array_type:
     { 
       if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = new CallExpr("chpl_buildArrayRuntimeType",
-                        new CallExpr("chpl_buildDomainExpr", $4), $6, $2->get(1)->remove(),
-                        new CallExpr("chpl_buildDomainExpr", $4->copy()));
+      $$ = new CallExpr("chpl__buildArrayRuntimeType",
+                        new CallExpr("chpl__buildDomainExpr", $4), $6, $2->get(1)->remove(),
+                        new CallExpr("chpl__buildDomainExpr", $4->copy()));
     }
 | TLSBR nonempty_expr_ls TRSBR type
-    { $$ = new CallExpr("chpl_buildArrayRuntimeType", new CallExpr("chpl_buildDomainExpr", $2), $4); }
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", new CallExpr("chpl__buildDomainExpr", $2), $4); }
 ;
 
 
@@ -1096,15 +1096,15 @@ formal_level_type:
 | array_type
 | TDOMAIN TLP expr_ls TRP distributed_expr
     {
-      CallExpr* call = new CallExpr("chpl_buildDomainRuntimeType", $5);
+      CallExpr* call = new CallExpr("chpl__buildDomainRuntimeType", $5);
       call->insertAtTail($3);
       $$ = call;
     }
 | TSUBDOMAIN TLP expr_ls TRP
-    { $$ = new CallExpr("chpl_buildSubDomainType", $3); }
+    { $$ = new CallExpr("chpl__buildSubDomainType", $3); }
 | TSPARSE TSUBDOMAIN TLP expr_ls TRP distributed_expr
     {
-      CallExpr* call = new CallExpr("chpl_buildSparseDomainRuntimeType", $6);
+      CallExpr* call = new CallExpr("chpl__buildSparseDomainRuntimeType", $6);
       call->insertAtTail($4);
       $$ = call;
     }
@@ -1133,7 +1133,7 @@ opt_domain:
   /* nothing */
     { $$ = NULL; }
 | TCOLON TLSBR nonempty_expr_ls TRSBR
-    { $$ = new CallExpr("chpl_buildDomainExpr", $3); }
+    { $$ = new CallExpr("chpl__buildDomainExpr", $3); }
 ;
 
 
@@ -1161,21 +1161,21 @@ opt_formal_type:
 | TCOLON TSYNC
     { $$ = new SymExpr( "_syncvar"); }
 | TCOLON TLSBR TRSBR type
-    { $$ = new CallExpr("chpl_buildArrayRuntimeType", gNil, $4); }
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, $4); }
 | TCOLON TLSBR query_expr TRSBR type
-    { $$ = new CallExpr("chpl_buildArrayRuntimeType", $3, $5); }
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", $3, $5); }
 | TCOLON TLSBR TRSBR
-    { $$ = new CallExpr("chpl_buildArrayRuntimeType", gNil); }
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil); }
 | TCOLON TLSBR query_expr TRSBR
-    { $$ = new CallExpr("chpl_buildArrayRuntimeType", $3); }
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", $3); }
 | TCOLON TLSBR nonempty_expr_ls TRSBR
-    { $$ = new CallExpr("chpl_buildArrayRuntimeType", new CallExpr("chpl_buildDomainExpr", $3)); }
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", new CallExpr("chpl__buildDomainExpr", $3)); }
 | TCOLON TLSBR TRSBR query_expr
-    { $$ = new CallExpr("chpl_buildArrayRuntimeType", gNil, $4); }
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, $4); }
 | TCOLON TLSBR query_expr TRSBR query_expr
-    { $$ = new CallExpr("chpl_buildArrayRuntimeType", $3, $5); }
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", $3, $5); }
 | TCOLON TLSBR nonempty_expr_ls TRSBR query_expr
-    { $$ = new CallExpr("chpl_buildArrayRuntimeType", new CallExpr("chpl_buildDomainExpr", $3), $5); }
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", new CallExpr("chpl__buildDomainExpr", $3), $5); }
 ;
 
 
@@ -1237,7 +1237,7 @@ formal_parenop_expr:
       $$ = call;
     }
 | TINDEX TLP expr_ls TRP
-    { $$ = new CallExpr("chpl_buildIndexType", $3); }
+    { $$ = new CallExpr("chpl__buildIndexType", $3); }
 ;
 
 formal_memberaccess_expr:
@@ -1346,7 +1346,7 @@ parenop_expr:
 | TCOMPILERWARNING TLP expr_ls TRP
     { $$ = new CallExpr(PRIMITIVE_WARNING, $3); }
 | TINDEX TLP expr_ls TRP
-    { $$ = new CallExpr("chpl_buildIndexType", $3); }
+    { $$ = new CallExpr("chpl__buildIndexType", $3); }
 ;
 
 
@@ -1372,7 +1372,7 @@ non_tuple_lvalue:
 | parenop_expr
 | memberaccess_expr
 | TLSBR nonempty_expr_ls TRSBR
-    { $$ = new CallExpr("chpl_buildDomainExpr", $2); }
+    { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
 ;
 
 

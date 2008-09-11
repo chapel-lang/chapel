@@ -936,7 +936,7 @@ static void fixup_array_formals(FnSymbol* fn) {
   for_formals(arg, fn) {
     if (arg->typeExpr) {
       CallExpr* call = toCallExpr(arg->typeExpr->body.tail);
-      if (call && call->isNamed("chpl_buildArrayRuntimeType")) {
+      if (call && call->isNamed("chpl__buildArrayRuntimeType")) {
         if (ArgSymbol* arg = toArgSymbol(call->parentSymbol)) {
           bool noDomain = (isSymExpr(call->get(1))) ? toSymExpr(call->get(1))->var == gNil : false;
           DefExpr* queryDomain = toDefExpr(call->get(1));

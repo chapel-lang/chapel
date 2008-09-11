@@ -663,14 +663,14 @@ buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs) {
   if (!strcmp(op, "+")) {
     stmt->insertAtTail(
       new CondStmt(
-        new CallExpr("chpl_isDomain", ltmp),
+        new CallExpr("chpl__isDomain", ltmp),
         new CallExpr(
           new CallExpr(".", ltmp, new_StringSymbol("add")), rtmp),
         inner));
   } else if (!strcmp(op, "-")) {
     stmt->insertAtTail(
       new CondStmt(
-        new CallExpr("chpl_isDomain", ltmp),
+        new CallExpr("chpl__isDomain", ltmp),
         new CallExpr(
           new CallExpr(".", ltmp, new_StringSymbol("remove")), rtmp),
         inner));

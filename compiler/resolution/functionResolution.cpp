@@ -2274,7 +2274,7 @@ preFold(Expr* expr) {
       if (type ->symbol->hasFlag(FLAG_REF))
         type = getValueType(type);
       if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-        result = new CallExpr("chpl_convertValueToRuntimeType", call->get(1)->remove());
+        result = new CallExpr("chpl__convertValueToRuntimeType", call->get(1)->remove());
         call->replace(result);
       }
     } else if (call->isNamed("_copy")) {
@@ -3575,7 +3575,7 @@ resolve() {
         !ts->hasFlag(FLAG_GENERIC)) {
       VarSymbol* tmp = new VarSymbol("tmp", ts->type);
       ts->type->defaultConstructor->insertAtTail(new DefExpr(tmp));
-      CallExpr* call = new CallExpr("chpl_convertValueToRuntimeType", tmp);
+      CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
       ts->type->defaultConstructor->insertAtTail(call);
       resolveCall(call);
       resolveFns(call->isResolved());
@@ -3955,7 +3955,7 @@ pruneResolvedTree() {
         runtimeTypeMap.put(fn->retType, runtimeType);
 
         FnSymbol* runtimeTypeToValueFn = fn->copy();
-        runtimeTypeToValueFn->name = astr("chpl_convertRuntimeTypeToValue");
+        runtimeTypeToValueFn->name = astr("chpl__convertRuntimeTypeToValue");
         runtimeTypeToValueFn->cname = runtimeTypeToValueFn->name;
         runtimeTypeToValueFn->removeFlag(FLAG_HAS_RUNTIME_TYPE);
         runtimeTypeToValueFn->getReturnSymbol()->removeFlag(FLAG_TYPE_VARIABLE);

@@ -590,23 +590,6 @@ void FnSymbol::codegenDef(FILE* outfile) {
   Vec<BaseAST*> asts;
   collect_top_asts(body, asts);
 
-  if (fShortNames) {
-    Vec<Symbol*> defSet;
-    int i = 1;
-    forv_Vec(BaseAST, ast, asts) {
-      if (SymExpr* se = toSymExpr(ast)) {
-        if (se->var->astTag == SYMBOL_VAR) {
-          if (se->var->defPoint && se->var->defPoint->parentSymbol == this) {
-            if (!defSet.set_in(se->var)) {
-              se->var->cname = astr("T", istr(i++));
-              defSet.set_add(se->var);
-            }
-          }
-        }
-      }
-    }
-  }
-
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!toTypeSymbol(def->sym))
