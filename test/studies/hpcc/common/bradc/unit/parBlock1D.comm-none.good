@@ -7,4 +7,4 @@
 (i,j) is: (7, 8)
 (i,j) is: (8, 9)
 (i,j) is: (9, 10)
-On locale #0, yielding: 0 1 2 3 4 5 6 7 8
+On locale #0, yielding: [0..8]

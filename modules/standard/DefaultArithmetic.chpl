@@ -72,6 +72,18 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
         yield i;
     }
   }
+  /*
+  def these(leader) {
+    // TODO: Need to 0-shift this?
+    yield chpl_buildDomainExpr(ranges);
+  }
+
+  def these(follower) {
+    // TODO: Need to un-0-shift this?
+    for i in follower do
+      yield i;
+  }
+  */
 
   def member(ind: idxType) where rank == 1 {
     if !ranges(1).member(ind) then
@@ -176,15 +188,15 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
     return d;
   }
 
-  def translate(off: rank*int) {
-    var x = new DefaultArithmeticDomain(rank, int, stridable, dist);
+  def translate(off: rank*idxType) {
+    var x = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).translate(off(i));
     return x;
   }
 
-  def interior(off: rank*int) {
-    var x = new DefaultArithmeticDomain(rank, int, stridable, dist);
+  def interior(off: rank*idxType) {
+    var x = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
     for i in 1..rank do {
       if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
           (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
@@ -195,15 +207,15 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
     return x;
   }
 
-  def exterior(off: rank*int) {
-    var x = new DefaultArithmeticDomain(rank, int, stridable, dist);
+  def exterior(off: rank*idxType) {
+    var x = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).exterior(off(i));
     return x;
   }
 
-  def expand(off: rank*int) {
-    var x = new DefaultArithmeticDomain(rank, int, stridable, dist);
+  def expand(off: rank*idxType) {
+    var x = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
     for i in 1..rank do {
       x.ranges(i) = ranges(i).expand(off(i));
       if (x.ranges(i)._low > x.ranges(i)._high) {
@@ -213,8 +225,8 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
     return x;
   }  
 
-  def expand(off: int) {
-    var x = new DefaultArithmeticDomain(rank, int, stridable, dist);
+  def expand(off: idxType) {
+    var x = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i).expand(off);
     return x;

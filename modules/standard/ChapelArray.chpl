@@ -209,18 +209,18 @@ record _domain {
   def order(i) return _value.order(i);
   def position(i) return _value.position(i);
 
-  def expand(i: int ...rank) return expand(i);
-  def expand(i: rank*int) return new _domain(_value.expand(i));
-  def expand(i: int) where rank > 1 return new _domain(_value.expand(i));
+  def expand(i: _value.idxType ...rank) return expand(i);
+  def expand(i: rank*_value.idxType) return new _domain(_value.expand(i));
+  def expand(i: _value.idxType) where rank > 1 return new _domain(_value.expand(i));
 
-  def exterior(i: int ...rank) return exterior(i);
-  def exterior(i: rank*int) return new _domain(_value.exterior(i));
+  def exterior(i: _value.idxType ...rank) return exterior(i);
+  def exterior(i: rank*_value.idxType) return new _domain(_value.exterior(i));
 
-  def interior(i: int ...rank) return interior(i);
-  def interior(i: rank*int) return new _domain(_value.interior(i));
+  def interior(i: _value.idxType ...rank) return interior(i);
+  def interior(i: rank*_value.idxType) return new _domain(_value.interior(i));
 
-  def translate(i: int ...rank) return translate(i);
-  def translate(i: rank*int) return new _domain(_value.translate(i));
+  def translate(i: _value.idxType ...rank) return translate(i);
+  def translate(i: rank*_value.idxType) return new _domain(_value.translate(i));
 
   def subBlocks {
     for d in _value.subBlocks do
@@ -246,6 +246,15 @@ record _domain {
     }
   }
 }
+
+def +(d: _domain, i: index(d)) {
+  return d.translate(i);
+}
+
+def -(d: _domain, i: index(d)) {
+  return d.translate(-i);
+}
+
 
 //
 // Array wrapper record
