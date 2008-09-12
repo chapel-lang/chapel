@@ -1,7 +1,0 @@
-feature request: domain decleration from tuple plus domain
-
-Allow decleration of arithmetic domains by adding a domain to a point (an
-n-tuple of ints where n is of the same dimensionality as the domain its added
-to).
-
-The effect of this can be thought of as shifting the domain by the point-value.
