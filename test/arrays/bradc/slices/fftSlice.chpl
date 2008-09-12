@@ -20,13 +20,13 @@ def dfft(A: [?ADom]) {
     writeln("bankStart is: ", bankStart);
     for lo in bankStart + (0..#str) {
       writeln("lo is: ", lo);
-      var t1 = (0..#radix);
+      var t1 = 0..#radix;
       writeln("t1 is: ", t1);
-      var t2 = (0..#radix)*str;
+      var t2 = 0.. by str #radix;
       writeln("t2 is: ", t2);
-      var t3 = (0..#radix)*str + lo;
+      var t3 = lo.. by str #radix;
       writeln("t3 is: ", t3);
-      var B = A[(0..#radix)*str + lo];
+      var B = A[lo.. by str # radix];
       writeln("B is: ", B);
       //      butterfly(wk1, wk2, wk3, A[[0..radix)*str + lo]);
     }

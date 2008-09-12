@@ -491,29 +491,11 @@ def +(r: range(?e,?b,?s), i: integral)
 def -(r: range(?e,?b,?s), i: integral)
   return new range((r.low-i).type, b, s, r.low-i, r.high-i, r.stride);
 
-def *(r: range(?e,?b,?s), i: integral) {
-  if i == 0 then
-    halt("multiplication of range by zero");
-  return new range((r.low*i).type, b, true, r.low*i, r.high*i, r.stride*i);
-}
-
-def /(r: range(?e,?b,?s), i: integral)
-  return new range((r.low/i).type, b, true, r.low/i, r.high/i, r.stride/i);
-
 def +(i:integral, r: range(?e,?b,?s))
   return new range((i+r.low).type, b, s, i+r.low, i+r.high, r.stride);
 
 def -(i:integral, r: range(?e,?b,?s))
   return new range((i-r.low).type, b, s, i-r.low, i-r.high, r.stride);
-
-def *(i:integral, r: range(?e,?b,?s)) {
-  if i == 0 then
-    halt("multiplication of range by zero");
-  return new range((i*r.low).type, b, true, i*r.low, i*r.high, i*r.stride);
-}
-
-def /(i:integral, r: range(?e,?b,?s))
-  return new range((i/r.low).type, b, true, i/r.low, i/r.high, i/r.stride);
 
 
 //

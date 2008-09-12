@@ -8,6 +8,6 @@ const B = A[1..4];
 
 writeln("B is: ", B);
 
-const C = A[(0..#4)*2 + 1];
+const C = A[1.. by 2 #4];
 
 writeln("C is: ", C);

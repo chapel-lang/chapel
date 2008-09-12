@@ -8,7 +8,7 @@ var A: [i in 1..n] int = i;
 writeln("A is: ", A);
 
 for span in 1..n/radix {
-  foo(A[1 + (0..#radix)*span]);
+  foo(A[1.. by span # radix]);
 }
 
 def foo(B:[1..4] int) {
