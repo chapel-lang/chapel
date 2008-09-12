@@ -126,7 +126,7 @@ class RandomStream {
   def these(follower) {
     // make a local copy of the 'this' random stream class
     var locStream = new RandomStream(seed);
-    var val = locStream.getNth(follower.low);
+    var val = locStream.getNth(follower.low + 1);
     for i in follower {
       yield val;
       val = locStream.getNext();

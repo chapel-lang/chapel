@@ -33,14 +33,14 @@ class C {
 
   def these(leader) {
     cobegin {
-      yield [n/2+1..n];
-      yield [1..n/2];
+      yield [n/2+1..n-1];
+      yield [0..n/2];
     }
   }
 
   def these(follower) var {
     for i in follower do
-      yield A(i);
+      yield A(i+1);
   }
 
   def this(i) var {
