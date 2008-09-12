@@ -39,3 +39,5 @@
 * List "by" among the overloaded operators?
 
 * Document domain operators: translate, interior, exterior, etc.
+
+* Document +, - on domains

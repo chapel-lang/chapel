@@ -251,6 +251,10 @@ def +(d: _domain, i: index(d)) {
   return d.translate(i);
 }
 
+def +(i, d: _domain) where i: index(d) {
+  return d.translate(i);
+}
+
 def -(d: _domain, i: index(d)) {
   return d.translate(-i);
 }
