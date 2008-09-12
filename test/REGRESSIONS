@@ -344,10 +344,6 @@ xt-gnu specific failures
 x1-/x2-specific failures
 ========================
 
-use before def in ic_value (09/11/08)
--------------------------------------
-[Error matching program output for release/examples/opaque]
-
 compilation timing out (started 4/19/08)
 ----------------------------------------
 [Error: Timed out compilation for release/examples/hpcc/fft]
@@ -376,10 +372,6 @@ print occurs in 0 seconds!?  Timers not working?
 =============================
 mta-/xmt-specific regressions
 =============================
-
-use before def in ic_value (09/11/08)
--------------------------------------
-[Error matching program output for release/examples/opaque]
 
 occasional timeouts? or slowed down during iterator rewrites? (e.g., 07/02/08)
 ------------------------------------------------------------------------------
