@@ -254,7 +254,6 @@ types:
 def +(r: range, s: integral): range
 def +(s: integral, s: range): range
 def -(r: range, s: integral): range
-def -(s: integral, s: range): range
 \end{chapel}
 
 The \chpl{+} and \chpl{-} operators apply the scalar via the operator
@@ -264,25 +263,16 @@ element type of applying the operator to the input range's element
 type and the scalar type.  The bounded and stridable parameters for
 the result range are the same as for the input range.
 
-The \chpl{*} and \chpl{/} operators apply the scalar via the operator
-to the range's low and high bounds as well as to its stride value,
-producing a shifted and scaled version of the range.  The element type
-of the resulting range is based on the element type of applying the
-operator to the range's element type and the scalar type.  The bounded
-parameter for the result range is the same as for the input range.
-The stridable parameter for the result range is always set to
-\chpl{true}.
-
 \begin{example}
 The following code creates a bounded, non-stridable range \chpl{r}
 which has an element type of \chpl{int} representing the values ${0,
-  1, 2, 3}$.  It then uses the \chpl{*} and \chpl{+} operators to
-create a second range \chpl{r2} representing the values ${1, 3, 5,
-  7}$.  The \chpl{r2} range is bounded, stridable, and represents
+  1, 2, 3}$.  It then uses the \chpl{+} operator to
+create a second range \chpl{r2} representing the values ${1, 2, 3,
+  4}$.  The \chpl{r2} range is bounded, non-stridable, and represents
 values of type \chpl{int}
 \begin{chapel}
 var r = 0..3;
-var r2 = (r * 2) + 1;
+var r2 = r + 1;
 \end{chapel}
 \end{example}
 

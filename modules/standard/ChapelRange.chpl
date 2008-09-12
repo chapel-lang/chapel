@@ -494,9 +494,6 @@ def -(r: range(?e,?b,?s), i: integral)
 def +(i:integral, r: range(?e,?b,?s))
   return new range((i+r.low).type, b, s, i+r.low, i+r.high, r.stride);
 
-def -(i:integral, r: range(?e,?b,?s))
-  return new range((i-r.low).type, b, s, i-r.low, i-r.high, r.stride);
-
 
 //
 // return a substring of a string with a range of indices
