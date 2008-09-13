@@ -52,7 +52,7 @@ complex2record() {
         if (is_complex_type(var->type)) {
           if (var->immediate) {
             ClassType* ct = complex2rec(se->var->type);
-            VarSymbol* tmp = new VarSymbol("_tmp", ct);
+            VarSymbol* tmp = newTemp(ct);
             se->getStmtExpr()->insertBefore(new DefExpr(tmp));
             se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, ct->getField(1), complex2real(se->var->type)->defaultValue));
             se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, ct->getField(2), complex2real(se->var->type)->defaultValue));

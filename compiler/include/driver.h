@@ -45,7 +45,7 @@ extern char fExplainInstantiation[256];
 
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
-extern bool fShortNames;
+extern bool fGenIDS;
 extern bool fSerial;
 extern bool fLocal;
 extern bool fieeefloat;

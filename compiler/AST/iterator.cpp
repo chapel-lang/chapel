@@ -43,14 +43,12 @@ insertSetMemberInits(FnSymbol* fn, Symbol* var) {
       if (field->type->symbol->hasFlag(FLAG_REF)) {
         if (getValueType(field->type)->symbol->hasFlag(FLAG_ARRAY))
           continue; // skips array types
-        Symbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->addFlag(FLAG_TEMP);
+        Symbol* tmp = newTemp(field->type);
         fn->insertAtTail(new DefExpr(tmp));
         fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, gNilRef));
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, field, tmp));
       } else if (field->type->refType) { // skips array types (how to handle arrays?) ( sjd later: really? )
-        Symbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->addFlag(FLAG_TEMP);
+        Symbol* tmp = newTemp(field->type);
         fn->insertAtTail(new DefExpr(tmp));
         insertSetMemberInits(fn, tmp);
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, field, tmp));
@@ -141,7 +139,7 @@ replaceLocalsWithFields(IteratorInfo* ii,
           se->var = field;
         } else {
           Symbol* field = local2field.get(se->var);
-          VarSymbol* tmp = new VarSymbol("_tmp", se->var->type);
+          VarSymbol* tmp = newTemp(se->var->type);
           Expr* stmt = se->getStmtExpr();
           BlockStmt* loop = NULL;
           if (!stmt->list) {
@@ -321,8 +319,7 @@ buildAdvance(FnSymbol* fn,
 
   // insert jump table at head of advance
   i = 2;
-  Symbol* tmp = new VarSymbol("_tmp", dtBool);
-  tmp->addFlag(FLAG_TEMP);
+  Symbol* tmp = newTemp(dtBool);
   Symbol* more = new VarSymbol("more", dtInt[INT_SIZE_32]);
 
   forv_Vec(Symbol, label, labels) {
@@ -338,7 +335,7 @@ buildAdvance(FnSymbol* fn,
 
 static void
 buildHasMore(IteratorInfo* ii) {
-  VarSymbol* tmp = new VarSymbol("_tmp", ii->hasMore->retType);
+  VarSymbol* tmp = newTemp(ii->hasMore->retType);
   ii->hasMore->insertAtTail(new DefExpr(tmp));
   ii->hasMore->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ii->hasMore->getFormal(1), ii->icType->getField("more"))));
   ii->hasMore->insertAtTail(new CallExpr(PRIMITIVE_RETURN, tmp));
@@ -347,7 +344,7 @@ buildHasMore(IteratorInfo* ii) {
 
 static void
 buildGetValue(IteratorInfo* ii) {
-  VarSymbol* tmp = new VarSymbol("_tmp", ii->getValue->retType);
+  VarSymbol* tmp = newTemp(ii->getValue->retType);
   ii->getValue->insertAtTail(new DefExpr(tmp));
   ii->getValue->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ii->getValue->getFormal(1), ii->icType->getField("value"))));
   ii->getValue->insertAtTail(new CallExpr(PRIMITIVE_RETURN, tmp));
@@ -518,8 +515,7 @@ rebuildIterator(IteratorInfo* ii,
     expr->remove();
   fn->defPoint->remove();
   fn->retType = ii->icType;
-  Symbol* iterator = new VarSymbol("ic", ii->icType);
-  iterator->addFlag(FLAG_TEMP);
+  Symbol* iterator = newTemp("_ic", ii->icType);
   fn->insertAtTail(new DefExpr(iterator));
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->icType->symbol, new_StringSymbol("iterator class"))));
   fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, iterator));
@@ -527,8 +523,7 @@ rebuildIterator(IteratorInfo* ii,
     Symbol* field = local2field.get(local);
     if (toArgSymbol(local)) {
       if (local->type == field->type->refType) {
-        Symbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->addFlag(FLAG_TEMP);
+        Symbol* tmp = newTemp(field->type);
         fn->insertAtTail(new DefExpr(tmp));
         fn->insertAtTail(
           new CallExpr(PRIMITIVE_MOVE, tmp,
@@ -539,8 +534,7 @@ rebuildIterator(IteratorInfo* ii,
       }
     } else if (isRecordType(local->type)) {
       if (field->type->refType) { // skips array types (how to handle arrays?)
-        Symbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->addFlag(FLAG_TEMP);
+        Symbol* tmp = newTemp(field->type);
         fn->insertAtTail(new DefExpr(tmp));
         insertSetMemberInits(fn, tmp);
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, tmp));

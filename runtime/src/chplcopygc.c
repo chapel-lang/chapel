@@ -25,7 +25,7 @@ void _chpl_gc_copy_collect(void) {
       } else {
         if (STACK_PTR(rootlist[i]) >= (void*)_from_space->head &&
             STACK_PTR(rootlist[i]) < (void*)_from_space->tail) {
-          size_t size = cid2size(*(_class_id*)STACK_PTR(rootlist[i]));
+          size_t size = cid2size(*(chpl__class_id*)STACK_PTR(rootlist[i]));
           memmove(_to_space->current, STACK_PTR(rootlist[i]), size);
           HEAP_AS_PTR(rootlist[i]) = (void*)_to_space->current;
           STACK_PTR(rootlist[i]) = (void*)_to_space->current;
@@ -41,7 +41,7 @@ void _chpl_gc_copy_collect(void) {
   /* Now that any root objects are moved, move sub-objects. */
   scanptr = _to_space->head;
   while (scanptr != _to_space->current) {
-    size_t *offsets = cid2offsets(*(_class_id*)scanptr);
+    size_t *offsets = cid2offsets(*(chpl__class_id*)scanptr);
     if (offsets[1] == (size_t)-1) {
       // data class (array)
       int i;
@@ -57,7 +57,7 @@ void _chpl_gc_copy_collect(void) {
           } else {
             if (data[i] >= (void*)_from_space->head &&
                 data[i] < (void*)_from_space->tail) {
-              size_t size = cid2size(*(_class_id*)data[i]);
+              size_t size = cid2size(*(chpl__class_id*)data[i]);
               memmove(_to_space->current, data[i], size);
               /* Put an update pointer on the heap */
               *(void**)data[i] = (void*)_to_space->current;
@@ -81,7 +81,7 @@ void _chpl_gc_copy_collect(void) {
           } else {
             if (STACK_PTR(current) >= (void*)_from_space->head &&
                 STACK_PTR(current) < (void*)_from_space->tail) {
-              size_t size = cid2size(**(_class_id**)current);
+              size_t size = cid2size(**(chpl__class_id**)current);
               memmove(_to_space->current, STACK_PTR(current), size);
               HEAP_AS_PTR(current) = (void*)_to_space->current;
               STACK_PTR(current) = (void*)_to_space->current;

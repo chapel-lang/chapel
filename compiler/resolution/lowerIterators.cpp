@@ -41,8 +41,7 @@ expandIteratorInline(CallExpr* call) {
           // count is used to get the nth field out of the iterator class;
           // it is replaced by the field once the iterator class is created
           Expr* stmt = se->getStmtExpr();
-          VarSymbol* tmp = new VarSymbol(formal->name, formal->type);
-          tmp->addFlag(FLAG_TEMP);
+          VarSymbol* tmp = newTemp(formal->name, formal->type);
           stmt->insertBefore(new DefExpr(tmp));
           stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, ic, new_IntSymbol(count))));
           se->var = tmp;
@@ -79,11 +78,11 @@ setupSimultaneousIterators(Vec<Symbol*>& iterators,
     ClassType* iteratorType = toClassType(gIterator->type);
     ClassType* indexType = toClassType(gIndex->type);
     for (int i=1; i <= iteratorType->fields.length(); i++) {
-      Symbol* iterator = new VarSymbol("_iterator", iteratorType->getField(i)->type);
+      Symbol* iterator = newTemp("_iterator", iteratorType->getField(i)->type);
       loop->insertBefore(new DefExpr(iterator));
       loop->insertBefore(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, gIterator, iteratorType->getField(i))));
 
-      Symbol* index = new VarSymbol("_index", indexType->getField(i)->type);
+      Symbol* index = newTemp("_index", indexType->getField(i)->type);
       loop->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER, gIndex, indexType->getField(i), index));
       loop->insertAtHead(new DefExpr(index));
       setupSimultaneousIterators(iterators, indices, iterator, index, loop);
@@ -147,8 +146,7 @@ buildIteratorCallInner(BlockStmt* block, Symbol* ret, int fnid, Symbol* iterator
     if (fn->retType == ret->type) {
       block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ret, call));
     } else {
-      VarSymbol* tmp = new VarSymbol("_tmp", fn->retType);
-      tmp->addFlag(FLAG_TEMP);
+      VarSymbol* tmp = newTemp(fn->retType);
       block->insertAtTail(new DefExpr(tmp));
       block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, call));
       block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ret, new CallExpr(PRIMITIVE_CAST, ret->type->symbol, tmp)));
@@ -163,16 +161,14 @@ buildIteratorCall(Symbol* ret, int fnid, Symbol* iterator, Vec<Type*>& children)
   BlockStmt* block = new BlockStmt();
   BlockStmt* outerBlock = block;
   forv_Vec(Type, type, children) {
-    VarSymbol* cid = new VarSymbol("_tmp", dtBool);
-    cid->addFlag(FLAG_TEMP);
+    VarSymbol* cid = newTemp(dtBool);
     block->insertAtTail(new DefExpr(cid));
     block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cid,
                           new CallExpr(PRIMITIVE_GETCID,
                                        iterator, type->symbol)));
     BlockStmt* thenStmt = new BlockStmt();
     BlockStmt* elseStmt = new BlockStmt();
-    VarSymbol* childIterator = new VarSymbol("_tmp", type);
-    childIterator->addFlag(FLAG_TEMP);
+    VarSymbol* childIterator = newTemp(type);
     thenStmt->insertAtTail(new DefExpr(childIterator));
     thenStmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, childIterator, new CallExpr(PRIMITIVE_CAST, type->symbol, iterator)));
     buildIteratorCallInner(thenStmt, ret, fnid, childIterator);
@@ -214,8 +210,7 @@ expand_for_loop(CallExpr* call) {
     for (int i = 0; i < iterators.n; i++) {
       Vec<Type*> children;
       getIteratorChildren(children, iterators.v[i]->type);
-      VarSymbol* cond = new VarSymbol("_cond", dtBool);
-      cond->addFlag(FLAG_TEMP);
+      VarSymbol* cond = newTemp("_cond", dtBool);
 
       block->insertBefore(buildIteratorCall(NULL, ZIP1, iterators.v[i], children));
 
@@ -229,7 +224,7 @@ expand_for_loop(CallExpr* call) {
         if (!firstCond) {
           firstCond = cond;
         } else if (!fNoBoundsChecks) {
-          VarSymbol* tmp = new VarSymbol("_tmp", dtBool);
+          VarSymbol* tmp = newTemp(dtBool);
           block->insertAtHead(new CondStmt(new SymExpr(tmp), new CallExpr(PRIMITIVE_RT_ERROR, new_StringSymbol("zippered iterations have non-equal lengths"))));
           block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_EQUAL, cond, new_IntSymbol(0))));
           block->insertAtHead(new DefExpr(tmp));
@@ -258,7 +253,7 @@ buildIterator2Leader(IteratorInfo* ii) {
   fn->retType = ii->leader->icType;
   ArgSymbol* iterator = new ArgSymbol(INTENT_BLANK, "iterator", ii->icType);
   fn->insertFormalAtTail(iterator);
-  VarSymbol* leader = new VarSymbol("leader", ii->leader->icType);
+  VarSymbol* leader = newTemp("leader", ii->leader->icType);
   fn->insertAtTail(new DefExpr(leader));
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leader, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->leader->icType->symbol, new_StringSymbol("leader iterator class"))));
   fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, leader));
@@ -279,8 +274,7 @@ buildIterator2Leader(IteratorInfo* ii) {
     if (iteratorFormal->type != leaderFormal->type) {
       USR_FATAL(ii->iterator, "type of argument %d in iterator '%s' does not match leader variant", i, ii->iterator->name);
     }
-    VarSymbol* tmp = new VarSymbol("_tmp", ii->icType->getField(j+1)->type);
-    tmp->addFlag(FLAG_TEMP);
+    VarSymbol* tmp = newTemp(ii->icType->getField(j+1)->type);
     fn->insertAtTail(new DefExpr(tmp));
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, ii->icType->getField(j+1))));
     fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, leader, ii->leader->icType->getField(i+1), tmp));
@@ -306,7 +300,7 @@ buildIterator2Follower(IteratorInfo* ii) {
   fn->insertFormalAtTail(iterator);
   ArgSymbol* leaderIndex = new ArgSymbol(INTENT_BLANK, "leaderIndex", ii->leader->getValue->retType);
   fn->insertFormalAtTail(leaderIndex);
-  VarSymbol* follower = new VarSymbol("follower", ii->follower->icType);
+  VarSymbol* follower = newTemp("follower", ii->follower->icType);
   fn->insertAtTail(new DefExpr(follower));
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, follower, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->follower->icType->symbol, new_StringSymbol("follower iterator class"))));
   fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, follower));
@@ -331,8 +325,7 @@ buildIterator2Follower(IteratorInfo* ii) {
     if (iteratorFormal->type != followerFormal->type) {
       USR_FATAL(ii->iterator, "type of argument %d in iterator '%s' does not match follower variant", i, ii->iterator->name);
     }
-    VarSymbol* tmp = new VarSymbol("_tmp", ii->icType->getField(j+1)->type);
-    tmp->addFlag(FLAG_TEMP);
+    VarSymbol* tmp = newTemp(ii->icType->getField(j+1)->type);
     fn->insertAtTail(new DefExpr(tmp));
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, ii->icType->getField(j+1))));
     fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, follower, ii->follower->icType->getField(i+1), tmp));
@@ -422,24 +415,21 @@ void lowerIterators() {
     INT_ASSERT(ic);
     ClassType* ct = toClassType(ic->type);
     INT_ASSERT(ct);
-    VarSymbol* cp = new VarSymbol("ic_copy", ct);
-    cp->addFlag(FLAG_TEMP);
+    VarSymbol* cp = newTemp(ct);
     block->insertAtTail(new DefExpr(cp));
 
     Vec<Type*> children;
     getIteratorChildren(children, ic->type);
 
     forv_Vec(Type, type, children) {
-      VarSymbol* cid = new VarSymbol("_tmp", dtBool);
-      cid->addFlag(FLAG_TEMP);
+      VarSymbol* cid = newTemp(dtBool);
       block->insertAtTail(new DefExpr(cid));
       block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cid,
                             new CallExpr(PRIMITIVE_GETCID,
                                          ic, type->symbol)));
       BlockStmt* thenStmt = new BlockStmt();
       BlockStmt* elseStmt = new BlockStmt();
-      VarSymbol* childIterator = new VarSymbol("_tmp", type);
-      childIterator->addFlag(FLAG_TEMP);
+      VarSymbol* childIterator = newTemp(type);
       thenStmt->insertAtTail(new DefExpr(childIterator));
       thenStmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, childIterator, new CallExpr(PRIMITIVE_CAST, type->symbol, ic)));
       thenStmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, childIterator, new CallExpr(getIteratorMap.get(type), childIterator)));
@@ -452,7 +442,7 @@ void lowerIterators() {
     block->insertAtTail(new CallExpr(PRIMITIVE_SETCID, cp));
     for_fields(field, ct) {
       if (!field->hasFlag(FLAG_SUPER_CLASS)) {
-        VarSymbol* tmp = new VarSymbol("_tmp", field->type);
+        VarSymbol* tmp = newTemp(field->type);
         block->insertAtTail(new DefExpr(tmp));
         block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, field)));
         block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, cp, field, tmp));

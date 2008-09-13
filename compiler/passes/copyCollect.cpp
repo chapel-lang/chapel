@@ -89,7 +89,7 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
         if (classfield->classTag == CLASS_CLASS) {
           if (!classfield->symbol->hasFlag(FLAG_REF) &&
               !classfield->symbol->hasFlag(FLAG_NO_OBJECT)) {
-            VarSymbol* tmp = new VarSymbol("_tmp", field->type);
+            VarSymbol* tmp = newTemp(field->type);
             fn->insertAtHead(new DefExpr(tmp));
             fn->insertAtHead(
               new CallExpr(PRIMITIVE_MOVE, tmp,
@@ -99,7 +99,7 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
             totalRoots++;
           }
         } else if (classfield->classTag == CLASS_RECORD) {
-          VarSymbol* tmp = new VarSymbol("_tmp", field->type);
+          VarSymbol* tmp = newTemp(field->type);
           fn->insertAtHead(new DefExpr(tmp));
           fn->insertAtHead(
             new CallExpr(PRIMITIVE_MOVE, tmp,

@@ -642,7 +642,7 @@ help_codegen_fn(FILE* outfile, const char* name, BaseAST* ast1 = NULL,
 
 
 static void codegenWideDynamicCastCheck(FILE* outfile, Type* type) {
-  fprintf(outfile, "chpl_macro_tmp == _e_%s", type->symbol->cname);
+  fprintf(outfile, "chpl_macro_tmp == chpl__cid_%s", type->symbol->cname);
   forv_Vec(Type, child, type->dispatchChildren) {
     fprintf(outfile, " || ");
     codegenWideDynamicCastCheck(outfile, child);
@@ -654,9 +654,9 @@ static void codegenDynamicCastCheck(FILE* outfile, Type* type, Expr* value) {
   fprintf(outfile, "((object)");
   value->codegen(outfile);
   if (fCopyCollect) {
-    fprintf(outfile, ")->__class_id._cid == %s%s", "_e_", type->symbol->cname);
+    fprintf(outfile, ")->chpl__cid_union.chpl__cid == %s%s", "chpl__cid_", type->symbol->cname);
   } else {
-    fprintf(outfile, ")->_cid == %s%s", "_e_", type->symbol->cname);
+    fprintf(outfile, ")->chpl__cid == %s%s", "chpl__cid_", type->symbol->cname);
   }
   forv_Vec(Type, child, type->dispatchChildren) {
     fprintf(outfile, " || ");
@@ -939,7 +939,7 @@ void CallExpr::codegen(FILE* outfile) {
             get(1)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(1)->codegen(outfile);
-            fprintf(outfile, ", _e_%s, object)",
+            fprintf(outfile, ", chpl__cid_%s, object)",
                     call->get(2)->typeInfo()->symbol->cname);
             break;
           }
@@ -1293,24 +1293,24 @@ void CallExpr::codegen(FILE* outfile) {
       }
     case PRIMITIVE_SETCID:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        fprintf(outfile, "_COMM_WIDE_CLASS_PUT_OFF(_class_id, ");
+        fprintf(outfile, "_COMM_WIDE_CLASS_PUT_OFF(chpl__class_id, ");
         get(1)->codegen(outfile);
-        fprintf(outfile, ", _e_%s, object, _cid)",
+        fprintf(outfile, ", chpl__cid_%s, object, chpl__cid)",
                 get(1)->typeInfo()->getField("addr")->type->symbol->cname);
       } else if (fCopyCollect) {
         fprintf(outfile, "((object)");
         get(1)->codegen(outfile);
         fprintf(outfile, ")");
-        fprintf(outfile, "->__class_id._padding_for_copy_collection_use = NULL;\n");
+        fprintf(outfile, "->chpl__cid_union._padding_for_copy_collection_use = NULL;\n");
         fprintf(outfile, "((object)");
         get(1)->codegen(outfile);
         fprintf(outfile, ")");
-        fprintf(outfile, "->__class_id._cid = %s%s", "_e_", get(1)->typeInfo()->symbol->cname);
+        fprintf(outfile, "->chpl__cid_union.chpl__cid = %s%s", "chpl__cid_", get(1)->typeInfo()->symbol->cname);
       } else {
         fprintf(outfile, "((object)");
         get(1)->codegen(outfile);
         fprintf(outfile, ")");
-        fprintf(outfile, "->_cid = %s%s", "_e_", get(1)->typeInfo()->symbol->cname);
+        fprintf(outfile, "->chpl__cid = %s%s", "chpl__cid_", get(1)->typeInfo()->symbol->cname);
       }
       break;
     case PRIMITIVE_GETCID:
@@ -1319,9 +1319,9 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
       if (fCopyCollect) {
-        fprintf(outfile, "->__class_id._cid == %s%s", "_e_", get(2)->typeInfo()->symbol->cname);
+        fprintf(outfile, "->chpl__cid_union.chpl__cid == %s%s", "chpl__cid_", get(2)->typeInfo()->symbol->cname);
       } else {
-        fprintf(outfile, "->_cid == %s%s", "_e_", get(2)->typeInfo()->symbol->cname);
+        fprintf(outfile, "->chpl__cid == %s%s", "chpl__cid_", get(2)->typeInfo()->symbol->cname);
       }
       fprintf(outfile, ")");
       break;

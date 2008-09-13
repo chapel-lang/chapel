@@ -623,7 +623,7 @@ static void build_constructor(ClassType* ct) {
           fn->insertFormalAtHead(superArg);
           superCall->insertAtHead(superArg->sym);
         }
-        VarSymbol* tmp = new VarSymbol("_tmp");
+        VarSymbol* tmp = newTemp();
         superCall->insertAtTail(new NamedExpr("meme", new SymExpr(tmp)));
         fn->insertAtTail(superCall);
         superCall->insertBefore(new DefExpr(tmp));

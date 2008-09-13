@@ -232,6 +232,9 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_co
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 PrimitiveType *immediate_type(Immediate *imm);
 
+VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
+VarSymbol* newTemp(Type* type);
+
 int compareSymbol(const void* v1, const void* v2);
 
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;

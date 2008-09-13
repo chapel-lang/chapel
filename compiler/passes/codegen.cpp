@@ -70,6 +70,8 @@ subChar(Symbol* sym, const char* ch, const char* x) {
 }
 
 static void legalizeCName(Symbol* sym) {
+  if (sym->hasFlag(FLAG_EXTERN))
+    return;
   for (const char* ch = sym->cname; *ch != '\0'; ch++) {
     switch (*ch) {
     case '>': ch = subChar(sym, ch, "_GREATER_"); break;
@@ -91,17 +93,12 @@ static void legalizeCName(Symbol* sym) {
     default: break;
     }
   }
+  if (!strncmp("chpl_", sym->cname, 5) && strcmp("chpl_main", sym->cname) && sym->cname[5] != '_' ||
+      sym->cname[0] == '_' && (sym->cname[1] == '_' || sym->cname[1] >= 'A' && sym->cname[1] <= 'Z')) {
+    sym->cname = astr("chpl__", sym->cname);
+  }
 }
 
-static inline bool symbol_clashes(const char *symbol_name,
-                                  ChainHashMap<const char*, StringHashFns, int> symbol_map) {
-  if (!strncmp("chpl_", symbol_name, 5) && strcmp("chpl_main", symbol_name) && symbol_name[5] != '_' ||
-      symbol_name[0] == '_' &&
-      symbol_name[1] == '_' || symbol_name[1] >= 'A' && symbol_name[1] <= 'Z')
-    return true;
-  else
-    return symbol_map.get(symbol_name);
-}
 
 static void codegen_header(void) {
   ChainHashMap<const char*, StringHashFns, int> cnames;
@@ -120,8 +117,9 @@ static void codegen_header(void) {
       const char* enumName = enumType->symbol->cname;
       for_enums(constant, enumType) {
         Symbol* sym = constant->sym;
+        legalizeCName(sym);
         sym->cname = astr(enumName, "__", sym->cname);
-        if (symbol_clashes(sym->cname, cnames))
+        if (cnames.get(sym->cname))
           sym->cname = astr("chpl__", sym->cname, "_", istr(sym->id));
         cnames.put(sym->cname, 1);
       }
@@ -135,7 +133,7 @@ static void codegen_header(void) {
   forv_Vec(TypeSymbol, ts, gTypes) {
     if (ts->defPoint->parentExpr != rootModule->block) {
       legalizeCName(ts);
-      if (!ts->hasFlag(FLAG_EXTERN) && symbol_clashes(ts->cname, cnames))
+      if (!ts->hasFlag(FLAG_EXTERN) && cnames.get(ts->cname))
         ts->cname = astr("chpl__", ts->cname, "_", istr(ts->id));
       cnames.put(ts->cname, 1);
       typeSymbols.add(ts);
@@ -169,7 +167,7 @@ static void codegen_header(void) {
       if (var->defPoint->parentExpr != rootModule->block &&
           toModuleSymbol(var->defPoint->parentSymbol)) {
         legalizeCName(var);
-        if (!var->hasFlag(FLAG_EXTERN) && symbol_clashes(var->cname, cnames))
+        if (!var->hasFlag(FLAG_EXTERN) && cnames.get(var->cname))
           var->cname = astr("chpl__", var->cname, "_", istr(var->id));
         cnames.put(var->cname, 1);
         varSymbols.add(var);
@@ -185,7 +183,7 @@ static void codegen_header(void) {
     if (fn == chpl_main)
       fn->cname = astr("chpl_main");
     legalizeCName(fn);
-    if (!fn->hasFlag(FLAG_EXPORT) && !fn->hasFlag(FLAG_EXTERN) && symbol_clashes(fn->cname, cnames))
+    if (!fn->hasFlag(FLAG_EXPORT) && !fn->hasFlag(FLAG_EXTERN) && cnames.get(fn->cname))
       fn->cname = astr("chpl__", fn->cname, "_", istr(fn->id));
     cnames.put(fn->cname, 1);
     fnSymbols.add(fn);
@@ -200,7 +198,7 @@ static void codegen_header(void) {
     Vec<const char*> formalSet;
     for_formals(formal, fn) {
       legalizeCName(formal);
-      if (symbol_clashes(formal->cname, cnames) || formalSet.set_in(formal->cname))
+      if (cnames.get(formal->cname) || formalSet.set_in(formal->cname))
         formal->cname = astr("chpl__", formal->cname, "_", istr(formal->id));
       formalSet.set_add(formal->cname);
     }
@@ -209,7 +207,7 @@ static void codegen_header(void) {
   //
   // mangle local variable names if they clash with types, global
   // variables, functions, formal arguments of their function, or
-  // other local variables in the same function; shorten temp names
+  // other local variables in the same function
   //
   forv_Vec(FnSymbol, fn, gFns) {
     Vec<const char*> local;
@@ -223,25 +221,20 @@ static void codegen_header(void) {
     int tmpID = 1;
     forv_Vec(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast)) {
-        if (def->sym->hasFlag(FLAG_TEMP)) {
+        legalizeCName(def->sym);
+        const char* cname = def->sym->cname;
+        if (!strcmp(cname, "_tmp")) {
           do {
-            def->sym->cname = astr("T", istr(tmpID++));
-          } while (local.set_in(def->sym->cname) || symbol_clashes(def->sym->cname, cnames));
-          local.set_add(def->sym->cname);
+            cname = astr("T", istr(tmpID++));
+          } while (local.set_in(cname) || cnames.get(cname));
+        } else {
+          int i = 1;
+          while (local.set_in(cname) || cnames.get(cname)) {
+            cname = astr(def->sym->cname, istr(i++));
+          }
         }
-      }
-    }
-    forv_Vec(BaseAST, ast, asts) {
-      if (DefExpr* def = toDefExpr(ast)) {
-        if (!def->sym->hasFlag(FLAG_TEMP)) {
-          legalizeCName(def->sym);
-          const char* cname;
-          do {
-            cname = astr("T", istr(tmpID++), "_", def->sym->cname);
-          } while (local.set_in(cname) || symbol_clashes(cname, cnames));
-          def->sym->cname = cname;
-          local.set_add(cname);
-        }
+        local.set_add(cname);
+        def->sym->cname = cname;
       }
     }
   }
@@ -270,27 +263,27 @@ static void codegen_header(void) {
     beautify(&runtimeHeaderFile);
     openRuntimeFile(&runtimeFile, userModules.v[0]->name, "c");
     outfile = runtimeFile.fptr;
-    fprintf(outfile, "#include \"chapel_code.h\"\n");
+    fprintf(outfile, "#include \"chapel_code.h\"\n\n");
   } else {
-    openCFile(&header, "_chpl_header", "h");
+    openCFile(&header, "chpl__header", "h");
     outfile = header.fptr;
   }
   genIncludeCommandLineHeaders(outfile);
 
-  fprintf(outfile, "\n/*** Class ID -- referred to in runtime ***/\n\n");
+  fprintf(outfile, "/*** Class Type Identification Numbers ***/\n\n");
   fprintf(outfile, "typedef enum {\n");
   bool comma = false;
   forv_Vec(TypeSymbol, ts, typeSymbols) {
     if (ClassType* ct = toClassType(ts->type)) {
       if (!isReference(ct) && ct->classTag == CLASS_CLASS) {
-        fprintf(outfile, "%s_e_%s", (comma) ? ",\n  " : "  ", ts->cname);
+        fprintf(outfile, "%schpl__cid_%s", (comma) ? ",\n  " : "  ", ts->cname);
         comma = true;
       }
     }
   }
   if (!comma)
-    fprintf(outfile, "  _e_placeholder");
-  fprintf(outfile, "\n} _class_id;\n\n");
+    fprintf(outfile, "  chpl__cid_placeholder");
+  fprintf(outfile, "\n} chpl__class_id;\n\n");
 
   if (!fRuntime) {
     fprintf(outfile, "#define CHPL_GEN_CODE\n");
@@ -486,13 +479,13 @@ codegen_cid2offsets(FILE* outfile) {
     }
   }
 
-  fprintf(outfile, "size_t* cid2offsets(_class_id cid) {\n");
+  fprintf(outfile, "size_t* cid2offsets(chpl__class_id cid) {\n");
   fprintf(outfile, "size_t* offsets = NULL;\n");
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = toClassType(typeSym->type)) {
       if (ct->classTag == CLASS_CLASS && !isReference(ct) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
-        fprintf(outfile, "case %s%s:\n", "_e_", ct->symbol->cname);
+        fprintf(outfile, "case %s%s:\n", "chpl__cid_", ct->symbol->cname);
         fprintf(outfile, "offsets = _");
         ct->symbol->codegen(outfile);
         fprintf(outfile, "_offsets;\n");
@@ -511,13 +504,13 @@ codegen_cid2offsets(FILE* outfile) {
 
 static void
 codegen_cid2size(FILE* outfile) {
-  fprintf(outfile, "size_t cid2size(_class_id cid) {\n");
+  fprintf(outfile, "size_t cid2size(chpl__class_id cid) {\n");
   fprintf(outfile, "size_t size = 0;\n");
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = toClassType(typeSym->type)) {
       if (ct->classTag == CLASS_CLASS && !isReference(ct) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
-        fprintf(outfile, "case %s%s:\n", "_e_", ct->symbol->cname);
+        fprintf(outfile, "case %s%s:\n", "chpl__cid_", ct->symbol->cname);
         fprintf(outfile, "size = sizeof(_");
         ct->symbol->codegen(outfile);
         fprintf(outfile, ");\n");
@@ -577,7 +570,7 @@ void codegen(void) {
 
   fileinfo mainfile;
   openCFile(&mainfile, "_main", "c");
-  fprintf(mainfile.fptr, "#include \"_chpl_header.h\"\n");
+  fprintf(mainfile.fptr, "#include \"chpl__header.h\"\n");
 
   codegen_makefile(&mainfile);
 

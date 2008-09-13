@@ -52,8 +52,7 @@ insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
   } else if (!fn->hasFlag(FLAG_ITERATOR_FN)) {
     wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   } else {
-    VarSymbol* index = new VarSymbol("_i");
-    index->addFlag(FLAG_TEMP);
+    VarSymbol* index = newTemp("_i");
     wrapper->insertAtTail(new DefExpr(index));
     wrapper->insertAtTail(buildForLoopStmt(new SymExpr(index), call, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, index))));
     wrapper->addFlag(FLAG_ITERATOR_FN);
@@ -113,16 +112,14 @@ buildDefaultWrapper(FnSymbol* fn,
       wrapper->insertFormalAtTail(wrapper_formal);
       Symbol* temp;
       if (formal->type->symbol->hasFlag(FLAG_REF)) {
-        temp = new VarSymbol("_tmp");
-        temp->addFlag(FLAG_TEMP);
+        temp = newTemp();
         temp->addFlag(FLAG_MAYBE_PARAM);
         if (formal->hasFlag(FLAG_TYPE_VARIABLE))
           temp->addFlag(FLAG_TYPE_VARIABLE); // unexecuted none/gasnet on 4/25/08
         wrapper->insertAtTail(new DefExpr(temp));
         wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, new CallExpr(PRIMITIVE_SET_REF, wrapper_formal)));
       } else if (specializeDefaultConstructor && wrapper_formal->typeExpr) {
-        temp = new VarSymbol("_tmp");
-        temp->addFlag(FLAG_TEMP);
+        temp = newTemp();
         temp->addFlag(FLAG_MAYBE_PARAM);
         if (formal->hasFlag(FLAG_TYPE_VARIABLE))
           temp->addFlag(FLAG_TYPE_VARIABLE); // unexecuted none/gasnet on 4/25/08
@@ -157,8 +154,7 @@ buildDefaultWrapper(FnSymbol* fn,
       call->insertAtTail(wrapper->_this);
     } else {
       const char* temp_name = astr("_default_temp_", formal->name);
-      VarSymbol* temp = new VarSymbol(temp_name);
-      temp->addFlag(FLAG_TEMP);
+      VarSymbol* temp = newTemp(temp_name);
       temp->addFlag(FLAG_MAYBE_PARAM);
       if (formal->hasFlag(FLAG_TYPE_VARIABLE))
         temp->addFlag(FLAG_TYPE_VARIABLE);
@@ -444,8 +440,7 @@ buildPromotionWrapper(FnSymbol* fn,
       new_formal->type = ts->type;
       wrapper->insertFormalAtTail(new_formal);
       iterator->insertAtTail(new_formal);
-      VarSymbol* index = new VarSymbol(astr("_p_i_", istr(i)));
-      index->addFlag(FLAG_TEMP);
+      VarSymbol* index = newTemp(astr("_p_i_", istr(i)));
       wrapper->insertAtTail(new DefExpr(index));
       indicesCall->insertAtTail(index);
       actualCall->insertAtTail(index);

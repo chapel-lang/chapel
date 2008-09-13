@@ -16,10 +16,10 @@ extern void CreateConfigVarTable(void);
 
 /* If we're not in the generated code, define an enum _class_id; */
 #ifndef CHPL_GEN_CODE
-typedef enum { _e_bogus } _class_id;
+typedef enum { chpl__cid_bogus } chpl__class_id;
 #endif
 
-extern size_t cid2size(_class_id cid);
-extern size_t* cid2offsets(_class_id cid);
+extern size_t cid2size(chpl__class_id cid);
+extern size_t* cid2offsets(chpl__class_id cid);
 
 #endif

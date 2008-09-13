@@ -37,7 +37,6 @@ Run-time Semantic Check Options:
 C Code Generation Options:
       --[no-]cpp-lines                   [Don't] Generate #line annotations
       --savec <directory>                Save generated C code in directory
-      --short-names                      Use short names
 
 C Code Compilation Options:
       --ccflags <flags>                  Back-end C compiler flags

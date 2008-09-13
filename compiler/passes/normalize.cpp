@@ -113,8 +113,7 @@ flattenGlobalFunctions() {
 
 static void insertHeapAllocate(CallExpr* move, bool global = false) {
   SET_LINENO(move);
-  VarSymbol* tmp = new VarSymbol("_tmp");
-  tmp->addFlag(FLAG_TEMP);
+  VarSymbol* tmp = newTemp();
   move->insertBefore(new DefExpr(tmp));
   move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, move->get(2)->remove()));
   if (global) {
@@ -138,8 +137,7 @@ static void insertHeapAccess(SymExpr* se, bool global = false) {
     se->replace(call);
     call->insertAtTail(se);
   } else {
-    VarSymbol* tmp = new VarSymbol("_tmp");
-    tmp->addFlag(FLAG_TEMP);
+    VarSymbol* tmp = newTemp();
     tmp->addFlag(FLAG_EXPR_TEMP);
     stmt->insertBefore(new DefExpr(tmp));
     stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
@@ -289,8 +287,7 @@ static void heapAllocateLocals() {
     //   replace all accesses 'a' with 't._val'
     if (ArgSymbol* arg = toArgSymbol(sym)) {
       FnSymbol* fn = sym->getFunction();
-      VarSymbol* tmp = new VarSymbol("_tmp");
-      tmp->addFlag(FLAG_TEMP);
+      VarSymbol* tmp = newTemp();
       fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("_heapAlloc", sym)));
       fn->insertAtHead(new DefExpr(tmp));
       for_defs(se, defMap, sym) {
@@ -433,7 +430,7 @@ void normalize(void) {
         fn->addFlag(FLAG_ITERATOR_FN);
       }
       if (call->isPrimitive(PRIMITIVE_DELETE)) {
-        VarSymbol* tmp = new VarSymbol("_tmp");
+        VarSymbol* tmp = newTemp();
         call->insertBefore(new DefExpr(tmp));
         call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call->get(1)->remove()));
         call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
@@ -574,8 +571,7 @@ static void normalize_returns(FnSymbol* fn) {
   if (returns_void) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
   } else {
-    retval = new VarSymbol(astr("_ret_", fn->name), fn->retType);
-    retval->addFlag(FLAG_TEMP);
+    retval = newTemp("_ret", fn->retType);
     if (fn->retTag == RET_PARAM)
       retval->addFlag(FLAG_PARAM);
     if (fn->retTag == RET_TYPE)
@@ -717,8 +713,7 @@ static void insert_call_temps(CallExpr* call) {
 
   SET_LINENO(call);
   Expr* stmt = call->getStmtExpr();
-  VarSymbol* tmp = new VarSymbol("_tmp", dtUnknown);
-  tmp->addFlag(FLAG_TEMP);
+  VarSymbol* tmp = newTemp();
   tmp->addFlag(FLAG_EXPR_TEMP);
   tmp->addFlag(FLAG_MAYBE_PARAM);
   tmp->addFlag(FLAG_MAYBE_TYPE);
@@ -761,8 +756,7 @@ fix_def_expr(VarSymbol* var) {
   //
   if (var->hasFlag(FLAG_ARRAY_ALIAS)) {
     CallExpr* partial;
-    VarSymbol* arrTemp = new VarSymbol("_arrTmp");
-    arrTemp->addFlag(FLAG_TEMP);
+    VarSymbol* arrTemp = newTemp();
     stmt->insertBefore(new DefExpr(arrTemp));
     stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, arrTemp, init->remove()));
     if (!type) {
@@ -780,8 +774,7 @@ fix_def_expr(VarSymbol* var) {
   // insert temporary for constants to assist constant checking
   //
   if (var->hasFlag(FLAG_CONST)) {
-    constTemp = new VarSymbol("_constTmp");
-    constTemp->addFlag(FLAG_TEMP);
+    constTemp = newTemp();
     stmt->insertBefore(new DefExpr(constTemp));
     stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, constTemp));
   }
@@ -858,15 +851,13 @@ fix_def_expr(VarSymbol* var) {
     // initialize variable based on specified type and then assign it
     // the initialization expression if it exists
     //
-    VarSymbol* typeTemp = new VarSymbol("_typeTmp");
-    typeTemp->addFlag(FLAG_TEMP);
+    VarSymbol* typeTemp = newTemp();
     stmt->insertBefore(new DefExpr(typeTemp));
     stmt->insertBefore(
       new CallExpr(PRIMITIVE_MOVE, typeTemp,
         new CallExpr(PRIMITIVE_INIT, type->remove())));
     if (init) {
-      VarSymbol* initTemp = new VarSymbol("_tmp");
-      initTemp->addFlag(FLAG_TEMP);
+      VarSymbol* initTemp = newTemp();
       initTemp->addFlag(FLAG_MAYBE_PARAM);
       stmt->insertBefore(new DefExpr(initTemp));
       stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, initTemp, init->remove()));
@@ -975,7 +966,7 @@ static void fixup_array_formals(FnSymbol* fn) {
               }
             }
           } else if (!noDomain) {
-            VarSymbol* tmp = new VarSymbol(astr("_reindex_", arg->name));
+            VarSymbol* tmp = newTemp("_reindex");
             forv_Vec(BaseAST, ast, asts) {
               if (SymExpr* sym = toSymExpr(ast)) {
                 if (sym->var == arg)

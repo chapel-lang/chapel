@@ -127,9 +127,9 @@ void insertLineNumbers() {
           Expr* lineno = call->argList.tail->remove();
           Expr* argClass = call->argList.tail;
           ClassType* ct = toClassType(argClass->typeInfo());
-          VarSymbol* linenoField = new VarSymbol("_ln", lineno->typeInfo());
+          VarSymbol* linenoField = newTemp("_ln", lineno->typeInfo());
           ct->fields.insertAtTail(new DefExpr(linenoField));
-          VarSymbol* filenameField = new VarSymbol("_fn", filename->typeInfo());
+          VarSymbol* filenameField = newTemp("_fn", filename->typeInfo());
           ct->fields.insertAtTail(new DefExpr(filenameField));
           call->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, argClass->copy(), linenoField, lineno));
           call->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, argClass->copy(), filenameField, filename));
@@ -139,8 +139,8 @@ void insertLineNumbers() {
           DefExpr* linenoFormal = toDefExpr(fn->formals.tail);
           linenoFormal->remove();
           DefExpr* argClassFormal = toDefExpr(fn->formals.tail);
-          VarSymbol* filenameLocal = new VarSymbol("_fn", filename->typeInfo());
-          VarSymbol* linenoLocal = new VarSymbol("_ln", lineno->typeInfo());
+          VarSymbol* filenameLocal = newTemp("_fn", filename->typeInfo());
+          VarSymbol* linenoLocal = newTemp("_ln", lineno->typeInfo());
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, filenameLocal, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, argClassFormal->sym, filenameField)));
           fn->insertAtHead(new DefExpr(filenameLocal));
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, linenoLocal, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, argClassFormal->sym, linenoField)));

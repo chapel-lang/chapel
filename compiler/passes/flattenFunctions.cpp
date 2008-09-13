@@ -69,7 +69,7 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
             } else if (call && call->isPrimitive(PRIMITIVE_SET_REF)) {
               call->replace(new SymExpr(arg));
             } else if (!type->symbol->hasFlag(FLAG_HEAP)) {
-              VarSymbol* tmp = new VarSymbol("_tmp", sym->type);
+              VarSymbol* tmp = newTemp(sym->type);
               se->getStmtExpr()->insertBefore(new DefExpr(tmp));
               se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, arg)));
               se->var = tmp;
@@ -87,7 +87,7 @@ addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars) {
   forv_Vec(Symbol, sym, *vars) {
     if (sym) {
       if (!isReference(sym->type) && !sym->type->symbol->hasFlag(FLAG_HEAP)) {
-        VarSymbol* tmp = new VarSymbol("_tmp", sym->type->refType);
+        VarSymbol* tmp = newTemp(sym->type->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, sym)));
         call->insertAtTail(tmp);

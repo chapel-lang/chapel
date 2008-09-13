@@ -63,8 +63,8 @@ typedef void (*func_p)(void*);
 
 #define _WIDE_CLASS_DYNAMIC_CAST(wide1, type, cond, wide2)              \
   do {                                                                  \
-    _class_id chpl_macro_tmp;                                           \
-    _COMM_WIDE_CLASS_GET_OFF(_class_id, chpl_macro_tmp, wide2, object, _cid); \
+    chpl__class_id chpl_macro_tmp;                                      \
+    _COMM_WIDE_CLASS_GET_OFF(chpl__class_id, chpl_macro_tmp, wide2, object, chpl__cid); \
     (wide1).locale = (wide2).locale;                                    \
     (wide1).addr = (cond) ? (type)((wide2).addr) : NULL;                \
   } while (0)
@@ -133,8 +133,8 @@ typedef void (*func_p)(void*);
 
 #define _COMM_WIDE_CLASS_GET_CID(local, wide, cid, stype)               \
   do {                                                                  \
-    _class_id chpl_macro_tmp;                                           \
-    _COMM_WIDE_CLASS_GET_OFF(_class_id, chpl_macro_tmp, wide, stype, _cid); \
+    chpl__class_id chpl_macro_tmp;                                      \
+    _COMM_WIDE_CLASS_GET_OFF(chpl__class_id, chpl_macro_tmp, wide, stype, chpl__cid); \
     local = chpl_macro_tmp == cid;                                      \
   } while (0)
 

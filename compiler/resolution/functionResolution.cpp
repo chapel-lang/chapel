@@ -279,7 +279,7 @@ protoIteratorClass(FnSymbol* fn) {
   resolvedFns.set_add(fn->iteratorInfo->hasMore);
   resolvedFns.set_add(fn->iteratorInfo->getValue);
 
-  VarSymbol* tmp = new VarSymbol("_tmp", ii->icType);
+  VarSymbol* tmp = newTemp(ii->icType);
   fn->insertAtHead(new DefExpr(tmp));
   CallExpr* getIteratorCall = new CallExpr("_getIterator", tmp);
   fn->insertAtHead(getIteratorCall);
@@ -862,7 +862,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
           if (arg->intent == INTENT_OUT || arg->intent == INTENT_INOUT) {
             int i = 1;
             for_actuals(actual, tupleCall) {
-              VarSymbol* tmp = new VarSymbol("_tmp");
+              VarSymbol* tmp = newTemp();
               fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
               fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(var, new_IntSymbol(i))));
               fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, actual->copy(), new CallExpr("=", actual->copy(), tmp)));
@@ -1713,16 +1713,16 @@ resolveCall(CallExpr* call, bool errorCheck) {
     call->getStmtExpr()->insertBefore(noop);
     VarSymbol* tmp = gTrue;
     for (int i = 1; i <= size; i++) {
-      VarSymbol* tmp1 = new VarSymbol("_expand_temp1");
+      VarSymbol* tmp1 = newTemp();
       tmp1->addFlag(FLAG_MAYBE_PARAM);
       tmp1->addFlag(FLAG_MAYBE_TYPE);
-      VarSymbol* tmp2 = new VarSymbol("_expand_temp2");
+      VarSymbol* tmp2 = newTemp();
       tmp2->addFlag(FLAG_MAYBE_PARAM);
       tmp2->addFlag(FLAG_MAYBE_TYPE);
-      VarSymbol* tmp3 = new VarSymbol("_expand_temp3");
+      VarSymbol* tmp3 = newTemp();
       tmp3->addFlag(FLAG_MAYBE_PARAM);
       tmp3->addFlag(FLAG_MAYBE_TYPE);
-      VarSymbol* tmp4 = new VarSymbol("_expand_temp4");
+      VarSymbol* tmp4 = newTemp();
       tmp4->addFlag(FLAG_MAYBE_PARAM);
       tmp4->addFlag(FLAG_MAYBE_TYPE);
       call->getStmtExpr()->insertBefore(new DefExpr(tmp1));
@@ -1766,8 +1766,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
     CallExpr* noop = new CallExpr(PRIMITIVE_NOOP);
     call->getStmtExpr()->insertBefore(noop);
     for (int i = 1; i <= size; i++) {
-      VarSymbol* tmp = new VarSymbol("_expand_temp");
-      tmp->addFlag(FLAG_TEMP);
+      VarSymbol* tmp = newTemp();
       tmp->addFlag(FLAG_MAYBE_TYPE);
       DefExpr* def = new DefExpr(tmp);
       call->getStmtExpr()->insertBefore(def);
@@ -1947,7 +1946,7 @@ insertFormalTemps(FnSymbol* fn) {
   SymbolMap formals2vars;
   for_formals(formal, fn) {
     if (formalRequiresTemp(formal)) {
-      VarSymbol* tmp = new VarSymbol(astr("_formal_tmp_", formal->name));
+      VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
       Type* formalType = formal->type;
       if (formalType->symbol->hasFlag(FLAG_REF))
         formalType = getValueType(formalType);
@@ -1957,7 +1956,6 @@ insertFormalTemps(FnSymbol* fn) {
           !formalType->symbol->hasFlag(FLAG_SYNC) &&
           !formalType->symbol->hasFlag(FLAG_ARRAY))
         tmp->addFlag(FLAG_CONST);
-      tmp->addFlag(FLAG_TEMP);
       formals2vars.put(formal, tmp);
     }
   }
@@ -1972,11 +1970,9 @@ insertFormalTemps(FnSymbol* fn) {
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, defaultExpr->body.tail->remove()));
           fn->insertAtHead(defaultExpr);
         } else {
-          VarSymbol* refTmp = new VarSymbol("_tmp");
-          VarSymbol* typeTmp = new VarSymbol("_tmp");
-          typeTmp->addFlag(FLAG_TEMP);
+          VarSymbol* refTmp = newTemp();
+          VarSymbol* typeTmp = newTemp();
           typeTmp->addFlag(FLAG_MAYBE_TYPE);
-          refTmp->addFlag(FLAG_TEMP);
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, typeTmp)));
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, typeTmp, new CallExpr(PRIMITIVE_TYPEOF, refTmp)));
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, refTmp, new CallExpr(PRIMITIVE_GET_REF, formal)));
@@ -2194,8 +2190,7 @@ preFold(Expr* expr) {
         }
         base->replace(base->baseExpr->remove());
       } else {
-        VarSymbol* this_temp = new VarSymbol("this_temp");
-        this_temp->addFlag(FLAG_TEMP);
+        VarSymbol* this_temp = newTemp("_this_temp");
         base->replace(new SymExpr("this"));
         CallExpr* move = new CallExpr(PRIMITIVE_MOVE, this_temp, base);
         call->insertAtHead(new SymExpr(this_temp));
@@ -2465,7 +2460,7 @@ preFold(Expr* expr) {
       //
       if (type->symbol->hasFlag(FLAG_ARRAY) ||
           type->symbol->hasFlag(FLAG_DOMAIN)) {
-        VarSymbol* tmp = new VarSymbol("_tmp");
+        VarSymbol* tmp = newTemp();
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         result = new CallExpr("_value", gMethodToken, call->get(1)->remove());
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, result));
@@ -2588,8 +2583,7 @@ static void
 insertValueTemp(Expr* insertPoint, Expr* actual) {
   if (SymExpr* se = toSymExpr(actual)) {
     if (!se->var->type->refType) {
-      VarSymbol* tmp = new VarSymbol("tmp", getValueType(se->var->type));
-      tmp->addFlag(FLAG_TEMP);
+      VarSymbol* tmp = newTemp(getValueType(se->var->type));
       insertPoint->insertBefore(new DefExpr(tmp));
       insertPoint->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, se->var)));
       se->var = tmp;
@@ -3156,8 +3150,7 @@ resolveFns(FnSymbol* fn) {
               if (SymExpr* se = toSymExpr(rhs)) {
                 tmp = se->var;
               } else {
-                tmp = new VarSymbol("_tmp", rhs->typeInfo());
-                tmp->addFlag(FLAG_TEMP);
+                tmp = newTemp(rhs->typeInfo());
                 call->insertBefore(new DefExpr(tmp));
                 call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, rhs));
               }
@@ -3235,8 +3228,7 @@ resolveFns(FnSymbol* fn) {
     if (ClassType* ct = toClassType(fn->retType)) {
       if (!ct->destructor &&
           !ct->symbol->hasFlag(FLAG_REF)) {
-        VarSymbol* tmp = new VarSymbol("_tmp", ct);
-        tmp->addFlag(FLAG_TEMP);
+        VarSymbol* tmp = newTemp(ct);
         CallExpr* call = new CallExpr("~chpl_destroy", gMethodToken, tmp);
         fn->insertAtHead(new CallExpr(call));
         fn->insertAtHead(new DefExpr(tmp));
@@ -3573,7 +3565,7 @@ resolve() {
         ts->defPoint->parentSymbol &&
         ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
         !ts->hasFlag(FLAG_GENERIC)) {
-      VarSymbol* tmp = new VarSymbol("tmp", ts->type);
+      VarSymbol* tmp = newTemp(ts->type);
       ts->type->defaultConstructor->insertAtTail(new DefExpr(tmp));
       CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
       ts->type->defaultConstructor->insertAtTail(call);
@@ -3623,10 +3615,8 @@ resolve() {
           SymExpr* tmp = new SymExpr(gNil);
           FnSymbol* if_fn = new FnSymbol("_if_fn");
           if_fn->addFlag(FLAG_INLINE);
-          VarSymbol* _ret = new VarSymbol("_ret_if_fn_dd", key->retType);
-          _ret->addFlag(FLAG_TEMP);
-          VarSymbol* cid = new VarSymbol("tmp", dtBool);
-          cid->addFlag(FLAG_TEMP);
+          VarSymbol* _ret = newTemp(key->retType);
+          VarSymbol* cid = newTemp(dtBool);
           if_fn->insertAtTail(new DefExpr(cid));
           if_fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, cid,
                                 new CallExpr(PRIMITIVE_GETCID,
@@ -3638,8 +3628,7 @@ resolve() {
             trueBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, _ret, subcall));
           } else if (isSubType(fn->retType, key->retType)) {
             // Insert a cast to the overridden method's return type
-            VarSymbol* castTemp = new VarSymbol("_castTemp", fn->retType);
-            castTemp->addFlag(FLAG_TEMP);
+            VarSymbol* castTemp = newTemp(fn->retType);
             trueBlock->insertAtTail(new DefExpr(castTemp));
             trueBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, castTemp,
                                                  subcall));
@@ -3664,8 +3653,7 @@ resolve() {
           tmp->replace(call);
           subcall->baseExpr->replace(new SymExpr(fn));
           if (SymExpr* se = toSymExpr(subcall->get(2))) {
-            VarSymbol* tmp = new VarSymbol("_tmp", type);
-            tmp->addFlag(FLAG_TEMP);
+            VarSymbol* tmp = newTemp(type);
             se->getStmtExpr()->insertBefore(new DefExpr(tmp));
             se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_CAST, type->symbol, se->var)));
             se->replace(new SymExpr(tmp));
@@ -3707,8 +3695,7 @@ resolve() {
           ClassType* fct = toClassType(field->type);
           INT_ASSERT(fct);
           if (fct->classTag != CLASS_CLASS) {
-            VarSymbol* tmp = new VarSymbol("_tmp", fct->refType);
-            tmp->addFlag(FLAG_TEMP);
+            VarSymbol* tmp = newTemp(fct->refType);
             ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
             ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, ct->destructor->_this, field)));
             ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
@@ -3722,8 +3709,7 @@ resolve() {
       INT_ASSERT(ct->dispatchParents.n <= 1);
       if (ct->dispatchParents.n == 1) {
         if (FnSymbol* parentDestructor = ct->dispatchParents.v[0]->destructor) {
-          VarSymbol* tmp = new VarSymbol("_tmp", ct->dispatchParents.v[0]);
-          tmp->addFlag(FLAG_TEMP);
+          VarSymbol* tmp = newTemp(ct->dispatchParents.v[0]);
           ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_CAST, ct->dispatchParents.v[0]->symbol, ct->destructor->_this)));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor, tmp));
@@ -3782,7 +3768,7 @@ static void insertReturnTemps() {
           if (fn->retType != dtVoid) {
             CallExpr* parent = toCallExpr(call->parentExpr);
             if (!parent && !isDefExpr(call->parentExpr)) { // no use
-              VarSymbol* tmp = new VarSymbol("_dummy", fn->retType);
+              VarSymbol* tmp = newTemp(fn->retType);
               DefExpr* def = new DefExpr(tmp);
               call->insertBefore(def);
               if ((getValueType(fn->retType) && getValueType(fn->retType)->symbol->hasFlag(FLAG_SYNC)) || fn->retType->symbol->hasFlag(FLAG_SYNC)) {
@@ -3815,8 +3801,7 @@ initializeClass(Expr* stmt, Symbol* sym) {
       if (field->type->defaultValue) {
         stmt->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, sym, field, field->type->defaultValue));
       } else if (isRecordType(field->type)) {
-        VarSymbol* tmp = new VarSymbol("_tmp", field->type);
-        tmp->addFlag(FLAG_TEMP);
+        VarSymbol* tmp = newTemp(field->type);
         stmt->insertBefore(new DefExpr(tmp));
         initializeClass(stmt, tmp);
         stmt->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, sym, field, tmp));
@@ -3966,7 +3951,7 @@ pruneResolvedTree() {
         fn->retType = runtimeType;
         fn->getReturnSymbol()->type = runtimeType;
         BlockStmt* block = new BlockStmt();
-        VarSymbol* var = new VarSymbol("_tmp", fn->retType);
+        VarSymbol* var = newTemp(fn->retType);
         block->insertAtTail(new DefExpr(var));
         for_formals(formal, fn) {
           Symbol* field = runtimeType->getField(formal->name);
@@ -3996,8 +3981,7 @@ pruneResolvedTree() {
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           formal->defPoint->remove();
-          VarSymbol* tmp = new VarSymbol("_removed_formal_tmp", formal->type);
-          tmp->addFlag(FLAG_TEMP);
+          VarSymbol* tmp = newTemp(formal->type);
           fn->insertAtHead(new DefExpr(tmp));
           if (asts.n == 0)
             collect_asts(fn->body, asts);
@@ -4066,7 +4050,7 @@ pruneResolvedTree() {
           for_formals(formal, runtimeTypeToValueFn) {
             Symbol* field = rt->getField(formal->name);
             INT_ASSERT(field);
-            VarSymbol* tmp = new VarSymbol("_tmp", field->type);
+            VarSymbol* tmp = newTemp(field->type);
             call->getStmtExpr()->insertBefore(new DefExpr(tmp));
             call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, se->var, field)));
             if (formal->hasFlag(FLAG_TYPE_VARIABLE))
@@ -4124,8 +4108,7 @@ pruneResolvedTree() {
         for_formals_actuals(formal, actual, call) {
           if (formal->type == actual->typeInfo()->refType) {
             SET_LINENO(call);
-            VarSymbol* tmp = new VarSymbol("_tmp", formal->type);
-            tmp->addFlag(FLAG_TEMP);
+            VarSymbol* tmp = newTemp(formal->type);
             call->getStmtExpr()->insertBefore(new DefExpr(tmp));
             actual->replace(new SymExpr(tmp));
             call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, actual)));

@@ -70,7 +70,7 @@ void cullOverReferences() {
             SymExpr* se = toSymExpr(move->get(1));
             INT_ASSERT(se);
             if (!refNecessary(se, defMap, useMap)) {
-              VarSymbol* tmp = new VarSymbol("_tmp", copy->retType);
+              VarSymbol* tmp = newTemp(copy->retType);
               move->insertBefore(new DefExpr(tmp));
               move->insertAfter(new CallExpr(PRIMITIVE_MOVE, se->var,
                                              new CallExpr(PRIMITIVE_SET_REF, tmp)));

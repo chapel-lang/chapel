@@ -285,8 +285,7 @@ static void build_chpl_main(void) {
   SET_LINENO(chpl_main);
   chpl_main->insertAtHead(new CallExpr(chpl_main->getModule()->initFn));
   if (!fRuntime) {
-    VarSymbol* endCount = new VarSymbol("_endCount");
-    endCount->addFlag(FLAG_TEMP);
+    VarSymbol* endCount = newTemp("_endCount");
     chpl_main->insertAtHead(new CallExpr("_startTrackingMem"));
     chpl_main->insertAtHead(new CallExpr(PRIMITIVE_SET_END_COUNT, endCount));
     chpl_main->insertAtHead(new CallExpr(PRIMITIVE_MOVE, endCount, new CallExpr("_endCountAlloc")));
@@ -513,8 +512,8 @@ static void build_record_cast_function(ClassType* ct) {
   fn->insertFormalAtTail(t);
   fn->insertFormalAtTail(arg);
   fn->where = new BlockStmt(new CallExpr(PRIMITIVE_ISSUBTYPE, ct->symbol, t));
-  VarSymbol* ret = new VarSymbol("_ret");
-  VarSymbol* tmp = new VarSymbol("_tmp");
+  VarSymbol* ret = newTemp();
+  VarSymbol* tmp = newTemp();
   fn->insertAtTail(new DefExpr(ret));
   fn->insertAtTail(new DefExpr(tmp));
   fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, t)));

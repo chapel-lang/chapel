@@ -530,6 +530,8 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void FnSymbol::codegenHeader(FILE* outfile) {
+  if (fGenIDS)
+    fprintf(outfile, "/* %7d */ ", id);
   retType->codegen(outfile);
   fprintf(outfile, " ");
   fprintf(outfile, "%s", cname);
@@ -592,8 +594,11 @@ void FnSymbol::codegenDef(FILE* outfile) {
 
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
-      if (!toTypeSymbol(def->sym))
+      if (!toTypeSymbol(def->sym)) {
+        if (fGenIDS)
+          fprintf(outfile, "/* %7d */ ", def->sym->id);
         def->sym->codegenDef(outfile);
+      }
   }
   body->codegen(outfile);
   fprintf(outfile, "}\n\n");
@@ -1042,6 +1047,20 @@ immediate_type(Immediate *imm) {
       break;
   }
   return NULL;
+}
+
+
+VarSymbol* newTemp(const char* name, Type* type) {
+  VarSymbol* vs = new VarSymbol(name ? name : "_tmp", type);
+  vs->addFlag(FLAG_TEMP);
+  return vs;
+}
+
+
+VarSymbol* newTemp(Type* type) {
+  VarSymbol* vs = new VarSymbol("_tmp", type);
+  vs->addFlag(FLAG_TEMP);
+  return vs;
 }
 
 

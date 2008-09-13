@@ -515,7 +515,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                            rtmp->remove()));
               addUse(useMap, se);
             } else {
-              VarSymbol* tmp = new VarSymbol("_XXtmp", parent->get(2)->typeInfo());
+              VarSymbol* tmp = newTemp(parent->get(2)->typeInfo());
               parent->getStmtExpr()->insertBefore(new DefExpr(tmp));
               parent->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, parent->get(2)->remove()));
               SymExpr* se = toSymExpr(rhs->get(1)->copy());
