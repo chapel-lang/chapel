@@ -3,7 +3,7 @@ def foo(n: int) {
     yield i;
 }
 
-def foo(n: int, leader) {
+def foo(n: int, param tag: iterator) where tag == iterator.leader {
   writeln("running leader iterator");
   cobegin {
     yield 0..n/2-1;
@@ -11,7 +11,7 @@ def foo(n: int, leader) {
   }
 }
 
-def foo(n: int, follower) {
+def foo(n: int, follower, param tag: iterator) where tag == iterator.follower{
   for i in follower+1 do
     yield i;
 }

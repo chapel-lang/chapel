@@ -11,13 +11,13 @@ def myIter() {
   }
 }
 
-def myIter(leader) {
+def myIter(param tag: iterator) where tag == iterator.leader {
   yield 0..3;
   yield 4..5;
   yield 6..8;
 }
 
-def myIter(follower) {
+def myIter(param tag: iterator, follower) where tag == iterator.follower {
   for i in follower {
     yield i;
   }

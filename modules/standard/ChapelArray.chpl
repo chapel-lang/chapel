@@ -534,6 +534,8 @@ def reshape(A: [], D: domain) {
 //
 // module support for iterators
 //
+enum iterator {leader, follower};
+
 def iteratorIndex(ic: _iteratorClass) {
   ic.advance();
   return ic.getValue();

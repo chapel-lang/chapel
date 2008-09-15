@@ -14,9 +14,6 @@
 
 config param debugBradsBlock1D = false;
 
-// TODO: This would need to be moved somewhere more standard
-enum IteratorType { leader, follower };
-
 //
 // The distribution class
 //
@@ -351,7 +348,7 @@ class Block1DDom: BaseArithmeticDomain {
   // clause interact with a loop that used an on clause explicitly
   // within its body?  How would it be done efficiently?
   //
-  def these(leader) {
+  def these(param tag: iterator) where tag == iterator.leader {
     //
     // TODO: This currently only results in a single level of
     // per-locale parallelism -- no per-core parallelism; maybe
@@ -383,7 +380,7 @@ class Block1DDom: BaseArithmeticDomain {
       }
   }
 
-  def these(follower) {
+  def these(param tag: iterator, follower) where tag == iterator.follower {
     //
     // TODO: Abstract this addition of low into a function?
     // Note relationship between this operation and the
@@ -536,12 +533,14 @@ class LocBlock1DDom {
   // this is the parallel iterator for the local domain, see global
   // domain parallel iterators for general notes on the approach
   //
-  def these(leader) {
+  def these(param tag: iterator) where tag == iterator.leader {
     halt("This is bogus");
     yield [1..100];
   }
 
-  def these(follower) {
+  def these(param tag: iterator, follower) where tag == iterator.follower {
+    halt("This is bogus");
+    yield 2;
   }
 
   //
@@ -650,14 +649,14 @@ class Block1DArr: BaseArray {
   // this is the parallel iterator for the global array, see the
   // example for general notes on the approach
   //
-  def these(leader) {
+  def these(param tag: iterator) where tag == iterator.leader {
     coforall locDom in dom.locDoms do
       on locDom do
     for blk in dom.these(leader=true) do
       yield blk;
   }
 
-  def these(follower) var {
+  def these(param tag: iterator, follower) var where tag == iterator.follower {
     for i in follower {
       yield this(i + dom.low);
     }
@@ -754,12 +753,12 @@ class LocBlock1DArr {
   // this is the parallel iterator for the local array, see global
   // domain parallel iterators for general notes on the approach
   //
-  def these(leader) {
+  def these(param tag: iterator) where tag == iterator.leader {
     halt("This is bogus");
     yield [1..100];
   }
 
-  def these(follower) {
+  def these(param tag: iterator, follower) where tag == iterator.follower {
   }
 
 

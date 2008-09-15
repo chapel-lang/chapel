@@ -22,6 +22,7 @@ Symbol *gUnknown = NULL;
 Symbol *gUnspecified = NULL;
 Symbol *gMethodToken = NULL;
 Symbol *gLeaderToken = NULL;
+Symbol *gLeaderTag = NULL, *gFollowerTag = NULL;
 Symbol *gModuleToken = NULL;
 Symbol *gVoid = NULL;
 Symbol *gFile = NULL;

@@ -3,14 +3,14 @@ def foo(n: int) {
     yield i;
 }
 
-def foo(leader, n: int) {
+def foo(param tag: iterator, n: int) where tag == iterator.leader {
   cobegin {
     yield 0..n/2-1;
     yield n/2..n-1;
   }
 }
 
-def foo(follower, n: int) {
+def foo(param tag: iterator, follower, n: int) where tag == iterator.follower {
   for i in follower+1 do
     yield i;
 }
@@ -20,12 +20,12 @@ def bar(n: int) {
     yield i;
 }
 
-def bar(leader, n: int) {
+def bar(param tag: iterator, n: int) where tag == iterator.leader {
   yield 0..n/2-2;
   yield n/2-1..n-1;
 }
 
-def bar(follower, n: int) {
+def bar(param tag: iterator, follower, n: int) where tag == iterator.follower {
   for i in follower+1 do
     yield i;
 }

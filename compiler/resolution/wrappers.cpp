@@ -49,14 +49,15 @@ static void
 insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
   if (fn->getReturnSymbol() == gVoid) {
     wrapper->insertAtTail(call);
-  } else if (!fn->hasFlag(FLAG_ITERATOR_FN)) {
-    wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
   } else {
+    //if (!fn->hasFlag(FLAG_ITERATOR_FN)) {
+    wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
+  } /*else {
     VarSymbol* index = newTemp("_i");
     wrapper->insertAtTail(new DefExpr(index));
     wrapper->insertAtTail(buildForLoopStmt(new SymExpr(index), call, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, index))));
     wrapper->addFlag(FLAG_ITERATOR_FN);
-  }
+    }*/
   fn->defPoint->insertAfter(new DefExpr(wrapper));
 }
 
@@ -266,7 +267,10 @@ buildOrderWrapper(FnSymbol* fn,
   for_formals(formal, fn) {
     SET_LINENO(formal);
     wrapper->insertFormalAtTail(copy_map.get(order_map->get(formal)));
-    call->insertAtTail(copy_map.get(formal));
+    if (formal->instantiatedParam)
+      call->insertAtTail(paramMap.get(formal));
+    else
+      call->insertAtTail(copy_map.get(formal));
   }
   insertWrappedCall(fn, wrapper, call);
   normalize(wrapper);

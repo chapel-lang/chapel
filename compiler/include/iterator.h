@@ -1,8 +1,11 @@
 #ifndef _ITERATOR_H_
 #define _ITERATOR_H_
 
+enum IteratorTag { it_iterator, it_leader, it_follower };
+
 class IteratorInfo {
 public:
+  IteratorTag tag;
   FnSymbol* iterator;
   ClassType* icType;
   FnSymbol* advance;

@@ -113,7 +113,7 @@ class RandomStream {
     yield getNext();
   }
 
-  def these(leader) {
+  def these(param tag: iterator) where tag == iterator.leader {
     halt("Someone's trying to call the leader");
     yield [1..10];
   }
@@ -123,7 +123,7 @@ class RandomStream {
   //       from the current value of sharedCount rather than assuming
   //       that the follower's indices are reasonable input for getNth
   //
-  def these(follower) {
+  def these(param tag: iterator, follower) where tag == iterator.follower {
     // make a local copy of the 'this' random stream class
     var locStream = new RandomStream(seed);
     var val = locStream.getNth(follower.low + 1);

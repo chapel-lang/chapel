@@ -31,14 +31,14 @@ class C {
       yield A(i);
   }
 
-  def these(leader) {
+  def these(param tag: iterator) where tag == iterator.leader {
     cobegin {
       yield [n/2+1..n-1];
       yield [0..n/2];
     }
   }
 
-  def these(follower) var {
+  def these(param tag: iterator, follower) var where tag == iterator.follower {
     for i in follower do
       yield A(i+1);
   }

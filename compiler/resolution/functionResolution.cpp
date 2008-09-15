@@ -256,6 +256,7 @@ protoIteratorClass(FnSymbol* fn) {
     cts->addFlag(FLAG_REF_ITERATOR_CLASS);
   fn->defPoint->insertBefore(new DefExpr(cts));
 
+  ii->tag = it_iterator;
   ii->advance = protoIteratorMethod(ii, "advance", dtVoid);
   ii->zip1 = protoIteratorMethod(ii, "zip1", dtVoid);
   ii->zip2 = protoIteratorMethod(ii, "zip2", dtVoid);
@@ -288,33 +289,32 @@ protoIteratorClass(FnSymbol* fn) {
   getIteratorCall->remove();
   tmp->defPoint->remove();
 
-  for_formals(formal, fn) {
-    if (!strcmp(formal->name, "leader"))
-      return;
-  }
-
   CallExpr* leaderCall = new CallExpr(fn->name);
   for_formals(formal, fn) {
     leaderCall->insertAtTail(formal);
   }
-  leaderCall->insertAtHead(new NamedExpr("leader", new SymExpr(gLeaderToken)));
+  leaderCall->insertAtHead(new NamedExpr("tag", new SymExpr(gLeaderTag)));
   fn->insertAtHead(leaderCall);
   resolveCall(leaderCall, false);
   leaderCall->remove();
   if (FnSymbol* leader = leaderCall->isResolved()) {
     resolveFns(leader);
 
-    if (!leader->iteratorInfo)
+    if (!leader->retType->defaultConstructor->iteratorInfo)
       INT_FATAL("leader->iteratorInfo is NULL");
 
-    ii->leader = leader->iteratorInfo;
+    ii->leader = leader->retType->defaultConstructor->iteratorInfo;
+    ii->leader->tag = it_leader;
+    ii->leader->iterator->addFlag(FLAG_INLINE_ITERATOR);
+
 
     CallExpr* followerCall = new CallExpr(fn->name);
     for_formals(formal, fn) {
       followerCall->insertAtTail(formal);
     }
-    VarSymbol* leaderIndex = new VarSymbol("leaderIndex", leader->iteratorInfo->getValue->retType);
+    VarSymbol* leaderIndex = new VarSymbol("leaderIndex", ii->leader->getValue->retType);
     followerCall->insertAtHead(new NamedExpr("follower", new SymExpr(leaderIndex)));
+    followerCall->insertAtHead(new NamedExpr("tag", new SymExpr(gFollowerTag)));
     fn->insertAtHead(new DefExpr(leaderIndex));
     fn->insertAtHead(followerCall);
     resolveCall(followerCall, false);
@@ -322,7 +322,8 @@ protoIteratorClass(FnSymbol* fn) {
     leaderIndex->defPoint->remove();
     if (FnSymbol* follower = followerCall->isResolved()) {
       resolveFns(follower);
-      ii->follower = follower->iteratorInfo;
+      ii->follower = follower->retType->defaultConstructor->iteratorInfo;
+      ii->follower->tag = it_follower;
     } else {
       USR_FATAL(leader, "unable to resolve follower iterator");
     }
@@ -3122,14 +3123,6 @@ resolveFns(FnSymbol* fn) {
       fn->retType = ret->type = dtVoid;
     else if (retType == dtUnknown)
       USR_FATAL(fn, "unable to resolve return type");
-  }
-
-  //
-  // mark leader iterator for early inlining
-  //
-  for_formals(formal, fn) {
-    if (formal->type == dtLeaderToken)
-      fn->addFlag(FLAG_INLINE_ITERATOR);
   }
 
   //
