@@ -1,0 +1,8 @@
+bug: follower type not sufficiently flexible
+
+In the current compiler implementation, the follower iterator
+can only follow the type of the leader iterator, when we would
+like it to be more generic based on the leader that it's actually
+being zippered against.  This test demonstrates this by zippering
+a leader of type int(32) with a follower of type int(64) and
+vice-versa.
