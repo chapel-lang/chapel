@@ -10,7 +10,7 @@ record list {
   var last: listNode(eltType);
   var length: int;
 
-  def ~list() {
+  def destroy() {
     var current = first;
     while (current != nil) {
       var next = current.next;

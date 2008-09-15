@@ -143,15 +143,15 @@ record _domain {
   var _value;
   var _promotionType: index(rank, _value.idxType);
 
+  def destroy() {
+    delete _value;
+  }
+
   def rank param {
     if isArithmeticDomain(this) || isSparseDomain(this) then
       return _value.rank;
     else
       return 1;
-  }
-
-  def ~_domain() {
-    delete _value;
   }
 
   pragma "inline"
@@ -269,13 +269,13 @@ record _array {
   var _value;
   var _promotionType: _value.eltType;
 
+  def destroy() {
+    delete _value;
+  }
+
   def eltType type return _value.eltType;
   def _dom return new _domain(_value.dom);
   def rank param return this.domain.rank;
-
-  def ~_array() {
-    delete _value;
-  }
 
   pragma "inline"
   def this(i: rank*_value.idxType) var where rank > 1

@@ -3460,6 +3460,17 @@ inlineIterators() {
 }
 
 
+static bool tupleContainsArrayOrDomain (ClassType* t) {
+  for (int i = 1; i <= t->fields.length(); i++) {
+    Type* fieldType = t->getField(i)->type;
+    if (fieldType->symbol->hasFlag(FLAG_ARRAY) || fieldType->symbol->hasFlag(FLAG_DOMAIN))
+      return true;
+    else if (fieldType->symbol->hasFlag(FLAG_TUPLE) && tupleContainsArrayOrDomain(toClassType(fieldType)))
+      return true;
+  }
+  return false;
+}
+
 void
 resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
@@ -3700,12 +3711,103 @@ resolve() {
       // insert call to parent destructor
       //
       INT_ASSERT(ct->dispatchParents.n <= 1);
-      if (ct->dispatchParents.n == 1) {
+      if (ct->dispatchParents.n >= 1) {
         if (FnSymbol* parentDestructor = ct->dispatchParents.v[0]->destructor) {
-          VarSymbol* tmp = newTemp(ct->dispatchParents.v[0]);
+          VarSymbol* tmp;
+          if (ct->classTag == CLASS_CLASS)
+            tmp = newTemp(ct->dispatchParents.v[0]);
+          else
+            tmp = newTemp(ct->dispatchParents.v[0]->refType);
+          tmp->addFlag(FLAG_TEMP);
           ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-          ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_CAST, ct->dispatchParents.v[0]->symbol, ct->destructor->_this)));
+          ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp,
+            new CallExpr(PRIMITIVE_CAST, ct->classTag == CLASS_CLASS ? ct->dispatchParents.v[0]->symbol : ct->dispatchParents.v[0]->refType->symbol, ct->destructor->_this)));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor, tmp));
+        }
+      }
+    }
+  }
+
+  //
+  // insert destructors for values when they go out of scope
+  //
+  compute_call_sites();
+
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(defMap, useMap);
+
+  Vec<FnSymbol*> constructors;
+
+  forv_Vec(TypeSymbol, ts, gTypes) {
+    ClassType* ct = toClassType(ts->type);
+    if (ct && ct->classTag != CLASS_CLASS && ct->destructor &&
+        (!ct->symbol->hasFlag(FLAG_TUPLE) || !tupleContainsArrayOrDomain(ct))) {
+      constructors.add(ct->defaultConstructor);
+    }
+  }
+
+  forv_Vec(FnSymbol, constructor, constructors) {
+//    printf("looking at constructor %s\n", constructor->cname);
+    forv_Vec(CallExpr, call, *constructor->calledBy) {
+      if (call->parentSymbol) {
+        CallExpr* move = toCallExpr(call->parentExpr);
+        INT_ASSERT(move && move->isPrimitive(PRIMITIVE_MOVE));
+        SymExpr* lhs = toSymExpr(move->get(1));
+        INT_ASSERT(lhs);
+        FnSymbol* fn = toFnSymbol(move->parentSymbol);
+        INT_ASSERT(fn);
+//    if (!strcmp(fn->cname, "foo"))
+//      printf("Found function foo\n");
+        if (fn->getReturnSymbol() == lhs->var) {
+          if (defMap.get(lhs->var)->n == 1) {
+            constructors.add(fn);
+          }
+        } else {
+          Vec<Symbol*> varsToTrack;
+          varsToTrack.add(lhs->var);
+          bool maybeCallDestructor = true;
+          forv_Vec(Symbol, var, varsToTrack) {
+            // should be OK if there is more than one definition of var?
+            //INT_ASSERT(defMap.get(var)->length() == 1);
+            if (maybeCallDestructor && useMap.get(var))
+            forv_Vec(SymExpr, se, *useMap.get(var)) {
+              if (CallExpr* call = toCallExpr(se->parentExpr)) {
+                if (call->isPrimitive(PRIMITIVE_MOVE)) {
+                  if (fn->getReturnSymbol() == toSymExpr(call->get(1))->var) {
+//          printf("may need to call destructor on %s (lhs)\n", lhs->var->cname);
+//                    printf("function returns %s\n", toSymExpr(call->get(1))->var->cname);
+                    maybeCallDestructor = false;
+                    break;
+                  } else
+                    varsToTrack.add(toSymExpr(call->get(1))->var);
+                } else if (lhs->var->type->symbol->hasFlag(FLAG_ARRAY)) {
+//                  printf("Probably shouldn't call destructor on %s\n", lhs->var->cname);
+                  maybeCallDestructor = false;
+                  break;
+                }
+              } else
+                printf("found a use of %s\n", var->cname);
+            }
+          }
+          if (maybeCallDestructor) {
+            // lhs does not "escape" its scope, so go ahead and insert a call to its destructor
+            VarSymbol* tmp = new VarSymbol("_tmp", lhs->var->type->refType);
+            tmp->addFlag(FLAG_TEMP);
+            INT_ASSERT(lhs->var->defPoint && lhs->var->defPoint->parentExpr);
+            BlockStmt* parentBlock = toBlockStmt(lhs->var->defPoint->parentExpr);
+            INT_ASSERT(parentBlock);
+            if (parentBlock == fn->body) {
+              fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, lhs->var)));
+              fn->insertBeforeReturnAfterLabel(new CallExpr(lhs->var->type->destructor, tmp));
+            } else {
+              parentBlock->insertAtTail(new DefExpr(tmp));
+              parentBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, lhs->var)));
+              parentBlock->insertAtTail(new CallExpr(lhs->var->type->destructor, tmp));
+            }
+//            printf("Need to call destructor %s on %s\n", constructor->cname, lhs->var->cname);
+          }
         }
       }
     }
