@@ -3743,10 +3743,12 @@ buildRuntimeTypeInfo(FnSymbol* fn) {
   ClassType* ct = new ClassType(CLASS_RECORD);
   TypeSymbol* ts = new TypeSymbol(astr("_RuntimeTypeInfo"), ct);
   for_formals(formal, fn) {
-    VarSymbol* field = new VarSymbol(formal->name, formal->type);
-    ct->fields.insertAtTail(new DefExpr(field));
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE))
-      field->addFlag(FLAG_TYPE_VARIABLE);
+    if (!formal->instantiatedParam) {
+      VarSymbol* field = new VarSymbol(formal->name, formal->type);
+      ct->fields.insertAtTail(new DefExpr(field));
+      if (formal->hasFlag(FLAG_TYPE_VARIABLE))
+        field->addFlag(FLAG_TYPE_VARIABLE);
+    }
   }
   theProgram->block->insertAtTail(new DefExpr(ts));
   ct->symbol->addFlag(FLAG_RUNTIME_TYPE_VALUE);
@@ -3915,6 +3917,7 @@ pruneResolvedTree() {
           ArgSymbol* formal = fn->getFormal(i);
           if (formal->type == dtMethodToken ||
               formal->type == dtLeaderToken ||
+              formal->instantiatedParam ||
               (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
                !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)))
             call->get(i)->remove();
@@ -3954,9 +3957,11 @@ pruneResolvedTree() {
         VarSymbol* var = newTemp(fn->retType);
         block->insertAtTail(new DefExpr(var));
         for_formals(formal, fn) {
-          Symbol* field = runtimeType->getField(formal->name);
-          if (!formal->hasFlag(FLAG_TYPE_VARIABLE) || field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
-          block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, field, formal));
+          if (!formal->instantiatedParam) {
+            Symbol* field = runtimeType->getField(formal->name);
+            if (!formal->hasFlag(FLAG_TYPE_VARIABLE) || field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+              block->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, field, formal));
+          }
         }
         block->insertAtTail(new CallExpr(PRIMITIVE_RETURN, var));
         fn->body->replace(block);
@@ -3976,7 +3981,8 @@ pruneResolvedTree() {
           formal->typeExpr->remove();
         // Remove method and leader token formals
         if (formal->type == dtMethodToken ||
-            formal->type == dtLeaderToken)
+            formal->type == dtLeaderToken ||
+            formal->instantiatedParam)
           formal->defPoint->remove();
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {

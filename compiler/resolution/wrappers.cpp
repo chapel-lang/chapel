@@ -332,7 +332,7 @@ buildCoercionWrapper(FnSymbol* fn,
   call->square = isSquare;
   for_formals(formal, fn) {
     SET_LINENO(formal);
-    Symbol* wrapperFormal = formal->copy();
+    ArgSymbol* wrapperFormal = formal->copy();
     if (fn->_this == formal)
       wrapper->_this = wrapperFormal;
     wrapper->insertFormalAtTail(wrapperFormal);
@@ -358,6 +358,8 @@ buildCoercionWrapper(FnSymbol* fn,
         // dereference reference actual
         //
         call->insertAtTail(new CallExpr(PRIMITIVE_GET_REF, wrapperFormal));
+      } else if (wrapperFormal->instantiatedParam) {
+        call->insertAtTail(new CallExpr("_cast", formal->type->symbol, paramMap.get(formal)));
       } else {
         call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapperFormal));
       }
