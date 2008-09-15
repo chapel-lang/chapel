@@ -114,8 +114,9 @@ class RandomStream {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
+    var D: domain(1, int(64)) = [1..10:int(64)];
     halt("Someone's trying to call the leader");
-    yield [1..10];
+    yield D;
   }
 
   //

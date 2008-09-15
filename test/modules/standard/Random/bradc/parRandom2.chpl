@@ -1,6 +1,6 @@
 use Random;
 
-config var n = 10000;
+config var n = 10000:int(64);
 
 const D = [1..n];
 
