@@ -1,5 +1,5 @@
 class CSR {
-  def newSparseDomain(param rank: int, type idxType, dom: _domain) {
+  def newSparseDomain(param rank: int, type idxType, dom: domain) {
     return new CSRDomain(rank=rank, idxType=idxType, dist=this, parentDom=dom);
   }
 }

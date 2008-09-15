@@ -14,7 +14,7 @@ class DefaultDistribution: Distribution {
   def newOpaqueDomain(type idxType)
     return new DefaultOpaqueDomain(this);
 
-  def newSparseDomain(param rank: int, type idxType, dom: _domain)
+  def newSparseDomain(param rank: int, type idxType, dom: domain)
     return new DefaultSparseDomain(rank, idxType, this, dom);
 }
 
@@ -415,7 +415,7 @@ class DefaultArithmeticArray: BaseArray {
     return alias;
   }
 
-  def reallocate(d: _domain) {
+  def reallocate(d: domain) {
     if (d._value.type == dom.type) {
       var copy = new DefaultArithmeticArray(eltType, rank, idxType,
                                                  d._value.stridable, reindexed,

@@ -18,7 +18,7 @@ class Distribution {
     compilerError("opaque domains not supported by this distribution");
   }
 
-  def newSparseDomain(param rank: int, type idxType, dom: _domain) {
+  def newSparseDomain(param rank: int, type idxType, dom: domain) {
     compilerError("opaque domains not supported by this distribution");
   }
 }
@@ -111,7 +111,7 @@ class BaseEnumDomain : BaseDomain {
 //
 pragma "base array"
 class BaseArray {
-  def reallocate(d: _domain) {
+  def reallocate(d: domain) {
     halt("reallocating not support for this array type");
   }
 

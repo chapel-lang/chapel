@@ -30,19 +30,19 @@ def chpl__buildDomainRuntimeType(dist, type idxType) type
   return chpl__buildDomainRuntimeType(dist, _OpaqueIndex);
 
 pragma "has runtime type"
-def chpl__buildSparseDomainRuntimeType(dist, dom: _domain) type
+def chpl__buildSparseDomainRuntimeType(dist, dom: domain) type
   return new _domain(dist.newSparseDomain(dom.rank, dom._value.idxType, dom));
 
-def chpl__convertValueToRuntimeType(dom: _domain) type
+def chpl__convertValueToRuntimeType(dom: domain) type
  where dom._value:BaseArithmeticDomain
   return chpl__buildDomainRuntimeType(dom._value.dist, dom._value.rank,
                             dom._value.idxType, dom._value.stridable);
 
-def chpl__convertValueToRuntimeType(dom: _domain) type
+def chpl__convertValueToRuntimeType(dom: domain) type
  where dom._value:BaseSparseDomain
   return chpl__buildSparseDomainRuntimeType(dom._value.dist, dom._value.parentDom);
 
-def chpl__convertValueToRuntimeType(dom: _domain) type
+def chpl__convertValueToRuntimeType(dom: domain) type
 where !dom._value:BaseArithmeticDomain && !dom._value:BaseSparseDomain
   return chpl__buildDomainRuntimeType(dom._value.dist, dom._value.idxType);
 
@@ -50,10 +50,10 @@ where !dom._value:BaseArithmeticDomain && !dom._value:BaseSparseDomain
 // Support for array types
 //
 pragma "has runtime type"
-def chpl__buildArrayRuntimeType(dom: _domain, type eltType) type
+def chpl__buildArrayRuntimeType(dom: domain, type eltType) type
   return dom.buildArray(eltType);
 
-def chpl__convertValueToRuntimeType(arr: _array) type
+def chpl__convertValueToRuntimeType(arr: []) type
   return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
 
 //
@@ -61,13 +61,13 @@ def chpl__convertValueToRuntimeType(arr: _array) type
 //
 // Note the domain of a subdomain is not yet part of the runtime type
 //
-def chpl__buildSubDomainType(dom: _domain) type
+def chpl__buildSubDomainType(dom: domain) type
   return chpl__convertValueToRuntimeType(dom);
 
 //
 // Support for domain expressions, e.g., [1..3, 1..3]
 //
-def chpl__buildDomainExpr(x: _domain)
+def chpl__buildDomainExpr(x: domain)
   return x;
 
 def chpl__buildDomainExpr(ranges: range(?) ...?rank) {
@@ -98,7 +98,7 @@ def chpl__buildIndexType(param rank: int, type idxType) type where rank > 1 {
 def chpl__buildIndexType(param rank: int) type
   return chpl__buildIndexType(rank, int);
 
-def chpl__buildIndexType(d: _domain) type
+def chpl__buildIndexType(d: domain) type
   return chpl__buildIndexType(d.rank, d._value.idxType);
 
 def chpl__buildIndexType(type idxType) type where idxType == opaque
@@ -247,15 +247,15 @@ record _domain {
   }
 }
 
-def +(d: _domain, i: index(d)) {
+def +(d: domain, i: index(d)) {
   return d.translate(i);
 }
 
-def +(i, d: _domain) where i: index(d) {
+def +(i, d: domain) where i: index(d) {
   return d.translate(i);
 }
 
-def -(d: _domain, i: index(d)) {
+def -(d: domain, i: index(d)) {
   return d.translate(-i);
 }
 
@@ -299,7 +299,7 @@ record _array {
   // representation?
   //
   pragma "valid var"
-  def this(d: _domain) var where d.rank == rank
+  def this(d: domain) var where d.rank == rank
     return this((...d.getIndices()));
 
   pragma "valid var"
@@ -325,12 +325,12 @@ record _array {
 
   def numElements return _dom.numIndices; // assume dom name
 
-  def reindex(d: _domain) where rank == 1 {
+  def reindex(d: domain) where rank == 1 {
     var x = _value.reindex(d._value);
     return new _array(x);
   }
 
-  def reindex(d: _domain) where rank != 1 {
+  def reindex(d: domain) where rank != 1 {
     var x = _value.reindex(d._value);
     return new _array(x);
   }
@@ -423,32 +423,32 @@ def _getRankChangeRanges(args) {
 //
 // Support for += and -= over domains
 //
-def chpl__isDomain(x: _domain) param return true;
+def chpl__isDomain(x: domain) param return true;
 def chpl__isDomain(x) param return false;
 
 //
 // Assignment of domains and arrays
 //
-def =(a: _domain, b: _domain) {
+def =(a: domain, b: domain) {
   for e in a._value._arrs do
     e.reallocate(b);
   a._value.setIndices(b._value.getIndices());
   return a;
 }
 
-def =(a: _domain, b: _tuple) {
+def =(a: domain, b: _tuple) {
   for ind in 1..b.size {
     a.add(b(ind));
   }
   return a;
 }
 
-def =(d: _domain, r: range(?)) {
+def =(d: domain, r: range(?)) {
   d = [r];
   return d;
 }
 
-def =(a: _domain, b) {  // b is iteratable
+def =(a: domain, b) {  // b is iteratable
   a._value.clearForIteratableAssign();
   for ind in b {
     a.add(ind);
@@ -456,19 +456,19 @@ def =(a: _domain, b) {  // b is iteratable
   return a;
 }
 
-def _copy(a: _domain) {
+def _copy(a: domain) {
   var b: a.type;
   b.setIndices(a.getIndices());
   return b;
 }
 
-pragma "inline" def =(a: _array, b) {
+pragma "inline" def =(a: [], b) {
   for (i,bb) in (a._dom,b) do
     a(i) = bb;
   return a;
 }
 
-def =(a: _array, b: _tuple) {
+def =(a: [], b: _tuple) {
   a._value.tupleInit(b);
   return a;
 }
@@ -483,13 +483,13 @@ def _desync(type t) where !(t: _syncvar|| t: _singlevar) {
   return x;
 }
 
-def =(a: _array, b: _desync(a.eltType)) {
+def =(a: [], b: _desync(a.eltType)) {
   for i in a._dom do
     a(i) = b;
   return a;
 }
 
-def _copy(a: _array) {
+def _copy(a: []) {
   var b : [a._dom] a.eltType;
   b = a;
   return b;
@@ -497,7 +497,7 @@ def _copy(a: _array) {
 
 
 
-def by(a: _domain, b) {
+def by(a: domain, b) {
   var x = a._value.strideBy(b);
   return new _domain(x);
 }

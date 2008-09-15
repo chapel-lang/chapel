@@ -276,7 +276,7 @@ class DefaultAssociativeArray: BaseArray {
   // Standard internal array interface
   // 
 
-  def reallocate(d: _domain) {
+  def reallocate(d: domain) {
     // reallocation is done in the setIndices function
   }
 
