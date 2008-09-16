@@ -57,6 +57,14 @@ failing nondeterministically (e.g., 04/04/08)
 gasnet-specific regressions
 ===========================
 
+cannot convert to a pointer type (09/16/08)
+-------------------------------------------
+[Error matching compiler output for classes/deitz/inherit/test_value2]
+[Error matching compiler output for classes/deitz/test_record_inherit1]
+[Error matching compiler output for classes/deitz/test_record_with1]
+[Error matching compiler output for classes/marybeth/test_dispatch_record]
+[Error matching compiler output for functions/jplevyak/scoping/visibility-4]
+
 too many instantiations of chpl_destroy
 ---------------------------------------
 [Error matching compiler output for classes/diten/deleteobject]
@@ -253,6 +261,10 @@ opts-specific tests
 pathscale-specific regressions
 ==============================
 
+domblock64 failure -- perhaps due to grabbing sources mid-change (09/16/08)
+---------------------------------------------------------------------------
+[Error matching compiler output for studies/hpcc/common/bradc/unit/parRandom2-domblock64]
+
 ???
 ---
 [Error matching program output for execflags/bradc/gdbddash/declint2]
@@ -373,6 +385,13 @@ print occurs in 0 seconds!?  Timers not working?
 mta-/xmt-specific regressions
 =============================
 
+unreachable line causes compiler warning (09/16/08)
+---------------------------------------------------
+[Error matching program output for release/examples/hpcc/fft]
+[Error matching program output for release/examples/opaque]
+[Error matching program output for release/examples/quicksort]
+[Error matching program output for release/examples/slices]
+
 occasional timeouts? or slowed down during iterator rewrites? (e.g., 07/02/08)
 ------------------------------------------------------------------------------
 [Error: Timed out executing program release/examples/hpcc/ra]
@@ -381,7 +400,6 @@ data alignment trap (05/10/08)
 ------------------------------
 [Error matching program output for release/examples/arrays]
 [Error matching program output for release/examples/blockLU]
-[Error matching program output for release/examples/fileIO]
 [Error matching program output for release/examples/jacobi]
 [Error matching program output for release/examples/norm]
 [Error matching program output for release/examples/reductions]
