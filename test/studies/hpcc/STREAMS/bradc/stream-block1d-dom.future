@@ -1,0 +1,6 @@
+bug: RandomStream follower doesn't track or update global state
+
+This test isn't working simply because our random stream follower
+always starts at position 0.  I think other than that, it's ready
+to performance tune.
+

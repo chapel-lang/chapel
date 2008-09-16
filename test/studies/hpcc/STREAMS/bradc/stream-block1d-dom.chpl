@@ -40,8 +40,8 @@ def main() {
     // A = B + alpha * C;
     // But this doesn't work because we don't support promotion over classes
 
-    forall (a, b, c) in (A, B, C) {
-      a = b + alpha * c;
+    forall (i,j,k) in (A.domain, B.domain, C.domain) {
+      A(i) = B(j) + alpha * C(k);
     }
 
     execTime(trial) = getCurrentTime() - startTime;
@@ -64,10 +64,10 @@ def initVectors(B, C) {
   // TODO: should write a fillRandom() implementation that does this
   //
   var randlist = new RandomStream(seed);
-  forall (b, r) in (B, randlist) do
-    b = r;
-  forall (c, r) in (C, randlist) do
-    c = r;
+  forall (i, r) in (B.domain, randlist) do
+    B(i) = r;
+  forall (i, r) in (C.domain, randlist) do
+    C(i) = r;
 
   if (printArrays) {
     writeln("B is: ", B, "\n");
