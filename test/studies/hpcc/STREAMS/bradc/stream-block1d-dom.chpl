@@ -26,7 +26,7 @@ def main() {
 
   const ProblemDist = new Block1DDist(bbox=[1..m], targetLocales=Locales);
 
-  const ProblemSpace: domain(1, int(64)) distributed(ProblemDist) = [1..m];
+  const ProblemSpace: domain(1, int(64)) distributed ProblemDist = [1..m];
 
   var A, B, C: [ProblemSpace] elemType;
 
