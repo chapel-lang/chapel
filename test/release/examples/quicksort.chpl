@@ -9,8 +9,8 @@ use Random, Time; // for random number generation and the Timer class
 var timer: Timer; // to time the sort
 
 config var n: int = 2**15;      // the size of the array to be sorted
-config var pdepth: int = 1;     // the recursive depth to serialize
-                                //  use --pdepth=-1 for unlimited threads
+config var thresh: int = 1;     // the recursive depth to serialize
+                                //  use --thresh=-1 for unlimited threads
 config var verbose: int = 0;    // print out this many elements in array
 config var timing: bool = true; // set timing to false to disable timer
 
@@ -31,7 +31,7 @@ if verbose > 0 then
 // start timer, call parallel quick sort routine, stop timer
 //
 if timing then timer.start();
-pqsort(pdepth, A);
+pqsort(A, thresh);
 if timing then timer.stop();
 
 //
@@ -58,13 +58,13 @@ writeln("verification success");
 //
 // pqsort -- parallel quick sort
 //
-//   pdepth: number of recursive calls to make before serializing
 //   arr: generic 1D array of values (real, int, ...)
+//   thresh: number of recursive calls to make before serializing
 //   low: lower bound of array to start sort at, defaults to whole array
 //   high: upper bound of array to stop sort at, defaults to whole array
 //
-def pqsort(pdepth: int,
-           arr: [],
+def pqsort(arr: [],
+           thresh: int,
            low: int = arr.domain.low,
            high: int = arr.domain.high) where arr.rank == 1 {
 
@@ -84,12 +84,12 @@ def pqsort(pdepth: int,
 
   //
   // make recursive calls to parallel quick sort each unsorted half of
-  // the array; if pdepth is 0, start serializing; note: once
+  // the array; if thresh is 0, start serializing; note: once
   // serialization is turned on, it is never turned off
   //
-  serial pdepth == 0 do cobegin {
-    pqsort(pdepth-1, arr, low, pivotLoc-1);
-    pqsort(pdepth-1, arr, pivotLoc+1, high);
+  serial thresh == 0 do cobegin {
+    pqsort(arr, thresh-1, low, pivotLoc-1);
+    pqsort(arr, thresh-1, pivotLoc+1, high);
   }
 
   //
