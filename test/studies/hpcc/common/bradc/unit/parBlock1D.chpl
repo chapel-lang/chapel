@@ -8,4 +8,4 @@ D1.setIndices([1..9]);
 D2.setIndices([2..10]);
 
 forall (i,j) in (D1, D2) do
-  writeln("(i,j) is: ", (i,j));
+  writeln("on ", here.id, ", (i,j) is: ", (i,j));

@@ -13,16 +13,18 @@ var B: [ProblemSpace] real;
 var randStr1 = new RandomStream(314159265);
 var randStr2 = new RandomStream(314159265);
 
-forall (i,r) in (A.domain, randStr1) do
+forall (i,r) in (A.domain, randStr1) {
+  writeln("Doing iteration ", format("#####", i), " on locale ", here.id);
   A(i) = r;
+}
 
 for b in B do
   b = randStr2.getNext();
 
 for (i,a,b) in (ProblemSpace,A,B) {
   if (a != b) then
-    writeln("mismatch at #", i, ": ", a, " != ", b);
+    writeln("mismatch at #", format("#####", i), ": ", a, " != ", b);
   else
-    writeln("#", i, " = ", a);
+    writeln("#", format("#####", i), " = ", a);
 }
 

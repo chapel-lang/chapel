@@ -375,7 +375,6 @@ class Block1DDom: BaseArithmeticDomain {
     //
     coforall locDom in locDoms do
       on locDom {
-        writeln("On locale #", here.id, ", yielding: ", locDom.myBlock - whole.low);
         yield locDom.myBlock - whole.low;
       }
   }
@@ -652,8 +651,8 @@ class Block1DArr: BaseArray {
   def these(param tag: iterator) where tag == iterator.leader {
     coforall locDom in dom.locDoms do
       on locDom do
-    for blk in dom.these(leader=true) do
-      yield blk;
+        for blk in dom.these(iterator.leader) do
+          yield blk;
   }
 
   def these(param tag: iterator, follower) var where tag == iterator.follower {
@@ -758,7 +757,8 @@ class LocBlock1DArr {
     yield [1..100];
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  def these(param tag: iterator, follower) var where tag == iterator.follower {
+    yield myElems(0);
   }
 
 
