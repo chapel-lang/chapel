@@ -1,0 +1,1 @@
+iteratorNoYield.chpl:6: error: iterators must yield values
