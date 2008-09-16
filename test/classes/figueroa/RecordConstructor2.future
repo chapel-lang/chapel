@@ -1,0 +1,5 @@
+bug: the initialize method is called after copying records
+
+In this code, records are copied in the process of performing the writeln's.
+After actually copying these records, the initialize method is called, thus
+overwriting some of the content (field c in this case) that was copied.
