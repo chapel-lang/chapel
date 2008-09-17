@@ -261,10 +261,6 @@ opts-specific tests
 pathscale-specific regressions
 ==============================
 
-domblock64 failure -- perhaps due to grabbing sources mid-change (09/16/08)
----------------------------------------------------------------------------
-[Error matching compiler output for studies/hpcc/common/bradc/unit/parRandom2-domblock64]
-
 ???
 ---
 [Error matching program output for execflags/bradc/gdbddash/declint2]
