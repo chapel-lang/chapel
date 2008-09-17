@@ -54,7 +54,7 @@ def defaultValues(type args...?n) {
 // function returns a tuple, it is destructured before being passed to the
 // writer function by using the tuple destructuring expression: (...Tuple).
 //
-anyTypeWriteln((...defaultValues(int, complex, [1..3].type, 2*real)));
+anyTypeWriteln((...defaultValues(int, complex, bool, 2*real)));
 
 //
 // This function uses Euclid's algorithm to compute the greatest common
