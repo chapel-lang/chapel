@@ -179,7 +179,16 @@ buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
 
 BlockStmt*
 buildLabelStmt(const char* name, Expr* stmt) {
-  BlockStmt* block = buildChapelStmt(stmt);
+  BlockStmt* block = toBlockStmt(stmt);
+  if (block) {
+    BlockStmt* loop = toBlockStmt(block->body.tail->prev);
+    if (loop && loop->blockInfo && loop->blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP)) {
+      loop->insertAtTail(new DefExpr(new LabelSymbol(name)));
+      loop->insertAfter(new DefExpr(new LabelSymbol(astr("_post", name))));
+      return block;
+    }
+  }
+  block = buildChapelStmt(stmt);
   block->insertAtHead(new DefExpr(new LabelSymbol(name)));
   block->insertAtTail(new DefExpr(new LabelSymbol(astr("_post", name))));
   return block;

@@ -1,3 +1,0 @@
-bug: continuing to labeled outer loop doesn't update loop index
-
-The outer loop should have its index updated after each continue 
