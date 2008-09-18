@@ -143,7 +143,7 @@ record _domain {
   var _value;
   var _promotionType: index(rank, _value.idxType);
 
-  def destroy() {
+  def ~_domain () {
     delete _value;
   }
 
@@ -269,7 +269,7 @@ record _array {
   var _value;
   var _promotionType: _value.eltType;
 
-  def destroy() {
+  def ~_array() {
     delete _value;
   }
 

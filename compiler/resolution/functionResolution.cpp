@@ -3463,7 +3463,8 @@ inlineIterators() {
 static bool tupleContainsArrayOrDomain (ClassType* t) {
   for (int i = 1; i <= t->fields.length(); i++) {
     Type* fieldType = t->getField(i)->type;
-    if (fieldType->symbol->hasFlag(FLAG_ARRAY) || fieldType->symbol->hasFlag(FLAG_DOMAIN))
+    //ClassType* fieldClassType = toClassType(fieldType);
+    if (fieldType->symbol->hasFlag(FLAG_ARRAY) || fieldType->symbol->hasFlag(FLAG_DOMAIN)/* || fieldClassType && fieldClassType->classTag == CLASS_CLASS*/)
       return true;
     else if (fieldType->symbol->hasFlag(FLAG_TUPLE) && tupleContainsArrayOrDomain(toClassType(fieldType)))
       return true;
@@ -3718,10 +3719,11 @@ resolve() {
             tmp = newTemp(ct->dispatchParents.v[0]);
           else
             tmp = newTemp(ct->dispatchParents.v[0]->refType);
-          tmp->addFlag(FLAG_TEMP);
           ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp,
-            new CallExpr(PRIMITIVE_CAST, ct->classTag == CLASS_CLASS ? ct->dispatchParents.v[0]->symbol : ct->dispatchParents.v[0]->refType->symbol, ct->destructor->_this)));
+            new CallExpr(PRIMITIVE_CAST,
+              ct->classTag == CLASS_CLASS ? ct->dispatchParents.v[0]->symbol : ct->dispatchParents.v[0]->refType->symbol,
+              ct->destructor->_this)));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor, tmp));
         }
       }
@@ -3768,27 +3770,31 @@ resolve() {
           varsToTrack.add(lhs->var);
           bool maybeCallDestructor = true;
           forv_Vec(Symbol, var, varsToTrack) {
-            // should be OK if there is more than one definition of var?
+            // may not be OK if there is more than one definition of var
             //INT_ASSERT(defMap.get(var)->length() == 1);
             if (maybeCallDestructor && useMap.get(var))
-            forv_Vec(SymExpr, se, *useMap.get(var)) {
-              if (CallExpr* call = toCallExpr(se->parentExpr)) {
-                if (call->isPrimitive(PRIMITIVE_MOVE)) {
-                  if (fn->getReturnSymbol() == toSymExpr(call->get(1))->var) {
+              forv_Vec(SymExpr, se, *useMap.get(var)) {
+                if (CallExpr* call = toCallExpr(se->parentExpr)) {
+                  if (call->isPrimitive(PRIMITIVE_MOVE)) {
+                    if (fn->getReturnSymbol() == toSymExpr(call->get(1))->var) {
 //          printf("may need to call destructor on %s (lhs)\n", lhs->var->cname);
 //                    printf("function returns %s\n", toSymExpr(call->get(1))->var->cname);
+                      maybeCallDestructor = false;
+                      break;
+                    } else
+                      varsToTrack.add(toSymExpr(call->get(1))->var);
+                  } else if (lhs->var->type->symbol->hasFlag(FLAG_ARRAY)) {
+//                  printf("Probably shouldn't call destructor on %s\n", lhs->var->cname);
                     maybeCallDestructor = false;
                     break;
-                  } else
-                    varsToTrack.add(toSymExpr(call->get(1))->var);
-                } else if (lhs->var->type->symbol->hasFlag(FLAG_ARRAY)) {
-//                  printf("Probably shouldn't call destructor on %s\n", lhs->var->cname);
-                  maybeCallDestructor = false;
-                  break;
-                }
-              } else
-                printf("found a use of %s\n", var->cname);
-            }
+                  } else if (call->isPrimitive(PRIMITIVE_ARRAY_SET_FIRST)) {
+          if (strcmp(toSymExpr(call->get(3))->var->cname, "y")) printf("Primitive array_set_first involves %s (%s)\n", toSymExpr(call->get(3))->var->cname, lhs->var->cname);
+                    maybeCallDestructor = false;
+                    break;
+                  }
+                } else
+                  printf("found a use of %s\n", var->cname);
+              }
           }
           if (maybeCallDestructor) {
             // lhs does not "escape" its scope, so go ahead and insert a call to its destructor
