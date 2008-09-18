@@ -19,10 +19,6 @@ problem with new "return iterators" change? (09/10/08)
 ------------------------------------------------------
 [Error matching compiler output for users/thom/arrArgIn-function]
 
-can't pass domain runtime types to varargs anymore (09/04/08)
--------------------------------------------------------------
-[Error matching program output for release/examples/varargs]
-
 precision issue, due to user code changing (07/01/08)
 -----------------------------------------------------
 [Error matching program output for
