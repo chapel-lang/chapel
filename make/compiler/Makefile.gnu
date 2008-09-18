@@ -56,7 +56,7 @@ SUPPORT_SETENV_CFLAGS = -std=gnu89
 #
 WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings
 WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wmissing-format-attribute
-WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused
+WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused -Wno-uninitialized
 
 #
 # developer settings

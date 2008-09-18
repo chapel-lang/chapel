@@ -1,4 +1,0 @@
-bug: unused values in generated leader/follower code
-
-When compiling leader/follower code with -O, cc compiler errors are
-generated.
