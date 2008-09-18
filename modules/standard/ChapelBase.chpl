@@ -567,10 +567,6 @@ class _ddata {
     __primitive("array_alloc", this, eltType, size);
     init_elts(this, size, eltType);
   }
-  pragma "inline" def init(d: eltType) {
-    __primitive("array_alloc", this, eltType, size);
-    [i in 0..size-1] __primitive("array_set_first", this, i, d);
-  }
   pragma "inline" def this(i: int) var {
     return __primitive("array_get", this, i);
   }
