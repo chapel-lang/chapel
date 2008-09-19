@@ -53,6 +53,59 @@ failing nondeterministically (e.g., 04/04/08)
 gasnet-specific regressions
 ===========================
 
+GASNet destructor problems (09/19/08)
+-------------------------------------
+[Error matching compiler output for arrays/bradc/workarounds/fakeSpsArr2]
+[Error matching compiler output for arrays/bradc/workarounds/fakeSpsArr]
+[Error matching compiler output for arrays/deitz/matrix]
+[Error matching compiler output for
+arrays/deitz/test_record_contains_array1]
+[Error matching compiler output for
+classes/bradc/arrayInClass/arrayDomInClassRecord2]
+[Error matching compiler output for
+classes/bradc/arrayInClass/arrayDomInClassRecord]
+[Error matching compiler output for
+classes/bradc/arrayInClass/arrayInClassRecord2]
+[Error matching compiler output for
+classes/bradc/arrayInClass/arrayInClassRecord3]
+[Error matching compiler output for
+classes/bradc/arrayInClass/arrayInClassRecord]
+[Error matching compiler output for
+classes/bradc/arrayInClass/passRecWArrToInout]
+[Error matching compiler output for classes/deitz/arrayToRecordConstructor]
+[Error matching compiler output for classes/diten/arrayInRecord]
+[Error matching compiler output for multilocale/deitz/linked/test_linked3]
+[Error matching compiler output for multilocale/deitz/linked/test_linked3a]
+[Error matching compiler output for multilocale/deitz/linked/test_linked3b]
+[Error matching compiler output for release/examples/genericStack]
+[Error matching compiler output for studies/hpcc/HPL/marybeth/HPL]
+[Error matching compiler output for
+studies/madness/aniruddha/madchap/recordBug/test_likepy]
+[Error matching compiler output for studies/madness/common/test_diff]
+[Error matching compiler output for studies/madness/common/test_gaxpy]
+[Error matching compiler output for studies/madness/common/test_likepy]
+[Error matching compiler output for studies/madness/common/test_mul]
+[Error matching compiler output for studies/madness/common/test_showboxes]
+[Error matching compiler output for
+studies/madness/dinan/mad_chapel/test_diff]
+[Error matching compiler output for
+studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching compiler output for
+studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching compiler output for
+studies/madness/dinan/mad_chapel/test_mul]
+[Error matching compiler output for
+studies/madness/dinan/mad_chapel/test_showboxes]
+[Error matching compiler output for
+studies/matrixMult/stonea/distributed/simpleBlockDist]
+[Error matching compiler output for users/shetag/assocDomOfRecord]
+[Error matching compiler output for users/shetag/assocInRecord-blc]
+[Error matching compiler output for users/shetag/assocInRecord]
+[Error matching program output for
+studies/hpcc/common/bradc/unit/leadFollowOpt]
+[Error: Timed out executing program
+studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+
 cannot convert to a pointer type (09/16/08)
 -------------------------------------------
 [Error matching compiler output for classes/deitz/inherit/test_value2]
@@ -157,10 +210,12 @@ opts-specific tests
 
 --no-local
 ----------
+[Error matching compiler output for release/examples/genericStack]
 [Error matching compiler output for release/examples/iterators]
 
 --baseline --no-local
 ---------------------
+[Error matching compiler output for release/examples/genericStack]
 [Error matching compiler output for release/examples/iterators]
 
 
