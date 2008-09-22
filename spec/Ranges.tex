@@ -212,10 +212,12 @@ a low bound, or both.  Its syntax is:
 expression `#' expression
 \end{syntax}
 
-The \chpl{#} operator takes a range and an integral count and creates a
-new range with count elements. The stride of the resulting range is the
-same as that of the initial range. It is an error for the count to be
-negative.
+The \chpl{#} operator takes a range and an integral count and creates
+a new range with count elements. The stride of the resulting range is
+the same as that of the initial range. It is an error for the count to
+be negative.  The \emph{eltType} of the resulting range is the same
+type that would be obtained by adding the integral count value to the
+range's \emph{eltType}.
 
 When applied to a \chpl{BoundedRangeType.bounded} range with a positive
 stride, the low bound count elements are taken starting from the low

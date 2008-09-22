@@ -76,63 +76,66 @@ def by(r : range(?), i : int) {
 //
 def #(r:range(?), i:integral)
   where r.boundedType == BoundedRangeType.boundedLow {
+  type resultType = (r.low + i).type;
   if i < 0 then
     halt("range cannot have a negative number of elements");
   if i == 0 then
-    return new range(eltType = r.eltType,
+    return new range(eltType = resultType,
                      boundedType = BoundedRangeType.bounded,
                      stridable = r.stridable,
                      _low = r.low + 1,
                      _high = r.low,
                      _stride = r.stride);
 
-  return new range(eltType = r.eltType,
+  return new range(eltType = resultType,
                    boundedType = BoundedRangeType.bounded,
                    stridable = r.stridable,
                    _low = r.low,
-                   _high = r.low + (i-1)*abs(r.stride):r.eltType,
+                   _high = r.low + (i-1)*abs(r.stride):resultType,
                    _stride = r.stride);
 }
 
 def #(r:range(?), i:integral)
   where r.boundedType == BoundedRangeType.boundedHigh {
+  type resultType = (r.low + i).type;
   if i < 0 then
     halt("range cannot have a negative number of elements");
   if i == 0 then
-    return new range(eltType = r.eltType,
+    return new range(eltType = resultType,
                    boundedType = BoundedRangeType.bounded,
                    stridable = r.stridable,
                    _low = r.high,
                    _high = r.high - 1,
                    _stride = r.stride);
 
-  return new range(eltType = r.eltType,
+  return new range(eltType = resultType,
                    boundedType = BoundedRangeType.bounded,
                    stridable = r.stridable,
-                   _low = r.high - (i-1)*abs(r.stride):r.eltType,
+                   _low = r.high - (i-1)*abs(r.stride):resultType,
                    _high = r.high,
                    _stride = r.stride);
 }
 
 def #(r:range(?), i:integral)
   where r.boundedType == BoundedRangeType.bounded {
+  type resultType = (r.low + i).type;
   if i < 0 then
     halt("range cannot have a negative number of elements");
   if i > r.length then
     halt("bounded range is too small to access ", i, " elements");
   if i == 0 then
-    return new range(eltType = r.eltType,
+    return new range(eltType = resultType,
                      boundedType = BoundedRangeType.bounded,
                      stridable = r.stridable,
                      _low = r.high,
                      _high = r.low,
                      _stride = r.stride);
 
-  return new range(eltType = r.eltType,
+  return new range(eltType = resultType,
                    boundedType = BoundedRangeType.bounded,
                    stridable = r.stridable,
-                   _low = if r.stride < 0 then r.high + (i-1)*r.stride:r.eltType else r.low,
-                   _high = if r.stride < 0 then r.high else r.low + (i-1)*r.stride:r.eltType,
+                   _low = if r.stride < 0 then r.high + (i-1)*r.stride:resultType else r.low,
+                   _high = if r.stride < 0 then r.high else r.low + (i-1)*r.stride:resultType,
                    _stride = r.stride);
 }
 
