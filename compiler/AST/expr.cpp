@@ -945,7 +945,8 @@ void CallExpr::codegen(FILE* outfile) {
           }
         }
         if (call->isPrimitive(PRIMITIVE_CAST)) {
-          if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+          if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+              call->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             fprintf(outfile, "_WIDE_CLASS_CAST(");
             get(1)->codegen(outfile);
             fprintf(outfile, ", ");
