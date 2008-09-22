@@ -1,0 +1,1 @@
+probSize.chpl ra-randstream.chpl --no-warnings -O --no-checks

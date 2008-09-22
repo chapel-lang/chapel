@@ -154,7 +154,7 @@ class Block1DDist : Distribution {
   def ind2locInd(ind: idxType) {
     //    writeln("distribution = ", this);
     const ind0 = ind - boundingBox.low;
-    const locInd = (ind0 * targetLocs.numElements) / boundingBox.numIndices;
+    const locInd = (ind0 * targetLocs.numElements:idxType) / boundingBox.numIndices;
     return locInd: index(targetLocDom);
   }
 }
@@ -228,7 +228,7 @@ class LocBlock1DDist {
   // a helper function for mapping processors to indices
   //
   def procToData(x, lo)
-    return (lo + (x: lo.type) + (x:real != x:int:real));
+    return (lo + (x: lo.type) + (x:real != x:int:real): lo.type);
 
   //
   // print out the local distribution class
