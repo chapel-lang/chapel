@@ -46,6 +46,13 @@ _real64 _now_time(void);
 #define _ARRAY_FREE(x, lineno, filename) \
   chpl_free((x)->_data, lineno, filename)
 
+#define _WIDE_ARRAY_FREE(x, lineno, filename)                          \
+  do {                                                                 \
+    if (x.locale != _localeID)                                         \
+      chpl_error("array vector data is not local", lineno, filename);  \
+    _ARRAY_FREE((x).addr, lineno, filename);                           \
+  } while (0)
+
 #define _noop(x)
 
 #define malloc  dont_use_malloc_use_chpl_malloc_instead

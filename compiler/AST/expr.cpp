@@ -696,10 +696,12 @@ codegenBasicPrimitive(FILE* outfile, CallExpr* call) {
       first_actual = false;
     else
       fprintf(outfile, ", ");
-    if (actual->typeInfo()->symbol->hasFlag(FLAG_REF))
+    if (actual->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+        actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
       fprintf(outfile, "*");
     actual->codegen(outfile);
-    if (actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+    if (actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+        actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
       fprintf(outfile, ".addr");
   }
   fprintf(outfile, ")");
@@ -750,7 +752,10 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     case PRIMITIVE_ARRAY_FREE:
-      help_codegen_fn(outfile, "_ARRAY_FREE", get(1), get(2), get(3));
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        help_codegen_fn(outfile, "_WIDE_ARRAY_FREE", get(1), get(2), get(3));
+      else
+        help_codegen_fn(outfile, "_ARRAY_FREE", get(1), get(2), get(3));
       break;
     case PRIMITIVE_ARRAY_FREE_ELTS:
       help_codegen_fn(outfile, "_ARRAY_FREE_ELTS", get(1), get(2), get(3));

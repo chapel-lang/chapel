@@ -2865,6 +2865,7 @@ postFold(Expr* expr) {
                call->isPrimitive(PRIMITIVE_SINGLE_ISFULL) ||
                call->isPrimitive(PRIMITIVE_EXECUTE_TASKS_IN_LIST) ||
                call->isPrimitive(PRIMITIVE_FREE_TASK_LIST) ||
+               call->isPrimitive(PRIMITIVE_CHPL_FREE) ||
                (call->primitive && 
                 (!strncmp("_fscan", call->primitive->name, 6) ||
                  !strcmp("fprintf", call->primitive->name) ||
