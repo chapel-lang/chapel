@@ -1,0 +1,3 @@
+twoThese.chpl:16: error: ambiguous iteration over 'C.these()'
+twoThese.chpl:2: note: candidates are: C.these()
+twoThese.chpl:7: note:                 C.these()
