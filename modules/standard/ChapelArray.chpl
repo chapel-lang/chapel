@@ -222,6 +222,9 @@ record _domain {
   def translate(i: _value.idxType ...rank) return translate(i);
   def translate(i: rank*_value.idxType) return new _domain(_value.translate(i));
 
+  def chpl__unTranslate(i: _value.idxType ...rank) return chpl__unTranslate(i);
+  def chpl__unTranslate(i: rank*_value.idxType) return new _domain(_value.chpl__unTranslate(i));
+
   def subBlocks {
     for d in _value.subBlocks do
       yield d;
@@ -256,7 +259,7 @@ def +(i, d: domain) where i: index(d) {
 }
 
 def -(d: domain, i: index(d)) {
-  return d.translate(-i);
+  return d.chpl__unTranslate(i);
 }
 
 

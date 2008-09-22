@@ -444,6 +444,13 @@ def range.writeThis(f: Writer) {
 def range.translate(i: eltType)
   return this + i;
 
+//
+// intended for internal use only:
+//
+def range.chpl__unTranslate(i: eltType) {
+  return this - i;
+}
+
 
 //
 // return an interior portion of this range
@@ -488,11 +495,11 @@ def range.expand(i: eltType)
 def +(r: range(?e,?b,?s), i: integral)
   return new range((r.low+i).type, b, s, r.low+i, r.high+i, r.stride);
 
-def -(r: range(?e,?b,?s), i: integral)
-  return new range((r.low-i).type, b, s, r.low-i, r.high-i, r.stride);
-
 def +(i:integral, r: range(?e,?b,?s))
   return new range((i+r.low).type, b, s, i+r.low, i+r.high, r.stride);
+
+def -(r: range(?e,?b,?s), i: integral)
+  return new range((r.low-i).type, b, s, r.low-i, r.high-i, r.stride);
 
 
 //

@@ -195,6 +195,13 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
     return x;
   }
 
+  def chpl__unTranslate(off: rank*idxType) {
+    var x = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
+    for i in 1..rank do
+      x.ranges(i) = dim(i).chpl__unTranslate(off(i));
+    return x;
+  }
+
   def interior(off: rank*idxType) {
     var x = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
     for i in 1..rank do {
