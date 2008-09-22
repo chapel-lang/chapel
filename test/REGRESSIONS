@@ -219,13 +219,14 @@ opts-specific tests
 [Error matching compiler output for release/examples/iterators]
 
 
-(Full run: 54, though some spurious test_refine errors)
+(Full run: 138, though some spurious test_refine errors)
 
 
 --no-copy-propagation
 ---------------------
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
+[Error: Timed out compilation for users/franzf/v2/chpl/main]
 
 --no-dead-code-elimination
 --------------------------
@@ -233,69 +234,108 @@ opts-specific tests
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
 
---no-inline-iterators
----------------------
-[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
-
---no-live-analysis
-------------------
-[Error matching compiler output for npb/cg/bradc/cg-makea1-sparse-sort]
-[Error matching compiler output for npb/cg/bradc/cg-printa]
-[Error matching compiler output for npb/cg/bradc/cg-sparse]
-
---no-scalar-replacement
------------------------
-[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
-
 --baseline --inline
 -------------------
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
-
---baseline --inline-iterators
------------------------------
-[Error matching program output for studies/sudoku/dinan/sudoku]
-
---no-optimize-loop-iterators --no-inline-iterators
---------------------------------------------------
-[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
-
---no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
----------------------------------------------------------------------
-[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
-[Error matching compiler output for npb/cg/bradc/cg-makea1-sparse-sort]
-[Error matching compiler output for npb/cg/bradc/cg-printa]
-[Error matching compiler output for npb/cg/bradc/cg-sparse]
+[Error: Timed out compilation for users/franzf/v2/chpl/main]
 
 --no-local
 ----------
+[Error matching compiler output for arrays/bradc/workarounds/fakeSpsArr]
+[Error matching compiler output for arrays/bradc/workarounds/fakeSpsArr2]
+[Error matching compiler output for arrays/deitz/matrix]
+[Error matching compiler output for arrays/deitz/test_record_contains_array1]
+[Error matching compiler output for classes/bradc/arrayInClass/arrayDomInClassRecord]
+[Error matching compiler output for classes/bradc/arrayInClass/arrayDomInClassRecord2]
+[Error matching compiler output for classes/bradc/arrayInClass/arrayInClassRecord]
+[Error matching compiler output for classes/bradc/arrayInClass/arrayInClassRecord2]
+[Error matching compiler output for classes/bradc/arrayInClass/arrayInClassRecord3]
+[Error matching compiler output for classes/bradc/arrayInClass/passRecWArrToInout]
+[Error matching compiler output for classes/deitz/arrayToRecordConstructor]
+[Error matching compiler output for classes/deitz/test_record_inherit1]
+[Error matching compiler output for classes/deitz/test_record_with1]
 [Error matching compiler output for classes/deitz/tree]
+[Error matching compiler output for classes/deitz/inherit/test_value2]
 [Error matching compiler output for classes/diten/allocateManyObjects]
+[Error matching compiler output for classes/diten/arrayInRecord]
+[Error matching compiler output for classes/diten/deleteobject]
 [Error matching compiler output for classes/figueroa/DestructorSubclassing1]
 [Error matching compiler output for classes/figueroa/LeakedMemory1]
+[Error matching compiler output for classes/marybeth/test_dispatch_record]
 [Error matching compiler output for functions/deitz/iterators/test_promote_inout]
 [Error matching compiler output for functions/deitz/iterators/tree]
+[Error matching compiler output for functions/jplevyak/scoping/visibility-4]
+[Error matching compiler output for modules/diten/returnClassDiffModule5]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
+[Error matching compiler output for release/examples/genericStack]
 [Error matching compiler output for release/examples/iterators]
+[Error matching compiler output for studies/hpcc/HPL/marybeth/HPL]
+[Error matching compiler output for studies/madness/aniruddha/madchap/recordBug/test_likepy]
+[Error matching compiler output for studies/madness/common/test_diff]
+[Error matching compiler output for studies/madness/common/test_gaxpy]
+[Error matching compiler output for studies/madness/common/test_likepy]
+[Error matching compiler output for studies/madness/common/test_mul]
+[Error matching compiler output for studies/madness/common/test_showboxes]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_diff]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_mul]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_showboxes]
+[Error matching compiler output for studies/matrixMult/stonea/distributed/simpleBlockDist]
 [Error matching compiler output for types/scalar/bradc/overloadbools]
 [Error matching compiler output for types/scalar/bradc/overloadbools2]
-[Summary: #Successes = 2139 | #Failures = 10 | #Futures = 0]
+[Error matching compiler output for users/shetag/assocDomOfRecord]
+[Error matching compiler output for users/shetag/assocInRecord-blc]
+[Error matching compiler output for users/shetag/assocInRecord]
 
 --baseline --no-local
 ---------------------
+[Error matching compiler output for arrays/bradc/workarounds/fakeSpsArr]
+[Error matching compiler output for arrays/bradc/workarounds/fakeSpsArr2]
+[Error matching compiler output for arrays/deitz/matrix]
+[Error matching compiler output for arrays/deitz/test_record_contains_array1]
 [Error matching program output for arrays/diten/promoteFieldAccessAndMethod]
+[Error matching compiler output for classes/bradc/arrayInClass/arrayDomInClassRecord]
+[Error matching compiler output for classes/bradc/arrayInClass/arrayDomInClassRecord2]
+[Error matching compiler output for classes/bradc/arrayInClass/arrayInClassRecord]
+[Error matching compiler output for classes/bradc/arrayInClass/arrayInClassRecord2]
+[Error matching compiler output for classes/bradc/arrayInClass/arrayInClassRecord3]
+[Error matching compiler output for classes/bradc/arrayInClass/passRecWArrToInout]
+[Error matching compiler output for classes/deitz/arrayToRecordConstructor]
+[Error matching compiler output for classes/deitz/test_record_inherit1]
+[Error matching compiler output for classes/deitz/test_record_with1]
 [Error matching compiler output for classes/deitz/tree]
+[Error matching compiler output for classes/deitz/inherit/test_value2]
 [Error matching compiler output for classes/diten/allocateManyObjects]
+[Error matching compiler output for classes/diten/arrayInRecord]
+[Error matching compiler output for classes/diten/deleteobject]
 [Error matching compiler output for classes/figueroa/DestructorSubclassing1]
 [Error matching compiler output for classes/figueroa/LeakedMemory1]
+[Error matching compiler output for classes/marybeth/test_dispatch_record]
 [Error matching compiler output for functions/deitz/iterators/test_promote_inout]
 [Error matching compiler output for functions/deitz/iterators/tree]
-[Error: Timed out executing program npb/cg/bradc/cg-sparse]
+[Error matching compiler output for functions/jplevyak/scoping/visibility-4]
+[Error matching compiler output for modules/diten/returnClassDiffModule5]
 [Error matching compiler output for parallel/sync/diten/tupleOfSync]
+[Error matching compiler output for release/examples/genericStack]
 [Error matching compiler output for release/examples/iterators]
 [Error matching compiler output for studies/590o/alaska/graph]
 [Error matching compiler output for studies/590o/blerner/xml-parse]
-[Error matching program output for studies/sudoku/dinan/sudoku]
+[Error matching compiler output for studies/hpcc/HPL/marybeth/HPL]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
+[Error matching compiler output for studies/madness/aniruddha/madchap/recordBug/test_likepy]
+[Error matching compiler output for studies/madness/common/test_diff]
+[Error matching compiler output for studies/madness/common/test_gaxpy]
+[Error matching compiler output for studies/madness/common/test_likepy]
+[Error matching compiler output for studies/madness/common/test_mul]
+[Error matching compiler output for studies/madness/common/test_showboxes]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_diff]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_mul]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_showboxes]
+[Error matching compiler output for studies/matrixMult/stonea/distributed/simpleBlockDist]
 [Error matching compiler output for studies/uts/dequeue]
 [Error matching compiler output for studies/uts/uts_deq]
 [Error matching compiler output for studies/uts/uts_deq_seq]
@@ -304,8 +344,10 @@ opts-specific tests
 [Error matching compiler output for types/scalar/bradc/overloadbools2]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
-[Summary: #Successes = 2152 | #Failures = 21 | #Futures = 0]
-
+[Error matching compiler output for users/shetag/assocDomOfRecord]
+[Error matching compiler output for users/shetag/assocInRecord-blc]
+[Error matching compiler output for users/shetag/assocInRecord]
+[Error matching compiler output for users/thom/arrArgIn-function]
 
 
 ==============================
