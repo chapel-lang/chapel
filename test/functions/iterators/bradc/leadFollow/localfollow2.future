@@ -1,0 +1,14 @@
+semantic: local within a follower
+
+What does it mean for a local block to be within a follower?  My
+hunch is that it should assert something about the local code in
+the follower but not to the body around which the follower is
+being placed.  Does this make sense?  Is it implementable?
+
+In the current implementation, the local block seems to disappear,
+though I'm not sure why that is.  In localfollow.chpl, this results
+in a seg fault as the compiler tries to infer the type of the
+follower and can't find anything to grab it from (?).  In
+localfollow2.chpl (which has an additional yield outside of the
+local block), it just makes the yields within the local block
+disappear (and the loop as well?).
