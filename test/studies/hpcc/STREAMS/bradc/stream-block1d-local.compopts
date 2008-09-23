@@ -1,0 +1,1 @@
+../../common/probSize.chpl ../../common/bradc/Block1D.chpl --enable-parallel-iterators --local
