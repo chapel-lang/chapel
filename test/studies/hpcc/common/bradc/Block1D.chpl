@@ -656,8 +656,12 @@ class Block1DArr: BaseArray {
   }
 
   def these(param tag: iterator, follower) var where tag == iterator.follower {
-    for i in follower {
-      yield this(i + dom.low);
+    //
+    // TODO: Would like to write this as follower += dom.low;
+    //
+    const followThis = follower + dom.low;
+    for i in followThis {
+      yield this(i);
     }
   }
 
