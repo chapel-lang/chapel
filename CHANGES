@@ -2,6 +2,178 @@
 Release Changes List
 ====================
 
+*** STOPPED AT r14121 (2008-04-23 14:45:35)
+
+===========
+version 0.8
+===========
+
+Fifth preliminary release of Chapel Compiler, September 2008
+
+High-Level Themes:
+------------------
+
+Changes to Chapel Language:
+---------------------------
+- added support for param string comparisons, concatenation, and other ops
+- made the implicit 'setter' argument in var functions constant and foldable
+- all non-compound single-statement conditionals/loops now require then/do
+- made single-statement sync statements create a new scope
+- added support for a single-statement serial statement
+  e.g., "serial test { foo(); }"  =>  "serial test do foo();"
+- functions now require a block statement unless they only contain a return stmt
+- removed "opaque" from the list of reserved words--it is now a type like "int"
+- added the capability to declare generic formals for gen. classes with defaults
+  e.g., "x: range" expects a default range; "x: range(?)" expects a generic one
+- added the ability to query argument types without naming the queried type
+  e.g., "x: ?" rather than "x:?t"
+
+Newly Implemented Features:
+---------------------------
+- added support for .remove() on opaque domains
+
+Portability of code base:
+-------------------------
+
+Semantic Changes:
+-----------------
+- instantiation point for dynamically-dispatched methods has changed (?)
+
+Syntactic/Naming Changes:
+-------------------------
+
+Compiler Changes:
+-----------------
+- the compiler now requires CHPL_HOME to be set
+- on clauses are now evaluated for side effects when using the --local flag
+- added support for opaque types for use when interfacing with extern functions
+
+Runtime Library Changes:
+------------------------
+- all tasks in a cobegin are now set up before any start executing for pthreads
+- made the task that starts a cobegin/coforall help execute the component tasks
+- disabled the GASNet polling thread when using the portals implementation
+
+Documentation:
+--------------
+- improved --help descriptions of --[no-] flags
+- updated the man page
+- improved the specification of instantiated fns: visibility & point-of-inst.
+
+Example Codes:
+--------------
+- improved the taskParallel example to reduce the likelihood of races
+
+Standard Modules:
+-----------------
+
+Compiler Flags:
+---------------
+- made all optimization control flags into --[no-] flags
+- renamed --no-expand-iterators-inline-opt to --[no-]inline-iterators
+- renamed --no-single-loop-iterator-opt to --[no-]optimize-loop-iterators
+- added --[no-]dead-code-elimination to turn dead-code elimination off/on
+- added --[no-]live-analysis to turn live variable analysis off/on
+- removed the --chplhome flag
+- removed the --flow-analysis flag
+
+Generated Code Flags:
+---------------------
+- added a -b/--blockreport flag to help debug deadlocked pthread programs
+
+Bug Fixes/New Semantic Checks (for old semantics):
+--------------------------------------------------
+- fixed a subtle issue related to copying arguments into default constructors
+- made 1-tuple-style declarations illegal:  var (x) = ...;
+- fixed support for readXX() on single variables
+- fixed a bug in string comparisons
+- fixed a bug in which query syntax could access non-types/params from a class
+- added an error check to prevent iteration over a type
+- fixed a bug related to iterating over a single iterator class multiple times
+- fixed codegen problems related to running --baseline --dead-code-elimination
+- added a warning about cobegin statements with fewer than two statements
+- added some runtime checks to try and avoid integer wraparound in malloc sizes
+- fixed some subtle race conditions in the pthreads version of the runtime
+- fixed a bug with inferring the target compiler in a cross-compilation setting
+- fixed a subtle bug in the compiler's reference culling
+- fixed a bug that showed up when doing zippered iteration over 4+ expressions
+- added support for tuples of lvalues
+  e.g., "for (a,b) in (A,B)" where A and B are arrays
+- fixed some bugs with module uses polluting the visible function space
+- fixed a number of bugs related to generic function instantiation points
+- fixed a bug related to nested functions within initialize() methods
+- improved the resolution of module-local functions with respect to 'use'd ones
+
+Error Message Improvements:
+---------------------------
+- improved error messages related to iterators and promoted expressions
+- improved error messages related to bad tuple index types
+
+Compiler Analysis and Optimizations/Performance of Generated Code:
+------------------------------------------------------------------
+- made "here" into a per-locale variable, reducing communication
+
+Compiler Performance and Cleanup:
+---------------------------------
+- reimplemented the caching data structures used in function resolution
+- specialized parameter tuple indexing for performance and fewer special cases
+- removed dead code in the reference culling pass
+- applied reference propagation to functions just prior to inlining
+- removed dead code for inserting actual argument temps
+- optimized the verification pass by hoisting out back pointer checks
+- removed dead prototypes and functions
+- tightened up memory leaks in the compiler
+- removed an extraneous computation of symbol uses
+- removed def/use information from the Symbol class to save space
+- optimized reference propagation to build smaller use/def sets
+- optimized the scalar replacement pass to localize the iterative aspects
+- pruned default reference type constructors from function res. to save time
+- removed dead code based on GCOV runs
+- moved the prune pass prior to optimizations to save time
+- improved the performance of getVisibleFunctions
+- rewrote the compiler's symboltable
+- removed filename references from IR nodes to save space
+
+Generated Code:
+---------------
+
+Testing System:
+---------------
+- made the testing system set the CHPL_* environment variables if they aren't
+- made the test system generate its output using relative paths
+- made the test system execute .numlocales tests on 1 locale for CHPL_COMM=none
+- made the quicksort example do fewer iterations to save some time
+- fixed a bug in the testing system's "skipif" capability
+
+Internal:
+---------
+- added a promotion wrappers cache to avoid creating duplicate wrappers
+- removed where clauses after function resolution
+- removed unused special-case scalar replacement code for domain/array wrappers
+- made the --baseline flag into an aggregate flag
+- added an internal traceback capability to unravel inlined functions
+- changed module representation of CHPL_* variables from enums to strings
+- added support for compiler CHPL_* variables of type const char*
+- improved the filename/line# information for statementLevelSymbol calls
+- improved the set of live references added/omitted from iterator classes
+- changed the mechanism for specifying reserved symbol names needing mangling
+- moved the tuple _copy function from the compiler to the standard modules
+- improved the format of the --print-statistics flag and added summary info
+- removed leading underscores from runtime memory routines
+- replaced compute_sym_uses() with buildDefUseMaps() and for_defs/uses macros
+- added developer flag --extra-verification
+- refactored flattenFunctions to use gFns rather than creating a vector of fns
+- removed the def/use map in function resolution
+- refactored reference propagation to share code with scalar replacement
+- added debugging functionality to the scalar replacement pass
+- decoupled the visible functions data structure from the symbol table
+- added a rootModule that contains the program module but is not codegen'd
+- improved debug output for the gasnet communication layer
+- removed the need for the symboltable after scope resolution
+- added more reserved symbols to the reserved symbol names list
+- removed unused fields from internal classes
+
+
 ===========
 version 0.7
 ===========
