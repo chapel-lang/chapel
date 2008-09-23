@@ -660,8 +660,36 @@ class Block1DArr: BaseArray {
     // TODO: Would like to write this as follower += dom.low;
     //
     const followThis = follower + dom.low;
-    for i in followThis {
-      yield this(i);
+    //
+    // TODO: The following is a buggy hack that will only work when we're
+    // distributing across the entire Locales array.  I still think the
+    // locArr/locDoms arrays should be associative over locale values.
+    //
+    const myLocArr = locArr(here.id);
+    if (myLocArr.owns(followThis)) {
+      // we own all the elements we're following
+      //
+
+      //
+      // TODO: Want this, but local does not currently work within
+      // follower iterators:
+      //
+      //      local {
+        for i in followThis {
+          yield myLocArr.this(i);
+        }
+        //      }
+      //
+    } else {
+      writeln("Warning: doing expensive these iteration");
+      //
+      // we don't own all the elements we're following
+      //
+      // TODO: could do something smarter to only bring the non-local
+      // elements over.
+      for i in followThis {
+        yield this(i);
+      }
     }
   }
 
@@ -781,5 +809,14 @@ class LocBlock1DArr {
   //
   def numElements {
     return myElems.numElements;
+  }
+
+  // INTERNAL INTERFACE:
+
+  def owns(x) {
+    //
+    // TODO: When this is multidimensional need to do a reduction or something:
+    //
+    return locDom.myBlock.dim(1).boundsCheck(x.dim(1));
   }
 }
