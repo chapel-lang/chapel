@@ -31,6 +31,7 @@ class RandomStream {
         t46   = 2.0**46;
   const internalSeed = computeInternalSeed();
 
+  var lock$: sync bool = false;
   var sharedCursor = internalSeed:real;
   var sharedCount: int(64) = 1;
 
@@ -127,7 +128,7 @@ class RandomStream {
   def these(param tag: iterator, follower) where tag == iterator.follower {
     // make a local copy of the 'this' random stream class
     var locStream = new RandomStream(seed);
-    var val = locStream.getNth(follower.low + 1);
+    var val = locStream.getNth(follower.low + sharedCount);
     for i in follower {
       yield val;
       val = locStream.getNext();
@@ -135,17 +136,9 @@ class RandomStream {
     // 
     // Update the sharedCount of the original random stream class
     //
-    // TODO: this needs to be locked to avoid a subtle race
-    //       But really, we'd prefer some sort of setup/teardown for
-    //       followers that gets the indices being iterated over.
-    //       But since we're not really expecting this stream to
-    //       be particularly useful a second time anyway, I didn't
-    //       take this on right now.
-    /*
-    if (follower.high > sharedCount) {
-      sharedCount = follower.high;
-    }
-    */
+    lock$;
+    sharedCount += follower.numIndices;
+    lock$ = false;
   }
 
   /*  BLC: Would like to add something like this, but should
