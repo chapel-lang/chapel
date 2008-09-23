@@ -788,14 +788,6 @@ static void buildDefaultWriteFunction(ClassType* ct) {
   fn->retType = dtVoid;
 
   if (ct->classTag == CLASS_CLASS) {
-    BlockStmt* fwriteNil = new BlockStmt();
-    fwriteNil->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol("nil")));
-    fwriteNil->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
-    fn->insertAtTail(new CondStmt(new CallExpr("==", fn->_this, gNil),
-                                    fwriteNil));
-  }
-
-  if (ct->classTag == CLASS_CLASS) {
     fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol("{")));
   } else {
     fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol("(")));

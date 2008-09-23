@@ -289,11 +289,20 @@ class Writer {
   def lockWrite() return false;
   def unlockWrite() { }
   def write(args ...?n) {
+    def isNilObject(val) {
+      def helper(o: object) return o == nil;
+      def helper(o)         return false;
+      return helper(val);
+    }
+
     on this {
       var need_release: bool;
       need_release = lockWrite();
       for param i in 1..n do
-        args(i).writeThis(this);
+        if isNilObject(args(i)) then
+          "nil".writeThis(this);
+        else
+          args(i).writeThis(this);
       if need_release then
         unlockWrite();
     }

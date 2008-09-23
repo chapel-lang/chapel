@@ -50,10 +50,7 @@ class DefaultAssociativeDomain: BaseAssociativeDomain {
   // Standard Internal Domain Interface
   //
   def buildArray(type eltType) {
-    if (this == nil) then
-      return new DefaultAssociativeArray(eltType, idxType, dom=new DefaultAssociativeDomain(idxType, dist)); 
-    else 
-      return new DefaultAssociativeArray(eltType, idxType, dom=this); 
+    return new DefaultAssociativeArray(eltType, idxType, dom=this); 
   }
 
   def getIndices()

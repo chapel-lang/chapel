@@ -7,7 +7,7 @@ class D {
 class C {
   param rank: int;
   type t;
-  var d: D;
+  var d: D = new D();
 
   var n = 10;
   var Dom = [d(1)];

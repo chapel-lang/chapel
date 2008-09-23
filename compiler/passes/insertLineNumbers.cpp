@@ -75,6 +75,23 @@ insertLineNumber(CallExpr* call) {
   }
 }
 
+
+static bool isClassMethodCall(CallExpr* call) {
+  FnSymbol* fn = call->isResolved();
+  if (fn && fn->hasFlag(FLAG_METHOD) && fn->_this) {
+    if (ClassType* ct = toClassType(fn->_this->typeInfo())) {
+      if (fn->numFormals() > 0 &&
+          fn->getFormal(1)->typeInfo() == fn->_this->typeInfo()) {
+        if (ct->classTag == CLASS_CLASS || ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+
 void insertLineNumbers() {
   compute_call_sites();
 
@@ -84,7 +101,9 @@ void insertLineNumbers() {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
             call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
-            call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+            call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
+            call->isPrimitive(PRIMITIVE_GETCID) ||
+            isClassMethodCall(call)) {
           Expr* stmt = call->getStmtExpr();
           SET_LINENO(stmt);
           ClassType* ct = toClassType(call->get(1)->typeInfo());
