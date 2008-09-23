@@ -1,0 +1,2 @@
+var r = .. ..;
+writeln(r);

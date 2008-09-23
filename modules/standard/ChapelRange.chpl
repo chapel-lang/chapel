@@ -313,6 +313,8 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
 //
 def range.these() {
   if boundedType != BoundedRangeType.bounded {
+    if boundedType == BoundedRangeType.boundedNone then
+      halt("iteration over a range with no bounds");
     if stridable {
       if boundedType == BoundedRangeType.boundedLow then
         if stride < 0 then
