@@ -137,7 +137,15 @@ class RandomStream {
     // Update the sharedCount of the original random stream class
     //
     lock$;
-    sharedCount += follower.numIndices;
+    //
+    // TODO: eventually, we would like to do something like this, but
+    // the following doesn't work because one follower could do this
+    // increment before another has even started.  The number of
+    // regressions caused by this was greater than the number of
+    // tests that would benefit from this change, so I'm backing it out
+    // for now.
+    //
+    //    sharedCount += follower.numIndices;
     lock$ = false;
   }
 
