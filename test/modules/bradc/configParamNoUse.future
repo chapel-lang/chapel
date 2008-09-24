@@ -1,0 +1,16 @@
+bug: config params in a module that is not used
+
+Here is perhaps more evidence that we should require modules to be
+used before being used to disambiguate member names.  In this case,
+not using M1 before calling into its code that refers to a config
+param results in the message:
+
+./configParamNoUse.chpl:4: In function 'foo':
+./configParamNoUse.chpl:5: error: actual type is unknown or generic [callInfo.cpp:32]
+
+Could be fixable, but the easiest fix is to use M1 before doing
+this call.
+
+The Random module includes an annoying "use" call in its top-level
+fillRandom() function for this reason now.  Once we resolve this
+issue, it can be removed.
