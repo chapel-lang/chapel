@@ -64,10 +64,14 @@ def initVectors(B, C) {
   // TODO: should write a fillRandom() implementation that does this
   //
   var randlist = new RandomStream(seed);
+  randlist.fillRandom(B);
+  randlist.fillRandom(C);
+  /*
   forall (b, r) in (B, randlist) do
     b = r;
   forall (c, r) in (C, randlist) do
     c = r;
+  */
 
   if (printArrays) {
     writeln("B is: ", B, "\n");

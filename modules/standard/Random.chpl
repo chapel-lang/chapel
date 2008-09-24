@@ -11,6 +11,7 @@
 
 use Time;
 
+config param debugParRandom: bool = false;
 
 class SeedGeneratorClass {
   def clockMS {
@@ -74,6 +75,7 @@ class RandomStream {
     if (n <= 0) then 
       halt("RandomStream.skipToNth() can only be called with positive values");
     initCursorVal();
+    sharedCount = n;
     n -= 1;
     var t = arand;
     var retval = arand;
@@ -84,21 +86,24 @@ class RandomStream {
       retval = randlc(t, t);
       n = i;
     }
-    sharedCount = n;
   }
 
   // n is assumed to be 1..
   def getNth(n : integral) {
     if (n <= 0) then 
-      halt("RandomStream.getNth() can only be called with a positive value");
+      halt("RandomStream.getNth() can only be called with a positive value, received: ", n);
     skipToNth(n);
     return getNext();
   }
 
 
-  def fillRandom(x: [] real) {
-    for i in x.domain {
-      x(i) = getNext();
+  def fillRandom(X: [] real) {
+    lock$;
+    const startCount: int(64) = sharedCount;
+    sharedCount = startCount + X.numElements;
+    lock$ = false;
+    forall (x, r) in (X, chpl__these(startCount, X.numElements)) {
+      x = r;
     }
   }
 
@@ -109,44 +114,39 @@ class RandomStream {
     }
   }
 
-  def these() {
-    halt("Need support for zipperable unbounded sequential iterators");
-    yield getNext();
+  //
+  // The following are internal-only iterators used by the fillRandom
+  // routine.  We would like to support general leaders/followers on
+  // RandomStreams, but the update to the shared cursor (sharedCount)
+  // is not possible to do in a safe way with our current iterator
+  // interface.  Future work should help with this.
+  // 
+  def chpl__these(startAt: int(64), numElements) {
+    skipToNth(startAt);
+    for i in 1..numElements {
+      const val = getNext();
+      yield val;
+    }
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
-    var D: domain(1, int(64)) = [1..10:int(64)];
+  def chpl__these(param tag: iterator, startAt: int(64), numElements) 
+      where tag == iterator.leader {
+    var D: domain(1, int(64)) = [1..numElements:int(64)];
     halt("Someone's trying to call the leader");
     yield D;
   }
 
-  //
-  // TODO: This will only work one time, and needs to start computing
-  //       from the current value of sharedCount rather than assuming
-  //       that the follower's indices are reasonable input for getNth
-  //
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  def chpl__these(param tag: iterator, follower, startAt: int(64), numElements)
+      where tag == iterator.follower {
     // make a local copy of the 'this' random stream class
     var locStream = new RandomStream(seed);
-    var val = locStream.getNth(follower.low + sharedCount);
+    locStream.skipToNth(follower.low + startAt);
     for i in follower {
+      if (debugParRandom) then
+        writeln("Doing iteration ", format("#####", i+1), " on locale ", here.id);
+      const val = locStream.getNext();
       yield val;
-      val = locStream.getNext();
     }
-    // 
-    // Update the sharedCount of the original random stream class
-    //
-    lock$;
-    //
-    // TODO: eventually, we would like to do something like this, but
-    // the following doesn't work because one follower could do this
-    // increment before another has even started.  The number of
-    // regressions caused by this was greater than the number of
-    // tests that would benefit from this change, so I'm backing it out
-    // for now.
-    //
-    //    sharedCount += follower.numIndices;
-    lock$ = false;
   }
 
   /*  BLC: Would like to add something like this, but should
@@ -167,6 +167,9 @@ class RandomStream {
 
 
 def fillRandom(x:[], initseed: int(64) = SeedGenerator.clockMS) {
+  use Random; // This is ridiculous, but only required for modules
+              // that call Random.fillRandom without use-ing Random
+              // like test/modules/standard/stonea/fillRandom.chpl
   var randNums = new RandomStream(initseed);
 
   randNums.fillRandom(x); 
