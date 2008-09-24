@@ -195,7 +195,11 @@ checkReturnPaths(FnSymbol* fn) {
 void
 checkResolved(void) {
   forv_Vec(FnSymbol, fn, gFns) {
-      checkReturnPaths(fn);
+    checkReturnPaths(fn);
+    if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+        !fn->hasFlag(FLAG_ITERATOR_FN) &&
+        fn->retType->defaultConstructor->defPoint->parentSymbol == fn)
+      USR_FATAL(fn, "functions cannot return nested iterators or loop expressions");
   }
 
   forv_Vec(TypeSymbol, type, gTypes) {
