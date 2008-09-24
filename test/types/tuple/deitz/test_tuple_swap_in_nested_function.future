@@ -1,0 +1,1 @@
+bug: flattening of nested functions incorrectly introduces copies
