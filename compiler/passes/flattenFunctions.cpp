@@ -59,7 +59,9 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
             CallExpr* call = toCallExpr(se->parentExpr);
             if (type == sym->type ||
                 (call && call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == se) ||
-
+                (call && call->isPrimitive(PRIMITIVE_SET_MEMBER) && call->get(1) == se) ||
+                (call && call->isPrimitive(PRIMITIVE_GET_MEMBER)) ||
+                (call && call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) ||
                 //
                 // let GET_LOCALE work apply to the reference
                 //
