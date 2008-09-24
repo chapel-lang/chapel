@@ -15,11 +15,6 @@
 linux and general regressions
 =============================
 
-Random number generator is no longer parallel-safe (09/23/08)
--------------------------------------------------------------
-[Error matching program output for modules/standard/Random/bradc/parRandom2]
-[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-domblock64]
-
 problem with new "return iterators" change? (09/10/08)
 ------------------------------------------------------
 [Error matching compiler output for users/thom/arrArgIn-function]
@@ -152,12 +147,10 @@ opts-specific tests
 
 --no-local
 ----------
-[Error matching compiler output for release/examples/genericStack]
 [Error matching compiler output for release/examples/iterators]
 
 --baseline --no-local
 ---------------------
-[Error matching compiler output for release/examples/genericStack]
 [Error matching compiler output for release/examples/iterators]
 
 
