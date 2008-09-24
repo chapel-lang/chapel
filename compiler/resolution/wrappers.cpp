@@ -225,6 +225,7 @@ defaultWrap(FnSymbol* fn,
         defaults.add(formal);
     }
     wrapper = buildDefaultWrapper(fn, &defaults, &paramMap, isSquare);
+    resolveFormals(wrapper);
 
     // update actualFormals for use in orderWrap
     int j = 1;
@@ -300,6 +301,7 @@ orderWrap(FnSymbol* fn,
   }
   if (order_wrapper_required) {
     fn = buildOrderWrapper(fn, &formals_to_formals, isSquare);
+    resolveFormals(fn);
   }
   return fn;
 }
@@ -401,8 +403,10 @@ coercionWrap(FnSymbol* fn, CallInfo* info) {
       }
     }
   }
-  if (coerce)
+  if (coerce) {
     fn = buildCoercionWrapper(fn, &subs, &coercions, info->call->square);
+    resolveFormals(fn);
+  }
   return fn;  
 }
 

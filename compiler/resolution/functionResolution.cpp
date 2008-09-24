@@ -372,11 +372,12 @@ resolveFormals(FnSymbol* fn) {
       //
       // change type of this on record methods to reference type
       //
-      if (formal->intent == INTENT_INOUT ||
-          formal->intent == INTENT_OUT ||
-          (formal == fn->_this &&
-           (isUnionType(formal->type) ||
-            isRecordType(formal->type) || fn->hasFlag(FLAG_REF_THIS)))) {
+      if (!formal->type->symbol->hasFlag(FLAG_REF) &&
+          (formal->intent == INTENT_INOUT ||
+           formal->intent == INTENT_OUT ||
+           (formal == fn->_this &&
+            (isUnionType(formal->type) ||
+             isRecordType(formal->type) || fn->hasFlag(FLAG_REF_THIS))))) {
         makeRefType(formal->type);
         formal->type = formal->type->refType;
       }
