@@ -649,10 +649,14 @@ class Block1DArr: BaseArray {
   // example for general notes on the approach
   //
   def these(param tag: iterator) where tag == iterator.leader {
+    //
+    // TODO: Rewrite this to reuse more of the global domain iterator
+    // logic?  (e.g., can we forward the forall to the global domain
+    // somehow?
+    //
     coforall locDom in dom.locDoms do
       on locDom do
-        for blk in dom.these(iterator.leader) do
-          yield blk;
+        yield locDom.myBlock - dom.whole.low;
   }
 
   def these(param tag: iterator, follower) var where tag == iterator.follower {
