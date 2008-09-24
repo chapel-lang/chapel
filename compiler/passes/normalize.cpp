@@ -455,8 +455,8 @@ void normalize(void) {
   checkConfigParams();
   checkUseBeforeDefs();
   flattenGlobalFunctions();
-  heapAllocateGlobals();
-  heapAllocateLocals();
+  if (0) heapAllocateGlobals();
+  if (0) heapAllocateLocals();
   insertUseForExplicitModuleCalls();
 
   // perform some checks on destructors

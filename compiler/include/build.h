@@ -29,7 +29,8 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  BlockStmt* body);
 BlockStmt* buildForLoopStmt(Expr* indices,
                             Expr* iterator,
-                            BlockStmt* body);
+                            BlockStmt* body,
+                            bool coforall = false);
 BlockStmt* buildForallLoopStmt(Expr* indices,
                                Expr* iterator,
                                BlockStmt* body);

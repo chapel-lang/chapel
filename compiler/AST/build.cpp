@@ -410,7 +410,8 @@ buildForLoopExpr(Expr* indices, Expr* iterator, Expr* expr, Expr* cond) {
 static void
 destructureIndices(BlockStmt* block,
                    BaseAST* indices,
-                   Expr* init) {
+                   Expr* init,
+                   bool coforall) {
   if (CallExpr* call = toCallExpr(indices)) {
     if (call->isNamed("_build_tuple")) {
       int i = 1;
@@ -422,7 +423,8 @@ destructureIndices(BlockStmt* block,
           }
         }
         destructureIndices(block, actual,
-                           new CallExpr(init->copy(), new_IntSymbol(i)));
+                           new CallExpr(init->copy(), new_IntSymbol(i)),
+                           coforall);
         i++;
       }
     }
@@ -432,9 +434,13 @@ destructureIndices(BlockStmt* block,
       block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, init));
       block->insertAtHead(new DefExpr(var));
       var->addFlag(FLAG_INDEX_VAR);
+      if (coforall)
+        var->addFlag(FLAG_HEAP_ALLOCATE);
     } else {
       block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, sym->var, init));
       sym->var->addFlag(FLAG_INDEX_VAR);
+      if (coforall)
+        sym->var->addFlag(FLAG_HEAP_ALLOCATE);
     }
   }
 }
@@ -457,7 +463,8 @@ checkIndices(BaseAST* indices) {
 
 BlockStmt* buildForLoopStmt(Expr* indices,
                             Expr* iteratorExpr,
-                            BlockStmt* body) {
+                            BlockStmt* body,
+                            bool coforall) {
   //
   // insert temporary index when elided by user
   //
@@ -484,7 +491,7 @@ BlockStmt* buildForLoopStmt(Expr* indices,
     new CallExpr(PRIMITIVE_MOVE, index,
       new CallExpr("iteratorIndex", iterator)),
     BLOCK_TYPE));
-  destructureIndices(body, indices, new SymExpr(index));
+  destructureIndices(body, indices, new SymExpr(index), coforall);
   body->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, index, iterator);
 
   body->insertAtTail(new DefExpr(continueLabel));
@@ -529,7 +536,7 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
   followerBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, followerIterator, new CallExpr("_toFollower", iterator, leaderIndexCopy)));
   followerBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, followerIndex, new CallExpr("iteratorIndex", followerIterator)), BLOCK_TYPE));
   BlockStmt* followerBody = new BlockStmt(body);
-  destructureIndices(followerBody, indices, new SymExpr(followerIndex));
+  destructureIndices(followerBody, indices, new SymExpr(followerIndex), false);
   followerBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, followerIndex, followerIterator);
   followerBlock->insertAtTail(followerBody);
 
@@ -566,7 +573,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
   beginBlk->blockInfo = new CallExpr(PRIMITIVE_BLOCK_COFORALL);
   beginBlk->insertAtHead(body);
   beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-  BlockStmt* block = buildForLoopStmt(indices, iterator, beginBlk);
+  BlockStmt* block = buildForLoopStmt(indices, iterator, beginBlk, true);
   block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
   block->insertAtHead(new DefExpr(coforallCount));
   block->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, coforallCount));

@@ -547,6 +547,8 @@ codegen_config(FILE* outfile) {
           type = type->getField("addr")->type;
         if (type->symbol->hasFlag(FLAG_HEAP))
           type = type->getField("_val")->type;
+        if (type->symbol->hasFlag(FLAG_NEW_HEAP_TYPE))
+          type = type->getField("value")->type;
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
           type = type->getField("addr")->type;
         fprintf(outfile, type->symbol->name);

@@ -54,6 +54,7 @@ enum Flag {
   FLAG_EXTERN, // extern variables, types, and functions
   FLAG_GENERIC, // generic types and functions
   FLAG_HEAP,
+  FLAG_HEAP_ALLOCATE,
   FLAG_INDEX_VAR,
   FLAG_INLINE,
   FLAG_INLINE_ITERATOR, // iterators that are always inlined, e.g., leaders
@@ -68,6 +69,7 @@ enum Flag {
   FLAG_MAYBE_PARAM, // symbol can resolve to a param
   FLAG_MAYBE_TYPE, // symbol can resolve to a type
   FLAG_METHOD, // function that is a method
+  FLAG_NEW_HEAP_TYPE,
   FLAG_NO_DEFAULT_FUNCTIONS,
   FLAG_NO_FORMAL_TMP,
   FLAG_NO_HEAP_ALLOCATION,

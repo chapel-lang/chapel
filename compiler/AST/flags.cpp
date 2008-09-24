@@ -49,6 +49,7 @@ initFlags() {
   defineFlag(FLAG_EXTERN, "extern");
   defineFlag(FLAG_GENERIC, "generic");
   defineFlag(FLAG_HEAP, "heap");
+  defineFlag(FLAG_HEAP_ALLOCATE, "heap allocate");
   defineFlag(FLAG_INDEX_VAR, "index var");
   defineFlag(FLAG_INLINE, "inline");
   defineFlag(FLAG_INLINE_ITERATOR, "inline iterator");
@@ -63,6 +64,7 @@ initFlags() {
   defineFlag(FLAG_MAYBE_PARAM, "maybe param");
   defineFlag(FLAG_MAYBE_TYPE, "maybe type");
   defineFlag(FLAG_METHOD, "method");
+  defineFlag(FLAG_NEW_HEAP_TYPE, "new heap type");
   defineFlag(FLAG_NO_DEFAULT_FUNCTIONS, "no default functions");
   defineFlag(FLAG_NO_FORMAL_TMP, "no formal tmp");
   defineFlag(FLAG_NO_HEAP_ALLOCATION, "no heap allocation");

@@ -152,8 +152,266 @@ insertEndCount(FnSymbol* fn,
 }
 
 
+static ClassType*
+buildHeapType(Type* type) {
+  static Map<Type*,ClassType*> heapTypeMap;
+  if (heapTypeMap.get(type))
+    return heapTypeMap.get(type);
+
+  ClassType* heap = new ClassType(CLASS_CLASS);
+  TypeSymbol* ts = new TypeSymbol(astr("heap_", type->symbol->cname), heap);
+  ts->addFlag(FLAG_NO_OBJECT);
+  ts->addFlag(FLAG_NEW_HEAP_TYPE);
+  theProgram->block->insertAtTail(new DefExpr(ts));
+  heap->fields.insertAtTail(new DefExpr(new VarSymbol("value", type)));
+  heapTypeMap.put(type, heap);
+  return heap;
+}
+
+
+static void
+makeHeapAllocations() {
+  Vec<Symbol*> refSet;
+  Vec<Symbol*> refVec;
+  Vec<Symbol*> varSet;
+  Vec<Symbol*> varVec;
+
+  compute_call_sites();
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(defMap, useMap);
+
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_ON)) {
+      for_formals(formal, fn) {
+        if (formal->type->symbol->hasFlag(FLAG_REF)) {
+          refSet.set_add(formal);
+          refVec.add(formal);
+        }
+      }
+    }
+  }
+
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (def->sym->hasFlag(FLAG_HEAP_ALLOCATE)) {
+        if (def->sym->type->symbol->hasFlag(FLAG_REF)) {
+          refSet.set_add(def->sym);
+          refVec.add(def->sym);
+        } else {
+          varSet.set_add(def->sym);
+          varVec.add(def->sym);
+        }
+      } else if (!fLocal &&
+                 isModuleSymbol(def->parentSymbol) &&
+                 def->parentSymbol != rootModule &&
+                 isVarSymbol(def->sym) &&
+                 !def->sym->hasFlag(FLAG_PRIVATE)) {
+        if (def->sym->hasFlag(FLAG_CONST) &&
+            (is_int_type(def->sym->type) ||
+             is_uint_type(def->sym->type) ||
+             is_real_type(def->sym->type) ||
+             def->sym->type == dtBool)) {
+          // replicate global const of primitive type
+          INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
+          for_defs(se, defMap, def->sym) {
+            se->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_PRIVATE_BROADCAST, def->sym));
+          }
+        } else {
+          // put other global constants and all global variables on the heap
+          varSet.set_add(def->sym);
+          varVec.add(def->sym);
+        }
+      }
+    }
+  }
+
+  forv_Vec(Symbol, ref, refVec) {
+    if (ArgSymbol* arg = toArgSymbol(ref)) {
+      FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
+      forv_Vec(CallExpr, call, *fn->calledBy) {
+        SymExpr* se = NULL;
+        for_formals_actuals(formal, actual, call) {
+          if (formal == arg)
+            se = toSymExpr(actual);
+        }
+        INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
+        if (!refSet.set_in(se->var)) {
+          refSet.set_add(se->var);
+          refVec.add(se->var);
+        }
+      }
+    } else if (VarSymbol* var = toVarSymbol(ref)) {
+      INT_ASSERT(defMap.get(var)->n == 1);
+      for_defs(def, defMap, var) {
+        INT_ASSERT(def);
+        if (CallExpr* call = toCallExpr(def->parentExpr)) {
+          if (call->isPrimitive(PRIMITIVE_MOVE)) {
+            if (CallExpr* rhs = toCallExpr(call->get(2))) {
+              if (rhs->isPrimitive(PRIMITIVE_SET_REF)) {
+                SymExpr* se = toSymExpr(rhs->get(1));
+                INT_ASSERT(se);
+                if (!varSet.set_in(se->var)) {
+                  varSet.set_add(se->var);
+                  varVec.add(se->var);
+                }
+              } else if (rhs->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+                         rhs->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+                SymExpr* se = toSymExpr(rhs->get(1));
+                INT_ASSERT(se);
+                if (!varSet.set_in(se->var)) {
+                  varSet.set_add(se->var);
+                  varVec.add(se->var);
+                }
+              }
+              //
+              // Otherwise assume reference is to something that is
+              // already on the heap!  This is concerning...  SJD:
+              // Build a future that returns a reference in an
+              // iterator to something that is not on the heap
+              // (including not in an array).
+              //
+              // The alternative to making this assumption is to
+              // follow the returned reference (assuming this is a
+              // function call) through the function and make sure
+              // that whatever it returns is on the heap.  Then if we
+              // eventually see a GET_ARRAY primitive, we know it is
+              // already on the heap.
+              //
+              // To debug this case, add an else INT_FATAL here.
+              //
+            } else if (SymExpr* rhs = toSymExpr(call->get(2))) {
+              INT_ASSERT(rhs->var->type->symbol->hasFlag(FLAG_REF));
+              if (!refSet.set_in(rhs->var)) {
+                refSet.set_add(rhs->var);
+                refVec.add(rhs->var);
+              }
+            } else
+              INT_FATAL(ref, "unexpected case");
+          } else
+            INT_FATAL(ref, "unexpected case");
+        } else
+          INT_FATAL(ref, "unexpected case");
+      }
+    }
+    //    ref->type = buildHeapType(getValueType(ref->type));
+  }
+
+  forv_Vec(Symbol, var, varVec) {
+    INT_ASSERT(!var->type->symbol->hasFlag(FLAG_REF));
+
+    if (ArgSymbol* arg = toArgSymbol(var)) {
+      VarSymbol* tmp = newTemp(var->type);
+      varSet.set_add(tmp);
+      varVec.add(tmp);
+      SymExpr* firstDef = new SymExpr(tmp);
+      arg->getFunction()->insertAtHead(new CallExpr(PRIMITIVE_MOVE, firstDef, arg));
+      addDef(defMap, firstDef);
+      arg->getFunction()->insertAtHead(new DefExpr(tmp));
+      for_defs(def, defMap, arg) {
+        def->var = tmp;
+        addDef(defMap, def);
+      }
+      for_uses(use, useMap, arg) {
+        use->var = tmp;
+        addUse(useMap, use);
+      }
+      continue;
+    }
+    ClassType* heapType = buildHeapType(var->type);
+    bool first = true;
+
+    //
+    // global heap variables are put on the heap during program startup
+    //
+    if (isModuleSymbol(var->defPoint->parentSymbol)) {
+      //      chpl_main->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_CHPL_ALLOC, heapType->symbol, new_StringSymbol("heap class"))));
+      first = false;
+    }
+
+    //
+    // handle variables with no definitions
+    //  temporaries for destructured indices
+    //
+    if (!defMap.get(var) || defMap.get(var)->n == 0) {
+      var->defPoint->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_CHPL_ALLOC, heapType->symbol, new_StringSymbol("heap class"))));
+    }
+
+    for_defs(def, defMap, var) {
+
+      // ack!! this is troublesome: we're assuming that the first
+      // definition in the defs vector is the initial definition
+      if (first) {
+        first = false;
+        CallExpr* move = toCallExpr(def->parentExpr);
+        INT_ASSERT(move && move->isPrimitive(PRIMITIVE_MOVE));
+        VarSymbol* tmp = newTemp(var->type);
+        move->insertBefore(new DefExpr(tmp));
+        move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, move->get(2)->remove()));
+        move->insertAtTail(new CallExpr(PRIMITIVE_CHPL_ALLOC, heapType->symbol, new_StringSymbol("heap class")));
+        move->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, move->get(1)->copy(), heapType->getField(1), tmp));
+      } else if (CallExpr* call = toCallExpr(def->parentExpr)) {
+        if (call->isPrimitive(PRIMITIVE_MOVE)) {
+          VarSymbol* tmp = newTemp(var->type);
+          call->insertBefore(new DefExpr(tmp));
+          call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call->get(2)->remove()));
+          call->replace(new CallExpr(PRIMITIVE_SET_MEMBER, call->get(1)->copy(), heapType->getField(1), tmp));
+        } else {
+          VarSymbol* tmp = newTemp(var->type);
+          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, def->var, heapType->getField(1))));
+          def->replace(new SymExpr(tmp));
+        }
+      } else
+        INT_FATAL(var, "unexpected case");
+    }
+
+    for_uses(use, useMap, var) {
+      if (CallExpr* call = toCallExpr(use->parentExpr)) {
+        if (call->isPrimitive(PRIMITIVE_SET_REF)) {
+          CallExpr* move = toCallExpr(call->parentExpr);
+          INT_ASSERT(move && move->isPrimitive(PRIMITIVE_MOVE));
+          if (move->get(1)->typeInfo() == heapType) {
+            call->replace(use->copy());
+          } else {
+            call->replace(new CallExpr(PRIMITIVE_GET_MEMBER, use->var, heapType->getField(1)));
+          }
+        } else if (call->isResolved()) {
+          if (actual_to_formal(use)->type == heapType) {
+            // do nothing
+          } else {
+            VarSymbol* tmp = newTemp(var->type);
+            call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+            call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, use->var, heapType->getField(1))));
+            use->replace(new SymExpr(tmp));
+          }
+        } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+                   call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
+                   call->isPrimitive(PRIMITIVE_SET_MEMBER) &&
+                   call->get(1) == use) {
+          VarSymbol* tmp = newTemp(var->type->refType);
+          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, use->var, heapType->getField(1))));
+          use->replace(new SymExpr(tmp));
+        } else {
+          VarSymbol* tmp = newTemp(var->type);
+          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, use->var, heapType->getField(1))));
+          use->replace(new SymExpr(tmp));
+        }
+      } else if (use->parentExpr)
+        INT_FATAL(var, "unexpected case");
+    }
+
+    var->type = heapType;
+  }
+}
+
+
 void
 parallel(void) {
+  makeHeapAllocations();
+
   compute_call_sites();
 
   Vec<FnSymbol*> queue;
@@ -421,6 +679,19 @@ insertWideReferences(void) {
   if (fLocal) {
     heapAllocateGlobals->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
     return;
+  }
+
+  Vec<Symbol*> heapVars;
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (!fLocal &&
+          isModuleSymbol(def->parentSymbol) &&
+          def->parentSymbol != rootModule &&
+          isVarSymbol(def->sym) &&
+          def->sym->type->symbol->hasFlag(FLAG_NEW_HEAP_TYPE)) {
+        heapVars.add(def->sym);
+      }
+    }
   }
 
   //
@@ -701,7 +972,6 @@ insertWideReferences(void) {
   Map<Symbol*,Vec<SymExpr*>*> useMap;
   buildDefUseMaps(defMap, useMap); // for "ack!!" below
 
-  Vec<Symbol*> heapVars;
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
 
@@ -798,7 +1068,6 @@ insertWideReferences(void) {
   BlockStmt* block = new BlockStmt();
   forv_Vec(Symbol, sym, heapVars) {
     block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, sym, new CallExpr(PRIMITIVE_CHPL_ALLOC, sym->type->getField("addr")->type->symbol, new_StringSymbol("global var heap allocation"))));
-    block->insertAtTail(new CallExpr(PRIMITIVE_SETCID, sym));
   }
   heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmpBool), block));
   int i = 0;

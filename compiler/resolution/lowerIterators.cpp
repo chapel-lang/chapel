@@ -206,6 +206,13 @@ expand_for_loop(CallExpr* call) {
     Vec<Symbol*> iterators;
     Vec<Symbol*> indices;
     setupSimultaneousIterators(iterators, indices, iterator, index, block);
+
+    //
+    // move declaration of index into loop body so that it is
+    // allocated on the heap for each iteration if necessary
+    //
+    block->insertAtHead(index->defPoint->remove());
+
     VarSymbol* firstCond = NULL;
     for (int i = 0; i < iterators.n; i++) {
       Vec<Type*> children;
