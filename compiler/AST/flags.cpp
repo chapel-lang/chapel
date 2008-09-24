@@ -64,10 +64,8 @@ initFlags() {
   defineFlag(FLAG_MAYBE_PARAM, "maybe param");
   defineFlag(FLAG_MAYBE_TYPE, "maybe type");
   defineFlag(FLAG_METHOD, "method");
-  defineFlag(FLAG_NEW_HEAP_TYPE, "new heap type");
   defineFlag(FLAG_NO_DEFAULT_FUNCTIONS, "no default functions");
   defineFlag(FLAG_NO_FORMAL_TMP, "no formal tmp");
-  defineFlag(FLAG_NO_HEAP_ALLOCATION, "no heap allocation");
   defineFlag(FLAG_NO_OBJECT, "no object");
   defineFlag(FLAG_NO_PARENS, "no parens");
   defineFlag(FLAG_NO_WIDE_CLASS, "no wide class");

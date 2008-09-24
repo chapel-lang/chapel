@@ -166,7 +166,6 @@ static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
   if (value->hasFlag(FLAG_SYNC) &&
       strcmp(fn->name, "_construct__tuple") &&
-      !fn->hasFlag(FLAG_HEAP) &&
       !fn->hasFlag(FLAG_REF)) {
     if (!fn->hasFlag(FLAG_SYNC) ||
         (fn->hasFlag(FLAG_METHOD) && (value->type->instantiatedFrom != fn->_this->type))) {

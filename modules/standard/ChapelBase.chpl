@@ -573,25 +573,6 @@ class _ddata {
 }
 
 //
-// heap class for allocating locals on the heap in support of begin-
-// and on-statements
-//
-pragma "heap"
-class _heap {
-  var _val;
-}
-
-pragma "heap" def _heapAlloc(x) return new _heap(x);
-pragma "heap" def _heapAccess(x) var return x._val;
-
-pragma "heap" def _heapAllocGlobal(x) return new _heap(x);
-
-pragma "heap" def _heapAllocConstGlobal(x) where _isSimpleScalarType(x.type) return x;
-pragma "heap" def _heapAllocConstGlobal(x) where !_isSimpleScalarType(x.type) return new _heap(x);
-pragma "heap" def _heapAccessConstGlobal(x) where _isSimpleScalarType(x.type) return x;
-pragma "heap" def _heapAccessConstGlobal(x) where !_isSimpleScalarType(x.type) return x._val;
-
-//
 // internal reference type
 //
 pragma "ref"

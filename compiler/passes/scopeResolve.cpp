@@ -431,8 +431,6 @@ static void build_type_constructor(ClassType* ct) {
 
   if (ct->symbol->hasFlag(FLAG_REF))
     fn->addFlag(FLAG_REF);
-  if (ct->symbol->hasFlag(FLAG_HEAP))
-    fn->addFlag(FLAG_HEAP);
   if (ct->symbol->hasFlag(FLAG_TUPLE)) {
     fn->addFlag(FLAG_TUPLE);
     fn->addFlag(FLAG_INLINE);
@@ -568,8 +566,6 @@ static void build_constructor(ClassType* ct) {
 
   if (ct->symbol->hasFlag(FLAG_REF))
     fn->addFlag(FLAG_REF);
-  if (ct->symbol->hasFlag(FLAG_HEAP))
-    fn->addFlag(FLAG_HEAP);
   if (ct->symbol->hasFlag(FLAG_TUPLE)) {
     fn->addFlag(FLAG_TUPLE);
     fn->addFlag(FLAG_INLINE);

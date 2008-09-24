@@ -161,7 +161,7 @@ buildHeapType(Type* type) {
   ClassType* heap = new ClassType(CLASS_CLASS);
   TypeSymbol* ts = new TypeSymbol(astr("heap_", type->symbol->cname), heap);
   ts->addFlag(FLAG_NO_OBJECT);
-  ts->addFlag(FLAG_NEW_HEAP_TYPE);
+  ts->addFlag(FLAG_HEAP);
   theProgram->block->insertAtTail(new DefExpr(ts));
   heap->fields.insertAtTail(new DefExpr(new VarSymbol("value", type)));
   heapTypeMap.put(type, heap);
@@ -688,7 +688,7 @@ insertWideReferences(void) {
           isModuleSymbol(def->parentSymbol) &&
           def->parentSymbol != rootModule &&
           isVarSymbol(def->sym) &&
-          def->sym->type->symbol->hasFlag(FLAG_NEW_HEAP_TYPE)) {
+          def->sym->type->symbol->hasFlag(FLAG_HEAP)) {
         heapVars.add(def->sym);
       }
     }

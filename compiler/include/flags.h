@@ -69,10 +69,8 @@ enum Flag {
   FLAG_MAYBE_PARAM, // symbol can resolve to a param
   FLAG_MAYBE_TYPE, // symbol can resolve to a type
   FLAG_METHOD, // function that is a method
-  FLAG_NEW_HEAP_TYPE,
   FLAG_NO_DEFAULT_FUNCTIONS,
   FLAG_NO_FORMAL_TMP,
-  FLAG_NO_HEAP_ALLOCATION,
   FLAG_NO_OBJECT,
   FLAG_NO_PARENS, // function without parentheses
   FLAG_NO_WIDE_CLASS,
