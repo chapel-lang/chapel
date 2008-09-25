@@ -287,6 +287,7 @@ buildIterator2Leader(IteratorInfo* ii) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, leader, ii->leader->icType->getField(i+1), tmp));
     j++;
   }
+  fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, leader, ii->leader->icType->getField("more"), new_IntSymbol(1)));
 
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, leader));
   ii->iterator2leader = fn;
@@ -338,6 +339,7 @@ buildIterator2Follower(IteratorInfo* ii) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, follower, ii->follower->icType->getField(i+1), tmp));
     j++;
   }
+  fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, follower, ii->follower->icType->getField("more"), new_IntSymbol(1)));
 
   fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, follower));
   ii->iterator2follower = fn;
