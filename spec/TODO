@@ -41,3 +41,43 @@
 * Document domain operators: translate, interior, exterior, etc.
 
 * Document +, - on domains
+
+* do we document that argument names must match for dynamic dispatch to apply?
+
+* did we document the instantiation point of functions that are only
+  instantiated via dynamic dispatch (14070)
+
+From meeting when David was here Sep 2008
+=========================================
+
+cleanups
+--------
+* dom & arr chapter (bradc)
+* iterators and promotion chapter -- unify
+  - define "promoted expr"
+* add compile-time machinery chapter
+  - param stuff
+  - type fns
+  - comp warning/error
+* distributions text
+* memory consistency model text
+
+updates/changes
+---------------
+* add 'delete'
+* type functions
+* rename 17.5.1
+* rename "implicit modules"
+* add # to operators list and expressions section
+* range promotion
+* ranges with opposite-signed strides slicing comment -- check for accuracy
+* remove 1D cases from high/low function definitions
+* tease "members" apart from "predefined fns" in ranges/domains/arrays
+* arr.domain -- fix return type
+* return iterators from functions text (or don't expose to user?)
+* hoist Standard/Math m odules to initial section "implicitly included"
+* describe the default distributions
+* local block
+* 17.8 top-level content
+
+=========================================
