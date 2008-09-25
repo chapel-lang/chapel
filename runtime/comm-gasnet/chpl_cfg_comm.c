@@ -1,4 +1,7 @@
+#include <signal.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <sys/utsname.h>
 #include "chplrt.h"
 #include "chplcomm.h"
 #include "chplmem.h"
@@ -8,8 +11,6 @@
 #define GASNET_PAR 1
 #include "gasnet.h"
 
-#include <stdint.h>
-#include <signal.h>
 
 #define CHPL_DIST_DEBUG 0
 
@@ -223,8 +224,10 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
 }
 
 void _chpl_comm_rollcall(void) {
-  chpl_msg(2, "executing on locale %d of %d locale(s)\n", _localeID, 
-            _numLocales);
+  struct utsname utsinfo;
+  uname(&utsinfo);
+  chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", _localeID, 
+           _numLocales, utsinfo.nodename);
 }
 
 void _chpl_comm_set_malloc_type(void) {
