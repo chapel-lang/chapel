@@ -24,9 +24,9 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const ProblemDist = new Block1DDist(bbox=[1..m], targetLocales=Locales);
+  const BlockDist = new Block1DDist(bbox=[1..m], targetLocales=Locales);
 
-  const ProblemSpace: domain(1, int(64)) distributed ProblemDist = [1..m];
+  const ProblemSpace: domain(1, int(64)) distributed BlockDist = [1..m];
 
   var A, B, C: [ProblemSpace] elemType;
 
@@ -61,9 +61,8 @@ def printConfiguration() {
 
 
 def initVectors(B, C) {
-  // TODO: should write a fillRandom() implementation that does this
-  //
   var randlist = new RandomStream(seed);
+
   randlist.fillRandom(B);
   randlist.fillRandom(C);
 
@@ -98,5 +97,3 @@ def printResults(successful, execTimes) {
     writeln("Performance (GB/s) = ", GBPerSec);
   }
 }
-
-// TODO: Check diff with main stream.chpl to see what differs
