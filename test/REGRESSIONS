@@ -15,10 +15,6 @@
 linux and general regressions
 =============================
 
-problem with new "return iterators" change? (09/10/08)
-------------------------------------------------------
-[Error matching compiler output for users/thom/arrArgIn-function]
-
 precision issue, due to user code changing (07/01/08)
 -----------------------------------------------------
 [Error matching program output for
@@ -33,6 +29,14 @@ extremely rare race condition in module initialization
 valgrind-specific regressions
 =============================
 
+uninitialized problem, probably in Random class (09/25/2008)
+------------------------------------------------------------
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-dom]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-local]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d]
+[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-fill]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
+
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
@@ -44,15 +48,9 @@ internal valgrind stuff 'the impossible has happened'
 gasnet-specific regressions
 ===========================
 
-Brad never added a prediff file
--------------------------------
-[Error matching program output for
-studies/hpcc/common/bradc/unit/leadFollowOpt]
-
-too many instantiations of chpl_destroy
----------------------------------------
-[Error matching compiler output for classes/diten/deleteobject]
-[Error matching compiler output for modules/diten/returnClassDiffModule5]
+timeout
+-------
+[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist]
 
 memory profile changed
 ----------------------
@@ -62,79 +60,25 @@ disabled warning about multilocale distributions not being implemented
 ----------------------------------------------------------------------
 [Error matching program output for multilocale/bradc/distribWarning]
 
-non-lvalue passed to inout intent (08/07/08)
---------------------------------------------
-[Error matching compiler output for functions/deitz/iterators/test_promote_inout]
-
-new problems related to Brad's bool changes
--------------------------------------------
-[Error matching compiler output for portability/boolSizes]
-[Error matching compiler output for types/scalar/bradc/overloadbools2]
-[Error matching compiler output for types/scalar/bradc/overloadbools]
-
-unable to resolve return types
-------------------------------
-[Error matching compiler output for classes/deitz/tree]
-[Error matching compiler output for functions/deitz/iterators/tree]
-[Error matching compiler output for release/examples/iterators]
-
-memory issues (showed up in chpl_free timeframe)
-------------------------------------------------
-[Error matching compiler output for memory/shannon/memtrackFlag]
-
-times out occasionally (20x diff -- maybe memory leak related?)
----------------------------------------------------------------
-[Error: Timed out executing program
-studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
-[Error: Timed out executing program
-studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error: Timed out executing program
-studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
-[Error: Timed out executing program
-studies/madness/aniruddha/madchap/test_likepy]
-[Error: Timed out executing program
-stress/deitz/test_10k_local_coforall_with_remote_update]
-
-???
----
-[Error matching compiler output for parallel/sync/diten/tupleOfSync]
-
 garbage collection doesn't work with multithreaded
 --------------------------------------------------
 [Error matching compiler output for classes/diten/allocateManyObjects]
 
-
-=================
-performance tests
-=================
-
-times out on linux64
---------------------
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra]
-
-
-=======================
-baseline-specific tests
-=======================
-
-out-of-memory allocating iterator classes
------------------------------------------
-[Error matching program output for studies/hpcc/RA/bradc/parallel/ra]
+times out occasionally (20x diff -- maybe memory leak related?)
+---------------------------------------------------------------
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
+[Error: Timed out executing program stress/deitz/test_10k_local_coforall_with_remote_update]
 
 
 ===================
 opts-specific tests
 ===================
 
-(Example runs: 2)
+(Example runs: 0)
 
---no-local
-----------
-[Error matching compiler output for release/examples/iterators]
-
---baseline --no-local
----------------------
-[Error matching compiler output for release/examples/iterators]
 
 
 (Full run: 138, though some spurious test_refine errors)
@@ -375,8 +319,6 @@ cygwin-specific failures
 pthread_cond_init failed errors -- possibly memory related? (e.g., 08/28/08)
 ----------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample1]
-[Error matching program output for studies/madness/common/test_likepy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
 [Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for npb/cg/bradc/cg-sparse]
 [Error matching program output for performance/compiler/bradc/cg-sparse-timecomp]
