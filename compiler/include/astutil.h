@@ -105,8 +105,7 @@ void insert_help(BaseAST* ast, Expr* parentExpr, Symbol* parentSymbol);
 
 ArgSymbol* actual_to_formal( Expr *a);
 
-// move to resolve include when function resolution is in own
-// directory
+// move to resolve when scope resolution is put in resolution directory
 BlockStmt* getVisibilityBlock(Expr* expr);
 
 #endif
