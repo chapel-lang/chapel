@@ -59,19 +59,8 @@ def printConfiguration() {
 def verifyResults(T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
-  //
-  // TODO: Ren-enable this?  Or clean up
-  //
-  /*
-  if (sequentialVerify) then
-    for r in RAStream(0..#N_U) do
-      T(r & indexMask) ^= r;
-  else
-  */
-    forall i in UpdateSpace {
-      const r = getNthRandom(i+1);
-      atomic T(r & indexMask) ^= r;
-    }
+  forall (i,r) in (UpdateSpace, RAStream()) do
+    atomic T(r & indexMask) ^= r;
 
   if (printArrays) then writeln("After verification, T is: ", T, "\n");
 
