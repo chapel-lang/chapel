@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h> // used only for sleep
 #include "chpllaunch.h"
 #include "chplmem.h"
 #include "error.h"
 
-static char* consoleFilename;
 static const char* pbsFilename = ".chpl-pbs-qsub";
+static const char* expectFilename = ".chpl-expect";
 
 char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i;
@@ -15,10 +14,8 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   char baseCommand[256];
   char* command;
   int procsPerNode = 1;  // BLC -- is this the value we want to use?
-  FILE* pbsFile;
-
-  consoleFilename = (char*)malloc(strlen(argv[0]) + strlen(".console") + 1);
-  sprintf(consoleFilename, "%s.console", argv[0]);
+  FILE* pbsFile, *expectFile;
+  char* projectString = getenv("CHPL_PROJECT_STRING");
 
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
@@ -26,23 +23,33 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   fprintf(pbsFile, "#PBS -l mppwidth=%d\n", numLocales);
   fprintf(pbsFile, "#PBS -l mppnppn=%d\n", procsPerNode);
   fprintf(pbsFile, "#PBS -l walltime=30\n");    // BLC -- ditto?
-  fprintf(pbsFile, "#PBS -joe -o %s\n", consoleFilename); // BLC -- ditto?
-  fprintf(pbsFile, "#PBS -W block=true\n");
-  fprintf(pbsFile, "\n");
-  fprintf(pbsFile, "cd $PBS_O_WORKDIR\n");
-  fprintf(pbsFile, "\n");
-  fprintf(pbsFile, "aprun -n%d -N%d %s_real", numLocales, procsPerNode, argv[0]);
-  for (i=1; i<argc; i++) {
-    fprintf(pbsFile, " %s", argv[i]);
-  }
-  fprintf(pbsFile, "\n");
+  if (projectString && strlen(projectString) > 0)
+    fprintf(pbsFile, "#PBS -A %s\n", projectString);
   fclose(pbsFile);
 
-  sprintf(baseCommand, "qsub -z %s", pbsFilename);
+  expectFile = fopen(expectFilename, "w");
+  fprintf(expectFile, "log_user 0\n");
+  fprintf(expectFile, "set timeout -1\n");
+  fprintf(expectFile, "set prompt \"(%|#|\\$|>) $\"\n");
+  fprintf(expectFile, "spawn qsub -z -I %s\n", pbsFilename);
+  fprintf(expectFile, "expect -re $prompt\n");
+  fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
+  fprintf(expectFile, "expect -re $prompt\n");
+  fprintf(expectFile, "log_user 1\n");
+  fprintf(expectFile, "send \"aprun -n%d -N%d %s_real",
+          numLocales, procsPerNode, argv[0]);
+  for (i=1; i<argc; i++) {
+    fprintf(expectFile, " %s", argv[i]);
+  }
+  fprintf(expectFile, "\\n\"\n");
+  fprintf(expectFile, "interact -o -re $prompt {send \"exit\\n\"}\n");
+  fclose(expectFile);
+
+  sprintf(baseCommand, "expect %s", expectFilename);
 
   size = strlen(baseCommand) + 1;
 
-  command = chpl_malloc(size, sizeof(char*), "zebra command buffer", -1, "");
+  command = chpl_malloc(size, sizeof(char*), "command buffer", -1, "");
   
   sprintf(command, "%s", baseCommand);
 
@@ -56,18 +63,12 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
 
 void chpl_launch_cleanup(void) {
   char command[1024];
-  /* This is hacky, but seems necessary in order to ensure the console
-     file exists by the time we return */
-  sleep(1);
-  sprintf(command, "cat %s", consoleFilename);
-  printf("system: %s\n", command);
-  system(command);
-
-  sprintf(command, "rm %s", consoleFilename);
-  printf("system: %s\n", command);
-  system(command);
 
   sprintf(command, "rm %s", pbsFilename);
+  printf("system: %s\n", command);
+  system(command);
+
+  sprintf(command, "rm %s", expectFilename);
   printf("system: %s\n", command);
   system(command);
 }
