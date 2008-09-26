@@ -1,5 +1,0 @@
-bug: runtime seg fault doing dynamic dispatch on nil
-
-This test crashes when trying to look at the class id field in a nil class for
-dynamic dispatch. Removing the declaration of the "d" variable causes the type
-"D" to be eliminated and the C.foo method to be statically resolved.
