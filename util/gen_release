@@ -37,7 +37,6 @@ system("cd $tmpdir && svn export -q $svnroot");
        "util/chplmake",
        "util/comm.pl",
        "util/commSubstrate.pl",
-       "util/commConfigureOpts.pl",
        "util/compiler.pl",
        "util/launcher.pl",
        "util/platform.pl",
