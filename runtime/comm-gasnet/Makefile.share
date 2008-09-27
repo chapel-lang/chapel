@@ -15,7 +15,7 @@ COMM_LAUNCHER_OBJS = \
 	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
 
 ifneq ($(MAKE_LAUNCHER), 1)
-include $(GASNET_INSTALL_DIR)/include/$(CHPL_GASNET_CONDUIT)-conduit/$(CHPL_GASNET_CONDUIT)-par.mak
+-include $(GASNET_INC_MAKEFILE)
 
 # 
 # The following lines try to combine GASNet's favorite C compiler
@@ -39,9 +39,21 @@ include $(GASNET_INSTALL_DIR)/include/$(CHPL_GASNET_CONDUIT)-conduit/$(CHPL_GASN
 # -O0 needs to be used because GASNet generates an error if client code
 # compiled -O3 is linked to GASNet compiled with debugging enabled
 #
-RUNTIME_CFLAGS += $(GASNET_CFLAGS) -I$(GASNET_INSTALL_DIR)/include -I$(GASNET_INSTALL_DIR)/include/$(CHPL_GASNET_CONDUIT)-conduit $(SUPPORT_SETENV_CFLAGS) -O0
+
+RUNTIME_CFLAGS += $(GASNET_CFLAGS) -I$(GASNET_INSTALL_DIR)/include -I$(GASNET_INSTALL_DIR)/include/$(CHPL_MAKE_COMM_SUBSTRATE)-conduit $(SUPPORT_SETENV_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
 endif
 
 ifdef CHPL_DEVELOPER
 RUNTIME_CFLAGS += -Wno-strict-prototypes -Wno-missing-prototypes
+ifndef CHPL_COMM_DEBUG
+RUNTIME_CFLAGS += -Wno-unused
 endif
+endif
+
+$(GASNET_INC_MAKEFILE):
+	@echo
+	@echo "******************************************************************************"
+	@echo GASNet not yet built for platform=$(CHPL_MAKE_TARGET_PLATFORM), segment=$(CHPL_GASNET_SEGMENT), debug=$(CHPL_GASNET_DEBUG)
+	@echo Try making third-party from CHPL_HOME
+	@echo "******************************************************************************"
+	@echo
