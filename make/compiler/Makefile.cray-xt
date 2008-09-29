@@ -2,12 +2,14 @@
 # Settings for the Cray XT3 and XT4
 #
 
+export XTPE_INFO_MESSAGE_OFF=true
+
 #
 # tools
 #
 
-CC = export XTPE_INFO_MESSAGE_OFF=true && cc
-CXX = export XTPE_INFO_MESSAGE_OFF=true && CC
+CC = cc
+CXX = CC
 
 MAKEDEPEND = $(CXX) -M
 CMAKEDEPEND = $(CC) -M
