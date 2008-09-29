@@ -6,8 +6,8 @@
 # tools
 #
 
-CC = cc
-CXX = CC
+CC = export XTPE_INFO_MESSAGE_OFF=true && cc
+CXX = export XTPE_INFO_MESSAGE_OFF=true && CC
 
 MAKEDEPEND = $(CXX) -M
 CMAKEDEPEND = $(CC) -M
