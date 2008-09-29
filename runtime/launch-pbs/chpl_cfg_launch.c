@@ -8,6 +8,8 @@
 static const char* pbsFilename = ".chpl-pbs-qsub";
 static const char* expectFilename = ".chpl-expect";
 
+#define launcherAccountEnvvar "CHPL_LAUNCHER_ACCOUNT"
+
 char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i;
   int size;
@@ -15,11 +17,12 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   char* command;
   int procsPerNode = 1;  // BLC -- is this the value we want to use?
   FILE* pbsFile, *expectFile;
-  char* projectString = getenv("CHPL_PROJECT_STRING");
+  char* projectString = getenv(launcherAccountEnvvar);
 
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
   fprintf(pbsFile, "#PBS -N Chapel-%s\n", argv[0]);
+  //  fprintf(pbsFile, "#PBS -l size=%d\n", 4*numLocales);
   fprintf(pbsFile, "#PBS -l mppwidth=%d\n", numLocales);
   fprintf(pbsFile, "#PBS -l mppnppn=%d\n", procsPerNode);
   fprintf(pbsFile, "#PBS -l walltime=30\n");    // BLC -- ditto?
@@ -32,7 +35,10 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   fprintf(expectFile, "set timeout -1\n");
   fprintf(expectFile, "set prompt \"(%|#|\\$|>) $\"\n");
   fprintf(expectFile, "spawn qsub -z -I %s\n", pbsFilename);
-  fprintf(expectFile, "expect -re $prompt\n");
+  fprintf(expectFile, "expect {\n");
+  fprintf(expectFile, "  \"A project was not specified\" {send_user \"A project account must be specified via \\$" launcherAccountEnvvar "\\n\" ; exit 1}\n");
+  fprintf(expectFile, "  -re $prompt\n");
+  fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
   fprintf(expectFile, "log_user 1\n");
