@@ -1036,12 +1036,16 @@ buildOnStmt(Expr* expr, Expr* stmt) {
 }
 
 
+bool beginEncountered;
+
 BlockStmt*
 buildBeginStmt(Expr* stmt) {
   checkControlFlow(stmt, "begin statement");
 
   if (fSerial)
     return buildChapelStmt(new BlockStmt(stmt));
+
+  beginEncountered = true;
 
   BlockStmt* block = buildChapelStmt();
   block->insertAtTail(new CallExpr("_upEndCount"));

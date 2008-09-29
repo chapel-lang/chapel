@@ -3437,13 +3437,15 @@ inlineIterators() {
 }
 
 
-static bool tupleContainsArrayOrDomain (ClassType* t) {
+static bool tupleContainsArrayOrDomain(ClassType* t) {
   for (int i = 1; i <= t->fields.length(); i++) {
     Type* fieldType = t->getField(i)->type;
-    //ClassType* fieldClassType = toClassType(fieldType);
-    if (fieldType->symbol->hasFlag(FLAG_ARRAY) || fieldType->symbol->hasFlag(FLAG_DOMAIN)/* || fieldClassType && fieldClassType->classTag == CLASS_CLASS*/)
+    ClassType* fieldClassType = toClassType(fieldType);
+    if (fieldType->symbol->hasFlag(FLAG_ARRAY) || fieldType->symbol->hasFlag(FLAG_DOMAIN))
       return true;
     else if (fieldType->symbol->hasFlag(FLAG_TUPLE) && tupleContainsArrayOrDomain(toClassType(fieldType)))
+      return true;
+    else if (fieldClassType && fieldClassType->classTag != CLASS_CLASS && tupleContainsArrayOrDomain(toClassType(fieldType)))
       return true;
   }
   return false;
@@ -3727,13 +3729,16 @@ resolve() {
   }
 
   forv_Vec(FnSymbol, constructor, constructors) {
-//    printf("looking at constructor %s\n", constructor->cname);
+//if (strstr(constructor->cname, "buildDomainExpr") || strstr(constructor->cname, "convertRuntimeTypeToValue") || strstr(constructor->cname, "DefaultAssociativeDomain") || strstr(constructor->cname, "reindex"))
+//  printf("looking at constructor %s-%d\n", constructor->cname, constructor->id);
     forv_Vec(CallExpr, call, *constructor->calledBy) {
       if (call->parentSymbol) {
         CallExpr* move = toCallExpr(call->parentExpr);
         INT_ASSERT(move && move->isPrimitive(PRIMITIVE_MOVE));
         SymExpr* lhs = toSymExpr(move->get(1));
         INT_ASSERT(lhs);
+        if (!lhs->var->type->destructor) continue;
+        if (lhs->var->type->symbol->hasFlag(FLAG_DOMAIN)) continue;
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
         INT_ASSERT(fn);
 //    if (!strcmp(fn->cname, "foo"))
@@ -3745,23 +3750,63 @@ resolve() {
         } else {
           Vec<Symbol*> varsToTrack;
           varsToTrack.add(lhs->var);
-          bool maybeCallDestructor = true;
+          extern bool beginEncountered;
+          bool maybeCallDestructor = !beginEncountered;
+          INT_ASSERT(lhs->var->defPoint && lhs->var->defPoint->parentExpr);
+          BlockStmt* parentBlock = toBlockStmt(lhs->var->defPoint->parentExpr);
           forv_Vec(Symbol, var, varsToTrack) {
             // may not be OK if there is more than one definition of var
             //INT_ASSERT(defMap.get(var)->length() == 1);
             if (maybeCallDestructor && useMap.get(var))
               forv_Vec(SymExpr, se, *useMap.get(var)) {
+                // the following conditional should not be necessary, but there may be cases
+                // in which a variable is used outside of the block in which it is defined!
+                if (var == lhs->var) {
+                  Expr* block = se->parentExpr;
+                  while (block && toBlockStmt(block) != parentBlock)
+                    block = block->parentExpr;
+                  // changing the parentBlock here could cause a variable's destructor
+                  // to be called outside the conditional block in which it is defined,
+                  // which could cause the destructor to be called on an unitialized
+                  // variable
+//                  if (!toBlockStmt(block))
+//                    parentBlock = fn->body;
+                  maybeCallDestructor = false;
+                  break;
+                }
                 if (CallExpr* call = toCallExpr(se->parentExpr)) {
                   if (call->isPrimitive(PRIMITIVE_MOVE)) {
                     if (fn->getReturnSymbol() == toSymExpr(call->get(1))->var) {
 //          printf("may need to call destructor on %s (lhs)\n", lhs->var->cname);
 //                    printf("function returns %s\n", toSymExpr(call->get(1))->var->cname);
                       maybeCallDestructor = false;
+                      if (defMap.get(toSymExpr(call->get(1))->var)->n == 1 &&
+                          strcmp(fn->name, "reindex") && !strstr(fn->name, "buildDomainExpr"))
+                        constructors.add(fn);
                       break;
-                    } else
-                      varsToTrack.add(toSymExpr(call->get(1))->var);
-                  } else if (lhs->var->type->symbol->hasFlag(FLAG_ARRAY)) {
-//                  printf("Probably shouldn't call destructor on %s\n", lhs->var->cname);
+                    } else if (toModuleSymbol(toSymExpr(call->get(1))->var->defPoint->parentSymbol)) {
+                      // lhs is directly or indirectly being assigned to a global variable
+                      maybeCallDestructor = false;
+                      break;
+                    } else if (toSymExpr(call->get(1))->var->defPoint->parentSymbol == fn) {
+                      if (toSymExpr(call->get(1))->var->defPoint->parentExpr != parentBlock) {
+                        Expr* block = parentBlock->parentExpr;
+                        while (block && block != toSymExpr(call->get(1))->var->defPoint->parentExpr)
+                          block = block->parentExpr;
+                        // changing the parentBlock here could cause a variable's destructor
+                        // to be called outside the conditional block in which it is defined,
+                        // which could cause the destructor to be called on an unitialized
+                        // variable
+//                        if (toBlockStmt(block))
+//                          parentBlock = toBlockStmt(block);
+                        maybeCallDestructor = false;
+                        break;
+                      }
+                    }
+                    varsToTrack.add(toSymExpr(call->get(1))->var);
+                  } else if (var->type->symbol->hasFlag(FLAG_ARRAY) &&
+                             call->isResolved() && call->isResolved()->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
+//                printf("Probably shouldn't call destructor on %s\n", lhs->var->cname);
                     maybeCallDestructor = false;
                     break;
                   } else if (call->isPrimitive(PRIMITIVE_ARRAY_SET_FIRST)) {
@@ -3775,16 +3820,13 @@ resolve() {
           }
           if (maybeCallDestructor) {
             // lhs does not "escape" its scope, so go ahead and insert a call to its destructor
-            VarSymbol* tmp = new VarSymbol("_tmp", lhs->var->type->refType);
-            tmp->addFlag(FLAG_TEMP);
-            INT_ASSERT(lhs->var->defPoint && lhs->var->defPoint->parentExpr);
-            BlockStmt* parentBlock = toBlockStmt(lhs->var->defPoint->parentExpr);
-            INT_ASSERT(parentBlock);
+            VarSymbol* tmp = newTemp(lhs->var->type->refType);
             if (parentBlock == fn->body) {
               fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
               fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, lhs->var)));
               fn->insertBeforeReturnAfterLabel(new CallExpr(lhs->var->type->destructor, tmp));
             } else {
+              INT_ASSERT(parentBlock);
               parentBlock->insertAtTail(new DefExpr(tmp));
               parentBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, lhs->var)));
               parentBlock->insertAtTail(new CallExpr(lhs->var->type->destructor, tmp));
