@@ -1,6 +1,0 @@
-bug: illegal const assignments not checked with --no-local
-
-It seems that const checking is not performed when
-compiling with the --no-local flag on.  One way to see
-this is to see that this test works as expected
-under CHPL_COMM=none, but not under CHPL_COMM=gasnet.
