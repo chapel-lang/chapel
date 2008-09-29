@@ -100,7 +100,7 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
     if rank == 1 {
       if stridable {
         var block =
-          ranges(1).low+follower.low*ranges(1).stride:ranges(1).eltType..ranges(1).low+follower.high*ranges(1).stride:ranges(1).eltType;
+          ranges(1).low+follower.low*ranges(1).stride:ranges(1).eltType..ranges(1).low+follower.high*ranges(1).stride:ranges(1).eltType by ranges(1).stride;
         for i in block do
           yield i;
       } else {
@@ -112,7 +112,7 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
       if stridable {
         for param i in 1..rank do
           follower(i) =
-            ranges(i).low+follower(i).low*ranges(i).stride:ranges(i).eltType..ranges(i).low+follower(i).high*ranges(i).stride:ranges(i).eltType;
+            ranges(i).low+follower(i).low*ranges(i).stride:ranges(i).eltType..ranges(i).low+follower(i).high*ranges(i).stride:ranges(i).eltType by ranges(i).stride;
       } else {
         for param i in 1..rank do
           follower(i) = follower(i) + ranges(i).low;
