@@ -427,7 +427,7 @@ static void* chpl_malloc1(size_t number, size_t size,
                            const char* description,
                            int32_t lineno, _string filename) {
   size_t chunk = computeChunkSize(number, size, 0, lineno, filename);
-  void* memAlloc = (chunk) ? malloc(chunk) : 0x0;
+  void* memAlloc = (chunk) ? malloc(chunk) : (void*)0x0;
   if (chunk != 0) {
     confirm(memAlloc, description, lineno, filename);
   }
