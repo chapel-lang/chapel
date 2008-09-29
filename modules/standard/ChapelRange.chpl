@@ -311,7 +311,12 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
 //
 // default iterator optimized for unit stride
 //
-def range.these() {
+def range.sharedInternalIterator() {
+  // This is a work-around to avoid a circularity in function
+  // resolution in which a serial iterator is resolved leading to the
+  // resolution of the parallel iterator but that calls the serial
+  // iterator.  When this is fixed, this can be the serial iterator
+  // and it can be called by the follower.
   if boundedType != BoundedRangeType.bounded {
     if boundedType == BoundedRangeType.boundedNone then
       halt("iteration over a range with no bounds");
@@ -350,6 +355,37 @@ def range.these() {
         i = i + 1;
       }
     }
+  }
+}
+
+def range.these() {
+  for i in sharedInternalIterator() do
+    yield i;
+}
+
+def range.these(param tag: iterator) where tag == iterator.leader {
+  // want "yield 0..length-1;"
+  // but compilerError in length causes a problem because leaders are
+  // resolved wherever an iterator is.
+  var v: eltType;
+  if stride > 0 then
+    v = (high - low) / stride:eltType + 1;
+  else
+    v = (low - high) / stride:eltType + 1;
+  if v < 0 then
+    v = 0;
+  yield 0..v-1;
+}
+
+def range.these(param tag: iterator, follower) where tag == iterator.follower {
+  if stridable {
+    var r = low+follower.low*stride:eltType..low+follower.high*stride:eltType by stride;
+    for i in r.sharedInternalIterator() do
+      yield i;
+  } else {
+    var r = low+follower;
+    for i in r.sharedInternalIterator() do
+      yield i;
   }
 }
 

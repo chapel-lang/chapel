@@ -288,46 +288,6 @@ protoIteratorClass(FnSymbol* fn) {
   resolveFns(getIteratorCall->isResolved());
   getIteratorCall->remove();
   tmp->defPoint->remove();
-
-  CallExpr* leaderCall = new CallExpr(fn->name);
-  for_formals(formal, fn) {
-    leaderCall->insertAtTail(formal);
-  }
-  leaderCall->insertAtHead(new NamedExpr("tag", new SymExpr(gLeaderTag)));
-  fn->insertAtHead(leaderCall);
-  resolveCall(leaderCall, false);
-  leaderCall->remove();
-  if (FnSymbol* leader = leaderCall->isResolved()) {
-    resolveFns(leader);
-
-    if (!leader->retType->defaultConstructor->iteratorInfo)
-      INT_FATAL("leader->iteratorInfo is NULL");
-
-    ii->leader = leader->retType->defaultConstructor->iteratorInfo;
-    ii->leader->tag = it_leader;
-    ii->leader->iterator->addFlag(FLAG_INLINE_ITERATOR);
-
-
-    CallExpr* followerCall = new CallExpr(fn->name);
-    for_formals(formal, fn) {
-      followerCall->insertAtTail(formal);
-    }
-    VarSymbol* leaderIndex = new VarSymbol("leaderIndex", ii->leader->getValue->retType);
-    followerCall->insertAtHead(new NamedExpr("follower", new SymExpr(leaderIndex)));
-    followerCall->insertAtHead(new NamedExpr("tag", new SymExpr(gFollowerTag)));
-    fn->insertAtHead(new DefExpr(leaderIndex));
-    fn->insertAtHead(followerCall);
-    resolveCall(followerCall, false);
-    followerCall->remove();
-    leaderIndex->defPoint->remove();
-    if (FnSymbol* follower = followerCall->isResolved()) {
-      resolveFns(follower);
-      ii->follower = follower->retType->defaultConstructor->iteratorInfo;
-      ii->follower->tag = it_follower;
-    } else {
-      USR_FATAL(leader, "unable to resolve follower iterator");
-    }
-  }
 }
 
 
@@ -1563,7 +1523,6 @@ resolveCall(CallExpr* call, bool errorCheck) {
     Vec<FnSymbol*> visibleFns;                    // visible functions
     Vec<FnSymbol*> candidateFns;
     Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
-    CallExpr* call = info.call;
 
     //
     // update visible function map as necessary
@@ -2468,6 +2427,25 @@ preFold(Expr* expr) {
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, result));
         call->insertAtTail(tmp);
       }
+    } else if (call->isPrimitive(PRIMITIVE_TO_LEADER)) {
+      FnSymbol* iterator = call->get(1)->typeInfo()->defaultConstructor;
+      CallExpr* leaderCall = new CallExpr(iterator->name);
+      leaderCall->insertAtTail(new NamedExpr("tag", new SymExpr(gLeaderTag)));
+      for_formals(formal, iterator) {
+        leaderCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
+      }
+      call->replace(leaderCall);
+      result = leaderCall;
+    } else if (call->isPrimitive(PRIMITIVE_TO_FOLLOWER)) {
+      FnSymbol* iterator = call->get(1)->typeInfo()->defaultConstructor;
+      CallExpr* followerCall = new CallExpr(iterator->name);
+      followerCall->insertAtTail(new NamedExpr("tag", new SymExpr(gFollowerTag)));
+      followerCall->insertAtTail(new NamedExpr("follower", call->get(2)->remove()));
+      for_formals(formal, iterator) {
+        followerCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
+      }
+      call->replace(followerCall);
+      result = followerCall;
     }
   }
   return result;
@@ -3450,11 +3428,8 @@ inlineIterators() {
   forv_Vec(BaseAST, ast, gAsts) {
     if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->parentSymbol) {
-        if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP)) {
-          Symbol* iterator = toSymExpr(block->blockInfo->get(2))->var;
-          if (iterator->type->defaultConstructor->hasFlag(FLAG_INLINE_ITERATOR)) {
-            expandIteratorInline(block->blockInfo);
-          }
+        if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_INLINE_FOR_LOOP)) {
+          expandIteratorInline(block->blockInfo);
         }
       }
     }

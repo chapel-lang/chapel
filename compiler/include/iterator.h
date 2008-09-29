@@ -15,10 +15,6 @@ public:
   FnSymbol* zip4;
   FnSymbol* hasMore;
   FnSymbol* getValue;
-  IteratorInfo* leader;
-  IteratorInfo* follower;
-  FnSymbol* iterator2leader;
-  FnSymbol* iterator2follower;
   IteratorInfo();
 };
 

@@ -20,11 +20,7 @@ IteratorInfo::IteratorInfo() :
   zip3(NULL),
   zip4(NULL),
   hasMore(NULL),
-  getValue(NULL),
-  leader(NULL),
-  follower(NULL),
-  iterator2leader(NULL),
-  iterator2follower(NULL)
+  getValue(NULL)
 {}
 
 

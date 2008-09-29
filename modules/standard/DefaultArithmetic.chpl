@@ -63,6 +63,18 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
     }
   }
 
+  def these_help(param d: int, block) {
+    if d == block.size - 1 {
+      for i in block(d) do
+        for j in block(block.size) do
+          yield (i, j);
+    } else {
+      for i in block(d) do
+        for j in these_help(d+1, block) do
+          yield (i, (...j));
+    }
+  }
+
   def these() {
     if rank == 1 {
       for i in ranges(1) do
@@ -72,18 +84,43 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
         yield i;
     }
   }
-  /*
-  def these(leader) {
-    // TODO: Need to 0-shift this?
-    yield chpl_buildDomainExpr(ranges);
+
+  def these(param tag: iterator) where tag == iterator.leader {
+    if rank == 1 {
+      yield 0..ranges(1).length-1;
+    } else {
+      var block = ranges;
+      for param i in 1..rank do
+        block(i) = 0..block(i).length-1;
+      yield block;
+    }
   }
 
-  def these(follower) {
-    // TODO: Need to un-0-shift this?
-    for i in follower do
-      yield i;
+  def these(param tag: iterator, follower) where tag == iterator.follower {
+    if rank == 1 {
+      if stridable {
+        var block =
+          ranges(1).low+follower.low*ranges(1).stride:ranges(1).eltType..ranges(1).low+follower.high*ranges(1).stride:ranges(1).eltType;
+        for i in block do
+          yield i;
+      } else {
+        var block = follower + ranges(1).low;
+        for i in block do
+          yield i;
+      }
+    } else {
+      if stridable {
+        for param i in 1..rank do
+          follower(i) =
+            ranges(i).low+follower(i).low*ranges(i).stride:ranges(i).eltType..ranges(i).low+follower(i).high*ranges(i).stride:ranges(i).eltType;
+      } else {
+        for param i in 1..rank do
+          follower(i) = follower(i) + ranges(i).low;
+      }
+      for i in these_help(1, follower) do
+        yield i;
+    }
   }
-  */
 
   def member(ind: idxType) where rank == 1 {
     if !ranges(1).member(ind) then
@@ -287,6 +324,16 @@ class DefaultArithmeticArray: BaseArray {
 
   def these() var {
     for i in dom do
+      yield this(i);
+  }
+
+  def these(param tag: iterator) where tag == iterator.leader {
+    for block in dom.these(tag=iterator.leader) do
+      yield block;
+  }
+
+  def these(param tag: iterator, follower) var where tag == iterator.follower {
+    for i in dom.these(tag=iterator.follower, follower) do
       yield this(i);
   }
 

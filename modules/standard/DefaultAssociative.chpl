@@ -116,6 +116,17 @@ class DefaultAssociativeDomain: BaseAssociativeDomain {
     }
   }
 
+  def these(param tag: iterator) where tag == iterator.leader {
+    yield 0..numIndices-1;
+  }
+
+  def these(param tag: iterator, follower) where tag == iterator.follower {
+    for (slot,i) in (_fullSlots(),0..) {
+      if follower.member(i) then
+        yield table(slot).idx;
+    }
+  }
+
   //
   // Associative Domain Interface
   //
@@ -299,6 +310,16 @@ class DefaultAssociativeArray: BaseArray {
     for slot in dom._fullSlots() {
       yield data(slot);
     }
+  }
+
+  def these(param tag: iterator) where tag == iterator.leader {
+    for block in dom.these(tag=iterator.leader) do
+      yield block;
+  }
+
+  def these(param tag: iterator, follower) var where tag == iterator.follower {
+    for i in dom.these(tag=iterator.follower, follower) do
+      yield this(i);
   }
 
   def writeThis(f: Writer) {

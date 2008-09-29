@@ -251,102 +251,6 @@ expand_for_loop(CallExpr* call) {
 }
 
 
-static void
-buildIterator2Leader(IteratorInfo* ii) {
-  if (!ii->leader)
-    return;
-
-  FnSymbol* fn = new FnSymbol("iterator2leader");
-  fn->retType = ii->leader->icType;
-  ArgSymbol* iterator = new ArgSymbol(INTENT_BLANK, "iterator", ii->icType);
-  fn->insertFormalAtTail(iterator);
-  VarSymbol* leader = newTemp("leader", ii->leader->icType);
-  fn->insertAtTail(new DefExpr(leader));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leader, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->leader->icType->symbol, new_StringSymbol("leader iterator class"))));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, leader));
-
-  if (ii->iterator->numFormals() < ii->leader->iterator->numFormals()) {
-    USR_FATAL(ii->leader->iterator, "leader iterator has too many formal arguments");
-  } else if (ii->iterator->numFormals() > ii->leader->iterator->numFormals()) {
-    USR_FATAL(ii->leader->iterator, "leader iterator has too few formal arguments");
-  }
-
-  int i = 0, j = 1;
-  for_formals(leaderFormal, ii->leader->iterator) {
-    i++;
-    ArgSymbol* iteratorFormal = ii->iterator->getFormal(j);
-    if (strcmp(iteratorFormal->name, leaderFormal->name)) {
-      USR_FATAL(ii->iterator, "name of argument %d in iterator '%s' does not match leader variant", i, ii->iterator->name);
-    }
-    if (iteratorFormal->type != leaderFormal->type) {
-      USR_FATAL(ii->iterator, "type of argument %d in iterator '%s' does not match leader variant", i, ii->iterator->name);
-    }
-    VarSymbol* tmp = newTemp(ii->icType->getField(j+1)->type);
-    fn->insertAtTail(new DefExpr(tmp));
-    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, ii->icType->getField(j+1))));
-    fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, leader, ii->leader->icType->getField(i+1), tmp));
-    j++;
-  }
-  fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, leader, ii->leader->icType->getField("more"), new_IntSymbol(1)));
-
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, leader));
-  ii->iterator2leader = fn;
-  ii->getValue->defPoint->insertAfter(new DefExpr(fn));
-}
-
-
-static void
-buildIterator2Follower(IteratorInfo* ii) {
-  if (!ii->follower)
-    return;
-
-  INT_ASSERT(ii->leader);
-
-  FnSymbol* fn = new FnSymbol("iterator2follower");
-  fn->retType = ii->follower->icType;
-  ArgSymbol* iterator = new ArgSymbol(INTENT_BLANK, "iterator", ii->icType);
-  fn->insertFormalAtTail(iterator);
-  ArgSymbol* leaderIndex = new ArgSymbol(INTENT_BLANK, "leaderIndex", ii->leader->getValue->retType);
-  fn->insertFormalAtTail(leaderIndex);
-  VarSymbol* follower = newTemp("follower", ii->follower->icType);
-  fn->insertAtTail(new DefExpr(follower));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, follower, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->follower->icType->symbol, new_StringSymbol("follower iterator class"))));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, follower));
-
-  if (ii->iterator->numFormals() < ii->follower->iterator->numFormals() - 1) {
-    USR_FATAL(ii->follower->iterator, "follower iterator has too many formal arguments");
-  } else if (ii->iterator->numFormals() > ii->follower->iterator->numFormals() - 1) {
-    USR_FATAL(ii->follower->iterator, "follower iterator has too few formal arguments");
-  }
-
-  int i = 0, j = 1;
-  for_formals(followerFormal, ii->follower->iterator) {
-    i++;
-    if (!strcmp(followerFormal->name, "follower")) {
-      fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, follower, ii->follower->icType->getField(i+1), leaderIndex));
-      continue;
-    }
-    ArgSymbol* iteratorFormal = ii->iterator->getFormal(j);
-    if (strcmp(iteratorFormal->name, followerFormal->name)) {
-      USR_FATAL(ii->iterator, "name of argument %d in iterator '%s' does not match follower variant", i, ii->iterator->name);
-    }
-    if (iteratorFormal->type != followerFormal->type) {
-      USR_FATAL(ii->iterator, "type of argument %d in iterator '%s' does not match follower variant", i, ii->iterator->name);
-    }
-    VarSymbol* tmp = newTemp(ii->icType->getField(j+1)->type);
-    fn->insertAtTail(new DefExpr(tmp));
-    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, ii->icType->getField(j+1))));
-    fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, follower, ii->follower->icType->getField(i+1), tmp));
-    j++;
-  }
-  fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, follower, ii->follower->icType->getField("more"), new_IntSymbol(1)));
-
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, follower));
-  ii->iterator2follower = fn;
-  ii->getValue->defPoint->insertAfter(new DefExpr(fn));
-}
-
-
 void lowerIterators() {
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast))
@@ -411,9 +315,43 @@ void lowerIterators() {
     if (fn->hasFlag(FLAG_ITERATOR_CLASS_COPY)) {
       getIteratorVec.add(fn);
       getIteratorMap.put(fn->retType, fn);
-    } else if (fn->iteratorInfo) {
-      buildIterator2Leader(fn->iteratorInfo);
-      buildIterator2Follower(fn->iteratorInfo);
+    }
+  }
+
+  //
+  // cleanup leader and follower iterator calls
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->parentSymbol) {
+        if (FnSymbol* fn = call->isResolved()) {
+          if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+            if (!strcmp(call->parentSymbol->name, "_toLeader") ||
+                !strcmp(call->parentSymbol->name, "_toFollower")) {
+              ArgSymbol* iterator = toFnSymbol(call->parentSymbol)->getFormal(1);
+              int i = 2; // first field is super
+              for_actuals(actual, call) {
+                SymExpr* se = toSymExpr(actual);
+                if (isArgSymbol(se->var)) {
+                  Symbol* field = toClassType(iterator->type)->getField(i);
+                  VarSymbol* tmp = NULL;
+                  if (field->type == se->var->type) {
+                    tmp = newTemp(field->type);
+                    call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                    call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, field)));
+                  } else if (field->type->refType == se->var->type) {
+                    tmp = newTemp(field->type->refType);
+                    call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                    call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, field)));
+                  }
+                  actual->replace(new SymExpr(tmp));
+                  i++;
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 
@@ -459,24 +397,5 @@ void lowerIterators() {
     }
     outerBlock->insertAtTail(new CallExpr(PRIMITIVE_RETURN, cp));
     fn->body->replace(outerBlock);
-  }
-
-  //
-  // insert calls to iterator2leader and iterator2follower and make
-  // sure we dynamically dispatch on _getIterator
-  //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIMITIVE_TO_LEADER)) {
-        CallExpr* iterator2leader = new CallExpr(call->get(1)->typeInfo()->defaultConstructor->iteratorInfo->iterator2leader);
-        iterator2leader->insertAtTail(call->get(1)->remove());
-        call->replace(iterator2leader);
-      } else if (call->isPrimitive(PRIMITIVE_TO_FOLLOWER)) {
-        CallExpr* iterator2follower = new CallExpr(call->get(1)->typeInfo()->defaultConstructor->iteratorInfo->iterator2follower);
-        iterator2follower->insertAtTail(call->get(1)->remove());
-        iterator2follower->insertAtTail(call->get(1)->remove());
-        call->replace(iterator2follower);
-      }
-    }
   }
 }

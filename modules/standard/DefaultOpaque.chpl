@@ -26,6 +26,16 @@ class DefaultOpaqueDomain: BaseOpaqueDomain {
       yield i;
   }
 
+  def these(param tag: iterator) where tag == iterator.leader {
+    for block in adomain.these(tag=iterator.leader) do
+      yield block;
+  }
+
+  def these(param tag: iterator, follower) where tag == iterator.follower {
+    for i in adomain.these(tag=iterator.follower, follower) do
+      yield i;
+  }
+
   def member(ind: idxType) {
     return adomain.member(ind);
   }
@@ -62,6 +72,17 @@ class DefaultOpaqueArray: BaseArray {
     for e in anarray do
       yield e;
   }
+
+  def these(param tag: iterator) where tag == iterator.leader {
+    for block in dom.these(tag=iterator.leader) do
+      yield block;
+  }
+
+  def these(param tag: iterator, follower) var where tag == iterator.follower {
+    for i in dom.these(tag=iterator.follower, follower) do
+      yield this(i);
+  }
+
 
   def sorted() {
     for e in anarray.sorted() do

@@ -547,7 +547,7 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
 
   BlockStmt* leaderBody = new BlockStmt(beginBlock);
   leaderBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, leaderIndex, new CallExpr("iteratorIndex", leaderIterator)), BLOCK_TYPE));
-  leaderBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, leaderIndex, leaderIterator);
+  leaderBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_INLINE_FOR_LOOP, leaderIndex, leaderIterator);
   leaderBlock->insertAtTail(leaderBody);
 
   return leaderBlock;

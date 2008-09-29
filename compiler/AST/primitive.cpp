@@ -231,30 +231,6 @@ returnInfoEndCount(CallExpr* call) {
 }
 
 static Type*
-returnInfoLeader(CallExpr* call) {
-  Type* ic = call->get(1)->typeInfo();
-  INT_ASSERT(ic->defaultConstructor);
-  INT_ASSERT(ic->defaultConstructor->iteratorInfo);
-  IteratorInfo* ii = ic->defaultConstructor->iteratorInfo;
-  if (!ii->leader) {
-    USR_FATAL(call, "forall loop applied to non-parallel iterator");
-  }
-  return ii->leader->icType;
-}
-
-static Type*
-returnInfoFollower(CallExpr* call) {
-  Type* ic = call->get(1)->typeInfo();
-  INT_ASSERT(ic->defaultConstructor);
-  INT_ASSERT(ic->defaultConstructor->iteratorInfo);
-  IteratorInfo* ii = ic->defaultConstructor->iteratorInfo;
-  if (!ii->follower) {
-    USR_FATAL(call, "forall loop applied to non-parallel iterator");
-  }
-  return ii->follower->icType;
-}
-
-static Type*
 returnInfoTaskList(CallExpr* call) {
   return dtTaskList;
 }
@@ -431,14 +407,15 @@ initPrimitive() {
   prim_def(PRIMITIVE_BLOCK_WHILEDO_LOOP, "while...do loop", returnInfoVoid);
   prim_def(PRIMITIVE_BLOCK_DOWHILE_LOOP, "do...while loop", returnInfoVoid);
   prim_def(PRIMITIVE_BLOCK_FOR_LOOP, "for loop", returnInfoVoid);
+  prim_def(PRIMITIVE_BLOCK_INLINE_FOR_LOOP, "inline for loop", returnInfoVoid);
   prim_def(PRIMITIVE_BLOCK_BEGIN, "begin block", returnInfoVoid);
   prim_def(PRIMITIVE_BLOCK_COBEGIN, "cobegin block", returnInfoVoid);
   prim_def(PRIMITIVE_BLOCK_COFORALL, "coforall loop", returnInfoVoid);
   prim_def(PRIMITIVE_BLOCK_ON, "on block", returnInfoVoid);
 
 
-  prim_def(PRIMITIVE_TO_LEADER, "to leader", returnInfoLeader);
-  prim_def(PRIMITIVE_TO_FOLLOWER, "to follower", returnInfoFollower);
+  prim_def(PRIMITIVE_TO_LEADER, "to leader", returnInfoVoid);
+  prim_def(PRIMITIVE_TO_FOLLOWER, "to follower", returnInfoVoid);
 
   prim_def(PRIMITIVE_DELETE, "delete class instance", returnInfoVoid);
 

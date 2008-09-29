@@ -126,14 +126,15 @@ enum PrimitiveTag {
   PRIMITIVE_WARNING,
   PRIMITIVE_WHEN,
 
-  PRIMITIVE_BLOCK_PARAM_LOOP,   // BlockStmt::blockInfo - param for loop
-  PRIMITIVE_BLOCK_WHILEDO_LOOP, // BlockStmt::blockInfo - while do loop
-  PRIMITIVE_BLOCK_DOWHILE_LOOP, // BlockStmt::blockInfo - do while loop
-  PRIMITIVE_BLOCK_FOR_LOOP,     // BlockStmt::blockInfo - for loop
-  PRIMITIVE_BLOCK_BEGIN,        // BlockStmt::blockInfo - begin block
-  PRIMITIVE_BLOCK_COBEGIN,      // BlockStmt::blockInfo - cobegin block
-  PRIMITIVE_BLOCK_COFORALL,     // BlockStmt::blockInfo - coforall block
-  PRIMITIVE_BLOCK_ON,           // BlockStmt::blockInfo - on block
+  PRIMITIVE_BLOCK_PARAM_LOOP,      // BlockStmt::blockInfo - param for loop
+  PRIMITIVE_BLOCK_WHILEDO_LOOP,    // BlockStmt::blockInfo - while do loop
+  PRIMITIVE_BLOCK_DOWHILE_LOOP,    // BlockStmt::blockInfo - do while loop
+  PRIMITIVE_BLOCK_FOR_LOOP,        // BlockStmt::blockInfo - for loop
+  PRIMITIVE_BLOCK_INLINE_FOR_LOOP, // BlockStmt::blockInfo - for loop
+  PRIMITIVE_BLOCK_BEGIN,           // BlockStmt::blockInfo - begin block
+  PRIMITIVE_BLOCK_COBEGIN,         // BlockStmt::blockInfo - cobegin block
+  PRIMITIVE_BLOCK_COFORALL,        // BlockStmt::blockInfo - coforall block
+  PRIMITIVE_BLOCK_ON,              // BlockStmt::blockInfo - on block
 
   PRIMITIVE_TO_LEADER,
   PRIMITIVE_TO_FOLLOWER,
