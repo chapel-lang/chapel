@@ -428,6 +428,52 @@ record _square_tuple {
         yield i;
     }
   }
+
+  pragma "expand tuples with values"
+  def lead_help(param dim: int) {
+    if dim == size - 1 {
+      for i in _toLeader(tuple(dim)) do
+        for j in _toLeader(tuple(size)) do
+          yield _build_tuple_always_allow_ref(i, j);
+    } else {
+      for i in _toLeader(tuple(dim)) do
+        for j in lead_help(dim+1) do
+          yield _build_tuple_always_allow_ref(i, (...j));
+    }
+  }
+
+  def these(param tag: iterator) where tag == iterator.leader {
+    if size == 1 {
+      for i in _toLeader(tuple(1)) do
+        yield i;
+    } else {
+      for i in lead_help(1) do
+        yield i;
+    }
+  }
+
+  pragma "expand tuples with values"
+  def follow_help(param dim: int, follower) {
+    if dim == size - 1 {
+      for i in _toFollower(tuple(dim), follower(dim)) do
+        for j in _toFollower(tuple(size), follower(size)) do
+          yield _build_tuple_always_allow_ref(i, j);
+    } else {
+      for i in _toFollower(tuple(dim), follower(dim)) do
+        for j in follow_help(dim+1) do
+          yield _build_tuple_always_allow_ref(i, (...j));
+    }
+  }
+
+  def these(param tag: iterator, follower) where tag == iterator.follower {
+    if size == 1 {
+      for i in _toFollower(tuple(1), follower) do
+        yield i;
+    } else {
+      for i in follow_help(1, follower) do
+        yield i;
+    }
+  }
 }
 
 def chpl__buildDomainExpr(x ...?size) where size > 1

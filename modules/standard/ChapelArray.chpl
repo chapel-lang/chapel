@@ -650,6 +650,10 @@ def _toLeader(x: _tuple)
   return _toLeader(x(1));
 
 pragma "inline"
+def _toLeader(x)
+  return _toLeader(x.these());
+
+pragma "inline"
 def _toFollower(iterator: _iteratorClass, leaderIndex)
   return __primitive("to follower", iterator, leaderIndex);
 
@@ -665,3 +669,7 @@ def _toFollower(x: _tuple, leaderIndex) {
   }
   return _toFollowerHelp(x, leaderIndex, 1);
 }
+
+pragma "inline"
+def _toFollower(x, leaderIndex)
+  return _toFollower(x.these(), leaderIndex);
