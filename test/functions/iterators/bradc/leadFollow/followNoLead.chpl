@@ -4,11 +4,11 @@ class C {
       yield i;
   }
 
-  def these(leader) {
+  def these(param tag: iterator) where tag == iterator.leader {
     yield 1..10;
   }
 
-  def these(follower) {
+  def these(param tag: iterator, follower) where tag == iterator.follower {
     for i in follower do
       yield i;
   }
@@ -23,7 +23,7 @@ class D {
   }
   //
 
-  def these(follower) {
+  def these(param tag: iterator, follower) where tag == iterator.follower {
     for i in follower do
       yield -i;
   }

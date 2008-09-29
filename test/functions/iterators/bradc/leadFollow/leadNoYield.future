@@ -1,4 +1,0 @@
-bug: yield-less leader seg faults
-
-A these function with an argument named leader causes a seg fault
-if it does not contain a yield.
