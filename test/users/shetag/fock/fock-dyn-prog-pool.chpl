@@ -49,7 +49,7 @@ def consumer() {
 }
 
 def producer() {
-  forall blk in genBlocks() do
+  for blk in genBlocks() do // sjd: changed forall to for
     t.add(blk);
 }
 

@@ -53,7 +53,7 @@ def consumer() {
 }
 
 def producer() {
-  forall bI in genBlocks() do
+  for bI in genBlocks() do // sjd: changed forall to for
     task = bI;
 }
 

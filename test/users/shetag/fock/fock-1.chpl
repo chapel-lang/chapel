@@ -38,7 +38,7 @@ def buildjk() {
           numLocsDone = numLocsDone + 1;
       }
     
-    forall bI in gen() do
+    for bI in gen() do // sjd: changed forall to for
       task = bI;
   }
   

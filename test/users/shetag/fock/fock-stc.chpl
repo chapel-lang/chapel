@@ -12,7 +12,7 @@ const dmat : [(i,j) in matD] elemType = 1.0/(i+j);
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
 
 def buildjk() {
-  forall (loc, blk) in genBlocks() do on Locales(loc) do 
+  for (loc, blk) in genBlocks() do on Locales(loc) do  // sjd: changed forall to for
     buildjk_atom4(blk);
 
   cobegin {

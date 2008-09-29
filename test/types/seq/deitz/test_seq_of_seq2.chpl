@@ -10,9 +10,9 @@ var ss : list(list(int)) = makeList(s1, s2);
 
 writeln(ss);
 
-forall s in ss do
+for s in ss do
   writeln(s);
 
-forall s in ss do
-  forall i in s do
+for s in ss do
+  for i in s do
     writeln(i);

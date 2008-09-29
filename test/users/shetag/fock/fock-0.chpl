@@ -18,7 +18,7 @@ class blockIndices {
 }
 
 def buildjk() {
-  forall bI in gen() do
+  for bI in gen() do // sjd: changed forall to for
     buildjk_atom4(bI);
   
   cobegin {
