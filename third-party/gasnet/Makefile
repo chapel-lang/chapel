@@ -1,3 +1,4 @@
+export CHPL_COMM=gasnet
 CHAPEL_ROOT = ../..
 CHAPEL_SUBDIR = third-party/gasnet
 CHPL_MAKE_HOST_TARGET = --target
@@ -23,7 +24,6 @@ endif
 GASNET_ABS_DIR = $(shell pwd)
 GASNET_INSTALL_DIR = $(GASNET_ABS_DIR)/$(GASNET_INSTALL_SUBDIR)
 GASNET_BUILD_DIR = $(GASNET_INSTALL_DIR)/build
-
 
 default: all
 
