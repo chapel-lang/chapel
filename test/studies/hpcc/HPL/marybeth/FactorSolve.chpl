@@ -125,7 +125,7 @@ def rightBlockLU(A: [?D], blk) where (D.rank == 2) {
     // here or in distribution.
     // A1 (nb x nb) is broadcast across processors in process row.
     var U => A11; // Want each processor in process row to have local copy of A1.
-    forall columnblk in blkIter(TrailingCols,blk) {
+    for columnblk in blkIter(TrailingCols,blk) {   // TODO: would like forall
       var Ublk => A12[CurrentPanelInds,columnblk];
       //On processor that owns Ublk, do the following update:
       forall j in columnblk do
