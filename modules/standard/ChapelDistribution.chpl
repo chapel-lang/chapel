@@ -28,7 +28,17 @@ class Distribution {
 //
 class BaseDomain {
   var _arrs: list(BaseArray);
-  var _locked: sync bool = false;
+  var _count: sync int = 0;
+
+  def ~BaseDomain() {
+    var cnt = _count - 1;
+    if cnt < 0 then halt("_count is negative!");
+    else if cnt == 0 {
+      _arrs.destroy();
+      delete _count;
+    }
+    else _count = cnt;
+  }
 
   def member(ind) : bool {
     halt("membership test not supported for this domain type");
@@ -112,7 +122,7 @@ class BaseEnumDomain : BaseDomain {
 pragma "base array"
 class BaseArray {
   def reallocate(d: domain) {
-    halt("reallocating not support for this array type");
+    halt("reallocating not supported for this array type");
   }
 
   // This method is unsatisfactory -- see bradc's commit entries of

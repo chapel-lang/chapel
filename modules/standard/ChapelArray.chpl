@@ -176,10 +176,9 @@ record _domain {
 
   def buildArray(type eltType) {
     var x = _value.buildArray(eltType);
-    if !_value._locked then {
-      _value._arrs.append(x);
-      _value._locked = false;  // writing to this sync var "unlocks" the lock!
-    }
+    var cnt = _value._count;
+    _value._arrs.append(x);
+    _value._count = cnt + 1;
     return new _array(x);
   }
 
