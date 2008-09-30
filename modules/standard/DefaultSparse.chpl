@@ -40,6 +40,19 @@ class DefaultSparseDomain: BaseSparseDomain {
     }
   }
 
+  def these(param tag: iterator) where tag == iterator.leader {
+    yield true;
+  }
+
+  def these(param tag: iterator, follower: bool) where tag == iterator.follower {
+    for i in 1..nnz do
+      yield indices(i);
+  }
+
+  def these(param tag: iterator, follower) where tag == iterator.follower {
+    compilerError("Sparse iterators can't yet be zippered with others");
+  }
+
   def dim(d : int) {
     return parentDom.dim(d);
   }

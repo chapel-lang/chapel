@@ -30,6 +30,16 @@ def SpsStencDom() {
       yield (i,j);
 }
 
+def SpsStencDom(param tag: iterator) where tag == iterator.leader {
+  yield true;
+}
+
+def SpsStencDom(param tag: iterator, follower) where tag == iterator.follower {
+  for (i,j) in [-1..1, -1..1] do
+    if (i != j) then
+      yield (i,j);
+}
+
 var A: [BigDom] real,
     B: [ProbDom] real,
     W: [ProbDom] sps33;
