@@ -1,1 +1,1 @@
-../Block1D.chpl -O --enable-parallel-iterators --main-module=leadFollowOpt
+../Block1D.chpl -O --main-module=leadFollowOpt

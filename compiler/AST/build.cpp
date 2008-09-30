@@ -506,7 +506,7 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
                                BlockStmt* body) {
   checkControlFlow(body, "forall statement");
 
-  if (fSerial || !fEnableParallelIterators)
+  if (fSerial || fSerialForall)
     return buildForLoopStmt(indices, iteratorExpr, body);
 
   //

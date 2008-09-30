@@ -92,6 +92,10 @@ OPTIONS
                     When $CHPL_THREADS is set to "none" --serial is the
                     default; otherwise --no-serial is.
 
+  --[no-]serial-forall   Compile forall-loops for single/[multi-] threaded
+                    execution.  If set, forall-loops are treated like
+                    for-loops.
+
   Optimization Control Options
 
   --baseline        Turns off all optimizations in the Chapel compiler and

@@ -15,8 +15,6 @@ extern int fdump_html;
 
 extern int trace_level;
 
-extern bool fEnableParallelIterators;
-
 // optimization control flags
 extern bool fNoBoundsChecks;
 extern bool fNoCopyPropagation;
@@ -46,6 +44,7 @@ extern char fExplainInstantiation[256];
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
 extern bool fGenIDS;
+extern bool fSerialForall;
 extern bool fSerial;
 extern bool fLocal;
 extern bool fieeefloat;
