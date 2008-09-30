@@ -42,7 +42,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
   fprintf(expectFile, "log_user 1\n");
-  fprintf(expectFile, "send \"aprun -n%d -N%d %s_real",
+  fprintf(expectFile, "send \"aprun -q -n%d -N%d %s_real",
           numLocales, procsPerNode, argv[0]);
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " %s", argv[i]);
