@@ -1,0 +1,5 @@
+semantic: Should the compiler insert calls to destroy global variables?
+
+One could argue that this is not necessary because such variables would need to
+be destroyed at the end of the program, so what's the point?  On the other hand,
+it could be desirable to be able to do so.
