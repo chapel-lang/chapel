@@ -65,6 +65,22 @@ times out occasionally (20x diff -- maybe memory leak related?)
 [Error: Timed out executing program stress/deitz/test_10k_local_coforall_with_remote_update]
 
 
+======================
+basline-specific tests
+======================
+
+seg fault in leader/follower resolution
+---------------------------------------
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-dom]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-local]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
+[Error matching compiler output for studies/hpcc/common/bradc/unit/leadFollowOpt]
+[Error matching compiler output for studies/hpcc/common/bradc/unit/parBlock1D]
+[Error matching compiler output for studies/hpcc/common/bradc/unit/parBlock1Da]
+[Error matching compiler output for studies/hpcc/common/bradc/unit/parRandom2-fill]
+
+
 ===================
 opts-specific tests
 ===================
@@ -238,6 +254,21 @@ print occurs in 0 seconds!?  Timers not working?
 =============================
 mta-/xmt-specific regressions
 =============================
+
+sync access to partial word object (09/30/08)
+---------------------------------------------
+[Error matching program output for release/examples/beer]
+[Error matching program output for release/examples/fileIO]
+[Error matching program output for release/examples/genericStack]
+[Error matching program output for release/examples/hello-module]
+[Error matching program output for release/examples/hello-multiloc]
+[Error matching program output for release/examples/hello]
+[Error matching program output for release/examples/hpcc/stream]
+[Error matching program output for release/examples/iterators]
+[Error matching program output for release/examples/linkedList]
+[Error matching program output for release/examples/multilocale]
+[Error matching program output for release/examples/tree]
+[Error matching program output for release/examples/varargs]
 
 unreachable line causes compiler warning (09/16/08)
 ---------------------------------------------------
