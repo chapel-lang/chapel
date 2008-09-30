@@ -38,7 +38,7 @@ def main() {
     const startTime = getCurrentTime();
     // TODO: Want:
     // A = B + alpha * C;
-    // But this doesn't work because we don't support promotion over classes
+    // But this doesn't yet result in parallelism
 
     forall (a, b, c) in (A, B, C) {
       a = b + alpha * c;
