@@ -192,6 +192,7 @@ class Block1DDom {
           yield ind;
   }
 
+
   //
   // the print method for the domain
   //
@@ -331,6 +332,18 @@ class Block1DArr {
         yield elem;
       }
     }
+  }
+
+  def these(param tag: iterator) where tag == iterator.leader {
+    coforall blk in dom.locDom do
+      on blk do
+        yield blk.myBlock;
+    //    yield 1..2;
+  }
+
+  def these(param tag: iterator, follower) var where tag == iterator.follower {
+    for i in follower do
+      yield this(i);
   }
 
   //
