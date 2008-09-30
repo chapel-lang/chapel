@@ -99,57 +99,15 @@ addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars) {
 }
 
 
-void flattenFunctions(void) {
-
-  //
-  // convert begin/cobegin/coforall/on blocks into nested functions
-  //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (BlockStmt* block = toBlockStmt(ast)) {
-      SET_LINENO(block);
-      if (block->blockInfo) {
-        FnSymbol* fn = NULL;
-        if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_BEGIN)) {
-          fn = new FnSymbol("begin_fn");
-          fn->addFlag(FLAG_BEGIN);
-        } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COBEGIN)) {
-          fn = new FnSymbol("cobegin_fn");
-          fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
-        } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COFORALL)) {
-          fn = new FnSymbol("coforall_fn");
-          fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
-        } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON)) {
-          fn = new FnSymbol("on_fn");
-          fn->addFlag(FLAG_ON);
-          ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
-          fn->insertFormalAtTail(arg);
-        }
-        if (fn) {
-          CallExpr* call = new CallExpr(fn);
-          if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON))
-            call->insertAtTail(block->blockInfo->get(1)->remove());
-          block->insertBefore(new DefExpr(fn));
-          block->insertBefore(call);
-          block->blockInfo->remove();
-          fn->insertAtTail(block->remove());
-          fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
-          fn->retType = dtVoid;
-        }
-      }
-    }
-  }
-
+void
+flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   compute_call_sites();
 
-  Vec<FnSymbol*> all_nested_functions;
   Map<FnSymbol*,Vec<Symbol*>*> args_map;
-  forv_Vec(FnSymbol, fn, gFns) {
-    if (isFnSymbol(fn->defPoint->parentSymbol)) {
-      all_nested_functions.add_exclusive(fn);
-      Vec<Symbol*>* uses = new Vec<Symbol*>();
-      findOuterVars(fn, uses);
-      args_map.put(fn, uses);
-    }
+  forv_Vec(FnSymbol, fn, nestedFunctions) {
+    Vec<Symbol*>* uses = new Vec<Symbol*>();
+    findOuterVars(fn, uses);
+    args_map.put(fn, uses);
   }
 
   // iterate to get outer vars in a function based on outer vars in
@@ -157,7 +115,7 @@ void flattenFunctions(void) {
   bool change;
   do {
     change = false;
-    forv_Vec(FnSymbol, fn, all_nested_functions) {
+    forv_Vec(FnSymbol, fn, nestedFunctions) {
       Vec<BaseAST*> asts;
       collect_top_asts(fn, asts);
       Vec<Symbol*>* uses = args_map.get(fn);
@@ -184,7 +142,7 @@ void flattenFunctions(void) {
   // before updating the function so that the outer var actuals can be
   // updated with the outer var functions when the formals are updated
   // (in nested functions that call one another)
-  forv_Vec(FnSymbol, fn, all_nested_functions) {
+  forv_Vec(FnSymbol, fn, nestedFunctions) {
     Vec<Symbol*>* uses = args_map.get(fn);
     forv_Vec(CallExpr, call, *fn->calledBy) {
       addVarsToActuals(call, uses);
@@ -192,7 +150,7 @@ void flattenFunctions(void) {
   }
 
   // move nested functions to module level
-  forv_Vec(FnSymbol, fn, all_nested_functions) {
+  forv_Vec(FnSymbol, fn, nestedFunctions) {
     ModuleSymbol* mod = fn->getModule();
     Expr* def = fn->defPoint;
     def->remove();
@@ -200,7 +158,7 @@ void flattenFunctions(void) {
   }
 
   // add extra formals to nested functions
-  forv_Vec(FnSymbol, fn, all_nested_functions) {
+  forv_Vec(FnSymbol, fn, nestedFunctions) {
     Vec<Symbol*>* uses = args_map.get(fn);
     addVarsToFormals(fn, uses);
   }
@@ -212,4 +170,15 @@ void flattenFunctions(void) {
     if (FnSymbol* fn = toFnSymbol(ts->defPoint->parentSymbol))
       fn->defPoint->insertBefore(ts->defPoint->remove());
   }
+}
+
+
+void flattenFunctions(void) {
+  Vec<FnSymbol*> nestedFunctions;
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (isFnSymbol(fn->defPoint->parentSymbol))
+      nestedFunctions.add(fn);
+  }
+
+  flattenNestedFunctions(nestedFunctions);
 }

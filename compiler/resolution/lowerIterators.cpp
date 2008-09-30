@@ -251,7 +251,26 @@ expand_for_loop(CallExpr* call) {
 }
 
 
+static void
+inlineIterators() {
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (BlockStmt* block = toBlockStmt(ast)) {
+      if (block->parentSymbol) {
+        if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP)) {
+          Symbol* iterator = toSymExpr(block->blockInfo->get(2))->var;
+          if (iterator->type->defaultConstructor->hasFlag(FLAG_INLINE_ITERATOR)) {
+            expandIteratorInline(block->blockInfo);
+          }
+        }
+      }
+    }
+  }
+}
+
+
 void lowerIterators() {
+  inlineIterators();
+
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast))
       if (call->parentSymbol)

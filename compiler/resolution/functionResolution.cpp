@@ -3437,23 +3437,6 @@ computeStandardModuleSet() {
 }
 
 
-static void
-inlineIterators() {
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (BlockStmt* block = toBlockStmt(ast)) {
-      if (block->parentSymbol) {
-        if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP)) {
-          Symbol* iterator = toSymExpr(block->blockInfo->get(2))->var;
-          if (iterator->type->defaultConstructor->hasFlag(FLAG_INLINE_ITERATOR)) {
-            expandIteratorInline(block->blockInfo);
-          }
-        }
-      }
-    }
-  }
-}
-
-
 static bool tupleContainsArrayOrDomain(ClassType* t) {
   for (int i = 1; i <= t->fields.length(); i++) {
     Type* fieldType = t->getField(i)->type;
@@ -3680,8 +3663,6 @@ resolve() {
 
   insertReturnTemps(); // must be done before pruneResolvedTree is called.
   pruneResolvedTree();
-
-  inlineIterators();
 
   forv_Vec(TypeSymbol, ts, gTypes) {
     if (ts->type->destructor) {

@@ -177,9 +177,24 @@ makeHeapAllocations() {
   Vec<Symbol*> varVec;
 
   compute_call_sites();
+
+  // compute def uses with postorder asts set so that the first def is
+  // the defining one; see ack!! below
+  Vec<Symbol*> symSet;
+  Vec<BaseAST*> asts;
+  collect_asts(rootModule, asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (def->parentSymbol) {
+        if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+          symSet.set_add(def->sym);
+        }
+      }
+    }
+  }
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(defMap, useMap);
+  buildDefUseMaps(symSet, asts, defMap, useMap);
 
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_ON)) {
@@ -410,6 +425,48 @@ makeHeapAllocations() {
 
 void
 parallel(void) {
+  //
+  // convert begin/cobegin/coforall/on blocks into nested functions and flatten
+  //
+  Vec<FnSymbol*> nestedFunctions;
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (BlockStmt* block = toBlockStmt(ast)) {
+      SET_LINENO(block);
+      if (block->blockInfo) {
+        FnSymbol* fn = NULL;
+        if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_BEGIN)) {
+          fn = new FnSymbol("begin_fn");
+          fn->addFlag(FLAG_BEGIN);
+        } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COBEGIN)) {
+          fn = new FnSymbol("cobegin_fn");
+          fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
+        } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COFORALL)) {
+          fn = new FnSymbol("coforall_fn");
+          fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
+        } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON)) {
+          fn = new FnSymbol("on_fn");
+          fn->addFlag(FLAG_ON);
+          ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
+          fn->insertFormalAtTail(arg);
+        }
+        if (fn) {
+          nestedFunctions.add(fn);
+          CallExpr* call = new CallExpr(fn);
+          if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON))
+            call->insertAtTail(block->blockInfo->get(1)->remove());
+          block->insertBefore(new DefExpr(fn));
+          block->insertBefore(call);
+          block->blockInfo->remove();
+          fn->insertAtTail(block->remove());
+          fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+          fn->retType = dtVoid;
+        }
+      }
+    }
+  }
+  flattenNestedFunctions(nestedFunctions);
+
+
   makeHeapAllocations();
 
   compute_call_sites();
