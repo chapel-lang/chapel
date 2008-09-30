@@ -102,8 +102,14 @@ class RandomStream {
     const startCount: int(64) = sharedCount;
     sharedCount = startCount + X.numElements;
     lock$ = false;
-    forall (x, r) in (X, chpl__these(startCount, X.numElements)) {
-      x = r;
+    if (X.rank == 1) {
+      forall (x, r) in (X, chpl__these(startCount, X.numElements)) {
+        x = r;
+      }
+    } else {
+      for (x,r) in (X, chpl__these(startCount, X.numElements)) {
+        x = r;
+      }
     }
   }
 
@@ -147,6 +153,7 @@ class RandomStream {
       const val = locStream.getNext();
       yield val;
     }
+    delete locStream;
   }
 
   /*  BLC: Would like to add something like this, but should
