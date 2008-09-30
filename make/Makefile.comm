@@ -7,6 +7,6 @@
 # work properly when building in third-party directories where we
 # explicitly set CHPL_COMM...
 #
-CHPL_MAKE_COMM = $(shell export CHPL_COMM=$(CHPL_COMM) && $(CHAPEL_ROOT)/util/comm.pl)
+CHPL_MAKE_COMM = $(shell export CHPL_COMM && CHPL_COMM=$(CHPL_COMM) && $(CHAPEL_ROOT)/util/comm.pl)
 
-CHPL_MAKE_COMM_SUBSTRATE = $(shell export CHPL_COMM=$(CHPL_COMM) && $(CHAPEL_ROOT)/util/commSubstrate.pl)
+CHPL_MAKE_COMM_SUBSTRATE = $(shell export CHPL_COMM && CHPL_COMM=$(CHPL_COMM) && $(CHAPEL_ROOT)/util/commSubstrate.pl)
