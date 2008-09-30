@@ -3139,6 +3139,20 @@ resolveFns(FnSymbol* fn) {
     }
   }
 
+  //
+  // mark leaders for inlining
+  //
+  if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+    for_formals(formal, fn) {
+      if (formal->type == gLeaderTag->type &&
+          paramMap.get(formal) == gLeaderTag) {
+        fn->addFlag(FLAG_INLINE_ITERATOR);
+      }
+    }
+  }
+
+
+
   if (fn->hasFlag(FLAG_ITERATOR_FN) && !fn->iteratorInfo) {
     protoIteratorClass(fn);
   }
@@ -3428,8 +3442,11 @@ inlineIterators() {
   forv_Vec(BaseAST, ast, gAsts) {
     if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->parentSymbol) {
-        if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_INLINE_FOR_LOOP)) {
-          expandIteratorInline(block->blockInfo);
+        if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP)) {
+          Symbol* iterator = toSymExpr(block->blockInfo->get(2))->var;
+          if (iterator->type->defaultConstructor->hasFlag(FLAG_INLINE_ITERATOR)) {
+            expandIteratorInline(block->blockInfo);
+          }
         }
       }
     }
