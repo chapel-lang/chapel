@@ -379,7 +379,10 @@ def range.these(param tag: iterator) where tag == iterator.leader {
 
 def range.these(param tag: iterator, follower) where tag == iterator.follower {
   if stridable {
-    var r = low+follower.low*stride:eltType..low+follower.high*stride:eltType by stride;
+    var r = if stride > 0 then
+        low+follower.low*stride:eltType..low+follower.high*stride:eltType by stride
+      else
+        high+follower.high*stride:eltType..high+follower.low*stride:eltType by stride;
     for i in r.sharedInternalIterator() do
       yield i;
   } else {
