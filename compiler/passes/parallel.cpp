@@ -1112,6 +1112,25 @@ insertWideReferences(void) {
     }
   }
 
+  //
+  // insert temp to handle GET_MEMBER and GET_MEMBER_VALUE on wide
+  // references of wide classes
+  //
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+          call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+        if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+            getValueType(call->get(1)->typeInfo()->getField("addr")->type)->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+          VarSymbol* tmp = newTemp(getValueType(call->get(1)->typeInfo()->getField("addr")->typeInfo()));
+          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, call->get(1)->remove())));
+          call->insertAtHead(tmp);
+        }
+      }
+    }
+  }
+
   handleLocalBlocks();
 
   CallExpr* localeID = new CallExpr(PRIMITIVE_LOCALE_ID);
