@@ -107,6 +107,7 @@
 		F73113C20E3EB7C000F62922 /* wrappers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F73113BB0E3EB7C000F62922 /* wrappers.cpp */; };
 		F731D5D00D510AE2009F6897 /* chapel.lex in Sources */ = {isa = PBXBuildFile; fileRef = F721A1370D455F3C00A6B43F /* chapel.lex */; };
 		F731D6130D51181B009F6897 /* chapel.y in Sources */ = {isa = PBXBuildFile; fileRef = F721A1380D455F3C00A6B43F /* chapel.y */; };
+		F754D95C0E929C5F00A527CD /* insertDestructors.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F754D95B0E929C5F00A527CD /* insertDestructors.cpp */; };
 		F7A456F30E1AC2BA0033D1FF /* tmpdirname.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7A456F20E1AC2BA0033D1FF /* tmpdirname.cpp */; };
 		F7A4FD2A0DE7AA9300CDE656 /* chpl_cfg_comm_locales.c in Sources */ = {isa = PBXBuildFile; fileRef = F7A4FD290DE7AA9300CDE656 /* chpl_cfg_comm_locales.c */; };
 		F7A4FD390DE7AB8D00CDE656 /* chplcomm_locales.h in Headers */ = {isa = PBXBuildFile; fileRef = F7A4FD380DE7AB8D00CDE656 /* chplcomm_locales.h */; };
@@ -332,6 +333,7 @@
 		F73113CC0E3EB83A00F62922 /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = ../compiler/resolution/Makefile.share; sourceTree = SOURCE_ROOT; };
 		F731D5D80D510E84009F6897 /* COPYRIGHT */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 4; name = COPYRIGHT; path = ../COPYRIGHT; sourceTree = SOURCE_ROOT; };
 		F731D5D90D510E84009F6897 /* LICENSE */ = {isa = PBXFileReference; explicitFileType = sourcecode; fileEncoding = 4; name = LICENSE; path = ../LICENSE; sourceTree = SOURCE_ROOT; };
+		F754D95B0E929C5F00A527CD /* insertDestructors.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = insertDestructors.cpp; path = ../compiler/passes/insertDestructors.cpp; sourceTree = SOURCE_ROOT; };
 		F7665EF00D7F3C1E00A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../Makefile; sourceTree = SOURCE_ROOT; };
 		F7665EF50D7F3C6500A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../make/Makefile; sourceTree = SOURCE_ROOT; };
 		F7665EF60D7F3C6500A55EBF /* Makefile.base */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.base; path = ../make/Makefile.base; sourceTree = SOURCE_ROOT; };
@@ -454,11 +456,6 @@
 		F77216560D6D436200DE6EF6 /* Random.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Random.chpl; path = ../modules/standard/Random.chpl; sourceTree = SOURCE_ROOT; };
 		F77216570D6D436200DE6EF6 /* Schedules.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Schedules.chpl; path = ../modules/standard/Schedules.chpl; sourceTree = SOURCE_ROOT; };
 		F77216580D6D436200DE6EF6 /* Search.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Search.chpl; path = ../modules/standard/Search.chpl; sourceTree = SOURCE_ROOT; };
-		F77216590D6D436200DE6EF6 /* SingleLocaleArithmetic.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = SingleLocaleArithmetic.chpl; path = ../modules/standard/SingleLocaleArithmetic.chpl; sourceTree = SOURCE_ROOT; };
-		F772165A0D6D436200DE6EF6 /* SingleLocaleAssociative.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = SingleLocaleAssociative.chpl; path = ../modules/standard/SingleLocaleAssociative.chpl; sourceTree = SOURCE_ROOT; };
-		F772165B0D6D436200DE6EF6 /* SingleLocaleEnum.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = SingleLocaleEnum.chpl; path = ../modules/standard/SingleLocaleEnum.chpl; sourceTree = SOURCE_ROOT; };
-		F772165C0D6D436200DE6EF6 /* SingleLocaleOpaque.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = SingleLocaleOpaque.chpl; path = ../modules/standard/SingleLocaleOpaque.chpl; sourceTree = SOURCE_ROOT; };
-		F772165D0D6D436200DE6EF6 /* SingleLocaleSparse.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = SingleLocaleSparse.chpl; path = ../modules/standard/SingleLocaleSparse.chpl; sourceTree = SOURCE_ROOT; };
 		F772165E0D6D436200DE6EF6 /* Sort.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Sort.chpl; path = ../modules/standard/Sort.chpl; sourceTree = SOURCE_ROOT; };
 		F772165F0D6D436200DE6EF6 /* Time.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Time.chpl; path = ../modules/standard/Time.chpl; sourceTree = SOURCE_ROOT; };
 		F77216600D6D436200DE6EF6 /* Types.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Types.chpl; path = ../modules/standard/Types.chpl; sourceTree = SOURCE_ROOT; };
@@ -469,6 +466,13 @@
 		F7A4FD2D0DE7AADB00CDE656 /* chpl_cfg_comm_locales.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm_locales.c; path = "../runtime/comm-gasnet/chpl_cfg_comm_locales.c"; sourceTree = SOURCE_ROOT; };
 		F7A4FD320DE7AB1B00CDE656 /* chpl_cfg_comm_locales.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm_locales.c; path = "../runtime/comm-armci/chpl_cfg_comm_locales.c"; sourceTree = SOURCE_ROOT; };
 		F7A4FD380DE7AB8D00CDE656 /* chplcomm_locales.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplcomm_locales.h; path = ../runtime/include/chplcomm_locales.h; sourceTree = SOURCE_ROOT; };
+		F7C8B8890E7F11B4001CEEF3 /* ChapelDistribution.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChapelDistribution.chpl; path = ../modules/standard/ChapelDistribution.chpl; sourceTree = SOURCE_ROOT; };
+		F7C8B88A0E7F11B4001CEEF3 /* Containers.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Containers.chpl; path = ../modules/standard/Containers.chpl; sourceTree = SOURCE_ROOT; };
+		F7C8B88B0E7F11B4001CEEF3 /* DefaultArithmetic.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = DefaultArithmetic.chpl; path = ../modules/standard/DefaultArithmetic.chpl; sourceTree = SOURCE_ROOT; };
+		F7C8B88C0E7F11B4001CEEF3 /* DefaultAssociative.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = DefaultAssociative.chpl; path = ../modules/standard/DefaultAssociative.chpl; sourceTree = SOURCE_ROOT; };
+		F7C8B88D0E7F11B4001CEEF3 /* DefaultEnum.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = DefaultEnum.chpl; path = ../modules/standard/DefaultEnum.chpl; sourceTree = SOURCE_ROOT; };
+		F7C8B88E0E7F11B4001CEEF3 /* DefaultOpaque.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = DefaultOpaque.chpl; path = ../modules/standard/DefaultOpaque.chpl; sourceTree = SOURCE_ROOT; };
+		F7C8B88F0E7F11B4001CEEF3 /* DefaultSparse.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = DefaultSparse.chpl; path = ../modules/standard/DefaultSparse.chpl; sourceTree = SOURCE_ROOT; };
 		F7F770950E5A72AD00798483 /* chapel_code.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = chapel_code.chpl; path = ../runtime/src/chapel_code.chpl; sourceTree = SOURCE_ROOT; };
 		F7FAC4F90D4537A700C02B67 /* libchpl.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libchpl.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7FAC5010D45384C00C02B67 /* arg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = arg.c; path = ../runtime/src/arg.c; sourceTree = SOURCE_ROOT; };
@@ -807,6 +811,7 @@
 				F77216480D6D436200DE6EF6 /* BitOps.chpl */,
 				F77216490D6D436200DE6EF6 /* ChapelArray.chpl */,
 				F772164A0D6D436200DE6EF6 /* ChapelBase.chpl */,
+				F7C8B8890E7F11B4001CEEF3 /* ChapelDistribution.chpl */,
 				F772164B0D6D436200DE6EF6 /* ChapelIO.chpl */,
 				F772164C0D6D436200DE6EF6 /* ChapelLocale.chpl */,
 				F772164D0D6D436200DE6EF6 /* ChapelRange.chpl */,
@@ -814,6 +819,12 @@
 				F772164F0D6D436200DE6EF6 /* ChapelStandard.chpl */,
 				F77216500D6D436200DE6EF6 /* ChapelTuple.chpl */,
 				F77216510D6D436200DE6EF6 /* ChapelUtil.chpl */,
+				F7C8B88A0E7F11B4001CEEF3 /* Containers.chpl */,
+				F7C8B88B0E7F11B4001CEEF3 /* DefaultArithmetic.chpl */,
+				F7C8B88C0E7F11B4001CEEF3 /* DefaultAssociative.chpl */,
+				F7C8B88D0E7F11B4001CEEF3 /* DefaultEnum.chpl */,
+				F7C8B88E0E7F11B4001CEEF3 /* DefaultOpaque.chpl */,
+				F7C8B88F0E7F11B4001CEEF3 /* DefaultSparse.chpl */,
 				F77216520D6D436200DE6EF6 /* DistCSR.chpl */,
 				F77216530D6D436200DE6EF6 /* List.chpl */,
 				F77216540D6D436200DE6EF6 /* Math.chpl */,
@@ -821,11 +832,6 @@
 				F77216560D6D436200DE6EF6 /* Random.chpl */,
 				F77216570D6D436200DE6EF6 /* Schedules.chpl */,
 				F77216580D6D436200DE6EF6 /* Search.chpl */,
-				F77216590D6D436200DE6EF6 /* SingleLocaleArithmetic.chpl */,
-				F772165A0D6D436200DE6EF6 /* SingleLocaleAssociative.chpl */,
-				F772165B0D6D436200DE6EF6 /* SingleLocaleEnum.chpl */,
-				F772165C0D6D436200DE6EF6 /* SingleLocaleOpaque.chpl */,
-				F772165D0D6D436200DE6EF6 /* SingleLocaleSparse.chpl */,
 				F772165E0D6D436200DE6EF6 /* Sort.chpl */,
 				F772165F0D6D436200DE6EF6 /* Time.chpl */,
 				F77216600D6D436200DE6EF6 /* Types.chpl */,
@@ -836,6 +842,7 @@
 		F7665EED0D7F3BB000A55EBF /* Makefiles */ = {
 			isa = PBXGroup;
 			children = (
+				F754D95B0E929C5F00A527CD /* insertDestructors.cpp */,
 				F7665EF00D7F3C1E00A55EBF /* Makefile */,
 				F7665EF50D7F3C6500A55EBF /* Makefile */,
 				F7665EF60D7F3C6500A55EBF /* Makefile.base */,
@@ -1269,6 +1276,7 @@
 				F73113C20E3EB7C000F62922 /* wrappers.cpp in Sources */,
 				F7FDB9410E53AB59006CE064 /* bitVec.cpp in Sources */,
 				F70EA9EC0E648652006F2EE0 /* flags.cpp in Sources */,
+				F754D95C0E929C5F00A527CD /* insertDestructors.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

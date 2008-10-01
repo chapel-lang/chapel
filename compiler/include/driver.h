@@ -15,6 +15,9 @@ extern int fdump_html;
 
 extern int trace_level;
 
+// whether a begin statement has been encountered in the program being compiled
+extern bool beginEncountered;
+
 // optimization control flags
 extern bool fNoBoundsChecks;
 extern bool fNoCopyPropagation;

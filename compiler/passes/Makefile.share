@@ -1,13 +1,14 @@
 PASSES_SRCS = \
         buildDefaultFunctions.cpp \
         cleanup.cpp \
-	codegen.cpp \
+        codegen.cpp \
         copyCollect.cpp \
-	filesToAST.cpp \
-	flattenClasses.cpp \
+        filesToAST.cpp \
+        flattenClasses.cpp \
         flattenFunctions.cpp \
-	insertLineNumbers.cpp \
+        insertLineNumbers.cpp \
         parallel.cpp \
+        insertDestructors.cpp \
         normalize.cpp \
         scopeResolve.cpp \
         semanticChecks.cpp

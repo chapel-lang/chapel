@@ -1036,8 +1036,6 @@ buildOnStmt(Expr* expr, Expr* stmt) {
 }
 
 
-bool beginEncountered;
-
 BlockStmt*
 buildBeginStmt(Expr* stmt) {
   checkControlFlow(stmt, "begin statement");

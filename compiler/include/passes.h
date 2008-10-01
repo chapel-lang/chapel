@@ -20,6 +20,7 @@ void deadCodeElimination();
 void flattenClasses();
 void flattenFunctions();
 void inlineFunctions();
+void insertDestructors();
 void insertWideReferences();
 void insertLineNumbers();
 void lowerIterators();

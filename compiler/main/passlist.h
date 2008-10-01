@@ -31,7 +31,8 @@ PassInfo passlist[] = {
   RUN(lowerIterators),     // lowers iterators into functions/classes
   RUN(cullOverReferences), // remove excess references
   RUN(parallel),           // parallel transforms
-  RUN(prune),               // prune AST of dead functions and types
+  RUN(insertDestructors),  // insert calls to destructors when variables go out of scope
+  RUN(prune),              // prune AST of dead functions and types
 
   // Optimizations
   RUN(complex2record),      // change complex numbers into records
