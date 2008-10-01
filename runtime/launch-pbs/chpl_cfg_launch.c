@@ -31,7 +31,9 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   fclose(pbsFile);
 
   expectFile = fopen(expectFilename, "w");
-  fprintf(expectFile, "log_user 0\n");
+  if (verbosity < 2) {
+    fprintf(expectFile, "log_user 0\n");
+  }
   fprintf(expectFile, "set timeout -1\n");
   fprintf(expectFile, "set prompt \"(%|#|\\$|>) $\"\n");
   fprintf(expectFile, "spawn qsub -z -I %s\n", pbsFilename);
