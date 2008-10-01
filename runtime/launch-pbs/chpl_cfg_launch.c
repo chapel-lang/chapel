@@ -61,7 +61,9 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
     fprintf(expectFile, " %s", argv[i]);
   }
   fprintf(expectFile, "\\n\"\n");
-  fprintf(expectFile, "interact -o -re $prompt {send \"exit\\n\"}\n");
+  fprintf(expectFile, "interact -o -re $prompt {return}\n");
+  fprintf(expectFile, "send_user \"\\n\"\n");
+  fprintf(expectFile, "send \"exit\\n\"\n");
   fclose(expectFile);
 
   sprintf(baseCommand, "expect %s", expectFilename);
