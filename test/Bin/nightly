@@ -133,6 +133,9 @@ $hostcompiler = `$utildir/compiler.pl --host`; chomp($hostcompiler);
 $targetcompiler = `$utildir/compiler.pl --target`; chomp($targetcompiler);
 $threads = `$utildir/threads.pl`; chomp($threads);
 $comm = `$utildir/comm.pl`; chomp($comm);
+if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
+    $comm = "$comm-$ENV{'CHPL_GASNET_SEGMENT'}";
+}
 
 $fullplatform = "$targetplatform.$targetcompiler.$comm.$threads";
 if ($hostplatform ne $targetplatform) {
