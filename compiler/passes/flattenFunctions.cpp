@@ -67,8 +67,10 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
 
               se->var = arg;
             } else if (call && call->isPrimitive(PRIMITIVE_SET_REF)) {
+              SET_LINENO(se);
               call->replace(new SymExpr(arg));
             } else {
+              SET_LINENO(se);
               VarSymbol* tmp = newTemp(sym->type);
               se->getStmtExpr()->insertBefore(new DefExpr(tmp));
               se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, arg)));
