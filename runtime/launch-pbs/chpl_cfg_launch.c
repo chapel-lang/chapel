@@ -41,7 +41,11 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "log_user 1\n");
+  fprintf(expectFile, "send \"aprun -q -b -n1 -N1 ls %s_real\\n\"\n", argv[0]);
+  fprintf(expectFile, "expect {\n");
+  fprintf(expectFile, "  \"failed: chdir\" {send_user \"%s must be stored on/launched from a cross-mounted file system\\n\" ; exit 1}\n", argv[0]);
+  fprintf(expectFile, "  -re $prompt\n");
+  fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"aprun -q -n%d -N%d %s_real",
           numLocales, procsPerNode, argv[0]);
   for (i=1; i<argc; i++) {
