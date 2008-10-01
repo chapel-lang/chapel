@@ -1,3 +1,4 @@
+#include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,10 +19,16 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int procsPerNode = 1;  // BLC -- is this the value we want to use?
   FILE* pbsFile, *expectFile;
   char* projectString = getenv(launcherAccountEnvvar);
+  char* basenamePtr = strrchr(argv[0], '/');
+  if (basenamePtr == NULL) {
+      basenamePtr = argv[0];
+  } else {
+      basenamePtr++;
+  }
 
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
-  fprintf(pbsFile, "#PBS -N Chapel-%s\n", argv[0]);
+  fprintf(pbsFile, "#PBS -N Chapel-%s\n", basenamePtr);
   //  fprintf(pbsFile, "#PBS -l size=%d\n", 4*numLocales);
   fprintf(pbsFile, "#PBS -l mppwidth=%d\n", numLocales);
   fprintf(pbsFile, "#PBS -l mppnppn=%d\n", procsPerNode);
@@ -38,14 +45,14 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   fprintf(expectFile, "set prompt \"(%|#|\\$|>) $\"\n");
   fprintf(expectFile, "spawn qsub -z -I %s\n", pbsFilename);
   fprintf(expectFile, "expect {\n");
-  fprintf(expectFile, "  \"A project was not specified\" {send_user \"A project account must be specified via \\$" launcherAccountEnvvar "\\n\" ; exit 1}\n");
+  fprintf(expectFile, "  \"A project was not specified\" {send_user \"Error: A project account must be specified via \\$" launcherAccountEnvvar "\\n\" ; exit 1}\n");
   fprintf(expectFile, "  -re $prompt\n");
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
   fprintf(expectFile, "send \"aprun -q -b -n1 -N1 ls %s_real\\n\"\n", argv[0]);
   fprintf(expectFile, "expect {\n");
-  fprintf(expectFile, "  \"failed: chdir\" {send_user \"%s must be stored on/launched from a cross-mounted file system\\n\" ; exit 1}\n", argv[0]);
+  fprintf(expectFile, "  \"failed: chdir\" {send_user \"Error: %s/%s_real must be launched from and/or stored on a cross-mounted file system\\n\" ; exit 1}\n", basenamePtr, basenamePtr);
   fprintf(expectFile, "  -re $prompt\n");
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"aprun -q -n%d -N%d %s_real",
