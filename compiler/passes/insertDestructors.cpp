@@ -83,10 +83,12 @@ void insertDestructors(void) {
 
   Vec<FnSymbol*> constructors;
 
-  forv_Vec(TypeSymbol, ts, gTypes) {
-    ClassType* ct = toClassType(ts->type);
-    if (ct && ct->classTag != CLASS_CLASS && ct->destructor &&
-        ct->defaultConstructor && toFnSymbol(ct->defaultConstructor) && ct->defaultConstructor->calledBy &&
+  forv_Vec(FnSymbol, fn, gFns) {
+    ClassType* ct = toClassType(fn->retType);
+    if ((fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
+         fn->hasFlag(FLAG_WRAPPER) && fn->hasFlag(FLAG_INLINE) && fn->hasFlag(FLAG_INVISIBLE_FN)) &&
+        fn->calledBy &&
+        ct && ct->classTag != CLASS_CLASS && ct->destructor &&
         (!ct->symbol->hasFlag(FLAG_TUPLE) || !tupleContainsArrayOrDomain(ct))) {
       constructors.add(ct->defaultConstructor);
     }
