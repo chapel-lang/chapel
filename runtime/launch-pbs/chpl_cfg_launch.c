@@ -18,7 +18,7 @@ static const char* expectFilename = ".chpl-expect";
 
 typedef enum {
   pbspro,
-  ccse,
+  nccs,
   unknown
 } qsubVersion;
 
@@ -43,12 +43,34 @@ static qsubVersion determineQsubVersion(void) {
 
   fclose(sysFile);
   if (strcmp(version, " ") == 0) {
-    return ccse;
+    return nccs;
   } else if (strstr(version, "PBSPro")) {
     return pbspro;
   } else {
     return unknown;
   }
+}
+
+static int getNumCoresPerLocale(void) {
+  FILE* sysFile;
+  int coreMask;
+  int bitMask = 0x1;
+  int numCores = 1;
+
+  /* BLC: This code is fairly specific to xt-cnl, but currently will
+     only be called for the NCCS version of qsub */
+  system("cnselect -Lcoremask > " sysFilename);
+  sysFile = fopen(sysFilename, "r");
+  if (fscanf(sysFile, "%d", &coreMask) != 1) {
+    chpl_error("Cannot determine number of cores per node", 0, 0);
+  }
+  fclose(sysFile);
+  coreMask >>= 1;
+  while (coreMask & bitMask) {
+    coreMask >>= 1;
+    numCores += 1;
+  }
+  return numCores;
 }
 
 static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub, 
@@ -59,8 +81,8 @@ static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
     fprintf(pbsFile, "#PBS -l mppwidth=%d\n", numLocales);
     fprintf(pbsFile, "#PBS -l mppnppn=%d\n", procsPerNode);
     break;
-  case ccse:
-    fprintf(pbsFile, "#PBS -l size=%d\n", 4*numLocales);
+  case nccs:
+    fprintf(pbsFile, "#PBS -l size=%d\n", getNumCoresPerLocale()*numLocales);
     break;
   }
 }
