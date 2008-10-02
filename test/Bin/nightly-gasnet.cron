@@ -5,12 +5,10 @@
 #
 source ~/.chapelcshrc-cron-gasnet
 setenv CHPL_GASNET_SEGMENT everything
-#$CHPL_HOME/test/Bin/nightly -cron
-$CHPL_HOME/test/Bin/nightly -debug -examples
+$CHPL_HOME/test/Bin/nightly -cron
 
 #
 # Then test one using the other segment (e.g., fast)
 #
 setenv CHPL_GASNET_SEGMENT fast
-#$CHPL_HOME/test/Bin/nightly -cron
-$CHPL_HOME/test/Bin/nightly -debug -examples
+$CHPL_HOME/test/Bin/nightly -cron
