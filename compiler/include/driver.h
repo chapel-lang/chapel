@@ -15,8 +15,9 @@ extern int fdump_html;
 
 extern int trace_level;
 
-// whether a begin statement has been encountered in the program being compiled
-extern bool beginEncountered;
+// whether to enable insertion of destructor calls when variables go out of scope
+// disabled if a begin statement has been encountered in the program being compiled
+extern bool fEnableDestructorCalls;
 
 // optimization control flags
 extern bool fNoBoundsChecks;

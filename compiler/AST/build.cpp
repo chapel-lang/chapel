@@ -1045,7 +1045,7 @@ buildBeginStmt(Expr* stmt) {
   if (fSerial)
     return buildChapelStmt(new BlockStmt(stmt));
 
-  beginEncountered = true;
+  fEnableDestructorCalls = false; // not safe if there is a begin in the program!
 
   BlockStmt* block = buildChapelStmt();
   block->insertAtTail(new CallExpr("_upEndCount"));
