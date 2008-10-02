@@ -15,10 +15,6 @@
 linux and general regressions
 =============================
 
-never worked
-------------
-[Error matching program output for classes/figueroa/RecordDestructor2]
-
 precision issue, due to user code changing (07/01/08)
 -----------------------------------------------------
 [Error matching program output for
@@ -33,59 +29,11 @@ extremely rare race condition in module initialization
 valgrind-specific regressions
 =============================
 
-compiler problem within insertDestructors (10/01/08)
-----------------------------------------------------
-[Error matching program output for classes/deitz/test_record_inherit1]
-[Error matching program output for classes/diten/nearestMutualParentClass]
-[Error matching program output for functions/jplevyak/scoping/visibility-4]
-[Error matching program output for io/bradc/readTypeStdin]
-[Error matching program output for io/bradc/readType]
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
-[Error matching program output for studies/madness/aniruddha/madchap/recordBug/test_likepy]
-[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
-[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
-[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
-[Error matching program output for studies/madness/aniruddha/madchap/test_mul]
-[Error matching program output for studies/madness/aniruddha/madchap/test_showboxes]
-[Error matching program output for studies/madness/common/test_diff]
-[Error matching program output for studies/madness/common/test_gaxpy]
-[Error matching program output for studies/madness/common/test_likepy]
-[Error matching program output for studies/madness/common/test_mul]
-[Error matching program output for studies/madness/common/test_showboxes]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_mul]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_showboxes]
-[Error matching program output for trivial/jplevyak/pragma-4]
-[Error matching program output for trivial/shannon/readWriteComplexFail1]
-[Error matching program output for trivial/shannon/readWriteComplex]
-[Error matching program output for types/file/freadBoolean]
-[Error matching program output for types/file/freadComplex]
-[Error matching program output for types/file/freadEnum]
-[Error matching program output for types/file/freadIntFloat]
-[Error matching program output for types/file/freadNoFloat]
-[Error matching program output for types/file/freadString]
-
-
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
 [Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 [Error matching program output for parallel/begin/dinan/mvm_coforall]
-
-
-================================
-performance-specific regressions
-================================
-
-lingering --enable-parallel-iterators flags
--------------------------------------------
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-local]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
 
 
 ===========================
