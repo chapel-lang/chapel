@@ -1,8 +1,8 @@
-bug: RandomStream follower doesn't track or update global state
+feature request: RandomStream follower iterator
 
-The RandomStream class' follower iterator currently uses the indices
-provided by the leader as the values to the skipToNth/getNth() calls
-rather than starting at the current cursor/count and going forward
-from there.  This test demonstrates the issue by using the same stream
-to fill two 10-element arrays and then comparing to a 20-element
-array.
+I'm backing out the support that I'd added for RandomStream follower
+iterators because we don't have sufficient machinery in the leader/
+follower story to be able to update the global cursor in a sufficiently
+race-safe way.  This would be nice to continue to develop after the
+release when we have more time.
+
