@@ -34,6 +34,9 @@ class AList {
   // add element(s) at end of list
   void insertAtTail(Expr* new_ast);
 
+  // add element(s) at end of list before goto, if any
+  void insertAtTailBeforeGoto(Expr* new_ast);
+
   // codegen list
   void codegen(FILE* outfile, const char* separator = ", ");
 };

@@ -194,9 +194,9 @@ void insertDestructors(void) {
               fn->insertBeforeReturnAfterLabel(new CallExpr(lhs->var->type->destructor, tmp));
             } else {
               INT_ASSERT(parentBlock);
-              parentBlock->insertAtTail(new DefExpr(tmp));
-              parentBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, lhs->var)));
-              parentBlock->insertAtTail(new CallExpr(lhs->var->type->destructor, tmp));
+              parentBlock->insertAtTailBeforeGoto(new DefExpr(tmp));
+              parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, lhs->var)));
+              parentBlock->insertAtTailBeforeGoto(new CallExpr(lhs->var->type->destructor, tmp));
             }
 //            printf("Need to call destructor %s on %s\n", constructor->cname, lhs->var->cname);
           }

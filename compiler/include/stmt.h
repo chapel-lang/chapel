@@ -31,6 +31,7 @@ class BlockStmt : public Expr {
 
   void insertAtHead(Expr* ast);
   void insertAtTail(Expr* ast);
+  void insertAtTailBeforeGoto(Expr* ast);
 
   bool isLoop(void);
   int length(void);

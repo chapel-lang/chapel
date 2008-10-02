@@ -120,6 +120,12 @@ BlockStmt::insertAtTail(Expr* ast) {
 }
 
 
+void
+BlockStmt::insertAtTailBeforeGoto(Expr* ast) {
+  body.insertAtTailBeforeGoto(ast);
+}
+
+
 bool
 BlockStmt::isLoop(void) {
   return (blockInfo &&
