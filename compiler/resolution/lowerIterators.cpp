@@ -9,6 +9,24 @@
 #include "iterator.h"
 
 
+//
+// replace a local block that contains yield or return statements by
+// smaller local blocks that do not contain these types of statements
+//
+static void
+fragmentLocalBlocks() {
+  Vec<BlockStmt*> localBlocks;
+
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (BlockStmt* block = toBlockStmt(ast))
+      if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_LOCAL))
+        localBlocks.add(block);
+  }
+
+
+}
+
+
 void
 expandIteratorInline(CallExpr* call) {
   BlockStmt* body;
@@ -269,6 +287,8 @@ inlineIterators() {
 
 
 void lowerIterators() {
+  fragmentLocalBlocks();
+
   inlineIterators();
 
   forv_Vec(BaseAST, ast, gAsts) {

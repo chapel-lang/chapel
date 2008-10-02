@@ -985,14 +985,16 @@ buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
 
 
 BlockStmt* buildLocalStmt(Expr* stmt) {
-  static int blockid = 1;
-  FnSymbol* fn = new FnSymbol(astr("_local_stmt_", istr(blockid++)));
   BlockStmt* block = buildChapelStmt();
 
-  fn->body = new BlockStmt(stmt);
-  fn->addFlag(FLAG_LOCAL_BLOCK);
-  block->insertAtTail(new DefExpr(fn));
-  block->insertAtTail(new CallExpr(fn));
+  if (fLocal) {
+    block->insertAtTail(stmt);
+    return block;
+  }
+
+  BlockStmt* localBlock = new BlockStmt(stmt);
+  localBlock->blockInfo = new CallExpr(PRIMITIVE_BLOCK_LOCAL);
+  block->insertAtTail(localBlock);
   return block;
 }
 

@@ -448,6 +448,9 @@ parallel(void) {
           fn->addFlag(FLAG_ON);
           ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
           fn->insertFormalAtTail(arg);
+        } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_LOCAL)) {
+          fn = new FnSymbol("local_fn");
+          fn->addFlag(FLAG_LOCAL_BLOCK);
         }
         if (fn) {
           nestedFunctions.add(fn);

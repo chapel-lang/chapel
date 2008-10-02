@@ -1795,6 +1795,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_BLOCK_COBEGIN:
     case PRIMITIVE_BLOCK_COFORALL:
     case PRIMITIVE_BLOCK_ON:
+    case PRIMITIVE_BLOCK_LOCAL:
     case PRIMITIVE_YIELD:
     case PRIMITIVE_DELETE:
     case PRIMITIVE_IS_ENUM:
