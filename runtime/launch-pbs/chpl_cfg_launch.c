@@ -12,6 +12,7 @@ static const char* expectFilename = ".chpl-expect";
 #define sysFilename ".chpl-tmp"
 /* copies of binary to run per node */
 #define procsPerNode 1  
+#define versionBuffLen 80
 
 #define launcherAccountEnvvar "CHPL_LAUNCHER_ACCOUNT"
 
@@ -22,11 +23,25 @@ typedef enum {
 } qsubVersion;
 
 static qsubVersion determineQsubVersion(void) {
-  char version[81] = "";
+  char version[versionBuffLen+1] = "";
+  char* versionPtr = version;
   FILE* sysFile;
+  int i;
+
   system("qsub --version > "sysFilename);
   sysFile = fopen(sysFilename, "r");
-  fscanf(sysFile, "version %80s", version);
+  for (i=0; i<versionBuffLen; i++) {
+    char tmp;
+    fscanf(sysFile, "%c", &tmp);
+    if (tmp == '\n') {
+      *versionPtr++ = '\0';
+      break;
+    } else {
+      *versionPtr++ = tmp;
+    }
+  }
+  printf("version is: %s\n", version);
+
   fclose(sysFile);
   if (strcmp(version, "") == 0) {
     return ccse;
