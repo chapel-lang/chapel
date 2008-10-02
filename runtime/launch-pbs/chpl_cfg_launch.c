@@ -40,10 +40,9 @@ static qsubVersion determineQsubVersion(void) {
       *versionPtr++ = tmp;
     }
   }
-  printf("version is: %s\n", version);
 
   fclose(sysFile);
-  if (strcmp(version, "") == 0) {
+  if (strcmp(version, " ") == 0) {
     return ccse;
   } else if (strstr(version, "PBSPro")) {
     return pbspro;
@@ -80,7 +79,6 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
       basenamePtr++;
   }
 
-  determineQsubVersion();
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
   fprintf(pbsFile, "#PBS -N Chapel-%s\n", basenamePtr);
