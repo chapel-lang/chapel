@@ -240,7 +240,7 @@ void _chpl_comm_set_malloc_type(void) {
 
 void _chpl_comm_alloc_registry(int numGlobals) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-  _global_vars_registry = chpl_malloc(numGlobals, sizeof(void*), "allocate global vars registry", 0, 0);
+  _global_vars_registry = numGlobals == 0 ? NULL : chpl_malloc(numGlobals, sizeof(void*), "allocate global vars registry", 0, 0);
 #else
   _global_vars_registry = _global_vars_registry_static;
 #endif
