@@ -40,17 +40,15 @@ internal valgrind stuff 'the impossible has happened'
 gasnet-specific regressions
 ===========================
 
-leader-follower iterators + --no-local (10/01/08)
--------------------------------------------------
-[Error matching compiler output for functions/deitz/iterators/leader_follower/test_leader_follower4]
-[Error matching compiler output for functions/deitz/iterators/leader_follower/test_leader_follower5]
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+incompatible pointer type in destroy array call (10/03/08)
+----------------------------------------------------------
+[Error matching compiler output for classes/figueroa/LeakedMemory2]
+
+weird race condition that Steve found--linked to no longer using GASNet debug?
+------------------------------------------------------------------------------
 [Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-dom]
 [Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
 [Error matching compiler output for studies/hpcc/common/bradc/unit/leadFollowOpt]
-[Error matching compiler output for studies/hpcc/common/bradc/unit/parBlock1D]
-[Error matching compiler output for studies/hpcc/common/bradc/unit/parBlock1Da]
-[Error matching compiler output for studies/hpcc/common/bradc/unit/parRandom2-fill]
 
 timeout
 -------
@@ -75,6 +73,15 @@ times out occasionally (20x diff -- maybe memory leak related?)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
 [Error: Timed out executing program stress/deitz/test_10k_local_coforall_with_remote_update]
+
+
+=======================
+baseline-specific tests
+=======================
+
+memory is leaked (10/03/08)
+---------------------------
+[Error matching program output for classes/figueroa/LeakedMemory2]
 
 
 ===================
@@ -124,6 +131,14 @@ opts-specific tests
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
 
+
+==========================
+intel-specific regressions
+==========================
+
+out of memory (10/03/08)
+------------------------
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 
 ==============================
 pathscale-specific regressions
