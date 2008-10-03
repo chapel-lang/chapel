@@ -74,7 +74,7 @@ static int getNumCoresPerLocale(void) {
 }
 
 static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub, 
-				 int32_t numLocales) {
+                                 int32_t numLocales) {
   switch (qsub) {
   case pbspro:
   case unknown:
@@ -119,8 +119,8 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   fprintf(expectFile, "spawn qsub -z -I %s\n", pbsFilename);
   fprintf(expectFile, "expect {\n");
   fprintf(expectFile, "  \"A project was not specified\" {send_user "
-	  "\"Error: A project account must be specified via \\$" 
-	  launcherAccountEnvvar "\\n\" ; exit 1}\n");
+          "\"Error: A project account must be specified via \\$" 
+          launcherAccountEnvvar "\\n\" ; exit 1}\n");
   fprintf(expectFile, "  -re $prompt\n");
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
@@ -128,13 +128,13 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   fprintf(expectFile, "send \"aprun -q -b -n1 -N1 ls %s_real\\n\"\n", argv[0]);
   fprintf(expectFile, "expect {\n");
   fprintf(expectFile, "  \"failed: chdir\" {send_user "
-	  "\"Error: %s/%s_real must be launched from and/or stored on a "
-	  "cross-mounted file system\\n\" ; exit 1}\n", 
-	  basenamePtr, basenamePtr);
+          "\"Error: %s/%s_real must be launched from and/or stored on a "
+          "cross-mounted file system\\n\" ; exit 1}\n", 
+          basenamePtr, basenamePtr);
   fprintf(expectFile, "  -re $prompt\n");
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"aprun -q -n%d -N%d %s_real", 
-	  numLocales, procsPerNode, argv[0]);
+          numLocales, procsPerNode, argv[0]);
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " %s", argv[i]);
   }
