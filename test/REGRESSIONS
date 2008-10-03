@@ -36,9 +36,9 @@ internal valgrind stuff 'the impossible has happened'
 [Error matching program output for parallel/begin/dinan/mvm_coforall]
 
 
-===========================
-gasnet-specific regressions
-===========================
+=============================
+gasnet-everything regressions
+=============================
 
 incompatible pointer type in destroy array call (10/03/08)
 ----------------------------------------------------------
@@ -73,6 +73,36 @@ times out occasionally (20x diff -- maybe memory leak related?)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
 [Error: Timed out executing program stress/deitz/test_10k_local_coforall_with_remote_update]
+
+
+==============================================
+gasnet-fast regressions (other than the above)
+==============================================
+
+memory allocator doesn't handle 0 bytes of memory well
+------------------------------------------------------
+[Error matching program output for arrays/deitz/jacobi-serial-local]
+[Error matching program output for trivial/bradc/ref2string]
+[Error matching program output for trivial/diten/classRef2string-local]
+
+memory allocator doesn't handle realloc or --mem flags
+------------------------------------------------------
+[Error matching program output for extern/bradc/defaultArgsNoLocal]
+[Error matching program output for memory/bradc/memmax]
+[Error matching program output for memory/shannon/freedWithoutMalloc]
+[Error matching program output for memory/shannon/jacobi]
+[Error matching program output for memory/shannon/memmaxExceedsLineno2]
+[Error matching program output for memory/shannon/memmaxExceeds]
+[Error matching program output for memory/shannon/memstatPrint]
+[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
+[Error matching program output for memory/shannon/printMemTable2]
+[Error matching program output for memory/shannon/printMemTable]
+[Error matching program output for memory/shannon/reallocWithoutMalloc]
+
+???
+---
+[Error matching program output for multilocale/bradc/locales/queryClassField]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-local]
 
 
 =======================
