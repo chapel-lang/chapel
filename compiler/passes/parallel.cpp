@@ -555,7 +555,7 @@ buildWideClass(Type* type) {
 // addr field into a non-wide of otherwise the same type. Then, replace its
 // use with the non-wide version.
 //
-static void insertLocalTemp(Expr* expr) {
+static void insertLocalTemp(Expr* expr, bool derefOnly = false) {
   SymExpr* se = toSymExpr(expr);
   Expr* stmt = expr->getStmtExpr();
   INT_ASSERT(se && stmt);
@@ -567,6 +567,23 @@ static void insertLocalTemp(Expr* expr) {
   }
   stmt->insertBefore(new DefExpr(var));
   stmt->insertBefore(new CallExpr(PRIMITIVE_LOCAL_DEREF, se->copy(), var));
+
+  //
+  // for wide references to wide classes, narrow the wide class too
+  // (unless derefOnly is set)
+  //
+  if (!derefOnly &&
+      var->type->symbol->hasFlag(FLAG_REF) &&
+      getValueType(var->type)->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+    VarSymbol* var2 = newTemp(astr("local_", se->var->name),
+                              getValueType(var->type)->getField("addr")->type);
+    if (!fNoLocalChecks)
+      stmt->insertBefore(new CallExpr(PRIMITIVE_LOCAL_CHECK, var));
+    stmt->insertBefore(new DefExpr(var2));
+    stmt->insertBefore(new CallExpr(PRIMITIVE_LOCAL_DEREF, var, var2));
+    var = var2;
+  }
+
   se->replace(new SymExpr(var));
 }
 
@@ -598,9 +615,12 @@ static void localizeCall(CallExpr* call) {
         } else if (rhs->isPrimitive(PRIMITIVE_GET_REF)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            insertLocalTemp(rhs->get(1));
-            if (!rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
+            insertLocalTemp(rhs->get(1), true);
+            if (!rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+              INT_ASSERT(rhs->get(1)->typeInfo() == dtString);
+              // special handling for wide strings
               rhs->replace(rhs->get(1)->remove());
+            }
           }
         } else if (rhs->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
@@ -637,7 +657,7 @@ static void localizeCall(CallExpr* call) {
       } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
                  !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
                  !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-        insertLocalTemp(call->get(1));
+        insertLocalTemp(call->get(1), true);
       }
       break;
     case PRIMITIVE_DYNAMIC_CAST:

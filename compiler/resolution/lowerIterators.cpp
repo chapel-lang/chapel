@@ -10,20 +10,100 @@
 
 
 //
-// replace a local block that contains yield or return statements by
-// smaller local blocks that do not contain these types of statements
+// replace a local block by smaller local blocks that do not contain
+// goto statements, yields, and returns.
 //
 static void
 fragmentLocalBlocks() {
-  Vec<BlockStmt*> localBlocks;
+  Vec<Expr*> preVec; // stmts to be inserted before new local blocks
+  Vec<Expr*> inVec;  // stmts to be inserted in new local blocks
 
+  //
+  // collect all local blocks into localBlocks vector
+  //
+  Vec<BlockStmt*> localBlocks; // old local blocks
   forv_Vec(BaseAST, ast, gAsts) {
     if (BlockStmt* block = toBlockStmt(ast))
       if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_LOCAL))
         localBlocks.add(block);
   }
 
+  //
+  // collect first statements of local blocks into queue vector
+  //
+  Vec<Expr*> queue;
+  forv_Vec(BlockStmt, block, localBlocks) {
+    if (block->body.head)
+      queue.add(block->body.head);
+  }
 
+  forv_Vec(Expr, expr, queue) {
+    for (Expr* current = expr; current; current = current->next) {
+      bool insertNewLocal = false;
+      CallExpr* call = toCallExpr(current);
+      DefExpr* def = toDefExpr(current);
+
+      //
+      // if this statement is a yield, a return, a label definition, a
+      // goto, a conditional, or a block, insert a new local block
+      // that contains all the statements seen to this point (by
+      // setting insertNewLocal to true) and add the first statements
+      // of blocks and conditional blocks to the queue; otherwise, if
+      // this statement is a definition, add it to preVec; otherwise,
+      // add this statement to inVec.
+      //
+      if ((call && call->isPrimitive(PRIMITIVE_YIELD)) ||
+          (call && call->isPrimitive(PRIMITIVE_RETURN)) ||
+          (def && isLabelSymbol(def->sym)) ||
+          isGotoStmt(current) ||
+          isCondStmt(current) ||
+          isBlockStmt(current)) {
+        insertNewLocal = true;
+        if (BlockStmt* block = toBlockStmt(current)) {
+          if (block->body.head)
+            queue.add(block->body.head);
+        } else if (CondStmt* cond = toCondStmt(current)) {
+          if (cond->thenStmt && cond->thenStmt->body.head)
+            queue.add(cond->thenStmt->body.head);
+          if (cond->elseStmt && cond->elseStmt->body.head)
+            queue.add(cond->elseStmt->body.head);
+        }
+      } else if (isDefExpr(current)) {
+        preVec.add(current);
+      } else {
+        inVec.add(current);
+      }
+
+      //
+      // if ready to insert a new local block or we are on the last
+      // statement in a block, insert a new local block containing all
+      // the statements in inVec; move all the statements in preVec to
+      // before this local block.
+      //
+      if (insertNewLocal || !current->next) {
+        if (preVec.n || inVec.n) {
+          BlockStmt* newLocalBlock = new BlockStmt();
+          newLocalBlock->blockInfo = new CallExpr(PRIMITIVE_BLOCK_LOCAL);
+          current->insertBefore(newLocalBlock);
+          forv_Vec(Expr, expr, preVec) {
+            newLocalBlock->insertBefore(expr->remove());
+          }
+          preVec.clear();
+          forv_Vec(Expr, expr, inVec) {
+            newLocalBlock->insertAtTail(expr->remove());
+          }
+          inVec.clear();
+        }
+      }
+    }
+  }
+
+  //
+  // remove old local blocks
+  //
+  forv_Vec(BlockStmt, block, localBlocks) {
+    block->blockInfo->remove();
+  }
 }
 
 

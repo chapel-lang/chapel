@@ -1413,6 +1413,8 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_LOCAL_CHECK:
       fprintf(outfile, "LOCAL_CHECK(");
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
+        fprintf(outfile, "*");
       get(1)->codegen(outfile);
       fprintf(outfile, ", ");
       get(2)->codegen(outfile);
@@ -1422,6 +1424,8 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIMITIVE_LOCAL_DEREF:
       fprintf(outfile, "LOCAL_DEREF(");
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
+        fprintf(outfile, "*");
       get(1)->codegen(outfile);
       fprintf(outfile, ", ");
       get(2)->codegen(outfile);
