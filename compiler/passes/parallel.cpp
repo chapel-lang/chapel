@@ -349,7 +349,11 @@ makeHeapAllocations() {
     //  temporaries for destructured indices
     //
     if (!defMap.get(var) || defMap.get(var)->n == 0) {
-      var->defPoint->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_CHPL_ALLOC, heapType->symbol, new_StringSymbol("heap class"))));
+      //
+      // In this case, where should we put this?  ack!! let's assume
+      // we can put it in front of the first use!
+      //
+      useMap.get(var)->v[0]->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_CHPL_ALLOC, heapType->symbol, new_StringSymbol("heap class"))));
     }
 
     for_defs(def, defMap, var) {
