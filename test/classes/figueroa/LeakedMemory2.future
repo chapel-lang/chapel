@@ -1,3 +1,0 @@
-performance: memory not freed upon returning from a function with a local array
-
-All memory associated with an array should be freed when it goes out of scope.

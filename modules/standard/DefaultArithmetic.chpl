@@ -326,7 +326,10 @@ class DefaultArithmeticArray: BaseArray {
   var data : _ddata(eltType);
   var noinit: bool = false;
 
-  def ~DefaultArithmeticArray() { delete data; }
+  def ~DefaultArithmeticArray() {
+    delete data;
+    delete dom;
+  }
 
   def these() var {
     for i in dom do
