@@ -327,7 +327,11 @@ class DefaultArithmeticArray: BaseArray {
   var noinit: bool = false;
 
   def ~DefaultArithmeticArray() {
-    delete data;
+    var cnt = data.count - 1;
+    data.count = cnt;
+    if cnt < 0 then halt("count is negative!"); // should never happen!
+    else if cnt == 0 then
+      delete data;
     delete dom;
   }
 
@@ -427,6 +431,7 @@ class DefaultArithmeticArray: BaseArray {
     var alias = new DefaultArithmeticArray(eltType, rank, idxType,
                                                 d.stridable, reindexed,
                                                 d, noinit=true);
+    data.count += 1;
     alias.data = data;
     alias.size = size;
     alias.blk = blk;

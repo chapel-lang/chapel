@@ -562,7 +562,11 @@ pragma "data class"
 class _ddata {
   type eltType;
   var size: int;
-  def ~_ddata() { __primitive("array_free", this); }
+  var count: sync int = 1;
+  def ~_ddata() {
+    __primitive("array_free", this);
+    delete count;
+  }
   pragma "inline" def init() {
     __primitive("array_alloc", this, eltType, size);
     init_elts(this, size, eltType);

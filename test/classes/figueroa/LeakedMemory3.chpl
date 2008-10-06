@@ -4,6 +4,8 @@
 use Memory;
 
 const N = 5;
+var A: [1..N] int = 7;
+var sum = -3;
 
 def foo (X) {
   var sum = 0;
@@ -11,12 +13,14 @@ def foo (X) {
   return sum;
 }
 
-var sum = -3;
-var A: [1..N] int = 7;
+def bar () {
+sum += foo(A[A.domain.low+1..A.domain.high-1]);
+}
 
 var m1 = memoryUsed();
-sum += foo(A[A.domain.low+1..A.domain.high-1]);
+bar();
 var m2 = memoryUsed();
 
-writeln("Amount of leaked memory after calling foo(): ", m2-m1);
+writeln("Amount of leaked memory after calling foo(): ", m2:int - m1:int);
 writeln("sum is ", sum);
+writeln(A);

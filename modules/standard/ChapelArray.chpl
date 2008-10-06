@@ -176,9 +176,9 @@ record _domain {
 
   def buildArray(type eltType) {
     var x = _value.buildArray(eltType);
-    var cnt = _value._count;
+    var cnt = _value._count; // lock
     _value._arrs.append(x);
-    _value._count = cnt + 1;
+    _value._count = cnt;     // unlock
     return new _array(x);
   }
 
