@@ -73,6 +73,11 @@ times out occasionally (20x diff -- maybe memory leak related?)
 gasnet-fast regressions (other than the above)
 ==============================================
 
+intermittent seg faults 
+---------------------------------------
+[Error matching program output for multilocale/deitz/linked/test_linked2] (e.g., 10/05/08)
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-dom] (e.g., 10/06/08)
+
 memory allocator doesn't handle realloc or --mem flags
 ------------------------------------------------------
 [Error matching program output for extern/bradc/defaultArgsNoLocal]
