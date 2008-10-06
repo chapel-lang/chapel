@@ -44,12 +44,6 @@ incompatible pointer type in destroy array call (10/03/08)
 ----------------------------------------------------------
 [Error matching compiler output for classes/figueroa/LeakedMemory2]
 
-weird race condition that Steve found--linked to no longer using GASNet debug?
-------------------------------------------------------------------------------
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-dom]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
-[Error matching compiler output for studies/hpcc/common/bradc/unit/leadFollowOpt]
-
 timeout
 -------
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -79,12 +73,6 @@ times out occasionally (20x diff -- maybe memory leak related?)
 gasnet-fast regressions (other than the above)
 ==============================================
 
-memory allocator doesn't handle 0 bytes of memory well
-------------------------------------------------------
-[Error matching program output for arrays/deitz/jacobi-serial-local]
-[Error matching program output for trivial/bradc/ref2string]
-[Error matching program output for trivial/diten/classRef2string-local]
-
 memory allocator doesn't handle realloc or --mem flags
 ------------------------------------------------------
 [Error matching program output for extern/bradc/defaultArgsNoLocal]
@@ -98,11 +86,6 @@ memory allocator doesn't handle realloc or --mem flags
 [Error matching program output for memory/shannon/printMemTable2]
 [Error matching program output for memory/shannon/printMemTable]
 [Error matching program output for memory/shannon/reallocWithoutMalloc]
-
-???
----
-[Error matching program output for multilocale/bradc/locales/queryClassField]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-local]
 
 
 =======================
@@ -122,37 +105,65 @@ opts-specific tests
 
 
 
-(Full run: 29, though some spurious test_refine errors)
+(Full run: 44, though some spurious test_refine errors)
 
 
 --no-copy-propagation
 --no-dead-code-elimination
---baseline --inline
 --------------------------
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
 
+--no-inline
+--baseline --copy-propagation
+--baseline --dead-code-elimination
+--baseline --inline-iterators
+--baseline --live-analysis
+--baseline --optimize-loop-iterators
+--baseline --scalar-replacement
+--no-scalar-replacement --no-inline
+------------------------------------
+[Error matching program output for classes/figueroa/LeakedMemory2]
+
 --no-inline-iterators
---no-scalar-replacement
---no-optimize-loop-iterators --no-inline-iterators
 --------------------------------------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
+--no-optimize-loop-iterators --no-inline-iterators
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
 ---------------------------------------------------------------------
-[Error: Timed out compilation for functions/deitz/named/test_named2]
+[Error matching program output for classes/figueroa/LeakedMemory2]
+[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+
+--no-scalar-replacement
+-----------------------
+[Error matching program output for classes/figueroa/LeakedMemory2]
+[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+
+--baseline --inline
+--------------------------
+[Error matching program output for classes/figueroa/LeakedMemory2]
+[Error: Timed out compilation for users/franzf/v0/chpl/main]
+[Error: Timed out compilation for users/franzf/v1/chpl/main]
+[Error: Timed out compilation for users/franzf/v2/chpl/main]
+
+--no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
+---------------------------------------------------------------------
+[Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
 --no-local
 ----------
 [Error matching compiler output for classes/diten/allocateManyObjects]
+[Error matching program output for classes/figueroa/LeakedMemory2]
 
 --baseline --no-local
 ---------------------
 [Error matching program output for arrays/diten/promoteFieldAccessAndMethod]
-[Error matching compiler output for classes/bradc/setterForField]
 [Error matching compiler output for classes/diten/allocateManyObjects]
+[Error matching program output for classes/figueroa/LeakedMemory2]
+[Error: Timed out executing program npb/cg/bradc/cg-sparse]
 [Error matching compiler output for studies/590o/alaska/graph]
 [Error matching compiler output for studies/590o/blerner/xml-parse]
 [Error matching compiler output for studies/uts/dequeue]
@@ -166,8 +177,8 @@ opts-specific tests
 intel-specific regressions
 ==========================
 
-out of memory (10/03/08)
-------------------------
+occasional out of memory (e.g., 10/03/08)
+-----------------------------------------
 [Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 
 ==============================
