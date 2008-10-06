@@ -161,6 +161,9 @@ TYPE_EXTERN PrimitiveType* dtTaskList;
 TYPE_EXTERN ClassType* dtArray;
 TYPE_EXTERN ClassType* dtChapelFile;
 TYPE_EXTERN ClassType* dtWriter;
+TYPE_EXTERN ClassType* dtBaseArray;
+TYPE_EXTERN ClassType* dtBaseDomain;
+TYPE_EXTERN ClassType* dtDistribution;
 
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference

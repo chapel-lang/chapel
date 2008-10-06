@@ -150,4 +150,6 @@ class BaseArray {
   def _preserveArrayElement(oldslot, newslot) {
     halt("_preserveArrayElement() not supported for non-associative arrays");
   }
+
+  def supportsAlignedFollower() param return false;
 }

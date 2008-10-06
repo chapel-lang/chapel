@@ -2309,6 +2309,10 @@ preFold(Expr* expr) {
         Type* rt = call->get(2)->typeInfo();
         if (lt != dtUnknown && rt != dtUnknown &&
             !lt->symbol->hasFlag(FLAG_GENERIC) && !rt->symbol->hasFlag(FLAG_GENERIC)) {
+          if (lt->symbol->hasFlag(FLAG_REF))
+            lt = getValueType(lt);
+          if (rt->symbol->hasFlag(FLAG_REF))
+            rt = getValueType(rt);
           result = (lt == rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
           call->replace(result);
         }
@@ -2319,6 +2323,10 @@ preFold(Expr* expr) {
         Type* rt = call->get(2)->typeInfo();
         if (lt != dtUnknown && rt != dtUnknown &&
             !lt->symbol->hasFlag(FLAG_GENERIC) && !rt->symbol->hasFlag(FLAG_GENERIC)) {
+          if (lt->symbol->hasFlag(FLAG_REF))
+            lt = getValueType(lt);
+          if (rt->symbol->hasFlag(FLAG_REF))
+            rt = getValueType(rt);
           result = (lt != rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
           call->replace(result);
         }
@@ -2444,8 +2452,33 @@ preFold(Expr* expr) {
       for_formals(formal, iterator) {
         followerCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
       }
-      call->replace(followerCall);
-      result = followerCall;
+      if (call->numActuals() > 1) {
+        CallExpr* alignedFollowerCall = followerCall->copy();
+        alignedFollowerCall->insertAtTail(new NamedExpr("aligned", call->get(2)->remove()));
+        call->replace(followerCall);
+        CallExpr* move = toCallExpr(followerCall->parentExpr);
+        INT_ASSERT(move && move->isPrimitive(PRIMITIVE_MOVE));
+        VarSymbol* tmp = newTemp();
+        tmp->addFlag(FLAG_MAYBE_PARAM);
+        move->insertBefore(new DefExpr(tmp));
+        CallExpr* hasAlignedFollower = new CallExpr("_callSupportsAlignedFollower");
+        for_formals(formal, iterator) {
+          if (!strcmp(formal->name, "this"))
+            hasAlignedFollower->insertAtTail(new SymExpr(formal));
+        }
+        move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, hasAlignedFollower));
+        result = hasAlignedFollower;
+        move->insertBefore(
+          new CondStmt(new SymExpr(tmp),
+                       new CallExpr(PRIMITIVE_MOVE, move->get(1)->copy(),
+                                    alignedFollowerCall),
+                       new CallExpr(PRIMITIVE_MOVE, move->get(1)->copy(),
+                                    followerCall->remove())));
+        move->remove();
+      } else {
+        call->replace(followerCall);
+        result = followerCall;
+      }
     }
   }
   return result;

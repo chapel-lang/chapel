@@ -70,6 +70,12 @@ void parse(void) {
       }
     } else if (!strcmp(ts->name, "_array")) {
       dtArray = toClassType(ts->type);
+    } else if (!strcmp(ts->name, "BaseArray")) {
+      dtBaseArray = toClassType(ts->type);
+    } else if (!strcmp(ts->name, "BaseDomain")) {
+      dtBaseDomain = toClassType(ts->type);
+    } else if (!strcmp(ts->name, "Distribution")) {
+      dtDistribution = toClassType(ts->type);
     } else if (!strcmp(ts->name, "Writer")) {
       dtWriter = toClassType(ts->type);
     } else if (!strcmp(ts->name, "file")) {

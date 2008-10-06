@@ -533,6 +533,15 @@ def reshape(A: [], D: domain) {
   return B;
 }
 
+def _callSupportsAlignedFollower(A) param where A: BaseArray
+  return A.supportsAlignedFollower();
+
+def _callSupportsAlignedFollower(A) param where !(A: BaseArray)
+  return false;
+
+def _callSupportsAlignedFollower() param
+  return false;
+
 //
 // module support for iterators
 //
@@ -656,6 +665,16 @@ pragma "inline"
 def _toFollower(iterator: _iteratorClass, leaderIndex)
   return __primitive("to follower", iterator, leaderIndex);
 
+//
+// If aligned is passed as an argument (true from alignment version of
+// _toFollower on tuple) then grab the aligned version of the array's
+// iterator if the array supports aligned followers
+//
+pragma "inline"
+def _toFollower(iterator: _iteratorClass, leaderIndex, param aligned: bool) {
+  return __primitive("to follower", iterator, leaderIndex, aligned);
+}
+
 pragma "inline"
 def _toFollower(x: _tuple, leaderIndex) {
   pragma "inline" def _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
@@ -669,6 +688,47 @@ def _toFollower(x: _tuple, leaderIndex) {
   return _toFollowerHelp(x, leaderIndex, 1);
 }
 
+//
+// The alignment version uses a compiler analysis to pass a tuple of
+// types according to whether the arrays in the tuple x have the same
+// distribution as the leader or not.  If they do, the component type
+// is passed as Distribution, otherwise as BaseArray.
+//
+pragma "inline"
+def _toFollower(x: _tuple, leaderIndex, type alignment) {
+  pragma "inline" def _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
+    if dim == x.size-1 {
+      type tdim = alignment(dim);
+      type tdimp1 = alignment(dim+1);
+      if tdim == Distribution & tdimp1 == Distribution {
+        return (_toFollower(x(dim), leaderIndex, true),
+                _toFollower(x(dim+1), leaderIndex, true));
+      } else if tdim == Distribution {
+        return (_toFollower(x(dim), leaderIndex, true),
+                _toFollower(x(dim+1), leaderIndex));
+      } else if tdimp1 == Distribution {
+        return (_toFollower(x(dim), leaderIndex),
+                _toFollower(x(dim+1), leaderIndex, true));
+      } else {
+        return (_toFollower(x(dim), leaderIndex),
+                _toFollower(x(dim+1), leaderIndex));
+      }
+    } else {
+      type tdim = alignment(dim);
+      if tdim == Distribution {
+        return (_toFollower(x(dim), leaderIndex, true),
+                (..._toFollowerHelp(x, leaderIndex, dim+1)));
+      } else {
+        return (_toFollower(x(dim), leaderIndex),
+                (..._toFollowerHelp(x, leaderIndex, dim+1)));
+      }
+    }
+  }
+  return _toFollowerHelp(x, leaderIndex, 1);
+}
+
+
+// sjd: is this ever called?
 pragma "inline"
 def _toFollower(x, leaderIndex)
   return _toFollower(x.these(), leaderIndex);

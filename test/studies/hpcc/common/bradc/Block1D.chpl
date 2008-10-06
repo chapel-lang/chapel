@@ -659,11 +659,41 @@ class Block1DArr: BaseArray {
         yield locDom.myBlock - dom.whole.low;
   }
 
-  def these(param tag: iterator, follower) var where tag == iterator.follower {
+  def supportsAlignedFollower() param return true;
+
+  def these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
     //
     // TODO: Would like to write this as follower += dom.low;
     //
     const followThis = follower + dom.low;
+
+    //
+    // TODO: The following is a buggy hack that will only work when we're
+    // distributing across the entire Locales array.  I still think the
+    // locArr/locDoms arrays should be associative over locale values.
+    //
+    const myLocArr = locArr(here.id);
+    if aligned {
+      local {
+        for i in followThis {
+          yield myLocArr.this(i);
+        }
+      }
+    } else {
+      writeln("Warning: doing expensive these iteration");
+      //
+      // we don't own all the elements we're following
+      //
+      // TODO: could do something smarter to only bring the non-local
+      // elements over.
+      for i in followThis {
+        yield this(i);
+      }
+    }
+
+
+    // SJD: This was here before I added aligned:
+    /*
     //
     // TODO: The following is a buggy hack that will only work when we're
     // distributing across the entire Locales array.  I still think the
@@ -695,6 +725,7 @@ class Block1DArr: BaseArray {
         yield this(i);
       }
     }
+    */
   }
 
   //
