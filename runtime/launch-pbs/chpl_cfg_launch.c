@@ -116,10 +116,31 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   }
   fprintf(expectFile, "set timeout -1\n");
   fprintf(expectFile, "set prompt \"(%|#|\\$|>) $\"\n");
+  if (verbosity > 0) {
+    fprintf(expectFile, "spawn tcsh -f\n");
+    fprintf(expectFile, "expect -re $prompt\n");
+    fprintf(expectFile, "send \"df -T . \\n\"\n");
+    fprintf(expectFile, "expect {\n");
+    fprintf(expectFile, "  -re $prompt {\n");
+    fprintf(expectFile, "    send_user \"warning: Executing this program from a non-Lustre file system may cause it \\nto be unlaunchable, or for file I/O to be performed on a non-local file system.\\nContinue anyway? (\\[y\\]/n) \"\n");
+    fprintf(expectFile, "    interact {\n");
+    fprintf(expectFile, "      \\015           {return}\n");
+    fprintf(expectFile, "      -echo -re \"y|Y\" {return}\n");
+    fprintf(expectFile, "      -echo -re \"n|N\" {send_user \"\\n\" ; exit 0}\n");
+    fprintf(expectFile, "      eof               {send_user \"\\n\" ; exit 0}\n");
+    fprintf(expectFile, "      \003              {send_user \"\\n\" ; exit 0}\n");
+    fprintf(expectFile, "      -echo -re \".\"   {send_user \"\\nContinue anyway? (\\[y\\]/n) \"}\n");
+    fprintf(expectFile, "    }\n");
+    fprintf(expectFile, "    send_user  \"\\n\"\n");
+    fprintf(expectFile, "  }\n");
+    fprintf(expectFile, "  lustre\n");
+    fprintf(expectFile, "}\n");
+    fprintf(expectFile, "send \"exit\\n\"\n");
+  }
   fprintf(expectFile, "spawn qsub -z -I %s\n", pbsFilename);
   fprintf(expectFile, "expect {\n");
   fprintf(expectFile, "  \"A project was not specified\" {send_user "
-          "\"Error: A project account must be specified via \\$" 
+          "\"error: A project account must be specified via \\$" 
           launcherAccountEnvvar "\\n\" ; exit 1}\n");
   fprintf(expectFile, "  -re $prompt\n");
   fprintf(expectFile, "}\n");
@@ -128,7 +149,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   fprintf(expectFile, "send \"aprun -q -b -n1 -N1 ls %s_real\\n\"\n", argv[0]);
   fprintf(expectFile, "expect {\n");
   fprintf(expectFile, "  \"failed: chdir\" {send_user "
-          "\"Error: %s/%s_real must be launched from and/or stored on a "
+          "\"error: %s/%s_real must be launched from and/or stored on a "
           "cross-mounted file system\\n\" ; exit 1}\n", 
           basenamePtr, basenamePtr);
   fprintf(expectFile, "  -re $prompt\n");
@@ -163,6 +184,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
 void chpl_launch_cleanup(void) {
   char command[1024];
 
+  /*
   sprintf(command, "rm %s", pbsFilename);
   system(command);
 
@@ -171,4 +193,5 @@ void chpl_launch_cleanup(void) {
 
   sprintf(command, "rm %s", sysFilename);
   system(command);
+  */
 }
