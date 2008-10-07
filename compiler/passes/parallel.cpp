@@ -552,7 +552,7 @@ buildWideClass(Type* type) {
 // addr field into a non-wide of otherwise the same type. Then, replace its
 // use with the non-wide version.
 //
-static void insertLocalTemp(Expr* expr, bool derefOnly = false) {
+static void insertLocalTemp(Expr* expr) {
   SymExpr* se = toSymExpr(expr);
   Expr* stmt = expr->getStmtExpr();
   INT_ASSERT(se && stmt);
@@ -564,23 +564,6 @@ static void insertLocalTemp(Expr* expr, bool derefOnly = false) {
   }
   stmt->insertBefore(new DefExpr(var));
   stmt->insertBefore(new CallExpr(PRIMITIVE_LOCAL_DEREF, se->copy(), var));
-
-  //
-  // for wide references to wide classes, narrow the wide class too
-  // (unless derefOnly is set)
-  //
-  if (!derefOnly &&
-      var->type->symbol->hasFlag(FLAG_REF) &&
-      getValueType(var->type)->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-    VarSymbol* var2 = newTemp(astr("local_", se->var->name),
-                              getValueType(var->type)->getField("addr")->type);
-    if (!fNoLocalChecks)
-      stmt->insertBefore(new CallExpr(PRIMITIVE_LOCAL_CHECK, var));
-    stmt->insertBefore(new DefExpr(var2));
-    stmt->insertBefore(new CallExpr(PRIMITIVE_LOCAL_DEREF, var, var2));
-    var = var2;
-  }
-
   se->replace(new SymExpr(var));
 }
 
@@ -612,7 +595,7 @@ static void localizeCall(CallExpr* call) {
         } else if (rhs->isPrimitive(PRIMITIVE_GET_REF)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            insertLocalTemp(rhs->get(1), true);
+            insertLocalTemp(rhs->get(1));
             if (!rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
               INT_ASSERT(rhs->get(1)->typeInfo() == dtString);
               // special handling for wide strings
@@ -654,7 +637,7 @@ static void localizeCall(CallExpr* call) {
       } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
                  !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
                  !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-        insertLocalTemp(call->get(1), true);
+        insertLocalTemp(call->get(1));
       }
       break;
     case PRIMITIVE_DYNAMIC_CAST:
@@ -1127,13 +1110,14 @@ insertWideReferences(void) {
   }
 
   //
-  // insert temp to handle GET_MEMBER and GET_MEMBER_VALUE on wide
-  // references of wide classes
+  // dereference wide references to wide classes in select primitives;
+  // this simplifies the implementation of these primitives
   //
   forv_Vec(BaseAST, ast, gAsts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
-          call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+          call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
+          call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
         if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
             getValueType(call->get(1)->typeInfo()->getField("addr")->type)->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           VarSymbol* tmp = newTemp(getValueType(call->get(1)->typeInfo()->getField("addr")->typeInfo()));
@@ -1144,8 +1128,6 @@ insertWideReferences(void) {
       }
     }
   }
-
-  handleLocalBlocks();
 
   CallExpr* localeID = new CallExpr(PRIMITIVE_LOCALE_ID);
   VarSymbol* tmp = newTemp(localeID->typeInfo());
@@ -1167,4 +1149,6 @@ insertWideReferences(void) {
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIMITIVE_HEAP_BROADCAST_GLOBAL_VARS, new_IntSymbol(i)));
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
   numGlobalsOnHeap = i;
+
+  handleLocalBlocks();
 }
