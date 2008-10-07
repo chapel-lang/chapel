@@ -105,7 +105,6 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   fprintf(pbsFile, "#!/bin/sh\n\n");
   fprintf(pbsFile, "#PBS -N Chapel-%s\n", basenamePtr);
   genNumLocalesOptions(pbsFile, determineQsubVersion(), numLocales);
-  fprintf(pbsFile, "#PBS -l walltime=30\n");    // BLC -- ditto?
   if (projectString && strlen(projectString) > 0)
     fprintf(pbsFile, "#PBS -A %s\n", projectString);
   fclose(pbsFile);
@@ -184,7 +183,6 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
 void chpl_launch_cleanup(void) {
   char command[1024];
 
-  /*
   sprintf(command, "rm %s", pbsFilename);
   system(command);
 
@@ -193,5 +191,4 @@ void chpl_launch_cleanup(void) {
 
   sprintf(command, "rm %s", sysFilename);
   system(command);
-  */
 }
