@@ -90,7 +90,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         }
       }
     } else if (BlockStmt* block = toBlockStmt(ast)) {
-      if (block->blockInfo) {
+      if (block->blockInfo && !block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_LOCAL)) {
         if (singleFor) {
           return NULL;
         } else if ((block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP) ||
