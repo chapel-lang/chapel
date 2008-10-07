@@ -43,6 +43,7 @@ gasnet-everything regressions
 incompatible pointer type in destroy array call (10/03/08)
 ----------------------------------------------------------
 [Error matching compiler output for classes/figueroa/LeakedMemory2]
+[Error matching compiler output for classes/figueroa/LeakedMemory3]
 
 timeout
 -------
@@ -100,6 +101,7 @@ baseline-specific tests
 memory is leaked (10/03/08)
 ---------------------------
 [Error matching program output for classes/figueroa/LeakedMemory2]
+[Error matching program output for classes/figueroa/LeakedMemory3]
 
 
 ===================
