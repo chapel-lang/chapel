@@ -327,12 +327,26 @@ class DefaultArithmeticArray: BaseArray {
   var noinit: bool = false;
 
   def ~DefaultArithmeticArray() {
+    destroyData();
+    destroyDom();
+  }
+
+  def destroyData() {
     var cnt = data.count - 1;
     data.count = cnt;
     if cnt < 0 then halt("count is negative!"); // should never happen!
     else if cnt == 0 then
       delete data;
-    delete dom;
+  }
+
+  def destroyDom() {
+    var cnt = dom._count - 1;
+    dom._count = cnt;
+    if cnt < 0 then halt("count is negative!"); // should never happen!
+    else if cnt == 0 then
+      delete dom;
+    else
+      dom._arrs.remove(this);
   }
 
   def these() var {
@@ -409,6 +423,8 @@ class DefaultArithmeticArray: BaseArray {
                                                 d.stridable, true, d,
                                                 noinit=true);
     //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit=true);
+    d._count += 1;
+    data.count += 1;
     alias.data = data;
     alias.size = size: d.idxType;
     for param i in 1..rank {
@@ -431,6 +447,7 @@ class DefaultArithmeticArray: BaseArray {
     var alias = new DefaultArithmeticArray(eltType, rank, idxType,
                                                 d.stridable, reindexed,
                                                 d, noinit=true);
+    d._count += 1;
     data.count += 1;
     alias.data = data;
     alias.size = size;
@@ -464,6 +481,8 @@ class DefaultArithmeticArray: BaseArray {
     var alias = new DefaultArithmeticArray(eltType, newRank, idxType,
                                                 newStridable, true, d,
                                                 noinit=true);
+    d._count += 1;
+    data.count += 1;
     alias.data = data;
     alias.size = size;
     var i = 1;
@@ -488,6 +507,7 @@ class DefaultArithmeticArray: BaseArray {
       var copy = new DefaultArithmeticArray(eltType, rank, idxType,
                                                  d._value.stridable, reindexed,
                                                  d._value);
+      d._value._count += 1;
       for i in d((...dom.ranges)) do
         copy(i) = this(i);
       off = copy.off;
@@ -496,7 +516,9 @@ class DefaultArithmeticArray: BaseArray {
       origin = copy.origin;
       factoredOffs = copy.factoredOffs;
       size = copy.size;
+      destroyData();
       data = copy.data;
+      //delete copy;
     } else {
       halt("illegal reallocation");
     }

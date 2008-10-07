@@ -28,14 +28,10 @@ class Distribution {
 //
 class BaseDomain {
   var _arrs: list(BaseArray);
-  var _count: sync int = 1;
+  var _count: sync int = 0;
 
   def ~BaseDomain() {
-    var cnt = _count - 1;
-    _count = cnt;
-    if cnt < 0 then halt("_count is negative!"); // should never happen!
-    else if cnt == 0 then
-      _arrs.destroy();
+    _arrs.destroy();
     delete _count;
   }
 

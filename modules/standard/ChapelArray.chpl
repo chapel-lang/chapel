@@ -178,7 +178,7 @@ record _domain {
     var x = _value.buildArray(eltType);
     var cnt = _value._count; // lock
     _value._arrs.append(x);
-    _value._count = cnt;     // unlock
+    _value._count = cnt + 1; // unlock
     return new _array(x);
   }
 

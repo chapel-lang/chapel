@@ -1,0 +1,1 @@
+bug: not all memory freed when an array is resized

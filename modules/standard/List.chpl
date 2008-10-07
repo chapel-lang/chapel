@@ -19,6 +19,25 @@ record list {
     }
   }
 
+  def remove(x: eltType) {
+    var tmp = first,
+        prev: first.type = nil;
+    while tmp != nil && tmp.data != x {
+      prev = tmp;
+      tmp = tmp.next;
+    }
+    if tmp.data == x {
+      if prev != nil then
+        prev.next = tmp.next;
+      if first == tmp then
+        first = tmp.next;
+      if last == tmp then
+        last = prev;
+      delete tmp;
+      length -= 1;
+    }
+  }
+
   def these() {
     var tmp = first;
     while tmp != nil {

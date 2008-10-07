@@ -21,6 +21,6 @@ var m1 = memoryUsed();
 bar();
 var m2 = memoryUsed();
 
-writeln("Amount of leaked memory after calling foo(): ", m2:int - m1:int);
+writeln("Amount of leaked memory after calling bar(): ", m2:int - m1:int);
 writeln("sum is ", sum);
 writeln(A);
