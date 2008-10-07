@@ -79,7 +79,7 @@ static void makeRefType(Type* type) {
 
 const char* toString(Type* type) {
   if (type->symbol->hasFlag(FLAG_REF))
-    return getValueType(type)->symbol->name;
+    return type->getValueType()->symbol->name;
   else
     return type->symbol->name;
 }
@@ -325,7 +325,7 @@ resolveFormals(FnSymbol* fn) {
           resolveBlock(formal->typeExpr);
           formal->type = formal->typeExpr->body.tail->typeInfo();
           if (formal->type->symbol->hasFlag(FLAG_REF))
-            formal->type = getValueType(formal->type);
+            formal->type = formal->type->getValueType();
         }
       }
 
@@ -432,7 +432,7 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   }
 
   if (actualType->symbol->hasFlag(FLAG_REF))
-    return canDispatch(getValueType(actualType), actualSym, formalType, fn, require_scalar_promotion);
+    return canDispatch(actualType->getValueType(), actualSym, formalType, fn, require_scalar_promotion);
 
   if (is_bool_type(formalType) && is_bool_type(actualType))
     return true;
@@ -677,7 +677,7 @@ getInstantiationType(Type* actualType, Type* formalType) {
     if (canInstantiate(st, formalType))
       return st;
   }
-  if (Type* vt = getValueType(actualType)) {
+  if (Type* vt = actualType->getValueType()) {
     if (canInstantiate(vt, formalType))
       return vt;
     else if (Type* st = vt->scalarPromotionType)
@@ -902,7 +902,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
         } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) &&
                    formal->type != dtUnknown &&
                    formalActuals.v[i]) {
-          Type* vt = getValueType(formalActuals.v[i]);
+          Type* vt = formalActuals.v[i]->getValueType();
           Type* st = formalActuals.v[i]->scalarPromotionType;
           Type* svt = (vt) ? vt->scalarPromotionType : NULL;
           if (!canInstantiate(formalActuals.v[i], formal->type) &&
@@ -971,7 +971,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     if (!strcmp(fn->name, "=")) {
       if (j == 0) {
         if (formalActuals.v[j] != formal->type &&
-            getValueType(formalActuals.v[j]) != formal->type) {
+            formalActuals.v[j]->getValueType() != formal->type) {
           delete actualFormals;
           return;
         }
@@ -1253,7 +1253,7 @@ printResolutionError(const char* error,
   } else if (!strcmp("this", info->name)) {
     Type* type = info->actuals.v[1]->type;
     if (type->symbol->hasFlag(FLAG_REF))
-      type = getValueType(type);
+      type = type->getValueType();
     if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
       USR_FATAL(call, "illegal access of iterator or promoted expression");
     } else {
@@ -1710,8 +1710,8 @@ resolveCall(CallExpr* call, bool errorCheck) {
   } else if (call->isPrimitive(PRIMITIVE_TUPLE_EXPAND)) {
     SymExpr* sym = toSymExpr(call->get(1));
     Type* type = sym->var->type;
-    if (isReference(type))
-      type = getValueType(type);
+    if (isReferenceType(type))
+      type = type->getValueType();
     int size = 0;
     for (int i = 0; i < type->substitutions.n; i++) {
       if (type->substitutions.v[i].key) {
@@ -1830,7 +1830,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
 
     Type* lhsType = lhs->type;
 
-    if (isReference(lhsType))
+    if (isReferenceType(lhsType))
       lhs->removeFlag(FLAG_EXPR_TEMP);
     if (lhsType->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS))
       lhs->removeFlag(FLAG_EXPR_TEMP);
@@ -1852,11 +1852,11 @@ resolveCall(CallExpr* call, bool errorCheck) {
       USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
                 toString(lhsType));
     Type* lhsBaseType = lhsType;
-    if (isReference(lhsBaseType))
-      lhsBaseType = getValueType(lhsBaseType);
+    if (isReferenceType(lhsBaseType))
+      lhsBaseType = lhsBaseType->getValueType();
     Type* rhsBaseType = rhsType;
-    if (isReference(rhsBaseType))
-      rhsBaseType = getValueType(rhsBaseType);
+    if (isReferenceType(rhsBaseType))
+      rhsBaseType = rhsBaseType->getValueType();
     if (rhsType != dtNil &&
         rhsBaseType != lhsBaseType &&
         !isDispatchParent(rhsBaseType, lhsBaseType))
@@ -1910,7 +1910,7 @@ insertFormalTemps(FnSymbol* fn) {
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
       Type* formalType = formal->type;
       if (formalType->symbol->hasFlag(FLAG_REF))
-        formalType = getValueType(formalType);
+        formalType = formalType->getValueType();
       if ((formal->intent == INTENT_BLANK ||
            formal->intent == INTENT_CONST) &&
           !formalType->symbol->hasFlag(FLAG_DOMAIN) &&
@@ -2182,13 +2182,13 @@ preFold(Expr* expr) {
         //
         Type* t = base->var->type;
         if (t->symbol->hasFlag(FLAG_REF))
-          t = getValueType(t);
+          t = t->getValueType();
         if (t->symbol->hasFlag(FLAG_TUPLE)) {
           if (call->numActuals() != 3)
             USR_FATAL(call, "illegal tuple indexing expression");
           Type* indexType = call->get(3)->typeInfo();
           if (indexType->symbol->hasFlag(FLAG_REF))
-            indexType = getValueType(indexType);
+            indexType = indexType->getValueType();
           if (!is_int_type(indexType))
             USR_FATAL(call, "tuple indexing expression is not of integral type");
           long index;
@@ -2212,7 +2212,7 @@ preFold(Expr* expr) {
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->typeInfo();
       if (type ->symbol->hasFlag(FLAG_REF))
-        type = getValueType(type);
+        type = type->getValueType();
       if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
         result = new CallExpr(PRIMITIVE_CAST, type->symbol, gNil);
         call->replace(result);
@@ -2228,7 +2228,7 @@ preFold(Expr* expr) {
     } else if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
       Type* type = call->get(1)->typeInfo();
       if (type ->symbol->hasFlag(FLAG_REF))
-        type = getValueType(type);
+        type = type->getValueType();
       if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         result = new CallExpr("chpl__convertValueToRuntimeType", call->get(1)->remove());
         call->replace(result);
@@ -2310,9 +2310,9 @@ preFold(Expr* expr) {
         if (lt != dtUnknown && rt != dtUnknown &&
             !lt->symbol->hasFlag(FLAG_GENERIC) && !rt->symbol->hasFlag(FLAG_GENERIC)) {
           if (lt->symbol->hasFlag(FLAG_REF))
-            lt = getValueType(lt);
+            lt = lt->getValueType();
           if (rt->symbol->hasFlag(FLAG_REF))
-            rt = getValueType(rt);
+            rt = rt->getValueType();
           result = (lt == rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
           call->replace(result);
         }
@@ -2324,9 +2324,9 @@ preFold(Expr* expr) {
         if (lt != dtUnknown && rt != dtUnknown &&
             !lt->symbol->hasFlag(FLAG_GENERIC) && !rt->symbol->hasFlag(FLAG_GENERIC)) {
           if (lt->symbol->hasFlag(FLAG_REF))
-            lt = getValueType(lt);
+            lt = lt->getValueType();
           if (rt->symbol->hasFlag(FLAG_REF))
-            rt = getValueType(rt);
+            rt = rt->getValueType();
           result = (lt != rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
           call->replace(result);
         }
@@ -2411,7 +2411,7 @@ preFold(Expr* expr) {
       Type* type = call->get(1)->typeInfo();
 
       if (type->symbol->hasFlag(FLAG_REF))
-        type = getValueType(type);
+        type = type->getValueType();
 
       //
       // ensure .locale (and on) are applied to lvalues or classes
@@ -2596,7 +2596,7 @@ static void
 insertValueTemp(Expr* insertPoint, Expr* actual) {
   if (SymExpr* se = toSymExpr(actual)) {
     if (!se->var->type->refType) {
-      VarSymbol* tmp = newTemp(getValueType(se->var->type));
+      VarSymbol* tmp = newTemp(se->var->type->getValueType());
       insertPoint->insertBefore(new DefExpr(tmp));
       insertPoint->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, se->var)));
       se->var = tmp;
@@ -2690,7 +2690,7 @@ postFold(Expr* expr) {
     } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
       Type* baseType = call->get(1)->typeInfo();
       if (baseType->symbol->hasFlag(FLAG_REF))
-        baseType = getValueType(baseType);
+        baseType = baseType->getValueType();
       const char* memberName = get_string(call->get(2));
       Symbol* sym = baseType->getField(memberName);
       if (sym->isParameter()) {
@@ -2710,9 +2710,9 @@ postFold(Expr* expr) {
         Type* lt = call->get(2)->typeInfo(); // a:t cast is cast(t,a)
         Type* rt = call->get(1)->typeInfo();
         if (lt->symbol->hasFlag(FLAG_REF))
-          lt = getValueType(lt);
+          lt = lt->getValueType();
         if (rt->symbol->hasFlag(FLAG_REF))
-          rt = getValueType(rt);
+          rt = rt->getValueType();
         if (lt != dtUnknown && rt != dtUnknown && lt != dtAny &&
             rt != dtAny && !lt->symbol->hasFlag(FLAG_GENERIC)) {
           bool is_true = false;
@@ -2751,7 +2751,7 @@ postFold(Expr* expr) {
       if (SymExpr* sym = toSymExpr(call->get(1))) {
         Symbol* typeSym;
         if (!sym->var->type->refType)
-          typeSym = getValueType(sym->var->type)->symbol;
+          typeSym = sym->var->type->getValueType()->symbol;
         else
           typeSym = sym->var->type->symbol;
         if (typeSym->hasFlag(FLAG_TUPLE)) {
@@ -3588,7 +3588,7 @@ resolve() {
       Type* type = init->get(1)->typeInfo();
       if (!type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         if (type->symbol->hasFlag(FLAG_REF))
-          type = getValueType(type);
+          type = type->getValueType();
         if (type->defaultValue) {
           INT_FATAL(init, "PRIMITIVE_INIT should have been replaced already");
         } else {
@@ -3738,7 +3738,7 @@ static void insertReturnTemps() {
               VarSymbol* tmp = newTemp(fn->retType);
               DefExpr* def = new DefExpr(tmp);
               call->insertBefore(def);
-              if ((getValueType(fn->retType) && getValueType(fn->retType)->symbol->hasFlag(FLAG_SYNC)) || fn->retType->symbol->hasFlag(FLAG_SYNC)) {
+              if ((fn->retType->getValueType() && fn->retType->getValueType()->symbol->hasFlag(FLAG_SYNC)) || fn->retType->symbol->hasFlag(FLAG_SYNC)) {
                 CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
                 call->insertBefore(sls);
                 reset_line_info(sls, call->lineno);
@@ -3808,7 +3808,7 @@ pruneResolvedTree() {
   forv_Vec(TypeSymbol, type, gTypes) {
     if (type->defPoint && type->defPoint->parentSymbol) {
       if (type->hasFlag(FLAG_REF) && type->type != dtNilRef) {
-        if (ClassType* ct = toClassType(getValueType(type->type))) {
+        if (ClassType* ct = toClassType(type->type->getValueType())) {
           if (!resolvedFns.set_in(ct->defaultConstructor) &&
               !resolvedFns.set_in(ct->defaultTypeConstructor)) {
             if (ct->symbol->hasFlag(FLAG_OBJECT_CLASS))
@@ -3841,7 +3841,7 @@ pruneResolvedTree() {
       } else if (call->isPrimitive(PRIMITIVE_TYPEOF)) {
         Type* type = call->get(1)->typeInfo();
         if (type->symbol->hasFlag(FLAG_REF))
-          type = getValueType(type);
+          type = type->getValueType();
         // Remove move(x, PRIMITIVE_TYPEOF(y)) calls -- useless after this
         CallExpr* parentCall = toCallExpr(call->parentExpr);
         if (parentCall && parentCall->isPrimitive(PRIMITIVE_MOVE) && 
@@ -3862,7 +3862,7 @@ pruneResolvedTree() {
         Type* baseType = call->get(1)->typeInfo();
         if (!call->parentSymbol->hasFlag(FLAG_REF) &&
             baseType->symbol->hasFlag(FLAG_REF))
-          baseType = getValueType(baseType);
+          baseType = baseType->getValueType();
         const char* memberName = get_string(call->get(2));
         Symbol* sym = baseType->getField(memberName);
         if ((sym->hasFlag(FLAG_TYPE_VARIABLE) && !sym->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) ||

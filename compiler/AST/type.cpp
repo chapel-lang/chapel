@@ -86,6 +86,31 @@ Symbol* Type::getField(const char* name, bool fatal) {
 }
 
 
+Type* Type::getValueType() {
+  if (symbol->hasFlag(FLAG_REF)) {
+    if (this == dtNilRef)
+      return dtNil;
+    ClassType* ct = toClassType(this);
+    INT_ASSERT(ct);
+    return ct->getField("_val")->type;
+  }
+  if (symbol->hasFlag(FLAG_WIDE)) {
+    ClassType* ct = toClassType(this);
+    INT_ASSERT(ct);
+    return ct->getField("addr")->type->getValueType();
+  }
+  return NULL;
+}
+
+Type* Type::getReferenceType() {
+  if (!symbol->hasFlag(FLAG_REF)) {
+    INT_ASSERT(refType);
+    return refType;
+  }
+  return NULL;
+}
+
+
 PrimitiveType::PrimitiveType(Symbol *init) :
   Type(TYPE_PRIMITIVE, init)
 {}
@@ -643,15 +668,6 @@ bool isUnionType(Type* t) {
   return false;
 }
 
-bool isReference(Type* t) {
-  return !t->refType;
-}
-
-Type* getValueType(Type* type) {
-  if (ClassType* ct = toClassType(type)) {
-    if (ct->symbol->hasFlag(FLAG_REF)) {
-      return ct->getField(1)->type;
-    }
-  }
-  return NULL;
+bool isReferenceType(Type* t) {
+  return t->symbol->hasFlag(FLAG_REF);
 }

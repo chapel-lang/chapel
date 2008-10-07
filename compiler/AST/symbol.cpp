@@ -359,7 +359,7 @@ bool ArgSymbol::requiresCPtr(void) {
 
 bool ArgSymbol::isConstant(void) {
   return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
-    !isReference(type) &&
+    !isReferenceType(type) &&
     !type->symbol->hasFlag(FLAG_ARRAY) &&
     !type->symbol->hasFlag(FLAG_DOMAIN);
 }

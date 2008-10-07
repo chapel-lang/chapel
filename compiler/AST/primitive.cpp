@@ -62,7 +62,7 @@ static Type*
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
   Type *t = call->get(1)->typeInfo();
   if (t->symbol->hasFlag(FLAG_REF))
-    t = getValueType(t);
+    t = t->getValueType();
   if (t == dtComplex[COMPLEX_SIZE_64]) {
     return dtReal[FLOAT_SIZE_32]->refType;
   } else if (t == dtComplex[COMPLEX_SIZE_128]) {
@@ -82,7 +82,7 @@ static Type*
 returnInfoFirstDeref(CallExpr* call) {
   Type *t = call->get(1)->typeInfo();
   if (t->symbol->hasFlag(FLAG_REF))
-    t = getValueType(t);
+    t = t->getValueType();
   return t;
 }
 
@@ -167,7 +167,7 @@ returnInfoGetMember(CallExpr* call) {
     INT_FATAL(call, "bad member primitive");
   ClassType* ct = toClassType(sym1->var->type);
   if (ct->symbol->hasFlag(FLAG_REF))
-    ct = toClassType(getValueType(ct));
+    ct = toClassType(ct->getValueType());
   if (!ct)
     INT_FATAL(call, "bad member primitive");
   SymExpr* sym = toSymExpr(call->get(2));
@@ -195,7 +195,7 @@ returnInfoGetMemberRef(CallExpr* call) {
     INT_FATAL(call, "bad member primitive");
   ClassType* ct = toClassType(sym1->var->type);
   if (ct->symbol->hasFlag(FLAG_REF))
-    ct = toClassType(getValueType(ct));
+    ct = toClassType(ct->getValueType());
   if (!ct)
     INT_FATAL(call, "bad member primitive");
   SymExpr* sym = toSymExpr(call->get(2));

@@ -88,7 +88,7 @@ static void
 addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars) {
   forv_Vec(Symbol, sym, *vars) {
     if (sym) {
-      if (!isReference(sym->type)) {
+      if (!isReferenceType(sym->type)) {
         VarSymbol* tmp = newTemp(sym->type->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, sym)));

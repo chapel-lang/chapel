@@ -275,7 +275,7 @@ static void codegen_header(void) {
   bool comma = false;
   forv_Vec(TypeSymbol, ts, typeSymbols) {
     if (ClassType* ct = toClassType(ts->type)) {
-      if (!isReference(ct) && ct->classTag == CLASS_CLASS) {
+      if (!isReferenceType(ct) && ct->classTag == CLASS_CLASS) {
         fprintf(outfile, "%schpl__cid_%s", (comma) ? ",\n  " : "  ", ts->cname);
         comma = true;
       }
@@ -325,7 +325,7 @@ static void codegen_header(void) {
   fprintf(outfile, "/*** Primitive References ***/\n\n");
   forv_Vec(TypeSymbol, ts, typeSymbols) {
     if (ts->hasFlag(FLAG_REF)) {
-      ClassType* ct = toClassType(getValueType(ts->type));
+      ClassType* ct = toClassType(ts->type->getValueType());
       if (ct && ct->classTag != CLASS_CLASS)
         continue; // references to records and unions codegened below
       ts->codegenPrototype(outfile);
@@ -342,7 +342,7 @@ static void codegen_header(void) {
     }
     forv_Vec(TypeSymbol, ts, typeSymbols) {
       if (ts->hasFlag(FLAG_REF))
-        if (ClassType* ct = toClassType(getValueType(ts->type)))
+        if (ClassType* ct = toClassType(ts->type->getValueType()))
           if (order.get(ct) == i)
             ts->codegenPrototype(outfile);
     }
@@ -484,7 +484,7 @@ codegen_cid2offsets(FILE* outfile) {
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = toClassType(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS && !isReference(ct) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
+      if (ct->classTag == CLASS_CLASS && !isReferenceType(ct) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
         fprintf(outfile, "case %s%s:\n", "chpl__cid_", ct->symbol->cname);
         fprintf(outfile, "offsets = _");
         ct->symbol->codegen(outfile);
@@ -509,7 +509,7 @@ codegen_cid2size(FILE* outfile) {
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypes) {
     if (ClassType* ct = toClassType(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS && !isReference(ct) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
+      if (ct->classTag == CLASS_CLASS && !isReferenceType(ct) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
         fprintf(outfile, "case %s%s:\n", "chpl__cid_", ct->symbol->cname);
         fprintf(outfile, "size = sizeof(_");
         ct->symbol->codegen(outfile);

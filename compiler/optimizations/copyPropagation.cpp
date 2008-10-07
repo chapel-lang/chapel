@@ -417,7 +417,7 @@ findRefDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, Symbol* var) {
   for_defs(def, defMap, var) {
     if (CallExpr* call = toCallExpr(def->parentExpr)) {
       if (call->isPrimitive(PRIMITIVE_MOVE)) {
-        if (isReference(call->get(2)->typeInfo())) {
+        if (isReferenceType(call->get(2)->typeInfo())) {
           if (ret)
             return NULL;
           else
@@ -547,7 +547,7 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
   Vec<Symbol*> refVec;
   forv_Vec(BaseAST, ast, asts) {
     if (VarSymbol* var = toVarSymbol(ast)) {
-      if (isReference(var->type)) {
+      if (isReferenceType(var->type)) {
         refVec.add(var);
         refSet.set_add(var);
       }
@@ -562,7 +562,7 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
     if (var) {
       if (CallExpr* move = findRefDef(defMap, var)) {
         if (SymExpr* rhs = toSymExpr(move->get(2))) {
-          if (isReference(rhs->var->type)) {
+          if (isReferenceType(rhs->var->type)) {
             for_uses(se, useMap, var) {
               if (se->parentExpr) {
                 SymExpr* rhsCopy = rhs->copy();

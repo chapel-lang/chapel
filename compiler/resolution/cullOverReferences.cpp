@@ -93,16 +93,16 @@ void cullOverReferences() {
   //
   forv_Vec(BaseAST, ast, gAsts) {
     if (Symbol* sym = toSymbol(ast)) {
-      if (isTypeSymbol(sym))
+      if (isTypeSymbol(sym) || !sym->type)
         continue;
-      if (Type* vt = getValueType(sym->type)) {
+      if (Type* vt = sym->type->getValueType()) {
         if (isDerefType(vt)) {
           sym->type = vt;
         }
       }
     }
     if (FnSymbol* fn = toFnSymbol(ast)) {
-      if (Type* vt = getValueType(fn->retType)) {
+      if (Type* vt = fn->retType->getValueType()) {
         if (isDerefType(vt)) {
           fn->retType = vt;
           fn->retTag = RET_VALUE;
@@ -113,24 +113,24 @@ void cullOverReferences() {
       if (call->isPrimitive(PRIMITIVE_GET_REF) ||
           call->isPrimitive(PRIMITIVE_SET_REF)) {
         Type* vt = call->get(1)->typeInfo();
-        if (isReference(vt))
-          vt = getValueType(vt);
+        if (isReferenceType(vt))
+          vt = vt->getValueType();
         if (isDerefType(vt)) {
           call->replace(call->get(1)->remove());
         }
       }
       if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
         Type* vt = call->get(2)->typeInfo();
-        if (isReference(vt))
-          vt = getValueType(vt);
+        if (isReferenceType(vt))
+          vt = vt->getValueType();
         if (isDerefType(vt)) {
           call->primitive = primitives[PRIMITIVE_GET_MEMBER_VALUE];
         }
       }
       if (call->isPrimitive(PRIMITIVE_ARRAY_GET)) {
         Type* vt = call->typeInfo();
-        if (isReference(vt))
-          vt = getValueType(vt);
+        if (isReferenceType(vt))
+          vt = vt->getValueType();
         if (isDerefType(vt)) {
           call->primitive = primitives[PRIMITIVE_ARRAY_GET_VALUE];
         }

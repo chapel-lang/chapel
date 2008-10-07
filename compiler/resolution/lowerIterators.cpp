@@ -197,7 +197,7 @@ isBoundedIterator(FnSymbol* fn) {
   if (fn->_this) {
     Type* type = fn->_this->type;
     if (type->symbol->hasFlag(FLAG_REF))
-      type = getValueType(type);
+      type = type->getValueType();
     if (type->symbol->hasFlag(FLAG_RANGE)) {
       if (!strcmp(type->substitutions.v[1].value->name, "bounded"))
         return true;
@@ -396,7 +396,7 @@ void lowerIterators() {
       if (call->parentSymbol && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
         ClassType* ct = toClassType(call->get(1)->typeInfo());
         if (ct->symbol->hasFlag(FLAG_REF))
-          ct = toClassType(getValueType(ct));
+          ct = toClassType(ct->getValueType());
         long num;
         if (get_int(call->get(2), &num)) {
           Symbol* field = ct->getField(num+1); // add 1 for super

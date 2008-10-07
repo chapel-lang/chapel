@@ -374,7 +374,7 @@ codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
     }
   }
   if (ct->symbol->hasFlag(FLAG_REF)) {
-    ct = toClassType(getValueType(ct));
+    ct = toClassType(ct->getValueType());
     fprintf(outfile, "(*");
     base->codegen(outfile);
     fprintf(outfile, ")");
@@ -770,7 +770,7 @@ void CallExpr::codegen(FILE* outfile) {
       if (CallExpr* call = toCallExpr(get(2))) {
         if (call->isPrimitive(PRIMITIVE_GET_LOCALEID)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-            if (getValueType(call->get(1)->typeInfo()->getField("addr")->type)->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            if (call->get(1)->typeInfo()->getValueType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               fprintf(outfile, "_COMM_WIDE_GET_LOCALE(");
               get(1)->codegen(outfile);
               fprintf(outfile, ", ");
@@ -844,9 +844,9 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             call->get(1)->codegen(outfile);
             fprintf(outfile, ", ");
-            fprintf(outfile, "%s", getValueType(call->get(1)->typeInfo()->getField("addr")->type)->symbol->cname);
+            fprintf(outfile, "%s", call->get(1)->typeInfo()->getValueType()->symbol->cname);
             fprintf(outfile, ", ");
-            if (isUnionType(getValueType(call->get(1)->typeInfo()->getField("addr")->type)))
+            if (isUnionType(call->get(1)->typeInfo()->getValueType()))
               fprintf(outfile, "_u.");
             call->get(2)->codegen(outfile);
             fprintf(outfile, ")");
@@ -876,9 +876,9 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             call->get(1)->codegen(outfile);
             fprintf(outfile, ", ");
-            fprintf(outfile, "%s*", getValueType(call->get(1)->typeInfo()->getField("addr")->type)->symbol->cname);
+            fprintf(outfile, "%s*", call->get(1)->typeInfo()->getValueType()->symbol->cname);
             fprintf(outfile, ", ");
-            if (isUnionType(getValueType(call->get(1)->typeInfo()->getField("addr")->type)))
+            if (isUnionType(call->get(1)->typeInfo()->getValueType()))
               fprintf(outfile, "_u.");
             call->get(2)->codegen(outfile);
             fprintf(outfile, ")");
@@ -933,7 +933,7 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             call->get(1)->codegen(outfile);
             fprintf(outfile, ", ");
-            fprintf(outfile, "%s", getValueType(call->get(1)->typeInfo()->getField("addr")->type)->symbol->cname);
+            fprintf(outfile, "%s", call->get(1)->typeInfo()->getValueType()->symbol->cname);
             fprintf(outfile, ", _uid)");
             break;
           }
@@ -1337,7 +1337,7 @@ void CallExpr::codegen(FILE* outfile) {
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(2)->codegen(outfile);
-        fprintf(outfile, ", %s, _uid)", getValueType(get(1)->typeInfo()->getField("addr")->type)->symbol->cname);
+        fprintf(outfile, ", %s, _uid)", get(1)->typeInfo()->getValueType()->symbol->cname);
       } else {
         get(1)->codegen(outfile);
         if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
@@ -1388,9 +1388,9 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ", ");
         get(3)->codegen(outfile);
         fprintf(outfile, ", ");
-        fprintf(outfile, "%s", getValueType(get(1)->typeInfo()->getField("addr")->type)->symbol->cname);
+        fprintf(outfile, "%s", get(1)->typeInfo()->getValueType()->symbol->cname);
         fprintf(outfile, ", ");
-        if (isUnionType(getValueType(get(1)->typeInfo()->getField("addr")->type)))
+        if (isUnionType(get(1)->typeInfo()->getValueType()))
           fprintf(outfile, "_u.");
         get(2)->codegen(outfile);
         fprintf(outfile, ")");

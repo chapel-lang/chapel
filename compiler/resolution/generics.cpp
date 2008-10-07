@@ -186,7 +186,7 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
              !fn->hasFlag(FLAG_ALLOW_REF) &&
              !fn->hasFlag(FLAG_TUPLE)) {
     // instantiation of a formal of ref type loses ref
-    return getNewSubType(fn, key, getValueType(value->type)->symbol);
+    return getNewSubType(fn, key, value->type->getValueType()->symbol);
   }
   return value;
 }

@@ -83,14 +83,14 @@ complex2record() {
       if (call->isPrimitive(PRIMITIVE_GET_REAL)) {
         call->primitive = primitives[PRIMITIVE_GET_MEMBER];
         ClassType* ct = toClassType(call->get(1)->typeInfo());
-        if (isReference(ct))
-          ct = toClassType(getValueType(ct));
+        if (isReferenceType(ct))
+          ct = toClassType(ct->getValueType());
         call->insertAtTail(ct->getField(1));
       } else if (call->isPrimitive(PRIMITIVE_GET_IMAG)) {
         call->primitive = primitives[PRIMITIVE_GET_MEMBER];
         ClassType* ct = toClassType(call->get(1)->typeInfo());
-        if (isReference(ct))
-          ct = toClassType(getValueType(ct));
+        if (isReferenceType(ct))
+          ct = toClassType(ct->getValueType());
         call->insertAtTail(ct->getField(2));
       }
     }

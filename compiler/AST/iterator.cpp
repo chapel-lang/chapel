@@ -37,7 +37,7 @@ insertSetMemberInits(FnSymbol* fn, Symbol* var) {
     INT_ASSERT(ct);
     for_fields(field, ct) {
       if (field->type->symbol->hasFlag(FLAG_REF)) {
-        if (getValueType(field->type)->symbol->hasFlag(FLAG_ARRAY))
+        if (field->type->getValueType()->symbol->hasFlag(FLAG_ARRAY))
           continue; // skips array types
         Symbol* tmp = newTemp(field->type);
         fn->insertAtTail(new DefExpr(tmp));
@@ -589,7 +589,7 @@ void lowerIterator(FnSymbol* fn) {
       : astr("F", istr(i++), "_", local->name);
     Type* type = local->type;
     if (type->symbol->hasFlag(FLAG_REF) && local == fn->_this)
-      type = getValueType(type);
+      type = type->getValueType();
     Symbol* field = new VarSymbol(fieldName, type);
     local2field.put(local, field);
     ii->icType->fields.insertAtTail(new DefExpr(field));

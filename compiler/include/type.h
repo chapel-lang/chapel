@@ -61,6 +61,9 @@ class Type : public BaseAST {
   virtual void codegenPrototype(FILE* outfile);
 
   virtual Symbol* getField(const char* name, bool fatal=true);
+
+  Type* getValueType();
+  Type* getReferenceType();
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
@@ -182,7 +185,6 @@ int  get_width(Type*);
 bool isRecordType(Type* t);
 bool isUnionType(Type* t);
 
-bool isReference(Type* t);
-Type* getValueType(Type* type);
+bool isReferenceType(Type* t);
 
 #endif

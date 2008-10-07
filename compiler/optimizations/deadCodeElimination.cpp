@@ -13,7 +13,7 @@
 static bool isDeadVariable(Symbol* var,
                            Map<Symbol*,Vec<SymExpr*>*>& defMap,
                            Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  if (isReference(var->type)) {
+  if (isReferenceType(var->type)) {
     Vec<SymExpr*>* uses = useMap.get(var);
     Vec<SymExpr*>* defs = defMap.get(var);
     return (!uses || uses->n == 0) && (!defs || defs->n <= 1);

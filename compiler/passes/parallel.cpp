@@ -309,7 +309,6 @@ makeHeapAllocations() {
           INT_FATAL(ref, "unexpected case");
       }
     }
-    //    ref->type = buildHeapType(getValueType(ref->type));
   }
 
   forv_Vec(Symbol, var, varVec) {
@@ -588,7 +587,7 @@ static void localizeCall(CallExpr* call) {
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
         if (rhs->isPrimitive(PRIMITIVE_GET_LOCALEID)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-            if (getValueType(rhs->get(1)->typeInfo()->getField("addr")->type)->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            if (rhs->get(1)->typeInfo()->getValueType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               insertLocalTemp(rhs->get(1));
             }
           }
@@ -1119,8 +1118,8 @@ insertWideReferences(void) {
           call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
           call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
         if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-            getValueType(call->get(1)->typeInfo()->getField("addr")->type)->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-          VarSymbol* tmp = newTemp(getValueType(call->get(1)->typeInfo()->getField("addr")->typeInfo()));
+            call->get(1)->typeInfo()->getValueType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+          VarSymbol* tmp = newTemp(call->get(1)->typeInfo()->getValueType());
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, call->get(1)->remove())));
           call->insertAtHead(tmp);
