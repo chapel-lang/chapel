@@ -65,7 +65,6 @@ enum Flag {
   FLAG_LABEL_BREAK,
   FLAG_LABEL_CONTINUE,
   FLAG_LOCAL_BLOCK,
-  FLAG_LOCALIZED,
   FLAG_MAYBE_PARAM, // symbol can resolve to a param
   FLAG_MAYBE_TYPE, // symbol can resolve to a type
   FLAG_METHOD, // function that is a method

@@ -700,49 +700,36 @@ static void localizeCall(CallExpr* call) {
 // to the queue of functions to handle at the next iteration of the BFS.
 //
 static void handleLocalBlocks() {
-  Map<FnSymbol*, FnSymbol*> fnMap;
-  Vec<FnSymbol*> localizeFns, next;
+  Map<FnSymbol*,FnSymbol*> cache; // cache of localized functions
+  Vec<FnSymbol*> queue; // queue of functions to localize
 
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->hasFlag(FLAG_LOCAL_BLOCK))
-      localizeFns.add(fn);
+      queue.add(fn);
   }
-  Vec<FnSymbol*>* localizeFnsP = &localizeFns;
-  Vec<FnSymbol*>* nextP = &next;
 
-  while (localizeFnsP->n > 0) {
-    forv_Vec(FnSymbol, fn, *localizeFnsP) {
-      Vec<BaseAST*> asts;
-      collect_asts(fn->body, asts);
-      forv_Vec(BaseAST, ast, asts) {
-        if (CallExpr* call = toCallExpr(ast)) {
-          localizeCall(call);
-          if (FnSymbol* fn = call->isResolved()) {
-            if (FnSymbol* localFn = fnMap.get(fn)) {
-              call->baseExpr->replace(new SymExpr(localFn));
-            } else {
-              if (!fn->hasFlag(FLAG_LOCALIZED)) {
-                FnSymbol* copy = fn->copy();
-                copy->name = astr("_local_", fn->name);
-                copy->cname = astr("_local_", fn->cname);
-                copy->addFlag(FLAG_LOCALIZED);
-                fn->defPoint->insertBefore(new DefExpr(copy));
-                fnMap.put(fn, copy);
-                call->baseExpr->replace(new SymExpr(copy));
-                nextP->add(copy);
-              } else {
-                INT_FATAL("localized function should already be in map", fn);
-              }
-            }
+  forv_Vec(FnSymbol, fn, queue) {
+    Vec<BaseAST*> asts;
+    collect_asts(fn->body, asts);
+    forv_Vec(BaseAST, ast, asts) {
+      if (CallExpr* call = toCallExpr(ast)) {
+        localizeCall(call);
+        if (FnSymbol* fn = call->isResolved()) {
+          if (FnSymbol* local = cache.get(fn)) {
+            call->baseExpr->replace(new SymExpr(local));
+          } else {
+            FnSymbol* local = fn->copy();
+            local->name = astr("_local_", fn->name);
+            local->cname = astr("_local_", fn->cname);
+            fn->defPoint->insertBefore(new DefExpr(local));
+            call->baseExpr->replace(new SymExpr(local));
+            queue.add(local);
+            cache.put(fn, local);
           }
         }
       }
     }
-    Vec<FnSymbol*>* tmp = localizeFnsP;
-    localizeFnsP = nextP;
-    nextP = tmp;
-    nextP->clear();
-  } 
+  }
 }
 
 
