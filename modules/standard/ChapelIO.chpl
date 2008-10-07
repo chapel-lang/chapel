@@ -317,6 +317,7 @@ class Writer {
 
 def write(args ...?n) {
   stdout.write((...args));
+  stdout.flush();
 }
 
 def writeln(args ...?n) {
