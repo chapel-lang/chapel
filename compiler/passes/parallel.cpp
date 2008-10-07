@@ -452,9 +452,6 @@ parallel(void) {
           fn->addFlag(FLAG_ON);
           ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
           fn->insertFormalAtTail(arg);
-        } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_LOCAL)) {
-          fn = new FnSymbol("local_fn");
-          fn->addFlag(FLAG_LOCAL_BLOCK);
         }
         if (fn) {
           nestedFunctions.add(fn);
@@ -701,16 +698,19 @@ static void localizeCall(CallExpr* call) {
 //
 static void handleLocalBlocks() {
   Map<FnSymbol*,FnSymbol*> cache; // cache of localized functions
-  Vec<FnSymbol*> queue; // queue of functions to localize
+  Vec<BlockStmt*> queue; // queue of blocks to localize
 
-  forv_Vec(FnSymbol, fn, gFns) {
-    if (fn->hasFlag(FLAG_LOCAL_BLOCK))
-      queue.add(fn);
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (BlockStmt* block = toBlockStmt(ast))
+      if (block->parentSymbol)
+        if (block->blockInfo)
+          if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_LOCAL))
+            queue.add(block);
   }
 
-  forv_Vec(FnSymbol, fn, queue) {
+  forv_Vec(BlockStmt, block, queue) {
     Vec<BaseAST*> asts;
-    collect_asts(fn->body, asts);
+    collect_asts(block, asts);
     forv_Vec(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         localizeCall(call);
@@ -723,7 +723,7 @@ static void handleLocalBlocks() {
             local->cname = astr("_local_", fn->cname);
             fn->defPoint->insertBefore(new DefExpr(local));
             call->baseExpr->replace(new SymExpr(local));
-            queue.add(local);
+            queue.add(local->body);
             cache.put(fn, local);
           }
         }

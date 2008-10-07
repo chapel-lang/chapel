@@ -59,7 +59,6 @@ initFlags() {
   defineFlag(FLAG_ITERATOR_FN, "iterator fn");
   defineFlag(FLAG_LABEL_BREAK, "label break");
   defineFlag(FLAG_LABEL_CONTINUE, "label continue");
-  defineFlag(FLAG_LOCAL_BLOCK, "local block");
   defineFlag(FLAG_MAYBE_PARAM, "maybe param");
   defineFlag(FLAG_MAYBE_TYPE, "maybe type");
   defineFlag(FLAG_METHOD, "method");
