@@ -727,6 +727,64 @@ static void handleLocalBlocks() {
 }
 
 
+static void
+narrowReferences() {
+  Vec<Symbol*> wideSet;
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (isVarSymbol(def->sym) && isFnSymbol(def->parentSymbol)) {
+        if (def->sym->type->symbol->hasFlag(FLAG_WIDE)) {
+          wideSet.set_add(def->sym);
+        }
+      }
+    }
+  }
+
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(wideSet, defMap, useMap);
+
+  forv_Vec(Symbol, sym, wideSet) if (sym) {
+    bool narrow = true;
+
+    for_defs(def, defMap, sym) {
+      bool narrowDef = false;
+      if (CallExpr* move = toCallExpr(def->parentExpr)) {
+        if (move->isPrimitive(PRIMITIVE_MOVE)) {
+          if (CallExpr* rhs = toCallExpr(move->get(2))) {
+            if (FnSymbol* fn = rhs->isResolved())
+              if (fn->retType->symbol->hasFlag(FLAG_REF))
+                narrowDef = true;
+          } else if (SymExpr* rhs = toSymExpr(move->get(2))) {
+            if (!rhs->var->type->symbol->hasFlag(FLAG_REF) &&
+                !rhs->var->type->symbol->hasFlag(FLAG_WIDE))
+              narrowDef = true;
+          }
+        }
+      }
+      if (!narrowDef)
+        narrow = false;
+    }
+
+    for_uses(use, useMap, sym) {
+      bool narrowUse = false;
+      if (CallExpr* call = toCallExpr(use->parentExpr)) {
+        if (call->isPrimitive(PRIMITIVE_GET_REF))
+          narrowUse = true;
+      }
+      if (!narrowUse)
+        narrow = false;
+    }
+
+    if (narrow) {
+      sym->type = sym->type->getField("addr")->type;
+    }
+  }
+
+  freeDefUseMaps(defMap, useMap);
+}
+
+
 //
 // change all classes into wide classes
 // change all references into wide references
@@ -1162,4 +1220,5 @@ insertWideReferences(void) {
   numGlobalsOnHeap = i;
 
   handleLocalBlocks();
+  narrowReferences();
 }
