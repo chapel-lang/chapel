@@ -697,8 +697,8 @@ static void handleLocalBlocks() {
       if (CallExpr* call = toCallExpr(ast)) {
         localizeCall(call);
         if (FnSymbol* fn = call->isResolved()) {
-          if (FnSymbol* local = cache.get(fn)) {
-            call->baseExpr->replace(new SymExpr(local));
+          if (FnSymbol* alreadyLocal = cache.get(fn)) {
+            call->baseExpr->replace(new SymExpr(alreadyLocal));
           } else {
             FnSymbol* local = fn->copy();
             local->name = astr("_local_", fn->name);
