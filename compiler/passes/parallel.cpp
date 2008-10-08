@@ -469,7 +469,6 @@ parallel(void) {
   }
   flattenNestedFunctions(nestedFunctions);
 
-
   makeHeapAllocations();
 
   compute_call_sites();
@@ -707,6 +706,19 @@ static void handleLocalBlocks() {
             call->baseExpr->replace(new SymExpr(local));
             queue.add(local->body);
             cache.put(fn, local);
+            if (local->retType->symbol->hasFlag(FLAG_WIDE) ||
+                local->retType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+              CallExpr* ret = toCallExpr(local->body->body.tail);
+              INT_ASSERT(ret && ret->isPrimitive(PRIMITIVE_RETURN));
+              Type* narrowType = local->retType->getField("addr")->type;
+              local->retType = narrowType;
+              VarSymbol* tmp = newTemp(narrowType);
+              ret->insertBefore(new DefExpr(tmp));
+              if (!fNoLocalChecks)
+                ret->insertBefore(new CallExpr(PRIMITIVE_LOCAL_CHECK, ret->get(1)->copy()));
+              ret->insertBefore(new CallExpr(PRIMITIVE_LOCAL_DEREF, ret->get(1)->copy(), tmp));
+              ret->get(1)->replace(new SymExpr(tmp));
+            }
           }
         }
       }
