@@ -1,0 +1,4 @@
+bug: for/forall expr iterator loses reference
+
+If this shouldn't happen, how can we keep the reference?  If this should, there
+should be an error?
