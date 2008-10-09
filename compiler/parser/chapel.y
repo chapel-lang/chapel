@@ -1388,25 +1388,25 @@ expr:
     {
       if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForLoopExpr($2->get(1)->remove(), $4, $6);
+      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $6);
     }
 | TLSBR nonempty_expr_ls TRSBR expr %prec TRSBR
     {
       if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid loop expression");
-      $$ = buildForLoopExpr(NULL, $2->get(1)->remove(), $4);
+      $$ = buildForallLoopExpr(NULL, $2->get(1)->remove(), $4);
     }
 | TLSBR nonempty_expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
       if ($2->argList.length() != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForLoopExpr($2->get(1)->remove(), $4, $9, $7);
+      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $9, $7);
     }
 | TLSBR nonempty_expr_ls TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
       if ($2->argList.length() != 1)
         USR_FATAL($5, "invalid loop expression");
-      $$ = buildForLoopExpr(NULL, $2->get(1)->remove(), $7, $5);
+      $$ = buildForallLoopExpr(NULL, $2->get(1)->remove(), $7, $5);
     }
 | TFOR expr TIN expr TDO expr %prec TRSBR
     { $$ = buildForLoopExpr($2, $4, $6); }
@@ -1417,13 +1417,13 @@ expr:
 | TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
     { $$ = buildForLoopExpr(NULL, $2, $7, $5); }
 | TFORALL expr TIN expr TDO expr %prec TRSBR
-    { $$ = buildForLoopExpr($2, $4, $6); }
+    { $$ = buildForallLoopExpr($2, $4, $6); }
 | TFORALL expr TDO expr %prec TRSBR
-    { $$ = buildForLoopExpr(NULL, $2, $4); }
+    { $$ = buildForallLoopExpr(NULL, $2, $4); }
 | TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
-    { $$ = buildForLoopExpr($2, $4, $9, $7); }
+    { $$ = buildForallLoopExpr($2, $4, $9, $7); }
 | TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
-    { $$ = buildForLoopExpr(NULL, $2, $7, $5); }
+    { $$ = buildForallLoopExpr(NULL, $2, $7, $5); }
 | TIF expr TTHEN expr TELSE expr
     { $$ = new CallExpr(new DefExpr(buildIfExpr($2, $4, $6))); }
 ;

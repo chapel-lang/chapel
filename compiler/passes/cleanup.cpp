@@ -53,6 +53,9 @@ static void normalize_nested_function_expressions(DefExpr* def) {
     }
     def->replace(new SymExpr(def->sym->name));
     stmt->insertBefore(def);
+  } else if (!strncmp("_iterator_for_loopexpr", def->sym->name, 22)) {
+    Symbol* parent = def->parentSymbol;
+    parent->defPoint->insertBefore(def->remove());
   }
 }
 

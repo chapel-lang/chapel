@@ -394,15 +394,80 @@ BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body) {
 }
 
 
+static int loopexpr_uid = 1;
+
 // builds body of for expression iterator
 CallExpr*
 buildForLoopExpr(Expr* indices, Expr* iterator, Expr* expr, Expr* cond) {
-  static int uid = 1;
-  FnSymbol* fn = new FnSymbol(astr("_loopexpr", istr(uid++)));
+  FnSymbol* fn = new FnSymbol(astr("_loopexpr", istr(loopexpr_uid++)));
   Expr* stmt = new CallExpr(PRIMITIVE_YIELD, expr);
   if (cond)
     stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
   fn->insertAtTail(buildForLoopStmt(indices, iterator, new BlockStmt(stmt)));
+  return new CallExpr(new DefExpr(fn));
+}
+
+
+CallExpr*
+buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond) {
+  if (fSerial || fSerialForall)
+    return buildForLoopExpr(indices, iteratorExpr, expr, cond);
+
+  FnSymbol* fn = new FnSymbol(astr("_loopexpr", istr(loopexpr_uid++)));
+  VarSymbol* iterator = newTemp("_iterator");
+  fn->insertAtTail(new DefExpr(iterator));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
+  const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
+  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(iteratorName, iterator)));
+
+  //
+  // build serial iterator function
+  //
+  FnSymbol* sifn = new FnSymbol(iteratorName);
+  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+  sifn->insertFormalAtTail(sifnIterator);
+  fn->insertAtHead(new DefExpr(sifn));
+  Expr* stmt = new CallExpr(PRIMITIVE_YIELD, expr);
+  if (cond)
+    stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
+  sifn->insertAtTail(buildForLoopStmt(indices, new SymExpr(sifnIterator), new BlockStmt(stmt)));
+
+  //
+  // build leader iterator function
+  //
+  FnSymbol* lifn = new FnSymbol(iteratorName);
+  ArgSymbol* lifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+  lifn->insertFormalAtTail(lifnIterator);
+  ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", gLeaderTag->type);
+  lifn->insertFormalAtTail(lifnTag);
+  lifn->where = new BlockStmt(new CallExpr("==", lifnTag, gLeaderTag));
+  fn->insertAtHead(new DefExpr(lifn));
+  VarSymbol* leaderIndex = newTemp("_leaderIndex");
+  lifn->insertAtTail(new DefExpr(leaderIndex));
+  VarSymbol* leaderIterator = newTemp("_leaderIterator");
+  lifn->insertAtTail(new DefExpr(leaderIterator));
+  lifn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leaderIterator, new CallExpr("_toLeader", lifnIterator)));
+  lifn->insertAtTail(buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), new BlockStmt(new CallExpr(PRIMITIVE_YIELD, leaderIndex))));
+
+  //
+  // build follower iterator function
+  //
+  FnSymbol* fifn = new FnSymbol(iteratorName);
+  ArgSymbol* fifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+  fifn->insertFormalAtTail(fifnIterator);
+  ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", gFollowerTag->type);
+  fifn->insertFormalAtTail(fifnTag);
+  ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, "follower", dtAny);
+  fifn->insertFormalAtTail(fifnFollower);
+  fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
+  fn->insertAtHead(new DefExpr(fifn));
+  VarSymbol* followerIterator = newTemp("_followerIterator");
+  fifn->insertAtTail(new DefExpr(followerIterator));
+  fifn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, followerIterator, new CallExpr("_toFollower", fifnIterator, fifnFollower)));
+  SymbolMap map;
+  Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
+  Expr* bodyCopy = stmt->copy(&map);
+  fifn->insertAtTail(buildForLoopStmt(indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy)));
   return new CallExpr(new DefExpr(fn));
 }
 

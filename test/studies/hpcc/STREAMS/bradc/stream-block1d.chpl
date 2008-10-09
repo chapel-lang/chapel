@@ -47,8 +47,12 @@ def main() {
     execTime(trial) = getCurrentTime() - startTime;
   }
 
+  //  var t: Timer;
+  //  t.start();
   const validAnswer = verifyResults(A, B, C);
+  //  t.stop();
   printResults(validAnswer, execTime);
+  //  writeln(t.elapsed());
 }
 
 

@@ -38,6 +38,10 @@ CallExpr* buildForLoopExpr(Expr* indices,
                            Expr* iterator,
                            Expr* expr,
                            Expr* cond = NULL);
+CallExpr* buildForallLoopExpr(Expr* indices,
+                              Expr* iterator,
+                              Expr* expr,
+                              Expr* cond = NULL);
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* block);
 BlockStmt* buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalAndExprAssignment(Expr* lhs, Expr* rhs);
