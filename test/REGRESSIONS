@@ -40,6 +40,19 @@ internal valgrind stuff 'the impossible has happened'
 gasnet-everything regressions
 =============================
 
+destructor trying to free non-local array (10/08/08)
+----------------------------------------------------
+[Error matching program output for multilocale/deitz/linked/test_linked3]
+[Error matching program output for multilocale/deitz/linked/test_linked3a]
+[Error matching program output for multilocale/deitz/linked/test_linked3b]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
+[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_mul]
+[Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
+
 incompatible pointer type in destroy array call (10/03/08)
 ----------------------------------------------------------
 [Error matching compiler output for classes/figueroa/LeakedMemory2]
@@ -78,6 +91,10 @@ intermittent seg faults
 ---------------------------------------
 [Error matching program output for multilocale/deitz/linked/test_linked2] (e.g., 10/05/08)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-dom] (e.g., 10/06/08)
+[Error matching program output for multilocale/deitz/linked/test_linked3e] (e.g., 10/07/08)
+[Error matching program output for multilocale/bradc/locales/queryLocaleLocation] (e.g., 10/08/08)
+[Error matching program output for multilocale/deitz/linked/test_linked2] (e.g., 10/08/08)
+
 
 memory allocator doesn't handle realloc or --mem flags
 ------------------------------------------------------
