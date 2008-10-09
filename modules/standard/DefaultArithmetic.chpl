@@ -336,17 +336,18 @@ class DefaultArithmeticArray: BaseArray {
     data.count = cnt;
     if cnt < 0 then halt("count is negative!"); // should never happen!
     else if cnt == 0 then
-      delete data;
+      on data do delete data;
   }
 
   def destroyDom() {
     var cnt = dom._count - 1;
-    dom._count = cnt;
     if cnt < 0 then halt("count is negative!"); // should never happen!
     else if cnt == 0 then
-      delete dom;
-    else
+      on dom do delete dom;
+    else {
       dom._arrs.remove(this);
+      dom._count = cnt;
+    }
   }
 
   def these() var {
@@ -507,7 +508,7 @@ class DefaultArithmeticArray: BaseArray {
       var copy = new DefaultArithmeticArray(eltType, rank, idxType,
                                                  d._value.stridable, reindexed,
                                                  d._value);
-      d._value._count += 1;
+      copy.dom._count += 2;
       for i in d((...dom.ranges)) do
         copy(i) = this(i);
       off = copy.off;
@@ -518,7 +519,8 @@ class DefaultArithmeticArray: BaseArray {
       size = copy.size;
       destroyData();
       data = copy.data;
-      //delete copy;
+      data.count += 1;
+      delete copy;
     } else {
       halt("illegal reallocation");
     }

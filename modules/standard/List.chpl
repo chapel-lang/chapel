@@ -26,7 +26,7 @@ record list {
       prev = tmp;
       tmp = tmp.next;
     }
-    if tmp.data == x {
+    if tmp != nil && tmp.data == x {
       if prev != nil then
         prev.next = tmp.next;
       if first == tmp then
