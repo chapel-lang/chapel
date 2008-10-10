@@ -14,13 +14,16 @@ def _scan(r, s) {
   return s2;
 }
 
-
 def _sum_type(type eltType) {
   var x: eltType;
   return x + x;
 }
 
-class _sum {
+class ReduceScanOp {
+
+}
+
+class SumReduceScanOp: ReduceScanOp {
   type eltType;
   var value : _sum_type(eltType).type;
   def accumulate(x) {
@@ -29,9 +32,9 @@ class _sum {
   def generate() return value;
 }
 
-class _prod {
+class ProductReduceScanOp: ReduceScanOp {
   type eltType;
-  var value : eltType = _prod_id( eltType);
+  var value : eltType = _prod_id(eltType);
 
   def accumulate(x) {
     value = value * x;
@@ -39,9 +42,9 @@ class _prod {
   def generate() return value;
 }
 
-class _max {
+class MaxReduceScanOp: ReduceScanOp {
   type eltType;
-  var value : eltType = min( eltType);
+  var value : eltType = min(eltType);
 
   def accumulate(x) {
     value = max(x, value);
@@ -49,9 +52,9 @@ class _max {
   def generate() return value;
 }
 
-class _min {
+class MinReduceScanOp: ReduceScanOp {
   type eltType;
-  var value : eltType = max( eltType);
+  var value : eltType = max(eltType);
 
   def accumulate(x) {
     value = min(x, value);
@@ -59,7 +62,57 @@ class _min {
   def generate() return value;
 }
 
-class maxloc {
+class LogicalAndReduceScanOp: ReduceScanOp {
+  type eltType;
+  var value : eltType = _land_id(eltType);
+
+  def accumulate(x) {
+    value = value && x;
+  }
+  def generate() return value;
+}
+
+class LogicalOrReduceScanOp: ReduceScanOp {
+  type eltType;
+  var value : eltType = _lor_id(eltType);
+
+  def accumulate(x) {
+    value = value || x;
+  }
+  def generate() return value;
+}
+
+class BitwiseAndReduceScanOp: ReduceScanOp {
+  type eltType;
+  var value : eltType = _band_id(eltType);
+
+  def accumulate(x) {
+    value = value & x;
+  }
+  def generate() return value;
+}
+
+class BitwiseOrReduceScanOp: ReduceScanOp {
+  type eltType;
+  var value : eltType = _bor_id(eltType);
+
+  def accumulate(x) {
+    value = value | x;
+  }
+  def generate() return value;
+}
+
+class BitwiseXorReduceScanOp: ReduceScanOp {
+  type eltType;
+  var value : eltType = _bxor_id(eltType);
+
+  def accumulate(x) {
+    value = value ^ x;
+  }
+  def generate() return value;
+}
+
+class maxloc: ReduceScanOp {
   type eltType;
   var value: eltType;
   var uninitialized = true;
@@ -72,7 +125,7 @@ class maxloc {
   def generate() return value;
 }
 
-class minloc {
+class minloc: ReduceScanOp {
   type eltType;
   var value: eltType;
   var uninitialized = true;
@@ -81,56 +134,6 @@ class minloc {
     if uninitialized || x(1) < value(1) then
       value = x;
     uninitialized = false;
-  }
-  def generate() return value;
-}
-
-class _land {                 // logical and
-  type eltType;
-  var value : eltType = _land_id( eltType);
-
-  def accumulate(x) {
-    value = value && x;
-  }
-  def generate() return value;
-}
-
-class _lor {                 // logical or
-  type eltType;
-  var value : eltType = _lor_id( eltType);
-
-  def accumulate(x) {
-    value = value || x;
-  }
-  def generate() return value;
-}
-
-class _band {                 // bit-wise and
-  type eltType;
-  var value : eltType = _band_id( eltType);
-
-  def accumulate(x) {
-    value = value & x;
-  }
-  def generate() return value;
-}
-
-class _bor {                 // bit-wise or
-  type eltType;
-  var value : eltType = _bor_id( eltType);
-
-  def accumulate(x) {
-    value = value | x;
-  }
-  def generate() return value;
-}
-
-class _bxor {                // bit-wise xor
-  type eltType;
-  var value : eltType = _bxor_id( eltType);
-
-  def accumulate(x) {
-    value = value ^ x;
   }
   def generate() return value;
 }

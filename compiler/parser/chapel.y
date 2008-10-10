@@ -198,7 +198,7 @@ NOTES
 %type <pexpr> tuple_paren_expr expr expr_list_item opt_return_part
 %type <pexpr> literal opt_where_part distributed_expr
 %type <pexpr> variable_expr stmt_level_expr alias_expr formal_level_type
-%type <pexpr> reduction opt_init_expr opt_init_type var_arg_expr
+%type <pexpr> reduce_expr scan_expr opt_init_expr opt_init_type var_arg_expr
 %type <pdefexpr> formal enum_item
 %type <pdefexpr> query_expr
 
@@ -1439,7 +1439,8 @@ stmt_level_expr:
     { $$ = new SymExpr(gNil); }
 | TLET var_decl_stmt_inner_ls TIN expr
     { $$ = buildLetExpr($2, $4); }
-| reduction %prec TREDUCE
+| reduce_expr %prec TREDUCE
+| scan_expr %prec TREDUCE
 | expr TCOLON expr
     { $$ = new CallExpr("_cast", $3, $1); }
 | expr TDOTDOT expr
@@ -1507,39 +1508,43 @@ stmt_level_expr:
 ;
 
 
-reduction:
+reduce_expr:
   expr TREDUCE expr
-    { $$ = buildReduceScanExpr($1, $3); }
+    { $$ = buildReduceExpr($1, $3); }
 | TPLUS TREDUCE expr
-    { $$ = buildReduceScanExpr(new SymExpr("_sum"), $3); }
+    { $$ = buildReduceExpr(new SymExpr("SumReduceScanOp"), $3); }
 | TSTAR TREDUCE expr
-    { $$ = buildReduceScanExpr(new SymExpr("_prod"), $3); }
+    { $$ = buildReduceExpr(new SymExpr("ProductReduceScanOp"), $3); }
 | TAND TREDUCE expr
-    { $$ = buildReduceScanExpr(new SymExpr("_land"), $3); }
+    { $$ = buildReduceExpr(new SymExpr("LogicalAndReduceScanOp"), $3); }
 | TOR TREDUCE expr
-    { $$ = buildReduceScanExpr(new SymExpr("_lor"), $3); }
+    { $$ = buildReduceExpr(new SymExpr("LogicalOrReduceScanOp"), $3); }
 | TBAND TREDUCE expr
-    { $$ = buildReduceScanExpr(new SymExpr("_band"), $3); }
+    { $$ = buildReduceExpr(new SymExpr("BitwiseAndReduceScanOp"), $3); }
 | TBOR TREDUCE expr
-    { $$ = buildReduceScanExpr(new SymExpr("_bor"), $3); }
+    { $$ = buildReduceExpr(new SymExpr("BitwiseOrReduceScanOp"), $3); }
 | TBXOR TREDUCE expr
-    { $$ = buildReduceScanExpr(new SymExpr("_bxor"), $3); }
-| expr TSCAN expr
-    { $$ = buildReduceScanExpr($1, $3, true); }
+    { $$ = buildReduceExpr(new SymExpr("BitwiseXorReduceScanOp"), $3); }
+;
+
+
+scan_expr:
+  expr TSCAN expr
+    { $$ = buildScanExpr($1, $3); }
 | TPLUS TSCAN expr
-    { $$ = buildReduceScanExpr(new SymExpr("_sum"), $3, true); }
+    { $$ = buildScanExpr(new SymExpr("SumReduceScanOp"), $3); }
 | TSTAR TSCAN expr
-    { $$ = buildReduceScanExpr(new SymExpr("_prod"), $3, true); }
+    { $$ = buildScanExpr(new SymExpr("ProductReduceScanOp"), $3); }
 | TAND TSCAN expr
-    { $$ = buildReduceScanExpr(new SymExpr("_land"), $3, true); }
+    { $$ = buildScanExpr(new SymExpr("LogicalAndReduceScanOp"), $3); }
 | TOR TSCAN expr
-    { $$ = buildReduceScanExpr(new SymExpr("_lor"), $3, true); }
+    { $$ = buildScanExpr(new SymExpr("LogicalOrReduceScanOp"), $3); }
 | TBAND TSCAN expr
-    { $$ = buildReduceScanExpr(new SymExpr("_band"), $3, true); }
+    { $$ = buildScanExpr(new SymExpr("BitwiseAndReduceScanOp"), $3); }
 | TBOR TSCAN expr
-    { $$ = buildReduceScanExpr(new SymExpr("_bor"), $3, true); }
+    { $$ = buildScanExpr(new SymExpr("BitwiseOrReduceScanOp"), $3); }
 | TBXOR TSCAN expr
-    { $$ = buildReduceScanExpr(new SymExpr("_bxor"), $3, true); }
+    { $$ = buildScanExpr(new SymExpr("BitwiseXorReduceScanOp"), $3); }
 ;
 
 

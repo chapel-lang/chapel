@@ -49,7 +49,8 @@ BlockStmt* buildLogicalOrExprAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildSelectStmt(Expr* s, BlockStmt* whenstmts);
 BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 
-CallExpr* buildReduceScanExpr(Expr* op, Expr* data, bool isScan=false);
+CallExpr* buildReduceExpr(Expr* op, Expr* data);
+CallExpr* buildScanExpr(Expr* op, Expr* data);
 
 void backPropagateInitsTypes(BlockStmt* stmts);
 void setVarSymbolAttributes(BlockStmt* stmts,
