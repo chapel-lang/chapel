@@ -76,12 +76,14 @@ gasnet-fast regressions (other than the above)
 
 intermittent seg faults 
 ---------------------------------------
-[Error matching program output for multilocale/deitz/linked/test_linked2] (e.g., 10/05/08)
+[Error matching program output for multilocale/deitz/linked/test_linked2] (e.g., 10/05/08, 10/08/08)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-dom] (e.g., 10/06/08)
-[Error matching program output for multilocale/deitz/linked/test_linked3e] (e.g., 10/07/08)
+[Error matching program output for multilocale/deitz/linked/test_linked3e] (e.g., 10/07/08, 10/13/08)
 [Error matching program output for multilocale/bradc/locales/queryLocaleLocation] (e.g., 10/08/08)
-[Error matching program output for multilocale/deitz/linked/test_linked2] (e.g., 10/08/08)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar] (e.g., 10/09/08)
+[Error matching program output for studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 10/10/08)
+
+
 
 memory allocator doesn't handle realloc or --mem flags
 ------------------------------------------------------
@@ -136,6 +138,7 @@ opts-specific tests
 --no-scalar-replacement --no-inline
 ------------------------------------
 [Error matching program output for classes/figueroa/LeakedMemory2]
+[Error matching program output for classes/figueroa/LeakedMemory3]
 
 --no-inline-iterators
 --------------------------------------------------
@@ -145,16 +148,19 @@ opts-specific tests
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
 ---------------------------------------------------------------------
 [Error matching program output for classes/figueroa/LeakedMemory2]
+[Error matching program output for classes/figueroa/LeakedMemory3]
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
 --no-scalar-replacement
 -----------------------
 [Error matching program output for classes/figueroa/LeakedMemory2]
+[Error matching program output for classes/figueroa/LeakedMemory3]
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
 --baseline --inline
 --------------------------
 [Error matching program output for classes/figueroa/LeakedMemory2]
+[Error matching program output for classes/figueroa/LeakedMemory3]
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
@@ -168,15 +174,22 @@ opts-specific tests
 ----------
 [Error matching compiler output for classes/diten/allocateManyObjects]
 [Error matching program output for classes/figueroa/LeakedMemory2]
+[Error matching program output for classes/figueroa/LeakedMemory3]
 
 --baseline --no-local
 ---------------------
 [Error matching program output for arrays/diten/promoteFieldAccessAndMethod]
 [Error matching compiler output for classes/diten/allocateManyObjects]
 [Error matching program output for classes/figueroa/LeakedMemory2]
+[Error matching program output for classes/figueroa/LeakedMemory3]
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
 [Error matching compiler output for studies/590o/alaska/graph]
 [Error matching compiler output for studies/590o/blerner/xml-parse]
+[Error matching compiler output for studies/590o/blerner/xml-parse]
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample3]
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample4]
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5]
+[Error matching program output for studies/matrixMult/stonea/distributed/luLike2]
 [Error matching compiler output for studies/uts/dequeue]
 [Error matching compiler output for studies/uts/uts_deq]
 [Error matching compiler output for studies/uts/uts_deq_seq]
@@ -246,6 +259,15 @@ studies/madness/dinan/mad_chapel/test_likepy]
 ========================
 pgi-specific regressions
 ========================
+
+corrupt def in cleanup.cpp (started 10/09/08)
+---------------------------------------------
+[Error matching compiler output for release/examples/fileIO]
+[Error matching compiler output for release/examples/hpcc/ra]
+[Error matching compiler output for release/examples/hpcc/stream]
+[Error matching compiler output for release/examples/norm]
+[Error matching compiler output for release/examples/reductions]
+[Error matching compiler output for release/examples/sparse]
 
 Numerical accuracy issues (started 05/24/08)
 --------------------------------------------
@@ -318,28 +340,6 @@ print occurs in 0 seconds!?  Timers not working?
 mta-/xmt-specific regressions
 =============================
 
-sync access to partial word object (09/30/08)
----------------------------------------------
-[Error matching program output for release/examples/beer]
-[Error matching program output for release/examples/fileIO]
-[Error matching program output for release/examples/genericStack]
-[Error matching program output for release/examples/hello-module]
-[Error matching program output for release/examples/hello-multiloc]
-[Error matching program output for release/examples/hello]
-[Error matching program output for release/examples/hpcc/stream]
-[Error matching program output for release/examples/iterators]
-[Error matching program output for release/examples/linkedList]
-[Error matching program output for release/examples/multilocale]
-[Error matching program output for release/examples/tree]
-[Error matching program output for release/examples/varargs]
-
-unreachable line causes compiler warning (09/16/08)
----------------------------------------------------
-[Error matching program output for release/examples/hpcc/fft]
-[Error matching program output for release/examples/opaque]
-[Error matching program output for release/examples/quicksort]
-[Error matching program output for release/examples/slices]
-
 occasional timeouts? or slowed down during iterator rewrites? (e.g., 07/02/08)
 ------------------------------------------------------------------------------
 [Error: Timed out executing program release/examples/hpcc/ra]
@@ -348,25 +348,11 @@ data alignment trap (05/10/08)
 ------------------------------
 [Error matching program output for release/examples/arrays]
 [Error matching program output for release/examples/blockLU]
-[Error matching program output for release/examples/jacobi]
-[Error matching program output for release/examples/norm]
-[Error matching program output for release/examples/reductions]
-[Error matching program output for release/examples/sparse]
 
 unreachable line causes compiler warning
 ----------------------------------------
 [Error matching program output for release/examples/arrays]
 [Error matching program output for release/examples/blockLU]
-
-small full/empty sizes
-----------------------
-[Error matching program output for release/examples/prodCons]
-[Error matching program output for release/examples/taskParallel]
-
-sparse code not running correctly -- getting a halt trying to assign zero value
--------------------------------------------------------------------------------
-[Error matching program output for release/examples/sparse]
-
 
 ===========================================
 xmt-specific regressions (beyond the above)
