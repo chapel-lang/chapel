@@ -83,6 +83,7 @@ static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
     break;
   case nccs:
     fprintf(pbsFile, "#PBS -l size=%d\n", getNumCoresPerLocale()*numLocales);
+    fprintf(pbsFile, "#PBS -q debug\n");
     break;
   }
 }
