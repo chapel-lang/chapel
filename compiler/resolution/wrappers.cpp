@@ -419,14 +419,14 @@ coercionWrap(FnSymbol* fn, CallInfo* info) {
 static FnSymbol*
 buildPromotionWrapper(FnSymbol* fn,
                       SymbolMap* promotion_subs,
-                      bool square) {
+                      CallInfo* info) {
   // return cached if we already created this promotion wrapper
   SymbolMap map;
   Vec<Symbol*> keys;
   promotion_subs->get_keys(keys);
   forv_Vec(Symbol*, key, keys)
     map.put(key, promotion_subs->get(key));
-  map.put(fn, (Symbol*)square); // add value of square to cache
+  map.put(fn, (Symbol*)info->call->square); // add value of square to cache
   if (FnSymbol* cached = checkCache(promotionsCache, fn, &map))
     return cached;
 
@@ -435,12 +435,14 @@ buildPromotionWrapper(FnSymbol* fn,
   wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
   wrapper->cname = astr("_promotion_wrap_", fn->cname);
   CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
-  CallExpr* iterator = new CallExpr(square ? "chpl__buildDomainExpr" : "_build_tuple");
+  CallExpr* iterator = new CallExpr(info->call->square ? "chpl__buildDomainExpr" : "_build_tuple");
   CallExpr* actualCall = new CallExpr(fn);
   int i = 1;
   for_formals(formal, fn) {
     SET_LINENO(formal);
     Symbol* new_formal = formal->copy();
+    if (Symbol* p = paramMap.get(formal))
+      paramMap.put(new_formal, p);
     if (fn->_this == formal)
       wrapper->_this = new_formal;
     if (Symbol* sub = promotion_subs->get(formal)) {
@@ -465,14 +467,60 @@ buildPromotionWrapper(FnSymbol* fn,
   if (indicesCall->numActuals() == 1)
     indices = indicesCall->get(1)->remove();
   if (fn->getReturnSymbol() == gVoid) {
-    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(actualCall))));
+    if (!fsjd || fSerial || fSerialForall)
+      wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(actualCall))));
+    else
+      wrapper->insertAtTail(new BlockStmt(buildForallLoopStmt(indices, iterator, new BlockStmt(actualCall))));
   } else {
-    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, actualCall)))));
     wrapper->addFlag(FLAG_ITERATOR_FN);
     wrapper->removeFlag(FLAG_INLINE);
+    if (fsjd && !fSerial && !fSerialForall) {
+      SymbolMap leaderMap;
+      FnSymbol* lifn = wrapper->copy(&leaderMap);
+      form_Map(SymbolMapElem, e, leaderMap) {
+        if (Symbol* s = paramMap.get(e->key))
+          paramMap.put(e->value, s);
+      }
+      ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", gLeaderTag->type);
+      lifn->insertFormalAtTail(lifnTag);
+      lifn->where = new BlockStmt(new CallExpr("==", lifnTag, gLeaderTag));
+      VarSymbol* leaderIndex = newTemp("_leaderIndex");
+      lifn->insertAtTail(new DefExpr(leaderIndex));
+      VarSymbol* leaderIterator = newTemp("_leaderIterator");
+      lifn->insertAtTail(new DefExpr(leaderIterator));
+      lifn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leaderIterator, new CallExpr("_toLeader", iterator->copy(&leaderMap))));
+      lifn->insertAtTail(buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), new BlockStmt(new CallExpr(PRIMITIVE_YIELD, leaderIndex))));
+      theProgram->block->insertAtTail(new DefExpr(lifn));
+      normalize(lifn);
+      lifn->removeFlag(FLAG_INVISIBLE_FN);
+      lifn->instantiationPoint = getVisibilityBlock(info->call);
+
+      SymbolMap followerMap;
+      FnSymbol* fifn = wrapper->copy(&followerMap);
+      form_Map(SymbolMapElem, e, followerMap) {
+        if (Symbol* s = paramMap.get(e->key))
+          paramMap.put(e->value, s);
+      }
+      ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", gFollowerTag->type);
+      fifn->insertFormalAtTail(fifnTag);
+      ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, "follower", dtAny);
+      fifn->insertFormalAtTail(fifnFollower);
+      fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
+      VarSymbol* followerIterator = newTemp("_followerIterator");
+      fifn->insertAtTail(new DefExpr(followerIterator));
+      fifn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower)));
+      fifn->insertAtTail(buildForLoopStmt(indices->copy(&followerMap), new SymExpr(followerIterator), new BlockStmt(new CallExpr(PRIMITIVE_YIELD, actualCall->copy(&followerMap)))));
+      theProgram->block->insertAtTail(new DefExpr(fifn));
+      normalize(fifn);
+      fifn->removeFlag(FLAG_INVISIBLE_FN);
+      fifn->addFlag(FLAG_GENERIC);
+      fifn->instantiationPoint = getVisibilityBlock(info->call);
+    }
+    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, actualCall)))));
   }
   fn->defPoint->insertBefore(new DefExpr(wrapper));
   normalize(wrapper);
+  wrapper->instantiationPoint = getVisibilityBlock(info->call);
   addCache(promotionsCache, fn, wrapper, &map);
   return wrapper;
 }
@@ -481,7 +529,6 @@ buildPromotionWrapper(FnSymbol* fn,
 FnSymbol*
 promotionWrap(FnSymbol* fn, CallInfo* info) {
   Vec<Symbol*>* actuals = &info->actuals;
-  bool isSquare = info->call->square;
   if (!strcmp(fn->name, "="))
     return fn;
   bool promotion_wrapper_required = false;
@@ -502,7 +549,7 @@ promotionWrap(FnSymbol* fn, CallInfo* info) {
   if (promotion_wrapper_required) {
     if (fWarnPromotion)
       USR_WARN(info->call, "promotion on %s", toString(info));
-    fn = buildPromotionWrapper(fn, &promoted_subs, isSquare);
+    fn = buildPromotionWrapper(fn, &promoted_subs, info);
     resolveFormals(fn);
   }
   return fn;

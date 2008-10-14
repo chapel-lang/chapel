@@ -19,6 +19,8 @@ extern int trace_level;
 // disabled if a begin statement has been encountered in the program being compiled
 extern bool fEnableDestructorCalls;
 
+extern bool fsjd;
+
 // optimization control flags
 extern bool fNoBoundsChecks;
 extern bool fNoCopyPropagation;

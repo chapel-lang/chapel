@@ -54,27 +54,31 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
           if (se->var == sym) {
-            CallExpr* call = toCallExpr(se->parentExpr);
-            if (type == sym->type ||
-                (call && call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == se) ||
-                (call && call->isPrimitive(PRIMITIVE_SET_MEMBER) && call->get(1) == se) ||
-                (call && call->isPrimitive(PRIMITIVE_GET_MEMBER)) ||
-                (call && call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) ||
-                //
-                // let GET_LOCALE work apply to the reference
-                //
-                (call && call->isPrimitive(PRIMITIVE_GET_LOCALEID))) {
-
+            if (!strcmp(fn->name, "_toFollower") ||
+                !strcmp(fn->name, "_toLeader")) {
               se->var = arg;
-            } else if (call && call->isPrimitive(PRIMITIVE_SET_REF)) {
-              SET_LINENO(se);
-              call->replace(new SymExpr(arg));
             } else {
-              SET_LINENO(se);
-              VarSymbol* tmp = newTemp(sym->type);
-              se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-              se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, arg)));
+              CallExpr* call = toCallExpr(se->parentExpr);
+              if (type == sym->type ||
+                  (call && call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == se) ||
+                  (call && call->isPrimitive(PRIMITIVE_SET_MEMBER) && call->get(1) == se) ||
+                  (call && call->isPrimitive(PRIMITIVE_GET_MEMBER)) ||
+                  (call && call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) ||
+                  //
+                  // let GET_LOCALE work apply to the reference
+                  //
+                  (call && call->isPrimitive(PRIMITIVE_GET_LOCALEID))) {
+                se->var = arg;
+              } else if (call && call->isPrimitive(PRIMITIVE_SET_REF)) {
+                SET_LINENO(se);
+                call->replace(new SymExpr(arg));
+              } else {
+                SET_LINENO(se);
+                VarSymbol* tmp = newTemp(sym->type);
+                se->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, arg)));
               se->var = tmp;
+              }
             }
           }
         }
@@ -85,10 +89,10 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
 
 
 static void
-addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars) {
+addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars, bool outerCall) {
   forv_Vec(Symbol, sym, *vars) {
     if (sym) {
-      if (!isReferenceType(sym->type)) {
+      if (!isReferenceType(sym->type) && !outerCall) {
         VarSymbol* tmp = newTemp(sym->type->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, sym)));
@@ -104,6 +108,10 @@ addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars) {
 void
 flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   compute_call_sites();
+
+  Vec<FnSymbol*> nestedFunctionSet;
+  forv_Vec(FnSymbol, fn, nestedFunctions)
+    nestedFunctionSet.set_add(fn);
 
   Map<FnSymbol*,Vec<Symbol*>*> args_map;
   forv_Vec(FnSymbol, fn, nestedFunctions) {
@@ -147,16 +155,41 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     Vec<Symbol*>* uses = args_map.get(fn);
     forv_Vec(CallExpr, call, *fn->calledBy) {
-      addVarsToActuals(call, uses);
+
+      //
+      // call not in a nested function; handle the toFollower/toLeader cases
+      //
+      bool outerCall = false;
+      if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {
+        if (!nestedFunctionSet.set_in(parent)) {
+          forv_Vec(Symbol, use, *uses) {
+            if (use->defPoint->parentSymbol != parent &&
+                !isOuterVar(use, parent))
+              outerCall = true;
+          }
+          if (outerCall) {
+            nestedFunctionSet.set_add(parent);
+            nestedFunctions.add(parent);
+            Vec<Symbol*>* usesCopy = new Vec<Symbol*>();
+            forv_Vec(Symbol, use, *uses)
+              usesCopy->add(use);
+            args_map.put(parent, usesCopy);
+          }
+        }
+      }
+
+      addVarsToActuals(call, uses, outerCall);
     }
   }
 
   // move nested functions to module level
   forv_Vec(FnSymbol, fn, nestedFunctions) {
-    ModuleSymbol* mod = fn->getModule();
-    Expr* def = fn->defPoint;
-    def->remove();
-    mod->block->insertAtTail(def);
+    if (isFnSymbol(fn->defPoint->parentSymbol)) {
+      ModuleSymbol* mod = fn->getModule();
+      Expr* def = fn->defPoint;
+      def->remove();
+      mod->block->insertAtTail(def);
+    }
   }
 
   // add extra formals to nested functions
