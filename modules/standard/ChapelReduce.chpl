@@ -20,7 +20,13 @@ def _sum_type(type eltType) {
 }
 
 class ReduceScanOp {
-
+  var lock$: sync bool;
+  def lock() {
+    lock$.writeEF(true);
+  }
+  def unlock() {
+    lock$.readFE();
+  }
 }
 
 class SumReduceScanOp: ReduceScanOp {
@@ -28,6 +34,9 @@ class SumReduceScanOp: ReduceScanOp {
   var value : _sum_type(eltType).type;
   def accumulate(x) {
     value = value + x;
+  }
+  def combine(x) {
+    value = value + x.value;
   }
   def generate() return value;
 }
@@ -39,6 +48,9 @@ class ProductReduceScanOp: ReduceScanOp {
   def accumulate(x) {
     value = value * x;
   }
+  def combine(x) {
+    value = value * x.value;
+  }
   def generate() return value;
 }
 
@@ -48,6 +60,9 @@ class MaxReduceScanOp: ReduceScanOp {
 
   def accumulate(x) {
     value = max(x, value);
+  }
+  def combine(x) {
+    value = max(value, x.value);
   }
   def generate() return value;
 }
@@ -59,6 +74,9 @@ class MinReduceScanOp: ReduceScanOp {
   def accumulate(x) {
     value = min(x, value);
   }
+  def combine(x) {
+    value = min(value, x.value);
+  }
   def generate() return value;
 }
 
@@ -68,6 +86,9 @@ class LogicalAndReduceScanOp: ReduceScanOp {
 
   def accumulate(x) {
     value = value && x;
+  }
+  def combine(x) {
+    value = value && x.value;
   }
   def generate() return value;
 }
@@ -79,6 +100,9 @@ class LogicalOrReduceScanOp: ReduceScanOp {
   def accumulate(x) {
     value = value || x;
   }
+  def combine(x) {
+    value = value || x.value;
+  }
   def generate() return value;
 }
 
@@ -88,6 +112,9 @@ class BitwiseAndReduceScanOp: ReduceScanOp {
 
   def accumulate(x) {
     value = value & x;
+  }
+  def combine(x) {
+    value = value & x.value;
   }
   def generate() return value;
 }
@@ -99,6 +126,9 @@ class BitwiseOrReduceScanOp: ReduceScanOp {
   def accumulate(x) {
     value = value | x;
   }
+  def combine(x) {
+    value = value | x.value;
+  }
   def generate() return value;
 }
 
@@ -108,6 +138,9 @@ class BitwiseXorReduceScanOp: ReduceScanOp {
 
   def accumulate(x) {
     value = value ^ x;
+  }
+  def combine(x) {
+    value = value ^ x.value;
   }
   def generate() return value;
 }
@@ -122,6 +155,12 @@ class maxloc: ReduceScanOp {
       value = x;
     uninitialized = false;
   }
+  def combine(x) {
+    if uninitialized || x.value(1) > value(1) {
+      value = x.value;
+      uninitialized = x.uninitialized;
+    }
+  }
   def generate() return value;
 }
 
@@ -134,6 +173,12 @@ class minloc: ReduceScanOp {
     if uninitialized || x(1) < value(1) then
       value = x;
     uninitialized = false;
+  }
+  def combine(x) {
+    if uninitialized || x.value(1) < value(1) {
+      value = x.value;
+      uninitialized = x.uninitialized;
+    }
   }
   def generate() return value;
 }

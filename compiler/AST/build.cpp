@@ -905,7 +905,9 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
   fn->insertAtTail(new DefExpr(globalOp));
   fn->insertAtTail(
     new CallExpr(PRIMITIVE_MOVE, globalOp,
-      new CallExpr(PRIMITIVE_NEW, new CallExpr(op, eltType))));
+      new CallExpr(PRIMITIVE_NEW,
+        new CallExpr(op,
+          new NamedExpr("eltType", new SymExpr(eltType))))));
   if (isScan) {
     fn->insertAtTail(
       new CallExpr(PRIMITIVE_RETURN, new CallExpr("_scan", globalOp, data)));
@@ -941,10 +943,23 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
 
       followerBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, followerIndex, new CallExpr("iteratorIndex", followerIterator)), BLOCK_TYPE));
 
-      BlockStmt* followerBody = new BlockStmt(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("accumulate")), followerIndex));
+
+
+      VarSymbol* localOp = newTemp();
+      followerBlock->insertAtTail(new DefExpr(localOp));
+      followerBlock->insertAtTail(
+        new CallExpr(PRIMITIVE_MOVE, localOp,
+          new CallExpr(PRIMITIVE_NEW,
+            new CallExpr(op->copy(),
+              new NamedExpr("eltType", new SymExpr(eltType))))));
+
+      BlockStmt* followerBody =new BlockStmt(new CallExpr(new CallExpr(".", localOp, new_StringSymbol("accumulate")), followerIndex));
       
       followerBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, followerIndex, followerIterator);
       followerBlock->insertAtTail(followerBody);
+      followerBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("lock"))));
+      followerBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("combine")), localOp));
+      followerBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("unlock"))));
 
       BlockStmt* beginBlock = new BlockStmt();
       beginBlock->insertAtTail(new DefExpr(leaderIndexCopy));
