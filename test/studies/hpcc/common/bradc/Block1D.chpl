@@ -613,7 +613,7 @@ class Block1DArr: BaseArray {
   // CONSTRUCTORS:
 
   def initialize() {
-    for localeIdx in dom.dist.targetLocDom do
+    coforall localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
         locArr(localeIdx) = new LocBlock1DArr(idxType, eltType, stridable, dom.locDoms(localeIdx));
   }
