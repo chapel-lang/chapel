@@ -627,6 +627,11 @@ class Block1DArr: BaseArray {
   // TODO: Do we need a global bounds check here or in ind2locind?
   //
   def this(i: idxType) var {
+    const myLocArr = locArr(here.id);
+    local {
+      if myLocArr.locDom.myBlock.member(i) then
+        return myLocArr.this(i);
+    }
     return locArr(dom.dist.ind2locInd(i))(i);
   }
 
