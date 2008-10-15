@@ -57,14 +57,15 @@ void insertDestructors(void) {
       if (ct->dispatchParents.n >= 1) {
         if (FnSymbol* parentDestructor = ct->dispatchParents.v[0]->destructor) {
           VarSymbol* tmp;
-          if (ct->classTag == CLASS_CLASS)
+          if (ct->classTag == CLASS_CLASS || ct->symbol->hasFlag(FLAG_ARRAY))
             tmp = newTemp(ct->dispatchParents.v[0]);
           else
             tmp = newTemp(ct->dispatchParents.v[0]->refType);
           ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp,
             new CallExpr(PRIMITIVE_CAST,
-              ct->classTag == CLASS_CLASS ? ct->dispatchParents.v[0]->symbol : ct->dispatchParents.v[0]->refType->symbol,
+              ct->classTag == CLASS_CLASS || ct->symbol->hasFlag(FLAG_ARRAY) ?
+                ct->dispatchParents.v[0]->symbol : ct->dispatchParents.v[0]->refType->symbol,
               ct->destructor->_this)));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor, tmp));
         }
@@ -196,16 +197,35 @@ void insertDestructors(void) {
           }
           if (maybeCallDestructor) {
             // lhs does not "escape" its scope, so go ahead and insert a call to its destructor
-            VarSymbol* tmp = newTemp(lhs->var->type->refType);
+            ClassType* ct = toClassType(lhs->var->type);
+            bool useRefType = ct->classTag != CLASS_CLASS && !ct->symbol->hasFlag(FLAG_ARRAY);
             if (parentBlock == fn->body) {
-              fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, lhs->var)));
-              fn->insertBeforeReturnAfterLabel(new CallExpr(lhs->var->type->destructor, tmp));
+              if (useRefType) {
+                VarSymbol* tmp = newTemp(ct->refType);
+                fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+                fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp,
+                  new CallExpr(PRIMITIVE_SET_REF, lhs->var)));
+                fn->insertBeforeReturnAfterLabel(new CallExpr(ct->destructor, tmp));
+              } else {
+                VarSymbol* tmp = newTemp(ct);
+                fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+                fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, lhs->var));
+                fn->insertBeforeReturnAfterLabel(new CallExpr(ct->destructor, tmp));
+              }
             } else {
               INT_ASSERT(parentBlock);
-              parentBlock->insertAtTailBeforeGoto(new DefExpr(tmp));
-              parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, lhs->var)));
-              parentBlock->insertAtTailBeforeGoto(new CallExpr(lhs->var->type->destructor, tmp));
+              if (useRefType) {
+                VarSymbol* tmp = newTemp(ct->refType);
+                parentBlock->insertAtTailBeforeGoto(new DefExpr(tmp));
+                parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIMITIVE_MOVE, tmp,
+                  new CallExpr(PRIMITIVE_SET_REF, lhs->var)));
+                parentBlock->insertAtTailBeforeGoto(new CallExpr(ct->destructor, tmp));
+              } else {
+                VarSymbol* tmp = newTemp(ct);
+                parentBlock->insertAtTailBeforeGoto(new DefExpr(tmp));
+                parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIMITIVE_MOVE, tmp, lhs->var));
+                parentBlock->insertAtTailBeforeGoto(new CallExpr(ct->destructor, tmp));
+              }
             }
 //            printf("Need to call destructor %s on %s\n", constructor->cname, lhs->var->cname);
           }
