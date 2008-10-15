@@ -1,0 +1,9 @@
+bug: Can't delete EndCount class
+
+This test demonstrates a problem with using a destructor for the EndCount
+class that is used for sync statements.
+
+Each iteration of the loop should have a completely independent instance
+of the EC class and it should be possible to free it and the sync variables it
+uses at the end of the wait function. Uncommenting the declaration of the
+variable "unused" makes this pass.
