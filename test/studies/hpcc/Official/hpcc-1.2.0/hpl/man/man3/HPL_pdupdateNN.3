@@ -1,0 +1,48 @@
+.TH HPL_pdupdateNN 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_pdupdateNN \- Broadcast a panel and update the trailing submatrix.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_pdupdateNN(\fR
+\fB\&HPL_T_panel *\fR
+\fI\&PBCST\fR,
+\fB\&int *\fR
+\fI\&IFLAG\fR,
+\fB\&HPL_T_panel *\fR
+\fI\&PANEL\fR,
+\fB\&const int\fR
+\fI\&NN\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_pdupdateNN\fR
+broadcast - forward the panel PBCST and simultaneously
+applies the row interchanges and updates part of the trailing  (using
+the panel PANEL) submatrix.
+.SH ARGUMENTS
+.TP 8
+PBCST   (local input/output)    HPL_T_panel *
+On entry,  PBCST  points to the data structure containing the
+panel (to be broadcast) information.
+.TP 8
+IFLAG   (local output)          int *
+On exit,  IFLAG  indicates  whether or not  the broadcast has
+been completed when PBCST is not NULL on entry. In that case,
+IFLAG is left unchanged.
+.TP 8
+PANEL   (local input/output)    HPL_T_panel *
+On entry,  PANEL  points to the data structure containing the
+panel (to be updated) information.
+.TP 8
+NN      (local input)           const int
+On entry, NN specifies  the  local  number  of columns of the
+trailing  submatrix  to be updated  starting  at the  current
+position. NN must be at least zero.
+.SH SEE ALSO
+.BR HPL_pdgesv \ (3),
+.BR HPL_pdgesv0 \ (3),
+.BR HPL_pdgesvK1 \ (3),
+.BR HPL_pdgesvK2 \ (3),
+.BR HPL_pdlaswp00N \ (3),
+.BR HPL_pdlaswp01N \ (3).

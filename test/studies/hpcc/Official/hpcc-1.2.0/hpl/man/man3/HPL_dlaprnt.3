@@ -1,0 +1,70 @@
+.TH HPL_dlaprnt 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_dlaprnt \- Print the matrix A.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_dlaprnt(\fR
+\fB\&const int\fR
+\fI\&M\fR,
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&double *\fR
+\fI\&A\fR,
+\fB\&const int\fR
+\fI\&IA\fR,
+\fB\&const int\fR
+\fI\&JA\fR,
+\fB\&const int\fR
+\fI\&LDA\fR,
+\fB\&const char *\fR
+\fI\&CMATNM\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_dlaprnt\fR
+prints to standard error an M-by-N matrix A.
+.SH ARGUMENTS
+.TP 8
+M       (local input)           const int
+On entry,  M  specifies the number of rows of A. M must be at
+least zero.
+.TP 8
+N       (local input)           const int
+On entry,  N  specifies the number of columns of A. N must be
+at least zero.
+.TP 8
+A       (local input)           double *
+On entry, A  points to an array of dimension (LDA,N).
+.TP 8
+IA      (local input)           const int
+On entry, IA specifies the starting row index to be printed.
+.TP 8
+JA      (local input)           const int
+On entry,  JA  specifies  the  starting  column index  to be
+printed.
+.TP 8
+LDA     (local input)           const int
+On entry, LDA specifies the leading dimension of the array A.
+LDA must be at least max(1,M).
+.TP 8
+CMATNM  (local input)           const char *
+On entry, CMATNM is the name of the matrix to be printed.
+.SH EXAMPLE
+\fI\&#include "hpl.h"\fR
+ 
+int main(int argc, char *argv[])
+.br
+{
+.br
+   double a[2*2];
+.br
+   a[0] = 1.0; a[1] = 3.0; a[2] = 2.0; a[3] = 4.0;
+.br
+   HPL_dlaprnt( 2, 2, a, 0, 0, 2, "A" );
+.br
+   exit(0); return(0);
+.br
+}
+.SH SEE ALSO
+.BR HPL_fprintf \ (3).

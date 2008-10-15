@@ -1,0 +1,24 @@
+.TH HPL_bwait 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_bwait \- Finalize the row broadcast.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&int\fR
+\fB\&HPL_bwait(\fR
+\fB\&HPL_T_panel *\fR
+\fI\&PANEL\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_bwait\fR
+HPL_bwait waits  for  the  row  broadcast  of  the current  panel  to
+terminate.  Successful completion is indicated by the returned  error
+code HPL_SUCCESS.
+.SH ARGUMENTS
+.TP 8
+PANEL   (input/output)          HPL_T_panel *
+On entry,  PANEL  points to the  current panel data structure
+being broadcast.
+.SH SEE ALSO
+.BR HPL_binit \ (3),
+.BR HPL_bcast \ (3).

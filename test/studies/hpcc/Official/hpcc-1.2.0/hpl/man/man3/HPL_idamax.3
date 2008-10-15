@@ -1,0 +1,59 @@
+.TH HPL_idamax 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_idamax \- 1st k s.t. |x_k| = max_i(|x_i|).
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&int\fR
+\fB\&HPL_idamax(\fR
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&const double *\fR
+\fI\&X\fR,
+\fB\&const int\fR
+\fI\&INCX\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_idamax\fR
+returns  the index in an n-vector  x  of the first element
+having maximum absolute value.
+.SH ARGUMENTS
+.TP 8
+N       (local input)           const int
+On entry, N specifies the length of the vector x. N  must  be
+at least zero.
+.TP 8
+X       (local input)           const double *
+On entry,  X  is an incremented array of dimension  at  least
+( 1 + ( n - 1 ) * abs( INCX ) )  that  contains the vector x.
+.TP 8
+INCX    (local input)           const int
+On entry, INCX specifies the increment for the elements of X.
+INCX must not be zero.
+.SH EXAMPLE
+\fI\&#include "hpl.h"\fR
+ 
+int main(int argc, char *argv[])
+.br
+{
+.br
+   double x[3];
+.br
+   int    imax;
+.br
+   x[0] = 1.0; x[1] = 3.0; x[2] = 2.0;
+.br
+   imax = HPL_idamax( 3, x, 1 );
+.br
+   printf("imax=%d\en", imax);
+.br
+   exit(0);
+.br
+   return(0);
+.br
+}
+.SH SEE ALSO
+.BR HPL_daxpy \ (3),
+.BR HPL_dcopy \ (3),
+.BR HPL_dscal \ (3),
+.BR HPL_dswap \ (3).

@@ -1,0 +1,92 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_dlaswp06N HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_dlaswp06N</B> swap rows of U with rows of A.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_dlaswp06N(</CODE>
+<CODE>const int</CODE>
+<CODE>M</CODE>,
+<CODE>const int</CODE>
+<CODE>N</CODE>,
+<CODE>double *</CODE>
+<CODE>A</CODE>,
+<CODE>const int</CODE>
+<CODE>LDA</CODE>,
+<CODE>double *</CODE>
+<CODE>U</CODE>,
+<CODE>const int</CODE>
+<CODE>LDU</CODE>,
+<CODE>const int *</CODE>
+<CODE>LINDXA</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_dlaswp06N</B>
+swaps rows of  U  with rows of A at positions
+indicated by LINDXA.
+
+<H1>Arguments</H1>
+<PRE>
+M       (local input)                 const int
+        On entry, M  specifies the number of rows of A that should be
+        swapped with rows of U. M must be at least zero.
+</PRE>
+<PRE>
+N       (local input)                 const int
+        On entry, N specifies the length of the rows of A that should
+        be swapped with rows of U. N must be at least zero.
+</PRE>
+<PRE>
+A       (local output)                double *
+        On entry, A points to an array of dimension (LDA,N). On exit,
+        the  rows of this array specified by  LINDXA  are replaced by
+        rows or columns of U.
+</PRE>
+<PRE>
+LDA     (local input)                 const int
+        On entry, LDA specifies the leading dimension of the array A.
+        LDA must be at least MAX(1,M).
+</PRE>
+<PRE>
+U       (local input/output)          double *
+        On entry,  U  points  to an array of dimension (LDU,N).  This
+        array contains the rows of U that are to be swapped with rows
+        of A.
+</PRE>
+<PRE>
+LDU     (local input)                 const int
+        On entry, LDU specifies the leading dimension of the array U.
+        LDU must be at least MAX(1,M).
+</PRE>
+<PRE>
+LINDXA  (local input)                 const int *
+        On entry, LINDXA is an array of dimension M that contains the
+        local row indexes of A that should be swapped with U.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_dlaswp00N.html">HPL_dlaswp00N</A>,
+<A HREF="HPL_dlaswp10N.html">HPL_dlaswp10N</A>,
+<A HREF="HPL_dlaswp01N.html">HPL_dlaswp01N</A>,
+<A HREF="HPL_dlaswp01T.html">HPL_dlaswp01T</A>,
+<A HREF="HPL_dlaswp02N.html">HPL_dlaswp02N</A>,
+<A HREF="HPL_dlaswp03N.html">HPL_dlaswp03N</A>,
+<A HREF="HPL_dlaswp03T.html">HPL_dlaswp03T</A>,
+<A HREF="HPL_dlaswp04N.html">HPL_dlaswp04N</A>,
+<A HREF="HPL_dlaswp04T.html">HPL_dlaswp04T</A>,
+<A HREF="HPL_dlaswp05N.html">HPL_dlaswp05N</A>,
+<A HREF="HPL_dlaswp05T.html">HPL_dlaswp05T</A>,
+<A HREF="HPL_dlaswp06N.html">HPL_dlaswp06N</A>,
+<A HREF="HPL_dlaswp06T.html">HPL_dlaswp06T</A>.
+
+</BODY>
+</HTML>

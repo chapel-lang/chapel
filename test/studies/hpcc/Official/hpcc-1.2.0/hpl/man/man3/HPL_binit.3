@@ -1,0 +1,23 @@
+.TH HPL_binit 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_binit \- Initialize the row broadcast.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&int\fR
+\fB\&HPL_binit(\fR
+\fB\&HPL_T_panel *\fR
+\fI\&PANEL\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_binit\fR
+initializes  a  row  broadcast.  Successful  completion  is
+indicated by the returned error code HPL_SUCCESS.
+.SH ARGUMENTS
+.TP 8
+PANEL   (input/output)          HPL_T_panel *
+On entry,  PANEL  points to the  current panel data structure
+being broadcast.
+.SH SEE ALSO
+.BR HPL_bcast \ (3),
+.BR HPL_bwait \ (3).

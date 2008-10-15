@@ -1,0 +1,212 @@
+.TH HPL_pdinfo 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_pdinfo \- Read input parameter file.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_pdinfo(\fR
+\fB\&HPL_T_test *\fR
+\fI\&TEST\fR,
+\fB\&int *\fR
+\fI\&NS\fR,
+\fB\&int *\fR
+\fI\&N\fR,
+\fB\&int *\fR
+\fI\&NBS\fR,
+\fB\&int *\fR
+\fI\&NB\fR,
+\fB\&HPL_T_ORDER *\fR
+\fI\&PMAPPIN\fR,
+\fB\&int *\fR
+\fI\&NPQS\fR,
+\fB\&int *\fR
+\fI\&P\fR,
+\fB\&int *\fR
+\fI\&Q\fR,
+\fB\&int *\fR
+\fI\&NPFS\fR,
+\fB\&HPL_T_FACT *\fR
+\fI\&PF\fR,
+\fB\&int *\fR
+\fI\&NBMS\fR,
+\fB\&int *\fR
+\fI\&NBM\fR,
+\fB\&int *\fR
+\fI\&NDVS\fR,
+\fB\&int *\fR
+\fI\&NDV\fR,
+\fB\&int *\fR
+\fI\&NRFS\fR,
+\fB\&HPL_T_FACT *\fR
+\fI\&RF\fR,
+\fB\&int *\fR
+\fI\&NTPS\fR,
+\fB\&HPL_T_TOP *\fR
+\fI\&TP\fR,
+\fB\&int *\fR
+\fI\&NDHS\fR,
+\fB\&int *\fR
+\fI\&DH\fR,
+\fB\&HPL_T_SWAP *\fR
+\fI\&FSWAP\fR,
+\fB\&int *\fR
+\fI\&TSWAP\fR,
+\fB\&int *\fR
+\fI\&L1NOTRAN\fR,
+\fB\&int *\fR
+\fI\&UNOTRAN\fR,
+\fB\&int *\fR
+\fI\&EQUIL\fR,
+\fB\&int *\fR
+\fI\&ALIGN\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_pdinfo\fR
+reads  the  startup  information for the various tests and
+transmits it to all processes.
+.SH ARGUMENTS
+.TP 8
+TEST    (global output)         HPL_T_test *
+On entry, TEST  points to a testing data structure.  On exit,
+the fields of this data structure are initialized as follows:
+TEST->outfp  specifies the output file where the results will
+be printed.  It is only defined and used by  the process 0 of
+the grid.  TEST->thrsh specifies the threshhold value for the
+test ratio.  TEST->epsil is the relative machine precision of
+the distributed computer.  Finally  the test counters, kfail,
+kpass, kskip, ktest are initialized to zero.
+.TP 8
+NS      (global output)         int *
+On exit,  NS  specifies the number of different problem sizes
+to be tested. NS is less than or equal to HPL_MAX_PARAM.
+.TP 8
+N       (global output)         int *
+On entry, N is an array of dimension HPL_MAX_PARAM.  On exit,
+the first NS entries of this array contain the  problem sizes
+to run the code with.
+.TP 8
+NBS     (global output)         int *
+On exit,  NBS  specifies the number of different distribution
+blocking factors to be tested. NBS must be less than or equal
+to HPL_MAX_PARAM.
+.TP 8
+NB      (global output)         int *
+On exit,  PMAPPIN  specifies the process mapping onto the no-
+des of the  MPI machine configuration.  PMAPPIN  defaults  to
+row-major ordering.
+.TP 8
+PMAPPIN (global output)         HPL_T_ORDER *
+On entry, NB is an array of dimension HPL_MAX_PARAM. On exit,
+the first NBS entries of this array contain the values of the
+various distribution blocking factors, to run the code with.
+.TP 8
+NPQS    (global output)         int *
+On exit, NPQS  specifies the  number of different values that
+can be used for P and Q, i.e., the number of process grids to
+run  the  code with.  NPQS must be  less  than  or  equal  to
+HPL_MAX_PARAM.
+.TP 8
+P       (global output)         int *
+On entry, P  is an array of dimension HPL_MAX_PARAM. On exit,
+the first NPQS entries of this array contain the values of P,
+the number of process rows of the  NPQS grids to run the code
+with.
+.TP 8
+Q       (global output)         int *
+On entry, Q  is an array of dimension HPL_MAX_PARAM. On exit,
+the first NPQS entries of this array contain the values of Q,
+the number of process columns of the  NPQS  grids to  run the
+code with.
+.TP 8
+NPFS    (global output)         int *
+On exit, NPFS  specifies the  number of different values that
+can be used for PF : the panel factorization algorithm to run
+the code with. NPFS is less than or equal to HPL_MAX_PARAM.
+.TP 8
+PF      (global output)         HPL_T_FACT *
+On entry, PF is an array of dimension HPL_MAX_PARAM. On exit,
+the first  NPFS  entries  of this array  contain  the various
+panel factorization algorithms to run the code with.
+.TP 8
+NBMS    (global output)         int *
+On exit,  NBMS  specifies  the  number  of  various recursive
+stopping criteria  to be tested.  NBMS  must be  less than or
+equal to HPL_MAX_PARAM.
+.TP 8
+NBM     (global output)         int *
+On entry,  NBM  is an array of  dimension  HPL_MAX_PARAM.  On
+exit, the first NBMS entries of this array contain the values
+of the various recursive stopping criteria to be tested.
+.TP 8
+NDVS    (global output)         int *
+On exit,  NDVS  specifies  the number  of various numbers  of
+panels in recursion to be tested.  NDVS is less than or equal
+to HPL_MAX_PARAM.
+.TP 8
+NDV     (global output)         int *
+On entry,  NDV  is an array of  dimension  HPL_MAX_PARAM.  On
+exit, the first NDVS entries of this array contain the values
+of the various numbers of panels in recursion to be tested.
+.TP 8
+NRFS    (global output)         int *
+On exit, NRFS  specifies the  number of different values that
+can be used for RF : the recursive factorization algorithm to
+be tested. NRFS is less than or equal to HPL_MAX_PARAM.
+.TP 8
+RF      (global output)         HPL_T_FACT *
+On entry, RF is an array of dimension HPL_MAX_PARAM. On exit,
+the first  NRFS  entries  of  this array contain  the various
+recursive factorization algorithms to run the code with.
+.TP 8
+NTPS    (global output)         int *
+On exit, NTPS  specifies the  number of different values that
+can be used for the  broadcast topologies  to be tested. NTPS
+is less than or equal to HPL_MAX_PARAM.
+.TP 8
+TP      (global output)         HPL_T_TOP *
+On entry, TP is an array of dimension HPL_MAX_PARAM. On exit,
+the  first NTPS  entries of this  array  contain  the various
+broadcast (along rows) topologies to run the code with.
+.TP 8
+NDHS    (global output)         int *
+On exit, NDHS  specifies the  number of different values that
+can be used for the  lookahead depths to be  tested.  NDHS is
+less than or equal to HPL_MAX_PARAM.
+.TP 8
+DH      (global output)         int *
+On entry,  DH  is  an array of  dimension  HPL_MAX_PARAM.  On
+exit, the first NDHS entries of this array contain the values
+of lookahead depths to run the code with.  Such a value is at
+least 0 (no-lookahead) or greater than zero.
+.TP 8
+FSWAP   (global output)         HPL_T_SWAP *
+On exit, FSWAP specifies the swapping algorithm to be used in
+all tests.
+.TP 8
+TSWAP   (global output)         int *
+On exit,  TSWAP  specifies the swapping threshold as a number
+of columns when the mixed swapping algorithm was chosen.
+.TP 8
+L1NOTRA (global output)         int *
+On exit, L1NOTRAN specifies whether the upper triangle of the
+panels of columns  should  be stored  in  no-transposed  form
+(L1NOTRAN=1) or in transposed form (L1NOTRAN=0).
+.TP 8
+UNOTRAN (global output)         int *
+On exit, UNOTRAN  specifies whether the panels of rows should
+be stored in  no-transposed form  (UNOTRAN=1)  or  transposed
+form (UNOTRAN=0) during their broadcast.
+.TP 8
+EQUIL   (global output)         int *
+On exit,  EQUIL  specifies  whether  equilibration during the
+swap-broadcast  of  the  panel of rows  should  be  performed
+(EQUIL=1) or not (EQUIL=0).
+.TP 8
+ALIGN   (global output)         int *
+On exit,  ALIGN  specifies the alignment  of  the dynamically
+allocated buffers in double precision words. ALIGN is greater
+than zero.
+.SH SEE ALSO
+.BR HPL_pddriver \ (3),
+.BR HPL_pdtest \ (3).

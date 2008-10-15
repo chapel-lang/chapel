@@ -1,0 +1,55 @@
+.TH HPL_grid_init 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_grid_init \- Create a process grid.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&int\fR
+\fB\&HPL_grid_init(\fR
+\fB\&MPI_Comm\fR
+\fI\&COMM\fR,
+\fB\&const HPL_T_ORDER\fR
+\fI\&ORDER\fR,
+\fB\&const int\fR
+\fI\&NPROW\fR,
+\fB\&const int\fR
+\fI\&NPCOL\fR,
+\fB\&HPL_T_grid *\fR
+\fI\&GRID\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_grid_init\fR
+creates a NPROW x NPCOL  process  grid using column- or
+row-major ordering from an initial collection of processes identified
+by an  MPI  communicator.  Successful  completion is indicated by the
+returned error code MPI_SUCCESS.  Other error codes depend on the MPI
+implementation. The coordinates of processes that are not part of the
+grid are set to values outside of [0..NPROW) x [0..NPCOL).
+.SH ARGUMENTS
+.TP 8
+COMM    (global/local input)    MPI_Comm
+On entry,  COMM  is  the  MPI  communicator  identifying  the
+initial  collection  of  processes out of which  the  grid is
+formed.
+.TP 8
+ORDER   (global input)          const HPL_T_ORDER
+On entry, ORDER specifies how the processes should be ordered
+in the grid as follows:
+   ORDER = HPL_ROW_MAJOR    row-major    ordering;
+   ORDER = HPL_COLUMN_MAJOR column-major ordering;
+.TP 8
+NPROW   (global input)          const int
+On entry,  NPROW  specifies the number of process rows in the
+grid to be created. NPROW must be at least one.
+.TP 8
+NPCOL   (global input)          const int
+On entry,  NPCOL  specifies  the number of process columns in
+the grid to be created. NPCOL must be at least one.
+.TP 8
+GRID    (local input/output)    HPL_T_grid *
+On entry,  GRID  points  to the data structure containing the
+process grid information to be initialized.
+.SH SEE ALSO
+.BR HPL_pnum \ (3),
+.BR HPL_grid_info \ (3),
+.BR HPL_grid_exit \ (3).

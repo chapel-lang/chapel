@@ -1,0 +1,49 @@
+.TH HPL_send 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_send \- Send a message.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&int\fR
+\fB\&HPL_send(\fR
+\fB\&double *\fR
+\fI\&SBUF\fR,
+\fB\&int\fR
+\fI\&SCOUNT\fR,
+\fB\&int\fR
+\fI\&DEST\fR,
+\fB\&int\fR
+\fI\&STAG\fR,
+\fB\&MPI_Comm\fR
+\fI\&COMM\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_send\fR
+is a simple wrapper around  MPI_Send.  Its  main  purpose is
+to  allow for some  experimentation / tuning  of this simple routine.
+Successful  completion  is  indicated  by  the  returned  error  code
+MPI_SUCCESS.  In the case of messages of length less than or equal to
+zero, this function returns immediately.
+.SH ARGUMENTS
+.TP 8
+SBUF    (local input)           double *
+On entry, SBUF specifies the starting address of buffer to be
+sent.
+.TP 8
+SCOUNT  (local input)           int
+On entry,  SCOUNT  specifies  the number of  double precision
+entries in SBUF. SCOUNT must be at least zero.
+.TP 8
+DEST    (local input)           int
+On entry, DEST specifies the rank of the receiving process in
+the communication space defined by COMM.
+.TP 8
+STAG    (local input)           int
+On entry,  STAG specifies the message tag to be used for this
+communication operation.
+.TP 8
+COMM    (local input)           MPI_Comm
+The MPI communicator identifying the communication space.
+.SH SEE ALSO
+.BR HPL_recv \ (3),
+.BR HPL_sendrecv \ (3).

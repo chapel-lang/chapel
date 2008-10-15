@@ -1,0 +1,77 @@
+.TH HPL_xjumpm 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_xjumpm \- Compute constants to jump in the random sequence.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_xjumpm(\fR
+\fB\&const int\fR
+\fI\&JUMPM\fR,
+\fB\&int *\fR
+\fI\&MULT\fR,
+\fB\&int *\fR
+\fI\&IADD\fR,
+\fB\&int *\fR
+\fI\&IRANN\fR,
+\fB\&int *\fR
+\fI\&IRANM\fR,
+\fB\&int *\fR
+\fI\&IAM\fR,
+\fB\&int *\fR
+\fI\&ICM\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_xjumpm\fR
+computes  the constants  A and C  to jump JUMPM numbers in
+the random sequence: X(n+JUMPM) = A*X(n)+C.  The constants encoded in
+MULT and IADD  specify  how to jump from one entry in the sequence to
+the next.
+.SH ARGUMENTS
+.TP 8
+JUMPM   (local input)           const int
+On entry,  JUMPM  specifies  the  number  of entries  in  the
+sequence to jump over. When JUMPM is less or equal than zero,
+A and C are not computed, IRANM is set to IRANN corresponding
+to a jump of size zero.
+.TP 8
+MULT    (local input)           int *
+On entry, MULT is an array of dimension 2,  that contains the
+16-lower  and 15-higher bits of the constant  a  to jump from
+X(n) to X(n+1) = a*X(n) + c in the random sequence.
+.TP 8
+IADD    (local input)           int *
+On entry, IADD is an array of dimension 2,  that contains the
+16-lower  and 15-higher bits of the constant  c  to jump from
+X(n) to X(n+1) = a*X(n) + c in the random sequence.
+.TP 8
+IRANN   (local input)           int *
+On entry, IRANN is an array of dimension 2. that contains the
+16-lower and 15-higher bits of the encoding of X(n).
+.TP 8
+IRANM   (local output)          int *
+On entry,  IRANM  is an array of dimension 2.   On exit, this
+array  contains respectively  the 16-lower and 15-higher bits
+of the encoding of X(n+JUMPM).
+.TP 8
+IAM     (local output)          int *
+On entry, IAM is an array of dimension 2. On exit, when JUMPM
+is  greater  than  zero,  this  array  contains  the  encoded
+constant  A  to jump from  X(n) to  X(n+JUMPM)  in the random
+sequence. IAM(0:1)  contains  respectively  the  16-lower and
+15-higher  bits  of this constant  A. When  JUMPM  is less or
+equal than zero, this array is not referenced.
+.TP 8
+ICM     (local output)          int *
+On entry, ICM is an array of dimension 2. On exit, when JUMPM
+is  greater  than  zero,  this  array  contains  the  encoded
+constant  C  to jump from  X(n)  to  X(n+JUMPM) in the random
+sequence. ICM(0:1)  contains  respectively  the  16-lower and
+15-higher  bits  of this constant  C. When  JUMPM  is less or
+equal than zero, this array is not referenced.
+.SH SEE ALSO
+.BR HPL_ladd \ (3),
+.BR HPL_lmul \ (3),
+.BR HPL_setran \ (3),
+.BR HPL_jumpit \ (3),
+.BR HPL_rand \ (3).

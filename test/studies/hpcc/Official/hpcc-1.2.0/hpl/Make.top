@@ -1,0 +1,192 @@
+#  
+#  -- High Performance Computing Linpack Benchmark (HPL)                
+#     HPL - 1.0a - January 20, 2004                          
+#     Antoine P. Petitet                                                
+#     University of Tennessee, Knoxville                                
+#     Innovative Computing Laboratories                                 
+#     (C) Copyright 2000-2004 All Rights Reserved                       
+#                                                                       
+#  -- Copyright notice and Licensing terms:                             
+#                                                                       
+#  Redistribution  and  use in  source and binary forms, with or without
+#  modification, are  permitted provided  that the following  conditions
+#  are met:                                                             
+#                                                                       
+#  1. Redistributions  of  source  code  must retain the above copyright
+#  notice, this list of conditions and the following disclaimer.        
+#                                                                       
+#  2. Redistributions in binary form must reproduce  the above copyright
+#  notice, this list of conditions,  and the following disclaimer in the
+#  documentation and/or other materials provided with the distribution. 
+#                                                                       
+#  3. All  advertising  materials  mentioning  features  or  use of this
+#  software must display the following acknowledgement:                 
+#  This  product  includes  software  developed  at  the  University  of
+#  Tennessee, Knoxville, Innovative Computing Laboratories.             
+#                                                                       
+#  4. The name of the  University,  the name of the  Laboratory,  or the
+#  names  of  its  contributors  may  not  be used to endorse or promote
+#  products  derived   from   this  software  without  specific  written
+#  permission.                                                          
+#                                                                       
+#  -- Disclaimer:                                                       
+#                                                                       
+#  THIS  SOFTWARE  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT
+#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE UNIVERSITY
+#  OR  CONTRIBUTORS  BE  LIABLE FOR ANY  DIRECT,  INDIRECT,  INCIDENTAL,
+#  SPECIAL,  EXEMPLARY,  OR  CONSEQUENTIAL DAMAGES  (INCLUDING,  BUT NOT
+#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#  DATA OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER CAUSED AND ON ANY
+#  THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY,  OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+# ######################################################################
+#  
+arch             = UNKNOWN
+#
+include Make.$(arch)
+#
+## build ###############################################################
+#
+build_src        :
+	( $(CD) src/auxil/$(arch);         $(MAKE) )
+	( $(CD) src/blas/$(arch);          $(MAKE) )
+	( $(CD) src/comm/$(arch);          $(MAKE) )
+	( $(CD) src/grid/$(arch);          $(MAKE) )
+	( $(CD) src/panel/$(arch);         $(MAKE) )
+	( $(CD) src/pauxil/$(arch);        $(MAKE) )
+	( $(CD) src/pfact/$(arch);         $(MAKE) )
+	( $(CD) src/pgesv/$(arch);         $(MAKE) )
+#
+build_tst        :
+	( $(CD) testing/matgen/$(arch);    $(MAKE) )
+	( $(CD) testing/timer/$(arch);     $(MAKE) )
+	( $(CD) testing/pmatgen/$(arch);   $(MAKE) )
+	( $(CD) testing/ptimer/$(arch);    $(MAKE) )
+	( $(CD) testing/ptest/$(arch);     $(MAKE) )
+#( SPMS_make_cd`' testing/test/$(arch);      SPMS_make_make`' )
+#
+## startup #############################################################
+#
+startup_dir      :
+	- $(MKDIR) include/$(arch)
+	- $(MKDIR) lib
+	- $(MKDIR) lib/$(arch)
+	- $(MKDIR) bin
+	- $(MKDIR) bin/$(arch)
+#
+startup_src      :
+	- $(MAKE) -f Make.top leaf le=src/auxil       arch=$(arch)
+	- $(MAKE) -f Make.top leaf le=src/blas        arch=$(arch)
+	- $(MAKE) -f Make.top leaf le=src/comm        arch=$(arch)
+	- $(MAKE) -f Make.top leaf le=src/grid        arch=$(arch)
+	- $(MAKE) -f Make.top leaf le=src/panel       arch=$(arch)
+	- $(MAKE) -f Make.top leaf le=src/pauxil      arch=$(arch)
+	- $(MAKE) -f Make.top leaf le=src/pfact       arch=$(arch)
+	- $(MAKE) -f Make.top leaf le=src/pgesv       arch=$(arch)
+#
+startup_tst      :
+	- $(MAKE) -f Make.top leaf le=testing/matgen  arch=$(arch)
+	- $(MAKE) -f Make.top leaf le=testing/timer   arch=$(arch)
+	- $(MAKE) -f Make.top leaf le=testing/pmatgen arch=$(arch)
+	- $(MAKE) -f Make.top leaf le=testing/ptimer  arch=$(arch)
+	- $(MAKE) -f Make.top leaf le=testing/ptest   arch=$(arch)
+#- SPMS_make_make`' -f Make.top leaf le=testing/test    arch=$(arch)
+#
+## refresh #############################################################
+#
+refresh_src      :
+	- $(CP) makes/Make.auxil    src/auxil/$(arch)/Makefile
+	- $(CP) makes/Make.blas     src/blas/$(arch)/Makefile
+	- $(CP) makes/Make.comm     src/comm/$(arch)/Makefile
+	- $(CP) makes/Make.grid     src/grid/$(arch)/Makefile
+	- $(CP) makes/Make.panel    src/panel/$(arch)/Makefile
+	- $(CP) makes/Make.pauxil   src/pauxil/$(arch)/Makefile
+	- $(CP) makes/Make.pfact    src/pfact/$(arch)/Makefile
+	- $(CP) makes/Make.pgesv    src/pgesv/$(arch)/Makefile
+#
+refresh_tst      :
+	- $(CP) makes/Make.matgen   testing/matgen/$(arch)/Makefile
+	- $(CP) makes/Make.timer    testing/timer/$(arch)/Makefile
+	- $(CP) makes/Make.pmatgen  testing/pmatgen/$(arch)/Makefile
+	- $(CP) makes/Make.ptimer   testing/ptimer/$(arch)/Makefile
+	- $(CP) makes/Make.ptest    testing/ptest/$(arch)/Makefile
+#- SPMS_make_cp`' makes/Make.test     testing/test/$(arch)/Makefile
+#
+## clean ###############################################################
+#
+clean_src        :
+	- ( $(CD) src/auxil/$(arch);        $(MAKE) clean )
+	- ( $(CD) src/blas/$(arch);         $(MAKE) clean )
+	- ( $(CD) src/comm/$(arch);         $(MAKE) clean )
+	- ( $(CD) src/grid/$(arch);         $(MAKE) clean )
+	- ( $(CD) src/panel/$(arch);        $(MAKE) clean )
+	- ( $(CD) src/pauxil/$(arch);       $(MAKE) clean )
+	- ( $(CD) src/pfact/$(arch);        $(MAKE) clean )
+	- ( $(CD) src/pgesv/$(arch);        $(MAKE) clean )
+#
+clean_tst        :
+	- ( $(CD) testing/matgen/$(arch);   $(MAKE) clean )
+	- ( $(CD) testing/timer/$(arch);    $(MAKE) clean )
+	- ( $(CD) testing/pmatgen/$(arch);  $(MAKE) clean )
+	- ( $(CD) testing/ptimer/$(arch);   $(MAKE) clean )
+	- ( $(CD) testing/ptest/$(arch);    $(MAKE) clean )
+#- ( SPMS_make_cd`' testing/test/$(arch);     SPMS_make_make`' clean )
+#
+## clean_arch ##########################################################
+#
+clean_arch_src   :
+	- $(RM) -r src/auxil/$(arch)
+	- $(RM) -r src/blas/$(arch)
+	- $(RM) -r src/comm/$(arch)
+	- $(RM) -r src/grid/$(arch)
+	- $(RM) -r src/panel/$(arch)
+	- $(RM) -r src/pauxil/$(arch)
+	- $(RM) -r src/pfact/$(arch)
+	- $(RM) -r src/pgesv/$(arch)
+#
+clean_arch_tst   :
+	- $(RM) -r testing/matgen/$(arch)
+	- $(RM) -r testing/timer/$(arch)
+	- $(RM) -r testing/pmatgen/$(arch)
+	- $(RM) -r testing/ptimer/$(arch)
+	- $(RM) -r testing/ptest/$(arch)
+#- SPMS_make_rm`' -r testing/test/$(arch)
+#
+## clean_arch_all ######################################################
+#
+clean_arch_all   :
+	- $(MAKE) -f Make.top clean_arch_src arch=$(arch)
+	- $(MAKE) -f Make.top clean_arch_tst arch=$(arch)
+	- $(RM) -r bin/$(arch) include/$(arch) lib/$(arch)
+#
+## clean_guard #########################################################
+#
+clean_guard_src  :
+	- ( $(CD) src/auxil/$(arch);       $(RM) *.grd )
+	- ( $(CD) src/blas/$(arch);        $(RM) *.grd )
+	- ( $(CD) src/comm/$(arch);        $(RM) *.grd )
+	- ( $(CD) src/grid/$(arch);        $(RM) *.grd )
+	- ( $(CD) src/panel/$(arch);       $(RM) *.grd )
+	- ( $(CD) src/pauxil/$(arch);      $(RM) *.grd )
+	- ( $(CD) src/pfact/$(arch);       $(RM) *.grd )
+	- ( $(CD) src/pgesv/$(arch);       $(RM) *.grd )
+#
+clean_guard_tst  :
+	- ( $(CD) testing/matgen/$(arch);  $(RM) *.grd )
+	- ( $(CD) testing/timer/$(arch);   $(RM) *.grd )
+	- ( $(CD) testing/pmatgen/$(arch); $(RM) *.grd )
+	- ( $(CD) testing/ptimer/$(arch);  $(RM) *.grd )
+	- ( $(CD) testing/ptest/$(arch);   $(RM) *.grd )
+#- ( SPMS_make_cd`' testing/test/$(arch);    SPMS_make_rm`' *.grd )
+#
+## misc ################################################################
+#
+leaf             :
+	- ( $(CD) $(le) ; $(MKDIR) $(arch) )
+	- ( $(CD) $(le)/$(arch) ; \
+            $(LN_S) $(TOPdir)/Make.$(arch) Make.inc )
+#
+########################################################################

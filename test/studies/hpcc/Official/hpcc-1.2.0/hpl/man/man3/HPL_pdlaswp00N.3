@@ -1,0 +1,65 @@
+.TH HPL_pdlaswp00N 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_pdlaswp00N \- Broadcast a column panel L and swap the row panel U.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_pdlaswp00N(\fR
+\fB\&HPL_T_panel *\fR
+\fI\&PBCST\fR,
+\fB\&int *\fR
+\fI\&IFLAG\fR,
+\fB\&HPL_T_panel *\fR
+\fI\&PANEL\fR,
+\fB\&const int\fR
+\fI\&NN\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_pdlaswp00N\fR
+applies the  NB  row interchanges to  NN columns of the
+trailing submatrix and broadcast a column panel.
+ 
+Bi-directional  exchange  is used to perform the  swap :: broadcast of
+the row  panel U at once, resulting in a lower number of messages than
+usual as well as a lower communication volume. With P process rows and
+assuming  bi-directional links,  the running time of this function can
+be approximated by:
+ 
+   log_2(P) * (lat + NB*LocQ(N) / bdwth)
+ 
+where  NB  is the number of rows of the row panel U,  N is the global
+number of columns being updated,  lat and bdwth  are the latency  and
+bandwidth  of  the  network  for  double  precision real words.  Mono
+directional links will double this communication cost.
+.SH ARGUMENTS
+.TP 8
+PBCST   (local input/output)    HPL_T_panel *
+On entry,  PBCST  points to the data structure containing the
+panel (to be broadcast) information.
+.TP 8
+IFLAG   (local input/output)    int *
+On entry, IFLAG  indicates  whether or not  the broadcast has
+already been completed.  If not,  probing will occur, and the
+outcome will be contained in IFLAG on exit.
+.TP 8
+PANEL   (local input/output)    HPL_T_panel *
+On entry,  PANEL  points to the data structure containing the
+panel (to be broadcast and swapped) information.
+.TP 8
+NN      (local input)           const int
+On entry, NN specifies  the  local  number  of columns of the
+trailing  submatrix  to  be swapped and broadcast starting at
+the current position. NN must be at least zero.
+.SH SEE ALSO
+.BR HPL_pdgesv \ (3),
+.BR HPL_pdgesvK2 \ (3),
+.BR HPL_pdupdateNN \ (3),
+.BR HPL_pdupdateTN \ (3),
+.BR HPL_pipid \ (3),
+.BR HPL_plindx0 \ (3),
+.BR HPL_dlaswp01N \ (3),
+.BR HPL_dlaswp02N \ (3),
+.BR HPL_dlaswp03N \ (3),
+.BR HPL_dlaswp04N \ (3),
+.BR HPL_dlaswp05N \ (3).

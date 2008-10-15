@@ -1,0 +1,39 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_grid_exit HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_grid_exit</B> Exit process grid.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>int</CODE>
+<CODE>HPL_grid_exit(</CODE>
+<CODE>HPL_T_grid *</CODE>
+<CODE>GRID</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_grid_exit</B>
+marks  the process  grid object for  deallocation.  The
+returned  error  code  MPI_SUCCESS  indicates  successful completion.
+Other error codes are (MPI) implementation dependent.
+
+<H1>Arguments</H1>
+<PRE>
+GRID    (local input/output)          HPL_T_grid *
+        On entry,  GRID  points  to the data structure containing the
+        process grid to be released.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_pnum.html">HPL_pnum</A>,
+<A HREF="HPL_grid_init.html">HPL_grid_init</A>,
+<A HREF="HPL_grid_info.html">HPL_grid_info</A>.
+
+</BODY>
+</HTML>

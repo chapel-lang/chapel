@@ -1,0 +1,44 @@
+.TH HPL_sum 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_sum \- Combine (sum) two buffers.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_sum(\fR
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&const void *\fR
+\fI\&IN\fR,
+\fB\&void *\fR
+\fI\&INOUT\fR,
+\fB\&const HPL_T_TYPE\fR
+\fI\&DTYPE\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_sum\fR
+combines (sum) two buffers.
+.SH ARGUMENTS
+.TP 8
+N       (input)                 const int
+On entry, N  specifies  the  length  of  the  buffers  to  be
+combined. N must be at least zero.
+.TP 8
+IN      (input)                 const void *
+On entry, IN points to the input-only buffer to be combined.
+.TP 8
+INOUT   (input/output)          void *
+On entry, INOUT  points  to  the  input-output  buffer  to be
+combined.  On exit,  the  entries of this array contains  the
+combined results.
+.TP 8
+DTYPE   (input)                 const HPL_T_TYPE
+On entry,  DTYPE  specifies the type of the buffers operands.
+.SH SEE ALSO
+.BR HPL_broadcast \ (3),
+.BR HPL_reduce \ (3),
+.BR HPL_all_reduce \ (3),
+.BR HPL_barrier \ (3),
+.BR HPL_min \ (3),
+.BR HPL_max \ (3),
+.BR HPL_sum \ (3).

@@ -1,0 +1,58 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_fprintf HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_fprintf</B> fprintf + fflush wrapper.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_fprintf(</CODE>
+<CODE>FILE *</CODE>
+<CODE>STREAM</CODE>,
+<CODE>const char *</CODE>
+<CODE>FORM</CODE>,
+<CODE>...</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_fprintf</B>
+is a wrapper around fprintf flushing the output stream.
+
+<H1>Arguments</H1>
+<PRE>
+STREAM  (local input)                 FILE *
+        On entry, STREAM specifies the output stream.
+</PRE>
+<PRE>
+FORM    (local input)                 const char *
+        On entry, FORM specifies the format, i.e., how the subsequent
+        arguments are converted for output.
+</PRE>
+<PRE>
+        (local input)                 ...
+        On entry,  ...  is the list of arguments to be printed within
+        the format string.
+</PRE>
+
+<H1>Example</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<PRE>
+int main(int argc, char *argv[])
+{
+   HPL_fprintf( stdout, "Hello World.\n" );
+   exit(0); return(0);
+}
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_abort.html">HPL_abort</A>,
+<A HREF="HPL_warn.html">HPL_warn</A>.
+
+</BODY>
+</HTML>

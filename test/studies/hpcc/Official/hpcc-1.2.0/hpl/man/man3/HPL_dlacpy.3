@@ -1,0 +1,72 @@
+.TH HPL_dlacpy 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_dlacpy \- B := A.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_dlacpy(\fR
+\fB\&const int\fR
+\fI\&M\fR,
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&const double *\fR
+\fI\&A\fR,
+\fB\&const int\fR
+\fI\&LDA\fR,
+\fB\&double *\fR
+\fI\&B\fR,
+\fB\&const int\fR
+\fI\&LDB\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_dlacpy\fR
+copies an array A into an array B.
+.SH ARGUMENTS
+.TP 8
+M       (local input)           const int
+On entry,  M specifies the number of rows of the arrays A and
+B. M must be at least zero.
+.TP 8
+N       (local input)           const int
+On entry,  N specifies  the number of columns of the arrays A
+and B. N must be at least zero.
+.TP 8
+A       (local input)           const double *
+On entry, A points to an array of dimension (LDA,N).
+.TP 8
+LDA     (local input)           const int
+On entry, LDA specifies the leading dimension of the array A.
+LDA must be at least MAX(1,M).
+.TP 8
+B       (local output)          double *
+On entry, B points to an array of dimension (LDB,N). On exit,
+B is overwritten with A.
+.TP 8
+LDB     (local input)           const int
+On entry, LDB specifies the leading dimension of the array B.
+LDB must be at least MAX(1,M).
+.SH EXAMPLE
+\fI\&#include "hpl.h"\fR
+ 
+int main(int argc, char *argv[])
+.br
+{
+.br
+   double a[2*2], b[2*2];
+.br
+   a[0] = 1.0; a[1] = 3.0; a[2] = 2.0; a[3] = 4.0;
+.br
+   HPL_dlacpy( 2, 2, a, 2, b, 2 );
+.br
+   printf("  [%f,%f]\en", b[0], b[2]);
+.br
+   printf("b=[%f,%f]\en", b[1], b[3]);
+.br
+   exit(0);
+.br
+   return(0);
+.br
+}
+.SH SEE ALSO
+.BR HPL_dlatcpy \ (3).

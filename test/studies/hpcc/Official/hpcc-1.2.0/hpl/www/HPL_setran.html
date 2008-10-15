@@ -1,0 +1,52 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_setran HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_setran</B> Manage the random number generator.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_setran(</CODE>
+<CODE>const int</CODE>
+<CODE>OPTION</CODE>,
+<CODE>int *</CODE>
+<CODE>IRAN</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_setran</B>
+initializes  the random generator with the encoding of the
+first number X(0) in the sequence,  and the constants a and c used to
+compute the next element in the sequence: X(n+1) = a*X(n) + c.  X(0),
+a and c are stored in the static variables  irand, ias and ics.  When
+OPTION is 0 (resp. 1 and 2),  irand  (resp. ia and ic)  is set to the
+values of the input array IRAN.  When OPTION is 3, IRAN is set to the
+current value of irand, and irand is then incremented.
+
+<H1>Arguments</H1>
+<PRE>
+OPTION  (local input)                 const int
+        On entry, OPTION  is an integer that specifies the operations
+        to be performed on the random generator as specified above.
+</PRE>
+<PRE>
+IRAN    (local input/output)          int *
+        On entry,  IRAN is an array of dimension 2, that contains the
+        16-lower and 15-higher bits of a random number.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_ladd.html">HPL_ladd</A>,
+<A HREF="HPL_lmul.html">HPL_lmul</A>,
+<A HREF="HPL_xjumpm.html">HPL_xjumpm</A>,
+<A HREF="HPL_jumpit.html">HPL_jumpit</A>,
+<A HREF="HPL_rand.html">HPL_rand</A>.
+
+</BODY>
+</HTML>

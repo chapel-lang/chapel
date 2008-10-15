@@ -1,0 +1,76 @@
+.TH HPL_dlamch 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_dlamch \- determines machine-specific arithmetic constants.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&double\fR
+\fB\&HPL_dlamch(\fR
+\fB\&const HPL_T_MACH\fR
+\fI\&CMACH\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_dlamch\fR
+determines  machine-specific  arithmetic constants such as
+the relative machine precision  (eps),  the safe minimum (sfmin) such
+that 1 / sfmin does not overflow, the base of the machine (base), the
+precision (prec), the  number of (base) digits  in the  mantissa (t),
+whether rounding occurs in addition (rnd=1.0 and 0.0 otherwise),  the
+minimum exponent before  (gradual)  underflow (emin),  the  underflow
+threshold (rmin) base**(emin-1), the largest exponent before overflow
+(emax), the overflow threshold (rmax) (base**emax)*(1-eps).
+.SH ARGUMENTS
+.TP 8
+CMACH   (local input)           const HPL_T_MACH
+Specifies the value to be returned by HPL_dlamch             
+   = HPL_MACH_EPS,   HPL_dlamch := eps (default)             
+   = HPL_MACH_SFMIN, HPL_dlamch := sfmin                     
+   = HPL_MACH_BASE,  HPL_dlamch := base                      
+   = HPL_MACH_PREC,  HPL_dlamch := eps*base                  
+   = HPL_MACH_MLEN,  HPL_dlamch := t                         
+   = HPL_MACH_RND,   HPL_dlamch := rnd                       
+   = HPL_MACH_EMIN,  HPL_dlamch := emin                      
+   = HPL_MACH_RMIN,  HPL_dlamch := rmin                      
+   = HPL_MACH_EMAX,  HPL_dlamch := emax                      
+   = HPL_MACH_RMAX,  HPL_dlamch := rmax                      
+ 
+where                                                        
+ 
+   eps   = relative machine precision,                       
+   sfmin = safe minimum,                                     
+   base  = base of the machine,                              
+   prec  = eps*base,                                         
+   t     = number of digits in the mantissa,                 
+   rnd   = 1.0 if rounding occurs in addition,               
+   emin  = minimum exponent before underflow,                
+   rmin  = underflow threshold,                              
+   emax  = largest exponent before overflow,                 
+   rmax  = overflow threshold.
+.SH EXAMPLE
+\fI\&#include "hpl.h"\fR
+ 
+int main(int argc, char *argv[])
+.br
+{
+.br
+   double eps;
+.br
+   eps = HPL_dlamch( HPL_MACH_EPS );
+.br
+   printf("eps=%18.8e\en", eps);
+.br
+   exit(0); return(0);
+.br
+}
+.SH REFERENCES
+This function has been manually translated from the Fortran 77 LAPACK
+auxiliary function dlamch.f  (version 2.0 -- 1992), that  was  itself
+based on the function ENVRON  by Malcolm and incorporated suggestions
+by Gentleman and Marovich. See                                       
+ 
+Malcolm M. A.,  Algorithms  to  reveal  properties  of floating-point
+arithmetic.,  Comms. of the ACM, 15, 949-951 (1972).                 
+ 
+Gentleman W. M. and Marovich S. B.,  More  on algorithms  that reveal
+properties of  floating point arithmetic units.,  Comms. of  the ACM,
+17, 276-277 (1974).

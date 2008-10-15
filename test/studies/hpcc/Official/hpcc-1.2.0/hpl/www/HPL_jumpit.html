@@ -1,0 +1,65 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_jumpit HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_jumpit</B> jump into the random sequence.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_jumpit(</CODE>
+<CODE>int *</CODE>
+<CODE>MULT</CODE>,
+<CODE>int *</CODE>
+<CODE>IADD</CODE>,
+<CODE>int *</CODE>
+<CODE>IRANN</CODE>,
+<CODE>int *</CODE>
+<CODE>IRANM</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_jumpit</B>
+jumps in the random sequence from the number  X(n) encoded
+in IRANN to the number  X(m)  encoded in  IRANM using the constants A
+and C encoded in MULT and IADD: X(m) = A * X(n) + C.  The constants A
+and C obviously depend on m and n,  see  the function  HPL_xjumpm  in
+order to initialize them.
+
+<H1>Arguments</H1>
+<PRE>
+MULT    (local input)                 int *
+        On entry, MULT is an array of dimension 2, that contains the
+        16-lower and 15-higher bits of the constant A.
+</PRE>
+<PRE>
+IADD    (local input)                 int *
+        On entry, IADD is an array of dimension 2, that contains the
+        16-lower and 15-higher bits of the constant C.
+</PRE>
+<PRE>
+IRANN   (local input)                 int *
+        On entry,  IRANN  is an array of dimension 2,  that contains 
+        the 16-lower and 15-higher bits of the encoding of X(n).
+</PRE>
+<PRE>
+IRANM   (local output)                int *
+        On entry,  IRANM  is an array of dimension 2.  On exit, this
+        array contains respectively the 16-lower and  15-higher bits
+        of the encoding of X(m).
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_ladd.html">HPL_ladd</A>,
+<A HREF="HPL_lmul.html">HPL_lmul</A>,
+<A HREF="HPL_setran.html">HPL_setran</A>,
+<A HREF="HPL_xjumpm.html">HPL_xjumpm</A>,
+<A HREF="HPL_rand.html">HPL_rand</A>.
+
+</BODY>
+</HTML>

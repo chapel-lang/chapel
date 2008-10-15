@@ -1,0 +1,23 @@
+.TH HPL_timer_cputime 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_timer_cputime \- Return the CPU time.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&double\fR
+\fB\&HPL_timer_cputime();\fR
+.SH DESCRIPTION
+\fB\&HPL_timer_cputime\fR
+returns the cpu time.  If HPL_USE_CLOCK is defined,
+the  clock() function is used to return an approximation of processor
+time used by the program.  The value returned is the CPU time used so
+far as a clock_t;  to get the number of seconds used,  the result  is
+divided by  CLOCKS_PER_SEC.  This function is part of the  ANSI/ISO C
+standard library.  If  HPL_USE_TIMES is defined, the times() function
+is used instead.  This  function  returns  the current process times.
+times() returns the number of clock ticks that have elapsed since the
+system has been up.  Otherwise and by default,  the  standard library
+function getrusage() is used.
+.SH SEE ALSO
+.BR HPL_timer_walltime \ (3),
+.BR HPL_timer \ (3).

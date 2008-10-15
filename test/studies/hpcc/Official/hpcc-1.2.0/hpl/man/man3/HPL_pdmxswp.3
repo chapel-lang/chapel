@@ -1,0 +1,78 @@
+.TH HPL_pdmxswp 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_pdmxswp \- swaps and broacast the pivot row.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_pdmxswp(\fR
+\fB\&HPL_T_panel *\fR
+\fI\&PANEL\fR,
+\fB\&const int\fR
+\fI\&M\fR,
+\fB\&const int\fR
+\fI\&II\fR,
+\fB\&const int\fR
+\fI\&JJ\fR,
+\fB\&double *\fR
+\fI\&WORK\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_pdmxswp\fR
+swaps  and  broadcasts  the  absolute value max row using
+bi-directional exchange.  The buffer is partially set by HPL_dlocmax.
+ 
+Bi-directional  exchange  is  used  to  perform  the  swap::broadcast
+operations  at once  for one column in the panel.  This  results in a
+lower number of slightly larger  messages than usual.  On P processes
+and assuming bi-directional links,  the running time of this function
+can be approximated by
+ 
+   log_2( P ) * ( lat + ( 2 * N0 + 4 ) / bdwth )
+ 
+where  lat and bdwth are the latency and bandwidth of the network for
+double precision real elements.  Communication  only  occurs  in  one
+process  column. Mono-directional links  will cause the communication
+cost to double.
+.SH ARGUMENTS
+.TP 8
+PANEL   (local input/output)    HPL_T_panel *
+On entry,  PANEL  points to the data structure containing the
+panel information.
+.TP 8
+M       (local input)           const int
+On entry,  M specifies the local number of rows of the matrix
+column on which this function operates.
+.TP 8
+II      (local input)           const int
+On entry, II  specifies the row offset where the column to be
+operated on starts with respect to the panel.
+.TP 8
+JJ      (local input)           const int
+On entry, JJ  specifies the column offset where the column to
+be operated on starts with respect to the panel.
+.TP 8
+WORK    (local workspace)       double *
+On entry, WORK  is a workarray of size at least 2 * (4+2*N0).
+It  is assumed that  HPL_dlocmax  was called  prior  to  this
+routine to  initialize  the first four entries of this array.
+On exit, the  N0  length max row is stored in WORK[4:4+N0-1];
+Note that this is also the  JJth  row  (or column) of L1. The
+remaining part is used as a temporary array.
+.SH SEE ALSO
+.BR HPL_dlocmax \ (3),
+.BR HPL_dlocswpN \ (3),
+.BR HPL_dlocswpT \ (3),
+.BR HPL_pdpancrN \ (3),
+.BR HPL_pdpancrT \ (3),
+.BR HPL_pdpanllN \ (3),
+.BR HPL_pdpanllT \ (3),
+.BR HPL_pdpanrlN \ (3),
+.BR HPL_pdpanrlT \ (3),
+.BR HPL_pdrpancrN \ (3),
+.BR HPL_pdrpancrT \ (3),
+.BR HPL_pdrpanllN \ (3),
+.BR HPL_pdrpanllT \ (3),
+.BR HPL_pdrpanrlN \ (3),
+.BR HPL_pdrpanrlT \ (3),
+.BR HPL_pdfact \ (3).

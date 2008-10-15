@@ -1,0 +1,50 @@
+.TH HPL_perm 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_perm \- Combine 2 index arrays - Generate the permutation.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_perm(\fR
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&int *\fR
+\fI\&LINDXA\fR,
+\fB\&int *\fR
+\fI\&LINDXAU\fR,
+\fB\&int *\fR
+\fI\&IWORK\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_perm\fR
+combines  two  index  arrays  and generate the corresponding
+permutation. First, this function computes the inverse of LINDXA, and
+then combine it with LINDXAU.  Second, in order to be able to perform
+the permutation in place,  LINDXAU  is overwritten by the sequence of
+permutation  producing  the  same result.  What we ultimately want to
+achieve is:  U[LINDXAU[i]] := U[LINDXA[i]] for i in [0..N). After the
+call to this function,  this in place permutation can be performed by
+for i in [0..N) swap U[i] with U[LINDXAU[i]].
+.SH ARGUMENTS
+.TP 8
+N       (global input)          const int
+On entry,  N  specifies the length of the arrays  LINDXA  and
+LINDXAU. N should be at least zero.
+.TP 8
+LINDXA  (global input/output)   int *
+On entry,  LINDXA  is an array of dimension N  containing the
+source indexes. On exit,  LINDXA  contains the combined index
+array.
+.TP 8
+LINDXAU (global input/output)   int *
+On entry,  LINDXAU is an array of dimension N  containing the
+target indexes.  On exit,  LINDXAU  contains  the sequence of
+permutation,  that  should be applied  in increasing order to
+permute the underlying array U in place.
+.TP 8
+IWORK   (workspace)             int *
+On entry, IWORK is a workarray of dimension N.
+.SH SEE ALSO
+.BR HPL_plindx1 \ (3),
+.BR HPL_pdlaswp01N \ (3),
+.BR HPL_pdlaswp01T \ (3).

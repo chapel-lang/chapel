@@ -1,0 +1,44 @@
+.TH HPL_fprintf 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_fprintf \- fprintf + fflush wrapper.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_fprintf(\fR
+\fB\&FILE *\fR
+\fI\&STREAM\fR,
+\fB\&const char *\fR
+\fI\&FORM\fR,
+\fB\&...\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_fprintf\fR
+is a wrapper around fprintf flushing the output stream.
+.SH ARGUMENTS
+.TP 8
+STREAM  (local input)           FILE *
+On entry, STREAM specifies the output stream.
+.TP 8
+FORM    (local input)           const char *
+On entry, FORM specifies the format, i.e., how the subsequent
+arguments are converted for output.
+.TP 8
+        (local input)           ...
+On entry,  ...  is the list of arguments to be printed within
+the format string.
+.SH EXAMPLE
+\fI\&#include "hpl.h"\fR
+ 
+int main(int argc, char *argv[])
+.br
+{
+.br
+   HPL_fprintf( stdout, "Hello World.\en" );
+.br
+   exit(0); return(0);
+.br
+}
+.SH SEE ALSO
+.BR HPL_abort \ (3),
+.BR HPL_warn \ (3).

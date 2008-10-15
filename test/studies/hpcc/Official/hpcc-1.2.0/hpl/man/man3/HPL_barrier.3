@@ -1,0 +1,27 @@
+.TH HPL_barrier 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_barrier \- Barrier operation.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&int\fR
+\fB\&HPL_barrier(\fR
+\fB\&MPI_Comm\fR
+\fI\&COMM\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_barrier\fR
+blocks the caller until all process members have call it.
+The  call  returns  at any process  only after all group members have
+entered the call.
+.SH ARGUMENTS
+.TP 8
+COMM    (global/local input)    MPI_Comm
+The MPI communicator identifying the process collection.
+.SH SEE ALSO
+.BR HPL_broadcast \ (3),
+.BR HPL_reduce \ (3),
+.BR HPL_all_reduce \ (3),
+.BR HPL_min \ (3),
+.BR HPL_max \ (3),
+.BR HPL_sum \ (3).

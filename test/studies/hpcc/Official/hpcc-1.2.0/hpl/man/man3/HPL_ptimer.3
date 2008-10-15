@@ -1,0 +1,35 @@
+.TH HPL_ptimer 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_ptimer \- Timer facility.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_ptimer(\fR
+\fB\&const int\fR
+\fI\&I\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_ptimer\fR
+provides a  "stopwatch"  functionality  cpu/wall  timer in
+seconds.  Up to  64  separate timers can be functioning at once.  The
+first call starts the timer,  and the second stops it.  This  routine
+can be disenabled  by calling HPL_ptimer_disable(),  so that calls to
+the timer are ignored.  This feature can be used to make sure certain
+sections of code do not affect timings,  even  if  they call routines
+which have HPL_ptimer calls in them. HPL_ptimer_enable()  will enable
+the  timer  functionality.  One  can retrieve  the current value of a
+timer by calling
+ 
+t0 = HPL_ptimer_inquire( HPL_WALL_TIME | HPL_CPU_TIME, I )
+ 
+where  I  is the timer index in  [0..64).  To  inititialize the timer
+functionality, one must have called HPL_ptimer_boot() prior to any of
+the functions mentioned above.
+.SH ARGUMENTS
+.TP 8
+I       (global input)          const int
+On entry, I specifies the timer to stop/start.
+.SH SEE ALSO
+.BR HPL_ptimer_cputime \ (3),
+.BR HPL_ptimer_walltime \ (3).

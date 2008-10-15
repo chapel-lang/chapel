@@ -1,0 +1,66 @@
+.TH HPL_indxg2lp 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_indxg2lp \- Map a local index into a global one.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_indxg2lp(\fR
+\fB\&int *\fR
+\fI\&IL\fR,
+\fB\&int *\fR
+\fI\&PROC\fR,
+\fB\&const int\fR
+\fI\&IG\fR,
+\fB\&const int\fR
+\fI\&INB\fR,
+\fB\&const int\fR
+\fI\&NB\fR,
+\fB\&const int\fR
+\fI\&SRCPROC\fR,
+\fB\&const int\fR
+\fI\&NPROCS\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_indxg2lp\fR
+computes the local index of a matrix entry pointed to by
+the global  index IG as well as the process coordinate which posseses
+this entry. The local returned index is the same in all processes.
+.SH ARGUMENTS
+.TP 8
+IL      (output)                int *
+On exit, IL specifies the local index corresponding to IG. IL
+is at least zero.
+.TP 8
+PROC    (output)                int *
+On exit,  PROC  is the  coordinate of the process  owning the
+entry specified by the global index IG. PROC is at least zero
+and less than NPROCS.
+.TP 8
+IG      (input)                 const int
+On entry, IG specifies the global index of the matrix  entry.
+IG must be at least zero.
+.TP 8
+INB     (input)                 const int
+On entry,  INB  specifies  the size of the first block of the
+global matrix. INB must be at least one.
+.TP 8
+NB      (input)                 const int
+On entry,  NB specifies the blocking factor used to partition
+and distribute the matrix A. NB must be larger than one.
+.TP 8
+SRCPROC (input)                 const int
+On entry, if SRCPROC = -1, the data  is not  distributed  but
+replicated,  in  which  case  this  routine returns IG in all
+processes. Otherwise, the value of SRCPROC is ignored.
+.TP 8
+NPROCS  (input)                 const int
+On entry,  NPROCS  specifies the total number of process rows
+or columns over which the matrix is distributed.  NPROCS must
+be at least one.
+.SH SEE ALSO
+.BR HPL_indxg2l \ (3),
+.BR HPL_indxg2p \ (3),
+.BR HPL_indxl2g \ (3),
+.BR HPL_numroc \ (3),
+.BR HPL_numrocI \ (3).

@@ -1,0 +1,72 @@
+.TH HPL_pdlaprnt 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_pdlaprnt \- Print a distributed matrix A.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_pdlaprnt(\fR
+\fB\&const HPL_T_grid *\fR
+\fI\&GRID\fR,
+\fB\&const int\fR
+\fI\&M\fR,
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&const int\fR
+\fI\&NB\fR,
+\fB\&double *\fR
+\fI\&A\fR,
+\fB\&const int\fR
+\fI\&LDA\fR,
+\fB\&const int\fR
+\fI\&IAROW\fR,
+\fB\&const int\fR
+\fI\&IACOL\fR,
+\fB\&const char *\fR
+\fI\&CMATNM\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_pdlaprnt\fR
+prints  to  standard  error a distributed matrix A. The
+local pieces of  A  are sent to the process of coordinates  (0,0)  in
+the grid and then printed.
+.SH ARGUMENTS
+.TP 8
+GRID    (local input)           const HPL_T_grid *
+On entry,  GRID  points  to the data structure containing the
+process grid information.
+.TP 8
+M       (global input)          const int
+On entry,  M  specifies the number of rows of the coefficient
+matrix A. M must be at least zero.
+.TP 8
+N       (global input)          const int
+On  entry,   N   specifies  the  number  of  columns  of  the
+coefficient matrix A. N must be at least zero.
+.TP 8
+NB      (global input)          const int
+On entry,  NB specifies the blocking factor used to partition
+and distribute the matrix. NB must be larger than one.
+.TP 8
+A       (local input)           double *
+On entry,  A  points to an  array of dimension (LDA,LocQ(N)).
+This array contains the coefficient matrix to be printed.
+.TP 8
+LDA     (local input)           const int
+On entry, LDA specifies the leading dimension of the array A.
+LDA must be at least max(1,LocP(M)).
+.TP 8
+IAROW   (global input)          const int
+On entry,  IAROW  specifies the row process coordinate owning
+the  first row of A.  IAROW  must be  larger than or equal to
+zero and less than NPROW.
+.TP 8
+IACOL   (global input)          const int
+On entry,  IACOL  specifies  the  column  process  coordinate
+owning the  first column  of A. IACOL  must be larger than or
+equal to zero and less than NPCOL.
+.TP 8
+CMATNM  (global input)          const char *
+On entry, CMATNM is the name of the matrix to be printed.
+.SH SEE ALSO
+.BR HPL_fprintf \ (3).

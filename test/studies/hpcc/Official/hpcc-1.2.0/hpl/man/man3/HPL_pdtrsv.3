@@ -1,0 +1,49 @@
+.TH HPL_pdtrsv 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_pdtrsv \- Solve triu( A ) x = b.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_pdtrsv(\fR
+\fB\&HPL_T_grid *\fR
+\fI\&GRID\fR,
+\fB\&HPL_T_pmat *\fR
+\fI\&AMAT\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_pdtrsv\fR
+solves an upper triangular system of linear equations.
+ 
+The rhs is the last column of the N by N+1 matrix A. The solve starts
+in the process  column owning the  Nth  column of A, so the rhs b may
+need to be moved one process column to the left at the beginning. The
+routine therefore needs  a column  vector in every process column but
+the one owning  b. The result is  replicated in all process rows, and
+returned in XR, i.e. XR is of size nq = LOCq( N ) in all processes.
+ 
+The algorithm uses decreasing one-ring broadcast in process rows  and
+columns  implemented  in terms of  synchronous communication point to
+point primitives.  The  lookahead of depth 1 is used to minimize  the
+critical path. This entire operation is essentially ``latency'' bound
+and an estimate of its running time is given by:
+ 
+   (move rhs) lat + N / ( P bdwth ) +            
+   (solve)    ((N / NB)-1) 2 (lat + NB / bdwth) +
+              gam2 N^2 / ( P Q ),                
+ 
+where  gam2   is an estimate of the   Level 2 BLAS rate of execution.
+There are  N / NB  diagonal blocks. One must exchange  2  messages of
+length NB to compute the next  NB  entries of the vector solution, as
+well as performing a total of N^2 floating point operations.
+.SH ARGUMENTS
+.TP 8
+GRID    (local input)           HPL_T_grid *
+On entry,  GRID  points  to the data structure containing the
+process grid information.
+.TP 8
+AMAT    (local input/output)    HPL_T_pmat *
+On entry,  AMAT  points  to the data structure containing the
+local array information.
+.SH SEE ALSO
+.BR HPL_pdgesv \ (3).

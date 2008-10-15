@@ -1,0 +1,40 @@
+.TH HPL_pdgesv 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_pdgesv \- Solve A x = b.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_pdgesv(\fR
+\fB\&HPL_T_grid *\fR
+\fI\&GRID\fR,
+\fB\&HPL_T_palg *\fR
+\fI\&ALGO\fR,
+\fB\&HPL_T_pmat *\fR
+\fI\&A\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_pdgesv\fR
+factors a N+1-by-N matrix using LU factorization with row
+partial pivoting.  The main algorithm  is the "right looking" variant
+with  or  without look-ahead.  The  lower  triangular  factor is left
+unpivoted and the pivots are not returned. The right hand side is the
+N+1 column of the coefficient matrix.
+.SH ARGUMENTS
+.TP 8
+GRID    (local input)           HPL_T_grid *
+On entry,  GRID  points  to the data structure containing the
+process grid information.
+.TP 8
+ALGO    (global input)          HPL_T_palg *
+On entry,  ALGO  points to  the data structure containing the
+algorithmic parameters.
+.TP 8
+A       (local input/output)    HPL_T_pmat *
+On entry, A points to the data structure containing the local
+array information.
+.SH SEE ALSO
+.BR HPL_pdgesv0 \ (3),
+.BR HPL_pdgesvK1 \ (3),
+.BR HPL_pdgesvK2 \ (3),
+.BR HPL_pdtrsv \ (3).

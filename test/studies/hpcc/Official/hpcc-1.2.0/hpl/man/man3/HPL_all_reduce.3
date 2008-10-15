@@ -1,0 +1,49 @@
+.TH HPL_all_reduce 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_all_reduce \- All reduce operation.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&int\fR
+\fB\&HPL_all_reduce(\fR
+\fB\&void *\fR
+\fI\&BUFFER\fR,
+\fB\&const int\fR
+\fI\&COUNT\fR,
+\fB\&const HPL_T_TYPE\fR
+\fI\&DTYPE\fR,
+\fB\&const HPL_T_OP \fR
+\fI\&OP\fR,
+\fB\&MPI_Comm\fR
+\fI\&COMM\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_all_reduce\fR
+performs   a   global   reduce  operation  across  all
+processes of a group leaving the results on all processes.
+.SH ARGUMENTS
+.TP 8
+BUFFER  (local input/global out void *
+On entry,  BUFFER  points to  the  buffer to be combined.  On
+exit, this array contains the combined data and  is identical
+on all processes in the group.
+.TP 8
+COUNT   (global input)          const int
+On entry,  COUNT  indicates the number of entries in  BUFFER.
+COUNT must be at least zero.
+.TP 8
+DTYPE   (global input)          const HPL_T_TYPE
+On entry,  DTYPE  specifies the type of the buffers operands.
+.TP 8
+OP      (global input)          const HPL_T_OP 
+On entry, OP is a pointer to the local combine function.
+.TP 8
+COMM    (global/local input)    MPI_Comm
+The MPI communicator identifying the process collection.
+.SH SEE ALSO
+.BR HPL_broadcast \ (3),
+.BR HPL_reduce \ (3),
+.BR HPL_barrier \ (3),
+.BR HPL_min \ (3),
+.BR HPL_max \ (3),
+.BR HPL_sum \ (3).

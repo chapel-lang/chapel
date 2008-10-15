@@ -1,0 +1,127 @@
+<HTML>
+<HEAD>
+<TITLE>
+HPL - A Portable Implementation of the High-Performance
+Linpack Benchmark for Distributed-Memory Computers
+</TITLE>
+</HEAD>
+ 
+<BODY 
+BGCOLOR     = "WHITE"
+BACKGROUND  = "WHITE"
+TEXT        = "#000000"
+VLINK       = "#000099"
+ALINK       = "#947153"
+LINK        = "#0000ff">
+
+<HR NOSHADE>
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0>
+<TR>
+<TD ALIGN=CENTER>
+<H3>HPL - A Portable Implementation of the High-Performance Linpack
+Benchmark for Distributed-Memory Computers</H3>
+</TD>
+<TD ALIGN=LEFT VALIGN=LEFT>
+<A HREF     = "http://icl.cs.utk.edu">
+<IMG SRC    = 2-273x48.jpg
+ALT         = "ICL - UTK Computer Science Department"
+BORDER      = 0
+HEIGHT      = 48
+WIDTH       = 273></A>
+</TD>
+</TR>
+</TABLE>
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0>
+<TR>
+<TD ALIGN=LEFT>Version 1.0a</TD>
+<TD ALIGN=CENTER>
+<A HREF     = "http://www.cs.utk.edu/~petitet">A. Petitet</A>,
+<A HREF     = "http://www.cs.utk.edu/~rwhaley">R. C. Whaley</A>,
+<A HREF     = "http://www.netlib.org/utk/people/JackDongarra">J. Dongarra</A>,
+<A HREF     = "mailto:cleary1@llnl.gov">A. Cleary</A>
+</TD>
+<TD ALIGN=CENTER>January 20, 2004</TD>
+<TD ALIGN=RIGHT>
+<A HREF="http://www.netlib.org/master_counts2.html#benchmark/hpl"># Accesses</A>
+</TD>
+</TR>
+</TABLE>
+<HR NOSHADE><BR> 
+
+<STRONG>HPL</STRONG> is  a software  package  that solves  a (random)
+dense  linear  system  in  double  precision   (64  bits)  arithmetic
+on  distributed-memory  computers.    It  can  thus  be  regarded  as
+a portable as well as  freely available  implementation  of the  High
+Performance Computing Linpack Benchmark.<BR><BR>
+
+The <STRONG>algorithm</STRONG> used  by HPL  can be summarized by the
+following keywords:  Two-dimensional  block-cyclic data  distribution
+- Right-looking variant  of  the  LU  factorization  with row partial
+pivoting  featuring  multiple  look-ahead depths  -  Recursive  panel
+factorization  with  pivot  search  and  column  broadcast combined -
+Various  virtual  panel  broadcast topologies  -  bandwidth  reducing
+swap-broadcast  algorithm -  backward  substitution  with  look-ahead
+of depth 1.<BR><BR>
+
+The  HPL package  provides  a testing and timing program  to quantify
+the  <STRONG>accuracy</STRONG> of  the obtained solution  as  well as
+the time it took to compute it. The best <STRONG>performance</STRONG>
+achievable by this software on your system depends on a large variety
+of factors.  Nonetheless,  with some restrictive assumptions  on  the
+interconnection  network,   the  algorithm  described  here  and  its
+attached implementation  are <STRONG>scalable</STRONG>  in  the sense
+that their parallel efficiency is maintained  constant  with  respect
+to the per processor memory usage.<BR><BR>
+
+The HPL software package <STRONG>requires</STRONG>  the  availibility
+on your system of an implementation of the  Message Passing Interface
+<STRONG>MPI</STRONG> (1.1 compliant).
+An implementation of <STRONG>either</STRONG> the Basic Linear Algebra
+Subprograms   <STRONG>BLAS  or</STRONG>   the   Vector  Signal  Image
+Processing Library <STRONG>VSIPL</STRONG> is also needed.
+Machine-specific as well as generic implementations of
+<A HREF = "links.html#mpi_libs">MPI</A>, the
+<A HREF = "links.html#blas_libs">BLAS</A> and
+<A HREF = "links.html#vsip_libs">VSIPL</A> are available  for a large
+variety of systems.<BR><BR>
+
+<STRONG>Acknowledgements</STRONG>: This work was  supported  in  part
+by  a  grant  from  the  Department  of  Energy's   Lawrence
+Livermore National Laboratory  and  Los  Alamos  National  Laboratory
+as   part  of  the   ASCI  Projects   contract  numbers  B503962  and
+12187-001-00 4R.
+
+<HR NOSHADE>
+<CENTER>
+<A HREF = "index.html">            [Home]</A>
+<A HREF = "copyright.html">        [Copyright and Licensing Terms]</A>
+<A HREF = "algorithm.html">        [Algorithm]</A>
+<A HREF = "scalability.html">      [Scalability]</A>
+<A HREF = "results.html">          [Performance Results]</A>
+<A HREF = "documentation.html">    [Documentation]</A>
+<A HREF = "software.html">         [Software]</A>
+<A HREF = "faqs.html">             [FAQs]</A>
+<A HREF = "tuning.html">           [Tuning]</A>
+<A HREF = "errata.html">           [Errata-Bugs]</A>
+<A HREF = "references.html">       [References]</A>
+<A HREF = "links.html">            [Related Links]</A><BR>
+</CENTER>
+<HR NOSHADE>
+
+<ADDRESS>
+Innovative Computing Laboratory<BR>
+last revised January 20, 2004<BR>
+</ADDRESS>
+
+<PRE>
+#########################################################################
+
+file    <a href="hpl.tgz">hpl.tgz</a>
+for     HPL - A Portable Implementation of the High-Performance Linpack
+,       Benchmark for Distributed-Memory Computers 
+by      Antoine Petitet, Clint Whaley, Jack Dongarra, Andy Cleary
+
+#########################################################################
+</PRE>
+</BODY>
+</HTML>

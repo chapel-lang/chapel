@@ -1,0 +1,67 @@
+.TH HPL_pdmatgen 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_pdmatgen \- Parallel random matrix generator.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_pdmatgen(\fR
+\fB\&const HPL_T_grid *\fR
+\fI\&GRID\fR,
+\fB\&const int\fR
+\fI\&M\fR,
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&const int\fR
+\fI\&NB\fR,
+\fB\&double *\fR
+\fI\&A\fR,
+\fB\&const int\fR
+\fI\&LDA\fR,
+\fB\&const int\fR
+\fI\&ISEED\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_pdmatgen\fR
+generates (or regenerates) a parallel random matrix A.
+ 
+The  pseudo-random  generator uses the linear congruential algorithm:
+X(n+1) = (a * X(n) + c) mod m  as  described  in the  Art of Computer
+Programming, Knuth 1973, Vol. 2.
+.SH ARGUMENTS
+.TP 8
+GRID    (local input)           const HPL_T_grid *
+On entry,  GRID  points  to the data structure containing the
+process grid information.
+.TP 8
+M       (global input)          const int
+On entry,  M  specifies  the number  of rows of the matrix A.
+M must be at least zero.
+.TP 8
+N       (global input)          const int
+On entry,  N specifies the number of columns of the matrix A.
+N must be at least zero.
+.TP 8
+NB      (global input)          const int
+On entry,  NB specifies the blocking factor used to partition
+and distribute the matrix A. NB must be larger than one.
+.TP 8
+A       (local output)          double *
+On entry,  A  points  to an array of dimension (LDA,LocQ(N)).
+On exit, this array contains the coefficients of the randomly
+generated matrix.
+.TP 8
+LDA     (local input)           const int
+On entry, LDA specifies the leading dimension of the array A.
+LDA must be at least max(1,LocP(M)).
+.TP 8
+ISEED   (global input)          const int
+On entry, ISEED  specifies  the  seed  number to generate the
+matrix A. ISEED must be at least zero.
+.SH SEE ALSO
+.BR HPL_ladd \ (3),
+.BR HPL_lmul \ (3),
+.BR HPL_setran \ (3),
+.BR HPL_xjumpm \ (3),
+.BR HPL_jumpit \ (3),
+.BR HPL_drand \ (3).

@@ -1,0 +1,24 @@
+.TH HPL_pdpanel_free 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_pdpanel_free \- Deallocate the panel ressources.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&int\fR
+\fB\&HPL_pdpanel_free(\fR
+\fB\&HPL_T_panel *\fR
+\fI\&PANEL\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_pdpanel_free\fR
+deallocates  the panel resources  and  stores the error
+code returned by the panel factorization.
+.SH ARGUMENTS
+.TP 8
+PANEL   (local input/output)    HPL_T_panel *
+On entry,  PANEL  points  to  the  panel data  structure from
+which the resources should be deallocated.
+.SH SEE ALSO
+.BR HPL_pdpanel_new \ (3),
+.BR HPL_pdpanel_init \ (3),
+.BR HPL_pdpanel_disp \ (3).

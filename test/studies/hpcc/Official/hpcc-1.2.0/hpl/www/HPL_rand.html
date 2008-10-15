@@ -1,0 +1,40 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_rand HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_rand</B> random number generator.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>double</CODE>
+<CODE>HPL_rand();</CODE>
+
+<H1>Description</H1>
+<B>HPL_rand</B>
+generates  the next number  in the  random  sequence.  This
+function  ensures  that this number lies in the interval (-0.5, 0.5].
+ 
+The static array irand contains the information (2 integers) required
+to generate the  next number  in the sequence  X(n).  This  number is
+computed as X(n) = (2^16 * irand[1] + irand[0]) / d - 0.5,  where the
+constant d is the largest 32 bit positive integer. The array irand is
+then  updated  for the generation of the next number  X(n+1)  in  the
+random sequence as follows X(n+1) = a * X(n) + c. The constants a and
+c  should have been preliminarily stored in the arrays ias and ics as
+2 pairs of integers.  The initialization of  ias,  ics and  irand  is
+performed by the function HPL_setran.
+
+<H1>See Also</H1>
+<A HREF="HPL_ladd.html">HPL_ladd</A>,
+<A HREF="HPL_lmul.html">HPL_lmul</A>,
+<A HREF="HPL_setran.html">HPL_setran</A>,
+<A HREF="HPL_xjumpm.html">HPL_xjumpm</A>,
+<A HREF="HPL_jumpit.html">HPL_jumpit</A>.
+
+</BODY>
+</HTML>

@@ -1,0 +1,76 @@
+.TH HPL_pdpanel_new 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_pdpanel_new \- Create a panel data structure.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_pdpanel_new(\fR
+\fB\&HPL_T_grid *\fR
+\fI\&GRID\fR,
+\fB\&HPL_T_palg *\fR
+\fI\&ALGO\fR,
+\fB\&const int\fR
+\fI\&M\fR,
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&const int\fR
+\fI\&JB\fR,
+\fB\&HPL_T_pmat *\fR
+\fI\&A\fR,
+\fB\&const int\fR
+\fI\&IA\fR,
+\fB\&const int\fR
+\fI\&JA\fR,
+\fB\&const int\fR
+\fI\&TAG\fR,
+\fB\&HPL_T_panel * *\fR
+\fI\&PANEL\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_pdpanel_new\fR
+creates and initializes a panel data structure.
+.SH ARGUMENTS
+.TP 8
+GRID    (local input)           HPL_T_grid *
+On entry,  GRID  points  to the data structure containing the
+process grid information.
+.TP 8
+ALGO    (global input)          HPL_T_palg *
+On entry,  ALGO  points to  the data structure containing the
+algorithmic parameters.
+.TP 8
+M       (local input)           const int
+On entry, M specifies the global number of rows of the panel.
+M must be at least zero.
+.TP 8
+N       (local input)           const int
+On entry,  N  specifies  the  global number of columns of the
+panel and trailing submatrix. N must be at least zero.
+.TP 8
+JB      (global input)          const int
+On entry, JB specifies is the number of columns of the panel.
+JB must be at least zero.
+.TP 8
+A       (local input/output)    HPL_T_pmat *
+On entry, A points to the data structure containing the local
+array information.
+.TP 8
+IA      (global input)          const int
+On entry,  IA  is  the global row index identifying the panel
+and trailing submatrix. IA must be at least zero.
+.TP 8
+JA      (global input)          const int
+On entry, JA is the global column index identifying the panel
+and trailing submatrix. JA must be at least zero.
+.TP 8
+TAG     (global input)          const int
+On entry, TAG is the row broadcast message id.
+.TP 8
+PANEL   (local input/output)    HPL_T_panel * *
+On entry,  PANEL  points  to  the  address  of the panel data
+structure to create and initialize.
+.SH SEE ALSO
+.BR HPL_pdpanel_new \ (3),
+.BR HPL_pdpanel_init \ (3),
+.BR HPL_pdpanel_disp \ (3).

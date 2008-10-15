@@ -1,0 +1,67 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_recv HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_recv</B> Receive a message.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>int</CODE>
+<CODE>HPL_recv(</CODE>
+<CODE>double *</CODE>
+<CODE>RBUF</CODE>,
+<CODE>int</CODE>
+<CODE>RCOUNT</CODE>,
+<CODE>int</CODE>
+<CODE>SRC</CODE>,
+<CODE>int</CODE>
+<CODE>RTAG</CODE>,
+<CODE>MPI_Comm</CODE>
+<CODE>COMM</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_recv</B>
+is a simple wrapper around  MPI_Recv.  Its  main  purpose is
+to  allow for some  experimentation / tuning  of this simple routine.
+Successful  completion  is  indicated  by  the  returned  error  code
+HPL_SUCCESS.  In the case of messages of length less than or equal to
+zero, this function returns immediately.
+
+<H1>Arguments</H1>
+<PRE>
+RBUF    (local output)                double *
+        On entry, RBUF specifies the starting address of buffer to be
+        received.
+</PRE>
+<PRE>
+RCOUNT  (local input)                 int
+        On entry,  RCOUNT  specifies  the number  of double precision
+        entries in RBUF. RCOUNT must be at least zero.
+</PRE>
+<PRE>
+SRC     (local input)                 int
+        On entry, SRC  specifies the rank of the  sending  process in
+        the communication space defined by COMM.
+</PRE>
+<PRE>
+RTAG    (local input)                 int
+        On entry,  STAG specifies the message tag to be used for this
+        communication operation.
+</PRE>
+<PRE>
+COMM    (local input)                 MPI_Comm
+        The MPI communicator identifying the communication space.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_send.html">HPL_send</A>,
+<A HREF="HPL_sendrecv.html">HPL_sendrecv</A>.
+
+</BODY>
+</HTML>

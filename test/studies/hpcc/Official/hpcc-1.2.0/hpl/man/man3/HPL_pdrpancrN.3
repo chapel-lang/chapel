@@ -1,0 +1,79 @@
+.TH HPL_pdrpancrN 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_pdrpancrN \- Crout recursive panel factorization.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_pdrpancrN(\fR
+\fB\&HPL_T_panel *\fR
+\fI\&PANEL\fR,
+\fB\&const int\fR
+\fI\&M\fR,
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&const int\fR
+\fI\&ICOFF\fR,
+\fB\&double *\fR
+\fI\&WORK\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_pdrpancrN\fR
+HPL_pdrpancrN recursively  factorizes  a panel of columns  using  the
+recursive  Crout  variant of the usual one-dimensional algorithm. The
+lower triangular  N0-by-N0  upper block  of  the  panel  is stored in
+no-transpose form (i.e. just like the input matrix itself).
+ 
+Bi-directional  exchange  is  used  to  perform  the  swap::broadcast
+operations  at once  for one column in the panel.  This  results in a
+lower number of slightly larger  messages than usual.  On P processes
+and assuming bi-directional links,  the running time of this function
+can be approximated by (when N is equal to N0):                      
+ 
+   N0 * log_2( P ) * ( lat + ( 2*N0 + 4 ) / bdwth ) +
+   N0^2 * ( M - N0/3 ) * gam2-3
+ 
+where M is the local number of rows of  the panel, lat and bdwth  are
+the latency and bandwidth of the network for  double  precision  real
+words, and  gam2-3  is  an estimate of the  Level 2 and Level 3  BLAS
+rate of execution. The  recursive  algorithm  allows indeed to almost
+achieve  Level 3 BLAS  performance  in the panel factorization.  On a
+large  number of modern machines,  this  operation is however latency
+bound,  meaning  that its cost can  be estimated  by only the latency
+portion N0 * log_2(P) * lat.  Mono-directional links will double this
+communication cost.
+.SH ARGUMENTS
+.TP 8
+PANEL   (local input/output)    HPL_T_panel *
+On entry,  PANEL  points to the data structure containing the
+panel information.
+.TP 8
+M       (local input)           const int
+On entry,  M specifies the local number of rows of sub(A).
+.TP 8
+N       (local input)           const int
+On entry,  N specifies the local number of columns of sub(A).
+.TP 8
+ICOFF   (global input)          const int
+On entry, ICOFF specifies the row and column offset of sub(A)
+in A.
+.TP 8
+WORK    (local workspace)       double *
+On entry, WORK  is a workarray of size at least 2*(4+2*N0).
+.SH SEE ALSO
+.BR HPL_dlocmax \ (3),
+.BR HPL_dlocswpN \ (3),
+.BR HPL_dlocswpT \ (3),
+.BR HPL_pdmxswp \ (3),
+.BR HPL_pdpancrN \ (3),
+.BR HPL_pdpancrT \ (3),
+.BR HPL_pdpanllN \ (3),
+.BR HPL_pdpanllT \ (3),
+.BR HPL_pdpanrlN \ (3),
+.BR HPL_pdpanrlT \ (3),
+.BR HPL_pdrpancrT \ (3),
+.BR HPL_pdrpanllN \ (3),
+.BR HPL_pdrpanllT \ (3),
+.BR HPL_pdrpanrlN \ (3),
+.BR HPL_pdrpanrlT \ (3),
+.BR HPL_pdfact \ (3).

@@ -1,0 +1,71 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_indxg2l HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_indxg2l</B> Map a global index into a local one.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>int</CODE>
+<CODE>HPL_indxg2l(</CODE>
+<CODE>const int</CODE>
+<CODE>IG</CODE>,
+<CODE>const int</CODE>
+<CODE>INB</CODE>,
+<CODE>const int</CODE>
+<CODE>NB</CODE>,
+<CODE>const int</CODE>
+<CODE>SRCPROC</CODE>,
+<CODE>const int</CODE>
+<CODE>NPROCS</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_indxg2l</B>
+computes  the local index of a matrix entry pointed to by
+the  global index IG.  This  local  returned index is the same in all
+processes.
+
+<H1>Arguments</H1>
+<PRE>
+IG      (input)                       const int
+        On entry, IG specifies the global index of the matrix  entry.
+        IG must be at least zero.
+</PRE>
+<PRE>
+INB     (input)                       const int
+        On entry,  INB  specifies  the size of the first block of the
+        global matrix. INB must be at least one.
+</PRE>
+<PRE>
+NB      (input)                       const int
+        On entry,  NB specifies the blocking factor used to partition
+        and distribute the matrix. NB must be larger than one.
+</PRE>
+<PRE>
+SRCPROC (input)                       const int
+        On entry, if SRCPROC = -1, the data  is not  distributed  but
+        replicated,  in  which  case  this  routine returns IG in all
+        processes. Otherwise, the value of SRCPROC is ignored.
+</PRE>
+<PRE>
+NPROCS  (input)                       const int
+        On entry,  NPROCS  specifies the total number of process rows
+        or columns over which the matrix is distributed.  NPROCS must
+        be at least one.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_indxg2lp.html">HPL_indxg2lp</A>,
+<A HREF="HPL_indxg2p.html">HPL_indxg2p</A>,
+<A HREF="HPL_indxl2g.html">HPL_indxl2g</A>,
+<A HREF="HPL_numroc.html">HPL_numroc</A>,
+<A HREF="HPL_numrocI.html">HPL_numrocI</A>.
+
+</BODY>
+</HTML>

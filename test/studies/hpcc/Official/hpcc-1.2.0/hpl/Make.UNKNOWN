@@ -1,0 +1,14 @@
+# -*- Makefile -*-
+
+RM = exit
+CD = exit
+arch=UNKNOWN
+
+UNKNOWN:
+	@echo
+	@echo Please specify "'"arch"'" variable, for example:
+	@echo 1. Create file Make.Unix in "'"hpl"'" directory
+	@echo 2. Type: make arch=Unix
+	@echo
+
+.PHONY: UNKNOWN

@@ -1,0 +1,59 @@
+.TH HPL_warn 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_warn \- displays an error message.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_warn(\fR
+\fB\&FILE *\fR
+\fI\&STREAM\fR,
+\fB\&int\fR
+\fI\&LINE\fR,
+\fB\&const char *\fR
+\fI\&SRNAME\fR,
+\fB\&const char *\fR
+\fI\&FORM\fR,
+\fB\&...\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_warn\fR
+displays an error message.
+.SH ARGUMENTS
+.TP 8
+STREAM  (local input)           FILE *
+On entry, STREAM specifies the output stream.
+.TP 8
+LINE    (local input)           int
+On entry,  LINE  specifies the line  number in the file where
+the  error  has  occured.  When  LINE  is not a positive line
+number, it is ignored.
+.TP 8
+SRNAME  (local input)           const char *
+On entry, SRNAME  should  be the name of the routine  calling
+this error handler.
+.TP 8
+FORM    (local input)           const char *
+On entry, FORM specifies the format, i.e., how the subsequent
+arguments are converted for output.
+.TP 8
+        (local input)           ...
+On entry,  ...  is the list of arguments to be printed within
+the format string.
+.SH EXAMPLE
+\fI\&#include "hpl.h"\fR
+ 
+int main(int argc, char *argv[])
+.br
+{
+.br
+   HPL_warn( stderr, __LINE__, __FILE__,
+.br
+             "Demo.\en" );
+.br
+   exit(0); return(0);
+.br
+}
+.SH SEE ALSO
+.BR HPL_abort \ (3),
+.BR HPL_fprintf \ (3).

@@ -1,0 +1,126 @@
+<HTML>
+<HEAD>
+<TITLE>HPL Frequently Asked Questions</TITLE>
+</HEAD>
+
+<BODY 
+BGCOLOR     = "WHITE"
+BACKGROUND  = "WHITE"
+TEXT        = "#000000"
+VLINK       = "#000099"
+ALINK       = "#947153"
+LINK        = "#0000ff">
+
+<H2>HPL Frequently Asked Questions</H2>
+
+<UL>
+<LI><A HREF="faqs.html#pbsize">What problem size N should I run ?</A>
+<LI><A HREF="faqs.html#blsize">What block size NB should I use ?</A>
+<LI><A HREF="faqs.html#grid">What process grid ratio P x Q should I use ?</A>
+<LI><A HREF="faqs.html#1node">What about the one processor case ?</A>
+<LI><A HREF="faqs.html#options">Why so many options in HPL.dat ?</A>
+<LI><A HREF="faqs.html#outperf">Can HPL be outperformed ?</A>
+</UL>
+<HR NOSHADE>
+
+<H3><A NAME="pbsize">What problem size N should I run ?</A></H3>
+
+In order  to find out  the  best performance   of  your  system,  the
+largest   problem size  fitting in memory is what you should aim for.
+The  amount  of  memory  used  by  HPL is essentially the size of the 
+coefficient matrix.  So for example, if you have 4 nodes  with 256 Mb
+of memory on each, this corresponds to 1 Gb total, i.e., 125 M double
+precision  (8  bytes)  elements. The  square  root  of that number is
+11585.  One  definitely needs to leave some memory for the OS as well
+as for other things, so a problem size of 10000 is likely to fit.  As
+a rule of thumb, 80 % of the  total amount of memory is a good guess.
+If the problem size you pick is too large,  swapping will occur,  and
+the performance will drop.  If multiple processes  are spawn  on each
+node  (say  you have 2 processors  per  node),  what  counts  is  the
+available amount of memory to each process.<BR><BR>
+<HR NOSHADE>
+
+<H3><A NAME="blsize">What block size NB should I use ?</A></H3>
+
+HPL  uses  the block size NB for the data distribution as well as for
+the  computational  granularity.  From  a data distribution  point of
+view,  the smallest NB,  the better the load balance.  You definitely
+want  to stay away  from very large values of NB.  From a computation
+point of view,  a too small value of NB  may  limit the computational
+performance by a large factor because almost no data reuse will occur
+in the highest level of the memory hierarchy. The  number of messages
+will  also  increase.  Efficient  matrix-multiply  routines are often 
+internally  blocked.  Small  multiples  of  this  blocking factor are 
+likely to be good block sizes for HPL. The bottom line is that "good"
+block sizes are almost always in the [32 .. 256] interval.  The  best
+values depend on the computation / communication performance ratio of
+your system. To a much less extent, the problem size matters as well.
+Say for example,  you emperically found that 44 was a good block size
+with respect to performance.  88 or 132  are likely  to give slightly 
+better results  for large problem sizes because of a slighlty  higher
+flop rate.<BR><BR>
+<HR NOSHADE>
+
+<H3><A NAME="grid">What process grid ratio P x Q should I use ?</A></H3>
+
+This  depends  on  the  physical  interconnection  network  you have.
+Assuming a mesh or a switch HPL "likes" a 1:k ratio with k in [1..3].
+In  other  words,  P  and  Q  should  be approximately equal,  with Q 
+slightly larger than P. Examples: 2 x 2, 2 x 4, 2 x 5,  3 x 4, 4 x 4,
+4 x 6, 5 x 6, 4 x 8 ...  If  you  are  running  on  a simple Ethernet 
+network,  there  is  only one wire through which all the messages are
+exchanged. On  such a network, the performance and scalability of HPL
+is strongly limited  and very flat process grids are likely to be the
+best choices: 1 x 4, 1 x 8, 2 x 4 ...<BR><BR>
+<HR NOSHADE>
+
+<H3><A NAME="1node">What about the one processor case ?</A></H3>
+
+HPL  has  been  designed  to  perform well for large problem sizes on
+hundreds  of  nodes and more.  The software works on one node and for
+large problem sizes, one  can usually achieve pretty good performance
+on a single processor as well.  For small problem sizes  however, the
+overhead  due  to  message-passing,  local  indexing and so on can be 
+significant.<BR><BR>
+<HR NOSHADE>
+
+<H3><A NAME="options">Why so many options in HPL.dat ?</A></H3>
+
+There are quite a few reasons. First off, these options are useful to
+determine what matters and what does not on your system. Second,  HPL
+is often used in the context  of early evaluation of new systems.  In
+such a case, everything is usually not quite working right, and it is
+convenient  to be able  to vary these parameters without recompiling.
+Finally,  every system has its own peculiarities and one is likely to
+be  willing  to  emperically determine the best set of parameters. In
+any   case,  one  can  always  follow  the  advice  provided  in  the
+<A HREF = "tuning.html">tuning  section</A> of this  document and not
+worry about the complexity of the input file.<BR><BR>
+<HR NOSHADE>
+
+<H3><A NAME="outperf">Can HPL be Outperformed ?</A></H3>
+
+Certainly.   There  is  always  room  for  performance  improvements.
+Specific knowledge about  a  particular system  is always a source of
+performance   gains.  Even  from  a generic  point  of  view,  better
+algorithms  or  more  efficient  formulation  of the classic ones are
+potential winners.<BR><BR>
+
+<HR NOSHADE>
+<CENTER>
+<A HREF = "index.html">            [Home]</A>
+<A HREF = "copyright.html">        [Copyright and Licensing Terms]</A>
+<A HREF = "algorithm.html">        [Algorithm]</A>
+<A HREF = "scalability.html">      [Scalability]</A>
+<A HREF = "results.html">          [Performance Results]</A>
+<A HREF = "documentation.html">    [Documentation]</A>
+<A HREF = "software.html">         [Software]</A>
+<A HREF = "faqs.html">             [FAQs]</A>
+<A HREF = "tuning.html">           [Tuning]</A>
+<A HREF = "errata.html">           [Errata-Bugs]</A>
+<A HREF = "references.html">       [References]</A>
+<A HREF = "links.html">            [Related Links]</A><BR>
+</CENTER>
+<HR NOSHADE>
+</BODY>
+</HTML>

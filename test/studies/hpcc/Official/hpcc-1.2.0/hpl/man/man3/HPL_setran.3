@@ -1,0 +1,37 @@
+.TH HPL_setran 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_setran \- Manage the random number generator.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_setran(\fR
+\fB\&const int\fR
+\fI\&OPTION\fR,
+\fB\&int *\fR
+\fI\&IRAN\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_setran\fR
+initializes  the random generator with the encoding of the
+first number X(0) in the sequence,  and the constants a and c used to
+compute the next element in the sequence: X(n+1) = a*X(n) + c.  X(0),
+a and c are stored in the static variables  irand, ias and ics.  When
+OPTION is 0 (resp. 1 and 2),  irand  (resp. ia and ic)  is set to the
+values of the input array IRAN.  When OPTION is 3, IRAN is set to the
+current value of irand, and irand is then incremented.
+.SH ARGUMENTS
+.TP 8
+OPTION  (local input)           const int
+On entry, OPTION  is an integer that specifies the operations
+to be performed on the random generator as specified above.
+.TP 8
+IRAN    (local input/output)    int *
+On entry,  IRAN is an array of dimension 2, that contains the
+16-lower and 15-higher bits of a random number.
+.SH SEE ALSO
+.BR HPL_ladd \ (3),
+.BR HPL_lmul \ (3),
+.BR HPL_xjumpm \ (3),
+.BR HPL_jumpit \ (3),
+.BR HPL_rand \ (3).

@@ -1,0 +1,160 @@
+.TH HPL_dgemm 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_dgemm \- C := alpha * op(A) * op(B) + beta * C.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_dgemm(\fR
+\fB\&const enum HPL_ORDER\fR
+\fI\&ORDER\fR,
+\fB\&const enum HPL_TRANS\fR
+\fI\&TRANSA\fR,
+\fB\&const enum HPL_TRANS\fR
+\fI\&TRANSB\fR,
+\fB\&const int\fR
+\fI\&M\fR,
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&const int\fR
+\fI\&K\fR,
+\fB\&const double\fR
+\fI\&ALPHA\fR,
+\fB\&const double *\fR
+\fI\&A\fR,
+\fB\&const int\fR
+\fI\&LDA\fR,
+\fB\&const double *\fR
+\fI\&B\fR,
+\fB\&const int\fR
+\fI\&LDB\fR,
+\fB\&const double\fR
+\fI\&BETA\fR,
+\fB\&double *\fR
+\fI\&C\fR,
+\fB\&const int\fR
+\fI\&LDC\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_dgemm\fR
+performs one of the matrix-matrix operations
+ 
+    C := alpha * op( A ) * op( B ) + beta * C
+ 
+ where op( X ) is one of
+ 
+    op( X ) = X   or   op( X ) = X^T.
+ 
+Alpha and beta are scalars,  and A,  B and C are matrices, with op(A)
+an m by k matrix, op(B) a k by n matrix and  C an m by n matrix.
+.SH ARGUMENTS
+.TP 8
+ORDER   (local input)           const enum HPL_ORDER
+On entry, ORDER  specifies the storage format of the operands
+as follows:                                                  
+   ORDER = HplRowMajor,                                      
+   ORDER = HplColumnMajor.                                   
+.TP 8
+TRANSA  (local input)           const enum HPL_TRANS
+On entry, TRANSA  specifies the form of  op(A)  to be used in
+the matrix-matrix operation follows:                         
+   TRANSA==HplNoTrans    : op( A ) = A,                     
+   TRANSA==HplTrans      : op( A ) = A^T,                   
+   TRANSA==HplConjTrans  : op( A ) = A^T.                   
+.TP 8
+TRANSB  (local input)           const enum HPL_TRANS
+On entry, TRANSB  specifies the form of  op(B)  to be used in
+the matrix-matrix operation follows:                         
+   TRANSB==HplNoTrans    : op( B ) = B,                     
+   TRANSB==HplTrans      : op( B ) = B^T,                   
+   TRANSB==HplConjTrans  : op( B ) = B^T.                   
+.TP 8
+M       (local input)           const int
+On entry,  M  specifies  the  number  of rows  of the  matrix
+op(A)  and  of  the  matrix  C.  M  must  be  at least  zero.
+.TP 8
+N       (local input)           const int
+On entry,  N  specifies  the number  of columns of the matrix
+op(B)  and  the number of columns of the matrix  C. N must be
+at least zero.
+.TP 8
+K       (local input)           const int
+On entry,  K  specifies  the  number of columns of the matrix
+op(A) and the number of rows of the matrix op(B).  K  must be
+be at least  zero.
+.TP 8
+ALPHA   (local input)           const double
+On entry, ALPHA specifies the scalar alpha.   When  ALPHA  is
+supplied  as  zero  then the elements of the matrices A and B
+need not be set on input.
+.TP 8
+A       (local input)           const double *
+On entry,  A  is an array of dimension (LDA,ka),  where ka is
+k  when   TRANSA==HplNoTrans,  and  is  m  otherwise.  Before
+entry  with  TRANSA==HplNoTrans, the  leading  m by k part of
+the array  A must contain the matrix A, otherwise the leading
+k  by  m  part of the array  A  must  contain the  matrix  A.
+.TP 8
+LDA     (local input)           const int
+On entry, LDA  specifies the first dimension of A as declared
+in the  calling (sub) program. When  TRANSA==HplNoTrans  then
+LDA must be at least max(1,m), otherwise LDA must be at least
+max(1,k).
+.TP 8
+B       (local input)           const double *
+On entry, B is an array of dimension (LDB,kb),  where  kb  is
+n   when  TRANSB==HplNoTrans, and  is  k  otherwise.   Before
+entry with TRANSB==HplNoTrans,  the  leading  k by n  part of
+the array  B must contain the matrix B, otherwise the leading
+n  by  k  part of the array  B  must  contain  the matrix  B.
+.TP 8
+LDB     (local input)           const int
+On entry, LDB  specifies the first dimension of B as declared
+in the  calling (sub) program. When  TRANSB==HplNoTrans  then
+LDB must be at least max(1,k), otherwise LDB must be at least
+max(1,n).
+.TP 8
+BETA    (local input)           const double
+On entry,  BETA  specifies the scalar  beta.   When  BETA  is
+supplied  as  zero  then  the  elements of the matrix C  need
+not be set on input.
+.TP 8
+C       (local input/output)    double *
+On entry,  C  is an array of dimension (LDC,n). Before entry,
+the  leading m by n part  of  the  array  C  must contain the
+matrix C,  except when beta is zero, in which case C need not
+be set on entry. On exit, the array  C  is overwritten by the
+m by n  matrix ( alpha*op( A )*op( B ) + beta*C ).
+.TP 8
+LDC     (local input)           const int
+On entry, LDC  specifies the first dimension of C as declared
+in  the   calling  (sub)  program.   LDC  must  be  at  least
+max(1,m).
+.SH EXAMPLE
+\fI\&#include "hpl.h"\fR
+ 
+int main(int argc, char *argv[])
+.br
+{
+.br
+   double a[2*2], b[2*2], c[2*2];
+.br
+   a[0] = 1.0; a[1] = 2.0; a[2] = 3.0; a[3] = 3.0;
+.br
+   b[0] = 2.0; b[1] = 1.0; b[2] = 1.0; b[3] = 2.0;
+.br
+   c[0] = 4.0; c[1] = 3.0; c[2] = 2.0; c[3] = 1.0;
+.br
+   HPL_dgemm( HplColumnMajor, HplNoTrans, HplNoTrans,
+.br
+              2, 2, 2, 2.0, a, 2, b, 2, -1.0, c, 2 );
+.br
+   printf("  [%f,%f]\en", c[0], c[2]);
+.br
+   printf("c=[%f,%f]\en", c[1], c[3]);
+.br
+   exit(0); return(0);
+.br
+}
+.SH SEE ALSO
+.BR HPL_dtrsm \ (3).

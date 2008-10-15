@@ -1,0 +1,86 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_pdlaswp01T HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_pdlaswp01T</B> Broadcast a column panel L and swap the row panel U.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_pdlaswp01T(</CODE>
+<CODE>HPL_T_panel *</CODE>
+<CODE>PBCST</CODE>,
+<CODE>int *</CODE>
+<CODE>IFLAG</CODE>,
+<CODE>HPL_T_panel *</CODE>
+<CODE>PANEL</CODE>,
+<CODE>const int</CODE>
+<CODE>NN</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_pdlaswp01T</B>
+applies the  NB  row interchanges to  NN columns of the
+trailing submatrix and broadcast a column panel.
+ 
+A "Spread then roll" algorithm performs  the swap :: broadcast  of the
+row panel U at once,  resulting in a minimal communication volume  and
+a "very good"  use of the connectivity if available.  With  P  process
+rows  and  assuming  bi-directional links,  the  running time  of this
+function can be approximated by:
+ 
+   (log_2(P)+(P-1)) * lat +   K * NB * LocQ(N) / bdwth
+ 
+where  NB  is the number of rows of the row panel U,  N is the global
+number of columns being updated,  lat and bdwth  are the latency  and
+bandwidth  of  the  network  for  double  precision real words.  K is
+a constant in (2,3] that depends on the achieved bandwidth  during  a
+simultaneous  message exchange  between two processes.  An  empirical
+optimistic value of K is typically 2.4.
+
+<H1>Arguments</H1>
+<PRE>
+PBCST   (local input/output)          HPL_T_panel *
+        On entry,  PBCST  points to the data structure containing the
+        panel (to be broadcast) information.
+</PRE>
+<PRE>
+IFLAG   (local input/output)          int *
+        On entry, IFLAG  indicates  whether or not  the broadcast has
+        already been completed.  If not,  probing will occur, and the
+        outcome will be contained in IFLAG on exit.
+</PRE>
+<PRE>
+PANEL   (local input/output)          HPL_T_panel *
+        On entry,  PANEL  points to the data structure containing the
+        panel information.
+</PRE>
+<PRE>
+NN      (local input)                 const int
+        On entry, NN specifies  the  local  number  of columns of the
+        trailing  submatrix  to  be swapped and broadcast starting at
+        the current position. NN must be at least zero.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_pdgesv.html">HPL_pdgesv</A>,
+<A HREF="HPL_pdgesvK2.html">HPL_pdgesvK2</A>,
+<A HREF="HPL_pdupdateNT.html">HPL_pdupdateNT</A>,
+<A HREF="HPL_pdupdateTT.html">HPL_pdupdateTT</A>,
+<A HREF="HPL_pipid.html">HPL_pipid</A>,
+<A HREF="HPL_plindx1.html">HPL_plindx1</A>,
+<A HREF="HPL_plindx10.html">HPL_plindx10</A>,
+<A HREF="HPL_spreadT.html">HPL_spreadT</A>,
+<A HREF="HPL_equil.html">HPL_equil</A>,
+<A HREF="HPL_rollT.html">HPL_rollT</A>,
+<A HREF="HPL_dlaswp10N.html">HPL_dlaswp10N</A>,
+<A HREF="HPL_dlaswp01T.html">HPL_dlaswp01T</A>,
+<A HREF="HPL_dlaswp06T.html">HPL_dlaswp06T</A>.
+
+</BODY>
+</HTML>

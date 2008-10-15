@@ -1,0 +1,31 @@
+.TH HPL_bcast 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_bcast \- Perform the row broadcast.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&int\fR
+\fB\&HPL_bcast(\fR
+\fB\&HPL_T_panel *\fR
+\fI\&PANEL\fR,
+\fB\&int *\fR
+\fI\&IFLAG\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_bcast\fR
+broadcasts  the  current  panel.  Successful  completion is
+indicated by IFLAG set to HPL_SUCCESS on return. IFLAG will be set to
+HPL_FAILURE on failure and to HPL_KEEP_TESTING when the operation was
+not completed, in which case this function should be called again.
+.SH ARGUMENTS
+.TP 8
+PANEL   (input/output)          HPL_T_panel *
+On entry,  PANEL  points to the  current panel data structure
+being broadcast.
+.TP 8
+IFLAG   (output)                int *
+On exit,  IFLAG  indicates  whether  or not the broadcast has
+occured.
+.SH SEE ALSO
+.BR HPL_binit \ (3),
+.BR HPL_bwait \ (3).

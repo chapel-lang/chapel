@@ -1,0 +1,77 @@
+.TH HPL_rollN 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_rollN \- Roll U and forward the column panel.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_rollN(\fR
+\fB\&HPL_T_panel *\fR
+\fI\&PBCST\fR,
+\fB\&int *\fR
+\fI\&IFLAG\fR,
+\fB\&HPL_T_panel *\fR
+\fI\&PANEL\fR,
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&double *\fR
+\fI\&U\fR,
+\fB\&const int\fR
+\fI\&LDU\fR,
+\fB\&const int *\fR
+\fI\&IPLEN\fR,
+\fB\&const int *\fR
+\fI\&IPMAP\fR,
+\fB\&const int *\fR
+\fI\&IPMAPM1\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_rollN\fR
+rolls the local arrays containing the local pieces of U, so
+that on exit to this function  U  is replicated in every process row.
+In addition, this function probe for the presence of the column panel
+and forwards it when available.
+.SH ARGUMENTS
+.TP 8
+PBCST   (local input/output)    HPL_T_panel *
+On entry,  PBCST  points to the data structure containing the
+panel (to be broadcast) information.
+.TP 8
+IFLAG   (local input/output)    int *
+On entry, IFLAG  indicates  whether or not  the broadcast has
+already been completed.  If not,  probing will occur, and the
+outcome will be contained in IFLAG on exit.
+.TP 8
+PANEL   (local input/output)    HPL_T_panel *
+On entry,  PANEL  points to the data structure containing the
+panel (to be rolled) information.
+.TP 8
+N       (local input)           const int
+On entry, N specifies the number of columns of  U.  N must be
+at least zero.
+.TP 8
+U       (local input/output)    double *
+On entry,  U  is an array of dimension (LDU,*) containing the
+local pieces of U in each process row.
+.TP 8
+LDU     (local input)           const int
+On entry, LDU specifies the local leading dimension of U. LDU
+should be at least  MAX(1,IPLEN[NPROW]).
+.TP 8
+IPLEN   (global input)          const int *
+On entry, IPLEN is an array of dimension NPROW+1.  This array
+is such that IPLEN[i+1] - IPLEN[i] is the number of rows of U
+in each process row.
+.TP 8
+IPMAP   (global input)          const int *
+On entry, IMAP  is an array of dimension  NPROW.  This  array
+contains  the  logarithmic mapping of the processes. In other
+words,  IMAP[myrow]  is the absolute coordinate of the sorted
+process.
+.TP 8
+IPMAPM1 (global input)          const int *
+On entry,  IMAPM1  is an array of dimension NPROW. This array
+contains  the inverse of the logarithmic mapping contained in
+IMAP: For i in [0.. NPROW) IMAPM1[IMAP[i]] = i.
+.SH SEE ALSO
+.BR HPL_pdlaswp01N \ (3).

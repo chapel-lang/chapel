@@ -1,0 +1,74 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_warn HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_warn</B> displays an error message.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_warn(</CODE>
+<CODE>FILE *</CODE>
+<CODE>STREAM</CODE>,
+<CODE>int</CODE>
+<CODE>LINE</CODE>,
+<CODE>const char *</CODE>
+<CODE>SRNAME</CODE>,
+<CODE>const char *</CODE>
+<CODE>FORM</CODE>,
+<CODE>...</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_warn</B>
+displays an error message.
+
+<H1>Arguments</H1>
+<PRE>
+STREAM  (local input)                 FILE *
+        On entry, STREAM specifies the output stream.
+</PRE>
+<PRE>
+LINE    (local input)                 int
+        On entry,  LINE  specifies the line  number in the file where
+        the  error  has  occured.  When  LINE  is not a positive line
+        number, it is ignored.
+</PRE>
+<PRE>
+SRNAME  (local input)                 const char *
+        On entry, SRNAME  should  be the name of the routine  calling
+        this error handler.
+</PRE>
+<PRE>
+FORM    (local input)                 const char *
+        On entry, FORM specifies the format, i.e., how the subsequent
+        arguments are converted for output.
+</PRE>
+<PRE>
+        (local input)                 ...
+        On entry,  ...  is the list of arguments to be printed within
+        the format string.
+</PRE>
+
+<H1>Example</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<PRE>
+int main(int argc, char *argv[])
+{
+   HPL_warn( stderr, __LINE__, __FILE__,
+             "Demo.\n" );
+   exit(0); return(0);
+}
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_abort.html">HPL_abort</A>,
+<A HREF="HPL_fprintf.html">HPL_fprintf</A>.
+
+</BODY>
+</HTML>

@@ -1,0 +1,560 @@
+# -*- Makefile -*-
+
+arch = UNKNOWN
+include ../../../Make.$(arch)
+
+HDEP1 = ../../../include/hpl_misc.h ../../../include/hpl_blas.h ../../../include/hpl_auxil.h ../../../include/hpl_test.h
+OBJS1 = ../../../src/auxil/HPL_dlacpy.o ../../../src/auxil/HPL_dlatcpy.o ../../../src/auxil/HPL_fprintf.o ../../../src/auxil/HPL_warn.o ../../../src/auxil/HPL_abort.o ../../../src/auxil/HPL_dlaprnt.o ../../../src/auxil/HPL_dlange.o
+HDEP2 = ../../../include/hpl_misc.h ../../../include/hpl_blas.h ../../../include/hpl_auxil.h
+OBJS2 = ../../../src/auxil/HPL_dlamch.o
+HDEP3 = ../../../include/hpl_misc.h ../../../include/hpl_blas.h
+OBJS3 = ../../../src/blas/HPL_dcopy.o ../../../src/blas/HPL_daxpy.o ../../../src/blas/HPL_dscal.o ../../../src/blas/HPL_idamax.o ../../../src/blas/HPL_dgemv.o ../../../src/blas/HPL_dtrsv.o ../../../src/blas/HPL_dger.o ../../../src/blas/HPL_dgemm.o ../../../src/blas/HPL_dtrsm.o
+HDEP4 = ../../../include/hpl_misc.h ../../../include/hpl_pmisc.h ../../../include/hpl_grid.h ../../../include/hpl_panel.h ../../../include/hpl_pgesv.h
+OBJS4 = ../../../src/comm/HPL_1ring.o ../../../src/comm/HPL_1rinM.o ../../../src/comm/HPL_2ring.o ../../../src/comm/HPL_2rinM.o ../../../src/comm/HPL_blong.o ../../../src/comm/HPL_blonM.o ../../../src/comm/HPL_packL.o ../../../src/comm/HPL_copyL.o ../../../src/comm/HPL_binit.o ../../../src/comm/HPL_bcast.o ../../../src/comm/HPL_bwait.o ../../../src/comm/HPL_send.o ../../../src/comm/HPL_recv.o ../../../src/comm/HPL_sdrv.o
+HDEP5 = ../../../include/hpl_misc.h ../../../include/hpl_pmisc.h ../../../include/hpl_grid.h
+OBJS5 = ../../../src/grid/HPL_grid_init.o ../../../src/grid/HPL_pnum.o ../../../src/grid/HPL_grid_info.o ../../../src/grid/HPL_grid_exit.o ../../../src/grid/HPL_broadcast.o ../../../src/grid/HPL_reduce.o ../../../src/grid/HPL_all_reduce.o ../../../src/grid/HPL_barrier.o ../../../src/grid/HPL_min.o ../../../src/grid/HPL_max.o ../../../src/grid/HPL_sum.o
+HDEP6 = ../../../include/hpl_misc.h ../../../include/hpl_blas.h ../../../include/hpl_auxil.h ../../../include/hpl_pmisc.h ../../../include/hpl_grid.h ../../../include/hpl_comm.h ../../../include/hpl_pauxil.h ../../../include/hpl_panel.h ../../../include/hpl_pfact.h ../../../include/hpl_pgesv.h
+OBJS6 = ../../../src/panel/HPL_pdpanel_new.o ../../../src/panel/HPL_pdpanel_init.o ../../../src/panel/HPL_pdpanel_disp.o ../../../src/panel/HPL_pdpanel_free.o
+HDEP7 = ../../../include/hpl_misc.h ../../../include/hpl_blas.h ../../../include/hpl_auxil.h ../../../include/hpl_pmisc.h ../../../include/hpl_grid.h ../../../include/hpl_pauxil.h
+OBJS7 = ../../../src/pauxil/HPL_indxg2l.o ../../../src/pauxil/HPL_indxg2lp.o ../../../src/pauxil/HPL_indxg2p.o ../../../src/pauxil/HPL_indxl2g.o ../../../src/pauxil/HPL_infog2l.o ../../../src/pauxil/HPL_numroc.o ../../../src/pauxil/HPL_numrocI.o ../../../src/pauxil/HPL_dlaswp00N.o ../../../src/pauxil/HPL_dlaswp10N.o ../../../src/pauxil/HPL_dlaswp01N.o ../../../src/pauxil/HPL_dlaswp01T.o ../../../src/pauxil/HPL_dlaswp02N.o ../../../src/pauxil/HPL_dlaswp03N.o ../../../src/pauxil/HPL_dlaswp03T.o ../../../src/pauxil/HPL_dlaswp04N.o ../../../src/pauxil/HPL_dlaswp04T.o ../../../src/pauxil/HPL_dlaswp05N.o ../../../src/pauxil/HPL_dlaswp05T.o ../../../src/pauxil/HPL_dlaswp06N.o ../../../src/pauxil/HPL_dlaswp06T.o ../../../src/pauxil/HPL_pwarn.o ../../../src/pauxil/HPL_pabort.o ../../../src/pauxil/HPL_pdlaprnt.o ../../../src/pauxil/HPL_pdlamch.o ../../../src/pauxil/HPL_pdlange.o
+HDEP8 = ../../../include/hpl_misc.h ../../../include/hpl_blas.h ../../../include/hpl_auxil.h ../../../include/hpl_pmisc.h ../../../include/hpl_pauxil.h ../../../include/hpl_pfact.h
+OBJS8 = ../../../src/pfact/HPL_dlocmax.o ../../../src/pfact/HPL_dlocswpN.o ../../../src/pfact/HPL_dlocswpT.o ../../../src/pfact/HPL_pdmxswp.o ../../../src/pfact/HPL_pdpancrN.o ../../../src/pfact/HPL_pdpancrT.o ../../../src/pfact/HPL_pdpanllN.o ../../../src/pfact/HPL_pdpanllT.o ../../../src/pfact/HPL_pdpanrlN.o ../../../src/pfact/HPL_pdpanrlT.o ../../../src/pfact/HPL_pdrpanllN.o ../../../src/pfact/HPL_pdrpanllT.o ../../../src/pfact/HPL_pdrpancrN.o ../../../src/pfact/HPL_pdrpancrT.o ../../../src/pfact/HPL_pdrpanrlN.o ../../../src/pfact/HPL_pdrpanrlT.o ../../../src/pfact/HPL_pdfact.o
+HDEP9 = ../../../include/hpl_misc.h ../../../include/hpl_blas.h ../../../include/hpl_auxil.h ../../../include/hpl_pmisc.h ../../../include/hpl_grid.h ../../../include/hpl_comm.h ../../../include/hpl_pauxil.h ../../../include/hpl_panel.h ../../../include/hpl_pfact.h ../../../include/hpl_pgesv.h
+OBJS9 = ../../../src/pgesv/HPL_pipid.o ../../../src/pgesv/HPL_plindx0.o ../../../src/pgesv/HPL_pdlaswp00N.o ../../../src/pgesv/HPL_pdlaswp00T.o ../../../src/pgesv/HPL_perm.o ../../../src/pgesv/HPL_logsort.o ../../../src/pgesv/HPL_plindx10.o ../../../src/pgesv/HPL_plindx1.o ../../../src/pgesv/HPL_spreadN.o ../../../src/pgesv/HPL_spreadT.o ../../../src/pgesv/HPL_rollN.o ../../../src/pgesv/HPL_rollT.o ../../../src/pgesv/HPL_equil.o ../../../src/pgesv/HPL_pdlaswp01N.o ../../../src/pgesv/HPL_pdlaswp01T.o ../../../src/pgesv/HPL_pdupdateNN.o ../../../src/pgesv/HPL_pdupdateNT.o ../../../src/pgesv/HPL_pdupdateTN.o ../../../src/pgesv/HPL_pdupdateTT.o ../../../src/pgesv/HPL_pdtrsv.o ../../../src/pgesv/HPL_pdgesv0.o ../../../src/pgesv/HPL_pdgesvK1.o ../../../src/pgesv/HPL_pdgesvK2.o ../../../src/pgesv/HPL_pdgesv.o
+HDEP10 = ../../../include/hpl_misc.h ../../../include/hpl_blas.h ../../../include/hpl_auxil.h ../../../include/hpl_matgen.h
+OBJS10 = ../../../testing/matgen/HPL_dmatgen.o ../../../testing/matgen/HPL_ladd.o ../../../testing/matgen/HPL_lmul.o ../../../testing/matgen/HPL_xjumpm.o ../../../testing/matgen/HPL_jumpit.o ../../../testing/matgen/HPL_rand.o ../../../testing/matgen/HPL_setran.o
+HDEP11 = ../../../include/hpl_pmisc.h ../../../include/hpl_timer.h
+OBJS11 = ../../../testing/timer/HPL_timer.o ../../../testing/timer/HPL_timer_cputime.o ../../../testing/timer/HPL_timer_walltime.o
+HDEP12 = ../../../include/hpl_pmisc.h ../../../include/hpl_matgen.h ../../../include/hpl_pmisc.h ../../../include/hpl_pauxil.h ../../../include/hpl_pmatgen.h
+OBJS12 = ../../../testing/pmatgen/HPL_pdmatgen.o
+HDEP13 = ../../../include/hpl_pmisc.h ../../../include/hpl_ptimer.h
+OBJS13 = ../../../testing/ptimer/HPL_ptimer.o ../../../testing/ptimer/HPL_ptimer_cputime.o ../../../testing/ptimer/HPL_ptimer_walltime.o
+HDEP14 = ../../../include/hpl_misc.h ../../../include/hpl_blas.h ../../../include/hpl_auxil.h ../../../include/hpl_gesv.h ../../../include/hpl_pmisc.h ../../../include/hpl_pauxil.h ../../../include/hpl_panel.h ../../../include/hpl_pmatgen.h ../../../include/hpl_pgesv.h ../../../include/hpl_ptimer.h ../../../include/hpl_ptest.h
+OBJS14 = ../../../testing/ptest/HPL_pddriver.o ../../../testing/ptest/HPL_pdinfo.o ../../../testing/ptest/HPL_pdtest.o
+HDEP15 = ../../../../include/hpcc.h ../../../include/hpl.h ../../../../RandomAccess/RandomAccess.h ../../../../RandomAccess/buckets.h ../../../../RandomAccess/heap.h ../../../../RandomAccess/pool.h ../../../../RandomAccess/time_bound.h ../../../../RandomAccess/verification.h
+OBJS15 = ../../../../RandomAccess/MPIRandomAccess.o ../../../../RandomAccess/buckets.o ../../../../RandomAccess/core_single_cpu.o ../../../../RandomAccess/heap.o ../../../../RandomAccess/pool.o ../../../../RandomAccess/single_cpu.o ../../../../RandomAccess/star_single_cpu.o ../../../../RandomAccess/time_bound.o ../../../../RandomAccess/utility.o ../../../../RandomAccess/verification.o ../../../../RandomAccess/MPIRandomAccess_vanilla.o ../../../../RandomAccess/MPIRandomAccess_opt.o
+HDEP16 = ../../../../include/hpcc.h ../../../include/hpl.h
+OBJS16 = ../../../../STREAM/onecpu.o ../../../../STREAM/stream.o
+HDEP17 = ../../../../include/hpcc.h ../../../include/hpl.h ../../../../PTRANS/cblacslt.h
+OBJS17 = ../../../../PTRANS/pmatgeninc.o ../../../../PTRANS/pdmatgen.o ../../../../PTRANS/pdtransdriver.o ../../../../PTRANS/pdmatcmp.o ../../../../PTRANS/pdtrans.o ../../../../PTRANS/sclapack.o ../../../../PTRANS/cblacslt.o ../../../../PTRANS/mem.o
+HDEP18 = ../../../../include/hpcc.h ../../../../include/hpccver.h ../../../include/hpl.h
+OBJS18 = ../../../../src/bench_lat_bw_1.5.2.o ../../../../src/hpcc.o ../../../../src/io.o
+HDEP19 = ../../../../include/hpcc.h ../../../include/hpl.h
+OBJS19 = ../../../../src/HPL_slamch.o ../../../../src/noopt.o
+HDEP20 = ../../../../include/hpcc.h ../../../include/hpl.h
+OBJS20 = ../../../../DGEMM/tstdgemm.o ../../../../DGEMM/onecpu.o
+HDEP21 = ../../../../include/hpcc.h ../../../include/hpl.h ../../../../FFT/hpccfft.h ../../../../FFT/wrapfftw.h ../../../../FFT/wrapmpifftw.h
+OBJS21 = ../../../../FFT/bcnrand.o ../../../../FFT/fft235.o ../../../../FFT/zfft1d.o ../../../../FFT/pzfft1d.o ../../../../FFT/onecpu.o ../../../../FFT/tstfft.o ../../../../FFT/wrapfftw.o ../../../../FFT/wrapmpifftw.o ../../../../FFT/mpifft.o
+
+../../../../hpcc : $(HPLlib)
+	$(LINKER) $(LINKFLAGS) -o ../../../../hpcc $(HPL_LIBS)
+
+$(HPLlib): $(OBJS1) $(OBJS2) $(OBJS3) $(OBJS4) $(OBJS5) $(OBJS6) $(OBJS7) $(OBJS8) $(OBJS9) $(OBJS10) $(OBJS11) $(OBJS12) $(OBJS13) $(OBJS14) $(OBJS15) $(OBJS16) $(OBJS17) $(OBJS18) $(OBJS19) $(OBJS20) $(OBJS21)
+	$(ARCHIVER) $(ARFLAGS) $(HPLlib) $(OBJS1) $(OBJS2) $(OBJS3) $(OBJS4) $(OBJS5) $(OBJS6) $(OBJS7) $(OBJS8) $(OBJS9) $(OBJS10) $(OBJS11) $(OBJS12) $(OBJS13) $(OBJS14) $(OBJS15) $(OBJS16) $(OBJS17) $(OBJS18) $(OBJS19) $(OBJS20) $(OBJS21)
+	$(RANLIB) $(HPLlib)
+
+clean:
+	$(RM) ../../../../hpcc $(HPLlib)
+	$(RM) $(OBJS1) $(OBJS2) $(OBJS3) $(OBJS4) $(OBJS5) $(OBJS6) $(OBJS7) $(OBJS8) $(OBJS9) $(OBJS10) $(OBJS11) $(OBJS12) $(OBJS13) $(OBJS14) $(OBJS15) $(OBJS16) $(OBJS17) $(OBJS18) $(OBJS19) $(OBJS20) $(OBJS21)
+
+../../../src/auxil/HPL_dlacpy.o : ../../../src/auxil/HPL_dlacpy.c $(HDEP1)
+	$(CC) -o ../../../src/auxil/HPL_dlacpy.o -c ../../../src/auxil/HPL_dlacpy.c $(CCFLAGS)
+
+../../../src/auxil/HPL_dlatcpy.o : ../../../src/auxil/HPL_dlatcpy.c $(HDEP1)
+	$(CC) -o ../../../src/auxil/HPL_dlatcpy.o -c ../../../src/auxil/HPL_dlatcpy.c $(CCFLAGS)
+
+../../../src/auxil/HPL_fprintf.o : ../../../src/auxil/HPL_fprintf.c $(HDEP1)
+	$(CC) -o ../../../src/auxil/HPL_fprintf.o -c ../../../src/auxil/HPL_fprintf.c $(CCFLAGS)
+
+../../../src/auxil/HPL_warn.o : ../../../src/auxil/HPL_warn.c $(HDEP1)
+	$(CC) -o ../../../src/auxil/HPL_warn.o -c ../../../src/auxil/HPL_warn.c $(CCFLAGS)
+
+../../../src/auxil/HPL_abort.o : ../../../src/auxil/HPL_abort.c $(HDEP1)
+	$(CC) -o ../../../src/auxil/HPL_abort.o -c ../../../src/auxil/HPL_abort.c $(CCFLAGS)
+
+../../../src/auxil/HPL_dlaprnt.o : ../../../src/auxil/HPL_dlaprnt.c $(HDEP1)
+	$(CC) -o ../../../src/auxil/HPL_dlaprnt.o -c ../../../src/auxil/HPL_dlaprnt.c $(CCFLAGS)
+
+../../../src/auxil/HPL_dlange.o : ../../../src/auxil/HPL_dlange.c $(HDEP1)
+	$(CC) -o ../../../src/auxil/HPL_dlange.o -c ../../../src/auxil/HPL_dlange.c $(CCFLAGS)
+
+../../../src/auxil/HPL_dlamch.o : ../../../src/auxil/HPL_dlamch.c $(HDEP2)
+	$(CC) -o ../../../src/auxil/HPL_dlamch.o -c ../../../src/auxil/HPL_dlamch.c $(CCNOOPT)
+
+../../../src/blas/HPL_dcopy.o : ../../../src/blas/HPL_dcopy.c $(HDEP3)
+	$(CC) -o ../../../src/blas/HPL_dcopy.o -c ../../../src/blas/HPL_dcopy.c $(CCFLAGS)
+
+../../../src/blas/HPL_daxpy.o : ../../../src/blas/HPL_daxpy.c $(HDEP3)
+	$(CC) -o ../../../src/blas/HPL_daxpy.o -c ../../../src/blas/HPL_daxpy.c $(CCFLAGS)
+
+../../../src/blas/HPL_dscal.o : ../../../src/blas/HPL_dscal.c $(HDEP3)
+	$(CC) -o ../../../src/blas/HPL_dscal.o -c ../../../src/blas/HPL_dscal.c $(CCFLAGS)
+
+../../../src/blas/HPL_idamax.o : ../../../src/blas/HPL_idamax.c $(HDEP3)
+	$(CC) -o ../../../src/blas/HPL_idamax.o -c ../../../src/blas/HPL_idamax.c $(CCFLAGS)
+
+../../../src/blas/HPL_dgemv.o : ../../../src/blas/HPL_dgemv.c $(HDEP3)
+	$(CC) -o ../../../src/blas/HPL_dgemv.o -c ../../../src/blas/HPL_dgemv.c $(CCFLAGS)
+
+../../../src/blas/HPL_dtrsv.o : ../../../src/blas/HPL_dtrsv.c $(HDEP3)
+	$(CC) -o ../../../src/blas/HPL_dtrsv.o -c ../../../src/blas/HPL_dtrsv.c $(CCFLAGS)
+
+../../../src/blas/HPL_dger.o : ../../../src/blas/HPL_dger.c $(HDEP3)
+	$(CC) -o ../../../src/blas/HPL_dger.o -c ../../../src/blas/HPL_dger.c $(CCFLAGS)
+
+../../../src/blas/HPL_dgemm.o : ../../../src/blas/HPL_dgemm.c $(HDEP3)
+	$(CC) -o ../../../src/blas/HPL_dgemm.o -c ../../../src/blas/HPL_dgemm.c $(CCFLAGS)
+
+../../../src/blas/HPL_dtrsm.o : ../../../src/blas/HPL_dtrsm.c $(HDEP3)
+	$(CC) -o ../../../src/blas/HPL_dtrsm.o -c ../../../src/blas/HPL_dtrsm.c $(CCFLAGS)
+
+../../../src/comm/HPL_1ring.o : ../../../src/comm/HPL_1ring.c $(HDEP4)
+	$(CC) -o ../../../src/comm/HPL_1ring.o -c ../../../src/comm/HPL_1ring.c $(CCFLAGS)
+
+../../../src/comm/HPL_1rinM.o : ../../../src/comm/HPL_1rinM.c $(HDEP4)
+	$(CC) -o ../../../src/comm/HPL_1rinM.o -c ../../../src/comm/HPL_1rinM.c $(CCFLAGS)
+
+../../../src/comm/HPL_2ring.o : ../../../src/comm/HPL_2ring.c $(HDEP4)
+	$(CC) -o ../../../src/comm/HPL_2ring.o -c ../../../src/comm/HPL_2ring.c $(CCFLAGS)
+
+../../../src/comm/HPL_2rinM.o : ../../../src/comm/HPL_2rinM.c $(HDEP4)
+	$(CC) -o ../../../src/comm/HPL_2rinM.o -c ../../../src/comm/HPL_2rinM.c $(CCFLAGS)
+
+../../../src/comm/HPL_blong.o : ../../../src/comm/HPL_blong.c $(HDEP4)
+	$(CC) -o ../../../src/comm/HPL_blong.o -c ../../../src/comm/HPL_blong.c $(CCFLAGS)
+
+../../../src/comm/HPL_blonM.o : ../../../src/comm/HPL_blonM.c $(HDEP4)
+	$(CC) -o ../../../src/comm/HPL_blonM.o -c ../../../src/comm/HPL_blonM.c $(CCFLAGS)
+
+../../../src/comm/HPL_packL.o : ../../../src/comm/HPL_packL.c $(HDEP4)
+	$(CC) -o ../../../src/comm/HPL_packL.o -c ../../../src/comm/HPL_packL.c $(CCFLAGS)
+
+../../../src/comm/HPL_copyL.o : ../../../src/comm/HPL_copyL.c $(HDEP4)
+	$(CC) -o ../../../src/comm/HPL_copyL.o -c ../../../src/comm/HPL_copyL.c $(CCFLAGS)
+
+../../../src/comm/HPL_binit.o : ../../../src/comm/HPL_binit.c $(HDEP4)
+	$(CC) -o ../../../src/comm/HPL_binit.o -c ../../../src/comm/HPL_binit.c $(CCFLAGS)
+
+../../../src/comm/HPL_bcast.o : ../../../src/comm/HPL_bcast.c $(HDEP4)
+	$(CC) -o ../../../src/comm/HPL_bcast.o -c ../../../src/comm/HPL_bcast.c $(CCFLAGS)
+
+../../../src/comm/HPL_bwait.o : ../../../src/comm/HPL_bwait.c $(HDEP4)
+	$(CC) -o ../../../src/comm/HPL_bwait.o -c ../../../src/comm/HPL_bwait.c $(CCFLAGS)
+
+../../../src/comm/HPL_send.o : ../../../src/comm/HPL_send.c $(HDEP4)
+	$(CC) -o ../../../src/comm/HPL_send.o -c ../../../src/comm/HPL_send.c $(CCFLAGS)
+
+../../../src/comm/HPL_recv.o : ../../../src/comm/HPL_recv.c $(HDEP4)
+	$(CC) -o ../../../src/comm/HPL_recv.o -c ../../../src/comm/HPL_recv.c $(CCFLAGS)
+
+../../../src/comm/HPL_sdrv.o : ../../../src/comm/HPL_sdrv.c $(HDEP4)
+	$(CC) -o ../../../src/comm/HPL_sdrv.o -c ../../../src/comm/HPL_sdrv.c $(CCFLAGS)
+
+../../../src/grid/HPL_grid_init.o : ../../../src/grid/HPL_grid_init.c $(HDEP5)
+	$(CC) -o ../../../src/grid/HPL_grid_init.o -c ../../../src/grid/HPL_grid_init.c $(CCFLAGS)
+
+../../../src/grid/HPL_pnum.o : ../../../src/grid/HPL_pnum.c $(HDEP5)
+	$(CC) -o ../../../src/grid/HPL_pnum.o -c ../../../src/grid/HPL_pnum.c $(CCFLAGS)
+
+../../../src/grid/HPL_grid_info.o : ../../../src/grid/HPL_grid_info.c $(HDEP5)
+	$(CC) -o ../../../src/grid/HPL_grid_info.o -c ../../../src/grid/HPL_grid_info.c $(CCFLAGS)
+
+../../../src/grid/HPL_grid_exit.o : ../../../src/grid/HPL_grid_exit.c $(HDEP5)
+	$(CC) -o ../../../src/grid/HPL_grid_exit.o -c ../../../src/grid/HPL_grid_exit.c $(CCFLAGS)
+
+../../../src/grid/HPL_broadcast.o : ../../../src/grid/HPL_broadcast.c $(HDEP5)
+	$(CC) -o ../../../src/grid/HPL_broadcast.o -c ../../../src/grid/HPL_broadcast.c $(CCFLAGS)
+
+../../../src/grid/HPL_reduce.o : ../../../src/grid/HPL_reduce.c $(HDEP5)
+	$(CC) -o ../../../src/grid/HPL_reduce.o -c ../../../src/grid/HPL_reduce.c $(CCFLAGS)
+
+../../../src/grid/HPL_all_reduce.o : ../../../src/grid/HPL_all_reduce.c $(HDEP5)
+	$(CC) -o ../../../src/grid/HPL_all_reduce.o -c ../../../src/grid/HPL_all_reduce.c $(CCFLAGS)
+
+../../../src/grid/HPL_barrier.o : ../../../src/grid/HPL_barrier.c $(HDEP5)
+	$(CC) -o ../../../src/grid/HPL_barrier.o -c ../../../src/grid/HPL_barrier.c $(CCFLAGS)
+
+../../../src/grid/HPL_min.o : ../../../src/grid/HPL_min.c $(HDEP5)
+	$(CC) -o ../../../src/grid/HPL_min.o -c ../../../src/grid/HPL_min.c $(CCFLAGS)
+
+../../../src/grid/HPL_max.o : ../../../src/grid/HPL_max.c $(HDEP5)
+	$(CC) -o ../../../src/grid/HPL_max.o -c ../../../src/grid/HPL_max.c $(CCFLAGS)
+
+../../../src/grid/HPL_sum.o : ../../../src/grid/HPL_sum.c $(HDEP5)
+	$(CC) -o ../../../src/grid/HPL_sum.o -c ../../../src/grid/HPL_sum.c $(CCFLAGS)
+
+../../../src/panel/HPL_pdpanel_new.o : ../../../src/panel/HPL_pdpanel_new.c $(HDEP6)
+	$(CC) -o ../../../src/panel/HPL_pdpanel_new.o -c ../../../src/panel/HPL_pdpanel_new.c $(CCFLAGS)
+
+../../../src/panel/HPL_pdpanel_init.o : ../../../src/panel/HPL_pdpanel_init.c $(HDEP6)
+	$(CC) -o ../../../src/panel/HPL_pdpanel_init.o -c ../../../src/panel/HPL_pdpanel_init.c $(CCFLAGS)
+
+../../../src/panel/HPL_pdpanel_disp.o : ../../../src/panel/HPL_pdpanel_disp.c $(HDEP6)
+	$(CC) -o ../../../src/panel/HPL_pdpanel_disp.o -c ../../../src/panel/HPL_pdpanel_disp.c $(CCFLAGS)
+
+../../../src/panel/HPL_pdpanel_free.o : ../../../src/panel/HPL_pdpanel_free.c $(HDEP6)
+	$(CC) -o ../../../src/panel/HPL_pdpanel_free.o -c ../../../src/panel/HPL_pdpanel_free.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_indxg2l.o : ../../../src/pauxil/HPL_indxg2l.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_indxg2l.o -c ../../../src/pauxil/HPL_indxg2l.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_indxg2lp.o : ../../../src/pauxil/HPL_indxg2lp.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_indxg2lp.o -c ../../../src/pauxil/HPL_indxg2lp.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_indxg2p.o : ../../../src/pauxil/HPL_indxg2p.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_indxg2p.o -c ../../../src/pauxil/HPL_indxg2p.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_indxl2g.o : ../../../src/pauxil/HPL_indxl2g.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_indxl2g.o -c ../../../src/pauxil/HPL_indxl2g.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_infog2l.o : ../../../src/pauxil/HPL_infog2l.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_infog2l.o -c ../../../src/pauxil/HPL_infog2l.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_numroc.o : ../../../src/pauxil/HPL_numroc.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_numroc.o -c ../../../src/pauxil/HPL_numroc.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_numrocI.o : ../../../src/pauxil/HPL_numrocI.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_numrocI.o -c ../../../src/pauxil/HPL_numrocI.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_dlaswp00N.o : ../../../src/pauxil/HPL_dlaswp00N.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_dlaswp00N.o -c ../../../src/pauxil/HPL_dlaswp00N.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_dlaswp10N.o : ../../../src/pauxil/HPL_dlaswp10N.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_dlaswp10N.o -c ../../../src/pauxil/HPL_dlaswp10N.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_dlaswp01N.o : ../../../src/pauxil/HPL_dlaswp01N.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_dlaswp01N.o -c ../../../src/pauxil/HPL_dlaswp01N.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_dlaswp01T.o : ../../../src/pauxil/HPL_dlaswp01T.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_dlaswp01T.o -c ../../../src/pauxil/HPL_dlaswp01T.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_dlaswp02N.o : ../../../src/pauxil/HPL_dlaswp02N.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_dlaswp02N.o -c ../../../src/pauxil/HPL_dlaswp02N.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_dlaswp03N.o : ../../../src/pauxil/HPL_dlaswp03N.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_dlaswp03N.o -c ../../../src/pauxil/HPL_dlaswp03N.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_dlaswp03T.o : ../../../src/pauxil/HPL_dlaswp03T.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_dlaswp03T.o -c ../../../src/pauxil/HPL_dlaswp03T.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_dlaswp04N.o : ../../../src/pauxil/HPL_dlaswp04N.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_dlaswp04N.o -c ../../../src/pauxil/HPL_dlaswp04N.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_dlaswp04T.o : ../../../src/pauxil/HPL_dlaswp04T.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_dlaswp04T.o -c ../../../src/pauxil/HPL_dlaswp04T.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_dlaswp05N.o : ../../../src/pauxil/HPL_dlaswp05N.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_dlaswp05N.o -c ../../../src/pauxil/HPL_dlaswp05N.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_dlaswp05T.o : ../../../src/pauxil/HPL_dlaswp05T.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_dlaswp05T.o -c ../../../src/pauxil/HPL_dlaswp05T.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_dlaswp06N.o : ../../../src/pauxil/HPL_dlaswp06N.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_dlaswp06N.o -c ../../../src/pauxil/HPL_dlaswp06N.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_dlaswp06T.o : ../../../src/pauxil/HPL_dlaswp06T.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_dlaswp06T.o -c ../../../src/pauxil/HPL_dlaswp06T.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_pwarn.o : ../../../src/pauxil/HPL_pwarn.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_pwarn.o -c ../../../src/pauxil/HPL_pwarn.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_pabort.o : ../../../src/pauxil/HPL_pabort.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_pabort.o -c ../../../src/pauxil/HPL_pabort.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_pdlaprnt.o : ../../../src/pauxil/HPL_pdlaprnt.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_pdlaprnt.o -c ../../../src/pauxil/HPL_pdlaprnt.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_pdlamch.o : ../../../src/pauxil/HPL_pdlamch.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_pdlamch.o -c ../../../src/pauxil/HPL_pdlamch.c $(CCFLAGS)
+
+../../../src/pauxil/HPL_pdlange.o : ../../../src/pauxil/HPL_pdlange.c $(HDEP7)
+	$(CC) -o ../../../src/pauxil/HPL_pdlange.o -c ../../../src/pauxil/HPL_pdlange.c $(CCFLAGS)
+
+../../../src/pfact/HPL_dlocmax.o : ../../../src/pfact/HPL_dlocmax.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_dlocmax.o -c ../../../src/pfact/HPL_dlocmax.c $(CCFLAGS)
+
+../../../src/pfact/HPL_dlocswpN.o : ../../../src/pfact/HPL_dlocswpN.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_dlocswpN.o -c ../../../src/pfact/HPL_dlocswpN.c $(CCFLAGS)
+
+../../../src/pfact/HPL_dlocswpT.o : ../../../src/pfact/HPL_dlocswpT.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_dlocswpT.o -c ../../../src/pfact/HPL_dlocswpT.c $(CCFLAGS)
+
+../../../src/pfact/HPL_pdmxswp.o : ../../../src/pfact/HPL_pdmxswp.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_pdmxswp.o -c ../../../src/pfact/HPL_pdmxswp.c $(CCFLAGS)
+
+../../../src/pfact/HPL_pdpancrN.o : ../../../src/pfact/HPL_pdpancrN.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_pdpancrN.o -c ../../../src/pfact/HPL_pdpancrN.c $(CCFLAGS)
+
+../../../src/pfact/HPL_pdpancrT.o : ../../../src/pfact/HPL_pdpancrT.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_pdpancrT.o -c ../../../src/pfact/HPL_pdpancrT.c $(CCFLAGS)
+
+../../../src/pfact/HPL_pdpanllN.o : ../../../src/pfact/HPL_pdpanllN.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_pdpanllN.o -c ../../../src/pfact/HPL_pdpanllN.c $(CCFLAGS)
+
+../../../src/pfact/HPL_pdpanllT.o : ../../../src/pfact/HPL_pdpanllT.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_pdpanllT.o -c ../../../src/pfact/HPL_pdpanllT.c $(CCFLAGS)
+
+../../../src/pfact/HPL_pdpanrlN.o : ../../../src/pfact/HPL_pdpanrlN.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_pdpanrlN.o -c ../../../src/pfact/HPL_pdpanrlN.c $(CCFLAGS)
+
+../../../src/pfact/HPL_pdpanrlT.o : ../../../src/pfact/HPL_pdpanrlT.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_pdpanrlT.o -c ../../../src/pfact/HPL_pdpanrlT.c $(CCFLAGS)
+
+../../../src/pfact/HPL_pdrpanllN.o : ../../../src/pfact/HPL_pdrpanllN.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_pdrpanllN.o -c ../../../src/pfact/HPL_pdrpanllN.c $(CCFLAGS)
+
+../../../src/pfact/HPL_pdrpanllT.o : ../../../src/pfact/HPL_pdrpanllT.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_pdrpanllT.o -c ../../../src/pfact/HPL_pdrpanllT.c $(CCFLAGS)
+
+../../../src/pfact/HPL_pdrpancrN.o : ../../../src/pfact/HPL_pdrpancrN.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_pdrpancrN.o -c ../../../src/pfact/HPL_pdrpancrN.c $(CCFLAGS)
+
+../../../src/pfact/HPL_pdrpancrT.o : ../../../src/pfact/HPL_pdrpancrT.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_pdrpancrT.o -c ../../../src/pfact/HPL_pdrpancrT.c $(CCFLAGS)
+
+../../../src/pfact/HPL_pdrpanrlN.o : ../../../src/pfact/HPL_pdrpanrlN.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_pdrpanrlN.o -c ../../../src/pfact/HPL_pdrpanrlN.c $(CCFLAGS)
+
+../../../src/pfact/HPL_pdrpanrlT.o : ../../../src/pfact/HPL_pdrpanrlT.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_pdrpanrlT.o -c ../../../src/pfact/HPL_pdrpanrlT.c $(CCFLAGS)
+
+../../../src/pfact/HPL_pdfact.o : ../../../src/pfact/HPL_pdfact.c $(HDEP8)
+	$(CC) -o ../../../src/pfact/HPL_pdfact.o -c ../../../src/pfact/HPL_pdfact.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_pipid.o : ../../../src/pgesv/HPL_pipid.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_pipid.o -c ../../../src/pgesv/HPL_pipid.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_plindx0.o : ../../../src/pgesv/HPL_plindx0.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_plindx0.o -c ../../../src/pgesv/HPL_plindx0.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_pdlaswp00N.o : ../../../src/pgesv/HPL_pdlaswp00N.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_pdlaswp00N.o -c ../../../src/pgesv/HPL_pdlaswp00N.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_pdlaswp00T.o : ../../../src/pgesv/HPL_pdlaswp00T.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_pdlaswp00T.o -c ../../../src/pgesv/HPL_pdlaswp00T.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_perm.o : ../../../src/pgesv/HPL_perm.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_perm.o -c ../../../src/pgesv/HPL_perm.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_logsort.o : ../../../src/pgesv/HPL_logsort.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_logsort.o -c ../../../src/pgesv/HPL_logsort.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_plindx10.o : ../../../src/pgesv/HPL_plindx10.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_plindx10.o -c ../../../src/pgesv/HPL_plindx10.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_plindx1.o : ../../../src/pgesv/HPL_plindx1.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_plindx1.o -c ../../../src/pgesv/HPL_plindx1.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_spreadN.o : ../../../src/pgesv/HPL_spreadN.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_spreadN.o -c ../../../src/pgesv/HPL_spreadN.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_spreadT.o : ../../../src/pgesv/HPL_spreadT.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_spreadT.o -c ../../../src/pgesv/HPL_spreadT.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_rollN.o : ../../../src/pgesv/HPL_rollN.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_rollN.o -c ../../../src/pgesv/HPL_rollN.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_rollT.o : ../../../src/pgesv/HPL_rollT.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_rollT.o -c ../../../src/pgesv/HPL_rollT.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_equil.o : ../../../src/pgesv/HPL_equil.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_equil.o -c ../../../src/pgesv/HPL_equil.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_pdlaswp01N.o : ../../../src/pgesv/HPL_pdlaswp01N.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_pdlaswp01N.o -c ../../../src/pgesv/HPL_pdlaswp01N.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_pdlaswp01T.o : ../../../src/pgesv/HPL_pdlaswp01T.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_pdlaswp01T.o -c ../../../src/pgesv/HPL_pdlaswp01T.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_pdupdateNN.o : ../../../src/pgesv/HPL_pdupdateNN.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_pdupdateNN.o -c ../../../src/pgesv/HPL_pdupdateNN.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_pdupdateNT.o : ../../../src/pgesv/HPL_pdupdateNT.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_pdupdateNT.o -c ../../../src/pgesv/HPL_pdupdateNT.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_pdupdateTN.o : ../../../src/pgesv/HPL_pdupdateTN.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_pdupdateTN.o -c ../../../src/pgesv/HPL_pdupdateTN.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_pdupdateTT.o : ../../../src/pgesv/HPL_pdupdateTT.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_pdupdateTT.o -c ../../../src/pgesv/HPL_pdupdateTT.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_pdtrsv.o : ../../../src/pgesv/HPL_pdtrsv.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_pdtrsv.o -c ../../../src/pgesv/HPL_pdtrsv.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_pdgesv0.o : ../../../src/pgesv/HPL_pdgesv0.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_pdgesv0.o -c ../../../src/pgesv/HPL_pdgesv0.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_pdgesvK1.o : ../../../src/pgesv/HPL_pdgesvK1.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_pdgesvK1.o -c ../../../src/pgesv/HPL_pdgesvK1.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_pdgesvK2.o : ../../../src/pgesv/HPL_pdgesvK2.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_pdgesvK2.o -c ../../../src/pgesv/HPL_pdgesvK2.c $(CCFLAGS)
+
+../../../src/pgesv/HPL_pdgesv.o : ../../../src/pgesv/HPL_pdgesv.c $(HDEP9)
+	$(CC) -o ../../../src/pgesv/HPL_pdgesv.o -c ../../../src/pgesv/HPL_pdgesv.c $(CCFLAGS)
+
+../../../testing/matgen/HPL_dmatgen.o : ../../../testing/matgen/HPL_dmatgen.c $(HDEP10)
+	$(CC) -o ../../../testing/matgen/HPL_dmatgen.o -c ../../../testing/matgen/HPL_dmatgen.c $(CCFLAGS)
+
+../../../testing/matgen/HPL_ladd.o : ../../../testing/matgen/HPL_ladd.c $(HDEP10)
+	$(CC) -o ../../../testing/matgen/HPL_ladd.o -c ../../../testing/matgen/HPL_ladd.c $(CCFLAGS)
+
+../../../testing/matgen/HPL_lmul.o : ../../../testing/matgen/HPL_lmul.c $(HDEP10)
+	$(CC) -o ../../../testing/matgen/HPL_lmul.o -c ../../../testing/matgen/HPL_lmul.c $(CCFLAGS)
+
+../../../testing/matgen/HPL_xjumpm.o : ../../../testing/matgen/HPL_xjumpm.c $(HDEP10)
+	$(CC) -o ../../../testing/matgen/HPL_xjumpm.o -c ../../../testing/matgen/HPL_xjumpm.c $(CCFLAGS)
+
+../../../testing/matgen/HPL_jumpit.o : ../../../testing/matgen/HPL_jumpit.c $(HDEP10)
+	$(CC) -o ../../../testing/matgen/HPL_jumpit.o -c ../../../testing/matgen/HPL_jumpit.c $(CCFLAGS)
+
+../../../testing/matgen/HPL_rand.o : ../../../testing/matgen/HPL_rand.c $(HDEP10)
+	$(CC) -o ../../../testing/matgen/HPL_rand.o -c ../../../testing/matgen/HPL_rand.c $(CCFLAGS)
+
+../../../testing/matgen/HPL_setran.o : ../../../testing/matgen/HPL_setran.c $(HDEP10)
+	$(CC) -o ../../../testing/matgen/HPL_setran.o -c ../../../testing/matgen/HPL_setran.c $(CCFLAGS)
+
+../../../testing/timer/HPL_timer.o : ../../../testing/timer/HPL_timer.c $(HDEP11)
+	$(CC) -o ../../../testing/timer/HPL_timer.o -c ../../../testing/timer/HPL_timer.c $(CCFLAGS)
+
+../../../testing/timer/HPL_timer_cputime.o : ../../../testing/timer/HPL_timer_cputime.c $(HDEP11)
+	$(CC) -o ../../../testing/timer/HPL_timer_cputime.o -c ../../../testing/timer/HPL_timer_cputime.c $(CCFLAGS)
+
+../../../testing/timer/HPL_timer_walltime.o : ../../../testing/timer/HPL_timer_walltime.c $(HDEP11)
+	$(CC) -o ../../../testing/timer/HPL_timer_walltime.o -c ../../../testing/timer/HPL_timer_walltime.c $(CCFLAGS)
+
+../../../testing/pmatgen/HPL_pdmatgen.o : ../../../testing/pmatgen/HPL_pdmatgen.c $(HDEP12)
+	$(CC) -o ../../../testing/pmatgen/HPL_pdmatgen.o -c ../../../testing/pmatgen/HPL_pdmatgen.c $(CCFLAGS)
+
+../../../testing/ptimer/HPL_ptimer.o : ../../../testing/ptimer/HPL_ptimer.c $(HDEP13)
+	$(CC) -o ../../../testing/ptimer/HPL_ptimer.o -c ../../../testing/ptimer/HPL_ptimer.c $(CCFLAGS)
+
+../../../testing/ptimer/HPL_ptimer_cputime.o : ../../../testing/ptimer/HPL_ptimer_cputime.c $(HDEP13)
+	$(CC) -o ../../../testing/ptimer/HPL_ptimer_cputime.o -c ../../../testing/ptimer/HPL_ptimer_cputime.c $(CCFLAGS)
+
+../../../testing/ptimer/HPL_ptimer_walltime.o : ../../../testing/ptimer/HPL_ptimer_walltime.c $(HDEP13)
+	$(CC) -o ../../../testing/ptimer/HPL_ptimer_walltime.o -c ../../../testing/ptimer/HPL_ptimer_walltime.c $(CCFLAGS)
+
+../../../testing/ptest/HPL_pddriver.o : ../../../testing/ptest/HPL_pddriver.c $(HDEP14)
+	$(CC) -o ../../../testing/ptest/HPL_pddriver.o -c ../../../testing/ptest/HPL_pddriver.c $(CCFLAGS)
+
+../../../testing/ptest/HPL_pdinfo.o : ../../../testing/ptest/HPL_pdinfo.c $(HDEP14)
+	$(CC) -o ../../../testing/ptest/HPL_pdinfo.o -c ../../../testing/ptest/HPL_pdinfo.c $(CCFLAGS)
+
+../../../testing/ptest/HPL_pdtest.o : ../../../testing/ptest/HPL_pdtest.c $(HDEP14)
+	$(CC) -o ../../../testing/ptest/HPL_pdtest.o -c ../../../testing/ptest/HPL_pdtest.c $(CCFLAGS)
+
+../../../../RandomAccess/MPIRandomAccess.o : ../../../../RandomAccess/MPIRandomAccess.c $(HDEP15)
+	$(CC) -o ../../../../RandomAccess/MPIRandomAccess.o -c ../../../../RandomAccess/MPIRandomAccess.c -I../../../../include $(CCFLAGS)
+
+../../../../RandomAccess/buckets.o : ../../../../RandomAccess/buckets.c $(HDEP15)
+	$(CC) -o ../../../../RandomAccess/buckets.o -c ../../../../RandomAccess/buckets.c -I../../../../include $(CCFLAGS)
+
+../../../../RandomAccess/core_single_cpu.o : ../../../../RandomAccess/core_single_cpu.c $(HDEP15)
+	$(CC) -o ../../../../RandomAccess/core_single_cpu.o -c ../../../../RandomAccess/core_single_cpu.c -I../../../../include $(CCFLAGS)
+
+../../../../RandomAccess/heap.o : ../../../../RandomAccess/heap.c $(HDEP15)
+	$(CC) -o ../../../../RandomAccess/heap.o -c ../../../../RandomAccess/heap.c -I../../../../include $(CCFLAGS)
+
+../../../../RandomAccess/pool.o : ../../../../RandomAccess/pool.c $(HDEP15)
+	$(CC) -o ../../../../RandomAccess/pool.o -c ../../../../RandomAccess/pool.c -I../../../../include $(CCFLAGS)
+
+../../../../RandomAccess/single_cpu.o : ../../../../RandomAccess/single_cpu.c $(HDEP15)
+	$(CC) -o ../../../../RandomAccess/single_cpu.o -c ../../../../RandomAccess/single_cpu.c -I../../../../include $(CCFLAGS)
+
+../../../../RandomAccess/star_single_cpu.o : ../../../../RandomAccess/star_single_cpu.c $(HDEP15)
+	$(CC) -o ../../../../RandomAccess/star_single_cpu.o -c ../../../../RandomAccess/star_single_cpu.c -I../../../../include $(CCFLAGS)
+
+../../../../RandomAccess/time_bound.o : ../../../../RandomAccess/time_bound.c $(HDEP15)
+	$(CC) -o ../../../../RandomAccess/time_bound.o -c ../../../../RandomAccess/time_bound.c -I../../../../include $(CCFLAGS)
+
+../../../../RandomAccess/utility.o : ../../../../RandomAccess/utility.c $(HDEP15)
+	$(CC) -o ../../../../RandomAccess/utility.o -c ../../../../RandomAccess/utility.c -I../../../../include $(CCFLAGS)
+
+../../../../RandomAccess/verification.o : ../../../../RandomAccess/verification.c $(HDEP15)
+	$(CC) -o ../../../../RandomAccess/verification.o -c ../../../../RandomAccess/verification.c -I../../../../include $(CCFLAGS)
+
+../../../../RandomAccess/MPIRandomAccess_vanilla.o : ../../../../RandomAccess/MPIRandomAccess_vanilla.c $(HDEP15)
+	$(CC) -o ../../../../RandomAccess/MPIRandomAccess_vanilla.o -c ../../../../RandomAccess/MPIRandomAccess_vanilla.c -I../../../../include $(CCFLAGS)
+
+../../../../RandomAccess/MPIRandomAccess_opt.o : ../../../../RandomAccess/MPIRandomAccess_opt.c $(HDEP15)
+	$(CC) -o ../../../../RandomAccess/MPIRandomAccess_opt.o -c ../../../../RandomAccess/MPIRandomAccess_opt.c -I../../../../include $(CCFLAGS)
+
+../../../../STREAM/onecpu.o : ../../../../STREAM/onecpu.c $(HDEP16)
+	$(CC) -o ../../../../STREAM/onecpu.o -c ../../../../STREAM/onecpu.c -I../../../../include $(CCFLAGS)
+
+../../../../STREAM/stream.o : ../../../../STREAM/stream.c $(HDEP16)
+	$(CC) -o ../../../../STREAM/stream.o -c ../../../../STREAM/stream.c -I../../../../include $(CCFLAGS)
+
+../../../../PTRANS/pmatgeninc.o : ../../../../PTRANS/pmatgeninc.c $(HDEP17)
+	$(CC) -o ../../../../PTRANS/pmatgeninc.o -c ../../../../PTRANS/pmatgeninc.c -I../../../../include $(CCFLAGS)
+
+../../../../PTRANS/pdmatgen.o : ../../../../PTRANS/pdmatgen.c $(HDEP17)
+	$(CC) -o ../../../../PTRANS/pdmatgen.o -c ../../../../PTRANS/pdmatgen.c -I../../../../include $(CCFLAGS)
+
+../../../../PTRANS/pdtransdriver.o : ../../../../PTRANS/pdtransdriver.c $(HDEP17)
+	$(CC) -o ../../../../PTRANS/pdtransdriver.o -c ../../../../PTRANS/pdtransdriver.c -I../../../../include $(CCFLAGS)
+
+../../../../PTRANS/pdmatcmp.o : ../../../../PTRANS/pdmatcmp.c $(HDEP17)
+	$(CC) -o ../../../../PTRANS/pdmatcmp.o -c ../../../../PTRANS/pdmatcmp.c -I../../../../include $(CCFLAGS)
+
+../../../../PTRANS/pdtrans.o : ../../../../PTRANS/pdtrans.c $(HDEP17)
+	$(CC) -o ../../../../PTRANS/pdtrans.o -c ../../../../PTRANS/pdtrans.c -I../../../../include $(CCFLAGS)
+
+../../../../PTRANS/sclapack.o : ../../../../PTRANS/sclapack.c $(HDEP17)
+	$(CC) -o ../../../../PTRANS/sclapack.o -c ../../../../PTRANS/sclapack.c -I../../../../include $(CCFLAGS)
+
+../../../../PTRANS/cblacslt.o : ../../../../PTRANS/cblacslt.c $(HDEP17)
+	$(CC) -o ../../../../PTRANS/cblacslt.o -c ../../../../PTRANS/cblacslt.c -I../../../../include $(CCFLAGS)
+
+../../../../PTRANS/mem.o : ../../../../PTRANS/mem.c $(HDEP17)
+	$(CC) -o ../../../../PTRANS/mem.o -c ../../../../PTRANS/mem.c -I../../../../include $(CCFLAGS)
+
+../../../../src/bench_lat_bw_1.5.2.o : ../../../../src/bench_lat_bw_1.5.2.c $(HDEP18)
+	$(CC) -o ../../../../src/bench_lat_bw_1.5.2.o -c ../../../../src/bench_lat_bw_1.5.2.c -I../../../../include $(CCFLAGS)
+
+../../../../src/hpcc.o : ../../../../src/hpcc.c $(HDEP18)
+	$(CC) -o ../../../../src/hpcc.o -c ../../../../src/hpcc.c -I../../../../include $(CCFLAGS)
+
+../../../../src/io.o : ../../../../src/io.c $(HDEP18)
+	$(CC) -o ../../../../src/io.o -c ../../../../src/io.c -I../../../../include $(CCFLAGS)
+
+../../../../src/HPL_slamch.o : ../../../../src/HPL_slamch.c $(HDEP19)
+	$(CC) -o ../../../../src/HPL_slamch.o -c ../../../../src/HPL_slamch.c -I../../../../include $(CCNOOPT)
+
+../../../../src/noopt.o : ../../../../src/noopt.c $(HDEP19)
+	$(CC) -o ../../../../src/noopt.o -c ../../../../src/noopt.c -I../../../../include $(CCNOOPT)
+
+../../../../DGEMM/tstdgemm.o : ../../../../DGEMM/tstdgemm.c $(HDEP20)
+	$(CC) -o ../../../../DGEMM/tstdgemm.o -c ../../../../DGEMM/tstdgemm.c -I../../../../include $(CCFLAGS)
+
+../../../../DGEMM/onecpu.o : ../../../../DGEMM/onecpu.c $(HDEP20)
+	$(CC) -o ../../../../DGEMM/onecpu.o -c ../../../../DGEMM/onecpu.c -I../../../../include $(CCFLAGS)
+
+../../../../FFT/bcnrand.o : ../../../../FFT/bcnrand.c $(HDEP21)
+	$(CC) -o ../../../../FFT/bcnrand.o -c ../../../../FFT/bcnrand.c -I../../../../include $(CCFLAGS)
+
+../../../../FFT/fft235.o : ../../../../FFT/fft235.c $(HDEP21)
+	$(CC) -o ../../../../FFT/fft235.o -c ../../../../FFT/fft235.c -I../../../../include $(CCFLAGS)
+
+../../../../FFT/zfft1d.o : ../../../../FFT/zfft1d.c $(HDEP21)
+	$(CC) -o ../../../../FFT/zfft1d.o -c ../../../../FFT/zfft1d.c -I../../../../include $(CCFLAGS)
+
+../../../../FFT/pzfft1d.o : ../../../../FFT/pzfft1d.c $(HDEP21)
+	$(CC) -o ../../../../FFT/pzfft1d.o -c ../../../../FFT/pzfft1d.c -I../../../../include $(CCFLAGS)
+
+../../../../FFT/onecpu.o : ../../../../FFT/onecpu.c $(HDEP21)
+	$(CC) -o ../../../../FFT/onecpu.o -c ../../../../FFT/onecpu.c -I../../../../include $(CCFLAGS)
+
+../../../../FFT/tstfft.o : ../../../../FFT/tstfft.c $(HDEP21)
+	$(CC) -o ../../../../FFT/tstfft.o -c ../../../../FFT/tstfft.c -I../../../../include $(CCFLAGS)
+
+../../../../FFT/wrapfftw.o : ../../../../FFT/wrapfftw.c $(HDEP21)
+	$(CC) -o ../../../../FFT/wrapfftw.o -c ../../../../FFT/wrapfftw.c -I../../../../include $(CCFLAGS)
+
+../../../../FFT/wrapmpifftw.o : ../../../../FFT/wrapmpifftw.c $(HDEP21)
+	$(CC) -o ../../../../FFT/wrapmpifftw.o -c ../../../../FFT/wrapmpifftw.c -I../../../../include $(CCFLAGS)
+
+../../../../FFT/mpifft.o : ../../../../FFT/mpifft.c $(HDEP21)
+	$(CC) -o ../../../../FFT/mpifft.o -c ../../../../FFT/mpifft.c -I../../../../include $(CCFLAGS)
+

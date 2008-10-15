@@ -1,0 +1,168 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_dtrsm HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_dtrsm</B> B := A^{-1} * B  or  B := B * A^{-1}.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_dtrsm(</CODE>
+<CODE>const enum HPL_ORDER</CODE>
+<CODE>ORDER</CODE>,
+<CODE>const enum HPL_SIDE</CODE>
+<CODE>SIDE</CODE>,
+<CODE>const enum HPL_UPLO</CODE>
+<CODE>UPLO</CODE>,
+<CODE>const enum HPL_TRANS</CODE>
+<CODE>TRANS</CODE>,
+<CODE>const enum HPL_DIAG</CODE>
+<CODE>DIAG</CODE>,
+<CODE>const int</CODE>
+<CODE>M</CODE>,
+<CODE>const int</CODE>
+<CODE>N</CODE>,
+<CODE>const double</CODE>
+<CODE>ALPHA</CODE>,
+<CODE>const double *</CODE>
+<CODE>A</CODE>,
+<CODE>const int</CODE>
+<CODE>LDA</CODE>,
+<CODE>double *</CODE>
+<CODE>B</CODE>,
+<CODE>const int</CODE>
+<CODE>LDB</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_dtrsm</B>
+solves one of the matrix equations
+ 
+   op( A ) * X = alpha * B,   or  X * op( A ) = alpha * B,
+ 
+where alpha is a scalar, X and B are m by n matrices, A is a unit, or
+non-unit, upper or lower triangular matrix and op(A) is one of
+ 
+   op( A ) = A   or   op( A ) = A^T.
+ 
+The matrix X is overwritten on B.
+ 
+No test for  singularity  or  near-singularity  is included  in  this
+routine. Such tests must be performed before calling this routine.
+
+<H1>Arguments</H1>
+<PRE>
+ORDER   (local input)                 const enum HPL_ORDER
+        On entry, ORDER  specifies the storage format of the operands
+        as follows:                                                  
+           ORDER = HplRowMajor,                                      
+           ORDER = HplColumnMajor.                                   
+</PRE>
+<PRE>
+SIDE    (local input)                 const enum HPL_SIDE
+        On entry, SIDE  specifies  whether  op(A) appears on the left
+        or right of X as follows:
+           SIDE==HplLeft    op( A ) * X = alpha * B,
+           SIDE==HplRight   X * op( A ) = alpha * B.
+</PRE>
+<PRE>
+UPLO    (local input)                 const enum HPL_UPLO
+        On  entry,   UPLO   specifies  whether  the  upper  or  lower
+        triangular  part  of the array  A  is to be referenced.  When
+        UPLO==HplUpper, only  the upper triangular part of A is to be
+        referenced, otherwise only the lower triangular part of A is 
+        to be referenced. 
+</PRE>
+<PRE>
+TRANS   (local input)                 const enum HPL_TRANS
+        On entry, TRANSA  specifies the form of  op(A)  to be used in
+        the matrix-matrix operation follows:                         
+           TRANSA==HplNoTrans    : op( A ) = A,                     
+           TRANSA==HplTrans      : op( A ) = A^T,                   
+           TRANSA==HplConjTrans  : op( A ) = A^T.                   
+</PRE>
+<PRE>
+DIAG    (local input)                 const enum HPL_DIAG
+        On entry,  DIAG  specifies  whether  A  is unit triangular or
+        not. When DIAG==HplUnit,  A is assumed to be unit triangular,
+        and otherwise, A is not assumed to be unit triangular.
+</PRE>
+<PRE>
+M       (local input)                 const int
+        On entry,  M  specifies  the number of rows of the  matrix B.
+        M must be at least zero.
+</PRE>
+<PRE>
+N       (local input)                 const int
+        On entry, N  specifies the number of columns of the matrix B.
+        N must be at least zero.
+</PRE>
+<PRE>
+ALPHA   (local input)                 const double
+        On entry, ALPHA specifies the scalar alpha.   When  ALPHA  is
+        supplied  as  zero then the elements of the matrix B need not
+        be set on input.
+</PRE>
+<PRE>
+A       (local input)                 const double *
+        On entry,  A  points  to an array of size equal to or greater
+        than LDA * k,  where  k is m  when  SIDE==HplLeft  and  is  n
+        otherwise.  Before  entry  with  UPLO==HplUpper,  the leading
+        k by k upper triangular  part of the array A must contain the
+        upper triangular  matrix and the  strictly  lower  triangular
+        part of A is not referenced.  When  UPLO==HplLower on  entry,
+        the  leading k by k lower triangular part of the array A must
+        contain the lower triangular matrix  and  the  strictly upper
+        triangular part of A is not referenced.
+         
+        Note that  when  DIAG==HplUnit,  the  diagonal elements of  A
+        not referenced  either,  but are assumed to be unity.
+</PRE>
+<PRE>
+LDA     (local input)                 const int
+        On entry,  LDA  specifies  the  leading  dimension  of  A  as
+        declared  in  the  calling  (sub) program.  LDA  must  be  at
+        least MAX(1,m) when SIDE==HplLeft, and MAX(1,n) otherwise.
+</PRE>
+<PRE>
+B       (local input/output)          double *
+        On entry,  B  points  to an array of size equal to or greater
+        than LDB * n.  Before entry, the leading  m by n  part of the
+        array B must contain the matrix  B, except when beta is zero,
+        in which case B need not be set on entry.  On exit, the array
+        B is overwritten by the m by n solution matrix.
+</PRE>
+<PRE>
+LDB     (local input)                 const int
+        On entry,  LDB  specifies  the  leading  dimension  of  B  as
+        declared  in  the  calling  (sub) program.  LDB  must  be  at
+        least MAX(1,m).
+</PRE>
+
+<H1>Example</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<PRE>
+int main(int argc, char *argv[])
+{
+   double a[2*2], b[2*2];
+   a[0] = 4.0; a[1] = 1.0; a[2] = 2.0; a[3] = 5.0;
+   b[0] = 2.0; b[1] = 1.0; b[2] = 1.0; b[3] = 2.0;
+   HPL_dtrsm( HplColumnMajor, HplLeft, HplUpper,
+              HplNoTrans, HplNonUnit, 2, 2, 2.0,
+              a, 2, b, 2 );
+   printf("  [%f,%f]\n", b[0], b[2]);
+   printf("b=[%f,%f]\n", b[1], b[3]);
+   exit(0); return(0);
+}
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_dgemm.html">HPL_dgemm</A>.
+
+</BODY>
+</HTML>

@@ -1,0 +1,42 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_copyL HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_copyL</B> Copy the current panel into a contiguous workspace.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_copyL(</CODE>
+<CODE>HPL_T_panel *</CODE>
+<CODE>PANEL</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_copyL</B>
+copies  the  panel of columns, the L1 replicated submatrix,
+the pivot array  and  the info scalar into a contiguous workspace for
+later broadcast.
+ 
+The copy of this panel  into  a contiguous buffer  can be enforced by
+specifying -DHPL_COPY_L in the architecture specific Makefile.
+
+<H1>Arguments</H1>
+<PRE>
+PANEL   (input/output)                HPL_T_panel *
+        On entry,  PANEL  points to the  current panel data structure
+        being broadcast.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_binit.html">HPL_binit</A>,
+<A HREF="HPL_bcast.html">HPL_bcast</A>,
+<A HREF="HPL_bwait.html">HPL_bwait</A>.
+
+</BODY>
+</HTML>

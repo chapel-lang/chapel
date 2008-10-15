@@ -1,0 +1,85 @@
+.TH HPL_dlaswp02N 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_dlaswp02N \- pack rows of A into columns of W.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_dlaswp02N(\fR
+\fB\&const int\fR
+\fI\&M\fR,
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&const double *\fR
+\fI\&A\fR,
+\fB\&const int\fR
+\fI\&LDA\fR,
+\fB\&double *\fR
+\fI\&W0\fR,
+\fB\&double *\fR
+\fI\&W\fR,
+\fB\&const int\fR
+\fI\&LDW\fR,
+\fB\&const int *\fR
+\fI\&LINDXA\fR,
+\fB\&const int *\fR
+\fI\&LINDXAU\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_dlaswp02N\fR
+packs scattered rows of an array  A  into workspace  W.
+The row offsets in A are specified by LINDXA.
+.SH ARGUMENTS
+.TP 8
+M       (local input)           const int
+On entry, M  specifies the number of rows of A that should be
+copied into W. M must be at least zero.
+.TP 8
+N       (local input)           const int
+On entry, N  specifies the length of rows of A that should be
+copied into W. N must be at least zero.
+.TP 8
+A       (local input)           const double *
+On entry, A points to an array of dimension (LDA,N). The rows
+of this array specified by LINDXA should be copied into W.
+.TP 8
+LDA     (local input)           const int
+On entry, LDA specifies the leading dimension of the array A.
+LDA must be at least MAX(1,M).
+.TP 8
+W0      (local input/output)    double *
+On exit,  W0  is  an array of size (M-1)*LDW+1, that contains
+the destination offset  in U where the columns of W should be
+copied.
+.TP 8
+W       (local output)          double *
+On entry, W  is an array of size (LDW,M). On exit, W contains
+the  rows LINDXA[i] for i in [0..M) of A stored  contiguously
+in W(:,i).
+.TP 8
+LDW     (local input)           const int
+On entry, LDW specifies the leading dimension of the array W.
+LDW must be at least MAX(1,N+1).
+.TP 8
+LINDXA  (local input)           const int *
+On entry, LINDXA is an array of dimension M that contains the
+local row indexes of A that should be copied into W.
+.TP 8
+LINDXAU (local input)           const int *
+On entry, LINDXAU  is an array of dimension M  that  contains
+the local  row indexes of  U that should be copied into A and
+replaced by the rows of W.
+.SH SEE ALSO
+.BR HPL_dlaswp00N \ (3),
+.BR HPL_dlaswp10N \ (3),
+.BR HPL_dlaswp01N \ (3),
+.BR HPL_dlaswp01T \ (3),
+.BR HPL_dlaswp02N \ (3),
+.BR HPL_dlaswp03N \ (3),
+.BR HPL_dlaswp03T \ (3),
+.BR HPL_dlaswp04N \ (3),
+.BR HPL_dlaswp04T \ (3),
+.BR HPL_dlaswp05N \ (3),
+.BR HPL_dlaswp05T \ (3),
+.BR HPL_dlaswp06N \ (3),
+.BR HPL_dlaswp06T \ (3).

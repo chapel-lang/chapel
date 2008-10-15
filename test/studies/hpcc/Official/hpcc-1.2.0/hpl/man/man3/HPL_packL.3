@@ -1,0 +1,42 @@
+.TH HPL_packL 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_packL \- Form the MPI structure for the row ring broadcasts.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&int\fR
+\fB\&HPL_packL(\fR
+\fB\&HPL_T_panel *\fR
+\fI\&PANEL\fR,
+\fB\&const int\fR
+\fI\&INDEX\fR,
+\fB\&const int\fR
+\fI\&LEN\fR,
+\fB\&const int\fR
+\fI\&IBUF\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_packL\fR
+forms  the MPI data type for the panel to be broadcast.
+Successful  completion  is  indicated  by  the  returned  error  code
+MPI_SUCCESS.
+.SH ARGUMENTS
+.TP 8
+PANEL   (input/output)          HPL_T_panel *
+On entry,  PANEL  points to the  current panel data structure
+being broadcast.
+.TP 8
+INDEX   (input)                 const int
+On entry,  INDEX  points  to  the  first entry of the  packed
+buffer being broadcast.
+.TP 8
+LEN     (input)                 const int
+On entry, LEN is the length of the packed buffer.
+.TP 8
+IBUF    (input)                 const int
+On entry, IBUF  specifies the panel buffer/count/type entries
+that should be initialized.
+.SH SEE ALSO
+.BR HPL_binit \ (3),
+.BR HPL_bcast \ (3),
+.BR HPL_bwait \ (3).

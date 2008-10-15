@@ -1,0 +1,128 @@
+.TH HPL_dgemv 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_dgemv \- y := beta * y + alpha * op(A) * x.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_dgemv(\fR
+\fB\&const enum HPL_ORDER\fR
+\fI\&ORDER\fR,
+\fB\&const enum HPL_TRANS\fR
+\fI\&TRANS\fR,
+\fB\&const int\fR
+\fI\&M\fR,
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&const double\fR
+\fI\&ALPHA\fR,
+\fB\&const double *\fR
+\fI\&A\fR,
+\fB\&const int\fR
+\fI\&LDA\fR,
+\fB\&const double *\fR
+\fI\&X\fR,
+\fB\&const int\fR
+\fI\&INCX\fR,
+\fB\&const double\fR
+\fI\&BETA\fR,
+\fB\&double *\fR
+\fI\&Y\fR,
+\fB\&const int\fR
+\fI\&INCY\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_dgemv\fR
+performs one of the matrix-vector operations
+ 
+    y := alpha * op( A ) * x + beta * y,
+ 
+ where op( X ) is one of
+ 
+    op( X ) = X   or   op( X ) = X^T.
+ 
+where alpha and beta are scalars, x and y are vectors and  A  is an m
+by n matrix.
+.SH ARGUMENTS
+.TP 8
+ORDER   (local input)           const enum HPL_ORDER
+On entry, ORDER  specifies the storage format of the operands
+as follows:                                                  
+   ORDER = HplRowMajor,                                      
+   ORDER = HplColumnMajor.                                   
+.TP 8
+TRANS   (local input)           const enum HPL_TRANS
+On entry,  TRANS  specifies the  operation to be performed as
+follows:   
+   TRANS = HplNoTrans y := alpha*A  *x + beta*y,
+   TRANS = HplTrans   y := alpha*A^T*x + beta*y.
+.TP 8
+M       (local input)           const int
+On entry,  M  specifies  the number of rows of  the matrix A.
+M must be at least zero.
+.TP 8
+N       (local input)           const int
+On entry, N  specifies the number of columns of the matrix A.
+N must be at least zero.
+.TP 8
+ALPHA   (local input)           const double
+On entry, ALPHA specifies the scalar alpha.   When  ALPHA  is
+supplied as zero then  A and X  need not be set on input.
+.TP 8
+A       (local input)           const double *
+On entry,  A  points  to an array of size equal to or greater
+than LDA * n.  Before  entry, the leading m by n part  of the
+array  A  must contain the matrix coefficients.
+.TP 8
+LDA     (local input)           const int
+On entry,  LDA  specifies  the  leading  dimension  of  A  as
+declared  in  the  calling  (sub) program.  LDA  must  be  at
+least MAX(1,m).
+.TP 8
+X       (local input)           const double *
+On entry,  X  is an incremented array of dimension  at  least
+( 1 + ( n - 1 ) * abs( INCX ) )  that  contains the vector x.
+.TP 8
+INCX    (local input)           const int
+On entry, INCX specifies the increment for the elements of X.
+INCX must not be zero.
+.TP 8
+BETA    (local input)           const double
+On entry, BETA  specifies the scalar beta.    When  ALPHA  is
+supplied as zero then  Y  need not be set on input.
+.TP 8
+Y       (local input/output)    double *
+On entry,  Y  is an incremented array of dimension  at  least
+( 1 + ( n - 1 ) * abs( INCY ) )  that  contains the vector y.
+Before entry with BETA non-zero, the incremented array Y must
+contain the vector  y.  On exit,  Y  is  overwritten  by  the
+updated vector y.
+.TP 8
+INCY    (local input)           const int
+On entry, INCY specifies the increment for the elements of Y.
+INCY must not be zero.
+.SH EXAMPLE
+\fI\&#include "hpl.h"\fR
+ 
+int main(int argc, char *argv[])
+.br
+{
+.br
+   double a[2*2], x[2], y[2];
+.br
+   a[0] = 1.0; a[1] = 2.0; a[2] = 3.0; a[3] = 3.0;
+.br
+   x[0] = 2.0; x[1] = 1.0; y[2] = 1.0; y[3] = 2.0;
+.br
+   HPL_dgemv( HplColumnMajor, HplNoTrans, 2, 2, 2.0,
+.br
+              a, 2, x, 1, -1.0, y, 1 );
+.br
+   printf("y=[%f,%f]\en", y[0], y[1]);
+.br
+   exit(0); return(0);
+.br
+}
+.SH SEE ALSO
+.BR HPL_dger \ (3),
+.BR HPL_dtrsv \ (3).

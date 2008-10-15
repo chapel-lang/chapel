@@ -1,0 +1,178 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_dgemm HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_dgemm</B> C := alpha * op(A) * op(B) + beta * C.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_dgemm(</CODE>
+<CODE>const enum HPL_ORDER</CODE>
+<CODE>ORDER</CODE>,
+<CODE>const enum HPL_TRANS</CODE>
+<CODE>TRANSA</CODE>,
+<CODE>const enum HPL_TRANS</CODE>
+<CODE>TRANSB</CODE>,
+<CODE>const int</CODE>
+<CODE>M</CODE>,
+<CODE>const int</CODE>
+<CODE>N</CODE>,
+<CODE>const int</CODE>
+<CODE>K</CODE>,
+<CODE>const double</CODE>
+<CODE>ALPHA</CODE>,
+<CODE>const double *</CODE>
+<CODE>A</CODE>,
+<CODE>const int</CODE>
+<CODE>LDA</CODE>,
+<CODE>const double *</CODE>
+<CODE>B</CODE>,
+<CODE>const int</CODE>
+<CODE>LDB</CODE>,
+<CODE>const double</CODE>
+<CODE>BETA</CODE>,
+<CODE>double *</CODE>
+<CODE>C</CODE>,
+<CODE>const int</CODE>
+<CODE>LDC</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_dgemm</B>
+performs one of the matrix-matrix operations
+ 
+    C := alpha * op( A ) * op( B ) + beta * C
+ 
+ where op( X ) is one of
+ 
+    op( X ) = X   or   op( X ) = X^T.
+ 
+Alpha and beta are scalars,  and A,  B and C are matrices, with op(A)
+an m by k matrix, op(B) a k by n matrix and  C an m by n matrix.
+
+<H1>Arguments</H1>
+<PRE>
+ORDER   (local input)                 const enum HPL_ORDER
+        On entry, ORDER  specifies the storage format of the operands
+        as follows:                                                  
+           ORDER = HplRowMajor,                                      
+           ORDER = HplColumnMajor.                                   
+</PRE>
+<PRE>
+TRANSA  (local input)                 const enum HPL_TRANS
+        On entry, TRANSA  specifies the form of  op(A)  to be used in
+        the matrix-matrix operation follows:                         
+           TRANSA==HplNoTrans    : op( A ) = A,                     
+           TRANSA==HplTrans      : op( A ) = A^T,                   
+           TRANSA==HplConjTrans  : op( A ) = A^T.                   
+</PRE>
+<PRE>
+TRANSB  (local input)                 const enum HPL_TRANS
+        On entry, TRANSB  specifies the form of  op(B)  to be used in
+        the matrix-matrix operation follows:                         
+           TRANSB==HplNoTrans    : op( B ) = B,                     
+           TRANSB==HplTrans      : op( B ) = B^T,                   
+           TRANSB==HplConjTrans  : op( B ) = B^T.                   
+</PRE>
+<PRE>
+M       (local input)                 const int
+        On entry,  M  specifies  the  number  of rows  of the  matrix
+        op(A)  and  of  the  matrix  C.  M  must  be  at least  zero.
+</PRE>
+<PRE>
+N       (local input)                 const int
+        On entry,  N  specifies  the number  of columns of the matrix
+        op(B)  and  the number of columns of the matrix  C. N must be
+        at least zero.
+</PRE>
+<PRE>
+K       (local input)                 const int
+        On entry,  K  specifies  the  number of columns of the matrix
+        op(A) and the number of rows of the matrix op(B).  K  must be
+        be at least  zero.
+</PRE>
+<PRE>
+ALPHA   (local input)                 const double
+        On entry, ALPHA specifies the scalar alpha.   When  ALPHA  is
+        supplied  as  zero  then the elements of the matrices A and B
+        need not be set on input.
+</PRE>
+<PRE>
+A       (local input)                 const double *
+        On entry,  A  is an array of dimension (LDA,ka),  where ka is
+        k  when   TRANSA==HplNoTrans,  and  is  m  otherwise.  Before
+        entry  with  TRANSA==HplNoTrans, the  leading  m by k part of
+        the array  A must contain the matrix A, otherwise the leading
+        k  by  m  part of the array  A  must  contain the  matrix  A.
+</PRE>
+<PRE>
+LDA     (local input)                 const int
+        On entry, LDA  specifies the first dimension of A as declared
+        in the  calling (sub) program. When  TRANSA==HplNoTrans  then
+        LDA must be at least max(1,m), otherwise LDA must be at least
+        max(1,k).
+</PRE>
+<PRE>
+B       (local input)                 const double *
+        On entry, B is an array of dimension (LDB,kb),  where  kb  is
+        n   when  TRANSB==HplNoTrans, and  is  k  otherwise.   Before
+        entry with TRANSB==HplNoTrans,  the  leading  k by n  part of
+        the array  B must contain the matrix B, otherwise the leading
+        n  by  k  part of the array  B  must  contain  the matrix  B.
+</PRE>
+<PRE>
+LDB     (local input)                 const int
+        On entry, LDB  specifies the first dimension of B as declared
+        in the  calling (sub) program. When  TRANSB==HplNoTrans  then
+        LDB must be at least max(1,k), otherwise LDB must be at least
+        max(1,n).
+</PRE>
+<PRE>
+BETA    (local input)                 const double
+        On entry,  BETA  specifies the scalar  beta.   When  BETA  is
+        supplied  as  zero  then  the  elements of the matrix C  need
+        not be set on input.
+</PRE>
+<PRE>
+C       (local input/output)          double *
+        On entry,  C  is an array of dimension (LDC,n). Before entry,
+        the  leading m by n part  of  the  array  C  must contain the
+        matrix C,  except when beta is zero, in which case C need not
+        be set on entry. On exit, the array  C  is overwritten by the
+        m by n  matrix ( alpha*op( A )*op( B ) + beta*C ).
+</PRE>
+<PRE>
+LDC     (local input)                 const int
+        On entry, LDC  specifies the first dimension of C as declared
+        in  the   calling  (sub)  program.   LDC  must  be  at  least
+        max(1,m).
+</PRE>
+
+<H1>Example</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<PRE>
+int main(int argc, char *argv[])
+{
+   double a[2*2], b[2*2], c[2*2];
+   a[0] = 1.0; a[1] = 2.0; a[2] = 3.0; a[3] = 3.0;
+   b[0] = 2.0; b[1] = 1.0; b[2] = 1.0; b[3] = 2.0;
+   c[0] = 4.0; c[1] = 3.0; c[2] = 2.0; c[3] = 1.0;
+   HPL_dgemm( HplColumnMajor, HplNoTrans, HplNoTrans,
+              2, 2, 2, 2.0, a, 2, b, 2, -1.0, c, 2 );
+   printf("  [%f,%f]\n", c[0], c[2]);
+   printf("c=[%f,%f]\n", c[1], c[3]);
+   exit(0); return(0);
+}
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_dtrsm.html">HPL_dtrsm</A>.
+
+</BODY>
+</HTML>

@@ -1,0 +1,76 @@
+.TH HPL_daxpy 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_daxpy \- y := y + alpha * x.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_daxpy(\fR
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&const double\fR
+\fI\&ALPHA\fR,
+\fB\&const double *\fR
+\fI\&X\fR,
+\fB\&const int\fR
+\fI\&INCX\fR,
+\fB\&double *\fR
+\fI\&Y\fR,
+\fB\&const int\fR
+\fI\&INCY\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_daxpy\fR
+scales the vector x by alpha and adds it to y.
+.SH ARGUMENTS
+.TP 8
+N       (local input)           const int
+On entry, N specifies the length of the vectors  x  and  y. N
+must be at least zero.
+.TP 8
+ALPHA   (local input)           const double
+On entry, ALPHA specifies the scalar alpha.   When  ALPHA  is
+supplied as zero, then the entries of the incremented array X
+need not be set on input.
+.TP 8
+X       (local input)           const double *
+On entry,  X  is an incremented array of dimension  at  least
+( 1 + ( n - 1 ) * abs( INCX ) )  that  contains the vector x.
+.TP 8
+INCX    (local input)           const int
+On entry, INCX specifies the increment for the elements of X.
+INCX must not be zero.
+.TP 8
+Y       (local input/output)    double *
+On entry,  Y  is an incremented array of dimension  at  least
+( 1 + ( n - 1 ) * abs( INCY ) )  that  contains the vector y.
+On exit, the entries of the incremented array  Y  are updated
+with the scaled entries of the incremented array X.
+.TP 8
+INCY    (local input)           const int
+On entry, INCY specifies the increment for the elements of Y.
+INCY must not be zero.
+.SH EXAMPLE
+\fI\&#include "hpl.h"\fR
+ 
+int main(int argc, char *argv[])
+.br
+{
+.br
+   double x[3], y[3];
+.br
+   x[0] = 1.0; x[1] = 2.0; x[2] = 3.0;
+.br
+   y[0] = 4.0; y[1] = 5.0; y[2] = 6.0;
+.br
+   HPL_daxpy( 3, 2.0, x, 1, y, 1 );
+.br
+   printf("y=[%f,%f,%f]\en", y[0], y[1], y[2]);
+.br
+   exit(0); return(0);
+.br
+}
+.SH SEE ALSO
+.BR HPL_dcopy \ (3),
+.BR HPL_dscal \ (3),
+.BR HPL_dswap \ (3).

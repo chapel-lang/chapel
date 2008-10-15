@@ -1,0 +1,187 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_plindx0 HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_plindx0</B> Compute local swapping index arrays.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_plindx0(</CODE>
+<CODE>HPL_T_panel *</CODE>
+<CODE>PANEL</CODE>,
+<CODE>const int</CODE>
+<CODE>K</CODE>,
+<CODE>int *</CODE>
+<CODE>IPID</CODE>,
+<CODE>int *</CODE>
+<CODE>LINDXA</CODE>,
+<CODE>int *</CODE>
+<CODE>LINDXAU</CODE>,
+<CODE>int *</CODE>
+<CODE>LLEN</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_plindx0</B>
+computes two local arrays  LINDXA and  LINDXAU  containing
+the  local  source and final destination position  resulting from the
+application of row interchanges.
+ 
+On entry, the array  IPID  of length K is such that the row of global
+index  IPID(i)  should be mapped onto row of global index  IPID(i+1).
+Let  IA  be the global index of the first row to be swapped. For k in
+[0..K/2), the row of global index IPID(2*k) should be mapped onto the
+row of global index  IPID(2*k+1).  The question then, is to determine
+which rows should ultimately be part of U.
+ 
+First, some rows of the process ICURROW  may be swapped locally.  One
+of this row belongs to U, the other one belongs to my local  piece of
+A.  The other  rows of the current block are swapped with remote rows
+and are thus not part of U. These rows however should be sent  along,
+and  grabbed by the other processes  as we  progress in the  exchange
+phase.
+ 
+So, assume that I am  ICURROW  and consider a row of index  IPID(2*i)
+that I own. If I own IPID(2*i+1) as well and IPID(2*i+1) - IA is less
+than N,  this row is locally swapped and should be copied into  U  at
+the position IPID(2*i+1) - IA. No row will be exchanged for this one.
+If IPID(2*i+1)-IA is greater than N, then the row IPID(2*i) should be
+locally copied into my local piece of A at the position corresponding
+to the row of global index IPID(2*i+1).
+ 
+If the process  ICURROW does not own  IPID(2*i+1), then row IPID(2*i)
+is to be swapped away and strictly speaking does not belong to U, but
+to  A  remotely.  Since this  process will however send this array U,
+this row is  copied into  U, exactly where the row IPID(2*i+1) should
+go. For this, we search IPID for k1, such that IPID(2*k1) is equal to
+IPID(2*i+1); and row  IPID(2*i) is to be copied in U  at the position
+IPID(2*k1+1)-IA.
+ 
+It is thus  important to put the rows that go into U, i.e., such that
+IPID(2*i+1) - IA is less than N at the begining of the array IPID. By
+doing so,  U  is formed, and the local copy  is performed in just one
+sweep.
+ 
+Two lists  LINDXA  and  LINDXAU are built.  LINDXA contains the local
+index of the rows I have that should be copied. LINDXAU  contains the
+local destination information: if LINDXAU(k) >= 0, row LINDXA(k) of A
+is to be copied in U at position LINDXAU(k). Otherwise, row LINDXA(k)
+of A should be locally copied into A(-LINDXAU(k),:).  In the  process
+ICURROW, the initial packing algorithm proceeds as follows.
+ 
+  for all entries in IPID,
+     if IPID(2*i) is in ICURROW,
+        if IPID(2*i+1) is in ICURROW,
+           if( IPID(2*i+1) - IA < N )
+            save corresponding local position
+            of this row (LINDXA);
+            save local position (LINDXAU) in U
+            where this row goes;
+            [copy row IPID(2*i) in U at position
+            IPID(2*i+1)-IA; ];
+           else
+            save corresponding local position of
+            this row (LINDXA);
+            save local position (-LINDXAU) in A
+            where this row goes;
+            [copy row IPID(2*i) in my piece of A
+            at IPID(2*i+1);]
+           end if
+        else
+           find k1 such that IPID(2*k1) = IPID(2*i+1);
+           copy row IPID(2*i) in U at position
+           IPID(2*k1+1)-IA;
+           save corresponding local position of this
+           row (LINDXA);
+           save local position (LINDXAU) in U where
+           this row goes;
+        end if
+     end if
+  end for
+ 
+Second, if I am not the current row process  ICURROW, all source rows
+in IPID that I own are part of U. Indeed,  they  are swapped with one
+row  of  the  current  block  of rows,  and  the  main  factorization
+algorithm proceeds one row after each other.  The processes different
+from ICURROW,  should  exchange and accumulate  those rows until they
+receive some data previously owned by the process ICURROW.
+ 
+In processes different from  ICURROW,  the  initial packing algorithm
+proceeds as follows.  Consider a row of global index IPID(2*i) that I
+own. When I will be receiving data previously owned by ICURROW, i.e.,
+U, row IPID(2*i) should  replace the row in U at pos. IPID(2*i+1)-IA,
+and  this particular row of U should be first copied into my piece of
+A, at A(il,:),  where  il is the  local row  index  corresponding  to
+IPID(2*i). Now,initially, this row will be packed into workspace, say
+as the kth row of  that  work array.  The  following  algorithm  sets
+LINDXAU[k] to IPID(2*i+1)-IA, that is the position in U where the row
+should be copied. LINDXA(k) stores the local index in  A  where  this
+row of U should be copied, i.e il.
+ 
+  for all entries in IPID,
+     if IPID(2*i) is not in ICURROW,
+        copy row IPID(2*i) in work array;
+        save corresponding local position
+        of this row (LINDXA);
+        save position (LINDXAU) in U where
+        this row should be copied;
+     end if
+  end for
+ 
+Since we are at it, we also globally figure  out  how many rows every
+process has. That is necessary, because it would rather be cumbersome
+to  figure it on  the fly  during the  bi-directional exchange phase.
+This information is kept in the array  LLEN  of size NPROW. Also note
+that the arrays LINDXA and LINDXAU are of max length equal to 2*N.
+
+<H1>Arguments</H1>
+<PRE>
+PANEL   (local input/output)          HPL_T_panel *
+        On entry,  PANEL  points to the data structure containing the
+        panel information.
+</PRE>
+<PRE>
+K       (global input)                const int
+        On entry, K specifies the number of entries in IPID.  K is at
+        least 2*N, and at most 4*N.
+</PRE>
+<PRE>
+IPID    (global input)                int *
+        On entry,  IPID  is an array of length K. The first K entries
+        of that array contain the src and final destination resulting
+        from the application of the interchanges.
+</PRE>
+<PRE>
+LINDXA  (local output)                int *
+        On entry, LINDXA  is an array of dimension 2*N. On exit, this
+        array contains the local indexes of the rows of A I have that
+        should be copied into U.
+</PRE>
+<PRE>
+LINDXAU (local output)                int *
+        On exit, LINDXAU  is an array of dimension 2*N. On exit, this
+        array contains  the local destination  information encoded as
+        follows.  If LINDXAU(k) >= 0, row  LINDXA(k)  of A  is  to be
+        copied in U at position LINDXAU(k).  Otherwise, row LINDXA(k)
+        of A should be locally copied into A(-LINDXAU(k),:).
+</PRE>
+<PRE>
+LLEN    (global output)               int *
+        On entry,  LLEN  is  an array  of length  NPROW.  On exit, it
+        contains how many rows every process has.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_pdlaswp00N.html">HPL_pdlaswp00N</A>,
+<A HREF="HPL_pdlaswp00T.html">HPL_pdlaswp00T</A>,
+<A HREF="HPL_pdlaswp01N.html">HPL_pdlaswp01N</A>,
+<A HREF="HPL_pdlaswp01T.html">HPL_pdlaswp01T</A>.
+
+</BODY>
+</HTML>

@@ -1,0 +1,28 @@
+.TH HPL_rand 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_rand \- random number generator.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&double\fR
+\fB\&HPL_rand();\fR
+.SH DESCRIPTION
+\fB\&HPL_rand\fR
+generates  the next number  in the  random  sequence.  This
+function  ensures  that this number lies in the interval (-0.5, 0.5].
+ 
+The static array irand contains the information (2 integers) required
+to generate the  next number  in the sequence  X(n).  This  number is
+computed as X(n) = (2^16 * irand[1] + irand[0]) / d - 0.5,  where the
+constant d is the largest 32 bit positive integer. The array irand is
+then  updated  for the generation of the next number  X(n+1)  in  the
+random sequence as follows X(n+1) = a * X(n) + c. The constants a and
+c  should have been preliminarily stored in the arrays ias and ics as
+2 pairs of integers.  The initialization of  ias,  ics and  irand  is
+performed by the function HPL_setran.
+.SH SEE ALSO
+.BR HPL_ladd \ (3),
+.BR HPL_lmul \ (3),
+.BR HPL_setran \ (3),
+.BR HPL_xjumpm \ (3),
+.BR HPL_jumpit \ (3).

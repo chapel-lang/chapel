@@ -1,0 +1,65 @@
+.TH HPL_logsort 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_logsort \- Sort the processes in logarithmic order.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_logsort(\fR
+\fB\&const int\fR
+\fI\&NPROCS\fR,
+\fB\&const int\fR
+\fI\&ICURROC\fR,
+\fB\&int *\fR
+\fI\&IPLEN\fR,
+\fB\&int *\fR
+\fI\&IPMAP\fR,
+\fB\&int *\fR
+\fI\&IPMAPM1\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_logsort\fR
+computes an array  IPMAP  and  its inverse  IPMAPM1  that
+contain  the logarithmic sorted processes id with repect to the local
+number of rows of  U  that they own. This is necessary to ensure that
+the logarithmic spreading of U is optimal in terms of number of steps
+and communication volume as well.  In other words,  the larget pieces
+of U will be sent a minimal number of times.
+.SH ARGUMENTS
+.TP 8
+NPROCS  (global input)          const int
+On entry, NPROCS  specifies the number of process rows in the
+process grid. NPROCS is at least one.
+.TP 8
+ICURROC (global input)          const int
+On entry, ICURROC is the source process row.
+.TP 8
+IPLEN   (global input/output)   int *
+On entry, IPLEN is an array of dimension NPROCS+1,  such that
+IPLEN[0] is 0, and IPLEN[i] contains the number of rows of U,
+that process i-1 has.  On exit,  IPLEN[i]  is  the number  of
+rows of U  in the processes before process IPMAP[i] after the
+sort,  with  the convention that  IPLEN[NPROCS] is  the total
+number  of rows  of the panel.  In other words,  IPLEN[i+1] -
+IPLEN[i] is  the  number of rows of A that should be moved to
+the process IPMAP[i].  IPLEN  is such that the number of rows
+of  the  source process  row is IPLEN[1] - IPLEN[0],  and the
+remaining  entries  of  this  array  are  sorted  so that the
+quantities IPLEN[i+1]-IPLEN[i] are logarithmically sorted.
+.TP 8
+IPMAP   (global output)         int *
+On entry,  IPMAP  is an array of dimension  NPROCS.  On exit,
+array contains  the logarithmic mapping of the processes.  In
+other words, IPMAP[myroc] is the corresponding sorted process
+coordinate.
+.TP 8
+IPMAPM1 (global output)         int *
+On entry, IPMAPM1  is an array of dimension NPROCS.  On exit,
+this  array  contains  the inverse of the logarithmic mapping
+contained  in  IPMAP:  IPMAPM1[ IPMAP[i] ] = i,  for all i in
+[0.. NPROCS)
+.SH SEE ALSO
+.BR HPL_plindx1 \ (3),
+.BR HPL_plindx10 \ (3),
+.BR HPL_pdlaswp01N \ (3),
+.BR HPL_pdlaswp01T \ (3).

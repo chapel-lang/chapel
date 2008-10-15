@@ -1,0 +1,60 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_min HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_min</B> Combine (min) two buffers.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_min(</CODE>
+<CODE>const int</CODE>
+<CODE>N</CODE>,
+<CODE>const void *</CODE>
+<CODE>IN</CODE>,
+<CODE>void *</CODE>
+<CODE>INOUT</CODE>,
+<CODE>const HPL_T_TYPE</CODE>
+<CODE>DTYPE</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_min</B>
+combines (min) two buffers.
+
+<H1>Arguments</H1>
+<PRE>
+N       (input)                       const int
+        On entry, N  specifies  the  length  of  the  buffers  to  be
+        combined. N must be at least zero.
+</PRE>
+<PRE>
+IN      (input)                       const void *
+        On entry, IN points to the input-only buffer to be combined.
+</PRE>
+<PRE>
+INOUT   (input/output)                void *
+        On entry, INOUT  points  to  the  input-output  buffer  to be
+        combined.  On exit,  the  entries of this array contains  the
+        combined results.
+</PRE>
+<PRE>
+DTYPE   (input)                       const HPL_T_TYPE
+        On entry,  DTYPE  specifies the type of the buffers operands.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_broadcast.html">HPL_broadcast</A>,
+<A HREF="HPL_reduce.html">HPL_reduce</A>,
+<A HREF="HPL_all_reduce.html">HPL_all_reduce</A>,
+<A HREF="HPL_barrier.html">HPL_barrier</A>,
+<A HREF="HPL_max.html">HPL_max</A>,
+<A HREF="HPL_sum.html">HPL_sum</A>.
+
+</BODY>
+</HTML>

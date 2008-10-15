@@ -1,0 +1,106 @@
+.TH HPL_plindx1 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_plindx1 \- Compute local swapping index arrays.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_plindx1(\fR
+\fB\&HPL_T_panel *\fR
+\fI\&PANEL\fR,
+\fB\&const int\fR
+\fI\&K\fR,
+\fB\&const int *\fR
+\fI\&IPID\fR,
+\fB\&int *\fR
+\fI\&IPA\fR,
+\fB\&int *\fR
+\fI\&LINDXA\fR,
+\fB\&int *\fR
+\fI\&LINDXAU\fR,
+\fB\&int *\fR
+\fI\&IPLEN\fR,
+\fB\&int *\fR
+\fI\&IPMAP\fR,
+\fB\&int *\fR
+\fI\&IPMAPM1\fR,
+\fB\&int *\fR
+\fI\&PERMU\fR,
+\fB\&int *\fR
+\fI\&IWORK\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_plindx1\fR
+computes two local arrays  LINDXA and  LINDXAU  containing
+the  local  source and final destination position  resulting from the
+application of row interchanges.  In addition, this function computes
+three arrays IPLEN, IPMAP and IPMAPM1  that contain  the  logarithmic
+mapping information for the spreading phase.
+.SH ARGUMENTS
+.TP 8
+PANEL   (local input/output)    HPL_T_panel *
+On entry,  PANEL  points to the data structure containing the
+panel information.
+.TP 8
+K       (global input)          const int
+On entry, K specifies the number of entries in IPID.  K is at
+least 2*N, and at most 4*N.
+.TP 8
+IPID    (global input)          const int *
+On entry,  IPID  is an array of length K. The first K entries
+of that array contain the src and final destination resulting
+from the application of the interchanges.
+.TP 8
+IPA     (global output)         int *
+On exit,  IPA  specifies  the number of rows that the current
+process row has that either belong to U  or should be swapped
+with remote rows of A.
+.TP 8
+LINDXA  (global output)         int *
+On entry, LINDXA  is an array of dimension 2*N. On exit, this
+array contains the local indexes of the rows of A I have that
+should be copied into U.
+.TP 8
+LINDXAU (global output)         int *
+On exit, LINDXAU  is an array of dimension 2*N. On exit, this
+array contains  the local destination  information encoded as
+follows.  If LINDXAU(k) >= 0, row  LINDXA(k)  of A  is  to be
+copied in U at position LINDXAU(k).  Otherwise, row LINDXA(k)
+of A should be locally copied into A(-LINDXAU(k),:).
+.TP 8
+IPLEN   (global output)         int *
+On entry, IPLEN is an array of dimension NPROW + 1. On  exit,
+this array is such that  IPLEN[i]  is the number of rows of A
+in  the  processes  before  process  IPMAP[i]  after the sort
+with the convention that IPLEN[nprow]  is the total number of
+rows of the panel.  In other words IPLEN[i+1]-IPLEN[i] is the
+local number of rows of A that should be moved to the process
+IPMAP[i]. IPLEN is such that the number of rows of the source
+process  row can be computed as  IPLEN[1] - IPLEN[0], and the
+remaining  entries  of  this  array  are  sorted  so that the
+quantities IPLEN[i+1] - IPLEN[i] are logarithmically sorted.
+.TP 8
+IPMAP   (global output)         int *
+On entry, IPMAP is an array of dimension NPROW. On exit, this
+array contains  the logarithmic mapping of the processes.  In
+other words, IPMAP[myrow] is the corresponding sorted process
+coordinate.
+.TP 8
+IPMAPM1 (global output)         int *
+On entry, IPMAPM1  is an array of dimension NPROW.  On  exit,
+this  array  contains  the inverse of the logarithmic mapping
+contained  in  IPMAP:  IPMAPM1[ IPMAP[i] ] = i,  for all i in
+[0.. NPROCS)
+.TP 8
+PERMU   (global output)         int *
+On entry,  PERMU  is an array of dimension JB. On exit, PERMU
+contains  a sequence of permutations,  that should be applied
+in increasing order to permute in place the row panel U.
+.TP 8
+IWORK   (workspace)             int *
+On entry, IWORK is a workarray of dimension 2*JB.
+.SH SEE ALSO
+.BR HPL_pdlaswp00N \ (3),
+.BR HPL_pdlaswp00T \ (3),
+.BR HPL_pdlaswp01N \ (3),
+.BR HPL_pdlaswp01T \ (3).

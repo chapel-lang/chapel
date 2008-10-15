@@ -1,0 +1,49 @@
+.TH HPL_recv 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_recv \- Receive a message.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&int\fR
+\fB\&HPL_recv(\fR
+\fB\&double *\fR
+\fI\&RBUF\fR,
+\fB\&int\fR
+\fI\&RCOUNT\fR,
+\fB\&int\fR
+\fI\&SRC\fR,
+\fB\&int\fR
+\fI\&RTAG\fR,
+\fB\&MPI_Comm\fR
+\fI\&COMM\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_recv\fR
+is a simple wrapper around  MPI_Recv.  Its  main  purpose is
+to  allow for some  experimentation / tuning  of this simple routine.
+Successful  completion  is  indicated  by  the  returned  error  code
+HPL_SUCCESS.  In the case of messages of length less than or equal to
+zero, this function returns immediately.
+.SH ARGUMENTS
+.TP 8
+RBUF    (local output)          double *
+On entry, RBUF specifies the starting address of buffer to be
+received.
+.TP 8
+RCOUNT  (local input)           int
+On entry,  RCOUNT  specifies  the number  of double precision
+entries in RBUF. RCOUNT must be at least zero.
+.TP 8
+SRC     (local input)           int
+On entry, SRC  specifies the rank of the  sending  process in
+the communication space defined by COMM.
+.TP 8
+RTAG    (local input)           int
+On entry,  STAG specifies the message tag to be used for this
+communication operation.
+.TP 8
+COMM    (local input)           MPI_Comm
+The MPI communicator identifying the communication space.
+.SH SEE ALSO
+.BR HPL_send \ (3),
+.BR HPL_sendrecv \ (3).

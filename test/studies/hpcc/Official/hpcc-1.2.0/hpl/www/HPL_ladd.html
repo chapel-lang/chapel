@@ -1,0 +1,57 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_ladd HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_ladd</B> Adds two long positive integers.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_ladd(</CODE>
+<CODE>int *</CODE>
+<CODE>J</CODE>,
+<CODE>int *</CODE>
+<CODE>K</CODE>,
+<CODE>int *</CODE>
+<CODE>I</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_ladd</B>
+adds  without carry two long positive integers  K and J  an
+put the result into I.  The long integers  I, J, K are encoded on 31
+bits using an array of 2 integers.  The 16-lower bits  are stored  i
+the  first  entry  of each array,  the 15-higher bits  in the second
+entry.
+
+<H1>Arguments</H1>
+<PRE>
+J       (local input)                 int *
+        On entry, J is an integer array of dimension 2 containing the
+        encoded long integer J.
+</PRE>
+<PRE>
+K       (local input)                 int *
+        On entry, K is an integer array of dimension 2 containing the
+        encoded long integer K.
+</PRE>
+<PRE>
+I       (local output)                int *
+        On entry, I is an integer array of dimension 2. On exit, this
+        array contains the encoded long integer result.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_lmul.html">HPL_lmul</A>,
+<A HREF="HPL_setran.html">HPL_setran</A>,
+<A HREF="HPL_xjumpm.html">HPL_xjumpm</A>,
+<A HREF="HPL_jumpit.html">HPL_jumpit</A>,
+<A HREF="HPL_rand.html">HPL_rand</A>.
+
+</BODY>
+</HTML>

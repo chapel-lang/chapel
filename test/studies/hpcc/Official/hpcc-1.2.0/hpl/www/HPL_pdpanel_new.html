@@ -1,0 +1,99 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_pdpanel_new HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_pdpanel_new</B> Create a panel data structure.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_pdpanel_new(</CODE>
+<CODE>HPL_T_grid *</CODE>
+<CODE>GRID</CODE>,
+<CODE>HPL_T_palg *</CODE>
+<CODE>ALGO</CODE>,
+<CODE>const int</CODE>
+<CODE>M</CODE>,
+<CODE>const int</CODE>
+<CODE>N</CODE>,
+<CODE>const int</CODE>
+<CODE>JB</CODE>,
+<CODE>HPL_T_pmat *</CODE>
+<CODE>A</CODE>,
+<CODE>const int</CODE>
+<CODE>IA</CODE>,
+<CODE>const int</CODE>
+<CODE>JA</CODE>,
+<CODE>const int</CODE>
+<CODE>TAG</CODE>,
+<CODE>HPL_T_panel * *</CODE>
+<CODE>PANEL</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_pdpanel_new</B>
+creates and initializes a panel data structure.
+
+<H1>Arguments</H1>
+<PRE>
+GRID    (local input)                 HPL_T_grid *
+        On entry,  GRID  points  to the data structure containing the
+        process grid information.
+</PRE>
+<PRE>
+ALGO    (global input)                HPL_T_palg *
+        On entry,  ALGO  points to  the data structure containing the
+        algorithmic parameters.
+</PRE>
+<PRE>
+M       (local input)                 const int
+        On entry, M specifies the global number of rows of the panel.
+        M must be at least zero.
+</PRE>
+<PRE>
+N       (local input)                 const int
+        On entry,  N  specifies  the  global number of columns of the
+        panel and trailing submatrix. N must be at least zero.
+</PRE>
+<PRE>
+JB      (global input)                const int
+        On entry, JB specifies is the number of columns of the panel.
+        JB must be at least zero.
+</PRE>
+<PRE>
+A       (local input/output)          HPL_T_pmat *
+        On entry, A points to the data structure containing the local
+        array information.
+</PRE>
+<PRE>
+IA      (global input)                const int
+        On entry,  IA  is  the global row index identifying the panel
+        and trailing submatrix. IA must be at least zero.
+</PRE>
+<PRE>
+JA      (global input)                const int
+        On entry, JA is the global column index identifying the panel
+        and trailing submatrix. JA must be at least zero.
+</PRE>
+<PRE>
+TAG     (global input)                const int
+        On entry, TAG is the row broadcast message id.
+</PRE>
+<PRE>
+PANEL   (local input/output)          HPL_T_panel * *
+        On entry,  PANEL  points  to  the  address  of the panel data
+        structure to create and initialize.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_pdpanel_new.html">HPL_pdpanel_new</A>,
+<A HREF="HPL_pdpanel_init.html">HPL_pdpanel_init</A>,
+<A HREF="HPL_pdpanel_disp.html">HPL_pdpanel_disp</A>.
+
+</BODY>
+</HTML>

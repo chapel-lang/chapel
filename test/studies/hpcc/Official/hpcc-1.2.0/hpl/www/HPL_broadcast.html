@@ -1,0 +1,67 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_broadcast HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_broadcast</B> Broadcast operation.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>int</CODE>
+<CODE>HPL_broadcast(</CODE>
+<CODE>void *</CODE>
+<CODE>BUFFER</CODE>,
+<CODE>const int</CODE>
+<CODE>COUNT</CODE>,
+<CODE>const HPL_T_TYPE</CODE>
+<CODE>DTYPE</CODE>,
+<CODE>const int</CODE>
+<CODE>ROOT</CODE>,
+<CODE>MPI_Comm</CODE>
+<CODE>COMM</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_broadcast</B>
+broadcasts  a message from the process with rank ROOT to
+all processes in the group.
+
+<H1>Arguments</H1>
+<PRE>
+BUFFER  (local input/output)          void *
+        On entry,  BUFFER  points to  the  buffer to be broadcast. On
+        exit, this array contains the broadcast data and is identical
+        on all processes in the group.
+</PRE>
+<PRE>
+COUNT   (global input)                const int
+        On entry,  COUNT  indicates the number of entries in  BUFFER.
+        COUNT must be at least zero.
+</PRE>
+<PRE>
+DTYPE   (global input)                const HPL_T_TYPE
+        On entry,  DTYPE  specifies the type of the buffers operands.
+</PRE>
+<PRE>
+ROOT    (global input)                const int
+        On entry, ROOT is the coordinate of the source process.
+</PRE>
+<PRE>
+COMM    (global/local input)          MPI_Comm
+        The MPI communicator identifying the process collection.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_reduce.html">HPL_reduce</A>,
+<A HREF="HPL_all_reduce.html">HPL_all_reduce</A>,
+<A HREF="HPL_barrier.html">HPL_barrier</A>,
+<A HREF="HPL_min.html">HPL_min</A>,
+<A HREF="HPL_max.html">HPL_max</A>,
+<A HREF="HPL_sum.html">HPL_sum</A>.
+
+</BODY>
+</HTML>

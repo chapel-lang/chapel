@@ -1,0 +1,243 @@
+<HTML>
+<HEAD>
+<TITLE>HPL Results</TITLE>
+</HEAD>
+
+<BODY 
+BGCOLOR     = "WHITE"
+BACKGROUND  = "WHITE"
+TEXT        = "#000000"
+VLINK       = "#000099"
+ALINK       = "#947153"
+LINK        = "#0000ff">
+
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0>
+<TR><TD ALIGN=LEFT VALIGN=LEFT>
+<IMG SRC    = "aprunner.gif" BORDER=0 HEIGHT=160 WIDTH=220>
+</TD>
+<TD ALIGN=LEFT VALIGN=LEFT>
+<H2>HPL Performance Results</H2>
+
+<STRONG>
+The performance achieved by this software package  on a few machine
+configurations is shown below.  These results are only provided for
+illustrative  purposes.  By the time you read this,  those  systems
+have changed,  they may not even exist anymore  and  one can surely
+not exactly reproduce  the state  in which these machines were when
+those measurements have been obtained.  To obtain  accurate figures
+on your system, it is absolutely necessary to
+<A HREF = "software.html">download the software</A> and run it there.
+</STRONG>
+</TD>
+</TR></TABLE>
+<HR NOSHADE>
+
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0><TR>
+<TD><UL>
+<LI><A HREF = "results.html#AMD_K7000">Athlon 4-nodes cluster</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "results.html#I550p3000">Intel PIII 8-duals cluster</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "results.html#compaq000">Compaq 64 nodes AlphaServer SC</A>
+</UL></TD>
+</TR></TABLE>
+<HR NOSHADE>
+
+<H3><A NAME="AMD_K7000">4 AMD Athlon K7 500 Mhz (256 Mb) - (2x) 100 Mbs
+Switched - 2 NICs per node (channel bonding)</A></H3>
+
+<CENTER>
+<TABLE BORDER>
+<TR><TD>OS         </TD><TD>Linux 6.2 RedHat (Kernel 2.2.14)       </TD></TR>
+<TR><TD>C compiler </TD><TD>gcc (egcs-2.91.66 egcs-1.1.2 release)  </TD></TR>
+<TR><TD>C flags    </TD><TD>-fomit-frame-pointer -O3 -funroll-loops</TD></TR>
+<TR><TD>MPI        </TD><TD>MPIch 1.2.1                            </TD></TR>
+<TR><TD>BLAS       </TD><TD>ATLAS (Version 3.0 beta)               </TD></TR>
+<TR><TD>Comments   </TD><TD>09 / 00                                </TD></TR>
+</TABLE><P>
+
+<TABLE BORDER>
+<TR>
+<TH ALIGN=CENTER> GRID</TH>
+<TH ALIGN=CENTER> 2000</TH>
+<TH ALIGN=CENTER> 5000</TH>
+<TH ALIGN=CENTER> 8000</TH>
+<TH ALIGN=CENTER>10000</TH>
+</TR>
+<TR>
+<TH ALIGN=CENTER>1 x 4</TH>
+<TD ALIGN=CENTER> 1.28</TD>
+<TD ALIGN=CENTER> 1.73</TD>
+<TD ALIGN=CENTER> 1.89</TD>
+<TD ALIGN=CENTER> 1.95</TD>
+</TR>
+<TR>
+<TH ALIGN=CENTER>2 x 2</TH>
+<TD ALIGN=CENTER> 1.17</TD>
+<TD ALIGN=CENTER> 1.68</TD>
+<TD ALIGN=CENTER> 1.88</TD>
+<TD ALIGN=CENTER> 1.93</TD>
+</TR>
+<TR>
+<TH ALIGN=CENTER>4 x 1</TH>
+<TD ALIGN=CENTER> 0.81</TD>
+<TD ALIGN=CENTER> 1.43</TD>
+<TD ALIGN=CENTER> 1.70</TD>
+<TD ALIGN=CENTER> 1.80</TD>
+</TR>
+Performance (Gflops) w.r.t Problem size on 4 nodes.
+</TABLE><P>
+</CENTER>
+
+<HR NOSHADE>
+<H3><A NAME="I550p3000">8 Duals Intel PIII 550 Mhz (512 Mb) - Myrinet</A></H3>
+
+<CENTER>
+<TABLE BORDER>
+<TR><TD>OS         </TD><TD>Linux 6.1 RedHat (Kernel 2.2.15)       </TD></TR>
+<TR><TD>C compiler </TD><TD>gcc (egcs-2.91.66 egcs-1.1.2 release)  </TD></TR>
+<TR><TD>C flags    </TD><TD>-fomit-frame-pointer -O3 -funroll-loops</TD></TR>
+<TR><TD>MPI        </TD><TD>MPI GM (Version 1.2.3)                 </TD></TR>
+<TR><TD>BLAS       </TD><TD>ATLAS (Version 3.0 beta)               </TD></TR>
+<TR><TD>Comments   </TD>
+<TD><A HREF="http://icl.cs.utk.edu">UTK / ICL</A> - Torc cluster - 09 / 00</TD>
+</TR>
+</TABLE><P>
+
+<TABLE BORDER>
+<TR>
+<TH ALIGN=CENTER> GRID</TH>
+<TH ALIGN=CENTER> 2000</TH>
+<TH ALIGN=CENTER> 5000</TH>
+<TH ALIGN=CENTER> 8000</TH>
+<TH ALIGN=CENTER>10000</TH>
+<TH ALIGN=CENTER>15000</TH>
+<TH ALIGN=CENTER>20000</TH>
+</TR>
+<TR>
+<TH ALIGN=CENTER>2 x 4</TH>
+<TD ALIGN=CENTER> 1.76</TD>
+<TD ALIGN=CENTER> 2.32</TD>
+<TD ALIGN=CENTER> 2.51</TD>
+<TD ALIGN=CENTER> 2.58</TD>
+<TD ALIGN=CENTER> 2.72</TD>
+<TD ALIGN=CENTER> 2.73</TD>
+</TR>
+<TR>
+<TH ALIGN=CENTER>4 x 4</TH>
+<TD ALIGN=CENTER> 2.27</TD>
+<TD ALIGN=CENTER> 3.94</TD>
+<TD ALIGN=CENTER> 4.46</TD>
+<TD ALIGN=CENTER> 4.68</TD>
+<TD ALIGN=CENTER> 5.00</TD>
+<TD ALIGN=CENTER> 5.16</TD>
+</TR>
+Performance (Gflops) w.r.t Problem size on 8- and 16-processors grids.
+</TABLE><P>
+</CENTER>
+
+<HR NOSHADE>
+<H3><A NAME="compaq000">Compaq 64 nodes (4 ev67 667 Mhz processors per node)
+AlphaServer SC</A></H3>
+
+<CENTER>
+<TABLE BORDER>
+<TR><TD>OS         </TD><TD>Tru64 Version 5               </TD></TR>
+<TR><TD>C compiler </TD><TD>cc Version 6.1                </TD></TR>
+<TR><TD>C flags    </TD><TD>-arch host -tune host -std -O5</TD></TR>
+<TR><TD>MPI        </TD><TD>-lmpi -lelan                  </TD></TR>
+<TR><TD>BLAS       </TD><TD>CXML                          </TD></TR>
+<TR><TD>Comments   </TD>
+<TD><A HREF = "http://www.ccs.ornl.gov/ccs">ORNL / CCS</A>
+ - falcon - 09 / 00</TD></TR>
+</TABLE><P>
+</CENTER>
+
+In the table below, each row corresponds to a given number of cpus (or
+processors) and nodes.  The first row for example is denoted by 1 / 1,
+i.e.,  1 cpu / 1 node.  Rmax is given in Gflops, and the value of Nmax
+in fact corresponds to  351 Mb per cpu for all machine configurations.<BR><BR>
+
+<CENTER>
+<TABLE BORDER>
+<TR>
+<TH ALIGN=CENTER>    CPUS / NODES     </TH>
+<TH ALIGN=CENTER>       GRID          </TH>
+<TH ALIGN=CENTER>      N 1/2          </TH>
+<TH ALIGN=CENTER>       Nmax          </TH>
+<TH ALIGN=CENTER>    Rmax (Gflops)    </TH>
+<TH ALIGN=CENTER> Parallel Efficiency </TH>
+</TR>
+<TR>
+<TH ALIGN=CENTER>   1 / 1    </TH>
+<TH ALIGN=CENTER>   1 x 1    </TH>
+<TD ALIGN=CENTER>     150    </TD>
+<TD ALIGN=CENTER>    6625    </TD>
+<TD ALIGN=CENTER>   1.136    </TD>
+<TD ALIGN=CENTER>   1.000    </TD>
+</TR>
+<TR>
+<TH ALIGN=CENTER>   4 / 1    </TH>
+<TH ALIGN=CENTER>   2 x 2    </TH>
+<TD ALIGN=CENTER>     800    </TD>
+<TD ALIGN=CENTER>   13250    </TD>
+<TD ALIGN=CENTER>   4.360    </TD>
+<TD ALIGN=CENTER>   0.960    </TD>
+</TR>
+<TR>
+<TH ALIGN=CENTER>  16 / 4    </TH>
+<TH ALIGN=CENTER>   4 x 4    </TH>
+<TD ALIGN=CENTER>    2300    </TD>
+<TD ALIGN=CENTER>   26500    </TD>
+<TD ALIGN=CENTER>   17.00    </TD>
+<TD ALIGN=CENTER>   0.935    </TD>
+</TR>
+<TR>
+<TH ALIGN=CENTER>  64 / 16   </TH>
+<TH ALIGN=CENTER>   8 x 8    </TH>
+<TD ALIGN=CENTER>    5700    </TD>
+<TD ALIGN=CENTER>   53000    </TD>
+<TD ALIGN=CENTER>   67.50    </TD>
+<TD ALIGN=CENTER>   0.928    </TD>
+</TR>
+<TR>
+<TH ALIGN=CENTER> 256 / 64   </TH>
+<TH ALIGN=CENTER>  16 x 16   </TH>
+<TD ALIGN=CENTER>   14000    </TD>
+<TD ALIGN=CENTER>  106000    </TD>
+<TD ALIGN=CENTER>   263.6    </TD>
+<TD ALIGN=CENTER>   0.906    </TD>
+</TR>
+</TABLE><P>
+</CENTER> 
+For Rmax shown in the table, the  parallel efficiency  per  cpu has been
+computed using the performance achieved by  HPL on 1 cpu.  That is fair,
+since the CXML matrix multiply routine was achieving at best 1.24 Gflops
+for large matrix operands on one cpu, it would have been difficult for a
+sequential  Linpack  benchmark  implementation to achieve much more than
+1.136 Gflops on this same cpu. For constant load (as in the table 351 Mb
+per cpu for Nmax),  HPL  scales almost linearly as it should.
+
+<BR><BR>
+The authors acknowledge the use  of the Oak Ridge National Laboratory
+Compaq computer, funded by the Department of Energy's Office
+of Science and Energy Efficiency programs.<BR><BR>
+
+<HR NOSHADE>
+<CENTER>
+<A HREF = "index.html">            [Home]</A>
+<A HREF = "copyright.html">        [Copyright and Licensing Terms]</A>
+<A HREF = "algorithm.html">        [Algorithm]</A>
+<A HREF = "scalability.html">      [Scalability]</A>
+<A HREF = "results.html">          [Performance Results]</A>
+<A HREF = "documentation.html">    [Documentation]</A>
+<A HREF = "software.html">         [Software]</A>
+<A HREF = "faqs.html">             [FAQs]</A>
+<A HREF = "tuning.html">           [Tuning]</A>
+<A HREF = "errata.html">           [Errata-Bugs]</A>
+<A HREF = "references.html">       [References]</A>
+<A HREF = "links.html">            [Related Links]</A><BR>
+</CENTER>
+<HR NOSHADE>
+</BODY>
+</HTML>

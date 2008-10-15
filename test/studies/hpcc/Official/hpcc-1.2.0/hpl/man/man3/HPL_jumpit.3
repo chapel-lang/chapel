@@ -1,0 +1,48 @@
+.TH HPL_jumpit 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_jumpit \- jump into the random sequence.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_jumpit(\fR
+\fB\&int *\fR
+\fI\&MULT\fR,
+\fB\&int *\fR
+\fI\&IADD\fR,
+\fB\&int *\fR
+\fI\&IRANN\fR,
+\fB\&int *\fR
+\fI\&IRANM\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_jumpit\fR
+jumps in the random sequence from the number  X(n) encoded
+in IRANN to the number  X(m)  encoded in  IRANM using the constants A
+and C encoded in MULT and IADD: X(m) = A * X(n) + C.  The constants A
+and C obviously depend on m and n,  see  the function  HPL_xjumpm  in
+order to initialize them.
+.SH ARGUMENTS
+.TP 8
+MULT    (local input)           int *
+On entry, MULT is an array of dimension 2, that contains the
+16-lower and 15-higher bits of the constant A.
+.TP 8
+IADD    (local input)           int *
+On entry, IADD is an array of dimension 2, that contains the
+16-lower and 15-higher bits of the constant C.
+.TP 8
+IRANN   (local input)           int *
+On entry,  IRANN  is an array of dimension 2,  that contains 
+the 16-lower and 15-higher bits of the encoding of X(n).
+.TP 8
+IRANM   (local output)          int *
+On entry,  IRANM  is an array of dimension 2.  On exit, this
+array contains respectively the 16-lower and  15-higher bits
+of the encoding of X(m).
+.SH SEE ALSO
+.BR HPL_ladd \ (3),
+.BR HPL_lmul \ (3),
+.BR HPL_setran \ (3),
+.BR HPL_xjumpm \ (3),
+.BR HPL_rand \ (3).

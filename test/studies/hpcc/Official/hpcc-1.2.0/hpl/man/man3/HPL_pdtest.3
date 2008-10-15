@@ -1,0 +1,63 @@
+.TH HPL_pdtest 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_pdtest \- Perform one test.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_pdtest(\fR
+\fB\&HPL_T_test *\fR
+\fI\&TEST\fR,
+\fB\&HPL_T_grid *\fR
+\fI\&GRID\fR,
+\fB\&HPL_T_palg *\fR
+\fI\&ALGO\fR,
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&const int\fR
+\fI\&NB\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_pdtest\fR
+performs  one  test  given a set of parameters such as the
+process grid, the  problem size, the distribution blocking factor ...
+This function generates  the data, calls  and times the linear system
+solver,  checks  the  accuracy  of the  obtained vector solution  and
+writes this information to the file pointed to by TEST->outfp.
+.SH ARGUMENTS
+.TP 8
+TEST    (global input)          HPL_T_test *
+On entry,  TEST  points  to a testing data structure:  outfp
+specifies the output file where the results will be printed.
+It is only defined and used by the process  0  of the  grid.
+thrsh  specifies  the  threshhold value  for the test ratio.
+Concretely, a test is declared "PASSED"  if and only if  all
+of the following inequalities are satisfied:
+||Ax-b||_oo / ( epsil * ||A||_1  * N        ) < thrsh,
+||Ax-b||_oo / ( epsil * ||A||_1  * ||x||_1  ) < thrsh,
+||Ax-b||_oo / ( epsil * ||A||_oo * ||x||_oo ) < thrsh.
+epsil  is the  relative machine precision of the distributed
+computer. Finally the test counters, kfail, kpass, kskip and
+ktest are updated as follows:  if the test passes,  kpass is
+incremented by one;  if the test fails, kfail is incremented
+by one; if the test is skipped, kskip is incremented by one.
+ktest is left unchanged.
+.TP 8
+GRID    (local input)           HPL_T_grid *
+On entry,  GRID  points  to the data structure containing the
+process grid information.
+.TP 8
+ALGO    (global input)          HPL_T_palg *
+On entry,  ALGO  points to  the data structure containing the
+algorithmic parameters to be used for this test.
+.TP 8
+N       (global input)          const int
+On entry,  N specifies the order of the coefficient matrix A.
+N must be at least zero.
+.TP 8
+NB      (global input)          const int
+On entry,  NB specifies the blocking factor used to partition
+and distribute the matrix A. NB must be larger than one.
+.SH SEE ALSO
+.BR HPL_pddriver \ (3),
+.BR HPL_pdinfo \ (3).

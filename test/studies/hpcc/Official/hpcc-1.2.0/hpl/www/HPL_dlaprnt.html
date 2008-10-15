@@ -1,0 +1,86 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_dlaprnt HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_dlaprnt</B> Print the matrix A.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_dlaprnt(</CODE>
+<CODE>const int</CODE>
+<CODE>M</CODE>,
+<CODE>const int</CODE>
+<CODE>N</CODE>,
+<CODE>double *</CODE>
+<CODE>A</CODE>,
+<CODE>const int</CODE>
+<CODE>IA</CODE>,
+<CODE>const int</CODE>
+<CODE>JA</CODE>,
+<CODE>const int</CODE>
+<CODE>LDA</CODE>,
+<CODE>const char *</CODE>
+<CODE>CMATNM</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_dlaprnt</B>
+prints to standard error an M-by-N matrix A.
+
+<H1>Arguments</H1>
+<PRE>
+M       (local input)                 const int
+        On entry,  M  specifies the number of rows of A. M must be at
+        least zero.
+</PRE>
+<PRE>
+N       (local input)                 const int
+        On entry,  N  specifies the number of columns of A. N must be
+        at least zero.
+</PRE>
+<PRE>
+A       (local input)                 double *
+        On entry, A  points to an array of dimension (LDA,N).
+</PRE>
+<PRE>
+IA      (local input)                 const int
+        On entry, IA specifies the starting row index to be printed.
+</PRE>
+<PRE>
+JA      (local input)                 const int
+        On entry,  JA  specifies  the  starting  column index  to be
+        printed.
+</PRE>
+<PRE>
+LDA     (local input)                 const int
+        On entry, LDA specifies the leading dimension of the array A.
+        LDA must be at least max(1,M).
+</PRE>
+<PRE>
+CMATNM  (local input)                 const char *
+        On entry, CMATNM is the name of the matrix to be printed.
+</PRE>
+
+<H1>Example</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<PRE>
+int main(int argc, char *argv[])
+{
+   double a[2*2];
+   a[0] = 1.0; a[1] = 3.0; a[2] = 2.0; a[3] = 4.0;
+   HPL_dlaprnt( 2, 2, a, 0, 0, 2, "A" );
+   exit(0); return(0);
+}
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_fprintf.html">HPL_fprintf</A>.
+
+</BODY>
+</HTML>

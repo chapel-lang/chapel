@@ -1,0 +1,98 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_dlaswp05T HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_dlaswp05T</B> copy rows of U into A.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_dlaswp05T(</CODE>
+<CODE>const int</CODE>
+<CODE>M</CODE>,
+<CODE>const int</CODE>
+<CODE>N</CODE>,
+<CODE>double *</CODE>
+<CODE>A</CODE>,
+<CODE>const int</CODE>
+<CODE>LDA</CODE>,
+<CODE>const double *</CODE>
+<CODE>U</CODE>,
+<CODE>const int</CODE>
+<CODE>LDU</CODE>,
+<CODE>const int *</CODE>
+<CODE>LINDXA</CODE>,
+<CODE>const int *</CODE>
+<CODE>LINDXAU</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_dlaswp05T</B>
+copies columns of  U of global offset LINDXAU into rows
+of A at positions indicated by LINDXA.
+
+<H1>Arguments</H1>
+<PRE>
+M       (local input)                 const int
+        On entry,  M  specifies the number of columns of U that shouldbe copied into A. M must be at least zero.
+</PRE>
+<PRE>
+N       (local input)                 const int
+        On entry, N specifies the length of the columns of U that will
+        be copied into rows of A. N must be at least zero.
+</PRE>
+<PRE>
+A       (local output)                double *
+        On entry, A points to an array of dimension (LDA,N). On exit,
+        the  rows of this array specified by  LINDXA  are replaced by
+        columns of U indicated by LINDXAU.
+</PRE>
+<PRE>
+LDA     (local input)                 const int
+        On entry, LDA specifies the leading dimension of the array A.
+        LDA must be at least MAX(1,M).
+</PRE>
+<PRE>
+U       (local input/output)          const double *
+        On entry,  U  points  to an array of dimension (LDU,*).  This
+        array contains the columns that are to be copied into rows of
+        A.
+</PRE>
+<PRE>
+LDU     (local input)                 const int
+        On entry, LDU specifies the leading dimension of the array U.
+        LDU must be at least MAX(1,N).
+</PRE>
+<PRE>
+LINDXA  (local input)                 const int *
+        On entry, LINDXA is an array of dimension M that contains the
+        local row indexes of A that should be copied from U.
+</PRE>
+<PRE>
+LINDXAU (local input)                 const int *
+        On entry, LINDXAU  is an array of dimension  M that  contains
+        the local column indexes of U that should be copied in A.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_dlaswp00N.html">HPL_dlaswp00N</A>,
+<A HREF="HPL_dlaswp10N.html">HPL_dlaswp10N</A>,
+<A HREF="HPL_dlaswp01N.html">HPL_dlaswp01N</A>,
+<A HREF="HPL_dlaswp01T.html">HPL_dlaswp01T</A>,
+<A HREF="HPL_dlaswp02N.html">HPL_dlaswp02N</A>,
+<A HREF="HPL_dlaswp03N.html">HPL_dlaswp03N</A>,
+<A HREF="HPL_dlaswp03T.html">HPL_dlaswp03T</A>,
+<A HREF="HPL_dlaswp04N.html">HPL_dlaswp04N</A>,
+<A HREF="HPL_dlaswp04T.html">HPL_dlaswp04T</A>,
+<A HREF="HPL_dlaswp05N.html">HPL_dlaswp05N</A>,
+<A HREF="HPL_dlaswp05T.html">HPL_dlaswp05T</A>,
+<A HREF="HPL_dlaswp06N.html">HPL_dlaswp06N</A>,
+<A HREF="HPL_dlaswp06T.html">HPL_dlaswp06T</A>.
+
+</BODY>
+</HTML>

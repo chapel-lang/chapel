@@ -1,0 +1,200 @@
+<HTML>
+<HEAD>
+<TITLE>HPL Scalability Analysis</TITLE>
+</HEAD>
+
+<BODY 
+BGCOLOR     = "WHITE"
+BACKGROUND  = "WHITE"
+TEXT        = "#000000"
+VLINK       = "#000099"
+ALINK       = "#947153"
+LINK        = "#0000ff">
+
+<H2>HPL Scalability Analysis</H2>
+
+The <A HREF = "scalability.html#model">machine model</A> used for the
+analysis is first described.  This crude model is then used  to first
+estimate  the  parallel running time  of  the various phases  of  the 
+algorithm namely
+<UL>
+<LI><A HREF="scalability.html#pfact">panel factorization and broadcast</A>,
+<LI><A HREF="scalability.html#updat">trailing submatrix update</A>, 
+<LI><A HREF="scalability.html#backs">backward substitution</A>. 
+</UL>
+Finally <A HREF="scalability.html#total">the  parallel efficiency</A>
+of the entire algorithm is estimated according to this machine model.
+We show that for a given set of parameters HPL is <STRONG>scalable</STRONG>
+not  only  with respect to the amount of computation,  but  also with
+respect to the communication volume.<BR><BR>
+<HR NOSHADE>
+
+<H3><A NAME = "model">The Machine Model</A></H3>
+
+Distributed-memory computers consist of processors that are connected
+using  a message passing interconnection network.  Each processor has
+its own memory called the local memory,  which  is accessible only to
+that processor.  As the time to access a remote memory is longer than
+the time to access a local one,  such computers are often referred to
+as Non-Uniform Memory Access (NUMA) machines.<BR><BR>
+
+The interconnection network  of our machine model is static,  meaning
+that   it   consists  of  point-to-point  communication  links  among
+processors.  This  type  of  network  is also referred to as a direct
+network as opposed to dynamic networks.  The  latter  are constructed 
+from switches and communication links.  These links  are  dynamically
+connected  to one another by the switching elements to establish,  at
+run time, the paths between processors memories.<BR><BR>
+ 
+The  interconnection  network  of the two-dimensional  machine  model
+considered here is a static,  fully  connected physical topology.  It
+is also assumed  that  processors  can be treated  equally  in  terms
+of  local performance  and  that  the  communication rate between two
+processors depends on the processors considered.<BR><BR>
+
+Our model assumes  that  a processor can send or receive data on only
+one of its communication ports at a time  (assuming  it has more than
+one). In the literature,  this  assumption is also referred to as the
+one-port communication model.<BR><BR>
+ 
+The time spent to communicate  a message between two given processors
+is called the communication time Tc.   In  our machine model,  Tc  is
+approximated  by  a  linear  function  of  the  number  L  of  double
+precision (64-bits) items communicated.  Tc is the sum of the time to
+prepare the message for transmission (alpha) and the time  (beta * L)
+taken  by the message of length  L  to traverse  the network  to  its 
+destination, i.e.,<BR><BR>
+<CENTER>
+Tc = alpha + beta L.<BR><BR>
+</CENTER>
+
+Finally,   the   model  assumes  that  the  communication  links  are
+bi-directional,  that is,  the time  for two processors  to send each 
+other a message of length L is also Tc.  A processor  can send and/or
+receive  a message on only one of  its communication links at a time.
+In particular, a processor can send a message while receiving another
+message from the processor it is sending to at the same time.<BR><BR>
+ 
+Since this document is only concerned with regular local dense linear
+algebra  operations,  the time taken to perform  one  floating  point 
+operation  is  assumed  to  be  summarized by  three constants  gam1, 
+gam2 and gam3. These quantitites are flop rates approximations of the
+vector-vector,  matrix-vector  and matrix-matrix operations for  each
+processor.  This  very  crude approximation summarizes all  the steps
+performed  by a processor  to achieve such a computation.  Obviously,
+such a model neglects all the phenomena  occurring  in  the processor
+components,  such as cache misses, pipeline startups, memory load  or
+store, floating point arithmetic and so on,  that  may  influence the
+value  of  these  constants  as  a function  of the  problem size for
+example.<BR><BR>
+ 
+Similarly,  the model  does  not make any assumption on the amount of
+physical memory per node.  It  is  assumed that if a process has been
+spawn  on  a processor,  one  has  ensured  that  enough  memory  was 
+available  on that processor. In other words, swapping will not occur
+during the modeled computation.<BR><BR>
+ 
+<STRONG>
+This  machine  model  is  a very crude approximation that is designed
+specifically  to  illustrate  the cost of the dominant factors of our
+particular case.<BR><BR>
+</STRONG>
+<HR NOSHADE>
+
+<H3><A NAME="pfact">Panel Factorization and Broadcast</A></H3>
+
+Let  consider  an  M-by-N  panel distributed over a P-process column.
+Because  of the recursive formulation of the panel factorization,  it
+is  reasonable to consider  that  the floating point operations  will
+be performed at matrix-matrix multiply "speed".  For  every column in
+the panel a binary-exchange is performed on 2*N data items. When this
+panel is broadcast,  what  matters  is the time that the next process
+column  will  spend  in this  communication operation.  Assuming  one
+chooses the <A HREF="algorithm.html#bcast">increasing-ring (modified)
+variant</A>,  only  one  message needs to be taken into account.  The
+execution  time  of the panel factorization and broadcast can thus be
+approximated by:<BR><BR>
+<CENTER>
+Tpfact( M, N ) = (M/P - N/3) N^2 gam3 + N log(P)( alpha + beta 2 N ) +
+alpha + beta M N / P.<BR><BR>
+</CENTER>
+<HR NOSHADE>
+
+<H3><A NAME="updat">Trailing Submatrix Update</A></H3>
+
+Let  consider  the  update  phase  of an  N-by-N  trailing  submatrix
+distributed on a P-by-Q process grid.  From  a computational point of
+view one has to (triangular) solve N right-hand-sides  and  perform a 
+local rank-NB update of this trailing submatrix. Assuming one chooses
+the <A HREF="algorithm.html#update">long variant</A>,  the  execution
+time of the update operation can be approximated by:<BR><BR>
+<CENTER>
+Tupdate( N, NB ) = gam3 ( N NB^2 / Q + 2 N^2 NB / ( P Q ) ) +
+alpha ( log( P ) + P - 1 ) + 3 beta N NB / Q.<BR><BR>
+</CENTER>
+The constant "3" in front of the "beta" term is obtained  by counting
+one for the (logarithmic) spread phase and two for the rolling phase;
+In the case of bi-directional links  this constant 3 should therefore
+be only a 2.<BR><BR>
+<HR NOSHADE>
+
+<H3><A NAME="backs">Backward Substitution</A></H3>
+
+The number of floating point operations performed during the backward
+substitution in given by  N^2 / (P*Q).  Because of the lookahead, the
+communication cost  can be approximated at each step  by two messages
+of length NB, i.e.,  the time  to  communicate  the NB-piece  of  the 
+solution vector from one diagonal block of the matrix to another.  It
+follows that the execution time of the backward substitution  can  be
+approximated by:<BR><BR>
+<CENTER>
+Tbacks( N, NB ) = gam2 N^2  / (P Q) + N ( alpha / NB + 2 beta ).<BR><BR>
+</CENTER>
+<HR NOSHADE>
+
+<H3><A NAME="total">Putting it All Together</A></H3>
+
+The total execution time of the algorithm described above is given by<BR><BR>
+<CENTER>
+Sum(k=0,N,NB)[Tpfact( N-k, NB ) + Tupdate( N-k-NB, NB )] +
+Tbacks( N, NB ).<BR><BR>
+</CENTER>
+That is, by only considering only the dominant term in alpha, beta and
+gam3:<BR><BR>
+<CENTER>
+Thpl = 2 gam3 N^3  / ( 3 P Q ) + beta N^2 (3 P + Q) / ( 2 P Q ) +
+alpha N ((NB + 1) log(P) + P) / NB.<BR><BR>
+</CENTER>
+The serial execution time is given by Tser = 2 gam3 N^3  / 3. If we
+define the parallel efficiency  E  as the ratio  Tser / ( P Q Thpl ), we
+obtain:<BR><BR>
+<CENTER>
+E = 1 / ( 1 + 3 beta (3 P + Q) / ( 4 gam3 N ) +
+3 alpha P Q ((NB + 1) log(P) + P) / (2 N^2 NB gam3) ).<BR><BR>
+</CENTER>
+This  last equality  shows  that when the memory usage per  processor
+N^2 / (P Q)  is maintained  constant, the parallel efficiency  slowly
+decreases  only  because of the alpha term.  The communication volume
+(the beta term) however remains constant.  Due to these results,  HPL
+is said to be <STRONG>scalable</STRONG> not only with respect  to the
+amount of computation,  but also  with  respect  to the communication
+volume.<BR><BR>
+
+<HR NOSHADE>
+<CENTER>
+<A HREF = "index.html">            [Home]</A>
+<A HREF = "copyright.html">        [Copyright and Licensing Terms]</A>
+<A HREF = "algorithm.html">        [Algorithm]</A>
+<A HREF = "scalability.html">      [Scalability]</A>
+<A HREF = "results.html">          [Performance Results]</A>
+<A HREF = "documentation.html">    [Documentation]</A>
+<A HREF = "software.html">         [Software]</A>
+<A HREF = "faqs.html">             [FAQs]</A>
+<A HREF = "tuning.html">           [Tuning]</A>
+<A HREF = "errata.html">           [Errata-Bugs]</A>
+<A HREF = "references.html">       [References]</A>
+<A HREF = "links.html">            [Related Links]</A><BR>
+</CENTER>
+<HR NOSHADE>
+</BODY>
+</HTML>

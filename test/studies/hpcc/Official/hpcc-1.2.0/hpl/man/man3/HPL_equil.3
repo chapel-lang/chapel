@@ -1,0 +1,91 @@
+.TH HPL_equil 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_equil \- Equilibrate U and forward the column panel L.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_equil(\fR
+\fB\&HPL_T_panel *\fR
+\fI\&PBCST\fR,
+\fB\&int *\fR
+\fI\&IFLAG\fR,
+\fB\&HPL_T_panel *\fR
+\fI\&PANEL\fR,
+\fB\&const enum HPL_TRANS\fR
+\fI\&TRANS\fR,
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&double *\fR
+\fI\&U\fR,
+\fB\&const int\fR
+\fI\&LDU\fR,
+\fB\&int *\fR
+\fI\&IPLEN\fR,
+\fB\&const int *\fR
+\fI\&IPMAP\fR,
+\fB\&const int *\fR
+\fI\&IPMAPM1\fR,
+\fB\&int *\fR
+\fI\&IWORK\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_equil\fR
+equilibrates  the  local  pieces  of U, so that on exit to
+this function, pieces of U contained in every process row are of the
+same size. This phase makes the rolling phase optimal.  In addition,
+this  function probes  for  the  column panel L and forwards it when
+possible.
+.SH ARGUMENTS
+.TP 8
+PBCST   (local input/output)    HPL_T_panel *
+On entry,  PBCST  points to the data structure containing the
+panel (to be broadcast) information.
+.TP 8
+IFLAG   (local input/output)    int *
+On entry, IFLAG  indicates  whether or not  the broadcast has
+already been completed.  If not,  probing will occur, and the
+outcome will be contained in IFLAG on exit.
+.TP 8
+PANEL   (local input/output)    HPL_T_panel *
+On entry,  PANEL  points to the data structure containing the
+panel (to be equilibrated) information.
+.TP 8
+TRANS   (global input)          const enum HPL_TRANS
+On entry, TRANS specifies whether  U  is stored in transposed
+or non-transposed form.
+.TP 8
+N       (local input)           const int
+On entry, N  specifies the number of rows or columns of  U. N
+must be at least 0.
+.TP 8
+U       (local input/output)    double *
+On entry,  U  is an array of dimension (LDU,*) containing the
+local pieces of U in each process row.
+.TP 8
+LDU     (local input)           const int
+On entry, LDU specifies the local leading dimension of U. LDU
+should be at least MAX(1,IPLEN[nprow]) when  U  is stored  in
+non-transposed form, and MAX(1,N) otherwise.
+.TP 8
+IPLEN   (global input)          int *
+On entry, IPLEN is an array of dimension NPROW+1.  This array
+is such that IPLEN[i+1] - IPLEN[i] is the number of rows of U
+in process IPMAP[i].
+.TP 8
+IPMAP   (global input)          const int *
+On entry, IPMAP is an array of dimension  NPROW.  This  array
+contains  the  logarithmic mapping of the processes. In other
+words, IPMAP[myrow]  is the absolute coordinate of the sorted
+process.
+.TP 8
+IPMAPM1 (global input)          const int *
+On entry, IPMAPM1  is an array of dimension NPROW. This array
+contains  the inverse of the logarithmic mapping contained in
+IPMAP: For i in [0.. NPROCS) IPMAPM1[IPMAP[i]] = i.
+.TP 8
+IWORK   (workspace)             int *
+On entry, IWORK is a workarray of dimension NPROW+1.
+.SH SEE ALSO
+.BR HPL_pdlaswp01N \ (3),
+.BR HPL_pdlaswp01T \ (3).

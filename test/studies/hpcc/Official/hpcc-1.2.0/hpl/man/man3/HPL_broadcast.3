@@ -1,0 +1,49 @@
+.TH HPL_broadcast 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_broadcast \- Broadcast operation.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&int\fR
+\fB\&HPL_broadcast(\fR
+\fB\&void *\fR
+\fI\&BUFFER\fR,
+\fB\&const int\fR
+\fI\&COUNT\fR,
+\fB\&const HPL_T_TYPE\fR
+\fI\&DTYPE\fR,
+\fB\&const int\fR
+\fI\&ROOT\fR,
+\fB\&MPI_Comm\fR
+\fI\&COMM\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_broadcast\fR
+broadcasts  a message from the process with rank ROOT to
+all processes in the group.
+.SH ARGUMENTS
+.TP 8
+BUFFER  (local input/output)    void *
+On entry,  BUFFER  points to  the  buffer to be broadcast. On
+exit, this array contains the broadcast data and is identical
+on all processes in the group.
+.TP 8
+COUNT   (global input)          const int
+On entry,  COUNT  indicates the number of entries in  BUFFER.
+COUNT must be at least zero.
+.TP 8
+DTYPE   (global input)          const HPL_T_TYPE
+On entry,  DTYPE  specifies the type of the buffers operands.
+.TP 8
+ROOT    (global input)          const int
+On entry, ROOT is the coordinate of the source process.
+.TP 8
+COMM    (global/local input)    MPI_Comm
+The MPI communicator identifying the process collection.
+.SH SEE ALSO
+.BR HPL_reduce \ (3),
+.BR HPL_all_reduce \ (3),
+.BR HPL_barrier \ (3),
+.BR HPL_min \ (3),
+.BR HPL_max \ (3),
+.BR HPL_sum \ (3).

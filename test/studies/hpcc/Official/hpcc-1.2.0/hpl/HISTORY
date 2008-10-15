@@ -1,0 +1,23 @@
+==============================================================
+ High Performance Computing Linpack Benchmark (HPL)
+ HPL 1.0a - January 20, 2004
+==============================================================
+
+ History
+
+ - 09/09/00 Public release of Version 1.0
+ - 09/27/00 A couple of mistakes in the  VSIPL  port have been
+ corrected.  The tar file as well as the web site were updated
+ on September 27th, 2000.  Note  that  these problems were not
+ affecting the BLAS version of the software in anyway.
+
+ - 01/01/04 Version 1.0a
+ The  MPI  process grid  numbering  scheme  is now an run-time
+ option.
+ The inlined assembly  timer  routine that caused the compila-
+ tion to fail when using  gcc  version 3.3  and above has been
+ removed from the package.
+ Various building problems on the T3E have been fixed;  Thanks
+ to Edward Anderson.
+
+==============================================================

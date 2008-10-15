@@ -1,0 +1,59 @@
+.TH HPL_indxl2g 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_indxl2g \- Map a index-process pair into a global index.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&int\fR
+\fB\&HPL_indxl2g(\fR
+\fB\&const int\fR
+\fI\&IL\fR,
+\fB\&const int\fR
+\fI\&INB\fR,
+\fB\&const int\fR
+\fI\&NB\fR,
+\fB\&const int\fR
+\fI\&PROC\fR,
+\fB\&const int\fR
+\fI\&SRCPROC\fR,
+\fB\&const int\fR
+\fI\&NPROCS\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_indxl2g\fR
+computes the global index of a matrix  entry  pointed to
+by the local index IL of the process indicated by PROC.
+.SH ARGUMENTS
+.TP 8
+IL      (input)                 const int
+On entry, IL specifies the local  index of the matrix  entry.
+IL must be at least zero.
+.TP 8
+INB     (input)                 const int
+On entry,  INB  specifies  the size of the first block of the
+global matrix. INB must be at least one.
+.TP 8
+NB      (input)                 const int
+On entry,  NB specifies the blocking factor used to partition
+and distribute the matrix A. NB must be larger than one.
+.TP 8
+PROC    (input)                 const int
+On entry, PROC  specifies the coordinate of the process whose
+local array row or column is to be determined. PROC  must  be
+at least zero and strictly less than NPROCS.
+.TP 8
+SRCPROC (input)                 const int
+On entry,  SRCPROC  specifies  the coordinate of the  process
+that possesses the first row or column of the matrix. SRCPROC
+must be at least zero and strictly less than NPROCS.
+.TP 8
+NPROCS  (input)                 const int
+On entry,  NPROCS  specifies the total number of process rows
+or columns over which the matrix is distributed.  NPROCS must
+be at least one.
+.SH SEE ALSO
+.BR HPL_indxg2l \ (3),
+.BR HPL_indxg2lp \ (3),
+.BR HPL_indxg2p \ (3),
+.BR HPL_numroc \ (3),
+.BR HPL_numrocI \ (3).

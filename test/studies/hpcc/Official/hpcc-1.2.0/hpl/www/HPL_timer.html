@@ -1,0 +1,49 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_timer HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_timer</B> Timer facility.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_timer(</CODE>
+<CODE>const int</CODE>
+<CODE>I</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_timer</B>
+provides a  "stopwatch"  functionality  cpu/wall  timer  in
+seconds.  Up to  64  separate timers can be functioning at once.  The
+first call starts the timer,  and the second stops it.  This  routine
+can be disenabled  by calling  HPL_timer_disable(),  so that calls to
+the timer are ignored.  This feature can be used to make sure certain
+sections of code do not affect timings,  even  if  they call routines
+which have HPL_timer calls in them. HPL_timer_enable() will re-enable
+the  timer  functionality.  One  can retrieve  the current value of a
+timer by calling
+ 
+t0 = HPL_timer_inquire( HPL_WALL_TIME | HPL_CPU_TIME, I )
+ 
+where  I  is the timer index in  [0..64).  To  initialize  the  timer
+functionality, one must have called HPL_timer_boot()  prior to any of
+the functions mentioned above.
+
+<H1>Arguments</H1>
+<PRE>
+I       (global input)                const int
+        On entry, I specifies the timer to stop/start.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_timer_cputime.html">HPL_timer_cputime</A>,
+<A HREF="HPL_timer_walltime.html">HPL_timer_walltime</A>.
+
+</BODY>
+</HTML>

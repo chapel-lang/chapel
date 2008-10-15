@@ -1,0 +1,28 @@
+.TH HPL_copyL 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_copyL \- Copy the current panel into a contiguous workspace.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_copyL(\fR
+\fB\&HPL_T_panel *\fR
+\fI\&PANEL\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_copyL\fR
+copies  the  panel of columns, the L1 replicated submatrix,
+the pivot array  and  the info scalar into a contiguous workspace for
+later broadcast.
+ 
+The copy of this panel  into  a contiguous buffer  can be enforced by
+specifying -DHPL_COPY_L in the architecture specific Makefile.
+.SH ARGUMENTS
+.TP 8
+PANEL   (input/output)          HPL_T_panel *
+On entry,  PANEL  points to the  current panel data structure
+being broadcast.
+.SH SEE ALSO
+.BR HPL_binit \ (3),
+.BR HPL_bcast \ (3),
+.BR HPL_bwait \ (3).

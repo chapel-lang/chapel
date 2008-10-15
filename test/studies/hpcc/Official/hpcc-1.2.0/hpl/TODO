@@ -1,0 +1,12 @@
+==============================================================
+ High Performance Computing Linpack Benchmark (HPL)
+ HPL 1.0a - January 20, 2004
+==============================================================
+
+ Done list in version 1.0a, January 1st, 2004
+ - Added Row- or Column-major process mapping in data file
+ - Fixed compilation error for gcc 3.3 in walltime.
+ - Fixed building problems on the T3E;
+   Thanks to Edward Anderson.
+
+==============================================================

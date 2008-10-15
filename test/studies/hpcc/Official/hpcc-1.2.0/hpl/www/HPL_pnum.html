@@ -1,0 +1,54 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_pnum HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_pnum</B> Rank determination.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>int</CODE>
+<CODE>HPL_pnum(</CODE>
+<CODE>const HPL_T_grid *</CODE>
+<CODE>GRID</CODE>,
+<CODE>const int</CODE>
+<CODE>MYROW</CODE>,
+<CODE>const int</CODE>
+<CODE>MYCOL</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_pnum</B>
+determines  the  rank  of a  process  as a function  of  its
+coordinates in the grid.
+
+<H1>Arguments</H1>
+<PRE>
+GRID    (local input)                 const HPL_T_grid *
+        On entry,  GRID  points  to the data structure containing the
+        process grid information.
+</PRE>
+<PRE>
+MYROW   (local input)                 const int
+        On entry,  MYROW  specifies the row coordinate of the process
+        whose rank is to be determined. MYROW must be greater than or
+        equal to zero and less than NPROW.
+</PRE>
+<PRE>
+MYCOL   (local input)                 const int
+        On entry,  MYCOL  specifies  the  column  coordinate  of  the
+        process whose rank is to be determined. MYCOL must be greater
+        than or equal to zero and less than NPCOL.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_grid_init.html">HPL_grid_init</A>,
+<A HREF="HPL_grid_info.html">HPL_grid_info</A>,
+<A HREF="HPL_grid_exit.html">HPL_grid_exit</A>.
+
+</BODY>
+</HTML>

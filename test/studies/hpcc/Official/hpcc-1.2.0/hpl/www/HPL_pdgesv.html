@@ -1,0 +1,56 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_pdgesv HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_pdgesv</B> Solve A x = b.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>void</CODE>
+<CODE>HPL_pdgesv(</CODE>
+<CODE>HPL_T_grid *</CODE>
+<CODE>GRID</CODE>,
+<CODE>HPL_T_palg *</CODE>
+<CODE>ALGO</CODE>,
+<CODE>HPL_T_pmat *</CODE>
+<CODE>A</CODE>
+<CODE>);</CODE>
+
+<H1>Description</H1>
+<B>HPL_pdgesv</B>
+factors a N+1-by-N matrix using LU factorization with row
+partial pivoting.  The main algorithm  is the "right looking" variant
+with  or  without look-ahead.  The  lower  triangular  factor is left
+unpivoted and the pivots are not returned. The right hand side is the
+N+1 column of the coefficient matrix.
+
+<H1>Arguments</H1>
+<PRE>
+GRID    (local input)                 HPL_T_grid *
+        On entry,  GRID  points  to the data structure containing the
+        process grid information.
+</PRE>
+<PRE>
+ALGO    (global input)                HPL_T_palg *
+        On entry,  ALGO  points to  the data structure containing the
+        algorithmic parameters.
+</PRE>
+<PRE>
+A       (local input/output)          HPL_T_pmat *
+        On entry, A points to the data structure containing the local
+        array information.
+</PRE>
+
+<H1>See Also</H1>
+<A HREF="HPL_pdgesv0.html">HPL_pdgesv0</A>,
+<A HREF="HPL_pdgesvK1.html">HPL_pdgesvK1</A>,
+<A HREF="HPL_pdgesvK2.html">HPL_pdgesvK2</A>,
+<A HREF="HPL_pdtrsv.html">HPL_pdtrsv</A>.
+
+</BODY>
+</HTML>

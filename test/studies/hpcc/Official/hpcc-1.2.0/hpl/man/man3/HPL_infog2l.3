@@ -1,0 +1,126 @@
+.TH HPL_infog2l 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_infog2l \- global to local index translation.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_infog2l(\fR
+\fB\&int\fR
+\fI\&I\fR,
+\fB\&int\fR
+\fI\&J\fR,
+\fB\&const int\fR
+\fI\&IMB\fR,
+\fB\&const int\fR
+\fI\&MB\fR,
+\fB\&const int\fR
+\fI\&INB\fR,
+\fB\&const int\fR
+\fI\&NB\fR,
+\fB\&const int\fR
+\fI\&RSRC\fR,
+\fB\&const int\fR
+\fI\&CSRC\fR,
+\fB\&const int\fR
+\fI\&MYROW\fR,
+\fB\&const int\fR
+\fI\&MYCOL\fR,
+\fB\&const int\fR
+\fI\&NPROW\fR,
+\fB\&const int\fR
+\fI\&NPCOL\fR,
+\fB\&int *\fR
+\fI\&II\fR,
+\fB\&int *\fR
+\fI\&JJ\fR,
+\fB\&int *\fR
+\fI\&PROW\fR,
+\fB\&int *\fR
+\fI\&PCOL\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_infog2l\fR
+computes the starting local index II, JJ corresponding to
+the submatrix starting globally at the entry pointed by  I,  J.  This
+routine returns the coordinates in the grid of the process owning the
+matrix entry of global indexes I, J, namely PROW and PCOL.
+.SH ARGUMENTS
+.TP 8
+I       (global input)          int
+On entry,  I  specifies  the  global  row index of the matrix
+entry. I must be at least zero.
+.TP 8
+J       (global input)          int
+On entry,  J  specifies the global column index of the matrix
+entry. J must be at least zero.
+.TP 8
+IMB     (global input)          const int
+On entry,  IMB  specifies  the size of the first row block of
+the global matrix. IMB must be at least one.
+.TP 8
+MB      (global input)          const int
+On entry,  MB specifies the blocking factor used to partition
+and  distribute the rows of the matrix A.  MB  must be larger
+than one.
+.TP 8
+INB     (global input)          const int
+On entry, INB specifies the size of the first column block of
+the global matrix. INB must be at least one.
+.TP 8
+NB      (global input)          const int
+On entry,  NB specifies the blocking factor used to partition
+and distribute the columns of the matrix A. NB must be larger
+than one.
+.TP 8
+RSRC    (global input)          const int
+On entry,  RSRC  specifies  the row coordinate of the process
+that possesses the row  I.  RSRC  must  be at least zero  and
+strictly less than NPROW.
+.TP 8
+CSRC    (global input)          const int
+On entry, CSRC specifies the column coordinate of the process
+that possesses the column J. CSRC  must be at least zero  and
+strictly less than NPCOL.
+.TP 8
+MYROW   (local input)           const int
+On entry, MYROW  specifies my  row process  coordinate in the
+grid. MYROW is greater than or equal  to zero  and  less than
+NPROW.
+.TP 8
+MYCOL   (local input)           const int
+On entry, MYCOL specifies my column process coordinate in the
+grid. MYCOL is greater than or equal  to zero  and  less than
+NPCOL.
+.TP 8
+NPROW   (global input)          const int
+On entry,  NPROW  specifies the number of process rows in the
+grid. NPROW is at least one.
+.TP 8
+NPCOL   (global input)          const int
+On entry,  NPCOL  specifies  the number of process columns in
+the grid. NPCOL is at least one.
+.TP 8
+II      (local output)          int *
+On exit, II  specifies the  local  starting  row index of the
+submatrix. On exit, II is at least 0.
+.TP 8
+JJ      (local output)          int *
+On exit, JJ  specifies the local starting column index of the
+submatrix. On exit, JJ is at least 0.
+.TP 8
+PROW    (global output)         int *
+On exit, PROW is the row coordinate of the process owning the
+entry specified by the global index I.  PROW is at least zero
+and less than NPROW.
+.TP 8
+PCOL    (global output)         int *
+On exit, PCOL  is the column coordinate of the process owning
+the entry specified by the global index J.  PCOL  is at least
+zero and less than NPCOL.
+.SH SEE ALSO
+.BR HPL_indxg2l \ (3),
+.BR HPL_indxg2p \ (3),
+.BR HPL_indxl2g \ (3),
+.BR HPL_numroc \ (3),
+.BR HPL_numrocI \ (3).

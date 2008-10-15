@@ -1,0 +1,304 @@
+<HTML>
+<HEAD>
+<TITLE>HPL Documentation</TITLE>
+</HEAD>
+
+<BODY 
+BGCOLOR     = "WHITE"
+BACKGROUND  = "WHITE"
+TEXT        = "#000000"
+VLINK       = "#000099"
+ALINK       = "#947153"
+LINK        = "#0000ff">
+
+<H2>HPL Documentation</H2>
+
+The  HPL software distribution comes  with a set of text files explaining
+how to install,  run and tune the software. These files reside in the top
+level  directory  and their names are in upper case.  To  a large extent,
+this page reproduces them. In addition,  man- and HTML-pages are provided
+for every routine in the package. To access the man pages,  one  must add
+hpl/man  to its  MANPATH  environment variable.  The  HTML  pages  can be 
+accessed on this site,  or by pointing your browser to your local hpl/www
+directory. Finally,  the source code has been heavily documented. Despite
+all the other documentation efforts, the  source  code remains  the  most
+trustworthy  and truthful piece of information about what goes on in HPL.
+<BR><BR>
+
+<H3>HPL Functions HTML Pages</H3>
+
+<STRONG>Computational Kernels Wrappers</STRONG> When calling the Fortran
+77 BLAS interface, these C functions allow to confine the C  to  Fortran
+77 interface  issues  to  a small  subset of routines.
+
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0><TR>
+<TD><UL>
+<LI><A HREF = "HPL_idamax.html">         HPL_idamax</A>
+<LI><A HREF = "HPL_dscal.html">          HPL_dscal</A>
+<LI><A HREF = "HPL_dswap.html">          HPL_dswap</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_dcopy.html">          HPL_dcopy</A>
+<LI><A HREF = "HPL_daxpy.html">          HPL_daxpy</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_dgemv.html">          HPL_dgemv</A>
+<LI><A HREF = "HPL_dger.html">           HPL_dger</A>
+<LI><A HREF = "HPL_dtrsv.html">          HPL_dtrsv</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_dgemm.html">          HPL_dgemm</A>
+<LI><A HREF = "HPL_dtrsm.html">          HPL_dtrsm</A>
+</UL></TD>
+</TR></TABLE>
+<HR NOSHADE>
+
+<STRONG>Local Auxiliaries</STRONG> Basic functionality, local swap functions.
+
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0><TR>
+<TD><UL>
+<LI><A HREF = "HPL_fprintf.html">        HPL_fprintf</A>
+<LI><A HREF = "HPL_warn.html">           HPL_warn</A>
+<LI><A HREF = "HPL_abort.html">          HPL_abort</A>
+<LI><A HREF = "HPL_dlaprnt.html">        HPL_dlaprnt</A>
+<LI><A HREF = "HPL_dlamch.html">         HPL_dlamch</A>
+<LI><A HREF = "HPL_dlacpy.html">         HPL_dlacpy</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_dlange.html">         HPL_dlange</A>
+<LI><A HREF = "HPL_dlatcpy.html">        HPL_dlatcpy</A>
+<LI><A HREF = "HPL_dlaswp00N.html">      HPL_dlaswp00N</A>
+<LI><A HREF = "HPL_dlaswp01N.html">      HPL_dlaswp01N</A>
+<LI><A HREF = "HPL_dlaswp02N.html">      HPL_dlaswp02N</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_dlaswp03N.html">      HPL_dlaswp03N</A>
+<LI><A HREF = "HPL_dlaswp04N.html">      HPL_dlaswp04N</A>
+<LI><A HREF = "HPL_dlaswp05N.html">      HPL_dlaswp05N</A>
+<LI><A HREF = "HPL_dlaswp06N.html">      HPL_dlaswp06N</A>
+<LI><A HREF = "HPL_dlaswp10N.html">      HPL_dlaswp10N</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_dlaswp01T.html">      HPL_dlaswp01T</A>
+<LI><A HREF = "HPL_dlaswp03T.html">      HPL_dlaswp03T</A>
+<LI><A HREF = "HPL_dlaswp04T.html">      HPL_dlaswp04T</A>
+<LI><A HREF = "HPL_dlaswp05T.html">      HPL_dlaswp05T</A>
+<LI><A HREF = "HPL_dlaswp06T.html">      HPL_dlaswp06T</A>
+</UL></TD>
+</TR></TABLE>
+<HR NOSHADE>
+
+<STRONG>Parallel Auxiliaries</STRONG> Index computations, parallel basic
+functionality.
+
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0><TR>
+<TD><UL>
+<LI><A HREF = "HPL_indxg2l.html">        HPL_indxg2l</A>
+<LI><A HREF = "HPL_indxg2lp.html">       HPL_indxg2lp</A>
+<LI><A HREF = "HPL_indxg2p.html">        HPL_indxg2p</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_indxl2g.html">        HPL_indxl2g</A>
+<LI><A HREF = "HPL_infog2l.html">        HPL_infog2l</A>
+<LI><A HREF = "HPL_numroc.html">         HPL_numroc</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_numrocI.html">        HPL_numrocI</A>
+<LI><A HREF = "HPL_pwarn.html">          HPL_pwarn</A>
+<LI><A HREF = "HPL_pabort.html">         HPL_pabort</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_pdlaprnt.html">       HPL_pdlaprnt</A>
+<LI><A HREF = "HPL_pdlamch.html">        HPL_pdlamch</A>
+<LI><A HREF = "HPL_pdlange.html">        HPL_pdlange</A>
+</UL></TD>
+</TR></TABLE>
+<HR NOSHADE>
+
+<STRONG>Grid Management</STRONG>  Most of these routines have a direct
+MPI equivalent.  On new systems,  when the entire MPI functionality is
+not yet readily available, these functions are particularly convenient
+since they rely on a mininal  subset of the MPI standard.
+
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0><TR>
+<TD><UL>
+<LI><A HREF = "HPL_grid_exit.html">      HPL_grid_exit</A>
+<LI><A HREF = "HPL_grid_info.html">      HPL_grid_info</A>
+<LI><A HREF = "HPL_grid_init.html">      HPL_grid_init</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_all_reduce.html">     HPL_all_reduce</A>
+<LI><A HREF = "HPL_barrier.html">        HPL_barrier</A>
+<LI><A HREF = "HPL_broadcast.html">      HPL_broadcast</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_reduce.html">         HPL_reduce</A>
+<LI><A HREF = "HPL_max.html">            HPL_max</A>
+<LI><A HREF = "HPL_min.html">            HPL_min</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_pnum.html">           HPL_pnum</A>
+<LI><A HREF = "HPL_sum.html">            HPL_sum</A>
+</UL></TD></TR></TABLE>
+<HR NOSHADE>
+
+<STRONG>Panel Management</STRONG>
+
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0><TR>
+<TD><UL>
+<LI><A HREF = "HPL_pdpanel_disp.html">   HPL_pdpanel_disp</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_pdpanel_free.html">   HPL_pdpanel_free</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_pdpanel_init.html">   HPL_pdpanel_init</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_pdpanel_new.html">    HPL_pdpanel_new</A>
+</UL></TD></TR></TABLE>
+<HR NOSHADE>
+
+<STRONG>Panel Factorization</STRONG> Recursive (matrix-multiply based) and
+(matrix-vector based) panel factorization.
+
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0><TR>
+<TD><UL>
+<LI><A HREF = "HPL_dlocmax.html">        HPL_dlocmax</A>
+<LI><A HREF = "HPL_dlocswpN.html">       HPL_dlocswpN</A>
+<LI><A HREF = "HPL_dlocswpT.html">       HPL_dlocswpT</A>
+<LI><A HREF = "HPL_pdmxswp.html">        HPL_pdmxswp</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_pdpancrN.html">       HPL_pdpancrN</A>
+<LI><A HREF = "HPL_pdpancrT.html">       HPL_pdpancrT</A>
+<LI><A HREF = "HPL_pdrpancrN.html">      HPL_pdrpancrN</A>
+<LI><A HREF = "HPL_pdrpancrT.html">      HPL_pdrpancrT</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_pdpanllN.html">       HPL_pdpanllN</A>
+<LI><A HREF = "HPL_pdpanllT.html">       HPL_pdpanllT</A>
+<LI><A HREF = "HPL_pdrpanllN.html">      HPL_pdrpanllN</A>
+<LI><A HREF = "HPL_pdrpanllT.html">      HPL_pdrpanllT</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_pdpanrlN.html">       HPL_pdpanrlN</A>
+<LI><A HREF = "HPL_pdpanrlT.html">       HPL_pdpanrlT</A>
+<LI><A HREF = "HPL_pdrpanrlN.html">      HPL_pdrpanrlN</A>
+<LI><A HREF = "HPL_pdrpanrlT.html">      HPL_pdrpanrlT</A>
+<LI><A HREF = "HPL_pdfact.html">         HPL_pdfact</A>
+</UL></TD></TR></TABLE>
+<HR NOSHADE>
+
+<STRONG>Panel Broadcast</STRONG>
+
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0><TR>
+<TD><UL>
+<LI><A HREF = "HPL_bcast.html">          HPL_bcast</A>
+<LI><A HREF = "HPL_binit.html">          HPL_binit</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_bwait.html">          HPL_bwait</A>
+<LI><A HREF = "HPL_copyL.html">          HPL_copyL</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_packL.html">          HPL_packL</A>
+<LI><A HREF = "HPL_recv.html">           HPL_recv</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_sdrv.html">           HPL_sdrv</A>
+<LI><A HREF = "HPL_send.html">           HPL_send</A>
+</UL></TD></TR></TABLE>
+<HR NOSHADE>
+
+<STRONG>Update</STRONG>
+
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0><TR>
+<TD><UL>
+<LI><A HREF = "HPL_perm.html">           HPL_perm</A>
+<LI><A HREF = "HPL_pipid.html">          HPL_pipid</A>
+<LI><A HREF = "HPL_plindx0.html">        HPL_plindx0</A>
+<LI><A HREF = "HPL_plindx1.html">        HPL_plindx1</A>
+<LI><A HREF = "HPL_plindx10.html">       HPL_plindx10</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_equil.html">          HPL_equil</A>
+<LI><A HREF = "HPL_pdlaswp00N.html">     HPL_pdlaswp00N</A>
+<LI><A HREF = "HPL_pdlaswp01N.html">     HPL_pdlaswp01N</A>
+<LI><A HREF = "HPL_pdlaswp00T.html">     HPL_pdlaswp00T</A>
+<LI><A HREF = "HPL_pdlaswp01T.html">     HPL_pdlaswp01T</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_logsort.html">        HPL_logsort</A>
+<LI><A HREF = "HPL_rollN.html">          HPL_rollN</A>
+<LI><A HREF = "HPL_rollT.html">          HPL_rollT</A>
+<LI><A HREF = "HPL_spreadN.html">        HPL_spreadN</A>
+<LI><A HREF = "HPL_spreadT.html">        HPL_spreadT</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_pdupdateNN.html">     HPL_pdupdateNN</A>
+<LI><A HREF = "HPL_pdupdateNT.html">     HPL_pdupdateNT</A>
+<LI><A HREF = "HPL_pdupdateTN.html">     HPL_pdupdateTN</A>
+<LI><A HREF = "HPL_pdupdateTT.html">     HPL_pdupdateTT</A>
+</UL></TD></TR></TABLE>
+<HR NOSHADE>
+
+<STRONG>Main Factorization / Look-ahead</STRONG>
+
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0><TR>
+<TD><UL>
+<LI><A HREF = "HPL_pdgesv.html">         HPL_pdgesv</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_pdgesv0.html">        HPL_pdgesv0</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_pdgesvK1.html">       HPL_pdgesvK1</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_pdgesvK2.html">       HPL_pdgesvK2</A>
+</UL></TD></TR></TABLE>
+<HR NOSHADE>
+
+<STRONG>Backward Substitution</STRONG>
+
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0><TR>
+<TD><UL>
+<LI><A HREF = "HPL_pdtrsv.html">         HPL_pdtrsv</A>
+</UL></TD></TR></TABLE>
+<HR NOSHADE>
+
+<STRONG>Matrix generation</STRONG> A C version of the ScaLAPACK random
+matrix generator with less functionality though.
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0><TR>
+<TD><UL>
+<LI><A HREF = "HPL_setran.html">         HPL_setran</A>
+<LI><A HREF = "HPL_rand.html">           HPL_rand</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_jumpit.html">         HPL_jumpit</A>
+<LI><A HREF = "HPL_xjumpm.html">         HPL_xjumpm</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_ladd.html">           HPL_ladd</A>
+<LI><A HREF = "HPL_lmul.html">           HPL_lmul</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_dmatgen.html">        HPL_dmatgen</A>
+<LI><A HREF = "HPL_pdmatgen.html">       HPL_pdmatgen</A>
+</UL></TD></TR></TABLE>
+<HR NOSHADE>
+
+<STRONG>Timers</STRONG> Sequential and parallel timing utilities.
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0><TR>
+<TD><UL>
+<LI><A HREF = "HPL_timer.html">          HPL_timer</A>
+<LI><A HREF = "HPL_ptimer.html">         HPL_ptimer</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_timer_cputime.html">  HPL_timer_cputime</A>
+<LI><A HREF = "HPL_timer_walltime.html"> HPL_timer_walltime</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_ptimer_cputime.html"> HPL_ptimer_cputime</A>
+<LI><A HREF = "HPL_ptimer_walltime.html">HPL_ptimer_walltime</A>
+</UL></TD></TR></TABLE>
+<HR NOSHADE>
+
+<STRONG>Main Testing / Timing Driver</STRONG>
+
+<TABLE HSPACE=0 VSPACE=0 WIDTH=100% BORDER=0 CELLSPACING=1 CELLPADDING=0><TR>
+<TD><UL>
+<LI><A HREF = "HPL_pddriver.html">       HPL_pddriver</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_pdinfo.html">         HPL_pdinfo</A>
+</UL></TD><TD><UL>
+<LI><A HREF = "HPL_pdtest.html">         HPL_pdtest</A>
+</UL></TD></TR></TABLE>
+
+<HR NOSHADE>
+<CENTER>
+<A HREF = "index.html">            [Home]</A>
+<A HREF = "copyright.html">        [Copyright and Licensing Terms]</A>
+<A HREF = "algorithm.html">        [Algorithm]</A>
+<A HREF = "scalability.html">      [Scalability]</A>
+<A HREF = "results.html">          [Performance Results]</A>
+<A HREF = "documentation.html">    [Documentation]</A>
+<A HREF = "software.html">         [Software]</A>
+<A HREF = "faqs.html">             [FAQs]</A>
+<A HREF = "tuning.html">           [Tuning]</A>
+<A HREF = "errata.html">           [Errata-Bugs]</A>
+<A HREF = "references.html">       [References]</A>
+<A HREF = "links.html">            [Related Links]</A><BR>
+</CENTER>
+<HR NOSHADE>
+</BODY>
+</HTML>

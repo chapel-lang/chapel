@@ -1,0 +1,121 @@
+.TH HPL_dtrsv 3 "January 20, 2004" "HPL 1.0a" "HPL Library Functions"
+.SH NAME
+HPL_dtrsv \- x := A^{-1} x.
+.SH SYNOPSIS
+\fB\&#include "hpl.h"\fR
+ 
+\fB\&void\fR
+\fB\&HPL_dtrsv(\fR
+\fB\&const enum HPL_ORDER\fR
+\fI\&ORDER\fR,
+\fB\&const enum HPL_UPLO\fR
+\fI\&UPLO\fR,
+\fB\&const enum HPL_TRANS\fR
+\fI\&TRANS\fR,
+\fB\&const enum HPL_DIAG\fR
+\fI\&DIAG\fR,
+\fB\&const int\fR
+\fI\&N\fR,
+\fB\&const double *\fR
+\fI\&A\fR,
+\fB\&const int\fR
+\fI\&LDA\fR,
+\fB\&double *\fR
+\fI\&X\fR,
+\fB\&const int\fR
+\fI\&INCX\fR
+\fB\&);\fR
+.SH DESCRIPTION
+\fB\&HPL_dtrsv\fR
+solves one of the systems of equations
+ 
+    A * x = b,   or   A^T * x = b,
+ 
+where b and x are n-element vectors and  A  is an n by n non-unit, or
+unit, upper or lower triangular matrix.
+ 
+No test for  singularity  or  near-singularity  is included  in  this
+routine. Such tests must be performed before calling this routine.
+.SH ARGUMENTS
+.TP 8
+ORDER   (local input)           const enum HPL_ORDER
+On entry, ORDER  specifies the storage format of the operands
+as follows:                                                  
+   ORDER = HplRowMajor,                                      
+   ORDER = HplColumnMajor.                                   
+.TP 8
+UPLO    (local input)           const enum HPL_UPLO
+On  entry,   UPLO   specifies  whether  the  upper  or  lower
+triangular  part  of the array  A  is to be referenced.  When
+UPLO==HplUpper, only  the upper triangular part of A is to be
+referenced, otherwise only the lower triangular part of A is 
+to be referenced. 
+.TP 8
+TRANS   (local input)           const enum HPL_TRANS
+On entry,  TRANS  specifies  the equations  to  be  solved as
+follows:
+   TRANS==HplNoTrans     A   * x = b,
+   TRANS==HplTrans       A^T * x = b.
+.TP 8
+DIAG    (local input)           const enum HPL_DIAG
+On entry,  DIAG  specifies  whether  A  is unit triangular or
+not. When DIAG==HplUnit,  A is assumed to be unit triangular,
+and otherwise, A is not assumed to be unit triangular.
+.TP 8
+N       (local input)           const int
+On entry, N specifies the order of the matrix A. N must be at
+least zero.
+.TP 8
+A       (local input)           const double *
+On entry,  A  points  to an array of size equal to or greater
+than LDA * n. Before entry with  UPLO==HplUpper,  the leading
+n by n upper triangular  part of the array A must contain the
+upper triangular  matrix and the  strictly  lower  triangular
+part of A is not referenced.  When  UPLO==HplLower  on entry,
+the  leading n by n lower triangular part of the array A must
+contain the lower triangular matrix  and  the  strictly upper
+triangular part of A is not referenced.
+ 
+Note  that  when  DIAG==HplUnit,  the diagonal elements of  A
+not referenced  either,  but are assumed to be unity.
+.TP 8
+LDA     (local input)           const int
+On entry,  LDA  specifies  the  leading  dimension  of  A  as
+declared  in  the  calling  (sub) program.  LDA  must  be  at
+least MAX(1,n).
+.TP 8
+X       (local input/output)    double *
+On entry,  X  is an incremented array of dimension  at  least
+( 1 + ( n - 1 ) * abs( INCX ) )  that  contains the vector x.
+Before entry,  the  incremented array  X  must contain  the n
+element right-hand side vector b. On exit,  X  is overwritten
+with the solution vector x.
+.TP 8
+INCX    (local input)           const int
+On entry, INCX specifies the increment for the elements of X.
+INCX must not be zero.
+.SH EXAMPLE
+\fI\&#include "hpl.h"\fR
+ 
+int main(int argc, char *argv[])
+.br
+{
+.br
+   double a[2*2], x[2];
+.br
+   a[0] = 4.0; a[1] = 1.0; a[2] = 2.0; a[3] = 5.0;
+.br
+   x[0] = 2.0; x[1] = 1.0;
+.br
+   HPL_dtrsv( HplColumnMajor, HplLower, HplNoTrans,
+.br
+              HplNoUnit, a, 2, x, 1 );
+.br
+   printf("x=[%f,%f]\en", x[0], x[1]);
+.br
+   exit(0); return(0);
+.br
+}
+.SH SEE ALSO
+.BR HPL_dger \ (3),
+.BR HPL_dgemv \ (3).

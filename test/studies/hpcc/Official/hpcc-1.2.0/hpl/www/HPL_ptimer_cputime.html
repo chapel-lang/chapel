@@ -1,0 +1,35 @@
+<HTML>
+<HEAD>
+<TITLE>HPL_ptimer_cputime HPL 1.0a Library Functions January 20, 2004</TITLE> 
+</HEAD>
+
+<BODY BGCOLOR="WHITE" TEXT = "#000000" LINK = "#0000ff" VLINK = "#000099"
+      ALINK = "#ffff00">
+
+<H1>Name</H1>
+<B>HPL_ptimer_cputime</B> Return the CPU time.
+
+<H1>Synopsis</H1>
+<CODE>#include "hpl.h"</CODE><BR><BR>
+<CODE>double</CODE>
+<CODE>HPL_ptimer_cputime();</CODE>
+
+<H1>Description</H1>
+<B>HPL_ptimer_cputime</B>
+returns the cpu time. If HPL_USE_CLOCK is defined,
+the  clock() function is used to return an approximation of processor
+time used by the program.  The value returned is the CPU time used so
+far as a clock_t;  to get the number of seconds used,  the result  is
+divided by  CLOCKS_PER_SEC.  This function is part of the  ANSI/ISO C
+standard library.  If  HPL_USE_TIMES is defined, the times() function
+is used instead.  This  function  returns  the current process times.
+times() returns the number of clock ticks that have elapsed since the
+system has been up.  Otherwise and by default,  the  standard library
+function getrusage() is used.
+
+<H1>See Also</H1>
+<A HREF="HPL_ptimer_walltime.html">HPL_ptimer_walltime</A>,
+<A HREF="HPL_ptimer.html">HPL_ptimer</A>.
+
+</BODY>
+</HTML>
