@@ -82,7 +82,7 @@ intermittent seg faults
 [Error matching program output for multilocale/bradc/locales/queryLocaleLocation] (e.g., 10/08/08)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar] (e.g., 10/09/08)
 [Error matching program output for studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 10/10/08)
-
+[Error matching program output for multilocale/deitz/linked/test_linked3] (e.g., 10/14/08)
 
 
 memory allocator doesn't handle realloc or --mem flags
@@ -330,6 +330,7 @@ pthread_cond_init failed errors -- possibly memory related? (e.g., 08/28/08)
 [Error matching program output for performance/compiler/bradc/cg-sparse-timecomp]
 [Error matching program output for studies/sudoku/dinan/sudoku]
 [Error matching program output for users/jglewis/badGetModule]
+[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
 
 print occurs in 0 seconds!?  Timers not working?
 ------------------------------------------------
