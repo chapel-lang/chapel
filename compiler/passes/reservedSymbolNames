@@ -60,6 +60,7 @@
   sleep
   stderr
   stdout
+  wait
   write
   y1 // this is ridiculous...
   log2
