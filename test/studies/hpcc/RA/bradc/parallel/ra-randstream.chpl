@@ -5,20 +5,13 @@ module RARandomStream {
   const bitDom = [0..#randWidth],
         m2: [bitDom] randType = computeM2Vals(randWidth);
 
-  //
-  // TODO: Remove when no longer necessary
-  //
+  // TODO: Why is this still needed?
   def RAStream() {
-    halt("sequential iterator called");
-    yield getNthRandom(0:int(64));
-  }
-
-  //
-  // TODO: Remove when no longer necessary
-  //
-  def RAStream(param tag: iterator) where tag == iterator.leader {
-    halt("leader called");
-    yield [0..10:uint(64)];
+    var val = getNthRandom(0);
+    while (1) {
+      getNextRandom(val);
+      yield val;
+    }
   }
 
   def RAStream(param tag: iterator, follower) where tag == iterator.follower {
@@ -30,7 +23,7 @@ module RARandomStream {
   }
 
 
-  def getNthRandom(in n) {
+  def getNthRandom(in n: uint(64)) {
     param period = 0x7fffffffffffffff/7;
 
     n %= period;
@@ -64,4 +57,3 @@ module RARandomStream {
     }
   }
 }
-
