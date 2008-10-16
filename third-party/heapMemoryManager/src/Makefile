@@ -1,5 +1,5 @@
 CHAPEL_ROOT = ../../..
-
+CHPL_MAKE_HOST_TARGET = --target
 include $(CHAPEL_ROOT)/make/Makefile.base
 
 HMM_BUILD_DIR = $(MEM_HMM_DIR)/build/$(CHPL_MAKE_TARGET_PLATFORM)-$(CHPL_MAKE_COMPILER)
