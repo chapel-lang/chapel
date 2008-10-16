@@ -30,7 +30,11 @@ MPI_CC="$CC" ; export MPI_CC     # MPI-enabled C compiler
 #MPI_CFLAGS='' ; export MPI_CFLAGS  # flags for MPI_CC
 MPI_LIBS='' ; export MPI_LIBS      # libs for linking with MPI_CC
 MPIRUN_CMD='aprun -N 1 -n %N %C' ; export MPIRUN_CMD  # launch command for MPI jobs
-NPTL_PTHREAD_ARGS='--enable-pthreads --with-pthreads-lib=/usr/lib64/nptl --with-pthreads-include=/usr/include/nptl --with-pthreads-patch=other/contrib/crayxt-nptl-pthread-patch'
+if test -f /usr/include/nptl/pthread.h -a -d /usr/lib64/nptl ; then # PE <= 2.0 use a patched version of NPTL
+  NPTL_PTHREAD_ARGS='--enable-pthreads --with-pthreads-lib=/usr/lib64/nptl --with-pthreads-include=/usr/include/nptl --with-pthreads-patch=other/contrib/crayxt-nptl-pthread-patch'
+else
+  NPTL_PTHREAD_ARGS='--enable-pthreads'
+fi
 EXTRA_CONFIGURE_ARGS="--enable-mpi --disable-udp --disable-amudp --disable-aligned-segments $NPTL_PTHREAD_ARGS"
 
 # 2. Fill in the canonical target machine type. You can usually obtain this
@@ -56,7 +60,7 @@ CROSS_PAGESIZE='4096' ; export CROSS_PAGESIZE
 
 # Does the system stack grow up?
 
-CROSS_STACK_GROWS_UP='1' ; export CROSS_STACK_GROWS_UP
+CROSS_STACK_GROWS_UP='0' ; export CROSS_STACK_GROWS_UP
 
 # Is char a signed type?
 
