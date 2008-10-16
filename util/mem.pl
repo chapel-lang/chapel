@@ -1,0 +1,41 @@
+#!/usr/bin/perl
+use File::Basename;
+
+$utildirname = dirname($0);
+
+$preset_mem=$ENV{'CHPL_MEM'};
+
+if ($#ARGV != -1) {
+  if ($ARGV[0] eq "--host") {
+    $preset_mem = "default";
+  }
+}
+
+if ($preset_mem eq "") {
+  $comm = `$utildirname/comm.pl`;
+  chomp($comm);
+  if ($comm eq "gasnet") {
+    $segment = `$utildirname/commSegment.pl`;
+    chomp($segment);
+
+    if ($segment eq "none" ||
+        $segment eq "everything") {
+      $mem = "default";
+    } elsif ($segment eq "fast" ||
+             $segment eq "large") {
+      $mem = "hmm";
+    } else {
+      # Unexpected segment type
+      $mem = "default";
+    }
+  } elsif ($comm eq "armci") {
+    $mem = "hmm";
+  } else {
+    $mem = "default";
+  }
+} else {
+  $mem = $preset_mem;
+}
+
+print "$mem\n";
+exit(0);

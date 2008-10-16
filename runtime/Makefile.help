@@ -5,6 +5,11 @@
 RUNTIME_ROOT = .
 RUNTIME_SUBDIR = .
 
+ifeq ($(MAKE_LAUNCHER), 0)
+CHPL_MAKE_HOST_TARGET = --target
+else
+CHPL_MAKE_HOST_TARGET = --host
+endif
 
 #
 # include standard header for runtime
@@ -17,6 +22,8 @@ printstuff:
 	@echo AR = $(AR)
 	@echo GOOPY = $(GOOPY)
 	@echo $(CHAPEL_ROOT)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
+	@echo CHPL_MAKE_MEM = $(CHPL_MAKE_MEM)
+	@echo CHPL_MAKE_HOST_TARGET = $(CHPL_MAKE_HOST_TARGET)
 
 
 
@@ -29,12 +36,14 @@ SUBDIRS = \
 	src \
 	comm-$(CHPL_MAKE_COMM) \
 	threads-$(CHPL_MAKE_THREADS) \
+	mem-$(CHPL_MAKE_MEM) \
 
 else
 SUBDIRS = \
 	src \
 	comm-$(CHPL_MAKE_COMM) \
 	launch-$(CHPL_MAKE_LAUNCHER) \
+	mem-$(CHPL_MAKE_MEM) 
 
 endif
 
@@ -46,6 +55,7 @@ include src/Makefile.include
 include threads-$(CHPL_MAKE_THREADS)/Makefile.include
 include comm-$(CHPL_MAKE_COMM)/Makefile.include
 include launch-$(CHPL_MAKE_LAUNCHER)/Makefile.include
+include mem-$(CHPL_MAKE_MEM)/Makefile.include
 
 SVN_SRCS = 
 
@@ -53,11 +63,13 @@ RUNTIME_OBJS = \
 	$(COMMON_OBJS) \
 	$(THREADS_OBJS) \
 	$(COMM_OBJS) \
+	$(MEM_COMMON_OBJS) \
 
 LAUNCH_LIB_OBJS = \
 	$(COMMON_LAUNCHER_OBJS) \
 	$(COMM_LAUNCHER_OBJS) \
 	$(LAUNCHER_OBJS) \
+	$(MEM_LAUNCHER_OBJS) \
 
 
 RUNTIME_DIR = ../$(LIB_RT_DIR)

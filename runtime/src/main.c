@@ -17,7 +17,6 @@
 int main(int argc, char* argv[]) {
   // Was this version of main invoked by the user, or by the comm layer?
   int userInvocation = _chpl_comm_user_invocation(argc, argv);
-  _chpl_comm_set_malloc_type();
 
   if (userInvocation) {
     //
@@ -59,6 +58,7 @@ int main(int argc, char* argv[]) {
     // layer parse the arguments first, then the Chapel runtime
     //
     _chpl_comm_init(&argc, &argv, 0);
+    _chpl_comm_init_shared_heap();
   }
 
   _chpl_comm_barrier("about to leave comm init code");

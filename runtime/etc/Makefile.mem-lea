@@ -1,0 +1,2 @@
+GEN_CFLAGS += -I$(MEM_LEA_INCLUDE_DIR)
+LIBS += -L$(MEM_LEA_LIB_DIR) -ldlmalloc

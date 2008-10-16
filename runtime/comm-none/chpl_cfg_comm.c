@@ -66,11 +66,13 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
   }
 }
 
+void _chpl_comm_init_shared_heap(void) {
+  initHeap(NULL, 0);
+}
+
 void _chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single locale\n");
 }
-
-void _chpl_comm_set_malloc_type(void) { whichMalloc = 1; }
 
 void _chpl_comm_alloc_registry(int numGlobals) { 
   _global_vars_registry = _global_vars_registry_static;

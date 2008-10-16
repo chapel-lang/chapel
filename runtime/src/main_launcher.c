@@ -16,7 +16,6 @@ int main(int argc, char* argv[]) {
   // the number of locales.
   //
   int32_t execNumLocales;
-  whichMalloc = 1;
   parseArgs(argc, argv);
   //  initMemTable();
   CreateConfigVarTable();

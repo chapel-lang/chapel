@@ -2,7 +2,6 @@ COMMON_LAUNCHER_SRCS = \
 	arg.c \
 	chplcast.c \
 	chplexit.c \
-	chplmem.c \
 	chpltypes.c \
 	config.c \
 	error.c \

@@ -191,13 +191,14 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
 
   ARMCI_SAFE(ARMCI_Malloc(globalPtrs, sz));
 
-  chpl_meminfo.head = (char *)globalPtrs[me];
-  chpl_meminfo.current = (char *)globalPtrs[me];
-  chpl_meminfo.tail = ((char *)globalPtrs[me]) + _MAX_ARMCI_MEMSZ;
-
   ghndl = ARMCI_Gpc_register(gpc_call_handler);
 }
 
+void _chpl_comm_init_shared_heap(void) {
+  void* heapStart = numGlobalsOnHeap*sizeof(void*) + (char*)globalPtrs[_localeID];
+  size_t heapSize = _MAX_ARMCI_MEMSZ - numGlobalsOnHeap*sizeof(void*);
+  initHeap(heapStart, heapSize);
+}
 
 //
 // a final comm layer stub before barrier synching and calling into
@@ -213,7 +214,7 @@ void _chpl_comm_rollcall(void) {
 }
 
 void _chpl_comm_alloc_registry(int numGlobals) {
-  _global_vars_registry = chpl_malloc(numGlobals, sizeof(void *), "allocate global vars registry", 0, 0);
+  _global_vars_registry = globalPtrs[_localeID];
 }
 
 void _chpl_comm_broadcast_global_vars(int numGlobals) {
@@ -223,10 +224,6 @@ void _chpl_comm_broadcast_global_vars(int numGlobals) {
     for (i = 0; i < numGlobals; i++)
       _chpl_comm_get(_global_vars_registry[i], 0, &((void **)globalPtrs[0])[i], sizeof(void *));
   }
-}
-
-void _chpl_comm_set_malloc_type(void) {
-  whichMalloc = 2; // _chpl_malloc() will be allocated from the remotely-accessible memory pool
 }
 
 typedef struct __broadcast_private_helper {

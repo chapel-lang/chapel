@@ -30,6 +30,9 @@ ifndef CHPL_MAKE_LAUNCHER
 include $(CHAPEL_ROOT)/make/Makefile.launcher
 endif
 
+ifndef CHPL_MAKE_MEM
+include $(CHAPEL_ROOT)/make/Makefile.mem
+endif
 
 #
 # default CFLAGS, based on other settings
@@ -92,6 +95,13 @@ MPICH1_DIR = $(THIRD_PARTY_DIR)/mpich1
 MPICH1_INSTALL_DIR = $(MPICH1_DIR)/install/$(CHPL_MAKE_TARGET_PLATFORM)
 MPICH1_LIB_DIR = $(MPICH1_INSTALL_DIR)/lib
 
+MEM_HMM_DIR = $(THIRD_PARTY_DIR)/heapMemoryManager
+MEM_HMM_LIB_DIR = $(MEM_HMM_DIR)/lib/$(CHPL_MAKE_TARGET_PLATFORM)-$(CHPL_MAKE_COMPILER)
+MEM_HMM_INCLUDE_DIR = $(MEM_HMM_DIR)/include
+
+MEM_LEA_DIR = $(THIRD_PARTY_DIR)/dlmalloc
+MEM_LEA_LIB_DIR = $(MEM_LEA_DIR)/lib/$(CHPL_MAKE_TARGET_PLATFORM)-$(CHPL_MAKE_COMPILER)
+MEM_LEA_INCLUDE_DIR = $(MEM_LEA_DIR)/include
 
 #
 # how to make a platform-specific subdirectory
@@ -109,6 +119,7 @@ printplatform:
 	@echo "CHPL_MAKE_COMM            = $(CHPL_MAKE_COMM)"
 	@echo "CHPL_MAKE_COMM_SUBSTRATE  = $(CHPL_MAKE_COMM_SUBSTRATE)"    
 	@echo "CHPL_MAKE_LAUNCHER        = $(CHPL_MAKE_LAUNCHER)"
+	@echo "CHPL_MAKE_MEM             = $(CHPL_MAKE_MEM)"
 
 #
 # OBJ_SUBDIR_MADE creates either a directory or a symbolic link,

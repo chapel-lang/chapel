@@ -1,0 +1,6 @@
+#
+# CHPL_MAKE_MEM
+#
+#
+#
+CHPL_MAKE_MEM = $(shell $(CHAPEL_ROOT)/util/mem.pl $(CHPL_MAKE_HOST_TARGET))

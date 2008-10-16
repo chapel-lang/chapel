@@ -13,9 +13,9 @@ typedef struct {
   char* tail;
 } chpl_meminfo_t;
 
+
 extern chpl_meminfo_t chpl_meminfo;
-extern int broadcastingGlobalsStarted;
-extern int whichMalloc;
+extern int heapInitialized;
 
 extern chpl_mutex_t _memtrack_lock;
 extern chpl_mutex_t _memstat_lock;
@@ -28,6 +28,7 @@ void resetMemStat(void);
 void startTrackingMem(void);
 void printMemStat(int32_t lineno, _string filename);
 void printFinalMemStat(int32_t lineno, _string filename);
+void initHeap(void* start, size_t size);
 
 void setMemmax(int64_t value);
 void setMemstat(void);

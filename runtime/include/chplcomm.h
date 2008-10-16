@@ -13,6 +13,8 @@ extern int32_t _localeID;   // unique ID for each locale: 0, 1, 2, ...
 extern int32_t _numLocales; // number of locales
 
 extern void _heapAllocateGlobals(void);
+
+extern const int numGlobalsOnHeap;
 extern char** _global_vars_registry;
 extern char* _global_vars_registry_static[];
 
@@ -238,6 +240,8 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB);
 //
 void _chpl_comm_rollcall(void);
 
+void _chpl_comm_init_shared_heap(void);
+
 //
 // allocate _global_vars_registry or make it point to
 // _global_vars_registry_static depending on the communication layer
@@ -262,11 +266,6 @@ void _chpl_comm_broadcast_global_vars(int numGlobals);
 // Assumes global variables have the same addresses across locales.
 //
 void _chpl_comm_broadcast_private(void* addr, int size);
-
-//
-// Decide which function to use for chpl_malloc calls.
-//
-void _chpl_comm_set_malloc_type(void);
 
 //
 // barrier for synchronization between all processes; currently only

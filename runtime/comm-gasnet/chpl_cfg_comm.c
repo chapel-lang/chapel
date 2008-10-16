@@ -202,11 +202,6 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
                             0));
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
   GASNET_Safe(gasnet_getSegmentInfo(seginfo_table, 1024));
-
-  chpl_meminfo.head    = (char*)seginfo_table[_localeID].addr;
-  chpl_meminfo.current = (char*)seginfo_table[_localeID].addr;
-  chpl_meminfo.tail    = ((char*)seginfo_table[_localeID].addr) +
-                    seginfo_table[_localeID].size;
 #endif
   //
   // start polling thread
@@ -230,17 +225,19 @@ void _chpl_comm_rollcall(void) {
            _numLocales, utsinfo.nodename);
 }
 
-void _chpl_comm_set_malloc_type(void) {
+void _chpl_comm_init_shared_heap(void) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-  whichMalloc = 2;
+  void* heapStart = numGlobalsOnHeap*sizeof(void*) + (char*)seginfo_table[_localeID].addr;
+  size_t heapSize = seginfo_table[_localeID].size - numGlobalsOnHeap*sizeof(void*);
+  initHeap(heapStart, heapSize);
 #else
-  whichMalloc = 1;
+  initHeap(NULL, 0);
 #endif
 }
 
 void _chpl_comm_alloc_registry(int numGlobals) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-  _global_vars_registry = numGlobals == 0 ? NULL : chpl_malloc(numGlobals, sizeof(void*), "allocate global vars registry", 0, 0);
+  _global_vars_registry = numGlobals == 0 ? NULL : seginfo_table[_localeID].addr;
 #else
   _global_vars_registry = _global_vars_registry_static;
 #endif

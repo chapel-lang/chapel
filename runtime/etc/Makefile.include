@@ -5,6 +5,7 @@ LD = $(CC)
 
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
+include $(CHAPEL_ROOT)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
 
 CHAPEL_RT_INC_DIR = $(CHAPEL_ROOT)/runtime/include/threads-$(CHPL_MAKE_THREADS) -I$(CHAPEL_ROOT)/runtime/include/comm-$(CHPL_MAKE_COMM) -I$(CHAPEL_ROOT)/runtime/include/comp-$(CHPL_MAKE_COMPILER) -I$(CHAPEL_ROOT)/runtime/include/$(CHPL_MAKE_TARGET_PLATFORM) -I$(CHAPEL_ROOT)/runtime/include
 CHAPEL_RT_LIB_DIR = $(CHAPEL_ROOT)/$(LIB_RT_DIR)
