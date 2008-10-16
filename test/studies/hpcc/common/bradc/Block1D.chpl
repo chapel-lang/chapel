@@ -685,14 +685,20 @@ class Block1DArr: BaseArray {
         }
       }
     } else {
-      writeln("Warning: doing expensive these iteration");
       //
       // we don't own all the elements we're following
       //
       // TODO: could do something smarter to only bring the non-local
       // elements over.
+      def accessHelper(i) var {
+        local {
+          if myLocArr.locDom.myBlock.member(i) then
+            return myLocArr.this(i);
+        }
+        return this(i);
+      }
       for i in followThis {
-        yield this(i);
+        yield accessHelper(i);
       }
     }
 

@@ -23,14 +23,19 @@ config const printParams = true,
 
 def main() {
   printConfiguration();
+  var t1, t2, t3: Timer;
 
+  t1.start();
   const BlockDist = new Block1DDist(bbox=[1..m], targetLocales=Locales);
 
   const ProblemSpace: domain(1, int(64)) distributed BlockDist = [1..m];
 
   var A, B, C: [ProblemSpace] elemType;
+  t1.stop();
 
+  t2.start();
   initVectors(B, C);
+  t2.stop();
 
   var execTime: [1..numTrials] real;
 
@@ -47,12 +52,13 @@ def main() {
     execTime(trial) = getCurrentTime() - startTime;
   }
 
-  //  var t: Timer;
-  //  t.start();
+  t3.start();
   const validAnswer = verifyResults(A, B, C);
-  //  t.stop();
+  t3.stop();
   printResults(validAnswer, execTime);
-  //  writeln(t.elapsed());
+  //  writeln("declarations  = ", t1.elapsed());
+  //  writeln("initVectors   = ", t2.elapsed());
+  //  writeln("verifyResults = ", t3.elapsed());
 }
 
 
@@ -80,7 +86,7 @@ def initVectors(B, C) {
 def verifyResults(A, B, C) {
   if (printArrays) then writeln("A is: ", A, "\n");
 
-  const infNorm = max reduce [i in A.domain] abs(A(i) - (B(i) + alpha * C(i)));
+  const infNorm = max reduce [(a,b,c) in (A,B,C)] abs(a - (b + alpha * c));
 
   return (infNorm <= epsilon);
 }
