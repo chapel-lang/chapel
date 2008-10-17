@@ -1,0 +1,1 @@
+bug: coforall + on deadlocks if maxThreads is equal to numLocales
