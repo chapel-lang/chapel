@@ -74,43 +74,6 @@ times out occasionally (20x diff -- maybe memory leak related?)
 gasnet-fast regressions (other than the above)
 ==============================================
 
-transient "too many symbolic links" error in tool chain
--------------------------------------------------------
-[Error matching compiler output for npb/cg/bradc/cg-arithDomArr]
-[Error matching compiler output for npb/cg/bradc/cg-dense]
-[Error matching compiler output for npb/cg/bradc/cg-enumDomArr]
-[Error matching compiler output for npb/cg/bradc/cg-makea1-small-sparse-countInds]
-[Error matching compiler output for npb/cg/bradc/cg-makea1-small-sparse]
-[Error matching compiler output for npb/cg/bradc/cg-makea1-small]
-[Error matching compiler output for npb/cg/bradc/cg-makea1-sparse-sort]
-[Error matching compiler output for npb/cg/bradc/cg-makea1]
-[Error matching compiler output for npb/cg/bradc/cg-makea2-small-sparse]
-[Error matching compiler output for npb/cg/bradc/cg-makea2]
-[Error matching compiler output for npb/cg/bradc/cg-makea3]
-[Error matching compiler output for npb/cg/bradc/cg-printa]
-[Error matching compiler output for npb/cg/bradc/cg-sparse]
-[Error matching compiler output for npb/ft/ft-serial]
-[Error matching compiler output for npb/is/diten/is]
-[Error matching compiler output for npb/is/diten/is_mt]
-[Error matching compiler output for npb/is/diten/is_no_buckets]
-[Error matching compiler output for parallel/atomic/bradc/atomicSingleStmt]
-[Error matching compiler output for parallel/begin/deitz/test_begin2]
-[Error matching compiler output for parallel/begin/deitz/test_begin3]
-[Error matching compiler output for parallel/begin/deitz/test_begin4]
-[Error matching compiler output for parallel/begin/deitz/test_begin5]
-[Error matching compiler output for parallel/begin/deitz/test_begin6]
-[Error matching compiler output for parallel/begin/deitz/test_begin7]
-[Error matching compiler output for parallel/begin/deitz/test_begin8]
-[Error matching compiler output for parallel/begin/deitz/test_begin9]
-[Error matching compiler output for parallel/begin/deitz/test_begin]
-[Error matching compiler output for parallel/begin/deitz/test_begin_cobegin1]
-[Error matching compiler output for parallel/begin/deitz/test_begin_cobegin2]
-[Error matching compiler output for parallel/begin/deitz/test_begin_error_lineno]
-[Error matching compiler output for parallel/begin/deitz/test_begin_in_generic]
-[Error matching compiler output for parallel/begin/deitz/test_begin_sync]
-[Error matching compiler output for parallel/begin/deitz/test_coforall_sugar1]
-[Error matching compiler output for parallel/begin/deitz/test_coforall_sugar2]
-
 intermittent seg faults 
 ---------------------------------------
 [Error matching program output for multilocale/deitz/linked/test_linked2] (e.g., 10/05/08, 10/08/08)
