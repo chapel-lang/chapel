@@ -22,6 +22,12 @@ class locale {
     return chpl_id;
   }
 
+  def name {
+    var locName: string;
+    on this do locName = __primitive("chpl_localeName");
+    return locName;
+  }
+
   def writeThis(f: Writer) {
     f.write("LOCALE", id);
   }

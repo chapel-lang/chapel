@@ -561,6 +561,7 @@ initPrimitive() {
 
   prim_def("chpl_bytesPerLocale", returnInfoUInt64);
   prim_def("chpl_coresPerLocale", returnInfoInt32);
+  prim_def("chpl_localeName", returnInfoString);
   prim_def("chpl_maxThreads", returnInfoInt32);
   prim_def("chpl_maxThreadsLimit", returnInfoInt32);
 

@@ -101,7 +101,7 @@ chpl_begin (chpl_threadfp_t,   // function to fork
                                // thread executing chpl_begin)
             chpl_task_list_p);
 
-#else   // LAUNNCHER
+#else   // LAUNCHER
 
 #define chpl_mutex_lock(x)
 #define chpl_mutex_unlock(x)

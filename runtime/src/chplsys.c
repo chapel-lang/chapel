@@ -1,13 +1,16 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include <unistd.h>
 #if defined __APPLE__ || defined __MTA__
 #include <sys/sysctl.h>
 #endif
+#include <sys/utsname.h>
 #if defined __MTA__
 #include <machine/runtime.h>
 #endif
 #include "chplrt.h"
+#include "chplmem.h"
 #include "chplsys.h"
 #include "chplthreads.h"
 #include "chplcomm.h"
@@ -88,4 +91,21 @@ int32_t chpl_maxThreadsLimit(void) {
     return comm_max;
   else
     return comm_max < threads_max ? comm_max : threads_max;
+}
+
+
+_string chpl_localeName(void) {
+  static char* namespace = NULL;
+  static int namelen = 0;
+  struct utsname utsinfo;
+  int newnamelen;
+  uname(&utsinfo);
+  newnamelen = strlen(utsinfo.nodename)+1;
+  if (newnamelen > namelen) {
+    namelen = newnamelen;
+    namespace = chpl_realloc(namespace, newnamelen, sizeof(char), 
+                             "buffer for chpl_localeName", 0, NULL);
+  }
+  strcpy(namespace, utsinfo.nodename);
+  return namespace;
 }

@@ -1,10 +1,10 @@
 #include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <sys/utsname.h>
 #include "chplrt.h"
 #include "chplcomm.h"
 #include "chplmem.h"
+#include "chplsys.h"
 #include "chplthreads.h"
 #include "error.h"
 
@@ -219,10 +219,8 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
 }
 
 void _chpl_comm_rollcall(void) {
-  struct utsname utsinfo;
-  uname(&utsinfo);
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", _localeID, 
-           _numLocales, utsinfo.nodename);
+           _numLocales, chpl_localeName());
 }
 
 void _chpl_comm_init_shared_heap(void) {
