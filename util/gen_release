@@ -39,6 +39,7 @@ system("cd $tmpdir && svn export -q $svnroot");
        "util/commSubstrate.pl",
        "util/compiler.pl",
        "util/launcher.pl",
+       "util/mem.pl",
        "util/platform.pl",
        "util/setchplenv.bash",
        "util/setchplenv.csh",
