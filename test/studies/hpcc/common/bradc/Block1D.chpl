@@ -98,7 +98,9 @@ class Block1DDist : Distribution {
   // global domain construction to not do anything with whole...
   //
   def newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
-    return new Block1DDom(idxType=idxType, dist=this, stridable=stridable);
+    var dom = new Block1DDom(idxType=idxType, dist=this, stridable=stridable);
+    dom.setup();
+    return dom;
   }
 
 
@@ -269,13 +271,15 @@ class Block1DDom: BaseArithmeticDomain {
 
   //
   // DOWN: an array of local domain class descriptors -- set up in
-  // initialize() below
+  // setup() below
   //
   // TODO: would like this to be const and initialize in-place,
   // removing the initialize method; would want to be able to use
   // an on-clause at the expression list to make this work.
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
+  // SJD: note cannot do this anymore because constructor does not
+  // setup (for privatization reasons)
   //
   var locDoms: [dist.targetLocDom] LocBlock1DDom(idxType, stridable);
 
@@ -286,29 +290,6 @@ class Block1DDom: BaseArithmeticDomain {
   // a domain describing the complete domain
   //
   const whole: domain(1, idxType);
-
-
-  // CONSTRUCTORS:
-
-  //
-  // TODO: Would like to create the following constructor, but this
-  //       is problematic because the class' default constructor
-  //       sets dist to nil and then tries to derefernce it.  :P
-  //
-  /*
-  def Block1DDom(type idxType, dist: Block1DDist(idxType)) {
-    writeln("in my constructor");
-    this.dist = dist;
-    setupLocalDoms();
-  }
-  */
-  //
-  // so doing this instead:
-  //
-  def initialize() {
-    setupLocalDoms();
-  }
-
 
 
   // GLOBAL DOMAIN INTERFACE:
@@ -407,7 +388,9 @@ class Block1DDom: BaseArithmeticDomain {
   // how to allocate a new array over this domain
   //
   def buildArray(type elemType) {
-    return new Block1DArr(idxType, elemType, stridable, this);
+    var arr = new Block1DArr(idxType, elemType, stridable, this);
+    arr.setup();
+    return arr;
   }
 
   //
@@ -436,7 +419,7 @@ class Block1DDom: BaseArithmeticDomain {
     if x._value.idxType != idxType then
       compilerError("index type mismatch in domain assignment");
     whole = x;
-    setupLocalDoms();
+    setup();
   }
 
   def setIndices(x) {
@@ -448,7 +431,7 @@ class Block1DDom: BaseArithmeticDomain {
     // TODO: This seems weird:
     //
     whole = x(1);
-    setupLocalDoms();
+    setup();
   }
 
   def getIndices() {
@@ -462,7 +445,7 @@ class Block1DDom: BaseArithmeticDomain {
     return dist;
   }
 
-  def setupLocalDoms() {
+  def setup() {
     for localeIdx in dist.targetLocDom do
       on dist.targetLocs(localeIdx) do
         if (locDoms(localeIdx) == nil) then
@@ -606,13 +589,15 @@ class Block1DArr: BaseArray {
   // an on-clause at the expression list to make this work.
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
+  // SJD: note cannot do this anymore because constructor does not
+  // setup (for privatization reasons)
   //
   var locArr: [dom.dist.targetLocDom] LocBlock1DArr(idxType, eltType, stridable);
 
 
   // CONSTRUCTORS:
 
-  def initialize() {
+  def setup() {
     coforall localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
         locArr(localeIdx) = new LocBlock1DArr(idxType, eltType, stridable, dom.locDoms(localeIdx));
