@@ -266,19 +266,20 @@ HPCC_Init(HPCC_Params *params) {
   params->RunStarDGEMM = 0;
   params->RunSingleDGEMM = 0;
   params->RunPTRANS = 0;
-  params->RunStarStream = 0;
-  params->RunSingleStream = 0;
-  params->RunMPIRandomAccess = 0;
-  params->RunStarRandomAccess = 0;
-  params->RunSingleRandomAccess = 0;
+  params->RunStarStream = 1;
+  params->RunSingleStream = 1;
+  params->RunMPIRandomAccess = 1;
+  params->RunStarRandomAccess = 1;
+  params->RunSingleRandomAccess = 1;
   params->RunLatencyBandwidth = 0;
-  params->RunMPIFFT = 0;
+  params->RunMPIFFT = 1;
+  /*
   params->RunHPL = params->RunStarDGEMM = params->RunSingleDGEMM =
   params->RunPTRANS = params->RunStarStream = params->RunSingleStream =
   params->RunMPIRandomAccess = params->RunStarRandomAccess = params->RunSingleRandomAccess =
   params->RunMPIFFT = params->RunStarFFT = params->RunSingleFFT =
   params->RunLatencyBandwidth = 1;
-
+  */
   params->MPIGUPs = params->StarGUPs = params->SingleGUPs =
   params->StarDGEMMGflops = params->SingleDGEMMGflops = -1.0;
   params->StarStreamCopyGBs = params->StarStreamScaleGBs = params->StarStreamAddGBs =
