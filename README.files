@@ -14,6 +14,7 @@ contain.
   CHANGES           : a list of changes since the previous release
   CONTRIBUTORS      : a list of contributors to the Chapel project
   COPYRIGHT         : copyright information
+  GOALS             : the goals of this release
   LICENSE           : Chapel's license
   STATUS            : a list of unimplemented features and bugs
   Makefile          : top-level Makefile for building the compiler and runtime
