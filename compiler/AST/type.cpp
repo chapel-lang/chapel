@@ -494,6 +494,16 @@ void initPrimitiveTypes(void) {
     *gBoundsChecking->immediate = *gTrue->immediate;
   }
 
+  gPrivatization = new VarSymbol("_privatization", dtBool);
+  gPrivatization->addFlag(FLAG_PARAM);
+  rootModule->block->insertAtTail(new DefExpr(gPrivatization));
+  if (fNoPrivatization || fLocal) {
+    gPrivatization->immediate = new Immediate;
+    *gPrivatization->immediate = *gFalse->immediate;
+  } else {
+    gPrivatization->immediate = new Immediate;
+    *gPrivatization->immediate = *gTrue->immediate;
+  }
   
   INIT_PRIMITIVE_BOOL("bool(8)", 8);
   INIT_PRIMITIVE_BOOL("bool(16)", 16);

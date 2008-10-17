@@ -245,7 +245,6 @@ class LocBlock1DDist {
 // The global domain class
 //
 class Block1DDom: BaseArithmeticDomain {
-
   // GENERICS:
 
   //
@@ -457,6 +456,14 @@ class Block1DDom: BaseArithmeticDomain {
       [loc in dist.targetLocDom] writeln(loc, " owns ", locDoms(loc));
 
   }
+
+  def supportsPrivatization() param return true;
+  def privatize() {
+    var c = new Block1DDom(idxType=idxType, rank=rank, stridable=stridable, dist=dist);
+    c.locDoms = locDoms;
+    c.whole = whole;
+    return c;
+  }
 }
 
 
@@ -559,7 +566,6 @@ class LocBlock1DDom {
 // the global array class
 //
 class Block1DArr: BaseArray {
-
   // GENERICS:
 
   //
@@ -594,15 +600,18 @@ class Block1DArr: BaseArray {
   //
   var locArr: [dom.dist.targetLocDom] LocBlock1DArr(idxType, eltType, stridable);
 
-
-  // CONSTRUCTORS:
-
   def setup() {
     coforall localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
         locArr(localeIdx) = new LocBlock1DArr(idxType, eltType, stridable, dom.locDoms(localeIdx));
   }
 
+  def supportsPrivatization() param return true;
+  def privatize() {
+    var c = new Block1DArr(idxType, eltType, stridable, dom);
+    c.locArr = locArr;
+    return c;
+  }
 
   // GLOBAL ARRAY INTERFACE:
 

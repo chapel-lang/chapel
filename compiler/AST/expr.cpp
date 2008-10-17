@@ -976,6 +976,16 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
+        if (call->isPrimitive(PRIMITIVE_PRIVATE_GET_CLASS)) {
+          if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            fprintf(outfile, "_WIDE_CLASS_GET_PRIVATE_CLASS(");
+            get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(2)->codegen(outfile);
+            fprintf(outfile, ")");
+            break;
+          }
+        }
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           !get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -1883,6 +1893,19 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_RT_ERROR:
     case PRIMITIVE_RT_WARNING:
       codegenBasicPrimitive(outfile, this);
+      break;
+    case PRIMITIVE_PRIVATE_SET_CLASS:
+      fprintf(outfile, "chpl_setPrivateClass(");
+      get(1)->codegen(outfile);
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        fprintf(outfile, ".addr");
+      fprintf(outfile, ")");
+      break;
+    case PRIMITIVE_PRIVATE_NUM_CLASSES:
+      fprintf(outfile, "chpl_numPrivateClasses()");
+      break;
+    case PRIMITIVE_PRIVATE_GET_CLASS:
+      INT_FATAL(this, "handled in move");
       break;
     case PRIMITIVE_GET_ERRNO:
       fprintf(outfile, "get_errno()");

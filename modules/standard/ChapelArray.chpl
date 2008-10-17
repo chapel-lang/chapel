@@ -1,25 +1,65 @@
+var privatizeLock$: sync int;
+
+def _supportsPrivatization(value) param
+  return _privatization & value.supportsPrivatization();
+
+def _newArrayDomainSharedCode(param isArray: bool, value) {
+  if _supportsPrivatization(value) {
+    privatizeLock$.writeEF(true);
+    var n = __primitive("chpl_numPrivateClasses");
+    for loc in Locales {
+      if loc != here {
+        on loc {
+          var mine = value.privatize();
+          __primitive("chpl_setPrivateClass", mine);
+        }
+      } else {
+        __primitive("chpl_setPrivateClass", value);
+      }
+    }
+    privatizeLock$.readFE();
+    if isArray then
+      return new _array(n, value);
+    else
+      return new _domain(n, value);
+  } else {
+    if isArray then
+      return new _array(value, value);
+    else
+      return new _domain(value, value);
+  }
+}
+
+def _newArray(value) {
+  return _newArrayDomainSharedCode(true, value);
+}
+
+def _newDomain(value) {
+  return _newArrayDomainSharedCode(false, value);
+}
+
 //
 // Support for domain types
 //
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist, param rank: int, type idxType = int(32),
                        param stridable: bool = false) type
-  return new _domain(dist.newArithmeticDomain(rank, idxType, stridable));
+  return _newDomain(dist.newArithmeticDomain(rank, idxType, stridable));
 
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist, type idxType) type
  where !__primitive("isEnumType", idxType) && idxType != opaque && idxType != _OpaqueIndex
-  return new _domain(dist.newAssociativeDomain(idxType));
+  return _newDomain(dist.newAssociativeDomain(idxType));
 
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist, type idxType) type
  where __primitive("isEnumType", idxType)
-  return new _domain(dist.newEnumeratedDomain(idxType));
+  return _newDomain(dist.newEnumeratedDomain(idxType));
 
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist, type idxType) type
  where idxType == _OpaqueIndex
-  return new _domain(dist.newOpaqueDomain(idxType));
+  return _newDomain(dist.newOpaqueDomain(idxType));
 
 // This function has no 'has runtime type' pragma since the idxType of
 // opaque domains is _OpaqueIndex, not opaque.  This function is
@@ -31,7 +71,7 @@ def chpl__buildDomainRuntimeType(dist, type idxType) type
 
 pragma "has runtime type"
 def chpl__buildSparseDomainRuntimeType(dist, dom: domain) type
-  return new _domain(dist.newSparseDomain(dom.rank, dom._value.idxType, dom));
+  return _newDomain(dist.newSparseDomain(dom.rank, dom._value.idxType, dom));
 
 def chpl__convertValueToRuntimeType(dom: domain) type
  where dom._value:BaseArithmeticDomain
@@ -140,8 +180,20 @@ def isSparseDomain(d: domain) param {
 pragma "domain"
 pragma "has runtime type"
 record _domain {
-  var _value;
+  var _valueField;
+  var _valueTypeField; // stores type of privatized domains
   var _promotionType: index(rank, _value.idxType);
+
+  def _value {
+    if _supportsPrivatization(_valueTypeField) {
+      var tc = _valueTypeField;
+      var id = _valueField;
+      var pc = __primitive("chpl_getPrivateClass", tc, id);
+      return pc;
+    } else {
+      return _valueField;
+    }
+  }
 
   def ~_domain () {
     delete _value;
@@ -160,12 +212,12 @@ record _domain {
   }
 
   def this(ranges: range(?) ...rank)
-    return new _domain(_value.slice(chpl__anyStridable(ranges), ranges));
+    return _newDomain(_value.slice(chpl__anyStridable(ranges), ranges));
 
   def this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl__anyStridable(ranges);
-    return new _domain(_value.rankChange(rank, stridable, args));
+    return _newDomain(_value.rankChange(rank, stridable, args));
   }
 
   def dim(d : int) return _value.dim(d);
@@ -179,7 +231,7 @@ record _domain {
     var cnt = _value._count; // lock
     _value._arrs.append(x);
     _value._count = cnt + 1; // unlock
-    return new _array(x);
+    return _newArray(x);
   }
 
   def clear() {
@@ -209,20 +261,20 @@ record _domain {
   def position(i) return _value.position(i);
 
   def expand(i: _value.idxType ...rank) return expand(i);
-  def expand(i: rank*_value.idxType) return new _domain(_value.expand(i));
-  def expand(i: _value.idxType) where rank > 1 return new _domain(_value.expand(i));
+  def expand(i: rank*_value.idxType) return _newDomain(_value.expand(i));
+  def expand(i: _value.idxType) where rank > 1 return _newDomain(_value.expand(i));
 
   def exterior(i: _value.idxType ...rank) return exterior(i);
-  def exterior(i: rank*_value.idxType) return new _domain(_value.exterior(i));
+  def exterior(i: rank*_value.idxType) return _newDomain(_value.exterior(i));
 
   def interior(i: _value.idxType ...rank) return interior(i);
-  def interior(i: rank*_value.idxType) return new _domain(_value.interior(i));
+  def interior(i: rank*_value.idxType) return _newDomain(_value.interior(i));
 
   def translate(i: _value.idxType ...rank) return translate(i);
-  def translate(i: rank*_value.idxType) return new _domain(_value.translate(i));
+  def translate(i: rank*_value.idxType) return _newDomain(_value.translate(i));
 
   def chpl__unTranslate(i: _value.idxType ...rank) return chpl__unTranslate(i);
-  def chpl__unTranslate(i: rank*_value.idxType) return new _domain(_value.chpl__unTranslate(i));
+  def chpl__unTranslate(i: rank*_value.idxType) return _newDomain(_value.chpl__unTranslate(i));
 
   def subBlocks {
     for d in _value.subBlocks do
@@ -268,15 +320,27 @@ def -(d: domain, i: index(d)) {
 pragma "array"
 pragma "has runtime type"
 record _array {
-  var _value;
+  var _valueField;
+  var _valueTypeField; // stores type of privatized arrays
   var _promotionType: _value.eltType;
+
+  def _value {
+    if _supportsPrivatization(_valueTypeField) {
+      var tc = _valueTypeField;
+      var id = _valueField;
+      var pc = __primitive("chpl_getPrivateClass", tc, id);
+      return pc;
+    } else {
+      return _valueField;
+    }
+  }
 
   def ~_array() {
     delete _value;
   }
 
   def eltType type return _value.eltType;
-  def _dom return new _domain(_value.dom);
+  def _dom return _newDomain(_value.dom);
   def rank param return this.domain.rank;
 
   pragma "inline"
@@ -308,7 +372,7 @@ record _array {
   def this(ranges: range(?) ...rank) var {
     if boundsChecking then
       _value.checkSlice(ranges);
-    return new _array(_value.slice(_dom((...ranges))._value));
+    return _newArray(_value.slice(_dom((...ranges))._value));
   }
 
   pragma "valid var"
@@ -317,7 +381,7 @@ record _array {
       _value.checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl__anyStridable(ranges);
-    return new _array(_value.rankChange(rank, stridable, args));
+    return _newArray(_value.rankChange(rank, stridable, args));
   }
 
   pragma "inline"
@@ -329,12 +393,12 @@ record _array {
 
   def reindex(d: domain) where rank == 1 {
     var x = _value.reindex(d._value);
-    return new _array(x);
+    return _newArray(x);
   }
 
   def reindex(d: domain) where rank != 1 {
     var x = _value.reindex(d._value);
-    return new _array(x);
+    return _newArray(x);
   }
 
   def writeThis(f: Writer) {
@@ -501,7 +565,7 @@ def _copy(a: []) {
 
 def by(a: domain, b) {
   var x = a._value.strideBy(b);
-  return new _domain(x);
+  return _newDomain(x);
 }
 
 //

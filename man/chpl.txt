@@ -133,6 +133,9 @@ OPTIONS
                     aggressively optimize iterators that are defined in terms
                     of a single loop. By default this is enabled.
 
+  --[no-]privatization   Enable [disable] privatization of distributed arrays
+                    and domains if the distribution supports it.
+
   --[no-]scalar-replacement   Enable [disable] scalar replacement of records
                     and classes for some compiler-generated data structures
                     that support language features such as tuples and

@@ -32,6 +32,7 @@ extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoScalarReplacement;
 extern bool fNoOptimizeLoopIterators;
+extern bool fNoPrivatization;
 
 extern bool report_inlining;
 extern char CHPL_HOME[FILENAME_MAX];

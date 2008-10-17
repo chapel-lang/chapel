@@ -27,6 +27,8 @@ Optimization Control Options:
                                          analysis
       --[no-]optimize-loop-iterators     Enable [disable] optimization of
                                          iterators composed of a single loop
+      --[no-]privatization               Enable [disable] privatization of
+                                         distributed arrays and domains
       --[no-]scalar-replacement          Enable [disable] scalar replacement
 
 Run-time Semantic Check Options:

@@ -55,6 +55,8 @@ class BaseDomain {
     for arr in _arrs do
       arr._preserveArrayElement(oldslot, newslot);
   }
+
+  def supportsPrivatization() param return false;
 }
 
 class BaseArithmeticDomain : BaseDomain {
@@ -148,4 +150,6 @@ class BaseArray {
   }
 
   def supportsAlignedFollower() param return false;
+
+  def supportsPrivatization() param return false;
 }

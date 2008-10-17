@@ -259,6 +259,7 @@ extern Symbol *gTimer;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 extern VarSymbol *gBoundsChecking;
+extern VarSymbol *gPrivatization;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

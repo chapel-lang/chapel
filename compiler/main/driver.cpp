@@ -53,6 +53,7 @@ bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fNoChecks = false;
 bool fNoInline = false;
+bool fNoPrivatization = false;
 bool fGenIDS = false;
 bool fSerialForall = false;
 bool fSerial;  // initialized in setupDependentDefaults() below
@@ -253,6 +254,7 @@ static void setFastFlag(ArgumentState* arg, char* unused) {
   fNoOptimizeLoopIterators = false;
   fNoLiveAnalysis = false;
   fNoScalarReplacement = false;
+  fNoPrivatization = false;
   fNoChecks = true;
   fNoBoundsChecks = true;
   fNoLocalChecks = true;
@@ -272,6 +274,7 @@ static void setBaselineFlag(ArgumentState* arg, char* unused) {
   fNoLiveAnalysis = true;
   fNoOptimizeLoopIterators = true;
   fNoScalarReplacement = true;
+  fNoPrivatization = true;
 }
 
 static void setHelpTrue(ArgumentState* arg, char* unused) {
@@ -319,6 +322,7 @@ static ArgumentDescription arg_desc[] = {
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
  {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
+ {"privatization", ' ', NULL, "Enable [disable] privatization of distributed arrays and domains", "n", &fNoPrivatization, "CHPL_DISABLE_PRIVATIZATION", NULL},
  {"scalar-replacement", ' ', NULL, "Enable [disable] scalar replacement", "n", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},

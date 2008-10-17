@@ -570,5 +570,9 @@ initPrimitive() {
   prim_def(PRIMITIVE_RT_ERROR, "chpl_error", returnInfoVoid, true, true);
   prim_def(PRIMITIVE_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
 
+  prim_def(PRIMITIVE_PRIVATE_SET_CLASS, "chpl_setPrivateClass", returnInfoVoid, true);
+  prim_def(PRIMITIVE_PRIVATE_NUM_CLASSES, "chpl_numPrivateClasses", returnInfoInt32);
+  prim_def(PRIMITIVE_PRIVATE_GET_CLASS, "chpl_getPrivateClass",  returnInfoFirst);
+
   prim_def("mem_used", returnInfoUInt64, false, true);
 }

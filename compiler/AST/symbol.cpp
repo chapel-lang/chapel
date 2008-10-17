@@ -35,6 +35,7 @@ Symbol *gTaskList = NULL;
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
 VarSymbol *gBoundsChecking = NULL;
+VarSymbol* gPrivatization = NULL;
 
 
 Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
