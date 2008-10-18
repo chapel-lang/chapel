@@ -74,6 +74,10 @@ times out occasionally (20x diff -- maybe memory leak related?)
 gasnet-fast regressions (other than the above)
 ==============================================
 
+unable to start polling thread
+------------------------------
+[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
+
 intermittent seg faults 
 ---------------------------------------
 [Error matching program output for multilocale/deitz/linked/test_linked2] (e.g., 10/05/08, 10/08/08)
@@ -85,19 +89,21 @@ intermittent seg faults
 [Error matching program output for multilocale/deitz/linked/test_linked3] (e.g., 10/14/08)
 [Error matching program output for studies/hpcc/common/bradc/unit/leadFollowOpt] (e.g., 10/15/08)
 
-memory allocator doesn't handle realloc or --mem flags
-------------------------------------------------------
+
+========================
+hmm-specific regressions
+========================
+
+memory allocator doesn't handle realloc
+---------------------------------------
 [Error matching program output for extern/bradc/defaultArgsNoLocal]
-[Error matching program output for memory/bradc/memmax]
-[Error matching program output for memory/shannon/freedWithoutMalloc]
-[Error matching program output for memory/shannon/jacobi]
-[Error matching program output for memory/shannon/memmaxExceedsLineno2]
-[Error matching program output for memory/shannon/memmaxExceeds]
-[Error matching program output for memory/shannon/memstatPrint]
-[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
-[Error matching program output for memory/shannon/printMemTable2]
-[Error matching program output for memory/shannon/printMemTable]
 [Error matching program output for memory/shannon/reallocWithoutMalloc]
+[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-dom]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d]
+[Error matching program output for studies/hpcc/common/bradc/unit/parBlock1Da]
+[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-fill]
 
 
 =======================
