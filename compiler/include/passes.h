@@ -3,6 +3,8 @@
 
 extern bool normalized;
 
+extern void fixupDestructors(void);
+
 //
 // prototypes of functions that are called as passes (alphabetical)
 //

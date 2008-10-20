@@ -344,7 +344,7 @@ pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
 
 
 void
-prune() {
+reallyPrune(bool pruneDestructors) {
   Vec<FnSymbol*> fns;
   Vec<TypeSymbol*> types;
   pruneVisit(chpl_main, fns, types);
@@ -352,6 +352,13 @@ prune() {
     forv_Vec(FnSymbol, fn, gFns) {
       if (fn->hasFlag(FLAG_EXPORT))
         pruneVisit(fn, fns, types);
+    }
+  }
+  if (!pruneDestructors) {
+    forv_Vec(FnSymbol, fn, gFns) {
+      if (!strcmp(fn->name, "~chpl_destroy") || !strcmp(fn->name, "chpl__auto_destroy")) {
+        pruneVisit(fn, fns, types);
+      }
     }
   }
   forv_Vec(FnSymbol, fn, gFns) {
@@ -374,6 +381,10 @@ prune() {
         //
         if (ts->type->refType)
           ts->type->refType->symbol->defPoint->remove();
+        if (Type *vt = ts->typeInfo()->getValueType()) {
+          INT_ASSERT(!vt->refType || vt->refType == ts->type);
+          vt->refType = NULL;
+        }
         ts->defPoint->remove();
       }
     }
@@ -387,4 +398,15 @@ prune() {
       if (def->parentSymbol && def->sym->type && isClassType(def->sym->type) && !isTypeSymbol(def->sym) && !types.set_in(def->sym->type->symbol))
         def->sym->type = dtVoid;
   }
+}
+
+void
+prune() {
+  static bool firstTime = true;
+  if (firstTime) {
+    fixupDestructors();
+    reallyPrune(fEnableDestructorCalls ? false : true);
+    firstTime = false;
+  } else if (fEnableDestructorCalls)
+    reallyPrune(true);
 }

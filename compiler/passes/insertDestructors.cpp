@@ -13,21 +13,7 @@
 
 bool fEnableDestructorCalls = false;
 
-static bool tupleContainsArrayOrDomain(ClassType* t) {
-  for (int i = 1; i <= t->fields.length(); i++) {
-    Type* fieldType = t->getField(i)->type;
-    ClassType* fieldClassType = toClassType(fieldType);
-    if (fieldType->symbol->hasFlag(FLAG_ARRAY) || fieldType->symbol->hasFlag(FLAG_DOMAIN))
-      return true;
-    else if (fieldType->symbol->hasFlag(FLAG_TUPLE) && tupleContainsArrayOrDomain(toClassType(fieldType)))
-      return true;
-    else if (fieldClassType && fieldClassType->classTag != CLASS_CLASS && tupleContainsArrayOrDomain(toClassType(fieldType)))
-      return true;
-  }
-  return false;
-}
-
-void insertDestructors(void) {
+void fixupDestructors(void) {
 
   forv_Vec(TypeSymbol, ts, gTypes) {
     if (ts->type->destructor) {
@@ -72,6 +58,34 @@ void insertDestructors(void) {
       }
     }
   }
+}
+
+#if 0
+static bool arrayPassedAsArgument(FnSymbol *fn) {
+  for (int i = 1; i <= fn->numFormals(); i++)
+    if (fn->getFormal(i)->type->symbol->hasFlag(FLAG_ARRAY))
+      return true;
+  return false;
+}
+#endif
+
+static bool tupleContainsArrayOrDomain(ClassType* t) {
+  for (int i = 1; i <= t->fields.length(); i++) {
+    Type* fieldType = t->getField(i)->type;
+    ClassType* fieldClassType = toClassType(fieldType);
+    if (fieldType->symbol->hasFlag(FLAG_ARRAY) || fieldType->symbol->hasFlag(FLAG_DOMAIN))
+      return true;
+    else if (fieldType->symbol->hasFlag(FLAG_TUPLE) && tupleContainsArrayOrDomain(toClassType(fieldType)))
+      return true;
+    else if (fieldClassType && fieldClassType->classTag != CLASS_CLASS && tupleContainsArrayOrDomain(toClassType(fieldType)))
+      return true;
+  }
+  return false;
+}
+
+extern void reallyPrune(bool);
+
+void insertDestructors(void) {
 
   if (!fEnableDestructorCalls) return;
 
@@ -91,7 +105,8 @@ void insertDestructors(void) {
 //if (strstr(fn->cname, "buildDomainExpr") || strstr(fn->cname, "convertRuntimeTypeToValue") || strstr(fn->cname, "DefaultArithmetic") || strstr(fn->cname, "buildArray"))
 //  printf("looking at function %s-%d\n", fn->cname, fn->id);
     if ((fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
-         fn->hasFlag(FLAG_WRAPPER) && fn->hasFlag(FLAG_INLINE) && fn->hasFlag(FLAG_INVISIBLE_FN)) &&
+         fn->hasFlag(FLAG_INLINE) && fn->hasFlag(FLAG_INVISIBLE_FN) &&
+         (fn->hasFlag(FLAG_WRAPPER) || fn->hasFlag(FLAG_ITERATOR_FN))) &&
         fn->calledBy &&
         ct && ct->classTag != CLASS_CLASS && ct->destructor &&
         (!ct->symbol->hasFlag(FLAG_TUPLE) || !tupleContainsArrayOrDomain(ct))) {
@@ -109,7 +124,10 @@ void insertDestructors(void) {
         INT_ASSERT(move && move->isPrimitive(PRIMITIVE_MOVE));
         SymExpr* lhs = toSymExpr(move->get(1));
         INT_ASSERT(lhs);
-        if (!lhs->var->type->destructor) continue;
+        if (!lhs->var->type->destructor || !gFns.in(lhs->var->type->destructor)) {
+//printf("skipping destructor for constructor %s-%d\n", constructor->cname, constructor->id);
+          continue;
+        }
         if (lhs->var->type->symbol->hasFlag(FLAG_DOMAIN)) continue;
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
         INT_ASSERT(fn);
@@ -153,7 +171,7 @@ void insertDestructors(void) {
 //                    printf("function returns %s\n", toSymExpr(call->get(1))->var->cname);
                       maybeCallDestructor = false;
                       if (defMap.get(toSymExpr(call->get(1))->var)->n == 1 &&
-                          strcmp(fn->name, "reindex") && !strstr(fn->name, "buildDomainExpr")) {
+                          /*strcmp(fn->name, "reindex") &&*/ !strstr(fn->name, "buildDomainExpr")) {
 //  printf("adding function %s-%d\n", fn->cname, fn->id);
                         constructors.add_exclusive(fn);
                       }
@@ -178,7 +196,7 @@ void insertDestructors(void) {
                         }
                       }
                     }
-                    varsToTrack.add(toSymExpr(call->get(1))->var);
+                    varsToTrack.add_exclusive(toSymExpr(call->get(1))->var);
 #if 0
                   } else if (var->type->symbol->hasFlag(FLAG_ARRAY) &&
                              call->isResolved() && call->isResolved()->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
