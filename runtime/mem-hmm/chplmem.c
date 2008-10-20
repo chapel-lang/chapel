@@ -549,14 +549,23 @@ void chpl_free(void* memAlloc, int32_t lineno, _string filename) {
 void* chpl_realloc(void* memAlloc, size_t number, size_t size, 
                     const char* description, int32_t lineno, _string filename) {
   size_t newChunk = computeChunkSize(number, size, 1, lineno, filename);
+  size_t numBlocks = newChunk / HMM_ADDR_ALIGN_UNIT;
   memTableEntry* memEntry = NULL;
+  int success;
   void* moreMemAlloc;
+  if (newChunk % HMM_ADDR_ALIGN_UNIT != 0)
+    numBlocks += 1;
 
-  chpl_error("realloc is not compatible with this malloc", lineno, filename);
   if (!newChunk) {
     chpl_free(memAlloc, lineno, filename);
     return NULL;
   }
+
+  if (!heapInitialized) {
+    moreMemAlloc = realloc(memAlloc, newChunk);
+    return moreMemAlloc;
+  }
+
   if (memtrack) {
     chpl_mutex_lock(&_memtrack_lock);
     memEntry = lookupMemory(memAlloc);
@@ -568,8 +577,21 @@ void* chpl_realloc(void* memAlloc, size_t number, size_t size,
       chpl_error(message, lineno, filename);
     }
   }
-  moreMemAlloc = realloc(memAlloc, newChunk);
-  confirm(moreMemAlloc, description, lineno, filename);
+
+  chpl_mutex_lock(&_malloc_lock);
+  success = !hmm_resize(&chpl_heap, memAlloc, numBlocks);
+  chpl_mutex_unlock(&_malloc_lock);
+
+  if (success) {
+    moreMemAlloc = memAlloc;
+    confirm(moreMemAlloc, description, lineno, filename);
+  } else {
+    size_t trueSize = hmm_true_size(memAlloc)*HMM_ADDR_ALIGN_UNIT;
+    size_t copySize = newChunk < trueSize ? newChunk : trueSize;
+    moreMemAlloc = chpl_malloc(number, size, description, lineno, filename);
+    confirm(moreMemAlloc, description, lineno, filename);
+    memcpy(moreMemAlloc, memAlloc, copySize);
+  }
 
   if (memtrack) { 
     chpl_mutex_lock(&_memtrack_lock);
@@ -599,6 +621,14 @@ void* chpl_realloc(void* memAlloc, size_t number, size_t size,
     printToMemLog(number, size, description, "realloc", memAlloc, 
                   moreMemAlloc);
     chpl_mutex_unlock(&_memtrace_lock);
+  }
+
+  /* If the allocator failed to realloc the memory and instead new memory
+     was allocated, then free the old memory. */
+  if (!success) {
+    chpl_mutex_lock(&_malloc_lock);
+    hmm_free(&chpl_heap, memAlloc);
+    chpl_mutex_unlock(&_malloc_lock);
   }
   return moreMemAlloc;
 }
