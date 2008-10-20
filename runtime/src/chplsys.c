@@ -104,7 +104,7 @@ _string chpl_localeName(void) {
   if (newnamelen > namelen) {
     namelen = newnamelen;
     namespace = chpl_malloc(newnamelen, sizeof(char), 
-			    "buffer for chpl_localeName", 0, NULL);
+                            "buffer for chpl_localeName", 0, NULL);
   }
   strcpy(namespace, utsinfo.nodename);
   return namespace;
