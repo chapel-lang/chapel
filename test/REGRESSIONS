@@ -40,6 +40,12 @@ internal valgrind stuff 'the impossible has happened'
 gasnet-everything regressions
 =============================
 
+incorrect arguments being passed to constructors (10/21/08)
+-----------------------------------------------------------
+[Error matching compiler output for studies/uts/dequeue]
+[Error matching compiler output for studies/uts/uts_deq]
+[Error matching compiler output for studies/uts/uts_deq_seq]
+
 memory is leaked (10/16/08)
 ---------------------------
 [Error matching compiler output for classes/figueroa/LeakedMemory2]
@@ -110,10 +116,10 @@ memory allocator doesn't handle realloc
 baseline-specific tests
 =======================
 
-memory is leaked (10/03/08)
----------------------------
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
+incorrect arguments to writes and destroy calls (10/21/08)
+----------------------------------------------------------
+[Error matching compiler output for classes/figueroa/LeakedMemory2]
+[Error matching compiler output for classes/figueroa/LeakedMemory3]
 
 
 ===================
@@ -124,7 +130,7 @@ opts-specific tests
 
 
 
-(Full run: 44, though some spurious test_refine errors)
+(Full run: 59, though some spurious test_refine errors)
 
 
 --no-copy-propagation
@@ -188,9 +194,7 @@ opts-specific tests
 [Error matching compiler output for classes/diten/allocateManyObjects]
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
-[Error: Timed out executing program npb/cg/bradc/cg-sparse]
 [Error matching compiler output for studies/590o/alaska/graph]
-[Error matching compiler output for studies/590o/blerner/xml-parse]
 [Error matching compiler output for studies/590o/blerner/xml-parse]
 [Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample3]
 [Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample4]
@@ -292,6 +296,8 @@ long identifiers
 ----------------
 [Error matching program output for trivial/deitz/test_longToken]
 [Error matching program output for types/tuple/deitz/test_128int]
+[Error matching compiler output for arrays/deitz/test_major_nesting_of_arrays]
+
 
 negative floating point 0.0 not supported
 -----------------------------------------
