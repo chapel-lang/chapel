@@ -1,1 +1,1 @@
-../Block1D.chpl --main-module=parRandom2-fill -sdebugParRandom=true
+--main-module=parRandom2-fill -sdebugParRandom=true

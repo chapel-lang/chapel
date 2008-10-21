@@ -1,1 +1,1 @@
-../Block1D.chpl -O --main-module=leadFollowOpt
+-O --main-module=leadFollowOpt

@@ -1,1 +1,1 @@
-../Block1D.chpl --main-module=parRandom2-domblock64
+--main-module=parRandom2-domblock64

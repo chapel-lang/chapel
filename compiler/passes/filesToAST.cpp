@@ -33,6 +33,7 @@ static void parseStandardModules(void) {
   parseStandardModule("DefaultSparse.chpl");
   parseStandardModule("DefaultEnum.chpl");
   parseStandardModule("DefaultOpaque.chpl");
+  parseStandardModule("BlockDist.chpl");
 
   parseStandardModule("Types.chpl");
   parseStandardModule("Math.chpl");

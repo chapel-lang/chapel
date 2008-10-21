@@ -1,1 +1,1 @@
-../Block1D.chpl --main-module=parBlock1Da
+--main-module=parBlock1Da

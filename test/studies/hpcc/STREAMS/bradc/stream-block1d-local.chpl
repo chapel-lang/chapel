@@ -1,5 +1,5 @@
 use Time, Types, Random;
-use Block1D;
+use BlockDist;
 
 use HPCCProblemSize;
 

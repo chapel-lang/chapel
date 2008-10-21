@@ -1,6 +1,6 @@
 use Random;
 
-use Block1D;
+use BlockDist;
 
 config var n = 10000: int(64);
 

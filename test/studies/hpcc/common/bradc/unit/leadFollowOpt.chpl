@@ -1,4 +1,4 @@
-use Block1D;
+use BlockDist;
 
 var Dist = new Block1DDist(int(32), bbox=[1..9]);
 

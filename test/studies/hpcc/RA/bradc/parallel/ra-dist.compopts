@@ -1,1 +1,1 @@
-../../../common/probSize.chpl ../../../common/bradc/Block1D.chpl ra-randstream.chpl --no-warnings -O
+../../../common/probSize.chpl ra-randstream.chpl --no-warnings -O
