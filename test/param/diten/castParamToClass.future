@@ -1,0 +1,1 @@
+bug: cast from int param to class type causes internal error
