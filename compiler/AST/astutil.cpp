@@ -343,7 +343,7 @@ pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
 }
 
 
-void
+static void
 reallyPrune(bool pruneDestructors) {
   Vec<FnSymbol*> fns;
   Vec<TypeSymbol*> types;

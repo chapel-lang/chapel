@@ -83,8 +83,6 @@ static bool tupleContainsArrayOrDomain(ClassType* t) {
   return false;
 }
 
-extern void reallyPrune(bool);
-
 void insertDestructors(void) {
 
   if (!fEnableDestructorCalls) return;
