@@ -85,7 +85,7 @@ unable to start polling thread
 [Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
 
 intermittent seg faults 
----------------------------------------
+-----------------------
 [Error matching program output for multilocale/deitz/linked/test_linked2] (e.g., 10/05/08, 10/08/08)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-dom] (e.g., 10/06/08)
 [Error matching program output for multilocale/deitz/linked/test_linked3e] (e.g., 10/07/08, 10/13/08)
@@ -95,21 +95,9 @@ intermittent seg faults
 [Error matching program output for multilocale/deitz/linked/test_linked3] (e.g., 10/14/08)
 [Error matching program output for studies/hpcc/common/bradc/unit/leadFollowOpt] (e.g., 10/15/08)
 
-
-========================
-hmm-specific regressions
-========================
-
-memory allocator doesn't handle realloc
----------------------------------------
-[Error matching program output for extern/bradc/defaultArgsNoLocal]
-[Error matching program output for memory/shannon/reallocWithoutMalloc]
-[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-dom]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d]
-[Error matching program output for studies/hpcc/common/bradc/unit/parBlock1Da]
-[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-fill]
+is this one intermittent or not? (10/21/08)
+-------------------------------------------
+[Error matching program output for extern/bradc/defaultArgsNoLocal] (e.g., 10/21/08)
 
 
 =======================
