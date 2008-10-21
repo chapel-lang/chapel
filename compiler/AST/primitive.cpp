@@ -412,6 +412,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_BLOCK_COBEGIN, "cobegin block", returnInfoVoid);
   prim_def(PRIMITIVE_BLOCK_COFORALL, "coforall loop", returnInfoVoid);
   prim_def(PRIMITIVE_BLOCK_ON, "on block", returnInfoVoid);
+  prim_def(PRIMITIVE_BLOCK_ON_NB, "non-blocking on block", returnInfoVoid);
   prim_def(PRIMITIVE_BLOCK_LOCAL, "local block", returnInfoVoid);
 
   prim_def(PRIMITIVE_TO_LEADER, "to leader", returnInfoVoid);

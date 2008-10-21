@@ -82,6 +82,8 @@ bundleArgs(CallExpr* fcall) {
   DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
   if (fn->hasFlag(FLAG_ON)) {
     wrap_fn->addFlag(FLAG_ON_BLOCK);
+    if (fn->hasFlag(FLAG_NON_BLOCKING))
+      wrap_fn->addFlag(FLAG_NON_BLOCKING);
     ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
     wrap_fn->insertFormalAtTail(locale);
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
@@ -446,16 +448,20 @@ parallel(void) {
         } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_COFORALL)) {
           fn = new FnSymbol("coforall_fn");
           fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
-        } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON)) {
+        } else if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON) ||
+                   block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON_NB)) {
           fn = new FnSymbol("on_fn");
           fn->addFlag(FLAG_ON);
+          if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON_NB))
+            fn->addFlag(FLAG_NON_BLOCKING);
           ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
           fn->insertFormalAtTail(arg);
         }
         if (fn) {
           nestedFunctions.add(fn);
           CallExpr* call = new CallExpr(fn);
-          if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON))
+          if (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON) ||
+              block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON_NB))
             call->insertAtTail(block->blockInfo->get(1)->remove());
           block->insertBefore(new DefExpr(fn));
           block->insertBefore(call);

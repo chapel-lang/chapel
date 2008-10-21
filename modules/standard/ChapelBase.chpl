@@ -867,17 +867,21 @@ class _EndCount {
 def _endCountAlloc() return new _EndCount();
 
 def _upEndCount(e: _EndCount) {
-  var i = e.i;
-  if i == 0 then
-    e.b.reset();
-  e.i = i + 1;
+  on e {
+    var i = e.i;
+    if i == 0 then
+      e.b.reset();
+    e.i = i + 1;
+  }
 }
 
 def _downEndCount(e: _EndCount) {
-  var i = e.i;
-  if i == 1 then
-    e.b = true;
-  e.i = i - 1;
+  on e {
+    var i = e.i;
+    if i == 1 then
+      e.b = true;
+    e.i = i - 1;
+  }
 }
 
 def _waitEndCount(e: _EndCount) {

@@ -633,18 +633,58 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
 
   checkIndices(indices);
 
-  VarSymbol* coforallCount = newTemp("_coforallCount");
-  BlockStmt* beginBlk = new BlockStmt();
-  beginBlk->blockInfo = new CallExpr(PRIMITIVE_BLOCK_COFORALL);
-  beginBlk->insertAtHead(body);
-  beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-  BlockStmt* block = buildForLoopStmt(indices, iterator, beginBlk, true);
-  block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
-  block->insertAtHead(new DefExpr(coforallCount));
-  block->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, coforallCount));
-  beginBlk->insertBefore(new CallExpr("_upEndCount", coforallCount));
-  block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
-  return block;
+  //
+  // detect on-statement directly inside coforall-loop
+  //
+  BlockStmt* onBlock = NULL;
+  BlockStmt* tmp = body;
+  while (tmp) {
+    if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
+      if (b->blockInfo && b->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON)) {
+        onBlock = b;
+        break;
+      }
+    }
+    if (tmp->body.tail == tmp->body.head) {
+      tmp = toBlockStmt(tmp->body.tail);
+      if (tmp && tmp->blockInfo)
+        tmp = NULL;
+    } else
+      tmp = NULL;
+  }
+
+  if (onBlock) {
+    //
+    // optimization of on-statements directly inside coforall-loops
+    //
+    //   In this case, the on-statement is made into a non-blocking
+    //   on-statement and the coforall is serialized (rather than
+    //   wasting threads that would do nothing other than wait on the
+    //   on-statement.
+    //
+    VarSymbol* coforallCount = newTemp("_coforallCount");
+    onBlock->insertAtTail(new CallExpr("_downEndCount", coforallCount));
+    BlockStmt* block = buildForLoopStmt(indices, iterator, body);
+    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
+    block->insertAtHead(new DefExpr(coforallCount));
+    body->insertAtHead(new CallExpr("_upEndCount", coforallCount));
+    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
+    onBlock->blockInfo->primitive = primitives[PRIMITIVE_BLOCK_ON_NB];
+    return block;
+  } else {
+    VarSymbol* coforallCount = newTemp("_coforallCount");
+    BlockStmt* beginBlk = new BlockStmt();
+    beginBlk->blockInfo = new CallExpr(PRIMITIVE_BLOCK_COFORALL);
+    beginBlk->insertAtHead(body);
+    beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
+    BlockStmt* block = buildForLoopStmt(indices, iterator, beginBlk, true);
+    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
+    block->insertAtHead(new DefExpr(coforallCount));
+    block->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, coforallCount));
+    beginBlk->insertBefore(new CallExpr("_upEndCount", coforallCount));
+    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
+    return block;
+  }
 }
 
 

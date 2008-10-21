@@ -337,7 +337,7 @@ void  _chpl_comm_get(void *addr, int32_t locale, const void* raddr, int32_t size
 void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size);
 
 //
-// non-blocking fork (not yet used)
+// non-blocking fork
 //
 void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size);
 

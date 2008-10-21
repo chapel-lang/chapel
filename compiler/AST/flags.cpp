@@ -67,6 +67,7 @@ initFlags() {
   defineFlag(FLAG_NO_OBJECT, "no object");
   defineFlag(FLAG_NO_PARENS, "no parens");
   defineFlag(FLAG_NO_WIDE_CLASS, "no wide class");
+  defineFlag(FLAG_NON_BLOCKING, "non blocking");
   defineFlag(FLAG_OBJECT_CLASS, "object class");
   defineFlag(FLAG_OMIT_FROM_CONSTRUCTOR, "omit from constructor");
   defineFlag(FLAG_ON, "on");

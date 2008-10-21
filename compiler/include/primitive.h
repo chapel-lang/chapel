@@ -135,6 +135,7 @@ enum PrimitiveTag {
   PRIMITIVE_BLOCK_COBEGIN,         // BlockStmt::blockInfo - cobegin block
   PRIMITIVE_BLOCK_COFORALL,        // BlockStmt::blockInfo - coforall block
   PRIMITIVE_BLOCK_ON,              // BlockStmt::blockInfo - on block
+  PRIMITIVE_BLOCK_ON_NB,           // BlockStmt::blockInfo - non-blocking on block
   PRIMITIVE_BLOCK_LOCAL,           // BlockStmt::blockInfo - local block
 
   PRIMITIVE_TO_LEADER,

@@ -1809,6 +1809,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_BLOCK_COBEGIN:
     case PRIMITIVE_BLOCK_COFORALL:
     case PRIMITIVE_BLOCK_ON:
+    case PRIMITIVE_BLOCK_ON_NB:
     case PRIMITIVE_BLOCK_LOCAL:
     case PRIMITIVE_YIELD:
     case PRIMITIVE_DELETE:
@@ -2017,7 +2018,10 @@ void CallExpr::codegen(FILE* outfile) {
     return;
   }
   else if (fn->hasFlag(FLAG_ON_BLOCK)) {
-    fprintf(outfile, "_chpl_comm_fork(");
+    if (fn->hasFlag(FLAG_NON_BLOCKING))
+      fprintf(outfile, "_chpl_comm_fork_nb(");
+    else
+      fprintf(outfile, "_chpl_comm_fork(");
     get(1)->codegen(outfile);
     fprintf(outfile, ", (func_p)");
     baseExpr->codegen(outfile);
