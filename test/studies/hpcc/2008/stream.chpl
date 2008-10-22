@@ -57,8 +57,8 @@ def main() {
   // blocking the indices 1..m between the Locales, and it contains the
   // indices 1..m.
   //
-  const ProblemSpace: domain(1, int(64)) distributed new Block1D(bbox=[1..m]) 
-                    = [1..m];
+  const BlockDist = new Block1D(bbox=[1..m]);
+  const ProblemSpace: domain(1, int(64)) distributed BlockDist = [1..m];
 
   //
   // A, B, and C are the three distributed vectors, declared to store
