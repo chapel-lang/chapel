@@ -1,11 +1,25 @@
+//
+// A helper module for the RA benchmark that defines the random stream
+// of values
+//
 module RARandomStream {
-  param randWidth = 64;
-  type randType = uint(randWidth);
+  param randWidth = 64;              // the bit-width of the random numbers
+  type randType = uint(randWidth);   // the type of the random numbers
 
+  //
+  // bitDom is a non-distributed domain whose indices correspond to
+  // the bit positions in the random values.  m2 is a table of helper
+  // values used to fast-forward through the random stream.
+  //
   const bitDom = [0..#randWidth],
         m2: [bitDom] randType = computeM2Vals(randWidth);
 
+  //
+  // A serial iterator for the random stream that resets the stream
+  // to its 0th element and yields values endlessly.
+  //
   // TODO: Why is this still needed?
+  //
   def RAStream() {
     var val = getNthRandom(0);
     while (1) {
@@ -14,6 +28,12 @@ module RARandomStream {
     }
   }
 
+  //
+  // A "follower" iterator for the random stream that takes a range of
+  // 0-based indices (follower) and yields the pseudo-random values
+  // corresponding to those indices.  Follower iterators like these
+  // are required for parallel zippered iteration.
+  //
   def RAStream(param tag: iterator, follower) where tag == iterator.follower {
     var val = getNthRandom(follower.low);
     for follower {
@@ -22,7 +42,10 @@ module RARandomStream {
     }
   }
 
-
+  //
+  // A helper function for "fast-forwarding" the random stream to
+  // position n in O(log2(n)) time
+  //
   def getNthRandom(in n: uint(64)) {
     param period = 0x7fffffffffffffff/7;
 
@@ -39,7 +62,10 @@ module RARandomStream {
     return ran;
   }
 
-
+  //
+  // A helper function for advancing a value from the random stream,
+  // x, to the next value
+  //
   def getNextRandom(inout x) {
     param POLY = 0x7;
     param hiRandBit = 0x1:randType << (randWidth-1);
@@ -47,7 +73,10 @@ module RARandomStream {
     x = (x << 1) ^ (if (x & hiRandBit) then POLY else 0);
   }
 
-
+  //
+  // A helper function for computing the values of the helper array,
+  // m2
+  //
   def computeM2Vals(numVals) {
     var nextVal = 0x1: randType;
     for i in 1..numVals {

@@ -12,12 +12,12 @@
 
 // TODO: implement the slicing interface?
 
-config param debugBradsBlock1D = false;
+config param debugBlock1D = false;
 
 //
 // The distribution class
 //
-class Block1DDist : Distribution {
+class Block1D : Distribution {
 
   // GENERICS:
 
@@ -53,8 +53,8 @@ class Block1DDist : Distribution {
 
   // CONSTRUCTORS:
 
-  def Block1DDist(type idxType = int(64), bbox: domain(1, idxType),
-                  targetLocales: [] locale = Locales) {
+  def Block1D(type idxType = int(64), bbox: domain(1, idxType),
+              targetLocales: [] locale = Locales) {
     boundingBox = bbox;
     //
     // 0-base the local capture of the targetLocDom for simplicity
@@ -70,7 +70,7 @@ class Block1DDist : Distribution {
       on targetLocs(locid) do
         locDist(locid) = new LocBlock1DDist(idxType, locid, this);
 
-    //    writeln("Created a Block1DDist:\n", this);
+    //    writeln("Created a Block1D:\n", this);
   }
 
 
@@ -108,7 +108,7 @@ class Block1DDist : Distribution {
   // print out the distribution
   //
   def writeThis(x:Writer) {
-    x.writeln("BradsBlock1DPar");
+    x.writeln("Block1DPar");
     x.writeln("---------------");
     x.writeln("distributes: ", boundingBox);
     x.writeln("across locales: ", targetLocs);
@@ -200,7 +200,7 @@ class LocBlock1DDist {
   //
   def LocBlock1DDist(type idxType, 
                      _localeIdx: int, // the locale index from the target domain
-                     dist: Block1DDist(idxType) // reference to glob dist
+                     dist: Block1D(idxType) // reference to glob dist
                      ) {
     const localeIdx = _localeIdx;
     loc = dist.targetLocs(localeIdx);
@@ -219,7 +219,7 @@ class LocBlock1DDist {
     const bhi = if (localeIdx == numlocs - 1) then max(idxType)
                 else procToData((numelems: real * (localeIdx+1)) / numlocs, lo) - 1;
     myChunk = [blo..bhi];
-    if debugBradsBlock1D then
+    if debugBlock1D then
       writeln(this);
   }
 
@@ -266,7 +266,7 @@ class Block1DDom: BaseArithmeticDomain {
   //
   // LEFT: a pointer to the parent distribution
   //
-  const dist: Block1DDist(idxType);
+  const dist: Block1D(idxType);
 
   //
   // DOWN: an array of local domain class descriptors -- set up in
@@ -440,7 +440,7 @@ class Block1DDom: BaseArithmeticDomain {
   //
   // INTERNAL INTERFACE
   //
-  def getDist(): Block1DDist(idxType) {
+  def getDist(): Block1D(idxType) {
     return dist;
   }
 
@@ -452,7 +452,7 @@ class Block1DDom: BaseArithmeticDomain {
                                                  dist.getChunk(whole, localeIdx));
         else
           locDoms(localeIdx).myBlock = dist.getChunk(whole, localeIdx);
-    if debugBradsBlock1D then
+    if debugBlock1D then
       [loc in dist.targetLocDom] writeln(loc, " owns ", locDoms(loc));
 
   }

@@ -26,8 +26,8 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const TableDist = new Block1DDist(idxType=indexType, bbox=[0..m-1], targetLocales=Locales),
-       UpdateDist = new Block1DDist(idxType=indexType, bbox=[0..N_U-1], targetLocales=Locales);
+  const TableDist = new Block1D(idxType=indexType, bbox=[0..m-1], targetLocales=Locales),
+       UpdateDist = new Block1D(idxType=indexType, bbox=[0..N_U-1], targetLocales=Locales);
 
   const TableSpace: domain(1, indexType) distributed TableDist = [0..m-1];
   var T: [TableSpace] elemType;

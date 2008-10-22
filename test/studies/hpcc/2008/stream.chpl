@@ -1,67 +1,96 @@
-use Time, Types, Random;
-use BlockDist;
+//
+// Use standard modules for Block distributions, Timing routines, Type
+// utility functions, and Random numbers
+//
+use BlockDist, Time, Types, Random;
 
+//
+// Use shared user module for computing HPCC problem sizes
+//
 use HPCCProblemSize;
 
-
-param numVectors = 3;
+//
+// The number of vectors and element type of those vectors
+//
+const numVectors = 3;
 type elemType = real(64);
 
-config const m = computeProblemSize(elemType, numVectors),
+//
+// Configuration constants to set the problem size (m) and the scalar
+// multiplier, alpha
+//
+config const m = computeProblemSize(numVectors, elemType),
              alpha = 3.0;
 
+//
+// Configuration constants to set the number of trials to run and the
+// amount of error to permit in the verification
+//
 config const numTrials = 10,
              epsilon = 0.0;
 
+//
+// Configuration constants to indicate whether or not to use a
+// pseudo-random seed (based on the clock) or a fixed seed; or to
+// specify the seed explicitly
+//
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.clockMS else 314159265;
 
+//
+// Configuration constants to control what's printed -- benchmark
+// parameters, input and output arrays, and/or statistics
+//
 config const printParams = true,
              printArrays = false,
              printStats = true;
 
-
+//
+// The program entry point
+//
 def main() {
-  printConfiguration();
-  var t1, t2, t3: Timer;
+  printConfiguration();   // print the problem size, number of trials, etc.
 
-  t1.start();
-  const BlockDist = new Block1DDist(bbox=[1..m], targetLocales=Locales);
+  //
+  // ProblemSpace describes the index set for the three vectors.  It
+  // is a 1D domain indexed using 64-bit ints that is distributed by
+  // blocking the indices 1..m between the Locales, and it contains the
+  // indices 1..m.
+  //
+  const ProblemSpace: domain(1, int(64)) distributed new Block1D(bbox=[1..m]) 
+                    = [1..m];
 
-  const ProblemSpace: domain(1, int(64)) distributed BlockDist = [1..m];
-
+  //
+  // A, B, and C are the three distributed vectors, declared to store
+  // a variable of type elemType for each index in ProblemSpace.
+  //
   var A, B, C: [ProblemSpace] elemType;
-  t1.stop();
 
-  t2.start();
-  initVectors(B, C);
-  t2.stop();
+  initVectors(B, C);    // Initialize the input vectors, B and C
 
-  var execTime: [1..numTrials] real;
+  var execTime: [1..numTrials] real;                 // an array of timings
 
-  for trial in 1..numTrials {
-    const startTime = getCurrentTime();
-    // TODO: Want:
-    // A = B + alpha * C;
-    // But this doesn't yet result in parallelism
+  for trial in 1..numTrials {                        // loop over the trials
+    const startTime = getCurrentTime();              // capture the start time
 
-    forall (a, b, c) in (A, B, C) {
+    //
+    // The main loop: Iterate over the vectors A, B, and C in a
+    // parallel, zippered manner storing the elements as a, b, and c.
+    // Compute the multiply-add on b and c, storing the result to a.
+    //
+    forall (a, b, c) in (A, B, C) do
       a = b + alpha * c;
-    }
 
-    execTime(trial) = getCurrentTime() - startTime;
+    execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
   }
 
-  t3.start();
-  const validAnswer = verifyResults(A, B, C);
-  t3.stop();
-  printResults(validAnswer, execTime);
-  //  writeln("declarations  = ", t1.elapsed());
-  //  writeln("initVectors   = ", t2.elapsed());
-  //  writeln("verifyResults = ", t3.elapsed());
+  const validAnswer = verifyResults(A, B, C);        // verify...
+  printResults(validAnswer, execTime);               // ...and print the results
 }
 
-
+//
+// Print the problem size and number of trials
+//
 def printConfiguration() {
   if (printParams) {
     printProblemSize(elemType, numVectors, m);
@@ -69,7 +98,10 @@ def printConfiguration() {
   }
 }
 
-
+//
+// Initialize vectors B and C using a random stream of values and
+// optionally print them to the console
+//
 def initVectors(B, C) {
   var randlist = new RandomStream(seed);
 
@@ -82,16 +114,25 @@ def initVectors(B, C) {
   }
 }
 
-
+//
+// Verify that the computation is correct
+//
 def verifyResults(A, B, C) {
-  if (printArrays) then writeln("A is: ", A, "\n");
+  if (printArrays) then writeln("A is: ", A, "\n");  // optionally print A
 
+  //
+  // Compute the infinity-norm by computing the maximum reduction of the
+  // absolute value of A's elements minus the multiply-add of B and C.
+  // "[i in I]" represents an expression-level loop: "forall i in I"
+  //
   const infNorm = max reduce [(a,b,c) in (A,B,C)] abs(a - (b + alpha * c));
 
-  return (infNorm <= epsilon);
+  return (infNorm <= epsilon);    // return whether the error is acceptable
 }
 
-
+//
+// Print out success/failure, the timings, and the GB/s value
+//
 def printResults(successful, execTimes) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {

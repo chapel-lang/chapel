@@ -4,7 +4,7 @@ use BlockDist;
 
 config var n = 10000: int(64);
 
-const ProblemDist = new Block1DDist(bbox=[1..n], targetLocales=Locales);
+const ProblemDist = new Block1D(bbox=[1..n], targetLocales=Locales);
 const ProblemSpace: domain(1, int(64)) distributed(ProblemDist) = [1..n];
 
 var A: [ProblemSpace] real;

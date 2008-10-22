@@ -1,6 +1,6 @@
 use BlockDist;
 
-var Dist = new Block1DDist(int(32), bbox=[1..9]);
+var Dist = new Block1D(int(32), bbox=[1..9]);
 
 var D1 = Dist.newArithmeticDomain(1, int(32), false);
 var D2 = Dist.newArithmeticDomain(1, int(32), false);
