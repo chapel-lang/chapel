@@ -52,12 +52,16 @@ def main() {
   printConfiguration();   // print the problem size, number of trials, etc.
 
   //
-  // ProblemSpace describes the index set for the three vectors.  It
-  // is a 1D domain indexed using 64-bit ints that is distributed by
-  // blocking the indices 1..m between the Locales, and it contains the
-  // indices 1..m.
+  // BlockDist is a 1D block distribution that is computed by blocking
+  // the bounding box 1..m across the set of locales
   //
   const BlockDist = new Block1D(bbox=[1..m]);
+
+  //
+  // ProblemSpace describes the index set for the three vectors.  It
+  // is a 1D domain storing 64-bit ints and is distributed according
+  // to BlockDist.  It contains the indices 1..m.
+  //
   const ProblemSpace: domain(1, int(64)) distributed BlockDist = [1..m];
 
   //

@@ -53,14 +53,25 @@ def main() {
   printConfiguration();   // print the problem size, number of trials, etc.
 
   //
-  // TableSpace describes the index set for the table.  It is a 1D
-  // domain indexed using 64-bit ints that is distributed by blocking
-  // the indices 0..m-1 between the locales, and it contains the
-  // indices 0..m-1.
+  // TableDist is a 1D block distribution for domains storing indices
+  // of type "indexType", and it is computed by blocking the bounding
+  // box 0..m-1 across the set of locales.  UpdateDist is a similar
+  // distribution that is computed by blocking the indices 0..N_U-1
+  // across the locales.
   //
-  const TableSpace: domain(1, indexType) 
-                    distributed new Block1D(idxType=indexType, bbox=[0..m-1]) 
-                  = [0..m-1];
+  const TableDist = new Block1D(indexType, bbox=[0..m-1]),
+        UpdateDist = new Block1D(indexType, bbox=[0..N_U-1]);
+
+  //
+  // TableSpace describes the index set for the table.  It is a 1D
+  // domain storing indices of type indexType, it is distributed
+  // according to TableDist, and it contains the indices 0..m-1.
+  // Updates is an index set describing the set of updates to be made.
+  // It is distributed according to UpdateDist and contains the
+  // indices 0..N_U-1.
+  //
+  const TableSpace: domain(1, indexType) distributed TableDist = [0..m-1],
+        Updates: domain(1, indexType) distributed UpdateDist = [0..N_U-1];
 
   //
   // T is the distributed table itself, storing a variable of type
@@ -68,15 +79,6 @@ def main() {
   //
   var T: [TableSpace] elemType;
 
-  //
-  // Updates describes a set of indices corresponding to the number of
-  // updates, N_U, to be performed.  It is a 1D domain indexed using
-  // 64-bit ints that is distributed by blocking the indices 0..N_U-1
-  // between the locales, and it contains the indices 0..N_U-1.
-  //
-  const Updates: domain(1, indexType) 
-                 distributed new Block1D(idxType=indexType, bbox=[0..N_U-1]) 
-               = [0..N_U-1];
 
   const startTime = getCurrentTime();              // capture the start time
 
@@ -90,7 +92,7 @@ def main() {
   //
   // The main computation: Iterate over the set of updates and the
   // stream of random values in a parallel, zippered manner, dropping
-  // the update index on the ground (_) and storing the random value
+  // the update index on the ground ("_") and storing the random value
   // in r.  Use r both to index into the table and as the update
   // value.
   //
