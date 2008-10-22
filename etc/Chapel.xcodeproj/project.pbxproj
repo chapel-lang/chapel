@@ -112,13 +112,13 @@
 		F7A4FD2A0DE7AA9300CDE656 /* chpl_cfg_comm_locales.c in Sources */ = {isa = PBXBuildFile; fileRef = F7A4FD290DE7AA9300CDE656 /* chpl_cfg_comm_locales.c */; };
 		F7A4FD390DE7AB8D00CDE656 /* chplcomm_locales.h in Headers */ = {isa = PBXBuildFile; fileRef = F7A4FD380DE7AB8D00CDE656 /* chplcomm_locales.h */; };
 		F7F770B20E5A751A00798483 /* chapel_code.chpl in Sources */ = {isa = PBXBuildFile; fileRef = F7F770950E5A72AD00798483 /* chapel_code.chpl */; };
+		F7F8478A0EAD204D004A9BD9 /* chplmem.c in Sources */ = {isa = PBXBuildFile; fileRef = F7F847890EAD204C004A9BD9 /* chplmem.c */; };
 		F7FAC5100D45384C00C02B67 /* arg.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5010D45384C00C02B67 /* arg.c */; };
 		F7FAC5110D45384C00C02B67 /* chplcast.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5020D45384C00C02B67 /* chplcast.c */; };
 		F7FAC5120D45384C00C02B67 /* chplcomm.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5030D45384C00C02B67 /* chplcomm.c */; };
 		F7FAC5130D45384C00C02B67 /* chplcopygc.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5040D45384C00C02B67 /* chplcopygc.c */; };
 		F7FAC5140D45384C00C02B67 /* chplexit.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5050D45384C00C02B67 /* chplexit.c */; };
 		F7FAC5150D45384C00C02B67 /* chplio.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5060D45384C00C02B67 /* chplio.c */; };
-		F7FAC5160D45384C00C02B67 /* chplmem.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5070D45384C00C02B67 /* chplmem.c */; };
 		F7FAC5180D45384C00C02B67 /* chplsys.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC5090D45384C00C02B67 /* chplsys.c */; };
 		F7FAC51A0D45384C00C02B67 /* chpltypes.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC50B0D45384C00C02B67 /* chpltypes.c */; };
 		F7FAC51B0D45384C00C02B67 /* config.c in Sources */ = {isa = PBXBuildFile; fileRef = F7FAC50C0D45384C00C02B67 /* config.c */; };
@@ -474,6 +474,46 @@
 		F7C8B88E0E7F11B4001CEEF3 /* DefaultOpaque.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = DefaultOpaque.chpl; path = ../modules/standard/DefaultOpaque.chpl; sourceTree = SOURCE_ROOT; };
 		F7C8B88F0E7F11B4001CEEF3 /* DefaultSparse.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = DefaultSparse.chpl; path = ../modules/standard/DefaultSparse.chpl; sourceTree = SOURCE_ROOT; };
 		F7F770950E5A72AD00798483 /* chapel_code.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = chapel_code.chpl; path = ../runtime/src/chapel_code.chpl; sourceTree = SOURCE_ROOT; };
+		F7F8477B0EAD1F93004A9BD9 /* Makefile.launcher */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.launcher; path = ../make/Makefile.launcher; sourceTree = SOURCE_ROOT; };
+		F7F8477C0EAD1F93004A9BD9 /* Makefile.mem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.mem; path = ../make/Makefile.mem; sourceTree = SOURCE_ROOT; };
+		F7F8477F0EAD1FD5004A9BD9 /* Makefile.comm-armci */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.comm-armci"; path = "../runtime/etc/Makefile.comm-armci"; sourceTree = SOURCE_ROOT; };
+		F7F847800EAD1FD5004A9BD9 /* Makefile.launcher */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.launcher; path = ../runtime/etc/Makefile.launcher; sourceTree = SOURCE_ROOT; };
+		F7F847810EAD1FD5004A9BD9 /* Makefile.mem-default */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.mem-default"; path = "../runtime/etc/Makefile.mem-default"; sourceTree = SOURCE_ROOT; };
+		F7F847820EAD1FD5004A9BD9 /* Makefile.mem-hmm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.mem-hmm"; path = "../runtime/etc/Makefile.mem-hmm"; sourceTree = SOURCE_ROOT; };
+		F7F847830EAD1FD5004A9BD9 /* Makefile.mem-lea */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.mem-lea"; path = "../runtime/etc/Makefile.mem-lea"; sourceTree = SOURCE_ROOT; };
+		F7F847890EAD204C004A9BD9 /* chplmem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplmem.c; path = "../runtime/mem-default/chplmem.c"; sourceTree = SOURCE_ROOT; };
+		F7F847F20EAD5DA2004A9BD9 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/mem-default/Makefile"; sourceTree = SOURCE_ROOT; };
+		F7F847F30EAD5DA2004A9BD9 /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/mem-default/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F7F847F40EAD5DA2004A9BD9 /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/mem-default/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F7F847F70EAD5DD0004A9BD9 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/mem-hmm/Makefile"; sourceTree = SOURCE_ROOT; };
+		F7F847F80EAD5DD0004A9BD9 /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/mem-hmm/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F7F847F90EAD5DD0004A9BD9 /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/mem-hmm/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F7F847FF0EAD5E0F004A9BD9 /* chplmem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplmem.c; path = "../runtime/mem-hmm/chplmem.c"; sourceTree = SOURCE_ROOT; };
+		F7F848020EAD5E37004A9BD9 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/mem-lea/Makefile"; sourceTree = SOURCE_ROOT; };
+		F7F848030EAD5E37004A9BD9 /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/mem-lea/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F7F848040EAD5E37004A9BD9 /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/mem-lea/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F7F8480C0EAD5E74004A9BD9 /* chplmem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplmem.c; path = "../runtime/mem-lea/chplmem.c"; sourceTree = SOURCE_ROOT; };
+		F7F8481D0EAD6380004A9BD9 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/launch-aprun/Makefile"; sourceTree = SOURCE_ROOT; };
+		F7F8481E0EAD6380004A9BD9 /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/launch-aprun/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F7F8481F0EAD6380004A9BD9 /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/launch-aprun/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F7F848220EAD6396004A9BD9 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/launch-mpirun/Makefile"; sourceTree = SOURCE_ROOT; };
+		F7F848230EAD6396004A9BD9 /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/launch-mpirun/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F7F848240EAD6396004A9BD9 /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/launch-mpirun/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F7F848270EAD63B2004A9BD9 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/launch-none/Makefile"; sourceTree = SOURCE_ROOT; };
+		F7F848280EAD63B2004A9BD9 /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/launch-none/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F7F8482B0EAD63CB004A9BD9 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/launch-pbs/Makefile"; sourceTree = SOURCE_ROOT; };
+		F7F8482C0EAD63CB004A9BD9 /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/launch-pbs/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F7F8482D0EAD63CB004A9BD9 /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/launch-pbs/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F7F848300EAD63F0004A9BD9 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/launch-zebra/Makefile"; sourceTree = SOURCE_ROOT; };
+		F7F848310EAD63F0004A9BD9 /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/launch-zebra/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F7F848320EAD63F0004A9BD9 /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/launch-zebra/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F7F8483A0EAD645B004A9BD9 /* chpl_cfg_launch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_launch.c; path = "../runtime/launch-aprun/chpl_cfg_launch.c"; sourceTree = SOURCE_ROOT; };
+		F7F848450EAD64B1004A9BD9 /* chpl_cfg_launch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_launch.c; path = "../runtime/launch-mpirun/chpl_cfg_launch.c"; sourceTree = SOURCE_ROOT; };
+		F7F8484D0EAD64DD004A9BD9 /* chpl_cfg_launch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_launch.c; path = "../runtime/launch-pbs/chpl_cfg_launch.c"; sourceTree = SOURCE_ROOT; };
+		F7F848530EAD650D004A9BD9 /* chpl_cfg_launch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_launch.c; path = "../runtime/launch-zebra/chpl_cfg_launch.c"; sourceTree = SOURCE_ROOT; };
+		F7F84B4C0EAE9BC5004A9BD9 /* BlockDist.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = BlockDist.chpl; path = ../modules/standard/BlockDist.chpl; sourceTree = SOURCE_ROOT; };
+		F7F84B510EAE9C1F004A9BD9 /* Makefile.linux64 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.linux64; path = ../make/platform/Makefile.linux64; sourceTree = SOURCE_ROOT; };
+		F7F84B520EAE9C1F004A9BD9 /* Makefile.xt-cnl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.xt-cnl"; path = "../make/platform/Makefile.xt-cnl"; sourceTree = SOURCE_ROOT; };
 		F7FAC4F90D4537A700C02B67 /* libchpl.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libchpl.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7FAC5010D45384C00C02B67 /* arg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = arg.c; path = ../runtime/src/arg.c; sourceTree = SOURCE_ROOT; };
 		F7FAC5020D45384C00C02B67 /* chplcast.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplcast.c; path = ../runtime/src/chplcast.c; sourceTree = SOURCE_ROOT; };
@@ -481,7 +521,6 @@
 		F7FAC5040D45384C00C02B67 /* chplcopygc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplcopygc.c; path = ../runtime/src/chplcopygc.c; sourceTree = SOURCE_ROOT; };
 		F7FAC5050D45384C00C02B67 /* chplexit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplexit.c; path = ../runtime/src/chplexit.c; sourceTree = SOURCE_ROOT; };
 		F7FAC5060D45384C00C02B67 /* chplio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplio.c; path = ../runtime/src/chplio.c; sourceTree = SOURCE_ROOT; };
-		F7FAC5070D45384C00C02B67 /* chplmem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplmem.c; path = ../runtime/src/chplmem.c; sourceTree = SOURCE_ROOT; };
 		F7FAC5090D45384C00C02B67 /* chplsys.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chplsys.c; path = ../runtime/src/chplsys.c; sourceTree = SOURCE_ROOT; };
 		F7FAC50B0D45384C00C02B67 /* chpltypes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpltypes.c; path = ../runtime/src/chpltypes.c; sourceTree = SOURCE_ROOT; };
 		F7FAC50C0D45384C00C02B67 /* config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = config.c; path = ../runtime/src/config.c; sourceTree = SOURCE_ROOT; };
@@ -684,7 +723,6 @@
 		F721A1440D455F6C00A6B43F /* passes */ = {
 			isa = PBXGroup;
 			children = (
-				F719EB150DB6C03900EFB331 /* reservedSymbolNames */,
 				F721A1470D455FDE00A6B43F /* buildDefaultFunctions.cpp */,
 				F721A1480D455FDE00A6B43F /* cleanup.cpp */,
 				F721A1490D455FDE00A6B43F /* codegen.cpp */,
@@ -692,9 +730,11 @@
 				F721A14D0D455FDE00A6B43F /* filesToAST.cpp */,
 				F721A14E0D455FDE00A6B43F /* flattenClasses.cpp */,
 				F721A14F0D455FDE00A6B43F /* flattenFunctions.cpp */,
+				F754D95B0E929C5F00A527CD /* insertDestructors.cpp */,
 				F721A1520D455FDE00A6B43F /* insertLineNumbers.cpp */,
 				F721A1540D455FDE00A6B43F /* normalize.cpp */,
 				F721A1550D455FDE00A6B43F /* parallel.cpp */,
+				F719EB150DB6C03900EFB331 /* reservedSymbolNames */,
 				F721A1570D455FDE00A6B43F /* scopeResolve.cpp */,
 				F721A1580D455FDE00A6B43F /* semanticChecks.cpp */,
 			);
@@ -809,6 +849,7 @@
 			isa = PBXGroup;
 			children = (
 				F77216480D6D436200DE6EF6 /* BitOps.chpl */,
+				F7F84B4C0EAE9BC5004A9BD9 /* BlockDist.chpl */,
 				F77216490D6D436200DE6EF6 /* ChapelArray.chpl */,
 				F772164A0D6D436200DE6EF6 /* ChapelBase.chpl */,
 				F7C8B8890E7F11B4001CEEF3 /* ChapelDistribution.chpl */,
@@ -842,7 +883,38 @@
 		F7665EED0D7F3BB000A55EBF /* Makefiles */ = {
 			isa = PBXGroup;
 			children = (
-				F754D95B0E929C5F00A527CD /* insertDestructors.cpp */,
+				F7F84B510EAE9C1F004A9BD9 /* Makefile.linux64 */,
+				F7F84B520EAE9C1F004A9BD9 /* Makefile.xt-cnl */,
+				F7F848300EAD63F0004A9BD9 /* Makefile */,
+				F7F848310EAD63F0004A9BD9 /* Makefile.include */,
+				F7F848320EAD63F0004A9BD9 /* Makefile.share */,
+				F7F8482B0EAD63CB004A9BD9 /* Makefile */,
+				F7F8482C0EAD63CB004A9BD9 /* Makefile.include */,
+				F7F8482D0EAD63CB004A9BD9 /* Makefile.share */,
+				F7F848270EAD63B2004A9BD9 /* Makefile */,
+				F7F848280EAD63B2004A9BD9 /* Makefile.include */,
+				F7F848220EAD6396004A9BD9 /* Makefile */,
+				F7F848230EAD6396004A9BD9 /* Makefile.include */,
+				F7F848240EAD6396004A9BD9 /* Makefile.share */,
+				F7F8481D0EAD6380004A9BD9 /* Makefile */,
+				F7F8481E0EAD6380004A9BD9 /* Makefile.include */,
+				F7F8481F0EAD6380004A9BD9 /* Makefile.share */,
+				F7F848020EAD5E37004A9BD9 /* Makefile */,
+				F7F848030EAD5E37004A9BD9 /* Makefile.include */,
+				F7F848040EAD5E37004A9BD9 /* Makefile.share */,
+				F7F847F70EAD5DD0004A9BD9 /* Makefile */,
+				F7F847F80EAD5DD0004A9BD9 /* Makefile.include */,
+				F7F847F90EAD5DD0004A9BD9 /* Makefile.share */,
+				F7F847F20EAD5DA2004A9BD9 /* Makefile */,
+				F7F847F30EAD5DA2004A9BD9 /* Makefile.include */,
+				F7F847F40EAD5DA2004A9BD9 /* Makefile.share */,
+				F7F8477F0EAD1FD5004A9BD9 /* Makefile.comm-armci */,
+				F7F847800EAD1FD5004A9BD9 /* Makefile.launcher */,
+				F7F847810EAD1FD5004A9BD9 /* Makefile.mem-default */,
+				F7F847820EAD1FD5004A9BD9 /* Makefile.mem-hmm */,
+				F7F847830EAD1FD5004A9BD9 /* Makefile.mem-lea */,
+				F7F8477B0EAD1F93004A9BD9 /* Makefile.launcher */,
+				F7F8477C0EAD1F93004A9BD9 /* Makefile.mem */,
 				F7665EF00D7F3C1E00A55EBF /* Makefile */,
 				F7665EF50D7F3C6500A55EBF /* Makefile */,
 				F7665EF60D7F3C6500A55EBF /* Makefile.base */,
@@ -1028,12 +1100,119 @@
 		F7B66D0F0D59738D00A53F3E /* Other sources */ = {
 			isa = PBXGroup;
 			children = (
-				F7FDB9D10E53C580006CE064 /* chpllaunch.h */,
-				F7FDB9D50E53C5AD006CE064 /* main_launcher.c */,
 				F7665EE80D7F3B8400A55EBF /* Standard Modules */,
 				F7665EED0D7F3BB000A55EBF /* Makefiles */,
 			);
 			name = "Other sources";
+			sourceTree = "<group>";
+		};
+		F7F847860EAD2001004A9BD9 /* Default mem */ = {
+			isa = PBXGroup;
+			children = (
+				F7F847890EAD204C004A9BD9 /* chplmem.c */,
+			);
+			name = "Default mem";
+			sourceTree = "<group>";
+		};
+		F7F847FC0EAD5DE5004A9BD9 /* HMM mem */ = {
+			isa = PBXGroup;
+			children = (
+				F7F847FF0EAD5E0F004A9BD9 /* chplmem.c */,
+			);
+			name = "HMM mem";
+			sourceTree = "<group>";
+		};
+		F7F848070EAD5E40004A9BD9 /* LEA mem */ = {
+			isa = PBXGroup;
+			children = (
+				F7F8480C0EAD5E74004A9BD9 /* chplmem.c */,
+			);
+			name = "LEA mem";
+			sourceTree = "<group>";
+		};
+		F7F8480F0EAD5E9E004A9BD9 /* Locales */ = {
+			isa = PBXGroup;
+			children = (
+				F76B620F0D53D790005C6869 /* Single locale */,
+				F76B61D50D53B1C1005C6869 /* Gasnet */,
+				F76B61E00D53D22C005C6869 /* Armci */,
+			);
+			name = Locales;
+			sourceTree = "<group>";
+		};
+		F7F848140EAD5EEE004A9BD9 /* Thread implementation */ = {
+			isa = PBXGroup;
+			children = (
+				F76B61CA0D53B0EE005C6869 /* Single threaded */,
+				F76B62020D53D636005C6869 /* POSIX threads */,
+				F76B618A0D53ACA3005C6869 /* MTA */,
+			);
+			name = "Thread implementation";
+			sourceTree = "<group>";
+		};
+		F7F848170EAD6110004A9BD9 /* Memory management */ = {
+			isa = PBXGroup;
+			children = (
+				F7F847860EAD2001004A9BD9 /* Default mem */,
+				F7F847FC0EAD5DE5004A9BD9 /* HMM mem */,
+				F7F848070EAD5E40004A9BD9 /* LEA mem */,
+			);
+			name = "Memory management";
+			sourceTree = "<group>";
+		};
+		F7F8481A0EAD621A004A9BD9 /* Platform specific */ = {
+			isa = PBXGroup;
+			children = (
+				F76B61EF0D53D470005C6869 /* Cygwin */,
+				F76B62170D53D894005C6869 /* SunOS */,
+				F76B61FD0D53D576005C6869 /* X1 */,
+			);
+			name = "Platform specific";
+			sourceTree = "<group>";
+		};
+		F7F848350EAD6403004A9BD9 /* Launcher */ = {
+			isa = PBXGroup;
+			children = (
+				F7FDB9D10E53C580006CE064 /* chpllaunch.h */,
+				F7FDB9D50E53C5AD006CE064 /* main_launcher.c */,
+				F7F8483D0EAD6462004A9BD9 /* Aprun */,
+				F7F848400EAD648A004A9BD9 /* MPIrun */,
+				F7F848480EAD64B6004A9BD9 /* PBS */,
+				F7F848500EAD64EB004A9BD9 /* Zebra */,
+			);
+			name = Launcher;
+			sourceTree = "<group>";
+		};
+		F7F8483D0EAD6462004A9BD9 /* Aprun */ = {
+			isa = PBXGroup;
+			children = (
+				F7F8483A0EAD645B004A9BD9 /* chpl_cfg_launch.c */,
+			);
+			name = Aprun;
+			sourceTree = "<group>";
+		};
+		F7F848400EAD648A004A9BD9 /* MPIrun */ = {
+			isa = PBXGroup;
+			children = (
+				F7F848450EAD64B1004A9BD9 /* chpl_cfg_launch.c */,
+			);
+			name = MPIrun;
+			sourceTree = "<group>";
+		};
+		F7F848480EAD64B6004A9BD9 /* PBS */ = {
+			isa = PBXGroup;
+			children = (
+				F7F8484D0EAD64DD004A9BD9 /* chpl_cfg_launch.c */,
+			);
+			name = PBS;
+			sourceTree = "<group>";
+		};
+		F7F848500EAD64EB004A9BD9 /* Zebra */ = {
+			isa = PBXGroup;
+			children = (
+				F7F848530EAD650D004A9BD9 /* chpl_cfg_launch.c */,
+			);
+			name = Zebra;
 			sourceTree = "<group>";
 		};
 		F7FAC5230D45389000C02B67 /* Runtime */ = {
@@ -1046,7 +1225,6 @@
 				F7FAC5040D45384C00C02B67 /* chplcopygc.c */,
 				F7FAC5050D45384C00C02B67 /* chplexit.c */,
 				F7FAC5060D45384C00C02B67 /* chplio.c */,
-				F7FAC5070D45384C00C02B67 /* chplmem.c */,
 				F7FAC5090D45384C00C02B67 /* chplsys.c */,
 				F7FAC50B0D45384C00C02B67 /* chpltypes.c */,
 				F7FAC50C0D45384C00C02B67 /* config.c */,
@@ -1054,15 +1232,11 @@
 				F7FAC50E0D45384C00C02B67 /* gdb.c */,
 				F7FAC50F0D45384C00C02B67 /* main.c */,
 				F721A2190D458E0000A6B43F /* Header files */,
-				F76B620F0D53D790005C6869 /* Single locale */,
-				F76B61D50D53B1C1005C6869 /* Gasnet */,
-				F76B61E00D53D22C005C6869 /* Armci */,
-				F76B61CA0D53B0EE005C6869 /* Single threaded */,
-				F76B62020D53D636005C6869 /* POSIX threads */,
-				F76B618A0D53ACA3005C6869 /* MTA */,
-				F76B61EF0D53D470005C6869 /* Cygwin */,
-				F76B62170D53D894005C6869 /* SunOS */,
-				F76B61FD0D53D576005C6869 /* X1 */,
+				F7F8480F0EAD5E9E004A9BD9 /* Locales */,
+				F7F848140EAD5EEE004A9BD9 /* Thread implementation */,
+				F7F848170EAD6110004A9BD9 /* Memory management */,
+				F7F848350EAD6403004A9BD9 /* Launcher */,
+				F7F8481A0EAD621A004A9BD9 /* Platform specific */,
 			);
 			name = Runtime;
 			sourceTree = "<group>";
@@ -1291,7 +1465,6 @@
 				F7FAC5130D45384C00C02B67 /* chplcopygc.c in Sources */,
 				F7FAC5140D45384C00C02B67 /* chplexit.c in Sources */,
 				F7FAC5150D45384C00C02B67 /* chplio.c in Sources */,
-				F7FAC5160D45384C00C02B67 /* chplmem.c in Sources */,
 				F7FAC5180D45384C00C02B67 /* chplsys.c in Sources */,
 				F7FAC51A0D45384C00C02B67 /* chpltypes.c in Sources */,
 				F7FAC51B0D45384C00C02B67 /* config.c in Sources */,
@@ -1301,6 +1474,7 @@
 				F7FAC5370D45390200C02B67 /* chpl_cfg_threads.c in Sources */,
 				F7FAC53B0D45391800C02B67 /* chpl_cfg_comm.c in Sources */,
 				F7A4FD2A0DE7AA9300CDE656 /* chpl_cfg_comm_locales.c in Sources */,
+				F7F8478A0EAD204D004A9BD9 /* chplmem.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
