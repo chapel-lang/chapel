@@ -40,19 +40,14 @@ internal valgrind stuff 'the impossible has happened'
 gasnet-everything regressions
 =============================
 
-incorrect arguments being passed to constructors (10/21/08)
------------------------------------------------------------
-[Error matching compiler output for studies/uts/dequeue]
-[Error matching compiler output for studies/uts/uts_deq]
-[Error matching compiler output for studies/uts/uts_deq_seq]
-
 memory is leaked (10/16/08)
 ---------------------------
 [Error matching compiler output for classes/figueroa/LeakedMemory2]
 [Error matching compiler output for classes/figueroa/LeakedMemory3]
 
-timeout
--------
+timeouts
+--------
+[Error: Timed out executing program studies/hpcc/2008/ra]
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist]
 
 memory profile changed
@@ -104,10 +99,10 @@ is this one intermittent or not? (10/21/08)
 baseline-specific tests
 =======================
 
-incorrect arguments to writes and destroy calls (10/21/08)
-----------------------------------------------------------
-[Error matching compiler output for classes/figueroa/LeakedMemory2]
-[Error matching compiler output for classes/figueroa/LeakedMemory3]
+memory is leaked due to heap classes (10/22/08)
+-----------------------------------------------
+[Error matching program output for classes/figueroa/LeakedMemory2]
+[Error matching program output for classes/figueroa/LeakedMemory3]
 
 
 ===================
