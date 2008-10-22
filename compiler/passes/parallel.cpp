@@ -234,6 +234,11 @@ makeHeapAllocations() {
           for_defs(se, defMap, def->sym) {
             se->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_PRIVATE_BROADCAST, def->sym));
           }
+        } else if (def->sym->type->symbol->hasFlag(FLAG_ARRAY) ||
+                   def->sym->type->symbol->hasFlag(FLAG_DOMAIN)) {
+          SymExpr* se = defMap.get(def->sym)->v[0];
+          INT_ASSERT(se);
+          se->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_PRIVATE_BROADCAST, def->sym));
         } else {
           // put other global constants and all global variables on the heap
           varSet.set_add(def->sym);

@@ -290,6 +290,7 @@ class Block1DDom: BaseArithmeticDomain {
   //
   const whole: domain(1, idxType);
 
+  var pid: int;
 
   // GLOBAL DOMAIN INTERFACE:
 
@@ -458,11 +459,14 @@ class Block1DDom: BaseArithmeticDomain {
   }
 
   def supportsPrivatization() param return true;
-  def privatize() {
+  def privatize1() {
     var c = new Block1DDom(idxType=idxType, rank=rank, stridable=stridable, dist=dist);
     c.locDoms = locDoms;
     c.whole = whole;
     return c;
+  }
+  def privatize2(pid: int) {
+    this.pid = pid;
   }
 }
 
@@ -607,10 +611,15 @@ class Block1DArr: BaseArray {
   }
 
   def supportsPrivatization() param return true;
-  def privatize() {
+  def privatize1() {
     var c = new Block1DArr(idxType, eltType, stridable, dom);
     c.locArr = locArr;
     return c;
+  }
+  def privatize2(pid) {
+    var dompid = dom.pid;
+    var thisdom = dom;
+    this.dom = __primitive("chpl_getPrivateClass", thisdom, dompid);
   }
 
   // GLOBAL ARRAY INTERFACE:

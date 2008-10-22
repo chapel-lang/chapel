@@ -10,11 +10,13 @@ def _newArrayDomainSharedCode(param isArray: bool, value) {
     for loc in Locales {
       if loc != here {
         on loc {
-          var mine = value.privatize();
+          var mine = value.privatize1();
           __primitive("chpl_setPrivateClass", mine);
+          mine.privatize2(n);
         }
       } else {
         __primitive("chpl_setPrivateClass", value);
+        value.privatize2(n);
       }
     }
     privatizeLock$.readFE();
