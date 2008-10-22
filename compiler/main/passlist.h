@@ -36,13 +36,13 @@ PassInfo passlist[] = {
   // Optimizations
   RUN(complex2record),      // change complex numbers into records
   RUN(inlineFunctions),     // function inlining
-  RUN(insertDestructors),   // insert calls to destructors when variables go out of scope
   RUN(scalarReplace),       // scalar replace all tuples
   RUN(refPropagation),      // reference propagation
   RUN(copyPropagation),     // copy propagation
+  RUN(insertDestructors),   // insert calls to destructors when variables go out of scope
   RUN(deadCodeElimination), // eliminate dead code
 
-  RUN(prune),              // prune AST of dead functions and types
+  RUN(prune),                // prune AST of dead functions and types again
   RUN(insertWideReferences), // inserts wide references for on clauses
 
   // AST to C

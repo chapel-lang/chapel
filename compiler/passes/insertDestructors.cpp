@@ -119,7 +119,8 @@ void insertDestructors(void) {
     forv_Vec(CallExpr, call, *constructor->calledBy) {
       if (call->parentSymbol) {
         CallExpr* move = toCallExpr(call->parentExpr);
-        INT_ASSERT(move && move->isPrimitive(PRIMITIVE_MOVE));
+        if (!move) continue;
+        INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
         SymExpr* lhs = toSymExpr(move->get(1));
         INT_ASSERT(lhs);
         if (!lhs->var->type->destructor || !gFns.in(lhs->var->type->destructor)) {
@@ -249,4 +250,6 @@ void insertDestructors(void) {
       }
     }
   }
+
+  inlineFunctions();
 }

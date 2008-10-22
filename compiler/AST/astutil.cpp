@@ -326,7 +326,7 @@ pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
 
 
 static void
-pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
+pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types, bool pruneDestructors) {
   fns.set_add(fn);
   Vec<BaseAST*> asts;
   collect_asts(fn, asts);
@@ -334,10 +334,16 @@ pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (FnSymbol* next = call->isResolved())
         if (!fns.set_in(next))
-          pruneVisit(next, fns, types);
+          pruneVisit(next, fns, types, pruneDestructors);
     } else if (SymExpr* se = toSymExpr(ast)) {
       if (se->var && se->var->type && !types.set_in(se->var->type->symbol))
         pruneVisit(se->var->type->symbol, fns, types);
+    } else if (!pruneDestructors) {
+      // the type of a destructor's argument may not be used anywhere else
+      // since calls to destructors may not have been inserted yet
+      if (ArgSymbol* as = toArgSymbol(ast))
+        if (!types.set_in(as->type->symbol))
+          pruneVisit(as->type->symbol, fns, types);
     }
   }
 }
@@ -347,17 +353,17 @@ static void
 reallyPrune(bool pruneDestructors) {
   Vec<FnSymbol*> fns;
   Vec<TypeSymbol*> types;
-  pruneVisit(chpl_main, fns, types);
+  pruneVisit(chpl_main, fns, types, pruneDestructors);
   if (fRuntime) {
     forv_Vec(FnSymbol, fn, gFns) {
       if (fn->hasFlag(FLAG_EXPORT))
-        pruneVisit(fn, fns, types);
+        pruneVisit(fn, fns, types, pruneDestructors);
     }
   }
   if (!pruneDestructors) {
     forv_Vec(FnSymbol, fn, gFns) {
       if (!strcmp(fn->name, "~chpl_destroy") || !strcmp(fn->name, "chpl__auto_destroy")) {
-        pruneVisit(fn, fns, types);
+        pruneVisit(fn, fns, types, pruneDestructors);
       }
     }
   }
@@ -377,15 +383,19 @@ reallyPrune(bool pruneDestructors) {
           continue;
 
         //
-        // delete reference type only if type is not used
+        // delete reference type if type is not used
         //
         if (ts->type->refType)
           ts->type->refType->symbol->defPoint->remove();
-        if (Type *vt = ts->typeInfo()->getValueType()) {
-          INT_ASSERT(!vt->refType || vt->refType == ts->type);
-          vt->refType = NULL;
+        Type *vt = ts->typeInfo()->getValueType();
+        // don't remove reference to nil, as it may be used when widening
+        if (vt != dtNil) {
+          if (vt) {
+            INT_ASSERT(!vt->refType || vt->refType == ts->type);
+            vt->refType = NULL;
+          }
+          ts->defPoint->remove();
         }
-        ts->defPoint->remove();
       }
     }
   }
