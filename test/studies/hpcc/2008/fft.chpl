@@ -9,7 +9,7 @@ param numVectors = 2;
 type elemType = complex(128);
 
 
-config const n = computeProblemSize(elemType, numVectors, returnLog2 = true);
+config const n = computeProblemSize(numVectors, elemType, returnLog2 = true);
 const m = 2**n;
 
 config const epsilon = 2.0 ** -51.0,
