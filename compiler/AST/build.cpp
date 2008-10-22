@@ -1207,20 +1207,51 @@ buildOnStmt(Expr* expr, Expr* stmt) {
 
   CallExpr* onExpr = new CallExpr(PRIMITIVE_GET_REF, buildOnExpr(expr));
 
+  BlockStmt* body = toBlockStmt(stmt);
+
+  //
+  // detect begin statement directly inside on-statement
+  //
+  BlockStmt* beginBlock = NULL;
+  BlockStmt* tmp = body;
+  while (tmp) {
+    if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
+      if (b->blockInfo && b->blockInfo->isPrimitive(PRIMITIVE_BLOCK_BEGIN)) {
+        beginBlock = b;
+        break;
+      }
+    }
+    if (tmp->body.tail == tmp->body.head) {
+      tmp = toBlockStmt(tmp->body.tail);
+      if (tmp && tmp->blockInfo)
+        tmp = NULL;
+    } else
+      tmp = NULL;
+  }
+
   if (fLocal) {
     BlockStmt* block = new BlockStmt(stmt);
     block->insertAtHead(onExpr); // evaluate the expression for side effects
     return buildChapelStmt(block);
   }
 
-  BlockStmt* block = buildChapelStmt();
-  Symbol* tmp = newTemp();
-  block->insertAtTail(new DefExpr(tmp));
-  block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, onExpr));
-  BlockStmt* onBlock = new BlockStmt(stmt);
-  onBlock->blockInfo = new CallExpr(PRIMITIVE_BLOCK_ON, tmp);
-  block->insertAtTail(onBlock);
-  return block;
+  if (beginBlock) {
+    Symbol* tmp = newTemp();
+    body->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, onExpr));
+    body->insertAtHead(new DefExpr(tmp));
+    beginBlock->blockInfo = new CallExpr(PRIMITIVE_BLOCK_ON, tmp);
+    beginBlock->blockInfo->primitive = primitives[PRIMITIVE_BLOCK_ON_NB];
+    return body;
+  } else {
+    BlockStmt* block = buildChapelStmt();
+    Symbol* tmp = newTemp();
+    block->insertAtTail(new DefExpr(tmp));
+    block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, onExpr));
+    BlockStmt* onBlock = new BlockStmt(stmt);
+    onBlock->blockInfo = new CallExpr(PRIMITIVE_BLOCK_ON, tmp);
+    block->insertAtTail(onBlock);
+    return block;
+  }
 }
 
 
@@ -1231,16 +1262,44 @@ buildBeginStmt(Expr* stmt) {
   if (fSerial)
     return buildChapelStmt(new BlockStmt(stmt));
 
-  fEnableDestructorCalls = false; // not safe if there is a begin in the program!
+  BlockStmt* body = toBlockStmt(stmt);
+  
+  //
+  // detect on-statement directly inside begin statement
+  //
+  BlockStmt* onBlock = NULL;
+  BlockStmt* tmp = body;
+  while (tmp) {
+    if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
+      if (b->blockInfo && b->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON)) {
+        onBlock = b;
+        break;
+      }
+    }
+    if (tmp->body.tail == tmp->body.head) {
+      tmp = toBlockStmt(tmp->body.tail);
+      if (tmp && tmp->blockInfo)
+        tmp = NULL;
+    } else
+      tmp = NULL;
+  }
 
-  BlockStmt* block = buildChapelStmt();
-  block->insertAtTail(new CallExpr("_upEndCount"));
-  BlockStmt* beginBlock = new BlockStmt();
-  beginBlock->blockInfo = new CallExpr(PRIMITIVE_BLOCK_BEGIN);
-  beginBlock->insertAtHead(stmt);
-  beginBlock->insertAtTail(new CallExpr("_downEndCount"));
-  block->insertAtTail(beginBlock);
-  return block;
+  fEnableDestructorCalls = false; // not safe if there is a begin in the program!
+  if (onBlock) {
+    body->insertAtHead(new CallExpr("_upEndCount"));
+    onBlock->insertAtTail(new CallExpr("_downEndCount"));
+    onBlock->blockInfo->primitive = primitives[PRIMITIVE_BLOCK_ON_NB];
+    return body;
+  } else {
+    BlockStmt* block = buildChapelStmt();
+    block->insertAtTail(new CallExpr("_upEndCount"));
+    BlockStmt* beginBlock = new BlockStmt();
+    beginBlock->blockInfo = new CallExpr(PRIMITIVE_BLOCK_BEGIN);
+    beginBlock->insertAtHead(stmt);
+    beginBlock->insertAtTail(new CallExpr("_downEndCount"));
+    block->insertAtTail(beginBlock);
+    return block;
+  }
 }
 
 
