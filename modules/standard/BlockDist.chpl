@@ -73,6 +73,16 @@ class Block1D : Distribution {
     //    writeln("Created a Block1D:\n", this);
   }
 
+  //
+  // builds up a privatized (replicated copy)
+  //
+  def Block1D(type idxType = int(64),
+              other: Block1D(idxType)) {
+    boundingBox = other.boundingBox;
+    targetLocDom = other.targetLocDom;
+    targetLocs = other.targetLocs;
+    locDist = other.locDist;
+  }
 
   // DISTRIBUTION INTERFACE:
 
@@ -460,7 +470,8 @@ class Block1DDom: BaseArithmeticDomain {
 
   def supportsPrivatization() param return true;
   def privatize1() {
-    var c = new Block1DDom(idxType=idxType, rank=rank, stridable=stridable, dist=dist);
+    var privateDist = new Block1D(idxType, dist);
+    var c = new Block1DDom(idxType=idxType, rank=rank, stridable=stridable, dist=privateDist);
     c.locDoms = locDoms;
     c.whole = whole;
     return c;

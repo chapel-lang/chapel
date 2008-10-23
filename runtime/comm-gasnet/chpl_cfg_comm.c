@@ -12,7 +12,11 @@
 #include "gasnet.h"
 
 #define CHPL_DIST_DEBUG 0
-static int chpl_comm_debug = 0; // set via _startCommDiagnosis in .chpl
+static int chpl_comm_debug = 0; // set via _startCommDiagnosis in
+                                // the Chapel code, or set to 1 here
+                                // to diagnose the whole program; also
+                                // CHPL_DIST_DEBUG must be set to 1
+static int chpl_comm_no_debug_private = 0;
 
 //
 // The following macro is from the GASNet test.h distribution
@@ -270,7 +274,7 @@ void _chpl_comm_broadcast_private(void* addr, int size) {
 
 void _chpl_comm_barrier(const char *msg) {
 #if CHPL_DIST_DEBUG
-  if (chpl_comm_debug)
+  if (chpl_comm_debug && !chpl_comm_no_debug_private)
     printf("%d: barrier for '%s'\n", _localeID, msg);
 #endif
   gasnet_barrier_notify(0, GASNET_BARRIERFLAG_ANONYMOUS);
@@ -301,7 +305,7 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
     bcopy(addr, raddr, size);
   } else {
 #if CHPL_DIST_DEBUG
-  if (chpl_comm_debug)
+  if (chpl_comm_debug && !chpl_comm_no_debug_private)
     printf("%d: remote put to %d\n", _localeID, locale);
 #endif
     gasnet_put(locale, raddr, addr, size); // node, dest, src, size
@@ -313,7 +317,7 @@ void  _chpl_comm_get(void* addr, int32_t locale, const void* raddr, int32_t size
     bcopy(raddr, addr, size);
   } else {
 #if CHPL_DIST_DEBUG
-  if (chpl_comm_debug)
+  if (chpl_comm_debug && !chpl_comm_no_debug_private)
     printf("%d: remote get from %d\n", _localeID, locale);
 #endif
     gasnet_get(addr, locale, (void*)raddr, size); // dest, node, src, size
@@ -337,7 +341,7 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
                false, info->serial_state, NULL);
   } else {
 #if CHPL_DIST_DEBUG
-  if (chpl_comm_debug)
+  if (chpl_comm_debug && !chpl_comm_no_debug_private)
     printf("%d: remote non-blocking thread created on %d\n", _localeID, locale);
 #endif
     GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB, info, info_size));
@@ -353,7 +357,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
     (*f)(arg);
   } else {
 #if CHPL_DIST_DEBUG
-  if (chpl_comm_debug)
+  if (chpl_comm_debug && !chpl_comm_no_debug_private)
     printf("%d: remote thread created on %d\n", _localeID, locale);
 #endif
     info_size = sizeof(fork_t) + arg_size;
@@ -375,7 +379,9 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
 
 void chpl_startCommDiagnosis() {
   chpl_comm_debug = 1;
+  chpl_comm_no_debug_private = 1;
   _chpl_comm_broadcast_private(&chpl_comm_debug, sizeof(int));
+  chpl_comm_no_debug_private = 0;
 }
 
 void chpl_stopCommDiagnosis() {

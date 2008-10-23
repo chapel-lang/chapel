@@ -40,6 +40,15 @@ def _newDomain(value) {
   return _newArrayDomainSharedCode(false, value);
 }
 
+def _getDomain(value) {
+  if _supportsPrivatization(value) {
+    return new _domain(value.pid, value);
+  } else {
+    return new _domain(value, value);
+  }
+}
+
+
 //
 // Support for domain types
 //
@@ -201,6 +210,8 @@ record _domain {
     delete _value;
   }
 
+  def dist return _value.dist;
+
   def rank param {
     if isArithmeticDomain(this) || isSparseDomain(this) then
       return _value.rank;
@@ -342,7 +353,7 @@ record _array {
   }
 
   def eltType type return _value.eltType;
-  def _dom return _newDomain(_value.dom);
+  def _dom return _getDomain(_value.dom);
   def rank param return this.domain.rank;
 
   pragma "inline"
