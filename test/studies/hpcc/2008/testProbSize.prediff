@@ -1,0 +1,8 @@
+#!/bin/sh
+
+machine="`uname -n | awk 'BEGIN {FS = "."}{print $1}'`"
+
+read JUNK1 JUNK2 MEMINBYTES < ../../../modules/standard/memory/countMemory/countMemory.$machine.good
+
+./computeProbSize.pl $MEMINBYTES > testProbSize.good
+

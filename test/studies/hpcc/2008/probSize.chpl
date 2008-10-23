@@ -13,17 +13,18 @@ module HPCCProblemSize {
   //
   def computeProblemSize(numArrays: int,    // #arrays in the benchmark
 			 type elemType,     // the element type of those arrays
+                         rank=1,            // rank of the arrays
 			 returnLog2=false,  // whether to return log2(probSize)
-                         memRatio=4) {      // amt of memory to use (default:1/4)
+                         memFraction=4) {   // fraction of mem to use (eg, 1/4)
     //
     // Compute the total memory available to the benchmark using a sum
     // reduction over the amount of physical memory (in bytes) owned
     // by the set of locales on which we're running.  Then compute the
-    // number of bytes we want to use as defined by memRatio and the
+    // number of bytes we want to use as defined by memFraction and the
     // number that will be required by each index in the problem size.
     //
     const totalMem = + reduce Locales.physicalMemory(unit = MemUnits.Bytes),
-          memoryTarget = totalMem / memRatio,
+          memoryTarget = totalMem / memFraction,
           bytesPerIndex = numArrays * numBytes(elemType);
 
     //
@@ -37,6 +38,8 @@ module HPCCProblemSize {
     //
     var lgProblemSize = log2(numIndices);
     if (returnLog2) {
+      if rank != 1 then 
+        halt("computeProblemSize() can't compute 2D 2**n problem sizes yet");
       numIndices = 2**lgProblemSize;
       if (numIndices * bytesPerIndex <= memoryTarget) {
         numIndices *= 2;
@@ -56,21 +59,32 @@ module HPCCProblemSize {
     //
     // return the problem size as requested by the callee
     //
-    return if returnLog2 then lgProblemSize else numIndices;
+    if returnLog2 then
+      return lgProblemSize;
+    else
+      select rank {
+        when 1 do return numIndices;
+        when 2 do return ceil(sqrt(numIndices)): numIndices.type;
+        otherwise halt("Unexpected rank in computeProblemSize");
+      }
   }
 
   //
   // Print out the problem size, #bytes per array, and total memory
   // required by the arrays
   //
-  def printProblemSize(type elemType, numArrays, problemSize: ?psType) {
-    const bytesPerArray = problemSize * numBytes(elemType),
+  def printProblemSize(type elemType, numArrays, problemSize: ?psType, 
+                       param rank=1) {
+    const bytesPerArray = problemSize**rank * numBytes(elemType),
           totalMemInGB = (numArrays * bytesPerArray:real) / (1024**3),
           lgProbSize = log2(problemSize):psType;
 
     write("Problem size = ", problemSize);
+    for i in 2..rank do write(" x ", problemSize);
     if (2**lgProbSize == problemSize) {
-      write(" (2**", lgProbSize, ")");
+      write(" (2**", lgProbSize);
+      for i in 2..rank do write(" x 2**", lgProbSize);
+      write(")");
     }
     writeln();
     writeln("Bytes per array = ", bytesPerArray);

@@ -1,1 +1,1 @@
---verbose=false
+--n=100 --printArrays=false --printStats=false --useRandomSeed=false
