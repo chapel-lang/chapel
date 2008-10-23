@@ -25,6 +25,7 @@ system("cd $tmpdir && svn export -q $svnroot");
        "CHANGES",
        "CONTRIBUTORS",
        "COPYRIGHT", 
+       "GOALS",
        "LICENSE",
        "Makefile",
        "README",
