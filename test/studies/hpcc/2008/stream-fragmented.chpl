@@ -49,7 +49,7 @@ def main() {
 
       minTimes[here.id] = min reduce localTimings;
       maxTimes[here.id] = max reduce localTimings;
-      avgTimes[here.id] = (+ reduce localTimings) / numTrials;
+      avgTimes[here.id] = + reduce localTimings / numTrials;
 
       allValidAnswer(here.id) = verifyResults(A, B, C);
     }
