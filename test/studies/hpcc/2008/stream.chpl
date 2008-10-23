@@ -31,8 +31,8 @@ config const numTrials = 10,
 
 //
 // Configuration constants to indicate whether or not to use a
-// pseudo-random seed (based on the clock) or a fixed seed; or to
-// specify the seed explicitly
+// pseudo-random seed (based on the clock) or a fixed seed; and to
+// specify the fixed seed explicitly
 //
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.clockMS else 314159265;
