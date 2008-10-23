@@ -103,3 +103,6 @@ void _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
 void _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   (*f)(arg);
 }
+
+void chpl_startCommDiagnosis() { }
+void chpl_stopCommDiagnosis() { }

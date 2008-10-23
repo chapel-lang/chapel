@@ -47,6 +47,14 @@ def _throwOpError(param op: string) {
     compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
 }
 
+def _startCommDiagnosis() {
+  __primitive("chpl_startCommDiagnosis");
+}
+
+def _stopCommDiagnosis() {
+  __primitive("chpl_stopCommDiagnosis");
+}
+
 //
 // assignment on primitive types
 //

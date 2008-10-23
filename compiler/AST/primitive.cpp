@@ -576,4 +576,7 @@ initPrimitive() {
   prim_def(PRIMITIVE_PRIVATE_GET_CLASS, "chpl_getPrivateClass",  returnInfoFirst);
 
   prim_def("mem_used", returnInfoUInt64, false, true);
+
+  prim_def("chpl_startCommDiagnosis", returnInfoVoid, true);
+  prim_def("chpl_stopCommDiagnosis", returnInfoVoid, true);
 }

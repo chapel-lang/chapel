@@ -12,6 +12,7 @@
 #include "gasnet.h"
 
 #define CHPL_DIST_DEBUG 0
+static int chpl_comm_debug = 0; // set via _startCommDiagnosis in .chpl
 
 //
 // The following macro is from the GASNet test.h distribution
@@ -269,7 +270,8 @@ void _chpl_comm_broadcast_private(void* addr, int size) {
 
 void _chpl_comm_barrier(const char *msg) {
 #if CHPL_DIST_DEBUG
-  printf("%d: barrier for '%s'\n", _localeID, msg);
+  if (chpl_comm_debug)
+    printf("%d: barrier for '%s'\n", _localeID, msg);
 #endif
   gasnet_barrier_notify(0, GASNET_BARRIERFLAG_ANONYMOUS);
   GASNET_Safe(gasnet_barrier_wait(0, GASNET_BARRIERFLAG_ANONYMOUS));
@@ -299,6 +301,7 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
     bcopy(addr, raddr, size);
   } else {
 #if CHPL_DIST_DEBUG
+  if (chpl_comm_debug)
     printf("%d: remote put to %d\n", _localeID, locale);
 #endif
     gasnet_put(locale, raddr, addr, size); // node, dest, src, size
@@ -310,6 +313,7 @@ void  _chpl_comm_get(void* addr, int32_t locale, const void* raddr, int32_t size
     bcopy(raddr, addr, size);
   } else {
 #if CHPL_DIST_DEBUG
+  if (chpl_comm_debug)
     printf("%d: remote get from %d\n", _localeID, locale);
 #endif
     gasnet_get(addr, locale, (void*)raddr, size); // dest, node, src, size
@@ -333,6 +337,7 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
                false, info->serial_state, NULL);
   } else {
 #if CHPL_DIST_DEBUG
+  if (chpl_comm_debug)
     printf("%d: remote non-blocking thread created on %d\n", _localeID, locale);
 #endif
     GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB, info, info_size));
@@ -348,6 +353,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
     (*f)(arg);
   } else {
 #if CHPL_DIST_DEBUG
+  if (chpl_comm_debug)
     printf("%d: remote thread created on %d\n", _localeID, locale);
 #endif
     info_size = sizeof(fork_t) + arg_size;
@@ -366,3 +372,15 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
     GASNET_BLOCKUNTIL(1==done);
   }
 }
+
+void chpl_startCommDiagnosis() {
+  chpl_comm_debug = 1;
+  _chpl_comm_broadcast_private(&chpl_comm_debug, sizeof(int));
+}
+
+void chpl_stopCommDiagnosis() {
+  chpl_comm_debug = 0;
+  _chpl_comm_broadcast_private(&chpl_comm_debug, sizeof(int));
+}
+
+
