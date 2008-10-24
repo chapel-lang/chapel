@@ -952,7 +952,7 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
     fn->insertAtTail(
       new CallExpr(PRIMITIVE_RETURN, new CallExpr("_scan", globalOp, data)));
   } else {
-    if (!fsjd || fSerial || fSerialForall) {
+    if (!fParallelizeReductionsPromotions || fSerial || fSerialForall) {
       VarSymbol* index = newTemp("_index");
       fn->insertAtTail(new DefExpr(index));
       fn->insertAtTail(buildForLoopStmt(new SymExpr(index), new SymExpr(data), new BlockStmt(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("accumulate")), index))));

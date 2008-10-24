@@ -41,7 +41,7 @@ int trace_level = 0;
 int fcg = 0;
 static bool fBaseline = false;
 static bool fFastFlag = false;
-bool fsjd = false;
+bool fParallelizeReductionsPromotions = false;
 bool fNoCopyPropagation = false;
 bool fNoDeadCodeElimination = false;
 bool fNoScalarReplacement = false;
@@ -383,7 +383,7 @@ static ArgumentDescription arg_desc[] = {
  {"extra-verification", ' ', NULL, "Do extra verification between passes", "F", &fExtraVerification, "CHPL_EXTRA_VERIFICATION", NULL},
  {"no-codegen", ' ', NULL, "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},
- {"sjd", ' ', NULL, "enable parallelism (sjd change)", "F", &fsjd, NULL, NULL},
+ {"parallelize-reductions-promotions", ' ', NULL, "parallelize reductions and promotions (work in progress)", "F", &fParallelizeReductionsPromotions, NULL, NULL},
  {"test-int-sizes", ' ', NULL, "Test compiler's internal integer sizes", "F", &testIntSizes, "CHPL_TEST_INT_SIZES", verifyIntSizes},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},

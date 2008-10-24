@@ -467,14 +467,14 @@ buildPromotionWrapper(FnSymbol* fn,
   if (indicesCall->numActuals() == 1)
     indices = indicesCall->get(1)->remove();
   if (fn->getReturnSymbol() == gVoid) {
-    if (!fsjd || fSerial || fSerialForall)
+    if (!fParallelizeReductionsPromotions || fSerial || fSerialForall)
       wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(actualCall))));
     else
       wrapper->insertAtTail(new BlockStmt(buildForallLoopStmt(indices, iterator, new BlockStmt(actualCall))));
   } else {
     wrapper->addFlag(FLAG_ITERATOR_FN);
     wrapper->removeFlag(FLAG_INLINE);
-    if (fsjd && !fSerial && !fSerialForall) {
+    if (fParallelizeReductionsPromotions && !fSerial && !fSerialForall) {
       SymbolMap leaderMap;
       FnSymbol* lifn = wrapper->copy(&leaderMap);
       form_Map(SymbolMapElem, e, leaderMap) {
