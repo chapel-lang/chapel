@@ -13,7 +13,6 @@ const radix = 4;               // the radix of this FFT implementation
 const numVectors = 2;          // the number of vectors to be stored
 type elemType = complex(128);  // the element type of the vectors
 
-
 //
 // A configuration constant defining log2(problem size) -- n -- and a
 // constant defining the problem size itself -- m
@@ -257,8 +256,6 @@ def bitReverse(val: ?valType, revBits = 64) {
 //
 def log4(x) return logBasePow2(x, 2);  
 
-
-            
 //
 // verify that the results are correct by reapplying the dfft and then
 // calculating the maximum error, comparing against epsilon
@@ -278,7 +275,6 @@ def verifyResults(z, Z, Twiddles) {
 
   return (maxerr < threshold);
 }
-
 
 //
 // print out sucess/failure, the timing, and the Gflop/s value

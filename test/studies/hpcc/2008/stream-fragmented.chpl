@@ -32,18 +32,19 @@ def main() {
   
   coforall loc in Locales {
     on loc {
-      const MyProblemSpace: domain(1, indexType) 
+      const myProblemSpace: domain(1, indexType) 
                           = BlockPartition(ProblemSpace, here.id, numLocales);
 
-      var A, B, C: [MyProblemSpace] elemType;
+      var myA, myB, myC: [myProblemSpace] elemType;
 
-      initVectors(B, C, ProblemSpace);
+      initVectors(myB, myC, ProblemSpace);
 
       const localTimings: [1..numTrials] real;
 
       for trial in 1..numTrials {
         const startTime = getCurrentTime();
-        A = B + alpha * C;
+	for (a, b, c) in (myA, myB, myC) do
+	  a = b + alpha * c;
         localTimings(trial) = getCurrentTime() - startTime;
       }
 
@@ -51,7 +52,7 @@ def main() {
       maxTimes[here.id] = max reduce localTimings;
       avgTimes[here.id] = + reduce localTimings / numTrials;
 
-      allValidAnswer(here.id) = verifyResults(A, B, C);
+      allValidAnswer(here.id) = verifyResults(myA, myB, myC);
     }
   }
 
