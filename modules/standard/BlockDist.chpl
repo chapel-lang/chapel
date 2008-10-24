@@ -382,8 +382,14 @@ class Block1DDom: BaseArithmeticDomain {
     // parallelism is expressed at that level?  Seems like a nice
     // natural composition and might help with my fears about how
     // stencil communication will be done on a per-locale basis.
+
+    //
+    // factored out for performance (to avoid remote communication)
+    //
+    var low = whole.low;
+
     for i in follower {
-      yield i + whole.low;
+      yield i + low;
     }
   }
 
