@@ -130,7 +130,7 @@ def verifyResults(T: [?TDom], Updates) {
   //
   // TODO: atomic isn't implemented
   //
-  forall (_,r) in (Updates, RAStream()) do
+  forall (_, r) in (Updates, RAStream()) do
     atomic T(r & indexMask) ^= r;
 
   //
