@@ -63,30 +63,26 @@ def main() {
   const MatVectSpace: domain(2, indexType) = [1..n, 1..n+1],
         MatrixSpace = MatVectSpace[.., ..n];
 
-  var A  : [MatVectSpace] elemType,  // the matrix A (and vector b)
+  var Ab : [MatVectSpace] elemType,  // the matrix A and vector b
       piv: [1..n] indexType,         // a vector of pivot values
       x  : [1..n] elemType;          // the solution vector, x
 
-  var b => A[.., n+1];               // an alias for the last column of A
+  var A => Ab[MatrixSpace],          // an alias for the Matrix part of Ab
+      b => Ab[.., n+1];              // an alias for the last column of Ab
 
-  //   
-  // construct an n by n+1 matrix filled with random values and scale
-  // it to be in the interval -1.0..1.0
-  //
-  fillRandom(A, seed);
-  A = A * 2.0 - 1.0;
+  initAB(Ab);
 
   const startTime = getCurrentTime();     // capture the start time
 
-  LUFactorize(n, A, piv);                 // compute the LU factorization
+  LUFactorize(n, Ab, piv);                 // compute the LU factorization
 
-  x = backwardSub(n, A[MatrixSpace], b);  // perform the back substitution
+  x = backwardSub(n, A, b);  // perform the back substitution
 
   const execTime = getCurrentTime() - startTime;  // store the elapsed time
 
   //
   // Validate the answer and print the results
-  const validAnswer = verifyResults(A, MatrixSpace, x, b);
+  const validAnswer = verifyResults(Ab, MatrixSpace, x);
   printResults(validAnswer, execTime);
 }
 
@@ -94,9 +90,9 @@ def main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-def LUFactorize(n: indexType, A: [1..n, 1..n+1] elemType,
+def LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
                 piv: [1..n] indexType) {
-  const AD = A.domain;    // alias A.domain to save typing
+  const AbD = Ab.domain;    // alias Ab.domain to save typing
   
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
@@ -126,25 +122,25 @@ def LUFactorize(n: indexType, A: [1..n, 1..n+1] elemType,
        +----+-----+----------------+
   */
   for blk in 1..n by blkSize {
-    const tl = AD[blk..#blkSize, blk..#blkSize],
-          tr = AD[blk..#blkSize, blk+blkSize..],
-          bl = AD[blk+blkSize.., blk..#blkSize],
-          br = AD[blk+blkSize.., blk+blkSize..],
-          l  = AD[blk.., blk..#blkSize];
+    const tl = AbD[blk..#blkSize, blk..#blkSize],
+          tr = AbD[blk..#blkSize, blk+blkSize..],
+          bl = AbD[blk+blkSize.., blk..#blkSize],
+          br = AbD[blk+blkSize.., blk+blkSize..],
+          l  = AbD[blk.., blk..#blkSize];
 
     //
-    // Now that we've sliced and diced A properly, do the blocked-LU
+    // Now that we've sliced and diced Ab properly, do the blocked-LU
     // computation:
     //
-    panelSolve(A, l, piv);
+    panelSolve(Ab, l, piv);
     if (tr.numIndices > 0) then
-      updateBlockRow(A, tl, tr);
+      updateBlockRow(Ab, tl, tr);
     
     //
     // update trailing submatrix (if any)
     //
     if (br.numIndices > 0) then
-      schurComplement(A, blk);
+      schurComplement(Ab, blk);
   }
 }
 
@@ -177,8 +173,8 @@ def LUFactorize(n: indexType, A: [1..n, 1..n+1] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-def schurComplement(A: [1..n, 1..n+1] elemType, ptOp: indexType) {
-  const AD = A.domain;
+def schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
+  const AbD = Ab.domain;
 
   //
   // Calculate location of ptSol (see diagram above)
@@ -191,18 +187,18 @@ def schurComplement(A: [1..n, 1..n+1] elemType, ptOp: indexType) {
   // replicated distributions aren't implemented yet, but imagine that
   // they look something like the following:
   //
-  //var replAD: domain(2) 
+  //var replAbD: domain(2) 
   //            distributed new Dimensional(BlkCyc(blkSize), Replicated)) 
-  //          = AD[ptSol.., 1..#blkSize];
+  //          = AbD[ptSol.., 1..#blkSize];
   //
-  const replAD: domain(2) = AD[ptSol.., ptOp..#blkSize],
-        replBD: domain(2) = AD[ptOp..#blkSize, ptSol..];
+  const replAD: domain(2) = AbD[ptSol.., ptOp..#blkSize],
+        replBD: domain(2) = AbD[ptOp..#blkSize, ptSol..];
     
-  const replA : [replAD] elemType = A[ptSol.., ptOp..#blkSize],
-        replB : [replBD] elemType = A[ptOp..#blkSize, ptSol..];
+  const replA : [replAD] elemType = Ab[ptSol.., ptOp..#blkSize],
+        replB : [replBD] elemType = Ab[ptOp..#blkSize, ptSol..];
 
   // do local matrix-multiply on a block-by-block basis
-  forall (row,col) in AD[ptSol.., ptSol..] by (blkSize, blkSize) {
+  forall (row,col) in AbD[ptSol.., ptSol..] by (blkSize, blkSize) {
     //
     // At this point, the dgemms should all be local, so assert that
     // fact
@@ -210,14 +206,14 @@ def schurComplement(A: [1..n, 1..n+1] elemType, ptOp: indexType) {
     local {
       const aBlkD = replAD[row..#blkSize, ptOp..#blkSize],
             bBlkD = replBD[ptOp..#blkSize, col..#blkSize],
-            cBlkD = AD[row..#blkSize, col..#blkSize];
+            cBlkD = AbD[row..#blkSize, col..#blkSize];
 
       dgemm(aBlkD.dim(1).length,
             aBlkD.dim(2).length,
             bBlkD.dim(2).length,
             replA(aBlkD),
             replB(bBlkD),
-            A(cBlkD));
+            Ab(cBlkD));
     }
   }
 }
@@ -243,17 +239,17 @@ def dgemm(p: indexType,       // number of rows in A
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-def panelSolve(A: [] ?t,
+def panelSolve(Ab: [] ?t,
                panel: domain(2, indexType),
                piv: [] indexType) {
   const pnlRows = panel.dim(1),
         pnlCols = panel.dim(2);
 
   //
-  // Ideally some type of assertion to ensure panel is embedded in A's
+  // Ideally some type of assertion to ensure panel is embedded in Ab's
   // domain
   //
-  assert(piv.domain.dim(1) == A.domain.dim(1));
+  assert(piv.domain.dim(1) == Ab.domain.dim(1));
   
   if (pnlCols.length == 0) then return;
   
@@ -267,13 +263,13 @@ def panelSolve(A: [] ?t,
     // do this in two steps since if I assign it like (pivot, pivotRow) =
     // maxloc(...) pivot will be assigned to the absolute value, not the
     // actual value.
-    const (_, pivotRow) = maxloc reduce(abs(A(col)), col.dim(1)),
-          pivot = A[pivotRow, k];
+    const (_, pivotRow) = maxloc reduce(abs(Ab(col)), col.dim(1)),
+          pivot = Ab[pivotRow, k];
     
     // Swap the current row with the pivot row
     piv[k] <=> piv[pivotRow];
 
-    A[k, ..] <=> A[pivotRow, ..];
+    Ab[k, ..] <=> Ab[pivotRow, ..];
     
     if (pivot == 0) then
       halt("Matrix can not be factorized");
@@ -281,12 +277,12 @@ def panelSolve(A: [] ?t,
     // divide all values below and in the same col as the pivot by
     // the pivot
     if k+1 <= pnlRows.high then
-      A(col)[k+1.., k..k] /= pivot;
+      Ab(col)[k+1.., k..k] /= pivot;
     
     // update all other values below the pivot
     if k+1 <= pnlRows.high && k+1 <= pnlCols.high then
       forall (i,j) in panel[k+1.., k+1..] do
-        A[i,j] -= A[i,k] * A[k,j];
+        Ab[i,j] -= Ab[i,k] * Ab[k,j];
   }
 }
 
@@ -296,7 +292,7 @@ def panelSolve(A: [] ?t,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-def updateBlockRow(A: [] ?t, tl: domain(2), tr: domain(2)) {
+def updateBlockRow(Ab: [] ?t, tl: domain(2), tr: domain(2)) {
   const tlRows = tl.dim(1),
         tlCols = tl.dim(2),
         trRows = tr.dim(1),
@@ -312,7 +308,7 @@ def updateBlockRow(A: [] ?t, tl: domain(2), tr: domain(2)) {
   for i in trRows do
     forall j in trCols do
       for k in tlRows.low..i-1 do
-        A[i, j] -= A[i, k] * A[k,j];
+        Ab[i, j] -= Ab[i, k] * Ab[k,j];
 }
 
 //
@@ -346,20 +342,28 @@ def printConfiguration() {
   }
 }
 
+//   
+// construct an n by n+1 matrix filled with random values and scale
+// it to be in the range -1.0..1.0
+//
+def initAB(Ab: [] elemType) {
+  fillRandom(Ab, seed);
+  Ab = Ab * 2.0 - 1.0;
+}
 
 //
-// verify the results
+// calculate norms and residuals to verify the results
 //
-def verifyResults(A, MatrixSpace, x, b) {
-  // calculate and report verification residuals
-  fillRandom(A, seed);
-  A = A * 2.0 - 1.0;
+def verifyResults(Ab, MatrixSpace, x) {
+  var A => Ab[MatrixSpace],
+      b => Ab[.., n+1];
+
+  initAB(Ab);
   
-  const axmbNorm = norm(gaxpyMinus(n, n, A[MatrixSpace], x, b), 
-                        normType.normInf);
+  const axmbNorm = norm(gaxpyMinus(n, n, A, x, b), normType.normInf);
 
-  const a1norm   = norm(A[MatrixSpace], normType.norm1),
-        aInfNorm = norm(A[MatrixSpace], normType.normInf),
+  const a1norm   = norm(A, normType.norm1),
+        aInfNorm = norm(A, normType.normInf),
         x1Norm   = norm(x, normType.norm1),
         xInfNorm = norm(x, normType.normInf);
 
