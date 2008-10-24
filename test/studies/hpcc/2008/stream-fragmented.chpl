@@ -27,12 +27,12 @@ def main() {
 
   const ProblemSpace: domain(1, indexType) = [1..m];
 
-  var minTimes, maxTimes, avgTimes: [LocaleSpace] real,
+  var localGBs: [LocaleSpace] real,
       allValidAnswer: [LocaleSpace] bool;
   
   coforall loc in Locales {
     on loc {
-      const myProblemSpace: domain(1, indexType) 
+      const myProblemSpace: domain(1, indexType)
                           = BlockPartition(ProblemSpace, here.id, numLocales);
 
       var myA, myB, myC: [myProblemSpace] elemType;
@@ -43,26 +43,27 @@ def main() {
 
       for trial in 1..numTrials {
         const startTime = getCurrentTime();
-	for (a, b, c) in (myA, myB, myC) do
+        local {
+	forall (a, b, c) in (myA, myB, myC) do
 	  a = b + alpha * c;
+        }
         localTimings(trial) = getCurrentTime() - startTime;
       }
 
-      minTimes[here.id] = min reduce localTimings;
-      maxTimes[here.id] = max reduce localTimings;
-      avgTimes[here.id] = + reduce localTimings / numTrials;
+      const myMinTime = min reduce localTimings;
 
+      localGBs(here.id) = numVectors * numBytes(elemType) * (m / myMinTime) * 1e-9;
       allValidAnswer(here.id) = verifyResults(myA, myB, myC);
     }
   }
 
-  const minTime = min reduce minTimes,
-        maxTime = max reduce maxTimes,
-        avgTime = + reduce avgTimes / numLocales;
+  const minGBs = min reduce localGBs,
+        maxGBs = max reduce localGBs,
+        avgGBs = + reduce localGBs / numLocales;
 
   const validAnswer = & reduce allValidAnswer;
 
-  printResults(validAnswer, minTime, avgTime, maxTime);
+  printResults(validAnswer, minGBs, avgGBs, maxGBs);
 }
 
 
@@ -98,15 +99,12 @@ def verifyResults(A, B, C) {
 }
 
 
-def printResults(successful, minTime, avgTime, maxTime) {
+def printResults(successful, minGBs, avgGBs, maxGBs) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
-    writeln("Execution time:");
-    writeln("  min = ", minTime);
-    writeln("  avg = ", avgTime);
-    writeln("  max = ", maxTime);
-
-    const GBPerSec = numVectors * numBytes(elemType) * (m / minTime) * 1e-9;
-    writeln("Performance (GB/s) = ", GBPerSec);
+    writeln("Fragmented, per-locale GBs:");
+    writeln("  min = ", minGBs);
+    writeln("  avg = ", avgGBs);
+    writeln("  max = ", maxGBs);
   }
 }
