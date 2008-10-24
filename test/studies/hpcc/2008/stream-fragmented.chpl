@@ -37,7 +37,7 @@ def main() {
 
       var myA, myB, myC: [myProblemSpace] elemType;
 
-      initVectors(myB, myC, ProblemSpace);
+      initVectors(myB, myC, myProblemSpace);
 
       const localTimings: [1..numTrials] real;
 
