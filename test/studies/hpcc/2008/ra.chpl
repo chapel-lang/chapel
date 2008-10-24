@@ -79,14 +79,14 @@ var T: [TableSpace] elemType;
 def main() {
   printConfiguration();   // print the problem size, number of trials, etc.
 
-  const startTime = getCurrentTime();              // capture the start time
-
   //
   // In parallel, initialize the table such that each position
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
   // i in TableSpace"
   //
   [i in TableSpace] T(i) = i;
+
+  const startTime = getCurrentTime();              // capture the start time
 
   //
   // The main computation: Iterate over the set of updates and the
