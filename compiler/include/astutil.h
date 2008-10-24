@@ -104,6 +104,7 @@ void sibling_insert_help(BaseAST* sibling, BaseAST* ast);
 void insert_help(BaseAST* ast, Expr* parentExpr, Symbol* parentSymbol);
 
 ArgSymbol* actual_to_formal( Expr *a);
+Expr* formal_to_actual(CallExpr* call, Symbol* formal);
 
 // move to resolve when scope resolution is put in resolution directory
 BlockStmt* getVisibilityBlock(Expr* expr);

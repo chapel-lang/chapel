@@ -432,6 +432,124 @@ makeHeapAllocations() {
   }
 }
 
+static bool isSafeToDeref(Symbol* startSym, Symbol* ref, FnSymbol* fn, Vec<FnSymbol*>* visited) {
+  if (!visited) {
+    Vec<FnSymbol*> newVisited;
+    return isSafeToDeref(startSym, ref, fn, &newVisited);
+  }
+  if (visited->set_in(fn))
+    return true;
+  visited->set_add(fn);
+
+  Vec<Symbol*> locals;
+  Vec<BaseAST*> asts;
+  collect_asts(fn, asts);
+
+  for_formals(formal, fn) {
+    locals.set_add(formal);
+  }
+
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (isVarSymbol(def->sym)) {
+        locals.set_add(def->sym);
+      }
+    }
+  }
+
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  asts.clear();
+  collect_asts(fn, asts);
+  buildDefUseMaps(locals, asts, defMap, useMap);
+
+  if (defMap.get(ref) && defMap.get(ref)->n > 0) {
+    if (startSym == ref || defMap.get(ref)->n != 1) {
+      freeDefUseMaps(defMap, useMap);
+      return false;
+    }
+  }
+
+  for_uses(use, useMap, ref) {
+    if (CallExpr* call = toCallExpr(use->parentExpr)) {
+      if (FnSymbol* newfn = call->isResolved()) {
+        ArgSymbol* formal = actual_to_formal(use);
+        if (isSafeToDeref(startSym, formal, newfn, visited)) {
+          continue;
+        } else {
+          freeDefUseMaps(useMap, defMap);
+          return false;
+        }
+      } else {
+        if (call->isPrimitive(PRIMITIVE_GET_REF)) {
+          continue;
+        }
+        if (call->isPrimitive(PRIMITIVE_MOVE)) {
+          SymExpr* newRef = toSymExpr(call->get(1));
+          INT_ASSERT(newRef);
+          Vec<FnSymbol*> newVisited;
+          if (isSafeToDeref(startSym, newRef->var, fn, &newVisited)) {
+            continue;
+          } else {
+            freeDefUseMaps(useMap, defMap);
+            return false;
+          }
+        }
+      }  
+ 
+    }
+  }
+  freeDefUseMaps(useMap, defMap);
+  return true;
+
+}
+
+static
+void passReadOnlyByValue(CallExpr* call, FnSymbol* fn) {
+  Vec<Symbol*> argSet;
+  
+  for_formals(formal, fn) {
+    argSet.set_add(formal);
+  }
+
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  Vec<BaseAST*> asts;
+
+  collect_asts(fn, asts);
+  buildDefUseMaps(argSet, asts, defMap, useMap);
+
+  forv_Vec(Symbol, arg, argSet) {
+    if (arg && (!defMap.get(arg) || defMap.get(arg)->n == 0)) {
+      if (arg->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+        if (!toClassType(arg->type->getValueType())) {
+          bool unsafe = false;
+          unsafe = !isSafeToDeref(arg, arg, fn, NULL);
+          if (!unsafe) {
+            arg->type = arg->type->getValueType();
+            Expr* actual = formal_to_actual(call, arg);
+            INT_ASSERT(actual);
+            if (actual->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+              VarSymbol* var = newTemp("deref", arg->type);
+              call->insertBefore(new DefExpr(var));
+              call->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_GET_REF, actual->copy())));
+              actual->replace(new SymExpr(var));
+            }
+
+            for_uses(use, useMap, arg) {
+              VarSymbol* ref = newTemp("ref", arg->typeInfo()->getReferenceType());
+              use->getStmtExpr()->insertBefore(new DefExpr(ref));
+              use->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, ref, new CallExpr(PRIMITIVE_SET_REF, arg)));
+              use->replace(new SymExpr(ref));
+            }
+          }
+        }
+      }
+    }
+  }
+  freeDefUseMaps(defMap, useMap);
+}
+
 
 void
 parallel(void) {
@@ -480,6 +598,86 @@ parallel(void) {
   }
   flattenNestedFunctions(nestedFunctions);
 
+  //
+  // compute set of functions that access sync variables (and thus are
+  // not candidates for this optimization that moves reads)
+  //
+  // first- look for sync access primitives
+  //
+  Vec<FnSymbol*> syncAccessFunctionSet;
+  Vec<FnSymbol*> syncAccessFunctionVec;
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->parentSymbol) {
+        if (call->isPrimitive(PRIMITIVE_SYNC_INIT) ||
+            call->isPrimitive(PRIMITIVE_SYNC_DESTROY) ||
+            call->isPrimitive(PRIMITIVE_SYNC_LOCK) ||
+            call->isPrimitive(PRIMITIVE_SYNC_UNLOCK) ||
+            call->isPrimitive(PRIMITIVE_SYNC_WAIT_FULL) ||
+            call->isPrimitive(PRIMITIVE_SYNC_WAIT_EMPTY) ||
+            call->isPrimitive(PRIMITIVE_SYNC_SIGNAL_FULL) ||
+            call->isPrimitive(PRIMITIVE_SYNC_SIGNAL_EMPTY) ||
+            call->isPrimitive(PRIMITIVE_SINGLE_INIT) ||
+            call->isPrimitive(PRIMITIVE_SINGLE_LOCK) ||
+            call->isPrimitive(PRIMITIVE_SINGLE_UNLOCK) ||
+            call->isPrimitive(PRIMITIVE_SINGLE_WAIT_FULL) ||
+            call->isPrimitive(PRIMITIVE_SINGLE_SIGNAL_FULL) ||
+            call->isPrimitive(PRIMITIVE_WRITEEF) ||
+            call->isPrimitive(PRIMITIVE_WRITEFF) ||
+            call->isPrimitive(PRIMITIVE_WRITEXF) ||
+            call->isPrimitive(PRIMITIVE_SYNC_RESET) ||
+            call->isPrimitive(PRIMITIVE_READFE) ||
+            call->isPrimitive(PRIMITIVE_READFF) ||
+            call->isPrimitive(PRIMITIVE_READXX) ||
+            call->isPrimitive(PRIMITIVE_SYNC_ISFULL) ||
+            call->isPrimitive(PRIMITIVE_SINGLE_WRITEEF) ||
+            call->isPrimitive(PRIMITIVE_SINGLE_RESET) ||
+            call->isPrimitive(PRIMITIVE_SINGLE_READFF) ||
+            call->isPrimitive(PRIMITIVE_SINGLE_READXX) ||
+            call->isPrimitive(PRIMITIVE_SINGLE_ISFULL)) {
+          FnSymbol* parent = toFnSymbol(call->parentSymbol);
+          INT_ASSERT(parent);
+          if (!syncAccessFunctionSet.set_in(parent)) {
+            syncAccessFunctionSet.set_add(parent);
+            syncAccessFunctionVec.add(parent);
+          }
+        }
+      }
+    }
+  }
+
+  //
+  // second- compute the call graph
+  //
+  compute_call_sites();
+
+  //
+  // third- traverse the call graph to find all functions that call
+  // sync access primitives through another function call
+  //
+  forv_Vec(FnSymbol, fn, syncAccessFunctionVec) {
+    forv_Vec(CallExpr, caller, *fn->calledBy) {
+      FnSymbol* parent = toFnSymbol(caller->parentSymbol);
+      INT_ASSERT(parent);
+      if (!syncAccessFunctionSet.set_in(parent)) {
+        syncAccessFunctionSet.set_add(parent);
+        syncAccessFunctionVec.add(parent);
+      }      
+    }
+  }
+
+  forv_Vec(BaseAST, ast, gAsts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->parentSymbol)
+        if (FnSymbol* fn = call->isResolved())
+          if (fn->hasFlag(FLAG_ON) ||
+              fn->hasFlag(FLAG_BEGIN) ||
+              fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))
+            if (!syncAccessFunctionSet.set_in(fn))
+              passReadOnlyByValue(call, fn);
+    }
+  }
+
   makeHeapAllocations();
 
   compute_call_sites();
@@ -522,8 +720,9 @@ parallel(void) {
   forv_Vec(CallExpr, call, calls) {
     if (call->isResolved() && (call->isResolved()->hasFlag(FLAG_ON) ||
                                call->isResolved()->hasFlag(FLAG_BEGIN) ||
-                               call->isResolved()->hasFlag(FLAG_COBEGIN_OR_COFORALL)))
+                               call->isResolved()->hasFlag(FLAG_COBEGIN_OR_COFORALL))) {
       bundleArgs(call);
+    }
   }
 }
 

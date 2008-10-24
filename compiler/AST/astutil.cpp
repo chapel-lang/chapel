@@ -310,6 +310,15 @@ actual_to_formal(Expr *a) {
 }
 
 
+Expr* formal_to_actual(CallExpr* call, Symbol* formal) {
+  for_actuals(expr, call) {
+    if (actual_to_formal(expr) == formal)
+      return expr;
+  }
+  return NULL;
+}
+
+
 static void
 pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   types.set_add(ts);
