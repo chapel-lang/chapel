@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include "chplcomm.h"
 #include "chplmem.h"
 #include "chplrt.h"
 #include "chpltypes.h"
@@ -429,6 +430,18 @@ static size_t computeChunkSize(size_t number, size_t size, int zeroOK,
 }
 
 
+#define MEM_DIAGNOSIS 0
+static int chpl_memDiagnosisFlag = 0;
+
+void chpl_startMemDiagnosis() {
+  chpl_memDiagnosisFlag = 1;
+}
+
+void chpl_stopMemDiagnosis() {
+  chpl_memDiagnosisFlag = 0;
+}
+
+
 void* chpl_malloc(size_t number, size_t size,
                   const char* description,
                   int32_t lineno, _string filename) {
@@ -453,6 +466,14 @@ void* chpl_malloc(size_t number, size_t size,
       chpl_mutex_unlock(&_memstat_lock);
     }
   }
+
+#if MEM_DIAGNOSIS
+  if (chpl_memDiagnosisFlag)
+    printf("MD- %d:%p chpl_malloc(%lu, %lu, \"%s\", %d, %s)\n",
+           _localeID, memAlloc, (unsigned long)number,
+           (unsigned long)size, description, lineno, filename);
+#endif
+
   return memAlloc;
 }
 
@@ -515,7 +536,13 @@ void chpl_free(void* memAlloc, int32_t lineno, _string filename) {
       removeMemory(memAlloc, lineno, filename);
       chpl_mutex_unlock(&_memtrack_lock);
     }
+
+#if MEM_DIAGNOSIS
+    if (chpl_memDiagnosisFlag)
+      printf("MD- %d:%p chpl_free(%d, %s)\n", _localeID, memAlloc, lineno, filename);
+#endif
   }
+
   free(memAlloc);
 }
 

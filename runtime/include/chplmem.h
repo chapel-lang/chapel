@@ -36,6 +36,9 @@ void setMemtrack(void);
 void setMemthreshold(int64_t value);
 void setMemtrace(char* memLogname);
 
+void chpl_startMemDiagnosis(void);
+void chpl_stopMemDiagnosis(void);
+
 #define CHPL_ALLOC_PERMIT_ZERO(s,d,l,f) ((s == 0) ? 0x0 : chpl_alloc(s,d,l,f))
 #define chpl_alloc(size, description, lineno, filename) \
   chpl_malloc(1, size, description, lineno, filename)

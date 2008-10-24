@@ -55,6 +55,18 @@ def _stopCommDiagnosis() {
   __primitive("chpl_stopCommDiagnosis");
 }
 
+def _startMemDiagnosis() {
+  for loc in Locales do if loc != here then on loc do
+    __primitive("chpl_startMemDiagnosis");
+  __primitive("chpl_startMemDiagnosis");
+}
+
+def _stopMemDiagnosis() {
+  __primitive("chpl_stopMemDiagnosis");
+  for loc in Locales do if loc != here then on loc do
+    __primitive("chpl_stopMemDiagnosis");
+}
+
 //
 // assignment on primitive types
 //

@@ -435,6 +435,10 @@ static size_t computeChunkSize(size_t number, size_t size, int zeroOK,
 }
 
 
+void chpl_startMemDiagnosis() { }
+void chpl_stopMemDiagnosis() { }
+
+
 void* chpl_malloc(size_t number, size_t size, const char* description,
                          int32_t lineno, _string filename) {
   size_t chunk = computeChunkSize(number, size, 0, lineno, filename);

@@ -579,4 +579,7 @@ initPrimitive() {
 
   prim_def("chpl_startCommDiagnosis", returnInfoVoid, true);
   prim_def("chpl_stopCommDiagnosis", returnInfoVoid, true);
+
+  prim_def("chpl_startMemDiagnosis", returnInfoVoid, true);
+  prim_def("chpl_stopMemDiagnosis", returnInfoVoid, true);
 }

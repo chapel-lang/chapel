@@ -64,7 +64,7 @@ static void AM_fork_nb(gasnet_token_t  token,
                         size_t          nbytes) {
   fork_t *f;
 
-  f = (fork_t*)chpl_malloc(nbytes, sizeof(char), "", 0, 0);
+  f = (fork_t*)chpl_malloc(nbytes, sizeof(char), "AM_fork_nb info", 0, 0);
   bcopy(buf, f, nbytes);
   chpl_begin((chpl_threadfp_t)fork_nb_wrapper, (chpl_threadarg_t)f,
              true, f->serial_state, NULL);
@@ -88,7 +88,7 @@ static void AM_fork(gasnet_token_t  token,
                      size_t          nbytes) {
   fork_t *f;
 
-  f = (fork_t*)chpl_malloc(nbytes, sizeof(char), "", 0, 0);
+  f = (fork_t*)chpl_malloc(nbytes, sizeof(char), "AM_fork info", 0, 0);
   bcopy(buf, f, nbytes);
   chpl_begin((chpl_threadfp_t)fork_wrapper, (chpl_threadarg_t)f,
              true, f->serial_state, NULL);
@@ -329,7 +329,7 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   int           info_size;
 
   info_size = sizeof(fork_t) + arg_size;
-  info = (fork_t*) chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork_nb", 0, 0);
+  info = (fork_t*) chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork_nb info", 0, 0);
   info->caller = _localeID;
   info->serial_state = chpl_get_serial();
   info->fun = f;
@@ -345,6 +345,7 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
     printf("%d: remote non-blocking thread created on %d\n", _localeID, locale);
 #endif
     GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB, info, info_size));
+    chpl_free(info, 0, 0);
   }
 }
 
@@ -361,7 +362,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
     printf("%d: remote thread created on %d\n", _localeID, locale);
 #endif
     info_size = sizeof(fork_t) + arg_size;
-    info = (fork_t*) chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork", 0, 0);
+    info = (fork_t*) chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork info", 0, 0);
 
     info->caller = _localeID;
     info->ack = &done;
@@ -374,6 +375,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
     done = 0;
     GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK, info, info_size));
     GASNET_BLOCKUNTIL(1==done);
+    chpl_free(info, 0, 0);
   }
 }
 
@@ -388,5 +390,3 @@ void chpl_stopCommDiagnosis() {
   chpl_comm_debug = 0;
   _chpl_comm_broadcast_private(&chpl_comm_debug, sizeof(int));
 }
-
-
