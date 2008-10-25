@@ -18,8 +18,6 @@ module RARandomStream {
   // A serial iterator for the random stream that resets the stream
   // to its 0th element and yields values endlessly.
   //
-  // TODO: Why is this still needed?
-  //
   def RAStream() {
     var val = getNthRandom(0);
     while (1) {

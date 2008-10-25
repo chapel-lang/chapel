@@ -91,8 +91,6 @@ def dfft(A: [?ADom], W) {
   // iterator genDFTStrideSpan that yields the stride and span for
   // each bank of butterfly calculations
   //
-  // TODO: insert an ASCII picture defining str, span, bankStart, etc.
-  //
   for (str, span) in genDFTStrideSpan(numElements) {
     //
     // loop in parallel over each of the banks of butterflies with

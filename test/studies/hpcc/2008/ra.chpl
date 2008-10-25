@@ -92,11 +92,13 @@ def main() {
   // The main computation: Iterate over the set of updates and the
   // stream of random values in a parallel, zippered manner, dropping
   // the update index on the ground ("_") and storing the random value
-  // in r.  Use r both to index into the table and as the update
-  // value.
+  // in r.  Use an on-clause to force the table update to be executed on
+  // the locale which owns the table element in question to minimize
+  // communications.  Compute the update using r both to compute the
+  // index and as the update value.
   //
   forall (_, r) in (Updates, RAStream()) do
-    on T.domain.dist.ind2loc(r&indexMask) do  // TODO: rewrite this
+    on T.domain.dist.ind2loc(r & indexMask) do
       T(r & indexMask) ^= r;
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
@@ -128,10 +130,9 @@ def verifyResults(T: [?TDom], Updates) {
   // Reverse the updates by recomputing them, this time using an
   // atomic statement to ensure no conflicting updates
   //
-  // TODO: atomic isn't implemented
-  //
   forall (_, r) in (Updates, RAStream()) do
-    atomic T(r & indexMask) ^= r;
+    on T.domain.dist.ind2loc(r & indexMask) do
+      atomic T(r & indexMask) ^= r;
 
   //
   // Print the table again after the updates have been reversed
