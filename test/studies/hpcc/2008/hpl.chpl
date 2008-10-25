@@ -24,7 +24,6 @@ config const n = computeProblemSize(numMatrices, elemType, rank=2,
                                     memFraction=2): indexType,
              blkSize = 5;
 
-
 //
 // Configuration constant used for verification thresholds
 //
@@ -144,7 +143,7 @@ def LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
   }
 }
 
-
+//
 // Distributed matrix-multiply for HPL. The idea behind this algorithm is that
 // some point the matrix will be partioned as shown in the following diagram:
 //
@@ -233,7 +232,6 @@ def dgemm(p: indexType,       // number of rows in A
       for k in 1..q do
         C[i,j] -= A[i, k] * B[k, j];
 }
-
 
 //
 // do unblocked-LU decomposition within the specified panel, update the
@@ -331,7 +329,6 @@ def backwardSub(n: int,
   return x;
 }
 
-
 //
 // print out the problem size and block size if requested
 //
@@ -411,4 +408,3 @@ def gaxpyMinus(n: indexType,
 
   return res;
 }
-
