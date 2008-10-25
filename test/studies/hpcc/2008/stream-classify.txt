@@ -27,7 +27,7 @@ DECL
 ////
 ////
 OUT
-OUT
+CHK
 ----
 ////
 ////
@@ -88,7 +88,7 @@ COMP
 OUT
 OUT
 ----
-OUT
+CHK
 OUT
 DECL
 ----
@@ -121,7 +121,7 @@ INIT
 ////
 ////
 ////
-OUT
+CHK
 TEST
 ----
 ////
@@ -129,10 +129,10 @@ TEST
 ////
 ////
 ////
-OUT
+CHK
 ----
-OUT
-OUT
+CHK
+CHK
 ----
 ////
 ////
