@@ -7,20 +7,22 @@ die "CHPL_HOME must be set" unless $home;
 $printusage = 0;
 
 $username = "";
-if (@ARGV) {
+while (@ARGV) {
     $flag = shift @ARGV;
     if ($flag eq "--help" || $flag eq "-h") {
         $printusage = 1;
+    } elsif ($flag eq "--show-first-revision-numbers") {
+        $nrevs = 1;
     } else {
+        if ($username ne "") {
+            $printusage = 1;
+        }
         $username = $flag;
-    }
-    if (@ARGV) {
-        $printusage = 1;
     }
 }
 
 if ($printusage) {
-    print "list_futures [<username>]\n";
+    print "list_futures [--show-first-revision-numbers] [<username>]\n";
     exit 0;
 }
 
@@ -32,17 +34,29 @@ if ($username ne "") {
 @fnames = `find $home/test -name .svn -prune ! -name .svn -or ! -name .svn ! -name . -name *.future`;
 
 foreach $fname (@fnames) {
-  chomp $fname;
-  $worker = `head -n 1 $fname`;
-  chomp $worker;
-  $fname =~ s/.*test\/(.*)\.future$/test\/$1/;
-  if (index($worker, $username) != -1) {
-      push @output, "$worker [$fname]\n";
-  }
+    chomp $fname;
+    $worker = `head -n 1 $fname`;
+    chomp $worker;
+    if (index($worker, $username) != -1) {
+        if ($nrevs) {
+            @log = `svn log $fname`;
+            foreach $line (@log) {
+                if ($line =~ /^r(\d+)\ \|/) {
+                    $num = "$1 ";
+                }
+            }
+        }
+        $fname =~ s/.*test\/(.*)\.future$/test\/$1/;
+        push @output, "$num$worker [$fname]\n";
+    }
 }
 
-@sorted = sort { lc($a) cmp lc($b) } @output;
+if ($nrevs) {
+    @sorted = sort { $a <=> $b } @output;
+} else {
+    @sorted = sort { lc($a) cmp lc($b) } @output;
+}
 
 foreach $line (@sorted) {
-  print $line;
+    print $line;
 }
