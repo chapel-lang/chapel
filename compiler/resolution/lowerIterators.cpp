@@ -175,7 +175,7 @@ setupSimultaneousIterators(Vec<Symbol*>& iterators,
   if (gIterator->type->symbol->hasFlag(FLAG_TUPLE)) {
     ClassType* iteratorType = toClassType(gIterator->type);
     ClassType* indexType = toClassType(gIndex->type);
-    for (int i=1; i <= iteratorType->fields.length(); i++) {
+    for (int i=1; i <= iteratorType->fields.length; i++) {
       Symbol* iterator = newTemp("_iterator", iteratorType->getField(i)->type);
       loop->insertBefore(new DefExpr(iterator));
       loop->insertBefore(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, gIterator, iteratorType->getField(i))));

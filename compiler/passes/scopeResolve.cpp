@@ -853,7 +853,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
 
   // make root records inherit from value
   // make root classes inherit from object
-  if (ct->inherits.length() == 0 && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
+  if (ct->inherits.length == 0 && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
     if (ct->classTag == CLASS_RECORD) {
       ct->dispatchParents.add(dtValue);
       dtValue->dispatchChildren.add(ct);
@@ -936,7 +936,7 @@ void scopeResolve(void) {
       //
       // add field to empty records and unions
       //
-      if (ct->classTag != CLASS_CLASS && ct->fields.isEmpty())
+      if (ct->classTag != CLASS_CLASS && ct->fields.length == 0)
         ct->fields.insertAtHead(
           new DefExpr(
             new VarSymbol("emptyRecordPlaceholder"),

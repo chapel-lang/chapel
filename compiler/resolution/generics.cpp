@@ -119,7 +119,7 @@ instantiate_tuple_init(FnSymbol* fn) {
   ClassType* ct = toClassType(arg->type);
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
-  for (int i = 1; i < ct->fields.length(); i++)
+  for (int i = 1; i < ct->fields.length; i++)
     call->insertAtTail(new CallExpr(PRIMITIVE_INIT, new CallExpr(arg, new_IntSymbol(i))));
   fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, call)));
   normalize(fn);
@@ -133,13 +133,13 @@ instantiate_tuple_hash( FnSymbol* fn) {
   ArgSymbol  *arg = fn->getFormal(1);
   ClassType  *ct = toClassType(arg->type);
   CallExpr *ret;
-  if (ct->fields.length() < 0) {
+  if (ct->fields.length < 0) {
     // unexecuted none/gasnet on 4/25/08
     ret = new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(0, INT_SIZE_64));
   } else {
     CallExpr *call = NULL;
     bool first = true;
-    for (int i=1; i<ct->fields.length(); i++) {
+    for (int i=1; i<ct->fields.length; i++) {
       CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i)); 
       if (first) {
         call =  new CallExpr( "_associative_hash", field_access);

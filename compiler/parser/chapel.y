@@ -427,13 +427,13 @@ forall_stmt:
     { $$ = buildForallLoopStmt(NULL, $2, new BlockStmt($4)); }
 | TLSBR nonempty_expr_ls TIN expr TRSBR stmt
     {
-      if ($2->argList.length() != 1)
+      if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
       $$ = buildForallLoopStmt($2->get(1)->remove(), $4, new BlockStmt($6));
     }
 | TLSBR nonempty_expr_ls TRSBR non_empty_stmt
     {
-      if ($2->argList.length() != 1)
+      if ($2->argList.length != 1)
         USR_FATAL($4, "invalid loop expression");
       $$ = buildForallLoopStmt(NULL, $2->get(1)->remove(), new BlockStmt($4));
     }
@@ -1074,7 +1074,7 @@ distributed_expr: /* not supported in one-locale implementation */
 array_type:
   TLSBR nonempty_expr_ls TIN expr TRSBR type
     { 
-      if ($2->argList.length() != 1)
+      if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
       $$ = new CallExpr("chpl__buildArrayRuntimeType",
                         new CallExpr("chpl__buildDomainExpr", $4), $6, $2->get(1)->remove(),
@@ -1217,7 +1217,7 @@ formal_expr_list_item:
 formal_tuple_paren_expr:
   TLP nonempty_formal_expr_ls TRP 
     { 
-      if ($2->argList.length() == 1) {
+      if ($2->argList.length == 1) {
         $$ = $2->get(1);
         $$->remove();
       } else {
@@ -1320,7 +1320,7 @@ opt_identifier:
 tuple_paren_expr:
   TLP nonempty_expr_ls TRP 
     { 
-      if ($2->argList.length() == 1) {
+      if ($2->argList.length == 1) {
         $$ = $2->get(1);
         $$->remove();
       } else {
@@ -1386,25 +1386,25 @@ expr:
   stmt_level_expr
 | TLSBR nonempty_expr_ls TIN expr TRSBR expr %prec TRSBR
     {
-      if ($2->argList.length() != 1)
+      if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
       $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $6);
     }
 | TLSBR nonempty_expr_ls TRSBR expr %prec TRSBR
     {
-      if ($2->argList.length() != 1)
+      if ($2->argList.length != 1)
         USR_FATAL($4, "invalid loop expression");
       $$ = buildForallLoopExpr(NULL, $2->get(1)->remove(), $4);
     }
 | TLSBR nonempty_expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
-      if ($2->argList.length() != 1)
+      if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
       $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $9, $7);
     }
 | TLSBR nonempty_expr_ls TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
-      if ($2->argList.length() != 1)
+      if ($2->argList.length != 1)
         USR_FATAL($5, "invalid loop expression");
       $$ = buildForallLoopExpr(NULL, $2->get(1)->remove(), $7, $5);
     }

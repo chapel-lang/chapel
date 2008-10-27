@@ -12,13 +12,10 @@ class AList {
   Expr* head;
   Expr* tail;
   BaseAST* parent;
+  int length;
 
   // constructors
   AList();
-
-  // checks for length
-  bool isEmpty(void);
-  int length(void);
 
   // iteration
   Expr* first(void); // begin iteration over a list
@@ -33,9 +30,6 @@ class AList {
 
   // add element(s) at end of list
   void insertAtTail(Expr* new_ast);
-
-  // add element(s) at end of list before goto, if any
-  void insertAtTailBeforeGoto(Expr* new_ast);
 
   // codegen list
   void codegen(FILE* outfile, const char* separator = ", ");
@@ -99,7 +93,7 @@ class AList {
 
 #define for_formals_actuals(formal, actual, call)                       \
   FnSymbol* _alist_fn = (call)->isResolved();                           \
-  if (_alist_fn->numFormals() != (call)->argList.length())         \
+  if (_alist_fn->numFormals() != (call)->argList.length)                \
     INT_FATAL(call, "number of actuals does not match number of formals"); \
   Expr* actual = ((call)->argList.head);                                \
   Expr* _alist_actual_next = (actual) ? actual->next : NULL;            \

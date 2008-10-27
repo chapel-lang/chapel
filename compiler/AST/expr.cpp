@@ -97,6 +97,7 @@ Expr* Expr::remove(void) {
       prev->next = next;
     else
       list->head = next;
+    list->length--;
     next = NULL;
     prev = NULL;
     list = NULL;
@@ -157,6 +158,7 @@ void Expr::insertBefore(Expr* new_ast) {
   prev = new_ast;
   if (parentSymbol)
     sibling_insert_help(this, new_ast);
+  list->length++;
 }
 
 
@@ -177,6 +179,7 @@ void Expr::insertAfter(Expr* new_ast) {
   next = new_ast;
   if (parentSymbol)
     sibling_insert_help(this, new_ast);
+  list->length++;
 }
 
 
@@ -568,7 +571,7 @@ bool CallExpr::isNamed(const char* name) {
 
 
 int CallExpr::numActuals() {
-  return argList.length();
+  return argList.length;
 }
 
 
@@ -1937,7 +1940,7 @@ void CallExpr::codegen(FILE* outfile) {
         fputs("NULL", outfile);
       }
       ClassType *bundledArgsType = toClassType(toSymExpr(get(1))->typeInfo());
-      int lastField = bundledArgsType->fields.length();  // this is the _endCount field
+      int lastField = bundledArgsType->fields.length;  // this is the _endCount field
       if (bundledArgsType->getField(lastField)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         fputs(", (", outfile);
         get(1)->codegen(outfile);
@@ -1981,7 +1984,7 @@ void CallExpr::codegen(FILE* outfile) {
       }
       ClassType *bundledArgsType = toClassType(toSymExpr(get(1))->typeInfo());
       int endCountField = 0;
-      for (int i = 1; i <= bundledArgsType->fields.length(); i++) {
+      for (int i = 1; i <= bundledArgsType->fields.length; i++) {
         if (!strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
                     "_ref(_EndCount)")
             || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,

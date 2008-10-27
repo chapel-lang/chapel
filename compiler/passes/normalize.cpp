@@ -241,10 +241,10 @@ void normalize(void) {
   // perform some checks on destructors
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
-      if (fn->formals.length() < 2
+      if (fn->formals.length < 2
           || toDefExpr(fn->formals.get(1))->sym->typeInfo() != gMethodToken->typeInfo()) {
         USR_FATAL(fn, "destructors must be methods");
-      } else if (fn->formals.length() > 2) {
+      } else if (fn->formals.length > 2) {
         USR_FATAL(fn, "destructors must not have arguments");
       } else {
         DefExpr* thisDef = toDefExpr(fn->formals.get(2));
@@ -259,7 +259,7 @@ void normalize(void) {
     }
     // make sure methods don't attempt to overload operators
     else if (!isalpha(*fn->name) && *fn->name != '_'
-             && fn->formals.length() > 1
+             && fn->formals.length > 1
              && toDefExpr(fn->formals.get(1))->sym->typeInfo() == gMethodToken->typeInfo()) {
       USR_FATAL(fn, "invalid method name");
     }
@@ -684,14 +684,14 @@ static void hack_resolve_types(ArgSymbol* arg) {
   if (arg->type == dtUnknown || arg->type == dtAny) {
     if (!arg->hasFlag(FLAG_TYPE_VARIABLE) && !arg->typeExpr && arg->defaultExpr) {
       SymExpr* se = NULL;
-      if (arg->defaultExpr->body.length() == 1)
+      if (arg->defaultExpr->body.length == 1)
         se = toSymExpr(arg->defaultExpr->body.tail);
       if (!se || se->var != gNil) {
         arg->typeExpr = arg->defaultExpr->copy();
         insert_help(arg->typeExpr, NULL, arg);
       }
     }
-    if (arg->typeExpr && arg->typeExpr->body.length() == 1) {
+    if (arg->typeExpr && arg->typeExpr->body.length == 1) {
       Type* type = arg->typeExpr->body.only()->typeInfo();
       if (type != dtUnknown && type != dtAny) {
         arg->type = type;

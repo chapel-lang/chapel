@@ -122,7 +122,10 @@ BlockStmt::insertAtTail(Expr* ast) {
 
 void
 BlockStmt::insertAtTailBeforeGoto(Expr* ast) {
-  body.insertAtTailBeforeGoto(ast);
+  if (body.tail->astTag == STMT_GOTO)
+    body.tail->insertBefore(ast);
+  else
+    body.insertAtTail(ast);
 }
 
 
@@ -138,7 +141,7 @@ BlockStmt::isLoop(void) {
 
 int
 BlockStmt::length(void) {
-  return body.length();
+  return body.length;
 }
 
 

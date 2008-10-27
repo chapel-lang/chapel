@@ -4,6 +4,5 @@
 #include "symbol.h"
 
 ModuleSymbol* ParseFile(const char* filename, ModTag moduletype);
-AList* parse_string(char* string);
 
 #endif

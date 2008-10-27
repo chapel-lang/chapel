@@ -264,7 +264,7 @@ ModuleSymbol* buildModule(const char* name, ModTag type, BlockStmt* block, const
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
   INT_ASSERT(exprs->isPrimitive(PRIMITIVE_ACTUALS_LIST));
-  if (exprs->argList.length() == 0)
+  if (exprs->argList.length == 0)
     INT_FATAL("primitive has no name");
   Expr* expr = exprs->get(1);
   expr->remove();
@@ -886,7 +886,7 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
         when->thenStmt->copy()));
       stmts->insertAtTail(new DefExpr(fn));
     } else {
-      if (conds->numActuals() != exprs->argList.length())
+      if (conds->numActuals() != exprs->argList.length)
         USR_FATAL(when, "Type select statement requires number of selectors to be equal to number of when conditions");
       fn = new FnSymbol(astr("_typeselect", istr(uid)));
       int lid = 1;

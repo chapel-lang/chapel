@@ -70,7 +70,7 @@ static bool arrayPassedAsArgument(FnSymbol *fn) {
 #endif
 
 static bool tupleContainsArrayOrDomain(ClassType* t) {
-  for (int i = 1; i <= t->fields.length(); i++) {
+  for (int i = 1; i <= t->fields.length; i++) {
     Type* fieldType = t->getField(i)->type;
     ClassType* fieldClassType = toClassType(fieldType);
     if (fieldType->symbol->hasFlag(FLAG_ARRAY) || fieldType->symbol->hasFlag(FLAG_DOMAIN))

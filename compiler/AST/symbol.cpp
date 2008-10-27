@@ -677,7 +677,7 @@ FnSymbol::insertFormalAtTail(BaseAST* ast) {
 
 int
 FnSymbol::numFormals() {
-  return formals.length();
+  return formals.length;
 }
 
 

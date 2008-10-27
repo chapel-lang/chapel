@@ -2195,7 +2195,7 @@ preFold(Expr* expr) {
           if (get_int(call->get(3), &index)) {
             char field[8];
             sprintf(field, "x%ld", index);
-            if (index <= 0 || index >= toClassType(t)->fields.length())
+            if (index <= 0 || index >= toClassType(t)->fields.length)
               USR_FATAL(call, "tuple index out-of-bounds error (%ld)", index);
             if (toClassType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
               result = new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, base->var, new_StringSymbol(field));

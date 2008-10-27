@@ -162,7 +162,7 @@ buildDefaultWrapper(FnSymbol* fn,
       copy_map.put(formal, temp);
       if (formal->intent == INTENT_OUT ||
           !formal->defaultExpr ||
-          (formal->defaultExpr->body.length() == 1 &&
+          (formal->defaultExpr->body.length == 1 &&
            isSymExpr(formal->defaultExpr->body.tail) &&
            toSymExpr(formal->defaultExpr->body.tail)->var == gNil)) {
         // use default value for type as default value for formal argument

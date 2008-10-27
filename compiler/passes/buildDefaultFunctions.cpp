@@ -615,7 +615,7 @@ static void build_record_hash_function(ClassType *ct) {
   arg->markedGeneric = true;
   fn->insertFormalAtTail(arg);
 
-  if (ct->fields.length() == 0) {
+  if (ct->fields.length == 0) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(0)));
   } else {
     CallExpr *call = NULL;
