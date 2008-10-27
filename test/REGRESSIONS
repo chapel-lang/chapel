@@ -40,6 +40,10 @@ internal valgrind stuff 'the impossible has happened'
 gasnet-everything regressions
 =============================
 
+Brad introduced regression to stream-fragmented (10/25/08)
+----------------------------------------------------------
+[Error matching program output for studies/hpcc/2008/stream-fragmented]
+
 memory is leaked (10/16/08)
 ---------------------------
 [Error matching compiler output for classes/figueroa/LeakedMemory2]
@@ -79,6 +83,10 @@ unable to start polling thread
 ------------------------------
 [Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
 
+is this one intermittent or not? (10/21/08)
+-------------------------------------------
+[Error matching program output for extern/bradc/defaultArgsNoLocal] (e.g., 10/21/08)
+
 intermittent seg faults 
 -----------------------
 [Error matching program output for multilocale/deitz/linked/test_linked2] (e.g., 10/05/08, 10/08/08)
@@ -89,11 +97,8 @@ intermittent seg faults
 [Error matching program output for studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 10/10/08)
 [Error matching program output for multilocale/deitz/linked/test_linked3] (e.g., 10/14/08)
 [Error matching program output for studies/hpcc/common/bradc/unit/leadFollowOpt] (e.g., 10/15/08)
-
-is this one intermittent or not? (10/21/08)
--------------------------------------------
-[Error matching program output for extern/bradc/defaultArgsNoLocal] (e.g., 10/21/08)
-
+[Error matching program output for multilocale/deitz/needMultiLocales/test_dot_locale4] (e.g., 10/22/08)
+[Error matching program output for multilocale/deitz/linked/test_linked3a] (e.g., 10/26/08)
 
 =======================
 baseline-specific tests
@@ -113,7 +118,7 @@ opts-specific tests
 
 
 
-(Full run: 59, though some spurious test_refine errors)
+(Full run: 68, though some spurious test_refine errors)
 
 
 --no-copy-propagation
@@ -170,6 +175,10 @@ opts-specific tests
 [Error matching compiler output for classes/diten/allocateManyObjects]
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
+[Error: Timed out executing program users/agnieszka/multiArrayI]
+[Error: Timed out executing program users/agnieszka/multiArrayI10]
+[Error: Timed out executing program users/agnieszka/test1]
+[Error: Timed out executing program users/agnieszka/test2]
 
 --baseline --no-local
 ---------------------
@@ -177,6 +186,7 @@ opts-specific tests
 [Error matching compiler output for classes/diten/allocateManyObjects]
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
+[Error: Timed out executing program npb/cg/bradc/cg-sparse]
 [Error matching compiler output for studies/590o/alaska/graph]
 [Error matching compiler output for studies/590o/blerner/xml-parse]
 [Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample3]
@@ -186,6 +196,10 @@ opts-specific tests
 [Error matching compiler output for studies/uts/dequeue]
 [Error matching compiler output for studies/uts/uts_deq]
 [Error matching compiler output for studies/uts/uts_deq_seq]
+[Error: Timed out executing program users/agnieszka/multiArrayI]
+[Error: Timed out executing program users/agnieszka/multiArrayI10]
+[Error: Timed out executing program users/agnieszka/test1]
+[Error: Timed out executing program users/agnieszka/test2]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
 
@@ -339,11 +353,6 @@ mta-/xmt-specific regressions
 occasional timeouts? or slowed down during iterator rewrites? (e.g., 07/02/08)
 ------------------------------------------------------------------------------
 [Error: Timed out executing program release/examples/hpcc/ra]
-
-data alignment trap (05/10/08)
-------------------------------
-[Error matching program output for release/examples/arrays]
-[Error matching program output for release/examples/blockLU]
 
 unreachable line causes compiler warning
 ----------------------------------------
