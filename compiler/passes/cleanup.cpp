@@ -45,13 +45,13 @@ static void normalize_nested_function_expressions(DefExpr* def) {
     if (!stmt) {
       if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
         if (ClassType* ct = toClassType(ts->type)) {
-          def->replace(new SymExpr(def->sym->name));
+          def->replace(new UnresolvedSymExpr(def->sym->name));
           ct->addDeclarations(def, true);
           return;
         }
       }
     }
-    def->replace(new SymExpr(def->sym->name));
+    def->replace(new UnresolvedSymExpr(def->sym->name));
     stmt->insertBefore(def);
   } else if (!strncmp("_iterator_for_loopexpr", def->sym->name, 22)) {
     Symbol* parent = def->parentSymbol;
@@ -79,8 +79,8 @@ static void destructure_tuple(CallExpr* call) {
   int i = 1;
   for_actuals(expr, call) {
     Expr *removed_expr = expr->remove();
-    if (SymExpr *sym_expr = toSymExpr(removed_expr)) {
-      if (sym_expr->isNamed("_")) {
+    if (UnresolvedSymExpr *sym_expr = toUnresolvedSymExpr(removed_expr)) {
+      if (!strcmp(sym_expr->unresolved, "_")) {
         i++;
         continue;
       }

@@ -463,7 +463,7 @@ void initPrimitiveTypes(void) {
   createInitFn(theProgram);
   if (!fRuntime)
     theProgram->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE,
-                                       new SymExpr("ChapelStandard")));
+                                       new UnresolvedSymExpr("ChapelStandard")));
 
   theProgram->initFn->insertAtHead(objectDef);
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");

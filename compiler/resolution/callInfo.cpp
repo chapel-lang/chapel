@@ -4,7 +4,10 @@
 
 
 CallInfo::CallInfo(CallExpr* icall) : call(icall), scope(NULL) {
-  name = toSymExpr(call->baseExpr)->getName();
+  if (SymExpr* se = toSymExpr(call->baseExpr))
+    name = se->var->name;
+  else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(call->baseExpr))
+    name = use->unresolved;
   if (call->numActuals() >= 2) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
       if (se->var == gModuleToken) {

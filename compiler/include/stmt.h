@@ -65,16 +65,17 @@ enum GotoTag {
 
 class GotoStmt : public Expr {
  public:
-  SymExpr* label;
   GotoTag gotoTag;
+  Expr* label;
 
   GotoStmt(GotoTag init_gotoTag, const char* init_label);
   GotoStmt(GotoTag init_gotoTag, Symbol* init_label);
-  GotoStmt(GotoTag init_gotoTag, SymExpr* init_label);
+  GotoStmt(GotoTag init_gotoTag, Expr* init_label);
   virtual void verify();
   DECLARE_COPY(GotoStmt);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   void codegen(FILE* outfile);
+  const char* getName();
 };
 
 

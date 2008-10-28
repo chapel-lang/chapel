@@ -185,18 +185,7 @@ void Expr::insertAfter(Expr* new_ast) {
 
 SymExpr::SymExpr(Symbol* init_var) :
   Expr(EXPR_SYM),
-  var(init_var),
-  unresolved(NULL)
-{
-  if (!init_var)
-    INT_FATAL(this, "Bad call to SymExpr");
-}
-
-
-SymExpr::SymExpr(const char* init_var) :
-  Expr(EXPR_SYM),
-  var(NULL),
-  unresolved(astr(init_var))
+  var(init_var)
 {
   if (!init_var)
     INT_FATAL(this, "Bad call to SymExpr");
@@ -214,10 +203,8 @@ SymExpr::verify() {
   Expr::verify();
   if (astTag != EXPR_SYM)
     INT_FATAL(this, "Bad SymExpr::astTag");
-  if (!var && !unresolved)
+  if (!var)
     INT_FATAL(this, "SymExpr::var is NULL");
-  if (var && unresolved)
-    INT_FATAL(this, "SymExpr::var and SymExpr::unresolved are set");
   if (var && var->defPoint && !var->defPoint->parentSymbol)
     INT_FATAL(this, "SymExpr::var::defPoint is not in AST");
 }
@@ -225,56 +212,73 @@ SymExpr::verify() {
 
 SymExpr*
 SymExpr::copyInner(SymbolMap* map) {
-  if (var)
-    return new SymExpr(var);
-  else
-    return new SymExpr(unresolved);
+  return new SymExpr(var);
 }
 
 
 Type* SymExpr::typeInfo(void) {
-  if (!var)
-    return dtUnknown;
   return var->type;
 }
 
 
 bool SymExpr::isConstant(void) {
-  INT_ASSERT(var);
   return var->isConstant();
 }
 
 
 bool SymExpr::isParameter(void){
-  INT_ASSERT(var);
   return var->isParameter();
 }
 
 
 void SymExpr::codegen(FILE* outfile) {
-  INT_ASSERT(var);
   if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(outfile, this);
-  if (unresolved && !var)
-    fprintf(outfile, "%s /* unresolved symbol */", unresolved);
-  else
-    var->codegen(outfile);
+  var->codegen(outfile);
   if (getStmtExpr() && getStmtExpr() == this)
     fprintf(outfile, ";\n");
 }
 
 
-bool SymExpr::isNamed(const char* name) {
-  return (var && !strcmp(var->name, name)) ||
-    (unresolved && !strcmp(unresolved, name));
+UnresolvedSymExpr::UnresolvedSymExpr(const char* iunresolved) :
+  Expr(EXPR_SYM_UNRESOLVED),
+  unresolved(astr(iunresolved))
+{
+  if (!iunresolved)
+    INT_FATAL(this, "nad call to UnresolvedSymExpr");
 }
 
 
-const char* SymExpr::getName() {
-  if (var)
-    return var->name;
-  else
-    return unresolved;
+void 
+UnresolvedSymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
+  INT_FATAL(this, "unexpected case in UnresolvedSymExpr::replaceChild");
+}
+
+
+void
+UnresolvedSymExpr::verify() {
+  Expr::verify();
+  if (astTag != EXPR_SYM_UNRESOLVED)
+    INT_FATAL(this, "bad UnresolvedSymExpr::astTag");
+  if (!unresolved)
+    INT_FATAL(this, "UnresolvedSymExpr::unresolved is NULL");
+}
+
+
+UnresolvedSymExpr*
+UnresolvedSymExpr::copyInner(SymbolMap* map) {
+  return new UnresolvedSymExpr(unresolved);
+}
+
+
+Type* UnresolvedSymExpr::typeInfo(void) {
+  return dtUnknown;
+}
+
+
+void UnresolvedSymExpr::codegen(FILE* outfile) {
+  INT_FATAL(this, "UnresolvedSymExpr::codegen called");
+  fprintf(outfile, "%s /* unresolved symbol */", unresolved);
 }
 
 
@@ -470,7 +474,7 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
 CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
                    BaseAST* arg3, BaseAST* arg4) :
   Expr(EXPR_CALL),
-  baseExpr(new SymExpr(name)),
+  baseExpr(new UnresolvedSymExpr(name)),
   argList(),
   primitive(NULL),
   partialTag(false),
@@ -563,9 +567,12 @@ FnSymbol* CallExpr::isResolved(void) {
 
 
 bool CallExpr::isNamed(const char* name) {
-  SymExpr* base = toSymExpr(baseExpr);
-  if (base && base->isNamed(name))
-    return true;
+  if (SymExpr* base = toSymExpr(baseExpr))
+    if (!strcmp(base->var->name, name))
+      return true;
+  if (UnresolvedSymExpr* base = toUnresolvedSymExpr(baseExpr))
+    if (!strcmp(base->unresolved, name))
+      return true;
   return false;
 }
 
@@ -2184,6 +2191,7 @@ Expr* getFirstExpr(Expr* expr) {
     INT_FATAL(expr, "unexpected expr in getFirstExpr");
     return NULL;
   case EXPR_SYM:
+  case EXPR_SYM_UNRESOLVED:
   case EXPR_DEF:
     return expr;
   case STMT_BLOCK:

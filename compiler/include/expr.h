@@ -69,19 +69,26 @@ class DefExpr : public Expr {
 class SymExpr : public Expr {
  public:
   Symbol* var;
-  const char* unresolved;
   SymExpr(Symbol* init_var);
-  SymExpr(const char* init_var);
   DECLARE_COPY(SymExpr);
   virtual void replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void verify(); 
-
   Type* typeInfo(void);
   virtual bool isConstant(void);
   virtual bool isParameter(void);
   void codegen(FILE* outfile);
-  bool isNamed(const char*);
-  const char* getName();
+};
+
+
+class UnresolvedSymExpr : public Expr {
+ public:
+  const char* unresolved;
+  UnresolvedSymExpr(const char* init_var);
+  DECLARE_COPY(UnresolvedSymExpr);
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void verify(); 
+  Type* typeInfo(void);
+  void codegen(FILE* outfile);
 };
 
 

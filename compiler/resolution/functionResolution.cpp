@@ -2137,7 +2137,7 @@ preFold(Expr* expr) {
     if (SymExpr* sym = toSymExpr(call->baseExpr)) {
       if (toVarSymbol(sym->var) || toArgSymbol(sym->var)) {
         Expr* base = call->baseExpr;
-        base->replace(new SymExpr("this"));
+        base->replace(new UnresolvedSymExpr("this"));
         call->insertAtHead(base);
         call->insertAtHead(gMethodToken);
       }
@@ -2152,7 +2152,7 @@ preFold(Expr* expr) {
         base->replace(base->baseExpr->remove());
       } else {
         VarSymbol* this_temp = newTemp("_this_temp");
-        base->replace(new SymExpr("this"));
+        base->replace(new UnresolvedSymExpr("this"));
         CallExpr* move = new CallExpr(PRIMITIVE_MOVE, this_temp, base);
         call->insertAtHead(new SymExpr(this_temp));
         call->insertAtHead(gMethodToken);

@@ -58,7 +58,7 @@ checkControlFlow(Expr* expr, const char* context) {
           USR_FATAL_CONT(call, "yield is not allowed in %s", context);
       }
     } else if (GotoStmt* gs = toGotoStmt(ast)) {
-      if (gs->label && labelSet.set_in(gs->label->getName()))
+      if (gs->label && labelSet.set_in(gs->getName()))
         continue; // break or continue target is in scope
       if (!gs->label && loopSet.set_in(gs))
         continue; // break or continue loop is in scope
@@ -87,7 +87,7 @@ Expr* buildDotExpr(BaseAST* base, const char* member) {
 
 
 Expr* buildDotExpr(const char* base, const char* member) {
-  return buildDotExpr(new SymExpr(base), member);
+  return buildDotExpr(new UnresolvedSymExpr(base), member);
 }
 
 
@@ -481,8 +481,8 @@ destructureIndices(BlockStmt* block,
     if (call->isNamed("_build_tuple")) {
       int i = 1;
       for_actuals(actual, call) {
-        if (SymExpr *sym_expr = toSymExpr(actual)) {
-          if (sym_expr->isNamed("_")) {
+        if (UnresolvedSymExpr* use = toUnresolvedSymExpr(actual)) {
+          if (!strcmp(use->unresolved, "_")) {
             i++;
             continue;
           }
@@ -493,20 +493,18 @@ destructureIndices(BlockStmt* block,
         i++;
       }
     }
+  } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(indices)) {
+    VarSymbol* var = new VarSymbol(sym->unresolved);
+    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, init));
+    block->insertAtHead(new DefExpr(var));
+    var->addFlag(FLAG_INDEX_VAR);
+    if (coforall)
+      var->addFlag(FLAG_HEAP_ALLOCATE);
   } else if (SymExpr* sym = toSymExpr(indices)) {
-    if (sym->unresolved) {
-      VarSymbol* var = new VarSymbol(sym->unresolved);
-      block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, init));
-      block->insertAtHead(new DefExpr(var));
-      var->addFlag(FLAG_INDEX_VAR);
-      if (coforall)
-        var->addFlag(FLAG_HEAP_ALLOCATE);
-    } else {
-      block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, sym->var, init));
-      sym->var->addFlag(FLAG_INDEX_VAR);
-      if (coforall)
-        sym->var->addFlag(FLAG_HEAP_ALLOCATE);
-    }
+    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, sym->var, init));
+    sym->var->addFlag(FLAG_INDEX_VAR);
+    if (coforall)
+      sym->var->addFlag(FLAG_HEAP_ALLOCATE);
   }
 }
 
@@ -521,7 +519,7 @@ checkIndices(BaseAST* indices) {
       USR_FATAL(indices, "invalid index expression");
     for_actuals(actual, call)
       checkIndices(actual);
-  } else if (indices->astTag != EXPR_SYM)
+  } else if (!isSymExpr(indices) && !isUnresolvedSymExpr(indices))
     USR_FATAL(indices, "invalid index expression");
 }
 
@@ -534,7 +532,7 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   // insert temporary index when elided by user
   //
   if (!indices)
-    indices = new SymExpr("_elided_index");
+    indices = new UnresolvedSymExpr("_elided_index");
 
   checkIndices(indices);
 
@@ -578,7 +576,7 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
   // insert temporary index when elided by user
   //
   if (!indices)
-    indices = new SymExpr("_elided_index");
+    indices = new UnresolvedSymExpr("_elided_index");
 
   checkIndices(indices);
 
@@ -629,7 +627,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
   // insert temporary index when elided by user
   //
   if (!indices)
-    indices = new SymExpr("_elided_index");
+    indices = new UnresolvedSymExpr("_elided_index");
 
   checkIndices(indices);
 
@@ -916,13 +914,11 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
 
 static CallExpr*
 buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
-  if (SymExpr* sym = toSymExpr(op)) {
-    if (sym->unresolved) {
-      if (!strcmp(sym->unresolved, "max"))
-        sym->unresolved = astr("MaxReduceScanOp");
-      else if (!strcmp(sym->unresolved, "min"))
-        sym->unresolved = astr("MinReduceScanOp");
-    }
+  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(op)) {
+    if (!strcmp(sym->unresolved, "max"))
+      sym->unresolved = astr("MaxReduceScanOp");
+    else if (!strcmp(sym->unresolved, "min"))
+      sym->unresolved = astr("MinReduceScanOp");
   }
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(astr("_reduce_scan", istr(uid++)));
@@ -1108,7 +1104,7 @@ buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
 
   if (!base) {
     /* This is the top-level call to buildTupleArg */
-    Expr* tupleType = new SymExpr("_tuple");
+    Expr* tupleType = new UnresolvedSymExpr("_tuple");
     ArgSymbol* argSymbol = new ArgSymbol(INTENT_BLANK,
                                          astr("_tuple_arg_tmp", istr(uid++)),
                                          dtUnknown, tupleType);

@@ -32,6 +32,7 @@ void printStatistics(const char* pass);
 enum AstTag {
   EXPR,
   EXPR_SYM,
+  EXPR_SYM_UNRESOLVED,
   EXPR_DEF,
   EXPR_CALL,
   EXPR_NAMED,
@@ -128,6 +129,7 @@ void registerModule(ModuleSymbol* mod);
   ((ast) && (ast)->astTag >= EXPR && (ast)->astTag <= STMT_GOTO)
 
 #define isSymExpr(ast)   ((ast) && (ast)->astTag == EXPR_SYM)
+#define isUnresolvedSymExpr(ast)   ((ast) && (ast)->astTag == EXPR_SYM_UNRESOLVED)
 #define isDefExpr(ast)   ((ast) && (ast)->astTag == EXPR_DEF)
 #define isCallExpr(ast)  ((ast) && (ast)->astTag == EXPR_CALL)
 #define isNamedExpr(ast) ((ast) && (ast)->astTag == EXPR_NAMED)
@@ -159,6 +161,7 @@ void registerModule(ModuleSymbol* mod);
 //
 #define toExpr(ast)      (isExpr(ast)      ? ((Expr*)(ast))      : NULL)
 #define toSymExpr(ast)   (isSymExpr(ast)   ? ((SymExpr*)(ast))   : NULL)
+#define toUnresolvedSymExpr(ast)   (isUnresolvedSymExpr(ast)   ? ((UnresolvedSymExpr*)(ast))   : NULL)
 #define toDefExpr(ast)   (isDefExpr(ast)   ? ((DefExpr*)(ast))   : NULL)
 #define toCallExpr(ast)  (isCallExpr(ast)  ? ((CallExpr*)(ast))  : NULL)
 #define toNamedExpr(ast) (isNamedExpr(ast) ? ((NamedExpr*)(ast)) : NULL)

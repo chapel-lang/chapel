@@ -68,7 +68,11 @@ list_ast(BaseAST* ast, int indent = 0) {
     }
     if (GotoStmt* e = toGotoStmt(ast)) {
       printf("goto ");
-      if (e->label->var != gNil) {
+      if (SymExpr* label = toSymExpr(e->label)) {
+        if (label->var != gNil) {
+          list_ast(e->label, indent+1);
+        }
+      } else {
         list_ast(e->label, indent+1);
       }
     } else if (toBlockStmt(ast)) {
@@ -85,10 +89,9 @@ list_ast(BaseAST* ast, int indent = 0) {
     } else if (toDefExpr(expr)) {
       printf("def ");
     } else if (SymExpr* e = toSymExpr(expr)) {
-      if (e->var)
-        list_sym(e->var, false);
-      else
-        printf("%s ", e->unresolved);
+      list_sym(e->var, false);
+    } else if (UnresolvedSymExpr* e = toUnresolvedSymExpr(expr)) {
+      printf("%s ", e->unresolved);
     }
   }
 
@@ -149,10 +152,8 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     printf("%s", astTagName[expr->astTag]);
 
     if (GotoStmt *gs= toGotoStmt(ast)) {
-      if (gs->label->var != gNil) {
-        printf( " ");
-        view_ast( gs->label, number, mark, indent+1);
-      }
+      printf( " ");
+      view_ast(gs->label, number, mark, indent+1);
     }
 
     if (CallExpr* call = toCallExpr(expr))
@@ -175,7 +176,7 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
 
     if (SymExpr* sym = toSymExpr(expr)) {
       printf(" '");
-      if (sym->var && sym->var->id == mark)
+      if (sym->var->id == mark)
         printf("***");
       if (toFnSymbol(sym->var)) {
         printf("fn ");
@@ -184,22 +185,21 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
       } else if (toTypeSymbol(sym->var)) {
         printf("type ");
       }
-      if (sym->var)
-        printf("%s", sym->var->name);
-      else
-        printf("%s", sym->unresolved);
-      if (sym->var && number)
+      printf("%s", sym->var->name);
+      if (number)
         printf("[%d]", sym->var->id);
       if (FnSymbol* fn = toFnSymbol(sym->var)) {
         printf(":%s", fn->retType->symbol->name);
         if (number)
           printf("[%d]", fn->retType->symbol->id);
-      } else if (sym->var && sym->var->type && sym->var->type->symbol) {
+      } else if (sym->var->type && sym->var->type->symbol) {
         printf(":%s", sym->var->type->symbol->name);
         if (number)
           printf("[%d]", sym->var->type->symbol->id);
       }
       printf("'");
+    } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
+      printf(" '%s'", sym->unresolved);
     }
   }
 
@@ -377,8 +377,9 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
       case GOTO_BREAK: fprintf(html_file, "<B>break</B> "); break;
       case GOTO_CONTINUE: fprintf(html_file, "<B>continue</B> "); break;
       }
-      if (s->label->var && s->label->var != gNil)
-        html_print_symbol(html_file, pass, s->label->var, true);
+      if (SymExpr* label = toSymExpr(s->label))
+        if (label->var != gNil)
+          html_print_symbol(html_file, pass, label->var, true);
     } else if (toCondStmt(expr)) {
       fprintf(html_file, "<DL>\n");
       fprintf(html_file, "<B>if</B> ");
@@ -454,10 +455,9 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
           fprintf(html_file, "<i><FONT COLOR=\"blue\">%s</FONT></i>", e->name);
         }
       } else if (SymExpr* e = toSymExpr(expr)) {
-        if (e->var)
-          html_print_symbol(html_file, pass, e->var, false);
-        else
-          fprintf(html_file, "<FONT COLOR=\"red\">%s</FONT>", e->unresolved);
+        html_print_symbol(html_file, pass, e->var, false);
+      } else if (UnresolvedSymExpr* e = toUnresolvedSymExpr(expr)) {
+        fprintf(html_file, "<FONT COLOR=\"red\">%s</FONT>", e->unresolved);
       } else if (NamedExpr* e = toNamedExpr(expr)) {
         fprintf(html_file, "(%s = ", e->name);
       } else if (CallExpr* e = toCallExpr(expr)) {

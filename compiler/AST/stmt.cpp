@@ -279,24 +279,24 @@ void CondStmt::codegen(FILE* outfile) {
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
   Expr(STMT_GOTO),
-  label(init_label ? new SymExpr(init_label) : new SymExpr(gNil)),
-  gotoTag(init_gotoTag)
+  gotoTag(init_gotoTag),
+  label(init_label ? (Expr*)new UnresolvedSymExpr(init_label) : (Expr*)new SymExpr(gNil))
 {
 }
 
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, Symbol* init_label) :
   Expr(STMT_GOTO),
-  label(new SymExpr(init_label)),
-  gotoTag(init_gotoTag)
+  gotoTag(init_gotoTag),
+  label(new SymExpr(init_label))
 {
 }
 
 
-GotoStmt::GotoStmt(GotoTag init_gotoTag, SymExpr* init_label) :
+GotoStmt::GotoStmt(GotoTag init_gotoTag, Expr* init_label) :
   Expr(STMT_GOTO),
-  label(init_label),
-  gotoTag(init_gotoTag)
+  gotoTag(init_gotoTag),
+  label(init_label)
 {
   if (!init_label)
     INT_FATAL(this, "GotoStmt initialized with null label");
@@ -341,4 +341,14 @@ void GotoStmt::codegen(FILE* outfile) {
   fprintf(outfile, "goto ");
   label->codegen(outfile);
   fprintf(outfile, ";\n");
+}
+
+
+const char* GotoStmt::getName() {
+  if (SymExpr* se = toSymExpr(label))
+    return se->var->name;
+  else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(label))
+    return use->unresolved;
+  else
+    return NULL;
 }

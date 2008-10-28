@@ -41,7 +41,8 @@ checkUseBeforeDefs() {
       forv_Vec(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
           if (call->isPrimitive(PRIMITIVE_MOVE))
-            defined.set_add(toSymExpr(call->get(1))->var);
+            if (SymExpr* se = toSymExpr(call->get(1)))
+              defined.set_add(se->var);
         } else if (DefExpr* def = toDefExpr(ast)) {
           if (isArgSymbol(def->sym))
             defined.set_add(def->sym);
@@ -58,15 +59,6 @@ checkUseBeforeDefs() {
               }
             }
           }
-          if ((!call || call->baseExpr != sym) && sym->unresolved) {
-            if (!undeclared.set_in(sym->unresolved)) {
-              if (!toFnSymbol(fn->defPoint->parentSymbol)) {
-                USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
-                               sym->unresolved);
-                undeclared.set_add(sym->unresolved);
-              }
-            }
-          }
           if (isVarSymbol(sym->var) || isArgSymbol(sym->var)) {
             if (sym->var->defPoint->parentExpr != rootModule->block &&
                 (sym->var->defPoint->parentSymbol == fn ||
@@ -76,6 +68,19 @@ checkUseBeforeDefs() {
                   USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
                   undefined.set_add(sym->var);
                 }
+              }
+            }
+          }
+        } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(ast)) {
+          CallExpr* call = toCallExpr(sym->parentExpr);
+          if (call && call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym)
+            continue;
+          if ((!call || call->baseExpr != sym) && sym->unresolved) {
+            if (!undeclared.set_in(sym->unresolved)) {
+              if (!toFnSymbol(fn->defPoint->parentSymbol)) {
+                USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
+                               sym->unresolved);
+                undeclared.set_add(sym->unresolved);
               }
             }
           }
@@ -413,18 +418,18 @@ static void call_constructor_for_class(SymExpr* se) {
         if (parent && parent->isPrimitive(PRIMITIVE_NEW)) {
           if (!ct->defaultConstructor)
             INT_FATAL(call, "class type has no default constructor");
-          se->replace(new SymExpr(ct->defaultConstructor->name));
+          se->replace(new UnresolvedSymExpr(ct->defaultConstructor->name));
           parent->replace(call->remove());
         } else if (parentParent && parentParent->isPrimitive(PRIMITIVE_NEW) &&
                    call->partialTag == true) {
           if (!ct->defaultConstructor)
             INT_FATAL(call, "class type has no default constructor");
-          se->replace(new SymExpr(ct->defaultConstructor->name));
+          se->replace(new UnresolvedSymExpr(ct->defaultConstructor->name));
           parentParent->replace(parent->remove());
         } else {
           if (!ct->defaultTypeConstructor)
             INT_FATAL(call, "class type has no default type constructor");
-          se->replace(new SymExpr(ct->defaultTypeConstructor->name));
+          se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
         }
       }
     }

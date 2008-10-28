@@ -326,38 +326,40 @@ find_outer_loop(Expr* stmt) {
 
 static void
 resolveGotoLabel(GotoStmt* gotoStmt) {
-  if (gotoStmt->label->var == gNil) {
-    BlockStmt* loop = find_outer_loop(gotoStmt);
-    if (!loop)
-      USR_FATAL(gotoStmt, "break or continue is not in a loop");
-    if (gotoStmt->gotoTag == GOTO_BREAK) {
-      Symbol* breakLabel = NULL;
-      for (Expr* expr = loop->next; expr; expr = expr->next) {
-        if (DefExpr* def = toDefExpr(expr)) {
-          if (def->sym->hasFlag(FLAG_LABEL_BREAK)) {
-            breakLabel = def->sym;
-            break;
+  if (SymExpr* label = toSymExpr(gotoStmt->label)) {
+    if (label->var == gNil) {
+      BlockStmt* loop = find_outer_loop(gotoStmt);
+      if (!loop)
+        USR_FATAL(gotoStmt, "break or continue is not in a loop");
+      if (gotoStmt->gotoTag == GOTO_BREAK) {
+        Symbol* breakLabel = NULL;
+        for (Expr* expr = loop->next; expr; expr = expr->next) {
+          if (DefExpr* def = toDefExpr(expr)) {
+            if (def->sym->hasFlag(FLAG_LABEL_BREAK)) {
+              breakLabel = def->sym;
+              break;
+            }
           }
         }
-      }
-      INT_ASSERT(breakLabel);
-      gotoStmt->label->replace(new SymExpr(breakLabel));
-    } else if (gotoStmt->gotoTag == GOTO_CONTINUE) {
-      Symbol* continueLabel = NULL;
-      for (Expr* expr = loop->body.tail; expr; expr = expr->prev) {
-        if (DefExpr* def = toDefExpr(expr)) {
-          if (def->sym->hasFlag(FLAG_LABEL_CONTINUE)) {
-            continueLabel = def->sym;
-            break;
+        INT_ASSERT(breakLabel);
+        gotoStmt->label->replace(new SymExpr(breakLabel));
+      } else if (gotoStmt->gotoTag == GOTO_CONTINUE) {
+        Symbol* continueLabel = NULL;
+        for (Expr* expr = loop->body.tail; expr; expr = expr->prev) {
+          if (DefExpr* def = toDefExpr(expr)) {
+            if (def->sym->hasFlag(FLAG_LABEL_CONTINUE)) {
+              continueLabel = def->sym;
+              break;
+            }
           }
         }
-      }
-      INT_ASSERT(continueLabel);
-      gotoStmt->label->replace(new SymExpr(continueLabel));
-    } else
-      INT_FATAL(gotoStmt, "unexpected goto type");
-  } else if (!gotoStmt->label->var) {
-    const char* name = gotoStmt->label->unresolved;
+        INT_ASSERT(continueLabel);
+        gotoStmt->label->replace(new SymExpr(continueLabel));
+      } else
+        INT_FATAL(gotoStmt, "unexpected goto type");
+    }
+  } else if (UnresolvedSymExpr* label = toUnresolvedSymExpr(gotoStmt->label)) {
+    const char* name = label->unresolved;
     if (gotoStmt->gotoTag == GOTO_BREAK)
       name = astr("_post", name);
     Vec<BaseAST*> asts;
@@ -381,8 +383,6 @@ static void resolveEnumeratedTypes() {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isNamed(".")) {
         if (SymExpr* first = toSymExpr(call->get(1))) {
-          if (first->unresolved)
-            continue; // EnumTypeName should be resolved already
           if (EnumType* type = toEnumType(first->var->type)) {
             if (SymExpr* second = toSymExpr(call->get(2))) {
               const char* name;
@@ -511,8 +511,8 @@ static void build_type_constructor(ClassType* ct) {
   Vec<BaseAST*> asts;
   collect_asts(fn->body, asts);
   forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* se = toSymExpr(ast))
-      if (!se->var && fieldNamesSet.set_in(se->unresolved))
+    if (UnresolvedSymExpr* se = toUnresolvedSymExpr(ast))
+      if (fieldNamesSet.set_in(se->unresolved))
         se->replace(buildDotExpr(fn->_this, se->unresolved));
   }
 
@@ -696,8 +696,8 @@ static void build_constructor(ClassType* ct) {
   Vec<BaseAST*> asts;
   collect_asts(fn->body, asts);
   forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* se = toSymExpr(ast))
-      if (!se->var && fieldNamesSet.set_in(se->unresolved))
+    if (UnresolvedSymExpr* se = toUnresolvedSymExpr(ast))
+      if (fieldNamesSet.set_in(se->unresolved))
         se->replace(buildDotExpr(fn->_this, se->unresolved));
   }
 
@@ -779,12 +779,18 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL) {
   }
 
   if (SymExpr* sym = toSymExpr(expr)) {
-    Symbol* symbol = lookup(useCall, sym->getName());
+    Symbol* symbol = sym->var;
+    mod = toModuleSymbol(symbol);
+    if (symbol && !mod) {
+      USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
+    }
+  } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
+    Symbol* symbol = lookup(useCall, sym->unresolved);
     mod = toModuleSymbol(symbol);
     if (symbol && !mod) {
       USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
     } else if (!symbol) {
-      USR_FATAL(useCall, "Cannot find module '%s'", sym->getName());
+      USR_FATAL(useCall, "Cannot find module '%s'", sym->unresolved);
     }
   } else if(CallExpr* call = toCallExpr(expr)) {
     if (!call->isNamed("."))
@@ -867,9 +873,9 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
   }
 
   for_alist(expr, ct->inherits) {
-    SymExpr* se = toSymExpr(expr);
+    UnresolvedSymExpr* se = toUnresolvedSymExpr(expr);
     INT_ASSERT(se);
-    Symbol* sym = lookup(expr, se->getName());
+    Symbol* sym = lookup(expr, se->unresolved);
     TypeSymbol* ts = toTypeSymbol(sym);
     if (!ts)
       USR_FATAL(expr, "Illegal super class");
@@ -957,24 +963,23 @@ void scopeResolve(void) {
   //
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->_this && fn->_this->type == dtUnknown) {
-      if (SymExpr* sym = toSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
-        if (!sym->var) {
-          TypeSymbol* ts = toTypeSymbol(lookup(sym, sym->unresolved));
-
-          if (!ts) {
-            USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
-          }
-          sym->var = ts;
-          sym->unresolved = NULL;
-          sym->remove();
+      if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
+        TypeSymbol* ts = toTypeSymbol(lookup(sym, sym->unresolved));
+        
+        if (!ts) {
+          USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
         }
+        sym->replace(new SymExpr(ts));
+        fn->_this->type = ts->type;
+        fn->_this->type->methods.add(fn);
+      } else if (SymExpr* sym = toSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
         fn->_this->type = sym->var->type;
         fn->_this->type->methods.add(fn);
       }
     }
   }
 
-  Vec<SymExpr*> skipSet;
+  Vec<UnresolvedSymExpr*> skipSet;
 
   forv_Vec(BaseAST, ast, gAsts) {
     SET_LINENO(ast);
@@ -996,7 +1001,7 @@ void scopeResolve(void) {
               if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {
                 call->replace(new CallExpr(fn));
               } else {
-                SymExpr* se = new SymExpr(get_string(call->get(2)));
+                UnresolvedSymExpr* se = new UnresolvedSymExpr(get_string(call->get(2)));
                 skipSet.set_add(se);
                 call->replace(se);
                 CallExpr* parent = toCallExpr(se->parentExpr);
@@ -1015,27 +1020,25 @@ void scopeResolve(void) {
       }
     }
 
-    if (SymExpr* symExpr = toSymExpr(ast)) {
-      if (symExpr->unresolved) {
-
-        if (skipSet.set_in(symExpr))
+    if (UnresolvedSymExpr* unresolvedSymExpr = toUnresolvedSymExpr(ast)) {
+        if (skipSet.set_in(unresolvedSymExpr))
           continue;
 
-        const char* name = symExpr->unresolved;
-        if (symExpr->isNamed(".") || !symExpr->parentSymbol)
+        const char* name = unresolvedSymExpr->unresolved;
+        if (!strcmp(name, "."))
           continue;
 
-        if (!symExpr->parentSymbol)
+        if (!unresolvedSymExpr->parentSymbol)
           continue;
 
-        Symbol* sym = lookup(symExpr, name); //, NULL, false);
+        Symbol* sym = lookup(unresolvedSymExpr, name); //, NULL, false);
 
         //
         // handle function call without parentheses
         //
         if (FnSymbol* fn = toFnSymbol(sym)) {
           if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {
-            symExpr->replace(new CallExpr(fn));
+            unresolvedSymExpr->replace(new CallExpr(fn));
             continue;
           }
         }
@@ -1045,10 +1048,12 @@ void scopeResolve(void) {
           if (fn->hasFlag(FLAG_METHOD))
             sym = NULL;
 
+        SymExpr* symExpr = NULL;
+
         if (sym) {
           if (!isFnSymbol(sym)) {
-            symExpr->var = sym;
-            symExpr->unresolved = NULL;
+            symExpr = new SymExpr(sym);
+            unresolvedSymExpr->replace(symExpr);
           }
           if (isTypeAlias(sym)) {
             Expr* init = sym->defPoint->init->copy();
@@ -1069,7 +1074,11 @@ void scopeResolve(void) {
 
         // Apply 'this' and 'outer' in methods where necessary
         {
-          Symbol* parent = symExpr->parentSymbol;
+          Expr* expr = symExpr;
+          if (!expr)
+            expr = unresolvedSymExpr;
+
+          Symbol* parent = expr->parentSymbol;
           while (!toModuleSymbol(parent)) {
             if (FnSymbol* method = toFnSymbol(parent)) {
 
@@ -1078,19 +1087,20 @@ void scopeResolve(void) {
               if (sym && sym->defPoint->getFunction() == method)
                 break;
 
-              if (method->_this && symExpr->var != method->_this) {
+              if (method->_this && (!symExpr || symExpr->var != method->_this)) {
                 Type* type = method->_this->type;
                 TypeSymbol* cts =
                   (sym) ? toTypeSymbol(sym->defPoint->parentSymbol) : NULL;
                 if ((cts && isClassType(cts->type)) ||
                     isMethodName(name, type)) {
-                  CallExpr* call = toCallExpr(symExpr->parentExpr);
-                  if (call && call->baseExpr == symExpr &&
+                  CallExpr* call = toCallExpr(expr->parentExpr);
+                  if (call && call->baseExpr == expr &&
                       call->numActuals() >= 2 &&
                       toSymExpr(call->get(1)) &&
                       toSymExpr(call->get(1))->var == gMethodToken) {
-                    symExpr->var = NULL;
-                    symExpr->unresolved = name;
+                    UnresolvedSymExpr* use = new UnresolvedSymExpr(name);
+                    expr->replace(use);
+                    skipSet.set_add(use);
                   } else {
                     ClassType* ct = toClassType(type);
                     int nestDepth = 0;
@@ -1139,7 +1149,7 @@ void scopeResolve(void) {
                         }
                       }
                     }
-                    symExpr->replace(dot);
+                    expr->replace(dot);
                   }
                 }
                 break;
@@ -1148,7 +1158,6 @@ void scopeResolve(void) {
             parent = parent->defPoint->parentSymbol;
           }
         }
-      }
     } else if (GotoStmt* gs = toGotoStmt(ast)) {
       resolveGotoLabel(gs);
     }

@@ -42,6 +42,7 @@ void printStatistics(const char* pass) {
   decl_counters(BlockStmt, STMT_BLOCK);
   decl_counters(GotoStmt, STMT_GOTO);
   decl_counters(SymExpr, EXPR_SYM);
+  decl_counters(UnresolvedSymExpr, EXPR_SYM_UNRESOLVED);
   decl_counters(DefExpr, EXPR_DEF);
   decl_counters(CallExpr, EXPR_CALL);
   decl_counters(NamedExpr, EXPR_NAMED);
@@ -61,6 +62,7 @@ void printStatistics(const char* pass) {
       case_counters(BlockStmt, STMT_BLOCK);
       case_counters(GotoStmt, STMT_GOTO);
       case_counters(SymExpr, EXPR_SYM);
+      case_counters(UnresolvedSymExpr, EXPR_SYM_UNRESOLVED);
       case_counters(DefExpr, EXPR_DEF);
       case_counters(CallExpr, EXPR_CALL);
       case_counters(NamedExpr, EXPR_NAMED);
@@ -81,6 +83,7 @@ void printStatistics(const char* pass) {
   calc_counters(BlockStmt, STMT_BLOCK);
   calc_counters(GotoStmt, STMT_GOTO);
   calc_counters(SymExpr, EXPR_SYM);
+  calc_counters(UnresolvedSymExpr, EXPR_SYM_UNRESOLVED);
   calc_counters(DefExpr, EXPR_DEF);
   calc_counters(CallExpr, EXPR_CALL);
   calc_counters(NamedExpr, EXPR_NAMED);
@@ -96,8 +99,8 @@ void printStatistics(const char* pass) {
   calc_counters(ClassType, TYPE_CLASS);
   int nStmt = nCondStmt + nBlockStmt + nGotoStmt;
   int kStmt = kCondStmt + kBlockStmt + kGotoStmt;
-  int nExpr = nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
-  int kExpr = kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
+  int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
+  int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
   int nType = nPrimitiveType+nEnumType+nClassType;
@@ -122,14 +125,14 @@ void printStatistics(const char* pass) {
             kStmt, kCondStmt, kBlockStmt, kGotoStmt);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9d  Sym  %9d  Def   %9d  Call  %9d  Named %9d\n",
-            nExpr, nSymExpr, nDefExpr, nCallExpr, nNamedExpr);
+    fprintf(stderr, "    Expr %9d  Unre %9d  Sym  %9d  Def   %9d  Call  %9d  Named %9d\n",
+            nExpr, nUnresolvedSymExpr, nSymExpr, nDefExpr, nCallExpr, nNamedExpr);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9dK Sym  %9dK Def   %9dK Call  %9dK Named %9dK\n",
-            kExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
+    fprintf(stderr, "    Expr %9dK Unre %9dK Sym  %9dK Def   %9dK Call  %9dK Named %9dK\n",
+            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %6dK Sym  %6dK Def   %6dK Call  %6dK Named %6dK\n",
-            kExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
+    fprintf(stderr, "    Expr %6dK Unre %6dK Sym  %6dK Def   %6dK Call  %6dK Named %6dK\n",
+            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kNamedExpr);
 
   if (strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
@@ -352,6 +355,7 @@ FnSymbol* BaseAST::getFunction() {
 const char* astTagName[BASE+1] = {
   "Expr",
   "SymExpr",
+  "UnresolvedSymExpr",
   "DefExpr",
   "CallExpr",
   "NamedExpr",
