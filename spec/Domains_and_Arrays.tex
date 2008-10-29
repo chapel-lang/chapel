@@ -993,6 +993,13 @@ We expect that this list of predefined functions and methods will
 grow.
 
 \begin{protohead}
+def $Domain$.rank param
+\end{protohead}
+\begin{protobody}
+Returns the rank of the domain.
+\end{protobody}
+
+\begin{protohead}
 def $Domain$.dim(d: int): range
 \end{protohead}
 \begin{protobody}
@@ -1048,6 +1055,20 @@ the domain.
 
 There is an expectation that this list of predefined functions and
 methods will grow.
+
+\begin{protohead}
+def $Array$.eltType type
+\end{protohead}
+\begin{protobody}
+Returns the element type of the array.
+\end{protobody}
+
+\begin{protohead}
+def $Array$.rank param
+\end{protohead}
+\begin{protobody}
+Returns the rank of the array.
+\end{protobody}
 
 \begin{protohead}
 def $Array$.domain: this.domain

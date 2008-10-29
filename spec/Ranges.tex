@@ -306,6 +306,27 @@ var r3 = r[1.. by 2];
 \index{ranges!predefined functions}
 
 \begin{protohead}
+def $range$.eltType type
+\end{protohead}
+\begin{protobody}
+Returns the element type of the range.
+\end{protobody}
+
+\begin{protohead}
+def $range$.boundedType param : BoundedRangeType
+\end{protohead}
+\begin{protobody}
+Returns the boundedness of the range.
+\end{protobody}
+
+\begin{protohead}
+def $range$.stridable param: bool
+\end{protohead}
+\begin{protobody}
+Returns the stridable parameter of the range.
+\end{protobody}
+
+\begin{protohead}
 def $range$.member(i: eltType): bool
 \end{protohead}
 \begin{protobody}

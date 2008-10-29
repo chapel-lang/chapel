@@ -3,8 +3,22 @@
   that this is possible by reading example codes.  Maybe include as
   part of the "supported functions" sections for these concepts?
 
+Added array.eltType to predefined methods on arrays
+Added array.rank to predefined methods on arrays
+Added domain.rank to predefined methods on domains
+Added range.eltType to predefined methods on ranges
+Added range.boundedType to predefined methods on ranges
+Added range.stridable to predefined methods on ranges
+
 * page 100: 1D arrays can be indexed with square brackets or parens;
   shouldn't any rank array be indexable with either?
+
+This may be stated as is because A(1..3, 1..3) would currently return
+the 2D slice rather than a 1D array whereas A[1..3, 1..3] returns the
+same thing but it is correct in that case.  This is because we don't
+use promotion to implement this (and we shouldn't) but that means the
+square brackets are currently ignored.  I didn't make any changes here
+yet.
 
 * add a description of the scan operator and an example
 
