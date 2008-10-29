@@ -12,6 +12,7 @@ class TypeSymbol;
 class VarSymbol;
 class Type;
 class Expr;
+class CallExpr;
 
 typedef Map<Symbol*,Symbol*> SymbolMap;
 typedef MapElem<Symbol*,Symbol*> SymbolMapElem;
@@ -21,6 +22,7 @@ extern void update_symbols(BaseAST* ast, SymbolMap* map);
 extern Vec<BaseAST*> gAsts;
 extern Vec<FnSymbol*> gFns;
 extern Vec<TypeSymbol*> gTypes;
+extern Vec<CallExpr*> gCalls;
 
 void cleanAst(void);
 void destroyAst(void);

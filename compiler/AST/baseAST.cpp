@@ -11,6 +11,7 @@
 Vec<BaseAST*> gAsts;
 Vec<FnSymbol*> gFns;
 Vec<TypeSymbol*> gTypes;
+Vec<CallExpr*> gCalls;
 static int uid = 1;
 
 #define decl_counters(typeName, enumName)       \
@@ -170,7 +171,7 @@ void cleanAst() {
         ts->type->dispatchChildren.v[i] = NULL;
     }
   }
-  int iasts = 0, ifn = 0, itypes = 0;
+  int iasts = 0, ifn = 0, itypes = 0, icalls = 0;
   forv_Vec(BaseAST, ast, gAsts) {
     if (Type* type = toType(ast)) {
       if (type->symbol->defPoint->parentSymbol) {
@@ -191,6 +192,8 @@ void cleanAst() {
     } else if (Expr* expr = toExpr(ast)) {
       if (expr->parentSymbol) {
         gAsts.v[iasts++] = ast;
+        if (CallExpr* call = toCallExpr(expr))
+          gCalls.v[icalls++] = call;
       } else {
         delete expr;
       }
@@ -199,6 +202,7 @@ void cleanAst() {
   gAsts.n = iasts;
   gFns.n = ifn;
   gTypes.n = itypes;
+  gCalls.n = icalls;
 }
 
 

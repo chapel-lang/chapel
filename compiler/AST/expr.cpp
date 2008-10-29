@@ -435,6 +435,7 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   argList.parent = this;
+  gCalls.add(this);
 }
 
 
@@ -452,6 +453,7 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   argList.parent = this;
+  gCalls.add(this);
 }
 
 CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, BaseAST* arg4) :
@@ -468,6 +470,7 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   argList.parent = this;
+  gCalls.add(this);
 }
 
 
@@ -486,6 +489,7 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   argList.parent = this;
+  gCalls.add(this);
 }
 
 

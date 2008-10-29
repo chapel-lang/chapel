@@ -162,39 +162,37 @@ markAlignedArrays() {
     }
   }
   Map<Symbol*,CallExpr*> iteratorTupleMap;
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isNamed("_getIterator")) {
-        if (CallExpr* tuple = toCallExpr(call->get(1))) {
-          if (tuple->isNamed("_build_tuple")) {
-            CallExpr* move = toCallExpr(call->parentExpr);
-            INT_ASSERT(move && move->isPrimitive(PRIMITIVE_MOVE));
-            SymExpr* se = toSymExpr(move->get(1));
-            INT_ASSERT(se);
-            iteratorTupleMap.put(se->var, tuple);
-          }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->isNamed("_getIterator")) {
+      if (CallExpr* tuple = toCallExpr(call->get(1))) {
+        if (tuple->isNamed("_build_tuple")) {
+          CallExpr* move = toCallExpr(call->parentExpr);
+          INT_ASSERT(move && move->isPrimitive(PRIMITIVE_MOVE));
+          SymExpr* se = toSymExpr(move->get(1));
+          INT_ASSERT(se);
+          iteratorTupleMap.put(se->var, tuple);
         }
-      } else if (call->isNamed("_toFollower")) {
-        if (SymExpr* se = toSymExpr(call->get(1))) {
-          if (CallExpr* tuple = iteratorTupleMap.get(se->var)) {
-            SymExpr* se = toSymExpr(tuple->get(1));
-            Symbol* leaderDom = (se) ? arrDomMap.get(se->var) : NULL;
-            Symbol* leaderDist = (leaderDom) ? domDistMap.get(leaderDom) : NULL;
-            CallExpr* alignment = new CallExpr("_build_tuple");
-            bool first = true;
-            for_actuals(actual, tuple) {
-              SymExpr* se = toSymExpr(actual);
-              Symbol* dom = (se) ? arrDomMap.get(se->var) : NULL;
-              Symbol* dist = (dom) ? domDistMap.get(dom) : NULL;
-              if (first || (leaderDist && leaderDist == dist)) {
-                alignment->insertAtTail(dtDistribution->symbol);
-              } else {
-                alignment->insertAtTail(dtBaseArray->symbol);
-              }
-              first = false;
+      }
+    } else if (call->isNamed("_toFollower")) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        if (CallExpr* tuple = iteratorTupleMap.get(se->var)) {
+          SymExpr* se = toSymExpr(tuple->get(1));
+          Symbol* leaderDom = (se) ? arrDomMap.get(se->var) : NULL;
+          Symbol* leaderDist = (leaderDom) ? domDistMap.get(leaderDom) : NULL;
+          CallExpr* alignment = new CallExpr("_build_tuple");
+          bool first = true;
+          for_actuals(actual, tuple) {
+            SymExpr* se = toSymExpr(actual);
+            Symbol* dom = (se) ? arrDomMap.get(se->var) : NULL;
+            Symbol* dist = (dom) ? domDistMap.get(dom) : NULL;
+            if (first || (leaderDist && leaderDist == dist)) {
+              alignment->insertAtTail(dtDistribution->symbol);
+            } else {
+              alignment->insertAtTail(dtBaseArray->symbol);
             }
-            call->insertAtTail(alignment);
+            first = false;
           }
+          call->insertAtTail(alignment);
         }
       }
     }
@@ -206,23 +204,21 @@ void normalize(void) {
   markAlignedArrays();
 
   // tag iterators and replace delete statements with calls to ~chpl_destroy
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIMITIVE_YIELD)) {
-        FnSymbol* fn = toFnSymbol(call->parentSymbol);
-        if (!fn) {
-          USR_FATAL(call, "yield statement must be in a function");
-        }
-        fn->addFlag(FLAG_ITERATOR_FN);
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->isPrimitive(PRIMITIVE_YIELD)) {
+      FnSymbol* fn = toFnSymbol(call->parentSymbol);
+      if (!fn) {
+        USR_FATAL(call, "yield statement must be in a function");
       }
-      if (call->isPrimitive(PRIMITIVE_DELETE)) {
-        VarSymbol* tmp = newTemp();
-        call->insertBefore(new DefExpr(tmp));
-        call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call->get(1)->remove()));
-        call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
-        call->insertBefore(new CallExpr(PRIMITIVE_CHPL_FREE, tmp));
-        call->remove();
-      }
+      fn->addFlag(FLAG_ITERATOR_FN);
+    }
+    if (call->isPrimitive(PRIMITIVE_DELETE)) {
+      VarSymbol* tmp = newTemp();
+      call->insertBefore(new DefExpr(tmp));
+      call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call->get(1)->remove()));
+      call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
+      call->insertBefore(new CallExpr(PRIMITIVE_CHPL_FREE, tmp));
+      call->remove();
     }
   }
 

@@ -379,24 +379,22 @@ resolveGotoLabel(GotoStmt* gotoStmt) {
 // the enumerated type named EnumTypeName
 //
 static void resolveEnumeratedTypes() {
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isNamed(".")) {
-        if (SymExpr* first = toSymExpr(call->get(1))) {
-          if (EnumType* type = toEnumType(first->var->type)) {
-            if (SymExpr* second = toSymExpr(call->get(2))) {
-              const char* name;
-              bool found = false;
-              INT_ASSERT(get_string(second, &name));
-              for_enums(constant, type) {
-                if (!strcmp(constant->sym->name, name)) {
-                  call->replace(new SymExpr(constant->sym));
-                  found = true;
-                }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->isNamed(".")) {
+      if (SymExpr* first = toSymExpr(call->get(1))) {
+        if (EnumType* type = toEnumType(first->var->type)) {
+          if (SymExpr* second = toSymExpr(call->get(2))) {
+            const char* name;
+            bool found = false;
+            INT_ASSERT(get_string(second, &name));
+            for_enums(constant, type) {
+              if (!strcmp(constant->sym->name, name)) {
+                call->replace(new SymExpr(constant->sym));
+                found = true;
               }
-              if (!found) {
-                USR_FATAL(call, "unresolved enumerated type symbol \"%s\"", name);
-              }
+            }
+            if (!found) {
+              USR_FATAL(call, "unresolved enumerated type symbol \"%s\"", name);
             }
           }
         }
@@ -981,16 +979,17 @@ void scopeResolve(void) {
 
   Vec<UnresolvedSymExpr*> skipSet;
 
+  //
+  // Translate M.x where M is a ModuleSymbol into just x where x is
+  // the symbol in module M; for functions, insert a "module=" token
+  // that is used to determine visible functions.
+  //
   forv_Vec(BaseAST, ast, gAsts) {
-    SET_LINENO(ast);
-
-    // Translate M.x where M is a ModuleSymbol into just x where x is
-    // the symbol in module M; for functions, insert a "module=" token
-    // that is used to determine visible functions.
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isNamed(".")) {
-        if (SymExpr* se1 = toSymExpr(call->get(1))) {
-          if (ModuleSymbol* mod = toModuleSymbol(se1->var)) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
+            SET_LINENO(call);
             SymbolTableEntry* entry = symbolTable.get(mod->initFn->body);
             Symbol* sym = (entry) ? entry->get(get_string(call->get(2))) : 0;
             if (!sym) {
@@ -1021,6 +1020,7 @@ void scopeResolve(void) {
     }
 
     if (UnresolvedSymExpr* unresolvedSymExpr = toUnresolvedSymExpr(ast)) {
+      SET_LINENO(ast);
         if (skipSet.set_in(unresolvedSymExpr))
           continue;
 

@@ -78,21 +78,19 @@ complex2record() {
     }
   }
 
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIMITIVE_GET_REAL)) {
-        call->primitive = primitives[PRIMITIVE_GET_MEMBER];
-        ClassType* ct = toClassType(call->get(1)->typeInfo());
-        if (isReferenceType(ct))
-          ct = toClassType(ct->getValueType());
-        call->insertAtTail(ct->getField(1));
-      } else if (call->isPrimitive(PRIMITIVE_GET_IMAG)) {
-        call->primitive = primitives[PRIMITIVE_GET_MEMBER];
-        ClassType* ct = toClassType(call->get(1)->typeInfo());
-        if (isReferenceType(ct))
-          ct = toClassType(ct->getValueType());
-        call->insertAtTail(ct->getField(2));
-      }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->isPrimitive(PRIMITIVE_GET_REAL)) {
+      call->primitive = primitives[PRIMITIVE_GET_MEMBER];
+      ClassType* ct = toClassType(call->get(1)->typeInfo());
+      if (isReferenceType(ct))
+        ct = toClassType(ct->getValueType());
+      call->insertAtTail(ct->getField(1));
+    } else if (call->isPrimitive(PRIMITIVE_GET_IMAG)) {
+      call->primitive = primitives[PRIMITIVE_GET_MEMBER];
+      ClassType* ct = toClassType(call->get(1)->typeInfo());
+      if (isReferenceType(ct))
+        ct = toClassType(ct->getValueType());
+      call->insertAtTail(ct->getField(2));
     }
   }
 

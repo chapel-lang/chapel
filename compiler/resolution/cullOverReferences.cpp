@@ -61,26 +61,24 @@ void cullOverReferences() {
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
   buildDefUseMaps(defMap, useMap);
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (FnSymbol* fn = call->isResolved()) {
-        if (FnSymbol* copy = fn->valueFunction) {
-          if (CallExpr* move = toCallExpr(call->parentExpr)) {
-            INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
-            SymExpr* se = toSymExpr(move->get(1));
-            INT_ASSERT(se);
-            if (!refNecessary(se, defMap, useMap)) {
-              VarSymbol* tmp = newTemp(copy->retType);
-              move->insertBefore(new DefExpr(tmp));
-              move->insertAfter(new CallExpr(PRIMITIVE_MOVE, se->var,
-                                             new CallExpr(PRIMITIVE_SET_REF, tmp)));
-              se->var = tmp;
-              SymExpr* base = toSymExpr(call->baseExpr);
-              base->var = copy;
-            }
-          } else
-            INT_FATAL("unexpected case");
-        }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (FnSymbol* fn = call->isResolved()) {
+      if (FnSymbol* copy = fn->valueFunction) {
+        if (CallExpr* move = toCallExpr(call->parentExpr)) {
+          INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
+          SymExpr* se = toSymExpr(move->get(1));
+          INT_ASSERT(se);
+          if (!refNecessary(se, defMap, useMap)) {
+            VarSymbol* tmp = newTemp(copy->retType);
+            move->insertBefore(new DefExpr(tmp));
+            move->insertAfter(new CallExpr(PRIMITIVE_MOVE, se->var,
+                                new CallExpr(PRIMITIVE_SET_REF, tmp)));
+            se->var = tmp;
+            SymExpr* base = toSymExpr(call->baseExpr);
+            base->var = copy;
+          }
+        } else
+          INT_FATAL("unexpected case");
       }
     }
   }
@@ -92,48 +90,48 @@ void cullOverReferences() {
   //   and may be worthwhile/necessary otherwise
   //
   forv_Vec(BaseAST, ast, gAsts) {
-    if (Symbol* sym = toSymbol(ast)) {
-      if (isTypeSymbol(sym) || !sym->type)
-        continue;
-      if (Type* vt = sym->type->getValueType()) {
-        if (isDerefType(vt)) {
-          sym->type = vt;
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (!isTypeSymbol(def->sym) && def->sym->type) {
+        if (Type* vt = def->sym->type->getValueType()) {
+          if (isDerefType(vt)) {
+            def->sym->type = vt;
+          }
+        }
+        if (FnSymbol* fn = toFnSymbol(def->sym)) {
+          if (Type* vt = fn->retType->getValueType()) {
+            if (isDerefType(vt)) {
+              fn->retType = vt;
+              fn->retTag = RET_VALUE;
+            }
+          }
         }
       }
     }
-    if (FnSymbol* fn = toFnSymbol(ast)) {
-      if (Type* vt = fn->retType->getValueType()) {
-        if (isDerefType(vt)) {
-          fn->retType = vt;
-          fn->retTag = RET_VALUE;
-        }
+  }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->isPrimitive(PRIMITIVE_GET_REF) ||
+        call->isPrimitive(PRIMITIVE_SET_REF)) {
+      Type* vt = call->get(1)->typeInfo();
+      if (isReferenceType(vt))
+        vt = vt->getValueType();
+      if (isDerefType(vt)) {
+        call->replace(call->get(1)->remove());
       }
     }
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIMITIVE_GET_REF) ||
-          call->isPrimitive(PRIMITIVE_SET_REF)) {
-        Type* vt = call->get(1)->typeInfo();
-        if (isReferenceType(vt))
-          vt = vt->getValueType();
-        if (isDerefType(vt)) {
-          call->replace(call->get(1)->remove());
-        }
+    if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+      Type* vt = call->get(2)->typeInfo();
+      if (isReferenceType(vt))
+        vt = vt->getValueType();
+      if (isDerefType(vt)) {
+        call->primitive = primitives[PRIMITIVE_GET_MEMBER_VALUE];
       }
-      if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
-        Type* vt = call->get(2)->typeInfo();
-        if (isReferenceType(vt))
-          vt = vt->getValueType();
-        if (isDerefType(vt)) {
-          call->primitive = primitives[PRIMITIVE_GET_MEMBER_VALUE];
-        }
-      }
-      if (call->isPrimitive(PRIMITIVE_ARRAY_GET)) {
-        Type* vt = call->typeInfo();
-        if (isReferenceType(vt))
-          vt = vt->getValueType();
-        if (isDerefType(vt)) {
-          call->primitive = primitives[PRIMITIVE_ARRAY_GET_VALUE];
-        }
+    }
+    if (call->isPrimitive(PRIMITIVE_ARRAY_GET)) {
+      Type* vt = call->typeInfo();
+      if (isReferenceType(vt))
+        vt = vt->getValueType();
+      if (isDerefType(vt)) {
+        call->primitive = primitives[PRIMITIVE_ARRAY_GET_VALUE];
       }
     }
   }

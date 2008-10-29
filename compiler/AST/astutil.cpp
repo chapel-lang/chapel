@@ -52,11 +52,9 @@ void compute_call_sites() {
     else
       fn->calledBy = new Vec<CallExpr*>();
   }
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (FnSymbol* fn = call->isResolved()) {
-        fn->calledBy->add(call);
-      }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (FnSymbol* fn = call->isResolved()) {
+      fn->calledBy->add(call);
     }
   }
 }

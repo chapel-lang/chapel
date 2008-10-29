@@ -606,41 +606,39 @@ parallel(void) {
   //
   Vec<FnSymbol*> syncAccessFunctionSet;
   Vec<FnSymbol*> syncAccessFunctionVec;
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->parentSymbol) {
-        if (call->isPrimitive(PRIMITIVE_SYNC_INIT) ||
-            call->isPrimitive(PRIMITIVE_SYNC_DESTROY) ||
-            call->isPrimitive(PRIMITIVE_SYNC_LOCK) ||
-            call->isPrimitive(PRIMITIVE_SYNC_UNLOCK) ||
-            call->isPrimitive(PRIMITIVE_SYNC_WAIT_FULL) ||
-            call->isPrimitive(PRIMITIVE_SYNC_WAIT_EMPTY) ||
-            call->isPrimitive(PRIMITIVE_SYNC_SIGNAL_FULL) ||
-            call->isPrimitive(PRIMITIVE_SYNC_SIGNAL_EMPTY) ||
-            call->isPrimitive(PRIMITIVE_SINGLE_INIT) ||
-            call->isPrimitive(PRIMITIVE_SINGLE_LOCK) ||
-            call->isPrimitive(PRIMITIVE_SINGLE_UNLOCK) ||
-            call->isPrimitive(PRIMITIVE_SINGLE_WAIT_FULL) ||
-            call->isPrimitive(PRIMITIVE_SINGLE_SIGNAL_FULL) ||
-            call->isPrimitive(PRIMITIVE_WRITEEF) ||
-            call->isPrimitive(PRIMITIVE_WRITEFF) ||
-            call->isPrimitive(PRIMITIVE_WRITEXF) ||
-            call->isPrimitive(PRIMITIVE_SYNC_RESET) ||
-            call->isPrimitive(PRIMITIVE_READFE) ||
-            call->isPrimitive(PRIMITIVE_READFF) ||
-            call->isPrimitive(PRIMITIVE_READXX) ||
-            call->isPrimitive(PRIMITIVE_SYNC_ISFULL) ||
-            call->isPrimitive(PRIMITIVE_SINGLE_WRITEEF) ||
-            call->isPrimitive(PRIMITIVE_SINGLE_RESET) ||
-            call->isPrimitive(PRIMITIVE_SINGLE_READFF) ||
-            call->isPrimitive(PRIMITIVE_SINGLE_READXX) ||
-            call->isPrimitive(PRIMITIVE_SINGLE_ISFULL)) {
-          FnSymbol* parent = toFnSymbol(call->parentSymbol);
-          INT_ASSERT(parent);
-          if (!syncAccessFunctionSet.set_in(parent)) {
-            syncAccessFunctionSet.set_add(parent);
-            syncAccessFunctionVec.add(parent);
-          }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->parentSymbol) {
+      if (call->isPrimitive(PRIMITIVE_SYNC_INIT) ||
+          call->isPrimitive(PRIMITIVE_SYNC_DESTROY) ||
+          call->isPrimitive(PRIMITIVE_SYNC_LOCK) ||
+          call->isPrimitive(PRIMITIVE_SYNC_UNLOCK) ||
+          call->isPrimitive(PRIMITIVE_SYNC_WAIT_FULL) ||
+          call->isPrimitive(PRIMITIVE_SYNC_WAIT_EMPTY) ||
+          call->isPrimitive(PRIMITIVE_SYNC_SIGNAL_FULL) ||
+          call->isPrimitive(PRIMITIVE_SYNC_SIGNAL_EMPTY) ||
+          call->isPrimitive(PRIMITIVE_SINGLE_INIT) ||
+          call->isPrimitive(PRIMITIVE_SINGLE_LOCK) ||
+          call->isPrimitive(PRIMITIVE_SINGLE_UNLOCK) ||
+          call->isPrimitive(PRIMITIVE_SINGLE_WAIT_FULL) ||
+          call->isPrimitive(PRIMITIVE_SINGLE_SIGNAL_FULL) ||
+          call->isPrimitive(PRIMITIVE_WRITEEF) ||
+          call->isPrimitive(PRIMITIVE_WRITEFF) ||
+          call->isPrimitive(PRIMITIVE_WRITEXF) ||
+          call->isPrimitive(PRIMITIVE_SYNC_RESET) ||
+          call->isPrimitive(PRIMITIVE_READFE) ||
+          call->isPrimitive(PRIMITIVE_READFF) ||
+          call->isPrimitive(PRIMITIVE_READXX) ||
+          call->isPrimitive(PRIMITIVE_SYNC_ISFULL) ||
+          call->isPrimitive(PRIMITIVE_SINGLE_WRITEEF) ||
+          call->isPrimitive(PRIMITIVE_SINGLE_RESET) ||
+          call->isPrimitive(PRIMITIVE_SINGLE_READFF) ||
+          call->isPrimitive(PRIMITIVE_SINGLE_READXX) ||
+          call->isPrimitive(PRIMITIVE_SINGLE_ISFULL)) {
+        FnSymbol* parent = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(parent);
+        if (!syncAccessFunctionSet.set_in(parent)) {
+          syncAccessFunctionSet.set_add(parent);
+          syncAccessFunctionVec.add(parent);
         }
       }
     }
@@ -666,16 +664,14 @@ parallel(void) {
     }
   }
 
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->parentSymbol)
-        if (FnSymbol* fn = call->isResolved())
-          if (fn->hasFlag(FLAG_ON) ||
-              fn->hasFlag(FLAG_BEGIN) ||
-              fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))
-            if (!syncAccessFunctionSet.set_in(fn))
-              passReadOnlyByValue(call, fn);
-    }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->parentSymbol)
+      if (FnSymbol* fn = call->isResolved())
+        if (fn->hasFlag(FLAG_ON) ||
+            fn->hasFlag(FLAG_BEGIN) ||
+            fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))
+          if (!syncAccessFunctionSet.set_in(fn))
+            passReadOnlyByValue(call, fn);
   }
 
   makeHeapAllocations();
@@ -685,19 +681,17 @@ parallel(void) {
   Vec<FnSymbol*> queue;
   Map<FnSymbol*,Symbol*> endCountMap;
 
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr * call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIMITIVE_GET_END_COUNT)) {
-        FnSymbol* pfn = call->getFunction();
-        if (!endCountMap.get(pfn))
-          insertEndCount(pfn, call->typeInfo(), queue, endCountMap);
-        call->replace(new SymExpr(endCountMap.get(pfn)));
-      } else if (call->isPrimitive(PRIMITIVE_SET_END_COUNT)) {
-        FnSymbol* pfn = call->getFunction();
-        if (!endCountMap.get(pfn))
-          insertEndCount(pfn, call->get(1)->typeInfo(), queue, endCountMap);
-        call->replace(new CallExpr(PRIMITIVE_MOVE, endCountMap.get(pfn), call->get(1)->remove()));
-      }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->isPrimitive(PRIMITIVE_GET_END_COUNT)) {
+      FnSymbol* pfn = call->getFunction();
+      if (!endCountMap.get(pfn))
+        insertEndCount(pfn, call->typeInfo(), queue, endCountMap);
+      call->replace(new SymExpr(endCountMap.get(pfn)));
+    } else if (call->isPrimitive(PRIMITIVE_SET_END_COUNT)) {
+      FnSymbol* pfn = call->getFunction();
+      if (!endCountMap.get(pfn))
+        insertEndCount(pfn, call->get(1)->typeInfo(), queue, endCountMap);
+      call->replace(new CallExpr(PRIMITIVE_MOVE, endCountMap.get(pfn), call->get(1)->remove()));
     }
   }
 
@@ -712,17 +706,15 @@ parallel(void) {
   }
 
   Vec<CallExpr*> calls;
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast))
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->isResolved() && (call->isResolved()->hasFlag(FLAG_ON) ||
+                               call->isResolved()->hasFlag(FLAG_BEGIN) ||
+                               call->isResolved()->hasFlag(FLAG_COBEGIN_OR_COFORALL)))
       calls.add(call);
   }
 
   forv_Vec(CallExpr, call, calls) {
-    if (call->isResolved() && (call->isResolved()->hasFlag(FLAG_ON) ||
-                               call->isResolved()->hasFlag(FLAG_BEGIN) ||
-                               call->isResolved()->hasFlag(FLAG_COBEGIN_OR_COFORALL))) {
-      bundleArgs(call);
-    }
+    bundleArgs(call);
   }
 }
 
@@ -1206,23 +1198,21 @@ insertWideReferences(void) {
   // of the wide class into a non-wide type and then use that in the call.
   // After the call, copy the value back into the wide class.
   //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isResolved() && call->isResolved()->hasFlag(FLAG_EXTERN)) {
-        for_alist(arg, call->argList) {
-          SymExpr* sym = toSymExpr(arg);
-          INT_ASSERT(sym);
-          if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-              sym->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-            VarSymbol* var = newTemp(sym->typeInfo()->getField("addr")->type);
-            call->getStmtExpr()->insertBefore(new DefExpr(var));
-            if (var->type->symbol->hasFlag(FLAG_REF))
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, sym->copy()));
-            else
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_GET_REF, sym->copy())));
-            call->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_MOVE, sym->copy(), var));
-            sym->replace(new SymExpr(var));
-          }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->isResolved() && call->isResolved()->hasFlag(FLAG_EXTERN)) {
+      for_alist(arg, call->argList) {
+        SymExpr* sym = toSymExpr(arg);
+        INT_ASSERT(sym);
+        if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+            sym->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+          VarSymbol* var = newTemp(sym->typeInfo()->getField("addr")->type);
+          call->getStmtExpr()->insertBefore(new DefExpr(var));
+          if (var->type->symbol->hasFlag(FLAG_REF))
+            call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, sym->copy()));
+          else
+            call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_GET_REF, sym->copy())));
+          call->getStmtExpr()->insertAfter(new CallExpr(PRIMITIVE_MOVE, sym->copy(), var));
+          sym->replace(new SymExpr(var));
         }
       }
     }
@@ -1281,17 +1271,15 @@ insertWideReferences(void) {
   // insert cast temps if lhs type does not match cast type
   //   allows separation of the remote put with the wide cast
   //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIMITIVE_CAST)) {
-        if (CallExpr* move = toCallExpr(call->parentExpr)) {
-          if (move->isPrimitive(PRIMITIVE_MOVE)) {
-            if (move->get(1)->typeInfo() != call->typeInfo()) {
-              VarSymbol* tmp = newTemp(call->typeInfo());
-              move->insertBefore(new DefExpr(tmp));
-              call->replace(new SymExpr(tmp));
-              move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
-            }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->isPrimitive(PRIMITIVE_CAST)) {
+      if (CallExpr* move = toCallExpr(call->parentExpr)) {
+        if (move->isPrimitive(PRIMITIVE_MOVE)) {
+          if (move->get(1)->typeInfo() != call->typeInfo()) {
+            VarSymbol* tmp = newTemp(call->typeInfo());
+            move->insertBefore(new DefExpr(tmp));
+            call->replace(new SymExpr(tmp));
+            move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
           }
         }
       }
@@ -1305,60 +1293,57 @@ insertWideReferences(void) {
   Map<Symbol*,Vec<SymExpr*>*> useMap;
   buildDefUseMaps(defMap, useMap); // for "ack!!" below
 
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
+  forv_Vec(CallExpr, call, gCalls) {
+    //
+    // if this is a call to _heapAllocGlobal or
+    // _heapAllocConstGlobal (or a wrapper thereof) but not from
+    // within a wrapper, then this is a global variable
+    //
+    if ((call->isNamed("_heapAllocGlobal") ||
+         call->isNamed("_heapAllocConstGlobal")) &&
+        !call->parentSymbol->hasFlag(FLAG_WRAPPER)) {
+
+      CallExpr* move = toCallExpr(call->parentExpr);
+      INT_ASSERT(move);
+      SymExpr* lhs = toSymExpr(move->get(1));
+      INT_ASSERT(lhs);
 
       //
-      // if this is a call to _heapAllocGlobal or
-      // _heapAllocConstGlobal (or a wrapper thereof) but not from
-      // within a wrapper, then this is a global variable
+      // ack!! check for tmp before global
+      // this can happen due to coercion wrappers
+      // this is a worrisome fix
       //
-      if ((call->isNamed("_heapAllocGlobal") ||
-           call->isNamed("_heapAllocConstGlobal")) &&
-          !call->parentSymbol->hasFlag(FLAG_WRAPPER)) {
-
-        CallExpr* move = toCallExpr(call->parentExpr);
-        INT_ASSERT(move);
-        SymExpr* lhs = toSymExpr(move->get(1));
-        INT_ASSERT(lhs);
-
-        //
-        // ack!! check for tmp before global
-        // this can happen due to coercion wrappers
-        // this is a worrisome fix
-        //
-        if (lhs->var->hasFlag(FLAG_TEMP)) {
-          if (CallExpr* move2 = toCallExpr(move->next)) {
-            Vec<SymExpr*>* defs = defMap.get(lhs->var);
-            Vec<SymExpr*>* uses = useMap.get(lhs->var);
-            if (defs && defs->n == 1 &&
-                uses && uses->n == 1 &&
-                uses->v[0] == move2->get(2)) {
-              move2->get(2)->replace(call->remove());
-              move->remove();
-              move = move2;
-              lhs->var->defPoint->remove();
-              lhs = toSymExpr(move->get(1));
-            }
+      if (lhs->var->hasFlag(FLAG_TEMP)) {
+        if (CallExpr* move2 = toCallExpr(move->next)) {
+          Vec<SymExpr*>* defs = defMap.get(lhs->var);
+          Vec<SymExpr*>* uses = useMap.get(lhs->var);
+          if (defs && defs->n == 1 &&
+              uses && uses->n == 1 &&
+              uses->v[0] == move2->get(2)) {
+            move2->get(2)->replace(call->remove());
+            move->remove();
+            move = move2;
+            lhs->var->defPoint->remove();
+            lhs = toSymExpr(move->get(1));
           }
         }
+      }
 
-        if (lhs->var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      if (lhs->var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
 
-          //
-          // handle global variables on the heap
-          //
-          move->replace(new CallExpr(PRIMITIVE_SET_MEMBER, lhs->remove(), lhs->var->type->getField("addr")->type->getField("_val"), call->get(1)->remove()));
-          heapVars.add(lhs->var);
+        //
+        // handle global variables on the heap
+        //
+        move->replace(new CallExpr(PRIMITIVE_SET_MEMBER, lhs->remove(), lhs->var->type->getField("addr")->type->getField("_val"), call->get(1)->remove()));
+        heapVars.add(lhs->var);
 
-        } else {
+      } else {
 
-          //
-          // handle constant global variables not on the heap
-          //
-          call->replace(call->get(1)->remove());
-          move->insertAfter(new CallExpr(PRIMITIVE_PRIVATE_BROADCAST, lhs->var));
-        }
+        //
+        // handle constant global variables not on the heap
+        //
+        call->replace(call->get(1)->remove());
+        move->insertAfter(new CallExpr(PRIMITIVE_PRIVATE_BROADCAST, lhs->var));
       }
     }
   }
@@ -1368,19 +1353,17 @@ insertWideReferences(void) {
   //
   // dereference wide string actual argument to primitive
   //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->primitive) {
-        if (call->primitive->tag == PRIMITIVE_UNKNOWN ||
-            call->isPrimitive(PRIMITIVE_CAST)) {
-          for_actuals(actual, call) {
-            if (actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              if (actual->typeInfo()->getField("addr")->typeInfo() == dtString) {
-                VarSymbol* tmp = newTemp(actual->typeInfo()->getField("addr")->typeInfo());
-                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, actual->copy())));
-                actual->replace(new SymExpr(tmp));
-              }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->primitive) {
+      if (call->primitive->tag == PRIMITIVE_UNKNOWN ||
+          call->isPrimitive(PRIMITIVE_CAST)) {
+        for_actuals(actual, call) {
+          if (actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            if (actual->typeInfo()->getField("addr")->typeInfo() == dtString) {
+              VarSymbol* tmp = newTemp(actual->typeInfo()->getField("addr")->typeInfo());
+              call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+              call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, actual->copy())));
+              actual->replace(new SymExpr(tmp));
             }
           }
         }
@@ -1392,18 +1375,16 @@ insertWideReferences(void) {
   // dereference wide references to wide classes in select primitives;
   // this simplifies the implementation of these primitives
   //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
-          call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
-          call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
-        if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-            call->get(1)->typeInfo()->getValueType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-          VarSymbol* tmp = newTemp(call->get(1)->typeInfo()->getValueType());
-          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, call->get(1)->remove())));
-          call->insertAtHead(tmp);
-        }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+        call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
+        call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+          call->get(1)->typeInfo()->getValueType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        VarSymbol* tmp = newTemp(call->get(1)->typeInfo()->getValueType());
+        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, call->get(1)->remove())));
+        call->insertAtHead(tmp);
       }
     }
   }

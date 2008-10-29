@@ -3604,10 +3604,9 @@ resolve() {
   }
 
   Vec<CallExpr*> calls;
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast))
-      if (call->parentSymbol && call->getStmtExpr())
-        calls.add(call);
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->parentSymbol && call->getStmtExpr())
+      calls.add(call);
   }
   forv_Vec(CallExpr, call, calls) {
     if (FnSymbol* key = call->isResolved()) {
@@ -3728,26 +3727,24 @@ static void insertReturnTemps() {
   // reference to a sync var, pass it through the _statementLevelSymbol
   // function to get the semantics of reading a sync var.
   //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->parentSymbol) {
-        if (FnSymbol* fn = call->isResolved()) {
-          if (fn->retType != dtVoid) {
-            CallExpr* parent = toCallExpr(call->parentExpr);
-            if (!parent && !isDefExpr(call->parentExpr)) { // no use
-              VarSymbol* tmp = newTemp(fn->retType);
-              DefExpr* def = new DefExpr(tmp);
-              call->insertBefore(def);
-              if ((fn->retType->getValueType() && fn->retType->getValueType()->symbol->hasFlag(FLAG_SYNC)) || fn->retType->symbol->hasFlag(FLAG_SYNC)) {
-                CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
-                call->insertBefore(sls);
-                reset_line_info(sls, call->lineno);
-                resolveCall(sls);
-                INT_ASSERT(sls->isResolved());
-                resolveFns(sls->isResolved());
-              }
-              def->insertAfter(new CallExpr(PRIMITIVE_MOVE, tmp, call->remove()));
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->parentSymbol) {
+      if (FnSymbol* fn = call->isResolved()) {
+        if (fn->retType != dtVoid) {
+          CallExpr* parent = toCallExpr(call->parentExpr);
+          if (!parent && !isDefExpr(call->parentExpr)) { // no use
+            VarSymbol* tmp = newTemp(fn->retType);
+            DefExpr* def = new DefExpr(tmp);
+            call->insertBefore(def);
+            if ((fn->retType->getValueType() && fn->retType->getValueType()->symbol->hasFlag(FLAG_SYNC)) || fn->retType->symbol->hasFlag(FLAG_SYNC)) {
+              CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
+              call->insertBefore(sls);
+              reset_line_info(sls, call->lineno);
+              resolveCall(sls);
+              INT_ASSERT(sls->isResolved());
+              resolveFns(sls->isResolved());
             }
+            def->insertAfter(new CallExpr(PRIMITIVE_MOVE, tmp, call->remove()));
           }
         }
       }
@@ -4070,25 +4067,23 @@ pruneResolvedTree() {
     }
   }
 
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->parentSymbol && call->isResolved()) {
-        //
-        // Insert reference temps for function arguments that expect them.
-        //
-        for_formals_actuals(formal, actual, call) {
-          if (formal->type == actual->typeInfo()->refType) {
-            SET_LINENO(call);
-            VarSymbol* tmp = newTemp(formal->type);
-            call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-            actual->replace(new SymExpr(tmp));
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, actual)));
-          }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->parentSymbol && call->isResolved()) {
+      //
+      // Insert reference temps for function arguments that expect them.
+      //
+      for_formals_actuals(formal, actual, call) {
+        if (formal->type == actual->typeInfo()->refType) {
+          SET_LINENO(call);
+          VarSymbol* tmp = newTemp(formal->type);
+          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          actual->replace(new SymExpr(tmp));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, actual)));
         }
-      } else if (call->isPrimitive(PRIMITIVE_INIT_FIELDS)) {
-        initializeClass(call, toSymExpr(call->get(1))->var);
-        call->remove();
       }
+    } else if (call->isPrimitive(PRIMITIVE_INIT_FIELDS)) {
+      initializeClass(call, toSymExpr(call->get(1))->var);
+      call->remove();
     }
   }
 }

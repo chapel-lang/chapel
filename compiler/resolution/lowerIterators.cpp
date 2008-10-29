@@ -365,12 +365,11 @@ void lowerIterators() {
 
   inlineIterators();
 
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast))
-      if (call->parentSymbol)
-        if (call->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP))
-          if (call->numActuals() > 1)
-            expand_for_loop(call);
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->parentSymbol)
+      if (call->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP))
+        if (call->numActuals() > 1)
+          expand_for_loop(call);
   }
   forv_Vec(FnSymbol, fn, gFns) {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
@@ -391,24 +390,22 @@ void lowerIterators() {
   }
   // fix GET_MEMBER primitives that access fields of an iterator class
   // via a number
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->parentSymbol && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
-        ClassType* ct = toClassType(call->get(1)->typeInfo());
-        if (ct->symbol->hasFlag(FLAG_REF))
-          ct = toClassType(ct->getValueType());
-        long num;
-        if (get_int(call->get(2), &num)) {
-          Symbol* field = ct->getField(num+1); // add 1 for super
-          call->get(2)->replace(new SymExpr(field));
-          CallExpr* parent = toCallExpr(call->parentExpr);
-          INT_ASSERT(parent->isPrimitive(PRIMITIVE_MOVE));
-          Symbol* local = toSymExpr(parent->get(1))->var;
-          if (local->type == field->type)
-            call->primitive = primitives[PRIMITIVE_GET_MEMBER_VALUE];
-          else if (local->type != field->type->refType)
-            INT_FATAL(call, "unexpected case");
-        }
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->parentSymbol && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+      ClassType* ct = toClassType(call->get(1)->typeInfo());
+      if (ct->symbol->hasFlag(FLAG_REF))
+        ct = toClassType(ct->getValueType());
+      long num;
+      if (get_int(call->get(2), &num)) {
+        Symbol* field = ct->getField(num+1); // add 1 for super
+        call->get(2)->replace(new SymExpr(field));
+        CallExpr* parent = toCallExpr(call->parentExpr);
+        INT_ASSERT(parent->isPrimitive(PRIMITIVE_MOVE));
+        Symbol* local = toSymExpr(parent->get(1))->var;
+        if (local->type == field->type)
+          call->primitive = primitives[PRIMITIVE_GET_MEMBER_VALUE];
+        else if (local->type != field->type->refType)
+          INT_FATAL(call, "unexpected case");
       }
     }
   }
@@ -434,32 +431,30 @@ void lowerIterators() {
   //
   // cleanup leader and follower iterator calls
   //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->parentSymbol) {
-        if (FnSymbol* fn = call->isResolved()) {
-          if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
-            if (!strcmp(call->parentSymbol->name, "_toLeader") ||
-                !strcmp(call->parentSymbol->name, "_toFollower")) {
-              ArgSymbol* iterator = toFnSymbol(call->parentSymbol)->getFormal(1);
-              int i = 2; // first field is super
-              for_actuals(actual, call) {
-                SymExpr* se = toSymExpr(actual);
-                if (isArgSymbol(se->var)) {
-                  Symbol* field = toClassType(iterator->type)->getField(i);
-                  VarSymbol* tmp = NULL;
-                  if (field->type == se->var->type) {
-                    tmp = newTemp(field->type);
-                    call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                    call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, field)));
-                  } else if (field->type->refType == se->var->type) {
-                    tmp = newTemp(field->type->refType);
-                    call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                    call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, field)));
-                  }
-                  actual->replace(new SymExpr(tmp));
-                  i++;
+  forv_Vec(CallExpr, call, gCalls) {
+    if (call->parentSymbol) {
+      if (FnSymbol* fn = call->isResolved()) {
+        if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+          if (!strcmp(call->parentSymbol->name, "_toLeader") ||
+              !strcmp(call->parentSymbol->name, "_toFollower")) {
+            ArgSymbol* iterator = toFnSymbol(call->parentSymbol)->getFormal(1);
+            int i = 2; // first field is super
+            for_actuals(actual, call) {
+              SymExpr* se = toSymExpr(actual);
+              if (isArgSymbol(se->var)) {
+                Symbol* field = toClassType(iterator->type)->getField(i);
+                VarSymbol* tmp = NULL;
+                if (field->type == se->var->type) {
+                  tmp = newTemp(field->type);
+                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, iterator, field)));
+                } else if (field->type->refType == se->var->type) {
+                  tmp = newTemp(field->type->refType);
+                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, iterator, field)));
                 }
+                actual->replace(new SymExpr(tmp));
+                i++;
               }
             }
           }
