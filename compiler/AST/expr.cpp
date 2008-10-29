@@ -184,7 +184,7 @@ void Expr::insertAfter(Expr* new_ast) {
 
 
 SymExpr::SymExpr(Symbol* init_var) :
-  Expr(EXPR_SYM),
+  Expr(E_SymExpr),
   var(init_var)
 {
   if (!init_var)
@@ -201,7 +201,7 @@ SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 void
 SymExpr::verify() {
   Expr::verify();
-  if (astTag != EXPR_SYM)
+  if (astTag != E_SymExpr)
     INT_FATAL(this, "Bad SymExpr::astTag");
   if (!var)
     INT_FATAL(this, "SymExpr::var is NULL");
@@ -241,7 +241,7 @@ void SymExpr::codegen(FILE* outfile) {
 
 
 UnresolvedSymExpr::UnresolvedSymExpr(const char* iunresolved) :
-  Expr(EXPR_SYM_UNRESOLVED),
+  Expr(E_UnresolvedSymExpr),
   unresolved(astr(iunresolved))
 {
   if (!iunresolved)
@@ -258,7 +258,7 @@ UnresolvedSymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 void
 UnresolvedSymExpr::verify() {
   Expr::verify();
-  if (astTag != EXPR_SYM_UNRESOLVED)
+  if (astTag != E_UnresolvedSymExpr)
     INT_FATAL(this, "bad UnresolvedSymExpr::astTag");
   if (!unresolved)
     INT_FATAL(this, "UnresolvedSymExpr::unresolved is NULL");
@@ -283,7 +283,7 @@ void UnresolvedSymExpr::codegen(FILE* outfile) {
 
 
 DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
-  Expr(EXPR_DEF),
+  Expr(E_DefExpr),
   sym(initSym),
   init(NULL),
   exprType(NULL)
@@ -318,7 +318,7 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
 
 void DefExpr::verify() {
   Expr::verify();
-  if (astTag != EXPR_DEF) {
+  if (astTag != E_DefExpr) {
     INT_FATAL(this, "Bad DefExpr::astTag");
   }
   if (!sym) {
@@ -415,7 +415,7 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
 
 CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
                    BaseAST* arg3, BaseAST* arg4) :
-  Expr(EXPR_CALL),
+  Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
   primitive(NULL),
@@ -440,7 +440,7 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
 
 
 CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, BaseAST* arg4) :
-  Expr(EXPR_CALL),
+  Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
   primitive(prim),
@@ -457,7 +457,7 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
 }
 
 CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, BaseAST* arg4) :
-  Expr(EXPR_CALL),
+  Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
   primitive(primitives[prim]),
@@ -476,7 +476,7 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
 
 CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
                    BaseAST* arg3, BaseAST* arg4) :
-  Expr(EXPR_CALL),
+  Expr(E_CallExpr),
   baseExpr(new UnresolvedSymExpr(name)),
   argList(),
   primitive(NULL),
@@ -498,7 +498,7 @@ CallExpr::~CallExpr() { }
 
 void CallExpr::verify() {
   Expr::verify();
-  if (astTag != EXPR_CALL) {
+  if (astTag != E_CallExpr) {
     INT_FATAL(this, "Bad CallExpr::astTag");
   }
   if (argList.parent != this)
@@ -2087,7 +2087,7 @@ bool CallExpr::isPrimitive(const char* primitiveName) {
 
 
 NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
-  Expr(EXPR_NAMED),
+  Expr(E_NamedExpr),
   name(init_name),
   actual(init_actual)
 { }
@@ -2095,7 +2095,7 @@ NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
 
 void NamedExpr::verify() {
   Expr::verify();
-  if (astTag != EXPR_NAMED) {
+  if (astTag != E_NamedExpr) {
     INT_FATAL(this, "Bad NamedExpr::astTag");
   }
   if (actual && actual->parentExpr != this)
@@ -2194,25 +2194,25 @@ Expr* getFirstExpr(Expr* expr) {
   default:
     INT_FATAL(expr, "unexpected expr in getFirstExpr");
     return NULL;
-  case EXPR_SYM:
-  case EXPR_SYM_UNRESOLVED:
-  case EXPR_DEF:
+  case E_SymExpr:
+  case E_UnresolvedSymExpr:
+  case E_DefExpr:
     return expr;
-  case STMT_BLOCK:
+  case E_BlockStmt:
     AST_RET_CHILD(BlockStmt, blockInfo);
     AST_RET_LIST(BlockStmt, body);
     break;
-  case STMT_COND:
+  case E_CondStmt:
     AST_RET_CHILD(CondStmt, condExpr);
     break;
-  case STMT_GOTO:
+  case E_GotoStmt:
     AST_RET_CHILD(GotoStmt, label);
     break;
-  case EXPR_CALL:
+  case E_CallExpr:
     AST_RET_CHILD(CallExpr, baseExpr);
     AST_RET_LIST(CallExpr, argList);
     break;
-  case EXPR_NAMED:
+  case E_NamedExpr:
     AST_RET_CHILD(NamedExpr, actual);
     break;
   }

@@ -32,31 +32,31 @@ void printStatistics(const char* pass);
  **  Note: update AstTag and astTagName together always.
  **/
 enum AstTag {
-  EXPR,
-  EXPR_SYM,
-  EXPR_SYM_UNRESOLVED,
-  EXPR_DEF,
-  EXPR_CALL,
-  EXPR_NAMED,
-  STMT_BLOCK,
-  STMT_COND,
-  STMT_GOTO,
+  E_SymExpr,
+  E_UnresolvedSymExpr,
+  E_DefExpr,
+  E_CallExpr,
+  E_NamedExpr,
+  E_BlockStmt,
+  E_CondStmt,
+  E_GotoStmt,
+  E_Expr,
 
-  SYMBOL,
-  SYMBOL_MODULE,
-  SYMBOL_VAR,
-  SYMBOL_ARG,
-  SYMBOL_TYPE,
-  SYMBOL_FN,
-  SYMBOL_ENUM,
-  SYMBOL_LABEL,
+  E_ModuleSymbol,
+  E_VarSymbol,
+  E_ArgSymbol,
+  E_TypeSymbol,
+  E_FnSymbol,
+  E_EnumSymbol,
+  E_LabelSymbol,
+  E_Symbol,
 
-  TYPE,
-  TYPE_PRIMITIVE,
-  TYPE_ENUM,
-  TYPE_CLASS,
+  E_PrimitiveType,
+  E_EnumType,
+  E_ClassType,
+  E_Type,
 
-  BASE
+  E_BaseAST
 };
 
 extern const char* astTagName[];
@@ -98,7 +98,7 @@ class BaseAST {
 
   int lineno;           // line number of location
 
-  BaseAST(AstTag type = BASE);
+  BaseAST(AstTag type);
   virtual ~BaseAST() { }
   DECLARE_COPY(BaseAST);
 
@@ -128,34 +128,34 @@ void registerModule(ModuleSymbol* mod);
 // class test macros: determine the dynamic type of a BaseAST*
 //
 #define isExpr(ast)                                                     \
-  ((ast) && (ast)->astTag >= EXPR && (ast)->astTag <= STMT_GOTO)
+  ((ast) && (ast)->astTag < E_Expr)
 
-#define isSymExpr(ast)   ((ast) && (ast)->astTag == EXPR_SYM)
-#define isUnresolvedSymExpr(ast)   ((ast) && (ast)->astTag == EXPR_SYM_UNRESOLVED)
-#define isDefExpr(ast)   ((ast) && (ast)->astTag == EXPR_DEF)
-#define isCallExpr(ast)  ((ast) && (ast)->astTag == EXPR_CALL)
-#define isNamedExpr(ast) ((ast) && (ast)->astTag == EXPR_NAMED)
-#define isBlockStmt(ast) ((ast) && (ast)->astTag == STMT_BLOCK)
-#define isCondStmt(ast)  ((ast) && (ast)->astTag == STMT_COND)
-#define isGotoStmt(ast)  ((ast) && (ast)->astTag == STMT_GOTO)
+#define isSymExpr(ast)   ((ast) && (ast)->astTag == E_SymExpr)
+#define isUnresolvedSymExpr(ast)   ((ast) && (ast)->astTag == E_UnresolvedSymExpr)
+#define isDefExpr(ast)   ((ast) && (ast)->astTag == E_DefExpr)
+#define isCallExpr(ast)  ((ast) && (ast)->astTag == E_CallExpr)
+#define isNamedExpr(ast) ((ast) && (ast)->astTag == E_NamedExpr)
+#define isBlockStmt(ast) ((ast) && (ast)->astTag == E_BlockStmt)
+#define isCondStmt(ast)  ((ast) && (ast)->astTag == E_CondStmt)
+#define isGotoStmt(ast)  ((ast) && (ast)->astTag == E_GotoStmt)
 
 #define isSymbol(ast)                                                   \
-  ((ast) && (ast)->astTag >= SYMBOL && (ast)->astTag <= SYMBOL_LABEL)
+  ((ast) && (ast)->astTag > E_Expr && (ast)->astTag < E_Symbol)
 
-#define isModuleSymbol(ast)     ((ast) && (ast)->astTag == SYMBOL_MODULE)
-#define isVarSymbol(ast)        ((ast) && (ast)->astTag == SYMBOL_VAR)
-#define isArgSymbol(ast)        ((ast) && (ast)->astTag == SYMBOL_ARG)
-#define isTypeSymbol(ast)       ((ast) && (ast)->astTag == SYMBOL_TYPE)
-#define isFnSymbol(ast)         ((ast) && (ast)->astTag == SYMBOL_FN)
-#define isEnumSymbol(ast)       ((ast) && (ast)->astTag == SYMBOL_ENUM)
-#define isLabelSymbol(ast)      ((ast) && (ast)->astTag == SYMBOL_LABEL)
+#define isModuleSymbol(ast)     ((ast) && (ast)->astTag == E_ModuleSymbol)
+#define isVarSymbol(ast)        ((ast) && (ast)->astTag == E_VarSymbol)
+#define isArgSymbol(ast)        ((ast) && (ast)->astTag == E_ArgSymbol)
+#define isTypeSymbol(ast)       ((ast) && (ast)->astTag == E_TypeSymbol)
+#define isFnSymbol(ast)         ((ast) && (ast)->astTag == E_FnSymbol)
+#define isEnumSymbol(ast)       ((ast) && (ast)->astTag == E_EnumSymbol)
+#define isLabelSymbol(ast)      ((ast) && (ast)->astTag == E_LabelSymbol)
 
 #define isType(ast)                                                     \
-  ((ast) && (ast)->astTag >= TYPE && (ast)->astTag <= TYPE_CLASS)
+  ((ast) && (ast)->astTag > E_Symbol && (ast)->astTag < E_Type)
 
-#define isPrimitiveType(ast) ((ast) && (ast)->astTag == TYPE_PRIMITIVE)
-#define isEnumType(ast)      ((ast) && (ast)->astTag == TYPE_ENUM)
-#define isClassType(ast)     ((ast) && (ast)->astTag == TYPE_CLASS)
+#define isPrimitiveType(ast) ((ast) && (ast)->astTag == E_PrimitiveType)
+#define isEnumType(ast)      ((ast) && (ast)->astTag == E_EnumType)
+#define isClassType(ast)     ((ast) && (ast)->astTag == E_ClassType)
 
 //
 // safe downcast macros: downcast BaseAST*, Expr*, Symbol*, or Type*
@@ -200,53 +200,53 @@ void registerModule(ModuleSymbol* mod);
 
 #define AST_CHILDREN_CALL(_a, call, ...)                                \
   switch (_a->astTag) {                                                 \
-  case EXPR_CALL:                                                       \
+  case E_CallExpr:                                                       \
     AST_CALL_CHILD(_a, CallExpr, baseExpr, call, __VA_ARGS__);          \
     AST_CALL_LIST(_a, CallExpr, argList, call, __VA_ARGS__);            \
     break;                                                              \
-  case EXPR_NAMED:                                                      \
+  case E_NamedExpr:                                                      \
     AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);           \
     break;                                                              \
-  case EXPR_DEF:                                                        \
+  case E_DefExpr:                                                        \
     AST_CALL_CHILD(_a, DefExpr, init, call, __VA_ARGS__);               \
     AST_CALL_CHILD(_a, DefExpr, exprType, call, __VA_ARGS__);           \
     AST_CALL_CHILD(_a, DefExpr, sym, call, __VA_ARGS__);                \
     break;                                                              \
-  case STMT_BLOCK:                                                      \
+  case E_BlockStmt:                                                      \
     AST_CALL_LIST(_a, BlockStmt, body, call, __VA_ARGS__);              \
     AST_CALL_CHILD(_a, BlockStmt, blockInfo, call, __VA_ARGS__);         \
     AST_CALL_CHILD(_a, BlockStmt, modUses, call, __VA_ARGS__);          \
     break;                                                              \
-  case STMT_COND:                                                       \
+  case E_CondStmt:                                                       \
     AST_CALL_CHILD(_a, CondStmt, condExpr, call, __VA_ARGS__);          \
     AST_CALL_CHILD(_a, CondStmt, thenStmt, call, __VA_ARGS__);          \
     AST_CALL_CHILD(_a, CondStmt, elseStmt, call, __VA_ARGS__);          \
     break;                                                              \
-  case STMT_GOTO:                                                       \
+  case E_GotoStmt:                                                       \
     AST_CALL_CHILD(_a, GotoStmt, label, call, __VA_ARGS__);             \
     break;                                                              \
-  case SYMBOL_MODULE:                                                   \
+  case E_ModuleSymbol:                                                   \
     AST_CALL_CHILD(_a, ModuleSymbol, block, call, __VA_ARGS__);         \
     break;                                                              \
-  case SYMBOL_ARG:                                                      \
+  case E_ArgSymbol:                                                      \
     AST_CALL_CHILD(_a, ArgSymbol, typeExpr, call, __VA_ARGS__);         \
     AST_CALL_CHILD(_a, ArgSymbol, defaultExpr, call, __VA_ARGS__);      \
     AST_CALL_CHILD(_a, ArgSymbol, variableExpr, call, __VA_ARGS__);     \
     break;                                                              \
-  case SYMBOL_TYPE:                                                     \
+  case E_TypeSymbol:                                                     \
     AST_CALL_CHILD(_a, Symbol, type, call, __VA_ARGS__);                \
     break;                                                              \
-  case SYMBOL_FN:                                                       \
+  case E_FnSymbol:                                                       \
     AST_CALL_LIST(_a, FnSymbol, formals, call, __VA_ARGS__);            \
     AST_CALL_CHILD(_a, FnSymbol, setter, call, __VA_ARGS__);            \
     AST_CALL_CHILD(_a, FnSymbol, body, call, __VA_ARGS__);              \
     AST_CALL_CHILD(_a, FnSymbol, where, call, __VA_ARGS__);             \
     AST_CALL_CHILD(_a, FnSymbol, retExprType, call, __VA_ARGS__);       \
     break;                                                              \
-  case TYPE_ENUM:                                                       \
+  case E_EnumType:                                                       \
     AST_CALL_LIST(_a, EnumType, constants, call, __VA_ARGS__);          \
     break;                                                              \
-  case TYPE_CLASS:                                                      \
+  case E_ClassType:                                                      \
     AST_CALL_LIST(_a, ClassType, fields, call, __VA_ARGS__);            \
     AST_CALL_LIST(_a, ClassType, inherits, call, __VA_ARGS__);          \
     break;                                                              \
@@ -266,52 +266,52 @@ void registerModule(ModuleSymbol* mod);
 
 #define AST_CHILDREN_PUSH(_asts, _a)                                    \
   switch (_a->astTag) {                                                 \
-  case EXPR_CALL:                                                       \
+  case E_CallExpr:                                                       \
     AST_ADD_CHILD(_asts, _a, CallExpr, baseExpr);                       \
     AST_ADD_LIST(_asts, _a, CallExpr, argList);                         \
     break;                                                              \
-  case EXPR_NAMED:                                                      \
+  case E_NamedExpr:                                                      \
     AST_ADD_CHILD(_asts, _a, NamedExpr, actual);                        \
     break;                                                              \
-  case EXPR_DEF:                                                        \
+  case E_DefExpr:                                                        \
     AST_ADD_CHILD(_asts, _a, DefExpr, init);                            \
     AST_ADD_CHILD(_asts, _a, DefExpr, exprType);                        \
     AST_ADD_CHILD(_asts, _a, DefExpr, sym);                             \
     break;                                                              \
-  case STMT_BLOCK:                                                      \
+  case E_BlockStmt:                                                      \
     AST_ADD_LIST(_asts, _a, BlockStmt, body);                           \
     AST_ADD_CHILD(_asts, _a, BlockStmt, blockInfo);                      \
     break;                                                              \
-  case STMT_COND:                                                       \
+  case E_CondStmt:                                                       \
     AST_ADD_CHILD(_asts, _a, CondStmt, condExpr);                       \
     AST_ADD_CHILD(_asts, _a, CondStmt, thenStmt);                       \
     AST_ADD_CHILD(_asts, _a, CondStmt, elseStmt);                       \
     break;                                                              \
-  case STMT_GOTO:                                                       \
+  case E_GotoStmt:                                                       \
     AST_ADD_CHILD(_asts, _a, GotoStmt, label);                          \
     break;                                                              \
-  case SYMBOL_MODULE:                                                   \
+  case E_ModuleSymbol:                                                   \
     AST_ADD_CHILD(_asts, _a, ModuleSymbol, block);                      \
     break;                                                              \
-  case SYMBOL_ARG:                                                      \
+  case E_ArgSymbol:                                                      \
     AST_ADD_CHILD(_asts, _a, ArgSymbol, typeExpr);                      \
     AST_ADD_CHILD(_asts, _a, ArgSymbol, defaultExpr);                   \
     AST_ADD_CHILD(_asts, _a, ArgSymbol, variableExpr);                  \
     break;                                                              \
-  case SYMBOL_TYPE:                                                     \
+  case E_TypeSymbol:                                                     \
     AST_ADD_CHILD(_asts, _a, Symbol, type);                             \
     break;                                                              \
-  case SYMBOL_FN:                                                       \
+  case E_FnSymbol:                                                       \
     AST_ADD_LIST(_asts, _a, FnSymbol, formals);                         \
     AST_ADD_CHILD(_asts, _a, FnSymbol, setter);                         \
     AST_ADD_CHILD(_asts, _a, FnSymbol, body);                           \
     AST_ADD_CHILD(_asts, _a, FnSymbol, where);                          \
     AST_ADD_CHILD(_asts, _a, FnSymbol, retExprType);                    \
     break;                                                              \
-  case TYPE_ENUM:                                                       \
+  case E_EnumType:                                                       \
     AST_ADD_LIST(_asts, _a, EnumType, constants);                       \
     break;                                                              \
-  case TYPE_CLASS:                                                      \
+  case E_ClassType:                                                      \
     AST_ADD_LIST(_asts, _a, ClassType, fields);                         \
     AST_ADD_LIST(_asts, _a, ClassType, inherits);                       \
     break;                                                              \

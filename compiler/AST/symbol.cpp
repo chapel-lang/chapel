@@ -150,7 +150,7 @@ bool Symbol::isImmediate() {
 
 VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
-  Symbol(SYMBOL_VAR, init_name, init_type),
+  Symbol(E_VarSymbol, init_name, init_type),
   immediate(NULL)
 { }
 
@@ -163,7 +163,7 @@ VarSymbol::~VarSymbol() {
 
 void VarSymbol::verify() {
   Symbol::verify();
-  if (astTag != SYMBOL_VAR) {
+  if (astTag != E_VarSymbol) {
     INT_FATAL(this, "Bad VarSymbol::astTag");
   }
 }
@@ -279,7 +279,7 @@ bool VarSymbol::isImmediate() {
 ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName, 
                      Type* iType, Expr* iTypeExpr,
                      Expr* iDefaultExpr, Expr* iVariableExpr) :
-  Symbol(SYMBOL_ARG, iName, iType),
+  Symbol(E_ArgSymbol, iName, iType),
   intent(iIntent),
   typeExpr(NULL),
   defaultExpr(NULL),
@@ -311,7 +311,7 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
 
 void ArgSymbol::verify() {
   Symbol::verify();
-  if (astTag != SYMBOL_ARG) {
+  if (astTag != E_ArgSymbol) {
     INT_FATAL(this, "Bad ArgSymbol::astTag");
   }
   if (typeExpr && typeExpr->parentSymbol != this)
@@ -385,7 +385,7 @@ void ArgSymbol::codegenDef(FILE* outfile) {
 
 
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
-  Symbol(SYMBOL_TYPE, init_name, init_type)
+  Symbol(E_TypeSymbol, init_name, init_type)
 {
   addFlag(FLAG_TYPE_VARIABLE);
   if (!type)
@@ -397,7 +397,7 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
 
 void TypeSymbol::verify() {
   Symbol::verify();
-  if (astTag != SYMBOL_TYPE) {
+  if (astTag != E_TypeSymbol) {
     INT_FATAL(this, "Bad TypeSymbol::astTag");
   }
   if (type->symbol != this)
@@ -431,7 +431,7 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 
 
 FnSymbol::FnSymbol(const char* initName) :
-  Symbol(SYMBOL_FN, initName),
+  Symbol(E_FnSymbol, initName),
   formals(),
   setter(NULL),
   retType(dtUnknown),
@@ -471,7 +471,7 @@ FnSymbol::~FnSymbol() {
 
 void FnSymbol::verify() {
   Symbol::verify();
-  if (astTag != SYMBOL_FN) {
+  if (astTag != E_FnSymbol) {
     INT_FATAL(this, "Bad FnSymbol::astTag");
   }
   if (normalized && !hasFlag(FLAG_AUTO_II)) {
@@ -734,13 +734,13 @@ bool FnSymbol::tag_generic() {
 
 
 EnumSymbol::EnumSymbol(const char* init_name) :
-  Symbol(SYMBOL_ENUM, init_name)
+  Symbol(E_EnumSymbol, init_name)
 { }
 
 
 void EnumSymbol::verify() {
   Symbol::verify();
-  if (astTag != SYMBOL_ENUM) {
+  if (astTag != E_EnumSymbol) {
     INT_FATAL(this, "Bad EnumSymbol::astTag");
   }
 }
@@ -757,7 +757,7 @@ void EnumSymbol::codegenDef(FILE* outfile) { }
 
 
 ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock) :
-  Symbol(SYMBOL_MODULE, iName),
+  Symbol(E_ModuleSymbol, iName),
   modTag(iModTag),
   block(iBlock),
   initFn(NULL),
@@ -774,7 +774,7 @@ ModuleSymbol::~ModuleSymbol() { }
 
 void ModuleSymbol::verify() {
   Symbol::verify();
-  if (astTag != SYMBOL_MODULE) {
+  if (astTag != E_ModuleSymbol) {
     INT_FATAL(this, "Bad ModuleSymbol::astTag");
   }
   if (block && block->parentSymbol != this)
@@ -826,7 +826,7 @@ void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 LabelSymbol::LabelSymbol(const char* init_name) :
-  Symbol(SYMBOL_LABEL, init_name, NULL)
+  Symbol(E_LabelSymbol, init_name, NULL)
 { 
  
 }
@@ -834,7 +834,7 @@ LabelSymbol::LabelSymbol(const char* init_name) :
 
 void LabelSymbol::verify() {
   Symbol::verify();
-  if (astTag != SYMBOL_LABEL) {
+  if (astTag != E_LabelSymbol) {
     INT_FATAL(this, "Bad LabelSymbol::astTag");
   }
 }

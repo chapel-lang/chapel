@@ -18,7 +18,7 @@ void codegenStmt(FILE* outfile, Expr* stmt) {
 
 
 BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
-  Expr(STMT_BLOCK),
+  Expr(E_BlockStmt),
   blockTag(init_blockTag),
   body(),
   blockInfo(NULL),
@@ -35,7 +35,7 @@ BlockStmt::~BlockStmt() { }
 
 void BlockStmt::verify() {
   Expr::verify();
-  if (astTag != STMT_BLOCK) {
+  if (astTag != E_BlockStmt) {
     INT_FATAL(this, "Bad BlockStmt::astTag");
   }
   if (body.parent != this)
@@ -122,7 +122,7 @@ BlockStmt::insertAtTail(Expr* ast) {
 
 void
 BlockStmt::insertAtTailBeforeGoto(Expr* ast) {
-  if (body.tail->astTag == STMT_GOTO)
+  if (isGotoStmt(body.tail))
     body.tail->insertBefore(ast);
   else
     body.insertAtTail(ast);
@@ -157,7 +157,7 @@ BlockStmt::addUse(ModuleSymbol* mod) {
 
 
 CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
-  Expr(STMT_COND),
+  Expr(E_CondStmt),
   condExpr(iCondExpr),
   thenStmt(NULL),
   elseStmt(NULL)
@@ -207,7 +207,7 @@ CondStmt::fold_cond_stmt() {
 
 void CondStmt::verify() {
   Expr::verify();
-  if (astTag != STMT_COND) {
+  if (astTag != E_CondStmt) {
     INT_FATAL(this, "Bad CondStmt::astTag");
   }
 
@@ -278,7 +278,7 @@ void CondStmt::codegen(FILE* outfile) {
 
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
-  Expr(STMT_GOTO),
+  Expr(E_GotoStmt),
   gotoTag(init_gotoTag),
   label(init_label ? (Expr*)new UnresolvedSymExpr(init_label) : (Expr*)new SymExpr(gNil))
 {
@@ -286,7 +286,7 @@ GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
 
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, Symbol* init_label) :
-  Expr(STMT_GOTO),
+  Expr(E_GotoStmt),
   gotoTag(init_gotoTag),
   label(new SymExpr(init_label))
 {
@@ -294,7 +294,7 @@ GotoStmt::GotoStmt(GotoTag init_gotoTag, Symbol* init_label) :
 
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, Expr* init_label) :
-  Expr(STMT_GOTO),
+  Expr(E_GotoStmt),
   gotoTag(init_gotoTag),
   label(init_label)
 {
@@ -308,7 +308,7 @@ GotoStmt::GotoStmt(GotoTag init_gotoTag, Expr* init_label) :
 
 void GotoStmt::verify() {
   Expr::verify();
-  if (astTag != STMT_GOTO) {
+  if (astTag != E_GotoStmt) {
     INT_FATAL(this, "Bad GotoStmt::astTag");
   }
   if (!label)

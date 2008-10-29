@@ -27,7 +27,7 @@ static void deadVariableEliminationHelp(FnSymbol* fn,
                                         Symbol* var,
                                         Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                         Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  if (var->astTag == SYMBOL_VAR &&
+  if (isVarSymbol(var) &&
       var->defPoint &&
       var->defPoint->parentSymbol == fn &&
       isDeadVariable(var, defMap, useMap)) {
@@ -155,7 +155,7 @@ void deadCodeElimination(FnSymbol* fn) {
 
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     forv_Vec(Expr, expr, bb->exprs) {
-      if (expr->astTag == EXPR_SYM || expr->astTag == EXPR_CALL)
+      if (isSymExpr(expr) || isCallExpr(expr))
         if (!liveCode.set_in(expr))
           expr->remove();
     }

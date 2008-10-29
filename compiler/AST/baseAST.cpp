@@ -14,13 +14,13 @@ Vec<TypeSymbol*> gTypes;
 Vec<CallExpr*> gCalls;
 static int uid = 1;
 
-#define decl_counters(typeName, enumName)       \
+#define decl_counters(typeName)                 \
   int n##typeName = 0, k##typeName = 0
 
-#define case_counters(typeName, enumName)       \
-  case enumName: n##typeName++; break
+#define case_counters(typeName)                 \
+  case E_##typeName: n##typeName++; break
 
-#define calc_counters(typeName, enumName)               \
+#define calc_counters(typeName)                         \
   k##typeName = n##typeName*sizeof(typeName)/1024
 
 void printStatistics(const char* pass) {
@@ -39,65 +39,65 @@ void printStatistics(const char* pass) {
     return;
   }
 
-  decl_counters(CondStmt, STMT_COND);
-  decl_counters(BlockStmt, STMT_BLOCK);
-  decl_counters(GotoStmt, STMT_GOTO);
-  decl_counters(SymExpr, EXPR_SYM);
-  decl_counters(UnresolvedSymExpr, EXPR_SYM_UNRESOLVED);
-  decl_counters(DefExpr, EXPR_DEF);
-  decl_counters(CallExpr, EXPR_CALL);
-  decl_counters(NamedExpr, EXPR_NAMED);
-  decl_counters(ModuleSymbol, SYMBOL_MODULE);
-  decl_counters(VarSymbol, SYMBOL_VAR);
-  decl_counters(ArgSymbol, SYMBOL_ARG);
-  decl_counters(TypeSymbol, SYMBOL_TYPE);
-  decl_counters(FnSymbol, SYMBOL_FN);
-  decl_counters(EnumSymbol, SYMBOL_ENUM);
-  decl_counters(LabelSymbol, SYMBOL_LABEL);
-  decl_counters(PrimitiveType, TYPE_PRIMITIVE);
-  decl_counters(EnumType, TYPE_ENUM);
-  decl_counters(ClassType, TYPE_CLASS);
+  decl_counters(CondStmt);
+  decl_counters(BlockStmt);
+  decl_counters(GotoStmt);
+  decl_counters(SymExpr);
+  decl_counters(UnresolvedSymExpr);
+  decl_counters(DefExpr);
+  decl_counters(CallExpr);
+  decl_counters(NamedExpr);
+  decl_counters(ModuleSymbol);
+  decl_counters(VarSymbol);
+  decl_counters(ArgSymbol);
+  decl_counters(TypeSymbol);
+  decl_counters(FnSymbol);
+  decl_counters(EnumSymbol);
+  decl_counters(LabelSymbol);
+  decl_counters(PrimitiveType);
+  decl_counters(EnumType);
+  decl_counters(ClassType);
   forv_Vec(BaseAST, ast, gAsts) {
     switch (ast->astTag) {
-      case_counters(CondStmt, STMT_COND);
-      case_counters(BlockStmt, STMT_BLOCK);
-      case_counters(GotoStmt, STMT_GOTO);
-      case_counters(SymExpr, EXPR_SYM);
-      case_counters(UnresolvedSymExpr, EXPR_SYM_UNRESOLVED);
-      case_counters(DefExpr, EXPR_DEF);
-      case_counters(CallExpr, EXPR_CALL);
-      case_counters(NamedExpr, EXPR_NAMED);
-      case_counters(ModuleSymbol, SYMBOL_MODULE);
-      case_counters(VarSymbol, SYMBOL_VAR);
-      case_counters(ArgSymbol, SYMBOL_ARG);
-      case_counters(TypeSymbol, SYMBOL_TYPE);
-      case_counters(FnSymbol, SYMBOL_FN);
-      case_counters(EnumSymbol, SYMBOL_ENUM);
-      case_counters(LabelSymbol, SYMBOL_LABEL);
-      case_counters(PrimitiveType, TYPE_PRIMITIVE);
-      case_counters(EnumType, TYPE_ENUM);
-      case_counters(ClassType, TYPE_CLASS);
+      case_counters(CondStmt);
+      case_counters(BlockStmt);
+      case_counters(GotoStmt);
+      case_counters(SymExpr);
+      case_counters(UnresolvedSymExpr);
+      case_counters(DefExpr);
+      case_counters(CallExpr);
+      case_counters(NamedExpr);
+      case_counters(ModuleSymbol);
+      case_counters(VarSymbol);
+      case_counters(ArgSymbol);
+      case_counters(TypeSymbol);
+      case_counters(FnSymbol);
+      case_counters(EnumSymbol);
+      case_counters(LabelSymbol);
+      case_counters(PrimitiveType);
+      case_counters(EnumType);
+      case_counters(ClassType);
     default: break;
     }
   }
-  calc_counters(CondStmt, STMT_COND);
-  calc_counters(BlockStmt, STMT_BLOCK);
-  calc_counters(GotoStmt, STMT_GOTO);
-  calc_counters(SymExpr, EXPR_SYM);
-  calc_counters(UnresolvedSymExpr, EXPR_SYM_UNRESOLVED);
-  calc_counters(DefExpr, EXPR_DEF);
-  calc_counters(CallExpr, EXPR_CALL);
-  calc_counters(NamedExpr, EXPR_NAMED);
-  calc_counters(ModuleSymbol, SYMBOL_MODULE);
-  calc_counters(VarSymbol, SYMBOL_VAR);
-  calc_counters(ArgSymbol, SYMBOL_ARG);
-  calc_counters(TypeSymbol, SYMBOL_TYPE);
-  calc_counters(FnSymbol, SYMBOL_FN);
-  calc_counters(EnumSymbol, SYMBOL_ENUM);
-  calc_counters(LabelSymbol, SYMBOL_LABEL);
-  calc_counters(PrimitiveType, TYPE_PRIMITIVE);
-  calc_counters(EnumType, TYPE_ENUM);
-  calc_counters(ClassType, TYPE_CLASS);
+  calc_counters(CondStmt);
+  calc_counters(BlockStmt);
+  calc_counters(GotoStmt);
+  calc_counters(SymExpr);
+  calc_counters(UnresolvedSymExpr);
+  calc_counters(DefExpr);
+  calc_counters(CallExpr);
+  calc_counters(NamedExpr);
+  calc_counters(ModuleSymbol);
+  calc_counters(VarSymbol);
+  calc_counters(ArgSymbol);
+  calc_counters(TypeSymbol);
+  calc_counters(FnSymbol);
+  calc_counters(EnumSymbol);
+  calc_counters(LabelSymbol);
+  calc_counters(PrimitiveType);
+  calc_counters(EnumType);
+  calc_counters(ClassType);
   int nStmt = nCondStmt + nBlockStmt + nGotoStmt;
   int kStmt = kCondStmt + kBlockStmt + kGotoStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
@@ -356,8 +356,7 @@ FnSymbol* BaseAST::getFunction() {
 }
 
 
-const char* astTagName[BASE+1] = {
-  "Expr",
+const char* astTagName[E_BaseAST+1] = {
   "SymExpr",
   "UnresolvedSymExpr",
   "DefExpr",
@@ -366,8 +365,8 @@ const char* astTagName[BASE+1] = {
   "BlockStmt",
   "CondStmt",
   "GotoStmt",
+  "Expr",
 
-  "Symbol",
   "ModuleSymbol",
   "VarSymbol",
   "ArgSymbol",
@@ -375,11 +374,12 @@ const char* astTagName[BASE+1] = {
   "FnSymbol",
   "EnumSymbol",
   "LabelSymbol",
+  "Symbol",
 
-  "Type",
   "PrimitiveType",
   "EnumType",
   "ClassType",
+  "Type",
 
   "BaseAST"
 };

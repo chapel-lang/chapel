@@ -101,7 +101,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
           return NULL;
         }
       }
-    } else if (ast->astTag == STMT_GOTO) {
+    } else if (isGotoStmt(ast)) {
       return NULL;
     }
   }

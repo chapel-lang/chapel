@@ -112,20 +112,20 @@ Type* Type::getReferenceType() {
 
 
 PrimitiveType::PrimitiveType(Symbol *init) :
-  Type(TYPE_PRIMITIVE, init)
+  Type(E_PrimitiveType, init)
 {}
 
 
 void PrimitiveType::verify() {
   Type::verify();
-  if (astTag != TYPE_PRIMITIVE) {
+  if (astTag != E_PrimitiveType) {
     INT_FATAL(this, "Bad PrimitiveType::astTag");
   }
 }
 
 
 EnumType::EnumType() :
-  Type(TYPE_ENUM, NULL),
+  Type(E_EnumType, NULL),
   constants()
 {
   constants.parent = this;
@@ -137,7 +137,7 @@ EnumType::~EnumType() { }
 
 void EnumType::verify() {
   Type::verify();
-  if (astTag != TYPE_ENUM) {
+  if (astTag != E_EnumType) {
     INT_FATAL(this, "Bad EnumType::astTag");
   }
   if (constants.parent != this)
@@ -191,7 +191,7 @@ void EnumType::codegenDef(FILE* outfile) {
 
 
 ClassType::ClassType(ClassTag initClassTag) :
-  Type(TYPE_CLASS, NULL),
+  Type(E_ClassType, NULL),
   classTag(initClassTag),
   fields(),
   inherits(),
@@ -212,7 +212,7 @@ ClassType::~ClassType() { }
 
 void ClassType::verify() {
   Type::verify();
-  if (astTag != TYPE_CLASS) {
+  if (astTag != E_ClassType) {
     INT_FATAL(this, "Bad ClassType::astTag");
   }
   if (classTag != CLASS_CLASS &&

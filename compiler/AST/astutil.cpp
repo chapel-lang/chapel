@@ -10,7 +10,7 @@
 void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
   if (Expr* expr = toExpr(ast)) {
     stmts.add(expr);
-    if (expr->astTag == STMT_BLOCK || expr->astTag == STMT_COND) {
+    if (isBlockStmt(expr) || isCondStmt(expr)) {
       AST_CHILDREN_CALL(ast, collect_stmts, stmts);
     }
   }
