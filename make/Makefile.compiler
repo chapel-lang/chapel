@@ -7,3 +7,5 @@
 # COMPILER which is sometimes set by shell environments.
 #
 CHPL_MAKE_COMPILER = $(shell $(CHAPEL_ROOT)/util/compiler.pl $(CHPL_MAKE_HOST_TARGET))
+CHPL_MAKE_HOST_COMPILER = $(shell $(CHAPEL_ROOT)/util/compiler.pl --host)
+CHPL_MAKE_TARGET_COMPILER = $(shell $(CHAPEL_ROOT)/util/compiler.pl --target)

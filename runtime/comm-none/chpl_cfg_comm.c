@@ -34,36 +34,23 @@ int32_t _chpl_comm_maxThreadsLimit(void) {
   return 0;
 }
 
-int _chpl_comm_user_invocation(int argc, char* argv[]) {
-  return 1;
+void _chpl_comm_init(int *argc_p, char ***argv_p) {
+  _numLocales = 1;
+  _localeID = 0;
 }
 
-char** _chpl_comm_create_argcv(int32_t numLocales, int argc, char* argv[],
-                               int* commArgc) {
-  *commArgc = argc;
-  return argv;
-}
-
-void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
-  if (runInGDB == 0) {
-    _numLocales = 1;
-    _localeID = 0;
-  } else {
-    char* command;
-    int status;
-    int i;
-
-    command = _glom_strings(2, "gdb -q -ex 'break gdbShouldBreakHere' --args ", 
-                            (*argv_p)[0]);
-    for (i=1; i<*argc_p; i++) {
-      if (i != runInGDB) {
-        command = _glom_strings(3, command, " ", (*argv_p)[i]);
-      }
+int _chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
+  int i;
+  char* command = _glom_strings(2, "gdb -q -ex 'break gdbShouldBreakHere' "
+                                "--args ", argv[0]);
+  for (i=1; i<argc; i++) {
+    if (i != gdbArgnum) {
+      command = _glom_strings(3, command, " ", argv[i]);
     }
-    status = mysystem(command, "running gdb", 0);
-
-    _chpl_exit_all(status);
   }
+  *status = mysystem(command, "running gdb", 0);
+
+  return 1;
 }
 
 void _chpl_comm_init_shared_heap(void) {

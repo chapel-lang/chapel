@@ -13,18 +13,19 @@ if ($preset_launcher eq "") {
     $substrate = `$utildirname/commSubstrate.pl`; chomp($substrate);
     $platform = `$utildirname/platform.pl --target`; chomp($platform);
 
-    if ($comm eq "armci") {
+    $launcher = "none";
+    if ($comm eq "gasnet") {
+        if ($substrate eq "udp") {
+            $launcher = "amudprun";
+        } elsif ($substrate eq "portals") {
+            $launcher = "aprun";
+        }
+    } elsif ($comm eq "armci") {
         if ($substrate eq "mpi") {
             $launcher = "mpirun";
-        } else {
-            $launcher = "none";
         }
     } elsif ($platform eq "xmt-sim") {
 	$launcher = "zebra";
-    } elsif ($platform eq "xt-cnl") {
-        $launcher = "aprun";
-    } else {
-        $launcher = "none";
     }
 } else {
     $launcher = $preset_launcher;

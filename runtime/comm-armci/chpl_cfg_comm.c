@@ -87,56 +87,6 @@ int32_t _chpl_comm_maxThreadsLimit(void) {
 }
 
 //
-// given the program arguments, returns whether the invocation of
-// main() is the original invocation by the user (1) or a recursive
-// invocation made by the comm layer to get the program started (0).
-//
-int _chpl_comm_user_invocation(int argc, char* argv[]) {
-  // This will probably need to look for a special argument that was
-  // inserted during the user invocation call to chpl_comm_init()
-
-  // For now return always false ... ? -- danich 10/23/07
-  return 0;
-}
-
-//
-// This routine allows a comm layer to process the argc/argv calls
-// provided by main(), and optionally to create a modified version of
-// argc/argv for use with _chpl_comm_init().  It is called in the case
-// of a user invocation of main() after Chapel has parsed the command
-// line arguments to determine the number of locales.
-//
-// This routine takes as its input arguments:
-//
-// - execNumLocales: indicating the number of locales the program will
-//                   be executed on;
-//
-// - argc/argv as provided to main().  
-//
-// It specifies the *commArgc value as an output argument and returns
-// a corresponding commArgv vector of size commArgc -- these values
-// are then passed into _chpl_comm_init() in the case of a user
-// invocation of main().  If the comm layer does not need to modify
-// argc/argv, it can just pass them through to commArgc/commArgv.
-//
-char** _chpl_comm_create_argcv(int32_t execNumLocales, int argc, char* argv[], 
-                               int* commArgc) {
-  // Depending on how _chpl_comm_init() is called, this may need to
-  // add extra command line arguments to those provided by the user
-  char **commArgv;
-  int i;
-
-  *commArgc = argc;
-  commArgv = chpl_malloc((*commArgc) + 1, sizeof(char *), "ARMCI argv", __LINE__, __FILE__);
-  for (i = 0; i < argc; i++)
-    commArgv[i] = argv[i];
-  commArgv[argc] = NULL;
-
-  return commArgv;
-}
-
-
-//
 // initializes the communications package
 //   set _localeID and _numLocales
 // notes:
@@ -149,7 +99,7 @@ static int armci_init_called = 0;
 static void **globalPtrs = NULL;
 
 //
-void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
+void _chpl_comm_init(int *argc_p, char ***argv_p) {
   // This will probably be one of the trickiest routines to implement;
   // the details will depend on what sorts of mechanisms ARMCI
   // supports to create the multiple cooperating executables.  If, for
@@ -172,10 +122,6 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
   int nprocs, me;
   armci_size_t sz;
 
-  if (runInGDB) {
-    chpl_error("--gdb not yet implemented for ARMCI", runInGDB, "<command-line>");
-  }
-
   MPI_SAFE(MPI_Init(argc_p, argv_p));
   ARMCI_SAFE(ARMCI_Init());
   armci_init_called = 1;
@@ -192,6 +138,12 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
   ARMCI_SAFE(ARMCI_Malloc(globalPtrs, sz));
 
   ghndl = ARMCI_Gpc_register(gpc_call_handler);
+}
+
+int _chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
+  chpl_error("--gdb not yet implemented for ARMCI", gdbArgnum, 
+             "<command-line>");
+  return 0;
 }
 
 void _chpl_comm_init_shared_heap(void) {

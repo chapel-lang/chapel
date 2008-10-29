@@ -126,46 +126,16 @@ int32_t _chpl_comm_maxThreadsLimit(void) {
   return 255;
 }
 
-int _chpl_comm_user_invocation(int argc, char* argv[]) {
-#if defined(GASNET_CONDUIT_PORTALS)
-  return false;
-#else
-  return ((argc <= 1) ||
-          (argc > 1 && strcmp(argv[1], "__AMUDP_SLAVE_PROCESS__") != 0));
-#endif
-}
-
-char** _chpl_comm_create_argcv(int32_t numLocales, int argc, char* argv[],
-                               int* commArgc) {
-  char** commArgv;
-  int i;
-  sprintf(numLocalesString, "%d", numLocales);
-  *commArgc = argc+1;
-  commArgv = chpl_malloc((*commArgc)+1, sizeof(char*), "GASNet argv", 
-                          __LINE__, __FILE__);
-  commArgv[0] = argv[0];
-  commArgv[1] = numLocalesString;
-  for (i=1; i< argc; i++) {
-    commArgv[i+1] = argv[i];
-  }
-  commArgv[argc+1] = NULL;
-
-  return commArgv;
-}
-
 static void polling(void* x) {
   GASNET_BLOCKUNTIL(exitSignal);
 }
 
-void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
+void _chpl_comm_init(int *argc_p, char ***argv_p) {
   int needPollingThread = 1;
   //#if defined(GASNET_CONDUIT_PORTALS)
   //  needPollingThread = 0;
   //#endif
 
-  if (runInGDB) {
-    setenv("CHPL_COMM_USE_GDB", "true", 1);
-  }
   gasnet_init(argc_p, argv_p);
   gasnet_init_called = 1;
   _localeID = gasnet_mynode();
@@ -190,6 +160,13 @@ void _chpl_comm_init(int *argc_p, char ***argv_p, int runInGDB) {
       chpl_internal_error("unable to start polling thread for gasnet");
     pthread_detach(polling_thread);
   }
+}
+
+//
+// No support for gdb for now
+//
+int _chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
+  return 0;
 }
 
 void _chpl_comm_rollcall(void) {
