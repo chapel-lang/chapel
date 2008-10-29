@@ -624,6 +624,19 @@ ensure that the actuals all have the same type.
 \end{example}
 
 \begin{example}
+Either or both the number of variable arguments and their types can be
+specified.  For example, a basic function to sum the values of three
+integers can be wrtten as
+\begin{chapel}
+def sum(x: int...3) return x(1) + x(2) + x(3);
+\end{chapel}
+Specifying the type is useful if it is important that each argument
+have the same type.  Specifying the number is useful in, for example,
+defining a method on a class that is instantiated over a rank
+parameter.
+\end{example}
+
+\begin{example}
 The function
 \begin{chapel}
 def tuple(x ...?) return x;

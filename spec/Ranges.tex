@@ -27,7 +27,7 @@ the range, and (3)~whether or not the range is \emph{stridable}.
 
 The type of the range's values is represented using a type parameter
 named \emph{eltType}.  This must be one of Chapel's \chpl{int} or
-\chpl{uint} types.
+\chpl{uint} types.  The default value is \chpl{int}.
 
 \begin{openissue}
 It has been hypothesized that ranges of other types, such as floating
@@ -42,12 +42,12 @@ Legal values are \chpl{bounded}, \chpl{boundedLow},
 \chpl{boundedHigh}, and \chpl{boundedNone}.  The first value specifies
 a bounded range while the other three values specify a range in which
 the high bound is omitted, the low bound is omitted, or both bounds
-are omitted, respectively.
+are omitted, respectively.  The default value is \chpl{bounded}.
 
 The stridability of a range is represented by a boolean parameter
 named \emph{stridable}.  If this parameter is set to true, the range
 can represent any stride.  If set to false, the range's stride is
-fixed to be the value 1.
+fixed to be the value 1.  The default value is \chpl{false}.
 
 \begin{rationale}
 The \emph{boundedType} and \emph{stridable} values of a range are used
@@ -71,6 +71,8 @@ than 1.
 var r: range(int(64), BoundedRangeType.bounded, stridable=true);
 \end{chapel}
 \end{example}
+
+The default value for a range is \chpl{1..0}.
 
 \subsection{Literal Range Values}
 \label{Range_Literals}

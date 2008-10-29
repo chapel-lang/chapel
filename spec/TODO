@@ -22,14 +22,23 @@ yet.
 
 * add a description of the scan operator and an example
 
+There is a description.  I added an example.
+
 * refactor/rewrite domain/array chapter (Brad)
 
 * add description of local block
 
+Is this a good idea?  I don't understand the semantic guarantees we
+can make for this construct in the presence of optimizations...
+
 * range chapter: more clearly state the default values of the range's
   types and parameters (is it currently stated at all?)
 
+Added.
+
 * describe how to specify a homogenous varargs type (e.g., x: int...n)?
+
+These are orthogonal.  I added an example.
 
 * add const intents to spec and define blank intents in terms of const
   intents (and "by reference" for arrays/domains):
