@@ -171,10 +171,8 @@ buildHeapType(Type* type) {
 }
 
 
-static Vec<Symbol*> heapAllocatedVars;
-
 static void
-freeHeapAllocatedVars() {
+freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   Vec<FnSymbol*> fnsContainingTaskll;
 
   // start with the functions created from begin, cobegin, and coforall statements
@@ -401,6 +399,8 @@ makeHeapAllocations() {
     }
   }
 
+  Vec<Symbol*> heapAllocatedVars;
+
   forv_Vec(Symbol, var, varVec) {
     INT_ASSERT(!var->type->symbol->hasFlag(FLAG_REF));
 
@@ -442,7 +442,8 @@ makeHeapAllocations() {
       // In this case, where should we put this?  ack!! let's assume
       // we can put it in front of the first use!
       //
-      useMap.get(var)->v[0]->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_CHPL_ALLOC, heapType->symbol, new_StringSymbol("heap class"))));
+      useMap.get(var)->v[0]->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_CHPL_ALLOC, heapType->symbol, new_StringSymbol(heapType->symbol->name))));
+      heapAllocatedVars.add(var);
     }
 
     for_defs(def, defMap, var) {
@@ -515,7 +516,7 @@ makeHeapAllocations() {
     var->type = heapType;
   }
 
-  freeHeapAllocatedVars();
+  freeHeapAllocatedVars(heapAllocatedVars);
 }
 
 static bool isSafeToDeref(Symbol* startSym, Symbol* ref, FnSymbol* fn, Vec<FnSymbol*>* visited) {
