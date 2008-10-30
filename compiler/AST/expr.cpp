@@ -1999,7 +1999,7 @@ void CallExpr::codegen(FILE* outfile) {
         if (!strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
                     "_ref(_EndCount)")
             || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                       "_wide__ref__EndCount")) {
+                       "__wide__ref__EndCount")) {
           endCountField = i;
           break;
         }

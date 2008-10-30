@@ -171,6 +171,85 @@ buildHeapType(Type* type) {
 }
 
 
+static Vec<Symbol*> heapAllocatedVars;
+
+static void
+freeHeapAllocatedVars() {
+  Vec<FnSymbol*> fnsContainingTaskll;
+
+  // start with the functions created from begin, cobegin, and coforall statements
+  forv_Vec(FnSymbol, fn, gFns) {
+    if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
+      fnsContainingTaskll.add(fn);
+    }
+  }
+  // add any functions that call the functions added so far
+  forv_Vec(FnSymbol, fn, fnsContainingTaskll) {
+    forv_Vec(CallExpr, call, *fn->calledBy) {
+      FnSymbol* caller = toFnSymbol(call->parentSymbol);
+      INT_ASSERT(caller);
+      fnsContainingTaskll.add_exclusive(caller);
+    }
+  }
+
+  Vec<Symbol*> symSet;
+  Vec<BaseAST*> asts;
+  collect_asts(rootModule, asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (def->parentSymbol) {
+        if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+          symSet.set_add(def->sym);
+        }
+      }
+    }
+  }
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(symSet, asts, defMap, useMap);
+
+  forv_Vec(Symbol, var, heapAllocatedVars) {
+    // find out if the variable just put on the heap could be passed in as an argument
+    // to a function created from a begin, cobegin, or coforall statement;
+    // if not, free the heap memory just allocated at the end of the block
+    if (defMap.get(var)->n == 1) {
+      bool freeVar = true;
+      Vec<Symbol*> varsToTrack;
+      varsToTrack.add(var);
+      forv_Vec(Symbol, v, varsToTrack) {
+        if (useMap.get(v)) {
+          forv_Vec(SymExpr, se, *useMap.get(v)) {
+            if (CallExpr* call = toCallExpr(se->parentExpr)) {
+              if (call->isPrimitive(PRIMITIVE_SET_REF) || call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+                  call->isPrimitive(PRIMITIVE_GET_LOCALEID))
+                call = toCallExpr(call->parentExpr);
+              if (call->isPrimitive(PRIMITIVE_MOVE))
+                varsToTrack.add(toSymExpr(call->get(1))->var);
+              else if (fnsContainingTaskll.in(call->isResolved())) {
+                freeVar = false;
+                break;
+              }
+            }
+          }
+          if (!freeVar) break;
+        }
+      }
+      if (freeVar) {
+        CallExpr* move = toCallExpr(defMap.get(var)->v[0]->parentExpr);
+        INT_ASSERT(move && move->isPrimitive(PRIMITIVE_MOVE));
+        FnSymbol* fn = toFnSymbol(move->parentSymbol);
+        if (fn && move->parentExpr == fn->body)
+          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_CHPL_FREE, move->get(1)->copy()));
+        else if (BlockStmt* parentBlock = toBlockStmt(move->parentExpr))
+          parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIMITIVE_CHPL_FREE, move->get(1)->copy()));
+        else
+          INT_FATAL(move, "unexpected case");
+      }
+    }
+  }
+}
+
+
 static void
 makeHeapAllocations() {
   Vec<Symbol*> refSet;
@@ -373,8 +452,9 @@ makeHeapAllocations() {
         VarSymbol* tmp = newTemp(var->type);
         move->insertBefore(new DefExpr(tmp));
         move->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, move->get(2)->remove()));
-        move->insertAtTail(new CallExpr(PRIMITIVE_CHPL_ALLOC, heapType->symbol, new_StringSymbol("heap class")));
+        move->insertAtTail(new CallExpr(PRIMITIVE_CHPL_ALLOC, heapType->symbol, new_StringSymbol(heapType->symbol->name)));
         move->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, move->get(1)->copy(), heapType->getField(1), tmp));
+        heapAllocatedVars.add(var);
       } else if (CallExpr* call = toCallExpr(def->parentExpr)) {
         if (call->isPrimitive(PRIMITIVE_MOVE)) {
           VarSymbol* tmp = newTemp(var->type);
@@ -430,6 +510,8 @@ makeHeapAllocations() {
 
     var->type = heapType;
   }
+
+  freeHeapAllocatedVars();
 }
 
 static bool isSafeToDeref(Symbol* startSym, Symbol* ref, FnSymbol* fn, Vec<FnSymbol*>* visited) {
@@ -722,7 +804,7 @@ parallel(void) {
 static void
 buildWideClass(Type* type) {
   ClassType* wide = new ClassType(CLASS_RECORD);
-  TypeSymbol* wts = new TypeSymbol(astr("_wide_", type->symbol->cname), wide);
+  TypeSymbol* wts = new TypeSymbol(astr("__wide_", type->symbol->cname), wide);
   wts->addFlag(FLAG_WIDE_CLASS);
   theProgram->block->insertAtTail(new DefExpr(wts));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
@@ -738,7 +820,7 @@ buildWideClass(Type* type) {
   // build reference type for wide class type
   //
   ClassType* ref = new ClassType(CLASS_CLASS);
-  TypeSymbol* rts = new TypeSymbol(astr("_ref_wide_", type->symbol->cname), ref);
+  TypeSymbol* rts = new TypeSymbol(astr("__ref_wide_", type->symbol->cname), ref);
   rts->addFlag(FLAG_REF);
   theProgram->block->insertAtTail(new DefExpr(rts));
   ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", type)));
@@ -1107,7 +1189,7 @@ insertWideReferences(void) {
   forv_Vec(TypeSymbol, ts, gTypes) {
     if (ts->hasFlag(FLAG_REF)) {
       ClassType* wide = new ClassType(CLASS_RECORD);
-      TypeSymbol* wts = new TypeSymbol(astr("_wide_", ts->cname), wide);
+      TypeSymbol* wts = new TypeSymbol(astr("__wide_", ts->cname), wide);
       wts->addFlag(FLAG_WIDE);
       theProgram->block->insertAtTail(new DefExpr(wts));
       wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
