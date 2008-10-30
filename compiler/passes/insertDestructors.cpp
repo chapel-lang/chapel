@@ -15,7 +15,7 @@ bool fEnableDestructorCalls = false;
 
 void fixupDestructors(void) {
 
-  forv_Vec(TypeSymbol, ts, gTypes) {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->type->destructor) {
       ClassType* ct = toClassType(ts->type);
       INT_ASSERT(ct);
@@ -98,7 +98,7 @@ void insertDestructors(void) {
 
   Vec<FnSymbol*> constructors;
 
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     ClassType* ct = toClassType(fn->retType);
 //if (strstr(fn->cname, "buildDomainExpr") || strstr(fn->cname, "convertRuntimeTypeToValue") || strstr(fn->cname, "DefaultArithmetic") || strstr(fn->cname, "buildArray"))
 //  printf("looking at function %s-%d\n", fn->cname, fn->id);
@@ -123,7 +123,7 @@ void insertDestructors(void) {
         INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
         SymExpr* lhs = toSymExpr(move->get(1));
         INT_ASSERT(lhs);
-        if (!lhs->var->type->destructor || !gFns.in(lhs->var->type->destructor)) {
+        if (!lhs->var->type->destructor || !gFnSymbols.in(lhs->var->type->destructor)) {
 //printf("skipping destructor for constructor %s-%d\n", constructor->cname, constructor->id);
           continue;
         }

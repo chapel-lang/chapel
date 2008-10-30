@@ -97,7 +97,7 @@ void insertLineNumbers() {
 
   // insert nil checks primitives in front of all member accesses
   if (!fNoNilChecks) {
-    forv_Vec(CallExpr, call, gCalls) {
+    forv_Vec(CallExpr, call, gCallExprs) {
       if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
           call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
           call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
@@ -117,7 +117,7 @@ void insertLineNumbers() {
 
   // loop over all primitives that require a line number and filename
   // and pass them an actual line number and filename
-  forv_Vec(CallExpr, call, gCalls) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     if (call->primitive && call->primitive->passLineno) {
       insertLineNumber(call);
     }
@@ -133,7 +133,7 @@ void insertLineNumbers() {
 
   // pass line number and filename arguments to functions that are
   // forked via the argument class
-  forv_Vec(CallExpr, call, gCalls) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isResolved()) {
       if ((call->numActuals() > 2 && call->isResolved()->hasFlag(FLAG_ON_BLOCK)) ||
           (call->numActuals() > 1 && call->isResolved()->hasFlag(FLAG_BEGIN_BLOCK))) {

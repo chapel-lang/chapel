@@ -220,7 +220,7 @@ static Type*
 returnInfoEndCount(CallExpr* call) {
   static Type* endCountType = NULL;
   if (endCountType == NULL) {
-    forv_Vec(TypeSymbol, ts, gTypes) {
+    forv_Vec(TypeSymbol, ts, gTypeSymbols) {
       if (!strcmp(ts->name, "_EndCount")) {
         endCountType = ts->type;
         break;

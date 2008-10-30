@@ -112,25 +112,22 @@ static void codegen_header(void) {
   //
   // change enum constant names into EnumTypeName__constantName
   //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (EnumType* enumType = toEnumType(ast)) {
-      const char* enumName = enumType->symbol->cname;
-      for_enums(constant, enumType) {
-        Symbol* sym = constant->sym;
-        legalizeCName(sym);
-        sym->cname = astr(enumName, "__", sym->cname);
-        if (cnames.get(sym->cname))
-          sym->cname = astr("chpl__", sym->cname, "_", istr(sym->id));
-        cnames.put(sym->cname, 1);
-      }
+  forv_Vec(EnumType, enumType, gEnumTypes) {
+    const char* enumName = enumType->symbol->cname;
+    for_enums(constant, enumType) {
+      Symbol* sym = constant->sym;
+      legalizeCName(sym);
+      sym->cname = astr(enumName, "__", sym->cname);
+      if (cnames.get(sym->cname))
+        sym->cname = astr("chpl__", sym->cname, "_", istr(sym->id));
+      cnames.put(sym->cname, 1);
     }
   }
-
 
   //
   // mangle type names if they clash with other types
   //
-  forv_Vec(TypeSymbol, ts, gTypes) {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentExpr != rootModule->block) {
       legalizeCName(ts);
       if (!ts->hasFlag(FLAG_EXTERN) && cnames.get(ts->cname))
@@ -144,7 +141,7 @@ static void codegen_header(void) {
   // mangle field names if they clash with types or other fields in
   // the same class
   //
-  forv_Vec(TypeSymbol, ts, gTypes) {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentExpr != rootModule->block) {
       if (ClassType* ct = toClassType(ts->type)) {
         Vec<const char*> fieldSet;
@@ -162,16 +159,14 @@ static void codegen_header(void) {
   // mangle global variable names if they clash with types or other
   // global variables
   //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (VarSymbol* var = toVarSymbol(ast)) {
-      if (var->defPoint->parentExpr != rootModule->block &&
-          toModuleSymbol(var->defPoint->parentSymbol)) {
-        legalizeCName(var);
-        if (!var->hasFlag(FLAG_EXTERN) && cnames.get(var->cname))
-          var->cname = astr("chpl__", var->cname, "_", istr(var->id));
-        cnames.put(var->cname, 1);
-        varSymbols.add(var);
-      }
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    if (var->defPoint->parentExpr != rootModule->block &&
+        toModuleSymbol(var->defPoint->parentSymbol)) {
+      legalizeCName(var);
+      if (!var->hasFlag(FLAG_EXTERN) && cnames.get(var->cname))
+        var->cname = astr("chpl__", var->cname, "_", istr(var->id));
+      cnames.put(var->cname, 1);
+      varSymbols.add(var);
     }
   }
 
@@ -179,7 +174,7 @@ static void codegen_header(void) {
   // mangle function names if they clash with types, global variables,
   // or other functions
   //
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn == chpl_main)
       fn->cname = astr("chpl_main");
     legalizeCName(fn);
@@ -194,7 +189,7 @@ static void codegen_header(void) {
   // variables, functions, or earlier formal arguments in the same
   // function
   //
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     Vec<const char*> formalSet;
     for_formals(formal, fn) {
       legalizeCName(formal);
@@ -209,7 +204,7 @@ static void codegen_header(void) {
   // variables, functions, formal arguments of their function, or
   // other local variables in the same function
   //
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     Vec<const char*> local;
 
     for_formals(formal, fn) {
@@ -453,7 +448,7 @@ codegen_cid2offsets(FILE* outfile) {
   // in the array is the size of the class. Then, generate a function
   // cid2offsets which takes a cid and returns a pointer to the array
   // corresponding to the class with that cid.
-  forv_Vec(TypeSymbol, typeSym, gTypes) {
+  forv_Vec(TypeSymbol, typeSym, gTypeSymbols) {
     if (ClassType* ct = toClassType(typeSym->type)) {
       if (ct->classTag == CLASS_CLASS && !ct->symbol->hasFlag(FLAG_REF) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
         fprintf(outfile, "size_t _");
@@ -483,7 +478,7 @@ codegen_cid2offsets(FILE* outfile) {
   fprintf(outfile, "size_t* cid2offsets(chpl__class_id cid) {\n");
   fprintf(outfile, "size_t* offsets = NULL;\n");
   fprintf(outfile, "switch(cid) {\n");
-  forv_Vec(TypeSymbol, typeSym, gTypes) {
+  forv_Vec(TypeSymbol, typeSym, gTypeSymbols) {
     if (ClassType* ct = toClassType(typeSym->type)) {
       if (ct->classTag == CLASS_CLASS && !isReferenceType(ct) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
         fprintf(outfile, "case %s%s:\n", "chpl__cid_", ct->symbol->cname);
@@ -508,7 +503,7 @@ codegen_cid2size(FILE* outfile) {
   fprintf(outfile, "size_t cid2size(chpl__class_id cid) {\n");
   fprintf(outfile, "size_t size = 0;\n");
   fprintf(outfile, "switch(cid) {\n");
-  forv_Vec(TypeSymbol, typeSym, gTypes) {
+  forv_Vec(TypeSymbol, typeSym, gTypeSymbols) {
     if (ClassType* ct = toClassType(typeSym->type)) {
       if (ct->classTag == CLASS_CLASS && !isReferenceType(ct) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
         fprintf(outfile, "case %s%s:\n", "chpl__cid_", ct->symbol->cname);
@@ -538,21 +533,18 @@ codegen_config(FILE* outfile) {
   fprintf(outfile, "void CreateConfigVarTable(void) {\n");
   fprintf(outfile, "initConfigVarTable();\n");
 
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      VarSymbol* var = toVarSymbol(def->sym);
-      if (var && var->hasFlag(FLAG_CONFIG)) {
-        fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
-        Type* type = var->type;
-        if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
-          type = type->getField("addr")->type;
-        if (type->symbol->hasFlag(FLAG_HEAP))
-          type = type->getField("value")->type;
-        if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
-          type = type->getField("addr")->type;
-        fprintf(outfile, type->symbol->name);
-        fprintf(outfile, "\", \"%s\");\n", var->getModule()->name);
-      }
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    if (var->hasFlag(FLAG_CONFIG)) {
+      fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
+      Type* type = var->type;
+      if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
+        type = type->getField("addr")->type;
+      if (type->symbol->hasFlag(FLAG_HEAP))
+        type = type->getField("value")->type;
+      if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
+        type = type->getField("addr")->type;
+      fprintf(outfile, type->symbol->name);
+      fprintf(outfile, "\", \"%s\");\n", var->getModule()->name);
     }
   }
 

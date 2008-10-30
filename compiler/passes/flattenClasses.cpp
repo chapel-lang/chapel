@@ -11,7 +11,7 @@ void flattenClasses(void) {
   // collect nested classes
   //
   Vec<ClassType*> nestedClasses;
-  forv_Vec(TypeSymbol, ts, gTypes) {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ClassType* ct = toClassType(ts->type))
       if (toClassType(ct->symbol->defPoint->parentSymbol->type))
         nestedClasses.add(ct);

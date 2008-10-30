@@ -189,6 +189,7 @@ SymExpr::SymExpr(Symbol* init_var) :
 {
   if (!init_var)
     INT_FATAL(this, "Bad call to SymExpr");
+  gSymExprs.add(this);
 }
 
 
@@ -246,6 +247,7 @@ UnresolvedSymExpr::UnresolvedSymExpr(const char* iunresolved) :
 {
   if (!iunresolved)
     INT_FATAL(this, "nad call to UnresolvedSymExpr");
+  gUnresolvedSymExprs.add(this);
 }
 
 
@@ -313,6 +315,8 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
 
   if (isArgSymbol(sym) && (exprType || init))
     INT_FATAL(this, "DefExpr of ArgSymbol cannot have either exprType or init");
+
+  gDefExprs.add(this);
 }
 
 
@@ -435,7 +439,7 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   argList.parent = this;
-  gCalls.add(this);
+  gCallExprs.add(this);
 }
 
 
@@ -453,7 +457,7 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   argList.parent = this;
-  gCalls.add(this);
+  gCallExprs.add(this);
 }
 
 CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, BaseAST* arg4) :
@@ -470,7 +474,7 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   argList.parent = this;
-  gCalls.add(this);
+  gCallExprs.add(this);
 }
 
 
@@ -489,7 +493,7 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   argList.parent = this;
-  gCalls.add(this);
+  gCallExprs.add(this);
 }
 
 
@@ -2090,7 +2094,9 @@ NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
   Expr(E_NamedExpr),
   name(init_name),
   actual(init_actual)
-{ }
+{
+  gNamedExprs.add(this);
+}
 
 
 void NamedExpr::verify() {

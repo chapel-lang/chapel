@@ -111,7 +111,7 @@ static FnSymbol* function_exists(const char* name,
                                  Type* formalType1 = NULL,
                                  Type* formalType2 = NULL,
                                  Type* formalType3 = NULL) {
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (strcmp(name, fn->name))
       continue;
 
@@ -214,7 +214,7 @@ static FnSymbol* chpl_main_exists(void) {
     if (!module)
       USR_FATAL("Couldn't find module %s", mainModuleName);
 
-    forv_Vec(FnSymbol, fn, gFns) {
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (!strcmp("main", fn->name) && !fn->numFormals() && fn->getModule() == module) {
         if (!match) {
           match = fn;
@@ -224,7 +224,7 @@ static FnSymbol* chpl_main_exists(void) {
       }
     }
   } else {
-    forv_Vec(FnSymbol, fn, gFns) {
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (!strcmp("main", fn->name) && !fn->numFormals()) {
         if (!match) {
           match = fn;

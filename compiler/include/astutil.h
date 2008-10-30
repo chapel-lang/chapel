@@ -20,6 +20,7 @@ void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts);
 void collect_asts_postorder(BaseAST*, Vec<BaseAST*>& asts);
 void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts);
 void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts);
+void collect_defs(BaseAST* ast, Vec<DefExpr*>& defs);
 
 // utility routines for clearing and resetting lineno and filename
 void reset_line_info(BaseAST* baseAST, int lineno);
@@ -50,11 +51,11 @@ void buildDefUseMaps(Vec<Symbol*>& symSet,
 // looks for uses and defs in the entire program
 
 void buildDefUseMaps(Vec<Symbol*>& symSet,
-                     Vec<BaseAST*>& asts,
+                     Vec<SymExpr*>& symExprs,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap);
 // builds the vectors for every variable/argument in 'symSet' and
-// looks for uses and defs only in 'asts'
+// looks for uses and defs only in 'symExprs'
 
 //
 // add a def to a defMap or a use to a useMap

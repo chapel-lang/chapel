@@ -16,6 +16,12 @@ void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
   }
 }
 
+void collect_defs(BaseAST* ast, Vec<DefExpr*>& defs) {
+  if (DefExpr* def = toDefExpr(ast))
+    defs.add(def);
+  AST_CHILDREN_CALL(ast, collect_defs, defs);
+}
+
 void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   asts.add(ast);
   AST_CHILDREN_CALL(ast, collect_asts, asts);
@@ -46,13 +52,13 @@ void reset_line_info(BaseAST* ast, int lineno) {
 
 
 void compute_call_sites() {
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->calledBy)
       fn->calledBy->clear();
     else
       fn->calledBy = new Vec<CallExpr*>();
   }
-  forv_Vec(CallExpr, call, gCalls) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     if (FnSymbol* fn = call->isResolved()) {
       fn->calledBy->add(call);
     }
@@ -63,40 +69,45 @@ void compute_call_sites() {
 void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   Vec<Symbol*> symSet;
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (def->parentSymbol) {
-        if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
-          symSet.set_add(def->sym);
-        }
+  forv_Vec(DefExpr, def, gDefExprs) {
+    if (def->parentSymbol) {
+      if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+        symSet.set_add(def->sym);
       }
     }
   }
-  buildDefUseMaps(symSet, gAsts, defMap, useMap);
+  buildDefUseMaps(symSet, gSymExprs, defMap, useMap);
+}
+
+
+void collectSymsSymExprs(BaseAST* ast,
+                         Vec<Symbol*>& symSet,
+                         Vec<SymExpr*>& symExprs) {
+  if (DefExpr* def = toDefExpr(ast)) {
+    if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+      symSet.set_add(def->sym);
+    }
+  } else if (SymExpr* se = toSymExpr(ast)) {
+    symExprs.add(se);
+  }
+  AST_CHILDREN_CALL(ast, collectSymsSymExprs, symSet, symExprs);
 }
 
 
 void buildDefUseMaps(FnSymbol* fn,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  Vec<BaseAST*> asts;
-  collect_asts(fn, asts);
   Vec<Symbol*> symSet;
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
-        symSet.set_add(def->sym);
-      }
-    }
-  }
-  buildDefUseMaps(symSet, asts, defMap, useMap);
+  Vec<SymExpr*> symExprs;
+  collectSymsSymExprs(fn, symSet, symExprs);
+  buildDefUseMaps(symSet, symExprs, defMap, useMap);
 }
 
 
 void buildDefUseMaps(Vec<Symbol*>& symSet,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  buildDefUseMaps(symSet, gAsts, defMap, useMap);
+  buildDefUseMaps(symSet, gSymExprs, defMap, useMap);
 }
 
 
@@ -148,18 +159,16 @@ static int isDefAndOrUse(SymExpr* se) {
 
 
 void buildDefUseMaps(Vec<Symbol*>& symSet,
-                     Vec<BaseAST*>& asts,
+                     Vec<SymExpr*>& symExprs,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* se = toSymExpr(ast)) {
-      if (se->parentSymbol && se->var && symSet.set_in(se->var)) {
-        int result = isDefAndOrUse(se);
-        if (result & 1)
-          addDef(defMap, se);
-        if (result & 2)
-          addUse(useMap, se);
-      }
+  forv_Vec(SymExpr, se, symExprs) {
+    if (se->parentSymbol && symSet.set_in(se->var)) {
+      int result = isDefAndOrUse(se);
+      if (result & 1)
+        addDef(defMap, se);
+      if (result & 2)
+        addUse(useMap, se);
     }
   }
 }
@@ -362,24 +371,24 @@ reallyPrune(bool pruneDestructors) {
   Vec<TypeSymbol*> types;
   pruneVisit(chpl_main, fns, types, pruneDestructors);
   if (fRuntime) {
-    forv_Vec(FnSymbol, fn, gFns) {
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_EXPORT))
         pruneVisit(fn, fns, types, pruneDestructors);
     }
   }
   if (!pruneDestructors) {
-    forv_Vec(FnSymbol, fn, gFns) {
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (!strcmp(fn->name, "~chpl_destroy") || !strcmp(fn->name, "chpl__auto_destroy")) {
         pruneVisit(fn, fns, types, pruneDestructors);
       }
     }
   }
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fns.set_in(fn)) {
       fn->defPoint->remove();
     }
   }
-  forv_Vec(TypeSymbol, ts, gTypes) {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (!types.set_in(ts)) {
       if (toClassType(ts->type)) {
         //
@@ -410,10 +419,9 @@ reallyPrune(bool pruneDestructors) {
   //
   // change symbols with dead types to void (important for baseline)
   //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (DefExpr* def = toDefExpr(ast))
-      if (def->parentSymbol && def->sym->type && isClassType(def->sym->type) && !isTypeSymbol(def->sym) && !types.set_in(def->sym->type->symbol))
-        def->sym->type = dtVoid;
+  forv_Vec(DefExpr, def, gDefExprs) {
+    if (def->parentSymbol && def->sym->type && isClassType(def->sym->type) && !isTypeSymbol(def->sym) && !types.set_in(def->sym->type->symbol))
+      def->sym->type = dtVoid;
   }
 }
 

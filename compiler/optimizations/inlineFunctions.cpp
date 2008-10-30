@@ -96,7 +96,7 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
 void
 inlineFunctions(void) {
   if (fNoInline) {
-    forv_Vec(FnSymbol, fn, gFns) {
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
       collapseBlocks(fn->body);
       removeUnnecessaryGotos(fn);
       deadExpressionElimination(fn);
@@ -107,12 +107,12 @@ inlineFunctions(void) {
   compute_call_sites();
 
   Vec<FnSymbol*> inlinedSet;
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_INLINE) && !inlinedSet.set_in(fn))
       inlineFunction(fn, inlinedSet);
   }
 
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_INLINE)) {
       fn->defPoint->remove();
     } else {

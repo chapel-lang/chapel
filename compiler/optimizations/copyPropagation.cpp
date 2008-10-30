@@ -545,18 +545,21 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
 
   Vec<Symbol*> refSet;
   Vec<Symbol*> refVec;
+  Vec<SymExpr*> symExprs;
   forv_Vec(BaseAST, ast, asts) {
     if (VarSymbol* var = toVarSymbol(ast)) {
       if (isReferenceType(var->type)) {
         refVec.add(var);
         refSet.set_add(var);
       }
+    } else if (SymExpr* se = toSymExpr(ast)) {
+      symExprs.add(se);
     }
   }
 
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(refSet, asts, defMap, useMap);
+  buildDefUseMaps(refSet, symExprs, defMap, useMap);
 
   forv_Vec(Symbol, var, refVec) {
     if (var) {
@@ -595,7 +598,7 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
 
 
 void copyPropagation(void) {
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fNoCopyPropagation) {
       localCopyPropagation(fn);
       if (!fNoDeadCodeElimination) {
@@ -615,7 +618,7 @@ void copyPropagation(void) {
 
 
 void refPropagation() {
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fNoCopyPropagation) {
       singleAssignmentRefPropagation(fn);
       if (!fNoDeadCodeElimination) {

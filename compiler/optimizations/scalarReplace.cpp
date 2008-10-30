@@ -388,7 +388,7 @@ scalarReplace() {
     // initialize typeOrder map and identify types that are candidates
     // for scalar replacement
     //
-    forv_Vec(TypeSymbol, ts, gTypes) {
+    forv_Vec(TypeSymbol, ts, gTypeSymbols) {
       ClassType* ct = toClassType(ts->type);
       if (ct) {
         typeOrder.put(ct, -1);
@@ -416,14 +416,12 @@ scalarReplace() {
     //
     // compute typeVarMap and varSet
     //
-    forv_Vec(BaseAST, ast, gAsts) {
-      if (VarSymbol* var = toVarSymbol(ast)) {
-        if (ClassType* ct = toClassType(var->type)) {
-          if (Vec<Symbol*>* varVec = typeVarMap.get(ct)) {
-            if (isFnSymbol(var->defPoint->parentSymbol)) {
-              varSet.set_add(var);
-              varVec->add(var);
-            }
+    forv_Vec(VarSymbol, var, gVarSymbols) {
+      if (ClassType* ct = toClassType(var->type)) {
+        if (Vec<Symbol*>* varVec = typeVarMap.get(ct)) {
+          if (isFnSymbol(var->defPoint->parentSymbol)) {
+            varSet.set_add(var);
+            varVec->add(var);
           }
         }
       }

@@ -1333,8 +1333,8 @@ getVisibilityBlock(Expr* expr) {
 }
 
 static void buildVisibleFunctionMap() {
-  for (int i = nVisibleFunctions; i < gFns.n; i++) {
-    FnSymbol* fn = gFns.v[i];
+  for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {
+    FnSymbol* fn = gFnSymbols.v[i];
     if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->defPoint->parentSymbol && !isArgSymbol(fn->defPoint->parentSymbol)) {
       BlockStmt* block = NULL;
       if (fn->hasFlag(FLAG_AUTO_II)) {
@@ -1360,7 +1360,7 @@ static void buildVisibleFunctionMap() {
       fns->add(fn);
     }
   }
-  nVisibleFunctions = gFns.n;
+  nVisibleFunctions = gFnSymbols.n;
 }
 
 static BlockStmt*
@@ -1527,7 +1527,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
     //
     // update visible function map as necessary
     //
-    if (gFns.n != nVisibleFunctions)
+    if (gFnSymbols.n != nVisibleFunctions)
       buildVisibleFunctionMap();
 
     if (!call->isResolved()) {
@@ -3302,7 +3302,7 @@ signature_match(FnSymbol* fn, FnSymbol* gn) {
 //
 static void
 collectInstantiatedClassTypes(Vec<Type*>& icts, Type* ct) {
-  forv_Vec(TypeSymbol, ts, gTypes) {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->type->defaultTypeConstructor)
       if (!ts->hasFlag(FLAG_GENERIC) &&
           ts->type->defaultTypeConstructor->instantiatedFrom ==
@@ -3392,7 +3392,7 @@ add_all_children_ddf(FnSymbol* fn, ClassType* ct) {
 
 static void
 build_ddf() {
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->hasFlag(FLAG_WRAPPER) && resolvedFns.set_in(fn) && !fn->hasFlag(FLAG_NO_PARENS)
         && !fn->hasFlag(FLAG_DESTRUCTOR)) {
       if (fn->numFormals() > 1) {
@@ -3482,7 +3482,7 @@ resolve() {
   bool changed = true;
   while (changed) {
     changed = false;
-    forv_Vec(FnSymbol, fn, gFns) {
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
       changed = fn->tag_generic() || changed;
     }
   }
@@ -3494,7 +3494,7 @@ resolve() {
   // markedGeneric is used to identify places where the user inserted
   // '?' (queries) to mark such a type as generic.
   //
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     bool unmark = fn->hasFlag(FLAG_GENERIC);
     for_formals(formal, fn) {
       if (formal->type->hasGenericDefaults) {
@@ -3520,7 +3520,7 @@ resolve() {
   resolveFns(chpl_main);
 
   if (fRuntime) {
-    forv_Vec(FnSymbol, fn, gFns) {
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_EXPORT)) {
         resolveFormals(fn);
         resolveFns(fn);
@@ -3529,7 +3529,7 @@ resolve() {
   }
 
   // need to handle enumerated types better
-  forv_Vec(TypeSymbol, type, gTypes) {
+  forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (EnumType* et = toEnumType(type->type)) {
       for_enums(def, et) {
         if (def->init) {
@@ -3541,7 +3541,7 @@ resolve() {
 
   int num_types;
   do {
-    num_types = gTypes.n;
+    num_types = gTypeSymbols.n;
     Vec<Vec<FnSymbol*>*> values;
     ddf.get_values(values);
     forv_Vec(Vec<FnSymbol*>, value, values) {
@@ -3549,7 +3549,7 @@ resolve() {
     }
     ddf.clear();
     build_ddf();
-  } while (num_types != gTypes.n);
+  } while (num_types != gTypeSymbols.n);
 
   if (fPrintDispatch) {
     printf("dynamic dispatch functions:\n");
@@ -3563,7 +3563,7 @@ resolve() {
     }
   }
 
-  forv_Vec(TypeSymbol, ts, gTypes) {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint &&
         ts->defPoint->parentSymbol &&
         ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
@@ -3604,7 +3604,7 @@ resolve() {
   }
 
   Vec<CallExpr*> calls;
-  forv_Vec(CallExpr, call, gCalls) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol && call->getStmtExpr())
       calls.add(call);
   }
@@ -3727,7 +3727,7 @@ static void insertReturnTemps() {
   // reference to a sync var, pass it through the _statementLevelSymbol
   // function to get the semantics of reading a sync var.
   //
-  forv_Vec(CallExpr, call, gCalls) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
       if (FnSymbol* fn = call->isResolved()) {
         if (fn->retType != dtVoid) {
@@ -3783,7 +3783,7 @@ initializeClass(Expr* stmt, Symbol* sym) {
 static void
 pruneResolvedTree() {
   // Remove unused functions
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (!resolvedFns.set_in(fn) || fn->retTag == RET_PARAM)
         fn->defPoint->remove();
@@ -3791,7 +3791,7 @@ pruneResolvedTree() {
   }
 
   // Remove unused types
-  forv_Vec(TypeSymbol, type, gTypes) {
+  forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (type->defPoint && type->defPoint->parentSymbol)
       if (!type->hasFlag(FLAG_REF))
         if (ClassType* ct = toClassType(type->type))
@@ -3802,7 +3802,7 @@ pruneResolvedTree() {
             ct->symbol->defPoint->remove();
           }
   }
-  forv_Vec(TypeSymbol, type, gTypes) {
+  forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (type->defPoint && type->defPoint->parentSymbol) {
       if (type->hasFlag(FLAG_REF) && type->type != dtNilRef) {
         if (ClassType* ct = toClassType(type->type->getValueType())) {
@@ -3897,7 +3897,7 @@ pruneResolvedTree() {
     }
   }
 
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (fn->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         INT_ASSERT(fn->retType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
@@ -3931,7 +3931,7 @@ pruneResolvedTree() {
     }
   }
 
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       Vec<BaseAST*> asts;
       for_formals(formal, fn) {
@@ -4054,7 +4054,7 @@ pruneResolvedTree() {
   }
 
   // Remove type fields, parameter fields, and _promotionType field
-  forv_Vec(TypeSymbol, type, gTypes) {
+  forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (type->defPoint && type->defPoint->parentSymbol) {
       if (ClassType* ct = toClassType(type->type)) {
         for_fields(field, ct) {
@@ -4067,7 +4067,7 @@ pruneResolvedTree() {
     }
   }
 
-  forv_Vec(CallExpr, call, gCalls) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol && call->isResolved()) {
       //
       // Insert reference temps for function arguments that expect them.

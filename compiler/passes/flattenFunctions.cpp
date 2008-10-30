@@ -201,7 +201,7 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   //
   // remove types from functions
   //
-  forv_Vec(TypeSymbol, ts, gTypes) {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (FnSymbol* fn = toFnSymbol(ts->defPoint->parentSymbol))
       fn->defPoint->insertBefore(ts->defPoint->remove());
   }
@@ -210,7 +210,7 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
 
 void flattenFunctions(void) {
   Vec<FnSymbol*> nestedFunctions;
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (isFnSymbol(fn->defPoint->parentSymbol))
       nestedFunctions.add(fn);
   }

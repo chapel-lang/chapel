@@ -8,23 +8,21 @@
 #include "type.h"
 #include "yy.h"
 
-Vec<BaseAST*> gAsts;
-Vec<FnSymbol*> gFns;
-Vec<TypeSymbol*> gTypes;
-Vec<CallExpr*> gCalls;
+//
+// declare global vectors gSymExprs, gCallExprs, gFnSymbols, ...
+//
+#define decl_gvecs(type) Vec<type*> g##type##s
+foreach_ast(decl_gvecs);
+
 static int uid = 1;
 
-#define decl_counters(typeName)                 \
-  int n##typeName = 0, k##typeName = 0
+#define decl_counters(type)                                             \
+  int n##type = g##type##s.n, k##type = n##type*sizeof(type)/1024
 
-#define case_counters(typeName)                 \
-  case E_##typeName: n##typeName++; break
-
-#define calc_counters(typeName)                         \
-  k##typeName = n##typeName*sizeof(typeName)/1024
+#define sum_gvecs(type) g##type##s.n
 
 void printStatistics(const char* pass) {
-  static int last_asts = -1;
+  static int last_nasts = -1;
   static int maxK = -1, maxN = -1;
 
   if (!strcmp(pass, "makeBinary")) {
@@ -34,70 +32,15 @@ void printStatistics(const char* pass) {
     }
   }
 
-  if (last_asts == gAsts.n) {
+  int nasts = foreach_ast_sep(sum_gvecs, +);
+
+  if (last_nasts == nasts) {
     fprintf(stderr, "%23s%s\n", "", pass);
     return;
   }
 
-  decl_counters(CondStmt);
-  decl_counters(BlockStmt);
-  decl_counters(GotoStmt);
-  decl_counters(SymExpr);
-  decl_counters(UnresolvedSymExpr);
-  decl_counters(DefExpr);
-  decl_counters(CallExpr);
-  decl_counters(NamedExpr);
-  decl_counters(ModuleSymbol);
-  decl_counters(VarSymbol);
-  decl_counters(ArgSymbol);
-  decl_counters(TypeSymbol);
-  decl_counters(FnSymbol);
-  decl_counters(EnumSymbol);
-  decl_counters(LabelSymbol);
-  decl_counters(PrimitiveType);
-  decl_counters(EnumType);
-  decl_counters(ClassType);
-  forv_Vec(BaseAST, ast, gAsts) {
-    switch (ast->astTag) {
-      case_counters(CondStmt);
-      case_counters(BlockStmt);
-      case_counters(GotoStmt);
-      case_counters(SymExpr);
-      case_counters(UnresolvedSymExpr);
-      case_counters(DefExpr);
-      case_counters(CallExpr);
-      case_counters(NamedExpr);
-      case_counters(ModuleSymbol);
-      case_counters(VarSymbol);
-      case_counters(ArgSymbol);
-      case_counters(TypeSymbol);
-      case_counters(FnSymbol);
-      case_counters(EnumSymbol);
-      case_counters(LabelSymbol);
-      case_counters(PrimitiveType);
-      case_counters(EnumType);
-      case_counters(ClassType);
-    default: break;
-    }
-  }
-  calc_counters(CondStmt);
-  calc_counters(BlockStmt);
-  calc_counters(GotoStmt);
-  calc_counters(SymExpr);
-  calc_counters(UnresolvedSymExpr);
-  calc_counters(DefExpr);
-  calc_counters(CallExpr);
-  calc_counters(NamedExpr);
-  calc_counters(ModuleSymbol);
-  calc_counters(VarSymbol);
-  calc_counters(ArgSymbol);
-  calc_counters(TypeSymbol);
-  calc_counters(FnSymbol);
-  calc_counters(EnumSymbol);
-  calc_counters(LabelSymbol);
-  calc_counters(PrimitiveType);
-  calc_counters(EnumType);
-  calc_counters(ClassType);
+  foreach_ast(decl_counters);
+
   int nStmt = nCondStmt + nBlockStmt + nGotoStmt;
   int kStmt = kCondStmt + kBlockStmt + kGotoStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
@@ -154,12 +97,38 @@ void printStatistics(const char* pass) {
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Type %6dK Prim  %6dK Enum %6dK Class %6dK\n",
             kType, kPrimitiveType, kEnumType, kClassType);
-  last_asts = gAsts.n;
+  last_nasts = nasts;
 }
 
 
+static inline bool isAlive(Expr* expr) {
+  return expr->parentSymbol;
+}
+
+static inline bool isAlive(Type* type) {
+  return type->symbol->defPoint->parentSymbol;
+}
+
+static inline bool isAlive(Symbol* symbol) {
+  return symbol == rootModule || symbol->defPoint->parentSymbol;
+}
+
+#define clean_gvec(type)                        \
+  int i##type = 0;                              \
+  forv_Vec(type, ast, g##type##s) {             \
+    if (isAlive(ast)) {                         \
+      g##type##s.v[i##type++] = ast;            \
+    } else {                                    \
+      delete ast;                               \
+    }                                           \
+  }                                             \
+  g##type##s.n = i##type
+
 void cleanAst() {
-  forv_Vec(TypeSymbol, ts, gTypes) {
+  //
+  // clear back pointers to dead ast instances
+  //
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     for(int i = 0; i < ts->type->methods.n; i++) {
       FnSymbol* method = ts->type->methods.v[i];
       if (method && !method->defPoint->parentSymbol)
@@ -171,90 +140,30 @@ void cleanAst() {
         ts->type->dispatchChildren.v[i] = NULL;
     }
   }
-  int iasts = 0, ifn = 0, itypes = 0, icalls = 0;
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (Type* type = toType(ast)) {
-      if (type->symbol->defPoint->parentSymbol) {
-        gAsts.v[iasts++] = type;
-      } else {
-        delete type;
-      }
-    } else if (Symbol* sym = toSymbol(ast)) {
-      if (sym == rootModule || sym->defPoint->parentSymbol) {
-        gAsts.v[iasts++] = sym;
-        if (FnSymbol* fn = toFnSymbol(sym))
-          gFns.v[ifn++] = fn;
-        else if (TypeSymbol* type = toTypeSymbol(sym))
-          gTypes.v[itypes++] = type;
-      } else {
-        delete sym;
-      }
-    } else if (Expr* expr = toExpr(ast)) {
-      if (expr->parentSymbol) {
-        gAsts.v[iasts++] = ast;
-        if (CallExpr* call = toCallExpr(expr))
-          gCalls.v[icalls++] = call;
-      } else {
-        delete expr;
-      }
-    }
-  }
-  gAsts.n = iasts;
-  gFns.n = ifn;
-  gTypes.n = itypes;
-  gCalls.n = icalls;
+
+  //
+  // clean global vectors and delete dead ast instances
+  //
+  foreach_ast(clean_gvec);
 }
 
 
 void destroyAst() {
-  forv_Vec(BaseAST, ast, gAsts) {
-    delete ast;
-  }
+  #define destroy_gvec(type)                    \
+    forv_Vec(type, ast, g##type##s) {           \
+      delete ast;                               \
+    }
+  foreach_ast(destroy_gvec);
 }
 
 
 void
 verify() {
-  forv_Vec(BaseAST, ast, gAsts)
-    ast->verify();
-
-  if (fExtraVerification) {
-    //
-    // verify gAsts and collect_asts are identical
-    //
-    Vec<Expr*> set;
-    Vec<BaseAST*> vAsts;
-    collect_asts(rootModule, vAsts);
-
-    forv_Vec(BaseAST, ast, gAsts) {
-      if (Expr* expr = toExpr(ast)) {
-        set.set_add(expr);
-      }
+  #define verify_gvec(type)                       \
+    forv_Vec(type, ast, g##type##s) {             \
+      ast->verify();                              \
     }
-    forv_Vec(BaseAST, ast, vAsts) {
-      if (Expr* expr = toExpr(ast)) {
-        if (!set.set_in(expr)) {
-          INT_FATAL(expr, "collected expr %d is not in gAsts", expr->id);
-        }
-      }
-    }
-
-    set.set_clear();
-
-    forv_Vec(BaseAST, ast, vAsts) {
-      if (Expr* expr = toExpr(ast)) {
-        set.set_add(expr);
-      }
-    }
-
-    forv_Vec(BaseAST, ast, gAsts) {
-      if (Expr* expr = toExpr(ast)) {
-        if (!set.set_in(expr)) {
-          INT_FATAL(expr, "expr %d in gAsts is not collected", expr->id);
-        }
-      }
-    }
-  }
+  foreach_ast(verify_gvec);
 }
 
 
@@ -275,7 +184,6 @@ BaseAST::BaseAST(AstTag type) :
       lineno = currentLineno;
     }
   }
-  gAsts.add(this);
 }
 
 

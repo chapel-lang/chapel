@@ -4,25 +4,52 @@
 #include "chpl.h"
 #include "stringutil.h"
 
+#define foreach_ast_sep(macro, sep)                \
+  macro(PrimitiveType) sep                         \
+  macro(EnumType) sep                              \
+  macro(ClassType) sep                             \
+  macro(ModuleSymbol) sep                          \
+  macro(VarSymbol) sep                             \
+  macro(ArgSymbol) sep                             \
+  macro(TypeSymbol) sep                            \
+  macro(FnSymbol) sep                              \
+  macro(EnumSymbol) sep                            \
+  macro(LabelSymbol) sep                           \
+  macro(SymExpr) sep                               \
+  macro(UnresolvedSymExpr) sep                     \
+  macro(DefExpr) sep                               \
+  macro(CallExpr) sep                              \
+  macro(NamedExpr) sep                             \
+  macro(BlockStmt) sep                             \
+  macro(CondStmt) sep                              \
+  macro(GotoStmt)
+
+#define foreach_ast(macro)                      \
+  foreach_ast_sep(macro, ;)
+
 class AList;
 class Symbol;
-class ModuleSymbol;
-class FnSymbol;
-class TypeSymbol;
-class VarSymbol;
 class Type;
 class Expr;
-class CallExpr;
+
+//
+// prototype ast classes SymExpr, CallExpr, FnSymbol, ...
+//
+#define proto_classes(type) class type
+foreach_ast(proto_classes);
+#undef proto_classes
+
+//
+// declare global vectors gSymExprs, gCallExprs, gFnSymbols, ...
+//
+#define decl_gvecs(type) extern Vec<type*> g##type##s
+foreach_ast(decl_gvecs);
+#undef decl_gvecs
 
 typedef Map<Symbol*,Symbol*> SymbolMap;
 typedef MapElem<Symbol*,Symbol*> SymbolMapElem;
 
 extern void update_symbols(BaseAST* ast, SymbolMap* map);
-
-extern Vec<BaseAST*> gAsts;
-extern Vec<FnSymbol*> gFns;
-extern Vec<TypeSymbol*> gTypes;
-extern Vec<CallExpr*> gCalls;
 
 void cleanAst(void);
 void destroyAst(void);
@@ -186,7 +213,6 @@ void registerModule(ModuleSymbol* mod);
 #define toClassType(ast)     (isClassType(ast)     ? ((ClassType*)(ast))     : NULL)
 
 
-
 #define AST_CALL_CHILD(_a, _t, _m, call, ...)                           \
   if (((_t*)_a)->_m) {                                                  \
     BaseAST* next_ast = ((_t*)_a)->_m;                                  \
@@ -253,73 +279,5 @@ void registerModule(ModuleSymbol* mod);
   default:                                                              \
     break;                                                              \
   }
-
-#define AST_ADD_CHILD(_asts, _a, _t, _m)                                \
-  if (((_t*)_a)->_m) {                                                  \
-    _asts.add(((_t*)_a)->_m);                                           \
-  }
-
-#define AST_ADD_LIST(_asts, _a, _t, _m)                                 \
-  for_alist(next_ast, ((_t*)_a)->_m) {                                  \
-    _asts.add(next_ast);                                                \
-  }
-
-#define AST_CHILDREN_PUSH(_asts, _a)                                    \
-  switch (_a->astTag) {                                                 \
-  case E_CallExpr:                                                       \
-    AST_ADD_CHILD(_asts, _a, CallExpr, baseExpr);                       \
-    AST_ADD_LIST(_asts, _a, CallExpr, argList);                         \
-    break;                                                              \
-  case E_NamedExpr:                                                      \
-    AST_ADD_CHILD(_asts, _a, NamedExpr, actual);                        \
-    break;                                                              \
-  case E_DefExpr:                                                        \
-    AST_ADD_CHILD(_asts, _a, DefExpr, init);                            \
-    AST_ADD_CHILD(_asts, _a, DefExpr, exprType);                        \
-    AST_ADD_CHILD(_asts, _a, DefExpr, sym);                             \
-    break;                                                              \
-  case E_BlockStmt:                                                      \
-    AST_ADD_LIST(_asts, _a, BlockStmt, body);                           \
-    AST_ADD_CHILD(_asts, _a, BlockStmt, blockInfo);                      \
-    break;                                                              \
-  case E_CondStmt:                                                       \
-    AST_ADD_CHILD(_asts, _a, CondStmt, condExpr);                       \
-    AST_ADD_CHILD(_asts, _a, CondStmt, thenStmt);                       \
-    AST_ADD_CHILD(_asts, _a, CondStmt, elseStmt);                       \
-    break;                                                              \
-  case E_GotoStmt:                                                       \
-    AST_ADD_CHILD(_asts, _a, GotoStmt, label);                          \
-    break;                                                              \
-  case E_ModuleSymbol:                                                   \
-    AST_ADD_CHILD(_asts, _a, ModuleSymbol, block);                      \
-    break;                                                              \
-  case E_ArgSymbol:                                                      \
-    AST_ADD_CHILD(_asts, _a, ArgSymbol, typeExpr);                      \
-    AST_ADD_CHILD(_asts, _a, ArgSymbol, defaultExpr);                   \
-    AST_ADD_CHILD(_asts, _a, ArgSymbol, variableExpr);                  \
-    break;                                                              \
-  case E_TypeSymbol:                                                     \
-    AST_ADD_CHILD(_asts, _a, Symbol, type);                             \
-    break;                                                              \
-  case E_FnSymbol:                                                       \
-    AST_ADD_LIST(_asts, _a, FnSymbol, formals);                         \
-    AST_ADD_CHILD(_asts, _a, FnSymbol, setter);                         \
-    AST_ADD_CHILD(_asts, _a, FnSymbol, body);                           \
-    AST_ADD_CHILD(_asts, _a, FnSymbol, where);                          \
-    AST_ADD_CHILD(_asts, _a, FnSymbol, retExprType);                    \
-    break;                                                              \
-  case E_EnumType:                                                       \
-    AST_ADD_LIST(_asts, _a, EnumType, constants);                       \
-    break;                                                              \
-  case E_ClassType:                                                      \
-    AST_ADD_LIST(_asts, _a, ClassType, fields);                         \
-    AST_ADD_LIST(_asts, _a, ClassType, inherits);                       \
-    break;                                                              \
-  default:                                                              \
-    break;                                                              \
-  }
-
-#define AST_CHILDREN_POP(_asts, _a)             \
-  _a = _asts.pop()                              \
 
 #endif

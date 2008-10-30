@@ -150,7 +150,7 @@ void copyCollection(void) {
                                        new_IntSymbol(20971520))); //20 MB
   chpl_main->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_GC_CLEANUP));
 
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     buildRootSetForFunction(fn, NULL, NULL);
   }
 

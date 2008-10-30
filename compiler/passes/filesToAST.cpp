@@ -57,7 +57,7 @@ void parse(void) {
 
   parseStandardModules();
   
-  forv_Vec(TypeSymbol, ts, gTypes) {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (!strcmp(ts->name, "iterator")) {
       if (EnumType* enumType = toEnumType(ts->type)) {
         for_alist(expr, enumType->constants) {

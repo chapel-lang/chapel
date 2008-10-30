@@ -57,7 +57,6 @@ extern bool fLocal;
 extern bool fieeefloat;
 
 extern int debugParserLevel;
-extern bool fExtraVerification;
 extern bool fRuntime;
 extern bool no_codegen;
 extern bool developer;

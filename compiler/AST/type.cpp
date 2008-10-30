@@ -113,7 +113,9 @@ Type* Type::getReferenceType() {
 
 PrimitiveType::PrimitiveType(Symbol *init) :
   Type(E_PrimitiveType, init)
-{}
+{
+  gPrimitiveTypes.add(this);
+}
 
 
 void PrimitiveType::verify() {
@@ -128,6 +130,7 @@ EnumType::EnumType() :
   Type(E_EnumType, NULL),
   constants()
 {
+  gEnumTypes.add(this);
   constants.parent = this;
 }
 
@@ -204,6 +207,7 @@ ClassType::ClassType(ClassTag initClassTag) :
   methods.clear();
   fields.parent = this;
   inherits.parent = this;
+  gClassTypes.add(this);
 }
 
 

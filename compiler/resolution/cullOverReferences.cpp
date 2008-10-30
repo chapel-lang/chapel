@@ -61,7 +61,7 @@ void cullOverReferences() {
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
   buildDefUseMaps(defMap, useMap);
-  forv_Vec(CallExpr, call, gCalls) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     if (FnSymbol* fn = call->isResolved()) {
       if (FnSymbol* copy = fn->valueFunction) {
         if (CallExpr* move = toCallExpr(call->parentExpr)) {
@@ -89,26 +89,24 @@ void cullOverReferences() {
   //   this is essential for handling the valid var flag
   //   and may be worthwhile/necessary otherwise
   //
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (!isTypeSymbol(def->sym) && def->sym->type) {
-        if (Type* vt = def->sym->type->getValueType()) {
-          if (isDerefType(vt)) {
-            def->sym->type = vt;
-          }
+  forv_Vec(DefExpr, def, gDefExprs) {
+    if (!isTypeSymbol(def->sym) && def->sym->type) {
+      if (Type* vt = def->sym->type->getValueType()) {
+        if (isDerefType(vt)) {
+          def->sym->type = vt;
         }
-        if (FnSymbol* fn = toFnSymbol(def->sym)) {
-          if (Type* vt = fn->retType->getValueType()) {
-            if (isDerefType(vt)) {
-              fn->retType = vt;
-              fn->retTag = RET_VALUE;
-            }
+      }
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        if (Type* vt = fn->retType->getValueType()) {
+          if (isDerefType(vt)) {
+            fn->retType = vt;
+            fn->retTag = RET_VALUE;
           }
         }
       }
     }
   }
-  forv_Vec(CallExpr, call, gCalls) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIMITIVE_GET_REF) ||
         call->isPrimitive(PRIMITIVE_SET_REF)) {
       Type* vt = call->get(1)->typeInfo();

@@ -152,7 +152,9 @@ VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
   Symbol(E_VarSymbol, init_name, init_type),
   immediate(NULL)
-{ }
+{
+  gVarSymbols.add(this);
+}
 
 
 VarSymbol::~VarSymbol() {
@@ -306,6 +308,7 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
     variableExpr = block;
   else
     variableExpr = new BlockStmt(iVariableExpr, BLOCK_SCOPELESS);
+  gArgSymbols.add(this);
 }
 
 
@@ -391,7 +394,7 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   if (!type)
     INT_FATAL(this, "TypeSymbol constructor called without type");
   type->addSymbol(this);
-  gTypes.add(this);
+  gTypeSymbols.add(this);
 }
 
 
@@ -450,7 +453,7 @@ FnSymbol::FnSymbol(const char* initName) :
   valueFunction(NULL)
 {
   substitutions.clear();
-  gFns.add(this);
+  gFnSymbols.add(this);
   formals.parent = this;
 }
 
@@ -735,7 +738,9 @@ bool FnSymbol::tag_generic() {
 
 EnumSymbol::EnumSymbol(const char* init_name) :
   Symbol(E_EnumSymbol, init_name)
-{ }
+{
+  gEnumSymbols.add(this);
+}
 
 
 void EnumSymbol::verify() {
@@ -766,6 +771,7 @@ ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock)
 {
   block->parentSymbol = this;
   registerModule(this);
+  gModuleSymbols.add(this);
 }
 
 
@@ -828,7 +834,7 @@ void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 LabelSymbol::LabelSymbol(const char* init_name) :
   Symbol(E_LabelSymbol, init_name, NULL)
 { 
- 
+  gLabelSymbols.add(this);
 }
 
 

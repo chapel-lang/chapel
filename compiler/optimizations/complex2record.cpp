@@ -46,39 +46,35 @@ complex2record() {
   dtComplex[COMPLEX_SIZE_64]->symbol->defPoint->remove();
   dtComplex[COMPLEX_SIZE_128]->symbol->defPoint->remove();
 
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (SymExpr* se = toSymExpr(ast)) {
-      if (VarSymbol* var = toVarSymbol(se->var)) {
-        if (is_complex_type(var->type)) {
-          if (var->immediate) {
-            ClassType* ct = complex2rec(se->var->type);
-            VarSymbol* tmp = newTemp(ct);
-            se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-            se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, ct->getField(1), complex2real(se->var->type)->defaultValue));
-            se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, ct->getField(2), complex2real(se->var->type)->defaultValue));
-            se->replace(new SymExpr(tmp));
-          }
+  forv_Vec(SymExpr, se, gSymExprs) {
+    if (VarSymbol* var = toVarSymbol(se->var)) {
+      if (is_complex_type(var->type)) {
+        if (var->immediate) {
+          ClassType* ct = complex2rec(se->var->type);
+          VarSymbol* tmp = newTemp(ct);
+          se->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, ct->getField(1), complex2real(se->var->type)->defaultValue));
+          se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, ct->getField(2), complex2real(se->var->type)->defaultValue));
+          se->replace(new SymExpr(tmp));
         }
-      } else if (TypeSymbol* ts = toTypeSymbol(se->var)) {
-        if (is_complex_type(ts->type)) {
-          se->var = complex2rec(ts->type)->symbol;
-        }
+      }
+    } else if (TypeSymbol* ts = toTypeSymbol(se->var)) {
+      if (is_complex_type(ts->type)) {
+        se->var = complex2rec(ts->type)->symbol;
       }
     }
   }
 
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (!isTypeSymbol(def->sym))
-        if (is_complex_type(def->sym->type))
-          def->sym->type = complex2rec(def->sym->type);
-      if (FnSymbol* fn = toFnSymbol(def->sym))
-        if (is_complex_type(fn->retType))
-          fn->retType = complex2rec(fn->retType);
-    }
+  forv_Vec(DefExpr, def, gDefExprs) {
+    if (!isTypeSymbol(def->sym))
+      if (is_complex_type(def->sym->type))
+        def->sym->type = complex2rec(def->sym->type);
+    if (FnSymbol* fn = toFnSymbol(def->sym))
+      if (is_complex_type(fn->retType))
+        fn->retType = complex2rec(fn->retType);
   }
 
-  forv_Vec(CallExpr, call, gCalls) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIMITIVE_GET_REAL)) {
       call->primitive = primitives[PRIMITIVE_GET_MEMBER];
       ClassType* ct = toClassType(call->get(1)->typeInfo());
@@ -97,7 +93,7 @@ complex2record() {
   //
   // change arrays of complexes into arrays of new complex records
   //
-  forv_Vec(TypeSymbol, ts, gTypes) {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->hasFlag(FLAG_DATA_CLASS)) {
       if (TypeSymbol* nt = toTypeSymbol(ts->type->substitutions.v[0].value)) {
         if (is_complex_type(nt->type)) {

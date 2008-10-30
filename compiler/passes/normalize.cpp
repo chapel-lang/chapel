@@ -30,7 +30,7 @@ static void checkConfigParams();
 
 static void
 checkUseBeforeDefs() {
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint->parentSymbol) {
       ModuleSymbol* mod = fn->getModule();
       Vec<const char*> undeclared;
@@ -118,21 +118,19 @@ flattenGlobalFunctions() {
 
 static void
 insertUseForExplicitModuleCalls(void) {
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (SymExpr* se = toSymExpr(ast)) {
-      if (se->parentSymbol && se->var == gModuleToken) {
-        CallExpr* call = toCallExpr(se->parentExpr);
-        INT_ASSERT(call);
-        SymExpr* mse = toSymExpr(call->get(2));
-        INT_ASSERT(mse);
-        ModuleSymbol* mod = toModuleSymbol(mse->var);
-        INT_ASSERT(mod);
-        Expr* stmt = se->getStmtExpr();
-        BlockStmt* block = new BlockStmt();
-        stmt->insertBefore(block);
-        block->insertAtHead(stmt->remove());
-        block->addUse(mod);
-      }
+  forv_Vec(SymExpr, se, gSymExprs) {
+    if (se->parentSymbol && se->var == gModuleToken) {
+      CallExpr* call = toCallExpr(se->parentExpr);
+      INT_ASSERT(call);
+      SymExpr* mse = toSymExpr(call->get(2));
+      INT_ASSERT(mse);
+      ModuleSymbol* mod = toModuleSymbol(mse->var);
+      INT_ASSERT(mod);
+      Expr* stmt = se->getStmtExpr();
+      BlockStmt* block = new BlockStmt();
+      stmt->insertBefore(block);
+      block->insertAtHead(stmt->remove());
+      block->addUse(mod);
     }
   }
 }
@@ -142,27 +140,25 @@ static void
 markAlignedArrays() {
   Map<Symbol*,Symbol*> domDistMap;
   Map<Symbol*,Symbol*> arrDomMap;
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (CallExpr* call = toCallExpr(def->exprType)) {
-        if (call->isNamed("chpl__buildDomainRuntimeType")) {
-          if (SymExpr* se = toSymExpr(call->get(1))) {
-            domDistMap.put(def->sym, se->var);
-          }
-        } else if (call->isNamed("chpl__buildArrayRuntimeType")) {
-          if (CallExpr* dcall = toCallExpr(call->get(1))) {
-            if (dcall->isNamed("chpl__buildDomainExpr")) {
-              if (SymExpr* se = toSymExpr(dcall->get(1))) {
-                arrDomMap.put(def->sym, se->var);
-              }
+  forv_Vec(DefExpr, def, gDefExprs) {
+    if (CallExpr* call = toCallExpr(def->exprType)) {
+      if (call->isNamed("chpl__buildDomainRuntimeType")) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          domDistMap.put(def->sym, se->var);
+        }
+      } else if (call->isNamed("chpl__buildArrayRuntimeType")) {
+        if (CallExpr* dcall = toCallExpr(call->get(1))) {
+          if (dcall->isNamed("chpl__buildDomainExpr")) {
+            if (SymExpr* se = toSymExpr(dcall->get(1))) {
+              arrDomMap.put(def->sym, se->var);
             }
           }
-        }        
-      }
+        }
+      }        
     }
   }
   Map<Symbol*,CallExpr*> iteratorTupleMap;
-  forv_Vec(CallExpr, call, gCalls) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isNamed("_getIterator")) {
       if (CallExpr* tuple = toCallExpr(call->get(1))) {
         if (tuple->isNamed("_build_tuple")) {
@@ -204,7 +200,7 @@ void normalize(void) {
   markAlignedArrays();
 
   // tag iterators and replace delete statements with calls to ~chpl_destroy
-  forv_Vec(CallExpr, call, gCalls) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIMITIVE_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
       if (!fn) {
@@ -222,7 +218,7 @@ void normalize(void) {
     }
   }
 
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     SET_LINENO(fn);
     if (!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&
         !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
@@ -240,7 +236,7 @@ void normalize(void) {
   insertUseForExplicitModuleCalls();
 
   // perform some checks on destructors
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
       if (fn->formals.length < 2
           || toDefExpr(fn->formals.get(1))->sym->typeInfo() != gMethodToken->typeInfo()) {

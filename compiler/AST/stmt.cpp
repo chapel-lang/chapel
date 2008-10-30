@@ -27,6 +27,7 @@ BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
   body.parent = this;
   if (init_body)
     body.insertAtTail(init_body);
+  gBlockStmts.add(this);
 }
 
 
@@ -172,6 +173,7 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
     else
       INT_FATAL(iElseStmt, "Bad else-stmt passed to CondStmt constructor");
   }
+  gCondStmts.add(this);
 }
 
 
@@ -282,6 +284,7 @@ GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
   gotoTag(init_gotoTag),
   label(init_label ? (Expr*)new UnresolvedSymExpr(init_label) : (Expr*)new SymExpr(gNil))
 {
+  gGotoStmts.add(this);
 }
 
 
@@ -290,6 +293,7 @@ GotoStmt::GotoStmt(GotoTag init_gotoTag, Symbol* init_label) :
   gotoTag(init_gotoTag),
   label(new SymExpr(init_label))
 {
+  gGotoStmts.add(this);
 }
 
 
@@ -303,6 +307,8 @@ GotoStmt::GotoStmt(GotoTag init_gotoTag, Expr* init_label) :
 
   if (init_label->parentSymbol)
     INT_FATAL(this, "GotoStmt initialized with label already in tree");
+
+  gGotoStmts.add(this);
 }
 
 

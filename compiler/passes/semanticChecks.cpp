@@ -83,11 +83,11 @@ check_named_arguments(CallExpr* call) {
 
 void
 checkParsed(void) {
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (CallExpr* call = toCallExpr(ast))
-      check_named_arguments(call);
+  forv_Vec(CallExpr, call, gCallExprs) {
+    check_named_arguments(call);
+  }
 
-    if (DefExpr* def = toDefExpr(ast)) {
+  forv_Vec(DefExpr, def, gDefExprs) {
       if (!strcmp(def->sym->name, "_")) {
         USR_FATAL("Symbol cannot be named \"_\"");
       } else if (toVarSymbol(def->sym)) {
@@ -99,19 +99,21 @@ checkParsed(void) {
                                "Variable '%s' is not initialized or has no type",
                                def->sym->name);
       }
-    }
+  }
 
-    if (VarSymbol* a = toVarSymbol(ast))
-      check_parsed_vars(a);
-    else if (FnSymbol* fn = toFnSymbol(ast))
-      check_functions(fn);
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    check_parsed_vars(var);
+  }
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    check_functions(fn);
   }
 }
 
 
 void
 checkNormalized(void) {
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
       for_formals(formal, fn) {
         if (formal->intent == INTENT_IN ||
@@ -194,7 +196,7 @@ checkReturnPaths(FnSymbol* fn) {
 
 void
 checkResolved(void) {
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     checkReturnPaths(fn);
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
         !fn->hasFlag(FLAG_ITERATOR_FN) &&
@@ -202,7 +204,7 @@ checkResolved(void) {
       USR_FATAL(fn, "functions cannot return nested iterators or loop expressions");
   }
 
-  forv_Vec(TypeSymbol, type, gTypes) {
+  forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (EnumType* et = toEnumType(type->type)) {
       for_enums(def, et) {
         if (def->init) {

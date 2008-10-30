@@ -166,7 +166,7 @@ void deadCodeElimination(FnSymbol* fn) {
 
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
-    forv_Vec(FnSymbol, fn, gFns) {
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
       deadCodeElimination(fn);
       deadVariableElimination(fn);
       deadExpressionElimination(fn);

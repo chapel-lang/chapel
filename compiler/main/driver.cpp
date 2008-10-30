@@ -30,7 +30,6 @@ int fdump_html = 0;
 static char libraryFilename[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
-bool fExtraVerification = false;
 bool fRuntime = false;
 bool no_codegen = false;
 int debugParserLevel = 0;
@@ -380,7 +379,6 @@ static ArgumentDescription arg_desc[] = {
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"ignore-errors", ' ', NULL, "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"enable-destructor-calls", ' ', NULL, "Enable insertion of destructor calls when variables go out of scope", "F", &fEnableDestructorCalls, "CHPL_ENABLE_DESTRUCTOR_CALLS", NULL},
- {"extra-verification", ' ', NULL, "Do extra verification between passes", "F", &fExtraVerification, "CHPL_EXTRA_VERIFICATION", NULL},
  {"no-codegen", ' ', NULL, "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},
  {"parallelize-reductions-promotions", ' ', NULL, "parallelize reductions and promotions (work in progress)", "F", &fParallelizeReductionsPromotions, NULL, NULL},

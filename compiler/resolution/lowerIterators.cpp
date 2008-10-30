@@ -22,10 +22,9 @@ fragmentLocalBlocks() {
   // collect all local blocks into localBlocks vector
   //
   Vec<BlockStmt*> localBlocks; // old local blocks
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (BlockStmt* block = toBlockStmt(ast))
-      if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_LOCAL))
-        localBlocks.add(block);
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_LOCAL))
+      localBlocks.add(block);
   }
 
   //
@@ -345,14 +344,12 @@ expand_for_loop(CallExpr* call) {
 
 static void
 inlineIterators() {
-  forv_Vec(BaseAST, ast, gAsts) {
-    if (BlockStmt* block = toBlockStmt(ast)) {
-      if (block->parentSymbol) {
-        if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP)) {
-          Symbol* iterator = toSymExpr(block->blockInfo->get(2))->var;
-          if (iterator->type->defaultConstructor->hasFlag(FLAG_INLINE_ITERATOR)) {
-            expandIteratorInline(block->blockInfo);
-          }
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (block->parentSymbol) {
+      if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP)) {
+        Symbol* iterator = toSymExpr(block->blockInfo->get(2))->var;
+        if (iterator->type->defaultConstructor->hasFlag(FLAG_INLINE_ITERATOR)) {
+          expandIteratorInline(block->blockInfo);
         }
       }
     }
@@ -365,13 +362,13 @@ void lowerIterators() {
 
   inlineIterators();
 
-  forv_Vec(CallExpr, call, gCalls) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol)
       if (call->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP))
         if (call->numActuals() > 1)
           expand_for_loop(call);
   }
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
       collapseBlocks(fn->body);
       removeUnnecessaryGotos(fn);
@@ -383,14 +380,14 @@ void lowerIterators() {
       }
     }
   }
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
       lowerIterator(fn);
     }
   }
   // fix GET_MEMBER primitives that access fields of an iterator class
   // via a number
-  forv_Vec(CallExpr, call, gCalls) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
       ClassType* ct = toClassType(call->get(1)->typeInfo());
       if (ct->symbol->hasFlag(FLAG_REF))
@@ -421,7 +418,7 @@ void lowerIterators() {
   //
   Vec<FnSymbol*> getIteratorVec;
   Map<Type*,FnSymbol*> getIteratorMap;
-  forv_Vec(FnSymbol, fn, gFns) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_CLASS_COPY)) {
       getIteratorVec.add(fn);
       getIteratorMap.put(fn->retType, fn);
@@ -431,7 +428,7 @@ void lowerIterators() {
   //
   // cleanup leader and follower iterator calls
   //
-  forv_Vec(CallExpr, call, gCalls) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
       if (FnSymbol* fn = call->isResolved()) {
         if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {

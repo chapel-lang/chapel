@@ -274,9 +274,12 @@ void nprint_view_noline(BaseAST* ast) {
 
 
 BaseAST* aid(int id) {
-  forv_Vec(BaseAST, a, gAsts)
-    if (a->id == id)
-      return a;
+  #define match_id(type)                        \
+    forv_Vec(type, a, g##type##s) {             \
+      if (a->id == id)                          \
+        return a;                               \
+    }
+  foreach_ast(match_id);
   return NULL;
 }
 
