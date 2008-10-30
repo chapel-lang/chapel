@@ -28,6 +28,18 @@ typedef Map<BaseAST*,SymbolTableEntry*> SymbolTable;
 static SymbolTable symbolTable;
 
 //
+// The moduleUsesCache is a cache from blocks with use-statements to
+// the modules that they use arranged in breadth-first order and
+// separated by NULL modules to indicate that the modules are not at
+// the same depth.
+//
+// Note that this caching is not enabled until after use expression
+// have been resolved.
+//
+static Map<BlockStmt*,Vec<ModuleSymbol*>*> moduleUsesCache;
+static bool enableModuleUsesCache = false;
+
+//
 // getScope returns the BaseAST that corresponds to the scope where
 // 'ast' exists; 'ast' must be an Expr or a Symbol.  Note that if you
 // pass this a BaseAST that defines a scope, the BaseAST that defines
@@ -112,34 +124,49 @@ destroyTable() {
 }
 
 
+//
+// delete the module uses cache
+//
 static void
-buildBreadthFirstUseTree(Vec<ModuleSymbol*>* current,
-                         Vec<Vec<ModuleSymbol*>*> &queue,
-                         Vec<ModuleSymbol*>* alreadySeen = NULL) {
+destroyModuleUsesCaches() {
+  Vec<Vec<ModuleSymbol*>*> values;
+  moduleUsesCache.get_values(values);
+  forv_Vec(Vec<ModuleSymbol*>, value, values) {
+    delete value;
+  }
+  moduleUsesCache.clear();
+}
+
+
+static void
+buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
+                            Vec<ModuleSymbol*>* current = NULL,
+                            Vec<ModuleSymbol*>* alreadySeen = NULL) {
   if (!alreadySeen) {
     Vec<ModuleSymbol*> seen;
-    return buildBreadthFirstUseTree(current, queue, &seen);
+    return buildBreadthFirstModuleList(modules, modules, &seen);
   }
-  queue.add(current);
-  Vec<ModuleSymbol*>* next = new Vec<ModuleSymbol*>;
+  modules->add(NULL); // use NULL sentinel to identify modules of equal depth
+  Vec<ModuleSymbol*> next;
   forv_Vec(ModuleSymbol, module, *current) {
-    if (module->block->modUses) {
+    if (!module) {
+      break;
+    } else if (module->block->modUses) {
       for_actuals(expr, module->block->modUses) {
         SymExpr* se = toSymExpr(expr);
         INT_ASSERT(se);
         ModuleSymbol* mod = toModuleSymbol(se->var);
         INT_ASSERT(mod);
         if (!alreadySeen->set_in(mod)) {
-          next->add(mod);
+          next.add(mod);
+          modules->add(mod);
           alreadySeen->set_add(mod);
         }
       }
     }
   }
-  if (next->n > 0) {
-    buildBreadthFirstUseTree(next, queue, alreadySeen);
-  } else {
-    delete next;
+  if (next.n) {
+    buildBreadthFirstModuleList(modules, &next, alreadySeen);
   }
 }
 
@@ -151,7 +178,8 @@ lookup(BaseAST* scope,
        bool scanModuleUses = true) {
   Vec<BaseAST*> nestedscopes;
   if (!alreadyVisited) {
-    return lookup(scope, name, &nestedscopes, scanModuleUses);
+    Symbol* result = lookup(scope, name, &nestedscopes, scanModuleUses);
+    return result;
   }
   if (!scanModuleUses) {
     nestedscopes.copy(*alreadyVisited);
@@ -160,65 +188,64 @@ lookup(BaseAST* scope,
 
   if (alreadyVisited->set_in(scope))
     return NULL;
+
   alreadyVisited->set_add(scope);
 
   Vec<Symbol*> symbols;
-  Symbol* sym = NULL;
-  SymbolTableEntry* entry = symbolTable.get(scope);
-  if (entry)
-    sym = entry->get(name);
-  if (sym) {
-    symbols.set_add(sym);
-  }
-  if (TypeSymbol* ts = toTypeSymbol(scope)) {
-    if (ClassType* ct = toClassType(ts->type)) {
-      sym = ct->getField(name, false);
-      if (sym)
+
+  if (SymbolTableEntry* entry = symbolTable.get(scope))
+    if (Symbol* sym = entry->get(name))
+      symbols.set_add(sym);
+
+  if (TypeSymbol* ts = toTypeSymbol(scope))
+    if (ClassType* ct = toClassType(ts->type))
+      if (Symbol* sym = ct->getField(name, false))
         symbols.set_add(sym);
-    }
-  }
-  if (symbols.n == 0 && scanModuleUses) {
-    BlockStmt* block = toBlockStmt(scope);
-    
-    Vec<ModuleSymbol*> modules;
-    if (block && block->modUses) {
-      for_actuals(expr, block->modUses) {
-        SymExpr* se = toSymExpr(expr);
-        INT_ASSERT(se);
-        ModuleSymbol* mod = toModuleSymbol(se->var);
-        INT_ASSERT(mod);
-        modules.add(mod);
-      }
-    }
-    if (modules.n) {
-      Vec<Vec<ModuleSymbol*>*> moduleQueue;
-      buildBreadthFirstUseTree(&modules, moduleQueue);
-      forv_Vec(Vec<ModuleSymbol*>, layer, moduleQueue) {
-        forv_Vec(ModuleSymbol, mod, *layer) {
-          if (mod == rootModule)
-            sym = lookup(mod->block, name, alreadyVisited, false);
-          else
-            sym = lookup(mod->initFn->body, name, alreadyVisited, false);
-          if (sym) {
-            symbols.set_add(sym);
+
+  if (scanModuleUses && symbols.n == 0) {
+    if (BlockStmt* block = toBlockStmt(scope)) {
+      if (block->modUses) {
+        Vec<ModuleSymbol*>* modules = moduleUsesCache.get(block); 
+        if (!modules) {
+          modules = new Vec<ModuleSymbol*>();
+          for_actuals(expr, block->modUses) {
+            SymExpr* se = toSymExpr(expr);
+            INT_ASSERT(se);
+            ModuleSymbol* mod = toModuleSymbol(se->var);
+            INT_ASSERT(mod);
+            modules->add(mod);
+          }
+          INT_ASSERT(modules->n);
+          buildBreadthFirstModuleList(modules);
+          if (enableModuleUsesCache)
+            moduleUsesCache.put(block, modules);
+        }
+        INT_ASSERT(modules);
+        forv_Vec(ModuleSymbol, mod, *modules) {
+          if (mod) {
+            if (mod != rootModule) {
+              if (Symbol* sym = lookup(mod->initFn->body, name, alreadyVisited, false))
+                symbols.set_add(sym);
+            } else {
+              if (Symbol* sym = lookup(mod->block, name, alreadyVisited, false))
+                symbols.set_add(sym);
+            }
+          } else {
+            //
+            // break on each new depth if a symbol has been found
+            //
+            if (symbols.n > 0)
+              break;
           }
         }
-        if (symbols.n > 0)
-          break;
-      }
-      bool first = true;
-      forv_Vec(Vec<ModuleSymbol*>, layer, moduleQueue) {
-        if (first) {
-          first = false;
-          continue;
-        }
-        delete layer;
       }
     }
   }
+
   if (scanModuleUses && symbols.n == 0) {
     if (scope->getModule()->block == scope) {
       ModuleSymbol* mod = scope->getModule();
+      Symbol* sym = NULL;
       if (mod == rootModule)
         sym = lookup(mod->block, name, alreadyVisited, scanModuleUses);
       else
@@ -235,7 +262,7 @@ lookup(BaseAST* scope,
       FnSymbol* fn = toFnSymbol(scope);
       if (fn && fn->_this && toClassType(fn->_this->type)) {
         ClassType* ct = toClassType(fn->_this->type);
-        sym = lookup(ct->symbol, name, alreadyVisited, scanModuleUses);
+        Symbol* sym = lookup(ct->symbol, name, alreadyVisited, scanModuleUses);
         if (sym)
           symbols.set_add(sym);
         else {
@@ -244,24 +271,24 @@ lookup(BaseAST* scope,
             symbols.set_add(sym);
         }
       } else if (getScope(scope)) {
-        sym = lookup(getScope(scope), name, alreadyVisited, scanModuleUses);
+        Symbol* sym = lookup(getScope(scope), name, alreadyVisited, scanModuleUses);
         if (sym)
           symbols.set_add(sym);
       }
     }
   }
+
   symbols.set_to_vec();
-  if (symbols.n > 1) {
-    forv_Vec(Symbol, sym, symbols) {
-      if (!toFnSymbol(sym)) {
-        USR_FATAL(sym, "Symbol %s multiply defined", name);
-      }
-    }
-  }
-  if (symbols.n == 0) {
-    return NULL;
-  } else {
+  if (symbols.n == 1)
     return symbols.v[0];
+  else if (symbols.n == 0)
+    return NULL;
+  else {
+    forv_Vec(Symbol, sym, symbols) {
+      if (!isFnSymbol(sym))
+        USR_FATAL(sym, "Symbol %s multiply defined", name);
+    }
+    return NULL;
   }
 }
 
@@ -934,6 +961,8 @@ void scopeResolve(void) {
     }
   }
 
+  enableModuleUsesCache = true;
+
   //
   // compute class hierarchy
   //
@@ -981,6 +1010,7 @@ void scopeResolve(void) {
   }
 
   resolveGotoLabels();
+
 
   Vec<UnresolvedSymExpr*> skipSet;
 
@@ -1173,4 +1203,6 @@ void scopeResolve(void) {
   }
 
   destroyTable();
+
+  destroyModuleUsesCaches();
 }
