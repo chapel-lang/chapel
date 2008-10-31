@@ -40,14 +40,82 @@ internal valgrind stuff 'the impossible has happened'
 gasnet-everything regressions
 =============================
 
-Brad introduced regression to stream-fragmented (10/25/08)
-----------------------------------------------------------
-[Error matching program output for studies/hpcc/2008/stream-fragmented]
+timeouts (10/31/08)
+-------------------
+[Error: Timed out executing program compflags/bradc/nameoutput/localname]
+[Error: Timed out executing program compflags/bradc/nameoutput/localnamesavec]
+[Error: Timed out executing program multilocale/diten/needMultiLocales/coforall_on]
+[Error: Timed out executing program stress/deitz/test_10k_local_coforall_with_remote_update]
+[Error: Timed out executing program users/shetag/fock/fock-dyn-prog-cntr]
+[Error: Timed out executing program users/shetag/fock/fock-stc]
 
-memory is leaked (10/16/08)
----------------------------
-[Error matching compiler output for classes/figueroa/LeakedMemory2]
-[Error matching compiler output for classes/figueroa/LeakedMemory3]
+problem passsing arguments from launcher (10/31/08)
+---------------------------------------------------
+[Error matching program output for execflags/diten/configComplex]
+
+AM_ERR_RESOURCE (10/31/08)
+--------------------------
+[Error matching program output for multilocale/bradc/needMultiLocales/remoteReal]
+[Error matching program output for multilocale/bradc/needMultiLocales/remoteString]
+
+wrong answer (10/31/08)
+-----------------------
+[Error matching program output for multilocale/deitz/linked/test_linked1]
+[Error matching program output for multilocale/deitz/linked/test_linked2]
+[Error matching program output for multilocale/deitz/linked/test_linked3]
+[Error matching program output for multilocale/deitz/linked/test_linked3a]
+[Error matching program output for multilocale/deitz/linked/test_linked4]
+[Error matching program output for multilocale/deitz/needMultiLocales/test_on_begin2]
+
+seg fault (10/31/08)
+--------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/test_local_int_begin]
+[Error matching program output for multilocale/deitz/needMultiLocales/test_termination2]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dclass]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
+
+array index out of bounds (10/31/08)
+------------------------------------
+[Error matching program output for multilocale/diten/oneOrMoreLocales/assocArrayOfRemoteArithArray]
+[Error matching program output for studies/matrixMult/stonea/distributed/luLike]
+[Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
+[Error matching program output for users/agnieszka/multiArrayI10]
+[Error matching program output for users/agnieszka/multiArrayI]
+[Error matching program output for users/agnieszka/test1]
+[Error matching program output for users/agnieszka/test2]
+[Error matching program output for users/shetag/fock/fock-stc-1]
+
+verbose output shows launch command (10/31/08)
+----------------------------------------------
+[Error matching program output for multilocale/numLocales/bradc/testVFlag]
+[Error matching program output for multilocale/numLocales/bradc/testVerboseFlag]
+
+cannot access remote data within a local block (10/31/08)
+---------------------------------------------------------
+[Error matching program output for studies/hpcc/2008/ra]
+[Error matching program output for studies/hpcc/2008/stream]
+[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-dom]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d]
+[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-fill]
+
+attempt to dereference nil (10/31/08)
+-------------------------------------
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
+[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_mul]
+[Error matching program output for studies/madness/aniruddha/madchap/test_showboxes]
+
+regressions due to enabling David's locality optimization (10/24/08)
+--------------------------------------------------------------------
+[Error matching program output for multilocale/local/deitz/test_local2]
+[Error matching program output for multilocale/local/deitz/test_local3]
 
 timeouts
 --------
