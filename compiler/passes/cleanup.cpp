@@ -54,8 +54,12 @@ static void normalize_nested_function_expressions(DefExpr* def) {
     def->replace(new UnresolvedSymExpr(def->sym->name));
     stmt->insertBefore(def);
   } else if (!strncmp("_iterator_for_loopexpr", def->sym->name, 22)) {
-    Symbol* parent = def->parentSymbol;
-    parent->defPoint->insertBefore(def->remove());
+    while (Symbol* parent = def->parentSymbol) {
+      if (!strncmp("_loopexpr", parent->name, 9))
+        parent->defPoint->insertBefore(def->remove());
+      else
+        break;
+    }
   }
 }
 
