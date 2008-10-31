@@ -80,9 +80,9 @@ void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 }
 
 
-void collectSymsSymExprs(BaseAST* ast,
-                         Vec<Symbol*>& symSet,
-                         Vec<SymExpr*>& symExprs) {
+static void collectSymsSymExprs(BaseAST* ast,
+                                Vec<Symbol*>& symSet,
+                                Vec<SymExpr*>& symExprs) {
   if (DefExpr* def = toDefExpr(ast)) {
     if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
       symSet.set_add(def->sym);
