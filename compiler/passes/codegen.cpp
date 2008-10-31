@@ -212,21 +212,21 @@ static void codegen_header(void) {
     }
 
     Vec<BaseAST*> asts;
+    Map<const char*, int> duplicateCounts;
     collect_asts(fn->body, asts);
-    int tmpID = 1;
     forv_Vec(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast)) {
         legalizeCName(def->sym);
+        if (!strcmp(def->sym->cname, "_tmp")) {
+          def->sym->cname = astr("T");
+        }
         const char* cname = def->sym->cname;
-        if (!strcmp(cname, "_tmp")) {
-          do {
-            cname = astr("T", istr(tmpID++));
-          } while (local.set_in(cname) || cnames.get(cname));
-        } else {
-          int i = 1;
-          while (local.set_in(cname) || cnames.get(cname)) {
-            cname = astr(def->sym->cname, istr(i++));
-          }
+        while (local.set_in(cname) || cnames.get(cname)) {
+          char numberTmp[64];
+          int count = duplicateCounts.get(def->sym->cname);
+          duplicateCounts.put(def->sym->cname, count+1);
+          snprintf(numberTmp, 64, "%d", count+1);
+          cname = astr(def->sym->cname, numberTmp);
         }
         local.set_add(cname);
         def->sym->cname = cname;
