@@ -43,9 +43,7 @@ def main() {
 
       for trial in 1..numTrials {
         const startTime = getCurrentTime();
-        local {
-          myA = myB + alpha * myC;
-        }
+        myA = myB + alpha * myC;
         localTimings(trial) = getCurrentTime() - startTime;
       }
 
