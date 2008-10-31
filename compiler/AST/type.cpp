@@ -26,9 +26,7 @@ Type::Type(AstTag astTag, Symbol* init_defaultVal) :
 Type::~Type() { }
 
 
-void Type::verify() {
-  BaseAST::verify();
-}
+void Type::verify() { }
 
 
 void Type::addSymbol(TypeSymbol* newsymbol) {
@@ -46,22 +44,6 @@ bool Type::inTree(void) {
 
 Type* Type::typeInfo(void) {
   return this;
-}
-
-
-Type*
-Type::copyInner(SymbolMap* map) {
-  INT_FATAL(this, "Illegal call to Type::copy");
-  return NULL;
-}
-
-
-void Type::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defaultValue) {
-    defaultValue = toSymbol(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in Type::replaceChild");
-  }
 }
 
 
@@ -118,6 +100,19 @@ PrimitiveType::PrimitiveType(Symbol *init) :
 }
 
 
+PrimitiveType*
+PrimitiveType::copyInner(SymbolMap* map) {
+  INT_FATAL(this, "unexpected call to PrimitiveType::copyInner");
+  return this;
+}
+
+
+void PrimitiveType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected case in PrimitiveType::replaceChild");
+}
+
+
+
 void PrimitiveType::verify() {
   Type::verify();
   if (astTag != E_PrimitiveType) {
@@ -163,11 +158,7 @@ EnumType::copyInner(SymbolMap* map) {
 
 
 void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defaultValue) {
-    defaultValue = toSymbol(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in Type::replaceChild");
-  }
+  INT_FATAL(this, "Unexpected case in EnumType::replaceChild");
 }
 
 
@@ -285,11 +276,7 @@ void ClassType::addDeclarations(Expr* expr, bool tail) {
 
 
 void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == defaultValue) {
-    defaultValue = toSymbol(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in Type::replaceChild");
-  }
+  INT_FATAL(this, "Unexpected case in ClassType::replaceChild");
 }
 
 

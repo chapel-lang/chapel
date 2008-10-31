@@ -26,15 +26,7 @@ Expr* Expr::getStmtExpr() {
 }
 
 
-Expr*
-Expr::copyInner(SymbolMap* map) {
-  INT_FATAL(this, "Illegal call to Expr::copy");
-  return NULL;
-}
-
-
 void Expr::verify() {
-  BaseAST::verify();
   if (prev || next)
     if (!list)
       INT_FATAL(this, "Expr is in list but does not point at it");
@@ -53,35 +45,19 @@ bool Expr::inTree(void) {
 }
 
 
-void Expr::callReplaceChild(Expr* new_ast) {
-  if (parentExpr) {
-    parentExpr->replaceChild(this, new_ast);
-  } else {
-    parentSymbol->replaceChild(this, new_ast);
-  }
-}
-
-
 Type* Expr::typeInfo(void) {
   INT_FATAL(this, "Illegal call to Expr::typeInfo()");
   return NULL;
 }
 
 
-bool Expr::isConstant(void) {
-  INT_FATAL(this, "Illegal call to Expr::isConstant()");
-  return false;
-}
-
-
-bool Expr::isParameter(void){
-  INT_FATAL(this, "Illegal call to Expr::isParameter()");
-  return false;
-}
-
-
-void Expr::replaceChild(Expr* old_ast, Expr* new_ast) {
-  INT_FATAL(this, "Unexpected call to Expr::replaceChild(old, new)");
+static void
+callReplaceChild(Expr* expr, Expr* new_ast) {
+  if (expr->parentExpr) {
+    expr->parentExpr->replaceChild(expr, new_ast);
+  } else {
+    expr->parentSymbol->replaceChild(expr, new_ast);
+  }
 }
 
 
@@ -102,7 +78,7 @@ Expr* Expr::remove(void) {
     prev = NULL;
     list = NULL;
   } else {
-    callReplaceChild(NULL);
+    callReplaceChild(this, NULL);
   }
   if (parentSymbol)
     remove_help(this);
@@ -131,7 +107,7 @@ void Expr::replace(Expr* new_ast) {
     prev = NULL;
     list = NULL;
   } else {
-    callReplaceChild(new_ast);
+    callReplaceChild(this, new_ast);
   }
 
   Symbol* myParentSymbol = parentSymbol;
@@ -219,16 +195,6 @@ SymExpr::copyInner(SymbolMap* map) {
 
 Type* SymExpr::typeInfo(void) {
   return var->type;
-}
-
-
-bool SymExpr::isConstant(void) {
-  return var->isConstant();
-}
-
-
-bool SymExpr::isParameter(void){
-  return var->isParameter();
 }
 
 

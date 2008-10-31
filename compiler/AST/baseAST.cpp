@@ -187,38 +187,6 @@ BaseAST::BaseAST(AstTag type) :
 }
 
 
-BaseAST*
-BaseAST::copyInner(SymbolMap* map) {
-  INT_FATAL(this, "copyInner not implemented for BaseAST subclass");
-  return NULL;
-}
-
-
-bool BaseAST::inTree(void) {
-  INT_FATAL(this, "Unexpected call to BaseAST::inTree()");
-  return false;
-}
-
-
-Type* BaseAST::typeInfo(void) {
-  INT_FATAL(this, "Unexpected call to BaseAST::typeInfo()");
-  return NULL;
-}
-
-
-void BaseAST::verify() {
-}
-
-
-void BaseAST::codegen(FILE* outfile) {
-  if (!this) {
-    INT_FATAL("Calling codegen() on a Null AST");
-  } else {
-    INT_FATAL("codegen() is unimplemented for a subclass of BaseAST");
-  }
-}
-
-
 const char* BaseAST::stringLoc(void) {
   const int tmpBuffSize = 64;
   char tmpBuff[tmpBuffSize];

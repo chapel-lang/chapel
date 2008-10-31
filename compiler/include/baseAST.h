@@ -89,7 +89,7 @@ enum AstTag {
 extern const char* astTagName[];
 
 #define DECLARE_COPY(type)                                              \
-  virtual type* copy(SymbolMap* map = NULL, bool internal = false) {    \
+  type* copy(SymbolMap* map = NULL, bool internal = false) {            \
     SymbolMap localMap;                                                 \
     if (!map)                                                           \
       map = &localMap;                                                  \
@@ -102,13 +102,13 @@ extern const char* astTagName[];
   virtual type* copyInner(SymbolMap* map)
 
 #define DECLARE_SYMBOL_COPY(type)                                       \
-  virtual type* copy(SymbolMap* map = NULL, bool internal = false) {    \
+  type* copy(SymbolMap* map = NULL, bool internal = false) {            \
     SymbolMap localMap;                                                 \
     if (!map)                                                           \
       map = &localMap;                                                  \
     type* _this = copyInner(map);                                       \
     _this->lineno = lineno;                                             \
-    _this->copyFlags(this);                                           \
+    _this->copyFlags(this);                                             \
     map->put(this, _this);                                              \
     if (!internal)                                                      \
       update_symbols(_this, map);                                       \
@@ -120,24 +120,20 @@ extern const char* astTagName[];
 
 class BaseAST {
  public:
-  AstTag astTag;    // BaseAST subclass
-  int id;               // Unique ID
-
-  int lineno;           // line number of location
+  AstTag astTag; // BaseAST subclass
+  int id;        // Unique ID
+  int lineno;    // line number of location
 
   BaseAST(AstTag type);
   virtual ~BaseAST() { }
-  DECLARE_COPY(BaseAST);
-
-  virtual void verify(); 
-
-  virtual void codegen(FILE* outfile);
-
-  virtual bool inTree(void);
-  virtual Type* typeInfo(void);
+  virtual void verify() = 0; 
+  virtual BaseAST* copy(SymbolMap* map = NULL, bool internal = false) = 0;
+  virtual BaseAST* copyInner(SymbolMap* map) = 0;
+  virtual bool inTree(void) = 0;
+  virtual Type* typeInfo(void) = 0;
+  virtual void codegen(FILE* outfile) = 0;
 
   const char* stringLoc(void);
-
   ModuleSymbol* getModule();
   FnSymbol* getFunction();
 };

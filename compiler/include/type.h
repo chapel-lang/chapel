@@ -48,13 +48,15 @@ class Type : public BaseAST {
 
   Type(AstTag astTag, Symbol* init_defaultVal);
   virtual ~Type();
+  virtual Type* copy(SymbolMap* map = NULL, bool internal = false) = 0;
+  virtual Type* copyInner(SymbolMap* map) = 0;
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
+
   virtual void verify(); 
   virtual bool inTree();
   virtual Type* typeInfo(void);
-  DECLARE_COPY(Type);
-  void addSymbol(TypeSymbol* newSymbol);
 
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void addSymbol(TypeSymbol* newSymbol);
 
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
@@ -75,9 +77,9 @@ class EnumType : public Type {
 
   EnumType();
   ~EnumType();
-  virtual void verify(); 
+  void verify(); 
   DECLARE_COPY(EnumType);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   void codegenDef(FILE* outfile);
 };
@@ -98,24 +100,25 @@ class ClassType : public Type {
 
   ClassType(ClassTag initClassTag);
   ~ClassType();
-  virtual void verify(); 
+  void verify(); 
   DECLARE_COPY(ClassType);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void addDeclarations(Expr* expr, bool tail = true);
 
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void codegenDef(FILE* outfile);
+  void codegenPrototype(FILE* outfile);
 
-  virtual void codegenDef(FILE* outfile);
-  virtual void codegenPrototype(FILE* outfile);
-
-  virtual Symbol* getField(const char* name, bool fatal=true);
-  virtual Symbol* getField(int i);
+  Symbol* getField(const char* name, bool fatal=true);
+  Symbol* getField(int i);
 };
 
 
 class PrimitiveType : public Type {
  public:
   PrimitiveType(Symbol *init_defaultVal = NULL);
-  virtual void verify(); 
+  void verify(); 
+  DECLARE_COPY(PrimitiveType);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 };
 
 

@@ -23,10 +23,10 @@ class BlockStmt : public Expr {
   CallExpr* modUses;  // module uses via PRIMITIVE_USE
 
   BlockStmt(Expr* init_body = NULL, BlockTag init_blockTag = BLOCK_NORMAL);
-  virtual ~BlockStmt();
-  virtual void verify();
+  ~BlockStmt();
+  void verify();
   DECLARE_COPY(BlockStmt);
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  void replaceChild(Expr* old_ast, Expr* new_ast);
   void codegen(FILE* outfile);
 
   void insertAtHead(Expr* ast);
@@ -48,9 +48,9 @@ class CondStmt : public Expr {
 
   CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt = NULL);
   Expr* fold_cond_stmt();
-  virtual void verify();
+  void verify();
   DECLARE_COPY(CondStmt);
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  void replaceChild(Expr* old_ast, Expr* new_ast);
 
   void codegen(FILE* outfile);
 };
@@ -71,9 +71,9 @@ class GotoStmt : public Expr {
   GotoStmt(GotoTag init_gotoTag, const char* init_label);
   GotoStmt(GotoTag init_gotoTag, Symbol* init_label);
   GotoStmt(GotoTag init_gotoTag, Expr* init_label);
-  virtual void verify();
+  void verify();
   DECLARE_COPY(GotoStmt);
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  void replaceChild(Expr* old_ast, Expr* new_ast);
   void codegen(FILE* outfile);
   const char* getName();
 };

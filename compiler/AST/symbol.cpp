@@ -53,7 +53,6 @@ Symbol::~Symbol() {
 
 
 void Symbol::verify() {
-  BaseAST::verify();
   if (defPoint && !defPoint->parentSymbol && !toModuleSymbol(this))
     INT_FATAL(this, "Symbol::defPoint is not in AST");
   if (defPoint && this != defPoint->sym)
@@ -73,18 +72,6 @@ bool Symbol::inTree(void) {
 
 Type* Symbol::typeInfo(void) {
   return type;
-}
-
-
-Symbol*
-Symbol::copyInner(SymbolMap* map) {
-  INT_FATAL(this, "Illegal call to Symbol::copy");
-  return NULL;
-}
-
-
-void Symbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  INT_FATAL(this, "Unexpected call to Symbol::replaceChild");
 }
 
 
@@ -181,7 +168,7 @@ VarSymbol::copyInner(SymbolMap* map) {
 
 
 void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  type->replaceChild(old_ast, new_ast);
+  INT_FATAL(this, "Unexpected case in VarSymbol::replaceChild");
 }
 
 
@@ -346,7 +333,7 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   else if (old_ast == variableExpr)
     variableExpr = toBlockStmt(new_ast);
   else
-    type->replaceChild(old_ast, new_ast);
+    INT_FATAL(this, "Unexpected case in ArgSymbol::replaceChild");
 }
 
 
@@ -419,7 +406,7 @@ TypeSymbol::copyInner(SymbolMap* map) {
 
 
 void TypeSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  type->replaceChild(old_ast, new_ast);
+  INT_FATAL(this, "Unexpected case in TypeSymbol::replaceChild");
 }
 
 
@@ -756,6 +743,10 @@ EnumSymbol::copyInner(SymbolMap* map) {
   return new EnumSymbol(name);
 }
 
+void EnumSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected case in EnumSymbol::replaceChild");
+}
+
 bool EnumSymbol::isParameter(void) { return true; }
 
 void EnumSymbol::codegenDef(FILE* outfile) { }
@@ -850,6 +841,10 @@ LabelSymbol::copyInner(SymbolMap* map) {
   LabelSymbol* copy = new LabelSymbol(name);
   copy->cname = cname;
   return copy;
+}
+
+void LabelSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected case in LabelSymbol::replaceChild");
 }
 
 void LabelSymbol::codegenDef(FILE* outfile) { }

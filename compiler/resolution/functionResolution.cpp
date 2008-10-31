@@ -1233,7 +1233,7 @@ printResolutionError(const char* error,
               toString(info->actuals.v[1]->type));
   } else if (!strcmp("_type_construct__tuple", info->name)) {
     SymExpr* sym = toSymExpr(info->call->get(1));
-    if (!sym || !sym->isParameter()) {
+    if (!sym || !sym->var->isParameter()) {
       USR_FATAL(call, "tuple size must be static");
     } else {
       USR_FATAL(call, "invalid tuple");

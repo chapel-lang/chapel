@@ -19,31 +19,28 @@ class FnSymbol;
 
 class Expr : public BaseAST {
  public:
-  Expr* prev;       // alist previous pointer
-  Expr* next;       // alist next pointer
-  AList* list;      // alist pointer
+  Expr* prev;           // alist previous pointer
+  Expr* next;           // alist next pointer
+  AList* list;          // alist pointer
   Expr* parentExpr;
   Symbol* parentSymbol;
 
   Expr(AstTag astTag);
   virtual ~Expr() { }
-  DECLARE_COPY(Expr);
-  virtual void callReplaceChild(Expr* new_ast);
+  virtual Expr* copy(SymbolMap* map = NULL, bool internal = false) = 0;
+  virtual Expr* copyInner(SymbolMap* map) = 0;
+  virtual void replaceChild(Expr* old_ast, Expr* new_ast) = 0;
+
   virtual void verify();
   virtual bool inTree();
   virtual Type* typeInfo(void);
 
-  virtual bool isParameter(void);
-  virtual bool isConstant(void);
-
   Expr* getStmtExpr();
-
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
 
   Expr* remove(void);
   void replace(Expr* new_ast);
-  virtual void insertBefore(Expr* new_ast);
-  virtual void insertAfter(Expr* new_ast);
+  void insertBefore(Expr* new_ast);
+  void insertAfter(Expr* new_ast);
 };
 
 
@@ -56,9 +53,9 @@ class DefExpr : public Expr {
   DefExpr(Symbol* initSym = NULL,
           BaseAST* initInit = NULL,
           BaseAST* initExprType = NULL);
-  virtual void verify(); 
+  void verify(); 
   DECLARE_COPY(DefExpr);
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  void replaceChild(Expr* old_ast, Expr* new_ast);
 
   Type* typeInfo(void);
 
@@ -71,11 +68,9 @@ class SymExpr : public Expr {
   Symbol* var;
   SymExpr(Symbol* init_var);
   DECLARE_COPY(SymExpr);
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void verify(); 
+  void replaceChild(Expr* old_ast, Expr* new_ast);
+  void verify(); 
   Type* typeInfo(void);
-  virtual bool isConstant(void);
-  virtual bool isParameter(void);
   void codegen(FILE* outfile);
 };
 
@@ -85,8 +80,8 @@ class UnresolvedSymExpr : public Expr {
   const char* unresolved;
   UnresolvedSymExpr(const char* init_var);
   DECLARE_COPY(UnresolvedSymExpr);
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void verify(); 
+  void replaceChild(Expr* old_ast, Expr* new_ast);
+  void verify(); 
   Type* typeInfo(void);
   void codegen(FILE* outfile);
 };
@@ -110,12 +105,12 @@ class CallExpr : public Expr {
   CallExpr(const char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
   ~CallExpr();
-  virtual void verify(); 
+  void verify(); 
   DECLARE_COPY(CallExpr);
 
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  void replaceChild(Expr* old_ast, Expr* new_ast);
 
-  virtual void codegen(FILE* outfile);
+  void codegen(FILE* outfile);
 
   void insertAtHead(BaseAST* ast);
   void insertAtTail(BaseAST* ast);
@@ -137,9 +132,9 @@ class NamedExpr : public Expr {
   const char* name;
   Expr* actual;
   NamedExpr(const char* init_name, Expr* init_actual);
-  virtual void verify(); 
+  void verify(); 
   DECLARE_COPY(NamedExpr);
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  void replaceChild(Expr* old_ast, Expr* new_ast);
   Type* typeInfo(void);
   void codegen(FILE* outfile);
 };

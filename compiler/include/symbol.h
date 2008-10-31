@@ -51,11 +51,13 @@ class Symbol : public BaseAST {
 
   Symbol(AstTag astTag, const char* init_name, Type* init_type = dtUnknown);
   virtual ~Symbol();
+  virtual Symbol* copy(SymbolMap* map = NULL, bool internal = false) = 0;
+  virtual Symbol* copyInner(SymbolMap* map) = 0;
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
+
   virtual void verify(); 
   virtual bool inTree();
   virtual Type* typeInfo(void);
-  DECLARE_SYMBOL_COPY(Symbol);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   virtual bool isConstant(void);
   virtual bool isParameter(void);
@@ -82,16 +84,16 @@ class VarSymbol : public Symbol {
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(const char* init_name, Type* init_type = dtUnknown);
   ~VarSymbol();
-  virtual void verify(); 
+  void verify(); 
   DECLARE_SYMBOL_COPY(VarSymbol);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   bool isConstant(void);
   bool isParameter(void);
 
   void codegen(FILE* outfile);
-  virtual void codegenDef(FILE* outfile);
-  virtual bool isImmediate();
+  void codegenDef(FILE* outfile);
+  bool isImmediate();
 };
 
 
@@ -109,9 +111,9 @@ class ArgSymbol : public Symbol {
             Expr* iTypeExpr = NULL, Expr* iDefaultExpr = NULL,
             Expr* iVariableExpr = NULL);
 
-  virtual void verify(); 
+  void verify(); 
   DECLARE_SYMBOL_COPY(ArgSymbol);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   bool requiresCPtr(void);
   bool isConstant(void);
@@ -125,11 +127,11 @@ class ArgSymbol : public Symbol {
 class TypeSymbol : public Symbol {
  public:
   TypeSymbol(const char* init_name, Type* init_type);
-  virtual void verify(); 
+  void verify(); 
   DECLARE_SYMBOL_COPY(TypeSymbol);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  virtual void codegenDef(FILE* outfile);
-  virtual void codegenPrototype(FILE* outfile);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void codegenDef(FILE* outfile);
+  void codegenPrototype(FILE* outfile);
 };
 
 
@@ -157,10 +159,10 @@ class FnSymbol : public Symbol {
   FnSymbol(const char* initName);
   ~FnSymbol();
            
-  virtual void verify(); 
+  void verify(); 
   DECLARE_SYMBOL_COPY(FnSymbol);
-  virtual FnSymbol* getFnSymbol(void);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  FnSymbol* getFnSymbol(void);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   void codegenHeader(FILE* outfile);
   void codegenPrototype(FILE* outfile);
@@ -189,8 +191,9 @@ class FnSymbol : public Symbol {
 class EnumSymbol : public Symbol {
  public:
   EnumSymbol(const char* init_name);
-  virtual void verify(); 
+  void verify(); 
   DECLARE_SYMBOL_COPY(EnumSymbol);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef(FILE* outfile);
   bool isParameter(void);
 };
@@ -206,9 +209,9 @@ class ModuleSymbol : public Symbol {
 
   ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock);
   ~ModuleSymbol();
-  virtual void verify(); 
+  void verify(); 
   DECLARE_SYMBOL_COPY(ModuleSymbol);
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef(FILE* outfile);
 };
 
@@ -216,9 +219,10 @@ class ModuleSymbol : public Symbol {
 class LabelSymbol : public Symbol {
  public:
   LabelSymbol(const char* init_name);
-  virtual void verify(); 
+  void verify(); 
   DECLARE_SYMBOL_COPY(LabelSymbol);
-  virtual void codegenDef(FILE* outfile);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void codegenDef(FILE* outfile);
 };
 
 
