@@ -569,7 +569,7 @@ static void build_type_constructor(ClassType* ct) {
   }
 
   Vec<DefExpr*> defs;
-  collect_defs(fn, defs);
+  collectDefExprs(fn, defs);
   addToSymbolTable(defs);
 }
 
@@ -781,7 +781,7 @@ static void build_constructor(ClassType* ct) {
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, fn->_this));
 
   Vec<DefExpr*> defs;
-  collect_defs(fn, defs);
+  collectDefExprs(fn, defs);
   addToSymbolTable(defs);
 }
 /********* end build constructor ***************/

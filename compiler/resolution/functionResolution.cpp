@@ -3039,33 +3039,29 @@ resolveFns(FnSymbol* fn) {
       fn->defPoint->insertBefore(new DefExpr(copy));
       fn->valueFunction = copy;
       Symbol* ret = copy->getReturnSymbol();
-      Vec<BaseAST*> asts;
-      collect_asts(copy, asts);
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
-          if (se->var == copy->setter->sym)
-            se->var = gFalse;
-          else if (se->var == ret) {
-            if (CallExpr* move = toCallExpr(se->parentExpr))
-              if (move->isPrimitive(PRIMITIVE_MOVE))
-                if (CallExpr* call = toCallExpr(move->get(2)))
-                  if (call->isPrimitive(PRIMITIVE_SET_REF))
-                    call->primitive = primitives[PRIMITIVE_GET_REF];
-          }
+      Vec<SymExpr*> symExprs;
+      collectSymExprs(copy, symExprs);
+      forv_Vec(SymExpr, se, symExprs) {
+        if (se->var == copy->setter->sym)
+          se->var = gFalse;
+        else if (se->var == ret) {
+          if (CallExpr* move = toCallExpr(se->parentExpr))
+            if (move->isPrimitive(PRIMITIVE_MOVE))
+              if (CallExpr* call = toCallExpr(move->get(2)))
+                if (call->isPrimitive(PRIMITIVE_SET_REF))
+                  call->primitive = primitives[PRIMITIVE_GET_REF];
         }
       }
       resolveFns(copy);
     }
 
-    Vec<BaseAST*> asts;
-    collect_asts(fn, asts);
-    forv_Vec(BaseAST, ast, asts) {
-      if (SymExpr* se = toSymExpr(ast)) {
-        if (se->var == fn->setter->sym) {
-          se->var = gTrue;
-          if (fn->hasFlag(FLAG_ITERATOR_FN))
-            USR_WARN(fn, "setter argument is not supported in iterators");
-        }
+    Vec<SymExpr*> symExprs;
+    collectSymExprs(fn, symExprs);
+    forv_Vec(SymExpr, se, symExprs) {
+      if (se->var == fn->setter->sym) {
+        se->var = gTrue;
+        if (fn->hasFlag(FLAG_ITERATOR_FN))
+          USR_WARN(fn, "setter argument is not supported in iterators");
       }
     }
   }
@@ -3933,7 +3929,7 @@ pruneResolvedTree() {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
-      Vec<BaseAST*> asts;
+      Vec<SymExpr*> symExprs;
       for_formals(formal, fn) {
         // Remove formal default values
         if (formal->defaultExpr)
@@ -3951,16 +3947,14 @@ pruneResolvedTree() {
           formal->defPoint->remove();
           VarSymbol* tmp = newTemp(formal->type);
           fn->insertAtHead(new DefExpr(tmp));
-          if (asts.n == 0)
-            collect_asts(fn->body, asts);
-          forv_Vec(BaseAST, ast, asts) {
-            if (SymExpr* se = toSymExpr(ast)) {
-              if (se->var == formal) {
-                if (CallExpr* call = toCallExpr(se->parentExpr))
-                  if (call->isPrimitive(PRIMITIVE_GET_REF))
-                    se->getStmtExpr()->remove();
-                se->var = tmp;
-              }
+          if (symExprs.n == 0)
+            collectSymExprs(fn->body, symExprs);
+          forv_Vec(SymExpr, se, symExprs) {
+            if (se->var == formal) {
+              if (CallExpr* call = toCallExpr(se->parentExpr))
+                if (call->isPrimitive(PRIMITIVE_GET_REF))
+                  se->getStmtExpr()->remove();
+              se->var = tmp;
             }
           }
         }

@@ -136,17 +136,15 @@ void deadCodeElimination(FnSymbol* fn) {
   }
 
   forv_Vec(Expr, expr, workSet) {
-    Vec<BaseAST*> asts;
-    collect_asts(expr, asts);
-    forv_Vec(BaseAST, ast, asts) {
-      if (SymExpr* se = toSymExpr(ast)) {
-        if (Vec<SymExpr*>* defs = UD.get(se)) {
-          forv_Vec(SymExpr, def, *defs) {
-            Expr* expr = exprMap.get(def);
-            if (!liveCode.set_in(expr)) {
-              liveCode.set_add(expr);
-              workSet.add(expr);
-            }
+    Vec<SymExpr*> symExprs;
+    collectSymExprs(expr, symExprs);
+    forv_Vec(SymExpr, se, symExprs) {
+      if (Vec<SymExpr*>* defs = UD.get(se)) {
+        forv_Vec(SymExpr, def, *defs) {
+          Expr* expr = exprMap.get(def);
+          if (!liveCode.set_in(expr)) {
+            liveCode.set_add(expr);
+            workSet.add(expr);
           }
         }
       }

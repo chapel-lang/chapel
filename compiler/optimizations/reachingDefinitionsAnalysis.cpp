@@ -58,16 +58,14 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
     BitVec* out = new BitVec(defs.n);
     for (int i = bb->exprs.n-1; i >= 0; i--) {
       Expr* expr = bb->exprs.v[i];
-      Vec<BaseAST*> asts;
-      collect_asts(expr, asts);
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
-          if (defSet.set_in(se)) {
-            if (!bbDefSet.set_in(se->var)) {
-              gen->set(defMap.get(se));
-            }
-            bbDefSet.set_add(se->var);
+      Vec<SymExpr*> symExprs;
+      collectSymExprs(expr, symExprs);
+      forv_Vec(SymExpr, se, symExprs) {
+        if (defSet.set_in(se)) {
+          if (!bbDefSet.set_in(se->var)) {
+            gen->set(defMap.get(se));
           }
+          bbDefSet.set_add(se->var);
         }
       }
     }
@@ -144,40 +142,35 @@ buildDefUseChains(FnSymbol* fn,
     BasicBlock* bb = fn->basicBlocks->v[i];
     BitVec* in = IN.v[i];
     forv_Vec(Expr, expr, bb->exprs) {
-      Vec<BaseAST*> asts;
-      collect_asts(expr, asts);
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
-          if (useSet.set_in(se)) {
-            UD.put(se, new Vec<SymExpr*>());
-            for (int j = defsIndexMap.get(se->var); j < defs.n; j++) {
-              if (defs.v[j]->var != se->var)
-                break;
-              if (in->get(j)) {
-                DU.get(defs.v[j])->add(se);
-                UD.get(se)->add(defs.v[j]);
-              }
+      Vec<SymExpr*> symExprs;
+      collectSymExprs(expr, symExprs);
+      forv_Vec(SymExpr, se, symExprs) {
+        if (useSet.set_in(se)) {
+          UD.put(se, new Vec<SymExpr*>());
+          for (int j = defsIndexMap.get(se->var); j < defs.n; j++) {
+            if (defs.v[j]->var != se->var)
+              break;
+            if (in->get(j)) {
+              DU.get(defs.v[j])->add(se);
+              UD.get(se)->add(defs.v[j]);
             }
           }
         }
       }
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
-          if (defSet.set_in(se)) {
-            for (int j = defsIndexMap.get(se->var); j < defs.n; j++) {
-              if (defs.v[j]->var != se->var)
-                break;
-              if (defs.v[j] == se)
-                in->set(j);
-              else
-                in->unset(j);
-            }
+      forv_Vec(SymExpr, se, symExprs) {
+        if (defSet.set_in(se)) {
+          for (int j = defsIndexMap.get(se->var); j < defs.n; j++) {
+            if (defs.v[j]->var != se->var)
+              break;
+            if (defs.v[j] == se)
+              in->set(j);
+            else
+              in->unset(j);
           }
         }
       }
     }
   }
-
   forv_Vec(BitVec, in, IN)
     delete in;
 }

@@ -16,10 +16,16 @@ void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
   }
 }
 
-void collect_defs(BaseAST* ast, Vec<DefExpr*>& defs) {
-  if (DefExpr* def = toDefExpr(ast))
-    defs.add(def);
-  AST_CHILDREN_CALL(ast, collect_defs, defs);
+void collectDefExprs(BaseAST* ast, Vec<DefExpr*>& defExprs) {
+  if (DefExpr* defExpr = toDefExpr(ast))
+    defExprs.add(defExpr);
+  AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
+}
+
+void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs) {
+  if (SymExpr* symExpr = toSymExpr(ast))
+    symExprs.add(symExpr);
+  AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
 }
 
 void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
@@ -189,27 +195,33 @@ void freeDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 }
 
 
+static void
+buildDefUseSetsInternal(BaseAST* ast,
+                        Vec<Symbol*>& symSet,
+                        Vec<SymExpr*>& defSet,
+                        Vec<SymExpr*>& useSet) {
+  if (SymExpr* se = toSymExpr(ast)) {
+    if (se->parentSymbol && se->var && symSet.set_in(se->var)) {
+      int result = isDefAndOrUse(se);
+      if (result & 1)
+        defSet.set_add(se);
+      if (result & 2)
+        useSet.set_add(se);
+    }
+  }
+  AST_CHILDREN_CALL(ast, buildDefUseSetsInternal, symSet, defSet, useSet);
+}
+
+
 void buildDefUseSets(Vec<Symbol*>& syms,
                      FnSymbol* fn,
                      Vec<SymExpr*>& defSet,
                      Vec<SymExpr*>& useSet) {
-  Vec<BaseAST*> asts;
-  collect_asts(fn, asts);
   Vec<Symbol*> symSet;
   forv_Vec(Symbol, sym, syms) {
     symSet.set_add(sym);
   }
-  forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* se = toSymExpr(ast)) {
-      if (se->parentSymbol && se->var && symSet.set_in(se->var)) {
-        int result = isDefAndOrUse(se);
-        if (result & 1)
-          defSet.set_add(se);
-        if (result & 2)
-          useSet.set_add(se);
-      }
-    }
-  }
+  buildDefUseSetsInternal(fn, symSet, defSet, useSet);
 }
 
 

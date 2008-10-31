@@ -96,19 +96,17 @@ localCopyPropagationCore(BasicBlock* bb,
                          Vec<SymExpr*>& defSet) {
 
   forv_Vec(Expr, expr, bb->exprs) {
-    Vec<BaseAST*> asts;
-    collect_asts(expr, asts);
+    Vec<SymExpr*> symExprs;
+    collectSymExprs(expr, symExprs);
 
     //
     // replace uses with available copies
     //
-    forv_Vec(BaseAST, ast, asts) {
-      if (SymExpr* se = toSymExpr(ast)) {
-        if (useSet.set_in(se)) {
-          if (Symbol* sym = available.get(se->var)) {
-            if (!invalidateCopies(se, defSet, useSet))
-              se->var = sym;
-          }
+    forv_Vec(SymExpr, se, symExprs) {
+      if (useSet.set_in(se)) {
+        if (Symbol* sym = available.get(se->var)) {
+          if (!invalidateCopies(se, defSet, useSet))
+            se->var = sym;
         }
       }
     }
@@ -118,11 +116,9 @@ localCopyPropagationCore(BasicBlock* bb,
     //  also if a reference to a variable is taken since the reference
     //  can be assigned
     //
-    forv_Vec(BaseAST, ast, asts) {
-      if (SymExpr* se = toSymExpr(ast)) {
-        if (invalidateCopies(se, defSet, useSet)) {
-          removeAvailable(available, reverseAvailable, se->var);
-        }
+    forv_Vec(SymExpr, se, symExprs) {
+      if (invalidateCopies(se, defSet, useSet)) {
+        removeAvailable(available, reverseAvailable, se->var);
       }
     }
 
@@ -226,21 +222,19 @@ void globalCopyPropagation(FnSymbol* fn) {
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     forv_Vec(Expr, expr, bb->exprs) {
 
-      Vec<BaseAST*> asts;
-      collect_asts(expr, asts);
+      Vec<SymExpr*> symExprs;
+      collectSymExprs(expr, symExprs);
 
       //
       // invalidate available copies based on defs
       //
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
-          if (invalidateCopies(se, defSet, useSet)) {
-            for (int i = start; i < spsLHS.n; i++) {
-              if (spsLHS.v[i]) {
-                if (spsLHS.v[i]->var == se->var || spsRHS.v[i]->var == se->var) {
-                  spsLHS.v[i] = 0;
-                  spsRHS.v[i] = 0;
-                }
+      forv_Vec(SymExpr, se, symExprs) {
+        if (invalidateCopies(se, defSet, useSet)) {
+          for (int i = start; i < spsLHS.n; i++) {
+            if (spsLHS.v[i]) {
+              if (spsLHS.v[i]->var == se->var || spsRHS.v[i]->var == se->var) {
+                spsLHS.v[i] = 0;
+                spsRHS.v[i] = 0;
               }
             }
           }
@@ -337,24 +331,22 @@ void globalCopyPropagation(FnSymbol* fn) {
     int stop = N.v[i];
     forv_Vec(Expr, expr, bb->exprs) {
 
-      Vec<BaseAST*> asts;
-      collect_asts(expr, asts);
+      Vec<SymExpr*> symExprs;
+      collectSymExprs(expr, symExprs);
 
       //
       // invalidate available copies based on defs
       //
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
-          if (invalidateCopies(se, defSet, useSet)) {
-            for (int j = 0; j < start; j++) {
-              if (LHS.v[j]->var == se->var || RHS.v[j]->var == se->var) {
-                KILL.v[i]->set(j);
-              }
+      forv_Vec(SymExpr, se, symExprs) {
+        if (invalidateCopies(se, defSet, useSet)) {
+          for (int j = 0; j < start; j++) {
+            if (LHS.v[j]->var == se->var || RHS.v[j]->var == se->var) {
+              KILL.v[i]->set(j);
             }
-            for (int j = stop; j < LHS.n; j++) {
-              if (LHS.v[j]->var == se->var || RHS.v[j]->var == se->var) {
-                KILL.v[i]->set(j);
-              }
+          }
+          for (int j = stop; j < LHS.n; j++) {
+            if (LHS.v[j]->var == se->var || RHS.v[j]->var == se->var) {
+              KILL.v[i]->set(j);
             }
           }
         }

@@ -211,26 +211,24 @@ static void codegen_header(void) {
       local.set_add(formal->cname);
     }
 
-    Vec<BaseAST*> asts;
     Map<const char*, int> duplicateCounts;
-    collect_asts(fn->body, asts);
-    forv_Vec(BaseAST, ast, asts) {
-      if (DefExpr* def = toDefExpr(ast)) {
-        legalizeCName(def->sym);
-        if (!strcmp(def->sym->cname, "_tmp")) {
-          def->sym->cname = astr("T");
-        }
-        const char* cname = def->sym->cname;
-        while (local.set_in(cname) || cnames.get(cname)) {
-          char numberTmp[64];
-          int count = duplicateCounts.get(def->sym->cname);
-          duplicateCounts.put(def->sym->cname, count+1);
-          snprintf(numberTmp, 64, "%d", count+1);
-          cname = astr(def->sym->cname, numberTmp);
-        }
-        local.set_add(cname);
-        def->sym->cname = cname;
+    Vec<DefExpr*> defs;
+    collectDefExprs(fn->body, defs);
+    forv_Vec(DefExpr, def, defs) {
+      legalizeCName(def->sym);
+      if (!strcmp(def->sym->cname, "_tmp")) {
+        def->sym->cname = astr("T");
       }
+      const char* cname = def->sym->cname;
+      while (local.set_in(cname) || cnames.get(cname)) {
+        char numberTmp[64];
+        int count = duplicateCounts.get(def->sym->cname);
+        duplicateCounts.put(def->sym->cname, count+1);
+        snprintf(numberTmp, 64, "%d", count+1);
+        cname = astr(def->sym->cname, numberTmp);
+      }
+      local.set_add(cname);
+      def->sym->cname = cname;
     }
   }
 
