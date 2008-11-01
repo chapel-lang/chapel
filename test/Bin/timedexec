@@ -8,6 +8,8 @@
 
 $| = 1;					# will flush buffers after write
 
+#setpgrp(0,0);
+
 eval {
     local $SIG{ALRM} = sub { die "alarm\n" };
     alarm @ARGV[0];
@@ -15,6 +17,7 @@ eval {
         print "timedexec cannot fork child\n";
         exit(1);
     } elsif ($child_pid == 0) {
+        setpgrp(0,0);
         exec @ARGV[1..$#ARGV];
         die "timedexec failed to execute: $1\n";
     } else {
@@ -36,7 +39,9 @@ eval {
 die if $@ && $@ ne "alarm\n";
 if ($@) {
     print "timedexec Alarm Clock\n";
-    kill 9, $child_pid;
+#    $child_pgrp = getpgrp($child_pid);
+#    $self_pgrp = getpgrp($$);
+    kill (-9, $child_pid);
     exit(222);
 } else {
     exit($cmdStatus);
