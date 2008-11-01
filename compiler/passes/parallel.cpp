@@ -515,7 +515,7 @@ makeHeapAllocations() {
     var->type = heapType;
   }
 
-  freeHeapAllocatedVars(heapAllocatedVars);
+  if (0) { freeHeapAllocatedVars(heapAllocatedVars); }
 }
 
 
