@@ -11,9 +11,9 @@
 
 record Node {
     const lvl, idx : int;
-    const loc = (lvl+idx)%numLocales; 
+    const loc = (2**lvl + idx)%numLocales; 
 
-    def this() {
+    def get_coords() {
         return (lvl, idx);
     }
 
@@ -127,8 +127,8 @@ class LocTree {
         to this type of iteration vs. the associative domain used here.
      */
     def coeffs_iter(lvl: int) {
-        for i in nodes do
-            if i.lvl == lvl then yield coeffs[i];
+        for node in nodes do
+            if node.lvl == lvl then yield coeffs[node];
     }
 
     /** Check if there are coefficients in box (lvl, idx)
@@ -150,30 +150,33 @@ class LocTree {
     }
 
     def node_iter(lvl: int) {
-        for i in nodes do
-            if i.lvl == lvl then yield i;
+        for node in nodes do
+            if node.lvl == lvl then yield node;
     }
 
     def node_iter() {
-        for i in nodes do
-            yield i;
+        for node in nodes do
+            yield node;
     }
 
+    //AGS: Provide constructor that can copy a tree instead of create-then-copy
     def copy(t: LocTree) {
-        t.nodes = nodes;
-        t.coeffs = coeffs; 
+        nodes = t.nodes;
+        coeffs = t.coeffs;
     }
 }
 
 class FTree {
-    const order    : int;
-    const coeffDom = [0..order-1];
-    
-    var tree       : [LocaleSpace] LocTree;
+    const order   : int;
+    const coeffDom: domain(1);
+    const tree    : [LocaleSpace] LocTree;
 
-    def initialize() {
+    def FTree(order: int) {
         if order == 0 then
             halt("FTree must be initialized with an order > 0");
+
+        this.order = order;
+        this.coeffDom = [0..order-1];
 
         coforall loc in LocaleSpace do
             on Locales(loc) do tree[loc] = new LocTree(coeffDom);
@@ -215,26 +218,27 @@ class FTree {
         const t = tree[node.loc];
         t.remove(node);
     }
-    
+   
+    //AGS: Provide constructor that can copy a tree instead of create-then-copy
     /** Return a copy of this FTree
      */
     def copy() {
         const f = new FTree(order);
         for loc in LocaleSpace do
-            tree[loc].copy(f.tree[loc]);
+            f.tree[loc].copy(tree[loc]);
         return f;
     }
 
     def node_iter(lvl: int) {
         for t in tree do
-            for i in t.node_iter(lvl) do
-                yield i;
+            for node in t.node_iter(lvl) do
+                yield node;
     }
 
     def node_iter() {
         for t in tree do
-            for i in t.node_iter() do
-                yield i;
+            for node in t.node_iter() do
+                yield node;
     }
 }
 
@@ -302,11 +306,11 @@ def main() {
 
     for lvl in 1..3 {
         writeln("\n\nindices on lvl ", lvl, " = ");
-            for i in f.node_iter(lvl) do
-                writeln(i());
+            for node in f.node_iter(lvl) do
+                writeln(node.get_coords());
     }
 
     writeln("\n\nall tree indices = ");
-    for i in f.node_iter() do
-        writeln(i());
+    for node in f.node_iter() do
+        writeln(node.get_coords());
 }

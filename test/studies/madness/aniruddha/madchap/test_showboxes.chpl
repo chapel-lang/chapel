@@ -20,7 +20,7 @@ def main() {
     writeln("\nDumping the boxes at each level:");
     for lvl in 0..F.max_level { 
         write("\n **",lvl,": ");
-        var arrNodeCoord = F.sumC.node_iter(lvl)();
+        var arrNodeCoord = F.sumC.node_iter(lvl).get_coords();
         QuickSort(arrNodeCoord);
         for (n, l) in arrNodeCoord do
             write(" [",n,", ",l,"]");
