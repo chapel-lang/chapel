@@ -150,7 +150,7 @@ class Function {
         into scaling function basis
      */
     def project(curNode: Node) {
-        const (n, l) = curNode();
+        const (n, l) = curNode.get_coords();
         var h     = 0.5 ** n;
         var scale = sqrt(h);
         var s  : [quadDom] real;
@@ -185,7 +185,7 @@ class Function {
         // check to see if within tolerance
         // normf() is Frobenius norm == 2-norm for vectors
         var nf = normf(dc[k..2*k-1]);
-        const (n, _ ) = curNode();
+        const (n, _ ) = curNode.get_coords();
         if((nf < thresh) || (n >= (max_level-1))) {
             if ( n+1 < log2(maxThreads) ) then {
                 on Locales(child(1).loc) do begin sumC[child(1)] = s0;
@@ -228,7 +228,7 @@ class Function {
      */
     def evaluate(curNode = rootNode, in x): real {
         if sumC.has_coeffs(curNode) {
-            const (n,_) = curNode();
+            const (n,_) = curNode.get_coords();
             var p = phi(x, k);
             return inner(sumC[curNode], p)*sqrt(2.0**n);
 
@@ -270,7 +270,7 @@ class Function {
         sumC.remove(child(1));
         sumC.remove(child(2));
 
-        const (n,_) = curNode();
+        const (n,_) = curNode.get_coords();
         if n==0 then compressed = true;
     }
 
@@ -303,7 +303,7 @@ class Function {
             reconstruct(child(2));
         }
         
-        const (n, _) = curNode();
+        const (n, _) = curNode.get_coords();
         if n == 0 then compressed = false;
     }
 
@@ -377,7 +377,7 @@ class Function {
             cleaning = sumC.has_coeffs(curNode);
 
         // Sub trees can run in parallel
-        const (n, _) = curNode();
+        const (n, _) = curNode.get_coords();
         if n < max_level {
             const child = curNode.get_children();
             if !cleaning || sumC.has_coeffs(child(1)) then
@@ -396,7 +396,7 @@ class Function {
 
   def diff() {
     def diffHelper(curNode = rootNode, result) {
-        const (n,l) = curNode();
+        const (n,l) = curNode.get_coords();
         if debug then writeln(" * diff",curNode);
         if !sumC.has_coeffs(curNode) {
             // Sub trees can run in parallel
@@ -486,7 +486,7 @@ class Function {
     def multiply(f1, f2, curNode = rootNode) {
         const child = curNode.get_children();
         if f1.sumC.has_coeffs(curNode) && f2.sumC.has_coeffs(curNode) {
-            const (n, _) = curNode();
+            const (n, _) = curNode.get_coords();
             if autorefine && n+1 <= max_level {
                 // if autorefine is set we are multiplying two polynomials
                 // of order k-1 the result could be up to order 2(k-1) so
