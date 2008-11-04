@@ -15,7 +15,8 @@ module HPCCProblemSize {
 			 type elemType,     // the element type of those arrays
                          rank=1,            // rank of the arrays
 			 returnLog2=false,  // whether to return log2(probSize)
-                         memFraction=4) {   // fraction of mem to use (eg, 1/4)
+                         memFraction=4,     // fraction of mem to use (eg, 1/4)
+                         type retType = int(64)): retType { // type to return
     //
     // Compute the total memory available to the benchmark using a sum
     // reduction over the amount of physical memory (in bytes) owned
@@ -60,11 +61,11 @@ module HPCCProblemSize {
     // return the problem size as requested by the callee
     //
     if returnLog2 then
-      return lgProblemSize;
+      return lgProblemSize: retType;
     else
       select rank {
-        when 1 do return numIndices;
-        when 2 do return ceil(sqrt(numIndices)): numIndices.type;
+        when 1 do return numIndices: retType;
+        when 2 do return ceil(sqrt(numIndices)): retType;
         otherwise halt("Unexpected rank in computeProblemSize");
       }
   }

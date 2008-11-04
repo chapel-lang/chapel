@@ -21,7 +21,7 @@ type indexType = int,
 // block size (blkSize)
 //
 config const n = computeProblemSize(numMatrices, elemType, rank=2, 
-                                    memFraction=2): indexType,
+                                    memFraction=2, retType=indexType),
              blkSize = 5;
 
 //

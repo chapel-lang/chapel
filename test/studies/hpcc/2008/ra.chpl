@@ -22,7 +22,7 @@ type elemType = randType,
 // the number of updates -- N_U
 //
 config const n = computeProblemSize(numTables, elemType,
-                                    returnLog2=true): indexType,
+                                    returnLog2=true, retType=indexType),
              N_U = 2**(n+2);
 
 //
