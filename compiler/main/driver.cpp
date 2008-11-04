@@ -40,7 +40,6 @@ int trace_level = 0;
 int fcg = 0;
 static bool fBaseline = false;
 static bool fFastFlag = false;
-bool fParallelizeReductionsPromotions = false;
 bool fNoCopyPropagation = false;
 bool fNoDeadCodeElimination = false;
 bool fNoScalarReplacement = false;
@@ -381,7 +380,6 @@ static ArgumentDescription arg_desc[] = {
  {"enable-destructor-calls", ' ', NULL, "Enable insertion of destructor calls when variables go out of scope", "F", &fEnableDestructorCalls, "CHPL_ENABLE_DESTRUCTOR_CALLS", NULL},
  {"no-codegen", ' ', NULL, "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},
- {"parallelize-reductions-promotions", ' ', NULL, "parallelize reductions and promotions (work in progress)", "F", &fParallelizeReductionsPromotions, NULL, NULL},
  {"test-int-sizes", ' ', NULL, "Test compiler's internal integer sizes", "F", &testIntSizes, "CHPL_TEST_INT_SIZES", verifyIntSizes},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},

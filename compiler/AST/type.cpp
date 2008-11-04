@@ -474,6 +474,10 @@ void initPrimitiveTypes(void) {
   gTrue->immediate->num_index = INT_SIZE_1;
   uniqueConstantsHash.put(gTrue->immediate, gTrue);
 
+  gTryToken = new VarSymbol("_chpl_try_token", dtBool);
+  gTryToken->addFlag(FLAG_CONST);
+  rootModule->block->insertAtTail(new DefExpr(gTryToken));
+
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
   gBoundsChecking->addFlag(FLAG_CONST);
   rootModule->block->insertAtTail(new DefExpr(gBoundsChecking));

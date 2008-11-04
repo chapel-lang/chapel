@@ -948,11 +948,16 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
     fn->insertAtTail(
       new CallExpr(PRIMITIVE_RETURN, new CallExpr("_scan", globalOp, data)));
   } else {
-    if (!fParallelizeReductionsPromotions || fSerial || fSerialForall) {
+    if (fSerial || fSerialForall) {
       VarSymbol* index = newTemp("_index");
       fn->insertAtTail(new DefExpr(index));
       fn->insertAtTail(buildForLoopStmt(new SymExpr(index), new SymExpr(data), new BlockStmt(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("accumulate")), index))));
     } else {
+
+      BlockStmt* serialBlock = buildChapelStmt();
+      VarSymbol* index = newTemp("_index");
+      serialBlock->insertAtTail(new DefExpr(index));
+      serialBlock->insertAtTail(buildForLoopStmt(new SymExpr(index), new SymExpr(data), new BlockStmt(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("accumulate")), index))));
 
       BlockStmt* leaderBlock = buildChapelStmt();
       VarSymbol* iterator = newTemp("_iterator");
@@ -978,8 +983,6 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
       followerBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, followerIterator, new CallExpr("_toFollower", iterator, leaderIndexCopy)));
 
       followerBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, followerIndex, new CallExpr("iteratorIndex", followerIterator)), BLOCK_TYPE));
-
-
 
       VarSymbol* localOp = newTemp();
       followerBlock->insertAtTail(new DefExpr(localOp));
@@ -1007,7 +1010,7 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
       leaderBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, leaderIndex, leaderIterator);
       leaderBlock->insertAtTail(leaderBody);
 
-      fn->insertAtTail(leaderBlock);
+      fn->insertAtTail(new CondStmt(new SymExpr(gTryToken), leaderBlock, serialBlock));
     }
     fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("generate")))));
   }

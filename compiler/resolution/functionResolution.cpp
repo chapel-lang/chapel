@@ -26,9 +26,12 @@ static int explainCallLine;
 static ModuleSymbol* explainCallModule;
 
 static Vec<CallExpr*> inits;
-static Vec<FnSymbol*> resolvedFns;
+static Map<FnSymbol*,bool> resolvedFns;
 static Vec<FnSymbol*> resolvedFormals;
 Vec<CallExpr*> callStack;
+
+static Vec<CondStmt*> tryStack;
+static bool tryFailure = false;
 
 static Map<FnSymbol*,Vec<FnSymbol*>*> ddf; // map of functions to
                                            // virtual children
@@ -272,13 +275,13 @@ protoIteratorClass(FnSymbol* fn) {
 
   makeRefType(fn->retType);
 
-  resolvedFns.set_add(fn->iteratorInfo->zip1);
-  resolvedFns.set_add(fn->iteratorInfo->zip2);
-  resolvedFns.set_add(fn->iteratorInfo->zip3);
-  resolvedFns.set_add(fn->iteratorInfo->zip4);
-  resolvedFns.set_add(fn->iteratorInfo->advance);
-  resolvedFns.set_add(fn->iteratorInfo->hasMore);
-  resolvedFns.set_add(fn->iteratorInfo->getValue);
+  resolvedFns.put(fn->iteratorInfo->zip1, true);
+  resolvedFns.put(fn->iteratorInfo->zip2, true);
+  resolvedFns.put(fn->iteratorInfo->zip3, true);
+  resolvedFns.put(fn->iteratorInfo->zip4, true);
+  resolvedFns.put(fn->iteratorInfo->advance, true);
+  resolvedFns.put(fn->iteratorInfo->hasMore, true);
+  resolvedFns.put(fn->iteratorInfo->getValue, true);
 
   VarSymbol* tmp = newTemp(ii->icType);
   fn->insertAtHead(new DefExpr(tmp));
@@ -1594,24 +1597,30 @@ resolveCall(CallExpr* call, bool errorCheck) {
     if (best && explainCallLine && explainCallMatch(call)) {
       USR_PRINT(best, "best candidate is: %s", toString(best));
     }
-    if (!best && candidateFns.n > 0) {
-      if (errorCheck)
-        printResolutionError("ambiguous", candidateFns, &info);
-      best = NULL;
-    } else if (call->partialTag && (!best || !best->hasFlag(FLAG_NO_PARENS))) {
+
+    if (call->partialTag && (!best || !best->hasFlag(FLAG_NO_PARENS))) {
       best = NULL;
     } else if (!best) {
-      if (errorCheck)
-        printResolutionError("unresolved", visibleFns, &info);
-      best = NULL;
+      if (tryStack.n) {
+        tryFailure = true;
+        return;
+      } else if (candidateFns.n > 0) {
+        if (errorCheck)
+          printResolutionError("ambiguous", candidateFns, &info);
+      } else {
+        if (errorCheck)
+          printResolutionError("unresolved", visibleFns, &info);
+      }
     } else {
       best = defaultWrap(best, actualFormals, call->square);
       best = orderWrap(best, actualFormals, call->square);
       best = coercionWrap(best, &info);
       best = promotionWrap(best, &info);
     }
+
     for (int i = 0; i < candidateActualFormals.n; i++)
       delete candidateActualFormals.v[i];
+
     FnSymbol* resolvedFn = best;
 
     if (!resolvedFn && !errorCheck) {
@@ -2911,9 +2920,29 @@ postFold(Expr* expr) {
     if (cond->condExpr == result) {
       if (Expr* expr = cond->fold_cond_stmt()) {
         result = expr;
+      } else {
+        //
+        // push try block
+        //
+        if (SymExpr* se = toSymExpr(result))
+          if (se->var == gTryToken)
+            tryStack.add(cond);
       }
     }
   }
+
+  //
+  // pop try block and delete else
+  //
+  if (tryStack.n) {
+    if (BlockStmt* block = toBlockStmt(result)) {
+      if (tryStack.v[tryStack.n-1]->thenStmt == block) {
+        tryStack.v[tryStack.n-1]->replace(block->remove());
+        tryStack.pop();
+      }
+    }
+  }
+
   return result;
 }
 
@@ -2991,8 +3020,20 @@ resolveBlock(Expr* body) {
       }
       callStack.add(call);
       resolveCall(call);
-      if (call->isResolved())
+      if (!tryFailure && call->isResolved())
         resolveFns(call->isResolved());
+      if (tryFailure) {
+        if (tryStack.v[tryStack.n-1]->parentSymbol == fn) {
+          BlockStmt* block = tryStack.v[tryStack.n-1]->elseStmt;
+          tryStack.v[tryStack.n-1]->replace(block->remove());
+          tryStack.pop();
+          expr = block->prev;
+          tryFailure = false;
+          continue;
+        } else {
+          return;
+        }
+      }
       callStack.pop();
     } else if (SymExpr* sym = toSymExpr(expr)) {
 
@@ -3018,9 +3059,9 @@ resolveBlock(Expr* body) {
 
 static void
 resolveFns(FnSymbol* fn) {
-  if (resolvedFns.set_in(fn))
+  if (resolvedFns.get(fn))
     return;
-  resolvedFns.set_add(fn);
+  resolvedFns.put(fn, true);
 
   if (fn->hasFlag(FLAG_EXTERN))
     return;
@@ -3069,6 +3110,11 @@ resolveFns(FnSymbol* fn) {
   insertFormalTemps(fn);
 
   resolveBlock(fn->body);
+
+  if (tryFailure) {
+    resolvedFns.put(fn, false);
+    return;
+  }
 
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
     ClassType* ct = toClassType(fn->retType);
@@ -3377,7 +3423,7 @@ add_all_children_ddf(FnSymbol* fn, ClassType* ct) {
     ClassType* ct = toClassType(t);
     if (ct->defaultTypeConstructor &&
         (ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) ||
-         resolvedFns.set_in(ct->defaultTypeConstructor))) {
+         resolvedFns.get(ct->defaultTypeConstructor))) {
       add_to_ddf(fn, ct);
     }
     if (!ct->instantiatedFrom)
@@ -3389,7 +3435,7 @@ add_all_children_ddf(FnSymbol* fn, ClassType* ct) {
 static void
 build_ddf() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->hasFlag(FLAG_WRAPPER) && resolvedFns.set_in(fn) && !fn->hasFlag(FLAG_NO_PARENS)
+    if (!fn->hasFlag(FLAG_WRAPPER) && resolvedFns.get(fn) && !fn->hasFlag(FLAG_NO_PARENS)
         && !fn->hasFlag(FLAG_DESTRUCTOR)) {
       if (fn->numFormals() > 1) {
         if (fn->getFormal(1)->type == dtMethodToken) {
@@ -3663,7 +3709,7 @@ resolve() {
           else
             INT_FATAL(subcall, "unexpected");
           normalize(if_fn);
-          resolvedFns.set_add(if_fn);
+          resolvedFns.put(if_fn, true);
         }
       }
     }
@@ -3781,7 +3827,7 @@ pruneResolvedTree() {
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
-      if (!resolvedFns.set_in(fn) || fn->retTag == RET_PARAM)
+      if (!resolvedFns.get(fn) || fn->retTag == RET_PARAM)
         fn->defPoint->remove();
     }
   }
@@ -3791,8 +3837,8 @@ pruneResolvedTree() {
     if (type->defPoint && type->defPoint->parentSymbol)
       if (!type->hasFlag(FLAG_REF))
         if (ClassType* ct = toClassType(type->type))
-          if (!resolvedFns.set_in(ct->defaultConstructor) &&
-              !resolvedFns.set_in(ct->defaultTypeConstructor)) {
+          if (!resolvedFns.get(ct->defaultConstructor) &&
+              !resolvedFns.get(ct->defaultTypeConstructor)) {
             if (ct->symbol->hasFlag(FLAG_OBJECT_CLASS))
               dtObject = NULL;
             ct->symbol->defPoint->remove();
@@ -3802,8 +3848,8 @@ pruneResolvedTree() {
     if (type->defPoint && type->defPoint->parentSymbol) {
       if (type->hasFlag(FLAG_REF) && type->type != dtNilRef) {
         if (ClassType* ct = toClassType(type->type->getValueType())) {
-          if (!resolvedFns.set_in(ct->defaultConstructor) &&
-              !resolvedFns.set_in(ct->defaultTypeConstructor)) {
+          if (!resolvedFns.get(ct->defaultConstructor) &&
+              !resolvedFns.get(ct->defaultTypeConstructor)) {
             if (ct->symbol->hasFlag(FLAG_OBJECT_CLASS))
               dtObject = NULL;
             type->defPoint->remove();

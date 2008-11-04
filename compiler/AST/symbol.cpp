@@ -34,6 +34,7 @@ Symbol *gTaskList = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
+VarSymbol *gTryToken = NULL;
 VarSymbol *gBoundsChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 

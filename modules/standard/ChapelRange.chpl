@@ -367,6 +367,8 @@ def range.these(param tag: iterator) where tag == iterator.leader {
   // want "yield 0..length-1;"
   // but compilerError in length causes a problem because leaders are
   // resolved wherever an iterator is.
+  if boundedType == BoundedRangeType.boundedNone then
+    halt("iteration over a range with no bounds");
   var v: eltType;
   if stride > 0 then
     v = (high - low) / stride:eltType + 1;
@@ -378,6 +380,8 @@ def range.these(param tag: iterator) where tag == iterator.leader {
 }
 
 def range.these(param tag: iterator, follower) where tag == iterator.follower {
+  if boundedType == BoundedRangeType.boundedNone then
+    halt("iteration over a range with no bounds");
   if stridable {
     var r = if stride > 0 then
         low+follower.low*stride:eltType..low+follower.high*stride:eltType by stride
