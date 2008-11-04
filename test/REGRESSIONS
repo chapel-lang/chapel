@@ -36,13 +36,9 @@ internal valgrind stuff 'the impossible has happened'
 [Error matching program output for parallel/begin/dinan/mvm_coforall]
 
 
-=============================
-gasnet-everything regressions
-=============================
-
-occasional timeouts (e.g., 11/03/08)
-------------------------------------
-[Error: Timed out executing program studies/hpcc/2008/ra]
+====================
+no-local regressions
+====================
 
 garbage collection doesn't work with multithreaded
 --------------------------------------------------
@@ -53,13 +49,36 @@ leaking memory (11/01/08)
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
 
-problem passsing arguments from launcher (10/31/08)
----------------------------------------------------
-[Error matching program output for execflags/diten/configComplex]
+allocAndFree returns different results (skipped for GASNet)
+-----------------------------------------------------------
+[Error matching program output for memory/shannon/allocAndFree]
+[Error matching program output for memory/shannon/freedMalloc]
+[Error matching program output for memory/shannon/printFinalMemStat]
+[Error matching program output for memory/shannon/reallocZeroSize]
 
 memory profile changed
 ----------------------
 [Error matching program output for memory/shannon/configVarFile]
+
+timed out
+---------
+[Error: Timed out executing program users/agnieszka/multiArrayI10]
+[Error: Timed out executing program users/agnieszka/multiArrayI]
+[Error: Timed out executing program users/agnieszka/test1]
+[Error: Timed out executing program users/agnieszka/test2]
+
+
+====================================================
+gasnet-everything regressions (other than the above)
+====================================================
+
+occasional timeouts (e.g., 11/03/08)
+------------------------------------
+[Error: Timed out executing program studies/hpcc/2008/ra]
+
+problem passsing arguments from launcher (10/31/08)
+---------------------------------------------------
+[Error matching program output for execflags/diten/configComplex]
 
 disabled warning about multilocale distributions not being implemented
 ----------------------------------------------------------------------
@@ -118,6 +137,110 @@ intermittent seg faults
 baseline-specific tests
 =======================
 
+AL0085 internal error
+---------------------
+[Error matching compiler output for arrays/bradc/workarounds/arrayOfArray2]
+[Error matching compiler output for arrays/deitz/jacobi5]
+[Error matching compiler output for expressions/bradc/reduceVsMathPrec]
+[Error matching compiler output for npb/cg/bradc/cg-dense]
+[Error matching compiler output for npb/cg/bradc/cg-sparse]
+[Error matching compiler output for performance/compiler/bradc/fft-timecomp]
+[Error matching compiler output for release/examples/jacobi]
+[Error matching compiler output for release/examples/hpcc/fft]
+[Error matching compiler output for release/examples/hpcc/ra]
+[Error matching compiler output for release/examples/hpcc/stream]
+[Error matching compiler output for spec/marybeth/testnorm]
+[Error matching compiler output for studies/590o/kfm/solver-blc]
+[Error matching compiler output for studies/hpcc/2008/fft]
+[Error matching compiler output for studies/hpcc/2008/hpl]
+[Error matching compiler output for studies/hpcc/2008/testProbSize]
+[Error matching compiler output for studies/hpcc/FFT/bradc/fft]
+[Error matching compiler output for studies/hpcc/FFT/fft-candidate-2d]
+[Error matching compiler output for studies/hpcc/FFT/fft-hpcc06-mta]
+[Error matching compiler output for studies/hpcc/FFT/fft-testPow4]
+[Error matching compiler output for studies/hpcc/FFT/marybeth/fft-test-even]
+[Error matching compiler output for studies/hpcc/FFT/marybeth/fft2d]
+[Error matching compiler output for studies/hpcc/HPL/stonea/errors/writelnCausesError]
+[Error matching compiler output for studies/hpcc/HPL/stonea/serial/hplExample3]
+[Error matching compiler output for studies/hpcc/HPL/stonea/serial/hplExample4]
+[Error matching compiler output for studies/hpcc/HPL/stonea/serial/hplExample5]
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-local]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1dclass]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
+[Error matching compiler output for studies/hpcc/STREAMS/marybeth/stream]
+[Error matching compiler output for studies/hpcc/STREAMS/stream-hpcc06]
+[Error matching compiler output for studies/jacobi/jacobi]
+[Error matching compiler output for studies/lu/marybeth/blockLU]
+[Error matching compiler output for studies/madness/aniruddha/madchap/test_likepy]
+[Error matching compiler output for studies/madness/aniruddha/madchap/test_mul]
+[Error matching compiler output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
+[Error matching compiler output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching compiler output for studies/madness/aniruddha/madchap/recordBug/test_likepy]
+[Error matching compiler output for studies/madness/common/test_diff]
+[Error matching compiler output for studies/madness/common/test_mul]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching compiler output for studies/matrixMult/stonea/mm]
+[Error matching compiler output for studies/matrixlib/QR/qr]
+[Error matching compiler output for studies/matrixlib/testBlockLU]
+[Error matching compiler output for studies/sudoku/deitz/sudoku_compress3]
+[Error matching compiler output for studies/sudoku/dinan/search/sudoku-reduce4]
+[Error matching compiler output for trivial/marybeth/typeselect]
+[Error matching compiler output for users/shetag/tensor]
+
+TYP0052 internal error
+----------------------
+[Error matching compiler output for arrays/deitz/jacobi5a]
+[Error matching compiler output for arrays/deitz/promotion/test_scalar_promote_side_effect]
+[Error matching compiler output for performance/compiler/bradc/cg-sparse-timecomp]
+[Error matching compiler output for puzzles/deitz/puzzle071004]
+[Error matching compiler output for release/examples/blockLU]
+[Error matching compiler output for release/examples/reductions]
+[Error matching compiler output for studies/590o/kfm/solver]
+[Error matching compiler output for studies/cholesky/marybeth/blockCholesky]
+[Error matching compiler output for studies/hpcc/2008/stream-fragforall]
+[Error matching compiler output for studies/hpcc/2008/stream-fragmented]
+[Error matching compiler output for studies/hpcc/2008/stream-fragnolocal]
+[Error matching compiler output for studies/hpcc/FFT/fft-hpcc06]
+[Error matching compiler output for studies/hpcc/FFT/marybeth/fft]
+[Error matching compiler output for studies/hpcc/HPL/stonea/serial/hplExample2]
+[Error matching compiler output for studies/hpcc/RA/ra-seq]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-dom]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1dpar]
+[Error matching compiler output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
+[Error matching compiler output for studies/hpcc/STREAMS/stream-nopromote]
+[Error matching compiler output for studies/hpcc/common/testProbSize]
+[Error matching compiler output for studies/lu/marybeth/pivlublock-alias]
+[Error matching compiler output for studies/madness/aniruddha/madchap/test_diff]
+[Error matching compiler output for studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching compiler output for studies/madness/aniruddha/madchap/test_showboxes]
+[Error matching compiler output for studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
+[Error matching compiler output for studies/madness/common/test_gaxpy]
+[Error matching compiler output for studies/madness/common/test_likepy]
+[Error matching compiler output for studies/madness/common/test_showboxes]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_diff]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_mul]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_showboxes]
+[Error matching compiler output for studies/matrixMult/stonea/distributed/luLike2]
+[Error matching compiler output for studies/matrixMult/stonea/distributed/luLike]
+[Error matching compiler output for users/shetag/fock/fock-3-blc]
+[Error matching compiler output for users/shetag/unboundslice2]
+
+EXP0186 internal error
+----------------------
+[Error matching compiler output for release/examples/norm]
+[Error matching compiler output for studies/hpcc/2008/ra]
+[Error matching compiler output for studies/hpcc/2008/stream]
+[Error matching compiler output for studies/hpcc/HPL/marybeth/HPL]
+[Error matching compiler output for studies/hpcc/HPL/stonea/serial/hplExample1]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-fragmented]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-nopromote]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-slice]
+
 memory is leaked due to heap classes (10/22/08)
 -----------------------------------------------
 [Error matching program output for classes/figueroa/LeakedMemory2]
@@ -128,7 +251,24 @@ memory is leaked due to heap classes (10/22/08)
 opts-specific tests
 ===================
 
-(Example runs: 0)
+(Example runs: 56)
+
+--no-dead-code-elimination
+--baseline --copy-propagation
+--baseline --inline
+--baseline --inline-iterators
+--baseline --live-analysis
+--baseline --optimize-loop-iterators
+--baseline --scalar-replacement
+--baseline --no-local
+------------------------------------
+[Error matching compiler output for release/examples/blockLU]
+[Error matching compiler output for release/examples/jacobi]
+[Error matching compiler output for release/examples/norm]
+[Error matching compiler output for release/examples/reductions]
+[Error matching compiler output for release/examples/hpcc/fft]
+[Error matching compiler output for release/examples/hpcc/ra]
+[Error matching compiler output for release/examples/hpcc/stream]
 
 
 
