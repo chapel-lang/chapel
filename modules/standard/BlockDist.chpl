@@ -383,13 +383,10 @@ class Block1DDom: BaseArithmeticDomain {
     // natural composition and might help with my fears about how
     // stencil communication will be done on a per-locale basis.
 
-    //
-    // factored out for performance (to avoid remote communication)
-    //
-    var low = whole.low;
+    const followThis = follower + whole.low;
 
-    for i in follower {
-      yield i + low;
+    for i in followThis {
+      yield i;
     }
   }
 
