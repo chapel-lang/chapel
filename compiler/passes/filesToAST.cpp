@@ -47,6 +47,7 @@ static void parseStandardModules(void) {
   parseStandardModule("Sort.chpl");
   parseStandardModule("Search.chpl");
   parseStandardModule("Containers.chpl");
+  parseStandardModule("Norm.chpl");
 
   // standard distributions
   parseStandardModule("DistCSR.chpl");

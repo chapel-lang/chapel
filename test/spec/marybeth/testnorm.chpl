@@ -1,4 +1,4 @@
-use Norm;
+use MyNorm;
 
 def main() {
   const D1 = [1..5];

@@ -16,10 +16,13 @@
  * The norm function may also be called without specifying normType,
  * in which case the default norm for that array rank will be used.
  *
+ * Note that this example forms/ed the basis for our standard
+ * Norm module that can be used by Chapel programs.
+ *
  */
 
 
-module Norm {
+module MyNorm {
 
   // normType specifies the type of norm to compute
   enum normType {norm1, norm2, normInf, normFrob};
@@ -71,7 +74,7 @@ module Norm {
 
 
 module TestNorm {
-  use Norm;
+  use MyNorm;
 
   def testNorm(arr: []) {
     var testType = if (arr.rank == 1) then "vector" else "matrix";

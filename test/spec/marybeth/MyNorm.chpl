@@ -1,4 +1,4 @@
-module Norm{
+module MyNorm{
   def norm(x: [], p) where x.rank == 1 {
 
     if (p == 2) {

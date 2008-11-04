@@ -2,70 +2,41 @@
 \label{Standard_Modules}
 \index{standard modules}
 
-This section describes predefined functions that are available to any
-Chapel program as well as a set of standard modules that, when used,
-define a set of functions and types available to Chapel programs.  The
-standard modules include the following:
+This section describes modules that are automatically used by every
+Chapel program as well as a set of standard modules that can be used
+manually, provididing standard library support.  The automatic modules
+are as follows:
+
+\begin{tabular}{lll}
+\hspace{1pc} & \chpl{Math} & Math routines \\
+             & \chpl{Standard} & Basic routines \\
+             & \chpl{Types} & Routines related to primitive types \\
+\end{tabular}
+
+\noindent The standard modules include:
 
 \begin{tabular}{lll}
 \hspace{1pc} & \chpl{BitOps} & Bit manipulation routines \\
- & \chpl{Math} & ({\it used by default}) Math routines \\
- & \chpl{Random} & Random number generation routines \\
- & \chpl{Search} & Generic searching routines \\
- & \chpl{Sort} & Generic sorting routines \\
- & \chpl{Standard} & ({\it used by default}) Basic routines \\
- & \chpl{Time} & Types and routines related to time \\
- & \chpl{Types} & ({\it used by default}) Routines related to primitive types \\
+             & \chpl{Norm}   & routines for computing vector and matrix norms \\
+             & \chpl{Random} & Random number generation routines \\
+             & \chpl{Search} & Generic searching routines \\
+             & \chpl{Sort} & Generic sorting routines \\
+             & \chpl{Time} & Types and routines related to time \\
 \end{tabular}
 
 There is an expectation that each of these modules will be extended
-and that more standard modules will be defined.
+and that more standard modules will be defined over time.
 
-\subsection{BitOps}
-\label{BitOps}
-\index{standard modules!BitOps}
+\subsection{Automatic Modules}
+\index{automatic modules}
 
-The module \chpl{BitOps} defines routines that manipulate the bits of
-values of integral types.
+Automatic modules are used by a Chapel program automatically.  There
+is currently no way to avoid their use by a program though we
+anticipate adding such a capability in the future.
 
-\vspace{1pc}
-
-\begin{protohead}
-def bitPop(i: integral): int
-\end{protohead}
-\begin{protobody}
-Returns the number of bits set to one in the integral
-argument \chpl{i}.
-\end{protobody}
-
-\begin{protohead}
-def bitMatMultOr(i: uint(64), j: uint(64)): uint(64)
-\end{protohead}
-\begin{protobody}
-Returns the bitwise matrix multiplication of \chpl{i} and \chpl{j}
-where the values of \chpl{uint(64)} type are treated as $8 \times 8$
-bit matrices and the combinator function is bitwise or.
-\end{protobody}
-
-\begin{protohead}
-def bitRotLeft(i: integral, shift: integral): i.type
-\end{protohead}
-\begin{protobody}
-Returns the value of the integral argument \chpl{i} after rotating the
-bits to the left \chpl{shift} number of times.
-\end{protobody}
-
-\begin{protohead}
-def bitRotRight(i: integral, shift: integral): i.type
-\end{protohead}
-\begin{protobody}
-Returns the value of the integral argument \chpl{i} after rotating the
-bits to the right \chpl{shift} number of times.
-\end{protobody}
-
-\subsection{Math}
+\subsubsection{Math}
 \label{Math}
-\index{standard modules!Math}
+\index{automatic modules!Math}
 
 The module \chpl{Math} defines routines for mathematical computations.
 This module is used by default; there is no need to explicitly use
@@ -371,176 +342,10 @@ Returns the nearest integral value to the argument that is not larger
 than the argument in absolute value.
 \end{protobody}
 
-\subsection{Random}
-\label{Random}
-\index{standard modules!Random}
 
-The module \chpl{Random} supports the generation of pseudo-random
-values and streams of values.  The current interface is minimal and
-should be expected to grow and evolve over time.
-
-\begin{protohead}
-class RandomStream
-\end{protohead}
-\begin{protobody}
-Implements a pseudo-random stream of values.  Our current
-implementation generates the values using a linear congruential
-generator.  In future versions of this module, the RandomStream class
-will offer a wider variety of algorithms for generating pseudo-random
-values.
-\end{protobody}
-
-\begin{protohead}
-const RandomStream.seed: int(64)
-\end{protohead}
-\begin{protobody}
-The seed value for the random stream.  If no seed is specified in the
-constructor, the millisecond value of the current time is used.  The
-seed value must be an odd integer.  If an even integer is supplied,
-the class constructor will increment it to obtain an odd integer.
-\end{protobody}
-
-\begin{protohead}
-def RandomStream.fillRandom(x:[?D] real)
-\end{protohead}
-\begin{protobody}
-Fill the argument array, \chpl{x}, with the next $|$\chpl{D}$|$ values
-of the pseudo-random stream.  Arrays of arbitrary rank can be passed
-to this routine, causing the 1D stream of values to be mapped to the
-array elements according to the array's default iteration order.  Once
-our implementation supports distributed arrays, this routine is
-intended to fill the array's values in parallel.
-\end{protobody}
-
-\begin{protohead}
-def RandomStream.fillRandom(x:[?D] complex)
-\end{protohead}
-\begin{protobody}
-Similar to the previous routine, but for use with arrays of complex
-values.  The elements are filled in the same order as above except
-that pairs of values from the stream are assigned to each element, the
-first to the real component, the second to the imaginary.  As this
-module matures, we will support \chpl{fillRandom} for arrays of other
-element types as well.
-\end{protobody}
-
-\begin{protohead}
-def RandomStream.skipToNth(in n: integral)
-\end{protohead}
-\begin{protobody}
-Skips ahead or back to the \chpl{n}-th value in the
-random stream.  The value of n is assumed to be positive, such that
-\chpl{n}~==~1 represents the initial value in the stream.
-\end{protobody}
-
-\begin{protohead}
-def RandomStream.getNext(): real
-\end{protohead}
-\begin{protobody}
-Returns the next value in the random stream as a real.
-\end{protobody}
-
-\begin{protohead}
-def RandomStream.getNth(n: integral): real
-\end{protohead}
-\begin{protobody}
-Returns the \chpl{n}-th value in the random stream as a real.  Equivalent to
-calling \chpl{skipToNth(n)} followed by \chpl{getNext()}.
-\end{protobody}
-
-\begin{protohead}
-SeedGenerator
-\end{protohead}
-\begin{protobody}
-A symbol that can be used to generate seed values for the RandomStream
-class.
-\end{protobody}
-
-\begin{protohead}
-SeedGenerator.clockMS
-\end{protohead}
-\begin{protobody}
-Generates a seed value using the milliseconds value from the current
-time.  As this module matures, \chpl{SeedGenerator} will support
-additional mechanisms for generating seed values.
-\end{protobody}
-
-\begin{protohead}
-def fillRandom(x:[], initseed: int(64))
-\end{protohead}
-\begin{protobody}
-
-A routine provided for convenience to support filling an array
-\chpl{x} with pseudo-random values without explicitly constructing an
-instance of the \chpl{RandomStream} class, useful for filling a single
-array or multiple arrays which require no coherence between them.  The
-\chpl{initseed} parameter corresponds to the \chpl{seed} member of the
-\chpl{RandomStream} class and will default to the milliseconds value
-of the current time if no seed value is provided.
-\end{protobody}
-
-
-\subsection{Search}
-\label{Search}
-\index{standard modules!Search}
-
-The \chpl{Search} module is designed to support standard search
-routines.  The current interface is minimal and should be expected to
-grow and evolve over time.
-
-\begin{protohead}
-def LinearSearch(Data: [?Dom], val): (bool, index(Dom))
-\end{protohead}
-\begin{protobody}
-Searches through the pre-sorted array \chpl{Data} looking for the
-value \chpl{val} using a sequential linear search.  Returns a tuple
-indicating (1) whether or not the value was found and (2) the location
-of the value if it was found, or the location where the value should
-have been if it was not found.
-\end{protobody}
-
-
-\begin{protohead}
-def BinarySearch(Data: [?Dom], val, in lo = Dom.low, in hi = Dom.high);
-\end{protohead}
-\begin{protobody}
-Searches through the pre-sorted array \chpl{Data} looking for the
-value \chpl{val} using a sequential binary search.  If provided, only
-the indices \chpl{lo} through \chpl{hi} will be considered, otherwise
-the whole array will be searched.  Returns a tuple indicating (1)
-whether or not the value was found and (2) the location of the value
-if it was found, or the location where the value should have been if
-it was not found.
-\end{protobody}
-
-
-\subsection{Sort}
-\label{Sort}
-\index{standard modules!Sort}
-
-The \chpl{Sort} module is designed to support standard sorting
-routines.  The current interface is minimal and should be expected to
-grow and evolve over time.
-
-\begin{protohead}
-def InsertionSort(Data: [?Dom]) where Dom.rank == 1;
-\end{protohead}
-\begin{protobody}
-Sorts the 1D array \chpl{Data} in-place using a sequential insertion
-sort algorithm.
-\end{protobody}
-
-\begin{protohead}
-def QuickSort(Data: [?Dom]) where Dom.rank == 1;
-\end{protohead}
-\begin{protobody}
-Sorts the 1D array \chpl{Data} in-place using a sequential
-implementation of the QuickSort algorithm.
-\end{protobody}
-
-\subsection{Standard}
+\subsubsection{Standard}
 \label{Standard}
-\index{standard modules!Standard}
+\index{automatic modules!Standard}
 
 \begin{protohead}
 def ascii(s: string): int
@@ -658,7 +463,293 @@ the substring where the characters in the substring are given by the
 values in the range.
 \end{protobody}
 
-\subsection{Time}
+
+\subsubsection{Types}
+
+\begin{protohead}
+def numBits(type t) param : int
+\end{protohead}
+\begin{protobody}
+Returns the number of bits used to store the values of type \chpl{t}.
+This is implemented for all numeric types and \chpl{bool}.
+\end{protobody}
+
+
+\begin{protohead}
+def numBytes(type t) param : int
+\end{protohead}
+\begin{protobody}
+Returns the number of bytes used to store the values of type \chpl{t}.
+This is implemented for all numeric types and \chpl{bool}.
+\end{protobody}
+
+\begin{protohead}
+def max(type t): t
+\end{protohead}
+\begin{protobody}
+Returns the maximum value that can be stored in type \chpl{t}.  This
+is implemented for all numeric types.
+\end{protobody}
+
+\begin{protohead}
+def min(type t): t
+\end{protohead}
+\begin{protobody}
+Returns the minimum value that can be stored in type \chpl{t}.  This
+is implemented for all numeric types.
+\end{protobody}
+
+
+
+\subsection{Standard Modules}
+
+Standard modules can be used by a Chapel program via the \chpl{use}
+keyword.
+
+\subsubsection{BitOps}
+\label{BitOps}
+\index{standard modules!BitOps}
+
+The module \chpl{BitOps} defines routines that manipulate the bits of
+values of integral types.
+
+\vspace{1pc}
+
+\begin{protohead}
+def bitPop(i: integral): int
+\end{protohead}
+\begin{protobody}
+Returns the number of bits set to one in the integral
+argument \chpl{i}.
+\end{protobody}
+
+\begin{protohead}
+def bitMatMultOr(i: uint(64), j: uint(64)): uint(64)
+\end{protohead}
+\begin{protobody}
+Returns the bitwise matrix multiplication of \chpl{i} and \chpl{j}
+where the values of \chpl{uint(64)} type are treated as $8 \times 8$
+bit matrices and the combinator function is bitwise or.
+\end{protobody}
+
+\begin{protohead}
+def bitRotLeft(i: integral, shift: integral): i.type
+\end{protohead}
+\begin{protobody}
+Returns the value of the integral argument \chpl{i} after rotating the
+bits to the left \chpl{shift} number of times.
+\end{protobody}
+
+\begin{protohead}
+def bitRotRight(i: integral, shift: integral): i.type
+\end{protohead}
+\begin{protobody}
+Returns the value of the integral argument \chpl{i} after rotating the
+bits to the right \chpl{shift} number of times.
+\end{protobody}
+
+
+\subsubsection{Norm}
+\label{Norm}
+\index{standard modules!Norm}
+
+The module \chpl{Norm} supports the computation of standard vector and
+matrix norms on Chapel arrays.  The current interface is minimal and
+should be expected to grow and evolve over time.
+
+\begin{protohead}
+enum normType {norm1, norm2, normInf, normFrob};
+\end{protohead}
+\begin{protobody}
+An enumerated type indicating the different types of norms supported
+by this module: 1-norm, 2-norm, infinity norm and Frobenius norm,
+respectively.
+\end{protobody}
+
+\begin{protohead}
+def norm(x: [], p: normType) where x.rank == 1 || x.rank == 2
+\end{protohead}
+\begin{protobody}
+Compute the norm indicated by \chpl{p} on the 1D or 2D array \chpl{x}.
+\end{protobody}
+
+\begin{protohead}
+def norm(x: [])
+\end{protohead}
+\begin{protobody}
+Compute the default norm on array \chpl{x}.  For a 1D array this is
+the 2-norm, for a 2D array, this is the Frobenius norm.
+\end{protobody}
+
+
+\subsubsection{Random}
+\label{Random}
+\index{standard modules!Random}
+
+The module \chpl{Random} supports the generation of pseudo-random
+values and streams of values.  The current interface is minimal and
+should be expected to grow and evolve over time.
+
+\begin{protohead}
+class RandomStream
+\end{protohead}
+\begin{protobody}
+Implements a pseudo-random stream of values.  Our current
+implementation generates the values using a linear congruential
+generator.  In future versions of this module, the RandomStream class
+will offer a wider variety of algorithms for generating pseudo-random
+values.
+\end{protobody}
+
+\begin{protohead}
+const RandomStream.seed: int(64)
+\end{protohead}
+\begin{protobody}
+The seed value for the random stream.  If no seed is specified in the
+constructor, the millisecond value of the current time is used.  The
+seed value must be an odd integer.  If an even integer is supplied,
+the class constructor will increment it to obtain an odd integer.
+\end{protobody}
+
+\begin{protohead}
+def RandomStream.fillRandom(x:[?D] real)
+\end{protohead}
+\begin{protobody}
+Fill the argument array, \chpl{x}, with the next $|$\chpl{D}$|$ values
+of the pseudo-random stream.  Arrays of arbitrary rank can be passed
+to this routine, causing the 1D stream of values to be mapped to the
+array elements according to the array's default iteration order.  Once
+our implementation supports distributed arrays, this routine is
+intended to fill the array's values in parallel.
+\end{protobody}
+
+\begin{protohead}
+def RandomStream.fillRandom(x:[?D] complex)
+\end{protohead}
+\begin{protobody}
+Similar to the previous routine, but for use with arrays of complex
+values.  The elements are filled in the same order as above except
+that pairs of values from the stream are assigned to each element, the
+first to the real component, the second to the imaginary.  As this
+module matures, we will support \chpl{fillRandom} for arrays of other
+element types as well.
+\end{protobody}
+
+\begin{protohead}
+def RandomStream.skipToNth(in n: integral)
+\end{protohead}
+\begin{protobody}
+Skips ahead or back to the \chpl{n}-th value in the
+random stream.  The value of n is assumed to be positive, such that
+\chpl{n}~==~1 represents the initial value in the stream.
+\end{protobody}
+
+\begin{protohead}
+def RandomStream.getNext(): real
+\end{protohead}
+\begin{protobody}
+Returns the next value in the random stream as a real.
+\end{protobody}
+
+\begin{protohead}
+def RandomStream.getNth(n: integral): real
+\end{protohead}
+\begin{protobody}
+Returns the \chpl{n}-th value in the random stream as a real.  Equivalent to
+calling \chpl{skipToNth(n)} followed by \chpl{getNext()}.
+\end{protobody}
+
+\begin{protohead}
+SeedGenerator
+\end{protohead}
+\begin{protobody}
+A symbol that can be used to generate seed values for the RandomStream
+class.
+\end{protobody}
+
+\begin{protohead}
+SeedGenerator.clockMS
+\end{protohead}
+\begin{protobody}
+Generates a seed value using the milliseconds value from the current
+time.  As this module matures, \chpl{SeedGenerator} will support
+additional mechanisms for generating seed values.
+\end{protobody}
+
+\begin{protohead}
+def fillRandom(x:[], initseed: int(64))
+\end{protohead}
+\begin{protobody}
+
+A routine provided for convenience to support filling an array
+\chpl{x} with pseudo-random values without explicitly constructing an
+instance of the \chpl{RandomStream} class, useful for filling a single
+array or multiple arrays which require no coherence between them.  The
+\chpl{initseed} parameter corresponds to the \chpl{seed} member of the
+\chpl{RandomStream} class and will default to the milliseconds value
+of the current time if no seed value is provided.
+\end{protobody}
+
+
+\subsubsection{Search}
+\label{Search}
+\index{standard modules!Search}
+
+The \chpl{Search} module is designed to support standard search
+routines.  The current interface is minimal and should be expected to
+grow and evolve over time.
+
+\begin{protohead}
+def LinearSearch(Data: [?Dom], val): (bool, index(Dom))
+\end{protohead}
+\begin{protobody}
+Searches through the pre-sorted array \chpl{Data} looking for the
+value \chpl{val} using a sequential linear search.  Returns a tuple
+indicating (1) whether or not the value was found and (2) the location
+of the value if it was found, or the location where the value should
+have been if it was not found.
+\end{protobody}
+
+
+\begin{protohead}
+def BinarySearch(Data: [?Dom], val, in lo = Dom.low, in hi = Dom.high);
+\end{protohead}
+\begin{protobody}
+Searches through the pre-sorted array \chpl{Data} looking for the
+value \chpl{val} using a sequential binary search.  If provided, only
+the indices \chpl{lo} through \chpl{hi} will be considered, otherwise
+the whole array will be searched.  Returns a tuple indicating (1)
+whether or not the value was found and (2) the location of the value
+if it was found, or the location where the value should have been if
+it was not found.
+\end{protobody}
+
+
+\subsubsection{Sort}
+\label{Sort}
+\index{standard modules!Sort}
+
+The \chpl{Sort} module is designed to support standard sorting
+routines.  The current interface is minimal and should be expected to
+grow and evolve over time.
+
+\begin{protohead}
+def InsertionSort(Data: [?Dom]) where Dom.rank == 1;
+\end{protohead}
+\begin{protobody}
+Sorts the 1D array \chpl{Data} in-place using a sequential insertion
+sort algorithm.
+\end{protobody}
+
+\begin{protohead}
+def QuickSort(Data: [?Dom]) where Dom.rank == 1;
+\end{protohead}
+\begin{protobody}
+Sorts the 1D array \chpl{Data} in-place using a sequential
+implementation of the QuickSort algorithm.
+\end{protobody}
+
+\subsubsection{Time}
 \label{Time}
 \index{standard modules!Time}
 
@@ -752,40 +843,5 @@ def sleep(t: uint)
 \end{protohead}
 \begin{protobody}
 Delays a task for \chpl{t} seconds.
-\end{protobody}
-
-\subsection{Types}
-
-\begin{protohead}
-def numBits(type t) param : int
-\end{protohead}
-\begin{protobody}
-Returns the number of bits used to store the values of type \chpl{t}.
-This is implemented for all numeric types and \chpl{bool}.
-\end{protobody}
-
-
-\begin{protohead}
-def numBytes(type t) param : int
-\end{protohead}
-\begin{protobody}
-Returns the number of bytes used to store the values of type \chpl{t}.
-This is implemented for all numeric types and \chpl{bool}.
-\end{protobody}
-
-\begin{protohead}
-def max(type t): t
-\end{protohead}
-\begin{protobody}
-Returns the maximum value that can be stored in type \chpl{t}.  This
-is implemented for all numeric types.
-\end{protobody}
-
-\begin{protohead}
-def min(type t): t
-\end{protohead}
-\begin{protobody}
-Returns the minimum value that can be stored in type \chpl{t}.  This
-is implemented for all numeric types.
 \end{protobody}
 
