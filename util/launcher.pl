@@ -19,7 +19,9 @@ if ($preset_launcher eq "") {
             $launcher = "amudprun";
         } elsif ($substrate eq "portals") {
             $launcher = "aprun";
-        }
+        } elsif ($substrate eq "ibv") {
+	    $launcher = "gasnetrun_ibv";
+	}
     } elsif ($comm eq "armci") {
         if ($substrate eq "mpi") {
             $launcher = "mpirun";
