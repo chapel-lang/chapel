@@ -10,6 +10,28 @@
 
 
 //
+// If a local block has no yields, returns, gotos or labels it can safely
+// be left unfragmented.
+//
+static bool leaveLocalBlockUnfragmented(BlockStmt* block) {
+  Vec<BaseAST*> asts;
+  collect_asts(block, asts);
+
+  forv_Vec(BaseAST, ast, asts) {
+    CallExpr* call = toCallExpr(ast);
+    DefExpr* def = toDefExpr(ast);
+    if ((call && call->isPrimitive(PRIMITIVE_YIELD))  ||
+        (call && call->isPrimitive(PRIMITIVE_RETURN)) ||
+         isGotoStmt(ast) || (def && isLabelSymbol(def->sym))) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
+//
 // replace a local block by smaller local blocks that do not contain
 // goto statements, yields, and returns.
 //
@@ -23,7 +45,7 @@ fragmentLocalBlocks() {
   //
   Vec<BlockStmt*> localBlocks; // old local blocks
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_LOCAL))
+    if (block->blockInfo && block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_LOCAL) && !leaveLocalBlockUnfragmented(block))
       localBlocks.add(block);
   }
 
