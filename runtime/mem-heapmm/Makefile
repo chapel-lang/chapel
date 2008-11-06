@@ -1,5 +1,5 @@
 RUNTIME_ROOT = ..
-RUNTIME_SUBDIR = mem-hmm
+RUNTIME_SUBDIR = mem-heapmm
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
  
@@ -9,9 +9,9 @@ MEM_LAUNCHER_OBJ_DIR = $(LAUNCHER_OBJDIR)
 include Makefile.share
 
 ifneq ($(MAKE_LAUNCHER),1)
-TARGETS = $(MEM_COMMON_OBJS) $(MEM_HMM_LIB_DIR)/libhmm.a
+TARGETS = $(MEM_COMMON_OBJS) $(MEM_HEAPMM_LIB_DIR)/libheapmm.a
 else
-TARGETS = $(MEM_LAUNCHER_OBJS) $(MEM_HMM_LIB_DIR)/libhmm.a
+TARGETS = $(MEM_LAUNCHER_OBJS) $(MEM_HEAPMM_LIB_DIR)/libheapmm.a
 endif
 
 

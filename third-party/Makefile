@@ -23,8 +23,8 @@ gasnet: FORCE
 mpich1: FORCE
 	cd mpich1 && $(MAKE)
 
-libhmm: FORCE
-	cd heapMemoryManager && $(MAKE)
+libheapmm: FORCE
+	cd heapmm && $(MAKE)
 
 libdlmalloc: FORCE
 	cd dlmalloc && $(MAKE)
