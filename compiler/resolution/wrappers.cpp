@@ -477,6 +477,7 @@ buildPromotionWrapper(FnSymbol* fn,
     if (!fSerial && !fSerialForall) {
       SymbolMap leaderMap;
       FnSymbol* lifn = wrapper->copy(&leaderMap);
+      lifn->body = new BlockStmt(); // indices are not used in leader
       form_Map(SymbolMapElem, e, leaderMap) {
         if (Symbol* s = paramMap.get(e->key))
           paramMap.put(e->value, s);
