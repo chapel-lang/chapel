@@ -1,7 +1,7 @@
 myLocales = LOCALE0 LOCALE0 LOCALE0 LOCALE0
 ProblemDist =
-BradsBlock1DPar
----------------
+Block1D
+-------
 distributes: [1..10]
 across locales: LOCALE0 LOCALE0 LOCALE0 LOCALE0
 indexed via: [0..3]
@@ -14,8 +14,8 @@ resulting in:
 
 myLocales = LOCALE0 LOCALE0 LOCALE0
 ProblemDist =
-BradsBlock1DPar
----------------
+Block1D
+-------
 distributes: [1..10]
 across locales: LOCALE0 LOCALE0 LOCALE0 LOCALE0
 indexed via: [0..3]

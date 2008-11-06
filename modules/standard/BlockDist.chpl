@@ -118,8 +118,8 @@ class Block1D : Distribution {
   // print out the distribution
   //
   def writeThis(x:Writer) {
-    x.writeln("Block1DPar");
-    x.writeln("---------------");
+    x.writeln("Block1D");
+    x.writeln("-------");
     x.writeln("distributes: ", boundingBox);
     x.writeln("across locales: ", targetLocs);
     x.writeln("indexed via: ", targetLocDom);
@@ -224,10 +224,9 @@ class LocBlock1DDist {
     const hi = dist.boundingBox.high;
     const numelems = hi - lo + 1;
     const numlocs = dist.targetLocDom.numIndices;
-    const blo = if (localeIdx == 0) then min(idxType)
-                else procToData((numelems: real * localeIdx) / numlocs, lo);
-    const bhi = if (localeIdx == numlocs - 1) then max(idxType)
-                else procToData((numelems: real * (localeIdx+1)) / numlocs, lo) - 1;
+    const (blo, bhi) = chpl_computeBlock(min(idxType), numelems, lo,
+                                         max(idxType), numlocs, localeIdx);
+    
     myChunk = [blo..bhi];
     if debugBlock1D then
       writeln(this);
@@ -235,12 +234,6 @@ class LocBlock1DDist {
 
 
   // INTERNAL INTERFACE:
-
-  //
-  // a helper function for mapping processors to indices
-  //
-  def procToData(x, lo)
-    return (lo + (x: lo.type) + (x:real != x:int:real): lo.type);
 
   //
   // print out the local distribution class
@@ -882,4 +875,21 @@ class LocBlock1DArr {
     //
     return locDom.myBlock.dim(1).boundsCheck(x.dim(1));
   }
+}
+
+
+//
+// a helper function for blocking index ranges:
+//
+
+def chpl_computeBlock(waylo, numelems, lo, wayhi, numblocks, blocknum) {
+  def procToData(x, lo)
+    return lo + (x: lo.type) + (x:real != x:int:real): lo.type;
+
+  const blo = if (blocknum == 0) then waylo
+              else procToData((numelems: real * blocknum) / numblocks, lo);
+  const bhi = if (blocknum == numblocks - 1) then wayhi
+              else procToData((numelems: real * (blocknum+1)) / numblocks, lo) - 1;
+
+  return (blo, bhi);
 }

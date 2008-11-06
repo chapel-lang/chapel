@@ -1,0 +1,33 @@
+locale 0 owns chunk: [-2147483648..4]
+locale 1 owns chunk: [5..7]
+locale 2 owns chunk: [8..2147483647]
+0 owns [1..0]
+1 owns [5..0]
+2 owns [8..0]
+0 owns [0..4]
+1 owns [5..7]
+2 owns [8..11]
+0 owns [1..0]
+1 owns [5..0]
+2 owns [8..0]
+0 owns [1..4]
+1 owns [5..7]
+2 owns [8..12]
+0 owns [1..0]
+1 owns [5..0]
+2 owns [8..0]
+0 owns [-1..4]
+1 owns [5..7]
+2 owns [8..10]
+ProblemDist =
+Block1D
+-------
+distributes: [1..10]
+across locales: LOCALE0 LOCALE1 LOCALE2
+indexed via: [0..2]
+resulting in: 
+  [0] locale 0 owns chunk: [-2147483648..4]
+  [1] locale 1 owns chunk: [5..7]
+  [2] locale 2 owns chunk: [8..2147483647]
+
+
