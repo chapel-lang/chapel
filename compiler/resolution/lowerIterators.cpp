@@ -144,9 +144,32 @@ expandIteratorInline(CallExpr* call) {
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIMITIVE_YIELD)) {
-        BlockStmt* bodyCopy = body->copy();
+        Symbol* yieldedIndex = newTemp("_yieldedIndex", index->type);
+        SymbolMap map;
+        map.put(index, yieldedIndex);
+        BlockStmt* bodyCopy = body->copy(&map);
+
+        Symbol* yieldedSymbol = toSymExpr(call->get(1))->var;
+        INT_ASSERT(yieldedSymbol);
+
+        // remove move to return-temp that is defined at top of iterator
+        bool inserted = false;
+        if (CallExpr* prev = toCallExpr(call->prev)) {
+          if (prev->isPrimitive(PRIMITIVE_MOVE)) {
+            if (SymExpr* lhs = toSymExpr(prev->get(1))) {
+              if (lhs->var == yieldedSymbol) {
+                lhs->var = yieldedIndex;
+                prev->insertBefore(new DefExpr(yieldedIndex));
+                inserted = true;
+              }
+            }
+          }
+        }
         call->replace(bodyCopy);
-        bodyCopy->insertAtHead(new CallExpr(PRIMITIVE_MOVE, index, call->get(1)));
+        if (!inserted) {
+          bodyCopy->insertAtHead(new CallExpr(PRIMITIVE_MOVE, yieldedIndex, call->get(1)));
+          bodyCopy->insertAtHead(new DefExpr(yieldedIndex));
+        }
       }
       if (call->isPrimitive(PRIMITIVE_RETURN)) // remove return
         call->remove();
