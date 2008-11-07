@@ -76,7 +76,7 @@ chpl_mutex_t _malloc_lock;
 void initHeap(void* start, size_t size) {
   if (!start || !size)
     chpl_error("Must have a shared segment", 0, 0);
-  chpl_heap = create_mspace_with_base(start, size, 0);
+  chpl_heap = create_mspace_with_base(start, size, 1);
   heapInitialized = 1;
 }
 
