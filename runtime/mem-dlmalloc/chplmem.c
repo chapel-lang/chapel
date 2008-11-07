@@ -444,11 +444,12 @@ void* chpl_malloc(size_t number, size_t size, const char* description,
   size_t chunk = computeChunkSize(number, size, 0, lineno, filename);
   void* memAlloc;
   if (!heapInitialized) {
-    memAlloc = (chunk) ? malloc(chunk) : (void*)0x0;
-  } else {
-    memAlloc = mspace_malloc(chpl_heap, chunk);
-    confirm(memAlloc, description, lineno, filename);
+    chpl_error("chpl_malloc called before the heap is initialized", lineno, filename);
   }
+
+  memAlloc = mspace_malloc(chpl_heap, chunk);
+  confirm(memAlloc, description, lineno, filename);
+
   if (memtrace) {
     chpl_mutex_lock(&_memtrace_lock);
     printToMemLog(number, size, description, "malloc", memAlloc, NULL);
@@ -472,12 +473,11 @@ void* chpl_calloc(size_t number, size_t size, const char* description,
                    int32_t lineno, _string filename) {
   void* memAlloc;
   if (!heapInitialized) {
-    memAlloc = calloc(number, size);
-    confirm(memAlloc, description, lineno, filename);
-  } else {
-    memAlloc = mspace_calloc(chpl_heap, number, size);
-    confirm(memAlloc, description, lineno, filename);
+    chpl_error("chpl_calloc called before the heap is initialized", lineno, filename);
   }
+
+  memAlloc = mspace_calloc(chpl_heap, number, size);
+  confirm(memAlloc, description, lineno, filename);
 
   if (memtrace) {
     chpl_mutex_lock(&_memtrace_lock);
@@ -533,10 +533,9 @@ void chpl_free(void* memAlloc, int32_t lineno, _string filename) {
       chpl_mutex_unlock(&_memtrack_lock);
     }
     if (!heapInitialized) {
-      free(memAlloc);
-    } else {
-      mspace_free(chpl_heap, memAlloc);
+      chpl_error("chpl_free called before the heap is initialized", lineno, filename);
     }
+    mspace_free(chpl_heap, memAlloc);
   }
 }
 
@@ -563,12 +562,11 @@ void* chpl_realloc(void* memAlloc, size_t number, size_t size,
     }
   }
   if (!heapInitialized) {
-    moreMemAlloc = realloc(memAlloc, newChunk);
-    confirm(moreMemAlloc, description, lineno, filename);
-  } else {
-    moreMemAlloc = mspace_realloc(chpl_heap, memAlloc, newChunk);
-    confirm(moreMemAlloc, description, lineno, filename);
+    chpl_error("chpl_realloc called before the heap is initialized", lineno, filename);
   }
+
+  moreMemAlloc = mspace_realloc(chpl_heap, memAlloc, newChunk);
+  confirm(moreMemAlloc, description, lineno, filename);
 
   if (memtrack) { 
     chpl_mutex_lock(&_memtrack_lock);

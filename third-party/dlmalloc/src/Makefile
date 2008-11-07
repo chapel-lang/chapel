@@ -3,25 +3,25 @@ CHPL_MAKE_HOST_TARGET = --target
 
 include $(CHAPEL_ROOT)/make/Makefile.base
 
-LEA_CFLAGS = -O3
+DLMALLOC_CFLAGS = -O3
 
-LEA_BUILD_DIR = $(MEM_LEA_DIR)/build/$(CHPL_MAKE_TARGET_PLATFORM)-$(CHPL_MAKE_COMPILER)
+DLMALLOC_BUILD_DIR = $(MEM_DLMALLOC_DIR)/build/$(CHPL_MAKE_TARGET_PLATFORM)-$(CHPL_MAKE_COMPILER)
 
-LEA_DEFINES = USE_LOCKS -DONLY_MSPACES -DMSPACES
+DLMALLOC_DEFINES = USE_LOCKS -DONLY_MSPACES -DMSPACES
 
-LEA_SRCS = dlmalloc.c
+DLMALLOC_SRCS = dlmalloc.c
 
-LEA_OBJS = $(LEA_SRCS:%.c=$(LEA_BUILD_DIR)/%.o)
+DLMALLOC_OBJS = $(DLMALLOC_SRCS:%.c=$(DLMALLOC_BUILD_DIR)/%.o)
 
 .PHONY: all
-all: $(MEM_LEA_LIB_DIR)/libdlmalloc.a
+all: $(MEM_DLMALLOC_LIB_DIR)/libdlmalloc.a
 
-$(MEM_LEA_LIB_DIR)/libdlmalloc.a: $(LEA_OBJS) $(MEM_LEA_LIB_DIR)/.timestamp
-	$(AR) -rc $@ $(LEA_OBJS)
+$(MEM_DLMALLOC_LIB_DIR)/libdlmalloc.a: $(DLMALLOC_OBJS) $(MEM_DLMALLOC_LIB_DIR)/.timestamp
+	$(AR) -rc $@ $(DLMALLOC_OBJS)
 	$(RANLIB) $@
 
-$(LEA_BUILD_DIR)/%.o: $(LEA_SRCS) $(LEA_BUILD_DIR)/.timestamp
-	$(CC) -I$(MEM_LEA_INCLUDE_DIR) -D$(LEA_DEFINES) $(LEA_CFLAGS) -c $*.c -o $@
+$(DLMALLOC_BUILD_DIR)/%.o: $(DLMALLOC_SRCS) $(DLMALLOC_BUILD_DIR)/.timestamp
+	$(CC) -I$(MEM_DLMALLOC_INCLUDE_DIR) -D$(DLMALLOC_DEFINES) $(DLMALLOC_CFLAGS) -c $*.c -o $@
 
 
 %/.timestamp:
@@ -29,5 +29,5 @@ $(LEA_BUILD_DIR)/%.o: $(LEA_SRCS) $(LEA_BUILD_DIR)/.timestamp
 	@-touch $*/.timestamp
 
 clean:
-	rm -f $(LEA_OBJS) $(MEM_LEA_LIB_DIR)/libdlmalloc.a
+	rm -f $(DLMALLOC_OBJS) $(MEM_DLMALLOC_LIB_DIR)/libdlmalloc.a
 
