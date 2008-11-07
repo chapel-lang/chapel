@@ -1,0 +1,1 @@
+nestedForall2.chpl:6: error: cannot use a coforall within a standard iterator

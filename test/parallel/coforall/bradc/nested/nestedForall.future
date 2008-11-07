@@ -1,0 +1,8 @@
+bug: race condition in nested coforall leader
+
+When using a nested coforall within a leader, we seem to get a race
+condition.  Running this test multiple times results in a varying
+number of "0 got 0" and "1 got 1" lines when only one of each would
+be expected.
+
+
