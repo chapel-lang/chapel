@@ -147,6 +147,9 @@ void _chpl_comm_init(int *argc_p, char ***argv_p) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
   GASNET_Safe(gasnet_getSegmentInfo(seginfo_table, 1024));
 #endif
+
+  gasnet_set_waitmode(GASNET_WAIT_BLOCK);
+
   //
   // start polling thread
   // this should call a special function in the threading interface
