@@ -178,9 +178,9 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
 
   // start with the functions created from begin, cobegin, and coforall statements
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
+    if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
+        fn->hasFlag(FLAG_NON_BLOCKING))
       fnsContainingTaskll.add(fn);
-    }
   }
   // add any functions that call the functions added so far
   forv_Vec(FnSymbol, fn, fnsContainingTaskll) {
@@ -211,8 +211,8 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   buildDefUseMaps(symSet, symExprs, defMap, useMap);
 
   forv_Vec(Symbol, var, heapAllocatedVars) {
-    // find out if the variable just put on the heap could be passed in as an argument
-    // to a function created from a begin, cobegin, or coforall statement;
+    // find out if a variable that was put on the heap could be passed in as an
+    // argument to a function created from a begin, cobegin, or coforall statement;
     // if not, free the heap memory just allocated at the end of the block
     if (defMap.get(var)->n == 1) {
       bool freeVar = true;
@@ -515,7 +515,7 @@ makeHeapAllocations() {
     var->type = heapType;
   }
 
-  if (0) { freeHeapAllocatedVars(heapAllocatedVars); }
+  freeHeapAllocatedVars(heapAllocatedVars);
 }
 
 
