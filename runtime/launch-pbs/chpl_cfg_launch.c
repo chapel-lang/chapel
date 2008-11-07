@@ -137,7 +137,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
     fprintf(expectFile, "}\n");
     fprintf(expectFile, "send \"exit\\n\"\n");
   }
-  fprintf(expectFile, "spawn qsub -z -I %s\n", pbsFilename);
+  fprintf(expectFile, "spawn qsub -z -vGASNET_MAX_SEGSIZE -I %s\n", pbsFilename);
   fprintf(expectFile, "expect {\n");
   fprintf(expectFile, "  \"A project was not specified\" {send_user "
           "\"error: A project account must be specified via \\$" 
