@@ -1,5 +1,5 @@
 RUNTIME_ROOT = ..
-RUNTIME_SUBDIR = mem-lea
+RUNTIME_SUBDIR = mem-dlmalloc
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
  
@@ -9,9 +9,9 @@ MEM_LAUNCHER_OBJ_DIR = $(LAUNCHER_OBJDIR)
 include Makefile.share
 
 ifneq ($(MAKE_LAUNCHER),1)
-TARGETS = $(MEM_COMMON_OBJS) $(MEM_LEA_LIB_DIR)/libdlmalloc.a
+TARGETS = $(MEM_COMMON_OBJS) $(MEM_DLMALLOC_LIB_DIR)/libdlmalloc.a
 else
-TARGETS = $(MEM_LAUNCHER_OBJS) $(MEM_LEA_LIB_DIR)/libdlmalloc.a
+TARGETS = $(MEM_LAUNCHER_OBJS) $(MEM_DLMALLOC_LIB_DIR)/libdlmalloc.a
 endif
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules

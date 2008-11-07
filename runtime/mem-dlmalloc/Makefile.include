@@ -1,4 +1,4 @@
-MEM_SUBDIR = mem-lea
+MEM_SUBDIR = mem-dlmalloc
 
 ALL_SRCS += $(CURDIR)/$(MEM_SUBDIR)/*.c
 
