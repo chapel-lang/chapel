@@ -103,7 +103,7 @@ def main() {
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 
-  const validAnswer = verifyResults(T, Updates);   // verify the updates
+  const validAnswer = verifyResults();             // verify the updates
   printResults(validAnswer, execTime);             // print the results
 }
 
@@ -120,7 +120,7 @@ def printConfiguration() {
 //
 // Verify that the computation is correct
 //
-def verifyResults(T: [?TDom], Updates) {
+def verifyResults() {
   //
   // Print the table, if requested
   //
@@ -144,7 +144,7 @@ def verifyResults(T: [?TDom], Updates) {
   // correctly.  This is an indication of the number of conflicting
   // updates.
   //
-  const numErrors = + reduce [i in TDom] (T(i) != i);
+  const numErrors = + reduce [i in TableSpace] (T(i) != i);
   if (printStats) then writeln("Number of errors is: ", numErrors, "\n");
 
   //
