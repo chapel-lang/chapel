@@ -11,7 +11,6 @@
 
 record Node {
     const lvl, idx : int;
-    const loc = (2**lvl + idx)%numLocales; 
 
     def get_coords() {
         return (lvl, idx);
@@ -178,12 +177,17 @@ class FTree {
         this.order = order;
         this.coeffDom = [0..order-1];
 
-        coforall loc in LocaleSpace do
-            on Locales(loc) do tree[loc] = new LocTree(coeffDom);
+        coforall loc in Locales do
+            on loc do tree[loc.id] = new LocTree(coeffDom);
+    }
+
+    def node2loc(node: Node) {
+        const loc = (2**node.lvl + node.idx)%numLocales;
+        return Locales(loc);
     }
 
     def this(node: Node) var {
-        const t = tree[node.loc];
+        const t = tree[node2loc(node).id];
         return t[node];
     }
 
@@ -205,17 +209,17 @@ class FTree {
     }
     
     def peek(node: Node) var {
-        const t = tree[node.loc];
+        const t = tree[node2loc(node).id];
         return t.peek(node);
     }
 
     def has_coeffs(node: Node) {
-        const t = tree[node.loc];
+        const t = tree[node2loc(node).id];
         return t.has_coeffs(node);
     }
 
     def remove(node: Node) {
-        const t = tree[node.loc];
+        const t = tree[node2loc(node).id];
         t.remove(node);
     }
    

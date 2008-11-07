@@ -81,7 +81,7 @@ class Function {
             if debug then writeln("  performing initial refinement of f(x)");
             for l in 0..2**initial_level-1 {
                 const node = new Node(initial_level, l);
-                sync on Locales(node.loc) do begin refine(node);
+                sync on sumC.node2loc(node) do begin refine(node);
             }
         }
 
@@ -188,8 +188,8 @@ class Function {
         const (n, _ ) = curNode.get_coords();
         if((nf < thresh) || (n >= (max_level-1))) {
             if ( n+1 < log2(maxThreads) ) then {
-                on Locales(child(1).loc) do begin sumC[child(1)] = s0;
-                on Locales(child(2).loc) do begin sumC[child(2)] = s1;
+                on sumC.node2loc(child(1)) do begin sumC[child(1)] = s0;
+                on sumC.node2loc(child(2)) do begin sumC[child(2)] = s1;
             }
             else {
                 sumC[child(1)] = s0;
@@ -200,8 +200,8 @@ class Function {
             // these recursive calls on sub-trees can go in parallel
             // if the HashMap is syncronized
             if ( n+1 < log2(maxThreads) ) then {
-                on Locales(child(1).loc) do begin refine(child(1));
-                on Locales(child(2).loc) do begin refine(child(2));
+                on sumC.node2loc(child(1)) do begin refine(child(1));
+                on sumC.node2loc(child(2)) do begin refine(child(2));
             }
             else {
                 refine(child(1));

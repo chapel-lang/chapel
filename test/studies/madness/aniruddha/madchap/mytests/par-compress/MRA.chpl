@@ -245,9 +245,9 @@ class Function {
         const (n,_) = curNode.get_coords();
         if ( n+1 < log2(maxThreads) ) then
             cobegin {	
-                on Locales(child(1).loc) do
+                on sumC.node2loc(child(1)) do
                     if !sumC.has_coeffs(child(1)) then compress(child(1));
-                on Locales(child(2).loc) do
+                on sumC.node2loc(child(2)) do
                     if !sumC.has_coeffs(child(2)) then compress(child(2));
             }
         else {
