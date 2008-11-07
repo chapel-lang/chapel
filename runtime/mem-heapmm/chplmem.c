@@ -447,14 +447,16 @@ void* chpl_malloc(size_t number, size_t size, const char* description,
   void* memAlloc;
   if (!heapInitialized) {
     chpl_error("chpl_malloc called before heap is initialized", lineno, filename);
-  } else {
-    if (chunk % HMM_ADDR_ALIGN_UNIT != 0)
-      numBlocks += 1;
-    chpl_mutex_lock(&_malloc_lock);
-    memAlloc = hmm_alloc(&chpl_heap, numBlocks);
-    chpl_mutex_unlock(&_malloc_lock);
-    confirm(memAlloc, description, lineno, filename);
   }
+
+  if (chunk % HMM_ADDR_ALIGN_UNIT != 0)
+    numBlocks += 1;
+
+  chpl_mutex_lock(&_malloc_lock);
+  memAlloc = hmm_alloc(&chpl_heap, numBlocks);
+  chpl_mutex_unlock(&_malloc_lock);
+  confirm(memAlloc, description, lineno, filename);
+
   if (memtrace) {
     chpl_mutex_lock(&_memtrace_lock);
     printToMemLog(number, size, description, "malloc", memAlloc, NULL);
@@ -479,11 +481,11 @@ void* chpl_calloc(size_t number, size_t size, const char* description,
   void* memAlloc;
   if (!heapInitialized) {
     chpl_error("chpl_calloc called before the heap is initialized", lineno, filename);
-  } else {
-    memAlloc = chpl_malloc(number, size, description, lineno, filename);
-    confirm(memAlloc, description, lineno, filename);
-    memset(memAlloc, 0, number*size);
   }
+
+  memAlloc = chpl_malloc(number, size, description, lineno, filename);
+  confirm(memAlloc, description, lineno, filename);
+  memset(memAlloc, 0, number*size);
 
   if (memtrace) {
     chpl_mutex_lock(&_memtrace_lock);
@@ -540,11 +542,10 @@ void chpl_free(void* memAlloc, int32_t lineno, _string filename) {
     }
     if (!heapInitialized) {
       chpl_error("chpl_free called before the heap is initialized", lineno, filename);
-    } else {
-      chpl_mutex_lock(&_malloc_lock);
-      hmm_free(&chpl_heap, memAlloc);
-      chpl_mutex_unlock(&_malloc_lock);
     }
+    chpl_mutex_lock(&_malloc_lock);
+    hmm_free(&chpl_heap, memAlloc);
+    chpl_mutex_unlock(&_malloc_lock);
   }
 }
 
