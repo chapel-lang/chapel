@@ -3,8 +3,9 @@ Using Chapel on Cray XTs
 ========================
 
 The following information is assembled to help users get up and
-running on a Cray XT running UNICOS/lc as easily as possible.  If you
-have any troubles, please let us know at chapel_info@cray.com.
+running on a Cray XT running the Cray Linux Environment as easily as
+possible.  If you have any troubles, please let us know at
+chapel_info@cray.com.
 
 
 1) Set CHPL_HOME, CHPL_HOST_PLATFORM, your path, and MANPATH as usual.
@@ -90,3 +91,29 @@ have any troubles, please let us know at chapel_info@cray.com.
        At the time of this release, we do not yet have experience
        launching Chapel programs using the non-interactive scheduler.
        Consult the alps and aprun man pages for details.
+
+
+-----------------------------
+Memory on the XT using GASNet
+-----------------------------
+
+* GASNet executions over portals on the XT currently conservatively
+  assume a maximum heap size of 2GB per locale even though many XT
+  configurations can handle a much larger heap size in practice.  If
+  you are getting out-of-memory errors as a result of this limit, you
+  can explicitly request a larger maximum heap size by setting the
+  environment variable GASNET_MAX_SEGSIZE to the number of bytes you
+  wish to make the limit.  For example, for a csh-based shell, you
+  could use:
+
+    setenv GASNET_MAX_SEGSIZE 4294967296
+
+  to set the GASNet heap size limit to 4GB.  Note that this variable
+  can be changed from run to run and need not be set at compile time.
+  Applications that set this limit too high may be terminated with an
+  error:
+
+     [NID 18]Apid 49229: initiated application termination
+     Application 49229 exit signals: Killed
+
+  If you get this message, try reducing the GASNET_MAX_SEGSIZE value.
