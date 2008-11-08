@@ -109,9 +109,6 @@ static gasnet_handlerentry_t ftable[] = {
 };
 
 static gasnet_seginfo_t seginfo_table[1024];
-static int exitSignal = 0;
-static int gasnet_init_called = 0;
-static pthread_t polling_thread;
 
 //
 // Chapel interface starts here
@@ -126,14 +123,14 @@ int32_t _chpl_comm_maxThreadsLimit(void) {
 }
 
 static void polling(void* x) {
-  GASNET_BLOCKUNTIL(exitSignal);
+  GASNET_BLOCKUNTIL(0);
 }
 
 void _chpl_comm_init(int *argc_p, char ***argv_p) {
+  pthread_t polling_thread;
   int status;
 
   gasnet_init(argc_p, argv_p);
-  gasnet_init_called = 1;
   _localeID = gasnet_mynode();
   _numLocales = gasnet_nodes();
   GASNET_Safe(gasnet_attach(ftable, 
@@ -255,14 +252,7 @@ void _chpl_comm_barrier(const char *msg) {
 }
 
 static void _chpl_comm_exit_common(int status) {
-  if (gasnet_init_called) {
-    int localExitSignal = 1;
-    // DITEN: Is it required by GASNet to do a gasnet_put instead of a normal
-    // assignment? exitSignal is always on the current locale.
-    //gasnet_put(_localeID, &exitSignal, &localExitSignal, sizeof(int));
-    exitSignal = localExitSignal;
-    gasnet_exit(status);
-  }
+  gasnet_exit(status);
 }
 
 void _chpl_comm_exit_all(int status) {
