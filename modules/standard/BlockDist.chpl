@@ -41,6 +41,7 @@ class Block1D : Distribution {
   const targetLocDom: domain(1);
   const targetLocs: [targetLocDom] locale;
 
+  var tasksPerLoc: int;
 
   // LINKAGE:
 
@@ -54,7 +55,8 @@ class Block1D : Distribution {
   // CONSTRUCTORS:
 
   def Block1D(type idxType = int(64), bbox: domain(1, idxType),
-              targetLocales: [] locale = Locales) {
+              targetLocales: [] locale = Locales, 
+	      tasksPerLocale = 0) {
     boundingBox = bbox;
     //
     // 0-base the local capture of the targetLocDom for simplicity
@@ -69,6 +71,10 @@ class Block1D : Distribution {
     for locid in targetLocDom do
       on targetLocs(locid) do
         locDist(locid) = new LocBlock1DDist(idxType, locid, this);
+
+    tasksPerLoc = tasksPerLocale;
+    if (tasksPerLoc == 0) then tasksPerLoc = min reduce targetLocs.numCores;
+    //    writeln("Using ", tasksPerLoc, " tasks per locale");
 
     //    writeln("Created a Block1D:\n", this);
   }
@@ -359,7 +365,18 @@ class Block1DDom: BaseArithmeticDomain {
     //
     coforall locDom in locDoms do
       on locDom {
-        yield locDom.myBlock - whole.low;
+	const locBlock = locDom.myBlock - whole.low,
+              numTasks = dist.tasksPerLoc;
+	if (numTasks == 1) {
+	  yield locBlock;
+	} else {
+          coforall taskid in 0..#numTasks {
+            const (lo,hi) = chpl_computeBlock(locBlock.low, locBlock.numIndices,
+                                              locBlock.low, locBlock.high, 
+                                              numTasks, taskid);
+            yield [lo..hi];
+          }
+        }
       }
   }
 
@@ -670,8 +687,21 @@ class Block1DArr: BaseArray {
     // somehow?
     //
     coforall locDom in dom.locDoms do
-      on locDom do
-        yield locDom.myBlock - dom.whole.low;
+      on locDom {
+        const locBlock = locDom.myBlock - dom.whole.low,
+              numTasks = dom.dist.tasksPerLoc;
+        if (numTasks == 1) {
+          yield locBlock;
+        } else {
+          coforall taskid in 0..#numTasks {
+	    const mytaskid = taskid;
+            const (lo,hi) = chpl_computeBlock(locBlock.low, locBlock.numIndices,
+                                              locBlock.low, locBlock.high, 
+                                              numTasks, mytaskid);
+            yield [lo..hi];
+          }
+        }
+      }
   }
 
   def supportsAlignedFollower() param return true;

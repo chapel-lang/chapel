@@ -39,6 +39,11 @@ const m = 2**n,
 config const errorTolerance = 1e-2;
 
 //
+// The number of tasks to use per Chapel locale
+//
+config const tasksPerLoc = min reduce Locales.numCores;
+
+//
 // Configuration constants to control what's printed -- benchmark
 // parameters, input and output arrays, and/or statistics
 //
@@ -53,8 +58,10 @@ config const printParams = true,
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new Block1D(indexType, bbox=[0..m-1]),
-      UpdateDist = new Block1D(indexType, bbox=[0..N_U-1]);
+const TableDist = new Block1D(indexType, bbox=[0..m-1], 
+                              tasksPerLocale=tasksPerLoc),
+      UpdateDist = new Block1D(indexType, bbox=[0..N_U-1],
+                               tasksPerLocale=tasksPerLoc);
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
