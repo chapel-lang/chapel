@@ -84,8 +84,8 @@ static void fork_wrapper(fork_t *f) {
 
 // AM fork handler, medium sized, receiver side
 static void AM_fork(gasnet_token_t  token,
-                     void           *buf,
-                     size_t          nbytes) {
+                    void           *buf,
+                    size_t          nbytes) {
   fork_t *f;
 
   f = (fork_t*)chpl_malloc(nbytes, sizeof(char), "AM_fork info", 0, 0);
@@ -96,8 +96,8 @@ static void AM_fork(gasnet_token_t  token,
 
 // AM signal handler, medium sized, receiver side
 static void AM_signal(gasnet_token_t  token,
-                       void          *buf,
-                       size_t         nbytes) {
+                      void           *buf,
+                      size_t          nbytes) {
   int **done = (int**)buf;
   **done = 1;
 }
@@ -109,7 +109,6 @@ static gasnet_handlerentry_t ftable[] = {
 };
 
 static gasnet_seginfo_t seginfo_table[1024];
-static char numLocalesString[64];
 static int exitSignal = 0;
 static int gasnet_init_called = 0;
 static pthread_t polling_thread;
@@ -131,10 +130,7 @@ static void polling(void* x) {
 }
 
 void _chpl_comm_init(int *argc_p, char ***argv_p) {
-  int needPollingThread = 1;
-  //#if defined(GASNET_CONDUIT_PORTALS)
-  //  needPollingThread = 0;
-  //#endif
+  int status;
 
   gasnet_init(argc_p, argv_p);
   gasnet_init_called = 1;
@@ -152,17 +148,14 @@ void _chpl_comm_init(int *argc_p, char ***argv_p) {
 
   //
   // start polling thread
-  // this should call a special function in the threading interface
-  // but remember that we have not yet initialized chapel threads!
   //
-  if (needPollingThread) {
-    int status;
-
-    status = pthread_create(&polling_thread, NULL, (chpl_threadfp_t)polling, 0);
-    if (status)
-      chpl_internal_error("unable to start polling thread for gasnet");
-    pthread_detach(polling_thread);
-  }
+  // This should call a special function in the threading interface
+  // but we have not yet initialized chapel threads!
+  //
+  status = pthread_create(&polling_thread, NULL, (chpl_threadfp_t)polling, 0);
+  if (status)
+    chpl_internal_error("unable to start polling thread for gasnet");
+  pthread_detach(polling_thread);
 }
 
 //
