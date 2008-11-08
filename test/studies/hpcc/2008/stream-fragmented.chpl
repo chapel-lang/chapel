@@ -90,9 +90,14 @@ def initVectors(B, C, ProblemSpace) {
 
 
 def verifyResults(A, B, C) {
-  if (printArrays) then writelnFragArray("A is: ", A, "\n");
+  if (printArrays) then writelnFragArray("A is:     ", A, "\n");
 
-  const infNorm = max reduce [i in A.domain] abs(A(i) - (B(i) + alpha * C(i)));
+  forall (b, c) in (B, C) do
+    b += alpha *c;  
+
+  if (printArrays) then writelnFragArray("A-hat is: ", B, "\n");
+
+  const infNorm = max reduce [(a,b) in (A,B)] abs(a - b);
 
   return (infNorm <= epsilon);
 }

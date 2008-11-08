@@ -122,14 +122,22 @@ def initVectors(B, C) {
 // Verify that the computation is correct
 //
 def verifyResults(A, B, C) {
-  if (printArrays) then writeln("A is: ", A, "\n");  // optionally print A
+  if (printArrays) then writeln("A is:     ", A, "\n");  // optionally print A
+
+  //
+  // recompute the computation, destructively storing into B to save space
+  //
+  forall (b, c) in (B, C) do
+    b += alpha *c;  
+
+  if (printArrays) then writeln("A-hat is: ", B, "\n");  // and A-hat too
 
   //
   // Compute the infinity-norm by computing the maximum reduction of the
-  // absolute value of A's elements minus the multiply-add of B and C.
+  // absolute value of A's elements minus the new result computed in B.
   // "[i in I]" represents an expression-level loop: "forall i in I"
   //
-  const infNorm = max reduce [(a,b,c) in (A,B,C)] abs(a - (b + alpha * c));
+  const infNorm = max reduce [(a,b) in (A,B)] abs(a - b);
 
   return (infNorm <= epsilon);    // return whether the error is acceptable
 }
