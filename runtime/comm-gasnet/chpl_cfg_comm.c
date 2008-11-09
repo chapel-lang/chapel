@@ -115,11 +115,11 @@ static gasnet_seginfo_t seginfo_table[1024];
 //
 
 int32_t _chpl_comm_getMaxThreads(void) {
-  return 255;
+  return GASNETI_MAX_THREADS-1;
 }
 
 int32_t _chpl_comm_maxThreadsLimit(void) {
-  return 255;
+  return GASNETI_MAX_THREADS-1;
 }
 
 static void polling(void* x) {
@@ -275,7 +275,7 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
   }
 }
 
-void  _chpl_comm_get(void* addr, int32_t locale, const void* raddr, int32_t size) {
+void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size) {
   if (_localeID == locale) {
     bcopy(raddr, addr, size);
   } else {
@@ -283,7 +283,7 @@ void  _chpl_comm_get(void* addr, int32_t locale, const void* raddr, int32_t size
   if (chpl_comm_debug && !chpl_comm_no_debug_private)
     printf("%d: remote get from %d\n", _localeID, locale);
 #endif
-    gasnet_get(addr, locale, (void*)raddr, size); // dest, node, src, size
+    gasnet_get(addr, locale, raddr, size); // dest, node, src, size
   }
 }
 

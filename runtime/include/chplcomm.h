@@ -117,7 +117,7 @@ typedef void (*func_p)(void*);
     char* chpl_macro_tmp = chpl_malloc((wide).size,                    \
                                         sizeof(char),                   \
                                         "wide_get_string", -1, "<internal>"); \
-    _chpl_comm_get(chpl_macro_tmp, (wide).locale, (wide).addr, (wide).size); \
+    _chpl_comm_get(chpl_macro_tmp, (wide).locale, (void*)((wide).addr), (wide).size); \
     local = chpl_macro_tmp;                                             \
   } while (0)
 
@@ -301,7 +301,7 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size);
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_get(void *addr, int32_t locale, const void* raddr, int32_t size);
+void  _chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size);
 
 //
 // remote fork should launch a thread on locale that runs function f
