@@ -132,7 +132,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
     fprintf(expectFile, "log_user 0\n");
   }
   fprintf(expectFile, "set timeout -1\n");
-  fprintf(expectFile, "set prompt \"(%|#|\\$|>) $\"\n");
+  fprintf(expectFile, "set prompt \"(%%|#|\\$|>) $\"\n");
   if (verbosity > 0) {
     fprintf(expectFile, "spawn tcsh -f\n");
     fprintf(expectFile, "expect -re $prompt\n");
