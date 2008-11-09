@@ -23,13 +23,13 @@ if ($preset_mem eq "") {
       $mem = "default";
     } elsif ($segment eq "fast" ||
              $segment eq "large") {
-      $mem = "heapmm";
+      $mem = "dlmalloc";
     } else {
       # Unexpected segment type
       $mem = "default";
     }
   } elsif ($comm eq "armci") {
-    $mem = "heapmm";
+    $mem = "dlmalloc";
   } else {
     $mem = "default";
   }
