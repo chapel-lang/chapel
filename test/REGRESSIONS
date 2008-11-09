@@ -40,14 +40,13 @@ internal valgrind stuff 'the impossible has happened'
 no-local regressions
 ====================
 
+attempt to dereference nil (11/08/08)
+-------------------------------------
+[Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
+
 garbage collection doesn't work with multithreaded
 --------------------------------------------------
 [Error matching compiler output for classes/diten/allocateManyObjects]
-
-leaking memory (11/01/08)
--------------------------
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
 
 allocAndFree returns different results (skipped for GASNet)
 -----------------------------------------------------------
@@ -75,6 +74,10 @@ occasional out-of-memory error (11/06/08)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+attempt to dereference nil (11/08/08)
+-------------------------------------
+[Error matching program output for studies/matrixMult/stonea/distributed/luLike]
 
 occasional timeouts (e.g., 11/03/08)
 ------------------------------------
