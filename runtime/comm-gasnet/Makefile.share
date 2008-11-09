@@ -58,9 +58,4 @@ endif
 endif
 
 $(GASNET_INC_MAKEFILE):
-	@echo
-	@echo "******************************************************************************"
-	@echo GASNet not yet built for platform=$(CHPL_MAKE_TARGET_PLATFORM), segment=$(CHPL_GASNET_SEGMENT), debug=$(CHPL_GASNET_DEBUG)
-	@echo Try making third-party from CHPL_HOME
-	@echo "******************************************************************************"
-	@echo
+	cd $(THIRD_PARTY_DIR) && $(MAKE) gasnet
