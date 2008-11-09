@@ -2,14 +2,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include "chpllaunch.h"
 #include "chplmem.h"
+#include "chpltypes.h"
 #include "error.h"
 
-static const char* pbsFilename = ".chpl-pbs-qsub";
-static const char* expectFilename = ".chpl-expect";
 
-#define sysFilename ".chpl-tmp"
+#define basePBSFilename ".chpl-pbs-qsub-"
+#define baseExpectFilename ".chpl-expect-"
+#define baseSysFilename ".chpl-sys-"
+
+char pbsFilename[FILENAME_MAX];
+char expectFilename[FILENAME_MAX];
+char sysFilename[FILENAME_MAX];
+
 /* copies of binary to run per node */
 #define procsPerNode 1  
 #define versionBuffLen 80
@@ -28,7 +36,8 @@ static qsubVersion determineQsubVersion(void) {
   FILE* sysFile;
   int i;
 
-  system("qsub --version > "sysFilename);
+  char* command = _glom_strings(2, "qsub --version > ", sysFilename);
+  system(command);
   sysFile = fopen(sysFilename, "r");
   for (i=0; i<versionBuffLen; i++) {
     char tmp;
@@ -59,7 +68,8 @@ static int getNumCoresPerLocale(void) {
 
   /* BLC: This code is fairly specific to xt-cnl, but currently will
      only be called for the NCCS version of qsub */
-  system("cnselect -Lcoremask > " sysFilename);
+  char* command = _glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
+  system(command);
   sysFile = fopen(sysFilename, "r");
   if (fscanf(sysFile, "%d", &coreMask) != 1) {
     chpl_error("Cannot determine number of cores per node", 0, 0);
@@ -96,11 +106,18 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   FILE* pbsFile, *expectFile;
   char* projectString = getenv(launcherAccountEnvvar);
   char* basenamePtr = strrchr(argv[0], '/');
+  pid_t mypid;
+
   if (basenamePtr == NULL) {
       basenamePtr = argv[0];
   } else {
       basenamePtr++;
   }
+
+  mypid = getpid();
+  sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
+  sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
+  sprintf(pbsFilename, "%s%d", basePBSFilename, (int)mypid);
 
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
@@ -173,7 +190,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
 
   size = strlen(baseCommand) + 1;
 
-  command = chpl_malloc(size, sizeof(char*), "command buffer", -1, "");
+  command = chpl_malloc(size, sizeof(char), "command buffer", -1, "");
   
   sprintf(command, "%s", baseCommand);
 
