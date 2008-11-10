@@ -996,9 +996,11 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
       
       followerBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, followerIndex, followerIterator);
       followerBlock->insertAtTail(followerBody);
-      followerBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("lock"))));
-      followerBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("combine")), localOp));
-      followerBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("unlock"))));
+      BlockStmt* combineBlock = new BlockStmt();
+      combineBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("lock"))));
+      combineBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("combine")), localOp));
+      combineBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("unlock"))));
+      followerBlock->insertAtTail(buildOnStmt(new SymExpr(globalOp), combineBlock));
 
       BlockStmt* beginBlock = new BlockStmt();
       beginBlock->insertAtTail(new DefExpr(leaderIndexCopy));

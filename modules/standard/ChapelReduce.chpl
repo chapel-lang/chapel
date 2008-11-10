@@ -1,10 +1,3 @@
-use List;
-def _reduce(r, s) { // reduce s by reduction r
-  for e in s do
-    r.accumulate(e);
-  return r.generate();  
-}
-
 def _scan(r, s) {
   var s2: list(r.eltType);
   for e in s {
