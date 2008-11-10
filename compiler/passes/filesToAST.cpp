@@ -28,6 +28,22 @@ static void parseStandardModules(void) {
   parseStandardModule("ChapelArray.chpl");
   parseStandardModule("ChapelDistribution.chpl");
   parseStandardModule("ChapelUtil.chpl");
+
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (!strcmp(ts->name, "iterator")) {
+      if (EnumType* enumType = toEnumType(ts->type)) {
+        for_alist(expr, enumType->constants) {
+          if (DefExpr* def = toDefExpr(expr)) {
+            if (!strcmp(def->sym->name, "leader"))
+              gLeaderTag = def->sym;
+            else if (!strcmp(def->sym->name, "follower"))
+              gFollowerTag = def->sym;
+          }
+        }
+      }
+    }
+  }
+
   parseStandardModule("DefaultArithmetic.chpl");
   parseStandardModule("DefaultAssociative.chpl");
   parseStandardModule("DefaultSparse.chpl");
@@ -59,18 +75,7 @@ void parse(void) {
   parseStandardModules();
   
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (!strcmp(ts->name, "iterator")) {
-      if (EnumType* enumType = toEnumType(ts->type)) {
-        for_alist(expr, enumType->constants) {
-          if (DefExpr* def = toDefExpr(expr)) {
-            if (!strcmp(def->sym->name, "leader"))
-              gLeaderTag = def->sym;
-            else if (!strcmp(def->sym->name, "follower"))
-              gFollowerTag = def->sym;
-          }
-        }
-      }
-    } else if (!strcmp(ts->name, "_array")) {
+    if (!strcmp(ts->name, "_array")) {
       dtArray = toClassType(ts->type);
     } else if (!strcmp(ts->name, "BaseArray")) {
       dtBaseArray = toClassType(ts->type);

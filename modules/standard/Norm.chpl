@@ -34,17 +34,13 @@ def norm(x: [], p: normType) where x.rank == 1 {
 def norm(x: [?D], p: normType) where x.rank == 2 {
   select (p) {
   when normType.norm1 do
-    // TODO: would like to make both reductions parallel, but currently
-    // causes a core dump
-    return max reduce for j in D.dim(2) do (+ reduce abs(x[D.dim(1), j]));
+    return max reduce forall j in D.dim(2) do (+ reduce abs(x[D.dim(1), j]));
   
   when normType.norm2 do
-    halt("Haven't implemented 2-norm for 2D arrays yet");
+    halt("2-norm for 2D arrays are not yet implemented");
   
   when normType.normInf do
-    // TODO: would like to make both reductions parallel, but currently
-    // causes a core dump
-    return max reduce for i in D.dim(1) do (+ reduce abs(x[i, D.dim(2)]));
+    return max reduce forall i in D.dim(1) do (+ reduce abs(x[i, D.dim(2)]));
   
   when normType.normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
   
