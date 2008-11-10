@@ -1,3 +1,5 @@
+MRA.chpl:400: In function 'norm2':
+MRA.chpl:402: warning: reduction will be executed serially
 Mad Chapel -- Differentiation Test
 
 ** Testing function 1

@@ -1,2 +1,6 @@
+cg-sparse.chpl:87: In function 'conjGrad':
+cg-sparse.chpl:100: warning: reduction will be executed serially
+cg-sparse.chpl:87: In function 'conjGrad':
+cg-sparse.chpl:115: warning: reduction will be executed serially
 Verification successful
 Zeta is: 8.59718

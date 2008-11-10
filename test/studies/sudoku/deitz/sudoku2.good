@@ -1,3 +1,5 @@
+sudoku2.chpl:2: In function 'R':
+sudoku2.chpl:6: warning: reduction will be executed serially
 8 3 7 6 9 1 5 4 2
 9 4 6 2 5 3 8 1 7
 1 2 5 7 4 8 9 6 3

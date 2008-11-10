@@ -3028,6 +3028,7 @@ resolveBlock(Expr* body) {
           tryStack.v[tryStack.n-1]->replace(block->remove());
           tryStack.pop();
           expr = block->prev;
+          USR_WARN(block->body.head, "reduction will be executed serially");
           tryFailure = false;
           continue;
         } else {

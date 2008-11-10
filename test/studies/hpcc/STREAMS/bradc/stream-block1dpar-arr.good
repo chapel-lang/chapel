@@ -1,3 +1,5 @@
+stream-block1dpar-arr.chpl:96: In function 'verifyResults':
+stream-block1dpar-arr.chpl:99: warning: reduction will be executed serially
 Problem size = 8 (2**3)
 Bytes per array = 64
 Total memory required (GB) = 1.78814e-07

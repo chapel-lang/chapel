@@ -1,1 +1,2 @@
+pi_monte_carlo.chpl:16: warning: reduction will be executed serially
 3.1112

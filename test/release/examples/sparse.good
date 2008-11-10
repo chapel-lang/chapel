@@ -1,3 +1,4 @@
+sparse.chpl:156: warning: reduction will be executed serially
 Initially, spsDom is: [
 
 ]

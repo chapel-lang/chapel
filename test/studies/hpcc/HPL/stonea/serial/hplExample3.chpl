@@ -133,12 +133,10 @@ def panelSolve(
     for k in pnlCols {
         var col = panel[k.., k..k];
 
-        // The pivot is the element with the largest absolute value.  I need to
-        // do this in two steps since if I assign it like (pivot, pivotRow) =
-        // maxloc(...) pivot will be assigned to the absolute value, not the
-        // actual value.
-        var (_, pivotRow) =
-            maxloc reduce(abs(A(col)), col.dim(1));
+        // The pivot is the element with the largest absolute value.
+        var (_, loc) =
+            maxloc reduce(abs(A(col)), col);
+        var pivotRow = loc(1);
         var pivot = A[pivotRow, k];
 
         // Swap the current row with the pivot row

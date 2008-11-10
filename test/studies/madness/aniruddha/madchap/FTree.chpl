@@ -202,6 +202,18 @@ class FTree {
                 yield coeffs;
     }
 
+    // BLC: Really want to replace these with a non-zippered parallel
+    // iterator
+    def these(param tag: iterator) where tag == iterator.leader {
+      coforall t in tree do
+        yield t;
+    }
+
+    def these(param tag: iterator, follower) where tag == iterator.follower {
+      for coeffs in follower do
+        yield coeffs;
+    }
+
     def coeffs_iter(lvl: int) {
         for t in tree do
             for coeffs in t.coeffs_iter(lvl) do

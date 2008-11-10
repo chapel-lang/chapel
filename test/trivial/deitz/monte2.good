@@ -1,1 +1,2 @@
+monte2.chpl:9: warning: reduction will be executed serially
 3.14248

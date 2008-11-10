@@ -257,11 +257,8 @@ def panelSolve(Ab: [] ?t,
     // If there are no rows below the current column return
     if col.dim(1).length == 0 then return;
     
-    // The pivot is the element with the largest absolute value.  I need to
-    // do this in two steps since if I assign it like (pivot, pivotRow) =
-    // maxloc(...) pivot will be assigned to the absolute value, not the
-    // actual value.
-    const (_, pivotRow) = maxloc reduce(abs(Ab(col)), col.dim(1)),
+    // Find the pivot, the element with the largest absolute value.
+    const (_, (pivotRow, _)) = maxloc reduce(abs(Ab(col)), col),
           pivot = Ab[pivotRow, k];
     
     // Swap the current row with the pivot row
