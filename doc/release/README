@@ -12,7 +12,7 @@ This directory contains the following documentation:
   README.executing   : execution options for Chapel programs
   README.multilocale : how to execute Chapel on multiple locales
   README.threads     : explains how Chapel tasks are implemented using threads
-  README.xt-cnl      : notes for Cray XT (UNICOS/lc) users
+  README.xt-cle      : notes for Cray XT (CLE) users
   README.cygwin      : notes for Cygwin users
   README.extern      : technical note on interfacing with external C routines
   README.format      : technical note on controlling value-to-string formatting

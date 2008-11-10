@@ -66,7 +66,7 @@ static int getNumCoresPerLocale(void) {
   int bitMask = 0x1;
   int numCores = 1;
 
-  /* BLC: This code is fairly specific to xt-cnl, but currently will
+  /* BLC: This code is fairly specific to xt-cle, but currently will
      only be called for the NCCS version of qsub */
   char* command = _glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
   system(command);

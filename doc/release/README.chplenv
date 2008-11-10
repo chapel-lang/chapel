@@ -79,7 +79,7 @@ Optional Settings
         mta    : Cray MTA-2
         x1     : Cray X1
         xmt    : Cray XMT
-        xt-cnl : Cray XT running Compute Node Linux
+        xt-cle : Cray XT running Cray Linux Environment
 
    If CHPL_TARGET_PLATFORM is not set, the target platform defaults to
    be the same as $CHPL_HOST_PLATFORM.
@@ -110,7 +110,7 @@ Optional Settings
         --------      --------
         mta, xmt  ->  cray-mta
         x1        ->  cray-vec
-        xt-cnl    ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
+        xt-cle    ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
         other     ->  gnu
 
    The default for CHPL_TARGET_COMPILER is CHPL_HOST_COMPILER if it is

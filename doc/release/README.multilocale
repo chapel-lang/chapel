@@ -7,8 +7,8 @@ To run Chapel on multiple locales, the following steps are required:
 
 0) The following information describes a fairly generic use of
    multi-locale Chapel, suitable for networked workstations and
-   generic parallel platforms.  If you are a Cray XT (UNICOS/lc) user,
-   please refer to README.xt-cnl for platform-specific information
+   generic parallel platforms.  If you are a Cray XT (CLE) user,
+   please refer to README.xt-cle for platform-specific information
    about running on multiple locales.
 
 

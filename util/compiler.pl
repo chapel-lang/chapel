@@ -25,14 +25,18 @@ if ($preset_compiler eq "") {
 	$compiler = "cray-mta";
     } elsif ($platform eq "x1" || $platform eq "x2") {
 	$compiler = "cray-vec";
-    } elsif ($platform eq "xt-cnl") {
-	$subcompiler = "-$ENV{'PE_ENV'}";
-	if ($subcompiler eq "-") {
-	    $subcompiler = "";
-	} else {
-	    $subcompiler =~ tr/A-Z/a-z/;
-	}
-	$compiler = "cray-xt$subcompiler";
+    } elsif ($platform eq "xt-cle") {
+        if ($flag eq "--host") {
+            $compiler = "gnu";
+        } else {
+            $subcompiler = "-$ENV{'PE_ENV'}";
+            if ($subcompiler eq "-") {
+                $subcompiler = "";
+            } else {
+                $subcompiler =~ tr/A-Z/a-z/;
+            }
+            $compiler = "cray-xt$subcompiler";
+        }
     } else {
 	$compiler = "gnu";
     }

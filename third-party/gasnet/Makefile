@@ -10,7 +10,7 @@ ifneq ($(CHPL_GASNET_SEGMENT),everything)
 CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
 endif
 
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xt-cnl)
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xt-cle)
 #
 # this conditional should only be necessary for PE <= 2.0 and should
 # match the corresponding test in cross-configure-crayxt-linux

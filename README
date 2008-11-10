@@ -73,7 +73,7 @@ For more detailed information about...      refer to...
   ...example Chapel programs                 ...examples/README
   ...reporting bugs                          ...doc/README.bugs
   ...notes for Cygwin users                  ...doc/README.cygwin
-  ...notes for Cray XT (UNICOS/lc) users     ...doc/README.xt-cnl
+  ...notes for Cray XT (CLE) users           ...doc/README.xt-cle
   ...implementation status                   ...STATUS
   ...changes since the last release          ...CHANGES
   ...an overview of the Chapel language      ...doc/chapelLanguageSpec.pdf, Ch5

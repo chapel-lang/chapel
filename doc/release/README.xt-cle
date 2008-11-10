@@ -12,9 +12,9 @@ chapel_info@cray.com.
    See README.chplenv for details.
 
 
-2) Set CHPL_TARGET_PLATFORM to xt-cnl.  For example:
+2) Set CHPL_TARGET_PLATFORM to xt-cle.  For example:
 
-     setenv CHPL_TARGET_PLATFORM xt-cnl
+     setenv CHPL_TARGET_PLATFORM xt-cle
 
 
 3) Ensure that you have one of the following Programming Environment
