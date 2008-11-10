@@ -122,6 +122,11 @@ printplatform:
 	@echo "CHPL_MAKE_MEM             = $(CHPL_MAKE_MEM)"
 
 #
+# use: make print-X to print the value of the variable X
+#
+print-%: ; @echo $* is $($*)
+
+#
 # OBJ_SUBDIR_MADE creates either a directory or a symbolic link,
 # depending on how CHPLDEVTMP is set -- well, actually it creates a
 # timestamp file (OBJ_SUBDIR_TIMESTAMP) so that the varying time
