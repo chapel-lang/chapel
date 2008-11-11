@@ -32,7 +32,7 @@ config const numTrials = 10,
 //
 // The number of tasks to use per Chapel locale
 //
-config const tasksPerLoc = min reduce Locales.numCores;
+config const tasksPerLocale = min reduce Locales.numCores;
 
 //
 // Configuration constants to indicate whether or not to use a
@@ -60,7 +60,7 @@ def main() {
   // BlockDist is a 1D block distribution that is computed by blocking
   // the bounding box 1..m across the set of locales
   //
-  const BlockDist = new Block1D(bbox=[1..m], tasksPerLocale=tasksPerLoc);
+  const BlockDist = new Block1D(bbox=[1..m], tasksPerLocale=tasksPerLocale);
 
   //
   // ProblemSpace describes the index set for the three vectors.  It
@@ -102,6 +102,7 @@ def main() {
 //
 def printConfiguration() {
   if (printParams) {
+    if (printStats) then printLocalesTasks(tasksPerLocale);
     printProblemSize(elemType, numVectors, m);
     writeln("Number of trials = ", numTrials, "\n");
   }

@@ -41,7 +41,7 @@ config const errorTolerance = 1e-2;
 //
 // The number of tasks to use per Chapel locale
 //
-config const tasksPerLoc = min reduce Locales.numCores;
+config const tasksPerLocale = min reduce Locales.numCores;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -59,9 +59,9 @@ config const printParams = true,
 // across the locales.
 //
 const TableDist = new Block1D(indexType, bbox=[0..m-1], 
-                              tasksPerLocale=tasksPerLoc),
+                              tasksPerLocale=tasksPerLocale),
       UpdateDist = new Block1D(indexType, bbox=[0..N_U-1],
-                               tasksPerLocale=tasksPerLoc);
+                               tasksPerLocale=tasksPerLocale);
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -119,6 +119,7 @@ def main() {
 //
 def printConfiguration() {
   if (printParams) {
+    if (printStats) then printLocalesTasks(tasksPerLocale);
     printProblemSize(elemType, numTables, m);
     writeln("Number of updates = ", N_U, "\n");
   }

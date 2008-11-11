@@ -66,6 +66,7 @@ def main() {
 
 def printConfiguration() {
   if (printParams) {
+    if (printStats) then printLocalesTasks(tasksPerLocale=1);
     printProblemSize(elemType, numVectors, m);
     writeln("Number of trials = ", numTrials, "\n");
   }

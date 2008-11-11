@@ -71,6 +71,14 @@ module HPCCProblemSize {
   }
 
   //
+  // Print out the machine configuration used to run the job
+  //
+  def printLocalesTasks(tasksPerLocale=1) {
+    writeln("Number of Locales = ", numLocales);
+    writeln("Tasks per locale = ", tasksPerLocale);
+  }
+
+  //
   // Print out the problem size, #bytes per array, and total memory
   // required by the arrays
   //

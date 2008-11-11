@@ -331,6 +331,7 @@ def backwardSub(n: int,
 //
 def printConfiguration() {
   if (printParams) {
+    if (printStats) then printLocalesTasks(tasksPerLocale=1);
     printProblemSize(elemType, numMatrices, n, rank=2);
     writeln("block size = ", blkSize, "\n");
   }

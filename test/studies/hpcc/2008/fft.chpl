@@ -192,7 +192,10 @@ def genDFTStrideSpan(numElements) {
 // Print the problem size
 //
 def printConfiguration() {
-  if (printParams) then printProblemSize(elemType, numVectors, m);
+  if (printParams) {
+    if (printStats) then printLocalesTasks(tasksPerLocale=1);
+    printProblemSize(elemType, numVectors, m);
+  }
 }
 
 //
