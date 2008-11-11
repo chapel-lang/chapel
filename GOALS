@@ -1,20 +1,20 @@
-=======================================
-Chapel Preliminary Release (v0.7) Goals
-=======================================
+==================================
+Chapel Public Release (v0.8) Goals
+==================================
 
 The goals of this release are as follows:
 
-* to demonstrate the Chapel's base language features
+* to demonstrate Chapel's base language features
 
 * to demonstrate Chapel's task parallel features in a multi-threaded,
   multi-locale setting
 
 * to demonstrate Chapel's data parallel features via a combination of
-  (i) a very initial multi-threaded, multi-locale implementation; and
-  (ii) a single-threaded, single-locale implementation
+  (i)  a single-threaded, single-locale implementation; and
+  (ii) a *very* initial multi-threaded, multi-locale implementation
 
 * to give the general public an opportunity to see the state and
   evolution of the Chapel implementation first-hand
 
 * to get feedback on the Chapel language and its ongoing
-  implementation
+  implementation (please direct to chapel_info@cray.com)

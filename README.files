@@ -10,13 +10,13 @@ contain.
 ./
   README            : top-level README with quick-start information
   README.files      : this file
-  AGREEMENT         : the user agreement for this preliminary release
-  CHANGES           : a list of changes since the previous release
+  AGREEMENT         : the user agreement for this release
+  CHANGES           : a list of changes since the previous releases
   CONTRIBUTORS      : a list of contributors to the Chapel project
   COPYRIGHT         : copyright information
   GOALS             : the goals of this release
   LICENSE           : Chapel's license
-  STATUS            : a list of unimplemented features and bugs
+  STATUS            : a list of unimplemented features and known bugs
   Makefile          : top-level Makefile for building the compiler and runtime
   bin/
     $CHPL_HOST_PLATFORM/ : location of the compiler (chpl) once it's been built
