@@ -156,10 +156,10 @@ times out occasionally (20x diff -- maybe memory leak related?)
 gasnet-fast regressions (other than the above)
 ==============================================
 
-recursive failure in AMUDP_SPMDShutdown (11/10/08)
---------------------------------------------------
-[Error matching program output for functions/bradc/retConstness/modifyReturnedClass]
-[Error matching program output for types/seq/bradc/hashEquals]
+spurious recursive failure in AMUDP_SPMDShutdown
+------------------------------------------------
+[Error matching program output for functions/bradc/retConstness/modifyReturnedClass] (11/10/08)
+[Error matching program output for types/seq/bradc/hashEquals] (11/10/08)
 
 unable to start polling thread
 ------------------------------
