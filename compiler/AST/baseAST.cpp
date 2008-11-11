@@ -133,6 +133,12 @@ void cleanAst() {
       FnSymbol* method = ts->type->methods.v[i];
       if (method && !method->defPoint->parentSymbol)
         ts->type->methods.v[i] = NULL;
+      if (ClassType* ct = toClassType(ts->type)) {
+        if (ct->defaultConstructor && !ct->defaultConstructor->defPoint->parentSymbol)
+          ct->defaultConstructor = NULL;
+        else if (ct->destructor && !ct->destructor->defPoint->parentSymbol)
+          ct->destructor = NULL;
+      }
     }
     for(int i = 0; i < ts->type->dispatchChildren.n; i++) {
       Type* type = ts->type->dispatchChildren.v[i];

@@ -35,6 +35,15 @@ class BaseDomain {
     delete _count;
   }
 
+  def destroyDom() {
+    var cnt = _count - 1;
+    if cnt < 0 then halt("count is negative!"); // should never happen!
+    else if cnt == 0 then
+      on this do delete this;
+    else
+      _count = cnt;
+  }
+
   def member(ind) : bool {
     halt("membership test not supported for this domain type");
     return false;

@@ -377,7 +377,7 @@ static ArgumentDescription arg_desc[] = {
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDistribution, "CHPL_DEFAULT_DISTRIBUTION", NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"ignore-errors", ' ', NULL, "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
- {"enable-destructor-calls", ' ', NULL, "Enable insertion of destructor calls when variables go out of scope", "F", &fEnableDestructorCalls, "CHPL_ENABLE_DESTRUCTOR_CALLS", NULL},
+ {"destroy-value-type-vars", ' ', NULL, "Enable insertion of destructor calls when variables go out of scope", "F", &fEnableDestructorCalls, "CHPL_ENABLE_DESTRUCTOR_CALLS", NULL},
  {"no-codegen", ' ', NULL, "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},
  {"test-int-sizes", ' ', NULL, "Test compiler's internal integer sizes", "F", &testIntSizes, "CHPL_TEST_INT_SIZES", verifyIntSizes},

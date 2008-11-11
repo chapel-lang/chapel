@@ -11,6 +11,9 @@
 #include "map.h"
 #include "misc.h"
 
+// This file is under construction!  Please pardon the dust and noise!
+
+
 bool fEnableDestructorCalls = false;
 
 void fixupDestructors(void) {
@@ -83,7 +86,7 @@ static bool tupleContainsArrayOrDomain(ClassType* t) {
   return false;
 }
 
-void insertDestructors(void) {
+static void insertDestructorsCalls(bool onlyMarkConstructors) {
 
   if (!fEnableDestructorCalls) return;
 
@@ -96,26 +99,35 @@ void insertDestructors(void) {
   Map<Symbol*,Vec<SymExpr*>*> useMap;
   buildDefUseMaps(defMap, useMap);
 
-  Vec<FnSymbol*> constructors;
+  Vec<FnSymbol*> constructors, functionsContainingGotos;
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    ClassType* ct = toClassType(fn->retType);
-//if (strstr(fn->cname, "buildDomainExpr") || strstr(fn->cname, "convertRuntimeTypeToValue") || strstr(fn->cname, "DefaultArithmetic") || strstr(fn->cname, "buildArray"))
-//  printf("looking at function %s-%d\n", fn->cname, fn->id);
-    if ((fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
-         fn->hasFlag(FLAG_INLINE) && fn->hasFlag(FLAG_INVISIBLE_FN) &&
-         (fn->hasFlag(FLAG_WRAPPER) || fn->hasFlag(FLAG_ITERATOR_FN))) &&
-        fn->calledBy &&
-        ct && ct->classTag != CLASS_CLASS && ct->destructor &&
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    ClassType* ct = toClassType(ts->type);
+    if (ct && ct->classTag != CLASS_CLASS && ct->defaultConstructor && ct->destructor &&
+        //(!ct->symbol->hasFlag(FLAG_ARRAY) || !arrayPassedAsArgument(fn)) &&
         (!ct->symbol->hasFlag(FLAG_TUPLE) || !tupleContainsArrayOrDomain(ct))) {
-//  printf("adding function %s-%d\n", fn->cname, fn->id);
-      constructors.add(fn);
+      constructors.add(ct->defaultConstructor);
+    }
+  }
+
+  if (!onlyMarkConstructors) {
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      //ClassType* ct = toClassType(fn->retType);
+      if (fn->hasFlag(FLAG_CALLS_CONSTRUCTOR) && fn->calledBy /*&&
+          ct && ct->classTag != CLASS_CLASS && ct->destructor &&
+          //(!ct->symbol->hasFlag(FLAG_ARRAY) || !arrayPassedAsArgument(fn)) &&
+          (!ct->symbol->hasFlag(FLAG_TUPLE) || !tupleContainsArrayOrDomain(ct))*/) {
+        constructors.add(fn);
+      }
+    }
+    forv_Vec(GotoStmt, gs, gGotoStmts) {
+      FnSymbol* fn = toFnSymbol(gs->parentSymbol);
+      INT_ASSERT(fn);
+      functionsContainingGotos.set_add(fn);
     }
   }
 
   forv_Vec(FnSymbol, constructor, constructors) {
-//if (strstr(constructor->cname, "buildDomainExpr") || strstr(constructor->cname, "convertRuntimeTypeToValue") || strstr(constructor->cname, "DefaultArithmetic") || strstr(constructor->cname, "buildArray"))
-//  printf("looking at constructor %s-%d\n", constructor->cname, constructor->id);
     forv_Vec(CallExpr, call, *constructor->calledBy) {
       if (call->parentSymbol) {
         CallExpr* move = toCallExpr(call->parentExpr);
@@ -123,17 +135,25 @@ void insertDestructors(void) {
         INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
         SymExpr* lhs = toSymExpr(move->get(1));
         INT_ASSERT(lhs);
-        if (!lhs->var->type->destructor || !gFnSymbols.in(lhs->var->type->destructor)) {
-//printf("skipping destructor for constructor %s-%d\n", constructor->cname, constructor->id);
+        if (!lhs->var->type->destructor || !gFnSymbols.in(lhs->var->type->destructor) ||
+            // don't destroy global variables
+            isModuleSymbol(lhs->var->defPoint->parentSymbol)) {
           continue;
         }
-        if (lhs->var->type->symbol->hasFlag(FLAG_DOMAIN)) continue;
+        //if (lhs->var->type->symbol->hasFlag(FLAG_DOMAIN)) continue;
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
         INT_ASSERT(fn);
+        // functions containing gotos may skip over initializations,
+        // potentially causing uninitialized variables to be freed;
+        // functions with "_loopexpr" in their name are most likely related to reduce
+        // expressions; they may embed domains, for example, into iterator classes
+        if (functionsContainingGotos.set_in(fn) || strstr(fn->name, "_loopexpr"))
+          continue;
         if (fn->getReturnSymbol() == lhs->var) {
           if (defMap.get(lhs->var)->n == 1) {
-//  printf("adding function %s-%d\n", fn->cname, fn->id);
             constructors.add_exclusive(fn);
+            if (onlyMarkConstructors)
+              fn->addFlag(FLAG_CALLS_CONSTRUCTOR);
           }
         } else {
           Vec<Symbol*> varsToTrack;
@@ -163,19 +183,29 @@ void insertDestructors(void) {
                     break;
                   }
                 }
-                if (CallExpr* call = toCallExpr(se->parentExpr)) {
+                CallExpr* call = toCallExpr(se->parentExpr);
+                if (call && (//call->isPrimitive(PRIMITIVE_SET_REF) || call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
+                    call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)))
+                  call = toCallExpr(call->parentExpr);
+                if (call) {
                   if (call->isPrimitive(PRIMITIVE_MOVE)) {
                     if (fn->getReturnSymbol() == toSymExpr(call->get(1))->var) {
-//          printf("may need to call destructor on %s (lhs)\n", lhs->var->cname);
-//                    printf("function returns %s\n", toSymExpr(call->get(1))->var->cname);
                       maybeCallDestructor = false;
-                      if (defMap.get(toSymExpr(call->get(1))->var)->n == 1 &&
-                          /*strcmp(fn->name, "reindex") &&*/ !strstr(fn->name, "buildDomainExpr")) {
-//  printf("adding function %s-%d\n", fn->cname, fn->id);
+                      if (defMap.get(toSymExpr(call->get(1))->var)->n == 1 /*&&
+                          strcmp(fn->name, "reindex") && !strstr(fn->name, "buildDomainExpr")*/) {
                         constructors.add_exclusive(fn);
+                        if (onlyMarkConstructors)
+                          fn->addFlag(FLAG_CALLS_CONSTRUCTOR);
                       }
                       break;
-                    } else if (toModuleSymbol(toSymExpr(call->get(1))->var->defPoint->parentSymbol)) {
+#if 0
+                    } else if (toFnSymbol(call->parentSymbol)->getReturnSymbol() == toSymExpr(call->get(1))->var) {
+                      // if call->parentSymbol is a different function than fn,
+                      // it is nontrivial to track down how the caller uses the return value
+                      maybeCallDestructor = false;
+                      break;
+#endif
+                    } else if (isModuleSymbol(toSymExpr(call->get(1))->var->defPoint->parentSymbol)) {
                       // lhs is directly or indirectly being assigned to a global variable
                       maybeCallDestructor = false;
                       break;
@@ -203,19 +233,26 @@ void insertDestructors(void) {
                     maybeCallDestructor = false;
                     break;
 #endif
-                  } else if (call->isPrimitive(PRIMITIVE_ARRAY_SET_FIRST)) {
-//          if (strcmp(toSymExpr(call->get(3))->var->cname, "y")) printf("Primitive array_set_first involves %s (%s)\n", toSymExpr(call->get(3))->var->cname, lhs->var->cname);
+                  } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER) &&
+                             !toSymExpr(call->get(1))->var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
                     maybeCallDestructor = false;
                     break;
+                  } else if (call->isPrimitive(PRIMITIVE_ARRAY_SET_FIRST)) {
+                    // used (only) in init_elts in ChapelBase.chpl
+                    maybeCallDestructor = false;
+                    break;
+                  } else if (!call->primitive) {
+                    varsToTrack.add_exclusive(actual_to_formal(se));
                   }
                 } else
                   printf("found a use of %s\n", var->cname);
               }
           }
-          if (maybeCallDestructor) {
+          if (maybeCallDestructor && !onlyMarkConstructors) {
             // lhs does not "escape" its scope, so go ahead and insert a call to its destructor
             ClassType* ct = toClassType(lhs->var->type);
-            bool useRefType = ct->classTag != CLASS_CLASS && !ct->symbol->hasFlag(FLAG_ARRAY);
+            bool useRefType = ct->classTag != CLASS_CLASS &&
+              !ct->symbol->hasFlag(FLAG_ARRAY) && !ct->symbol->hasFlag(FLAG_DOMAIN);
             if (parentBlock == fn->body) {
               if (useRefType) {
                 VarSymbol* tmp = newTemp(ct->refType);
@@ -244,7 +281,6 @@ void insertDestructors(void) {
                 parentBlock->insertAtTailBeforeGoto(new CallExpr(ct->destructor, tmp));
               }
             }
-//            printf("Need to call destructor %s on %s\n", constructor->cname, lhs->var->cname);
           }
         }
       }
@@ -252,4 +288,12 @@ void insertDestructors(void) {
   }
 
   inlineFunctions();
+}
+
+void markConstructors() {
+  insertDestructorsCalls(true);
+}
+
+void insertDestructors() {
+  insertDestructorsCalls(false);
 }

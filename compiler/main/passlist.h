@@ -32,6 +32,7 @@ PassInfo passlist[] = {
   RUN(cullOverReferences), // remove excess references
   RUN(parallel),           // parallel transforms
   RUN(prune),              // prune AST of dead functions and types
+  RUN(markConstructors),   // mark functions that return constructor return values
 
   // Optimizations
   RUN(complex2record),      // change complex numbers into records

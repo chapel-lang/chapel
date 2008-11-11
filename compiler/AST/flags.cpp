@@ -32,6 +32,7 @@ initFlags() {
   defineFlag(FLAG_BASE_ARRAY, "base array");
   defineFlag(FLAG_BEGIN, "begin");
   defineFlag(FLAG_BEGIN_BLOCK, "begin block");
+  defineFlag(FLAG_CALLS_CONSTRUCTOR, "calls constructor");
   defineFlag(FLAG_COBEGIN_OR_COFORALL, "cobegin or coforall");
   defineFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK, "cobegin or coforall block");
   defineFlag(FLAG_COMMAND_LINE_SETTING, "command line setting");

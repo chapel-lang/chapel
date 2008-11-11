@@ -27,6 +27,7 @@ void insertWideReferences();
 void insertLineNumbers();
 void lowerIterators();
 void makeBinary();
+void markConstructors();
 void normalize();
 void parallel();
 void parse();

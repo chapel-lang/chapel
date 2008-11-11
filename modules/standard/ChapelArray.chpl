@@ -195,6 +195,10 @@ record _domain {
   var _valueTypeField; // stores type of privatized domains
   var _promotionType: index(rank, _value.idxType);
 
+  def initialize() { 
+    _valueField._count += 1;
+  }
+
   def _value {
     if _supportsPrivatization(_valueTypeField) {
       var tc = _valueTypeField;
@@ -207,7 +211,7 @@ record _domain {
   }
 
   def ~_domain () {
-    delete _value;
+    _value.destroyDom();
   }
 
   def dist return _value.dist;
