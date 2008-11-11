@@ -24,10 +24,19 @@ extremely rare race condition in module initialization
 ------------------------------------------------------
 [Error matching program output for modules/diten/useInBegin]
 
+leaked memory tests enter infinite loop?
+----------------------------------------
+[Error: Timed out executing program classes/figueroa/LeakedMemory2]
+[Error: Timed out executing program classes/figueroa/LeakedMemory3]
+
 
 =============================
 valgrind-specific regressions
 =============================
+
+everything failed due to invalid read in clean AST (11/11/08)
+-------------------------------------------------------------
+[*]
 
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
@@ -36,9 +45,33 @@ internal valgrind stuff 'the impossible has happened'
 [Error matching program output for parallel/begin/dinan/mvm_coforall]
 
 
+=======================
+performance regressions
+=======================
+
+compile error due to reference counting change (11/11/08)
+---------------------------------------------------------
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
+
+
 ====================
 no-local regressions
 ====================
+
+compile error due to reference counting change (11/11/08)
+---------------------------------------------------------
+[Error matching compiler output for studies/hpcc/2008/ra]
+[Error matching compiler output for studies/hpcc/2008/stream]
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-dom]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
+[Error matching compiler output for studies/hpcc/common/bradc/unit/multipleDomains2]
+[Error matching compiler output for studies/hpcc/common/bradc/unit/parBlock1Da]
+[Error matching compiler output for studies/hpcc/common/bradc/unit/parRandom2-fill]
+
 
 attempt to dereference nil (11/08/08)
 -------------------------------------
@@ -74,6 +107,10 @@ occasional out-of-memory error (11/06/08)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+??? (11/11/08)
+--------------
+[Error matching program output for types/type_variables/deitz/part3/test_instantiate_construct1]
 
 attempt to dereference nil (11/08/08)
 -------------------------------------
@@ -118,6 +155,11 @@ times out occasionally (20x diff -- maybe memory leak related?)
 ==============================================
 gasnet-fast regressions (other than the above)
 ==============================================
+
+recursive failure in AMUDP_SPMDShutdown (11/10/08)
+--------------------------------------------------
+[Error matching program output for functions/bradc/retConstness/modifyReturnedClass]
+[Error matching program output for types/seq/bradc/hashEquals]
 
 unable to start polling thread
 ------------------------------
@@ -245,6 +287,16 @@ opts-specific tests
 [Error matching program output for users/shetag/fock/fock-stc-1]
 [Error matching program output for users/shetag/fock/fock-stc]
 
+
+===========================
+x1-/x2-specific regressions
+===========================
+
+no warning generated because compiled --serial? (11/11/08)
+----------------------------------------------------------
+[Error matching program output for release/examples/sparse]
+
+
 ==========================
 intel-specific regressions
 ==========================
@@ -252,6 +304,7 @@ intel-specific regressions
 occasional out of memory (e.g., 10/03/08)
 -----------------------------------------
 [Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
+
 
 ==============================
 pathscale-specific regressions
