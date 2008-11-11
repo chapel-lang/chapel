@@ -143,12 +143,12 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-primary-expr-kwds
   "Keywords besides constants and operators that start primary expressions."
-  chpl '("this" "new")) ;; Not really a keyword, but practically works as one.
+  chpl '("this" "new" "delete")) ;; Not really a keyword, but practically works as one.
 
 
 (c-lang-defconst c-other-kwds
   "Keywords not accounted for by any other `*-kwds' language constant."
-  chpl '("begin" "cobegin" "coforall" "distributed" "for" "forall" "if" "in" "on" "reduce" "scan" "serial" "single" "sparse" "sync" "where"))
+  chpl '("begin" "cobegin" "coforall" "distributed" "for" "forall" "if" "in" "local" "on" "reduce" "scan" "serial" "single" "sparse" "sync" "where"))
 
 ;;; Chpl.
 
