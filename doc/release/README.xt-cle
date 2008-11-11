@@ -1,119 +1,124 @@
-========================
-Using Chapel on Cray XTs
-========================
+=========================
+Using Chapel on a Cray XT
+=========================
 
 The following information is assembled to help users get up and
-running on a Cray XT running the Cray Linux Environment as easily as
-possible.  If you have any troubles, please let us know at
-chapel_info@cray.com.
+running on multiple nodes of a Cray XT running the Cray Linux
+Environment (CLE) as easily as possible.  If you are not familiar with
+Chapel, it is recommended that you try the instructions in the
+top-level README first to get started with the language.
+
+If you are an XT user on an NCCS machine, please see the special notes
+at the bottom of this file.  If you have any troubles, please let us
+know at chapel_info@cray.com.
 
 
-1) Set CHPL_HOME, CHPL_HOST_PLATFORM, your path, and MANPATH as usual.
-   See README.chplenv for details.
+1) Set CHPL_HOME and MANPATH as usual.  See README.chplenv for
+   details.
 
 
-2) Set CHPL_TARGET_PLATFORM to xt-cle.  For example:
+2) Set CHPL_HOST_PLATFORM to xt-cle and CHPL_COMM to gasnet.  For
+   example:
 
-     setenv CHPL_TARGET_PLATFORM xt-cle
+     setenv CHPL_HOST_PLATFORM xt-cle
+     setenv CHPL_COMM gasnet
+
+   See README.multilocale for further information about the GASNet
+   library.
 
 
-3) Ensure that you have one of the following Programming Environment
-   modules loaded, based on which C compiler you want to use to
-   compile Chapel's generated code:
+3) If your XT requires PBS/qsub to launch jobs onto the compute nodes
+   (or you simply wish to use it as your job launcher), set
+   CHPL_LAUNCHER to pbs.  For example:
+
+     setenv CHPL_LAUNCHER pbs
+
+   Otherwise, aprun will be used to launch jobs by default (you can
+   optionally set this by setting CHPL_LAUNCHER to aprun).
+
+
+4) Ensure that you have one of the following Programming Environment
+   modules loaded, based on the C compiler you want to use to compile
+   for the compute nodes:
 
      - PrgEnv-gnu
      - PrgEnv-pathscale
      - PrgEnv-pgi
 
 
-4) If you want to perform multi-locale (multiple compute node) runs,
-   take the following additional steps:
-
-   (a) Set CHPL_COMM to gasnet.  For example:
-
-         setenv CHPL_COMM gasnet
-
-   (b) Build the GASNet libraries.  GASNet is a one-sided
-       communication layer developed at UC Berkeley that currently
-       serves as the foundation for our multi-locale implementation
-       (future releases are expected to also support an option to run
-       over PNNL's ARMCI library).  Do this by changing to your
-       chapel/ directory and making the third-party directory.  For
-       example:
-
-         cd $CHPL_HOME
-         gmake third-party
-
-       Note that this step currently builds GASNet in debug mode which
-       will have a major detrimental impact on performance (along with
-       the lack of several obvious optimizations on Chapel's part).
-       At the time of this release, we have not yet had a chance to
-       experiment with executing Chapel over GASNet in non-debug mode.
-
-       For more information on GASNet, please refer to:
-         - $CHPL_HOME/third-party/gasnet/README
-         - $CHPL_HOME/third-party/README
-
-
-5) Make the Chapel compiler and runtime:
+5) Make sure you're in the top-level chapel/ directory:
 
      cd $CHPL_HOME
+
+
+6) Make/re-make the compiler and runtime:
+
      gmake
 
 
-6) Compile your Chapel programs as usual.  See README.compiling for
+7) Compile your Chapel program as usual.  See README.compiling for
+   details.  For example:
+
+     chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
+
+
+8) When you compile a Chapel program for the XT, you should see two
+   binaries (e.g., a.out and a.out_real).  The first binary contains
+   code to launch the Chapel program onto the compute nodes, as
+   specified by your CHPL_LAUNCHER setting.  The second contains the
+   program code itself.  You can use the -v flag to see the commands
+   used to launch your program.  See README.launcher for further
    details.
 
 
-7) Execute the resulting Chapel program as follows:
+9) Multi-locale executions require the number of locales to be
+   specified on the command line.  Other than this, execute your
+   Chapel program as usual.  For example:
 
-   (a) For executables created using CHPL_COMM == "none", execute the
-       resulting binary as you would for any other XT program.
-
-
-   (b) For interactive CHPL_COMM == "gasnet" execution on the XT,
-       Chapel programs must currently be launched using with the
-       "aprun" command, and the Chapel command-line should not include
-       any of the traditional options to specify the number of locales
-       (e.g., -nl #, --numLocales=#, or -snumLocales=#).  For example,
-       a Chapel program that would typically be launched using:
-
-         ./myChapelProg -nl 4 --delta=0.001 --n=100
-
-       would be launched interactively on the XT using:
-
-         aprun -n 4 ./myChapelProg --delta=0.001 --n=100
-
-       In future releases, we intend to wrap this aprun command so
-       that XT launch does not require any special treatment compared
-       to other multi-locale Chapel runs.
-
-       At the time of this release, we do not yet have experience
-       launching Chapel programs using the non-interactive scheduler.
-       Consult the alps and aprun man pages for details.
+     ./hello-multiloc -nl 2
 
 
------------------------------
-Memory on the XT using GASNet
------------------------------
+--------------------------
+Memory limits using GASNet
+--------------------------
 
 * GASNet executions over portals on the XT currently conservatively
   assume a maximum heap size of 2GB per locale even though many XT
-  configurations can handle a much larger heap size in practice.  If
+  configurations can support a much larger heap size in practice.  If
   you are getting out-of-memory errors as a result of this limit, you
   can explicitly request a larger maximum heap size by setting the
   environment variable GASNET_MAX_SEGSIZE to the number of bytes you
-  wish to make the limit.  For example, for a csh-based shell, you
-  could use:
+  wish to use as a limit.  For example:
 
     setenv GASNET_MAX_SEGSIZE 4294967296
 
-  to set the GASNet heap size limit to 4GB.  Note that this variable
-  can be changed from run to run and need not be set at compile time.
-  Applications that set this limit too high may be terminated with an
-  error:
+  would set the GASNet heap size limit to 4GB.  Note that this
+  variable can be changed from run to run and need not be set at
+  compile time.  Applications that set this limit too high may be
+  terminated with the following error:
 
      [NID 18]Apid 49229: initiated application termination
      Application 49229 exit signals: Killed
 
   If you get this message, try reducing the GASNET_MAX_SEGSIZE value.
+  For more details, please refer to:
+
+    $CHPL_HOME/third-party/gasnet/GASNet-*/portals-conduit/README
+
+
+---------------
+NCCS user notes
+---------------
+
+* At the time of this release, NCCS XT machines use a different qsub
+  mechanism in order to enforce their policies.  We have attempted to
+  make our qsub launch code work with this version of qsub, but
+  require the CHPL_LAUNCHER_ACCOUNT environment variable to be set to
+  specify your NCCS account name.  For example:
+
+    setenv CHPL_LAUNCHER_ACCOUNT MYACCOUNTID
+
+  If our PBS launcher fails to work for you, you can always launch the
+  a.out_real binary manually using aprun within a manually-generated
+  qsub script -- or recompile using aprun as CHPL_LAUNCHER and execute
+  a.out within a manually-generated qsub script.

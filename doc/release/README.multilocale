@@ -7,59 +7,69 @@ To run Chapel on multiple locales, the following steps are required:
 
 0) The following information describes a fairly generic use of
    multi-locale Chapel, suitable for networked workstations and
-   generic parallel platforms.  If you are a Cray XT (CLE) user,
-   please refer to README.xt-cle for platform-specific information
-   about running on multiple locales.
+   generic parallel platforms.  If you are a Cray XT (CLE) or Cray CX1
+   (Linux) user, please refer to README.xt-cle or README.cx1 for
+   platform-specific notes about running on multiple locales.
 
 
 1) Set your CHPL_COMM environment variable to "gasnet".  For example:
 
      setenv CHPL_COMM gasnet
 
+   This specifies that you wish to use the GASNet library for
+   inter-locale communication.  GASNet is a one-sided communication
+   and active message layer developed at UC Berkeley.  Refer to:
+   $CHPL_HOME/third-party/gasnet/README and
+   $CHPL_HOME/third-party/README for details.  Future releases of
+   Chapel are expected to support additional communication layer
+   options such as PNNL's ARMCI library.
 
-2) Build the GASNet libraries.  GASNet is a one-sided communication
-   layer developed at UC Berkeley that currently serves as the
-   foundation for our multi-locale implementation (future releases are
-   expected to also support an option to run over PNNL's ARMCI
-   library).  Do this by changing to your chapel/ directory and making
-   the third-party directory.  For example:
+
+2) Advanced GASNet users can set CHPL_COMM_SUBSTRATE to indicate the
+   GASNet conduit that they wish to use.  Novice users can leave this
+   unset and Chapel will make a choice for them.  Current defaults
+   are:
+
+     When compiling for...       Chapel will choose...
+       cx1                         ibv
+       xt-cle                      portals
+       (other)                     udp
+
+
+3) Advanced GASNet users can set CHPL_GASNET_SEGMENT to choose a
+   memory segment to use with GASNet.  Current defaults are:
+
+     When CHPL_COMM_SUBSTRATE is...    Chapel will choose...
+       portals                           fast
+       (other)                           everything
+
+
+4) Advanced GASNet users can set CHPL_COMM_DEBUG if they want to turn
+   GASNet's debugging mode on.  Otherwise, the default is to leave
+   debugging off.
+
+
+5) Make sure you are in CHPL_HOME:
 
      cd $CHPL_HOME
-     gmake third-party
-
-   Note that this step currently builds GASNet in debug mode which
-   will have a major detrimental impact on performance (along with the
-   lack of several obvious optimizations on Chapel's part).  At the
-   time of this release, we have not yet had a chance to experiment
-   with executing Chapel over GASNet in non-debug mode.
-
-   For more information on GASNet, please refer to:
-     - $CHPL_HOME/third-party/gasnet/README
-     - $CHPL_HOME/third-party/README.
 
 
-3) Build a GASNet version of the Chapel runtime libraries.  Assuming
-   that you are still in your $CHPL_HOME directory, this is done by
-   executing a simple make command for the runtime directory.  For
-   example:
+6) Re-make the compiler and runtime as necessary:
 
-     gmake runtime
+     gmake
 
-   The previous steps cause GASNet to use UDP as its underlying
-   conduit.  Many custom networks support more efficient conduits for
-   running GASNet, but at the time of this release we have little
-   experience with conduits other than UDP.  See the GASNet
-   documentation and Makefiles in the Chapel runtime if you want to
-   experiment with other GASNet conduits.
+   Or:
 
+     make
+     
 
-4) Set up GASNet environment variables.  
+7) Set up GASNet environment variables for execution:
 
    (a) Set up variables telling GASNet how to spawn program instances.
        Most of our experience to date has been with two options:
 
-       (i) To run on a network of workstations to which you have access
-           via ssh, configure GASNet as follows:
+       (i) To run on a network of workstations to which you have
+           access via ssh, configure GASNet as follows:
 
              setenv GASNET_SPAWNFN S
              setenv SSH_SERVERS "host1 host2 host3 ..."
@@ -77,7 +87,7 @@ To run Chapel on multiple locales, the following steps are required:
 
               setenv GASNET_SPAWNFN L
 
-       (iii) For other options, refer to:
+       (iii) For other options, please refer to:
                $CHPL_HOME/third-party/gasnet/GASNet-1.10.0/udp-conduit/README
 
 
@@ -88,12 +98,21 @@ To run Chapel on multiple locales, the following steps are required:
        but your mileage may vary.
 
 
-5) Compile your Chapel program as usual:
+8) Compile your Chapel program as usual:
 
-     chpl -o multilocale examples/multilocale.chpl
+     chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
 
 
-6) Run your Chapel program using the -nl or --numLocales flags to set
-   the number of locales to use:
+9) When you compile a Chapel program for multiple locales, you should
+   see two binaries (e.g., a.out and a.out_real).  The first binary
+   contains code to launch the Chapel program onto the compute nodes
+   using a GASNet run command.  The second contains the program code
+   itself.  You can use the -v flag to see the commands used to launch
+   your program.  See README.launcher for further details.
 
-     ./multilocale -nl 4
+
+10) Multi-locale executions require the number of locales to be
+    specified on the command line.  Other than this, execute your
+    Chapel program as usual.  For example:
+
+      ./hello-multiloc -nl 2

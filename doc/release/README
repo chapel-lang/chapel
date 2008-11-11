@@ -10,10 +10,13 @@ This directory contains the following documentation:
   README.chplenv     : setting up your environment to use Chapel
   README.compiling   : how to use the Chapel compiler to compile code
   README.executing   : execution options for Chapel programs
+  README.launcher    : using a launcher to get Chapel execution started
   README.multilocale : how to execute Chapel on multiple locales
   README.threads     : explains how Chapel tasks are implemented using threads
-  README.xt-cle      : notes for Cray XT (CLE) users
+
+  README.cx1         : notes for CX1 users
   README.cygwin      : notes for Cygwin users
+  README.xt-cle      : notes for Cray XT (CLE) users
   README.extern      : technical note on interfacing with external C routines
   README.format      : technical note on controlling value-to-string formatting
   README.prereqs     : prerequisites for using Chapel
