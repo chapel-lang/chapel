@@ -22,8 +22,12 @@ type-specifier:
   index-type
 \end{syntax}
 
-Sync and single types are discussed
-in~\rsec{Sync_Variables} and~\rsec{Single_Variables}.
+Classes are discussed in~\rsec{Classes}.  Records are discussed
+in~\rsec{Records}.  Unions are discussed in~\rsec{Unions}.  Tuples are
+discussed in~\rsec{Tuples}.  Ranges are discussed in~\rsec{Ranges}.
+Domains and arrays are discussed in~\rsec{Domains_and_Arrays}.  Sync
+and single types are discussed in~\rsec{Sync_Variables}
+and~\rsec{Single_Variables}.
 
 Programmers can define their own enumerated types, classes, records,
 unions, and type aliases in type declaration statements summarized by
@@ -37,29 +41,24 @@ type-declaration-statement:
   type-alias-declaration-statement
 \end{syntax}
 
-Classes are discussed in~\rsec{Classes}.  Records are discussed
-in~\rsec{Records}.  Unions are discussed in~\rsec{Unions}.  Tuples are
-discussed in~\rsec{Tuples}.  Ranges are discussed in~\rsec{Ranges}.
-Domains and arrays are discussed in~\rsec{Domains_and_Arrays}.
-
 \subsection{Primitive Types}
 \label{Primitive_Types}
 \index{types!primitive}
 
-The primitive types include the following
-types: \chpl{bool}, \chpl{int}, \chpl{uint}, \chpl{real},
-\chpl{complex}, \chpl{imag}, \chpl{string}, and \chpl{locale}.
-These primitive types are defined in this section except for
-the \chpl{locale} type which is defined in~\rsec{The_Locale_Type}.
-The syntax of a primitive type is summarized by the following syntax:
+The primitive types include the following types: \chpl{bool},
+\chpl{int}, \chpl{uint}, \chpl{real}, \chpl{imag}, \chpl{complex},
+\chpl{string}, and \chpl{locale}.  These primitive types are defined
+in this section except for the \chpl{locale} type which is defined
+in~\rsec{The_Locale_Type}.  The syntax of a primitive type is
+summarized by the following syntax:
 \begin{syntax}
 primitive-type:
   `bool' primitive-type-parameter-part[OPT]
   `int' primitive-type-parameter-part[OPT]
   `uint' primitive-type-parameter-part[OPT]
   `real' primitive-type-parameter-part[OPT]
-  `complex' primitive-type-parameter-part[OPT]
   `imag' primitive-type-parameter-part[OPT]
+  `complex' primitive-type-parameter-part[OPT]
   `string'
   `locale'
 
@@ -85,9 +84,6 @@ logical operators operate on values of \chpl{bool} type.
 Some statements require expressions of \chpl{bool} type and Chapel
 supports a special conversion of values to \chpl{bool} type when used
 in this context~(\rsec{Implicit_Statement_Bool_Conversions}).
-For example, an integer can be used as the condition in a conditional
-statement.  It is converted to \chpl{false} if it is zero, and
-otherwise, it is converted to \chpl{true}.
 
 \subsubsection{Signed and Unsigned Integral Types}
 \label{Signed_and_Unsigned_Integral_Types}
@@ -134,9 +130,29 @@ and \chpl{real(64)}.
 
 Arithmetic over real values follows the IEEE 754 standard.
 
-\begin{rationale}
+\begin{openissue}
 There is an expectation of future support for real(128) and/or
 real(80) depending on a platform's native support for those types
+\end{openissue}
+
+\subsubsection{Imaginary Types}
+\label{Imaginary_Types}
+\index{imaginary@\chpl{imaginary}}
+
+The imaginary types can be parameterized by the number of bits used to
+represent them.  The default imaginary type, \chpl{imag}, is 64 bits.
+The imaginary types that are supported are machine-dependent, but
+usually include \chpl{imag(32)} and \chpl{imag(64)}.
+
+\begin{openissue}
+There is an expectation of future support for imag(128) and/or
+imag(80) depending on a platform's native support for those types
+\end{openissue}
+
+\begin{rationale}
+The imaginary type is included to avoid numeric instabilities and
+under-optimized code stemming from always coercing real values to
+complex values with a zero imaginary part.
 \end{rationale}
 
 \subsubsection{Complex Types}
@@ -152,39 +168,19 @@ it consists of two 64-bit real numbers.  The complex types that are
 supported are machine-dependent, but usually
 include \chpl{complex(64)} and \chpl{complex(128)}.
 
-\begin{rationale}
+\begin{openissue}
 There is an expectation of future support for complex(256) and/or
 complex(160) depending on a platform's native support for those types
-\end{rationale}
+\end{openissue}
 
 The real and imaginary components can be accessed via the methods
 \chpl{re} and \chpl{im}.  The type of these components is real.
 
 \begin{example}
-Given a complex number \chpl{3.14+2.72i}, the expressions
-\chpl{c.re} and \chpl{c.im} refer to \chpl{3.14} and \chpl{2.72}
-respectively.
+Given a complex number \chpl{c} with the value \chpl{3.14+2.72i}, the
+expressions \chpl{c.re} and \chpl{c.im} refer to \chpl{3.14}
+and \chpl{2.72} respectively.
 \end{example}
-
-\subsubsection{Imaginary Types}
-\label{Imaginary_Types}
-\index{imaginary@\chpl{imaginary}}
-
-The imaginary types can be parameterized by the number of bits used to
-represent them.  The default imaginary type, \chpl{imag}, is 64 bits.
-The imaginary types that are supported are machine-dependent, but
-usually include \chpl{imag(32)} and \chpl{imag(64)}.
-
-\begin{rationale}
-There is an expectation of future support for imag(128) and/or
-imag(80) depending on a platform's native support for those types
-\end{rationale}
-
-\begin{rationale}
-The imaginary type is included to avoid numeric instabilities and
-under-optimized code stemming from always coercing real values to
-complex values with a zero imaginary part.
-\end{rationale}
 
 \subsubsection{The String Type}
 \label{The_String_Type}
@@ -192,14 +188,6 @@ complex values with a zero imaginary part.
 
 Strings are a primitive type designated by the symbol \chpl{string}.
 Their length is unbounded.
-
-Characters in a string can be accessed via the \chpl{substring} method
-on strings.  This method takes an integer $i$ and returns the $i$th
-character in the string.
-\begin{example}
-The first character of a string \chpl{s} can be selected by the method
-call \chpl{s.substring(1)}.
-\end{example}
 
 \subsection{Enumerated Types}
 \label{Enumerated_Types}
@@ -255,7 +243,6 @@ outputs a rhyme for any given color.  Note that enumerated constants
 must be prefixed by the enumerated type and a dot.
 \end{example}
 
-
 \subsection{Class Types}
 
 The class type defines a type that contains variables and constants,
@@ -291,9 +278,8 @@ are defined in~\rsec{Ranges}.
 \subsection{Domain and Array Types}
 \label{Domain_and_Array_Types}
 
-Domains are index sets.  Arrays are types that contain a set of zero
-or more elements all of the same type.  The elements are referenced
-via indices that are in the domain that the array is declared over.
+A domain defines a set of indices and an array defines a set of
+elements that are mapped by the indices in an associated domain.
 Domains and arrays are defined in~\rsec{Domains_and_Arrays}.
 
 \subsection{Type Aliases}

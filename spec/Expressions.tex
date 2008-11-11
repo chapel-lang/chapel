@@ -9,6 +9,7 @@ The syntax for an expression is given by:
 expression:
   literal-expression
   variable-expression
+  enum-constant-expression
   member-access-expression
   call-expression
   query-expression
@@ -46,9 +47,9 @@ in~\rsec{Querying_the_Locale_of_a_Variable}.
 \subsection{Literal Expressions}
 \label{Literal_Expressions}
 
-A literal value for any of the built-in types is a literal expression.
-These are defined where the type is defined.  The list of literal
-values is given by the following syntax:
+A literal value for any of the built-in
+types~(\ref{Primitive_Type_Literals}) is a literal expression.
+Literal expressions are given by the following syntax:
 \begin{syntax}
 literal-expression:
   bool-literal
@@ -62,12 +63,29 @@ literal-expression:
 \subsection{Variable Expressions}
 \label{Variable_Expressions}
 
-A use of a variable is itself an expression.  The syntax of a variable
-expression is given by:
+A use of a variable, constant, parameter, or formal argument, is
+itself an expression.  The syntax of a variable expression is given
+by:
 \begin{syntax}
 variable-expression:
   identifier
 \end{syntax}
+
+\subsection{Enumeration Constant Expression}
+\label{Enumeration_Constant_Expression}
+
+A use of an enumeration constant is itself an expression.  Such a
+constant must be preceded by the enumeration type name.  The syntax of
+an enumeration constant expression is given by:
+\begin{syntax}
+enum-constant-expression:
+  enum-type . identifier
+\end{syntax}
+
+\begin{example}
+For an example of using enumeration constants,
+see~\ref{Enumerated_Types}.
+\end{example}
 
 \subsection{Parenthesized Expressions}
 \label{Parenthesized_Expressions}
@@ -113,8 +131,8 @@ only difference in the call has to do with promotion and is discussed
 in~\rsec{Tensor_Product_Promotion}.
 
 Functions that are defined without parentheses are called without
-parentheses where the symbol is resolved.  Functions with parentheses
-are discussed in~\rsec{Functions_without_Parentheses}.
+parentheses as defined by scope resolution.  Functions without
+parentheses are discussed in~\rsec{Functions_without_Parentheses}.
 
 A \sntx{named-expression} is an expression that may be optionally
 named.  The optional \sntx{identifier} represents a named actual
@@ -177,7 +195,14 @@ The type alias \chpl{t} is used to specify the element type of
 array \chpl{y}.  Arrays passed to this function must have element
 type \chpl{y}.  The body of the function iterates over the domain
 of \chpl{y} captured in variable \chpl{D} and assigns the value of
-argument \chpl{x} to each element in array \chpl{y}.
+argument \chpl{x} to each element in array \chpl{y}.  This function is
+equivalent to:
+\begin{chapel}
+def foo(x, y: [] x.type) {
+  for i in y.domain do
+    y[i] = x;
+}
+\end{chapel}
 \end{example}
 
 There is an expectation that query expressions will be allowed in more
@@ -212,10 +237,10 @@ explicit conversion:
 \index{lvalue}
 
 An {\em lvalue} is an expression that can be used on the left-hand
-side of an assignment statement or on both sides of a swap statement,
-that can be passed to a formal argument of a function that has \chpl{out} or 
-\chpl{inout} intent, or that can be returned by a variable function.  Valid 
-lvalue expressions include the following:
+side of an assignment statement or on either side of a swap statement,
+that can be passed to a formal argument of a function that
+has \chpl{out} or \chpl{inout} intent, or that can be returned by a
+variable function.  Valid lvalue expressions include the following:
 \begin{itemize}
 \item
  Variable expressions.
@@ -370,8 +395,8 @@ unparenthesized version of this statement result in an aggregate value
 if A and B are both aggregates---the reduction of A results in a
 scalar which promotes when being multiplied by B, resulting in an
 aggregate.  Our intuition is that users who forget the parenthesis
-will quickly learn of their error when the resulting expression is not
-a scalar as expected.
+will learn of their error at compilation time because the resulting
+expression is not a scalar as expected.
 
 \end{rationale}
 

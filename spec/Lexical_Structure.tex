@@ -29,7 +29,7 @@ delimiting comments and tokens, they are ignored by the compiler.
 \index{case sensitivity}
 
 Chapel is a case sensitive language so identifiers that are identical
-except of the case of the characters are still different.
+except for the case of the characters are considered different.
 
 \subsection{Tokens}
 \label{Tokens}
@@ -78,7 +78,7 @@ such variables could result in deadlocks.
 \begin{example}
 The following are legal identifiers:
 \begin{chapel}
-  x, x1e, xt3, syncvar$\mbox{{\bf \$}}$, legalChapelIdentifier, legal_chapel_identifier
+  CX1, XT5, XMT, syncvar$\mbox{{\bf \$}}$, legalIdentifier, legal_identifier
 \end{chapel}
 \end{example}
 
@@ -102,10 +102,10 @@ compilerError
 compilerWarning
 config
 const
-\end{chapel} &
-\begin{chapel}
+\end{chapel} & \begin{chapel}
 continue
 def
+delete
 distributed
 do
 domain
@@ -114,22 +114,21 @@ enum
 for
 forall
 if
+\end{chapel} & \begin{chapel}
 in
-\end{chapel} &
-\begin{chapel}
 index
 inout
 label
 let
+local
 module
 new
 nil
 on
 otherwise
+\end{chapel} & \begin{chapel}
 out
 param
-\end{chapel} &
-\begin{chapel}
 record      
 reduce      
 return      
@@ -139,10 +138,9 @@ serial
 single      
 sparse
 subdomain
+\end{chapel} & \begin{chapel}
 sync        
 then        
-\end{chapel} &
-\begin{chapel}
 type        
 union       
 use         
@@ -151,8 +149,6 @@ when
 where       
 while       
 yield
-$$
-$$
 $$
 \end{chapel} \\
 \begin{invisible}
@@ -227,11 +223,11 @@ sign: one of
 The type of a real literal is \chpl{real}.  Explicit conversions are
 necessary to change the type of the literal to another real
 size.
-
-Note that real literals require that a digit follow the
-decimal point.  This is necessary to avoid an ambiguity in
-interpreting \chpl{2.e+2} that arises if a method called \chpl{e} is
-defined on integers.
+\begin{rationale}
+Note that real literals require that a digit follow the decimal point.
+This is necessary to avoid an ambiguity in interpreting \chpl{2.e+2}
+that arises if a method called \chpl{e} is defined on integers.
+\end{rationale}
 
 Imaginary literals are designated by the following syntax:
 \begin{syntax}
@@ -240,14 +236,13 @@ imaginary-literal:
   integer-literal `i'
 \end{syntax}
 
-A complex literal is specified by adding or subtracting an imaginary
-literal with a real literal.  Alternatively, a 2-tuple literal of
-expressions of integer or real type can be cast to a complex.  These
-expressions can be literals, but do not need to be.  To create a
-complex literal or parameter, they must be literals or parameters.
-
+There are no complex literals.  Rather, a complex value can be
+specified by adding or subtracting an imaginary literal with a real
+literal.  Alternatively, a 2-tuple of integral or real expressions can
+be cast to a complex such that the first component becomes the real
+part and the second component becomes the imaginary part.
 \begin{example}
-The following codes represent the same complex literal:
+The following codes represent the same complex value:
 \begin{center}
 \chpl{2.0i}, \hspace{1pc} \chpl{0.0+2.0i}, \hspace{1pc}
 \chpl{(0.0,2.0):complex}.
@@ -257,15 +252,19 @@ The following codes represent the same complex literal:
 String literals are designated by the following syntax:
 \begin{syntax}
 string-literal:
-  " characters[OPT] "
-  ' characters[OPT] '
+  " quote-delimited-characters[OPT] "
+  ' apostrophe-delimited-characters[OPT] '
 
-characters:
-  character
-  character characters
+quote-delimited-characters:
+  character quote-delimited-characters[OPT]
+  ' quote-delimited-characters[OPT]
+
+apostrophe-delimited-characters:
+  character apostrophe-delimited-characters[OPT]
+  " apostrophe-delimited-characters[OPT]
 
 character:
-  `any-character-except-newline'
+  `any-character-except-newline-quote-and-apostrophe'
 \end{syntax}
 
 \subsubsection{Operators and Punctuation}

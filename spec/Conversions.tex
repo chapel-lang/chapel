@@ -4,7 +4,7 @@
 A conversion allows an expression of one type to be converted into
 another type.  Conversions can be either
 implicit~(\rsec{Implicit_Conversions}) or
-explicit~(\rsec{Implicit_Conversions}).
+explicit~(\rsec{Explicit_Conversions}).
 
 \subsection{Implicit Conversions}
 \label{Implicit_Conversions}
@@ -72,8 +72,8 @@ type \chpl{int} rather than lose precision and half of the bits to
 call the \chpl{real(32)} version.
 
 Additionally, we don't allow implicit conversions from \chpl{int(8)}
-or \chpl{int(16)} to \chpl{real(32)} either because to do so would
-result in an ambiguity when computing, e.g., \chpl{int(8) + int(8)}.
+or \chpl{int(16)} to \chpl{real(32)} because to do so would result in
+an ambiguity when computing, e.g., \chpl{int(8) + int(8)}.
 \end{rationale}
 
 \subsubsection{Implicit Enumeration Conversions}

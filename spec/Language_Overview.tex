@@ -5,21 +5,17 @@ Chapel is a new programming language under development at Cray Inc. as
 part of the DARPA High Productivity Computing Systems (HPCS) program
 to improve the productivity of parallel programmers.
 
-This section provides a brief overview of the Chapel language by first
-discussing the guiding principles behind the design of the language
-and then providing introductory discussions of the main language
-features.  These discussions are written at an intuitive level of
-detail.  They are neither formal nor complete, but rather are intended
-as starting points for the beginning Chapel programmer.
+This section provides a brief overview of the Chapel language by
+discussing first the guiding principles behind the design of the
+language and second how to get started with Chapel.
 
 \subsection{Guiding Principles}
 
-The following four main principles have guided the design of the
-Chapel language since conception:
+The following four principles guided the design of Chapel:
 \begin{enumerate}
 \item General parallel programming
-\item Control of locality
-\item Object oriented programming
+\item Locality-aware programming
+\item Object-oriented programming
 \item Generic programming
 \end{enumerate}
 The first two principles were motivated by a desire to support
@@ -92,7 +88,7 @@ more closely match a particular machine's characteristics, though
 doing so may cause the program to be a poorer match for other
 architectures.
 
-\subsubsection{Control of Locality}
+\subsubsection{Locality-Aware Programming}
 
 A second principle in Chapel is to allow the user to optionally and
 incrementally specify where data and computation should be placed on

@@ -97,19 +97,25 @@ are as follows:
 enums & first enum constant \\
 classes & {\tt nil} \\
 records & default constructed record \\
-ranges & an empty range \\
+ranges & {\tt 1..0} \\
 arrays & elements are default values \\
 tuples & components are default values \\
 \hline
 \end{tabular}
 \end{center}
 
+\begin{openissue}
+Array initialization is potentially time-consuming.  There is an
+expectation that there will be a way to declare an array that is
+explicitly left uninitialized in order to address this concern.
+\end{openissue}
+
 \subsubsection{Local Type Inference}
 \label{Local_Type_Inference}
 \index{type inference}
 
 If the type is omitted from a variable declaration, the type of the
-variable becomes the type of the initialization expression.
+variable is defined to be the type of the initialization expression.
 
 \subsection{Global Variables}
 \label{Global_Variables}
