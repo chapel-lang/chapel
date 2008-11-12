@@ -14,7 +14,7 @@
 // This file is under construction!  Please pardon the dust and noise!
 
 
-bool fEnableDestructorCalls = false;
+bool fEnableDestructorCalls = true;
 
 void fixupDestructors(void) {
 
@@ -184,9 +184,11 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
                   }
                 }
                 CallExpr* call = toCallExpr(se->parentExpr);
+#if 0
                 if (call && (//call->isPrimitive(PRIMITIVE_SET_REF) || call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
                     call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)))
                   call = toCallExpr(call->parentExpr);
+#endif
                 if (call) {
                   if (call->isPrimitive(PRIMITIVE_MOVE)) {
                     if (fn->getReturnSymbol() == toSymExpr(call->get(1))->var) {
@@ -233,10 +235,12 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
                     maybeCallDestructor = false;
                     break;
 #endif
+#if 1
                   } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER) &&
                              !toSymExpr(call->get(1))->var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
                     maybeCallDestructor = false;
                     break;
+#endif
                   } else if (call->isPrimitive(PRIMITIVE_ARRAY_SET_FIRST)) {
                     // used (only) in init_elts in ChapelBase.chpl
                     maybeCallDestructor = false;

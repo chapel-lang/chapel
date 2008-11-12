@@ -442,6 +442,8 @@ prune() {
   static bool firstTime = true;
   if (firstTime) {
     fixupDestructors();
+    // this optimization doesn't yet work reliably when running in nonlocal environments
+    fEnableDestructorCalls = fEnableDestructorCalls && fLocal;
     reallyPrune(fEnableDestructorCalls ? false : true);
     firstTime = false;
   } else if (fEnableDestructorCalls)

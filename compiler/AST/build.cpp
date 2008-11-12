@@ -1285,7 +1285,6 @@ buildBeginStmt(Expr* stmt) {
       tmp = NULL;
   }
 
-  fEnableDestructorCalls = false; // not safe if there is a begin in the program!
   if (onBlock) {
     body->insertAtHead(new CallExpr("_upEndCount"));
     onBlock->insertAtTail(new CallExpr("_downEndCount"));
