@@ -2,16 +2,32 @@
 Release Changes List
 ====================
 
-*** STOPPED AT r14121 (2008-04-23 14:45:35)
+*** STOPPED AT r15006 | figueroa | 2008-11-11 19:14:02 -0800
 
 ===========
 version 0.8
 ===========
 
-Fifth preliminary release of Chapel Compiler, September 2008
+First public release of Chapel compiler, November 14, 2008
 
 High-Level Themes:
 ------------------
+- multi-locale task parallelism
+- improved task parallel correctness, features, thread management
+- improved stability of core features
+- very initial support for data parallelism, distributed arrays
+- target audience: general public
+
+License Changes:
+----------------
+- switched from MIT to BSD license (see LICENSE)
+- updated user agreement text (see AGREEMENT)
+
+Environment Changes:
+--------------------
+- changed the identifier for the Cray XT platform from xt-cnl to xt-cle
+- added a CHPL_MEM setting to select memory allocators (see README.chplenv) **TODO**
+- 
 
 Changes to Chapel Language:
 ---------------------------
@@ -27,20 +43,53 @@ Changes to Chapel Language:
   e.g., "x: range" expects a default range; "x: range(?)" expects a generic one
 - added the ability to query argument types without naming the queried type
   e.g., "x: ?" rather than "x:?t"
+- changed operator precedence for : vs. **, bitwise ops, reduce, !, unary +/-
+- added support for a local block that asserts code requiring no communications
+- added destructors and a 'delete' keyword for destroying class instances
+- added .order() and .position() methods to ranges and domains
+  e.g., (1..3).order(3) == 2;  ([1..3, 1..3]).position((2,1)) = (1,0)
+- removed open interval syntax in which [0..n) == 0..n-1
+- added range operator # that counts a number of elements
+  e.g., 0..#n == 0..n-1;  0.. by 2 #5 == 0, 2, 4, 6, 8
+- added initial support for leader/follower iterators supporting zippered foralls
+- added initial support for distributed domains and arrays
+- added initial support for parallel reductions and forall expressions
+- added support for overriding iterators within a class hierarchy
+- added support for variable-width boolean types
+- added support for ~ on bool types
+- added support for .clear() on arithmetic domain vars to reset to degenerate
+- added support for +/- on (arith. domain, index) and + on (index, arith. domain)
+- removed support for * and / on (range, integer) and - on (integer, range)
+- added support for locale.name to query a locale's node name
 
 Newly Implemented Features:
 ---------------------------
 - added support for .remove() on opaque domains
+- added support for explicitly naming a function's module at the callsite
+- added support for querying the eltType of an array:
+  e.g., def foo(A: [D] ?t) { ... }
+- added support for user-defined constructors for generic classes
+- added support for overriding methods using subtype return types
+- added initial support for freeing value type memory (records, arrays, domains)
+- added support for freeing compiler-introduced heap-allocated variables
 
 Portability of code base:
 -------------------------
+- added support for the Cray CX1 platform running Linux  (see README.cx1-linux)
+- made support for the Cray XT platform more robust (see README.xt-cle)
+- 
 
 Semantic Changes:
 -----------------
 - instantiation point for dynamically-dispatched methods has changed (?)
+- added support for casting an integer to a string at compile time
+- permitted partially-bounded out-of-bounds degenerate ranges to be legal, empty
+  e.g., var A: [1..10] real;  A[11..] == A[11..10] == a legal, empty slice of A
+- disallowed calling a method on a nil reference as previously permitted
 
 Syntactic/Naming Changes:
 -------------------------
+- distributed clauses no longer require parenthesis
 
 Compiler Changes:
 -----------------
@@ -48,24 +97,44 @@ Compiler Changes:
 - on clauses are now evaluated for side effects when using the --local flag
 - added support for opaque types for use when interfacing with extern functions
 
+Third Party Changes:
+--------------------
+- updated to GASNet 1.12.0
+- added support for using dlmalloc as a memory allocator
+
 Runtime Library Changes:
 ------------------------
 - all tasks in a cobegin are now set up before any start executing for pthreads
 - made the task that starts a cobegin/coforall help execute the component tasks
 - disabled the GASNet polling thread when using the portals implementation
+- made the task that enters a sync statement help execute the component tasks
+- added support for deadlock detection for 1 locale executions using the -b flag
+- added "launcher" capability to wrap job launch mechanism (see README.launcher)
+- improved the thread-safety of declaring arrays over a domain
 
 Documentation:
 --------------
 - improved --help descriptions of --[no-] flags
 - updated the man page
 - improved the specification of instantiated fns: visibility & point-of-inst.
+- updated and improved the language specification
 
 Example Codes:
 --------------
+- added a hello-multiloc example to run a "Hello, world!" on multiple locales
 - improved the taskParallel example to reduce the likelihood of races
+- improved hpcc codes resulting in our 2008 HPC Challenge entry
+- added hpl example code from our 2008 HPC Challenge entry
+- improved the verification step of stream.chpl to make it stronger
+- made the stream.chpl and ra.chpl benchmarks use Block1D-distributed domains
+- added support for the stream and ra benchmarks to use multiple tasks per locale
 
 Standard Modules:
 -----------------
+- added a day of week enumeration and getCurrentDayOfWeek() to the Time module
+- added a standard Vector module
+- fillRandom() calls in the Random module now fill 1D arrays in parallel
+- added a Norm module for computing vector and matrix norms
 
 Compiler Flags:
 ---------------
@@ -76,10 +145,14 @@ Compiler Flags:
 - added --[no-]live-analysis to turn live variable analysis off/on
 - removed the --chplhome flag
 - removed the --flow-analysis flag
+- improved the parsing of single-dash compiler flags to avoid common errors
+  e.g., -abcd != -a -b -c -d
 
 Generated Code Flags:
 ---------------------
-- added a -b/--blockreport flag to help debug deadlocked pthread programs
+- added a -b/--blockreport flag to help debug deadlocked 1-locale programs
+- added a -t/--taskreport flag to print a list of tasks for 1-locale programs
+- made the -v flag print node names for locales on which code is executing
 
 Bug Fixes/New Semantic Checks (for old semantics):
 --------------------------------------------------
@@ -103,15 +176,35 @@ Bug Fixes/New Semantic Checks (for old semantics):
 - fixed a number of bugs related to generic function instantiation points
 - fixed a bug related to nested functions within initialize() methods
 - improved the resolution of module-local functions with respect to 'use'd ones
+- fixed a bug in generated code for type casts to generic types
+- fixed a bug related to module uses getting lost when the IR was copied
+- fixed a bug in which param functions with multiple returns corrupted constants
+- fixed a bug in which multidimensional tuple-to-array assignment was failing
+- fixed a bug in which queried domains in where clauses were lost on copy
+- fixed an issue related to parameter coercions and function resolution
+- fixed a bug permitting array initializers to be used for class members
+- fixed a bug related to nested var iterators in which references were lost
+- fixed a bug related to formal arguments with no type, initialized to nil
+- fixed a bug in which default functions were not built when they should be
+- fixed bugs related to heap allocation of parameters and types
+- fixed a bug in which casts on return expressions were ignored
+- improved support for range slicing at extreme integer values
+- fixed a bug in which partially instantiated types could be used improperly
+- fixed a bug in which write statements would not print atomically as intended
 
 Error Message Improvements:
 ---------------------------
 - improved error messages related to iterators and promoted expressions
 - improved error messages related to bad tuple index types
+- improved an error message related to illegal assignments of domains to arrays
 
 Compiler Analysis and Optimizations/Performance of Generated Code:
 ------------------------------------------------------------------
 - made "here" into a per-locale variable, reducing communication
+- added initial support for optimizing zippered iteration over aligned arrays
+- added initial support for privatizing global domain/array descriptors
+- optimized coforall...on and begin...on idioms to minimize thread spinning
+- optimized read-only non-local accesses to value types
 
 Compiler Performance and Cleanup:
 ---------------------------------
@@ -133,6 +226,15 @@ Compiler Performance and Cleanup:
 - improved the performance of getVisibleFunctions
 - rewrote the compiler's symboltable
 - removed filename references from IR nodes to save space
+- reimplemented the traversal mechanism
+- optimized the cleanAST pass
+- simplified pragma lookups
+- simplified the implementation of copy on the IR by simplifying the maps
+- streamlined function instantiation when a function is not a viable candidate
+- eliminated dead code
+- refactored and cleaned up the wrapper/generic function caching code
+- optimized visible function lookup by grouping a module's top-level functions
+- added support for a BitVec class to save space and time
 
 Generated Code:
 ---------------
@@ -172,7 +274,32 @@ Internal:
 - removed the need for the symboltable after scope resolution
 - added more reserved symbols to the reserved symbol names list
 - removed unused fields from internal classes
-
+- added support for developers to print references in 0x0000abcd form
+- made all exits from the compiler use our clean exit routine
+- moved zipper iteration implementation from the standard modules to the compiler
+- improved the cleanup of temporary files when using the --gdb flag for gdb >6.6
+- fixed a bug with the --gdb flag in which quit and run would fail after errors
+- fixed a bug in which live analysis would conservatively mark references as live
+- simplified and optimized the normalize pass
+- general cleanup of coercion wrapper code
+- refactored instantiation code
+- removed --nostdincs compiler flag
+- added a --runtime flag to compile Chapel code into the runtime and used it
+- removed _pass functions
+- revamped implementation of pragmas and unified with various boolean flags
+- changed handling of on, begin, cobegin, coforall to use blocks, not nested fns
+- removed _init calls from the compiler
+- generalized creation of runtime array types
+- removed need for buildEmptyDomain methods within domain classes
+- reorganized abstract distribution, domain, array classes
+- renamed SingleLocale* classes for domains/arrays to Default* classes
+- removed redundant type/param fields from array wrapper records
+- reworked mangling of local temporary names
+- changed arithmetic array of primes into function returning primes
+- reimplemented heap allocated variables
+- added reference counting to domain classes to aid in freeing them
+- added support for dynamically turning on/off communication and memory tracing
+- simplified AList class
 
 ===========
 version 0.7
