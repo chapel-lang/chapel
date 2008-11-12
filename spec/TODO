@@ -1,3 +1,9 @@
+TODOs while updating the CHANGES file
+-------------------------------------
+* document the Containers module
+* document that by operators can be overloaded
+-------------------------------------
+
 * Make supported parameter and type queries for ranges, domains, and
   arrays more explicit in the spec.  Most users are only realizing
   that this is possible by reading example codes.  Maybe include as
