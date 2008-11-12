@@ -28,19 +28,15 @@ know at chapel_info@cray.com.
 
 
 3) If your XT requires PBS/qsub to launch jobs onto the compute nodes
-   (or you prefer to use it as your job launcher and it's supported),
+   (or you simply want to use it as your job launch mechanism),
    set CHPL_LAUNCHER to pbs.  For example:
 
      setenv CHPL_LAUNCHER pbs
 
-   If you are running on an NCCS system that uses its own qsub wrapper
-   script, you will want to use 'pbs-nccs' instead:
-
-     setenv CHPL_LAUNCHER pbs-nccs
-
-   Without setting CHPL_LAUNCHER, it will default to 'aprun' on xt-cle
-   systems (you can also request this explicitly by setting it to
-   'aprun').
+   Otherwise, CHPL_LAUNCHER will default to 'aprun' on xt-cle
+   systems (you can also set this explicitly if you wish).  See
+   README.launcher for more information on Chapel's launcher
+   capabilities.
 
 
 4) Ensure that you have one of the following Programming Environment
@@ -119,12 +115,21 @@ NCCS user notes
 * At the time of this release, NCCS XT machines use a different qsub
   mechanism in order to enforce their policies.  We have attempted to
   make our qsub launch code work with this version of qsub, but
-  require the CHPL_LAUNCHER_ACCOUNT environment variable to be set to
+  require a CHPL_LAUNCHER_ACCOUNT environment variable to be set to
   specify your NCCS account name.  For example:
 
     setenv CHPL_LAUNCHER_ACCOUNT MYACCOUNTID
 
-  If our PBS launcher fails to work for you, you can always launch the
-  a.out_real binary manually using aprun within a manually-generated
-  qsub script -- or recompile using aprun as CHPL_LAUNCHER and execute
-  a.out within a manually-generated qsub script.
+* Should CHPL_LAUNCHER=='pbs' fail to work for you, try setting
+  CHPL_LAUNCHER to 'pbs-nccs', remaking the compiler and runtime, and
+  recompiling your program.
+
+* If both of these options fail, you can always fall back on one of
+  these options:
+
+  - launch the a.out_real binary manually using aprun within a
+    manually-generated qsub script
+
+  - set CHPL_LAUNCHER to aprun, rebuild and recompile, and execute
+    the resulting binary within a manually-generated qsub script.
+

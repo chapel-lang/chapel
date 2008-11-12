@@ -36,7 +36,7 @@ static qsubVersion determineQsubVersion(void) {
   FILE* sysFile;
   int i;
 
-  char* command = _glom_strings(2, "qsub --version > ", sysFilename);
+  char* command = _glom_strings(3, "qsub --version > ", sysFilename, " 2>&1");
   system(command);
   sysFile = fopen(sysFilename, "r");
   for (i=0; i<versionBuffLen; i++) {
@@ -51,7 +51,7 @@ static qsubVersion determineQsubVersion(void) {
   }
 
   fclose(sysFile);
-  if (strcmp(version, " ") == 0) {
+  if (strstr(version, "NCCS")) {
     return nccs;
   } else if (strstr(version, "PBSPro")) {
     return pbspro;
