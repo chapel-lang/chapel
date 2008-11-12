@@ -1,7 +1,7 @@
 //
-// Histogram II
+// Histogram Solution 2
 //
-// Compute the histogram of an array of random numbers in parallel.
+// Compute the histogram of an array of random numbers.
 //
 
 // import standard modules to generate random number and use timers
@@ -17,7 +17,7 @@ config const printRandomNumbers: bool = true, // print random numbers to screen
 // global variables
 var X: [1..numNumbers] real, // array of random numbers
     Y: [1..numBuckets] int,  // histogram
-    t: Timer;                // computation timer
+    timer: Timer;            // computation timer
 
 // output startup message
 writeln("Running Histogram Example");
@@ -33,21 +33,20 @@ if printRandomNumbers then
   writeln("Random Numbers\n\n", X, "\n");
 
 // compute histogram
-t.start();
+timer.start();
 computeHistogram(X, Y);
-t.stop();
+timer.stop();
 
 // verify number of items in histogram is equal to number of random
 // numbers and output timing results
 if + reduce Y != numNumbers then
   halt("Number of items in histogram does not match number of random numbers");
-writeln("Histogram computed in ", t.elapsed(), " seconds\n");
+writeln("Histogram computed in ", timer.elapsed(), " seconds\n");
 
 // output histogram
 if printHistogram then
   outputHistogram(Y);
 
-// computeHistogram: compute histogram in parallel
 def computeHistogram(X: [] real, Y: [] int) {
   var lock$: sync bool;
   coforall t in 1..numThreads {

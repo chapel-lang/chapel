@@ -1,5 +1,5 @@
 //
-// Histogram Solution 1
+// Histogram Solution 2
 //
 // Compute the histogram of an array of random numbers.
 //
@@ -11,12 +11,13 @@ use Random, Time;
 config const printRandomNumbers: bool = true, // print random numbers to screen
              printHistogram: bool = true,     // print histogram to screen
              numNumbers: int = 8,             // number of random numbers
-             numBuckets: int = 10;            // number of histogram buckets
+             numBuckets: int = 10,            // number of histogram buckets
+             numThreads: int = 4;             // number of threads to use
 
 // global variables
-var X: [1..numNumbers] real, // array of random numbers
-    Y: [1..numBuckets] int,  // histogram
-    timer: Timer;            // computation timer
+var X, X2: [1..numNumbers] real, // arrays of random numbers
+    Y: [1..numBuckets] int,      // histogram
+    timer: Timer;                // computation timer
 
 // output startup message
 writeln("Running Histogram Example");
@@ -24,12 +25,14 @@ writeln(" Number of Random Numbers = ", format("########", numNumbers));
 writeln(" Number of Buckets        = ", format("########", numBuckets));
 writeln();
 
-// fill array with random numbers (using standard Random module)
+// fill arrays with random numbers (using standard Random module)
 fillRandom(X);
+fillRandom(X2);
+X = (X+X2)/2;
 
-// output array of random numbers
+// output arrays of random numbers as averages
 if printRandomNumbers then
-  writeln("Random Numbers\n\n", X, "\n");
+  writeln("Random Averages\n\n", X, "\n");
 
 // compute histogram
 timer.start();
@@ -47,8 +50,17 @@ if printHistogram then
   outputHistogram(Y);
 
 def computeHistogram(X: [] real, Y: [] int) {
-  for x in X do
-    Y(1 + (x / (1.0 / numBuckets)): int) += 1;
+  var lock$: sync bool;
+  coforall t in 1..numThreads {
+    var low = 1+(t-1)*numNumbers/numThreads;
+    var high = if t == numThreads then numNumbers else t*numNumbers/numThreads;
+    var myY: [1..numBuckets] int;
+    for x in X(low..high) do
+      myY(1 + (x / (1.0 / numBuckets)): int) += 1;
+    lock$ = true;
+    Y += myY;
+    lock$;
+  }
 }
 
 // outputHistogram: output histogram array
