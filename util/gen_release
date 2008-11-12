@@ -102,6 +102,7 @@ system("cd chapel/runtime && rm -r comm-armci");
 system("cd chapel/runtime/include && rm -r comm-armci");
 system("cd chapel/runtime && rm -r launch-mpirun");
 system("cd chapel/runtime && rm -r mem-heapmm");
+system("cd chapel/third-party/gasnet && rm -r GASNet-1.10.0");
 
 foreach $file (@files) {
     $dfile = "chapel/$file";
