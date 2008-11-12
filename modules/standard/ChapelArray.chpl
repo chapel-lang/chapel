@@ -196,7 +196,7 @@ record _domain {
   var _promotionType: index(rank, _value.idxType);
 
   def initialize() { 
-    //    _valueField._count += 1;
+    _value._count += 1;
   }
 
   def _value {

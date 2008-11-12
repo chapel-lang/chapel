@@ -340,13 +340,15 @@ class DefaultArithmeticArray: BaseArray {
   }
 
   def destroyDom() {
-    var cnt = dom._count - 1;
-    if cnt < 0 then halt("count is negative!"); // should never happen!
-    else if cnt == 0 then
-      on dom do delete dom;
-    else {
-      dom._arrs.remove(this);
-      dom._count = cnt;
+    if !dom.supportsPrivatization() {
+      var cnt = dom._count - 1;
+      if cnt < 0 then halt("count is negative!"); // should never happen!
+      else if cnt == 0 then
+        on dom do delete dom;
+      else {
+        dom._arrs.remove(this);
+        dom._count = cnt;
+      }
     }
   }
 

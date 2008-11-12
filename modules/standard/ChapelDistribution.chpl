@@ -36,12 +36,14 @@ class BaseDomain {
   }
 
   def destroyDom() {
-    var cnt = _count - 1;
-    if cnt < 0 then halt("count is negative!"); // should never happen!
-    else if cnt == 0 then
-      on this do delete this;
-    else
-      _count = cnt;
+    if !supportsPrivatization() {
+      var cnt = _count - 1;
+      if cnt < 0 then halt("count is negative!"); // should never happen!
+      else if cnt == 0 then
+        on this do delete this;
+      else
+        _count = cnt;
+    }
   }
 
   def member(ind) : bool {
