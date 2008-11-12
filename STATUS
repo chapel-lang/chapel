@@ -32,10 +32,8 @@ Variables, Types and Expressions
 Unimplemented Features:
 
 Bugs:
-- Const arrays, records, and fields can currently be modified -- these
-  should result in a compiler error
-- Const variables may incorrectly be modified when compiling using the
-  --no-local flag or CHPL_COMM == gasnet
+- Constant arrays and records can be modified (without error)
+- Array types cannot be specified in tuple types or expression contexts
 
 
 -------
@@ -55,7 +53,7 @@ Functions
 Unimplemented Features:
 
 Bugs:
-- programs requiring non-linear function resolution may not work properly
+- Programs requiring non-linear function resolution may not work
 
 
 ----------------------------
@@ -68,8 +66,9 @@ Unimplemented Features:
 - Garbage collection is not supported
 
 Bugs:
-- const fields can be assigned multiple times in constructors
-- record field initializers may incorrectly be evaluated more than once
+- Constant fields can be modified (without error)
+- Record field initializers may be evaluated more than once
+- User-defined constructors exhibit occasional bugs
 
 
 -----------------------------
@@ -80,6 +79,7 @@ Unimplemented Features:
 
 Bugs:
 - Nested var iterators do not work correctly
+- The implicit 'setter' argument does not work in var iterators
 
 
 ------------------
@@ -95,11 +95,11 @@ Unimplemented Features:
 - Arrays of arrays where the inner arrays vary in size are not supported
 - Strided domains sliced by unstrided domains are not handled correctly
 - Sparse domains/arrays are incomplete:
-  - can't be sliced nor used to slice dense domains/arrays
-  - don't yet support remove methods or the -= operator
-  - assignment between sparse domains is not yet implemented
-- index(D) bounds checking is not implemented
-- subdomain(D) index subset checking is not implemented
+  - Can't be sliced nor used to slice dense domains/arrays
+  - Don't yet support remove methods or the -= operator
+  - Assignment between sparse domains is not yet implemented
+- There are no bounds checks on index types
+- There are no subset checks on subdomains
 
 Bugs:
 - Constant domains can be modified illegally if passed to functions
@@ -156,14 +156,13 @@ Input and Output
 ----------------
 
 Unimplemented Features:
-- format control for the output precision/width of scalar values
+- Format control for the output precision/width of scalar values
   Workaround: see doc/README.format
+- Input of whole arrays, e.g., read(A);
+  Workaround: use a loop and read in the elements one at a time
+    e.g., for i in A.domain do read(A(i));
 
 Bugs:
-- read()s of whole arrays are not working
-    e.g., read(A);
-  Workaround: use a loop and read in the elements one at a time
-    e.g., for i in A.domain read(A(i));
 
 
 -----------------
@@ -171,7 +170,7 @@ Standard Library
 -----------------
 
 Unimplemented Features:
-- on some platforms, math library support may be incomplete based on C support
+- On some platforms, math library is limited by C support
 
 Bugs:
 
