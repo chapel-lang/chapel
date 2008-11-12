@@ -67,7 +67,7 @@ ARMCI_LIB_DIR = $(ARMCI_INSTALL_DIR)
 # GASNet stuff
 #
 # the gasnet version
-GASNET_VERSION = 1.10.0
+GASNET_VERSION = 1.12.0
 GASNET_SUBDIR = $(GASNET_ABS_DIR)/GASNet-$(GASNET_VERSION)
 # determine the segment if the user hasn't specified onex
 ifndef CHPL_GASNET_SEGMENT
