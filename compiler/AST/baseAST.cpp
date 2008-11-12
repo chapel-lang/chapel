@@ -136,7 +136,7 @@ void cleanAst() {
       if (ClassType* ct = toClassType(ts->type)) {
         if (ct->defaultConstructor && !ct->defaultConstructor->defPoint->parentSymbol)
           ct->defaultConstructor = NULL;
-        else if (ct->destructor && !ct->destructor->defPoint->parentSymbol)
+        if (ct->destructor && !ct->destructor->defPoint->parentSymbol)
           ct->destructor = NULL;
       }
     }
