@@ -24,54 +24,26 @@ extremely rare race condition in module initialization
 ------------------------------------------------------
 [Error matching program output for modules/diten/useInBegin]
 
-leaked memory tests enter infinite loop?
-----------------------------------------
-[Error: Timed out executing program classes/figueroa/LeakedMemory2]
-[Error: Timed out executing program classes/figueroa/LeakedMemory3]
-
 
 =============================
 valgrind-specific regressions
 =============================
 
-everything failed due to invalid read in clean AST (11/11/08)
--------------------------------------------------------------
-[*]
-
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
+[Error matching program output for parallel/begin/dinan/mvm_coforall]
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
 [Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
-[Error matching program output for parallel/begin/dinan/mvm_coforall]
-
-
-=======================
-performance regressions
-=======================
-
-compile error due to reference counting change (11/11/08)
----------------------------------------------------------
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
 
 
 ====================
 no-local regressions
 ====================
 
-compile error due to reference counting change (11/11/08)
----------------------------------------------------------
-[Error matching compiler output for studies/hpcc/2008/ra]
-[Error matching compiler output for studies/hpcc/2008/stream]
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-dom]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
-[Error matching compiler output for studies/hpcc/common/bradc/unit/multipleDomains2]
-[Error matching compiler output for studies/hpcc/common/bradc/unit/parBlock1Da]
-[Error matching compiler output for studies/hpcc/common/bradc/unit/parRandom2-fill]
-
+memory is not freed with --no-local on (11/12/08)
+-------------------------------------------------
+[Error matching program output for classes/figueroa/LeakedMemory2]
+[Error matching program output for classes/figueroa/LeakedMemory3]
 
 attempt to dereference nil (11/08/08)
 -------------------------------------
@@ -108,8 +80,8 @@ occasional out-of-memory error (11/06/08)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-??? (11/11/08)
---------------
+spurious binary file diff??? (11/11/08)
+---------------------------------------
 [Error matching program output for types/type_variables/deitz/part3/test_instantiate_construct1]
 
 attempt to dereference nil (11/08/08)
@@ -390,9 +362,24 @@ negative floating point 0.0 not supported
 [Error matching program output for execflags/bradc/gdbddash/declint2] 
 
 
+====================
+xt-specific failures
+====================
+
+brad forgot to update .good files
+---------------------------------
+[Error matching program output for multilocale/numLocales/bradc/numLocales2]
+[Error matching program output for multilocale/numLocales/bradc/printNumLocalesTwo]
+
+
 ========================
 xt-gnu specific failures
 ========================
+
+??? (11/12/08)
+--------------
+[Error matching program output for functions/dinan/exp2]
+
 
 ???
 ---
@@ -411,6 +398,11 @@ compilation timing out (started 4/19/08)
 ========================
 cygwin-specific failures
 ========================
+
+??? (11/12/08)
+--------------
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample1]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
 
 Yikes!  output was 2 2 2 2 1 1 1 1 rather than 2 2 2 2 1 2 2 2 (09/26/08)
 -------------------------------------------------------------------------
