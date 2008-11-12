@@ -21,7 +21,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   size = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen(baseCommand) + 1;
 
   for (i=1; i<argc; i++) {
-    size += strlen(argv[i]) + 1;
+    size += strlen(argv[i]) + 3;
   }
 
   command = chpl_malloc(size, sizeof(char*), "gasnetrun_ibv command buffer", 
@@ -29,8 +29,9 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   
   sprintf(command, "%s%s", WRAP_TO_STR(LAUNCH_PATH), baseCommand);
   for (i=1; i<argc; i++) {
-    strcat(command, " ");
+    strcat(command, " '");
     strcat(command, argv[i]);
+    strcat(command, "'");
   }
 
   if (strlen(command)+1 > size) {

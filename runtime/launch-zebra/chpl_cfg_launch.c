@@ -15,15 +15,16 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   size = strlen(baseCommand) + 1;
 
   for (i=1; i<argc; i++) {
-    size += strlen(argv[i]) + 1;
+    size += strlen(argv[i]) + 3;
   }
 
   command = chpl_malloc(size, sizeof(char*), "zebra command buffer", -1, "");
   
   sprintf(command, "%s", baseCommand);
   for (i=1; i<argc; i++) {
-    strcat(command, " ");
+    strcat(command, " '");
     strcat(command, argv[i]);
+    strcat(command, "'");
   }
 
   if (strlen(command)+1 > size) {
