@@ -347,13 +347,14 @@ The index-expression can be an identifier or a tuple of identifiers.
 The identifiers are declared to be new variables for the scope of this
 statement.  A for loop can be defined without an index expression.
 
-If the iterator-expression is a tuple, the components of the tuple
-must support iteration, e.g., a tuple of arrays, and those components
-are iterated over using a zipper iteration defined
-in~\rsec{Zipper_Iteration}.  If the iterator-expression is a tuple
-delimited by square brackets, the components of the tuple must support
-iteration and these components are iterated over using a tensor
-product iteration defined in~\rsec{Tensor_Product_Iteration}.
+If the iterator-expression is a tuple delimited by parentheses, the
+components of the tuple must support iteration, e.g., a tuple of
+arrays, and those components are iterated over using a zipper
+iteration defined in~\rsec{Zipper_Iteration}.  If the
+iterator-expression is a tuple delimited by brackets, the components
+of the tuple must support iteration and these components are iterated
+over using a tensor product iteration defined
+in~\rsec{Tensor_Product_Iteration}.
 
 \subsubsection{Zipper Iteration}
 \label{Zipper_Iteration}
@@ -483,6 +484,12 @@ the use statement occurs.
 If used modules themselves use other modules, symbols are scoped according
 the depth of use statements followed to find them. It is an error for two
 variables, types, or modules to be defined at the same depth.
+
+\begin{openissue}
+There is an expectation that this statement will be extended to allow
+the programmer to restrict which symbols are 'used' as well as to
+rename symbols that are used.
+\end{openissue}
 
 \subsection{The Type Select Statement}
 \label{The_Type_Select_Statement}

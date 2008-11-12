@@ -48,7 +48,7 @@ in~\rsec{Querying_the_Locale_of_a_Variable}.
 \label{Literal_Expressions}
 
 A literal value for any of the built-in
-types~(\ref{Primitive_Type_Literals}) is a literal expression.
+types~(\rsec{Primitive_Type_Literals}) is a literal expression.
 Literal expressions are given by the following syntax:
 \begin{syntax}
 literal-expression:
@@ -84,7 +84,7 @@ enum-constant-expression:
 
 \begin{example}
 For an example of using enumeration constants,
-see~\ref{Enumerated_Types}.
+see~\rsec{Enumerated_Types}.
 \end{example}
 
 \subsection{Parenthesized Expressions}
@@ -191,12 +191,10 @@ def foo(x: ?t, y: [?D] t) {
     y[i] = x;
 }
 \end{chapel}
-The type alias \chpl{t} is used to specify the element type of
-array \chpl{y}.  Arrays passed to this function must have element
-type \chpl{y}.  The body of the function iterates over the domain
-of \chpl{y} captured in variable \chpl{D} and assigns the value of
-argument \chpl{x} to each element in array \chpl{y}.  This function is
-equivalent to:
+This allows a generic specification of a function to assign a
+particular value to all elements of an array.  The value and the
+elements of the array are constrained to be the same type.  This
+function can be rewritten without query expression as follows:
 \begin{chapel}
 def foo(x, y: [] x.type) {
   for i in y.domain do
@@ -259,8 +257,8 @@ lvalue-expression:
   member-access-expression
   call-expression
 \end{syntax}
-The syntax is more relaxed than the definition above.  For example, not
-all \sntx{call-expression}s are lvalues.
+The syntax is less restrictive than the definition above.  For
+example, not all \sntx{call-expression}s are lvalues.
 
 \subsection{Operator Precedence and Associativity}
 \label{Operator_Precedence_and_Associativity}
@@ -433,10 +431,10 @@ This section describes the predefined arithmetic operators.  These
 operators can be redefined over different types using operator
 overloading~(\rsec{Function_Overloading}).
 
-All arithmetic operators are implemented over integral types of size
-32 and 64 bits only.  For example, adding two 8-bit integers is done
-by first converting them to 32-bit integers and then adding the 32-bit
-integers.  The result is a 32-bit integer.
+All integral arithmetic operators are implemented over integral types
+of size 32 and 64 bits only.  For example, adding two 8-bit integers
+is done by first converting them to 32-bit integers and then adding
+the 32-bit integers.  The result is a 32-bit integer.
 
 \subsubsection{Unary Plus Operators}
 \label{Unary_Plus_Operators}
@@ -736,7 +734,7 @@ will be extended to handle imaginary and complex types in the future.
 
 This section describes the predefined bitwise operators.  These
 operators can be redefined over different types using operator
-overloading~(\rsec{Function_Overloading}.
+overloading~(\rsec{Function_Overloading}).
 
 \subsubsection{Bitwise Complement Operators}
 \label{Bitwise_Complement_Operators}
@@ -825,7 +823,7 @@ vice versa.
 
 This section describes the predefined shift operators.  These
 operators can be redefined over different types using operator
-overloading~(\rsec{Function_Overloading}.
+overloading~(\rsec{Function_Overloading}).
 
 The shift operators are predefined as follows:
 \begin{chapel}
@@ -923,7 +921,7 @@ function over other types.
 
 This section describes the predefined relational operators.  These
 operators can be redefined over different types using operator
-overloading~(\rsec{Function_Overloading}.
+overloading~(\rsec{Function_Overloading}).
 
 \subsubsection{Ordered Comparison Operators}
 \label{Ordered_Comparison_Operators}
@@ -1057,7 +1055,7 @@ equivalent to \chpl{\!(a == b)}.
 
 This section describes several miscellaneous operators.  These
 operators can be redefined over different types using operator
-overloading~(\rsec{Function_Overloading}.
+overloading~(\rsec{Function_Overloading}).
 
 \subsubsection{The String Concatenation Operator}
 \label{The_String_Concatenation_Operator}
@@ -1154,9 +1152,10 @@ for-expression:
   `for' index-expression `in' iterator-expression `do' expression
   `for' iterator-expression `do' expression
 \end{syntax}
-The for expression evaluates a loop in the context of an expression
-and has the semantics of calling an iterator that yields the evaluated
-expressions on each iteration.
+The for-expression evaluates a for-loop~(\rsec{The_For_Loop}) in the
+context of an expression and has the semantics of calling an
+iterator~(\rsec{Iterators}) that yields the evaluated expressions on
+each iteration.
 
 \subsubsection{Filtering Predicates in For Expressions}
 \label{Filtering_Predicates_For}
