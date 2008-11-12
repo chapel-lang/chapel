@@ -1,0 +1,260 @@
+GASNet gm-conduit documentation
+Christian Bell <csbell@cs.berkeley.edu>
+$Revision: 1.21 $
+
+User Information:
+-----------------
+
+* MPI GM-conduit Compatibility
+
+  MPI and GM compatibility (--enable-mpi-compat and --disable-mpi-compat)
+  The major problem in allowing GASNet/GM applications and MPI applications to
+  coexist peacefully is related to job spawning, since Myricom doesn't provide
+  an API for opening network endpoints.  As part of GASNet's configure script,
+  if MPI is detected on the system, GASNet/GM will link against MPI and use the
+  mpi-spawner to initialize GASNet -- in Myrinet parlance, this means having
+  MPI open it's own Myrinet port followed by GASNet opening it's own Myrinet
+  port.  As a result, MPI and GASNet/GM independently access the Myrinet on
+  their own port.  
+
+  Providing compatibility as the default compilation option does have the
+  drawback that the MPI library is at least initialized even for GASNet
+  applications that only target the native GM library.  However, as a
+  consolation, the latest MPICH/GM release (1.2.6..14 at this time) is not
+  known to require a wealth of memory resources simply at initialization time.
+  Furthermore, the MPI compatibility for bootstrap purposes can also be carried
+  out over any MPI channel adapter such as Ethernet, which may be preferred if
+  accounting of library resources is critical.
+
+  At any time, whether MPI is detected or not on the target system, the GM-MPI
+  compatibility option can be disabled with --disable-mpi-compat, at which
+  time GASNet/GM job spawning utilities described below must be used.
+
+
+* Job Spawning
+
+  Myricom provides no job spawning mechanism and relies on sites to either roll
+  their own spawning mechanism or use a perl script they provide for launching
+  MPI jobs.  Job spawning capability differs whether the GM-MPI compatibility
+  option is enabled or not. The following table summarizes the state of
+  spawning support with GM-conduit, whether GM-MPI compatibility is enabled or
+  not.
+
+		       |                   |  Spawner availability with  |
+		       | Forwards GASNet   |     GM-MPI Compatibility    |
+		       | environment vars  |   enabled   .    disabled   |
+  ---------------------|-------------------|-------------|---------------|
+  gasnetrun_gm         |        yes        |     yes     |      yes      |
+  ---------------------|-------------------|-------------|---------------|
+  gasnetrun_mpi        |        yes        |     yes     |      no       |
+  ---------------------|-------------------|-------------|---------------|
+  ---------------------|-------------------|-------------|---------------|
+  mpiexec -comm gm (1) |        yes        |     yes     |      yes      |
+  ---------------------|-------------------|-------------|---------------|
+  mpirun.ch_gm  (2)    |  ver. > 1.2.6..14 |     yes     |      yes      | 
+  ---------------------|-------------------|-------------|---------------|
+  ~/.gmpi/conf  (3)    |         no        |     no      |      yes      |
+  ---------------------|-------------------|-------------|---------------|
+
+  (1,2,3) Are "unofficially" supported, but they are functional.
+  (1) mpiexec is supported as of version 0.72 and above.
+  (2) mpirun.ch_gm, the mpirun shipped with MPICH-GM is functional up to the
+      latest released 1.2.6..14 but may break if the sockets spawning protocol
+      is changed in future releases.
+  (3) ~/.gmpi/conf is the file-based spawning utility and obeys the following
+      syntax:
+      2
+      host001 2
+      host002 4
+      Where the first line contains the number of processors and each other
+      line contains the host and its GM port number.
+
+
+* Memory Registration (Firehose algorithm)
+
+  Myrinet requires remote memory pages to be explicitly pinned before they can
+  be used as the source/target of an RDMA operation.  The GM conduit implements
+  a new algorithm for dealing with pinning of large memory spaces.  See paper
+  at http://upc.lbl.gov/publications/ for
+
+       Bell, Bonachea. "A New DMA Registration Strategy for Pinning-Based High
+       Performance Networks", Workshop on Communication Architecture for
+       Clusters (CAC'03), 2003.
+
+  GM-conduit uses the page-based version of the Firehose algorithm.  In short,
+  Firehose ammortizes the amount of pinning operations by allowing each node to
+  keep track of a set of remote pages that are guaranteed to be pinned at all
+  time.  Each node is allowed to control M/THREADS worth of memory at every
+  other node where 'M' is determined to be the total amount of per-node memory
+  set aside for remote pinning operations (this memory is used as the source of
+  remote RDMA gets and the destination of remote RDMA puts).  Additionally,
+  some memory must be put aside for operations initiated by the local node, in
+  order to pin memory associated to the source of RDMA puts and the destination
+  of RDMA gets.  These two parameters can be set in the environment as
+  explained below in the 'environment variables' section.
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+
+* The GASNET_EXITTIMEOUT family of environment variables (see top-level README)
+
+* GASNET_GM_RDMA_GETS (1/0) (default=1 if available, 0 otherwise) - 
+  Use Myrinet's RDMA hardware support for fast remote gets (gm_get) - this 
+  typically has a very noticable impact on get performance, and therefore 
+  should be enabled whenever possible. If disabled, use Active Message
+  operations to have the source initate RDMA puts back to the destination.
+  GM 1.x does not support gm_get() and GM 2.x has functional get support starting
+  after 2.0.6 in the 2.0 series and 2.1.2 in the 2.1 series.  However, up to and
+  including 2.0.12, we have experienced deadlock issues with GM gets.  Setting
+  this variable to zero may help if deadlock issues are encountered.
+
+* GASNET_GM_NO_RDMAGET_WARNING (1/0) (default=0) - Disabled warning printed out
+  at initialization about gets being disabled. For GM versions that offer GM
+  gets (2.x) but with a broken implementation, or when users explicitly set
+  GASNET_GM_DISABLE_RDMA_GETS in the environment, a warning is printed about
+  native RDMA get support being disabled.
+
+* GASNET_PHYSMEM_PINNABLE_RATIO (<FLOAT>) (default=0.7) - Sets the portion of
+  the detected amount of physical memory that can be made pinnable.  Myricom
+  claims that up to 70% of a node's physical memory may be pinned for correct
+  operation.  This value should be reduced if a node shows problems in
+  registering a large segment at startup.
+
+* GASNET_FIREHOSE_M (<INTEGER>[G|M]) 
+  (default="pinnable physmem" * FH_MAXVICTIM_TO_PHYSMEM_RATIO) - Establishes
+  the amount of memory reserved for remote pin operations (by default, NUMBER
+  is considered to be an amount in megabytes, but a M or G suffix can be added
+  to specify base2 megabytes or base2 gigabytes).  If this parameter is not set
+  in the environment, firehose finds the amount of pinnable physical memory
+  (see the GASNETC_PHYSMEM_PINNABLE_RATIO compile-time setting) and multiplies
+  it by the compile-time 1-FH_MAXVICTIM_TO_PHYSMEM_RATIO setting.  
+
+  By default, this allocates 75% of the determined pinnable physical memory for
+  remote pinning operations (see GASNETC_PHYSMEM_PINNABLE_RATIO compile-time
+  parameter).
+
+* GASNET_FIREHOSE_MAXVICTIM_M (NUMBER = <0-99999>[G|M]) - Establishes the amount
+  of memory that can remain pinned for locally-initiated operations before
+  firehose starts to unpin pages (by default, NUMBER is considered to be an
+  amount in megabytes, but a M or G suffix can be added to specify base2
+  megabytes or base2 gigabytes).  If this parameter is not set in the
+  environment, firhose finds the amount of pinnable physical memory (see the
+  GASNETC_PHYSMEM_PINNABLE_RATIO compil-time setting) and multiplies it by the
+  compile-time FH_MAXVICTIM_TO_PHYSMEM_RATIO setting.
+
+  By default, this allocates 25% of the determined pinnable physical memory for
+  physical pages that can remain pinned.
+
+* GASNET_PACKEDLONG_LIMIT (<INTEGER>) - Limits the maximum amount of AMLong
+  payload that may be packed to be sent together with the header.  This packing
+  can be beneficial by reducing by one the number of GM sends required, but
+  also adds the additional cost of a memcpy at the destination (and possibly
+  one at the source).  A value of zero disables this optimization.
+  The current default value is 2048 bytes.
+
+Optional compile-time settings:
+------------------------------
+
+* GASNETC_AM_SIZE (default=16).  Log2 size of the AM buffers used in the core.
+  By default, an amount of 64k buffers equal to the number of GM tokens are
+  allocated.  This value cannot be less than the MTU where 4096 = 12.
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
+Known problems:
+---------------
+
+* Job spawning is difficult, see section on Job Spawning.
+
+* GM 1.x does not support RDMA gets (gets are AM-based).
+
+* GM 2.0 before 2.0.12 and GM 2.1 before 2.1.2 have GM gets disabled because
+  the implmentation is faulty (configure with '--enable-broken-gm' and see the
+  environment variables section for controlling GM get operation at runtime).
+
+* See the Berkeley UPC Bugzilla server for details on known bugs.
+
+Future work:
+------------
+
+* None anticipated, except maintenance.
+
+==============================================================================
+
+Design Overview:
+----------------
+
+* File list
+
+    Core files:
+    gasnet_core.c		Main core functions
+    gasnet_core.h		Function prototypes for core
+    gasnet_core_fwd.h
+    gasnet_core_help.h
+    gasnet_core_internal.h
+    gasnet_core_firehose.c	Client-independent implementation of the
+				firehose dynamic memory registration algorithm
+				over AM
+    gasnet_core_misc.c		Misc. core functions send/callbacks/AM
+    gasnet_core_receive.c	GM receive/polling functions and AM reception
+    
+    Extended files:
+    gasnet_extended.c		Main extended functions, which remain
+    				independent of the dynamic memory registration
+    				algorithm (mostly functions to sync and access
+    				regions).
+    gasnet_extended_internal.h
+    gasnet_extended_op.c	Op management, important from extended-ref
+    gasnet_extended_ref.c	Extended ref operations, used as fallbacks in
+    				both turkey and firehose algorithms
+    gasnet_extended.h		Function prototypes for extended
+    gasnet_extended_firehose.c	Extended firehose provides all put/get
+    				functions for firehose algorithm and supplies
+    				AM reply handlers to plug into
+    				gasnet_core_firehose.c 
+    
+* Basic Extended API Design for puts/gets
+
+	put_nb/put_nbi:
+	    if < GASNETE_AM_LEN
+		get a pinned AM buffer (or poll until one is obtained)
+		copy source data into buffer 
+		if put hits firehose cache
+		    rdma put
+		else
+		    send AMReuqest with list of new and replacement firehoses
+		    in RequestH at remote node, pin/increment and send reply
+		    in ReplyH at initiator, update firehose table
+		    rdma put
+	    else
+		use AM ref-ext
+	
+	put_nb_bulk/put_nbi_bulk:
+	    local firehose pin
+	    if remote put hits in firehose table
+		rdma put
+	    else
+		send AMReuqest with list of new and replacement firehoses
+		in RequestH at remote node, pin/increment and send reply
+		in ReplyH at initiator, update firehose table
+		rdma put
+
+	get_nb/get_nbi (bulk and non-bulk):
+	    if get hits in remote firehose table
+		local pin if unpinned locally
+		if (enable_rdma_gets)
+		    rdma get
+		else
+		    AM-Based request for get
+		completion decrements/unpins destination
+	    else
+		send Firehose pin request (reply contains get payload)
+		at callback, update table 
+		if (enable_rdma_gets)
+		    rdma get
+		else
+		    AM-Based request for get
+		decrement locally
+

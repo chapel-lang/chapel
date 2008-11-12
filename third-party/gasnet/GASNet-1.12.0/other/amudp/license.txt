@@ -1,0 +1,37 @@
+/* $Header: /var/local/cvs/gasnet/other/amudp/license.txt,v 1.2 2004/08/26 04:53:50 bonachea Exp $
+ * All files in this directory and all sub-directories (except where otherwise noted)
+ * are subject to the following licensing terms: 
+ *
+ * ---------------------------------------------------------------------------
+ * "Copyright (c) 2000-2004 The Regents of the University of California.
+ * All rights reserved.
+ * 
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose, without fee, and without written agreement is
+ * hereby granted, provided that the above copyright notice and the following
+ * two paragraphs appear in all copies of this software.
+ * 
+ * IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY FOR
+ * DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT
+ * OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF
+ * CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * 
+ * THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
+ * ON AN "AS IS" BASIS, AND THE UNIVERSITY OF CALIFORNIA HAS NO OBLIGATION TO
+ * PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS."
+ * ---------------------------------------------------------------------------
+ *
+ * For more information about AMUDP, visit our home page at:
+ *  http://www.cs.berkeley.edu/~bonachea/amudp
+ * Or send email to:
+ *  Dan Bonachea <bonachea@cs.berkeley.edu>
+ *
+ * Source code contributions (fixes, patches, extensions etc.) should be 
+ * sent to <bonachea@cs.berkeley.edu> to be reviewed for acceptance into the
+ * primary distribution. Contributions are most likely to be accepted if they
+ * are provided as public domain, or under a BSD-style license such as 
+ * the one above.
+ *
+ */

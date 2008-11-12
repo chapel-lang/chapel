@@ -1,0 +1,102 @@
+GASNet sci-conduit documentation
+Burt Gordon, Hung-Hsun Su  {gordon,su}@hcs.ufl.edu 
+$Revision: 1.4 $
+
+User Information:
+-----------------
+The top makefile will look for the available libraries and includes in the /opt/DIS
+directory. If they are not there, please configure GASNet with --with-sci-includes 
+and --with-sci-libs. Here is what a configure might look like:
+
+./configure --enable-sci --enable-segment-fast --with-sci-includes="-I/opt/DIS/include -I/opt/DIS/lib/api" --with-sci-libs=/opt/DIS/lib/api/libsisci.a
+
+Only segment-fast is supported in this release. To use segments of larger than 1MB,
+the kernel must be patched with the BigPhysArea patch (sorry, this is a problem with the Dolphin
+driver and Linux, we are working to change this). The latest Dolphin driver (2.4) supports 
+segment sizes of upto 4MB on some systems, and subsequent releases promise to be able to 
+handle sizes on the order of 512MB-1GB. This code has been tested on V2.1, V2.2, and V2.4 of the 
+Dolphin SCI drivers. It will probably work on other versions of the driver, but no testing has
+taken place to guarentee that.
+
+Dolphin SISCI has no job management routine that we could find. To execute any 
+program compiled agaist this library you must use the 'start' script found in the 
+sci-conduit directory. This may be seen as the "gasnetrun_sci" script under the contrib 
+directory. It is portable (written for the bourne shell), so you can copy it to your program's 
+working directory and use it there if needed. Run it without any options to see a help menu.
+Basically, the format is: gasnetrun_sci -np [#num_nodes] [-jobs [#machine_file]] <program_name and args>
+It needs one of two files, either the jobs file (used with the -jobs flag) or the 
+default machines.sci file. Both of these files have the same format of:
+
+#machine-name #sci-id-number
+
+for example:
+
+#>cat jobs.sci
+kappa-1	4
+kappa-2	8
+kappa-3	12
+kappa-9 132
+
+and so forth. No comments are allowed in this file as of now (that can be 
+changed later if it seems to be needed). In both cases, if the number of UPC threads
+(designated by -np #) exceeds the number of machines in the file provided, only 
+1 thread will be spawned on each of the machines in the file. An extension will be made in the 
+future to allow more threads to be spawed on a sigle machine. As of now, a simple check is made to 
+see if an SCI ID matching the ID of the card found on the machine is found. Changes in the future will
+allow more than 1 unique SCI ID to be used in preparing segments for use, though this may cut down 
+on the useable memory space of each thread. Therefore GASNet cannot be spawned multiple times on any 
+given machine, one of them will not succeed (possibly both if they get intertwined).
+
+As of now, only adapter 0 is supported, that will change in a future revision to 
+look for the first available adapter.
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
+Known problems:
+---------------
+
+* See the Berkeley UPC Bugzilla server for details on known bugs.
+
+Future work:
+------------
+
+Lots. Currently, only the core API is implemented. This uses the reference API 
+to implement the extended API. This shows decent performance for put operations, 
+but get operations are terrible.
+
+Also, support is being planned for segment-large and segment-everything using the 
+gasnet-provided firehose infrastructure. Work has just concluded on an extension to the Dolphin 
+driver that will allow the firehose algorithm to be implemented on SCI. Look for it soon.
+
+===============================================================================
+
+Design Overview:
+----------------
+
+Please see our paper to be published in the 2004 HSLN conference. That provides a good overview of the design.
+
+Basically, the Core API is set up as a series of mailboxes for each node to place AMs in. These mailboxes
+exist on each node and only 1 remote node can write to any given mailbox. The assignments are static so the 
+same remote node will write to the same local mailbox everytime. This allows for a race-free message system
+with fairly high performance. The mailboxes are each mapped into virtual memory to allow PIO writes 
+(very low-latency operations) The total memory on a given node necessary for the mailbox system is 
+2*N*(size of mailbox). As the mailboxes are 2KB each + 80bytes for headers, a cluster of 128 nodes would only
+need 0.5MB of space. 
+
+The main GASNet segment is created as an SCI segment with the size specified in gasnet_attach(), but is limited to the 
+physical size of contiguous memory on the system (an SCI requirement). So for unpatched systems, this size can 
+be rather small (1-4MB, based on the system and driver version). With the BigPhysArea patch, tests have shown that 
+the size can be safely increased to just over 256MB. All transactions to the GASNet segment directly are done through
+DMA operations. While this can provide good throughput, latency can really take a hit. Also, currently
+the SCI DMA engine requires all source memory to fall within an SCI segment. So if the source is outside the
+SCI segment, a performance hit is taken as memory must be copied into a separate DMA segment before being sent.
+
+   

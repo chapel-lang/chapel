@@ -1,0 +1,52 @@
+#   $Source: /var/local/cvs/gasnet/other/amudp/Makefile.common,v $
+#     $Date: 2006/05/31 08:17:42 $
+# $Revision: 1.7 $
+# Description: Platform-independent variable init, overridden by pre-baked makefiles
+# Copyright 2000, Dan Bonachea <bonachea@cs.berkeley.edu>
+
+# variables added here should also go in Makefile.titanium.in, and vice-versa
+
+srcdir = .
+altincdir = $(srcdir)
+testdir = $(srcdir)
+
+# compiler
+CC = gcc 
+CXX = g++ 
+#CC = /project/cs/titanium/srs/i686-pc-linux-gnu/bin/gcc-3.0.2 -static
+#CXX = /project/cs/titanium/srs/i686-pc-linux-gnu/bin/g++-3.0.2 -static
+
+#otherflags := $(otherflags) -pg
+#otherflags := $(otherflags) -DFREEZE_SLAVE=1
+#otherflags := $(otherflags) -static
+
+uethlibname = -lueth
+#uethlibname = -lueth-profile
+#uethlibname = -lueth-3.0
+#uethlibname = -lueth-3.0-profile
+
+#ccdebugflags = -O0 -g3 -ansi -Wall -Wno-unused-variable -Wno-unused-function $(otherflags)
+ccdebugflags = -O0 -g3 $(otherflags)
+ccoptflags = -O3 $(otherflags)
+
+#cxxdebugflags = -O0 -g3 -ansi -Wall -Wno-unused-variable -Wno-unused-function $(otherflags)
+cxxdebugflags = -O0 -g3 $(otherflags)
+cxxoptflags = -O3 $(otherflags)
+
+# system utilities
+ranlib = ranlib
+ar = ar
+PERL = perl
+
+# paths to platform-dependent helpers
+glunix_includes  := $(shell /usr/bin/test -e /usr/now/bin/glurun && echo "-I/usr/now/include -DGLUNIX")
+glunix_libraries := $(shell /usr/bin/test -e /usr/now/bin/glurun && echo "-L/usr/now/lib -lglunix")
+rexec_includes   := $(shell /usr/bin/test -e /usr/mill/bin/rexec && echo "-DREXEC")
+ueth_includes	 := $(shell csh -c 'if ("`hostname`" == "whomp") echo "-DUETH"')
+ueth_libraries	 := $(shell csh -c 'if ("`hostname`" == "whomp") echo "$(uethlibname)"')
+
+# To be set by pre-baked makefiles:
+platform_defines = 
+platform_ldflags =
+platform_libraries = 
+

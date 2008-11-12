@@ -1,0 +1,24 @@
+README file for mpi-spawner
+================================
+Paul H. Hargrove <PHHargrove@lbl.gov>
+$Revision: 1.1 $
+
+See vapi-conduit for an example of how to use this code in a conduit.
+
+When using the mpi-spawner, the following apply:
+
++ usage summary:
+    mpirun -np N your_app [args ...]
+  where N is the number of processes to run.
+  If running a UPC or Titanium application, then language-specific
+  commands should be used instead.
+
++ In order to use this spawner, a working MPI must be installed
+  and configured on your system.  See mpi-conduit/README for
+  information on configuring GASNet for a particular MPI.  Note that
+  you must compile mpi-conduit as well (even if you never plan to use
+  it).
+
++ Since that MPI is only used in gasnet_init(), gasnet_attach() and
+  gasnet_exit() and not for any GASNet communications.  Therefore
+  it is acceptable to use a TCP/IP based MPI such as MPICH or LAM/MPI.

@@ -1,0 +1,116 @@
+GASNet mpi-conduit documentation
+Dan Bonachea <bonachea@cs.berkeley.edu>
+$Revision: 1.10 $
+
+User Information:
+-----------------
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+
+* GASNET_NETWORKDEPTH - depth of network buffers to allocate (defaults to 4)
+  can also be set as AMMPI_NETWORKDEPTH (GASNET_NETWORKDEPTH takes precedence)
+  mpi-conduit's max MPI buffer usage at any time is bounded by:
+   4 * depth * 65 KB preposted non-blocking recvs
+   2 * depth * 65 KB non-blocking sends (AMMedium/AMLong)
+   2 * depth * 78 byte non-blocking sends (AMShort)
+
+* AMMPI_CREDITS_PP - number of send credits each node has for each remote target 
+  node in the token-based flow-control. Setting this value too high can increase
+  the incidence of unexpected messages at the target, reducing effective bandwidth.
+  Setting the value too low can induce premature backpressure at the initiator,
+  reducing communication overlap and effective bandwidth. Defaults to depth*2.
+
+* AMMPI_CREDITS_SLACK - number of send credits that may be coalesced at the target
+  during a purely one-way AM messaging stream before forcing a reply to be
+  generated for refunding credits. Defaults to AMMPI_CREDITS_PP*0.75.
+
+* AMMPI_SYNCSEND_THRESH - size threshhold above which to use synchronous
+  non-blocking MPI sends, a workaround for buggy MPI implementations on a
+  few platforms. 0 means always use synchronous sends, -1 means never use them
+  (the default on most platforms).
+
+Configuration-time variables:
+---------------------------------
+
+In order to compile mpi-conduit, and subsequently use it, GASNet must
+know how to invoke your mpicc and mpirun (or equivalents).  GASNet's
+configure script use some sensible defaults, but these may not work
+on all platforms.  In particular, if you have set CC to a non-default
+C compiler, you will likely need to set mpicc as well.  Here are
+the relevant variables:
+
+MPI_CC		the program to use as the compiler and linker
+MPI_CFLAGS	options passed to MPI_CC when used as a compiler
+MPI_LIBS	options passed to MPI_CC when used as a linker
+MPIRUN_CMD	template for invoking mpirun, or equivalent
+
+GASNet's configure script will test the MPI_CC, MPI_CFLAGS and
+MPI_LIBS variable by trying approximately the following:
+
+	$MPI_CC $MPI_CFLAGS -c foo.c
+	$MPI_CC $MPI_LIBS -o foo foo.o
+
+GASNet's configure script does not attempt to run MPIRUN_CMD.
+MPIRUN_CMD is a template which tells the gasnetrun_mpi
+script how to invoke your mpirun.  The template may include
+the following strings for variable substitution at run time:
+
+"%N"	The number of MPI processes requested
+"%P"	The GASNet program to run
+"%A"	The arguments to the GASNet program
+"%C"	Alias for "%P %A"
+"%H"	Expands to the value of environment variable GASNET_NODEFILE.
+	This file should be one hostname per line.
+
+The default is "mpirun -np %N %C".  You may need a full path to
+mpirun if the correct version is not in your PATH.  This template
+is also the mechanism to add extra arguments - for instance:
+  MPIRUN_CMD='mpirun -np %N -hostfile my_hosts_file %C'
+or
+  MPIRUN_CMD='mpirun -np %N -hostfile %H %C'
+
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
+Known problems:
+---------------
+
+* Proper operation of GASNet and its client often depends on environment
+variables passed to all the processes.  Unfortunately, there is no uniform way
+to achieve this across different implementations of mpirun.  The gasnetrun_mpi
+script tries many different things and is known to work correctly for LAM/MPI
+and for MPICH and most of its derivatives (including MPICH-NT, MVICH and
+MVAPICH).  For assistance with any particular MPI implementation, search the
+Berkeley UPC Bugzilla server and open a new bug (registration required) if
+you cannot find information on your MPI.
+
+* See the Berkeley UPC Bugzilla server for details on other known bugs.
+
+Future work:
+------------
+
+==============================================================================
+
+Design Overview:
+----------------
+
+The core API implementation is a very thin wrapper around the AMMPI
+implementation by Dan Bonachea. See documentation in the other/ammpi directory
+or the AMMPI webpage (http://www.cs.berkeley.edu/~bonachea/ammpi) for details.
+AMMPI requires an MPI 1.1 or newer compliant MPI implementation, and performance 
+varies widely across MPI implementations (based primarily on their performance
+for non-blocking sends and recvs - MPI_ISend/MPI_IRecv).
+
+AMMPI performs all its MPI calls on a separate, private MPI communicator, which
+is strongly guaranteed by the MPI spec to isolate it from any other MPI
+communication in the application, so there's never a possibility of deadlock or
+hard-limit resource contention between the two.
+
+The mpi-conduit directly uses the extended-ref implementation for the extended
+API - see the extended-ref directory for details.
+
