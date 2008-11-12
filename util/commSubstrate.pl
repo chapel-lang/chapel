@@ -13,7 +13,7 @@ if ($preset_substrate eq "") {
     if ($comm eq "gasnet") {
         if ($platform eq "xt-cle") {
             $substrate = "portals";
-	} elsif ($platform eq "cx1") {
+	} elsif ($platform eq "cx1-linux") {
 	    $substrate = "ibv";
         } else {
             $substrate = "udp";

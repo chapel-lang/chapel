@@ -74,8 +74,9 @@ For more detailed information about...      refer to...
   ...how Chapel tasks are mapped to threads  ...doc/README.threads
   ...example Chapel programs                 ...examples/README
   ...reporting bugs                          ...doc/README.bugs
-  ...notes for Cygwin users                  ...doc/README.cygwin
+  ...notes for Cray CX1 (Linux) users        ...doc/README.cx1-linux
   ...notes for Cray XT (CLE) users           ...doc/README.xt-cle
+  ...notes for Cygwin users                  ...doc/README.cygwin
   ...implementation status                   ...STATUS
   ...changes since the last release          ...CHANGES
   ...an overview of the Chapel language      ...doc/chapelLanguageSpec.pdf, Ch5

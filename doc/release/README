@@ -14,9 +14,9 @@ This directory contains the following documentation:
   README.multilocale : how to execute Chapel on multiple locales
   README.threads     : explains how Chapel tasks are implemented using threads
 
-  README.cx1         : notes for CX1 users
+  README.cx1-linux   : notes for CX1 users running Linux
   README.cygwin      : notes for Cygwin users
-  README.xt-cle      : notes for Cray XT (CLE) users
+  README.xt-cle      : notes for Cray XT users running CLE
   README.extern      : technical note on interfacing with external C routines
   README.format      : technical note on controlling value-to-string formatting
   README.prereqs     : prerequisites for using Chapel
