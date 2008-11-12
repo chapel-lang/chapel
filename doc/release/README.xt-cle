@@ -28,13 +28,19 @@ know at chapel_info@cray.com.
 
 
 3) If your XT requires PBS/qsub to launch jobs onto the compute nodes
-   (or you simply wish to use it as your job launcher), set
-   CHPL_LAUNCHER to pbs.  For example:
+   (or you prefer to use it as your job launcher and it's supported),
+   set CHPL_LAUNCHER to pbs.  For example:
 
      setenv CHPL_LAUNCHER pbs
 
-   Otherwise, aprun will be used to launch jobs by default (you can
-   optionally set this by setting CHPL_LAUNCHER to aprun).
+   If you are running on an NCCS system that uses its own qsub wrapper
+   script, you will want to use 'pbs-nccs' instead:
+
+     setenv CHPL_LAUNCHER pbs-nccs
+
+   Without setting CHPL_LAUNCHER, it will default to 'aprun' on xt-cle
+   systems (you can also request this explicitly by setting it to
+   'aprun').
 
 
 4) Ensure that you have one of the following Programming Environment

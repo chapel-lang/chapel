@@ -32,6 +32,7 @@ Current launchers supported include:
   aprun         : Cray XT application launcher using aprun
   gasnetrun_ibv : GASNet launcher for programs running over Infiniband
   pbs           : Cray XT application launcher using PBS (qsub)
+  pbs-nccs      : Cray XT application launcher using NCCS' qsub script
   zebra         : Cray XMT simulator launcher
   none          : do not use a launcher
 

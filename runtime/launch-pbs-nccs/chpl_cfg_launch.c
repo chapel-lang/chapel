@@ -9,7 +9,6 @@
 #include "chpltypes.h"
 #include "error.h"
 
-
 #define basePBSFilename ".chpl-pbs-qsub-"
 #define baseExpectFilename ".chpl-expect-"
 #define baseSysFilename ".chpl-sys-"
@@ -31,33 +30,7 @@ typedef enum {
 } qsubVersion;
 
 static qsubVersion determineQsubVersion(void) {
-  char version[versionBuffLen+1] = "";
-  char* versionPtr = version;
-  FILE* sysFile;
-  int i;
-
-  char* command = _glom_strings(2, "qsub --version > ", sysFilename);
-  system(command);
-  sysFile = fopen(sysFilename, "r");
-  for (i=0; i<versionBuffLen; i++) {
-    char tmp;
-    fscanf(sysFile, "%c", &tmp);
-    if (tmp == '\n') {
-      *versionPtr++ = '\0';
-      break;
-    } else {
-      *versionPtr++ = tmp;
-    }
-  }
-
-  fclose(sysFile);
-  if (strcmp(version, " ") == 0) {
-    return nccs;
-  } else if (strstr(version, "PBSPro")) {
-    return pbspro;
-  } else {
-    return unknown;
-  }
+  return nccs;
 }
 
 static int getNumCoresPerLocale(void) {
