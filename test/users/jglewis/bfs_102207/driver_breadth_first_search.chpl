@@ -33,7 +33,7 @@ def main {}
 
    var adj                  : Adjacency_Structure;
 
-   var randlist = RandomStream (seed);
+   var randlist = new RandomStream (seed);
 
    var root = 1, max_min_dist = -1, max_width = -1;
 
