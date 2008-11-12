@@ -53,12 +53,9 @@ Functions
 ---------
 
 Unimplemented Features:
-- Functions as variables and/or arguments to functions
-- Array arguments cannot have both their domain and element types queried
 
 Bugs:
 - programs requiring non-linear function resolution may not work properly
-- param functions with multiple return statements may not work well
 
 
 ----------------------------
@@ -68,7 +65,7 @@ Classes, Records, and Unions
 Unimplemented Features:
 - Multiple inheritance is not supported
 - Type select on unions is not implemented
-- Garbage collection is only supported at a preliminary level (see below)
+- Garbage collection is not supported
 
 Bugs:
 - const fields can be assigned multiple times in constructors
@@ -80,12 +77,9 @@ Tuples, Ranges, and Iterators
 -----------------------------
 
 Unimplemented Features:
-- Iterators may not be overridden in subclasses
 
 Bugs:
 - Nested var iterators do not work correctly
-- Zippered iteration over var iterators does not work correctly
-- Tuples of sync variables may not work for $CHPL_COMM == gasnet
 
 
 ------------------
@@ -99,7 +93,6 @@ Unimplemented Features:
     e.g., [i in D] foo(i) should result in an array of type: [D] foo(i).type
           but instead results in a 1D array
 - Arrays of arrays where the inner arrays vary in size are not supported
-- Arrays of sparse domains are not implemented
 - Strided domains sliced by unstrided domains are not handled correctly
 - Sparse domains/arrays are incomplete:
   - can't be sliced nor used to slice dense domains/arrays
@@ -111,6 +104,7 @@ Unimplemented Features:
 Bugs:
 - Constant domains can be modified illegally if passed to functions
 - Records with array members of recursive types do not work
+- Arrays and domains of different ranks can be zippered serially
 
 
 --------
@@ -118,8 +112,6 @@ Generics
 --------
 
 Unimplemented Features:
-- User constructors for generic classes are not well-supported
-  Workaround: try using the default constructor and initialize() function
 
 Bugs:
 - Subclassing uninstantiated generic classes should be prohibited but is not
@@ -131,8 +123,8 @@ Parallelism and Synchronization
 
 Unimplemented Features:
 - Atomic statements are not implemented
-- Data parallel concepts that should generate parallelism are run serially
-  e.g., forall loops, promoted calls, reductions, scans
+- Some data-parallel constructs are serialized
+  e.g., forall loops, promoted calls, reductions, scans over default arrays
 
 Bugs:
 
@@ -154,7 +146,7 @@ Locality and Distributions
 Unimplemented Features:
 - On statement var declarations are not yet supported
     e.g., on Locales(1) var x: real;
-- Multi-locale distributed domains/arrays are not yet supported
+- Multi-locale distributed domains/arrays are under development
 
 Bugs:
 
@@ -190,22 +182,8 @@ Memory Management
 
 Status:
 
-This release includes an initial draft version of a copying garbage
-collector.  When it is enabled via the --copy-collect flag, most
-objects are allocated onto a small, un-expandable, garbage-collected
-heap. This is very preliminary in nature, and should not be used in
-most cases. It is expected that in future releases additional support
-for automatic memory management will be included in the Chapel
-compiler and runtime.
-
-  What is properly garbage collected:
-  - Classes with references to them located on the program stack
-  - Classes with references to them in records on the stack
-  - Classes with references to them in class fields reachable from the stack
-
-  What isn't yet properly garbage collected:
-  - Arrays and domains
-  - Dynamically allocated array elements
-  - Multi-threaded or multi-locale programs
-  - Classes whose only references are fields in records that are class fields
-  - Strings
+This release includes an initial draft version of a delete-statement
+that can be used to delete class instances allocated with 'new'.  In
+addition, heap-allocated memory associatived with values such as
+arrays, domains, and sync- and single-variables is freed for single
+locale programs.  However, this support is a work in progress.
