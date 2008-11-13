@@ -186,3 +186,44 @@ that can be used to delete class instances allocated with 'new'.  In
 addition, heap-allocated memory associatived with values such as
 arrays, domains, and sync- and single-variables is freed for single
 locale programs.  However, this support is a work in progress.
+
+
+-----------
+Portability
+-----------
+
+Status:
+
+Cray XT:
+* Memory limit is artificially set at 2GB -- see doc/README.xt-cle for details
+* We currently only support XTs running the Cray Linux Environment (CLE)
+
+Cray CX1:
+* Have only started testing this platform in the weeks leading up to
+  the release, so our port should be considered immature at this point
+* We currently only support CX1s running Linux
+
+PBS launcher:
+* while our PBS launcher was designed to be general, it is currently
+  fairly tailored to supporting PBS on Cray XTs
+
+
+Bugs:
+
+GASNet, segment-fast:
+
+* On some platforms running GASNet in semgent-fast mode, we reserve
+  too much of the heap for our use, not leaving enough to start new
+  pthreads.  Workaround: use segment 'everything' if available;
+  otherwise, contact us to inquire about reducing the amount of
+  memory.
+
+* GASNet segment-fast executions are occasionally subject to spurious
+  segmentation faults and AMUDP_SPMDShutdown failures.  We haven't
+  been able to diagnose either of these yet, but they tend to be
+  infrequent and disappear on subsequent runs.
+
+Cygwin:
+* Cygwin executions occasionally result in a pthread_cond_init()
+  failure.  Contact us if this prevents you from making progress.
+
