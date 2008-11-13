@@ -31,28 +31,28 @@ void BitVec::clear() {
 
 bool BitVec::get(int i) {
   int j = i / (sizeof(TYPE)<<3);
-  int k = i - j;
+  int k = i - j*(sizeof(TYPE)<<3);
   return data[j] & (1 << k);
 }
 
 
 void BitVec::set(int i) {
   int j = i / (sizeof(TYPE)<<3);
-  int k = i - j;
+  int k = i - j*(sizeof(TYPE)<<3);
   data[j] |= 1 << k;
 }
 
 
 void BitVec::unset(int i) {
   int j = i / (sizeof(TYPE)<<3);
-  int k = i - j;
+  int k = i - j*(sizeof(TYPE)<<3);
   data[j] &= ((TYPE)-1) - (1 << k);
 }
 
 
 void BitVec::flip(int i) {
   int j = i / (sizeof(TYPE)<<3);
-  int k = i - j;
+  int k = i - j*(sizeof(TYPE)<<3);
   data[j] ^= 1 << k;
 }
 
