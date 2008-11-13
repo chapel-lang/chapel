@@ -31,16 +31,24 @@ Recommended Settings
    platform-specific files during the build process.  The strings for
    our currently-supported host platforms are as follows:
 
-        cygwin  : Cygwin (Windows) platforms
-        darwin  : Macintosh OS X platforms
-        linux   : 32-bit Linux platforms
-        linux64 : 64-bit Linux platforms
-        sunos   : SunOS platforms
+        cx1-linux : Cray CX1 running Linux
+        cygwin    : Cygwin (Windows) platforms
+        darwin    : Macintosh OS X platforms
+        linux     : 32-bit Linux platforms
+        linux64   : 64-bit Linux platforms
+        sunos     : SunOS platforms
+        xt-cle    : Cray XT running Cray Linux Environment (CLE)
+
+   Note that if you are compiling for a Cray CX1 or XT, these
+   platforms require CHPL_HOST_PLATFORM to be set manually since they
+   appear to be a linux64 platform to the platform.pl script above.
+   See README.cx1-linux and README.xt-linux for details, respectively
+   (as well as for other hints on getting started on these platforms).
 
    The Chapel Makefiles and sources are designed to work for any
    UNIX-compatible environment that supports a GNU-compatible make
-   utility.  The list above represents the platforms that we access
-   and test frequently.  We are interested in making our code
+   utility.  The list above represents the set of platforms that we
+   access and test frequently.  We are interested in making our code
    framework portable to other platforms -- if you are working on a
    platform other than the ones listed above, please refer to the
    README.building file and/or contact us at: chapel_info@cray.com
@@ -62,9 +70,10 @@ Recommended Settings
 The setchplenv.* scripts in the $CHPL_HOME/util/ directory contain
 commands that set these variables up for various shells when they are
 sourced from the $CHPL_HOME directory.  Frequent Chapel users will
-likely want to copy these lines into their shell dotfile(s) by
+likely want to copy this logic into their shell dotfile(s) by
 hard-coding the definition of $CHPL_HOME and removing the check to
 ensure that the script is being invoked from the chapel/ directory.
+
 
 
 -----------------
@@ -76,10 +85,12 @@ Optional Settings
    variable to describe that platform.  Currently supported
    cross-compilation target platforms include:
 
-        mta    : Cray MTA-2
-        x1     : Cray X1
-        xmt    : Cray XMT
-        xt-cle : Cray XT running Cray Linux Environment
+        cx1-linux : Cray CX1 running Linux
+        mta       : Cray MTA-2
+        x1        : Cray X1
+        xmt       : Cray XMT
+        xmt-sim   : Cray XMT simulator
+        xt-cle    : Cray XT running Cray Linux Environment
 
    If CHPL_TARGET_PLATFORM is not set, the target platform defaults to
    be the same as $CHPL_HOST_PLATFORM.
@@ -108,15 +119,16 @@ Optional Settings
 
         platform      compiler
         --------      --------
+        cx1-linux ->  gnu
         mta, xmt  ->  cray-mta
         x1        ->  cray-vec
         xt-cle    ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
         other     ->  gnu
 
    The default for CHPL_TARGET_COMPILER is CHPL_HOST_COMPILER if it is
-   set and CHPL_HOST_PLATFORM and CHPL_TARGET_PLATFORM are the same.
-   Otherwise, it will default to a value based on CHPL_TARGET_PLATFORM
-   according to the preceding table.
+   set *and* CHPL_HOST_PLATFORM == CHPL_TARGET_PLATFORM (i.e., you are
+   not cross-compiling).  Otherwise, it will default to a value based
+   on CHPL_TARGET_PLATFORM according to the preceding table.
 
 
 3) Optionally, set the CHPL_MAKE environment variable to indicate the
@@ -135,8 +147,8 @@ Optional Settings
    what threading layer you want to use to implement parallelism.
    Current options are:
 
-        mta      : use Cray MTA threads (futures and sync vars)
         none     : no threading (implies no support for multiple tasks)
+        mta      : use Cray MTA threads (futures and sync vars)
         pthreads : use POSIX threads (pthreads)
 
    If unset, CHPL_THREADS defaults to a value based on
@@ -161,6 +173,17 @@ Optional Settings
    If unset, CHPL_COMM defaults to "none".  See README.multilocale for
    more information on executing Chapel programs using multiple
    locales.
+
+
+6) Optionally, the CHPL_MEM environment variable can be used to select
+   a memory management layer.  Current options are:
+
+        default  : use the standard C malloc/free commands
+        dlmalloc : use Doug Lea's memory allocation package
+
+   If unset, CHPL_COMM defaults to "default" unless CHPL_COMM is
+   gasnet and you are using the fast or large segments.  See
+   README.multilocale for more information on GASNet segments.
 
 
 -------------------------------------
