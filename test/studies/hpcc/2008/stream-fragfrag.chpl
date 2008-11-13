@@ -49,7 +49,7 @@ def main() {
           const taskInds = BlockPartition(myProblemSpace, taskid, 
                                           tasksPerLocale);
           local {
-            for (a,b,c) in (myA[taskInds], myB[taskInds], myC[taskInds]) do
+            forall (a,b,c) in (myA[taskInds], myB[taskInds], myC[taskInds]) do
               a = b + alpha * c;
           }
         }
