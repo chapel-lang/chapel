@@ -92,10 +92,6 @@ occasional timeouts (e.g., 11/03/08)
 ------------------------------------
 [Error: Timed out executing program studies/hpcc/2008/ra]
 
-problem passsing arguments from launcher (10/31/08)
----------------------------------------------------
-[Error matching program output for execflags/diten/configComplex]
-
 disabled warning about multilocale distributions not being implemented
 ----------------------------------------------------------------------
 [Error matching program output for multilocale/bradc/distribWarning]
@@ -153,6 +149,8 @@ intermittent seg faults
 [Error matching program output for studies/hpcc/common/bradc/unit/leadFollowOpt] (e.g., 10/15/08)
 [Error matching program output for multilocale/deitz/needMultiLocales/test_dot_locale4] (e.g., 10/22/08)
 [Error matching program output for multilocale/deitz/linked/test_linked3a] (e.g., 10/26/08)
+[Error matching program output for multilocale/deitz/linked/test_linked1] (e.g., 11/12/08)
+[Error matching program output for multilocale/diten/oneOrMoreLocales/1DBlockDistributedJacobi] (e.g., 11/12/08)
 
 =======================
 baseline-specific tests
@@ -399,10 +397,11 @@ compilation timing out (started 4/19/08)
 cygwin-specific failures
 ========================
 
-??? (11/12/08)
---------------
+'can't rm binary' error
+-----------------------
 [Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample1]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
 
 Yikes!  output was 2 2 2 2 1 1 1 1 rather than 2 2 2 2 1 2 2 2 (09/26/08)
 -------------------------------------------------------------------------
