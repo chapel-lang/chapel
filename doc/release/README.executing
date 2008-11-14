@@ -65,6 +65,11 @@ For users running with $CHPL_COMM == none (the default), only one
 locale can be used.  See $CHPL_HOME/doc/README.multilocale for more
 information about executing on multiple locales.
 
+Multi-locale tests typically use a launcher executable to do some
+initial command-line checking before spawning the real program, stored
+in a second binary named <original_binary_name>_real.  See
+README.launcher for more information about the launcher executable.
+
 
 ------------------------------
 Limiting the number of threads
@@ -86,8 +91,9 @@ that control the amount of Chapel-generated information printed by the
 executable.
 
 Using the --verbose flag (-v for short) will print out extra
-information.  In the current implementation, it causes each locale to
-print out a message when it starts executing.
+information.  In the current implementation, it prints out the
+launcher commands used to start the program (if any) and causes each
+locale to print out a message when it starts executing.
 
 Using the --quiet flag (-q for short) causes run-time warnings that
 are printed by default to be suppressed.
@@ -115,28 +121,52 @@ generated code a lot and need help or have requests for better
 support, please let us know so that we can prioritize accordingly.
 
 
+------------------------
+Flags for Tracking Tasks
+------------------------
+
+As of this release, Chapel supports a few experimental capabilities
+for tracking the status of tasks, primarily designed for use in a
+single-locale execution.  These flags add a certain amount of runtime
+overhead to task parallel programs. The flags are as follows:
+
+  -b, --blockreport : when Ctrl-C is entered during a program
+                      executing under this flag, it will display a
+                      list of where tasks are blocked on a
+                      synchronization variable.  Running with this
+                      flag will also cause the executable to
+                      automatically detect deadlock for single-locale
+                      executions.
+
+  -t, --taskreport : When Ctrl-C is entered during a program executing
+                      under this flag, a list of pending and executing
+                      tasks will be printed to the screen, giving an
+                      indication of which tasks are at which source
+                      locations.
+                      
+
 -------------------------
 Flags for Tracking Memory
 -------------------------
 
 Chapel supports a number of flags related to dynamic memory allocation
-for the compiler-generated executable, currently used by the
-development team to track memory usage in tests.  Please note that we
-have done little to optimize Chapel's memory utilization, so you
-should not be surprised if your program requires more memory than it
-seems it should.
+for the compiler-generated executable, currently designed for use
+primarily by the development team to track memory usage in tests.
+Please note that we have done little to optimize Chapel's memory
+utilization, so you should not be surprised if your program requires
+more memory than it seems it should.
 
 The flags are as follows:
 
-  --memmax=<n>         : runs the program pretending that only 'n' 
-                         bytes of heap memory are available.  When the
-                         amount of outstanding dynamic memory exceeds
-                         'n', the program terminates with an error
-                         message.
+  --memmax=<n>          : runs the program pretending that only 'n' 
+                          bytes of heap memory are available.  When the
+                          amount of outstanding dynamic memory exceeds
+                          'n', the program terminates with an error
+                          message.
 
-  --memstat            : when the program exits, this flag causes it 
-                         to print the amount of memory used by the
-                         program and the high-water mark.
+  --memstat             : when the program exits, this flag causes it 
+                          to print the amount of memory used by the
+                          program and the high-water mark.
 
   --memtrack            : causes all memory events to be tracked using 
                           a hash table at run-time in order to find

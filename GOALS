@@ -11,7 +11,7 @@ The goals of this release are as follows:
 
 * to demonstrate Chapel's data parallel features via a combination of
   (i)  a single-threaded, single-locale implementation; and
-  (ii) a *very* initial multi-threaded, multi-locale implementation
+  (ii) a *very* initial/limited multi-threaded, multi-locale implementation
 
 * to give the general public an opportunity to see the state and
   evolution of the Chapel implementation first-hand
