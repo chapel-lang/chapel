@@ -10,19 +10,14 @@ chapel_info@cray.com.  Please feel encouraged to err on the side of
 mailing us with any issues you run into.
 
 
--------
-General
--------
+----------------------------------------------------------------
+General (see also portability section at the bottom of this file)
+----------------------------------------------------------------
 
-Unimplemented Features:
 - Some error messages continue to be confusing/unhelpful
   Workaround: Please ask us for help interpreting any that you struggle with
 - Compiler and runtime errors don't always report useful line numbers
   Workaround: Please ask us for help finding the correct error location
-
-Bugs:
-- Identifiers in the generated code may exceed a back-end compiler's limit
-- Using a PGI back-end compiler, float values of -0.0 may not work as expected
 
 
 --------------------------------
@@ -34,6 +29,7 @@ Unimplemented Features:
 Bugs:
 - Constant arrays and records can be modified (without error)
 - Array types cannot be specified in tuple types or expression contexts
+- Tuples of array and domain values may not reference vs. copy correctly
 
 
 -------
@@ -68,7 +64,7 @@ Unimplemented Features:
 Bugs:
 - Constant fields can be modified (without error)
 - Record field initializers may be evaluated more than once
-- User-defined constructors exhibit occasional bugs
+- User-defined constructors are not completely robust
 
 
 -----------------------------
@@ -195,35 +191,36 @@ Portability
 Status:
 
 Cray XT:
-* Memory limit is artificially set at 2GB -- see doc/README.xt-cle for details
-* We currently only support XTs running the Cray Linux Environment (CLE)
+- Memory limit is artificially set at 2GB -- see doc/README.xt-cle for details
+- We currently only support XTs running the Cray Linux Environment (CLE)
 
 Cray CX1:
-* Have only started testing this platform in the weeks leading up to
+- Have only started testing this platform in the weeks leading up to
   the release, so our port should be considered immature at this point
-* We currently only support CX1s running Linux
+- We currently only support CX1s running Linux
 
 PBS launcher:
-* while our PBS launcher was designed to be general, it is currently
+- while our PBS launcher was designed to be general, it is currently
   fairly tailored to supporting PBS on Cray XTs
 
 
 Bugs:
 
 GASNet, segment-fast:
-
-* On some platforms running GASNet in semgent-fast mode, we reserve
+- On some platforms running GASNet in semgent-fast mode, we reserve
   too much of the heap for our use, not leaving enough to start new
   pthreads.  Workaround: use segment 'everything' if available;
   otherwise, contact us to inquire about reducing the amount of
   memory.
-
-* GASNet segment-fast executions are occasionally subject to spurious
+- GASNet segment-fast executions are occasionally subject to spurious
   segmentation faults and AMUDP_SPMDShutdown failures.  We haven't
   been able to diagnose either of these yet, but they tend to be
   infrequent and disappear on subsequent runs.
 
 Cygwin:
-* Cygwin executions occasionally result in a pthread_cond_init()
+- Cygwin executions occasionally result in a pthread_cond_init()
   failure.  Contact us if this prevents you from making progress.
 
+PGI compilers (and possibly others):
+- Identifiers in the generated code may exceed the back-end compiler's limit
+- Floating point literals of -0.0 may not work as expected
