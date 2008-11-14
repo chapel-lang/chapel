@@ -93,7 +93,7 @@ OPTIONS
                     default; otherwise --no-serial is.
 
   --[no-]serial-forall   Compile forall-loops for single/[multi-] threaded
-                    execution.  If set, forall-loops are treated like
+                    execution. If set, forall-loops are treated like
                     for-loops.
 
   Optimization Control Options
@@ -158,8 +158,6 @@ OPTIONS
   --[no-]nil-checks   Enable [disable] dynamic checking for accessing nil
                     object references.
 
-
-
   C Code Generation Options
 
   --[no-]cpp-lines   Causes the compiler to emit cpp #line directives
@@ -170,7 +168,6 @@ OPTIONS
   --savec <directory>    Saves the compiler-generated C code in the specified 
                     directory, creating the directory if it does not already
                     exist.
-
 
   C Code Compilation Options
 
@@ -208,9 +205,6 @@ OPTIONS
                      executable (defaults to a.out if unspecified).
 
   Miscellaneous Options
-
-  --chplhome <directory>   Specify the location of the Chapel installation
-                     if you need to over-ride the $CHPL_HOME location.
 
   --[no-]devel       Puts the compiler into [out of] developer mode, which
                      takes off some of the safety belts, changes default
@@ -253,6 +247,10 @@ OPTIONS
                      be omitted, causing the default value to be toggled.
 
 ENVIRONMENT
+  See $CHPL_HOME/doc/README.chplenv for detailed information about 
+  general environment variable settings, legal values, and default
+  settings.
+
   CHPL_HOME           Specifies the location of the chapel installation directory
 
   CHPL_HOST_PLATFORM  Specifies the platform on which the Chapel compiler is
@@ -279,8 +277,12 @@ ENVIRONMENT
   CHPL_COMM           Specifies the communication layer to use for
                       inter-locale data transfers (defaults to 'none')
 
-  See $CHPL_HOME/doc/README.chplenv for further information about 
-  general environment variable settings and legal values.
+  CHPL_LAUNCHER       Specifies the launcher, if any, used to start job
+                      execution (defaults to a best guess based on
+                      $CHPL_COMM and $CHPL_TARGET_PLATFORM)
+
+  CHPL_MEM            Specifies the memory allocation layer to use
+                      (defaults to 'default' which uses C's malloc/free)
 
   Most compiler command-line options have an environment variable that can
   be used to specify a default value. Use the --help-env option to list the 
