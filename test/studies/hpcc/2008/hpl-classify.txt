@@ -258,9 +258,6 @@ DECL
 COMP
 ----
 ////
-////
-////
-////
 COMP
 COMP
 ----
@@ -332,6 +329,7 @@ DECL
 ////
 ////
 ////
+OUT
 OUT
 OUT
 OUT

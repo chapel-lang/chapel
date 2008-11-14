@@ -194,6 +194,9 @@ DECL
 OUT
 OUT
 OUT
+OUT
+OUT
+OUT
 ----
 ////
 ////

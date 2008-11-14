@@ -41,6 +41,11 @@ CHK
 ////
 ////
 ////
+DECL
+----
+////
+////
+////
 ////
 OUT
 TEST
@@ -53,6 +58,8 @@ OUT
 ////
 ////
 ////
+DECL
+DECL
 DECL
 DECL
 ----
@@ -110,6 +117,7 @@ DECL
 ////
 ////
 ////
+OUT
 OUT
 OUT
 OUT
