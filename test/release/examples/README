@@ -38,6 +38,7 @@ benchmarks:
      stream.chpl            : the STREAM Triad benchmark
      ra.chpl                : the global Random Access benchmark
      fft.chpl               : the global 1D FFT benchmark
+     hpl.chpl               : the High Performance Linpack benchmark
 
 
 ------------------
@@ -83,3 +84,4 @@ Other files
   *.notest        : "
   *.numlocales    : "
   *.perfkeys      : "
+  *.timeout       : "
