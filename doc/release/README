@@ -11,27 +11,29 @@ This directory contains the following documentation:
   README.compiling   : how to use the Chapel compiler to compile code
   README.executing   : execution options for Chapel programs
   README.launcher    : using a launcher to get Chapel execution started
-  README.multilocale : how to execute Chapel on multiple locales
+  README.multilocale : how to use Chapel with multiple locales
+  README.prereqs     : prerequisites for using Chapel
   README.threads     : explains how Chapel tasks are implemented using threads
 
   README.cx1-linux   : notes for CX1 users running Linux
   README.cygwin      : notes for Cygwin users
   README.xt-cle      : notes for Cray XT users running CLE
+
   README.extern      : technical note on interfacing with external C routines
   README.format      : technical note on controlling value-to-string formatting
-  README.prereqs     : prerequisites for using Chapel
 
   chapelLanguageSpec.pdf : the current draft of the Chapel language
                            specification
 
   hpccOverview.pdf : a high-level overview of our implementations of
                      the HPC Challenge benchmarks for STREAM Triad,
-                     Random Access, and FFT in Chapel
+                     Random Access, FFT, and HPL in Chapel
 
   hpccTutorial.pdf : a companion paper to the previous that provides a
-                     detailed walkthrough of our implementations of
-                     the HPCC benchmarks to serve as a tutorial to
-                     Chapel and the codes themselves
+                     detailed walkthrough of (a slightly earlier
+                     version) of our HPCC benchmark implementations to
+                     serve as a tutorial to Chapel and the codes
+                     themselves
 
   quickReference.pdf : a one-sheet, tri-fold overview of Chapel syntax
                        for quick reference
