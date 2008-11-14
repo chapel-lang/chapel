@@ -32,6 +32,7 @@ varargs        : variable argument functions, tuples
 hpcc/stream    : whole-array operators; standard modules; time/random routines
 hpcc/ra        : iterators; atomic statements
 hpcc/fft       : array slicing; iterators; complex and imaginary values
+hpcc/hpl       : 2D array slicing and aliases; linear algebra
 
 
 --------------
@@ -80,6 +81,7 @@ varargs        |       |   x   |       |       |       |       |       |
 hpcc/stream    |       |   x   |       |   x   |       |       |       |
 hpcc/ra        |       |   x   |       |   x   |       |       |       |
 hpcc/fft       |       |   x   |       |   x   |       |       |       |
+hpcc/hpl       |       |   x   |       |   x   |       |       |       |
 -------------------------------------------------------------------------------
 key:
   read  = uses read() statements to do input
@@ -122,6 +124,7 @@ varargs        |       |       |       |   x   |       |       |   *   |
 hpcc/stream    |   x   |   x   |   x   |   x   |       |   x   |       |
 hpcc/ra        |   *   |   x   |   x   |   x   |   x   |   x   |       |
 hpcc/fft       |   x   |   x   |   x   |   x   |   x   |   x   |       |
+hpcc/hpl       |   x   |   x   |   x   |   x   |       |   x   |       |
 -------------------------------------------------------------------------------
 key:
   modls = uses modules to organize user code
@@ -144,7 +147,7 @@ test           | strng | tuple | recrd | class | gener | infer | query | enum
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |   x   |       |       |       |       |   x   |       |
-hello-multiloc |       |       |       |       |       |       |       |
+hello-multiloc |   x   |       |       |       |       |       |       |
 arrays         |       |   x   |       |       |       |   x   |   *   |
 beer           |   *   |       |       |       |       |   *   |       |
 blockLU        |   x   |   x   |       |       |       |   x   |   *   |
@@ -167,6 +170,7 @@ varargs        |       |   x   |       |       |       |   x   |   x   |
 hpcc/stream    |       |       |       |       |       |   x   |   x   |
 hpcc/ra        |       |       |       |       |       |   x   |   x   |
 hpcc/fft       |       |   x   |       |       |       |   x   |   *   |
+hpcc/hpl       |   x   |   x   |       |       |       |   x   |   x   |
 -------------------------------------------------------------------------------
 key:
   strng = uses variables of string type and/or operators on strings
@@ -210,6 +214,7 @@ varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |   x   |       |       |       |       |       |       |
 hpcc/ra        |   x   |       |       |       |       |       |       |
 hpcc/fft       |   x   |       |       |       |       |       |       |
+hpcc/hpl       |   *   |       |       |       |       |       |       |
 -------------------------------------------------------------------------------
 key:
   arith = uses arithmetic domains/arrays
@@ -253,6 +258,7 @@ varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |   x   |   *   |       |       |   x   |       |       |
 hpcc/ra        |   x   |       |       |       |   x   |       |       |
 hpcc/fft       |   x   |   x   |   x   |       |   x   |       |       |
+hpcc/hpl       |   x   |   x   |   *   |   *   |   x   |       |       |
 -------------------------------------------------------------------------------
 key:
   frall = uses forall loops
@@ -295,6 +301,7 @@ varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |       |       |       |       |       |       |       |
 hpcc/ra        |       |       |       |       |       |   x   |       |
 hpcc/fft       |       |       |       |       |       |       |       |
+hpcc/hpl       |       |       |       |       |       |       |       |
 -------------------------------------------------------------------------------
 key:
   begin = uses begin statements
@@ -312,11 +319,11 @@ key:
 -------------------------------------------------------------------------------
                |              Locality Features
                |
-test           | nmloc | locle | LocSp | Lcles |  on   | .locl | here  | xxxxx
+test           | nmloc | locle | LocSp | Lcles |  on   | .locl | here  | local
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
-hello-multiloc |   *   |       |       |   *   |   *   |       |   *   |
+hello-multiloc |   *   |       |       |   *   |   *   |       |   *   |   
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
 blockLU        |       |       |       |       |       |       |       |
@@ -339,6 +346,7 @@ varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |       |       |       |       |       |       |       |
 hpcc/ra        |       |       |       |       |       |       |       |
 hpcc/fft       |       |       |       |       |       |       |       |
+hpcc/hpl       |       |       |       |       |       |       |       |   *
 -------------------------------------------------------------------------------
 key:
   nmloc = uses the numLocales constant
@@ -348,8 +356,47 @@ key:
   on    = uses on clauses
   .locl = uses .locale queries on expressions
   here  = uses here
+  local = uses local statement
 -------------------------------------------------------------------------------
 
+
+
+
+-------------------------------------------------------------------------------
+               |                   DISTRIBUTIONS
+               |
+test           | distr | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx
+---------------+-------+-------+-------+-------+-------+-------+-------+-------
+hello          |       |       |       |       |       |       |       |
+hello-module   |       |       |       |       |       |       |       |
+hello-multiloc |       |       |       |       |       |       |       |
+arrays         |       |       |       |       |       |       |       |
+beer           |       |       |       |       |       |       |       |
+blockLU        |       |       |       |       |       |       |       |
+fileIO         |       |       |       |       |       |       |       |
+genericStack   |       |       |       |       |       |       |       |
+iterators      |       |       |       |       |       |       |       |
+jacobi         |       |       |       |       |       |       |       |
+linkedList     |       |       |       |       |       |       |       |
+multilocale    |       |       |       |       |       |       |       |
+norm           |       |       |       |       |       |       |       |
+opaque         |       |       |       |       |       |       |       |
+prodCons       |       |       |       |       |       |       |       |
+quicksort      |       |       |       |       |       |       |       |
+reductions     |       |       |       |       |       |       |       |
+slices         |       |       |       |       |       |       |       |
+sparse         |       |       |       |       |       |       |       |
+taskParallel   |       |       |       |       |       |       |       |
+tree           |       |       |       |       |       |       |       |
+varargs        |       |       |       |       |       |       |       |
+hpcc/stream    |   x   |       |       |       |       |       |       |
+hpcc/ra        |   x   |       |       |       |       |       |       |
+hpcc/fft       |       |       |       |       |       |       |       |
+hpcc/hpl       |       |       |       |       |       |       |       |
+-------------------------------------------------------------------------------
+key:
+  distr = uses distributed domains/arrays
+-------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
@@ -382,6 +429,7 @@ varargs        |       |       |       |       |       |       |       |
 hpcc/stream    |       |       |       |       |       |       |       |
 hpcc/ra        |       |       |       |       |       |       |       |
 hpcc/fft       |       |       |       |       |       |       |       |
+hpcc/hpl       |       |       |       |       |       |       |       |
 -------------------------------------------------------------------------------
 key:
 -------------------------------------------------------------------------------
