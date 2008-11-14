@@ -1441,6 +1441,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F731D6130D51181B009F6897 /* chapel.y in Sources */,
 				F721A0D50D455B8C00A6B43F /* map.cpp in Sources */,
 				F721A0D60D455B8C00A6B43F /* vec.cpp in Sources */,
 				F721A0E80D455BE300A6B43F /* alist.cpp in Sources */,
@@ -1491,7 +1492,6 @@
 				F721A17A0D45603C00A6B43F /* stringutil.cpp in Sources */,
 				F721A17B0D45603C00A6B43F /* timer.cpp in Sources */,
 				F731D5D00D510AE2009F6897 /* chapel.lex in Sources */,
-				F731D6130D51181B009F6897 /* chapel.y in Sources */,
 				F7A456F30E1AC2BA0033D1FF /* tmpdirname.cpp in Sources */,
 				F73113A70E3EB71900F62922 /* complex2record.cpp in Sources */,
 				F73113A80E3EB71900F62922 /* inlineFunctions.cpp in Sources */,
