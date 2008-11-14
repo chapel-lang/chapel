@@ -12,7 +12,6 @@ hello-module   : configuration vars; module structure; main() entry point
 hello-multiloc : coforalls, on clauses, locales
 arrays         : arithmetic domains and arrays; slicing; iteration; reallocation
 beer           : 1D domains and arrays; string manipulation; generic functions
-blockLU        : 2D domains and arrays; iterators; domain/array slicing, queries
 fileIO         : file I/O of scalars and arrays
 genericStack   : generic classes; nested classes; array reallocation
 iterators      : iterators of various styles
@@ -61,7 +60,6 @@ hello-module   |       |   *   |       |       |       |       |       |
 hello-multiloc |       |   x   |       |       |       |       |       |
 arrays         |       |   x   |       |       |       |       |       |
 beer           |       |   *   |       |       |       |       |       |
-blockLU        |   x   |   x   |   *   |   *   |       |       |       |
 fileIO         |   *   |   *   |   *   |       |       |       |       |
 genericStack   |       |   x   |       |   x   |       |       |       |
 iterators      |       |   x   |       |       |       |       |       |
@@ -104,7 +102,6 @@ hello-module   |   *   |       |   *   |       |       |   *   |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |       |       |       |   x   |       |   x   |       |
 beer           |       |       |   x   |   *   |       |   x   |       |
-blockLU        |       |       |   x   |   x   |   x   |   x   |       |
 fileIO         |       |       |   x   |   x   |       |   x   |       |
 genericStack   |       |       |       |   x   |       |       |       |
 iterators      |       |       |       |       |   *   |       |       |
@@ -150,7 +147,6 @@ hello-module   |   x   |       |       |       |       |   x   |       |
 hello-multiloc |   x   |       |       |       |       |       |       |
 arrays         |       |   x   |       |       |       |   x   |   *   |
 beer           |   *   |       |       |       |       |   *   |       |
-blockLU        |   x   |   x   |       |       |       |   x   |   *   |
 fileIO         |       |       |       |       |       |   x   |       |
 genericStack   |   x   |       |   *   |   *   |   *   |   x   |       |
 iterators      |   x   |   x   |       |   x   |       |   x   |       |
@@ -194,7 +190,6 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |   *   |       |       |       |       |       |       |   *
 beer           |   x   |       |       |       |       |       |       |
-blockLU        |   x   |       |       |       |       |       |       |
 fileIO         |   x   |       |       |       |       |       |       |
 genericStack   |   x   |       |       |       |       |       |   x   |   x
 iterators      |       |       |       |       |       |       |       |
@@ -238,7 +233,6 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |   x   |   *   |   *   |       |       |       |       |
 beer           |   x   |       |       |       |       |       |       |
-blockLU        |   x   |       |   x   |   *   |   x   |       |       |
 fileIO         |       |       |       |       |   x   |       |       |
 genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
@@ -281,7 +275,6 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |       |       |   x   |       |       |       |       |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
-blockLU        |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
@@ -326,7 +319,6 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |   *   |       |       |   *   |   *   |       |   *   |   
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
-blockLU        |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
@@ -372,7 +364,6 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
-blockLU        |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
@@ -409,7 +400,6 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
-blockLU        |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |

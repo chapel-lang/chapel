@@ -9,7 +9,6 @@ TARGETS = \
 	hello-multiloc \
 	arrays \
 	beer \
-        blockLU \
 	fileIO \
 	genericStack \
 	iterators \

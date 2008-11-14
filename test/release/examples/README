@@ -1,6 +1,6 @@
-=========================
-Chapel Examples Directory
-=========================
+====================
+Chapel Example Codes
+====================
 
 This directory contains a few simple "Hello, world!" example codes to
 get started with Chapel program structure:
@@ -9,28 +9,32 @@ get started with Chapel program structure:
      hello-module.chpl      : a variation using a more structured use of Chapel
      hello-multiloc.chpl    : a multi-locale "Hello, world!" program
 
-It also contains a number of more interesting examples that
-demonstrate various Chapel features:
+It also contains a number of targeted examples---many written in a
+tutorial style---to help get started with specific Chapel language
+features:
 
      arrays.chpl            : tutorial for Chapel arithmetic arrays/domains
-     beer.chpl              : computes lyrics to "99 bottles of beer"
-     blockLU.chpl           : block LU factorization
      fileIO.chpl            : simple file I/O example using arrays
-     genericStack.chpl      : generic stack classes (list- and array-based)
      iterators.chpl         : sample iterators
-     jacobi.chpl            : Jacobi iteration
-     linkedList.chpl        : generic linked list example
      multilocale.chpl       : demonstration of multi-locale concepts
-     norm.chpl              : sample module for computing array norms
      opaque.chpl            : tutorial for Chapel opaque arrays
-     prodCons.chpl          : producer-consumer example using circular buffer
-     quicksort.chpl         : parallel quick sort using cobegin and serial
      reductions.chpl        : applies several array reductions on a 2D array
      slices.chpl            : examples of array slicing and reindexing
      sparse.chpl            : sparse domain/array tutorial example
      taskParallel.chpl      : introduces task parallel language concepts
-     tree.chpl              : constructs and walks a tree in parallel
      varargs.chpl           : demonstration of variable argument functions
+
+A number of other examples show some simple computations in Chapel
+that exercise various language features:
+
+     beer.chpl              : computes lyrics to "99 bottles of beer"
+     genericStack.chpl      : generic stack classes (list- and array-based)
+     jacobi.chpl            : Jacobi iteration
+     linkedList.chpl        : generic linked list example
+     norm.chpl              : sample module for computing array norms
+     prodCons.chpl          : producer-consumer example using circular buffer
+     quicksort.chpl         : parallel quick sort using cobegin and serial
+     tree.chpl              : constructs and walks a tree in parallel
 
 The hpcc subdirectory contains Chapel versions of three HPC Challenge
 benchmarks:
@@ -39,6 +43,10 @@ benchmarks:
      ra.chpl                : the global Random Access benchmark
      fft.chpl               : the global 1D FFT benchmark
      hpl.chpl               : the High Performance Linpack benchmark
+
+If you are interested in a specific Chapel feature, refer to
+README.features, which contains a map of which tests use which
+language features.
 
 
 ------------------
@@ -73,7 +81,6 @@ Other files
   README.features : maps out which tests use which Chapel features
   README.testing  : provides an introduction to using the Chapel testing system
   Arr.dat         : array input used by fileIO.chpl
-  blockLU-Mat.dat : matrix input used by blockLU.chpl
   start_test      : the main script for the Chapel testing system
   Bin/            : contains helper scripts for the testing system
   Logs/           : directory created by the test system to store logs
