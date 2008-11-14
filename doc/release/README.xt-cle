@@ -80,6 +80,22 @@ know at chapel_info@cray.com.
      ./hello-multiloc -nl 2
 
 
+------------------------------------
+XT File Systems and Chapel execution
+------------------------------------
+
+* For best results, it is recommended that you execute your Chapel
+  program on a Lustre file system for the XT, as this will provide the
+  greatest amount of transparency between the login nodes and compute
+  nodes.  In some cases, running a Chapel program from a non-Lustre
+  file system will make it impossible to launch onto the compute
+  nodes.  In other cases, the launch will succeed, but any files read
+  or written by the Chapel program will be local to the compute node's
+  file system and not the login node's.  To avoid dealing with these
+  issues, executing Chapel programs from a Lustre file system will
+  generally produce the best results.
+
+
 --------------------------
 Memory limits using GASNet
 --------------------------
