@@ -88,10 +88,6 @@ system("cd chapel/test/Bin && cp timedexec sub_test sub_clean computePerfStats.p
 print "Building the man page...\n";
 system("cd chapel && make man");
 
-print "Building the quick reference sheet...\n";
-system("cd chapel/doc/internal/quickReference && make");
-system("cp chapel/doc/internal/quickReference/reference.pdf chapel/doc/release/quickReference.pdf");
-
 print "Creating the docs directory...\n";
 system("cd chapel && mv doc doctmp");
 system("cd chapel && mv doctmp/release doc");
