@@ -129,7 +129,7 @@ As Chapel's task parallel implementation matures, we expect to have
 multiple task->thread scheduling policies from literally creating and
 destroying new threads with each task (for programmers who want full
 control over a thread's lifetime) to automated work stealing and load
-balancing at the other end of the spectrum (for programmers whoh would
+balancing at the other end of the spectrum (for programmers who would
 prefer not to manage threads or whose programs cannot trivially be
 load balanced manually).  Our hope is to leverage existing open source
 threading and task management software and to collaborate with others
