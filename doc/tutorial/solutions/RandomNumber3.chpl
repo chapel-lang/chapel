@@ -19,5 +19,6 @@ for i in 1..numberOfIterations do
   // Cast RandomNumber's return value to whatever seed's type is
   seed = RandomNumber(seed) : seed.type;
 
+writeln ("After 10000 iterations, RandomNumber should return 1043618065");
 writeln ("After ", numberOfIterations, " iterations, RandomNumber returns ", seed);
 writeln ("RealRandomNumber returns ", RealRandomNumber());

@@ -1,9 +1,9 @@
-use RandomNumber4;
+use RandomNumber7;
 
-var count = 0;
+var count: sync int = 0;
 config const numberOfPoints = 10;
 
-for i in 1..numberOfPoints {
+coforall i in 1..numberOfPoints {
   if sqrt(RealRandomNumber()**2 + RealRandomNumber()**2) <= 1 then
     count += 1;
 }

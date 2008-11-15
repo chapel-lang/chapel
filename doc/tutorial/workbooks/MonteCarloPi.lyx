@@ -16,7 +16,7 @@
 \font_tt_scale 100
 
 \graphics default
-\paperfontsize default
+\paperfontsize 11
 \spacing single
 \use_hyperref false
 \papersize default
@@ -31,7 +31,7 @@
 \paragraph_separation indent
 \defskip medskip
 \quotes_language english
-\papercolumns 2
+\papercolumns 1
 \papersides 1
 \paperpagestyle default
 \tracking_changes false
@@ -47,8 +47,8 @@ Estimating π Using a Monte Carlo Method
 \end_layout
 
 \begin_layout Standard
-In this exercise, you will become familiar with Chapel's basic syntax, while
- estimating the value of 
+In this exercise, you will become familiar with Chapel's basic syntax, including
+ some of the parallel tasking features, while estimating the value of 
 \begin_inset Formula $\pi$
 \end_inset
 
@@ -60,14 +60,14 @@ As with any Monte Carlo method, you will need a pseudorandom number generator.
  A simple one, taken from 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "HardToFind"
+key "63042"
 
 \end_inset
 
 , is a multiplicative linear congruential generator defined by the following
  formula:
-\begin_inset Formula \[
-x_{n+1}=ax_{n}\textrm{mod}m,\]
+\begin_inset Formula \begin{equation}
+x_{n+1}=ax_{n}\mathrm{mod}m,\label{eq:MLCG}\end{equation}
 
 \end_inset
 
@@ -85,9 +85,11 @@ where the multiplier
 \begin_inset Formula $x_{n}$
 \end_inset
 
-in the formula above) and uses it to compute and return the next random
+ in the formula above) and use it to compute and return the next random
  number in the sequence.
- Be careful with how you do the multiplication: the product 
+ (If you are terrified of starting with a blank screen, you can use RandomNumber
+0.chpl in the solutions to the exercises as a starting point.) Be careful
+ with how you do the multiplication: the product 
 \begin_inset Formula $ax_{n}$
 \end_inset
 
@@ -171,7 +173,11 @@ value
 \begin_inset Quotes eld
 \end_inset
 
---main-module <
+
+\begin_inset Formula $\mathtt{--main-module}$
+\end_inset
+
+ <
 \emph on
 module-name
 \emph default
@@ -279,21 +285,104 @@ In the separate source file you created above, write a program that generates
  should improve as you increase the number of simulated darts.
 \end_layout
 
+\begin_layout List
+\labelwidthstring 00.00.0000
+
+\emph on
+Optional
+\emph default
+: Use the reduce operator with a square-bracketed forall expression as its
+ operand to count how many points are inside the unit circle.
+ Note that you can use a boolean expression as part of the forall expression;
+ the value of a boolean expression is 1 if it evaluates to true, and 0 otherwise.
+\end_layout
+
 \end_deeper
-\begin_layout Bibliography
-\begin_inset CommandInset bibitem
-LatexCommand bibitem
-key "HardToFind"
+\begin_layout Enumerate
+It would be great to improve the performance of your program by parallelizing
+ it.
+ One way to do that would be to break up the counting of the points among
+ several tasks by using the coforall statement.
+ This will require a thread-safe random number generator.
+ You can test if your random number generator is thread safe by replacing
+ the for statement in what used to be the main program of your random number
+ generator module with a coforall statement.
+ (Ignore the warning message about running out of threads to run your program.)
+ Since the computation for each iteration is so short, it is unlikely you
+ will run into any race conditions.
+ However, if you use a standard module called Time, and insert 
+\begin_inset Formula $\mathtt{sleep(1);}$
+\end_inset
+
+ in the function that computes the next random number to delay its computation
+ by about a second, you will be much more likely to run into a race condition,
+ and the output of your program will very likely be different.
+\end_layout
+
+\begin_layout Enumerate
+In order to make your random number generator thread safe, you can use a
+ sync variable so that only one iteration of the coforall statement can
+ read and then modify the global variable your random number generator uses:
+ once a sync variable is read, no task (including the one that just read
+ it) can read it again until it has been written to.
+ Now that your random number generator is thread safe, replace the for statement
+ in your program to estimate 
+\begin_inset Formula $\pi$
+\end_inset
+
+ with a coforall statement.
+ You may need to use a sync variable to ensure you get an accurate count!
+\end_layout
+
+\begin_layout Enumerate
+Unfortunately, this is not a very satisfactory way to parallelize this program
+ because the random number generator serializes execution.
+ There are several ways around this.
+ One way is to have each iteration use a different random number generator
+ to create several points.
+ For the purposes of this exercise, you can create a new random number generator
+ by using different values for the multiplier 
+\begin_inset Formula $a$
+\end_inset
+
+ in equation 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:MLCG"
 
 \end_inset
 
-Stephen K.
- Park and Keith W.
- Miller, Random Number Generators: Good Ones Are Hard to Find, Communications
- of the ACM, vol.
- 31 no.
- 10, pp.
- 1192-1201.
+ above, such as 397204094 or 950706376.
+ (See 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "272709"
+
+\end_inset
+
+.) For each iteration, the count of points that lie inside the unit circle
+ can be accumulated in a separate variable, and these counts can be added
+ together at the end.
+\end_layout
+
+\begin_layout Enumerate
+As an exercise for the reader, you can distribute the computation to multiple
+ locales, and have each locale execute one iteration of the coforall statement.
+ In order to avoid having each locale access global arrays or variables,
+ which would reside in locale 0, you can encapsulate all the data that a
+ locale will need into a class, and then have each locale instantiate that
+ class.
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "references"
+options "plain"
+
+\end_inset
+
+
 \end_layout
 
 \end_body

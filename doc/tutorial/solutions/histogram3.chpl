@@ -1,5 +1,5 @@
 //
-// Histogram Solution 2
+// Histogram Solution 3
 //
 // Compute the histogram of an array of random numbers.
 //
