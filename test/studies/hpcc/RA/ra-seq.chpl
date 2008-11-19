@@ -7,7 +7,7 @@ param numTables = 1;
 type elemType = randType,
      indexType = randType;
 
-config const n = computeProblemSize(elemType, numTables,
+config const n = computeProblemSize(numTables, elemType,
                                     returnLog2=true): indexType,
              N_U = 2**(n+2);   // numUpdates
 
@@ -35,7 +35,7 @@ def main() {
   [i in TableSpace] T(i) = i;
 
   for block in UpdateSpace.subBlocks do
-    for r in RAStream(block) do
+    forall (_,r) in (block,RAStream()) do
       T(r & indexMask) ^= r;
 
   const execTime = getCurrentTime() - startTime;
@@ -57,7 +57,7 @@ def verifyResults(T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   if (sequentialVerify) then
-    for r in RAStream(0:indexType..#N_U) do
+    forall (_,r) in (0:indexType..#N_U, RAStream()) do
       T(r & indexMask) ^= r;
   else
     forall i in UpdateSpace {
