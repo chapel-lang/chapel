@@ -190,7 +190,7 @@ NOTES
 %type <pblockstmt> when_stmt_ls
 
 %type <pexpr> opt_type opt_formal_type array_type
-%type <pexpr> type anon_record_type type_binding_part opt_domain
+%type <pexpr> type type_binding_part opt_domain
 %type <ptype> class_tag
 %type <pet> enum_ls
 
@@ -222,7 +222,6 @@ NOTES
 %left TRSBR
 %left TIN
 %left TDOTDOT
-%right TSTARTUPLE
 %left TOR
 %left TAND
 %left TBOR
@@ -1055,14 +1054,6 @@ tuple_var_decl_stmt_inner_ls:
 /** TYPES ********************************************************************/
 
 
-anon_record_type:
-  TRECORD TLCBR class_body_stmt_ls TRCBR
-    {
-      $$ = buildClassDefExpr(astr("_anon_record", istr(anon_record_uid++)), new ClassType(CLASS_RECORD), $3);
-    }
-;
-
-
 distributed_expr: /* not supported in one-locale implementation */
   /* nothing */
     { $$ = new UnresolvedSymExpr("defaultDistribution"); }
@@ -1092,8 +1083,7 @@ type:
 
 
 formal_level_type:
-  anon_record_type
-| array_type
+  array_type
 | TDOMAIN TLP expr_ls TRP distributed_expr
     {
       CallExpr* call = new CallExpr("chpl__buildDomainRuntimeType", $5);

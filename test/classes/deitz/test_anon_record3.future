@@ -1,4 +1,0 @@
-bug: passing anonymous record type to function
-
-It seems like a function that expects a type ought to be able to accept any
-type as an actual.
