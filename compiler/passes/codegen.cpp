@@ -100,6 +100,25 @@ static void legalizeCName(Symbol* sym) {
 }
 
 
+static void
+genClassTagEnum(FILE* outfile, Vec<TypeSymbol*> typeSymbols) {
+  fprintf(outfile, "/*** Class Type Identification Numbers ***/\n\n");
+  fprintf(outfile, "typedef enum {\n");
+  bool comma = false;
+  forv_Vec(TypeSymbol, ts, typeSymbols) {
+    if (ClassType* ct = toClassType(ts->type)) {
+      if (!isReferenceType(ct) && ct->classTag == CLASS_CLASS) {
+        fprintf(outfile, "%schpl__cid_%s", (comma) ? ",\n  " : "  ", ts->cname);
+        comma = true;
+      }
+    }
+  }
+  if (!comma)
+    fprintf(outfile, "  chpl__cid_placeholder");
+  fprintf(outfile, "\n} chpl__class_id;\n\n");
+}
+
+
 static void codegen_header(void) {
   ChainHashMap<const char*, StringHashFns, int> cnames;
   Vec<TypeSymbol*> typeSymbols;
@@ -260,26 +279,13 @@ static void codegen_header(void) {
   } else {
     openCFile(&header, "chpl__header", "h");
     outfile = header.fptr;
+    fprintf(outfile, "#define CHPL_GEN_CODE\n\n");
   }
   genIncludeCommandLineHeaders(outfile);
 
-  fprintf(outfile, "/*** Class Type Identification Numbers ***/\n\n");
-  fprintf(outfile, "typedef enum {\n");
-  bool comma = false;
-  forv_Vec(TypeSymbol, ts, typeSymbols) {
-    if (ClassType* ct = toClassType(ts->type)) {
-      if (!isReferenceType(ct) && ct->classTag == CLASS_CLASS) {
-        fprintf(outfile, "%schpl__cid_%s", (comma) ? ",\n  " : "  ", ts->cname);
-        comma = true;
-      }
-    }
-  }
-  if (!comma)
-    fprintf(outfile, "  chpl__cid_placeholder");
-  fprintf(outfile, "\n} chpl__class_id;\n\n");
+  genClassTagEnum(outfile, typeSymbols);
 
   if (!fRuntime) {
-    fprintf(outfile, "#define CHPL_GEN_CODE\n");
     fprintf(outfile, "#include \"stdchpl.h\"\n");
   }
 
@@ -297,6 +303,17 @@ static void codegen_header(void) {
       typeSymbol->codegenDef(outfile);
   }
 
+  // codegen reference types
+  fprintf(outfile, "\n/*** Primitive References ***/\n\n");
+  forv_Vec(TypeSymbol, ts, typeSymbols) {
+    if (ts->hasFlag(FLAG_REF)) {
+      ClassType* ct = toClassType(ts->type->getValueType());
+      if (ct && ct->classTag != CLASS_CLASS)
+        continue; // references to records and unions codegened below
+      ts->codegenPrototype(outfile);
+    }
+  }
+
   // order records/unions topologically
   //   (int, int) before (int, (int, int))
   Map<ClassType*,int> order;
@@ -307,23 +324,12 @@ static void codegen_header(void) {
   }
 
   // debug
-//   for (int i = 0; i < order.n; i++) {
-//     if (order.v[i].key && order.v[i].value) {
-//       printf("%d: %s\n", order.v[i].value, order.v[i].key->symbol->name);
-//     }
-//   }
-//   printf("%d\n", maxOrder);
-
-  // codegen reference types
-  fprintf(outfile, "/*** Primitive References ***/\n\n");
-  forv_Vec(TypeSymbol, ts, typeSymbols) {
-    if (ts->hasFlag(FLAG_REF)) {
-      ClassType* ct = toClassType(ts->type->getValueType());
-      if (ct && ct->classTag != CLASS_CLASS)
-        continue; // references to records and unions codegened below
-      ts->codegenPrototype(outfile);
-    }
-  }
+  //   for (int i = 0; i < order.n; i++) {
+  //     if (order.v[i].key && order.v[i].value) {
+  //       printf("%d: %s\n", order.v[i].value, order.v[i].key->symbol->name);
+  //     }
+  //   }
+  //   printf("%d\n", maxOrder);
 
   // codegen records/unions in topological order
   fprintf(outfile, "\n/*** Records and Unions (Hierarchically) ***/\n\n");

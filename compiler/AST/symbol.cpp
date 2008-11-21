@@ -588,7 +588,7 @@ void FnSymbol::codegenDef(FILE* outfile) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!toTypeSymbol(def->sym)) {
-        if (fGenIDS)
+        if (fGenIDS && isVarSymbol(def->sym))
           fprintf(outfile, "/* %7d */ ", def->sym->id);
         def->sym->codegenDef(outfile);
       }

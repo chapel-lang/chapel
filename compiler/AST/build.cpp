@@ -205,7 +205,7 @@ static FnSymbol* initModuleGuards = NULL;
 
 
 void createInitFn(ModuleSymbol* mod) {
-  static int moduleNumber = 0;
+  static int uid = 1;
   SET_LINENO(mod);
 
   mod->initFn = new FnSymbol(astr("chpl__init_", mod->name));
@@ -219,7 +219,7 @@ void createInitFn(ModuleSymbol* mod) {
 
   if (strcmp(mod->name, "_Program")) {
     // guard init function so it is not run more than once
-    mod->guard = new VarSymbol(astr("__run_", mod->name, "_firsttime", istr(moduleNumber++)));
+    mod->guard = new VarSymbol(astr("chpl__guard", istr(uid++), "_", mod->name));
     mod->guard->addFlag(FLAG_PRIVATE); // private = separate copy per locale
     theProgram->initFn->insertAtHead(new DefExpr(mod->guard, new SymExpr(gTrue)));
     if (!fRuntime)
