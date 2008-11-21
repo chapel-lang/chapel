@@ -24,7 +24,6 @@ NOTES
 #include <cstring>
 #include "lexyacc.h" // all #includes here, for make depend
 
-  static int anon_record_uid = 1;
   static int query_uid = 1;
   int captureTokens;
   char captureString[1024];
