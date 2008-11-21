@@ -9,7 +9,7 @@ include $(CHAPEL_ROOT)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
 
-CHAPEL_LN_INC_DIR = -I$(CHAPEL_ROOT)/runtime/include/$(CHPL_MAKE_TARGET_PLATFORM) -I$(CHAPEL_ROOT)/runtime/include
+CHAPEL_LN_INC_DIR = $(CHAPEL_ROOT)/runtime/include/$(CHPL_MAKE_TARGET_PLATFORM) -I$(CHAPEL_ROOT)/runtime/include
 CHAPEL_LN_LIB_DIR = $(CHAPEL_ROOT)/$(LIB_LN_DIR)
 
 LAUNCHER_SRC_NAME = $(TMPDIRNAME)/config.c
