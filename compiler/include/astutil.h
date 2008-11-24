@@ -21,7 +21,9 @@ void collect_asts_postorder(BaseAST*, Vec<BaseAST*>& asts);
 void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts);
 void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts);
 void collectDefExprs(BaseAST* ast, Vec<DefExpr*>& defExprs);
+void collectCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs);
 void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs);
+void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols);
 
 // utility routines for clearing and resetting lineno and filename
 void reset_line_info(BaseAST* baseAST, int lineno);

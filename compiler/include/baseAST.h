@@ -126,7 +126,7 @@ class BaseAST {
 
   BaseAST(AstTag type);
   virtual ~BaseAST() { }
-  virtual void verify() = 0; 
+  virtual void verify() = 0;
   virtual BaseAST* copy(SymbolMap* map = NULL, bool internal = false) = 0;
   virtual BaseAST* copyInner(SymbolMap* map) = 0;
   virtual bool inTree(void) = 0;
@@ -150,65 +150,59 @@ void registerModule(ModuleSymbol* mod);
 //
 // class test macros: determine the dynamic type of a BaseAST*
 //
-#define isExpr(ast)                                                     \
-  ((ast) && (ast)->astTag < E_Expr)
+#define isExpr(a)   ((a) && (a)->astTag < E_Expr)
+#define isSymbol(a) ((a) && (a)->astTag > E_Expr && (a)->astTag < E_Symbol)
+#define isType(a)   ((a) && (a)->astTag > E_Symbol && (a)->astTag < E_Type)
 
-#define isSymExpr(ast)   ((ast) && (ast)->astTag == E_SymExpr)
-#define isUnresolvedSymExpr(ast)   ((ast) && (ast)->astTag == E_UnresolvedSymExpr)
-#define isDefExpr(ast)   ((ast) && (ast)->astTag == E_DefExpr)
-#define isCallExpr(ast)  ((ast) && (ast)->astTag == E_CallExpr)
-#define isNamedExpr(ast) ((ast) && (ast)->astTag == E_NamedExpr)
-#define isBlockStmt(ast) ((ast) && (ast)->astTag == E_BlockStmt)
-#define isCondStmt(ast)  ((ast) && (ast)->astTag == E_CondStmt)
-#define isGotoStmt(ast)  ((ast) && (ast)->astTag == E_GotoStmt)
-
-#define isSymbol(ast)                                                   \
-  ((ast) && (ast)->astTag > E_Expr && (ast)->astTag < E_Symbol)
-
-#define isModuleSymbol(ast)     ((ast) && (ast)->astTag == E_ModuleSymbol)
-#define isVarSymbol(ast)        ((ast) && (ast)->astTag == E_VarSymbol)
-#define isArgSymbol(ast)        ((ast) && (ast)->astTag == E_ArgSymbol)
-#define isTypeSymbol(ast)       ((ast) && (ast)->astTag == E_TypeSymbol)
-#define isFnSymbol(ast)         ((ast) && (ast)->astTag == E_FnSymbol)
-#define isEnumSymbol(ast)       ((ast) && (ast)->astTag == E_EnumSymbol)
-#define isLabelSymbol(ast)      ((ast) && (ast)->astTag == E_LabelSymbol)
-
-#define isType(ast)                                                     \
-  ((ast) && (ast)->astTag > E_Symbol && (ast)->astTag < E_Type)
-
-#define isPrimitiveType(ast) ((ast) && (ast)->astTag == E_PrimitiveType)
-#define isEnumType(ast)      ((ast) && (ast)->astTag == E_EnumType)
-#define isClassType(ast)     ((ast) && (ast)->astTag == E_ClassType)
+#define isSymExpr(a)           ((a) && (a)->astTag == E_SymExpr)
+#define isUnresolvedSymExpr(a) ((a) && (a)->astTag == E_UnresolvedSymExpr)
+#define isDefExpr(a)           ((a) && (a)->astTag == E_DefExpr)
+#define isCallExpr(a)          ((a) && (a)->astTag == E_CallExpr)
+#define isNamedExpr(a)         ((a) && (a)->astTag == E_NamedExpr)
+#define isBlockStmt(a)         ((a) && (a)->astTag == E_BlockStmt)
+#define isCondStmt(a)          ((a) && (a)->astTag == E_CondStmt)
+#define isGotoStmt(a)          ((a) && (a)->astTag == E_GotoStmt)
+#define isModuleSymbol(a)      ((a) && (a)->astTag == E_ModuleSymbol)
+#define isVarSymbol(a)         ((a) && (a)->astTag == E_VarSymbol)
+#define isArgSymbol(a)         ((a) && (a)->astTag == E_ArgSymbol)
+#define isTypeSymbol(a)        ((a) && (a)->astTag == E_TypeSymbol)
+#define isFnSymbol(a)          ((a) && (a)->astTag == E_FnSymbol)
+#define isEnumSymbol(a)        ((a) && (a)->astTag == E_EnumSymbol)
+#define isLabelSymbol(a)       ((a) && (a)->astTag == E_LabelSymbol)
+#define isPrimitiveType(a)     ((a) && (a)->astTag == E_PrimitiveType)
+#define isEnumType(a)          ((a) && (a)->astTag == E_EnumType)
+#define isClassType(a)         ((a) && (a)->astTag == E_ClassType)
 
 //
 // safe downcast macros: downcast BaseAST*, Expr*, Symbol*, or Type*
 //   note: toDerivedClass is equivalent to dynamic_cast<DerivedClass*>
 //
-#define toExpr(ast)      (isExpr(ast)      ? ((Expr*)(ast))      : NULL)
-#define toSymExpr(ast)   (isSymExpr(ast)   ? ((SymExpr*)(ast))   : NULL)
-#define toUnresolvedSymExpr(ast)   (isUnresolvedSymExpr(ast)   ? ((UnresolvedSymExpr*)(ast))   : NULL)
-#define toDefExpr(ast)   (isDefExpr(ast)   ? ((DefExpr*)(ast))   : NULL)
-#define toCallExpr(ast)  (isCallExpr(ast)  ? ((CallExpr*)(ast))  : NULL)
-#define toNamedExpr(ast) (isNamedExpr(ast) ? ((NamedExpr*)(ast)) : NULL)
-#define toBlockStmt(ast) (isBlockStmt(ast) ? ((BlockStmt*)(ast)) : NULL)
-#define toCondStmt(ast)  (isCondStmt(ast)  ? ((CondStmt*)(ast))  : NULL)
-#define toGotoStmt(ast)  (isGotoStmt(ast)  ? ((GotoStmt*)(ast))  : NULL)
+#define def_to_ast(Type, a)    (is##Type(a) ? ((Type*)(a)) : NULL)
+#define toSymExpr(a)           def_to_ast(SymExpr, a)
+#define toUnresolvedSymExpr(a) def_to_ast(UnresolvedSymExpr, a)
+#define toDefExpr(a)           def_to_ast(DefExpr, a)
+#define toCallExpr(a)          def_to_ast(CallExpr, a)
+#define toNamedExpr(a)         def_to_ast(NamedExpr, a)
+#define toBlockStmt(a)         def_to_ast(BlockStmt, a)
+#define toCondStmt(a)          def_to_ast(CondStmt, a)
+#define toGotoStmt(a)          def_to_ast(GotoStmt, a)
+#define toExpr(a)              def_to_ast(Expr, a)
+#define toModuleSymbol(a)      def_to_ast(ModuleSymbol, a)
+#define toVarSymbol(a)         def_to_ast(VarSymbol, a)
+#define toArgSymbol(a)         def_to_ast(ArgSymbol, a)
+#define toTypeSymbol(a)        def_to_ast(TypeSymbol, a)
+#define toFnSymbol(a)          def_to_ast(FnSymbol, a)
+#define toEnumSymbol(a)        def_to_ast(EnumSymbol, a)
+#define toLabelSymbol(a)       def_to_ast(LabelSymbol, a)
+#define toSymbol(a)            def_to_ast(Symbol, a)
+#define toPrimitiveType(a)     def_to_ast(PrimitiveType, a)
+#define toEnumType(a)          def_to_ast(EnumType, a)
+#define toClassType(a)         def_to_ast(ClassType, a)
+#define toType(a)              def_to_ast(Type, a)
 
-#define toSymbol(ast)           (isSymbol(ast)           ? ((Symbol*)(ast))           : NULL)
-#define toModuleSymbol(ast)     (isModuleSymbol(ast)     ? ((ModuleSymbol*)(ast))     : NULL)
-#define toVarSymbol(ast)        (isVarSymbol(ast)        ? ((VarSymbol*)(ast))        : NULL)
-#define toArgSymbol(ast)        (isArgSymbol(ast)        ? ((ArgSymbol*)(ast))        : NULL)
-#define toTypeSymbol(ast)       (isTypeSymbol(ast)       ? ((TypeSymbol*)(ast))       : NULL)
-#define toFnSymbol(ast)         (isFnSymbol(ast)         ? ((FnSymbol*)(ast))         : NULL)
-#define toEnumSymbol(ast)       (isEnumSymbol(ast)       ? ((EnumSymbol*)(ast))       : NULL)
-#define toLabelSymbol(ast)      (isLabelSymbol(ast)      ? ((LabelSymbol*)(ast))      : NULL)
-
-#define toType(ast)          (isType(ast)          ? ((Type*)(ast))          : NULL)
-#define toPrimitiveType(ast) (isPrimitiveType(ast) ? ((PrimitiveType*)(ast)) : NULL)
-#define toEnumType(ast)      (isEnumType(ast)      ? ((EnumType*)(ast))      : NULL)
-#define toClassType(ast)     (isClassType(ast)     ? ((ClassType*)(ast))     : NULL)
-
-
+//
+// traversal macros
+//
 #define AST_CALL_CHILD(_a, _t, _m, call, ...)                           \
   if (((_t*)_a)->_m) {                                                  \
     BaseAST* next_ast = ((_t*)_a)->_m;                                  \
@@ -222,53 +216,53 @@ void registerModule(ModuleSymbol* mod);
 
 #define AST_CHILDREN_CALL(_a, call, ...)                                \
   switch (_a->astTag) {                                                 \
-  case E_CallExpr:                                                       \
+  case E_CallExpr:                                                      \
     AST_CALL_CHILD(_a, CallExpr, baseExpr, call, __VA_ARGS__);          \
     AST_CALL_LIST(_a, CallExpr, argList, call, __VA_ARGS__);            \
     break;                                                              \
-  case E_NamedExpr:                                                      \
+  case E_NamedExpr:                                                     \
     AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);           \
     break;                                                              \
-  case E_DefExpr:                                                        \
+  case E_DefExpr:                                                       \
     AST_CALL_CHILD(_a, DefExpr, init, call, __VA_ARGS__);               \
     AST_CALL_CHILD(_a, DefExpr, exprType, call, __VA_ARGS__);           \
     AST_CALL_CHILD(_a, DefExpr, sym, call, __VA_ARGS__);                \
     break;                                                              \
-  case E_BlockStmt:                                                      \
+  case E_BlockStmt:                                                     \
     AST_CALL_LIST(_a, BlockStmt, body, call, __VA_ARGS__);              \
-    AST_CALL_CHILD(_a, BlockStmt, blockInfo, call, __VA_ARGS__);         \
+    AST_CALL_CHILD(_a, BlockStmt, blockInfo, call, __VA_ARGS__);        \
     AST_CALL_CHILD(_a, BlockStmt, modUses, call, __VA_ARGS__);          \
     break;                                                              \
-  case E_CondStmt:                                                       \
+  case E_CondStmt:                                                      \
     AST_CALL_CHILD(_a, CondStmt, condExpr, call, __VA_ARGS__);          \
     AST_CALL_CHILD(_a, CondStmt, thenStmt, call, __VA_ARGS__);          \
     AST_CALL_CHILD(_a, CondStmt, elseStmt, call, __VA_ARGS__);          \
     break;                                                              \
-  case E_GotoStmt:                                                       \
+  case E_GotoStmt:                                                      \
     AST_CALL_CHILD(_a, GotoStmt, label, call, __VA_ARGS__);             \
     break;                                                              \
-  case E_ModuleSymbol:                                                   \
+  case E_ModuleSymbol:                                                  \
     AST_CALL_CHILD(_a, ModuleSymbol, block, call, __VA_ARGS__);         \
     break;                                                              \
-  case E_ArgSymbol:                                                      \
+  case E_ArgSymbol:                                                     \
     AST_CALL_CHILD(_a, ArgSymbol, typeExpr, call, __VA_ARGS__);         \
     AST_CALL_CHILD(_a, ArgSymbol, defaultExpr, call, __VA_ARGS__);      \
     AST_CALL_CHILD(_a, ArgSymbol, variableExpr, call, __VA_ARGS__);     \
     break;                                                              \
-  case E_TypeSymbol:                                                     \
+  case E_TypeSymbol:                                                    \
     AST_CALL_CHILD(_a, Symbol, type, call, __VA_ARGS__);                \
     break;                                                              \
-  case E_FnSymbol:                                                       \
+  case E_FnSymbol:                                                      \
     AST_CALL_LIST(_a, FnSymbol, formals, call, __VA_ARGS__);            \
     AST_CALL_CHILD(_a, FnSymbol, setter, call, __VA_ARGS__);            \
     AST_CALL_CHILD(_a, FnSymbol, body, call, __VA_ARGS__);              \
     AST_CALL_CHILD(_a, FnSymbol, where, call, __VA_ARGS__);             \
     AST_CALL_CHILD(_a, FnSymbol, retExprType, call, __VA_ARGS__);       \
     break;                                                              \
-  case E_EnumType:                                                       \
+  case E_EnumType:                                                      \
     AST_CALL_LIST(_a, EnumType, constants, call, __VA_ARGS__);          \
     break;                                                              \
-  case E_ClassType:                                                      \
+  case E_ClassType:                                                     \
     AST_CALL_LIST(_a, ClassType, fields, call, __VA_ARGS__);            \
     AST_CALL_LIST(_a, ClassType, inherits, call, __VA_ARGS__);          \
     break;                                                              \

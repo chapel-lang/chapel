@@ -17,15 +17,27 @@ void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
 }
 
 void collectDefExprs(BaseAST* ast, Vec<DefExpr*>& defExprs) {
+  AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
   if (DefExpr* defExpr = toDefExpr(ast))
     defExprs.add(defExpr);
-  AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
+}
+
+void collectCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs) {
+  AST_CHILDREN_CALL(ast, collectCallExprs, callExprs);
+  if (CallExpr* callExpr = toCallExpr(ast))
+    callExprs.add(callExpr);
 }
 
 void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs) {
+  AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
   if (SymExpr* symExpr = toSymExpr(ast))
     symExprs.add(symExpr);
-  AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
+}
+
+void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols) {
+  AST_CHILDREN_CALL(ast, collectSymbols, symbols);
+  if (Symbol* symbol = toSymbol(ast))
+    symbols.add(symbol);
 }
 
 void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts) {

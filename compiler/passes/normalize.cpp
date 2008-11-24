@@ -17,9 +17,9 @@ Vec<const char*> usedConfigParams;
 
 static void change_method_into_constructor(FnSymbol* fn);
 static void normalize_returns(FnSymbol* fn);
-static void call_constructor_for_class(SymExpr* se);
+static void call_constructor_for_class(CallExpr* call);
 static void hack_resolve_types(ArgSymbol* arg);
-static void applyGetterTransform(Vec<BaseAST*>& asts);
+static void applyGetterTransform(CallExpr* call);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
 static void fix_def_expr(VarSymbol* var);
@@ -235,6 +235,26 @@ void normalize(void) {
   flattenGlobalFunctions();
   insertUseForExplicitModuleCalls();
 
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->parentSymbol && call->isPrimitive(PRIMITIVE_NEW))
+      USR_FATAL(call, "invalid use of 'new'");
+  }
+
+  // handle side effects on sync/single variables
+  forv_Vec(SymExpr, se, gSymExprs) {
+    if (isFnSymbol(se->parentSymbol) && se == se->getStmtExpr()) {
+      SET_LINENO(se);
+      CallExpr* call = new CallExpr("_statementLevelSymbol");
+      se->insertBefore(call);
+      call->insertAtTail(se->remove());
+    }
+  }
+
+  forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    if (arg->defPoint->parentSymbol)
+      hack_resolve_types(arg);
+  }
+
   // perform some checks on destructors
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
@@ -266,50 +286,23 @@ void normalize(void) {
 // the following function is called from multiple places,
 // e.g., after generating default or wrapper functions
 void normalize(BaseAST* base) {
-  Vec<BaseAST*> asts;
-
-  collect_asts(base, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (FnSymbol* fn = toFnSymbol(ast)) {
+  Vec<Symbol*> symbols;
+  collectSymbols(base, symbols);
+  forv_Vec(Symbol, symbol, symbols) {
+    if (FnSymbol* fn = toFnSymbol(symbol))
       normalize_returns(fn);
-    }
+    else if (VarSymbol* var = toVarSymbol(symbol))
+      if (isFnSymbol(var->defPoint->parentSymbol))
+        fix_def_expr(var);
   }
 
-  asts.clear();
-  collect_asts_postorder(base, asts);
-  applyGetterTransform(asts);
-
-  asts.clear();
-  collect_asts_postorder(base, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* se = toSymExpr(ast)) {
-      if (se == se->getStmtExpr() && isFnSymbol(se->parentSymbol)) {
-        SET_LINENO(se);
-        CallExpr* call = new CallExpr("_statementLevelSymbol");
-        se->insertBefore(call);
-        call->insertAtTail(se->remove());
-      }
-      call_constructor_for_class(se);
-    } else if (CallExpr* call = toCallExpr(ast)) {
-      if (call->parentSymbol && call->isPrimitive(PRIMITIVE_NEW))
-        USR_FATAL(call, "invalid use of 'new'");
-    } else if (DefExpr* def = toDefExpr(ast)) {
-      if (VarSymbol* var = toVarSymbol(def->sym))
-        if (isFnSymbol(def->parentSymbol))
-          fix_def_expr(var);
-    }
-  }
-
-  asts.clear();
-  collect_asts_postorder(base, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* a = toCallExpr(ast)) {
-      insert_call_temps(a);
-      fix_user_assign(a);
-    } else if (DefExpr* def = toDefExpr(ast)) {
-      if (ArgSymbol* arg = toArgSymbol(def->sym))
-        hack_resolve_types(arg);
-    }
+  Vec<CallExpr*> calls;
+  collectCallExprs(base, calls);
+  forv_Vec(CallExpr, call, calls) {
+    applyGetterTransform(call);
+    call_constructor_for_class(call);
+    insert_call_temps(call);
+    fix_user_assign(call);
   }
 }
 
@@ -397,10 +390,9 @@ static void normalize_returns(FnSymbol* fn) {
 }
 
 
-static void call_constructor_for_class(SymExpr* se) {
-  if (TypeSymbol* ts = toTypeSymbol(se->var)) {
-    CallExpr* call = toCallExpr(se->parentExpr);
-    if (call && call->baseExpr == se) {
+static void call_constructor_for_class(CallExpr* call) {
+  if (SymExpr* se = toSymExpr(call->baseExpr)) {
+    if (TypeSymbol* ts = toTypeSymbol(se->var)) {
       if (ClassType* ct = toClassType(ts->type)) {
         SET_LINENO(call);
         CallExpr* parent = toCallExpr(call->parentExpr);
@@ -429,7 +421,7 @@ static void call_constructor_for_class(SymExpr* se) {
 }
 
 
-static void applyGetterTransform(Vec<BaseAST*>& asts) {
+static void applyGetterTransform(CallExpr* call) {
   // Most generally:
   //   x.f(a) --> f(_mt, x)(a)
   // which is the same as
@@ -438,30 +430,28 @@ static void applyGetterTransform(Vec<BaseAST*>& asts) {
   //   x.f --> f(_mt, x)
   // Note:
   //   call(call or )( indicates partial
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isNamed(".")) {
-        SET_LINENO(call);
-        CallExpr* getter = NULL;
-        if (SymExpr* symExpr = toSymExpr(call->get(2))) {
-          if (VarSymbol* var = toVarSymbol(symExpr->var)) {
-            if (var->immediate->const_kind == CONST_KIND_STRING) {
-              getter = new CallExpr(var->immediate->v_string,
-                                    gMethodToken, call->get(1)->remove());
-            }
-          } else if (TypeSymbol* type = toTypeSymbol(symExpr->var)) {
-            getter = new CallExpr(type, gMethodToken, call->get(1)->remove());
-          }
-        }
-        INT_ASSERT(getter);
-        asts.add(getter);
-        getter->methodTag = true;
-        call->replace(getter);
-        if (CallExpr* parent = toCallExpr(getter->parentExpr))
-          if (parent->baseExpr == getter)
-            getter->partialTag = true;
+  if (call->isNamed(".")) {
+    SET_LINENO(call);
+    SymExpr* symExpr = toSymExpr(call->get(2));
+    INT_ASSERT(symExpr);
+    symExpr->remove();
+    if (VarSymbol* var = toVarSymbol(symExpr->var)) {
+      if (var->immediate->const_kind == CONST_KIND_STRING) {
+        call->baseExpr->replace(new UnresolvedSymExpr(var->immediate->v_string));
+        call->insertAtHead(gMethodToken);
+      } else {
+        INT_FATAL(call, "unexpected case");
       }
+    } else if (TypeSymbol* type = toTypeSymbol(symExpr->var)) {
+      call->baseExpr->replace(new SymExpr(type));
+      call->insertAtHead(gMethodToken);
+    } else {
+      INT_FATAL(call, "unexpected case");
     }
+    call->methodTag = true;
+    if (CallExpr* parent = toCallExpr(call->parentExpr))
+      if (parent->baseExpr == call)
+        call->partialTag = true;
   }
 }
 
