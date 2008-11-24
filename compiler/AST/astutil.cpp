@@ -324,16 +324,19 @@ actual_to_formal(Expr *a) {
       }
     }
   }
-  INT_FATAL(a, "bad call to actual_to_formals");
+  INT_FATAL(a, "bad call to actual_to_formal");
   return NULL;
 }
 
 
-Expr* formal_to_actual(CallExpr* call, Symbol* formal) {
-  for_actuals(expr, call) {
-    if (actual_to_formal(expr) == formal)
-      return expr;
+Expr* formal_to_actual(CallExpr* call, Symbol* arg) {
+  if (call->isResolved()) {
+    for_formals_actuals(formal, actual, call) {
+      if (arg == formal)
+        return actual;
+    }
   }
+  INT_FATAL(call, "bad call to formal_to_actual");
   return NULL;
 }
 
