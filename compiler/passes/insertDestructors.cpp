@@ -31,9 +31,11 @@ void fixupDestructors(void) {
           ClassType* fct = toClassType(field->type);
           INT_ASSERT(fct);
           if (fct->classTag != CLASS_CLASS) {
-            VarSymbol* tmp = newTemp(fct->refType);
+            bool useRefType = !fct->symbol->hasFlag(FLAG_ARRAY) && !fct->symbol->hasFlag(FLAG_DOMAIN);
+            VarSymbol* tmp = useRefType ? newTemp(fct->refType) : newTemp(fct);
             ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-            ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, ct->destructor->_this, field)));
+            ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp,
+              new CallExpr(useRefType ? PRIMITIVE_GET_MEMBER : PRIMITIVE_GET_MEMBER_VALUE, ct->destructor->_this, field)));
             ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
           }
         }
@@ -46,14 +48,15 @@ void fixupDestructors(void) {
       if (ct->dispatchParents.n >= 1) {
         if (FnSymbol* parentDestructor = ct->dispatchParents.v[0]->destructor) {
           VarSymbol* tmp;
-          if (ct->classTag == CLASS_CLASS || ct->symbol->hasFlag(FLAG_ARRAY))
+          if (ct->classTag == CLASS_CLASS || ct->symbol->hasFlag(FLAG_ARRAY) ||
+              ct->symbol->hasFlag(FLAG_DOMAIN))
             tmp = newTemp(ct->dispatchParents.v[0]);
           else
             tmp = newTemp(ct->dispatchParents.v[0]->refType);
           ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp,
             new CallExpr(PRIMITIVE_CAST,
-              ct->classTag == CLASS_CLASS || ct->symbol->hasFlag(FLAG_ARRAY) ?
+              ct->classTag == CLASS_CLASS || ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN) ?
                 ct->dispatchParents.v[0]->symbol : ct->dispatchParents.v[0]->refType->symbol,
               ct->destructor->_this)));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor, tmp));
