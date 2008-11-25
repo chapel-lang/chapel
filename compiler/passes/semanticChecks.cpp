@@ -15,13 +15,12 @@ check_functions(FnSymbol* fn) {
   if (!strcmp(fn->name, "these") && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL(fn, "method 'these' must have parentheses");
 
-  Vec<BaseAST*> asts;
   Vec<CallExpr*> rets;
-  collect_asts(fn, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* ret = toCallExpr(ast))
-      if (ret->isPrimitive(PRIMITIVE_RETURN) && ret->parentSymbol == fn)
-        rets.add(ret);
+  Vec<CallExpr*> calls;
+  collectCallExprs(fn, calls);
+  forv_Vec(CallExpr, call, calls) {
+    if (call->isPrimitive(PRIMITIVE_RETURN) && call->parentSymbol == fn)
+      rets.add(call);
   }
   if (rets.n == 0)
     return;
@@ -126,14 +125,11 @@ checkNormalized(void) {
     } else if (!strncmp(fn->name, "_construct_", 11) &&
                !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
       for_formals(formal, fn) {
-        Vec<BaseAST*> asts;
-        collect_asts(formal, asts);
-        forv_Vec(BaseAST, ast, asts) {
-          if (SymExpr* se = toSymExpr(ast)) {
-            if (se->var == fn->_this) {
-              USR_FATAL(se, "invalid access of class member in constructor header");
-            }
-          }
+        Vec<SymExpr*> symExprs;
+        collectSymExprs(formal, symExprs);
+        forv_Vec(SymExpr, se, symExprs) {
+          if (se->var == fn->_this)
+            USR_FATAL(se, "invalid access of class member in constructor header");
         }
       }
     }

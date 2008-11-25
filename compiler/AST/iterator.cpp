@@ -397,17 +397,13 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
             }
           }
         }
-        Vec<BaseAST*> asts;
-        collect_asts(bb->exprs.v[k], asts);
-        forv_Vec(BaseAST, ast, asts) {
-          if (SymExpr* se = toSymExpr(ast)) {
-            if (defSet.set_in(se)) {
-              live.unset(localMap.get(se->var));
-            }
-            if (useSet.set_in(se)) {
-              live.set(localMap.get(se->var));
-            }
-          }
+        Vec<SymExpr*> symExprs;
+        collectSymExprs(bb->exprs.v[k], symExprs);
+        forv_Vec(SymExpr, se, symExprs) {
+          if (defSet.set_in(se))
+            live.unset(localMap.get(se->var));
+          if (useSet.set_in(se))
+            live.set(localMap.get(se->var));
         }
       }
     }

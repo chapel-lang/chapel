@@ -612,30 +612,25 @@ moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
 
 static bool
 computeActualFormalMap(FnSymbol* fn,
-                       Vec<Type*>* formalActuals,
-                       Vec<Symbol*>* formalSyms,
+                       Vec<Symbol*>* formalActuals,
                        Vec<ArgSymbol*>* actualFormals,
-                       int num_actuals,
-                       int num_formals,
-                       Vec<Symbol*>* actuals,
-                       Vec<const char*>* actualNames) {
-  for (int i = 0; i < num_formals; i++) {
+                       CallInfo& info) {
+  for_formals(formal, fn) {
     formalActuals->add(NULL);
-    formalSyms->add(NULL);
   }
-  for (int i = 0; i < num_actuals; i++)
+  for (int i = 0; i < info.actuals.n; i++) {
     actualFormals->add(NULL);
-  for (int i = 0; i < num_actuals; i++) {
-    if (actualNames->v[i]) {
+  }
+  for (int i = 0; i < info.actuals.n; i++) {
+    if (info.actualNames.v[i]) {
       bool match = false;
       int j = -1;
       for_formals(formal, fn) {
         j++;
-        if (!strcmp(actualNames->v[i], formal->name)) {
+        if (!strcmp(info.actualNames.v[i], formal->name)) {
           match = true;
           actualFormals->v[i] = formal;
-          formalActuals->v[j] = actuals->v[i]->type;
-          formalSyms->v[j] = actuals->v[i];
+          formalActuals->v[j] = info.actuals.v[i];
           break;
         }
       }
@@ -643,8 +638,8 @@ computeActualFormalMap(FnSymbol* fn,
         return false;
     }
   }
-  for (int i = 0; i < num_actuals; i++) {
-    if (!actualNames->v[i]) {
+  for (int i = 0; i < info.actuals.n; i++) {
+    if (!info.actualNames.v[i]) {
       bool match = false;
       int j = -1;
       for_formals(formal, fn) {
@@ -654,8 +649,7 @@ computeActualFormalMap(FnSymbol* fn,
         if (!formalActuals->v[j]) {
           match = true;
           actualFormals->v[i] = formal;
-          formalActuals->v[j] = actuals->v[i]->type;
-          formalSyms->v[j] = actuals->v[i];
+          formalActuals->v[j] = info.actuals.v[i];
           break;
         }
       }
@@ -694,15 +688,14 @@ getInstantiationType(Type* actualType, Type* formalType) {
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Type*>* formalActuals,
-                   Vec<Symbol*>* formalSyms) {
+                   Vec<Symbol*>* formalActuals) {
   int i = 0;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
-      if (formalSyms->v[i] && formalSyms->v[i]->isParameter()) {
+      if (formalActuals->v[i] && formalActuals->v[i]->isParameter()) {
         if (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
-            canInstantiate(formalActuals->v[i], formal->type))
-          subs.put(formal, formalSyms->v[i]);
+            canInstantiate(formalActuals->v[i]->type, formal->type))
+          subs.put(formal, formalActuals->v[i]);
       } else if (!formalActuals->v[i] && formal->defaultExpr) {
 
         // break because default expression may reference generic
@@ -728,7 +721,7 @@ computeGenericSubs(SymbolMap &subs,
         USR_FATAL(formal, "invalid generic type specification on class field");
 
       if (formalActuals->v[i]) {
-        if (Type* type = getInstantiationType(formalActuals->v[i], formal->type))
+        if (Type* type = getInstantiationType(formalActuals->v[i]->type, formal->type))
           subs.put(formal, type->symbol);
       } else if (formal->defaultExpr) {
 
@@ -875,14 +868,8 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
 
   Vec<ArgSymbol*>* actualFormals = new Vec<ArgSymbol*>();
 
-  int num_actuals = info.actuals.n;
-  int num_formals = fn->numFormals();
-
-  Vec<Type*> formalActuals;
-  Vec<Symbol*> formalSyms;
-  bool valid = computeActualFormalMap(fn, &formalActuals, &formalSyms,
-                                      actualFormals, num_actuals,
-                                      num_formals, &info.actuals, &info.actualNames);
+  Vec<Symbol*> formalActuals;
+  bool valid = computeActualFormalMap(fn, &formalActuals, actualFormals, info);
   if (!valid) {
     delete actualFormals;
     return;
@@ -899,16 +886,16 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
         if (!formal->type->symbol->hasFlag(FLAG_GENERIC) &&
             formal->type != dtUnknown &&
             formalActuals.v[i] &&
-            !canDispatch(formalActuals.v[i], formalSyms.v[i], formal->type, fn, NULL, formal->instantiatedParam)) {
+            !canDispatch(formalActuals.v[i]->type, formalActuals.v[i], formal->type, fn, NULL, formal->instantiatedParam)) {
           delete actualFormals;
           return;
         } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) &&
                    formal->type != dtUnknown &&
                    formalActuals.v[i]) {
-          Type* vt = formalActuals.v[i]->getValueType();
-          Type* st = formalActuals.v[i]->scalarPromotionType;
+          Type* vt = formalActuals.v[i]->type->getValueType();
+          Type* st = formalActuals.v[i]->type->scalarPromotionType;
           Type* svt = (vt) ? vt->scalarPromotionType : NULL;
-          if (!canInstantiate(formalActuals.v[i], formal->type) &&
+          if (!canInstantiate(formalActuals.v[i]->type, formal->type) &&
               (!vt || !canInstantiate(vt, formal->type)) &&
               (!st || !canInstantiate(st, formal->type)) &&
               (!svt || !canInstantiate(svt, formal->type))) {
@@ -921,7 +908,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     }
 
     SymbolMap subs;
-    computeGenericSubs(subs, fn, &formalActuals, &formalSyms);
+    computeGenericSubs(subs, fn, &formalActuals);
     if (subs.n) {
       FnSymbol* inst_fn = instantiate(fn, &subs, info.call);
       if (inst_fn)
@@ -973,23 +960,23 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     j++;
     if (!strcmp(fn->name, "=")) {
       if (j == 0) {
-        if (formalActuals.v[j] != formal->type &&
-            formalActuals.v[j]->getValueType() != formal->type) {
+        if (formalActuals.v[j]->type != formal->type &&
+            formalActuals.v[j]->type->getValueType() != formal->type) {
           delete actualFormals;
           return;
         }
       }
     }
     if (formalActuals.v[j] &&
-        !canDispatch(formalActuals.v[j], formalSyms.v[j], formal->type, fn, NULL, formal->instantiatedParam)) {
+        !canDispatch(formalActuals.v[j]->type, formalActuals.v[j], formal->type, fn, NULL, formal->instantiatedParam)) {
       delete actualFormals;
       return;
     }
-    if (formalSyms.v[j] && formalSyms.v[j]->hasFlag(FLAG_TYPE_VARIABLE) && !formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+    if (formalActuals.v[j] && formalActuals.v[j]->hasFlag(FLAG_TYPE_VARIABLE) && !formal->hasFlag(FLAG_TYPE_VARIABLE)) {
       delete actualFormals;
       return;
    }
-    if (formalSyms.v[j] && !formalSyms.v[j]->hasFlag(FLAG_TYPE_VARIABLE) && formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+    if (formalActuals.v[j] && !formalActuals.v[j]->hasFlag(FLAG_TYPE_VARIABLE) && formal->hasFlag(FLAG_TYPE_VARIABLE)) {
       delete actualFormals;
       return;
     }

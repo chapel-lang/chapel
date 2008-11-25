@@ -310,16 +310,14 @@ void normalize(BaseAST* base) {
 static void normalize_returns(FnSymbol* fn) {
   SET_LINENO(fn);
 
-  Vec<BaseAST*> asts;
   Vec<CallExpr*> rets;
-  collect_asts(fn, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* returnStmt = toCallExpr(ast)) {
-      if (returnStmt->isPrimitive(PRIMITIVE_RETURN) ||
-          returnStmt->isPrimitive(PRIMITIVE_YIELD))
-        if (returnStmt->parentSymbol == fn) // not in a nested function
-          rets.add(returnStmt);
-    }
+  Vec<CallExpr*> calls;
+  collectCallExprs(fn, calls);
+  forv_Vec(CallExpr, call, calls) {
+    if (call->isPrimitive(PRIMITIVE_RETURN) ||
+        call->isPrimitive(PRIMITIVE_YIELD))
+      if (call->parentSymbol == fn) // not in a nested function
+        rets.add(call);
   }
   if (rets.n == 0) {
     if (fn->hasFlag(FLAG_ITERATOR_FN))
@@ -700,16 +698,14 @@ static void fixup_array_formals(FnSymbol* fn) {
           bool noEltType = (call->numActuals() == 1);
           DefExpr* queryEltType = (!noEltType) ? toDefExpr(call->get(2)) : NULL;
 
-          Vec<BaseAST*> asts;
-          collect_asts(fn, asts);
+          Vec<SymExpr*> symExprs;
+          collectSymExprs(fn, symExprs);
 
           arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_SCOPELESS));
           if (queryEltType) {
-            forv_Vec(BaseAST, ast, asts) {
-              if (SymExpr* sym = toSymExpr(ast)) {
-                if (sym->var == queryEltType->sym)
-                  sym->replace(new CallExpr(".", arg, new_StringSymbol("eltType")));
-              }
+            forv_Vec(SymExpr, se, symExprs) {
+              if (se->var == queryEltType->sym)
+                se->replace(new CallExpr(".", arg, new_StringSymbol("eltType")));
             }
           } else if (!noEltType) {
             if (!fn->where) {
@@ -725,19 +721,15 @@ static void fixup_array_formals(FnSymbol* fn) {
                 new CallExpr(".", arg, new_StringSymbol("eltType"))));
           }
           if (queryDomain) {
-            forv_Vec(BaseAST, ast, asts) {
-              if (SymExpr* sym = toSymExpr(ast)) {
-                if (sym->var == queryDomain->sym)
-                  sym->replace(new CallExpr(".", arg, new_StringSymbol("_dom")));
-              }
+            forv_Vec(SymExpr, se, symExprs) {
+              if (se->var == queryDomain->sym)
+                se->replace(new CallExpr(".", arg, new_StringSymbol("_dom")));
             }
           } else if (!noDomain) {
             VarSymbol* tmp = newTemp("_reindex");
-            forv_Vec(BaseAST, ast, asts) {
-              if (SymExpr* sym = toSymExpr(ast)) {
-                if (sym->var == arg)
-                  sym->var = tmp;
-              }
+            forv_Vec(SymExpr, se, symExprs) {
+              if (se->var == arg)
+                se->var = tmp;
             }
             fn->insertAtHead(new CondStmt(
                                new CallExpr("!=", dtNil->symbol, arg),
@@ -824,12 +816,11 @@ clone_for_parameterized_primitive_formals(FnSymbol* fn,
   FnSymbol* newfn = fn->copy(&map);
   Symbol* newsym = map.get(def->sym);
   newsym->defPoint->replace(new SymExpr(new_IntSymbol(width)));
-  Vec<BaseAST*> asts;
-  collect_asts(newfn, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* se = toSymExpr(ast))
-      if (se->var == newsym)
-        se->var = new_IntSymbol(width);
+  Vec<SymExpr*> symExprs;
+  collectSymExprs(newfn, symExprs);
+  forv_Vec(SymExpr, se, symExprs) {
+    if (se->var == newsym)
+      se->var = new_IntSymbol(width);
   }
   fn->defPoint->insertAfter(new DefExpr(newfn));
   fixup_query_formals(newfn);
@@ -837,22 +828,20 @@ clone_for_parameterized_primitive_formals(FnSymbol* fn,
 
 static void
 replace_query_uses(ArgSymbol* formal, DefExpr* def, ArgSymbol* arg,
-                   Vec<BaseAST*>& asts) {
+                   Vec<SymExpr*>& symExprs) {
   if (!arg->hasFlag(FLAG_TYPE_VARIABLE) && arg->intent != INTENT_PARAM)
     USR_FATAL(def, "query variable is not type or parameter: %s", arg->name);
-  forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* se = toSymExpr(ast)) {
-      if (se->var == def->sym) {
-        if (formal->variableExpr) {
-          CallExpr* parent = toCallExpr(se->parentExpr);
-          if (!parent || parent->numActuals() != 1)
-            USR_FATAL(se, "illegal access to query type or parameter");
-          se->replace(new SymExpr(formal));
-          parent->replace(se);
-          se->replace(new CallExpr(".", parent, new_StringSymbol(arg->name)));
-        } else {
-          se->replace(new CallExpr(".", formal, new_StringSymbol(arg->name)));
-        }
+  forv_Vec(SymExpr, se, symExprs) {
+    if (se->var == def->sym) {
+      if (formal->variableExpr) {
+        CallExpr* parent = toCallExpr(se->parentExpr);
+        if (!parent || parent->numActuals() != 1)
+          USR_FATAL(se, "illegal access to query type or parameter");
+        se->replace(new SymExpr(formal));
+        parent->replace(se);
+        se->replace(new CallExpr(".", parent, new_StringSymbol(arg->name)));
+      } else {
+        se->replace(new CallExpr(".", formal, new_StringSymbol(arg->name)));
       }
     }
   }
@@ -884,14 +873,11 @@ fixup_query_formals(FnSymbol* fn) {
     if (!formal->typeExpr)
       continue;
     if (DefExpr* def = toDefExpr(formal->typeExpr->body.tail)) {
-      Vec<BaseAST*> asts;
-      collect_asts(fn, asts);
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
-          if (se->var == def->sym) {
-            se->replace(new CallExpr(PRIMITIVE_TYPEOF, formal));
-          }
-        }
+      Vec<SymExpr*> symExprs;
+      collectSymExprs(fn, symExprs);
+      forv_Vec(SymExpr, se, symExprs) {
+        if (se->var == def->sym)
+          se->replace(new CallExpr(PRIMITIVE_TYPEOF, formal));
       }
       formal->typeExpr->remove();
       formal->type = dtAny;
@@ -942,8 +928,8 @@ fixup_query_formals(FnSymbol* fn) {
             queried = true;
       }
       if (queried) {
-        Vec<BaseAST*> asts;
-        collect_asts(fn, asts);
+        Vec<SymExpr*> symExprs;
+        collectSymExprs(fn, symExprs);
         SymExpr* base = toSymExpr(call->baseExpr);
         if (!base)
           USR_FATAL(base, "illegal queried type expression");
@@ -960,7 +946,7 @@ fixup_query_formals(FnSymbol* fn) {
               if (args.v[i]) {
                 if (!strcmp(named->name, args.v[i]->name)) {
                   if (DefExpr* def = toDefExpr(named->actual)) {
-                    replace_query_uses(formal, def, args.v[i], asts);
+                    replace_query_uses(formal, def, args.v[i], symExprs);
                   } else {
                     add_to_where_clause(formal, named->actual, args.v[i]);
                   }
@@ -976,7 +962,7 @@ fixup_query_formals(FnSymbol* fn) {
             for (int i = 0; i < args.n; i++) {
               if (args.v[i]) {
                 if (DefExpr* def = toDefExpr(actual)) {
-                  replace_query_uses(formal, def, args.v[i], asts);
+                  replace_query_uses(formal, def, args.v[i], symExprs);
                 } else {
                   add_to_where_clause(formal, actual, args.v[i]);
                 }
