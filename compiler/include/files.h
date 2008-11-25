@@ -1,7 +1,7 @@
 #ifndef _files_H_
 #define _files_H_
 
-#include <stdio.h>
+#include <cstdio>
 
 extern char executableFilename[FILENAME_MAX];
 extern char saveCDir[FILENAME_MAX];
@@ -17,6 +17,7 @@ struct fileinfo {
 
 void codegen_makefile(fileinfo* mainfile);
 
+void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 void deleteTmpDir(void);
 
 void openCFile(fileinfo* fi, const char* name, const char* ext = NULL);

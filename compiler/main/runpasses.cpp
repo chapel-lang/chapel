@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <string.h>
-#include <sys/time.h>
 #include "baseAST.h"
 #include "files.h"
 #include "misc.h"
@@ -8,6 +5,10 @@
 #include "runpasses.h"
 #include "stringutil.h"
 #include "view.h"
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <sys/time.h>
 
 bool printPasses = false;
 
@@ -99,6 +100,7 @@ static void dump_index_footer(FILE* f) {
 
 void runPasses(void) {
   if (fdump_html) {
+    ensureDirExists(log_dir, "ensuring directory for html files exists");
     if (!(html_index_file = fopen(astr(log_dir, "index.html"), "w"))) {
       USR_FATAL("cannot open html index file \"%s\" for writing", astr(log_dir, "index.html"));
     }

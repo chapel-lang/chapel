@@ -1,9 +1,3 @@
-#include <errno.h>
-#include <pwd.h>
-#include <string.h>
-#include <sys/types.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include "beautify.h"
 #include "chpltypes.h"
 #include "files.h"
@@ -11,6 +5,12 @@
 #include "mysystem.h"
 #include "stringutil.h"
 #include "tmpdirname.h"
+#include <cstring>
+#include <cstdlib>
+#include <pwd.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 char executableFilename[FILENAME_MAX] = "a.out";
 char saveCDir[FILENAME_MAX] = "";
@@ -39,8 +39,7 @@ void addLibInfo(const char* libName) {
 }
 
 
-static void ensureDirExists(const char* dirname,
-                            const char* explanation) {
+void ensureDirExists(const char* dirname, const char* explanation) {
   const char* mkdircommand = "mkdir -p ";
   const char* command = astr(mkdircommand, dirname);
 
