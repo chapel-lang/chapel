@@ -70,6 +70,9 @@ class AList {
        formal = _alist_next,                                            \
          _alist_next = (formal && formal->defPoint->next) ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL)
 
+#define next_formal(formal)                                             \
+  ((formal && formal->defPoint->next) ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL)
+
 #define for_formals_backward(formal, fn)                                \
   for (ArgSymbol *formal = ((fn)->formals.tail) ? toArgSymbol(toDefExpr((fn)->formals.tail)->sym) : NULL, \
          *_alist_prev = (formal && formal->defPoint->prev) ? toArgSymbol(toDefExpr((formal)->defPoint->prev)->sym) : NULL; \

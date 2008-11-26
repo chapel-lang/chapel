@@ -612,50 +612,54 @@ moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
 
 static bool
 computeActualFormalMap(FnSymbol* fn,
-                       Vec<Symbol*>* formalActuals,
-                       Vec<ArgSymbol*>* actualFormals,
+                       Vec<Symbol*>& formalActuals,
+                       Vec<ArgSymbol*>& actualFormals,
                        CallInfo& info) {
-  for_formals(formal, fn) {
-    formalActuals->add(NULL);
-  }
-  for (int i = 0; i < info.actuals.n; i++) {
-    actualFormals->add(NULL);
-  }
-  for (int i = 0; i < info.actuals.n; i++) {
+  formalActuals.fill(fn->numFormals());
+  actualFormals.fill(info.actuals.n);
+  for (int i = 0; i < actualFormals.n; i++) {
     if (info.actualNames.v[i]) {
       bool match = false;
-      int j = -1;
+      int j = 0;
       for_formals(formal, fn) {
-        j++;
         if (!strcmp(info.actualNames.v[i], formal->name)) {
           match = true;
-          actualFormals->v[i] = formal;
-          formalActuals->v[j] = info.actuals.v[i];
+          actualFormals.v[i] = formal;
+          formalActuals.v[j] = info.actuals.v[i];
           break;
         }
+        j++;
       }
       if (!match)
         return false;
     }
   }
-  for (int i = 0; i < info.actuals.n; i++) {
+  int j = 0;
+  ArgSymbol* formal = (fn->numFormals()) ? fn->getFormal(1) : NULL;
+  for (int i = 0; i < actualFormals.n; i++) {
     if (!info.actualNames.v[i]) {
       bool match = false;
-      int j = -1;
-      for_formals(formal, fn) {
+      while (formal) {
         if (formal->variableExpr)
           return (fn->hasFlag(FLAG_GENERIC)) ? true : false;
-        j++;
-        if (!formalActuals->v[j]) {
+        if (!formalActuals.v[j]) {
           match = true;
-          actualFormals->v[i] = formal;
-          formalActuals->v[j] = info.actuals.v[i];
+          actualFormals.v[i] = formal;
+          formalActuals.v[j] = info.actuals.v[i];
           break;
         }
+        formal = next_formal(formal);
+        j++;
       }
-      if (!match && !fn->hasFlag(FLAG_GENERIC))
+      if (!match && !(fn->hasFlag(FLAG_GENERIC) && fn->hasFlag(FLAG_TUPLE)))
         return false;
     }
+  }
+  while (formal) {
+    if (!formalActuals.v[j] && !formal->defaultExpr)
+      return false;
+    formal = next_formal(formal);
+    j++;
   }
   return true;
 }
@@ -866,60 +870,51 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
   if (!fn)
     return;
 
-  Vec<ArgSymbol*>* actualFormals = new Vec<ArgSymbol*>();
-
+  Vec<ArgSymbol*> actualFormals;
   Vec<Symbol*> formalActuals;
-  bool valid = computeActualFormalMap(fn, &formalActuals, actualFormals, info);
-  if (!valid) {
-    delete actualFormals;
+
+  bool valid = computeActualFormalMap(fn, formalActuals, actualFormals, info);
+
+  if (!valid)
     return;
-  }
 
   if (fn->hasFlag(FLAG_GENERIC)) {
 
     //
     // try to avoid excessive over-instantiation
     //
-    if (fn->numFormals() == formalActuals.n) {
-      int i = 0;
-      for_formals(formal, fn) {
-        if (!formal->type->symbol->hasFlag(FLAG_GENERIC) &&
-            formal->type != dtUnknown &&
-            formalActuals.v[i] &&
-            !canDispatch(formalActuals.v[i]->type, formalActuals.v[i], formal->type, fn, NULL, formal->instantiatedParam)) {
-          delete actualFormals;
-          return;
-        } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) &&
-                   formal->type != dtUnknown &&
-                   formalActuals.v[i]) {
-          Type* vt = formalActuals.v[i]->type->getValueType();
-          Type* st = formalActuals.v[i]->type->scalarPromotionType;
-          Type* svt = (vt) ? vt->scalarPromotionType : NULL;
-          if (!canInstantiate(formalActuals.v[i]->type, formal->type) &&
-              (!vt || !canInstantiate(vt, formal->type)) &&
-              (!st || !canInstantiate(st, formal->type)) &&
-              (!svt || !canInstantiate(svt, formal->type))) {
-            delete actualFormals;
+    int i = 0;
+    for_formals(formal, fn) {
+      if (formal->type != dtUnknown) {
+        if (Symbol* actual = formalActuals.v[i]) {
+          if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE))
             return;
+          if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+            Type* vt = actual->type->getValueType();
+            Type* st = actual->type->scalarPromotionType;
+            Type* svt = (vt) ? vt->scalarPromotionType : NULL;
+            if (!canInstantiate(actual->type, formal->type) &&
+                (!vt || !canInstantiate(vt, formal->type)) &&
+                (!st || !canInstantiate(st, formal->type)) &&
+                (!svt || !canInstantiate(svt, formal->type)))
+              return;
+          } else {
+            if (!canDispatch(actual->type, actual, formal->type, fn, NULL, formal->instantiatedParam))
+              return;
           }
         }
-        i++;
       }
+      i++;
     }
 
     SymbolMap subs;
     computeGenericSubs(subs, fn, &formalActuals);
     if (subs.n) {
-      FnSymbol* inst_fn = instantiate(fn, &subs, info.call);
-      if (inst_fn)
-        addCandidate(candidateFns, candidateActualFormals, inst_fn, info);
+      if (FnSymbol* ifn = instantiate(fn, &subs, info.call))
+        addCandidate(candidateFns, candidateActualFormals, ifn, info);
     }
-    delete actualFormals;
     return;
   }
-
-  if (fn->hasFlag(FLAG_GENERIC))
-    INT_FATAL(fn, "unexpected generic function");
 
   //
   // make sure that type constructor is resolved before other constructors
@@ -955,38 +950,27 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
 
   resolveFormals(fn);
 
-  int j = -1;
+  if (!strcmp(fn->name, "=")) {
+    Symbol* actual = formalActuals.v[0];
+    Symbol* formal = fn->getFormal(1);
+    if (actual->type != formal->type &&
+        actual->type != formal->type->refType)
+      return;
+  }
+
+  int j = 0;
   for_formals(formal, fn) {
+    if (Symbol* actual = formalActuals.v[j]) {
+      if (!canDispatch(actual->type, actual, formal->type, fn, NULL, formal->instantiatedParam))
+        return;
+      if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE))
+        return;
+    }
     j++;
-    if (!strcmp(fn->name, "=")) {
-      if (j == 0) {
-        if (formalActuals.v[j]->type != formal->type &&
-            formalActuals.v[j]->type->getValueType() != formal->type) {
-          delete actualFormals;
-          return;
-        }
-      }
-    }
-    if (formalActuals.v[j] &&
-        !canDispatch(formalActuals.v[j]->type, formalActuals.v[j], formal->type, fn, NULL, formal->instantiatedParam)) {
-      delete actualFormals;
-      return;
-    }
-    if (formalActuals.v[j] && formalActuals.v[j]->hasFlag(FLAG_TYPE_VARIABLE) && !formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-      delete actualFormals;
-      return;
-   }
-    if (formalActuals.v[j] && !formalActuals.v[j]->hasFlag(FLAG_TYPE_VARIABLE) && formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-      delete actualFormals;
-      return;
-    }
-    if (!formalActuals.v[j] && !formal->defaultExpr) {
-      delete actualFormals;
-      return;
-    }
   }
   candidateFns->add(fn);
-  candidateActualFormals->add(actualFormals);
+  Vec<ArgSymbol*>* actualFormalsCopy = new Vec<ArgSymbol*>(actualFormals);
+  candidateActualFormals->add(actualFormalsCopy);
 }
 
 
@@ -1547,7 +1531,6 @@ resolveCall(CallExpr* call, bool errorCheck) {
     }
 
     forv_Vec(FnSymbol, visibleFn, visibleFns) {
-
       if (call->methodTag && !visibleFn->hasFlag(FLAG_NO_PARENS) && !visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
         continue;
       addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
@@ -3118,17 +3101,17 @@ resolveFns(FnSymbol* fn) {
   Vec<Type*> retTypes;
   Vec<Symbol*> retParams;
 
-  for_exprs_postorder(expr, fn->body) {
-    if (CallExpr* call = toCallExpr(expr)) {
-      if (call->isPrimitive(PRIMITIVE_MOVE)) {
-        if (SymExpr* sym = toSymExpr(call->get(1))) {
-          if (sym->var == ret) {
-            if (SymExpr* sym = toSymExpr(call->get(2)))
-              retParams.add(sym->var);
-            else
-              retParams.add(NULL);
-            retTypes.add(call->get(2)->typeInfo());
-          }
+  Vec<CallExpr*> calls;
+  collectCallExprs(fn->body, calls);
+  forv_Vec(CallExpr, call, calls) {
+    if (call->isPrimitive(PRIMITIVE_MOVE)) {
+      if (SymExpr* sym = toSymExpr(call->get(1))) {
+        if (sym->var == ret) {
+          if (SymExpr* sym = toSymExpr(call->get(2)))
+            retParams.add(sym->var);
+          else
+            retParams.add(NULL);
+          retTypes.add(call->get(2)->typeInfo());
         }
       }
     }
@@ -3172,8 +3155,10 @@ resolveFns(FnSymbol* fn) {
   // insert casts as necessary
   //
   if (fn->retTag != RET_PARAM) {
-    for_exprs_postorder(expr, fn->body) {
-      if (CallExpr* call = toCallExpr(expr)) {
+    calls.clear();
+    collectCallExprs(fn->body, calls);
+    forv_Vec(CallExpr, call, calls) {
+      if (call->parentSymbol == fn) {
         if (call->isPrimitive(PRIMITIVE_MOVE)) {
           if (SymExpr* lhs = toSymExpr(call->get(1))) {
             Expr* rhs = call->get(2);
