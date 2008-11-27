@@ -7,7 +7,6 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 USE_XCODEBUILD=yes
-SYMROOT=/tmp 
 endif
 
 default: all
