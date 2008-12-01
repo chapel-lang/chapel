@@ -2,6 +2,7 @@
 #define _PASSES_H_
 
 extern bool normalized;
+extern bool resolved;
 
 extern void fixupDestructors(void);
 

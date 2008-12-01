@@ -11,6 +11,8 @@
 #include "symbol.h"
 #include "../ifa/prim_data.h"
 
+bool resolved = false;
+
 SymbolMap paramMap;
 static Expr* dropUnnecessaryCast(CallExpr* call);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
@@ -3714,6 +3716,8 @@ resolve() {
   }
   visibleFunctionMap.clear();
   visibilityBlockCache.clear();
+
+  resolved = true;
 }
 
 

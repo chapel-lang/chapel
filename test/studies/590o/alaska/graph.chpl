@@ -397,7 +397,7 @@ class Graph {
 	 * From the non-treeEdges, we must find one with minimum slack
 	 */
 	var delta = 256;
-	var minEdge = nil;
+	var minEdge: Edge = nil;
 	for e in incident_non_tree_edge() do {
 	    if(slack(e.id) < delta){
 	      delta = slack(e.id);
