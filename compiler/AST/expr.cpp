@@ -1029,8 +1029,14 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen(outfile);
       break;
     case PRIMITIVE_INIT_REF:
-      get(1)->codegen(outfile);
-      fprintf(outfile, " = NULL;\n");
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        fprintf(outfile, "_SET_WIDE_NULL(");
+        get(1)->codegen(outfile);
+        fprintf(outfile, ")");
+      } else {
+        get(1)->codegen(outfile);
+        fprintf(outfile, " = NULL;\n");
+      }
       break;
     case PRIMITIVE_SET_REF:
       fprintf(outfile, "&(");

@@ -43,6 +43,9 @@ typedef void (*func_p)(void*);
     _global_vars_registry[i] = (char*)(&((wide).addr)); \
   }
 
+#define _SET_WIDE_NULL(wide)                    \
+  (wide).locale = 0; (wide).addr = NULL
+
 #define _SET_WIDE_CLASS(wide, cls) \
   (wide).locale = _localeID; (wide).addr = cls
 
