@@ -32,7 +32,7 @@ PassInfo passlist[] = {
   RUN(cullOverReferences), // remove excess references
   RUN(parallel),           // parallel transforms
   RUN(prune),              // prune AST of dead functions and types
-  RUN(markConstructors),   // mark functions that return constructor return values
+  RUN(markConstructors),   // mark functions that return constructor values
 
   // Optimizations
   RUN(complex2record),      // change complex numbers into records
@@ -40,10 +40,11 @@ PassInfo passlist[] = {
   RUN(scalarReplace),       // scalar replace all tuples
   RUN(refPropagation),      // reference propagation
   RUN(copyPropagation),     // copy propagation
-  RUN(insertDestructors),   // insert calls to destructors when variables go out of scope
+  RUN(insertDestructors),   // insert deestructors when vars go out of scope
+  RUN(removeWrapRecords),   // remove _array and _domain records
   RUN(deadCodeElimination), // eliminate dead code
-
   RUN(prune),                // prune AST of dead functions and types again
+
   RUN(insertWideReferences), // inserts wide references for on clauses
 
   // AST to C

@@ -199,6 +199,7 @@ record _domain {
     _value._count += 1;
   }
 
+  pragma "inline"
   def _value {
     if _supportsPrivatization(_valueTypeField) {
       var tc = _valueTypeField;
@@ -337,10 +338,11 @@ def -(d: domain, i: index(d)) {
 pragma "array"
 pragma "has runtime type"
 record _array {
-  var _valueField;
+  var _valueField;     // stores array class, may be privatized, use _value
   var _valueTypeField; // stores type of privatized arrays
   var _promotionType: _value.eltType;
 
+  pragma "inline"
   def _value {
     if _supportsPrivatization(_valueTypeField) {
       var tc = _valueTypeField;

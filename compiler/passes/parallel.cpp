@@ -1245,6 +1245,15 @@ insertWideReferences(void) {
     }
   }
 
+  //
+  // widen class types in certain primitives, e.g., PRIVATE_GET_CLASS
+  //
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIMITIVE_PRIVATE_GET_CLASS)) {
+      call->get(1)->replace(new SymExpr(wideClassMap.get(call->get(1)->typeInfo())->symbol));
+    }
+  }
+
   CallExpr* localeID = new CallExpr(PRIMITIVE_LOCALE_ID);
   VarSymbol* tmp = newTemp(localeID->typeInfo());
   VarSymbol* tmpBool = newTemp(dtBool);

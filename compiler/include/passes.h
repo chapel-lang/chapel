@@ -34,6 +34,7 @@ void parallel();
 void parse();
 void prune();
 void refPropagation();
+void removeWrapRecords();
 void resolve();
 void scalarReplace();
 void scopeResolve();
