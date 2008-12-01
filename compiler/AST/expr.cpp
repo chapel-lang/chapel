@@ -1028,6 +1028,10 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, " = ");
       get(2)->codegen(outfile);
       break;
+    case PRIMITIVE_INIT_REF:
+      get(1)->codegen(outfile);
+      fprintf(outfile, " = NULL;\n");
+      break;
     case PRIMITIVE_SET_REF:
       fprintf(outfile, "&(");
       get(1)->codegen(outfile);

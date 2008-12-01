@@ -17,7 +17,6 @@ ModuleSymbol* theProgram = NULL;
 ModuleSymbol* baseModule = NULL;
 ModuleSymbol* standardModule = NULL;
 Symbol *gNil = NULL;
-Symbol *gNilRef = NULL;
 Symbol *gUnknown = NULL;
 Symbol *gUnspecified = NULL;
 Symbol *gMethodToken = NULL;

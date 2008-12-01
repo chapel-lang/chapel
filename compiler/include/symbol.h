@@ -249,7 +249,6 @@ extern ModuleSymbol* theProgram;
 extern ModuleSymbol* baseModule;
 extern ModuleSymbol* standardModule;
 extern Symbol *gNil;
-extern Symbol *gNilRef;
 extern Symbol *gUnknown;
 extern Symbol *gUnspecified;
 extern Symbol *gMethodToken;

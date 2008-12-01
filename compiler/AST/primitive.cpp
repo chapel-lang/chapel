@@ -276,8 +276,6 @@ initPrimitive() {
   prim_def(PRIMITIVE_NOOP, "noop", returnInfoVoid);
   prim_def(PRIMITIVE_MOVE, "move", returnInfoVoid);
   prim_def(PRIMITIVE_INIT, "init", returnInfoFirstDeref);
-  prim_def(PRIMITIVE_SET_REF, "set ref", returnInfoRef);
-  prim_def(PRIMITIVE_GET_REF, "get ref", returnInfoVal);
   prim_def(PRIMITIVE_REF2STR, "ref to string", returnInfoString);
   prim_def(PRIMITIVE_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIMITIVE_YIELD, "yield", returnInfoFirst, true);
@@ -324,6 +322,10 @@ initPrimitive() {
   prim_def(PRIMITIVE_NEW, "new", returnInfoFirst);
   prim_def(PRIMITIVE_GET_REAL, "complex_get_real", returnInfoComplexField);
   prim_def(PRIMITIVE_GET_IMAG, "complex_get_imag", returnInfoComplexField);
+
+  prim_def(PRIMITIVE_INIT_REF, "init ref", returnInfoVoid, true);
+  prim_def(PRIMITIVE_SET_REF, "set ref", returnInfoRef);
+  prim_def(PRIMITIVE_GET_REF, "get ref", returnInfoVal);
 
   // local block primitives
   prim_def(PRIMITIVE_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);

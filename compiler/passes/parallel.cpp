@@ -995,12 +995,6 @@ insertWideReferences(void) {
   //
   forv_Vec(DefExpr, def, gDefExprs) {
     //
-    // do not widen reference nil
-    //
-    if (def->sym == gNilRef)
-      continue;
-
-    //
     // do not change reference field in wide reference type
     //
     if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol))
@@ -1090,7 +1084,7 @@ insertWideReferences(void) {
   // insert wide class temps for nil
   //
   forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->var == gNil || se->var == gNilRef) {
+    if (se->var == gNil) {
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
         if (call->isResolved()) {
           if (Type* type = actual_to_formal(se)->typeInfo()) {

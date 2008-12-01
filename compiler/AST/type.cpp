@@ -70,8 +70,6 @@ Symbol* Type::getField(const char* name, bool fatal) {
 
 Type* Type::getValueType() {
   if (symbol->hasFlag(FLAG_REF)) {
-    if (this == dtNilRef)
-      return dtNil;
     ClassType* ct = toClassType(this);
     INT_ASSERT(ct);
     return ct->getField("_val")->type;
@@ -433,10 +431,6 @@ void initPrimitiveTypes(void) {
   dtNil = createPrimitiveType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
 
-  dtNilRef = createPrimitiveType ("_nilRefType", "_nilRefType");
-  CREATE_DEFAULT_SYMBOL (dtNilRef, gNilRef, "nilRef");
-  dtNilRef->symbol->addFlag(FLAG_REF);
-  
   dtUnknown = createPrimitiveType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
 

@@ -41,7 +41,7 @@ insertSetMemberInits(FnSymbol* fn, Symbol* var) {
           continue; // skips array types
         Symbol* tmp = newTemp(field->type);
         fn->insertAtTail(new DefExpr(tmp));
-        fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, gNilRef));
+        fn->insertAtTail(new CallExpr(PRIMITIVE_INIT_REF, tmp));
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, field, tmp));
       } else if (field->type->refType) { // skips array types (how to handle arrays?) ( sjd later: really? )
         Symbol* tmp = newTemp(field->type);

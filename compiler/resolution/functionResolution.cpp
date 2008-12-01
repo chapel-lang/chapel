@@ -3823,7 +3823,7 @@ pruneResolvedTree() {
   }
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (type->defPoint && type->defPoint->parentSymbol) {
-      if (type->hasFlag(FLAG_REF) && type->type != dtNilRef) {
+      if (type->hasFlag(FLAG_REF)) {
         if (ClassType* ct = toClassType(type->type->getValueType())) {
           if (!resolvedFns.get(ct->defaultConstructor) &&
               !resolvedFns.get(ct->defaultTypeConstructor)) {

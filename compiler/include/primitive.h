@@ -9,8 +9,6 @@ enum PrimitiveTag {
   PRIMITIVE_NOOP,
   PRIMITIVE_MOVE,
   PRIMITIVE_INIT,
-  PRIMITIVE_SET_REF,
-  PRIMITIVE_GET_REF,
   PRIMITIVE_REF2STR,
   PRIMITIVE_RETURN,
   PRIMITIVE_YIELD,
@@ -55,6 +53,10 @@ enum PrimitiveTag {
   PRIMITIVE_NEW,                       // new keyword
   PRIMITIVE_GET_REAL,                  // get complex real component
   PRIMITIVE_GET_IMAG,                  // get complex imag component
+
+  PRIMITIVE_INIT_REF, // initialize reference to NULL
+  PRIMITIVE_SET_REF,  // set a reference to a value
+  PRIMITIVE_GET_REF,  // dereference a reference
 
   PRIMITIVE_LOCAL_CHECK,          // Assert that a wide ref is on this locale
   PRIMITIVE_LOCAL_DEREF,          // Assign a wide ref addr field to a non-wide
