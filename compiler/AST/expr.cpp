@@ -1035,7 +1035,7 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ")");
       } else {
         get(1)->codegen(outfile);
-        fprintf(outfile, " = NULL;\n");
+        fprintf(outfile, " = NULL");
       }
       break;
     case PRIMITIVE_SET_REF:
