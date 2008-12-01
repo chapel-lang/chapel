@@ -20,13 +20,13 @@ removeWrapRecords() {
   // do not remove wrap records if dead code elimination is disabled
   // (or weakened because inlining or copy propagation is disabled)
   // because code associated with accesses to the removed
-  // _valueTypeField field will remain
+  // _valueType field will remain
   //
   if (fNoDeadCodeElimination || fNoInline || fNoCopyPropagation)
     return;
 
   //
-  // replace use of _valueTypeField field with type
+  // replace use of _valueType field with type
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIMITIVE_PRIVATE_GET_CLASS)) {
@@ -35,14 +35,14 @@ removeWrapRecords() {
   }
 
   //
-  // remove defs of _valueTypeField field
+  // remove defs of _valueType field
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
         call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
         call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
       if (SymExpr* se = toSymExpr(call->get(2))) {
-        if (!strcmp(se->var->name, "_valueTypeField")) {
+        if (!strcmp(se->var->name, "_valueType")) {
           se->getStmtExpr()->remove();
         }
       }
@@ -50,22 +50,22 @@ removeWrapRecords() {
   }
 
   //
-  // remove _valueTypeField fields
+  // remove _valueType fields
   //
   forv_Vec(ClassType, ct, gClassTypes) {
     for_fields(field, ct) {
-      if (!strcmp(field->name, "_valueTypeField"))
+      if (!strcmp(field->name, "_valueType"))
         field->defPoint->remove();
     }
   }
 
   //
-  // remove formals for _valueTypeField fields in constructors
+  // remove formals for _valueType fields in constructors
   //
   compute_call_sites();
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     for_formals(formal, fn) {
-      if (!strcmp(formal->name, "_valueTypeField")) {
+      if (!strcmp(formal->name, "_valueType")) {
         forv_Vec(CallExpr, call, *fn->calledBy) {
           formal_to_actual(call, formal)->remove();
         }
@@ -75,7 +75,7 @@ removeWrapRecords() {
   }
 
   //
-  // replace accesses of _valueField with wrap record
+  // replace accesses of _value with wrap record
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
@@ -136,7 +136,7 @@ removeWrapRecords() {
     if (ct->symbol->hasFlag(FLAG_DATA_CLASS)) {
       if (TypeSymbol* ts = toTypeSymbol(ct->substitutions.v[0].value)) {
         if (ts->hasFlag(FLAG_ARRAY) || ts->hasFlag(FLAG_DOMAIN)) {
-          ct->substitutions.v[0].value = ts->type->getField("_valueField")->type->symbol;
+          ct->substitutions.v[0].value = ts->type->getField("_value")->type->symbol;
         }
       }
     }
@@ -148,12 +148,12 @@ static Type*
 getWrapRecordBaseType(Type* type) {
   if (type->symbol->hasFlag(FLAG_ARRAY) ||
       type->symbol->hasFlag(FLAG_DOMAIN)) {
-    return type->getField("_valueField")->type;
+    return type->getField("_value")->type;
   } else if (type->symbol->hasFlag(FLAG_REF)) {
     Type* vt = type->getValueType();
     if (vt->symbol->hasFlag(FLAG_ARRAY) ||
         vt->symbol->hasFlag(FLAG_DOMAIN)) {
-      return vt->getField("_valueField")->type->refType;
+      return vt->getField("_value")->type->refType;
     }
   }
   return NULL;

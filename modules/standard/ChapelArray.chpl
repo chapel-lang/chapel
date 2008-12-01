@@ -191,8 +191,8 @@ def isSparseDomain(d: domain) param {
 pragma "domain"
 pragma "has runtime type"
 record _domain {
-  var _valueField;
-  var _valueTypeField; // stores type of privatized domains
+  var _value;     // stores domain class, may be privatized
+  var _valueType; // stores type of privatized domains
   var _promotionType: index(rank, _value.idxType);
 
   def initialize() { 
@@ -201,13 +201,13 @@ record _domain {
 
   pragma "inline"
   def _value {
-    if _supportsPrivatization(_valueTypeField) {
-      var tc = _valueTypeField;
-      var id = _valueField;
+    if _supportsPrivatization(_valueType) {
+      var tc = _valueType;
+      var id = _value;
       var pc = __primitive("chpl_getPrivateClass", tc, id);
       return pc;
     } else {
-      return _valueField;
+      return _value;
     }
   }
 
@@ -338,19 +338,19 @@ def -(d: domain, i: index(d)) {
 pragma "array"
 pragma "has runtime type"
 record _array {
-  var _valueField;     // stores array class, may be privatized, use _value
-  var _valueTypeField; // stores type of privatized arrays
+  var _value;     // stores array class, may be privatized
+  var _valueType; // stores type of privatized arrays
   var _promotionType: _value.eltType;
 
   pragma "inline"
   def _value {
-    if _supportsPrivatization(_valueTypeField) {
-      var tc = _valueTypeField;
-      var id = _valueField;
+    if _supportsPrivatization(_valueType) {
+      var tc = _valueType;
+      var id = _value;
       var pc = __primitive("chpl_getPrivateClass", tc, id);
       return pc;
     } else {
-      return _valueField;
+      return _value;
     }
   }
 
