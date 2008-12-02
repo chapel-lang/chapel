@@ -487,10 +487,14 @@ void CallExpr::verify() {
     if (actual->parentExpr != this)
       INT_FATAL(this, "Bad CallExpr::argList::parentExpr");
   }
-  if (resolved && isResolved()) {
-    for_formals_actuals(formal, actual, this) {
-      if (formal->type != actual->typeInfo() && actual->typeInfo() != dtNil)
-        INT_FATAL(this, "actual formal type mismatch");
+  if (resolved) {
+    if (FnSymbol* fn = isResolved()) {
+      if (!fn->hasFlag(FLAG_EXTERN)) {
+        for_formals_actuals(formal, actual, this) {
+          if (formal->type != actual->typeInfo() && actual->typeInfo() != dtNil)
+            INT_FATAL(this, "actual formal type mismatch");
+        }
+      }
     }
   }
 }
