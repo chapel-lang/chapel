@@ -401,18 +401,13 @@ compilation timing out (started 4/19/08)
 cygwin-specific failures
 ========================
 
-'can't rm binary' error
------------------------
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample1]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
-
 Yikes!  output was 2 2 2 2 1 1 1 1 rather than 2 2 2 2 1 2 2 2 (09/26/08)
 -------------------------------------------------------------------------
 [Error matching program output for functions/deitz/iterators/leader_follower/test_leader_follower2a]
 
 pthread_cond_init failed errors -- possibly memory related? (e.g., 08/28/08)
 ----------------------------------------------------------------------------
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample2]
 [Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample1]
 [Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for npb/cg/bradc/cg-sparse]
@@ -437,7 +432,6 @@ occasional timeouts? or slowed down during iterator rewrites? (e.g., 07/02/08)
 unreachable line causes compiler warning
 ----------------------------------------
 [Error matching program output for release/examples/arrays]
-[Error matching program output for release/examples/blockLU]
 [Error matching program output for release/examples/hpcc/hpl]
 
 
