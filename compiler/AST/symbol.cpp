@@ -18,9 +18,7 @@ ModuleSymbol* baseModule = NULL;
 ModuleSymbol* standardModule = NULL;
 Symbol *gNil = NULL;
 Symbol *gUnknown = NULL;
-Symbol *gUnspecified = NULL;
 Symbol *gMethodToken = NULL;
-Symbol *gLeaderToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL;
 Symbol *gModuleToken = NULL;
 Symbol *gVoid = NULL;
@@ -1010,6 +1008,28 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_co
   return s;
 }
 
+static PrimitiveType*
+immediate_type(Immediate *imm) {
+  switch (imm->const_kind) {
+    case CONST_KIND_STRING:
+      return dtString;
+    case NUM_KIND_UINT:
+      return dtUInt[imm->num_index];
+    case NUM_KIND_INT:
+      return dtInt[imm->num_index];
+    case NUM_KIND_FLOAT:
+      return dtReal[imm->num_index];
+    case NUM_KIND_IMAG:
+      return dtImag[imm->num_index];
+    case NUM_KIND_COMPLEX:
+      return dtComplex[imm->num_index];
+    default:
+      USR_FATAL("bad immediate type");
+      break;
+  }
+  return NULL;
+}
+
 VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   VarSymbol *s = uniqueConstantsHash.get(imm);
   if (s)
@@ -1028,28 +1048,6 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   *s->immediate = *imm;
   uniqueConstantsHash.put(s->immediate, s);
   return s;
-}
-
-PrimitiveType *
-immediate_type(Immediate *imm) {
-  switch (imm->const_kind) {
-    case CONST_KIND_STRING: 
-      return dtString;
-    case NUM_KIND_UINT:
-      return dtUInt[imm->num_index];
-    case NUM_KIND_INT:
-      return dtInt[imm->num_index];
-    case NUM_KIND_FLOAT:
-      return dtReal[imm->num_index];
-    case NUM_KIND_IMAG:
-      return dtImag[imm->num_index];
-    case NUM_KIND_COMPLEX:
-      return dtComplex[imm->num_index];
-    default: 
-      USR_FATAL("bad immediate type");
-      break;
-  }
-  return NULL;
 }
 
 

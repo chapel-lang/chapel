@@ -58,7 +58,6 @@ static void makeRefType(Type* type) {
     return;
 
   if (type == dtMethodToken ||
-      type == dtLeaderToken ||
       type == dtUnknown ||
       type->symbol->hasFlag(FLAG_REF) ||
       type->symbol->hasFlag(FLAG_GENERIC))
@@ -1863,7 +1862,6 @@ formalRequiresTemp(ArgSymbol* formal) {
       formal->hasFlag(FLAG_TYPE_VARIABLE) ||
       formal->instantiatedParam ||
       formal->type == dtMethodToken ||
-      formal->type == dtLeaderToken ||
       (formal->type->symbol->hasFlag(FLAG_REF) &&
        formal->intent == INTENT_BLANK) ||
       formal->hasFlag(FLAG_NO_FORMAL_TMP))
@@ -3897,7 +3895,6 @@ pruneResolvedTree() {
         for (int i = fn->numFormals(); i >= 1; i--) {
           ArgSymbol* formal = fn->getFormal(i);
           if (formal->type == dtMethodToken ||
-              formal->type == dtLeaderToken ||
               formal->instantiatedParam ||
               (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
                !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)))
@@ -3961,9 +3958,7 @@ pruneResolvedTree() {
         if (formal->typeExpr)
           formal->typeExpr->remove();
         // Remove method and leader token formals
-        if (formal->type == dtMethodToken ||
-            formal->type == dtLeaderToken ||
-            formal->instantiatedParam)
+        if (formal->type == dtMethodToken || formal->instantiatedParam)
           formal->defPoint->remove();
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {

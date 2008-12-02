@@ -234,7 +234,6 @@ VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOA
 VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
 VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
-PrimitiveType *immediate_type(Immediate *imm);
 
 VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
 VarSymbol* newTemp(Type* type);
@@ -250,9 +249,7 @@ extern ModuleSymbol* baseModule;
 extern ModuleSymbol* standardModule;
 extern Symbol *gNil;
 extern Symbol *gUnknown;
-extern Symbol *gUnspecified;
 extern Symbol *gMethodToken;
-extern Symbol *gLeaderToken;
 extern Symbol *gLeaderTag, *gFollowerTag;
 extern Symbol *gModuleToken;
 extern Symbol *gVoid;
