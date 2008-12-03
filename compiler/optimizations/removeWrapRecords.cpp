@@ -109,7 +109,7 @@ removeWrapRecords() {
   //
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (Type* type = getWrapRecordBaseType(var->type))
-      if (!var->defPoint->parentSymbol->hasFlag(FLAG_REF)) // refs second
+      if (!var->defPoint->parentSymbol->hasFlag(FLAG_REF))
         var->type = type;
   }
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
@@ -121,12 +121,6 @@ removeWrapRecords() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (Type* type = getWrapRecordBaseType(fn->retType))
       fn->retType = type;
-  }
-  forv_Vec(ClassType, ct, gClassTypes) {
-    if (ct->symbol->hasFlag(FLAG_REF))
-      if (Symbol* var = ct->getField(1))
-        if (Type* type = getWrapRecordBaseType(var->type))
-          var->type = type;
   }
 
   //
