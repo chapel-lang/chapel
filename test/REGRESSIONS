@@ -38,12 +38,6 @@ extremely rare race condition in module initialization
 performance-specific regressions
 ================================
 
-internal error due to --no-local and refs to wrapper records (12/02/08)
------------------------------------------------------------------------
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
-
 
 =============================
 valgrind-specific regressions
@@ -59,29 +53,6 @@ internal valgrind stuff 'the impossible has happened'
 ====================
 no-local regressions
 ====================
-
-internal error due to --no-local and refs to wrapper records (12/02/08)
------------------------------------------------------------------------
-[Error matching compiler output for release/examples/hpcc/ra]
-[Error matching compiler output for release/examples/hpcc/stream]
-[Error matching compiler output for studies/hpcc/2008/ra]
-[Error matching compiler output for studies/hpcc/2008/stream-promoted]
-[Error matching compiler output for studies/hpcc/2008/stream]
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-dom]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
-[Error matching compiler output for studies/hpcc/common/bradc/unit/multipleDomains2]
-[Error matching compiler output for studies/hpcc/common/bradc/unit/parBlock1Da]
-[Error matching compiler output for studies/hpcc/common/bradc/unit/parRandom2-fill]
-[Error matching program output for studies/hpcc/RA/ra-seq]
-
-type checking on extern functions issue (12/02/08)
---------------------------------------------------
-[Error matching compiler output for studies/uts/uts_deq]
-[Error matching compiler output for studies/uts/uts_deq_seq]
-[Error matching compiler output for studies/uts/uts_rec]
-[Error matching compiler output for studies/uts/uts_rec_seq]
 
 attempt to dereference nil (11/08/08)
 -------------------------------------
@@ -118,9 +89,15 @@ occasional out-of-memory error (11/06/08)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-??? (12/02/08)
---------------
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_string]
+recursive failure in AMUDP_SPMDShutdown (12/03/08)
+--------------------------------------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/test_inout_arg]
+
+core dump (12/03/08)
+--------------------
+[Error matching program output for release/examples/hpcc/ra]
+[Error matching program output for studies/hpcc/2008/ra]
+
 
 spurious binary file diff??? (11/11/08)
 ---------------------------------------
@@ -208,12 +185,7 @@ memory is leaked due to heap classes (10/22/08)
 opts-specific tests
 ===================
 
-(Example runs: 3)
-
---no-local (12/02/08 -- probably due to reference to wrapper issue)
--------------------------------------------------------------------
-[Error matching compiler output for release/examples/hpcc/ra]
-[Error matching compiler output for release/examples/hpcc/stream]
+(Example runs: 1)
 
 --baseline --no-local (11/18/08 -- ???)
 ---------------------------------------
@@ -312,6 +284,10 @@ opts-specific tests
 ===========================
 x1-/x2-specific regressions
 ===========================
+
+memory fault (12/03/08)
+-----------------------
+[Error matching program output for release/examples/hpcc/stream]
 
 threads-none causes serial iterator to be used rather than follower (11/25/08)
 ------------------------------------------------------------------------------
@@ -419,14 +395,13 @@ negative floating point 0.0 not supported
 [Error matching program output for execflags/bradc/gdbddash/declint2] 
 
 
-====================
-xt-specific failures
-====================
+========================
+xt-cle-specific failures
+========================
 
-brad forgot to update .good files
----------------------------------
-[Error matching program output for multilocale/numLocales/bradc/numLocales2]
-[Error matching program output for multilocale/numLocales/bradc/printNumLocalesTwo]
+??? (12/02/08)
+--------------
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
 
 
 ========================
