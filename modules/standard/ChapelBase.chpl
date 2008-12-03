@@ -71,6 +71,7 @@ def _stopMemDiagnosis() {
 // assignment on primitive types
 //
 pragma "inline" def =(a: bool, b: bool) return b;
+pragma "inline" def =(a: bool(?w), b: bool) return b:a.type;
 pragma "inline" def =(a: int(?w), b: int(w)) return b;
 pragma "inline" def =(a: uint(?w), b: uint(w)) return b;
 pragma "inline" def =(a: real(?w), b: real(w)) return b;

@@ -886,10 +886,8 @@ fixup_query_formals(FnSymbol* fn) {
       if (call->numActuals() == 1) {
         if (DefExpr* def = toDefExpr(call->get(1))) {
           if (call->isNamed("bool")) {
-            printf("Found call named bool");
-            for (int i=BOOL_SIZE_1; i<BOOL_SIZE_NUM; i++)
+            for (int i=BOOL_SIZE_8; i<BOOL_SIZE_NUM; i++)
               if (dtBools[i]) {
-                printf("Found match");
                 clone_for_parameterized_primitive_formals(fn, def,
                                                           get_width(dtBools[i]));
               }

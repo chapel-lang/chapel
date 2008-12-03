@@ -563,8 +563,6 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
     *require_scalar_promotion = false;
   if (actualType == formalType)
     return true;
-  if (actualType == dtNil && formalType == dtObject)
-    return true;
   if (actualType == dtNil && isClass(formalType))
     return true;
   if (actualType->refType == formalType)
@@ -591,8 +589,6 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
 
 bool
 isDispatchParent(Type* t, Type* pt) {
-  if (is_bool_type(t) && is_bool_type(pt))
-    return true;
   forv_Vec(Type, p, t->dispatchParents)
     if (p == pt || isDispatchParent(p, pt))
       return true;
@@ -1216,7 +1212,7 @@ printResolutionError(const char* error,
         info->actuals.v[1] && info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
       USR_FATAL(call, "illegal assignment of type to value");
     } else if (info->actuals.v[1]->type == dtNil) {
-      USR_FATAL(call, "type mismatch in assignment of nil to %s",
+      USR_FATAL(call, "type mismatch in assignment from nil to %s",
                 toString(info->actuals.v[0]->type));
     } else {
       USR_FATAL(call, "type mismatch in assignment from %s to %s",
