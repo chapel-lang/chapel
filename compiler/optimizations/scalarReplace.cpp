@@ -447,7 +447,7 @@ scalarReplace() {
         }
       }
       Vec<Symbol*>* varVec = typeVarMap.get(ct);
-      if (isRecordType(ct)) {
+      if (isRecord(ct)) {
         forv_Vec(Symbol, var, *varVec) {
           if (var->defPoint->parentSymbol) {
             bool result = scalarReplaceRecord(ct, var);

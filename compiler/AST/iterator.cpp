@@ -524,7 +524,7 @@ rebuildIterator(IteratorInfo* ii,
       } else {
         fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, local));
       }
-    } else if (isRecordType(local->type)) {
+    } else if (isRecord(local->type)) {
       if (field->type->refType) { // skips array types (how to handle arrays?)
         Symbol* tmp = newTemp(field->type);
         fn->insertAtTail(new DefExpr(tmp));

@@ -63,7 +63,7 @@ void buildDefaultFunctions(void) {
         buildDefaultWriteFunction(ct);
       }
       if (ClassType* ct = toClassType(type->type)) {
-        if (ct->classTag == CLASS_RECORD) {
+        if (isRecord(ct)) {
           if (!(ct->symbol->hasFlag(FLAG_DOMAIN) ||
                 ct->symbol->hasFlag(FLAG_ARRAY))) {
             build_record_equality_function(ct);
@@ -75,9 +75,8 @@ void buildDefaultFunctions(void) {
           build_record_copy_function(ct);
           build_record_hash_function(ct);
         }
-        if (ct->classTag == CLASS_UNION) {
+        if (isUnion(ct))
           build_union_assignment_function(ct);
-        }
       }
       if (EnumType* et = toEnumType(type->type)) {
         build_enum_init_function(et);
@@ -173,7 +172,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
     fn->retTag = RET_VAR;
     fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
   }
-  if (ct->classTag == CLASS_UNION)
+  if (isUnion(ct))
     fn->insertAtTail(
       new CondStmt(
         new SymExpr(fn->setter->sym),
@@ -787,13 +786,13 @@ static void buildDefaultWriteFunction(ClassType* ct) {
   fn->insertFormalAtTail(fileArg);
   fn->retType = dtVoid;
 
-  if (ct->classTag == CLASS_CLASS) {
+  if (isClass(ct)) {
     fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol("{")));
   } else {
     fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol("(")));
   }
 
-  if (ct->classTag == CLASS_UNION) {
+  if (isUnion(ct)) {
     CondStmt* cond = NULL;
     for_fields(tmp, ct) {
       BlockStmt* writeFieldBlock = new BlockStmt();
@@ -829,7 +828,7 @@ static void buildDefaultWriteFunction(ClassType* ct) {
     }
   }
 
-  if (ct->classTag == CLASS_CLASS) {
+  if (isClass(ct)) {
     fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol("}")));
   } else {
     fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(")")));
@@ -893,4 +892,3 @@ static void buildDefaultDestructor(ClassType* ct) {
   fn->addFlag(FLAG_METHOD);
   ct->methods.add(fn);
 }
-

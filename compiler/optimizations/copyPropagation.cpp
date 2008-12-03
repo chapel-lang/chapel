@@ -23,7 +23,7 @@ static bool invalidateCopies(SymExpr* se, Vec<SymExpr*>& defSet, Vec<SymExpr*>& 
     if (CallExpr* parent = toCallExpr(se->parentExpr)) {
       if (parent->isPrimitive(PRIMITIVE_SET_REF))
         return true;
-      if (isRecordType(se->var->type)) {
+      if (isRecord(se->var->type)) {
         if (parent->isPrimitive(PRIMITIVE_GET_MEMBER))
           return true;
         if (parent->isPrimitive(PRIMITIVE_SET_MEMBER) && parent->get(1) == se)

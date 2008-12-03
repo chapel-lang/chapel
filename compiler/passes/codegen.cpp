@@ -33,22 +33,21 @@ getOrder(Map<ClassType*,int>& order, int& maxOrder,
   for_fields(field, ct) {
     if (ClassType* fct = toClassType(field->type)) {
       if (!visit.set_in(fct)) {
-        if (fct->classTag != CLASS_CLASS || fct->symbol->hasFlag(FLAG_REF)) {
+        if (!isClass(fct) || fct->symbol->hasFlag(FLAG_REF)) {
           setOrder(order, maxOrder, fct);
           i = max(i, getOrder(order, maxOrder, fct, visit));
         }
       }
     }
   }
-  return i + (ct->classTag != CLASS_CLASS);
+  return i + !isClass(ct);
 }
 
 
 static void
 setOrder(Map<ClassType*,int>& order, int& maxOrder,
          ClassType* ct) {
-  if (order.get(ct) || (ct->classTag == CLASS_CLASS &&
-                        !ct->symbol->hasFlag(FLAG_REF)))
+  if (order.get(ct) || (isClass(ct) && !ct->symbol->hasFlag(FLAG_REF)))
     return;
   int i;
   Vec<ClassType*> visit;
@@ -107,7 +106,7 @@ genClassTagEnum(FILE* outfile, Vec<TypeSymbol*> typeSymbols) {
   bool comma = false;
   forv_Vec(TypeSymbol, ts, typeSymbols) {
     if (ClassType* ct = toClassType(ts->type)) {
-      if (!isReferenceType(ct) && ct->classTag == CLASS_CLASS) {
+      if (!isReferenceType(ct) && isClass(ct)) {
         fprintf(outfile, "%schpl__cid_%s", (comma) ? ",\n  " : "  ", ts->cname);
         comma = true;
       }
@@ -307,8 +306,8 @@ static void codegen_header(void) {
   fprintf(outfile, "\n/*** Primitive References ***/\n\n");
   forv_Vec(TypeSymbol, ts, typeSymbols) {
     if (ts->hasFlag(FLAG_REF)) {
-      ClassType* ct = toClassType(ts->type->getValueType());
-      if (ct && ct->classTag != CLASS_CLASS)
+      Type* vt = ts->type->getValueType();
+      if (isRecord(vt) || isUnion(vt))
         continue; // references to records and unions codegened below
       ts->codegenPrototype(outfile);
     }
@@ -351,19 +350,11 @@ static void codegen_header(void) {
   // codegen remaining types
   fprintf(outfile, "\n/*** Classes ***/\n\n");
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
-    ClassType* ct = toClassType(typeSymbol->type);
-    if (!ct || ct->classTag != CLASS_CLASS)
-      continue;
-    if (toEnumType(typeSymbol->type))
-      continue;
-    if (typeSymbol->hasFlag(FLAG_REF))
-      continue;
-
-    if (ClassType* ct = toClassType(typeSymbol->type))
-      if (!ct->symbol->hasFlag(FLAG_NO_OBJECT) || ct->symbol->hasFlag(FLAG_OBJECT_CLASS))
-        continue;
-
-    typeSymbol->codegenDef(outfile);
+    if (isClass(typeSymbol->type) &&
+        !typeSymbol->hasFlag(FLAG_REF) &&
+        typeSymbol->hasFlag(FLAG_NO_OBJECT) &&
+        !typeSymbol->hasFlag(FLAG_OBJECT_CLASS))
+      typeSymbol->codegenDef(outfile);
   }
   /* Generate class definitions in breadth first order starting with
      "object" and following its dispatch children. */
@@ -428,7 +419,7 @@ static void codegen_cid2offsets_help(FILE* outfile, ClassType* ct) {
     if (ClassType* innerct = toClassType(field->type)) {
       if (!innerct->symbol->hasFlag(FLAG_REF) &&
           !innerct->symbol->hasFlag(FLAG_NO_OBJECT)) {
-        if (innerct->classTag == CLASS_CLASS) {
+        if (isClass(innerct)) {
           if (field->hasFlag(FLAG_SUPER_CLASS)) {
             codegen_cid2offsets_help(outfile, innerct);
           } else {
@@ -454,7 +445,7 @@ codegen_cid2offsets(FILE* outfile) {
   // corresponding to the class with that cid.
   forv_Vec(TypeSymbol, typeSym, gTypeSymbols) {
     if (ClassType* ct = toClassType(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS && !ct->symbol->hasFlag(FLAG_REF) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
+      if (isClass(ct) && !ct->symbol->hasFlag(FLAG_REF) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
         fprintf(outfile, "size_t _");
         ct->symbol->codegen(outfile);
         fprintf(outfile, "_offsets[] = { sizeof(_");
@@ -462,7 +453,7 @@ codegen_cid2offsets(FILE* outfile) {
         fprintf(outfile, "), ");
         if (typeSym->hasFlag(FLAG_DATA_CLASS)) {
           if (ClassType* elementType = toClassType(ct->substitutions.v[0].value)) {
-            if (elementType->classTag == CLASS_CLASS) {
+            if (isClass(elementType)) {
               fprintf(outfile, "(size_t)-1,"); // Special token for arrays of classes
               fprintf(outfile, "(size_t)&((_");
               ct->symbol->codegen(outfile);
@@ -484,7 +475,7 @@ codegen_cid2offsets(FILE* outfile) {
   fprintf(outfile, "switch(cid) {\n");
   forv_Vec(TypeSymbol, typeSym, gTypeSymbols) {
     if (ClassType* ct = toClassType(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS && !isReferenceType(ct) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
+      if (isClass(ct) && !isReferenceType(ct) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
         fprintf(outfile, "case %s%s:\n", "chpl__cid_", ct->symbol->cname);
         fprintf(outfile, "offsets = _");
         ct->symbol->codegen(outfile);
@@ -507,15 +498,13 @@ codegen_cid2size(FILE* outfile) {
   fprintf(outfile, "size_t cid2size(chpl__class_id cid) {\n");
   fprintf(outfile, "size_t size = 0;\n");
   fprintf(outfile, "switch(cid) {\n");
-  forv_Vec(TypeSymbol, typeSym, gTypeSymbols) {
-    if (ClassType* ct = toClassType(typeSym->type)) {
-      if (ct->classTag == CLASS_CLASS && !isReferenceType(ct) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
-        fprintf(outfile, "case %s%s:\n", "chpl__cid_", ct->symbol->cname);
-        fprintf(outfile, "size = sizeof(_");
-        ct->symbol->codegen(outfile);
-        fprintf(outfile, ");\n");
-        fprintf(outfile, "break;\n");
-      }
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (isClass(ts->type) && !isReferenceType(ts->type) && !ts->hasFlag(FLAG_NO_OBJECT)) {
+      fprintf(outfile, "case %s%s:\n", "chpl__cid_", ts->cname);
+      fprintf(outfile, "size = sizeof(_");
+      ts->codegen(outfile);
+      fprintf(outfile, ");\n");
+      fprintf(outfile, "break;\n");
     }
   }
   fprintf(outfile, "default:\n");

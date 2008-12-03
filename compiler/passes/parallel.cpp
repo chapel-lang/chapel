@@ -918,7 +918,7 @@ insertWideReferences(void) {
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     ClassType* ct = toClassType(ts->type);
-    if (ct && ct->classTag == CLASS_CLASS && !ts->hasFlag(FLAG_REF) && !ts->hasFlag(FLAG_NO_WIDE_CLASS)) {
+    if (ct && isClass(ct) && !ts->hasFlag(FLAG_REF) && !ts->hasFlag(FLAG_NO_WIDE_CLASS)) {
       buildWideClass(ct);
     }
   }

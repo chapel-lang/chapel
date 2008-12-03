@@ -5,6 +5,7 @@
 #include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "type.h"
 
 
 Expr::Expr(AstTag astTag) :
@@ -350,13 +351,12 @@ codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
     fprintf(outfile, ")");
   } else
     base->codegen(outfile);
-  if (ct->classTag == CLASS_CLASS)
+  if (isClass(ct))
     fprintf(outfile, "->");
   else
     fprintf(outfile, ".");
-  if (ct->classTag == CLASS_UNION) {
+  if (isUnion(ct))
     fprintf(outfile, "_u.");
-  }
   member->codegen(outfile);
   if (SymExpr* mem = toSymExpr(member)) {
     if (mem->var->hasFlag(FLAG_SUPER_CLASS)) {
@@ -654,7 +654,7 @@ static void codegenDynamicCastCheck(FILE* outfile, Type* type, Expr* value) {
 
 static void
 codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct, int skip=0) {
-  if (!skip && ct->classTag == CLASS_CLASS)
+  if (!skip && isClass(ct))
     fprintf(outfile, "%s = NULL;\n", cname);
   else {
     for_fields(field, ct) {
@@ -833,7 +833,7 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             fprintf(outfile, "%s", call->get(1)->typeInfo()->getValueType()->symbol->cname);
             fprintf(outfile, ", ");
-            if (isUnionType(call->get(1)->typeInfo()->getValueType()))
+            if (isUnion(call->get(1)->typeInfo()->getValueType()))
               fprintf(outfile, "_u.");
             call->get(2)->codegen(outfile);
             fprintf(outfile, ")");
@@ -865,7 +865,7 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             fprintf(outfile, "%s*", call->get(1)->typeInfo()->getValueType()->symbol->cname);
             fprintf(outfile, ", ");
-            if (isUnionType(call->get(1)->typeInfo()->getValueType()))
+            if (isUnion(call->get(1)->typeInfo()->getValueType()))
               fprintf(outfile, "_u.");
             call->get(2)->codegen(outfile);
             fprintf(outfile, ")");
@@ -1397,7 +1397,7 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ", ");
         fprintf(outfile, "%s", get(1)->typeInfo()->getValueType()->symbol->cname);
         fprintf(outfile, ", ");
-        if (isUnionType(get(1)->typeInfo()->getValueType()))
+        if (isUnion(get(1)->typeInfo()->getValueType()))
           fprintf(outfile, "_u.");
         get(2)->codegen(outfile);
         fprintf(outfile, ")");
@@ -1757,8 +1757,7 @@ void CallExpr::codegen(FILE* outfile) {
         }
         fprintf(outfile, ")");
       } else {
-        ClassType* ct = toClassType(typeInfo());
-        if (ct && ct->classTag != CLASS_CLASS) {
+        if (isRecord(typeInfo()) || isUnion(typeInfo())) {
           fprintf(outfile, "(*((");
           typeInfo()->codegen(outfile);
           fprintf(outfile, "*)(&(");

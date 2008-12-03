@@ -340,8 +340,7 @@ bool ArgSymbol::requiresCPtr(void) {
   if (intent == INTENT_REF ||
       (!strcmp(name, "this") && is_complex_type(type)))
     return true;
-  ClassType* ct = toClassType(type);
-  if (ct && ct->classTag != CLASS_CLASS)
+  if (isRecord(type) || isUnion(type))
     return true;
   return false;
 }
@@ -554,7 +553,7 @@ void FnSymbol::codegenPrototype(FILE* outfile) {
 
 static void
 codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct) {
-  if (ct->classTag == CLASS_CLASS)
+  if (isClass(ct))
     fprintf(outfile, "%s = NULL;\n", cname);
   else {
     for_fields(field, ct) {

@@ -30,7 +30,7 @@ void fixupDestructors(void) {
         if (field->type->destructor) {
           ClassType* fct = toClassType(field->type);
           INT_ASSERT(fct);
-          if (fct->classTag != CLASS_CLASS) {
+          if (!isClass(fct)) {
             bool useRefType = !fct->symbol->hasFlag(FLAG_ARRAY) && !fct->symbol->hasFlag(FLAG_DOMAIN);
             VarSymbol* tmp = useRefType ? newTemp(fct->refType) : newTemp(fct);
             ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
@@ -48,7 +48,7 @@ void fixupDestructors(void) {
       if (ct->dispatchParents.n >= 1) {
         if (FnSymbol* parentDestructor = ct->dispatchParents.v[0]->destructor) {
           VarSymbol* tmp;
-          if (ct->classTag == CLASS_CLASS || ct->symbol->hasFlag(FLAG_ARRAY) ||
+          if (isClass(ct) || ct->symbol->hasFlag(FLAG_ARRAY) ||
               ct->symbol->hasFlag(FLAG_DOMAIN))
             tmp = newTemp(ct->dispatchParents.v[0]);
           else
@@ -56,7 +56,7 @@ void fixupDestructors(void) {
           ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp,
             new CallExpr(PRIMITIVE_CAST,
-              ct->classTag == CLASS_CLASS || ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN) ?
+                         isClass(ct) || ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN) ?
                 ct->dispatchParents.v[0]->symbol : ct->dispatchParents.v[0]->refType->symbol,
               ct->destructor->_this)));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor, tmp));
@@ -83,7 +83,7 @@ static bool tupleContainsArrayOrDomain(ClassType* t) {
       return true;
     else if (fieldType->symbol->hasFlag(FLAG_TUPLE) && tupleContainsArrayOrDomain(toClassType(fieldType)))
       return true;
-    else if (fieldClassType && fieldClassType->classTag != CLASS_CLASS && tupleContainsArrayOrDomain(toClassType(fieldType)))
+    else if (fieldClassType && !isClass(fieldClassType) && tupleContainsArrayOrDomain(toClassType(fieldType)))
       return true;
   }
   return false;
@@ -106,7 +106,7 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
 
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     ClassType* ct = toClassType(ts->type);
-    if (ct && ct->classTag != CLASS_CLASS && ct->defaultConstructor && ct->destructor &&
+    if (ct && !isClass(ct) && ct->defaultConstructor && ct->destructor &&
         //(!ct->symbol->hasFlag(FLAG_ARRAY) || !arrayPassedAsArgument(fn)) &&
         (!ct->symbol->hasFlag(FLAG_TUPLE) || !tupleContainsArrayOrDomain(ct))) {
       constructors.add(ct->defaultConstructor);
@@ -117,7 +117,7 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       //ClassType* ct = toClassType(fn->retType);
       if (fn->hasFlag(FLAG_CALLS_CONSTRUCTOR) && fn->calledBy /*&&
-          ct && ct->classTag != CLASS_CLASS && ct->destructor &&
+          ct && !isClass(ct) && ct->destructor &&
           //(!ct->symbol->hasFlag(FLAG_ARRAY) || !arrayPassedAsArgument(fn)) &&
           (!ct->symbol->hasFlag(FLAG_TUPLE) || !tupleContainsArrayOrDomain(ct))*/) {
         constructors.add(fn);
@@ -258,7 +258,7 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
           if (maybeCallDestructor && !onlyMarkConstructors) {
             // lhs does not "escape" its scope, so go ahead and insert a call to its destructor
             ClassType* ct = toClassType(lhs->var->type);
-            bool useRefType = ct->classTag != CLASS_CLASS &&
+            bool useRefType = !isClass(ct) &&
               !ct->symbol->hasFlag(FLAG_ARRAY) && !ct->symbol->hasFlag(FLAG_DOMAIN);
             if (parentBlock == fn->body) {
               if (useRefType) {

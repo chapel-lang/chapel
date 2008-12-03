@@ -653,17 +653,25 @@ int get_width(Type *t) {
 }
 
 
-bool isRecordType(Type* t) {
-  ClassType* ct = toClassType(t);
-  if (ct && ct->classTag == CLASS_RECORD)
-    return true;
+bool isClass(Type* t) {
+  if (ClassType* ct = toClassType(t))
+    if (ct->classTag == CLASS_CLASS)
+      return true;
   return false;
 }
 
-bool isUnionType(Type* t) {
-  ClassType* ct = toClassType(t);
-  if (ct && ct->classTag == CLASS_UNION)
-    return true;
+
+bool isRecord(Type* t) {
+  if (ClassType* ct = toClassType(t))
+    if (ct->classTag == CLASS_RECORD)
+      return true;
+  return false;
+}
+
+bool isUnion(Type* t) {
+  if (ClassType* ct = toClassType(t))
+    if (ct->classTag == CLASS_UNION)
+      return true;
   return false;
 }
 

@@ -624,7 +624,7 @@ static void build_constructor(ClassType* ct) {
     meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL, new SymExpr(gTypeDefaultToken));
     meme->addFlag(FLAG_IS_MEME);
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this, meme));
-    if (ct->classTag == CLASS_CLASS) {
+    if (isClass(ct)) {
       if (ct->dispatchParents.n > 0) {
         if (!ct->dispatchParents.v[0]->defaultConstructor) {
           build_type_constructor(toClassType(ct->dispatchParents.v[0]));
@@ -656,7 +656,7 @@ static void build_constructor(ClassType* ct) {
     }
   }
 
-  if (ct->classTag == CLASS_UNION)
+  if (isUnion(ct))
     fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, fn->_this, new_IntSymbol(0)));
 
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
@@ -886,10 +886,10 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
   // make root records inherit from value
   // make root classes inherit from object
   if (ct->inherits.length == 0 && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
-    if (ct->classTag == CLASS_RECORD) {
+    if (isRecord(ct)) {
       ct->dispatchParents.add(dtValue);
       dtValue->dispatchChildren.add(ct);
-    } else if (ct->classTag == CLASS_CLASS) {
+    } else if (isClass(ct)) {
       ct->dispatchParents.add(dtObject);
       dtObject->dispatchChildren.add(ct);
       VarSymbol* super = new VarSymbol("super", dtObject);
@@ -908,12 +908,12 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     ClassType* pt = toClassType(ts->type);
     if (!pt)
       USR_FATAL(expr, "Illegal super class %s", ts->name);
-    if (ct->classTag == CLASS_UNION || pt->classTag == CLASS_UNION)
+    if (isUnion(ct) && isUnion(pt))
       USR_FATAL(expr, "Illegal inheritance involving union type");
-    if (ct->classTag == CLASS_RECORD && pt->classTag == CLASS_CLASS)
+    if (isRecord(ct) && isClass(pt))
       USR_FATAL(expr, "Record %s inherits from class %s",
                 ct->symbol->name, pt->symbol->name);
-    if (ct->classTag == CLASS_CLASS && pt->classTag == CLASS_RECORD)
+    if (isClass(ct) && isRecord(pt))
       USR_FATAL(expr, "Class %s inherits from record %s",
                 ct->symbol->name, pt->symbol->name);
     localSeenPtr->set_add(ct);
@@ -921,7 +921,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     ct->dispatchParents.add(pt);
     pt->dispatchChildren.add(ct);
     expr->remove();
-    if (ct->classTag != CLASS_CLASS) {
+    if (!isClass(ct)) {
       for_fields_backward(field, pt) {
         if (toVarSymbol(field) && !field->hasFlag(FLAG_SUPER_CLASS)) {
           bool alreadyContainsField = false;
@@ -972,7 +972,7 @@ void scopeResolve(void) {
     //
     // add field to empty records and unions
     //
-    if (ct->classTag != CLASS_CLASS && ct->fields.length == 0)
+    if (!isClass(ct) && ct->fields.length == 0)
       ct->fields.insertAtHead(
         new DefExpr(
           new VarSymbol("emptyRecordPlaceholder"),

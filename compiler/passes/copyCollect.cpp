@@ -32,13 +32,13 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
     /* This is the first level of recursion.  Scan the formals. */
     for_formals(formal, fn) {
       if (ClassType* ct = toClassType(formal->type)) {
-        if (ct->classTag == CLASS_CLASS) {
+        if (isClass(ct)) {
           if (!ct->symbol->hasFlag(FLAG_REF) &&
               !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
             addToRootSet(fn, new SymExpr(formal));
             totalRoots++;
           }
-        } else if (ct->classTag == CLASS_RECORD) {
+        } else if (isRecord(ct)) {
           buildRootSetForFunction(fn, new SymExpr(formal), formal->defPoint);
         }
       }
@@ -47,13 +47,13 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
     for_alist(expr, fn->body->body) {
       if (DefExpr* def = toDefExpr(expr)) {
         if (ClassType* ct = toClassType(def->sym->type)) {
-          if (ct->classTag == CLASS_CLASS) {
+          if (isClass(ct)) {
             if (!ct->symbol->hasFlag(FLAG_REF) &&
                 !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
               addToRootSet(fn, new SymExpr(def->sym));
               totalRoots++;
             }
-          } else if (ct->classTag == CLASS_RECORD) {
+          } else if (isRecord(ct)) {
             buildRootSetForFunction(fn, new SymExpr(def->sym), def);
           }
         }
@@ -68,13 +68,13 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
     for_alist(ast, blk->body) {
       if (DefExpr* def = toDefExpr(ast)) {
         if (ClassType* ct = toClassType(def->sym->type)) {
-          if (ct->classTag == CLASS_CLASS) {
+          if (isClass(ct)) {
             if (!ct->symbol->hasFlag(FLAG_REF) &&
                 !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
               addToRootSet(fn, new SymExpr(def->sym));
               totalRoots++;
             }
-          } else if (ct->classTag == CLASS_RECORD) {
+          } else if (isRecord(ct)) {
             buildRootSetForFunction(fn, new SymExpr(def->sym), def);
           }
         }
@@ -86,7 +86,7 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
     INT_ASSERT(ct);
     for_fields(field, ct) {
       if (ClassType* classfield = toClassType(field->type)) {
-        if (classfield->classTag == CLASS_CLASS) {
+        if (isClass(classfield)) {
           if (!classfield->symbol->hasFlag(FLAG_REF) &&
               !classfield->symbol->hasFlag(FLAG_NO_OBJECT)) {
             VarSymbol* tmp = newTemp(field->type);
@@ -98,7 +98,7 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
             addToRootSet(fn, new SymExpr(tmp));
             totalRoots++;
           }
-        } else if (classfield->classTag == CLASS_RECORD) {
+        } else if (isRecord(classfield)) {
           VarSymbol* tmp = newTemp(field->type);
           fn->insertAtHead(new DefExpr(tmp));
           fn->insertAtHead(
@@ -124,7 +124,7 @@ static void buildRootSetForModule(ModuleSymbol* module) {
     if (DefExpr* def = toDefExpr(expr)) {
       if (toVarSymbol(def->sym)) {
         if (ClassType* ct = toClassType(def->sym->type)) {
-          if (ct->classTag == CLASS_CLASS) {
+          if (isClass(ct)) {
             if (!ct->symbol->hasFlag(FLAG_REF) &&
                 !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
               addToRootSet(chpl_main, new SymExpr(def->sym), true);

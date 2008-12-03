@@ -340,8 +340,8 @@ resolveFormals(FnSymbol* fn) {
           (formal->intent == INTENT_INOUT ||
            formal->intent == INTENT_OUT ||
            (formal == fn->_this &&
-            (isUnionType(formal->type) ||
-             isRecordType(formal->type) || fn->hasFlag(FLAG_REF_THIS))))) {
+            (isUnion(formal->type) ||
+             isRecord(formal->type) || fn->hasFlag(FLAG_REF_THIS))))) {
         makeRefType(formal->type);
         formal->type = formal->type->refType;
       }
@@ -565,10 +565,8 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
     return true;
   if (actualType == dtNil && formalType == dtObject)
     return true;
-  if (actualType == dtNil)
-    if (ClassType* ct = toClassType(formalType))
-      if (ct->classTag == CLASS_CLASS)
-        return true;
+  if (actualType == dtNil && isClass(formalType))
+    return true;
   if (actualType->refType == formalType)
     return true;
   if (!paramCoerce && canCoerce(actualType, actualSym, formalType, fn, require_scalar_promotion))
@@ -1613,7 +1611,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
     }
     if (resolvedFn &&
         !strcmp("=", resolvedFn->name) &&
-        isRecordType(resolvedFn->getFormal(1)->type) &&
+        isRecord(resolvedFn->getFormal(1)->type) &&
         resolvedFn->getFormal(2)->type == dtNil)
       USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
                 toString(resolvedFn->getFormal(1)->type));
@@ -1827,8 +1825,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
     if (rhsType == dtUnknown)
       USR_FATAL(call, "unable to resolve type");
 
-    ClassType* ct = toClassType(lhsType);
-    if (rhsType == dtNil && lhsType != dtNil && (!ct || ct->classTag != CLASS_CLASS))
+    if (rhsType == dtNil && lhsType != dtNil && !isClass(lhsType))
       USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
                 toString(lhsType));
     Type* lhsBaseType = lhsType;
@@ -2397,8 +2394,7 @@ preFold(Expr* expr) {
       // (locale type is a class)
       //
       SymExpr* se = toSymExpr(call->get(1));
-      ClassType* ct = toClassType(type);
-      if (se->var->hasFlag(FLAG_EXPR_TEMP) && (!ct || ct->classTag != CLASS_CLASS))
+      if (se->var->hasFlag(FLAG_EXPR_TEMP) && !isClass(type))
         USR_WARN(se, "accessing the locale of a local expression");
 
       //
@@ -3413,7 +3409,7 @@ build_ddf() {
       if (fn->numFormals() > 1) {
         if (fn->getFormal(1)->type == dtMethodToken) {
           if (ClassType* pt = toClassType(fn->getFormal(2)->type)) {
-            if (pt->classTag == CLASS_CLASS && !pt->symbol->hasFlag(FLAG_GENERIC)) {
+            if (isClass(pt) && !pt->symbol->hasFlag(FLAG_GENERIC)) {
               add_all_children_ddf(fn, pt);
             }
           }
@@ -3781,7 +3777,7 @@ initializeClass(Expr* stmt, Symbol* sym) {
     if (!field->hasFlag(FLAG_SUPER_CLASS)) {
       if (field->type->defaultValue) {
         stmt->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, sym, field, field->type->defaultValue));
-      } else if (isRecordType(field->type)) {
+      } else if (isRecord(field->type)) {
         VarSymbol* tmp = newTemp(field->type);
         stmt->insertBefore(new DefExpr(tmp));
         initializeClass(stmt, tmp);

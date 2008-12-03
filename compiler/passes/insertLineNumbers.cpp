@@ -82,7 +82,7 @@ static bool isClassMethodCall(CallExpr* call) {
     if (ClassType* ct = toClassType(fn->_this->typeInfo())) {
       if (fn->numFormals() > 0 &&
           fn->getFormal(1)->typeInfo() == fn->_this->typeInfo()) {
-        if (ct->classTag == CLASS_CLASS || ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        if (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           return true;
         }
       }
@@ -106,8 +106,7 @@ void insertLineNumbers() {
         Expr* stmt = call->getStmtExpr();
         SET_LINENO(stmt);
         ClassType* ct = toClassType(call->get(1)->typeInfo());
-        if (ct && (ct->classTag == CLASS_CLASS ||
-                   ct->symbol->hasFlag(FLAG_WIDE_CLASS))) {
+        if (ct && (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS))) {
           stmt->insertBefore(
             new CallExpr(PRIMITIVE_CHECK_NIL, call->get(1)->copy()));
         }

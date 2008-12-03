@@ -90,7 +90,7 @@ buildDefaultWrapper(FnSymbol* fn,
     copy_map.put(fn->_this, wrapper->_this);
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
     if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME)) {
-      if (!isRecordType(fn->_this->type) && !isUnionType(fn->_this->type)) {
+      if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
         wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, wrapper->_this,
                                 new CallExpr(PRIMITIVE_CHPL_ALLOC, wrapper->_this,
                                 new_StringSymbol(astr("instance of class ",
