@@ -3,6 +3,7 @@
 use File::Basename;
 
 $utildirname = dirname($0);
+$platformscript = "$utildirname/platform.pl";
 
 my $flag = $ARGV[0];
 
@@ -10,16 +11,10 @@ if ($flag eq "" || $flag eq "--host") {
     $preset_compiler=$ENV{'CHPL_HOST_COMPILER'};
 } elsif ($flag eq "--target") {
     $preset_compiler=$ENV{'CHPL_TARGET_COMPILER'};
-    if ($preset_compiler eq "") {
-	if (`$utildirname/platform.pl --host` eq `$utildirname/platform.pl --target`) {
-	    $preset_compiler=$ENV{'CHPL_HOST_COMPILER'};
-	}
-    }
 }
 
-
 if ($preset_compiler eq "") {
-    $platform = `$utildirname/platform.pl $flag`;
+    $platform = `$platformscript $flag`;
     chomp($platform);
     if ($platform eq "mta" || $platform eq "xmt" || $platform eq "xmt-sim") {
 	$compiler = "cray-mta";
@@ -38,7 +33,12 @@ if ($preset_compiler eq "") {
             $compiler = "cray-xt$subcompiler";
         }
     } else {
-	$compiler = "gnu";
+	if (`$platformscript --host` eq `$platformscript --target`) {
+	    $compiler=$ENV{'CHPL_HOST_COMPILER'};
+	}
+	if ($compiler eq "") {
+	    $compiler = "gnu";
+	}
     }
 } else {
     $compiler = $preset_compiler;
