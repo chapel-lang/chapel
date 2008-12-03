@@ -15,6 +15,11 @@
 linux and general regressions
 =============================
 
+puzzling timeouts (12/02/08)
+----------------------------
+[Error: Timed out executing program classes/figueroa/LeakedMemory2]
+[Error: Timed out executing program classes/figueroa/LeakedMemory3]
+
 moving release examples around broke interface (11/14/08)
 ---------------------------------------------------------
 [Error matching compiler output for studies/hpcc/RA/ra-seq]
@@ -27,6 +32,17 @@ studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
 extremely rare race condition in module initialization
 ------------------------------------------------------
 [Error matching program output for modules/diten/useInBegin]
+
+
+================================
+performance-specific regressions
+================================
+
+internal error due to --no-local and refs to wrapper records (12/02/08)
+-----------------------------------------------------------------------
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
 
 
 =============================
@@ -44,10 +60,28 @@ internal valgrind stuff 'the impossible has happened'
 no-local regressions
 ====================
 
-memory is not freed with --no-local on (11/12/08)
--------------------------------------------------
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
+internal error due to --no-local and refs to wrapper records (12/02/08)
+-----------------------------------------------------------------------
+[Error matching compiler output for release/examples/hpcc/ra]
+[Error matching compiler output for release/examples/hpcc/stream]
+[Error matching compiler output for studies/hpcc/2008/ra]
+[Error matching compiler output for studies/hpcc/2008/stream-promoted]
+[Error matching compiler output for studies/hpcc/2008/stream]
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-dom]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
+[Error matching compiler output for studies/hpcc/common/bradc/unit/multipleDomains2]
+[Error matching compiler output for studies/hpcc/common/bradc/unit/parBlock1Da]
+[Error matching compiler output for studies/hpcc/common/bradc/unit/parRandom2-fill]
+[Error matching program output for studies/hpcc/RA/ra-seq]
+
+type checking on extern functions issue (12/02/08)
+--------------------------------------------------
+[Error matching compiler output for studies/uts/uts_deq]
+[Error matching compiler output for studies/uts/uts_deq_seq]
+[Error matching compiler output for studies/uts/uts_rec]
+[Error matching compiler output for studies/uts/uts_rec_seq]
 
 attempt to dereference nil (11/08/08)
 -------------------------------------
@@ -83,6 +117,10 @@ occasional out-of-memory error (11/06/08)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+??? (12/02/08)
+--------------
+[Error matching program output for multilocale/deitz/needMultiLocales/test_local_string]
 
 spurious binary file diff??? (11/11/08)
 ---------------------------------------
@@ -143,13 +181,13 @@ is this one intermittent or not? (on: 10/21/08) (off: 11/07/08)
 
 intermittent seg faults 
 -----------------------
-[Error matching program output for multilocale/deitz/linked/test_linked2] (e.g., 10/05/08, 10/08/08)
+[Error matching program output for multilocale/deitz/linked/test_linked2] (e.g., 10/05/08, 10/08/08, 12/02/08)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-dom] (e.g., 10/06/08)
 [Error matching program output for multilocale/deitz/linked/test_linked3e] (e.g., 10/07/08, 10/13/08)
 [Error matching program output for multilocale/bradc/locales/queryLocaleLocation] (e.g., 10/08/08)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar] (e.g., 10/09/08)
 [Error matching program output for studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 10/10/08)
-[Error matching program output for multilocale/deitz/linked/test_linked3] (e.g., 10/14/08)
+[Error matching program output for multilocale/deitz/linked/test_linked3] (e.g., 10/14/08, 12/02/08)
 [Error matching program output for studies/hpcc/common/bradc/unit/leadFollowOpt] (e.g., 10/15/08)
 [Error matching program output for multilocale/deitz/needMultiLocales/test_dot_locale4] (e.g., 10/22/08)
 [Error matching program output for multilocale/deitz/linked/test_linked3a] (e.g., 10/26/08)
@@ -170,7 +208,16 @@ memory is leaked due to heap classes (10/22/08)
 opts-specific tests
 ===================
 
-(Example runs: 0)
+(Example runs: 3)
+
+--no-local (12/02/08 -- probably due to reference to wrapper issue)
+-------------------------------------------------------------------
+[Error matching compiler output for release/examples/hpcc/ra]
+[Error matching compiler output for release/examples/hpcc/stream]
+
+--baseline --no-local (11/18/08 -- ???)
+---------------------------------------
+[Error matching program output for release/examples/hpcc/hpl]
 
 
 (Full run: 68, though some spurious test_refine errors)
@@ -266,9 +313,17 @@ opts-specific tests
 x1-/x2-specific regressions
 ===========================
 
-no warning generated because compiled --serial? (11/11/08)
-----------------------------------------------------------
+threads-none causes serial iterator to be used rather than follower (11/25/08)
+------------------------------------------------------------------------------
+[Error matching program output for release/examples/hpcc/ra]
+
+no warning generated because of threads-none? (11/11/08)
+--------------------------------------------------------
 [Error matching program output for release/examples/sparse]
+
+times out in C compiler
+-----------------------
+[Error: Timed out compilation for release/examples/hpcc/fft]
 
 
 ==========================
@@ -450,6 +505,43 @@ simulation timeouts
 ===============================
 CHPL_THREADS = none regressions
 ===============================
+
+leader/follower problems with threads=none (between 09/03/08 and 12/02/08)
+--------------------------------------------------------------------------
+[Error matching program output for functions/deitz/iterators/leader_follower/test_leader_follower7]
+[Error matching program output for functions/deitz/nested/test_nested_with_begin]
+[Error matching program output for functions/iterators/bradc/leadFollow/followFlexType]
+[Error matching program output for functions/iterators/bradc/leadFollow/followNoLead]
+[Error matching program output for functions/iterators/bradc/leadFollow/localfollow2]
+[Error matching program output for npb/cg/bradc/cg-sparse]
+[Error matching program output for parallel/coforall/bradc/nested/nestedForall1a]
+[Error matching program output for parallel/coforall/bradc/nested/nestedForall]
+[Error matching program output for performance/compiler/bradc/cg-sparse-timecomp]
+[Error matching program output for release/examples/hpcc/ra]
+[Error matching program output for release/examples/sparse]
+[Error matching program output for studies/hpcc/2008/ra]
+[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching program output for studies/hpcc/RA/ra-seq]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dclass]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar]
+[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-fill]
+[Error matching program output for studies/madness/common/test_diff]
+[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for studies/madness/common/test_showboxes]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_showboxes]
+[Error matching program output for studies/sudoku/deitz/sudoku2]
+[Error matching program output for studies/sudoku/deitz/sudoku3]
+[Error matching program output for studies/sudoku/deitz/sudoku_compress2]
+[Error matching program output for studies/sudoku/deitz/sudoku_compress3]
+[Error matching program output for studies/sudoku/dinan/search/sudoku-reduce4]
+[Error matching program output for trivial/deitz/monte2]
+[Error matching program output for trivial/deitz/monte3]
+[Error matching program output for trivial/deitz/monte]
+[Error matching program output for trivial/diten/pi_monte_carlo]
+[Error matching program output for types/seq/deitz/test_reduce1]
 
 ???
 ---
