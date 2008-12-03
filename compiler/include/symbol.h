@@ -250,6 +250,7 @@ extern ModuleSymbol* standardModule;
 extern Symbol *gNil;
 extern Symbol *gUnknown;
 extern Symbol *gMethodToken;
+extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag;
 extern Symbol *gModuleToken;
 extern Symbol *gVoid;

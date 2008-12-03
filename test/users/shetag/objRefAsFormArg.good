@@ -1,2 +1,3 @@
-objRefAsFormArg.chpl:10: In constructor 'B':
-objRefAsFormArg.chpl:11: error: type mismatch in assignment from object to A
+objRefAsFormArg.chpl:15: In function 'main':
+objRefAsFormArg.chpl:20: error: unresolved call 'B(a=A)'
+objRefAsFormArg.chpl:10: note: candidates are: B(a = nil)

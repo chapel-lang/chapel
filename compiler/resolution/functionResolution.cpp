@@ -738,8 +738,8 @@ computeGenericSubs(SymbolMap &subs,
 
         resolveBlock(formal->defaultExpr);
         Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
-        if (defaultType == dtNil)
-          subs.put(formal, defaultType->symbol);
+        if (defaultType == dtTypeDefaultToken)
+          subs.put(formal, dtTypeDefaultToken->symbol);
         else if (Type* type = getInstantiationType(defaultType, formal->type))
           subs.put(formal, type->symbol);
       }
@@ -1905,7 +1905,7 @@ insertFormalTemps(FnSymbol* fn) {
       ArgSymbol* formal = toArgSymbol(e->key);
       Symbol* tmp = e->value;
       if (formal->intent == INTENT_OUT) {
-        if (formal->defaultExpr && formal->defaultExpr->body.tail->typeInfo() != dtNil) {
+        if (formal->defaultExpr && formal->defaultExpr->body.tail->typeInfo() != dtTypeDefaultToken) {
           BlockStmt* defaultExpr = formal->defaultExpr->copy();
           fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, defaultExpr->body.tail->remove()));
           fn->insertAtHead(defaultExpr);

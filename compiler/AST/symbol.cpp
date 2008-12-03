@@ -19,6 +19,7 @@ ModuleSymbol* standardModule = NULL;
 Symbol *gNil = NULL;
 Symbol *gUnknown = NULL;
 Symbol *gMethodToken = NULL;
+Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL;
 Symbol *gModuleToken = NULL;
 Symbol *gVoid = NULL;

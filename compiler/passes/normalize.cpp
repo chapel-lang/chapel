@@ -671,7 +671,7 @@ static void hack_resolve_types(ArgSymbol* arg) {
       SymExpr* se = NULL;
       if (arg->defaultExpr->body.length == 1)
         se = toSymExpr(arg->defaultExpr->body.tail);
-      if (!se || se->var != gNil) {
+      if (!se || se->var != gTypeDefaultToken) {
         arg->typeExpr = arg->defaultExpr->copy();
         insert_help(arg->typeExpr, NULL, arg);
       }

@@ -621,7 +621,7 @@ static void build_constructor(ClassType* ct) {
                        new CallExpr(PRIMITIVE_CHPL_ALLOC, fn->_this,
                          new_StringSymbol(astr("instance of class ", ct->symbol->name)))));
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
-    meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL, new SymExpr(gNil));
+    meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL, new SymExpr(gTypeDefaultToken));
     meme->addFlag(FLAG_IS_MEME);
     fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this, meme));
     if (ct->classTag == CLASS_CLASS) {
@@ -698,7 +698,7 @@ static void build_constructor(ClassType* ct) {
       if (hasInit)
         arg->defaultExpr = new BlockStmt(init, BLOCK_SCOPELESS);
       else
-        arg->defaultExpr = new BlockStmt(new SymExpr(gNil));
+        arg->defaultExpr = new BlockStmt(new SymExpr(gTypeDefaultToken));
     }
     if (exprType)
       arg->typeExpr = new BlockStmt(exprType, BLOCK_SCOPELESS);

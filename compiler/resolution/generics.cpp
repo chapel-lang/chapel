@@ -97,7 +97,7 @@ instantiate_tuple(FnSymbol* fn) {
   Expr* last = fn->body->body.last();
   for (int i = 1; i <= size; i++) {
     const char* name = astr("x", istr(i));
-    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, NULL, new SymExpr(gNil));
+    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, dtAny, NULL, new SymExpr(gTypeDefaultToken));
     if (tuple)
       arg->addFlag(FLAG_TYPE_VARIABLE);
     fn->insertFormalAtTail(arg);
@@ -455,7 +455,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
         if (Symbol* sym = paramMap.get(newFormal))
           newFormal->defaultExpr = new BlockStmt(new SymExpr(sym));
         else
-          newFormal->defaultExpr = new BlockStmt(new SymExpr(gNil));
+          newFormal->defaultExpr = new BlockStmt(new SymExpr(gTypeDefaultToken));
         insert_help(newFormal->defaultExpr, NULL, newFormal);
       }
     }

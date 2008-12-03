@@ -164,7 +164,7 @@ buildDefaultWrapper(FnSymbol* fn,
           !formal->defaultExpr ||
           (formal->defaultExpr->body.length == 1 &&
            isSymExpr(formal->defaultExpr->body.tail) &&
-           toSymExpr(formal->defaultExpr->body.tail)->var == gNil)) {
+           toSymExpr(formal->defaultExpr->body.tail)->var == gTypeDefaultToken)) {
         // use default value for type as default value for formal argument
         if (formal->typeExpr) {
           BlockStmt* typeExpr = formal->typeExpr->copy();
