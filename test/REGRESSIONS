@@ -54,7 +54,7 @@ internal valgrind stuff 'the impossible has happened'
 no-local regressions
 ====================
 
-attempt to dereference nil (11/08/08)
+'attempt to dereference nil' (11/08/08)
 -------------------------------------
 [Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
 
@@ -89,8 +89,13 @@ occasional out-of-memory error (11/06/08)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-recursive failure in AMUDP_SPMDShutdown (12/03/08)
---------------------------------------------------
+'attempt to dereference nil'
+----------------------------
+[Error matching program output for studies/matrixMult/stonea/distributed/luLike] (11/08/08 onwards)
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d] (12/04/08)
+
+spurious recursive failure in AMUDP_SPMDShutdown (e.g., 12/03/08)
+-----------------------------------------------------------------
 [Error matching program output for multilocale/deitz/needMultiLocales/test_inout_arg]
 
 core dump (12/03/08)
@@ -102,10 +107,6 @@ core dump (12/03/08)
 spurious binary file diff??? (11/11/08)
 ---------------------------------------
 [Error matching program output for types/type_variables/deitz/part3/test_instantiate_construct1]
-
-attempt to dereference nil (11/08/08)
--------------------------------------
-[Error matching program output for studies/matrixMult/stonea/distributed/luLike]
 
 occasional timeouts (e.g., 11/03/08)
 ------------------------------------
@@ -142,6 +143,10 @@ times out occasionally (20x diff -- maybe memory leak related?)
 ==============================================
 gasnet-fast regressions (other than the above)
 ==============================================
+
+spurious 'attempt to dereference nil' (12/03/08)
+------------------------------------------------
+[Error matching program output for release/examples/hpcc/stream]
 
 spurious recursive failure in AMUDP_SPMDShutdown
 ------------------------------------------------
@@ -285,10 +290,6 @@ opts-specific tests
 x1-/x2-specific regressions
 ===========================
 
-memory fault (12/03/08)
------------------------
-[Error matching program output for release/examples/hpcc/stream]
-
 threads-none causes serial iterator to be used rather than follower (11/25/08)
 ------------------------------------------------------------------------------
 [Error matching program output for release/examples/hpcc/ra]
@@ -398,10 +399,6 @@ negative floating point 0.0 not supported
 ========================
 xt-cle-specific failures
 ========================
-
-??? (12/02/08)
---------------
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
 
 
 ========================
