@@ -15,7 +15,7 @@ ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xt-cle)
 # this conditional should only be necessary for PE <= 2.0 and should
 # match the corresponding test in cross-configure-crayxt-linux
 #
-XTRA_CONFIG_COMMAND=if test -f /usr/include/nptl/pthread.h -a -d /usr/lib64/nptl ; then cp --update $(GASNET_SUBDIR)/other/contrib/cross-configure-crayxt-linux $(GASNET_SUBDIR); fi
+XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/cross-configure-crayxt-linux $(GASNET_SUBDIR)
 XTRA_BUILD_COMMAND=if test -f /usr/include/nptl/pthread.h -a -d /usr/lib64/nptl ; then cp -fr $(GASNET_BUILD_DIR)/patched-headers $(GASNET_INSTALL_DIR); fi
 CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxt-linux
 else
