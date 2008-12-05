@@ -567,50 +567,50 @@ void initPrimitiveTypes(void) {
 
 bool is_bool_type(Type* t) {
   return 
+    t == dtBools[BOOL_SIZE_SYS] ||
     t == dtBools[BOOL_SIZE_8] ||
     t == dtBools[BOOL_SIZE_16] ||
     t == dtBools[BOOL_SIZE_32] ||
-    t == dtBools[BOOL_SIZE_64] ||
-    t == dtBools[BOOL_SIZE_SYS];
+    t == dtBools[BOOL_SIZE_64];
 }
 
 
 bool is_int_type(Type *t) {
   return
+    t == dtInt[INT_SIZE_32] ||
     t == dtInt[INT_SIZE_8] ||
     t == dtInt[INT_SIZE_16] ||
-    t == dtInt[INT_SIZE_32] ||
     t == dtInt[INT_SIZE_64];
 }
 
 
 bool is_uint_type(Type *t) {
   return
+    t == dtUInt[INT_SIZE_32] ||
     t == dtUInt[INT_SIZE_8] ||
     t == dtUInt[INT_SIZE_16] ||
-    t == dtUInt[INT_SIZE_32] ||
     t == dtUInt[INT_SIZE_64];
 }
 
 
 bool is_real_type(Type *t) {
   return
-    t == dtReal[FLOAT_SIZE_32] ||
-    t == dtReal[FLOAT_SIZE_64];
+    t == dtReal[FLOAT_SIZE_64] ||
+    t == dtReal[FLOAT_SIZE_32];
 }
 
 
 bool is_imag_type(Type *t) {
   return
-    t == dtImag[FLOAT_SIZE_32] ||
-    t == dtImag[FLOAT_SIZE_64];
+    t == dtImag[FLOAT_SIZE_64] ||
+    t == dtImag[FLOAT_SIZE_32];
 }
 
 
 bool is_complex_type(Type *t) {
   return
-    t == dtComplex[COMPLEX_SIZE_64] ||
-    t == dtComplex[COMPLEX_SIZE_128];
+    t == dtComplex[COMPLEX_SIZE_128] ||
+    t == dtComplex[COMPLEX_SIZE_64];
 }
 
 

@@ -422,28 +422,16 @@ canInstantiate(Type* actualType, Type* formalType) {
   return false;
 }
 
-// Returns true iff dispatching the actualType to the formalType
-// results in a coercion.
-bool
-canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion) {
-  if (actualType->symbol->hasFlag(FLAG_SYNC)) {
-    if (actualType->symbol->hasFlag(FLAG_GENERIC)) {
-      return false;
-    } else {
-      Type *base_type = actualType->substitutions.v[0].value->type;
-      return canDispatch(base_type, actualSym, formalType, fn, require_scalar_promotion);
-    }
-  }
 
-  if (actualType->symbol->hasFlag(FLAG_REF))
-    return canDispatch(actualType->getValueType(), actualSym, formalType, fn, require_scalar_promotion);
-
+//
+// returns true if dispatching from actualType to formalType results
+// in a compile-time coercion; this is a subset of canCoerce below as,
+// for example, real(32) cannot be coerced to real(64) at compile-time
+//
+static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType) {
   if (is_bool_type(formalType) && is_bool_type(actualType))
     return true;
-
   if (is_int_type(formalType)) {
-    if (toEnumType(actualType))
-      return true;
     if (is_bool_type(actualType))
       return true;
     if (is_int_type(actualType) &&
@@ -457,6 +445,8 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
         if (var->immediate)
           if (fits_in_int(get_width(formalType), var->immediate))
             return true;
+    if (toEnumType(actualType))
+      return true;
   }
   if (is_uint_type(formalType)) {
     if (is_bool_type(actualType))
@@ -469,6 +459,24 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
         if (fits_in_uint(get_width(formalType), var->immediate))
           return true;
   }
+  if (formalType == dtString) {
+    if (is_int_type(actualType) ||
+        is_uint_type(actualType) ||
+        is_bool_type(actualType))
+      return true;
+  }
+  return false;
+}
+
+
+//
+// returns true iff dispatching the actualType to the formalType
+// results in a coercion.
+//
+bool
+canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes) {
+  if (canParamCoerce(actualType, actualSym, formalType))
+    return true;
   if (is_real_type(formalType)) {
     if ((is_int_type(actualType) || is_uint_type(actualType))
         && get_width(formalType) >= 64)
@@ -492,96 +500,47 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
       return true;
   }
   if (formalType == dtString) {
-    if (is_int_type(actualType) || is_uint_type(actualType) || 
-        is_real_type(actualType) || is_imag_type(actualType) ||
-        is_complex_type(actualType) ||
-        is_bool_type(actualType))
-      return true;
-    if (toEnumType(actualType))
+    if (is_real_type(actualType) || is_imag_type(actualType) ||
+        is_complex_type(actualType) || isEnumType(actualType))
       return true;
   }
+  if (actualType->symbol->hasFlag(FLAG_SYNC)) {
+    Type* baseType = actualType->getField("base_type")->type;
+    return canDispatch(baseType, NULL, formalType, fn, promotes);
+  }
+  if (actualType->symbol->hasFlag(FLAG_REF))
+    return canDispatch(actualType->getValueType(), NULL, formalType, fn, promotes);
   return false;
 }
-
-//
-// Check if actualType can be coerced to formalType at compile time. This is
-// more restrictive than canCoerce, since, for example, a real(32) cannot be
-// coerced to a real(64) at compile time. 
-//
-static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType) {
-  if (is_bool_type(formalType) && is_bool_type(actualType))
-    return true;
-  if (is_int_type(formalType)) {
-    if (is_bool_type(actualType))
-      return true;
-    if (is_int_type(actualType) &&
-        get_width(actualType) < get_width(formalType))
-      return true;
-    if (is_uint_type(actualType) &&
-        get_width(actualType) < get_width(formalType))
-      return true;
-    if (get_width(formalType) < 64)
-      if (VarSymbol* var = toVarSymbol(actualSym))
-        if (var->immediate)
-          if (fits_in_int(get_width(formalType), var->immediate))
-            return true;
-  }
-  if (is_uint_type(formalType)) {
-    if (is_bool_type(actualType))
-      return true;
-    if (is_uint_type(actualType) &&
-        get_width(actualType) < get_width(formalType))
-      return true;
-    if (VarSymbol* var = toVarSymbol(actualSym))
-      if (var->immediate)
-        if (fits_in_uint(get_width(formalType), var->immediate))
-          return true;
-  }
-  if (is_complex_type(formalType)) {
-    if (is_real_type(actualType) &&
-        (get_width(actualType) == get_width(formalType)/2))
-      return true;
-    if (is_imag_type(actualType) &&
-        (get_width(actualType) == get_width(formalType)/2))
-      return true;
-  }
-  if (formalType == dtString) {
-    if (is_int_type(actualType) || is_uint_type(actualType) ||
-        is_bool_type(actualType))
-      return true;
-  }
-  return false;
-}
-
 
 // Returns true iff the actualType can dispatch to the formalType.
 // The function symbol is used to avoid scalar promotion on =.
 // param is set if the actual is a parameter (compile-time constant).
 bool
-canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion, bool paramCoerce) {
-  if (require_scalar_promotion)
-    *require_scalar_promotion = false;
+canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes, bool paramCoerce) {
+  if (promotes)
+    *promotes = false;
   if (actualType == formalType)
     return true;
   if (actualType == dtNil && isClass(formalType))
     return true;
   if (actualType->refType == formalType)
     return true;
-  if (!paramCoerce && canCoerce(actualType, actualSym, formalType, fn, require_scalar_promotion))
+  if (!paramCoerce && canCoerce(actualType, actualSym, formalType, fn, promotes))
     return true;
   if (paramCoerce && canParamCoerce(actualType, actualSym, formalType))
     return true;
   forv_Vec(Type, parent, actualType->dispatchParents) {
-    if (parent == formalType || canDispatch(parent, actualSym, formalType, fn, require_scalar_promotion)) {
+    if (parent == formalType || canDispatch(parent, NULL, formalType, fn, promotes)) {
       return true;
     }
   }
   if (fn &&
       strcmp(fn->name, "=") && 
       actualType->scalarPromotionType && 
-      (canDispatch(actualType->scalarPromotionType, actualSym, formalType, fn))) {
-    if (require_scalar_promotion)
-      *require_scalar_promotion = true;
+      (canDispatch(actualType->scalarPromotionType, NULL, formalType, fn))) {
+    if (promotes)
+      *promotes = true;
     return true;
   }
   return false;
@@ -1084,15 +1043,15 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
             else if (arg->type == arg2->type && !arg->instantiatedParam && arg2->instantiatedParam)
               better = true;
             else {
-              bool require_scalar_promotion1;
-              bool require_scalar_promotion2;
-              canDispatch(actuals->v[k]->type, actuals->v[k], arg->type, best, &require_scalar_promotion1);
-              canDispatch(actuals->v[k]->type, actuals->v[k], arg2->type, best, &require_scalar_promotion2);
-              promotion1 |= require_scalar_promotion1;
-              promotion2 |= require_scalar_promotion2;
-              if (require_scalar_promotion1 && !require_scalar_promotion2)
+              bool promotes1;
+              bool promotes2;
+              canDispatch(actuals->v[k]->type, actuals->v[k], arg->type, best, &promotes1);
+              canDispatch(actuals->v[k]->type, actuals->v[k], arg2->type, best, &promotes2);
+              promotion1 |= promotes1;
+              promotion2 |= promotes2;
+              if (promotes1 && !promotes2)
                 better = true;
-              else if (!require_scalar_promotion1 && require_scalar_promotion2)
+              else if (!promotes1 && promotes2)
                 as_good = false;
               else {
                 if (arg->type == arg2->type && arg->instantiatedFrom && !arg2->instantiatedFrom) {
@@ -1440,9 +1399,7 @@ makeNoop(CallExpr* call) {
 static bool
 isTypeExpr(Expr* expr) {
   if (SymExpr* sym = toSymExpr(expr)) {
-    if (sym->var->hasFlag(FLAG_TYPE_VARIABLE))
-      return true;
-    if (isTypeSymbol(sym->var))
+    if (sym->var->hasFlag(FLAG_TYPE_VARIABLE) || isTypeSymbol(sym->var))
       return true;
   } else if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIMITIVE_TYPEOF))

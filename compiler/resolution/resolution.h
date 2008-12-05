@@ -8,8 +8,8 @@ extern Vec<CallExpr*> callStack;
 
 bool isDispatchParent(Type* t, Type* pt);
 
-bool canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* require_scalar_promotion = NULL);
-bool canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn = NULL, bool* require_scalar_promotion = NULL, bool paramCoerce = false);
+bool canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes = NULL);
+bool canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn = NULL, bool* promotes = NULL, bool paramCoerce = false);
 
 const char* toString(Type* type);
 const char* toString(CallInfo* info);

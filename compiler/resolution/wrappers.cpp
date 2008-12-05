@@ -539,9 +539,9 @@ promotionWrap(FnSymbol* fn, CallInfo* info) {
     j++;
     Type* actualType = actuals->v[j]->type;
     Symbol* actualSym = actuals->v[j];
-    bool require_scalar_promotion = false;
-    if (canDispatch(actualType, actualSym, formal->type, fn, &require_scalar_promotion)){
-      if (require_scalar_promotion) {
+    bool promotes = false;
+    if (canDispatch(actualType, actualSym, formal->type, fn, &promotes)){
+      if (promotes) {
         promotion_wrapper_required = true;
         promoted_subs.put(formal, actualType->symbol);
       }
