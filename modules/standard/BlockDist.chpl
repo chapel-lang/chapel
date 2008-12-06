@@ -643,7 +643,7 @@ class Block1DArr: BaseArray {
   def privatize2(pid) {
     var dompid = dom.pid;
     var thisdom = dom;
-    this.dom = __primitive("chpl_getPrivateClass", thisdom, dompid);
+    this.dom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
   }
 
   // GLOBAL ARRAY INTERFACE:

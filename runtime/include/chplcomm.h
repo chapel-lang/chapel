@@ -15,9 +15,9 @@ extern int32_t _numLocales; // number of locales
 extern int32_t chpl_numPrivateObjects;
 extern void** chpl_privateObjects; // privatized array and domain objects
 
-#define chpl_numPrivateClasses() chpl_numPrivateObjects
-extern void chpl_setPrivateClass(void*);
-extern void* chpl_getPrivateClass(int32_t);
+#define chpl_numPrivatizedClasses() chpl_numPrivateObjects
+extern void chpl_newPrivatizedClass(void*);
+extern void* chpl_getPrivatizedClass(int32_t);
 
 
 extern void _heapAllocateGlobals(void);
@@ -82,8 +82,8 @@ typedef void (*func_p)(void*);
     (wide1).addr = (cond) ? (type)((wide2).addr) : NULL;                \
   } while (0)
 
-#define _WIDE_CLASS_GET_PRIVATE_CLASS(wide, id)                         \
-  (wide).locale = _localeID; (wide).addr = chpl_getPrivateClass(id)
+#define _WIDE_CLASS_GET_PRIVATIZED_CLASS(wide, id)                         \
+  (wide).locale = _localeID; (wide).addr = chpl_getPrivatizedClass(id)
 
 #define _SET_WIDE_REF(wide, ref) \
   (wide).locale = _localeID; (wide).addr = ref

@@ -29,7 +29,7 @@ removeWrapRecords() {
   // replace use of _valueType field with type
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIMITIVE_PRIVATE_GET_CLASS)) {
+    if (call->isPrimitive(PRIMITIVE_GET_PRIV_CLASS)) {
       call->get(1)->replace(new SymExpr(call->get(1)->typeInfo()->symbol));
     }
   }

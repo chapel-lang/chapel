@@ -963,9 +963,9 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
-        if (call->isPrimitive(PRIMITIVE_PRIVATE_GET_CLASS)) {
+        if (call->isPrimitive(PRIMITIVE_GET_PRIV_CLASS)) {
           if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            fprintf(outfile, "_WIDE_CLASS_GET_PRIVATE_CLASS(");
+            fprintf(outfile, "_WIDE_CLASS_GET_PRIVATIZED_CLASS(");
             get(1)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(2)->codegen(outfile);
@@ -1891,17 +1891,17 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIMITIVE_RT_WARNING:
       codegenBasicPrimitive(outfile, this);
       break;
-    case PRIMITIVE_PRIVATE_SET_CLASS:
-      fprintf(outfile, "chpl_setPrivateClass(");
+    case PRIMITIVE_NEW_PRIV_CLASS:
+      fprintf(outfile, "chpl_newPrivatizedClass(");
       get(1)->codegen(outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_PRIVATE_NUM_CLASSES:
-      fprintf(outfile, "chpl_numPrivateClasses()");
+    case PRIMITIVE_NUM_PRIV_CLASSES:
+      fprintf(outfile, "chpl_numPrivatizedClasses()");
       break;
-    case PRIMITIVE_PRIVATE_GET_CLASS:
+    case PRIMITIVE_GET_PRIV_CLASS:
       INT_FATAL(this, "handled in move");
       break;
     case PRIMITIVE_GET_ERRNO:

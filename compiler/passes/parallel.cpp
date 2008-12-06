@@ -1246,10 +1246,10 @@ insertWideReferences(void) {
   }
 
   //
-  // widen class types in certain primitives, e.g., PRIVATE_GET_CLASS
+  // widen class types in certain primitives, e.g., GET_PRIV_CLASS
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIMITIVE_PRIVATE_GET_CLASS)) {
+    if (call->isPrimitive(PRIMITIVE_GET_PRIV_CLASS)) {
       call->get(1)->replace(new SymExpr(wideClassMap.get(call->get(1)->typeInfo())->symbol));
     }
   }

@@ -13,7 +13,7 @@ int32_t _numLocales = -1;
 int32_t chpl_numPrivateObjects = 0;
 void** chpl_privateObjects;
 
-void chpl_setPrivateClass(void* v) {
+void chpl_newPrivatizedClass(void* v) {
   chpl_numPrivateObjects += 1;
   if (chpl_numPrivateObjects == 1) {
     chpl_privateObjects = chpl_malloc(chpl_numPrivateObjects, sizeof(void*), "private objects array", 0, "");
@@ -23,7 +23,7 @@ void chpl_setPrivateClass(void* v) {
   chpl_privateObjects[chpl_numPrivateObjects-1] = v;
 }
 
-extern void* chpl_getPrivateClass(int32_t i) {
+extern void* chpl_getPrivatizedClass(int32_t i) {
   return chpl_privateObjects[i];
 }
 

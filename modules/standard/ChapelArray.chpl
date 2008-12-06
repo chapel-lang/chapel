@@ -3,49 +3,44 @@ var privatizeLock$: sync int;
 def _supportsPrivatization(value) param
   return _privatization & value.supportsPrivatization();
 
-def _newArrayDomainSharedCode(param isArray: bool, value) {
-  if _supportsPrivatization(value) {
-    privatizeLock$.writeEF(true);
-    var n = __primitive("chpl_numPrivateClasses");
-    for loc in Locales {
-      if loc != here {
-        on loc {
-          var mine = value.privatize1();
-          __primitive("chpl_setPrivateClass", mine);
-          mine.privatize2(n);
-        }
-      } else {
-        __primitive("chpl_setPrivateClass", value);
-        value.privatize2(n);
+def _newPrivatizedClass(value) {
+  privatizeLock$.writeEF(true);
+  var n = __primitive("chpl_numPrivatizedClasses");
+  for loc in Locales {
+    if loc != here {
+      on loc {
+        var mine = value.privatize1();
+        __primitive("chpl_newPrivatizedClass", mine);
+        mine.privatize2(n);
       }
+    } else {
+      __primitive("chpl_newPrivatizedClass", value);
+      value.privatize2(n);
     }
-    privatizeLock$.readFE();
-    if isArray then
-      return new _array(n, value);
-    else
-      return new _domain(n, value);
-  } else {
-    if isArray then
-      return new _array(value, value);
-    else
-      return new _domain(value, value);
   }
+  privatizeLock$.readFE();
+  return n;
 }
 
 def _newArray(value) {
-  return _newArrayDomainSharedCode(true, value);
+  if _supportsPrivatization(value) then
+    return new _array(_newPrivatizedClass(value), value);
+  else
+    return new _array(value, value);
 }
 
 def _newDomain(value) {
-  return _newArrayDomainSharedCode(false, value);
+  if _supportsPrivatization(value) then
+    return new _domain(_newPrivatizedClass(value), value);
+  else
+    return new _domain(value, value);
 }
 
 def _getDomain(value) {
-  if _supportsPrivatization(value) {
+  if _supportsPrivatization(value) then
     return new _domain(value.pid, value);
-  } else {
+  else
     return new _domain(value, value);
-  }
 }
 
 
@@ -54,7 +49,7 @@ def _getDomain(value) {
 //
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist, param rank: int, type idxType = int(32),
-                       param stridable: bool = false) type
+                                 param stridable: bool = false) type
   return _newDomain(dist.newArithmeticDomain(rank, idxType, stridable));
 
 pragma "has runtime type"
@@ -204,7 +199,7 @@ record _domain {
     if _supportsPrivatization(_valueType) {
       var tc = _valueType;
       var id = _value;
-      var pc = __primitive("chpl_getPrivateClass", tc, id);
+      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
       return pc;
     } else {
       return _value;
@@ -347,7 +342,7 @@ record _array {
     if _supportsPrivatization(_valueType) {
       var tc = _valueType;
       var id = _value;
-      var pc = __primitive("chpl_getPrivateClass", tc, id);
+      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
       return pc;
     } else {
       return _value;
@@ -580,8 +575,6 @@ def _copy(a: []) {
   return b;
 }
 
-
-
 def by(a: domain, b) {
   var x = a._value.strideBy(b);
   return _newDomain(x);
@@ -810,8 +803,7 @@ def _toFollower(x: _tuple, leaderIndex, type alignment) {
   return _toFollowerHelp(x, leaderIndex, 1);
 }
 
-
-// sjd: is this ever called?
 pragma "inline"
-def _toFollower(x, leaderIndex)
+def _toFollower(x, leaderIndex) {
   return _toFollower(x.these(), leaderIndex);
+}
