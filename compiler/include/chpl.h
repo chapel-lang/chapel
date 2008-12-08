@@ -1,13 +1,13 @@
 #ifndef _chpl_H
 #define _chpl_H_
 
-#include <stdarg.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <limits.h>
+#include <cstdarg>
+#include <cstdlib>
+#include <cstdio>
+#include <climits>
 #include <sys/types.h>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 
 #include "chpltypes.h"
 

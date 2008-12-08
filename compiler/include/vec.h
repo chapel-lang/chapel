@@ -31,9 +31,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _vec_H_
 #define _vec_H_
 
-#include <string.h>
+#include <cstring>
 #include <stdint.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <sys/types.h>
 
 // Simple Vector class, also supports open hashed sets

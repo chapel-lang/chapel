@@ -30,9 +30,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *****************************************************************************/
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cstdlib>
+#include <cstring>
 #include "chpl.h"
 #include "chpltypes.h"
 #include "beautify.h"

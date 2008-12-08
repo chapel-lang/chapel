@@ -3,7 +3,7 @@
 
 // Lists for use with Stmts and Exprs (only)
 
-#include <stdio.h>
+#include <cstdio>
 #include "chpl.h"
 #include "baseAST.h"
 

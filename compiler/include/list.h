@@ -41,9 +41,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _list_H_
 #define _list_H_
 
-#include <stddef.h>
-#if !defined(__FreeBSD__) || (__FreeBSD_version >= 500000)
-#else
+#include <cstddef>
+#if defined(__FreeBSD__) && (__FreeBSD_version < 500000)
 #include <stdint.h>
 #endif
 

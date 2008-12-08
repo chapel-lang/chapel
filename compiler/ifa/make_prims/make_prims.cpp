@@ -1,19 +1,19 @@
-#include <assert.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <limits.h>
+#include <cassert>
+#include <cstdarg>
+#include <cstdlib>
+#include <cstdio>
+#include <climits>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/uio.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <time.h>
+#include <ctime>
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include <ctype.h>
-#include <string.h>
+#include <cctype>
+#include <cstring>
 #include <inttypes.h>
 #include "vec.h"
 

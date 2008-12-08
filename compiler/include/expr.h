@@ -1,7 +1,7 @@
 #ifndef _EXPR_H_
 #define _EXPR_H_
 
-#include <stdio.h>
+#include <cstdio>
 #include "alist.h"
 #include "baseAST.h"
 #include "symbol.h"

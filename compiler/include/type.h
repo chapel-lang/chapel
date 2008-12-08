@@ -2,7 +2,7 @@
 #define _TYPE_H_
 
 
-#include <stdio.h>
+#include <cstdio>
 #include "baseAST.h"
 #include "../ifa/num.h"
 

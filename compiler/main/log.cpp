@@ -1,5 +1,5 @@
-#include <stdarg.h>
-#include <string.h>
+#include <cstdarg>
+#include <cstring>
 #include <sys/stat.h>
 #include "log.h"
 #include "misc.h"

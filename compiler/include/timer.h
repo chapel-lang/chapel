@@ -1,7 +1,7 @@
 #ifndef _timer_h_
 #define _timer_h_
 
-#include <stdio.h>
+#include <cstdio>
 #include <sys/time.h>
 
 typedef struct timeval _timervalue;

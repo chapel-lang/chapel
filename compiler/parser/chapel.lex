@@ -3,7 +3,7 @@
 
 %{
 
-#include <stdio.h>
+#include <cstdio>
 #include "lexyacc.h"
 #include "chapel.tab.h"
 

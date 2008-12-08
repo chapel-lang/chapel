@@ -1,7 +1,7 @@
 #ifndef _num_h_
 #define _num_h_
 
-#include <string.h>
+#include <cstring>
 #include "chpltypes.h"
 #include "map.h"
 #include "misc.h"

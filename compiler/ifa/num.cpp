@@ -1,6 +1,6 @@
-#include <math.h>
-#include <string.h>
-#include <stdio.h>
+#include <cmath>
+#include <cstring>
+#include <cstdio>
 #include "num.h"
 #include "prim_data.h"
 #include "stringutil.h"

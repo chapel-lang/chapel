@@ -1,4 +1,4 @@
-#include <stdlib.h>
+#include <cstdlib>
 #include "build.h"
 #include "countTokens.h"
 #include "files.h"

@@ -1,4 +1,4 @@
-#include <stdlib.h>
+#include <cstdlib>
 #include "astutil.h"
 #include "bb.h"
 #include "bitVec.h"

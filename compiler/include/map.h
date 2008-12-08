@@ -31,9 +31,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _map_H_
 #define _map_H_
 
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cstring>
+#include <cassert>
 #include "vec.h"
 #include "list.h"
 

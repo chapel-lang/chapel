@@ -1,4 +1,4 @@
-#include <signal.h>
+#include <csignal>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include "driver.h"

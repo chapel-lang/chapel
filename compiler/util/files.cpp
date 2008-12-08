@@ -8,7 +8,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <pwd.h>
-#include <errno.h>
+#include <cerrno>
 #include <unistd.h>
 #include <sys/types.h>
 

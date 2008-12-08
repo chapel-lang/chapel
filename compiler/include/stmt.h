@@ -1,7 +1,7 @@
 #ifndef _STMT_H_
 #define _STMT_H_
 
-#include <stdio.h>
+#include <cstdio>
 #include "alist.h"
 #include "baseAST.h"
 #include "symbol.h"

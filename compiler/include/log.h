@@ -1,7 +1,7 @@
 #ifndef _log_H_
 #define _log_H_
 
-#include <stdio.h>
+#include <cstdio>
 #include "chpltypes.h"
 
 #ifndef IFA_EXTERN

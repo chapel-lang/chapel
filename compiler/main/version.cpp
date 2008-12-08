@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cstdio>
 #include "version.h"
 #include "version_num.h"
 

@@ -1,4 +1,4 @@
-#include <string.h>
+#include <cstring>
 #include "countTokens.h"
 #include "misc.h"
 #include "processTokens.h"

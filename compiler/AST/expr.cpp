@@ -1,4 +1,4 @@
-#include <string.h>
+#include <cstring>
 #include "astutil.h"
 #include "expr.h"
 #include "misc.h"

@@ -1,7 +1,7 @@
 #ifndef _driver_H_
 #define _driver_H_
 
-#include <stdio.h>
+#include <cstdio>
 #include "map.h"
 #include "chpl.h"
 
