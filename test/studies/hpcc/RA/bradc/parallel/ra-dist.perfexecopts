@@ -1,1 +1,1 @@
---n=20 --printStats=false
+--n=20 --printStats=true --printParams=false
