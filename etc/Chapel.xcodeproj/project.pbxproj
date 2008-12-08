@@ -23,6 +23,7 @@
 
 /* Begin PBXBuildFile section */
 		F70EA9EC0E648652006F2EE0 /* flags.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F70EA9EB0E648652006F2EE0 /* flags.cpp */; };
+		F713828D0EE7544F0086E1AE /* removeWrapRecords.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F713828C0EE7544F0086E1AE /* removeWrapRecords.cpp */; };
 		F721A0BE0D454AB400A6B43F /* libchpl.a in CopyFiles */ = {isa = PBXBuildFile; fileRef = F7FAC4F90D4537A700C02B67 /* libchpl.a */; };
 		F721A0D50D455B8C00A6B43F /* map.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A0D30D455B8C00A6B43F /* map.cpp */; };
 		F721A0D60D455B8C00A6B43F /* vec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A0D40D455B8C00A6B43F /* vec.cpp */; };
@@ -228,6 +229,7 @@
 		8DD76F6C0486A84900D96B5E /* chpl */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = chpl; sourceTree = BUILT_PRODUCTS_DIR; };
 		F70EA9EB0E648652006F2EE0 /* flags.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = flags.cpp; path = ../compiler/AST/flags.cpp; sourceTree = SOURCE_ROOT; };
 		F70EA9EF0E648687006F2EE0 /* flags.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = flags.h; path = ../compiler/include/flags.h; sourceTree = SOURCE_ROOT; };
+		F713828C0EE7544F0086E1AE /* removeWrapRecords.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = removeWrapRecords.cpp; path = ../compiler/optimizations/removeWrapRecords.cpp; sourceTree = SOURCE_ROOT; };
 		F719EB150DB6C03900EFB331 /* reservedSymbolNames */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = reservedSymbolNames; path = ../compiler/passes/reservedSymbolNames; sourceTree = SOURCE_ROOT; };
 		F721A0D30D455B8C00A6B43F /* map.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = map.cpp; path = ../compiler/adt/map.cpp; sourceTree = "<group>"; };
 		F721A0D40D455B8C00A6B43F /* vec.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = vec.cpp; path = ../compiler/adt/vec.cpp; sourceTree = "<group>"; };
@@ -719,6 +721,7 @@
 				F73EB6F90EC5030A00E3026E /* optimizeReadOnlyReferenceArguments.cpp */,
 				F721A12A0D455E3C00A6B43F /* reachingDefinitionsAnalysis.cpp */,
 				F721A12B0D455E3C00A6B43F /* removeUnnecessaryGotos.cpp */,
+				F713828C0EE7544F0086E1AE /* removeWrapRecords.cpp */,
 				F73113A60E3EB71900F62922 /* scalarReplace.cpp */,
 			);
 			name = optimizations;
@@ -1507,6 +1510,7 @@
 				F70EA9EC0E648652006F2EE0 /* flags.cpp in Sources */,
 				F754D95C0E929C5F00A527CD /* insertDestructors.cpp in Sources */,
 				F73EB6FA0EC5030A00E3026E /* optimizeReadOnlyReferenceArguments.cpp in Sources */,
+				F713828D0EE7544F0086E1AE /* removeWrapRecords.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
