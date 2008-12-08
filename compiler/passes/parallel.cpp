@@ -899,15 +899,26 @@ insertWideReferences(void) {
   }
 
   //
-  // change dtNil into dtObject
+  // change dtNil return type into dtObject
+  // replace symbols of type nil by nil
   //
   forv_Vec(DefExpr, def, gDefExprs) {
     if (FnSymbol* fn = toFnSymbol(def->sym)) {
       if (fn->retType == dtNil)
         fn->retType = dtObject;
     } else if (!isTypeSymbol(def->sym)) {
-      if (def->sym != gNil && def->sym->type == dtNil)
-        def->sym->type = dtObject;
+      if (def->sym != gNil &&
+          def->sym->type == dtNil &&
+          !isTypeSymbol(def->parentSymbol))
+        def->remove();
+    }
+  }
+  forv_Vec(SymExpr, se, gSymExprs) {
+    if (se->var != gNil && se->var->type == dtNil) {
+      se->var = gNil;
+      if (CallExpr* parent = toCallExpr(se->parentExpr))
+        if (parent->isPrimitive(PRIM_MOVE) && parent->get(1) == se)
+          parent->remove();
     }
   }
 
@@ -1118,6 +1129,13 @@ insertWideReferences(void) {
               call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
             }
           }
+        } else if (call->isPrimitive(PRIM_RETURN)) {
+          FnSymbol* fn = toFnSymbol(call->parentSymbol);
+          INT_ASSERT(fn);
+          VarSymbol* tmp = newTemp(fn->retType);
+          call->insertBefore(new DefExpr(tmp));
+          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, gNil));
+          se->var = tmp;
         }
       }
     }
@@ -1210,7 +1228,7 @@ insertWideReferences(void) {
   // dereference wide string actual argument to primitive
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->primitive) {
+    if (call->parentSymbol && call->primitive) {
       if (call->primitive->tag == PRIM_UNKNOWN ||
           call->isPrimitive(PRIM_CAST)) {
         for_actuals(actual, call) {
