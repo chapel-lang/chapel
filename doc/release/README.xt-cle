@@ -17,65 +17,80 @@ know at chapel_info@cray.com.
    details.
 
 
-2) Set CHPL_HOST_PLATFORM to xt-cle and CHPL_COMM to gasnet.  For
-   example:
+2) Set CHPL_HOST_PLATFORM to 'xt-cle' -- for example:
 
      setenv CHPL_HOST_PLATFORM xt-cle
+
+
+3) If you want to run on multiple compute nodes, set CHPL_COMM to
+   'gasnet'.  For example:
+
      setenv CHPL_COMM gasnet
 
-   See README.multilocale for further information about the GASNet
-   library.
+   See README.multilocale for further information about running on
+   multiple locales and using the GASNet library.
 
 
-3) If your XT requires PBS/qsub to launch jobs onto the compute nodes
-   (or you simply want to use it as your job launch mechanism),
-   set CHPL_LAUNCHER to pbs.  For example:
+4) If your XT requires PBS/qsub to launch jobs onto the compute nodes
+   (or you simply want to use it as your job launch mechanism), set
+   CHPL_LAUNCHER to 'pbs'.  For example:
 
      setenv CHPL_LAUNCHER pbs
 
-   Otherwise, CHPL_LAUNCHER will default to 'aprun' on xt-cle
-   systems (you can also set this explicitly if you wish).  See
+   Otherwise, CHPL_LAUNCHER will default to 'aprun' on xt-cle systems
+   (you can also set this explicitly if you wish).  See
    README.launcher for more information on Chapel's launcher
    capabilities.
 
 
-4) Ensure that you have one of the following Programming Environment
-   modules loaded, based on the C compiler you want to use to compile
-   for the compute nodes:
+5) Ensure that you have one of the following Programming Environment
+   modules loaded which will specify the C compiler used to compile
+   Chapel programs for the compute nodes:
 
      - PrgEnv-gnu
      - PrgEnv-pathscale
      - PrgEnv-pgi
 
 
-5) Make sure you're in the top-level chapel/ directory:
+6) By default, g++ will be used to compile code that runs on the login
+   nodes, such as the Chapel compiler and launcher code.  Optionally,
+   you can override this default by setting CHPL_HOST_COMPILER to one
+   of the following values:
+
+     gnu       : the GNU compiler suite -- gcc and g++
+     intel     : the Intel compiler suite -- icc and icpc
+     pathscale : the Pathscale compiler suite -- pathcc and pathCC
+     pgi       : the PGI compiler suite -- pgcc and pgCC
+
+
+7) Make sure you're in the top-level chapel/ directory:
 
      cd $CHPL_HOME
 
 
-6) Make/re-make the compiler and runtime:
+8) Make/re-make the compiler and runtime:
 
      gmake
 
 
-7) Compile your Chapel program as usual.  See README.compiling for
+9) Compile your Chapel program as usual.  See README.compiling for
    details.  For example:
 
      chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
 
 
-8) When you compile a Chapel program for the XT, you should see two
-   binaries (e.g., a.out and a.out_real).  The first binary contains
-   code to launch the Chapel program onto the compute nodes, as
-   specified by your CHPL_LAUNCHER setting.  The second contains the
-   program code itself.  You can use the -v flag to see the commands
-   used to launch your program.  See README.launcher for further
-   details.
+10) When you compile a Chapel program for the XT, you should see two
+    binaries (e.g., a.out and a.out_real).  The first binary contains
+    code to launch the Chapel program onto the compute nodes, as
+    specified by your CHPL_LAUNCHER setting.  The second contains the
+    program code itself.  You can use the -v flag to see the commands
+    used to launch your program.  See README.launcher for further
+    details.
 
 
-9) Multi-locale executions require the number of locales to be
-   specified on the command line.  Other than this, execute your
-   Chapel program as usual.  For example:
+11) Multi-locale executions require the number of locales to be
+    specified on the command line.  Other than this, execute your
+    Chapel program as usual.  For example:
 
      ./hello-multiloc -nl 2
 
@@ -90,10 +105,10 @@ XT File Systems and Chapel execution
   nodes.  In some cases, running a Chapel program from a non-Lustre
   file system will make it impossible to launch onto the compute
   nodes.  In other cases, the launch will succeed, but any files read
-  or written by the Chapel program will be local to the compute node's
-  file system and not the login node's.  To avoid dealing with these
-  issues, executing Chapel programs from a Lustre file system will
-  generally produce the best results.
+  or written by the Chapel program will opened relative to the compute
+  node's file system rather than the login node's.  To avoid wrestling
+  with such issues, executing Chapel programs from a Lustre file
+  generally produces the best results.
 
 
 --------------------------
@@ -101,25 +116,30 @@ Memory limits using GASNet
 --------------------------
 
 * GASNet executions over portals on the XT currently conservatively
-  assume a maximum heap size of 2GB per locale even though many XT
-  configurations can support a much larger heap size in practice.  If
-  you are getting out-of-memory errors as a result of this limit, you
-  can explicitly request a larger maximum heap size by setting the
-  environment variable GASNET_MAX_SEGSIZE to the number of bytes you
-  wish to use as a limit.  For example:
+  assume a maximum heap size of 2GB per locale even though some XT
+  configurations may not have this much memory while others may
+  support a much larger heap size in practice.  If you are getting
+  out-of-memory errors, you may want to request a different maximum
+  heap size by setting the environment variable GASNET_MAX_SEGSIZE to
+  the number of bytes you wish to use as a limit.  For example:
 
     setenv GASNET_MAX_SEGSIZE 4294967296
 
   would set the GASNet heap size limit to 4GB.  Note that this
   variable can be changed from run to run and need not be set at
-  compile time.  Applications that set this limit too high may be
-  terminated with the following error:
+  build/compile time.  Applications that set this limit too high may
+  be terminated with the following error:
 
-     [NID 18]Apid 49229: initiated application termination
-     Application 49229 exit signals: Killed
+     [NID ###] Apid ######: initiated application termination
+     Application ###### exit signals: Killed
 
-  If you get this message, try reducing the GASNET_MAX_SEGSIZE value.
-  For more details, please refer to:
+  or:
+
+    [NID ###] Apid ######: OOM killer terminated this process.
+    Application ###### exit signals: Killed
+
+  If you get one of these messages, try setting/reducing the
+  GASNET_MAX_SEGSIZE value.  For more details, please refer to:
 
     $CHPL_HOME/third-party/gasnet/GASNet-*/portals-conduit/README
 
@@ -129,16 +149,16 @@ NCCS user notes
 ---------------
 
 * At the time of this release, NCCS XT machines use a different qsub
-  mechanism in order to enforce their policies.  We have attempted to
-  make our qsub launch code work with this version of qsub, but
-  require a CHPL_LAUNCHER_ACCOUNT environment variable to be set to
-  specify your NCCS account name.  For example:
+  mechanism in order to enforce their queuing policies.  We have
+  attempted to make our qsub launch code work with this version of
+  qsub, but require a CHPL_LAUNCHER_ACCOUNT environment variable to be
+  set to specify your NCCS account name.  For example:
 
     setenv CHPL_LAUNCHER_ACCOUNT MYACCOUNTID
 
-* Should CHPL_LAUNCHER=='pbs' fail to work for you, try setting
-  CHPL_LAUNCHER to 'pbs-nccs', remaking the compiler and runtime, and
-  recompiling your program.
+* Should setting CHPL_LAUNCHER to 'pbs' fail to work for you, try
+  setting CHPL_LAUNCHER to 'pbs-nccs', remaking the compiler and
+  runtime, and recompiling your program.
 
 * If both of these options fail, you can always fall back on one of
   these options:
@@ -146,6 +166,5 @@ NCCS user notes
   - launch the a.out_real binary manually using aprun within a
     manually-generated qsub script
 
-  - set CHPL_LAUNCHER to aprun, rebuild and recompile, and execute
-    the resulting binary within a manually-generated qsub script.
-
+  - set CHPL_LAUNCHER to aprun, rebuild and recompile, and execute the
+    resulting binary within a manually-generated qsub script.

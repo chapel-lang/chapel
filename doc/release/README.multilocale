@@ -44,9 +44,9 @@ To run Chapel on multiple locales, the following steps are required:
        (other)                           everything
 
 
-4) Advanced GASNet users can set CHPL_COMM_DEBUG if they want to turn
-   GASNet's debugging mode on.  Otherwise, the default is to leave
-   debugging off.
+4) Advanced GASNet users may want to set CHPL_COMM_DEBUG in order to
+   turn GASNet's debugging mode on.  Otherwise, the default is to
+   leave debugging off.
 
 
 5) Make sure you are in CHPL_HOME:
@@ -61,7 +61,13 @@ To run Chapel on multiple locales, the following steps are required:
    Or:
 
      make
-     
+
+   Note that the runtime libraries used by the Chapel compiler are
+   based on your choices of conduit, substrate, and debugging mode
+   (steps 2, 3, and 4), so the runtime directory will need to be
+   recompiled for each variation in these settings that you want to
+   use for a given choice of target platform, compiler, and launcher.
+
 
 7) Set up GASNet environment variables for execution:
 
