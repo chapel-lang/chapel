@@ -19,7 +19,7 @@ check_functions(FnSymbol* fn) {
   Vec<CallExpr*> calls;
   collectCallExprs(fn, calls);
   forv_Vec(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIMITIVE_RETURN) && call->parentSymbol == fn)
+    if (call->isPrimitive(PRIM_RETURN) && call->parentSymbol == fn)
       rets.add(call);
   }
   if (rets.n == 0)
@@ -142,7 +142,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret) {
   if (!expr)
     return 0;
   if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIMITIVE_MOVE))
+    if (call->isPrimitive(PRIM_MOVE))
       if (SymExpr* lhs = toSymExpr(call->get(1)))
         if (lhs->var == ret)
           return 1 + isDefinedAllPaths(expr->next, ret);
@@ -153,7 +153,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret) {
       return 1 + isDefinedAllPaths(expr->next, ret);
   } else if (BlockStmt* block = toBlockStmt(expr)) {
     if (!block->blockInfo ||
-        block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_DOWHILE_LOOP))
+        block->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP))
       if (int result = isDefinedAllPaths(block->body.head, ret))
         return result;
   } else if (isGotoStmt(expr)) {

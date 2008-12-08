@@ -486,29 +486,29 @@ when_stmt_ls:
 
 when_stmt:
   TWHEN nonempty_expr_ls TDO stmt
-    { $$ = new CondStmt(new CallExpr(PRIMITIVE_WHEN, $2), $4); }
+    { $$ = new CondStmt(new CallExpr(PRIM_WHEN, $2), $4); }
 | TWHEN nonempty_expr_ls block_stmt
-    { $$ = new CondStmt(new CallExpr(PRIMITIVE_WHEN, $2), $3); }
+    { $$ = new CondStmt(new CallExpr(PRIM_WHEN, $2), $3); }
 | TOTHERWISE stmt
-    { $$ = new CondStmt(new CallExpr(PRIMITIVE_WHEN), $2); }
+    { $$ = new CondStmt(new CallExpr(PRIM_WHEN), $2); }
 ;
 
 
 return_stmt:
   TRETURN opt_return_part TSEMI
-    { $$ = buildChapelStmt(new CallExpr(PRIMITIVE_RETURN, $2)); }
+    { $$ = buildChapelStmt(new CallExpr(PRIM_RETURN, $2)); }
 ;
 
 
 yield_stmt:
   TYIELD opt_return_part TSEMI
-    { $$ = buildChapelStmt(new CallExpr(PRIMITIVE_YIELD, $2)); }
+    { $$ = buildChapelStmt(new CallExpr(PRIM_YIELD, $2)); }
 ;
 
 
 delete_stmt:
   TDELETE expr TSEMI
-    { $$ = buildChapelStmt(new CallExpr(PRIMITIVE_DELETE, $2)); }
+    { $$ = buildChapelStmt(new CallExpr(PRIM_DELETE, $2)); }
 ;
 
 
@@ -623,10 +623,10 @@ use_stmt:
 
 use_stmt_ls:
   lvalue
-    { $$ = buildChapelStmt(new CallExpr(PRIMITIVE_USE, $1)); }
+    { $$ = buildChapelStmt(new CallExpr(PRIM_USE, $1)); }
 | use_stmt_ls TCOMMA lvalue
     {
-      $1->insertAtTail(new CallExpr(PRIMITIVE_USE, $3));
+      $1->insertAtTail(new CallExpr(PRIM_USE, $3));
       $$ = $1;
     }
 ;
@@ -889,7 +889,7 @@ class_tag:
 
 opt_inherit_expr_ls:
   /* nothing */
-    { $$ = new CallExpr(PRIMITIVE_ACTUALS_LIST); }
+    { $$ = new CallExpr(PRIM_ACTUALS_LIST); }
 | TCOLON nonempty_expr_ls
     { $$ = $2; }
 ;
@@ -1181,14 +1181,14 @@ formal_type_expr:
 
 formal_expr_ls:
   /* nothing */
-    { $$ = new CallExpr(PRIMITIVE_ACTUALS_LIST); }
+    { $$ = new CallExpr(PRIM_ACTUALS_LIST); }
 | nonempty_formal_expr_ls
 ;
 
 
 nonempty_formal_expr_ls:
   formal_expr_list_item
-    { $$ = new CallExpr(PRIMITIVE_ACTUALS_LIST, $1); }
+    { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
 | nonempty_formal_expr_ls TCOMMA formal_expr_list_item
     { $1->insertAtTail($3); }
 ;
@@ -1233,7 +1233,7 @@ formal_memberaccess_expr:
   formal_type_expr TDOT identifier
     { $$ = buildDotExpr($1, $3); }
 | formal_type_expr TDOT TTYPE
-    { $$ = new CallExpr(PRIMITIVE_TYPEOF, $1); }
+    { $$ = new CallExpr(PRIM_TYPEOF, $1); }
 | formal_type_expr TDOT TDOMAIN
     { $$ = buildDotExpr($1, "_dom"); }
 ;
@@ -1244,14 +1244,14 @@ formal_memberaccess_expr:
 
 expr_ls:
   /* nothing */
-    { $$ = new CallExpr(PRIMITIVE_ACTUALS_LIST); }
+    { $$ = new CallExpr(PRIM_ACTUALS_LIST); }
 | nonempty_expr_ls
 ;
 
 
 nonempty_expr_ls:
   expr_list_item
-    { $$ = new CallExpr(PRIMITIVE_ACTUALS_LIST, $1); }
+    { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
 | nonempty_expr_ls TCOMMA expr_list_item
     { $1->insertAtTail($3); }
 ;
@@ -1331,9 +1331,9 @@ parenop_expr:
 | TPRIMITIVE TLP expr_ls TRP
     { $$ = buildPrimitiveExpr($3); }
 | TCOMPILERERROR TLP expr_ls TRP
-    { $$ = new CallExpr(PRIMITIVE_ERROR, $3); }
+    { $$ = new CallExpr(PRIM_ERROR, $3); }
 | TCOMPILERWARNING TLP expr_ls TRP
-    { $$ = new CallExpr(PRIMITIVE_WARNING, $3); }
+    { $$ = new CallExpr(PRIM_WARNING, $3); }
 | TINDEX TLP expr_ls TRP
     { $$ = new CallExpr("chpl__buildIndexType", $3); }
 ;
@@ -1343,7 +1343,7 @@ memberaccess_expr:
   lvalue TDOT identifier
     { $$ = buildDotExpr($1, $3); }
 | lvalue TDOT TTYPE
-    { $$ = new CallExpr(PRIMITIVE_TYPEOF, $1); }
+    { $$ = new CallExpr(PRIM_TYPEOF, $1); }
 | lvalue TDOT TDOMAIN
     { $$ = buildDotExpr($1, "_dom"); }
 ;
@@ -1421,9 +1421,9 @@ expr:
 stmt_level_expr: 
   lvalue
 | TNEW parenop_expr
-    { $$ = new CallExpr(PRIMITIVE_NEW, $2); }
+    { $$ = new CallExpr(PRIM_NEW, $2); }
 | TLP TDOTDOTDOT expr TRP
-    { $$ = new CallExpr(PRIMITIVE_TUPLE_EXPAND, $3); }
+    { $$ = new CallExpr(PRIM_TUPLE_EXPAND, $3); }
 | TNIL
     { $$ = new SymExpr(gNil); }
 | TLET var_decl_stmt_inner_ls TIN expr

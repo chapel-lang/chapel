@@ -51,11 +51,11 @@ insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
     wrapper->insertAtTail(call);
   } else {
     //if (!fn->hasFlag(FLAG_ITERATOR_FN)) {
-    wrapper->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
+    wrapper->insertAtTail(new CallExpr(PRIM_RETURN, call));
   } /*else {
     VarSymbol* index = newTemp("_i");
     wrapper->insertAtTail(new DefExpr(index));
-    wrapper->insertAtTail(buildForLoopStmt(new SymExpr(index), call, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, index))));
+    wrapper->insertAtTail(buildForLoopStmt(new SymExpr(index), call, new BlockStmt(new CallExpr(PRIM_YIELD, index))));
     wrapper->addFlag(FLAG_ITERATOR_FN);
     }*/
   fn->defPoint->insertAfter(new DefExpr(wrapper));
@@ -91,14 +91,14 @@ buildDefaultWrapper(FnSymbol* fn,
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
     if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME)) {
       if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
-        wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, wrapper->_this,
-                                new CallExpr(PRIMITIVE_CHPL_ALLOC, wrapper->_this,
+        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, wrapper->_this,
+                                new CallExpr(PRIM_CHPL_ALLOC, wrapper->_this,
                                 new_StringSymbol(astr("instance of class ",
                                                       fn->_this->type->symbol->name)))));
-        wrapper->insertAtTail(new CallExpr(PRIMITIVE_SETCID, wrapper->_this));
+        wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
       }
     }
-    wrapper->insertAtTail(new CallExpr(PRIMITIVE_INIT_FIELDS, wrapper->_this));
+    wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
   }
   CallExpr* call = new CallExpr(fn);
   call->square = isSquare;
@@ -109,7 +109,7 @@ buildDefaultWrapper(FnSymbol* fn,
       if (fn->_this == formal)
         wrapper->_this = wrapper_formal;
       if (formal->hasFlag(FLAG_IS_MEME))
-        wrapper->_this->defPoint->insertAfter(new CallExpr(PRIMITIVE_MOVE, wrapper->_this, wrapper_formal)); // unexecuted none/gasnet on 4/25/08
+        wrapper->_this->defPoint->insertAfter(new CallExpr(PRIM_MOVE, wrapper->_this, wrapper_formal)); // unexecuted none/gasnet on 4/25/08
       wrapper->insertFormalAtTail(wrapper_formal);
       Symbol* temp;
       if (formal->type->symbol->hasFlag(FLAG_REF)) {
@@ -118,7 +118,7 @@ buildDefaultWrapper(FnSymbol* fn,
         if (formal->hasFlag(FLAG_TYPE_VARIABLE))
           temp->addFlag(FLAG_TYPE_VARIABLE); // unexecuted none/gasnet on 4/25/08
         wrapper->insertAtTail(new DefExpr(temp));
-        wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, new CallExpr(PRIMITIVE_SET_REF, wrapper_formal)));
+        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_SET_REF, wrapper_formal)));
       } else if (specializeDefaultConstructor && wrapper_formal->typeExpr) {
         temp = newTemp();
         temp->addFlag(FLAG_MAYBE_PARAM);
@@ -127,7 +127,7 @@ buildDefaultWrapper(FnSymbol* fn,
         wrapper->insertAtTail(new DefExpr(temp));
         BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
         wrapper->insertAtTail(typeExpr);
-        wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, new CallExpr("_createFieldDefault", typeExpr->body.tail->remove(), wrapper_formal)));
+        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("_createFieldDefault", typeExpr->body.tail->remove(), wrapper_formal)));
       } else
         temp = wrapper_formal;
       copy_map.put(formal, temp);
@@ -140,7 +140,7 @@ buildDefaultWrapper(FnSymbol* fn,
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
               if (!isShadowedField(formal))
                 wrapper->insertAtTail(
-                  new CallExpr(PRIMITIVE_SET_MEMBER, wrapper->_this,
+                  new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
                                new_StringSymbol(formal->name), temp));
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
@@ -178,9 +178,9 @@ buildDefaultWrapper(FnSymbol* fn,
         BlockStmt* defaultExpr = formal->defaultExpr->copy();
         wrapper->insertAtTail(defaultExpr);
         if (formal->intent != INTENT_INOUT) {
-          wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, defaultExpr->body.tail->remove()));
+          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, defaultExpr->body.tail->remove()));
         } else {
-          wrapper->insertAtTail(new CallExpr(PRIMITIVE_MOVE, temp, new CallExpr("_copy", defaultExpr->body.tail->remove())));
+          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("_copy", defaultExpr->body.tail->remove())));
           INT_ASSERT(!temp->hasFlag(FLAG_EXPR_TEMP));
           temp->removeFlag(FLAG_MAYBE_PARAM);
         }
@@ -192,7 +192,7 @@ buildDefaultWrapper(FnSymbol* fn,
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
               if (!isShadowedField(formal))
                 wrapper->insertAtTail(
-                  new CallExpr(PRIMITIVE_SET_MEMBER, wrapper->_this,
+                  new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
                                new_StringSymbol(formal->name), temp));
     }
   }
@@ -363,7 +363,7 @@ buildCoercionWrapper(FnSymbol* fn,
         //
         // dereference reference actual
         //
-        call->insertAtTail(new CallExpr(PRIMITIVE_GET_REF, wrapperFormal));
+        call->insertAtTail(new CallExpr(PRIM_GET_REF, wrapperFormal));
       } else if (wrapperFormal->instantiatedParam) {
         call->insertAtTail(new CallExpr("_cast", formal->type->symbol, paramMap.get(formal)));
       } else {
@@ -489,8 +489,8 @@ buildPromotionWrapper(FnSymbol* fn,
       lifn->insertAtTail(new DefExpr(leaderIndex));
       VarSymbol* leaderIterator = newTemp("_leaderIterator");
       lifn->insertAtTail(new DefExpr(leaderIterator));
-      lifn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leaderIterator, new CallExpr("_toLeader", iterator->copy(&leaderMap))));
-      lifn->insertAtTail(buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), new BlockStmt(new CallExpr(PRIMITIVE_YIELD, leaderIndex))));
+      lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", iterator->copy(&leaderMap))));
+      lifn->insertAtTail(buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex))));
       theProgram->block->insertAtTail(new DefExpr(lifn));
       normalize(lifn);
       lifn->removeFlag(FLAG_INVISIBLE_FN);
@@ -509,15 +509,15 @@ buildPromotionWrapper(FnSymbol* fn,
       fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
       VarSymbol* followerIterator = newTemp("_followerIterator");
       fifn->insertAtTail(new DefExpr(followerIterator));
-      fifn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower)));
-      fifn->insertAtTail(buildForLoopStmt(indices->copy(&followerMap), new SymExpr(followerIterator), new BlockStmt(new CallExpr(PRIMITIVE_YIELD, actualCall->copy(&followerMap)))));
+      fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower)));
+      fifn->insertAtTail(buildForLoopStmt(indices->copy(&followerMap), new SymExpr(followerIterator), new BlockStmt(new CallExpr(PRIM_YIELD, actualCall->copy(&followerMap)))));
       theProgram->block->insertAtTail(new DefExpr(fifn));
       normalize(fifn);
       fifn->removeFlag(FLAG_INVISIBLE_FN);
       fifn->addFlag(FLAG_GENERIC);
       fifn->instantiationPoint = getVisibilityBlock(info->call);
     }
-    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(new CallExpr(PRIMITIVE_YIELD, actualCall)))));
+    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(new CallExpr(PRIM_YIELD, actualCall)))));
   }
   fn->defPoint->insertBefore(new DefExpr(wrapper));
   normalize(wrapper);

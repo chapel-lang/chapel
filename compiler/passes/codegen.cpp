@@ -258,7 +258,7 @@ static void codegen_header(void) {
   FILE* outfile;
   if (fRuntime) {
     chpl_main->cname = astr("chpl_init_", userModules.v[0]->name);
-    baseModule->initFn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, gVoid)));
+    baseModule->initFn->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, gVoid)));
     fileinfo runtimeHeaderFile;
     openRuntimeFile(&runtimeHeaderFile, userModules.v[0]->name, "h");
     outfile = runtimeHeaderFile.fptr;

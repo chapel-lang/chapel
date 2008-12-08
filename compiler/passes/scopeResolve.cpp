@@ -478,9 +478,9 @@ static void build_type_constructor(ClassType* ct) {
           field->hasFlag(FLAG_OMIT_FROM_CONSTRUCTOR)) {
         fn->insertAtTail(
           new BlockStmt(
-            new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+            new CallExpr(PRIM_SET_MEMBER, fn->_this, 
               new_StringSymbol(field->name),
-              new CallExpr(PRIMITIVE_INIT, exprType->remove())),
+              new CallExpr(PRIM_INIT, exprType->remove())),
             BLOCK_TYPE));
       } else {
         fieldNamesSet.set_add(field->name);
@@ -507,18 +507,18 @@ static void build_type_constructor(ClassType* ct) {
             arg->type = dtAny;
 
           if (field->hasFlag(FLAG_PARAM) || field->hasFlag(FLAG_TYPE_VARIABLE))
-            fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
+            fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name), arg));
           else
-            fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
+            fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name),
-                                          new CallExpr(PRIMITIVE_INIT, arg)));
+                                          new CallExpr(PRIM_INIT, arg)));
         } else if (exprType) {
-          fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
+          fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name),
-                                          new CallExpr(PRIMITIVE_INIT, exprType->copy())));
+                                          new CallExpr(PRIM_INIT, exprType->copy())));
         } else if (init) {
-          fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
+          fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                         new_StringSymbol(field->name),
                                         new CallExpr("_copy", init->copy())));
         }
@@ -526,7 +526,7 @@ static void build_type_constructor(ClassType* ct) {
     }
   }
 
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, fn->_this));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
   fn->retType = ct;
 
@@ -561,7 +561,7 @@ static void build_type_constructor(ClassType* ct) {
 
     // Save the pointer to the outer class
     ct->fields.insertAtTail(new DefExpr(outer));
-    fn->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER,
+    fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER,
                                   fn->_this,
                                   new_StringSymbol("outer"),
                                   fn->_outer));
@@ -617,13 +617,13 @@ static void build_constructor(ClassType* ct) {
 
   ArgSymbol* meme = NULL;
   if (ct->symbol->hasFlag(FLAG_REF) || ct->symbol->hasFlag(FLAG_SYNC)) {
-    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this,
-                       new CallExpr(PRIMITIVE_CHPL_ALLOC, fn->_this,
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this,
+                       new CallExpr(PRIM_CHPL_ALLOC, fn->_this,
                          new_StringSymbol(astr("instance of class ", ct->symbol->name)))));
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
     meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL, new SymExpr(gTypeDefaultToken));
     meme->addFlag(FLAG_IS_MEME);
-    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, fn->_this, meme));
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, meme));
     if (isClass(ct)) {
       if (ct->dispatchParents.n > 0) {
         if (!ct->dispatchParents.v[0]->defaultConstructor) {
@@ -649,15 +649,15 @@ static void build_constructor(ClassType* ct) {
         fn->insertAtTail(superCall);
         superCall->insertBefore(new DefExpr(tmp));
         superCall->insertBefore(
-          new CallExpr(PRIMITIVE_MOVE, tmp,
-            new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
+          new CallExpr(PRIM_MOVE, tmp,
+            new CallExpr(PRIM_GET_MEMBER_VALUE,
                          fn->_this, new_StringSymbol("super"))));
       }
     }
   }
 
   if (isUnion(ct))
-    fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, fn->_this, new_IntSymbol(0)));
+    fn->insertAtTail(new CallExpr(PRIM_UNION_SETID, fn->_this, new_IntSymbol(0)));
 
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
 
@@ -683,10 +683,10 @@ static void build_constructor(ClassType* ct) {
     bool hasInit = init;
     if (init) {
       if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !exprType) {
-        exprType = new CallExpr(PRIMITIVE_TYPEOF, new CallExpr("_copy", init->copy()));
+        exprType = new CallExpr(PRIM_TYPEOF, new CallExpr("_copy", init->copy()));
       }
     } else if (exprType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
-      init = new CallExpr(PRIMITIVE_INIT, exprType->copy());
+      init = new CallExpr(PRIM_INIT, exprType->copy());
     }
     if (hasType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
       init = new CallExpr("_createFieldDefault", exprType->copy(), init);
@@ -707,7 +707,7 @@ static void build_constructor(ClassType* ct) {
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
     fn->insertFormalAtTail(arg);
-    fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this, 
+    fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this, 
                                   new_StringSymbol(arg->name),
                                   arg));
   }
@@ -743,7 +743,7 @@ static void build_constructor(ClassType* ct) {
     insertPoint->insertBefore(fn->defPoint->remove());
 
     // Save the pointer to the outer class
-    fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER,
+    fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                   fn->_this,
                                   new_StringSymbol("outer"),
                                   fn->_outer));
@@ -763,9 +763,9 @@ static void build_constructor(ClassType* ct) {
         collect_top_asts(method->body, asts);
         forv_Vec(BaseAST, ast, asts) {
           if (CallExpr* call = toCallExpr(ast)) {
-            if (call->isPrimitive(PRIMITIVE_RETURN)) {
+            if (call->isPrimitive(PRIM_RETURN)) {
               if (call->get(1) && call->get(1)->typeInfo() != dtVoid) {
-                init = new CallExpr(PRIMITIVE_RETURN, init);
+                init = new CallExpr(PRIM_RETURN, init);
                 insertedReturn = true;
                 break;
               }
@@ -778,7 +778,7 @@ static void build_constructor(ClassType* ct) {
     }
   }
   if (!insertedReturn)
-    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, fn->_this));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
 
   Vec<DefExpr*> defs;
   collectDefExprs(fn, defs);
@@ -798,7 +798,7 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall = NULL) {
     CallExpr* call = toCallExpr(expr);
     if (!call)
       INT_FATAL(call, "Bad use statement in getUsedModule");
-    if (!call->isPrimitive(PRIMITIVE_USE))
+    if (!call->isPrimitive(PRIM_USE))
       INT_FATAL(call, "Bad use statement in getUsedModule");
     return getUsedModule(call->get(1), call);
   }
@@ -854,8 +854,8 @@ process_import_expr(CallExpr* call) {
   ModuleSymbol* mod = getUsedModule(call);
   if (!mod)
     USR_FATAL(call, "Cannot find module");
-  call->getStmtExpr()->insertBefore(new CondStmt(new SymExpr(mod->guard), buildOnStmt(new CallExpr(PRIMITIVE_ON_LOCALE_NUM, new SymExpr(new_IntSymbol(0))), new CallExpr(mod->initFn))));
-  call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, mod->guard, gFalse));
+  call->getStmtExpr()->insertBefore(new CondStmt(new SymExpr(mod->guard), buildOnStmt(new CallExpr(PRIM_ON_LOCALE_NUM, new SymExpr(new_IntSymbol(0))), new CallExpr(mod->initFn))));
+  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, mod->guard, gFalse));
   if (call->getFunction() == call->getModule()->initFn)
     call->getModule()->block->addUse(mod);
   else
@@ -956,7 +956,7 @@ void scopeResolve(void) {
   // handle "use mod;" where mod is a module
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIMITIVE_USE)) {
+    if (call->isPrimitive(PRIM_USE)) {
       process_import_expr(call);
     }
   }

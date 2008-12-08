@@ -31,7 +31,7 @@ static void
 insertSetMemberInits(FnSymbol* fn, Symbol* var) {
   Type* type = var->type;
   if (type->defaultValue) {
-    fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, var, type->defaultValue));
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, var, type->defaultValue));
   } else {
     ClassType* ct = toClassType(type);
     INT_ASSERT(ct);
@@ -41,13 +41,13 @@ insertSetMemberInits(FnSymbol* fn, Symbol* var) {
           continue; // skips array types
         Symbol* tmp = newTemp(field->type);
         fn->insertAtTail(new DefExpr(tmp));
-        fn->insertAtTail(new CallExpr(PRIMITIVE_INIT_REF, tmp));
-        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, field, tmp));
+        fn->insertAtTail(new CallExpr(PRIM_INIT_REF, tmp));
+        fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, var, field, tmp));
       } else if (field->type->refType) { // skips array types (how to handle arrays?) ( sjd later: really? )
         Symbol* tmp = newTemp(field->type);
         fn->insertAtTail(new DefExpr(tmp));
         insertSetMemberInits(fn, tmp);
-        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, var, field, tmp));
+        fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, var, field, tmp));
       }
     }
   }
@@ -74,13 +74,13 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
   CallExpr* singleYield = NULL;
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIMITIVE_YIELD)) {
+      if (call->isPrimitive(PRIM_YIELD)) {
         if (singleYield) {
           return NULL;
         } else if (BlockStmt* block = toBlockStmt(call->parentExpr)) {
           if (block->blockInfo &&
-              (block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP) ||
-               block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_WHILEDO_LOOP))) {
+              (block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
+               block->blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP))) {
             singleYield = call;
           } else {
             return NULL;
@@ -90,11 +90,11 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         }
       }
     } else if (BlockStmt* block = toBlockStmt(ast)) {
-      if (block->blockInfo && !block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_LOCAL)) {
+      if (block->blockInfo && !block->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL)) {
         if (singleFor) {
           return NULL;
-        } else if ((block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP) ||
-                    block->blockInfo->isPrimitive(PRIMITIVE_BLOCK_WHILEDO_LOOP)) &&
+        } else if ((block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
+                    block->blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP)) &&
                    block->parentExpr == fn->body) {
           singleFor = block;
         } else {
@@ -128,9 +128,9 @@ replaceLocalsWithFields(IteratorInfo* ii,
     if (SymExpr* se = toSymExpr(ast)) {
       if (se->parentSymbol && (useSet.set_in(se) || defSet.set_in(se))) {
         CallExpr* call = toCallExpr(se->parentExpr);
-        if (call && call->isPrimitive(PRIMITIVE_SET_REF)) {
+        if (call && call->isPrimitive(PRIM_SET_REF)) {
           Symbol* field = local2field.get(se->var);
-          call->primitive = primitives[PRIMITIVE_GET_MEMBER];
+          call->primitive = primitives[PRIM_GET_MEMBER];
           call->insertAtHead(ic);
           se->var = field;
         } else {
@@ -143,7 +143,7 @@ replaceLocalsWithFields(IteratorInfo* ii,
             INT_ASSERT(loop);
             stmt = loop;
           }
-          if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+          if (call && call->isPrimitive(PRIM_GET_MEMBER)) {
             INT_ASSERT(tmp->type->refType);
             tmp->type = tmp->type->refType;
           }
@@ -151,22 +151,22 @@ replaceLocalsWithFields(IteratorInfo* ii,
           asts.add(tmp->defPoint);
           if (useSet.set_in(se)) {
             if (tmp->type == field->type->refType)
-              stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, ic, field)));
+              stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, ic, field)));
             else
-              stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, field)));
+              stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, field)));
             if (loop) {
               if (tmp->type == field->type->refType)
-                loop->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER, ic, field)));
+                loop->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, ic, field)));
               else
-                loop->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, field)));
+                loop->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, field)));
             }
           }
           if (defSet.set_in(se) ||
-              call && call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+              call && call->isPrimitive(PRIM_SET_MEMBER)) {
             if (loop) {
-              loop->insertAtHead(new CallExpr(PRIMITIVE_SET_MEMBER, ic, field, tmp));
+              loop->insertAtHead(new CallExpr(PRIM_SET_MEMBER, ic, field, tmp));
             } else {
-              stmt->insertAfter(new CallExpr(PRIMITIVE_SET_MEMBER, ic, field, tmp));
+              stmt->insertAfter(new CallExpr(PRIM_SET_MEMBER, ic, field, tmp));
             }
           }
           se->var = tmp;
@@ -195,9 +195,9 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   }
   CallExpr* blockInfo = singleLoop->blockInfo->copy(&map);
   ii->zip1->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
-                                      new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip1->_this, ii->icType->getField("more"), new_IntSymbol(1)),
-                                      new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip1->_this, ii->icType->getField("more"), new_IntSymbol(0))));
-  ii->zip1->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+                                      new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->icType->getField("more"), new_IntSymbol(1)),
+                                      new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->icType->getField("more"), new_IntSymbol(0))));
+  ii->zip1->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
 
@@ -213,12 +213,12 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   }
   for_alist(expr, singleLoop->body) {
     if (CallExpr* call = toCallExpr(expr))
-      if (call->isPrimitive(PRIMITIVE_YIELD))
+      if (call->isPrimitive(PRIM_YIELD))
         break;
     if (!isDefExpr(expr))
       ii->zip2->insertAtTail(expr->copy(&map));
   }
-  ii->zip2->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+  ii->zip2->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
 
@@ -236,7 +236,7 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   for_alist(expr, singleLoop->body) {
     if (flag) {
       if (CallExpr* call = toCallExpr(expr))
-        if (call->isPrimitive(PRIMITIVE_YIELD))
+        if (call->isPrimitive(PRIM_YIELD))
           flag = false;
       continue;
     }
@@ -245,9 +245,9 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   }
   CallExpr* blockInfo = singleLoop->blockInfo->copy(&map);
   ii->zip3->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
-                                      new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip3->_this, ii->icType->getField("more"), new_IntSymbol(1)),
-                                      new CallExpr(PRIMITIVE_SET_MEMBER, ii->zip3->_this, ii->icType->getField("more"), new_IntSymbol(0))));
-  ii->zip3->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+                                      new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->icType->getField("more"), new_IntSymbol(1)),
+                                      new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->icType->getField("more"), new_IntSymbol(0))));
+  ii->zip3->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
 
@@ -271,7 +271,7 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     if (!isDefExpr(expr) && expr->next)
       ii->zip4->insertAtTail(expr->copy(&map));
   }
-  ii->zip4->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+  ii->zip4->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
 
@@ -298,16 +298,16 @@ buildAdvance(FnSymbol* fn,
   Vec<Symbol*> labels;
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIMITIVE_YIELD)) {
-        call->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, ic, ii->icType->getField("more"), new_IntSymbol(i)));
+      if (call->isPrimitive(PRIM_YIELD)) {
+        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, ii->icType->getField("more"), new_IntSymbol(i)));
         call->insertBefore(new GotoStmt(GOTO_NORMAL, end));
         Symbol* label = new LabelSymbol(astr("_jump_", istr(i)));
         call->insertBefore(new DefExpr(label));
         labels.add(label);
         call->remove();
         i++;
-      } else if (call->isPrimitive(PRIMITIVE_RETURN)) {
-        call->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, ic, ii->icType->getField("more"), new_IntSymbol(0)));
+      } else if (call->isPrimitive(PRIM_RETURN)) {
+        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, ii->icType->getField("more"), new_IntSymbol(0)));
         call->remove(); // remove old return
       }
     }
@@ -320,12 +320,12 @@ buildAdvance(FnSymbol* fn,
 
   forv_Vec(Symbol, label, labels) {
     ii->advance->insertAtHead(new CondStmt(new SymExpr(tmp), new GotoStmt(GOTO_NORMAL, label)));
-    ii->advance->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_EQUAL, more, new_IntSymbol(i++))));
+    ii->advance->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_EQUAL, more, new_IntSymbol(i++))));
   }
-  ii->advance->insertAtHead(new CallExpr(PRIMITIVE_MOVE, more, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ic, ii->icType->getField("more"))));
+  ii->advance->insertAtHead(new CallExpr(PRIM_MOVE, more, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, ii->icType->getField("more"))));
   ii->advance->insertAtHead(new DefExpr(tmp));
   ii->advance->insertAtHead(new DefExpr(more));
-  ii->advance->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+  ii->advance->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
 
@@ -333,8 +333,8 @@ static void
 buildHasMore(IteratorInfo* ii) {
   VarSymbol* tmp = newTemp(ii->hasMore->retType);
   ii->hasMore->insertAtTail(new DefExpr(tmp));
-  ii->hasMore->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ii->hasMore->getFormal(1), ii->icType->getField("more"))));
-  ii->hasMore->insertAtTail(new CallExpr(PRIMITIVE_RETURN, tmp));
+  ii->hasMore->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->hasMore->getFormal(1), ii->icType->getField("more"))));
+  ii->hasMore->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
 }
 
 
@@ -342,8 +342,8 @@ static void
 buildGetValue(IteratorInfo* ii) {
   VarSymbol* tmp = newTemp(ii->getValue->retType);
   ii->getValue->insertAtTail(new DefExpr(tmp));
-  ii->getValue->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, ii->getValue->getFormal(1), ii->icType->getField("value"))));
-  ii->getValue->insertAtTail(new CallExpr(PRIMITIVE_RETURN, tmp));
+  ii->getValue->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->getValue->getFormal(1), ii->icType->getField("value"))));
+  ii->getValue->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
 }
 
 
@@ -373,7 +373,7 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
     bool collect = false;
     forv_Vec(Expr, expr, bb->exprs) {
       CallExpr* call = toCallExpr(expr);
-      if (call && call->isPrimitive(PRIMITIVE_YIELD))
+      if (call && call->isPrimitive(PRIM_YIELD))
         collect = true;
       if (singleLoop && expr == singleLoop->next)
         collect = true;
@@ -388,7 +388,7 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
       }
       for (int k = bb->exprs.n - 1; k >= 0; k--) {
         CallExpr* call = toCallExpr(bb->exprs.v[k]);
-        if (call && call->isPrimitive(PRIMITIVE_YIELD) ||
+        if (call && call->isPrimitive(PRIM_YIELD) ||
             singleLoop && bb->exprs.v[k] == singleLoop->next ||
             singleLoop && bb->exprs.v[k] == singleLoop->body.head) {
           for (int j = 0; j < locals.n; j++) {
@@ -451,7 +451,7 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
         }
         CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
         INT_ASSERT(move);
-        INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
+        INT_ASSERT(move->isPrimitive(PRIM_MOVE));
         SymExpr* se = toSymExpr(move->get(2));
         CallExpr* call = toCallExpr(move->get(2));
         if (se) {
@@ -459,9 +459,9 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
           if (se->var->defPoint->parentSymbol == fn) {
             syms.add_exclusive(se->var);
           }
-        } else if (call->isPrimitive(PRIMITIVE_SET_REF) ||
-                   call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
-                   call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+        } else if (call->isPrimitive(PRIM_SET_REF) ||
+                   call->isPrimitive(PRIM_GET_MEMBER) ||
+                   call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
           SymExpr* rhs = toSymExpr(call->get(1));
           INT_ASSERT(rhs);
           syms.add_exclusive(rhs->var);
@@ -509,8 +509,8 @@ rebuildIterator(IteratorInfo* ii,
   fn->retType = ii->icType;
   Symbol* iterator = newTemp("_ic", ii->icType);
   fn->insertAtTail(new DefExpr(iterator));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr(PRIMITIVE_CHPL_ALLOC, ii->icType->symbol, new_StringSymbol("iterator class"))));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_SETCID, iterator));
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr(PRIM_CHPL_ALLOC, ii->icType->symbol, new_StringSymbol("iterator class"))));
+  fn->insertAtTail(new CallExpr(PRIM_SETCID, iterator));
   forv_Vec(Symbol, local, locals) {
     Symbol* field = local2field.get(local);
     if (toArgSymbol(local)) {
@@ -518,27 +518,27 @@ rebuildIterator(IteratorInfo* ii,
         Symbol* tmp = newTemp(field->type);
         fn->insertAtTail(new DefExpr(tmp));
         fn->insertAtTail(
-          new CallExpr(PRIMITIVE_MOVE, tmp,
-            new CallExpr(PRIMITIVE_GET_REF, local)));
-        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, tmp));
+          new CallExpr(PRIM_MOVE, tmp,
+            new CallExpr(PRIM_GET_REF, local)));
+        fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, tmp));
       } else {
-        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, local));
+        fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, local));
       }
     } else if (isRecord(local->type)) {
       if (field->type->refType) { // skips array types (how to handle arrays?)
         Symbol* tmp = newTemp(field->type);
         fn->insertAtTail(new DefExpr(tmp));
         insertSetMemberInits(fn, tmp);
-        fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, tmp));
+        fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, tmp));
       }
     } else if (field->type->symbol->hasFlag(FLAG_REF)) {
       // do not initialize references
     } else if (field->type->defaultValue) {
-      fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, field, field->type->defaultValue));
+      fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, field->type->defaultValue));
     }
   }
-  fn->insertAtTail(new CallExpr(PRIMITIVE_SET_MEMBER, iterator, ii->icType->getField("more"), new_IntSymbol(1)));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, iterator));
+  fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, ii->icType->getField("more"), new_IntSymbol(1)));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, iterator));
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
   fn->addFlag(FLAG_INLINE);
 }
@@ -601,11 +601,11 @@ void lowerIterator(FnSymbol* fn) {
       buildZip4(ii, asts, singleLoop);
     } else {
       ii->zip1->insertAtTail(new CallExpr(ii->advance, ii->zip1->_this));
-      ii->zip1->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
-      ii->zip2->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+      ii->zip1->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+      ii->zip2->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
       ii->zip3->insertAtTail(new CallExpr(ii->advance, ii->zip3->_this));
-      ii->zip3->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
-      ii->zip4->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+      ii->zip3->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+      ii->zip4->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     }
     buildAdvance(fn, asts, local2field, locals);
     buildHasMore(ii);

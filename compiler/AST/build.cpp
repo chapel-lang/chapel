@@ -50,9 +50,9 @@ checkControlFlow(Expr* expr, const char* context) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (innerFnSet.set_in(call))
         continue; // yield or return is in nested function/iterator
-      if (call->isPrimitive(PRIMITIVE_RETURN)) {
+      if (call->isPrimitive(PRIM_RETURN)) {
         USR_FATAL_CONT(call, "return is not allowed in %s", context);
-      } else if (call->isPrimitive(PRIMITIVE_YIELD)) {
+      } else if (call->isPrimitive(PRIM_YIELD)) {
         if (!strcmp(context, "begin statement") ||
             !strcmp(context, "yield statement"))
           USR_FATAL_CONT(call, "yield is not allowed in %s", context);
@@ -80,7 +80,7 @@ checkControlFlow(Expr* expr, const char* context) {
 Expr* buildDotExpr(BaseAST* base, const char* member) {
   if (!strcmp("locale", member))
     return new CallExpr("chpl_int_to_locale", 
-                        new CallExpr(PRIMITIVE_GET_LOCALEID, base));
+                        new CallExpr(PRIM_GET_LOCALEID, base));
   else
     return new CallExpr(".", base, new_StringSymbol(member));
 }
@@ -97,8 +97,8 @@ Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
   FnSymbol* ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
                                  new CallExpr("isTrue", right),
                                  new SymExpr(gFalse));
-  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr(PRIMITIVE_ERROR, new_StringSymbol("cannot promote short-circuiting && operator"))));
-  ifFn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, lvar, left));
+  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr(PRIM_ERROR, new_StringSymbol("cannot promote short-circuiting && operator"))));
+  ifFn->insertAtHead(new CallExpr(PRIM_MOVE, lvar, left));
   ifFn->insertAtHead(new DefExpr(lvar));
   return new CallExpr(new DefExpr(ifFn));
 }
@@ -110,8 +110,8 @@ Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
   FnSymbol* ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
                                  new SymExpr(gTrue),
                                  new CallExpr("isTrue", right));
-  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr(PRIMITIVE_ERROR, new_StringSymbol("cannot promote short-circuiting || operator"))));
-  ifFn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, lvar, left));
+  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr(PRIM_ERROR, new_StringSymbol("cannot promote short-circuiting || operator"))));
+  ifFn->insertAtHead(new CallExpr(PRIM_MOVE, lvar, left));
   ifFn->insertAtHead(new DefExpr(lvar));
   return new CallExpr(new DefExpr(ifFn));
 }
@@ -182,7 +182,7 @@ buildLabelStmt(const char* name, Expr* stmt) {
   BlockStmt* block = toBlockStmt(stmt);
   if (block) {
     BlockStmt* loop = toBlockStmt(block->body.tail->prev);
-    if (loop && loop->blockInfo && loop->blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP)) {
+    if (loop && loop->blockInfo && loop->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
       loop->insertAtTail(new DefExpr(new LabelSymbol(name)));
       loop->insertAfter(new DefExpr(new LabelSymbol(astr("_post", name))));
       return block;
@@ -223,11 +223,11 @@ void createInitFn(ModuleSymbol* mod) {
     mod->guard->addFlag(FLAG_PRIVATE); // private = separate copy per locale
     theProgram->initFn->insertAtHead(new DefExpr(mod->guard, new SymExpr(gTrue)));
     if (!fRuntime)
-      initModuleGuards->insertAtTail(new CallExpr(PRIMITIVE_MOVE, mod->guard, gTrue));
+      initModuleGuards->insertAtTail(new CallExpr(PRIM_MOVE, mod->guard, gTrue));
     mod->initFn->insertAtTail(
       new CondStmt(
         new CallExpr("!", mod->guard),
-        new CallExpr(PRIMITIVE_RETURN, gVoid)));
+        new CallExpr(PRIM_RETURN, gVoid)));
     mod->initFn->insertAtTail(new CallExpr("=", mod->guard, gFalse));
   }
 
@@ -263,7 +263,7 @@ ModuleSymbol* buildModule(const char* name, ModTag type, BlockStmt* block, const
 
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
-  INT_ASSERT(exprs->isPrimitive(PRIMITIVE_ACTUALS_LIST));
+  INT_ASSERT(exprs->isPrimitive(PRIM_ACTUALS_LIST));
   if (exprs->argList.length == 0)
     INT_FATAL("primitive has no name");
   Expr* expr = exprs->get(1);
@@ -298,20 +298,20 @@ FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
   ifFn->addFlag(FLAG_MAYBE_TYPE);
   ifFn->insertAtHead(new DefExpr(tmp1));
   ifFn->insertAtHead(new DefExpr(tmp2));
-  ifFn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, new SymExpr(tmp1), new CallExpr("_cond_test", e)));
+  ifFn->insertAtTail(new CallExpr(PRIM_MOVE, new SymExpr(tmp1), new CallExpr("_cond_test", e)));
   ifFn->insertAtTail(new CondStmt(
     new SymExpr(tmp1),
-    new CallExpr(PRIMITIVE_MOVE,
+    new CallExpr(PRIM_MOVE,
                  new SymExpr(tmp2),
-                 new CallExpr(PRIMITIVE_LOGICAL_FOLDER,
+                 new CallExpr(PRIM_LOGICAL_FOLDER,
                               new SymExpr(tmp1),
-                              new CallExpr(PRIMITIVE_GET_REF, e1))),
-    new CallExpr(PRIMITIVE_MOVE,
+                              new CallExpr(PRIM_GET_REF, e1))),
+    new CallExpr(PRIM_MOVE,
                  new SymExpr(tmp2),
-                 new CallExpr(PRIMITIVE_LOGICAL_FOLDER,
+                 new CallExpr(PRIM_LOGICAL_FOLDER,
                               new SymExpr(tmp1),
-                              new CallExpr(PRIMITIVE_GET_REF, e2)))));
-  ifFn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, tmp2));
+                              new CallExpr(PRIM_GET_REF, e2)))));
+  ifFn->insertAtTail(new CallExpr(PRIM_RETURN, tmp2));
   return ifFn;
 }
 
@@ -321,7 +321,7 @@ CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
   FnSymbol* fn = new FnSymbol(astr("_let_fn", istr(uid++)));
   fn->addFlag(FLAG_INLINE);
   fn->insertAtTail(decls);
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, expr));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, expr));
   return new CallExpr(new DefExpr(fn));
 }
 
@@ -330,7 +330,7 @@ BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
   cond = new CallExpr("_cond_test", cond);
   VarSymbol* condVar = newTemp();
   body = new BlockStmt(body);
-  body->blockInfo = new CallExpr(PRIMITIVE_BLOCK_WHILEDO_LOOP, condVar);
+  body->blockInfo = new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, condVar);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   continueLabel->addFlag(FLAG_TEMP);
   continueLabel->addFlag(FLAG_LABEL_CONTINUE);
@@ -338,10 +338,10 @@ BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
   breakLabel->addFlag(FLAG_TEMP);
   breakLabel->addFlag(FLAG_LABEL_BREAK);
   body->insertAtTail(new DefExpr(continueLabel));
-  body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
+  body->insertAtTail(new CallExpr(PRIM_MOVE, condVar, cond->copy()));
   BlockStmt* stmts = buildChapelStmt();
   stmts->insertAtTail(new DefExpr(condVar));
-  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
+  stmts->insertAtTail(new CallExpr(PRIM_MOVE, condVar, cond->copy()));
   stmts->insertAtTail(body);
   stmts->insertAtTail(new DefExpr(breakLabel));
   return stmts;
@@ -366,12 +366,12 @@ BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body) {
   breakLabel->addFlag(FLAG_TEMP);
   breakLabel->addFlag(FLAG_LABEL_BREAK);
   BlockStmt* block = new BlockStmt(body);
-  block->blockInfo = new CallExpr(PRIMITIVE_BLOCK_DOWHILE_LOOP, condVar);
+  block->blockInfo = new CallExpr(PRIM_BLOCK_DOWHILE_LOOP, condVar);
   BlockStmt* stmts = buildChapelStmt();
   stmts->insertAtTail(new DefExpr(condVar));
   stmts->insertAtTail(block);
   body->insertAtTail(new DefExpr(continueLabel));
-  body->insertAtTail(new CallExpr(PRIMITIVE_MOVE, condVar, cond->copy()));
+  body->insertAtTail(new CallExpr(PRIM_MOVE, condVar, cond->copy()));
   stmts->insertAtTail(new DefExpr(breakLabel));
   return stmts;
 }
@@ -385,10 +385,10 @@ BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body) {
   } else {
     BlockStmt *sbody = new BlockStmt();
     VarSymbol *serial_state = newTemp();
-    sbody->insertAtTail(new DefExpr(serial_state, new CallExpr(PRIMITIVE_GET_SERIAL)));
-    sbody->insertAtTail(new CondStmt(cond, new CallExpr(PRIMITIVE_SET_SERIAL, gTrue)));
+    sbody->insertAtTail(new DefExpr(serial_state, new CallExpr(PRIM_GET_SERIAL)));
+    sbody->insertAtTail(new CondStmt(cond, new CallExpr(PRIM_SET_SERIAL, gTrue)));
     sbody->insertAtTail(body);
-    sbody->insertAtTail(new CallExpr(PRIMITIVE_SET_SERIAL, serial_state));
+    sbody->insertAtTail(new CallExpr(PRIM_SET_SERIAL, serial_state));
     return sbody;
   }
 }
@@ -400,7 +400,7 @@ static int loopexpr_uid = 1;
 CallExpr*
 buildForLoopExpr(Expr* indices, Expr* iterator, Expr* expr, Expr* cond) {
   FnSymbol* fn = new FnSymbol(astr("_loopexpr", istr(loopexpr_uid++)));
-  Expr* stmt = new CallExpr(PRIMITIVE_YIELD, expr);
+  Expr* stmt = new CallExpr(PRIM_YIELD, expr);
   if (cond)
     stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
   fn->insertAtTail(buildForLoopStmt(indices, iterator, new BlockStmt(stmt)));
@@ -416,9 +416,9 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond) {
   FnSymbol* fn = new FnSymbol(astr("_loopexpr", istr(loopexpr_uid++)));
   VarSymbol* iterator = newTemp("_iterator");
   fn->insertAtTail(new DefExpr(iterator));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(iteratorName, iterator)));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
   //
   // build serial iterator function
@@ -427,7 +427,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond) {
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   sifn->insertFormalAtTail(sifnIterator);
   fn->insertAtHead(new DefExpr(sifn));
-  Expr* stmt = new CallExpr(PRIMITIVE_YIELD, expr);
+  Expr* stmt = new CallExpr(PRIM_YIELD, expr);
   if (cond)
     stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
   sifn->insertAtTail(buildForLoopStmt(indices, new SymExpr(sifnIterator), new BlockStmt(stmt)));
@@ -446,8 +446,8 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond) {
   lifn->insertAtTail(new DefExpr(leaderIndex));
   VarSymbol* leaderIterator = newTemp("_leaderIterator");
   lifn->insertAtTail(new DefExpr(leaderIterator));
-  lifn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leaderIterator, new CallExpr("_toLeader", lifnIterator)));
-  lifn->insertAtTail(buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), new BlockStmt(new CallExpr(PRIMITIVE_YIELD, leaderIndex))));
+  lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", lifnIterator)));
+  lifn->insertAtTail(buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex))));
 
   //
   // build follower iterator function
@@ -463,7 +463,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond) {
   fn->insertAtHead(new DefExpr(fifn));
   VarSymbol* followerIterator = newTemp("_followerIterator");
   fifn->insertAtTail(new DefExpr(followerIterator));
-  fifn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, followerIterator, new CallExpr("_toFollower", fifnIterator, fifnFollower)));
+  fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", fifnIterator, fifnFollower)));
   SymbolMap map;
   Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
   Expr* bodyCopy = stmt->copy(&map);
@@ -495,13 +495,13 @@ destructureIndices(BlockStmt* block,
     }
   } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(indices)) {
     VarSymbol* var = new VarSymbol(sym->unresolved);
-    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, var, init));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, var, init));
     block->insertAtHead(new DefExpr(var));
     var->addFlag(FLAG_INDEX_VAR);
     if (coforall)
       var->addFlag(FLAG_HEAP_ALLOCATE);
   } else if (SymExpr* sym = toSymExpr(indices)) {
-    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, sym->var, init));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, sym->var, init));
     sym->var->addFlag(FLAG_INDEX_VAR);
     if (coforall)
       sym->var->addFlag(FLAG_HEAP_ALLOCATE);
@@ -547,15 +547,15 @@ BlockStmt* buildForLoopStmt(Expr* indices,
 
   VarSymbol* iterator = newTemp("_iterator");
   stmts->insertAtTail(new DefExpr(iterator));
-  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
+  stmts->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
   VarSymbol* index = newTemp("_index");
   stmts->insertAtTail(new DefExpr(index));
   stmts->insertAtTail(new BlockStmt(
-    new CallExpr(PRIMITIVE_MOVE, index,
+    new CallExpr(PRIM_MOVE, index,
       new CallExpr("iteratorIndex", iterator)),
     BLOCK_TYPE));
   destructureIndices(body, indices, new SymExpr(index), coforall);
-  body->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, index, iterator);
+  body->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator);
 
   body->insertAtTail(new DefExpr(continueLabel));
   stmts->insertAtTail(body);
@@ -583,34 +583,34 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
   BlockStmt* leaderBlock = buildChapelStmt();
   VarSymbol* iterator = newTemp("_iterator");
   leaderBlock->insertAtTail(new DefExpr(iterator));
-  leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
+  leaderBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
   VarSymbol* leaderIndex = newTemp("_leaderIndex");
   leaderBlock->insertAtTail(new DefExpr(leaderIndex));
   VarSymbol* leaderIterator = newTemp("_leaderIterator");
   leaderBlock->insertAtTail(new DefExpr(leaderIterator));
   VarSymbol* leaderIndexCopy = newTemp("_leaderIndexCopy");
   leaderIndexCopy->addFlag(FLAG_INDEX_VAR);
-  leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leaderIterator, new CallExpr("_toLeader", iterator)));
+  leaderBlock->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", iterator)));
   BlockStmt* followerBlock = new BlockStmt();
   VarSymbol* followerIndex = newTemp("_followerIndex");
   followerBlock->insertAtTail(new DefExpr(followerIndex));
   VarSymbol* followerIterator = newTemp("_followerIterator");
   followerBlock->insertAtTail(new DefExpr(followerIterator));
-  followerBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, followerIterator, new CallExpr("_toFollower", iterator, leaderIndexCopy)));
-  followerBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, followerIndex, new CallExpr("iteratorIndex", followerIterator)), BLOCK_TYPE));
+  followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator, leaderIndexCopy)));
+  followerBlock->insertAtTail(new BlockStmt(new CallExpr(PRIM_MOVE, followerIndex, new CallExpr("iteratorIndex", followerIterator)), BLOCK_TYPE));
   BlockStmt* followerBody = new BlockStmt(body);
   destructureIndices(followerBody, indices, new SymExpr(followerIndex), false);
-  followerBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, followerIndex, followerIterator);
+  followerBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, followerIndex, followerIterator);
   followerBlock->insertAtTail(followerBody);
 
   BlockStmt* beginBlock = new BlockStmt();
   beginBlock->insertAtTail(new DefExpr(leaderIndexCopy));
-  beginBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leaderIndexCopy, leaderIndex));
+  beginBlock->insertAtTail(new CallExpr(PRIM_MOVE, leaderIndexCopy, leaderIndex));
   beginBlock->insertAtTail(followerBlock);
 
   BlockStmt* leaderBody = new BlockStmt(beginBlock);
-  leaderBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, leaderIndex, new CallExpr("iteratorIndex", leaderIterator)), BLOCK_TYPE));
-  leaderBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, leaderIndex, leaderIterator);
+  leaderBlock->insertAtTail(new BlockStmt(new CallExpr(PRIM_MOVE, leaderIndex, new CallExpr("iteratorIndex", leaderIterator)), BLOCK_TYPE));
+  leaderBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, leaderIndex, leaderIterator);
   leaderBlock->insertAtTail(leaderBody);
 
   return leaderBlock;
@@ -638,7 +638,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
   BlockStmt* tmp = body;
   while (tmp) {
     if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
-      if (b->blockInfo && b->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON)) {
+      if (b->blockInfo && b->blockInfo->isPrimitive(PRIM_BLOCK_ON)) {
         onBlock = b;
         break;
       }
@@ -663,22 +663,22 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
     VarSymbol* coforallCount = newTemp("_coforallCount");
     onBlock->insertAtTail(new CallExpr("_downEndCount", coforallCount));
     BlockStmt* block = buildForLoopStmt(indices, iterator, body);
-    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
     block->insertAtHead(new DefExpr(coforallCount));
     body->insertAtHead(new CallExpr("_upEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
-    onBlock->blockInfo->primitive = primitives[PRIMITIVE_BLOCK_ON_NB];
+    onBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
     return block;
   } else {
     VarSymbol* coforallCount = newTemp("_coforallCount");
     BlockStmt* beginBlk = new BlockStmt();
-    beginBlk->blockInfo = new CallExpr(PRIMITIVE_BLOCK_COFORALL);
+    beginBlk->blockInfo = new CallExpr(PRIM_BLOCK_COFORALL);
     beginBlk->insertAtHead(body);
     beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
     BlockStmt* block = buildForLoopStmt(indices, iterator, beginBlk, true);
-    block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
     block->insertAtHead(new DefExpr(coforallCount));
-    block->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, coforallCount));
+    block->insertAtTail(new CallExpr(PRIM_PROCESS_TASK_LIST, coforallCount));
     beginBlk->insertBefore(new CallExpr("_upEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
     return block;
@@ -691,7 +691,7 @@ insertBeforeCompilerTemp(Expr* stmt, Expr* expr) {
   Symbol* expr_var = newTemp();
   expr_var->addFlag(FLAG_MAYBE_PARAM);
   stmt->insertBefore(new DefExpr(expr_var));
-  stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, expr_var, expr));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, expr_var, expr));
   return expr_var;
 }
 
@@ -717,7 +717,7 @@ BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmt
   Symbol* lowVar = insertBeforeCompilerTemp(block, low);
   Symbol* highVar = insertBeforeCompilerTemp(block, high);
   Symbol* strideVar = insertBeforeCompilerTemp(block, stride);
-  block->blockInfo = new CallExpr(PRIMITIVE_BLOCK_PARAM_LOOP, indexVar, lowVar, highVar, strideVar);
+  block->blockInfo = new CallExpr(PRIM_BLOCK_PARAM_LOOP, indexVar, lowVar, highVar, strideVar);
   return buildChapelStmt(outer);
 }
 
@@ -729,21 +729,21 @@ buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs) {
   VarSymbol* ltmp = newTemp();
   ltmp->addFlag(FLAG_MAYBE_PARAM);
   stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp,
-                       new CallExpr(PRIMITIVE_SET_REF, lhs)));
+  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp,
+                       new CallExpr(PRIM_SET_REF, lhs)));
 
   VarSymbol* rtmp = newTemp();
   rtmp->addFlag(FLAG_MAYBE_PARAM);
   stmt->insertAtTail(new DefExpr(rtmp));
-  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, rtmp, rhs));
+  stmt->insertAtTail(new CallExpr(PRIM_MOVE, rtmp, rhs));
 
   BlockStmt* cast =
     new BlockStmt(
       new CallExpr("=", ltmp,
         new CallExpr("_cast",
-          new CallExpr(PRIMITIVE_TYPEOF, ltmp),
+          new CallExpr(PRIM_TYPEOF, ltmp),
           new CallExpr(op,
-            new CallExpr(PRIMITIVE_GET_REF, ltmp), rtmp))));
+            new CallExpr(PRIM_GET_REF, ltmp), rtmp))));
 
   if (strcmp(op, "<<") && strcmp(op, ">>"))
     cast->insertAtHead(
@@ -752,12 +752,12 @@ buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs) {
   CondStmt* inner =
     new CondStmt(
       new CallExpr("_isPrimitiveType",
-        new CallExpr(PRIMITIVE_TYPEOF,
-          new CallExpr(PRIMITIVE_GET_REF, ltmp))),
+        new CallExpr(PRIM_TYPEOF,
+          new CallExpr(PRIM_GET_REF, ltmp))),
       cast,
       new CallExpr("=", ltmp,
         new CallExpr(op,
-          new CallExpr(PRIMITIVE_GET_REF, ltmp), rtmp)));
+          new CallExpr(PRIM_GET_REF, ltmp), rtmp)));
 
   if (!strcmp(op, "+")) {
     stmt->insertAtTail(
@@ -785,7 +785,7 @@ BlockStmt* buildLogicalAndExprAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = buildChapelStmt();
   VarSymbol* ltmp = newTemp();
   stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp, new CallExpr(PRIMITIVE_SET_REF, lhs)));
+  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_SET_REF, lhs)));
   stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalAndExpr(ltmp, rhs)));
   return stmt;
 }
@@ -795,7 +795,7 @@ BlockStmt* buildLogicalOrExprAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = buildChapelStmt();
   VarSymbol* ltmp = newTemp();
   stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ltmp, new CallExpr(PRIMITIVE_SET_REF, lhs)));
+  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_SET_REF, lhs)));
   stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalOrExpr(ltmp, rhs)));
   return stmt;
 }
@@ -811,7 +811,7 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
     if (!when)
       INT_FATAL("error in buildSelectStmt");
     CallExpr* conds = toCallExpr(when->condExpr);
-    if (!conds || !conds->isPrimitive(PRIMITIVE_WHEN))
+    if (!conds || !conds->isPrimitive(PRIM_WHEN))
       INT_FATAL("error in buildSelectStmt");
     if (conds->numActuals() == 0) {
       if (otherwise)
@@ -855,14 +855,14 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
   BlockStmt* newWhenStmts = buildChapelStmt();
   bool has_otherwise = false;
 
-  INT_ASSERT(exprs->isPrimitive(PRIMITIVE_ACTUALS_LIST));
+  INT_ASSERT(exprs->isPrimitive(PRIM_ACTUALS_LIST));
 
   for_alist(stmt, whenstmts->body) {
     CondStmt* when = toCondStmt(stmt);
     if (!when)
       INT_FATAL("error in buildSelectStmt");
     CallExpr* conds = toCallExpr(when->condExpr);
-    if (!conds || !conds->isPrimitive(PRIMITIVE_WHEN))
+    if (!conds || !conds->isPrimitive(PRIM_WHEN))
       INT_FATAL("error in buildSelectStmt");
     if (conds->numActuals() == 0) {
       if (has_otherwise)
@@ -878,9 +878,9 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
                           dtAny)));
       }
       fn->retTag = RET_PARAM;
-      fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(caseId)));
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(caseId)));
       newWhenStmts->insertAtTail(
-        new CondStmt(new CallExpr(PRIMITIVE_WHEN, new_IntSymbol(caseId++)),
+        new CondStmt(new CallExpr(PRIM_WHEN, new_IntSymbol(caseId++)),
         when->thenStmt->copy()));
       stmts->insertAtTail(new DefExpr(fn));
     } else {
@@ -894,9 +894,9 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
                                     dtUnknown, expr->copy())));
       }
       fn->retTag = RET_PARAM;
-      fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(caseId)));
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(caseId)));
       newWhenStmts->insertAtTail(
-        new CondStmt(new CallExpr(PRIMITIVE_WHEN, new_IntSymbol(caseId++)),
+        new CondStmt(new CallExpr(PRIM_WHEN, new_IntSymbol(caseId++)),
         when->thenStmt->copy()));
       stmts->insertAtTail(new DefExpr(fn));
     }
@@ -904,7 +904,7 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
   VarSymbol* tmp = newTemp();
   tmp->addFlag(FLAG_MAYBE_PARAM);
   stmts->insertAtHead(new DefExpr(tmp));
-  stmts->insertAtTail(new CallExpr(PRIMITIVE_MOVE,
+  stmts->insertAtTail(new CallExpr(PRIM_MOVE,
                                    tmp,
                                    new CallExpr(fn->name, exprs)));
   stmts->insertAtTail(buildSelectStmt(new SymExpr(tmp), newWhenStmts));
@@ -925,14 +925,14 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
   fn->addFlag(FLAG_INLINE);
   VarSymbol* data = newTemp();
   fn->insertAtTail(new DefExpr(data));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, data, dataExpr));
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, data, dataExpr));
   VarSymbol* eltType = newTemp();
   eltType->addFlag(FLAG_MAYBE_TYPE);
   fn->insertAtTail(new DefExpr(eltType));
   fn->insertAtTail(
     new BlockStmt(
-      new CallExpr(PRIMITIVE_MOVE, eltType,
-        new CallExpr(PRIMITIVE_TYPEOF,
+      new CallExpr(PRIM_MOVE, eltType,
+        new CallExpr(PRIM_TYPEOF,
           new CallExpr("_copy",
             new CallExpr("iteratorIndex",
               new CallExpr("_getIterator", data))))),
@@ -940,13 +940,13 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
   VarSymbol* globalOp = newTemp();
   fn->insertAtTail(new DefExpr(globalOp));
   fn->insertAtTail(
-    new CallExpr(PRIMITIVE_MOVE, globalOp,
-      new CallExpr(PRIMITIVE_NEW,
+    new CallExpr(PRIM_MOVE, globalOp,
+      new CallExpr(PRIM_NEW,
         new CallExpr(op,
           new NamedExpr("eltType", new SymExpr(eltType))))));
   if (isScan) {
     fn->insertAtTail(
-      new CallExpr(PRIMITIVE_RETURN, new CallExpr("_scan", globalOp, data)));
+      new CallExpr(PRIM_RETURN, new CallExpr("_scan", globalOp, data)));
   } else {
     if (fSerial || fSerialForall) {
       VarSymbol* index = newTemp("_index");
@@ -962,7 +962,7 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
       BlockStmt* leaderBlock = buildChapelStmt();
       VarSymbol* iterator = newTemp("_iterator");
       leaderBlock->insertAtTail(new DefExpr(iterator));
-      leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, iterator, new CallExpr("_getIterator", data)));
+      leaderBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator", data)));
 
       VarSymbol* leaderIndex = newTemp("_leaderIndex");
       leaderBlock->insertAtTail(new DefExpr(leaderIndex));
@@ -972,7 +972,7 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
       VarSymbol* leaderIndexCopy = newTemp("_leaderIndexCopy");
       leaderIndexCopy->addFlag(FLAG_INDEX_VAR);
 
-      leaderBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leaderIterator, new CallExpr("_toLeader", iterator)));
+      leaderBlock->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", iterator)));
 
       BlockStmt* followerBlock = new BlockStmt();
       VarSymbol* followerIndex = newTemp("_followerIndex");
@@ -980,21 +980,21 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
       VarSymbol* followerIterator = newTemp("_followerIterator");
       followerBlock->insertAtTail(new DefExpr(followerIterator));
 
-      followerBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, followerIterator, new CallExpr("_toFollower", iterator, leaderIndexCopy)));
+      followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator, leaderIndexCopy)));
 
-      followerBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, followerIndex, new CallExpr("iteratorIndex", followerIterator)), BLOCK_TYPE));
+      followerBlock->insertAtTail(new BlockStmt(new CallExpr(PRIM_MOVE, followerIndex, new CallExpr("iteratorIndex", followerIterator)), BLOCK_TYPE));
 
       VarSymbol* localOp = newTemp();
       followerBlock->insertAtTail(new DefExpr(localOp));
       followerBlock->insertAtTail(
-        new CallExpr(PRIMITIVE_MOVE, localOp,
-          new CallExpr(PRIMITIVE_NEW,
+        new CallExpr(PRIM_MOVE, localOp,
+          new CallExpr(PRIM_NEW,
             new CallExpr(op->copy(),
               new NamedExpr("eltType", new SymExpr(eltType))))));
 
       BlockStmt* followerBody =new BlockStmt(new CallExpr(new CallExpr(".", localOp, new_StringSymbol("accumulate")), followerIndex));
       
-      followerBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, followerIndex, followerIterator);
+      followerBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, followerIndex, followerIterator);
       followerBlock->insertAtTail(followerBody);
       BlockStmt* combineBlock = new BlockStmt();
       combineBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("lock"))));
@@ -1004,17 +1004,17 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
 
       BlockStmt* beginBlock = new BlockStmt();
       beginBlock->insertAtTail(new DefExpr(leaderIndexCopy));
-      beginBlock->insertAtTail(new CallExpr(PRIMITIVE_MOVE, leaderIndexCopy, leaderIndex));
+      beginBlock->insertAtTail(new CallExpr(PRIM_MOVE, leaderIndexCopy, leaderIndex));
       beginBlock->insertAtTail(followerBlock);
 
       BlockStmt* leaderBody = new BlockStmt(beginBlock);
-      leaderBlock->insertAtTail(new BlockStmt(new CallExpr(PRIMITIVE_MOVE, leaderIndex, new CallExpr("iteratorIndex", leaderIterator)), BLOCK_TYPE));
-      leaderBody->blockInfo = new CallExpr(PRIMITIVE_BLOCK_FOR_LOOP, leaderIndex, leaderIterator);
+      leaderBlock->insertAtTail(new BlockStmt(new CallExpr(PRIM_MOVE, leaderIndex, new CallExpr("iteratorIndex", leaderIterator)), BLOCK_TYPE));
+      leaderBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, leaderIndex, leaderIterator);
       leaderBlock->insertAtTail(leaderBody);
 
       fn->insertAtTail(new CondStmt(new SymExpr(gTryToken), leaderBlock, serialBlock));
     }
-    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("generate")))));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("generate")))));
   }
   return new CallExpr(new DefExpr(fn));
 }
@@ -1134,7 +1134,7 @@ buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
       /* newClause is:
          (& IS_TUPLE(base(count)) (buildTupleArg's where clause)) */
       Expr* newClause = buildLogicalAndExpr(
-                          new CallExpr(PRIMITIVE_IS_TUPLE,
+                          new CallExpr(PRIM_IS_TUPLE,
                             new CallExpr(base->copy(),
                               new_IntSymbol(count))),
                           buildTupleArg(fn, subtuple,
@@ -1180,7 +1180,7 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
   }
 
   BlockStmt* localBlock = new BlockStmt(stmt);
-  localBlock->blockInfo = new CallExpr(PRIMITIVE_BLOCK_LOCAL);
+  localBlock->blockInfo = new CallExpr(PRIM_BLOCK_LOCAL);
   block->insertAtTail(localBlock);
   return block;
 }
@@ -1191,14 +1191,14 @@ static Expr* buildOnExpr(Expr* expr) {
   // to strip off the primitive and have the naked integer value be the
   // locale ID.
   if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIMITIVE_ON_LOCALE_NUM)) {
+    if (call->isPrimitive(PRIM_ON_LOCALE_NUM)) {
       return call->get(1);
     }
   }
 
   // Otherwise, we need to wrap the expression in a primitive to query
   // the locale ID of the expression
-  return new CallExpr(PRIMITIVE_GET_LOCALEID, expr);
+  return new CallExpr(PRIM_GET_LOCALEID, expr);
 }
 
 
@@ -1206,7 +1206,7 @@ BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
   checkControlFlow(stmt, "on statement");
 
-  CallExpr* onExpr = new CallExpr(PRIMITIVE_GET_REF, buildOnExpr(expr));
+  CallExpr* onExpr = new CallExpr(PRIM_GET_REF, buildOnExpr(expr));
 
   BlockStmt* body = toBlockStmt(stmt);
 
@@ -1217,7 +1217,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   BlockStmt* tmp = body;
   while (tmp) {
     if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
-      if (b->blockInfo && b->blockInfo->isPrimitive(PRIMITIVE_BLOCK_BEGIN)) {
+      if (b->blockInfo && b->blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)) {
         beginBlock = b;
         break;
       }
@@ -1238,18 +1238,18 @@ buildOnStmt(Expr* expr, Expr* stmt) {
 
   if (beginBlock) {
     Symbol* tmp = newTemp();
-    body->insertAtHead(new CallExpr(PRIMITIVE_MOVE, tmp, onExpr));
+    body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr));
     body->insertAtHead(new DefExpr(tmp));
-    beginBlock->blockInfo = new CallExpr(PRIMITIVE_BLOCK_ON, tmp);
-    beginBlock->blockInfo->primitive = primitives[PRIMITIVE_BLOCK_ON_NB];
+    beginBlock->blockInfo = new CallExpr(PRIM_BLOCK_ON, tmp);
+    beginBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
     return body;
   } else {
     BlockStmt* block = buildChapelStmt();
     Symbol* tmp = newTemp();
     block->insertAtTail(new DefExpr(tmp));
-    block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, onExpr));
+    block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, onExpr));
     BlockStmt* onBlock = new BlockStmt(stmt);
-    onBlock->blockInfo = new CallExpr(PRIMITIVE_BLOCK_ON, tmp);
+    onBlock->blockInfo = new CallExpr(PRIM_BLOCK_ON, tmp);
     block->insertAtTail(onBlock);
     return block;
   }
@@ -1272,7 +1272,7 @@ buildBeginStmt(Expr* stmt) {
   BlockStmt* tmp = body;
   while (tmp) {
     if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
-      if (b->blockInfo && b->blockInfo->isPrimitive(PRIMITIVE_BLOCK_ON)) {
+      if (b->blockInfo && b->blockInfo->isPrimitive(PRIM_BLOCK_ON)) {
         onBlock = b;
         break;
       }
@@ -1288,13 +1288,13 @@ buildBeginStmt(Expr* stmt) {
   if (onBlock) {
     body->insertAtHead(new CallExpr("_upEndCount"));
     onBlock->insertAtTail(new CallExpr("_downEndCount"));
-    onBlock->blockInfo->primitive = primitives[PRIMITIVE_BLOCK_ON_NB];
+    onBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
     return body;
   } else {
     BlockStmt* block = buildChapelStmt();
     block->insertAtTail(new CallExpr("_upEndCount"));
     BlockStmt* beginBlock = new BlockStmt();
-    beginBlock->blockInfo = new CallExpr(PRIMITIVE_BLOCK_BEGIN);
+    beginBlock->blockInfo = new CallExpr(PRIM_BLOCK_BEGIN);
     beginBlock->insertAtHead(stmt);
     beginBlock->insertAtTail(new CallExpr("_downEndCount"));
     block->insertAtTail(beginBlock);
@@ -1311,11 +1311,11 @@ buildSyncStmt(Expr* stmt) {
   BlockStmt* block = new BlockStmt();
   VarSymbol* endCountSave = newTemp("_endCountSave");
   block->insertAtTail(new DefExpr(endCountSave));
-  block->insertAtTail(new CallExpr(PRIMITIVE_MOVE, endCountSave, new CallExpr(PRIMITIVE_GET_END_COUNT)));
-  block->insertAtTail(new CallExpr(PRIMITIVE_SET_END_COUNT, new CallExpr("_endCountAlloc")));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, endCountSave, new CallExpr(PRIM_GET_END_COUNT)));
+  block->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, new CallExpr("_endCountAlloc")));
   block->insertAtTail(stmt);
   block->insertAtTail(new CallExpr("_waitEndCount"));
-  block->insertAtTail(new CallExpr(PRIMITIVE_SET_END_COUNT, endCountSave));
+  block->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCountSave));
   return block;
 }
 
@@ -1345,16 +1345,16 @@ buildCobeginStmt(BlockStmt* block) {
 
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();
-    beginBlk->blockInfo = new CallExpr(PRIMITIVE_BLOCK_COBEGIN);
+    beginBlk->blockInfo = new CallExpr(PRIM_BLOCK_COBEGIN);
     stmt->insertBefore(beginBlk);
     beginBlk->insertAtHead(stmt->remove());
     beginBlk->insertAtTail(new CallExpr("_downEndCount", cobeginCount));
     block->insertAtHead(new CallExpr("_upEndCount", cobeginCount));
   }
 
-  block->insertAtHead(new CallExpr(PRIMITIVE_MOVE, cobeginCount, new CallExpr("_endCountAlloc")));
+  block->insertAtHead(new CallExpr(PRIM_MOVE, cobeginCount, new CallExpr("_endCountAlloc")));
   block->insertAtHead(new DefExpr(cobeginCount));
-  block->insertAtTail(new CallExpr(PRIMITIVE_PROCESS_TASK_LIST, cobeginCount));
+  block->insertAtTail(new CallExpr(PRIM_PROCESS_TASK_LIST, cobeginCount));
   block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));
   return block;
 }

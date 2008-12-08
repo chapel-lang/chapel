@@ -98,17 +98,17 @@ void insertLineNumbers() {
   // insert nil checks primitives in front of all member accesses
   if (!fNoNilChecks) {
     forv_Vec(CallExpr, call, gCallExprs) {
-      if (call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
-          call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
-          call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
-          call->isPrimitive(PRIMITIVE_GETCID) ||
+      if (call->isPrimitive(PRIM_GET_MEMBER) ||
+          call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+          call->isPrimitive(PRIM_SET_MEMBER) ||
+          call->isPrimitive(PRIM_GETCID) ||
           isClassMethodCall(call)) {
         Expr* stmt = call->getStmtExpr();
         SET_LINENO(stmt);
         ClassType* ct = toClassType(call->get(1)->typeInfo());
         if (ct && (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS))) {
           stmt->insertBefore(
-            new CallExpr(PRIMITIVE_CHECK_NIL, call->get(1)->copy()));
+            new CallExpr(PRIM_CHECK_NIL, call->get(1)->copy()));
         }
       }
     }
@@ -144,8 +144,8 @@ void insertLineNumbers() {
         ct->fields.insertAtTail(new DefExpr(linenoField));
         VarSymbol* filenameField = newTemp("_fn", filename->typeInfo());
         ct->fields.insertAtTail(new DefExpr(filenameField));
-        call->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, argClass->copy(), linenoField, lineno));
-        call->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, argClass->copy(), filenameField, filename));
+        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, argClass->copy(), linenoField, lineno));
+        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, argClass->copy(), filenameField, filename));
         FnSymbol* fn = call->isResolved();
         DefExpr* filenameFormal = toDefExpr(fn->formals.tail);
         filenameFormal->remove();
@@ -154,9 +154,9 @@ void insertLineNumbers() {
         DefExpr* argClassFormal = toDefExpr(fn->formals.tail);
         VarSymbol* filenameLocal = newTemp("_fn", filename->typeInfo());
         VarSymbol* linenoLocal = newTemp("_ln", lineno->typeInfo());
-        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, filenameLocal, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, argClassFormal->sym, filenameField)));
+        fn->insertAtHead(new CallExpr(PRIM_MOVE, filenameLocal, new CallExpr(PRIM_GET_MEMBER_VALUE, argClassFormal->sym, filenameField)));
         fn->insertAtHead(new DefExpr(filenameLocal));
-        fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, linenoLocal, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, argClassFormal->sym, linenoField)));
+        fn->insertAtHead(new CallExpr(PRIM_MOVE, linenoLocal, new CallExpr(PRIM_GET_MEMBER_VALUE, argClassFormal->sym, linenoField)));
         fn->insertAtHead(new DefExpr(linenoLocal));
         SymbolMap update;
         update.put(filenameFormal->sym, filenameLocal);

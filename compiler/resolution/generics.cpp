@@ -101,7 +101,7 @@ instantiate_tuple(FnSymbol* fn) {
     if (tuple)
       arg->addFlag(FLAG_TYPE_VARIABLE);
     fn->insertFormalAtTail(arg);
-    last->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, fn->_this,
+    last->insertBefore(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                     new_StringSymbol(name), arg));
     if (tuple)
       tuple->fields.insertAtTail(new DefExpr(new VarSymbol(name)));
@@ -120,8 +120,8 @@ instantiate_tuple_init(FnSymbol* fn) {
   CallExpr* call = new CallExpr(ct->defaultConstructor->name);
   call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
   for (int i = 1; i < ct->fields.length; i++)
-    call->insertAtTail(new CallExpr(PRIMITIVE_INIT, new CallExpr(arg, new_IntSymbol(i))));
-  fn->body->replace(new BlockStmt(new CallExpr(PRIMITIVE_RETURN, call)));
+    call->insertAtTail(new CallExpr(PRIM_INIT, new CallExpr(arg, new_IntSymbol(i))));
+  fn->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, call)));
   normalize(fn);
 }
 
@@ -135,7 +135,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
   CallExpr *ret;
   if (ct->fields.length < 0) {
     // unexecuted none/gasnet on 4/25/08
-    ret = new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(0, INT_SIZE_64));
+    ret = new CallExpr(PRIM_RETURN, new_IntSymbol(0, INT_SIZE_64));
   } else {
     CallExpr *call = NULL;
     bool first = true;
@@ -155,7 +155,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
     }
     // YAH, make sure that we do not return a negative hash value for now
     call = new CallExpr( "&", new_IntSymbol( 0x7fffffffffffffffLL, INT_SIZE_64), call);
-    ret = new CallExpr(PRIMITIVE_RETURN, new CallExpr("_cast", dtInt[INT_SIZE_64]->symbol, call));
+    ret = new CallExpr(PRIM_RETURN, new CallExpr("_cast", dtInt[INT_SIZE_64]->symbol, call));
   }
   fn->body->replace( new BlockStmt( ret));
   normalize(fn);

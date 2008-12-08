@@ -40,7 +40,7 @@ checkUseBeforeDefs() {
       collect_asts_postorder(fn, asts);
       forv_Vec(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
-          if (call->isPrimitive(PRIMITIVE_MOVE))
+          if (call->isPrimitive(PRIM_MOVE))
             if (SymExpr* se = toSymExpr(call->get(1)))
               defined.set_add(se->var);
         } else if (DefExpr* def = toDefExpr(ast)) {
@@ -48,11 +48,11 @@ checkUseBeforeDefs() {
             defined.set_add(def->sym);
         } else if (SymExpr* sym = toSymExpr(ast)) {
           CallExpr* call = toCallExpr(sym->parentExpr);
-          if (call && call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym)
+          if (call && call->isPrimitive(PRIM_MOVE) && call->get(1) == sym)
             continue;
           if (toModuleSymbol(sym->var)) {
             if (!toFnSymbol(fn->defPoint->parentSymbol)) {
-              if (!call || !call->isPrimitive(PRIMITIVE_USED_MODULES_LIST)) {
+              if (!call || !call->isPrimitive(PRIM_USED_MODULES_LIST)) {
                 SymExpr* prev = toSymExpr(sym->prev);
                 if (!prev || prev->var != gModuleToken)
                   USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->var->name);
@@ -73,7 +73,7 @@ checkUseBeforeDefs() {
           }
         } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(ast)) {
           CallExpr* call = toCallExpr(sym->parentExpr);
-          if (call && call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == sym)
+          if (call && call->isPrimitive(PRIM_MOVE) && call->get(1) == sym)
             continue;
           if ((!call || call->baseExpr != sym) && sym->unresolved) {
             if (!undeclared.set_in(sym->unresolved)) {
@@ -163,7 +163,7 @@ markAlignedArrays() {
       if (CallExpr* tuple = toCallExpr(call->get(1))) {
         if (tuple->isNamed("_build_tuple")) {
           CallExpr* move = toCallExpr(call->parentExpr);
-          INT_ASSERT(move && move->isPrimitive(PRIMITIVE_MOVE));
+          INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
           SymExpr* se = toSymExpr(move->get(1));
           INT_ASSERT(se);
           iteratorTupleMap.put(se->var, tuple);
@@ -201,19 +201,19 @@ void normalize(void) {
 
   // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIMITIVE_YIELD)) {
+    if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
       if (!fn) {
         USR_FATAL(call, "yield statement must be in a function");
       }
       fn->addFlag(FLAG_ITERATOR_FN);
     }
-    if (call->isPrimitive(PRIMITIVE_DELETE)) {
+    if (call->isPrimitive(PRIM_DELETE)) {
       VarSymbol* tmp = newTemp();
       call->insertBefore(new DefExpr(tmp));
-      call->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call->get(1)->remove()));
+      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(1)->remove()));
       call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
-      call->insertBefore(new CallExpr(PRIMITIVE_CHPL_FREE, tmp));
+      call->insertBefore(new CallExpr(PRIM_CHPL_FREE, tmp));
       call->remove();
     }
   }
@@ -236,7 +236,7 @@ void normalize(void) {
   insertUseForExplicitModuleCalls();
 
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol && call->isPrimitive(PRIMITIVE_NEW))
+    if (call->parentSymbol && call->isPrimitive(PRIM_NEW))
       USR_FATAL(call, "invalid use of 'new'");
   }
 
@@ -314,15 +314,15 @@ static void normalize_returns(FnSymbol* fn) {
   Vec<CallExpr*> calls;
   collectCallExprs(fn, calls);
   forv_Vec(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIMITIVE_RETURN) ||
-        call->isPrimitive(PRIMITIVE_YIELD))
+    if (call->isPrimitive(PRIM_RETURN) ||
+        call->isPrimitive(PRIM_YIELD))
       if (call->parentSymbol == fn) // not in a nested function
         rets.add(call);
   }
   if (rets.n == 0) {
     if (fn->hasFlag(FLAG_ITERATOR_FN))
       USR_FATAL(fn, "iterator does not yield or return a value");
-    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     return;
   }
   if (rets.n == 1) {
@@ -336,7 +336,7 @@ static void normalize_returns(FnSymbol* fn) {
   fn->insertAtTail(new DefExpr(label));
   VarSymbol* retval = NULL;
   if (returns_void) {
-    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   } else {
     retval = newTemp("_ret", fn->retType);
     if (fn->retTag == RET_PARAM)
@@ -345,12 +345,12 @@ static void normalize_returns(FnSymbol* fn) {
       retval->addFlag(FLAG_TYPE_VARIABLE);
     if (fn->retExprType && fn->retTag != RET_VAR) {
       BlockStmt* retExprType = fn->retExprType->copy();
-      fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_INIT, retExprType->body.tail->remove())));
+      fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_INIT, retExprType->body.tail->remove())));
       fn->insertAtHead(retExprType);
       fn->addFlag(FLAG_SPECIFIED_RETURN_TYPE);
     }
     fn->insertAtHead(new DefExpr(retval));
-    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, retval));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, retval));
   }
   bool label_is_used = false;
   forv_Vec(CallExpr, ret, rets) {
@@ -359,23 +359,23 @@ static void normalize_returns(FnSymbol* fn) {
       Expr* ret_expr = ret->get(1);
       ret_expr->remove();
       if (fn->retTag == RET_VAR)
-        ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_SET_REF, ret_expr)));
+        ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_SET_REF, ret_expr)));
       else if (fn->retExprType)
-        ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr("=", retval, ret_expr)));
+        ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr("=", retval, ret_expr)));
       else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
                strcmp(fn->name, "iteratorIndexHelp"))
-        ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, new CallExpr(PRIMITIVE_GET_REF, ret_expr)));
+        ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_GET_REF, ret_expr)));
       else
-        ret->insertBefore(new CallExpr(PRIMITIVE_MOVE, retval, ret_expr));
+        ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
     }
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
       if (!retval)
         INT_FATAL(ret, "unexpected case");
-      if (ret->isPrimitive(PRIMITIVE_RETURN)) {
+      if (ret->isPrimitive(PRIM_RETURN)) {
         ret->insertAfter(new GotoStmt(GOTO_NORMAL, label));
         label_is_used = true;
       }
-      ret->replace(new CallExpr(PRIMITIVE_YIELD, retval));
+      ret->replace(new CallExpr(PRIM_YIELD, retval));
     } else if (ret->next != label->defPoint) {
       ret->replace(new GotoStmt(GOTO_NORMAL, label));
       label_is_used = true;
@@ -397,12 +397,12 @@ static void call_constructor_for_class(CallExpr* call) {
         CallExpr* parentParent = NULL;
         if (parent)
           parentParent = toCallExpr(parent->parentExpr);
-        if (parent && parent->isPrimitive(PRIMITIVE_NEW)) {
+        if (parent && parent->isPrimitive(PRIM_NEW)) {
           if (!ct->defaultConstructor)
             INT_FATAL(call, "class type has no default constructor");
           se->replace(new UnresolvedSymExpr(ct->defaultConstructor->name));
           parent->replace(call->remove());
-        } else if (parentParent && parentParent->isPrimitive(PRIMITIVE_NEW) &&
+        } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
                    call->partialTag == true) {
           if (!ct->defaultConstructor)
             INT_FATAL(call, "class type has no default constructor");
@@ -467,12 +467,12 @@ static void insert_call_temps(CallExpr* call) {
   if (call->partialTag)
     return;
 
-  if (call->isPrimitive(PRIMITIVE_TUPLE_EXPAND) ||
-      call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE))
+  if (call->isPrimitive(PRIM_TUPLE_EXPAND) ||
+      call->isPrimitive(PRIM_GET_MEMBER_VALUE))
     return;
 
   if (CallExpr* parentCall = toCallExpr(call->parentExpr))
-    if (parentCall->isPrimitive(PRIMITIVE_MOVE))
+    if (parentCall->isPrimitive(PRIM_MOVE))
       return;
 
   SET_LINENO(call);
@@ -483,7 +483,7 @@ static void insert_call_temps(CallExpr* call) {
   tmp->addFlag(FLAG_MAYBE_TYPE);
   call->replace(new SymExpr(tmp));
   stmt->insertBefore(new DefExpr(tmp));
-  stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, call));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
 }
 
 
@@ -493,7 +493,7 @@ static void fix_user_assign(CallExpr* call) {
       !call->isNamed("="))
     return;
   SET_LINENO(call);
-  CallExpr* move = new CallExpr(PRIMITIVE_MOVE, call->get(1)->copy());
+  CallExpr* move = new CallExpr(PRIM_MOVE, call->get(1)->copy());
   call->replace(move);
   move->insertAtTail(call);
 }
@@ -522,14 +522,14 @@ fix_def_expr(VarSymbol* var) {
     CallExpr* partial;
     VarSymbol* arrTemp = newTemp();
     stmt->insertBefore(new DefExpr(arrTemp));
-    stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, arrTemp, init->remove()));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, arrTemp, init->remove()));
     if (!type) {
-      stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, arrTemp));
+      stmt->insertBefore(new CallExpr(PRIM_MOVE, var, arrTemp));
     } else {
       partial = new CallExpr("reindex", gMethodToken, arrTemp);
       partial->partialTag = true;
       partial->methodTag = true;
-      stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(partial, type->remove())));
+      stmt->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(partial, type->remove())));
     }
     return;
   }
@@ -540,7 +540,7 @@ fix_def_expr(VarSymbol* var) {
   if (var->hasFlag(FLAG_CONST)) {
     constTemp = newTemp();
     stmt->insertBefore(new DefExpr(constTemp));
-    stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, var, constTemp));
+    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, constTemp));
   }
 
   //
@@ -548,12 +548,12 @@ fix_def_expr(VarSymbol* var) {
   //
   if (var->hasFlag(FLAG_CONFIG)) {
     if (!var->hasFlag(FLAG_PARAM)) {
-      Expr* noop = new CallExpr(PRIMITIVE_NOOP);
+      Expr* noop = new CallExpr(PRIM_NOOP);
       ModuleSymbol* module = var->getModule();
       CallExpr* strToValExpr =
         new CallExpr("_command_line_cast",
                      new SymExpr(new_StringSymbol(var->name)),
-                     new CallExpr(PRIMITIVE_TYPEOF, constTemp),
+                     new CallExpr(PRIM_TYPEOF, constTemp),
                      new CallExpr(primitives_map.get("_config_get_value"),
                                   new_StringSymbol(var->name),
                                   new_StringSymbol(module->name)));
@@ -564,7 +564,7 @@ fix_def_expr(VarSymbol* var) {
                          new_StringSymbol(var->name),
                          new_StringSymbol(module->name))),
           noop,
-          new CallExpr(PRIMITIVE_MOVE, constTemp, strToValExpr)));
+          new CallExpr(PRIM_MOVE, constTemp, strToValExpr)));
 
       stmt = noop; // insert regular definition code in then block
     } else {
@@ -606,7 +606,7 @@ fix_def_expr(VarSymbol* var) {
     //
     if (init && var->hasFlag(FLAG_PARAM)) {
       stmt->insertAfter(
-        new CallExpr(PRIMITIVE_MOVE, var,
+        new CallExpr(PRIM_MOVE, var,
           new CallExpr("_cast", type->remove(), init->remove())));
       return;
     }
@@ -618,22 +618,22 @@ fix_def_expr(VarSymbol* var) {
     VarSymbol* typeTemp = newTemp();
     stmt->insertBefore(new DefExpr(typeTemp));
     stmt->insertBefore(
-      new CallExpr(PRIMITIVE_MOVE, typeTemp,
-        new CallExpr(PRIMITIVE_INIT, type->remove())));
+      new CallExpr(PRIM_MOVE, typeTemp,
+        new CallExpr(PRIM_INIT, type->remove())));
     if (init) {
       VarSymbol* initTemp = newTemp();
       initTemp->addFlag(FLAG_MAYBE_PARAM);
       stmt->insertBefore(new DefExpr(initTemp));
-      stmt->insertBefore(new CallExpr(PRIMITIVE_MOVE, initTemp, init->remove()));
-      stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, constTemp, typeTemp));
+      stmt->insertBefore(new CallExpr(PRIM_MOVE, initTemp, init->remove()));
+      stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
       stmt->insertAfter(
-        new CallExpr(PRIMITIVE_MOVE, typeTemp,
+        new CallExpr(PRIM_MOVE, typeTemp,
           new CallExpr("=", typeTemp, initTemp)));
     } else {
       if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
-        stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, constTemp, new CallExpr(PRIMITIVE_TYPEOF, typeTemp)));
+        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, new CallExpr(PRIM_TYPEOF, typeTemp)));
       else
-        stmt->insertAfter(new CallExpr(PRIMITIVE_MOVE, constTemp, typeTemp));
+        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
     }
 
   } else {
@@ -642,7 +642,7 @@ fix_def_expr(VarSymbol* var) {
     // initialize untyped variable with initialization expression
     //
     stmt->insertAfter(
-      new CallExpr(PRIMITIVE_MOVE, constTemp,
+      new CallExpr(PRIM_MOVE, constTemp,
         new CallExpr("_copy", init->remove())));
 
   }
@@ -733,12 +733,12 @@ static void fixup_array_formals(FnSymbol* fn) {
             }
             fn->insertAtHead(new CondStmt(
                                new CallExpr("!=", dtNil->symbol, arg),
-                               new CallExpr(PRIMITIVE_MOVE, tmp,
+                               new CallExpr(PRIM_MOVE, tmp,
                                  new CallExpr(
                                    new CallExpr(".", arg,
                                      new_StringSymbol("reindex")),
                                    call->get(1)->copy())),
-                               new CallExpr(PRIMITIVE_MOVE, tmp, gNil)));
+                               new CallExpr(PRIM_MOVE, tmp, gNil)));
             fn->insertAtHead(new DefExpr(tmp));
           }
         }
@@ -859,7 +859,7 @@ add_to_where_clause(ArgSymbol* formal, Expr* expr, ArgSymbol* arg) {
   Expr* where = fn->where->body.tail;
   Expr* clause;
   if (formal->variableExpr)
-    clause = new CallExpr(PRIMITIVE_TUPLE_AND_EXPAND, formal,
+    clause = new CallExpr(PRIM_TUPLE_AND_EXPAND, formal,
                           new_StringSymbol(arg->name), expr->copy());
   else
     clause = new CallExpr("==", expr->copy(),
@@ -877,7 +877,7 @@ fixup_query_formals(FnSymbol* fn) {
       collectSymExprs(fn, symExprs);
       forv_Vec(SymExpr, se, symExprs) {
         if (se->var == def->sym)
-          se->replace(new CallExpr(PRIMITIVE_TYPEOF, formal));
+          se->replace(new CallExpr(PRIM_TYPEOF, formal));
       }
       formal->typeExpr->remove();
       formal->type = dtAny;
@@ -1007,9 +1007,9 @@ static void change_method_into_constructor(FnSymbol* fn) {
     }
   }
   fn->_this = new VarSymbol("this");
-  fn->insertAtHead(new CallExpr(PRIMITIVE_MOVE, fn->_this, call));
+  fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, call));
   fn->insertAtHead(new DefExpr(fn->_this));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new SymExpr(fn->_this)));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
   SymbolMap map;
   map.put(fn->getFormal(2), fn->_this);
   fn->formals.get(2)->remove();

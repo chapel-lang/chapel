@@ -146,7 +146,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
           if (call->get(1)->typeInfo() == dtMethodToken &&
               call->get(2)->typeInfo() == ct) {
             Expr* arg2 = call->get(2);
-            call->replace(new CallExpr(PRIMITIVE_GET_MEMBER, arg2->remove(), new_StringSymbol(field->name)));
+            call->replace(new CallExpr(PRIM_GET_MEMBER, arg2->remove(), new_StringSymbol(field->name)));
           }
         }
       }
@@ -176,20 +176,20 @@ static void build_getter(ClassType* ct, Symbol *field) {
     fn->insertAtTail(
       new CondStmt(
         new SymExpr(fn->setter->sym),
-        new CallExpr(PRIMITIVE_UNION_SETID, _this, new_IntSymbol(field->id)),
+        new CallExpr(PRIM_UNION_SETID, _this, new_IntSymbol(field->id)),
         new CondStmt(
           new CallExpr("!=", 
-            new CallExpr(PRIMITIVE_UNION_GETID, _this),
+            new CallExpr(PRIM_UNION_GETID, _this),
               new_IntSymbol(field->id)),
           new CallExpr("halt", new_StringSymbol("illegal union access")))));
   if (isTypeSymbol(field) && isEnumType(field->type)) {
-    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, field));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, field));
     // better flatten enumerated types now
     ct->symbol->defPoint->insertBefore(field->defPoint->remove());
   } else if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_SUPER_CLASS))
-    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_GET_MEMBER_VALUE, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   else
-    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_line_info(fn, field->lineno);
@@ -286,8 +286,8 @@ static void build_chpl_main(void) {
   if (!fRuntime) {
     VarSymbol* endCount = newTemp("_endCount");
     chpl_main->insertAtHead(new CallExpr("_startTrackingMem"));
-    chpl_main->insertAtHead(new CallExpr(PRIMITIVE_SET_END_COUNT, endCount));
-    chpl_main->insertAtHead(new CallExpr(PRIMITIVE_MOVE, endCount, new CallExpr("_endCountAlloc")));
+    chpl_main->insertAtHead(new CallExpr(PRIM_SET_END_COUNT, endCount));
+    chpl_main->insertAtHead(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
     chpl_main->insertAtHead(new DefExpr(endCount));
     chpl_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
   }
@@ -310,10 +310,10 @@ static void build_record_equality_function(ClassType* ct) {
     if (strcmp(tmp->name, "_promotionType")) {
       Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
       Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIMITIVE_RETURN, gFalse)));
+      fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIM_RETURN, gFalse)));
     }
   }
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gTrue));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_line_info(def, ct->symbol->lineno);
@@ -336,10 +336,10 @@ static void build_record_inequality_function(ClassType* ct) {
     if (strcmp(tmp->name, "_promotionType")) {
       Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
       Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIMITIVE_RETURN, gTrue)));
+      fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIM_RETURN, gTrue)));
     }
   }
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gFalse));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_line_info(def, ct->symbol->lineno);
@@ -364,7 +364,7 @@ static void build_enum_enumerate_function(EnumType* et) {
   }
   call->insertAtHead(new_IntSymbol(call->numActuals()));
 
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   normalize(fn);
 }
 
@@ -380,7 +380,7 @@ static void build_enum_cast_function(EnumType* et) {
   fn->insertFormalAtTail(arg2);
   fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
   if (fNoBoundsChecks) {
-    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new CallExpr(PRIMITIVE_CAST, et->symbol, arg2)));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_CAST, et->symbol, arg2)));
   } else {
     // Generate a select statement with when clauses for each of the
     // enumeration constants, and an otherwise clause that calls halt.
@@ -391,16 +391,16 @@ static void build_enum_cast_function(EnumType* et) {
         count++;
       }
       CondStmt* when =
-        new CondStmt(new CallExpr(PRIMITIVE_WHEN,
+        new CondStmt(new CallExpr(PRIM_WHEN,
                                   new SymExpr(new_IntSymbol(count))),
-                     new CallExpr(PRIMITIVE_RETURN,
-                                  new CallExpr(PRIMITIVE_CAST,
+                     new CallExpr(PRIM_RETURN,
+                                  new CallExpr(PRIM_CAST,
                                                et->symbol, arg2)));
       whenstmts->insertAtTail(when);
     }
     const char * errorString = "enumerated type out of bounds";
     CondStmt* otherwise =
-      new CondStmt(new CallExpr(PRIMITIVE_WHEN),
+      new CondStmt(new CallExpr(PRIM_WHEN),
                    new BlockStmt(new CallExpr("halt",
                                  new_StringSymbol(errorString))));
     whenstmts->insertAtTail(otherwise);
@@ -428,12 +428,12 @@ static void build_enum_cast_function(EnumType* et) {
   for_enums(constant, et) {
     cond = new CondStmt(
              new CallExpr("==", arg2, new_StringSymbol(constant->sym->name)),
-             new CallExpr(PRIMITIVE_RETURN, constant->sym),
+             new CallExpr(PRIM_RETURN, constant->sym),
              cond);
   }
   fn->insertAtTail(cond);
   fn->insertAtTail(new CallExpr("halt", new_StringSymbol("illegal conversion of string \\\""), arg2, new_StringSymbol("\\\" to "), new_StringSymbol(et->symbol->name)));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, 
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, 
                                 toDefExpr(et->constants.first())->sym));
 
   fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
@@ -455,7 +455,7 @@ static void build_enum_init_function(EnumType* et) {
   FnSymbol* fn = new FnSymbol("_init");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", et);
   fn->insertFormalAtTail(arg1);
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, toDefExpr(et->constants.first())->sym));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, toDefExpr(et->constants.first())->sym));
   DefExpr* def = new DefExpr(fn);
   et->symbol->defPoint->insertBefore(def);
   reset_line_info(def, et->symbol->lineno);
@@ -472,7 +472,7 @@ static void build_enum_assignment_function(EnumType* et) {
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, arg2));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, arg2));
   DefExpr* def = new DefExpr(fn);
   et->symbol->defPoint->insertBefore(def);
   reset_line_info(def, et->symbol->lineno);
@@ -495,7 +495,7 @@ static void build_record_assignment_function(ClassType* ct) {
     if (!tmp->hasFlag(FLAG_TYPE_VARIABLE) && !tmp->isParameter() && strcmp(tmp->name, "_promotionType"))
       fn->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))));
   }
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, arg1));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, arg1));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_line_info(def, ct->symbol->lineno);
@@ -510,15 +510,15 @@ static void build_record_cast_function(ClassType* ct) {
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "arg", dtAny);
   fn->insertFormalAtTail(t);
   fn->insertFormalAtTail(arg);
-  fn->where = new BlockStmt(new CallExpr(PRIMITIVE_ISSUBTYPE, ct->symbol, t));
+  fn->where = new BlockStmt(new CallExpr(PRIM_ISSUBTYPE, ct->symbol, t));
   VarSymbol* ret = newTemp();
   VarSymbol* tmp = newTemp();
   fn->insertAtTail(new DefExpr(ret));
   fn->insertAtTail(new DefExpr(tmp));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_INIT, t)));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr("=", tmp, arg)));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_MOVE, ret, tmp));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, ret));
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, t)));
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("=", tmp, arg)));
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, ret, tmp));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_line_info(def, ct->symbol->lineno);
@@ -535,18 +535,18 @@ static void build_union_assignment_function(ClassType* ct) {
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtUnknown;
-  fn->insertAtTail(new CallExpr(PRIMITIVE_UNION_SETID, arg1, new_IntSymbol(0)));
+  fn->insertAtTail(new CallExpr(PRIM_UNION_SETID, arg1, new_IntSymbol(0)));
   for_fields(tmp, ct)
     if (!tmp->hasFlag(FLAG_TYPE_VARIABLE))
       fn->insertAtTail(
         new CondStmt(
           new CallExpr("==",
-            new CallExpr(PRIMITIVE_UNION_GETID, arg2),
+            new CallExpr(PRIM_UNION_GETID, arg2),
             new_IntSymbol(tmp->id)),
           new CallExpr("=",
             new CallExpr(".", arg1, new_StringSymbol(tmp->name)),
             new CallExpr(".", arg2, new_StringSymbol(tmp->name)))));
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, arg1));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, arg1));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_line_info(def, ct->symbol->lineno);
@@ -569,7 +569,7 @@ static void build_record_copy_function(ClassType* ct) {
     if (strcmp("_promotionType", tmp->name))
       call->insertAtTail(new NamedExpr(tmp->name, new CallExpr(".", arg, new_StringSymbol(tmp->name))));
   }
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_line_info(def, ct->symbol->lineno);
@@ -591,10 +591,10 @@ static void build_record_init_function(ClassType* ct) {
     if (formal->hasFlag(FLAG_TYPE_VARIABLE) || formal->intent == INTENT_PARAM) {
       call->insertAtTail(new NamedExpr(formal->name, new CallExpr(".", arg, new_StringSymbol(formal->name))));
     } else if (!formal->defaultExpr) {
-      call->insertAtTail(new NamedExpr(formal->name, new CallExpr(PRIMITIVE_INIT, new CallExpr(".", arg, new_StringSymbol(formal->name)))));
+      call->insertAtTail(new NamedExpr(formal->name, new CallExpr(PRIM_INIT, new CallExpr(".", arg, new_StringSymbol(formal->name)))));
     }
   }
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_line_info(def, ct->symbol->lineno);
@@ -615,7 +615,7 @@ static void build_record_hash_function(ClassType *ct) {
   fn->insertFormalAtTail(arg);
 
   if (ct->fields.length == 0) {
-    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_IntSymbol(0)));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(0)));
   } else {
     CallExpr *call = NULL;
     bool first = true;
@@ -633,7 +633,7 @@ static void build_record_hash_function(ClassType *ct) {
                                          new_IntSymbol(17)));
       }
     }
-    fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, call));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   }
   DefExpr *def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
@@ -667,7 +667,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
   CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringSymbol("{"), ignoreWhiteSpace);
   body->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));
   CallExpr* notRead = new CallExpr("==", matchingCharWasRead, new_IntSymbol(0));
-  Expr* readError = new CallExpr("halt", new_StringSymbol("Read of the class failed: "), new CallExpr(PRIMITIVE_GET_ERRNO));
+  Expr* readError = new CallExpr("halt", new_StringSymbol("Read of the class failed: "), new CallExpr(PRIM_GET_ERRNO));
   CondStmt* readErrorCond = new CondStmt(notRead, readError);
   body->insertAtTail(readErrorCond);
   bool first = true;
@@ -800,7 +800,7 @@ static void buildDefaultWriteFunction(ClassType* ct) {
       writeFieldBlock->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(" = ")));
       writeFieldBlock->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), 
                                                  buildDotExpr(fn->_this, tmp->name)));
-      cond = new CondStmt(new CallExpr("==", new CallExpr(PRIMITIVE_UNION_GETID, fn->_this), new_IntSymbol(tmp->id)), writeFieldBlock, cond);
+      cond = new CondStmt(new CallExpr("==", new CallExpr(PRIM_UNION_GETID, fn->_this), new_IntSymbol(tmp->id)), writeFieldBlock, cond);
     }
     fn->insertAtTail(cond);
   } else {
@@ -859,9 +859,9 @@ static void buildStringCastFunction(EnumType* et) {
     fn->insertAtTail(
       new CondStmt(
         new CallExpr("==", arg, constant->sym),
-        new CallExpr(PRIMITIVE_RETURN, new_StringSymbol(constant->sym->name))));
+        new CallExpr(PRIM_RETURN, new_StringSymbol(constant->sym->name))));
   }
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, new_StringSymbol("")));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, new_StringSymbol("")));
 
   DefExpr* def = new DefExpr(fn);
   //
@@ -887,7 +887,7 @@ static void buildDefaultDestructor(ClassType* ct) {
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->insertFormalAtTail(fn->_this);
   fn->retType = dtVoid;
-  fn->insertAtTail(new CallExpr(PRIMITIVE_RETURN, gVoid));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
   fn->addFlag(FLAG_METHOD);
   ct->methods.add(fn);

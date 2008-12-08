@@ -60,23 +60,23 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
             } else {
               CallExpr* call = toCallExpr(se->parentExpr);
               if (type == sym->type ||
-                  (call && call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == se) ||
-                  (call && call->isPrimitive(PRIMITIVE_SET_MEMBER) && call->get(1) == se) ||
-                  (call && call->isPrimitive(PRIMITIVE_GET_MEMBER)) ||
-                  (call && call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) ||
+                  (call && call->isPrimitive(PRIM_MOVE) && call->get(1) == se) ||
+                  (call && call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
+                  (call && call->isPrimitive(PRIM_GET_MEMBER)) ||
+                  (call && call->isPrimitive(PRIM_GET_MEMBER_VALUE)) ||
                   //
                   // let GET_LOCALE work apply to the reference
                   //
-                  (call && call->isPrimitive(PRIMITIVE_GET_LOCALEID))) {
+                  (call && call->isPrimitive(PRIM_GET_LOCALEID))) {
                 se->var = arg;
-              } else if (call && call->isPrimitive(PRIMITIVE_SET_REF)) {
+              } else if (call && call->isPrimitive(PRIM_SET_REF)) {
                 SET_LINENO(se);
                 call->replace(new SymExpr(arg));
               } else {
                 SET_LINENO(se);
                 VarSymbol* tmp = newTemp(sym->type);
                 se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_GET_REF, arg)));
+                se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, arg)));
               se->var = tmp;
               }
             }
@@ -95,7 +95,7 @@ addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars, bool outerCall) {
       if (!isReferenceType(sym->type) && !outerCall) {
         VarSymbol* tmp = newTemp(sym->type->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-        call->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, new CallExpr(PRIMITIVE_SET_REF, sym)));
+        call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REF, sym)));
         call->insertAtTail(tmp);
       } else {
         call->insertAtTail(sym);

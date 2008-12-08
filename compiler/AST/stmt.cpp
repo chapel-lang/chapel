@@ -78,13 +78,13 @@ void BlockStmt::codegen(FILE* outfile) {
   codegenStmt(outfile, this);
 
   if (blockInfo) {
-    if (blockInfo->isPrimitive(PRIMITIVE_BLOCK_WHILEDO_LOOP)) {
+    if (blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP)) {
       fprintf(outfile, "while (");
       blockInfo->get(1)->codegen(outfile);
       fprintf(outfile, ") ");
-    } else if (blockInfo->isPrimitive(PRIMITIVE_BLOCK_DOWHILE_LOOP)) {
+    } else if (blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
       fprintf(outfile, "do ");
-    } else if (blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP)) {
+    } else if (blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
       fprintf(outfile, "for (;");
       blockInfo->get(1)->codegen(outfile);
       fprintf(outfile, ";) ");
@@ -96,7 +96,7 @@ void BlockStmt::codegen(FILE* outfile) {
 
   body.codegen(outfile, "");
 
-  if (blockInfo && blockInfo->isPrimitive(PRIMITIVE_BLOCK_DOWHILE_LOOP)) {
+  if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
     fprintf(outfile, "} while (");
     blockInfo->get(1)->codegen(outfile);
     fprintf(outfile, ");\n");
@@ -133,10 +133,10 @@ BlockStmt::insertAtTailBeforeGoto(Expr* ast) {
 bool
 BlockStmt::isLoop(void) {
   return (blockInfo &&
-          (blockInfo->isPrimitive(PRIMITIVE_BLOCK_DOWHILE_LOOP) ||
-           blockInfo->isPrimitive(PRIMITIVE_BLOCK_WHILEDO_LOOP) ||
-           blockInfo->isPrimitive(PRIMITIVE_BLOCK_PARAM_LOOP) ||
-           blockInfo->isPrimitive(PRIMITIVE_BLOCK_FOR_LOOP)));
+          (blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
+           blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+           blockInfo->isPrimitive(PRIM_BLOCK_PARAM_LOOP) ||
+           blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)));
 }
 
 
@@ -149,7 +149,7 @@ BlockStmt::length(void) {
 void
 BlockStmt::addUse(ModuleSymbol* mod) {
   if (!modUses) {
-    modUses = new CallExpr(PRIMITIVE_USED_MODULES_LIST);
+    modUses = new CallExpr(PRIM_USED_MODULES_LIST);
     if (parentSymbol)
       insert_help(modUses, this, parentSymbol);
   }
@@ -185,7 +185,7 @@ CondStmt::fold_cond_stmt() {
       if (var->immediate &&
           var->immediate->const_kind == NUM_KIND_UINT &&
           var->immediate->num_index == INT_SIZE_1) {
-        result = new CallExpr(PRIMITIVE_NOOP);
+        result = new CallExpr(PRIM_NOOP);
         this->insertBefore(result);
         if (var->immediate->v_bool == gTrue->immediate->v_bool) {
           Expr* then_stmt = thenStmt;

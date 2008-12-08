@@ -15,32 +15,32 @@ computeSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
-      if (call->isPrimitive(PRIMITIVE_SYNC_INIT) ||
-          call->isPrimitive(PRIMITIVE_SYNC_DESTROY) ||
-          call->isPrimitive(PRIMITIVE_SYNC_LOCK) ||
-          call->isPrimitive(PRIMITIVE_SYNC_UNLOCK) ||
-          call->isPrimitive(PRIMITIVE_SYNC_WAIT_FULL) ||
-          call->isPrimitive(PRIMITIVE_SYNC_WAIT_EMPTY) ||
-          call->isPrimitive(PRIMITIVE_SYNC_SIGNAL_FULL) ||
-          call->isPrimitive(PRIMITIVE_SYNC_SIGNAL_EMPTY) ||
-          call->isPrimitive(PRIMITIVE_SINGLE_INIT) ||
-          call->isPrimitive(PRIMITIVE_SINGLE_LOCK) ||
-          call->isPrimitive(PRIMITIVE_SINGLE_UNLOCK) ||
-          call->isPrimitive(PRIMITIVE_SINGLE_WAIT_FULL) ||
-          call->isPrimitive(PRIMITIVE_SINGLE_SIGNAL_FULL) ||
-          call->isPrimitive(PRIMITIVE_WRITEEF) ||
-          call->isPrimitive(PRIMITIVE_WRITEFF) ||
-          call->isPrimitive(PRIMITIVE_WRITEXF) ||
-          call->isPrimitive(PRIMITIVE_SYNC_RESET) ||
-          call->isPrimitive(PRIMITIVE_READFE) ||
-          call->isPrimitive(PRIMITIVE_READFF) ||
-          call->isPrimitive(PRIMITIVE_READXX) ||
-          call->isPrimitive(PRIMITIVE_SYNC_ISFULL) ||
-          call->isPrimitive(PRIMITIVE_SINGLE_WRITEEF) ||
-          call->isPrimitive(PRIMITIVE_SINGLE_RESET) ||
-          call->isPrimitive(PRIMITIVE_SINGLE_READFF) ||
-          call->isPrimitive(PRIMITIVE_SINGLE_READXX) ||
-          call->isPrimitive(PRIMITIVE_SINGLE_ISFULL)) {
+      if (call->isPrimitive(PRIM_SYNC_INIT) ||
+          call->isPrimitive(PRIM_SYNC_DESTROY) ||
+          call->isPrimitive(PRIM_SYNC_LOCK) ||
+          call->isPrimitive(PRIM_SYNC_UNLOCK) ||
+          call->isPrimitive(PRIM_SYNC_WAIT_FULL) ||
+          call->isPrimitive(PRIM_SYNC_WAIT_EMPTY) ||
+          call->isPrimitive(PRIM_SYNC_SIGNAL_FULL) ||
+          call->isPrimitive(PRIM_SYNC_SIGNAL_EMPTY) ||
+          call->isPrimitive(PRIM_SINGLE_INIT) ||
+          call->isPrimitive(PRIM_SINGLE_LOCK) ||
+          call->isPrimitive(PRIM_SINGLE_UNLOCK) ||
+          call->isPrimitive(PRIM_SINGLE_WAIT_FULL) ||
+          call->isPrimitive(PRIM_SINGLE_SIGNAL_FULL) ||
+          call->isPrimitive(PRIM_WRITEEF) ||
+          call->isPrimitive(PRIM_WRITEFF) ||
+          call->isPrimitive(PRIM_WRITEXF) ||
+          call->isPrimitive(PRIM_SYNC_RESET) ||
+          call->isPrimitive(PRIM_READFE) ||
+          call->isPrimitive(PRIM_READFF) ||
+          call->isPrimitive(PRIM_READXX) ||
+          call->isPrimitive(PRIM_SYNC_ISFULL) ||
+          call->isPrimitive(PRIM_SINGLE_WRITEEF) ||
+          call->isPrimitive(PRIM_SINGLE_RESET) ||
+          call->isPrimitive(PRIM_SINGLE_READFF) ||
+          call->isPrimitive(PRIM_SINGLE_READXX) ||
+          call->isPrimitive(PRIM_SINGLE_ISFULL)) {
         FnSymbol* parent = toFnSymbol(call->parentSymbol);
         INT_ASSERT(parent);
         if (!syncAccessFunctionSet.set_in(parent)) {
@@ -99,10 +99,10 @@ isSafeToDeref(Symbol* startSym,
           return false;
         }
       } else {
-        if (call->isPrimitive(PRIMITIVE_GET_REF)) {
+        if (call->isPrimitive(PRIM_GET_REF)) {
           continue;
         }
-        if (call->isPrimitive(PRIMITIVE_MOVE)) {
+        if (call->isPrimitive(PRIM_MOVE)) {
           SymExpr* newRef = toSymExpr(call->get(1));
           INT_ASSERT(newRef);
           Vec<FnSymbol*> newVisited;
@@ -144,14 +144,14 @@ passReadOnlyReferencesByValue(CallExpr* call, FnSymbol* fn) {
         if (actual->typeInfo()->symbol->hasFlag(FLAG_REF)) {
           VarSymbol* var = newTemp("deref", arg->type);
           call->insertBefore(new DefExpr(var));
-          call->insertBefore(new CallExpr(PRIMITIVE_MOVE, var, new CallExpr(PRIMITIVE_GET_REF, actual->copy())));
+          call->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_GET_REF, actual->copy())));
           actual->replace(new SymExpr(var));
         }
 
         for_uses(use, useMap, arg) {
           VarSymbol* ref = newTemp("ref", arg->typeInfo()->getReferenceType());
           use->getStmtExpr()->insertBefore(new DefExpr(ref));
-          use->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, ref, new CallExpr(PRIMITIVE_SET_REF, arg)));
+          use->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, ref, new CallExpr(PRIM_SET_REF, arg)));
           use->replace(new SymExpr(ref));
         }
       }

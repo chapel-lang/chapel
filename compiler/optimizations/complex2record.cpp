@@ -53,8 +53,8 @@ complex2record() {
           ClassType* ct = complex2rec(se->var->type);
           VarSymbol* tmp = newTemp(ct);
           se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, ct->getField(1), complex2real(se->var->type)->defaultValue));
-          se->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_SET_MEMBER, tmp, ct->getField(2), complex2real(se->var->type)->defaultValue));
+          se->getStmtExpr()->insertBefore(new CallExpr(PRIM_SET_MEMBER, tmp, ct->getField(1), complex2real(se->var->type)->defaultValue));
+          se->getStmtExpr()->insertBefore(new CallExpr(PRIM_SET_MEMBER, tmp, ct->getField(2), complex2real(se->var->type)->defaultValue));
           se->replace(new SymExpr(tmp));
         }
       }
@@ -75,14 +75,14 @@ complex2record() {
   }
 
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIMITIVE_GET_REAL)) {
-      call->primitive = primitives[PRIMITIVE_GET_MEMBER];
+    if (call->isPrimitive(PRIM_GET_REAL)) {
+      call->primitive = primitives[PRIM_GET_MEMBER];
       ClassType* ct = toClassType(call->get(1)->typeInfo());
       if (isReferenceType(ct))
         ct = toClassType(ct->getValueType());
       call->insertAtTail(ct->getField(1));
-    } else if (call->isPrimitive(PRIMITIVE_GET_IMAG)) {
-      call->primitive = primitives[PRIMITIVE_GET_MEMBER];
+    } else if (call->isPrimitive(PRIM_GET_IMAG)) {
+      call->primitive = primitives[PRIM_GET_MEMBER];
       ClassType* ct = toClassType(call->get(1)->typeInfo());
       if (isReferenceType(ct))
         ct = toClassType(ct->getValueType());

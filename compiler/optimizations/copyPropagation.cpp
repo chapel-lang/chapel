@@ -21,17 +21,17 @@ static bool invalidateCopies(SymExpr* se, Vec<SymExpr*>& defSet, Vec<SymExpr*>& 
     return true;
   if (useSet.set_in(se)) {
     if (CallExpr* parent = toCallExpr(se->parentExpr)) {
-      if (parent->isPrimitive(PRIMITIVE_SET_REF))
+      if (parent->isPrimitive(PRIM_SET_REF))
         return true;
       if (isRecord(se->var->type)) {
-        if (parent->isPrimitive(PRIMITIVE_GET_MEMBER))
+        if (parent->isPrimitive(PRIM_GET_MEMBER))
           return true;
-        if (parent->isPrimitive(PRIMITIVE_SET_MEMBER) && parent->get(1) == se)
+        if (parent->isPrimitive(PRIM_SET_MEMBER) && parent->get(1) == se)
           return true;
       }
       if (is_complex_type(se->var->type)) {
-        if (parent->isPrimitive(PRIMITIVE_GET_REAL) ||
-            parent->isPrimitive(PRIMITIVE_GET_IMAG))
+        if (parent->isPrimitive(PRIM_GET_REAL) ||
+            parent->isPrimitive(PRIM_GET_IMAG))
           return true;
       }
     }
@@ -126,7 +126,7 @@ localCopyPropagationCore(BasicBlock* bb,
     // insert pairs into available copies map
     //
     if (CallExpr* call = toCallExpr(expr))
-      if (call->isPrimitive(PRIMITIVE_MOVE))
+      if (call->isPrimitive(PRIM_MOVE))
         if (SymExpr* rhs = toSymExpr(call->get(2)))
           if (SymExpr* lhs = toSymExpr(call->get(1)))
             if (lhs->var != rhs->var)
@@ -245,7 +245,7 @@ void globalCopyPropagation(FnSymbol* fn) {
       // insert pairs into available copies map
       //
       if (CallExpr* call = toCallExpr(expr))
-        if (call->isPrimitive(PRIMITIVE_MOVE))
+        if (call->isPrimitive(PRIM_MOVE))
           if (SymExpr* lhs = toSymExpr(call->get(1)))
             if (SymExpr* rhs = toSymExpr(call->get(2)))
               if (lhs->var != rhs->var &&
@@ -408,7 +408,7 @@ findRefDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, Symbol* var) {
   CallExpr* ret = NULL;
   for_defs(def, defMap, var) {
     if (CallExpr* call = toCallExpr(def->parentExpr)) {
-      if (call->isPrimitive(PRIMITIVE_MOVE)) {
+      if (call->isPrimitive(PRIM_MOVE)) {
         if (isReferenceType(call->get(2)->typeInfo())) {
           if (ret)
             return NULL;
@@ -428,24 +428,24 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                    Symbol* var) {
   if (CallExpr* move = findRefDef(defMap, var)) {
     if (CallExpr* rhs = toCallExpr(move->get(2))) {
-      if (rhs->isPrimitive(PRIMITIVE_SET_REF)) {
+      if (rhs->isPrimitive(PRIM_SET_REF)) {
         bool stillAlive = false;
         for_uses(se, useMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);
           SET_LINENO(se);
-          if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
+          if (parent && parent->isPrimitive(PRIM_GET_REF)) {
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
             parent->replace(se);
             addUse(useMap, se);
           } else if (parent &&
-                     (parent->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
-                      parent->isPrimitive(PRIMITIVE_GET_MEMBER))) {
+                     (parent->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                      parent->isPrimitive(PRIM_GET_MEMBER))) {
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
             parent->get(1)->replace(se);
             addUse(useMap, se);
-          } else if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
+          } else if (parent && parent->isPrimitive(PRIM_MOVE)) {
             CallExpr* rhsCopy = rhs->copy();
             parent->get(2)->replace(rhsCopy);
             SymExpr* se = toSymExpr(rhsCopy->get(1));
@@ -459,7 +459,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
           SET_LINENO(se);
           if (parent == move)
             continue;
-          if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
+          if (parent && parent->isPrimitive(PRIM_MOVE)) {
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
             parent->get(1)->replace(se);
@@ -471,19 +471,19 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
           var->defPoint->remove();
           defMap.get(var)->v[0]->getStmtExpr()->remove();
         }
-      } else if (rhs->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+      } else if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
         bool stillAlive = false;
         for_uses(se, useMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);
           SET_LINENO(se);
-          if (parent && parent->isPrimitive(PRIMITIVE_GET_REF)) {
+          if (parent && parent->isPrimitive(PRIM_GET_REF)) {
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
-            parent->replace(new CallExpr(PRIMITIVE_GET_MEMBER_VALUE,
+            parent->replace(new CallExpr(PRIM_GET_MEMBER_VALUE,
                                          se,
                                          rhs->get(2)->copy()));
             addUse(useMap, se);
-          } else if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
+          } else if (parent && parent->isPrimitive(PRIM_MOVE)) {
             CallExpr* rhsCopy = rhs->copy();
             parent->get(2)->replace(rhsCopy);
             SymExpr* se = toSymExpr(rhsCopy->get(1));
@@ -497,11 +497,11 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
           SET_LINENO(se);
           if (parent == move)
             continue;
-          if (parent && parent->isPrimitive(PRIMITIVE_MOVE)) {
+          if (parent && parent->isPrimitive(PRIM_MOVE)) {
             if (SymExpr* rtmp = toSymExpr(parent->get(2))) {
               SymExpr* se = toSymExpr(rhs->get(1)->copy());
               INT_ASSERT(se);
-              parent->replace(new CallExpr(PRIMITIVE_SET_MEMBER,
+              parent->replace(new CallExpr(PRIM_SET_MEMBER,
                                            se,
                                            rhs->get(2)->copy(),
                                            rtmp->remove()));
@@ -509,10 +509,10 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
             } else {
               VarSymbol* tmp = newTemp(parent->get(2)->typeInfo());
               parent->getStmtExpr()->insertBefore(new DefExpr(tmp));
-              parent->getStmtExpr()->insertBefore(new CallExpr(PRIMITIVE_MOVE, tmp, parent->get(2)->remove()));
+              parent->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, parent->get(2)->remove()));
               SymExpr* se = toSymExpr(rhs->get(1)->copy());
               INT_ASSERT(se);
-              parent->replace(new CallExpr(PRIMITIVE_SET_MEMBER,
+              parent->replace(new CallExpr(PRIM_SET_MEMBER,
                                            se,
                                            rhs->get(2)->copy(),
                                            tmp));

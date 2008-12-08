@@ -157,7 +157,7 @@ void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use) {
 //
 static int isDefAndOrUse(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
-    if (call->isPrimitive(PRIMITIVE_MOVE) && call->get(1) == se) {
+    if (call->isPrimitive(PRIM_MOVE) && call->get(1) == se) {
       return 1;
     } else if (call->isResolved()) {
       ArgSymbol* arg = actual_to_formal(se);

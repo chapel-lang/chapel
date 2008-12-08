@@ -80,7 +80,7 @@ removeIdentityDefs(Symbol* sym) {
 
   for_defs(def, defMap, sym) {
     CallExpr* move = toCallExpr(def->parentExpr);
-    if (move && move->isPrimitive(PRIMITIVE_MOVE)) {
+    if (move && move->isPrimitive(PRIM_MOVE)) {
       SymExpr* rhs = toSymExpr(move->get(2));
       if (rhs && def->var == rhs->var) {
         move->remove();
@@ -108,7 +108,7 @@ removeUnusedClassInstance(Symbol* sym) {
     for_defs(def, defMap, sym) {
       if (def->parentSymbol) {
         CallExpr* move = toCallExpr(def->parentExpr);
-        if (move && move->isPrimitive(PRIMITIVE_MOVE)) {
+        if (move && move->isPrimitive(PRIM_MOVE)) {
           move->remove();
           change = true;
         }
@@ -128,7 +128,7 @@ unifyClassInstances(Symbol* sym) {
   for_defs(def, defMap, sym) {
     if (def->parentSymbol) {
       CallExpr* move = toCallExpr(def->parentExpr);
-      if (!move || !move->isPrimitive(PRIMITIVE_MOVE))
+      if (!move || !move->isPrimitive(PRIM_MOVE))
         return false;
       SymExpr* se = toSymExpr(move->get(2));
       if (!se)
@@ -167,10 +167,10 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   if (!defs || defs->n != 1)
     return false;
   CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
-  if (!move || !move->isPrimitive(PRIMITIVE_MOVE))
+  if (!move || !move->isPrimitive(PRIM_MOVE))
     return false;
   CallExpr* alloc = toCallExpr(move->get(2));
-  if (!alloc || !alloc->isPrimitive(PRIMITIVE_CHPL_ALLOC))
+  if (!alloc || !alloc->isPrimitive(PRIM_CHPL_ALLOC))
     return false;
 
   //
@@ -179,10 +179,10 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   for_uses(se, useMap, sym) {
     if (se->parentSymbol) {
       CallExpr* call = toCallExpr(se->parentExpr);
-      if (!call || !(call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
-                     call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
-                     call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
-                     call->isPrimitive(PRIMITIVE_SETCID)) ||
+      if (!call || !(call->isPrimitive(PRIM_SET_MEMBER) ||
+                     call->isPrimitive(PRIM_GET_MEMBER) ||
+                     call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                     call->isPrimitive(PRIM_SETCID)) ||
           !(call->get(1) == se))
         return false;
     }
@@ -216,33 +216,33 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   //
   for_uses(se, useMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
-      if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+      if (call && call->isPrimitive(PRIM_GET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
         SymExpr* use = new SymExpr(fieldMap.get(member->var));
-        call->replace(new CallExpr(PRIMITIVE_SET_REF, use));
+        call->replace(new CallExpr(PRIM_SET_REF, use));
         addUse(useMap, use);
-      } else if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+      } else if (call && call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
         SymExpr* member = toSymExpr(call->get(2));
         SymExpr* use = new SymExpr(fieldMap.get(member->var));
         call->replace(use);
         addUse(useMap, use);
-      } else if (call && call->isPrimitive(PRIMITIVE_SETCID)) {
+      } else if (call && call->isPrimitive(PRIM_SETCID)) {
         //
         // we can remove the setting of the cid because it is never
         // used and we are otherwise able to remove the class
         // reference
         //
         call->remove();
-      } else if (call && call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+      } else if (call && call->isPrimitive(PRIM_SET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
-        call->primitive = primitives[PRIMITIVE_MOVE];
+        call->primitive = primitives[PRIM_MOVE];
         call->get(2)->remove();
         call->get(1)->remove();
         SymExpr* def = new SymExpr(fieldMap.get(member->var));
         call->insertAtHead(def);
         addDef(defMap, def);
         if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)
-          call->insertAtTail(new CallExpr(PRIMITIVE_SET_REF, call->get(2)->remove()));
+          call->insertAtTail(new CallExpr(PRIM_SET_REF, call->get(2)->remove()));
       }
     }
   }
@@ -260,7 +260,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
     if (se->parentSymbol) {
       CallExpr* call = toCallExpr(se->parentExpr);
       if (!call ||
-          !call->isPrimitive(PRIMITIVE_MOVE) ||
+          !call->isPrimitive(PRIM_MOVE) ||
           !isSymExpr(call->get(2)))
         return false;
     }
@@ -273,10 +273,10 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
     if (se->parentSymbol) {
       CallExpr* call = toCallExpr(se->parentExpr);
       if (!call ||
-          !((call->isPrimitive(PRIMITIVE_SET_MEMBER) && call->get(1) == se) ||
-            call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
-            call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
-            call->isPrimitive(PRIMITIVE_MOVE)))
+          !((call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
+            call->isPrimitive(PRIM_GET_MEMBER) ||
+            call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+            call->isPrimitive(PRIM_MOVE)))
         return false;
     }
   }
@@ -304,14 +304,14 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
   //
   for_defs(se, defMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
-      if (call && call->isPrimitive(PRIMITIVE_MOVE)) {
+      if (call && call->isPrimitive(PRIM_MOVE)) {
         SymExpr* rhs = toSymExpr(call->get(2));
         for_fields(field, ct) {
           SymExpr* rhsCopy = rhs->copy();
           SymExpr* use = new SymExpr(fieldMap.get(field));
           call->insertBefore(
-            new CallExpr(PRIMITIVE_MOVE, use,
-              new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, rhsCopy, field)));
+            new CallExpr(PRIM_MOVE, use,
+              new CallExpr(PRIM_GET_MEMBER_VALUE, rhsCopy, field)));
           addDef(defMap, use);
           addUse(useMap, rhsCopy);
         }
@@ -325,37 +325,37 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
   //
   for_uses(se, useMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
-      if (call && call->isPrimitive(PRIMITIVE_MOVE)) {
+      if (call && call->isPrimitive(PRIM_MOVE)) {
         SymExpr* lhs = toSymExpr(call->get(1));
         for_fields(field, ct) {
           SymExpr* lhsCopy = lhs->copy();
           SymExpr* use = new SymExpr(fieldMap.get(field));
           call->insertBefore(
-            new CallExpr(PRIMITIVE_SET_MEMBER, lhsCopy, field, use));
+            new CallExpr(PRIM_SET_MEMBER, lhsCopy, field, use));
           addUse(useMap, use);
           addUse(useMap, lhsCopy);
         }
         call->remove();
-      } else if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+      } else if (call && call->isPrimitive(PRIM_GET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
         SymExpr* use = new SymExpr(fieldMap.get(member->var));
-        call->replace(new CallExpr(PRIMITIVE_SET_REF, use));
+        call->replace(new CallExpr(PRIM_SET_REF, use));
         addUse(useMap, use);
-      } else if (call && call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+      } else if (call && call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
         SymExpr* member = toSymExpr(call->get(2));
         SymExpr* use = new SymExpr(fieldMap.get(member->var));
         call->replace(use);
         addUse(useMap, use);
-      } else if (call && call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+      } else if (call && call->isPrimitive(PRIM_SET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
-        call->primitive = primitives[PRIMITIVE_MOVE];
+        call->primitive = primitives[PRIM_MOVE];
         call->get(2)->remove();
         call->get(1)->remove();
         SymExpr* def = new SymExpr(fieldMap.get(member->var));
         call->insertAtHead(def);
         addDef(defMap, def);
         if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)
-          call->insertAtTail(new CallExpr(PRIMITIVE_SET_REF, call->get(2)->remove()));
+          call->insertAtTail(new CallExpr(PRIM_SET_REF, call->get(2)->remove()));
       }
     }
   }

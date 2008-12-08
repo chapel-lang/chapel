@@ -33,7 +33,7 @@ inlineCall(CallExpr* call) {
 
   reset_line_info(block, call->lineno);
   CallExpr* return_stmt = toCallExpr(block->body.last());
-  if (!return_stmt || !return_stmt->isPrimitive(PRIMITIVE_RETURN))
+  if (!return_stmt || !return_stmt->isPrimitive(PRIM_RETURN))
     INT_FATAL(call, "function is not normalized");
   Expr* return_value = return_stmt->get(1);
   SymExpr* se = toSymExpr(return_value);

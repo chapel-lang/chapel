@@ -1,181 +1,181 @@
-#ifndef _PRIMITIVE_H_
-#define _PRIMITIVE_H_
+#ifndef _PRIM_H_
+#define _PRIM_H_
 
 #include "chpl.h"
 
 enum PrimitiveTag {
-  PRIMITIVE_UNKNOWN = 0,    // use for any primitives not in this list
-  PRIMITIVE_ACTUALS_LIST,
-  PRIMITIVE_NOOP,
-  PRIMITIVE_MOVE,
-  PRIMITIVE_INIT,
-  PRIMITIVE_REF2STR,
-  PRIMITIVE_RETURN,
-  PRIMITIVE_YIELD,
-  PRIMITIVE_UNARY_MINUS,
-  PRIMITIVE_UNARY_PLUS,
-  PRIMITIVE_UNARY_NOT,
-  PRIMITIVE_UNARY_LNOT,
-  PRIMITIVE_ADD,
-  PRIMITIVE_SUBTRACT,
-  PRIMITIVE_MULT,
-  PRIMITIVE_DIV,
-  PRIMITIVE_MOD,
-  PRIMITIVE_LSH,
-  PRIMITIVE_RSH,
-  PRIMITIVE_EQUAL,
-  PRIMITIVE_NOTEQUAL,
-  PRIMITIVE_LESSOREQUAL,
-  PRIMITIVE_GREATEROREQUAL,
-  PRIMITIVE_LESS,
-  PRIMITIVE_GREATER,
-  PRIMITIVE_AND,
-  PRIMITIVE_OR,
-  PRIMITIVE_XOR,
-  PRIMITIVE_POW,
-  PRIMITIVE_MIN,
-  PRIMITIVE_MAX,
-  PRIMITIVE_PROD_ID,                   // product identity operand
-  PRIMITIVE_BAND_ID,                   // bit-wise AND identity operand
-  PRIMITIVE_BOR_ID,                    // bit-wise OR identity operand
-  PRIMITIVE_BXOR_ID,                   // bit-wise XOR identity operand
-  PRIMITIVE_LAND_ID,                   // logical AND identity operand
-  PRIMITIVE_LOR_ID,                    // logical OR identity operand
-  PRIMITIVE_LXOR_ID,                   // logical XOR identity operand
-  PRIMITIVE_GETCID,
-  PRIMITIVE_SETCID,
-  PRIMITIVE_UNION_GETID,
-  PRIMITIVE_UNION_SETID,
-  PRIMITIVE_GET_MEMBER,
-  PRIMITIVE_GET_MEMBER_VALUE,
-  PRIMITIVE_SET_MEMBER,
-  PRIMITIVE_CHECK_NIL,
-  PRIMITIVE_NEW,                       // new keyword
-  PRIMITIVE_GET_REAL,                  // get complex real component
-  PRIMITIVE_GET_IMAG,                  // get complex imag component
+  PRIM_UNKNOWN = 0,    // use for any primitives not in this list
+  PRIM_ACTUALS_LIST,
+  PRIM_NOOP,
+  PRIM_MOVE,
+  PRIM_INIT,
+  PRIM_REF2STR,
+  PRIM_RETURN,
+  PRIM_YIELD,
+  PRIM_UNARY_MINUS,
+  PRIM_UNARY_PLUS,
+  PRIM_UNARY_NOT,
+  PRIM_UNARY_LNOT,
+  PRIM_ADD,
+  PRIM_SUBTRACT,
+  PRIM_MULT,
+  PRIM_DIV,
+  PRIM_MOD,
+  PRIM_LSH,
+  PRIM_RSH,
+  PRIM_EQUAL,
+  PRIM_NOTEQUAL,
+  PRIM_LESSOREQUAL,
+  PRIM_GREATEROREQUAL,
+  PRIM_LESS,
+  PRIM_GREATER,
+  PRIM_AND,
+  PRIM_OR,
+  PRIM_XOR,
+  PRIM_POW,
+  PRIM_MIN,
+  PRIM_MAX,
+  PRIM_PROD_ID,                   // product identity operand
+  PRIM_BAND_ID,                   // bit-wise AND identity operand
+  PRIM_BOR_ID,                    // bit-wise OR identity operand
+  PRIM_BXOR_ID,                   // bit-wise XOR identity operand
+  PRIM_LAND_ID,                   // logical AND identity operand
+  PRIM_LOR_ID,                    // logical OR identity operand
+  PRIM_LXOR_ID,                   // logical XOR identity operand
+  PRIM_GETCID,
+  PRIM_SETCID,
+  PRIM_UNION_GETID,
+  PRIM_UNION_SETID,
+  PRIM_GET_MEMBER,
+  PRIM_GET_MEMBER_VALUE,
+  PRIM_SET_MEMBER,
+  PRIM_CHECK_NIL,
+  PRIM_NEW,                       // new keyword
+  PRIM_GET_REAL,                  // get complex real component
+  PRIM_GET_IMAG,                  // get complex imag component
 
-  PRIMITIVE_INIT_REF, // initialize reference to NULL
-  PRIMITIVE_SET_REF,  // set a reference to a value
-  PRIMITIVE_GET_REF,  // dereference a reference
+  PRIM_INIT_REF, // initialize reference to NULL
+  PRIM_SET_REF,  // set a reference to a value
+  PRIM_GET_REF,  // dereference a reference
 
-  PRIMITIVE_LOCAL_CHECK,          // Assert that a wide ref is on this locale
-  PRIMITIVE_LOCAL_DEREF,          // Assign a wide ref addr field to a non-wide
+  PRIM_LOCAL_CHECK,          // Assert that a wide ref is on this locale
+  PRIM_LOCAL_DEREF,          // Assign a wide ref addr field to a non-wide
 
-  PRIMITIVE_THREAD_INIT,
-  PRIMITIVE_THREAD_ID,
-  PRIMITIVE_GET_SERIAL,                // get serial state
-  PRIMITIVE_SET_SERIAL,                // set serial state to true or false
+  PRIM_THREAD_INIT,
+  PRIM_THREAD_ID,
+  PRIM_GET_SERIAL,                // get serial state
+  PRIM_SET_SERIAL,                // set serial state to true or false
 
-  PRIMITIVE_SYNC_INIT,                
-  PRIMITIVE_SYNC_DESTROY,                
-  PRIMITIVE_SYNC_LOCK,                
-  PRIMITIVE_SYNC_UNLOCK,
-  PRIMITIVE_SYNC_WAIT_FULL,
-  PRIMITIVE_SYNC_WAIT_EMPTY,
-  PRIMITIVE_SYNC_SIGNAL_FULL,
-  PRIMITIVE_SYNC_SIGNAL_EMPTY,
-  PRIMITIVE_SINGLE_INIT,
-  PRIMITIVE_SINGLE_LOCK,
-  PRIMITIVE_SINGLE_UNLOCK,
-  PRIMITIVE_SINGLE_WAIT_FULL,
-  PRIMITIVE_SINGLE_SIGNAL_FULL,
+  PRIM_SYNC_INIT,                
+  PRIM_SYNC_DESTROY,                
+  PRIM_SYNC_LOCK,                
+  PRIM_SYNC_UNLOCK,
+  PRIM_SYNC_WAIT_FULL,
+  PRIM_SYNC_WAIT_EMPTY,
+  PRIM_SYNC_SIGNAL_FULL,
+  PRIM_SYNC_SIGNAL_EMPTY,
+  PRIM_SINGLE_INIT,
+  PRIM_SINGLE_LOCK,
+  PRIM_SINGLE_UNLOCK,
+  PRIM_SINGLE_WAIT_FULL,
+  PRIM_SINGLE_SIGNAL_FULL,
 
-  PRIMITIVE_WRITEEF,
-  PRIMITIVE_WRITEFF,
-  PRIMITIVE_WRITEXF,
-  PRIMITIVE_SYNC_RESET,
-  PRIMITIVE_READFE,
-  PRIMITIVE_READFF,
-  PRIMITIVE_READXX,
-  PRIMITIVE_SYNC_ISFULL,
-  PRIMITIVE_SINGLE_WRITEEF,
-  PRIMITIVE_SINGLE_RESET,
-  PRIMITIVE_SINGLE_READFF,
-  PRIMITIVE_SINGLE_READXX,
-  PRIMITIVE_SINGLE_ISFULL,
+  PRIM_WRITEEF,
+  PRIM_WRITEFF,
+  PRIM_WRITEXF,
+  PRIM_SYNC_RESET,
+  PRIM_READFE,
+  PRIM_READFF,
+  PRIM_READXX,
+  PRIM_SYNC_ISFULL,
+  PRIM_SINGLE_WRITEEF,
+  PRIM_SINGLE_RESET,
+  PRIM_SINGLE_READFF,
+  PRIM_SINGLE_READXX,
+  PRIM_SINGLE_ISFULL,
 
-  PRIMITIVE_GET_END_COUNT,
-  PRIMITIVE_SET_END_COUNT,
+  PRIM_GET_END_COUNT,
+  PRIM_SET_END_COUNT,
 
-  PRIMITIVE_INIT_TASK_LIST,
-  PRIMITIVE_PROCESS_TASK_LIST,
-  PRIMITIVE_EXECUTE_TASKS_IN_LIST,
-  PRIMITIVE_FREE_TASK_LIST,
+  PRIM_INIT_TASK_LIST,
+  PRIM_PROCESS_TASK_LIST,
+  PRIM_EXECUTE_TASKS_IN_LIST,
+  PRIM_FREE_TASK_LIST,
 
-  PRIMITIVE_CHPL_ALLOC,
-  PRIMITIVE_CHPL_ALLOC_PERMIT_ZERO,  // chpl_alloc wrapper that permits size 0
-  PRIMITIVE_CHPL_FREE,               // only for variables on heap?
-  PRIMITIVE_INIT_FIELDS, // initialize fields of a temporary record
-  PRIMITIVE_PTR_EQUAL,
-  PRIMITIVE_PTR_NOTEQUAL,
-  PRIMITIVE_CAST,
-  PRIMITIVE_DYNAMIC_CAST,
-  PRIMITIVE_ISSUBTYPE,
-  PRIMITIVE_TYPEOF,
-  PRIMITIVE_GET_ITERATOR_RETURN,
-  PRIMITIVE_USE,
-  PRIMITIVE_USED_MODULES_LIST, // used modules in BlockStmt::modUses
-  PRIMITIVE_TUPLE_EXPAND,
-  PRIMITIVE_TUPLE_AND_EXPAND,
-  PRIMITIVE_ARRAY_FREE,
-  PRIMITIVE_ARRAY_FREE_ELTS,
-  PRIMITIVE_ARRAY_ALLOC,
-  PRIMITIVE_ARRAY_GET,
-  PRIMITIVE_ARRAY_GET_VALUE,
-  PRIMITIVE_ARRAY_SET,
-  PRIMITIVE_ARRAY_SET_FIRST,
-  PRIMITIVE_ERROR,
-  PRIMITIVE_WARNING,
-  PRIMITIVE_WHEN,
+  PRIM_CHPL_ALLOC,
+  PRIM_CHPL_ALLOC_PERMIT_ZERO,  // chpl_alloc wrapper that permits size 0
+  PRIM_CHPL_FREE,               // only for variables on heap?
+  PRIM_INIT_FIELDS, // initialize fields of a temporary record
+  PRIM_PTR_EQUAL,
+  PRIM_PTR_NOTEQUAL,
+  PRIM_CAST,
+  PRIM_DYNAMIC_CAST,
+  PRIM_ISSUBTYPE,
+  PRIM_TYPEOF,
+  PRIM_GET_ITERATOR_RETURN,
+  PRIM_USE,
+  PRIM_USED_MODULES_LIST, // used modules in BlockStmt::modUses
+  PRIM_TUPLE_EXPAND,
+  PRIM_TUPLE_AND_EXPAND,
+  PRIM_ARRAY_FREE,
+  PRIM_ARRAY_FREE_ELTS,
+  PRIM_ARRAY_ALLOC,
+  PRIM_ARRAY_GET,
+  PRIM_ARRAY_GET_VALUE,
+  PRIM_ARRAY_SET,
+  PRIM_ARRAY_SET_FIRST,
+  PRIM_ERROR,
+  PRIM_WARNING,
+  PRIM_WHEN,
 
-  PRIMITIVE_BLOCK_PARAM_LOOP,      // BlockStmt::blockInfo - param for loop
-  PRIMITIVE_BLOCK_WHILEDO_LOOP,    // BlockStmt::blockInfo - while do loop
-  PRIMITIVE_BLOCK_DOWHILE_LOOP,    // BlockStmt::blockInfo - do while loop
-  PRIMITIVE_BLOCK_FOR_LOOP,        // BlockStmt::blockInfo - for loop
-  PRIMITIVE_BLOCK_INLINE_FOR_LOOP, // BlockStmt::blockInfo - for loop
-  PRIMITIVE_BLOCK_BEGIN,           // BlockStmt::blockInfo - begin block
-  PRIMITIVE_BLOCK_COBEGIN,         // BlockStmt::blockInfo - cobegin block
-  PRIMITIVE_BLOCK_COFORALL,        // BlockStmt::blockInfo - coforall block
-  PRIMITIVE_BLOCK_ON,              // BlockStmt::blockInfo - on block
-  PRIMITIVE_BLOCK_ON_NB,           // BlockStmt::blockInfo - non-blocking on block
-  PRIMITIVE_BLOCK_LOCAL,           // BlockStmt::blockInfo - local block
+  PRIM_BLOCK_PARAM_LOOP,      // BlockStmt::blockInfo - param for loop
+  PRIM_BLOCK_WHILEDO_LOOP,    // BlockStmt::blockInfo - while do loop
+  PRIM_BLOCK_DOWHILE_LOOP,    // BlockStmt::blockInfo - do while loop
+  PRIM_BLOCK_FOR_LOOP,        // BlockStmt::blockInfo - for loop
+  PRIM_BLOCK_INLINE_FOR_LOOP, // BlockStmt::blockInfo - for loop
+  PRIM_BLOCK_BEGIN,           // BlockStmt::blockInfo - begin block
+  PRIM_BLOCK_COBEGIN,         // BlockStmt::blockInfo - cobegin block
+  PRIM_BLOCK_COFORALL,        // BlockStmt::blockInfo - coforall block
+  PRIM_BLOCK_ON,              // BlockStmt::blockInfo - on block
+  PRIM_BLOCK_ON_NB,           // BlockStmt::blockInfo - non-blocking on block
+  PRIM_BLOCK_LOCAL,           // BlockStmt::blockInfo - local block
 
-  PRIMITIVE_TO_LEADER,
-  PRIMITIVE_TO_FOLLOWER,
+  PRIM_TO_LEADER,
+  PRIM_TO_FOLLOWER,
 
-  PRIMITIVE_DELETE,
+  PRIM_DELETE,
 
-  PRIMITIVE_GC_CC_INIT,       // Initialize heap for copy-collecting
-  PRIMITIVE_GC_ADD_ROOT,      // Add a root variable for garbage collection
-  PRIMITIVE_GC_ADD_NULL_ROOT, // Add a root and point it to NULL
-  PRIMITIVE_GC_DELETE_ROOT,   // Remove a root variable for garbage collection
-  PRIMITIVE_GC_CLEANUP,       // Free GC heaps
+  PRIM_GC_CC_INIT,       // Initialize heap for copy-collecting
+  PRIM_GC_ADD_ROOT,      // Add a root variable for garbage collection
+  PRIM_GC_ADD_NULL_ROOT, // Add a root and point it to NULL
+  PRIM_GC_DELETE_ROOT,   // Remove a root variable for garbage collection
+  PRIM_GC_CLEANUP,       // Free GC heaps
 
-  PRIMITIVE_IS_ENUM,   // True if argument is an enum
-  PRIMITIVE_IS_TUPLE,  // True if argument is a tuple
+  PRIM_IS_ENUM,   // True if argument is an enum
+  PRIM_IS_TUPLE,  // True if argument is a tuple
 
-  PRIMITIVE_LOGICAL_FOLDER, // Help fold logical && and ||
+  PRIM_LOGICAL_FOLDER, // Help fold logical && and ||
 
-  PRIMITIVE_GET_LOCALEID,   // return locale on which an expression exists
-  PRIMITIVE_LOCALE_ID,    // return locale id
-  PRIMITIVE_NUM_LOCALES,  // return number of locales
-  PRIMITIVE_ON_LOCALE_NUM,  // specify a particular locale # for an on clause
+  PRIM_GET_LOCALEID,   // return locale on which an expression exists
+  PRIM_LOCALE_ID,    // return locale id
+  PRIM_NUM_LOCALES,  // return number of locales
+  PRIM_ON_LOCALE_NUM,  // specify a particular locale # for an on clause
 
-  PRIMITIVE_ALLOC_GVR,    // allocate space for global vars registry
-  PRIMITIVE_HEAP_REGISTER_GLOBAL_VAR,
-  PRIMITIVE_HEAP_BROADCAST_GLOBAL_VARS,
-  PRIMITIVE_PRIVATE_BROADCAST,
+  PRIM_ALLOC_GVR,    // allocate space for global vars registry
+  PRIM_HEAP_REGISTER_GLOBAL_VAR,
+  PRIM_HEAP_BROADCAST_GLOBAL_VARS,
+  PRIM_PRIVATE_BROADCAST,
 
-  PRIMITIVE_INT_ERROR,
+  PRIM_INT_ERROR,
 
-  PRIMITIVE_GET_ERRNO,
+  PRIM_GET_ERRNO,
 
-  PRIMITIVE_RT_ERROR,
-  PRIMITIVE_RT_WARNING,
+  PRIM_RT_ERROR,
+  PRIM_RT_WARNING,
 
-  PRIMITIVE_NEW_PRIV_CLASS,
-  PRIMITIVE_NUM_PRIV_CLASSES,
-  PRIMITIVE_GET_PRIV_CLASS,
+  PRIM_NEW_PRIV_CLASS,
+  PRIM_NUM_PRIV_CLASSES,
+  PRIM_GET_PRIV_CLASS,
 
   NUM_KNOWN_PRIMS
 };

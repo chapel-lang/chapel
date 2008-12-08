@@ -33,7 +33,7 @@ static void deadVariableEliminationHelp(FnSymbol* fn,
       isDeadVariable(var, defMap, useMap)) {
     for_defs(se, defMap, var) {
       CallExpr* call = toCallExpr(se->parentExpr);
-      if (call->isPrimitive(PRIMITIVE_MOVE)) {
+      if (call->isPrimitive(PRIM_MOVE)) {
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
           call->remove();
           if (Vec<SymExpr*>* uses = useMap.get(var))
@@ -74,14 +74,14 @@ void deadExpressionElimination(FnSymbol* fn) {
       if (expr->parentExpr && expr == expr->getStmtExpr())
         expr->remove();
     } else if (CallExpr* expr = toCallExpr(ast)) {
-      if (expr->isPrimitive(PRIMITIVE_CAST) ||
-          expr->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE) ||
-          expr->isPrimitive(PRIMITIVE_GET_MEMBER) ||
-          expr->isPrimitive(PRIMITIVE_GET_REF) ||
-          expr->isPrimitive(PRIMITIVE_SET_REF))
+      if (expr->isPrimitive(PRIM_CAST) ||
+          expr->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+          expr->isPrimitive(PRIM_GET_MEMBER) ||
+          expr->isPrimitive(PRIM_GET_REF) ||
+          expr->isPrimitive(PRIM_SET_REF))
         if (expr->parentExpr && expr == expr->getStmtExpr())
           expr->remove();
-      if (expr->isPrimitive(PRIMITIVE_MOVE))
+      if (expr->isPrimitive(PRIM_MOVE))
         if (SymExpr* lhs = toSymExpr(expr->get(1)))
           if (SymExpr* rhs = toSymExpr(expr->get(2)))
             if (lhs->var == rhs->var)
@@ -112,7 +112,7 @@ void deadCodeElimination(FnSymbol* fn) {
               (call->primitive && call->primitive->isEssential))
             essential = true;
           // mark assignments to global variables as essential
-          if (call->isPrimitive(PRIMITIVE_MOVE))
+          if (call->isPrimitive(PRIM_MOVE))
             if (SymExpr* se = toSymExpr(call->get(1)))
               if (!DU.get(se) || // DU chain only contains locals
                   !se->var->type->refType) // reference issue

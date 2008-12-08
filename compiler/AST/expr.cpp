@@ -466,7 +466,7 @@ void CallExpr::verify() {
   }
   if (argList.parent != this)
     INT_FATAL(this, "Bad AList::parent in CallExpr");
-  if (normalized && isPrimitive(PRIMITIVE_RETURN)) {
+  if (normalized && isPrimitive(PRIM_RETURN)) {
     FnSymbol* fn = toFnSymbol(parentSymbol);
     SymExpr* sym = toSymExpr(get(1));
     if (!fn)
@@ -701,15 +701,15 @@ void CallExpr::codegen(FILE* outfile) {
 
   if (primitive) {
     switch (primitive->tag) {
-    case PRIMITIVE_UNKNOWN:
+    case PRIM_UNKNOWN:
       codegenBasicPrimitive(outfile, this);
       break;
-    case PRIMITIVE_ARRAY_GET:
-    case PRIMITIVE_ARRAY_GET_VALUE:
+    case PRIM_ARRAY_GET:
+    case PRIM_ARRAY_GET_VALUE:
       fprintf(outfile, "/* uncaptured _data vector access not generated */");
       break;
-    case PRIMITIVE_ARRAY_SET:
-    case PRIMITIVE_ARRAY_SET_FIRST:
+    case PRIM_ARRAY_SET:
+    case PRIM_ARRAY_SET_FIRST:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         fprintf(outfile, "_COMM_WIDE_ARRAY_SET(");
 
@@ -727,7 +727,7 @@ void CallExpr::codegen(FILE* outfile) {
       } else
         help_codegen_fn(outfile, "_ARRAY_SET", get(1), get(2), get(3));
       break;
-    case PRIMITIVE_ARRAY_ALLOC:
+    case PRIM_ARRAY_ALLOC:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         help_codegen_fn(outfile, "_WIDE_ARRAY_ALLOC", get(1),
                         get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value,
@@ -738,24 +738,24 @@ void CallExpr::codegen(FILE* outfile) {
                         get(3), get(4), get(5));
       }
       break;
-    case PRIMITIVE_ARRAY_FREE:
+    case PRIM_ARRAY_FREE:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         help_codegen_fn(outfile, "_WIDE_ARRAY_FREE", get(1), get(2), get(3));
       else
         help_codegen_fn(outfile, "_ARRAY_FREE", get(1), get(2), get(3));
       break;
-    case PRIMITIVE_ARRAY_FREE_ELTS:
+    case PRIM_ARRAY_FREE_ELTS:
       help_codegen_fn(outfile, "_ARRAY_FREE_ELTS", get(1), get(2), get(3));
       break;
-    case PRIMITIVE_NOOP:
+    case PRIM_NOOP:
       break;
-    case PRIMITIVE_MOVE:
+    case PRIM_MOVE:
       if (get(1)->typeInfo() == dtVoid) {
         get(2)->codegen(outfile);
         break;
       }
       if (CallExpr* call = toCallExpr(get(2))) {
-        if (call->isPrimitive(PRIMITIVE_GET_LOCALEID)) {
+        if (call->isPrimitive(PRIM_GET_LOCALEID)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             if (call->get(1)->typeInfo()->getValueType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               fprintf(outfile, "_COMM_WIDE_GET_LOCALE(");
@@ -780,7 +780,7 @@ void CallExpr::codegen(FILE* outfile) {
           }
           break;
         }
-        if (call->isPrimitive(PRIMITIVE_GET_REF)) {
+        if (call->isPrimitive(PRIM_GET_REF)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             if (get(1)->typeInfo() != dtString) {
@@ -801,7 +801,7 @@ void CallExpr::codegen(FILE* outfile) {
           }
           break;
         }
-        if (call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+        if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             SymExpr* se = toSymExpr(call->get(2));
             INT_ASSERT(se);
@@ -845,7 +845,7 @@ void CallExpr::codegen(FILE* outfile) {
           }
           break;
         }
-        if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+        if (call->isPrimitive(PRIM_GET_MEMBER)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             fprintf(outfile, "_SET_WIDE_REF_OFF(");
             get(1)->codegen(outfile);
@@ -872,7 +872,7 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
-        if (call->isPrimitive(PRIMITIVE_ARRAY_GET)) {
+        if (call->isPrimitive(PRIM_ARRAY_GET)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             fprintf(outfile, "_COMM_SET_WIDE_REF_WIDE_ARRAY(");
             fprintf(outfile, "%s, ", get(1)->typeInfo()->getField("addr")->type->symbol->cname);
@@ -892,7 +892,7 @@ void CallExpr::codegen(FILE* outfile) {
           }
           break;
         }
-        if (call->isPrimitive(PRIMITIVE_ARRAY_GET_VALUE)) {
+        if (call->isPrimitive(PRIM_ARRAY_GET_VALUE)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             fprintf(outfile, "_COMM_WIDE_ARRAY_GET(");
             fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
@@ -913,7 +913,7 @@ void CallExpr::codegen(FILE* outfile) {
           }
           break;
         }
-        if (call->isPrimitive(PRIMITIVE_UNION_GETID)) {
+        if (call->isPrimitive(PRIM_UNION_GETID)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             fprintf(outfile, "_COMM_WIDE_GET_OFF(int64_t, ");
             get(1)->codegen(outfile);
@@ -925,7 +925,7 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
-        if (call->isPrimitive(PRIMITIVE_GETCID)) {
+        if (call->isPrimitive(PRIM_GETCID)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             fprintf(outfile, "_COMM_WIDE_CLASS_GET_CID(");
             get(1)->codegen(outfile);
@@ -936,7 +936,7 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
-        if (call->isPrimitive(PRIMITIVE_CAST)) {
+        if (call->isPrimitive(PRIM_CAST)) {
           if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
               call->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             fprintf(outfile, "_WIDE_CLASS_CAST(");
@@ -949,7 +949,7 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
-        if (call->isPrimitive(PRIMITIVE_DYNAMIC_CAST)) {
+        if (call->isPrimitive(PRIM_DYNAMIC_CAST)) {
           if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             fprintf(outfile, "_WIDE_CLASS_DYNAMIC_CAST(");
             get(1)->codegen(outfile);
@@ -963,7 +963,7 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
-        if (call->isPrimitive(PRIMITIVE_GET_PRIV_CLASS)) {
+        if (call->isPrimitive(PRIM_GET_PRIV_CLASS)) {
           if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             fprintf(outfile, "_WIDE_CLASS_GET_PRIVATIZED_CLASS(");
             get(1)->codegen(outfile);
@@ -1025,7 +1025,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, " = ");
       get(2)->codegen(outfile);
       break;
-    case PRIMITIVE_INIT_REF:
+    case PRIM_INIT_REF:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
         fprintf(outfile, "_SET_WIDE_NULL(");
         get(1)->codegen(outfile);
@@ -1035,15 +1035,15 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, " = NULL");
       }
       break;
-    case PRIMITIVE_SET_REF:
+    case PRIM_SET_REF:
       fprintf(outfile, "&(");
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_GET_REF:
-      INT_FATAL(this, "generated by PRIMITIVE_MOVE");
+    case PRIM_GET_REF:
+      INT_FATAL(this, "generated by PRIM_MOVE");
       break;
-    case PRIMITIVE_REF2STR:
+    case PRIM_REF2STR:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
         fprintf(outfile, "chpl_wideRefToString(&(");
       } else {
@@ -1056,48 +1056,48 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ")");
       }
       break;
-    case PRIMITIVE_RETURN:
+    case PRIM_RETURN:
       fprintf(outfile, "return");
       if (typeInfo() != dtVoid) {
         fprintf(outfile, " ");
         get(1)->codegen(outfile);
       }
       break;
-    case PRIMITIVE_UNARY_MINUS:
+    case PRIM_UNARY_MINUS:
       help_codegen_op(outfile, "-", get(1));
       break;
-    case PRIMITIVE_UNARY_PLUS:
+    case PRIM_UNARY_PLUS:
       help_codegen_op(outfile, "+", get(1));
       break;
-    case PRIMITIVE_UNARY_NOT:
+    case PRIM_UNARY_NOT:
       help_codegen_op(outfile, "~", get(1));
       break;
-    case PRIMITIVE_UNARY_LNOT:
+    case PRIM_UNARY_LNOT:
       help_codegen_op(outfile, "!", get(1));
       break;
-    case PRIMITIVE_ADD:
+    case PRIM_ADD:
       help_codegen_op(outfile, "+", get(1), get(2));
       break;
-    case PRIMITIVE_SUBTRACT:
+    case PRIM_SUBTRACT:
       help_codegen_op(outfile, "-", get(1), get(2));
       break;
-    case PRIMITIVE_MULT:
+    case PRIM_MULT:
       help_codegen_op(outfile, "*", get(1), get(2));
       break;
-    case PRIMITIVE_DIV:
+    case PRIM_DIV:
       help_codegen_op(outfile, "/", get(1), get(2));
       break;
-    case PRIMITIVE_MOD:
+    case PRIM_MOD:
       help_codegen_op(outfile, "%%", get(1), get(2));
       break;
-    case PRIMITIVE_LSH:
+    case PRIM_LSH:
       help_codegen_op(outfile, "<<", get(1), get(2));
       break;
-    case PRIMITIVE_RSH:
+    case PRIM_RSH:
       help_codegen_op(outfile, ">>", get(1), get(2));
       break;
-    case PRIMITIVE_PTR_EQUAL:
-    case PRIMITIVE_EQUAL:
+    case PRIM_PTR_EQUAL:
+    case PRIM_EQUAL:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         fprintf(outfile, "_WIDE_CLASS_EQ(");
@@ -1118,8 +1118,8 @@ void CallExpr::codegen(FILE* outfile) {
         help_codegen_op(outfile, "==", get(1), get(2));
       }
       break;
-    case PRIMITIVE_PTR_NOTEQUAL:
-    case PRIMITIVE_NOTEQUAL:
+    case PRIM_PTR_NOTEQUAL:
+    case PRIM_NOTEQUAL:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         fprintf(outfile, "_WIDE_CLASS_NE(");
@@ -1140,32 +1140,32 @@ void CallExpr::codegen(FILE* outfile) {
         help_codegen_op(outfile, "!=", get(1), get(2));
       }
       break;
-    case PRIMITIVE_LESSOREQUAL:
+    case PRIM_LESSOREQUAL:
       help_codegen_op(outfile, "<=", get(1), get(2));
       break;
-    case PRIMITIVE_GREATEROREQUAL:
+    case PRIM_GREATEROREQUAL:
       help_codegen_op(outfile, ">=", get(1), get(2));
       break;
-    case PRIMITIVE_LESS:
+    case PRIM_LESS:
       help_codegen_op(outfile, "<", get(1), get(2));
       break;
-    case PRIMITIVE_GREATER:
+    case PRIM_GREATER:
       help_codegen_op(outfile, ">", get(1), get(2));
       break;
-    case PRIMITIVE_AND:
+    case PRIM_AND:
       help_codegen_op(outfile, "&", get(1), get(2));
       break;
-    case PRIMITIVE_OR:
+    case PRIM_OR:
       help_codegen_op(outfile, "|", get(1), get(2));
       break;
-    case PRIMITIVE_XOR:
+    case PRIM_XOR:
       help_codegen_op(outfile, "^", get(1), get(2));
       break;
-    case PRIMITIVE_POW:
+    case PRIM_POW:
       fprintf(outfile, "pow");
       help_codegen_op(outfile, ", ", get(1), get(2));
       break;
-    case PRIMITIVE_MIN: 
+    case PRIM_MIN: 
       {
         Type *t = get(1)->typeInfo();
         if (is_arithmetic_type( t)) {
@@ -1188,7 +1188,7 @@ void CallExpr::codegen(FILE* outfile) {
         }
         break;
       }
-    case PRIMITIVE_MAX: 
+    case PRIM_MAX: 
       {
         Type *t = get(1)->typeInfo();
         if (is_arithmetic_type( t)) {
@@ -1211,7 +1211,7 @@ void CallExpr::codegen(FILE* outfile) {
         }
         break;
       }
-    case PRIMITIVE_PROD_ID: 
+    case PRIM_PROD_ID: 
       {
         Type *t = get(1)->typeInfo();
         if (is_arithmetic_type( t)) {
@@ -1227,7 +1227,7 @@ void CallExpr::codegen(FILE* outfile) {
         }
         break;
       }
-    case PRIMITIVE_LAND_ID: 
+    case PRIM_LAND_ID: 
       {
         Type *t = get(1)->typeInfo();
         if (is_arithmetic_type( t) || (is_bool_type(t))) {
@@ -1245,8 +1245,8 @@ void CallExpr::codegen(FILE* outfile) {
         }
         break;
       }
-    case PRIMITIVE_LOR_ID: 
-    case PRIMITIVE_LXOR_ID: 
+    case PRIM_LOR_ID: 
+    case PRIM_LXOR_ID: 
       {
         Type *t = get(1)->typeInfo();
         if (is_arithmetic_type( t) || (is_bool_type(t))) {
@@ -1264,7 +1264,7 @@ void CallExpr::codegen(FILE* outfile) {
         }
         break;
       }
-    case PRIMITIVE_BAND_ID: 
+    case PRIM_BAND_ID: 
       {
         Type *t = get(1)->typeInfo();
         if (is_arithmetic_type( t)) {
@@ -1283,8 +1283,8 @@ void CallExpr::codegen(FILE* outfile) {
         }
         break;
       }
-    case PRIMITIVE_BOR_ID: 
-    case PRIMITIVE_BXOR_ID: 
+    case PRIM_BOR_ID: 
+    case PRIM_BXOR_ID: 
       {
         Type *t = get(1)->typeInfo();
         if (is_arithmetic_type( t)) {
@@ -1304,7 +1304,7 @@ void CallExpr::codegen(FILE* outfile) {
         }
         break;
       }
-    case PRIMITIVE_SETCID:
+    case PRIM_SETCID:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         fprintf(outfile, "_COMM_WIDE_CLASS_PUT_OFF(chpl__class_id, ");
         get(1)->codegen(outfile);
@@ -1326,7 +1326,7 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, "->chpl__cid = %s%s", "chpl__cid_", get(1)->typeInfo()->symbol->cname);
       }
       break;
-    case PRIMITIVE_GETCID:
+    case PRIM_GETCID:
       INT_ASSERT(get(1)->typeInfo() != dtNil);
       fprintf(outfile, "(((object)");
       get(1)->codegen(outfile);
@@ -1338,7 +1338,7 @@ void CallExpr::codegen(FILE* outfile) {
       }
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_UNION_SETID:
+    case PRIM_UNION_SETID:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
         fprintf(outfile, "_COMM_WIDE_PUT_OFF(int64_t, ");
         get(1)->codegen(outfile);
@@ -1355,7 +1355,7 @@ void CallExpr::codegen(FILE* outfile) {
         get(2)->codegen(outfile);
       }
       break;
-    case PRIMITIVE_UNION_GETID:
+    case PRIM_UNION_GETID:
       fprintf(outfile, "(");
       get(1)->codegen(outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
@@ -1364,7 +1364,7 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ".");
       fprintf(outfile, "_uid)");
       break;
-    case PRIMITIVE_GET_MEMBER:
+    case PRIM_GET_MEMBER:
     {
       if (!get(2)->typeInfo()->symbol->hasFlag(FLAG_REF))
         fprintf(outfile, "(&(");
@@ -1373,10 +1373,10 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, "))");
       break;
     }
-    case PRIMITIVE_GET_MEMBER_VALUE:
-      INT_FATAL(this, "generated by PRIMITIVE_MOVE");
+    case PRIM_GET_MEMBER_VALUE:
+      INT_FATAL(this, "generated by PRIM_MOVE");
       break;
-    case PRIMITIVE_SET_MEMBER:
+    case PRIM_SET_MEMBER:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         fprintf(outfile, "_COMM_WIDE_CLASS_PUT_OFF(");
         fprintf(outfile, "%s, ", get(2)->typeInfo()->symbol->cname);
@@ -1407,7 +1407,7 @@ void CallExpr::codegen(FILE* outfile) {
         get(3)->codegen(outfile);
       }
       break;
-    case PRIMITIVE_CHECK_NIL:
+    case PRIM_CHECK_NIL:
       fprintf(outfile, "_CHECK_NIL(");
       get(1)->codegen(outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -1418,7 +1418,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(3)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_LOCAL_CHECK:
+    case PRIM_LOCAL_CHECK:
       fprintf(outfile, "LOCAL_CHECK(");
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
         fprintf(outfile, "*");
@@ -1429,7 +1429,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(3)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_LOCAL_DEREF:
+    case PRIM_LOCAL_DEREF:
       fprintf(outfile, "LOCAL_DEREF(");
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
         fprintf(outfile, "*");
@@ -1438,45 +1438,45 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_THREAD_INIT: {
+    case PRIM_THREAD_INIT: {
       fprintf( outfile, "chpl_thread_init()");
       break;
     }
-    case PRIMITIVE_THREAD_ID:
+    case PRIM_THREAD_ID:
       fprintf(outfile, "chpl_thread_id()");
       break;
-    case PRIMITIVE_GET_SERIAL:
+    case PRIM_GET_SERIAL:
       fprintf(outfile, "chpl_get_serial()");
       break;
-    case PRIMITIVE_SET_SERIAL:
+    case PRIM_SET_SERIAL:
       fprintf(outfile, "chpl_set_serial(");
       get(1)->codegen( outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_SYNC_INIT:
-    case PRIMITIVE_SYNC_DESTROY:
-      fprintf( outfile, primitive->tag == PRIMITIVE_SYNC_INIT ?
+    case PRIM_SYNC_INIT:
+    case PRIM_SYNC_DESTROY:
+      fprintf( outfile, primitive->tag == PRIM_SYNC_INIT ?
                "chpl_init_sync_aux(&((" : "chpl_destroy_sync_aux(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, ")->sync_aux))");
       break;
-    case PRIMITIVE_SYNC_LOCK:
+    case PRIM_SYNC_LOCK:
       fprintf( outfile, "chpl_sync_lock(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, ")->sync_aux))");
       break;
-    case PRIMITIVE_SYNC_UNLOCK:
+    case PRIM_SYNC_UNLOCK:
       fprintf(outfile, "chpl_sync_unlock(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf(outfile, ")->sync_aux))");
       break;
-    case PRIMITIVE_SYNC_WAIT_FULL:
+    case PRIM_SYNC_WAIT_FULL:
       fprintf( outfile, "chpl_sync_wait_full_and_lock(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -1487,7 +1487,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(3)->codegen( outfile);
       fprintf( outfile, ")");
       break;
-    case PRIMITIVE_SYNC_WAIT_EMPTY:
+    case PRIM_SYNC_WAIT_EMPTY:
       fprintf( outfile, "chpl_sync_wait_empty_and_lock(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -1498,42 +1498,42 @@ void CallExpr::codegen(FILE* outfile) {
       get(3)->codegen( outfile);
       fprintf( outfile, ")");
       break;
-    case PRIMITIVE_SYNC_SIGNAL_FULL:
+    case PRIM_SYNC_SIGNAL_FULL:
       fprintf(outfile, "chpl_sync_mark_and_signal_full(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf(outfile, ")->sync_aux))");
       break;
-    case PRIMITIVE_SYNC_SIGNAL_EMPTY:
+    case PRIM_SYNC_SIGNAL_EMPTY:
       fprintf( outfile, "chpl_sync_mark_and_signal_empty(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, ")->sync_aux))");
       break;
-    case PRIMITIVE_SINGLE_INIT:
+    case PRIM_SINGLE_INIT:
       fprintf( outfile, "chpl_init_single_aux(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, ")->single_aux))");
       break;
-    case PRIMITIVE_SINGLE_LOCK:
+    case PRIM_SINGLE_LOCK:
       fprintf( outfile, "chpl_single_lock(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, ")->single_aux))");
       break;
-    case PRIMITIVE_SINGLE_UNLOCK:
+    case PRIM_SINGLE_UNLOCK:
       fprintf( outfile, "chpl_single_unlock(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, ")->single_aux))");
       break;
-    case PRIMITIVE_SINGLE_WAIT_FULL:
+    case PRIM_SINGLE_WAIT_FULL:
       fprintf( outfile, "chpl_single_wait_full(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -1544,14 +1544,14 @@ void CallExpr::codegen(FILE* outfile) {
       get(3)->codegen( outfile);
       fprintf( outfile, ")");
       break;
-    case PRIMITIVE_SINGLE_SIGNAL_FULL:
+    case PRIM_SINGLE_SIGNAL_FULL:
       fprintf(outfile, "chpl_single_mark_and_signal_full(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf(outfile, ")->single_aux))");
       break;
-    case PRIMITIVE_WRITEEF:
+    case PRIM_WRITEEF:
       fprintf( outfile, "chpl_write_EF((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -1560,7 +1560,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
       break;
-    case PRIMITIVE_WRITEFF:
+    case PRIM_WRITEFF:
       fprintf( outfile, "chpl_write_FF((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -1569,7 +1569,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
       break;
-    case PRIMITIVE_WRITEXF:
+    case PRIM_WRITEXF:
       fprintf( outfile, "chpl_write_XF((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -1578,35 +1578,35 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
       break;
-    case PRIMITIVE_SYNC_RESET:
+    case PRIM_SYNC_RESET:
       fprintf( outfile, "chpl_sync_reset((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, "))");
       break;
-    case PRIMITIVE_READFE:
+    case PRIM_READFE:
       fprintf( outfile, "chpl_read_FE((");
       get(2)->codegen( outfile);
       if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, "))");
       break;
-    case PRIMITIVE_READFF:
+    case PRIM_READFF:
       fprintf( outfile, "chpl_read_FF((");
       get(2)->codegen( outfile);
       if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, "))");
       break;
-    case PRIMITIVE_READXX:
+    case PRIM_READXX:
       fprintf( outfile, "chpl_read_XX((");
       get(2)->codegen( outfile);
       if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, "))");
       break;
-    case PRIMITIVE_SYNC_ISFULL:
+    case PRIM_SYNC_ISFULL:
       fprintf( outfile, "chpl_sync_is_full(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -1619,7 +1619,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
       break;
-    case PRIMITIVE_SINGLE_WRITEEF:
+    case PRIM_SINGLE_WRITEEF:
       fprintf( outfile, "chpl_single_write_EF((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -1628,28 +1628,28 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
       break;
-    case PRIMITIVE_SINGLE_RESET:
+    case PRIM_SINGLE_RESET:
       fprintf( outfile, "chpl_single_reset((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, "))");
       break;
-    case PRIMITIVE_SINGLE_READFF:
+    case PRIM_SINGLE_READFF:
       fprintf( outfile, "chpl_single_read_FF((");
       get(2)->codegen( outfile);
       if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, "))");
       break;
-    case PRIMITIVE_SINGLE_READXX:
+    case PRIM_SINGLE_READXX:
       fprintf( outfile, "chpl_single_read_XX((");
       get(2)->codegen( outfile);
       if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, "))");
       break;
-    case PRIMITIVE_SINGLE_ISFULL:
+    case PRIM_SINGLE_ISFULL:
       fprintf( outfile, "chpl_single_is_full(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -1662,7 +1662,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen( outfile);
       fprintf( outfile, ")");
       break;
-    case PRIMITIVE_PROCESS_TASK_LIST:
+    case PRIM_PROCESS_TASK_LIST:
       fputs( "chpl_process_task_list(", outfile);
       get(1)->codegen( outfile);
       {
@@ -1677,21 +1677,21 @@ void CallExpr::codegen(FILE* outfile) {
       }
       fputc( ')', outfile);
       break;
-    case PRIMITIVE_EXECUTE_TASKS_IN_LIST:
+    case PRIM_EXECUTE_TASKS_IN_LIST:
       fputs( "chpl_execute_tasks_in_list(", outfile);
       get(1)->codegen( outfile);
       fputc( ')', outfile);
       break;
-    case PRIMITIVE_FREE_TASK_LIST:
+    case PRIM_FREE_TASK_LIST:
       fputs( "chpl_free_task_list(", outfile);
       get(1)->codegen( outfile);
       fputc( ')', outfile);
       break;
-    case PRIMITIVE_INIT_TASK_LIST:
+    case PRIM_INIT_TASK_LIST:
       fprintf( outfile, "NULL");
       break;
-    case PRIMITIVE_CHPL_ALLOC:
-    case PRIMITIVE_CHPL_ALLOC_PERMIT_ZERO: {
+    case PRIM_CHPL_ALLOC:
+    case PRIM_CHPL_ALLOC_PERMIT_ZERO: {
       bool is_struct = false;
 
       // if Chapel class or record
@@ -1712,7 +1712,7 @@ void CallExpr::codegen(FILE* outfile) {
       // target: void* chpl_alloc(size_t size, char* description);
       if (!fCopyCollect || typeInfo()->symbol->hasFlag(FLAG_NO_OBJECT)) {
         fprintf(outfile, "%s(sizeof(",
-                (primitive->tag == PRIMITIVE_CHPL_ALLOC ?
+                (primitive->tag == PRIM_CHPL_ALLOC ?
                  "chpl_alloc" : 
                  "CHPL_ALLOC_PERMIT_ZERO"));
       } else {
@@ -1729,7 +1729,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
       break;
     }
-    case PRIMITIVE_CHPL_FREE: {
+    case PRIM_CHPL_FREE: {
       codegenBasicPrimitive(outfile, this);
       fprintf(outfile, "; ");
       get(1)->codegen(outfile);
@@ -1738,7 +1738,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, " = NULL");
       break;
     }
-    case PRIMITIVE_CAST: {
+    case PRIM_CAST: {
       if (typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         INT_FATAL(this, "wide class cast is not normal");
       Type* dst = get(1)->typeInfo();
@@ -1773,7 +1773,7 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     }
-    case PRIMITIVE_DYNAMIC_CAST:
+    case PRIM_DYNAMIC_CAST:
       if (typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         INT_FATAL(this, "wide class dynamic cast is not normal");
       fprintf(outfile, "((");
@@ -1784,133 +1784,133 @@ void CallExpr::codegen(FILE* outfile) {
       get(2)->codegen(outfile);
       fprintf(outfile, ")) : NULL)");
       break;
-    case PRIMITIVE_ACTUALS_LIST:
-    case PRIMITIVE_NEW:
-    case PRIMITIVE_INIT:
-    case PRIMITIVE_ISSUBTYPE:
-    case PRIMITIVE_TYPEOF:
-    case PRIMITIVE_GET_ITERATOR_RETURN:
-    case PRIMITIVE_USE:
-    case PRIMITIVE_USED_MODULES_LIST:
-    case PRIMITIVE_TUPLE_EXPAND:
-    case PRIMITIVE_TUPLE_AND_EXPAND:
-    case PRIMITIVE_ERROR:
-    case PRIMITIVE_WHEN:
-    case PRIMITIVE_BLOCK_PARAM_LOOP:
-    case PRIMITIVE_BLOCK_WHILEDO_LOOP:
-    case PRIMITIVE_BLOCK_DOWHILE_LOOP:
-    case PRIMITIVE_BLOCK_FOR_LOOP:
-    case PRIMITIVE_BLOCK_INLINE_FOR_LOOP:
-    case PRIMITIVE_BLOCK_BEGIN:
-    case PRIMITIVE_BLOCK_COBEGIN:
-    case PRIMITIVE_BLOCK_COFORALL:
-    case PRIMITIVE_BLOCK_ON:
-    case PRIMITIVE_BLOCK_ON_NB:
-    case PRIMITIVE_BLOCK_LOCAL:
-    case PRIMITIVE_YIELD:
-    case PRIMITIVE_DELETE:
-    case PRIMITIVE_IS_ENUM:
-    case PRIMITIVE_IS_TUPLE:
-    case PRIMITIVE_LOGICAL_FOLDER:
-    case PRIMITIVE_GET_END_COUNT:
-    case PRIMITIVE_SET_END_COUNT:
-    case PRIMITIVE_ON_LOCALE_NUM:
-    case PRIMITIVE_INIT_FIELDS:
-    case PRIMITIVE_GET_REAL:
-    case PRIMITIVE_GET_IMAG:
+    case PRIM_ACTUALS_LIST:
+    case PRIM_NEW:
+    case PRIM_INIT:
+    case PRIM_ISSUBTYPE:
+    case PRIM_TYPEOF:
+    case PRIM_GET_ITERATOR_RETURN:
+    case PRIM_USE:
+    case PRIM_USED_MODULES_LIST:
+    case PRIM_TUPLE_EXPAND:
+    case PRIM_TUPLE_AND_EXPAND:
+    case PRIM_ERROR:
+    case PRIM_WHEN:
+    case PRIM_BLOCK_PARAM_LOOP:
+    case PRIM_BLOCK_WHILEDO_LOOP:
+    case PRIM_BLOCK_DOWHILE_LOOP:
+    case PRIM_BLOCK_FOR_LOOP:
+    case PRIM_BLOCK_INLINE_FOR_LOOP:
+    case PRIM_BLOCK_BEGIN:
+    case PRIM_BLOCK_COBEGIN:
+    case PRIM_BLOCK_COFORALL:
+    case PRIM_BLOCK_ON:
+    case PRIM_BLOCK_ON_NB:
+    case PRIM_BLOCK_LOCAL:
+    case PRIM_YIELD:
+    case PRIM_DELETE:
+    case PRIM_IS_ENUM:
+    case PRIM_IS_TUPLE:
+    case PRIM_LOGICAL_FOLDER:
+    case PRIM_GET_END_COUNT:
+    case PRIM_SET_END_COUNT:
+    case PRIM_ON_LOCALE_NUM:
+    case PRIM_INIT_FIELDS:
+    case PRIM_GET_REAL:
+    case PRIM_GET_IMAG:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
-    case PRIMITIVE_TO_LEADER:
+    case PRIM_TO_LEADER:
       fprintf(outfile, "GET_LEADER(");
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_TO_FOLLOWER:
+    case PRIM_TO_FOLLOWER:
       fprintf(outfile, "GET_FOLLOWER(");
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_GC_CC_INIT:
+    case PRIM_GC_CC_INIT:
       fprintf(outfile, "_chpl_gc_init(");
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_GC_ADD_ROOT:
+    case PRIM_GC_ADD_ROOT:
       fprintf(outfile, "_addRoot(&");
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_GC_ADD_NULL_ROOT:
+    case PRIM_GC_ADD_NULL_ROOT:
       fprintf(outfile, "_addNullRoot(&");
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_GC_DELETE_ROOT:
+    case PRIM_GC_DELETE_ROOT:
       fprintf(outfile, "_deleteRoot(");
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_GC_CLEANUP:
+    case PRIM_GC_CLEANUP:
       fprintf(outfile, "_chpl_gc_cleanup()");
       break;
-    case PRIMITIVE_GET_LOCALEID:
+    case PRIM_GET_LOCALEID:
       INT_FATAL(this, "handled in move");
       break;
-    case PRIMITIVE_LOCALE_ID:
+    case PRIM_LOCALE_ID:
       fprintf(outfile, "_localeID");
       break;
-    case PRIMITIVE_NUM_LOCALES:
+    case PRIM_NUM_LOCALES:
       fprintf(outfile, "_chpl_comm_default_num_locales()");
       break;
-    case PRIMITIVE_ALLOC_GVR:
+    case PRIM_ALLOC_GVR:
       fprintf(outfile, "_chpl_comm_alloc_registry(%d)", numGlobalsOnHeap);
       break;
-    case PRIMITIVE_HEAP_REGISTER_GLOBAL_VAR:
+    case PRIM_HEAP_REGISTER_GLOBAL_VAR:
       fprintf(outfile, "_HEAP_REGISTER_GLOBAL_VAR(");
       get(1)->codegen(outfile);
       fprintf(outfile, ", ");
       get(2)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_HEAP_BROADCAST_GLOBAL_VARS:
+    case PRIM_HEAP_BROADCAST_GLOBAL_VARS:
       fprintf(outfile, "_COMM_BROADCAST_GLOBAL_VARS(");
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_PRIVATE_BROADCAST:
+    case PRIM_PRIVATE_BROADCAST:
       fprintf(outfile, "_chpl_comm_broadcast_private(&(");
       get(1)->codegen(outfile);
       fprintf(outfile, "), sizeof(");
       get(1)->typeInfo()->codegen(outfile);
       fprintf(outfile, "))");
       break;
-    case PRIMITIVE_INT_ERROR:
+    case PRIM_INT_ERROR:
       fprintf(outfile, "chpl_internal_error(\"compiler generated error\")");
       break;
-    case PRIMITIVE_RT_ERROR:
-    case PRIMITIVE_RT_WARNING:
+    case PRIM_RT_ERROR:
+    case PRIM_RT_WARNING:
       codegenBasicPrimitive(outfile, this);
       break;
-    case PRIMITIVE_NEW_PRIV_CLASS:
+    case PRIM_NEW_PRIV_CLASS:
       fprintf(outfile, "chpl_newPrivatizedClass(");
       get(1)->codegen(outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf(outfile, ")");
       break;
-    case PRIMITIVE_NUM_PRIV_CLASSES:
+    case PRIM_NUM_PRIV_CLASSES:
       fprintf(outfile, "chpl_numPrivatizedClasses()");
       break;
-    case PRIMITIVE_GET_PRIV_CLASS:
+    case PRIM_GET_PRIV_CLASS:
       INT_FATAL(this, "handled in move");
       break;
-    case PRIMITIVE_GET_ERRNO:
+    case PRIM_GET_ERRNO:
       fprintf(outfile, "get_errno()");
       break;
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "Impossible");
       break;
-    case PRIMITIVE_WARNING:
+    case PRIM_WARNING:
       fprintf(outfile, "/* compilerWarning was here */");
       break;
     }

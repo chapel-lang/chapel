@@ -474,9 +474,9 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
         if (!e->primitive) {
           fprintf(html_file, "<B>call</B> ");
         } else {
-          if (e->isPrimitive(PRIMITIVE_RETURN))
+          if (e->isPrimitive(PRIM_RETURN))
             fprintf(html_file, "<B>return</B> ");
-          else if (e->isPrimitive(PRIMITIVE_YIELD))
+          else if (e->isPrimitive(PRIM_YIELD))
             fprintf(html_file, "<B>yield</B> ");
           else
             fprintf(html_file, "'%s' ", e->primitive->name);

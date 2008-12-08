@@ -78,7 +78,7 @@ static void destructure_tuple(CallExpr* call) {
   Expr* stmt = parent->getStmtExpr();
   VarSymbol* temp = newTemp();
   stmt->insertBefore(new DefExpr(temp));
-  stmt = new CallExpr(PRIMITIVE_MOVE, temp, parent->get(2)->remove());
+  stmt = new CallExpr(PRIM_MOVE, temp, parent->get(2)->remove());
   parent->replace(stmt);
   int i = 1;
   for_actuals(expr, call) {
@@ -120,7 +120,7 @@ static void change_cast_in_where(FnSymbol* fn) {
     forv_Vec(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isNamed("_cast")) {
-          call->primitive = primitives[PRIMITIVE_ISSUBTYPE];
+          call->primitive = primitives[PRIM_ISSUBTYPE];
           call->baseExpr->remove();
         }
       }

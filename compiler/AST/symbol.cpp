@@ -464,7 +464,7 @@ void FnSymbol::verify() {
   }
   if (normalized && !hasFlag(FLAG_AUTO_II)) {
     CallExpr* last = toCallExpr(body->body.last());
-    if (!last || !last->isPrimitive(PRIMITIVE_RETURN))
+    if (!last || !last->isPrimitive(PRIM_RETURN))
       INT_FATAL(this, "Last statement in normalized function is not a return");
   }
   if (formals.parent != this)
@@ -610,7 +610,7 @@ FnSymbol::insertAtTail(Expr* ast) {
 Symbol*
 FnSymbol::getReturnSymbol() {
   CallExpr* ret = toCallExpr(body->body.last());
-  if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
+  if (!ret || !ret->isPrimitive(PRIM_RETURN))
     INT_FATAL(this, "function is not normal");
   SymExpr* sym = toSymExpr(ret->get(1));
   if (!sym)
@@ -622,7 +622,7 @@ FnSymbol::getReturnSymbol() {
 void
 FnSymbol::insertBeforeReturn(Expr* ast) {
   CallExpr* ret = toCallExpr(body->body.last());
-  if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
+  if (!ret || !ret->isPrimitive(PRIM_RETURN))
     INT_FATAL(this, "function is not normal");
   Expr* last = ret;
   if (DefExpr* def = toDefExpr(last->prev))
@@ -635,7 +635,7 @@ FnSymbol::insertBeforeReturn(Expr* ast) {
 void
 FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
   CallExpr* ret = toCallExpr(body->body.last());
-  if (!ret || !ret->isPrimitive(PRIMITIVE_RETURN))
+  if (!ret || !ret->isPrimitive(PRIM_RETURN))
     INT_FATAL(this, "function is not normal");
   ret->insertBefore(ast);
 }

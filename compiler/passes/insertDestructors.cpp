@@ -34,8 +34,8 @@ void fixupDestructors(void) {
             bool useRefType = !fct->symbol->hasFlag(FLAG_ARRAY) && !fct->symbol->hasFlag(FLAG_DOMAIN);
             VarSymbol* tmp = useRefType ? newTemp(fct->refType) : newTemp(fct);
             ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-            ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp,
-              new CallExpr(useRefType ? PRIMITIVE_GET_MEMBER : PRIMITIVE_GET_MEMBER_VALUE, ct->destructor->_this, field)));
+            ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
+              new CallExpr(useRefType ? PRIM_GET_MEMBER : PRIM_GET_MEMBER_VALUE, ct->destructor->_this, field)));
             ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
           }
         }
@@ -54,8 +54,8 @@ void fixupDestructors(void) {
           else
             tmp = newTemp(ct->dispatchParents.v[0]->refType);
           ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-          ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp,
-            new CallExpr(PRIMITIVE_CAST,
+          ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
+            new CallExpr(PRIM_CAST,
                          isClass(ct) || ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN) ?
                 ct->dispatchParents.v[0]->symbol : ct->dispatchParents.v[0]->refType->symbol,
               ct->destructor->_this)));
@@ -135,7 +135,7 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
       if (call->parentSymbol) {
         CallExpr* move = toCallExpr(call->parentExpr);
         if (!move) continue;
-        INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
+        INT_ASSERT(move->isPrimitive(PRIM_MOVE));
         SymExpr* lhs = toSymExpr(move->get(1));
         INT_ASSERT(lhs);
         if (!lhs->var->type->destructor || !gFnSymbols.in(lhs->var->type->destructor) ||
@@ -188,12 +188,12 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
                 }
                 CallExpr* call = toCallExpr(se->parentExpr);
 #if 0
-                if (call && (//call->isPrimitive(PRIMITIVE_SET_REF) || call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
-                    call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)))
+                if (call && (//call->isPrimitive(PRIM_SET_REF) || call->isPrimitive(PRIM_GET_MEMBER) ||
+                    call->isPrimitive(PRIM_GET_MEMBER_VALUE)))
                   call = toCallExpr(call->parentExpr);
 #endif
                 if (call) {
-                  if (call->isPrimitive(PRIMITIVE_MOVE)) {
+                  if (call->isPrimitive(PRIM_MOVE)) {
                     if (fn->getReturnSymbol() == toSymExpr(call->get(1))->var) {
                       maybeCallDestructor = false;
                       if (defMap.get(toSymExpr(call->get(1))->var)->n == 1 /*&&
@@ -239,12 +239,12 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
                     break;
 #endif
 #if 1
-                  } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER) &&
+                  } else if (call->isPrimitive(PRIM_SET_MEMBER) &&
                              !toSymExpr(call->get(1))->var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
                     maybeCallDestructor = false;
                     break;
 #endif
-                  } else if (call->isPrimitive(PRIMITIVE_ARRAY_SET_FIRST)) {
+                  } else if (call->isPrimitive(PRIM_ARRAY_SET_FIRST)) {
                     // used (only) in init_elts in ChapelBase.chpl
                     maybeCallDestructor = false;
                     break;
@@ -264,13 +264,13 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
               if (useRefType) {
                 VarSymbol* tmp = newTemp(ct->refType);
                 fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-                fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp,
-                  new CallExpr(PRIMITIVE_SET_REF, lhs->var)));
+                fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
+                  new CallExpr(PRIM_SET_REF, lhs->var)));
                 fn->insertBeforeReturnAfterLabel(new CallExpr(ct->destructor, tmp));
               } else {
                 VarSymbol* tmp = newTemp(ct);
                 fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-                fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_MOVE, tmp, lhs->var));
+                fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp, lhs->var));
                 fn->insertBeforeReturnAfterLabel(new CallExpr(ct->destructor, tmp));
               }
             } else {
@@ -278,13 +278,13 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
               if (useRefType) {
                 VarSymbol* tmp = newTemp(ct->refType);
                 parentBlock->insertAtTailBeforeGoto(new DefExpr(tmp));
-                parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIMITIVE_MOVE, tmp,
-                  new CallExpr(PRIMITIVE_SET_REF, lhs->var)));
+                parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIM_MOVE, tmp,
+                  new CallExpr(PRIM_SET_REF, lhs->var)));
                 parentBlock->insertAtTailBeforeGoto(new CallExpr(ct->destructor, tmp));
               } else {
                 VarSymbol* tmp = newTemp(ct);
                 parentBlock->insertAtTailBeforeGoto(new DefExpr(tmp));
-                parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIMITIVE_MOVE, tmp, lhs->var));
+                parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIM_MOVE, tmp, lhs->var));
                 parentBlock->insertAtTailBeforeGoto(new CallExpr(ct->destructor, tmp));
               }
             }

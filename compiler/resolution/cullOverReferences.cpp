@@ -22,21 +22,21 @@ refNecessary(SymExpr* se,
         if (formal->type->symbol->hasFlag(FLAG_REF) &&
             fn->hasFlag(FLAG_ALLOW_REF))
           return true;
-      } else if (call->isPrimitive(PRIMITIVE_MOVE)) {
+      } else if (call->isPrimitive(PRIM_MOVE)) {
         if (refNecessary(toSymExpr(call->get(1)), defMap, useMap))
           return true;
-      } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+      } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
         CallExpr* move = toCallExpr(call->parentExpr);
         INT_ASSERT(move);
-        INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
+        INT_ASSERT(move->isPrimitive(PRIM_MOVE));
         if (refNecessary(toSymExpr(move->get(1)), defMap, useMap))
           return true;
-      } else if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+      } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
         if (!call->get(2)->typeInfo()->refType)
           return true;
-      } else if (call->isPrimitive(PRIMITIVE_RETURN)) {
+      } else if (call->isPrimitive(PRIM_RETURN)) {
         return true;
-      } else if (call->isPrimitive(PRIMITIVE_GET_LOCALEID)) {
+      } else if (call->isPrimitive(PRIM_GET_LOCALEID)) {
         return true;
       }
     }
@@ -65,14 +65,14 @@ void cullOverReferences() {
     if (FnSymbol* fn = call->isResolved()) {
       if (FnSymbol* copy = fn->valueFunction) {
         if (CallExpr* move = toCallExpr(call->parentExpr)) {
-          INT_ASSERT(move->isPrimitive(PRIMITIVE_MOVE));
+          INT_ASSERT(move->isPrimitive(PRIM_MOVE));
           SymExpr* se = toSymExpr(move->get(1));
           INT_ASSERT(se);
           if (!refNecessary(se, defMap, useMap)) {
             VarSymbol* tmp = newTemp(copy->retType);
             move->insertBefore(new DefExpr(tmp));
-            move->insertAfter(new CallExpr(PRIMITIVE_MOVE, se->var,
-                                new CallExpr(PRIMITIVE_SET_REF, tmp)));
+            move->insertAfter(new CallExpr(PRIM_MOVE, se->var,
+                                new CallExpr(PRIM_SET_REF, tmp)));
             se->var = tmp;
             SymExpr* base = toSymExpr(call->baseExpr);
             base->var = copy;
@@ -107,8 +107,8 @@ void cullOverReferences() {
     }
   }
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIMITIVE_GET_REF) ||
-        call->isPrimitive(PRIMITIVE_SET_REF)) {
+    if (call->isPrimitive(PRIM_GET_REF) ||
+        call->isPrimitive(PRIM_SET_REF)) {
       Type* vt = call->get(1)->typeInfo();
       if (isReferenceType(vt))
         vt = vt->getValueType();
@@ -116,20 +116,20 @@ void cullOverReferences() {
         call->replace(call->get(1)->remove());
       }
     }
-    if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+    if (call->isPrimitive(PRIM_GET_MEMBER)) {
       Type* vt = call->get(2)->typeInfo();
       if (isReferenceType(vt))
         vt = vt->getValueType();
       if (isDerefType(vt)) {
-        call->primitive = primitives[PRIMITIVE_GET_MEMBER_VALUE];
+        call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
       }
     }
-    if (call->isPrimitive(PRIMITIVE_ARRAY_GET)) {
+    if (call->isPrimitive(PRIM_ARRAY_GET)) {
       Type* vt = call->typeInfo();
       if (isReferenceType(vt))
         vt = vt->getValueType();
       if (isDerefType(vt)) {
-        call->primitive = primitives[PRIMITIVE_ARRAY_GET_VALUE];
+        call->primitive = primitives[PRIM_ARRAY_GET_VALUE];
       }
     }
   }

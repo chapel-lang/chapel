@@ -57,7 +57,7 @@ void AList::insertAtHead(Expr* new_ast) {
   if (new_ast->list)
     INT_FATAL(new_ast, "Argument is in a list in AList::insertAtHead");
   if (CallExpr* call = toCallExpr(new_ast)) {
-    if (call && call->isPrimitive(PRIMITIVE_ACTUALS_LIST)) {
+    if (call && call->isPrimitive(PRIM_ACTUALS_LIST)) {
       for_actuals(expr, call) {
         expr->remove();
         insertAtHead(expr);
@@ -86,7 +86,7 @@ void AList::insertAtTail(Expr* new_ast) {
   if (new_ast->prev || new_ast->next)
     INT_FATAL(new_ast, "Argument is in a list in AList::insertAtTail");
   if (CallExpr* call = toCallExpr(new_ast)) {
-    if (call && call->isPrimitive(PRIMITIVE_ACTUALS_LIST)) {
+    if (call && call->isPrimitive(PRIM_ACTUALS_LIST)) {
       for_actuals(expr, call) {
         expr->remove();
         insertAtTail(expr);

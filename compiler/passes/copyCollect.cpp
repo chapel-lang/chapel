@@ -10,9 +10,9 @@
 
 static void addToRootSet(FnSymbol* fn, Expr* expr, bool nullify = false) {
   if (nullify)
-    fn->insertAtHead(new CallExpr(PRIMITIVE_GC_ADD_NULL_ROOT, expr));
+    fn->insertAtHead(new CallExpr(PRIM_GC_ADD_NULL_ROOT, expr));
   else
-    fn->insertAtHead(new CallExpr(PRIMITIVE_GC_ADD_ROOT, expr));
+    fn->insertAtHead(new CallExpr(PRIM_GC_ADD_ROOT, expr));
 }
 
 
@@ -92,8 +92,8 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
             VarSymbol* tmp = newTemp(field->type);
             fn->insertAtHead(new DefExpr(tmp));
             fn->insertAtHead(
-              new CallExpr(PRIMITIVE_MOVE, tmp,
-                new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, base->copy(),
+              new CallExpr(PRIM_MOVE, tmp,
+                new CallExpr(PRIM_GET_MEMBER_VALUE, base->copy(),
                   new SymExpr(field))));
             addToRootSet(fn, new SymExpr(tmp));
             totalRoots++;
@@ -102,8 +102,8 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
           VarSymbol* tmp = newTemp(field->type);
           fn->insertAtHead(new DefExpr(tmp));
           fn->insertAtHead(
-            new CallExpr(PRIMITIVE_MOVE, tmp,
-              new CallExpr(PRIMITIVE_GET_MEMBER_VALUE, base->copy(),
+            new CallExpr(PRIM_MOVE, tmp,
+              new CallExpr(PRIM_GET_MEMBER_VALUE, base->copy(),
                 new SymExpr(field))));
           buildRootSetForFunction(fn, new SymExpr(tmp), field->defPoint);
         }
@@ -112,7 +112,7 @@ static void buildRootSetForFunction(FnSymbol* fn, Expr* base, DefExpr* def) {
   }
   if (!base) {
     if (totalRoots != 0)
-      fn->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_GC_DELETE_ROOT,
+      fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_GC_DELETE_ROOT,
                                                     new_IntSymbol(totalRoots)));
   }
 }
@@ -136,7 +136,7 @@ static void buildRootSetForModule(ModuleSymbol* module) {
     }
   }
   if (totalRoots != 0)
-    chpl_main->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_GC_DELETE_ROOT,
+    chpl_main->insertBeforeReturnAfterLabel(new CallExpr(PRIM_GC_DELETE_ROOT,
                                                          new_IntSymbol(totalRoots)));
 
 }
@@ -146,9 +146,9 @@ void copyCollection(void) {
   if (!fCopyCollect)
     return;
 
-  chpl_main->insertAtHead(new CallExpr(PRIMITIVE_GC_CC_INIT,
+  chpl_main->insertAtHead(new CallExpr(PRIM_GC_CC_INIT,
                                        new_IntSymbol(20971520))); //20 MB
-  chpl_main->insertBeforeReturnAfterLabel(new CallExpr(PRIMITIVE_GC_CLEANUP));
+  chpl_main->insertBeforeReturnAfterLabel(new CallExpr(PRIM_GC_CLEANUP));
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     buildRootSetForFunction(fn, NULL, NULL);

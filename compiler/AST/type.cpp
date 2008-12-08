@@ -386,27 +386,27 @@ createPrimitiveType(const char *name, const char *cname) {
 // Create new primitive type for integers. Specify name for now. Though it will 
 // probably be something like int1, int8, etc. in the end. In that case
 // we can just specify the width (i.e., size).
-#define INIT_PRIMITIVE_BOOL(name, width)                                \
+#define INIT_PRIM_BOOL(name, width)                                \
   dtBools[BOOL_SIZE_##width] = createPrimitiveType(name, "chpl_bool" #width); \
   dtBools[BOOL_SIZE_##width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_##width)
 
-#define INIT_PRIMITIVE_INT( name, width)                                 \
+#define INIT_PRIM_INT( name, width)                                 \
   dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t"); \
   dtInt[INT_SIZE_ ## width]->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width)
 
-#define INIT_PRIMITIVE_UINT( name, width)                                  \
+#define INIT_PRIM_UINT( name, width)                                  \
   dtUInt[INT_SIZE_ ## width] = createPrimitiveType (name, "uint" #width "_t"); \
   dtUInt[INT_SIZE_ ## width]->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width)
 
-#define INIT_PRIMITIVE_REAL( name, width)                                     \
+#define INIT_PRIM_REAL( name, width)                                     \
   dtReal[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_real" #width); \
   dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
   
-#define INIT_PRIMITIVE_IMAG( name, width)                               \
+#define INIT_PRIM_IMAG( name, width)                               \
   dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_imag" #width); \
   dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
   
-#define INIT_PRIMITIVE_COMPLEX( name, width)                                   \
+#define INIT_PRIM_COMPLEX( name, width)                                   \
   dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width); \
   dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(         \
                                   "_chpl_complex" #width "(0.0, 0.0)",         \
@@ -447,7 +447,7 @@ void initPrimitiveTypes(void) {
 
   createInitFn(theProgram);
   if (!fRuntime)
-    theProgram->initFn->insertAtHead(new CallExpr(PRIMITIVE_USE,
+    theProgram->initFn->insertAtHead(new CallExpr(PRIM_USE,
                                        new UnresolvedSymExpr("ChapelStandard")));
 
   theProgram->initFn->insertAtHead(objectDef);
@@ -494,31 +494,31 @@ void initPrimitiveTypes(void) {
     *gPrivatization->immediate = *gTrue->immediate;
   }
   
-  INIT_PRIMITIVE_BOOL("bool(8)", 8);
-  INIT_PRIMITIVE_BOOL("bool(16)", 16);
-  INIT_PRIMITIVE_BOOL("bool(32)", 32);
-  INIT_PRIMITIVE_BOOL("bool(64)", 64);
+  INIT_PRIM_BOOL("bool(8)", 8);
+  INIT_PRIM_BOOL("bool(16)", 16);
+  INIT_PRIM_BOOL("bool(32)", 32);
+  INIT_PRIM_BOOL("bool(64)", 64);
   dtBools[BOOL_SIZE_SYS] = dtBool;
 
   // WAW: could have a loop, but the following unrolling is more explicit.
-  INIT_PRIMITIVE_INT( "int(8)", 8);
-  INIT_PRIMITIVE_INT( "int(16)", 16);
-  INIT_PRIMITIVE_INT( "int", 32);
-  INIT_PRIMITIVE_INT( "int(64)", 64);            // default size
+  INIT_PRIM_INT( "int(8)", 8);
+  INIT_PRIM_INT( "int(16)", 16);
+  INIT_PRIM_INT( "int", 32);
+  INIT_PRIM_INT( "int(64)", 64);            // default size
 
-  INIT_PRIMITIVE_UINT( "uint(8)", 8);
-  INIT_PRIMITIVE_UINT( "uint(16)", 16);
-  INIT_PRIMITIVE_UINT( "uint", 32);
-  INIT_PRIMITIVE_UINT( "uint(64)", 64);          // default size
+  INIT_PRIM_UINT( "uint(8)", 8);
+  INIT_PRIM_UINT( "uint(16)", 16);
+  INIT_PRIM_UINT( "uint", 32);
+  INIT_PRIM_UINT( "uint(64)", 64);          // default size
 
-  INIT_PRIMITIVE_REAL( "real(32)", 32);
-  INIT_PRIMITIVE_REAL( "real", 64);            // default size
+  INIT_PRIM_REAL( "real(32)", 32);
+  INIT_PRIM_REAL( "real", 64);            // default size
 
-  INIT_PRIMITIVE_IMAG( "imag(32)", 32);
-  INIT_PRIMITIVE_IMAG( "imag", 64);            // default size
+  INIT_PRIM_IMAG( "imag(32)", 32);
+  INIT_PRIM_IMAG( "imag", 64);            // default size
 
-  INIT_PRIMITIVE_COMPLEX( "complex(64)", 64);
-  INIT_PRIMITIVE_COMPLEX( "complex", 128);       // default size
+  INIT_PRIM_COMPLEX( "complex(64)", 64);
+  INIT_PRIM_COMPLEX( "complex", 128);       // default size
 
   dtString = createPrimitiveType( "string", "_string");
   dtString->defaultValue = new_StringSymbol("");

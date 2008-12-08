@@ -29,7 +29,7 @@ removeWrapRecords() {
   // replace use of _valueType field with type
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIMITIVE_GET_PRIV_CLASS)) {
+    if (call->isPrimitive(PRIM_GET_PRIV_CLASS)) {
       call->get(1)->replace(new SymExpr(call->get(1)->typeInfo()->symbol));
     }
   }
@@ -38,9 +38,9 @@ removeWrapRecords() {
   // remove defs of _valueType field
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIMITIVE_SET_MEMBER) ||
-        call->isPrimitive(PRIMITIVE_GET_MEMBER) ||
-        call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+    if (call->isPrimitive(PRIM_SET_MEMBER) ||
+        call->isPrimitive(PRIM_GET_MEMBER) ||
+        call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
       if (SymExpr* se = toSymExpr(call->get(2))) {
         if (!strcmp(se->var->name, "_valueType")) {
           se->getStmtExpr()->remove();
@@ -78,23 +78,23 @@ removeWrapRecords() {
   // replace accesses of _value with wrap record
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIMITIVE_SET_MEMBER)) {
+    if (call->isPrimitive(PRIM_SET_MEMBER)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (se->var->type->symbol->hasFlag(FLAG_ARRAY) ||
             se->var->type->symbol->hasFlag(FLAG_DOMAIN)) {
-          call->primitive = primitives[PRIMITIVE_MOVE];
+          call->primitive = primitives[PRIM_MOVE];
           call->get(2)->remove();
         }
       }
-    } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER)) {
+    } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (se->var->type->symbol->hasFlag(FLAG_ARRAY) ||
             se->var->type->symbol->hasFlag(FLAG_DOMAIN)) {
-          call->primitive = primitives[PRIMITIVE_SET_REF];
+          call->primitive = primitives[PRIM_SET_REF];
           call->get(2)->remove();
         }
       }
-    } else if (call->isPrimitive(PRIMITIVE_GET_MEMBER_VALUE)) {
+    } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (se->var->type->symbol->hasFlag(FLAG_ARRAY) ||
             se->var->type->symbol->hasFlag(FLAG_DOMAIN)) {
