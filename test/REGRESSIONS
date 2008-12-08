@@ -15,6 +15,10 @@
 linux and general regressions
 =============================
 
+simple .good mismatch (12/06/08)
+--------------------------------
+[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
+
 puzzling timeouts (12/02/08)
 ----------------------------
 [Error: Timed out executing program classes/figueroa/LeakedMemory2]
@@ -89,9 +93,10 @@ occasional out-of-memory error (11/06/08)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-'attempt to dereference nil'
-----------------------------
+spurious 'attempt to dereference nil'
+-------------------------------------
 [Error matching program output for studies/matrixMult/stonea/distributed/luLike] (11/08/08 onwards)
+[Error matching program output for release/examples/hpcc/stream] (12/03/08, 12/07/08)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d] (12/04/08)
 
 spurious recursive failure in AMUDP_SPMDShutdown (e.g., 12/03/08)
@@ -144,10 +149,6 @@ times out occasionally (20x diff -- maybe memory leak related?)
 gasnet-fast regressions (other than the above)
 ==============================================
 
-spurious 'attempt to dereference nil' (12/03/08)
-------------------------------------------------
-[Error matching program output for release/examples/hpcc/stream]
-
 spurious recursive failure in AMUDP_SPMDShutdown
 ------------------------------------------------
 [Error matching program output for functions/bradc/retConstness/modifyReturnedClass] (11/10/08)
@@ -175,6 +176,7 @@ intermittent seg faults
 [Error matching program output for multilocale/deitz/linked/test_linked3a] (e.g., 10/26/08)
 [Error matching program output for multilocale/deitz/linked/test_linked1] (e.g., 11/12/08)
 [Error matching program output for multilocale/diten/oneOrMoreLocales/1DBlockDistributedJacobi] (e.g., 11/12/08)
+[Error matching program output for studies/hpcc/common/bradc/unit/modifyLocales] (e.g., 12/07/08)
 
 =======================
 baseline-specific tests
@@ -197,7 +199,8 @@ opts-specific tests
 [Error matching program output for release/examples/hpcc/hpl]
 
 
-(Full run: 68, though some spurious test_refine errors)
+(Full run: 110, though some spurious test_refine errors and general
+ra-seq and ra-dist failures)
 
 --no-dead-code-elimination
 --------------------------
@@ -259,17 +262,32 @@ opts-specific tests
 
 --baseline --no-local
 ---------------------
-[Error matching program output for arrays/diten/promoteFieldAccessAndMethod]
 [Error matching compiler output for classes/diten/allocateManyObjects]
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
-[Error matching compiler output for studies/590o/alaska/graph]
+[Error matching program output for release/examples/hpcc/hpl]
 [Error matching compiler output for studies/590o/blerner/xml-parse]
 [Error matching program output for studies/hpcc/2008/hpl]
+[Error matching program output for studies/hpcc/2008/stream-fragfrag]
+[Error matching program output for studies/hpcc/2008/stream-fragmented]
 [Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample3]
 [Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample4]
 [Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5]
+[Error matching program output for studies/hpcc/2008/hpl]
+[Error matching program output for studies/hpcc/2008/stream-fragfrag]
+[Error matching program output for studies/hpcc/2008/stream-fragmented]
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample3]
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample4]
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5]
+[Error matching program output for studies/hpcc/RA/ra-seq]
+[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching program output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
+[Error matching compiler output for studies/madness/aniruddha/madchap/test_diff]
+[Error matching compiler output for studies/madness/aniruddha/madchap/test_likepy]
+[Error matching compiler output for studies/madness/aniruddha/madchap/test_mul]
+[Error matching program output for studies/matrixMult/stonea/distributed/luLike]
+[Error matching program output for studies/matrixMult/stonea/distributed/luLike2]
 [Error matching program output for studies/matrixMult/stonea/distributed/luLike]
 [Error matching program output for studies/matrixMult/stonea/distributed/luLike2]
 [Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
@@ -282,7 +300,6 @@ opts-specific tests
 [Error: Timed out executing program users/agnieszka/test2]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
-[Error matching program output for users/shetag/fock/fock-stc-1]
 [Error matching program output for users/shetag/fock/fock-stc]
 
 
