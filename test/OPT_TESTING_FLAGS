@@ -15,5 +15,4 @@
 --no-optimize-loop-iterators --no-inline-iterators
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
 --no-scalar-replacement --no-inline
---no-local
 --baseline --no-local
