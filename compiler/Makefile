@@ -79,7 +79,18 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 # target-based rules
 #
 
-$(BUILD_VERSION_FILE): FORCE
+CheckForStandardCHeaders:
+	@if [ `find . \( -name '*.cpp' -or -name '*.h' \) -exec egrep -q '^[       ]*#[    ]*include[      ][      ]*<[    ]*(assert|ctype|errno|float|iso646|limits|locale|math|setjmp|signal|stdarg|stddef|stdio|stdlib|string|time|wchar|wctype)[.]h[   ]*>' {} \; -print | wc -l` -gt 0 ]; then \
+	  echo; \
+	  echo Standard C headers found in the following files:; \
+	  echo `find . \( -name '*.cpp' -or -name '*.h' \) -exec egrep -q '^[       ]*#[    ]*include[      ][      ]*<[    ]*(assert|ctype|errno|float|iso646|limits|locale|math|setjmp|signal|stdarg|stddef|stdio|stdlib|string|time|wchar|wctype)[.]h[   ]*>' {} \; -print` | sed 's-\./-compiler/-g'; \
+	  echo; \
+	  echo The above list was generated with the following command:; \
+	  echo find compiler \\\( -name "'*.cpp'" -or -name "'*.h'" \\\) -exec egrep -q "'^[       ]*#[    ]*include[      ][      ]*<[    ]*(assert|ctype|errno|float|iso646|limits|locale|math|setjmp|signal|stdarg|stddef|stdio|stdlib|string|time|wchar|wctype)[.]h[   ]*>'" {} \\\; -print; \
+	  exit 1; \
+	fi
+
+$(BUILD_VERSION_FILE): CheckForStandardCHeaders
 	@$(CHAPEL_ROOT)/util/updateBuildVersion.pl $(CHAPEL_ROOT)/compiler/main
 
 $(CHPL): $(CHPL_BIN_DIR) $(CHPL_OBJS)
