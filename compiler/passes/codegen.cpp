@@ -19,7 +19,6 @@ static int max(int a, int b) {
 }
 
 static void setOrder(Map<ClassType*,int>& order, int& maxOrder, ClassType* ct);
-static void codegen_cid2offsets_help(FILE* outfile, ClassType* ct);
 
 static int
 getOrder(Map<ClassType*,int>& order, int& maxOrder,
@@ -414,107 +413,6 @@ static void codegen_header(void) {
   }
 }
 
-static void codegen_cid2offsets_help(FILE* outfile, ClassType* ct) {
-  for_fields(field, ct) {
-    if (ClassType* innerct = toClassType(field->type)) {
-      if (!innerct->symbol->hasFlag(FLAG_REF) &&
-          !innerct->symbol->hasFlag(FLAG_NO_OBJECT)) {
-        if (isClass(innerct)) {
-          if (field->hasFlag(FLAG_SUPER_CLASS)) {
-            codegen_cid2offsets_help(outfile, innerct);
-          } else {
-            fprintf(outfile, "(size_t)&((_");
-            ct->symbol->codegen(outfile);
-            fprintf(outfile, "*)NULL)->");
-            field->codegen(outfile);
-            fprintf(outfile, ", ");
-          }
-        }
-      }
-    }
-  }
-}
-
-
-static void
-codegen_cid2offsets(FILE* outfile) {
-  // Generate one array for each Class.  Initialize it to contain the offsets
-  // of each class field that is a pointer to a class.  The first location
-  // in the array is the size of the class. Then, generate a function
-  // cid2offsets which takes a cid and returns a pointer to the array
-  // corresponding to the class with that cid.
-  forv_Vec(TypeSymbol, typeSym, gTypeSymbols) {
-    if (ClassType* ct = toClassType(typeSym->type)) {
-      if (isClass(ct) && !ct->symbol->hasFlag(FLAG_REF) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
-        fprintf(outfile, "size_t _");
-        ct->symbol->codegen(outfile);
-        fprintf(outfile, "_offsets[] = { sizeof(_");
-        ct->symbol->codegen(outfile);
-        fprintf(outfile, "), ");
-        if (typeSym->hasFlag(FLAG_DATA_CLASS)) {
-          if (ClassType* elementType = toClassType(ct->substitutions.v[0].value)) {
-            if (isClass(elementType)) {
-              fprintf(outfile, "(size_t)-1,"); // Special token for arrays of classes
-              fprintf(outfile, "(size_t)&((_");
-              ct->symbol->codegen(outfile);
-              fprintf(outfile, "*)0)->size,");
-              fprintf(outfile, "(size_t)&((_");
-              ct->symbol->codegen(outfile);
-              fprintf(outfile, "*)0)->_data,");
-            }
-          }
-        }
-        codegen_cid2offsets_help(outfile, ct);
-        fprintf(outfile, "0 };\n");
-      }
-    }
-  }
-
-  fprintf(outfile, "size_t* cid2offsets(chpl__class_id cid) {\n");
-  fprintf(outfile, "size_t* offsets = NULL;\n");
-  fprintf(outfile, "switch(cid) {\n");
-  forv_Vec(TypeSymbol, typeSym, gTypeSymbols) {
-    if (ClassType* ct = toClassType(typeSym->type)) {
-      if (isClass(ct) && !isReferenceType(ct) && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
-        fprintf(outfile, "case %s%s:\n", "chpl__cid_", ct->symbol->cname);
-        fprintf(outfile, "offsets = _");
-        ct->symbol->codegen(outfile);
-        fprintf(outfile, "_offsets;\n");
-        fprintf(outfile, "break;\n");
-      }
-    }
-  }
-  fprintf(outfile, "default:\n");
-  fprintf(outfile, "chpl_error(\"Bad cid in cid2offsets\", 0, 0);\n");
-  fprintf(outfile, "break;\n");
-  fprintf(outfile, "}\n");
-  fprintf(outfile, "return offsets;\n");
-  fprintf(outfile, "}\n");
-}
-
-
-static void
-codegen_cid2size(FILE* outfile) {
-  fprintf(outfile, "size_t cid2size(chpl__class_id cid) {\n");
-  fprintf(outfile, "size_t size = 0;\n");
-  fprintf(outfile, "switch(cid) {\n");
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (isClass(ts->type) && !isReferenceType(ts->type) && !ts->hasFlag(FLAG_NO_OBJECT)) {
-      fprintf(outfile, "case %s%s:\n", "chpl__cid_", ts->cname);
-      fprintf(outfile, "size = sizeof(_");
-      ts->codegen(outfile);
-      fprintf(outfile, ");\n");
-      fprintf(outfile, "break;\n");
-    }
-  }
-  fprintf(outfile, "default:\n");
-  fprintf(outfile, "chpl_error(\"Bad cid in cid2size\", 0, 0);\n");
-  fprintf(outfile, "break;\n");
-  fprintf(outfile, "}\n");
-  fprintf(outfile, "return size;\n");
-  fprintf(outfile, "}\n");
-}
-
 
 static void
 codegen_config(FILE* outfile) {
@@ -617,14 +515,6 @@ void codegen(void) {
     beautify(&runtimeFile);
   }
 
-  fileinfo memoryfile;
-  openCFile(&memoryfile, "_memory_management", "c");
-  fprintf(mainfile.fptr, "#include \"%s\"\n", memoryfile.filename);
-
-  codegen_cid2offsets(memoryfile.fptr);
-  codegen_cid2size(memoryfile.fptr);
-  closeCFile(&memoryfile);
-  beautify(&memoryfile);
   closeCFile(&mainfile);
   beautify(&mainfile);
 }

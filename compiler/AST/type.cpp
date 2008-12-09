@@ -299,14 +299,7 @@ void ClassType::codegenDef(FILE* outfile) {
   }
   fprintf(outfile, " {\n");
   if (symbol->hasFlag(FLAG_OBJECT_CLASS) && classTag == CLASS_CLASS) {
-    if (fCopyCollect) {
-      fprintf(outfile, "union {\n");
-      fprintf(outfile, "chpl__class_id chpl__cid;\n");
-      fprintf(outfile, "void* _padding_for_copy_collection_use;\n");
-      fprintf(outfile, "} chpl__cid_union;\n");
-    } else {
-      fprintf(outfile, "chpl__class_id chpl__cid;\n");
-    }
+    fprintf(outfile, "chpl__class_id chpl__cid;\n");
   } else if (classTag == CLASS_UNION) {
     fprintf(outfile, "int64_t _uid;\n");
     fprintf(outfile, "union {\n");

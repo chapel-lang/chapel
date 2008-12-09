@@ -248,12 +248,6 @@ void VarSymbol::codegenDef(FILE* outfile) {
                ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       if (isFnSymbol(defPoint->parentSymbol))
         fprintf(outfile, " = {0,NULL}");
-    } else if (fCopyCollect && ct->classTag == CLASS_RECORD) {
-      /* If garbage collection is on, zero-initialize records */
-      if (isFnSymbol(defPoint->parentSymbol)) {
-        fprintf(outfile, " = ");
-        zeroInitializeRecord(outfile, ct);
-      }
     }
   fprintf(outfile, ";\n");
 }

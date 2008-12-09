@@ -68,7 +68,6 @@ extern bool ignore_errors;
 extern int squelch_header_errors;
 
 extern bool fWarnPromotion;
-extern bool fCopyCollect;
 
 extern bool debugCCode, optimizeCCode;
 

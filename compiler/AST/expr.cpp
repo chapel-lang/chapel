@@ -640,11 +640,7 @@ static void codegenWideDynamicCastCheck(FILE* outfile, Type* type) {
 static void codegenDynamicCastCheck(FILE* outfile, Type* type, Expr* value) {
   fprintf(outfile, "((object)");
   value->codegen(outfile);
-  if (fCopyCollect) {
-    fprintf(outfile, ")->chpl__cid_union.chpl__cid == %s%s", "chpl__cid_", type->symbol->cname);
-  } else {
-    fprintf(outfile, ")->chpl__cid == %s%s", "chpl__cid_", type->symbol->cname);
-  }
+  fprintf(outfile, ")->chpl__cid == %s%s", "chpl__cid_", type->symbol->cname);
   forv_Vec(Type, child, type->dispatchChildren) {
     fprintf(outfile, " || ");
     codegenDynamicCastCheck(outfile, child, value);
@@ -1310,15 +1306,6 @@ void CallExpr::codegen(FILE* outfile) {
         get(1)->codegen(outfile);
         fprintf(outfile, ", chpl__cid_%s, object, chpl__cid)",
                 get(1)->typeInfo()->getField("addr")->type->symbol->cname);
-      } else if (fCopyCollect) {
-        fprintf(outfile, "((object)");
-        get(1)->codegen(outfile);
-        fprintf(outfile, ")");
-        fprintf(outfile, "->chpl__cid_union._padding_for_copy_collection_use = NULL;\n");
-        fprintf(outfile, "((object)");
-        get(1)->codegen(outfile);
-        fprintf(outfile, ")");
-        fprintf(outfile, "->chpl__cid_union.chpl__cid = %s%s", "chpl__cid_", get(1)->typeInfo()->symbol->cname);
       } else {
         fprintf(outfile, "((object)");
         get(1)->codegen(outfile);
@@ -1331,11 +1318,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "(((object)");
       get(1)->codegen(outfile);
       fprintf(outfile, ")");
-      if (fCopyCollect) {
-        fprintf(outfile, "->chpl__cid_union.chpl__cid == %s%s", "chpl__cid_", get(2)->typeInfo()->symbol->cname);
-      } else {
-        fprintf(outfile, "->chpl__cid == %s%s", "chpl__cid_", get(2)->typeInfo()->symbol->cname);
-      }
+      fprintf(outfile, "->chpl__cid == %s%s", "chpl__cid_", get(2)->typeInfo()->symbol->cname);
       fprintf(outfile, ")");
       break;
     case PRIM_UNION_SETID:
@@ -1710,14 +1693,10 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
 
       // target: void* chpl_alloc(size_t size, char* description);
-      if (!fCopyCollect || typeInfo()->symbol->hasFlag(FLAG_NO_OBJECT)) {
-        fprintf(outfile, "%s(sizeof(",
-                (primitive->tag == PRIM_CHPL_ALLOC ?
-                 "chpl_alloc" : 
-                 "CHPL_ALLOC_PERMIT_ZERO"));
-      } else {
-        fprintf( outfile, "_chpl_gc_malloc(1, sizeof(");
-      }
+      fprintf(outfile, "%s(sizeof(",
+              (primitive->tag == PRIM_CHPL_ALLOC ?
+               "chpl_alloc" : 
+               "CHPL_ALLOC_PERMIT_ZERO"));
       if (is_struct) fprintf( outfile, "_");          // need struct of class
       typeInfo()->symbol->codegen( outfile);
       fprintf( outfile, "), ");

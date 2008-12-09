@@ -16,7 +16,6 @@ void checkResolved();
 void cleanup();
 void codegen();
 void complex2record();
-void copyCollection();
 void copyPropagation();
 void cullOverReferences();
 void deadCodeElimination();

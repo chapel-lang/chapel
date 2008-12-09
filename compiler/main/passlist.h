@@ -48,7 +48,6 @@ PassInfo passlist[] = {
   RUN(insertWideReferences), // inserts wide references for on clauses
 
   // AST to C
-  RUN(copyCollection),    // insert code needed for copying garbage collection
   RUN(insertLineNumbers), // insert line numbers for error messages
   RUN(codegen),           // generate C code
   RUN(makeBinary),        // invoke underlying C compiler
