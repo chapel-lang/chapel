@@ -37,7 +37,7 @@ if ($cron) {
 @OPTS = `cat $home/OPT_TESTING_FLAGS`;
 
 if ($all) {
-  $dir = "arrays associative classes dispatch domains expressions functions modules npb parallel puzzles reductions release/examples sparse spec statements studies types users";
+  $dir = "arrays associative classes demo dispatch distributions domains expressions functions io modules multilocale no_infer npb parallel param parsing portability puzzles reductions release/examples sparse spec statements studies trivial types users";
 } else {
   $dir = "release/examples";
 }
