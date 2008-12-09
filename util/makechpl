@@ -1,11 +1,5 @@
 #!/bin/sh
 
-# makechpl
-# Chapel
-#
-# Created by Samuel Figueroa on 12/3/08.
-# Copyright 2008 Cray Inc. All rights reserved.
-
 if uname 2>&1 | fgrep Darwin 2>&1 >/dev/null; then
   make="xcodebuild ARCHS='\$NATIVE_ARCH'"
 else
