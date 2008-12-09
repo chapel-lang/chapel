@@ -20,7 +20,6 @@ scalarReplace :
 copyPropagation :
 deadCodeElimination :
 prune :
-copyCollection :
 insertLineNumbers :
 codegen :
 refPropagation :
