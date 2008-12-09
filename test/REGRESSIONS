@@ -15,10 +15,6 @@
 linux and general regressions
 =============================
 
-simple .good mismatch (12/06/08)
---------------------------------
-[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
-
 puzzling timeouts (12/02/08)
 ----------------------------
 [Error: Timed out executing program classes/figueroa/LeakedMemory2]
@@ -42,6 +38,12 @@ extremely rare race condition in module initialization
 performance-specific regressions
 ================================
 
+removed copyCollect pass
+------------------------
+[Error matching performance keys for performance/compiler/bradc/cg-sparse-timecomp]
+[Error matching performance keys for performance/compiler/bradc/compSampler-timecomp]
+[Error matching performance keys for performance/compiler/bradc/fft-timecomp]
+
 
 =============================
 valgrind-specific regressions
@@ -61,10 +63,6 @@ no-local regressions
 'attempt to dereference nil' (11/08/08)
 -------------------------------------
 [Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
-
-garbage collection doesn't work with multithreaded
---------------------------------------------------
-[Error matching compiler output for classes/diten/allocateManyObjects]
 
 allocAndFree returns different results (skipped for GASNet)
 -----------------------------------------------------------
@@ -93,11 +91,16 @@ occasional out-of-memory error (11/06/08)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+accidentally checked in GASNet xterm code
+-----------------------------------------
+*** everything failed
+
 spurious 'attempt to dereference nil'
 -------------------------------------
 [Error matching program output for studies/matrixMult/stonea/distributed/luLike] (11/08/08 onwards)
 [Error matching program output for release/examples/hpcc/stream] (12/03/08, 12/07/08)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d] (12/04/08)
+[Error matching program output for studies/hpcc/2008/stream-promoted] (e.g., 12/08/08)
 
 spurious recursive failure in AMUDP_SPMDShutdown (e.g., 12/03/08)
 -----------------------------------------------------------------
@@ -177,6 +180,8 @@ intermittent seg faults
 [Error matching program output for multilocale/deitz/linked/test_linked1] (e.g., 11/12/08)
 [Error matching program output for multilocale/diten/oneOrMoreLocales/1DBlockDistributedJacobi] (e.g., 11/12/08)
 [Error matching program output for studies/hpcc/common/bradc/unit/modifyLocales] (e.g., 12/07/08)
+[Error matching program output for users/agnieszka/test1] (e.g., 12/08/08)
+
 
 =======================
 baseline-specific tests
@@ -253,7 +258,6 @@ ra-seq and ra-dist failures)
 
 --no-local
 ----------
-[Error matching compiler output for classes/diten/allocateManyObjects]
 [Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
 [Error: Timed out executing program users/agnieszka/multiArrayI]
 [Error: Timed out executing program users/agnieszka/multiArrayI10]
@@ -262,7 +266,6 @@ ra-seq and ra-dist failures)
 
 --baseline --no-local
 ---------------------
-[Error matching compiler output for classes/diten/allocateManyObjects]
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
@@ -547,10 +550,6 @@ Need requeuable tasks for this to work
 parallel/coforall/bradc/manyThreads-folded]
 [Error matching program output for
 parallel/coforall/bradc/manyThreads-revorder]
-
-Write doesn't seem to be locked properly
-----------------------------------------
-[Error matching program output for classes/diten/allocateManyObjects]
 
 Inherently multithreaded?  Needs re-queueing ability
 ----------------------------------------------------
