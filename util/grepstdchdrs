@@ -1,0 +1,16 @@
+#!/bin/sh
+
+if [ -d compiler -a -d runtime ]; then
+  project_dir=.
+elif [ `basename $PWD` = compiler -a -d AST -a -d passes ]; then
+  project_dir=..
+else
+  project_dir=${CHPL_HOME:-.}
+  if [ ! -d $project_dir/compiler -o ! -d $project_dir/runtime ]; then
+    echo "Can't find the Chapel project!  Make sure CHPL_HOME is set correctly."
+    exit 1
+  fi
+fi
+
+cd $project_dir && \
+find compiler \( -name '*.cpp' -or -name '*.h' \) -exec egrep ${1:--q} '^[       ]*#[    ]*include[      ][      ]*<[    ]*(assert|ctype|errno|float|iso646|limits|locale|math|setjmp|signal|stdarg|stddef|stdio|stdlib|string|time|wchar|wctype)[.]h[   ]*>' {} \; -print

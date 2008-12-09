@@ -80,13 +80,12 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 #
 
 CheckForStandardCHeaders:
-	@if [ `find . \( -name '*.cpp' -or -name '*.h' \) -exec egrep -q '^[       ]*#[    ]*include[      ][      ]*<[    ]*(assert|ctype|errno|float|iso646|limits|locale|math|setjmp|signal|stdarg|stddef|stdio|stdlib|string|time|wchar|wctype)[.]h[   ]*>' {} \; -print | wc -l` -gt 0 ]; then \
+	@if [ `grepstdchdrs | wc -l` -gt 0 ]; then \
 	  echo; \
-	  echo Standard C headers found in the following files:; \
-	  echo `find . \( -name '*.cpp' -or -name '*.h' \) -exec egrep -q '^[       ]*#[    ]*include[      ][      ]*<[    ]*(assert|ctype|errno|float|iso646|limits|locale|math|setjmp|signal|stdarg|stddef|stdio|stdlib|string|time|wchar|wctype)[.]h[   ]*>' {} \; -print` | sed 's-\./-compiler/-g'; \
+	  echo Standard C headers found in the following file\(s\):; \
+	  echo `grepstdchdrs`; \
 	  echo; \
-	  echo The above list was generated with the following command:; \
-	  echo find compiler \\\( -name "'*.cpp'" -or -name "'*.h'" \\\) -exec egrep -q "'^[       ]*#[    ]*include[      ][      ]*<[    ]*(assert|ctype|errno|float|iso646|limits|locale|math|setjmp|signal|stdarg|stddef|stdio|stdlib|string|time|wchar|wctype)[.]h[   ]*>'" {} \\\; -print; \
+	  echo The above list was generated with the util/grepstdchdrs script.; \
 	  exit 1; \
 	fi
 
