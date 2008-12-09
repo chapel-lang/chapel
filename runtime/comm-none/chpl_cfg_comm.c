@@ -8,6 +8,7 @@
 #include "chplexit.h"
 #include "error.h"
 #include "chplmem.h"
+#include "chplthreads.h"
 
 // Helper functions
 
@@ -83,8 +84,31 @@ void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size) {
   memcpy(addr, raddr, size);
 }
 
+typedef struct {
+  func_p  fun;
+  int     arg_size;
+  char    arg[0];       // variable-sized data here
+} fork_t;
+
+static void fork_nb_wrapper(fork_t* f) {
+  if (f->arg_size)
+    (*(f->fun))(&(f->arg));
+  else
+    (*(f->fun))(0);
+  chpl_free(f, 0, 0);
+}
+
 void _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
-  (*f)(arg);
+  fork_t *info;
+  int     info_size;
+
+  info_size = sizeof(fork_t) + arg_size;
+  info = (fork_t*) chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork_nb info", 0, 0);
+  info->fun = f;
+  info->arg_size = arg_size;
+  if (arg_size)
+    memcpy(&(info->arg), arg, arg_size);
+  chpl_begin((chpl_threadfp_t)fork_nb_wrapper, (chpl_threadarg_t)info, false, false, NULL);
 }
 
 void _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
