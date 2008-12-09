@@ -125,7 +125,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
 
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
-  fprintf(pbsFile, "#PBS -N Chapel-%s\n", basenamePtr);
+  fprintf(pbsFile, "#PBS -N Chpl-%.10s\n", basenamePtr);
   genNumLocalesOptions(pbsFile, determineQsubVersion(), numLocales);
   if (projectString && strlen(projectString) > 0)
     fprintf(pbsFile, "#PBS -A %s\n", projectString);
