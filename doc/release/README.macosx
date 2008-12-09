@@ -1,0 +1,45 @@
+========================================
+Building the Chapel compiler on Mac OS X
+========================================
+
+The Chapel compiler can be built in one of three ways:
+
+1) using the make command as described in the top level README file;
+2) by launching Xcode and opening the project in etc/Chapel.xcodeproj,
+   and then building the "Compiler and Runtime" target; or
+3) using the util/makechpl shell script, which invokes the xcodebuild
+   command on the aforementioned Xcode project.
+
+The advantage of either of the two latter alternatives is that they can be
+much faster than using make, particularly since they will take advantage of
+all the CPU cores on your computer, as well as any computers you have
+specified for use with distributed builds.
+
+Note that the directories used for intermediate files in the first
+alternative above is different than that used by the latter two alternatives.
+Consequently, if you build the Chapel compiler using the first alternative,
+and you subsequently build it again with either of the other two alternatives,
+the Chapel compiler will be built again from scratch.
+
+The third alternative above enables optimization while compiling the Chapel
+compiler source code.  If you would like to build the Chapel compiler even
+faster, you can use the following command:
+
+     util/makechpl debug
+
+This will disable optimization when compiling the Chapel compiler source
+code.
+
+The makechpl script understands the following targets: Compiler, Runtime,
+all, comprt (i.e., both compiler and runtime), and clean.  You can also
+specify additional arguments to be passed on to xcodebuild.  For example,
+you can request to have the compiler and runtime built from scratch,
+with intermediate files put in /tmp, by using:
+
+     util/makechpl clean all SYMROOT=/tmp
+
+By the way, if you invoke util/makechpl on a system that is not running
+Mac OS X, this script will simply build the Chapel compiler using make.
+On a non-Mac OS X system, there is no advantage to using this script,
+but there is also no harm either.  All targets mentioned above can be
+specified.

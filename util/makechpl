@@ -1,0 +1,77 @@
+#!/bin/sh
+
+# makechpl
+# Chapel
+#
+# Created by Samuel Figueroa on 12/3/08.
+# Copyright 2008 Cray Inc. All rights reserved.
+
+if uname 2>&1 | fgrep Darwin 2>&1 >/dev/null; then
+  make="xcodebuild ARCHS='\$NATIVE_ARCH'"
+else
+  make=make
+fi
+
+targets=
+other_args=
+debug=
+
+while [ "$1" ]; do
+  case $1 in
+    [Cc]ompiler)
+      if [ "$make" = make ]; then
+        targets="$targets compiler"
+      else targets="$targets Compiler"
+      fi;;
+    [Rr]untime)
+      if [ "$make" = make ]; then
+        targets="$targets runtime"
+      else targets="$targets Runtime"
+      fi;;
+    all)
+      if [ "$make" = make ]; then
+        targets="$targets all"
+      else targets="$targets build"
+      fi;;
+    comprt)
+      if [ "$make" = make ]; then
+        targets="$targets comprt"
+      else targets="$targets build"
+      fi;;
+    depend)
+      if [ "$make" = make ]; then
+        targets="$targets depend"
+      fi;;
+    clean)
+      targets="$targets clean";;
+    debug)
+      debug="-configuration Debug";;
+    *)
+      other_args="$other_args $1";;
+  esac
+  shift
+done
+
+if [ -d compiler -a -d runtime ]; then
+  project_dir=.
+else
+  project_dir=${CHPL_HOME:-.}
+  if [ ! -d $project_dir/compiler -o ! -d $project_dir/runtime ]; then
+    echo "Can't find the Chapel project!  Make sure CHPL_HOME is set correctly."
+    exit 1
+  fi
+fi
+
+if [ "$make" = make ]; then set -x; cd $project_dir && make $targets $other_args
+else
+  if [ ! "$targets" ]; then targets=build; fi
+  for target in $targets; do
+    case $target in
+      build | clean)
+        set -x; (cd $project_dir/etc && $make $debug $target $other_args) || exit 1;;
+      *)
+        set -x; (cd $project_dir/etc && $make $debug -target $target $other_args) || exit 1;;
+    esac
+    set +x
+  done
+fi
