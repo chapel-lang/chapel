@@ -38,12 +38,6 @@ extremely rare race condition in module initialization
 performance-specific regressions
 ================================
 
-removed copyCollect pass
-------------------------
-[Error matching performance keys for performance/compiler/bradc/cg-sparse-timecomp]
-[Error matching performance keys for performance/compiler/bradc/compSampler-timecomp]
-[Error matching performance keys for performance/compiler/bradc/fft-timecomp]
-
 
 =============================
 valgrind-specific regressions
@@ -74,13 +68,6 @@ allocAndFree returns different results (skipped for GASNet)
 memory profile changed
 ----------------------
 [Error matching program output for memory/shannon/configVarFile]
-
-timed out
----------
-[Error: Timed out executing program users/agnieszka/multiArrayI10]
-[Error: Timed out executing program users/agnieszka/multiArrayI]
-[Error: Timed out executing program users/agnieszka/test1]
-[Error: Timed out executing program users/agnieszka/test2]
 
 occasional out-of-memory error (11/06/08)
 -----------------------------------------
