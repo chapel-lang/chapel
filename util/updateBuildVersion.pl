@@ -16,7 +16,7 @@ $chplhome = $ENV{'CHPL_HOME'};
 $build_version_file_dir = $ARGV[0];
 
 if ($build_version_file_dir eq "") {
-    print "usage: computeBuildVersion.pl <directory to place BUILD_VERSION";
+    print "usage: updateBuildVersion.pl <directory to place BUILD_VERSION";
     exit(1);
 }
 
@@ -40,7 +40,7 @@ if (defined $ENV{'CHPL_DEVELOPER'} &&
         $CURRENT_BUILD_NUM = $1;
         $build_version = $CURRENT_BUILD_NUM - $LAST_RELEASE_BUILD_NUM;
     } else {
-        print "ERROR: computeBuildVersion.pl failed!";
+        print "ERROR: updateBuildVersion.pl failed!";
         exit(1);
     }
 } else {
