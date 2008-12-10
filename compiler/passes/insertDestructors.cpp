@@ -10,6 +10,7 @@
 #include "vec.h"
 #include "map.h"
 #include "misc.h"
+#include <cstring>
 
 // This file is under construction!  Please pardon the dust and noise!
 
@@ -26,6 +27,7 @@ void fixupDestructors(void) {
       //
       // insert calls to destructors for all 'value' fields
       //
+      int count = 0;  // count of how many fields need to be destroyed
       for_fields_backward(field, ct) {
         if (field->type->destructor) {
           ClassType* fct = toClassType(field->type);
@@ -38,8 +40,12 @@ void fixupDestructors(void) {
               new CallExpr(useRefType ? PRIM_GET_MEMBER : PRIM_GET_MEMBER_VALUE, ct->destructor->_this, field)));
             ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
           }
+          count++;
         }
       }
+      if (count <= 1 ||
+          count <= 3 && !strncmp(ts->type->destructor->cname, "chpl__auto_destroy", 18))
+        ts->type->destructor->addFlag(FLAG_INLINE);
 
       //
       // insert call to parent destructor
@@ -79,11 +85,9 @@ static bool tupleContainsArrayOrDomain(ClassType* t) {
   for (int i = 1; i <= t->fields.length; i++) {
     Type* fieldType = t->getField(i)->type;
     ClassType* fieldClassType = toClassType(fieldType);
-    if (fieldType->symbol->hasFlag(FLAG_ARRAY) || fieldType->symbol->hasFlag(FLAG_DOMAIN))
-      return true;
-    else if (fieldType->symbol->hasFlag(FLAG_TUPLE) && tupleContainsArrayOrDomain(toClassType(fieldType)))
-      return true;
-    else if (fieldClassType && !isClass(fieldClassType) && tupleContainsArrayOrDomain(toClassType(fieldType)))
+    if (fieldType->symbol->hasFlag(FLAG_ARRAY) || fieldType->symbol->hasFlag(FLAG_DOMAIN) ||
+        (fieldType->symbol->hasFlag(FLAG_TUPLE) && tupleContainsArrayOrDomain(toClassType(fieldType))) ||
+        (fieldClassType && !isClass(fieldClassType) && tupleContainsArrayOrDomain(toClassType(fieldType))))
       return true;
   }
   return false;
@@ -115,13 +119,8 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
 
   if (!onlyMarkConstructors) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      //ClassType* ct = toClassType(fn->retType);
-      if (fn->hasFlag(FLAG_CALLS_CONSTRUCTOR) && fn->calledBy /*&&
-          ct && !isClass(ct) && ct->destructor &&
-          //(!ct->symbol->hasFlag(FLAG_ARRAY) || !arrayPassedAsArgument(fn)) &&
-          (!ct->symbol->hasFlag(FLAG_TUPLE) || !tupleContainsArrayOrDomain(ct))*/) {
+      if (fn->hasFlag(FLAG_CALLS_CONSTRUCTOR) && fn->calledBy)
         constructors.add(fn);
-      }
     }
     forv_Vec(GotoStmt, gs, gGotoStmts) {
       FnSymbol* fn = toFnSymbol(gs->parentSymbol);
@@ -143,7 +142,6 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
             isModuleSymbol(lhs->var->defPoint->parentSymbol)) {
           continue;
         }
-        //if (lhs->var->type->symbol->hasFlag(FLAG_DOMAIN)) continue;
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
         INT_ASSERT(fn);
         // functions containing gotos may skip over initializations,
@@ -175,8 +173,7 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
                   Expr* block = se->parentExpr;
                   while (block && toBlockStmt(block) != parentBlock)
                     block = block->parentExpr;
-                  if (!toBlockStmt(block))
-                  {
+                  if (!toBlockStmt(block)) {
                     // changing the parentBlock here could cause a variable's destructor
                     // to be called outside the conditional block in which it is defined,
                     // which could cause the destructor to be called on an unitialized
@@ -196,8 +193,7 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
                   if (call->isPrimitive(PRIM_MOVE)) {
                     if (fn->getReturnSymbol() == toSymExpr(call->get(1))->var) {
                       maybeCallDestructor = false;
-                      if (defMap.get(toSymExpr(call->get(1))->var)->n == 1 /*&&
-                          strcmp(fn->name, "reindex") && !strstr(fn->name, "buildDomainExpr")*/) {
+                      if (defMap.get(toSymExpr(call->get(1))->var)->n == 1) {
                         constructors.add_exclusive(fn);
                         if (onlyMarkConstructors)
                           fn->addFlag(FLAG_CALLS_CONSTRUCTOR);
@@ -231,13 +227,6 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
                       }
                     }
                     varsToTrack.add_exclusive(toSymExpr(call->get(1))->var);
-#if 0
-                  } else if (var->type->symbol->hasFlag(FLAG_ARRAY) &&
-                             call->isResolved() && call->isResolved()->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
-//                printf("Probably shouldn't call destructor on %s\n", lhs->var->cname);
-                    maybeCallDestructor = false;
-                    break;
-#endif
 #if 1
                   } else if (call->isPrimitive(PRIM_SET_MEMBER) &&
                              !toSymExpr(call->get(1))->var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
@@ -293,8 +282,6 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
       }
     }
   }
-
-  inlineFunctions();
 }
 
 void markConstructors() {

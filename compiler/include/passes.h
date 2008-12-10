@@ -5,6 +5,7 @@ extern bool normalized;
 extern bool resolved;
 
 extern void fixupDestructors(void);
+void markConstructors(void);
 
 //
 // prototypes of functions that are called as passes (alphabetical)
@@ -27,7 +28,6 @@ void insertWideReferences();
 void insertLineNumbers();
 void lowerIterators();
 void makeBinary();
-void markConstructors();
 void normalize();
 void parallel();
 void parse();
