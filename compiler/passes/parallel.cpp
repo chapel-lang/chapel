@@ -792,8 +792,7 @@ static void handleLocalBlocks() {
           call->baseExpr->replace(new SymExpr(local));
           queue.add(local->body);
           cache.put(fn, local);
-          if (local->retType->symbol->hasFlag(FLAG_WIDE) ||
-              local->retType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+          if (local->retType->symbol->hasFlag(FLAG_WIDE)) {
             CallExpr* ret = toCallExpr(local->body->body.tail);
             INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
             Type* narrowType = local->retType->getField("addr")->type;
