@@ -179,8 +179,11 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
           basenamePtr, basenamePtr);
   fprintf(expectFile, "  -re $prompt\n");
   fprintf(expectFile, "}\n");
-  fprintf(expectFile, "send \"aprun -q -n%d -N%d %s_real", 
-          numLocales, procsPerNode, argv[0]);
+  fprintf(expectFile, "send \"aprun ");
+  if (verbosity < 2) {
+    fprintf(expectFile, "-q ");
+  }
+  fprintf(expectFile, "-n%d -N%d %s_real", numLocales, procsPerNode, argv[0]);
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " '%s'", argv[i]);
   }
