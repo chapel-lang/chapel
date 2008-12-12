@@ -122,8 +122,10 @@ int32_t _chpl_comm_maxThreadsLimit(void) {
   return GASNETI_MAX_THREADS-1;
 }
 
+static int done = 0;
+
 static void polling(void* x) {
-  GASNET_BLOCKUNTIL(0);
+  GASNET_BLOCKUNTIL(done);
 }
 
 void _chpl_comm_init(int *argc_p, char ***argv_p) {
@@ -252,6 +254,7 @@ void _chpl_comm_barrier(const char *msg) {
 }
 
 static void _chpl_comm_exit_common(int status) {
+  done = 1;
   gasnet_exit(status);
 }
 
