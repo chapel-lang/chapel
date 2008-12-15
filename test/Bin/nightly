@@ -384,6 +384,13 @@ if ($examples == 1) {
         $testflags = "$testflags -dirfile DIRFILE";
     }
 }
+if ($parnodefile eq "") {
+} else {
+    if ($gasnet == 1) {
+        $testflags = "$testflags -comm gasnet";
+    }
+}
+    
 if ($hello == 1) {
     if ($parnodefile eq "") {
 	$testflags = "$testflags release/examples/hello.chpl";
