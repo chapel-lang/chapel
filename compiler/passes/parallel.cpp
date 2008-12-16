@@ -621,14 +621,13 @@ buildWideClass(Type* type) {
   wideClassMap.put(type, wide);
 
   //
-  // build reference type for wide class type
+  // set reference type of wide class to reference type of class since
+  // it will be widened; rename for documentation purposes
   //
-  ClassType* ref = new ClassType(CLASS_CLASS);
-  TypeSymbol* rts = new TypeSymbol(astr("__ref_wide_", type->symbol->cname), ref);
-  rts->addFlag(FLAG_REF);
-  theProgram->block->insertAtTail(new DefExpr(rts));
-  ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", type)));
-  wide->refType = ref;
+  if (type->refType) {
+    wide->refType = type->refType;
+    wide->refType->symbol->cname = astr("_ref_wide_", type->symbol->cname);
+  }
 }
 
 
