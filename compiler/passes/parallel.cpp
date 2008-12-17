@@ -613,21 +613,21 @@ buildWideClass(Type* type) {
   theProgram->block->insertAtTail(new DefExpr(wts));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", type)));
+
   //
   // Strings need an extra field in their wide class to hold their length
   //
   if (type == dtString)
     wide->fields.insertAtTail(new DefExpr(new VarSymbol("size", dtInt[INT_SIZE_32])));
-  wideClassMap.put(type, wide);
 
   //
   // set reference type of wide class to reference type of class since
-  // it will be widened; rename for documentation purposes
+  // it will be widened
   //
-  if (type->refType) {
+  if (type->refType)
     wide->refType = type->refType;
-    wide->refType->symbol->cname = astr("_ref_wide_", type->symbol->cname);
-  }
+
+  wideClassMap.put(type, wide);
 }
 
 
