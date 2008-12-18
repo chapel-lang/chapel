@@ -168,19 +168,23 @@ buildDefaultWrapper(FnSymbol* fn,
         // use default value for type as default value for formal argument
         if (formal->typeExpr) {
           BlockStmt* typeExpr = formal->typeExpr->copy();
-          wrapper->insertAtTail(typeExpr);
-          wrapper->insertAtTail(new DefExpr(temp, NULL, typeExpr->body.tail->remove()));
+          for_alist(expr, typeExpr->body) {
+            wrapper->insertAtTail(expr->remove());
+          }
+          wrapper->insertAtTail(new DefExpr(temp, NULL, wrapper->body->body.tail->remove()));
         } else {
           wrapper->insertAtTail(new DefExpr(temp, NULL, new SymExpr(formal->type->symbol)));
         }
       } else {
         wrapper->insertAtTail(new DefExpr(temp));
         BlockStmt* defaultExpr = formal->defaultExpr->copy();
-        wrapper->insertAtTail(defaultExpr);
+        for_alist(expr, defaultExpr->body) {
+          wrapper->insertAtTail(expr->remove());
+        }
         if (formal->intent != INTENT_INOUT) {
-          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, defaultExpr->body.tail->remove()));
+          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapper->body->body.tail->remove()));
         } else {
-          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("_copy", defaultExpr->body.tail->remove())));
+          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("_copy", wrapper->body->body.tail->remove())));
           INT_ASSERT(!temp->hasFlag(FLAG_EXPR_TEMP));
           temp->removeFlag(FLAG_MAYBE_PARAM);
         }
