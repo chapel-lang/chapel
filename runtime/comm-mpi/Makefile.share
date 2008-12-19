@@ -1,0 +1,42 @@
+MPI_INSTALL = $(THIRD_PARTY_DIR)/openmpi/install13
+COMM_LAUNCHER_SRCS = \
+        chpl_cfg_comm_locales.c \
+
+COMM_SRCS = \
+	$(COMM_LAUNCHER_SRCS) \
+	chpl_cfg_comm.c \
+
+SVN_SRCS = $(COMM_SRCS)
+SRCS = $(SVN_SRCS)
+
+COMM_OBJS = \
+	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
+
+COMM_LAUNCHER_OBJS = \
+	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
+
+ifneq ($(MAKE_LAUNCHER), 1)
+
+# 
+# -std=c99 doesn't work because setenv() is no longer supported by C99,
+# and it's currently our best way of conveyinng to GASNet to use gdb when
+# it launches the child tasks.  We use -std=gnu89 instead because with
+# our compilers it's what you'd get if you weren't specifying a standard
+# at all -- this is set using SUPPORT_SETENV_CFLAGS so as not to encode
+# gcc-specific flags into this Makefile
+#
+
+#RUNTIME_CFLAGS += $(GASNET_CFLAGS) -I$(GASNET_INSTALL_DIR)/include -I$(GASNET_INSTALL_DIR)/include/$(CHPL_MAKE_COMM_SUBSTRATE)-conduit $(SUPPORT_SETENV_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
+#RUNTIME_CFLAGS += -I$(MPICH1_INSTALL_DIR)/include
+RUNTIME_CFLAGS += -I$(MPI_INSTALL)/include -pthread
+endif
+
+ifdef CHPL_DEVELOPER
+RUNTIME_CFLAGS += -Wno-strict-prototypes -Wno-missing-prototypes
+ifndef CHPL_COMM_DEBUG
+RUNTIME_CFLAGS += -Wno-unused
+endif
+endif
+
+#$(GASNET_INC_MAKEFILE):
+#	cd $(THIRD_PARTY_DIR) && $(MAKE) gasnet
