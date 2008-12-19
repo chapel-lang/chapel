@@ -80,10 +80,10 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 #
 
 CheckForStandardCHeaders:
-	@if [ `grepstdchdrs | wc -l` -gt 0 ]; then \
+	@if [ `$(CHAPEL_ROOT)/util/grepstdchdrs | wc -l` -gt 0 ]; then \
 	  echo; \
 	  echo Standard C headers found in the following file\(s\):; \
-	  echo `grepstdchdrs`; \
+	  echo `$(CHAPEL_ROOT)/util/grepstdchdrs`; \
 	  echo; \
 	  echo The above list was generated with the util/grepstdchdrs script.; \
 	  exit 1; \
