@@ -1,4 +1,4 @@
-config const n: int = 1024;
+config const n: int = 4096;
 
 def foo(i: int) {
   if i < n {
