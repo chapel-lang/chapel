@@ -54,6 +54,10 @@ internal valgrind stuff 'the impossible has happened'
 no-local regressions
 ====================
 
+spurious problems
+-----------------
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (12/18/08, 12/20/08)
+
 'attempt to dereference nil' (11/08/08)
 -------------------------------------
 [Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
@@ -78,9 +82,9 @@ occasional out-of-memory error (11/06/08)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-accidentally checked in GASNet xterm code
------------------------------------------
-*** everything failed
+spurious problems
+-----------------
+[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist] (12/15/08)
 
 spurious 'attempt to dereference nil'
 -------------------------------------
@@ -139,6 +143,15 @@ times out occasionally (20x diff -- maybe memory leak related?)
 gasnet-fast regressions (other than the above)
 ==============================================
 
+spurious timeout issue
+----------------------
+[Error: Timed out executing program studies/hpcc/2008/ra] (12/18/08)
+
+spurious problems due to memory allocator race that Steve is looking at
+-----------------------------------------------------------------------
+[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock1]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
+
 spurious recursive failure in AMUDP_SPMDShutdown
 ------------------------------------------------
 [Error matching program output for functions/bradc/retConstness/modifyReturnedClass] (11/10/08)
@@ -164,15 +177,23 @@ intermittent seg faults
 [Error matching program output for studies/hpcc/common/bradc/unit/leadFollowOpt] (e.g., 10/15/08)
 [Error matching program output for multilocale/deitz/needMultiLocales/test_dot_locale4] (e.g., 10/22/08)
 [Error matching program output for multilocale/deitz/linked/test_linked3a] (e.g., 10/26/08)
-[Error matching program output for multilocale/deitz/linked/test_linked1] (e.g., 11/12/08)
+[Error matching program output for multilocale/deitz/linked/test_linked1] (e.g., 11/12/08, 12/21/08)
 [Error matching program output for multilocale/diten/oneOrMoreLocales/1DBlockDistributedJacobi] (e.g., 11/12/08)
 [Error matching program output for studies/hpcc/common/bradc/unit/modifyLocales] (e.g., 12/07/08)
-[Error matching program output for users/agnieszka/test1] (e.g., 12/08/08)
+[Error matching program output for users/agnieszka/test1] (e.g., 12/08/08, 12/14/08)
+[Error matching program output for users/agnieszka/multiArrayI] (e.g., 12/21/08)
+
 
 
 =======================
 baseline-specific tests
 =======================
+
+memory is leaked for unknown reasons
+------------------------------------
+[Error matching program output for memory/deitz/test_leaked_array] (12/18/08)
+[Error matching program output for arrays/deitz/test_descriptor_frees] (12/19/08)
+
 
 memory is leaked due to heap classes (10/22/08)
 -----------------------------------------------
@@ -184,110 +205,94 @@ memory is leaked due to heap classes (10/22/08)
 opts-specific tests
 ===================
 
-(Example runs: 1)
-
---baseline --no-local (11/18/08 -- ???)
----------------------------------------
-[Error matching program output for release/examples/hpcc/hpl]
+(Example runs: 0)
 
 
-(Full run: 110, though some spurious test_refine errors and general
-ra-seq and ra-dist failures)
+(Full run: 97, though some spurious test_refine errors and ra-seq failures)
+
+--no-copy-propagation
+---------------------
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
 
 --no-dead-code-elimination
 --------------------------
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
 
 --no-inline
---baseline --copy-propagation
---baseline --dead-code-elimination
---baseline --inline
---baseline --inline-iterators
---baseline --live-analysis
---baseline --optimize-loop-iterators
---baseline --scalar-replacement
 --no-scalar-replacement --no-inline
-------------------------------------
+-----------------------------------
+[Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 --no-inline-iterators
 --------------------------------------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
+--no-optimize-loop-iterators
+----------------------------
+[Error matching program output for arrays/deitz/test_descriptor_frees]
+
+--no-scalar-replacement
 --no-optimize-loop-iterators --no-inline-iterators
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
 ---------------------------------------------------------------------
+[Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
---no-scalar-replacement
------------------------
+--baseline --copy-propagation
+-----------------------------
+[Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
-[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+[Error matching program output for modules/diten/useInBegin]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
+
+--baseline --dead-code-elimination
+--baseline --inline-iterators
+--baseline --optimize-loop-iterators
+--baseline --scalar-replacement
+------------------------------------
+[Error matching program output for arrays/deitz/test_descriptor_frees]
+[Error matching program output for classes/figueroa/LeakedMemory2]
+[Error matching program output for classes/figueroa/LeakedMemory3]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 --baseline --inline
---------------------------
+-------------------
+[Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
-[Error: Timed out compilation for users/franzf/v0/chpl/main]
-[Error: Timed out compilation for users/franzf/v1/chpl/main]
-[Error: Timed out compilation for users/franzf/v2/chpl/main]
 
---no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
----------------------------------------------------------------------
+--baseline --live-analysis
+-----------------------------------
+[Error matching program output for arrays/deitz/jacobi5-no-local]
+[Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
-
---no-local
-----------
-[Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
-[Error: Timed out executing program users/agnieszka/multiArrayI]
-[Error: Timed out executing program users/agnieszka/multiArrayI10]
-[Error: Timed out executing program users/agnieszka/test1]
-[Error: Timed out executing program users/agnieszka/test2]
+[Error matching program output for classes/figueroa/LeakedMemory3]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 --baseline --no-local
 ---------------------
+[Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
-[Error matching program output for release/examples/hpcc/hpl]
-[Error matching compiler output for studies/590o/blerner/xml-parse]
-[Error matching program output for studies/hpcc/2008/hpl]
-[Error matching program output for studies/hpcc/2008/stream-fragfrag]
-[Error matching program output for studies/hpcc/2008/stream-fragmented]
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample3]
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample4]
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5]
-[Error matching program output for studies/hpcc/2008/hpl]
-[Error matching program output for studies/hpcc/2008/stream-fragfrag]
-[Error matching program output for studies/hpcc/2008/stream-fragmented]
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample3]
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample4]
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5]
-[Error matching program output for studies/hpcc/RA/ra-seq]
-[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
-[Error matching program output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
-[Error matching compiler output for studies/madness/aniruddha/madchap/test_diff]
-[Error matching compiler output for studies/madness/aniruddha/madchap/test_likepy]
-[Error matching compiler output for studies/madness/aniruddha/madchap/test_mul]
 [Error matching program output for studies/matrixMult/stonea/distributed/luLike]
-[Error matching program output for studies/matrixMult/stonea/distributed/luLike2]
-[Error matching program output for studies/matrixMult/stonea/distributed/luLike]
-[Error matching program output for studies/matrixMult/stonea/distributed/luLike2]
 [Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
-[Error matching compiler output for studies/uts/dequeue]
-[Error matching compiler output for studies/uts/uts_deq]
-[Error matching compiler output for studies/uts/uts_deq_seq]
-[Error: Timed out executing program users/agnieszka/multiArrayI]
-[Error: Timed out executing program users/agnieszka/multiArrayI10]
-[Error: Timed out executing program users/agnieszka/test1]
-[Error: Timed out executing program users/agnieszka/test2]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
 [Error matching program output for users/shetag/fock/fock-stc]
@@ -374,6 +379,10 @@ studies/madness/dinan/mad_chapel/test_likepy]
 pgi-specific regressions
 ========================
 
+??? (moved from compile to program error on (12/09/08)
+------------------------------------------------------
+[Error matching program output for arrays/deitz/test_major_nesting_of_arrays]
+
 Numerical accuracy issues (started 05/24/08)
 --------------------------------------------
 [Error matching program output for studies/madness/aniruddha/madchap/test_diff]
@@ -391,7 +400,6 @@ long identifiers
 ----------------
 [Error matching program output for trivial/deitz/test_longToken]
 [Error matching program output for types/tuple/deitz/test_128int]
-[Error matching compiler output for arrays/deitz/test_major_nesting_of_arrays]
 
 
 negative floating point 0.0 not supported
@@ -441,8 +449,6 @@ Yikes!  output was 2 2 2 2 1 1 1 1 rather than 2 2 2 2 1 2 2 2 (09/26/08)
 
 pthread_cond_init failed errors -- possibly memory related? (e.g., 08/28/08)
 ----------------------------------------------------------------------------
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample2]
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample1]
 [Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for npb/cg/bradc/cg-sparse]
 [Error matching program output for performance/compiler/bradc/cg-sparse-timecomp]
@@ -500,7 +506,6 @@ leader/follower problems with threads=none (between 09/03/08 and 12/02/08)
 [Error matching program output for release/examples/sparse]
 [Error matching program output for studies/hpcc/2008/ra]
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
-[Error matching program output for studies/hpcc/RA/ra-seq]
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dclass]
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar]
