@@ -7,34 +7,9 @@
 #include "chpltypes.h"
 #include "chplthreads.h"
 
-typedef struct {
-  char* head;
-  char* current;
-  char* tail;
-} chpl_meminfo_t;
-
-
-extern chpl_meminfo_t chpl_meminfo;
 extern int heapInitialized;
 
-extern chpl_mutex_t _memtrack_lock;
-extern chpl_mutex_t _memstat_lock;
-extern chpl_mutex_t _memtrace_lock;
-extern chpl_mutex_t _malloc_lock;
-
-void initMemTable(void);
-void printMemTable(int64_t threshold, int32_t lineno, _string filename);
-void resetMemStat(void);
-void startTrackingMem(void);
-void printMemStat(int32_t lineno, _string filename);
-void printFinalMemStat(int32_t lineno, _string filename);
 void initHeap(void* start, size_t size);
-
-void setMemmax(int64_t value);
-void setMemstat(void);
-void setMemtrack(void);
-void setMemthreshold(int64_t value);
-void setMemtrace(char* memLogname);
 
 void chpl_startMemDiagnosis(void);
 void chpl_stopMemDiagnosis(void);
@@ -49,7 +24,5 @@ void* chpl_calloc(size_t number, size_t size, const char* description,
 void* chpl_realloc(void* ptr, size_t number, size_t size, 
                     const char* description, int32_t lineno, _string filename);
 void  chpl_free(void* ptr, int32_t lineno, _string filename);
-
-uint64_t mem_used(int32_t lineno, _string filename);
 
 #endif

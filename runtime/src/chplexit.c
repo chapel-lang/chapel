@@ -3,6 +3,7 @@
 #include "chplcomm.h"
 #include "chplexit.h"
 #include "chplmem.h"
+#include "chplmemtrack.h"
 #include "chplrt.h"
 #include "gdb.h"
 

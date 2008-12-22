@@ -41,7 +41,7 @@ launch_next_task(void) {
 }
 
 // Mutex
-
+void chpl_mutex_init(chpl_mutex_p mutex) { }
 int chpl_mutex_lock(chpl_mutex_p mutex) { return 0; }
 void chpl_mutex_unlock(chpl_mutex_p mutex) { }
 

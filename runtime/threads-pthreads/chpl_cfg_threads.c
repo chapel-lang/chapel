@@ -98,7 +98,7 @@ static chpl_condvar_p chpl_condvar_new(void) {
 
 // Mutex
 
-static void chpl_mutex_init(chpl_mutex_p mutex) {
+void chpl_mutex_init(chpl_mutex_p mutex) {
   // WAW: how to explicitly specify blocking-type?
   if (pthread_mutex_init(mutex, NULL))
     chpl_internal_error("pthread_mutex_init() failed");
@@ -300,11 +300,6 @@ void initChplThreads() {
   blocked_thread_cnt = 0;
   maybe_deadlocked = NULL;
   task_pool_head = task_pool_tail = NULL;
-
-  chpl_mutex_init(&_memtrack_lock);
-  chpl_mutex_init(&_memstat_lock);
-  chpl_mutex_init(&_memtrace_lock);
-  chpl_mutex_init(&_malloc_lock);
 
   if (pthread_key_create(&serial_key, (void(*)(void*))serial_delete))
     chpl_internal_error("serial key not created");

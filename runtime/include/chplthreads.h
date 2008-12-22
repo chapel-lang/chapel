@@ -17,6 +17,7 @@ extern int32_t maxThreads;
 
 typedef chpl_mutex_t* chpl_mutex_p;
 
+void chpl_mutex_init(chpl_mutex_p mutex);
 int chpl_mutex_lock(chpl_mutex_p);
 void chpl_mutex_unlock(chpl_mutex_p);
 
@@ -103,6 +104,7 @@ chpl_begin (chpl_threadfp_t,   // function to fork
 
 #else   // LAUNCHER
 
+#define chpl_mutex_init(x)
 #define chpl_mutex_lock(x)
 #define chpl_mutex_unlock(x)
 typedef void chpl_sync_aux_t;

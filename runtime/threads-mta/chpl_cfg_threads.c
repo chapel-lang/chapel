@@ -18,7 +18,7 @@ static sync int64_t     chpl_can_exit;       // can main thread exit?
 
 // Mutex
 
-static void chpl_mutex_init(chpl_mutex_p mutex) {
+void chpl_mutex_init(chpl_mutex_p mutex) {
   purge(mutex);                     // set to zero and mark empty
 }
 
@@ -139,11 +139,6 @@ int32_t chpl_threads_maxThreadsLimit(void) {
 void initChplThreads() {
   chpl_begin_cnt = 0;                     // only main thread running
   chpl_can_exit = 1;                      // mark full - no threads created yet
-
-  chpl_mutex_init(&_memtrack_lock);
-  chpl_mutex_init(&_memstat_lock);
-  chpl_mutex_init(&_memtrace_lock);
-  chpl_mutex_init(&_malloc_lock);
 
   chpl_thread_init();
 }

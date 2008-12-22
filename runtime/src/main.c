@@ -6,6 +6,7 @@
 #include "chplexit.h"
 #include "chplio.h"
 #include "chplmem.h"
+#include "chplmemtrack.h"
 #include "chplrt.h"
 #include "chplthreads.h"
 #include "config.h"
