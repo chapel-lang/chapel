@@ -1,8 +1,10 @@
 #!/bin/sh
 
+mypwd=`pwd`; export mypwd;
+
 if [ -d compiler -a -d runtime ]; then
   project_dir=.
-elif [ `basename $PWD` = compiler -a -d AST -a -d passes ]; then
+elif [ `basename $mypwd` = compiler -a -d AST -a -d passes ]; then
   project_dir=..
 else
   project_dir=${CHPL_HOME:-.}
@@ -13,4 +15,4 @@ else
 fi
 
 cd $project_dir && \
-find compiler \( -name '*.cpp' -or -name '*.h' \) -exec egrep ${1:--q} '^[       ]*#[    ]*include[      ][      ]*<[    ]*(assert|ctype|errno|float|iso646|limits|locale|math|setjmp|signal|stdarg|stddef|stdio|stdlib|string|time|wchar|wctype)[.]h[   ]*>' {} \; -print
+(find compiler \( -name '*.cpp' -o -name '*.h' \) -exec egrep '^[       ]*#[    ]*include[      ][      ]*<[    ]*(assert|ctype|errno|float|iso646|limits|locale|math|setjmp|signal|stdarg|stddef|stdio|stdlib|string|time|wchar|wctype)[.]h[   ]*>' {} \; -print) | grep -v "include "

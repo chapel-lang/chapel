@@ -79,6 +79,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 # target-based rules
 #
 
+ifdef CHPL_DEVELOPER
 CheckForStandardCHeaders:
 	@if [ `$(CHAPEL_ROOT)/util/grepstdchdrs | wc -l` -gt 0 ]; then \
 	  echo; \
@@ -88,6 +89,9 @@ CheckForStandardCHeaders:
 	  echo The above list was generated with the util/grepstdchdrs script.; \
 	  exit 1; \
 	fi
+else
+CheckForStandardCHeaders:
+endif
 
 $(BUILD_VERSION_FILE): CheckForStandardCHeaders
 	@$(CHAPEL_ROOT)/util/updateBuildVersion.pl $(CHAPEL_ROOT)/compiler/main
