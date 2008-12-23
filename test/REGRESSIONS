@@ -143,6 +143,10 @@ times out occasionally (20x diff -- maybe memory leak related?)
 gasnet-fast regressions (other than the above)
 ==============================================
 
+spurious array index out of bounds (12/23/08)
+---------------------------------------------
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d]
+
 spurious timeout issue
 ----------------------
 [Error: Timed out executing program studies/hpcc/2008/ra] (12/18/08)
