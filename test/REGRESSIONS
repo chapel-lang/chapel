@@ -2,36 +2,38 @@
 # USAGE: the intent of this file is to keep track of current
 # regressions and to keep notes about why they are failing.  Since
 # linux is our main platform, linux regressions are listed first, and
-# are typically assumed to apply to all other platforms as well.
-# Other platforms/settings that are currently causing regressions are
-# listed afterwards in no particular order.  Formatting for each entry
-# can be loose, but should roughly follow the format of brief note on
-# why the test is failing followed by a list of tests that are failing
-# for that reason.  If someone owns a particular regression, their
-# name can be added to the description as well.
+# are typically assumed to apply to all other platforms as well (other
+# failures that apply to most platforms other than linux can be listed
+# there as well).  Other platforms/settings that are currently causing
+# regressions are listed afterwards in some approximation to priority
+# order.  Formatting for each entry can be loose, but should roughly
+# follow the format of brief note on why the test is failing followed
+# by a list of tests that are failing for that reason.  If someone
+# owns a particular regression, their name can be added to the
+# description as well.
 
 
 =============================
 linux and general regressions
 =============================
 
-puzzling timeouts (12/02/08)
-----------------------------
-[Error: Timed out executing program classes/figueroa/LeakedMemory2]
-[Error: Timed out executing program classes/figueroa/LeakedMemory3]
+2008-2009 switchover issue; should now be fixed
+-----------------------------------------------
+[Error matching program output for functions/deitz/Time/test_getCurrentDate]
 
-moving release examples around broke interface (11/14/08)
----------------------------------------------------------
-[Error matching compiler output for studies/hpcc/RA/ra-seq]
-
-precision issue, due to user code changing (07/01/08)
------------------------------------------------------
+precision issue, due to user code changing (07/01/08) (bradc)
+-------------------------------------------------------------
 [Error matching program output for
 studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
 
 extremely rare race condition in module initialization
 ------------------------------------------------------
 [Error matching program output for modules/diten/useInBegin]
+
+updates don't seem to have happened (most settings other than basic linux)
+--------------------------------------------------------------------------
+[Error matching program output for studies/hpcc/RA/ra-seq]
+
 
 
 ================================
@@ -49,14 +51,14 @@ internal valgrind stuff 'the impossible has happened'
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
 [Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 
+no longer needs to be suppressed?
+---------------------------------
+[Error: didn't find expected suppression memory/shannon/outofmemory/mallocOutOfMemory]
+
 
 ====================
 no-local regressions
 ====================
-
-spurious problems
------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (12/18/08, 12/20/08)
 
 'attempt to dereference nil' (11/08/08)
 -------------------------------------
@@ -73,46 +75,13 @@ memory profile changed
 ----------------------
 [Error matching program output for memory/shannon/configVarFile]
 
-occasional out-of-memory error (11/06/08)
------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
-
 
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
 
-spurious problems
------------------
-[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist] (12/15/08)
-
-spurious 'attempt to dereference nil'
--------------------------------------
-[Error matching program output for studies/matrixMult/stonea/distributed/luLike] (11/08/08 onwards)
-[Error matching program output for release/examples/hpcc/stream] (12/03/08, 12/07/08)
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d] (12/04/08)
-[Error matching program output for studies/hpcc/2008/stream-promoted] (e.g., 12/08/08)
-
-spurious recursive failure in AMUDP_SPMDShutdown (e.g., 12/03/08)
------------------------------------------------------------------
-[Error matching program output for multilocale/deitz/needMultiLocales/test_inout_arg]
-
-core dump (12/03/08)
---------------------
-[Error matching program output for release/examples/hpcc/ra]
-[Error matching program output for studies/hpcc/2008/ra]
-
-
-spurious binary file diff??? (11/11/08)
----------------------------------------
-[Error matching program output for types/type_variables/deitz/part3/test_instantiate_construct1]
-
-occasional timeouts (e.g., 11/03/08)
-------------------------------------
-[Error: Timed out executing program studies/hpcc/2008/ra]
-
-disabled warning about multilocale distributions not being implemented
-----------------------------------------------------------------------
+Needs to be retired (bradc)
+---------------------------
 [Error matching program output for multilocale/bradc/distribWarning]
 
 regressions due to enabling David's locality optimization (10/24/08)
@@ -120,73 +89,53 @@ regressions due to enabling David's locality optimization (10/24/08)
 [Error matching program output for multilocale/local/deitz/test_local2]
 [Error matching program output for multilocale/local/deitz/test_local3]
 
-verbose output shows launch command (10/31/08)
-----------------------------------------------
+verbose output now shows launch command (10/31/08) (bradc)
+----------------------------------------------------------
 [Error matching program output for multilocale/numLocales/bradc/testVFlag]
 [Error matching program output for multilocale/numLocales/bradc/testVerboseFlag]
+
+'attempt to dereference nil'
+----------------------------
+[Error matching program output for studies/matrixMult/stonea/distributed/luLike]
 
 timeouts (10/31/08)
 -------------------
 [Error: Timed out executing program compflags/bradc/nameoutput/localname]
 [Error: Timed out executing program compflags/bradc/nameoutput/localnamesavec]
 
-times out occasionally (20x diff -- maybe memory leak related?)
----------------------------------------------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
+times out fairly consistently
+-----------------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
-[Error: Timed out executing program stress/deitz/test_10k_local_coforall_with_remote_update]
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul]
+
+times out spuriously
+--------------------
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09)
+[Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09)
 
 
 ==============================================
 gasnet-fast regressions (other than the above)
 ==============================================
 
-spurious array index out of bounds (12/23/08)
----------------------------------------------
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d]
-
-spurious timeout issue
-----------------------
-[Error: Timed out executing program studies/hpcc/2008/ra] (12/18/08)
-
-spurious problems due to memory allocator race that Steve is looking at
------------------------------------------------------------------------
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock1]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
-
-spurious recursive failure in AMUDP_SPMDShutdown
-------------------------------------------------
-[Error matching program output for functions/bradc/retConstness/modifyReturnedClass] (11/10/08)
-[Error matching program output for types/seq/bradc/hashEquals] (11/10/08)
-
-unable to start polling thread
-------------------------------
+GASNet unable to start polling thread
+-------------------------------------
 [Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
 
-is this one intermittent or not? (on: 10/21/08) (off: 11/07/08)
----------------------------------------------------------------
-[Error matching program output for extern/bradc/defaultArgsNoLocal]
+spurious segfault
+-----------------
+[Error matching program output for multilocale/deitz/needMultiLocales/test_dot_locale4] (e.g., 01/05/09)
 
-intermittent seg faults 
------------------------
-[Error matching program output for multilocale/deitz/linked/test_linked2] (e.g., 10/05/08, 10/08/08, 12/02/08)
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-dom] (e.g., 10/06/08)
-[Error matching program output for multilocale/deitz/linked/test_linked3e] (e.g., 10/07/08, 10/13/08)
-[Error matching program output for multilocale/bradc/locales/queryLocaleLocation] (e.g., 10/08/08)
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar] (e.g., 10/09/08)
-[Error matching program output for studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 10/10/08)
-[Error matching program output for multilocale/deitz/linked/test_linked3] (e.g., 10/14/08, 12/02/08)
-[Error matching program output for studies/hpcc/common/bradc/unit/leadFollowOpt] (e.g., 10/15/08)
-[Error matching program output for multilocale/deitz/needMultiLocales/test_dot_locale4] (e.g., 10/22/08)
-[Error matching program output for multilocale/deitz/linked/test_linked3a] (e.g., 10/26/08)
-[Error matching program output for multilocale/deitz/linked/test_linked1] (e.g., 11/12/08, 12/21/08)
-[Error matching program output for multilocale/diten/oneOrMoreLocales/1DBlockDistributedJacobi] (e.g., 11/12/08)
-[Error matching program output for studies/hpcc/common/bradc/unit/modifyLocales] (e.g., 12/07/08)
-[Error matching program output for users/agnieszka/test1] (e.g., 12/08/08, 12/14/08)
-[Error matching program output for users/agnieszka/multiArrayI] (e.g., 12/21/08)
+spurious zipper iterations have non-equal lengths
+-------------------------------------------------
+[Error matching program output for release/examples/hpcc/stream] (e.g., 01/03/09)
 
+times out spuriously
+--------------------
+[Error: Timed out executing program multilocale/deitz/linked/test_linked2] (e.g., 12/30/08)
 
 
 =======================
@@ -195,8 +144,8 @@ baseline-specific tests
 
 memory is leaked for unknown reasons
 ------------------------------------
-[Error matching program output for memory/deitz/test_leaked_array] (12/18/08)
 [Error matching program output for arrays/deitz/test_descriptor_frees] (12/19/08)
+[Error matching program output for memory/deitz/test_leaked_array] (12/18/08)
 
 
 memory is leaked due to heap classes (10/22/08)
@@ -236,7 +185,7 @@ opts-specific tests
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 --no-inline-iterators
---------------------------------------------------
+---------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
 --no-optimize-loop-iterators
@@ -253,14 +202,6 @@ opts-specific tests
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
 --baseline --copy-propagation
------------------------------
-[Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
-[Error matching program output for modules/diten/useInBegin]
-[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
-[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
-
 --baseline --dead-code-elimination
 --baseline --inline-iterators
 --baseline --optimize-loop-iterators
@@ -323,69 +264,25 @@ times out in C compiler
 intel-specific regressions
 ==========================
 
-occasional out of memory (e.g., 10/03/08)
------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
-
-
-==============================
-pathscale-specific regressions
-==============================
-
-???
----
-[Error matching program output for execflags/bradc/gdbddash/declint2]
-
-exp2 not supported:
--------------------
-[Error matching program output for functions/dinan/exp2] 
-
-
-==========================
-sunos-specific regressions
-==========================
-
-%p results in different format?
--------------------------------
-[Error matching program output for trivial/bradc/ref2string]
-[Error matching program output for trivial/bradc/wideref2string]
-[Error matching program output for trivial/diten/classRef2string-local]
-
-exp2/log2/other math fns not supported
---------------------------------------
-[Error matching compiler output for functions/dinan/exp2] 
-[Error matching compiler output for modules/standard/math/lg2] 
-[Error matching compiler output for modules/standard/math/bradc/math32bits-more] 
-
-numeric stability issues
-------------------------
-[Error matching program output for
-studies/madness/aniruddha/madchap/test_diff]
-[Error matching program output for
-studies/madness/aniruddha/madchap/test_gaxpy]
-[Error matching program output for
-studies/madness/aniruddha/madchap/test_likepy]
-[Error matching program output for
-studies/madness/dinan/mad_chapel/test_diff]
-[Error matching program output for
-studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching program output for
-studies/madness/dinan/mad_chapel/test_likepy]
-[Error matching program output for studies/madness/marybeth/test_diff]
-[Error matching program output for studies/madness/marybeth/test_gaxpy]
-[Error matching program output for studies/madness/marybeth/test_likepy]
-[Error matching program output for studies/madness/test_diff]
-[Error matching program output for studies/madness/test_gaxpy]
-[Error matching program output for studies/madness/test_likepy]
-
 
 ========================
-pgi-specific regressions
+xt-cle-specific failures
 ========================
 
-??? (moved from compile to program error on (12/09/08)
-------------------------------------------------------
+??? -- gdb incompatability?
+---------------------------
+[Error matching program output for execflags/bradc/gdbddash/declint2] 
+
+
+=============================================================
+pgi-specific regressions (in addition to xt-cle errors above)
+=============================================================
+
+long identifiers
+----------------
 [Error matching program output for arrays/deitz/test_major_nesting_of_arrays]
+[Error matching program output for trivial/deitz/test_longToken]
+[Error matching program output for types/tuple/deitz/test_128int]
 
 Numerical accuracy issues (started 05/24/08)
 --------------------------------------------
@@ -396,73 +293,82 @@ Numerical accuracy issues (started 05/24/08)
 [Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
 
-Some sort of offset type mismatch -- likely caused by long identifiers
-----------------------------------------------------------------------
-[Error matching program output for types/tuple/diten/tupleOfTupleOfTupleOfTuple]
-
-long identifiers
-----------------
-[Error matching program output for trivial/deitz/test_longToken]
-[Error matching program output for types/tuple/deitz/test_128int]
-
-
 negative floating point 0.0 not supported
 -----------------------------------------
 [Error matching program output for types/complex/bradc/negateimaginary3] 
 [Error matching program output for types/complex/bradc/negativeimaginaryliteral] 
-??? -- gdb incompatability?
----------------------------
-[Error matching program output for execflags/bradc/gdbddash/declint2] 
+
+Some sort of offset type mismatch -- likely caused by long identifiers
+----------------------------------------------------------------------
+[Error matching program output for types/tuple/diten/tupleOfTupleOfTupleOfTuple]
 
 
-========================
-xt-cle-specific failures
-========================
+===================================================================
+pathscale-specific regressions (in addition to xt-cle errors above)
+===================================================================
+
+exp2 not supported:
+-------------------
+[Error matching program output for functions/dinan/exp2] 
 
 
 ========================
 xt-gnu specific failures
 ========================
 
-??? (11/12/08)
---------------
-[Error matching program output for functions/dinan/exp2]
 
+==========================
+sunos-specific regressions
+==========================
 
-???
----
-[Error matching program output for execflags/bradc/gdbddash/declint2]
+exp2/log2/other math fns not supported
+--------------------------------------
+[Error matching compiler output for functions/dinan/exp2] 
+[Error matching compiler output for modules/standard/math/bradc/math32bits-more] 
+[Error matching compiler output for modules/standard/math/lg2] 
 
+numeric stability issues
+------------------------
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] 
+[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
+[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for studies/madness/common/test_diff]
+[Error matching program output for studies/madness/common/test_gaxpy]
+[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
 
-========================
-x1-/x2-specific failures
-========================
-
-compilation timing out (started 4/19/08)
-----------------------------------------
-[Error: Timed out compilation for release/examples/hpcc/fft]
+%p results in different format?
+-------------------------------
+[Error matching program output for trivial/bradc/ref2string]
+[Error matching program output for trivial/bradc/wideref2string]
+[Error matching program output for trivial/diten/classRef2string-local]
 
 
 ========================
 cygwin-specific failures
 ========================
 
-Yikes!  output was 2 2 2 2 1 1 1 1 rather than 2 2 2 2 1 2 2 2 (09/26/08)
--------------------------------------------------------------------------
-[Error matching program output for functions/deitz/iterators/leader_follower/test_leader_follower2a]
-
-pthread_cond_init failed errors -- possibly memory related? (e.g., 08/28/08)
-----------------------------------------------------------------------------
-[Error matching program output for studies/madness/common/test_likepy]
+pthread_cond_init failure => cannot rm binary
+---------------------------------------------
 [Error matching program output for npb/cg/bradc/cg-sparse]
 [Error matching program output for performance/compiler/bradc/cg-sparse-timecomp]
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample1]
 [Error matching program output for studies/sudoku/dinan/sudoku]
-[Error matching program output for users/jglewis/badGetModule]
-[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
 
 print occurs in 0 seconds!?  Timers not working?
 ------------------------------------------------
 [Error matching program output for spec/marybeth/use]
+
+sig_send: wait for sig_complete event failed
+--------------------------------------------
+[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for studies/madness/common/test_gaxpy]
+[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching program output for users/jglewis/badGetModule]
 
 
 =============================
@@ -495,107 +401,4 @@ simulation timeouts
 CHPL_THREADS = none regressions
 ===============================
 
-leader/follower problems with threads=none (between 09/03/08 and 12/02/08)
---------------------------------------------------------------------------
-[Error matching program output for functions/deitz/iterators/leader_follower/test_leader_follower7]
-[Error matching program output for functions/deitz/nested/test_nested_with_begin]
-[Error matching program output for functions/iterators/bradc/leadFollow/followFlexType]
-[Error matching program output for functions/iterators/bradc/leadFollow/followNoLead]
-[Error matching program output for functions/iterators/bradc/leadFollow/localfollow2]
-[Error matching program output for npb/cg/bradc/cg-sparse]
-[Error matching program output for parallel/coforall/bradc/nested/nestedForall1a]
-[Error matching program output for parallel/coforall/bradc/nested/nestedForall]
-[Error matching program output for performance/compiler/bradc/cg-sparse-timecomp]
-[Error matching program output for release/examples/hpcc/ra]
-[Error matching program output for release/examples/sparse]
-[Error matching program output for studies/hpcc/2008/ra]
-[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dclass]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar]
-[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-fill]
-[Error matching program output for studies/madness/common/test_diff]
-[Error matching program output for studies/madness/common/test_likepy]
-[Error matching program output for studies/madness/common/test_showboxes]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_showboxes]
-[Error matching program output for studies/sudoku/deitz/sudoku2]
-[Error matching program output for studies/sudoku/deitz/sudoku3]
-[Error matching program output for studies/sudoku/deitz/sudoku_compress2]
-[Error matching program output for studies/sudoku/deitz/sudoku_compress3]
-[Error matching program output for studies/sudoku/dinan/search/sudoku-reduce4]
-[Error matching program output for trivial/deitz/monte2]
-[Error matching program output for trivial/deitz/monte3]
-[Error matching program output for trivial/deitz/monte]
-[Error matching program output for trivial/diten/pi_monte_carlo]
-[Error matching program output for types/seq/deitz/test_reduce1]
-
-???
----
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
-[Error matching program output for parallel/end/deitz/test_end3]
-[Error matching program output for parallel/single/diten/simpleSingleAccess]
-[Error matching program output for users/shetag/fock/fock-dyn-prog-pool]
-
-
-Need requeuable tasks for this to work
---------------------------------------
-[Error matching program output for
-parallel/coforall/bradc/manyThreads-folded]
-[Error matching program output for
-parallel/coforall/bradc/manyThreads-revorder]
-
-Inherently multithreaded?  Needs re-queueing ability
-----------------------------------------------------
-[Error matching program output for users/shetag/fock/fock-1-latest]
-[Error matching program output for users/shetag/fock/fock-3-blc]
-
-Assumes something about timing?
--------------------------------
-[Error matching program output for parallel/begin/deitz/test_begin3]
-[Error matching program output for parallel/begin/deitz/test_begin4]
-[Error matching program output for parallel/begin/deitz/test_begin5]
-[Error matching program output for parallel/begin/deitz/test_heap_begin]
-[Error matching program output for parallel/serial/deitz/test_serial1]
-[Error matching program output for parallel/serial/waynew/begin1a]
-[Error matching program output for parallel/serial/waynew/cobegin1a]
-
-Uncategorized as of yet
------------------------
-[Error matching program output for
-parallel/single/figueroa/ReadWriteMethods]
-[Error matching program output for parallel/single/waynew/class0]
-[Error matching program output for parallel/single/waynew/class1]
-[Error matching program output for parallel/single/waynew/simple1-int64]
-[Error matching program output for parallel/single/waynew/simple1]
-[Error matching program output for parallel/single/waynew/simple2]
-[Error matching program output for parallel/single/waynew/simple3]
-[Error matching program output for parallel/single/waynew/simple4]
-[Error matching program output for parallel/sync/bradc/fib_sync]
-[Error matching program output for parallel/sync/deitz/test_sync_in_generic]
-[Error matching program output for parallel/sync/figueroa/ReadMethods]
-[Error matching program output for parallel/sync/figueroa/WriteMethods]
-[Error matching program output for parallel/sync/waynew/class1]
-[Error matching program output for parallel/sync/waynew/class2]
-[Error matching program output for parallel/sync/waynew/record1]
-[Error matching program output for parallel/sync/waynew/record2]
-[Error matching program output for parallel/sync/waynew/simple1]
-[Error matching program output for parallel/sync/waynew/simple2]
-[Error matching program output for release/examples/prodCons]
-[Error matching program output for studies/590o/blerner/xml-parse]
-[Error matching program output for users/shetag/fock/fock-1-begin-blc]
-[Error matching program output for users/shetag/fock/fock-1]
-[Error matching program output for users/shetag/fock/fock-orig]
-[Error: Timed out executing program
-parallel/begin/deitz/test_begin_error_lineno]
-[Error: Timed out executing program
-parallel/begin/deitz/test_coforall_sugar3]
-[Error: Timed out executing program
-parallel/begin/deitz/test_global_for_begin]
-[Error: Timed out executing program parallel/begin/waynew/simple2]
-[Error: Timed out executing program parallel/cobegin/bradc/exitone]
-[Error matching program output parallel/cobegin/waynew/depend]
-[Error: Timed out executing program parallel/cobegin/waynew/while]
-[Error: Timed out executing program parallel/coforall/figueroa/ManyThreads]
+Never has worked well enough to be worth tracking...
