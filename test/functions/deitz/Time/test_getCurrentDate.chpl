@@ -1,7 +1,7 @@
 use Time;
 var year, month, day: int;
 (year, month, day) = getCurrentDate();
-if year > 2008 then
+if year > 2009 then
   writeln("I don't believe that you are still working on Chapel!");
 else
   writeln("Chapel is a new parallel programming language.");
