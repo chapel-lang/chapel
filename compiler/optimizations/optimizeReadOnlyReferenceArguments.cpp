@@ -93,6 +93,11 @@ isSafeToDeref(Symbol* startSym,
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
       if (FnSymbol* newfn = call->isResolved()) {
         ArgSymbol* formal = actual_to_formal(use);
+        // var functions need references to the variables they return.
+        if (newfn->retTag == RET_VAR) {
+          return false;
+        }
+
         if (isSafeToDeref(startSym, formal, newfn, defMap, useMap, visited)) {
           continue;
         } else {
