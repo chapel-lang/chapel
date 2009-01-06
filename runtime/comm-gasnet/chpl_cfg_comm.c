@@ -43,12 +43,19 @@ typedef struct {
   char    arg[0];       // variable-sized data here
 } fork_t;
 
+typedef struct {
+  void* addr;    // address to put data
+  int size;      // size of data
+  char data[0];  // data
+} put_t;
+
 //
 // AM functions
 //
 #define FORK_NB   128    // (non-blocking) async fork 
 #define FORK      129    // synchronous fork
 #define SIGNAL    130    // ack of synchronous fork
+#define PUTDATA   131    // put data at addr (used for private broadcast)
 
 static void fork_nb_wrapper(fork_t *f) {
   if (f->arg_size)
@@ -102,10 +109,18 @@ static void AM_signal(gasnet_token_t  token,
   **done = 1;
 }
 
+static void AM_putdata(gasnet_token_t  token,
+                       void           *buf,
+                       size_t          nbytes) {
+  put_t* pbp = buf;
+  memcpy(pbp->addr, pbp->data, pbp->size);
+}
+
 static gasnet_handlerentry_t ftable[] = {
   {FORK,    AM_fork},    // fork remote thread synchronously
   {FORK_NB, AM_fork_nb}, // fork remote thread asynchronously
   {SIGNAL,  AM_signal},  // set remote (int) condition
+  {PUTDATA, AM_putdata}  // put data at addr (used for private broadcast)
 };
 
 static gasnet_seginfo_t seginfo_table[1024];
@@ -202,46 +217,28 @@ void _chpl_comm_broadcast_global_vars(int numGlobals) {
   }
 }
 
-#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-typedef struct __broadcast_private_helper {
-  void* addr;
-  void* raddr;
-  int locale;
-  size_t size;
-} _broadcast_private_helper;
-
-void _broadcastPrivateHelperFn(struct __broadcast_private_helper* arg);
-
-void _broadcastPrivateHelperFn(struct __broadcast_private_helper* arg) {
-  _chpl_comm_get(arg->addr, arg->locale, arg->raddr, arg->size);
-}
-
-#endif
-
 void _chpl_comm_broadcast_private(void* addr, int size) {
-  int i;
+  int locale;
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-  /* For each private constant, copy it to the heap, fork to each locale,
-     and read it off the remote heap into its final non-heap location. Ick.
-   */
-  void* heapAddr = chpl_malloc(1, size, "broadcast private", 0, 0);
-  _broadcast_private_helper bph;
-
-  bcopy(addr, heapAddr, size);
-  bph.addr = addr;
-  bph.raddr = heapAddr;
-  bph.locale = _localeID;
-  bph.size = size;
+  int payloadSize = size + sizeof(put_t);
+  put_t* pbp = chpl_malloc(1, payloadSize, "private broadcast payload", 0, 0);
+  pbp->addr = addr;
+  pbp->size = size;
+  memcpy(pbp->data, addr, size);
 #endif
-  for (i = 0; i < _numLocales; i++) {
-    if (i != _localeID) {
+
+  for (locale = 0; locale < _numLocales; locale++) {
+    if (locale != _localeID) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-      _chpl_comm_fork(i, (func_p)_broadcastPrivateHelperFn, &bph, sizeof(_broadcast_private_helper));
+      GASNET_Safe(gasnet_AMRequestMedium0(locale, PUTDATA, pbp, payloadSize));
 #else
-      _chpl_comm_put(addr, i, addr, size);
+      _chpl_comm_put(addr, locale, addr, size);
 #endif
     }
   }
+#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
+  chpl_free(pbp, 0, 0);
+#endif
 }
 
 void _chpl_comm_barrier(const char *msg) {
@@ -271,8 +268,8 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
     bcopy(addr, raddr, size);
   } else {
 #if CHPL_DIST_DEBUG
-  if (chpl_comm_debug && !chpl_comm_no_debug_private)
-    printf("%d: remote put to %d\n", _localeID, locale);
+    if (chpl_comm_debug && !chpl_comm_no_debug_private)
+      printf("%d: remote put to %d\n", _localeID, locale);
 #endif
     gasnet_put(locale, raddr, addr, size); // node, dest, src, size
   }
@@ -283,8 +280,8 @@ void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size) {
     bcopy(raddr, addr, size);
   } else {
 #if CHPL_DIST_DEBUG
-  if (chpl_comm_debug && !chpl_comm_no_debug_private)
-    printf("%d: remote get from %d\n", _localeID, locale);
+    if (chpl_comm_debug && !chpl_comm_no_debug_private)
+      printf("%d: remote get from %d\n", _localeID, locale);
 #endif
     gasnet_get(addr, locale, raddr, size); // dest, node, src, size
   }
