@@ -80,11 +80,6 @@ Needs to be retired (bradc)
 ---------------------------
 [Error matching program output for multilocale/bradc/distribWarning]
 
-regressions due to enabling David's locality optimization (10/24/08)
---------------------------------------------------------------------
-[Error matching program output for multilocale/local/deitz/test_local2]
-[Error matching program output for multilocale/local/deitz/test_local3]
-
 verbose output now shows launch command (10/31/08) (bradc)
 ----------------------------------------------------------
 [Error matching program output for multilocale/numLocales/bradc/testVFlag]
@@ -348,6 +343,10 @@ numeric stability issues
 ========================
 cygwin-specific failures
 ========================
+
+cannot remove binary (no other indication of failure) -- threads still running?
+-------------------------------------------------------------------------------
+[Error matching program output for studies/madness/common/test_mul]
 
 pthread_cond_init failure => cannot rm binary
 ---------------------------------------------
