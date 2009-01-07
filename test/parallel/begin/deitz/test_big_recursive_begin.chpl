@@ -1,10 +1,14 @@
 config const n: int = 4096;
 
 def foo(i: int) {
+  var x: sync int;
+  var y: single int;
   if i < n {
-    _debugWriteln(here.id, " pre ", i);
-    sync begin foo(i+1);
-    _debugWriteln(here.id, " post ", i);
+    sync {
+      begin {_debugWriteln(here.id, " pre ", x); y = x;}
+      begin {x = i; foo(i+1); x = i;}
+    }
+    _debugWriteln(here.id, " post ", y);
   }
 }
 
