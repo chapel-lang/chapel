@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include "chpllaunch.h"
 #include "chplmem.h"
 #include "error.h"
@@ -14,8 +15,12 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i;
   int size;
   char baseCommand[256];
+  char realName[256];
   char* command;
-  sprintf(baseCommand, "amudprun -np %d %s_real", numLocales, argv[0]);
+  struct stat statBuf;
+
+  sprintf(realName, "%s_real", argv[0]);
+  sprintf(baseCommand, "amudprun -np %d %s", numLocales, realName);
 
   size = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen(baseCommand) + 1;
 
@@ -34,6 +39,13 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
 
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
+  }
+
+  // Make sure the _real binary exists
+  if (stat(realName, &statBuf) != 0) {
+    char errorMsg[256];
+    sprintf(errorMsg, "unable to locate file: %s", realName);
+    chpl_error(errorMsg, -1, "<internal>");
   }
 
   return command;
