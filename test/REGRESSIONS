@@ -89,11 +89,6 @@ verbose output now shows launch command (10/31/08) (bradc)
 ----------------------------
 [Error matching program output for studies/matrixMult/stonea/distributed/luLike]
 
-timeouts (10/31/08)
--------------------
-[Error: Timed out executing program compflags/bradc/nameoutput/localname]
-[Error: Timed out executing program compflags/bradc/nameoutput/localnamesavec]
-
 times out fairly consistently
 -----------------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
@@ -365,6 +360,7 @@ sig_send: wait for sig_complete event failed
 [Error matching program output for studies/madness/common/test_gaxpy]
 [Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
 [Error matching program output for users/jglewis/badGetModule]
 
 
