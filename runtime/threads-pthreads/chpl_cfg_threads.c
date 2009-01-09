@@ -352,10 +352,7 @@ void chpl_set_serial(chpl_bool state) {
       p = (_Bool*) chpl_alloc(sizeof(_Bool), "serial flag", 0, 0);
       *p = state;
       if (pthread_setspecific(serial_key, p)) {
-        if (pthread_key_create(&serial_key, (void(*)(void*))serial_delete))
-          chpl_internal_error("serial key not created");
-        else if (pthread_setspecific(serial_key, p))
-          chpl_internal_error("serial state not created");
+        chpl_internal_error("serial key got corrupted");
       }
     }
   }
