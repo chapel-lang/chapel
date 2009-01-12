@@ -251,7 +251,12 @@ void _chpl_comm_barrier(const char *msg) {
 }
 
 static void _chpl_comm_exit_common(int status) {
-  done = 1;
+  int* ack = &done;
+
+  GASNET_Safe(gasnet_AMRequestMedium0(_localeID,
+                                      SIGNAL,
+                                      &ack,
+                                      sizeof(ack)));
   gasnet_exit(status);
 }
 
