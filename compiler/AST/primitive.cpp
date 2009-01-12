@@ -139,7 +139,7 @@ returnInfoNumericUp(CallExpr* call) {
 }
 
 static Type*
-returnInfoArrayIndex(CallExpr* call) {
+returnInfoArrayIndexValue(CallExpr* call) {
   SymExpr* sym = toSymExpr(call->get(1));
   INT_ASSERT(sym);
   Type* type = sym->var->type;
@@ -147,7 +147,12 @@ returnInfoArrayIndex(CallExpr* call) {
     type = type->getField("addr")->type;
   if (!type->substitutions.n)
     INT_FATAL(call, "bad primitive");
-  return toTypeSymbol(type->substitutions.v[0].value)->type->refType;
+  return toTypeSymbol(type->substitutions.v[0].value)->type;
+}
+
+static Type*
+returnInfoArrayIndex(CallExpr* call) {
+  return returnInfoArrayIndexValue(call)->refType;
 }
 
 static Type*
@@ -396,7 +401,7 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_FREE, "array_free", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_FREE_ELTS, "array_free_elts", returnInfoVoid, true);
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex);
-  prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndex);
+  prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue);
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
   prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true);
   prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true);
