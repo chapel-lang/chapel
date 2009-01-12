@@ -99,7 +99,7 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09)
 
 
@@ -124,6 +124,8 @@ spurious zipper iterations have non-equal lengths
 times out spuriously
 --------------------
 [Error: Timed out executing program multilocale/deitz/linked/test_linked2] (e.g., 12/30/08)
+[Error: Timed out executing program studies/hpcc/STREAMS/bradc/stream-block1dpar] (e.g., 01/09/08)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/11/09)
 
 
 =======================
