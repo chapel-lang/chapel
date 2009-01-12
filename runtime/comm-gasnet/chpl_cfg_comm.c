@@ -161,15 +161,18 @@ void _chpl_comm_init(int *argc_p, char ***argv_p) {
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
 
   //
-  // start polling thread
+  // Start polling thread on locale 0.  (On other locales, main enters
+  // into a barrier wait, so the polling thread is unnecessary.)
   //
   // This should call a special function in the threading interface
   // but we have not yet initialized chapel threads!
   //
-  status = pthread_create(&polling_thread, NULL, (chpl_threadfp_t)polling, 0);
-  if (status)
-    chpl_internal_error("unable to start polling thread for gasnet");
-  pthread_detach(polling_thread);
+  if (_localeID == 0) {
+    status = pthread_create(&polling_thread, NULL, (chpl_threadfp_t)polling, 0);
+    if (status)
+      chpl_internal_error("unable to start polling thread for gasnet");
+    pthread_detach(polling_thread);
+  }
 }
 
 //
@@ -253,10 +256,12 @@ void _chpl_comm_barrier(const char *msg) {
 static void _chpl_comm_exit_common(int status) {
   int* ack = &done;
 
-  GASNET_Safe(gasnet_AMRequestMedium0(_localeID,
-                                      SIGNAL,
-                                      &ack,
-                                      sizeof(ack)));
+  if (_localeID == 0) {
+    GASNET_Safe(gasnet_AMRequestMedium0(_localeID,
+                                        SIGNAL,
+                                        &ack,
+                                        sizeof(ack)));
+  }
   gasnet_exit(status);
 }
 
