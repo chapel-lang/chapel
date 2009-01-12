@@ -49,7 +49,7 @@ def main() {
   //  The array slice is sent directly to initBlock.
   writeln("Initializing the diagonal blocks of A.");
   writeln("No reindexing of diagonal blocks.");
-  for subvec in blockIter(vec,blk) { // sjd: changed forall to for
+  for subvec in blockIter(vec,blk) {
     initBlock(A[subvec,subvec]);
   }
 
@@ -64,7 +64,7 @@ def main() {
   // diagonal block, and that array alias is sent to initBlock.
   writeln("Initializing the diagonal blocks of A."); 
   writeln("Reindexing of each diagonal block in alias declaration. ");
-  for subvec in blockIter(vec,blk) { // sjd: changed forall to for
+  for subvec in blockIter(vec,blk) {
     var Ablock: [D0] => A[subvec,subvec];
     initBlock(Ablock);
   }
@@ -79,7 +79,7 @@ def main() {
   // where the domain of the array argument is reindexed.
   writeln("Initializing the diagonal blocks of A."); 
   writeln("Reindexing of array argument in init function definition. ");
-  for subvec in blockIter(vec,blk) { // sjd: changed forall to for
+  for subvec in blockIter(vec,blk) {
     var Ablock => A[subvec,subvec];
     initBlock2(Ablock);
   }
