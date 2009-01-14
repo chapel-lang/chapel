@@ -28,6 +28,8 @@ if ($preset_launcher eq "") {
         }
     } elsif ($platform eq "xmt-sim") {
 	$launcher = "zebra";
+    } elsif ($platform eq "x1-sim" || $platform eq "x2-sim") {
+      $launcher = "apsim";
     } elsif ($comm eq "mpi") {
         $launcher = "mpirun";
     }

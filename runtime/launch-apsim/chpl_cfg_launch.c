@@ -5,30 +5,34 @@
 #include "chplmem.h"
 #include "error.h"
 
-#define LAUNCH_PATH_HELP WRAP_TO_STR(LAUNCH_PATH)
 #define WRAP_TO_STR(x) TO_STR(x)
 #define TO_STR(x) #x
-
-// TODO: Un-hard-code this stuff:
 
 char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i;
   int size;
   char baseCommand[256];
   char* command;
-  sprintf(baseCommand, "gasnetrun_ibv -spawner=ssh -n %d %s_real", numLocales,
-          argv[0]);
+  char targetType;
+  if (!strcmp(WRAP_TO_STR(LAUNCH_TARGET_PLATFORM), "x1-sim")) {
+    targetType = '1';
+  } else if (!strcmp(WRAP_TO_STR(LAUNCH_TARGET_PLATFORM), "x2-sim")) {
+    targetType = 'b';
+  } else {
+    chpl_internal_error("unknown target type for apsim launcher");
+  }
+    
+  sprintf(baseCommand, "apsim -P p%c %s_real", targetType, argv[0]);
 
-  size = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen(baseCommand) + 1;
+  size = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen(baseCommand) + 2;
 
   for (i=1; i<argc; i++) {
     size += strlen(argv[i]) + 3;
   }
 
-  command = chpl_malloc(size, sizeof(char*), "gasnetrun_ibv command buffer", 
-                        -1, "");
+  command = chpl_malloc(size, sizeof(char*), "apsim command buffer", -1, "");
   
-  sprintf(command, "%s%s", WRAP_TO_STR(LAUNCH_PATH), baseCommand);
+  sprintf(command, "%s/%s", WRAP_TO_STR(LAUNCH_PATH), baseCommand);
   for (i=1; i<argc; i++) {
     strcat(command, " '");
     strcat(command, argv[i]);
@@ -42,7 +46,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   return command;
 }
 
-void chpl_launch_sanity_checks(int argc, char* argv[], const char* cmd) {
+void chpl_launch_sanity_checks(int argc, char* argv[], const char* command) {
   // Do sanity checks just before launching.
   struct stat statBuf;
   char realName[256];

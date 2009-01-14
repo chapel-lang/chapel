@@ -18,7 +18,8 @@ if ($preset_compiler eq "") {
     chomp($platform);
     if ($platform eq "mta" || $platform eq "xmt" || $platform eq "xmt-sim") {
 	$compiler = "cray-mta";
-    } elsif ($platform eq "x1" || $platform eq "x2") {
+    } elsif ($platform eq "x1"     || $platform eq "x2" ||
+             $platform eq "x1-sim" || $platform eq "x2-sim") {
 	$compiler = "cray-vec";
     } elsif ($platform eq "xt-cle") {
         if ($flag eq "--host") {

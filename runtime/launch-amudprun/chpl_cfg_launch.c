@@ -15,12 +15,9 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i;
   int size;
   char baseCommand[256];
-  char realName[256];
   char* command;
-  struct stat statBuf;
 
-  sprintf(realName, "%s_real", argv[0]);
-  sprintf(baseCommand, "amudprun -np %d %s", numLocales, realName);
+  sprintf(baseCommand, "amudprun -np %d %s_real", numLocales, argv[0]);
 
   size = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen(baseCommand) + 1;
 
@@ -41,14 +38,27 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
     chpl_internal_error("buffer overflow");
   }
 
+  return command;
+}
+
+
+void chpl_launch_sanity_checks(int argc, char* argv[], const char* cmd) {
+  // Do sanity checks just before launching.
+  struct stat statBuf;
+  char realName[256];
+  int retVal;
+
+  retVal = snprintf(realName, 256, "%s_real", argv[0]);
+  if (retVal < 0 || retVal >= 256) {
+    chpl_internal_error("error generating back-end filename");
+  }
+
   // Make sure the _real binary exists
   if (stat(realName, &statBuf) != 0) {
     char errorMsg[256];
     sprintf(errorMsg, "unable to locate file: %s", realName);
     chpl_error(errorMsg, -1, "<internal>");
   }
-
-  return command;
 }
 
 

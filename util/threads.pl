@@ -11,6 +11,8 @@ if ($preset_threads eq "") {
     chomp($platform);
     if ($platform eq "mta" || $platform eq "xmt" || $platform eq "xmt-sim") {
 	$threads = "mta";
+    } elsif ($platform eq "x1-sim" || $platform eq "x2-sim") {
+        $threads = "none";
     } else {
 	$threads = "pthreads";
     }

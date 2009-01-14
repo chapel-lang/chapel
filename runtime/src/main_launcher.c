@@ -41,6 +41,7 @@ int main(int argc, char* argv[]) {
     if (verbosity > 1) {
       printf("%s\n", command);
     }
+    chpl_launch_sanity_checks(argc, argv, command);
     system(command);
   }
 
