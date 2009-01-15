@@ -239,13 +239,57 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
       if (freeVar) {
         CallExpr* move = toCallExpr(defMap.get(var)->v[0]->parentExpr);
         INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+        Expr* innermostBlock = NULL;
+        // find the innermost block that contains all uses of var
+        INT_ASSERT(useMap.get(var));
+        forv_Vec(SymExpr, se, *useMap.get(var)) {
+          bool useInInnermostBlock = false;
+          BlockStmt* curInnermostBlock = toBlockStmt(se->parentExpr);
+          INT_ASSERT(!curInnermostBlock); // assumed to be NULL at this point
+          for (Expr* block = se->parentExpr->parentExpr;
+               block && !useInInnermostBlock;
+               block = block->parentExpr) {
+            if (!curInnermostBlock)
+              curInnermostBlock = toBlockStmt(block);
+            if (!innermostBlock) {
+              innermostBlock = toBlockStmt(block);
+              if (innermostBlock)
+                useInInnermostBlock = true;
+            } else if (block == innermostBlock)
+              useInInnermostBlock = true;
+          }
+          if (!useInInnermostBlock) {
+            // the current use is not contained within innermostBlock,
+            // so find out if the innermost block that contains the current use
+            // also contains innermostBlock
+            Expr* block = innermostBlock;
+            while (block && block != curInnermostBlock)
+              block = block->parentExpr;
+            if (block)
+              innermostBlock = curInnermostBlock;
+            else {
+              // the innermost block that contains the current use is disjoint
+              // from the innermost block that contains previously encountered use(s)
+              INT_ASSERT(innermostBlock && !block);
+              while ((innermostBlock = innermostBlock->parentExpr)) {
+                for (block = curInnermostBlock->parentExpr; block && block != innermostBlock;
+                     block = block->parentExpr)
+                  /* do nothing */;
+                if (block) break;
+              }
+              if (!innermostBlock)
+                INT_FATAL(move, "cannot find a block that contains all uses of var\n");
+            }
+          }
+        }
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
-        if (fn && move->parentExpr == fn->body)
+        if (fn && innermostBlock == fn->body)
           fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, move->get(1)->copy()));
-        else if (BlockStmt* parentBlock = toBlockStmt(move->parentExpr))
-          parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIM_CHPL_FREE, move->get(1)->copy()));
-        else
-          INT_FATAL(move, "unexpected case");
+        else {
+          BlockStmt* block = toBlockStmt(innermostBlock);
+          INT_ASSERT(block);
+          block->insertAtTailBeforeGoto(new CallExpr(PRIM_CHPL_FREE, move->get(1)->copy()));
+        }
       }
     }
   }
