@@ -99,7 +99,7 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09)
 
 
@@ -110,22 +110,6 @@ gasnet-fast regressions (other than the above)
 GASNet unable to start polling thread
 -------------------------------------
 [Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
-
-spurious segfault
------------------
-[Error matching program output for multilocale/deitz/needMultiLocales/test_dot_locale4] (e.g., 01/05/09)
-[Error matching program output for multilocale/deitz/needMultiLocales/test_local_array_writeln] (e.g., 01/06/09)
-[Error matching program output for studies/hpcc/2008/stream-fragnolocal] (e.g., 01/06/09)
-
-spurious zipper iterations have non-equal lengths
--------------------------------------------------
-[Error matching program output for release/examples/hpcc/stream] (e.g., 01/03/09)
-
-times out spuriously
---------------------
-[Error: Timed out executing program multilocale/deitz/linked/test_linked2] (e.g., 12/30/08)
-[Error: Timed out executing program studies/hpcc/STREAMS/bradc/stream-block1dpar] (e.g., 01/09/08)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/11/09)
 
 
 =======================
@@ -341,15 +325,10 @@ numeric stability issues
 cygwin-specific failures
 ========================
 
-cannot remove binary (no other indication of failure) -- threads still running?
--------------------------------------------------------------------------------
-[Error matching program output for studies/madness/common/test_mul]
-
 pthread_cond_init failure => cannot rm binary
 ---------------------------------------------
 [Error matching program output for npb/cg/bradc/cg-sparse]
 [Error matching program output for performance/compiler/bradc/cg-sparse-timecomp]
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample1]
 [Error matching program output for studies/sudoku/dinan/sudoku]
 
 print occurs in 0 seconds!?  Timers not working?
@@ -358,11 +337,10 @@ print occurs in 0 seconds!?  Timers not working?
 
 sig_send: wait for sig_complete event failed
 --------------------------------------------
-[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
 [Error matching program output for studies/madness/common/test_gaxpy]
 [Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
 [Error matching program output for users/jglewis/badGetModule]
 
 
