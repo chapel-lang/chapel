@@ -56,10 +56,6 @@ no longer needs to be suppressed?
 no-local regressions
 ====================
 
-'attempt to dereference nil' (11/08/08)
--------------------------------------
-[Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
-
 allocAndFree returns different results (skipped for GASNet)
 -----------------------------------------------------------
 [Error matching program output for memory/shannon/allocAndFree]
@@ -85,10 +81,6 @@ verbose output now shows launch command (10/31/08) (bradc)
 [Error matching program output for multilocale/numLocales/bradc/testVFlag]
 [Error matching program output for multilocale/numLocales/bradc/testVerboseFlag]
 
-'attempt to dereference nil'
-----------------------------
-[Error matching program output for studies/matrixMult/stonea/distributed/luLike]
-
 times out fairly consistently
 -----------------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
@@ -99,7 +91,7 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09)
 
 
