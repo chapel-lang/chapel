@@ -590,10 +590,10 @@ help_codegen_op(FILE* outfile, const char* name, Expr* e1, Expr* e2 = NULL) {
   fprintf(outfile, "(");
   if (e2) {
     e1->codegen(outfile);
-    fprintf(outfile, name);
+    fprintf(outfile, "%s", name);
     e2->codegen(outfile);
   } else {
-    fprintf(outfile, name);
+    fprintf(outfile, "%s", name);
     e1->codegen(outfile);
   }
   fprintf(outfile, ")");
@@ -1084,7 +1084,7 @@ void CallExpr::codegen(FILE* outfile) {
       help_codegen_op(outfile, "/", get(1), get(2));
       break;
     case PRIM_MOD:
-      help_codegen_op(outfile, "%%", get(1), get(2));
+      help_codegen_op(outfile, "%", get(1), get(2));
       break;
     case PRIM_LSH:
       help_codegen_op(outfile, "<<", get(1), get(2));

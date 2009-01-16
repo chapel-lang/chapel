@@ -434,7 +434,7 @@ codegen_config(FILE* outfile) {
         type = type->getField("value")->type;
       if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
         type = type->getField("addr")->type;
-      fprintf(outfile, type->symbol->name);
+      fprintf(outfile, "%s", type->symbol->name);
       fprintf(outfile, "\", \"%s\");\n", var->getModule()->name);
     }
   }
@@ -481,7 +481,7 @@ void codegen(void) {
     // create a filename by bumping a version number until we get a
     // filename we haven't seen before
     char filename[FILENAME_MAX];
-    sprintf(filename, lowerFilename);
+    sprintf(filename, "%s", lowerFilename);
     int version = 1;
     while (filenames.get(filename)) {
       version++;
