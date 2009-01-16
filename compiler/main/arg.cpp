@@ -366,7 +366,7 @@ void usage(ArgumentState* arg_state, int status, bool printEnvHelp,
         case 'N':
         case 'n':
           printf("--%s%s", 
-                 (*(bool*)desc[i].location ^ type == 'N') ? "no-" : "",
+                 (*(bool*)desc[i].location ^ (type == 'N')) ? "no-" : "",
                  desc[i].name);
           break;
         default:
