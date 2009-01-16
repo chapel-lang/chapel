@@ -1165,3 +1165,12 @@ A conditional expression that is immediately enclosed in a for
 expression does not require an else-part.  Such a conditional
 expression filters the evaluated expressions and only returns an
 expression if the condition holds.
+
+\begin{example}
+The code
+\begin{chapel}
+var A = for i in 1..10 do if i % 3 != 0 then i;
+\end{chapel}
+declares an array A that is initialized to the integers between
+1 and 10 that are not divisible by 3.
+\end{example}

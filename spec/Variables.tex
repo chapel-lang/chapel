@@ -70,6 +70,17 @@ initial expression to assign to the variable.  If
 the \sntx{initialization-part} is omitted, the variable is initialized
 to a default value described in~\rsec{Default_Initialization}.
 
+\begin{example}
+In the declaration
+\begin{chapel}
+var a = 1.0, b, c:int;
+\end{chapel}
+the variable \chpl{a} is inferred to be of type \chpl{real} because the
+initializer, \chpl{1.0}, is a real.  The variables \chpl{b} and \chpl{c}
+are declared to have type \chpl{int} and are initialized to the default
+\chpl{int} value.
+\end{example}
+
 The \sntx{special-array-declaration}
 and \sntx{array-alias-declaration} are defined
 in~\rsec{Domains_and_Arrays}.
@@ -176,7 +187,7 @@ Parameter expressions are restricted to the following constructs:
  and \verb@~@ on operands that are bool or integral parameter
  expressions.
 \item
- Applications of the binary operators \verb@+@, \verb@-@, \verb@*@, \verb@/@, \verb@%@, \verb@**@, \verb@&&@, \verb@||@, \verb@!@, \verb@&@, \verb@|@, \verb@^@, \verb@~@, \verb@<<@, \verb@>>@, \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@, and \verb@>@ on operands that are bool or integral parameter expressions.
+ Applications of the binary operators \verb@+@, \verb@-@, \verb@*@, \verb@/@, \verb@%@, \verb@**@, \verb@&&@, \verb@||@, \verb@&@, \verb@|@, \verb@^@, \verb@<<@, \verb@>>@, \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@, and \verb@>@ on operands that are bool or integral parameter expressions.
 \item
  Applications of the string concatenation operator \verb@+@, string comparison operators \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@, \verb@>@, and the string length and ascii functions on parameter string expressions.
 \item
