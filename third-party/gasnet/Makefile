@@ -43,7 +43,7 @@ clobber: FORCE
 
 gasnet-config: FORCE
 	mkdir -p $(GASNET_BUILD_DIR)
-	-cd $(GASNET_SUBDIR) && echo "n" | ./Bootstrap
+	-cd $(GASNET_SUBDIR)
 	$(XTRA_CONFIG_COMMAND)
 	cd $(GASNET_BUILD_DIR) && export CC=$(CC) && export CXX=$(CXX) $(XTRA_CONFIG_EXPORTS) && $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT) --prefix=$(GASNET_INSTALL_DIR) $(CHPL_GASNET_CFG_OPTIONS)
 
