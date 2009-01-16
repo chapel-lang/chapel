@@ -1,3 +1,5 @@
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include "astutil.h"
 #include "caches.h"
 #include "chpl.h"
@@ -48,7 +50,7 @@ explainInstantiation(FnSymbol* fn) {
           len += sprintf(msg+len, "%s", ts->name);
         else if (VarSymbol* vs = toVarSymbol(e->value)) {
           if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
-            len += sprintf(msg+len, "%lld", vs->immediate->int_value());
+            len += sprintf(msg+len, "%"PRId64, vs->immediate->int_value());
           else if (vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
             len += sprintf(msg+len, "\"%s\"", vs->immediate->v_string);
           else
@@ -93,7 +95,7 @@ instantiate_tuple(FnSymbol* fn) {
   // tuple is NULL for the default constructor
   //
 
-  int64 size = toVarSymbol(fn->substitutions.v[0].value)->immediate->int_value();
+  int64_t size = toVarSymbol(fn->substitutions.v[0].value)->immediate->int_value();
   Expr* last = fn->body->body.last();
   for (int i = 1; i <= size; i++) {
     const char* name = astr("x", istr(i));

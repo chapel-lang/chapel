@@ -9,8 +9,6 @@
 #include <unistd.h>
 #include <cstring>
 
-#include "chpltypes.h"
-
 #define round2(_x,_n) ((_x + ((_n)-1)) & ~((_n)-1))
 #define tohex1(_x) \
 ((((_x)&15) > 9) ? (((_x)&15) - 10 + 'A') : (((_x)&15) + '0'))

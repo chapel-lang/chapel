@@ -662,7 +662,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
   Symbol* ignoreWhiteSpace = new VarSymbol("ignoreWhiteSpace");
   body->insertAtTail(new DefExpr(ignoreWhiteSpace, new SymExpr(gTrue)));
   Symbol* matchingCharWasRead = new VarSymbol("matchingCharWasRead");
-  body->insertAtTail(new DefExpr(matchingCharWasRead, new_IntSymbol((int64)0)));
+  body->insertAtTail(new DefExpr(matchingCharWasRead, new_IntSymbol((int64_t)0)));
   Expr* fileArgFP = buildDotExpr(fn->_this, "_fp");
   CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringSymbol("{"), ignoreWhiteSpace);
   body->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));

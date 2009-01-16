@@ -356,7 +356,7 @@ resolveFormals(FnSymbol* fn) {
 static bool
 fits_in_int(int width, Immediate* imm) {
   if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_32) {
-    int64 i = imm->int_value();
+    int64_t i = imm->int_value();
     switch (width) {
     default: INT_FATAL("bad width in fits_in_int");
     case 8:
@@ -375,10 +375,10 @@ fits_in_int(int width, Immediate* imm) {
 static bool
 fits_in_uint(int width, Immediate* imm) {
   if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_32) {
-    int64 i = imm->int_value();
+    int64_t i = imm->int_value();
     if (i < 0)
       return false;
-    uint64 u = (uint64)i;
+    uint64_t u = (uint64_t)i;
     switch (width) {
     default: INT_FATAL("bad width in fits_in_uint");
     case 8:
@@ -391,7 +391,7 @@ fits_in_uint(int width, Immediate* imm) {
       return true;
     }
   } else if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_64) {
-    int64 i = imm->int_value();
+    int64_t i = imm->int_value();
     if (i > 0 && width == 64)
       return true;
   }
@@ -1904,9 +1904,9 @@ static void fold_param_for(CallExpr* loop) {
     INT_FATAL(loop, "bad param loop primitive");
   if (!lvar->immediate || !hvar->immediate || !svar->immediate)
     INT_FATAL(loop, "bad param loop primitive");
-  int64 low = lvar->immediate->int_value();
-  int64 high = hvar->immediate->int_value();
-  int64 stride = svar->immediate->int_value();
+  int64_t low = lvar->immediate->int_value();
+  int64_t high = hvar->immediate->int_value();
+  int64_t stride = svar->immediate->int_value();
   Expr* index_expr = loop->get(1);
   if (block->blockTag != BLOCK_NORMAL)
     INT_FATAL("ha");

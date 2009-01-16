@@ -8,16 +8,16 @@ const char* asubstr(const char* s, const char* e);
 
 void deleteStrings();
 
-int8  str2int8(const char* str);
-int16  str2int16(const char* str);
-int32  str2int32(const char* str);
-int64  str2int64(const char* str);
-uint8 str2uint8(const char* str);
-uint16 str2uint16(const char* str);
-uint32 str2uint32(const char* str);
-uint64 str2uint64(const char* str);
+int8_t  str2int8(const char* str);
+int16_t  str2int16(const char* str);
+int32_t  str2int32(const char* str);
+int64_t  str2int64(const char* str);
+uint8_t str2uint8(const char* str);
+uint16_t str2uint16(const char* str);
+uint32_t str2uint32(const char* str);
+uint64_t str2uint64(const char* str);
 
-uint64 binStr2uint64(const char* str);
-uint64 hexStr2uint64(const char* str);
+uint64_t binStr2uint64(const char* str);
+uint64_t hexStr2uint64(const char* str);
 
 #endif

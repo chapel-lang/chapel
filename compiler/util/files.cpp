@@ -1,5 +1,4 @@
 #include "beautify.h"
-#include "chpltypes.h"
 #include "files.h"
 #include "misc.h"
 #include "mysystem.h"

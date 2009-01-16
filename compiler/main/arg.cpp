@@ -29,6 +29,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include <cstdio>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include "arg.h"
 #include "chpl.h"
 #include "stringutil.h"
@@ -91,7 +93,7 @@ process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
           *(double *)desc[i].location = atof(arg);
           break;
         case 'L':
-          *(int64 *)desc[i].location = atoll(arg);
+          *(int64_t *)desc[i].location = atoll(arg);
           break;
         case 'P': strncpy((char *)desc[i].location,arg, FILENAME_MAX);
           break;
@@ -139,7 +141,7 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
         case 'T': *(int *)desc[i].location = !*(int *)desc[i].location; break;
         case 'I': *(int *)desc[i].location = strtol(env, NULL, 0); break;
         case 'D': *(double *)desc[i].location = strtod(env, NULL); break;
-        case 'L': *(int64 *)desc[i].location = str2int64(env); break;
+        case 'L': *(int64_t *)desc[i].location = str2int64(env); break;
         case 'P': strncpy((char *)desc[i].location, env, FILENAME_MAX); break;
         case 'S': strncpy((char *)desc[i].location, env, strtol(desc[i].type+1, NULL, 0)); break;
       }
@@ -359,7 +361,7 @@ void usage(ArgumentState* arg_state, int status, bool printEnvHelp,
           printf("%s", *(bool*)desc[i].location ? "selected" : "not selected");
           break;
         case 'L':
-          printf("%Ld", *(int64*)desc[i].location);
+          printf("%"PRId64, *(int64_t*)desc[i].location);
           break;
         case 'N':
         case 'n':

@@ -34,7 +34,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cstdlib>
 #include <cstring>
 #include "chpl.h"
-#include "chpltypes.h"
 #include "beautify.h"
 #include "files.h"
 #include "misc.h"

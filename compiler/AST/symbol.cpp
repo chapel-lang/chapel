@@ -1,3 +1,5 @@
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include "astutil.h"
 #include "bb.h"
 #include "build.h"
@@ -190,18 +192,18 @@ void VarSymbol::codegen(FILE* outfile) {
     fprintf(outfile, immediate->uint_value() ? "true" : "false");
   } else if (immediate &&
              immediate->const_kind == NUM_KIND_INT) {
-    int64 iconst = immediate->int_value();
+    int64_t iconst = immediate->int_value();
     if (iconst == (1ll<<63)) {
       fprintf(outfile, "-INT64(9223372036854775807) - INT64(1)");
     } else if (iconst <= -2147483648ll || iconst >= 2147483647ll) {
-      fprintf(outfile, "INT64(%lld)", iconst);
+      fprintf(outfile, "INT64(%"PRId64")", iconst);
     } else {
-      fprintf(outfile, "%lld", iconst);
+      fprintf(outfile, "%"PRId64, iconst);
     }
   } else if (immediate &&
              immediate->const_kind == NUM_KIND_UINT) {
-    uint64 uconst = immediate->uint_value();
-    fprintf(outfile, "UINT64(%llu)", uconst);
+    uint64_t uconst = immediate->uint_value();
+    fprintf(outfile, "UINT64(%"PRIu64")", uconst);
   } else {
     fprintf(outfile, "%s", cname);
   }

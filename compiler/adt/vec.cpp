@@ -30,7 +30,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /* UnionFind by Tarjan (adapted) */
 
-#include "chpltypes.h"
 #include "misc.h"
 #include "vec.h"
 

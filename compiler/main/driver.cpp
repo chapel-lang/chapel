@@ -89,7 +89,6 @@ static bool printEnvHelp = false;
 static bool printSettingsHelp = false;
 static bool printLicense = false;
 static bool printVersion = false;
-static bool testIntSizes = false;
 
 
 static void setupChplHome(void) {
@@ -214,20 +213,6 @@ static void verifySaveCDir(ArgumentState* arg, char* unused) {
     USR_FATAL("--savec takes a directory name as its argument\n"
               "       (you specified '%s', assumed to be another flag)",
               saveCDir);
-  }
-}
-
-
-static void verifyIntSizes(ArgumentState* arg, char* unused) {
-  if (sizeof(int8) != 1 ||
-      sizeof(int16) != 2 ||
-      sizeof(int32) != 4 ||
-      sizeof(int64) != 8 ||
-      sizeof(uint8) != 1 ||
-      sizeof(uint16) != 2 ||
-      sizeof(uint32) != 4 ||
-      sizeof(uint64) != 8) {
-    INT_FATAL("compiler integer types not set up properly");
   }
 }
 
@@ -378,7 +363,6 @@ static ArgumentDescription arg_desc[] = {
  {"destroy-value-type-vars", ' ', NULL, "Enable insertion of destructor calls when value type variables go out of scope", "N", &fEnableDestructorCalls, "CHPL_ENABLE_DESTRUCTOR_CALLS", NULL},
  {"no-codegen", ' ', NULL, "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},
- {"test-int-sizes", ' ', NULL, "Test compiler's internal integer sizes", "F", &testIntSizes, "CHPL_TEST_INT_SIZES", verifyIntSizes},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
  {0}

@@ -700,7 +700,7 @@ BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmt
   BlockStmt* block = new BlockStmt(stmts);
   BlockStmt* outer = new BlockStmt(block);
   VarSymbol* indexVar = new VarSymbol(index);
-  block->insertBefore(new DefExpr(indexVar, new_IntSymbol((int64)0)));
+  block->insertBefore(new DefExpr(indexVar, new_IntSymbol((int64_t)0)));
   Expr *low = NULL, *high = NULL, *stride;
   CallExpr* call = toCallExpr(range);
   if (call && call->isNamed("by")) {

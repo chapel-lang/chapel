@@ -14,7 +14,8 @@
 #endif
 
 enum IF1_num_kind {
-  NUM_KIND_NONE, NUM_KIND_UINT, NUM_KIND_INT, NUM_KIND_FLOAT, NUM_KIND_IMAG, NUM_KIND_COMPLEX
+  NUM_KIND_NONE, NUM_KIND_UINT, NUM_KIND_INT, NUM_KIND_FLOAT, NUM_KIND_IMAG, 
+  NUM_KIND_COMPLEX
 };
 
 enum IF1_const_kind {
@@ -48,25 +49,25 @@ class Immediate { public:
   unsigned int num_index : 3;
   union {
     bool       v_bool;
-    int8       v_int8;
-    int16      v_int16;
-    int32      v_int32;
-    int64      v_int64;
+    int8_t     v_int8;
+    int16_t    v_int16;
+    int32_t    v_int32;
+    int64_t    v_int64;
     // int128     v_int128;
-    uint8      v_uint8;
-    uint16     v_uint16;
-    uint32     v_uint32;
-    uint64     v_uint64;
+    uint8_t    v_uint8;
+    uint16_t   v_uint16;
+    uint32_t   v_uint32;
+    uint64_t   v_uint64;
     // uint128    v_uint128;
-    float32    v_float32;
-    float64    v_float64;
+    float      v_float32;
+    double     v_float64;
     complex64  v_complex64;
     complex128 v_complex128;
     const char *v_string;
   };
 
-  int64  int_value( void);
-  uint64 uint_value( void);
+  int64_t  int_value( void);
+  uint64_t uint_value( void);
 
   Immediate& operator=(const Immediate&);
   Immediate& operator=(bool b) {
@@ -96,9 +97,9 @@ class Immediate { public:
 };
 
 
-inline int64
+inline int64_t
 Immediate::int_value( void) {
-  int64 val = 0;
+  int64_t val = 0;
   switch (num_index) {
   case INT_SIZE_8 : val = v_int8;  break;
   case INT_SIZE_16: val = v_int16; break;
@@ -111,9 +112,9 @@ Immediate::int_value( void) {
 }
 
 
-inline uint64
+inline uint64_t
 Immediate::uint_value( void) {
-  uint64 val = 0;
+  uint64_t val = 0;
   switch (num_index) {
   case INT_SIZE_1 : val = v_bool;  break;
   case INT_SIZE_8 : val = v_uint8;  break;

@@ -2,7 +2,6 @@
 #define _log_H_
 
 #include <cstdio>
-#include "chpltypes.h"
 
 #ifndef IFA_EXTERN
 #define IFA_EXTERN extern

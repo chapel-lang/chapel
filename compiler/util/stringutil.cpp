@@ -2,6 +2,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include "misc.h"
 #include "stringutil.h"
 
@@ -74,34 +76,34 @@ void deleteStrings() {
 }
 
 
-#define define_str2Int(type, format)                            \
-  type str2##type(const char* str) {                            \
-    if (!str) {                                                 \
-      INT_FATAL("NULL string passed to strTo_" #type "()");     \
-    }                                                           \
-    int len = strlen(str);                                      \
-    if (len < 1) {                                              \
-      INT_FATAL("empty string passed to strTo_" #type "()");    \
-    }                                                           \
-    type val;                                                   \
-    int numitems = sscanf(str, format, &val);                   \
-    if (numitems != 1) {                                        \
-      INT_FATAL("Illegal string passed to strTo_" #type "()");  \
-    }                                                           \
-    return val;                                                 \
+#define define_str2Int(type, format)                              \
+  type##_t str2##type(const char* str) {                          \
+    if (!str) {                                                   \
+      INT_FATAL("NULL string passed to strTo_" #type "()");       \
+    }                                                             \
+    int len = strlen(str);                                        \
+    if (len < 1) {                                                \
+      INT_FATAL("empty string passed to strTo_" #type "()");      \
+    }                                                             \
+    type##_t val;                                                 \
+    int numitems = sscanf(str, format, &val);                     \
+    if (numitems != 1) {                                          \
+      INT_FATAL("Illegal string passed to strTo_" #type "()");    \
+    }                                                             \
+    return val;                                                   \
   }
 
-define_str2Int(int8, int8fmt)
-define_str2Int(int16, int16fmt)
-define_str2Int(int32, int32fmt)
-define_str2Int(int64, int64fmt)
-define_str2Int(uint8, uint8fmt)
-define_str2Int(uint16, uint16fmt)
-define_str2Int(uint32, uint32fmt)
-define_str2Int(uint64, uint64fmt)
+define_str2Int(int8, "%" SCNd8)
+define_str2Int(int16, "%" SCNd16)
+define_str2Int(int32, "%" SCNd32)
+define_str2Int(int64, "%" SCNd64)
+define_str2Int(uint8, "%" SCNu8)
+define_str2Int(uint16, "%" SCNu16)
+define_str2Int(uint32, "%" SCNu32)
+define_str2Int(uint64, "%" SCNu64)
 
 
-uint64 binStr2uint64(const char* str) {
+uint64_t binStr2uint64(const char* str) {
   if (!str) {
     INT_FATAL("NULL string passed to binStrToUint64()");
   }
@@ -109,7 +111,7 @@ uint64 binStr2uint64(const char* str) {
   if (len < 3 || str[0] != '0' || str[1] != 'b') {
     INT_FATAL("Illegal string passed to binStrToUint64()");
   }
-  uint64 val = 0;
+  uint64_t val = 0;
   for (int i=2; i<len; i++) {
     val <<= 1;
     switch (str[i]) {
@@ -126,7 +128,7 @@ uint64 binStr2uint64(const char* str) {
 }
 
 
-uint64 hexStr2uint64(const char* str) {
+uint64_t hexStr2uint64(const char* str) {
   if (!str) {
     INT_FATAL("NULL string passed to binStrToUint64()");
   }
@@ -134,8 +136,8 @@ uint64 hexStr2uint64(const char* str) {
   if (len < 3 || str[0] != '0' || str[1] != 'x') {
     INT_FATAL("Illegal string passed to binStrToUint64()");
   }
-  uint64 val;
-  int numitems = sscanf(str+2, "%llx", &val);
+  uint64_t val;
+  int numitems = sscanf(str+2, "%"SCNx64, &val);
   if (numitems != 1) {
     INT_FATAL("Illegal string passed to hexStrToUint64");
   }

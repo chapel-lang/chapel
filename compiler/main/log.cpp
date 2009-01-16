@@ -23,7 +23,7 @@ log_flags_arg(ArgumentState *arg_state, char *arg) {
       fprintf(stderr, "Unrecognized log flag: '%c'\n", *arg);
       clean_exit(1);
     }
-    log_tag[((uint8)*arg)]++;
+    log_tag[((uint8_t)*arg)]++;
     arg++;
   }
 }

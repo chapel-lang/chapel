@@ -1,3 +1,5 @@
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include <cmath>
 #include <cstring>
 #include <cstdio>
@@ -6,7 +8,7 @@
 #include "stringutil.h"
 
 static int 
-sprint_float_val(char* str, float64 val) {
+sprint_float_val(char* str, double val) {
   int numchars = sprintf(str, "%g", val);
   if (strchr(str, '.') == NULL && strchr(str, 'e') == NULL) {
     strcat(str, ".0");
@@ -17,7 +19,7 @@ sprint_float_val(char* str, float64 val) {
 }
 
 static int 
-sprint_complex_val(char* str, float64 real, float64 imm) {
+sprint_complex_val(char* str, double real, double imm) {
   int numchars = 0;
   numchars += sprintf(str+numchars, "(");
   numchars += sprint_float_val(str+numchars, real);
@@ -111,7 +113,7 @@ sprint_imm(char *str, Immediate &imm) {
         case INT_SIZE_32:
           res = sprintf(str, "%u", (unsigned)imm.v_uint32); break;
         case INT_SIZE_64:
-          res = sprintf(str, "%llu", imm.v_uint64); break;
+          res = sprintf(str, "%"PRIu64, imm.v_uint64); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -127,7 +129,7 @@ sprint_imm(char *str, Immediate &imm) {
         case INT_SIZE_32:
           res = sprintf(str, "%d", imm.v_int32); break;
         case INT_SIZE_64:
-          res = sprintf(str, "%lld", imm.v_int64); break;
+          res = sprintf(str, "%"PRId64, imm.v_int64); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -176,7 +178,7 @@ fprint_imm(FILE *fp, Immediate &imm) {
         case INT_SIZE_32:
           res = fprintf(fp, "%u", (unsigned)imm.v_uint32); break;
         case INT_SIZE_64:
-          res = fprintf(fp, "%llu", imm.v_uint64); break;
+          res = fprintf(fp, "%"PRIu64, imm.v_uint64); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -192,7 +194,7 @@ fprint_imm(FILE *fp, Immediate &imm) {
         case INT_SIZE_32:
           res = fprintf(fp, "%d", imm.v_int32); break;
         case INT_SIZE_64:
-          res = fprintf(fp, "%lld", imm.v_int64); break;
+          res = fprintf(fp, "%"PRId64, imm.v_int64); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -303,13 +305,13 @@ coerce_immediate(Immediate *from, Immediate *to) {
     }                                            \
   }
     
-#define COMPUTE_UINT_POW(type, b, e)      \
-  type base = b;                     \
-  type exp = e;                      \
-  type res = 1;                                 \
-  uint32 i;                                        \
-  for (i=0; i<exp; i++) {                       \
-    res *= base;                                \
+#define COMPUTE_UINT_POW(type, b, e)                 \
+  type base = b;                                     \
+  type exp = e;                                      \
+  type res = 1;                                      \
+  uint32_t i;                                        \
+  for (i=0; i<exp; i++) {                            \
+    res *= base;                                     \
   }
 
 #define DO_FOLDPOW() \
@@ -320,31 +322,31 @@ coerce_immediate(Immediate *from, Immediate *to) {
           switch (imm->num_index) { \
             case INT_SIZE_1:  \
               {                                                         \
-                COMPUTE_UINT_POW(uint8, im1.v_bool, im2.v_bool);       \
+                COMPUTE_UINT_POW(uint8_t, im1.v_bool, im2.v_bool);       \
                 imm->v_bool = res;                                     \
                 break;                                                  \
               }                                                         \
             case INT_SIZE_8:  \
               {                                                         \
-                COMPUTE_UINT_POW(uint8, im1.v_uint8, im2.v_uint8);       \
+                COMPUTE_UINT_POW(uint8_t, im1.v_uint8, im2.v_uint8);       \
                 imm->v_uint8 = res;                                     \
                 break;                                                  \
               }                                                         \
             case INT_SIZE_16: \
               {                                                         \
-                COMPUTE_UINT_POW(uint16, im1.v_uint16, im2.v_uint16);       \
+                COMPUTE_UINT_POW(uint16_t, im1.v_uint16, im2.v_uint16);       \
                 imm->v_uint16 = res;                                     \
                 break;                                                  \
               }                                                         \
             case INT_SIZE_32: \
               {                                                         \
-                COMPUTE_UINT_POW(uint32, im1.v_uint32, im2.v_uint32);       \
+                COMPUTE_UINT_POW(uint32_t, im1.v_uint32, im2.v_uint32);       \
                 imm->v_uint32 = res;                                     \
                 break;                                                  \
               }                                                         \
             case INT_SIZE_64: \
               {                                                         \
-                COMPUTE_UINT_POW(uint64, im1.uint_value(), im2.uint_value()); \
+                COMPUTE_UINT_POW(uint64_t, im1.uint_value(), im2.uint_value()); \
                 imm->v_uint64 = res;                                     \
                 break;                                                  \
               }                                                         \
@@ -356,31 +358,31 @@ coerce_immediate(Immediate *from, Immediate *to) {
           switch (imm->num_index) { \
             case INT_SIZE_1:  \
               {                                                         \
-                COMPUTE_INT_POW(int8, im1.v_bool, im2.v_bool);       \
+                COMPUTE_INT_POW(int8_t, im1.v_bool, im2.v_bool);       \
                 imm->v_bool = res;                                     \
                 break;                                                  \
               }                                                         \
             case INT_SIZE_8: \
               {                                                         \
-                COMPUTE_INT_POW(int8, im1.v_int8, im2.v_int8);       \
+                COMPUTE_INT_POW(int8_t, im1.v_int8, im2.v_int8);       \
                 imm->v_int8 = res;                                     \
                 break;                                                  \
               }                                                         \
             case INT_SIZE_16: \
               {                                                         \
-                COMPUTE_INT_POW(int16, im1.v_int16, im2.v_int16);       \
+                COMPUTE_INT_POW(int16_t, im1.v_int16, im2.v_int16);       \
                 imm->v_int16 = res;                                     \
                 break;                                                  \
               }                                                         \
             case INT_SIZE_32: \
               {                                                         \
-                COMPUTE_INT_POW(int32, im1.v_int32, im2.v_int32);       \
+                COMPUTE_INT_POW(int32_t, im1.v_int32, im2.v_int32);       \
                 imm->v_int32 = res;                                     \
                 break;                                                  \
               }                                                         \
             case INT_SIZE_64: \
               {                                                         \
-                COMPUTE_INT_POW(int64, im1.int_value(), im2.int_value()); \
+                COMPUTE_INT_POW(int64_t, im1.int_value(), im2.int_value()); \
                 imm->v_int64 = res;                                     \
                 break;                                                  \
               }                                                         \

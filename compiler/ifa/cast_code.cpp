@@ -63,30 +63,30 @@ switch (to->const_kind) {
      case NUM_KIND_UINT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_uint8 = (uint8)from->v_bool; break;
+         to->v_uint8 = (uint8_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_uint8 = (uint8)from->v_uint8; break;
+         to->v_uint8 = (uint8_t)from->v_uint8; break;
        case INT_SIZE_16:
-         to->v_uint8 = (uint8)from->v_uint16; break;
+         to->v_uint8 = (uint8_t)from->v_uint16; break;
        case INT_SIZE_32:
-         to->v_uint8 = (uint8)from->v_uint32; break;
+         to->v_uint8 = (uint8_t)from->v_uint32; break;
        case INT_SIZE_64:
-         to->v_uint8 = (uint8)from->uint_value(); break;
+         to->v_uint8 = (uint8_t)from->uint_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
      case NUM_KIND_INT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_uint8 = (uint8)from->v_bool; break;
+         to->v_uint8 = (uint8_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_uint8 = (uint8)from->v_int8; break;
+         to->v_uint8 = (uint8_t)from->v_int8; break;
        case INT_SIZE_16:
-         to->v_uint8 = (uint8)from->v_int16; break;
+         to->v_uint8 = (uint8_t)from->v_int16; break;
        case INT_SIZE_32:
-         to->v_uint8 = (uint8)from->v_int32; break;
+         to->v_uint8 = (uint8_t)from->v_int32; break;
        case INT_SIZE_64:
-         to->v_uint8 = (uint8)from->int_value(); break;
+         to->v_uint8 = (uint8_t)from->int_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
@@ -95,11 +95,11 @@ switch (to->const_kind) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_32:
-         to->v_uint8 = (uint8)from->v_float32; break;
+         to->v_uint8 = (uint8_t)from->v_float32; break;
        case FLOAT_SIZE_48:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_64:
-         to->v_uint8 = (uint8)from->v_float64; break;
+         to->v_uint8 = (uint8_t)from->v_float64; break;
        case FLOAT_SIZE_80:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_96:
@@ -118,30 +118,30 @@ switch (to->const_kind) {
      case NUM_KIND_UINT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_uint16 = (uint16)from->v_bool; break;
+         to->v_uint16 = (uint16_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_uint16 = (uint16)from->v_uint8; break;
+         to->v_uint16 = (uint16_t)from->v_uint8; break;
        case INT_SIZE_16:
-         to->v_uint16 = (uint16)from->v_uint16; break;
+         to->v_uint16 = (uint16_t)from->v_uint16; break;
        case INT_SIZE_32:
-         to->v_uint16 = (uint16)from->v_uint32; break;
+         to->v_uint16 = (uint16_t)from->v_uint32; break;
        case INT_SIZE_64:
-         to->v_uint16 = (uint16)from->uint_value(); break;
+         to->v_uint16 = (uint16_t)from->uint_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
      case NUM_KIND_INT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_uint16 = (uint16)from->v_bool; break;
+         to->v_uint16 = (uint16_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_uint16 = (uint16)from->v_int8; break;
+         to->v_uint16 = (uint16_t)from->v_int8; break;
        case INT_SIZE_16:
-         to->v_uint16 = (uint16)from->v_int16; break;
+         to->v_uint16 = (uint16_t)from->v_int16; break;
        case INT_SIZE_32:
-         to->v_uint16 = (uint16)from->v_int32; break;
+         to->v_uint16 = (uint16_t)from->v_int32; break;
        case INT_SIZE_64:
-         to->v_uint16 = (uint16)from->int_value(); break;
+         to->v_uint16 = (uint16_t)from->int_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
@@ -150,11 +150,11 @@ switch (to->const_kind) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_32:
-         to->v_uint16 = (uint16)from->v_float32; break;
+         to->v_uint16 = (uint16_t)from->v_float32; break;
        case FLOAT_SIZE_48:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_64:
-         to->v_uint16 = (uint16)from->v_float64; break;
+         to->v_uint16 = (uint16_t)from->v_float64; break;
        case FLOAT_SIZE_80:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_96:
@@ -173,30 +173,30 @@ switch (to->const_kind) {
      case NUM_KIND_UINT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_uint32 = (uint32)from->v_bool; break;
+         to->v_uint32 = (uint32_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_uint32 = (uint32)from->v_uint8; break;
+         to->v_uint32 = (uint32_t)from->v_uint8; break;
        case INT_SIZE_16:
-         to->v_uint32 = (uint32)from->v_uint16; break;
+         to->v_uint32 = (uint32_t)from->v_uint16; break;
        case INT_SIZE_32:
-         to->v_uint32 = (uint32)from->v_uint32; break;
+         to->v_uint32 = (uint32_t)from->v_uint32; break;
        case INT_SIZE_64:
-         to->v_uint32 = (uint32)from->uint_value(); break;
+         to->v_uint32 = (uint32_t)from->uint_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
      case NUM_KIND_INT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_uint32 = (uint32)from->v_bool; break;
+         to->v_uint32 = (uint32_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_uint32 = (uint32)from->v_int8; break;
+         to->v_uint32 = (uint32_t)from->v_int8; break;
        case INT_SIZE_16:
-         to->v_uint32 = (uint32)from->v_int16; break;
+         to->v_uint32 = (uint32_t)from->v_int16; break;
        case INT_SIZE_32:
-         to->v_uint32 = (uint32)from->v_int32; break;
+         to->v_uint32 = (uint32_t)from->v_int32; break;
        case INT_SIZE_64:
-         to->v_uint32 = (uint32)from->int_value(); break;
+         to->v_uint32 = (uint32_t)from->int_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
@@ -205,11 +205,11 @@ switch (to->const_kind) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_32:
-         to->v_uint32 = (uint32)from->v_float32; break;
+         to->v_uint32 = (uint32_t)from->v_float32; break;
        case FLOAT_SIZE_48:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_64:
-         to->v_uint32 = (uint32)from->v_float64; break;
+         to->v_uint32 = (uint32_t)from->v_float64; break;
        case FLOAT_SIZE_80:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_96:
@@ -228,30 +228,30 @@ switch (to->const_kind) {
      case NUM_KIND_UINT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_uint64 = (uint64)from->v_bool; break;
+         to->v_uint64 = (uint64_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_uint64 = (uint64)from->v_uint8; break;
+         to->v_uint64 = (uint64_t)from->v_uint8; break;
        case INT_SIZE_16:
-         to->v_uint64 = (uint64)from->v_uint16; break;
+         to->v_uint64 = (uint64_t)from->v_uint16; break;
        case INT_SIZE_32:
-         to->v_uint64 = (uint64)from->v_uint32; break;
+         to->v_uint64 = (uint64_t)from->v_uint32; break;
        case INT_SIZE_64:
-         to->v_uint64 = (uint64)from->uint_value(); break;
+         to->v_uint64 = (uint64_t)from->uint_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
      case NUM_KIND_INT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_uint64 = (uint64)from->v_bool; break;
+         to->v_uint64 = (uint64_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_uint64 = (uint64)from->v_int8; break;
+         to->v_uint64 = (uint64_t)from->v_int8; break;
        case INT_SIZE_16:
-         to->v_uint64 = (uint64)from->v_int16; break;
+         to->v_uint64 = (uint64_t)from->v_int16; break;
        case INT_SIZE_32:
-         to->v_uint64 = (uint64)from->v_int32; break;
+         to->v_uint64 = (uint64_t)from->v_int32; break;
        case INT_SIZE_64:
-         to->v_uint64 = (uint64)from->int_value(); break;
+         to->v_uint64 = (uint64_t)from->int_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
@@ -260,11 +260,11 @@ switch (to->const_kind) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_32:
-         to->v_uint64 = (uint64)from->v_float32; break;
+         to->v_uint64 = (uint64_t)from->v_float32; break;
        case FLOAT_SIZE_48:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_64:
-         to->v_uint64 = (uint64)from->v_float64; break;
+         to->v_uint64 = (uint64_t)from->v_float64; break;
        case FLOAT_SIZE_80:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_96:
@@ -343,30 +343,30 @@ switch (to->const_kind) {
      case NUM_KIND_UINT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_int8 = (int8)from->v_bool; break;
+         to->v_int8 = (int8_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_int8 = (int8)from->v_uint8; break;
+         to->v_int8 = (int8_t)from->v_uint8; break;
        case INT_SIZE_16:
-         to->v_int8 = (int8)from->v_uint16; break;
+         to->v_int8 = (int8_t)from->v_uint16; break;
        case INT_SIZE_32:
-         to->v_int8 = (int8)from->v_uint32; break;
+         to->v_int8 = (int8_t)from->v_uint32; break;
        case INT_SIZE_64:
-         to->v_int8 = (int8)from->uint_value(); break;
+         to->v_int8 = (int8_t)from->uint_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
      case NUM_KIND_INT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_int8 = (int8)from->v_bool; break;
+         to->v_int8 = (int8_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_int8 = (int8)from->v_int8; break;
+         to->v_int8 = (int8_t)from->v_int8; break;
        case INT_SIZE_16:
-         to->v_int8 = (int8)from->v_int16; break;
+         to->v_int8 = (int8_t)from->v_int16; break;
        case INT_SIZE_32:
-         to->v_int8 = (int8)from->v_int32; break;
+         to->v_int8 = (int8_t)from->v_int32; break;
        case INT_SIZE_64:
-         to->v_int8 = (int8)from->int_value(); break;
+         to->v_int8 = (int8_t)from->int_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
@@ -375,11 +375,11 @@ switch (to->const_kind) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_32:
-         to->v_int8 = (int8)from->v_float32; break;
+         to->v_int8 = (int8_t)from->v_float32; break;
        case FLOAT_SIZE_48:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_64:
-         to->v_int8 = (int8)from->v_float64; break;
+         to->v_int8 = (int8_t)from->v_float64; break;
        case FLOAT_SIZE_80:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_96:
@@ -398,30 +398,30 @@ switch (to->const_kind) {
      case NUM_KIND_UINT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_int16 = (int16)from->v_bool; break;
+         to->v_int16 = (int16_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_int16 = (int16)from->v_uint8; break;
+         to->v_int16 = (int16_t)from->v_uint8; break;
        case INT_SIZE_16:
-         to->v_int16 = (int16)from->v_uint16; break;
+         to->v_int16 = (int16_t)from->v_uint16; break;
        case INT_SIZE_32:
-         to->v_int16 = (int16)from->v_uint32; break;
+         to->v_int16 = (int16_t)from->v_uint32; break;
        case INT_SIZE_64:
-         to->v_int16 = (int16)from->uint_value(); break;
+         to->v_int16 = (int16_t)from->uint_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
      case NUM_KIND_INT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_int16 = (int16)from->v_bool; break;
+         to->v_int16 = (int16_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_int16 = (int16)from->v_int8; break;
+         to->v_int16 = (int16_t)from->v_int8; break;
        case INT_SIZE_16:
-         to->v_int16 = (int16)from->v_int16; break;
+         to->v_int16 = (int16_t)from->v_int16; break;
        case INT_SIZE_32:
-         to->v_int16 = (int16)from->v_int32; break;
+         to->v_int16 = (int16_t)from->v_int32; break;
        case INT_SIZE_64:
-         to->v_int16 = (int16)from->int_value(); break;
+         to->v_int16 = (int16_t)from->int_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
@@ -430,11 +430,11 @@ switch (to->const_kind) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_32:
-         to->v_int16 = (int16)from->v_float32; break;
+         to->v_int16 = (int16_t)from->v_float32; break;
        case FLOAT_SIZE_48:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_64:
-         to->v_int16 = (int16)from->v_float64; break;
+         to->v_int16 = (int16_t)from->v_float64; break;
        case FLOAT_SIZE_80:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_96:
@@ -453,30 +453,30 @@ switch (to->const_kind) {
      case NUM_KIND_UINT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_int32 = (int32)from->v_bool; break;
+         to->v_int32 = (int32_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_int32 = (int32)from->v_uint8; break;
+         to->v_int32 = (int32_t)from->v_uint8; break;
        case INT_SIZE_16:
-         to->v_int32 = (int32)from->v_uint16; break;
+         to->v_int32 = (int32_t)from->v_uint16; break;
        case INT_SIZE_32:
-         to->v_int32 = (int32)from->v_uint32; break;
+         to->v_int32 = (int32_t)from->v_uint32; break;
        case INT_SIZE_64:
-         to->v_int32 = (int32)from->uint_value(); break;
+         to->v_int32 = (int32_t)from->uint_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
      case NUM_KIND_INT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_int32 = (int32)from->v_bool; break;
+         to->v_int32 = (int32_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_int32 = (int32)from->v_int8; break;
+         to->v_int32 = (int32_t)from->v_int8; break;
        case INT_SIZE_16:
-         to->v_int32 = (int32)from->v_int16; break;
+         to->v_int32 = (int32_t)from->v_int16; break;
        case INT_SIZE_32:
-         to->v_int32 = (int32)from->v_int32; break;
+         to->v_int32 = (int32_t)from->v_int32; break;
        case INT_SIZE_64:
-         to->v_int32 = (int32)from->int_value(); break;
+         to->v_int32 = (int32_t)from->int_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
@@ -485,11 +485,11 @@ switch (to->const_kind) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_32:
-         to->v_int32 = (int32)from->v_float32; break;
+         to->v_int32 = (int32_t)from->v_float32; break;
        case FLOAT_SIZE_48:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_64:
-         to->v_int32 = (int32)from->v_float64; break;
+         to->v_int32 = (int32_t)from->v_float64; break;
        case FLOAT_SIZE_80:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_96:
@@ -508,30 +508,30 @@ switch (to->const_kind) {
      case NUM_KIND_UINT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_int64 = (int64)from->v_bool; break;
+         to->v_int64 = (int64_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_int64 = (int64)from->v_uint8; break;
+         to->v_int64 = (int64_t)from->v_uint8; break;
        case INT_SIZE_16:
-         to->v_int64 = (int64)from->v_uint16; break;
+         to->v_int64 = (int64_t)from->v_uint16; break;
        case INT_SIZE_32:
-         to->v_int64 = (int64)from->v_uint32; break;
+         to->v_int64 = (int64_t)from->v_uint32; break;
        case INT_SIZE_64:
-         to->v_int64 = (int64)from->uint_value(); break;
+         to->v_int64 = (int64_t)from->uint_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
      case NUM_KIND_INT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_int64 = (int64)from->v_bool; break;
+         to->v_int64 = (int64_t)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_int64 = (int64)from->v_int8; break;
+         to->v_int64 = (int64_t)from->v_int8; break;
        case INT_SIZE_16:
-         to->v_int64 = (int64)from->v_int16; break;
+         to->v_int64 = (int64_t)from->v_int16; break;
        case INT_SIZE_32:
-         to->v_int64 = (int64)from->v_int32; break;
+         to->v_int64 = (int64_t)from->v_int32; break;
        case INT_SIZE_64:
-         to->v_int64 = (int64)from->int_value(); break;
+         to->v_int64 = (int64_t)from->int_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
@@ -540,11 +540,11 @@ switch (to->const_kind) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_32:
-         to->v_int64 = (int64)from->v_float32; break;
+         to->v_int64 = (int64_t)from->v_float32; break;
        case FLOAT_SIZE_48:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_64:
-         to->v_int64 = (int64)from->v_float64; break;
+         to->v_int64 = (int64_t)from->v_float64; break;
        case FLOAT_SIZE_80:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_96:
@@ -570,30 +570,30 @@ switch (to->const_kind) {
      case NUM_KIND_UINT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_float32 = (float32)from->v_bool; break;
+         to->v_float32 = (float)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_float32 = (float32)from->v_uint8; break;
+         to->v_float32 = (float)from->v_uint8; break;
        case INT_SIZE_16:
-         to->v_float32 = (float32)from->v_uint16; break;
+         to->v_float32 = (float)from->v_uint16; break;
        case INT_SIZE_32:
-         to->v_float32 = (float32)from->v_uint32; break;
+         to->v_float32 = (float)from->v_uint32; break;
        case INT_SIZE_64:
-         to->v_float32 = (float32)from->uint_value(); break;
+         to->v_float32 = (float)from->uint_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
      case NUM_KIND_INT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_float32 = (float32)from->v_bool; break;
+         to->v_float32 = (float)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_float32 = (float32)from->v_int8; break;
+         to->v_float32 = (float)from->v_int8; break;
        case INT_SIZE_16:
-         to->v_float32 = (float32)from->v_int16; break;
+         to->v_float32 = (float)from->v_int16; break;
        case INT_SIZE_32:
-         to->v_float32 = (float32)from->v_int32; break;
+         to->v_float32 = (float)from->v_int32; break;
        case INT_SIZE_64:
-         to->v_float32 = (float32)from->int_value(); break;
+         to->v_float32 = (float)from->int_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
@@ -602,11 +602,11 @@ switch (to->const_kind) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_32:
-         to->v_float32 = (float32)from->v_float32; break;
+         to->v_float32 = (float)from->v_float32; break;
        case FLOAT_SIZE_48:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_64:
-         to->v_float32 = (float32)from->v_float64; break;
+         to->v_float32 = (float)from->v_float64; break;
        case FLOAT_SIZE_80:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_96:
@@ -627,30 +627,30 @@ switch (to->const_kind) {
      case NUM_KIND_UINT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_float64 = (float64)from->v_bool; break;
+         to->v_float64 = (double)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_float64 = (float64)from->v_uint8; break;
+         to->v_float64 = (double)from->v_uint8; break;
        case INT_SIZE_16:
-         to->v_float64 = (float64)from->v_uint16; break;
+         to->v_float64 = (double)from->v_uint16; break;
        case INT_SIZE_32:
-         to->v_float64 = (float64)from->v_uint32; break;
+         to->v_float64 = (double)from->v_uint32; break;
        case INT_SIZE_64:
-         to->v_float64 = (float64)from->uint_value(); break;
+         to->v_float64 = (double)from->uint_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
      case NUM_KIND_INT:
        switch (from->num_index) {
        case INT_SIZE_1:
-         to->v_float64 = (float64)from->v_bool; break;
+         to->v_float64 = (double)from->v_bool; break;
        case INT_SIZE_8:
-         to->v_float64 = (float64)from->v_int8; break;
+         to->v_float64 = (double)from->v_int8; break;
        case INT_SIZE_16:
-         to->v_float64 = (float64)from->v_int16; break;
+         to->v_float64 = (double)from->v_int16; break;
        case INT_SIZE_32:
-         to->v_float64 = (float64)from->v_int32; break;
+         to->v_float64 = (double)from->v_int32; break;
        case INT_SIZE_64:
-         to->v_float64 = (float64)from->int_value(); break;
+         to->v_float64 = (double)from->int_value(); break;
        default:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        } break;
@@ -659,11 +659,11 @@ switch (to->const_kind) {
        case FLOAT_SIZE_16:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_32:
-         to->v_float64 = (float64)from->v_float32; break;
+         to->v_float64 = (double)from->v_float32; break;
        case FLOAT_SIZE_48:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_64:
-         to->v_float64 = (float64)from->v_float64; break;
+         to->v_float64 = (double)from->v_float64; break;
        case FLOAT_SIZE_80:
          INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
        case FLOAT_SIZE_96:
