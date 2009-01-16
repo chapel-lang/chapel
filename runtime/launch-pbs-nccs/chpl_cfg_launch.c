@@ -199,26 +199,12 @@ void chpl_launch_sanity_checks(int argc, char* argv[], const char* cmd) {
     sprintf(errorMsg, "unable to locate file: %s", realName);
     chpl_error(errorMsg, -1, "<internal>");
   }
-
-  // Make sure the PBS script exists
-  if (stat(pbsFilename, &statBuf) != 0) {
-    char errorMsg[256];
-    sprintf(errorMsg, "unable to locate file: %s", realName);
-    chpl_error(errorMsg, -1, "<internal>");
-  }
-
-  // Make sure the expect script exists
-  if (stat(expectFilename, &statBuf) != 0) {
-    char errorMsg[256];
-    sprintf(errorMsg, "unable to locate file: %s", realName);
-    chpl_error(errorMsg, -1, "<internal>");
-  }
 }
 
 void chpl_launch_cleanup(void) {
+#ifndef DEBUG_LAUNCH
   char command[1024];
 
-#ifndef DEBUG_LAUNCH
   sprintf(command, "rm %s", pbsFilename);
   system(command);
 
