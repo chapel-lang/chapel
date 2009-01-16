@@ -10,6 +10,46 @@
 
 
 //
+// Declare a set of recursive iterators and create a function to
+// compute this set.  This set is used to make sure we only inline the
+// body of a loop into an iterator, rather than the whole iterator, in
+// places where we would otherwise attempt to inline a recursive
+// iterator.
+//
+static Vec<FnSymbol*> recursiveIteratorSet;
+static void computeRecursiveIteratorSet() {
+  compute_call_sites();
+
+  forv_Vec(FnSymbol, ifn, gFnSymbols) {
+    if (ifn->hasFlag(FLAG_ITERATOR_FN)) {
+      bool recursive = false;
+      Vec<FnSymbol*> fnSet;
+      Vec<FnSymbol*> fnVec;
+      fnSet.set_add(ifn);
+      fnVec.add(ifn);
+      forv_Vec(FnSymbol, fn, fnVec) {
+        forv_Vec(CallExpr, call, *fn->calledBy) {
+          FnSymbol* parent = toFnSymbol(call->parentSymbol);
+          INT_ASSERT(parent);
+          if (parent == ifn) {
+            recursive = true;
+            break;
+          } else if (!fnSet.set_in(parent)) {
+            fnSet.set_add(parent);
+            fnVec.add(parent);
+          }
+        }
+        if (recursive)
+          break;
+      }
+      if (recursive)
+        recursiveIteratorSet.set_add(ifn);
+    }
+  }
+}
+
+
+//
 // If a local block has no yields, returns, gotos or labels it can safely
 // be left unfragmented.
 //
@@ -128,13 +168,18 @@ fragmentLocalBlocks() {
 }
 
 
-void
+static void
 expandIteratorInline(CallExpr* call) {
   BlockStmt* body;
   Symbol* index = toSymExpr(call->get(1))->var;
   Symbol* ic = toSymExpr(call->get(2))->var;
   FnSymbol* iterator = ic->type->defaultConstructor;
   BlockStmt* ibody = iterator->body->copy();
+
+  if (recursiveIteratorSet.set_in(iterator)) {
+    INT_FATAL(call, "recursive iterator inlining is not yet supported");
+  }
+
   reset_line_info(ibody, call->lineno);
   body = toBlockStmt(call->parentExpr);
   call->remove();
@@ -405,6 +450,8 @@ inlineIterators() {
 void lowerIterators() {
   fragmentLocalBlocks();
 
+  computeRecursiveIteratorSet();
+
   inlineIterators();
 
   forv_Vec(CallExpr, call, gCallExprs) {
@@ -458,8 +505,6 @@ void lowerIterators() {
   // iterator class (copies the dynamic iterator type)
   //
   // see functions/deitz/iterators/test_generic_use_twice2.chpl
-  //
-  // also build iterator2leader and iterator2follower functions
   //
   Vec<FnSymbol*> getIteratorVec;
   Map<Type*,FnSymbol*> getIteratorMap;
