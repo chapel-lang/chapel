@@ -6,4 +6,17 @@
 
 #include <inttypes.h>
 
+//
+// our Suns don't define these macros, so we'll do it here, even
+// though it would be more appropriate in inttypes.h
+//
+
+#ifndef SCNd8
+#define SCNd8 "hhd"
+#endif
+
+#ifndef SCNu8
+#define SCNu8 "hhu"
+#endif
+
 #endif
