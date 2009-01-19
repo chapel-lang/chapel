@@ -126,8 +126,10 @@ buildDefaultWrapper(FnSymbol* fn,
           temp->addFlag(FLAG_TYPE_VARIABLE); // unexecuted none/gasnet on 4/25/08
         wrapper->insertAtTail(new DefExpr(temp));
         BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
-        wrapper->insertAtTail(typeExpr);
-        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("_createFieldDefault", typeExpr->body.tail->remove(), wrapper_formal)));
+        for_alist(expr, typeExpr->body) {
+          wrapper->insertAtTail(expr->remove());
+        }
+        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("_createFieldDefault", wrapper->body->body.tail->remove(), wrapper_formal)));
       } else
         temp = wrapper_formal;
       copy_map.put(formal, temp);

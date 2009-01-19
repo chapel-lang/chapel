@@ -44,7 +44,7 @@ void fixupDestructors(void) {
         }
       }
       if (count <= 1 ||
-          count <= 3 && !strncmp(ts->type->destructor->cname, "chpl__auto_destroy", 18))
+           (count <= 3 && !strncmp(ts->type->destructor->cname, "chpl__auto_destroy", 18)))
         ts->type->destructor->addFlag(FLAG_INLINE);
 
       //
@@ -71,15 +71,6 @@ void fixupDestructors(void) {
     }
   }
 }
-
-#if 0
-static bool arrayPassedAsArgument(FnSymbol *fn) {
-  for (int i = 1; i <= fn->numFormals(); i++)
-    if (fn->getFormal(i)->type->symbol->hasFlag(FLAG_ARRAY))
-      return true;
-  return false;
-}
-#endif
 
 static bool tupleContainsArrayOrDomain(ClassType* t) {
   for (int i = 1; i <= t->fields.length; i++) {
@@ -159,9 +150,10 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
         } else {
           Vec<Symbol*> varsToTrack;
           varsToTrack.add(lhs->var);
-          bool maybeCallDestructor = fEnableDestructorCalls;
-          INT_ASSERT(lhs->var->defPoint && lhs->var->defPoint->parentExpr);
+          bool maybeCallDestructor = true;
+          INT_ASSERT(lhs->var->defPoint);
           BlockStmt* parentBlock = toBlockStmt(lhs->var->defPoint->parentExpr);
+          INT_ASSERT(parentBlock);
           forv_Vec(Symbol, var, varsToTrack) {
             // may not be OK if there is more than one definition of var
             //INT_ASSERT(defMap.get(var)->length() == 1);
@@ -169,19 +161,14 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
               forv_Vec(SymExpr, se, *useMap.get(var)) {
                 // the following conditional should not be necessary, but there may be cases
                 // in which a variable is used outside of the block in which it is defined!
+                // (The scalar replace and copy propagation passes could introduce such uses;
+                // other uses like this are most likely bugs.)
                 if (var == lhs->var) {
                   Expr* block = se->parentExpr;
                   while (block && toBlockStmt(block) != parentBlock)
                     block = block->parentExpr;
-                  if (!toBlockStmt(block)) {
-                    // changing the parentBlock here could cause a variable's destructor
-                    // to be called outside the conditional block in which it is defined,
-                    // which could cause the destructor to be called on an unitialized
-                    // variable
-//                    parentBlock = fn->body;
-                    maybeCallDestructor = false;
-                    break;
-                  }
+                  if (!block)
+                    INT_FATAL(var->defPoint, "variable used outside of block in which it's declared");
                 }
                 CallExpr* call = toCallExpr(se->parentExpr);
 #if 0
