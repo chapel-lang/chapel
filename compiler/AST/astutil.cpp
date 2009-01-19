@@ -457,7 +457,7 @@ prune() {
   static bool firstTime = true;
   if (firstTime) {
     fixupDestructors();  // to ensure needed destructors are not pruned
-    reallyPrune(fEnableDestructorCalls ? false : true);
+    reallyPrune(!fEnableDestructorCalls);
     // mark functions that return constructor return values
     // before function inlining gets rid of them
     markConstructors();
