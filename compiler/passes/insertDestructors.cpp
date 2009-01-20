@@ -103,9 +103,7 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
       // some vars may be bogus at this point because they have been pruned
       if (var->defPoint->parentSymbol &&
           // no need to check global symbols
-          !isModuleSymbol(var->defPoint->parentSymbol) &&
-          strncmp(var->defPoint->parentSymbol->name, "chpl__init_", 11) &&
-          strcmp(var->name, "_iterator")) {
+          !isModuleSymbol(var->defPoint->parentSymbol)) {
         if (useMap.get(var)) {
           BlockStmt* parentBlock = toBlockStmt(var->defPoint->parentExpr);
           if (!parentBlock) {
