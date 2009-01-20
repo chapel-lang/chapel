@@ -84,7 +84,7 @@ static bool tupleContainsArrayOrDomain(ClassType* t) {
   return false;
 }
 
-static void insertDestructorsCalls(bool onlyMarkConstructors) {
+static void insertDestructorCalls(bool onlyMarkConstructors) {
 
   if (!fEnableDestructorCalls) return;
 
@@ -93,19 +93,49 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
   //
   compute_call_sites();
 
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  Map<Symbol*,Vec<SymExpr*>*> defMap, useMap;
   buildDefUseMaps(defMap, useMap);
+
+  if (onlyMarkConstructors) {
+    // as a sanity check, look for variable uses outside of the blocks
+    // in which they are declared
+    forv_Vec(VarSymbol, var, gVarSymbols) {
+      // some vars may be bogus at this point because they have been pruned
+      if (var->defPoint->parentSymbol &&
+          // no need to check global symbols
+          !isModuleSymbol(var->defPoint->parentSymbol) &&
+          strncmp(var->defPoint->parentSymbol->name, "chpl__init_", 11) &&
+          strcmp(var->name, "_iterator")) {
+        if (useMap.get(var)) {
+          BlockStmt* parentBlock = toBlockStmt(var->defPoint->parentExpr);
+          if (!parentBlock) {
+            FnSymbol *fn = toFnSymbol(var->defPoint->parentSymbol);
+            if (!fn)
+              fn = toFnSymbol(var->defPoint->parentSymbol->defPoint->parentSymbol);
+            if (fn)
+              parentBlock = fn->body;
+          }
+          if (parentBlock) {
+            forv_Vec(SymExpr, se, *useMap.get(var)) {
+              Expr* block = se->parentExpr;
+              while (block && toBlockStmt(block) != parentBlock)
+                block = block->parentExpr;
+              if (!block)
+                INT_FATAL("var used outside of block in which it is declared");
+            }
+          }
+        }
+      }
+    }
+  }
 
   Vec<FnSymbol*> constructors, functionsContainingGotos;
 
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     ClassType* ct = toClassType(ts->type);
     if (ct && !isClass(ct) && ct->defaultConstructor && ct->destructor &&
-        //(!ct->symbol->hasFlag(FLAG_ARRAY) || !arrayPassedAsArgument(fn)) &&
-        (!ct->symbol->hasFlag(FLAG_TUPLE) || !tupleContainsArrayOrDomain(ct))) {
+        (!ct->symbol->hasFlag(FLAG_TUPLE) || !tupleContainsArrayOrDomain(ct)))
       constructors.add(ct->defaultConstructor);
-    }
   }
 
   if (!onlyMarkConstructors) {
@@ -159,15 +189,18 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
             //INT_ASSERT(defMap.get(var)->length() == 1);
             if (maybeCallDestructor && useMap.get(var))
               forv_Vec(SymExpr, se, *useMap.get(var)) {
-                // the following conditional should not be necessary, but there may be cases
-                // in which a variable is used outside of the block in which it is defined!
-                // (The scalar replace and copy propagation passes could introduce such uses;
-                // other uses like this are most likely bugs.)
+                // The following conditional may not seem necessary, particularly since
+                // a similar check appears above, but there may be new cases in which
+                // a variable is used outside of the block in which it is defined!
+                // (The scalar replace and copy propagation passes could introduce
+                // such uses; other uses like this are most likely bugs.)
                 if (var == lhs->var) {
                   Expr* block = se->parentExpr;
                   while (block && toBlockStmt(block) != parentBlock)
                     block = block->parentExpr;
                   if (!block)
+                    // it is probably possible to work around this situation, but this
+                    // situation is very unlikely to occur, so make it a fatal error
                     INT_FATAL(var->defPoint, "variable used outside of block in which it's declared");
                 }
                 CallExpr* call = toCallExpr(se->parentExpr);
@@ -214,7 +247,7 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
                       }
                     }
                     varsToTrack.add_exclusive(toSymExpr(call->get(1))->var);
-#if 1
+#if 1  // can cause some arrays to leak memory
                   } else if (call->isPrimitive(PRIM_SET_MEMBER) &&
                              !toSymExpr(call->get(1))->var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
                     maybeCallDestructor = false;
@@ -272,9 +305,9 @@ static void insertDestructorsCalls(bool onlyMarkConstructors) {
 }
 
 void markConstructors() {
-  insertDestructorsCalls(true);
+  insertDestructorCalls(true);
 }
 
 void insertDestructors() {
-  insertDestructorsCalls(false);
+  insertDestructorCalls(false);
 }
