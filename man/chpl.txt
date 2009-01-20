@@ -296,5 +296,5 @@ BUGS
 AUTHORS
   See $CHPL_HOME/CONTRIBUTORS for a list of contributors and authors.
 COPYRIGHT
-  Copyright (c) 2004-2008 Cray Inc. (See $CHPL_HOME/LICENSE for more
+  Copyright (c) 2004-2009 Cray Inc. (See $CHPL_HOME/LICENSE for more
   details)
