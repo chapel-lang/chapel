@@ -26,7 +26,7 @@ CLEAN_TARGS += \
 endif
 
 lex.yy.cpp: chapel.lex chapel.tab.h
-	flex -o $@ chapel.lex
+	flex -o$@ chapel.lex
 
 chapel.tab.h chapel.tab.cpp: chapel.ypp
 	bison --defines=chapel.tab.h -v -t $<
