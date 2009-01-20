@@ -106,7 +106,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
   parseModVarName(setConfigBuffer, &moduleName, &varName);
   
   if ((firstChar != lastChar) || (strlen(value) == 0)) {
-    char nextChar = fgetc(argFile);
+    int nextChar = fgetc(argFile);
     do {
       switch (nextChar) {
       case EOF:
