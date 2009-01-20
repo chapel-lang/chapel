@@ -73,7 +73,7 @@ print "Tagging the files with copyright messages...\n";
 system("cd chapel && make -f make/Makefile.release");
 
 print "Generating the bison/flex files...\n";
-system("cd chapel/compiler/parser && make lex.yy.c > /dev/null");
+system("cd chapel/compiler/parser && make lex.yy.cpp > /dev/null");
 
 print "Creating the BUILD_VERSION file...\n";
 system("cd chapel/compiler && export CHPL_DEVELOPER=true && make main/BUILD_VERSION > /dev/null");
@@ -115,7 +115,7 @@ foreach $dir (@code_dirs) {
         chomp $fullpath;
         $file = $fullpath;
         $file =~ s/(\S+\/)+//g;
-        if ($file =~ /(\.(h|cpp|c|y|lex)$)|Makefile|README|BUILD_VERSION/) {
+        if ($file =~ /(\.(h|cpp|c|ypp|lex)$)|Makefile|README|BUILD_VERSION/) {
             # print "$fullpath\n";
             push @tarfiles, $fullpath;
         }
