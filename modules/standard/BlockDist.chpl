@@ -299,7 +299,7 @@ class Block1DDom: BaseArithmeticDomain {
   //
   const whole: domain(1, idxType);
 
-  var pid: int;
+  var pid: int; // privatized object id
 
   // GLOBAL DOMAIN INTERFACE:
 
@@ -628,6 +628,8 @@ class Block1DArr: BaseArray {
   //
   var locArr: [dom.dist.targetLocDom] LocBlock1DArr(idxType, eltType, stridable);
 
+  var pid: int; // privatized object id
+
   def setup() {
     coforall localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
@@ -644,6 +646,7 @@ class Block1DArr: BaseArray {
     var dompid = dom.pid;
     var thisdom = dom;
     this.dom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+    this.pid = pid;
   }
 
   // GLOBAL ARRAY INTERFACE:
@@ -686,18 +689,30 @@ class Block1DArr: BaseArray {
     // logic?  (e.g., can we forward the forall to the global domain
     // somehow?
     //
+    const numTasks = dom.dist.tasksPerLoc;
+    const dom_id = dom.pid, dom_tc = dom; // for reprivatization
     coforall locDom in dom.locDoms do
       on locDom {
-        const locBlock = locDom.myBlock - dom.whole.low,
-              numTasks = dom.dist.tasksPerLoc;
-        if (numTasks == 1) {
+
+        // The next line re-privatizes dom; referring to this.dom
+        // refers to the privatized domain before executing the
+        // on-statement; now we want dom to refer to the domain on
+        // whatever locale locDom lives on.  Unfortunately, this uses
+        // a primitive.  How else can this be done so that
+        // user-defined distributions are easier to write?
+        const my_dom_id = dom_id;
+        const myDom = if _supportsPrivatization(dom) then __primitive("chpl_getPrivatizedClass", dom_tc, my_dom_id) else dom;
+
+        const myNumTasks = numTasks;
+        const locBlock = locDom.myBlock - myDom.whole.low;
+        if (myNumTasks == 1) {
           yield locBlock;
         } else {
-          coforall taskid in 0..#numTasks {
-	    const mytaskid = taskid;
+          coforall taskid in 0..#myNumTasks {
+            const mytaskid = taskid;
             const (lo,hi) = chpl_computeBlock(locBlock.low, locBlock.numIndices,
                                               locBlock.low, locBlock.high, 
-                                              numTasks, mytaskid);
+                                              myNumTasks, mytaskid);
             yield [lo..hi];
           }
         }
@@ -707,17 +722,23 @@ class Block1DArr: BaseArray {
   def supportsAlignedFollower() param return true;
 
   def these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
+
+    // The next two lines re-privatize 'this'
+    var id = pid, tc = this;
+    var myThis = if _supportsPrivatization(this) then __primitive("chpl_getPrivatizedClass", tc, id) else this;
+
     //
     // TODO: Would like to write this as follower += dom.low;
     //
-    const followThis = follower + dom.low;
+    const followThis = follower + myThis.dom.low;
 
     //
     // TODO: The following is a buggy hack that will only work when we're
     // distributing across the entire Locales array.  I still think the
     // locArr/locDoms arrays should be associative over locale values.
     //
-    const myLocArr = locArr(here.id);
+
+    const myLocArr = myThis.locArr(here.id);
     if aligned {
       local {
         for i in followThis {

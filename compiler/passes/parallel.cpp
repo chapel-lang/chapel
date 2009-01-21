@@ -1310,7 +1310,10 @@ insertWideReferences(void) {
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_GET_PRIV_CLASS)) {
-      call->get(1)->replace(new SymExpr(wideClassMap.get(call->get(1)->typeInfo())->symbol));
+      if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        call->get(1)->replace(new SymExpr(wideClassMap.get(call->get(1)->typeInfo())->symbol));
+      else
+        call->get(1)->replace(new SymExpr(call->get(1)->typeInfo()->symbol));
     }
   }
 
