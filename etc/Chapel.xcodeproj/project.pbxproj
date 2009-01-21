@@ -24,6 +24,7 @@
 /* Begin PBXBuildFile section */
 		F70EA9EC0E648652006F2EE0 /* flags.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F70EA9EB0E648652006F2EE0 /* flags.cpp */; };
 		F713828D0EE7544F0086E1AE /* removeWrapRecords.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F713828C0EE7544F0086E1AE /* removeWrapRecords.cpp */; };
+		F71FADA20F269F2500392B80 /* chapel.ypp in Sources */ = {isa = PBXBuildFile; fileRef = F71FADA00F269F2300392B80 /* chapel.ypp */; };
 		F721A0BE0D454AB400A6B43F /* libchpl.a in CopyFiles */ = {isa = PBXBuildFile; fileRef = F7FAC4F90D4537A700C02B67 /* libchpl.a */; };
 		F721A0D50D455B8C00A6B43F /* map.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A0D30D455B8C00A6B43F /* map.cpp */; };
 		F721A0D60D455B8C00A6B43F /* vec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F721A0D40D455B8C00A6B43F /* vec.cpp */; };
@@ -106,7 +107,6 @@
 		F73113C10E3EB7C000F62922 /* lowerIterators.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F73113BA0E3EB7C000F62922 /* lowerIterators.cpp */; };
 		F73113C20E3EB7C000F62922 /* wrappers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F73113BB0E3EB7C000F62922 /* wrappers.cpp */; };
 		F731D5D00D510AE2009F6897 /* chapel.lex in Sources */ = {isa = PBXBuildFile; fileRef = F721A1370D455F3C00A6B43F /* chapel.lex */; };
-		F731D6130D51181B009F6897 /* chapel.y in Sources */ = {isa = PBXBuildFile; fileRef = F721A1380D455F3C00A6B43F /* chapel.y */; };
 		F73EB6FA0EC5030A00E3026E /* optReadOnlyRefArgs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F73EB6F90EC5030A00E3026E /* optReadOnlyRefArgs.cpp */; };
 		F754D95C0E929C5F00A527CD /* insertDestructors.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F754D95B0E929C5F00A527CD /* insertDestructors.cpp */; };
 		F7979A210F1590CB00C8831E /* chplmemtrack.c in Sources */ = {isa = PBXBuildFile; fileRef = F7979A200F1590CB00C8831E /* chplmemtrack.c */; };
@@ -241,6 +241,9 @@
 		F71FAD090F20187400392B80 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/launch-apsim/Makefile"; sourceTree = SOURCE_ROOT; };
 		F71FAD0A0F20187400392B80 /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/launch-apsim/Makefile.include"; sourceTree = SOURCE_ROOT; };
 		F71FAD0B0F20187400392B80 /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/launch-apsim/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F71FADA00F269F2300392B80 /* chapel.ypp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.yacc; name = chapel.ypp; path = ../compiler/parser/chapel.ypp; sourceTree = SOURCE_ROOT; };
+		F71FADA10F269F2300392B80 /* lexyacc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lexyacc.cpp; path = ../compiler/parser/lexyacc.cpp; sourceTree = SOURCE_ROOT; };
+		F71FADB70F26A6B400392B80 /* Makefile.ibm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.ibm; path = ../make/compiler/Makefile.ibm; sourceTree = SOURCE_ROOT; };
 		F721A0D30D455B8C00A6B43F /* map.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = map.cpp; path = ../compiler/adt/map.cpp; sourceTree = "<group>"; };
 		F721A0D40D455B8C00A6B43F /* vec.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = vec.cpp; path = ../compiler/adt/vec.cpp; sourceTree = "<group>"; };
 		F721A0DB0D455BE300A6B43F /* alist.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = alist.cpp; path = ../compiler/AST/alist.cpp; sourceTree = "<group>"; };
@@ -270,7 +273,6 @@
 		F721A12A0D455E3C00A6B43F /* reachingDefinitionsAnalysis.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = reachingDefinitionsAnalysis.cpp; path = ../compiler/optimizations/reachingDefinitionsAnalysis.cpp; sourceTree = "<group>"; };
 		F721A12B0D455E3C00A6B43F /* removeUnnecessaryGotos.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = removeUnnecessaryGotos.cpp; path = ../compiler/optimizations/removeUnnecessaryGotos.cpp; sourceTree = "<group>"; };
 		F721A1370D455F3C00A6B43F /* chapel.lex */ = {isa = PBXFileReference; explicitFileType = sourcecode.lex; fileEncoding = 4; name = chapel.lex; path = ../compiler/parser/chapel.lex; sourceTree = SOURCE_ROOT; };
-		F721A1380D455F3C00A6B43F /* chapel.y */ = {isa = PBXFileReference; explicitFileType = sourcecode.yacc; fileEncoding = 4; name = chapel.y; path = ../compiler/parser/chapel.y; sourceTree = SOURCE_ROOT; };
 		F721A1390D455F3C00A6B43F /* countTokens.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = countTokens.cpp; path = ../compiler/parser/countTokens.cpp; sourceTree = SOURCE_ROOT; };
 		F721A13A0D455F3C00A6B43F /* parser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = parser.cpp; path = ../compiler/parser/parser.cpp; sourceTree = SOURCE_ROOT; };
 		F721A13B0D455F3C00A6B43F /* processTokens.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = processTokens.cpp; path = ../compiler/parser/processTokens.cpp; sourceTree = SOURCE_ROOT; };
@@ -759,7 +761,7 @@
 			isa = PBXGroup;
 			children = (
 				F721A1370D455F3C00A6B43F /* chapel.lex */,
-				F721A1380D455F3C00A6B43F /* chapel.y */,
+				F71FADA00F269F2300392B80 /* chapel.ypp */,
 				F721A1390D455F3C00A6B43F /* countTokens.cpp */,
 				F721A13A0D455F3C00A6B43F /* parser.cpp */,
 				F721A13B0D455F3C00A6B43F /* processTokens.cpp */,
@@ -956,6 +958,7 @@
 		F7665EED0D7F3BB000A55EBF /* Makefiles */ = {
 			isa = PBXGroup;
 			children = (
+				F71FADB70F26A6B400392B80 /* Makefile.ibm */,
 				F71FAD090F20187400392B80 /* Makefile */,
 				F71FAD0A0F20187400392B80 /* Makefile.include */,
 				F71FAD0B0F20187400392B80 /* Makefile.share */,
@@ -1190,6 +1193,7 @@
 		F7B66D0F0D59738D00A53F3E /* Other sources */ = {
 			isa = PBXGroup;
 			children = (
+				F71FADA10F269F2300392B80 /* lexyacc.cpp */,
 				F7665EE80D7F3B8400A55EBF /* Standard Modules */,
 				F7665EED0D7F3BB000A55EBF /* Makefiles */,
 			);
@@ -1482,7 +1486,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F731D6130D51181B009F6897 /* chapel.y in Sources */,
 				F721A0D50D455B8C00A6B43F /* map.cpp in Sources */,
 				F721A0D60D455B8C00A6B43F /* vec.cpp in Sources */,
 				F721A0E80D455BE300A6B43F /* alist.cpp in Sources */,
@@ -1548,6 +1551,7 @@
 				F754D95C0E929C5F00A527CD /* insertDestructors.cpp in Sources */,
 				F73EB6FA0EC5030A00E3026E /* optReadOnlyRefArgs.cpp in Sources */,
 				F713828D0EE7544F0086E1AE /* removeWrapRecords.cpp in Sources */,
+				F71FADA20F269F2500392B80 /* chapel.ypp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
