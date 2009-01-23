@@ -690,21 +690,15 @@ class Block1DArr: BaseArray {
     // somehow?
     //
     const numTasks = dom.dist.tasksPerLoc;
-    const dom_id = dom.pid, dom_tc = dom; // for reprivatization
+    var id = pid, tc = this; // for reprivatization
     coforall locDom in dom.locDoms do
       on locDom {
 
-        // The next line re-privatizes dom; referring to this.dom
-        // refers to the privatized domain before executing the
-        // on-statement; now we want dom to refer to the domain on
-        // whatever locale locDom lives on.  Unfortunately, this uses
-        // a primitive.  How else can this be done so that
-        // user-defined distributions are easier to write?
-        const my_dom_id = dom_id;
-        const myDom = if _supportsPrivatization(dom) then __primitive("chpl_getPrivatizedClass", dom_tc, my_dom_id) else dom;
+        // The next line re-privatize 'this'
+        var myThis = if _supportsPrivatization(this) then __primitive("chpl_getPrivatizedClass", tc, id) else this;
 
         const myNumTasks = numTasks;
-        const locBlock = locDom.myBlock - myDom.whole.low;
+        const locBlock = locDom.myBlock - myThis.dom.whole.low;
         if (myNumTasks == 1) {
           yield locBlock;
         } else {
