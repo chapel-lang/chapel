@@ -4,15 +4,13 @@ use DefaultArithmetic;
 //const LocaleSpace: domain(1) distributed(OnePer) = [0..numLocales-1];
 const LocaleSpace: domain(1) = [0..numLocales-1];
 
-// BLC: This should be a single, but there's currently no way to
-// query a single variable in a non-blocking manner
-var doneCreatingLocales: bool;
+var doneCreatingLocales: single bool;
 
 class locale {
   const chpl_id: int;
 
   def locale(id: int = -1) {
-    if doneCreatingLocales {
+    if doneCreatingLocales.readXX() {
       halt("locales cannot be created");
     }
     chpl_id = id;
