@@ -4,13 +4,13 @@ use DefaultArithmetic;
 //const LocaleSpace: domain(1) distributed(OnePer) = [0..numLocales-1];
 const LocaleSpace: domain(1) = [0..numLocales-1];
 
-var doneCreatingLocales: single bool;
+var doneCreatingLocales: bool;
 
 class locale {
   const chpl_id: int;
 
   def locale(id: int = -1) {
-    if doneCreatingLocales.readXX() {
+    if doneCreatingLocales {
       halt("locales cannot be created");
     }
     chpl_id = id;
