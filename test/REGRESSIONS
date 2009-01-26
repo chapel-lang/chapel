@@ -36,6 +36,18 @@ updates don't seem to have happened (most settings other than basic linux)
 performance-specific regressions
 ================================
 
+out of space in /tmp
+--------------------
+[Error matching compiler output for npb/cg/bradc/cg-sparse]
+[Error matching compiler output for performance/compiler/bradc/cg-sparse-timecomp]
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-fragmented]
+[Error matching compiler output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
+[Error matching compiler output for users/franzf/v0/chpl/main]
+
+
 
 =============================
 valgrind-specific regressions
@@ -91,8 +103,10 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09)
+
 
 
 ==============================================
@@ -127,26 +141,25 @@ opts-specific tests
 (Example runs: 0)
 
 
-(Full run: 97, though some spurious test_refine errors and ra-seq failures)
-
---no-copy-propagation
----------------------
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+(Full run: 89, though some spurious test_refine errors and ra-seq failures)
 
 --no-dead-code-elimination
 --------------------------
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
 
 --no-inline
+--baseline --copy-propagation
+--baseline --dead-code-elimination
+--baseline --inline-iterators
+--baseline --optimize-loop-iterators
+--baseline --scalar-replacement
 --no-scalar-replacement --no-inline
 -----------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
@@ -166,18 +179,6 @@ opts-specific tests
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
-
---baseline --copy-propagation
---baseline --dead-code-elimination
---baseline --inline-iterators
---baseline --optimize-loop-iterators
---baseline --scalar-replacement
-------------------------------------
-[Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
-[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
-[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 --baseline --inline
 -------------------
@@ -200,18 +201,15 @@ opts-specific tests
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
-[Error matching program output for studies/matrixMult/stonea/distributed/luLike]
-[Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
-[Error matching program output for users/shetag/fock/fock-stc]
 
 
-===========================
-x1-/x2-specific regressions
-===========================
+=======================
+x2-specific regressions
+=======================
 
 threads-none causes serial iterator to be used rather than follower (11/25/08)
 ------------------------------------------------------------------------------
@@ -234,10 +232,6 @@ intel-specific regressions
 ========================
 xt-cle-specific failures
 ========================
-
-??? -- gdb incompatability?
----------------------------
-[Error matching program output for execflags/bradc/gdbddash/declint2] 
 
 
 =============================================================
