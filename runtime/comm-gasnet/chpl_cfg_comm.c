@@ -12,12 +12,15 @@
 #include "gasnet.h"
 
 static int chpl_comm_diagnostics = 0; // set via startCommDiagnostics
+static chpl_mutex_t chpl_comm_diagnostics_lock;
 static int chpl_comm_gets = 0;
 static int chpl_comm_puts = 0;
 static int chpl_comm_forks = 0;
 static int chpl_comm_nb_forks = 0;
 static int chpl_verbose_comm = 0;     // set via startVerboseComm
 static int chpl_comm_no_debug_private = 0;
+
+
 
 //
 // The following macro is from the GASNet test.h distribution
@@ -184,6 +187,7 @@ int _chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 void _chpl_comm_rollcall(void) {
+  chpl_mutex_init(&chpl_comm_diagnostics_lock);
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", _localeID, 
            _numLocales, chpl_localeName());
 }
@@ -278,8 +282,11 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote put to %d\n", _localeID, locale);
-    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private)
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+      chpl_mutex_lock(&chpl_comm_diagnostics_lock);
       chpl_comm_puts++;
+      chpl_mutex_unlock(&chpl_comm_diagnostics_lock);
+    }
     gasnet_put(locale, raddr, addr, size); // node, dest, src, size
   }
 }
@@ -290,8 +297,11 @@ void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size) {
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote get from %d\n", _localeID, locale);
-    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private)
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+      chpl_mutex_lock(&chpl_comm_diagnostics_lock);
       chpl_comm_gets++;
+      chpl_mutex_unlock(&chpl_comm_diagnostics_lock);
+    }
     gasnet_get(addr, locale, raddr, size); // dest, node, src, size
   }
 }
@@ -314,8 +324,11 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote non-blocking thread created on %d\n", _localeID, locale);
-    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private)
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+      chpl_mutex_lock(&chpl_comm_diagnostics_lock);
       chpl_comm_nb_forks++;
+      chpl_mutex_unlock(&chpl_comm_diagnostics_lock);
+    }
     GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB, info, info_size));
     chpl_free(info, 0, 0);
   }
@@ -331,8 +344,11 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote thread created on %d\n", _localeID, locale);
-    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private)
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+      chpl_mutex_lock(&chpl_comm_diagnostics_lock);
       chpl_comm_forks++;
+      chpl_mutex_unlock(&chpl_comm_diagnostics_lock);
+    }
     info_size = sizeof(fork_t) + arg_size;
     info = (fork_t*) chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork info", 0, 0);
 
