@@ -40,8 +40,10 @@ class file: Writer {
       }
       _fp = __primitive("fopen", filename, modestring);
 
-      if _fp == __primitive("get_nullfile") then
-        halt("***Error: Unable to open \"", fullFilename, "\": ", __primitive("get_errno"), "***");
+      if _fp == __primitive("get_nullfile") {
+        const err = __primitive("get_errno");
+        halt("***Error: Unable to open \"", fullFilename, "\": ", err, "***");
+      }
     }
   }
 
@@ -91,8 +93,9 @@ class file: Writer {
       var returnVal: int = __primitive("fclose", _fp);
       if (returnVal < 0) {
         var fullFilename = path + "/" + filename;
-        halt("***Error: The close of \"", fullFilename, "\" failed: ", 
-             __primitive("get_errno"), "***");
+        const err = __primitive("get_errno");
+        halt("***Error: The close of \"", fullFilename, "\" failed: ", err, 
+             "***");
       }
       _fp = __primitive("get_nullfile");
     }
@@ -255,8 +258,10 @@ def file.writeIt(s: string) {
   if mode != FileAccessMode.write then
     halt("***Error: ", path, "/", filename, " not open for writing***");
   var status = __primitive("fprintf", _fp, "%s", s);
-  if status < 0 then
-    halt("***Error: Write failed: ", __primitive("get_errno"), "***");
+  if status < 0 {
+    const err = __primitive("get_errno");
+    halt("***Error: Write failed: ", err, "***");
+  }
 }
 
 class StringClass: Writer {
@@ -396,8 +401,10 @@ def halt(args ...?numArgs) {
 def _debugWrite(args: string ...?n) {
   for param i in 1..n {
     var status = __primitive("fprintf", __primitive("get_stdout"), "%s", args(i));
-    if status < 0 then
-      halt("_debugWrite failed with status ", __primitive("get_errno"));
+    if status < 0 {
+      const err = __primitive("get_errno");
+      halt("_debugWrite failed with status ", err);
+    }
   }
   __primitive("fflush", __primitive("get_stdout"));
 }
