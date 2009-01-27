@@ -337,11 +337,21 @@ class UserMapAssocDom: BaseAssociativeDomain {
   // the print method for the domain
   //
   def writeThis(x:Writer) {
-    coforall locDom in locDoms do
-      on locDom {
-        write("locale ", here.id, " owns: ");
-        writeln(locDom);
-      }
+    for locDom in locDoms do
+      // TODO: This doesn't work -- accesses a bad file descriptor
+      //      on locDom {
+      //
+
+      // TODO: The following doesn't work -- deadlock:
+      //
+      // writeln(""locale" + here.id + " owns: ");
+
+      // TODO: The following didn't work either -- seg fault:
+      //
+      //        ("locale" + here.id + " owns: ").writeThis(x);
+
+        locDom.writeThis(x);
+      //      }
   }
 
   //
