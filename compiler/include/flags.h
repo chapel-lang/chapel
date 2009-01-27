@@ -80,6 +80,7 @@ enum Flag {
   FLAG_ON_BLOCK,
   FLAG_PARAM, // parameter (compile-time constant)
   FLAG_PRIVATE,
+  FLAG_PRIVATIZED_CLASS, // privatized array or domain class
   FLAG_PROMOTION_WRAPPER,
   FLAG_RANGE,
   FLAG_REF,

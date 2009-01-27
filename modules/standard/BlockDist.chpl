@@ -41,6 +41,11 @@ class Block1D : Distribution {
   const targetLocDom: domain(1);
   const targetLocs: [targetLocDom] locale;
 
+  //
+  // sjd: note this is a variable but it shouldn't be changed after
+  // privatization, because it won't be reflected everywhere.  should
+  // this be a constant?  how should we handle such?
+  //
   var tasksPerLoc: int;
 
   // LINKAGE:
@@ -87,6 +92,7 @@ class Block1D : Distribution {
     boundingBox = other.boundingBox;
     targetLocDom = other.targetLocDom;
     targetLocs = other.targetLocs;
+    tasksPerLoc = other.tasksPerLoc;
     locDist = other.locDist;
   }
 
@@ -299,7 +305,7 @@ class Block1DDom: BaseArithmeticDomain {
   //
   const whole: domain(1, idxType);
 
-  var pid: int; // privatized object id
+  var pid: int = -1; // privatized object id
 
   // GLOBAL DOMAIN INTERFACE:
 
@@ -363,10 +369,11 @@ class Block1DDom: BaseArithmeticDomain {
     // order/position functions -- any chance for creating similar
     // support? (esp. given how frequent this seems likely to be?)
     //
+    const precomputedNumTasks = dist.tasksPerLoc;
     coforall locDom in locDoms do
       on locDom {
 	const locBlock = locDom.myBlock - whole.low,
-              numTasks = dist.tasksPerLoc;
+              numTasks = precomputedNumTasks;
 	if (numTasks == 1) {
 	  yield locBlock;
 	} else {
@@ -491,6 +498,10 @@ class Block1DDom: BaseArithmeticDomain {
   }
   def privatize2(pid: int) {
     this.pid = pid;
+  }
+  def reprivatize(other) {
+    locDoms = other.locDoms;
+    whole = other.whole;
   }
 }
 
@@ -628,7 +639,7 @@ class Block1DArr: BaseArray {
   //
   var locArr: [dom.dist.targetLocDom] LocBlock1DArr(idxType, eltType, stridable);
 
-  var pid: int; // privatized object id
+  var pid: int = -1; // privatized object id
 
   def setup() {
     coforall localeIdx in dom.dist.targetLocDom do
@@ -689,24 +700,19 @@ class Block1DArr: BaseArray {
     // logic?  (e.g., can we forward the forall to the global domain
     // somehow?
     //
-    const numTasks = dom.dist.tasksPerLoc;
-    var id = pid, tc = this; // for reprivatization
+    const precomputedNumTasks = dom.dist.tasksPerLoc;
+    const precomputedWholeLow = dom.whole.low;
     coforall locDom in dom.locDoms do
       on locDom {
-
-        // The next line re-privatize 'this'
-        var myThis = if _supportsPrivatization(this) then __primitive("chpl_getPrivatizedClass", tc, id) else this;
-
-        const myNumTasks = numTasks;
-        const locBlock = locDom.myBlock - myThis.dom.whole.low;
-        if (myNumTasks == 1) {
+        const locBlock = locDom.myBlock - precomputedWholeLow,
+              numTasks = precomputedNumTasks;
+        if (numTasks == 1) {
           yield locBlock;
         } else {
-          coforall taskid in 0..#myNumTasks {
-            const mytaskid = taskid;
+          coforall taskid in 0..#numTasks {
             const (lo,hi) = chpl_computeBlock(locBlock.low, locBlock.numIndices,
                                               locBlock.low, locBlock.high, 
-                                              myNumTasks, mytaskid);
+                                              numTasks, taskid);
             yield [lo..hi];
           }
         }
@@ -716,23 +722,17 @@ class Block1DArr: BaseArray {
   def supportsAlignedFollower() param return true;
 
   def these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
-
-    // The next two lines re-privatize 'this'
-    var id = pid, tc = this;
-    var myThis = if _supportsPrivatization(this) then __primitive("chpl_getPrivatizedClass", tc, id) else this;
-
     //
     // TODO: Would like to write this as follower += dom.low;
     //
-    const followThis = follower + myThis.dom.low;
+    const followThis = follower + dom.low;
 
     //
     // TODO: The following is a buggy hack that will only work when we're
     // distributing across the entire Locales array.  I still think the
     // locArr/locDoms arrays should be associative over locale values.
     //
-
-    const myLocArr = myThis.locArr(here.id);
+    const myLocArr = locArr(here.id);
     if aligned {
       local {
         for i in followThis {
@@ -756,42 +756,6 @@ class Block1DArr: BaseArray {
         yield accessHelper(i);
       }
     }
-
-
-    // SJD: This was here before I added aligned:
-    /*
-    //
-    // TODO: The following is a buggy hack that will only work when we're
-    // distributing across the entire Locales array.  I still think the
-    // locArr/locDoms arrays should be associative over locale values.
-    //
-    const myLocArr = locArr(here.id);
-    if (myLocArr.owns(followThis)) {
-      // we own all the elements we're following
-      //
-
-      //
-      // TODO: Want this, but local does not currently work within
-      // follower iterators:
-      //
-      //      local {
-        for i in followThis {
-          yield myLocArr.this(i);
-        }
-        //      }
-      //
-    } else {
-      writeln("Warning: doing expensive these iteration");
-      //
-      // we don't own all the elements we're following
-      //
-      // TODO: could do something smarter to only bring the non-local
-      // elements over.
-      for i in followThis {
-        yield this(i);
-      }
-    }
-    */
   }
 
   //

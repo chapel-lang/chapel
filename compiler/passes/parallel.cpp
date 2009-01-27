@@ -612,6 +612,24 @@ parallel(void) {
 
   optimizeReadOnlyReferenceArguments(nestedFunctions);
 
+  //
+  // re-privatize privatized object fields when accessed
+  //
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+      CallExpr* move = toCallExpr(call->parentExpr);
+      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+      SymExpr* lhs = toSymExpr(move->get(1));
+      if (lhs->var->type->symbol->hasFlag(FLAG_PRIVATIZED_CLASS)) {
+        ClassType* ct = toClassType(lhs->var->type);
+        VarSymbol* tmp = newTemp(ct->getField("pid")->type);
+        move->insertAfter(new CallExpr(PRIM_MOVE, lhs->var, new CallExpr(PRIM_GET_PRIV_CLASS, lhs->var->type->symbol, tmp)));
+        move->insertAfter(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, lhs->var, ct->getField("pid"))));
+        move->insertAfter(new DefExpr(tmp));
+      }
+    }
+  }
+
   makeHeapAllocations();
 
   Vec<FnSymbol*> queue;

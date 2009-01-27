@@ -1,5 +1,6 @@
 var privatizeLock$: sync int;
 
+pragma "privatized class"
 def _supportsPrivatization(value) param
   return _privatization & value.supportsPrivatization();
 
@@ -296,6 +297,19 @@ record _domain {
 
   def setIndices(x) {
     _value.setIndices(x);
+    if _supportsPrivatization(_valueType) {
+      var other = _value;
+      var id = _value.pid;
+      for loc in Locales {
+        if loc != here {
+          on loc {
+            var tc = _valueType;
+            var pc = __primitive("chpl_getPrivatizedClass", tc, id);
+            pc.reprivatize(other);
+          }
+        }
+      }
+    }
   }
 
   def getIndices()
@@ -512,7 +526,7 @@ def chpl__isDomain(x) param return false;
 def =(a: domain, b: domain) {
   for e in a._value._arrs do
     e.reallocate(b);
-  a._value.setIndices(b._value.getIndices());
+  a.setIndices(b.getIndices());
   return a;
 }
 

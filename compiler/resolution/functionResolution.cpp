@@ -3224,6 +3224,15 @@ resolveFns(FnSymbol* fn) {
       }
     }
   }
+
+  //
+  // mark privatized classes
+  //
+  if (fn->hasFlag(FLAG_PRIVATIZED_CLASS)) {
+    if (fn->getReturnSymbol() == gTrue) {
+      fn->getFormal(1)->type->symbol->addFlag(FLAG_PRIVATIZED_CLASS);
+    }
+  }
 }
 
 

@@ -75,6 +75,7 @@ initFlags() {
   defineFlag(FLAG_ON_BLOCK, "on block");
   defineFlag(FLAG_PARAM, "param");
   defineFlag(FLAG_PRIVATE, "private");
+  defineFlag(FLAG_PRIVATIZED_CLASS, "privatized class");
   defineFlag(FLAG_PROMOTION_WRAPPER, "promotion wrapper");
   defineFlag(FLAG_RANGE, "range");
   defineFlag(FLAG_REF, "ref");
