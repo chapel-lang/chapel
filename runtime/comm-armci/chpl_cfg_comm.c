@@ -402,8 +402,8 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   _chpl_comm_fork_common(locale, f, arg, arg_size, false);
 }
 
-void chpl_startCommDiagnosis() { }
-void chpl_stopCommDiagnosis() { }
+void chpl_startVerboseComm() { }
+void chpl_stopVerboseComm() { }
 
 static void *_gpc_thread_handler(void *arg);
 

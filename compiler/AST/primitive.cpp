@@ -584,8 +584,15 @@ initPrimitive() {
 
   prim_def("mem_used", returnInfoUInt64, false, true);
 
-  prim_def("chpl_startCommDiagnosis", returnInfoVoid, true);
-  prim_def("chpl_stopCommDiagnosis", returnInfoVoid, true);
+  prim_def("chpl_startVerboseComm", returnInfoVoid, true);
+  prim_def("chpl_stopVerboseComm", returnInfoVoid, true);
+
+  prim_def("chpl_startCommDiagnostics", returnInfoVoid, true);
+  prim_def("chpl_stopCommDiagnostics", returnInfoVoid, true);
+  prim_def("chpl_numCommGets", returnInfoInt32);
+  prim_def("chpl_numCommPuts", returnInfoInt32);
+  prim_def("chpl_numCommForks", returnInfoInt32);
+  prim_def("chpl_numCommNBForks", returnInfoInt32);
 
   prim_def("chpl_startMemDiagnosis", returnInfoVoid, true);
   prim_def("chpl_stopMemDiagnosis", returnInfoVoid, true);

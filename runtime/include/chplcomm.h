@@ -315,8 +315,14 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size);
 //
 void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size);
 
-void chpl_startCommDiagnosis(void);
-void chpl_stopCommDiagnosis(void);
+void chpl_startVerboseComm(void);
+void chpl_stopVerboseComm(void);
+void chpl_startCommDiagnostics(void);
+void chpl_stopCommDiagnostics(void);
+int32_t chpl_numCommGets(void);
+int32_t chpl_numCommPuts(void);
+int32_t chpl_numCommForks(void);
+int32_t chpl_numCommNBForks(void);
 
 #else  // LAUNCHER
 

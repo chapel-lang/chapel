@@ -57,3 +57,24 @@ def locale.numCores {
 def chpl_int_to_locale(id) {
   return Locales(id);
 }
+
+
+//
+// multi-locale diagnostics/debugging support
+//
+def startVerboseComm() { __primitive("chpl_startVerboseComm"); }
+def stopVerboseComm() { __primitive("chpl_stopVerboseComm"); }
+def startCommDiagnostics() { __primitive("chpl_startCommDiagnostics"); }
+def stopCommDiagnostics() { __primitive("chpl_stopCommDiagnostics"); }
+
+def getCommDiagnostics() {
+  var D: [LocaleSpace] 4*int;
+  for loc in Locales do on loc {
+    const gets = __primitive("chpl_numCommGets");
+    const puts = __primitive("chpl_numCommPuts");
+    const forks = __primitive("chpl_numCommForks");
+    const nbforks = __primitive("chpl_numCommNBForks");
+    D(loc.id) = (gets, puts, forks, nbforks);
+  }
+  return D;
+}

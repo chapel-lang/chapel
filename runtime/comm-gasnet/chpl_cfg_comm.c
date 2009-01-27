@@ -11,11 +11,12 @@
 #define GASNET_PAR 1
 #include "gasnet.h"
 
-#define CHPL_DIST_DEBUG 0
-static int chpl_comm_debug = 0; // set via _startCommDiagnosis in
-                                // the Chapel code, or set to 1 here
-                                // to diagnose the whole program; also
-                                // CHPL_DIST_DEBUG must be set to 1
+static int chpl_comm_diagnostics = 0; // set via startCommDiagnostics
+static int chpl_comm_gets = 0;
+static int chpl_comm_puts = 0;
+static int chpl_comm_forks = 0;
+static int chpl_comm_nb_forks = 0;
+static int chpl_verbose_comm = 0;     // set via startVerboseComm
 static int chpl_comm_no_debug_private = 0;
 
 //
@@ -245,10 +246,8 @@ void _chpl_comm_broadcast_private(void* addr, int size) {
 }
 
 void _chpl_comm_barrier(const char *msg) {
-#if CHPL_DIST_DEBUG
-  if (chpl_comm_debug && !chpl_comm_no_debug_private)
+  if (chpl_verbose_comm && !chpl_comm_no_debug_private)
     printf("%d: barrier for '%s'\n", _localeID, msg);
-#endif
   gasnet_barrier_notify(0, GASNET_BARRIERFLAG_ANONYMOUS);
   GASNET_Safe(gasnet_barrier_wait(0, GASNET_BARRIERFLAG_ANONYMOUS));
 }
@@ -277,10 +276,10 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
   if (_localeID == locale) {
     bcopy(addr, raddr, size);
   } else {
-#if CHPL_DIST_DEBUG
-    if (chpl_comm_debug && !chpl_comm_no_debug_private)
+    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote put to %d\n", _localeID, locale);
-#endif
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private)
+      chpl_comm_puts++;
     gasnet_put(locale, raddr, addr, size); // node, dest, src, size
   }
 }
@@ -289,10 +288,10 @@ void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size) {
   if (_localeID == locale) {
     bcopy(raddr, addr, size);
   } else {
-#if CHPL_DIST_DEBUG
-    if (chpl_comm_debug && !chpl_comm_no_debug_private)
+    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote get from %d\n", _localeID, locale);
-#endif
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private)
+      chpl_comm_gets++;
     gasnet_get(addr, locale, raddr, size); // dest, node, src, size
   }
 }
@@ -313,10 +312,10 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
     chpl_begin((chpl_threadfp_t)fork_nb_wrapper, (chpl_threadarg_t)info,
                false, info->serial_state, NULL);
   } else {
-#if CHPL_DIST_DEBUG
-  if (chpl_comm_debug && !chpl_comm_no_debug_private)
-    printf("%d: remote non-blocking thread created on %d\n", _localeID, locale);
-#endif
+    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
+      printf("%d: remote non-blocking thread created on %d\n", _localeID, locale);
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private)
+      chpl_comm_nb_forks++;
     GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB, info, info_size));
     chpl_free(info, 0, 0);
   }
@@ -330,10 +329,10 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   if (_localeID == locale) {
     (*f)(arg);
   } else {
-#if CHPL_DIST_DEBUG
-  if (chpl_comm_debug && !chpl_comm_no_debug_private)
-    printf("%d: remote thread created on %d\n", _localeID, locale);
-#endif
+    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
+      printf("%d: remote thread created on %d\n", _localeID, locale);
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private)
+      chpl_comm_forks++;
     info_size = sizeof(fork_t) + arg_size;
     info = (fork_t*) chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork info", 0, 0);
 
@@ -352,14 +351,46 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   }
 }
 
-void chpl_startCommDiagnosis() {
-  chpl_comm_debug = 1;
+void chpl_startVerboseComm() {
+  chpl_verbose_comm = 1;
   chpl_comm_no_debug_private = 1;
-  _chpl_comm_broadcast_private(&chpl_comm_debug, sizeof(int));
+  _chpl_comm_broadcast_private(&chpl_verbose_comm, sizeof(int));
   chpl_comm_no_debug_private = 0;
 }
 
-void chpl_stopCommDiagnosis() {
-  chpl_comm_debug = 0;
-  _chpl_comm_broadcast_private(&chpl_comm_debug, sizeof(int));
+void chpl_stopVerboseComm() {
+  chpl_verbose_comm = 0;
+  chpl_comm_no_debug_private = 1;
+  _chpl_comm_broadcast_private(&chpl_verbose_comm, sizeof(int));
+  chpl_comm_no_debug_private = 0;
+}
+
+void chpl_startCommDiagnostics() {
+  chpl_comm_diagnostics = 1;
+  chpl_comm_no_debug_private = 1;
+  _chpl_comm_broadcast_private(&chpl_comm_diagnostics, sizeof(int));
+  chpl_comm_no_debug_private = 0;
+}
+
+void chpl_stopCommDiagnostics() {
+  chpl_comm_diagnostics = 0;
+  chpl_comm_no_debug_private = 1;
+  _chpl_comm_broadcast_private(&chpl_comm_diagnostics, sizeof(int));
+  chpl_comm_no_debug_private = 0;
+}
+
+int32_t chpl_numCommGets(void) {
+  return chpl_comm_gets;
+}
+
+int32_t chpl_numCommPuts(void) {
+  return chpl_comm_puts;
+}
+
+int32_t chpl_numCommForks(void) {
+  return chpl_comm_forks;
+}
+
+int32_t chpl_numCommNBForks(void) {
+  return chpl_comm_nb_forks;
 }

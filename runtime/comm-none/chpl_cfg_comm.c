@@ -115,5 +115,11 @@ void _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   (*f)(arg);
 }
 
-void chpl_startCommDiagnosis() { }
-void chpl_stopCommDiagnosis() { }
+void chpl_startVerboseComm() { }
+void chpl_stopVerboseComm() { }
+void chpl_startCommDiagnostics() { }
+void chpl_stopCommDiagnostics() { }
+int32_t chpl_numCommGets(void) { return 0; }
+int32_t chpl_numCommPuts(void) { return 0; }
+int32_t chpl_numCommForks(void) { return 0; }
+int32_t chpl_numCommNBForks(void) { return 0; }
