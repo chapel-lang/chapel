@@ -13,9 +13,9 @@
 # description as well.
 
 
-=============================
-linux and general regressions
-=============================
+===================
+general regressions
+===================
 
 precision issue, due to user code changing (07/01/08) (bradc)
 -------------------------------------------------------------
@@ -31,22 +31,22 @@ updates don't seem to have happened (most settings other than basic linux)
 [Error matching program output for studies/hpcc/RA/ra-seq]
 
 
+=================
+linux regressions
+=================
+
+maxThreads is 300, but can't create more than 254 threads
+---------------------------------------------------------
+[Error matching program output for parallel/taskPool/figueroa/ManyThreads]
+
+out-of-memory error
+-------------------
+[Error matching program output for stress/deitz/test_10k_coforall]
+
 
 ================================
 performance-specific regressions
 ================================
-
-out of space in /tmp
---------------------
-[Error matching compiler output for npb/cg/bradc/cg-sparse]
-[Error matching compiler output for performance/compiler/bradc/cg-sparse-timecomp]
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1d]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-fragmented]
-[Error matching compiler output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
-[Error matching compiler output for users/franzf/v0/chpl/main]
-
 
 
 =============================
@@ -237,6 +237,111 @@ xt-cle-specific failures
 =============================================================
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
+
+float.h gone missing
+--------------------
+[Error matching compiler output for arrays/deitz/opaque/test_opaque3]
+[Error matching compiler output for arrays/deitz/opaque/test_opaque_remove]
+[Error matching compiler output for arrays/deitz/part1/test_array_1D]
+[Error matching compiler output for arrays/deitz/part1/test_array_2D]
+[Error matching compiler output for arrays/deitz/part1/test_array_2Da]
+[Error matching compiler output for arrays/deitz/part1/test_array_2Db]
+[Error matching compiler output for arrays/deitz/part1/test_array_2Dc]
+[Error matching compiler output for arrays/deitz/part1/test_array_3D]
+[Error matching compiler output for arrays/deitz/part1/test_array_3D_float]
+[Error matching compiler output for arrays/deitz/part1/test_array_8d]
+[Error matching compiler output for arrays/deitz/part1/test_array_arg1]
+[Error matching compiler output for arrays/deitz/part1/test_array_arg2]
+[Error matching compiler output for arrays/deitz/part1/test_array_arg3]
+[Error matching compiler output for arrays/deitz/part1/test_array_arg4]
+[Error matching compiler output for arrays/deitz/part1/test_array_arg5]
+[Error matching compiler output for arrays/deitz/part1/test_array_arg6]
+[Error matching compiler output for arrays/deitz/part1/test_array_arg7]
+[Error matching compiler output for arrays/deitz/part1/test_array_arg8]
+[Error matching compiler output for arrays/deitz/part1/test_array_arg9]
+[Error matching compiler output for arrays/deitz/part1/test_array_assign1]
+[Error matching compiler output for arrays/deitz/part1/test_array_assign2]
+[Error matching compiler output for arrays/deitz/part1/test_array_assign3]
+[Error matching compiler output for arrays/deitz/part2/test_array_basic1]
+[Error matching compiler output for arrays/deitz/part2/test_array_basic1a]
+[Error matching compiler output for arrays/deitz/part2/test_array_basic2]
+[Error matching compiler output for arrays/deitz/part2/test_array_basic2a]
+[Error matching compiler output for arrays/deitz/part2/test_array_complex]
+[Error matching compiler output for arrays/deitz/part2/test_array_float1]
+[Error matching compiler output for arrays/deitz/part2/test_array_in_class]
+[Error matching compiler output for arrays/deitz/part2/test_array_init1]
+[Error matching compiler output for arrays/deitz/part2/test_array_init2]
+[Error matching compiler output for arrays/deitz/part2/test_array_init3]
+[Error matching compiler output for arrays/deitz/part2/test_array_init]
+[Error matching compiler output for arrays/deitz/part2/test_array_init_seq]
+[Error matching compiler output for arrays/deitz/part2/test_array_init_with_seq]
+[Error matching compiler output for arrays/deitz/part2/test_array_integer_2d]
+[Error matching compiler output for arrays/deitz/part2/test_array_integer_3d]
+[Error matching compiler output for arrays/deitz/part2/test_array_of_array1]
+[Error matching compiler output for arrays/deitz/part2/test_array_of_array2]
+[Error matching compiler output for arrays/deitz/part2/test_array_of_class1]
+[Error matching compiler output for arrays/deitz/part2/test_array_of_record1]
+[Error matching compiler output for arrays/deitz/part2/test_array_of_string1]
+[Error matching compiler output for arrays/deitz/part2/test_array_of_string2]
+[Error matching compiler output for arrays/deitz/part2/test_array_traverse1]
+[Error matching compiler output for arrays/deitz/promotion/test_ref_promotion]
+[Error matching compiler output for arrays/deitz/promotion/test_scalar_promote1]
+[Error matching compiler output for arrays/deitz/promotion/test_scalar_promote2]
+[Error matching compiler output for arrays/deitz/promotion/test_scalar_promote3]
+[Error matching compiler output for arrays/deitz/promotion/test_scalar_promote4]
+[Error matching compiler output for arrays/deitz/promotion/test_scalar_promote5]
+[Error matching compiler output for arrays/deitz/promotion/test_scalar_promote6]
+[Error matching compiler output for arrays/deitz/test_array_of_array_of_array_assign]
+[Error matching compiler output for arrays/deitz/test_array_of_array_size_change]
+[Error matching compiler output for arrays/deitz/test_array_of_associative_arrays]
+[Error matching compiler output for arrays/deitz/test_array_of_associative_domains]
+[Error matching compiler output for arrays/deitz/test_array_of_class_field]
+[Error matching compiler output for arrays/deitz/test_array_of_tuple1]
+[Error matching compiler output for arrays/deitz/test_array_rankchange_error]
+[Error matching compiler output for arrays/deitz/test_array_type_alias]
+[Error matching compiler output for arrays/deitz/test_array_uint3]
+[Error matching compiler output for arrays/deitz/test_array_uint4]
+[Error matching compiler output for arrays/deitz/test_array_uint64]
+[Error matching compiler output for arrays/deitz/test_array_uint]
+[Error matching compiler output for arrays/deitz/test_assign_copy]
+[Error matching compiler output for arrays/deitz/test_assign_slice2]
+[Error matching compiler output for arrays/deitz/test_assign_slice3]
+[Error matching compiler output for arrays/deitz/test_assign_slice]
+[Error matching compiler output for arrays/deitz/test_basic1d1]
+[Error matching compiler output for arrays/deitz/test_basic1d2]
+[Error matching compiler output for arrays/deitz/test_basic1d3]
+[Error matching compiler output for arrays/deitz/test_basic1d4]
+[Error matching compiler output for arrays/deitz/test_big_stride]
+[Error matching compiler output for arrays/deitz/test_bounds1]
+[Error matching compiler output for arrays/deitz/test_bounds2]
+[Error matching compiler output for arrays/deitz/test_class_array1]
+[Error matching compiler output for arrays/deitz/test_class_array2]
+[Error matching compiler output for arrays/deitz/test_class_array3]
+[Error matching compiler output for arrays/deitz/test_class_contains_array1]
+[Error matching compiler output for arrays/deitz/test_copy_array]
+[Error matching compiler output for arrays/deitz/test_copy_array_copy_domain]
+[Error matching compiler output for arrays/deitz/test_descriptor_frees]
+[Error matching compiler output for arrays/deitz/test_domain_ref_in_begin]
+[Error matching compiler output for arrays/deitz/test_domain_swap]
+[Error matching compiler output for arrays/deitz/test_dot_domain]
+[Error matching compiler output for arrays/deitz/test_error_stride_range]
+[Error matching compiler output for arrays/deitz/test_explicit_array_return_type]
+[Error matching compiler output for arrays/deitz/test_forall1]
+[Error matching compiler output for arrays/deitz/test_forall2]
+[Error matching compiler output for arrays/deitz/test_index_domain2]
+[Error matching compiler output for arrays/deitz/test_index_domain]
+[Error matching compiler output for arrays/deitz/test_major_nesting_of_arrays]
+[Error matching compiler output for arrays/deitz/test_multi_array_of_array2]
+[Error matching compiler output for arrays/deitz/test_multi_array_of_array]
+[Error matching compiler output for arrays/deitz/test_no_elt_type]
+[Error matching compiler output for arrays/deitz/test_out_array]
+[Error matching compiler output for arrays/deitz/test_parse_distributed]
+[Error matching compiler output for arrays/deitz/test_plus]
+[Error matching compiler output for arrays/deitz/test_plus_assign_iter]
+[Error matching compiler output for arrays/deitz/test_plus_seq_temps]
+[Error matching compiler output for arrays/deitz/test_rank_change2]
+[Error matching compiler output for arrays/deitz/test_rank_change2a]
+[Error matching compiler output for arrays/deitz/test_rank_change]
 
 long identifiers
 ----------------
