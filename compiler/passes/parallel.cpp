@@ -563,6 +563,66 @@ makeHeapAllocations() {
 }
 
 
+//
+// re-privatize privatized object fields in iterator classes
+//
+static void
+reprivatizeIterators() {
+  Vec<Symbol*> privatizedFields;
+
+  forv_Vec(ClassType, ct, gClassTypes) {
+    for_fields(field, ct) {
+      if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+          field->type->symbol->hasFlag(FLAG_PRIVATIZED_CLASS)) {
+        privatizedFields.set_add(field);
+      }
+    }
+  }
+
+  forv_Vec(SymExpr, se, gSymExprs) {
+    if (privatizedFields.set_in(se->var)) {
+      if (CallExpr* call = toCallExpr(se->parentExpr)) {
+        if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+          CallExpr* move = toCallExpr(call->parentExpr);
+          INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+          SymExpr* lhs = toSymExpr(move->get(1));
+          ClassType* ct = toClassType(se->var->type);
+          VarSymbol* tmp = newTemp(ct->getField("pid")->type);
+          move->insertBefore(new DefExpr(tmp));
+          lhs->replace(new SymExpr(tmp));
+          move->insertAfter(new CallExpr(PRIM_MOVE, lhs->var, new CallExpr(PRIM_GET_PRIV_CLASS, lhs->var->type->symbol, tmp)));
+        } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
+          CallExpr* move = toCallExpr(call->parentExpr);
+          INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+          SymExpr* lhs = toSymExpr(move->get(1));
+          ClassType* ct = toClassType(se->var->type);
+          VarSymbol* tmp = newTemp(ct->getField("pid")->type);
+          move->insertBefore(new DefExpr(tmp));
+          lhs->replace(new SymExpr(tmp));
+          call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
+          VarSymbol* valTmp = newTemp(lhs->var->type->getValueType());
+          move->insertBefore(new DefExpr(valTmp));
+          move->insertAfter(new CallExpr(PRIM_MOVE, lhs, new CallExpr(PRIM_SET_REF, valTmp)));
+          move->insertAfter(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_GET_PRIV_CLASS, lhs->var->type->getValueType()->symbol, tmp)));
+        } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+          ClassType* ct = toClassType(se->var->type);
+          VarSymbol* tmp = newTemp(ct->getField("pid")->type);
+          call->insertBefore(new DefExpr(tmp));
+          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, call->get(3)->remove(), ct->getField("pid"))));
+          call->insertAtTail(new SymExpr(tmp));
+        } else
+          INT_FATAL(se, "unexpected case in re-privatization in iterator");
+      } else
+        INT_FATAL(se, "unexpected case in re-privatization in iterator");
+    }
+  }
+
+  forv_Vec(Symbol, sym, privatizedFields) if (sym) {
+    sym->type = dtInt[INT_SIZE_32];
+  }
+}
+
+
 void
 parallel(void) {
   //
@@ -612,23 +672,7 @@ parallel(void) {
 
   optimizeReadOnlyReferenceArguments(nestedFunctions);
 
-  //
-  // re-privatize privatized object fields when accessed
-  //
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-      CallExpr* move = toCallExpr(call->parentExpr);
-      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
-      SymExpr* lhs = toSymExpr(move->get(1));
-      if (lhs->var->type->symbol->hasFlag(FLAG_PRIVATIZED_CLASS)) {
-        ClassType* ct = toClassType(lhs->var->type);
-        VarSymbol* tmp = newTemp(ct->getField("pid")->type);
-        move->insertAfter(new CallExpr(PRIM_MOVE, lhs->var, new CallExpr(PRIM_GET_PRIV_CLASS, lhs->var->type->symbol, tmp)));
-        move->insertAfter(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, lhs->var, ct->getField("pid"))));
-        move->insertAfter(new DefExpr(tmp));
-      }
-    }
-  }
+  reprivatizeIterators();
 
   makeHeapAllocations();
 

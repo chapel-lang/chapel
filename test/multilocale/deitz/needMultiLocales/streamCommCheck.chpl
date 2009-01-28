@@ -3,11 +3,12 @@ use BlockDist, Time, Memory, Types, Random;
 type elemType = real(64);
 config const m: int(64) = 8, alpha = 3.0;
 config const seed = 314159265;
+config const tasksPerLocale = 1;
 
 config const verbose: bool = false;
 
 def main() {
-  const Dist = new Block1D(bbox=[1..m], tasksPerLocale=1);
+  const Dist = new Block1D(bbox=[1..m], tasksPerLocale=tasksPerLocale);
   const ProblemSpace: domain(1, int(64)) distributed Dist = [1..m];
   var A, B, C: [ProblemSpace] elemType;
 
@@ -29,7 +30,7 @@ def main() {
   if verbose then
     writeln((gets, puts, forks, nbforks));
 
-  if gets < 18 || gets > 21 then
+  if gets < 15 || gets > 17 then
     halt("comm unexpected number of gets");
 
   if puts != 0 then
