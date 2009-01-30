@@ -3,6 +3,9 @@
 #include "optimizations.h"
 #include "stmt.h"
 
+Map<Symbol*,Vec<SymExpr*>*> defMap;
+Map<Symbol*,Vec<SymExpr*>*> useMap;
+
 //
 // compute set of functions that access sync variables
 //
@@ -43,7 +46,8 @@ computeSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
           call->isPrimitive(PRIM_SINGLE_ISFULL)) {
         FnSymbol* parent = toFnSymbol(call->parentSymbol);
         INT_ASSERT(parent);
-        if (!syncAccessFunctionSet.set_in(parent)) {
+        if (!parent->hasFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING) &&
+            !syncAccessFunctionSet.set_in(parent)) {
           syncAccessFunctionSet.set_add(parent);
           syncAccessFunctionVec.add(parent);
         }
@@ -59,7 +63,8 @@ computeSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
     forv_Vec(CallExpr, caller, *fn->calledBy) {
       FnSymbol* parent = toFnSymbol(caller->parentSymbol);
       INT_ASSERT(parent);
-      if (!syncAccessFunctionSet.set_in(parent)) {
+      if (!parent->hasFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING) &&
+          !syncAccessFunctionSet.set_in(parent)) {
         syncAccessFunctionSet.set_add(parent);
         syncAccessFunctionVec.add(parent);
       }
@@ -84,7 +89,7 @@ isSafeToDeref(Symbol* startSym,
   visited->set_add(fn);
 
   if (defMap.get(ref) && defMap.get(ref)->n > 0) {
-    if (startSym == ref || defMap.get(ref)->n != 1) {
+    if (isArgSymbol(ref) || defMap.get(ref)->n > 1) {
       return false;
     }
   }
@@ -136,10 +141,6 @@ passReadOnlyReferencesByValue(CallExpr* call, FnSymbol* fn) {
   if (!args.n)
     return;
 
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(fn, defMap, useMap);
-
   forv_Vec(ArgSymbol, arg, args) {
     if (!defMap.get(arg) || defMap.get(arg)->n == 0) {
       if (isSafeToDeref(arg, arg, fn, defMap, useMap, NULL)) {
@@ -162,8 +163,6 @@ passReadOnlyReferencesByValue(CallExpr* call, FnSymbol* fn) {
       }
     }
   }
-
-  freeDefUseMaps(defMap, useMap);
 }
 
 
@@ -178,6 +177,8 @@ optimizeReadOnlyReferenceArguments(Vec<FnSymbol*>& fns) {
   Vec<FnSymbol*> syncAccessFunctionSet;
   computeSyncAccessFunctionSet(syncAccessFunctionSet);
 
+  buildDefUseMaps(defMap, useMap);
+
   forv_Vec(FnSymbol, fn, fns) {
     if (!syncAccessFunctionSet.set_in(fn)) {
       forv_Vec(CallExpr, call, *fn->calledBy) {
@@ -185,4 +186,6 @@ optimizeReadOnlyReferenceArguments(Vec<FnSymbol*>& fns) {
       }
     }
   }
+
+  freeDefUseMaps(defMap, useMap);
 }

@@ -877,8 +877,10 @@ class _EndCount {
       taskList: _task_list = _nullTaskList;
 }
 
+pragma "dont disable remote value forwarding"
 def _endCountAlloc() return new _EndCount();
 
+pragma "dont disable remote value forwarding"
 def _upEndCount(e: _EndCount) {
   on e {
     var i = e.i;
@@ -888,6 +890,7 @@ def _upEndCount(e: _EndCount) {
   }
 }
 
+pragma "dont disable remote value forwarding"
 def _downEndCount(e: _EndCount) {
   on e {
     var i = e.i;
@@ -897,6 +900,7 @@ def _downEndCount(e: _EndCount) {
   }
 }
 
+pragma "dont disable remote value forwarding"
 def _waitEndCount(e: _EndCount) {
   __primitive("execute tasks in list", e.taskList);
   e.b.readFE();
@@ -1092,27 +1096,32 @@ pragma "inline" def _chpl_swap(inout x, inout y) {
   x = t;
 }
 
+pragma "dont disable remote value forwarding"
 pragma "inline" def _createFieldDefault(type t, init) {
   var x: t;
   x = init;
   return x;
 }
 
+pragma "dont disable remote value forwarding"
 pragma "inline" def _createFieldDefault(type t, param init) {
   var x: t;
   x = init;
   return x;
 }
 
+pragma "dont disable remote value forwarding"
 pragma "inline" def _createFieldDefault(type t, init: _nilType) {
   var x: t;
   return x;
 }
 
+pragma "dont disable remote value forwarding"
 pragma "inline" def _createFieldDefault(type t, init: sync) {
   return init;
 }
 
+pragma "dont disable remote value forwarding"
 pragma "inline" def _createFieldDefault(type t, init: single) {
   return init;
 }

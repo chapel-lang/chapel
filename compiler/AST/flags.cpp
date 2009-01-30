@@ -83,6 +83,7 @@ initFlags() {
   defineFlag(FLAG_REF_THIS, "ref this");
   defineFlag(FLAG_SINGLE, "single");
   defineFlag(FLAG_SPECIFIED_RETURN_TYPE, "specified return type");
+  defineFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING, "dont disable remote value forwarding");
   defineFlag(FLAG_SUPER_CLASS, "super class");
   defineFlag(FLAG_SYNC, "sync");
   defineFlag(FLAG_TEMP, "temp");

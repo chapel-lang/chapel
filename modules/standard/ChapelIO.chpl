@@ -269,7 +269,7 @@ class StringClass: Writer {
   def writeIt(s: string) { this.s += s; }
 }
 
-pragma "ref this"
+pragma "ref this" pragma "dont disable remote value forwarding"
 def string.write(args ...?n) {
   var sc = new StringClass(this);
   sc.write((...args));

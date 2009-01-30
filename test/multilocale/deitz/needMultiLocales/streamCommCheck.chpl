@@ -30,15 +30,23 @@ def main() {
   if verbose then
     writeln((gets, puts, forks, nbforks));
 
-  if gets < 15 || gets > 17 then
+  if gets < 13 || gets > 15 {
+    writeln((gets, puts, forks, nbforks));
     halt("comm unexpected number of gets");
+  }
 
-  if puts != 0 then
+  if puts != 0 {
+    writeln((gets, puts, forks, nbforks));
     halt("comm unexpected number of puts");
+  }
 
-  if forks != 1 then
+  if forks != 1 {
+    writeln((gets, puts, forks, nbforks));
     halt("comm unexpected number of forks");
+  }
 
-  if nbforks != 1 then
+  if nbforks != 1 {
+    writeln((gets, puts, forks, nbforks));
     halt("comm unexpected number of non-blocking forks");
+  }
 }

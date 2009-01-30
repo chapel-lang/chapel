@@ -191,6 +191,7 @@ record _domain {
   var _valueType; // stores type of privatized domains
   var _promotionType: index(rank, _value.idxType);
 
+  pragma "dont disable remote value forwarding"
   def initialize() { 
     _value._count += 1;
   }

@@ -7,10 +7,11 @@ def main() {
   writeln(s);
   on Locales(1) {
     var i = 0;
+    var r: sync int;
     cobegin {
-      while (s != "done") { i += 1; } 
+      { r; while (s != "done") { i += 1; } }
       on s.locale {
-        s = "done";
+        s = "done"; r = 1;
       }
     }
     s = "another string";
