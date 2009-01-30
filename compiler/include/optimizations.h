@@ -34,6 +34,6 @@ freeDefUseChains(Map<SymExpr*,Vec<SymExpr*>*>& DU,
                  Map<SymExpr*,Vec<SymExpr*>*>& UD);
 
 void
-optimizeReadOnlyReferenceArguments(Vec<FnSymbol*>& fns);
+remoteValueForwarding(Vec<FnSymbol*>& fns);
 
 #endif

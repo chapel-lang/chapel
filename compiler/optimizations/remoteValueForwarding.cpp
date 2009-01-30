@@ -173,7 +173,7 @@ passReadOnlyReferencesByValue(CallExpr* call, FnSymbol* fn) {
 // pre-condition: the call graph is computed
 //
 void
-optimizeReadOnlyReferenceArguments(Vec<FnSymbol*>& fns) {
+remoteValueForwarding(Vec<FnSymbol*>& fns) {
   Vec<FnSymbol*> syncAccessFunctionSet;
   computeSyncAccessFunctionSet(syncAccessFunctionSet);
 

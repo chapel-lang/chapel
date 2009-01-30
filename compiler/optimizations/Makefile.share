@@ -5,8 +5,8 @@ OPTIMIZATIONS_SRCS = \
 	deadCodeElimination.cpp \
 	inlineFunctions.cpp \
 	liveVariableAnalysis.cpp \
-	optReadOnlyRefArgs.cpp \
 	reachingDefinitionsAnalysis.cpp \
+	remoteValueForwarding.cpp \
 	removeUnnecessaryGotos.cpp \
 	removeWrapRecords.cpp \
 	scalarReplace.cpp

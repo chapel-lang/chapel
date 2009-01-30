@@ -670,7 +670,7 @@ parallel(void) {
 
   compute_call_sites();
 
-  optimizeReadOnlyReferenceArguments(nestedFunctions);
+  remoteValueForwarding(nestedFunctions);
 
   reprivatizeIterators();
 
