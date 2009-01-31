@@ -71,22 +71,23 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
 
 
 //
-// Return true iff it is safe to dereference a reference arg.
+// Return true iff it is safe to dereference a reference arg.  It is
+// safe to dereference iff the reference is not modified and any use
+// of the reference is a simple dereference or is passed or moved to
+// another reference that is safe to dereference.
 //
 static bool
 isSafeToDeref(Symbol* ref,
-              FnSymbol* fn,
               Map<Symbol*,Vec<SymExpr*>*>& defMap,
               Map<Symbol*,Vec<SymExpr*>*>& useMap,
-              Vec<FnSymbol*>* visited) {
-
+              Vec<Symbol*>* visited) {
   if (!visited) {
-    Vec<FnSymbol*> newVisited;
-    return isSafeToDeref(ref, fn, defMap, useMap, &newVisited);
+    Vec<Symbol*> newVisited;
+    return isSafeToDeref(ref, defMap, useMap, &newVisited);
   }
-  if (visited->set_in(fn))
+  if (visited->set_in(ref))
     return true;
-  visited->set_add(fn);
+  visited->set_add(ref);
 
   int numDefs = (defMap.get(ref)) ? defMap.get(ref)->n : 0;
   if (isArgSymbol(ref) && numDefs > 0 || numDefs > 1)
@@ -94,25 +95,17 @@ isSafeToDeref(Symbol* ref,
 
   for_uses(use, useMap, ref) {
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
-      if (FnSymbol* newfn = call->isResolved()) {
+      if (call->isResolved()) {
         ArgSymbol* arg = actual_to_formal(use);
-        // var functions need references to the variables they return.
-        if (newfn->retTag == RET_VAR) {
+        if (!isSafeToDeref(arg, defMap, useMap, visited))
           return false;
-        }
-        if (!isSafeToDeref(arg, newfn, defMap, useMap, visited)) {
-          return false;
-        }
       } else if (call->isPrimitive(PRIM_MOVE)) {
         SymExpr* newRef = toSymExpr(call->get(1));
         INT_ASSERT(newRef);
-        Vec<FnSymbol*> newVisited;
-        if (!isSafeToDeref(newRef->var, fn, defMap, useMap, &newVisited)) {
+        if (!isSafeToDeref(newRef->var, defMap, useMap, visited))
           return false;
-        }
-      } else if (!call->isPrimitive(PRIM_GET_REF)) {
+      } else if (!call->isPrimitive(PRIM_GET_REF))
         return false;
-      }
     } else
       return false;
   }
@@ -147,7 +140,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
       for_formals(arg, fn) {
         if (arg->type->symbol->hasFlag(FLAG_REF) &&
             !isClassType(arg->type->getValueType()) &&
-            isSafeToDeref(arg, fn, defMap, useMap, NULL)) {
+            isSafeToDeref(arg, defMap, useMap, NULL)) {
 
           //
           // Find actual for arg and dereference arg type.
