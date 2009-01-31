@@ -107,8 +107,8 @@
 		F73113C10E3EB7C000F62922 /* lowerIterators.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F73113BA0E3EB7C000F62922 /* lowerIterators.cpp */; };
 		F73113C20E3EB7C000F62922 /* wrappers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F73113BB0E3EB7C000F62922 /* wrappers.cpp */; };
 		F731D5D00D510AE2009F6897 /* chapel.lex in Sources */ = {isa = PBXBuildFile; fileRef = F721A1370D455F3C00A6B43F /* chapel.lex */; };
-		F73EB6FA0EC5030A00E3026E /* optReadOnlyRefArgs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F73EB6F90EC5030A00E3026E /* optReadOnlyRefArgs.cpp */; };
 		F754D95C0E929C5F00A527CD /* insertDestructors.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F754D95B0E929C5F00A527CD /* insertDestructors.cpp */; };
+		F75628C40F33D2D3008ABCDC /* remoteValueForwarding.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F75628C30F33D2D3008ABCDC /* remoteValueForwarding.cpp */; };
 		F7979A210F1590CB00C8831E /* chplmemtrack.c in Sources */ = {isa = PBXBuildFile; fileRef = F7979A200F1590CB00C8831E /* chplmemtrack.c */; };
 		F7A456F30E1AC2BA0033D1FF /* tmpdirname.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7A456F20E1AC2BA0033D1FF /* tmpdirname.cpp */; };
 		F7A4FD2A0DE7AA9300CDE656 /* chpl_cfg_comm_locales.c in Sources */ = {isa = PBXBuildFile; fileRef = F7A4FD290DE7AA9300CDE656 /* chpl_cfg_comm_locales.c */; };
@@ -347,7 +347,6 @@
 		F73113CC0E3EB83A00F62922 /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = ../compiler/resolution/Makefile.share; sourceTree = SOURCE_ROOT; };
 		F731D5D80D510E84009F6897 /* COPYRIGHT */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 4; name = COPYRIGHT; path = ../COPYRIGHT; sourceTree = SOURCE_ROOT; };
 		F731D5D90D510E84009F6897 /* LICENSE */ = {isa = PBXFileReference; explicitFileType = sourcecode; fileEncoding = 4; name = LICENSE; path = ../LICENSE; sourceTree = SOURCE_ROOT; };
-		F73EB6F90EC5030A00E3026E /* optReadOnlyRefArgs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = optReadOnlyRefArgs.cpp; path = ../compiler/optimizations/optReadOnlyRefArgs.cpp; sourceTree = SOURCE_ROOT; };
 		F73EC0A00ECBBBB100E3026E /* Makefile.mem-dlmalloc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.mem-dlmalloc"; path = "../runtime/etc/Makefile.mem-dlmalloc"; sourceTree = SOURCE_ROOT; };
 		F73EC0A10ECBBBB100E3026E /* Makefile.mem-heapmm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.mem-heapmm"; path = "../runtime/etc/Makefile.mem-heapmm"; sourceTree = SOURCE_ROOT; };
 		F73EC0A40ECBBBF700E3026E /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/launch-amudprun/Makefile"; sourceTree = SOURCE_ROOT; };
@@ -374,6 +373,7 @@
 		F73EC0FA0ECBBF2800E3026E /* Makefile.xt-cle */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.xt-cle"; path = "../make/platform/Makefile.xt-cle"; sourceTree = SOURCE_ROOT; };
 		F73EC0FD0ECBBF5500E3026E /* Norm.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Norm.chpl; path = ../modules/standard/Norm.chpl; sourceTree = SOURCE_ROOT; };
 		F754D95B0E929C5F00A527CD /* insertDestructors.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = insertDestructors.cpp; path = ../compiler/passes/insertDestructors.cpp; sourceTree = SOURCE_ROOT; };
+		F75628C30F33D2D3008ABCDC /* remoteValueForwarding.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = remoteValueForwarding.cpp; path = ../compiler/optimizations/remoteValueForwarding.cpp; sourceTree = SOURCE_ROOT; };
 		F7665EF00D7F3C1E00A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../Makefile; sourceTree = SOURCE_ROOT; };
 		F7665EF50D7F3C6500A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = ../make/Makefile; sourceTree = SOURCE_ROOT; };
 		F7665EF60D7F3C6500A55EBF /* Makefile.base */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.base; path = ../make/Makefile.base; sourceTree = SOURCE_ROOT; };
@@ -748,8 +748,8 @@
 				F721A1280D455E3C00A6B43F /* deadCodeElimination.cpp */,
 				F73113A50E3EB71900F62922 /* inlineFunctions.cpp */,
 				F721A1290D455E3C00A6B43F /* liveVariableAnalysis.cpp */,
-				F73EB6F90EC5030A00E3026E /* optReadOnlyRefArgs.cpp */,
 				F721A12A0D455E3C00A6B43F /* reachingDefinitionsAnalysis.cpp */,
+				F75628C30F33D2D3008ABCDC /* remoteValueForwarding.cpp */,
 				F721A12B0D455E3C00A6B43F /* removeUnnecessaryGotos.cpp */,
 				F713828C0EE7544F0086E1AE /* removeWrapRecords.cpp */,
 				F73113A60E3EB71900F62922 /* scalarReplace.cpp */,
@@ -1549,9 +1549,9 @@
 				F7FDB9410E53AB59006CE064 /* bitVec.cpp in Sources */,
 				F70EA9EC0E648652006F2EE0 /* flags.cpp in Sources */,
 				F754D95C0E929C5F00A527CD /* insertDestructors.cpp in Sources */,
-				F73EB6FA0EC5030A00E3026E /* optReadOnlyRefArgs.cpp in Sources */,
 				F713828D0EE7544F0086E1AE /* removeWrapRecords.cpp in Sources */,
 				F71FADA20F269F2500392B80 /* chapel.ypp in Sources */,
+				F75628C40F33D2D3008ABCDC /* remoteValueForwarding.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
