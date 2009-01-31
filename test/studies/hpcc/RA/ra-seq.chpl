@@ -22,6 +22,25 @@ config const printParams = true,
              printStats = true;
 
 
+record FakeLeader {
+  def these() {
+    for i in 0:indexType..#N_U do
+      yield i;
+  }
+
+  def these(param tag: iterator) where tag == iterator.leader {
+    yield 0:indexType..#N_U;
+  }
+  
+  def these(param tag: iterator, follower) where tag == iterator.follower {
+    for i in follower do
+      yield follower;
+  }
+}
+
+var myFakeLeader: FakeLeader;
+
+
 def main() {
   printConfiguration();
 
@@ -34,9 +53,8 @@ def main() {
 
   [i in TableSpace] T(i) = i;
 
-  for block in UpdateSpace.subBlocks do
-    forall (_,r) in (block,RAStream()) do
-      T(r & indexMask) ^= r;
+  forall (_,r) in (myFakeLeader, RAStream()) do
+    T(r & indexMask) ^= r;
 
   const execTime = getCurrentTime() - startTime;
 
@@ -56,14 +74,8 @@ def printConfiguration() {
 def verifyResults(T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
-  if (sequentialVerify) then
-    forall (_,r) in (0:indexType..#N_U, RAStream()) do
-      T(r & indexMask) ^= r;
-  else
-    forall i in UpdateSpace {
-      const r = getNthRandom(i+1);
-      atomic T(r & indexMask) ^= r;
-    }
+  forall (_,r) in (myFakeLeader, RAStream()) do
+    T(r & indexMask) ^= r;
 
   if (printArrays) then writeln("After verification, T is: ", T, "\n");
 
