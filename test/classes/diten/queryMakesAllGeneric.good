@@ -1,0 +1,2 @@
+queryMakesAllGeneric.chpl:17: error: unresolved call 'foo(R(1,2,4))'
+queryMakesAllGeneric.chpl:8: note: candidates are: foo(r: R(1,?b,3))

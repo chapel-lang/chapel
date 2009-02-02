@@ -1,0 +1,4 @@
+bug: record with only parameter fields used in begin fails allocating 0 bytes
+
+A record with only parameter or type fields is 0 bytes, so the memory
+allocation fails when trying to put it on the heap for use in a begin.
