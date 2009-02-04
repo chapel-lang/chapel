@@ -136,6 +136,21 @@ int32_t chpl_threads_maxThreadsLimit(void) {
   return chpl_coresPerLocale() * 104;
 }
 
+// not sure what the correct value should be here!
+uint32_t chpl_numThreads(void) { return 1; }
+
+// not sure what the correct value should be here!
+uint32_t chpl_numIdleThreads(void) { return 0; }
+
+// not sure what the correct value should be here!
+uint32_t chpl_numQueuedTasks(void) { return 0; }
+
+// not sure what the correct value should be here!
+uint32_t chpl_numRunningTasks(void) { return 1; }
+
+// not sure what the correct value should be here!
+int32_t  chpl_numBlockedTasks(void) { return -1; }
+
 void initChplThreads() {
   chpl_begin_cnt = 0;                     // only main thread running
   chpl_can_exit = 1;                      // mark full - no threads created yet

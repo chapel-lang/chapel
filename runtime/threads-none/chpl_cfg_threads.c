@@ -16,6 +16,7 @@ typedef struct chpl_pool_struct {
 
 static chpl_task_pool_p     task_pool_head; // head of task pool
 static chpl_task_pool_p     task_pool_tail; // tail of task pool
+static int                  queued_cnt;     // number of tasks in the task pool
 
 static _Bool
 launch_next_task(void) {
@@ -25,6 +26,9 @@ launch_next_task(void) {
     task_pool_head = task_pool_head->next;
     if (task_pool_head == NULL)  // task pool is now empty
       task_pool_tail = NULL;
+
+    assert(queued_cnt > 0);
+    queued_cnt--;
 
     //
     // reset serial state
@@ -127,13 +131,25 @@ void chpl_init_single_aux(chpl_single_aux_t *s) {
 // Threads
 
 int32_t chpl_threads_getMaxThreads(void) { return 1; }
+
 int32_t chpl_threads_maxThreadsLimit(void) { return 1; }
+
+uint32_t chpl_numThreads(void) { return 1; }
+
+uint32_t chpl_numIdleThreads(void) { return 0; }
+
+uint32_t chpl_numQueuedTasks(void) { return queued_cnt; }
+
+uint32_t chpl_numRunningTasks(void) { return 1; }
+
+int32_t  chpl_numBlockedTasks(void) { return 0; }
 
 static _Bool serial_state;
 
 void initChplThreads() {
   task_pool_head = task_pool_tail = NULL;
   serial_state = false;
+  queued_cnt = 0;
 }
 
 void exitChplThreads() { }
@@ -167,6 +183,8 @@ chpl_begin(chpl_threadfp_t fp, chpl_threadarg_t a, chpl_bool ignore_serial,
       task_pool_head = task;
     }
     task_pool_tail = task;
+
+    queued_cnt++;
   }
 }
 

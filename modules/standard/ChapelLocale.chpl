@@ -59,6 +59,47 @@ def chpl_int_to_locale(id) {
 }
 
 
+def locale.totalThreads() {
+  var totalThreads: uint;
+
+  on this do totalThreads = __primitive("chpl_numThreads");
+
+  return totalThreads;
+}
+
+def locale.idleThreads() {
+  var idleThreads: uint;
+
+  on this do idleThreads = __primitive("chpl_numIdleThreads");
+
+  return idleThreads;
+}
+
+def locale.queuedTasks() {
+  var queuedTasks: uint;
+
+  on this do queuedTasks = __primitive("chpl_numQueuedTasks");
+
+  return queuedTasks;
+}
+
+def locale.runningTasks() {
+  var numTasks: uint;
+
+  on this do numTasks = __primitive("chpl_numRunningTasks");
+
+  return numTasks;
+}
+
+def locale.blockedTasks() {
+  var blockedTasks: int;
+
+  on this do blockedTasks = __primitive("chpl_numBlockedTasks");
+
+  return blockedTasks;
+}
+
+
 //
 // multi-locale diagnostics/debugging support
 //

@@ -572,6 +572,11 @@ initPrimitive() {
   prim_def("chpl_localeName", returnInfoString);
   prim_def("chpl_maxThreads", returnInfoInt32);
   prim_def("chpl_maxThreadsLimit", returnInfoInt32);
+  prim_def("chpl_numThreads", returnInfoUInt32);
+  prim_def("chpl_numIdleThreads", returnInfoUInt32);
+  prim_def("chpl_numQueuedTasks", returnInfoUInt32);
+  prim_def("chpl_numRunningTasks", returnInfoUInt32);
+  prim_def("chpl_numBlockedTasks", returnInfoInt32);
 
   prim_def("startTrackingMem", returnInfoVoid, true);
 

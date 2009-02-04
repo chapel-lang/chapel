@@ -58,6 +58,7 @@ static chpl_condvar_t   wakeup_signal;      // signal a waiting thread
 static pthread_key_t    serial_key;         // per-thread serial state
 static chpl_task_pool_p task_pool_head;     // head of task pool
 static chpl_task_pool_p task_pool_tail;     // tail of task pool
+static int              queued_cnt;         // number of tasks in the task pool
 static int              waking_cnt;         // number of threads signaled to wakeup
 static int              running_cnt;        // number of running threads 
 static int              threads_cnt;        // number of threads (total)
@@ -281,19 +282,52 @@ void chpl_init_single_aux(chpl_single_aux_t *s) {
 // Threads
 
 static void serial_delete(_Bool *p) {
-  if (p != NULL) {
+  if (p != NULL)
     chpl_free(p, 0, 0);
-  }
 }
 
-int32_t chpl_threads_getMaxThreads(void) { return 0; }
-int32_t chpl_threads_maxThreadsLimit(void) { return 0; }
+static void lock_report_delete(lockReport *p) {
+  if (p != NULL)
+    chpl_free(p, 0, 0);
+}
+
+
+int32_t  chpl_threads_getMaxThreads(void) { return 0; }
+
+int32_t  chpl_threads_maxThreadsLimit(void) { return 0; }
+
+// take the main thread into account
+uint32_t chpl_numThreads(void) { return threads_cnt + 1; }
+
+uint32_t chpl_numIdleThreads(void) {
+  int numIdleThreads;
+
+  // begin critical section
+  chpl_mutex_lock(&threading_lock);
+
+  numIdleThreads = threads_cnt - running_cnt - waking_cnt;
+
+  // end critical section
+  chpl_mutex_unlock(&threading_lock);
+
+  assert(numIdleThreads >= 0);
+  return numIdleThreads;
+}
+
+uint32_t chpl_numQueuedTasks(void) { return queued_cnt; }
+
+// take the main thread into account
+uint32_t chpl_numRunningTasks(void) { return running_cnt + 1; }
+
+int32_t  chpl_numBlockedTasks(void) { return blockreport ? blocked_thread_cnt : -1; }
+
 
 void initChplThreads() {
   chpl_mutex_init(&threading_lock);
   chpl_mutex_init(&task_list_lock);
   if (pthread_cond_init(&wakeup_signal, NULL))
     chpl_internal_error("pthread_cond_init() failed in");
+  queued_cnt = 0;
   running_cnt = 0;                     // only main thread running
   waking_cnt = 0;
   threads_cnt = 0;
@@ -303,7 +337,7 @@ void initChplThreads() {
 
   if (pthread_key_create(&serial_key, (void(*)(void*))serial_delete))
     chpl_internal_error("serial key not created");
-  if (pthread_key_create(&lock_report_key, NULL))
+  if (pthread_key_create(&lock_report_key, (void(*)(void*))lock_report_delete))
     chpl_internal_error("lock report key not created");
 
   if (blockreport) {
@@ -351,9 +385,8 @@ void chpl_set_serial(chpl_bool state) {
     if (state) {
       p = (_Bool*) chpl_alloc(sizeof(_Bool), "serial flag", 0, 0);
       *p = state;
-      if (pthread_setspecific(serial_key, p)) {
+      if (pthread_setspecific(serial_key, p))
         chpl_internal_error("serial key got corrupted");
-      }
     }
   }
   else *p = state;
@@ -474,7 +507,8 @@ static void initializeLockReportForThread() {
   newLockReport->next = NULL;
   newLockReport->maybeLocked = false;
   newLockReport->maybeDeadlocked = false;
-  pthread_setspecific(lock_report_key, newLockReport);
+  if (pthread_setspecific(lock_report_key, newLockReport))
+    chpl_internal_error("lock report key got corrupted");
 
   // Begin critical section
   chpl_mutex_lock(&report_lock);
@@ -511,13 +545,8 @@ static void skip_over_begun_tasks (void) {
 //
 static void
 chpl_begin_helper (chpl_task_pool_p task) {
-
-  // The thread-specific data below should already exist, but for some
-  // unknown reason, it is sometimes missing, so create it if missing.
-  if (blockreport) {
-    if (pthread_getspecific(lock_report_key) == NULL)
-      initializeLockReportForThread();
-  }
+  if (blockreport)
+    initializeLockReportForThread();
 
   // add incoming task to task-table structure in ChapelRuntime
   if(taskreport) {
@@ -547,6 +576,7 @@ chpl_begin_helper (chpl_task_pool_p task) {
     //
     // finished task; decrement running count
     //
+    assert(running_cnt > 0);
     running_cnt--;
 
     //
@@ -593,6 +623,8 @@ chpl_begin_helper (chpl_task_pool_p task) {
     // track of currently running tasks for task-reports on deadlock or 
     // Ctrl+C.
     //
+    assert(queued_cnt > 0);
+    queued_cnt--;
     running_cnt++;
     task = task_pool_head;
     if (task->task_list_entry) {
@@ -652,6 +684,8 @@ launch_next_task(void) {
       chpl_warning(msg, 0, 0);
       warning_issued = true;
     } else {
+      assert(queued_cnt > 0);
+      queued_cnt--;
       threads_cnt++;
       running_cnt++;
       if (task->task_list_entry) {
@@ -728,6 +762,9 @@ static chpl_task_pool_p add_to_task_pool (
   else
     task_pool_head = task;
   task_pool_tail = task;
+
+  queued_cnt++;
+
   return task;
 }
 
@@ -921,6 +958,8 @@ void chpl_execute_tasks_in_list (chpl_task_list_p task_list) {
         task->task_pool_entry = NULL;
         if (waking_cnt > 0)
           waking_cnt--;
+        assert(queued_cnt > 0);
+        queued_cnt--;
       }
 
       // end critical section
