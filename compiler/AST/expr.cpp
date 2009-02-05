@@ -752,7 +752,8 @@ void CallExpr::codegen(FILE* outfile) {
         if (call->isPrimitive(PRIM_GET_LOCALEID)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             if (call->get(1)->typeInfo()->getValueType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              fprintf(outfile, "CHPL_COMM_WIDE_GET_LOCALE(");
+              // get locale field of wide class via wide reference
+              fprintf(outfile, "CHPL_COMM_WIDE_GET(");
               get(1)->codegen(outfile);
               fprintf(outfile, ", ");
               call->get(1)->codegen(outfile);
@@ -779,7 +780,6 @@ void CallExpr::codegen(FILE* outfile) {
               call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             if (get(1)->typeInfo() != dtString) {
               fprintf(outfile, "CHPL_COMM_WIDE_GET(");
-              fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
             } else {
               fprintf(outfile, "CHPL_COMM_WIDE_GET_STRING(");
             }
