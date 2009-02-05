@@ -1,7 +1,13 @@
+#ifdef __OPTIMIZE__
+// Turn assert() into a no op if the C compiler defines the macro above.
+#define NDEBUG
+#endif
+
 #include "chplrt.h"
 #include "chplthreads.h"
 #include "chplmem.h"
 #include "error.h"
+#include <assert.h>
 #include <stdint.h>
 
 //
