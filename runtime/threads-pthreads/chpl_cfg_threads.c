@@ -53,6 +53,7 @@ struct chpl_task_list {
 
 
 static chpl_mutex_t     threading_lock;     // critical section lock
+static chpl_mutex_t     extra_task_lock;    // critical section lock
 static chpl_mutex_t     task_list_lock;     // critical section lock
 static chpl_condvar_t   wakeup_signal;      // signal a waiting thread
 static pthread_key_t    serial_key;         // per-thread serial state
@@ -63,6 +64,8 @@ static int              waking_cnt;         // number of threads signaled to wak
 static int              running_cnt;        // number of running threads 
 static int              threads_cnt;        // number of threads (total)
 static int              blocked_thread_cnt; // number of threads waiting for something
+static int              idle_cnt;           // number of threads that are idle
+static int              extra_task_cnt;     // number of threads executing more than one task
 static _Bool*           maybe_deadlocked;   // whether all existing threads are blocked
 static chpl_mutex_t     report_lock;        // critical section lock
 static pthread_key_t    lock_report_key;
@@ -305,7 +308,7 @@ uint32_t chpl_numIdleThreads(void) {
   // begin critical section
   chpl_mutex_lock(&threading_lock);
 
-  numIdleThreads = threads_cnt - running_cnt - waking_cnt;
+  numIdleThreads = idle_cnt - waking_cnt;
 
   // end critical section
   chpl_mutex_unlock(&threading_lock);
@@ -316,14 +319,48 @@ uint32_t chpl_numIdleThreads(void) {
 
 uint32_t chpl_numQueuedTasks(void) { return queued_cnt; }
 
-// take the main thread into account
-uint32_t chpl_numRunningTasks(void) { return running_cnt + 1; }
+uint32_t chpl_numRunningTasks(void) {
+  int numRunningTasks;
 
-int32_t  chpl_numBlockedTasks(void) { return blockreport ? blocked_thread_cnt : -1; }
+  // begin critical section
+  chpl_mutex_lock(&threading_lock);
+  chpl_mutex_lock(&extra_task_lock);
+
+  // take the main thread into account
+  numRunningTasks = running_cnt + extra_task_cnt + 1;
+
+  // end critical section
+  chpl_mutex_unlock(&threading_lock);
+  chpl_mutex_unlock(&extra_task_lock);
+
+  return numRunningTasks;
+}
+
+int32_t  chpl_numBlockedTasks(void) {
+  if (blockreport) {
+    int numBlockedTasks;
+
+    // begin critical section
+    chpl_mutex_lock(&threading_lock);
+    chpl_mutex_lock(&report_lock);
+
+    numBlockedTasks = blocked_thread_cnt - idle_cnt;
+
+    // end critical section
+    chpl_mutex_unlock(&threading_lock);
+    chpl_mutex_unlock(&report_lock);
+
+    assert(numBlockedTasks >= 0);
+    return numBlockedTasks;
+  }
+  else
+    return -1;
+}
 
 
 void initChplThreads() {
   chpl_mutex_init(&threading_lock);
+  chpl_mutex_init(&extra_task_lock);
   chpl_mutex_init(&task_list_lock);
   if (pthread_cond_init(&wakeup_signal, NULL))
     chpl_internal_error("pthread_cond_init() failed in");
@@ -332,6 +369,8 @@ void initChplThreads() {
   waking_cnt = 0;
   threads_cnt = 0;
   blocked_thread_cnt = 0;
+  idle_cnt = 0;
+  extra_task_cnt = 0;
   maybe_deadlocked = NULL;
   task_pool_head = task_pool_tail = NULL;
 
@@ -574,10 +613,11 @@ chpl_begin_helper (chpl_task_pool_p task) {
     }
 
     //
-    // finished task; decrement running count
+    // finished task; decrement running count and increment idle count
     //
     assert(running_cnt > 0);
     running_cnt--;
+    idle_cnt++;
 
     //
     // wait for a task to be added to the task pool
@@ -625,6 +665,7 @@ chpl_begin_helper (chpl_task_pool_p task) {
     //
     assert(queued_cnt > 0);
     queued_cnt--;
+    idle_cnt--;
     running_cnt++;
     task = task_pool_head;
     if (task->task_list_entry) {
@@ -709,15 +750,14 @@ launch_next_task(void) {
 static void schedule_next_task(int howMany) {
   // if there is an idle thread, send it a signal to wake up and grab
   // a new task
-  if (threads_cnt > running_cnt + waking_cnt) {
+  if (idle_cnt > waking_cnt) {
     // increment waking_cnt by the number of idle threads
-    int idle_cnt = threads_cnt - running_cnt - waking_cnt;
-    if (idle_cnt >= howMany) {
+    if (idle_cnt - waking_cnt >= howMany) {
       waking_cnt += howMany;
       howMany = 0;
     } else {
-      waking_cnt += idle_cnt;
-      howMany -= idle_cnt;
+      howMany -= (idle_cnt - waking_cnt);
+      waking_cnt = idle_cnt;
     }
     pthread_cond_signal(&wakeup_signal);
   }
@@ -911,7 +951,23 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
         chpl_mutex_unlock(&threading_lock);
     }
 
+    // begin critical section
+    chpl_mutex_lock(&extra_task_lock);
+
+    extra_task_cnt++;
+
+    // end critical section
+    chpl_mutex_unlock(&extra_task_lock);
+
     (*first_task->fun)(first_task->arg);
+
+    // begin critical section
+    chpl_mutex_lock(&extra_task_lock);
+
+    extra_task_cnt--;
+
+    // end critical section
+    chpl_mutex_unlock(&extra_task_lock);
 
     if(taskreport) {
         chpl_mutex_lock(&threading_lock);
@@ -965,8 +1021,25 @@ void chpl_execute_tasks_in_list (chpl_task_list_p task_list) {
       // end critical section
       chpl_mutex_unlock(&threading_lock);
 
-      if (task_to_run_fun)
+      if (task_to_run_fun) {
+        // begin critical section
+        chpl_mutex_lock(&extra_task_lock);
+
+        extra_task_cnt++;
+
+        // end critical section
+        chpl_mutex_unlock(&extra_task_lock);
+
         (*task_to_run_fun)(task_to_run_arg);
+
+        // begin critical section
+        chpl_mutex_lock(&extra_task_lock);
+
+        extra_task_cnt--;
+
+        // end critical section
+        chpl_mutex_unlock(&extra_task_lock);
+      }
     }
 
   } while (task != task_list);

@@ -81,19 +81,19 @@ uint32_t  chpl_numQueuedTasks(void);
 // returns the number of tasks that are running on the current locale,
 // including any that may be blocked waiting for something.
 // Note that the value returned could be larger than the limit on the maximum
-// number of threads, since threads could be "suspended," particularly if it
+// number of threads, since a thread could be "suspended," particularly if it
 // is waiting at the end of a cobegin, e.g.  In this case, it could be
-// executing a task inside the cobegin, so in effect it would be executing
-// more than one task.
+// executing a task inside the cobegin, so in effect the same thread would be
+// executing more than one task.
 //
 uint32_t  chpl_numRunningTasks(void);
 
 //
-// returns the number of tasks that are blocked either because they are waiting
-// on a sync or single variable, or because they are idle.
-// Note that this information is only available if the program is run with the
-// -b switch, which enables block reporting and deadlock detection.  If this
-// switch is not specified, -1 will be returned.
+// returns the number of tasks that are blocked waiting on a sync or single
+// variable.
+// Note that this information may only available if the program is run with
+// the -b switch, which enables block reporting and deadlock detection.
+// If this switch is not specified, -1 may be returned.
 //
 int32_t chpl_numBlockedTasks(void);
 
