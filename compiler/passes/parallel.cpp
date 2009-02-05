@@ -754,7 +754,7 @@ static void insertLocalTemp(Expr* expr) {
     stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, se->copy()));
   }
   stmt->insertBefore(new DefExpr(var));
-  stmt->insertBefore(new CallExpr(PRIM_LOCAL_DEREF, se->copy(), var));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, var, se->copy()));
   se->replace(new SymExpr(var));
 }
 
@@ -906,7 +906,7 @@ static void handleLocalBlocks() {
             ret->insertBefore(new DefExpr(tmp));
             if (!fNoLocalChecks)
               ret->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, ret->get(1)->copy()));
-            ret->insertBefore(new CallExpr(PRIM_LOCAL_DEREF, ret->get(1)->copy(), tmp));
+            ret->insertBefore(new CallExpr(PRIM_MOVE, tmp, ret->get(1)->copy()));
             ret->get(1)->replace(new SymExpr(tmp));
           }
         }

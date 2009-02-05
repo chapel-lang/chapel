@@ -334,7 +334,6 @@ initPrimitive() {
 
   // local block primitives
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
-  prim_def(PRIM_LOCAL_DEREF, "local_deref", returnInfoVoid, true);
 
   // thread primitives
   prim_def(PRIM_THREAD_INIT, "thread_init", returnInfoVoid, true);

@@ -58,8 +58,7 @@ enum PrimitiveTag {
   PRIM_SET_REF,  // set a reference to a value
   PRIM_GET_REF,  // dereference a reference
 
-  PRIM_LOCAL_CHECK,          // Assert that a wide ref is on this locale
-  PRIM_LOCAL_DEREF,          // Assign a wide ref addr field to a non-wide
+  PRIM_LOCAL_CHECK,          // assert that a wide ref is on this locale
 
   PRIM_THREAD_INIT,
   PRIM_THREAD_ID,
