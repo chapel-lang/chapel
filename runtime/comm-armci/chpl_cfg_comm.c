@@ -174,7 +174,7 @@ void _chpl_comm_broadcast_global_vars(int numGlobals) {
 
   if (_localeID != 0) {
     for (i = 0; i < numGlobals; i++)
-      _chpl_comm_get(_global_vars_registry[i], 0, &((void **)globalPtrs[0])[i], sizeof(void *));
+      _chpl_comm_get(_global_vars_registry[i], 0, &((void **)globalPtrs[0])[i], sizeof(void *), 0, "");
   }
 }
 
@@ -188,7 +188,7 @@ typedef struct __broadcast_private_helper {
 static void _broadcastPrivateHelperFn(struct __broadcast_private_helper *arg);
 
 void _broadcastPrivateHelperFn(struct __broadcast_private_helper *arg) {
-  _chpl_comm_get(arg->addr, arg->locale, arg->raddr, arg->size);
+  _chpl_comm_get(arg->addr, arg->locale, arg->raddr, arg->size, 0, "");
 }
 
 void _chpl_comm_broadcast_private(void* addr, int size) {
@@ -273,7 +273,7 @@ void _chpl_comm_exit_any(int status) {
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
+void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, char* fn) {
   // this should be an ARMCI put call
 
   if (_localeID == locale)
@@ -293,7 +293,7 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size) {
+void  _chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int ln, char* fn) {
   // this should be an ARMCI get call
 
   if (_localeID == locale)
@@ -452,7 +452,7 @@ void *_gpc_thread_handler(void *arg)
   *done = 1;
 
   if (ginfo->info->block)
-    _chpl_comm_put(done, ginfo->info->caller, ginfo->rhdr, sizeof(int));
+    _chpl_comm_put(done, ginfo->info->caller, ginfo->rhdr, sizeof(int), 0, "");
 
   ARMCI_Free_local(done);
 

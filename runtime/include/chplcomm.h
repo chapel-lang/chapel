@@ -73,11 +73,11 @@ typedef void (*func_p)(void*);
     (wide1).addr = (type)((wide2).addr);                                \
   } while (0)
 
-#define CHPL_COMM_WIDE_DYNAMIC_CAST(wide1, type, cond, wide2)           \
+#define CHPL_COMM_WIDE_DYNAMIC_CAST(wide1, type, cond, wide2, ln, fn)   \
   do {                                                                  \
     chpl__class_id chpl_macro_tmp;                                      \
     CHPL_COMM_WIDE_GET_FIELD_VALUE(chpl_macro_tmp,                      \
-                                   wide2, object, chpl__cid);           \
+                                   wide2, object, chpl__cid, ln, fn);   \
     (wide1).locale = (wide2).locale;                                    \
     (wide1).addr = (cond) ? (type)((wide2).addr) : NULL;                \
   } while (0)
@@ -88,24 +88,24 @@ typedef void (*func_p)(void*);
     (wide).addr = chpl_getPrivatizedClass(id);                          \
   } while (0)
 
-#define CHPL_COMM_WIDE_GET(local, wide)                                 \
-  _chpl_comm_get(&(local), (wide).locale, (wide).addr, sizeof(local))
+#define CHPL_COMM_WIDE_GET(local, wide, ln, fn)                         \
+  _chpl_comm_get(&(local), (wide).locale, (wide).addr, sizeof(local), ln, fn)
 
-#define CHPL_COMM_WIDE_PUT(type, wide, local)                           \
+#define CHPL_COMM_WIDE_PUT(type, wide, local, ln, fn)                   \
   do {                                                                  \
     type chpl_macro_tmp2 = local;                                       \
     _chpl_comm_put(&chpl_macro_tmp2, (wide).locale,                     \
-                   (wide).addr, sizeof(chpl_macro_tmp2));               \
+                   (wide).addr, sizeof(chpl_macro_tmp2), ln, fn);       \
   } while (0)
 
-#define CHPL_COMM_WIDE_GET_STRING(local, wide)                          \
+#define CHPL_COMM_WIDE_GET_STRING(local, wide, ln, fn)                  \
   do {                                                                  \
     char* chpl_macro_tmp = chpl_malloc((wide).size,                     \
                                        sizeof(char),                    \
                                        "wide_get_string",               \
                                        -1, "<internal>");               \
     _chpl_comm_get(chpl_macro_tmp, (wide).locale,                       \
-                   (void*)((wide).addr), (wide).size);                  \
+                   (void*)((wide).addr), (wide).size, ln, fn);          \
     local = chpl_macro_tmp;                                             \
   } while (0)
 
@@ -115,40 +115,40 @@ typedef void (*func_p)(void*);
     (wide1).addr = &((stype)((wide2).addr))->sfield;                    \
   } while (0)
 
-#define CHPL_COMM_WIDE_GET_FIELD_VALUE(local, wide, stype, sfield)      \
+#define CHPL_COMM_WIDE_GET_FIELD_VALUE(local, wide, stype, sfield, ln, fn) \
   _chpl_comm_get(&(local),                                              \
                  (wide).locale,                                         \
                  &((stype)((wide).addr))->sfield,                       \
-                 sizeof(local))
+                 sizeof(local), ln, fn)
 
-#define CHPL_COMM_WIDE_SET_FIELD_VALUE(type, wide, local, stype, sfield) \
+#define CHPL_COMM_WIDE_SET_FIELD_VALUE(type, wide, local, stype, sfield, ln, fn) \
   do {                                                                  \
     type chpl_macro_tmp = local;                                        \
     _chpl_comm_put(&chpl_macro_tmp,                                     \
                    (wide).locale,                                       \
                    &((stype)((wide).addr))->sfield,                     \
-                   sizeof(chpl_macro_tmp));                             \
+                   sizeof(chpl_macro_tmp), ln, fn);                     \
   } while (0)
 
-#define CHPL_COMM_WIDE_ARRAY_GET(wide, cls, ind, stype, sfield)         \
+#define CHPL_COMM_WIDE_ARRAY_GET(wide, cls, ind, stype, sfield, ln, fn) \
   do {                                                                  \
     (wide).locale = (cls).locale;                                       \
-    CHPL_COMM_WIDE_GET_FIELD_VALUE((wide).addr, cls, stype, sfield);    \
+    CHPL_COMM_WIDE_GET_FIELD_VALUE((wide).addr, cls, stype, sfield, ln, fn); \
     (wide).addr += ind;                                                 \
   } while (0)
 
-#define CHPL_COMM_WIDE_ARRAY_GET_VALUE(wide_type, local, cls, ind, stype, sfield, etype) \
+#define CHPL_COMM_WIDE_ARRAY_GET_VALUE(wide_type, local, cls, ind, stype, sfield, etype, ln, fn) \
   do {                                                                  \
     wide_type chpl_macro_tmp;                                           \
-    CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, stype, sfield);  \
-    CHPL_COMM_WIDE_GET(local, chpl_macro_tmp);                          \
+    CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, stype, sfield, ln, fn); \
+    CHPL_COMM_WIDE_GET(local, chpl_macro_tmp, ln, fn);                  \
   } while (0)
 
-#define CHPL_COMM_WIDE_ARRAY_SET_VALUE(wide_type, cls, ind, stype, sfield, etype, val) \
+#define CHPL_COMM_WIDE_ARRAY_SET_VALUE(wide_type, cls, ind, stype, sfield, etype, val, ln, fn) \
   do {                                                                  \
     wide_type chpl_macro_tmp;                                           \
-    CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, stype, sfield);  \
-    CHPL_COMM_WIDE_PUT(etype, chpl_macro_tmp, val);                     \
+    CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, stype, sfield, ln, fn); \
+    CHPL_COMM_WIDE_PUT(etype, chpl_macro_tmp, val, ln, fn);             \
   } while (0)
 
 #define CHPL_WIDE_CLASS_GET_SUPER(type, local, wide)                    \
@@ -157,19 +157,18 @@ typedef void (*func_p)(void*);
     (local).addr = (type)((wide).addr);                                 \
   } while (0)
 
-#define CHPL_COMM_WIDE_CLASS_GET_CID(local, wide, cid, stype)           \
+#define CHPL_COMM_WIDE_CLASS_GET_CID(local, wide, cid, stype, ln, fn)   \
   do {                                                                  \
     chpl__class_id chpl_macro_tmp;                                      \
     CHPL_COMM_WIDE_GET_FIELD_VALUE(chpl_macro_tmp, wide,                \
-                                   stype, chpl__cid);                   \
+                                   stype, chpl__cid, ln, fn);           \
     local = chpl_macro_tmp == cid;                                      \
   } while (0)
 
-#define CHPL_TEST_LOCAL(wide, lineno, filename)              \
-  do {                                                       \
-    if ((wide).locale != _here.locale)                       \
-      chpl_error("cannot access remote data in local block", \
-                 lineno, filename);                          \
+#define CHPL_TEST_LOCAL(wide, ln, fn)                                   \
+  do {                                                                  \
+    if ((wide).locale != _here.locale)                                  \
+      chpl_error("cannot access remote data in local block", ln, fn);   \
   } while (0)
 
 #define CHPL_HEAP_REGISTER_GLOBAL_VAR(i, wide)            \
@@ -297,7 +296,7 @@ void _chpl_comm_exit_any(int status);
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size);
+void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, _string fn);
 
 //
 // get 'size' bytes of remote data at 'raddr' on locale 'locale' to
@@ -306,7 +305,7 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size);
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size);
+void  _chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int ln, _string fn);
 
 //
 // remote fork should launch a thread on locale that runs function f

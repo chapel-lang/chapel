@@ -216,10 +216,10 @@ void _chpl_comm_broadcast_global_vars(int numGlobals) {
     for (i = 0; i < numGlobals; i++) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
       _chpl_comm_get(_global_vars_registry[i], 0,
-                     &((void**)seginfo_table[0].addr)[i], sizeof(void*));
+                     &((void**)seginfo_table[0].addr)[i], sizeof(void*), 0, "");
 #else
       _chpl_comm_get(_global_vars_registry[i], 0,
-                     &_global_vars_registry[i], sizeof(void*));
+                     &_global_vars_registry[i], sizeof(void*), 0, "");
 #endif
     }
   }
@@ -240,7 +240,7 @@ void _chpl_comm_broadcast_private(void* addr, int size) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
       GASNET_Safe(gasnet_AMRequestMedium0(locale, PUTDATA, pbp, payloadSize));
 #else
-      _chpl_comm_put(addr, locale, addr, size);
+      _chpl_comm_put(addr, locale, addr, size, 0, "");
 #endif
     }
   }
@@ -276,12 +276,12 @@ void _chpl_comm_exit_any(int status) {
   _chpl_comm_exit_common(status);
 }
 
-void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
+void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, _string fn) {
   if (_localeID == locale) {
     bcopy(addr, raddr, size);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: remote put to %d\n", _localeID, locale);
+      printf("%d: %s:%d: remote put to %d\n", _localeID, fn, ln, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_mutex_lock(&chpl_comm_diagnostics_lock);
       chpl_comm_puts++;
@@ -291,12 +291,12 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
   }
 }
 
-void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size) {
+void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, _string fn) {
   if (_localeID == locale) {
     bcopy(raddr, addr, size);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: remote get from %d\n", _localeID, locale);
+      printf("%d: %s:%d: remote get from %d\n", _localeID, fn, ln, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_mutex_lock(&chpl_comm_diagnostics_lock);
       chpl_comm_gets++;

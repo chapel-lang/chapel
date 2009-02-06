@@ -717,6 +717,10 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, "_data, ");
         fprintf(outfile, "%s, ", toTypeSymbol(get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->cname);
         get(3)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(4)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(5)->codegen(outfile);
         fprintf(outfile, ")");
       } else
         help_codegen_fn(outfile, "_ARRAY_SET", get(1), get(2), get(3));
@@ -757,6 +761,10 @@ void CallExpr::codegen(FILE* outfile) {
               get(1)->codegen(outfile);
               fprintf(outfile, ", ");
               call->get(1)->codegen(outfile);
+              fprintf(outfile, ", ");
+              call->get(2)->codegen(outfile);
+              fprintf(outfile, ", ");
+              call->get(3)->codegen(outfile);
               fprintf(outfile, ")");
             } else {
               get(1)->codegen(outfile);
@@ -786,6 +794,10 @@ void CallExpr::codegen(FILE* outfile) {
             get(1)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(2)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(3)->codegen(outfile);
             fprintf(outfile, ")");
           } else {
             get(1)->codegen(outfile);
@@ -815,6 +827,10 @@ void CallExpr::codegen(FILE* outfile) {
               fprintf(outfile, "%s", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
               fprintf(outfile, ", ");
               call->get(2)->codegen(outfile);
+              fprintf(outfile, ", ");
+              call->get(3)->codegen(outfile);
+              fprintf(outfile, ", ");
+              call->get(4)->codegen(outfile);
               fprintf(outfile, ")");
             }
           } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
@@ -828,6 +844,10 @@ void CallExpr::codegen(FILE* outfile) {
             if (isUnion(call->get(1)->typeInfo()->getValueType()))
               fprintf(outfile, "_u.");
             call->get(2)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(3)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(4)->codegen(outfile);
             fprintf(outfile, ")");
           } else {
             get(1)->codegen(outfile);
@@ -874,7 +894,11 @@ void CallExpr::codegen(FILE* outfile) {
             call->get(2)->codegen(outfile);
             fprintf(outfile, ", ");
             fprintf(outfile, "%s, ", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
-            fprintf(outfile, "_data)");
+            fprintf(outfile, "_data,");
+            call->get(3)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(4)->codegen(outfile);
+            fprintf(outfile, ")");
           } else {
             get(1)->codegen(outfile);
             fprintf(outfile, " = ");
@@ -894,7 +918,11 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             fprintf(outfile, "%s, ", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
             fprintf(outfile, "_data, ");
-            fprintf(outfile, "%s)", toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->cname);
+            fprintf(outfile, "%s,", toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->cname);
+            call->get(3)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(4)->codegen(outfile);
+            fprintf(outfile, ")");
           } else {
             get(1)->codegen(outfile);
             fprintf(outfile, " = ");
@@ -910,7 +938,11 @@ void CallExpr::codegen(FILE* outfile) {
             call->get(1)->codegen(outfile);
             fprintf(outfile, ", ");
             fprintf(outfile, "%s*", call->get(1)->typeInfo()->getValueType()->symbol->cname);
-            fprintf(outfile, ", _uid)");
+            fprintf(outfile, ", _uid,");
+            call->get(2)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(3)->codegen(outfile);
+            fprintf(outfile, ")");
             break;
           }
         }
@@ -920,8 +952,12 @@ void CallExpr::codegen(FILE* outfile) {
             get(1)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(1)->codegen(outfile);
-            fprintf(outfile, ", chpl__cid_%s, object)",
+            fprintf(outfile, ", chpl__cid_%s, object, ",
                     call->get(2)->typeInfo()->symbol->cname);
+            call->get(3)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(4)->codegen(outfile);
+            fprintf(outfile, ")");
             break;
           }
         }
@@ -948,6 +984,10 @@ void CallExpr::codegen(FILE* outfile) {
             codegenWideDynamicCastCheck(outfile, call->typeInfo()->getField("addr")->type);
             fprintf(outfile, "), ");
             call->get(2)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(3)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(4)->codegen(outfile);
             fprintf(outfile, ")");
             break;
           }
@@ -993,6 +1033,10 @@ void CallExpr::codegen(FILE* outfile) {
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(2)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(3)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(4)->codegen(outfile);
         fprintf(outfile, ")");
         break;
       }
@@ -1308,8 +1352,12 @@ void CallExpr::codegen(FILE* outfile) {
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         fprintf(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE(chpl__class_id, ");
         get(1)->codegen(outfile);
-        fprintf(outfile, ", chpl__cid_%s, object, chpl__cid)",
+        fprintf(outfile, ", chpl__cid_%s, object, chpl__cid,",
                 get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+        get(2)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(3)->codegen(outfile);
+        fprintf(outfile, ")");
       } else {
         fprintf(outfile, "((object)");
         get(1)->codegen(outfile);
@@ -1331,7 +1379,11 @@ void CallExpr::codegen(FILE* outfile) {
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(2)->codegen(outfile);
-        fprintf(outfile, ", %s*, _uid)", get(1)->typeInfo()->getValueType()->symbol->cname);
+        fprintf(outfile, ", %s*, _uid, ", get(1)->typeInfo()->getValueType()->symbol->cname);
+        get(3)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(4)->codegen(outfile);
+        fprintf(outfile, ")");
       } else {
         get(1)->codegen(outfile);
         if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
@@ -1374,6 +1426,10 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, "%s", get(1)->typeInfo()->getField("addr")->type->symbol->cname);
         fprintf(outfile, ", ");
         get(2)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(4)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(5)->codegen(outfile);
         fprintf(outfile, ")");
       } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
         fprintf(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE(");
@@ -1387,6 +1443,10 @@ void CallExpr::codegen(FILE* outfile) {
         if (isUnion(get(1)->typeInfo()->getValueType()))
           fprintf(outfile, "_u.");
         get(2)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(4)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(5)->codegen(outfile);
         fprintf(outfile, ")");
       } else {
         codegen_member(outfile, get(1), get(2));

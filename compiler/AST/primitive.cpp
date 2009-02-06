@@ -279,7 +279,7 @@ initPrimitive() {
 
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);
-  prim_def(PRIM_MOVE, "move", returnInfoVoid);
+  prim_def(PRIM_MOVE, "move", returnInfoVoid, false, true);
   prim_def(PRIM_INIT, "init", returnInfoFirstDeref);
   prim_def(PRIM_REF2STR, "ref to string", returnInfoString);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
@@ -316,13 +316,13 @@ initPrimitive() {
   prim_def(PRIM_BOR_ID, "_bor_id", returnInfoFirst);
   prim_def(PRIM_BXOR_ID, "_bxor_id", returnInfoFirst);
 
-  prim_def(PRIM_SETCID, "setcid", returnInfoVoid, true);
-  prim_def(PRIM_GETCID, "getcid", returnInfoBool);
-  prim_def(PRIM_UNION_SETID, "set_union_id", returnInfoVoid, true);
-  prim_def(PRIM_UNION_GETID, "get_union_id", returnInfoInt64);
+  prim_def(PRIM_SETCID, "setcid", returnInfoVoid, true, true);
+  prim_def(PRIM_GETCID, "getcid", returnInfoBool, false, true);
+  prim_def(PRIM_UNION_SETID, "set_union_id", returnInfoVoid, true, true);
+  prim_def(PRIM_UNION_GETID, "get_union_id", returnInfoInt64, false, true);
   prim_def(PRIM_GET_MEMBER, ".", returnInfoGetMemberRef);
-  prim_def(PRIM_GET_MEMBER_VALUE, ".v", returnInfoGetMember);
-  prim_def(PRIM_SET_MEMBER, ".=", returnInfoVoid, true);
+  prim_def(PRIM_GET_MEMBER_VALUE, ".v", returnInfoGetMember, false, true);
+  prim_def(PRIM_SET_MEMBER, ".=", returnInfoVoid, true, true);
   prim_def(PRIM_CHECK_NIL, "_check_nil", returnInfoVoid, true, true);
   prim_def(PRIM_NEW, "new", returnInfoFirst);
   prim_def(PRIM_GET_REAL, "complex_get_real", returnInfoComplexField);
@@ -330,7 +330,7 @@ initPrimitive() {
 
   prim_def(PRIM_INIT_REF, "init ref", returnInfoVoid, true);
   prim_def(PRIM_SET_REF, "set ref", returnInfoRef);
-  prim_def(PRIM_GET_REF, "get ref", returnInfoVal);
+  prim_def(PRIM_GET_REF, "get ref", returnInfoVal, false, true);
 
   // local block primitives
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
@@ -388,7 +388,7 @@ initPrimitive() {
   prim_def(PRIM_PTR_NOTEQUAL, "ptr_neq", returnInfoBool);
   prim_def(PRIM_ISSUBTYPE, "is_subtype", returnInfoBool);
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
-  prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast);
+  prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false, true);
   prim_def(PRIM_TYPEOF, "typeof", returnInfoFirstDeref);
   prim_def(PRIM_GET_ITERATOR_RETURN, "get iterator return", returnIteratorType);
   prim_def(PRIM_USE, "use", returnInfoVoid, true);
@@ -399,11 +399,11 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_ALLOC, "array_alloc", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_FREE, "array_free", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_FREE_ELTS, "array_free_elts", returnInfoVoid, true);
-  prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex);
-  prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue);
+  prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false, true);
+  prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false, true);
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
-  prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true);
-  prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true);
+  prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true, true);
+  prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true, true);
 
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);
@@ -438,7 +438,7 @@ initPrimitive() {
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 
   prim_def(PRIM_NUM_LOCALES, "_chpl_comm_default_num_locales", returnInfoInt32);
-  prim_def(PRIM_GET_LOCALEID, "_get_locale", returnInfoInt32);
+  prim_def(PRIM_GET_LOCALEID, "_get_locale", returnInfoInt32, false, true);
   prim_def(PRIM_LOCALE_ID, "_localeID", returnInfoInt32);
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoInt32);
 

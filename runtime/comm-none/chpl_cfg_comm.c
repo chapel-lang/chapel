@@ -76,11 +76,11 @@ void _chpl_comm_exit_any(int status) { }
 
 void _chpl_comm_exit_all(int status) { }
 
-void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
+void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, _string fn) {
   memcpy(raddr, addr, size);
 }
 
-void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size) {
+void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, _string fn) {
   memcpy(addr, raddr, size);
 }
 
