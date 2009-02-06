@@ -489,15 +489,12 @@ class Block1DDom: BaseArithmeticDomain {
   }
 
   def supportsPrivatization() param return true;
-  def privatize1() {
+  def privatize() {
     var privateDist = new Block1D(idxType, dist);
     var c = new Block1DDom(idxType=idxType, rank=rank, stridable=stridable, dist=privateDist);
     c.locDoms = locDoms;
     c.whole = whole;
     return c;
-  }
-  def privatize2(pid: int) {
-    this.pid = pid;
   }
   def reprivatize(other) {
     locDoms = other.locDoms;
@@ -636,6 +633,8 @@ class Block1DArr: BaseArray {
   // just to get it at the statement level.
   // SJD: note cannot do this anymore because constructor does not
   // setup (for privatization reasons)
+  // SJD update: maybe can do this again with privatize simplification
+  // SJD: actually, this can only be const if the Chapel array is const?
   //
   var locArr: [dom.dist.targetLocDom] LocBlock1DArr(idxType, eltType, stridable);
 
@@ -648,16 +647,13 @@ class Block1DArr: BaseArray {
   }
 
   def supportsPrivatization() param return true;
-  def privatize1() {
-    var c = new Block1DArr(idxType, eltType, stridable, dom);
-    c.locArr = locArr;
-    return c;
-  }
-  def privatize2(pid) {
+  def privatize() {
     var dompid = dom.pid;
     var thisdom = dom;
-    this.dom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
-    this.pid = pid;
+    var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+    var c = new Block1DArr(idxType, eltType, stridable, privdom);
+    c.locArr = locArr;
+    return c;
   }
 
   // GLOBAL ARRAY INTERFACE:

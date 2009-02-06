@@ -10,13 +10,13 @@ def _newPrivatizedClass(value) {
   for loc in Locales {
     if loc != here {
       on loc {
-        var mine = value.privatize1();
+        var mine = value.privatize();
         __primitive("chpl_newPrivatizedClass", mine);
-        mine.privatize2(n);
+        mine.pid = n;
       }
     } else {
       __primitive("chpl_newPrivatizedClass", value);
-      value.privatize2(n);
+      value.pid = n;
     }
   }
   privatizeLock$.readFE();
