@@ -17,18 +17,9 @@
 general regressions
 ===================
 
-precision issue, due to user code changing (07/01/08) (bradc)
--------------------------------------------------------------
-[Error matching program output for
-studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
-
 extremely rare race condition in module initialization
 ------------------------------------------------------
 [Error matching program output for modules/diten/useInBegin]
-
-updates don't seem to have happened (most settings other than basic linux)
---------------------------------------------------------------------------
-[Error matching program output for studies/hpcc/RA/ra-seq]
 
 
 =================
@@ -38,10 +29,6 @@ linux regressions
 maxThreads is 300, but can't create more than 254 threads
 ---------------------------------------------------------
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
-
-out-of-memory error
--------------------
-[Error matching program output for stress/deitz/test_10k_coforall]
 
 
 ================================
@@ -84,9 +71,9 @@ memory profile changed
 gasnet-everything regressions (other than the above)
 ====================================================
 
-Needs to be retired (bradc)
----------------------------
-[Error matching program output for multilocale/bradc/distribWarning]
+occasional nondeterminism in output (01/30/09, 02/03/09)
+--------------------------------------------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/streamCommCheck]
 
 verbose output now shows launch command (10/31/08) (bradc)
 ----------------------------------------------------------
@@ -103,9 +90,9 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc] (e.g., 01/29/09)
 [Error: Timed out executing program users/franzf/v1/chpl/main] (e.g., 01/29/09)
@@ -246,9 +233,9 @@ xt-cle-specific failures
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
 
-float.h gone missing
---------------------
-*a bunch of varying stuff*
+some sort of gdb compatability issue?
+-------------------------------------
+[Error matching program output for execflags/bradc/gdbddash/declint2]
 
 long identifiers
 ----------------
