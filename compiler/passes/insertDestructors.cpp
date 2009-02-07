@@ -12,8 +12,6 @@
 #include "misc.h"
 #include <cstring>
 
-// This file is under construction!  Please pardon the dust and noise!
-
 
 bool fEnableDestructorCalls = true;
 
@@ -104,23 +102,21 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
       if (var->defPoint->parentSymbol &&
           // no need to check global symbols
           !isModuleSymbol(var->defPoint->parentSymbol)) {
-        if (useMap.get(var)) {
-          BlockStmt* parentBlock = toBlockStmt(var->defPoint->parentExpr);
-          if (!parentBlock) {
-            FnSymbol *fn = toFnSymbol(var->defPoint->parentSymbol);
-            if (!fn)
-              fn = toFnSymbol(var->defPoint->parentSymbol->defPoint->parentSymbol);
-            if (fn)
-              parentBlock = fn->body;
-          }
-          if (parentBlock) {
-            forv_Vec(SymExpr, se, *useMap.get(var)) {
-              Expr* block = se->parentExpr;
-              while (block && toBlockStmt(block) != parentBlock)
-                block = block->parentExpr;
-              if (!block)
-                INT_FATAL("var used outside of block in which it is declared");
-            }
+        BlockStmt* parentBlock = toBlockStmt(var->defPoint->parentExpr);
+        if (!parentBlock) {
+          FnSymbol *fn = toFnSymbol(var->defPoint->parentSymbol);
+          if (!fn)
+            fn = toFnSymbol(var->defPoint->parentSymbol->defPoint->parentSymbol);
+          if (fn)
+            parentBlock = fn->body;
+        }
+        if (parentBlock) {
+          for_uses(se, useMap, var) {
+            Expr* block = se->parentExpr;
+            while (block && toBlockStmt(block) != parentBlock)
+              block = block->parentExpr;
+            if (!block)
+              INT_FATAL("var used outside of block in which it is declared");
           }
         }
       }
@@ -156,7 +152,7 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
         INT_ASSERT(move->isPrimitive(PRIM_MOVE));
         SymExpr* lhs = toSymExpr(move->get(1));
         INT_ASSERT(lhs);
-        if (!lhs->var->type->destructor || !gFnSymbols.in(lhs->var->type->destructor) ||
+        if (!lhs->var->type->destructor ||
             // don't destroy global variables
             isModuleSymbol(lhs->var->defPoint->parentSymbol)) {
           continue;
@@ -185,8 +181,8 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
           forv_Vec(Symbol, var, varsToTrack) {
             // may not be OK if there is more than one definition of var
             //INT_ASSERT(defMap.get(var)->length() == 1);
-            if (maybeCallDestructor && useMap.get(var))
-              forv_Vec(SymExpr, se, *useMap.get(var)) {
+            if (maybeCallDestructor)
+              for_uses(se, useMap, var) {
                 // The following conditional may not seem necessary, particularly since
                 // a similar check appears above, but there may be new cases in which
                 // a variable is used outside of the block in which it is defined!
@@ -259,7 +255,7 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
                     varsToTrack.add_exclusive(actual_to_formal(se));
                   }
                 } else
-                  printf("found a use of %s\n", var->cname);
+                  INT_FATAL(se, "unexpected use");
               }
           }
           if (maybeCallDestructor && !onlyMarkConstructors) {
