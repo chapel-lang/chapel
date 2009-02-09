@@ -1,7 +1,7 @@
 use Schedules;
 use List;
 
-class DefaultDistribution: Distribution {
+class DefaultDistribution: BaseDistribution {
   def newArithmeticDomain(param rank: int, type idxType, param stridable: bool)
     return new DefaultArithmeticDomain(rank, idxType, stridable, this);
 

@@ -16,7 +16,7 @@
 config param debugBlock1D = false;
 
 
-class Block1D : Distribution {
+class Block1D : BaseDistribution {
   type idxType = int(64); // distribution's index type, for domain
 
   const boundingBox: domain(1, idxType);

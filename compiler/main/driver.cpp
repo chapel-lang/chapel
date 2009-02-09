@@ -66,7 +66,7 @@ bool fPrintDispatch = false;
 bool fWarnPromotion = false;
 bool printCppLineno = false;
 int num_constants_per_variable = 1;
-char defaultDistribution[256] = "SingleLocaleDistribution";
+char defaultDistribution[256] = "DefaultDistribution";
 int instantiation_limit = 256;
 char mainModuleName[256] = "";
 

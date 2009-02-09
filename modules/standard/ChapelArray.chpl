@@ -791,13 +791,13 @@ def _toFollower(x: _tuple, leaderIndex, type alignment) {
     if dim == x.size-1 {
       type tdim = alignment(dim);
       type tdimp1 = alignment(dim+1);
-      if tdim == Distribution & tdimp1 == Distribution {
+      if tdim == BaseDistribution & tdimp1 == BaseDistribution {
         return (_toFollower(x(dim), leaderIndex, true),
                 _toFollower(x(dim+1), leaderIndex, true));
-      } else if tdim == Distribution {
+      } else if tdim == BaseDistribution {
         return (_toFollower(x(dim), leaderIndex, true),
                 _toFollower(x(dim+1), leaderIndex));
-      } else if tdimp1 == Distribution {
+      } else if tdimp1 == BaseDistribution {
         return (_toFollower(x(dim), leaderIndex),
                 _toFollower(x(dim+1), leaderIndex, true));
       } else {
@@ -806,7 +806,7 @@ def _toFollower(x: _tuple, leaderIndex, type alignment) {
       }
     } else {
       type tdim = alignment(dim);
-      if tdim == Distribution {
+      if tdim == BaseDistribution {
         return (_toFollower(x(dim), leaderIndex, true),
                 (..._toFollowerHelp(x, leaderIndex, dim+1)));
       } else {

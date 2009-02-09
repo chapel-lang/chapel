@@ -81,7 +81,7 @@ void parse(void) {
       dtBaseArray = toClassType(ts->type);
     } else if (!strcmp(ts->name, "BaseDomain")) {
       dtBaseDomain = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "Distribution")) {
+    } else if (!strcmp(ts->name, "BaseDistribution")) {
       dtDistribution = toClassType(ts->type);
     } else if (!strcmp(ts->name, "Writer")) {
       dtWriter = toClassType(ts->type);

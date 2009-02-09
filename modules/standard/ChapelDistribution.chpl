@@ -1,7 +1,7 @@
 //
 // Abstract distribution class
 //
-class Distribution {
+class BaseDistribution {
   def newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
     compilerError("arithmetic domains not supported by this distribution");
   }
