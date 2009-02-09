@@ -7,6 +7,6 @@ endif
 
 cd $CHPL_HOME/compiler
 
-$grep -e "$argv" */*.lex */*.y */*.h */*.cpp */*/*.h
+$grep -e "$argv" */*.lex */*.y */*.ypp */*.h */*.cpp */*/*.h
 
 cd -
