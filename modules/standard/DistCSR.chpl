@@ -1,12 +1,12 @@
 class CSR {
-  def newSparseDomain(param rank: int, type idxType, dom: domain) {
-    return new CSRDomain(rank=rank, idxType=idxType, dist=this, parentDom=dom);
+  def newSparseDom(param rank: int, type idxType, dom: domain) {
+    return new CSRDom(rank=rank, idxType=idxType, dist=this, parentDom=dom);
   }
 }
 
 use Search;
 
-class CSRDomain: BaseSparseDomain {
+class CSRDom: BaseSparseDom {
   param rank : int;
   type idxType;
   var dist: CSR;
@@ -37,7 +37,7 @@ class CSRDomain: BaseSparseDomain {
   def setIndices(x) { }
 
   def buildArray(type eltType)
-    return new CSRArray(eltType, rank, idxType, dom=this);
+    return new CSRArr(eltType, rank, idxType, dom=this);
 
   def these() {
     var cursorRow = rowRange.low;
@@ -130,12 +130,12 @@ class CSRDomain: BaseSparseDomain {
 }
 
 
-class CSRArray: BaseArray {
+class CSRArr: BaseArr {
   type eltType;
   param rank : int;
   type idxType;
 
-  var dom : CSRDomain(rank=rank, idxType=idxType);
+  var dom : CSRDom(rank=rank, idxType=idxType);
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 
@@ -174,7 +174,7 @@ class CSRArray: BaseArray {
 }
 
 
-def CSRDomain.writeThis(f: Writer) {
+def CSRDom.writeThis(f: Writer) {
   f.writeln("[");
   for r in rowRange {
     const lo = rowStart(r);
@@ -187,7 +187,7 @@ def CSRDomain.writeThis(f: Writer) {
 }
 
 
-def CSRArray.writeThis(f: Writer) {
+def CSRArr.writeThis(f: Writer) {
   for r in dom.rowRange {
     const lo = dom.rowStart(r);
     const hi = dom.rowStop(r);

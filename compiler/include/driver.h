@@ -61,7 +61,7 @@ extern bool developer;
 extern int num_constants_per_variable;
 extern bool printCppLineno;
 
-extern char defaultDistribution[256];
+extern char defaultDist[256];
 extern char mainModuleName[256];
 extern bool ignore_warnings;
 extern bool ignore_errors;

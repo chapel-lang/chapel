@@ -77,12 +77,12 @@ void parse(void) {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (!strcmp(ts->name, "_array")) {
       dtArray = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "BaseArray")) {
-      dtBaseArray = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "BaseDomain")) {
-      dtBaseDomain = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "BaseDistribution")) {
-      dtDistribution = toClassType(ts->type);
+    } else if (!strcmp(ts->name, "BaseArr")) {
+      dtBaseArr = toClassType(ts->type);
+    } else if (!strcmp(ts->name, "BaseDom")) {
+      dtBaseDom = toClassType(ts->type);
+    } else if (!strcmp(ts->name, "BaseDist")) {
+      dtDist = toClassType(ts->type);
     } else if (!strcmp(ts->name, "Writer")) {
       dtWriter = toClassType(ts->type);
     } else if (!strcmp(ts->name, "file")) {

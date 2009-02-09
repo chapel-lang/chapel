@@ -1,12 +1,12 @@
 use List;
-class DefaultEnumDomain: BaseEnumDomain {
+class DefaultEnumDom: BaseEnumDom {
   type idxType;
-  var dist: DefaultDistribution;
-  var adomain: DefaultAssociativeDomain(idxType);
+  var dist: DefaultDist;
+  var adomain: DefaultAssociativeDom(idxType);
 
-  def DefaultEnumDomain(type idxType, dist: DefaultDistribution) {
+  def DefaultEnumDom(type idxType, dist: DefaultDist) {
     this.dist = dist;
-    adomain = new DefaultAssociativeDomain(idxType, dist);
+    adomain = new DefaultAssociativeDom(idxType, dist);
     var enumTuple = _enum_enumerate(idxType);
     for param i in 1..enumTuple.size do
       adomain.add(enumTuple(i));
@@ -14,7 +14,7 @@ class DefaultEnumDomain: BaseEnumDomain {
 
   def getIndices() return adomain;
 
-  def setIndices(b: DefaultAssociativeDomain) {
+  def setIndices(b: DefaultAssociativeDom) {
     adomain.setIndices(b);
   }
 
@@ -43,12 +43,12 @@ class DefaultEnumDomain: BaseEnumDomain {
   }
 
   def buildArray(type eltType) {
-    var ia = new DefaultEnumArray(eltType, idxType, dom=this);
+    var ia = new DefaultEnumArr(eltType, idxType, dom=this);
     return ia;
   }
 }
 
-def DefaultEnumDomain.writeThis(f: Writer) {
+def DefaultEnumDom.writeThis(f: Writer) {
   var enumTuple = _enum_enumerate(idxType);
   f.write("[");
   if (enumTuple.size > 1) {
@@ -59,7 +59,7 @@ def DefaultEnumDomain.writeThis(f: Writer) {
   f.write("]");
 }
 
-def DefaultEnumArray.writeThis(f: Writer) {
+def DefaultEnumArr.writeThis(f: Writer) {
   var enumTuple = _enum_enumerate(idxType);
   if (enumTuple.size > 1) {
     f.write(anarray(enumTuple(1)));
@@ -68,12 +68,12 @@ def DefaultEnumArray.writeThis(f: Writer) {
   }
 }
 
-class DefaultEnumArray: BaseArray {
+class DefaultEnumArr: BaseArr {
   type eltType;
   type idxType;
 
-  var dom: DefaultEnumDomain(idxType=idxType);
-  var anarray = new DefaultAssociativeArray(eltType, idxType, dom.adomain);
+  var dom: DefaultEnumDom(idxType=idxType);
+  var anarray = new DefaultAssociativeArr(eltType, idxType, dom.adomain);
 
   def this(ind : idxType) var : eltType
     return anarray(ind);

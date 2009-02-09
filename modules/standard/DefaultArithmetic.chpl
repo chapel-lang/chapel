@@ -1,36 +1,35 @@
 use Schedules;
 use List;
 
-class DefaultDistribution: BaseDistribution {
-  def newArithmeticDomain(param rank: int, type idxType, param stridable: bool)
-    return new DefaultArithmeticDomain(rank, idxType, stridable, this);
+class DefaultDist: BaseDist {
+  def newArithmeticDom(param rank: int, type idxType, param stridable: bool)
+    return new DefaultArithmeticDom(rank, idxType, stridable, this);
 
-  def newAssociativeDomain(type idxType)
-    return new DefaultAssociativeDomain(idxType, this);
+  def newAssociativeDom(type idxType)
+    return new DefaultAssociativeDom(idxType, this);
 
-  def newEnumeratedDomain(type idxType)
-    return new DefaultEnumDomain(idxType, this);
+  def newEnumDom(type idxType)
+    return new DefaultEnumDom(idxType, this);
 
-  def newOpaqueDomain(type idxType)
-    return new DefaultOpaqueDomain(this);
+  def newOpaqueDom(type idxType)
+    return new DefaultOpaqueDom(this);
 
-  def newSparseDomain(param rank: int, type idxType, dom: domain)
-    return new DefaultSparseDomain(rank, idxType, this, dom);
+  def newSparseDom(param rank: int, type idxType, dom: domain)
+    return new DefaultSparseDom(rank, idxType, this, dom);
 }
 
 
-var defaultDistribution = new DefaultDistribution();
-var Block = new DefaultDistribution();
+var defaultDist = new DefaultDist();
 
 
-class DefaultArithmeticDomain: BaseArithmeticDomain {
+class DefaultArithmeticDom: BaseArithmeticDom {
   param rank : int;
   type idxType;
   param stridable: bool;
-  var dist: DefaultDistribution;
+  var dist: DefaultDist;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
-  def DefaultArithmeticDomain(param rank, type idxType, param stridable,
+  def DefaultArithmeticDom(param rank, type idxType, param stridable,
                                    dist) {
     this.dist = dist;
   }
@@ -205,12 +204,12 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
   }
 
   def buildArray(type eltType) {
-    return new DefaultArithmeticArray(eltType, rank, idxType, stridable,
+    return new DefaultArithmeticArr(eltType, rank, idxType, stridable,
                                            dom=this);
   }
 
   def slice(param stridable: bool, ranges) {
-    var d = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
+    var d = new DefaultArithmeticDom(rank, idxType, stridable, dist);
     for param i in 1..rank do
       d.ranges(i) = dim(i)(ranges(i));
     return d;
@@ -220,7 +219,7 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
-    var d = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
+    var d = new DefaultArithmeticDom(rank, idxType, stridable, dist);
     var i = 1;
     for param j in 1..args.size {
       if isRange(args(j)) {
@@ -232,21 +231,21 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
   }
 
   def translate(off: rank*idxType) {
-    var x = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
+    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).translate(off(i));
     return x;
   }
 
   def chpl__unTranslate(off: rank*idxType) {
-    var x = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
+    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).chpl__unTranslate(off(i));
     return x;
   }
 
   def interior(off: rank*idxType) {
-    var x = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
+    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do {
       if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
           (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
@@ -258,14 +257,14 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
   }
 
   def exterior(off: rank*idxType) {
-    var x = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
+    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).exterior(off(i));
     return x;
   }
 
   def expand(off: rank*idxType) {
-    var x = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
+    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do {
       x.ranges(i) = ranges(i).expand(off(i));
       if (x.ranges(i)._low > x.ranges(i)._high) {
@@ -276,7 +275,7 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
   }  
 
   def expand(off: idxType) {
-    var x = new DefaultArithmeticDomain(rank, idxType, stridable, dist);
+    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i).expand(off);
     return x;
@@ -293,14 +292,14 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
   }
 
   def strideBy(str : rank*int) {
-    var x = new DefaultArithmeticDomain(rank, idxType, true, dist);
+    var x = new DefaultArithmeticDom(rank, idxType, true, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str(i);
     return x;
   }
 
   def strideBy(str : int) {
-    var x = new DefaultArithmeticDomain(rank, idxType, true, dist);
+    var x = new DefaultArithmeticDom(rank, idxType, true, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str;
     return x;
@@ -308,14 +307,14 @@ class DefaultArithmeticDomain: BaseArithmeticDomain {
 }
 
 
-class DefaultArithmeticArray: BaseArray {
+class DefaultArithmeticArr: BaseArr {
   type eltType;
   param rank : int;
   type idxType;
   param stridable: bool;
   param reindexed: bool = false; // may have blk(rank) != 1
 
-  var dom : DefaultArithmeticDomain(rank=rank, idxType=idxType,
+  var dom : DefaultArithmeticDom(rank=rank, idxType=idxType,
                                          stridable=stridable);
   var off: rank*idxType;
   var blk: rank*idxType;
@@ -326,7 +325,7 @@ class DefaultArithmeticArray: BaseArray {
   var data : _ddata(eltType);
   var noinit: bool = false;
 
-  def ~DefaultArithmeticArray() {
+  def ~DefaultArithmeticArr() {
     destroyData();
     destroyDom();
   }
@@ -416,13 +415,13 @@ class DefaultArithmeticArray: BaseArray {
     return data(sum:int); // !!ahh
   }
 
-  def reindex(d: DefaultArithmeticDomain) {
+  def reindex(d: DefaultArithmeticDom) {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
     for param i in 1..rank do
       if d.dim(i).length != dom.dim(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    var alias = new DefaultArithmeticArray(eltType, d.rank, d.idxType,
+    var alias = new DefaultArithmeticArr(eltType, d.rank, d.idxType,
                                                 d.stridable, true, d,
                                                 noinit=true);
     //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit=true);
@@ -446,8 +445,8 @@ class DefaultArithmeticArray: BaseArray {
         halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
   }
 
-  def slice(d: DefaultArithmeticDomain) {
-    var alias = new DefaultArithmeticArray(eltType, rank, idxType,
+  def slice(d: DefaultArithmeticDom) {
+    var alias = new DefaultArithmeticArr(eltType, rank, idxType,
                                                 d.stridable, reindexed,
                                                 d, noinit=true);
     d._count += 1;
@@ -481,7 +480,7 @@ class DefaultArithmeticArray: BaseArray {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
-    var alias = new DefaultArithmeticArray(eltType, newRank, idxType,
+    var alias = new DefaultArithmeticArr(eltType, newRank, idxType,
                                                 newStridable, true, d,
                                                 noinit=true);
     d._count += 1;
@@ -507,7 +506,7 @@ class DefaultArithmeticArray: BaseArray {
 
   def reallocate(d: domain) {
     if (d._value.type == dom.type) {
-      var copy = new DefaultArithmeticArray(eltType, rank, idxType,
+      var copy = new DefaultArithmeticArr(eltType, rank, idxType,
                                                  d._value.stridable, reindexed,
                                                  d._value);
       copy.dom._count += 2;
@@ -553,14 +552,14 @@ class DefaultArithmeticArray: BaseArray {
   }
 }
 
-def DefaultArithmeticDomain.writeThis(f: Writer) {
+def DefaultArithmeticDom.writeThis(f: Writer) {
   f.write("[", dim(1));
   for i in 2..rank do
     f.write(", ", dim(i));
   f.write("]");
 }
 
-def DefaultArithmeticArray.writeThis(f: Writer) {
+def DefaultArithmeticArr.writeThis(f: Writer) {
   if dom.numIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do

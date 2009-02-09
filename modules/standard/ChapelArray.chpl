@@ -51,22 +51,22 @@ def _getDomain(value) {
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist, param rank: int, type idxType = int(32),
                                  param stridable: bool = false) type
-  return _newDomain(dist.newArithmeticDomain(rank, idxType, stridable));
+  return _newDomain(dist.newArithmeticDom(rank, idxType, stridable));
 
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist, type idxType) type
  where !__primitive("isEnumType", idxType) && idxType != opaque && idxType != _OpaqueIndex
-  return _newDomain(dist.newAssociativeDomain(idxType));
+  return _newDomain(dist.newAssociativeDom(idxType));
 
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist, type idxType) type
  where __primitive("isEnumType", idxType)
-  return _newDomain(dist.newEnumeratedDomain(idxType));
+  return _newDomain(dist.newEnumDom(idxType));
 
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist, type idxType) type
  where idxType == _OpaqueIndex
-  return _newDomain(dist.newOpaqueDomain(idxType));
+  return _newDomain(dist.newOpaqueDom(idxType));
 
 // This function has no 'has runtime type' pragma since the idxType of
 // opaque domains is _OpaqueIndex, not opaque.  This function is
@@ -78,19 +78,19 @@ def chpl__buildDomainRuntimeType(dist, type idxType) type
 
 pragma "has runtime type"
 def chpl__buildSparseDomainRuntimeType(dist, dom: domain) type
-  return _newDomain(dist.newSparseDomain(dom.rank, dom._value.idxType, dom));
+  return _newDomain(dist.newSparseDom(dom.rank, dom._value.idxType, dom));
 
 def chpl__convertValueToRuntimeType(dom: domain) type
- where dom._value:BaseArithmeticDomain
+ where dom._value:BaseArithmeticDom
   return chpl__buildDomainRuntimeType(dom._value.dist, dom._value.rank,
                             dom._value.idxType, dom._value.stridable);
 
 def chpl__convertValueToRuntimeType(dom: domain) type
- where dom._value:BaseSparseDomain
+ where dom._value:BaseSparseDom
   return chpl__buildSparseDomainRuntimeType(dom._value.dist, dom._value.parentDom);
 
 def chpl__convertValueToRuntimeType(dom: domain) type
-where !dom._value:BaseArithmeticDomain && !dom._value:BaseSparseDomain
+where !dom._value:BaseArithmeticDom && !dom._value:BaseSparseDom
   return chpl__buildDomainRuntimeType(dom._value.dist, dom._value.idxType);
 
 //
@@ -151,34 +151,34 @@ def chpl__buildIndexType(d: domain) type
 def chpl__buildIndexType(type idxType) type where idxType == opaque
   return _OpaqueIndex;
 
-def isArithmeticDomain(d: domain) param {
-  def isArithmeticDomainClass(dc: BaseArithmeticDomain) param return true;
-  def isArithmeticDomainClass(dc) param return false;
-  return isArithmeticDomainClass(d._value);
+def isArithmeticDom(d: domain) param {
+  def isArithmeticDomClass(dc: BaseArithmeticDom) param return true;
+  def isArithmeticDomClass(dc) param return false;
+  return isArithmeticDomClass(d._value);
 }
 
-def isAssociativeDomain(d: domain) param {
-  def isAssociativeDomainClass(dc: BaseAssociativeDomain) param return true;
-  def isAssociativeDomainClass(dc) param return false;
-  return isAssociativeDomainClass(d._value);
+def isAssociativeDom(d: domain) param {
+  def isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
+  def isAssociativeDomClass(dc) param return false;
+  return isAssociativeDomClass(d._value);
 }
 
-def isEnumDomain(d: domain) param {
-  def isEnumDomainClass(dc: BaseEnumDomain) param return true;
-  def isEnumDomainClass(dc) param return false;
-  return isEnumDomainClass(d._value);
+def isEnumDom(d: domain) param {
+  def isEnumDomClass(dc: BaseEnumDom) param return true;
+  def isEnumDomClass(dc) param return false;
+  return isEnumDomClass(d._value);
 }
 
-def isOpaqueDomain(d: domain) param {
-  def isOpaqueDomainClass(dc: BaseOpaqueDomain) param return true;
-  def isOpaqueDomainClass(dc) param return false;
-  return isOpaqueDomainClass(d._value);
+def isOpaqueDom(d: domain) param {
+  def isOpaqueDomClass(dc: BaseOpaqueDom) param return true;
+  def isOpaqueDomClass(dc) param return false;
+  return isOpaqueDomClass(d._value);
 }
 
-def isSparseDomain(d: domain) param {
-  def isSparseDomainClass(dc: BaseSparseDomain) param return true;
-  def isSparseDomainClass(dc) param return false;
-  return isSparseDomainClass(d._value);
+def isSparseDom(d: domain) param {
+  def isSparseDomClass(dc: BaseSparseDom) param return true;
+  def isSparseDomClass(dc) param return false;
+  return isSparseDomClass(d._value);
 }
 
 //
@@ -215,7 +215,7 @@ record _domain {
   def dist return _value.dist;
 
   def rank param {
-    if isArithmeticDomain(this) || isSparseDomain(this) then
+    if isArithmeticDom(this) || isSparseDom(this) then
       return _value.rank;
     else
       return 1;
@@ -624,10 +624,10 @@ def reshape(A: [], D: domain) {
   return B;
 }
 
-def _callSupportsAlignedFollower(A) param where A: BaseArray
+def _callSupportsAlignedFollower(A) param where A: BaseArr
   return A.supportsAlignedFollower();
 
-def _callSupportsAlignedFollower(A) param where !(A: BaseArray)
+def _callSupportsAlignedFollower(A) param where !(A: BaseArr)
   return false;
 
 def _callSupportsAlignedFollower() param
@@ -783,7 +783,7 @@ def _toFollower(x: _tuple, leaderIndex) {
 // The alignment version uses a compiler analysis to pass a tuple of
 // types according to whether the arrays in the tuple x have the same
 // distribution as the leader or not.  If they do, the component type
-// is passed as Distribution, otherwise as BaseArray.
+// is passed as BaseDist, otherwise as BaseArr.
 //
 pragma "inline"
 def _toFollower(x: _tuple, leaderIndex, type alignment) {
@@ -791,13 +791,13 @@ def _toFollower(x: _tuple, leaderIndex, type alignment) {
     if dim == x.size-1 {
       type tdim = alignment(dim);
       type tdimp1 = alignment(dim+1);
-      if tdim == BaseDistribution & tdimp1 == BaseDistribution {
+      if tdim == BaseDist & tdimp1 == BaseDist {
         return (_toFollower(x(dim), leaderIndex, true),
                 _toFollower(x(dim+1), leaderIndex, true));
-      } else if tdim == BaseDistribution {
+      } else if tdim == BaseDist {
         return (_toFollower(x(dim), leaderIndex, true),
                 _toFollower(x(dim+1), leaderIndex));
-      } else if tdimp1 == BaseDistribution {
+      } else if tdimp1 == BaseDist {
         return (_toFollower(x(dim), leaderIndex),
                 _toFollower(x(dim+1), leaderIndex, true));
       } else {
@@ -806,7 +806,7 @@ def _toFollower(x: _tuple, leaderIndex, type alignment) {
       }
     } else {
       type tdim = alignment(dim);
-      if tdim == BaseDistribution {
+      if tdim == BaseDist {
         return (_toFollower(x(dim), leaderIndex, true),
                 (..._toFollowerHelp(x, leaderIndex, dim+1)));
       } else {

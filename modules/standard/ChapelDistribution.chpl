@@ -1,24 +1,24 @@
 //
 // Abstract distribution class
 //
-class BaseDistribution {
-  def newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
+class BaseDist {
+  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     compilerError("arithmetic domains not supported by this distribution");
   }
 
-  def newAssociativeDomain(type idxType) {
+  def newAssociativeDom(type idxType) {
     compilerError("associative domains not supported by this distribution");
   }
 
-  def newEnumeratedDomain(type idxType) {
+  def newEnumDom(type idxType) {
     compilerError("enumerated domains not supported by this distribution");
   }
 
-  def newOpaqueDomain(type idxType) {
+  def newOpaqueDom(type idxType) {
     compilerError("opaque domains not supported by this distribution");
   }
 
-  def newSparseDomain(param rank: int, type idxType, dom: domain) {
+  def newSparseDom(param rank: int, type idxType, dom: domain) {
     compilerError("opaque domains not supported by this distribution");
   }
 }
@@ -26,11 +26,11 @@ class BaseDistribution {
 //
 // Abstract domain classes
 //
-class BaseDomain {
-  var _arrs: list(BaseArray);
+class BaseDom {
+  var _arrs: list(BaseArr);
   var _count: sync int = 0;
 
-  def ~BaseDomain() {
+  def ~BaseDom() {
     _arrs.destroy();
     delete _count;
   }
@@ -70,7 +70,7 @@ class BaseDomain {
   def supportsPrivatization() param return false;
 }
 
-class BaseArithmeticDomain : BaseDomain {
+class BaseArithmeticDom : BaseDom {
   def clear() {
     halt("clear not implemented for this distribution");
   }
@@ -84,7 +84,7 @@ class BaseArithmeticDomain : BaseDomain {
   }
 }
 
-class BaseSparseDomain : BaseDomain {
+class BaseSparseDom : BaseDom {
   def clear() {
     halt("clear not implemented for this distribution");
   }
@@ -94,7 +94,7 @@ class BaseSparseDomain : BaseDomain {
   }
 }
 
-class BaseAssociativeDomain : BaseDomain {
+class BaseAssociativeDom : BaseDom {
   def clear() {
     halt("clear not implemented for this distribution");
   }
@@ -104,7 +104,7 @@ class BaseAssociativeDomain : BaseDomain {
   }
 }
 
-class BaseOpaqueDomain : BaseDomain {
+class BaseOpaqueDom : BaseDom {
   def clear() {
     halt("clear not implemented for this distribution");
   }
@@ -114,7 +114,7 @@ class BaseOpaqueDomain : BaseDomain {
   }
 }
 
-class BaseEnumDomain : BaseDomain {
+class BaseEnumDom : BaseDom {
   def clear() {
     compilerError("Cannot clear an enumerated domain");
   }
@@ -128,7 +128,7 @@ class BaseEnumDomain : BaseDomain {
 // Abstract array class
 //
 pragma "base array"
-class BaseArray {
+class BaseArr {
   def reallocate(d: domain) {
     halt("reallocating not supported for this array type");
   }

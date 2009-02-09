@@ -1,10 +1,10 @@
-class CMODist : Distribution {
-  def newArithmeticDomain(param rank: int, type dimensional_index_type, param stridable: bool) {
-    return new CMODomain(rank=rank, idxType=dimensional_index_type, stridable=stridable);
+class CMODist : BaseDist {
+  def newArithmeticDom(param rank: int, type dimensional_index_type, param stridable: bool) {
+    return new CMODom(rank=rank, idxType=dimensional_index_type, stridable=stridable);
   }
 }
 
-class CMODomain: BaseArithmeticDomain {
+class CMODom: BaseArithmeticDom {
   param rank : int;
   type idxType;
   param stridable: bool;
@@ -20,9 +20,6 @@ class CMODomain: BaseArithmeticDomain {
       compilerError("index type mismatch in domain assignment");
     ranges = x;
   }
-
-  def buildEmptyDomain()
-    return new CMODomain(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
 
   def these_help(param dim: int) {
     if dim == rank - 1 {
@@ -101,17 +98,17 @@ class CMODomain: BaseArithmeticDomain {
   }
 
   def buildArray(type eltType) {
-    return new CMOArray(eltType, rank, idxType, stridable, dom=this);
+    return new CMOArr(eltType, rank, idxType, stridable, dom=this);
   }
  
   def buildSubdomain() 
-    return new CMODomain(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
+    return new CMODom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
 
   def rankChange(param rank: int, param stridable: bool, args) {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
-    var d = new CMODomain(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
+    var d = new CMODom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
     var i = 1;
     for param j in 1..args.size {
       if isRange(args(j)) {
@@ -123,14 +120,14 @@ class CMODomain: BaseArithmeticDomain {
   }
 
   def translate(off: rank*int) {
-    var x = new CMODomain(rank=rank, idxType=int, stridable = stridable, dist=dist);
+    var x = new CMODom(rank=rank, idxType=int, stridable = stridable, dist=dist);
     for i in 1..rank do
       x.ranges(i) = dim(i)._translate(off(i));
     return x;
   }
 
   def interior(off: rank*int) {
-    var x = new CMODomain(rank=rank, idxType=int, stridable=stridable, dist=dist);
+    var x = new CMODom(rank=rank, idxType=int, stridable=stridable, dist=dist);
     for i in 1..rank do {
       if ((off(i) > 0) && (dim(i)._high+1-dim(i) < dim(i)._low) ||
           (off(i) < 0) && (dim(i)._low-1-dim(i) > dim(i)._high)) {
@@ -142,14 +139,14 @@ class CMODomain: BaseArithmeticDomain {
   }
 
   def exterior(off: rank*int) {
-    var x = new CMODomain(rank=rank, idxType=int, stridable=stridable, dist=dist);
+    var x = new CMODom(rank=rank, idxType=int, stridable=stridable, dist=dist);
     for i in 1..rank do
       x.ranges(i) = dim(i)._exterior(off(i));
     return x;
   }
 
   def expand(off: rank*int) {
-    var x = new CMODomain(rank=rank, idxType=int, stridable=stridable, dist=dist);
+    var x = new CMODom(rank=rank, idxType=int, stridable=stridable, dist=dist);
     for i in 1..rank do {
       x.ranges(i) = ranges(i)._expand(off(i));
       if (x.ranges(i)._low > x.ranges(i)._high) {
@@ -160,7 +157,7 @@ class CMODomain: BaseArithmeticDomain {
   }  
 
   def expand(off: int) {
-    var x = new CMODomain(rank=rank, idxType=int, stridable=stridable, dist=dist);
+    var x = new CMODom(rank=rank, idxType=int, stridable=stridable, dist=dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i)._expand(off);
     return x;
@@ -174,28 +171,28 @@ class CMODomain: BaseArithmeticDomain {
   }
 
   def strideBy(str : rank*int) {
-    var x = new CMODomain(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
+    var x = new CMODom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str(i);
     return x;
   }
 
   def strideBy(str : int) {
-    var x = new CMODomain(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
+    var x = new CMODom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str;
     return x;
   }
 }
 
-class CMOArray:BaseArray {
+class CMOArr:BaseArr {
   type eltType;
   param rank: int;
   type idxType;
   param stridable: bool;
   param reindexed: bool = false;
 
-  var dom: CMODomain(rank=rank,idxType=idxType, stridable=stridable);
+  var dom: CMODom(rank=rank,idxType=idxType, stridable=stridable);
   var off: rank*idxType;
   var blk: rank*idxType;
   var str: rank*int;
@@ -258,13 +255,13 @@ class CMOArray:BaseArray {
     return data(sum); 
   }
 
-  def reindex(d: CMODomain) {
+  def reindex(d: CMODom) {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
     for param i in 1..rank do
       if d.dim(i).length != dom.dim(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    var alias = new CMOArray(eltType, d.rank, d.idxType, d.stridable, true, d, noinit=true);
+    var alias = new CMOArr(eltType, d.rank, d.idxType, d.stridable, true, d, noinit=true);
     //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit=true);
     alias.D1 = [0:idxType..#size:idxType];
     alias.data = data;
@@ -287,8 +284,8 @@ class CMOArray:BaseArray {
     }
   }
 
-  def slice(d: CMODomain) {
-    var alias = new CMOArray(eltType, rank, idxType, d.stridable, reindexed, d, noinit=true);
+  def slice(d: CMODom) {
+    var alias = new CMOArr(eltType, rank, idxType, d.stridable, reindexed, d, noinit=true);
     alias.D1 = [0:idxType..#size:idxType];
     alias.data = data;
     alias.size = size;
@@ -318,7 +315,7 @@ class CMOArray:BaseArray {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
     var d = dom.rankChange(newRank, newStridable, irs);
-    var alias = new CMOArray(eltType, newRank, idxType, newStridable, true, d, noinit=true);
+    var alias = new CMOArr(eltType, newRank, idxType, newStridable, true, d, noinit=true);
     alias.D1 = [0:idxType..#size:idxType];
     alias.data = data;
     alias.size = size;
@@ -342,7 +339,7 @@ class CMOArray:BaseArray {
 
   def reallocate(d: _domain) {
     if (d._value.type == dom.type) {
-      var copy = new CMOArray(eltType, rank, idxType, d._value.stridable, reindexed, d._value);
+      var copy = new CMOArr(eltType, rank, idxType, d._value.stridable, reindexed, d._value);
       for i in _intersect(d._value, dom) do
         copy(i) = this(i);
       off = copy.off;
@@ -382,14 +379,14 @@ class CMOArray:BaseArray {
   }
 }
 
-def CMODomain.writeThis(f: Writer) {
+def CMODom.writeThis(f: Writer) {
   f.write("[", this(1));
   for i in 2..rank do
     f.write(", ", this(i));
   f.write("]");
 }
 
-def CMOArray.writeThis(f: Writer) {
+def CMOArr.writeThis(f: Writer) {
   var i : rank*idxType;
   for dim in 1..rank do
     i(dim) = dom.dim(dim)._low;
@@ -414,8 +411,8 @@ def CMOArray.writeThis(f: Writer) {
   }
 }
 
-def _intersect(a: CMODomain, b: CMODomain) {
-  var c = new CMODomain(a.rank, a.idxType, stridable=a.stridable, dist=b.dist);
+def _intersect(a: CMODom, b: CMODom) {
+  var c = new CMODom(a.rank, a.idxType, stridable=a.stridable, dist=b.dist);
   for param i in 1..a.rank do
     c.ranges(i) = a.dim(i)(b.dim(i));
   return c;

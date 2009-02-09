@@ -1,12 +1,12 @@
 use List;
-class DefaultOpaqueDomain: BaseOpaqueDomain {
+class DefaultOpaqueDom: BaseOpaqueDom {
   type idxType = _OpaqueIndex;
-  var dist: DefaultDistribution;
-  var adomain: DefaultAssociativeDomain(idxType=_OpaqueIndex);
+  var dist: DefaultDist;
+  var adomain: DefaultAssociativeDom(idxType=_OpaqueIndex);
 
-  def DefaultOpaqueDomain(dist: DefaultDistribution) {
+  def DefaultOpaqueDom(dist: DefaultDist) {
     this.dist = dist;
-    adomain = new DefaultAssociativeDomain(_OpaqueIndex, dist);
+    adomain = new DefaultAssociativeDom(_OpaqueIndex, dist);
   }
 
   def create() {
@@ -17,7 +17,7 @@ class DefaultOpaqueDomain: BaseOpaqueDomain {
 
   def getIndices() return adomain;
 
-  def setIndices(b: DefaultAssociativeDomain) {
+  def setIndices(b: DefaultAssociativeDom) {
     adomain.setIndices(b);
   }
 
@@ -45,25 +45,25 @@ class DefaultOpaqueDomain: BaseOpaqueDomain {
   }
 
   def buildArray(type eltType) {
-    var ia = new DefaultOpaqueArray(eltType, idxType, dom=this);
+    var ia = new DefaultOpaqueArr(eltType, idxType, dom=this);
     return ia;
   }
 }
 
-def DefaultOpaqueDomain.writeThis(f: Writer) {
+def DefaultOpaqueDom.writeThis(f: Writer) {
   adomain.writeThis(f);
 }
 
-def DefaultOpaqueArray.writeThis(f: Writer) {
+def DefaultOpaqueArr.writeThis(f: Writer) {
   anarray.writeThis(f);
 }
 
-class DefaultOpaqueArray: BaseArray {
+class DefaultOpaqueArr: BaseArr {
   type eltType;
   type idxType;
 
-  var dom: DefaultOpaqueDomain(idxType=idxType);
-  var anarray = new DefaultAssociativeArray(eltType, idxType, dom.adomain);
+  var dom: DefaultOpaqueDom(idxType=idxType);
+  var anarray = new DefaultAssociativeArr(eltType, idxType, dom.adomain);
 
   def this(ind : idxType) var : eltType
     return anarray(ind);
@@ -98,6 +98,6 @@ class DefaultOpaqueArray: BaseArray {
   }
 }
 
-def DefaultOpaqueDomain.remove(idx: idxType) {
+def DefaultOpaqueDom.remove(idx: idxType) {
   adomain.remove(idx);
 }

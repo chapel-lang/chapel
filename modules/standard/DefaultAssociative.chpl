@@ -6,7 +6,7 @@ type chpl_table_index_type = int(32);
 
 
 /* These declarations could/should both be nested within
-   DefaultAssociativeDomain? */
+   DefaultAssociativeDom? */
 enum chpl_hash_status { empty, full, deleted };
 
 record chpl_TableEntry {
@@ -20,10 +20,10 @@ def chpl__primes return (23, 53, 97, 193, 389, 769, 1543,
                          393241, 786433, 1572869, 3145739, 6291469, 12582917, 25165843,
                          50331653, 100663319, 201326611, 402653189, 805306457, 1610612741);
 
-class DefaultAssociativeDomain: BaseAssociativeDomain {
+class DefaultAssociativeDom: BaseAssociativeDom {
   type idxType;
 
-  var dist: DefaultDistribution;
+  var dist: DefaultDist;
 
   // The guts of the associative domain
   var numEntries: chpl_table_index_type = 0;
@@ -42,7 +42,7 @@ class DefaultAssociativeDomain: BaseAssociativeDomain {
   var tmpDom2 = [0..-1:chpl_table_index_type];
   var tmpTable2: [tmpDom2] idxType;
 
-  def DefaultAssociativeDomain(type idxType, dist: DefaultDistribution) {
+  def DefaultAssociativeDom(type idxType, dist: DefaultDist) {
     this.dist = dist;
   }
 
@@ -50,13 +50,13 @@ class DefaultAssociativeDomain: BaseAssociativeDomain {
   // Standard Internal Domain Interface
   //
   def buildArray(type eltType) {
-    return new DefaultAssociativeArray(eltType, idxType, dom=this); 
+    return new DefaultAssociativeArr(eltType, idxType, dom=this); 
   }
 
   def getIndices()
     return this;
 
-  def setIndices(b: DefaultAssociativeDomain) {
+  def setIndices(b: DefaultAssociativeDom) {
     // store cache of old domain/arrays
     _backupArrays();
     tmpDom = tableDom;
@@ -270,10 +270,10 @@ class DefaultAssociativeDomain: BaseAssociativeDomain {
 }
 
 
-class DefaultAssociativeArray: BaseArray {
+class DefaultAssociativeArr: BaseArr {
   type eltType;
   type idxType;
-  var dom : DefaultAssociativeDomain(idxType);
+  var dom : DefaultAssociativeDom(idxType);
 
   var data : [dom.tableDom] eltType;
 

@@ -182,9 +182,9 @@ markAlignedArrays() {
             Symbol* dom = (se) ? arrDomMap.get(se->var) : NULL;
             Symbol* dist = (dom) ? domDistMap.get(dom) : NULL;
             if (first || (leaderDist && leaderDist == dist)) {
-              alignment->insertAtTail(dtDistribution->symbol);
+              alignment->insertAtTail(dtDist->symbol);
             } else {
-              alignment->insertAtTail(dtBaseArray->symbol);
+              alignment->insertAtTail(dtBaseArr->symbol);
             }
             first = false;
           }

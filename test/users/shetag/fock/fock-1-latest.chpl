@@ -4,7 +4,7 @@ const bas_info : [(i,j) in [1..natom, 1..2]] int =
   5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
 
 type elemType = real(64);
-const matD : domain(2) distributed(Block) = [1..n, 1..n];
+const matD : domain(2) = [1..n, 1..n];
 const dmat : [(i,j) in matD] elemType = 1.0/(i+j);
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType;
 var oneAtATime: sync bool = true;

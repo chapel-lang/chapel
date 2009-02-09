@@ -1,14 +1,11 @@
-class MyDist : Distribution {
-  def newAssociativeDomain(type idxType) {
+class MyDist : BaseDist {
+  def newAssociativeDom(type idxType) {
     return new MyDom();
   }
 }
 
-class MyDom : BaseAssociativeDomain {
+class MyDom : BaseAssociativeDom {
   type idxType = int(32);
-  def buildEmptyDomain() {
-    return new MyDom();
-  }
 
   def getIndices() {
     var r: range;

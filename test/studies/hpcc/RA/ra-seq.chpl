@@ -44,10 +44,10 @@ var myFakeLeader: FakeLeader;
 def main() {
   printConfiguration();
 
-  const TableSpace: domain(1, indexType) distributed(Block) = [0:indexType..#m];
+  const TableSpace: domain(1, indexType) = [0:indexType..#m];
   var T: [TableSpace] elemType;
 
-  const UpdateSpace: domain(1, indexType) distributed(Block) = [0:indexType..#N_U];
+  const UpdateSpace: domain(1, indexType) = [0:indexType..#N_U];
 
   const startTime = getCurrentTime();
 

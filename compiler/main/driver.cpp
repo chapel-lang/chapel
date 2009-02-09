@@ -66,7 +66,7 @@ bool fPrintDispatch = false;
 bool fWarnPromotion = false;
 bool printCppLineno = false;
 int num_constants_per_variable = 1;
-char defaultDistribution[256] = "DefaultDistribution";
+char defaultDist[256] = "DefaultDist";
 int instantiation_limit = 256;
 char mainModuleName[256] = "";
 
@@ -357,7 +357,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
 
  {"", ' ', NULL, "Misc. Developer Flags", NULL, NULL, NULL, NULL},
- {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDistribution, "CHPL_DEFAULT_DISTRIBUTION", NULL},
+ {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"ignore-errors", ' ', NULL, "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"destroy-value-type-vars", ' ', NULL, "Enable insertion of destructor calls when value type variables go out of scope", "N", &fEnableDestructorCalls, "CHPL_ENABLE_DESTRUCTOR_CALLS", NULL},

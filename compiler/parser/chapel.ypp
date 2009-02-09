@@ -1055,7 +1055,7 @@ tuple_var_decl_stmt_inner_ls:
 
 distributed_expr: /* not supported in one-locale implementation */
   /* nothing */
-    { $$ = new UnresolvedSymExpr("defaultDistribution"); }
+    { $$ = new UnresolvedSymExpr("defaultDist"); }
 | TDISTRIBUTED expr
     { $$ = $2; }
 ;

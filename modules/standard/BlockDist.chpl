@@ -16,7 +16,7 @@
 config param debugBlock1D = false;
 
 
-class Block1D : BaseDistribution {
+class Block1D : BaseDist {
   type idxType = int(64); // distribution's index type, for domain
 
   const boundingBox: domain(1, idxType);
@@ -75,7 +75,7 @@ class Block1D : BaseDistribution {
   // initial index set if one exists?  If not, we should rewrite the
   // global domain construction to not do anything with whole...
   //
-  def newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
+  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     if idxType != this.idxType then
       compilerError("Block1D domain index type does not match distribution's");
     if rank != 1 then
@@ -196,7 +196,7 @@ class LocBlock1DDist {
 }
 
 
-class Block1DDom: BaseArithmeticDomain {
+class Block1DDom: BaseArithmeticDom {
   type idxType;
   param rank = 1;
   param stridable: bool;
@@ -433,7 +433,7 @@ class LocBlock1DDom {
 }
 
 
-class Block1DArr: BaseArray {
+class Block1DArr: BaseArr {
   type idxType;
   type eltType;
   param stridable: bool;

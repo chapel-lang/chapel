@@ -7,7 +7,7 @@ config const natom = 5;
 const bas_info : [i in 1..natom] range = (1..10/(i%2+1)) + 5*(i/2) + 10*((i-1)/2);
 
 const n = (natom/2)*10 + ((natom+1)/2)*5;
-const matD : domain(2) distributed(Block) = [1..n, 1..n]; 
+const matD : domain(2) = [1..n, 1..n]; 
 const dmat : [(i,j) in matD] elemType = 1.0/(i+j); 
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
 
