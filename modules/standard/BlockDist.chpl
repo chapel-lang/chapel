@@ -1,37 +1,24 @@
-// TODO: Convert to Steve's leader/follower scheme (implemented in compiler)
+//
+// Block1D Distribution
+// 
+//      Block1D       Block1DDom     Block1DArr
+//
+//   LocBlock1DDist  LocBlock1DDom  LocBlock1DArr
+//
 
 // TODO: Make multidimensional
 
 // TODO: Make this work for a strided domain of locales; for a strided
 // domain implemented using this distribution.
 
-// TODO: Have the global class leader/follower iterators defer to the
-// local class leader/followers once we're within a locale?
-
-// TODO: Make these into an official distribution?
-
 // TODO: implement the slicing interface?
 
 config param debugBlock1D = false;
 
-//
-// The distribution class
-//
+
 class Block1D : Distribution {
+  type idxType = int(64); // distribution's index type, for domain
 
-  // GENERICS:
-
-  //
-  // The distribution's index type and domain's global index type
-  //
-  type idxType = int(64);
-
-
-  // STATE:
-
-  //
-  // The bounding box that defines the block distribution
-  //
   const boundingBox: domain(1, idxType);
 
   //
@@ -48,29 +35,17 @@ class Block1D : Distribution {
   //
   var tasksPerLoc: int;
 
-  // LINKAGE:
-
   //
-  // DOWN: an array of local distribution class descriptors -- set up
-  // in the class constructor
+  // DOWN LINK: an array of local distribution class descriptors --
+  // set up in the class constructor
   //
   const locDist: [targetLocDom] LocBlock1DDist(idxType);
-
-
-  // CONSTRUCTORS:
 
   def Block1D(type idxType = int(64), bbox: domain(1, idxType),
               targetLocales: [] locale = Locales, 
 	      tasksPerLocale = 0) {
     boundingBox = bbox;
-    //
-    // 0-base the local capture of the targetLocDom for simplicity
-    // later on
-    //
-    // TODO: Create a helper function to create a domain like this for
-    // arbitrary dimensions (since the k-D case is a bit harder?)
-    //
-    targetLocDom = [0..#targetLocales.numElements];
+    targetLocDom = [0..#targetLocales.numElements]; // 0-based for simplicity
     targetLocs = targetLocales;
 
     for locid in targetLocDom do
@@ -79,16 +54,12 @@ class Block1D : Distribution {
 
     tasksPerLoc = tasksPerLocale;
     if (tasksPerLoc == 0) then tasksPerLoc = min reduce targetLocs.numCores;
-    //    writeln("Using ", tasksPerLoc, " tasks per locale");
-
-    //    writeln("Created a Block1D:\n", this);
   }
 
   //
   // builds up a privatized (replicated copy)
   //
-  def Block1D(type idxType = int(64),
-              other: Block1D(idxType)) {
+  def Block1D(type idxType = int(64), other: Block1D(idxType)) {
     boundingBox = other.boundingBox;
     targetLocDom = other.targetLocDom;
     targetLocs = other.targetLocs;
@@ -96,35 +67,24 @@ class Block1D : Distribution {
     locDist = other.locDist;
   }
 
-  // DISTRIBUTION INTERFACE:
-
   //
   // Create a new domain over this distribution with the given index
   // set (inds) and global index type (idxType, idxType)
-  //
-  // TODO: What should we do if domIdxType did not match idxType?
-  //
-  def newArithmeticDomain(param rank: int, type domIdxType, param stridable: bool) 
-        where domIdxType != idxType {
-    compilerError("Trying to create a domain whose index type does not match the distribution's");
-  }
-
-  def newArithmeticDomain(param rank: int, type domIdxType, param stridable: bool) 
-        where rank != 1 {
-    compilerError("Block1D only supports 1D domains currently");
-  }
-
   //
   // INTERFACE NOTES: Should we support a form that passes in an
   // initial index set if one exists?  If not, we should rewrite the
   // global domain construction to not do anything with whole...
   //
   def newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
+    if idxType != this.idxType then
+      compilerError("Block1D domain index type does not match distribution's");
+    if rank != 1 then
+      compilerError("Block1D domains are restricted to 1D (rank 1)");
+
     var dom = new Block1DDom(idxType=idxType, dist=this, stridable=stridable);
     dom.setup();
     return dom;
   }
-
 
   //
   // print out the distribution
@@ -146,9 +106,6 @@ class Block1D : Distribution {
   def ind2loc(ind: idxType) {
     return targetLocs(ind2locInd(ind));
   }
-
-
-  // INTERNAL INTERFACE:
 
   //
   // compute what chunk of inds is owned by a given locale -- assumes
@@ -183,20 +140,9 @@ class Block1D : Distribution {
   }
 }
 
-//
-// A per-locale local distribution class
-//
+
 class LocBlock1DDist {
-
-  // GENERICS:
-
-  // 
-  // The distribution's index type and domain's global index type
-  //
   type idxType;
-
-
-  // STATE:
 
   //
   // This stores the piece of the global bounding box owned by
@@ -213,9 +159,6 @@ class LocBlock1DDist {
   //
   const loc: locale;
 
-
-  // CONSTRUCTORS:
-
   //
   // Constructor computes what chunk of index(1) is owned by the
   // current locale
@@ -229,23 +172,20 @@ class LocBlock1DDist {
     //
     // TODO: Create these assertions for other local classes as well
     //
-    if (loc != here) {
+    if (loc != here) then
       halt("Creating a local distribution class on the wrong locale");
-    }
+
     const lo = dist.boundingBox.low;
     const hi = dist.boundingBox.high;
     const numelems = hi - lo + 1;
     const numlocs = dist.targetLocDom.numIndices;
-    const (blo, bhi) = chpl_computeBlock(min(idxType), numelems, lo,
-                                         max(idxType), numlocs, localeIdx);
+    const (blo, bhi) = _computeBlock(min(idxType), numelems, lo,
+                                     max(idxType), numlocs, localeIdx);
     
     myChunk = [blo..bhi];
     if debugBlock1D then
       writeln(this);
   }
-
-
-  // INTERNAL INTERFACE:
 
   //
   // print out the local distribution class
@@ -256,35 +196,18 @@ class LocBlock1DDist {
 }
 
 
-//
-// The global domain class
-//
 class Block1DDom: BaseArithmeticDomain {
-  // GENERICS:
-
-  //
-  // The index types of the domain
-  //
   type idxType;
-
-  //
-  // The rank of the domain
-  //
-  // TODO: remove the default value; make this work for rank != 1
-  //
   param rank = 1;
-
-  param stridable: bool; // sjd: added stridable parameter
-
-  // LINKAGE:
+  param stridable: bool;
 
   //
-  // LEFT: a pointer to the parent distribution
+  // LEFT LINK: a pointer to the parent distribution
   //
   const dist: Block1D(idxType);
 
   //
-  // DOWN: an array of local domain class descriptors -- set up in
+  // DOWN LINK: an array of local domain class descriptors -- set up in
   // setup() below
   //
   // TODO: would like this to be const and initialize in-place,
@@ -297,9 +220,6 @@ class Block1DDom: BaseArithmeticDomain {
   //
   var locDoms: [dist.targetLocDom] LocBlock1DDom(idxType, stridable);
 
-
-  // STATE:
-
   //
   // a domain describing the complete domain
   //
@@ -307,99 +227,57 @@ class Block1DDom: BaseArithmeticDomain {
 
   var pid: int = -1; // privatized object id
 
-  // GLOBAL DOMAIN INTERFACE:
-
-  //
-  // the iterator for the domain -- currently sequential
-  //
   //
   // TODO: This really should go over the elements in row-major order,
   // not the block orders.
   //
   def these() {
     for blk in locDoms do
-      // TODO: Would want to do something like:     
-      // on blk do
-      // But can't currently have yields in on clauses
-        for ind in blk do
-          yield ind;
+      for ind in blk do
+        yield ind;
   }
 
-  //
-  // this is the parallel iterator for the global domain, following
-  // a variation on Steve and David's proposals -- I've split the
-  // single iterator into two iterators, distinguished by where
-  // clauses on their parameter values.  This permits each to only
-  // take the parameters it cares about; permits the leader to be
-  // defined in an inlineable way; and permits the follower for an
-  // array iterator to be a var iterator
-  //
-  // I've named these methods newThese() for the time being
-  // to avoid conflicting with the above which is currently targeted
-  // by the compiler.  My current assumption is that we would want to
-  // overload these() to serve this purpose in the final language
-  // definition.
   //
   // TODO: Steve's question: how would a leader containing an on
   // clause interact with a loop that used an on clause explicitly
   // within its body?  How would it be done efficiently?
   //
+  // TODO: Abstract this subtraction of low into a function?
+  // Note relationship between this operation and the
+  // order/position functions -- any chance for creating similar
+  // support? (esp. given how frequent this seems likely to be?)
+  //
   def these(param tag: iterator) where tag == iterator.leader {
-    //
-    // TODO: This currently only results in a single level of
-    // per-locale parallelism -- no per-core parallelism; maybe
-    // approach this by deferring to the local leader/follower
-    // iterators at some point?
-    //
-    // TODO: Really want the parallelism across the target locales
-    // to be expressed more independently of the distribution by
-    // pushing it into the leader iterator.  Need to get an on clause
-    // into here somehow.  That is:
-    //
-    //   coforall locDom in locDoms do
-    //     on locDom do
-    //       yield locDom.myBlock - whole.low;
-    //
-    // TODO: And really want to split the inter- and intra-locale
-    // parallelism into two separate stages for communication
-    // optimization and the like
-    //
-    // TODO: Abstract this subtraction of low into a function?
-    // Note relationship between this operation and the
-    // order/position functions -- any chance for creating similar
-    // support? (esp. given how frequent this seems likely to be?)
-    //
     const precomputedNumTasks = dist.tasksPerLoc;
-    coforall locDom in locDoms do
-      on locDom {
-	const locBlock = locDom.myBlock - whole.low,
-              numTasks = precomputedNumTasks;
-	if (numTasks == 1) {
-	  yield locBlock;
-	} else {
-          coforall taskid in 0..#numTasks {
-            const (lo,hi) = chpl_computeBlock(locBlock.low, locBlock.numIndices,
-                                              locBlock.low, locBlock.high, 
-                                              numTasks, taskid);
-            yield [lo..hi];
-          }
+    coforall locDom in locDoms do on locDom {
+      const locBlock = locDom.myBlock - whole.low,
+            numTasks = precomputedNumTasks;
+      if (numTasks == 1) {
+        yield locBlock;
+      } else {
+        coforall taskid in 0..#numTasks {
+          const (lo,hi) = _computeBlock(locBlock.low, locBlock.numIndices,
+                                        locBlock.low, locBlock.high, 
+                                        numTasks, taskid);
+          yield [lo..hi];
         }
       }
+    }
   }
 
+  //
+  // TODO: Abstract the addition of low into a function?
+  // Note relationship between this operation and the
+  // order/position functions -- any chance for creating similar
+  // support? (esp. given how frequent this seems likely to be?)
+  //
+  // TODO: Is there some clever way to invoke the leader/follower
+  // iterator on the local blocks in here such that the per-core
+  // parallelism is expressed at that level?  Seems like a nice
+  // natural composition and might help with my fears about how
+  // stencil communication will be done on a per-locale basis.
+  //
   def these(param tag: iterator, follower) where tag == iterator.follower {
-    //
-    // TODO: Abstract this addition of low into a function?
-    // Note relationship between this operation and the
-    // order/position functions -- any chance for creating similar
-    // support? (esp. given how frequent this seems likely to be?)
-    //
-    // TODO: Is there some clever way to invoke the leader/follower
-    // iterator on the local blocks in here such that the per-core
-    // parallelism is expressed at that level?  Seems like a nice
-    // natural composition and might help with my fears about how
-    // stencil communication will be done on a per-locale basis.
-
     const followThis = follower + whole.low;
 
     for i in followThis {
@@ -426,18 +304,9 @@ class Block1DDom: BaseArithmeticDomain {
   //
   // queries for the number of indices, low, and high bounds
   //
-  def numIndices {
-    return whole.numIndices;
-  }
-
-  def low {
-    return whole.low;
-  }
-
-  def high {
-    return whole.high;
-  }
-
+  def numIndices return whole.numIndices;
+  def low return whole.low;
+  def high return whole.high;
 
   //
   // INTERFACE NOTES: Could we make setIndices() for an arithmetic
@@ -468,9 +337,6 @@ class Block1DDom: BaseArithmeticDomain {
     return whole;
   }
 
-  //
-  // INTERNAL INTERFACE
-  //
   def getDist(): Block1D(idxType) {
     return dist;
   }
@@ -503,36 +369,17 @@ class Block1DDom: BaseArithmeticDomain {
 }
 
 
-//
-// the local domain class
-//
 class LocBlock1DDom {
-
-  // GENERICS:
-
-  //
-  // The index type of the domain
-  //
   type idxType;
-
-  param stridable: bool; // sjd: added stridable parameter
-
-
-  // LINKAGE:
+  param stridable: bool;
 
   //
-  // UP: a reference to the parent global domain class
+  // UP LINK: a reference to the parent global domain class
   //
   const wholeDom: Block1DDom(idxType, 1, stridable);
 
-
-  // STATE:
-
   //
   // a local domain describing the indices owned by this locale
-  //
-  // TODO: Steve would like to see the strided parameter pushed into
-  // the global and local domain classes.
   //
   // NOTE: I used to use a local index type for this, but that would
   // require a glbIdxType offset in order to get from the global
@@ -540,16 +387,7 @@ class LocBlock1DDom {
   //
   var myBlock: domain(1, idxType);
 
-
-  // LOCAL DOMAIN INTERFACE:
-
-  //
-  // iterator over this locale's indices
-  //
   def these() {
-    // May want to do something like:     
-    // on this do
-    // But can't currently have yields in on clauses
     for ind in myBlock do
       yield ind;
   }
@@ -575,9 +413,6 @@ class LocBlock1DDom {
     x.write(myBlock);
   }
 
-
-  // INTERNAL INTERFACE:
-
   //
   // queries for this locale's number of indices, low, and high bounds
   //
@@ -598,33 +433,18 @@ class LocBlock1DDom {
 }
 
 
-//
-// the global array class
-//
 class Block1DArr: BaseArray {
-  // GENERICS:
-
-  //
-  // The index type of the domain
-  //
   type idxType;
-
-  //
-  // the array's element type
-  //
   type eltType;
+  param stridable: bool;
 
-  param stridable: bool; // sjd: added stridable parameter
-
-  // LINKAGE:
-  
   //
-  // LEFT: the global domain descriptor for this array
+  // LEFT LINK: the global domain descriptor for this array
   //
   var dom: Block1DDom(idxType, 1, stridable);
 
   //
-  // DOWN: an array of local array classes
+  // DOWN LINK: an array of local array classes
   //
   // TODO: would like this to be const and initialize in-place,
   // removing the initialize method; would want to be able to use
@@ -656,8 +476,6 @@ class Block1DArr: BaseArray {
     return c;
   }
 
-  // GLOBAL ARRAY INTERFACE:
-
   //
   // the global accessor for the array
   //
@@ -672,14 +490,8 @@ class Block1DArr: BaseArray {
     return locArr(dom.dist.ind2locInd(i))(i);
   }
 
-  //
-  // the iterator over the array's elements, currently sequential
-  //
   def these() var {
     for loc in dom.dist.targetLocDom {
-      // TODO: May want to do something like:     
-      // on this do
-      // But can't currently have yields in on clauses
       for elem in locArr(loc) {
         yield elem;
       }
@@ -687,40 +499,32 @@ class Block1DArr: BaseArray {
   }
 
   //
-  // this is the parallel iterator for the global array, see the
-  // example for general notes on the approach
+  // TODO: Rewrite this to reuse more of the global domain iterator
+  // logic?  (e.g., can we forward the forall to the global domain
+  // somehow?
   //
   def these(param tag: iterator) where tag == iterator.leader {
-    //
-    // TODO: Rewrite this to reuse more of the global domain iterator
-    // logic?  (e.g., can we forward the forall to the global domain
-    // somehow?
-    //
     const precomputedNumTasks = dom.dist.tasksPerLoc;
     const precomputedWholeLow = dom.whole.low;
-    coforall locDom in dom.locDoms do
-      on locDom {
-        const locBlock = locDom.myBlock - precomputedWholeLow,
-              numTasks = precomputedNumTasks;
-        if (numTasks == 1) {
-          yield locBlock;
-        } else {
-          coforall taskid in 0..#numTasks {
-            const (lo,hi) = chpl_computeBlock(locBlock.low, locBlock.numIndices,
-                                              locBlock.low, locBlock.high, 
-                                              numTasks, taskid);
-            yield [lo..hi];
-          }
+    coforall locDom in dom.locDoms do on locDom {
+      const locBlock = locDom.myBlock - precomputedWholeLow,
+            numTasks = precomputedNumTasks;
+      if (numTasks == 1) {
+        yield locBlock;
+      } else {
+        coforall taskid in 0..#numTasks {
+          const (lo,hi) = _computeBlock(locBlock.low, locBlock.numIndices,
+                                        locBlock.low, locBlock.high, 
+                                        numTasks, taskid);
+          yield [lo..hi];
         }
       }
+    }
   }
 
   def supportsAlignedFollower() param return true;
 
   def these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
-    //
-    // TODO: Would like to write this as follower += dom.low;
-    //
     const followThis = follower + dom.low;
 
     //
@@ -739,8 +543,6 @@ class Block1DArr: BaseArray {
       //
       // we don't own all the elements we're following
       //
-      // TODO: could do something smarter to only bring the non-local
-      // elements over.
       def accessHelper(i) var {
         local {
           if myLocArr.locDom.myBlock.member(i) then
@@ -786,31 +588,13 @@ class Block1DArr: BaseArray {
 }
 
 
-//
-// the local array class
-//
 class LocBlock1DArr {
-
-  // GENERICS:
-
-  //
-  // The index type of the domain
-  //
   type idxType;
-
-  //
-  // the element type
-  //
   type eltType;
-
-
-  param stridable: bool; // sjd: added stridable parameter
-
-
-  // LINKAGE:
+  param stridable: bool;
 
   //
-  // LEFT: a reference to the local domain class for this array and locale
+  // LEFT LINK: a reference to the local domain class for this array and locale
   //
   const locDom: LocBlock1DDom(idxType, stridable);
 
@@ -872,29 +656,25 @@ class LocBlock1DArr {
     return myElems.numElements;
   }
 
-  // INTERNAL INTERFACE:
-
   def owns(x) {
-    //
-    // TODO: When this is multidimensional need to do a reduction or something:
-    //
     return locDom.myBlock.dim(1).boundsCheck(x.dim(1));
   }
 }
 
 
 //
-// a helper function for blocking index ranges:
+// helper function for blocking index ranges
 //
-
-def chpl_computeBlock(waylo, numelems, lo, wayhi, numblocks, blocknum) {
+def _computeBlock(waylo, numelems, lo, wayhi, numblocks, blocknum) {
   def procToData(x, lo)
     return lo + (x: lo.type) + (x:real != x:int:real): lo.type;
 
-  const blo = if (blocknum == 0) then waylo
-              else procToData((numelems: real * blocknum) / numblocks, lo);
-  const bhi = if (blocknum == numblocks - 1) then wayhi
-              else procToData((numelems: real * (blocknum+1)) / numblocks, lo) - 1;
+  const blo =
+    if (blocknum == 0) then waylo
+      else procToData((numelems: real * blocknum) / numblocks, lo);
+  const bhi =
+    if (blocknum == numblocks - 1) then wayhi
+      else procToData((numelems: real * (blocknum+1)) / numblocks, lo) - 1;
 
   return (blo, bhi);
 }
