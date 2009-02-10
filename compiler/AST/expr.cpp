@@ -2015,7 +2015,11 @@ void CallExpr::codegen(FILE* outfile) {
         if (!strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
                     "_ref(_EndCount)")
             || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                       "__wide__ref__EndCount")) {
+                       "__wide__ref__EndCount")
+            || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
+                       "_EndCount")
+            || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
+                       "__wide__EndCount")) {
           endCountField = i;
           break;
         }
@@ -2032,8 +2036,24 @@ void CallExpr::codegen(FILE* outfile) {
         fputs(")->", outfile);
         bundledArgsType->getField(endCountField)->codegen(outfile);
         fputs(".addr->addr", outfile);
-      } else {
+      } else if (bundledArgsType->getField(endCountField)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        fputs(", (", outfile);
+        get(1)->codegen(outfile);
+        fputs(")->", outfile);
+        bundledArgsType->getField(endCountField)->codegen(outfile);
+        fputs(".locale != _localeID ? NULL : &((", outfile);
+        get(1)->codegen(outfile);
+        fputs(")->", outfile);
+        bundledArgsType->getField(endCountField)->codegen(outfile);
+        fputs(".addr", outfile);
+      } else if (bundledArgsType->getField(endCountField)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         fputs(", &((*(", outfile);
+        get(1)->codegen(outfile);
+        fputs(")->", outfile);
+        bundledArgsType->getField(endCountField)->codegen(outfile);
+        fputc(')', outfile);
+      } else {
+        fputs(", &(((", outfile);
         get(1)->codegen(outfile);
         fputs(")->", outfile);
         bundledArgsType->getField(endCountField)->codegen(outfile);

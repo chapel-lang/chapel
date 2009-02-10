@@ -139,7 +139,8 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
       //
       for_formals(arg, fn) {
         if (arg->type->symbol->hasFlag(FLAG_REF) &&
-            !isClassType(arg->type->getValueType()) &&
+            !isRecord(arg->type->getValueType()) &&
+            !isUnion(arg->type->getValueType()) &&
             isSafeToDeref(arg, defMap, useMap, NULL)) {
 
           //

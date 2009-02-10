@@ -883,20 +883,37 @@ def _endCountAlloc() return new _EndCount();
 pragma "dont disable remote value forwarding"
 def _upEndCount(e: _EndCount) {
   on e {
-    var i = e.i;
-    if i == 0 then
-      e.b.reset();
-    e.i = i + 1;
+    _upEndCountInternal(e);
+    pragma "dont disable remote value forwarding" pragma "inline"
+    def _upEndCountInternal(e: _EndCount) {
+      //
+      // By hiding this code in its own function, remote value
+      // forwarding can be applied to the reference 'e' in order to
+      // pass the class to the on-statement rather than a reference to
+      // it.  Since the class is local, we avoid remote accesses in
+      // this case.  Remote value forwarding is disabled otherwise
+      // because of the sync variable accesses within this function.
+      //
+      var i = e.i;
+      if i == 0 then
+        e.b.reset();
+      e.i = i + 1;
+    }
   }
 }
 
 pragma "dont disable remote value forwarding"
 def _downEndCount(e: _EndCount) {
   on e {
-    var i = e.i;
-    if i == 1 then
-      e.b = true;
-    e.i = i - 1;
+    _downEndCountInternal(e);
+    // This function seems unnecessary; sse comment in _upEndCountInternal.
+    pragma "dont disable remote value forwarding" pragma "inline"
+    def _downEndCountInternal(e: _EndCount) {
+      var i = e.i;
+      if i == 1 then
+        e.b = true;
+      e.i = i - 1;
+    }
   }
 }
 
