@@ -40,6 +40,7 @@ def chpl_setupLocale(id) {
   on __primitive("chpl_on_locale_num", id) {
     tmp = new locale(id);
     _here = tmp;
+    defaultDist = new DefaultDist();
   }
   return tmp;
 }

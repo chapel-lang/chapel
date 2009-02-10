@@ -18,9 +18,11 @@ class DefaultDist: BaseDist {
     return new DefaultSparseDom(rank, idxType, this, dom);
 }
 
-
-var defaultDist = new DefaultDist();
-
+//
+// Note that the replicated copies are set up in ChapelLocale on the
+// other locales.  This just sets it up on this locale.
+//
+pragma "private" var defaultDist: DefaultDist = new DefaultDist();
 
 class DefaultArithmeticDom: BaseArithmeticDom {
   param rank : int;
