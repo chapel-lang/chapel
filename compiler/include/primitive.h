@@ -169,6 +169,8 @@ enum PrimitiveTag {
 
   PRIM_GET_ERRNO,
 
+  PRIM_PRINT_MEM_TABLE,
+
   PRIM_RT_ERROR,
   PRIM_RT_WARNING,
 

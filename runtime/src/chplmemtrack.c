@@ -26,12 +26,14 @@ static memTableEntry* memTable[HASHSIZE];
 static memTableEntry* first = NULL;
 static memTableEntry* last = NULL;
 
-int memstat = 0;
-int memtrace = 0;
-int memtrack = 0;
-static int memstatSet = 0;
-static int memtraceSet = 0;
-static int memtrackSet = 0;
+_Bool memfinalstat = false;
+_Bool memstat = false;
+_Bool memtrace = false;
+_Bool memtrack = false;
+static _Bool memfinalstatSet = false;
+static _Bool memstatSet = false;
+static _Bool memtraceSet = false;
+static _Bool memtrackSet = false;
 
 static int64_t memmaxValue = 0;
 static int64_t memthresholdValue = 0;
@@ -135,13 +137,20 @@ void setMemmax(int64_t value) {
 
 
 void setMemstat(void) {
-  memstatSet = 1;
-  memtrackSet = 1;
+  memstatSet = true;
+  memtrackSet = true;
+}
+
+
+void setMemfinalstat(void) {
+  memfinalstatSet = true;
+  memstatSet = true;
+  memtrackSet = true;
 }
 
 
 void setMemtrack(void) {
-  memtrackSet = 1;
+  memtrackSet = true;
 }
 
 
@@ -154,7 +163,7 @@ void setMemthreshold(int64_t value) {
 
 
 void setMemtrace(char* memlogname) {
-  memtraceSet = 1;
+  memtraceSet = true;
   if (memlogname) {
     memlog = fopen(memlogname, "w");
     if (!memlog) {
@@ -193,6 +202,7 @@ void resetMemStat(void) {
 
 
 void startTrackingMem(void) {
+    memfinalstat = memfinalstatSet;
     memstat = memstatSet;
     memtrack = memtrackSet;
     memtrace = memtraceSet;
@@ -289,6 +299,12 @@ void printMemTable(int64_t threshold, int32_t lineno, _string filename) {
     }
   }
   fprintf(stdout, "\n");
+}
+
+
+void chpl_printMemTable(int64_t threshold, int32_t lineno, _string filename) {
+  if (memfinalstat)
+    printMemTable(threshold, lineno, filename);
 }
 
 

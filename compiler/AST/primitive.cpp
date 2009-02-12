@@ -578,6 +578,8 @@ initPrimitive() {
   prim_def("chpl_numBlockedTasks", returnInfoInt32);
 
   prim_def("startTrackingMem", returnInfoVoid, true);
+  prim_def("mem_used", returnInfoUInt64, false, true);
+  prim_def(PRIM_PRINT_MEM_TABLE, "chpl_printMemTable", returnInfoVoid, true, true);
 
   prim_def(PRIM_RT_ERROR, "chpl_error", returnInfoVoid, true, true);
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
@@ -585,8 +587,6 @@ initPrimitive() {
   prim_def(PRIM_NEW_PRIV_CLASS, "chpl_newPrivatizedClass", returnInfoVoid, true);
   prim_def(PRIM_NUM_PRIV_CLASSES, "chpl_numPrivatizedClasses", returnInfoInt32);
   prim_def(PRIM_GET_PRIV_CLASS, "chpl_getPrivatizedClass",  returnInfoFirst);
-
-  prim_def("mem_used", returnInfoUInt64, false, true);
 
   prim_def("chpl_startVerboseComm", returnInfoVoid, true);
   prim_def("chpl_stopVerboseComm", returnInfoVoid, true);
