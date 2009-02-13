@@ -84,10 +84,10 @@ def pqsort(arr: [],
 
   //
   // make recursive calls to parallel quick sort each unsorted half of
-  // the array; if thresh is 0, start serializing; note: once
-  // serialization is turned on, it is never turned off
+  // the array; once thresh reaches 0, start serializing; note: once
+  // serialization is turned on here, it is not turned off
   //
-  serial thresh == 0 do cobegin {
+  serial thresh <= 0 do cobegin {
     pqsort(arr, thresh-1, low, pivotLoc-1);
     pqsort(arr, thresh-1, pivotLoc+1, high);
   }
