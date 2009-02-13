@@ -3348,6 +3348,7 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
                 Type* ic = fn->retType->defaultConstructor->iteratorInfo->iclass;
                 pic->dispatchChildren.add_exclusive(ic);
                 ic->dispatchParents.add_exclusive(pic);
+                continue; // do not add to ddf; handle in _getIterator
               }
             } else if (!isSubType(fn->retType, pfn->retType)) {
               USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
