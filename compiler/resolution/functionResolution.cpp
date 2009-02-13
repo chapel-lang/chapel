@@ -133,7 +133,7 @@ const char* toString(CallInfo* info) {
     if (info->actualNames.v[i])
       str = astr(str, info->actualNames.v[i], "=");
     VarSymbol* var = toVarSymbol(info->actuals.v[i]);
-    if (info->actuals.v[i]->type->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+    if (info->actuals.v[i]->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         info->actuals.v[i]->type->defaultConstructor->hasFlag(FLAG_PROMOTION_WRAPPER))
       str = astr(str, "promoted expression");
     else if (info->actuals.v[i] && info->actuals.v[i]->hasFlag(FLAG_TYPE_VARIABLE))
@@ -232,7 +232,7 @@ protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType) {
   if (strcmp(name, "advance"))
     fn->addFlag(FLAG_INLINE);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ii->icType);
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ii->iclass);
   fn->retType = retType;
   fn->insertFormalAtTail(fn->_this);
   ii->iterator->defPoint->insertBefore(new DefExpr(fn));
@@ -250,15 +250,19 @@ protoIteratorClass(FnSymbol* fn) {
   fn->iteratorInfo = ii;
   fn->iteratorInfo->iterator = fn;
 
-  const char* className = astr("_ic_", fn->name);
+  const char* className = astr(fn->name);
   if (fn->_this)
     className = astr(className, "_", fn->_this->type->symbol->cname);
-  ii->icType = new ClassType(CLASS_CLASS);
-  TypeSymbol* cts = new TypeSymbol(className, ii->icType);
+  ii->iclass = new ClassType(CLASS_CLASS);
+  TypeSymbol* cts = new TypeSymbol(astr("_ic_", className), ii->iclass);
   cts->addFlag(FLAG_ITERATOR_CLASS);
-  if (fn->retTag == RET_VAR)
-    cts->addFlag(FLAG_REF_ITERATOR_CLASS);
   fn->defPoint->insertBefore(new DefExpr(cts));
+  ii->irecord = new ClassType(CLASS_RECORD);
+  TypeSymbol* rts = new TypeSymbol(astr("_ir_", className), ii->irecord);
+  rts->addFlag(FLAG_ITERATOR_RECORD);
+  if (fn->retTag == RET_VAR)
+    rts->addFlag(FLAG_REF_ITERATOR_CLASS);
+  fn->defPoint->insertBefore(new DefExpr(rts));
 
   ii->tag = it_iterator;
   ii->advance = protoIteratorMethod(ii, "advance", dtVoid);
@@ -269,9 +273,9 @@ protoIteratorClass(FnSymbol* fn) {
   ii->hasMore = protoIteratorMethod(ii, "hasMore", dtInt[INT_SIZE_32]);
   ii->getValue = protoIteratorMethod(ii, "getValue", fn->retType);
 
-  ii->icType->defaultConstructor = fn;
-  ii->icType->scalarPromotionType = fn->retType;
-  fn->retType = ii->icType;
+  ii->irecord->defaultConstructor = fn;
+  ii->irecord->scalarPromotionType = fn->retType;
+  fn->retType = ii->irecord;
   fn->retTag = RET_VALUE;
 
   makeRefType(fn->retType);
@@ -284,14 +288,19 @@ protoIteratorClass(FnSymbol* fn) {
   resolvedFns.put(fn->iteratorInfo->hasMore, true);
   resolvedFns.put(fn->iteratorInfo->getValue, true);
 
-  VarSymbol* tmp = newTemp(ii->icType);
-  fn->insertAtHead(new DefExpr(tmp));
-  CallExpr* getIteratorCall = new CallExpr("_getIterator", tmp);
-  fn->insertAtHead(getIteratorCall);
-  resolveCall(getIteratorCall);
-  resolveFns(getIteratorCall->isResolved());
-  getIteratorCall->remove();
-  tmp->defPoint->remove();
+  ii->getIterator = new FnSymbol("_getIterator");
+  ii->getIterator->addFlag(FLAG_AUTO_II);
+  ii->getIterator->addFlag(FLAG_INLINE);
+  ii->getIterator->retType = ii->iclass;
+  ii->getIterator->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
+  VarSymbol* ret = newTemp("ic", ii->iclass);
+  ii->getIterator->insertAtTail(new DefExpr(ret));
+  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CHPL_ALLOC, ii->iclass->symbol, new_StringSymbol("iterator class"))));
+  ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
+  ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
+  fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
+  ii->iclass->defaultConstructor = ii->getIterator;
+  resolvedFns.put(ii->getIterator, true);
 }
 
 
@@ -413,7 +422,9 @@ canInstantiate(Type* actualType, Type* formalType) {
     return true;
   if (formalType == dtNumeric && (is_int_type(actualType) || is_uint_type(actualType) || is_imag_type(actualType) || is_real_type(actualType) || is_complex_type(actualType)))
     return true;
-  if (formalType == dtIterator && actualType->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+  if (formalType == dtIteratorRecord && actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    return true;
+  if (formalType == dtIteratorClass && actualType->symbol->hasFlag(FLAG_ITERATOR_CLASS))
     return true;
   if (actualType == formalType)
     return true;
@@ -1182,7 +1193,7 @@ printResolutionError(const char* error,
     Type* type = info->actuals.v[1]->type;
     if (type->symbol->hasFlag(FLAG_REF))
       type = type->getValueType();
-    if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       USR_FATAL(call, "illegal access of iterator or promoted expression");
     } else {
       USR_FATAL(call, "%s access of '%s' by '%s'", error,
@@ -1876,6 +1887,7 @@ insertFormalTemps(FnSymbol* fn) {
         if (!ts->hasFlag(FLAG_DOMAIN) &&
             !ts->hasFlag(FLAG_ARRAY) &&
             !ts->hasFlag(FLAG_ITERATOR_CLASS) &&
+            !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
             !ts->hasFlag(FLAG_REF) &&
             !ts->hasFlag(FLAG_SYNC))
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("_copy", formal)));
@@ -2301,7 +2313,7 @@ preFold(Expr* expr) {
       }
     } else if (call->isPrimitive(PRIM_SET_REF)) {
       // remove set ref if already a reference (or an iterator of references)
-      if ((call->get(1)->typeInfo()->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+      if ((call->get(1)->typeInfo()->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
            call->get(1)->typeInfo()->defaultConstructor->iteratorInfo->getValue->retType->symbol->hasFlag(FLAG_REF)) ||
           call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         result = call->get(1)->remove();
@@ -2364,7 +2376,7 @@ preFold(Expr* expr) {
         call->insertAtTail(tmp);
       }
     } else if (call->isPrimitive(PRIM_TO_LEADER)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultConstructor;
+      FnSymbol* iterator = call->get(1)->typeInfo()->defaultConstructor->getFormal(1)->type->defaultConstructor;
       CallExpr* leaderCall = new CallExpr(iterator->name);
       leaderCall->insertAtTail(new NamedExpr("tag", new SymExpr(gLeaderTag)));
       for_formals(formal, iterator) {
@@ -2373,7 +2385,7 @@ preFold(Expr* expr) {
       call->replace(leaderCall);
       result = leaderCall;
     } else if (call->isPrimitive(PRIM_TO_FOLLOWER)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultConstructor;
+      FnSymbol* iterator = call->get(1)->typeInfo()->defaultConstructor->getFormal(1)->type->defaultConstructor;
       CallExpr* followerCall = new CallExpr(iterator->name);
       followerCall->insertAtTail(new NamedExpr("tag", new SymExpr(gFollowerTag)));
       followerCall->insertAtTail(new NamedExpr("follower", call->get(2)->remove()));
@@ -2965,7 +2977,9 @@ resolveBlock(Expr* body) {
           !sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
 
         if (ClassType* ct = toClassType(sym->typeInfo())) {
-          if (!ct->symbol->hasFlag(FLAG_GENERIC) && !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+          if (!ct->symbol->hasFlag(FLAG_GENERIC) &&
+              !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+              !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
             resolveFormals(ct->defaultTypeConstructor);
             if (resolvedFormals.set_in(ct->defaultTypeConstructor))
               resolveFns(ct->defaultTypeConstructor);
@@ -3321,8 +3335,8 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
           resolveFormals(fn);
           if (signature_match(pfn, fn)) {
             resolveFns(fn);
-            if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
-                pfn->retType->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+            if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
+                pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
               if (!isSubType(fn->retType->defaultConstructor->iteratorInfo->getValue->retType, pfn->retType->defaultConstructor->iteratorInfo->getValue->retType)) {
                 USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->defaultConstructor->iteratorInfo->getValue->retType->symbol->name);
                 USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->defaultConstructor->iteratorInfo->getValue->retType->symbol->name);
@@ -3330,6 +3344,10 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
               } else {
                 pfn->retType->dispatchChildren.add_exclusive(fn->retType);
                 fn->retType->dispatchParents.add_exclusive(pfn->retType);
+                Type* pic = pfn->retType->defaultConstructor->iteratorInfo->iclass;
+                Type* ic = fn->retType->defaultConstructor->iteratorInfo->iclass;
+                pic->dispatchChildren.add_exclusive(ic);
+                ic->dispatchParents.add_exclusive(pic);
               }
             } else if (!isSubType(fn->retType, pfn->retType)) {
               USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
@@ -3564,6 +3582,9 @@ resolve() {
           type = type->getValueType();
         if (type->defaultValue) {
           INT_FATAL(init, "PRIM_INIT should have been replaced already");
+        } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+          // why??  --sjd
+          init->replace(init->get(1)->remove());
         } else {
           INT_ASSERT(type->defaultConstructor);
           CallExpr* call = new CallExpr(type->defaultConstructor);

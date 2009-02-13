@@ -13,7 +13,9 @@
 
 IteratorInfo::IteratorInfo() :
   iterator(NULL),
-  icType(NULL),
+  getIterator(NULL),
+  iclass(NULL),
+  irecord(NULL),
   advance(NULL),
   zip1(NULL),
   zip2(NULL),
@@ -22,36 +24,6 @@ IteratorInfo::IteratorInfo() :
   hasMore(NULL),
   getValue(NULL)
 {}
-
-
-//
-// initialize temp to default value (recursive for records)
-//
-static void
-insertSetMemberInits(FnSymbol* fn, Symbol* var) {
-  Type* type = var->type;
-  if (type->defaultValue) {
-    fn->insertAtTail(new CallExpr(PRIM_MOVE, var, type->defaultValue));
-  } else {
-    ClassType* ct = toClassType(type);
-    INT_ASSERT(ct);
-    for_fields(field, ct) {
-      if (field->type->symbol->hasFlag(FLAG_REF)) {
-        if (field->type->getValueType()->symbol->hasFlag(FLAG_ARRAY))
-          continue; // skips array types
-        Symbol* tmp = newTemp(field->type);
-        fn->insertAtTail(new DefExpr(tmp));
-        fn->insertAtTail(new CallExpr(PRIM_INIT_REF, tmp));
-        fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, var, field, tmp));
-      } else if (field->type->refType) { // skips array types (how to handle arrays?) ( sjd later: really? )
-        Symbol* tmp = newTemp(field->type);
-        fn->insertAtTail(new DefExpr(tmp));
-        insertSetMemberInits(fn, tmp);
-        fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, var, field, tmp));
-      }
-    }
-  }
-}
 
 
 //
@@ -195,8 +167,8 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   }
   CallExpr* blockInfo = singleLoop->blockInfo->copy(&map);
   ii->zip1->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
-                                      new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->icType->getField("more"), new_IntSymbol(1)),
-                                      new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->icType->getField("more"), new_IntSymbol(0))));
+                                      new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
+                                      new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
   ii->zip1->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
@@ -245,8 +217,8 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   }
   CallExpr* blockInfo = singleLoop->blockInfo->copy(&map);
   ii->zip3->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
-                                      new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->icType->getField("more"), new_IntSymbol(1)),
-                                      new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->icType->getField("more"), new_IntSymbol(0))));
+                                      new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
+                                      new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
   ii->zip3->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
@@ -299,7 +271,7 @@ buildAdvance(FnSymbol* fn,
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIM_YIELD)) {
-        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, ii->icType->getField("more"), new_IntSymbol(i)));
+        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, ii->iclass->getField("more"), new_IntSymbol(i)));
         call->insertBefore(new GotoStmt(GOTO_NORMAL, end));
         Symbol* label = new LabelSymbol(astr("_jump_", istr(i)));
         call->insertBefore(new DefExpr(label));
@@ -307,7 +279,7 @@ buildAdvance(FnSymbol* fn,
         call->remove();
         i++;
       } else if (call->isPrimitive(PRIM_RETURN)) {
-        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, ii->icType->getField("more"), new_IntSymbol(0)));
+        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, ii->iclass->getField("more"), new_IntSymbol(0)));
         call->remove(); // remove old return
       }
     }
@@ -322,7 +294,7 @@ buildAdvance(FnSymbol* fn,
     ii->advance->insertAtHead(new CondStmt(new SymExpr(tmp), new GotoStmt(GOTO_NORMAL, label)));
     ii->advance->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_EQUAL, more, new_IntSymbol(i++))));
   }
-  ii->advance->insertAtHead(new CallExpr(PRIM_MOVE, more, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, ii->icType->getField("more"))));
+  ii->advance->insertAtHead(new CallExpr(PRIM_MOVE, more, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, ii->iclass->getField("more"))));
   ii->advance->insertAtHead(new DefExpr(tmp));
   ii->advance->insertAtHead(new DefExpr(more));
   ii->advance->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
@@ -333,7 +305,7 @@ static void
 buildHasMore(IteratorInfo* ii) {
   VarSymbol* tmp = newTemp(ii->hasMore->retType);
   ii->hasMore->insertAtTail(new DefExpr(tmp));
-  ii->hasMore->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->hasMore->getFormal(1), ii->icType->getField("more"))));
+  ii->hasMore->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->hasMore->getFormal(1), ii->iclass->getField("more"))));
   ii->hasMore->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
 }
 
@@ -342,7 +314,7 @@ static void
 buildGetValue(IteratorInfo* ii) {
   VarSymbol* tmp = newTemp(ii->getValue->retType);
   ii->getValue->insertAtTail(new DefExpr(tmp));
-  ii->getValue->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->getValue->getFormal(1), ii->icType->getField("value"))));
+  ii->getValue->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->getValue->getFormal(1), ii->iclass->getField("value"))));
   ii->getValue->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
 }
 
@@ -498,19 +470,17 @@ static void
 rebuildIterator(IteratorInfo* ii,
                 SymbolMap& local2field,
                 Vec<Symbol*>& locals) {
-  if (ii->icType->dispatchParents.n == 0) {
-    ii->icType->dispatchParents.add(dtObject);
-    dtObject->dispatchChildren.add(ii->icType);
+  if (ii->iclass->dispatchParents.n == 0) {
+    ii->iclass->dispatchParents.add(dtObject);
+    dtObject->dispatchChildren.add(ii->iclass);
   }
   FnSymbol* fn = ii->iterator;
   for_alist(expr, fn->body->body)
     expr->remove();
   fn->defPoint->remove();
-  fn->retType = ii->icType;
-  Symbol* iterator = newTemp("_ic", ii->icType);
+  fn->retType = ii->irecord;
+  Symbol* iterator = newTemp("_ir", ii->irecord);
   fn->insertAtTail(new DefExpr(iterator));
-  fn->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr(PRIM_CHPL_ALLOC, ii->icType->symbol, new_StringSymbol("iterator class"))));
-  fn->insertAtTail(new CallExpr(PRIM_SETCID, iterator));
   forv_Vec(Symbol, local, locals) {
     Symbol* field = local2field.get(local);
     if (toArgSymbol(local)) {
@@ -524,23 +494,26 @@ rebuildIterator(IteratorInfo* ii,
       } else {
         fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, local));
       }
-    } else if (isRecord(local->type)) {
-      if (field->type->refType) { // skips array types (how to handle arrays?)
-        Symbol* tmp = newTemp(field->type);
-        fn->insertAtTail(new DefExpr(tmp));
-        insertSetMemberInits(fn, tmp);
-        fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, tmp));
-      }
-    } else if (field->type->symbol->hasFlag(FLAG_REF)) {
-      // do not initialize references
-    } else if (field->type->defaultValue) {
-      fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, field->type->defaultValue));
     }
   }
-  fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, ii->icType->getField("more"), new_IntSymbol(1)));
   fn->insertAtTail(new CallExpr(PRIM_RETURN, iterator));
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
   fn->addFlag(FLAG_INLINE);
+}
+
+
+static void
+rebuildGetIterator(IteratorInfo* ii) {
+  FnSymbol* getIterator = ii->getIterator;
+  Symbol* ret = getIterator->getReturnSymbol();
+  ArgSymbol* arg = getIterator->getFormal(1);
+  getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER, ret, ii->iclass->getField("more"), new_IntSymbol(1)));
+  for_fields(field, ii->irecord) {
+    VarSymbol* tmp = newTemp(field->type);
+    getIterator->insertBeforeReturn(new DefExpr(tmp));
+    getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
+    getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER, ret, ii->iclass->getField(field->name), tmp));
+  }
 }
 
 
@@ -562,7 +535,8 @@ void lowerIterator(FnSymbol* fn) {
   // variables that are live at places where the iterator methods will
   // yield control back to the loop body.
   //
-  SymbolMap local2field;
+  SymbolMap local2field;  // map from arg/local to class field
+  SymbolMap local2rfield; // map from arg to record field
   Vec<Symbol*> locals;
 
   for_formals(formal, fn)
@@ -576,7 +550,7 @@ void lowerIterator(FnSymbol* fn) {
 
   Symbol* super = new VarSymbol("super", dtObject);
   super->addFlag(FLAG_SUPER_CLASS);
-  ii->icType->fields.insertAtTail(new DefExpr(super));
+  ii->iclass->fields.insertAtTail(new DefExpr(super));
 
   int i = 0;
   forv_Vec(Symbol, local, locals) {
@@ -588,12 +562,17 @@ void lowerIterator(FnSymbol* fn) {
       type = type->getValueType();
     Symbol* field = new VarSymbol(fieldName, type);
     local2field.put(local, field);
-    ii->icType->fields.insertAtTail(new DefExpr(field));
+    ii->iclass->fields.insertAtTail(new DefExpr(field));
+    if (isArgSymbol(local)) {
+      Symbol* rfield = new VarSymbol(fieldName, type);
+      local2rfield.put(local, rfield);
+      ii->irecord->fields.insertAtTail(new DefExpr(rfield));
+    }
   }
-  ii->icType->fields.insertAtTail(new DefExpr(new VarSymbol("more", dtInt[INT_SIZE_32])));
+  ii->iclass->fields.insertAtTail(new DefExpr(new VarSymbol("more", dtInt[INT_SIZE_32])));
 
   replaceLocalsWithFields(ii, asts, local2field, locals);
-  if (!ii->icType->defaultConstructor->hasFlag(FLAG_INLINE_ITERATOR)) {
+  if (!ii->iclass->defaultConstructor->hasFlag(FLAG_INLINE_ITERATOR)) {
     if (singleLoop) {
       buildZip1(ii, asts, singleLoop);
       buildZip2(ii, asts, singleLoop);
@@ -611,6 +590,7 @@ void lowerIterator(FnSymbol* fn) {
     buildHasMore(ii);
     buildGetValue(ii);
   }
-  rebuildIterator(ii, local2field, locals);
+  rebuildIterator(ii, local2rfield, locals);
+  rebuildGetIterator(ii);
 }
 

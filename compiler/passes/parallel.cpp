@@ -388,7 +388,7 @@ makeHeapAllocations() {
         }
       }
     } else if (VarSymbol* var = toVarSymbol(ref)) {
-      INT_ASSERT(defMap.get(var)->n == 1);
+      //      INT_ASSERT(defMap.get(var)->n == 1);
       for_defs(def, defMap, var) {
         INT_ASSERT(def);
         if (CallExpr* call = toCallExpr(def->parentExpr)) {
@@ -480,7 +480,7 @@ makeHeapAllocations() {
     // handle variables with no definitions
     //  temporaries for destructured indices
     //
-    if (!defMap.get(var) || defMap.get(var)->n == 0) {
+    if (useMap.get(var) && (!defMap.get(var) || defMap.get(var)->n == 0)) {
       //
       // In this case, where should we put this?  ack!! let's assume
       // we can put it in front of the first use!

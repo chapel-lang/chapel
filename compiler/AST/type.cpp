@@ -545,8 +545,10 @@ void initPrimitiveTypes(void) {
   dtIntegral->symbol->addFlag(FLAG_GENERIC);
   dtNumeric = createPrimitiveType ("numeric", "numeric");
   dtNumeric->symbol->addFlag(FLAG_GENERIC);
-  dtIterator = createPrimitiveType("_iteratorClass", "_iteratorClass");
-  dtIterator->symbol->addFlag(FLAG_GENERIC);
+  dtIteratorRecord = createPrimitiveType("_iteratorRecord", "_iteratorRecord");
+  dtIteratorRecord->symbol->addFlag(FLAG_GENERIC);
+  dtIteratorClass = createPrimitiveType("_iteratorClass", "_iteratorClass");
+  dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
   dtMethodToken = createPrimitiveType ("_MT", "_MT");
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
   dtTypeDefaultToken = createPrimitiveType("_TypeDefaultT", "_TypeDefaultT");

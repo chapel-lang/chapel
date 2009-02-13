@@ -498,7 +498,7 @@ pragma "inline" def _cond_test(x) {
   compilerError("type '", x.type, "' used in if or while condition");
 }
 
-pragma "inline" def _cond_test(x: _iteratorClass) {
+pragma "inline" def _cond_test(x: _iteratorRecord) {
   compilerError("iterator or promoted expression used in if or while condition");
 }
 

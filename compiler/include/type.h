@@ -128,7 +128,8 @@ class PrimitiveType : public Type {
 
 // internal types
 TYPE_EXTERN Type* dtAny;
-TYPE_EXTERN Type* dtIterator;
+TYPE_EXTERN Type* dtIteratorRecord;
+TYPE_EXTERN Type* dtIteratorClass;
 TYPE_EXTERN Type* dtIntegral;
 TYPE_EXTERN Type* dtNumeric;
 TYPE_EXTERN Type* dtEnumerated;

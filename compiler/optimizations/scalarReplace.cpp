@@ -392,7 +392,9 @@ scalarReplace() {
       ClassType* ct = toClassType(ts->type);
       if (ct) {
         typeOrder.put(ct, -1);
-        if (ts->hasFlag(FLAG_ITERATOR_CLASS) || ts->hasFlag(FLAG_TUPLE)) {
+        if (ts->hasFlag(FLAG_ITERATOR_CLASS) ||
+            ts->hasFlag(FLAG_ITERATOR_RECORD) ||
+            ts->hasFlag(FLAG_TUPLE)) {
           typeVec.add(ct);
           typeVarMap.put(ct, new Vec<Symbol*>());
           if (ClassType* rct = toClassType(ct->refType))

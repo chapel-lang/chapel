@@ -7,7 +7,9 @@ class IteratorInfo {
 public:
   IteratorTag tag;
   FnSymbol* iterator;
-  ClassType* icType;
+  FnSymbol* getIterator;
+  ClassType* iclass;
+  ClassType* irecord;
   FnSymbol* advance;
   FnSymbol* zip1;
   FnSymbol* zip2;

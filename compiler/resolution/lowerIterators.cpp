@@ -173,7 +173,7 @@ expandIteratorInline(CallExpr* call) {
   BlockStmt* body;
   Symbol* index = toSymExpr(call->get(1))->var;
   Symbol* ic = toSymExpr(call->get(2))->var;
-  FnSymbol* iterator = ic->type->defaultConstructor;
+  FnSymbol* iterator = ic->type->defaultConstructor->getFormal(1)->type->defaultConstructor;
   BlockStmt* ibody = iterator->body->copy();
 
   if (recursiveIteratorSet.set_in(iterator)) {
@@ -318,7 +318,7 @@ getIteratorChildren(Vec<Type*>& children, Type* type) {
 
 static void
 buildIteratorCallInner(BlockStmt* block, Symbol* ret, int fnid, Symbol* iterator) {
-  IteratorInfo* ii = iterator->type->defaultConstructor->iteratorInfo;
+  IteratorInfo* ii = iterator->type->defaultConstructor->getFormal(1)->type->defaultConstructor->iteratorInfo;
   FnSymbol* fn = NULL;
   switch (fnid) {
   case ZIP1: fn = ii->zip1; break;
@@ -382,8 +382,8 @@ expand_for_loop(CallExpr* call) {
     INT_FATAL(call, "bad for loop primitive");
 
   if (!fNoInlineIterators &&
-      iterator->type->defaultConstructor->iteratorInfo &&
-      canInlineIterator(iterator->type->defaultConstructor) &&
+      iterator->type->defaultConstructor->getFormal(1)->type->defaultConstructor->iteratorInfo &&
+      canInlineIterator(iterator->type->defaultConstructor->getFormal(1)->type->defaultConstructor) &&
       (iterator->type->dispatchChildren.n == 0 ||
        iterator->type->dispatchChildren.n == 1 &&
        iterator->type->dispatchChildren.v[0] == dtObject)) {
@@ -408,7 +408,7 @@ expand_for_loop(CallExpr* call) {
 
       block->insertAtTail(buildIteratorCall(NULL, ZIP3, iterators.v[i], children));
       block->insertAtTail(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
-      if (isBoundedIterator(iterators.v[i]->type->defaultConstructor)) {
+      if (isBoundedIterator(iterators.v[i]->type->defaultConstructor->getFormal(1)->type->defaultConstructor)) {
         if (!firstCond) {
           firstCond = cond;
         } else if (!fNoBoundsChecks) {
@@ -438,7 +438,7 @@ inlineIterators() {
     if (block->parentSymbol) {
       if (block->blockInfo && block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
         Symbol* iterator = toSymExpr(block->blockInfo->get(2))->var;
-        if (iterator->type->defaultConstructor->hasFlag(FLAG_INLINE_ITERATOR)) {
+        if (iterator->type->defaultConstructor->getFormal(1)->type->defaultConstructor->hasFlag(FLAG_INLINE_ITERATOR)) {
           expandIteratorInline(block->blockInfo);
         }
       }
@@ -521,7 +521,7 @@ void lowerIterators() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
       if (FnSymbol* fn = call->isResolved()) {
-        if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+        if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
           if (!strcmp(call->parentSymbol->name, "_toLeader") ||
               !strcmp(call->parentSymbol->name, "_toFollower")) {
             ArgSymbol* iterator = toFnSymbol(call->parentSymbol)->getFormal(1);
@@ -592,5 +592,37 @@ void lowerIterators() {
     }
     outerBlock->insertAtTail(new CallExpr(PRIM_RETURN, cp));
     fn->body->replace(outerBlock);
+  }
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->defPoint->parentSymbol && fn->iteratorInfo) {
+      FnSymbol* getIterator = fn->iteratorInfo->getIterator;
+      INT_ASSERT(getIterator->defPoint->parentSymbol);
+      ClassType* irecord = fn->iteratorInfo->irecord;
+      if (irecord->dispatchChildren.n > 0) {
+        LabelSymbol* label = new LabelSymbol("end");
+        getIterator->insertBeforeReturn(new DefExpr(label));
+        Symbol* ret = getIterator->getReturnSymbol();
+        Symbol* field = irecord->getField(1);
+        forv_Vec(Type, type, irecord->dispatchChildren) {
+          VarSymbol* tmp = newTemp(field->type);
+          VarSymbol* cid = newTemp(dtBool);
+          BlockStmt* thenStmt = new BlockStmt();
+          VarSymbol* recordTmp = newTemp(type);
+          VarSymbol* classTmp = newTemp(type->defaultConstructor->iteratorInfo->getIterator->retType);
+          thenStmt->insertAtTail(new DefExpr(recordTmp));
+          thenStmt->insertAtTail(new DefExpr(classTmp));
+          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, recordTmp, new CallExpr(PRIM_CAST, type->symbol, getIterator->getFormal(1))));
+          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(type->defaultConstructor->iteratorInfo->getIterator, recordTmp)));
+          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CAST, ret->type->symbol, classTmp)));
+          thenStmt->insertAtTail(new GotoStmt(GOTO_NORMAL, label));
+          ret->defPoint->insertAfter(new CondStmt(new SymExpr(cid), thenStmt));
+          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_GETCID, tmp, type->defaultConstructor->iteratorInfo->irecord->getField(1)->type->symbol)));
+          ret->defPoint->insertAfter(new DefExpr(cid));
+          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), field)));
+          ret->defPoint->insertAfter(new DefExpr(tmp));
+        }
+      }
+    }
   }
 }

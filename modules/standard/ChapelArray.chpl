@@ -662,7 +662,7 @@ def iteratorIndexType(x) type {
   return iteratorIndex(x).type;
 }
 
-def _iteratorClass.writeThis(f: Writer) {
+def _iteratorRecord.writeThis(f: Writer) {
   var first: bool = true;
   for e in this {
     if !first then
@@ -673,19 +673,19 @@ def _iteratorClass.writeThis(f: Writer) {
   }
 }
 
-def =(ic: _iteratorClass, xs) {
+def =(ic: _iteratorRecord, xs) {
   for (e, x) in (ic, xs) do
     e = x;
   return ic;
 }
 
-def =(ic: _iteratorClass, x: iteratorIndexType(ic)) {
+def =(ic: _iteratorRecord, x: iteratorIndexType(_getIterator(ic))) {
   for e in ic do
     e = x;
   return ic;
 }
 
-def _copy(ic: _iteratorClass) {
+def _copy(ic: _iteratorRecord) {
   return _ic_copy_help(_ic_copy_recursive(ic));
 
   def _ic_copy_recursive(ic) {
@@ -719,12 +719,12 @@ def _copy(ic: _iteratorClass) {
   }
 }
 
-pragma "inline" pragma "iterator class copy"
-def _getIterator(ic: _iteratorClass)
-  return ic;
+pragma "inline" def _getIterator(x) {
+  return _getIterator(x.these());
+}
 
-pragma "inline" pragma "ref" def _getIterator(x)
-  return x.these();
+pragma "inline" def _getIterator(ic: _iteratorClass)
+  return ic;
 
 pragma "inline" def _getIterator(x: _tuple) {
   pragma "inline" def _getIteratorHelp(x: _tuple, param dim: int) {
@@ -745,6 +745,12 @@ def _toLeader(iterator: _iteratorClass)
   return __primitive("to leader", iterator);
 
 pragma "inline"
+def _toLeader(ir: _iteratorRecord) {
+  var ic = _getIterator(ir);
+  return _toLeader(ic);
+}
+
+pragma "inline"
 def _toLeader(x: _tuple)
   return _toLeader(x(1));
 
@@ -755,6 +761,14 @@ def _toLeader(x)
 pragma "inline"
 def _toFollower(iterator: _iteratorClass, leaderIndex)
   return __primitive("to follower", iterator, leaderIndex);
+
+pragma "inline"
+def _toFollower(ir: _iteratorRecord, leaderIndex) {
+  var ic = _getIterator(ir);
+  return _toFollower(ic, leaderIndex);
+}
+
+
 
 //
 // If aligned is passed as an argument (true from alignment version of
