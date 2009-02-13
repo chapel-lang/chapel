@@ -106,8 +106,14 @@ def locale.blockedTasks() {
 //
 def startVerboseComm() { __primitive("chpl_startVerboseComm"); }
 def stopVerboseComm() { __primitive("chpl_stopVerboseComm"); }
+def startVerboseCommHere() { __primitive("chpl_startVerboseCommHere"); }
+def stopVerboseCommHere() { __primitive("chpl_stopVerboseCommHere"); }
+
 def startCommDiagnostics() { __primitive("chpl_startCommDiagnostics"); }
 def stopCommDiagnostics() { __primitive("chpl_stopCommDiagnostics"); }
+def startCommDiagnosticsHere() { __primitive("chpl_startCommDiagnosticsHere"); }
+def stopCommDiagnosticsHere() { __primitive("chpl_stopCommDiagnosticsHere"); }
+
 
 def getCommDiagnostics() {
   var D: [LocaleSpace] 4*int;

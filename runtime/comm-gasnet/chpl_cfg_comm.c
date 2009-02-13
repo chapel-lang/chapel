@@ -56,10 +56,11 @@ typedef struct {
 //
 // AM functions
 //
-#define FORK_NB   128    // (non-blocking) async fork 
-#define FORK      129    // synchronous fork
-#define SIGNAL    130    // ack of synchronous fork
-#define PUTDATA   131    // put data at addr (used for private broadcast)
+#define FORK_NB    128    // (non-blocking) async fork 
+#define FORK       129    // synchronous fork
+#define SIGNAL     130    // ack of synchronous fork
+#define PUTDATA    131    // put data at addr (used for private broadcast)
+#define FORK_LARGE 132    // synchronous fork with an argument too big for FORK
 
 static void fork_nb_wrapper(fork_t *f) {
   if (f->arg_size)
@@ -93,6 +94,19 @@ static void fork_wrapper(fork_t *f) {
   chpl_free(f, 0, 0);
 }
 
+static void fork_large_wrapper(fork_t* f) {
+  void* arg = chpl_malloc(1, f->arg_size, "fork argument", 0, 0);
+
+  _chpl_comm_get(arg, f->caller, *(void**)f->arg, f->arg_size, 0, "fork large");
+  (*(f->fun))(arg);
+  GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
+                                      SIGNAL,
+                                      &(f->ack),
+                                      sizeof(f->ack)));
+  chpl_free(f, 0, 0);
+  chpl_free(arg, 0, 0);
+}
+
 // AM fork handler, medium sized, receiver side
 static void AM_fork(gasnet_token_t  token,
                     void           *buf,
@@ -104,6 +118,15 @@ static void AM_fork(gasnet_token_t  token,
   chpl_begin((chpl_threadfp_t)fork_wrapper, (chpl_threadarg_t)f,
              true, f->serial_state, NULL);
 }
+
+static void AM_fork_large(gasnet_token_t  token, void* buf, size_t nbytes) {
+  fork_t* f = chpl_malloc(1, nbytes, "large fork pointer", 0, 0);
+  bcopy(buf, f, nbytes);
+
+  chpl_begin((chpl_threadfp_t)fork_large_wrapper, (chpl_threadarg_t)f,
+             true, f->serial_state, NULL);
+}
+
 
 // AM signal handler, medium sized, receiver side
 static void AM_signal(gasnet_token_t  token,
@@ -124,7 +147,8 @@ static gasnet_handlerentry_t ftable[] = {
   {FORK,    AM_fork},    // fork remote thread synchronously
   {FORK_NB, AM_fork_nb}, // fork remote thread asynchronously
   {SIGNAL,  AM_signal},  // set remote (int) condition
-  {PUTDATA, AM_putdata}  // put data at addr (used for private broadcast)
+  {PUTDATA, AM_putdata}, // put data at addr (used for private broadcast)
+  {FORK_LARGE, AM_fork_large}
 };
 
 static gasnet_seginfo_t seginfo_table[1024];
@@ -335,9 +359,10 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
 }
 
 void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
-  fork_t *info;
-  int          info_size;
-  int          done;
+  fork_t* info;
+  int     info_size;
+  int     done;
+  int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
 
   if (_localeID == locale) {
     (*f)(arg);
@@ -349,20 +374,31 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
       chpl_comm_forks++;
       chpl_mutex_unlock(&chpl_comm_diagnostics_lock);
     }
-    info_size = sizeof(fork_t) + arg_size;
-    info = (fork_t*) chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork info", 0, 0);
 
+    if (passArg) {
+      info_size = sizeof(fork_t) + arg_size;
+    } else {
+      info_size = sizeof(fork_t) + sizeof(void*);
+    }
+    info = chpl_malloc(1, info_size, "_chpl_comm_fork info", 0, 0);
     info->caller = _localeID;
     info->ack = &done;
     info->serial_state = chpl_get_serial();
     info->fun = f;
     info->arg_size = arg_size;
-    if (arg_size)
-      bcopy(arg, &(info->arg), arg_size);
 
     done = 0;
-    GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK, info, info_size));
-    GASNET_BLOCKUNTIL(1==done);
+
+    if (passArg) {
+      if (arg_size)
+        bcopy(arg, &(info->arg), arg_size);
+      GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK, info, info_size));
+      GASNET_BLOCKUNTIL(1==done);
+    } else {
+      bcopy(&arg, &(info->arg), sizeof(void*));
+      GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_LARGE, info, info_size));
+      GASNET_BLOCKUNTIL(1==done);
+    }
     chpl_free(info, 0, 0);
   }
 }
@@ -381,6 +417,14 @@ void chpl_stopVerboseComm() {
   chpl_comm_no_debug_private = 0;
 }
 
+void chpl_startVerboseCommHere() {
+  chpl_verbose_comm = 1;
+}
+
+void chpl_stopVerboseCommHere() {
+  chpl_verbose_comm = 0;
+}
+
 void chpl_startCommDiagnostics() {
   chpl_comm_diagnostics = 1;
   chpl_comm_no_debug_private = 1;
@@ -393,6 +437,14 @@ void chpl_stopCommDiagnostics() {
   chpl_comm_no_debug_private = 1;
   _chpl_comm_broadcast_private(&chpl_comm_diagnostics, sizeof(int));
   chpl_comm_no_debug_private = 0;
+}
+
+void chpl_startCommDiagnosticsHere() {
+  chpl_comm_diagnostics = 1;
+}
+
+void chpl_stopCommDiagnosticsHere() {
+  chpl_comm_diagnostics = 0;
 }
 
 int32_t chpl_numCommGets(void) {
