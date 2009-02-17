@@ -416,7 +416,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond) {
   FnSymbol* fn = new FnSymbol(astr("_loopexpr", istr(loopexpr_uid++)));
   VarSymbol* iterator = newTemp("_iterator");
   fn->insertAtTail(new DefExpr(iterator));
-  fn->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorExpr));
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
@@ -446,7 +446,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond) {
   lifn->insertAtTail(new DefExpr(leaderIndex));
   VarSymbol* leaderIterator = newTemp("_leaderIterator");
   lifn->insertAtTail(new DefExpr(leaderIterator));
-  lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_getIterator", new CallExpr("_toLeader", lifnIterator))));
+  lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", lifnIterator)));
   lifn->insertAtTail(buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex))));
 
   //
@@ -463,7 +463,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond) {
   fn->insertAtHead(new DefExpr(fifn));
   VarSymbol* followerIterator = newTemp("_followerIterator");
   fifn->insertAtTail(new DefExpr(followerIterator));
-  fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_getIterator", new CallExpr("_toFollower", fifnIterator, fifnFollower))));
+  fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", fifnIterator, fifnFollower)));
   SymbolMap map;
   Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
   Expr* bodyCopy = stmt->copy(&map);
@@ -583,7 +583,7 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
   BlockStmt* leaderBlock = buildChapelStmt();
   VarSymbol* iterator = newTemp("_iterator");
   leaderBlock->insertAtTail(new DefExpr(iterator));
-  leaderBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
+  leaderBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
   VarSymbol* leaderIndex = newTemp("_leaderIndex");
   leaderBlock->insertAtTail(new DefExpr(leaderIndex));
   VarSymbol* leaderIterator = newTemp("_leaderIterator");

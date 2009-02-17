@@ -56,7 +56,6 @@ initFlags() {
   defineFlag(FLAG_INLINE_ITERATOR, "inline iterator");
   defineFlag(FLAG_IS_MEME, "is meme");
   defineFlag(FLAG_ITERATOR_CLASS, "iterator class");
-  defineFlag(FLAG_ITERATOR_CLASS_COPY, "iterator class copy");
   defineFlag(FLAG_ITERATOR_FN, "iterator fn");
   defineFlag(FLAG_ITERATOR_RECORD, "iterator record");
   defineFlag(FLAG_LABEL_BREAK, "label break");

@@ -500,22 +500,6 @@ void lowerIterators() {
   }
 
   //
-  // make _getIterator(ic: _iteratorClass) implement a shallow copy to
-  // avoid clashing during simultaneous iterations of the same
-  // iterator class (copies the dynamic iterator type)
-  //
-  // see functions/deitz/iterators/test_generic_use_twice2.chpl
-  //
-  Vec<FnSymbol*> getIteratorVec;
-  Map<Type*,FnSymbol*> getIteratorMap;
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ITERATOR_CLASS_COPY)) {
-      getIteratorVec.add(fn);
-      getIteratorMap.put(fn->retType, fn);
-    }
-  }
-
-  //
   // cleanup leader and follower iterator calls
   //
   forv_Vec(CallExpr, call, gCallExprs) {
@@ -548,50 +532,6 @@ void lowerIterators() {
         }
       }
     }
-  }
-
-  forv_Vec(FnSymbol, fn, getIteratorVec) {
-    BlockStmt* block = new BlockStmt();
-    BlockStmt* outerBlock = block;
-    ArgSymbol* ic = fn->getFormal(1);
-    INT_ASSERT(ic);
-    ClassType* ct = toClassType(ic->type);
-    INT_ASSERT(ct);
-    VarSymbol* cp = newTemp(ct);
-    block->insertAtTail(new DefExpr(cp));
-
-    Vec<Type*> children;
-    getIteratorChildren(children, ic->type);
-
-    forv_Vec(Type, type, children) {
-      VarSymbol* cid = newTemp(dtBool);
-      block->insertAtTail(new DefExpr(cid));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, cid,
-                            new CallExpr(PRIM_GETCID,
-                                         ic, type->symbol)));
-      BlockStmt* thenStmt = new BlockStmt();
-      BlockStmt* elseStmt = new BlockStmt();
-      VarSymbol* childIterator = newTemp(type);
-      thenStmt->insertAtTail(new DefExpr(childIterator));
-      thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, childIterator, new CallExpr(PRIM_CAST, type->symbol, ic)));
-      thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, childIterator, new CallExpr(getIteratorMap.get(type), childIterator)));
-      thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, cp, new CallExpr(PRIM_CAST, ic->type->symbol, childIterator)));
-      block->insertAtTail(new CondStmt(new SymExpr(cid), thenStmt, elseStmt));
-      block = elseStmt;
-    }
-
-    block->insertAtTail(new CallExpr(PRIM_MOVE, cp, new CallExpr(PRIM_CHPL_ALLOC, ct->symbol, new_StringSymbol("iterator class copy"))));
-    block->insertAtTail(new CallExpr(PRIM_SETCID, cp));
-    for_fields(field, ct) {
-      if (!field->hasFlag(FLAG_SUPER_CLASS)) {
-        VarSymbol* tmp = newTemp(field->type);
-        block->insertAtTail(new DefExpr(tmp));
-        block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, field)));
-        block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, cp, field, tmp));
-      }
-    }
-    outerBlock->insertAtTail(new CallExpr(PRIM_RETURN, cp));
-    fn->body->replace(outerBlock);
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {

@@ -740,6 +740,14 @@ def _getIterator(type t) {
   compilerError("cannot iterate over a type");
 }
 
+def _checkIterator(type t) {
+  compilerError("cannot iterate over a type");
+}
+
+def _checkIterator(x) {
+  return x;
+}
+
 pragma "inline"
 def _toLeader(iterator: _iteratorClass)
   return __primitive("to leader", iterator);

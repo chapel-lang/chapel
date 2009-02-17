@@ -61,7 +61,6 @@ enum Flag {
   FLAG_INLINE_ITERATOR, // iterators that are always inlined, e.g., leaders
   FLAG_IS_MEME,
   FLAG_ITERATOR_CLASS,
-  FLAG_ITERATOR_CLASS_COPY,
   FLAG_ITERATOR_FN,
   FLAG_ITERATOR_RECORD,
   FLAG_LABEL_BREAK,

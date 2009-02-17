@@ -30,7 +30,7 @@ def main() {
   if verbose then
     writeln((gets, puts, forks, nbforks));
 
-  if gets != 3 {
+  if gets != 0 {
     writeln((gets, puts, forks, nbforks));
     halt("comm unexpected number of gets");
   }

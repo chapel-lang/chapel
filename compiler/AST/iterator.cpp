@@ -509,6 +509,8 @@ rebuildGetIterator(IteratorInfo* ii) {
   ArgSymbol* arg = getIterator->getFormal(1);
   getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER, ret, ii->iclass->getField("more"), new_IntSymbol(1)));
   for_fields(field, ii->irecord) {
+    if (!strcmp("chpl__empty_record", field->name))
+      continue;
     VarSymbol* tmp = newTemp(field->type);
     getIterator->insertBeforeReturn(new DefExpr(tmp));
     getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
@@ -570,6 +572,11 @@ void lowerIterator(FnSymbol* fn) {
     }
   }
   ii->iclass->fields.insertAtTail(new DefExpr(new VarSymbol("more", dtInt[INT_SIZE_32])));
+
+  // make sure iterator record has at least one field; alternatively,
+  // should remote this if it is empty later.
+  if (ii->irecord->fields.length == 0)
+    ii->irecord->fields.insertAtTail(new DefExpr(new VarSymbol("chpl__empty_record", dtInt[INT_SIZE_32])));
 
   replaceLocalsWithFields(ii, asts, local2field, locals);
   if (!ii->iclass->defaultConstructor->hasFlag(FLAG_INLINE_ITERATOR)) {
