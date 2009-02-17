@@ -543,23 +543,35 @@ void lowerIterators() {
         LabelSymbol* label = new LabelSymbol("end");
         getIterator->insertBeforeReturn(new DefExpr(label));
         Symbol* ret = getIterator->getReturnSymbol();
-        Symbol* field = irecord->getField(1);
         forv_Vec(Type, type, irecord->dispatchChildren) {
-          VarSymbol* tmp = newTemp(field->type);
+          VarSymbol* tmp = newTemp(irecord->getField(1)->type);
           VarSymbol* cid = newTemp(dtBool);
           BlockStmt* thenStmt = new BlockStmt();
           VarSymbol* recordTmp = newTemp(type);
           VarSymbol* classTmp = newTemp(type->defaultConstructor->iteratorInfo->getIterator->retType);
           thenStmt->insertAtTail(new DefExpr(recordTmp));
           thenStmt->insertAtTail(new DefExpr(classTmp));
-          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, recordTmp, new CallExpr(PRIM_CAST, type->symbol, getIterator->getFormal(1))));
+          ClassType* ct = toClassType(type);
+          for_fields(field, ct) {
+            VarSymbol* ftmp = newTemp(getIterator->getFormal(1)->type->getField(field->name)->type);
+            thenStmt->insertAtTail(new DefExpr(ftmp));
+            thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ftmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), getIterator->getFormal(1)->type->getField(field->name))));
+            if (ftmp->type == field->type) {
+              thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp));
+            } else {
+              VarSymbol* ftmp2 = newTemp(field->type);
+              thenStmt->insertAtTail(new DefExpr(ftmp2));
+              thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ftmp2, new CallExpr(PRIM_CAST, field->type->symbol, ftmp)));
+              thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp2));
+            }
+          }
           thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(type->defaultConstructor->iteratorInfo->getIterator, recordTmp)));
           thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CAST, ret->type->symbol, classTmp)));
           thenStmt->insertAtTail(new GotoStmt(GOTO_NORMAL, label));
           ret->defPoint->insertAfter(new CondStmt(new SymExpr(cid), thenStmt));
           ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_GETCID, tmp, type->defaultConstructor->iteratorInfo->irecord->getField(1)->type->symbol)));
           ret->defPoint->insertAfter(new DefExpr(cid));
-          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), field)));
+          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), irecord->getField(1))));
           ret->defPoint->insertAfter(new DefExpr(tmp));
         }
       }
