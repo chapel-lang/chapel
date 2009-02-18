@@ -83,13 +83,16 @@ extern gasneti_atomic_t gasnetc_exit_running;
 
 /* ------------------------------------------------------------------------------------ */
 
+#define GASNETC_ARGSEND_AUX(s,nargs) \
+	(offsetof(s,args)+((nargs)*sizeof(gasnet_handlerarg_t)))
+
 typedef struct {
 #if GASNETI_STATS_OR_TRACE
   gasneti_tick_t	stamp;
 #endif
   gasnet_handlerarg_t	args[GASNETC_MAX_ARGS];	
 } gasnetc_shortmsg_t;
-#define GASNETC_MSG_SHORT_ARGSEND(nargs) offsetof(gasnetc_shortmsg_t,args[(unsigned int)nargs])
+#define GASNETC_MSG_SHORT_ARGSEND(nargs) GASNETC_ARGSEND_AUX(gasnetc_shortmsg_t,nargs)
 
 typedef struct {
 #if GASNETI_STATS_OR_TRACE
@@ -99,7 +102,7 @@ typedef struct {
   gasnet_handlerarg_t	args[GASNETC_MAX_ARGS];	
 } gasnetc_medmsg_t;
 #define GASNETC_MSG_MED_ARGSEND(nargs) /* Note 8-byte alignment for payload */ \
-		GASNETI_ALIGNUP(offsetof(gasnetc_medmsg_t,args[(unsigned int)nargs]), 8)
+		GASNETI_ALIGNUP(GASNETC_ARGSEND_AUX(gasnetc_medmsg_t,nargs), 8)
 #define GASNETC_MSG_MED_DATA(msg,nargs) \
 		((void *)((uintptr_t)(msg) + GASNETC_MSG_MED_ARGSEND(nargs)))
 
@@ -111,7 +114,7 @@ typedef struct {
   int32_t		nBytes;
   gasnet_handlerarg_t	args[GASNETC_MAX_ARGS];	
 } gasnetc_longmsg_t;
-#define GASNETC_MSG_LONG_ARGSEND(nargs)  offsetof(gasnetc_longmsg_t,args[(unsigned int)nargs])
+#define GASNETC_MSG_LONG_ARGSEND(nargs)  GASNETC_ARGSEND_AUX(gasnetc_longmsg_t,nargs)
 #define GASNETC_MSG_LONG_DATA(msg,nargs) (void *)(&msg->longmsg.args[(unsigned int)nargs])
 
 typedef union {
