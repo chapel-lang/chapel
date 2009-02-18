@@ -749,6 +749,21 @@ def _checkIterator(x) {
 }
 
 pragma "inline"
+def _freeIterator(ic: _iteratorClass) {
+  __primitive("chpl_free", ic);
+}
+
+pragma "inline"
+def _freeIterator(x) {
+  __primitive("chpl_free", x);
+}
+
+pragma "inline"
+def _freeIterator(x: _tuple) {
+  // do nothing!
+}
+
+pragma "inline"
 def _toLeader(iterator: _iteratorClass)
   return __primitive("to leader", iterator);
 

@@ -181,7 +181,11 @@ BlockStmt*
 buildLabelStmt(const char* name, Expr* stmt) {
   BlockStmt* block = toBlockStmt(stmt);
   if (block) {
-    BlockStmt* loop = toBlockStmt(block->body.tail->prev);
+    Expr* breakLabelStmt = block->body.tail;
+    if (!isDefExpr(breakLabelStmt) && isDefExpr(breakLabelStmt->prev))
+      // the last statement in the block could be a call to _freeIterator()
+      breakLabelStmt = breakLabelStmt->prev;
+    BlockStmt* loop = toBlockStmt(breakLabelStmt->prev);
     if (loop && loop->blockInfo && loop->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
       loop->insertAtTail(new DefExpr(new LabelSymbol(name)));
       loop->insertAfter(new DefExpr(new LabelSymbol(astr("_post", name))));
@@ -560,6 +564,7 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   body->insertAtTail(new DefExpr(continueLabel));
   stmts->insertAtTail(body);
   stmts->insertAtTail(new DefExpr(breakLabel));
+  stmts->insertAtTail(new CallExpr("_freeIterator", iterator));
   return stmts;
 }
 

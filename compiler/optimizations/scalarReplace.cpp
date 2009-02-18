@@ -182,7 +182,8 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
       if (!call || !(call->isPrimitive(PRIM_SET_MEMBER) ||
                      call->isPrimitive(PRIM_GET_MEMBER) ||
                      call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                     call->isPrimitive(PRIM_SETCID)) ||
+                     call->isPrimitive(PRIM_SETCID) ||
+                     call->isPrimitive(PRIM_CHPL_FREE)) ||
           !(call->get(1) == se))
         return false;
     }
@@ -226,11 +227,13 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
         SymExpr* use = new SymExpr(fieldMap.get(member->var));
         call->replace(use);
         addUse(useMap, use);
-      } else if (call && call->isPrimitive(PRIM_SETCID)) {
+      } else if (call && (call->isPrimitive(PRIM_SETCID) ||
+                 call->isPrimitive(PRIM_CHPL_FREE))) {
         //
         // we can remove the setting of the cid because it is never
         // used and we are otherwise able to remove the class
-        // reference
+        // reference; similarly, if we can otherwise remove the
+        // class reference, we can remove the call to free it
         //
         call->remove();
       } else if (call && call->isPrimitive(PRIM_SET_MEMBER)) {
