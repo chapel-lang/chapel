@@ -35,6 +35,11 @@ maxThreads is 300, but can't create more than 254 threads
 performance-specific regressions
 ================================
 
+infrequent seg fault on linux32
+-------------------------------
+[Error matching performance keys for studies/hpcc/STREAMS/bradc/stream-block1d] (e.g., 02/12/09)
+
+
 
 =============================
 valgrind-specific regressions
@@ -54,6 +59,10 @@ no longer needs to be suppressed?
 ====================
 no-local regressions
 ====================
+
+maxMem statistics are off
+-------------------------
+[Error matching program output for memory/figueroa/printFinalMemStat]
 
 allocAndFree returns different results (skipped for GASNet)
 -----------------------------------------------------------
@@ -90,9 +99,9 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc] (e.g., 01/29/09)
 [Error: Timed out executing program users/franzf/v1/chpl/main] (e.g., 01/29/09)
@@ -103,6 +112,10 @@ times out spuriously
 gasnet-fast regressions (other than the above)
 ==============================================
 
+extremely infrequent dereference of nil after printing results (02/15/09)
+-------------------------------------------------------------------------
+[Error matching program output for release/examples/hpcc/stream]
+
 GASNet unable to start polling thread
 -------------------------------------
 [Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
@@ -112,11 +125,14 @@ GASNet unable to start polling thread
 baseline-specific tests
 =======================
 
+program execution timeout (02/18/09)
+------------------------------------
+[Error: Timed out executing program studies/590o/bradc/psp2]
+
 memory is leaked for unknown reasons
 ------------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees] (12/19/08)
 [Error matching program output for memory/deitz/test_leaked_array] (12/18/08)
-
 
 memory is leaked due to heap classes (10/22/08)
 -----------------------------------------------
@@ -131,7 +147,7 @@ opts-specific tests
 (Example runs: 0)
 
 
-(Full run: 89, though some spurious test_refine errors and ra-seq failures)
+(Full run: 69)
 
 --no-dead-code-elimination
 --------------------------
@@ -177,7 +193,7 @@ opts-specific tests
 [Error matching program output for classes/figueroa/LeakedMemory3]
 
 --baseline --live-analysis
------------------------------------
+--------------------------
 [Error matching program output for arrays/deitz/jacobi5-no-local]
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for classes/figueroa/LeakedMemory2]
@@ -201,6 +217,10 @@ opts-specific tests
 x2-specific regressions
 =======================
 
+use-before-def problem (02/18/09)
+---------------------------------
+[Error matching program output for release/examples/reductions]
+
 threads-none causes serial iterator to be used rather than follower (11/25/08)
 ------------------------------------------------------------------------------
 [Error matching program output for release/examples/hpcc/ra]
@@ -217,6 +237,54 @@ times out in C compiler
 ==========================
 intel-specific regressions
 ==========================
+
+use-before-def errors (02/14/09)
+--------------------------------
+[Error matching compiler output for arrays/bradc/workarounds/arrayOfSpsArray-workaround-generictype]
+[Error matching compiler output for arrays/bradc/workarounds/arrayOfSpsArray-workaround]
+[Error matching compiler output for arrays/deitz/jacobi-no-inline]
+[Error matching compiler output for arrays/deitz/jacobi-unoptimized]
+[Error matching compiler output for arrays/diten/promoteFieldAccessAndMethod]
+[Error matching compiler output for functions/deitz/iterators/temps/test_iterator_temp4]
+[Error matching compiler output for functions/deitz/iterators/test_misc]
+[Error matching compiler output for functions/deitz/test_square2]
+[Error matching compiler output for multilocale/deitz/linked/test_linked3]
+[Error matching compiler output for multilocale/deitz/linked/test_linked3a]
+[Error matching compiler output for multilocale/deitz/linked/test_linked3b]
+[Error matching compiler output for multilocale/deitz/linked/test_linked3c]
+[Error matching compiler output for multilocale/deitz/linked/test_linked4]
+[Error matching compiler output for puzzles/deitz/puzzle080117]
+[Error matching compiler output for trivial/deitz/test_for_expr]
+[Error matching compiler output for trivial/deitz/test_nested_fors2]
+
+more use-before-def errors (02/18/09)
+-------------------------------------
+[Error matching compiler output for classes/deitz/infer/infer_field2]
+[Error matching compiler output for classes/deitz/infer/infer_field2a]
+[Error matching compiler output for classes/deitz/infer/infer_field2b]
+[Error matching compiler output for classes/deitz/infer/infer_field2c]
+[Error matching compiler output for expressions/bradc/twoFilteredForalls]
+[Error matching compiler output for functions/deitz/iterators/temps/test_iterator_temp1]
+[Error matching compiler output for functions/deitz/iterators/temps/test_iterator_temp2]
+[Error matching compiler output for functions/deitz/iterators/test_generic_use_twice2]
+[Error matching compiler output for functions/deitz/iterators/test_generic_use_twice]
+[Error matching compiler output for functions/deitz/iterators/test_instantiate_iterator1]
+[Error matching compiler output for functions/deitz/iterators/test_var_iterator3]
+[Error matching compiler output for functions/deitz/iterators/test_var_iterator4]
+[Error matching compiler output for functions/deitz/test_iterator1]
+[Error matching compiler output for functions/iterators/bradc/captureIterator]
+[Error matching compiler output for functions/iterators/bradc/leadFollow/leadfollow2]
+[Error matching compiler output for functions/iterators/bradc/leadFollow/leadfollow]
+[Error matching compiler output for functions/waynew/iterator7]
+[Error matching compiler output for functions/waynew/iterator8]
+[Error matching compiler output for parallel/coforall/bradc/nested/nestedForall1a]
+[Error matching compiler output for parallel/coforall/bradc/nested/nestedForall]
+[Error matching compiler output for release/examples/hpcc/ra]
+[Error matching compiler output for studies/590o/wk3/07forExprs]
+[Error matching compiler output for studies/hpcc/2008/ra]
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching compiler output for studies/hpcc/RA/ra-seq]
+[Error matching compiler output for types/seq/deitz/test_seq_tuple3]
 
 
 ===========================
