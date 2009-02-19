@@ -10,7 +10,7 @@ clean: clean.helpme
 clobber: clobber.helpme
 
 %.helpme:
-	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=0 $*
+	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=0 CHPL_MAKE_RULE=$* $*
 ifneq ($(CHPL_MAKE_LAUNCHER),none)
-	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=1 $*
+	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=1 CHPL_MAKE_RULE=$* $*
 endif
