@@ -17,8 +17,8 @@ RANLIB = ranlib
 # General Flags
 #
 
-DEBUG_CFLAGS = -g
-OPT_CFLAGS = -O2 -qmaxmem=-1
+DEBUG_CFLAGS = -qarch=auto -g
+OPT_CFLAGS = -qarch=auto -qtune=auto -O3 -qstrict -qhot
 
 
 #

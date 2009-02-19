@@ -33,6 +33,8 @@ if ($preset_compiler eq "") {
             }
             $compiler = "cray-xt$subcompiler";
         }
+    } elsif ($platform eq "power-smp") {
+	$compiler = "ibm";
     } else {
 	if (`$platformscript --host` eq `$platformscript --target`) {
 	    $compiler=$ENV{'CHPL_HOST_COMPILER'};
