@@ -16,8 +16,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int size;
   char baseCommand[256];
   char* command;
-  sprintf(baseCommand, "gasnetrun_ibv -spawner=ssh -n %d %s_real", numLocales,
-          argv[0]);
+  sprintf(baseCommand, "gasnetrun_ibv -n %d %s_real", numLocales, argv[0]);
 
   size = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen(baseCommand) + 1;
 
