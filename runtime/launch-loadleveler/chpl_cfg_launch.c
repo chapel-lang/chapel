@@ -10,8 +10,6 @@
 #include "chpltypes.h"
 #include "error.h"
 
-#define DEBUG_LAUNCH
-
 #define baseLLFilename ".chpl-ll-qsub-"
 #define baseExpectFilename ".chpl-expect-"
 
