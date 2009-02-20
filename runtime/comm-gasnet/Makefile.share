@@ -67,7 +67,11 @@ else
 ifeq ($(CHPL_MAKE_RULE),clobber)
 $(GASNET_INC_MAKEFILE):
 else
+ifeq ($(CHPL_MAKE_RULE),depend)
+$(GASNET_INC_MAKEFILE):
+else
 $(GASNET_INC_MAKEFILE):
 	cd $(THIRD_PARTY_DIR) && $(MAKE) gasnet
+endif
 endif
 endif
