@@ -5,7 +5,9 @@ Setting up your environment for Chapel
 To get started with Chapel, there are four environment settings that
 are strongly recommended for effective use of the release, and a few
 other optional settings that are useful for cross-compiling or
-overriding the default settings.
+overriding the default settings.  To check the set and inferred values
+of these environment variables, run the script:
+$CHPL_HOME/util/printchplenv.pl
 
 
 --------------------

@@ -5,7 +5,7 @@ use File::Basename;
 $utildirname = dirname($0);
 
 $preset_chplmake=$ENV{'CHPL_MAKE'};
-if ($preset_make eq "") {
+if ($preset_chplmake eq "") {
     $platform = `$utildirname/platform.pl`;
     chomp($platform);
     if ($platform eq "cygwin" || $platform eq "darwin") {

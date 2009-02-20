@@ -19,7 +19,7 @@ example:
   * the version number of your Chapel compiler (chpl --version)
   * the platform(s) you are running on and their OS versions
   * the C/C++ compiler(s) you are using and their versions
-  * the values of any CHPL environment variables
+  * the output of the $CHPL_HOME/util/printchplenv.pl script
   * the Chapel program that caused the problem (if possible)
 
 A list of unimplemented features and known bugs can be found in
