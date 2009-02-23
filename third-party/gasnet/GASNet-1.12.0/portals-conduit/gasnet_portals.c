@@ -11,10 +11,8 @@
    #include <catamount/cnos_mpi_os.h>
 #elif HAVE_PCTMBOX_H /* old CNL */
    #include <pctmbox.h>
-#else /* backup declarations, since these headers seem to be in flux */
-  extern int cnos_get_rank();
-  extern int cnos_get_size();
-  extern int cnos_get_nidpid_map(void *);
+#else
+#include <pmi.h>
   typedef struct {
       ptl_nid_t nid;
       ptl_pid_t pid;
@@ -22,12 +20,6 @@
         int port;
       #endif
   } cnos_nidpid_map_t;
-  extern void cnos_barrier_init(ptl_handle_ni_t ni_handle); /* NOOP function on Catamount */
-  extern int cnos_barrier(void);
-  #if PLATFORM_OS_CNL
-    extern void cnos_pm_barrier(int);
-    extern int cnos_register_ptlid(ptl_process_id_t);
-  #endif
 #endif
 
 /* set to one for ReqRB Auto Unlink
@@ -2437,10 +2429,18 @@ extern void gasnetc_init_portals_network(int *argc, char ***argv)
   int               rc, i, node;
   int               num_interfaces;
   int               pid_offset = 0;
+  int               spawned;
   uint32_t          maxnodes = (uint32_t)((gasnetc_dll_index_t)-1);
- 
-  gasneti_mynode = cnos_get_rank();
-  gasneti_nodes = cnos_get_size();
+
+  if (PMI_SUCCESS != PMI_Init(&spawned)) {
+    gasneti_fatalerror("Error initializing PMI");
+  }
+  if (PMI_SUCCESS != PMI_Get_rank(&gasneti_mynode)) {
+    gasneti_fatalerror("Error finding rank");
+  }
+  if (PMI_SUCCESS != PMI_Get_size(&gasneti_nodes)) {
+    gasneti_fatalerror("Error finding number of nodes");
+  }
 
   /* init tracing as early as possible */
   gasneti_trace_init(argc, argv);
@@ -2488,26 +2488,9 @@ extern void gasnetc_init_portals_network(int *argc, char ***argv)
   GASNETC_PTLSAFE(PtlGetUid(gasnetc_ni_h,&gasnetc_uid));
   GASNETC_PTLSAFE(PtlGetId(gasnetc_ni_h,&gasnetc_myid));
 
-#if PLATFORM_OS_CNL
-  /* must init the CNOS barrier under CNL (this is a noop for Catamount)
-   * This MUST be done before calls to
-   *      cnos_register_ptlid() AND cnos_get_nidpid_map()
-   * which for a split-phase barrier in CNL job startup.
-   * Cannot call cnos_barrier() until all three have been called.
-   */
-  cnos_barrier_init(gasnetc_ni_h);
-
-  /* Assume APRUN launcher */
-  if ((rc=cnos_register_ptlid(gasnetc_myid)) != 0) {
-    gasneti_fatalerror("cnos_register_ptlid returned %d\n",rc);
-  }
-#else
-  /* Under Catamount, dont have to do anything */
-#endif
-
   /* get process to portals address mapping */
-  if(gasneti_nodes != cnos_get_nidpid_map(&cnos_map)) {
-    gasneti_fatalerror("cnos_get_nidpid_map size != %d",gasneti_nodes);
+  if (PMI_SUCCESS != PMI_CNOS_Get_nidpid_map(&cnos_map)) {
+    gasneti_fatalerror("PMI_CNOS_Get_nidpid_map failed");
   }
 
   gasneti_assert_always(cnos_map[gasneti_mynode].nid == gasnetc_myid.nid);
@@ -2611,7 +2594,7 @@ extern void gasnetc_bootstrapBarrier() {
     gasnetc_sys_barrier();
   } else {
     GASNETI_TRACE_PRINTF(C,("bootstrapBarrier count = %d",gasnetc_bootstrapBarrierCnt));
-    cnos_barrier();
+    PMI_Barrier();
   }
 }
 
@@ -3851,12 +3834,9 @@ extern void gasnetc_portals_exit()
     GASNETC_PTLSAFE(PtlNIFini(gasnetc_ni_h));
   }
 #endif
-#if PLATFORM_OS_CNL
-  /* inform cnos of clean exit
-   * MLW: dont understand the args to this yet!!!
-   */
-  cnos_pm_barrier(1);
-#endif
+  if (PMI_SUCCESS != PMI_Finalize()) {
+    gasneti_fatalerror("Error in PMI_Finalize");
+  }
 }
 
 /* ------------------------------------------------------------------------------------
