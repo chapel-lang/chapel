@@ -144,123 +144,143 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
     }
   }
 
+  Vec<CallExpr*> constructorCalls;
+
   forv_Vec(FnSymbol, constructor, constructors) {
-    forv_Vec(CallExpr, call, *constructor->calledBy) {
-      if (call->parentSymbol) {
-        CallExpr* move = toCallExpr(call->parentExpr);
-        if (!move) continue;
-        INT_ASSERT(move->isPrimitive(PRIM_MOVE));
-        SymExpr* lhs = toSymExpr(move->get(1));
-        INT_ASSERT(lhs);
-        if (!lhs->var->type->destructor ||
-            // don't destroy global variables
-            isModuleSymbol(lhs->var->defPoint->parentSymbol)) {
-          continue;
-        }
-        FnSymbol* fn = toFnSymbol(move->parentSymbol);
-        INT_ASSERT(fn);
-        // functions containing gotos may skip over initializations,
-        // potentially causing uninitialized variables to be freed;
-        // functions with "_loopexpr" in their name are most likely related to reduce
-        // expressions; they may embed domains, for example, into iterator classes
-        if (functionsContainingGotos.set_in(fn) || strstr(fn->name, "_loopexpr"))
-          continue;
-        if (fn->getReturnSymbol() == lhs->var) {
-          if (defMap.get(lhs->var)->n == 1) {
-            constructors.add_exclusive(fn);
-            if (onlyMarkConstructors)
-              fn->addFlag(FLAG_CALLS_CONSTRUCTOR);
+    forv_Vec(CallExpr, call, *constructor->calledBy)
+      constructorCalls.add(call);
+  }
+  forv_Vec(CallExpr, call, gCallExprs) {
+    // look for casts from a numeric type to string,
+    // since they will require allocating memory for the resulting string
+    if (call->isPrimitive(PRIM_CAST) && !strcmp(toSymExpr(call->get(1))->var->name, "string") &&
+        is_arithmetic_type(toSymExpr(call->get(2))->var->type))
+      constructorCalls.add(call);
+  }
+
+  forv_Vec(CallExpr, call, constructorCalls) {
+    if (call->parentSymbol) {
+      CallExpr* move = toCallExpr(call->parentExpr);
+      if (!move) continue;
+      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+      SymExpr* lhs = toSymExpr(move->get(1));
+      INT_ASSERT(lhs);
+      if (!lhs->var->type->destructor && !call->isPrimitive(PRIM_CAST) &&
+          strcmp(toSymExpr(call->baseExpr)->var->name, "_cast") ||
+          // don't destroy global variables
+          isModuleSymbol(lhs->var->defPoint->parentSymbol)) {
+        continue;
+      }
+      FnSymbol* fn = toFnSymbol(move->parentSymbol);
+      INT_ASSERT(fn);
+      // functions containing gotos may skip over initializations,
+      // potentially causing uninitialized variables to be freed;
+      // functions with "_loopexpr" in their name are most likely related to reduce
+      // expressions; they may embed domains, for example, into iterator classes
+      if (functionsContainingGotos.set_in(fn) || strstr(fn->name, "_loopexpr"))
+        continue;
+      if (fn->getReturnSymbol() == lhs->var) {
+        if (defMap.get(lhs->var)->n == 1) {
+          if (!constructors.in(fn)) {
+            forv_Vec(CallExpr, call, *fn->calledBy)
+              constructorCalls.add(call);
           }
-        } else {
-          Vec<Symbol*> varsToTrack;
-          varsToTrack.add(lhs->var);
-          bool maybeCallDestructor = true;
-          INT_ASSERT(lhs->var->defPoint);
-          BlockStmt* parentBlock = toBlockStmt(lhs->var->defPoint->parentExpr);
-          INT_ASSERT(parentBlock);
-          forv_Vec(Symbol, var, varsToTrack) {
-            // may not be OK if there is more than one definition of var
-            //INT_ASSERT(defMap.get(var)->length() == 1);
-            if (maybeCallDestructor)
-              for_uses(se, useMap, var) {
-                // The following conditional may not seem necessary, particularly since
-                // a similar check appears above, but there may be new cases in which
-                // a variable is used outside of the block in which it is defined!
-                // (The scalar replace and copy propagation passes could introduce
-                // such uses; other uses like this are most likely bugs.)
-                if (var == lhs->var) {
-                  Expr* block = se->parentExpr;
-                  while (block && toBlockStmt(block) != parentBlock)
-                    block = block->parentExpr;
-                  if (!block)
-                    // it is probably possible to work around this situation, but this
-                    // situation is very unlikely to occur, so make it a fatal error
-                    INT_FATAL(var->defPoint, "variable used outside of block in which it's declared");
-                }
-                CallExpr* call = toCallExpr(se->parentExpr);
+          if (onlyMarkConstructors)
+            fn->addFlag(FLAG_CALLS_CONSTRUCTOR);
+        }
+      } else {
+        Vec<Symbol*> varsToTrack;
+        varsToTrack.add(lhs->var);
+        bool maybeCallDestructor = true;
+        INT_ASSERT(lhs->var->defPoint);
+        BlockStmt* parentBlock = toBlockStmt(lhs->var->defPoint->parentExpr);
+        INT_ASSERT(parentBlock);
+        forv_Vec(Symbol, var, varsToTrack) {
+          // may not be OK if there is more than one definition of var
+          //INT_ASSERT(defMap.get(var)->length() == 1);
+          if (maybeCallDestructor)
+            for_uses(se, useMap, var) {
+              // The following conditional may not seem necessary, particularly since
+              // a similar check appears above, but there may be new cases in which
+              // a variable is used outside of the block in which it is defined!
+              // (The scalar replace and copy propagation passes could introduce
+              // such uses; other uses like this are most likely bugs.)
+              if (var == lhs->var) {
+                Expr* block = se->parentExpr;
+                while (block && toBlockStmt(block) != parentBlock)
+                  block = block->parentExpr;
+                if (!block)
+                  // it is probably possible to work around this situation, but this
+                  // situation is very unlikely to occur, so make it a fatal error
+                  INT_FATAL(var->defPoint, "variable used outside of block in which it's declared");
+              }
+              CallExpr* call = toCallExpr(se->parentExpr);
 #if 0
-                if (call && (//call->isPrimitive(PRIM_SET_REF) || call->isPrimitive(PRIM_GET_MEMBER) ||
-                    call->isPrimitive(PRIM_GET_MEMBER_VALUE)))
-                  call = toCallExpr(call->parentExpr);
+              if (call && (//call->isPrimitive(PRIM_SET_REF) || call->isPrimitive(PRIM_GET_MEMBER) ||
+                  call->isPrimitive(PRIM_GET_MEMBER_VALUE)))
+                call = toCallExpr(call->parentExpr);
 #endif
-                if (call) {
-                  if (call->isPrimitive(PRIM_MOVE)) {
-                    if (fn->getReturnSymbol() == toSymExpr(call->get(1))->var) {
-                      maybeCallDestructor = false;
-                      if (defMap.get(toSymExpr(call->get(1))->var)->n == 1) {
-                        constructors.add_exclusive(fn);
-                        if (onlyMarkConstructors)
-                          fn->addFlag(FLAG_CALLS_CONSTRUCTOR);
+              if (call) {
+                if (call->isPrimitive(PRIM_MOVE)) {
+                  if (fn->getReturnSymbol() == toSymExpr(call->get(1))->var) {
+                    maybeCallDestructor = false;
+                    if (defMap.get(toSymExpr(call->get(1))->var)->n == 1) {
+                      if (!constructors.in(fn)) {
+                        forv_Vec(CallExpr, call, *fn->calledBy)
+                          constructorCalls.add(call);
                       }
-                      break;
+                      if (onlyMarkConstructors)
+                        fn->addFlag(FLAG_CALLS_CONSTRUCTOR);
+                    }
+                    break;
 #if 0
-                    } else if (toFnSymbol(call->parentSymbol)->getReturnSymbol() == toSymExpr(call->get(1))->var) {
-                      // if call->parentSymbol is a different function than fn,
-                      // it is nontrivial to track down how the caller uses the return value
-                      maybeCallDestructor = false;
-                      break;
+                  } else if (toFnSymbol(call->parentSymbol)->getReturnSymbol() == toSymExpr(call->get(1))->var) {
+                    // if call->parentSymbol is a different function than fn,
+                    // it is nontrivial to track down how the caller uses the return value
+                    maybeCallDestructor = false;
+                    break;
 #endif
-                    } else if (isModuleSymbol(toSymExpr(call->get(1))->var->defPoint->parentSymbol)) {
-                      // lhs is directly or indirectly being assigned to a global variable
-                      maybeCallDestructor = false;
-                      break;
-                    } else if (toSymExpr(call->get(1))->var->defPoint->parentSymbol == fn) {
-                      if (toSymExpr(call->get(1))->var->defPoint->parentExpr != parentBlock) {
-                        Expr* block = parentBlock->parentExpr;
-                        while (block && block != toSymExpr(call->get(1))->var->defPoint->parentExpr)
-                          block = block->parentExpr;
-                        if (toBlockStmt(block)) {
-                          // changing the parentBlock here could cause a variable's destructor
-                          // to be called outside the conditional block in which it is defined,
-                          // which could cause the destructor to be called on an unitialized
-                          // variable
+                  } else if (isModuleSymbol(toSymExpr(call->get(1))->var->defPoint->parentSymbol)) {
+                    // lhs is directly or indirectly being assigned to a global variable
+                    maybeCallDestructor = false;
+                    break;
+                  } else if (toSymExpr(call->get(1))->var->defPoint->parentSymbol == fn) {
+                    if (toSymExpr(call->get(1))->var->defPoint->parentExpr != parentBlock) {
+                      Expr* block = parentBlock->parentExpr;
+                      while (block && block != toSymExpr(call->get(1))->var->defPoint->parentExpr)
+                        block = block->parentExpr;
+                      if (toBlockStmt(block)) {
+                        // changing the parentBlock here could cause a variable's destructor
+                        // to be called outside the conditional block in which it is defined,
+                        // which could cause the destructor to be called on an unitialized
+                        // variable
 //                          parentBlock = toBlockStmt(block);
-                          maybeCallDestructor = false;
-                          break;
-                        }
+                        maybeCallDestructor = false;
+                        break;
                       }
                     }
-                    varsToTrack.add_exclusive(toSymExpr(call->get(1))->var);
-#if 1  // can cause some arrays to leak memory
-                  } else if (call->isPrimitive(PRIM_SET_MEMBER) &&
-                             !toSymExpr(call->get(1))->var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-                    maybeCallDestructor = false;
-                    break;
-#endif
-                  } else if (call->isPrimitive(PRIM_ARRAY_SET_FIRST)) {
-                    // used (only) in init_elts in ChapelBase.chpl
-                    maybeCallDestructor = false;
-                    break;
-                  } else if (!call->primitive) {
-                    varsToTrack.add_exclusive(actual_to_formal(se));
                   }
-                } else
-                  INT_FATAL(se, "unexpected use");
-              }
-          }
-          if (maybeCallDestructor && !onlyMarkConstructors) {
-            // lhs does not "escape" its scope, so go ahead and insert a call to its destructor
-            ClassType* ct = toClassType(lhs->var->type);
+                  varsToTrack.add_exclusive(toSymExpr(call->get(1))->var);
+#if 1  // can cause some arrays to leak memory
+                } else if (call->isPrimitive(PRIM_SET_MEMBER) &&
+                           !toSymExpr(call->get(1))->var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+                  maybeCallDestructor = false;
+                  break;
+#endif
+                } else if (call->isPrimitive(PRIM_ARRAY_SET_FIRST)) {
+                  // used (only) in init_elts in ChapelBase.chpl
+                  maybeCallDestructor = false;
+                  break;
+                } else if (!call->primitive) {
+                  varsToTrack.add_exclusive(actual_to_formal(se));
+                }
+              } else
+                INT_FATAL(se, "unexpected use");
+            }
+        }
+        if (maybeCallDestructor && !onlyMarkConstructors) {
+          // lhs does not "escape" its scope, so go ahead and insert a call to its destructor
+          if (ClassType* ct = toClassType(lhs->var->type)) {
             bool useRefType = !isClass(ct) &&
               !ct->symbol->hasFlag(FLAG_ARRAY) && !ct->symbol->hasFlag(FLAG_DOMAIN);
             if (parentBlock == fn->body) {
@@ -290,6 +310,19 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
                 parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIM_MOVE, tmp, lhs->var));
                 parentBlock->insertAtTailBeforeGoto(new CallExpr(ct->destructor, tmp));
               }
+            }
+          } else {
+            INT_ASSERT(!strcmp(lhs->var->type->symbol->name, "string"));
+            if (parentBlock == fn->body) {
+              VarSymbol* tmp = newTemp(lhs->var->type);
+              fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp, lhs->var));
+              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
+            } else {
+              VarSymbol* tmp = newTemp(lhs->var->type);
+              parentBlock->insertAtTailBeforeGoto(new DefExpr(tmp));
+              parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIM_MOVE, tmp, lhs->var));
+              parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIM_CHPL_FREE, tmp));
             }
           }
         }

@@ -291,7 +291,7 @@ static void build_chpl_main(void) {
     chpl_main->insertAtHead(new DefExpr(endCount));
     chpl_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
     // ignore allocations of 4 bytes or fewer
-    chpl_main->insertBeforeReturn(new CallExpr(PRIM_PRINT_MEM_TABLE, new_IntSymbol(4)));
+    chpl_main->insertBeforeReturn(new CallExpr(PRIM_PRINT_MEM_TABLE, new_IntSymbol(0)));
   }
   chpl_main->insertAtHead(new CallExpr(theProgram->initFn));
 }

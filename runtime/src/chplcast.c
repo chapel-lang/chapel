@@ -363,22 +363,24 @@ static void ensureDecimal(char* buffer) {
 #define NEGINFSTRING "-inf"
 #define POSINFSTRING "inf"
 
-#define real_to_string(type, format)          \
-  _string type##_to_string(type x) {          \
-    if (isnan(x)) {                           \
-      return NANSTRING;                       \
-    } else if (isinf(x)) {                    \
-      if (x < 0) {                            \
-        return NEGINFSTRING;                  \
-      } else {                                \
-        return POSINFSTRING;                  \
-      }                                       \
-    } else {                                  \
-      char buffer[256];                       \
-      sprintf(buffer, format, x);             \
-      ensureDecimal(buffer);                  \
-      return _glom_strings(1, buffer);        \
-    }                                         \
+// the above strings are copied below so the return value of real_to_string
+// can be freed unconditionally
+#define real_to_string(type, format)           \
+  _string type##_to_string(type x) {           \
+    if (isnan(x)) {                            \
+      return _glom_strings(1, NANSTRING);      \
+    } else if (isinf(x)) {                     \
+      if (x < 0) {                             \
+        return _glom_strings(1, NEGINFSTRING); \
+      } else {                                 \
+        return _glom_strings(1, POSINFSTRING); \
+      }                                        \
+    } else {                                   \
+      char buffer[256];                        \
+      sprintf(buffer, format, x);              \
+      ensureDecimal(buffer);                   \
+      return _glom_strings(1, buffer);         \
+    }                                          \
   }
 
 real_to_string(_real32, "%lg")

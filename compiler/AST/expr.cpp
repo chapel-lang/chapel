@@ -1764,10 +1764,26 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIM_CHPL_FREE: {
-      codegenBasicPrimitive(outfile, this);
-      fprintf(outfile, "; ");
+      fprintf(outfile, "%s((void*)", this->primitive->name);
+      bool first_actual;
+      first_actual = true;
+      for_actuals(actual, this) {
+        if (first_actual)
+          first_actual = false;
+        else
+          fprintf(outfile, ", ");
+        if (actual->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+            actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+          fprintf(outfile, "*");
+        actual->codegen(outfile);
+        if (actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+            actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+          fprintf(outfile, ".addr");
+      }
+      fprintf(outfile, "); ");
       get(1)->codegen(outfile);
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE))
         fprintf(outfile, ".addr");
       fprintf(outfile, " = NULL");
       break;
