@@ -159,7 +159,7 @@ markAlignedArrays() {
   }
   Map<Symbol*,CallExpr*> iteratorTupleMap;
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isNamed("_getIterator")) {
+    if (call->isNamed("_checkIterator")) {
       if (CallExpr* tuple = toCallExpr(call->get(1))) {
         if (tuple->isNamed("_build_tuple")) {
           CallExpr* move = toCallExpr(call->parentExpr);

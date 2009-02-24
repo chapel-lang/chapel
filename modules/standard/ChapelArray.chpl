@@ -744,7 +744,7 @@ def _checkIterator(type t) {
   compilerError("cannot iterate over a type");
 }
 
-def _checkIterator(x) {
+pragma "inline" def _checkIterator(x) {
   return x;
 }
 
@@ -804,6 +804,24 @@ def _toFollower(iterator: _iteratorClass, leaderIndex, param aligned: bool) {
 }
 
 pragma "inline"
+def _toFollower(ir: _iteratorRecord, leaderIndex, param aligned: bool) {
+  var ic = _getIterator(ir);
+  return _toFollower(ic, leaderIndex, aligned);
+}
+
+
+pragma "inline"
+def _toFollower(x, leaderIndex) {
+  return _toFollower(x.these(), leaderIndex);
+}
+
+pragma "inline"
+def _toFollower(x, leaderIndex, param aligned: bool) {
+  return _toFollower(x.these(), leaderIndex, aligned);
+}
+
+
+pragma "inline"
 def _toFollower(x: _tuple, leaderIndex) {
   pragma "inline" def _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
     if dim == x.size-1 then
@@ -853,9 +871,4 @@ def _toFollower(x: _tuple, leaderIndex, type alignment) {
     }
   }
   return _toFollowerHelp(x, leaderIndex, 1);
-}
-
-pragma "inline"
-def _toFollower(x, leaderIndex) {
-  return _toFollower(x.these(), leaderIndex);
 }
