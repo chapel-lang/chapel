@@ -172,7 +172,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "send \"aprun -q -b -n1 -N1 ls %s_real\\n\"\n", argv[0]);
+  fprintf(expectFile, "send \"aprun -q -b -d%d -n1 -N1 ls %s_real\\n\"\n", getNumCoresPerLocale(), argv[0]);
   fprintf(expectFile, "expect {\n");
   fprintf(expectFile, "  \"failed: chdir\" {send_user "
           "\"error: %s/%s_real must be launched from and/or stored on a "
@@ -184,7 +184,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   if (verbosity < 2) {
     fprintf(expectFile, "-q ");
   }
-  fprintf(expectFile, "-n%d -N%d %s_real", numLocales, procsPerNode, argv[0]);
+  fprintf(expectFile, "-d%d -n%d -N%d %s_real", getNumCoresPerLocale(), numLocales, procsPerNode, argv[0]);
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " '%s'", argv[i]);
   }
