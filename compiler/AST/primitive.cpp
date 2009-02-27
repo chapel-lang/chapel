@@ -408,6 +408,7 @@ initPrimitive() {
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);
   prim_def(PRIM_WHEN, "when case expressions", returnInfoVoid);
+  prim_def(PRIM_TYPE_TO_STRING, "typeToString", returnInfoString);
 
   prim_def(PRIM_BLOCK_PARAM_LOOP, "param loop", returnInfoVoid);
   prim_def(PRIM_BLOCK_WHILEDO_LOOP, "while...do loop", returnInfoVoid);

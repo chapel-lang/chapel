@@ -71,8 +71,6 @@ NOTES
 %token TCLASS
 %token TCOBEGIN
 %token TCOFORALL
-%token TCOMPILERERROR
-%token TCOMPILERWARNING
 %token TCONFIG
 %token TCONST
 %token TCONTINUE
@@ -1330,10 +1328,6 @@ parenop_expr:
     }
 | TPRIMITIVE TLP expr_ls TRP
     { $$ = buildPrimitiveExpr($3); }
-| TCOMPILERERROR TLP expr_ls TRP
-    { $$ = new CallExpr(PRIM_ERROR, $3); }
-| TCOMPILERWARNING TLP expr_ls TRP
-    { $$ = new CallExpr(PRIM_WARNING, $3); }
 | TINDEX TLP expr_ls TRP
     { $$ = new CallExpr("chpl__buildIndexType", $3); }
 ;

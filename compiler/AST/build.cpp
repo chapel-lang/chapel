@@ -97,7 +97,7 @@ Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
   FnSymbol* ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
                                  new CallExpr("isTrue", right),
                                  new SymExpr(gFalse));
-  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr(PRIM_ERROR, new_StringSymbol("cannot promote short-circuiting && operator"))));
+  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr("compilerError", new_StringSymbol("cannot promote short-circuiting && operator"))));
   ifFn->insertAtHead(new CallExpr(PRIM_MOVE, lvar, left));
   ifFn->insertAtHead(new DefExpr(lvar));
   return new CallExpr(new DefExpr(ifFn));
@@ -110,7 +110,7 @@ Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
   FnSymbol* ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
                                  new SymExpr(gTrue),
                                  new CallExpr("isTrue", right));
-  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr(PRIM_ERROR, new_StringSymbol("cannot promote short-circuiting || operator"))));
+  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr("compilerError", new_StringSymbol("cannot promote short-circuiting || operator"))));
   ifFn->insertAtHead(new CallExpr(PRIM_MOVE, lvar, left));
   ifFn->insertAtHead(new DefExpr(lvar));
   return new CallExpr(new DefExpr(ifFn));

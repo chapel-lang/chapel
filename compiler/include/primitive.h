@@ -125,6 +125,7 @@ enum PrimitiveTag {
   PRIM_ARRAY_SET_FIRST,
   PRIM_ERROR,
   PRIM_WARNING,
+  PRIM_TYPE_TO_STRING,
   PRIM_WHEN,
 
   PRIM_BLOCK_PARAM_LOOP,      // BlockStmt::blockInfo - param for loop

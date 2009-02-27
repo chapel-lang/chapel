@@ -1868,6 +1868,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_INIT_FIELDS:
     case PRIM_GET_REAL:
     case PRIM_GET_IMAG:
+    case PRIM_TYPE_TO_STRING:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
     case PRIM_TO_LEADER:

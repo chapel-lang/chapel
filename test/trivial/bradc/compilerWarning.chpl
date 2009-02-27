@@ -3,7 +3,7 @@ def foo(x, y) {
 }
 
 def foo(x) {
-  compilerWarning("1-argument version of foo called with type: ", x.type);
+  compilerWarning("1-argument version of foo called with type: ", typeToString(x.type));
   writeln("In generic foo!");
 }
 

@@ -2348,6 +2348,11 @@ preFold(Expr* expr) {
         result = call->get(1)->remove();
         call->replace(result);
       }
+    } else if (call->isPrimitive(PRIM_TYPE_TO_STRING)) {
+      SymExpr* se = toSymExpr(call->get(1));
+      INT_ASSERT(se && se->var->hasFlag(FLAG_TYPE_VARIABLE));
+      result = new SymExpr(new_StringSymbol(se->var->type->symbol->name));
+      call->replace(result);
     } else if (call->isPrimitive(PRIM_GET_LOCALEID)) {
       Type* type = call->get(1)->typeInfo();
 
@@ -2880,31 +2885,17 @@ postFold(Expr* expr) {
 
 static void issueCompilerError(CallExpr* call) {
   CallExpr* from = NULL;
-  for (int i = callStack.n-1; i >= 0; i--) {
+  for (int i = callStack.n-2; i >= 0; i--) {
     from = callStack.v[i];
     if (from->lineno > 0 && from->getModule()->modTag != MOD_STANDARD)
       break;
   }
   const char* str = "";
-  for_actuals(actual, call) {
-    if (SymExpr* sym = toSymExpr(actual)) {
-      if (VarSymbol* var = toVarSymbol(sym->var)) {
-        if (var->immediate &&
-            var->immediate->const_kind == CONST_KIND_STRING) {
-          str = astr(str, var->immediate->v_string);
-          continue;
-        }
-      }
-      if (sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
-        str = astr(str, sym->var->type->symbol->name);
-        continue;
-      }
-    }
-    if (CallExpr* call = toCallExpr(actual)) {
-      if (call->isPrimitive(PRIM_TYPEOF)) {
-        str = astr(str, call->get(1)->typeInfo()->symbol->name);
-      }
-    }
+  FnSymbol* fn = toFnSymbol(call->parentSymbol);
+  for_formals(arg, fn) {
+    VarSymbol* var = toVarSymbol(paramMap.get(arg));
+    INT_ASSERT(var && var->immediate && var->immediate->const_kind == CONST_KIND_STRING);
+    str = astr(str, var->immediate->v_string);
   }
   if (call->isPrimitive(PRIM_ERROR)) {
     USR_FATAL(from, "%s", str);

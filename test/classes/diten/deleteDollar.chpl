@@ -1,14 +1,14 @@
-class $ {
+class c$ {
   def writeme() {
     writeln("Hi from $");
   }
-  def ~$() {
+  def ~c$() {
     writeln("Destroy dollar");
   }
 }
 
 def main {
-  var $$ = new $();
-  $$.writeme();
-  delete $$;
+  var c$$ = new c$();
+  c$$.writeme();
+  delete c$$;
 }

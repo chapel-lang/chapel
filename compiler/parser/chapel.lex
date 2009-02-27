@@ -47,10 +47,10 @@
 digit           [0-9]
 bit             [0-1]
 hexDigit        [0-9a-fA-F]
-letter          [_a-zA-Z$]
-ident           {letter}({letter}|{digit})*
-binaryLiteral   0b{bit}+
-hexLiteral      0x{hexDigit}+
+letter          [_a-zA-Z]
+ident           {letter}({letter}|{digit}|"$")*
+binaryLiteral   0[bB]{bit}+
+hexLiteral      0[xX]{hexDigit}+
 intLiteral      {digit}+|{binaryLiteral}|{hexLiteral}
 exponent        [Ee][\+\-]?{digit}+
 floatLiteral    {digit}*"."{digit}+{exponent}?|{digit}+{exponent}
@@ -65,8 +65,6 @@ by              processToken(TBY);
 class           processToken(TCLASS);
 cobegin         processToken(TCOBEGIN);
 coforall        processToken(TCOFORALL);
-compilerError   processToken(TCOMPILERERROR);
-compilerWarning processToken(TCOMPILERWARNING);
 config          processToken(TCONFIG);
 const           processToken(TCONST);
 continue        processToken(TCONTINUE);

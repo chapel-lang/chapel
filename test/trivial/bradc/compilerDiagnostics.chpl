@@ -1,12 +1,12 @@
 def foo(x, y) {
   if (x.type != y.type) then
     compilerError("foo() called with non-matching types: ", 
-                  x.type, " != ", y.type);
+                  typeToString(x.type), " != ", typeToString(y.type));
   writeln("In 2-argument foo...");
 }
 
 def foo(x) {
-  compilerWarning("1-argument version of foo called with type: ", x.type);
+  compilerWarning("1-argument version of foo called with type: ", typeToString(x.type));
   writeln("In generic foo!");
 }
 

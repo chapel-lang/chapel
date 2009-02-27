@@ -59,6 +59,18 @@ def _stopMemDiagnosis() {
     __primitive("chpl_stopMemDiagnosis");
 }
 
+def compilerError(param x ...?n) {
+  __primitive("error", (...x));
+}
+
+def compilerWarning(param x ...?n) {
+  __primitive("warning", (...x));
+}
+
+def typeToString(type t) param {
+  return __primitive("typeToString", t);
+}
+
 //
 // assignment on primitive types
 //
@@ -181,7 +193,7 @@ pragma "inline" def +(a: complex(?w)) return a;
 
 pragma "inline" def -(a: int(32)) return __primitive("u-", a);
 pragma "inline" def -(a: int(64)) return __primitive("u-", a);
-pragma "inline" def -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", a.type); }
+pragma "inline" def -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", typeToString(a.type)); }
 pragma "inline" def -(a: real(?w)) return __primitive("u-", a);
 pragma "inline" def -(a: imag(?w)) return __primitive("u-", a);
 pragma "inline" def -(a: complex(?w)) return (-a.re, -a.im):complex;
@@ -195,7 +207,7 @@ pragma "inline" def -(param a: int(32)) param return __primitive("u-", a);
 pragma "inline" def -(param a: int(64)) param return __primitive("u-", a);
 pragma "inline" def -(param a: uint(64)) param {
   if (a:int(64) < 0) then
-    compilerError("illegal use of '-' on operand of type ", a.type);
+    compilerError("illegal use of '-' on operand of type ", typeToString(a.type));
   else
     return -(a:int(64));
 }
@@ -495,7 +507,7 @@ pragma "inline" def _cond_test(param x: bool) param return x;
 pragma "inline" def _cond_test(param x: integral) param return x != 0;
 
 pragma "inline" def _cond_test(x) {
-  compilerError("type '", x.type, "' used in if or while condition");
+  compilerError("type '", typeToString(x.type), "' used in if or while condition");
 }
 
 pragma "inline" def _cond_test(x: _iteratorRecord) {

@@ -1,12 +1,12 @@
 
-var $a : sync bool;
+var a$ : sync bool;
 
 begin {
     writeln("In thread");
-    if $a then
+    if a$ then
         writeln("impossible");
 }
 
-if $a then
+if a$ then
     writeln("impossible");
 
