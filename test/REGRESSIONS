@@ -150,7 +150,7 @@ opts-specific tests
 (Example runs: 0)
 
 
-(Full run: 78)
+(Full run: 87)
 
 --no-dead-code-elimination
 --------------------------
@@ -170,6 +170,7 @@ opts-specific tests
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
 [Error matching program output for studies/590o/bradc/psp2]
+[Error matching program output for trivial/diten/infix2postfix]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
@@ -203,6 +204,7 @@ opts-specific tests
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
 [Error matching program output for studies/590o/bradc/psp2]
+[Error matching program output for trivial/diten/infix2postfix]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
@@ -213,6 +215,7 @@ opts-specific tests
 [Error matching program output for classes/figueroa/LeakedMemory3]
 [Error matching program output for studies/590o/bradc/psp2]
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
+[Error matching program output for trivial/diten/infix2postfix]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
