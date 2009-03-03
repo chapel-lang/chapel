@@ -29,6 +29,8 @@ Optimization Control Options:
                                          iterators composed of a single loop
       --[no-]privatization               Enable [disable] privatization of
                                          distributed arrays and domains
+      --[no-]remote-value-forwarding     Enable [disable] remote value
+                                         forwarding
       --[no-]scalar-replacement          Enable [disable] scalar replacement
 
 Run-time Semantic Check Options:

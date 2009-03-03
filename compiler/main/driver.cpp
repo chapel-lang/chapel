@@ -43,6 +43,7 @@ static bool fFastFlag = false;
 bool fNoCopyPropagation = false;
 bool fNoDeadCodeElimination = false;
 bool fNoScalarReplacement = false;
+bool fNoRemoteValueForwarding = false;
 bool fNoOptimizeLoopIterators = false;
 bool fNoInlineIterators = false;
 bool fNoLiveAnalysis = false;
@@ -235,6 +236,7 @@ static void setFastFlag(ArgumentState* arg, char* unused) {
   fNoInlineIterators = false;
   fNoOptimizeLoopIterators = false;
   fNoLiveAnalysis = false;
+  fNoRemoteValueForwarding = false;
   fNoScalarReplacement = false;
   fNoPrivatization = false;
   fNoChecks = true;
@@ -255,6 +257,7 @@ static void setBaselineFlag(ArgumentState* arg, char* unused) {
   fNoInlineIterators = true;
   fNoLiveAnalysis = true;
   fNoOptimizeLoopIterators = true;
+  fNoRemoteValueForwarding = true;
   fNoScalarReplacement = true;
   fNoPrivatization = true;
 }
@@ -305,6 +308,7 @@ static ArgumentDescription arg_desc[] = {
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
  {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
  {"privatization", ' ', NULL, "Enable [disable] privatization of distributed arrays and domains", "n", &fNoPrivatization, "CHPL_DISABLE_PRIVATIZATION", NULL},
+ {"remote-value-forwarding", ' ', NULL, "Enable [disable] remote value forwarding", "n", &fNoRemoteValueForwarding, "CHPL_DISABLE_REMOTE_VALUE_FORWARDING", NULL},
  {"scalar-replacement", ' ', NULL, "Enable [disable] scalar replacement", "n", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},

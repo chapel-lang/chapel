@@ -122,6 +122,9 @@ isSafeToDeref(Symbol* ref,
 //
 void
 remoteValueForwarding(Vec<FnSymbol*>& fns) {
+  if (fNoRemoteValueForwarding)
+    return;
+
   Vec<FnSymbol*> syncAccessFunctionSet;
   buildSyncAccessFunctionSet(syncAccessFunctionSet);
 
@@ -152,36 +155,11 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
           // Insert de-reference temp of value.  For tuples, insert
           // component arguments.
           //
-          Symbol* repl = arg;
-          if (arg->type->symbol->hasFlag(FLAG_TUPLE)) {
-            ClassType* ct = toClassType(arg->type);
-            INT_ASSERT(ct);
-            VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
-            call->insertBefore(new DefExpr(deref));
-            call->insertBefore(new CallExpr(PRIM_MOVE, deref,
-                                 new CallExpr(PRIM_GET_REF, actual->var)));
-            repl = newTemp("rvfTupleTemp", ct);
-            for_fields(field, ct) {
-              ArgSymbol* fieldArg = new ArgSymbol(INTENT_BLANK, astr(arg->name, "_", field->name), field->type);
-              fieldArg->cname = astr(arg->cname, "_", field->cname);
-              arg->defPoint->insertAfter(new DefExpr(fieldArg));
-              VarSymbol* fieldActual = newTemp("rvfDerefTmp", field->type);
-              call->insertBefore(new DefExpr(fieldActual));
-              call->insertBefore(new CallExpr(PRIM_MOVE, fieldActual,
-                                   new CallExpr(PRIM_GET_MEMBER_VALUE, deref, field)));
-              actual->insertAfter(new SymExpr(fieldActual));
-              fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER, repl, field, fieldArg));
-            }
-            actual->remove();
-            arg->defPoint->remove();
-            fn->insertAtHead(new DefExpr(repl));
-          } else {
-            VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
-            call->insertBefore(new DefExpr(deref));
-            call->insertBefore(new CallExpr(PRIM_MOVE, deref,
-                                 new CallExpr(PRIM_GET_REF, actual->var)));
-            actual->replace(new SymExpr(deref));
-          }
+          VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
+          call->insertBefore(new DefExpr(deref));
+          call->insertBefore(new CallExpr(PRIM_MOVE, deref,
+                               new CallExpr(PRIM_GET_REF, actual->var)));
+          actual->replace(new SymExpr(deref));
 
           //
           // Insert re-reference temps at use points.
@@ -189,15 +167,15 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
           for_uses(use, useMap, arg) {
             CallExpr* call = toCallExpr(use->parentExpr);
             if (call && call->isPrimitive(PRIM_GET_REF)) {
-              call->replace(new SymExpr(repl));
+              call->replace(new SymExpr(arg));
             } else if (call && call->isPrimitive(PRIM_MOVE)) {
-              use->replace(new CallExpr(PRIM_SET_REF, repl));
+              use->replace(new CallExpr(PRIM_SET_REF, arg));
             } else {
               Expr* stmt = use->getStmtExpr();
               VarSymbol* reref = newTemp("rvfRerefTmp", actual->var->type);
               stmt->insertBefore(new DefExpr(reref));
               stmt->insertBefore(new CallExpr(PRIM_MOVE, reref,
-                                   new CallExpr(PRIM_SET_REF, repl)));
+                                   new CallExpr(PRIM_SET_REF, arg)));
               use->replace(new SymExpr(reref));
             }
           }
