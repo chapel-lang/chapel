@@ -418,27 +418,17 @@ second function is instantiated the where clause evaluates to false.
 \index{compilerError}
 \index{compilerWarning}
 
-The special compiler diagnostic statements given by
-\begin{syntax}
-compiler-diagnostic-statement:
-  `compilerError' ( expression-list ) ;
-  `compilerWarning' ( expression-list ) ;
+The special compiler diagnostic function calls \chpl{compilerError}
+and \chpl{compilerWarning} generate compiler diagnostic of the
+indicated severity if the function containing these calls may be
+called when the program is executed and the function call is not
+eliminated by parameter folding.
 
-expression-list:
-  expression
-  expression , expression-list
-\end{syntax}
-generate a compiler diagnostic of the indicated severity 
-if the function containing the statement may be called 
-when the program is executed and the statement is
-not eliminated by parameter folding.
-
-The compiler diagnostic is defined by the expression list which can
-contain string literals and types.  The diagnostic points to the spot
-in the Chapel program from which the function containing
-the \sntx{compiler-diagnostic-statement} is called.  Compilation halts
-if a \chpl{compilerError} is encountered whereas it will continue
-after encountering a \chpl{compilerWarning}.
+The compiler diagnostic is defined by the actual arguments which must
+be string parameters.  The diagnostic points to the spot in the Chapel
+program from which the function containing the call is called.
+Compilation halts if a \chpl{compilerError} is encountered whereas it
+will continue after encountering a \chpl{compilerWarning}.
 
 Note that when a variable function is called in a context where the
 implicit \chpl{setter} argument is true or false, both versions of the
@@ -454,7 +444,7 @@ diagnostics to generate warnings and errors:
 def foo(x, y) {
   if (x.type != y.type) then
     compilerError("foo() called with non-matching types: ", 
-                  x.type, " != ", y.type);
+                  typeToString(x.type), " != ", typeToString(y.type));
   writeln("In 2-argument foo...");
 }
 
