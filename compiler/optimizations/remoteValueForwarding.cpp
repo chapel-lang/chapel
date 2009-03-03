@@ -105,9 +105,9 @@ isSafeToDeref(Symbol* ref,
         if (!isSafeToDeref(newRef->var, defMap, useMap, visited))
           return false;
       } else if (!call->isPrimitive(PRIM_GET_REF))
-        return false;
+        return false; // what cases does this preclude? can this be an assert?
     } else
-      return false;
+      return false; // what cases does this preclude? can this be an assert?
   }
 
   return true;
@@ -138,7 +138,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
       CallExpr* call = fn->calledBy->v[0];
 
       //
-      // For each reference arg of simple type that is safe to dereference
+      // For each reference arg that is safe to dereference
       //
       for_formals(arg, fn) {
         if (arg->type->symbol->hasFlag(FLAG_REF) &&
@@ -152,8 +152,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
           arg->type = arg->type->getValueType();
 
           //
-          // Insert de-reference temp of value.  For tuples, insert
-          // component arguments.
+          // Insert de-reference temp of value.
           //
           VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
           call->insertBefore(new DefExpr(deref));
