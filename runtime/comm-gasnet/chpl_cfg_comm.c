@@ -1,6 +1,7 @@
 #include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include "chplrt.h"
 #include "chplcomm.h"
 #include "chplmem.h"
@@ -11,16 +12,14 @@
 #define GASNET_PAR 1
 #include "gasnet.h"
 
-static int chpl_comm_diagnostics = 0; // set via startCommDiagnostics
+static int chpl_comm_diagnostics = 0;           // set via startCommDiagnostics
 static chpl_mutex_t chpl_comm_diagnostics_lock;
 static int chpl_comm_gets = 0;
 static int chpl_comm_puts = 0;
 static int chpl_comm_forks = 0;
 static int chpl_comm_nb_forks = 0;
-static int chpl_verbose_comm = 0;     // set via startVerboseComm
+static int chpl_verbose_comm = 0;               // set via startVerboseComm
 static int chpl_comm_no_debug_private = 0;
-
-
 
 //
 // The following macro is from the GASNet test.h distribution
@@ -56,31 +55,12 @@ typedef struct {
 //
 // AM functions
 //
-#define FORK_NB    128    // (non-blocking) async fork 
-#define FORK       129    // synchronous fork
-#define SIGNAL     130    // ack of synchronous fork
-#define PUTDATA    131    // put data at addr (used for private broadcast)
-#define FORK_LARGE 132    // synchronous fork with an argument too big for FORK
-
-static void fork_nb_wrapper(fork_t *f) {
-  if (f->arg_size)
-    (*(f->fun))(&(f->arg));
-  else
-    (*(f->fun))(0);
-  chpl_free(f, 0, 0);
-}
-
-// AM non-blocking fork handler, medium sized, receiver side
-static void AM_fork_nb(gasnet_token_t  token,
-                        void           *buf,
-                        size_t          nbytes) {
-  fork_t *f;
-
-  f = (fork_t*)chpl_malloc(nbytes, sizeof(char), "AM_fork_nb info", 0, 0);
-  bcopy(buf, f, nbytes);
-  chpl_begin((chpl_threadfp_t)fork_nb_wrapper, (chpl_threadarg_t)f,
-             true, f->serial_state, NULL);
-}
+#define FORK          128 // synchronous fork
+#define FORK_LARGE    129 // synchronous fork with a huge argument
+#define FORK_NB       130 // non-blocking fork 
+#define FORK_NB_LARGE 131 // non-blocking fork with a huge argument
+#define SIGNAL        132 // ack of synchronous fork
+#define PUTDATA       133 // put data at addr (used for private broadcast)
 
 static void fork_wrapper(fork_t *f) {
   if (f->arg_size)
@@ -92,6 +72,13 @@ static void fork_wrapper(fork_t *f) {
                                       &(f->ack),
                                       sizeof(f->ack)));
   chpl_free(f, 0, 0);
+}
+
+static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
+  fork_t *f = (fork_t*)chpl_malloc(nbytes, sizeof(char), "AM_fork info", 0, 0);
+  memcpy(f, buf, nbytes);
+  chpl_begin((chpl_threadfp_t)fork_wrapper, (chpl_threadarg_t)f,
+             true, f->serial_state, NULL);
 }
 
 static void fork_large_wrapper(fork_t* f) {
@@ -107,48 +94,63 @@ static void fork_large_wrapper(fork_t* f) {
   chpl_free(arg, 0, 0);
 }
 
-// AM fork handler, medium sized, receiver side
-static void AM_fork(gasnet_token_t  token,
-                    void           *buf,
-                    size_t          nbytes) {
-  fork_t *f;
-
-  f = (fork_t*)chpl_malloc(nbytes, sizeof(char), "AM_fork info", 0, 0);
-  bcopy(buf, f, nbytes);
-  chpl_begin((chpl_threadfp_t)fork_wrapper, (chpl_threadarg_t)f,
-             true, f->serial_state, NULL);
-}
-
-static void AM_fork_large(gasnet_token_t  token, void* buf, size_t nbytes) {
-  fork_t* f = chpl_malloc(1, nbytes, "large fork pointer", 0, 0);
-  bcopy(buf, f, nbytes);
-
+static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
+  fork_t* f = (fork_t*)chpl_malloc(1, nbytes, "AM_fork_large info", 0, 0);
+  memcpy(f, buf, nbytes);
   chpl_begin((chpl_threadfp_t)fork_large_wrapper, (chpl_threadarg_t)f,
              true, f->serial_state, NULL);
 }
 
+static void fork_nb_wrapper(fork_t *f) {
+  if (f->arg_size)
+    (*(f->fun))(&(f->arg));
+  else
+    (*(f->fun))(0);
+  chpl_free(f, 0, 0);
+}
 
-// AM signal handler, medium sized, receiver side
-static void AM_signal(gasnet_token_t  token,
-                      void           *buf,
-                      size_t          nbytes) {
+static void AM_fork_nb(gasnet_token_t  token,
+                        void           *buf,
+                        size_t          nbytes) {
+  fork_t *f = (fork_t*)chpl_malloc(nbytes, sizeof(char), "AM_fork_nb info", 0, 0);
+  memcpy(f, buf, nbytes);
+  chpl_begin((chpl_threadfp_t)fork_nb_wrapper, (chpl_threadarg_t)f,
+             true, f->serial_state, NULL);
+}
+
+static void fork_nb_large_wrapper(fork_t* f) {
+  void* arg = chpl_malloc(1, f->arg_size, "fork argument", 0, 0);
+
+  _chpl_comm_get(arg, f->caller, *(void**)f->arg, f->arg_size, 0, "fork large");
+  (*(f->fun))(arg);
+  chpl_free(f, 0, 0);
+  chpl_free(arg, 0, 0);
+}
+
+static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
+  fork_t* f = (fork_t*)chpl_malloc(1, nbytes, "AM_fork_large info", 0, 0);
+  memcpy(f, buf, nbytes);
+  chpl_begin((chpl_threadfp_t)fork_nb_large_wrapper, (chpl_threadarg_t)f,
+             true, f->serial_state, NULL);
+}
+
+static void AM_signal(gasnet_token_t token, void* buf, size_t nbytes) {
   int **done = (int**)buf;
   **done = 1;
 }
 
-static void AM_putdata(gasnet_token_t  token,
-                       void           *buf,
-                       size_t          nbytes) {
+static void AM_putdata(gasnet_token_t token, void* buf, size_t nbytes) {
   put_t* pbp = buf;
   memcpy(pbp->addr, pbp->data, pbp->size);
 }
 
 static gasnet_handlerentry_t ftable[] = {
-  {FORK,    AM_fork},    // fork remote thread synchronously
-  {FORK_NB, AM_fork_nb}, // fork remote thread asynchronously
-  {SIGNAL,  AM_signal},  // set remote (int) condition
-  {PUTDATA, AM_putdata}, // put data at addr (used for private broadcast)
-  {FORK_LARGE, AM_fork_large}
+  {FORK,          AM_fork},
+  {FORK_LARGE,    AM_fork_large},
+  {FORK_NB,       AM_fork_nb},
+  {FORK_NB_LARGE, AM_fork_nb_large},
+  {SIGNAL,        AM_signal},
+  {PUTDATA,       AM_putdata},
 };
 
 static gasnet_seginfo_t seginfo_table[1024];
@@ -302,7 +304,7 @@ void _chpl_comm_exit_any(int status) {
 
 void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, _string fn) {
   if (_localeID == locale) {
-    bcopy(addr, raddr, size);
+    memcpy(raddr, addr, size);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote put to %d\n", _localeID, fn, ln, locale);
@@ -317,7 +319,7 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int 
 
 void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, _string fn) {
   if (_localeID == locale) {
-    bcopy(raddr, addr, size);
+    memcpy(addr, raddr, size);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote get from %d\n", _localeID, fn, ln, locale);
@@ -327,34 +329,6 @@ void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int 
       chpl_mutex_unlock(&chpl_comm_diagnostics_lock);
     }
     gasnet_get(addr, locale, raddr, size); // dest, node, src, size
-  }
-}
-
-void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
-  fork_t *info;
-  int           info_size;
-
-  info_size = sizeof(fork_t) + arg_size;
-  info = (fork_t*) chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork_nb info", 0, 0);
-  info->caller = _localeID;
-  info->serial_state = chpl_get_serial();
-  info->fun = f;
-  info->arg_size = arg_size;
-  if (arg_size)
-    bcopy(arg, &(info->arg), arg_size);
-  if (_localeID == locale) {
-    chpl_begin((chpl_threadfp_t)fork_nb_wrapper, (chpl_threadarg_t)info,
-               false, info->serial_state, NULL);
-  } else {
-    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: remote non-blocking thread created on %d\n", _localeID, locale);
-    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      chpl_mutex_lock(&chpl_comm_diagnostics_lock);
-      chpl_comm_nb_forks++;
-      chpl_mutex_unlock(&chpl_comm_diagnostics_lock);
-    }
-    GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB, info, info_size));
-    chpl_free(info, 0, 0);
   }
 }
 
@@ -380,7 +354,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
     } else {
       info_size = sizeof(fork_t) + sizeof(void*);
     }
-    info = chpl_malloc(1, info_size, "_chpl_comm_fork info", 0, 0);
+    info = (fork_t*)chpl_malloc(1, info_size, "_chpl_comm_fork info", 0, 0);
     info->caller = _localeID;
     info->ack = &done;
     info->serial_state = chpl_get_serial();
@@ -391,13 +365,54 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
 
     if (passArg) {
       if (arg_size)
-        bcopy(arg, &(info->arg), arg_size);
+        memcpy(&(info->arg), arg, arg_size);
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK, info, info_size));
       GASNET_BLOCKUNTIL(1==done);
     } else {
-      bcopy(&arg, &(info->arg), sizeof(void*));
+      memcpy(&(info->arg), &arg, sizeof(void*));
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_LARGE, info, info_size));
       GASNET_BLOCKUNTIL(1==done);
+    }
+    chpl_free(info, 0, 0);
+  }
+}
+
+void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
+  fork_t *info;
+  int     info_size;
+  int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
+
+  if (passArg) {
+    info_size = sizeof(fork_t) + arg_size;
+  } else {
+    info_size = sizeof(fork_t) + sizeof(void*);
+  }
+  info = (fork_t*)chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork_nb info", 0, 0);
+  info->caller = _localeID;
+  info->serial_state = chpl_get_serial();
+  info->fun = f;
+  info->arg_size = arg_size;
+  if (passArg) {
+    if (arg_size)
+      memcpy(&(info->arg), arg, arg_size);
+  } else {
+    memcpy(&(info->arg), &arg, sizeof(void*));
+  }
+  if (_localeID == locale) {
+    chpl_begin((chpl_threadfp_t)fork_nb_wrapper, (chpl_threadarg_t)info,
+               false, info->serial_state, NULL);
+  } else {
+    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
+      printf("%d: remote non-blocking thread created on %d\n", _localeID, locale);
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+      chpl_mutex_lock(&chpl_comm_diagnostics_lock);
+      chpl_comm_nb_forks++;
+      chpl_mutex_unlock(&chpl_comm_diagnostics_lock);
+    }
+    if (passArg) {
+      GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB, info, info_size));
+    } else {
+      GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB_LARGE, info, info_size));
     }
     chpl_free(info, 0, 0);
   }
