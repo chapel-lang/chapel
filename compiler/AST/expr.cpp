@@ -213,7 +213,7 @@ UnresolvedSymExpr::UnresolvedSymExpr(const char* iunresolved) :
   unresolved(astr(iunresolved))
 {
   if (!iunresolved)
-    INT_FATAL(this, "nad call to UnresolvedSymExpr");
+    INT_FATAL(this, "bad call to UnresolvedSymExpr");
   gUnresolvedSymExprs.add(this);
 }
 
@@ -590,7 +590,7 @@ help_codegen_op(FILE* outfile, const char* name, Expr* e1, Expr* e2 = NULL) {
   fprintf(outfile, "(");
   if (e2) {
     e1->codegen(outfile);
-    fprintf(outfile, "%s", name);
+    fprintf(outfile, " %s ", name);
     e2->codegen(outfile);
   } else {
     fprintf(outfile, "%s", name);
