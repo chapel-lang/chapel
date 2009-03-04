@@ -446,12 +446,10 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond) {
   lifn->insertFormalAtTail(lifnTag);
   lifn->where = new BlockStmt(new CallExpr("==", lifnTag, gLeaderTag));
   fn->insertAtHead(new DefExpr(lifn));
-  VarSymbol* leaderIndex = newTemp("_leaderIndex");
-  lifn->insertAtTail(new DefExpr(leaderIndex));
   VarSymbol* leaderIterator = newTemp("_leaderIterator");
   lifn->insertAtTail(new DefExpr(leaderIterator));
   lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", lifnIterator)));
-  lifn->insertAtTail(buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex))));
+  lifn->insertAtTail(new CallExpr(PRIM_RETURN, leaderIterator));
 
   //
   // build follower iterator function
@@ -552,7 +550,7 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   VarSymbol* iterator = newTemp("_iterator");
   stmts->insertAtTail(new DefExpr(iterator));
   stmts->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
-  VarSymbol* index = newTemp("_index");
+  VarSymbol* index = newTemp("_indexOfInterest");
   stmts->insertAtTail(new DefExpr(index));
   stmts->insertAtTail(new BlockStmt(
     new CallExpr(PRIM_MOVE, index,
