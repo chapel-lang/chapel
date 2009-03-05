@@ -122,6 +122,10 @@ static void fork_nb_large_wrapper(fork_t* f) {
   void* arg = chpl_malloc(1, f->arg_size, "fork argument", 0, 0);
 
   _chpl_comm_get(arg, f->caller, *(void**)f->arg, f->arg_size, 0, "fork large");
+  GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
+                                      SIGNAL,
+                                      &(f->ack),
+                                      sizeof(f->ack)));
   (*(f->fun))(arg);
   chpl_free(f, 0, 0);
   chpl_free(arg, 0, 0);
@@ -380,7 +384,8 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
 void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   fork_t *info;
   int     info_size;
-  int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
+  int     done;
+  int     passArg = _localeID == locale || sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
 
   if (passArg) {
     info_size = sizeof(fork_t) + arg_size;
@@ -389,6 +394,7 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   }
   info = (fork_t*)chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork_nb info", 0, 0);
   info->caller = _localeID;
+  info->ack = &done;
   info->serial_state = chpl_get_serial();
   info->fun = f;
   info->arg_size = arg_size;
@@ -398,6 +404,9 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   } else {
     memcpy(&(info->arg), &arg, sizeof(void*));
   }
+
+  done = 0;
+
   if (_localeID == locale) {
     chpl_begin((chpl_threadfp_t)fork_nb_wrapper, (chpl_threadarg_t)info,
                false, info->serial_state, NULL);
@@ -413,6 +422,7 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB, info, info_size));
     } else {
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB_LARGE, info, info_size));
+      GASNET_BLOCKUNTIL(1==done);
     }
     chpl_free(info, 0, 0);
   }
