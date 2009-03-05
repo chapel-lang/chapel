@@ -30,7 +30,7 @@ class AbstractMapper {
 //
 // The distribution class
 //
-class UserMapAssoc : Distribution {
+class UserMapAssoc : BaseDist {
 
   // GENERICS:
 
@@ -101,7 +101,7 @@ class UserMapAssoc : Distribution {
   //
   // TODO: What should we do if domIdxType did not match idxType?
   //
-  def newAssociativeDomain(type domIdxType) where domIdxType != idxType {
+  def newAssociativeDom(type domIdxType) where domIdxType != idxType {
     compilerError("Trying to create a domain whose index type does not match the distribution's");
   }
 
@@ -110,7 +110,7 @@ class UserMapAssoc : Distribution {
   // initial index set if one exists?  If not, we should rewrite the
   // global domain construction to not do anything with whole...
   //
-  def newAssociativeDomain(type idxType) {
+  def newAssociativeDom(type idxType) {
     var dom = new UserMapAssocDom(idxType=idxType, dist=this);
     dom.setup();
     return dom;
@@ -204,7 +204,7 @@ class LocUserMapAssocDist {
 //
 // The global domain class
 //
-class UserMapAssocDom: BaseAssociativeDomain {
+class UserMapAssocDom: BaseAssociativeDom {
   // GENERICS:
 
   //
@@ -240,7 +240,7 @@ class UserMapAssocDom: BaseAssociativeDomain {
   // a domain describing the complete domain
   //
 
-  var pid: int;
+  var pid: int = -1;
 
   // GLOBAL DOMAIN INTERFACE:
 
@@ -404,14 +404,14 @@ class UserMapAssocDom: BaseAssociativeDomain {
   }
 
   def supportsPrivatization() param return true;
-  def privatize1() {
+  def privatize() {
     var privateDist = new UserMapAssoc(idxType, dist);
     var c = new UserMapAssocDom(idxType=idxType, dist=privateDist);
     c.locDoms = locDoms;
     return c;
   }
-  def privatize2(pid: int) {
-    this.pid = pid;
+  def reprivatize(other) {
+    locDoms = other.locDoms;
   }
 }
 
@@ -508,7 +508,7 @@ class LocUserMapAssocDom {
 //
 // the global array class
 //
-class UserMapAssocArr: BaseArray {
+class UserMapAssocArr: BaseArr {
   // GENERICS:
 
   //
@@ -541,6 +541,8 @@ class UserMapAssocArr: BaseArray {
   //
   var locArr: [dom.dist.targetLocDom] LocUserMapAssocArr(idxType, eltType);
 
+  var pid: int = -1; // privatized object id
+
   def setup() {
     coforall localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
@@ -548,16 +550,15 @@ class UserMapAssocArr: BaseArray {
   }
 
   def supportsPrivatization() param return true;
-  def privatize1() {
-    var c = new UserMapAssocArr(idxType, eltType, dom);
+  def privatize() {
+    var dompid = dom.pid;
+    var thisdom = dom;
+    var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+    var c = new UserMapAssocArr(idxType, eltType, privdom);
     c.locArr = locArr;
     return c;
   }
-  def privatize2(pid) {
-    var dompid = dom.pid;
-    var thisdom = dom;
-    this.dom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
-  }
+
 
   // GLOBAL ARRAY INTERFACE:
 
