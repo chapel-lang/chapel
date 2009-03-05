@@ -157,7 +157,7 @@ static gasnet_handlerentry_t ftable[] = {
   {PUTDATA,       AM_putdata},
 };
 
-static gasnet_seginfo_t seginfo_table[1024];
+static gasnet_seginfo_t* seginfo_table;
 
 //
 // Chapel interface starts here
@@ -189,7 +189,10 @@ void _chpl_comm_init(int *argc_p, char ***argv_p) {
                             gasnet_getMaxLocalSegmentSize(),
                             0));
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-  GASNET_Safe(gasnet_getSegmentInfo(seginfo_table, 1024));
+#undef malloc
+  seginfo_table = (gasnet_seginfo_t*)malloc(_numLocales*sizeof(gasnet_seginfo_t));
+#define malloc dont_use_malloc_use_chpl_malloc_instead
+  GASNET_Safe(gasnet_getSegmentInfo(seginfo_table, _numLocales));
 #endif
 
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
