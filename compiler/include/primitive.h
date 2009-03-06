@@ -170,6 +170,8 @@ enum PrimitiveTag {
 
   PRIM_GET_ERRNO,
 
+  PRIM_STRING_COPY,
+
   PRIM_PRINT_MEM_TABLE,
 
   PRIM_RT_ERROR,

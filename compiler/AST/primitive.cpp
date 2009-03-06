@@ -539,7 +539,7 @@ initPrimitive() {
   prim_def("string_length", returnInfoInt32);
   prim_def("ascii", returnInfoInt32);
   prim_def("string_index", returnInfoString, true, true);
-  prim_def("string_copy", returnInfoString, true, true);
+  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoString, false, true);
   prim_def("string_select", returnInfoString, true, true);
   prim_def("string_strided_select", returnInfoString, true, true);
   prim_def("_string_get_imag_part", returnInfoString, true);

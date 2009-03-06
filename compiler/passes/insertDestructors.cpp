@@ -39,6 +39,12 @@ void fixupDestructors(void) {
             ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
           }
           count++;
+        } else if (field->type == dtString) {
+          VarSymbol* tmp = newTemp(dtString);
+          ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+          ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
+            new CallExpr(PRIM_GET_MEMBER_VALUE, ct->destructor->_this, field)));
+          ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
         }
       }
       if (count <= 1 ||
@@ -153,8 +159,9 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
   forv_Vec(CallExpr, call, gCallExprs) {
     // look for casts from a numeric type to string,
     // since they will require allocating memory for the resulting string
-    if (call->isPrimitive(PRIM_CAST) && !strcmp(toSymExpr(call->get(1))->var->name, "string") &&
-        is_arithmetic_type(toSymExpr(call->get(2))->var->type))
+    if (call->isPrimitive(PRIM_CAST) && toSymExpr(call->get(1))->var->type == dtString &&
+        is_arithmetic_type(toSymExpr(call->get(2))->var->type) ||
+        call->isPrimitive(PRIM_STRING_COPY))
       constructorCalls.add(call);
   }
 
@@ -165,8 +172,11 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
       INT_ASSERT(move->isPrimitive(PRIM_MOVE));
       SymExpr* lhs = toSymExpr(move->get(1));
       INT_ASSERT(lhs);
-      if (!lhs->var->type->destructor && !call->isPrimitive(PRIM_CAST) &&
-          strcmp(toSymExpr(call->baseExpr)->var->name, "_cast") ||
+      if (!lhs->var->type->destructor &&
+          !call->isPrimitive(PRIM_CAST) && !call->isPrimitive(PRIM_STRING_COPY) &&
+          (lhs->var->type != dtString || !isSymExpr(call->baseExpr) ||
+            strcmp(toSymExpr(call->baseExpr)->var->name, "_cast") &&
+            strcmp(toSymExpr(call->baseExpr)->var->name, "_copy")) ||
           // don't destroy global variables
           isModuleSymbol(lhs->var->defPoint->parentSymbol)) {
         continue;
@@ -240,6 +250,15 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
                     maybeCallDestructor = false;
                     break;
 #endif
+                  } else if (toSymExpr(call->get(1))->var->type == var->type->refType) {
+                    maybeCallDestructor = false;
+                    break;
+                  } else if (isArgSymbol(toSymExpr(call->get(1))->var)) {
+                    // if lhs is being assigned directly or indirectly to an argument,
+                    // then the caller could still have access to the piece of memory
+                    // in question
+                    maybeCallDestructor = false;
+                    break;
                   } else if (isModuleSymbol(toSymExpr(call->get(1))->var->defPoint->parentSymbol)) {
                     // lhs is directly or indirectly being assigned to a global variable
                     maybeCallDestructor = false;
@@ -312,7 +331,7 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
               }
             }
           } else {
-            INT_ASSERT(!strcmp(lhs->var->type->symbol->name, "string"));
+            INT_ASSERT(lhs->var->type == dtString);
             if (parentBlock == fn->body) {
               VarSymbol* tmp = newTemp(lhs->var->type);
               fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
