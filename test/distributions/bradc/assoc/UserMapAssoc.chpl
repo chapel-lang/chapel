@@ -310,8 +310,7 @@ class UserMapAssocDom: BaseAssociativeDom {
     //
     coforall locDom in locDoms do
       on locDom {
-        forall i in locDom do
-          yield i;
+        yield locDom;
       }
   }
 
@@ -539,14 +538,14 @@ class UserMapAssocArr: BaseArr {
   // SJD: note cannot do this anymore because constructor does not
   // setup (for privatization reasons)
   //
-  var locArr: [dom.dist.targetLocDom] LocUserMapAssocArr(idxType, eltType);
+  var locArrs: [dom.dist.targetLocDom] LocUserMapAssocArr(idxType, eltType);
 
   var pid: int = -1; // privatized object id
 
   def setup() {
     coforall localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
-        locArr(localeIdx) = new LocUserMapAssocArr(idxType, eltType, dom.locDoms(localeIdx));
+        locArrs(localeIdx) = new LocUserMapAssocArr(idxType, eltType, dom.locDoms(localeIdx));
   }
 
   def supportsPrivatization() param return true;
@@ -555,7 +554,7 @@ class UserMapAssocArr: BaseArr {
     var thisdom = dom;
     var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
     var c = new UserMapAssocArr(idxType, eltType, privdom);
-    c.locArr = locArr;
+    c.locArrs = locArrs;
     return c;
   }
 
@@ -568,12 +567,12 @@ class UserMapAssocArr: BaseArr {
   // TODO: Do we need a global bounds check here or in ind2locind?
   //
   def this(i: idxType) var {
-    const myLocArr = locArr(here.id);
+    const myLocArr = locArrs(here.id);
     local {
       if myLocArr.locDom.myInds.member(i) then
         return myLocArr.this(i);
     }
-    return locArr(dom.dist.ind2locInd(i))(i);
+    return locArrs(dom.dist.ind2locInd(i))(i);
   }
 
   //
@@ -584,7 +583,7 @@ class UserMapAssocArr: BaseArr {
       // TODO: May want to do something like:     
       // on this do
       // But can't currently have yields in on clauses
-      for elem in locArr(loc) {
+      for elem in locArrs(loc) {
         yield elem;
       }
     }
@@ -602,8 +601,7 @@ class UserMapAssocArr: BaseArr {
     //
     coforall locDom in dom.locDoms do
       on locDom {
-        forall i in locDom do
-          yield i;
+        yield locDom;
       }
   }
 
@@ -617,9 +615,9 @@ class UserMapAssocArr: BaseArr {
     //
     // TODO: The following is a buggy hack that will only work when we're
     // distributing across the entire Locales array.  I still think the
-    // locArr/locDoms arrays should be associative over locale values.
+    // locArrs/locDoms arrays should be associative over locale values.
     //
-    const myLocArr = locArr(here.id);
+    const myLocArr = locArrs(here.id);
     if aligned {
       local {
         for i in follower {
@@ -650,9 +648,9 @@ class UserMapAssocArr: BaseArr {
     //
     // TODO: The following is a buggy hack that will only work when we're
     // distributing across the entire Locales array.  I still think the
-    // locArr/locDoms arrays should be associative over locale values.
+    // locArrs/locDoms arrays should be associative over locale values.
     //
-    const myLocArr = locArr(here.id);
+    const myLocArr = locArrs(here.id);
     if (myLocArr.owns(followThis)) {
       // we own all the elements we're following
       //
@@ -687,19 +685,10 @@ class UserMapAssocArr: BaseArr {
   def writeThis(x: Writer) {
 
     var first = true;
-    for loc in dom.dist.targetLocDom {
-      // May want to do something like the following:
-      //      on loc {
-      // but it causes deadlock -- see writeThisUsingOn.chpl
-        if (locArr(loc).numElements >= 1) {
-          if (first) {
-            first = false;
-          } else {
-            x.write(" ");
-          }
-          x.write(locArr(loc));
-        }
-        //    }
+    for locArr in locArrs {
+      "[".writeThis(x);
+      locArr.writeThis(x);
+      "] ".writeThis(x);
       stdout.flush();
     }
   }
