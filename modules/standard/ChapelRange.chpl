@@ -445,12 +445,17 @@ def range.order(i: eltType) {
 
 //
 // returns true if other is in bounds of this for all specified
-// bounds; this function is used to determine if an array slice is
-// valid
+// bounds; these functions are used to determine if an array slice is
+// valid.  We break out the boundedNone case in order to permit
+// unbounded ranges to slice ranges of various index types -- otherwise
+// we get a compiler error in the boundsCheck function.
 //
-def range.boundsCheck(other: range(?e,?b,?s)) {
-  if other.boundedType == BoundedRangeType.boundedNone then
-    return true;
+def range.boundsCheck(other: range(?e,?b,?s)) where b == BoundedRangeType.boundedNone {
+  return true;
+}
+
+
+def range.boundsCheck(other: range(?e,?b,?s)) where b != BoundedRangeType.boundedNone {
   var boundedOther: range(e,BoundedRangeType.bounded,s);
   if other._hasLow() then
     boundedOther._low = other.low;

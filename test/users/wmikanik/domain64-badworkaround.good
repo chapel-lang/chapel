@@ -1,0 +1,1 @@
+domain64-badworkaround.chpl:8: type mismatch in assignment from unbounded range to bounded range
