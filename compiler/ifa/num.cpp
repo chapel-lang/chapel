@@ -292,26 +292,36 @@ coerce_immediate(Immediate *from, Immediate *to) {
           break; \
       }
 
-#define COMPUTE_INT_POW(type, b, e)       \
-  type base = b;                               \
-  type exp = e;                                  \
-  type res = 1;                                  \
-  if (exp < 0) {                                 \
-    res = 0;                                     \
-  } else {                                       \
-    int i;                                       \
-    for (i=0; i<exp; i++) {                      \
-      res *= base;                               \
-    }                                            \
+#define COMPUTE_INT_POW(type, b, e)                      \
+  type base = b;                                         \
+  type exp = e;                                          \
+  type res = 1;                                          \
+  if (base == 0 && exp < 0) {                            \
+    USR_FATAL("0 cannot be raised to a negative power"); \
+  } else if (exp < 0) {                                  \
+    res = 0;                                             \
+  } else {                                               \
+    type i = exp;                                        \
+    type z = base;                                       \
+    while (i != 0) {                                     \
+      if (i % 2 == 1)                                    \
+        res *= z;                                        \
+      z *= z;                                            \
+      i /= 2;                                            \
+    }                                                    \
   }
     
 #define COMPUTE_UINT_POW(type, b, e)                 \
   type base = b;                                     \
   type exp = e;                                      \
   type res = 1;                                      \
-  uint32_t i;                                        \
-  for (i=0; i<exp; i++) {                            \
-    res *= base;                                     \
+  type i = exp;                                      \
+  type z = base;                                     \
+  while (i != 0) {                                   \
+    if (i % 2 == 1)                                  \
+      res *= z;                                      \
+    z *= z;                                          \
+    i /= 2;                                          \
   }
 
 #define DO_FOLDPOW() \

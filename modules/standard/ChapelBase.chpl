@@ -325,10 +325,27 @@ pragma "inline" def %(param a: uint(64), param b: uint(64)) param return __primi
 //
 // ** on primitive types
 //
-pragma "inline" def **(a: int(32), b: int(32)) return __primitive("**", a, b);
-pragma "inline" def **(a: int(64), b: int(64)) return __primitive("**", a, b);
-pragma "inline" def **(a: uint(32), b: uint(32)) return __primitive("**", a, b);
-pragma "inline" def **(a: uint(64), b: uint(64)) return __primitive("**", a, b);
+
+pragma "inline" def _intExpHelp(a:integral, b) where a.type == b.type {
+  if b < 0 then
+    if a == 0 then
+      halt("cannot compute ", a, " ** ", b);
+    else
+      return 0;
+  var i = b, y:a.type = 1, z = a;
+  while i != 0 {
+    if i % 2 == 1 then
+      y *= z;
+    z *= z;
+    i /= 2;
+  }
+  return y;
+}
+
+pragma "inline" def **(a: int(32), b: int(32)) return _intExpHelp(a, b);
+pragma "inline" def **(a: int(64), b: int(64)) return _intExpHelp(a, b);
+pragma "inline" def **(a: uint(32), b: uint(32)) return _intExpHelp(a, b);
+pragma "inline" def **(a: uint(64), b: uint(64)) return _intExpHelp(a, b);
 pragma "inline" def **(a: real(?w), b: real(w)) return __primitive("**", a, b);
 
 def **(param a: int(32), param b: int(32)) param return __primitive("**", a, b);
