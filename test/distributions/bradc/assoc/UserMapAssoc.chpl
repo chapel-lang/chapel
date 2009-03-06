@@ -20,10 +20,6 @@ class AbstractMapper {
   def ind2locInd(ind, numlocs: int) {
     return 0;
   }
-
-  def ind2slot(ind, numslots: int) {
-    return 0;
-  }
 }
 
 
@@ -686,9 +682,14 @@ class UserMapAssocArr: BaseArr {
 
     var first = true;
     for locArr in locArrs {
-      "[".writeThis(x);
+      if locArr.numElements {
+        if first {
+          first = false;
+        } else {
+          " ".writeThis(x);
+        }
+      }
       locArr.writeThis(x);
-      "] ".writeThis(x);
       stdout.flush();
     }
   }

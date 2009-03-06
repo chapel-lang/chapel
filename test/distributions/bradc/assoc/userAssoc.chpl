@@ -5,13 +5,6 @@ class myMapper : AbstractMapper {
     const indAsInt = ind: int;
     return indAsInt % numlocs;
   }
-
-  def ind2slot(ind: real, numslots: int) {
-    const indAsInt = ind: int;
-    ind -= indAsInt;
-    ind *= 100;
-    return ind % numslots;
-  }
 }
 
 var newDist = new UserMapAssoc(idxType=real, initMapper=new myMapper());
