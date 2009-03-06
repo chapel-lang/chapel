@@ -505,8 +505,8 @@ pragma "inline" def _statementLevelSymbol(type a) type { return a; }
 //
 pragma "inline" def _copy(a: ?t) where t == string {
   if t == string then
-    return __primitive("string_copy", a);
-  else
+//  return __primitive("string_copy", a);
+//else
     return a;
 }
 

@@ -39,12 +39,14 @@ void fixupDestructors(void) {
             ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
           }
           count++;
+#if 0
         } else if (field->type == dtString) {
           VarSymbol* tmp = newTemp(dtString);
           ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
             new CallExpr(PRIM_GET_MEMBER_VALUE, ct->destructor->_this, field)));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
+#endif
         }
       }
       if (count <= 1 ||
@@ -330,6 +332,7 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
                 parentBlock->insertAtTailBeforeGoto(new CallExpr(ct->destructor, tmp));
               }
             }
+#if 0
           } else {
             INT_ASSERT(lhs->var->type == dtString);
             if (parentBlock == fn->body) {
@@ -343,6 +346,7 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
               parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIM_MOVE, tmp, lhs->var));
               parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIM_CHPL_FREE, tmp));
             }
+#endif
           }
         }
       }
