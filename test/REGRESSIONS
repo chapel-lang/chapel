@@ -99,7 +99,7 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
@@ -365,6 +365,14 @@ sig_send: wait for sig_complete event failed
 =============================
 mta-/xmt-specific regressions
 =============================
+
+use-before-def warning in generated code -- should disable (03/06/09)
+---------------------------------------------------------------------
+[Error matching program output for release/examples/hpcc/ra]
+
+compilation timeout (03/06/09)
+------------------------------
+[Error: Timed out compilation for release/examples/arrays]
 
 occasional timeouts? or slowed down during iterator rewrites? (e.g., 07/02/08)
 ------------------------------------------------------------------------------
