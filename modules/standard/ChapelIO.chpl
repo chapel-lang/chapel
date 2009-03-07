@@ -267,7 +267,6 @@ def file.writeIt(s: string) {
 class StringClass: Writer {
   var s: string;
   def writeIt(s: string) { this.s += s; }
-  def ~StringClass { __primitive("chpl_free", s); }
 }
 
 pragma "ref this" pragma "dont disable remote value forwarding"

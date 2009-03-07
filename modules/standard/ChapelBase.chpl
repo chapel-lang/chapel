@@ -503,14 +503,12 @@ pragma "inline" def _statementLevelSymbol(type a) type { return a; }
 //
 // _copy on primitive types and classes
 //
-pragma "inline" def _copy(a: ?t) where t == string {
-  if t == string then
-//  return __primitive("string_copy", a);
-//else
+pragma "inline" def _copy(a) {
+  if a.type == string then
+    return __primitive("string_copy", a);
+  else
     return a;
 }
-
-pragma "inline" def _copy(a: ?t) where t != string return a;
 
 pragma "inline" def _copy(type t) {
   compilerError("illegal assignment of type to value");
