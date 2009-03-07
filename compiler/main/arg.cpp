@@ -28,8 +28,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *****************************************************************************/
 
 
-#include <cstdio>
 #define __STDC_FORMAT_MACROS
+#include <cstdio>
 #include <inttypes.h>
 #include "arg.h"
 #include "chpl.h"

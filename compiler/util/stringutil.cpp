@@ -1,8 +1,8 @@
+#define __STDC_FORMAT_MACROS
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <stdint.h>   // required on Sun to define SCN?8
 #include "misc.h"
