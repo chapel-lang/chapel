@@ -74,8 +74,6 @@ typedef int64_t              _symbol;
 
 #define ascii(s) ((int8_t)(*s))
 
-#define string_copy(rhs, lineno, filename) (string_concat(rhs, "", lineno, filename))
-
 //
 // stopgap formatting
 //
@@ -85,6 +83,7 @@ _string _format(_string format, ...)
 char* _glom_strings(int numstrings, ...);
 
 chpl_bool string_contains(_string x, _string y);
+_string string_copy(_string x, int32_t lineno, _string filename);
 _string string_concat(_string x, _string y, int32_t lineno, _string filename);
 _string string_index(_string x, int i, int32_t lineno, _string filename);
 _string string_select(_string x, int low, int high, int32_t lineno, _string filename);

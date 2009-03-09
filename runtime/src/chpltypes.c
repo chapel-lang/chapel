@@ -54,9 +54,31 @@ _string _format(_string format, ...) {
 
 
 _string
+string_copy(_string x, int32_t lineno, _string filename) {
+  const char *basename = NULL;
+  char *z, buf[FILENAME_MAX+19];
+  int uncommitted_len, basename_len = 0;
+  if (filename) {
+    basename = strrchr(filename, '/');
+    basename = basename ? basename+1 : filename;
+    basename_len = strlen(basename);
+    snprintf(buf, sizeof(buf), "%d", lineno);
+    uncommitted_len = sizeof(buf) - strlen(buf) - 14;
+    snprintf(buf, sizeof(buf), "string_copy:%s:%d",
+             basename_len<=uncommitted_len ? basename
+                                           : basename+(basename_len-uncommitted_len),
+             lineno);
+  }
+  else strcpy(buf, "string_copy");
+  z = (char*)chpl_malloc(strlen(x)+1, sizeof(char), buf, lineno, filename);
+  return strcpy(z, x);
+}
+
+
+_string
 string_concat(_string x, _string y, int32_t lineno, _string filename) {
   char *z = (char*)chpl_malloc(strlen(x)+strlen(y)+1, sizeof(char),
-                                "string_concat", lineno, filename);
+                               "string_concat", lineno, filename);
   z[0] = '\0';
   strcat(z, x);
   strcat(z, y);
