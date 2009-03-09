@@ -1,1 +1,1 @@
-error: --memthreshold useless when used without --memtrace
+error: --memthreshold useless when used without --memtrace or --memfinalstat

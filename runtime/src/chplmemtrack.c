@@ -155,8 +155,8 @@ void setMemtrack(void) {
 
 
 void setMemthreshold(int64_t value) {
-  if (!memlog) {
-    chpl_error("--memthreshold useless when used without --memtrace", 0, 0);
+  if (!memlog && !memfinalstatSet) {
+    chpl_error("--memthreshold useless when used without --memtrace or --memfinalstat", 0, 0);
   }
   memthresholdValue = value;
 }
@@ -304,7 +304,7 @@ void printMemTable(int64_t threshold, int32_t lineno, _string filename) {
 
 void chpl_printMemTable(int64_t threshold, int32_t lineno, _string filename) {
   if (memfinalstat)
-    printMemTable(threshold, lineno, filename);
+    printMemTable(threshold>=0 ? threshold : memthresholdValue, lineno, filename);
 }
 
 
@@ -427,14 +427,11 @@ void printToMemLog(size_t number, size_t size, const char* description,
   chpl_mutex_lock(&_memtrace_lock);
   if (chunk >= memthresholdValue) {
     if (moreMemAlloc && (moreMemAlloc != memAlloc)) {
-      fprintf(memlog, "%s called for %u items of size %u"
-              " for %s:  0x%x -> 0x%x\n", memType, (unsigned)number,
-              (unsigned)size, description, (unsigned)(intptr_t)memAlloc,
-              (unsigned)(intptr_t)moreMemAlloc);
+      fprintf(memlog, "%s called for %zu items of size %zu for %s:  0x%p -> 0x%p\n",
+              memType, number, size, description, memAlloc, moreMemAlloc);
     } else {
-      fprintf(memlog, "%s called for %u items of size %u"
-              " for %s:  0x%x\n", memType, (unsigned)number, (unsigned)size,
-              description, (unsigned)(intptr_t)memAlloc);
+      fprintf(memlog, "%s called for %zu items of size %zu for %s:  %p\n",
+              memType, number, size, description, memAlloc);
     }
   }
   chpl_mutex_unlock(&_memtrace_lock);
