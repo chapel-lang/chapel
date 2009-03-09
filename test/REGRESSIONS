@@ -17,6 +17,15 @@
 general regressions
 ===================
 
+memory regressions due to Sam's string-freeing work (03/07/09)
+--------------------------------------------------------------
+[Error matching program output for memory/diten/reallocToZero]
+[Error matching program output for memory/figueroa/printFinalMemStat]
+[Error matching program output for memory/shannon/allocAndFree]
+[Error matching program output for memory/shannon/memstatPrint]
+[Error matching program output for memory/shannon/printFinalMemStat]
+[Error matching program output for memory/shannon/reallocZeroSize]
+
 extremely rare race condition in module initialization
 ------------------------------------------------------
 [Error matching program output for modules/diten/useInBegin]
@@ -125,6 +134,23 @@ GASNet unable to start polling thread
 baseline-specific tests
 =======================
 
+signal 11 (03/07/09)
+--------------------
+[Error matching program output for associative/waynew/indef2]
+[Error matching program output for param/bradc/foldIntParams]
+[Error matching program output for param/bradc/foldStringParams]
+[Error matching program output for trivial/bradc/compilerWarning]
+
+glibc double free (03/07/09)
+----------------------------
+[Error matching program output for classes/marybeth/test_dispatch_record]
+[Error matching program output for studies/590o/alaska/graph]
+
+output missing (03/07/09)
+-------------------------
+[Error matching program output for types/tuple/dinan/pining_for_lisp_ver2]
+
+
 strings freed prematurely (02/24/09)
 ------------------------------------
 [Error matching program output for trivial/diten/infix2postfix]
@@ -150,7 +176,11 @@ opts-specific tests
 (Example runs: 0)
 
 
-(Full run: 87)
+(Full run: 96)
+
+all
+---
+[Error matching compiler output for functions/deitz/test_write_type_error]
 
 --no-dead-code-elimination
 --------------------------
@@ -170,7 +200,6 @@ opts-specific tests
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
 [Error matching program output for studies/590o/bradc/psp2]
-[Error matching program output for trivial/diten/infix2postfix]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
@@ -204,7 +233,6 @@ opts-specific tests
 [Error matching program output for classes/figueroa/LeakedMemory2]
 [Error matching program output for classes/figueroa/LeakedMemory3]
 [Error matching program output for studies/590o/bradc/psp2]
-[Error matching program output for trivial/diten/infix2postfix]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
@@ -215,7 +243,6 @@ opts-specific tests
 [Error matching program output for classes/figueroa/LeakedMemory3]
 [Error matching program output for studies/590o/bradc/psp2]
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
-[Error matching program output for trivial/diten/infix2postfix]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
@@ -247,6 +274,10 @@ times out in C compiler
 intel-specific regressions
 ==========================
 
+spurious out-of-memory error
+----------------------------
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (e.g., 03/07/09)
+
 
 ===========================
 darwin-specific regressions
@@ -272,6 +303,7 @@ some sort of gdb compatability issue?
 
 long identifiers
 ----------------
+[Error matching compiler output for studies/hpcc/RA/diten/ra]
 [Error matching program output for arrays/deitz/test_major_nesting_of_arrays]
 [Error matching program output for trivial/deitz/test_longToken]
 [Error matching program output for types/tuple/deitz/test_128int]
@@ -369,6 +401,10 @@ mta-/xmt-specific regressions
 use-before-def warning in generated code -- should disable (03/06/09)
 ---------------------------------------------------------------------
 [Error matching program output for release/examples/hpcc/ra]
+
+execution timeout (03/07/09)
+----------------------------
+[Error: Timed out executing program release/examples/prodCons]
 
 compilation timeout (03/06/09)
 ------------------------------
