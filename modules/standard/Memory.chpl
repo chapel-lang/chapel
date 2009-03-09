@@ -18,3 +18,5 @@ def locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) {
 
 def memoryUsed()
   return __primitive("mem_used");
+
+_extern def printMemTable(thresh=0, lineno=-1, filename="");
