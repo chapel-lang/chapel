@@ -419,9 +419,7 @@ def _debugWriteln() {
 }
 
 def _ddata.writeThis(f: Writer) {
-  for i in 0..size-2 do
-    f.write(this(i), " ");
-  f.write(this(size-1));
+  compilerError("cannot write _ddata class");
 }
 
 def format(fmt: string, x:?t) where _isIntegralType(t) || _isFloatType(t) {

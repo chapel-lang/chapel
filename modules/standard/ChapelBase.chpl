@@ -326,7 +326,7 @@ pragma "inline" def %(param a: uint(64), param b: uint(64)) param return __primi
 // ** on primitive types
 //
 
-pragma "inline" def _intExpHelp(a:integral, b) where a.type == b.type {
+pragma "inline" def _intExpHelp(a: integral, b) where a.type == b.type {
   if b < 0 then
     if a == 0 then
       halt("cannot compute ", a, " ** ", b);
@@ -608,17 +608,16 @@ def init_elts(x, s, type t) {
 pragma "data class"
 class _ddata {
   type eltType;
-  var size: int;
   var count: sync int = 1;
   def ~_ddata() {
     __primitive("array_free", this);
     delete count;
   }
-  pragma "inline" def init() {
+  pragma "inline" def init(size: integral) {
     __primitive("array_alloc", this, eltType, size);
     init_elts(this, size, eltType);
   }
-  pragma "inline" def this(i: int) var {
+  pragma "inline" def this(i: integral) var {
     return __primitive("array_get", this, i);
   }
 }

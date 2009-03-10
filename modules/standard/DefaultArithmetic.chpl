@@ -386,8 +386,8 @@ class DefaultArithmeticArr: BaseArr {
       blk(dim) = blk(dim+1) * dom.dim(dim+1).length;
     computeFactoredOffs();
     size = blk(1) * dom.dim(1).length;
-    data = new _ddata(eltType, size:int); // ahh!!! can't cast to int here
-    data.init();
+    data = new _ddata(eltType);
+    data.init(size);
   }
 
   pragma "inline"
@@ -414,7 +414,7 @@ class DefaultArithmeticArr: BaseArr {
       }
       sum -= factoredOffs;
     }
-    return data(sum:int); // !!ahh
+    return data(sum);
   }
 
   def reindex(d: DefaultArithmeticDom) {

@@ -11,15 +11,15 @@ class _stack {
   def initialize() {
     top = 0;
     size = _INIT_STACK_SIZE;
-    data = new _ddata(eltType, 8);
-    data.init();
+    data = new _ddata(eltType);
+    data.init(8);
   }
 
   def push( e: eltType) {
     if (top == size-1) {  // supersize as necessary
       size *= 2;
-      var supersize = new _ddata(eltType, size);
-      supersize.init();
+      var supersize = new _ddata(eltType);
+      supersize.init(size);
       [i in 0..(size/2)-1] supersize[i] = data[i];
       data = supersize;
     }

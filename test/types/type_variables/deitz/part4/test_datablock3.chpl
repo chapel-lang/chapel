@@ -1,5 +1,5 @@
-var d : _ddata(int) = new _ddata(int, 3);
-d.init();
+var d : _ddata(int) = new _ddata(int);
+d.init(3);
 
 d(0) = 1;
 d(1) = 2;
