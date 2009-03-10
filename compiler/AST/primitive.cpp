@@ -533,7 +533,7 @@ initPrimitive() {
   prim_def("_fscan_real64", returnInfoReal64, true, true);
   prim_def("_readToEndOfLine", returnInfoVoid, true);
   prim_def("_format", returnInfoString);
-  prim_def("_string_compare", returnInfoInt32, true);
+  prim_def("chpl_string_compare", returnInfoInt32, true);
   prim_def("string_contains", returnInfoBool, true);
   prim_def("string_concat", returnInfoString, true, true);
   prim_def("string_length", returnInfoInt32);
@@ -542,7 +542,6 @@ initPrimitive() {
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoString, false, true);
   prim_def("string_select", returnInfoString, true, true);
   prim_def("string_strided_select", returnInfoString, true, true);
-  prim_def("_string_get_imag_part", returnInfoString, true);
   prim_def("sleep", returnInfoVoid, true);
   prim_def("real2int", returnInfoInt64);
   prim_def("object2int", returnInfoInt64);

@@ -33,7 +33,7 @@ typedef struct chpl_pool_struct {
   _Bool            begun;           // whether execution of this task has begun
   chpl_task_list_p task_list_entry; // points to the task list entry, if there is one
   chpl_task_pool_p next;
-  _string filename;
+  chpl_string filename;
   int lineno;
 } task_pool_t;
 
@@ -47,7 +47,7 @@ struct chpl_task_list {
   chpl_threadarg_t arg;
   volatile chpl_task_pool_p task_pool_entry; // when null, execution of the associated task has begun
   chpl_task_list_p next;
-  _string filename;
+  chpl_string filename;
   int lineno;
 };
 
@@ -84,10 +84,10 @@ lockReport* lockReportTail = NULL;
 
 static void  traverseLockedThreads(int sig);
 static void  tasksReport(int sig);
-static _Bool setBlockingLocation(int lineno, _string filename);
+static _Bool setBlockingLocation(int lineno, chpl_string filename);
 static void  unsetBlockingLocation(void);
 static void  initializeLockReportForThread(void);
-static _string idleThreadName = "|idle|";
+static chpl_string idleThreadName = "|idle|";
 
 // Condition variables
 
@@ -138,7 +138,7 @@ void chpl_sync_unlock(chpl_sync_aux_t *s) {
   chpl_mutex_unlock(s->lock);
 }
 
-int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string filename) {
+int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
   int return_value = chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
     if (setBlockingLocation(lineno, filename)) {
@@ -166,7 +166,7 @@ int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string fil
   return return_value;
 }
 
-int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string filename) {
+int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
   int return_value = chpl_mutex_lock(s->lock);
   while (return_value == 0 && s->is_full) {
     if (setBlockingLocation(lineno, filename)) {
@@ -236,7 +236,7 @@ void chpl_single_unlock(chpl_single_aux_t *s) {
   chpl_mutex_unlock(s->lock);
 }
 
-int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, _string filename) {
+int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, chpl_string filename) {
   int return_value = chpl_mutex_lock(s->lock);
   while (return_value == 0 && !s->is_full) {
     if (setBlockingLocation(lineno, filename)) {
@@ -491,7 +491,7 @@ static void tasksReport(int sig) {
     _chpl_exit_any(1);
 }
 
-static _Bool setBlockingLocation(int lineno, _string filename) {
+static _Bool setBlockingLocation(int lineno, chpl_string filename) {
   lockReport* lockRprt;
   _Bool isLastUnblockedThread = false;
   if (blockreport) {
@@ -845,7 +845,7 @@ void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
                             int32_t task_list_locale,
                             chpl_bool call_chpl_begin,
                             int lineno,
-                            _string filename) {
+                            chpl_string filename) {
   if (task_list_locale == _localeID) {
     chpl_task_list_p task = (chpl_task_list_p)chpl_alloc(sizeof(struct chpl_task_list), "task list entry", 0, 0);
     task->filename = filename;

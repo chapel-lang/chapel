@@ -113,14 +113,13 @@ static int64_t getIntArg(char* valueString, const char* memFlag) {
   char* message;
 
   if (!valueString || strcmp(valueString, "") == 0) {
-    message = _glom_strings(3, "The ", memFlag, " flag is missing "
-                                  "its int input");
+    message = chpl_glom_strings(3, "The ", memFlag, " flag is missing its int input");
     chpl_error(message, 0, 0);
   }
   numScans = sscanf(valueString, _default_format_read_int64"%c", 
                     &value, &extraChars);
   if (numScans != 1) {
-    message = _glom_strings(2, valueString, " is not of int type");
+    message = chpl_glom_strings(2, valueString, " is not of int type");
     chpl_error(message, 0, 0);
   }
   return value; 
@@ -130,8 +129,7 @@ static int64_t getIntArg(char* valueString, const char* memFlag) {
 static char* getStringArg(char* valueString, const char* memFlag) {
   char* message;
   if (!valueString || strcmp(valueString, "") == 0) {
-    message = _glom_strings(3, "The ", memFlag, " flag is missing "
-                                  "its string input");
+    message = chpl_glom_strings(3, "The ", memFlag, " flag is missing its string input");
     chpl_error(message, 0, 0);
   }
   return valueString;
@@ -140,8 +138,7 @@ static char* getStringArg(char* valueString, const char* memFlag) {
 
 static void exitIfEqualsSign(char* equalsSign, const char* memFlag) {
   if (equalsSign) {
-    char* message = _glom_strings(3, "The ", memFlag, " flag takes no "
-                                  "argument");
+    char* message = chpl_glom_strings(3, "The ", memFlag, " flag takes no argument");
     chpl_error(message, 0, 0);
   }
 }
@@ -232,7 +229,7 @@ static int parseMemFlag(const char* memFlag) {
 
 
 static void unexpectedArg(const char* currentArg) {
-  char* message = _glom_strings(3, "Unexpected flag:  \"", currentArg, "\"");
+  char* message = chpl_glom_strings(3, "Unexpected flag:  \"", currentArg, "\"");
   chpl_error(message, 0, 0);
 }
 
@@ -242,11 +239,10 @@ static int32_t _argNumLocales = 0;
 static void parseNumLocales(const char* numPtr) {
   int invalid;
   char invalidChars[2] = "\0\0";
-  _argNumLocales = _string_to_int32_t_precise(numPtr, &invalid, invalidChars);
+  _argNumLocales = chpl_string_to_int32_t_precise(numPtr, &invalid, invalidChars);
   if (invalid) {
-    char* message = _glom_strings(3, "\"", numPtr, 
-                                  "\" is not a valid number of locales"
-                                  );
+    char* message = chpl_glom_strings(3, "\"", numPtr, 
+                                      "\" is not a valid number of locales");
     chpl_error(message, 0, 0);
   }
   if (_argNumLocales < 1) {
@@ -270,8 +266,8 @@ void parseArgs(int argc, char* argv[]) {
     argLength = strlen(currentArg);
 
     if (argLength < 2) {
-      const char* message = _glom_strings(3, "\"", currentArg, 
-                                          "\" is not a valid argument");
+      const char* message = chpl_glom_strings(3, "\"", currentArg, 
+                                              "\" is not a valid argument");
       chpl_error(message, 0, 0);
     }
 
@@ -316,8 +312,8 @@ void parseArgs(int argc, char* argv[]) {
             break;
           }
           if (argLength < 3) {
-            char* message = _glom_strings(3, "\"", currentArg, 
-                                          "\" is not a valid argument");
+            char* message = chpl_glom_strings(3, "\"", currentArg, 
+                                              "\" is not a valid argument");
             chpl_error(message, 0, 0);
           }
           addToConfigList(currentArg + 2, ddash);
@@ -371,8 +367,8 @@ void parseArgs(int argc, char* argv[]) {
       case 's':
         {
           if (argLength < 3) {
-            char* message = _glom_strings(3, "\"", currentArg, 
-                                          "\" is not a valid argument");
+            char* message = chpl_glom_strings(3, "\"", currentArg, 
+                                              "\" is not a valid argument");
             chpl_error(message, 0, 0);
           }
           if (strncmp(currentArg+2, "numLocales", 10) == 0) {

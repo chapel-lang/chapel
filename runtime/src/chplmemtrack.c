@@ -167,14 +167,13 @@ void setMemtrace(char* memlogname) {
   if (memlogname) {
     memlog = fopen(memlogname, "w");
     if (!memlog) {
-      char* message = _glom_strings(3, "Unable to open \"", memlogname,
-                                    "\"");
+      char* message = chpl_glom_strings(3, "Unable to open \"", memlogname, "\"");
       chpl_error(message, 0, 0);
     }
   }
 }
 
-void increaseMemStat(size_t chunk, int32_t lineno, _string filename) {
+void increaseMemStat(size_t chunk, int32_t lineno, chpl_string filename) {
   chpl_mutex_lock(&_memstat_lock);
   totalMem += chunk;
   if (memmaxValue && (totalMem > memmaxValue)) {
@@ -209,7 +208,7 @@ void startTrackingMem(void) {
 }
 
 
-uint64_t mem_used(int32_t lineno, _string filename) {
+uint64_t mem_used(int32_t lineno, chpl_string filename) {
   uint64_t u;
   alreadyPrintingStat = 1; /* hack: don't want to print final stats */
   if (!memstat)
@@ -219,7 +218,7 @@ uint64_t mem_used(int32_t lineno, _string filename) {
 }
 
 
-void printMemStat(int32_t lineno, _string filename) {
+void printMemStat(int32_t lineno, chpl_string filename) {
   if (memstat) {
     chpl_mutex_lock(&_memstat_lock);
     fprintf(stdout, "totalMem=%u, maxMem=%u\n",
@@ -233,7 +232,7 @@ void printMemStat(int32_t lineno, _string filename) {
 }
 
 
-void printFinalMemStat(int32_t lineno, _string filename) {
+void printFinalMemStat(int32_t lineno, chpl_string filename) {
   if (!alreadyPrintingStat && memstat) {
     fprintf(stdout, "Final Memory Statistics:  ");
     printMemStat(lineno, filename);
@@ -241,7 +240,7 @@ void printFinalMemStat(int32_t lineno, _string filename) {
 }
 
 
-void printMemTable(int64_t threshold, int32_t lineno, _string filename) {
+void printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
   memTableEntry* memEntry = NULL;
 
   int numberWidth   = 9;
@@ -302,7 +301,7 @@ void printMemTable(int64_t threshold, int32_t lineno, _string filename) {
 }
 
 
-void chpl_printMemTable(int64_t threshold, int32_t lineno, _string filename) {
+void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
   if (memfinalstat)
     printMemTable(threshold>=0 ? threshold : memthresholdValue, lineno, filename);
 }
@@ -332,8 +331,8 @@ void installMemory(void* memAlloc, size_t number, size_t size,
   if (!memEntry) {
     memEntry = (memTableEntry*) calloc(1, sizeof(memTableEntry));
     if (!memEntry) {
-      char* message = _glom_strings(3, "Out of memory allocating table entry "
-                                    "for \"", description, "\"");
+      char* message = chpl_glom_strings(3, "Out of memory allocating table entry "
+                                        "for \"", description, "\"");
       chpl_error(message, 0, 0);
     }
 
@@ -352,8 +351,8 @@ void installMemory(void* memAlloc, size_t number, size_t size,
     memEntry->description = (char*) malloc((strlen(description) + 1)
                                            * sizeof(char));
     if (!memEntry->description) {
-      char* message = _glom_strings(3, "Out of memory allocating table entry "
-                                    "for \"", description, "\"");
+      char* message = chpl_glom_strings(3, "Out of memory allocating table entry "
+                                        "for \"", description, "\"");
       chpl_error(message, 0, 0);
     }
     strcpy(memEntry->description, description);
@@ -385,7 +384,7 @@ void updateMemory(memTableEntry* memEntry, void* oldAddress,
   PRINTF("updateMemory done");
 }
 
-void removeMemory(void* memAlloc, int32_t lineno, _string filename) {
+void removeMemory(void* memAlloc, int32_t lineno, chpl_string filename) {
   memTableEntry* thisBucketEntry;
   memTableEntry* memEntry;
   PRINTF("removeMemory");

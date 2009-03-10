@@ -33,7 +33,7 @@ void initHeap(void* start, size_t size) {
 
 static void
 confirm(void* memAlloc, const char* description, int32_t lineno, 
-        _string filename) {
+        chpl_string filename) {
   if (!memAlloc) {
     char message[1024];
     sprintf(message, "Out of memory allocating \"%s\"", description);
@@ -43,7 +43,7 @@ confirm(void* memAlloc, const char* description, int32_t lineno,
 
 
 static size_t computeChunkSize(size_t number, size_t size, int zeroOK, 
-                               int32_t lineno, _string filename) {
+                               int32_t lineno, chpl_string filename) {
   size_t chunk = number * size;
   long long bigChunk = (long long)number * (long long)size;
   if (bigChunk != chunk) {
@@ -70,7 +70,7 @@ void chpl_stopMemDiagnosis() {
 
 
 void* chpl_malloc(size_t number, size_t size, const char* description,
-                         int32_t lineno, _string filename) {
+                         int32_t lineno, chpl_string filename) {
   size_t chunk = computeChunkSize(number, size, 0, lineno, filename);
   size_t numBlocks = chunk / HMM_ADDR_ALIGN_UNIT;
   void* memAlloc;
@@ -107,7 +107,7 @@ void* chpl_malloc(size_t number, size_t size, const char* description,
 
 
 void* chpl_calloc(size_t number, size_t size, const char* description, 
-                   int32_t lineno, _string filename) {
+                   int32_t lineno, chpl_string filename) {
   void* memAlloc;
   if (!heapInitialized) {
     chpl_error("chpl_calloc called before the heap is initialized", lineno, filename);
@@ -133,7 +133,7 @@ void* chpl_calloc(size_t number, size_t size, const char* description,
 }
 
 
-void chpl_free(void* memAlloc, int32_t lineno, _string filename) {
+void chpl_free(void* memAlloc, int32_t lineno, chpl_string filename) {
   if (memAlloc != (void*)0x0) {
     if (memtrace) {
       if (memtrack) {
@@ -172,7 +172,7 @@ void chpl_free(void* memAlloc, int32_t lineno, _string filename) {
 
 
 void* chpl_realloc(void* memAlloc, size_t number, size_t size, 
-                    const char* description, int32_t lineno, _string filename) {
+                    const char* description, int32_t lineno, chpl_string filename) {
   size_t newChunk = computeChunkSize(number, size, 1, lineno, filename);
   size_t numBlocks = newChunk / HMM_ADDR_ALIGN_UNIT;
   memTableEntry* memEntry = NULL;
@@ -199,8 +199,8 @@ void* chpl_realloc(void* memAlloc, size_t number, size_t size,
     memEntry = lookupMemory(memAlloc);
     if (!memEntry && (memAlloc != NULL)) {
       char* message;
-      message = _glom_strings(3, "Attempting to realloc memory for ",
-                              description, " that wasn't allocated");
+      message = chpl_glom_strings(3, "Attempting to realloc memory for ",
+                                  description, " that wasn't allocated");
       chpl_error(message, lineno, filename);
     }
   }

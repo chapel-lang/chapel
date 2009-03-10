@@ -44,7 +44,7 @@ void chpl_sync_unlock(chpl_sync_aux_t *s) {
   writeef(&(s->is_full), is_full);  // mark full
 }
 
-int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string filename) {
+int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
   chpl_sync_lock(s);
   while (!readxx(&(s->is_full))) {
     chpl_sync_unlock(s);
@@ -54,7 +54,7 @@ int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string fil
   return 0;
 }
 
-int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string filename) {
+int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
   chpl_sync_lock(s);
   while (readxx(&(s->is_full))) {
     chpl_sync_unlock(s);
@@ -102,7 +102,7 @@ void chpl_single_unlock(chpl_single_aux_t *s) {
   writeef(&(s->is_full), is_full);  // mark full
 }
 
-int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, _string filename) {
+int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, chpl_string filename) {
   while (!readxx(&(s->is_full)))
     readff(&(s->signal_full));
   return 0;
@@ -236,7 +236,7 @@ void chpl_add_to_task_list (
     int32_t task_list_locale,
     chpl_bool call_chpl_begin,
     int lineno,
-    _string filename)
+    chpl_string filename)
 {
   chpl_begin (fun, arg, false, false, NULL);
 }

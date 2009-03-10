@@ -23,13 +23,13 @@ extern char* _default_format_write_complex128;
 
 typedef FILE* _cfile;
 
-_string _fscan_string(FILE* fp, int32_t lineno, _string filename);
-int32_t _fscan_int32(FILE* fp, int32_t lineno, _string filename);
-uint32_t _fscan_uint32(FILE* fp, int32_t lineno, _string filename);
-_real64 _fscan_real64(FILE* fp, int32_t lineno, _string filename);
+chpl_string _fscan_string(FILE* fp, int32_t lineno, chpl_string filename);
+int32_t _fscan_int32(FILE* fp, int32_t lineno, chpl_string filename);
+uint32_t _fscan_uint32(FILE* fp, int32_t lineno, chpl_string filename);
+_real64 _fscan_real64(FILE* fp, int32_t lineno, chpl_string filename);
 
-chpl_bool _fscan_literal(FILE* fp, _string val, chpl_bool ignoreWhiteSpace,
-                          int32_t lineno, _string filename);
+chpl_bool _fscan_literal(FILE* fp, chpl_string val, chpl_bool ignoreWhiteSpace,
+                          int32_t lineno, chpl_string filename);
 
 void _readToEndOfLine(FILE* fp);
 

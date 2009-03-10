@@ -296,7 +296,7 @@ void _chpl_comm_exit_any(int status);
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, _string fn);
+void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn);
 
 //
 // get 'size' bytes of remote data at 'raddr' on locale 'locale' to
@@ -305,7 +305,7 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int 
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  _chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int ln, _string fn);
+void  _chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn);
 
 //
 // remote fork should launch a thread on locale that runs function f

@@ -26,8 +26,8 @@ void chpl_mutex_unlock(chpl_mutex_p);
 
 int chpl_sync_lock(chpl_sync_aux_t *);
 void chpl_sync_unlock(chpl_sync_aux_t *);
-int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *, int32_t, _string);
-int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *, int32_t, _string);
+int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *, int32_t, chpl_string);
+int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *, int32_t, chpl_string);
 void chpl_sync_mark_and_signal_full(chpl_sync_aux_t *);     // also unlocks
 void chpl_sync_mark_and_signal_empty(chpl_sync_aux_t *);    // also unlocks
 chpl_bool chpl_sync_is_full(void *, chpl_sync_aux_t *, chpl_bool);
@@ -39,7 +39,7 @@ void chpl_destroy_sync_aux(chpl_sync_aux_t *);
 
 int chpl_single_lock(chpl_single_aux_t *);
 void chpl_single_unlock(chpl_single_aux_t *);
-int chpl_single_wait_full(chpl_single_aux_t *, int32_t, _string);
+int chpl_single_wait_full(chpl_single_aux_t *, int32_t, chpl_string);
 void chpl_single_mark_and_signal_full(chpl_single_aux_t *); // also unlocks
 chpl_bool chpl_single_is_full(void *, chpl_single_aux_t *, chpl_bool);
 void chpl_init_single_aux(chpl_single_aux_t *);
@@ -121,7 +121,7 @@ void chpl_add_to_task_list (
     int32_t task_list_locale,         // locale where task list resides
     chpl_bool call_chpl_begin,        // whether to call chpl_begin
     int lineno,
-    _string filename);
+    chpl_string filename);
 void chpl_process_task_list (chpl_task_list_p);
 void chpl_execute_tasks_in_list (chpl_task_list_p);
 void chpl_free_task_list (chpl_task_list_p);

@@ -2705,7 +2705,7 @@ postFold(Expr* expr) {
       }
       result = (is_tuple) ? new SymExpr(gTrue) : new SymExpr(gFalse);
       call->replace(result);
-    } else if (call->isPrimitive("_string_compare")) {
+    } else if (call->isPrimitive("chpl_string_compare")) {
       SymExpr* lhs = toSymExpr(call->get(1));
       SymExpr* rhs = toSymExpr(call->get(2));
       INT_ASSERT(lhs && rhs);

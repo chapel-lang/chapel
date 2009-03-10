@@ -42,11 +42,11 @@ void _chpl_comm_init(int *argc_p, char ***argv_p) {
 
 int _chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   int i;
-  char* command = _glom_strings(2, "gdb -q -ex 'break gdbShouldBreakHere' "
-                                "--args ", argv[0]);
+  char* command = chpl_glom_strings(2, "gdb -q -ex 'break gdbShouldBreakHere' --args ",
+                                    argv[0]);
   for (i=1; i<argc; i++) {
     if (i != gdbArgnum) {
-      command = _glom_strings(3, command, " ", argv[i]);
+      command = chpl_glom_strings(3, command, " ", argv[i]);
     }
   }
   *status = mysystem(command, "running gdb", 0);
@@ -76,11 +76,11 @@ void _chpl_comm_exit_any(int status) { }
 
 void _chpl_comm_exit_all(int status) { }
 
-void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, _string fn) {
+void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   memcpy(raddr, addr, size);
 }
 
-void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, _string fn) {
+void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   memcpy(addr, raddr, size);
 }
 

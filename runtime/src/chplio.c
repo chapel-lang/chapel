@@ -7,7 +7,7 @@
 #include "chplrt.h"
 #include "error.h"
 
-static void _fscan_error_check(int err, int32_t lineno, _string filename) {
+static void _fscan_error_check(int err, int32_t lineno, chpl_string filename) {
   if (err == EOF)
     chpl_error("read failed: eof", lineno, filename);
   else if (err < 0)
@@ -17,7 +17,7 @@ static void _fscan_error_check(int err, int32_t lineno, _string filename) {
     chpl_error("read failed: value not read", lineno, filename);
 }
 
-_string _fscan_string(FILE* fp, int32_t lineno, _string filename) {
+chpl_string _fscan_string(FILE* fp, int32_t lineno, chpl_string filename) {
   char result[_default_string_length];
   char dsl[1024];
   int err;
@@ -29,10 +29,10 @@ _string _fscan_string(FILE* fp, int32_t lineno, _string filename) {
     chpl_error(string_concat("maximum string length is ", dsl, lineno, filename),
                 lineno, filename);
   }
-  return _glom_strings(1, result);
+  return chpl_glom_strings(1, result);
 }
 
-int32_t _fscan_int32(FILE* fp, int32_t lineno, _string filename) {
+int32_t _fscan_int32(FILE* fp, int32_t lineno, chpl_string filename) {
   int32_t result;
   int err;
 
@@ -41,7 +41,7 @@ int32_t _fscan_int32(FILE* fp, int32_t lineno, _string filename) {
   return result;
 }
 
-uint32_t _fscan_uint32(FILE* fp, int32_t lineno, _string filename) {
+uint32_t _fscan_uint32(FILE* fp, int32_t lineno, chpl_string filename) {
   uint32_t result;
   int err;
 
@@ -50,7 +50,7 @@ uint32_t _fscan_uint32(FILE* fp, int32_t lineno, _string filename) {
   return result;
 }
 
-_real64 _fscan_real64(FILE* fp, int32_t lineno, _string filename) {
+_real64 _fscan_real64(FILE* fp, int32_t lineno, chpl_string filename) {
   _real64 result;
   int err;
 
@@ -59,8 +59,8 @@ _real64 _fscan_real64(FILE* fp, int32_t lineno, _string filename) {
   return result;
 }
 
-chpl_bool _fscan_literal(FILE* fp, _string val, chpl_bool ignoreWhiteSpace,
-                          int32_t lineno, _string filename) {
+chpl_bool _fscan_literal(FILE* fp, chpl_string val, chpl_bool ignoreWhiteSpace,
+                          int32_t lineno, chpl_string filename) {
   char ch  = ' ';
   int err;
 
@@ -91,7 +91,7 @@ void _readToEndOfLine(FILE* fp) {
 char* chpl_refToString(void* ref) {
   char buff[32];
   sprintf(buff, "%p", ref);
-  return _glom_strings(1, buff);
+  return chpl_glom_strings(1, buff);
 }
 
 
@@ -106,5 +106,5 @@ char* chpl_wideRefToString(void* wideref) {
   int32_t locale = ((chpl_wide_voidStar*)wideref)->locale;
   void* ref = ((chpl_wide_voidStar*)wideref)->addr;
   sprintf(buff, "%" PRId32 ":%p", locale, ref);
-  return _glom_strings(1, buff);
+  return chpl_glom_strings(1, buff);
 }

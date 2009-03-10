@@ -42,7 +42,7 @@ static int getNumCoresPerLocale(void) {
 
   /* BLC: This code is fairly specific to xt-cle, but currently will
      only be called for the NCCS version of qsub */
-  char* command = _glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
+  char* command = chpl_glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
   system(command);
   sysFile = fopen(sysFilename, "r");
   if (fscanf(sysFile, "%d", &coreMask) != 1) {

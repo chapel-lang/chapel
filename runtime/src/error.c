@@ -8,7 +8,7 @@
 
 int verbosity = 1;
 
-void chpl_warning(const char* message, int32_t lineno, _string filename) {
+void chpl_warning(const char* message, int32_t lineno, chpl_string filename) {
   // squash warnings if --quiet flag is used
   if (verbosity == 0) {
     return;
@@ -22,7 +22,7 @@ void chpl_warning(const char* message, int32_t lineno, _string filename) {
     fprintf(stderr, "warning: %s\n", message);
 }
 
-void chpl_error(const char* message, int32_t lineno, _string filename) {
+void chpl_error(const char* message, int32_t lineno, chpl_string filename) {
   fflush(stdout);
   if (lineno > 0)
     fprintf(stderr, "%s:%" PRId32 ": error: %s\n", filename, lineno, message);

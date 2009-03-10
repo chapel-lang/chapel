@@ -513,7 +513,7 @@ void initPrimitiveTypes(void) {
   INIT_PRIM_COMPLEX( "complex(64)", 64);
   INIT_PRIM_COMPLEX( "complex", 128);       // default size
 
-  dtString = createPrimitiveType( "string", "_string");
+  dtString = createPrimitiveType( "string", "chpl_string");
   dtString->defaultValue = new_StringSymbol("");
 
   dtSymbol = createPrimitiveType( "symbol", "_symbol"); 

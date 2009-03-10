@@ -44,7 +44,7 @@ typedef float               _imag32;
 typedef double              _imag64;
 typedef struct __complex64 { _real32 re; _real32 im; } _complex64;
 typedef struct __complex128 { _real64 re; _real64 im; } _complex128;
-typedef const char*         _string;
+typedef const char*         chpl_string;
 typedef int64_t              _symbol;
 
 
@@ -77,19 +77,19 @@ typedef int64_t              _symbol;
 //
 // stopgap formatting
 //
-_string _format(_string format, ...)
+chpl_string _format(chpl_string format, ...)
   __attribute__((format(printf, 1, 2)));
 
-char* _glom_strings(int numstrings, ...);
+char* chpl_glom_strings(int numstrings, ...);
 
-chpl_bool string_contains(_string x, _string y);
-_string string_copy(_string x, int32_t lineno, _string filename);
-_string string_concat(_string x, _string y, int32_t lineno, _string filename);
-_string string_index(_string x, int i, int32_t lineno, _string filename);
-_string string_select(_string x, int low, int high, int32_t lineno, _string filename);
-_string string_strided_select(_string x, int low, int high, int stride, int32_t lineno, _string filename);
-int32_t _string_compare(_string x, _string y);
-int64_t string_length(_string x);
+chpl_bool string_contains(chpl_string x, chpl_string y);
+chpl_string string_copy(chpl_string x, int32_t lineno, chpl_string filename);
+chpl_string string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename);
+chpl_string string_index(chpl_string x, int i, int32_t lineno, chpl_string filename);
+chpl_string string_select(chpl_string x, int low, int high, int32_t lineno, chpl_string filename);
+chpl_string string_strided_select(chpl_string x, int low, int high, int stride, int32_t lineno, chpl_string filename);
+int32_t chpl_string_compare(chpl_string x, chpl_string y);
+int64_t string_length(chpl_string x);
 
 int64_t real2int( _real64 f);       // return the raw bytes of the float
 int64_t object2int( _chpl_object o);  // return the ptr

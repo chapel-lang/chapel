@@ -48,12 +48,12 @@ static argType* firstArg = NULL;
 static argType* lastArg = NULL;
 
 void addToConfigList(const char* currentArg, configSource argSource) {
-  char* description = _glom_strings(2, "argument list entry for ", currentArg);
+  char* description = chpl_glom_strings(2, "argument list entry for ", currentArg);
   argType* arg = (argType*) chpl_calloc(1, sizeof(argType), description, 0, 0);
   chpl_free(description, 0, 0);
 
   arg->argSource = argSource;
-  arg->input = _glom_strings(1, currentArg);
+  arg->input = chpl_glom_strings(1, currentArg);
   
   if (firstArg == NULL) {
     firstArg = arg;
@@ -113,8 +113,8 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
         {
           char* message;
           setConfigBuffer[stringLength] = '\0';
-          message = _glom_strings(2, "Found end of file while reading string: ",
-                                  equalsSign + 1);
+          message = chpl_glom_strings(2, "Found end of file while reading string: ",
+                                      equalsSign + 1);
           chpl_error(message, 0, 0);
           break;
         }
@@ -122,8 +122,8 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
         {
           char* message;
           setConfigBuffer[stringLength] = '\0';
-          message = _glom_strings(2, "Found newline while reading string: ", 
-                                  equalsSign + 1);
+          message = chpl_glom_strings(2, "Found newline while reading string: ", 
+                                      equalsSign + 1);
           chpl_error(message, 0, 0);
           break;
         }
@@ -133,8 +133,8 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer) {
             char dsl[1024];
             char* message;
             sprintf(dsl, "%d", _default_string_length);
-            message = _glom_strings(2, "String exceeds the maximum "
-                                          "string length of ", dsl);
+            message = chpl_glom_strings(2, "String exceeds the maximum string length of ",
+                                        dsl);
             chpl_error(message, 0, 0);
           }
           setConfigBuffer[stringLength] = nextChar;
@@ -167,29 +167,29 @@ static void parseSingleArg(char* currentArg, configSource argSource) {
   if (configVar == NULL || configVar == ambiguousConfigVar) {
     const char* message;
     if (!equalsSign && argSource == ddash) {
-      message = _glom_strings(3, "Unrecognized flag: '--", currentArg, "'");
+      message = chpl_glom_strings(3, "Unrecognized flag: '--", currentArg, "'");
     } else if (configVar == NULL) {
       if (strcmp(moduleName, "") != 0) {
-        message = _glom_strings(5, "Module '", moduleName, 
-                                "' has no configuration variable named '", 
-                                varName, "'");
+        message = chpl_glom_strings(5, "Module '", moduleName, 
+                                    "' has no configuration variable named '", 
+                                    varName, "'");
       } else {
         if (varName[0]) {
-          message = _glom_strings(3, "Unrecognized configuration variable '",
-                                  varName, "'");
+          message = chpl_glom_strings(3, "Unrecognized configuration variable '",
+                                      varName, "'");
         } else {
           if (argSource == ddash) {
-            message = _glom_strings(3, "Unrecognized flag: '--", currentArg, "'");
+            message = chpl_glom_strings(3, "Unrecognized flag: '--", currentArg, "'");
           } else {
             message = "No configuration variable name specified";
           }
         }
       }
     } else {
-      message = _glom_strings(5, "Configuration variable '", varName, 
-                              "' is defined in more than one module.\n"
-                              "       Use '--help' for a list of configuration variables\n"
-                              "       and '-s<module>.", varName, "' to resolve the ambiguity.");
+      message = chpl_glom_strings(5, "Configuration variable '", varName, 
+                                  "' is defined in more than one module.\n"
+                                  "       Use '--help' for a list of configuration variables\n"
+                                  "       and '-s<module>.", varName, "' to resolve the ambiguity.");
     }
     chpl_error(message, 0, 0);
   }
@@ -198,8 +198,8 @@ static void parseSingleArg(char* currentArg, configSource argSource) {
     initSetValue(varName, value, moduleName);
   } else {
     char* message;
-    message = _glom_strings(3, "Configuration variable '", varName, 
-                            "' is missing its initialization value");
+    message = chpl_glom_strings(3, "Configuration variable '", varName, 
+                                "' is missing its initialization value");
     chpl_error(message, 0, 0);
   }
 }
@@ -209,7 +209,7 @@ static void parseFileArgs(char* currentArg) {
   char* argFilename = currentArg;
   FILE* argFile = fopen(argFilename, "r");
   if (!argFile) {
-    char* message = _glom_strings(2, "Unable to open ", argFilename);
+    char* message = chpl_glom_strings(2, "Unable to open ", argFilename);
     chpl_error(message, 0, 0);
   } 
   while (!feof(argFile)) {
@@ -358,7 +358,7 @@ void initSetValue(char* varName, char* value, const char* moduleName) {
   if (configVar == NULL || configVar == ambiguousConfigVar) {
     chpl_internal_error("unknown config var case not handled appropriately");
   }
-  configVar->setValue = _glom_strings(1, value);
+  configVar->setValue = chpl_glom_strings(1, value);
 }
 
 
@@ -392,7 +392,7 @@ char* lookupSetValue(const char* varName, const char* moduleName) {
 void installConfigVar(const char* varName, const char* value, 
                       const char* moduleName) {
   unsigned hashValue;
-  char* description = _glom_strings(2, "config table entry for ", varName);
+  char* description = chpl_glom_strings(2, "config table entry for ", varName);
   configVarType* configVar = (configVarType*) 
     chpl_calloc(1, sizeof(configVarType), description, 0, 0);
   chpl_free(description, 0, 0);
@@ -406,11 +406,11 @@ void installConfigVar(const char* varName, const char* value,
     lastInTable->nextInstalled = configVar;
   }
   lastInTable = configVar;
-  configVar->varName = _glom_strings(1, varName);
+  configVar->varName = chpl_glom_strings(1, varName);
   if (isInternalModuleName(moduleName)) {
     configVar->moduleName = "Built-in";
   } else {
-    configVar->moduleName = _glom_strings(1, moduleName);
+    configVar->moduleName = chpl_glom_strings(1, moduleName);
   }
-  configVar->defaultValue = _glom_strings(1, value);
+  configVar->defaultValue = chpl_glom_strings(1, value);
 } 

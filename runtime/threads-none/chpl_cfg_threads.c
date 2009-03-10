@@ -61,7 +61,7 @@ void chpl_mutex_unlock(chpl_mutex_p mutex) { }
 int chpl_sync_lock(chpl_sync_aux_t *s) { return s == NULL; }
 void chpl_sync_unlock(chpl_sync_aux_t *s) { }
 
-int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string filename) {
+int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
   // while blocked, try running tasks from the task pool
   while (!*s && launch_next_task())
     /* do nothing! */;
@@ -73,7 +73,7 @@ int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string fil
   }
 }
 
-int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, _string filename) {
+int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
   // while blocked, try running tasks from the task pool
   while (*s && launch_next_task())
     /* do nothing! */;
@@ -109,7 +109,7 @@ int chpl_single_lock(chpl_single_aux_t *s) { return s == NULL; }
 
 void chpl_single_unlock(chpl_single_aux_t *s) { }
 
-int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, _string filename) {
+int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, chpl_string filename) {
   // while blocked, try running tasks from the task pool
   while (!*s && launch_next_task())
     /* do nothing! */;
@@ -203,7 +203,7 @@ void chpl_add_to_task_list(
     int32_t task_list_locale,
     chpl_bool call_chpl_begin,
     int lineno,
-    _string filename)
+    chpl_string filename)
 {
   chpl_begin (fun, arg, false, false, NULL);
 }

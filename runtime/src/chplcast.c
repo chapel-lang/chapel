@@ -38,9 +38,9 @@ static int illegalFirstUnsChar(char c) {
 #define _type(base, width) base##width##_t
 
 #define _define_string_to_int_precise(base, width, uns)                 \
-  _type(base,width) _string_to_##base##width##_t_precise(const char* str, \
-                                                         int* invalid,    \
-                                                         char* invalidCh) { \
+  _type(base,width) chpl_string_to_##base##width##_t_precise(const char* str, \
+                                                             int* invalid,    \
+                                                             char* invalidCh) { \
     char* endPtr;                                                       \
     _type(base, width) val = (_type(base, width))strtol(str, &endPtr, 10);  \
     *invalid = (*str == '\0' || *endPtr != '\0');                       \
@@ -54,9 +54,9 @@ static int illegalFirstUnsChar(char c) {
   }
 
 #define _define_string_to_bigint_precise(base, width, uns, format)      \
-  _type(base, width)  _string_to_##base##width##_t_precise(const char* str, \
-                                                           int* invalid,  \
-                                                           char* invalidCh) { \
+  _type(base, width)  chpl_string_to_##base##width##_t_precise(const char* str, \
+                                                               int* invalid,  \
+                                                               char* invalidCh) { \
     _type(base, width)  val;                                            \
     int numbytes;                                                       \
     int numitems = sscanf(str, format"%n", &val, &numbytes);            \
@@ -95,16 +95,15 @@ _define_string_to_int_precise(uint, 32, 1)
 _define_string_to_bigint_precise(uint, 64, 1, "%" SCNu64)
 
 
-chpl_bool _string_to_chpl_bool(const char* str, int lineno, const char* filename) {
-  if (_string_compare(str, "true") == 0) {
+chpl_bool chpl_string_to_chpl_bool(const char* str, int lineno, const char* filename) {
+  if (chpl_string_compare(str, "true") == 0) {
     return true;
-  } else if (_string_compare(str, "false") == 0) {
+  } else if (chpl_string_compare(str, "false") == 0) {
     return false;
   } else {
     const char* message = 
-      _glom_strings(3, 
-                    "Unexpected value when converting from string to bool: '",
-                    str, "'");
+      chpl_glom_strings(3, "Unexpected value when converting from string to bool: '",
+                        str, "'");
     chpl_error(message, lineno, filename);
     return false;
   }
@@ -114,9 +113,9 @@ chpl_bool _string_to_chpl_bool(const char* str, int lineno, const char* filename
 #define _real_type(base, width) _##base##width
 
 #define _define_string_to_float_precise(base, width, format)            \
-  _real_type(base, width) _string_to_##base##width##_precise(const char* str, \
-                                                             int* invalid,   \
-                                                             char* invalidCh) { \
+  _real_type(base, width) chpl_string_to_##base##width##_precise(const char* str, \
+                                                                 int* invalid,   \
+                                                                 char* invalidCh) { \
     _real_type(base, width) val;                                        \
     int numbytes;                                                       \
     int numitems = sscanf(str, format"%n", &val, &numbytes);            \
@@ -143,9 +142,9 @@ _define_string_to_float_precise(real, 32, "%f")
 _define_string_to_float_precise(real, 64, "%lf")
 
 #define _define_string_to_imag_precise(base, width, format)             \
-  _real_type(base, width) _string_to_##base##width##_precise(const char* str, \
-                                                             int* invalid,   \
-                                                             char* invalidCh) { \
+  _real_type(base, width) chpl_string_to_##base##width##_precise(const char* str, \
+                                                                 int* invalid,   \
+                                                                 char* invalidCh) { \
     _real_type(base, width) val;                                        \
     int numbytes;                                                       \
     char i = '\0';                                                      \
@@ -182,12 +181,12 @@ _define_string_to_imag_precise(imag, 64, "%lf")
 
 
 #define _define_string_to_complex_precise(base, width, format, halfwidth) \
-  _real_type(base, width) _string_to_##base##width##_precise(const char* str, \
-                                                             int* invalid,   \
-                                                             char* invalidCh) { \
+  _real_type(base, width) chpl_string_to_##base##width##_precise(const char* str, \
+                                                                 int* invalid,   \
+                                                                 char* invalidCh) { \
     _real_type(base, width) val = {0.0, 0.0};                           \
     /* check for pure imaginary case first */                           \
-    val.im = _string_to_imag##halfwidth##_precise(str, invalid, invalidCh); \
+    val.im = chpl_string_to_imag##halfwidth##_precise(str, invalid, invalidCh); \
     if (*invalid) {                                                     \
       int numbytes = -1;                                                \
       char sign = '\0';                                                 \
@@ -257,23 +256,23 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
 
 
 #define _define_string_to_type(base, width)                             \
-  _type(base, width) _string_to_##base##width##_t(const char* str, int lineno, \
-                                                  const char* filename) {   \
+  _type(base, width) chpl_string_to_##base##width##_t(const char* str, int lineno, \
+                                                      const char* filename) {   \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
-    _type(base, width) val = _string_to_##base##width##_t_precise(str,    \
-                                                                  &invalid, \
-                                                                  invalidStr); \
+    _type(base, width) val = chpl_string_to_##base##width##_t_precise(str,    \
+                                                                      &invalid, \
+                                                                      invalidStr); \
     if (invalid) {                                                      \
       const char* message;                                              \
       if (invalid == 2) {                                               \
         if (invalidStr[0] == '\0') {                                    \
           message = "Missing terminating 'i' character when converting from string to " #base "(" #width ")"; \
         } else {                                                        \
-          message = _glom_strings(3, "Missing terminating 'i' character when converting from string to " #base "(" #width "); got '", invalidStr, "' instead"); \
+          message = chpl_glom_strings(3, "Missing terminating 'i' character when converting from string to " #base "(" #width "); got '", invalidStr, "' instead"); \
         }                                                               \
       } else if (invalidStr[0]) {                                       \
-        message = _glom_strings(3, "Unexpected character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
+        message = chpl_glom_strings(3, "Unexpected character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
       } else {                                                          \
         message = "Empty string when converting from string to " #base "(" #width ")"; \
       }                                                                 \
@@ -292,23 +291,23 @@ _define_string_to_type(uint, 32)
 _define_string_to_type(uint, 64)
 
 #define _define_string_to_real_type(base, width)                        \
-  _real_type(base, width) _string_to_##base##width(const char* str, int lineno, \
-                                                   const char* filename) {   \
+  _real_type(base, width) chpl_string_to_##base##width(const char* str, int lineno, \
+                                                       const char* filename) {   \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
-    _real_type(base, width) val = _string_to_##base##width##_precise(str,    \
-                                                                     &invalid, \
-                                                                     invalidStr); \
+    _real_type(base, width) val = chpl_string_to_##base##width##_precise(str,    \
+                                                                         &invalid, \
+                                                                         invalidStr); \
     if (invalid) {                                                      \
       const char* message;                                              \
       if (invalid == 2) {                                               \
         if (invalidStr[0] == '\0') {                                    \
           message = "Missing terminating 'i' character when converting from string to " #base "(" #width ")"; \
         } else {                                                        \
-          message = _glom_strings(3, "Missing terminating 'i' character when converting from string to " #base "(" #width "); got '", invalidStr, "' instead"); \
+          message = chpl_glom_strings(3, "Missing terminating 'i' character when converting from string to " #base "(" #width "); got '", invalidStr, "' instead"); \
         }                                                               \
       } else if (invalidStr[0]) {                                       \
-        message = _glom_strings(3, "Unexpected character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
+        message = chpl_glom_strings(3, "Unexpected character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
       } else {                                                          \
         message = "Empty string when converting from string to " #base "(" #width ")"; \
       }                                                                 \
@@ -329,10 +328,10 @@ _define_string_to_real_type(complex, 128)
  *  int and uint to string
  */
 #define integral_to_string(type, format)        \
-  _string type##_to_string(type x) {            \
+  chpl_string type##_to_chpl_string(type x) {   \
     char buffer[256];                           \
     sprintf(buffer, format, x);                 \
-    return _glom_strings(1, buffer);            \
+    return chpl_glom_strings(1, buffer);        \
   }
 
 integral_to_string(int8_t, "%" PRId8)
@@ -366,20 +365,20 @@ static void ensureDecimal(char* buffer) {
 // the above strings are copied below so the return value of real_to_string
 // can be freed unconditionally
 #define real_to_string(type, format)           \
-  _string type##_to_string(type x) {           \
+  chpl_string type##_to_chpl_string(type x) {  \
     if (isnan(x)) {                            \
-      return _glom_strings(1, NANSTRING);      \
+      return chpl_glom_strings(1, NANSTRING);  \
     } else if (isinf(x)) {                     \
       if (x < 0) {                             \
-        return _glom_strings(1, NEGINFSTRING); \
+        return chpl_glom_strings(1, NEGINFSTRING); \
       } else {                                 \
-        return _glom_strings(1, POSINFSTRING); \
+        return chpl_glom_strings(1, POSINFSTRING); \
       }                                        \
     } else {                                   \
       char buffer[256];                        \
       sprintf(buffer, format, x);              \
       ensureDecimal(buffer);                   \
-      return _glom_strings(1, buffer);         \
+      return chpl_glom_strings(1, buffer);     \
     }                                          \
   }
 

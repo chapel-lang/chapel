@@ -94,7 +94,7 @@ int32_t chpl_maxThreadsLimit(void) {
 }
 
 
-_string chpl_localeName(void) {
+chpl_string chpl_localeName(void) {
   static char* namespace = NULL;
   static int namelen = 0;
   struct utsname utsinfo;

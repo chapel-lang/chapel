@@ -19,7 +19,7 @@
 const char* _default_format_write_complex64 = "%g + %gi";
 const char* _default_format_write_complex128 = "%g + %gi";
 
-char* _glom_strings(int numstrings, ...) {
+char* chpl_glom_strings(int numstrings, ...) {
   va_list ap;
   int i, len;
   char* str;
@@ -30,7 +30,7 @@ char* _glom_strings(int numstrings, ...) {
     len += strlen(va_arg(ap, char*));
   va_end(ap);
 
-  str = (char*)chpl_malloc(len+1, sizeof(char), "_glom_strings result", 0, 0);
+  str = (char*)chpl_malloc(len+1, sizeof(char), "chpl_glom_strings result", 0, 0);
 
   va_start(ap, numstrings);
   str[0] = '\0';
@@ -42,7 +42,7 @@ char* _glom_strings(int numstrings, ...) {
 }
 
 
-_string _format(_string format, ...) {
+chpl_string _format(chpl_string format, ...) {
   va_list ap;
   char z[128];
 
@@ -53,8 +53,8 @@ _string _format(_string format, ...) {
 }
 
 
-_string
-string_copy(_string x, int32_t lineno, _string filename) {
+chpl_string
+string_copy(chpl_string x, int32_t lineno, chpl_string filename) {
   const char *basename = NULL;
   char *z, buf[FILENAME_MAX+19];
   int uncommitted_len, basename_len = 0;
@@ -75,8 +75,8 @@ string_copy(_string x, int32_t lineno, _string filename) {
 }
 
 
-_string
-string_concat(_string x, _string y, int32_t lineno, _string filename) {
+chpl_string
+string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename) {
   char *z = (char*)chpl_malloc(strlen(x)+strlen(y)+1, sizeof(char),
                                "string_concat", lineno, filename);
   z[0] = '\0';
@@ -86,17 +86,17 @@ string_concat(_string x, _string y, int32_t lineno, _string filename) {
 }
 
 
-_string
-string_strided_select(_string x, int low, int high, int stride, int32_t lineno, _string filename) {
+chpl_string
+string_strided_select(chpl_string x, int low, int high, int stride, int32_t lineno, chpl_string filename) {
   int64_t length = string_length(x);
   char* result = NULL;
   char* dst = NULL;
-  _string src = stride > 0 ? x + low - 1 : x + high - 1;
+  chpl_string src = stride > 0 ? x + low - 1 : x + high - 1;
   int size = high - low >= 0 ? high - low : 0;
   if (low < 1 || low > length || high > length) {
     chpl_error("string index out of bounds", lineno, filename);
   }
-  result = chpl_malloc(size + 2, sizeof(char), "_chpl_string_strided_select temp", lineno, filename);
+  result = chpl_malloc(size + 2, sizeof(char), "string_strided_select temp", lineno, filename);
   dst = result;
   if (stride > 0) {
     while (src - x <= high - 1) {
@@ -110,26 +110,26 @@ string_strided_select(_string x, int low, int high, int stride, int32_t lineno, 
     }
   }
   *dst = '\0';
-  return _glom_strings(1, result);
+  return chpl_glom_strings(1, result);
 }
 
-_string
-string_select(_string x, int low, int high, int32_t lineno, _string filename) {
+chpl_string
+string_select(chpl_string x, int low, int high, int32_t lineno, chpl_string filename) {
   return string_strided_select(x, low, high, 1, lineno, filename);
 }
 
-_string
-string_index(_string x, int i, int32_t lineno, _string filename) {
+chpl_string
+string_index(chpl_string x, int i, int32_t lineno, chpl_string filename) {
   char buffer[2];
   if (i-1 < 0 || i-1 >= string_length(x))
     chpl_error("string index out of bounds", lineno, filename);
   sprintf(buffer, "%c", x[i-1]);
-  return _glom_strings(1, buffer);
+  return chpl_glom_strings(1, buffer);
 }
 
 
 chpl_bool
-string_contains(_string x, _string y) {
+string_contains(chpl_string x, chpl_string y) {
   if (strstr(x, y))
     return true;
   else
@@ -137,13 +137,13 @@ string_contains(_string x, _string y) {
 }
 
 
-int32_t _string_compare(_string x, _string y) {
+int32_t chpl_string_compare(chpl_string x, chpl_string y) {
   return (int32_t)strcmp(x, y);
 }
 
 
 int64_t
-string_length(_string x) {
+string_length(chpl_string x) {
   return strlen(x);
 }
 

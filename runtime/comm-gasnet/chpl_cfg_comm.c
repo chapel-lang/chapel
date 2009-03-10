@@ -309,7 +309,7 @@ void _chpl_comm_exit_any(int status) {
   _chpl_comm_exit_common(status);
 }
 
-void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, _string fn) {
+void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   if (_localeID == locale) {
     memcpy(raddr, addr, size);
   } else {
@@ -324,7 +324,7 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int 
   }
 }
 
-void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, _string fn) {
+void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   if (_localeID == locale) {
     memcpy(addr, raddr, size);
   } else {

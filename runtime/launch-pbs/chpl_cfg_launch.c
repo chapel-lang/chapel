@@ -37,7 +37,7 @@ static qsubVersion determineQsubVersion(void) {
   FILE* sysFile;
   int i;
 
-  char* command = _glom_strings(3, "qsub --version > ", sysFilename, " 2>&1");
+  char* command = chpl_glom_strings(3, "qsub --version > ", sysFilename, " 2>&1");
   system(command);
   sysFile = fopen(sysFilename, "r");
   for (i=0; i<versionBuffLen; i++) {
@@ -69,7 +69,7 @@ static int getNumCoresPerLocale(void) {
 
   /* BLC: This code is fairly specific to xt-cle, but currently will
      only be called for the NCCS version of qsub */
-  char* command = _glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
+  char* command = chpl_glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
   system(command);
   sysFile = fopen(sysFilename, "r");
   if (fscanf(sysFile, "%d", &coreMask) != 1) {
