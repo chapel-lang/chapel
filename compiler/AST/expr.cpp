@@ -1939,7 +1939,6 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "chpl_internal_error(\"compiler generated error\")");
       break;
     case PRIM_STRING_COPY:
-    case PRIM_PRINT_MEM_TABLE:
       codegenBasicPrimitive(outfile, this);
       break;
     case PRIM_RT_ERROR:

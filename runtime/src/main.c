@@ -52,8 +52,11 @@ int main(int argc, char* argv[]) {
   initChplThreads();         // initialize the threads layer
   _initModuleGuards();       // initialize _run_mod_firsttime vars
 
-  if (_localeID == 0)        // have locale #0 run the user's main function
+  if (_localeID == 0) {      // have locale #0 run the user's main function
     chpl_main();
+    // the following does nothing unless --memfinalstat is specified at run time
+    chpl_printMemTable(-1, __LINE__, __FILE__);
+  }
 
   _chpl_exit_all(0);         // have everyone exit
   return 0;                  // should never get here
