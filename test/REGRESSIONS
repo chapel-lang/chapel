@@ -35,6 +35,10 @@ extremely rare race condition in module initialization
 linux regressions
 =================
 
+signal 11 (03/10/09)
+--------------------
+[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-fill]
+
 maxThreads is 300, but can't create more than 254 threads
 ---------------------------------------------------------
 [Error matching program output for parallel/taskPool/figueroa/ManyThreads]
@@ -285,7 +289,7 @@ darwin-specific regressions
 
 infrequent seg fault on Sam's Mac
 ---------------------------------
-[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-fill]
+[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-fill] (e.g., 03/10/09)
 
 
 ========================
@@ -344,6 +348,10 @@ xt-gnu specific failures
 ==========================
 sunos-specific regressions
 ==========================
+
+core dump (03/10/09)
+--------------------
+[Error matching program output for memory/shannon/jacobi]
 
 exp2/log2/other math fns not supported
 --------------------------------------
