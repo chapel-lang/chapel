@@ -2870,16 +2870,16 @@ if test "$enabled_portals" = yes; then
        #elif HAVE_PCTMBOX_H /* old CNL */
        #include <pctmbox.h>
        #else /* backup */
-         extern int cnos_get_rank();
-         extern int cnos_get_size();
-	 extern int cnos_get_nidpid_map(void *);
+       #include <pmi.h>
        #endif
     ], [{
        static ptl_handle_ni_t ptl_ni_h;
        static ptl_interface_t ptl_iface;
-       int my_rank = cnos_get_rank();
-       int my_size = cnos_get_size();
-       cnos_get_nidpid_map(NULL);
+       int my_rank;
+       int my_size;
+       PMI_Get_rank(&my_rank);
+       PMI_Get_size(&my_size);
+       PMI_CNOS_Get_nidpid_map(NULL);
        PtlNIInit(ptl_iface, PTL_PID_ANY, NULL, NULL, &ptl_ni_h);
     }], [ portals_test_worked=yes ], [ portals_test_worked=no GASNET_ERR_SAVE() ] )
     GASNET_POPVAR(CPPFLAGS)
