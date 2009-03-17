@@ -1939,7 +1939,29 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "chpl_internal_error(\"compiler generated error\")");
       break;
     case PRIM_STRING_COPY:
-      codegenBasicPrimitive(outfile, this);
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        fputs("chpl_wide_string_copy(", outfile);
+        bool first_actual;
+        first_actual = true;
+        for_actuals(actual, this) {
+          if (first_actual) {
+            fputc('&', outfile);
+            actual->codegen(outfile);
+            first_actual = false;
+          } else {
+            fputs(", ", outfile);
+            if (actual->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+                actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+              fputc('*', outfile);
+            actual->codegen(outfile);
+            if (actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+                actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+              fputs(".addr", outfile);
+          }
+        }
+        fputc(')', outfile);
+      } else
+        codegenBasicPrimitive(outfile, this);
       break;
     case PRIM_RT_ERROR:
     case PRIM_RT_WARNING:

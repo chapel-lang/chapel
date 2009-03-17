@@ -10,6 +10,7 @@
 #include "chplmem.h"
 #include "chplrt.h"
 #include "chpltypes.h"
+#include "chplcomm.h"
 #include "error.h"
 
 #define NANSTRING "nan"
@@ -51,6 +52,26 @@ chpl_string _format(chpl_string format, ...) {
     chpl_error("overflow encountered in format", 0, 0);
   return string_copy(z, 0, 0);
 }
+
+
+#ifndef LAUNCHER
+struct __chpl____wide_chpl_string {
+  int32_t locale;
+  chpl_string addr;
+  int32_t size;
+};
+
+chpl_string
+chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename) {
+  if (x->locale == _localeID)
+    return string_copy(x->addr, lineno, filename);
+  else {
+    chpl_string s;
+    CHPL_COMM_WIDE_GET_STRING(s, *x, lineno, filename);
+    return s;
+  }
+}
+#endif
 
 
 chpl_string

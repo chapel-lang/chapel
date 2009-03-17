@@ -74,6 +74,8 @@ typedef int64_t              _symbol;
 
 #define ascii(s) ((int8_t)(*s))
 
+struct __chpl____wide_chpl_string;
+
 //
 // stopgap formatting
 //
@@ -84,6 +86,7 @@ char* chpl_glom_strings(int numstrings, ...);
 
 chpl_bool string_contains(chpl_string x, chpl_string y);
 chpl_string string_copy(chpl_string x, int32_t lineno, chpl_string filename);
+chpl_string chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename);
 chpl_string string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename);
 chpl_string string_index(chpl_string x, int i, int32_t lineno, chpl_string filename);
 chpl_string string_select(chpl_string x, int low, int high, int32_t lineno, chpl_string filename);
