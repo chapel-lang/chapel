@@ -1,3 +1,7 @@
+//
+// could move gasnet.h up to get safer stdint.h #inclusion -- however, will only help
+// with this file, not our general files.
+//
 #include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -9,6 +13,7 @@
 #include "chplthreads.h"
 #include "error.h"
 
+// no longer need #define below: see Makefile.comm-gasnet
 #define GASNET_PAR 1
 #include "gasnet.h"
 
@@ -94,6 +99,9 @@ static void fork_large_wrapper(fork_t* f) {
   chpl_free(arg, 0, 0);
 }
 
+////GASNET - can we send as much of user data as possible initially
+////           hide data copy by making get non-blocking
+////GASNET - can we allocate f big enough so as not to need malloc in wrapper
 static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_malloc(1, nbytes, "AM_fork_large info", 0, 0);
   memcpy(f, buf, nbytes);
@@ -324,6 +332,9 @@ void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int 
   }
 }
 
+////GASNET - pass trace info to gasnet_get
+////GASNET - define GASNET_E_ PUTGET always REMOTE
+////GASNET - look at GASNET tools at top of README.tools has atomic counters
 void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   if (_localeID == locale) {
     memcpy(addr, raddr, size);
@@ -339,6 +350,8 @@ void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int 
   }
 }
 
+////GASNET - introduce locale-int size
+////GASNET - is caller in fork_t redundant? active message can determine this.
 void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   fork_t* info;
   int     info_size;
@@ -424,6 +437,7 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
     if (passArg) {
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB, info, info_size));
     } else {
+      ////GASNET - BLOCKUNTIL not necessary, have active message simply free info
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB_LARGE, info, info_size));
       GASNET_BLOCKUNTIL(1==done);
     }

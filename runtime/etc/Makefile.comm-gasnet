@@ -1,6 +1,14 @@
 ifneq ($(MAKE_LAUNCHER), 1)
 include $(GASNET_INC_MAKEFILE)
 
+#
+# Makefile fragment shows what an apropriate command line would be -- there are -I directories
+# that we are missing by using our own -I's.  This would cause a problem on shmem over altix,
+# for example
+#
+# This should also permit us to remove the GASNET_PAR #define that is in the top of 
+# chpl_cfg_comm.c, which is hackery.
+#
 CC = $(GASNET_CC) $(GASNET_CFLAGS) -I$(GASNET_INSTALL_DIR)/include -I$(GASNET_INSTALL_DIR)/include/$(CHPL_MAKE_COMM_SUBSTRATE)-conduit
 LD = $(GASNET_LD) $(GASNET_LFLAGS)
 

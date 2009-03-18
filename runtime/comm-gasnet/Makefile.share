@@ -17,6 +17,9 @@ COMM_LAUNCHER_OBJS = \
 ifneq ($(MAKE_LAUNCHER), 1)
 -include $(GASNET_INC_MAKEFILE)
 
+#
+# TODO: pull these -Wno- warnings out and see what breaks in GASNet
+# report to them
 # 
 # The following lines try to combine GASNet's favorite C compiler
 # flags with ours.  Unfortunately, we have to override several of our
@@ -40,6 +43,9 @@ ifneq ($(MAKE_LAUNCHER), 1)
 # compiled -O3 is linked to GASNet compiled with debugging enabled
 #
 
+#
+# these would/should go away if we use the GASNET_CPPFLAGS
+#
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),ibv)
 	CHPL_GASNET_MORE_CFLAGS += -DGASNET_CONDUIT_IBV
 endif
@@ -47,6 +53,9 @@ ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),vapi)
 	CHPL_GASNET_MORE_CFLAGS += -DGASNET_CONDUIT_VAPI
 endif
 
+#
+# another place we should be using GASNET_CPPFLAGS
+#
 RUNTIME_CFLAGS += $(GASNET_CFLAGS) -I$(GASNET_INSTALL_DIR)/include -I$(GASNET_INSTALL_DIR)/include/$(CHPL_MAKE_COMM_SUBSTRATE)-conduit $(SUPPORT_SETENV_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
 endif
 
@@ -60,6 +69,10 @@ endif
 #
 # don't remake gasnet if we're making clean or clobber from the parent
 # directory
+#
+#
+# move conditional around -include instead of here...  Or use a shell
+# command to do the comparison below before the cd && make
 #
 ifeq ($(CHPL_MAKE_RULE),clean)
 $(GASNET_INC_MAKEFILE):
