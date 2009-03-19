@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -83,9 +84,9 @@ string_copy(chpl_string x, int32_t lineno, chpl_string filename) {
     basename = strrchr(filename, '/');
     basename = basename ? basename+1 : filename;
     basename_len = strlen(basename);
-    snprintf(buf, sizeof(buf), "%d", lineno);
+    snprintf(buf, sizeof(buf), "%"PRId32, lineno);
     uncommitted_len = sizeof(buf) - strlen(buf) - 14;
-    snprintf(buf, sizeof(buf), "string_copy:%s:%d",
+    snprintf(buf, sizeof(buf), "string_copy:%s:%"PRId32,
              basename_len<=uncommitted_len ? basename
                                            : basename+(basename_len-uncommitted_len),
              lineno);
