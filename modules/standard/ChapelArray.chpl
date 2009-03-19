@@ -7,16 +7,17 @@ def _supportsPrivatization(value) param
 def _newPrivatizedClass(value) {
   privatizeLock$.writeEF(true);
   var n = __primitive("chpl_numPrivatizedClasses");
-  for loc in Locales {
-    if loc != here {
-      on loc {
+  var hereID = here.id;
+  coforall loc in Locales {
+    on loc {
+      if hereID != here.id {
         var mine = value.privatize();
         __primitive("chpl_newPrivatizedClass", mine);
         mine.pid = n;
+      } else {
+        __primitive("chpl_newPrivatizedClass", value);
+        value.pid = n;
       }
-    } else {
-      __primitive("chpl_newPrivatizedClass", value);
-      value.pid = n;
     }
   }
   privatizeLock$.readFE();
@@ -301,9 +302,10 @@ record _domain {
     if _supportsPrivatization(_valueType) {
       var other = _value;
       var id = _value.pid;
-      for loc in Locales {
-        if loc != here {
-          on loc {
+      var hereID = here.id;
+      coforall loc in Locales {
+        on loc {
+          if hereID != here.id {
             var tc = _valueType;
             var pc = __primitive("chpl_getPrivatizedClass", tc, id);
             pc.reprivatize(other);
@@ -525,9 +527,10 @@ def chpl__isDomain(x) param return false;
 // Assignment of domains and arrays
 //
 def =(a: domain, b: domain) {
+  var bc = b;
   for e in a._value._arrs do
-    e.reallocate(b);
-  a.setIndices(b.getIndices());
+    e.reallocate(bc);
+  a.setIndices(bc.getIndices());
   return a;
 }
 

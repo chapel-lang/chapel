@@ -48,7 +48,7 @@ class Block1D : BaseDist {
     targetLocDom = [0..#targetLocales.numElements]; // 0-based for simplicity
     targetLocs = targetLocales;
 
-    for locid in targetLocDom do
+    coforall locid in targetLocDom do
       on targetLocs(locid) do
         locDist(locid) = new LocBlock1DDist(idxType, locid, this);
 
@@ -342,7 +342,7 @@ class Block1DDom: BaseArithmeticDom {
   }
 
   def setup() {
-    for localeIdx in dist.targetLocDom do
+    coforall localeIdx in dist.targetLocDom do
       on dist.targetLocs(localeIdx) do
         if (locDoms(localeIdx) == nil) then
           locDoms(localeIdx) = new LocBlock1DDom(idxType, stridable, this, 
