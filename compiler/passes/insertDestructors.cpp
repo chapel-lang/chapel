@@ -122,7 +122,7 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
             while (block && toBlockStmt(block) != parentBlock)
               block = block->parentExpr;
             if (!block)
-              INT_FATAL("var used outside of block in which it is declared");
+              INT_FATAL(se, "var used outside of block in which it is declared");
           }
         }
       }
