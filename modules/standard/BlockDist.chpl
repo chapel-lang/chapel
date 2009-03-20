@@ -55,7 +55,8 @@ class Block1D : BaseDist {
     tasksPerLoc = tasksPerLocale;
     if (tasksPerLoc == 0) then tasksPerLoc = min reduce targetLocs.numCores;
 
-    for loc in locDist do writeln(loc);
+    if debugBlock1D then
+      for loc in locDist do writeln(loc);
   }
 
   //
