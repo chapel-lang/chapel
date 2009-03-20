@@ -509,11 +509,14 @@ void lowerIterators() {
           if (!strcmp(call->parentSymbol->name, "_toLeader") ||
               !strcmp(call->parentSymbol->name, "_toFollower")) {
             ArgSymbol* iterator = toFnSymbol(call->parentSymbol)->getFormal(1);
+            Type* iteratorType = iterator->type;
+            if (iteratorType->symbol->hasFlag(FLAG_REF))
+              iteratorType = iteratorType->getValueType();
             int i = 2; // first field is super
             for_actuals(actual, call) {
               SymExpr* se = toSymExpr(actual);
-              if (isArgSymbol(se->var)) {
-                Symbol* field = toClassType(iterator->type)->getField(i);
+              if (isArgSymbol(se->var) && call->parentSymbol != se->var->defPoint->parentSymbol) {
+                Symbol* field = toClassType(iteratorType)->getField(i);
                 VarSymbol* tmp = NULL;
                 if (field->type == se->var->type) {
                   tmp = newTemp(field->type);

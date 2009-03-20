@@ -823,17 +823,18 @@ def _toFollower(x, leaderIndex, param aligned: bool) {
   return _toFollower(x.these(), leaderIndex, aligned);
 }
 
+pragma "inline"
+def _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
+  if dim == x.size-1 then
+    return (_toFollower(x(dim), leaderIndex),
+            _toFollower(x(dim+1), leaderIndex));
+  else
+    return (_toFollower(x(dim), leaderIndex),
+            (..._toFollowerHelp(x, leaderIndex, dim+1)));
+}
 
 pragma "inline"
 def _toFollower(x: _tuple, leaderIndex) {
-  pragma "inline" def _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
-    if dim == x.size-1 then
-      return (_toFollower(x(dim), leaderIndex),
-              _toFollower(x(dim+1), leaderIndex));
-    else
-      return (_toFollower(x(dim), leaderIndex),
-              (..._toFollowerHelp(x, leaderIndex, dim+1)));
-  }
   return _toFollowerHelp(x, leaderIndex, 1);
 }
 
@@ -843,35 +844,36 @@ def _toFollower(x: _tuple, leaderIndex) {
 // distribution as the leader or not.  If they do, the component type
 // is passed as BaseDist, otherwise as BaseArr.
 //
-pragma "inline"
-def _toFollower(x: _tuple, leaderIndex, type alignment) {
-  pragma "inline" def _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
-    if dim == x.size-1 {
-      type tdim = alignment(dim);
-      type tdimp1 = alignment(dim+1);
-      if tdim == BaseDist & tdimp1 == BaseDist {
-        return (_toFollower(x(dim), leaderIndex, true),
-                _toFollower(x(dim+1), leaderIndex, true));
-      } else if tdim == BaseDist {
-        return (_toFollower(x(dim), leaderIndex, true),
-                _toFollower(x(dim+1), leaderIndex));
-      } else if tdimp1 == BaseDist {
-        return (_toFollower(x(dim), leaderIndex),
-                _toFollower(x(dim+1), leaderIndex, true));
-      } else {
-        return (_toFollower(x(dim), leaderIndex),
-                _toFollower(x(dim+1), leaderIndex));
-      }
+pragma "inline" def _toFollowerHelp(x: _tuple, leaderIndex, type alignment, param dim: int) {
+  if dim == x.size-1 {
+    type tdim = alignment(dim);
+    type tdimp1 = alignment(dim+1);
+    if tdim == BaseDist & tdimp1 == BaseDist {
+      return (_toFollower(x(dim), leaderIndex, true),
+              _toFollower(x(dim+1), leaderIndex, true));
+    } else if tdim == BaseDist {
+      return (_toFollower(x(dim), leaderIndex, true),
+              _toFollower(x(dim+1), leaderIndex));
+    } else if tdimp1 == BaseDist {
+      return (_toFollower(x(dim), leaderIndex),
+              _toFollower(x(dim+1), leaderIndex, true));
     } else {
-      type tdim = alignment(dim);
-      if tdim == BaseDist {
-        return (_toFollower(x(dim), leaderIndex, true),
-                (..._toFollowerHelp(x, leaderIndex, dim+1)));
-      } else {
-        return (_toFollower(x(dim), leaderIndex),
-                (..._toFollowerHelp(x, leaderIndex, dim+1)));
-      }
+      return (_toFollower(x(dim), leaderIndex),
+              _toFollower(x(dim+1), leaderIndex));
+    }
+  } else {
+    type tdim = alignment(dim);
+    if tdim == BaseDist {
+      return (_toFollower(x(dim), leaderIndex, true),
+              (..._toFollowerHelp(x, leaderIndex, alignment, dim+1)));
+    } else {
+      return (_toFollower(x(dim), leaderIndex),
+              (..._toFollowerHelp(x, leaderIndex, alignment, dim+1)));
     }
   }
-  return _toFollowerHelp(x, leaderIndex, 1);
+}
+
+pragma "inline"
+def _toFollower(x: _tuple, leaderIndex, type alignment) {
+  return _toFollowerHelp(x, leaderIndex, alignment, 1);
 }
