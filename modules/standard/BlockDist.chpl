@@ -54,6 +54,8 @@ class Block1D : BaseDist {
 
     tasksPerLoc = tasksPerLocale;
     if (tasksPerLoc == 0) then tasksPerLoc = min reduce targetLocs.numCores;
+
+    for loc in locDist do writeln(loc);
   }
 
   //
@@ -183,8 +185,6 @@ class LocBlock1DDist {
                                      max(idxType), numlocs, localeIdx);
     
     myChunk = [blo..bhi];
-    if debugBlock1D then
-      writeln(this);
   }
 
   //
@@ -350,7 +350,7 @@ class Block1DDom: BaseArithmeticDom {
         else
           locDoms(localeIdx).myBlock = dist.getChunk(whole, localeIdx);
     if debugBlock1D then
-      [loc in dist.targetLocDom] writeln(loc, " owns ", locDoms(loc));
+      for loc in dist.targetLocDom do writeln(loc, " owns ", locDoms(loc));
 
   }
 
