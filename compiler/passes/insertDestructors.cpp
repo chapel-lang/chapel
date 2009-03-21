@@ -190,7 +190,7 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
       if (functionsContainingGotos.set_in(fn) || strstr(fn->name, "_loopexpr"))
         continue;
       if (fn->getReturnSymbol() == lhs->var) {
-        if (defMap.get(lhs->var)->n == 1) {
+        if (defMap.get(lhs->var)->length() == 1) {
           if (!constructors.in(fn)) {
             forv_Vec(CallExpr, call, *fn->calledBy)
               constructorCalls.add(call);
@@ -201,6 +201,9 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
       } else {
         Vec<Symbol*> varsToTrack;
         varsToTrack.add(lhs->var);
+        Expr *onlyOneUse = NULL;
+        if (useMap.get(lhs->var) && useMap.get(lhs->var)->length() == 1)
+          onlyOneUse = useMap.get(lhs->var)->first();
         bool maybeCallDestructor = true;
         INT_ASSERT(lhs->var->defPoint);
         BlockStmt* parentBlock = toBlockStmt(lhs->var->defPoint->parentExpr);
@@ -279,7 +282,15 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
                       }
                     }
                   }
-                  varsToTrack.add_exclusive(toSymExpr(call->get(1))->var);
+                  Symbol *moveDest = toSymExpr(call->get(1))->var;
+                  varsToTrack.add_exclusive(moveDest);
+                  if (onlyOneUse &&
+                      useMap.get(moveDest) && useMap.get(moveDest)->length() == 1 &&
+                      useMap.get(moveDest)->first()->parentSymbol == fn)
+                    onlyOneUse = useMap.get(moveDest)->first();
+                  // if there are no uses of moveDest, don't change onlyOneUse
+                  else if (useMap.get(moveDest) && useMap.get(moveDest)->length() > 1)
+                    onlyOneUse = NULL;
 #if 1  // can cause some arrays to leak memory
                 } else if (call->isPrimitive(PRIM_SET_MEMBER) &&
                            !toSymExpr(call->get(1))->var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
@@ -303,51 +314,57 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
             bool useRefType = !isClass(ct) &&
               !ct->symbol->hasFlag(FLAG_ARRAY) && !ct->symbol->hasFlag(FLAG_DOMAIN);
             if (parentBlock == fn->body) {
-              if (useRefType) {
-                VarSymbol* tmp = newTemp(ct->refType);
-                fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+              VarSymbol* tmp = newTemp(useRefType ? ct->refType : ct);
+              fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+              if (useRefType)
                 fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
                   new CallExpr(PRIM_SET_REF, lhs->var)));
-                fn->insertBeforeReturnAfterLabel(new CallExpr(ct->destructor, tmp));
-              } else {
-                VarSymbol* tmp = newTemp(ct);
-                fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+              else
                 fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp, lhs->var));
-                fn->insertBeforeReturnAfterLabel(new CallExpr(ct->destructor, tmp));
-              }
+              fn->insertBeforeReturnAfterLabel(new CallExpr(ct->destructor, tmp));
             } else {
               INT_ASSERT(parentBlock);
-              if (useRefType) {
-                VarSymbol* tmp = newTemp(ct->refType);
-                parentBlock->insertAtTailBeforeGoto(new DefExpr(tmp));
+              VarSymbol* tmp = newTemp(useRefType ? ct->refType : ct);
+              parentBlock->insertAtTailBeforeGoto(new DefExpr(tmp));
+              if (useRefType)
                 parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIM_MOVE, tmp,
                   new CallExpr(PRIM_SET_REF, lhs->var)));
-                parentBlock->insertAtTailBeforeGoto(new CallExpr(ct->destructor, tmp));
-              } else {
-                VarSymbol* tmp = newTemp(ct);
-                parentBlock->insertAtTailBeforeGoto(new DefExpr(tmp));
+              else
                 parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIM_MOVE, tmp, lhs->var));
-                parentBlock->insertAtTailBeforeGoto(new CallExpr(ct->destructor, tmp));
-              }
+              parentBlock->insertAtTailBeforeGoto(new CallExpr(ct->destructor, tmp));
             }
           } else {
             INT_ASSERT(lhs->var->type == dtString);
-            if (parentBlock == fn->body) {
-              VarSymbol* tmp = newTemp(lhs->var->type);
-              fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp, lhs->var));
-              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
+            if (onlyOneUse) {
+              // find the statement that contains the use of lhs;
+              // lhs will be freed after this statement
+              Expr* parentExpr = onlyOneUse;
+              while (parentExpr && !toBlockStmt(parentExpr->parentExpr))
+                parentExpr = parentExpr->parentExpr;
+              // find out if the only use is inside a loop;
+              // if so, free lhs after the outermost loop
+              for (BlockStmt* block = toBlockStmt(parentExpr->parentExpr);
+                   block && block != parentBlock;
+                   block = toBlockStmt(block->parentExpr)) {
+                if (block->blockInfo &&
+                    (block->blockInfo->isPrimitive(PRIM_BLOCK_PARAM_LOOP) ||
+                     block->blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+                     block->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
+                     block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)))
+                  parentExpr = block;
+              }
+              parentExpr->insertAfter(new CallExpr(PRIM_CHPL_FREE, lhs->var));
+            } else if (parentBlock == fn->body) {
+              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, lhs->var));
             } else {
-              VarSymbol* tmp = newTemp(lhs->var->type);
-              parentBlock->insertAtTailBeforeGoto(new DefExpr(tmp));
-              parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIM_MOVE, tmp, lhs->var));
-              parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIM_CHPL_FREE, tmp));
+              parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIM_CHPL_FREE, lhs->var));
             }
           }
         }
       }
     }
   }
+  freeDefUseMaps(defMap, useMap);
 }
 
 void markConstructors() {

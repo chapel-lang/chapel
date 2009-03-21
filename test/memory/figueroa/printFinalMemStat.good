@@ -11,4 +11,4 @@ Size:    Number:  Total:   Address:    Description:
 64       1        64       0x00000000  64 bytes
 64       1        64       0x00000000  64 bytes
 
-Final Memory Statistics:  totalMem=256, maxMem=256
+Final Memory Statistics:  totalMem=256, maxMem=265
