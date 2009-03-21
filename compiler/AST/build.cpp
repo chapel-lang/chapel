@@ -222,6 +222,7 @@ void createInitFn(ModuleSymbol* mod) {
   }
 
   if (strcmp(mod->name, "_Program")) {
+    INT_ASSERT(mod != theProgram);
     // guard init function so it is not run more than once
     mod->guard = new VarSymbol(astr("chpl__guard", istr(uid++), "_", mod->name));
     mod->guard->addFlag(FLAG_PRIVATE); // private = separate copy per locale
@@ -231,7 +232,8 @@ void createInitFn(ModuleSymbol* mod) {
     mod->initFn->insertAtTail(
       new CondStmt(
         new CallExpr("!", mod->guard),
-        new CallExpr(PRIM_RETURN, gVoid)));
+        new CallExpr("halt", new_StringSymbol(astr(mod->initFn->name, " called when ",
+                                                  mod->guard->name, " is false")))));
     mod->initFn->insertAtTail(new CallExpr("=", mod->guard, gFalse));
   }
 
@@ -241,17 +243,16 @@ void createInitFn(ModuleSymbol* mod) {
   if (mod != theProgram) {
     for_alist(stmt, mod->block->body) {
 
-    //
-    // except for module definitions
-    //
-    if (BlockStmt* block = toBlockStmt(stmt))
-      if (block->length() == 1)
-        if (DefExpr* def = toDefExpr(block->body.only()))
-          if (toModuleSymbol(def->sym))
-            continue;
+      //
+      // except for module definitions
+      //
+      if (BlockStmt* block = toBlockStmt(stmt))
+        if (block->length() == 1)
+          if (DefExpr* def = toDefExpr(block->body.only()))
+            if (isModuleSymbol(def->sym))
+              continue;
 
-    stmt->remove();
-    mod->initFn->insertAtTail(stmt);
+      mod->initFn->insertAtTail(stmt->remove());
     }
   }
   mod->block->insertAtHead(new DefExpr(mod->initFn));

@@ -31,12 +31,10 @@ check_functions(FnSymbol* fn) {
         returns_void = true;
   }
   forv_Vec(CallExpr, ret, rets) {
-    if (returns_void && ret->typeInfo() != dtVoid) {
-      if (fn->getModule()->initFn == fn) {
-        USR_FATAL(ret, "return statement is not in a function");
-      } else {
-        USR_FATAL(fn, "Not all function returns return a value");
-      }
+    if (fn->getModule()->initFn == fn) {
+      USR_FATAL(ret, "return statement is not in a function");
+    } else if (returns_void && ret->typeInfo() != dtVoid) {
+      USR_FATAL(fn, "Not all function returns return a value");
     }
   }
 }

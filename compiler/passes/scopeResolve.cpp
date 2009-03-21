@@ -854,7 +854,11 @@ process_import_expr(CallExpr* call) {
   ModuleSymbol* mod = getUsedModule(call);
   if (!mod)
     USR_FATAL(call, "Cannot find module");
-  call->getStmtExpr()->insertBefore(new CondStmt(new SymExpr(mod->guard), buildOnStmt(new CallExpr(PRIM_ON_LOCALE_NUM, new SymExpr(new_IntSymbol(0))), new CallExpr(mod->initFn))));
+  call->getStmtExpr()->insertBefore(new CondStmt(new SymExpr(mod->guard),
+                                                 buildOnStmt(new CallExpr(PRIM_ON_LOCALE_NUM,
+                                                                          new SymExpr(new_IntSymbol(0))),
+                                                             new CondStmt(new SymExpr(mod->guard),
+                                                                          new CallExpr(mod->initFn)))));
   call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, mod->guard, gFalse));
   if (call->getFunction() == call->getModule()->initFn)
     call->getModule()->block->addUse(mod);

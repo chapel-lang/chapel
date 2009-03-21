@@ -282,7 +282,8 @@ static void build_chpl_main(void) {
     USR_FATAL(chpl_main, "main function must be defined at module scope");
   }
   SET_LINENO(chpl_main);
-  chpl_main->insertAtHead(new CallExpr(chpl_main->getModule()->initFn));
+  chpl_main->insertAtHead(new CondStmt(new SymExpr(chpl_main->getModule()->guard),
+                                       new CallExpr(chpl_main->getModule()->initFn)));
   if (!fRuntime) {
     VarSymbol* endCount = newTemp("_endCount");
     chpl_main->insertAtHead(new CallExpr("_startTrackingMem"));
