@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
   _chpl_comm_init_shared_heap();
 
   _chpl_comm_barrier("about to leave comm init code");
-  _heapAllocateGlobals();    // allocate global vars on heap for multilocale
+  chpl__heapAllocateGlobals();    // allocate global vars on heap for multilocale
   parseArgs(argc, argv);
   runInGDB = _runInGDB();
   if (runInGDB) {
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
   CreateConfigVarTable();    // get ready to start tracking config vars
   chpl_init_chapel_code();
   initChplThreads();         // initialize the threads layer
-  _initModuleGuards();       // initialize _run_mod_firsttime vars
+  chpl__initModuleGuards();       // initialize _run_mod_firsttime vars
 
   if (_localeID == 0) {      // have locale #0 run the user's main function
     chpl_main();

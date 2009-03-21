@@ -981,7 +981,7 @@ insertWideReferences(void) {
   if (fRuntime)
     return;
 
-  FnSymbol* heapAllocateGlobals = new FnSymbol("_heapAllocateGlobals");
+  FnSymbol* heapAllocateGlobals = new FnSymbol("chpl__heapAllocateGlobals");
   heapAllocateGlobals->retType = dtVoid;
   theProgram->block->insertAtTail(new DefExpr(heapAllocateGlobals));
   heapAllocateGlobals->insertAtHead(new CallExpr(PRIM_ALLOC_GVR));

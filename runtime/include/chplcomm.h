@@ -20,7 +20,7 @@ extern void chpl_newPrivatizedClass(void*);
 extern void* chpl_getPrivatizedClass(int32_t);
 
 
-extern void _heapAllocateGlobals(void);
+extern void chpl__heapAllocateGlobals(void);
 
 extern const int numGlobalsOnHeap;
 extern char** _global_vars_registry;

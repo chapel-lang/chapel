@@ -216,12 +216,12 @@ void createInitFn(ModuleSymbol* mod) {
   mod->initFn->retType = dtVoid;
 
   if (!fRuntime && !initModuleGuards) {
-    initModuleGuards = new FnSymbol("_initModuleGuards");
+    initModuleGuards = new FnSymbol("chpl__initModuleGuards");
     theProgram->block->insertAtHead(new DefExpr(initModuleGuards));
     theProgram->initFn->insertAtHead(new CallExpr(initModuleGuards));
   }
 
-  if (strcmp(mod->name, "_Program")) {
+  if (strcmp(mod->name, "chpl__Program")) {
     INT_ASSERT(mod != theProgram);
     // guard init function so it is not run more than once
     mod->guard = new VarSymbol(astr("chpl__guard", istr(uid++), "_", mod->name));

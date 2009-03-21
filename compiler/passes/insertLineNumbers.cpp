@@ -33,8 +33,8 @@ static void
 insertLineNumber(CallExpr* call) {
   FnSymbol* fn = call->getFunction();
   ModuleSymbol* mod = fn->getModule();
-  if (!strcmp(fn->name, "_heapAllocateGlobals") ||
-      !strcmp(fn->name, "_initModuleGuards") ||
+  if (!strcmp(fn->name, "chpl__heapAllocateGlobals") ||
+      !strcmp(fn->name, "chpl__initModuleGuards") ||
       (mod->modTag == MOD_USER && !fn->hasFlag(FLAG_TEMP) && !fn->hasFlag(FLAG_INLINE)) ||
       (developer == true && strcmp(fn->name, "halt"))) {
     // call is in user code; insert AST line number and filename

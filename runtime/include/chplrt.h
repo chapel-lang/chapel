@@ -4,7 +4,7 @@
 #include "chpltypes.h"
 #include <stdint.h>
 
-extern void _initModuleGuards(void);
+extern void chpl__initModuleGuards(void);
 
 #define _CHECK_NIL(x, lineno, filename)                                 \
   do {                                                                  \
