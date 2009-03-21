@@ -1850,7 +1850,6 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_BLOCK_WHILEDO_LOOP:
     case PRIM_BLOCK_DOWHILE_LOOP:
     case PRIM_BLOCK_FOR_LOOP:
-    case PRIM_BLOCK_INLINE_FOR_LOOP:
     case PRIM_BLOCK_BEGIN:
     case PRIM_BLOCK_COBEGIN:
     case PRIM_BLOCK_COFORALL:

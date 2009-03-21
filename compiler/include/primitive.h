@@ -132,7 +132,6 @@ enum PrimitiveTag {
   PRIM_BLOCK_WHILEDO_LOOP,    // BlockStmt::blockInfo - while do loop
   PRIM_BLOCK_DOWHILE_LOOP,    // BlockStmt::blockInfo - do while loop
   PRIM_BLOCK_FOR_LOOP,        // BlockStmt::blockInfo - for loop
-  PRIM_BLOCK_INLINE_FOR_LOOP, // BlockStmt::blockInfo - for loop
   PRIM_BLOCK_BEGIN,           // BlockStmt::blockInfo - begin block
   PRIM_BLOCK_COBEGIN,         // BlockStmt::blockInfo - cobegin block
   PRIM_BLOCK_COFORALL,        // BlockStmt::blockInfo - coforall block

@@ -414,7 +414,6 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_WHILEDO_LOOP, "while...do loop", returnInfoVoid);
   prim_def(PRIM_BLOCK_DOWHILE_LOOP, "do...while loop", returnInfoVoid);
   prim_def(PRIM_BLOCK_FOR_LOOP, "for loop", returnInfoVoid);
-  prim_def(PRIM_BLOCK_INLINE_FOR_LOOP, "inline for loop", returnInfoVoid);
   prim_def(PRIM_BLOCK_BEGIN, "begin block", returnInfoVoid);
   prim_def(PRIM_BLOCK_COBEGIN, "cobegin block", returnInfoVoid);
   prim_def(PRIM_BLOCK_COFORALL, "coforall loop", returnInfoVoid);
