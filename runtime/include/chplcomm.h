@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include "chplcomm_locales.h"
 #include "chpltypes.h"
-#include "chpl_cfg_comm.h"
 
 
 extern int32_t _localeID;   // unique ID for each locale: 0, 1, 2, ...
