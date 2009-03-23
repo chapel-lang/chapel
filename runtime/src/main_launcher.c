@@ -5,9 +5,6 @@
 #include "chplmem.h"
 #include "chpltypes.h"
 #include "error.h"
-/*
-#include "arg.h"
-*/
 
 
 int main(int argc, char* argv[]) {
@@ -17,7 +14,6 @@ int main(int argc, char* argv[]) {
   //
   int32_t execNumLocales;
   parseArgs(argc, argv);
-  //  initMemTable();
   CreateConfigVarTable();
 
   execNumLocales = getArgNumLocales();
