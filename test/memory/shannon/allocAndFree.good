@@ -1,12 +1,12 @@
 malloc'd an int
-totalMem=8, maxMem=8
+totalMem=8, maxMem=76
 malloc'd a bool
-totalMem=9, maxMem=9
+totalMem=9, maxMem=77
 calloc'd a real
-totalMem=17, maxMem=17
+totalMem=17, maxMem=85
 freed the int and the bool
-totalMem=8, maxMem=17
+totalMem=8, maxMem=120
 realloc'd 10 times the real
-totalMem=80, maxMem=80
+totalMem=80, maxMem=196
 freed the real
-totalMem=0, maxMem=80
+totalMem=0, maxMem=196
