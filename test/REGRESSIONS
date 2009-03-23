@@ -17,18 +17,9 @@
 general regressions
 ===================
 
-race in debugBlock1D stuff (03/20/09)
--------------------------------------
-[Error matching program output for studies/hpcc/common/bradc/unit/multipleDomains2]
-
 memory regressions due to Sam's string-freeing work (03/07/09)
 --------------------------------------------------------------
-[Error matching program output for memory/diten/reallocToZero]
-[Error matching program output for memory/figueroa/printFinalMemStat]
 [Error matching program output for memory/shannon/allocAndFree]
-[Error matching program output for memory/shannon/memstatPrint]
-[Error matching program output for memory/shannon/printFinalMemStat]
-[Error matching program output for memory/shannon/reallocZeroSize]
 
 extremely rare race condition in module initialization
 ------------------------------------------------------
@@ -116,8 +107,8 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09)
-[Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09, 03/14/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09)
+[Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09, 03/14/09, 03/22/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc] (e.g., 01/29/09)
@@ -141,6 +132,10 @@ GASNet unable to start polling thread
 =======================
 baseline-specific tests
 =======================
+
+signal 11 (03/21/09)
+--------------------
+[Error matching program output for studies/590o/blerner/xml-parse]
 
 signal 11 (03/07/09)
 --------------------
