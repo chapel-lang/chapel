@@ -127,7 +127,7 @@ sprint_imm(char *str, Immediate &imm) {
         case INT_SIZE_16:
           res = sprintf(str, "%d", imm.v_int16); break;
         case INT_SIZE_32:
-          res = sprintf(str, "%d", imm.v_int32); break;
+          res = sprintf(str, "%"PRId32, imm.v_int32); break;
         case INT_SIZE_64:
           res = sprintf(str, "%"PRId64, imm.v_int64); break;
         default: INT_FATAL("Unhandled case in switch statement");
@@ -192,7 +192,7 @@ fprint_imm(FILE *fp, Immediate &imm) {
         case INT_SIZE_16:
           res = fprintf(fp, "%d", imm.v_int16); break;
         case INT_SIZE_32:
-          res = fprintf(fp, "%d", imm.v_int32); break;
+          res = fprintf(fp, "%"PRId32, imm.v_int32); break;
         case INT_SIZE_64:
           res = fprintf(fp, "%"PRId64, imm.v_int64); break;
         default: INT_FATAL("Unhandled case in switch statement");
