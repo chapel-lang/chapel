@@ -3,17 +3,17 @@
 #
 # Test a normal MTA compile + execute using boomer
 #
-source ~/.chapelcshrc-mta-cron
-$CHPL_HOME/test/Bin/nightly -cron -examples
+#source ~/.chapelcshrc-mta-cron
+#$CHPL_HOME/test/Bin/nightly -cron -examples
 
 #
 # Test building the compiler using the MTA compiler, but not the
 # runtime (requires executing the chpl compiler), nor running
 # the tests.
 #
-setenv CHPL_HOST_PLATFORM $CHPL_TARGET_PLATFORM
-unsetenv CHPL_TARGET_PLATFORM
-$CHPL_HOME/test/Bin/nightly -cron -noruntime
+#setenv CHPL_HOST_PLATFORM $CHPL_TARGET_PLATFORM
+#unsetenv CHPL_TARGET_PLATFORM
+#$CHPL_HOME/test/Bin/nightly -cron -noruntime
 
 #
 # Test the XMT compiler using the zebra simulator
