@@ -36,6 +36,8 @@ if ($preset_launcher eq "") {
       $launcher = "apsim";
     } elsif ($comm eq "mpi") {
         $launcher = "mpirun";
+    } elsif ($comm eq "pvm") {
+	$launcher = "pvm";
     }
 } else {
     $launcher = $preset_launcher;
