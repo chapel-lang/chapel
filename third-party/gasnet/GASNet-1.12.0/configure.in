@@ -2813,6 +2813,7 @@ esac
 if test "$enabled_portals" = yes; then
   have_portals=yes # start by assuming we have it
   GASNET_ENV_DEFAULT(PE_DIR, /opt/xt-pe/default)
+  GASNET_ENV_DEFAULT(MPT_DIR, /opt/xt-mpt/default)
   GASNET_ENV_DEFAULT(PORTALS_INCLUDE, $PE_DIR/include)
   PORTALS_INCLUDES="-I${PORTALS_INCLUDE}"
   case "$target" in
@@ -2842,6 +2843,29 @@ if test "$enabled_portals" = yes; then
     # Since we are using firehose we need to disable certain optimizations.
     GASNET_FH_CFLAGS
 
+    GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS ${PORTALS_INCLUDES} -I${MPT_DIR}/pmi/include")
+    GASNET_PUSHVAR(LIBS,"$LIBS ${PORTALS_LIBS}")
+    GASNET_TRY_CACHE_LINK(for working Cray PMI library, pmi_cnos_works, [
+       #include <stdlib.h> /* For NULL */
+       #define _CRAY_PORTALS
+       #include <pmi.h>
+    ], [
+       int my_rank;
+       int my_size;
+       PMI_Get_rank(&my_rank);
+       PMI_Get_size(&my_size);
+       PMI_CNOS_Get_nidpid_map(NULL);
+    ], [ pmi_cnos_test_worked=yes ], [ pmi_cnos_test_worked=no ] )
+    GASNET_POPVAR(LIBS)
+    GASNET_POPVAR(CPPFLAGS)
+
+    if test "$pmi_cnos_test_worked" = yes; then
+      AC_DEFINE(HAVE_PMI_CNOS)
+      PORTALS_INCLUDES="${PORTALS_INCLUDES} -I${MPT_DIR}/pmi/include"
+    else
+      AC_CHECK_LIB(pct, cnos_get_rank, PORTALS_LIBS="$PORTALS_LIBS -lpct") # bug 2472
+    fi
+
     GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS ${PORTALS_INCLUDES}")
   
     # pctmbox.h requires portals/portals3.h
@@ -2863,25 +2887,36 @@ if test "$enabled_portals" = yes; then
       ptl_eq_handler_t x;
     ], [], [AC_DEFINE(GASNETC_PORTALS_MISSING_EQ_HANDLER_T)])
 
+    GASNET_PUSHVAR(LIBS,"$LIBS ${PORTALS_LIBS}")
     GASNET_TRY_CACHE_LINK(for working Portals configuration, portals_works, [
        #include <portals/portals3.h>
-       #if HAVE_CATAMOUNT_CNOS_MPI_OS_H /* catamount and new CNL */
+
+       #if HAVE_PMI_CNOS
+       /* Nothing more to do */
+       #elif HAVE_CNOS_MPI_OS_H /* new CNL (bug 2472) */
+       #include <cnos_mpi_os.h>
+       #elif HAVE_CATAMOUNT_CNOS_MPI_OS_H /* catamount and new CNL */
        #include <catamount/cnos_mpi_os.h>
        #elif HAVE_PCTMBOX_H /* old CNL */
        #include <pctmbox.h>
        #else /* backup */
-       #include <pmi.h>
+         extern int cnos_get_rank();
+         extern int cnos_get_size();
+	 extern int cnos_get_nidpid_map(void *);
        #endif
     ], [{
        static ptl_handle_ni_t ptl_ni_h;
        static ptl_interface_t ptl_iface;
-       int my_rank;
-       int my_size;
-       PMI_Get_rank(&my_rank);
-       PMI_Get_size(&my_size);
-       PMI_CNOS_Get_nidpid_map(NULL);
+       #if HAVE_PMI_CNOS
+       /* Nothing more to do */
+       #else
+       int my_rank = cnos_get_rank();
+       int my_size = cnos_get_size();
+       cnos_get_nidpid_map(NULL);
+       #endif
        PtlNIInit(ptl_iface, PTL_PID_ANY, NULL, NULL, &ptl_ni_h);
     }], [ portals_test_worked=yes ], [ portals_test_worked=no GASNET_ERR_SAVE() ] )
+    GASNET_POPVAR(LIBS)
     GASNET_POPVAR(CPPFLAGS)
   
     if test "$portals_test_worked" != yes; then

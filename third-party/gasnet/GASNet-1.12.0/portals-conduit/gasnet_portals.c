@@ -7,12 +7,29 @@
 
 #define GASNETC_DEBUG_RB_VERBOSE 0
 
-#if HAVE_CATAMOUNT_CNOS_MPI_OS_H /* catamount and new CNL */
+#if HAVE_PMI_CNOS
+   #define _CRAY_PORTALS
+   #include <pmi.h>
+   #define GASNETC_NEED_CNOS_NIDPID_MAP_T 1
+#elif HAVE_CNOS_MPI_OS_H /* new CNL (bug 2472) */
+   #include <cnos_mpi_os.h>
+#elif HAVE_CATAMOUNT_CNOS_MPI_OS_H /* catamount and new CNL */
    #include <catamount/cnos_mpi_os.h>
 #elif HAVE_PCTMBOX_H /* old CNL */
    #include <pctmbox.h>
-#else
-#include <pmi.h>
+#else /* backup declarations, since these headers seem to be in flux */
+  extern int cnos_get_rank();
+  extern int cnos_get_size();
+  extern int cnos_get_nidpid_map(void *);
+  extern void cnos_barrier_init(ptl_handle_ni_t ni_handle); /* NOOP function on Catamount */
+  extern int cnos_barrier(void);
+  #if PLATFORM_OS_CNL
+    extern void cnos_pm_barrier(int);
+    extern int cnos_register_ptlid(ptl_process_id_t);
+  #endif
+  #define GASNETC_NEED_CNOS_NIDPID_MAP_T 1
+#endif
+#if GASNETC_NEED_CNOS_NIDPID_MAP_T
   typedef struct {
       ptl_nid_t nid;
       ptl_pid_t pid;
@@ -2429,18 +2446,24 @@ extern void gasnetc_init_portals_network(int *argc, char ***argv)
   int               rc, i, node;
   int               num_interfaces;
   int               pid_offset = 0;
-  int               spawned;
   uint32_t          maxnodes = (uint32_t)((gasnetc_dll_index_t)-1);
 
-  if (PMI_SUCCESS != PMI_Init(&spawned)) {
-    gasneti_fatalerror("Error initializing PMI");
+#if HAVE_PMI_CNOS
+  if (PMI_SUCCESS != PMI_Init(&rc)) {
+    gasneti_fatalerror("PMI_Init() failed");
   }
-  if (PMI_SUCCESS != PMI_Get_rank(&gasneti_mynode)) {
-    gasneti_fatalerror("Error finding rank");
+  if (PMI_SUCCESS != PMI_Get_rank(&i)) {
+    gasneti_fatalerror("PMI_Get_rank() failed");
   }
-  if (PMI_SUCCESS != PMI_Get_size(&gasneti_nodes)) {
-    gasneti_fatalerror("Error finding number of nodes");
+  gasneti_mynode = i;
+  if (PMI_SUCCESS != PMI_Get_size(&i)) {
+    gasneti_fatalerror("PMI_Get_size() failed");
   }
+  gasneti_nodes = i;
+#else
+  gasneti_mynode = cnos_get_rank();
+  gasneti_nodes = cnos_get_size();
+#endif
 
   /* init tracing as early as possible */
   gasneti_trace_init(argc, argv);
@@ -2488,10 +2511,35 @@ extern void gasnetc_init_portals_network(int *argc, char ***argv)
   GASNETC_PTLSAFE(PtlGetUid(gasnetc_ni_h,&gasnetc_uid));
   GASNETC_PTLSAFE(PtlGetId(gasnetc_ni_h,&gasnetc_myid));
 
+#if HAVE_PMI_CNOS
+  /* Not using the CNOS barrier */
+#elif PLATFORM_OS_CNL
+  /* must init the CNOS barrier under CNL (this is a noop for Catamount)
+   * This MUST be done before calls to
+   *      cnos_register_ptlid() AND cnos_get_nidpid_map()
+   * which for a split-phase barrier in CNL job startup.
+   * Cannot call cnos_barrier() until all three have been called.
+   */
+  cnos_barrier_init(gasnetc_ni_h);
+
+  /* Assume APRUN launcher */
+  if ((rc=cnos_register_ptlid(gasnetc_myid)) != 0) {
+    gasneti_fatalerror("cnos_register_ptlid returned %d\n",rc);
+  }
+#else
+  /* Under Catamount, dont have to do anything */
+#endif
+
   /* get process to portals address mapping */
-  if (PMI_SUCCESS != PMI_CNOS_Get_nidpid_map(&cnos_map)) {
+#if HAVE_PMI_CNOS
+  if (PMI_SUCCESS != PMI_CNOS_Get_nidpid_map((void **)&cnos_map)) {
     gasneti_fatalerror("PMI_CNOS_Get_nidpid_map failed");
   }
+#else
+  if(gasneti_nodes != cnos_get_nidpid_map(&cnos_map)) {
+    gasneti_fatalerror("cnos_get_nidpid_map size != %d",gasneti_nodes);
+  }
+#endif
 
   gasneti_assert_always(cnos_map[gasneti_mynode].nid == gasnetc_myid.nid);
   gasneti_assert_always(cnos_map[gasneti_mynode].pid == (gasnetc_myid.pid - pid_offset));
@@ -2594,7 +2642,11 @@ extern void gasnetc_bootstrapBarrier() {
     gasnetc_sys_barrier();
   } else {
     GASNETI_TRACE_PRINTF(C,("bootstrapBarrier count = %d",gasnetc_bootstrapBarrierCnt));
+#if HAVE_PMI_CNOS
     PMI_Barrier();
+#else
+    cnos_barrier();
+#endif
   }
 }
 
@@ -3834,9 +3886,17 @@ extern void gasnetc_portals_exit()
     GASNETC_PTLSAFE(PtlNIFini(gasnetc_ni_h));
   }
 #endif
+
+#if HAVE_PMI_CNOS
   if (PMI_SUCCESS != PMI_Finalize()) {
     gasneti_fatalerror("Error in PMI_Finalize");
   }
+#elif PLATFORM_OS_CNL
+  /* inform cnos of clean exit
+   * MLW: dont understand the args to this yet!!!
+   */
+  cnos_pm_barrier(1);
+#endif
 }
 
 /* ------------------------------------------------------------------------------------

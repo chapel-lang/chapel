@@ -283,6 +283,7 @@
 
 /* GASNet portals-conduit specific */
 #undef HAVE_PCTMBOX_H
+#undef HAVE_PMI_CNOS
 #undef GASNETC_PORTALS_MISSING_EQ_HANDLER_T
 
 /* GASNet bug1389 detection/work-around */
