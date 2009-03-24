@@ -477,7 +477,8 @@ gasneti_atomic_val_t gasneti_semaphore_trydown_partial(gasneti_semaphore_t *s, g
      return gasneti_atomic64_compare_and_swap(&(v->a64), oldval, newval, flags);
   }
   #define GASNETI_GEN_ATOMIC_DBLPTR_CAS 1 /* Causes default version to be constructed below */
-#elif PLATFORM_ARCH_64 && defined(GASNETI_HAVE_ATOMIC_PTR_CAS) && defined(GASNETI_HAVE_ATOMIC128_T)
+#elif PLATFORM_ARCH_64 && defined(GASNETI_HAVE_ATOMIC_PTR_CAS) && \
+	defined(GASNETI_HAVE_ATOMIC128_T) && (GASNETI_HAVE_ATOMIC128_T <= 8 /*alignment*/)
   #if PLATFORM_ARCH_BIG_ENDIAN
     typedef union {
       struct { gasneti_atomic_ptr_t hi_ptr, lo_ptr; } ptrs;	/* must be first for initializer */
@@ -788,6 +789,55 @@ gasneti_atomic_val_t gasneti_semaphore_trydown_partial(gasneti_semaphore_t *s, g
     }
     #define GASNETI_LIFO_INITIALIZER	{{0,}, gasneti_atomic_dblptr_init(0,0),}
     #define GASNETI_HAVE_ARCH_LIFO	1
+#elif PLATFORM_ARCH_64 && defined(GASNETI_HAVE_ATOMIC128_T)
+    /* Same algorithm as dblptr_cas, above, but with alignment worries added in */
+    typedef struct {
+      char                _pad0[GASNETI_CACHE_LINE_BYTES + GASNETI_HAVE_ATOMIC128_T];
+      gasneti_atomic128_t head_and_tag; /* Actually might be lower addr, in _pad0 */
+      char                _pad1[GASNETI_CACHE_LINE_BYTES];
+    } gasneti_lifo_head_t;
+    #define _GASNETI_LIFO_ALIGN(p) ((uintptr_t)p & ~(GASNETI_HAVE_ATOMIC128_T - 1))
+
+    GASNETI_INLINE(_gasneti_lifo_push)
+    void _gasneti_lifo_push(gasneti_lifo_head_t *p, void **head, void **tail) {
+      gasneti_atomic64_t *ptr = (gasneti_atomic64_t *)_GASNETI_LIFO_ALIGN(p);
+      uintptr_t oldhead;
+      do {
+        oldhead = gasneti_atomic64_read(ptr, 0);
+        *tail = (void *)oldhead;
+      } while (!gasneti_atomic64_compare_and_swap(ptr, oldhead, (uintptr_t)head, GASNETI_ATOMIC_REL));
+    }
+    GASNETI_INLINE(_gasneti_lifo_pop)
+    void *_gasneti_lifo_pop(gasneti_lifo_head_t *p) {
+      uintptr_t tag, oldhead, newhead;
+      gasneti_atomic64_t *head = (gasneti_atomic64_t *)_GASNETI_LIFO_ALIGN(p);
+      gasneti_atomic128_t *head_and_tag = (gasneti_atomic128_t *)head;
+      do {
+        oldhead = gasneti_atomic64_read(head, 0);
+        tag = gasneti_atomic64_read(head+1, 0);
+        if_pf (!oldhead) break;
+        newhead = (uintptr_t)(*(void **)oldhead);
+      } while
+  #if PLATFORM_ARCH_BIG_ENDIAN
+              (!gasneti_atomic128_compare_and_swap(head_and_tag, oldhead, tag,
+                                                   newhead, tag+1, GASNETI_ATOMIC_ACQ_IF_TRUE));
+  #else
+              (!gasneti_atomic128_compare_and_swap(head_and_tag, tag, oldhead,
+                                                   tag+1, newhead, GASNETI_ATOMIC_ACQ_IF_TRUE));
+  #endif
+      return (void *)oldhead;
+    }
+    GASNETI_INLINE(_gasneti_lifo_init)
+    void _gasneti_lifo_init(gasneti_lifo_head_t *p) {
+      gasneti_atomic128_t *head_and_tag = (gasneti_atomic128_t *)_GASNETI_LIFO_ALIGN(p);
+      gasneti_atomic128_set(head_and_tag, 0, 0, 0);
+    }
+    GASNETI_INLINE(_gasneti_lifo_destroy)
+    void _gasneti_lifo_destroy(gasneti_lifo_head_t *p) {
+      /* NOTHING */
+    }
+    #define GASNETI_LIFO_INITIALIZER    {{0,}, }
+    #define GASNETI_HAVE_ARCH_LIFO      1
 #elif PLATFORM_ARCH_IA64 && PLATFORM_ARCH_64 && GASNETI_HAVE_IA64_CMP8XCHG16
     /* Use the SCDS (Single-compare, double-swap) cmp8xchg16 instruction added to
      * the Montecito processors.  The algorithm is essentially the same as w/ CAS,

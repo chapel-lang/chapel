@@ -642,13 +642,13 @@
 
       /* Optionally build a 128-bit atomic type using 64-bit types for all args */
       #if GASNETI_HAVE_X86_CMPXCHG16B
-	#define GASNETI_HAVE_ATOMIC128_T 1
+	#define GASNETI_HAVE_ATOMIC128_T 16 /* Encodes aligment */
 	typedef struct { volatile uint64_t lo, hi; } gasneti_atomic128_t;
-	#define gasneti_atomic128_init(hi,lo)      { (lo),(hi) }
 
 	GASNETI_INLINE(gasneti_atomic128_compare_and_swap)
 	int gasneti_atomic128_compare_and_swap(gasneti_atomic128_t *p, uint64_t oldhi, uint64_t oldlo, uint64_t newhi, uint64_t newlo, int flags) {
 	  GASNETI_ASM_REGISTER_KEYWORD unsigned char retval;
+          gasneti_assert(!(((uintptr_t)p) & 0xF)); /* cmpxchg16b requires 16-byte alignment */
 	  __asm__ __volatile__ (
 		"lock; "
 		"cmpxchg16b  %1   \n\t"
@@ -668,6 +668,7 @@
 	void gasneti_atomic128_set(gasneti_atomic128_t *p, uint64_t newhi, uint64_t newlo, int flags) {
 	  GASNETI_ASM_REGISTER_KEYWORD uint32_t oldlo = p->lo;
 	  GASNETI_ASM_REGISTER_KEYWORD uint32_t oldhi = p->hi;
+          gasneti_assert(!(((uintptr_t)p) & 0xF)); /* cmpxchg16b requires 16-byte alignment */
 	  __asm__ __volatile__ (
 		"0:               \n\t"
 		"lock; "
@@ -684,6 +685,7 @@
 	  GASNETI_ASM_REGISTER_KEYWORD uint64_t retlo = p->lo;
 	  GASNETI_ASM_REGISTER_KEYWORD uint64_t rethi = p->hi;
 	  GASNETI_ASM_REGISTER_KEYWORD uint64_t tmphi, tmplo;
+          gasneti_assert(!(((uintptr_t)p) & 0xF)); /* cmpxchg16b requires 16-byte alignment */
 	  __asm__ __volatile__ (
 		"0:                 \n\t"
 		"movq        %1, %3 \n\t"
