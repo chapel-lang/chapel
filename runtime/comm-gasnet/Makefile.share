@@ -15,7 +15,11 @@ COMM_LAUNCHER_OBJS = \
 	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
 
 ifneq ($(MAKE_LAUNCHER), 1)
+ifneq ($(CHPL_MAKE_RULE),clean)
+ifneq ($(CHPL_MAKE_RULE),clobber)
 -include $(GASNET_INC_MAKEFILE)
+endif
+endif
 
 #
 # TODO: pull these -Wno- warnings out and see what breaks in GASNet
@@ -43,20 +47,7 @@ ifneq ($(MAKE_LAUNCHER), 1)
 # compiled -O3 is linked to GASNet compiled with debugging enabled
 #
 
-#
-# these would/should go away if we use the GASNET_CPPFLAGS
-#
-ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),ibv)
-	CHPL_GASNET_MORE_CFLAGS += -DGASNET_CONDUIT_IBV
-endif
-ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),vapi)
-	CHPL_GASNET_MORE_CFLAGS += -DGASNET_CONDUIT_VAPI
-endif
-
-#
-# another place we should be using GASNET_CPPFLAGS
-#
-RUNTIME_CFLAGS += $(GASNET_CFLAGS) -I$(GASNET_INSTALL_DIR)/include -I$(GASNET_INSTALL_DIR)/include/$(CHPL_MAKE_COMM_SUBSTRATE)-conduit $(SUPPORT_SETENV_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
+RUNTIME_CFLAGS += $(GASNET_CFLAGS) $(GASNET_CPPFLAGS) $(GASNET_CFLAGS) $(SUPPORT_SETENV_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
 endif
 
 ifdef CHPL_DEVELOPER
@@ -67,24 +58,11 @@ endif
 endif
 
 #
-# don't remake gasnet if we're making clean or clobber from the parent
-# directory
+# don't remake gasnet if we're making depend from the parent directory
 #
-#
-# move conditional around -include instead of here...  Or use a shell
-# command to do the comparison below before the cd && make
-#
-ifeq ($(CHPL_MAKE_RULE),clean)
-$(GASNET_INC_MAKEFILE):
-else
-ifeq ($(CHPL_MAKE_RULE),clobber)
-$(GASNET_INC_MAKEFILE):
-else
 ifeq ($(CHPL_MAKE_RULE),depend)
 $(GASNET_INC_MAKEFILE):
 else
 $(GASNET_INC_MAKEFILE):
 	cd $(THIRD_PARTY_DIR) && $(MAKE) gasnet
-endif
-endif
 endif

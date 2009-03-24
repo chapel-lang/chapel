@@ -1,7 +1,3 @@
-//
-// could move gasnet.h up to get safer stdint.h #inclusion -- however, will only help
-// with this file, not our general files.
-//
 #include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -12,9 +8,6 @@
 #include "chplsys.h"
 #include "chplthreads.h"
 #include "error.h"
-
-// no longer need #define below: see Makefile.comm-gasnet
-#define GASNET_PAR 1
 #include "gasnet.h"
 
 static int chpl_comm_diagnostics = 0;           // set via startCommDiagnostics
