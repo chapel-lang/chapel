@@ -84,4 +84,15 @@ COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
 RUNTIME_GEN_CFLAGS += -Wno-unused
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
+
+#
+# When compiling GASNet...
+#
+# -Wno-strict-prototypes has to be used because most GASNet prototypes
+# aren't strict.
+#
+CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes
+endif
+ifdef CHPL_COMM_DEBUG
+CHPL_GASNET_MORE_CFLAGS += -O0 -wr10120
 endif
