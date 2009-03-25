@@ -59,11 +59,6 @@ void _chpl_comm_barrier(const char *msg) {
   return;
 }
 
-static void _chpl_comm_exit_common(int status) {
-  fprintf(stderr, "_chpl_comm_exit_common called");
-  return;
-}
-
 void _chpl_comm_exit_all(int status) {
   fprintf(stderr, "_chpl_comm_exit_all called");
   return;

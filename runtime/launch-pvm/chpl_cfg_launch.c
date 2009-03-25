@@ -7,17 +7,22 @@
 
 
 char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
-  fprintf(stderr, "Called into chpl_launch_create_command(..., numLocales=%d\n", 
+  char baseCommand[256];
+  char* command;
+
+  sprintf(baseCommand, "echo \"spawn -> %s\" | pvm", argv[0]);
+
+  fprintf(stderr, "Called into chpl_launch_create_command(..., numLocales=%d\n",
 	  numLocales);
-  exit(1);
+  return command;
 }
 
 void chpl_launch_sanity_checks(int argc, char* argv[], const char* cmd) {
   fprintf(stderr, "chpl_launch_sanity_checks()\n");
-  exit(1);
+  return;
 }
 
 void chpl_launch_cleanup(void) {
   fprintf(stderr, "chpl_launch_cleanup()\n");
-  exit(1);
+  return;
 }
