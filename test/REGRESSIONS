@@ -26,8 +26,8 @@ extremely rare race condition in module initialization
 linux regressions
 =================
 
-verification failed (03/24/09)
-------------------------------
+spurious verification failed (03/24/09)
+---------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
 
 signal 11 (03/10/09)
@@ -501,6 +501,20 @@ numeric stability issues
 cygwin-specific failures
 ========================
 
+gdb issues
+----------
+[Error matching compiler output for compflags/bradc/gdbddash/declint]
+[Error matching program output for execflags/bradc/gdbddash/declint2]
+[Error matching program output for execflags/bradc/gdbddash/declint]
+[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
+
+machine configuration issues
+----------------------------
+[Error matching program output for modules/standard/machine/numCores]
+[Error matching program output for modules/standard/memory/countMemory/countMemory]
+[Error matching program output for studies/hpcc/2008/testProbSize]
+[Error matching program output for studies/hpcc/common/testProbSize]
+
 pthread_cond_init failure => cannot rm binary
 ---------------------------------------------
 [Error matching program output for npb/cg/bradc/cg-sparse]
@@ -514,7 +528,6 @@ print occurs in 0 seconds!?  Timers not working?
 sig_send: wait for sig_complete event failed
 --------------------------------------------
 [Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
-[Error matching program output for studies/madness/common/test_gaxpy]
 [Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
 [Error matching program output for users/jglewis/badGetModule]
