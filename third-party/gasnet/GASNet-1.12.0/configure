@@ -1022,6 +1022,7 @@ Optional Packages:
   --with-ibv-spawner=value    IBV job spawner ("ssh" or "mpi", default is mpi when available)
   --with-ibv-max-hcas=value   maximum number of IBV HCAs to open for multi-rail support (default is 2)
   --with-pe-dir=              value for PE_DIR
+  --with-mpt-dir=             value for MPT_DIR
   --with-portals-include=     value for PORTALS_INCLUDE
   --with-catamount-dir=       value for CATAMOUNT_DIR
   --with-catamount-include=   value for CATAMOUNT_INCLUDE
@@ -78421,6 +78422,108 @@ echo "$as_me: error: See $CONFIG_FILE for details." >&2;}
 
 
 
+# vvvvvvvvvvvvvvvvvvvvvv GASNET_ENV_DEFAULT(MPT_DIR,/opt/xt-mpt/default) vvvvvvvvvvvvvvvvvvvvvv (L:1)
+
+
+
+
+  echo "$as_me:$LINENO: checking for MPT_DIR in environment" >&5
+echo $ECHO_N "checking for MPT_DIR in environment... $ECHO_C" >&6
+
+
+
+
+
+# Check whether --with-mpt-dir or --without-mpt-dir was given.
+if test "${with_mpt_dir+set}" = set; then
+  withval="$with_mpt_dir"
+
+fi;
+
+
+
+
+
+  envval_src_MPT_DIR="cached"
+  if test "${gasnet_cv_envvar_MPT_DIR+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+
+      case "${MPT_DIR-__NOT_SET__}" in
+	__NOT_SET__)
+            if test "$with_mpt_dir" != ""; then
+	      gasnet_cv_envvar_MPT_DIR="$with_mpt_dir"
+	      envval_src_MPT_DIR=given
+	    else
+	      gasnet_cv_envvar_MPT_DIR="/opt/xt-mpt/default"
+	      envval_src_MPT_DIR=default
+	    fi
+	    ;;
+	*)  gasnet_cv_envvar_MPT_DIR="$MPT_DIR"
+	    envval_src_MPT_DIR=given
+      esac
+
+fi
+
+
+  MPT_DIR="$gasnet_cv_envvar_MPT_DIR"
+  case "$envval_src_MPT_DIR" in
+      'cached')
+	  echo "$as_me:$LINENO: result: using cached value \"$MPT_DIR\"" >&5
+echo "${ECHO_T}using cached value \"$MPT_DIR\"" >&6 ;;
+      'default')
+	  echo "$as_me:$LINENO: result: no, defaulting to \"$MPT_DIR\"" >&5
+echo "${ECHO_T}no, defaulting to \"$MPT_DIR\"" >&6 ;;
+      'given')
+	  echo "$as_me:$LINENO: result: yes, using \"$MPT_DIR\"" >&5
+echo "${ECHO_T}yes, using \"$MPT_DIR\"" >&6 ;;
+      *)
+
+echo
+echo "configure error: _GASNET_ENV_DEFAULT broken"
+if test "" ; then
+if test -f "conftest.$ac_ext" ; then
+  errfile=conftest.$ac_ext
+else
+  errfile=gasnet_errsave_file
+fi
+if test -f "$errfile" ; then
+  echo
+  echo " --- Failed program --- "
+  cat $errfile
+  echo " -----------------------"
+fi
+fi
+if test -f "conftest.err" ; then
+  errfile=conftest.err
+else
+  errfile=gasnet_errsave_err
+fi
+if test -f "$errfile" ; then
+  echo
+  echo "Compilation error: "
+  echo
+  cat $errfile
+fi
+echo
+CONFIG_FILE=`pwd`/config.log
+{ { echo "$as_me:$LINENO: error: See $CONFIG_FILE for details." >&5
+echo "$as_me: error: See $CONFIG_FILE for details." >&2;}
+   { (exit 1); exit 1; }; }
+
+
+  esac
+
+
+
+
+# ^^^^^^^^^^^^^^^^^^^^^^ GASNET_ENV_DEFAULT(MPT_DIR,/opt/xt-mpt/default) ^^^^^^^^^^^^^^^^^^^^^^ (L:1)
+
+
+
+
+
+
 # vvvvvvvvvvvvvvvvvvvvvv GASNET_ENV_DEFAULT(PORTALS_INCLUDE,$PE_DIR/include) vvvvvvvvvvvvvvvvvvvvvv (L:1)
 
 
@@ -78867,6 +78970,335 @@ echo "$as_me: error: See $CONFIG_FILE for details." >&2;}
 
 
 
+# vvvvvvvvvvvvvvvvvvvvvv GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS ${PORTALS_INCLUDES} -I${MPT_DIR}/pmi/include") vvvvvvvvvvvvvvvvvvvvvv (L:1)
+
+    if test "$_pushcnt_CPPFLAGS" = "" ; then
+    _pushcnt_CPPFLAGS=0
+  fi
+  if test "$_total_pushcnt" = "" ; then
+    _total_pushcnt=0
+  fi
+  if test "${CPPFLAGS+set}" = set; then
+   _gasnet_pushvar_isset=1
+  else
+   _gasnet_pushvar_isset=0
+  fi
+  eval _pushedvar_CPPFLAGS_$_pushcnt_CPPFLAGS=\$CPPFLAGS
+  eval _pushedvarset_CPPFLAGS_$_pushcnt_CPPFLAGS=$_gasnet_pushvar_isset
+  _pushcnt_CPPFLAGS=`expr $_pushcnt_CPPFLAGS + 1`
+  _total_pushcnt=`expr $_total_pushcnt + 1`
+  CPPFLAGS="$CPPFLAGS ${PORTALS_INCLUDES} -I${MPT_DIR}/pmi/include"
+  echo "pushed new CPPFLAGS value: $CPPFLAGS" >&5
+
+# ^^^^^^^^^^^^^^^^^^^^^^ GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS ${PORTALS_INCLUDES} -I${MPT_DIR}/pmi/include") ^^^^^^^^^^^^^^^^^^^^^^ (L:1)
+
+
+
+
+
+
+# vvvvvvvvvvvvvvvvvvvvvv GASNET_PUSHVAR(LIBS,"$LIBS ${PORTALS_LIBS}") vvvvvvvvvvvvvvvvvvvvvv (L:1)
+
+    if test "$_pushcnt_LIBS" = "" ; then
+    _pushcnt_LIBS=0
+  fi
+  if test "$_total_pushcnt" = "" ; then
+    _total_pushcnt=0
+  fi
+  if test "${LIBS+set}" = set; then
+   _gasnet_pushvar_isset=1
+  else
+   _gasnet_pushvar_isset=0
+  fi
+  eval _pushedvar_LIBS_$_pushcnt_LIBS=\$LIBS
+  eval _pushedvarset_LIBS_$_pushcnt_LIBS=$_gasnet_pushvar_isset
+  _pushcnt_LIBS=`expr $_pushcnt_LIBS + 1`
+  _total_pushcnt=`expr $_total_pushcnt + 1`
+  LIBS="$LIBS ${PORTALS_LIBS}"
+  echo "pushed new LIBS value: $LIBS" >&5
+
+# ^^^^^^^^^^^^^^^^^^^^^^ GASNET_PUSHVAR(LIBS,"$LIBS ${PORTALS_LIBS}") ^^^^^^^^^^^^^^^^^^^^^^ (L:1)
+
+
+
+
+
+
+# vvvvvvvvvvvvvvvvvvvvvv GASNET_TRY_CACHE_LINK(for working Cray PMI library,pmi_cnos_works,...) vvvvvvvvvvvvvvvvvvvvvv (L:1)
+
+echo "$as_me:$LINENO: checking for working Cray PMI library" >&5
+echo $ECHO_N "checking for working Cray PMI library... $ECHO_C" >&6
+if test "${gasnet_cv_pmi_cnos_works+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+       #include <stdlib.h> /* For NULL */
+       #define _CRAY_PORTALS
+       #include <pmi.h>
+
+int
+main ()
+{
+
+       int my_rank;
+       int my_size;
+       PMI_Get_rank(&my_rank);
+       PMI_Get_size(&my_size);
+       PMI_CNOS_Get_nidpid_map(NULL);
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  gasnet_cv_pmi_cnos_works=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+gasnet_cv_pmi_cnos_works=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+fi
+echo "$as_me:$LINENO: result: $gasnet_cv_pmi_cnos_works" >&5
+echo "${ECHO_T}$gasnet_cv_pmi_cnos_works" >&6
+if test "$gasnet_cv_pmi_cnos_works" = yes; then
+  :
+   pmi_cnos_test_worked=yes
+else
+  :
+   pmi_cnos_test_worked=no
+fi
+
+# ^^^^^^^^^^^^^^^^^^^^^^ GASNET_TRY_CACHE_LINK(for working Cray PMI library,pmi_cnos_works,...) ^^^^^^^^^^^^^^^^^^^^^^ (L:1)
+
+
+
+
+
+
+# vvvvvvvvvvvvvvvvvvvvvv GASNET_POPVAR(LIBS) vvvvvvvvvvvvvvvvvvvvvv (L:1)
+
+  if test "$_pushcnt_LIBS" -ge "1"; then
+    _pushcnt_LIBS=`expr $_pushcnt_LIBS - 1`
+    _total_pushcnt=`expr $_total_pushcnt - 1`
+    eval _gasnet_pushvar_isset=\$_pushedvarset_LIBS_$_pushcnt_LIBS
+    if test "$_gasnet_pushvar_isset" = "1" ; then
+      eval LIBS=\$_pushedvar_LIBS_$_pushcnt_LIBS
+      echo "popping LIBS back to: $LIBS" >&5
+    else
+      unset LIBS
+      echo "popping LIBS back to: <unset>" >&5
+    fi
+  else
+
+
+echo
+echo "configure error: INTERNAL ERROR: GASNET_PUSH/POPVAR underflow on LIBS"
+if test "" ; then
+if test -f "conftest.$ac_ext" ; then
+  errfile=conftest.$ac_ext
+else
+  errfile=gasnet_errsave_file
+fi
+if test -f "$errfile" ; then
+  echo
+  echo " --- Failed program --- "
+  cat $errfile
+  echo " -----------------------"
+fi
+fi
+if test -f "conftest.err" ; then
+  errfile=conftest.err
+else
+  errfile=gasnet_errsave_err
+fi
+if test -f "$errfile" ; then
+  echo
+  echo "Compilation error: "
+  echo
+  cat $errfile
+fi
+echo
+CONFIG_FILE=`pwd`/config.log
+{ { echo "$as_me:$LINENO: error: See $CONFIG_FILE for details." >&5
+echo "$as_me: error: See $CONFIG_FILE for details." >&2;}
+   { (exit 1); exit 1; }; }
+
+
+  fi
+
+# ^^^^^^^^^^^^^^^^^^^^^^ GASNET_POPVAR(LIBS) ^^^^^^^^^^^^^^^^^^^^^^ (L:1)
+
+
+
+
+
+
+# vvvvvvvvvvvvvvvvvvvvvv GASNET_POPVAR(CPPFLAGS) vvvvvvvvvvvvvvvvvvvvvv (L:1)
+
+  if test "$_pushcnt_CPPFLAGS" -ge "1"; then
+    _pushcnt_CPPFLAGS=`expr $_pushcnt_CPPFLAGS - 1`
+    _total_pushcnt=`expr $_total_pushcnt - 1`
+    eval _gasnet_pushvar_isset=\$_pushedvarset_CPPFLAGS_$_pushcnt_CPPFLAGS
+    if test "$_gasnet_pushvar_isset" = "1" ; then
+      eval CPPFLAGS=\$_pushedvar_CPPFLAGS_$_pushcnt_CPPFLAGS
+      echo "popping CPPFLAGS back to: $CPPFLAGS" >&5
+    else
+      unset CPPFLAGS
+      echo "popping CPPFLAGS back to: <unset>" >&5
+    fi
+  else
+
+
+echo
+echo "configure error: INTERNAL ERROR: GASNET_PUSH/POPVAR underflow on CPPFLAGS"
+if test "" ; then
+if test -f "conftest.$ac_ext" ; then
+  errfile=conftest.$ac_ext
+else
+  errfile=gasnet_errsave_file
+fi
+if test -f "$errfile" ; then
+  echo
+  echo " --- Failed program --- "
+  cat $errfile
+  echo " -----------------------"
+fi
+fi
+if test -f "conftest.err" ; then
+  errfile=conftest.err
+else
+  errfile=gasnet_errsave_err
+fi
+if test -f "$errfile" ; then
+  echo
+  echo "Compilation error: "
+  echo
+  cat $errfile
+fi
+echo
+CONFIG_FILE=`pwd`/config.log
+{ { echo "$as_me:$LINENO: error: See $CONFIG_FILE for details." >&5
+echo "$as_me: error: See $CONFIG_FILE for details." >&2;}
+   { (exit 1); exit 1; }; }
+
+
+  fi
+
+# ^^^^^^^^^^^^^^^^^^^^^^ GASNET_POPVAR(CPPFLAGS) ^^^^^^^^^^^^^^^^^^^^^^ (L:1)
+
+
+
+
+    if test "$pmi_cnos_test_worked" = yes; then
+      cat >>confdefs.h <<\_ACEOF
+#define HAVE_PMI_CNOS 1
+_ACEOF
+
+      PORTALS_INCLUDES="${PORTALS_INCLUDES} -I${MPT_DIR}/pmi/include"
+    else
+      echo "$as_me:$LINENO: checking for cnos_get_rank in -lpct" >&5
+echo $ECHO_N "checking for cnos_get_rank in -lpct... $ECHO_C" >&6
+if test "${ac_cv_lib_pct_cnos_get_rank+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpct  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char cnos_get_rank ();
+int
+main ()
+{
+cnos_get_rank ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_pct_cnos_get_rank=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_lib_pct_cnos_get_rank=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_pct_cnos_get_rank" >&5
+echo "${ECHO_T}$ac_cv_lib_pct_cnos_get_rank" >&6
+if test $ac_cv_lib_pct_cnos_get_rank = yes; then
+  PORTALS_LIBS="$PORTALS_LIBS -lpct"
+fi
+ # bug 2472
+    fi
+
+
+
+
 # vvvvvvvvvvvvvvvvvvvvvv GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS ${PORTALS_INCLUDES}") vvvvvvvvvvvvvvvvvvvvvv (L:1)
 
     if test "$_pushcnt_CPPFLAGS" = "" ; then
@@ -79206,6 +79638,33 @@ fi
 
 
 
+# vvvvvvvvvvvvvvvvvvvvvv GASNET_PUSHVAR(LIBS,"$LIBS ${PORTALS_LIBS}") vvvvvvvvvvvvvvvvvvvvvv (L:1)
+
+    if test "$_pushcnt_LIBS" = "" ; then
+    _pushcnt_LIBS=0
+  fi
+  if test "$_total_pushcnt" = "" ; then
+    _total_pushcnt=0
+  fi
+  if test "${LIBS+set}" = set; then
+   _gasnet_pushvar_isset=1
+  else
+   _gasnet_pushvar_isset=0
+  fi
+  eval _pushedvar_LIBS_$_pushcnt_LIBS=\$LIBS
+  eval _pushedvarset_LIBS_$_pushcnt_LIBS=$_gasnet_pushvar_isset
+  _pushcnt_LIBS=`expr $_pushcnt_LIBS + 1`
+  _total_pushcnt=`expr $_total_pushcnt + 1`
+  LIBS="$LIBS ${PORTALS_LIBS}"
+  echo "pushed new LIBS value: $LIBS" >&5
+
+# ^^^^^^^^^^^^^^^^^^^^^^ GASNET_PUSHVAR(LIBS,"$LIBS ${PORTALS_LIBS}") ^^^^^^^^^^^^^^^^^^^^^^ (L:1)
+
+
+
+
+
+
 # vvvvvvvvvvvvvvvvvvvvvv GASNET_TRY_CACHE_LINK(for working Portals configuration,portals_works,...) vvvvvvvvvvvvvvvvvvvvvv (L:1)
 
 echo "$as_me:$LINENO: checking for working Portals configuration" >&5
@@ -79221,7 +79680,12 @@ cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
        #include <portals/portals3.h>
-       #if HAVE_CATAMOUNT_CNOS_MPI_OS_H /* catamount and new CNL */
+
+       #if HAVE_PMI_CNOS
+       /* Nothing more to do */
+       #elif HAVE_CNOS_MPI_OS_H /* new CNL (bug 2472) */
+       #include <cnos_mpi_os.h>
+       #elif HAVE_CATAMOUNT_CNOS_MPI_OS_H /* catamount and new CNL */
        #include <catamount/cnos_mpi_os.h>
        #elif HAVE_PCTMBOX_H /* old CNL */
        #include <pctmbox.h>
@@ -79237,9 +79701,13 @@ main ()
 {
        static ptl_handle_ni_t ptl_ni_h;
        static ptl_interface_t ptl_iface;
+       #if HAVE_PMI_CNOS
+       /* Nothing more to do */
+       #else
        int my_rank = cnos_get_rank();
        int my_size = cnos_get_size();
        cnos_get_nidpid_map(NULL);
+       #endif
        PtlNIInit(ptl_iface, PTL_PID_ANY, NULL, NULL, &ptl_ni_h);
     }
   ;
@@ -79296,6 +79764,64 @@ fi
 fi
 
 # ^^^^^^^^^^^^^^^^^^^^^^ GASNET_TRY_CACHE_LINK(for working Portals configuration,portals_works,...) ^^^^^^^^^^^^^^^^^^^^^^ (L:1)
+
+
+
+
+
+
+# vvvvvvvvvvvvvvvvvvvvvv GASNET_POPVAR(LIBS) vvvvvvvvvvvvvvvvvvvvvv (L:1)
+
+  if test "$_pushcnt_LIBS" -ge "1"; then
+    _pushcnt_LIBS=`expr $_pushcnt_LIBS - 1`
+    _total_pushcnt=`expr $_total_pushcnt - 1`
+    eval _gasnet_pushvar_isset=\$_pushedvarset_LIBS_$_pushcnt_LIBS
+    if test "$_gasnet_pushvar_isset" = "1" ; then
+      eval LIBS=\$_pushedvar_LIBS_$_pushcnt_LIBS
+      echo "popping LIBS back to: $LIBS" >&5
+    else
+      unset LIBS
+      echo "popping LIBS back to: <unset>" >&5
+    fi
+  else
+
+
+echo
+echo "configure error: INTERNAL ERROR: GASNET_PUSH/POPVAR underflow on LIBS"
+if test "" ; then
+if test -f "conftest.$ac_ext" ; then
+  errfile=conftest.$ac_ext
+else
+  errfile=gasnet_errsave_file
+fi
+if test -f "$errfile" ; then
+  echo
+  echo " --- Failed program --- "
+  cat $errfile
+  echo " -----------------------"
+fi
+fi
+if test -f "conftest.err" ; then
+  errfile=conftest.err
+else
+  errfile=gasnet_errsave_err
+fi
+if test -f "$errfile" ; then
+  echo
+  echo "Compilation error: "
+  echo
+  cat $errfile
+fi
+echo
+CONFIG_FILE=`pwd`/config.log
+{ { echo "$as_me:$LINENO: error: See $CONFIG_FILE for details." >&5
+echo "$as_me: error: See $CONFIG_FILE for details." >&2;}
+   { (exit 1); exit 1; }; }
+
+
+  fi
+
+# ^^^^^^^^^^^^^^^^^^^^^^ GASNET_POPVAR(LIBS) ^^^^^^^^^^^^^^^^^^^^^^ (L:1)
 
 
 
