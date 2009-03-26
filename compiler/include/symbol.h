@@ -204,7 +204,8 @@ class ModuleSymbol : public Symbol {
   ModTag modTag;
   BlockStmt* block;
   FnSymbol* initFn;
-  VarSymbol* guard; // keeps initFn from being run more than once
+  VarSymbol* guard;     // keeps initFn from being run more than once
+  VarSymbol* privGuard; // privatized (per locale) version of guard
   const char* filename;
 
   ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock);

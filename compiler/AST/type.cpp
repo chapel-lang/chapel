@@ -439,9 +439,14 @@ void initPrimitiveTypes(void) {
   dtValue = createPrimitiveType("value", "_chpl_value");
 
   createInitFn(theProgram);
-  if (!fRuntime)
+  if (!fRuntime) {
     theProgram->initFn->insertAtHead(new CallExpr(PRIM_USE,
+                                       new UnresolvedSymExpr("ChapelBase")));
+    // it may be better to add the following use after parsing
+    // to simplify insertion of module guard sync var defs
+    theProgram->initFn->insertAtTail(new CallExpr(PRIM_USE,
                                        new UnresolvedSymExpr("ChapelStandard")));
+  }
 
   theProgram->initFn->insertAtHead(objectDef);
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");

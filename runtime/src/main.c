@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
   CreateConfigVarTable();    // get ready to start tracking config vars
   chpl_init_chapel_code();
   initChplThreads();         // initialize the threads layer
-  chpl__initModuleGuards();       // initialize _run_mod_firsttime vars
+  chpl__initModuleGuards();  // initialize per-locale run once guard vars
 
   if (_localeID == 0) {      // have locale #0 run the user's main function
     chpl_main();

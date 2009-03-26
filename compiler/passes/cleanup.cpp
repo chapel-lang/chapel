@@ -143,7 +143,20 @@ static void initializeOuterModules(ModuleSymbol* mod) {
         if (mod != theProgram) {
           if (!m->initFn || !mod->initFn)
             INT_FATAL("Module with no initialization function");
-          m->initFn->insertAtHead(new CondStmt(new SymExpr(mod->guard), new CallExpr(mod->initFn)));
+          INT_ASSERT(strcmp(mod->name, "ChapelStandard") && strcmp(mod->name, "ChapelBase"));
+          BlockStmt* thenBlock = new BlockStmt(new CallExpr(PRIM_MOVE, mod->privGuard, gFalse));
+          if (fRuntime)
+            thenBlock->insertAtTail(new CallExpr(mod->initFn));
+          else {
+            thenBlock->insertAtTail(buildOnStmt(new CallExpr(PRIM_ON_LOCALE_NUM, new SymExpr(new_IntSymbol(0))),
+                                                new CondStmt(new CallExpr("_cond_test", mod->guard),
+                                                             new CallExpr(mod->initFn),
+                                                             new CallExpr(PRIM_MOVE, mod->guard,
+                                                                          new CallExpr("=", mod->guard, new SymExpr(gFalse))))));
+          }
+          // the first statement in m->initFn is assumed to set its sync guard to false
+          m->initFn->body->body.head->insertAfter(new CondStmt(new SymExpr(mod->privGuard),
+                                                               thenBlock));
         }
         initializeOuterModules(m);
       }

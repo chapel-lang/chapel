@@ -752,6 +752,7 @@ ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock)
   block(iBlock),
   initFn(NULL),
   guard(NULL),
+  privGuard(NULL),
   filename(NULL)
 {
   block->parentSymbol = this;

@@ -854,12 +854,22 @@ process_import_expr(CallExpr* call) {
   ModuleSymbol* mod = getUsedModule(call);
   if (!mod)
     USR_FATAL(call, "Cannot find module");
-  call->getStmtExpr()->insertBefore(new CondStmt(new SymExpr(mod->guard),
-                                                 buildOnStmt(new CallExpr(PRIM_ON_LOCALE_NUM,
-                                                                          new SymExpr(new_IntSymbol(0))),
-                                                             new CondStmt(new SymExpr(mod->guard),
-                                                                          new CallExpr(mod->initFn)))));
-  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, mod->guard, gFalse));
+  if (!strcmp(mod->name, "ChapelStandard"))
+    // ChapelStandard does not have a guard
+    call->getStmtExpr()->insertBefore(new CallExpr(mod->initFn));
+  else {
+    BlockStmt* thenBlock = new BlockStmt(new CallExpr(PRIM_MOVE, mod->privGuard, gFalse));
+    if (fRuntime || !strcmp(mod->name, "ChapelBase"))
+      thenBlock->insertAtTail(new CallExpr(mod->initFn));
+    else {
+      thenBlock->insertAtTail(buildOnStmt(new CallExpr(PRIM_ON_LOCALE_NUM, new SymExpr(new_IntSymbol(0))),
+                                          new CondStmt(new CallExpr("_cond_test", mod->guard),
+                                                       new CallExpr(mod->initFn),
+                                                       new CallExpr(PRIM_MOVE, mod->guard,
+                                                                    new CallExpr("=", mod->guard, new SymExpr(gFalse))))));
+    }
+    call->getStmtExpr()->insertBefore(new CondStmt(new SymExpr(mod->privGuard), thenBlock));
+  }
   if (call->getFunction() == call->getModule()->initFn)
     call->getModule()->block->addUse(mod);
   else
