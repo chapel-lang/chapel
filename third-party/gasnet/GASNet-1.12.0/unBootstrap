@@ -35,9 +35,11 @@ rm -f Makefile.in              \
       vapi-conduit/Makefile.in \
       vapi-conduit/contrib/Makefile.in   \
       shmem-conduit/Makefile.in \
+      template-conduit/Makefile.in \
       other/Makefile.in        \
       other/ammpi/Makefile.in  \
       other/amudp/Makefile.in  \
       other/contrib/Makefile.in \
+      other/firehose/Makefile.in \
       other/testspawn/Makefile.in \
       tests/Makefile

@@ -26,8 +26,10 @@ for arg in "$@"; do
     	echo " -y  force a Bootstrap, even if it looks unnecessary"
     	echo " -n  no checks for autotool presence and versions"
 	echo " -o  Bootstrap for tools-only distribution (default is conduit-mode)"
+	echo " -T  touch Bootstrap-generated files to make them appear up-to-date"
 	exit 1
     	;;
+    -T) DOTOUCH=1 ;;
     -v) autofilter=cat ;;
     -y) CONFIRM=1 ;;
     y) CONFIRM=1 ;; # legacy
@@ -44,6 +46,26 @@ for arg in "$@"; do
     *) ;; # ignore unrecognized args
   esac
 done
+
+if [ "$DOTOUCH" = 1 ]; then
+    if [   -r $srcdir/gasnet_config.h.in \
+        -a -r $srcdir/Makefile.in \
+        -a -r $srcdir/aclocal.m4 \
+        -a -r $srcdir/configure \
+    ]; then
+        echo "Touching Bootstrap-generated files in $srcdir to make them appear up-to-date"
+        cd $srcdir
+        touch aclocal.m4
+        sleep 2
+        touch configure gasnet_config.h.in
+        sleep 2
+        perl -ane 'utime undef, undef, (grep {m/\bMakefile\.in$/ && -f $_} @F);' -- unBootstrap
+        exit 0;
+    else
+        echo "Can't touch generated files because this tree does not appear to be Bootstrapped"
+        exit 1;
+    fi
+fi
 
 DOIT='echo "+ $CMD | \$autofilter" ; ( eval $TIME $CMD 2>&1 || kill $$ ) | eval $autofilter'
 

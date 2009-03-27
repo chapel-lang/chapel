@@ -34,9 +34,13 @@ will be made available in future versions of GASNet:
 * one co-developed by the Chapel team that addresses the use of
   cnos/PMI calls in the portals conduit.
 
-* one that disable's the building of the portals conduit when segment
+* one that disables the building of the portals conduit when segment
   everything has been specified.
 
+* one which supports a -T option for the Bootstrap script that touches
+  the autoconf-generated files in the appropriate order in cases when
+  timestamps are not preserved (such as being stored in our source
+  repository)
 
 The structure of this directory is as follows:
 

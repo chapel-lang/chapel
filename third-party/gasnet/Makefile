@@ -32,7 +32,7 @@ endif
 #
 GASNET_ABS_DIR = $(shell pwd)
 GASNET_INSTALL_DIR = $(GASNET_ABS_DIR)/$(GASNET_INSTALL_SUBDIR)
-GASNET_BUILD_DIR = $(GASNET_INSTALL_DIR)/build
+GASNET_BUILD_DIR = $(GASNET_ABS_DIR)/$(GASNET_BUILD_SUBDIR)
 
 default: all
 
@@ -47,7 +47,7 @@ clobber: FORCE
 
 gasnet-config: FORCE
 	mkdir -p $(GASNET_BUILD_DIR)
-	-cd $(GASNET_SUBDIR) && touch aclocal.m4 && sleep 2 && touch configure gasnet_config.h.in && sleep 2 && (find . -name Makefile.in -print | xargs touch)
+	cd $(GASNET_SUBDIR) && ./Bootstrap -T
 	$(XTRA_CONFIG_COMMAND)
 	cd $(GASNET_BUILD_DIR) && export CC && CC=$(CC) && export CXX && CXX=$(CXX) $(XTRA_CONFIG_EXPORTS) && $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT) --prefix=$(GASNET_INSTALL_DIR) $(CHPL_GASNET_CFG_OPTIONS) --disable-seq --enable-par --disable-parsync
 
