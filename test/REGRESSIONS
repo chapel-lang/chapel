@@ -17,6 +17,16 @@
 general regressions
 ===================
 
+race conditions in module initializations (03/27/09)
+----------------------------------------------------
+[Error matching program output for modules/diten/moduleNotInitialized2]
+[Error matching program output for modules/diten/moduleNotInitialized]
+
+line numbers changed due to sync var mallocs (03/26/09)
+-------------------------------------------------------
+[Error matching program output for memory/shannon/memmaxExceedsLineno2]
+[Error matching program output for memory/shannon/memmaxExceeds]
+
 extremely rare race condition in module initialization
 ------------------------------------------------------
 [Error matching program output for modules/diten/useInBegin]
@@ -119,11 +129,6 @@ times out spuriously
 ==============================================
 gasnet-fast regressions (other than the above)
 ==============================================
-
-line numbers changed (03/26/09)
--------------------------------
-[Error matching program output for memory/shannon/memmaxExceedsLineno2]
-[Error matching program output for memory/shannon/memmaxExceeds]
 
 extremely infrequent dereference of nil after printing results (02/15/09)
 -------------------------------------------------------------------------
@@ -393,7 +398,7 @@ intel-specific regressions
 
 spurious out-of-memory error
 ----------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (e.g., 03/07/09)
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (e.g., 03/07/09, 03/27/09)
 
 
 ===========================
@@ -402,7 +407,7 @@ darwin-specific regressions
 
 infrequent failure on Sam's Mac
 -------------------------------
-[Error matching program output for trivial/diten/tutorial/timers] (e.g., 03/13/09)
+[Error matching program output for trivial/diten/tutorial/timers] (e.g., 03/13/09, 03/27/09)
 
 
 infrequent seg fault on Sam's Mac
