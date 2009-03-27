@@ -2824,7 +2824,10 @@ if test "$enabled_portals" = yes; then
       ;;
   esac
 
-  if test "$gasnet_cv_cc_family" != GNU; then
+  if expr "$segconfig" : everything >/dev/null; then
+    GASNET_MSG_WARN([portals-conduit does not support the EVERYTHING shared segment configuration])
+    have_portals=no
+  elif test "$gasnet_cv_cc_family" != GNU; then
     # bug 1584 - non-GNU compilers don't support portals until PE v1.5
     if test -z "$XTOS_VERSION" ; then
       for val in "$PE_DIR" "$PRGENV_DIR" "$OS_DIR" "$CATAMOUNT_DIR" ; do

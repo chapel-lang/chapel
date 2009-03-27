@@ -78834,7 +78834,25 @@ echo "$as_me: error: See $CONFIG_FILE for details." >&2;}
       ;;
   esac
 
-  if test "$gasnet_cv_cc_family" != GNU; then
+  if expr "$segconfig" : everything >/dev/null; then
+
+
+
+
+# vvvvvvvvvvvvvvvvvvvvvv GASNET_MSG_WARN() vvvvvvvvvvvvvvvvvvvvvv (L:1)
+
+  { echo "$as_me:$LINENO: WARNING: portals-conduit does not support the EVERYTHING shared segment configuration" >&5
+echo "$as_me: WARNING: portals-conduit does not support the EVERYTHING shared segment configuration" >&2;}
+  echo "portals-conduit does not support the EVERYTHING shared segment configuration" >> ".gasnet_cv_configure_warnings.tmp"
+  echo " " >> ".gasnet_cv_configure_warnings.tmp"
+
+# ^^^^^^^^^^^^^^^^^^^^^^ GASNET_MSG_WARN() ^^^^^^^^^^^^^^^^^^^^^^ (L:1)
+
+
+
+
+    have_portals=no
+  elif test "$gasnet_cv_cc_family" != GNU; then
     # bug 1584 - non-GNU compilers don't support portals until PE v1.5
     if test -z "$XTOS_VERSION" ; then
       for val in "$PE_DIR" "$PRGENV_DIR" "$OS_DIR" "$CATAMOUNT_DIR" ; do
