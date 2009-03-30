@@ -228,11 +228,10 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
                   INT_FATAL(var->defPoint, "variable used outside of block in which it's declared");
               }
               CallExpr* call = toCallExpr(se->parentExpr);
-#if 0
-              if (call && (//call->isPrimitive(PRIM_SET_REF) || call->isPrimitive(PRIM_GET_MEMBER) ||
-                  call->isPrimitive(PRIM_GET_MEMBER_VALUE)))
+              if (call && (call->isPrimitive(PRIM_SET_REF) || call->isPrimitive(PRIM_GET_REF) /*||
+                  call->isPrimitive(PRIM_GET_MEMBER) || call->isPrimitive(PRIM_GET_MEMBER_VALUE)*/) &&
+                  lhs->var->type == dtString)
                 call = toCallExpr(call->parentExpr);
-#endif
               if (call) {
                 if (call->isPrimitive(PRIM_MOVE)) {
                   if (fn->getReturnSymbol() == toSymExpr(call->get(1))->var) {
@@ -253,7 +252,8 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
                     maybeCallDestructor = false;
                     break;
 #endif
-                  } else if (toSymExpr(call->get(1))->var->type == var->type->refType) {
+                  } else if (toSymExpr(call->get(1))->var->type == var->type->refType &&
+                             (lhs->var->type != dtString || !isCallExpr(call->get(2)))) {
                     maybeCallDestructor = false;
                     break;
                   } else if (isArgSymbol(toSymExpr(call->get(1))->var)) {
