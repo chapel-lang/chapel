@@ -49,7 +49,7 @@ gasnet-config: FORCE
 	mkdir -p $(GASNET_BUILD_DIR)
 	cd $(GASNET_SUBDIR) && ./Bootstrap -T
 	$(XTRA_CONFIG_COMMAND)
-	cd $(GASNET_BUILD_DIR) && export CC && CC=$(CC) && export CXX && CXX=$(CXX) $(XTRA_CONFIG_EXPORTS) && $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT) --prefix=$(GASNET_INSTALL_DIR) $(CHPL_GASNET_CFG_OPTIONS) --disable-seq --enable-par --disable-parsync
+	cd $(GASNET_BUILD_DIR) && export CC && CC='$(CC)' && export CXX && CXX='$(CXX)' $(XTRA_CONFIG_EXPORTS) && $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT) --prefix=$(GASNET_INSTALL_DIR) $(CHPL_GASNET_CFG_OPTIONS) --disable-seq --enable-par --disable-parsync
 
 gasnet-build: FORCE
 	cd $(GASNET_BUILD_DIR) && $(MAKE) all
