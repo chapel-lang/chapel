@@ -24,10 +24,18 @@ sleep(1);
 t.stop();
 
 //
+// On some systems, a request to sleep for a given period of time could result
+// in a delay slightly less than the requested amount of time, so when checking
+// how much time has elapsed, we need to multiply the desired amount of time
+// by a factor that is very nearly one.
+//
+const almostOne = 0.99996;
+
+//
 // By now, at least one second should have elapsed. By default, the elapsed
 // method reports time in seconds.
 //
-if t.elapsed() < 1 then
+if t.elapsed() < 1 * almostOne then
   halt("Didn't sleep for a full second");
 else
   writeln("Slept for at least 1 second");
@@ -35,7 +43,7 @@ else
 // The elapsed time can also be checked in units other than seconds. The
 // supported units are: microseconds, milliseconds, seconds, minutes, hours.
 //
-if t.elapsed(TimeUnits.milliseconds) < 1000 then
+if t.elapsed(TimeUnits.milliseconds) < 1000 * almostOne then
   halt("Didn't sleep for a full second");
 else
   writeln("Slept for at least 1 thousand milliseconds");
@@ -46,7 +54,7 @@ else
 t.start();
 sleep(1);
 t.stop();
-if t.elapsed(TimeUnits.microseconds) < 2000000 then
+if t.elapsed(TimeUnits.microseconds) < 2000000 * almostOne then
   halt("Didn't accumulate enough time");
 else
   writeln("Accumulated at least 2 million microseconds");
