@@ -27,20 +27,20 @@ static int mysystem(const char* command, const char* description,
 
 // Chapel interface
 
-int32_t _chpl_comm_getMaxThreads(void) {
+int32_t chpl_comm_getMaxThreads(void) {
   return 0;
 }
 
-int32_t _chpl_comm_maxThreadsLimit(void) {
+int32_t chpl_comm_maxThreadsLimit(void) {
   return 0;
 }
 
-void _chpl_comm_init(int *argc_p, char ***argv_p) {
-  _numLocales = 1;
-  _localeID = 0;
+void chpl_comm_init(int *argc_p, char ***argv_p) {
+  chpl_numLocales = 1;
+  chpl_localeID = 0;
 }
 
-int _chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
+int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   int i;
   char* command = chpl_glom_strings(2, "gdb -q -ex 'break gdbShouldBreakHere' --args ",
                                     argv[0]);
@@ -54,33 +54,33 @@ int _chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   return 1;
 }
 
-void _chpl_comm_init_shared_heap(void) {
+void chpl_comm_init_shared_heap(void) {
   initHeap(NULL, 0);
 }
 
-void _chpl_comm_rollcall(void) {
+void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single locale\n");
 }
 
-void _chpl_comm_alloc_registry(int numGlobals) { 
-  _global_vars_registry = _global_vars_registry_static;
+void chpl_comm_alloc_registry(int numGlobals) { 
+  chpl_globals_registry = chpl_globals_registry_static;
 }
 
-void _chpl_comm_broadcast_global_vars(int numGlobals) { }
+void chpl_comm_broadcast_global_vars(int numGlobals) { }
 
-void _chpl_comm_broadcast_private(void* addr, int size) { }
+void chpl_comm_broadcast_private(void* addr, int size) { }
 
-void _chpl_comm_barrier(const char *msg) { }
+void chpl_comm_barrier(const char *msg) { }
 
-void _chpl_comm_exit_any(int status) { }
+void chpl_comm_exit_any(int status) { }
 
-void _chpl_comm_exit_all(int status) { }
+void chpl_comm_exit_all(int status) { }
 
-void  _chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   memcpy(raddr, addr, size);
 }
 
-void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   memcpy(addr, raddr, size);
 }
 
@@ -98,12 +98,12 @@ static void fork_nb_wrapper(fork_t* f) {
   chpl_free(f, 0, 0);
 }
 
-void _chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   fork_t *info;
   int     info_size;
 
   info_size = sizeof(fork_t) + arg_size;
-  info = (fork_t*)chpl_malloc(info_size, sizeof(char), "_chpl_comm_fork_nb info", 0, 0);
+  info = (fork_t*)chpl_malloc(info_size, sizeof(char), "chpl_comm_fork_nb info", 0, 0);
   info->fid = fid;
   info->arg_size = arg_size;
   if (arg_size)
@@ -111,7 +111,7 @@ void _chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
   chpl_begin((chpl_fn_p)fork_nb_wrapper, (void*)info, false, false, NULL);
 }
 
-void _chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   (*chpl_ftable[fid])(arg);
 }
 

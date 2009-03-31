@@ -29,8 +29,8 @@
 typedef struct chpl_pool_struct {
   chpl_fn_p        fun;             // function to call for task
   void*            arg;             // argument to the function
-  _Bool            serial_state;    // whether new threads can be created while executing fun
-  _Bool            begun;           // whether execution of this task has begun
+  chpl_bool        serial_state;    // whether new threads can be created while executing fun
+  chpl_bool        begun;           // whether execution of this task has begun
   chpl_task_list_p task_list_entry; // points to the task list entry, if there is one
   chpl_task_pool_p next;
   chpl_string filename;
@@ -66,7 +66,7 @@ static int              threads_cnt;        // number of threads (total)
 static int              blocked_thread_cnt; // number of threads waiting for something
 static int              idle_cnt;           // number of threads that are idle
 static int              extra_task_cnt;     // number of threads executing more than one task
-static _Bool*           maybe_deadlocked;   // whether all existing threads are blocked
+static chpl_bool*       maybe_deadlocked;   // whether all existing threads are blocked
 static chpl_mutex_t     report_lock;        // critical section lock
 static pthread_key_t    lock_report_key;
 
@@ -74,7 +74,7 @@ static pthread_key_t    lock_report_key;
 typedef struct lockReport {
   const char* filename;
   int lineno;
-  _Bool maybeLocked, maybeDeadlocked;
+  chpl_bool maybeLocked, maybeDeadlocked;
   struct lockReport* next;
 } lockReport;
 
@@ -84,7 +84,7 @@ lockReport* lockReportTail = NULL;
 
 static void  traverseLockedThreads(int sig);
 static void  tasksReport(int sig);
-static _Bool setBlockingLocation(int lineno, chpl_string filename);
+static chpl_bool setBlockingLocation(int lineno, chpl_string filename);
 static void  unsetBlockingLocation(void);
 static void  initializeLockReportForThread(void);
 static chpl_string idleThreadName = "|idle|";
@@ -284,7 +284,7 @@ void chpl_init_single_aux(chpl_single_aux_t *s) {
 
 // Threads
 
-static void serial_delete(_Bool *p) {
+static void serial_delete(chpl_bool *p) {
   if (p != NULL)
     chpl_free(p, 0, 0);
 }
@@ -393,7 +393,7 @@ void initChplThreads() {
 
 
 void exitChplThreads() {
-  _Bool debug = false;
+  chpl_bool debug = false;
   if (debug)
     fprintf(stderr, "A total of %d threads were created; waking_cnt = %d\n", threads_cnt, waking_cnt);
   pthread_key_delete(serial_key);
@@ -412,17 +412,17 @@ uint64_t chpl_thread_id(void) {
 
 
 chpl_bool chpl_get_serial(void) {
-  _Bool *p;
-  p = (_Bool*) pthread_getspecific(serial_key);
+  chpl_bool *p;
+  p = (chpl_bool*) pthread_getspecific(serial_key);
   return p == NULL ? false : *p;
 }
 
 void chpl_set_serial(chpl_bool state) {
-  _Bool *p;
-  p = (_Bool*) pthread_getspecific(serial_key);
+  chpl_bool *p;
+  p = (chpl_bool*) pthread_getspecific(serial_key);
   if (p == NULL) {
     if (state) {
-      p = (_Bool*) chpl_alloc(sizeof(_Bool), "serial flag", 0, 0);
+      p = (chpl_bool*) chpl_alloc(sizeof(chpl_bool), "serial flag", 0, 0);
       *p = state;
       if (pthread_setspecific(serial_key, p))
         chpl_internal_error("serial key got corrupted");
@@ -491,9 +491,9 @@ static void tasksReport(int sig) {
     _chpl_exit_any(1);
 }
 
-static _Bool setBlockingLocation(int lineno, chpl_string filename) {
+static chpl_bool setBlockingLocation(int lineno, chpl_string filename) {
   lockReport* lockRprt;
-  _Bool isLastUnblockedThread = false;
+  chpl_bool isLastUnblockedThread = false;
   if (blockreport) {
     lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
     lockRprt->filename = filename;
@@ -623,7 +623,7 @@ chpl_begin_helper (chpl_task_pool_p task) {
     // wait for a task to be added to the task pool
     //
     do {
-      _Bool timed_out = false;
+      chpl_bool timed_out = false;
       while (!task_pool_head || timed_out) {
         timed_out = false;
         if (setBlockingLocation(0, idleThreadName)) {
@@ -705,7 +705,7 @@ static void
 launch_next_task(void) {
   pthread_t        thread;
   chpl_task_pool_p task;
-  static _Bool warning_issued = false;
+  static chpl_bool warning_issued = false;
 
   if (warning_issued)  // If thread creation failed previously, don't try again!
     return;
@@ -779,7 +779,7 @@ static void schedule_next_task(int howMany) {
 static chpl_task_pool_p add_to_task_pool (
     chpl_fn_p fp,
     void* a,
-   _Bool serial,
+   chpl_bool serial,
     chpl_task_list_p task_list_entry)
 {
   chpl_task_pool_p task = (chpl_task_pool_p)chpl_alloc(sizeof(task_pool_t), "task pool entry", 0, 0);
@@ -846,7 +846,7 @@ void chpl_add_to_task_list (chpl_fn_int_t fid, void* arg,
                             chpl_bool call_chpl_begin,
                             int lineno,
                             chpl_string filename) {
-  if (task_list_locale == _localeID) {
+  if (task_list_locale == chpl_localeID) {
     chpl_task_list_p task = (chpl_task_list_p)chpl_alloc(sizeof(struct chpl_task_list), "task list entry", 0, 0);
     task->filename = filename;
     task->lineno = lineno;
@@ -872,7 +872,7 @@ void chpl_add_to_task_list (chpl_fn_int_t fid, void* arg,
       chpl_mutex_unlock(&task_list_lock);
   }
   else {
-    // call_chpl_begin should be true here because if task_list_locale != _localeID, then
+    // call_chpl_begin should be true here because if task_list_locale != chpl_localeID, then
     // this function could not have been called from the context of a cobegin or coforall
     // statement, which are the only contexts in which chpl_begin() should not be called.
     assert(call_chpl_begin);
@@ -884,7 +884,7 @@ void chpl_process_task_list (chpl_task_list_p task_list) {
   // task_list points to the last entry on the list; task_list->next is actually
   // the first element on the list.
   chpl_task_list_p task = task_list, next_task;
-  _Bool serial = chpl_get_serial();
+  chpl_bool serial = chpl_get_serial();
   // This function is not expected to be called if a cobegin contains fewer
   // than two statements; a coforall, however, may generate just one task,
   // or even none at all.

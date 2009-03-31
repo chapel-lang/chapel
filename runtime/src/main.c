@@ -19,16 +19,16 @@ int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
 
-  _chpl_comm_init(&argc, &argv);
-  _chpl_comm_init_shared_heap();
+  chpl_comm_init(&argc, &argv);
+  chpl_comm_init_shared_heap();
 
-  _chpl_comm_barrier("about to leave comm init code");
+  chpl_comm_barrier("about to leave comm init code");
   chpl__heapAllocateGlobals();    // allocate global vars on heap for multilocale
   parseArgs(argc, argv);
   runInGDB = _runInGDB();
   if (runInGDB) {
     int status;
-    if (_chpl_comm_run_in_gdb(argc, argv, runInGDB, &status)) {
+    if (chpl_comm_run_in_gdb(argc, argv, runInGDB, &status)) {
       _chpl_exit_all(status);
     }
   }
@@ -38,21 +38,21 @@ int main(int argc, char* argv[]) {
   // comm layer decide how many to use (or flag an error)
   //
   if (execNumLocales == 0) {
-    execNumLocales = _chpl_comm_default_num_locales();
+    execNumLocales = chpl_comm_default_num_locales();
   }
   //
   // Before proceeding, allow the comm layer to verify that the
   // number of locales is reasonable
   //
-  _chpl_comm_verify_num_locales(execNumLocales);
-  _chpl_comm_rollcall();
+  chpl_comm_verify_num_locales(execNumLocales);
+  chpl_comm_rollcall();
   initMemTable();            // get ready to start tracking memory
   CreateConfigVarTable();    // get ready to start tracking config vars
   chpl_init_chapel_code();
   initChplThreads();         // initialize the threads layer
   chpl__initModuleGuards();  // initialize per-locale run once guard vars
 
-  if (_localeID == 0) {      // have locale #0 run the user's main function
+  if (chpl_localeID == 0) {      // have locale #0 run the user's main function
     chpl_main();
     // the following does nothing unless --memfinalstat is specified at run time
     chpl_printMemTable(-1, __LINE__, __FILE__);

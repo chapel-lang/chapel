@@ -28,7 +28,7 @@ if (CHPL_COMM == "unset") {
 
 
 // the number of locales on which to run the program
-config const numLocales: int = __primitive("_chpl_comm_default_num_locales");
+config const numLocales: int = __primitive("chpl_comm_default_num_locales");
 
 // the maximum number of threads that can be live at any given time
 config const maxThreads: int = __primitive("chpl_maxThreads");

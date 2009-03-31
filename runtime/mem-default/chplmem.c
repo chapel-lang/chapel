@@ -84,7 +84,7 @@ void* chpl_malloc(size_t number, size_t size,
 #if MEM_DIAGNOSIS
   if (chpl_memDiagnosisFlag)
     printf("MD- %d:%p chpl_malloc(%lu, %lu, \"%s\", %d, %s)\n",
-           _localeID, memAlloc, (unsigned long)number,
+           chpl_localeID, memAlloc, (unsigned long)number,
            (unsigned long)size, description, lineno, filename);
 #endif
 
@@ -139,7 +139,7 @@ void chpl_free(void* memAlloc, int32_t lineno, chpl_string filename) {
 
 #if MEM_DIAGNOSIS
     if (chpl_memDiagnosisFlag)
-      printf("MD- %d:%p chpl_free(%d, %s)\n", _localeID, memAlloc, lineno, filename);
+      printf("MD- %d:%p chpl_free(%d, %s)\n", chpl_localeID, memAlloc, lineno, filename);
 #endif
   }
 

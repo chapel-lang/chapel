@@ -417,9 +417,9 @@ static void codegen_header(void) {
   }
 
   if (!fRuntime) {
-    fprintf(outfile, "\nconst int numGlobalsOnHeap = %d;\n", numGlobalsOnHeap);
-    fprintf(outfile, "\nchar** _global_vars_registry;\n");
-    fprintf(outfile, "\nchar* _global_vars_registry_static[%d];\n", 
+    fprintf(outfile, "\nconst int chpl_numGlobalsOnHeap = %d;\n", numGlobalsOnHeap);
+    fprintf(outfile, "\nchar** chpl_globals_registry;\n");
+    fprintf(outfile, "\nchar* chpl_globals_registry_static[%d];\n", 
             (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
   }
 

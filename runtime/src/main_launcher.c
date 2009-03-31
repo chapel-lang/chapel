@@ -23,13 +23,13 @@ int main(int argc, char* argv[]) {
   // comm layer decide how many to use (or flag an error)
   //
   if (execNumLocales == 0) {
-    execNumLocales = _chpl_comm_default_num_locales();
+    execNumLocales = chpl_comm_default_num_locales();
   }
   //
   // Before proceeding, allow the comm layer to verify that the
   // number of locales is reasonable
   //
-  _chpl_comm_verify_num_locales(execNumLocales);
+  chpl_comm_verify_num_locales(execNumLocales);
 
   {
     const char* command = chpl_launch_create_command(argc, argv, execNumLocales);

@@ -24,7 +24,7 @@ static chpl_task_pool_p     task_pool_head; // head of task pool
 static chpl_task_pool_p     task_pool_tail; // tail of task pool
 static int                  queued_cnt;     // number of tasks in the task pool
 
-static _Bool
+static chpl_bool
 launch_next_task(void) {
   if (task_pool_head) {
     // retrieve the first task from the task pool
@@ -150,7 +150,7 @@ uint32_t chpl_numRunningTasks(void) { return 1; }
 
 int32_t  chpl_numBlockedTasks(void) { return 0; }
 
-static _Bool serial_state;
+static chpl_bool serial_state;
 
 void initChplThreads() {
   task_pool_head = task_pool_tail = NULL;

@@ -16,11 +16,11 @@ static void _chpl_exit_common(int status, int all) {
     gdbShouldBreakHere();
   }
   if (all) {
-    _chpl_comm_barrier("_chpl_comm_exit_all");
+    chpl_comm_barrier("chpl_comm_exit_all");
     exitChplThreads();         // tear down the threads
-    _chpl_comm_exit_all(status);
+    chpl_comm_exit_all(status);
   } else {
-    _chpl_comm_exit_any(status);
+    chpl_comm_exit_any(status);
   }
   exit(status);
 }

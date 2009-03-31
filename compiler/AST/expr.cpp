@@ -779,7 +779,7 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ").locale");
           } else {
             get(1)->codegen(outfile);
-            fprintf(outfile, " = _localeID");
+            fprintf(outfile, " = chpl_localeID");
           }
           break;
         }
@@ -1907,13 +1907,13 @@ void CallExpr::codegen(FILE* outfile) {
       INT_FATAL(this, "handled in move");
       break;
     case PRIM_LOCALE_ID:
-      fprintf(outfile, "_localeID");
+      fprintf(outfile, "chpl_localeID");
       break;
     case PRIM_NUM_LOCALES:
-      fprintf(outfile, "_chpl_comm_default_num_locales()");
+      fprintf(outfile, "chpl_comm_default_num_locales()");
       break;
     case PRIM_ALLOC_GVR:
-      fprintf(outfile, "_chpl_comm_alloc_registry(%d)", numGlobalsOnHeap);
+      fprintf(outfile, "chpl_comm_alloc_registry(%d)", numGlobalsOnHeap);
       break;
     case PRIM_HEAP_REGISTER_GLOBAL_VAR:
       fprintf(outfile, "CHPL_HEAP_REGISTER_GLOBAL_VAR(");
@@ -1928,7 +1928,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     case PRIM_PRIVATE_BROADCAST:
-      fprintf(outfile, "_chpl_comm_broadcast_private(&(");
+      fprintf(outfile, "chpl_comm_broadcast_private(&(");
       get(1)->codegen(outfile);
       fprintf(outfile, "), sizeof(");
       get(1)->typeInfo()->codegen(outfile);
@@ -2013,7 +2013,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(lastField)->codegen(outfile);
-      fputs(".locale != _localeID ? NULL : &((", outfile);
+      fputs(".locale != chpl_localeID ? NULL : &((", outfile);
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(lastField)->codegen(outfile);
@@ -2031,7 +2031,7 @@ void CallExpr::codegen(FILE* outfile) {
       bundledArgsType->getField(lastField)->codegen(outfile);
       fputs(".locale", outfile);
     } else
-      fputs("_localeID)", outfile);
+      fputs("chpl_localeID)", outfile);
     fprintf(outfile, ", true, %d, \"%s\");\n",
             fn->lineno, fn->getModule()->filename);
     return;
@@ -2066,7 +2066,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(endCountField)->codegen(outfile);
-      fputs(".locale != _localeID ? NULL : &((", outfile);
+      fputs(".locale != chpl_localeID ? NULL : &((", outfile);
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(endCountField)->codegen(outfile);
@@ -2076,7 +2076,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(endCountField)->codegen(outfile);
-      fputs(".locale != _localeID ? NULL : &((", outfile);
+      fputs(".locale != chpl_localeID ? NULL : &((", outfile);
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(endCountField)->codegen(outfile);
@@ -2095,14 +2095,14 @@ void CallExpr::codegen(FILE* outfile) {
       fputc(')', outfile);
     }
     fputs("->taskList)", outfile);
-    fprintf(outfile, ", _localeID, false, %d, \"%s\");\n",
+    fprintf(outfile, ", chpl_localeID, false, %d, \"%s\");\n",
             baseExpr->lineno, baseExpr->getModule()->filename);
     return;
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
     if (fn->hasFlag(FLAG_NON_BLOCKING))
-      fprintf(outfile, "_chpl_comm_fork_nb(");
+      fprintf(outfile, "chpl_comm_fork_nb(");
     else
-      fprintf(outfile, "_chpl_comm_fork(");
+      fprintf(outfile, "chpl_comm_fork(");
     get(1)->codegen(outfile);
     fprintf(outfile, ", /* %s */ %d, ", fn->cname, ftable.get(fn));
     get(2)->codegen(outfile);

@@ -4,7 +4,7 @@
 // bogus mutex type (no mutexes)
 typedef int chpl_mutex_t;
 
-typedef _Bool chpl_sync_aux_t;       // only needs to store the full/empty bit
+typedef chpl_bool chpl_sync_aux_t; // only needs to store the full/empty bit
 typedef chpl_sync_aux_t chpl_single_aux_t;
 
 #endif

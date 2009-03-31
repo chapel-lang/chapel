@@ -37,7 +37,7 @@ _real64 _now_time(void);
 
 #define _WIDE_ARRAY_ALLOC(x, type, size, lineno, filename)              \
   do {                                                                 \
-    if (x.locale != _localeID)                                         \
+    if (x.locale != chpl_localeID)                                         \
       chpl_error("array vector data is not local", lineno, filename); \
     _ARRAY_ALLOC((x).addr, type, size, lineno, filename);               \
   } while (0)
@@ -50,7 +50,7 @@ _real64 _now_time(void);
 
 #define _WIDE_ARRAY_FREE(x, lineno, filename)                          \
   do {                                                                 \
-    if (x.locale != _localeID)                                         \
+    if (x.locale != chpl_localeID)                                         \
       chpl_error("array vector data is not local", lineno, filename);  \
     _ARRAY_FREE((x).addr, lineno, filename);                           \
   } while (0)
