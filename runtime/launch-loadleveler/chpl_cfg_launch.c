@@ -52,7 +52,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   fprintf(llFile, "# @ node = %d\n", numLocales);
   fprintf(llFile, "# @ tasks_per_node = 1\n");
   if (projectString && strlen(projectString) > 0)
-      fprintf(llFile, "# # class = %s\n", projectString);
+      fprintf(llFile, "# @ class = %s\n", projectString);
   fprintf(llFile, "# @ output = out.$(jobid)\n");
   fprintf(llFile, "# @ error = err.$(jobid)\n");
   fprintf(llFile, "# @ queue\n");
