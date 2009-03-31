@@ -202,7 +202,7 @@ void chpl_set_serial(chpl_bool state) {
 
 
 void
-chpl_begin (chpl_threadfp_t fp, chpl_threadarg_t arg, chpl_bool ignore_serial, 
+chpl_begin (chpl_fn_p fp, void* arg, chpl_bool ignore_serial, 
             chpl_bool serial_state, chpl_task_list_p task_list_entry) {
 
   if (!ignore_serial && chpl_get_serial())
@@ -229,16 +229,14 @@ chpl_begin (chpl_threadfp_t fp, chpl_threadarg_t arg, chpl_bool ignore_serial,
   }
 }
 
-void chpl_add_to_task_list (
-    chpl_threadfp_t  fun,
-    chpl_threadarg_t arg,
-    chpl_task_list_p *task_list,
-    int32_t task_list_locale,
-    chpl_bool call_chpl_begin,
-    int lineno,
-    chpl_string filename)
-{
-  chpl_begin (fun, arg, false, false, NULL);
+void chpl_add_to_task_list(chpl_fn_int_t fid,
+                           void* arg,
+                           chpl_task_list_p *task_list,
+                           int32_t task_list_locale,
+                           chpl_bool call_chpl_begin,
+                           int lineno,
+                           chpl_string filename) {
+  chpl_begin(chpl_ftable[fid], arg, false, false, NULL);
 }
 
 void chpl_process_task_list (chpl_task_list_p task_list) { }

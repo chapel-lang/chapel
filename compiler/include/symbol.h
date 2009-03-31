@@ -269,4 +269,6 @@ extern Symbol *gSingleVarAuxFields;
 
 extern Symbol *gTaskList;
 
+extern Map<FnSymbol*,int> ftable;
+
 #endif

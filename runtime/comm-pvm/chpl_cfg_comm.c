@@ -79,12 +79,12 @@ void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int 
   return;
 }
 
-void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
+void  _chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   fprintf(stderr, "chpl_comm_fork called");
   return;
 }
 
-void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
+void  _chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   fprintf(stderr, "chpl_comm_fork_nb called");
   return;
 }

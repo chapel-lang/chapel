@@ -72,7 +72,12 @@ typedef struct __chpl_mpi_message_info {
   int msg_type : 4;    // One of the ChplCommMsgType enum values
   int replyTag : 27;   // Use this tag for the reply message
   int size;            // Size at location, or size of function arguments
-  void* location;      // Either function pointer or data location
+  void* location;      // Either function id or data location
+                       // sjd: I changed this to store a function id
+                       // so that we don't rely on function pointers
+                       // being the same, but this may not be the same
+                       // size as void*; we probably need a union
+                       // here, or just two fields.
 } _chpl_mpi_message_info;
 
 //
@@ -80,7 +85,7 @@ typedef struct __chpl_mpi_message_info {
 // the function, send an empty message to joinLocale with replyTag.
 // 
 typedef struct __chpl_RPC_arg {
-  func_p function;
+  chpl_fn_int_t fid;
   void* arg;
   int replyTag;
   int joinLocale;
@@ -123,7 +128,7 @@ static int makeTag(int threadID, int localeID) {
 
 static void chpl_RPC(_chpl_RPC_arg* arg) {
   PRINTF("Doing forked task");
-  arg->function(arg->arg);
+  (*chpl_table[arg->fid])(arg->arg);
   PRINTF("Did task");
   chpl_mpi_send(NULL, 0, MPI_BYTE, arg->joinLocale, arg->replyTag, MPI_COMM_WORLD);
   if (arg->arg != NULL)
@@ -245,7 +250,7 @@ static void chpl_mpi_polling_thread(void* arg) {
         break;
       }
       case ChplCommFork: {
-        chpl_threadarg_t args;
+        void* args;
         _chpl_RPC_arg* rpcArg = chpl_malloc(1, sizeof(_chpl_RPC_arg), "RPC args", __LINE__, __FILE__);
 #if CHPL_DIST_DEBUG
         sprintf(debugMsg, "Fulfilling ChplCommFork(fromloc=%d, tag=%d)", status.MPI_SOURCE, msg_info.replyTag);
@@ -259,16 +264,16 @@ static void chpl_mpi_polling_thread(void* arg) {
 
         chpl_mpi_recv(args, msg_info.size, MPI_BYTE, status.MPI_SOURCE, msg_info.replyTag, MPI_COMM_WORLD);
 
-        rpcArg->function = (func_p)msg_info.location;
+        rpcArg->fid = (chpl_fn_int_t)msg_info.location;
         rpcArg->arg = args;
         rpcArg->replyTag = msg_info.replyTag;
         rpcArg->joinLocale = status.MPI_SOURCE;
 
-        chpl_begin((chpl_threadfp_t)chpl_RPC, rpcArg, false, false, NULL);
+        chpl_begin((chpl_fn_p)chpl_RPC, rpcArg, false, false, NULL);
         break;
       }
       case ChplCommForkNB: {
-        chpl_threadarg_t args;
+        void* args;
         _chpl_RPC_arg* rpcArg = chpl_malloc(1, sizeof(_chpl_RPC_arg), "RPC args", __LINE__, __FILE__);
 #if CHPL_DIST_DEBUG
         sprintf(debugMsg, "Fulfilling ChplCommForkNB(fromloc=%d, tag=%d)", status.MPI_SOURCE, msg_info.replyTag);
@@ -281,7 +286,7 @@ static void chpl_mpi_polling_thread(void* arg) {
         }
         chpl_mpi_recv(args, msg_info.size, MPI_BYTE, status.MPI_SOURCE,
                       msg_info.replyTag, MPI_COMM_WORLD);
-        chpl_begin((chpl_threadfp_t)msg_info.location, args, false, false, NULL);
+        chpl_begin((chpl_fn_p)msg_info.location, args, false, false, NULL);
         break;
       }
       case ChplCommFinish: {
@@ -328,7 +333,7 @@ void _chpl_comm_init(int *argc_p, char ***argv_p) {
     chpl_internal_error("pthread_mutex_init() failed");
 
   if (pthread_create(&polling_thread, NULL,
-                     (chpl_threadfp_t)chpl_mpi_polling_thread, 0))
+                     (void*(*)(void*))chpl_mpi_polling_thread, 0))
     chpl_internal_error("unable to start polling thread for mpi");
   pthread_detach(polling_thread);
 }
@@ -461,9 +466,9 @@ void  _chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size) {
 }
 
 
-void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
+void  _chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   if (_localeID == locale) {
-    (*f)(arg);
+    (*chpl_ftable[fid])(arg);
   } else {
     _chpl_mpi_message_info msg_info;
     int tag = makeTag((int)pthread_self(), _localeID);
@@ -475,7 +480,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
     msg_info.msg_type = ChplCommFork;
     msg_info.replyTag = tag;
     msg_info.size = arg_size;
-    msg_info.location = f;
+    msg_info.location = (void*)fid;
 
     chpl_mpi_send(&msg_info, sizeof(_chpl_mpi_message_info), MPI_BYTE,
                   locale, TAGMASK+1, MPI_COMM_WORLD);
@@ -486,12 +491,12 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
 }
 
 
-void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
+void  _chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   _chpl_mpi_message_info msg_info;
   if (_localeID == locale) {
     void* argCopy = chpl_malloc(1, arg_size, "fork_nb argument copy", __LINE__, __FILE__);
     memmove(argCopy, arg, arg_size);
-    chpl_begin((chpl_threadfp_t)f, argCopy, false, false, NULL);
+    chpl_begin((chpl_fn_p)chpl_ftable[fid], argCopy, false, false, NULL);
   } else {
     int tag = makeTag((int)pthread_self(), _localeID);
 #if CHPL_DIST_DEBUG
@@ -500,7 +505,7 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
     PRINTF(debugMsg);
 #endif
     msg_info.msg_type = ChplCommForkNB;
-    msg_info.location = f;
+    msg_info.location = (void*)fid;
     msg_info.size = arg_size;
     msg_info.replyTag = tag;
 

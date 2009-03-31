@@ -29,6 +29,9 @@ typedef int16_t chpl_bool16;
 typedef int32_t chpl_bool32;
 typedef int64_t chpl_bool64;
 
+typedef void (*chpl_fn_p)(void*); // function pointer for runtime ftable
+typedef int16_t chpl_fn_int_t;    // int type for ftable indexing
+
 // It is tempting to #undef true and false and then #define them just to be sure
 // they expand correctly, but future versions of the C standard may not allow this!
 #ifndef false

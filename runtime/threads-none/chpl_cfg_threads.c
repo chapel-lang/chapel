@@ -14,9 +14,9 @@
 // task pool: linked list of tasks
 //
 typedef struct chpl_pool_struct {
-  chpl_threadfp_t  fun;          // function to call for task
-  chpl_threadarg_t arg;          // argument to the function
-  _Bool            serial_state; // whether new threads can be created while executing fun
+  chpl_fn_p fun;          // function to call for task
+  void*     arg;          // argument to the function
+  chpl_bool serial_state; // whether new threads can be created while executing fun
   chpl_task_pool_p next;
 } task_pool_t;
 
@@ -169,9 +169,8 @@ void chpl_set_serial(chpl_bool new_state) {
   serial_state = new_state;
 }
 
-void
-chpl_begin(chpl_threadfp_t fp, chpl_threadarg_t a, chpl_bool ignore_serial,
-           chpl_bool serial_state, chpl_task_list_p task_list_entry) {
+void chpl_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
+                chpl_bool serial_state, chpl_task_list_p task_list_entry) {
   if (!ignore_serial && chpl_get_serial()) {
     (*fp)(a);
   } else {
@@ -194,18 +193,14 @@ chpl_begin(chpl_threadfp_t fp, chpl_threadarg_t a, chpl_bool ignore_serial,
   }
 }
 
-
-
-void chpl_add_to_task_list(
-    chpl_threadfp_t fun,
-    chpl_threadarg_t arg,
-    chpl_task_list_p *task_list,
-    int32_t task_list_locale,
-    chpl_bool call_chpl_begin,
-    int lineno,
-    chpl_string filename)
-{
-  chpl_begin (fun, arg, false, false, NULL);
+void chpl_add_to_task_list(chpl_fn_int_t fid,
+                           void* arg,
+                           chpl_task_list_p *task_list,
+                           int32_t task_list_locale,
+                           chpl_bool call_chpl_begin,
+                           int lineno,
+                           chpl_string filename) {
+  chpl_begin(chpl_ftable[fid], arg, false, false, NULL);
 }
 
 void chpl_process_task_list (chpl_task_list_p task_list) { }

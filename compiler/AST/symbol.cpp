@@ -38,6 +38,7 @@ VarSymbol *gTryToken = NULL;
 VarSymbol *gBoundsChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 
+Map<FnSymbol*,int> ftable;
 
 Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),

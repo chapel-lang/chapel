@@ -57,7 +57,7 @@
 typedef struct {
   int               caller;
   _Bool             serial_state; // whether the current thread is allowed to spawn new threads
-  func_p            fun;
+  chpl_fn_int_t     fid;
   _Bool             block; // whether the fork is blocking or not
   int               arg_size;
   char              arg[0];       // variable-sized data here
@@ -205,7 +205,12 @@ void _chpl_comm_broadcast_private(void* addr, int size) {
       bph.locale = _localeID;
       bph.size = size;
 
-      _chpl_comm_fork(i, (func_p)_broadcastPrivateHelperFn, &bph, sizeof(_broadcast_private_helper));
+      // expected build error - this needs to be modified since fork
+      // takes an fn id, not a function
+
+      // This needs to be updated since chpl_comm_fork expects a fn id
+      // instead of a function pointer
+      _chpl_comm_fork(i, _broadcastPrivateHelperFn, &bph, sizeof(_broadcast_private_helper));
     }
 }
 
@@ -312,9 +317,7 @@ void  _chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int 
 //   multiple forks to the same locale should be handled concurrently
 //
 
-static void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Bool block);
-
-void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Bool block) {
+static void _chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int arg_size, _Bool block) {
   const int rhdr_size = sizeof(int);
 
   int ret;
@@ -327,7 +330,7 @@ void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Boo
   volatile int *done;
 
   if (_localeID == locale) {
-    f(arg);
+    (*chpl_ftable[fid])(arg);
     return;
   }
 
@@ -341,7 +344,7 @@ void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Boo
 
   info->caller = _localeID;
   info->serial_state = chpl_get_serial();
-  info->fun = f;
+  info->fid = fid;
   info->arg_size = arg_size;
   info->block = block;
   if (arg_size)
@@ -391,15 +394,12 @@ void  _chpl_comm_fork_common(int locale, func_p f, void *arg, int arg_size, _Boo
   chpl_free((void *)rheader, __LINE__, __FILE__);
 }
 
-void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
-  _chpl_comm_fork_common(locale, f, arg, arg_size, true);
+void  _chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+  _chpl_comm_fork_common(locale, fid, arg, arg_size, true);
 }
 
-//
-// non-blocking fork (not yet used)
-//
-void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
-  _chpl_comm_fork_common(locale, f, arg, arg_size, false);
+void  _chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+  _chpl_comm_fork_common(locale, fid, arg, arg_size, false);
 }
 
 void chpl_startVerboseComm() { }
@@ -457,9 +457,9 @@ void *_gpc_thread_handler(void *arg)
   ginfo = (gpc_info_t *)arg;
 
   if (ginfo->info->arg_size)
-    ginfo->info->fun(ginfo->info->arg);
+    (*chpl_ftable[ginfo->info->fid])(ginfo->info->arg);
   else
-    ginfo->info->fun(NULL);
+    (*chpl_ftable[ginfo->info->fid])(0);
 
   *done = 1;
 

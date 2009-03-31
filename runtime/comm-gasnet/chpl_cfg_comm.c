@@ -39,7 +39,7 @@ typedef struct {
   int     caller;
   int    *ack;
   _Bool   serial_state; // true if not allowed to spawn new threads
-  func_p  fun;
+  chpl_fn_int_t fid;
   int     arg_size;
   char    arg[0];       // variable-sized data here
 } fork_t;
@@ -63,9 +63,9 @@ typedef struct {
 
 static void fork_wrapper(fork_t *f) {
   if (f->arg_size)
-    (*(f->fun))(&(f->arg));
+    (*chpl_ftable[f->fid])(&f->arg);
   else
-    (*(f->fun))(0);
+    (*chpl_ftable[f->fid])(0);
   GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
                                       SIGNAL,
                                       &(f->ack),
@@ -76,15 +76,14 @@ static void fork_wrapper(fork_t *f) {
 static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = (fork_t*)chpl_malloc(nbytes, sizeof(char), "AM_fork info", 0, 0);
   memcpy(f, buf, nbytes);
-  chpl_begin((chpl_threadfp_t)fork_wrapper, (chpl_threadarg_t)f,
-             true, f->serial_state, NULL);
+  chpl_begin((chpl_fn_p)fork_wrapper, (void*)f, true, f->serial_state, NULL);
 }
 
 static void fork_large_wrapper(fork_t* f) {
   void* arg = chpl_malloc(1, f->arg_size, "fork argument", 0, 0);
 
   _chpl_comm_get(arg, f->caller, *(void**)f->arg, f->arg_size, 0, "fork large");
-  (*(f->fun))(arg);
+  (*chpl_ftable[f->fid])(arg);
   GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
                                       SIGNAL,
                                       &(f->ack),
@@ -99,15 +98,15 @@ static void fork_large_wrapper(fork_t* f) {
 static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_malloc(1, nbytes, "AM_fork_large info", 0, 0);
   memcpy(f, buf, nbytes);
-  chpl_begin((chpl_threadfp_t)fork_large_wrapper, (chpl_threadarg_t)f,
+  chpl_begin((chpl_fn_p)fork_large_wrapper, (void*)f,
              true, f->serial_state, NULL);
 }
 
 static void fork_nb_wrapper(fork_t *f) {
   if (f->arg_size)
-    (*(f->fun))(&(f->arg));
+    (*chpl_ftable[f->fid])(&f->arg);
   else
-    (*(f->fun))(0);
+    (*chpl_ftable[f->fid])(0);
   chpl_free(f, 0, 0);
 }
 
@@ -116,7 +115,7 @@ static void AM_fork_nb(gasnet_token_t  token,
                         size_t          nbytes) {
   fork_t *f = (fork_t*)chpl_malloc(nbytes, sizeof(char), "AM_fork_nb info", 0, 0);
   memcpy(f, buf, nbytes);
-  chpl_begin((chpl_threadfp_t)fork_nb_wrapper, (chpl_threadarg_t)f,
+  chpl_begin((chpl_fn_p)fork_nb_wrapper, (void*)f,
              true, f->serial_state, NULL);
 }
 
@@ -128,7 +127,7 @@ static void fork_nb_large_wrapper(fork_t* f) {
                                       FREE,
                                       &(f->ack),
                                       sizeof(f->ack)));
-  (*(f->fun))(arg);
+  (*chpl_ftable[f->fid])(arg);
   chpl_free(f, 0, 0);
   chpl_free(arg, 0, 0);
 }
@@ -136,7 +135,7 @@ static void fork_nb_large_wrapper(fork_t* f) {
 static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_malloc(1, nbytes, "AM_fork_large info", 0, 0);
   memcpy(f, buf, nbytes);
-  chpl_begin((chpl_threadfp_t)fork_nb_large_wrapper, (chpl_threadarg_t)f,
+  chpl_begin((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
              true, f->serial_state, NULL);
 }
 
@@ -213,7 +212,7 @@ void _chpl_comm_init(int *argc_p, char ***argv_p) {
   // but we have not yet initialized chapel threads!
   //
   if (_localeID == 0) {
-    status = pthread_create(&polling_thread, NULL, (chpl_threadfp_t)polling, 0);
+    status = pthread_create(&polling_thread, NULL, (void*(*)(void*))polling, 0);
     if (status)
       chpl_internal_error("unable to start polling thread for gasnet");
     pthread_detach(polling_thread);
@@ -352,17 +351,17 @@ void  _chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int 
 
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in fork_t redundant? active message can determine this.
-void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
+void  _chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   fork_t* info;
   int     info_size;
   int     done;
   int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
 
   if (_localeID == locale) {
-    (*f)(arg);
+    (*chpl_ftable[fid])(arg);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: remote thread created on %d\n", _localeID, locale);
+      printf("%d: re`mote thread created on %d\n", _localeID, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_mutex_lock(&chpl_comm_diagnostics_lock);
       chpl_comm_forks++;
@@ -378,7 +377,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
     info->caller = _localeID;
     info->ack = &done;
     info->serial_state = chpl_get_serial();
-    info->fun = f;
+    info->fid = fid;
     info->arg_size = arg_size;
 
     done = 0;
@@ -396,7 +395,7 @@ void  _chpl_comm_fork(int locale, func_p f, void *arg, int arg_size) {
   }
 }
 
-void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
+void  _chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   fork_t *info;
   int     info_size;
   int     passArg = _localeID == locale || sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
@@ -412,7 +411,7 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   info->caller = _localeID;
   info->ack = (int*)info; // pass address to free after get in large case
   info->serial_state = chpl_get_serial();
-  info->fun = f;
+  info->fid = fid;
   info->arg_size = arg_size;
   if (passArg) {
     if (arg_size)
@@ -424,7 +423,7 @@ void  _chpl_comm_fork_nb(int locale, func_p f, void *arg, int arg_size) {
   }
 
   if (_localeID == locale) {
-    chpl_begin((chpl_threadfp_t)fork_nb_wrapper, (chpl_threadarg_t)info,
+    chpl_begin((chpl_fn_p)fork_nb_wrapper, (void*)info,
                false, info->serial_state, NULL);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)

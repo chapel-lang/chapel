@@ -107,19 +107,15 @@ void      chpl_thread_init(void);          // setup per-thread state
 chpl_bool chpl_get_serial(void);           // set dynamic serial state
 void      chpl_set_serial(chpl_bool);      // set dynamic serial state true or false
 
-
-typedef void* (*chpl_threadfp_t)(void*);   // function pointer
-typedef void* chpl_threadarg_t;            // function argument
-
 typedef struct chpl_task_list*   chpl_task_list_p;
 typedef struct chpl_pool_struct* chpl_task_pool_p;
 
-void chpl_add_to_task_list (
-    chpl_threadfp_t  fun,             // function to call for task
-    chpl_threadarg_t arg,             // argument to the function
+void chpl_add_to_task_list(
+    chpl_fn_int_t fid,           // function to call for task
+    void* arg,                   // argument to the function
     chpl_task_list_p *task_list,
-    int32_t task_list_locale,         // locale where task list resides
-    chpl_bool call_chpl_begin,        // whether to call chpl_begin
+    int32_t task_list_locale,    // locale where task list resides
+    chpl_bool call_chpl_begin,   // whether to call chpl_begin
     int lineno,
     chpl_string filename);
 void chpl_process_task_list (chpl_task_list_p);
@@ -129,16 +125,16 @@ void chpl_free_task_list (chpl_task_list_p);
 // Fork one thread.  Do not wait.  Used to implement Chapel's begin statement.
 // Returns a pointer to the task pool entry.
 void
-chpl_begin (chpl_threadfp_t,   // function to fork
-            chpl_threadarg_t,  // function arg
-            chpl_bool,         // ignore_serial = force spawning task regardless
-                               // of serial state; as in the case of calling
-                               // for on-statement implementation
-            chpl_bool,         // serial state (must be "false" except when
-                               // called from a comm lib such as gasnet;
-                               // otherwise, serial state is that of the
-                               // thread executing chpl_begin)
-            chpl_task_list_p);
+chpl_begin(chpl_fn_p,         // function to fork
+           void*,             // function arg
+           chpl_bool,         // ignore_serial = force spawning task regardless
+                              // of serial state; as in the case of calling
+                              // for on-statement implementation
+           chpl_bool,         // serial state (must be "false" except when
+                              // called from a comm lib such as gasnet;
+                              // otherwise, serial state is that of the
+                              // thread executing chpl_begin)
+           chpl_task_list_p);
 
 #else   // LAUNCHER
 

@@ -1998,125 +1998,113 @@ void CallExpr::codegen(FILE* outfile) {
   INT_ASSERT(fn);
 
   if (fn->hasFlag(FLAG_BEGIN_BLOCK)) {
-    fputs("chpl_add_to_task_list( ", outfile);
-    if (SymExpr *sexpr=toSymExpr(baseExpr)) {
-      fprintf(outfile, "(chpl_threadfp_t) %s, ", sexpr->var->cname);
-      fputs("(chpl_threadarg_t) ", outfile);
-      if (Expr *actuals = get(1)) {
-        actuals->codegen (outfile);
-      } else {
-        fputs("NULL", outfile);
-      }
-      ClassType *bundledArgsType = toClassType(toSymExpr(get(1))->typeInfo());
-      int lastField = bundledArgsType->fields.length;  // this is the _endCount field
-      if (bundledArgsType->getField(lastField)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        fputs(", (", outfile);
-        get(1)->codegen(outfile);
-        fputs(")->", outfile);
-        bundledArgsType->getField(lastField)->codegen(outfile);
-        fputs(".locale != _localeID ? NULL : &((", outfile);
-        get(1)->codegen(outfile);
-        fputs(")->", outfile);
-        bundledArgsType->getField(lastField)->codegen(outfile);
-        fputs(".addr", outfile);
-      } else {
-        fputs(", &((", outfile);
-        get(1)->codegen(outfile);
-        fputs(")->", outfile);
-        bundledArgsType->getField(lastField)->codegen(outfile);
-      }
-      fputs("->taskList), (", outfile);
-      if (bundledArgsType->getField(lastField)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        get(1)->codegen(outfile);
-        fputs(")->", outfile);
-        bundledArgsType->getField(lastField)->codegen(outfile);
-        fputs(".locale", outfile);
-      } else
-        fputs("_localeID)", outfile);
+    fputs("chpl_add_to_task_list(", outfile);
+    fprintf(outfile, "/* %s */ %d, ", fn->cname, ftable.get(fn));
+    fputs("(void*)", outfile);
+    if (Expr *actuals = get(1)) {
+      actuals->codegen(outfile);
     } else {
-      INT_FATAL(this, "cobegin codegen - call expr not a SymExpr");
-    } 
-    fprintf(outfile, ", true, %d, \"%s\");\n",
-        fn->lineno, fn->getModule()->filename);
-    return;
-  }
-  else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
-    fputs("chpl_add_to_task_list( ", outfile);
-    if (SymExpr *sexpr=toSymExpr(baseExpr)) {
-      fprintf(outfile, "(chpl_threadfp_t) %s, ", sexpr->var->cname);
-      fputs("(chpl_threadarg_t) ", outfile);
-      if (Expr *actuals = get(1)) {
-        actuals->codegen (outfile);
-      } else {
-        fputs("NULL", outfile);
-      }
-      ClassType *bundledArgsType = toClassType(toSymExpr(get(1))->typeInfo());
-      int endCountField = 0;
-      for (int i = 1; i <= bundledArgsType->fields.length; i++) {
-        if (!strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                    "_ref(_EndCount)")
-            || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                       "__wide__ref__EndCount")
-            || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                       "_EndCount")
-            || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                       "__wide__EndCount")) {
-          endCountField = i;
-          break;
-        }
-      }
-      if (endCountField == 0)
-        INT_FATAL(this, "cobegin/codegen codegen - _EndCount field not found");
-      if (bundledArgsType->getField(endCountField)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-        fputs(", (", outfile);
-        get(1)->codegen(outfile);
-        fputs(")->", outfile);
-        bundledArgsType->getField(endCountField)->codegen(outfile);
-        fputs(".locale != _localeID ? NULL : &((", outfile);
-        get(1)->codegen(outfile);
-        fputs(")->", outfile);
-        bundledArgsType->getField(endCountField)->codegen(outfile);
-        fputs(".addr->addr", outfile);
-      } else if (bundledArgsType->getField(endCountField)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        fputs(", (", outfile);
-        get(1)->codegen(outfile);
-        fputs(")->", outfile);
-        bundledArgsType->getField(endCountField)->codegen(outfile);
-        fputs(".locale != _localeID ? NULL : &((", outfile);
-        get(1)->codegen(outfile);
-        fputs(")->", outfile);
-        bundledArgsType->getField(endCountField)->codegen(outfile);
-        fputs(".addr", outfile);
-      } else if (bundledArgsType->getField(endCountField)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-        fputs(", &((*(", outfile);
-        get(1)->codegen(outfile);
-        fputs(")->", outfile);
-        bundledArgsType->getField(endCountField)->codegen(outfile);
-        fputc(')', outfile);
-      } else {
-        fputs(", &(((", outfile);
-        get(1)->codegen(outfile);
-        fputs(")->", outfile);
-        bundledArgsType->getField(endCountField)->codegen(outfile);
-        fputc(')', outfile);
-      }
-      fputs("->taskList)", outfile);
-    } else {
-      INT_FATAL(this, "cobegin codegen - call expr not a SymExpr");
+      fputs("NULL", outfile);
     }
-    fprintf(outfile, ", _localeID, false, %d, \"%s\");\n",
-        baseExpr->lineno, baseExpr->getModule()->filename);
+    ClassType *bundledArgsType = toClassType(toSymExpr(get(1))->typeInfo());
+    int lastField = bundledArgsType->fields.length;  // this is the _endCount field
+    if (bundledArgsType->getField(lastField)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      fputs(", (", outfile);
+      get(1)->codegen(outfile);
+      fputs(")->", outfile);
+      bundledArgsType->getField(lastField)->codegen(outfile);
+      fputs(".locale != _localeID ? NULL : &((", outfile);
+      get(1)->codegen(outfile);
+      fputs(")->", outfile);
+      bundledArgsType->getField(lastField)->codegen(outfile);
+      fputs(".addr", outfile);
+    } else {
+      fputs(", &((", outfile);
+      get(1)->codegen(outfile);
+      fputs(")->", outfile);
+      bundledArgsType->getField(lastField)->codegen(outfile);
+    }
+    fputs("->taskList), (", outfile);
+    if (bundledArgsType->getField(lastField)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      get(1)->codegen(outfile);
+      fputs(")->", outfile);
+      bundledArgsType->getField(lastField)->codegen(outfile);
+      fputs(".locale", outfile);
+    } else
+      fputs("_localeID)", outfile);
+    fprintf(outfile, ", true, %d, \"%s\");\n",
+            fn->lineno, fn->getModule()->filename);
     return;
-  }
-  else if (fn->hasFlag(FLAG_ON_BLOCK)) {
+  } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
+    fputs("chpl_add_to_task_list(", outfile);
+    fprintf(outfile, "/* %s */ %d, ", fn->cname, ftable.get(fn));
+    fputs("(void*)", outfile);
+    if (Expr *actuals = get(1)) {
+      actuals->codegen (outfile);
+    } else {
+      fputs("NULL", outfile);
+    }
+    ClassType *bundledArgsType = toClassType(toSymExpr(get(1))->typeInfo());
+    int endCountField = 0;
+    for (int i = 1; i <= bundledArgsType->fields.length; i++) {
+      if (!strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
+                  "_ref(_EndCount)")
+          || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
+                     "__wide__ref__EndCount")
+          || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
+                     "_EndCount")
+          || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
+                     "__wide__EndCount")) {
+        endCountField = i;
+        break;
+      }
+    }
+    if (endCountField == 0)
+      INT_FATAL(this, "cobegin/codegen codegen - _EndCount field not found");
+    if (bundledArgsType->getField(endCountField)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+      fputs(", (", outfile);
+      get(1)->codegen(outfile);
+      fputs(")->", outfile);
+      bundledArgsType->getField(endCountField)->codegen(outfile);
+      fputs(".locale != _localeID ? NULL : &((", outfile);
+      get(1)->codegen(outfile);
+      fputs(")->", outfile);
+      bundledArgsType->getField(endCountField)->codegen(outfile);
+      fputs(".addr->addr", outfile);
+    } else if (bundledArgsType->getField(endCountField)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      fputs(", (", outfile);
+      get(1)->codegen(outfile);
+      fputs(")->", outfile);
+      bundledArgsType->getField(endCountField)->codegen(outfile);
+      fputs(".locale != _localeID ? NULL : &((", outfile);
+      get(1)->codegen(outfile);
+      fputs(")->", outfile);
+      bundledArgsType->getField(endCountField)->codegen(outfile);
+      fputs(".addr", outfile);
+    } else if (bundledArgsType->getField(endCountField)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      fputs(", &((*(", outfile);
+      get(1)->codegen(outfile);
+      fputs(")->", outfile);
+      bundledArgsType->getField(endCountField)->codegen(outfile);
+      fputc(')', outfile);
+    } else {
+      fputs(", &(((", outfile);
+      get(1)->codegen(outfile);
+      fputs(")->", outfile);
+      bundledArgsType->getField(endCountField)->codegen(outfile);
+      fputc(')', outfile);
+    }
+    fputs("->taskList)", outfile);
+    fprintf(outfile, ", _localeID, false, %d, \"%s\");\n",
+            baseExpr->lineno, baseExpr->getModule()->filename);
+    return;
+  } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
     if (fn->hasFlag(FLAG_NON_BLOCKING))
       fprintf(outfile, "_chpl_comm_fork_nb(");
     else
       fprintf(outfile, "_chpl_comm_fork(");
     get(1)->codegen(outfile);
-    fprintf(outfile, ", (func_p)");
-    baseExpr->codegen(outfile);
-    fprintf(outfile, ", ");
+    fprintf(outfile, ", /* %s */ %d, ", fn->cname, ftable.get(fn));
     get(2)->codegen(outfile);
     fprintf(outfile, ", sizeof(_");
     get(2)->typeInfo()->symbol->codegen(outfile);

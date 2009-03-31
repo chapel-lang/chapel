@@ -27,8 +27,8 @@
 // task pool: linked list of tasks
 //
 typedef struct chpl_pool_struct {
-  chpl_threadfp_t  fun;             // function to call for task
-  chpl_threadarg_t arg;             // argument to the function
+  chpl_fn_p        fun;             // function to call for task
+  void*            arg;             // argument to the function
   _Bool            serial_state;    // whether new threads can be created while executing fun
   _Bool            begun;           // whether execution of this task has begun
   chpl_task_list_p task_list_entry; // points to the task list entry, if there is one
@@ -43,8 +43,8 @@ typedef struct chpl_pool_struct {
 // Since it is part of a circular list, the last entry will, of course,
 // point to the first entry in the list.
 struct chpl_task_list {
-  chpl_threadfp_t fun;
-  chpl_threadarg_t arg;
+  chpl_fn_p fun;
+  void* arg;
   volatile chpl_task_pool_p task_pool_entry; // when null, execution of the associated task has begun
   chpl_task_list_p next;
   chpl_string filename;
@@ -714,7 +714,7 @@ launch_next_task(void) {
   skip_over_begun_tasks();
 
   if ((task = task_pool_head)) {
-    if (pthread_create(&thread, NULL, (chpl_threadfp_t)chpl_begin_helper, task)) {
+    if (pthread_create(&thread, NULL, (void*(*)(void*))chpl_begin_helper, task)) {
       char msg[256];
       if (maxThreads)
         sprintf(msg, "maxThreads is %"PRId32", but unable to create more than %d threads",
@@ -777,8 +777,8 @@ static void schedule_next_task(int howMany) {
 // and append it to the end of the task pool
 // assumes threading_lock has already been acquired!
 static chpl_task_pool_p add_to_task_pool (
-    chpl_threadfp_t fp,
-    chpl_threadarg_t a,
+    chpl_fn_p fp,
+    void* a,
    _Bool serial,
     chpl_task_list_p task_list_entry)
 {
@@ -812,7 +812,7 @@ static chpl_task_pool_p add_to_task_pool (
 //
 // interface function with begin-statement
 //
-void chpl_begin (chpl_threadfp_t fp, chpl_threadarg_t a,
+void chpl_begin (chpl_fn_p fp, void* a,
                  chpl_bool ignore_serial,  // always add task to pool
                  chpl_bool serial_state, chpl_task_list_p task_list_entry) {
   if (!ignore_serial && chpl_get_serial()) {
@@ -840,7 +840,7 @@ void chpl_begin (chpl_threadfp_t fp, chpl_threadarg_t a,
   }
 }
 
-void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
+void chpl_add_to_task_list (chpl_fn_int_t fid, void* arg,
                             chpl_task_list_p *task_list,
                             int32_t task_list_locale,
                             chpl_bool call_chpl_begin,
@@ -850,11 +850,11 @@ void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
     chpl_task_list_p task = (chpl_task_list_p)chpl_alloc(sizeof(struct chpl_task_list), "task list entry", 0, 0);
     task->filename = filename;
     task->lineno = lineno;
-    task->fun = fun;
+    task->fun = chpl_ftable[fid];
     task->arg = arg;
     task->task_pool_entry = NULL;
     if (call_chpl_begin)
-      chpl_begin(fun, arg, false, false, task);
+      chpl_begin(chpl_ftable[fid], arg, false, false, task);
 
     // begin critical section - not needed for cobegin or coforall statements
     if (call_chpl_begin)
@@ -876,7 +876,7 @@ void chpl_add_to_task_list (chpl_threadfp_t fun, chpl_threadarg_t arg,
     // this function could not have been called from the context of a cobegin or coforall
     // statement, which are the only contexts in which chpl_begin() should not be called.
     assert(call_chpl_begin);
-    chpl_begin(fun, arg, false, false, NULL);
+    chpl_begin(chpl_ftable[fid], arg, false, false, NULL);
   }
 }
 
@@ -997,8 +997,8 @@ void chpl_execute_tasks_in_list (chpl_task_list_p task_list) {
 
     // don't lock unnecessarily
     if (task->task_pool_entry) {
-      chpl_threadfp_t  task_to_run_fun = NULL;
-      chpl_threadarg_t task_to_run_arg = NULL;
+      chpl_fn_p task_to_run_fun = NULL;
+      void* task_to_run_arg = NULL;
 
       // begin critical section
       chpl_mutex_lock(&threading_lock);

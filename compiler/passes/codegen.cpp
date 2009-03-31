@@ -389,6 +389,22 @@ static void codegen_header(void) {
         fnSymbol->codegenPrototype(outfile);
     }
   }
+  if (!fRuntime) {
+    fprintf(outfile, "\n/*** Function Pointer Table ***/\n\n");
+    fprintf(outfile, "chpl_fn_p chpl_ftable[] = {\n");
+    int i = 0;
+    forv_Vec(FnSymbol, fn, fnSymbols) {
+      if (fn->hasFlag(FLAG_BEGIN_BLOCK) ||
+          fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
+          fn->hasFlag(FLAG_ON_BLOCK)) {
+        if (i > 0)
+          fprintf(outfile, ",\n");
+        ftable.put(fn, i++);
+        fprintf(outfile, "(chpl_fn_p)%s", fn->cname);
+      }
+    }
+    fprintf(outfile, "\n};\n");
+  }
 
   fprintf(outfile, "\n/*** Global Variables ***/\n\n");
   forv_Vec(VarSymbol, varSymbol, varSymbols) {

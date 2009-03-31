@@ -6,6 +6,8 @@
 
 extern void chpl__initModuleGuards(void);
 
+extern chpl_fn_p chpl_ftable[];
+
 #define _CHECK_NIL(x, lineno, filename)                                 \
   do {                                                                  \
     if (x == nil)                                                       \
