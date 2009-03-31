@@ -5,11 +5,11 @@
 #
 # Tools
 #
-CXX = xlC -q64
-CC = xlc -q64
+CXX = xlC
+CC = xlc
 MAKEDEPEND = g++ -M
 CMAKEDEPEND = gcc -M
-AR = ar -X64
+AR = ar
 
 RANLIB = ranlib
 
