@@ -71,13 +71,11 @@ typedef struct __chpl_mpi_message_info {
   //ChplCommMsgType msg_type;
   int msg_type : 4;    // One of the ChplCommMsgType enum values
   int replyTag : 27;   // Use this tag for the reply message
-  int size;            // Size at location, or size of function arguments
-  void* location;      // Either function id or data location
-                       // sjd: I changed this to store a function id
-                       // so that we don't rely on function pointers
-                       // being the same, but this may not be the same
-                       // size as void*; we probably need a union
-                       // here, or just two fields.
+  int size;            // Size of data or function arguments
+  union {
+    void* data;        // Data location
+    chpl_fn_int_t fid; // Function id
+  } u;
 } _chpl_mpi_message_info;
 
 //
@@ -97,11 +95,6 @@ static MPI_Status chpl_mpi_recv(void* buf, int count, MPI_Datatype datatype,
                                 int source, int tag, MPI_Comm comm);
 static void chpl_mpi_send(void* buf, int count, MPI_Datatype datatype,
                           int dest, int tag, MPI_Comm comm);
-static MPI_Status chpl_mpi_spin_recv(void* buf, int count,
-                                     MPI_Datatype datatype, int source,
-                                     int tag, MPI_Comm comm);
-static void chpl_mpi_spin_send(void* buf, int count, MPI_Datatype datatype,
-                               int dest, int tag, MPI_Comm comm);
 static int makeTag(int threadID, int localeID);
 
 
@@ -128,7 +121,7 @@ static int makeTag(int threadID, int localeID) {
 
 static void chpl_RPC(_chpl_RPC_arg* arg) {
   PRINTF("Doing forked task");
-  (*chpl_table[arg->fid])(arg->arg);
+  (*chpl_ftable[arg->fid])(arg->arg);
   PRINTF("Did task");
   chpl_mpi_send(NULL, 0, MPI_BYTE, arg->joinLocale, arg->replyTag, MPI_COMM_WORLD);
   if (arg->arg != NULL)
@@ -167,49 +160,6 @@ static void chpl_mpi_send(void* buf, int count, MPI_Datatype datatype, int dest,
 }
 
 
-static MPI_Status chpl_mpi_spin_recv(void* buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm) {
-  int flag;
-  MPI_Status status;
-  MPI_Request request;
-#if CHPL_DIST_DEBUG
-  char debugMsg[DEBUG_MSG_LENGTH];
-  sprintf(debugMsg, "chpl_mpi_spin_recv(%p, size=%d, from=%d, tag=%d)", buf, count, source, tag);
-  PRINTF(debugMsg);
-#endif
-  MPI_SAFE(MPI_Irecv(buf, count, datatype, source, tag, comm, &request));
-  do {
-    int result;
-    MPI_SAFE(MPI_Test(&request, &flag, &status));
-  } while (flag != 1);
-#if CHPL_DIST_DEBUG
-  sprintf(debugMsg, "chpl_mpi_spin_recv(%p, size=%d, from=%d, tag=%d) done", buf, count, source, tag);
-  PRINTF(debugMsg);
-#endif
-  return status;
-}
-
-
-static void chpl_mpi_spin_send(void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) {
-  int flag;
-  MPI_Status status;
-  MPI_Request request;
-#if CHPL_DIST_DEBUG
-  char debugMsg[DEBUG_MSG_LENGTH];
-  sprintf(debugMsg, "chpl_mpi_spin_send(%p, size=%d, to=%d, tag=%d)", buf, count, dest, tag);
-  PRINTF(debugMsg);
-#endif
-  MPI_SAFE(MPI_Issend(buf, count, datatype, dest, tag, comm, &request));
-  do {
-    int result;
-    MPI_SAFE(MPI_Test(&request, &flag, &status));
-  } while (!flag);
-#if CHPL_DIST_DEBUG
-  sprintf(debugMsg, "chpl_mpi_spin_send(%p, size=%d, to=%d, tag=%d) done", buf, count, dest, tag);
-  PRINTF(debugMsg);
-#endif
-}
-
-
 //
 // Every node has a polling thread that does an MPI receive accepting a
 // message from any node. The message is always a struct chpl_mpi_message_info.
@@ -233,19 +183,19 @@ static void chpl_mpi_polling_thread(void* arg) {
     switch (msg_info.msg_type) {
       case ChplCommPut: {
 #if CHPL_DIST_DEBUG
-        sprintf(debugMsg, "Fulfilling ChplCommPut(location=%p, size=%d, from=%d, tag=%d)", msg_info.location, (int)msg_info.size, status.MPI_SOURCE, msg_info.replyTag);
+        sprintf(debugMsg, "Fulfilling ChplCommPut(data=%p, size=%d, from=%d, tag=%d)", msg_info.u.data, (int)msg_info.size, status.MPI_SOURCE, msg_info.replyTag);
         PRINTF(debugMsg);
 #endif
-        chpl_mpi_recv(msg_info.location, msg_info.size, MPI_BYTE,
+        chpl_mpi_recv(msg_info.u.data, msg_info.size, MPI_BYTE,
                       status.MPI_SOURCE, msg_info.replyTag, MPI_COMM_WORLD);
         break;
       }
       case ChplCommGet: {
 #if CHPL_DIST_DEBUG
-        sprintf(debugMsg, "Fulfilling ChplCommGet(location=%p, size=%d, to=%d, tag=%d)", msg_info.location, (int)msg_info.size, status.MPI_SOURCE, msg_info.replyTag);
+        sprintf(debugMsg, "Fulfilling ChplCommGet(data=%p, size=%d, to=%d, tag=%d)", msg_info.u.data, (int)msg_info.size, status.MPI_SOURCE, msg_info.replyTag);
         PRINTF(debugMsg);
 #endif
-        chpl_mpi_send(msg_info.location, msg_info.size, MPI_BYTE,
+        chpl_mpi_send(msg_info.u.data, msg_info.size, MPI_BYTE,
                       status.MPI_SOURCE, msg_info.replyTag, MPI_COMM_WORLD);
         break;
       }
@@ -264,7 +214,7 @@ static void chpl_mpi_polling_thread(void* arg) {
 
         chpl_mpi_recv(args, msg_info.size, MPI_BYTE, status.MPI_SOURCE, msg_info.replyTag, MPI_COMM_WORLD);
 
-        rpcArg->fid = (chpl_fn_int_t)msg_info.location;
+        rpcArg->fid = (chpl_fn_int_t)msg_info.u.fid;
         rpcArg->arg = args;
         rpcArg->replyTag = msg_info.replyTag;
         rpcArg->joinLocale = status.MPI_SOURCE;
@@ -274,7 +224,7 @@ static void chpl_mpi_polling_thread(void* arg) {
       }
       case ChplCommForkNB: {
         void* args;
-        _chpl_RPC_arg* rpcArg = chpl_malloc(1, sizeof(_chpl_RPC_arg), "RPC args", __LINE__, __FILE__);
+        // ?? compiler complains this is never used        _chpl_RPC_arg* rpcArg = chpl_malloc(1, sizeof(_chpl_RPC_arg), "RPC args", __LINE__, __FILE__);
 #if CHPL_DIST_DEBUG
         sprintf(debugMsg, "Fulfilling ChplCommForkNB(fromloc=%d, tag=%d)", status.MPI_SOURCE, msg_info.replyTag);
         PRINTF(debugMsg);
@@ -286,7 +236,7 @@ static void chpl_mpi_polling_thread(void* arg) {
         }
         chpl_mpi_recv(args, msg_info.size, MPI_BYTE, status.MPI_SOURCE,
                       msg_info.replyTag, MPI_COMM_WORLD);
-        chpl_begin((chpl_fn_p)msg_info.location, args, false, false, NULL);
+        chpl_begin((chpl_fn_p)chpl_ftable[msg_info.u.fid], args, false, false, NULL);
         break;
       }
       case ChplCommFinish: {
@@ -370,7 +320,7 @@ void chpl_comm_broadcast_private(void* addr, int size) {
 
   for (i = 0; i < chpl_numLocales; i++) {
     if (i != chpl_localeID) {
-      chpl_comm_put(addr, i, addr, size);
+      chpl_comm_put(addr, i, addr, size, 0, 0);
     }
   }
 }
@@ -410,7 +360,7 @@ void chpl_comm_exit_any(int status) {
 }
 
 
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
+void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   if (chpl_localeID == locale) {
     memmove(raddr, addr, size);
   } else {
@@ -425,7 +375,7 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
     msg_info.msg_type = ChplCommPut;
     msg_info.replyTag = tag;
     msg_info.size = size;
-    msg_info.location = raddr;
+    msg_info.u.data = raddr;
 
     chpl_mpi_send(&msg_info, sizeof(_chpl_mpi_message_info), MPI_BYTE,
                   locale, TAGMASK+1, MPI_COMM_WORLD);
@@ -438,7 +388,7 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size) {
 }
 
 
-void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size) {
+void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   if (chpl_localeID == locale) {
     memmove(addr, raddr, size);
   } else {
@@ -453,7 +403,7 @@ void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size) {
     msg_info.msg_type = ChplCommGet;
     msg_info.replyTag = tag;
     msg_info.size = size;
-    msg_info.location = (void*)raddr;
+    msg_info.u.data = (void*)raddr;
 
     chpl_mpi_send(&msg_info, sizeof(_chpl_mpi_message_info), MPI_BYTE,
                   locale, TAGMASK+1, MPI_COMM_WORLD);
@@ -480,7 +430,7 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
     msg_info.msg_type = ChplCommFork;
     msg_info.replyTag = tag;
     msg_info.size = arg_size;
-    msg_info.location = (void*)fid;
+    msg_info.u.fid = fid;
 
     chpl_mpi_send(&msg_info, sizeof(_chpl_mpi_message_info), MPI_BYTE,
                   locale, TAGMASK+1, MPI_COMM_WORLD);
@@ -505,7 +455,7 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
     PRINTF(debugMsg);
 #endif
     msg_info.msg_type = ChplCommForkNB;
-    msg_info.location = (void*)fid;
+    msg_info.u.fid = fid;
     msg_info.size = arg_size;
     msg_info.replyTag = tag;
 
@@ -530,3 +480,47 @@ int32_t chpl_numCommGets(void) { return -1; }
 int32_t chpl_numCommPuts(void) { return -1; }
 int32_t chpl_numCommForks(void) { return -1; }
 int32_t chpl_numCommNBForks(void) { return -1; }
+
+
+/*
+ *  work to try to make a non-thread-safe version of MPI work
+ */
+/* static MPI_Status chpl_mpi_spin_recv(void* buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm) { */
+/*   int flag; */
+/*   MPI_Status status; */
+/*   MPI_Request request; */
+/* #if CHPL_DIST_DEBUG */
+/*   char debugMsg[DEBUG_MSG_LENGTH]; */
+/*   sprintf(debugMsg, "chpl_mpi_spin_recv(%p, size=%d, from=%d, tag=%d)", buf, count, source, tag); */
+/*   PRINTF(debugMsg); */
+/* #endif */
+/*   MPI_SAFE(MPI_Irecv(buf, count, datatype, source, tag, comm, &request)); */
+/*   do { */
+/*     MPI_SAFE(MPI_Test(&request, &flag, &status)); */
+/*   } while (flag != 1); */
+/* #if CHPL_DIST_DEBUG */
+/*   sprintf(debugMsg, "chpl_mpi_spin_recv(%p, size=%d, from=%d, tag=%d) done", buf, count, source, tag); */
+/*   PRINTF(debugMsg); */
+/* #endif */
+/*   return status; */
+/* } */
+
+
+/* static void chpl_mpi_spin_send(void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) { */
+/*   int flag; */
+/*   MPI_Status status; */
+/*   MPI_Request request; */
+/* #if CHPL_DIST_DEBUG */
+/*   char debugMsg[DEBUG_MSG_LENGTH]; */
+/*   sprintf(debugMsg, "chpl_mpi_spin_send(%p, size=%d, to=%d, tag=%d)", buf, count, dest, tag); */
+/*   PRINTF(debugMsg); */
+/* #endif */
+/*   MPI_SAFE(MPI_Issend(buf, count, datatype, dest, tag, comm, &request)); */
+/*   do { */
+/*     MPI_SAFE(MPI_Test(&request, &flag, &status)); */
+/*   } while (!flag); */
+/* #if CHPL_DIST_DEBUG */
+/*   sprintf(debugMsg, "chpl_mpi_spin_send(%p, size=%d, to=%d, tag=%d) done", buf, count, dest, tag); */
+/*   PRINTF(debugMsg); */
+/* #endif */
+/* } */

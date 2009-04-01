@@ -7,7 +7,7 @@
 
 
 // TODO: Un-hard-code this stuff:
-static const char* mpirunPath = "$CHPL_HOME/third-party/mpich1/install/linux/bin/";
+static const char* mpirunPath = "$CHPL_HOME/third-party/openmpi/install/bin/";
 
 char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i;

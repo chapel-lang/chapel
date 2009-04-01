@@ -1,4 +1,4 @@
-MPI_INSTALL = $(THIRD_PARTY_DIR)/openmpi/install13
+MPI_INSTALL = $(THIRD_PARTY_DIR)/openmpi/install
 COMM_LAUNCHER_SRCS = \
         chpl_cfg_comm_locales.c \
 
