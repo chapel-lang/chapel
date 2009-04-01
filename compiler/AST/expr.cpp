@@ -757,7 +757,7 @@ void CallExpr::codegen(FILE* outfile) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             if (call->get(1)->typeInfo()->getValueType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               // get locale field of wide class via wide reference
-              fprintf(outfile, "CHPL_COMM_WIDE_GET(");
+              fprintf(outfile, "CHPL_COMM_WIDE_GET_LOCALE(");
               get(1)->codegen(outfile);
               fprintf(outfile, ", ");
               call->get(1)->codegen(outfile);
