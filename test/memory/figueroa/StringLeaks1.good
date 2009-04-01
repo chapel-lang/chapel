@@ -1,12 +1,3 @@
 a string
 Nos vemos
-
-================================================================================
-----------------------
-***Allocated Memory***
-----------------------
-Size:    Number:  Total:   Address:    Description:
-(bytes)           (bytes)  
-================================================================================
-
-Final Memory Statistics:  totalMem=0, maxMem=93
+Amount of leaked memory after calling foo(): 0

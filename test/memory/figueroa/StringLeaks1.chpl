@@ -1,6 +1,8 @@
+use Memory;
+
 config const n = 1;
 
-def main () {
+def foo () {
   var s1 = "a string",
       s2 = s1,
       s3 = "another string",
@@ -25,3 +27,9 @@ def main () {
     when 2 do writeln(s0);
   }
 }
+
+var m1 = memoryUsed();
+foo();
+var m2 = memoryUsed();
+
+writeln("Amount of leaked memory after calling foo(): ", m2:int - m1:int);
