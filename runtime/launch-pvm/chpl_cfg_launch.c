@@ -4,35 +4,103 @@
 #include "chpllaunch.h"
 #include "chplmem.h"
 #include "error.h"
+#include <stdlib.h>
 
 // TODO: Un-hard-code this stuff:
 static const char* pvmrunPath = "/tmp/Chapel/pvm3/lib/";
+static const char* hostfile = "/tmp/Chapel/pvm3/hostfile";
 
 char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i;
   int size;
+  int addsize = 0;
+  int deletesize = 0;
+  int topvmsize = 0;
+  char* addCommand;
+  char* deleteCommand;
+  char* topvmCommand;
   char baseCommand[256];
   char* command;
-  sprintf(baseCommand, "echo \"spawn -> %s\" | %spvm", argv[0], pvmrunPath);
 
-  size = strlen(baseCommand) + 1;
-  for ( i=1; i<argc; i++ ) {
-    size += strlen(argv[i]) + 3;
+  // Add nodes to PVM configuration.
+  FILE* nodelistfile;
+  char nodetoadd[256];
+  char* nodestoadd[2048];
+  if ((nodelistfile = fopen(hostfile, "r")) == NULL) {
+    fprintf(stderr, "Make sure %s is present and readable.\n", hostfile);
+    chpl_internal_error("Exiting.");
   }
+  i = 0;
+  while (((fscanf(nodelistfile, "%s", nodetoadd)) == 1) && (i < numLocales)) {
+    if ((nodestoadd[i] = malloc(strlen(nodetoadd)+1)) == NULL) {
+      chpl_internal_error("Memory allocation error.");
+    }
+    strcpy(nodestoadd[i], nodetoadd);
+    addsize += strlen(nodestoadd[i]);
+    i++;
+  }
+  deletesize = addsize;
+  addsize += (i * strlen("add \n")) + strlen("echo \"");
+  deletesize += (i * strlen("delete \n")) + strlen("\"");
+  topvmsize = strlen(" | pvm") + strlen(pvmrunPath);
+  if (i < numLocales) {
+    fclose(nodelistfile);
+    while (i >= 0) {
+      free(nodestoadd[i]);
+      i--;
+    }
+    chpl_internal_error("Number of locales specified is greater than what's known in PVM hostfile.");
+  }
+  fclose(nodelistfile);
 
+  // Build the command for use in four parts
+  // The first part is the nodes to add to the PVM config in addCommand
+  // The second part is the spawn command in PVM
+  // The third part (built with the first) is the deleteCommand for PVM
+  // Finally, this needs to be passed to PVM with a pipe
+  i = 0;
+  addCommand = chpl_malloc(addsize, sizeof(char*), "first part pvm command buffer", -1, "");
+  deleteCommand = chpl_malloc(deletesize, sizeof(char*), "last part pvm command buffer", -1, "");
+  topvmCommand = chpl_malloc(topvmsize, sizeof(char*), "send to pvm via pipe command buffer", -1, "");
+  *addCommand = '\0';
+  *deleteCommand = '\0';
+  *topvmCommand = '\0';
+  strcat(addCommand, "echo \"");
+  while (i < numLocales) {
+    strcat(addCommand, "add ");
+    strcat(addCommand, nodestoadd[i]);
+    strcat(addCommand, "\n");
+    strcat(deleteCommand, "delete ");
+    strcat(deleteCommand, nodestoadd[i]);
+    strcat(deleteCommand, "\n");
+    i++;
+  }
+  strcat(deleteCommand, "\"");
+  strcat(topvmCommand, " | ");
+  strcat(topvmCommand, pvmrunPath);
+  strcat(topvmCommand, "pvm");
+  sprintf(baseCommand, "spawn -> %s\n", argv[0]);
+
+  size = strlen(addCommand) + strlen(deleteCommand) + strlen(baseCommand) + strlen(topvmCommand) + 1;
   command = chpl_malloc(size, sizeof(char*), "pvm command buffer", -1, "");
-  sprintf(command, "%s", baseCommand);
-  for ( i=1; i<argc; i++ ) {
-    strcat(command, " '");
-    strcat(command, argv[i]);
-    strcat(command, "'");
-  }
+  *command = '\0';
+
+  strcat(command, addCommand);
+  strcat(command, baseCommand);
+  strcat(command, deleteCommand);
+  strcat(command, topvmCommand);
 
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
   }
 
-  fprintf(stderr, "command is: %s\n", command);
+  while (i >= 0) {
+    free(nodestoadd[i]);
+    i--;
+  }
+  chpl_free(addCommand, -1, "");
+  chpl_free(deleteCommand, -1, "");
+  chpl_free(topvmCommand, -1, "");
   return command;
 }
 
