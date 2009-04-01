@@ -353,6 +353,14 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
                      block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)))
                   parentExpr = block;
               }
+              // find out if the only use is inside a conditional statement;
+              // if so, free lhs after the outermost conditional statement
+              for (Expr* condStmt = parentExpr;
+                   condStmt->parentExpr && condStmt->parentExpr != parentBlock &&
+                     isCondStmt(condStmt->parentExpr->parentExpr); /* do nothing */) {
+                condStmt = condStmt->parentExpr->parentExpr;
+                parentExpr = condStmt;
+              }
               parentExpr->insertAfter(new CallExpr(PRIM_CHPL_FREE, lhs->var));
             } else if (parentBlock == fn->body) {
               fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, lhs->var));
