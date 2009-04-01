@@ -403,6 +403,8 @@ static void codegen_header(void) {
         fprintf(outfile, "(chpl_fn_p)%s", fn->cname);
       }
     }
+    if (i == 0)
+      fprintf(outfile, "(chpl_fn_p)0");
     fprintf(outfile, "\n};\n");
   }
 
