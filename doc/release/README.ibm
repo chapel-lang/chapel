@@ -1,0 +1,83 @@
+============================
+Using Chapel on IBM Machines
+============================
+
+We only have limited experience using Chapel on IBM platforms to date.
+This file contains notes that reflect our current experience, focusing
+first on PowerPC-based systems and then BG systems.
+
+PowerPC SMP clusters
+--------------------
+We have run Chapel on clusters with Power5 and Power6 SMP nodes using
+the following settings:
+
+1) Set CHPL_HOME and MANPATH as usual.
+
+
+2) Set CHPL_HOST_PLATFORM to power-smp.  For example:
+
+     setenv CHPL_HOST_PLATFORM power-smp
+
+   This will cause Chapel to use the IBM xlc and xlC compilers by
+   default.
+
+
+3) For multi-locale (-node) runs, set CHPL_COMM to gasnet.  For
+   example:
+
+     setenv CHPL_COMM gasnet
+
+   See README.multilocale for further information about running using
+   multiple locales and GASNet.
+
+   Note: if you are using an installation in which your xlc/xlC
+   compilers and 'ar' utility do not use 64-bit object formats by
+   default, you will need to set the OBJECT_MODE variable to 64 to use
+   GASNet.  For example:
+
+     setenv OBJECT_MODE 64
+
+
+4) Make sure you're in the top-level chapel/ directory:
+
+     cd $CHPL_HOME
+
+
+5) Make/re-make the compiler and runtime:
+
+     gmake
+
+
+6) Compile your Chapel program as usual.  See README.compiling for
+   details.  For example:
+
+     chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
+
+
+7) When you compile a multi-locale program for power-smp, you should
+   see two binaries (e.g., a.out and a.out_real).  The first binary
+   contains code to launch the Chapel program onto the compute nodes
+   using loadleveler by default.  The second contains the program code
+   itself.  If the loadleveler script we generate turns out not to be
+   compatible with your installation, you can write your own script
+   and have it execute the a.out_real binary explicitly.  See
+   README.launcher for further details.
+
+
+Blue Gene/L
+-----------
+Our current implementation of Chapel relies heavily on POSIX threads
+(pthreads) to implement both intra- and inter-locale parallelism.
+Since BG/L does not support pthreads, Chapel is not well-supported on
+this platform today.  You may be able to write serial Chapel code for
+BG/L by setting CHPL_THREADS=none, but you won't be able to execute
+anything particularly interesting.  If you are interested in running
+Chapel on BG/L, please contact us and let us know.
+
+Blue Gene/P
+-----------
+We have done some initial experimentation with the GASNet team to try
+and run Chapel on BG/P with some limited success, however more work is
+required to make this a stable and supported platform.  If running
+Chapel on BG/P would be of interest to you, please contact us and let
+us know.

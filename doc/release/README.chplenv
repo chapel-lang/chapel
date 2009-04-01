@@ -38,6 +38,7 @@ Recommended Settings
         darwin    : Macintosh OS X platforms
         linux     : 32-bit Linux platforms
         linux64   : 64-bit Linux platforms
+        power-smp : IBM PowerPC SMP clusters
         sunos     : SunOS platforms
         xt-cle    : Cray XT running Cray Linux Environment (CLE)
 
@@ -89,6 +90,7 @@ Optional Settings
 
         cx1-linux : Cray CX1 running Linux
         mta       : Cray MTA-2
+        power-smp : IBM PowerPC SMP Clusters
         x1        : Cray X1
         xmt       : Cray XMT
         xmt-sim   : Cray XMT simulator
@@ -112,6 +114,7 @@ Optional Settings
         cray-xt-pathscale : the Cray XT compiler using the Pathscale backend
         cray-xt-pgi       : the Cray XT compiler using the PGI backend
         gnu               : the GNU compiler suite -- gcc and g++
+        ibm               : the IBM compiler suite -- xlc and xlC
         intel             : the Intel compiler suite -- icc and icpc
 	pathscale         : the Pathscale compiler suite -- pathcc and pathCC
 	pgi               : the PGI compiler suite -- pgcc and pgCC
@@ -119,13 +122,14 @@ Optional Settings
    The default for CHPL_HOST_COMPILER depends on the value of the
    CHPL_HOST_PLATFORM environment variable:
 
-        platform      compiler
-        --------      --------
-        cx1-linux ->  gnu
-        mta, xmt  ->  cray-mta
-        x1        ->  cray-vec
-        xt-cle    ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
-        other     ->  gnu
+        platform       compiler
+        --------       --------
+        cx1-linux  ->  gnu
+        mta, xmt   ->  cray-mta
+        power-smp  ->  ibm
+        x1         ->  cray-vec
+        xt-cle     ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
+        other      ->  gnu
 
    The default for CHPL_TARGET_COMPILER is CHPL_HOST_COMPILER if it is
    set *and* CHPL_HOST_PLATFORM == CHPL_TARGET_PLATFORM (i.e., you are
