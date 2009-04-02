@@ -156,10 +156,6 @@ NCCS user notes
 
     setenv CHPL_LAUNCHER_ACCOUNT MYACCOUNTID
 
-* Should setting CHPL_LAUNCHER to 'pbs' fail to work for you, try
-  setting CHPL_LAUNCHER to 'pbs-nccs', remaking the compiler and
-  runtime, and recompiling your program.
-
 * If both of these options fail, you can always fall back on one of
   these options:
 
