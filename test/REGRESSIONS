@@ -64,6 +64,12 @@ no longer needs to be suppressed?
 no-local regressions
 ====================
 
+wide strings leaked (?) (04/02/09)
+----------------------------------
+[Error matching program output for memory/figueroa/StringLeaks1]
+[Error matching program output for memory/figueroa/StringLeaks4]
+[Error matching program output for memory/figueroa/StringLeaks5]
+
 maxMem statistics are off
 -------------------------
 [Error matching program output for memory/figueroa/printFinalMemStat]
@@ -105,7 +111,7 @@ times out spuriously
 --------------------
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09, 03/14/09, 03/22/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09, 03/24/09, 03/28/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09, 03/24/09, 03/28/09, 04/02/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc] (e.g., 01/29/09)
 [Error: Timed out executing program users/franzf/v1/chpl/main] (e.g., 01/29/09)
@@ -159,8 +165,8 @@ memory is leaked for unknown reasons
 
 memory is leaked due to heap classes (10/22/08)
 -----------------------------------------------
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemory3]
 
 
 ===================
@@ -188,8 +194,8 @@ all
 --no-inline
 -----------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for classes/marybeth/test_dispatch_record]
 [Error matching program output for param/bradc/foldIntParams]
 [Error matching program output for param/bradc/foldStringParams]
@@ -215,8 +221,8 @@ all
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
 ---------------------------------------------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
 --baseline --copy-propagation
@@ -225,8 +231,8 @@ all
 ------------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for associative/waynew/indef2]
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for classes/marybeth/test_dispatch_record]
 [Error matching program output for param/bradc/foldIntParams]
 [Error matching program output for param/bradc/foldStringParams]
@@ -241,16 +247,16 @@ all
 --baseline --inline
 -------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for studies/590o/blerner/xml-parse]
 
 --baseline --inline-iterators
 -----------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for associative/waynew/indef2]
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for classes/marybeth/test_dispatch_record]
 [Error matching program output for modules/diten/useInBegin]
 [Error matching program output for param/bradc/foldIntParams]
@@ -268,8 +274,8 @@ all
 [Error matching program output for arrays/deitz/jacobi5-no-local]
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for associative/waynew/indef2]
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for classes/marybeth/test_dispatch_record]
 [Error matching program output for param/bradc/foldIntParams]
 [Error matching program output for param/bradc/foldStringParams]
@@ -285,8 +291,8 @@ all
 -------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for associative/waynew/indef2]
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for classes/marybeth/test_dispatch_record]
 [Error matching program output for param/bradc/foldIntParams]
 [Error matching program output for param/bradc/foldStringParams]
@@ -302,8 +308,8 @@ all
 --no-scalar-replacement --no-inline
 -----------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for classes/marybeth/test_dispatch_record]
 [Error matching program output for param/bradc/foldIntParams]
 [Error matching program output for param/bradc/foldStringParams]
@@ -318,8 +324,8 @@ all
 --baseline --no-local
 ---------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error matching program output for classes/figueroa/LeakedMemory2]
-[Error matching program output for classes/figueroa/LeakedMemory3]
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for classes/marybeth/test_dispatch_record]
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
 [Error matching program output for studies/590o/blerner/xml-parse]
