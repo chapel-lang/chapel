@@ -292,10 +292,14 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
                   else if (useMap.get(moveDest) && useMap.get(moveDest)->length() > 1)
                     onlyOneUse = NULL;
 #if 1  // can cause some arrays to leak memory
-                } else if (call->isPrimitive(PRIM_SET_MEMBER) &&
-                           !toSymExpr(call->get(1))->var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-                  maybeCallDestructor = false;
-                  break;
+                } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+                  if (toSymExpr(call->get(1))->var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
+                    // free at the end of the block, not right after this use
+                    onlyOneUse = NULL;
+                  else {
+                    maybeCallDestructor = false;
+                    break;
+                  }
 #endif
                 } else if (call->isPrimitive(PRIM_ARRAY_SET_FIRST)) {
                   // used (only) in init_elts in ChapelBase.chpl
@@ -343,15 +347,17 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
                 parentExpr = parentExpr->parentExpr;
               // find out if the only use is inside a loop;
               // if so, free lhs after the outermost loop
-              for (BlockStmt* block = toBlockStmt(parentExpr->parentExpr);
+              for (Expr* block = parentExpr->parentExpr;
                    block && block != parentBlock;
-                   block = toBlockStmt(block->parentExpr)) {
-                if (block->blockInfo &&
-                    (block->blockInfo->isPrimitive(PRIM_BLOCK_PARAM_LOOP) ||
-                     block->blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-                     block->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
-                     block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)))
-                  parentExpr = block;
+                   block = block->parentExpr) {
+                if (BlockStmt* b = toBlockStmt(block)) {
+                  if (b->blockInfo &&
+                      (b->blockInfo->isPrimitive(PRIM_BLOCK_PARAM_LOOP) ||
+                       b->blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+                       b->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
+                       b->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)))
+                    parentExpr = b;
+                }
               }
               // find out if the only use is inside a conditional statement;
               // if so, free lhs after the outermost conditional statement
