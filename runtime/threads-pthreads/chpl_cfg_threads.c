@@ -853,8 +853,10 @@ void chpl_add_to_task_list (chpl_fn_int_t fid, void* arg,
     task->fun = chpl_ftable[fid];
     task->arg = arg;
     task->task_pool_entry = NULL;
-    if (call_chpl_begin)
-      chpl_begin(chpl_ftable[fid], arg, false, false, task);
+    if (call_chpl_begin) {
+      chpl_fn_p fp = chpl_ftable[fid];
+      chpl_begin(fp, arg, false, false, task);
+    }
 
     // begin critical section - not needed for cobegin or coforall statements
     if (call_chpl_begin)
@@ -875,8 +877,9 @@ void chpl_add_to_task_list (chpl_fn_int_t fid, void* arg,
     // call_chpl_begin should be true here because if task_list_locale != chpl_localeID, then
     // this function could not have been called from the context of a cobegin or coforall
     // statement, which are the only contexts in which chpl_begin() should not be called.
+    chpl_fn_p fp = chpl_ftable[fid];
     assert(call_chpl_begin);
-    chpl_begin(chpl_ftable[fid], arg, false, false, NULL);
+    chpl_begin(fp, arg, false, false, NULL);
   }
 }
 
