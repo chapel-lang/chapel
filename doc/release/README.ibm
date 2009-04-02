@@ -8,15 +8,18 @@ first on PowerPC-based systems and then BG systems.
 
 PowerPC SMP clusters
 --------------------
-We have run Chapel on clusters with Power5 and Power6 SMP nodes using
+We have run Chapel on clusters of Power5 and Power6 SMP nodes using
 the following settings:
 
 1) Set CHPL_HOME and MANPATH as usual.
 
 
-2) Set CHPL_HOST_PLATFORM to power-smp.  For example:
+2) Set CHPL_HOST_PLATFORM to pwr5 for a Power5 cluster or pwr6 for a
+   Power6 cluster.  For example:
 
-     setenv CHPL_HOST_PLATFORM power-smp
+     setenv CHPL_HOST_PLATFORM pwr5
+or:
+     setenv CHPL_HOST_PLATFORM pwr6
 
    This will cause Chapel to use the IBM xlc and xlC compilers by
    default.
@@ -54,8 +57,8 @@ the following settings:
      chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
 
 
-7) When you compile a multi-locale program for power-smp, you should
-   see two binaries (e.g., a.out and a.out_real).  The first binary
+7) When you compile a multi-locale program for pwr6, you should see
+   two binaries (e.g., a.out and a.out_real).  The first binary
    contains code to launch the Chapel program onto the compute nodes
    using loadleveler by default.  The second contains the program code
    itself.  If the loadleveler script we generate turns out not to be

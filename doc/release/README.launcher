@@ -31,6 +31,7 @@ Current launchers supported include:
   amudprun      : GASNet launcher for programs running over UDP
   aprun         : Cray XT application launcher using aprun
   gasnetrun_ibv : GASNet launcher for programs running over Infiniband
+  loadleveler   : launch using IBM loadleveler
   pbs           : Cray XT application launcher using PBS (qsub)
   zebra         : Cray XMT simulator launcher
   none          : do not use a launcher
@@ -42,5 +43,6 @@ environment variable.  If left unset, a default is picked as follows:
   + CHPL_COMM_SUBSTRATE=ibv     -> gasnetrun_ibv
   + CHPL_COMM_SUBSTRATE=portals -> aprun
   + CHPL_COMM_SUBSTRATE=udp     -> amudprun
+  + CHPL_TARGET_PLATFORM=pwr6   -> loadleveler
   CHPL_TARGET_PLATFORM=xt-sim   -> zebra
   (otherwise)                   -> none

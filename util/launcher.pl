@@ -20,13 +20,17 @@ if ($preset_launcher eq "") {
         } elsif ($substrate eq "portals") {
             $launcher = "aprun";
         } elsif ($substrate eq "ibv") {
-	    if ($platform eq "pwr5" || $platform eq "pwr6") {
+	    if ($platform eq "pwr6") {
 		$launcher = "loadleveler";
 	    } else {
 		$launcher = "gasnetrun_ibv";
 	    }
-	} elsif ($substrate eq "lapi") {
-	    $launcher = "loadleveler";
+#
+# our loadleveler code doesn't seem compatible with a pwr5 version
+# of loadleveler yet
+#
+#	} elsif ($substrate eq "lapi") {
+#	    $launcher = "loadleveler";
 	}
     } elsif ($comm eq "armci") {
         if ($substrate eq "mpi") {

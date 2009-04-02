@@ -38,7 +38,8 @@ Recommended Settings
         darwin    : Macintosh OS X platforms
         linux     : 32-bit Linux platforms
         linux64   : 64-bit Linux platforms
-        power-smp : IBM PowerPC SMP clusters
+        pwr5      : IBM Power5 SMP cluster
+        pwr6      : IBM Power6 SMP cluster
         sunos     : SunOS platforms
         xt-cle    : Cray XT running Cray Linux Environment (CLE)
 
@@ -90,7 +91,6 @@ Optional Settings
 
         cx1-linux : Cray CX1 running Linux
         mta       : Cray MTA-2
-        power-smp : IBM PowerPC SMP Clusters
         x1        : Cray X1
         xmt       : Cray XMT
         xmt-sim   : Cray XMT simulator
@@ -126,7 +126,7 @@ Optional Settings
         --------       --------
         cx1-linux  ->  gnu
         mta, xmt   ->  cray-mta
-        power-smp  ->  ibm
+        pwr5, pwr6 ->  ibm
         x1         ->  cray-vec
         xt-cle     ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
         other      ->  gnu
