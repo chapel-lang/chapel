@@ -15,7 +15,9 @@ if ($preset_substrate eq "") {
             $substrate = "portals";
 	} elsif ($platform eq "cx1-linux") {
 	    $substrate = "ibv";
-	} elsif ($platform eq "power-smp") {
+	} elsif ($platform eq "pwr5") {
+	    $substrate = "lapi";
+	} elsif ($platform eq "pwr6") {
 	    $substrate = "ibv";
         } else {
             $substrate = "udp";

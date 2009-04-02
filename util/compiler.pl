@@ -33,7 +33,7 @@ if ($preset_compiler eq "") {
             }
             $compiler = "cray-xt$subcompiler";
         }
-    } elsif ($platform eq "power-smp") {
+    } elsif ($platform eq "pwr5" || $platform eq "pwr6") {
 	$compiler = "ibm";
     } else {
 	if (`$platformscript --host` eq `$platformscript --target`) {

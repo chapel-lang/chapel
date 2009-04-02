@@ -20,11 +20,13 @@ if ($preset_launcher eq "") {
         } elsif ($substrate eq "portals") {
             $launcher = "aprun";
         } elsif ($substrate eq "ibv") {
-	    if ($platform eq "power-smp") {
+	    if ($platform eq "pwr5" || $platform eq "pwr6") {
 		$launcher = "loadleveler";
 	    } else {
 		$launcher = "gasnetrun_ibv";
 	    }
+	} elsif ($substrate eq "lapi") {
+	    $launcher = "loadleveler";
 	}
     } elsif ($comm eq "armci") {
         if ($substrate eq "mpi") {
