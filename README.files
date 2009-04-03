@@ -10,6 +10,7 @@ contain.
 ./
   README            : top-level README with quick-start information
   README.files      : this file
+  ACKNOWLEDGEMENTS  : funding agencies and HPC centers who supported this work
   AGREEMENT         : the user agreement for this release
   CHANGES           : a list of changes since the previous releases
   CONTRIBUTORS      : a list of contributors to the Chapel project
