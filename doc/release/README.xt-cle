@@ -115,33 +115,31 @@ XT File Systems and Chapel execution
 Memory limits using GASNet
 --------------------------
 
-* GASNet executions over portals on the XT currently conservatively
-  assume a maximum heap size of 2GB per locale even though some XT
-  configurations may not have this much memory while others may
-  support a much larger heap size in practice.  If you are getting
-  out-of-memory errors, you may want to request a different maximum
-  heap size by setting the environment variable GASNET_MAX_SEGSIZE to
-  the number of bytes you wish to use as a limit.  For example:
+* The amount of memory that is available to a Chapel program running
+  over GASNet+portals on the XT is constrained by an environment
+  variable named GASNET_MAX_SEGSIZE.  If the user has not set this
+  variable, we set it for each compute node based on the MemTotal
+  value reported by /proc/meminfo (minus 0.5GB for code and static
+  data).  If GASNET_MAX_SEGSIZE is set too high, your program may
+  terminate with the message:
 
-    setenv GASNET_MAX_SEGSIZE 4294967296
+        _pmii_daemon(SIGCHLD): PE 0 exit signal Killed
 
-  would set the GASNet heap size limit to 4GB.  Note that this
-  variable can be changed from run to run and need not be set at
-  build/compile time.  Applications that set this limit too high may
-  be terminated with the following error:
-
-     [NID ###] Apid ######: initiated application termination
-     Application ###### exit signals: Killed
-
-  or:
+  If running again with -v shows that the cause of the termination
+  was the OOM killer:
 
     [NID ###] Apid ######: OOM killer terminated this process.
     Application ###### exit signals: Killed
 
-  If you get one of these messages, try setting/reducing the
-  GASNET_MAX_SEGSIZE value.  For more details, please refer to:
+  then GASNET_MAX_SEGSIZE is set too high.  Set it to a lower value
+  and try re-running your program.  For more information on
+  GASNET_MAX_SEGSIZE, refer to:
 
     $CHPL_HOME/third-party/gasnet/GASNet-*/portals-conduit/README
+
+  and:
+
+    $CHPL_HOME/third-party/gasnet/GASNet-*/README
 
 
 ---------------
@@ -156,11 +154,11 @@ NCCS user notes
 
     setenv CHPL_LAUNCHER_ACCOUNT MYACCOUNTID
 
-* If both of these options fail, you can always fall back on one of
-  these options:
+* If our PBS launcher does not work for you, you can fall back on a
+  more manual launch of your program as always:
 
   - launch the a.out_real binary manually using aprun within a
-    manually-generated qsub script
+    manually-generated qsub script/command
 
   - set CHPL_LAUNCHER to aprun, rebuild and recompile, and execute the
     resulting binary within a manually-generated qsub script.
