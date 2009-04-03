@@ -10,6 +10,12 @@
 #include "error.h"
 #include "gasnet.h"
 
+#ifdef GASNET_NEEDS_MAX_SEGSIZE
+#define CHPL_COMM_GASNET_SETENV chpl_comm_gasnet_set_max_segsize();
+#else
+#define CHPL_COMM_GASNET_SETENV
+#endif
+
 static int chpl_comm_diagnostics = 0;           // set via startCommDiagnostics
 static chpl_mutex_t chpl_comm_diagnostics_lock;
 static int chpl_comm_gets = 0;
@@ -184,9 +190,41 @@ static void polling(void* x) {
   GASNET_BLOCKUNTIL(done);
 }
 
+#ifdef GASNET_NEEDS_MAX_SEGSIZE
+static char segsizeval[80];
+
+static void chpl_comm_gasnet_set_max_segsize() {
+  if (getenv("GASNET_MAX_SEGSIZE")) {
+    return;
+  }
+
+  FILE* file = fopen( "/proc/meminfo", "r" );
+  if (file == NULL) {
+    return;
+  }
+  /* The first line of /proc/meminfo looks something like:
+   * MemTotal:      1027296 kB
+   */
+  int memtotal;
+  if (fscanf(file, "MemTotal: %d kB", &memtotal) != 1) {
+    return;
+  }
+
+  /* Subtract off 1/2 G for static data...  value chosen by trial and
+     error... */
+  memtotal -= (0.5*1024*1024);
+  
+  snprintf(segsizeval, 80, "%dKB", memtotal);
+  setenv( "GASNET_MAX_SEGSIZE", segsizeval, 0 );
+}
+#endif
+
+
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   pthread_t polling_thread;
   int status;
+
+  CHPL_COMM_GASNET_SETENV
 
   gasnet_init(argc_p, argv_p);
   chpl_localeID = gasnet_mynode();

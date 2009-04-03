@@ -4,9 +4,9 @@
 #ifndef LAUNCHER
 
 #include <stdint.h>
+#include <chplcomm_md.h>
 #include "chplcomm_locales.h"
 #include "chpltypes.h"
-
 
 extern int32_t chpl_localeID; // unique ID for each locale: 0, 1, 2, ...
 extern int32_t chpl_numLocales; // number of locales
