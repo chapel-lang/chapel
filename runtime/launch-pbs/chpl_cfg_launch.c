@@ -65,36 +65,50 @@ static int getNumCoresPerLocale(void) {
   FILE* sysFile;
   int coreMask;
   int bitMask = 0x1;
-  int numCores = 1;
+  int numCores;
+  char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
 
-  /* BLC: This code is fairly specific to xt-cle, but currently will
-     only be called for the NCCS version of qsub */
+  if (numCoresString) {
+    numCores = atoi(numCoresString);
+    if (numCores != 0)
+      return numCores;
+  }
+
   char* command = chpl_glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
   system(command);
   sysFile = fopen(sysFilename, "r");
-  if (fscanf(sysFile, "%d", &coreMask) != 1) {
-    chpl_error("Cannot determine number of cores per node", 0, 0);
+  if (fscanf(sysFile, "%d\n", &coreMask) != 1 || !feof(sysFile)) {
+    chpl_error("unable to determine number of cores per locale; please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
   }
-  fclose(sysFile);
   coreMask >>= 1;
+  numCores = 1;
   while (coreMask & bitMask) {
     coreMask >>= 1;
     numCores += 1;
   }
+  fclose(sysFile);
   return numCores;
 }
 
 static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub, 
-                                 int32_t numLocales) {
+                                 int32_t numLocales,
+                                 int32_t numCoresPerLocale) {
+  char* queue = getenv("CHPL_LAUNCHER_QUEUE");
   switch (qsub) {
   case pbspro:
   case unknown:
+    if (queue)
+      fprintf(pbsFile, "#PBS -q %s\n", queue);
     fprintf(pbsFile, "#PBS -l mppwidth=%d\n", numLocales);
     fprintf(pbsFile, "#PBS -l mppnppn=%d\n", procsPerNode);
+    fprintf(pbsFile, "#PBS -l mppdepth=%d\n", numCoresPerLocale);
     break;
   case nccs:
-    fprintf(pbsFile, "#PBS -l size=%d\n", getNumCoresPerLocale()*numLocales);
-    fprintf(pbsFile, "#PBS -q debug\n");
+    if (queue)
+      fprintf(pbsFile, "#PBS -q %s\n", queue);
+    else
+      fprintf(pbsFile, "#PBS -q debug\n");
+    fprintf(pbsFile, "#PBS -l size=%d\n", numCoresPerLocale*numLocales);
     break;
   }
 }
@@ -108,6 +122,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   char* projectString = getenv(launcherAccountEnvvar);
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
+  int numCoresPerLocale;
 
   if (basenamePtr == NULL) {
       basenamePtr = argv[0];
@@ -124,10 +139,12 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
   sprintf(pbsFilename, "%s%d", basePBSFilename, (int)mypid);
 
+  numCoresPerLocale = getNumCoresPerLocale();
+
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
   fprintf(pbsFile, "#PBS -N Chpl-%.10s\n", basenamePtr);
-  genNumLocalesOptions(pbsFile, determineQsubVersion(), numLocales);
+  genNumLocalesOptions(pbsFile, determineQsubVersion(), numLocales, numCoresPerLocale);
   if (projectString && strlen(projectString) > 0)
     fprintf(pbsFile, "#PBS -A %s\n", projectString);
   fclose(pbsFile);
@@ -172,7 +189,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "send \"aprun -q -b -d%d -n1 -N1 ls %s_real\\n\"\n", getNumCoresPerLocale(), argv[0]);
+  fprintf(expectFile, "send \"aprun -q -b -d%d -n1 -N1 ls %s_real\\n\"\n", numCoresPerLocale, argv[0]);
   fprintf(expectFile, "expect {\n");
   fprintf(expectFile, "  \"failed: chdir\" {send_user "
           "\"error: %s/%s_real must be launched from and/or stored on a "
@@ -184,7 +201,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   if (verbosity < 2) {
     fprintf(expectFile, "-q ");
   }
-  fprintf(expectFile, "-d%d -n%d -N%d %s_real", getNumCoresPerLocale(), numLocales, procsPerNode, argv[0]);
+  fprintf(expectFile, "-d%d -n%d -N%d %s_real", numCoresPerLocale, numLocales, procsPerNode, argv[0]);
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " '%s'", argv[i]);
   }

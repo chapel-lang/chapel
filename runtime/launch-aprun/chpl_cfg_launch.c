@@ -18,9 +18,15 @@ static int getNumCoresPerLocale(void) {
   FILE* sysFile;
   int coreMask;
   int bitMask = 0x1;
-  int numCores = 1;
-  int maxNumCores = 1;
+  int numCores;
   pid_t mypid;
+  char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
+
+  if (numCoresString) {
+    numCores = atoi(numCoresString);
+    if (numCores != 0)
+      return numCores;
+  }
 
 #ifndef DEBUG_LAUNCH
   mypid = getpid();
@@ -28,23 +34,17 @@ static int getNumCoresPerLocale(void) {
   mypid = 0;
 #endif
   sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
-
-  /* BLC: This code is fairly specific to xt-cle, but currently will
-     only be called for the NCCS version of qsub */
   char* command = chpl_glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
   system(command);
   sysFile = fopen(sysFilename, "r");
-  while (!feof(sysFile)) {
-    if (fscanf(sysFile, "%d\n", &coreMask) != 1) {
-      chpl_error("Cannot determine number of cores per node", 0, 0);
-    }
+  if (fscanf(sysFile, "%d\n", &coreMask) != 1 || !feof(sysFile)) {
+    chpl_error("unable to determine number of cores per locale; please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
+  }
+  coreMask >>= 1;
+  numCores = 1;
+  while (coreMask & bitMask) {
     coreMask >>= 1;
-    while (coreMask & bitMask) {
-      coreMask >>= 1;
-      numCores += 1;
-    }
-    if (numCores > maxNumCores)
-      maxNumCores = numCores;
+    numCores += 1;
   }
   fclose(sysFile);
   sprintf(command, "rm %s", sysFilename);
