@@ -1,0 +1,4 @@
+bug: The index of a param for loop is always an int
+
+The index type should be inferred to be int(64), as it is in the runtime
+for loop.
