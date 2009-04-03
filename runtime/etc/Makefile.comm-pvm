@@ -1,1 +1,2 @@
-LIBS += -lnsl -lrt
+GEN_CFLAGS += -I$(PVM_ROOT)/include
+LIBS += -L$(PVM_ROOT)/lib/$(PVM_ARCH) -lpvm3 -lgpvm3
