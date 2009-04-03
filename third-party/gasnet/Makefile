@@ -4,6 +4,10 @@ CHAPEL_SUBDIR = third-party/gasnet
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHAPEL_ROOT)/make/Makefile.base
 
+ifeq ($(CHPL_MAKE_TARGET_COMPILER), cray-xt-cray)
+$(error Cannot build GASNet with this compiler yet)
+endif
+
 CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_GASNET_SEGMENT) --enable-allow-gcc4
 
 ifneq ($(CHPL_GASNET_SEGMENT),everything)
