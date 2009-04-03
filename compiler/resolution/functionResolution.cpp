@@ -1927,13 +1927,13 @@ static void fold_param_for(CallExpr* loop) {
   block->insertAfter(noop);
   Symbol* index = toSymExpr(index_expr)->var;
   if (stride <= 0) {
-    for (int i = high; i >= low; i += stride) {
+    for (int64_t i = high; i >= low; i += stride) {
       SymbolMap map;
       map.put(index, new_IntSymbol(i));
       noop->insertBefore(block->copy(&map));
     }
   } else {
-    for (int i = low; i <= high; i += stride) {
+    for (int64_t i = low; i <= high; i += stride) {
       SymbolMap map;
       map.put(index, new_IntSymbol(i));
       noop->insertBefore(block->copy(&map));
