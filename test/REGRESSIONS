@@ -389,14 +389,14 @@ infrequent seg fault on Sam's Mac
 xt-cle-specific failures
 ========================
 
+Some sort of new info message causes output diffs (04/03/09)
+------------------------------------------------------------
+*everything*
+
 
 =============================================================
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
-
-syntax error in chpl_header.h (04/01/09) 
-----------------------------------------
-*everything*
 
 some sort of gdb compatability issue?
 -------------------------------------
