@@ -139,7 +139,7 @@ class Block1D : BaseDist {
     //    writeln("distribution = ", this);
     const ind0 = ind - boundingBox.low;
     const locInd = (ind0 * targetLocs.numElements:idxType) / boundingBox.numIndices;
-    return locInd: index(targetLocDom);
+    return max(0, min(locInd:int, (targetLocDom.dim(1).length-1):int));
   }
 }
 

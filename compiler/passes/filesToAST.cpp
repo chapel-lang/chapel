@@ -50,6 +50,7 @@ static void parseStandardModules(void) {
   parseStandardModule("DefaultEnum.chpl");
   parseStandardModule("DefaultOpaque.chpl");
   parseStandardModule("BlockDist.chpl");
+  parseStandardModule("MultiBlockDist.chpl");
 
   parseStandardModule("Types.chpl");
   parseStandardModule("Math.chpl");
