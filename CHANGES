@@ -2,6 +2,109 @@
 Release Changes List
 ====================
 
+*** stopped at r15222 | figuero ***
+
+===========
+version 0.9
+===========
+
+Second public release of Chapel compiler, April 16, 2009
+
+High-Level Themes:
+------------------
+- multi-locale task parallelism
+- very initial/limited support for data parallelism, distributed arrays
+- improved stability, portability, and performance
+- target audience: general public
+
+Environment Changes:
+--------------------
+- improved the logic for determining host and target compilers for xt-cle
+- added support for the compiler xlc/xlC compilers via CHPL_*_COMPILER ibm
+
+Changes to Chapel Language:
+---------------------------
+
+Newly Implemented Features:
+---------------------------
+- added ability to query task/thread statistics for CHPL_COMM=pthreads
+
+Portability of code base:
+-------------------------
+- added a script to build Chapel on Macs using xcodebuild -- see README.macosx
+- improved portability of GASNet configure + build steps for xt-cle
+- made flex and bison generate .cpp files rather than .c files for portability
+
+Semantic Changes:
+-----------------
+
+Syntactic/Naming Changes:
+-------------------------
+
+Compiler Changes:
+-----------------
+
+Third Party Changes:
+--------------------
+
+Runtime Library Changes:
+------------------------
+- improved support for communication diagnostics and debugging
+
+Documentation:
+--------------
+
+Example Codes:
+--------------
+
+Standard Modules:
+-----------------
+
+Compiler Flags:
+---------------
+
+Generated Code Flags:
+---------------------
+
+Bug Fixes/New Semantic Checks (for old semantics):
+--------------------------------------------------
+- fixed a number of spurious errors caused by how we were using GASNet
+- improved verification of formal/actual argument types
+- fixed a bug in which long program names broke the PBS launcher
+- fixed problems in how we terminated multithreaded GASNet programs
+- fixed Chapel error messages that referred to C's errno variable
+
+Error Message Improvements:
+---------------------------
+- added a runtime error message if the launcher binary can't find the _real one
+
+Compiler Analysis and Optimizations/Performance of Generated Code:
+------------------------------------------------------------------
+- improved reclamation of compiler-allocated memory
+- removed array/domain wrapper records
+- optimized implementation of broadcasts used to initialize private data
+- improved the correctness and effectiveness of remote value forwarding
+- optimized away an thread per locale used for progress+termination
+- optimized parallel iteration for Block1D to minimize remote references
+- improved the correctness and effectiveness of re-privatization optimizations
+
+Compiler Performance and Cleanup:
+---------------------------------
+- fixed an infinite loop when inlining recursive iterators
+- removed hand-baked and occasionally incorrect integer types int32, int64
+- fixed cases in which uses of compiler temps were outside the variable's scope
+
+Cleanup of Generated Code:
+--------------------------
+- removed redundant reference types from the generated code
+
+Testing System:
+---------------
+
+Internal:
+---------
+- removed compiler support for (undocumented) anonymous record types
+
 ===========
 version 0.8
 ===========
