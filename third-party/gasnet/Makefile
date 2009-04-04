@@ -26,6 +26,7 @@ ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xt-cle)
 XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/cross-configure-crayxt-linux $(GASNET_SUBDIR)
 XTRA_BUILD_COMMAND=if test -f /usr/include/nptl/pthread.h -a -d /usr/lib64/nptl ; then cp -fr $(GASNET_BUILD_DIR)/patched-headers $(GASNET_INSTALL_DIR); fi
 XTRA_CONFIG_EXPORTS=&& export LIBS=-lpct
+XTRA_POST_INSTALL_COMMAND=$(foreach var,include/portals-conduit/portals-par.mak include/mpi-conduit/mpi-par.mak,sed -i -e "s;$(GASNET_INSTALL_DIR);"'$$(GASNET_INSTALL_DIR);g' $(GASNET_INSTALL_DIR)/$(var) &&) true
 CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxt-linux
 else
 CHPL_GASNET_CFG_SCRIPT=configure
@@ -59,6 +60,8 @@ gasnet-build: FORCE
 	cd $(GASNET_BUILD_DIR) && $(MAKE) all
 	cd $(GASNET_BUILD_DIR) && $(MAKE) install
 	$(XTRA_BUILD_COMMAND)
+extra:
+	$(XTRA_POST_INSTALL_COMMAND)
 
 gasnet: gasnet-config gasnet-build
 
