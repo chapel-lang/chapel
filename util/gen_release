@@ -21,6 +21,7 @@ system("cd $tmpdir && svn export -q $svnroot");
 
 # explicit files to include
 @files = (
+       "ACKNOWLEDGEMENTS",
        "AGREEMENT",
        "CHANGES",
        "CONTRIBUTORS",
@@ -43,6 +44,7 @@ system("cd $tmpdir && svn export -q $svnroot");
        "util/launcher.pl",
        "util/mem.pl",
        "util/platform.pl",
+       "util/printchplenv.pl",
        "util/setchplenv.bash",
        "util/setchplenv.csh",
        "util/setchplenv.sh",
