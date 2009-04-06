@@ -136,6 +136,11 @@ OPTIONS
   --[no-]privatization   Enable [disable] privatization of distributed arrays
                     and domains if the distribution supports it.
 
+  --[no-]remote-value-forwarding   Enable [disable] remote value
+                    forwarding of read-only values to remote threads
+                    if reading them early does not violate program
+                    semantics.
+
   --[no-]scalar-replacement   Enable [disable] scalar replacement of records
                     and classes for some compiler-generated data structures
                     that support language features such as tuples and
