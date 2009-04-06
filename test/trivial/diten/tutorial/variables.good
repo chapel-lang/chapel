@@ -1,5 +1,5 @@
-0
-1.618
-1.27201, 3.14
-world, true, 1
-1.0, 0, 0, 1.0, 1.0, 0.0
+myVariable1 = 0
+myVariable2 = 1.618 (type = real)
+myConst = 1.27201, myParam = 3.14
+cfgVar = world, cfgConst = true, cfgParam = 1
+a = 1.0, b = 0, c = 0, d = 1.0, e = 1.0, f = 0.0
