@@ -2,7 +2,7 @@
 Release Changes List
 ====================
 
-*** stopped at r15222 | figuero ***
+*** stopped at r15407 | deitz ***
 
 ===========
 version 0.9
@@ -21,25 +21,39 @@ Environment Changes:
 --------------------
 - improved the logic for determining host and target compilers for xt-cle
 - added support for the compiler xlc/xlC compilers via CHPL_*_COMPILER ibm
+- added a script to print out set and inferred CHPL env vars (printchplenv.pl)
+- added an environment variable for specifying a queue to the PBS launcher
+- added an environment variable for specifying #cores/locale to pbs/aprun
 
 Changes to Chapel Language:
 ---------------------------
 
 Newly Implemented Features:
 ---------------------------
-- added ability to query task/thread statistics for CHPL_COMM=pthreads
+- added ability to query task/thread counts for CHPL_COMM=pthreads
+- added a typeToString() function for converting a static type to a string
+- added a printMemTable() routine to the memory module for use within Chapel
 
 Portability of code base:
 -------------------------
 - added a script to build Chapel on Macs using xcodebuild -- see README.macosx
 - improved portability of GASNet configure + build steps for xt-cle
 - made flex and bison generate .cpp files rather than .c files for portability
+- added initial support for IBM Power5 and Power6 systems (see README.ibm)
+- updated GASNet to use PMI rather than cnos calls on the Cray XT
+- added -d option to our use of aprun in the aprun and pbs launchers
+- improved our mode of building and using GASNet for portability
+- removed assumption that function pointers are identical between nodes
 
 Semantic Changes:
 -----------------
 
 Syntactic/Naming Changes:
 -------------------------
+- renamed classes used for defining distributions
+- disallowed identifiers that start with $
+- permitted binary and hex literals to be written using uppercase B/X
+- removed compilerError and compilerWarning as keywords
 
 Compiler Changes:
 -----------------
@@ -53,6 +67,9 @@ Runtime Library Changes:
 
 Documentation:
 --------------
+- added a new acknowledgements file to track financial and machine time support
+- minor changes and improvements to the language specification
+- added a description of our experience using Chapel on IBM systems
 
 Example Codes:
 --------------
@@ -62,9 +79,11 @@ Standard Modules:
 
 Compiler Flags:
 ---------------
+- added a flag to disable/enable the remote value forwarding optimization
 
 Generated Code Flags:
 ---------------------
+- added a -memfinalstat flag to track leaked memory (see READMe.executing)
 
 Bug Fixes/New Semantic Checks (for old semantics):
 --------------------------------------------------
@@ -73,6 +92,18 @@ Bug Fixes/New Semantic Checks (for old semantics):
 - fixed a bug in which long program names broke the PBS launcher
 - fixed problems in how we terminated multithreaded GASNet programs
 - fixed Chapel error messages that referred to C's errno variable
+- added the ability for _chpl_comm_fork[_nb] to handle large arguments
+- fixed a bug with accidentally shared state during parallel iterations
+- fixed a bug with incorrectly spacing operators in generated code
+- fixed a bug which had previously limited execution to 1024 locales
+- fixed a bug in which integer exponentiation was being computed using pow()
+- fixed a bug in which slicing via .. could only be done for int(32) indices
+- fixed a bug in which arrays could only store 2**31 elements
+- fixed a bug related to reductions involving forall expressions
+- added a check to ensure that return statements are not used at module scope
+- applied a GASNet patch that fixes an x86 alignment error
+- eliminated a race condition when two tasks initialize the same module
+- fixed a bug with Block1D domains that exceed the bounding box argument
 
 Error Message Improvements:
 ---------------------------
@@ -86,7 +117,10 @@ Compiler Analysis and Optimizations/Performance of Generated Code:
 - improved the correctness and effectiveness of remote value forwarding
 - optimized away an thread per locale used for progress+termination
 - optimized parallel iteration for Block1D to minimize remote references
-- improved the correctness and effectiveness of re-privatization optimizations
+- improved the correctness and effectiveness of (re-)privatization optimizations
+- privatized the default distribution object
+- parallelized declarations of Block1D distributions, domains, and arrays
+- optimized performance of local communications
 
 Compiler Performance and Cleanup:
 ---------------------------------
@@ -104,6 +138,8 @@ Testing System:
 Internal:
 ---------
 - removed compiler support for (undocumented) anonymous record types
+- switched iterator implementation to use records rather than classes
+- improved the naming of identifiers in the runtime and generated code
 
 ===========
 version 0.8
