@@ -15,49 +15,17 @@ licenses -- see third-party/README for details.
 Quick Start
 -----------
 
-1) Make sure that your shell is in the directory containing this
-   README file.  For example:
+1) Load the Chapel module:
 
-        cd ~/chapel
-
-
-2) Build the compiler and runtime libraries using:
-
-        gmake
-
-   or if your default make is GNU make compatible (as on Cygwin), use:
-
-        make
-
-   or if you are running Mac OS X, you may optionally use:
-
-        util/makechpl
+        module load chapel
 
 
-3) Set up your environment to use Chapel.
-
-   If you use...                                  then type...
-
-     ...a csh-compatible shell (csh, tcsh)        source util/setchplenv.csh
-     ...a bash-compatible shell (bash)            source util/setchplenv.bash
-     ...the Bourne shell (sh)                     . util/setchplenv.sh
-
-   You must be in the "chapel" directory for these command scripts to
-   work properly.
-
-   If you use a different shell, refer to doc/README.chplenv for
-   information about what environment settings you'll need to use
-   Chapel satisfactorily (and if you're able to create an equivalent
-   util/setchplenv.* script for your shell, please mail a copy of it
-   to us at chapel_info@cray.com for inclusion in our next release).
-
-
-4) Compile an example program using:
+2) Compile an example program using:
 
         chpl -o hello examples/hello.chpl
 
 
-5) Execute the resulting executable:
+3) Execute the resulting executable:
 
         ./hello
 
@@ -68,11 +36,10 @@ What's next?
 
 For more detailed information about...      refer to...
 
+
   ...implementation status                   ...STATUS
   ...changes since the last release          ...CHANGES
   ...Chapel's file and directory structure   ...README.files
-  ...prerequisites for using this release    ...doc/README.prereqs
-  ...building the compiler                   ...doc/README.building
   ...using the compiler                      ...doc/README.compiling
   ...executing Chapel programs               ...doc/README.executing
   ...reporting bugs                          ...doc/README.bugs

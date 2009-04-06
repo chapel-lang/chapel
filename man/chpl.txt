@@ -254,7 +254,8 @@ OPTIONS
 ENVIRONMENT
   See $CHPL_HOME/doc/README.chplenv for detailed information about 
   general environment variable settings, legal values, and default
-  settings.
+  settings. Use $CHPL_HOME/util/printchplenv.pl to view your current
+  settings (as explicitly set and inferred).
 
   CHPL_HOME           Specifies the location of the chapel installation directory
 
@@ -298,8 +299,10 @@ ENVIRONMENT
 BUGS
   See $CHPL_HOME/STATUS for a list of known bugs and $CHPL_HOME/doc/README.bugs
   for instructions on reporting bugs.
+SEE ALSO
+  $CHPL_HOME/README for more information on how to get started with Chapel.
 AUTHORS
-  See $CHPL_HOME/CONTRIBUTORS for a list of contributors and authors.
+  See $CHPL_HOME/CONTRIBUTORS for a list of contributors to Chapel.
 COPYRIGHT
   Copyright (c) 2004-2009 Cray Inc. (See $CHPL_HOME/LICENSE for more
   details)
