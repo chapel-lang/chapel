@@ -7,13 +7,15 @@ files used by our regression testing infrastructure to automatically
 compile, run, and test sample codes.  For a test foo.chpl, the
 following files may also exist:
 
-     foo.compopts   : command-line options to be used when compiling the test
-     foo.execopts   : command-line options to be used when executing the test
-     foo.good       : the expected output for the test
-     foo.notest     : indicates that foo.chpl should not be tested 
-                      (e.g., because it is a helper module)
-     foo.perfkeys   : indicates keys that are used to identify values of
-                      interest in performance-oriented runs
+     foo.compopts       : command-line options for compiling the test
+     foo.execopts       : command-line options for executing the test
+     foo.good           : the expected output for the test
+     foo.comm-none.good : the expected single-locale output, if different
+     foo.notest         : indicates that foo.chpl should not be tested 
+                          (e.g., because it is a helper module)
+     foo.perfkeys       : indicates keys that are used to identify values of
+                          interest in performance-oriented runs
+     foo.timeout        : kill the test if this much time passes
 
 
 ---------------------

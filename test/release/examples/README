@@ -9,55 +9,28 @@ get started with Chapel program structure:
      hello-module.chpl      : a variation using a more structured use of Chapel
      hello-multiloc.chpl    : a multi-locale "Hello, world!" program
 
-It also contains a number of targeted examples---many written in a
-tutorial style---to help get started with specific Chapel language
-features:
+It also contains subdirectories that contain more interesting
+examples:
 
-     arrays.chpl            : tutorial for Chapel arithmetic arrays/domains
-     fileIO.chpl            : simple file I/O example using arrays
-     iterators.chpl         : sample iterators
-     multilocale.chpl       : demonstration of multi-locale concepts
-     opaque.chpl            : tutorial for Chapel opaque arrays
-     ranges.chpl            : uses of ranges and operations on ranges
-     reductions.chpl        : applies several array reductions on a 2D array
-     slices.chpl            : examples of array slicing and reindexing
-     sparse.chpl            : sparse domain/array tutorial example
-     taskParallel.chpl      : introduces task parallel language concepts
-     varargs.chpl           : demonstration of variable argument functions
-     variables.chpl         : examples of variables, constants, parameters
+     tutorials/             : introduce Chapel concepts using a narrative flow
+     idioms/                : demonstrate common parallel idioms or patterns
+     hpcc/                  : implementations of the HPC Challenge benchmarks
 
-A number of other examples show some simple computations in Chapel
-that exercise various language features:
+See the READMEs in each subdirectory for a description of its
+examples.
 
-     beer.chpl              : computes lyrics to "99 bottles of beer"
-     genericStack.chpl      : generic stack classes (list- and array-based)
-     jacobi.chpl            : Jacobi iteration
-     linkedList.chpl        : generic linked list example
-     norm.chpl              : sample module for computing array norms
-     prodCons.chpl          : producer-consumer example using circular buffer
-     quicksort.chpl         : parallel quick sort using cobegin and serial
-     tree.chpl              : constructs and walks a tree in parallel
-
-The hpcc subdirectory contains Chapel versions of three HPC Challenge
-benchmarks:
-
-     stream.chpl            : the STREAM Triad benchmark
-     ra.chpl                : the global Random Access benchmark
-     fft.chpl               : the global 1D FFT benchmark
-     hpl.chpl               : the High Performance Linpack benchmark
-
-If you are interested in a specific Chapel feature, refer to
-README.features, which contains a map of which tests use which
-language features.
+If you are interested in finding examples that use a specific Chapel
+feature, refer to README.features, which contains a map of which tests
+demonstrate which language features.
 
 
 ------------------
 Building the tests
 ------------------
 
-The examples in this directory can be compiled in a standalone manner,
-for example, the canonical "Hello, world!" program can be compiled as
-follows:
+Most of the examples can be compiled without referring to any
+additional source files.  For example, the canonical "Hello, world!"
+program can be compiled as follows:
 
      chpl -o hello hello.chpl
 
@@ -69,7 +42,8 @@ single test in that directory by name:
 
      gmake hello
 
-or to build all tests in that directory and its subdirectories:
+Alternatively, you can build all the tests in a directory and its
+subdirectories:
 
      gmake all
 
@@ -82,11 +56,10 @@ Other files
   Makefile        : Makefile for compiling the examples
   README.features : maps out which tests use which Chapel features
   README.testing  : provides an introduction to using the Chapel testing system
-  Arr.dat         : array input used by fileIO.chpl
   start_test      : the main script for the Chapel testing system
   Bin/            : contains helper scripts for the testing system
   Logs/           : directory created by the test system to store logs
-  *.good          : these files are used by the Chapel testing system
+  *.good          : used by the Chapel testing system -- see README.testing
   *.compopts      : "
   *.execopts      : "
   *.good          : "

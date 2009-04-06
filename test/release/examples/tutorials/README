@@ -1,0 +1,21 @@
+===============================
+Chapel Examples: Tutorial-style
+===============================
+
+These examples are written in a narrative style, to demonstrate a
+specific Chapel feature area in detail.  Over time, we plan to add
+more of these.
+
+     arrays.chpl            : tutorial for Chapel arithmetic arrays/domains
+     fileIO.chpl            : simple file I/O example using arrays
+     iterators.chpl         : sample iterators
+     multilocale.chpl       : demonstration of multi-locale concepts
+     opaque.chpl            : tutorial for Chapel opaque arrays
+     ranges.chpl            : uses of ranges and operations on ranges
+     reductions.chpl        : applies several array reductions on a 2D array
+     slices.chpl            : examples of array slicing and reindexing
+     sparse.chpl            : sparse domain/array tutorial example
+     taskParallel.chpl      : introduces task parallel language concepts
+     varargs.chpl           : demonstration of variable argument functions
+     variables.chpl         : examples of variables, constants, parameters
+
