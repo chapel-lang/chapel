@@ -19,12 +19,14 @@ TARGETS = \
 	opaque \
 	prodCons \
 	quicksort \
+	ranges \
 	reductions \
 	slices \
 	sparse \
 	taskParallel \
 	tree \
 	varargs \
+	variables \
 
 
 default: all hpcc

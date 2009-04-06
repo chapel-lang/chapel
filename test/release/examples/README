@@ -18,11 +18,13 @@ features:
      iterators.chpl         : sample iterators
      multilocale.chpl       : demonstration of multi-locale concepts
      opaque.chpl            : tutorial for Chapel opaque arrays
+     ranges.chpl            : uses of ranges and operations on ranges
      reductions.chpl        : applies several array reductions on a 2D array
      slices.chpl            : examples of array slicing and reindexing
      sparse.chpl            : sparse domain/array tutorial example
      taskParallel.chpl      : introduces task parallel language concepts
      varargs.chpl           : demonstration of variable argument functions
+     variables.chpl         : examples of variables, constants, parameters
 
 A number of other examples show some simple computations in Chapel
 that exercise various language features:

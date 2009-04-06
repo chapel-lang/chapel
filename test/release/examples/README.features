@@ -22,12 +22,14 @@ norm           : reductions; function overloading and where clauses; modules
 opaque         : opaque domains and arrays; graph-based data structures
 prodCons       : synchronization variables; task parallelism using cobegin
 quicksort      : bounded task parallelism using cobegin and serial
+ranges         : ranges; .., #, by operators; range iteration; range slicing
 reductions     : minloc, maxloc, + and && array reductions
 slices         : array slicing and reindexing; iterators
 sparse         : sparse domains and arrays; operations on them
 taskParallel   : begin, cobegin, coforall, sync statements, sync variables
 tree           : unbounded task parallelism using cobegin
 varargs        : variable argument functions, tuples
+variables      : var, const, param; config; basic inference; .type
 hpcc/stream    : whole-array operators; standard modules; time/random routines
 hpcc/ra        : iterators; atomic statements
 hpcc/fft       : array slicing; iterators; complex and imaginary values
@@ -70,12 +72,14 @@ norm           |       |   x   |       |   x   |       |       |       |
 opaque         |       |   x   |       |       |       |       |       |
 prodCons       |       |   x   |       |       |       |       |       |
 quicksort      |       |   x   |       |   *   |       |       |       |
+ranges         |       |   x   |       |       |       |       |       |
 reductions     |       |   x   |       |       |       |       |       |
 slices         |       |   *   |       |       |       |       |       |
 sparse         |       |   x   |       |       |       |       |       |
 taskParallel   |       |   x   |       |       |       |       |       |
 tree           |       |   x   |       |       |       |       |       |
 varargs        |       |   x   |       |       |       |       |       |
+variables      |       |   *   |       |       |       |       |       |
 hpcc/stream    |       |   x   |       |   x   |       |       |       |
 hpcc/ra        |       |   x   |       |   x   |       |       |       |
 hpcc/fft       |       |   x   |       |   x   |       |       |       |
@@ -112,12 +116,14 @@ norm           |   *   |       |   x   |   x   |       |       |       |
 opaque         |       |   x   |       |   x   |       |   x   |       |
 prodCons       |       |       |   x   |   x   |   x   |   x   |       |
 quicksort      |       |   *   |       |   x   |       |   x   |       |
+ranges         |       |       |       |   x   |       |       |       |
 reductions     |       |   *   |       |       |       |   x   |       |
 slices         |       |       |   x   |   x   |   x   |   x   |       |
 sparse         |       |       |       |   x   |   x   |   x   |       |
 taskParallel   |       |   x   |       |   x   |       |       |       |
 tree           |       |       |   x   |   x   |       |   x   |       |
-varargs        |       |       |       |   x   |       |       |   *   |
+varargs        |       |       |       |   x   |       |       |   *   |   *
+variables      |       |       |       |   x   |       |   *   |       |
 hpcc/stream    |   x   |   x   |   x   |   x   |       |   x   |       |
 hpcc/ra        |   *   |   x   |   x   |   x   |   x   |   x   |       |
 hpcc/fft       |   x   |   x   |   x   |   x   |   x   |   x   |       |
@@ -157,12 +163,14 @@ norm           |       |       |       |       |       |   x   |   x   |   x
 opaque         |   x   |       |       |       |       |   x   |       |
 prodCons       |       |       |       |       |       |   x   |       |
 quicksort      |       |       |       |       |       |   x   |       |
+ranges         |       |   x   |       |       |       |   x   |       |
 reductions     |       |       |       |       |       |   x   |       |
 slices         |       |       |       |       |       |   *   |       |
 sparse         |       |       |       |       |       |   x   |       |
 taskParallel   |       |       |       |       |       |   x   |       |   x
 tree           |       |       |       |   x   |       |   x   |       |
 varargs        |       |   x   |       |       |       |   x   |   x   |
+variables      |       |       |       |       |       |   *   |       |
 hpcc/stream    |       |       |       |       |       |   x   |   x   |
 hpcc/ra        |       |       |       |       |       |   x   |   x   |
 hpcc/fft       |       |   x   |       |       |       |   x   |   *   |
@@ -200,12 +208,14 @@ norm           |   x   |       |       |       |       |       |       |
 opaque         |       |       |       |       |   *   |       |   x   |   x
 prodCons       |   x   |       |       |       |       |       |       |
 quicksort      |   x   |       |       |       |       |       |       |
+ranges         |   x   |       |       |       |       |       |       |
 reductions     |   x   |       |       |       |       |       |       |
 slices         |   x   |       |       |       |       |       |       |
 sparse         |   x   |   *   |       |       |       |       |       |   x
 taskParallel   |   x   |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
+variables      |       |       |       |       |       |       |       |
 hpcc/stream    |   x   |       |       |       |       |       |       |
 hpcc/ra        |   x   |       |       |       |       |       |       |
 hpcc/fft       |   x   |       |       |       |       |       |       |
@@ -243,12 +253,14 @@ norm           |   x   |   x   |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |   x   |       |       |       |       |
+ranges         |       |       |       |       |       |       |       |
 reductions     |       |   *   |   *   |       |   x   |       |       |
 slices         |   *   |   *   |   x   |   x   |       |       |       |
 sparse         |   x   |       |       |       |   x   |       |       |
 taskParallel   |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
+variables      |       |       |       |       |       |       |       |
 hpcc/stream    |   x   |   *   |       |       |   x   |       |       |
 hpcc/ra        |   x   |       |       |       |   x   |       |       |
 hpcc/fft       |   x   |   x   |   x   |       |   x   |       |       |
@@ -285,12 +297,14 @@ norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |   *   |       |       |   *   |       |       |
 quicksort      |       |   *   |       |   *   |       |       |       |
+ranges         |       |       |       |       |       |       |       |
 reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 taskParallel   |   *   |   *   |   *   |       |   *   |       |   *   |
 tree           |       |   x   |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
+variables      |       |       |       |       |       |       |       |
 hpcc/stream    |       |       |       |       |       |       |       |
 hpcc/ra        |       |       |       |       |       |   x   |       |
 hpcc/fft       |       |       |       |       |       |       |       |
@@ -329,12 +343,14 @@ norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |       |       |       |       |       |
+ranges         |       |       |       |       |       |       |       |
 reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 taskParallel   |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
+variables      |       |       |       |       |       |       |       |
 hpcc/stream    |       |       |       |       |       |       |       |
 hpcc/ra        |       |       |       |       |       |       |       |
 hpcc/fft       |       |       |       |       |       |       |       |
@@ -374,12 +390,14 @@ norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
 quicksort      |       |       |       |       |       |       |       |
+ranges         |       |       |       |       |       |       |       |
 reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 taskParallel   |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
+variables      |       |       |       |       |       |       |       |
 hpcc/stream    |   x   |       |       |       |       |       |       |
 hpcc/ra        |   x   |       |       |       |       |       |       |
 hpcc/fft       |       |       |       |       |       |       |       |
