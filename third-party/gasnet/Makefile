@@ -60,7 +60,6 @@ gasnet-build: FORCE
 	cd $(GASNET_BUILD_DIR) && $(MAKE) all
 	cd $(GASNET_BUILD_DIR) && $(MAKE) install
 	$(XTRA_BUILD_COMMAND)
-extra:
 	$(XTRA_POST_INSTALL_COMMAND)
 
 gasnet: gasnet-config gasnet-build
