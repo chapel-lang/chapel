@@ -59,8 +59,7 @@ Other files
   start_test      : the main script for the Chapel testing system
   Bin/            : contains helper scripts for the testing system
   Logs/           : directory created by the test system to store logs
-  *.good          : used by the Chapel testing system -- see README.testing
-  *.compopts      : "
+  *.compopts      : used by the Chapel testing system -- see README.testing
   *.execopts      : "
   *.good          : "
   *.notest        : "
