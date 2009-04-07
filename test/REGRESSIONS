@@ -17,6 +17,10 @@
 general regressions
 ===================
 
+spurious verification failures on RA (e.g. 04/04/09)
+----------------------------------------------------
+[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
+
 
 =================
 linux regressions
@@ -109,7 +113,7 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09, 03/14/09, 03/22/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09, 03/24/09, 03/28/09, 04/02/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
@@ -176,7 +180,7 @@ opts-specific tests
 (Example runs: 0)
  
 
-(Full run: 136)
+(Full run: 107)
 
 all
 ---
@@ -194,12 +198,9 @@ all
 --no-inline
 -----------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error matching program output for memory/figueroa/LeakedMemory2]
-[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for classes/marybeth/test_dispatch_record]
 [Error matching program output for param/bradc/foldIntParams]
 [Error matching program output for param/bradc/foldStringParams]
-[Error matching program output for studies/590o/blerner/xml-parse]
 [Error matching program output for studies/590o/bradc/psp2]
 [Error matching program output for trivial/bradc/compilerWarning]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
@@ -213,6 +214,7 @@ all
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
 --no-optimize-loop-iterators
+--baseline --inline
 ----------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 
@@ -221,67 +223,35 @@ all
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
 ---------------------------------------------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error matching program output for memory/figueroa/LeakedMemory2]
-[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
 --baseline --copy-propagation
 --baseline --dead-code-elimination
 --baseline --optimize-loop-iterators
+--baseline --live-analysis
 ------------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for associative/waynew/indef2]
-[Error matching program output for memory/figueroa/LeakedMemory2]
-[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for classes/marybeth/test_dispatch_record]
 [Error matching program output for param/bradc/foldIntParams]
 [Error matching program output for param/bradc/foldStringParams]
 [Error matching program output for studies/590o/alaska/graph]
-[Error matching program output for studies/590o/blerner/xml-parse]
 [Error matching program output for studies/590o/bradc/psp2]
 [Error matching program output for trivial/bradc/compilerWarning]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 [Error matching program output for types/tuple/dinan/pining_for_lisp_ver2]
-
---baseline --inline
--------------------
-[Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error matching program output for memory/figueroa/LeakedMemory2]
-[Error matching program output for memory/figueroa/LeakedMemory3]
-[Error matching program output for studies/590o/blerner/xml-parse]
 
 --baseline --inline-iterators
 -----------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for associative/waynew/indef2]
-[Error matching program output for memory/figueroa/LeakedMemory2]
-[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for classes/marybeth/test_dispatch_record]
 [Error matching program output for modules/diten/useInBegin]
 [Error matching program output for param/bradc/foldIntParams]
 [Error matching program output for param/bradc/foldStringParams]
 [Error matching program output for studies/590o/alaska/graph]
-[Error matching program output for studies/590o/blerner/xml-parse]
 [Error matching program output for studies/590o/bradc/psp2]
-[Error matching program output for trivial/bradc/compilerWarning]
-[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
-[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
-[Error matching program output for types/tuple/dinan/pining_for_lisp_ver2]
-
---baseline --live-analysis
---------------------------
-[Error matching program output for arrays/deitz/jacobi5-no-local]
-[Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error matching program output for associative/waynew/indef2]
-[Error matching program output for memory/figueroa/LeakedMemory2]
-[Error matching program output for memory/figueroa/LeakedMemory3]
-[Error matching program output for classes/marybeth/test_dispatch_record]
-[Error matching program output for param/bradc/foldIntParams]
-[Error matching program output for param/bradc/foldStringParams]
-[Error matching program output for studies/590o/alaska/graph]
-[Error matching program output for studies/590o/blerner/xml-parse]
-[Error: Timed out executing program studies/590o/bradc/psp2]
 [Error matching program output for trivial/bradc/compilerWarning]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
@@ -291,13 +261,10 @@ all
 -------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for associative/waynew/indef2]
-[Error matching program output for memory/figueroa/LeakedMemory2]
-[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for classes/marybeth/test_dispatch_record]
 [Error matching program output for param/bradc/foldIntParams]
 [Error matching program output for param/bradc/foldStringParams]
 [Error matching program output for studies/590o/alaska/graph]
-[Error matching program output for studies/590o/blerner/xml-parse]
 [Error: Timed out executing program studies/590o/bradc/psp2]
 [Error matching program output for trivial/bradc/compilerWarning]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
@@ -308,12 +275,9 @@ all
 --no-scalar-replacement --no-inline
 -----------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error matching program output for memory/figueroa/LeakedMemory2]
-[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for classes/marybeth/test_dispatch_record]
 [Error matching program output for param/bradc/foldIntParams]
 [Error matching program output for param/bradc/foldStringParams]
-[Error matching program output for studies/590o/blerner/xml-parse]
 [Error matching program output for studies/590o/bradc/psp2]
 [Error matching program output for trivial/bradc/compilerWarning]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
@@ -324,17 +288,11 @@ all
 --baseline --no-local
 ---------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error matching program output for memory/figueroa/LeakedMemory2]
-[Error matching program output for memory/figueroa/LeakedMemory3]
 [Error matching program output for classes/marybeth/test_dispatch_record]
-[Error: Timed out executing program npb/cg/bradc/cg-sparse]
-[Error matching program output for studies/590o/blerner/xml-parse]
 [Error matching program output for studies/590o/bradc/psp2]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 [Error matching program output for types/tuple/dinan/pining_for_lisp_ver2]
-[Error: Timed out executing program users/franzf/v1/chpl/main]
-[Error: Timed out executing program users/franzf/v2/chpl/main]
 
 
 =======================
@@ -347,7 +305,7 @@ spurious errno routing to host message
 
 use-before-def problem (02/18/09)
 ---------------------------------
-[Error matching program output for release/examples/reductions]
+[Error matching program output for release/examples/tutorials/reductions]
 
 threads-none causes serial iterator to be used rather than follower (11/25/08)
 ------------------------------------------------------------------------------
@@ -355,7 +313,7 @@ threads-none causes serial iterator to be used rather than follower (11/25/08)
 
 no warning generated because of threads-none? (11/11/08)
 --------------------------------------------------------
-[Error matching program output for release/examples/sparse]
+[Error matching program output for release/examples/tutorials/sparse]
 
 times out in C compiler
 -----------------------
@@ -388,10 +346,6 @@ infrequent seg fault on Sam's Mac
 ========================
 xt-cle-specific failures
 ========================
-
-Some sort of new info message causes output diffs (04/03/09)
-------------------------------------------------------------
-*everything*
 
 
 =============================================================
@@ -432,9 +386,17 @@ Some sort of offset type mismatch -- likely caused by long identifiers
 pathscale-specific regressions (in addition to xt-cle errors above)
 ===================================================================
 
+some sort of gdb issue
+----------------------
+[Error matching program output for execflags/bradc/gdbddash/declint2]
+
 exp2 not supported:
 -------------------
 [Error matching program output for functions/dinan/exp2] 
+
+compilation timeout (04/03/09)
+------------------------------
+[Error: Timed out compilation for studies/hpcc/RA/diten/ra]
 
 
 ========================
@@ -508,11 +470,11 @@ use-before-def warning in generated code -- should disable (03/06/09)
 
 execution timeout (03/07/09)
 ----------------------------
-[Error: Timed out executing program release/examples/prodCons]
+[Error: Timed out executing program release/examples/programs/prodCons]
 
 compilation timeout (03/06/09)
 ------------------------------
-[Error: Timed out compilation for release/examples/arrays]
+[Error: Timed out compilation for release/examples/tutorials/arrays]
 
 occasional timeouts? or slowed down during iterator rewrites? (e.g., 07/02/08)
 ------------------------------------------------------------------------------
@@ -520,7 +482,7 @@ occasional timeouts? or slowed down during iterator rewrites? (e.g., 07/02/08)
 
 unreachable line causes compiler warning
 ----------------------------------------
-[Error matching program output for release/examples/arrays]
+[Error matching program output for release/examples/tutorials/arrays]
 [Error matching program output for release/examples/hpcc/hpl]
 
 
@@ -531,8 +493,8 @@ xmt-specific regressions (beyond the above)
 simulation timeouts
 -------------------
 [Error: Timed out executing program release/examples/hpcc/ra]
-[Error: Timed out executing program release/examples/quicksort]
-[Error: Timed out executing program release/examples/taskParallel]
+[Error: Timed out executing program release/examples/programs/quicksort]
+[Error: Timed out executing program release/examples/tutorials/taskParallel]
 
 
 
