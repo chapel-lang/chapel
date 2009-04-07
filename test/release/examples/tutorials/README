@@ -7,7 +7,9 @@ specific Chapel feature area in detail.  Over time, we plan to add
 more of these.
 
      arrays.chpl            : tutorial for Chapel arithmetic arrays/domains
+     classes.chpl           : examples of defining and using classes
      fileIO.chpl            : simple file I/O example using arrays
+     genericClasses.chpl    : examples of defining and using generic classes
      iterators.chpl         : sample iterators
      multilocale.chpl       : demonstration of multi-locale concepts
      opaque.chpl            : tutorial for Chapel opaque arrays
@@ -16,6 +18,6 @@ more of these.
      slices.chpl            : examples of array slicing and reindexing
      sparse.chpl            : sparse domain/array tutorial example
      taskParallel.chpl      : introduces task parallel language concepts
+     timers.chpl            : introduces timers, a built-in stopwatch
      varargs.chpl           : demonstration of variable argument functions
      variables.chpl         : examples of variables, constants, parameters
-

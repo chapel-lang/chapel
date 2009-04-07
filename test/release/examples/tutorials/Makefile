@@ -5,7 +5,9 @@ CHPL = chpl
 
 TARGETS = \
 	arrays \
+	classes \
 	fileIO \
+	genericClasses \
 	iterators \
 	multilocale \
 	opaque \
@@ -14,6 +16,7 @@ TARGETS = \
 	slices \
 	sparse \
 	taskParallel \
+	timers \
 	varargs \
 	variables \
 

@@ -12,7 +12,9 @@ hello-module   : configuration vars; module structure; main() entry point
 hello-multiloc : coforalls, on clauses, locales
 arrays         : arithmetic domains and arrays; slicing; iteration; reallocation
 beer           : 1D domains and arrays; string manipulation; generic functions
+classes        : classes and objects; dynamic dispatch; 'this' and 'these'
 fileIO         : file I/O of scalars and arrays
+genericClasses : generic classes and objects; generic types
 genericStack   : generic classes; nested classes; array reallocation
 iterators      : iterators of various styles
 jacobi         : 2D domains and arrays; stencil operations; reductions
@@ -27,6 +29,7 @@ reductions     : minloc, maxloc, + and && array reductions
 slices         : array slicing and reindexing; iterators
 sparse         : sparse domains and arrays; operations on them
 taskParallel   : begin, cobegin, coforall, sync statements, sync variables
+timers         : Timer record in Time module
 tree           : unbounded task parallelism using cobegin
 varargs        : variable argument functions, tuples
 variables      : var, const, param; config; basic inference; .type
@@ -62,7 +65,9 @@ hello-module   |       |   *   |       |       |       |       |       |
 hello-multiloc |       |   x   |       |       |       |       |       |
 arrays         |       |   x   |       |       |       |       |       |
 beer           |       |   *   |       |       |       |       |       |
+classes        |       |   x   |       |       |       |       |       |
 fileIO         |   *   |   *   |   *   |       |       |       |       |
+genericClasses |       |   x   |       |       |       |       |       |
 genericStack   |       |   x   |       |   x   |       |       |       |
 iterators      |       |   x   |       |       |       |       |       |
 jacobi         |       |   *   |       |       |       |       |       |
@@ -77,6 +82,7 @@ reductions     |       |   x   |       |       |       |       |       |
 slices         |       |   *   |       |       |       |       |       |
 sparse         |       |   x   |       |       |       |       |       |
 taskParallel   |       |   x   |       |       |       |       |       |
+timers         |       |   x   |       |       |       |       |       |
 tree           |       |   x   |       |       |       |       |       |
 varargs        |       |   x   |       |       |       |       |       |
 variables      |       |   *   |       |       |       |       |       |
@@ -106,7 +112,9 @@ hello-module   |   *   |       |   *   |       |       |   *   |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |       |       |       |   x   |       |   x   |       |
 beer           |       |       |   x   |   *   |       |   x   |       |
+classes        |       |       |       |   x   |   x   |       |   *   |
 fileIO         |       |       |   x   |   x   |       |   x   |       |
+genericClasses |       |       |       |   x   |       |       |       |
 genericStack   |       |       |       |   x   |       |       |       |
 iterators      |       |       |       |       |   *   |       |       |
 jacobi         |       |       |   x   |       |       |   x   |       |
@@ -121,6 +129,7 @@ reductions     |       |   *   |       |       |       |   x   |       |
 slices         |       |       |   x   |   x   |   x   |   x   |       |
 sparse         |       |       |       |   x   |   x   |   x   |       |
 taskParallel   |       |   x   |       |   x   |       |       |       |
+timers         |       |   x   |       |       |       |   x   |       |
 tree           |       |       |   x   |   x   |       |   x   |       |
 varargs        |       |       |       |   x   |       |       |   *   |   *
 variables      |       |       |       |   x   |       |   *   |       |
@@ -153,7 +162,9 @@ hello-module   |   x   |       |       |       |       |   x   |       |
 hello-multiloc |   x   |       |       |       |       |       |       |
 arrays         |       |   x   |       |       |       |   x   |   *   |
 beer           |   *   |       |       |       |       |   *   |       |
+classes        |       |       |       |   *   |       |   x   |       |
 fileIO         |       |       |       |       |       |   x   |       |
+genericClasses |       |   x   |       |   x   |   *   |   x   |       |
 genericStack   |   x   |       |   *   |   *   |   *   |   x   |       |
 iterators      |   x   |   x   |       |   x   |       |   x   |       |
 jacobi         |       |   x   |       |       |       |   x   |       |
@@ -168,6 +179,7 @@ reductions     |       |       |       |       |       |   x   |       |
 slices         |       |       |       |       |       |   *   |       |
 sparse         |       |       |       |       |       |   x   |       |
 taskParallel   |       |       |       |       |       |   x   |       |   x
+timers         |       |       |       |       |       |       |       |
 tree           |       |       |       |   x   |       |   x   |       |
 varargs        |       |   x   |       |       |       |   x   |   x   |
 variables      |       |       |       |       |       |   *   |       |
@@ -198,7 +210,9 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |   *   |       |       |       |       |       |       |   *
 beer           |   x   |       |       |       |       |       |       |
+classes        |       |       |       |       |       |       |       |
 fileIO         |   x   |       |       |       |       |       |       |
+genericClasses |       |       |       |       |       |       |       |
 genericStack   |   x   |       |       |       |       |       |   x   |   x
 iterators      |       |       |       |       |       |       |       |
 jacobi         |   x   |       |       |       |       |       |       |
@@ -213,6 +227,7 @@ reductions     |   x   |       |       |       |       |       |       |
 slices         |   x   |       |       |       |       |       |       |
 sparse         |   x   |   *   |       |       |       |       |       |   x
 taskParallel   |   x   |       |       |       |       |       |       |
+timers         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
 variables      |       |       |       |       |       |       |       |
@@ -243,7 +258,9 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |   x   |   *   |   *   |       |       |       |       |
 beer           |   x   |       |       |       |       |       |       |
+classes        |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |   x   |       |       |
+genericClasses |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |   *   |       |   *   |       |   *   |       |       |
@@ -258,6 +275,7 @@ reductions     |       |   *   |   *   |       |   x   |       |       |
 slices         |   *   |   *   |   x   |   x   |       |       |       |
 sparse         |   x   |       |       |       |   x   |       |       |
 taskParallel   |       |       |       |       |       |       |       |
+timers         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
 variables      |       |       |       |       |       |       |       |
@@ -287,7 +305,9 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |       |       |   x   |       |       |       |       |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
+classes        |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |       |       |       |
+genericClasses |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
@@ -302,6 +322,7 @@ reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 taskParallel   |   *   |   *   |   *   |       |   *   |       |   *   |
+timers         |       |       |       |       |       |       |       |
 tree           |       |   x   |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
 variables      |       |       |       |       |       |       |       |
@@ -333,7 +354,9 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |   *   |       |       |   *   |   *   |       |   *   |   
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
+classes        |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |       |       |       |
+genericClasses |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
@@ -348,6 +371,7 @@ reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 taskParallel   |       |       |       |       |       |       |       |
+timers         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
 variables      |       |       |       |       |       |       |       |
@@ -380,7 +404,9 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
+classes        |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |       |       |       |
+genericClasses |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
 iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
@@ -395,6 +421,7 @@ reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
 taskParallel   |       |       |       |       |       |       |       |
+timers         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
 variables      |       |       |       |       |       |       |       |
