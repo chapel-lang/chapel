@@ -7,6 +7,7 @@ specific Chapel feature area in detail.  Over time, we plan to add
 more of these.
 
      arrays.chpl            : tutorial for Chapel arithmetic arrays/domains
+     block2D.chpl           : example of using the Block distribution
      classes.chpl           : examples of defining and using classes
      fileIO.chpl            : simple file I/O example using arrays
      genericClasses.chpl    : examples of defining and using generic classes

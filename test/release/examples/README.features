@@ -12,6 +12,7 @@ hello-module   : configuration vars; module structure; main() entry point
 hello-multiloc : coforalls, on clauses, locales
 arrays         : arithmetic domains and arrays; slicing; iteration; reallocation
 beer           : 1D domains and arrays; string manipulation; generic functions
+block2D        : distributions; Block distribution
 classes        : classes and objects; dynamic dispatch; 'this' and 'these'
 fileIO         : file I/O of scalars and arrays
 genericClasses : generic classes and objects; generic types
@@ -65,6 +66,7 @@ hello-module   |       |   *   |       |       |       |       |       |
 hello-multiloc |       |   x   |       |       |       |       |       |
 arrays         |       |   x   |       |       |       |       |       |
 beer           |       |   *   |       |       |       |       |       |
+block2D        |       |   x   |       |       |       |       |       |
 classes        |       |   x   |       |       |       |       |       |
 fileIO         |   *   |   *   |   *   |       |       |       |       |
 genericClasses |       |   x   |       |       |       |       |       |
@@ -112,6 +114,7 @@ hello-module   |   *   |       |   *   |       |       |   *   |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |       |       |       |   x   |       |   x   |       |
 beer           |       |       |   x   |   *   |       |   x   |       |
+block2D        |       |   x   |       |       |       |       |       |
 classes        |       |       |       |   x   |   x   |       |   *   |
 fileIO         |       |       |   x   |   x   |       |   x   |       |
 genericClasses |       |       |       |   x   |       |       |       |
@@ -162,6 +165,7 @@ hello-module   |   x   |       |       |       |       |   x   |       |
 hello-multiloc |   x   |       |       |       |       |       |       |
 arrays         |       |   x   |       |       |       |   x   |   *   |
 beer           |   *   |       |       |       |       |   *   |       |
+block2D        |       |       |       |       |       |       |       |
 classes        |       |       |       |   *   |       |   x   |       |
 fileIO         |       |       |       |       |       |   x   |       |
 genericClasses |       |   x   |       |   x   |   *   |   x   |       |
@@ -210,6 +214,7 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |   *   |       |       |       |       |       |       |   *
 beer           |   x   |       |       |       |       |       |       |
+block2D        |   x   |       |       |       |       |       |       |
 classes        |       |       |       |       |       |       |       |
 fileIO         |   x   |       |       |       |       |       |       |
 genericClasses |       |       |       |       |       |       |       |
@@ -258,6 +263,7 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |   x   |   *   |   *   |       |       |       |       |
 beer           |   x   |       |       |       |       |       |       |
+block2D        |   x   |       |       |       |       |       |       |
 classes        |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |   x   |       |       |
 genericClasses |       |       |       |       |       |       |       |
@@ -305,6 +311,7 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |       |       |   x   |       |       |       |       |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
+block2D        |       |       |       |       |       |       |       |
 classes        |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |       |       |       |
 genericClasses |       |       |       |       |       |       |       |
@@ -354,6 +361,7 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |   *   |       |       |   *   |   *   |       |   *   |   
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
+block2D        |       |       |       |       |       |   x   |       |
 classes        |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |       |       |       |
 genericClasses |       |       |       |       |       |       |       |
@@ -404,6 +412,7 @@ hello-module   |       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
+block2D        |   *   |       |       |       |       |       |       |
 classes        |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |       |       |       |
 genericClasses |       |       |       |       |       |       |       |

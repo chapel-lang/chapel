@@ -5,6 +5,7 @@ CHPL = chpl
 
 TARGETS = \
 	arrays \
+	block2D \
 	classes \
 	fileIO \
 	genericClasses \
