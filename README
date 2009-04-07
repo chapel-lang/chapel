@@ -85,16 +85,16 @@ For more detailed information about...      refer to...
   ...a tutorial using three HPCC benchmarks  ...doc/hpccTutorial.pdf
   ...the Chapel language specification       ...doc/chapelLanguageSpec.pdf
 
-  ...using Chapel on a Cray XT (CLE)         ...doc/README.xt-cle
-  ...using Chapel on a Cray CX1 (Linux)      ...doc/README.cx1-linux
-  ...using Chapel with Mac OS X              ...doc/README.macosx
-  ...using Chapel with Cygwin over Windows   ...doc/README.cygwin
-  ...using Chapel on an IBM system           ...doc/README.ibm
+  ...using Chapel on a Cray XT (CLE)         ...doc/platforms/README.xt-cle
+  ...using Chapel on a Cray CX1 (Linux)      ...doc/platforms/README.cx1-linux
+  ...using Chapel with Mac OS X              ...doc/platforms/README.macosx
+  ...using Chapel with Cygwin over Windows   ...doc/platforms/README.cygwin
+  ...using Chapel on an IBM system           ...doc/platforms/README.ibm
 
   ...how Chapel tasks are mapped to threads  ...doc/README.threads
 
-  ...calling C routines from Chapel          ...doc/README.extern
-  ...formatting value-to-string conversions  ...doc/README.format
+  ...calling C routines from Chapel          ...doc/technotes/README.extern
+  ...formatting value-to-string conversions  ...doc/technotes/README.format
 
   ...third-party software that we use        ...third-party/README
   ...the GASNet communication library        ...third-party/gasnet/README

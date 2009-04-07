@@ -36,7 +36,7 @@ Newly Implemented Features:
 
 Portability of code base:
 -------------------------
-- added a script to build Chapel on Macs using xcodebuild -- see README.macosx
+- added a script to build Chapel on Macs using xcodebuild (see README.macosx)
 - improved portability of GASNet configure + build steps for xt-cle
 - made flex and bison generate .cpp files rather than .c files for portability
 - added initial support for IBM Power5 and Power6 systems (see README.ibm)

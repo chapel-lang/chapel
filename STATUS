@@ -155,7 +155,7 @@ Input and Output
 
 Unimplemented Features:
 - Format control for the output precision/width of scalar values
-  Workaround: see doc/README.format
+  Workaround: see doc/technotes/README.format
 - Input of whole arrays, e.g., read(A);
   Workaround: use a loop and read in the elements one at a time
     e.g., for i in A.domain do read(A(i));
@@ -190,7 +190,7 @@ Status:
 
 Cray XT:
 - The memory limit for Chapel programs may need to be set manually --
-  see doc/README.xt-cle for details
+  see doc/platforms/README.xt-cle for details
 
 Cray CX1:
 - We currently only support CX1s running Linux
@@ -201,11 +201,7 @@ PBS launcher:
 
 IBM Power5/Power6 systems:
 - we have had some initial successes executing Chapel on these machines --
-  see doc/README.ibm for details
-
-Altix:
-- our users have had some initial success executing Chapel on Altix
-  machines using MPI.  See doc/README.altix for details
+  see doc/platforms/README.ibm for details
 
 
 Bugs:
