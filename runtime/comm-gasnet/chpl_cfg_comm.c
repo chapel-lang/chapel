@@ -399,7 +399,7 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
     (*chpl_ftable[fid])(arg);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: re`mote thread created on %d\n", chpl_localeID, locale);
+      printf("%d: remote task created on %d\n", chpl_localeID, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_mutex_lock(&chpl_comm_diagnostics_lock);
       chpl_comm_forks++;
@@ -465,7 +465,7 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
                false, info->serial_state, NULL);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: remote non-blocking thread created on %d\n", chpl_localeID, locale);
+      printf("%d: remote non-blocking task created on %d\n", chpl_localeID, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_mutex_lock(&chpl_comm_diagnostics_lock);
       chpl_comm_nb_forks++;
