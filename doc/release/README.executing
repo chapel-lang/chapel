@@ -172,8 +172,9 @@ The flags are as follows:
                           memory errors such as freeing a pointer that
                           is not currently allocated.  The table can
                           be printed out during execution using a call
-                          to the 0-argument routine
-                          _chpl_memtest_printMemTable()
+                          to the 0-argument routine printMemTable(),
+                          which is defined in the Memory standard
+                          module
 
   --memtrace=<filename> : print a trace of all memory events to the
                           specified filename
