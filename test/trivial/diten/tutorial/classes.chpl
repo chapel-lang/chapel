@@ -6,12 +6,12 @@
  */
 
 //
-// A class is a type that can contain variables and constants as well as
-// methods. A new class is declared using the 'class' keyword.
+// A class is a type that can contain variables and constants, called
+// fields, as well as functions, called methods.  A new class type is
+// declared using the 'class' keyword.
 //
 class C {
   var a, b: int;
-
   def printFields() {
     writeln("a = ", a, " b = ", b);
   }
@@ -19,54 +19,62 @@ class C {
 
 //
 // Class variables can be declared using the 'new' keyword to call the
-// constructor for the class C. The default constructor has an argument for
-// each field in the class. Once a class has been constructed, its methods
-// can be called. 
+// constructor for the class C.  The default constructor has an argument for
+// each field in the class.  Once a class has been constructed, its methods
+// can be called.
 //
 var c = new C(1, 2);
 c.printFields();
 
 //
-// Methods can also be defined outside of the class body by prefixing the
-// method name with the class name. All methods have an implicit 'this'
-// argument that is a reference to the object the method was called with.
-// The 'this' argument can be used to access a field explicitly.
+// Default output is supported so a class can be written by making a
+// call to write or writeln.  Default input is also supported.
+//
+writeln(c);
+
+//
+// Methods can also be defined outside of the class body by prefixing
+// the method name with the class name.  All methods have an implicit
+// 'this' argument that is a reference to the class instance, or
+// object.  The 'this' argument can be used to access a field
+// explicitly.  For example, in the method below, the 'this' argument
+// is used to access the 'b' field which is otherwise shadowed by the
+// 'b' argument.
 //
 def C.sum_a_b_b(b: int) {
   return a + b + this.b;
 }
-
 writeln(c.sum_a_b_b(3));
 
-
 //
-// Here, a class named 'D' is declared as a derived class from 'C'. This new
-// class has all of the fields and methods from 'C', plus any additional fields
-// or methods it declares. The printFields method has the same signature as
-// a method from 'C' - it is overridden.
+// Here, a class named 'D' is declared as a derived class from 'C'.
+// This new class has all of the fields and methods from 'C', plus any
+// additional fields or methods it declares.  The printFields method
+// has the same signature as a method from 'C'--it is overridden.
 //
 class D: C {
   var c = 1.2, d = 3.4;
-
   def printFields() {
     writeln("a = ", a, " b = ", b, " c = ", c, " d = ", d);
   }
 }
 
 //
-// The static type of the variable 'c', declared above, is 'C'. Because the
-// class 'D' is derived from 'C', this variable is able to reference an object
-// of type 'D'. If an overridden method such as printFields is called, it
-// is dynamically dispatched to the method with the most specific dynamic
-// type possible.
+// The static type of the variable 'c', declared above, is 'C'.
+// Because the class 'D' is derived from 'C', the variable 'c' can
+// reference an object of type 'D'.  If an overridden method such as
+// printFields is called, it is dynamically dispatched to the method
+// with the most specific dynamic type.
 //
 c = new D(3, 4);
 c.printFields();
 
 //
-// There are a few method names that cause a method to have special meaning.
-// A method named 'this' allows a class to be indexed like an array. A method
-// named 'these' allows a class to be iterated over.
+// There are a few method names that cause the method to have special
+// meaning.  A method named 'this' allows a class to be indexed like
+// an array.  A method named 'these' allows a class to be iterated
+// over.
+//
 class ArrayLike {
   var a, b, c, d: int;
   def this(i:int) var {
@@ -88,13 +96,12 @@ class ArrayLike {
 }
 
 //
-// An 'ArrayLike' object can be indexed like a 4 element array and it can
-// be iterated over in a loop. 
+// An 'ArrayLike' object can be indexed like a 4 element array and it
+// can be iterated over in a loop.
 //
 var a = new ArrayLike();
-a(2) = 1;
-a(4) = 2;
+a(2) = 1; // call to this function
+a(4) = 2; // call to this function
 
-for elt in a do
+for elt in a do // invocation of these iterator
   writeln(elt);
-
