@@ -2,13 +2,15 @@
 Reporting Bugs for Chapel
 =========================
 
-The Chapel compiler is tested using a suite of 2750+ tests on a
-nightly basis for ~10 platforms using ~6 C/C++ compilers and a variety
-of compiler flag combinations.  While these tests help us make steady
-progress in implementing the language, there are still many bugs in
-our implementation, some known to us, others not.  If you encounter a
-bug or problem using the Chapel compiler, please do not hesitate to
-contact the Chapel development team at the following address:
+If you encounter a bug or problem using the Chapel compiler, please do
+not hesitate to contact the Chapel development team at the following
+address:
+
+  chapel-bugs@lists.sourceforge.net
+
+Note that mail sent to the above address will be publicly readable.
+If you would prefer for your bug to be held in confidence by the
+Chapel team, please mail it to:
 
   chapel_bugs@cray.com
 

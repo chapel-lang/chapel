@@ -4,7 +4,10 @@ Using Chapel on IBM Machines
 
 We only have limited experience using Chapel on IBM platforms to date.
 This file contains notes that reflect our current experience, focusing
-first on PowerPC-based systems and then BG systems.
+first on PowerPC-based systems and then BG systems.  If you are not
+familiar with Chapel, it is recommended that you first try the
+instructions in the top-level README to get started with the language.
+
 
 PowerPC SMP clusters
 --------------------
@@ -25,8 +28,7 @@ or:
    default.
 
 
-3) For multi-locale (-node) runs, set CHPL_COMM to gasnet.  For
-   example:
+3) Set CHPL_COMM to gasnet.  For example:
 
      setenv CHPL_COMM gasnet
 
@@ -58,12 +60,15 @@ or:
 
 
 7) When you compile a multi-locale program for pwr6, you should see
-   two binaries (e.g., a.out and a.out_real).  The first binary
-   contains code to launch the Chapel program onto the compute nodes
-   using loadleveler by default.  The second contains the program code
-   itself.  If the loadleveler script we generate turns out not to be
-   compatible with your installation, you can write your own script
-   and have it execute the a.out_real binary explicitly.  See
+   two binaries (e.g., hello-multiloc and hello-multiloc_real).  The
+   first binary contains code to launch the Chapel program onto the
+   compute nodes using loadleveler by default.  The second contains
+   the program code itself.  
+
+   If the loadleveler script we generate turns out not to be
+   compatible with your installation, or you are using a Power5
+   system, you can write your own loadleveler script and have it
+   execute the a.out_real binary using poe explicitly.  See
    README.launcher for further details.
 
 
@@ -77,10 +82,11 @@ BG/L by setting CHPL_THREADS=none, but you won't be able to execute
 anything particularly interesting.  If you are interested in running
 Chapel on BG/L, please contact us and let us know.
 
+
 Blue Gene/P
 -----------
 We have done some initial experimentation with the GASNet team to try
-and run Chapel on BG/P with some limited success, however more work is
-required to make this a stable and supported platform.  If running
+and run Chapel on BG/P with some limited success, however more effort
+is required to make this a stable and supported platform.  If running
 Chapel on BG/P would be of interest to you, please contact us and let
 us know.

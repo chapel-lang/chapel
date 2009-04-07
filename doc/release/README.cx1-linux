@@ -4,10 +4,8 @@ Using Chapel on a Cray CX1
 
 The following information is assembled to help users get up and
 running on multiple nodes of a Cray CX1 running Linux.  If you are not
-familiar with Chapel, it is recommended that you try the instructions
-in the top-level README first to get started with the language.  Our
-experience with the CX1 is quite new, so if you have any troubles,
-please let us know at chapel_info@cray.com.
+familiar with Chapel, it is recommended that you first try the
+instructions in the top-level README to get started with the language.
 
 
 1) Set CHPL_HOME and MANPATH as usual.  See README.chplenv for
@@ -20,8 +18,8 @@ please let us know at chapel_info@cray.com.
      setenv CHPL_HOST_PLATFORM cx1-linux
      setenv CHPL_COMM gasnet
 
-   See README.multilocale for further information about the GASNet
-   library.
+   See README.multilocale for further information about running using
+   multiple locales and GASNet.
 
 
 3) Set GASNET_SSH_SERVERS to list the names of the compute nodes on
@@ -51,13 +49,13 @@ please let us know at chapel_info@cray.com.
      chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
 
 
-8) When you compile a Chapel program for the CX1, you should see two
-   binaries (e.g., a.out and a.out_real).  The first binary contains
-   code to launch the Chapel program onto the compute nodes, as
-   specified by your CHPL_LAUNCHER setting.  The second contains the
-   program code itself.  You can use the -v flag to see the commands
-   used to launch your program.  See README.launcher for further
-   details.
+8) When you compile a Chapel program using the settings above, you
+   should see two binaries (e.g., hello-multiloc and
+   hello-multiloc_real).  The first binary contains code to launch the
+   Chapel program onto the compute nodes, as specified by your
+   GASNET_SSH_SERVERS variable.  The second contains the program code
+   itself.  You can use the -v flag to see the commands used to launch
+   your program.  See README.launcher for further details.
 
 
 9) Multi-locale executions require the number of locales to be

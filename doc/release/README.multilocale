@@ -7,9 +7,8 @@ To run Chapel on multiple locales, the following steps are required:
 
 0) The following information describes a fairly generic use of
    multi-locale Chapel, suitable for networked workstations and
-   generic parallel platforms.  If you are a Cray XT (CLE) or Cray CX1
-   (Linux) user, please refer to README.xt-cle or README.cx1-linux for
-   platform-specific notes about running on multiple locales.
+   generic parallel platforms.  For other platforms, refer to the
+   platform-specific READMEs for additional tips.
 
 
 1) Set your CHPL_COMM environment variable to "gasnet".  For example:
@@ -25,13 +24,14 @@ To run Chapel on multiple locales, the following steps are required:
    options such as PNNL's ARMCI library.
 
 
-2) Advanced GASNet users can set CHPL_COMM_SUBSTRATE to indicate the
-   GASNet conduit that they wish to use.  Novice users can leave this
-   unset and Chapel will make a choice for them.  Current defaults
-   are:
+2) Advanced users can set CHPL_COMM_SUBSTRATE to indicate the GASNet
+   conduit that they wish to use.  Novice users can leave this unset
+   and Chapel will make a choice for them.  Current defaults are:
 
      When compiling for...       Chapel will choose...
        cx1-linux                   ibv
+       pwr5                        lapi
+       pwr6                        ibv
        xt-cle                      portals
        (other)                     udp
 
@@ -44,9 +44,9 @@ To run Chapel on multiple locales, the following steps are required:
        (other)                           everything
 
 
-4) Advanced GASNet users may want to set CHPL_COMM_DEBUG in order to
-   turn GASNet's debugging mode on.  Otherwise, the default is to
-   leave debugging off.
+4) Chapel developers may want to set CHPL_COMM_DEBUG in order to turn
+   GASNet's debugging mode on.  Otherwise, the default is to leave
+   debugging off.
 
 
 5) Make sure you are in CHPL_HOME:
@@ -65,8 +65,8 @@ To run Chapel on multiple locales, the following steps are required:
    Note that the runtime libraries used by the Chapel compiler are
    based on your choices of conduit, substrate, and debugging mode
    (steps 2, 3, and 4), so the runtime directory will need to be
-   recompiled for each variation in these settings that you want to
-   use for a given choice of target platform, compiler, and launcher.
+   recompiled for each variation in these settings that you use for a
+   given choice of target platform, compiler, and launcher.
 
 
 7) Set up GASNet environment variables for execution:
@@ -85,7 +85,10 @@ To run Chapel on multiple locales, the following steps are required:
            where host1, host2, host3, ... are the names of the
            workstations that will serve as your Chapel locales.  In
            order to run your Chapel program on k locales, you must
-           have k entries in the SSH_SERVERS variable.
+           have k entries in the SSH_SERVERS variable.  To avoid
+           typing in passwords for each node, you will probably want
+           to use normal ssh-agent/ssh-add capabilities to support
+           password-less ssh-ing.
 
        (ii) To simulate multiple Chapel locales with one workstation,
             you can request that GASNet spawn its child functions on
@@ -110,11 +113,12 @@ To run Chapel on multiple locales, the following steps are required:
 
 
 9) When you compile a Chapel program for multiple locales, you should
-   see two binaries (e.g., a.out and a.out_real).  The first binary
-   contains code to launch the Chapel program onto the compute nodes
-   using a GASNet run command.  The second contains the program code
-   itself.  You can use the -v flag to see the commands used to launch
-   your program.  See README.launcher for further details.
+   typically see two binaries (e.g., hello-multiloc and
+   hello-multiloc_real).  The first binary contains code to launch the
+   Chapel program onto the compute nodes using a GASNet run command.
+   The second contains the program code itself.  You can use the -v
+   flag to see the commands used to launch your program.  See
+   README.launcher for further details.
 
 
 10) Multi-locale executions require the number of locales to be

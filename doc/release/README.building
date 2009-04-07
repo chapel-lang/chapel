@@ -27,9 +27,9 @@ If everything works as intended, you ought to see:
      comm-$CHPL_COMM/threads-$CHPL_THREADS/
 
 If you get an error or failure during the make process, please let us
-know about it at: chapel_bugs@cray.com (as well as information about
-your system as described in README.bugs and any workaround that you
-come up with).
+know about it at: chapel-bugs@lists.sourceforge.net (as well as
+information about your system as described in README.bugs and any
+workaround that you come up with).
 
 Note that each make command only builds the compiler and runtime for
 the current set of CHPL_ environment variables defined by (and
@@ -56,12 +56,13 @@ Platform Support
 ----------------
 
 Currently supported platforms include 32- and 64-bit Linux, Mac OS X,
-Cygwin (Windows), SunOS, and a variety of current Cray platforms.
-Other UNIX-based environments ought to work (subject to the
-assumptions in README.prereqs), but may not be supported by our
-current Makefile structure.  See the section below on
-platform-specific settings for more information on adding support for
-additional UNIX-compatible environments.
+Cygwin (Windows), SunOS, a variety of current Cray platforms, and a
+few systems by other vendors.  Most UNIX-based environments ought to
+support Chapel (subject to the assumptions in README.prereqs), but may
+not be supported "out-of-the-box" by our current Makefile structure.
+See the section below on platform-specific settings for more
+information on adding support for additional UNIX-compatible
+environments.
 
 Note that a single Chapel installation can simultaneously support
 Chapel for multiple platforms and compiler options because all

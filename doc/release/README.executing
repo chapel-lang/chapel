@@ -32,19 +32,18 @@ or:
     ./a.out -s<cfgVar>=<val>
 
 
-As an example, compile the beer.chpl example which prints the lyrics
-to "99 bottles of beer":
+As an example, compile the hello-module.chpl example which prints a
+user-definable message:
 
-     chpl -o beer $CHPL_HOME/examples/beer.chpl
+     chpl -o hello-module $CHPL_HOME/examples/hello-module.chpl
 
-This program defines a configuration constant "numBottles" indicating
-the number of bottles of beer that should start on the wall, set to 99
-by default.  To override the default and only start with a 6-pack on
-the wall, you can use:
+This program defines a configuration constant -- message -- indicating
+the string to print to the console, set to "Hello, world!" by default.
+To override the default, you can use:
 
-     ./beer --numBottles=6
+     ./hello-module --message='Hello, Chapel users!'
 or:
-     ./beer -snumBottles=6
+     ./hello-module -smessage='Hello, Chapel users!'
 
 
 -----------------------------
@@ -65,7 +64,7 @@ For users running with $CHPL_COMM == none (the default), only one
 locale can be used.  See $CHPL_HOME/doc/README.multilocale for more
 information about executing on multiple locales.
 
-Multi-locale tests typically use a launcher executable to do some
+Multi-locale programs often use a launcher executable to do some
 initial command-line checking before spawning the real program, stored
 in a second binary named <original_binary_name>_real.  See
 README.launcher for more information about the launcher executable.
@@ -75,7 +74,7 @@ README.launcher for more information about the launcher executable.
 Limiting the number of threads
 ------------------------------
 
-For multi-tasking Chapel executions, a built-in configuration constant
+For multithreaded Chapel executions, a built-in configuration constant
 named maxThreads is used to control the maximum number of threads that
 may be used per locale to implement the program.  See README.threads
 for more information on the role of this variable in creating threads
@@ -91,9 +90,9 @@ that control the amount of Chapel-generated information printed by the
 executable.
 
 Using the --verbose flag (-v for short) will print out extra
-information.  In the current implementation, it prints out the
-launcher commands used to start the program (if any) and causes each
-locale to print out a message when it starts executing.
+information.  For example, it prints out the launcher commands used to
+start the program (if any) and causes each locale to print out a
+message when it starts executing.
 
 Using the --quiet flag (-q for short) causes run-time warnings that
 are printed by default to be suppressed.
@@ -139,10 +138,10 @@ overhead to task parallel programs. The flags are as follows:
                       executions.
 
   -t, --taskreport : When Ctrl-C is entered during a program executing
-                      under this flag, a list of pending and executing
-                      tasks will be printed to the screen, giving an
-                      indication of which tasks are at which source
-                      locations.
+                     under this flag, a list of pending and executing
+                     tasks will be printed to the screen, giving an
+                     indication of which tasks are at which source
+                     locations.
                       
 
 -------------------------
@@ -152,9 +151,9 @@ Flags for Tracking Memory
 Chapel supports a number of flags related to dynamic memory allocation
 for the compiler-generated executable, currently designed for use
 primarily by the development team to track memory usage in tests.
-Please note that we have done little to optimize Chapel's memory
-utilization, so you should not be surprised if your program requires
-more memory than it seems it should.
+Please note that our generated code currently contains memory leaks,
+so you should not be surprised if your program requires more memory
+than it seems it should.
 
 The flags are as follows:
 
