@@ -85,10 +85,9 @@ Optional Settings
    variable to describe that platform.  Currently supported
    cross-compilation target platforms include:
 
-        x1        : Cray X1
-        x2        : Cray X2
-        xmt       : Cray XMT
-        xmt-sim   : Cray XMT simulator
+        x1  : Cray X1
+        x2  : Cray X2
+        xmt : Cray XMT
 
    If CHPL_TARGET_PLATFORM is not set, the target platform defaults to
    the same value as $CHPL_HOST_PLATFORM.
@@ -116,14 +115,14 @@ Optional Settings
    The default for CHPL_HOST_COMPILER depends on the value of the
    CHPL_HOST_PLATFORM environment variable:
 
-        platform         compiler
-        --------         --------
-        cx1-linux    ->  gnu
-        xmt, xmt-sim ->  cray-mta
-        pwr5, pwr6   ->  ibm
-        x1, x2       ->  cray-vec
-        xt-cle       ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
-        other        ->  gnu
+        platform        compiler
+        --------        --------
+        cx1-linux   ->  gnu
+        xmt         ->  cray-mta
+        pwr5, pwr6  ->  ibm
+        x1, x2      ->  cray-vec
+        xt-cle      ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
+        other       ->  gnu
 
    The default for CHPL_TARGET_COMPILER is CHPL_HOST_COMPILER if it is
    set *and* CHPL_HOST_PLATFORM == CHPL_TARGET_PLATFORM (i.e., you are
@@ -154,10 +153,10 @@ Optional Settings
    If unset, CHPL_THREADS defaults to a value based on
    $CHPL_TARGET_PLATFORM:
 
-        platform        threads
-        --------        -------
-        xmt, xmt-sim -> mta
-        other        -> pthreads
+        platform    threads
+        --------    -------
+        xmt      ->  mta
+        other    ->  pthreads
 
    See README.threads for more information about executing using the
    various CHPL_THREADS options.

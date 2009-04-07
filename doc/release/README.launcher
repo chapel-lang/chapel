@@ -37,7 +37,6 @@ Currently-supported launchers include:
   gasnetrun_ibv : GASNet launcher for programs running over Infiniband
   loadleveler   : launch using IBM loadleveler
   pbs           : Cray XT application launcher using PBS (qsub) + aprun
-  zebra         : Cray XMT simulator launcher
   none          : do not use a launcher
 
 A specific launcher can be requested by setting the CHPL_LAUNCHER
@@ -48,7 +47,6 @@ environment variable.  If left unset, a default is picked as follows:
   + CHPL_COMM_SUBSTRATE=portals -> aprun
   + CHPL_COMM_SUBSTRATE=udp     -> amudprun
   + CHPL_TARGET_PLATFORM=pwr6   -> loadleveler
-  CHPL_TARGET_PLATFORM=xmt-sim  -> zebra
   (otherwise)                   -> none
 
 If the launcher binary does not work for your system (due to an
