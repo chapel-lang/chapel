@@ -25,7 +25,7 @@ contain.
   doc/              : documentation and READMEs
   examples/         : example Chapel codes
     hpcc/           : source code for HPC Challenge benchmarks
-  lib/              : location of the runtime and launcher libraries, once built:
+  lib/              : stores the runtime and launcher libraries, once built:
     $CHPL_TARGET_PLATFORM/
       $CHPL_TARGET_COMPILER/
         comm-$CHPL_COMM/

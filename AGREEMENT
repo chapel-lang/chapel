@@ -1,5 +1,5 @@
 ===========================================
-Chapel Public Release User Agreement (v0.8)
+Chapel Public Release User Agreement (v0.9)
 ===========================================
 
 This release is being distributed under the BSD License (see LICENSE)
@@ -12,7 +12,7 @@ understand the following:
   release of Chapel is being made available to give the general public
   insight into that work and to encourage feedback that will improve
   it in the future.  Feedback should be directed to
-  chapel_info@cray.com or chapel_bugs@cray.com.
+  chapel_info@cray.com.
 
 * Although Chapel has been designed with performance in mind,
   performance optimizations have not been an implementation priority

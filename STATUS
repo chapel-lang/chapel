@@ -30,7 +30,7 @@ Bugs:
 - Constant arrays and records can be modified (without error)
 - Array types cannot be specified in tuple types or expression contexts
 - Tuples of array and domain values may not reference vs. copy correctly
-
+- parameter for loops do not correctly preserve index type
 
 -------
 Modules
@@ -119,7 +119,7 @@ Parallelism and Synchronization
 
 Unimplemented Features:
 - Atomic statements are not implemented
-- Some data-parallel constructs are serialized
+- Some data-parallel constructs are serialized by default
   e.g., forall loops, promoted calls, reductions, scans over default arrays
 
 Bugs:
@@ -143,8 +143,10 @@ Unimplemented Features:
 - On statement var declarations are not yet supported
     e.g., on Locales(1) var x: real;
 - Multi-locale distributed domains/arrays are under development
+- the draft Block1D/Block distributions do not support slicing or reindexing
 
 Bugs:
+- string assignment across locales causes the string's location to migrate
 
 
 ----------------
@@ -177,11 +179,7 @@ Memory Management
 
 Status:
 
-This release includes an initial draft version of a delete-statement
-that can be used to delete class instances allocated with 'new'.  In
-addition, heap-allocated memory associatived with values such as
-arrays, domains, and sync- and single-variables is freed for single
-locale programs.  However, this support is a work in progress.
+The compiler-generated code may contain memory leaks.
 
 
 -----------
@@ -191,31 +189,26 @@ Portability
 Status:
 
 Cray XT:
-- Memory limit is artificially set at 2GB -- see doc/README.xt-cle for details
-- We currently only support XTs running the Cray Linux Environment (CLE)
+- The memory limit for Chapel programs may need to be set manually --
+  see doc/README.xt-cle for details
 
 Cray CX1:
-- Have only started testing this platform in the weeks leading up to
-  the release, so our port should be considered immature at this point
 - We currently only support CX1s running Linux
 
 PBS launcher:
-- while our PBS launcher was designed to be general, it is currently
-  fairly tailored to supporting PBS on Cray XTs
+- while our PBS launcher will eventually be generalized, it is
+  currently fairly specific to supporting PBS on Cray XTs
+
+IBM Power5/Power6 systems:
+- we have had some initial successes executing Chapel on these machines --
+  see doc/README.ibm for details
+
+Altix:
+- our users have had some initial success executing Chapel on Altix
+  machines using MPI.  See doc/README.altix for details
 
 
 Bugs:
-
-GASNet, segment-fast:
-- On some platforms running GASNet in semgent-fast mode, we reserve
-  too much of the heap for our use, not leaving enough to start new
-  pthreads.  Workaround: use segment 'everything' if available;
-  otherwise, contact us to inquire about reducing the amount of
-  memory.
-- GASNet segment-fast executions are occasionally subject to spurious
-  segmentation faults and AMUDP_SPMDShutdown failures.  We haven't
-  been able to diagnose either of these yet, but they tend to be
-  infrequent and disappear on subsequent runs.
 
 Cygwin:
 - Cygwin executions occasionally result in a pthread_cond_init()

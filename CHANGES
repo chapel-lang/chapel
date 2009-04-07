@@ -83,7 +83,6 @@ Compiler Flags:
 
 Generated Code Flags:
 ---------------------
-- added a -memfinalstat flag to track leaked memory (see READMe.executing)
 
 Bug Fixes/New Semantic Checks (for old semantics):
 --------------------------------------------------
