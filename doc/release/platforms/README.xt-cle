@@ -131,10 +131,10 @@ Memory limits using GASNet
 * The amount of memory that is available to a Chapel program running
   over GASNet+portals on the XT is constrained by an environment
   variable named GASNET_MAX_SEGSIZE.  If the user has not set this
-  variable, we set it for each compute node based on the MemTotal
-  value reported by /proc/meminfo minus 0.5GB for code and static
-  data.  If GASNET_MAX_SEGSIZE is set too high, your program may
-  terminate silently, or with the message:
+  variable, we heuristically set it for each compute node to be 90% of
+  the MemTotal value reported by /proc/meminfo.  If GASNET_MAX_SEGSIZE
+  is set too high, your program may terminate silently, or with the
+  message:
 
         _pmii_daemon(SIGCHLD): PE 0 exit signal Killed
 
