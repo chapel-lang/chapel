@@ -210,11 +210,11 @@ static void chpl_comm_gasnet_set_max_segsize() {
     return;
   }
 
-  /* Subtract off 1/2 G for static data...  value chosen by trial and
-     error... */
-  memtotal -= (0.5*1024*1024);
-  
-  snprintf(segsizeval, 80, "%dKB", memtotal);
+  /* Use 90% of the /proc/meminfo as the maximum segment size,
+     heuristically */
+  memtotal *= 0.9;
+
+  snprintf(segsizeval, 80, "%d", memtotal);
   setenv( "GASNET_MAX_SEGSIZE", segsizeval, 0 );
 }
 #endif
