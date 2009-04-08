@@ -82,33 +82,37 @@ too low can result in deadlock if there are not enough threads to
 implement all of the required tasks.  The -b/--blockreport flag can
 help debug programs like this that appear to be deadlocked.
 
-Several methods are available to query the state of the task pool and
-threads:
+Several methods on the locale type are available to query the state of
+the task pool and threads:
 
-queuedTasks(): returns the number of tasks in the task pool that are
-  ready to run, but have not yet begun executing
-runningTasks(): returns the number of tasks that have begun, but not
-  yet finished, executing; note that this number can exceed the number
-  of threads that are not idle, because there may be cases in which
-  the same thread is assigned simultaneously to more than one task,
-  e.g., if a task is blocked waiting on something
-blockedTasks(): returns the number of tasks that are blocked because
-  they are waiting on a sync or single variable; note that for
-  performance reasons, this information may only be available if the
-  the program was run with the -b/--blockreport flag -- the returned
-  value may be negative otherwise
-totalThreads(): returns the number of threads that have been created
-  since the program started executing, regardless of whether they are
-  busy or idle
-idleThreads(): returns the number of threads are idle, i.e., not
-  assigned to any task
+* queuedTasks(): returns the number of tasks in the task pool that are
+    ready to run, but have not yet begun executing.
 
-In order to use these methods, you have to specify the locale you
-wish to query, as in here.runningTasks(), where here is the current
+* runningTasks(): returns the number of tasks that have begun
+    executing, but have not yet finished.  Note that this number can
+    exceed the number of non-idle threads because there are cases in
+    which one thread is working on more than one task, e.g., if a task
+    is blocked waiting on something.
+
+* blockedTasks(): returns the number of tasks that are blocked because
+    they are waiting on a sync or single variable.  Note that for
+    performance reasons, this information may only be available if the
+    the program was run with the -b/--blockreport flag -- the returned
+    value may be negative otherwise.
+
+* totalThreads(): returns the number of threads that have been created
+    since the program started executing, regardless of whether they
+    are busy or idle.
+
+* idleThreads(): returns the number of threads are idle, i.e., not
+    assigned to any task.
+
+In order to use these methods, you have to specify the locale you wish
+to query, as in here.runningTasks(), where 'here' is the current
 locale.
 
-These methods are available in all threading options, but they are
-probably only relevant to the pthreads implementation.
+These methods are available in all threading options, but currently
+they only return meaningful values for the pthreads threading layer.
 
 If you have further questions about thread and task scheduling, please
 contact chapel_info@cray.com.
