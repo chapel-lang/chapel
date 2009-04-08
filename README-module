@@ -39,21 +39,20 @@ For more detailed information about...      refer to...
   ...implementation status                   ...STATUS
   ...changes since the last release          ...CHANGES
   ...Chapel's file and directory structure   ...README.files
+  ...Chapel environment variables            ...doc/README.chplenv
   ...using the compiler                      ...doc/README.compiling
   ...executing Chapel programs               ...doc/README.executing
   ...reporting bugs                          ...doc/README.bugs
 
   ...example Chapel programs                 ...examples/README
-  ...Chapel environment variables            ...doc/README.chplenv
-  ...executing programs on multiple locales  ...doc/README.multilocale
-
   ...a quick reference for Chapel syntax     ...doc/quickReference.pdf
   ...a tutorial using three HPCC benchmarks  ...doc/hpccTutorial.pdf
   ...the Chapel language specification       ...doc/chapelLanguageSpec.pdf
 
-  ...using Chapel on a Cray XT (CLE)         ...doc/platforms/README.xt-cle
-
+  ...executing programs on multiple locales  ...doc/README.multilocale
   ...how Chapel tasks are mapped to threads  ...doc/README.threads
+
+  ...using Chapel on a Cray XT (CLE)         ...doc/platforms/README.xt-cle
 
   ...calling C routines from Chapel          ...doc/technotes/README.extern
   ...formatting value-to-string conversions  ...doc/technotes/README.format
