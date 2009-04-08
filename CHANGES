@@ -36,6 +36,8 @@ Newly Implemented Features:
   (see doc/README.threads)
 - added a printMemTable() routine to the Memory module for use in Chapel
   (see doc/README.executing)
+- added a prototype multidimensional Block distribution: MultiBlockDist.chpl
+  (see examples/tutorials/block2D.chpl)
 
 Portability of code base:
 -------------------------
@@ -77,10 +79,6 @@ Example Codes:
 - added new tutorial examples for variables, ranges, classes, generic classes
 - added new tutorial examples for timers and the prototype Block distribution
 - changed quicksort to ensure levels beyond thresh do not re-enable parallelism
-
-Standard Modules:
------------------
-- added a prototype multidimensional Block distribution: MultiBlockDist.chpl
 
 Compiler Flags:
 ---------------
