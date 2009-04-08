@@ -94,7 +94,6 @@
 		F721A22B0D458E3A00A6B43F /* error.h in Headers */ = {isa = PBXBuildFile; fileRef = F7FAC54F0D4539E400C02B67 /* error.h */; };
 		F721A22C0D458E3B00A6B43F /* gdb.h in Headers */ = {isa = PBXBuildFile; fileRef = F7FAC5500D4539E400C02B67 /* gdb.h */; };
 		F721A22D0D458E3D00A6B43F /* stdchpl.h in Headers */ = {isa = PBXBuildFile; fileRef = F7FAC5510D4539E400C02B67 /* stdchpl.h */; };
-		F721A2340D458F1600A6B43F /* chpl_cfg_comm.h in Headers */ = {isa = PBXBuildFile; fileRef = F721A2330D458F1600A6B43F /* chpl_cfg_comm.h */; };
 		F721A2390D458F6800A6B43F /* chpl_cfg_threads.h in Headers */ = {isa = PBXBuildFile; fileRef = F721A2380D458F6800A6B43F /* chpl_cfg_threads.h */; };
 		F73113A70E3EB71900F62922 /* complex2record.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F73113A40E3EB71900F62922 /* complex2record.cpp */; };
 		F73113A80E3EB71900F62922 /* inlineFunctions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F73113A50E3EB71900F62922 /* inlineFunctions.cpp */; };
@@ -109,6 +108,7 @@
 		F731D5D00D510AE2009F6897 /* chapel.lex in Sources */ = {isa = PBXBuildFile; fileRef = F721A1370D455F3C00A6B43F /* chapel.lex */; };
 		F754D95C0E929C5F00A527CD /* insertDestructors.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F754D95B0E929C5F00A527CD /* insertDestructors.cpp */; };
 		F75628C40F33D2D3008ABCDC /* remoteValueForwarding.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F75628C30F33D2D3008ABCDC /* remoteValueForwarding.cpp */; };
+		F768A8100F8C298400B4A5A2 /* chplcomm_md.h in Headers */ = {isa = PBXBuildFile; fileRef = F768A80F0F8C298400B4A5A2 /* chplcomm_md.h */; };
 		F7979A210F1590CB00C8831E /* chplmemtrack.c in Sources */ = {isa = PBXBuildFile; fileRef = F7979A200F1590CB00C8831E /* chplmemtrack.c */; };
 		F7A456F30E1AC2BA0033D1FF /* tmpdirname.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7A456F20E1AC2BA0033D1FF /* tmpdirname.cpp */; };
 		F7A4FD2A0DE7AA9300CDE656 /* chpl_cfg_comm_locales.c in Sources */ = {isa = PBXBuildFile; fileRef = F7A4FD290DE7AA9300CDE656 /* chpl_cfg_comm_locales.c */; };
@@ -325,7 +325,6 @@
 		F721A1DE0D45616800A6B43F /* vec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vec.h; path = ../compiler/include/vec.h; sourceTree = SOURCE_ROOT; };
 		F721A1DF0D45616800A6B43F /* view.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = view.h; path = ../compiler/include/view.h; sourceTree = SOURCE_ROOT; };
 		F721A1E00D45616800A6B43F /* yy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = yy.h; path = ../compiler/include/yy.h; sourceTree = SOURCE_ROOT; };
-		F721A2330D458F1600A6B43F /* chpl_cfg_comm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_cfg_comm.h; path = "../runtime/include/comm-none/chpl_cfg_comm.h"; sourceTree = "<group>"; };
 		F721A2380D458F6800A6B43F /* chpl_cfg_threads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_cfg_threads.h; path = "../runtime/include/threads-pthreads/chpl_cfg_threads.h"; sourceTree = SOURCE_ROOT; };
 		F731139E0E3EB6A800F62922 /* passlist.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = passlist.h; path = ../compiler/main/passlist.h; sourceTree = SOURCE_ROOT; };
 		F731139F0E3EB6A800F62922 /* runpasses.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = runpasses.h; path = ../compiler/main/runpasses.h; sourceTree = SOURCE_ROOT; };
@@ -357,10 +356,6 @@
 		F73EC0B70ECBBCD800E3026E /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/launch-gasnetrun_ibv/Makefile"; sourceTree = SOURCE_ROOT; };
 		F73EC0B80ECBBCD800E3026E /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/launch-gasnetrun_ibv/Makefile.include"; sourceTree = SOURCE_ROOT; };
 		F73EC0B90ECBBCD800E3026E /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/launch-gasnetrun_ibv/Makefile.share"; sourceTree = SOURCE_ROOT; };
-		F73EC0BC0ECBBD0B00E3026E /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/launch-pbs-nccs/Makefile"; sourceTree = SOURCE_ROOT; };
-		F73EC0BD0ECBBD0B00E3026E /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/launch-pbs-nccs/Makefile.include"; sourceTree = SOURCE_ROOT; };
-		F73EC0BE0ECBBD0B00E3026E /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/launch-pbs-nccs/Makefile.share"; sourceTree = SOURCE_ROOT; };
-		F73EC0C60ECBBD3C00E3026E /* chpl_cfg_launch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_launch.c; path = "../runtime/launch-pbs-nccs/chpl_cfg_launch.c"; sourceTree = SOURCE_ROOT; };
 		F73EC0CB0ECBBDB200E3026E /* Makefile.help */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.help; path = ../runtime/Makefile.help; sourceTree = SOURCE_ROOT; };
 		F73EC0CE0ECBBDD000E3026E /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/mem-dlmalloc/Makefile"; sourceTree = SOURCE_ROOT; };
 		F73EC0CF0ECBBDD000E3026E /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/mem-dlmalloc/Makefile.include"; sourceTree = SOURCE_ROOT; };
@@ -465,13 +460,29 @@
 		F7665F5C0D7F698700A55EBF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/threads-pthreads/Makefile"; sourceTree = SOURCE_ROOT; };
 		F7665F5D0D7F698700A55EBF /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/threads-pthreads/Makefile.include"; sourceTree = SOURCE_ROOT; };
 		F7665F5E0D7F698700A55EBF /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/threads-pthreads/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F768A7B50F8C27BB00B4A5A2 /* chpl_cfg_comm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm.c; path = "../runtime/comm-pvm/chpl_cfg_comm.c"; sourceTree = SOURCE_ROOT; };
+		F768A7B60F8C27BB00B4A5A2 /* chpl_cfg_comm_locales.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm_locales.c; path = "../runtime/comm-pvm/chpl_cfg_comm_locales.c"; sourceTree = SOURCE_ROOT; };
+		F768A7B70F8C27BB00B4A5A2 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/comm-pvm/Makefile"; sourceTree = SOURCE_ROOT; };
+		F768A7B80F8C27BB00B4A5A2 /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/comm-pvm/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F768A7B90F8C27BB00B4A5A2 /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/comm-pvm/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F768A80B0F8C28B600B4A5A2 /* Makefile.comm-pvm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.comm-pvm"; path = "../runtime/etc/Makefile.comm-pvm"; sourceTree = SOURCE_ROOT; };
+		F768A80F0F8C298400B4A5A2 /* chplcomm_md.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplcomm_md.h; path = ../runtime/include/chplcomm_md.h; sourceTree = SOURCE_ROOT; };
+		F768A8150F8C29FA00B4A5A2 /* chplcomm_md.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplcomm_md.h; path = "../runtime/include/xt-cle/chplcomm_md.h"; sourceTree = SOURCE_ROOT; };
+		F768A81C0F8C2A7800B4A5A2 /* chpl_cfg_launch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_launch.c; path = "../runtime/launch-loadleveler/chpl_cfg_launch.c"; sourceTree = SOURCE_ROOT; };
+		F768A81D0F8C2A7800B4A5A2 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/launch-loadleveler/Makefile"; sourceTree = SOURCE_ROOT; };
+		F768A81E0F8C2A7800B4A5A2 /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/launch-loadleveler/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F768A81F0F8C2A7800B4A5A2 /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/launch-loadleveler/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F768A8280F8C2B0900B4A5A2 /* chpl_cfg_launch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_launch.c; path = "../runtime/launch-pvm/chpl_cfg_launch.c"; sourceTree = SOURCE_ROOT; };
+		F768A8290F8C2B0900B4A5A2 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; name = Makefile; path = "../runtime/launch-pvm/Makefile"; sourceTree = SOURCE_ROOT; };
+		F768A82A0F8C2B0900B4A5A2 /* Makefile.include */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.include; path = "../runtime/launch-pvm/Makefile.include"; sourceTree = SOURCE_ROOT; };
+		F768A82B0F8C2B0900B4A5A2 /* Makefile.share */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.share; path = "../runtime/launch-pvm/Makefile.share"; sourceTree = SOURCE_ROOT; };
+		F768A8310F8C2B9600B4A5A2 /* MultiBlockDist.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = MultiBlockDist.chpl; path = ../modules/standard/MultiBlockDist.chpl; sourceTree = SOURCE_ROOT; };
+		F768A8340F8C2BD600B4A5A2 /* Makefile.cray-xt-intel */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Makefile.cray-xt-intel"; path = "../make/compiler/Makefile.cray-xt-intel"; sourceTree = SOURCE_ROOT; };
 		F76B61800D53AC0C005C6869 /* chpl_cfg_threads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_threads.c; path = "../runtime/threads-mta/chpl_cfg_threads.c"; sourceTree = SOURCE_ROOT; };
 		F76B61850D53AC56005C6869 /* chpl_cfg_threads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_cfg_threads.h; path = "../runtime/include/threads-mta/chpl_cfg_threads.h"; sourceTree = SOURCE_ROOT; };
 		F76B61CD0D53B15D005C6869 /* chpl_cfg_threads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_cfg_threads.h; path = "../runtime/include/threads-none/chpl_cfg_threads.h"; sourceTree = SOURCE_ROOT; };
 		F76B61D00D53B188005C6869 /* chpl_cfg_threads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_threads.c; path = "../runtime/threads-none/chpl_cfg_threads.c"; sourceTree = SOURCE_ROOT; };
-		F76B61DA0D53D1D6005C6869 /* chpl_cfg_comm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_cfg_comm.h; path = "../runtime/include/comm-gasnet/chpl_cfg_comm.h"; sourceTree = SOURCE_ROOT; };
 		F76B61DD0D53D218005C6869 /* chpl_cfg_comm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm.c; path = "../runtime/comm-gasnet/chpl_cfg_comm.c"; sourceTree = SOURCE_ROOT; };
-		F76B61E50D53D29B005C6869 /* chpl_cfg_comm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_cfg_comm.h; path = "../runtime/include/comm-armci/chpl_cfg_comm.h"; sourceTree = SOURCE_ROOT; };
 		F76B61E80D53D2B5005C6869 /* chpl_cfg_comm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = chpl_cfg_comm.c; path = "../runtime/comm-armci/chpl_cfg_comm.c"; sourceTree = SOURCE_ROOT; };
 		F76B61F40D53D4CE005C6869 /* chplfp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplfp.h; path = ../runtime/include/cygwin/chplfp.h; sourceTree = SOURCE_ROOT; };
 		F76B61F50D53D4CE005C6869 /* chplsys.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplsys.h; path = ../runtime/include/cygwin/chplsys.h; sourceTree = SOURCE_ROOT; };
@@ -861,6 +872,7 @@
 				F7FAC5410D4539E400C02B67 /* chplcgfns.h */,
 				F7FAC5420D4539E400C02B67 /* chplcomm.h */,
 				F7A4FD380DE7AB8D00CDE656 /* chplcomm_locales.h */,
+				F768A80F0F8C298400B4A5A2 /* chplcomm_md.h */,
 				F7FAC5430D4539E400C02B67 /* chplcopygc.h */,
 				F7FAC5440D4539E400C02B67 /* chplexit.h */,
 				F7FAC5450D4539E400C02B67 /* chplfp.h */,
@@ -914,7 +926,6 @@
 		F73EC0C10ECBBD1400E3026E /* PBS-NCCS */ = {
 			isa = PBXGroup;
 			children = (
-				F73EC0C60ECBBD3C00E3026E /* chpl_cfg_launch.c */,
 			);
 			name = "PBS-NCCS";
 			sourceTree = "<group>";
@@ -944,6 +955,7 @@
 				F77216530D6D436200DE6EF6 /* List.chpl */,
 				F77216540D6D436200DE6EF6 /* Math.chpl */,
 				F77216550D6D436200DE6EF6 /* Memory.chpl */,
+				F768A8310F8C2B9600B4A5A2 /* MultiBlockDist.chpl */,
 				F73EC0FD0ECBBF5500E3026E /* Norm.chpl */,
 				F77216560D6D436200DE6EF6 /* Random.chpl */,
 				F77216570D6D436200DE6EF6 /* Schedules.chpl */,
@@ -958,6 +970,17 @@
 		F7665EED0D7F3BB000A55EBF /* Makefiles */ = {
 			isa = PBXGroup;
 			children = (
+				F768A8340F8C2BD600B4A5A2 /* Makefile.cray-xt-intel */,
+				F768A8290F8C2B0900B4A5A2 /* Makefile */,
+				F768A82A0F8C2B0900B4A5A2 /* Makefile.include */,
+				F768A82B0F8C2B0900B4A5A2 /* Makefile.share */,
+				F768A81D0F8C2A7800B4A5A2 /* Makefile */,
+				F768A81E0F8C2A7800B4A5A2 /* Makefile.include */,
+				F768A81F0F8C2A7800B4A5A2 /* Makefile.share */,
+				F768A80B0F8C28B600B4A5A2 /* Makefile.comm-pvm */,
+				F768A7B70F8C27BB00B4A5A2 /* Makefile */,
+				F768A7B80F8C27BB00B4A5A2 /* Makefile.include */,
+				F768A7B90F8C27BB00B4A5A2 /* Makefile.share */,
 				F71FADB70F26A6B400392B80 /* Makefile.ibm */,
 				F71FAD090F20187400392B80 /* Makefile */,
 				F71FAD0A0F20187400392B80 /* Makefile.include */,
@@ -974,9 +997,6 @@
 				F73EC0CF0ECBBDD000E3026E /* Makefile.include */,
 				F73EC0D00ECBBDD000E3026E /* Makefile.share */,
 				F73EC0CB0ECBBDB200E3026E /* Makefile.help */,
-				F73EC0BC0ECBBD0B00E3026E /* Makefile */,
-				F73EC0BD0ECBBD0B00E3026E /* Makefile.include */,
-				F73EC0BE0ECBBD0B00E3026E /* Makefile.share */,
 				F73EC0B70ECBBCD800E3026E /* Makefile */,
 				F73EC0B80ECBBCD800E3026E /* Makefile.include */,
 				F73EC0B90ECBBCD800E3026E /* Makefile.share */,
@@ -1106,6 +1126,39 @@
 			name = Makefiles;
 			sourceTree = "<group>";
 		};
+		F768A7BC0F8C27D300B4A5A2 /* PVM */ = {
+			isa = PBXGroup;
+			children = (
+				F768A7B50F8C27BB00B4A5A2 /* chpl_cfg_comm.c */,
+				F768A7B60F8C27BB00B4A5A2 /* chpl_cfg_comm_locales.c */,
+			);
+			name = PVM;
+			sourceTree = "<group>";
+		};
+		F768A8190F8C2A1F00B4A5A2 /* XT-CLE */ = {
+			isa = PBXGroup;
+			children = (
+				F768A8150F8C29FA00B4A5A2 /* chplcomm_md.h */,
+			);
+			name = "XT-CLE";
+			sourceTree = "<group>";
+		};
+		F768A8220F8C2A9500B4A5A2 /* Load Leveler */ = {
+			isa = PBXGroup;
+			children = (
+				F768A81C0F8C2A7800B4A5A2 /* chpl_cfg_launch.c */,
+			);
+			name = "Load Leveler";
+			sourceTree = "<group>";
+		};
+		F768A82E0F8C2B1500B4A5A2 /* PVM */ = {
+			isa = PBXGroup;
+			children = (
+				F768A8280F8C2B0900B4A5A2 /* chpl_cfg_launch.c */,
+			);
+			name = PVM;
+			sourceTree = "<group>";
+		};
 		F76B618A0D53ACA3005C6869 /* MTA */ = {
 			isa = PBXGroup;
 			children = (
@@ -1130,7 +1183,6 @@
 			children = (
 				F76B61DD0D53D218005C6869 /* chpl_cfg_comm.c */,
 				F7A4FD2D0DE7AADB00CDE656 /* chpl_cfg_comm_locales.c */,
-				F76B61DA0D53D1D6005C6869 /* chpl_cfg_comm.h */,
 			);
 			name = Gasnet;
 			sourceTree = "<group>";
@@ -1140,7 +1192,6 @@
 			children = (
 				F76B61E80D53D2B5005C6869 /* chpl_cfg_comm.c */,
 				F7A4FD320DE7AB1B00CDE656 /* chpl_cfg_comm_locales.c */,
-				F76B61E50D53D29B005C6869 /* chpl_cfg_comm.h */,
 			);
 			name = Armci;
 			sourceTree = "<group>";
@@ -1176,7 +1227,6 @@
 			children = (
 				F7FAC53A0D45391800C02B67 /* chpl_cfg_comm.c */,
 				F7A4FD290DE7AA9300CDE656 /* chpl_cfg_comm_locales.c */,
-				F721A2330D458F1600A6B43F /* chpl_cfg_comm.h */,
 			);
 			name = "Single locale";
 			sourceTree = "<group>";
@@ -1231,6 +1281,7 @@
 				F76B61D50D53B1C1005C6869 /* Gasnet */,
 				F76B61E00D53D22C005C6869 /* Armci */,
 				F71FACE10F2016C600392B80 /* MPI */,
+				F768A7BC0F8C27D300B4A5A2 /* PVM */,
 			);
 			name = Communication;
 			sourceTree = "<group>";
@@ -1261,6 +1312,7 @@
 				F76B61EF0D53D470005C6869 /* Cygwin */,
 				F76B62170D53D894005C6869 /* SunOS */,
 				F76B61FD0D53D576005C6869 /* X1 */,
+				F768A8190F8C2A1F00B4A5A2 /* XT-CLE */,
 			);
 			name = "Platform specific";
 			sourceTree = "<group>";
@@ -1274,9 +1326,11 @@
 				F7F8483D0EAD6462004A9BD9 /* Aprun */,
 				F71FAD030F20180800392B80 /* Apsim */,
 				F73EC0B20ECBBC9000E3026E /* Gasnetrun-ibv */,
+				F768A8220F8C2A9500B4A5A2 /* Load Leveler */,
 				F7F848400EAD648A004A9BD9 /* MPIrun */,
 				F7F848480EAD64B6004A9BD9 /* PBS */,
 				F73EC0C10ECBBD1400E3026E /* PBS-NCCS */,
+				F768A82E0F8C2B1500B4A5A2 /* PVM */,
 				F7F848500EAD64EB004A9BD9 /* Zebra */,
 			);
 			name = Launcher;
@@ -1367,10 +1421,10 @@
 				F721A22B0D458E3A00A6B43F /* error.h in Headers */,
 				F721A22C0D458E3B00A6B43F /* gdb.h in Headers */,
 				F721A22D0D458E3D00A6B43F /* stdchpl.h in Headers */,
-				F721A2340D458F1600A6B43F /* chpl_cfg_comm.h in Headers */,
 				F721A2390D458F6800A6B43F /* chpl_cfg_threads.h in Headers */,
 				F7A4FD390DE7AB8D00CDE656 /* chplcomm_locales.h in Headers */,
 				F7FDBA3B0E5A4FCE006CE064 /* stdchplrt.h in Headers */,
+				F768A8100F8C298400B4A5A2 /* chplcomm_md.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
