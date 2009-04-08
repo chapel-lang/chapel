@@ -2,8 +2,6 @@
 Release Changes List
 ====================
 
-*** stopped at r15427 | bradc ***
-
 ===========
 version 0.9
 ===========
@@ -19,10 +17,13 @@ High-Level Themes:
 
 Environment Changes:
 --------------------
-- added a script to print out set and inferred CHPL env vars (printchplenv.pl)
+- added a script to print out set and inferred CHPL env vars
+  (see util/printchplenv.pl)
 - added support for the IBM xlc/xlC compilers by setting CHPL_*_COMPILER to ibm
-- added an envvar for naming a queue to the PBS launcher (see README.xt-cle)
-- added an envvar for specifying #cores/locale to pbs/aprun (see README.xt-cle)
+- added an environment variable for naming a queue for the PBS launcher
+  (see doc/platforms/README.xt-cle)
+- added an environment variable for specifying #cores/locale to pbs/aprun
+  (see doc/platforms/README.xt-cle)
 - improved the logic for inferring host and target compilers for xt-cle
 
 Changes to Chapel Language:
@@ -31,16 +32,22 @@ Changes to Chapel Language:
 
 Newly Implemented Features:
 ---------------------------
-- added queries for task/thread counts per locale to CHPL_COMM=pthreads
-- added a printMemTable() routine to the Memory module for use within Chapel
+- added queries for task/thread counts per locale for CHPL_THREADS=pthreads
+  (see doc/README.threads)
+- added a printMemTable() routine to the Memory module for use in Chapel
+  (see doc/README.executing)
 
 Portability of code base:
 -------------------------
 - improved our general method of building and using GASNet for portability
 - improved portability of GASNet configure + build steps for xt-cle
-- added initial support for IBM Power5 and Power6 systems (see README.ibm)
+- improved the heuristic for setting GASNET_MAX_SEGSIZE for xt-cle
+  (see doc/platforms/README.xt-cle)
+- added initial support for IBM Power5 and Power6 systems
+  (see doc/platforms/README.ibm)
 - made flex and bison generate .cpp files rather than .c files for portability
-- added a script to build Chapel on Macs using xcodebuild (see README.macosx)
+- added capabilities to build Chapel on Macs using xcodebuild
+  (see doc/platforms/README.macosx)
 - added a -d option to our use of aprun in the aprun and pbs launchers
 - removed the assumption that function pointers are identical between nodes
 
@@ -53,12 +60,12 @@ Syntactic/Naming Changes:
 
 Runtime Library Changes:
 ------------------------
-- improved support for communication diagnostics and debugging
+- added support for communication diagnostics and debugging
+  (see doc/technotes/README.comm-diagnostics)
 
 Documentation:
 --------------
 - added a new ACKNOWLEDGEMENTS file for financial and machine time support
-- added notes on our experience using Chapel on IBM systems (README.ibm)
 - refactored the doc directory, pushing platform & technical notes into subdirs
 - minor changes and improvements to the language specification
 - minor edits to many of the README files
@@ -67,8 +74,8 @@ Documentation:
 Example Codes:
 --------------
 - pushed most top-level examples into tutorials/ and programs/ subdirectories
-- added new tutorial examples for variables, ranges, classes, generic classes,
-  and timers
+- added new tutorial examples for variables, ranges, classes, generic classes
+- added new tutorial examples for timers and the prototype Block distribution
 - changed quicksort to ensure levels beyond thresh do not re-enable parallelism
 
 Standard Modules:
