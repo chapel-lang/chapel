@@ -34,8 +34,10 @@ know at chapel_info@cray.com.
      setenv CHPL_LAUNCHER pbs
 
    Otherwise, CHPL_LAUNCHER will default to 'aprun' on xt-cle systems.
-   See README.launcher for more information on Chapel's launcher
-   capabilities.
+   Note that for some system installations, you may need to execute
+   'module load pbs' from your shell in order to put PBS/qsub into
+   your path.  See README.launcher for more information on Chapel's
+   launcher capabilities.
 
 
 4) If your XT has compute nodes with varying numbers of cores, you
