@@ -95,10 +95,10 @@ the task pool and threads:
     is blocked waiting on something.
 
 * blockedTasks(): returns the number of tasks that are blocked because
-    they are waiting on a sync or single variable.  Note that for
-    performance reasons, this information may only be available if the
-    the program was run with the -b/--blockreport flag -- the returned
-    value may be negative otherwise.
+    they are waiting on a sync or single variable.  In the current
+    implementation, this method will not generate meaningful
+    information unless the program was run with the -b/--blockreport
+    flag, in order to avoid unnecessary overheads.
 
 * totalThreads(): returns the number of threads that have been created
     since the program started executing, regardless of whether they
