@@ -8,7 +8,8 @@ compile, run, and test sample codes.  For a test foo.chpl, the
 following files may also exist:
 
      foo.compopts       : command-line options for compiling the test
-     foo.comm-none.good : the expected single-locale output, if different
+     foo.comm-none.good : the expected output for CHPL_COMM=none testing, 
+                          if it differs from the normal .good output
      foo.execopts       : command-line options for executing the test
      foo.good           : the expected output for the test
      foo.notest         : indicates that foo.chpl should not be tested 
