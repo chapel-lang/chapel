@@ -25,7 +25,7 @@ use MultiBlockDist;
 // default for domains and arrays distributed with the Block
 // distribution.
 //
-config var n: int(64) = 8;
+config const n: int(64) = 8;
 
 //
 // Declare and initialize an instance of the Block distribution Dist,
