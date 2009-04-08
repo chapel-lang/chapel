@@ -38,9 +38,10 @@ This directory contains the following documentation:
   quickReference.pdf : a one-sheet, tri-fold overview of Chapel syntax
                        for quick reference
 
-  technotes/         : technical notes about our implementation
-    README.extern    : technical note on interfacing with external C routines
-    README.format    : technical note on controlling value-to-string formatting
+  technotes/                : technical notes about our implementation
+    README.comm-diagnostics : technical note about tracking communication events
+    README.extern           : technical note on calling external C routines
+    README.format           : technical note on value-to-string formatting
 
 
 --------------------
