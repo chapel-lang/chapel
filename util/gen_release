@@ -33,7 +33,6 @@ system("cd $tmpdir && svn export -q $svnroot");
        "README.files",
        "STATUS",
        "compiler/passes/reservedSymbolNames",
-       "etc/Chapel.xcodeproj/project.pbxproj",
        "man/man1/chpl.1",
        "third-party/Makefile",
        "third-party/README",
