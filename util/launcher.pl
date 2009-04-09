@@ -21,16 +21,22 @@ if ($preset_launcher eq "") {
             $launcher = "aprun";
         } elsif ($substrate eq "ibv") {
 	    if ($platform eq "pwr6") {
-		$launcher = "loadleveler";
+#
+# our loadleveler launcher is not yet portable/stable/flexible enough
+# to serve as a good default
+#
+#		$launcher = "loadleveler";
+                $launcher = "none";
 	    } else {
 		$launcher = "gasnetrun_ibv";
 	    }
+	} elsif ($substrate eq "lapi") {
 #
 # our loadleveler code doesn't seem compatible with a pwr5 version
 # of loadleveler yet
 #
-#	} elsif ($substrate eq "lapi") {
 #	    $launcher = "loadleveler";
+            $launcher = "none";
 	}
     } elsif ($comm eq "armci") {
         if ($substrate eq "mpi") {

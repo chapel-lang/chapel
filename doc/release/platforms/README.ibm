@@ -59,17 +59,40 @@ or:
      chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
 
 
-7) When you compile a multi-locale program for pwr6, you should see
-   two binaries (e.g., hello-multiloc and hello-multiloc_real).  The
-   first binary contains code to launch the Chapel program onto the
-   compute nodes using loadleveler by default.  The second contains
-   the program code itself.  
+7) When you compile a multi-locale program for pwr5 or pwr6, you will
+   get a single binary by default (e.g., hello-multiloc).  In order to
+   run this program properly, you will typically need to write a
+   loadleveler script that requests a number of compute nodes equal to
+   the number of locales that you will specify through the -nl option,
+   and launches a single copy of the binary per node (either using
+   poe, or on some systems by simply invoking the binary directly, at
+   the bottom of the script).  The parallelism within the node will be
+   generated within the binary using pthreads in order to utilize all
+   of the cores per node.  In our experience, the details of required
+   options for loadleveler scripts vary greatly from one site to
+   another so check with your site's documentation for details.
 
-   If the loadleveler script we generate turns out not to be
-   compatible with your installation, or you are using a Power5
-   system, you can write your own loadleveler script and have it
-   execute the a.out_real binary using poe explicitly.  See
-   README.launcher for further details.
+   We started work on a loadleveler launcher (see README.launcher for
+   a general description of the role of launchers in Chapel) which can
+   be utilized by setting the CHPL_LAUNCH environment variable to
+   loadleveler.  At the time of the release, this launcher was not
+   sufficiently portable, robust, configurable, or interactive to
+   warrant being made the default for Power5 or Power6 machines.  If
+   you are an IBM enthusiast who would like to work with us to improve
+   the utility of this launcher, we would greatly appreciate the help.
+
+
+Additional Notes for Power5 Clusters
+------------------------------------
+Our current technique for querying the amount of memory per node is
+apparently not portable to the Power5 (which is to say, we get an
+insanely large value back).  When running the hpcc benchmarks with the
+default configuration constants, this will exhibit itself as a halt
+indicating that we can't take the log() of a non-positive integer.
+Set the problem size explicitly using the --m or --n flags.  If anyone
+has a chance to debug this problem or suggest a better way to query
+the amount of memory before we come up with a solution, please let us
+know at chapel_info@cray.com.
 
 
 Blue Gene/L
