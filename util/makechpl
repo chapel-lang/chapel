@@ -62,9 +62,9 @@ else
   for target in $targets; do
     case $target in
       build | clean)
-        set -x; (cd $project_dir/etc && $make $debug $target $other_args) || exit 1;;
+        set -x; (cd $project_dir/make && $make $debug $target $other_args) || exit 1;;
       *)
-        set -x; (cd $project_dir/etc && $make $debug -target $target $other_args) || exit 1;;
+        set -x; (cd $project_dir/make && $make $debug -target $target $other_args) || exit 1;;
     esac
     set +x
   done

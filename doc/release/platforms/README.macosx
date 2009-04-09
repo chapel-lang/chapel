@@ -5,7 +5,7 @@ Compiling Chapel on a Mac running OS X
 On a Mac, the Chapel compiler can be built in one of three ways:
 
 1) using the make command as described in the top level README file;
-2) by launching Xcode and opening the project in etc/Chapel.xcodeproj,
+2) by launching Xcode and opening the project in make/Chapel.xcodeproj,
    and then building the "Compiler and Runtime" target; or
 3) using the util/makechpl shell script, which invokes the xcodebuild
    command on the aforementioned Xcode project.
