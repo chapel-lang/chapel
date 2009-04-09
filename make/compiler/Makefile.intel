@@ -33,7 +33,7 @@ COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL = -wr111,193,1418,1419
 RUNTIME_CFLAGS = -std=c99 $(CFLAGS) -wr181
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
-GEN_CFLAGS = -std=c99 -mp -wr592
+GEN_CFLAGS = -std=c99 -fp-model strict -wr592
 
 #
 # Warnings squashed for flex-/bison-generated code
