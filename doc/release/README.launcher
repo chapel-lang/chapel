@@ -43,7 +43,9 @@ A specific launcher can be requested by setting the CHPL_LAUNCHER
 environment variable.  If left unset, a default is picked as follows:
 
   CHPL_COMM=gasnet...
-  + CHPL_COMM_SUBSTRATE=ibv     -> gasnetrun_ibv
+  + CHPL_COMM_SUBSTRATE=ibv
+    + CHPL_TARGET_PLATFORM=pwr6 -> none
+    (otherwise)                 -> gasnetrun_ibv
   + CHPL_COMM_SUBSTRATE=portals -> aprun
   + CHPL_COMM_SUBSTRATE=udp     -> amudprun
   (otherwise)                   -> none
