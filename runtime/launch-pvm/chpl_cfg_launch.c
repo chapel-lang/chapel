@@ -12,6 +12,7 @@ static const char* hostfile = "/tmp/Chapel/pvm3/hostfile";
 
 char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i;
+  char i_str[128];
   int size;
   int addsize = 0;
   int basesize = 0;
@@ -42,9 +43,12 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   }
   basesize = addsize;
   deletesize = addsize;
-  addsize += (i * strlen("add \n")) + strlen("echo \"");
-  basesize += (i * strlen(" ")) + strlen("spawn -> \n") + strlen(argv[0]);
-  deletesize += (i * strlen("delete \n")) + strlen("\"");
+  addsize += (i * strlen("add \n")) + strlen("echo \"\"");
+  basesize += strlen("echo \"\" | pvm && sleep 5 && ") + strlen(pvmrunPath) + (i * strlen("spawn - -> _real   \n")) + (i * strlen(argv[0])) + (i * strlen(argv[1])) + (i * strlen(argv[2])) + (i * strlen(i_str));
+  //  basesize += (i * strlen("echo\"spawn - -> _real   \" | pvm && sleep 5 && ")) + (i * strlen(argv[0])) + (i * strlen(pvmrunPath)) + (i * strlen(argv[1])) + (i * strlen(argv[2])) + (i * sizeof(i_str)) + (strlen("sleep 10"));
+  //  basesize += (i * strlen(" ")) + strlen("spawn -> \n") + strlen(argv[0]);
+  //  basesize += strlen(argv[0]) + strlen("_real;") + (i * strlen(" "));
+  deletesize += (i * strlen("delete \n")) + strlen("echo \"\"");
   topvmsize = strlen(" | pvm") + strlen(pvmrunPath);
   if (i < numLocales) {
     fclose(nodelistfile);
@@ -71,33 +75,55 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   *deleteCommand = '\0';
   *topvmCommand = '\0';
   strcat(addCommand, "echo \"");
-  strcat(baseCommand, "spawn -> ");
-  strcat(baseCommand, argv[0]);
+  strcat(deleteCommand, "echo \"");
+  // strcat(baseCommand, "spawn -> ");
+  //  strcat(baseCommand, argv[0]);
+  //  strcat(baseCommand, "_real");
+  strcat(baseCommand, "echo \"");
   while (i < numLocales) {
+    sprintf(i_str, "%d", i);
     strcat(addCommand, "add ");
     strcat(addCommand, nodestoadd[i]);
     strcat(addCommand, "\n");
-    strcat(baseCommand, " ");
+    strcat(baseCommand, "spawn -");
     strcat(baseCommand, nodestoadd[i]);
+    strcat(baseCommand, " -> ");
+    strcat(baseCommand, argv[0]);
+    strcat(baseCommand, "_real ");
+    strcat(baseCommand, argv[1]);
+    strcat(baseCommand, " ");
+    strcat(baseCommand, argv[2]);
+    strcat(baseCommand, " ");
+    strcat(baseCommand, i_str);
+    strcat(baseCommand, "\n");
+    //    strcat(baseCommand, " ");
+    //    strcat(baseCommand, nodestoadd[i]);
     strcat(deleteCommand, "delete ");
     strcat(deleteCommand, nodestoadd[i]);
     strcat(deleteCommand, "\n");
     i++;
   }
-  strcat(baseCommand, "\n");
+  strcat(addCommand, "\"");
+  strcat(baseCommand, "\" | ");
+  strcat(baseCommand, pvmrunPath);
+  strcat(baseCommand, "pvm && sleep 5 && ");
   strcat(deleteCommand, "\"");
   strcat(topvmCommand, " | ");
   strcat(topvmCommand, pvmrunPath);
   strcat(topvmCommand, "pvm");
 
-  size = strlen(addCommand) + strlen(deleteCommand) + strlen(baseCommand) + strlen(topvmCommand) + 1;
+  size = strlen(addCommand) + strlen(topvmCommand) + strlen(" && sleep 3 && ") + strlen(deleteCommand) + strlen(baseCommand) + strlen(topvmCommand) + 1;
   command = chpl_malloc(size, sizeof(char*), "pvm command buffer", -1, "");
   *command = '\0';
 
   strcat(command, addCommand);
+  strcat(command, topvmCommand);
+  strcat(command, " && sleep 3 && ");
   strcat(command, baseCommand);
   strcat(command, deleteCommand);
   strcat(command, topvmCommand);
+
+  fprintf(stderr, "command is now: %s\n", command);
 
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
