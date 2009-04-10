@@ -39,7 +39,7 @@ void fixupDestructors(void) {
             ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
           }
           count++;
-        } else if (field->type == dtString) {
+        } else if (field->type == dtString && !ct->symbol->hasFlag(FLAG_TUPLE)) {
           VarSymbol* tmp = newTemp(dtString);
           ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
