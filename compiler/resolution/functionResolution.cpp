@@ -1902,6 +1902,34 @@ insertFormalTemps(FnSymbol* fn) {
   }
 }
 
+//
+// Calculate the index type for a param for loop by checking the type of
+// the range that would be built using the same low and high values.
+// 
+static Type* param_for_index_type(CallExpr* loop) {
+  BlockStmt* block = toBlockStmt(loop->parentExpr);
+  SymExpr* lse = toSymExpr(loop->get(2));
+  SymExpr* hse = toSymExpr(loop->get(3));
+  CallExpr* range = new CallExpr("_build_range", lse->copy(), hse->copy());
+  block->insertBefore(range);
+  resolveCall(range);
+  if (!range->isResolved()) {
+    INT_FATAL("unresolved range");
+  }
+  resolveFormals(range->isResolved());
+  DefExpr* formal = toDefExpr(range->isResolved()->formals.get(1));
+  Type* formalType;
+  if (toArgSymbol(formal->sym)->typeExpr) {
+    // range->isResolved() is the coercion wrapper for _build_range
+    formalType = toArgSymbol(formal->sym)->typeExpr->body.tail->typeInfo();
+  } else {
+    formalType = formal->sym->type;
+  }
+  range->remove();
+  return formalType;
+}
+
+
 static void fold_param_for(CallExpr* loop) {
   BlockStmt* block = toBlockStmt(loop->parentExpr);
   SymExpr* lse = toSymExpr(loop->get(2));
@@ -1916,27 +1944,55 @@ static void fold_param_for(CallExpr* loop) {
     INT_FATAL(loop, "bad param loop primitive");
   if (!lvar->immediate || !hvar->immediate || !svar->immediate)
     INT_FATAL(loop, "bad param loop primitive");
-  int64_t low = lvar->immediate->int_value();
-  int64_t high = hvar->immediate->int_value();
-  int64_t stride = svar->immediate->int_value();
   Expr* index_expr = loop->get(1);
+  Type* formalType = param_for_index_type(loop);
+  IF1_int_type idx_size;
+  if (get_width(formalType) == 32) {
+    idx_size = INT_SIZE_32;
+  } else {
+    idx_size = INT_SIZE_64;
+  }
   if (block->blockTag != BLOCK_NORMAL)
     INT_FATAL("ha");
   loop->remove();
   CallExpr* noop = new CallExpr(PRIM_NOOP);
   block->insertAfter(noop);
   Symbol* index = toSymExpr(index_expr)->var;
-  if (stride <= 0) {
-    for (int64_t i = high; i >= low; i += stride) {
-      SymbolMap map;
-      map.put(index, new_IntSymbol(i));
-      noop->insertBefore(block->copy(&map));
+
+  if (is_int_type(formalType)) {
+    int64_t low = lvar->immediate->int_value();
+    int64_t high = hvar->immediate->int_value();
+    int64_t stride = svar->immediate->int_value();
+    if (stride <= 0) {
+      for (int64_t i = high; i >= low; i += stride) {
+        SymbolMap map;
+        map.put(index, new_IntSymbol(i, idx_size));
+        noop->insertBefore(block->copy(&map));
+      }
+    } else {
+      for (int64_t i = low; i <= high; i += stride) {
+        SymbolMap map;
+        map.put(index, new_IntSymbol(i, idx_size));
+        noop->insertBefore(block->copy(&map));
+      }
     }
   } else {
-    for (int64_t i = low; i <= high; i += stride) {
-      SymbolMap map;
-      map.put(index, new_IntSymbol(i));
-      noop->insertBefore(block->copy(&map));
+    INT_ASSERT(is_uint_type(formalType) || is_bool_type(formalType));
+    uint64_t low = lvar->immediate->uint_value();
+    uint64_t high = hvar->immediate->uint_value();
+    int64_t stride = svar->immediate->int_value();
+    if (stride <= 0) {
+      for (uint64_t i = high; i >= low; i += stride) {
+        SymbolMap map;
+        map.put(index, new_UIntSymbol(i, idx_size));
+        noop->insertBefore(block->copy(&map));
+      }
+    } else {
+      for (uint64_t i = low; i <= high; i += stride) {
+        SymbolMap map;
+        map.put(index, new_UIntSymbol(i, idx_size));
+        noop->insertBefore(block->copy(&map));
+      }
     }
   }
   block->replace(loop);
