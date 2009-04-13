@@ -447,13 +447,22 @@ class BlockArr: BaseArr {
   //
   var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
 
+  //
+  // optimized reference to a local LocBlockArr instance (or nil)
+  //
+  var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
+
   var pid: int = -1; // privatized object id
 }
 
 def BlockArr.setup() {
-  coforall localeIdx in dom.dist.targetLocDom do
-    on dom.dist.targetLocs(localeIdx) do
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocs(localeIdx) {
       locArr(localeIdx) = new LocBlockArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx));
+      if this.locale == here then
+        myLocArr = locArr(localeIdx);
+    }
+  }
 }
 
 def BlockArr.supportsPrivatization() param return true;
@@ -464,6 +473,9 @@ def BlockArr.privatize() {
   var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
   var c = new BlockArr(eltType, rank, idxType, stridable, privdom);
   c.locArr = locArr;
+  for localeIdx in dom.dist.targetLocDom do
+    if c.locArr(localeIdx).locale == here then
+      c.myLocArr = c.locArr(localeIdx);
   return c;
 }
 
@@ -473,6 +485,10 @@ def BlockArr.privatize() {
 // TODO: Do we need a global bounds check here or in ind2locind?
 //
 def BlockArr.this(i: idxType) var where rank == 1 {
+  if myLocArr then local {
+    if myLocArr.locDom.myBlock.member(i) then
+      return myLocArr.this(i);
+  }
   return locArr(dom.dist.ind2locInd(i))(i);
 }
 
@@ -553,10 +569,12 @@ def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) v
     // we don't own all the elements we're following
     //
     def accessHelper(i) var {
-      //      local {
-      //        if myLocArr.locDom.myBlock.member(i) then
-      //          return myLocArr.this(i);
-      //      }
+//      if myLocArr.locale == here {
+//	local {
+//          if myLocArr.locDom.myBlock.member(i) then
+//            return myLocArr.this(i);
+//        }
+//      }
       return this(i);
     }
     for i in followThis {
@@ -592,22 +610,6 @@ def BlockArr.writeThis(f: Writer) {
       break;
     }
   }
-  /*
-  var first = true;
-  for loc in dom.dist.targetLocDom {
-    // note on loc fails; see writeThisUsingOn.chpl
-    if (locArr(loc).numElements >= 1) {
-      if (first) {
-        first = false;
-      } else {
-        x.write(" ");
-      }
-      x.write(locArr(loc));
-    }
-    //    }
-    stdout.flush();
-  }
-  */
 }
 
 def BlockArr.numElements return dom.numIndices;
