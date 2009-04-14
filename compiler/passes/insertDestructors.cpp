@@ -55,20 +55,15 @@ void fixupDestructors(void) {
       // insert call to parent destructor
       //
       INT_ASSERT(ct->dispatchParents.n <= 1);
-      if (ct->dispatchParents.n >= 1) {
+      if (ct->dispatchParents.n >= 1 && isClass(ct)) {
+        // avoid destroying record fields more than once
         if (FnSymbol* parentDestructor = ct->dispatchParents.v[0]->destructor) {
-          VarSymbol* tmp;
-          if (isClass(ct) || ct->symbol->hasFlag(FLAG_ARRAY) ||
-              ct->symbol->hasFlag(FLAG_DOMAIN))
-            tmp = newTemp(ct->dispatchParents.v[0]);
-          else
-            tmp = newTemp(ct->dispatchParents.v[0]->refType);
+          Type* tmpType = isClass(ct) || ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN) ?
+            ct->dispatchParents.v[0] : ct->dispatchParents.v[0]->refType;
+          VarSymbol* tmp = newTemp(tmpType);
           ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
-            new CallExpr(PRIM_CAST,
-                         isClass(ct) || ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN) ?
-                ct->dispatchParents.v[0]->symbol : ct->dispatchParents.v[0]->refType->symbol,
-              ct->destructor->_this)));
+            new CallExpr(PRIM_CAST, tmpType->symbol, ct->destructor->_this)));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor, tmp));
         }
       }
