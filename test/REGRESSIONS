@@ -113,7 +113,7 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09, 03/14/09, 03/22/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09, 03/24/09, 03/28/09, 04/02/09, 04/12/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
@@ -145,11 +145,6 @@ baseline-specific tests
 [Error matching program output for memory/figueroa/StringLeaks4]
 [Error matching program output for memory/shannon/freedMalloc]
 [Error matching program output for memory/shannon/reallocZeroSize]
-[Error: Timed out executing program classes/figueroa/RecordDestructor3]
-
-glibc double free (03/07/09)
-----------------------------
-[Error matching program output for classes/marybeth/test_dispatch_record]
 
 strings freed prematurely (02/24/09)
 ------------------------------------
@@ -246,9 +241,31 @@ times out in C compiler
 intel-specific regressions
 ==========================
 
-intel 11.0 upgrade problems
+compilation timeout (new with 11.x)
+-----------------------------------
+[Error: Timed out compilation for studies/hpcc/RA/diten/ra]
+[Error: Timed out compilation for users/franzf/v0/chpl/main]
+[Error: Timed out compilation for users/franzf/v1/chpl/main]
+[Error: Timed out compilation for users/franzf/v2/chpl/main]
+
+using pow for int ** (new warning with 11.x)
+--------------------------------------------
+[Error matching program output for modules/bradc/ra-paramWidth]
+[Error matching program output for release/examples/hpcc/ra]
+[Error matching program output for studies/hpcc/2008/ra]
+[Error matching program output for studies/hpcc/2008/testProbSize]
+[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching program output for studies/hpcc/RA/ra-seq]
+[Error matching program output for studies/hpcc/serial-v0.7/ra]
+[Error matching program output for types/coerce/diten/test_uint64_op_param_int]
+
+int/uint conversion warning
 ---------------------------
-*everything*
+[Error matching program output for studies/uts/dequeue]
+[Error matching program output for studies/uts/uts_deq]
+[Error matching program output for studies/uts/uts_deq_seq]
+[Error matching program output for studies/uts/uts_rec]
+[Error matching program output for studies/uts/uts_rec_seq]
 
 spurious out-of-memory error
 ----------------------------
