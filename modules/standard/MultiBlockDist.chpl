@@ -119,6 +119,10 @@ def Block.writeThis(x:Writer) {
 //
 // convert an index into a locale value
 //
+def Block.ind2loc(ind: idxType) where rank == 1 {
+  return targetLocs(ind2locInd(ind));
+}
+
 def Block.ind2loc(ind: rank*idxType) {
   return targetLocs(ind2locInd(ind));
 }
