@@ -66,10 +66,10 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   // The third part (built with the first) is the deleteCommand for PVM
   // Finally, this needs to be passed to PVM with a pipe
   i = 0;
-  addCommand = chpl_malloc(addsize, sizeof(char*), "first part pvm command buffer", -1, "");
-  baseCommand = chpl_malloc(basesize, sizeof(char*), "actual command to spawn", -1, "");
-  deleteCommand = chpl_malloc(deletesize, sizeof(char*), "last part pvm command buffer", -1, "");
-  topvmCommand = chpl_malloc(topvmsize, sizeof(char*), "send to pvm via pipe command buffer", -1, "");
+  addCommand = chpl_malloc(addsize, sizeof(char*), "first part pvm command buffer", false, -1, "");
+  baseCommand = chpl_malloc(basesize, sizeof(char*), "actual command to spawn", false, -1, "");
+  deleteCommand = chpl_malloc(deletesize, sizeof(char*), "last part pvm command buffer", false, -1, "");
+  topvmCommand = chpl_malloc(topvmsize, sizeof(char*), "send to pvm via pipe command buffer", false, -1, "");
   *addCommand = '\0';
   *baseCommand = '\0';
   *deleteCommand = '\0';
@@ -113,7 +113,7 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   strcat(topvmCommand, "pvm");
 
   size = strlen(addCommand) + strlen(topvmCommand) + strlen(" && sleep 3 && ") + strlen(deleteCommand) + strlen(baseCommand) + strlen(topvmCommand) + 1;
-  command = chpl_malloc(size, sizeof(char*), "pvm command buffer", -1, "");
+  command = chpl_malloc(size, sizeof(char*), "pvm command buffer", false, -1, "");
   *command = '\0';
 
   strcat(command, addCommand);

@@ -1,4 +1,4 @@
-_extern def chpl_malloc(number, size, description, lineno=-1, filename=""): opaque;
+_extern def chpl_malloc(number, size, description, userCode=true, lineno=-1, filename=""): opaque;
 _extern def chpl_realloc(ptr, number, size, description, lineno=-1, filename=""): opaque;
 _extern def chpl_free(ptr, lineno=-1, filename="");
 
@@ -7,7 +7,7 @@ _extern def printMemStat(lineno=-1, filename="");
 
 resetMemStat();
 
-var i = chpl_malloc(1, numBytes(int(64)), "int(64)", -1, "");
+var i = chpl_malloc(1, numBytes(int(64)), "int(64)", true, -1, "");
 writeln("malloc'd an int");
 printMemStat();
 
@@ -17,11 +17,11 @@ printMemStat();
 // implementation to implementation, so am changing the following
 // from a bool to an int(8)
 //
-var b = chpl_malloc(1, numBytes(int(8)), "fake bool", -1, "");
+var b = chpl_malloc(1, numBytes(int(8)), "fake bool", true, -1, "");
 writeln("malloc'd a bool");
 printMemStat();
 
-var f = chpl_malloc(1, numBytes(real), "real", -1, "");
+var f = chpl_malloc(1, numBytes(real), "real", true, -1, "");
 writeln("malloc'd a real");
 printMemStat();
 

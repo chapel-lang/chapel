@@ -103,7 +103,7 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   int     info_size;
 
   info_size = sizeof(fork_t) + arg_size;
-  info = (fork_t*)chpl_malloc(info_size, sizeof(char), "chpl_comm_fork_nb info", 0, 0);
+  info = (fork_t*)chpl_malloc(info_size, sizeof(char), "chpl_comm_fork_nb info", false, 0, 0);
   info->fid = fid;
   info->arg_size = arg_size;
   if (arg_size)

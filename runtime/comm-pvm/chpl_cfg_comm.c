@@ -171,13 +171,13 @@ static void polling(void* x) {
     }
     case ChplCommFork: {
       void* args;
-      _chpl_RPC_arg* rpcArg = chpl_malloc(1, sizeof(_chpl_RPC_arg), "RPC args", __LINE__, __FILE__);
+      _chpl_RPC_arg* rpcArg = chpl_malloc(1, sizeof(_chpl_RPC_arg), "RPC args", false, __LINE__, __FILE__);
 #if CHPL_DIST_DEBUG
       sprintf(debugMsg, "Fulfilling ChplCommFork");
       PRINTF(debugMsg);
 #endif
       if (msg_info.size != 0) {
-        args = chpl_malloc(1, msg_info.size, "Args for new remote task", __LINE__, __FILE__);
+        args = chpl_malloc(1, msg_info.size, "Args for new remote task", false, __LINE__, __FILE__);
       } else {
         args = NULL;
       }
@@ -199,7 +199,7 @@ static void polling(void* x) {
       PRINTF(debugMsg);
 #endif
       if (msg_info.size != 0) {
-        args = chpl_malloc(1, msg_info.size, "Args for new remote task", __LINE__, __FILE__);
+        args = chpl_malloc(1, msg_info.size, "Args for new remote task", false, __LINE__, __FILE__);
       } else {
         args = NULL;
       }

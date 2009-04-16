@@ -69,7 +69,7 @@ void chpl_stopMemDiagnosis() {
 
 
 void* chpl_malloc(size_t number, size_t size, const char* description,
-                         int32_t lineno, chpl_string filename) {
+                  chpl_bool userCode, int32_t lineno, chpl_string filename) {
   size_t chunk = computeChunkSize(number, size, 0, lineno, filename);
   size_t numBlocks = chunk / HMM_ADDR_ALIGN_UNIT;
   void* memAlloc;
