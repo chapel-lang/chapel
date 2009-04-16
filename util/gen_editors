@@ -1,5 +1,9 @@
 #!/usr/bin/perl
 
+if (!defined $ENV{'CHPL_HOME_REPOSITORY'}) {
+    print "ERROR: CHPL_HOME_REPOSITORY must be set to use gen_editors\n";
+    exit(1);
+}
 
 # check out a clean copy of the sources into a temporary directory
 $pid = getpgrp();
@@ -13,10 +17,10 @@ if ($basetmpdir eq "") {
 }
 $tmpdir = "$basetmpdir/chapel-editors.$user.$pid.deleteme";
 $chapeldir = "$tmpdir/etc";
-$svnroot = "https://gemelli.cs.washington.edu/repos/chapel";
+$svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
 system("mkdir $tmpdir > /dev/null");
 print "Checking out the sources...\n";
-system("cd $tmpdir && svn export -q $svnroot");
+system("cd $tmpdir && svn export -q $svnroot chapel");
 system("cd $tmpdir/chapel/etc/emacs && rm */*.orig.el");
 
 

@@ -1,5 +1,10 @@
 #!/usr/bin/perl
 
+if (!defined $ENV{'CHPL_HOME_REPOSITORY'}) {
+    print "ERROR: CHPL_HOME_REPOSITORY must be set to use nightly\n";
+    exit(1);
+}
+
 use File::Basename;
 
 $valgrind = 0;
@@ -305,8 +310,8 @@ delete($ENV{'CHPL_HOME'});
 #
 # checkout sources
 #
-$svnroot = "https://gemelli.cs.washington.edu/repos/chapel";
-mysystem("cd $tmpdir && svn export -q $svnroot", "svn checkout", 1, 1);
+$svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
+mysystem("cd $tmpdir && svn export -q $svnroot chapel", "svn checkout", 1, 1);
 
 
 #
