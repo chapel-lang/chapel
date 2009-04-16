@@ -10,7 +10,6 @@
 #include "error.h"
 
 #undef malloc
-#undef calloc
 #undef free
 #undef realloc
 
@@ -88,27 +87,6 @@ void* chpl_malloc(size_t number, size_t size,
            (unsigned long)size, description, lineno, filename);
 #endif
 
-  return memAlloc;
-}
-
-void* chpl_calloc(size_t number, size_t size, const char* description, 
-                   int32_t lineno, chpl_string filename) {
-  void* memAlloc;
-  memAlloc = calloc(number, size);
-  confirm(memAlloc, description, lineno, filename);
-
-  if (memtrace) {
-    printToMemLog(number, size, description, "calloc", memAlloc, NULL);
-  }
-
-  if (memtrack) {
-    installMemory(memAlloc, number, size, description);
-    if (memstat) {
-      size_t chunk;
-      chunk = number * size;
-      increaseMemStat(chunk, lineno, filename);
-    }
-  }
   return memAlloc;
 }
 

@@ -49,11 +49,12 @@ static argType* lastArg = NULL;
 
 void addToConfigList(const char* currentArg, configSource argSource) {
   char* description = chpl_glom_strings(2, "argument list entry for ", currentArg);
-  argType* arg = (argType*) chpl_calloc(1, sizeof(argType), description, 0, 0);
+  argType* arg = (argType*) chpl_malloc(1, sizeof(argType), description, 0, 0);
   chpl_free(description, 0, 0);
 
   arg->argSource = argSource;
   arg->input = chpl_glom_strings(1, currentArg);
+  arg->next = NULL;
   
   if (firstArg == NULL) {
     firstArg = arg;
@@ -394,11 +395,12 @@ void installConfigVar(const char* varName, const char* value,
   unsigned hashValue;
   char* description = chpl_glom_strings(2, "config table entry for ", varName);
   configVarType* configVar = (configVarType*) 
-    chpl_calloc(1, sizeof(configVarType), description, 0, 0);
+    chpl_malloc(1, sizeof(configVarType), description, 0, 0);
   chpl_free(description, 0, 0);
 
   hashValue = hash(varName);
   configVar->nextInBucket = configVarTable[hashValue]; 
+  configVar->nextInstalled = NULL;
   configVarTable[hashValue] = configVar;
   if (firstInTable == NULL) {
     firstInTable = configVar;
@@ -413,4 +415,5 @@ void installConfigVar(const char* varName, const char* value,
     configVar->moduleName = chpl_glom_strings(1, moduleName);
   }
   configVar->defaultValue = chpl_glom_strings(1, value);
+  configVar->setValue = NULL;
 } 

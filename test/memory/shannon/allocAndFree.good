@@ -2,7 +2,7 @@ malloc'd an int
 totalMem=8, maxMem=76
 malloc'd a bool
 totalMem=9, maxMem=77
-calloc'd a real
+malloc'd a real
 totalMem=17, maxMem=85
 freed the int and the bool
 totalMem=8, maxMem=120
