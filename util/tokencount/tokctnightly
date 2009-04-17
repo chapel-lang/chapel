@@ -1,5 +1,11 @@
 #!/usr/bin/perl
 
+if (!defined $ENV{'CHPL_HOME_REPOSITORY'}) {
+    print "ERROR: CHPL_HOME_REPOSITORY must be set to use tokctnightly\n";
+    exit(1);
+}
+$svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
+
 $printusage = 0;
 if (@ARGV) {
     $debugflag = shift @ARGV;
@@ -85,7 +91,7 @@ mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
 # checkout sources
 #
 
-mysystem("cd $tmpdir && svn export -q -r '$svndate' https://gemelli.cs.washington.edu/repos/chapel", "svn checkout", 1, 1);
+mysystem("cd $tmpdir && svn export -q -r '$svndate' $svnroot chapel", "svn checkout", 1, 1);
 
 $allcppfiles = "`find -name '*.cpp'` `find -name '*.c'` `find -name '*.h'`";
 $compdir = "$tmpdir/chapel/compiler";

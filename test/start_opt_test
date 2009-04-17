@@ -12,6 +12,12 @@
 #       release/examples
 #
 
+if (!defined $ENV{'CHPL_HOME_REPOSITORY'}) {
+    print "ERROR: CHPL_HOME_REPOSITORY must be set to use getoldperf\n";
+    exit(1);
+}
+$svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
+
 while (@ARGV) {
   $flag = shift @ARGV;
   if ($flag eq "--cron" || $flag eq "-cron") {
@@ -26,7 +32,7 @@ while (@ARGV) {
 if ($cron) {
   `rm -rf /tmp/opt_testing`;
   `mkdir /tmp/opt_testing`;
-  `cd /tmp/opt_testing && svn export -q https://gemelli.cs.washington.edu/repos/chapel >& /dev/null`;
+  `cd /tmp/opt_testing && svn export -q $svnroot chapel >& /dev/null`;
   `cd /tmp/opt_testing/chapel && make all >& /dev/null`;
   $home = "/tmp/opt_testing/chapel/test";
   $ENV{'CHPL_HOME'} = "/tmp/opt_testing/chapel";
