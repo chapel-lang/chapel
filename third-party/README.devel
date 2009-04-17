@@ -2,12 +2,57 @@
 Chapel third-party directory : for developers
 =============================================
 
-This directory contains the following subdirectories, which we
-currently do not make available to users:
+This directory is designed to hold sources that were not developed by
+the Chapel team and which are released under distinct licenses from
+Chapel itself.  Current subdirectories that we do not make availble in
+the release are:
 
-armci/   : PNNL's ARMCI library for one-sided communication
-mpich1/  : MPICH version 1 implementation of MPI
-txt2man/ : a shell script utility for converting text files to man pages
+armci/
+  Summary: the PNNL ARMCI library for one-sided communication which we
+           are investigating using as an alternative to GASNet
 
-Licensing information for each package should be available in its
-separate directory.
+  License: Batelle Open Source License (see:
+           http://www.emsl.pnl.gov/docs/parsoft/armci/license.htm)
+
+  Contact: For more information, please refer to:
+           http://www.emsl.pnl.gov/docs/parsoft/armci/
+
+  See also: armci/armci-*/README
+
+
+heapmm/
+  Summary: Walt Karas' heap memory manager which we initially used as
+           an alternative to dlmalloc.
+
+  License: Public Domain (see comments at top of source files,
+           http://www.geocities.com/wkaras/ and 
+           http://creativecommons.org/licenses/publicdomain/
+
+  Contact: For more information, please refer to:
+           http://www.geocities.com/wkaras/heapmm/heapmm.html
+
+
+mpich1/
+  Summary: the MPICH1 implementation of MPI that we use to launch
+           ARMCI programs
+
+  License: MPICH1 license and ROMIO license (see
+           mpich1/mpich-*/COPYRIGHT and mpich1/mpich-*/romio/COPYRIGHT)
+
+  Contact: For more information, please refer to:
+           http://www.mcs.anl.gov/research/projects/mpi/mpich1/
+
+  See also: mpich1/mpich-*/README
+
+
+txt2man/
+  Summary: Marc Vertes' shell script for converting text files to man
+           pages.  We use this to generate the Chapel man page
+
+  License: GPL (see comments at the top of txt2man/txt2man)
+
+  Contact: For more information, please refer to:
+           http://mvertes.free.fr/
+
+  See also: comments at the top of txt2man/txt2man
+
