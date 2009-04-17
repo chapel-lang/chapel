@@ -21,6 +21,10 @@ spurious verification failures on RA (e.g. 04/04/09)
 ----------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
 
+failure due to chpl_malloc interface change (04/17/09)
+------------------------------------------------------
+[Error matching compiler output for memory/bradc/allocBig]
+
 
 =================
 linux regressions
@@ -241,23 +245,33 @@ times out in C compiler
 intel-specific regressions
 ==========================
 
+comparison against 0 warnings (04/07/09)
+----------------------------------------
+[Error matching compiler output for arrays/deitz/test_array_uint64]
+[Error matching compiler output for modules/bradc/ra-paramWidth]
+[Error matching compiler output for release/examples/hpcc/ra]
+[Error matching compiler output for studies/hpcc/2008/ra]
+[Error matching compiler output for studies/hpcc/2008/testProbSize]
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc-domainPromote]
+[Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc]
+[Error matching compiler output for studies/hpcc/RA/diten/ra]
+[Error matching compiler output for studies/hpcc/RA/marybeth/ra-test-dist]
+[Error matching compiler output for studies/hpcc/RA/marybeth/ra2]
+[Error matching compiler output for studies/hpcc/RA/marybeth/ra3]
+[Error matching compiler output for studies/hpcc/RA/ra-seq]
+[Error matching compiler output for studies/hpcc/serial-v0.7/ra]
+[Error matching compiler output for types/coerce/diten/test_uint64_op_param_int]
+[Error matching compiler output for types/scalar/bradc/uintZeroComparisons2]
+[Error matching compiler output for types/scalar/bradc/uintZeroComparisons]
+[Error matching compiler output for types/scalar/diten/simpleComparesWithZero]
+[Error matching compiler output for types/seq/deitz/test_aseq3]
+
 compilation timeout (new with 11.x)
 -----------------------------------
-[Error: Timed out compilation for studies/hpcc/RA/diten/ra]
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
-
-using pow for int ** (new warning with 11.x)
---------------------------------------------
-[Error matching program output for modules/bradc/ra-paramWidth]
-[Error matching program output for release/examples/hpcc/ra]
-[Error matching program output for studies/hpcc/2008/ra]
-[Error matching program output for studies/hpcc/2008/testProbSize]
-[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
-[Error matching program output for studies/hpcc/RA/ra-seq]
-[Error matching program output for studies/hpcc/serial-v0.7/ra]
-[Error matching program output for types/coerce/diten/test_uint64_op_param_int]
 
 int/uint conversion warning
 ---------------------------
