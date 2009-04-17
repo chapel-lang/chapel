@@ -54,10 +54,10 @@ void rng_init(RNG_state *newstate, int seed)
 
   for (i=0; i < 16; i++) 
     gen.state[i] = 0;
-  gen.state[16] = 0xFF & (seed >> 24);
-  gen.state[17] = 0xFF & (seed >> 16);
-  gen.state[18] = 0xFF & (seed >> 8);
-  gen.state[19] = 0xFF & (seed >> 0);
+  gen.state[16] = (uint_8t)(0xFF & (seed >> 24));
+  gen.state[17] = (uint_8t)(0xFF & (seed >> 16));
+  gen.state[18] = (uint_8t)(0xFF & (seed >> 8));
+  gen.state[19] = (uint_8t)(0xFF & (seed >> 0));
   
   sha1_begin(&ctx);
   sha1_hash(gen.state, 20, &ctx);
@@ -69,10 +69,10 @@ void rng_spawn(RNG_state *mystate, RNG_state *newstate, int spawnnumber)
 	struct sha1_context ctx;
 	uint_8t  bytes[4];
 	
-	bytes[0] = 0xFF & (spawnnumber >> 24);
-	bytes[1] = 0xFF & (spawnnumber >> 16);
-	bytes[2] = 0xFF & (spawnnumber >> 8);
-	bytes[3] = 0xFF & spawnnumber;
+	bytes[0] = (uint_8t)(0xFF & (spawnnumber >> 24));
+	bytes[1] = (uint_8t)(0xFF & (spawnnumber >> 16));
+	bytes[2] = (uint_8t)(0xFF & (spawnnumber >> 8));
+	bytes[3] = (uint_8t)(0xFF & spawnnumber);
 	
 	sha1_begin(&ctx);
 	sha1_hash(mystate, 20, &ctx);
