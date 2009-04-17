@@ -1381,7 +1381,7 @@ pragma "inline" def >(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError(">"); else return a > b:uint(64);
 }
 pragma "inline" def >(param a: int(64), b: uint(64)) {
-  if a < 0 then _throwOpError(">"); else return a:uint(64) > b;
+  if a < 0 then _throwOpError(">"); else return if a == 0 then false else a:uint(64) > b;
 }
 
 
@@ -1399,7 +1399,7 @@ pragma "inline" def <(param a: int(64), param b: uint(64)) param {
 
 // non-param/param and param/non-param
 pragma "inline" def <(a: uint(64), param b: int(64)) {
-  if b < 0 then _throwOpError("<"); else return a < b:uint(64);
+  if b < 0 then _throwOpError("<"); else return if b == 0 then false else a < b:uint(64);
 }
 pragma "inline" def <(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("<"); else return a:uint(64) < b;
@@ -1420,7 +1420,7 @@ pragma "inline" def >=(param a: int(64), param b: uint(64)) param {
 
 // non-param/param and param/non-param
 pragma "inline" def >=(a: uint(64), param b: int(64)) {
-  if b < 0 then _throwOpError(">="); else return a >= b:uint(64);
+  if b < 0 then _throwOpError(">="); else return if b == 0 then true else a >= b:uint(64);
 }
 pragma "inline" def >=(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError(">="); else return a:uint(64) >= b;
@@ -1444,7 +1444,7 @@ pragma "inline" def <=(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("<="); else return a <= b:uint(64);
 }
 pragma "inline" def <=(param a: int(64), b: uint(64)) {
-  if a < 0 then _throwOpError("<="); else return a:uint(64) <= b;
+  if a < 0 then _throwOpError("<="); else return if a == 0 then true else a:uint(64) <= b;
 }
 
 
