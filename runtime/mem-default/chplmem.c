@@ -37,7 +37,7 @@ confirm(void* memAlloc, const char* description, int32_t lineno,
 static size_t computeChunkSize(size_t number, size_t size, int zeroOK, 
                                int32_t lineno, chpl_string filename) {
   size_t chunk = number * size;
-  long long bigChunk = (long long)number * (long long)size;
+  int64_t bigChunk = (int64_t)number * (int64_t)size;
   if (bigChunk != chunk) {
     chpl_error("Attempting to allocate > max(size_t) bytes of memory", lineno,
                filename);

@@ -1,5 +1,6 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+#include <stdint.h>
 #include "astutil.h"
 #include "bb.h"
 #include "build.h"
@@ -886,7 +887,7 @@ VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
   return s;
 }
 
-VarSymbol *new_IntSymbol(long long int b, IF1_int_type size) {
+VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size) {
   Immediate imm;
   switch (size) {
   case INT_SIZE_8  : imm.v_int8   = b; break;
@@ -910,7 +911,7 @@ VarSymbol *new_IntSymbol(long long int b, IF1_int_type size) {
   return s;
 }
 
-VarSymbol *new_UIntSymbol(unsigned long long int b, IF1_int_type size) {
+VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size) {
   Immediate imm;
   switch (size) {
   case INT_SIZE_8  : imm.v_uint8   = b; break;

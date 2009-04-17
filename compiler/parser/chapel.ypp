@@ -22,6 +22,7 @@ NOTES
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <stdint.h>
 #include "lexyacc.h" // all #includes here, for make depend
 
   static int query_uid = 1;
@@ -1265,7 +1266,7 @@ expr_list_item:
 literal:
   INTLITERAL
     {
-      unsigned long long int ull;
+      uint64_t ull;
       if (!strncmp("0b", yytext, 2))
         ull = binStr2uint64(yytext);
       else if (!strncmp("0x", yytext, 2))
