@@ -1,0 +1,9 @@
+bug: varargs function causes method over bools to be ambiguous
+
+The varargs argument to function f is making the bool method call ambiguous;
+there are mymethod methods for each bool size and we aren't resolving the call
+to the correctly sized one. Copying the argument into a temp before calling
+the bool method works:
+
+var t = args(i);
+t.mymethod();
