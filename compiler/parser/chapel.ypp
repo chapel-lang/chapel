@@ -64,7 +64,7 @@ NOTES
   FnSymbol* pfnsym;
   ModuleSymbol* pmodsym;
   EnumSymbol* penumsym;
-}
+};
 
 %token TATOMIC
 %token TBEGIN
