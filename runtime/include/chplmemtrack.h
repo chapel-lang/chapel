@@ -15,6 +15,7 @@ typedef struct _memTableEntry { /* table entry */
   size_t number;
   size_t size;
   char* description;
+  chpl_bool userCode;
   void* memAlloc;
 
   struct _memTableEntry* nextInBucket;
@@ -23,21 +24,25 @@ typedef struct _memTableEntry { /* table entry */
 
 } memTableEntry;
 
-void decreaseMemStat(size_t chunk);
-void increaseMemStat(size_t chunk, int32_t lineno, chpl_string filename);
+void decreaseMemStat(size_t chunk, chpl_bool userCode);
+void increaseMemStat(size_t chunk, chpl_bool userCode,
+                     int32_t lineno, chpl_string filename);
 void initMemTable(void);
 void installMemory(void* memAlloc, size_t number, size_t size,
-                   const char* description);
+                   const char* description, chpl_bool userCode);
 memTableEntry* lookupMemory(void* memAlloc);
 uint64_t mem_used(int32_t lineno, chpl_string filename);
 void printFinalMemStat(int32_t lineno, chpl_string filename);
 void printMemStat(int32_t lineno, chpl_string filename);
-void printMemTable(int64_t threshold, int32_t lineno, chpl_string filename);
+void printMemTable(int64_t threshold, chpl_bool userCode,
+                   int32_t lineno, chpl_string filename);
 // calls printMemTable if --memfinalstat was specified on the command line;
 // otherwise does nothing
 void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename);
-void printToMemLog(size_t number, size_t size, const char* description,
-                   const char* memType, void* memAlloc, void* moreMemAlloc);
+void printToMemLog(const char* memType, size_t number, size_t size,
+                   const char* description, chpl_bool userCode,
+                   int32_t lineno, chpl_string filename,
+                   void* memAlloc, void* moreMemAlloc);
 void removeMemory(void* memAlloc, int32_t lineno, chpl_string filename);
 void resetMemStat(void);
 void setMemmax(int64_t value);

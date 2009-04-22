@@ -1,2 +1,2 @@
 --memtrace=jacobi.log
---memthreshold=392
+--memthreshold=-392

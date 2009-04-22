@@ -1,4 +1,4 @@
-_extern def printMemTable(thresh=1000, lineno=-1, filename="");
+use Memory;
 
 config var n : int = 20;
 config var epsilon : real = 0.00001;
@@ -44,7 +44,7 @@ while (delta > epsilon) {
   }
 }
 
-printMemTable();
+printMemTable(1000, false);
 
 writeln("Jacobi computation complete.");
 writeln("Delta is ", delta, " (< epsilon = ", epsilon, ")");

@@ -1,0 +1,4 @@
+bug: no way to distinguish calls to free due to explicit user code
+from those due to compiler-generated code.  Likewise for calls to chpl_realloc;
+however, in that case, it is only ever called from chplcomm.c, so this test
+may require some modification.

@@ -1,4 +1,4 @@
-_extern def printMemTable(thresh=1000, lineno=-1, filename="");
+use Memory;
 
 class C {
   var a: [1..32] int(64);
@@ -9,4 +9,4 @@ var d = new C();
 var e = new C();
 var f = new C();
 
-printMemTable(240, 0, "");
+printMemTable(240, true);
