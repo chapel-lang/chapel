@@ -47,9 +47,11 @@ static size_t maxMem = 0;           /* maximum total memory during run  */
 static _Bool reportOnlyUserAllocations = true;
 static _Bool alreadyPrintingStat = false;
 
+#ifndef LAUNCHER
 static chpl_mutex_t memtrack_lock;
 static chpl_mutex_t memstat_lock;
 static chpl_mutex_t memtrace_lock;
+#endif
 
 static unsigned hash(void* memAlloc);
 static void updateMaxMem(void);
@@ -258,8 +260,8 @@ void printMemTable(int64_t threshold, chpl_bool userCode,
   memTableEntry* memEntry = NULL;
 
   const int numberWidth   = 9;
-  const int addressWidth  = 12;
-  const int precision     = 8;
+  const int precision     = sizeof(uintptr_t) * 2;
+  const int addressWidth  = precision + 4;
 
   const char* size        = "Size:";
   const char* bytes       = "(bytes)";
@@ -430,6 +432,7 @@ void printToMemLog(const char* memType, size_t number, size_t size,
                    const char* description, chpl_bool userCode,
                    int32_t lineno, chpl_string filename,
                    void* memAlloc, void* moreMemAlloc) {
+#ifndef LAUNCHER
   size_t chunk = number * size;
   chpl_mutex_lock(&memtrace_lock);
   if (chunk >= memthresholdValue &&
@@ -444,4 +447,5 @@ void printToMemLog(const char* memType, size_t number, size_t size,
     }
   }
   chpl_mutex_unlock(&memtrace_lock);
+#endif
 }

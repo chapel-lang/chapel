@@ -4,5 +4,5 @@ set outfile  = $2
 
 set tmpfile = $outfile.prediff.tmp
 mv $outfile $tmpfile
-sed s/0x\[0-9a-f\]\*/0xnnnnnnnn/g $tmpfile > $outfile
+sed -e s/0x\[0-9a-f\]\*/0xnnnnnnnn/g -e 's/Address: */Address:    /' $tmpfile > $outfile
 rm $tmpfile
