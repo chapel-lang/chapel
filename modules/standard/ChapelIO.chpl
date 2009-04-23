@@ -252,6 +252,20 @@ def string.writeThis(f: Writer) {
   f.writeIt(this);
 }
 
+def numeric.writeThis(f: Writer) {
+  f.writeIt(this:string);
+}
+
+def enumerated.writeThis(f: Writer) {
+  f.writeIt(this:string);
+}
+
+/*
+def bool.writeThis(f: Writer) {
+  f.writeIt(this:string);
+}
+*/
+
 def file.writeIt(s: string) {
   if !isOpen then
     _checkOpen(this, isRead = false);
@@ -290,6 +304,9 @@ def file.unlockWrite() {
   _lock.reset();
 }
 
+def isBoolean(b: bool) param return true;
+def isBoolean(b) param return false;
+
 class Writer {
   def writeIt(s: string) { }
   def lockWrite() return false;
@@ -307,6 +324,14 @@ class Writer {
       for param i in 1..n do
         if isNilObject(args(i)) then
           "nil".writeThis(this);
+        else if isBoolean(args(i)) then
+          // This isBoolean case is a workaround for a problem with
+          // resolving a reference to a bool to one of the bool.writeThis
+          // methods.
+          if args(i) then
+            "true".writeThis(this);
+          else
+            "false".writeThis(this);
         else
           args(i).writeThis(this);
       if need_release then

@@ -26,6 +26,41 @@ if (CHPL_COMM == "unset") {
   compilerWarning("CHPL_COMM not set");
 }
 
+pragma "inline" def +(s: string, x: numeric)
+  return s + x:string;
+
+pragma "inline" def +(x: numeric, s: string)
+  return x:string + s;
+
+def +(param s: string, param x: integral) param
+  return s + x:string;
+
+def +(param x: integral, param s: string) param
+  return x:string + s;
+
+pragma "inline" def +(s: string, x: enumerated)
+  return s + x:string;
+
+pragma "inline" def +(x: enumerated, s: string)
+  return x:string + s;
+
+def +(param s: string, param x: enumerated) param
+  return s + x:string;
+
+def +(param x: enumerated, param s: string) param
+  return x:string + s;
+
+pragma "inline" def +(s: string, x: bool)
+  return s + x:string;
+
+pragma "inline" def +(x: bool, s: string)
+  return x:string + s;
+
+def +(param s: string, param x: bool) param
+  return s + x:string;
+
+def +(param x: bool, param s: string) param
+  return x:string + s;
 
 // the number of locales on which to run the program
 config const numLocales: int = __primitive("chpl_comm_default_num_locales");

@@ -470,12 +470,6 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
         if (fits_in_uint(get_width(formalType), var->immediate))
           return true;
   }
-  if (formalType == dtString) {
-    if (is_int_type(actualType) ||
-        is_uint_type(actualType) ||
-        is_bool_type(actualType))
-      return true;
-  }
   return false;
 }
 
@@ -508,11 +502,6 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
       return true;
     if (is_complex_type(actualType) && 
         (get_width(actualType) < get_width(formalType)))
-      return true;
-  }
-  if (formalType == dtString) {
-    if (is_real_type(actualType) || is_imag_type(actualType) ||
-        is_complex_type(actualType) || isEnumType(actualType))
       return true;
   }
   if (actualType->symbol->hasFlag(FLAG_SYNC)) {
@@ -2012,17 +2001,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
         Type* src = var->type;
         Type* dst = sym->var->type;
 
-        if ((is_bool_type(src) && is_bool_type(dst)) ||
-            (is_int_type(src) && is_int_type(dst)) ||
-            (is_uint_type(src) && is_uint_type(dst)) ||
-            (is_real_type(src) && is_real_type(dst)) ||
-            (is_imag_type(src) && is_imag_type(dst)) ||
-            (is_complex_type(src) && is_complex_type(dst))) {
-          if (get_width(src) == get_width(dst)) {
-            result = new SymExpr(var);
-            call->replace(result);
-          }
-        } else if (dst == dtString && src == dtString) {
+        if (dst == src) {
           result = new SymExpr(var);
           call->replace(result);
         }
@@ -2031,11 +2010,9 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
       if (SymExpr* sym = toSymExpr(call->get(1))) {
         EnumType* src = toEnumType(e->type);
         EnumType* dst = toEnumType(sym->var->type);
-        if (dst) {
-          if (!strcmp(src->symbol->name, dst->symbol->name)) {
-            result = new SymExpr(e);
-            call->replace(result);
-          }
+        if (dst && src == dst) {
+          result = new SymExpr(e);
+          call->replace(result);
         }
       }
     }
@@ -2295,6 +2272,14 @@ preFold(Expr* expr) {
                     INT_FATAL("unexpected case in cast_fold");
                   }
                 }
+              }
+            }
+          } else if (EnumSymbol* enumSym = toEnumSymbol(sym->var)) {
+            if (SymExpr* sym = toSymExpr(call->get(1))) {
+              Type* dst = sym->var->type;
+              if (dst == dtString) {
+                result = new SymExpr(new_StringSymbol(enumSym->name));
+                call->replace(result);
               }
             }
           }
