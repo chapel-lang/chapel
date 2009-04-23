@@ -6,8 +6,8 @@ def main() {
   a = 2.0;
   writeln("Test of vector norms.  x = ");
   writeln(a);
-  writeln("1-norm = ",norm(a,1));
-  writeln("2-norm = " , norm(a,2));
+  writeln("1-norm = ",norm(a,'1'));
+  writeln("2-norm = " , norm(a,'2'));
   writeln("infinity norm = ",norm(a,'inf'));
   writeln("default norm = ",norm(a));
   const D2 = [1..2,1..2];
@@ -15,7 +15,7 @@ def main() {
   b = 2.0;
   writeln("Test of matrix norms.  A = ");
   writeln(b);
-  writeln("1-norm = ", norm(b,1));
+  writeln("1-norm = ", norm(b,'1'));
   writeln("infinity norm = ", norm(b,'inf'));
   writeln("frobenius norm = ",norm(b,'frob'));
   writeln("default norm = ",norm(b));
@@ -24,7 +24,7 @@ def main() {
   c = 2.0;
   writeln("Test of matrix norms.  A = ");
   writeln(c);
-  writeln("1-norm = " , norm(c,1));
+  writeln("1-norm = " , norm(c,'1'));
   writeln("infinity norm = ", norm(c,'inf'));
   writeln("frobenius norm = ", norm(c,'frob'));
   writeln("default norm = ", norm(c));
@@ -32,7 +32,7 @@ def main() {
   d = 1;
   writeln("Test of matrix norms.  A = ");
   writeln(d);
-  writeln("1-norm = ",norm(d,1));
+  writeln("1-norm = ",norm(d,'1'));
   writeln("infinity norm = ", norm(d,'inf'));
   writeln("frobenius norm = ",norm(d,'frob'));
   writeln("default norm = ",norm(d));
@@ -40,7 +40,7 @@ def main() {
   e = 1.0 + 1.0i;
   writeln("Test of matrix norms.  A = ");
   writeln(e);
-  writeln("1-norm = ",norm(e,1));
+  writeln("1-norm = ",norm(e,'1'));
   writeln("infinity norm = ", norm(e,'inf'));
   writeln("frobenius norm = ",norm(e,'frob'));
   writeln("default norm = ",norm(e));

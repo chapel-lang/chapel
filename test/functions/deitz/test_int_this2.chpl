@@ -1,3 +1,4 @@
-writeln(987.substring(1));
-writeln(987.substring(2));
-writeln(987.substring(3));
+var s = 987:string;
+writeln(s.substring(1));
+writeln(s.substring(2));
+writeln(s.substring(3));

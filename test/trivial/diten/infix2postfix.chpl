@@ -79,7 +79,7 @@ def infix2postfix(str: string) {
         assert(stack.peek() != "");
         stack.pop();
       }
-      when 0, 1, 2, 3, 4, 5, 6, 7, 8, 9  {
+      when "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" {
         post += s;
       }
       otherwise {
@@ -98,32 +98,32 @@ def postfixEval(str: string) {
   for i in 1..length(str) {
     var s: string = str.substring(i);
     select s {
-      when 0,1,2,3,4,5,6,7,8,9 {
+      when "0","1","2","3","4","5","6","7","8","9" {
         stack.push(s);
       }
       when "+" {
         var t1, t2: real;
         t2 = stack.pop():real;
-        t1 = stack.pop(): real;
-        stack.push(t1 + t2);
+        t1 = stack.pop():real;
+        stack.push((t1 + t2):string);
       }
       when "-" {
         var t1, t2: real;
         t2 = stack.pop():real;
-        t1 = stack.pop(): real;
-        stack.push(t1 - t2);
+        t1 = stack.pop():real;
+        stack.push((t1 - t2):string);
       }
       when "*" {
         var t1, t2: real;
         t2 = stack.pop():real;
-        t1 = stack.pop(): real;
-        stack.push(t1 * t2);
+        t1 = stack.pop():real;
+        stack.push((t1 * t2):string);
       }
       when "/" {
         var t1, t2: real;
         t2 = stack.pop():real;
-        t1 = stack.pop(): real;
-        stack.push(t1 / t2);
+        t1 = stack.pop():real;
+        stack.push((t1 / t2):string);
       }
       otherwise {
         assert(false);

@@ -21,7 +21,7 @@ var C: [D] string;
 forall i in D {
   A(i) = i;
   B(i) = i;
-  C(i) = i;
+  C(i) = i:string;
 }
 
 {

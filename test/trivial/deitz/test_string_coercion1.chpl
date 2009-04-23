@@ -2,6 +2,6 @@ def foo(s : string) {
   writeln("string ", s);
 }
 
-foo(true);
-foo(2);
-foo(2.0);
+foo(true:string);
+foo(2:string);
+foo(2.0:string);

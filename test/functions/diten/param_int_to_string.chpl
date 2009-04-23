@@ -8,5 +8,5 @@ def foo(s: string) {
 param int_param: int = 1;
 var   int_var:   int = 1;
 
-foo(int_param);
-foo(int_var);
+foo(int_param:string);
+foo(int_var:string);

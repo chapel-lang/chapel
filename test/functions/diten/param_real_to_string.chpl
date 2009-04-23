@@ -8,5 +8,5 @@ def foo(s: string) {
 param real_param: real = 1.0;
 var   real_var:   real = 1.0;
 
-foo(real_param);
-foo(real_var);
+foo(real_param:string);
+foo(real_var:string);

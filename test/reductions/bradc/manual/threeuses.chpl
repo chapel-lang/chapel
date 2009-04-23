@@ -2,7 +2,7 @@ class mysumreduce {
   type t;
   
   def ident() {
-    return 0;
+    return 0:t;
   }
 
   def combine(x: t, y: t): t {
@@ -21,7 +21,7 @@ var C: [D] string;
 forall i in D {
   A(i) = i;
   B(i) = i;
-  C(i) = i;
+  C(i) = i:string;
 }
 
 {

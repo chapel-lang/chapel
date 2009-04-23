@@ -8,5 +8,5 @@ def foo(s: string) {
 param bool_param: bool = true;
 var   bool_var:   bool = true;
 
-foo(bool_param);
-foo(bool_var);
+foo(bool_param:string);
+foo(bool_var:string);

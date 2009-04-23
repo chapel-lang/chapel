@@ -2,8 +2,8 @@ def foo(s : string) {
   writeln(s);
 }
 
-foo(12);
+foo(12:string);
 
 var i : int = 12;
 
-foo(i);
+foo(i:string);

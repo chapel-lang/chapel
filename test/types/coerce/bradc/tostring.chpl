@@ -23,20 +23,20 @@ var cdf: complex = 25.26 + 27.28i;
 
 def dobool(x) {
   var s: string;
-  s = x;
+  s = x:string;
   writeln("s is: ", s);
   writeln();
 }
 
 def dotype(x: ?t) {
   var s: string;
-  s = x;
+  s = x:string;
   writeln("s is: ", s);
   var v = min(t);
-  s = v;
+  s = v:string;
   writeln("s is: ", s);
   v = max(t);
-  s = v;
+  s = v:string;
   writeln("s is: ", s);
   writeln();
 }

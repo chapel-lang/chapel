@@ -5,9 +5,9 @@ class C {
       if s == "0" then
         writeln(x);
       else
-        bar(0);
+        bar(0:string);
     }
-    bar(1);
+    bar(1:string);
   }
 }
 

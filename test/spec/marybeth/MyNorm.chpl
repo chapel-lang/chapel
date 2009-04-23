@@ -1,18 +1,18 @@
 module MyNorm{
-  def norm(x: [], p) where x.rank == 1 {
+  def norm(x: [], p: string) where x.rank == 1 {
 
-    if (p == 2) {
+    if (p == '2') {
       return sqrt(+ reduce (x*x));
-    } else if (p == 1) {
+    } else if (p == '1') {
       return + reduce abs(x);
     } else if ((p == 'inf') || (p == 'INF') || (p == 'Inf')) {
       return max reduce abs(x);
     } else return -1;
   }
 
-  def norm(x:[?D], p) where x.rank == 2 {
+  def norm(x:[?D], p: string) where x.rank == 2 {
   
-    if (p == 1) {
+    if (p == '1') {
       var maxColSum = abs(x(1,1));
       for j in D.dim(2) {
         maxColSum = max(maxColSum,+ reduce abs(x[D.dim(1),j]));
@@ -30,7 +30,7 @@ module MyNorm{
   }
 
   def norm(x: []) {
-    if (x.rank == 1) then return norm(x,2);
+    if (x.rank == 1) then return norm(x,'2');
     else if (x.rank == 2) then return norm(x,'frob');
     else return -1;
   }

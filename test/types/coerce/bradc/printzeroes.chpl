@@ -8,20 +8,20 @@ var cdf: complex     = 8.0 + 9.0i;
 
 var s: string;
 
-s = f32;
+s = f32:string;
 writeln("s is: ", s);
 
-s = f64;
+s = f64:string;
 writeln("s is: ", s);
 
-s = fdf;
+s = fdf:string;
 writeln("s is: ", s);
 
-s = c64;
+s = c64:string;
 writeln("s is: ", s);
 
-s = c128;
+s = c128:string;
 writeln("s is: ", s);
 
-s = cdf;
+s = cdf:string;
 writeln("s is: ", s);
