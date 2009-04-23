@@ -2,7 +2,7 @@
 // Use standard modules for Block distributions, Timing routines, Type
 // utility functions, and Random numbers
 //
-use BlockDist, Time, Types, Random;
+use MultiBlockDist, Time, Types, Random;
 
 //
 // Use shared user module for computing HPCC problem sizes
@@ -60,7 +60,7 @@ def main() {
   // BlockDist is a 1D block distribution that is computed by blocking
   // the bounding box 1..m across the set of locales
   //
-  const BlockDist = new Block1D(bbox=[1..m], tasksPerLocale=tasksPerLocale);
+  const BlockDist = new Block(rank=1,bbox=[1..m],tasksPerLocale=tasksPerLocale);
 
   //
   // ProblemSpace describes the index set for the three vectors.  It

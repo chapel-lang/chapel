@@ -1,4 +1,4 @@
-use BlockDist, Time, Memory, Types, Random;
+use MultiBlockDist, Time, Memory, Types, Random;
 
 type elemType = real(64);
 config const m: int(64) = 8, alpha = 3.0;
@@ -8,7 +8,7 @@ config const tasksPerLocale = 1;
 config const verbose: bool = false;
 
 def main() {
-  const Dist = new Block1D(bbox=[1..m], tasksPerLocale=tasksPerLocale);
+  const Dist = new Block(rank=1,bbox=[1..m],tasksPerLocale=tasksPerLocale);
   const ProblemSpace: domain(1, int(64)) distributed Dist = [1..m];
   var A, B, C: [ProblemSpace] elemType;
 

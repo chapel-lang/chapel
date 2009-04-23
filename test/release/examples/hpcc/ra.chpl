@@ -1,7 +1,7 @@
 //
 // Use standard modules for Block distributions and Timing routines
 //
-use BlockDist, Time;
+use MultiBlockDist, Time;
 
 //
 // Use the user modules for computing HPCC problem sizes and for
@@ -58,10 +58,10 @@ config const printParams = true,
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new Block1D(indexType, bbox=[0..m-1], 
-                              tasksPerLocale=tasksPerLocale),
-      UpdateDist = new Block1D(indexType, bbox=[0..N_U-1],
-                               tasksPerLocale=tasksPerLocale);
+const TableDist = new Block(1, indexType, bbox=[0..m-1], 
+                            tasksPerLocale=tasksPerLocale),
+      UpdateDist = new Block(1, indexType, bbox=[0..N_U-1],
+                             tasksPerLocale=tasksPerLocale);
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -104,9 +104,11 @@ def main() {
   // communications.  Compute the update using r both to compute the
   // index and as the update value.
   //
+  startVerboseComm();
   forall (_, r) in (Updates, RAStream()) do
     on T.domain.dist.ind2loc(r & indexMask) do
       T(r & indexMask) ^= r;
+  stopVerboseComm();
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 
