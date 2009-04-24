@@ -424,9 +424,21 @@ def halt(args ...?numArgs) {
   __primitive("chpl_error", "halt reached - "+_tuple2string(args));
 }
 
-def _debugWrite(args: string ...?n) {
+def _debugWrite(args...?n) {
+  def getString(a: ?t) {
+    if t == bool(8) || t == bool(16) || t == bool(32) || t == bool(64) ||
+       t == int(8) || t == int(16) || t == int(32) || t == int(64) ||
+       t == uint(8) || t == uint(16) || t == uint(32) || t == uint(64) ||
+       t == real(32) || t == real(64) || t == imag(32) || t == imag(64) ||
+       t == complex(64) || t == complex(128) ||
+       t == bool || t == string || __primitive("isEnumType", t) then
+      return a:string;
+    else 
+      compilerError("Cannot call _debugWrite on value of type ",
+                    typeToString(t));
+  }
   for param i in 1..n {
-    var status = __primitive("fprintf", __primitive("get_stdout"), "%s", args(i));
+    var status = __primitive("fprintf", __primitive("get_stdout"), "%s", getString(args(i)));
     if status < 0 {
       const err = __primitive("get_errno");
       halt("_debugWrite failed with status ", err);
@@ -435,7 +447,7 @@ def _debugWrite(args: string ...?n) {
   __primitive("fflush", __primitive("get_stdout"));
 }
 
-def _debugWriteln(args: string ...?n) {
+def _debugWriteln(args...?n) {
   _debugWrite((...args), "\n");
 }
 
