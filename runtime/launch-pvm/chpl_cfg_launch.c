@@ -133,9 +133,9 @@ char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
     free(nodestoadd[i]);
     i--;
   }
-  chpl_free(addCommand, -1, "");
-  chpl_free(deleteCommand, -1, "");
-  chpl_free(topvmCommand, -1, "");
+  chpl_free(addCommand, false, -1, "");
+  chpl_free(deleteCommand, false, -1, "");
+  chpl_free(topvmCommand, false, -1, "");
   return command;
 }
 

@@ -125,8 +125,8 @@ static void chpl_RPC(_chpl_RPC_arg* arg) {
   PRINTF("Did task");
   chpl_mpi_send(NULL, 0, MPI_BYTE, arg->joinLocale, arg->replyTag, MPI_COMM_WORLD);
   if (arg->arg != NULL)
-    chpl_free(arg->arg, __LINE__, __FILE__);
-  chpl_free(arg, __LINE__, __FILE__);
+    chpl_free(arg->arg, false, __LINE__, __FILE__);
+  chpl_free(arg, false, __LINE__, __FILE__);
 }
 
 

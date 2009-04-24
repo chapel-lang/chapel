@@ -5,6 +5,7 @@
 #include "countTokens.h"
 #include "driver.h"
 #include "expr.h"
+#include "parser.h"
 #include "processTokens.h"
 #include "stmt.h"
 #include "stringutil.h"

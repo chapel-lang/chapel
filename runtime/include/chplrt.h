@@ -46,7 +46,7 @@ _real64 _now_time(void);
   for(i = 0; i < (x)->size; i++) call
 
 #define _ARRAY_FREE(x, lineno, filename) \
-  chpl_free((x)->_data, lineno, filename)
+  chpl_free((x)->_data, false, lineno, filename)
 
 #define _WIDE_ARRAY_FREE(x, lineno, filename)                          \
   do {                                                                 \

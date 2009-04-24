@@ -220,9 +220,9 @@ void chpl_init_sync_aux(chpl_sync_aux_t *s) {
 }
 
 void chpl_destroy_sync_aux(chpl_sync_aux_t *s) {
-  chpl_free(s->lock, 0, 0);
-  chpl_free(s->signal_full, 0, 0);
-  chpl_free(s->signal_empty, 0, 0);
+  chpl_free(s->lock, false, 0, 0);
+  chpl_free(s->signal_full, false, 0, 0);
+  chpl_free(s->signal_empty, false, 0, 0);
 }
 
 
@@ -286,12 +286,12 @@ void chpl_init_single_aux(chpl_single_aux_t *s) {
 
 static void serial_delete(chpl_bool *p) {
   if (p != NULL)
-    chpl_free(p, 0, 0);
+    chpl_free(p, false, 0, 0);
 }
 
 static void lock_report_delete(lockReport *p) {
   if (p != NULL)
-    chpl_free(p, 0, 0);
+    chpl_free(p, false, 0, 0);
 }
 
 
@@ -572,7 +572,7 @@ static void skip_over_begun_tasks (void) {
   while (task_pool_head && task_pool_head->begun) {
     chpl_task_pool_p task = task_pool_head;
     task_pool_head = task_pool_head->next;
-    chpl_free(task, 0, 0);
+    chpl_free(task, false, 0, 0);
     if (task_pool_head == NULL)  // task pool is now empty
       task_pool_tail = NULL;
   }
@@ -606,7 +606,7 @@ chpl_begin_helper (chpl_task_pool_p task) {
     // begin critical section
     chpl_mutex_lock(&threading_lock);
 
-    chpl_free(task, 0, 0);  // make sure task_pool_head no longer points to this task!
+    chpl_free(task, false, 0, 0);  // make sure task_pool_head no longer points to this task!
 
     if(taskreport) {
         chpldev_taskTable_remove(chpl_thread_id());
@@ -1063,6 +1063,6 @@ void chpl_free_task_list (chpl_task_list_p task_list) {
   do {
     task = next_task;
     next_task = task->next;
-    chpl_free(task, 0, 0);
+    chpl_free(task, false, 0, 0);
   } while (task != task_list);
 }

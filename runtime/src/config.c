@@ -50,7 +50,7 @@ static argType* lastArg = NULL;
 void addToConfigList(const char* currentArg, configSource argSource) {
   char* description = chpl_glom_strings(2, "argument list entry for ", currentArg);
   argType* arg = (argType*) chpl_malloc(1, sizeof(argType), description, false, 0, 0);
-  chpl_free(description, 0, 0);
+  chpl_free(description, false, 0, 0);
 
   arg->argSource = argSource;
   arg->input = chpl_glom_strings(1, currentArg);
@@ -396,7 +396,7 @@ void installConfigVar(const char* varName, const char* value,
   char* description = chpl_glom_strings(2, "config table entry for ", varName);
   configVarType* configVar = (configVarType*) 
     chpl_malloc(1, sizeof(configVarType), description, false, 0, 0);
-  chpl_free(description, 0, 0);
+  chpl_free(description, false, 0, 0);
 
   hashValue = hash(varName);
   configVar->nextInBucket = configVarTable[hashValue]; 

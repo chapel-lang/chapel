@@ -76,7 +76,7 @@ static void fork_wrapper(fork_t *f) {
                                       SIGNAL,
                                       &(f->ack),
                                       sizeof(f->ack)));
-  chpl_free(f, 0, 0);
+  chpl_free(f, false, 0, 0);
 }
 
 static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
@@ -94,8 +94,8 @@ static void fork_large_wrapper(fork_t* f) {
                                       SIGNAL,
                                       &(f->ack),
                                       sizeof(f->ack)));
-  chpl_free(f, 0, 0);
-  chpl_free(arg, 0, 0);
+  chpl_free(f, false, 0, 0);
+  chpl_free(arg, false, 0, 0);
 }
 
 ////GASNET - can we send as much of user data as possible initially
@@ -113,7 +113,7 @@ static void fork_nb_wrapper(fork_t *f) {
     (*chpl_ftable[f->fid])(&f->arg);
   else
     (*chpl_ftable[f->fid])(0);
-  chpl_free(f, 0, 0);
+  chpl_free(f, false, 0, 0);
 }
 
 static void AM_fork_nb(gasnet_token_t  token,
@@ -134,8 +134,8 @@ static void fork_nb_large_wrapper(fork_t* f) {
                                       &(f->ack),
                                       sizeof(f->ack)));
   (*chpl_ftable[f->fid])(arg);
-  chpl_free(f, 0, 0);
-  chpl_free(arg, 0, 0);
+  chpl_free(f, false, 0, 0);
+  chpl_free(arg, false, 0, 0);
 }
 
 static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
@@ -156,8 +156,8 @@ static void AM_putdata(gasnet_token_t token, void* buf, size_t nbytes) {
 }
 
 static void AM_free(gasnet_token_t token, void* buf, size_t nbytes) {
-  chpl_free(*(void**)(*(fork_t**)buf)->arg, 0, 0);
-  chpl_free(*(void**)buf, 0, 0);
+  chpl_free(*(void**)(*(fork_t**)buf)->arg, false, 0, 0);
+  chpl_free(*(void**)buf, false, 0, 0);
 }
 
 static gasnet_handlerentry_t ftable[] = {
@@ -323,7 +323,7 @@ void chpl_comm_broadcast_private(void* addr, int size) {
     }
   }
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-  chpl_free(pbp, 0, 0);
+  chpl_free(pbp, false, 0, 0);
 #endif
 }
 
@@ -429,7 +429,7 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_LARGE, info, info_size));
     }
     GASNET_BLOCKUNTIL(1==done);
-    chpl_free(info, 0, 0);
+    chpl_free(info, false, 0, 0);
   }
 }
 
@@ -473,7 +473,7 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
     }
     if (passArg) {
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB, info, info_size));
-      chpl_free(info, 0, 0);
+      chpl_free(info, false, 0, 0);
     } else {
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB_LARGE, info, info_size));
     }

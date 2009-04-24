@@ -95,7 +95,7 @@ static void fork_nb_wrapper(fork_t* f) {
     (*chpl_ftable[f->fid])(&f->arg);
   else
     (*chpl_ftable[f->fid])(0);
-  chpl_free(f, 0, 0);
+  chpl_free(f, false, 0, 0);
 }
 
 void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {

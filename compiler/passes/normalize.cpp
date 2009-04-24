@@ -213,7 +213,10 @@ void normalize(void) {
       call->insertBefore(new DefExpr(tmp));
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(1)->remove()));
       call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
-      call->insertBefore(new CallExpr(PRIM_CHPL_FREE, tmp));
+      if (call->numActuals() > 0)
+        call->insertBefore(new CallExpr(PRIM_CHPL_FREE, tmp, call->get(1)->remove()));
+      else
+        call->insertBefore(new CallExpr(PRIM_CHPL_FREE, tmp));
       call->remove();
     }
   }

@@ -507,7 +507,10 @@ yield_stmt:
 
 delete_stmt:
   TDELETE expr TSEMI
-    { $$ = buildChapelStmt(new CallExpr(PRIM_DELETE, $2)); }
+    {
+      $$ = buildChapelStmt(new CallExpr(PRIM_DELETE, $2,
+                                        new SymExpr(moduleType == MOD_USER ? gTrue : gFalse)));
+    }
 ;
 
 

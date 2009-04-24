@@ -152,8 +152,8 @@ void _chpl_gc_init(size_t heapsize) {
 }
 
 void _chpl_gc_cleanup(void) {
-  chpl_free(_to_space->head, __LINE__, __FILE__);
-  chpl_free(_from_space->head, __LINE__, __FILE__);
-  chpl_free(_to_space, __LINE__, __FILE__);
-  chpl_free(_from_space, __LINE__, __FILE__);
+  chpl_free(_to_space->head, false, __LINE__, __FILE__);
+  chpl_free(_from_space->head, false, __LINE__, __FILE__);
+  chpl_free(_to_space, false, __LINE__, __FILE__);
+  chpl_free(_from_space, false, __LINE__, __FILE__);
 }

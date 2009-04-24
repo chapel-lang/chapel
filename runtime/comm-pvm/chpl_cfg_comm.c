@@ -91,8 +91,8 @@ static void chpl_RPC(_chpl_RPC_arg* arg) {
   PRINTF("Did task");
   chpl_pvm_send(-1, -1, NULL);            // Figure this out
   if (arg->arg != NULL)
-    chpl_free(arg->arg, __LINE__, __FILE__);
-  chpl_free(arg, __LINE__, __FILE__);
+    chpl_free(arg->arg, false, __LINE__, __FILE__);
+  chpl_free(arg, false, __LINE__, __FILE__);
 }
 
 static int chpl_pvm_recv(int tid, int msgtag, _chpl_message_info* buf) {
@@ -288,7 +288,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     chpl_internal_error("unable to start polling thread for PVM");
   pthread_detach(polling_thread);
 
-  //  chpl_free(hostname, -1, "");
+  //  chpl_free(hostname, false, -1, "");
   
   fprintf(stderr, "chpl_comm_init called\n");
   return;

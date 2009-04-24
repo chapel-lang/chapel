@@ -3,6 +3,8 @@
 
 #include "symbol.h"
 
-ModuleSymbol* ParseFile(const char* filename, ModTag moduletype);
+extern ModTag moduleType;
+
+ModuleSymbol* ParseFile(const char* filename, ModTag modtype);
 
 #endif

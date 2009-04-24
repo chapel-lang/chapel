@@ -373,25 +373,25 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
 
   if (ret != 0) {
     chpl_internal_error("ARMCI_Gpc_exec() failed");
-    chpl_free(info, __LINE__, __FILE__);
+    chpl_free(info, false, __LINE__, __FILE__);
     if (rdata)
-      chpl_free(rdata, __LINE__, __FILE__);
-    chpl_free(header, __LINE__, __FILE__);
-    chpl_free((void *)rheader, __LINE__, __FILE__);
+      chpl_free(rdata, false, __LINE__, __FILE__);
+    chpl_free(header, false, __LINE__, __FILE__);
+    chpl_free((void *)rheader, false, __LINE__, __FILE__);
     return;
   }
 
   while (block && *done == 0)
     ;
 
-  chpl_free(info, __LINE__, __FILE__);
+  chpl_free(info, false, __LINE__, __FILE__);
   if (rdata) {
     if (block)
       bcopy(rdata, arg, rdlen);
-    chpl_free(rdata, __LINE__, __FILE__);
+    chpl_free(rdata, false, __LINE__, __FILE__);
   }
-  chpl_free(header, __LINE__, __FILE__);
-  chpl_free((void *)rheader, __LINE__, __FILE__);
+  chpl_free(header, false, __LINE__, __FILE__);
+  chpl_free((void *)rheader, false, __LINE__, __FILE__);
 }
 
 void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
@@ -468,8 +468,8 @@ void *_gpc_thread_handler(void *arg)
 
   ARMCI_Free_local(done);
 
-  chpl_free(ginfo->info, __LINE__, __FILE__);
-  chpl_free(ginfo, __LINE__, __FILE__);
+  chpl_free(ginfo->info, false, __LINE__, __FILE__);
+  chpl_free(ginfo, false, __LINE__, __FILE__);
 
   return NULL;
 } /* _gpc_thread_handler */

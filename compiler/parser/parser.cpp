@@ -12,6 +12,7 @@ BlockStmt* yyblock = NULL;
 const char* yyfilename;
 int chplLineno;
 int yystartlineno;
+ModTag moduleType;
 
 static const char* filenameToModulename(const char* filename) {
   const char* modulename = astr(filename);
@@ -39,21 +40,21 @@ containsOnlyModules(BlockStmt* block) {
 }
 
 
-ModuleSymbol* ParseFile(const char* filename, ModTag moduletype) {
+ModuleSymbol* ParseFile(const char* filename, ModTag modType) {
   ModuleSymbol* newModule = NULL;
+  moduleType = modType;
   yyfilename = filename;
-  yylloc.first_column = yylloc.last_column = yylloc.first_line = yylloc.last_line = yystartlineno = chplLineno = 0;
 
   yylloc.first_column = yylloc.last_column = 0;
   yylloc.first_line = yylloc.last_line = yystartlineno = chplLineno = 1;
   yyin = openInputFile(filename);
   
   yyblock = NULL;
-  if (moduletype == MOD_USER) {
+  if (modType == MOD_USER) {
     startCountingFileTokens(filename);
   }
   yyparse();
-  if (moduletype == MOD_USER) {
+  if (modType == MOD_USER) {
     stopCountingFileTokens();
   }
 
@@ -61,7 +62,7 @@ ModuleSymbol* ParseFile(const char* filename, ModTag moduletype) {
 
   if (!yyblock->body.head || !containsOnlyModules(yyblock)) {
     const char* modulename = filenameToModulename(filename);
-    newModule = buildModule(modulename, moduletype, yyblock, yyfilename);
+    newModule = buildModule(modulename, modType, yyblock, yyfilename);
   }
   if (newModule) {
     theProgram->block->insertAtTail(new DefExpr(newModule));
