@@ -435,7 +435,13 @@ void codegen_makefile(fileinfo* mainfile) {
   fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n", CHPL_HOME);
   fprintf(makefile.fptr, "TAGS_COMMAND = ");
   if (developer && saveCDir[0] && !printCppLineno) {
-    fprintf(makefile.fptr, "-@which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && cd %s && cp $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) . && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(CHPL_TAGS_APPEND_FLAG) *.c *.h", saveCDir);
+    fprintf(makefile.fptr,
+            "-@which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && "
+            "test -f $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) && "
+            "cd %s && "
+            "cp $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) . && "
+            "$(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(CHPL_TAGS_APPEND_FLAG) *.c *.h",
+            saveCDir);
   }
   fprintf(makefile.fptr, "\n");
   fprintf(makefile.fptr, "CHPLSRC = \\\n");
