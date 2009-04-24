@@ -637,7 +637,7 @@ pragma "inline" def max(x, y, z...?k) return max(max(x, y), (...z));
 // More primitive funs
 //
 pragma "inline" def exit(status: int) {
-  __primitive("_chpl_exit_any", status);
+  __primitive("chpl_exit_any", status);
 }
 
 def init_elts(x, s, type t) {

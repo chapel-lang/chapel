@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
   if (runInGDB) {
     int status;
     if (chpl_comm_run_in_gdb(argc, argv, runInGDB, &status)) {
-      _chpl_exit_all(status);
+      chpl_exit_all(status);
     }
   }
   execNumLocales = getArgNumLocales();
@@ -58,6 +58,6 @@ int main(int argc, char* argv[]) {
     chpl_printMemTable(-1, __LINE__, __FILE__);
   }
 
-  _chpl_exit_all(0);         // have everyone exit
+  chpl_exit_all(0);         // have everyone exit
   return 0;                  // should never get here
 }

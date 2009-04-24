@@ -460,7 +460,7 @@ static void traverseLockedThreads(int sig) {
   }
 
   exitChplThreads();
-  _chpl_exit_any(1);
+  chpl_exit_any(1);
 }
 
 // called to print thread report
@@ -488,7 +488,7 @@ static void tasksReport(int sig) {
     // be nice and honor the user's wish to interrupt program execution -
     // kill all threads and exit program
     exitChplThreads();
-    _chpl_exit_any(1);
+    chpl_exit_any(1);
 }
 
 static chpl_bool setBlockingLocation(int lineno, chpl_string filename) {

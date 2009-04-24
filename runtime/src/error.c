@@ -30,14 +30,14 @@ void chpl_error(const char* message, int32_t lineno, chpl_string filename) {
     fprintf(stderr, "%s: error: %s\n", filename, message);
   else
     fprintf(stderr, "error: %s\n", message);
-  _chpl_exit_any(1);
+  chpl_exit_any(1);
 }
 
 
 void chpl_internal_error(const char* message) {
   fflush(stdout);
   fprintf(stderr, "internal error: %s\n", message);
-  _chpl_exit_any(2);
+  chpl_exit_any(2);
 }
 
 

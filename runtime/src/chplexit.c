@@ -9,7 +9,7 @@
 
 #undef exit
 
-static void _chpl_exit_common(int status, int all) {
+static void chpl_exit_common(int status, int all) {
   fflush(stdout);
   fflush(stderr);
   if (status != 0) {
@@ -26,12 +26,12 @@ static void _chpl_exit_common(int status, int all) {
 }
 
 
-void _chpl_exit_all(int status) {
+void chpl_exit_all(int status) {
   printFinalMemStat(0, 0);   // print the final memory statistics
-  _chpl_exit_common(status, 1);
+  chpl_exit_common(status, 1);
 }
 
 
-void _chpl_exit_any(int status) {
-  _chpl_exit_common(status, 0);
+void chpl_exit_any(int status) {
+  chpl_exit_common(status, 0);
 }

@@ -3,7 +3,7 @@
 
 void cleanup_for_exit(void);    // must be exposed to avoid dead-code elim.
 
-void _chpl_exit_all(int status);  // must be called by all threads
-void _chpl_exit_any(int status);  // may be called by any thread
+void chpl_exit_all(int status);  // must be called by all threads
+void chpl_exit_any(int status);  // may be called by any thread
 
 #endif
