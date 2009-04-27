@@ -1747,7 +1747,7 @@ void CallExpr::codegen(FILE* outfile) {
       } 
       fprintf( outfile, ")");
 
-      // target: void* chpl_alloc(size_t size, char* description);
+      // target: void* chpl_alloc(size_t size, char* description, chpl_bool userCode);
       fprintf(outfile, "%s(sizeof(",
               (primitive->tag == PRIM_CHPL_ALLOC ?
                "chpl_alloc" : 
@@ -1757,9 +1757,15 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, "), ");
       get(2)->codegen( outfile);
       fprintf( outfile, ", ");
+      if (numActuals() < 5)
+        fputs( "false, ", outfile);
       get(3)->codegen( outfile);
       fprintf( outfile, ", ");
       get(4)->codegen( outfile);
+      if (numActuals() > 4) {
+        fprintf( outfile, ", ");
+        get(5)->codegen( outfile);
+      }
       fprintf( outfile, ")");
       break;
     }

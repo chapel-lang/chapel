@@ -93,7 +93,7 @@ static chpl_string idleThreadName = "|idle|";
 
 static chpl_condvar_p chpl_condvar_new(void) {
   chpl_condvar_p cv;
-  cv = (chpl_condvar_p) chpl_alloc(sizeof(chpl_condvar_t), "condition var", 0, 0);
+  cv = (chpl_condvar_p) chpl_alloc(sizeof(chpl_condvar_t), "condition var", false, 0, 0);
   if (pthread_cond_init(cv, NULL))
     chpl_internal_error("pthread_cond_init() failed");
   return cv;
@@ -110,7 +110,7 @@ void chpl_mutex_init(chpl_mutex_p mutex) {
 
 static chpl_mutex_p chpl_mutex_new(void) {
   chpl_mutex_p m;
-  m = (chpl_mutex_p) chpl_alloc(sizeof(chpl_mutex_t), "mutex", 0, 0);
+  m = (chpl_mutex_p) chpl_alloc(sizeof(chpl_mutex_t), "mutex", false, 0, 0);
   chpl_mutex_init(m);
   return m;
 }
@@ -422,7 +422,7 @@ void chpl_set_serial(chpl_bool state) {
   p = (chpl_bool*) pthread_getspecific(serial_key);
   if (p == NULL) {
     if (state) {
-      p = (chpl_bool*) chpl_alloc(sizeof(chpl_bool), "serial flag", 0, 0);
+      p = (chpl_bool*) chpl_alloc(sizeof(chpl_bool), "serial flag", false, 0, 0);
       *p = state;
       if (pthread_setspecific(serial_key, p))
         chpl_internal_error("serial key got corrupted");
@@ -542,7 +542,7 @@ static void unsetBlockingLocation() {
 //
 static void initializeLockReportForThread() {
   lockReport* newLockReport;
-  newLockReport = chpl_alloc(sizeof(lockReport), "lockReport", 0, 0);
+  newLockReport = chpl_alloc(sizeof(lockReport), "lockReport", false, 0, 0);
   newLockReport->next = NULL;
   newLockReport->maybeLocked = false;
   newLockReport->maybeDeadlocked = false;
@@ -782,7 +782,8 @@ static chpl_task_pool_p add_to_task_pool (
    chpl_bool serial,
     chpl_task_list_p task_list_entry)
 {
-  chpl_task_pool_p task = (chpl_task_pool_p)chpl_alloc(sizeof(task_pool_t), "task pool entry", 0, 0);
+  chpl_task_pool_p task = (chpl_task_pool_p)chpl_alloc(sizeof(task_pool_t), "task pool entry",
+                                                       false, 0, 0);
   if (task_list_entry) {
     task->filename = task_list_entry->filename;
     task->lineno = task_list_entry->lineno;
@@ -847,7 +848,8 @@ void chpl_add_to_task_list (chpl_fn_int_t fid, void* arg,
                             int lineno,
                             chpl_string filename) {
   if (task_list_locale == chpl_localeID) {
-    chpl_task_list_p task = (chpl_task_list_p)chpl_alloc(sizeof(struct chpl_task_list), "task list entry", 0, 0);
+    chpl_task_list_p task = (chpl_task_list_p)chpl_alloc(sizeof(struct chpl_task_list),
+                                                         "task list entry", false, 0, 0);
     task->filename = filename;
     task->lineno = lineno;
     task->fun = chpl_ftable[fid];
