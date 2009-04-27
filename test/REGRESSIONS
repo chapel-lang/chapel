@@ -21,10 +21,6 @@ spurious verification failures on RA (e.g. 04/04/09)
 ----------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
 
-failure due to chpl_malloc interface change (04/17/09)
-------------------------------------------------------
-[Error matching compiler output for memory/bradc/allocBig]
-
 
 =================
 linux regressions
@@ -78,25 +74,18 @@ wide strings leaked (?) (04/02/09)
 [Error matching program output for memory/figueroa/StringLeaks4]
 [Error matching program output for memory/figueroa/StringLeaks5]
 
-maxMem statistics are off
--------------------------
-[Error matching program output for memory/figueroa/printFinalMemStat]
-
-allocAndFree returns different results (skipped for GASNet)
------------------------------------------------------------
-[Error matching program output for memory/shannon/allocAndFree]
-[Error matching program output for memory/shannon/freedMalloc]
-[Error matching program output for memory/shannon/printFinalMemStat]
-[Error matching program output for memory/shannon/reallocZeroSize]
-
-memory profile changed
-----------------------
-[Error matching program output for memory/shannon/configVarFile]
+???
+---
+[Error matching program output for memory/diten/reallocToZero]
 
 
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+??? (04/24/09)
+--------------
+[Error matching program output for release/examples/hpcc/ra]
 
 occasional nondeterminism in output (01/30/09, 02/03/09)
 --------------------------------------------------------
@@ -117,9 +106,9 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09, 04/18/09, 04/21/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09, 03/14/09, 03/22/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09, 03/24/09, 03/28/09, 04/02/09, 04/12/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09, 03/24/09, 03/28/09, 04/02/09, 04/12/09, 04/22/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc] (e.g., 01/29/09)
 [Error: Timed out executing program users/franzf/v1/chpl/main] (e.g., 01/29/09)
@@ -175,7 +164,7 @@ opts-specific tests
 (Example runs: 0)
  
 
-(Full run: 57)
+(Full run: 48)
 
 --no-dead-code-elimination
 --------------------------
@@ -194,7 +183,6 @@ opts-specific tests
 --baseline --no-local
 ------------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error matching program output for classes/marybeth/test_dispatch_record]
 [Error matching program output for studies/590o/bradc/psp2]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
@@ -245,41 +233,11 @@ times out in C compiler
 intel-specific regressions
 ==========================
 
-comparison against 0 warnings (04/07/09)
-----------------------------------------
-[Error matching compiler output for arrays/deitz/test_array_uint64]
-[Error matching compiler output for modules/bradc/ra-paramWidth]
-[Error matching compiler output for release/examples/hpcc/ra]
-[Error matching compiler output for studies/hpcc/2008/ra]
-[Error matching compiler output for studies/hpcc/2008/testProbSize]
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
-[Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc-domainPromote]
-[Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc]
-[Error matching compiler output for studies/hpcc/RA/diten/ra]
-[Error matching compiler output for studies/hpcc/RA/marybeth/ra-test-dist]
-[Error matching compiler output for studies/hpcc/RA/marybeth/ra2]
-[Error matching compiler output for studies/hpcc/RA/marybeth/ra3]
-[Error matching compiler output for studies/hpcc/RA/ra-seq]
-[Error matching compiler output for studies/hpcc/serial-v0.7/ra]
-[Error matching compiler output for types/coerce/diten/test_uint64_op_param_int]
-[Error matching compiler output for types/scalar/bradc/uintZeroComparisons2]
-[Error matching compiler output for types/scalar/bradc/uintZeroComparisons]
-[Error matching compiler output for types/scalar/diten/simpleComparesWithZero]
-[Error matching compiler output for types/seq/deitz/test_aseq3]
-
 compilation timeout (new with 11.x)
 -----------------------------------
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
-
-int/uint conversion warning
----------------------------
-[Error matching program output for studies/uts/dequeue]
-[Error matching program output for studies/uts/uts_deq]
-[Error matching program output for studies/uts/uts_deq_seq]
-[Error matching program output for studies/uts/uts_rec]
-[Error matching program output for studies/uts/uts_rec_seq]
 
 spurious out-of-memory error
 ----------------------------
@@ -359,40 +317,6 @@ compilation timeout (04/03/09)
 ========================
 xt-gnu specific failures
 ========================
-
-
-==========================
-sunos-specific regressions
-==========================
-
-core dump (03/10/09)
---------------------
-[Error matching program output for memory/shannon/jacobi]
-
-exp2/log2/other math fns not supported
---------------------------------------
-[Error matching compiler output for functions/dinan/exp2] 
-[Error matching compiler output for modules/standard/math/bradc/math32bits-more] 
-[Error matching compiler output for modules/standard/math/lg2] 
-
-numeric stability issues
-------------------------
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] 
-[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
-[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
-[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
-[Error matching program output for studies/madness/common/test_diff]
-[Error matching program output for studies/madness/common/test_gaxpy]
-[Error matching program output for studies/madness/common/test_likepy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
-
-%p results in different format?
--------------------------------
-[Error matching program output for trivial/bradc/ref2string]
-[Error matching program output for trivial/bradc/wideref2string]
-[Error matching program output for trivial/diten/classRef2string-local]
 
 
 ========================
