@@ -291,7 +291,7 @@ unary \verb@+ -@ & right & positive identity and negation \\
 \verb@||@ & left & short-circuiting logical or \\
 \verb@..@ & left & range construction \\
 \verb@in@ & left & forall expression \\
-\verb@by@ & left & striding ranges and domains \\
+\verb@by #@ & left & striding ranges and domains, counting ranges \\
 \verb@if...then...[else]@ & left & conditional expressions \\
 \verb@forall...in@ & left & parallel iteration expressions \\
 \verb@for...in@ & left & serial iteration expressions \\
@@ -418,7 +418,7 @@ binary-expression:
   expression binary-operator expression
 
 binary-operator: one of
-  + - * / % ** & | ^ << >> && || == != <= >= < >
+  + - * / % ** & | ^ << >> && || == != <= >= < > `by' #
 \end{syntax}
 
 The operators are defined in subsequent sections.
@@ -1091,6 +1091,13 @@ described in~\rsec{Strided_Arithmetic_Domains_and_Arrays}.
 
 The operator \chpl{by} is predefined on ranges.  It is
 described in~\rsec{Strided_Ranges}.
+
+\subsubsection{The Range Count Operator}
+\label{The_Range_Count_Operator}
+\index{#@\chpl{#}}
+
+The operator \chpl{#} is predefined on ranges. It is described
+in ~\rsec{Count_Operator}.
 
 \subsection{Let Expressions}
 \label{Let_Expressions}

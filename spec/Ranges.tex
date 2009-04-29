@@ -2,16 +2,18 @@
 \label{Ranges}
 \index{ranges}
 
-Chapel's ranges represent a sequence of integral values.  Ranges are
+Ranges represent a sequence of integral values.  Ranges are
 either \emph{bounded} or \emph{unbounded}.
 
 Bounded ranges are characterized by a low bound~$l$, a high bound~$h$,
 and a stride~$s$.  If the stride is positive, the values described by
 the range are $l, l+s, l+2s, l+3s, ...$ such that all of the values in
-the sequence are less than $h$.  If the stride is negative, the values
-described by the range are $h, h-s, h-2s, h-3s, ...$ such that all of
-the values in the sequence are greater than $l$.  If $l > h$, the
-range is considered degenerate and represents an empty sequence.
+the sequence are less than or equal to $h$.  If the stride is negative,
+the values described by the range are $h, h+s, h+2s, h+3s, ...$ such
+that all of the values in the sequence are greater than or equal to
+$l$.  If $l > h$, the range is considered degenerate and represents an
+empty sequence. Ranges support iteration over the values they represent
+as described in ~\rsec{The_For_Loop}.
 
 Unbounded ranges are those in which the low and/or high bounds are
 omitted.  Unbounded ranges conceptually represent a countably infinite
@@ -21,13 +23,13 @@ number of values.
 \label{Range_Types}
 \index{ranges!types}
 
-The type of a range in Chapel is characterized by three things:
+The type of a range is characterized by three things:
 (1)~the type of the values being represented, (2)~the boundedness of
 the range, and (3)~whether or not the range is \emph{stridable}.
 
 The type of the range's values is represented using a type parameter
-named \emph{eltType}.  This must be one of Chapel's \chpl{int} or
-\chpl{uint} types.  The default value is \chpl{int}.
+named \emph{eltType}.  This must be one of the \chpl{int} or
+\chpl{uint} types.  The default type is \chpl{int}.
 
 \begin{openissue}
 It has been hypothesized that ranges of other types, such as floating
@@ -45,9 +47,9 @@ the high bound is omitted, the low bound is omitted, or both bounds
 are omitted, respectively.  The default value is \chpl{bounded}.
 
 The stridability of a range is represented by a boolean parameter
-named \emph{stridable}.  If this parameter is set to true, the range
-can represent any stride.  If set to false, the range's stride is
-fixed to be the value 1.  The default value is \chpl{false}.
+named \emph{stridable}.  If this parameter is set to true, the range's
+stride can take on any \chpl{int} value except 0.  If set to false,
+the range's stride is fixed to 1.  The default value is \chpl{false}.
 
 \begin{rationale}
 The \emph{boundedType} and \emph{stridable} values of a range are used
@@ -63,7 +65,7 @@ range-type:
 \end{syntax}
 
 \begin{example}
-As an example, the following declaration declares a variable \chpl{r}
+The following declaration declares a variable \chpl{r}
 of range type that can represent ranges of 64-bit integers, with both
 high and low bounds specified, and the ability to have a stride other
 than 1.
@@ -123,9 +125,9 @@ The first form results in a \chpl{BoundedRangeType.boundedLow} range, the
 second in a \chpl{BoundedRangeType.boundedHigh} range, and the third in
 a \chpl{BoundedRangeType.boundedNone} range.
 
-Unbounded ranges can be iterated over with zipper iteration and their
-shape conforms to the shape of the other iterators they are being
-iterated over with.
+Unbounded ranges can be iterated over with zipper iteration
+(~\rsec{Zipper_Iteration}) and their shape conforms to the shape of the
+other iterators they are being iterated over with.
 \begin{example}
 The code
 \begin{chapel}
@@ -135,28 +137,13 @@ for i in (1..5, 3..) do
 produces the output ``(1, 3); (2, 4); (3, 5); (4, 6); (5, 7); ''.
 \end{example}
 
-It is an error to zip an unbounded range with a range that does not
-have a stride with the same sign.
+It is an error to iterate over a \chpl{BoundedRangeType.boundedNone} range,
+a \chpl{BoundedRangeType.boundedLow} range with negative stride or a
+\chpl{BoundedRangeType.boundedHigh} range with positive stride.
 
 Unbounded ranges can also be used to index into ranges, domains,
 arrays, and strings.  In these cases, elided bounds are inherited
 from the bounds of the expression being indexed.
-
-\subsection{Range Methods}
-\index{low@\chpl{low}}
-\index{high@\chpl{high}}
-\index{stride@\chpl{stride}}
-
-\begin{protohead}
-def range.low: eltType
-def range.high: eltType
-def range.stride: int
-\end{protohead}
-\begin{protobody}
-These routines respectively return the low bound, the high bound, and
-the stride of the range.  The type of the returned low and high bound
-is the element type of the range.
-\end{protobody}
 
 
 \subsection{Range Assignment}
@@ -184,15 +171,21 @@ range unless the stridable range has a stride value of 1.
 \index{ranges!by operator}
 
 The \chpl{by} operator can be applied to any range to create a strided
-range.  Its syntax is as follows:
+range.
 
-\begin{syntax}
-expression `by' expression
-\end{syntax}
-
-The by operator takes a range and an integer to yield a new range that
+The \chpl{by} operator takes a range and an integer to yield a new range that
 is strided by the integer.  Striding a strided range results in a
 stride whose value is the product of the two strides.
+
+\begin{example}
+In the following declarations, range \chpl{r1} represents the odd integers
+between 1 and 20. Range \chpl{r2} strides \chpl{r1} by two and represents
+every other odd integer between 1 and 20: 1, 5, 9, ...
+\begin{chapel}
+var r1 = 1..20 by 2;
+var r2 = r1 by 2;
+\end{chapel}
+\end{example}
 
 \begin{rationale}
 {\it Why isn't the high bound specified first if the stride is
@@ -209,22 +202,20 @@ R into the expression.
 \index{ranges!count operator}
 
 The \chpl{#} operator can be applied to a range that has a high bound,
-a low bound, or both.  Its syntax is:
-\begin{syntax}
-expression `#' expression
-\end{syntax}
+a low bound, or both.
 
 The \chpl{#} operator takes a range and an integral count and creates
-a new range with count elements. The stride of the resulting range is
+a new range with \emph{count} elements. The stride of the resulting range is
 the same as that of the initial range. It is an error for the count to
 be negative.  The \emph{eltType} of the resulting range is the same
-type that would be obtained by adding the integral count value to the
-range's \emph{eltType}.
+type that would be obtained by adding the integral count value to a value
+with the range's \emph{eltType}.
 
 When applied to a \chpl{BoundedRangeType.bounded} range with a positive
-stride, the low bound count elements are taken starting from the low
-bound. When the stride is negative, count elements are taken starting
-from the high bound.
+stride, \emph{count} elements are taken starting from the low
+bound. When the stride is negative, \emph{count} elements are taken
+starting from the high bound. It is an error for \emph{count} to be larger
+than the length of the range.
 
 When applied to a \chpl{BoundedRangeType.boundedLow} range, the low bound
 is fixed and and the high bound is set based on the count and the
@@ -240,9 +231,10 @@ It is an error to apply the count operator to a
 \begin{example}
 The following declarations result in equivalent ranges.
 \begin{chapel}
-var r = 2.. by -2 # 3;
+var r1 = 2.. by -2 # 3;
 var r2 = ..6 by -2 # 3;
 var r3 = 0..6 by -2 # 3;
+var r4 = 1..#6 by -2;
 \end{chapel}
 Each of these ranges represents the ordered set of three values: 6, 4, 2.
 \end{example}
@@ -256,15 +248,15 @@ types:
 
 \begin{chapel}
 def +(r: range, s: integral): range
-def +(s: integral, s: range): range
+def +(s: integral, r: range): range
 def -(r: range, s: integral): range
 \end{chapel}
 
 The \chpl{+} and \chpl{-} operators apply the scalar via the operator
 to the range's low and high bounds, producing a shifted version of the
-range.  The element type of the resulting range is based on the
-element type of applying the operator to the input range's element
-type and the scalar type.  The bounded and stridable parameters for
+range.  The element type of the resulting range is the type of the value
+that would result from an addition between the scalar value and a value
+with the range's element type.  The bounded and stridable parameters for
 the result range are the same as for the input range.
 
 \begin{example}
@@ -273,7 +265,7 @@ which has an element type of \chpl{int} representing the values ${0,
   1, 2, 3}$.  It then uses the \chpl{+} operator to
 create a second range \chpl{r2} representing the values ${1, 2, 3,
   4}$.  The \chpl{r2} range is bounded, non-stridable, and represents
-values of type \chpl{int}
+values of type \chpl{int}.
 \begin{chapel}
 var r = 0..3;
 var r2 = r + 1;
@@ -286,46 +278,54 @@ var r2 = r + 1;
 \index{ranges!slicing}
 
 Ranges can be \emph{sliced} using other ranges to create new
-sub-ranges.  Range slicing is defined by using the range as a function
-in a call expression where the argument is another range.  The
-resulting range represents the intersection between the two ranges.
+sub-ranges.  The resulting range represents the intersection between
+the two ranges.  Range slicing is defined by using the range as a
+function in a call expression where the argument is another range.
 If the slicing range is unbounded in one or both directions, it
 inherits its missing bounds from the range being sliced.
 
 \begin{example}
 In the following example, \chpl{r} represents the integers from 1 to
-10 inclusive.  Ranges \chpl{r2} and \chpl{r3} are defined using range
-slices and represent the indices from 3 to 10 and the odd integers
-between 1 and 10 respectively.
+20 inclusive.  Ranges \chpl{r2} and \chpl{r3} are defined using range
+slices and represent the indices from 3 to 20 and the odd integers
+between 1 and 20 respectively. Range \chpl{r4} represents the odd
+integers between 1 and 20 that are also divisible by 3.
 \begin{chapel}
-var r = 1..10;
+var r = 1..20;
 var r2 = r[3..];
 var r3 = r[1.. by 2];
+var r4 = r3[0.. by 3];
 \end{chapel}
 \end{example}
 
 \subsection{Predefined Functions and Methods on Ranges}
 \index{ranges!predefined functions}
-
 \begin{protohead}
-def $range$.eltType type
+def $range$.low : eltType
 \end{protohead}
 \begin{protobody}
-Returns the element type of the range.
+Returns the low bound of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.boundedType param : BoundedRangeType
+def $range$.high : eltType
 \end{protohead}
 \begin{protobody}
-Returns the boundedness of the range.
+Returns the high bound of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.stridable param: bool
+def $range$.stride : int
 \end{protohead}
 \begin{protobody}
-Returns the stridable parameter of the range.
+Returns the stride of the range.
+\end{protobody}
+
+\begin{protohead}
+def $range$.length : eltType
+\end{protohead}
+\begin{protobody}
+Returns the number of elements in the range.
 \end{protobody}
 
 \begin{protohead}

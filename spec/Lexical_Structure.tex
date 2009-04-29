@@ -114,7 +114,6 @@ The following identifiers are reserved as keywords:
 atomic
 begin
 break
-by
 class
 cobegin
 coforall
@@ -122,8 +121,8 @@ config
 const
 continue
 def
-\end{chapel} & \begin{chapel}
 delete
+\end{chapel} & \begin{chapel}
 distributed
 do
 domain
@@ -134,8 +133,8 @@ for
 forall
 if
 in
-\end{chapel} & \begin{chapel}
 index
+\end{chapel} & \begin{chapel}
 inout
 label
 let
@@ -146,8 +145,8 @@ nil
 on
 otherwise
 out
-\end{chapel} & \begin{chapel}
 param
+\end{chapel} & \begin{chapel}
 record      
 reduce      
 return      
@@ -158,8 +157,8 @@ single
 sparse
 subdomain
 sync        
+then
 \end{chapel} & \begin{chapel}
-then        
 true
 type        
 union       
@@ -317,7 +316,8 @@ the language:
 \verb@+= -= *= /= **= %= &= |= ^= &&= ||= <<= >>=@ & compound assignment \\
 \verb@<=>@ & swap \\
 \verb@..@ & range specifier \\
-\verb@#@ & count operator \\
+\verb@by@ & range/domain stride specifier \\
+\verb@#@ & range count operator \\
 \verb@...@ & variable argument lists \\
 \verb@&& || ! & | ^ ~ << >>@ & logical/bitwise operators \\
 \verb@== != <= >= < >@ & relational operators \\
