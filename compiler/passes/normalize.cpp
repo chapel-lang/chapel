@@ -404,12 +404,26 @@ static void call_constructor_for_class(CallExpr* call) {
           if (!ct->defaultConstructor)
             INT_FATAL(call, "class type has no default constructor");
           se->replace(new UnresolvedSymExpr(ct->defaultConstructor->name));
+          if (CallExpr* pe = toCallExpr(parent->parentExpr)) {
+            if ((pe->isPrimitive(PRIM_MOVE) ||
+                 (isUnresolvedSymExpr(pe->baseExpr) &&
+                  !strcmp(toUnresolvedSymExpr(pe->baseExpr)->unresolved, "_copy")))
+                && parent->numActuals() > 1 && toSymExpr(parent->get(2))->var == gTrue)
+              call->insertAtTail(new NamedExpr("userCode", parent->get(2)->remove()));
+          }
           parent->replace(call->remove());
         } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
                    call->partialTag == true) {
           if (!ct->defaultConstructor)
             INT_FATAL(call, "class type has no default constructor");
           se->replace(new UnresolvedSymExpr(ct->defaultConstructor->name));
+          if (CallExpr* pe = toCallExpr(parentParent->parentExpr)) {
+            if ((pe->isPrimitive(PRIM_MOVE) ||
+                 (isUnresolvedSymExpr(pe->baseExpr) &&
+                  !strcmp(toUnresolvedSymExpr(pe->baseExpr)->unresolved, "_copy")))
+                && parentParent->numActuals() > 1 && toSymExpr(parentParent->get(2))->var == gTrue)
+              call->insertAtTail(new NamedExpr("userCode", parentParent->get(2)->remove()));
+          }
           parentParent->replace(parent->remove());
         } else {
           if (!ct->defaultTypeConstructor)

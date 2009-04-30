@@ -634,7 +634,7 @@ static void build_constructor(ClassType* ct) {
         CallExpr* superCall = new CallExpr(superCtor->name);
         int shadowID = 1;
         for_formals_backward(formal, superCtor) {
-          if (formal->hasFlag(FLAG_IS_MEME))
+          if (formal->hasFlag(FLAG_IS_MEME) || !strcmp(formal->name, "userCode"))
             continue;
           DefExpr* superArg = formal->defPoint->copy();
           if (fieldNamesSet.set_in(superArg->sym->name))
@@ -710,6 +710,12 @@ static void build_constructor(ClassType* ct) {
     fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this, 
                                   new_StringSymbol(arg->name),
                                   arg));
+  }
+
+  if (!fn->hasFlag(FLAG_TUPLE)) {
+    // add arg to propagate whether call came from explicit user code
+    ArgSymbol* userCode = new ArgSymbol(INTENT_BLANK, "userCode", dtBool, NULL, new SymExpr(gFalse));
+    fn->insertFormalAtTail(userCode);
   }
 
   if (meme)

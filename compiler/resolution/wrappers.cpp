@@ -89,15 +89,6 @@ buildDefaultWrapper(FnSymbol* fn,
     wrapper->_this = fn->_this->copy();
     copy_map.put(fn->_this, wrapper->_this);
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
-    if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME)) {
-      if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
-        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, wrapper->_this,
-                                new CallExpr(PRIM_CHPL_ALLOC, wrapper->_this,
-                                new_StringSymbol(astr("instance of class ",
-                                                      fn->_this->type->symbol->name)))));
-        wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
-      }
-    }
     wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
   }
   CallExpr* call = new CallExpr(fn);
@@ -200,6 +191,28 @@ buildDefaultWrapper(FnSymbol* fn,
                 wrapper->insertAtTail(
                   new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
                                new_StringSymbol(formal->name), temp));
+    }
+  }
+  if (specializeDefaultConstructor) {
+    if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME)) {
+      if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
+        wrapper->_this->defPoint->insertAfter(new CallExpr(PRIM_SETCID, wrapper->_this));
+        // if this wrapper has an argument called "userCode", it will be the last argument
+        INT_ASSERT(wrapper->numFormals() <= 1 ||
+                   strcmp(wrapper->getFormal(wrapper->numFormals()-1)->name, "userCode"));
+        VarSymbol* description = new_StringSymbol(astr("instance of class ",
+                                                       fn->_this->type->symbol->name));
+        CallExpr* callAlloc;
+        if (wrapper->numFormals() > 0 &&
+            !strcmp(wrapper->getFormal(wrapper->numFormals())->name, "userCode")) {
+          callAlloc = new CallExpr(PRIM_CHPL_ALLOC, wrapper->_this, description,
+                                   wrapper->getFormal(wrapper->numFormals()));
+        } else {
+          callAlloc = new CallExpr(PRIM_CHPL_ALLOC, wrapper->_this, description,
+                                   new SymExpr(gFalse));
+        }
+        wrapper->_this->defPoint->insertAfter(new CallExpr(PRIM_MOVE, wrapper->_this, callAlloc));
+      }
     }
   }
   update_symbols(wrapper->body, &copy_map);
