@@ -487,8 +487,6 @@
 		F76B61F40D53D4CE005C6869 /* chplfp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplfp.h; path = ../runtime/include/cygwin/chplfp.h; sourceTree = SOURCE_ROOT; };
 		F76B61F50D53D4CE005C6869 /* chplsys.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplsys.h; path = ../runtime/include/cygwin/chplsys.h; sourceTree = SOURCE_ROOT; };
 		F76B620C0D53D75E005C6869 /* chplfp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplfp.h; path = ../runtime/include/x1/chplfp.h; sourceTree = SOURCE_ROOT; };
-		F76B62120D53D890005C6869 /* chpl_md.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_md.h; path = ../runtime/include/sunos/chpl_md.h; sourceTree = SOURCE_ROOT; };
-		F76B62130D53D890005C6869 /* chplfp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chplfp.h; path = ../runtime/include/sunos/chplfp.h; sourceTree = SOURCE_ROOT; };
 		F76B62280D53EA83005C6869 /* chpl_md.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = chpl_md.h; path = "../runtime/include/comp-cray-mta/chpl_md.h"; sourceTree = SOURCE_ROOT; };
 		F77216480D6D436200DE6EF6 /* BitOps.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = BitOps.chpl; path = ../modules/standard/BitOps.chpl; sourceTree = SOURCE_ROOT; };
 		F77216490D6D436200DE6EF6 /* ChapelArray.chpl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChapelArray.chpl; path = ../modules/standard/ChapelArray.chpl; sourceTree = SOURCE_ROOT; };
@@ -1231,15 +1229,6 @@
 			name = "Single locale";
 			sourceTree = "<group>";
 		};
-		F76B62170D53D894005C6869 /* SunOS */ = {
-			isa = PBXGroup;
-			children = (
-				F76B62120D53D890005C6869 /* chpl_md.h */,
-				F76B62130D53D890005C6869 /* chplfp.h */,
-			);
-			name = SunOS;
-			sourceTree = "<group>";
-		};
 		F7B66D0F0D59738D00A53F3E /* Other sources */ = {
 			isa = PBXGroup;
 			children = (
@@ -1310,7 +1299,6 @@
 			isa = PBXGroup;
 			children = (
 				F76B61EF0D53D470005C6869 /* Cygwin */,
-				F76B62170D53D894005C6869 /* SunOS */,
 				F76B61FD0D53D576005C6869 /* X1 */,
 				F768A8190F8C2A1F00B4A5A2 /* XT-CLE */,
 			);
