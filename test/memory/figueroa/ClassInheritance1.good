@@ -1,0 +1,12 @@
+
+================================================================================
+----------------------
+***Allocated Memory***
+----------------------
+Size:    Number:  Total:   Address:    Description:
+(bytes)           (bytes)  
+================================================================================
+32       1        32       0x00000000  instance of class C2
+8        1        8        0x00000000  instance of class C
+
+Final Memory Statistics:  totalMem=40, maxMem=40
