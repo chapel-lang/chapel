@@ -1419,7 +1419,7 @@ expr:
 stmt_level_expr: 
   lvalue
 | TNEW parenop_expr
-    { $$ = new CallExpr(PRIM_NEW, $2); }
+    { $$ = new CallExpr(PRIM_NEW, $2, new SymExpr(moduleType == MOD_USER ? gTrue : gFalse)); }
 | TLP TDOTDOTDOT expr TRP
     { $$ = new CallExpr(PRIM_TUPLE_EXPAND, $3); }
 | TNIL

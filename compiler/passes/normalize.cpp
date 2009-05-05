@@ -1008,6 +1008,9 @@ static void change_method_into_constructor(FnSymbol* fn) {
   ClassType* ct = toClassType(fn->getFormal(2)->type);
   if (!ct)
     INT_FATAL(fn, "constructor on non-class type");
+  // add arg to propagate whether call came from explicit user code
+  ArgSymbol* userCode = new ArgSymbol(INTENT_BLANK, "userCode", dtBool, NULL, new SymExpr(gFalse));
+  fn->insertFormalAtTail(userCode);
   CallExpr* call = new CallExpr(ct->defaultConstructor);
   for_formals(defaultTypeConstructorArg, ct->defaultTypeConstructor) {
     ArgSymbol* arg = NULL;

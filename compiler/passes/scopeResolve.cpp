@@ -616,10 +616,12 @@ static void build_constructor(ClassType* ct) {
   }
 
   ArgSymbol* meme = NULL;
+  CallExpr* superCall = NULL;
+  CallExpr* allocCall = NULL;
   if (ct->symbol->hasFlag(FLAG_REF) || ct->symbol->hasFlag(FLAG_SYNC)) {
-    fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this,
-                       new CallExpr(PRIM_CHPL_ALLOC, fn->_this,
-                         new_StringSymbol(astr("instance of class ", ct->symbol->name)))));
+    allocCall = new CallExpr(PRIM_CHPL_ALLOC, fn->_this,
+                         new_StringSymbol(astr("instance of class ", ct->symbol->name)));
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
     meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL, new SymExpr(gTypeDefaultToken));
     meme->addFlag(FLAG_IS_MEME);
@@ -631,7 +633,7 @@ static void build_constructor(ClassType* ct) {
           build_constructor(toClassType(ct->dispatchParents.v[0]));
         }
         FnSymbol* superCtor = ct->dispatchParents.v[0]->defaultConstructor;
-        CallExpr* superCall = new CallExpr(superCtor->name);
+        superCall = new CallExpr(superCtor->name);
         int shadowID = 1;
         for_formals_backward(formal, superCtor) {
           if (formal->hasFlag(FLAG_IS_MEME) || !strcmp(formal->name, "userCode"))
@@ -716,6 +718,10 @@ static void build_constructor(ClassType* ct) {
     // add arg to propagate whether call came from explicit user code
     ArgSymbol* userCode = new ArgSymbol(INTENT_BLANK, "userCode", dtBool, NULL, new SymExpr(gFalse));
     fn->insertFormalAtTail(userCode);
+    if (superCall)
+      superCall->insertAtTail(new NamedExpr("userCode", new SymExpr(fn->getFormal(fn->numFormals()))));
+    if (allocCall)
+      allocCall->insertAtTail(fn->getFormal(fn->numFormals()));
   }
 
   if (meme)

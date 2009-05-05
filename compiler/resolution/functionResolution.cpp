@@ -126,6 +126,8 @@ const char* toString(CallInfo* info) {
   if (_this)
     start = 2;
   for (int i = start; i < info->actuals.n; i++) {
+    if (info->actualNames.v[i] && !strcmp(info->actualNames.v[i], "userCode"))
+      continue;
     if (!first)
       first = true;
     else
@@ -295,7 +297,8 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
   VarSymbol* ret = newTemp("ic", ii->iclass);
   ii->getIterator->insertAtTail(new DefExpr(ret));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CHPL_ALLOC, ii->iclass->symbol, new_StringSymbol("iterator class"))));
+  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CHPL_ALLOC, ii->iclass->symbol,
+                                                                          new_StringSymbol("iterator class"))));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
@@ -420,7 +423,9 @@ canInstantiate(Type* actualType, Type* formalType) {
     return true;
   if (formalType == dtEnumerated && (is_enum_type(actualType)))
     return true;
-  if (formalType == dtNumeric && (is_int_type(actualType) || is_uint_type(actualType) || is_imag_type(actualType) || is_real_type(actualType) || is_complex_type(actualType)))
+  if (formalType == dtNumeric &&
+      (is_int_type(actualType) || is_uint_type(actualType) || is_imag_type(actualType) ||
+       is_real_type(actualType) || is_complex_type(actualType)))
     return true;
   if (formalType == dtIteratorRecord && actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     return true;
@@ -675,7 +680,9 @@ computeGenericSubs(SymbolMap &subs,
       //
       // check for field with specified generic type
       //
-      if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && strcmp(formal->name, "outer") && strcmp(formal->name, "meme") && formal->type != dtAny && (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
+      if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && formal->type != dtAny &&
+          strcmp(formal->name, "outer") && strcmp(formal->name, "meme") &&
+          (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
         USR_FATAL(formal, "invalid generic type specification on class field");
 
       if (formalActuals->v[i]) {
@@ -761,7 +768,8 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
       if (VarSymbol* n_var = toVarSymbol(sym->var)) {
         if (n_var->type == dtInt[INT_SIZE_32] && n_var->immediate) {
           int n = n_var->immediate->int_value();
-          CallExpr* tupleCall = new CallExpr((arg->hasFlag(FLAG_TYPE_VARIABLE)) ? "_type_construct__tuple" : "_construct__tuple");
+          CallExpr* tupleCall = new CallExpr((arg->hasFlag(FLAG_TYPE_VARIABLE)) ?
+                                             "_type_construct__tuple" : "_construct__tuple");
           for (int i = 0; i < n; i++) {
             DefExpr* new_arg_def = arg->defPoint->copy();
             ArgSymbol* new_arg = toArgSymbol(new_arg_def->sym);
@@ -781,7 +789,8 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
               VarSymbol* tmp = newTemp();
               fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
               fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp, new CallExpr(var, new_IntSymbol(i))));
-              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, actual->copy(), new CallExpr("=", actual->copy(), tmp)));
+              fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, actual->copy(),
+                                                            new CallExpr("=", actual->copy(), tmp)));
               i++;
             }
           }
@@ -1711,7 +1720,8 @@ resolveCall(CallExpr* call, bool errorCheck) {
         if (field->type == dtUnknown)
           field->type = t;
         if (t != field->type && t != dtNil && t != dtObject)
-          USR_FATAL(userCall(call), "cannot assign expression of type %s to field of type %s", toString(t), toString(field->type));
+          USR_FATAL(userCall(call), "cannot assign expression of type %s to field of type %s",
+                    toString(t), toString(field->type));
         found = true;
       }
     }
@@ -3369,9 +3379,12 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
             resolveFns(fn);
             if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                 pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-              if (!isSubType(fn->retType->defaultConstructor->iteratorInfo->getValue->retType, pfn->retType->defaultConstructor->iteratorInfo->getValue->retType)) {
-                USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->defaultConstructor->iteratorInfo->getValue->retType->symbol->name);
-                USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->defaultConstructor->iteratorInfo->getValue->retType->symbol->name);
+              if (!isSubType(fn->retType->defaultConstructor->iteratorInfo->getValue->retType,
+                  pfn->retType->defaultConstructor->iteratorInfo->getValue->retType)) {
+                USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn),
+                               pfn->retType->defaultConstructor->iteratorInfo->getValue->retType->symbol->name);
+                USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn),
+                               fn->retType->defaultConstructor->iteratorInfo->getValue->retType->symbol->name);
                 USR_STOP();
               } else {
                 pfn->retType->dispatchChildren.add_exclusive(fn->retType);
@@ -3765,7 +3778,8 @@ static void insertReturnTemps() {
             VarSymbol* tmp = newTemp(fn->retType);
             DefExpr* def = new DefExpr(tmp);
             call->insertBefore(def);
-            if ((fn->retType->getValueType() && fn->retType->getValueType()->symbol->hasFlag(FLAG_SYNC)) || fn->retType->symbol->hasFlag(FLAG_SYNC)) {
+            if ((fn->retType->getValueType() && fn->retType->getValueType()->symbol->hasFlag(FLAG_SYNC)) ||
+                fn->retType->symbol->hasFlag(FLAG_SYNC)) {
               CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
               call->insertBefore(sls);
               reset_line_info(sls, call->lineno);
@@ -3991,7 +4005,8 @@ pruneResolvedTree() {
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           FnSymbol* fn = valueToRuntimeTypeMap.get(formal->type);
-          Type* rt = (fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ? fn->retType : runtimeTypeMap.get(fn->retType);
+          Type* rt = (fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ?
+                      fn->retType : runtimeTypeMap.get(fn->retType);
           INT_ASSERT(rt);
           formal->type =  rt;
           formal->removeFlag(FLAG_TYPE_VARIABLE);
@@ -4003,7 +4018,8 @@ pruneResolvedTree() {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
         if (ret && ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           FnSymbol* rtfn = valueToRuntimeTypeMap.get(ret->type);
-          Type* rt = (rtfn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ? rtfn->retType : runtimeTypeMap.get(rtfn->retType);
+          Type* rt = (rtfn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ?
+                      rtfn->retType : runtimeTypeMap.get(rtfn->retType);
           INT_ASSERT(rt);
           ret->type = rt;
           fn->retType = ret->type;
@@ -4044,7 +4060,8 @@ pruneResolvedTree() {
             INT_ASSERT(field);
             VarSymbol* tmp = newTemp(field->type);
             call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, se->var, field)));
+            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp,
+                                                           new CallExpr(PRIM_GET_MEMBER_VALUE, se->var, field)));
             if (formal->hasFlag(FLAG_TYPE_VARIABLE))
               tmp->addFlag(FLAG_TYPE_VARIABLE);
             runtimeTypeToValueCall->insertAtTail(tmp);
