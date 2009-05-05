@@ -23,9 +23,13 @@ OPT_CFLAGS =
 
 CFLAGS = 
 
+#
+# -WR 682 says ignore full/empty on less than word-sized data; the theory
+# being that we've padded things appropriately
+#
 COMP_CFLAGS = $(CFLAGS)
 RUNTIME_CFLAGS = $(CFLAGS)
-RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
+RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS) -WR 682
 GEN_CFLAGS = $(CFLAGS) -WS 189 -WR 682
 GEN_LFLAGS = -static
 
