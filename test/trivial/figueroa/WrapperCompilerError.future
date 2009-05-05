@@ -1,0 +1,6 @@
+semantic: line no. incorrectly that of wrapper rather than actual function call
+Should the line number associated with error message be the one containing the
+call to compilerError (which is a side effect of creating a wrapper function),
+or the one containing the original function call (to foo in this case)?
+In this test case, if n=0, the line number reported is the latter one because
+no wrapper function is created.
