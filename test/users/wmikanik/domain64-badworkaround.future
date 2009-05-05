@@ -1,8 +1,0 @@
-bug: assignment of unbounded range to bounded not disallowed
-
-This test shows that it's legal to assign an unbounded range value to
-a bounded range type without the compiler complaining.  Or, if this
-should be legal with the boundedness inferred, then the range doesn't
-seem to be getting stored as an unbounded range (though I don't think
-this is the case).
-

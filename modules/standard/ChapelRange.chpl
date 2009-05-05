@@ -221,6 +221,8 @@ def range._alignHigh(alignment: eltType) {
 // range assignment
 //
 def =(r1: range(stridable=?s1), r2: range(stridable=?s2)) {
+  if r1.boundedType != r2.boundedType then
+    compilerError("type mismatch in assignment of ranges with different boundedType parameters");
   if !s1 && s2 then
     if r2.stride != 1 then
       halt("non-stridable range assigned non-unit stride");
