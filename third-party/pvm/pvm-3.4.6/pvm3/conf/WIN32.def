@@ -1,0 +1,29 @@
+###############################################
+# Get the information captured during setup !
+###############################################
+
+ARCHCFLAGS	=	-DHASSTDLIB -DWIN32 -DSYSVBFUNC -DSYSVSTR \
+				-DHASERRORVARS -DNOWAIT3 -DNOGETDTBLSIZ -DNOUNIXDOM \
+				-DNOTMPNAM -DMAXHOSTNAMELEN=64 -DMAXPATHLEN=64 \
+				-DNEEDSFFS
+
+# for the defines in the workspace declaration
+# HASSTDLIB, WIN32, SYSVBFUNC, SYSVSTR, HASERRORVARS, NOWAIT3,
+# NOGETDTBLSIZ, NOUNIXDOM, NOTMPNAM, MAXHOSTNAMELEN=64, MAXPATHLEN=64,
+# NEEDSFFS, STDC_HEADERS, REGEX_MALLOC
+
+ARCHDLIB	=
+ARCHDOBJ	=
+ARCHLIB		=
+MAKE		=	make
+
+################################################
+# We are ready to go:
+# compilerswitch
+################################################
+
+!IF "$(PVM_CCOMPILER)" == "WATCOMC++"
+!include $(PVM_ROOT)\conf\win32watcom.def
+!else
+!include $(PVM_ROOT)\conf\win32visual.def
+!endif

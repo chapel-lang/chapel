@@ -1,0 +1,74 @@
+.\" $Id: pvm_hostsync.3,v 1.1 1996/09/23 22:01:35 pvmsrc Exp $
+.TH HOSTSYNC 3PVM "20 February, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_hostsync \- Get time-of-day clock from PVM host.
+
+.SH SYNOPSIS
+.nf
+.ft B
+.nf
+C	#include <sys/time.h>
+.br
+	int info = pvm_hostsync( int host, struct timeval *clk,
+.br
+		struct timeval *delta )
+.br
+
+Fortran	call pvmfhostsync( host, clksec, clkusec, deltasec, deltausec, info )
+.fi
+
+.SH PARAMETERS
+.IP host 0.8i
+TID of host.
+.br
+.IP clk
+(or \fIclksec\fR and \fIclkusec\fR)
+Returns time-of-day clock sample from host.
+.br
+.IP delta
+(or \fIdeltasec\fR and \fIdeltausec\fR)
+Returns difference between local clock and remote host clock.
+
+.SH DESCRIPTION
+\fIpvm_hostsync\fR
+samples the time-of day clock of a host in the virtual machine
+and returns both the clock value and the difference between
+local and remote clocks.
+.PP
+To reduce the delta error due to message transit time,
+local clock samples are taken before and after reading the remote clock.
+Delta is the difference between the mean local clocks and remote clock.
+.PP
+Note that the delta time can be negative.
+The microseconds field is always normalized to 0..999999,
+while the sign of the seconds field gives the sign of the delta.
+For example:
+.br
+	3.25 Sec =  3,250000
+.br
+	0        =  0,0
+.br
+	-1 uSec  = -1,999999
+.br
+	-1 Sec   = -1,000000
+.br
+	-1.1 Sec = -2,999000
+.PP
+In C,
+if \fIclk\fR or \fIdelta\fR is a null pointer,
+that parameter is not returned.
+
+.SH ERRORS
+If pvm_hostsync is successful,
+it returns PvmOk.
+These error conditions can be returned by
+.I pvm_hostsync
+.IP PvmSysErr
+pvmd not responding.
+.IP PvmNoHost
+specified host not in virtual machine.
+.IP PvmHostFail
+host is unreachable (and thus possibly failed)
+.PP
+.SH SEE ALSO
+pvm_config(3PVM)

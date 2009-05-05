@@ -1,0 +1,16 @@
+ARCHCFLAGS	=	-DCYGWIN -DHASSTDLIB -DSYSVSTR -DSYSVSIGNAL \
+				-DNOTMPNAM -DFDSETNOTSTRUCT -DNOUNIXDOM \
+				-DSTDC_HEADERS \
+				-DRSHCOMMAND=\"rsh\" -DNEEDSFFS -DSYSVBFUNC -DNOWAIT3 \
+				-DNOGETDTBLSIZ -DNOREXEC -DNO_NETINET_TCP_H \
+				-DUSESTRERROR -I/usr/include -I/usr/local/include
+# if available	-DHASREADLINE
+ARCHDLIB	=	-L/usr/lib -L/usr/local/lib -lrpclib
+ARCHDOBJ	=
+ARCHLIB		=	-L/usr/lib -L/usr/local/lib -lrpclib
+HASRANLIB	=	t
+AR			=	ar
+PVM_ARCH	=	CYGWIN
+MAKE		=	make
+EXESFX		=	.exe
+FC			=	g77

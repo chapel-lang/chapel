@@ -1,0 +1,58 @@
+#*****************************************************************************#
+# 
+# READ_ME_PVMcygwin.txt						03/30/1999
+#
+#*****************************************************************************#
+
+To install PVM 3.4.0 in the Cygwin environment:
+
+1-	Install the Cygwin version b20.1 package
+	(http://sourceware.cygnus.com/cygwin/)
+
+2-	Install and configure the WRSHD-9X or WRSHD-NT package
+	(http://www.uni-paderborn.de/cs/getin/download.htm)
+
+3-	Choose suitable locations for /tmp and /etc. These could be real
+	directories or mount points. See the Cygwin documentation.
+
+4-	Create the passwd and group databases using Cygwin's mkpasswd and
+	mkgroup utilities.
+
+5-	Unzip the pvm3_4_0_Xcygwin.ZIP archive in the directory of your choice.
+	This directory will be the PVM root directory.
+
+6-	In the Control Panel, choose the System icon and select the environment
+	tab. Add the following variables to the system variables (requires
+	administraive privileges under NT):
+
+Variable	Value
+PVM_ARCH	Win32
+PVM_ROOT	Windows path to the PVM root directory (e.g., D:\pvm3_4_0)
+PVM_ROOT_U	Unix path to the PVM root directory, using / instead of \,
+		and a mount point if necessary (e.g., /disks/d/pvm3_4_0)
+
+7-	Add the directory containing the CYGWIN1.DLL file to the system PATH
+	variable. If the path already includes some directory containing POSIX
+	utilities from the NT resource kit, the directory containing the 
+	CYGWIN1.DLL file must be inserted before the one containing POSIX
+	utilities.
+
+8-	If the locations chosen for /tmp and /etc are not direct subdirectories
+	of C:\ or if the PVM root directory is not on the C: drive, you must 
+	create permanent mount points for them. In the registry editor, go to 
+	the key:
+
+\\HKEY_LOCAL_MACHINE\SOFTWARE\Cygnus Solutions\CYGWIN.DLL.setup\b15.0\mounts
+
+	and, for each of the needed mount points, select the first empty 
+	subkey and add the following values:
+
+fbinary (REG_DWORD) 0
+fsilent (REG_DWORD) 0
+native (REG_SZ) windows path (e.g., C:\TEMP)
+unix (REG_SZ) unix path (e.g., /tmp)
+
+	This may require administraive privileges under NT.
+
+9-	Reboot the system.
+

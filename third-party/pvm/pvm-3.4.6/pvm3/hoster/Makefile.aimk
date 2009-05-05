@@ -1,0 +1,53 @@
+#
+# $Id: Makefile.aimk,v 1.8 1997/08/28 19:39:09 pvmsrc Exp $
+#
+# Generic Makefile body to be concatenated to config header.
+#
+# Imports:
+#  PVM_ARCH   = the official pvm-name of your processor
+#  ARCHCFLAGS = special cc flags
+#  ARCHLIB    = special libs needed for daemon
+#
+SHELL		=	/bin/sh
+PVMDIR		=	../..
+PVMIDIR		=	$(PVMDIR)/include
+PVMSDIR		=	$(PVMDIR)/src
+PVMLDIR		=	$(PVMDIR)/lib/$(PVM_ARCH)
+PVMLIB		=	pvm3
+LIBPREFIX	=	lib
+PVMLIBDEP	=	$(PVMLDIR)/$(LIBPREFIX)$(PVMLIB).a
+SDIR		=	$(PVMDIR)/hoster
+BDIR		=	$(PVMDIR)/bin
+XDIR		=	$(BDIR)/$(PVM_ARCH)
+
+CFLOPTS		=	-O
+CFLAGS		=	$(CFLOPTS) -I$(PVMIDIR) -I$(PVMSDIR) -DIMA_$(PVM_ARCH) \
+				$(ARCHCFLAGS)
+LIBS		=	-L$(PVMLDIR) -l$(PVMLIB) $(ARCHLIB)
+
+HEADERS		=	$(PVMIDIR)/pvm3.h $(PVMIDIR)/pvmproto.h
+
+REXECOBJ	=
+
+default:	all
+
+all:	$(XDIR)/hoster$(EXESFX)
+
+$(XDIR):
+	- mkdir $(BDIR)
+	- mkdir $(XDIR)
+
+$(XDIR)/hoster$(EXESFX):  $(XDIR) hoster$(EXESFX)
+	cp hoster$(EXESFX) $(XDIR)
+
+hoster$(EXESFX):  $(SDIR)/hoster.c $(HEADERS) $(PVMLIBDEP) $(REXECOBJ)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/hoster.c $(REXECOBJ) $(LIBS)
+
+rexec.o:  $(PVMDIR)/src/$(PVM_ARCH)/src/rexec.c 
+	$(CC) $(CFLAGS) -c $(PVMDIR)/src/$(PVM_ARCH)/src/rexec.c 
+ruserpas.o:  $(PVMDIR)/src/$(PVM_ARCH)/src/ruserpas.c 
+	$(CC) $(CFLAGS) -c $(PVMDIR)/src/$(PVM_ARCH)/src/ruserpas.c 
+
+clean:
+	rm -f *.o hoster$(EXESFX)
+

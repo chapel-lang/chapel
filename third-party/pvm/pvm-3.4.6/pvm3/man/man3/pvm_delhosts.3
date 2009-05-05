@@ -1,0 +1,93 @@
+.\" $Id: pvm_delhosts.3,v 1.2 1997/11/05 16:57:21 pvmsrc Exp $
+.TH DELHOSTS 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_delhosts \- Deletes hosts from the virtual machine.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_delhosts( char **hosts, int nhost, int *infos )
+.br
+
+Fortran	call pvmfdelhost( host, info )
+.fi
+
+.SH PARAMETERS
+.IP hosts 0.8i
+An array of pointers to character strings
+containing the names of the machines to be deleted.
+.br
+.IP nhost
+Integer specifying the number of hosts to be deleted.
+.br
+.IP infos
+Integer array of length
+.I nhost
+which contains the
+status code returned by the routine for the individual hosts.
+Values less than zero indicate an error.
+.br
+.IP host
+Character string containing the name of the machine to be deleted.
+.br
+.IP info
+Integer status code returned by the routine.
+Values less than nhost indicate partial failure,
+values less than 1 indicate total failure.
+
+.SH DESCRIPTION
+The routine
+.I pvm_delhosts
+deletes the computers pointed to in
+.I hosts
+from the existing configuration of computers making up the virtual
+machine.
+All PVM processes and the pvmd running on these computers are
+killed as the computer is deleted.
+If pvm_delhosts is successful,
+.I info
+will be
+.I nhost.
+Partial success is indicated by 1<= info < nhost,
+and total failure by info < 1.
+The array
+.I infos
+can be checked to determine which host
+caused the error.
+.PP
+The Fortran routine
+.I pvmfdelhost
+deletes a single host from
+the configuration with each call.
+.PP
+If a host fails, the PVM system will continue to function and will
+automatically delete this host from the virtual machine.
+An application can be notified of a host failure by calling
+pvm_notify.
+It is still the responsibility of the
+application developer to make his application tolerant of host failure.
+
+.SH EXAMPLES
+.nf
+C:
+	static char *hosts[] = {
+		"sparky",
+		"thud.cs.utk.edu",
+	};
+	int status[2];
+	info = pvm_delhosts( hosts, 2, status );
+.sp
+Fortran:
+	CALL PVMFDELHOST( 'azure', INFO )
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_delhosts
+.IP PvmBadParam
+giving an invalid argument value.
+.IP PvmSysErr
+local pvmd not responding.
+.PP
+.SH SEE ALSO
+pvm_addhosts(3PVM),
+pvm_notify(3PVM)

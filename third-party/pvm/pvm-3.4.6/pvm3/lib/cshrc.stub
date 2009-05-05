@@ -1,0 +1,30 @@
+
+#
+# append this file to your .cshrc to set path according to machine type.
+# you may wish to use this for your own programs (edit the last part to
+# point to a different directory f.e. ~/bin/_$PVM_ARCH.
+#
+if (! $?PVM_ROOT) then
+	if (-d ~/pvm3) then
+		setenv PVM_ROOT ~/pvm3
+	else
+		echo "Warning - PVM_ROOT not defined"
+		echo "To use PVM, define PVM_ROOT and rerun your .cshrc"
+	endif
+endif
+
+if ($?PVM_ROOT) then
+	setenv PVM_ARCH `$PVM_ROOT/lib/pvmgetarch`
+#
+# uncomment one of the following lines if you want the PVM commands directory
+# to be added to your shell path.
+#
+#	set path=($path $PVM_ROOT/lib)            # generic
+#	set path=($path $PVM_ROOT/lib/$PVM_ARCH)  # arch-specific
+#
+# uncomment the following line if you want the PVM executable directory
+# to be added to your shell path.
+#
+#	set path=($path $PVM_ROOT/bin/$PVM_ARCH)
+endif
+

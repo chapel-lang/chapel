@@ -1,0 +1,103 @@
+.\" $Id: pvm_mcast.3,v 1.1 1996/09/23 22:05:19 pvmsrc Exp $
+.TH MCAST 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_mcast \- Multicasts the data in the active message buffer
+to a set of tasks.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_mcast( int *tids, int ntask, int msgtag )
+.br
+
+Fortran	call pvmfmcast( ntask, tids, msgtag, info )
+.fi
+
+.SH PARAMETERS
+.IP ntask 0.8i
+Integer specifying the number of tasks to be sent to.
+.br
+.IP tids
+Integer array of length
+.I ntask
+containing the task IDs of the tasks to be sent to.
+.br
+.IP msgtag
+Integer message tag supplied by the user.
+msgtag should be >= 0.
+It allows the user's program to
+distinguish between different kinds of messages .
+.br
+.IP info
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_mcast
+multicasts a message stored
+in the active send buffer to
+.I ntask
+tasks specified in the
+.I tids
+array.
+The message is not sent to the caller even if listed in the array of tids.
+The content of the message can be distinguished by
+.I msgtag.
+If pvm_mcast is successful,
+.I info
+will be 0. If some error occurs then
+.I info
+will be < 0.
+.PP
+The receiving processes can call either pvm_recv or pvm_nrecv
+to receive their copy of the multicast.
+pvm_mcast is asynchronous and based on a minimum spanning tree algorithm
+between the pvmds.
+Computation on the sending processor resumes as soon as the message is
+safely on its way to the receiving processors.  This is in
+contrast to synchronous communication, during which computation on
+the sending processor halts until the matching receive is
+executed by the receiving processor.
+.PP
+pvm_mcast first determines which other pvmds contain
+the specified tasks.
+Then passes the message to these pvmds
+which in turn distribute the message to their local tasks
+without further network traffic.
+.PP
+Multicasting is not supported by most multiprocessor vendors.
+Typically their native calls only support broadcasting to {\em all
+the user's processes on a multiprocessor. Because of this omission,
+pvm_mcast may not be an efficient communication method on
+some multiprocessors except in the special case of broadcasting
+to all PVM processes.
+
+.SH EXAMPLES
+.nf
+C:
+	info = pvm_initsend( PvmDataRaw );
+	info = pvm_pkint( array, 10, 1 );
+	msgtag = 5 ;
+	info = pvm_mcast( tids, ntask, msgtag );
+.sp
+Fortran:
+	CALL PVMFINITSEND(PVMDEFAULT)
+	CALL PVMFPACK( REAL4, DATA, 100, 1, INFO )
+	CALL PVMFMCAST( NPROC, TIDS, 5, INFO )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_mcast
+.IP PvmBadParam
+giving a msgtag < 0.
+.IP PvmSysErr
+pvmd not responding.
+.IP PvmNoBuf
+no send buffer.
+.PP
+.SH SEE ALSO
+pvm_psend(3PVM),
+pvm_recv(3PVM),
+pvm_send(3PVM)

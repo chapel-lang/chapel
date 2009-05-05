@@ -1,0 +1,17 @@
+#
+# *** DO NOT MODIFY ***  AUTOMATICALLY GENERATED  ***
+#
+# $Id: pvmdep,v 1.1 1999/03/04 21:40:55 pvmsrc Exp $
+#
+# PVM Source Header Dependencies
+#
+
+block.o: $(SDIR)/shmd.h
+pvm_shmd.o: $(PVMDIR)/include/pvm3.h
+pvm_shmd.o: $(SDIR)/shmd.h
+pvm_shmd_stat.o: $(PVMDIR)/include/pvm3.h
+pvm_shmd_stat.o: $(SDIR)/shmd.h
+sendrecv.o: $(PVMDIR)/include/pvm3.h
+sendrecv.o: $(SDIR)/shmd.h
+tidinfo.o: $(SDIR)/shmd.h
+

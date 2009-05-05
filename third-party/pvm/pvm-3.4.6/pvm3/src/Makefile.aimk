@@ -1,0 +1,508 @@
+#
+# $Id: Makefile.aimk,v 1.41 2007/03/07 18:16:16 pvmsrc Exp $
+#
+# Generic Makefile body to be concatenated to config header.
+#
+# Imports:
+#  PVM_ARCH   = the official pvm-name of your processor
+#  ARCHCFLAGS = special cc flags
+#  ARCHDLIB   = special libs needed for daemon
+#  ARCHDOBJ   = special objects needed for daemon
+#  HASRANLIB  = 't' or 'f'
+#  AMEM       = Memory page locks from Convex
+#  PLOCKFILE  = Page Lock in line code from SUN
+#
+# Compatibility defines (usually in conf/*.def):
+#  FDSETPATCH      if system includes don't have fd_set stuff
+#  USESTRERROR     if sys_errlist, sys_nerr not public, use strerror()
+#  HASERRORVARS    if errno, sys_nerr, sys_errlist already declared
+#  HASSTDLIB       if system has stdlib.h
+#  NEEDENDIAN      to include <endian.h>
+#  NEEDMENDIAN     to include <machine/endian.h>
+#  NOGETDTBLSIZ    if system doesn't have getdtablesize()
+#  NOREXEC         if system doesn't have rexec()
+#  NOSOCKOPT       if system doesn't have setsockopt() / it doesn't work
+#  NOSTRCASE       if system doesn't have strcasecmp, strncasecmp
+#  NOTMPNAM        if system doesn't have tmpnam() or it's hosed
+#  NOUNIXDOM       to disable use of Unix domain sockets
+#  NOWAIT3         if system doesn't have wait3()
+#  NOWAITPID       if system doesn't have waitpid() either
+#  RSHCOMMAND=     for rsh command other than "/usr/ucb/rsh"
+#                      (can override using PVM_RSH environment variable)
+#  SHAREDTMP       if /tmp is shared between machines (yecch)
+#  SOCKADHASLEN    if struct sockaddr has an sa_len field
+#  SYSVBFUNC       if system uses memcpy() instead of bcopy(), etc.
+#  SYSVSIGNAL      if system has sysV signal handling
+#  SYSVSTR         if system uses strchr() instead of index()
+#  UDPMAXLEN=      for alternate max udp packet size
+#  NEEDSSELECTH    if you need to include select.h to get fd_set (IBMs)
+#  SOCKLENISUINT   if socket parameter is unsigned int (or size_t),
+#                      generally ->  recvfrom() accept() getsockname()
+#                      remove flag for AIX 4.1 compiler complaints...
+#  FDSETNOTSTRUCT  if fd_set var declarations do not require "struct"
+#  CTIMEISTIMET    if ctime() takes an arg of type "time_t"
+#  SYSERRISCONST   if char *sys_errlist[] defined as const
+#
+# Options defines:
+#  CLUMP_ALLOC     allocates several data structures in big chunks
+#  MCHECKSUM       to enable crc checksums on messages
+#  RSHNPLL=        for number of parallel rsh startups (default is 5)
+#  RSHTIMEOUT=     for rsh timeout other than default (60 sec)
+#  STATISTICS      to enable collection of statistics in pvmd
+#  TIMESTAMPLOG    to enable timestamps in pvmd log file
+#  USE_PVM_ALLOC   to enable instrumented malloc functs (for pvm debug)
+#  USE_GNU_REGEX   to enable use of GNU Regex for Mbox Lookup
+#                     -> requires installation of GNU regex, as well as
+#                        modifying the following defines (see below):
+#                            REGEXCONF, REGEXCONFOS2, REGEXOBJS
+#
+
+SHELL		=	/bin/sh
+PVMDIR		=	../..
+SDIR		=	$(PVMDIR)/src
+LIBDIR		=	$(PVMDIR)/lib/$(PVM_ARCH)
+CFLOPTS		=	-O
+#CFLOPTS	=	-g
+#OPTIONS	=	-DCLUMP_ALLOC
+#OPTIONS	=	-DSTATISTICS
+#OPTIONS	=	-p
+OPTIONS		=	-DCLUMP_ALLOC -DSTATISTICS \
+				-DTIMESTAMPLOG -DSANITY
+CFLAGS		=	$(CFLOPTS) $(OPTIONS) -I$(PVMDIR)/include \
+				-DARCHCLASS=\"$(PVM_ARCH)\" -DIMA_$(PVM_ARCH) \
+				$(ARCHCFLAGS)
+
+LIBPREFIX	=	lib
+LIBPVM		=	$(LIBPREFIX)pvm3
+
+#
+# GNU Regular Expression Defines - set if needed
+#
+
+REGEXCONF		=
+#REGEXCONF		=	regexconfig
+
+REGEXCONFOS2	=
+#REGEXCONFOS2	=	regexconfig-os2
+
+REGEXOBJS		=
+#REGEXOBJS		=	pvmregex.o regex.o
+
+#
+# PVM Daemon & Library Objects
+#
+
+DOBJ		= \
+	ddpro.o \
+	host.o \
+	hoster.o \
+	imalloc.o \
+	msgbox.o \
+	pkt.o \
+	pmsg.o \
+	pvmalloc.o \
+	pvmcruft.o \
+	pvmd.o \
+	pvmdpack.o \
+	pvmdtev.o \
+	pvmerr.o \
+	pvmfrag.o \
+	pvmlog.o \
+	sdpro.o \
+	task.o \
+	tdpro.o \
+	waitc.o \
+	global.o \
+	$(REGEXOBJS)
+
+SOCKDOBJ	= \
+	pvmdabuf.o \
+	pvmdunix.o
+
+SHMEMDOBJ	= \
+	$(AMEMOBJ) \
+	nmdclass.o \
+	pvmdshmem.o \
+	pvmshmem.o
+
+MPPDOBJ		= \
+	mppchunkhost.o \
+	mppmsghost.o \
+	lmsg.o \
+	pvmdabuf.o \
+	pvmdmimd.o \
+	pvmdunix.o
+
+BEODOBJ		= \
+	pvmdmimd.o
+
+OS2DOBJ		= \
+	deathapi.o \
+	sthoster.o \
+	stdlog.o \
+	rexec.o \
+	ruserpas.o \
+	os2spawn.o
+
+LOBJ		= \
+	imalloc.o \
+	tev.o \
+	lpvmcat.o \
+	lpvmgen.o \
+	lpvmpack.o \
+	lpvmglob.o \
+	pmsg.o \
+	pvmalloc.o \
+	pvmcruft.o \
+	pvmerr.o \
+	pvmfrag.o \
+	waitc.o \
+	global.o
+
+LPVMSOCK	=	lpvm.o
+
+SOCKLOBJ	= \
+	pvmdabuf.o
+
+LPVMSHMEM	=	lpvmshmem.o
+
+SHMEMLOBJ	= \
+	$(AMEMOBJ) \
+	pvmshmem.o
+
+LPVMMIMD	=	lpvmmimd.o
+
+MPPLOBJ		= \
+	mppchunknode.o \
+	mppmsgnode.o \
+	lmsg.o \
+	lpvmmpp.o \
+	pvmdabuf.o
+
+OS2LOBJ		=	 stdlog.o
+
+REGEXSRC	= \
+	$(SDIR)/regex/Makefile.in \
+	$(SDIR)/regex/configure \
+	$(SDIR)/regex/configure.in \
+	$(SDIR)/regex/pvmregex.c \
+	$(SDIR)/regex/regex.c \
+	$(SDIR)/regex/regex.h
+
+REGEXDIR	=	./regex
+
+REGEXCP		= \
+	$(REGEXDIR)/Makefile.in \
+	$(REGEXDIR)/configure \
+	$(REGEXDIR)/configure.in \
+	$(REGEXDIR)/pvmregex.c \
+	$(REGEXDIR)/regex.c \
+	$(REGEXDIR)/regex.h
+
+REGEXOPTS	=	CC=$(CC) \
+				CFLAGS="$(CFLOPTS) -DREGEX_MALLOC $(ARCHCFLAGS)"
+
+SHMEMTARGETS	=	$(LIBDIR)/pvmd3-shm \
+					$(LIBDIR)/lib-shm $(LIBDIR)/$(LIBPVM)s.a
+
+MPPTARGETS		=	$(LIBDIR)/pvmd3-mpp \
+					$(LIBDIR)/$(LIBPVM).a $(LIBDIR)/$(LIBPVM)pe.a
+
+BEOTARGETS		=	$(LIBDIR)/pvmd3-beo $(LIBDIR)/$(LIBPVM).a
+
+OS2TARGETS		=	$(LIBDIR)/pvmd3-os2 $(LIBDIR)/lib-os2
+
+all:	pvmd3$(EXESFX) $(LIBPVM).a
+
+all-shm:	pvmd3-shm lib-shm $(LIBPVM)s.a
+
+all-mpp:	pvmd3-mpp $(LIBPVM).a $(LIBPVM)pe.a
+
+all-beo:	pvmd3-beo $(LIBPVM).a
+
+all-os2:	pvmd3-os2 lib-os2
+
+install:	$(LIBDIR) $(LIBDIR)/pvmd3$(EXESFX) $(LIBDIR)/$(LIBPVM).a
+
+install-shm:	$(LIBDIR) $(SHMEMTARGETS)
+
+install-mpp:	$(LIBDIR) $(MPPTARGETS)
+
+install-beo:	$(LIBDIR) $(BEOTARGETS)
+
+install-os2:	$(LIBDIR) $(OS2TARGETS)
+
+install-shared:	$(LIBDIR) $(LIBDIR)/$(LIBPVM).so
+
+$(LIBDIR):
+	- mkdir $(LIBDIR)
+
+# libdir sock pvmd3 & libpvm3.a
+
+$(LIBDIR)/pvmd3$(EXESFX):	pvmd3$(EXESFX)
+	cp pvmd3$(EXESFX) $(LIBDIR)
+
+$(LIBDIR)/$(LIBPVM).a:	$(LIBPVM).a
+	cp $(LIBPVM).a $(LIBDIR)
+
+# libdir shm pvmd3 & libpvm3*.a
+
+$(LIBDIR)/pvmd3-shm:	pvmd3-shm
+	cp pvmd3$(EXESFX) $(LIBDIR)
+	touch $(LIBDIR)/pvmd3-shm
+
+$(LIBDIR)/lib-shm:	lib-shm
+	cp $(LIBPVM).a $(LIBDIR)
+	touch $(LIBDIR)/lib-shm
+
+$(LIBDIR)/$(LIBPVM)s.a:  $(LIBPVM)s.a
+	cp $(LIBPVM)s.a $(LIBDIR)/$(LIBPVM)s.a
+
+# libdir mpp pvmd3 & libpvm3*.a
+
+$(LIBDIR)/pvmd3-mpp:	pvmd3-mpp
+	cp pvmd3$(EXESFX) $(LIBDIR)
+	touch $(LIBDIR)/pvmd3-mpp
+
+$(LIBDIR)/$(LIBPVM)pe.a:	$(LIBPVM)pe.a
+	cp $(LIBPVM)pe.a $(LIBDIR)
+
+# libdir Beowulf pvmd3
+
+$(LIBDIR)/pvmd3-beo:	pvmd3-beo
+	cp pvmd3$(EXESFX) $(LIBDIR)
+	touch $(LIBDIR)/pvmd3-beo
+
+# libdir os2 pvmd3 & libpvm3*.a
+
+$(LIBDIR)/pvmd3-os2:	pvmd3-os2
+	cp pvmd3$(EXESFX) $(LIBDIR)
+	touch $(LIBDIR)/pvmd3-os2
+
+$(LIBDIR)/lib-os2:	lib-os2
+	cp $(LIBPVM).a $(LIBDIR)
+	touch $(LIBDIR)/lib-os2
+
+# sock pvmd3 & libpvm3.a
+
+pvmd3$(EXESFX):	$(REGEXCONF) $(DOBJ) $(SOCKDOBJ)
+	$(CC) $(CFLAGS) -o pvmd3$(EXESFX) $(DOBJ) $(SOCKDOBJ) \
+		$(LOPT) $(ARCHDLIB)
+
+$(LIBPVM).a:	$(REGEXCONF) $(LOBJ) $(LPVMSOCK) $(SOCKLOBJ)
+	rm -f $(LIBPVM).a
+	$(AR) cr $(LIBPVM).a $(LOBJ) $(LPVMSOCK) $(SOCKLOBJ)
+	case x$(HASRANLIB) in xt ) echo ranlib; ranlib $(LIBPVM).a ;; esac
+
+# shm pvmd3 & libpvm3*.a
+
+pvmd3-shm:	$(REGEXCONF) $(DOBJ) $(SHMEMDOBJ)
+	$(CC) $(CFLAGS) -o pvmd3$(EXESFX) $(DOBJ) $(SHMEMDOBJ) $(ARCHDLIB)
+	touch pvmd3-shm
+
+lib-shm:	$(REGEXCONF) $(LOBJ) $(LPVMSHMEM) $(SHMEMLOBJ)
+	rm -f $(LIBPVM).a
+	$(AR) cr $(LIBPVM).a $(LOBJ) $(LPVMSHMEM) $(SHMEMLOBJ)
+	case x$(HASRANLIB) in xt ) echo ranlib; ranlib $(LIBPVM).a ;; esac
+	touch lib-shm
+
+$(LIBPVM)s.a:	$(REGEXCONF) $(LOBJ) $(LPVMSOCK) $(SOCKLOBJ)
+	rm -f $(LIBPVM)s.a
+	$(AR) cr $(LIBPVM)s.a $(LOBJ) $(LPVMSOCK) $(SOCKLOBJ)
+	case x$(HASRANLIB) in xt ) echo ranlib; ranlib $(LIBPVM)s.a ;; esac
+
+# mpp pvmd3 & libpvm3*.a
+
+pvmd3-mpp:	$(REGEXCONF) $(DOBJ) $(MPPDOBJ)
+	$(CC) $(CFLAGS) -o pvmd3$(EXESFX) $(DOBJ) $(MPPDOBJ) \
+		$(LOPT) $(ARCHDLIB)
+	touch pvmd3-mpp
+
+$(LIBPVM)pe.a:	$(REGEXCONF) $(LOBJ) $(LPVMMIMD) $(MPPLOBJ)
+	rm -f $(LIBPVM)pe.a
+	$(AR) cr $(LIBPVM)pe.a $(LOBJ) $(LPVMMIMD) $(MPPLOBJ)
+
+# Beowulf(LINUX) pvmd3 & libpvm3.a
+
+pvmd3-beo:	$(REGEXCONF) $(DOBJ) $(BEODOBJ) $(SOCKDOBJ)
+	$(CC) $(CFLAGS) -o pvmd3$(EXESFX) $(DOBJ) $(BEODOBJ) $(SOCKDOBJ) \
+		$(LOPT) $(ARCHDLIB)
+
+# os2 pvmd3 & libpvm3.a
+
+pvmd3-os2:	$(REGEXCONFOS2) $(OS2DOBJ) $(DOBJ) $(SOCKDOBJ)
+	$(CC) $(CFLAGS) -o pvmd3$(EXESFX) $(OS2DOBJ) $(DOBJ) $(SOCKDOBJ) \
+		$(LOPT) $(ARCHDLIB)
+	touch pvmd3-os2
+
+lib-os2:	$(REGEXCONFOS2) $(LOBJ) $(OS2LOBJ) $(LPVMSOCK) $(SOCKLOBJ)
+	rm -f $(LIBPVM).a
+	$(AR) cr $(LIBPVM).a $(LOBJ) $(OS2LOBJ) $(LPVMSOCK) $(SOCKLOBJ)
+	case x$(HASRANLIB) in xt ) echo ranlib; ranlib $(LIBPVM).a ;; esac
+	touch lib-os2
+
+# shared library libpvm3.so
+
+$(LIBDIR)/$(LIBPVM).so:	$(LIBPVM).so
+	cp $(LIBPVM).so $(LIBDIR)
+
+$(LIBPVM).so:	$(REGEXCONF) $(LOBJ) $(LPVMSOCK) $(SOCKLOBJ)
+	rm -f $(LIBPVM).so
+	$(CC) $(SHAREDLDFLAGS) -o $(LIBPVM).so $(LOBJ) $(LPVMSOCK) $(SOCKLOBJ)
+
+#
+
+clean:	tidy
+	- rm -f pvmd3$(EXESFX) $(LIBPVM).a $(LIBPVM)s.a $(LIBPVM)pe.a
+	- rm -f $(LIBPVM).so
+	- rm -rf $(REGEXDIR)
+
+tidy:
+	- rm -f $(DOBJ) $(SOCKDOBJ) $(SHMEMDOBJ) $(MPPDOBJ) \
+		$(LOBJ) $(LPVMSOCK) $(SOCKLOBJ) $(LPVMSHMEM) $(SHMEMLOBJ) \
+		$(LPVMMIMD) $(MPPLOBJ) $(REGEXDIR)/*.o \
+		pvmd3-shm lib-shm pvmd3-mpp pvmd3-os2 lib-os2 \
+		regexconfig regexconfig-os2
+
+lint:	lintd lintl
+
+lintd:
+	lint -DARCHCLASS=\"$(PVM_ARCH)\" \
+		ddpro.c host.c hoster.c imalloc.c pkt.c pmsg.c \
+		pvmalloc.c pvmcruft.c pvmd.c pvmdtev.c pvmfrag.c pvmlog.c \
+		task.c tdpro.c waitc.c global.c > Ld
+
+lintl:
+	lint -I$(PVMDIR)/include \
+		lpvm.c lpvmshmem.c lpvmmimd.c \
+		imalloc.c lpvmcat.c lpvmgen.c lpvmpack.c lpvmglob.c \
+		pvmalloc.c pvmcruft.c pvmerr.c pvmfrag.c tev.c global.c > Ll
+
+amem.o:	$(SDIR)/amem.s
+	$(AS) -o amem.o $(SDIR)/amem.s
+ddpro.o:	$(SDIR)/ddpro.c
+	$(CC) $(CFLAGS) -c $(SDIR)/ddpro.c
+host.o:	$(SDIR)/host.c
+	$(CC) $(CFLAGS) -c $(SDIR)/host.c
+hoster.o:	$(SDIR)/hoster.c
+	$(CC) $(CFLAGS) -c $(SDIR)/hoster.c
+imalloc.o:	$(SDIR)/imalloc.c
+	$(CC) $(CFLAGS) -c $(SDIR)/imalloc.c
+lmsg.o:	$(SDIR)/lmsg.c
+	$(NODECC) $(CFLAGS) -DIMA_NODE -c $(SDIR)/lmsg.c
+lpvm.o:	$(SDIR)/lpvm.c
+	$(CC) $(CFLAGS) -c $(SDIR)/lpvm.c
+lpvmshmem.o:	$(SDIR)/lpvmshmem.c
+	$(CC) $(CFLAGS) -c $(SDIR)/lpvmshmem.c $(PLOCKFILE)
+lpvmmimd.o:	$(SDIR)/lpvm.c
+	$(CC) $(CFLAGS) -DIMA_MPP -o lpvmmimd.o -c $(SDIR)/lpvm.c
+lpvmmpp.o:	$(SDIR)/lpvmmpp.c
+	$(NODECC) $(CFLAGS) -DIMA_MPP -c $(SDIR)/lpvmmpp.c
+lpvmcat.o:	$(SDIR)/lpvmcat.c
+	$(CC) $(CFLAGS) -c $(SDIR)/lpvmcat.c
+lpvmgen.o:	$(SDIR)/lpvmgen.c
+	$(CC) $(CFLAGS) -c $(SDIR)/lpvmgen.c
+lpvmpack.o:	$(SDIR)/lpvmpack.c
+	$(CC) $(CFLAGS) -c $(SDIR)/lpvmpack.c
+lpvmglob.o:	$(SDIR)/lpvmglob.c
+	$(CC) $(CFLAGS) -c $(SDIR)/lpvmglob.c
+msgbox.o:	$(SDIR)/msgbox.c
+	$(CC) $(CFLAGS) -c $(SDIR)/msgbox.c
+mppchunkhost.o:	$(SDIR)/mppchunk.c
+	$(CC) $(CFLAGS) -c -o mppchunkhost.o $(SDIR)/mppchunk.c
+mppchunknode.o:	$(SDIR)/mppchunk.c
+	$(NODECC) $(CFLAGS) -DIMA_NODE -c -o mppchunknode.o \
+		$(SDIR)/mppchunk.c
+mppmsghost.o:	$(SDIR)/mppmsg.c
+	$(CC) $(CFLAGS) -c -o mppmsghost.o $(SDIR)/mppmsg.c
+mppmsgnode.o:	$(SDIR)/mppmsg.c
+	$(NODECC) $(CFLAGS) -DIMA_NODE -c -o mppmsgnode.o $(SDIR)/mppmsg.c
+nmdclass.o:	$(SDIR)/nmdclass.c
+	$(CC) $(CFLAGS) -c $(SDIR)/nmdclass.c
+pkt.o:	$(SDIR)/pkt.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pkt.c
+pmsg.o:	$(SDIR)/pmsg.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pmsg.c
+pvmalloc.o:	$(SDIR)/pvmalloc.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmalloc.c
+pvmcruft.o:	$(SDIR)/pvmcruft.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmcruft.c
+pvmd.o:	$(SDIR)/pvmd.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmd.c
+pvmdabuf.o:	$(SDIR)/pvmdabuf.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmdabuf.c
+pvmdshmem.o:	$(SDIR)/pvmdshmem.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmdshmem.c $(PLOCKFILE)
+pvmdmimd.o:	pvmdmimd.c
+	$(CC) $(CFLAGS) -I..  -c pvmdmimd.c
+pvmdpack.o:	$(SDIR)/pvmdpack.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmdpack.c
+pvmdunix.o:	$(SDIR)/pvmdunix.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmdunix.c
+pvmerr.o:	$(SDIR)/pvmerr.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmerr.c
+pvmfrag.o:	$(SDIR)/pvmfrag.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmfrag.c
+pvmlog.o:	$(SDIR)/pvmlog.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmlog.c
+pvmshmem.o:	$(SDIR)/pvmshmem.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmshmem.c $(PLOCKFILE)
+pvmmpp.o:	$(SDIR)/pvmmpp.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmmpp.c
+sdpro.o:	$(SDIR)/sdpro.c
+	$(CC) $(CFLAGS) -c $(SDIR)/sdpro.c
+task.o:	$(SDIR)/task.c
+	$(CC) $(CFLAGS) -c $(SDIR)/task.c
+tev.o:	$(SDIR)/tev.c
+	$(CC) $(CFLAGS) -c $(SDIR)/tev.c
+tdpro.o:	$(SDIR)/tdpro.c
+	$(CC) $(CFLAGS) -c $(SDIR)/tdpro.c
+waitc.o:	$(SDIR)/waitc.c
+	$(CC) $(CFLAGS) -c $(SDIR)/waitc.c
+pvmdtev.o:	$(SDIR)/pvmdtev.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmdtev.c
+global.o:	$(SDIR)/global.c
+	$(CC) $(CFLAGS) -c $(SDIR)/global.c
+
+deathapi.o:	$(SDIR)/$(PVM_ARCH)/src/deathapi.c 
+	$(CC) $(CFLAGS) -c $(SDIR)/$(PVM_ARCH)/src/deathapi.c 
+stdlog.o:	$(SDIR)/$(PVM_ARCH)/src/stdlog.c 
+	$(CC) $(CFLAGS) -c $(SDIR)/$(PVM_ARCH)/src/stdlog.c 
+sthoster.o:	$(SDIR)/$(PVM_ARCH)/src/sthoster.c 
+	$(CC) $(CFLAGS) -c $(SDIR)/$(PVM_ARCH)/src/sthoster.c 
+rexec.o:	$(SDIR)/$(PVM_ARCH)/src/rexec.c 
+	$(CC) $(CFLAGS) -c $(SDIR)/$(PVM_ARCH)/src/rexec.c 
+ruserpas.o:	$(SDIR)/$(PVM_ARCH)/src/ruserpas.c 
+	$(CC) $(CFLAGS) -c $(SDIR)/$(PVM_ARCH)/src/ruserpas.c 
+os2spawn.o:	$(SDIR)/$(PVM_ARCH)/src/os2spawn.c 
+	$(CC) $(CFLAGS) -c $(SDIR)/$(PVM_ARCH)/src/os2spawn.c 
+
+pvmregex.o:	$(REGEXDIR)/pvmregex.o
+	cp $(REGEXDIR)/pvmregex.o .
+regex.o:	$(REGEXDIR)/regex.o
+	cp $(REGEXDIR)/regex.o .
+$(REGEXDIR)/pvmregex.o:	$(REGEXCP)
+	cd $(REGEXDIR) ; $(MAKE) $(REGEXOPTS) pvmregex.o
+$(REGEXDIR)/regex.o:	$(REGEXCP)
+	cd $(REGEXDIR) ; $(MAKE) $(REGEXOPTS) regex.o
+
+regexconfig:	$(REGEXDIR) $(REGEXCP) $(REGEXDIR)/Makefile 
+	@ touch regexconfig
+
+regexconfig-os2:	$(REGEXDIR) $(REGEXCP)
+	cp $(SDIR)/$(PVM_ARCH)/Makefile.reg $(REGEXDIR)/Makefile
+	@ touch regexconfig-os2
+
+$(REGEXDIR)/Makefile:
+	cd $(REGEXDIR) ; CC=$(CC) ./configure
+$(REGEXCP):	$(REGEXSRC)
+	cp $(REGEXSRC) $(REGEXDIR)
+$(REGEXDIR):
+	@- mkdir $(REGEXDIR)
+
+#
+# Source File Dependencies
+#
+
+include $(PVMDEPPATH)$(SDIR)/pvmdep
+

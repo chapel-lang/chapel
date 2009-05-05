@@ -1,0 +1,22 @@
+#!/bin/sh
+#
+# $Id: pvmtmparch,v 1.1 1997/05/19 15:07:52 pvmsrc Exp $
+#
+# pvmtmparch.sh
+#
+# Generate temporary PVM architecture string.
+#
+# First check for existing env var $PVM_ARCH.
+#
+# If not set, then just call "pvmgetarch".
+#
+
+if [ "#$PVM_ARCH#" != "##" ]; then
+	echo "$PVM_ARCH"
+else
+	here="`dirname $0`"
+	echo "`$here/pvmgetarch`"
+fi
+
+exit
+

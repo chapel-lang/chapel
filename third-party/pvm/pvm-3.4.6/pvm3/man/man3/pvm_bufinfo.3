@@ -1,0 +1,77 @@
+.\" $Id: pvm_bufinfo.3,v 1.1 1996/09/23 22:01:05 pvmsrc Exp $
+.TH BUFINFO 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_bufinfo() \- Returns information about a message buffer.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_bufinfo( int bufid, int *bytes, int *msgtag,
+int *tid )
+.br
+
+Fortran	call pvmfbufinfo( bufid, bytes, msgtag, tid, info )
+.fi
+
+.SH PARAMETERS
+.IP bufid 0.8i
+Integer specifying a particular message buffer identifier.
+.br
+.IP bytes
+Integer returning the length in bytes of the body of the message.
+This will be equal to the actual size of the data packed,
+if \fIPvmDataRaw\fR is used,
+otherwise it may include pad bytes.
+.br
+.IP msgtag
+Integer returning the message label.
+Useful when the message was received with a wildcard msgtag.
+.br
+.IP tid
+Integer returning the source of the message.
+Useful when the message was received with a wildcard tid.
+.br
+.IP info
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_bufinfo
+returns information about the
+requested message buffer. Typically it is used to determine
+facts about the last received message such as its size or source.
+pvm_bufinfo is especially useful when an application
+is able to receive any incoming message, and the action
+taken depends on the source
+.I tid
+and the
+.I msgtag
+associated with the message that comes in first.
+If pvm_bufinfo is successful,
+.I info
+will be 0.
+If some error occurs then
+.I info
+will be < 0.
+
+.SH EXAMPLES
+.nf
+C:
+	bufid = pvm_recv( -1, -1 );
+	info = pvm_bufinfo( bufid, &bytes, &type, &source );
+.sp
+Fortran:
+	CALL PVMFRECV( -1, -1, BUFID )
+	CALL PVMFBUFINFO( BUFID, BYTES, TYPE, SOURCE, INFO )
+
+.SH ERRORS
+This error condition can be returned by
+.I pvm_bufinfo.
+.IP PvmNoSuchBuf
+specified buffer does not exist.
+.IP PvmBadParam
+invalid argument
+.PP
+.SH SEE ALSO
+pvm_recv(3PVM)

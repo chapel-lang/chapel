@@ -1,0 +1,15 @@
+#
+# Note: The -DCTIMEISTIMET flag in the ARCHCFLAGS definition may not
+#           be required on all Alpha systems...
+#
+ARCHCFLAGS	=	-DHASSTDLIB -DNOUNIXDOM -DSHMEM -DCTIMEISTIMET
+ARCHDLIB	=
+ARCHDOBJ	=
+ARCHLIB		=
+HASRANLIB	=	t
+AR			=	ar
+PVM_ARCH	=	ALPHAMP
+# PVMDEPPATH Not Needed on *All* DEC Alpha Systems
+#PVMDEPPATH	=
+PVMDEPPATH	=	ALPHAMP/
+MAKE		=	make

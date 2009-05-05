@@ -1,0 +1,14 @@
+ARCHCFLAGS	=	-DSOCKADHASLEN -DNOREXEC \
+	-DRSHCOMMAND=\"/usr/bin/rsh\" \
+	-DHASSTDLIB -DNEEDMENDIAN -DHASERRORVARS \
+	-DFAKEXDRFLOAT -DSYSERRISCONST \
+	-I/usr/include/malloc \
+	-I/System/Library/Frameworks/System.framework/Headers/bsd/sys
+	# this last -I flag needed for tracer build...
+ARCHDLIB	=
+ARCHDOBJ	=
+ARCHLIB		=	
+HASRANLIB	=	t
+AR			=	ar
+PVM_ARCH	=	DARWIN
+MAKE		=	make

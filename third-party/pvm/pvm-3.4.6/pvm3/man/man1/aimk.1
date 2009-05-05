@@ -1,0 +1,127 @@
+.\" $Id: aimk.1,v 1.1 1996/09/23 21:50:22 pvmsrc Exp $
+.TH AIMK 1PVM "02 May, 1994" "" "PVM Version 3.4"
+.SH NAME
+aimk \- Portable make wrapper script
+.SH SYNOPSIS
+.ft B
+aimk
+[
+\-here
+]
+[
+make arguments
+]
+.ft R
+
+.SH DESCRIPTION
+
+\fIaimk\fR is a wrapper program for \fImake\fR,
+used to portably select options to build PVM and PVM applications
+on various machines.
+Each port of PVM is assigned an \fIarchitecture name\fR.
+The name is used both
+during compilation
+(to conditionally switch in code)
+and
+at runtime (to select an executable or host).
+
+aimk uses the value of
+environment variable \fI$PVM_ARCH\fR if it is set,
+otherwise it calls
+\fI$PVM_ROOT/pvmgetarch\fR to determine the architecture
+name.
+pvmgetarch is a script that sniffs at various parts of the system
+to determine the correct architecture name.
+It is updated as new PVM ports are defined,
+and can be augmented locally.
+
+aimk determines the machine architecture
+and execs make,
+passing it the architecture and a configuration file
+along with arguments supplied to aimk.
+It runs make in a subdirectory to prevent executables from becoming
+intermixed and to permit overlapping compiles.
+A different makefile can be placed in each subdirectory
+or a single makefile, \fIMakefile.aimk\fR, can be shared between
+architectures.
+Per-architecture definitions from the $PVM_ROOT/conf
+directory are appended to the common makefile.
+aimk calls make is called in one of three ways,
+depending on what makefiles are present:
+
+.IP i. 6
+If $PVM_ARCH/Makefile or $PVM_ARCH/makefile exists,
+change directory to $PVM_ARCH and exec make there:
+
+(cd $PVM_ARCH ; make PVM_ARCH=$PVM_ARCH < aimk args >)
+
+.IP ii.
+Else if Makefile.aimk exists,
+create $PVM_ARCH directory if it doesn't exist,
+then:
+
+(cd $PVM_ARCH ; \\
+.br
+make -f $PVM_ROOT/conf/$PVM_ARCH.def \\
+.br
+-f ../Makefile.aimk PVM_ARCH=$PVM_ARCH < aimk args >)
+
+.IP iii.
+Else just exec make in current directory:
+
+make PVM_ARCH=$PVM_ARCH < aimk args >
+
+.PP
+
+If aimk succeeds in calling make,
+the exit status is that of make,
+otherwise it is 1.
+
+.SH FLAGS
+
+.IP \-here 6
+Forces aimk to run make in the current directory,
+e.g.  converts case i. to case iii.
+
+.PP
+
+.SH EXAMPLES
+
+The following Makefile.aimk file builds and installs \fIhello\fR,
+creating the PVM binary directory if it doesn't exist.
+It can be run concurrently on machines of different types,
+sharing the same source directory.
+
+.nf
+      LDIR    =  -L$(PVM_ROOT)/lib/$(PVM_ARCH)
+      PVMLIB  =  -lpvm3
+      SDIR    =  ..
+      BDIR    =  $(HOME)/pvm3/bin
+      XDIR    =  $(BDIR)/$(PVM_ARCH)
+      CFLAGS  =  -g -I$(PVM_ROOT)/include
+      LIBS    =  $(LDIR) $(PVMLIB) $(ARCHLIB)
+
+      $(XDIR):
+              - mkdir $(BDIR) $(XDIR)
+
+      hello: $(SDIR)/hello.c $(XDIR)
+              $(CC) $(CFLAGS) -o $@ $(SDIR)/$@.c $(LIBS)
+              mv $@ $(XDIR)
+.fi
+
+.SH ENVIRONMENT
+.nf
+.ta 4 16
+	$PVM_ROOT	Root path of PVM installation.
+	$PVM_ARCH	PVM architecture name for machine.
+.fi
+
+.SH FILES
+.ta 4 40
+.nf
+	$PVM_ROOT/lib/aimk	The aimk program
+	$PVM_ROOT/conf/$PVM_ARCH.def	Arch config file
+.fi
+
+.SH SEE ALSO
+pvm_intro(1PVM)

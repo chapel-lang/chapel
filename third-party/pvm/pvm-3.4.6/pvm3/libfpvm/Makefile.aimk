@@ -1,0 +1,441 @@
+#
+# $Id: Makefile.aimk,v 1.19 1999/03/15 19:05:11 pvmsrc Exp $
+#
+
+#
+# Generic Makefile body to be concatenated to config header.
+#
+
+SHELL			=	/bin/sh
+PVMDIR			=	../..
+SDIR			=	$(PVMDIR)/libfpvm
+CFLAGS			=	$(CFLOPTS) -c -DIMA_$(PVM_ARCH) \
+					-I$(SDIR) -I$(PVMDIR)/include -I$(PVMDIR)/src \
+					$(CDEBUGFLAGS) $(ARCHCFLAGS)
+RM				=	rm -f
+M4				=	m4
+M4FILE			=	$(PVMDIR)/conf/$(PVM_ARCH).m4
+PVMLDIR			=	$(PVMDIR)/lib/$(PVM_ARCH)
+
+RWBSPECIAL		=	|sed '/^.include \"pvm3.h\"/d' \
+					|sed '/^.include \"pvm_consts.h\"/d'
+
+M4A				=	`case x$(NEEDF2M4) in xt) echo "$(M4) -DUSCORYES $(M4FILE)";; x) echo "$(M4) $(M4FILE)";; esac`
+
+M4B1			=	case x$(NEEDF2M4) in xt) $(M4) $(M4FILE)
+M4B2			=	;; esac
+
+PVMHEADERS		=	$(PVMDIR)/include/pvm3.h \
+					$(SDIR)/pvm_consts.h
+
+PVMALLOCH		=	$(PVMDIR)/src/pvmalloc.h
+
+PVMBFUNCH		=	$(PVMDIR)/src/bfunc.h
+
+PVMBFHEADERS	=	$(PVMHEADERS) $(PVMBFUNCH)
+
+LIBPREFIX		=	lib
+LIBFPVM			=	$(LIBPREFIX)fpvm3.a
+
+LOBS			=	pvmfaddhost.o \
+					pvmfaddmhf.o \
+					pvmfarchcode.o \
+					pvmfbarrier.o \
+					pvmfbcast.o \
+					pvmfbufinfo.o \
+					pvmfcatchout.o \
+					pvmfconfig.o \
+					pvmfdelhost.o \
+					pvmfdelinfo.o \
+					pvmfdelmhf.o \
+					pvmfexit.o \
+					pvmffreebuf.o \
+					pvmffreectx.o \
+					pvmffrzgrp.o \
+					pvmfgather.o \
+					pvmfgetctx.o \
+					pvmfgetinfo.o \
+					pvmfgetinst.o \
+					pvmfgetopt.o \
+					pvmfgetrbuf.o \
+					pvmfgetsbuf.o \
+					pvmfgettid.o \
+					pvmfgsize.o \
+					pvmfhalt.o \
+					pvmfhostsync.o \
+					pvmfinitsend.o \
+					pvmfjoingrp.o \
+					pvmfkill.o \
+					pvmflvgrp.o \
+					pvmfmcast.o \
+					pvmfmkbuf.o \
+					pvmfmstat.o \
+					pvmfmytid.o \
+					pvmfnewctx.o \
+					pvmfnotify.o \
+					pvmfnrecv.o \
+					pvmfpack.o \
+					pvmfparent.o \
+					pvmfperror.o \
+					pvmfprecv.o \
+					pvmfprobe.o \
+					pvmfpsend.o \
+					pvmfpstat.o \
+					pvmfputinfo.o \
+					pvmfrecv.o \
+					pvmfrecvinfo.o \
+					pvmfreduce.o \
+					pvmfscatter.o \
+					pvmfsend.o \
+					pvmfsendsig.o \
+					pvmfsetctx.o \
+					pvmfsetopt.o \
+					pvmfsetrbuf.o \
+					pvmfsetsbuf.o \
+					pvmfsiblings.o \
+					pvmfsleep.o \
+					pvmfspawn.o \
+					pvmfstartpvmd.o \
+					pvmftasks.o \
+					pvmftidtoh.o \
+					pvmftrecv.o \
+					pvmfunpack.o
+
+default:	$(LIBFPVM)
+
+install:	$(PVMLDIR) $(PVMLDIR)/$(LIBFPVM)
+
+$(PVMLDIR):
+	- mkdir $(PVMLDIR)
+
+$(PVMLDIR)/$(LIBFPVM):  $(LIBFPVM)
+	cp $(LIBFPVM) $(PVMLDIR)
+
+$(LIBFPVM):  $(LOBS) ftocstr.o
+	$(AR) cr $(LIBFPVM) $?
+	case x$(HASRANLIB) in xt ) echo ranlib; ranlib $(LIBFPVM) ;; esac
+
+clean:
+	rm -f $(LOBS) ftocstr.o $(LIBFPVM)
+
+tidy:
+	rm -f $(LOBS)
+
+ftocstr.o: $(SDIR)/ftocstr.c $(PVMBFUNCH)
+	$(CC) $(CFLAGS) $(SDIR)/ftocstr.c
+pvmfaddhost.o:	$(SDIR)/pvmfaddhost.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfaddhost.m4 > pvmfaddhost.c
+	$(M4B1) $(SDIR)/pvmfaddhost.m4 $(RWBSPECIAL) >> pvmfaddhost.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfaddhost.c
+	$(RM) pvmfaddhost.c
+pvmfaddmhf.o:	$(SDIR)/pvmfaddmhf.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfaddmhf.m4 > pvmfaddmhf.c
+	$(M4B1) $(SDIR)/pvmfaddmhf.m4 $(RWBSPECIAL) >> pvmfaddmhf.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfaddmhf.c
+	$(RM) pvmfaddmhf.c
+pvmfarchcode.o:	$(SDIR)/pvmfarchcode.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfarchcode.m4 > pvmfarchcode.c
+	$(M4B1) $(SDIR)/pvmfarchcode.m4 $(RWBSPECIAL) >> pvmfarchcode.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfarchcode.c
+	$(RM) pvmfarchcode.c
+pvmfbarrier.o:	$(SDIR)/pvmfbarrier.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfbarrier.m4 > pvmfbarrier.c
+	$(M4B1) $(SDIR)/pvmfbarrier.m4 $(RWBSPECIAL) >> pvmfbarrier.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfbarrier.c
+	$(RM) pvmfbarrier.c
+pvmfbcast.o:	$(SDIR)/pvmfbcast.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfbcast.m4 > pvmfbcast.c
+	$(M4B1) $(SDIR)/pvmfbcast.m4 $(RWBSPECIAL) >> pvmfbcast.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfbcast.c
+	$(RM) pvmfbcast.c
+pvmfbufinfo.o:	$(SDIR)/pvmfbufinfo.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfbufinfo.m4 > pvmfbufinfo.c
+	$(M4B1) $(SDIR)/pvmfbufinfo.m4 $(RWBSPECIAL) >> pvmfbufinfo.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfbufinfo.c
+	$(RM) pvmfbufinfo.c
+pvmfcatchout.o:	$(SDIR)/pvmfcatchout.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfcatchout.m4 > pvmfcatchout.c
+	$(M4B1) $(SDIR)/pvmfcatchout.m4 $(RWBSPECIAL) >> pvmfcatchout.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfcatchout.c
+	$(RM) pvmfcatchout.c
+pvmfconfig.o:	$(SDIR)/pvmfconfig.m4 $(M4FILE) $(PVMBFHEADERS)
+	$(M4A) $(SDIR)/pvmfconfig.m4 > pvmfconfig.c
+	$(M4B1) $(SDIR)/pvmfconfig.m4 $(RWBSPECIAL) >> pvmfconfig.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfconfig.c
+	$(RM) pvmfconfig.c
+pvmfdelhost.o:	$(SDIR)/pvmfdelhost.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfdelhost.m4 > pvmfdelhost.c
+	$(M4B1) $(SDIR)/pvmfdelhost.m4 $(RWBSPECIAL) >> pvmfdelhost.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfdelhost.c
+	$(RM) pvmfdelhost.c
+pvmfdelinfo.o:	$(SDIR)/pvmfdelinfo.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfdelinfo.m4 > pvmfdelinfo.c
+	$(M4B1) $(SDIR)/pvmfdelinfo.m4 $(RWBSPECIAL) >> pvmfdelinfo.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfdelinfo.c
+	$(RM) pvmfdelinfo.c
+pvmfdelmhf.o:	$(SDIR)/pvmfdelmhf.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfdelmhf.m4 > pvmfdelmhf.c
+	$(M4B1) $(SDIR)/pvmfdelmhf.m4 $(RWBSPECIAL) >> pvmfdelmhf.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfdelmhf.c
+	$(RM) pvmfdelmhf.c
+pvmfexit.o:	$(SDIR)/pvmfexit.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfexit.m4 > pvmfexit.c
+	$(M4B1) $(SDIR)/pvmfexit.m4 $(RWBSPECIAL) >> pvmfexit.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfexit.c
+	$(RM) pvmfexit.c
+pvmffreebuf.o:	$(SDIR)/pvmffreebuf.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmffreebuf.m4 > pvmffreebuf.c
+	$(M4B1) $(SDIR)/pvmffreebuf.m4 $(RWBSPECIAL) >> pvmffreebuf.c $(M4B2)
+	$(CC) $(CFLAGS) pvmffreebuf.c
+	$(RM) pvmffreebuf.c
+pvmffreectx.o:	$(SDIR)/pvmffreectx.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmffreectx.m4 > pvmffreectx.c
+	$(M4B1) $(SDIR)/pvmffreectx.m4 $(RWBSPECIAL) >> pvmffreectx.c $(M4B2)
+	$(CC) $(CFLAGS) pvmffreectx.c
+	$(RM) pvmffreectx.c
+pvmffrzgrp.o:	$(SDIR)/pvmffrzgrp.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmffrzgrp.m4 > pvmffrzgrp.c
+	$(M4B1) $(SDIR)/pvmffrzgrp.m4 $(RWBSPECIAL) >> pvmffrzgrp.c $(M4B2)
+	$(CC) $(CFLAGS) pvmffrzgrp.c
+	$(RM) pvmffrzgrp.c
+pvmfgather.o:	$(SDIR)/pvmfgather.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfgather.m4 > pvmfgather.c
+	$(M4B1) $(SDIR)/pvmfgather.m4 $(RWBSPECIAL) >> pvmfgather.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfgather.c
+	$(RM) pvmfgather.c
+pvmfgetctx.o:	$(SDIR)/pvmfgetctx.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfgetctx.m4 > pvmfgetctx.c
+	$(M4B1) $(SDIR)/pvmfgetctx.m4 $(RWBSPECIAL) >> pvmfgetctx.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfgetctx.c
+	$(RM) pvmfgetctx.c
+pvmfgetinfo.o:	$(SDIR)/pvmfgetinfo.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfgetinfo.m4 > pvmfgetinfo.c
+	$(M4B1) $(SDIR)/pvmfgetinfo.m4 $(RWBSPECIAL) >> pvmfgetinfo.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfgetinfo.c
+	$(RM) pvmfgetinfo.c
+pvmfgetinst.o:	$(SDIR)/pvmfgetinst.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfgetinst.m4 > pvmfgetinst.c
+	$(M4B1) $(SDIR)/pvmfgetinst.m4 $(RWBSPECIAL) >> pvmfgetinst.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfgetinst.c
+	$(RM) pvmfgetinst.c
+pvmfgetopt.o:	$(SDIR)/pvmfgetopt.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfgetopt.m4 > pvmfgetopt.c
+	$(M4B1) $(SDIR)/pvmfgetopt.m4 $(RWBSPECIAL) >> pvmfgetopt.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfgetopt.c
+	$(RM) pvmfgetopt.c
+pvmfgetrbuf.o:	$(SDIR)/pvmfgetrbuf.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfgetrbuf.m4 > pvmfgetrbuf.c
+	$(M4B1) $(SDIR)/pvmfgetrbuf.m4 $(RWBSPECIAL) >> pvmfgetrbuf.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfgetrbuf.c
+	$(RM) pvmfgetrbuf.c
+pvmfgetsbuf.o:	$(SDIR)/pvmfgetsbuf.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfgetsbuf.m4 > pvmfgetsbuf.c
+	$(M4B1) $(SDIR)/pvmfgetsbuf.m4 $(RWBSPECIAL) >> pvmfgetsbuf.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfgetsbuf.c
+	$(RM) pvmfgetsbuf.c
+pvmfgettid.o:	$(SDIR)/pvmfgettid.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfgettid.m4 > pvmfgettid.c
+	$(M4B1) $(SDIR)/pvmfgettid.m4 $(RWBSPECIAL) >> pvmfgettid.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfgettid.c
+	$(RM) pvmfgettid.c
+pvmfgsize.o:	$(SDIR)/pvmfgsize.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfgsize.m4 > pvmfgsize.c
+	$(M4B1) $(SDIR)/pvmfgsize.m4 $(RWBSPECIAL) >> pvmfgsize.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfgsize.c
+	$(RM) pvmfgsize.c
+pvmfhalt.o:	$(SDIR)/pvmfhalt.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfhalt.m4 > pvmfhalt.c
+	$(M4B1) $(SDIR)/pvmfhalt.m4 $(RWBSPECIAL) >> pvmfhalt.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfhalt.c
+	$(RM) pvmfhalt.c
+pvmfhostsync.o:	$(SDIR)/pvmfhostsync.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfhostsync.m4 > pvmfhostsync.c
+	$(M4B1) $(SDIR)/pvmfhostsync.m4 $(RWBSPECIAL) >> pvmfhostsync.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfhostsync.c
+	$(RM) pvmfhostsync.c
+pvmfinitsend.o:	$(SDIR)/pvmfinitsend.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfinitsend.m4 > pvmfinitsend.c
+	$(M4B1) $(SDIR)/pvmfinitsend.m4 $(RWBSPECIAL) >> pvmfinitsend.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfinitsend.c
+	$(RM) pvmfinitsend.c
+pvmfjoingrp.o:	$(SDIR)/pvmfjoingrp.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfjoingrp.m4 > pvmfjoingrp.c
+	$(M4B1) $(SDIR)/pvmfjoingrp.m4 $(RWBSPECIAL) >> pvmfjoingrp.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfjoingrp.c
+	$(RM) pvmfjoingrp.c
+pvmfkill.o:	$(SDIR)/pvmfkill.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfkill.m4 > pvmfkill.c
+	$(M4B1) $(SDIR)/pvmfkill.m4 $(RWBSPECIAL) >> pvmfkill.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfkill.c
+	$(RM) pvmfkill.c
+pvmflvgrp.o:	$(SDIR)/pvmflvgrp.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmflvgrp.m4 > pvmflvgrp.c
+	$(M4B1) $(SDIR)/pvmflvgrp.m4 $(RWBSPECIAL) >> pvmflvgrp.c $(M4B2)
+	$(CC) $(CFLAGS) pvmflvgrp.c
+	$(RM) pvmflvgrp.c
+pvmfmcast.o:	$(SDIR)/pvmfmcast.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfmcast.m4 > pvmfmcast.c
+	$(M4B1) $(SDIR)/pvmfmcast.m4 $(RWBSPECIAL) >> pvmfmcast.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfmcast.c
+	$(RM) pvmfmcast.c
+pvmfmkbuf.o:	$(SDIR)/pvmfmkbuf.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfmkbuf.m4 > pvmfmkbuf.c
+	$(M4B1) $(SDIR)/pvmfmkbuf.m4 $(RWBSPECIAL) >> pvmfmkbuf.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfmkbuf.c
+	$(RM) pvmfmkbuf.c
+pvmfmstat.o:	$(SDIR)/pvmfmstat.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfmstat.m4 > pvmfmstat.c
+	$(M4B1) $(SDIR)/pvmfmstat.m4 $(RWBSPECIAL) >> pvmfmstat.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfmstat.c
+	$(RM) pvmfmstat.c
+pvmfmytid.o:	$(SDIR)/pvmfmytid.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfmytid.m4 > pvmfmytid.c
+	$(M4B1) $(SDIR)/pvmfmytid.m4 $(RWBSPECIAL) >> pvmfmytid.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfmytid.c
+	$(RM) pvmfmytid.c
+pvmfnewctx.o:	$(SDIR)/pvmfnewctx.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfnewctx.m4 > pvmfnewctx.c
+	$(M4B1) $(SDIR)/pvmfnewctx.m4 $(RWBSPECIAL) >> pvmfnewctx.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfnewctx.c
+	$(RM) pvmfnewctx.c
+pvmfnotify.o:	$(SDIR)/pvmfnotify.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfnotify.m4 > pvmfnotify.c
+	$(M4B1) $(SDIR)/pvmfnotify.m4 $(RWBSPECIAL) >> pvmfnotify.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfnotify.c
+	$(RM) pvmfnotify.c
+pvmfnrecv.o:	$(SDIR)/pvmfnrecv.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfnrecv.m4 > pvmfnrecv.c
+	$(M4B1) $(SDIR)/pvmfnrecv.m4 $(RWBSPECIAL) >> pvmfnrecv.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfnrecv.c
+	$(RM) pvmfnrecv.c
+pvmfpack.o:	$(SDIR)/pvmfpack.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfpack.m4 > pvmfpack.c
+	$(M4B1) $(SDIR)/pvmfpack.m4 $(RWBSPECIAL) >> pvmfpack.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfpack.c
+	$(RM) pvmfpack.c
+pvmfparent.o:	$(SDIR)/pvmfparent.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfparent.m4 > pvmfparent.c
+	$(M4B1) $(SDIR)/pvmfparent.m4 $(RWBSPECIAL) >> pvmfparent.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfparent.c
+	$(RM) pvmfparent.c
+pvmfperror.o:	$(SDIR)/pvmfperror.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfperror.m4 > pvmfperror.c
+	$(M4B1) $(SDIR)/pvmfperror.m4 $(RWBSPECIAL) >> pvmfperror.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfperror.c
+	$(RM) pvmfperror.c
+pvmfprecv.o:	$(SDIR)/pvmfprecv.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfprecv.m4 > pvmfprecv.c
+	$(M4B1) $(SDIR)/pvmfprecv.m4 $(RWBSPECIAL) >> pvmfprecv.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfprecv.c
+	$(RM) pvmfprecv.c
+pvmfprobe.o:	$(SDIR)/pvmfprobe.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfprobe.m4 > pvmfprobe.c
+	$(M4B1) $(SDIR)/pvmfprobe.m4 $(RWBSPECIAL) >> pvmfprobe.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfprobe.c
+	$(RM) pvmfprobe.c
+pvmfpsend.o:	$(SDIR)/pvmfpsend.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfpsend.m4 > pvmfpsend.c
+	$(M4B1) $(SDIR)/pvmfpsend.m4 $(RWBSPECIAL) >> pvmfpsend.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfpsend.c
+	$(RM) pvmfpsend.c
+pvmfpstat.o:	$(SDIR)/pvmfpstat.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfpstat.m4 > pvmfpstat.c
+	$(M4B1) $(SDIR)/pvmfpstat.m4 $(RWBSPECIAL) >> pvmfpstat.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfpstat.c
+	$(RM) pvmfpstat.c
+pvmfputinfo.o:	$(SDIR)/pvmfputinfo.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfputinfo.m4 > pvmfputinfo.c
+	$(M4B1) $(SDIR)/pvmfputinfo.m4 $(RWBSPECIAL) >> pvmfputinfo.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfputinfo.c
+	$(RM) pvmfputinfo.c
+pvmfrecv.o:	$(SDIR)/pvmfrecv.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfrecv.m4 > pvmfrecv.c
+	$(M4B1) $(SDIR)/pvmfrecv.m4 $(RWBSPECIAL) >> pvmfrecv.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfrecv.c
+	$(RM) pvmfrecv.c
+pvmfrecvinfo.o:	$(SDIR)/pvmfrecvinfo.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfrecvinfo.m4 > pvmfrecvinfo.c
+	$(M4B1) $(SDIR)/pvmfrecvinfo.m4 $(RWBSPECIAL) >> pvmfrecvinfo.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfrecvinfo.c
+	$(RM) pvmfrecvinfo.c
+pvmfreduce.o:	$(SDIR)/pvmfreduce.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfreduce.m4 > pvmfreduce.c
+	$(M4B1) $(SDIR)/pvmfreduce.m4 $(RWBSPECIAL) >> pvmfreduce.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfreduce.c
+	$(RM) pvmfreduce.c
+pvmfscatter.o:	$(SDIR)/pvmfscatter.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfscatter.m4 > pvmfscatter.c
+	$(M4B1) $(SDIR)/pvmfscatter.m4 $(RWBSPECIAL) >> pvmfscatter.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfscatter.c
+	$(RM) pvmfscatter.c
+pvmfsend.o:	$(SDIR)/pvmfsend.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfsend.m4 > pvmfsend.c
+	$(M4B1) $(SDIR)/pvmfsend.m4 $(RWBSPECIAL) >> pvmfsend.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfsend.c
+	$(RM) pvmfsend.c
+pvmfsendsig.o:	$(SDIR)/pvmfsendsig.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfsendsig.m4 > pvmfsendsig.c
+	$(M4B1) $(SDIR)/pvmfsendsig.m4 $(RWBSPECIAL) >> pvmfsendsig.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfsendsig.c
+	$(RM) pvmfsendsig.c
+pvmfsetctx.o:	$(SDIR)/pvmfsetctx.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfsetctx.m4 > pvmfsetctx.c
+	$(M4B1) $(SDIR)/pvmfsetctx.m4 $(RWBSPECIAL) >> pvmfsetctx.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfsetctx.c
+	$(RM) pvmfsetctx.c
+pvmfsetopt.o:	$(SDIR)/pvmfsetopt.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfsetopt.m4 > pvmfsetopt.c
+	$(M4B1) $(SDIR)/pvmfsetopt.m4 $(RWBSPECIAL) >> pvmfsetopt.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfsetopt.c
+	$(RM) pvmfsetopt.c
+pvmfsetrbuf.o:	$(SDIR)/pvmfsetrbuf.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfsetrbuf.m4 > pvmfsetrbuf.c
+	$(M4B1) $(SDIR)/pvmfsetrbuf.m4 $(RWBSPECIAL) >> pvmfsetrbuf.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfsetrbuf.c
+	$(RM) pvmfsetrbuf.c
+pvmfsetsbuf.o:	$(SDIR)/pvmfsetsbuf.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfsetsbuf.m4 > pvmfsetsbuf.c
+	$(M4B1) $(SDIR)/pvmfsetsbuf.m4 $(RWBSPECIAL) >> pvmfsetsbuf.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfsetsbuf.c
+	$(RM) pvmfsetsbuf.c
+pvmfsiblings.o:	$(SDIR)/pvmfsiblings.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfsiblings.m4 > pvmfsiblings.c
+	$(M4B1) $(SDIR)/pvmfsiblings.m4 $(RWBSPECIAL) >> pvmfsiblings.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfsiblings.c
+	$(RM) pvmfsiblings.c
+pvmfsleep.o:	$(SDIR)/pvmfsleep.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfsleep.m4 > pvmfsleep.c
+	$(M4B1) $(SDIR)/pvmfsleep.m4 $(RWBSPECIAL) >> pvmfsleep.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfsleep.c
+	$(RM) pvmfsleep.c
+pvmfspawn.o:	$(SDIR)/pvmfspawn.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfspawn.m4 > pvmfspawn.c
+	$(M4B1) $(SDIR)/pvmfspawn.m4 $(RWBSPECIAL) >> pvmfspawn.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfspawn.c
+	$(RM) pvmfspawn.c
+pvmfstartpvmd.o:	$(SDIR)/pvmfstartpvmd.m4 $(M4FILE) $(PVMHEADERS) $(PVMALLOCH)
+	$(M4A) $(SDIR)/pvmfstartpvmd.m4 > pvmfstartpvmd.c
+	$(M4B1) $(SDIR)/pvmfstartpvmd.m4 $(RWBSPECIAL) >> pvmfstartpvmd.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfstartpvmd.c
+	$(RM) pvmfstartpvmd.c
+pvmftasks.o:	$(SDIR)/pvmftasks.m4 $(M4FILE) $(PVMBFHEADERS)
+	$(M4A) $(SDIR)/pvmftasks.m4 > pvmftasks.c
+	$(M4B1) $(SDIR)/pvmftasks.m4 $(RWBSPECIAL) >> pvmftasks.c $(M4B2)
+	$(CC) $(CFLAGS) pvmftasks.c
+	$(RM) pvmftasks.c
+pvmftidtoh.o:	$(SDIR)/pvmftidtoh.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmftidtoh.m4 > pvmftidtoh.c
+	$(M4B1) $(SDIR)/pvmftidtoh.m4 $(RWBSPECIAL) >> pvmftidtoh.c $(M4B2)
+	$(CC) $(CFLAGS) pvmftidtoh.c
+	$(RM) pvmftidtoh.c
+pvmftrecv.o:	$(SDIR)/pvmftrecv.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmftrecv.m4 > pvmftrecv.c
+	$(M4B1) $(SDIR)/pvmftrecv.m4 $(RWBSPECIAL) >> pvmftrecv.c $(M4B2)
+	$(CC) $(CFLAGS) pvmftrecv.c
+	$(RM) pvmftrecv.c
+pvmfunpack.o:	$(SDIR)/pvmfunpack.m4 $(M4FILE) $(PVMHEADERS)
+	$(M4A) $(SDIR)/pvmfunpack.m4 > pvmfunpack.c
+	$(M4B1) $(SDIR)/pvmfunpack.m4 $(RWBSPECIAL) >> pvmfunpack.c $(M4B2)
+	$(CC) $(CFLAGS) pvmfunpack.c
+	$(RM) pvmfunpack.c
+

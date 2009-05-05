@@ -1,0 +1,42 @@
+.\" $Id: pvm_delete.3,v 1.2 1996/10/11 17:00:14 pvmsrc Exp $
+.TH DELETE 3PVM "27 June, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_delete \- delete data from pvmd database
+.br
+[In Version 3.4: Relaced by pvm_delinfo]
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int cc = pvm_delete( char *name, int index )
+.br
+
+Fortran	Not available
+.fi
+
+.SH PARAMETERS
+.IP name 0.8i
+The class name, a null-terminated string.
+.IP index 0.8i
+The class index, >= 0.
+
+.SH DESCRIPTION
+See pvm_insert(3PVM) for a description of this database.
+
+\fIpvm_delete\fR
+deletes entry <name, index> from the database.
+
+.\".SH EXAMPLES
+
+.SH ERRORS
+If successful, pvm_delete returns PvmOk,
+otherwise it returns a negative error code:
+.IP PvmBadParam
+giving an invalid argument value.
+.IP PvmNoEntry
+the requested <name, index> pair does not exist.
+.PP
+.SH SEE ALSO
+pvm_insert(3PVM),
+pvm_lookup(3PVM)
+

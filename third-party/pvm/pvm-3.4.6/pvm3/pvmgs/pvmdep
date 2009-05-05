@@ -1,0 +1,63 @@
+#
+# *** DO NOT MODIFY ***  AUTOMATICALLY GENERATED  ***
+#
+# $Id: pvmdep,v 1.1 1997/05/13 18:49:53 pvmsrc Exp $
+#
+# PVM Source Header Dependencies
+#
+
+pvm_gstat.o:	$(PVMDIR)/include/pvm3.h
+pvm_gstat.o:	$(PVMDIR)/src/pvmalloc.h
+pvm_gstat.o:	$(SDIR)/pvmgs_const.h
+pvm_gstat.o:	$(SDIR)/pvmgs_decl.h
+pvm_gstat.o:	$(SDIR)/pvmgs_ds.h
+pvm_gstat.o:	$(SDIR)/pvmgs_mac.h
+pvm_gstat.o:	$(SDIR)/pvmgsd.h
+pvmgroups.o:	$(PVMDIR)/include/pvm3.h
+pvmgroups.o:	$(SDIR)/pvmgs_const.h
+pvmgroups.o:	$(SDIR)/pvmgs_decl.h
+pvmgroups.o:	$(SDIR)/pvmgs_ds.h
+pvmgroups.o:	$(SDIR)/pvmgs_mac.h
+pvmgroups.o:	$(SDIR)/pvmgsd.h
+pvmgs_core.o:	$(PVMDIR)/include/pvm3.h
+pvmgs_core.o:	$(PVMDIR)/src/pvmalloc.h
+pvmgs_core.o:	$(SDIR)/pvmgs_const.h
+pvmgs_core.o:	$(SDIR)/pvmgs_decl.h
+pvmgs_core.o:	$(SDIR)/pvmgs_ds.h
+pvmgs_core.o:	$(SDIR)/pvmgs_mac.h
+pvmgs_core.o:	$(SDIR)/pvmgsd.h
+pvmgs_func.o:	$(PVMDIR)/include/pvm3.h
+pvmgs_func.o:	$(PVMDIR)/src/bfunc.h
+pvmgs_func.o:	$(PVMDIR)/src/global.h
+pvmgs_func.o:	$(PVMDIR)/src/pvmalloc.h
+pvmgs_func.o:	$(PVMDIR)/src/pvmmimd.h
+pvmgs_func.o:	$(SDIR)/pvmgs_const.h
+pvmgs_func.o:	$(SDIR)/pvmgs_decl.h
+pvmgs_func.o:	$(SDIR)/pvmgs_ds.h
+pvmgs_func.o:	$(SDIR)/pvmgs_mac.h
+pvmgs_func.o:	$(SDIR)/pvmgsd.h
+pvmgsu_aux.o:	$(PVMDIR)/include/pvm3.h
+pvmgsu_aux.o:	$(PVMDIR)/include/pvmtev.h
+pvmgsu_aux.o:	$(PVMDIR)/src/bfunc.h
+pvmgsu_aux.o:	$(PVMDIR)/src/global.h
+pvmgsu_aux.o:	$(PVMDIR)/src/lpvm.h
+pvmgsu_aux.o:	$(PVMDIR)/src/pvmalloc.h
+pvmgsu_aux.o:	$(PVMDIR)/src/pvmmimd.h
+pvmgsu_aux.o:	$(PVMDIR)/src/tevmac.h
+pvmgsu_aux.o:	$(SDIR)/pvmgs_const.h
+pvmgsu_aux.o:	$(SDIR)/pvmgs_decl.h
+pvmgsu_aux.o:	$(SDIR)/pvmgs_ds.h
+pvmgsu_aux.o:	$(SDIR)/pvmgs_mac.h
+pvmgsu_aux.o:	$(SDIR)/pvmgsd.h
+pvmgsu_core.o:	$(PVMDIR)/include/pvm3.h
+pvmgsu_core.o:	$(PVMDIR)/include/pvmtev.h
+pvmgsu_core.o:	$(PVMDIR)/src/bfunc.h
+pvmgsu_core.o:	$(PVMDIR)/src/lpvm.h
+pvmgsu_core.o:	$(PVMDIR)/src/pvmalloc.h
+pvmgsu_core.o:	$(PVMDIR)/src/tevmac.h
+pvmgsu_core.o:	$(SDIR)/pvmgs_const.h
+pvmgsu_core.o:	$(SDIR)/pvmgs_decl.h
+pvmgsu_core.o:	$(SDIR)/pvmgs_ds.h
+pvmgsu_core.o:	$(SDIR)/pvmgs_mac.h
+pvmgsu_core.o:	$(SDIR)/pvmgsd.h
+

@@ -1,0 +1,120 @@
+.\" $Id: pvm_tasks.3,v 1.1 1996/09/23 22:21:01 pvmsrc Exp $
+.TH TASKS 3PVM "31 August, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_tasks \- Returns information about the tasks running
+on the virtual machine.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_tasks( int where, int *ntask, struct pvmtaskinfo **taskp )
+
+	struct pvmtaskinfo {
+	int ti_tid;
+	int ti_ptid;
+	int ti_host;
+	int ti_flag;
+	char *ti_a_out;
+	} taskp;
+
+.br
+
+Fortran	call pvmftasks( where, ntask, tid, ptid, dtid, flag, aout, info )
+.fi
+
+.SH PARAMETERS
+.IP where 0.8i
+Integer specifying what tasks to return information about.
+The options are:
+.ta 0.5i 1.5i
+.nf
+
+	   0	for all the tasks on the virtual machine
+	pvmd tid	for all tasks on a given host
+	  tid	for a specific task
+
+.fi
+.IP ntask
+Integer returning the number of tasks being reported on.
+.br
+.IP taskp
+Returns pointer to an array of structures which contain
+information about each task including its task ID, parent tid,
+pvmd task ID, status flag, and the name of this task's executable file.
+The status flag values are: waiting for a message, waiting for the pvmd,
+and running.
+.br
+.IP tid
+Integer returning task ID of one task
+.br
+.IP ptid
+Integer returning parent task ID
+.br
+.IP dtid
+Integer returning pvmd task ID of host task is on.
+.br
+.IP flag
+Integer returning status of task
+.br
+.IP aout
+Character string returning the name of spawned task.
+Manually started tasks return blank.
+.br
+.IP info
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_tasks
+returns information about
+tasks presently running on the virtual machine.
+The information returned is the same as
+that available from the console command
+.I ps.
+The C function returns information about the entire virtual machine
+in one call. The Fortran function returns information about one task
+per call and cycles through all the tasks.  Thus, if where = 0, and
+.I pvmftasks
+is called ntask times, all tasks will be represented.
+
+Note that in Fortran the reported value of ntask and the set of tasks
+do not change until the function resets at the end of a complete cycle.
+The user can reset pvmftasks() at any time by calling it with
+.I ntask = -1.
+
+If pvm_tasks is successful,
+.I info
+will be 0.
+If some error occurs then
+.I info
+will be < 0.
+
+.SH EXAMPLES
+.nf
+C:
+	struct pvmtaskinfo *taskp;
+	int i, ntask;
+
+	info = pvm_tasks( 0, &ntask, &taskp );
+	for (i = 0; i < ntask; i++)
+		printf("t%x\\n", taskp[i].ti_tid);
+Fortran:
+	Do i=1, NTASK
+	    CALL PVMFTASKS( DTID, NTASK, TID(i), PTID(i), DTID(i),
+	&                  FLAG(i), AOUT(i), INFO )
+	EndDo
+
+.SH ERRORS
+The following error condition can be returned by
+.I pvm_tasks
+.IP PvmBadParam
+invalid value for \fIwhere\fR argument.
+.IP PvmSysErr
+pvmd not responding.
+.IP PvmNoHost
+specified host not in virtual machine.
+.PP
+.SH SEE ALSO
+pvm_config(3PVM),
+pvm_tidtohost(3PVM)

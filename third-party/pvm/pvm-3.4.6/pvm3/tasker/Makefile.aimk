@@ -1,0 +1,44 @@
+#
+# $Id: Makefile.aimk,v 1.5 1997/06/17 20:48:50 pvmsrc Exp $
+#
+# Generic Makefile body to be concatenated to config header.
+#
+# Imports:
+#  PVM_ARCH   = the official pvm-name of your processor
+#  ARCHCFLAGS = special cc flags
+#  ARCHLIB    = special libs needed for daemon
+#
+SHELL		=	/bin/sh
+PVMDIR		=	../..
+PVMIDIR		=	$(PVMDIR)/include
+PVMLDIR		=	$(PVMDIR)/lib/$(PVM_ARCH)
+PVMLIB		=	pvm3
+PVMLIBDEP	=	$(PVMLDIR)/lib$(PVMLIB).a
+SDIR		=	$(PVMDIR)/tasker
+BDIR		=	$(PVMDIR)/bin
+XDIR		=	$(BDIR)/$(PVM_ARCH)
+
+CFLOPTS		=	-g
+CFLAGS		=	$(CFLOPTS) -I$(PVMIDIR) $(ARCHCFLAGS) \
+				-DIMA_$(PVM_ARCH) $(ARCHCFLAGS)
+LIBS		=	-L$(PVMLDIR) -l$(PVMLIB) $(ARCHLIB)
+
+HEADERS		=	$(PVMIDIR)/pvm3.h $(PVMIDIR)/pvmproto.h
+
+default:	all
+
+all:	$(XDIR) $(XDIR)/tasker
+
+$(XDIR):
+	- mkdir $(BDIR)
+	- mkdir $(XDIR)
+
+$(XDIR)/tasker:  tasker
+	cp tasker $(XDIR)
+
+tasker:	$(SDIR)/tasker.c $(HEADERS) $(XDIR) $(PVMLIBDEP)
+	$(CC) $(CFLAGS) -o tasker $(SDIR)/tasker.c $(LIBS)
+
+clean:
+	rm -f tasker *.o
+

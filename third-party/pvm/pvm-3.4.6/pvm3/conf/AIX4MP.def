@@ -1,0 +1,9 @@
+ARCHCFLAGS	=	-DSOCKLENISUINT -DSYSVSIGNAL -DNOUNIXDOM -D_BSD \
+				-DRSHCOMMAND=\"/usr/bin/rsh\" -DNEEDSSELECTH -DSHMEM
+ARCHDLIB	=	-lbsd -lpthreads
+ARCHDOBJ	=
+ARCHLIB		=	-lbsd -lpthreads 
+HASRANLIB	=	t
+PVM_ARCH	=	AIX4MP
+AR			=	ar
+MAKE		=	make

@@ -1,0 +1,49 @@
+.\" $Id: pvm_perror.3,v 1.1 1996/09/23 22:05:31 pvmsrc Exp $
+.TH PERROR 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_perror \- Prints message describing the last error returned by a PVM call.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_perror( char *msg )
+.br
+
+Fortran	call pvmfperror( msg, info )
+.fi
+
+.SH PARAMETERS
+.IP msg 0.8i
+Character string supplied by the user which will be prepended to
+the error message of the last PVM call.
+.br
+.IP info
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_perror
+returns the error message of the
+last PVM call. The user can use
+.I msg
+to add additional
+information to the error message, for example, its location.
+.PP
+Unless redirected, all stdout and stderr messages are placed
+in the file /tmp/pvml.<uid> on the master host.
+
+.SH EXAMPLES
+.nf
+C:
+	if ( pvm_send( tid, msgtag ) )
+		pvm_perror();
+.sp
+Fortran:
+	CALL PVMFSEND( TID, MSGTAG )
+	IF( INFO .LT. 0 ) CALL PVMFPERROR( 'Step 6', INFO )
+.fi
+
+.SH ERRORS
+No error condition is returned by
+.I pvm_perror.

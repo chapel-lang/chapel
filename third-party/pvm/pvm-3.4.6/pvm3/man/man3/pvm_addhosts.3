@@ -1,0 +1,125 @@
+.\" $Id: pvm_addhosts.3,v 1.1 1996/09/23 22:00:57 pvmsrc Exp $
+.TH ADDHOSTS 3PVM "22 February, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_addhosts \- Add hosts to the virtual machine.
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_addhosts( char **hosts, int nhost, int *infos )
+.br
+
+Fortran	call pvmfaddhost( host, info )
+.fi
+
+.SH PARAMETERS
+.IP hosts 0.8i
+An array of strings
+naming the hosts to be added.
+Pvmd must already be installed and
+the user must have an account on the specified hosts.
+.br
+.IP nhost
+Integer specifying the length of array hosts.
+.br
+.IP infos
+Integer array of length
+.I nhost
+which returns the
+status for each host.
+Values less than zero indicate an error,
+while positive values are TIDs of the new hosts.
+.br
+.IP host
+Character string naming the host to be added.
+.br
+.IP info
+Integer status code returned by the routine.
+Values less than \fInhost\fR indicate partial failure,
+and
+values less than 1 indicate total failure.
+
+.SH DESCRIPTION
+The routine
+.I pvm_addhosts
+adds the computers named in
+.I hosts
+to the configuration of computers making up the virtual machine.
+The names should have the same syntax as lines of a pvmd hostfile
+(see man page for pvmd3):
+A hostname followed by options of the form xx=y.
+.PP
+If pvm_addhosts is successful,
+.I info
+will be equal to
+.I nhost.
+Partial success is indicated by 0 < info < nhost,
+and total failure by info < 1.
+The array
+.I infos
+can be checked to determine which host caused the error.
+.PP
+The Fortran routine
+.I pvmfaddhost
+adds a single host to the configuration with each call.
+.I info
+will be 1 if successful or < 0 if error.
+.PP
+.\"If a host fails, the PVM system will continue to function.
+.\"The user can use this routine to increase the fault tolerance
+.\"of his PVM application.
+The status of hosts can be requested by the application using
+\fIpvm_mstat\fR and \fIpvm_config\fR.
+If a host fails it will be automatically deleted from the configuration.
+Using pvm_addhosts a replacement host can be added by the application,
+however
+it is the responsibility of the
+application developer to make his application tolerant of host failure.
+Another use of this feature would be to add more hosts
+as they become available, for example on a weekend, or if the
+application dynamically determines it could use more computational power.
+.\".PP
+.\"pvm_addhosts requires the synchronization of the entire virtual machine.
+
+.SH EXAMPLES
+.nf
+C:
+	static char *hosts[] = {
+	    "sparky",
+	    "thud.cs.utk.edu",
+	};
+	info = pvm_addhosts( hosts, 2, infos );
+.sp
+Fortran:
+	CALL PVMFADDHOST( 'azure', INFO )
+.fi
+
+.SH ERRORS
+The following error conditions can be returned by \fIpvm_addhosts\fR:
+.IP PvmBadParam
+giving an invalid argument value.
+.IP PvmAlready
+another task is currently adding hosts.
+.IP PvmSysErr
+local pvmd is not responding.
+.PP
+
+and in the \fIinfos\fR vector:
+.IP PvmBadParam
+bad hostname syntax.
+.IP PvmNoHost
+no such host.
+.IP PvmCantStart
+failed to start pvmd on host.
+.IP PvmDupHost
+host already configured.
+.IP PvmBadVersion
+pvmd protocol versions don't match.
+.IP PvmOutOfRes
+PVM has run out of system resources.
+.PP
+.SH SEE ALSO
+pvm_pvmd3(1PVM),
+pvm_delhosts(3PVM),
+pvm_start_pvmd(3PVM),
+pvm_config(3PVM),
+pvm_mstat(3PVM)

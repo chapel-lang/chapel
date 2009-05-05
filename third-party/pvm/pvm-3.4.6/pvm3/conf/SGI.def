@@ -1,0 +1,8 @@
+ARCHCFLAGS	=	-DSYSVSIGNAL -DRSHCOMMAND=\"/usr/bsd/rsh\" -DNOWAIT3
+ARCHDLIB	=	-lsun
+ARCHDOBJ	=
+ARCHLIB		=	-lsun
+HASRANLIB	=	f
+AR			=	ar
+PVM_ARCH	=	SGI
+MAKE		=	make

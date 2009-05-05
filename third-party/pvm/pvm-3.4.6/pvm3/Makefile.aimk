@@ -1,0 +1,139 @@
+#
+# $Id: Makefile.aimk,v 1.7 2007/03/07 18:16:06 pvmsrc Exp $
+#
+# top-level PVM3 aimk makefile
+#
+# targets:
+#  s: src - pvmd3, libpvm3.a
+#  c: console - pvm
+#  f: fortran lib - libfpvm3.a
+#  g: groups - pvmgs, libgpvm3.a
+#  e: examples
+#  t: tracer
+#  m: xep example
+#  x: xpvm
+#  r: srm
+#
+
+SHELL		=	/bin/sh
+
+#
+# Override with Any User Defaults
+#
+# (*** Must Add To PVMOPTS List To Pass Down ***)
+#
+
+#CC			=	cc
+#CFLOPTS	=	-g
+#F77		=	f77
+#FFLOPTS	=	-g
+#PVMDIR		=	../..
+
+#
+# Pass Options Down
+#
+
+PVMOPTS		=	CC="$(CC)" \
+				F77="$(F77)"
+
+#				CFLOPTS="$(CFLOPTS)"
+#				FFLOPTS="$(FFLOPTS)"
+#				PVMDIR=$(PVMDIR)
+
+#
+# Targets
+#
+
+default:	s c f g
+
+install:	default
+
+all:	s c f g e m t x r
+
+c:	s t
+
+g:	s
+
+e:	s f g
+
+m:	s
+
+t:	s
+
+x:	s
+
+r:	c
+
+clean:
+	- cd src; ../lib/aimk $(PVMOPTS) clean
+	- cd console; ../lib/aimk $(PVMOPTS) clean
+	- cd libfpvm; ../lib/aimk $(PVMOPTS) clean
+	- cd pvmgs; ../lib/aimk $(PVMOPTS) clean
+	- cd examples; ../lib/aimk $(PVMOPTS) clean
+	- cd gexamples; ../lib/aimk $(PVMOPTS) clean
+	- cd tracer; ../lib/aimk $(PVMOPTS) clean
+	- cd xep; ../lib/aimk $(PVMOPTS) clean
+	- cd xpvm; ../lib/aimk $(PVMOPTS) clean
+	- cd rm; ../lib/aimk $(PVMOPTS) clean
+
+## build pvmd, libpvm ##
+s:
+	@ echo "building in src"
+	cd src; ../lib/aimk $(PVMOPTS) install
+	@ echo "done building in src"
+
+## build libfpvm ##
+f:
+	@ echo "building libfpvm"
+	cd libfpvm; ../lib/aimk $(PVMOPTS) install
+	@ echo "done building libfpvm"
+
+## build groups ##
+g:
+	@ echo "building group server and library"
+	cd pvmgs; ../lib/aimk $(PVMOPTS) install
+	@ echo "done building group server and library"
+
+## build pvm console ##
+c:
+	@ echo "building console"
+	cd console; ../lib/aimk $(PVMOPTS) install
+	@ echo "done building console"
+
+## build xep example ##
+m:
+	@ echo "building xep example"
+	- cd xep; ../lib/aimk $(PVMOPTS)
+	@ echo "done building xep example"
+
+## build example programs ##
+e:
+	@ echo "building examples"
+	- cd examples; ../lib/aimk $(PVMOPTS) all
+	- cd gexamples; ../lib/aimk $(PVMOPTS) all
+	@ echo "done building examples"
+
+## build tracer ##
+t:
+	@ echo "building tracer"
+	- cd tracer; ../lib/aimk $(PVMOPTS) install
+	@ echo "done building tracer"
+
+## build xpvm ##
+x:
+	@ echo "building XPVM"
+	- cd xpvm; ../lib/aimk $(PVMOPTS) install
+	@ echo "done building XPVM"
+
+## build srm ##
+r:
+	@ echo "building srm"
+	- cd rm; ../lib/aimk $(PVMOPTS) install
+	@ echo "done building srm"
+
+## build pvmd, libpvm.so ##
+shared:
+	@ echo "building shared in src"
+	cd src; ../lib/aimk $(PVMOPTS) install-shared
+	@ echo "done building shared in src"
+

@@ -1,0 +1,69 @@
+Directory: pvm3/gexamples
+
+This directory contains several example programs for using dynamic group
+services. The following is a list with short descriptions of what each
+program illustrates:
+
+      frsg.f   -  Fortran example of reduce, scatter, and gather operations. 
+                  Sum of sqaures for first N integers. N defaults to 
+                  20 with 4 processors if frsg is spawned from the console. 
+
+                  Synopsis:
+                        frsg 
+
+      trsg.c   -  C version of the frsg program
+
+                  Synopsis:
+                        trsg
+
+      gexamp.c -  Instance 0 spawns nproc-1 copies of gexamp. All group
+                  members then perform a barrier. All members
+                  broadcast a copy of their tid and instance to the
+                  entire. Each process checks the incoming message
+                  against its own data.
+                   
+                  Synopsis: 
+                        gexamp <nproc>
+
+      joinleave.c -  One process continually joins and leaves the same
+                  group. A diagnostic is printed every 100 join/leave pairs.
+                  Will join and leave the group 10000 times, unless a 
+                  different count is specified on the command line.
+
+                  Synopsis:
+                        joinleave [njoins]
+      thb.c
+      tnb.c    -  thb joins 32 different groups.  It checks the
+                  group server for consistency using pvm_gettinst and
+                  pvm_gettid.  It then spawns <nproc> tnb process and 
+                  sends them some intialization information. The tnb 
+                  processes receive the initialization
+                  data and then perform a barrier with themselves and
+                  the thb process.
+              
+                  Synopsis:
+                        thb <nproc>
+
+
+HOW TO COMPILE
+
+   $PVM_ROOT/lib should be in your path so that the aimk program can be
+   located. Then,
+
+          % aimk all                # make  all the test programs
+         
+          % aimk frsg               # make just frsg
+
+
+NOTES FOR PARAGON USERS
+
+   All the codes are compiled to run as compute node programs. You
+   must therefore  spawn the programs from the pvm console.  For
+   example to run the gexamp program type at the pvm console
+
+    % pvm              # start a pvm console, in $PVM_ROOT/lib/$PVM_ARCH/pvm
+      pvm> spawn -> gexamp <4>
+
+
+  The -> redirects all output of the tasks to the pvm console window.
+

@@ -1,0 +1,8 @@
+ARCHCFLAGS	=	-I/usr/include/bsd -DSYSVSIGNAL -DNOWAIT3
+ARCHDLIB	=	-lrpcsvc -lsun -lbsd -lgen
+ARCHDOBJ	=
+ARCHLIB		=	-lrpcsvc -lsun -lbsd
+HASRANLIB	=	t
+AR			=	ar
+PVM_ARCH	=	MIPS
+MAKE		=	make

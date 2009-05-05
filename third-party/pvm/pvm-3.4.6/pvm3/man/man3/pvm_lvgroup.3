@@ -1,0 +1,60 @@
+.\" $Id: pvm_lvgroup.3,v 1.1 1996/09/23 22:05:18 pvmsrc Exp $
+.TH LVGROUP 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_lvgroup \- Unenrolls the calling process from a named group.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_lvgroup( char *group )
+.br
+
+Fortran	call pvmflvgroup( group, info )
+.fi
+
+.SH PARAMETERS
+.IP group 0.8i
+Character string group name of an existing group.
+.br
+.IP info
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_lvgroup
+unenrolls the calling process from
+the group named
+.I group.
+If there is an error
+.I info
+will be negative.
+.PP
+If a process leaves a group by calling either pvm_lvgroup
+or pvm_exit, and later rejoins the same group, the process
+may be assigned a new instance number. Old instance
+numbers are reassigned to processes calling pvm_joingroup.
+
+.SH EXAMPLES
+.nf
+C:
+	info = pvm_lvgroup( "worker" );
+.sp
+Fortran:
+	CALL PVMFLVGROUP( 'group2', INFO )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_lvgroup
+.IP PvmSysErr
+pvmd not responding.
+.IP PvmBadParam
+giving a NULL group name.
+.IP PvmNoGroup
+giving a non-existent group name.
+.IP PvmNotInGroup
+asking to leave a group you are not a member of.
+.PP
+.SH SEE ALSO
+pvm_joingroup(3PVM)

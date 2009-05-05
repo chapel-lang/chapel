@@ -1,0 +1,25 @@
+==========================
+PVM for Chapel development
+==========================
+
+This copy of PVM has been imported into Chapel's source tree for
+convenience and is a snapshot of PVM version 3.4.6 obtained from
+Netlib at: http://www.netlib.org/pvm3/index.html
+
+Any Chapel issues that seem to be related to PVM should be directed to
+the Chapel team at chapel-bugs@lists.sourceforge.net, as the cause is
+most likely due to Chapel's use of PVM and not the PVM library itself.
+
+We have taken the liberty of removing the pvm3/src/regex and
+pvm3/src/OS2/Makefile.reg files from our copy of the distribution in
+order to avoid potential confusion around files distributed under the
+GPL license and due to reports from ORNL that these files are no
+longer needed.  Otherwise, the source is unchanged.
+
+The structure of this directory is as follows:
+
+./
+  Makefile        : a Makefile to help build PVM for Chapel's use
+  README          : this file
+  pvm-3.4.6/      : a container directory to support multiple pvm versions
+    pvm3/         : the official PVM release, with the above modifications

@@ -1,0 +1,39 @@
+.\" $Id: pvm_halt.3,v 1.1 1996/09/23 22:01:34 pvmsrc Exp $
+.TH HALT 3PVM "06 May, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_halt \- Shuts down the entire PVM system.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_halt( void )
+.br
+
+Fortran	call pvmfhalt( info )
+.fi
+
+.SH PARAMETERS
+.br
+.IP info 0.8i
+Integer returns the error status.
+
+.SH DESCRIPTION
+The routine
+.I pvm_halt
+shuts down the entire PVM system including remote tasks,
+remote pvmds, the local tasks (including the calling task)
+and the local pvmd.
+
+The task calling pvm_halt() must ignore or catch signal \fISIGTERM\fR
+or it will be killed along with all the others.
+
+.SH ERRORS
+The following error conditions can be returned
+.IP PvmSysErr
+local pvmd is not responding.
+.PP
+
+.SH SEE ALSO
+pvm_delhosts(3PVM),
+pvm_kill(3PVM),
+pvm_exit(3PVM)

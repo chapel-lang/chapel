@@ -1,0 +1,131 @@
+.\" $Id: pvm_settmask.3,v 1.1 1996/09/23 22:20:57 pvmsrc Exp $
+.TH SETTMASK 3PVM "16 March, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_gettmask,
+pvm_settmask \- Get or set trace mask of a task or its children.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	#include <pvm3.h>
+	#include <pvmtev.h>
+
+	int info = pvm_gettmask( int who, Pvmtmask mask )
+.br
+	int info = pvm_settmask( int who, Pvmtmask mask )
+.br
+
+Fortran	Not Available
+.fi
+
+.SH PARAMETERS
+.IP who 0.8i
+Specifies which trace mask to get or set:
+.ta 4 20
+.nf
+	PvmTaskSelf	The current task
+	PvmTaskChild	Children tasks to be spawned
+.fi
+.IP mask
+Trace mask (owned by caller),
+which is filled in with the current trace vector on calling pvm_gettmask
+or used to set the current trace vector on calling pvm_settmask.
+.br
+.IP info
+Status code returned.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+Each task has a trace mask,
+which can be used to individually enable tracing of each \fIlibpvm\fR
+function.
+The mask is inherited from its parent task (or initially all cleared
+if the task has no parent).
+When calls are made to functions in libpvm,
+the parameters and results are sent in messages to the \fItrace sink\fR
+of the task (variable \fIPvmTraceTid\fR set by
+calling \fIpvm_setopt\fR - see man page).
+
+The PVM console and XPVM use this system to get trace data from application
+programs.
+
+A task can get or set either its own trace mask,
+or the mask passed to children it spawns.
+Note the mask must be set
+before the spawn call;
+setting the child trace mask has no effect on already-running children.
+
+The trace mask can be kept in a temporary variable, declared as:
+
+	Pvmtmask mymask;
+
+Right now, this is a character array with approximately 80 bits.
+
+There are four macros defined to manipulate trace masks.
+Along with the functions,
+these allow a program to get the current trace mask, modify or save
+it,
+and put it back:
+
+.nf
+	TEV_INIT_MASK(mask)
+	TEV_SET_MASK(mask, kind)
+	TEV_UNSET_MASK(mask, kind)
+	TEV_CHECK_MASK(mask, kind)
+.fi
+
+TEV_INIT_MASK initializes a mask to all bits cleared
+and must be used to initialize a trace mask (unless that is done by
+setting it from pvm_gettmask).
+TEV_SET_MASK sets a bit in a mask.
+Bit values are defined in <pvmtev.h>.
+Likewise, TEV_UNSET_MASK clears a single bit
+and TEV_CHECK_MASK checks to see if a bit is set,
+returning nonzero if true.
+
+Note:
+Most events in the trace mask come in pairs,
+the first (ending in ...0) is generated on entry to a function and the
+second (...1) on exit.
+The trace mask has only half as many bits as there are events;
+events are enabled in pairs.
+In other words,
+if you select TEV_SEND0, you'll also get TEV_SEND1.
+
+The trace mask is deliberately kept as a printable (and null-terminated) string,
+for two reasons.
+First, it is passed through the environment between tasks,
+in the form:
+
+	PVMTMASK=@@AAOG@@NO@L@@@@@@@@
+
+so the pvmd doesn't have to explicitly manage it.
+Second, the mask variables can be passed between tasks using
+pvm_pkstr() or otherwise manipulated as strings.
+
+pvm_gettmask and pvm_settmask return PvmOk on success,
+else a negative value.
+
+.SH EXAMPLES
+.nf
+C:
+	#include <pvm3.h>
+	#include <pvmtev.h>
+
+	Pvmtmask m;
+
+	pvm_gettmask( PvmTaskChild, m );
+	TEV_SET_MASK(m, TEV_ADDHOSTS0 );
+	pvm_settmask( PvmTaskChild, m );
+	pvm_spawn( "worker", (char **)0, PvmTaskDefault, "", 1, (int *)0);
+
+.SH ERRORS
+The following error condition can be returned by
+pvm_gettmask or pvm_settmask:
+.IP PvmBadParam
+invalid value for \fIwho\fR argument.
+.PP
+.SH SEE ALSO
+pvm(1PVM),
+pvm_getopt(3PVM),
+pvm_setopt(3PVM)

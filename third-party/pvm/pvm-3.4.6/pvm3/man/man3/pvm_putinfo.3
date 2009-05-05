@@ -1,0 +1,249 @@
+.\" $Id: pvm_putinfo.3,v 1.10 2000/03/21 21:45:53 pvmsrc Exp $
+.TH PUTINFO 3PVM "22 May, 1997" "" "PVM Version 3.4"
+.SH NAME
+pvm_putinfo,
+pvm_recvinfo,
+pvm_getmboxinfo,
+pvm_delinfo \- Store and retrieve messages in global mailbox.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int index = pvm_putinfo( char *name, int bufid, int flags )
+.br
+	int bufid = pvm_recvinfo( char *name, int index, int flags )
+.br
+	int info = pvm_delinfo( char *name, int index, int flags )
+.br
+	int info = pvm_getmboxinfo( char *pattern, int *nclasses, 
+	                            struct pvmmboxinfo **classes )
+.br
+
+     struct pvmmboxinfo {
+        char *mi_name;                /* class name */
+        int   mi_nentries;            /* # of entries for this class */
+        int  *mi_indices;             /* mbox entry indices */
+        int  *mi_owners;              /* mbox entry owner tids */
+        int  *mi_flags;               /* mbox entry flags */
+     };
+
+Fortran
+.br
+	call pvmfputinfo( name, bufid, flags, index )
+.br
+	call pvmfrecvinfo( name, index, flags, bufid )
+.br
+	call pvmfdelinfo( name, index, flags, info )
+.br
+	call pvmfgetmboxinfo( pattern, name, nclasses, nentries, 
+	                      index, owner, flags, info )
+.fi
+
+
+.SH PARAMETERS
+.IP name
+.br
+Database key (class name), any null-terminated string.
+.IP index
+.br
+Database key (class index), >= 0.
+Default index = 0.
+.IP flags
+.br
+User specified options.  (see below)
+.IP bufid
+.br
+Handle of message buffer to put in database, or message returned.
+A returned bufid < 0 indicates an error.
+.IP info
+.br
+Resulting status code.
+.IP pattern
+.br
+GNU regular expression (pattern) to match on names in mailbox database.
+Additionally, the singular "*" will match on all names.
+.IP nclasses
+.br
+Number of classes matching pattern.
+.IP classes
+.br
+Array of pvmmboxinfo mailbox entries matching pattern.
+.IP nentries
+.br
+Number of entries for a given class.
+.IP owner
+.br
+Task id that inserted entry into mailbox database.
+.SH DESCRIPTION
+
+These functions implement a "message mailbox" database
+that can be used by PVM tasks to advertise information to
+other PVM tasks.
+An example would be to advertise names or locations
+of services.  Another example would be to advertise
+a common "context" on which two tasks may communicate.
+
+The database entries are PVM messages keyed by
+a user specified name and an optional index value.
+The name may be any null-terminated string and the index a
+non-negative integer.
+The index value is assigned by PVM and is used to
+uniquely identify one of multiple named instances
+within the database.
+
+Entries are "owned" by the task that created them.
+An entry is automatically removed from the database when 
+the owner task exits unless the database entry was
+created with flag PvmMboxPersistent.
+
+When a task exits and leaves an entry in the mailbox,
+the owner tid of that entry is marked as zero (0) to
+indicate that there is no longer an active owner task.
+
+
+.I \fIpvm_putinfo\fR
+inserts a record in the database, given a key and data (message).
+It returns mailbox index number if the record is successfully stored,
+PvmExists if a record with the given key already exists,
+or PvmDenied if an attempt is made to overwrite a locked record.
+
+The following options are added together as the flags parameter
+to pvm_putinfo.
+
+.IP PvmMboxDefault
+Inserts entry as the only named instance for a given name.
+This entry may only be modified and deleted by its owner.
+It is automatically deleted when its owner exits.
+
+.IP PvmMboxPersistent
+Entry remains in the database when the owner task exits.
+Entries are removed from the database when PVM is halted
+or a reset is issued from the console.
+
+.IP PvmMboxMultiInstance
+Permits multiple entry instances of the same name.
+PVM will assign an index key to each instance.
+
+.IP PvmMboxOverWritable
+Permits other tasks to overwrite and delete this
+database entry.
+
+.IP PvmMboxDirectIndex( index )
+Performs an atomic delete and re-insert for the mailbox entry
+at the given index.
+Valid index values for this macro are limited to the range
+[ 0 .. \fIPvmMboxMaxDirectIndex\fR ).
+The given mailbox entry must have been created with the
+\fIPvmMboxOverWritable\fR flag set.
+If \fIindex\fR is greater than 0, then the mailbox must also have
+been created with the \fIPvmMboxMultiInstance\fR flag set.
+.PP
+
+.I \fIpvm_recvinfo\fR
+operates just like a pvm_recv() except the message is coming
+from the database.
+The message should be unpacked after pvm_recvinfo().
+Like pvm_recv, pvm_recvinfo returns a pointer to a message buffer 
+containing the record matching the key <name,index> from the database.
+Returned value < 0 indicates an error.
+
+The following options are added together as the flags parameter
+to pvm_recvinfo.
+
+.IP PvmMboxDefault
+Exact match on key <name, index> is returned.
+Returns PvmNotFound if exact match not found.
+
+.IP PvmMboxFirstAvail
+The first entry in <name> with index greater than or equal to
+the specified index parameter is retuned.
+PvmMboxFirstAvail with index = 0 will produce the same
+results as using PvmMboxDefault.
+
+.IP PvmMboxReadAndDelete
+Return entry and delete from database.
+Task must be permitted to do both read and delete otherwise
+an error will occur.
+bufid returns PvmNotFound if entry does not exist and
+will return PvmDenied if the record exists but may not be deleted.
+.PP
+
+.I \fIpvm_delinfo\fR
+deletes database entry specified by the key <name, index>.
+Returns PvmOK if the record was deleted, PvmNotFound if 
+the record does not exist, or PvmDenied if an attempt is
+made to remove a "locked" record.
+
+There are no flags presently specified for pvm_delinfo.
+
+.I \fIpvm_getmboxinfo\fR
+returns an array of pvmmboxinfo for all class names in the database.
+This is used, for example, by programs that clean up the database
+or for applications to find out what is available.
+\fIclasses\fR returns a pointer to the array allocated by libpvm and freed
+on the next call to pvm_getmboxinfo.
+
+The Fortran function returns information on one entry per call.
+Thus, if called repeatedly until an info value of
+.I PvmNotFound
+is returned, all entries matching the given pattern will have been
+returned.
+If a new pattern is desired, calling pvmfgetnames() with info = -1
+will reset the entry name list and obtain a new list for the given
+pattern.
+
+.SH EXAMPLES
+.nf
+C:
+	/*
+	*  create and insert mailbox entry
+	*/
+	sprintf( service, "Task_A_service" );
+	sprintf( message, "Greetings from task A." );
+	pvm_initsend( PvmDataDefault );
+	pvm_pkint( &mytid, 1, 1 );
+	pvm_pkint( &context, 1, 1 );
+	pvm_pkstr( message );
+	if (( pvm_putinfo( service, pvm_getsbuf(), PvmMboxDefault )) == PvmExists ){
+		printf( "can't register - service already running\n" );
+		exit( -1 );
+	}
+
+
+	/*
+	*  look for and retrieve specified mailbox
+	*/
+	sprintf( service, "Task_A_service" );
+	if (( msg_buf = pvm_recvinfo(service, 0, PvmMboxFirstAvail )) >= 0 ){
+		pvm_setrbuf( msg_buf );
+		pvm_upkint( &their_tid, 1, 1 );
+		pvm_upkint( &their_context, 1, 1 );
+		pvm_upkstr( message );
+	}
+
+Fortran:
+	we need the fortran examples...
+
+
+.fi
+
+.SH ERRORS
+The following error conditions can be returned by one or more of these
+functions:
+.IP PvmBadParam
+An invalid value was specified for \fIbufid\fR argument.
+.IP PvmNoSuchBuf
+Message buffer \fIbufid\fR doesn't exist.
+.IP PvmNoMem
+Libpvm is unable to allocate memory to pack data.
+.IP PvmExists
+The requested key is already in use (pvm_putinfo).
+.IP PvmNotFound
+The requested key does not exist (pvm_recvinfo, pvm_delinfo).
+.IP PvmDenied
+The key is locked by another task and cannot be replaced or deleted.
+
+.SH SEE ALSO
+pvm_initsend(3PVM),
+pvm_getsbuf(3PVM),
+pvm_pack(3PVM),

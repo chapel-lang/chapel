@@ -1,0 +1,232 @@
+.\" $Id: pvm_unpack.3,v 1.1 1996/09/23 22:21:07 pvmsrc Exp $
+.TH UNPACK 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_unpack \- Unpack the active message buffer into arrays
+of prescribed data type.
+
+.SH SYNOPSIS
+.ft B
+.nf
+C
+.br
+	int info = pvm_unpackf( const char *fmt, ... )
+.br
+	int info = pvm_upkbyte( char *xp, int nitem, int stride)
+.br
+	int info = pvm_upkcplx( float *cp, int nitem, int stride)
+.br
+	int info = pvm_upkdcplx( double *zp, int nitem, int stride)
+.br
+	int info = pvm_upkdouble( double *dp, int nitem, int stride)
+.br
+	int info = pvm_upkfloat( float *fp, int nitem, int stride)
+.br
+	int info = pvm_upkint( int *ip, int nitem, int stride)
+.br
+	int info = pvm_upkuint( unsigned int *ip, int nitem, int stride )
+.br
+	int info = pvm_upkushort( unsigned short *ip, int nitem, int stride )
+.br
+	int info = pvm_upkulong( unsigned long *ip, int nitem, int stride )
+.br
+	int info = pvm_upklong( long *ip, int nitem, int stride)
+.br
+	int info = pvm_upkshort( short *jp, int nitem, int stride)
+.br
+	int info = pvm_upkstr( char *sp )
+
+Fortran
+.br
+	call pvmfunpack( what, xp, nitem, stride, info )
+.fi
+
+.SH PARAMETERS
+.IP fmt 0.8i
+Printf-like format expression specifying what to pack. (See discussion)
+.br
+.IP nitem
+The total number of \fIitems\fR to be unpacked
+(not the number of bytes).
+.\" For example, if nitem = 5 in pvm_upkdouble, then 5 double precision
+.\" floating point values will be unpacked.
+.br
+.IP stride
+The stride to be used when packing the items.
+For example, if stride = 2 in pvm_upkcplx, then every other complex
+number will be unpacked.
+.br
+.IP xp
+Pointer to the beginning of a block of bytes. Can be any data type,
+but must match the corresponding pack data type.
+.br
+.IP cp
+Complex array at least nitem*stride items long.
+.br
+.IP zp
+Double precision complex array at least nitem*stride items long.
+.br
+.IP dp
+Double precision real array at least nitem*stride items long.
+.br
+.IP fp
+Real array at least nitem*stride items long.
+.br
+.IP ip
+Integer array at least nitem*stride items long.
+.br
+.IP jp
+Integer*2 array at least nitem*stride items long.
+.br
+.IP sp
+Pointer to a null terminated character string.
+.br
+.IP what
+Integer specifying the type of data being unpacked.
+.sp
+.ce
+\fIwhat\fR options
+.ta 0.5i 2.0i 2.5i 4.0i
+.nf
+	STRING	0	REAL4	4
+	BYTE1	1	COMPLEX8	5
+	INTEGER2	2	REAL8	6
+	INTEGER4	3	COMPLEX16	7
+
+.fi
+.IP info
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+Each of the pvm_upk* routines unpacks an array of the
+given data type from the active receive buffer.
+The arguments for each of the routines are a pointer
+to the array to be unpacked into,
+.I nitem
+which is the total number of items to unpack, and
+.I stride
+which is the stride to use when unpacking.
+.PP
+An exception is pvm_upkstr() which by definition unpacks
+a NULL terminated character string and thus does not need
+.I nitem
+or
+.I stride
+arguments.
+The Fortran routine pvmfunpack( STRING, ... ) expects
+.I nitem
+to be the number of characters in the string and
+.I stride
+to be 1.
+.PP
+If the unpacking is successful,
+.I info
+will be 0. If some error occurs then
+.I info
+will be < 0.
+.PP
+A single variable (not an array) can be unpacked by setting
+.I nitem
+= 1 and
+.I stride
+= 1.
+.PP
+The routine pvm_unpackf() uses a printf-like format expression
+to specify what and how to unpack data from the receive buffer.
+All variables are passed as addresses.
+A BNF-like description of the format syntax is:
+.br
+    format : null | init | format fmt
+.br
+    init : null | '%' '+'
+.br
+    fmt : '%' count stride modifiers fchar
+.br
+    fchar : 'c' | 'd' | 'f' | 'x' | 's'
+.br
+    count : null | [0-9]+ | '*'
+.br
+    stride : null | '.' ( [0-9]+ | '*' )
+.br
+    modifiers : null | modifiers mchar
+.br
+    mchar : 'h' | 'l' | 'u'
+
+Formats:
+.nf
+  +  means initsend - must match an int (how) in the param list.
+  c  pack/unpack bytes
+  d  integer
+  f  float
+  x  complex float
+  s  string
+
+Modifiers:
+  h  short (int)
+  l  long  (int, float, complex float)
+  u  unsigned (int)
+
+'*' count or stride must match an int in the param list.
+.fi
+
+.PP
+Future extensions to the
+.I what
+argument in pvmfunpack will include
+64 bit types when XDR encoding of these types is available.
+Meanwhile users should be aware that precision can be lost
+when passing data from a 64 bit machine like a Cray to a
+32 bit machine like a SPARCstation. As a mnemonic the
+.I what
+argument name includes the number of bytes of
+precision to expect. By setting encoding to PVMRAW (see pvmfinitsend)
+data can be transferred between two 64 bit machines with
+full precision even if the PVM configuration is heterogeneous.
+.PP
+Messages should be unpacked exactly like they were packed
+to insure data integrity.
+Packing integers and unpacking
+them as floats will often fail because a type encoding
+will have occurred transferring the data between heterogeneous
+hosts. Packing 10 integers and 100 floats then trying to
+unpack only 3 integers and the 100 floats will also fail.
+
+.SH EXAMPLES
+.nf
+C:
+	info = pvm_recv( tid, msgtag );
+	info = pvm_upkstr( string );
+	info = pvm_upkint( &size, 1, 1 );
+	info = pvm_upkint( array, size, 1 );
+	info = pvm_upkdouble( matrix, size*size, 1 );
+.sp
+	int count, *iarry;
+	double darry[4];
+        pvm_unpackf("%d", &count);
+        pvm_unpackf("%*d %4lf", count, iarry, darry);
+.sp
+Fortran:
+	CALL PVMFRECV( TID, MSGTAG, INFO );
+	CALL PVMFUNPACK( INTEGER4, NSIZE, 1, 1, INFO )
+	CALL PVMFUNPACK( STRING, STEPNAME, 8, 1, INFO )
+	CALL PVMFUNPACK( REAL4, A(5,1), NSIZE, NSIZE , INFO )
+.fi
+
+.SH ERRORS
+.IP PvmNoData
+Reading beyond the end of the receive buffer.
+Most likely cause is trying to unpack more items than were originally
+packed into the buffer.
+.IP PvmBadMsg
+The received message can not be decoded.
+Most likely because the hosts are heterogeneous and the user specified
+an incompatible encoding.
+Try setting the encoding to PvmDataDefault (see pvm_mkbuf).
+.IP PvmNoBuf
+There is no active receive buffer to unpack.
+.PP
+.SH SEE ALSO
+pvm_pack(3PVM)
+pvm_send(3PVM),
+pvm_recv(3PVM),
+pvm_pkmesg(3PVM)

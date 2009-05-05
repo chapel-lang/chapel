@@ -1,0 +1,34 @@
+
+misc directory
+09 October 1995
+
+________________________________________________________________________
+
+This directory contains a bunch of random PVM-related programs and
+utilities.  They're here because they might be generally useful, but
+I don't want to kill myself supporting them.  Like the "examples",
+even less official.
+
+pvm_fork.c
+
+ This is an implementation of pvm_fork(), a function to fork a new PVM
+ task from an existing PVM task.
+
+xhoster/
+
+ This is a little X-Windows program that enrolls as the hoster task,
+ giving the user a convenient place to type passwords when starting
+ hosts that require them.
+
+group-hack-337
+
+ This is a patch to PVM version 3.3.7 to allow access to the virtual
+ machine to anyone in a unix group.  If environment variable PVM_GID
+ is set to the name or number of a group, sockets and files are
+ chown'd to that group and mode 0660 is used instead of 0600.
+
+ Note that all spawned processes have the same user id as the pvmd,
+ so this isn't a true multi-user virtual machine.  This is seen as
+ being useful mainly for allowing e.g. a group of people access to
+ a database, or display or instrument server.
+

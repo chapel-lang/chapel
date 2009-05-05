@@ -1,0 +1,81 @@
+.\" $Id: pvm_archcode.3,v 1.2 1999/01/29 17:02:26 pvmsrc Exp $
+.TH ARCHCODE 3PVM "15 March, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_archcode \- Returns the data representation code for a
+PVM architecture name.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int cod = pvm_archcode( char *arch )
+.br
+
+Fortran	call pvmfarchcode( arch, cod )
+.fi
+
+.SH PARAMETERS
+.IP arch 0.8i
+Character string containing the architecture name.
+.br
+.IP cod
+Integer returning architecture code.
+.SH DESCRIPTION
+The routine
+.I pvm_archcode
+returns an integer given an architecture name.
+The code returned identifies machines
+with compatible binary data formats.
+For example, SUN4 and RS6K have the same code,
+while ALPHA has a different one
+(because a few datatypes have different sizes).
+This lets you know when you can get away with using \fIPvmDataRaw\fR
+instead of \fIPvmDataDefault\fR
+encoding to pass messages between tasks on two machines.
+.PP
+Naturally,
+you shouldn't assume the values returned by pvm_archcode
+are etched in stone;
+the numbers have no intrinsic meaning except that
+if two different arch names map to the same value
+then they're compatible.
+.PP
+This routine is actually obsolete in the sense that the architecture
+codes returned are already available in the \fIhi_dsig\fR field
+of the pvmhostinfo structure returned by pvm_config(),
+as shown in the below example.
+The routine is maintained for backwards compatibility only.
+
+
+.SH EXAMPLES
+.nf
+C:
+	struct pvmhostinfo *hip;
+	int i;
+
+	pvm_config((int *)0, (int *)0, &hip);
+	i = pvm_archcode(hip[0].hi_arch);
+
+	/* or you could just do:  i = hip[0].hi_dsig;  */
+.sp
+Fortran:
+	CALL PVMFARCHCODE( 'RS6K', k )
+.fi
+
+.SH ERRORS
+On success, \fIpvm_archcode\fR returns
+a positive integer data signature.
+
+The following error conditions can be returned as well:
+.IP PvmBadParam
+giving an invalid architecture name.
+.IP PvmNotFound
+there is no host with the given architecture name in the current
+virtual machine configuration.
+.IP PvmSysErr
+pvmd not responding.
+.SH SEE ALSO
+pvm_config(3PVM),
+pvm_initsend(3PVM),
+pvm_notify(3PVM),
+pvm_tasks(3PVM),
+pvm_tidtohost(3PVM)

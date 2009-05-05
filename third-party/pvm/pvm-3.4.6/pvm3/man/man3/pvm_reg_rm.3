@@ -1,0 +1,109 @@
+.\" $Id: pvm_reg_rm.3,v 1.1 1996/09/23 22:06:04 pvmsrc Exp $
+.TH REG_RM 3PVM "4 March, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_reg_rm \- Register task as PVM resource manager.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	#include <pvmsdpro.h>
+
+	int cc = pvm_reg_rm( struct pvmhostinfo **hip )
+.br
+	struct pvmhostinfo {
+.br
+		int  hi_tid;
+.br
+		char *hi_name;
+.br
+		char *hi_arch;
+.br
+		int  hi_speed;
+.br
+	};
+.br
+
+Fortran	Not Available
+.fi
+
+.SH PARAMETERS
+.IP hostp
+Returns
+pointer to a pvmhostinfo structure which contains
+information about the master host.
+
+.SH DESCRIPTION
+
+Registers the calling task as a PVM task and slave host manager.
+This
+means it intercepts certain libpvm calls from other tasks
+in order to have a say in scheduling policy.
+The resource manager will asynchronously receive messages from tasks
+containing requests for service,
+as well as messages from pvmds notifying it of system failures.
+
+Before you start using this function,
+be warned that it's not a trivial thing,
+i.e. you can't just call it to turn off the default round-robin task
+assignment.
+Rather,
+it allows you to write your own resource manager and hook it to PVM.
+
+To understand what the following messages mean,
+you should refer to the PVM source code and/or user guide section
+on implementation;
+There's just too much to say about them.
+
+When one of the following libpvm functions is called in a task with
+resource manager set,
+the given message tag is sent to to resource manager.
+
+.ta 4 26 44
+.nf
+	\fILibpvm call	RM message	Normal message\fR
+	pvm_addhosts()	SM_ADDHOST	TM_ADDHOST
+	pvm_config()	SM_CONFIG	TM_CONFIG
+	pvm_delhosts()	SM_DELHOST	TM_DELHOST
+	pvm_notify()	SM_NOTIFY	TM_NOTIFY
+	pvm_spawn()	SM_SPAWN	TM_SPAWN
+	pvm_tasks()	SM_TASK	TM_TASK
+	pvm_reg_rm()	SM_SCHED	TM_SCHED
+.fi
+
+The resource manager must in turn compose the following messages and send
+them to the pvmds:
+
+.ta 4 22
+.nf
+	\fIRM message	Normal message\fR
+	SM_EXEC	DM_EXEC
+	SM_EXECACK	DM_EXECACK
+	SM_ADD	DM_ADD
+	SM_ADDACK	DM_ADDACK
+	SM_HANDOFF	(none - change of resource manager)
+.fi
+
+The following messages are sent asynchronously to the resource manager by
+the system:
+
+.nf
+	\fIRM message	Meaning\fR
+	SM_TASKX	notify of task exit/fail
+	SM_HOSTX	notify of host delete/fail
+.fi
+
+The resource manager task
+must use pvm_setopt(PvmResvTids, 1) to allow sending reserved messages.
+Messages should be packed using encoding \fIPvmDataDefault\fR to
+ensure they can be unpacked anywhere in the system.
+
+pvm_reg_rm()
+returns PvmOk when successful.
+
+.SH SEE ALSO
+pvm_addhosts(3PVM),
+pvm_config(3PVM),
+pvm_delhosts(3PVM),
+pvm_notify(3PVM),
+pvm_spawn(3PVM),
+pvm_tasks(3PVM)

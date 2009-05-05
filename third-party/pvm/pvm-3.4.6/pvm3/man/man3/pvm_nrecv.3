@@ -1,0 +1,116 @@
+.\" $Id: pvm_nrecv.3,v 1.1 1996/09/23 22:05:26 pvmsrc Exp $
+.TH NRECV 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_nrecv \- Non-blocking receive.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int bufid = pvm_nrecv( int tid, int msgtag )
+.br
+
+Fortran	call pvmfnrecv( tid, msgtag, bufid )
+.fi
+
+.SH PARAMETERS
+.IP tid 0.8i
+Integer task identifier of sending process supplied by the user.
+.br
+.IP msgtag
+Integer message tag supplied by the user.
+msgtag should be >= 0.
+.br
+.IP bufid
+Integer returning the value of the new active receive buffer
+identifier.  Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_nrecv
+checks to see if a message with
+label
+.I msgtag
+has arrived from
+.I tid.
+and also clears the current receive buffer if any,
+If a matching message has arrived pvm_nrecv immediately
+places the message in a new \fIactive\fR receive buffer,
+and returns the buffer identifier in
+.I bufid.
+.PP
+If the requested message has not arrived, then pvm_nrecv
+immediately returns with a 0 in
+.I bufid.
+If some error occurs
+.I bufid
+will be < 0.
+.PP
+A -1 in
+.I msgtag
+or
+.I tid
+matches anything.
+This allows the user the following options.
+If tid = -1 and msgtag is defined by the user,
+then pvm_nrecv will accept a message from any process
+which has a matching msgtag.
+If msgtag = -1 and tid is defined by the user,
+then pvm_nrecv will accept any message that is sent from process tid.
+If tid = -1 and msgtag = -1,
+then pvm_nrecv will accept any message from any process.
+.PP
+The PVM model guarantees the following about message order.
+If task 1 sends message A to task 2, then task 1 sends message B to task 2,
+message A will arrive at task 2 before message B.
+Moreover, if both messages arrive before task 2 does a receive,
+then a wildcard receive will always return message A.
+.PP
+pvm_nrecv is non-blocking in the sense that the routine always returns
+immediately either with the message or with the information
+that the message has not arrived at the local pvmd yet.
+pvm_nrecv can be called multiple times to check if a given
+message has arrived yet.
+In addition the blocking receive pvm_recv can be called for the same message
+if the application runs out of work it could do before
+the data arrives.
+.PP
+If pvm_nrecv returns with the message,
+then the data in the message can be unpacked
+into the user's memory using the unpack routines.
+
+.SH EXAMPLES
+.nf
+C:
+	tid = pvm_parent();
+	msgtag = 4 ;
+	arrived = pvm_nrecv( tid, msgtag );
+	if ( arrived > 0)
+		info = pvm_upkint( tid_array, 10, 1 );
+	else
+		/* go do other computing */
+.sp
+Fortran:
+	CALL PVMFNRECV( -1, 4, ARRIVED )
+	IF ( ARRIVED .gt. 0 ) THEN
+	   CALL PVMFUNPACK( INTEGER4, TIDS, 25, 1, INFO )
+	   CALL PVMFUNPACK( REAL8, MATRIX, 100, 100, INFO )
+	ELSE
+*	   GO DO USEFUL WORK
+	ENDIF
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_nrecv.
+.IP PvmBadParam
+giving an invalid tid value or msgtag.
+.IP PvmSysErr
+pvmd not responding.
+.PP
+.SH SEE ALSO
+pvm_bufinfo(3PVM),
+pvm_getminfo(3PVM),
+pvm_recv(3PVM),
+pvm_unpack(3PVM),
+pvm_send(3PVM),
+pvm_mcast(3PVM)

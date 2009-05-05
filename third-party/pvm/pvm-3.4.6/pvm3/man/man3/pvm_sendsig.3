@@ -1,0 +1,68 @@
+.\" $Id: pvm_sendsig.3,v 1.1 1996/09/23 22:06:12 pvmsrc Exp $
+.TH SENDSIG 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_sendsig \- Sends a signal to another PVM process.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_sendsig( int tid, int signum )
+.br
+
+Fortran	call pvmfsendsig( tid, signum, info )
+.fi
+
+.SH PARAMETERS
+.IP tid 0.8i
+Integer task identifier of PVM process to receive the signal.
+.br
+.IP signum
+Integer signal number.
+.br
+.IP info
+Integer status code returned by the routine.
+
+.SH DESCRIPTION
+The routine
+.I pvm_sendsig
+sends the signal number
+.I signum
+to the PVM process identified by
+.I tid.
+If pvm_sendsig is successful,
+.I info
+will be 0.
+If some error occurs then
+.I info
+will be < 0.
+.PP
+pvm_sendsig should only be used by programmers with Unix signal handling
+experience.
+Many library functions (and in fact the PVM library functions) cannot
+be called in a signal handler context because they do not mask signals
+or lock internal data structures.
+
+Further caveat:  the signal numbers passed between systems are not
+mapped - PVM assumes that signal 9 on one system is the same as on another.
+
+.SH EXAMPLES
+.nf
+C:
+	tid = pvm_parent();
+	info = pvm_sendsig( tid, SIGKILL);
+.sp
+Fortran:
+	CALL PVMFBUFINFO( BUFID, BYTES, TYPE, TID, INFO );
+	CALL PVMFSENDSIG( TID, SIGNUM, INFO )
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_sendsig
+.IP PvmSysErr
+pvmd not responding.
+.IP PvmBadParam
+giving an invalid tid value.
+.PP
+
+.SH SEE ALSO
+

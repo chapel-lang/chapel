@@ -1,0 +1,14 @@
+#
+# Note:  some versions of NetBSD for Sparc may require the
+#            -DNEEDMENDIAN flag in the ARCHCFLAGS definition.
+#
+ARCHCFLAGS	=	-DSOCKADHASLEN -DRSHCOMMAND=\"/usr/bin/rsh\" \
+				-DHASERRORVARS -DNOREXEC -DSYSERRISCONST
+ARCHDLIB	=
+ARCHDOBJ	=
+ARCHLIB		=
+HASRANLIB	=	t
+AR			=	ar
+PVM_ARCH	=	NETBSDSPARC
+MAKE		=	make
+#MAKE		=	gmake

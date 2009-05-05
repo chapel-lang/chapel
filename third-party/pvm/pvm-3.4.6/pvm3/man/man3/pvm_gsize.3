@@ -1,0 +1,58 @@
+.\" $Id: pvm_gsize.3,v 1.1 1996/09/23 22:01:32 pvmsrc Exp $
+.TH GSIZE 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_gsize \- Returns the number of members presently in the named group.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int size = pvm_gsize( char *group )
+.br
+
+Fortran	call pvmfgsize( group, size )
+.fi
+
+.SH PARAMETERS
+.IP group 0.8i
+Character string group name of an existing group.
+.br
+.IP size
+Integer returning the number of members presently in the group.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_gsize
+returns the size of
+the group named
+.I group.
+If there is an error
+.I size
+will be negative.
+.PP
+Since groups can change dynamically in PVM 3.0,
+this routine can only guarantee to return the instantaneous
+size of a given group.
+.\" It is the user's responsibility
+.\"    to make sure the group members are not changing dynamically
+.\"    during the call to pvm_gsize.
+
+.SH EXAMPLES
+.nf
+C:
+	size = pvm_gsize( "worker" );
+.sp
+Fortran:
+	CALL PVMFGSIZE( 'group2', SIZE )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_gsize
+.IP PvmSysErr
+pvmd was not started or has crashed.
+.IP PvmBadParam
+giving an invalid group name.
+.PP
+.SH SEE ALSO
+pvm_joingroup(3PVM)

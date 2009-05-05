@@ -1,0 +1,52 @@
+#!/bin/sh
+#
+#	$Id: xpvm,v 1.1 1996/09/23 21:15:50 pvmsrc Exp $
+#
+#	Start XPVM.
+#	If PVM_ROOT is not set in environment,
+#		we try to guess it by combining the working directory with argv[0],
+#		otherwise it defaults to ~/pvm3.
+#	If PVM_ARCH is not set,
+#		we get it by execing $PVMROOT/lib/pvmgetarch.
+#	If XPVM_ROOT is not set,
+#		set it to $PVM_ROOT/xpvm
+#
+#	11 May 1995  Manchek, from Convex version
+#
+
+case "x$PVM_ROOT" in x )
+	case "$0" in
+	/*) PVM_ROOT="$0" ;;
+	*) PVM_ROOT=`pwd`/"$0" ;;
+	esac
+	PVM_ROOT=`echo "$PVM_ROOT" | sed -e 's/\/lib\/xpvm//'`
+	if [ -d $PVM_ROOT ]; then
+		export PVM_ROOT
+	else
+		if [ -d $HOME/pvm3 ]; then
+			PVM_ROOT=$HOME/pvm3
+			export PVM_ROOT
+		else
+			echo xpvm: PVM_ROOT not defined >&2
+			exit 1
+		fi
+	fi
+;; esac
+
+case "x$PVM_ARCH" in x | xUNKNOWN )
+	PVM_ARCH="`$PVM_ROOT/lib/pvmgetarch`"
+	case "x$PVM_ARCH" in x )
+		echo xpvm: can\'t set arch >&2
+		exit 1
+	;; esac
+	export PVM_ARCH
+;; esac
+
+case "x$XPVM_ROOT" in x )
+	XPVM_ROOT=$PVM_ROOT/xpvm
+	export XPVM_ROOT
+;; esac
+
+exec $XPVM_ROOT/src/$PVM_ARCH/xpvm $@
+exit 1
+

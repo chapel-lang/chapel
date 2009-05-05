@@ -1,0 +1,279 @@
+#
+# $Id: Makefile.aimk,v 1.18 2004/01/14 18:43:37 pvmsrc Exp $
+#
+# Makefile.aimk for PVM example programs.
+#
+# Set PVM_ROOT to the path where PVM includes & libraries are installed.
+# Set PVM_ARCH to your architecture type (SUN4, HP9K, RS6K, SGI, etc.)
+# Set ARCHLIB to any special libs needed on PVM_ARCH (-lrpc, -lsocket,
+#     etc.)
+# otherwise leave ARCHLIB blank
+#
+# PVM_ARCH and ARCHLIB, among other things, are set for you if you
+# use "$PVM_ROOT/lib/aimk" instead of "make".
+#
+# aimk also creates a $PVM_ARCH directory below this one and will cd
+# to it before invoking make - this allows building in parallel on
+# different arches.
+#
+
+SHELL		=	/bin/sh
+
+PVMDIR		=	../..
+SDIR		=	$(PVMDIR)/examples
+BDIR		=	$(PVMDIR)/bin
+XDIR		=	$(BDIR)/$(PVM_ARCH)
+
+CFLOPTS		=	-g
+CFLAGS		=	$(CFLOPTS) -I$(PVMDIR)/include $(ARCHCFLAGS)
+
+##### Need to select some architecture-specific libraries to link tasks
+# The default setup is for workstations
+
+### Select PVMLIB depending on architecture. 
+#  		For MPPs (PGON and AIX5SP2/AIX4SP2/SP2MPI) select:
+# PVMLIB	= 	-lpvm3pe
+#		For Workstations and shared memory architectures select:
+# PVMLIB 	= 	-lpvm3
+
+PVMLIB		=	-lpvm3
+
+### Select the PVMHLIB depending on architecture
+# Host versions of programs use sockets to communicate with the daemon.
+# They can be built with aimk hostprogs, they are only necessary for
+# MPPs and are OPTIONAL for other architectures
+#
+#		For MPPs and Workstations select
+# PVMHLIB	= 	-lpvm3
+#		for Shared Memory Archtiectures
+# PVMHLIB	=	-lpvm3s
+
+PVMHLIB		=	-lpvm3
+
+########################################################################
+LIBS		=	$(PVMLIB) $(ARCHLIB)
+
+HLIBS		= 	$(PVMHLIB) $(ARCHLIB)
+
+GLIBS		=	-lgpvm3
+
+#F77		=	f77
+FORT		=	`case "$(FC)@$(F77)" in @) echo f77 ;; *@) echo $(FC) ;; @*) echo $(F77) ;; *) echo $(FC) ;; esac`
+FFLOPTS		=	-g
+FFLAGS		=	$(FFLOPTS) $(ARCHFFLAGS)
+FLIBS		=	-lfpvm3
+
+LDFLAGS		=	$(LOPT) -L$(PVMDIR)/lib/$(PVM_ARCH)
+
+CPROGS		=	hello$(EXESFX) hello_other$(EXESFX) \
+				gexample$(EXESFX) \
+				master1$(EXESFX) slave1$(EXESFX) \
+				spmd$(EXESFX) \
+				timing$(EXESFX) timing_slave$(EXESFX) \
+				gmbi$(EXESFX) \
+				dbwtest$(EXESFX) ibwtest$(EXESFX) \
+				pbwtest$(EXESFX) rbwtest$(EXESFX)
+
+HOSTCPROGS	= 	helloh gexampleh master1h timingh gmbih 
+
+FPROGS		=	fgexample$(EXESFX) fmaster1$(EXESFX) fslave1$(EXESFX) \
+				fspmd$(EXESFX) hitc$(EXESFX) hitc_slave$(EXESFX)
+
+HOSTFPROGS	=	fmaster1h hitch
+
+CTXPROGS	=	inherita$(EXESFX) inheritb$(EXESFX) inherit1$(EXESFX) \
+				inherit2$(EXESFX) inherit3$(EXESFX)
+
+MBPROGS		=	taskf.o task0$(EXESFX) task1$(EXESFX) \
+				task_end$(EXESFX) rme$(EXESFX) \
+				lmbi$(EXESFX) gmbi$(EXESFX)
+
+MHFPROGS	=	mhf_server$(EXESFX) mhf_tickle$(EXESFX)
+
+default:	hello$(EXESFX) hello_other$(EXESFX)
+
+all:	c-all f-all
+
+c-all:	$(CPROGS) $(CTXPROGS) $(MBPROGS) $(MHFPROGS)
+
+f-all:	$(FPROGS)
+
+hostprogs:	$(HOSTCRPROGS) $(HOSTFPROGS)
+
+clean:
+	rm -f *.o $(CPROGS) $(FPROGS) $(CTXPROGS) $(MBPROGS) $(MHFPROGS)
+
+$(XDIR):
+	- mkdir $(BDIR)
+	- mkdir $(XDIR)
+
+hello$(EXESFX):  $(SDIR)/hello.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/hello.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+helloh:  $(SDIR)/hello.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/hello.c $(LDFLAGS) $(HLIBS)
+	mv $@ $(XDIR)
+
+hello_other$(EXESFX):  $(SDIR)/hello_other.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/hello_other.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+dbwtest$(EXESFX):  $(SDIR)/bwtest.c $(XDIR)
+	$(CC) $(CFLAGS) -DENCODE=PvmDataDefault -DPACK -o $@ \
+		$(SDIR)/bwtest.c $(LDFLAGS) $(GLIBS) $(LIBS)
+	mv $@ $(XDIR)
+
+ibwtest$(EXESFX):  $(SDIR)/bwtest.c $(XDIR)
+	$(CC) $(CFLAGS) -DPACK -DENCODE=PvmDataInPlace -o $@ \
+		$(SDIR)/bwtest.c $(LDFLAGS) $(GLIBS) $(LIBS)
+	mv $@ $(XDIR)
+
+pbwtest$(EXESFX):  $(SDIR)/bwtest.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/bwtest.c $(LDFLAGS) $(GLIBS) $(LIBS)
+	mv $@ $(XDIR)
+
+rbwtest$(EXESFX):  $(SDIR)/bwtest.c $(XDIR)
+	$(CC) $(CFLAGS) -DPACK -DENCODE=PvmDataRaw -o $@ \
+		$(SDIR)/bwtest.c $(LDFLAGS) $(GLIBS) $(LIBS)
+	mv $@ $(XDIR)
+
+
+timing$(EXESFX):  $(SDIR)/timing.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/timing.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+timingh:  $(SDIR)/timing.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/timing.c $(LDFLAGS) $(HLIBS)
+	mv $@ $(XDIR)
+
+timing_slave$(EXESFX):  $(SDIR)/timing_slave.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/timing_slave.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+spmd$(EXESFX):  $(SDIR)/spmd.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/spmd.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+fspmd$(EXESFX):  $(SDIR)/spmd.f $(XDIR)
+	$(FORT) $(FFLAGS) -o $@ $(SDIR)/spmd.f $(LDFLAGS) $(FLIBS) $(LIBS)
+	mv $@ $(XDIR)
+
+master1$(EXESFX):  $(SDIR)/master1.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/master1.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+master1h:  $(SDIR)/master1.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/master1.c $(LDFLAGS) $(HLIBS)
+	mv $@ $(XDIR)
+
+slave1$(EXESFX):  $(SDIR)/slave1.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/slave1.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+
+fmaster1$(EXESFX):  $(SDIR)/master1.f $(XDIR)
+	$(FORT) $(FFLAGS) -o $@ $(SDIR)/master1.f \
+		$(LDFLAGS) $(FLIBS) $(LIBS)
+	mv $@ $(XDIR)
+
+fmaster1h:  $(SDIR)/master1.f $(XDIR)
+	$(FORT) $(FFLAGS) -o $@ $(SDIR)/master1.f \
+		$(LDFLAGS) $(FLIBS) $(HLIBS)
+	mv $@ $(XDIR)
+
+fslave1$(EXESFX):  $(SDIR)/slave1.f $(XDIR)
+	$(FORT) $(FFLAGS) -o $@ $(SDIR)/slave1.f $(LDFLAGS) $(FLIBS) $(LIBS)
+	mv $@ $(XDIR)
+
+hitc$(EXESFX):  $(SDIR)/hitc.f $(XDIR)
+	$(FORT) $(FFLAGS) -o $@ $(SDIR)/hitc.f $(LDFLAGS) $(FLIBS) $(LIBS)
+	mv $@ $(XDIR)
+
+hitch:  $(SDIR)/hitc.f $(XDIR)
+	$(FORT) $(FFLAGS) -o $@ $(SDIR)/hitc.f $(LDFLAGS) $(FLIBS) $(HLIBS)
+	mv $@ $(XDIR)
+
+
+hitc_slave$(EXESFX):  $(SDIR)/hitc_slave.f $(XDIR)
+	$(FORT) $(FFLAGS) -o $@ $(SDIR)/hitc_slave.f \
+		$(LDFLAGS) $(FLIBS) $(LIBS)
+	mv $@ $(XDIR)
+
+gexample$(EXESFX):  $(SDIR)/gexample.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/gexample.c $(LDFLAGS) $(GLIBS) $(LIBS)
+	mv $@ $(XDIR)
+
+gexampleh:  $(SDIR)/gexample.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/gexample.c \
+		$(LDFLAGS) $(GLIBS) $(HLIBS)
+	mv $@ $(XDIR)
+
+fgexample$(EXESFX):  $(SDIR)/gexample.f $(XDIR)
+	$(FORT) $(FFLAGS) -o $@ $(SDIR)/gexample.f \
+		$(LDFLAGS) $(FLIBS) $(GLIBS) $(LIBS)
+	mv $@ $(XDIR)
+
+mbox$(EXESFX):  $(SDIR)/mbox.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/mbox.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+inherita$(EXESFX):  $(SDIR)/inherita.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/inherita.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+inheritb$(EXESFX):  $(SDIR)/inheritb.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/inheritb.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+inherit1$(EXESFX):  $(SDIR)/inherit1.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/inherit1.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+inherit2$(EXESFX):  $(SDIR)/inherit2.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/inherit2.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+inherit3$(EXESFX):  $(SDIR)/inherit3.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/inherit3.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+taskf.o:  $(SDIR)/taskf.c
+	$(CC) $(CFLAGS) -c $(SDIR)/taskf.c
+
+task0$(EXESFX):  $(SDIR)/task0.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/task0.c taskf.o $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+task1$(EXESFX):  $(SDIR)/task1.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/task1.c taskf.o $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+task_end$(EXESFX):  $(SDIR)/task_end.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/task_end.c taskf.o $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+rme$(EXESFX):  $(SDIR)/rme.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/rme.c taskf.o $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+lmbi$(EXESFX):  $(SDIR)/lmbi.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/lmbi.c taskf.o $(LDFLAGS) $(HLIBS)
+	mv $@ $(XDIR)
+
+gmbi$(EXESFX):  $(SDIR)/gmbi.c taskf.o $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/gmbi.c taskf.o $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+gmbih:  $(SDIR)/gmbi.c taskf.o $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/gmbi.c taskf.o $(LDFLAGS) $(HLIBS)
+	mv $@ $(XDIR)
+
+mhf_server$(EXESFX):  $(SDIR)/mhf_server.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/mhf_server.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+
+mhf_tickle$(EXESFX):  $(SDIR)/mhf_tickle.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/mhf_tickle.c $(LDFLAGS) $(LIBS)
+	mv $@ $(XDIR)
+

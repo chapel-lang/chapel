@@ -1,0 +1,102 @@
+.\" $Id: pvm_probe.3,v 1.1 1996/09/23 22:05:53 pvmsrc Exp $
+.TH PROBE 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_probe \- Check if message has arrived.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int bufid = pvm_probe( int tid, int msgtag )
+.br
+
+Fortran	call pvmfprobe( tid, msgtag, bufid )
+.fi
+
+.SH PARAMETERS
+.IP tid 0.8i
+Integer task identifier of sending process supplied by the user.
+.br
+.IP msgtag
+Integer message tag supplied by the user.
+msgtag should be >= 0.
+.br
+.IP bufid
+Integer returning the value of the new active receive buffer
+identifier.  Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_probe
+checks to see if a message with label
+.I msgtag
+has arrived from
+.I tid.
+If a matching message has arrived pvm_probe
+returns a buffer identifier in
+.I bufid.
+This
+.I bufid
+can be used with pvm_bufinfo
+to determine information about the message such as
+its source and length.
+.PP
+If the requested message has not arrived, then pvm_probe
+returns with a 0 in
+.I bufid.
+If some error occurs
+.I bufid
+will be < 0.
+.PP
+A -1 in
+.I msgtag
+or
+.I tid
+matches anything.
+This allows the user the following options.
+If tid = -1 and msgtag is defined by the user,
+then pvm_probe will accept a message from any process
+which has a matching msgtag.
+If msgtag = -1 and tid is defined by the user,
+then pvm_probe will accept any message that is sent from process tid.
+If tid = -1 and msgtag = -1,
+then pvm_probe will accept any message from any process.
+.PP
+pvm_probe can be called multiple times to check if a given
+message has arrived yet. After the message has arrived,
+pvm_recv must be called before the message can be unpacked
+into the user's memory using the unpack routines.
+
+.SH EXAMPLES
+.nf
+C:
+	tid = pvm_parent();
+	msgtag = 4 ;
+	arrived = pvm_probe( tid, msgtag );
+	if ( arrived )
+		info = pvm_bufinfo( arrived, &len, &tag, &tid );
+	else
+		/* go do other computing */
+.sp
+Fortran:
+	CALL PVMFPROBE( -1, 4, ARRIVED )
+	IF ( ARRIVED .GT. 0 ) THEN
+		CALL PVMFBUFINFO( ARRIVED, LEN, TAG, TID, INFO )
+	ELSE
+*		GO DO USEFUL WORK
+	ENDIF
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_probe.
+.IP PvmBadParam
+giving an invalid tid value or msgtag.
+.IP PvmSysErr
+pvmd not responding.
+.PP
+.SH SEE ALSO
+pvm_bufinfo(3PVM),
+pvm_getminfo(3PVM),
+pvm_nrecv(3PVM),
+pvm_recv(3PVM),
+pvm_unpack(3PVM)

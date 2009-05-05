@@ -1,0 +1,90 @@
+.\" $Id: pvm_catchout.3,v 1.2 2001/09/27 18:51:32 pvmsrc Exp $
+.TH CATCHOUT 3PVM "13 July, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_catchout \- Catch output from child tasks.
+
+.SH SYNOPSIS
+.ft B
+.nf
+C	#include <stdio.h>
+
+	int info = pvm_catchout( FILE *ff )
+.br
+
+Fortran	call pvmfcatchout( onoff, info )
+.fi
+
+.SH PARAMETERS
+.IP ff 0.8i
+File descriptor on which to write collected output.
+.br
+.IP onoff 0.8i
+Integer parameter.  Turns output collection on or off.
+.br
+.IP info
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine \fIpvm_catchout\fR
+causes the calling task (the parent)
+to catch output from any tasks spawned after the call to
+\fIpvm_catchout\fR.
+Characters printed on \fIstdout\fR or \fIstderr\fR in children tasks
+are collected by the pvmds
+and sent in control messages to the parent task,
+which tags each line and appends it to the specified file.
+Output from grandchildren (spawned by children) tasks
+is also collected,
+provided the children don't reset their \fIPvmOutputTid\fR.
+.PP
+If option \fIPvmShowTids\fR (see \fIpvm_setopt\fR) is true (nonzero),
+output is printed as shown below,
+tagged with the task id where the output originated:
+.nf
+	[txxxxx] BEGIN
+	[txxxxx] (text from child task)
+	[txxxxx] END
+.fi
+
+The output from each task includes one BEGIN line and one END line,
+with whatever the task prints in between.
+If PvmShowTids is false,
+raw output is printed with no additional information.
+.PP
+In C,
+the output file descriptor may be specified.
+Giving a null pointer turns output collection off
+for any subsequently spawned child tasks.
+(Any existing output collection will still proceed at the
+child tasks, until they exit or change their\fIPvmOutputTid\fR
+or related settings - see man page for pvm_setopt().)
+In Fortran,
+output collection can only be turned on or off (again only
+for subsequently spawned child tasks),
+and is always logged to the stdout of the parent task.
+.PP
+If \fIpvm_exit\fR is called while output collection is in effect,
+it will block in order to print all the output,
+until all tasks sending the given task output have exited.
+To avoid this,
+output collection can be turned off by calling pvm_catchout(0)
+before calling pvm_exit.
+.PP
+pvm_catchout() always returns 0.
+
+.SH EXAMPLES
+.nf
+C:
+	#include <stdio.h>
+
+	pvm_catchout(stdout);
+.sp
+Fortran:
+	CALL PVMFCATCHOUT( 1, INFO )
+.fi
+
+.SH SEE ALSO
+pvm_exit(3PVM),
+pvm_setopt(3PVM),
+pvm_spawn(3PVM)

@@ -1,0 +1,501 @@
+.\" $Id: pvm_intro.1,v 1.7 2007/01/03 20:13:15 pvmsrc Exp $
+.TH PVM_INTRO 1PVM "11 April, 1995" "" "PVM Version 3.4"
+.SH NAME
+PVM, pvm_intro \- Parallel Virtual Machine System Version 3
+.SH DESCRIPTION
+.I PVM
+is a software system that enables a collection of heterogeneous
+computers to be used as a coherent and flexible concurrent computational
+resource.
+
+The individual computers may be shared- or local-memory multiprocessors,
+vector supercomputers, specialized graphics engines, or scalar
+workstations, that may be interconnected by a variety of networks,
+such as ethernet, FDDI.
+
+User programs written in C, C++ or Fortran access PVM through library
+routines (\fIlibpvm3.a\fR and \fIlibfpvm3.a\fR).
+
+Daemon programs (\fIpvmd3\fR) provide communication and process control
+between computers.
+.SH MACHINE ARCHITECTURE
+In the PVM system, machines are assigned a short string to identify their
+architectures (this includes operating system type as well as CPU type).
+The types currently predefined in the distribution are:
+.RS
+.PD 0
+.TP 14
+AFX8
+Alliant FX/8
+.TP
+ALPHA
+DEC Alpha/OSF-1
+.TP
+ALPHAMP
+DEC Alpha/OSF-1 / using shared memory
+.TP
+AIX46K
+IBM/RS6000 / AIX 4.x
+.TP
+AIX4MP
+IBM SMP / shared memory transport / AIX 4.x
+.TP
+AIX4SP2
+IBM SP-2 / using MPI / AIX 4.x
+.TP
+APOLLO
+HP 300 running Domain/OS
+.TP
+ATT
+AT&T/NCR 3600 running SysVR4
+.TP
+BAL
+Sequent Balance
+.TP
+BFLY
+BBN Butterfly TC2000
+.TP
+BSD386
+80[345]86 running BSDI or BSD386
+.TP
+CM2
+Thinking Machines CM-2 Sun front-end
+.TP
+CM5
+Thinking Machines CM-5
+.TP
+CNVX
+Convex using IEEE floating-point
+.TP
+CNVXN
+Convex using native f.p.
+.TP
+CRAY
+Cray
+.TP
+CRAY2
+Cray-2
+.TP
+CRAYSMP
+Cray S-MP
+.TP
+CSPP
+Convex Exemplar
+.TP
+CYGWIN
+POSIX emulation layer on top of Windows32
+.TP
+DGAV,DGIX
+Data General Aviion
+.TP
+E88K
+Encore 88000
+.TP
+FREEBSD
+80[345]86 running FreeBSD
+.TP
+HP300
+HP 9000 68000 cpu
+.TP
+HPPA
+HP 9000 PA-Risc
+.TP
+HPPAMP
+HP 9000 PA-Risc / shared memory transport
+.TP
+KSR1
+Kendall Square
+.TP
+I860
+Intel RX Hypercube
+.TP
+IPSC2
+Intel IPSC/2
+.TP
+LINUX
+80[345]86 running Linux
+.TP
+LINUXALPHA
+DEC Alpha running Linux
+.TP
+LINUXARM
+Strogarm running Linux
+.TP
+LINUXHPPA
+HP 9000 running Linux
+.TP
+LINUXPPC
+PowerPC running Linux
+.TP
+LINUXSPARC
+Sparc running Linux
+.TP
+M88K
+Motorola M88100 running Real/IX
+.TP
+M88K
+Motorola M88100 running Real/IX
+.TP
+MASPAR
+Maspar
+.TP
+MIPS
+Mips
+.TP
+NETBSDALPHA
+DEC Alpha running NetBSD
+.TP
+NETBSDAMIGA
+Amiga running NetBSD
+.TP
+NETBSDARM32
+Strongarm running NetBSD
+.TP
+NETBSDHP300
+HP 300 running NetBSD
+.TP
+NETBSDI386
+80[345]86 running NetBSD
+.TP
+NETBSDM68K
+Any Motorola 68K running NetBSD
+.TP
+NETBSDMAC68K
+Macintosh running NetBSD
+.TP
+NETBSDMIPSEB
+Mips EB running NetBSD
+.TP
+NETBSDMIPSEL
+Mips EL running NetBSD
+.TP
+NETBSDNS32K
+NS32K running NetBSD
+.TP
+NETBSDPMAX
+DEC Pmax running NetBSD
+.TP
+NETBSDPOWERPC
+PowerPC running NetBSD
+.TP
+NETBSDSH3
+SH3 running NetBSD
+.TP
+NETBSDSPARC
+Sparc running NetBSD
+.TP
+NETBSDSPARC64
+Sparc64 running NetBSD
+.TP
+NETBSDSUN3
+SUN 3 running NetBSD
+.TP
+NETBSDVAX
+Vax running NetBSD
+.TP
+NEXT
+NeXT
+.TP
+OS2
+OS/2
+.TP
+PGON
+Intel Paragon
+.TP
+PMAX
+DEC/Mips arch (3100, 5000, etc.)
+.TP
+RS6K
+IBM/RS6000 / AIX 3.x
+.TP
+RS6KMP
+IBM SMP / shared memory transport / AIX 3.x
+.TP
+RT
+IBM/RT
+.TP
+SCO
+80[345]86 running SCO Unix
+.TP
+SGI
+Silicon Graphics IRIS
+.TP
+SGI5
+Silicon Graphics IRIS running OS 5.0
+.TP
+SGI6
+Silicon Graphics IRIS running OS >= 6.0
+.TP
+SGI64
+Silicon Graphics IRIS running 64 bit
+.TP
+SGIMP
+Silicon Graphics IRIS / OS 5.x / using shared memory
+.TP
+SGIMP6
+Silicon Graphics IRIS / OS 6.x / using shared memory
+.TP
+SGIMP64
+Silicon Graphics IRIS / 64 bit / using shared memory
+.TP
+SP2MPI
+IBM SP-2 / using MPI / AIX 3.x
+.TP
+SUN3
+Sun 3
+.TP
+SUN4
+Sun 4, 4c, sparc, etc.
+.TP
+SUN4SOL2
+Sun 4 running Solaris 2.x
+.TP
+SUNMP
+Sun 4 / using shared memory / Solaris 2.x
+.TP
+SX3
+NEC SX-3
+.TP
+SYMM
+Sequent Symmetry
+.TP
+TITN
+Stardent Titan
+.TP
+U370
+IBM 3090 running AIX
+.TP
+UTS2
+Amdahl running UTS
+.TP
+UVAX
+DEC/Microvax
+.TP
+UWARE
+Uware
+.TP
+UXPM
+Fujitsu running UXP/M
+.TP
+VCM2
+Thinking Machines CM-2 Vax front-end
+.TP
+WIN32
+Windows 95/98/NT
+.TP
+X86SOL2
+80[345]86 running Solaris 2.x
+.PD
+.RE
+.\".SH INSTALLING
+
+.SH ENVIRONMENT VARIABLES
+The following environment variables are read by PVM and may be set
+in order to customize your PVM environment.
+To set them,
+you can add commands to your \fI.cshrc\fR or \fI.profile\fR
+or equivalent shell startup file.
+See the manual page for the shell you normally use for information
+about how to do this.
+You can also include an appropriate shell startup file stub to set
+PVM environment variables and to add PVM directories to your
+execution path.
+Inert the matching stub file, pvm3/lib/cshrc.stub, pvm3/lib/kshrc.stub
+or pvm3/lib/bashrc.stub, after your declaration of PVM_ROOT
+in your shell startup file.
+
+For \fIcsh\fR users:
+Note that setting them in \fI.login\fR does not have the same effect.
+The .login script file
+is only read when you are actually logging in,
+whereas .cshrc is read every time csh starts up.
+PVM needs to have environment variables set when it starts a slave
+pvmd with "rsh host pvmd ...",
+so they must be set in .cshrc.
+
+For those using a shell that doesn't always read a startup script
+(e.g. \fIsh\fR, \fIksh\fR),
+there is another way to set environment variables
+for PVM.
+Before running the PVM executables,
+the \fIpvm\fR and \fIpvmd\fR startup scripts
+source any commands in \fI$HOME/.pvmprofile\fR
+if this file exists.
+
+The following environment variables are supported by PVM 3.4.4:
+.IP PVM_ROOT
+The path where PVM libraries and system programs are installed,
+for example /usr/local/pvm3 or $HOME/pvm3.
+This variable must be set on each host where PVM is used in order
+for PVM to function.
+There is no default value.
+.IP PVM_TMP
+The path for PVM temporary files, such as the daemon socket file
+pvmd.<uid> and the log file pvml.<uid>.
+Use this environment variable to use a directory other than /tmp
+(or C:\\TEMP on Win32),
+or to introduce added security by using a protected subdirectory
+in /tmp that is owned by your userid and cannot be easily corrupted.
+.IP PVM_RSH
+The path to the "rsh" program on your system, if different than
+that defined in the $PVM_ROOT/conf/$PVM_ARCH.def configuration file.
+This environment variable can also be used to replace "rsh" with "ssh"
+for added security.
+.IP PVM_PATH
+The execution path to be searched for PVM programs on your system.
+By default, PVM looks in $HOME/pvm3/bin/$PVM_ARCH and
+$PVM_ROOT/bin/$PVM_ARCH for your PVM applications.
+This environment variable does \fBnot\fR override the \fIep=\fR
+host file option.
+.IP PVM_WD
+The working directory for spawned PVM programs on your system.
+By default, PVM spawns your PVM applications in $HOME, but
+for convenience in accessing data or input files using relative
+path names, an alternate working directory can be specified.
+This environment variable does \fBnot\fR override the \fIwd=\fR
+host file option.
+.IP PVM_EXPORT
+Names of environment variables to export from a parent task
+to children tasks through \fIpvm_spawn()\fR.
+Multiple names must be separated by ':'.
+If PVM_EXPORT is not set, no environment is exported.
+.IP PVM_DEBUGGER
+The debugger script to use when \fIpvm_spawn()\fR is called
+with \fIPvmTaskDebug\fR set.
+The default is $PVM_ROOT/lib/debugger.
+.IP PVM_DPATH
+The path of the pvmd startup script (default is $PVM_ROOT/lib/pvmd).
+It is overridden by host file option \fIdx=\fR.
+
+This variable is useful if you use a shell that doesn't automatically
+execute a startup script (such as .cshrc) to allow setting PVM_ROOT
+on slave (added) hosts.
+If you set it to the absolute or relative path of the pvmd startup
+script (for example /usr/local/pvm3/lib/pvmd or pvm3/lib/pvmd),
+the script will automatically set PVM_ROOT.
+Note that for this to work,
+you must set it to run the pvmd script,
+not the pvmd3 executable itself.
+.IP PVM_WINDPATH
+This variable serves the same purpose as the PVM_DPATH above,
+but specifically for Win32 systems.  This second environment
+variable allows for alternate specification of the path to
+the pvmd3.exe daemon executable using appropriate DOS file path
+syntax and environment variables
+(e.g. %PVM_ROOT%\\lib\\WIN32\\pvmd3.exe).
+.IP PVMHOSTFILE
+Specifies the path to an optional host file to be used by default
+when starting PVM.
+This alleviates the need to manually pass a host file path argument
+to the "pvm" console or "pvmd" script when starting PVM.
+.IP PVMDLOGMAX
+Sets the maximum length of the pvmd error log file.
+Default value is the PVMDLOGMAX parameter in the source, 1 Mbyte.
+.IP PVMDDEBUG
+Sets the default pvmd debugging mask (as does the pvmd -d option).
+Value can be in hexadecimal (0x...), octal (0...) or decimal.
+Used to debug the pvmd (not intended to be used to debug
+application programs).
+.IP PVMTASKDEBUG
+Sets the default libpvm debugging mask
+(as does pvm_setopt(PvmDebugMask, x)).
+Value can be in hexadecimal (0x...), octal (0...) or decimal.
+Used to debug libpvm (not intended to be used to debug
+application programs).
+.IP PVMTASK
+Sets additional flag bits for the pvm_spawn() library call.
+Allows override at run time of flags compiled into the
+pvm_spawn() calls in PVM application, e.g. to turn on
+PvmTaskDebug for popping up child tasks in a debugger window.
+.IP PVMBUFSIZE
+Sets the size of the shared memory buffers used by libpvm and the pvmd.
+The default value is 1048576.
+If your program composes messages longer than this size,
+you must increase it.
+.IP PVM_VMID
+A new feature in PVM 3.4.4 is the concept of a "Virtual Machine ID".
+You can now set the PVM_VMID environment variable to an arbitrary
+string (or use the "id=" option in a host file, see man page for pvmd3),
+and this will distinguish and allow multiple virtual machines to run
+on the same set of hosts under the same userid.  (This feature was
+originally introduced by SGI in their commercial PVM product, and has
+now been generalized for the public PVM system.)  This feature seems
+to be something that people often want, and the PVM_VMID is the
+cleanest way to provide this functionality, rather than overloading
+the SHAREDTMP compiler flag and other internals.
+.sp
+Setting the PVM_VMID environment variable before starting PVM will
+create an encapsulated virtual machine with the given VMID name.
+By default, all other hosts which are added to this virtual machine
+will inherit the same VMID.  If hosts are added to the virtual machine
+which are running older versions of PVM (prior to 3.4.4), then the
+VMID will be ignored for those hosts, and hence these machines can
+only be added to one virtual machine for the given user.  The VMID
+need not be consistent on every host in a virtual machine (although
+this is not necessarily advisable), and the VMID can be set for
+individual hosts using the "id=" host file option (see man page for
+pvmd3).
+.PP
+
+The following environment variables are used by PVM internally.
+With the exception of PVM_ARCH,
+their values should not be modified.
+This is for information only.
+.IP PVM_ARCH
+The PVM architecture name of the host on which it is set,
+used to distinguish between
+machines with different executable (a.out) formats.
+Copies of a program for different architectures are installed
+in parallel directories named for PVM architectures.
+.IP PVMSOCK
+Is passed from pvmd to spawned task, and gives the
+address of the pvmd local socket.
+.IP PVMEPID
+Holds the expected process id of a spawned task exec'd by the pvmd.
+This is a magic cookie used by the
+task to identify itself when reconnecting to the pvmd,
+in order to get the correct task slot.
+.IP PVMTMASK
+The libpvm trace mask,
+passed from the pvmd to spawned tasks.
+.IP PVMTRCBUF
+The libpvm trace buffer size.
+If specified determines the number of bytes of trace event message
+buffer to be collected before sending to front-end tracer program.
+.IP PVMTRCOPT
+The libpvm trace option setting.
+Determines the level of tracing to be performed on invocations of
+PVM library calls.
+.IP PVMINPLACEDELAY
+Used to optimize sending of PvmDataInPlace messages on MPP systems.
+.IP PVMKEY
+PVM uses this value,
+combined with the process id,
+to generate shared-memory segment keys.
+The default value is your numeric uid.
+PVM automatically detects collisions when generating a key
+and picks a new key,
+so it should almost never need to be set explicitly.
+.PP
+
+.SH SEE ALSO
+aimk(1PVM), pvm(1PVM), pvmd3(1PVM),
+PVM 3.3 User's Guide and Reference Manual
+.SH AUTHORS
+A. L. Beguelin [4,5],
+J. J. Dongarra [1,2],
+G. A. Geist [2],
+W. C. Jiang [1],
+R. J. Manchek [1],
+B. K. Moore [1],
+V. S. Sunderam [3]
+
+1.  University of Tennessee, Knoxville TN.
+.br
+2.  Oak Ridge National Laboratory, Oak Ridge TN.
+.br
+3.  Emory University, Atlanta GA.
+.br
+4.  Carnegie Mellon University, Pittsburgh PA
+.br
+5.  Pittsburgh Supercomputer Center, Pittsburgh PA

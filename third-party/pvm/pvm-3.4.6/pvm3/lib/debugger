@@ -1,0 +1,26 @@
+#!/bin/csh -f
+#
+#	$Id: debugger,v 1.1 1996/09/23 21:15:39 pvmsrc Exp $
+#
+#	debugger.csh
+#
+#	this script is invoked by the pvmd when a task is spawned with
+#	the PvmTaskDebug flag set.  it execs an xterm with script
+#	debugger2 running inside.
+#
+#	06 Apr 1993  Manchek
+#
+
+if ($#argv < 1) then
+	echo "usage: debugger command [args]"
+	exit 1
+endif
+
+set noglob
+if ($PVM_ARCH == "SUN4SOL2" || $PVM_ARCH == "SUNMP" || $PVM_ARCH == "X86SOL2") then
+	set hn=`uname -n`
+else
+	set hn=`hostname`
+endif
+exec xterm -title "${hn}:$argv[1]" -e $PVM_ROOT/lib/debugger2 $argv
+

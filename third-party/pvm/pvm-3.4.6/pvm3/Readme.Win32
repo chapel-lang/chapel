@@ -1,0 +1,147 @@
+
+             PVM version 3.4:  Parallel Virtual Machine System
+                   University of Tennessee, Knoxville TN.
+               Oak Ridge National Laboratory, Oak Ridge TN.
+                       Emory University, Atlanta GA.
+          Authors:  J. J. Dongarra, G. E. Fagg, M. Fischer,
+              G. A. Geist, J. A. Kohl, R. J. Manchek, P. Mucci,
+             P. M. Papadopoulos, S. L. Scott, and V. S. Sunderam
+                       (C) 1997 All Rights Reserved
+    
+                                  NOTICE
+    
+     Permission to use, copy, modify, and distribute this software and
+     its documentation for any purpose and without fee is hereby granted
+     provided that the above copyright notice appear in all copies and
+     that both the copyright notice and this permission notice appear in
+     supporting documentation.
+    
+     Neither the Institutions (Emory University, Oak Ridge National
+     Laboratory, and University of Tennessee) nor the Authors make any
+     representations about the suitability of this software for any
+     purpose.  This software is provided ``as is'' without express or
+     implied warranty.
+    
+     PVM version 3 was funded in part by the U.S. Department of Energy,
+     the National Science Foundation and the State of Tennessee.
+    
+    ________________________________________________________________________
+    
+    This is a supplement to the main Readme file.  The reader should consult
+    that file for more information.
+    
+    
+    Table of Contents
+    -----------------
+    0. What's new
+    1. Possible User Specifications - Different Compiler Dependencies
+    2. Installation, Environment Settings
+    3. Startup Differences compared to the Unix version
+    4. Additional Software for WIN32
+    5. Further, detailed information
+    6. Basic Testing
+    7. Fortran Problems
+    -----------------
+    
+    0. What's new.
+  
+	What we are working on (in WIN32):
+  
+  	- rshd for convenient startup:
+    	Currently users have to install a rshd or rexecd on their 
+    	machines which is often Shareware. However some of them do 
+    	not follow the BSD specification.
+    	Also it is required to specify the location of the daemon 
+    	executable which may be installation dependent and different 
+    	on other machines.
+  
+    	We have a rshd in progress which is BSD compliant, but also 
+    	converting the $VARIABLES to their corresponding values set 
+    	in the registry. This way the daemon location is no longer 
+    	needed. However this daemon is allowing only one connection 
+    	at a time, but we are working on that.
+  
+  	- XPVM:
+    	XPVM comes with beta6 but is crashing from time to time in its 
+    	initialization.
+    	This is hard to debug since the SEGV is in the TK library. But
+  	probably someone can give us some hints.
+  
+  	- GUI Console:
+    	We would like to integrate all the applications we provide in one 
+    	GUI application.
+    
+  
+  	Changes:
+
+	From Beta 6: (09/30/98)
+
+	fortran make files updated to actually work
+	win32 beta merged with unix beta into single source PVM version
+  
+  	From Beta 5: (01/22/98)
+  
+  	Bug fixes (tracer, console, daemon),
+  	Winhelp,
+  	XPVM,
+  	Static Lib and DLL
+  
+  	From Beta 4: (09/23/97)
+  
+  	First InstallShield Version,
+  	Use of Registry,
+  	Bug fixes.
+   	.
+  	.
+  	.
+  
+  
+    1. Unlike standardized compilers in the Unix world, different flags
+       and libs are used for WIN32.  Currently we distinguish between
+       Borland 5.0 or VC++ 4.0 or higher.  Thus, a dependency file in
+       %PVM_ROOT/conf named WIN32.def can be modified to point to the
+       INCLUDE and LIB directories of the installed Compiler.
+       It also provides a compiler detection mechanism,
+       which works with a normal compiler installation (checking for
+       INCLUDE environment variables).
+    
+    2. The installation is now wizard guided.  Required information is
+       stored in the registry.  For manual installation, please see
+       the documentation in PVM3.4\WIN32\Installation.doc.
+
+    3. PVM is started by invoking the console command "pvm" with an additional
+       hostfile argument which identifies potential resources.  The machine
+       on which "pvm" is run for the first time (in a given session) is
+       referred to as the "master daemon."  If this machine crashes, your
+       PVM virtual machine goes down (a single point of failure).
+       The hostfile should be referenced by full path, e.g. pvm d:\hostfile.
+    
+       Manual adding of hosts is performed by the "add" command in the
+       "pvm" console.  Add commands must specify the location of the daemon
+       executable, e.g.
+    
+            pvm> add "hostname dx=d:\pvm3\lib\win32\pvmd3.exe"
+    
+    4. Rshd or rexecd are required for WINNT, Rshd for WIN95.  This is
+       additional (shareware) software that you will find on the WWW,
+       as long as MS does not offer its own solution.
+       Please note that the rshd is required to run remote processes
+       under your account.  If you find pvm{d,l}.System in your PVM_TMP
+       directory, then the rshd is NOT working properly.
+    
+    5. If you are new to PVM, please read the book on PVM or check out the
+       user's guide.  You will find it on the PVM homepage at:
+    
+            http://www.csm.ornl.gov/pvm
+    
+    6. Before using PVM, you should test the functionality of the additional
+       software, e.g.
+    
+            "rsh remotehost -l login dir | more"
+    
+       This should show the directory listing of the remote host.  Piping
+       to "more" additionally checks for buffered std{io,err}.
+    
+    7. We are aware of Fortran problems when calling one of the 
+       pvm_pk* functions. This is currently an open question.
+    

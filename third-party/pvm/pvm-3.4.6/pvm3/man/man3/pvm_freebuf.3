@@ -1,0 +1,85 @@
+.\" $Id: pvm_freebuf.3,v 1.1 1996/09/23 22:01:16 pvmsrc Exp $
+.TH FREEBUF 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_freebuf \- Disposes of a message buffer.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_freebuf( int bufid )
+.br
+
+Fortran	call pvmffreebuf( bufid, info )
+.fi
+
+.SH PARAMETERS
+.IP bufid 0.8i
+Integer message buffer identifier.
+.br
+.IP info
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_freebuf
+frees the memory associated
+with the message buffer identified by
+.I bufid.
+Message buffers are created by pvm_mkbuf, pvm_initsend, and pvm_recv.
+If pvm_freebuf is successful,
+.I info
+will be 0.
+If some error occurs then
+.I info
+will be < 0.
+.PP
+pvm_freebuf can be called for a send buffer created by pvm_mkbuf
+after the message has been sent and is no longer needed.
+.PP
+Receive buffers typically do not have to be freed unless
+they have been saved in the course of using multiple buffers.
+But pvm_freebuf can be used to destroy receive buffers as well.
+So messages that arrive but are no longer needed can be destroyed
+so they will not consume buffer space.
+.PP
+Typically multiple send and receive buffers are not needed
+and the user can simply use the pvm_initsend routine to
+reset the default send buffer.
+.PP
+There are several cases where multiple buffers are useful.
+One example where multiple message buffers are needed involves
+libraries or graphical interfaces that use PVM and
+interact with a running PVM application but do not want
+to interfere with the application's own communication.
+.PP
+When multiple buffers are used they generally are made and
+freed for each message that is packed.
+In fact, pvm_initsend simply does a pvm_freebuf followed
+by a pvm_mkbuf for the default buffer.
+
+.SH EXAMPLES
+.nf
+C:
+	bufid = pvm_mkbuf( PvmDataDefault );
+	      :
+	info = pvm_freebuf( bufid );
+.sp
+Fortran:
+	CALL PVMFMKBUF( PVMDEFAULT, BUFID )
+	      :
+	CALL PVMFFREEBUF( BUFID, INFO )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_freebuf
+.IP PvmBadParam
+giving an invalid argument value.
+.IP PvmNoSuchBuf
+giving an invalid bufid value.
+.PP
+.SH SEE ALSO
+pvm_mkbuf(3PVM),
+pvm_initsend(3PVM),
+pvm_recv(3PVM)

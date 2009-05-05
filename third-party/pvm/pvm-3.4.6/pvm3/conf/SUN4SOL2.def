@@ -1,0 +1,16 @@
+#
+# Note: for 64-bit systems, add the following flags to ARCHCFLAGS:
+#
+#     -DHASSTDLIB -xarch=v9 -KPIC
+#
+#    (-KPIC used for building shared dynamic libraries...)
+#
+ARCHCFLAGS	=	-DSYSVBFUNC -DSYSVSTR -DNOGETDTBLSIZ -DSYSVSIGNAL \
+				-DNOWAIT3 -DRSHCOMMAND=\"/usr/bin/rsh\" -DUSESTRERROR
+ARCHDLIB	=	-lnsl -lsocket
+ARCHDOBJ	=
+ARCHLIB		=	-lnsl -lsocket
+HASRANLIB	=	f
+AR			=	ar
+PVM_ARCH	=	SUN4SOL2
+MAKE		=	make

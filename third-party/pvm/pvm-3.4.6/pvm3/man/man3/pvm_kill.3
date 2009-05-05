@@ -1,0 +1,61 @@
+.\" $Id: pvm_kill.3,v 1.1 1996/09/23 22:05:15 pvmsrc Exp $
+.TH KILL 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_kill \- Terminates a specified PVM process.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_kill( int tid )
+.br
+
+Fortran	call pvmfkill( tid, info )
+.fi
+
+.SH PARAMETERS
+.IP tid 0.8i
+Integer task identifier of the PVM process to be killed
+(not yourself).
+.br
+.IP info
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_kill
+sends a terminate (SIGTERM) signal
+to the PVM process identified by
+.I tid.
+In the case of multiprocessors the terminate signal is replaced
+with a host dependent method for killing a process.
+If pvm_kill is successful,
+.I info
+will be 0. If some error occurs then
+.I info
+will be < 0.
+.PP
+pvm_kill is not designed to kill the calling process.
+To kill yourself in C call pvm_exit() followed by exit().
+To kill yourself in Fortran call pvmfexit followed by stop.
+
+.SH EXAMPLES
+.nf
+C:
+	info = pvm_kill( tid );
+.sp
+Fortran:
+	CALL PVMFKILL( TID, INFO )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_kill
+.IP PvmBadParam
+giving an invalid tid value.
+.IP PvmSysErr
+pvmd not responding.
+.PP
+.SH SEE ALSO
+pvm_exit(3PVM),
+pvm_halt(3PVM)

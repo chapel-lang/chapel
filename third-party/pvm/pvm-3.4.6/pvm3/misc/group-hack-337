@@ -1,0 +1,209 @@
+*** ../../netlib/pvm3.3.7/src/lpvm.c	Tue Feb 07 15:16:11 1995
+--- lpvm.c	Mon May 15 14:17:06 1995
+***************
+*** 1971,1976 ****
+--- 1971,1977 ----
+  	char buf[16];					/* for converting sockaddr */
+  	char *p;
+  	int x;
++ 	int gid;
+  
+  /*
+  	pvm_setopt(PvmDebugMask, -1);
+***************
+*** 2033,2038 ****
+--- 2034,2045 ----
+  		pvmlogerror("pvmbeatask() can't creat t-auth file\n");
+  		cc = PvmSysErr;
+  		goto bail2;
++ 	}
++ 	if ((gid = pvmgetugid()) != -1) {
++ 		if (fchown(authfd, -1, gid) == -1)
++ 			pvmlogperror("pvmbeatask() can't chown t-auth file");
++ 		if (fchmod(authfd, 0660) == -1)
++ 			pvmlogperror("pvmbeatask() can't chmod t-auth file");
+  	}
+  
+  	sbf = pvm_setsbuf(pvm_mkbuf(PvmDataFoo));
+*** ../../netlib/pvm3.3.7/src/pvmcruft.c	Wed Nov 09 10:58:42 1994
+--- pvmcruft.c	Mon May 15 14:37:16 1995
+***************
+*** 66,71 ****
+--- 66,72 ----
+  #include <strings.h>
+  #define	CINDEX(s,c)	index(s,c)
+  #endif
++ #include <grp.h>
+  #include "global.h"
+  #include "protoglarp.h"
+  #include "pvmalloc.h"
+***************
+*** 458,463 ****
+--- 459,465 ----
+  
+  	char hna[128];
+  	char *p;
++ 	int gid;
+  
+  #ifdef	SHAREDTMP
+  	if (gethostname(hna, sizeof(hna)-1) == -1) {
+***************
+*** 466,477 ****
+  	}
+  	if (p = CINDEX(hna, '.'))
+  		*p = 0;
+! 	(void)sprintf(buf, TDSOCKNAME, pvm_useruid, hna);
+  
+  #else
+! 	(void)sprintf(buf, TDSOCKNAME, pvm_useruid);
+  #endif
+  
+  	return buf;
+  }
+  
+--- 468,515 ----
+  	}
+  	if (p = CINDEX(hna, '.'))
+  		*p = 0;
+! 	if ((gid = pvmgetugid()) != -1) {
+! 		(void)sprintf(buf, TDSOCKGNAME, gid, hna);
+! 	else
+! 		(void)sprintf(buf, TDSOCKNAME, pvm_useruid, hna);
+  
+  #else
+! 	if ((gid = pvmgetugid()) != -1)
+! 		(void)sprintf(buf, TDSOCKGNAME, gid);
+! 	else
+! 		(void)sprintf(buf, TDSOCKNAME, pvm_useruid);
+  #endif
+  
+  	return buf;
+  }
++ 
++ 
++ int
++ pvmgetugid()
++ {
++ 	static int gid = -2;
++ 
++ 	char *p;
++ 	struct group *ge;
++ 	char buf[128];
++ 
++ 	if (gid == -2) {
++ 		gid = -1;
++ 		if (p = getenv("PVM_GID")) {
++ 			if (isdigit(*p))
++ 				return (int)atoi(p);
++ 
++ 			if (ge = getgrnam(p))
++ 				gid = ge->gr_gid;
++ 			else {
++ 				sprintf(buf, "pvmgetugid() can't lookup group \"%s\"\n", p);
++ 				pvmlogerror(buf);
++ 			}
++ 			endgrent();
++ 		}
++ 	}
++ 
++ 	return gid;
++ }
++ 
+  
+*** ../../netlib/pvm3.3.7/src/startup.c	Tue Feb 07 15:16:13 1995
+--- startup.c	Mon May 15 14:20:43 1995
+***************
+*** 242,247 ****
+--- 242,248 ----
+  	char spath[LEN_OF_TMP_NAM];	/* local socket path */
+  	struct sockaddr_un uns;
+  #endif
++ 	int gid;
+  
+  	/*
+  	* make pvmd-pvmd socket
+***************
+*** 395,400 ****
+--- 396,407 ----
+  		}
+  
+  	} else {
++ 		if ((gid = pvmgetugid()) != -1) {
++ 			if (fchown(d, -1, gid) == -1)
++ 				pvmlogperror("mksocs() can't chown address file");
++ 			if (fchmod(d, 0640) == -1)
++ 				pvmlogperror("mksocs() can't chmod address file");
++ 		}
+  		cc = write(d, p, strlen(p));
+  		if (cc != strlen(p)) {
+  			if (cc == -1) {
+*** ../../netlib/pvm3.3.7/src/tdpro.c	Wed Nov 09 10:58:44 1994
+--- tdpro.c	Mon May 15 14:20:54 1995
+***************
+*** 106,111 ****
+--- 106,113 ----
+   **           **
+   ***************/
+  
++ char *getenv();
++ 
+  extern void task_dump();
+  char *debug_flags();
+  char *inadport_hex();
+***************
+*** 298,303 ****
+--- 300,306 ----
+  	char authfn[LEN_OF_TMP_NAM];	/* t-auth file name */
+  	int d;
+  	int cc;
++ 	int gid;
+  
+  	if (upkint(mp, &ver) || upkstr(mp, authfn, sizeof(authfn))) {
+  		pvmlogerror("tm_connect() bad msg format\n");
+***************
+*** 345,356 ****
+  	tp->t_authnam = TALLOC(LEN_OF_TMP_NAM, char, "auth");
+  	(void)TMPNAMFUN(tp->t_authnam);
+  
+! 	if ((tp->t_authfd = open(tp->t_authnam, O_RDONLY|O_CREAT|O_TRUNC, 0600))
+! 	== -1) {
+  		pvmlogperror("tm_connect() can't create d-auth file");
+  		PVM_FREE(tp->t_authnam);
+  		tp->t_authnam = 0;
+  		goto bail;
+  	}
+  
+  	/*
+--- 348,364 ----
+  	tp->t_authnam = TALLOC(LEN_OF_TMP_NAM, char, "auth");
+  	(void)TMPNAMFUN(tp->t_authnam);
+  
+! 	if ((tp->t_authfd = open(tp->t_authnam, O_RDONLY|O_CREAT|O_TRUNC, 0600)) == -1) {
+  		pvmlogperror("tm_connect() can't create d-auth file");
+  		PVM_FREE(tp->t_authnam);
+  		tp->t_authnam = 0;
+  		goto bail;
++ 	}
++ 	if ((gid = pvmgetugid()) != -1) {
++ 		if (fchown(tp->t_authfd, -1, gid) == -1)
++ 			pvmlogperror("tm_connect() can't chown d-auth file");
++ 		if (fchmod(tp->t_authfd, 0660) == -1)
++ 			pvmlogperror("tm_connect() can't chmod d-auth file");
+  	}
+  
+  	/*
+*** ../../netlib/pvm3.3.7/src/tdpro.h	Fri Jun 03 16:38:32 1994
+--- tdpro.h	Mon May 15 14:32:25 1995
+***************
+*** 59,66 ****
+--- 59,68 ----
+  
+  #ifdef	SHAREDTMP
+  #define	TDSOCKNAME	"/tmp/pvmd.%d.%s"	/* file with task->pvmd sockaddr */
++ #define	TDSOCKGNAME	"/tmp/pvmd.g%d.%s"	/* file with task->pvmd sockaddr */
+  #else
+  #define	TDSOCKNAME	"/tmp/pvmd.%d"	/* file with task->pvmd sockaddr */
++ #define	TDSOCKGNAME	"/tmp/pvmd.g%d"	/* file with task->pvmd sockaddr */
+  #endif
+  
+  #define	TM_FIRST	0x80010001		/* first TM_ message */

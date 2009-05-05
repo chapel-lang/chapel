@@ -1,0 +1,349 @@
+Received: from msr.epm.ornl.gov by CS.UTK.EDU with SMTP (cf v2.9s-UTK)
+	id EAA23496; Mon, 11 Jul 1994 04:48:33 -0400
+Received: from appana.ap.titech.ac.jp by msr.epm.ornl.gov (4.1/1.34)
+	id AA28611; Mon, 11 Jul 94 04:46:41 EDT
+Received: by appana.ap.titech.ac.jp (5.65+1.6W/tit-mx1.1); Mon, 11 Jul 94 17:45:55 +0900
+Received: by wisdom.ap.titech.ac.jp (NX5.67c/NX3.0S)
+	id AA12748; Mon, 11 Jul 94 17:46:04 +0900
+Date: Mon, 11 Jul 94 17:46:04 +0900
+From: Satoshi Adachi <adachi@wisdom.ap.titech.ac.jp>
+Message-Id: <9407110846.AA12748@wisdom.ap.titech.ac.jp>
+To: pvm@msr.epm.ornl.gov
+Subject: Modifications of xep necessary for NeXTstation Color.
+Cc: adachi@wisdom.ap.titech.ac.jp
+
+
+Dear Scientists and Engineers who have been developing PVM:
+
+(1) Recently, I was informed by my friend that there is a very nice
+software system, called PVM, that enable us to look a cluster of
+many workstations as a single virtual machine and to write
+parallel programs for the virtual machine. So, I installed
+PVM3.2.4 for our workstation cluster of NeXTstation's and IBM RS6000's.
+Now, PVM works very well on our workstation cluster.
+I have just begun writing several programs for physics by using PVM.
+Thank you very much for developing such a nice software system
+and for making it a free software.
+
+In the installation of PVM3.2.4, the body part of PVM did not need
+any change of source code and the installcation was completely automatic.
+However, the installtion of the demo program "xep" for NeXTstation color
+needed some change of source code.
+
+In this email, I will explain the modification of the source code of "xep"
+which is necessary to run "xep" on NeXTstation Color and NeXTstation Color
+Turbo.
+
+I hope that the modification or its equivalent will be incorpolated in
+the future releases of "xep".
+
+(2) Our NeXTstaion Color's and NeXTstation Color Turbo's are running
+under NeXTSTEP 3.0J and the commercial X Window software "Co-Xist"
+is installed on these machines.
+
+For NeXTstaion Color and NeXTstation Color Turbo, the true color model is
+used rather than the pseudo color model. On the screen, each pixel directly
+corresponds to a binary number of 12 bit length. Namely, Red, Green and
+Blue intensities are expressed by 4 bit integers. In C programs, a pixel
+is prepresented by a short integer with 16 bit which consists of 12 bit
+RGB fields and 4 bit pad.
+
+The source code of "xep" supports the not only the pseudo colode model
+but also the true color model. However, when the true color model is used,
+it is assumed that each pixel is expressed by the RGB value of 24 bit
+length (8 bit each) and is represented by 32 bit integer in C programs
+(including 8 bit pad).
+
+This assumption supposed by "xep" does not hold for NeXTstation Color and
+NeXTstation Color Turbo. Consequently, "xep" abends on these machines with
+Co-Xist.
+
+In order to support the true color model with RGB value represented by
+not only 3*8 bit but also 3*4 bit, I changed the source code of "xep"
+in the file "xep/xep.c" in the following way:
+
+-------------------------------------------------------------------------------
+*** xep.c	Mon Jul 11 17:19:01 1994
+--- xep.c.org	Sat Jul  9 20:16:37 1994
+***************
+*** 70,78 ****
+  
+  typedef	unsigned int IBIT32;
+  
+- /* ***** Added by S.Adachi (94/07/09) ***** */
+- typedef unsigned short int IBIT16;
+- 
+  /* describes an image canvas (currently only one) */
+  
+  struct canvas {
+--- 70,75 ----
+***************
+*** 410,437 ****
+  			}
+  			xBpp = pfv[i].bits_per_pixel;
+  			xBypp = xBpp / 8;
+- 			/* ***** Modified by S.Adachi (94/07/10) ***** */
+- #if 0
+  			redMask = defVis->red_mask;
+  			redShift = ffs(redMask & ~(redMask >> 1)) - 8;
+  			greenMask = defVis->green_mask;
+  			greenShift = ffs(greenMask & ~(greenMask >> 1)) - 8;
+  			blueMask = defVis->blue_mask;
+  			blueShift = ffs(blueMask & ~(blueMask >> 1)) - 8;
+- #else
+- 			if ((xBypp != 2) && (xBypp != 4)) {
+- 			  fprintf(stderr, "unsupported bytes per pixel: %d\n",
+- 				  xBypp);
+- 			  exit(1);
+- 			}
+- 			redMask = defVis->red_mask;
+- 			redShift = ffs(redMask) - 1;
+- 			greenMask = defVis->green_mask;
+- 			greenShift = ffs(greenMask) - 1;
+- 			blueMask = defVis->blue_mask;
+- 			blueShift = ffs(blueMask) - 1;
+- #endif /* Modification by S.Adachi (94/07/10) */
+  			mkrbow(fclutr, fclutg, fclutb, 256);
+  		} else {
+  			isCmap = 1;
+  			xCmap = DefaultColormap(xDisp, xScrn);
+--- 407,420 ----
+  			}
+  			xBpp = pfv[i].bits_per_pixel;
+  			xBypp = xBpp / 8;
+  			redMask = defVis->red_mask;
+  			redShift = ffs(redMask & ~(redMask >> 1)) - 8;
+  			greenMask = defVis->green_mask;
+  			greenShift = ffs(greenMask & ~(greenMask >> 1)) - 8;
+  			blueMask = defVis->blue_mask;
+  			blueShift = ffs(blueMask & ~(blueMask >> 1)) - 8;
+  			mkrbow(fclutr, fclutg, fclutb, 256);
++ 
+  		} else {
+  			isCmap = 1;
+  			xCmap = DefaultColormap(xDisp, xScrn);
+***************
+*** 1044,1068 ****
+  	return x;
+  }
+  
+- /* ***** Added by S.Adachi (94/07/09) ***** */
+- /*	sw2()
+- *
+- *	Byteswap a 16-bit integer.
+- */
+- 
+- IBIT16
+- sw2(x)
+- 	IBIT16 x;
+- {
+- 	u_char *cp = (u_char*)&x;
+- 	u_char c;
+- 
+- 	c = cp[0];
+- 	cp[0] = cp[1];
+- 	cp[1] = c;
+- 	return x;
+- }
+- 
+  
+  /*	repaint_region()
+  *
+--- 1027,1032 ----
+***************
+*** 1133,1212 ****
+  			dy = (y1 - cnp->cn_oy) * cnp->cn_zoom;
+  			ya = 0;
+  			while (sy < y2 && dy < cnp->cn_ht) {
+! 			  sx = x1;
+! 			  dx = (x1 - cnp->cn_ox) * cnp->cn_zoom;
+! 			  xa = 0;
+! 			  sa = ribuf + sy * cnp->cn_wd + sx;
+! 			  /* ***** Modified by S.Adachi (94/07/09) ***** */
+! #if 0
+! 			  da = (ximbuf + dy * cnp->cn_xim->bytes_per_line
+! 				+ dx * sizeof(IBIT32));
+! 			  while (sx < x2 && dx < cnp->cn_wd) {
+! 			    pixv = lbm & *sa;
+! 			    pixr = fclutr[pixv];
+! 			    pixg = fclutg[pixv];
+! 			    pixb = fclutb[pixv];
+! 			    pixv = (redMask & (pixr << redShift))
+! 			      | (greenMask & (pixg << greenShift))
+! 				| (blueMask & (pixb << blueShift));
+! 			    if (revByte)
+! 			      *((IBIT32*)da) = sw4(pixv);
+! 			    else
+! 			      *((IBIT32*)da) = pixv;
+! 			    da += sizeof(IBIT32);
+! 			    dx++;
+! 			    if (++xa >= cnp->cn_zoom) {
+! 			      xa = 0;
+! 			      sx++;
+! 			      sa++;
+! 			    }
+! 			  }
+! #else
+! 			  da = (ximbuf + dy * cnp->cn_xim->bytes_per_line
+! 				+ dx * xBypp);
+! 			  while (sx < x2 && dx < cnp->cn_wd) {
+! 			    pixv = lbm & *sa;
+! 			    pixr = fclutr[pixv];
+! 			    pixg = fclutg[pixv];
+! 			    pixb = fclutb[pixv];
+! 			    if (xBypp == 4) {
+! 			      pixv = ((redMask & (pixr << redShift))
+! 				      |(greenMask & (pixg << greenShift))
+! 				      |(blueMask & (pixb << blueShift)));
+! 			      if (revByte)
+! 				*((IBIT32*)da) = sw4(pixv);
+! 			      else
+! 				*((IBIT32*)da) = pixv;
+! 			      da += sizeof(IBIT32);
+! 			    }
+! 			    else {
+! 			      /* xBypp == 2 */
+! 			      IBIT16 pixvs;
+! 			      pixr = pixr >> 4;
+! 			      pixg = pixg >> 4;
+! 			      pixb = pixb >> 4;
+! 			      pixvs = ((redMask & (pixr << redShift))
+! 				       |(greenMask & (pixg << greenShift))
+! 				       |(blueMask & (pixb << blueShift)));
+! 			      if (revByte)
+! 				*((IBIT16*)da) = sw2(pixvs);
+! 			      else
+! 				*((IBIT16*)da) = pixvs;
+! 			      da += sizeof(IBIT16);
+! 			    }
+! 			    dx++;
+! 			    if (++xa >= cnp->cn_zoom) {
+! 			      xa = 0;
+! 			      sx++;
+! 			      sa++;
+! 			    }
+! 			  }
+! #endif /* ***** End of Modification by S.Adachi (94/07/10) ***** */
+! 			  dy++;
+! 			  if (++ya >= cnp->cn_zoom) {
+! 			    ya = 0;
+! 			    sy++;
+! 			  }
+  			}
+  		}
+  
+--- 1097,1133 ----
+  			dy = (y1 - cnp->cn_oy) * cnp->cn_zoom;
+  			ya = 0;
+  			while (sy < y2 && dy < cnp->cn_ht) {
+! 				sx = x1;
+! 				dx = (x1 - cnp->cn_ox) * cnp->cn_zoom;
+! 				xa = 0;
+! 				sa = ribuf + sy * cnp->cn_wd + sx;
+! 				da = ximbuf + dy * cnp->cn_xim->bytes_per_line + dx * sizeof(IBIT32);
+! 				while (sx < x2 && dx < cnp->cn_wd) {
+! 					pixv = lbm & *sa;
+! 					pixr = fclutr[pixv];
+! 					pixg = fclutg[pixv];
+! 					pixb = fclutb[pixv];
+! 					pixv = (redMask & (pixr << redShift))
+! 							| (greenMask & (pixg << greenShift))
+! 							| (blueMask & (pixb << blueShift));
+! 					if (revByte)
+! 						*((IBIT32*)da) = sw4(pixv);
+! 					else
+! 						*((IBIT32*)da) = pixv;
+! 		
+! 					da += sizeof(IBIT32);
+! 					dx++;
+! 					if (++xa >= cnp->cn_zoom) {
+! 						xa = 0;
+! 						sx++;
+! 						sa++;
+! 					}
+! 				}
+! 				dy++;
+! 				if (++ya >= cnp->cn_zoom) {
+! 					ya = 0;
+! 					sy++;
+! 				}
+  			}
+  		}
+  
+-------------------------------------------------------------------------------
+
+I would like to make several remarks on the above modifications:
+
+(i) In contrast to IBIT32 for the RGB value represented in 32 bit,
+a new type IBIT 16 is introduced for the RGB value represented in 16 bit as:
+
+	typedef unsigned short int IBIT16;
+
+(ii) In order to confirm that when the true color model is used, the RGB value
+is represented in either 16 bit or 32 bit, the following code is added:
+
+		if ((xBypp != 2) && (xBypp != 4)) {
+		  fprintf(stderr, "unsupported bytes per pixel: %d\n",
+			  xBypp);
+		  exit(1);
+		}
+
+(iii) The original code to calculate the shift for the red field in the RGB
+value was
+
+		redShift = ffs(redMask & ~(redMask >> 1)) - 8;
+
+This assumes that the field has 8 bit length. This is changed to
+
+		redShift = ffs(redMask) - 1;
+
+Same is true for the fields of Green and Blue. This new code may have some
+problem on the respect to byte order mismatch between X server and X client.
+I am not sure. I did not inspect it.
+
+(iv) A new function "sw2()" is added. This is the 16 bit version of sw4().
+
+(v) The following code assumes that each pixel is represented by 32 bit
+integer:
+
+		  da = (ximbuf + dy * cnp->cn_xim->bytes_per_line
+			+ dx * sizeof(IBIT32));
+
+In the new code, "sizeof(IBIT32)" is replaced by "xBypp".
+
+(vi) When a pixel value is written in memory, the following "if" statement
+is introduced to respect the bit length of the pixel:
+
+		    if (xBypp == 4) {
+
+			/* Same as the original code */
+
+		    }
+		    else {
+		      /* xBypp == 2 */
+		      IBIT16 pixvs;
+		      pixr = pixr >> 4;
+		      pixg = pixg >> 4;
+		      pixb = pixb >> 4;
+		      pixvs = ((redMask & (pixr << redShift))
+			       |(greenMask & (pixg << greenShift))
+			       |(blueMask & (pixb << blueShift)));
+		      if (revByte)
+			*((IBIT16*)da) = sw2(pixvs);
+		      else
+			*((IBIT16*)da) = pixvs;
+		      da += sizeof(IBIT16);
+		    }
+
+We should be careful that the original pixr, pixg, pixb values are
+in the range 0-255.
+
+Thank you very much.
+
+Satoshi Adachi
+(adachi@wisdom.ap.titech.ac.jp)
+
+Research Associate
+Department of Applied Physics
+Tokyo Institute of Technology
+Meguro, Tokyo 152, JAPAN

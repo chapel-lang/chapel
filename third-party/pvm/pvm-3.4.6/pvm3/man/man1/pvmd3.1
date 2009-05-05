@@ -1,0 +1,402 @@
+.\" $Id: pvmd3.1,v 1.5 2004/02/17 17:53:04 pvmsrc Exp $
+.TH PVMD 1PVM "06 May, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvmd, pvmd3 \- PVM daemon
+.SH SYNOPSIS
+.ft B
+pvmd
+[
+\-options
+]
+[
+hostfile
+]
+.ft R
+.SH DESCRIPTION
+.I Pvmd3
+is a daemon process which coordinates unix hosts
+in a virtual machine.
+One \fIpvmd3\fR must run on each host in the group.
+They provide the communication and process control functions
+needed by the user's PVM processes.
+The daemon can be started manually with a host file argument
+that will automatically start the remote pvmds.
+The local and remote pvmds can also be started from the PVM console
+program \fIpvm\fR.
+
+The name of the daemon executable is \fIpvmd3\fR.
+It is usually started by a shell script, \fI$PVM_ROOT/lib/pvmd\fR.
+
+[v3.4 and later]
+Before running pvmd3,
+pvmd
+sources any commands in \fI$HOME/.pvmprofile\fR
+if this file exists.
+
+.SH OPTIONS
+The following options may be specified on the command line when
+starting the master pvmd or PVM console:
+.TP 8
+-d\fImask\fR
+Set pvmd debug mask.
+Used to debug the pvmd or libpvm (not intended to be used to debug
+application programs).
+\fIMask\fR is the \fIsum\fR of the following bits
+and
+can be specified in hexadecimal (0x...), octal (0...) or decimal:
+.RS 12
+.PD 0
+.TP 8
+Bit
+Information
+.TP
+0x1
+Packet routing
+.TP
+0x2
+Message routing and entry points
+.TP
+0x4
+Task state
+.TP
+0x8
+Slave pvmd startup
+.TP
+0x10
+Host table updates
+.TP
+0x20
+Select loop (below packet layer)
+.TP
+0x40
+IP network
+.TP
+0x80
+Multiprocessor nodes
+.TP
+0x100
+Resource manager interface
+.TP
+0x200
+Application (messages with no destination, etc.)
+.TP
+0x400
+Wait contexts
+.TP
+0x800
+Shared memory operations
+.TP
+0x1000
+Semaphores
+.TP
+0x2000
+Locks
+.TP
+0x4000
+Message route control
+.PD
+.RE
+
+.TP 8
+-n\fIname\fR
+Specify an alternate hostname for the master pvmd to use.
+Useful when \fIgethostname()\fR returns a name not assigned to any
+network interface.
+.PP
+
+The following options are used by the master pvmd when starting slaves
+and are only of interest to someone writing a \fIhoster\fR.
+Don't just go using them, now.
+.TP
+-s
+Start pvmd in slave mode.
+Hostfile cannot be used,
+five additional parameters must be supplied:
+master pvmd index,
+master IP,
+master MTU,
+slave pvmd index,
+and
+slave IP.
+.TP
+-S
+Same as -s,
+but slave pvmd doesn't wait for its \fIstdin\fR to be closed
+after printing its parameters.
+Used for manual startup.
+.TP
+-f
+Slave doesn't fork after configuration (useful if the slave is
+to be controlled or monitored by some process).
+.PP
+
+.SH HOST FILE FORMAT
+Each host in the virtual machine must have an entry in the host
+file.
+Lines beginning with a splat ( # ), optionally preceded by whitespace,
+are ignored.
+
+A simple host file might look like:
+
+	# my first host file
+.br
+	thud
+.br
+	fred
+.br
+	wilma
+.br
+	barney
+.br
+	betty
+
+This specifies the names of five hosts to be configured in the virtual machine.
+
+The master \fIpvmd\fR for a group is started by hand on the localhost,
+and it starts slaves on each of the remaining hosts
+using the \fIrsh\fR or \fIrexec\fR command.
+The master host may appear on any line of the host file.
+Host names cannot be numeric (IP) addresses,
+because they are passed to rsh and rexec(),
+which usually don't accept addresses.
+
+The simple format above works fine if you have the same login name
+on all five machines and the name of the master host in your .rhosts
+files on the other four.
+
+There are several host file options available:
+.RS
+.TP 10
+lo=NAME
+Specifies an alternate login name (NAME) to use.
+
+.TP
+so=pw
+This is necessary when the remote host cannot trust the master.
+Causes the master pvmd to prompt for a password for the remote host
+in the tty of the pvmd (note you can't start the master using the
+console or background it when using this option) you will see:
+.br
+	Password (honk.cs.utk.edu:manchek):
+.br
+you should type your password for the remote host.  The startup
+will then continue as normal.
+
+.TP
+dx=FILE
+Specifies the path of the pvmd executable.
+FILE may be a simple filename, an absolute pathname,
+or a path relative to the user's home directory on the remote host.
+This is mainly useful to aid in debugging new versions of PVM,
+but may have other uses.
+
+.TP
+ep=PATH
+Specifies a path for the \fIpvmd\fR to search for executable
+program components when spawning a new process.
+The path may have multiple elements, separated by colons ( : ).
+
+.TP
+wd=PATH
+Specifies a working directory in which all spawned
+tasks on this host will execute.
+
+.TP
+sp=VALUE
+Specifies the relative computational speed of this host
+compared to other hosts in the configuration.
+VALUE is an integer in the range [1 - 1000000]
+
+.TP
+bx=PATH
+Specifies the debugger program path.
+Note: the environment variable PVM_DEBUGGER can also be set.
+
+.TP
+ip=NAME
+Specifies an alternate IP address to use for the host.
+As with host names (when ip= is not used),
+the address must be a host name, not a numeric address, because it is passed
+to rsh and rexec().
+This option allows one to pick a specific network interface for a machine
+without using the interface's name.
+It can also be used to create a virtual machine using symbolic (instead of actual)
+host names.
+
+.TP
+so=ms
+Rarely used.
+Causes the master pvmd to request user to manually
+perform the startup of a pvmd on a slave host when rsh and rexec
+network services are disabled but IP connectivity exists.
+See section "MANUAL STARTUP".
+
+.TP
+id=VMID
+A new feature in PVM 3.4.4 is the concept of a "Virtual Machine ID".
+You can now set the VMID to an arbitrary string and this will
+distinguish and allow multiple virtual machines to run on the same
+set of hosts under the same userid.  (This feature was originally
+introduced by SGI in their commercial PVM product, and has now been
+generalized for the public PVM system.)  This feature seems to be
+something that people often want, and the "id=" hostfile option
+(or $PVM_VMID environment variable) is the cleanest
+way to provide this functionality, rather than overloading the
+SHAREDTMP compiler flag and other internals.
+.sp
+*** Make Sure *** that you appropriately set the $PVM_VMID environment
+variable in any shells from which PVM application tasks or the "pvm"
+console will be run, or else they won't know
+.I which
+virtual machine to attach to!
+.sp
+By default, all hosts which are added to the virtual machine
+will inherit the same VMID.  If hosts are added to the virtual machine
+which are running older versions of PVM (prior to 3.4.4), then the
+VMID will be ignored for those hosts, and hence these machines can
+only be added to one virtual machine for the given user.  The VMID
+need not be consistent on every host in a virtual machine (although
+this is not necessarily advisable).
+.RE
+.PP
+
+A dollar sign ( $ ) in an option introduces a variable name,
+for example \fI$PVM_ARCH\fR.
+Names are expanded from environment variables by each pvmd.
+
+Each of the flags above has a default value.  These are:
+.RS
+.PD 0
+.TP 8
+lo
+The loginname on the master host.
+.TP 8
+so
+Nothing
+.TP 8
+dx
+$PVM_ROOT/lib/pvmd (or environment variable PVM_DPATH)
+.TP 8
+ep
+$HOME/pvm3/bin/$PVM_ARCH:$PVM_ROOT/bin/$PVM_ARCH
+.TP 8
+wd
+$HOME
+.TP 8
+sp
+1000
+.TP 8
+bx
+$PVM_ROOT/lib/debugger
+.PD
+.RE
+.PP
+
+You can change these by adding a line with a star ( * ) in the
+first field followed by the options, for example:
+
+	* lo=afriend so=pw
+
+This sets new default values for 'lo' and 'so' for the remainder
+of the host file, or until the next '*' line.
+Options set on the last '*' line also apply to hosts added dynamically
+using \fIpvm_addhosts()\fR.
+
+Host options can be set without starting the hosts automatically.
+Information on host file lines beginning with '&' is stored,
+but the hosts are not started until added using \fIpvm_addhosts()\fR.
+
+Example host file:
+.nf
+	# host file for testing on various platforms
+	fonebone
+	refuge
+	# installed in /usr/local here
+	sigi.cs            dx=/usr/local/pvm3/lib/pvmd
+	# borrowed accts, "guest", don't trust fonebone
+	*                  lo=guest  so=pw
+	sn666.jrandom.com
+	cubie.misc.edu
+	# really painful one, must start it by hand and share a homedir
+	& igor.firewall.com  lo=guest2  so=ms  ep=bob/pvm3/bin/$PVM_ARCH
+.fi
+
+.SH MANUAL STARTUP
+When adding a host with this option set you will see on the tty of the pvmd:
+.nf
+.\"	[t80040000] ready   Fri Aug 27 18:47:47 1993
+	*** Manual startup ***
+	Login to "honk" and type:
+	$PVM_ROOT/lib/pvmd -S -d0 -nhonk 1 80a9ca95:0cb6 4096 2 80a95c43:0000
+	Type response:
+.fi
+
+after typing the given command on host \fIhonk\fR, you should see a line like:
+.nf
+	ddpro<2312> arch<ALPHA> ip<80a95c43:0a8e> mtu<4096>
+.fi
+
+type this line on the tty of the master pvmd.
+You should then see:
+.nf
+	Thanks
+.fi
+
+and the two pvmds should be able to communicate.
+
+Note you can't start the master using the
+console or background it when using this option.
+
+.SH OVERLOADING HOSTS
+
+You can force PVM to overload a host (start more than one pvmd on it)
+by putting a '$' before the host name in the host file.
+This is not recommended unless you know what you're doing and have
+a good reason for it.
+You must build the PVM source with option OVERLOADHOST defined for it to work.
+
+You may also need to use the ip= hostfile option to define several names
+with the same IP address.
+If two or more hosts in a PVM have the same name,
+they cannot be identified uniquely.
+
+.SH STOPPING PVMD3
+.\"When pvmd3 starts up it prints the single line:
+.\"[t800xxxxxxx] ready
+.\".PP
+The preferred method of stopping all the pvmds is to give the
+\fIhalt\fR command in the PVM console. This kills all PVM tasks,
+all the remote daemons, the local daemon, and finally the console itself.
+If the master pvmd is killed manually it should be sent a SIGTERM signal
+to allow it to kill the remote pvmds and clean up various files.
+.PP
+The pvmd can be killed in a manner that leaves the file
+/tmp/pvmd.\fIuid\fR behind on one or more hosts.
+\fIUid\fR is the numeric user ID (from /etc/passwd) of the user.
+This will prevent PVM from restarting on that host.
+Deletion of this file will fix this problem:
+
+.nf
+    rm `( grep $user /etc/passwd || ypmatch $user passwd )
+         | awk -F: '{print "/tmp/pvmd."$3; exit}'` 
+.fi
+
+.SH FILES
+.ta 4 40
+.nf
+  $PVM_ROOT/lib/pvmd  PVM daemon startup script
+  $PVM_ROOT/lib/$PVM_ARCH/pvmd3 PVM daemon executable
+  $HOME/.pvmprofile Shell commands read by pvmd before
+    running pvmd3
+  $HOME/pvm3/bin/$PVM_ARCH  Private PVM executable directory
+  $PVM_ROOT/pvm3/bin/$PVM_ARCH  System PVM executable directory
+  /tmp/pvmd.\fIuid\fR Pvmd local socket address
+  /tmp/pvml.\fIuid\fR Pvmd runtime error log
+  $HOME/.rhosts File allowing access to a host from
+    other hosts
+.fi
+
+.SH SEE ALSO
+pvm(1PVM),
+pvm_intro(1PVM),
+rhosts(5)

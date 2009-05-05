@@ -1,0 +1,58 @@
+.\" $Id: pvm_setmwid.3,v 1.1 1996/09/23 22:06:16 pvmsrc Exp $
+.TH SETMWID 3PVM "18 May, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_getmwid,
+pvm_setmwid \- Get or set wait ID of a message.
+.br
+[In Version 3.4: Relaced by pvm_getminfo and pvm_setminfo]
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_getmwid( int bufid )
+.br
+	int info = pvm_setmwid( int bufid, int waitid )
+.br
+
+Fortran	Not Available
+.fi
+
+.SH PARAMETERS
+.IP bufid 0.8i
+Message buffer identifier.
+.IP waitid
+Wait identifier number.
+
+.SH DESCRIPTION
+A wait identifier is part of a message (like the source,
+destination, tag and body).
+It is used to match a reply to the corresponding request.
+
+The default wait ID for a message is zero (none).
+
+pvm_getmwid returns the wait ID associated with a message buffer,
+or a negative error code.
+
+pvm_setmwid assigns a new wait ID to a message buffer.
+It returns PvmOk unless an error occurs.
+
+.SH EXAMPLES
+.nf
+	int src, tag;
+
+	pvm_recv(-1, -1);
+	/* ... process, compose reply message */
+	pvm_setmwid(pvm_getsbuf(), pvm_getmwid(pvm_getrbuf()));
+	pvm_bufinfo(pvm_getrbuf(), (int *)0, &tag, &src);
+	pvm_send(src, tag);
+
+.SH ERRORS
+The following error conditions can be returned by
+pvm_getmwid or pvm_setmwid:
+.IP PvmBadParam
+Invalid value for \fIbufid\fR argument.
+.IP PvmNoSuchBuf
+Message buffer \fIbufid\fR doesn't exist.
+.PP
+.SH SEE ALSO
+pvm_bufinfo(3PVM)

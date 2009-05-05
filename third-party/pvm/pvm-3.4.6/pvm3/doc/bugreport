@@ -1,0 +1,35 @@
+
+PVM version 3.4 Bug Report Form
+02 February 2009
+________________________________________________________________________
+
+If you find a bug in PVM, please report it to:
+
+    pvm@msr.csm.ornl.gov
+________________________________________________________________________
+
+Please try to include the following information:
+
+* The exact version and patch level of PVM you're using (e.g. 3.4.0).
+  This is necessary, because we don't want to go looking through source
+  for all past versions of PVM.  Also, if you're using an old version,
+  you mave have found a bug that we've already fixed.
+
+* The machine type(s) you're using, hardware and software (e.g. DEC
+  3000/500 running OSF 1.2).  This is helpful if we want to try to
+  reproduce the bug here.  Also, we know very little about some of the
+  machines PVM runs on and we'll be able to tell you that.
+
+* The machine architecture PVM chooses for you (e.g. ALPHA).
+
+* What shell you use (csh, ksh, ...).
+
+* A short description of the problem (what happens, when it happens,
+  what you did, etc.).  Include any relevant input you typed and output
+  printed by PVM.  Don't edit the output to format it or summarize it
+  (except maybe for removing 10000 lines that say the same thing - make
+  a note you did this).  Crucial information about the bug may be in a
+  few numbers or words.
+
+* Please warn us if you've made any changes to the distribution source.
+

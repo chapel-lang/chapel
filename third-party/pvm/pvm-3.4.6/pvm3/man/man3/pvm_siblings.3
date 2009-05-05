@@ -1,0 +1,98 @@
+.\" $Id: pvm_siblings.3,v 1.1 1997/06/26 19:55:13 pvmsrc Exp $
+.TH SIBLINGS 3PVM "26 June, 1997" "" "PVM Version 3.4"
+.SH NAME
+pvm_siblings \-  return the number and associated task ids of 
+processes that were started together in a single spawn call. 
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int ntids = pvm_siblings( int **tids )
+.br
+
+Fortran	call pvmfsiblings( ntids, index, sibling )
+.fi
+
+.SH PARAMETERS
+.IP ntids 0.8i
+Returns the number of tids that were spawned together. Value
+less than 0 indicates an error. 
+.br
+.IP tids 0.8i
+Pointer to the array of tids that contains the siblings. Indexed from
+0 to (ntids - 1)
+.br
+.IP index 
+Integer index of tid to be returned in sibling. If index is set to -1,
+then sibling is unchanged. Otherwise, must be in the range
+[0, ntids - 1] 
+.br
+.IP sibling 
+When index is in the range [0, ntids -1], this contains the tid of
+the desired index.
+
+.SH DESCRIPTION
+The routine
+.I pvm_siblings
+returns the number of tasks and a list of task ids of processes 
+that were spawned
+together in a single spawn call. The spawning task multicasts the
+list of successful to the spawned tasks so that each task has
+an identical copy of the sibling list.  
+.I pvm_siblings 
+uses local storage to keep the list of tids and
+does not update this list when sibling tasks exit the virtual machine. 
+The FORTRAN version allows calling programs read a particular index in
+the internal sibling array.
+If pvm_siblings is successful,
+.I ntids 
+will be  > 0. If some error occurs then
+.I ntids 
+will be < 0.
+.PP
+pvm_siblings is designed to simplify the logic in static spmd-style
+programs. By giving tasks an identical list of tids and its size,
+programs may self size and treat the sibling as static map between
+instances and tasks. The internal list is not updated when sibling
+tasks exit the virtual machine and should be treated as a snapshot
+of the parallel program when it was first started.  
+.PP
+If a task was started by 
+.I pvm_spawn,
+then
+.I pvm_siblings
+will return 
+.I ntids = 1
+and
+
+.I ntids = 1
+and
+.I tids
+will contain a single entry identical to the task id returned by  
+.I pvm_mytid() 
+
+
+.SH EXAMPLES
+.nf
+C:
+	int *tids;
+	ntids = pvm_siblings(&tids);
+.sp
+Fortran:
+	INTEGER TIDS(0:MAXNPROC)
+	CALL PVMFSIBLINGS(NTIDS, -1, IDUM)
+	DO I = 0, NTIDS-1
+        CALL PVMFSIBLINGS(NTIDS, I, TIDS(I))
+.fi
+
+.SH ERRORS
+.I pvm_siblings
+can return the following error codes
+.IP PvmNoTask
+No task at that index, or index is invalid.
+
+.SH SEE ALSO
+pvm_spawn(3PVM),
+pvm_mytid(3PVM),
+pvm_parent(3PVM)
+

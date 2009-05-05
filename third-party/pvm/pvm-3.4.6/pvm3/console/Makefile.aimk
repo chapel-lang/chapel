@@ -1,0 +1,61 @@
+#
+# $Id: Makefile.aimk,v 1.12 1997/08/28 18:12:54 pvmsrc Exp $
+#
+# Generic Makefile body to be concatenated to config header.
+#
+# Imports:
+#  PVM_ARCH   = the official pvm-name of your processor
+#  ARCHCFLAGS = special cc flags
+#  ARCHLIB    = special libs needed for daemon
+#
+SHELL		=	/bin/sh
+PVMDIR		=	../..
+SDIR		=	$(PVMDIR)/console
+TRCDIR		=	$(PVMDIR)/tracer
+PVMIDIR		=	$(PVMDIR)/include
+PVMSDIR		=	$(PVMDIR)/src
+TRCIDIR		=	$(TRCDIR)
+PVMLDIR		=	$(PVMDIR)/lib/$(PVM_ARCH)
+TRCLDIR		=	$(TRCDIR)/$(PVM_ARCH)
+PVMLIB		=	pvm3
+TRCLIB		=	pvmtrc
+LIBPREFIX	=	lib
+PVMLIBDEP	=	$(PVMLDIR)/$(LIBPREFIX)$(PVMLIB).a
+TRCLIBDEP	=	$(TRCLDIR)/$(LIBPREFIX)$(TRCLIB).a
+CFLAGS		=	$(CFLOPTS) -DIMA_$(PVM_ARCH) -I$(PVMIDIR) -I$(TRCIDIR) \
+				-I$(PVMSDIR) $(ARCHCFLAGS)
+LIBS		=	$(LOPT) -L$(TRCLDIR) -L$(PVMLDIR) \
+				-l$(TRCLIB) -l$(PVMLIB) $(ARCHLIB)
+OBJ			=	cons.o cmds.o job.o trc.o
+
+default:	pvm$(EXESFX)
+
+install:	$(PVMLDIR) $(PVMLDIR)/pvm$(EXESFX)
+
+$(PVMLDIR):
+	- mkdir $(PVMLDIR)
+
+$(PVMLDIR)/pvm$(EXESFX):	pvm$(EXESFX)
+	cp pvm$(EXESFX) $(PVMLDIR)
+
+pvm$(EXESFX):	$(OBJ) $(PVMLIBDEP) $(TRCLIBDEP)
+	$(CC) $(CFLAGS) -o pvm$(EXESFX) $(OBJ) $(LIBS)
+
+cons.o:	$(SDIR)/cons.c
+	$(CC) $(CFLAGS) -c $(SDIR)/cons.c
+cmds.o:	$(SDIR)/cmds.c
+	$(CC) $(CFLAGS) -c $(SDIR)/cmds.c
+job.o:	$(SDIR)/job.c
+	$(CC) $(CFLAGS) -c $(SDIR)/job.c
+trc.o:	$(SDIR)/trc.c
+	$(CC) $(CFLAGS) -c $(SDIR)/trc.c
+
+clean:
+	rm -f *.o pvm$(EXESFX)
+
+#
+# Source File Dependencies
+#
+
+include $(PVMDEPPATH)$(SDIR)/pvmdep
+

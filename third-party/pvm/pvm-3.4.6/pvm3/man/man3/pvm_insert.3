@@ -1,0 +1,65 @@
+.\" $Id: pvm_insert.3,v 1.2 1996/10/08 18:33:36 pvmsrc Exp $
+.TH INSERT 3PVM "27 June, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_insert \- store data in pvmd database
+.br
+[In Version 3.4: Relaced by pvm_putinfo]
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int cc = pvm_insert( char *name, int index, int data )
+.br
+
+Fortran	Not available
+.fi
+
+.SH PARAMETERS
+.IP name 0.8i
+The class name, a null-terminated string.
+.IP index 0.8i
+The class index, >= 0 or -1 for first available.
+.IP data 0.8i
+Data to store in the <name, index> entry.
+
+.SH DESCRIPTION
+The master pvmd maintains a simple database,
+which can be used to store values such as tids and make them
+accessible anywhere within a virtual
+machine.
+This is useful when building an application such as the group
+server,
+which must advertise its task id
+so clients can register send messages to register.
+
+The database stores integer data,
+indexed by <name, index> pairs.
+The name may be any null-terminated string
+and the index any non-negative integer.
+Database entries are grouped by name into classes;
+index may be specified as -1 to store or retrieve the first available
+instance in a class.
+
+These functions are not part of the group library,
+but are the underlying mechanism used to implement it.
+
+\fIpvm_insert\fR stores data at the given index.
+If index is -1,
+the data is stored at the first available index in the named class,
+starting at 0.
+
+.\".SH EXAMPLES
+
+.SH ERRORS
+If successful,
+pvm_insert returns the index at which the data was stored,
+otherwise it returns a negative result.
+The following error conditions can be returned:
+.IP PvmBadParam
+giving an invalid argument value.
+.IP PvmDupEntry
+the requested <name, index> pair is already in use.
+.PP
+.SH SEE ALSO
+pvm_delete(3PVM),
+pvm_lookup(3PVM)

@@ -1,0 +1,46 @@
+#
+# $Id: win32watcom.def,v 1.2 1998/10/01 21:03:29 pvmsrc Exp $
+#
+
+cc			=	wcc386 -wcd=301 -wcd=202
+fc			=	wfc386 -noreference
+
+conflags	=	
+
+OUT			=	-FO=
+OUTBIN		=	/fe=
+OUTLIB		=	-o =
+OUTDLL		=	-o=
+
+FORTRANLIB	=
+
+linkexe		=	wcl386
+linklib		=	wlib -b -n
+linkdll		=	wlib -b -n /bd
+
+FILE		=	file
+
+link_flags	=
+
+SEPARATOR	=	" "
+
+BEGIN		=	{
+END			=	}
+
+link_multithread	=
+
+conlibs		=
+	
+CFLAGS		=	-bt=nt	
+
+!ifeq CFLAGS -zW
+CFLAGS		+=	-i=$(%WATCOM)\h;$(%WATCOM)\h\win
+!else
+CFLAGS		+=	-i=$(%WATCOM)\h;$(%WATCOM)\h\nt
+!endif
+
+CFLAGS		+=	$(ARCHCFLAGS) -DWIN32 -DIMA_WIN32_WATCOM -i=..\include \
+				-i=..\src -i=..\tracer -oaxt -d2 -db -w4 -hw
+
+MAKE		=	make
+

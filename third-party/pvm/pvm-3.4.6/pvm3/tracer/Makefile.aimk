@@ -1,0 +1,197 @@
+#
+# $Id: Makefile.aimk,v 4.23 1998/10/01 21:13:24 pvmsrc Exp $
+#
+
+#
+# Enforce Proper Shell Environment
+#
+
+SHELL		=	/bin/sh
+
+
+#
+# Version Compatibility Flags & Compiler Options
+#
+
+PVMVERSION	=
+#PVMVERSION	=	-DUSE_PVM_33
+
+CFLOPTS		=	-O
+#CFLOPTS	=	-g
+
+#CC			=	cc
+#CC			=	gcc
+
+CFLAGS		=	$(CFLOPTS) $(PVMVERSION) -DIMA_$(PVM_ARCH) $(ARCHCFLAGS)
+
+
+#
+# Source Directory
+#
+
+PVMDIR		=	../..
+
+TRCDIR		=	$(PVMDIR)/tracer
+
+SRCDIR		=	$(TRCDIR)
+
+PVMBDIR		=	$(PVMDIR)/bin
+PVMXDIR		=	$(PVMBDIR)/$(PVM_ARCH)
+
+PVMLDIR		=	$(PVMDIR)/lib/$(PVM_ARCH)
+
+
+#
+# Libraries
+#
+
+PVMLIBDIR	=	-L$(PVMDIR)/lib/$(PVM_ARCH)
+
+TRCLIBDIR	=	-L$(TRCDIR)/$(PVM_ARCH)
+
+LIBDIRS		=	$(PVMLIBDIR) $(TRCLIBDIR)
+
+SYSLIBS	 	=	$(ARCHLIB)
+
+LIBPREFIX	=	lib
+
+PVMLIB		=	pvm3
+PVMLIBDEP	=	$(PVMLDIR)/$(LIBPREFIX)$(PVMLIB).a
+
+TRCLIB		=	pvmtrc
+LIBPVMTRC	=	$(LIBPREFIX)$(TRCLIB).a
+TRCLIBDEP	=	$(PVMLDIR)/$(LIBPVMTRC)
+
+LIBS		=	$(LIBDIRS) -l$(TRCLIB) -l$(PVMLIB) $(SYSLIBS)
+
+
+#
+# Include Directories
+#
+
+PVMINCL		=	-I$(PVMDIR)/include
+
+TRCINCL		=	-I$(TRCDIR)
+
+INCL		=	-I$(SRCDIR) $(PVMINCL) $(TRCINCL)
+
+
+#
+# Object Files
+#
+
+OBJS		=	tracer.o cmd.o trcglob.o
+
+TRCOBJS		=	trcmess.o trcfile.o trccompat.o trccompatglob.o \
+				trcutil.o trclib.o
+
+HEADERS		=	$(SRCDIR)/tracer.h $(SRCDIR)/trcglob.h \
+				$(TRCDIR)/trcdef.h $(TRCDIR)/trctype.h \
+				$(TRCDIR)/trcproto.h \
+				$(PVMDIR)/include/pvm3.h $(PVMDIR)/include/pvmtev.h
+
+TRCHEADERS	=	$(TRCDIR)/trclib.h $(TRCDIR)/trctype.h \
+				$(TRCDIR)/trcproto.h \
+				$(TRCDIR)/trccompat.h $(TRCDIR)/trccompatrev.h \
+				$(PVMDIR)/include/pvm3.h $(PVMDIR)/include/pvmtev.h
+
+PROGS		=	$(PVMXDIR)/tracer$(EXESFX) $(PVMXDIR)/trcsort$(EXESFX)
+
+#
+# Targets
+#
+
+default:  local
+
+install:  $(PVMXDIR) $(PVMLDIR) $(PROGS)
+
+$(PVMXDIR)/tracer$(EXESFX):  tracer$(EXESFX)
+	@ cp tracer$(EXESFX) $(PVMXDIR)
+
+$(PVMXDIR)/trcsort$(EXESFX):  trcsort$(EXESFX)
+	@ cp trcsort$(EXESFX) $(PVMXDIR)
+
+local:  tracer$(EXESFX) trcsort$(EXESFX)
+
+tracer$(EXESFX):  $(OBJS) $(TRCLIBDEP) $(PVMLIBDEP)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+
+objs:  $(OBJS)
+
+trcsort$(EXESFX):  trcsort.o $(TRCLIBDEP) $(PVMLIBDEP)
+	$(CC) $(CFLAGS) -o $@ trcsort.o $(LIBS)
+
+trcsort.o:  $(SRCDIR)/trcsort.c
+	$(CC) $(CFLAGS) -c $(INCL) $(SRCDIR)/trcsort.c
+
+$(TRCLIBDEP):  $(LIBPVMTRC)
+	@ cp $(LIBPVMTRC) $(PVMLDIR)
+
+$(LIBPVMTRC):  $(TRCOBJS) $(PVMLDIR)
+	$(AR) rcv $(LIBPVMTRC) $(TRCOBJS)
+	@ case x$(HASRANLIB) in \
+		xt ) echo "ranlib $(LIBPVMTRC)"; ranlib $(LIBPVMTRC) ;; \
+		xf ) echo "No Ranlib Necessary." ;; esac
+
+$(PVMXDIR):
+	- mkdir $(PVMBDIR)
+	- mkdir $(PVMXDIR)
+
+$(PVMLDIR):
+	- mkdir $(PVMLDIR)
+
+again:
+	cd $(SRCDIR) ; touch *.c *.h ; $(MAKE)
+
+clean:
+	- rm -f *.o
+
+veryclean:  clean
+	- rm -f tracer$(EXESFX) trcsort$(EXESFX) $(LIBPVMTRC)
+
+
+#
+# C Dependencies
+#
+
+tracer.o:  $(SRCDIR)/tracer.c $(HEADERS)
+	@ touch tracer.o
+	$(CC) $(CFLAGS) -c $(INCL) $(SRCDIR)/tracer.c
+
+cmd.o:  $(SRCDIR)/cmd.c $(HEADERS)
+	@ touch cmd.o
+	$(CC) $(CFLAGS) -c $(INCL) $(SRCDIR)/cmd.c
+
+trcglob.o:  $(SRCDIR)/trcglob.c $(HEADERS)
+	@ touch trcglob.o
+	$(CC) $(CFLAGS) -c $(INCL) $(SRCDIR)/trcglob.c
+
+
+#
+# Library Objects
+#
+
+trcmess.o:  $(TRCDIR)/trcmess.c $(TRCHEADERS)
+	@ touch trcmess.o
+	$(CC) $(CFLAGS) -c $(INCL) $(TRCDIR)/trcmess.c
+
+trcfile.o:  $(TRCDIR)/trcfile.c $(TRCHEADERS)
+	@ touch trcfile.o
+	$(CC) $(CFLAGS) -c $(INCL) $(TRCDIR)/trcfile.c
+
+trccompat.o:  $(TRCDIR)/trccompat.c $(TRCHEADERS)
+	@ touch trccompat.o
+	$(CC) $(CFLAGS) -c $(INCL) $(TRCDIR)/trccompat.c
+
+trccompatglob.o:  $(TRCDIR)/trccompatglob.c $(TRCHEADERS)
+	@ touch trccompatglob.o
+	$(CC) $(CFLAGS) -c $(INCL) $(TRCDIR)/trccompatglob.c
+
+trcutil.o:  $(TRCDIR)/trcutil.c $(TRCHEADERS)
+	@ touch trcutil.o
+	$(CC) $(CFLAGS) -c $(INCL) $(TRCDIR)/trcutil.c
+
+trclib.o:  $(TRCDIR)/trclib.c $(TRCHEADERS)
+	@ touch trclib.o
+	$(CC) $(CFLAGS) -c $(INCL) $(TRCDIR)/trclib.c
+

@@ -1,0 +1,54 @@
+.\" $Id: pvm_parent.3,v 1.1 1996/09/23 22:05:30 pvmsrc Exp $
+.TH PARENT 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_parent \- Returns the tid of the process that spawned
+the calling process.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int tid = pvm_parent( void )
+.br
+
+Fortran	call pvmfparent( tid )
+.fi
+
+.SH PARAMETERS
+.IP tid 0.8i
+Integer returns the task identifier of the parent of the calling
+process.
+If the calling process was not created with pvm_spawn,
+then tid = PvmNoParent.
+
+.SH DESCRIPTION
+The routine
+.I pvm_parent
+returns the
+.I tid
+of the process
+that spawned the calling process. If the calling process was
+not created with pvm_spawn, then
+.I tid
+is set to
+PvmNoParent.
+
+.SH EXAMPLES
+.nf
+C:
+	tid = pvm_parent();
+.sp
+Fortran:
+	CALL PVMFPARENT( TID )
+.fi
+
+.SH ERRORS
+This error condition can be returned by
+.I pvm_parent.
+.IP PvmNoParent
+The calling process was not created with pvm_spawn.
+.IP PvmSysErr
+Can't contact local pvmd.
+.PP
+
+.SH SEE ALSO
+

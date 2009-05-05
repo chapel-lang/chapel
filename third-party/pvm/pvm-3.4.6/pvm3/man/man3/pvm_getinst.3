@@ -1,0 +1,69 @@
+.\" $Id: pvm_getinst.3,v 1.1 1996/09/23 22:01:22 pvmsrc Exp $
+.TH GETINST 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_getinst \- Returns the instance number in a group of a PVM process.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int inum = pvm_getinst( char *group, int tid )
+.br
+
+Fortran	call pvmfgetinst( group, tid, inum )
+.fi
+
+.SH PARAMETERS
+.IP group 0.8i
+Character string group name of an existing group.
+.br
+.IP tid
+Integer task identifier of a PVM process.
+.br
+.IP inum
+Integer instance number returned by the routine.
+Instance numbers start at 0 and count up.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_getinst
+takes a group name
+.I group
+and a PVM task identifier
+.I tid
+and returns the unique
+instance number that corresponds to the input.
+It can be called by any task whether in the group or not.
+If pvm_getinst is successful,
+.I inum
+will be >= 0.
+If some error occurs then
+.I inum
+will be < 0.
+
+.SH EXAMPLES
+.nf
+C:
+	inum = pvm_getinst( "worker", pvm_mytid() );
+	--------
+	inum = pvm_getinst( "worker", tid[i] );
+.sp
+Fortran:
+	CALL PVMFGETINST( 'GROUP3', TID, INUM )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_getinst
+.IP PvmSysErr
+pvmd was not started or has crashed.
+.IP PvmBadParam
+giving an invalid tid value.
+.IP PvmNoGroup
+giving a non-existent group name.
+.IP PvmNotInGroup
+specifying a group in which the tid is not a member.
+.PP
+.SH SEE ALSO
+pvm_joingroup(3PVM),
+pvm_gettid(3PVM)

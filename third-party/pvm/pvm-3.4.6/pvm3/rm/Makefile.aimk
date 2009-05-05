@@ -1,0 +1,68 @@
+#
+# $Id: Makefile.aimk,v 1.4 1997/08/28 21:20:11 pvmsrc Exp $
+#
+# Generic Makefile body to be concatenated to config header.
+#
+# Imports:
+#  PVM_ARCH   = the official pvm-name of your processor
+#  ARCHCFLAGS = special cc flags
+#  ARCHLIB    = special libs needed for daemon
+#
+DEBUG     =
+#DEBUG      =     -DDEBUG_RM
+#DEBUG     =     -DDEBUG_RM_MORE
+#MESSAGE   =
+MESSAGE    =     -DMESSAGE_ON
+DEBUG_FLAGS     =     $(DEBUG) $(MESSAGE)
+SHELL		=	/bin/sh
+PVMDIR		=	../..
+PVMIDIR		=	$(PVMDIR)/include
+PVMLDIR		=	$(PVMDIR)/lib/$(PVM_ARCH)
+PVMLIB		=	pvm3
+LIBPREFIX	=	lib
+PVMLIBDEP	=	$(PVMLDIR)/$(LIBPREFIX)$(PVMLIB).a
+SDIR		=	$(PVMDIR)/rm
+BDIR		=	$(PVMDIR)/bin
+XDIR		=	$(BDIR)/$(PVM_ARCH)
+
+CFLOPTS		=	-g
+CFLAGS		=	$(CFLOPTS) -I$(PVMIDIR) $(ARCHCFLAGS) \
+				-DIMA_$(PVM_ARCH) $(ARCHCFLAGS) \
+			$(DEBUG_FLAGS)
+LIBS		=	-L$(PVMLDIR) -l$(PVMLIB) $(ARCHLIB)
+
+HEADERS		=	$(PVMIDIR)/pvm3.h $(PVMIDIR)/pvmproto.h $(SDIR)/srm.h
+
+default:	all
+
+all:	$(XDIR) $(XDIR)/srm$(EXESFX)
+
+$(XDIR):
+	- mkdir $(BDIR)
+	- mkdir $(XDIR)
+
+$(XDIR)/srm$(EXESFX):  srm$(EXESFX)
+	cp srm$(EXESFX) $(XDIR)
+
+
+default: local
+
+install: $(XDIR) $(XDIR)/srm$(EXESFX)
+
+local:	srm$(EXESFX)
+
+srm$(EXESFX):	srm.o $(XDIR)
+	$(CC) $(CFLAGS) -o $@ srm.o $(LIBS)
+
+srm.o:  $(SDIR)/srm.c $(HEADERS) $(PVMLIBDEP) $(XDIR)
+	$(CC) $(CFLAGS) -c $(SDIR)/srm.c
+
+again:
+	cd $(SDIR) ; touch *.c *.h ; make
+
+clean:
+	- rm -f srm$(EXESFX) *.o
+
+veryclean:
+	- rm -f srm$(EXESFX) *.o core $(XDIR)/srm$(EXESFX)
+

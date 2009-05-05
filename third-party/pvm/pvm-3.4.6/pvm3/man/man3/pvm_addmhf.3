@@ -1,0 +1,140 @@
+.\" $Id: pvm_addmhf.3,v 1.8 2004/02/17 17:53:17 pvmsrc Exp $
+.TH ADDMHF 3PVM "1 April, 1997" "" "PVM Version 3.4"
+.SH NAME
+pvm_addmhf, pvm_delmhf \- Install or remove message-handler functions.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int mhid = pvm_addmhf( int src, int tag, int ctx, int (*func)(int mid) )
+.br
+	int info = pvm_delmhf( int mhid )
+.br
+
+Fortran	Not available
+.fi
+
+.SH PARAMETERS
+.IP src
+The tid of the sender.
+.IP tag
+The tag sent with the message.
+.IP ctx
+The context sent with the message.
+.IP func
+Function to call when message received.
+.IP mhid
+Message handler id.
+.IP info
+Result code.
+.IP mid
+Message buffer identifier for new active receive buffer.
+
+.SH DESCRIPTION
+pvm_addmhf
+specifies a function that will be called whenever
+libpvm copies in a message whose header fields of 
+\fIsrc\fR, \fItag\fR, and \fIctx\fR match those provided to pvm_addmhf().
+
+The src and tag fields may be left unspecified (wildcard) by setting
+to -1.
+
+The calling sequence of the message handler function is:
+
+.nf
+	int handler( int mid )
+.fi
+
+Where \fImid\fR is the bufid of the received message.
+The handler function can be used to unpack and process the received
+message buffer.
+PVM automatically saves the current send and receive buffers, so the
+handler need not worry about interfering with message buffers in the
+regular program flow.  PVM also sets the current receive buffer to
+the received message (using pvm_setrbuf()) before invoking the message
+handler, so the message can be unpacked directly.  PVM will free this
+message buffer when the message handler returns, if the handler has not
+already done so.  But, any other message buffers created by the handler
+routine should be freed using pvm_freebuf() before returning.
+
+Note:
+Operation in the message handler context is somewhat restricted.
+The function may call some PVM functions, but not others.
+For example,
+it may compose and send a reply message as shown:
+
+.nf
+	pvm_packf( "%+ %s", PvmDataDefault, "got your message" );
+	pvm_send( tid, tag );
+	pvm_freebuf( pvm_setsbuf( 0 ) );
+.fi
+
+or equivalently:
+
+.nf
+	pvm_setsbuf( pvm_mkbuf( PvmDataDefault ) );
+	pvm_pkstr( "got your message" );
+	pvm_send( tid, tag );
+	pvm_freebuf( pvm_setsbuf( 0 ) );
+.fi
+
+but is not allowed to call certain other PVM communication functions,
+such as multicast or receive.
+
+pvm_addmhf returns the id number of the newly created message handler
+if successful; this number may be passed to pvm_delmhf to remove the entry.
+There is no guarantee to the ordering of id values returned by pvm_addmhf,
+or to the order in which message handlers will be invoked.
+PvmExists is returned if the handler already exists.
+
+pvm_delmhf returns PvmOk if successful.
+PvmBadParam if pvm_delmhf is passed a negative id value.
+PvmNotFound if the id value is not found.
+
+.SH EXAMPLES
+.nf
+	/* Print a message when hosts are added to virtual machine */
+
+	int
+	hostAdded( int mid )
+	{
+		int n;
+		pvm_unpackf( "%d", &n );
+		printf( "*** %d new hosts just added ***\\n", n );
+	}
+
+	void
+	main()
+	{
+		int src, tag, ctx;
+
+		. . .
+
+		src = -1;
+		tag = 99;
+		ctx = -1;
+
+		pvm_addmhf( src, tag, ctx, hostAdded );
+		pvm_notify( PvmHostAdd, 99, -1, (int *) NULL );
+
+		. . .
+	}
+.fi
+
+.SH ERRORS
+The following error conditions can be returned by pvm_addmhf():
+.IP PvmExists
+Can't insert as handler already exists with same 
+(tag, ctx, src) including "wild-cards" (those set to -1)
+.PP
+
+The following error conditions can be returned by pvm_delmhf():
+.IP PvmBadParam
+Invalid (negative) \fImhid\fR passed in.
+.IP PvmNotFound
+Message handler \fImhid\fR does not exist.
+.PP
+.SH SEE ALSO
+pvm_setrbuf(3PVM),
+pvm_setsbuf(3PVM),
+pvm_freebuf(3PVM)

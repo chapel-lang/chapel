@@ -1,0 +1,122 @@
+.\" $Id: pvm_trecv.3,v 1.1 1996/09/23 22:21:04 pvmsrc Exp $
+.TH TRECV 3PVM "8 February, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_trecv \- Receive with timeout.
+
+.SH SYNOPSIS
+.nf
+.ft B
+.nf
+C	#include <sys/time.h>
+.br
+	int bufid = pvm_trecv( int tid, int msgtag, struct timeval *tmout )
+.br
+
+Fortran	call pvmftrecv( tid, msgtag, sec, usec, bufid )
+.fi
+
+.SH PARAMETERS
+.IP tid 0.8i
+Integer to match task identifier of sending process.
+.br
+.IP msgtag
+Integer to match message tag;
+should be >= 0.
+.br
+.IP tmout
+(or \fIsec\fR and \fIusec\fR)
+Time to wait before returning without a message.
+.br
+.IP bufid
+Integer returns the value of the new active receive buffer identifier.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine \fIpvm_trecv\fR
+blocks the process until a message with label \fImsgtag\fR
+has arrived from \fItid\fR.
+pvm_trecv then places the message in a new \fIactive\fR receive buffer,
+also clearing the current receive buffer.
+If no matching message arrives within the specified waiting time,
+pvm_trecv returns without a message.
+.PP
+A -1 in \fImsgtag\fR or \fItid\fR matches anything.
+This allows the user the following options.
+If \fItid\fR = -1
+then pvm_trecv will accept a message from any process
+which has a matching \fImsgtag\fR.
+If \fImsgtag\fR = -1
+then pvm_trecv will accept any message that is sent from process \fItid\fR.
+If \fItid\fR and \fImsgtag\fR are both -1,
+then pvm_trecv will accept any message from any process.
+.PP
+In C, the \fItmout\fR fields tv_sec and tv_usec
+specify how long pvm_trecv will wait without returning a matching message.
+In Fortran,
+two separate parameters,
+\fIsec\fR and \fIusec\fR are passed.
+With both set to zero, pvm_trecv behaves the same as \fIpvm_nrecv\fR,
+which is to probe for messages and return immediately
+even if none are matched.
+In C,
+passing a null pointer in \fItmout\fR makes pvm_trecv act like \fIpvm_recv\fR,
+that is,
+it will wait indefinitely.
+In Fortran,
+setting \fIsec\fR to -1 has the same effect.
+.PP
+The PVM model guarantees the following about message order.
+If task 1 sends message A to task 2, then task 1 sends message B to task 2,
+message A will arrive at task 2 before message B.
+Moreover, if both messages arrive before task 2 does a receive,
+then a wildcard receive will always return message A.
+.PP
+If pvm_trecv is successful, \fIbufid\fR
+will be the new active receive buffer identifier.
+If no message is received, pvm_trecv returns 0.
+If some error occurs then \fIbufid\fR will be < 0.
+.PP
+Once pvm_trecv returns, the data in the message can be unpacked
+into the user's memory using the unpack routines.
+
+.SH EXAMPLES
+.nf
+C:
+	struct timeval tmout;
+
+	tid = pvm_parent();
+	msgtag = 4 ;
+	tmout.tv_sec = 60;
+	tmout.tv_usec = 0;
+	if ((bufid = pvm_trecv( tid, msgtag, &tmout )) > 0) {
+		pvm_upkint( tid_array, 10, 1 );
+		pvm_upkint( problem_size, 1, 1 );
+		pvm_upkfloat( input_array, 100, 1 );
+	}
+.sp
+Fortran:
+	CALL PVMFTRECV( -1, 4, 60, 0, BUFID )
+	IF (BUFID .EQ. 0) GO TO 666
+	CALL PVMFUNPACK( INTEGER4, TIDS, 25, 1, INFO )
+	CALL PVMFUNPACK( REAL8, MATRIX, 100, 100, INFO )
+666	CONTINUE
+.fi
+
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_trecv
+.IP PvmBadParam
+giving an invalid tid value, or msgtag < -1.
+.IP PvmSysErr
+pvmd not responding.
+.PP
+.SH SEE ALSO
+pvm_bufinfo(3PVM),
+pvm_getminfo(3PVM),
+pvm_nrecv(3PVM),
+pvm_recv(3PVM),
+pvm_unpack(3PVM),
+pvm_probe(3PVM),
+pvm_send(3PVM),
+pvm_mcast(3PVM)

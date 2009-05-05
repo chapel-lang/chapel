@@ -1,0 +1,50 @@
+.\" $Id: pvm_exit.3,v 1.1 1996/09/23 22:01:13 pvmsrc Exp $
+.TH EXIT 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_exit \- Tells the local pvmd that this process is leaving PVM.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_exit( void )
+.br
+
+Fortran	call pvmfexit( info )
+.fi
+
+.SH PARAMETERS
+.IP info 0.8i
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_exit
+tells the local pvmd
+that this process is leaving PVM.
+This routine does not kill the process, which can continue to
+perform tasks just like any other serial process.
+.PP
+pvm_exit should be called by all PVM processes before
+they stop or exit for good. It \fImust\fR be called
+by processes that were not started with pvm_spawn.
+
+.SH EXAMPLES
+.nf
+C:
+	/* Program done */
+	pvm_exit();
+	exit();
+.sp
+Fortran:
+	CALL PVMFEXIT(INFO)
+	STOP
+.fi
+
+.SH ERRORS
+.IP PvmSysErr
+pvmd not responding
+.PP
+
+.SH SEE ALSO
+

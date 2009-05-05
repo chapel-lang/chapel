@@ -1,0 +1,137 @@
+.\" $Id: pvm_psend.3,v 1.1 1996/09/23 22:05:55 pvmsrc Exp $
+.TH PSEND 3PVM "15 March, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_psend \- Pack and send data in one call.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_psend( int tid, int msgtag, char *buf,
+.br
+	                      int len, int datatype )
+.br
+
+Fortran	call pvmfpsend( tid, msgtag, buf, len, datatype,
+.br
+                        info )
+.fi
+
+.SH PARAMETERS
+.IP tid 0.8i
+Integer task identifier of destination process.
+.br
+.IP msgtag
+Integer message tag supplied by the user.
+msgtag should be >= 0.
+.br
+.IP buf
+Pointer to a buffer to send.
+.br
+.IP len
+Length of buffer (in multiple of data type size).
+.br
+.IP datatype
+Type of data to which buf points (see below).
+.br
+.IP info
+Integer status code returned by the routine.
+
+.SH DESCRIPTION
+The routine
+.I pvm_psend
+takes a pointer to a buffer
+.I buf
+its length
+.I len
+and its data type
+.I datatype
+and
+sends this data directly to the PVM task identified by
+.I tid.
+.I msgtag
+is used to label the content of the message.
+If pvm_psend is successful,
+.I info
+will be 0. If some error occurs then
+.I info
+will be < 0.
+.PP
+pvm_psend data can be received by pvm_precv, pvm_recv, pvm_trecv, or pvm_nrecv.
+.PP
+The pvm_psend routine is asynchronous.
+Computation on the sending processor resumes as soon as the buffer 
+is safe for reuse.
+This is in
+contrast to synchronous communication, during which computation on
+the sending processor halts until the matching receive is
+executed by the receiving processor.
+.PP
+In C the \fIdatatype\fR parameter must be one of the following,
+depending on the type of data to be sent:
+[Version 3.3.0 - This parameter only determines message length,
+not data conversion.  It only sends raw bytes]
+.ta 4 16
+.nf
+	\fIdatatype\fR	Data Type
+	PVM_STR	string
+	PVM_BYTE	byte
+	PVM_SHORT	short
+	PVM_INT	int
+	PVM_FLOAT	real
+	PVM_CPLX	complex
+	PVM_DOUBLE	double
+	PVM_DCPLX	double complex
+	PVM_LONG	long integer
+	PVM_USHORT	unsigned short int
+	PVM_UINT	unsigned int
+	PVM_ULONG	unsigned long int
+.fi
+
+In Fortran the same data types specified for pack should be used.
+.PP
+The PVM model guarantees the following about message order.
+If task 1 sends message A to task 2, then task 1 sends message B to task 2,
+message A will arrive at task 2 before message B.
+Moreover, if both messages arrive before task 2 does a receive,
+then a wildcard receive will always return message A.
+.PP
+pvm_psend does not affect the state of the current outgoing message buffer
+(created by pvm_initsend and used by pvm_send).
+.SH WARNINGS
+In some versions of PVM (CM5, I860 and PGON),
+messages sent using pvm_psend must be received only by pvm_precv,
+likewise those sent with pvm_send
+must be received by pvm_recv, pvm_nrecv or pvm_trecv.
+pvm_psend is not compatible with pvm_recv
+(nor pvm_send with pvm_precv).
+In addition, pvm_probe is not interoperable with pvm_psend.
+.PP
+This problem occurs
+because nonstandard message headers are used for efficiency
+in the pvm_psend function.
+In the generic Unix version of PVM,
+the calls are fully interoperable.
+.PP
+The message tag space is shared between pvm_send and pvm_psend,
+so you must be careful to avoid selecting the wrong message
+(for example by using a wildcard to match the message).
+.SH EXAMPLES
+.nf
+C:
+	info = pvm_psend( tid, msgtag, array, 1000, PVM_FLOAT );
+.sp
+Fortran:
+	CALL PVMFPSEND( TID, MSGTAG, BUF, CNT, REAL4, INFO )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_psend
+.IP PvmBadParam
+giving an invalid tid, msgtag, or datatype.
+.IP PvmSysErr
+pvmd not responding.
+.PP
+.SH SEE ALSO
+pvm_precv(3PVM),
+pvm_send(3PVM)

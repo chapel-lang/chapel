@@ -1,0 +1,88 @@
+#
+# $Id: Makefile.aimk,v 1.7 2000/02/16 21:48:37 pvmsrc Exp $
+#
+# Makefile for PVM group library example programs.
+#
+# Set PVM_ROOT to the path where PVM includes & libraries are installed.
+# Set PVM_ARCH to your architecture type (SUN4, HP9K, RS6K, SGI, etc.)
+# Set ARCHLIB to any special libs needed on PVM_ARCH (-lrpc, -lsocket,
+#     etc.)
+# otherwise leave ARCHLIB blank
+#
+# PVM_ARCH and ARCHLIB, among other things, are set for you if you
+# use "$PVM_ROOT/lib/aimk" instead of "make".
+#
+
+#PVM_ROOT	=
+#PVM_ARCH	=
+#ARCHCFLAGS	=
+
+SHELL	=	/bin/sh
+PVMDIR	=	../..
+PVMIDIR	=	$(PVMDIR)/include
+PVMLDIR	=	$(PVMDIR)/lib/$(PVM_ARCH)
+PVMLIB	=	$(LOPT) -L$(PVMLDIR) -lgpvm3 -lpvm3 $(ARCHLIB)
+CFLOPTS	=	-g
+CFLAGS	=	$(CFLOPTS) -I$(PVMIDIR) $(ARCHCFLAGS)
+SDIR	=	$(PVMDIR)/gexamples
+BDIR	=	$(PVMDIR)/bin
+XDIR	=	$(BDIR)/$(PVM_ARCH)
+#F77		=	f77
+FORT	=	`case "$(FC)@$(F77)" in @) echo f77 ;; *@) echo $(FC) ;; @*) echo $(F77) ;; *) echo $(FC) ;; esac`
+FFLOPTS	=	-g
+FFLAGS	=	$(FFLOPTS) -I$(PVMIDIR) $(ARCHFFLAGS)
+PVMFLIB	=	$(LOPT) -L$(PVMLDIR) -lfpvm3 $(PVMLIB) $(ARCHLIB)
+
+PROGS	=	joinleave$(EXESFX) gexamp$(EXESFX) tst$(EXESFX) \
+			thb$(EXESFX) tnb$(EXESFX) ge$(EXESFX) tjl$(EXESFX) \
+			tjf$(EXESFX) trsg$(EXESFX) frsg$(EXESFX) gs$(EXESFX)
+
+all:  $(PROGS)
+
+joinleave$(EXESFX): $(SDIR)/joinleave.c
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/joinleave.c $(PVMLIB)
+	cp joinleave$(EXESFX) $(XDIR)
+
+tst$(EXESFX): $(SDIR)/tst.c
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/tst.c $(PVMLIB)
+	cp tst$(EXESFX) $(XDIR)
+
+gs$(EXESFX): $(SDIR)/gs.c
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/gs.c $(PVMLIB)
+	cp gs$(EXESFX) $(XDIR)
+
+ge$(EXESFX): $(SDIR)/ge.c
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/ge.c $(PVMLIB)
+	cp ge$(EXESFX) $(XDIR)
+
+gexamp$(EXESFX): $(SDIR)/gexamp.c
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/gexamp.c $(PVMLIB)
+	cp gexamp$(EXESFX) $(XDIR)
+
+thb$(EXESFX): $(SDIR)/thb.c
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/thb.c $(PVMLIB)
+	cp thb$(EXESFX) $(XDIR)
+
+tnb$(EXESFX): $(SDIR)/tnb.c
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/tnb.c $(PVMLIB)
+	cp tnb$(EXESFX) $(XDIR)
+
+tjl$(EXESFX): $(SDIR)/tjl.c
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/tjl.c $(PVMLIB)
+	cp tjl$(EXESFX) $(XDIR)
+
+tjf$(EXESFX): $(SDIR)/tjf.c
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/tjf.c $(PVMLIB)
+	cp tjf$(EXESFX) $(XDIR)
+
+trsg$(EXESFX): $(SDIR)/trsg.c
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/trsg.c $(PVMLIB)
+	cp trsg$(EXESFX) $(XDIR)
+
+frsg$(EXESFX): $(SDIR)/frsg.f
+	$(FORT) $(FFLAGS) -o $@ $(SDIR)/frsg.f $(PVMFLIB)
+	cp frsg$(EXESFX) $(XDIR)
+
+clean:
+	rm -f *.o $(PROGS)
+

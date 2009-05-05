@@ -1,0 +1,45 @@
+#
+# Notes on readline Usage:
+#
+#	If your Linux system has readline, then you may append the
+#	following flags to the defines below:
+#
+#		ARCHCFLAGS = . . .  -DHASREADLINE
+#		ARCHLIB = . . .  -lreadline
+#
+#	and recompile PVM.
+#
+#	On some Linux systems, readline requires ncurses, so you
+#	must also add "-lncurses" to the ARCHLIB define.
+#
+# Add define of HASSTDLIB for LINUX64 (copied from the LINUX template) 
+# new definitions to allow, at least, "malloc.h" heder file include
+# and thus not generate 32-bits truncating (thru "sxt4" assembly
+# instruction ...) code, leading to Linux64 Virtual Memory addresses
+# to be corrupted ("segments" bits are located in the highest weighted
+# word/bits !!), on IA-64/Linux64 platforms.
+#
+# For some x86-64 systems (like LINUXX86_64 on Fedora 5), you need
+# to add -DSYSVSTR to ARCHCFLAGS, or else strerror() will bomb.
+# (Thanks to Bill Schell <bill@skarven.net> for this report!)
+#
+# For building shared libraries, swap the SHAREDCFLAGS define below
+#	to use the -fpic (or -fPIC, usually equivalent) setting,
+#   (be sure $(SHAREDCFLAGS) is included in $(ARCHCFLAGS) below)
+#	and then do a "make clean ; make shared" in $PVM_ROOT.
+#
+# SHAREDCFLAGS = -fpic
+SHAREDCFLAGS =
+SHAREDLDFLAGS = -shared
+#
+ARCHCFLAGS	=	-DSYSVSIGNAL -DNOWAIT3 -DRSHCOMMAND=\"/usr/bin/rsh\" \
+				-DNEEDENDIAN -DFDSETNOTSTRUCT -DHASERRORVARS \
+				-DHASSTDLIB -DCTIMEISTIMET -DSYSERRISCONST -DNOTMPNAM \
+				-DSYSVSTR -DUSESTRERROR $(SHAREDCFLAGS)
+ARCHDLIB	=
+ARCHDOBJ	=
+ARCHLIB		=
+HASRANLIB	=	t
+AR			=	ar
+PVM_ARCH	=	LINUX64
+MAKE		=	make

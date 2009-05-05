@@ -1,0 +1,89 @@
+.\" $Id: pvm_reg_tasker.3,v 1.1 1996/09/23 22:06:06 pvmsrc Exp $
+.TH REG_TASKER 3PVM "16 March, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_reg_tasker \- Register task as PVM task starter.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	#include <pvmsdpro.h>
+
+	int cc = pvm_reg_tasker()
+.br
+
+Fortran	Not Available
+.fi
+
+.SH DESCRIPTION
+
+Registers the calling task as a PVM task starter.
+When a tasker is registered with a pvmd,
+and the pvmd receives a DM_EXEC message,
+instead of fork()ing and exec()ing the task itself,
+it passes a message to the tasker,
+which does the dirty work and sends a message back to the pvmd.
+
+Note:  If this doesn't make sense,
+don't worry about it.
+This function is for folks who are writing stuff like debugger servers
+and so on.
+For a more complete explanation of what's going on here,
+you should refer to the PVM source code and/or user guide section
+on implementation;
+this is only a man page.
+That said...
+
+When the pvmd receives a \fIDM_EXEC\fR message (request to exec new
+tasks),
+it searches \fIepath\fR (the PVM executable search path)
+for the file name.
+If it finds the file,
+it then either attempts to start the processes (using \fIfork()\fR and
+\fIexec()\fR)
+or, if a tasker has registered,
+sends it a \fISM_STTASK\fR message.
+
+The format of the SM_STTASK message is:
+.ta 4 26
+.nf
+	int tid	// of task
+	int flags	// as passed to spawn()
+	string path	// absolute path of the executable
+	int argc	// number of args to process
+	string argv[argc]	// args
+	int nenv	// number of envars to pass to task
+	string env[nenv]	// environment strings
+.fi
+
+The tasker must attempt to start the process when it gets one of
+these messages.
+The tasker doesn't reply to the pvmd if the task is successfully started;
+the task will reconnect to the pvmd on its own,
+using the cookie in envar \fIPVMEPID\fR to identify itself
+to the pvmd.
+
+The tasker must send a \fISM_TASKX\fR message to the pvmd when any
+task that it owns (has started) exits,
+or if it can't start a particular task.
+The format of the SM_TASKX message is:
+
+.nf
+	int tid	// of task
+	int status	// the Unix exit status (from \fIwait()\fR)
+	int u_sec	// user time used by the task, seconds
+	int u_usec	// microseconds
+	int s_sec	// system time used by the task, seconds
+	int s_usec	// microseconds
+.fi
+
+The tasker task
+must use pvm_setopt(PvmResvTids, 1) to allow sending reserved messages.
+Messages should be packed using encoding \fIPvmDataDefault\fR to
+ensure they can be unpacked anywhere in the system.
+
+pvm_reg_tasker()
+returns PvmOk when successful.
+
+.SH SEE ALSO
+pvm_spawn(3PVM),
+pvm_tasks(3PVM),

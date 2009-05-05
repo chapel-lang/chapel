@@ -1,0 +1,91 @@
+.\" $Id: pvm_start_pvmd.3,v 1.2 1997/03/17 22:01:36 pvmsrc Exp $
+.TH START_PVMD 3PVM "11 December, 1995" "" "PVM Version 3.4"
+.SH NAME
+pvm_start_pvmd \- Starts new PVM daemon.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_start_pvmd( int argc, char **argv, int block )
+.br
+
+Fortran	call pvmfstartpvmd( args, block, info )
+.fi
+
+.SH PARAMETERS
+.IP argc 0.8i
+Number of arguments in argv.
+.br
+.IP argv
+An array of arguments to the executable.
+.br
+.IP args
+A character string containing the arguments to the executable.
+.br
+.IP args
+A character string containing the arguments to the executable.
+.br
+.IP block
+Integer specifying whether to block until startup of all hosts complete
+or return immediately.
+.br
+.IP info
+Integer returning the error code.
+
+.SH DESCRIPTION
+The routine
+.I pvm_start_pvmd
+starts up a pvmd3 process,
+the master of a new virtual machine.
+It returns as soon as the pvmd is started and ready for work.
+If the block parameter is nonzero and a hostfile is passed to the
+pvmd as a parameter,
+it returns when all hosts marked to start have been added.
+pvm_start_pvmd returns zero on success.
+
+If PVM is compiled to allow running more than one pvmd per host,
+a task calling pvm_start_pvmd before any other pvm functions
+will connect to the pvmd that it starts.
+pvm_start_pvmd sets environment variable \fIPVMSOCK\fR to the address printed
+by the pvmd as it starts up.
+
+.SH EXAMPLES
+.nf
+C:
+	static char *argv[] = {
+	    "-d41",
+	    "/u/jones/pvmd_hosts",
+	};
+	argc = 2
+	info = pvm_start_pvmd( argc, argv, block );
+.sp
+Fortran:
+	CALL PVMFSTART_PVMD( '-d41 /u/jones/pvmd_hosts', BLOCK, INFO )
+.fi
+
+.SH EXAMPLES
+.nf
+C:
+	static char *argv[] = {
+	    "-d41",
+	    "/u/jones/pvmd_hosts",
+	};
+	argc = 2
+	info = pvm_start_pvmd( argc, argv, block );
+.sp
+Fortran:
+	CALL PVMFSTART_PVMD( '-d41 /u/jones/pvmd_hosts', BLOCK, INFO )
+.fi
+
+.SH ERRORS
+The following error conditions can be returned
+.IP  PvmDupHost
+A pvmd is already running.
+.IP  PvmSysErr
+The local pvmd is not responding.
+.PP
+
+.SH SEE ALSO
+pvm_addhosts(3PVM),
+pvmd3(1PVM)
+pvmd3(1PVM)

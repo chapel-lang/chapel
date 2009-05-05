@@ -1,0 +1,69 @@
+#!/bin/sh
+#
+#	$Id: pvm,v 1.2 1997/08/28 20:12:35 pvmsrc Exp $
+#
+#	Start the appropriate pvm console.
+#	If PVM_ROOT is not set in environment,
+#		we try to guess it by combining the working directory with
+#		argv[0], otherwise it defaults to $HOME/pvm3.
+#	If PVM_ARCH is not set,
+#		we get it by execing $PVMROOT/lib/pvmgetarch.
+#	Called with "-exe" flag executes "pvm.exe" instead of "pvm" (OS2).
+#
+#	09 Apr 1993  Manchek
+#
+
+case "x$PVM_ROOT" in x )
+	case "$0" in
+	/*) PVM_ROOT="$0" ;;
+	*) PVM_ROOT=`pwd`/"$0" ;;
+	esac
+	PVM_ROOT=`echo "$PVM_ROOT" | sed -e 's/\/lib\/pvm//'`
+	if [ -d $PVM_ROOT ]; then
+		export PVM_ROOT
+	else
+		if [ -d $HOME/pvm3 ]; then
+			PVM_ROOT=$HOME/pvm3
+			export PVM_ROOT
+		else
+			echo pvm: PVM_ROOT not defined >&2
+			exit 1
+		fi
+	fi
+;; esac
+
+#
+# these lines let you set environment variables on systems
+# where a shell profile doesn't get read when rshing in.
+#
+if [ -f $PVM_ROOT/.pvmprofile ]; then
+	. $PVM_ROOT/.pvmprofile
+fi
+if [ -f $HOME/.pvmprofile ]; then
+	. $HOME/.pvmprofile
+fi
+
+case "x$PVM_ARCH" in x | xUNKNOWN )
+	PVM_ARCH="`$PVM_ROOT/lib/pvmgetarch`"
+	case "x$PVM_ARCH" in x )
+		echo pvm: can\'t set arch >&2
+		exit 1
+	;; esac
+;; esac
+
+if [ "$1" = '-exe' ]; then
+	sfx=".exe"
+	shift
+else
+	sfx=""
+fi
+
+if [ ! -f $PVM_ROOT/lib/$PVM_ARCH/pvm$sfx ]; then
+	echo "pvm: $PVM_ROOT/lib/$PVM_ARCH/pvm$sfx doesn't exist." >&2
+	echo "Make sure PVM is built and PVM_ROOT is set correctly" >&2
+	exit 1
+fi
+export PVM_ARCH
+exec $PVM_ROOT/lib/$PVM_ARCH/pvm$sfx $@
+exit 1
+

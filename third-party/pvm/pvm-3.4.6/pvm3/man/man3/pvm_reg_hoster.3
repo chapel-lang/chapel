@@ -1,0 +1,104 @@
+.\" $Id: pvm_reg_hoster.3,v 1.1 1996/09/23 22:06:03 pvmsrc Exp $
+.TH REG_HOSTER 3PVM "4 March, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_reg_hoster \- Register task as PVM slave starter.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	#include <pvmsdpro.h>
+
+	int cc = pvm_reg_hoster()
+.br
+
+Fortran	Not Available
+.fi
+
+.SH DESCRIPTION
+
+Registers the calling task as a PVM slave pvmd starter.
+When the master pvmd receives a DM_ADD message,
+instead of starting the new slave pvmd processes itself,
+it passes a message to the hoster,
+which does the dirty work and sends a message back to the pvmd.
+
+Note:  This function isn't for beginners.
+If you don't grok what it does, you probably don't need it.
+For a more complete explanation of what's going on here,
+you should refer to the PVM source code and/or user guide section
+on implementation;
+this is just a man page.
+That said...
+
+When the master pvmd receives a \fIDM_ADD\fR message (request to add hosts to
+the virtual machine),
+it looks up the new host IP addresses,
+gets parameters from the host file if it was started with one,
+and sets default parameters.
+It then either attempts to start the processes (using \fIrsh\fR or
+\fIrexec()\fR)
+or, if a hoster has registered,
+sends it a \fISM_STHOST\fR message.
+
+The format of the SM_STHOST message is:
+.ta 4 8 30
+.nf
+	int nhosts	// number of hosts
+	{
+		int tid	// of host
+		string options	// from hostfile \fIso=\fR field
+		string login	// in form ``[username@]hostname.domain''
+		string command	// to run on remote host
+	} [nhosts]
+.fi
+
+The hoster should attempt to run each command on each host and record
+the result.
+A command usually looks like:
+.br
+	$PVM_ROOT/lib/pvmd -s -d8 -nhonk 1 80a9ca95:0f5a 4096 3 80a95c43:0000
+
+and a reply from a slave pvmd like:
+.br
+	ddpro<2312> arch<ALPHA> ip<80a95c43:0b3f> mtu<4096>
+
+When finished,
+the hoster should send a \fISM_STHOSTACK\fR message back to the
+address of the sender (the master pvmd).
+The format of the reply message is:
+
+.nf
+	{
+		int tid	// of host, must match request
+		string status	// result line from slave or error code
+	} []	// implied count
+.fi
+
+The TIDs in the reply must match those in the request.
+They may be in a different order, however.
+
+The result string should contain the entire reply (a single line)
+from each new slave pvmd,
+or an error code if something went wrong.
+Legal
+error codes are the literal names of the \fIpvm_errno\fR codes,
+for example ``PvmCantStart''.
+The default PVM hoster can return PvmDSysErr or PvmCantStart,
+and the slave pvmd itself can return PvmDupHost.
+
+The hoster must use \fIpvm_setmwid()\fR to set the wait ID in the reply
+message to the same value as in the request.
+The wait ID in the request is obtained by calling \fIpvm_getmwid()\fR.
+
+The hoster task
+must use pvm_setopt(PvmResvTids, 1) to allow sending reserved messages.
+Messages should be packed using encoding \fIPvmDataDefault\fR to
+ensure they can be unpacked anywhere in the system.
+
+pvm_reg_hoster()
+returns PvmOk when successful.
+
+.SH SEE ALSO
+pvm_addhosts(3PVM),
+pvm_config(3PVM),
+pvm_setmwid(3PVM)

@@ -1,0 +1,85 @@
+.\" $Id: pvm_barrier.3,v 1.1 1996/09/23 22:01:02 pvmsrc Exp $
+.TH BARRIER 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_barrier \- Blocks the calling process until all processes
+in a group have called it.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_barrier( char *group, int count )
+.br
+
+Fortran	call pvmfbarrier( group, count, info )
+.fi
+
+.SH PARAMETERS
+.IP group 0.8i
+Character string group name. The group must exist and the
+calling process must be a member of the group.
+.br
+.IP count
+Integer specifying the number of group members that must call
+pvm_barrier before they are all released. Though not required,
+count is expected to be the total number of members of the
+specified group.
+.br
+.IP info
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_barrier
+blocks the calling process until
+.I count
+members of the
+.I group
+have called pvm_barrier.
+The count argument is required because processes could be
+joining the given group after other processes have called
+pvm_barrier. Thus PVM doesn't know how many group members
+to wait for at any given instant. Although count can be set less,
+it is typically the total number of members of the group.
+So the logical function of the pvm_barrier call
+is to provide a group synchronization.
+During any given barrier call all participating group members
+must call barrier with the same count value.
+Once a given barrier has been successfully passed,
+pvm_barrier can be called again by the same group using the same
+group name.
+.PP
+If pvm_barrier is successful,
+.I info
+will be 0. If some error occurs then
+.I info
+will be < 0.
+
+.SH EXAMPLES
+.nf
+C:
+	inum = pvm_joingroup( "worker" );
+	        .
+	        .
+	info = pvm_barrier( "worker", 5 );
+.sp
+Fortran:
+	CALL PVMFJOINGROUP( "shakers", INUM )
+	COUNT = 10
+	CALL PVMFBARRIER( "shakers", COUNT, INFO )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_barrier
+.IP PvmSysErr
+pvmd was not started or has crashed.
+.IP PvmBadParam
+giving a count < 1.
+.IP PvmNoGroup
+giving a non-existent group name.
+.IP PvmNotInGroup
+calling process is not in specified group.
+.PP
+.SH SEE ALSO
+pvm_joingroup(3PVM)

@@ -1,0 +1,149 @@
+.\" $Id: pvm_gather.3,v 1.1 1996/09/23 22:01:18 pvmsrc Exp $
+.TH GATHER 3PVM "21 April, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_gather \- A specified member of the group receives messages
+from each member of the group and gathers these messages into
+a single array.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C    int info = pvm_gather( void *result,  void *data,
+.br
+                  int count, int datatype, int msgtag,
+.br
+                  char *group, int rootginst)
+.br
+
+Fortran    call pvmfgather(result, data, count, datatype, 
+.br
+                           msgtag, group, rootginst, info)
+.fi
+
+.SH PARAMETERS
+.IP result 0.8i
+On the root this is a
+pointer to the starting address of an array 
+.I datatype
+of local values
+which are to be accumulated from the members of the group.
+If
+n
+if the number of members in the group, then this array
+of 
+.I datatype
+should be of length at least
+n*\fIcount\fR.
+This argument is meaningful only on the root.
+.br
+.IP data 
+For each group member this is a pointer to the starting 
+address of an array of length
+.I count
+of
+.I datatype
+which will be sent to the specified root member of the group.
+.br
+.IP count
+Integer specifying the number of elements of 
+.I datatype 
+to be sent by each member of the group to the root.
+.br
+.IP datatype 
+Integer specifying the type of the entries in the result and data arrays.
+(See below for defined types.)
+.IP msgtag   
+Integer message tag supplied by the user.
+msgtag should be >= 0.  It allows the user's program to 
+distinguish between different kinds of messages.
+.br
+.IP group    
+Character string group name of an existing group.
+.br
+.IP rootginst
+Integer instance number of group member who performs the 
+gather of the messages from the members of the group.
+.br
+.IP info     
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+
+.SH DESCRIPTION
+.I pvm_gather() 
+performs a send of messages from each member of the group to 
+the specified root member of the group.
+All group members must call pvm_gather(), each sends its array 
+.I data
+of length
+.I count
+of
+.I datatype
+to the root which accumulates these messages into its 
+.I result
+array.
+It is as if the root receives
+.I count
+elements of
+.I datatype
+from the ith member of the group and places these values in its
+.I result
+array starting with offset i*\fIcount\fR from the beginning of the
+.I result
+array.  
+The root task is identified by its instance number in the group.
+.PP
+C and Fortran defined
+.I datatypes
+are:
+.nf
+           C datatypes   FORTRAN datatypes
+         -----------------------------------
+           PVM_BYTE       BYTE1
+           PVM_SHORT      INTEGER2
+           PVM_INT        INTEGER4
+           PVM_FLOAT      REAL4
+           PVM_CPLX       COMPLEX8
+           PVM_DOUBLE     REAL8
+           PVM_DCPLX      COMPLEX16
+           PVM_LONG
+.fi
+.PP
+In using the scatter and gather routines, keep in mind that
+C stores multidimensional arrays in row order,
+typically starting with an initial index of 0; whereas,
+Fortran stores arrays in column order, 
+typically starting with an offset of 1.
+.PP 
+Note: pvm_gather() does not block.   If a task calls pvm_gather and then
+leaves the group before the root has called pvm_gather an error may occur.
+.PP
+The current algorithm is very simple and robust.  A future implementation
+may make more efficient use of the architecture to allow greater
+parallelism.
+
+.SH EXAMPLES
+.nf
+C:
+   info =  pvm_gather(&getmatrix, &myrow, 10, PVM_INT,
+                      msgtag, "workers", rootginst);
+.sp
+Fortran:
+   CALL PVMFGATHER(GETMATRIX, MYCOLUMN, COUNT, INTEGER4,
+  &                MTAG, 'workers', ROOT, INFO)
+.fi
+
+.SH ERRORS
+These error conditions can be returned by 
+.I pvm_gather
+.IP PvmNoInst
+Calling task is not in the group
+.IP PvmBadParam
+The datatype specified is not appropriate
+.IP PvmSysErr
+Pvm system error
+.PP
+.SH SEE ALSO
+pvm_bcast(3PVM),
+pvm_barrier(3PVM),
+pvm_psend(3PVM)

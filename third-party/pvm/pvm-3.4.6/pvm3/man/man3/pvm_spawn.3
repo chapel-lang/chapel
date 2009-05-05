@@ -1,0 +1,263 @@
+.\" $Id: pvm_spawn.3,v 1.3 2001/04/23 14:41:59 pvmsrc Exp $
+.TH SPAWN 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_spawn \- Starts new PVM processes.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int numt = pvm_spawn( char *task, char **argv, int flag,
+char *where, int ntask, int *tids )
+.br
+
+Fortran	call pvmfspawn( task, flag, where, ntask, tids, numt )
+.fi
+
+.SH PARAMETERS
+.IP task 0.8i
+Character string which is the executable file name of the PVM
+process to be started.
+The executable must already reside on the host
+on which it is to be started.
+The name may be a file in the PVM search path or an absolute path.
+The default PVM search path
+is $HOME/pvm3/bin/$PVM_ARCH/ .
+.br
+.IP argv
+Pointer to an array of arguments to the executable
+(if supported on the target machine), not including 
+the executable name, with the end of
+the array specified by NULL. 
+argv[0] of the spawned task is set to the executable path
+relative to the PVM working directory
+(or absolute if an absolute filename was specified).
+If the executable needs no arguments,
+then the second argument to pvm_spawn is NULL.
+.br
+.IP flag
+Integer specifying spawn options.
+.ta 0.5i 2.0i 2.5i
+.nf
+
+In C, \fIflag\fR should be the \fIsum\fR of:
+	Option value		MEANING
+	PvmTaskDefault	0	PVM can choose any machine to start task
+	PvmTaskHost	1	\fIwhere\fR specifies a particular host
+	PvmTaskArch	2	\fIwhere\fR specifies a type of architecture
+	PvmTaskDebug	4	Start up processes under debugger
+	PvmTaskTrace	8	Processes will generate PVM trace data. *
+	PvmMppFront	16	Start process on MPP front-end.
+	PvmHostCompl	32	Use complement host set
+
+In Fortran, \fIflag\fR should be the \fIsum\fR of:
+	Option value		MEANING
+	PVMDEFAULT	0	PVM can choose any machine to start task
+	PVMHOST	1	\fIwhere\fR specifies a particular host
+	PVMARCH	2	\fIwhere\fR specifies a type of architecture
+	PVMDEBUG	4	Start up processes under debugger
+	PVMTRACE	8	Processes will generate PVM trace data. *
+
+* future extension
+
+.fi
+.IP where
+Character string specifying where to start the PVM process.
+Depending on the value of
+.I flag,
+.I where
+can be a host name such as "ibm1.epm.ornl.gov" or a PVM
+architecture class such as "SUN4".
+Also, the host name "." is taken as the localhost.
+If
+.I flag
+is 0, then
+.I where
+is ignored when determining the target host or architecture,
+and PVM will select the most appropriate host.
+.sp
+The
+.I where
+argument can also be used to specify a custom working directory
+for each given spawn command.  This is done by appending a ':' and
+the desired working directory path to the
+.I where
+string, i.e.:
+.sp
+"ibm1.epm.ornl.gov:/home/user/project/foo"
+.sp
+PVM will temporarily change the working directory to spawn the given
+task(s), and will then reset to the default working directory after
+the spawn is executed.  This option need not be used in conjunction
+with either the
+.I PvmTaskHost
+or
+.I PvmTaskArch
+flags, as the working directory path is stripped off prior to parsing
+any host or architecture name.  A valid specification for
+.I where
+is therefore:
+.sp
+":/home/user/project/foo"
+.sp
+The working directory can be either an absolute path name or can be
+relative to the current default working directory.
+.br
+.IP ntask
+Integer specifying the number of copies of the executable to start.
+.br
+.IP tids
+Integer array of length
+.I ntask
+returning
+the tids of the PVM processes started by this pvm_spawn call.
+.br
+.IP numt
+Integer returning the actual number of tasks started.
+Values less than zero indicate a system error.
+A positive value less than
+.I ntask
+indicates a partial failure.
+In this case the user should check the
+.I tids
+array for the error code(s).
+
+.SH DESCRIPTION
+The routine
+.I pvm_spawn
+starts
+.I ntask
+copies of the executable named
+.I task.
+On systems that support environment,
+spawn passes selected variables from parent environment to children tasks.
+If set, the envar \fIPVM_EXPORT\fR is passed.
+If PVM_EXPORT contains other names (separated by ':') they will
+be passed too.  This is useful for e.g.:
+.nf
+
+	setenv DISPLAY myworkstation:0.0
+	setenv MYSTERYVAR 13
+	setenv PVM_EXPORT DISPLAY:MYSTERYVAR
+.fi
+.PP
+The hosts on which
+the PVM processes are started are determined by the
+.I flag
+and
+.I where
+arguments. On return the array
+.I tids
+contains the PVM task identifiers for each process started.
+.PP
+If pvm_spawn starts one or more tasks,
+.I numt
+will be the actual number of tasks started.
+If a system error occurs then
+.I numt
+will be < 0.
+If
+.I numt
+is less than
+.I ntask
+then some executables
+have failed to start and the user should check the last
+.I ntask -
+.I numt
+locations in the
+.I tids
+array which will contain error codes
+(see below for meaning).
+The first
+.I numt
+tids in the array are always valid.
+.PP
+When
+.I flag
+is set to 0 and
+.I where
+is set to NULL (or "*" in Fortran)
+a heuristic (round-robin assignment) is used to distribute the
+.I ntask
+processes across the virtual machine.
+.PP
+If the PvmHostCompl flag is set, the resulting host set
+gets complemented.
+Given that the TaskHost host name "." is taken as localhost,
+these can be used together, for example, to request
+n - 1 tasks on host "." but with flags TaskHost|HostCompl
+to spawn n - 1 tasks on hosts other than the localhost.
+.PP
+In the special case where a multiprocessor is specified by
+.I where,
+pvm_spawn will start all
+.I ntask
+copies on this
+single machine using the vendor's underlying routines.
+.PP
+The spawned task will have
+.I argv[0] 
+set to the the executable path relative to its inherited working directory
+(or possibly an absolute path),
+so the base filename can be got by using:
+.br
+	char *p;
+.br
+	p = (p = rindex(argv[0], '/')) ? p + 1 : argv[0];
+.PP
+If PvmTaskDebug is set, then the pvmd will start the task(s)
+under debugger(s). In this case, instead of executing
+\fIpvm3/bin/ARCH/task args\fR
+it executes
+\fIpvm3/lib/debugger pvm3/bin/ARCH/task args\fR.
+debugger is a shell script that the users can modify to
+their individual tastes.
+Presently the script starts an xterm with dbx or comparable
+debugger in it.
+
+.SH EXAMPLES
+.nf
+C:
+	numt = pvm_spawn( "host", 0, PvmTaskHost, "sparky", 1, &tid[0] );
+	numt = pvm_spawn( "host", 0, (PvmTaskHost+PvmTaskDebug),
+		"sparky", 1, &tid[0] );
+	numt = pvm_spawn( "node", 0, PvmTaskArch, "RIOS", 1, &tid[i] );
+
+	char *args[] = { "12", "60" , (char*)0 };
+	numt = pvm_spawn( "FEM1", args, 0, 0, 16, tids );
+
+	numt = pvm_spawn( "pde", 0, PvmTaskHost, "paragon.ornl", 512, tids );
+
+.sp
+Fortran:
+	FLAG = PVMARCH + PVMDEBUG
+	CALL PVMFSPAWN( 'node', FLAG, 'SUN4', 1, TID(3), NUMT )
+	CALL PVMFSPAWN( 'FEM1', PVMDEFAULT, '*', 16, TIDS, NUMT )
+	CALL PVMFSPAWN( 'TBMD', PVMHOST, 'cm5.utk.edu', 32, TIDS, NUMT )
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_spawn
+either in
+.I numt
+or in the
+.I tids
+array.
+.IP PvmBadParam
+giving an invalid argument value.
+.IP PvmNoHost
+Specified host is not in the virtual machine.
+.IP PvmNoFile
+Specified executable cannot be found. The default
+location PVM looks in is ~/pvm3/bin/ARCH,
+where ARCH is a PVM architecture name.
+.IP PvmNoMem
+Malloc failed. Not enough memory on host.
+.IP PvmSysErr
+pvmd not responding.
+.IP PvmOutOfRes
+out of resources.
+.PP
+
+.SH SEE ALSO
+pvm_export(3PVM)
+

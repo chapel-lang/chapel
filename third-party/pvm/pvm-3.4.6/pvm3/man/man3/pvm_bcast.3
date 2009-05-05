@@ -1,0 +1,89 @@
+.\" $Id: pvm_bcast.3,v 1.1 1996/09/23 22:01:04 pvmsrc Exp $
+.TH BCAST 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_bcast \- Broadcasts the data in the active
+message buffer to a group of processes.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_bcast( char *group, int msgtag )
+.br
+
+Fortran	call pvmfbcast( group, msgtag, info )
+.fi
+
+.SH PARAMETERS
+.IP group 0.8i
+Character string group name of an existing group.
+.br
+.IP msgtag
+Integer message tag supplied by the user.
+msgtag should be >= 0.
+It allows the user's program to
+distinguish between different kinds of messages .
+.br
+.I info
+integer status code returned by the routine.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_bcast
+broadcasts a message stored
+in the active send buffer to all the members of
+.I group.
+In PVM 3.2 and later the broadcast message is not sent back to the sender.
+Any PVM task can call pvm_bcast(), it need not be a member of the group.
+The content of the message can be distinguished by
+.I msgtag.
+If pvm_bcast is successful,
+.I info
+will be 0. If some error occurs then
+.I info
+will be < 0.
+.PP
+pvm_bcast is asynchronous.
+Computation on the sending processor resumes as soon as the message is
+safely on its way to the receiving processors.  This is in
+contrast to synchronous communication, during which computation on
+the sending processor halts until a matching receive is
+executed by all the receiving processors.
+.PP
+pvm_bcast first determines the tids of the
+group members by checking a group data base.
+A multicast is performed to these tids.
+If the group is changed during a broadcast the change will not
+be reflected in the broadcast.
+Multicasting is not supported by most multiprocessor vendors.
+Typically their native calls only support broadcasting to \fIall\fR
+the user's processes on a multiprocessor. Because of this omission,
+pvm_bcast may not be an efficient communication method on
+some multiprocessors.
+
+.SH EXAMPLES
+.nf
+C:
+	info = pvm_initsend( PvmDataRaw );
+	info = pvm_pkint( array, 10, 1 );
+	msgtag = 5 ;
+	info = pvm_bcast( "worker", msgtag );
+.sp
+Fortran:
+	CALL PVMFINITSEND( PVMDEFAULT )
+	CALL PVMFPKFLOAT( DATA, 100, 1, INFO )
+	CALL PVMFBCAST( 'worker', 5, INFO )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_bcast
+.IP PvmSysErr
+pvmd was not started or has crashed.
+.IP PvmBadParam
+giving a negative msgtag.
+.IP PvmNoGroup
+giving a non-existent group name.
+.PP
+.SH SEE ALSO
+pvm_joingroup(3PVM)

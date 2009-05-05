@@ -1,0 +1,57 @@
+.\" $Id: pvm_serror.3,v 1.1 1996/09/23 22:06:13 pvmsrc Exp $
+.TH SERROR 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_serror \- Sets automatic error message printing on or off.
+.br
+[In Version 3.2: Replaced by pvm_setopt]
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int oldset = pvm_serror( int set )
+.br
+
+Fortran	call pvmfserror( set, oldset )
+.fi
+
+.SH PARAMETERS
+.IP set 0.8i
+Integer defining whether detection is to be turned on (1) or off (0).
+.br
+.IP oldset
+Integer defining the previous setting of pvm_serror.
+
+.SH DESCRIPTION
+The routine
+.I pvm_serror
+sets automatic error message printing for
+all subsequent PVM calls by this process. Any PVM routines that
+return an error condition will automatically print the associated
+error message. The argument
+.I set
+defines whether this
+detection is to be turned on (1) or turned off (0) for subsequent calls.
+In the future a value of (2) will cause the program to exit
+after printing the error message.
+pvm_serror returns the previous value of set in
+.I oldset.
+.PP
+All stdout and stderr messages are placed
+in the file /tmp/pvml.<uid> on the master pvmd's host.
+
+.SH EXAMPLES
+.nf
+C:
+	info = pvm_serror( 1 );
+Fortran:
+	CALL PVMFSERROR( 0, INFO )
+
+.SH ERRORS
+This error condition can be returned by
+.I pvm_serror
+.IP PvmBadParam
+giving an invalid set value.
+.PP
+
+.SH SEE ALSO
+pvm_setopt(3PVM)

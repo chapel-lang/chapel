@@ -23,6 +23,9 @@ gasnet: FORCE
 mpich1: FORCE
 	cd mpich1 && $(MAKE)
 
+pvm: FORCE
+	cd pvm && $(MAKE)
+
 libheapmm: FORCE
 	cd heapmm && $(MAKE)
 

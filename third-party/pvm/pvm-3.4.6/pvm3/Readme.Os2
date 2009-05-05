@@ -1,0 +1,62 @@
+==================================================================
+PVM 3.4.0 for OS2, Bohumir Horeni, horeni@login.cz, Sat Aug 9 1997 
+==================================================================
+
+Port of Paralel Virtual Machine (PVM) v.3.4.beta3 (Netlib 22 July 1997)
+to OS2 platform.
+
+Mimimal cahanges in "unix" code, no extensive rewriting.
+
+tested:
+=======
+PVM Test Engine version 2.0 (patched for gcc/i386)
+OS2<--->LINUX<--->HPPA   
+
+used:
+=====
+    OS/2 version 4.0 ( v.3 Connect fixpack level 17 ) 
+
+    emx 0.9c (GNU C compiler 2.7.2.1)         ftp://hobbes.nmsu.edu
+    RPC for emx                               http://set.gmd.de/~veit/os2
+(9) XF86 Support device driver                http://set.gmd.de/~veit/os2
+                                              or XFree86 v.3.3 for OS/2
+    GNU Make (v.3.75)                         ftp://hobbes.nmsu.edu
+(*) Korn shell (OS/2 port of pdksh version 5) ftp://hobbes.nmsu.edu            
+    GNU file utilities (cp/mv/etc.)           ftp://hobbes.nmsu.edu
+(f) GNU Fortran 0.5.20 for the OS/2 with emx  ftp://hobbes.nmsu.edu
+(f) GNU m4 macro processor (1.4)              ftp://hobbes.nmsu.edu
+(x) XFree86 v.3.3                             ftp://hobbes.nmsu.edu
+
+
+(9) kill -9 feature for OS/2
+(*) some other shells (bash) failed for -D\"IMA_OS2\" 
+(f) libfpvm, *.f examples
+(x) xep
+
+config.sys (example)
+==========
+...
+DEVICE=C:\XFree86\lib\xf86sup.sys
+...
+SET HOME=c:/home
+SET TMP=c:/tmp
+...
+SET PVM_ROOT=c:/home/work/tools/pvm3
+SET PVM_ARCH=OS2
+...
+# environment for emx, XFree86, ... 
+...
+
+build
+=====
+makeOs2.cmd
+
+rebuild
+=======
+maclOs2.cmd
+makeOs2.cmd
+
+PVM
+===
+http://www.csm.ornl.gov/pvm/pvm_home.html
+

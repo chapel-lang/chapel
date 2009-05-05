@@ -1,0 +1,39 @@
+.\" $Id: pvm_tidtohost.3,v 1.1 1996/09/23 22:21:03 pvmsrc Exp $
+.TH TIDTOHOST 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_tidtohost \- Returns the host of the specified PVM process.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int dtid = pvm_tidtohost( tid )
+.br
+
+Fortran	call pvmftidtoh( tid, dtid )
+.fi
+
+.SH PARAMETERS
+.IP tid 0.8i
+Integer task identifier of the PVM process in question.
+.br
+.IP dtid
+Integer returns the tid of the host's pvmd3
+or a negative value if an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_tidtohost
+returns the host id on which the process identified by
+.I tid
+is located.
+
+.SH ERRORS
+The following error conditions can be returned
+.IP PvmBadParam
+An invalid tid value was specified.
+.IP PvmSysErr
+pvmd not responding.
+.PP
+.SH SEE ALSO
+pvm_config(3PVM),
+pvm_tasks(3PVM)

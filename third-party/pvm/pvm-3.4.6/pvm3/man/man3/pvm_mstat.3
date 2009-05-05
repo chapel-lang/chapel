@@ -1,0 +1,63 @@
+.\" $Id: pvm_mstat.3,v 1.1 1996/09/23 22:05:22 pvmsrc Exp $
+.TH MSTAT 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_mstat \- Returns the status of a host in the virtual machine.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int mstat = pvm_mstat( char *host )
+.br
+
+Fortran	call pvmfmstat( host, mstat )
+.fi
+
+.SH PARAMETERS
+.IP host 0.8i
+Character string containing the host name.
+.br
+.IP mstat
+Integer returning machine status:
+.ta 0.5i 2.5i
+.nf
+	value	MEANING
+	PvmOk	host is OK
+	PvmNoHost	host is not in virtual machine
+	PvmHostFail	host is unreachable (and thus possibly failed)
+.fi
+
+.SH DESCRIPTION
+The routine
+.I pvm_mstat
+returns the status
+.I mstat
+of the computer named
+.I host
+with respect to running
+PVM processes. This routine can be used to determine if
+a particular host has failed and if the virtual machine
+needs to be reconfigured. The function pvm_notify() can also be
+used to notify the caller that a host has failed.
+
+.SH EXAMPLES
+.nf
+C:
+	mstat = pvm_mstat( "msr.ornl.gov" );
+.sp
+Fortran:
+	CALL PVMFMSTAT( 'msr.ornl.gov', MSTAT )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_mstat
+.IP PvmSysErr
+pvmd not responding.
+.IP PvmNoHost
+giving a host name not in the virtual machine.
+.IP PvmHostFail
+host is unreachable (and thus possibly failed).
+.PP
+.SH SEE ALSO
+pvm_notify(3PVM),
+pvm_config(3PVM)

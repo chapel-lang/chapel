@@ -1,0 +1,10 @@
+
+SRCS = xhoster.c hostc.c
+OBJS = xhoster.o hostc.o
+
+CCOPTIONS = -I$(PVM_ROOT)/include -I$(PVM_ROOT)/src -DIMA_$(PVM_ARCH) $(ARCHCFLAGS)
+EXTRA_LOAD_FLAGS = -L$(PVM_ROOT)/lib/$(PVM_ARCH)
+EXTRA_LIBRARIES = -lXaw -lXt -lXmu -lXext -lX11 -lpvm3
+
+ComplexProgramTarget(xhoster)
+

@@ -1,0 +1,87 @@
+.\" $Id: pvm_send.3,v 1.1 1996/09/23 22:06:10 pvmsrc Exp $
+.TH SEND 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_send \- Immediately sends the data in the active message buffer.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_send( int tid, int msgtag )
+.br
+
+Fortran	call pvmfsend( tid, msgtag, info )
+.fi
+
+.SH PARAMETERS
+.IP tid 0.8i
+Integer task identifier of destination process.
+.br
+.IP msgtag
+Integer message tag supplied by the user.
+msgtag should be >= 0.
+.br
+.IP info
+Integer status code returned by the routine.
+
+.SH DESCRIPTION
+The routine
+.I pvm_send
+sends a message stored in the active send buffer
+to the PVM process identified by
+.I tid.
+.I msgtag
+is used to label the content of the message.
+If pvm_send is successful,
+.I info
+will be 0. If some error occurs then
+.I info
+will be < 0.
+.PP
+The pvm_send routine is asynchronous.
+Computation on the sending processor resumes as soon as the message is
+safely on its way to the receiving processor.  This is in
+contrast to synchronous communication, during which computation on
+the sending processor halts until the matching receive is
+executed by the receiving processor.
+.PP
+The PVM model guarantees the following about message order.
+If task 1 sends message A to task 2, then task 1 sends message B to task 2,
+message A will arrive at task 2 before message B.
+Moreover, if both messages arrive before task 2 does a receive,
+then a wildcard receive will always return message A.
+.PP
+Terminating a PVM task immediately after sending a message or messages
+from it may result in those messages being lost.
+To be sure,
+always call pvm_exit() before stopping.
+
+.SH EXAMPLES
+.nf
+C:
+	info = pvm_initsend( PvmDataDefault );
+	info = pvm_pkint( array, 10, 1 );
+	msgtag = 3 ;
+	info = pvm_send( tid, msgtag );
+.sp
+Fortran:
+	CALL PVMFINITSEND(PVMRAW, INFO)
+	CALL PVMFPACK( REAL8, DATA, 100, 1, INFO )
+	CALL PVMFSEND( TID, 3, INFO )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_send
+.IP PvmBadParam
+giving an invalid tid or a msgtag.
+.IP PvmSysErr
+pvmd not responding.
+.IP PvmNoBuf
+no active send buffer. Try pvm_initsend() before send.
+.PP
+.SH SEE ALSO
+pvm_initsend(3PVM),
+pvm_mcast(3PVM),
+pvm_pack(3PVM),
+pvm_psend(3PVM),
+pvm_recv(3PVM)

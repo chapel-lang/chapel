@@ -1,0 +1,33 @@
+
+#
+# example PVM console startup script
+# copy this file to $HOME/.pvmrc
+#
+
+#
+# command aliases
+#
+alias ? help
+alias print_environment spawn -> /bin/env
+alias h help
+alias j jobs
+alias t ps
+alias tm trace
+alias v version
+
+#
+# important for debugging
+#
+setenv PVM_EXPORT DISPLAY
+
+#
+# want to see these trace events by default
+#
+tm addhosts delhosts halt
+tm pvm_mytid pvm_exit pvm_parent
+tm send recv nrecv probe mcast trecv sendsig recvf
+
+version  # print PVM release version
+id       # print console TID
+#conf
+

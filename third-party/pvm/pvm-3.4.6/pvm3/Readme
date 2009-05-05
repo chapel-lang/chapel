@@ -1,0 +1,461 @@
+
+         PVM version 3.4:  Parallel Virtual Machine System
+               University of Tennessee, Knoxville TN.
+           Oak Ridge National Laboratory, Oak Ridge TN.
+                   Emory University, Atlanta GA.
+      Authors:  J. J. Dongarra, G. E. Fagg, G. A. Geist,
+                 J. A. Kohl, R. J. Manchek, P. Mucci,
+         P. M. Papadopoulos, S. L. Scott, and V. S. Sunderam
+                   (C) 2009 All Rights Reserved
+
+                              NOTICE
+
+ Permission to use, copy, modify, and distribute this software and
+ its documentation for any purpose and without fee is hereby granted
+ provided that the above copyright notice appear in all copies and
+ that both the copyright notice and this permission notice appear in
+ supporting documentation.
+
+ Neither the Institutions (Emory University, Oak Ridge National
+ Laboratory, and University of Tennessee) nor the Authors make any
+ representations about the suitability of this software for any
+ purpose.  This software is provided ``as is'' without express or
+ implied warranty.
+
+ PVM version 3 was funded in part by the U.S. Department of Energy,
+ the National Science Foundation and the State of Tennessee.
+
+________________________________________________________________________
+
+WHAT IS PVM?
+
+PVM is a software system that enables a collection of heterogeneous
+computers to be used as a coherent and flexible concurrent computational
+resource, or a "parallel virtual machine".
+
+The individual computers may be shared- or local-memory multiprocessors,
+vector supercomputers, specialized graphics engines, or scalar
+workstations and PCs, that may be interconnected by a variety of
+networks, such as Ethernet or FDDI.
+
+PVM consists of a run-time environment and library for message-passing,
+task and resource management, and fault notification.  While PVM will
+not automatically make a commercial software package run faster, it
+*does* provide a powerful set of functions for manually parallelizing
+an existing source program, or for writing new parallel / distributed
+programs.
+
+The PVM software must be specifically installed on every machine that
+is to be used in your "virtual machine".  There is no "automatic"
+installation of executables onto remote machines in PVM, although
+simply copying the pvm3/lib and pvm3/bin directories to another
+*similar* machine (and setting $PVM_ROOT and $PVM_ARCH - see below)
+is sufficient for running PVM programs.  Compiling or building PVM
+programs requires the full PVM installation.
+
+User programs written in C, C++ or Fortran can access PVM through
+provided library routines.
+
+________________________________________________________________________
+
+UNPACKING
+
+This distribution contains source code, some simple examples, and
+run-time support for PVM version 3.  The documentation for PVM can
+be obtained separately from Netlib.  To get a list of available
+subsets, send e-mail to "netlib@ORNL.GOV" with the subject:
+"send index from pvm3".
+
+The files in the source distribution unpack into a "pvm3" directory.
+The pvm3 directory can reside in either a private or shared disk area.
+Installations for multiple machine architectures can coexist in the
+same shared filesystem because compiled files are placed in different
+subdirectories named for each architecture ($PVM_ARCH).
+
+Some of the more important directories are:
+
+ Directory   Contains
+ ---------------------------------------------------------------
+ bin/$PVM_ARCH/  PVM user program executables (examples & your programs)
+ conf/           Make configuration files for all PVM architectures
+ console/        Source for the pvm console
+ doc/            Miscellaneous documentation
+ examples/       Example PVM programs source files
+ gexamples/      More example PVM programs - for group library
+ hoster/         An example "hoster" program
+ include/        Header files for PVM programs
+ lib/            Generic system executables (scripts, rc file stubs)
+ lib/$PVM_ARCH/  System executables (PVM daemon, console, etc.)
+ libfpvm/        Source for the libfpvm Fortran library
+ man/man[13]/    Online manual pages (nroff format)
+ misc/           Some miscellaneous PVM examples and utilities
+ patches/        Patch files and instructions, as they are released
+ pvmgs/          Source for the libgpvm library and group nameserver
+ rm/             An example resource manager for PVM
+ shmd/           A special daemon for shared memory systems (*MP)
+ src/            Source for the libpvm library and PVM daemon
+ src/$PVM_ARCH/  Additional source code for specific machines
+ tasker/         An example "tasker" program for PVM
+ tracer/         An example "tracer" program for PVM
+ xep/            An example interactive X-Window program
+
+
+BUILDING AND INSTALLING
+
+To build the full PVM software, you will need to have a "make" utility,
+a C or C++ compiler, and a Fortran compiler installed on your system.
+
+Before building or running PVM, you must set the environment variable
+"PVM_ROOT" to the path where PVM resides, i.e. the path of the
+directory with this "Readme" file.  This can be in a private area,
+for example $HOME/pvm3, or a public one, such as /usr/local/pvm3.
+
+If your shell is "csh", add a line such as:
+
+    setenv PVM_ROOT $HOME/pvm3
+
+to your .cshrc file.  If you use "ksh" or "bash" shells,
+then add the following lines to that shell's startup file,
+i.e. $HOME/.kshrc or $HOME/.bashrc, respectively:
+
+    PVM_ROOT=$HOME/pvm3
+    export PVM_ROOT
+
+(NOTE: If you use "bash", please do _Not_ put PVM environment
+settings into $HOME/.profile, as it is _Not_ sourced on remote
+shell invocations - *Always Use $HOME/.bashrc*...! :-)
+
+The use of this variable and others is explained more fully in the
+pvm_intro man page.
+
+You can also include an appropriate shell startup file stub to set
+other PVM environment variables and to add PVM directories to your
+execution path.  Insert the matching stub file, pvm3/lib/cshrc.stub,
+pvm3/lib/kshrc.stub or pvm3/lib/bashrc.stub, after your declaration
+of PVM_ROOT in your shell startup file (e.g. copy the lines from the
+stub file _into_ your $HOME/.cshrc or $HOME/.kshrc or $HOME/.bashrc
+file, respectively, and uncomment the stuff you want... :-).
+
+To build PVM for your system, type "make" in this directory.  Make
+will use the "aimk" in the pvm3/lib directory to build the daemon
+executable (pvmd3), the C library (libpvm3.a), the Fortran library
+(libfpvm3.a) and the console client program (pvm).
+
+The libraries and executables are installed in $PVM_ROOT/lib/$PVM_ARCH,
+where $PVM_ARCH is the host architecture name, e.g. "CRAY" or "LINUX".
+
+If you have problems compiling PVM on your system, check the
+architecture-specific configuration file:
+
+	$PVM_ROOT/conf/$PVM_ARCH.def
+
+for comments regarding alternative configurations for your system.
+
+The provided scripts $PVM_ROOT/lib/pvm and $PVM_ROOT/lib/pvmd are
+used to start the PVM console and the PVM daemon, respectively.
+They determine the machine architecture and run the actual programs
+in the $PVM_ROOT/lib/$PVM_ARCH directory.  You can either copy these
+scripts to your bin directory or add $PVM_ROOT/lib to your shell
+search path (using the above *.stub files).
+
+You may wish to add $PVM_ROOT/man to your MANPATH environment variable,
+if it's supported on your system.  This will allow you to easily read
+the online manual pages.
+
+
+ALTERNATIVES TO RSH
+
+To use "ssh" instead of "rsh" on your system, you can either:
+
+1. Modify the $PVM_ROOT/conf/$PVM_ARCH.def file to change the absolute
+path specified for RSHCOMMAND in the ARCHCFLAGS define.  Replace the
+path to rsh with the absolute path to "ssh" on your system and then
+recompile PVM and your applications.
+
+or
+
+2. Set the "PVM_RSH" environment variable to point to the absolute
+path to "ssh" on your system.  This does not require re-compilation
+but must be done in every shell from which PVM is executed.  The
+"PVM_RSH" environment variable can be set in your $HOME/.cshrc or
+equivalent shell startup file to take affect in all new shells.
+
+Once either of these approaches has been applied, the $HOME/.rhosts
+file is then no longer necessary for PVM, thereby eliminating a
+fundamental security concern.  Now, to add PVM hosts (using ssh),
+you can either manually enter your password each time you add a
+host, or else you can set up an ssh-agent session.  (You can always
+just use a $HOME/.shosts file, but then you're not much more secure
+than with standard rsh...)
+
+When manually entering your password, you will not receive a prompt
+from PVM or ssh - the text prompts normally returned by ssh are
+automatically captured and written to the local /tmp/pvml.<uid> log
+file.  However, simply typing your password from inside the "pvm"
+console or when running the "pvmd" script will work.
+
+You can bypass this manual password entry for a given session by
+executing the following commands (example is for bash, could use
+for any shell):
+
+	$ ssh-agent bash
+	$ ssh-add
+	<now enter your passphrase ONCE>
+	$ pvm
+	$ pvm> add host2 . . .
+
+For this to work, you must have run "ssh-keygen" on each host to
+create a private/public key pair for your login id.  These keys are
+typically stored in the $HOME/.ssh directory on each system.  The
+$HOME/.ssh/identity.pub public key must be copied to each remote
+host and added as a line in the $HOME/.ssh/authorized_keys file
+on the remote system.  When this has been set up, any PVM hosts
+can be added without password or passphrase entry using the above
+ssh-agent session.
+
+
+STARTING AND STOPPING PVM
+
+To start PVM, run $PVM_ROOT/lib/pvm.  This starts the console task,
+which in turn starts a PVM daemon ("pvmd") if one is not already running.
+More hosts can be started and added to your "virtual machine" by using
+the console "add" command.
+
+To start the pvmd without starting the console, you can also run the
+$PVM_ROOT/lib/pvmd directly.  A number of hosts can all be started at
+once by supplying the pvmd with a host file, as in:
+
+	$PVM_ROOT/lib/pvmd my_hosts
+
+where "my_hosts" contains the names of the hosts you wish to add,
+one host per line.  See the pvmd man page for other host file
+options.
+
+To stop PVM, use the PVM console command "halt".  From within your
+user programs, you can use the pvm_halt() function.  You can also
+kill the pvmd3 process (always use a catchable signal such as
+SIGTERM).  But, if you do kill the pvmd, or if it fails for some
+other reason, always be sure to remove any leftover /tmp/pvmd.<uid>
+pvmd socket files, where <uid> is your numerical user id.  These
+files will make PVM think a pvmd is running, and can cause the
+dreaded "Can't Start Pvmd" message.
+
+For more information about the console commands, see the console "help"
+function or the console man page.
+
+
+TROUBLESHOOTING
+
+If you ever have trouble starting PVM or adding a new host to your
+virtual machine, verify that there are no leftover /tmp/pvmd.<uid>
+daemon socket files on the machines where you are trying to start
+PVM (as described above) and then check the local PVM log file:
+
+	/tmp/pvml.<uid>
+
+for any error messages which may help you to determine the problem.
+
+A common problem is caused by restricted access to a remote machine
+via "rsh".  PVM uses "rsh" to start the pvmd on a remote host.  If
+you cannot do this:
+
+	% rsh remote_host 'echo $PVM_ROOT'
+
+and successfully get back the correct value of $PVM_ROOT on that
+remote host, without typing your password, then that is the problem.
+You will need to set up permissions on the remote host to allow rsh
+access without a password.  On Unix systems, this is accomplished
+by creating a $HOME/.rhosts file on the *remote* machine that
+provides access to your *local* machine.  (Note: the $HOME/.rhosts
+file is *NOT* a PVM host file...)  The format of a $HOME/.rhosts
+file is as follows:
+
+	your_host_1  your_login_on_host_1
+	your_host_2  your_login_on_host_2
+	your_host_3  your_login_on_host_3
+	. . .
+
+If you get really stuck, try checking the online FAQ off of the
+PVM Home Page:
+
+ http://www.netlib.org/pvm3/book/node23.html#SECTION00450000000000000000
+
+
+Master Host IP Address is Loopback!
+-----------------------------------
+
+*** If you see "Master Host IP Address is Loopback!" or get the
+PvmIPLoopback error when adding hosts, this means that the networking
+on your Master PVM host (the one you initially started PVM on) is
+not set up correctly for networking to multiple, remote hosts in
+your virtual machine.  By default, especially on many Linux systems,
+your system's host name alias is appended to the 127.0.0.1 loopback,
+or localhost, IP address in the /etc/hosts file.  This is very useful
+for PCs running in stand-alone mode without networking, however this
+alias must be removed for interaction with remote hosts in PVM.
+The bottom line is that you need to assign a "real" IP address to
+your machine's host name in /etc/hosts.
+
+By default, most Linux systems create an entry like this:
+
+        127.0.0.1       localhost.localdomain localhost foo
+
+where "foo" is your system's host name.
+
+The problem here is that PVM uses the host name "foo" to look up the
+IP address for your system, so PVM gets the localhost "loopback" IP
+address (127.0.0.1) by mistake.
+
+You need to create a separate line in /etc/hosts that associates your
+host name with its externally recognized IP address:
+
+        127.0.0.1       localhost.localdomain localhost
+        123.45.67.89    foo.your.domain foo
+
+Make sure that you remove any references to your host name / alias
+from the 127.0.0.1 line, or else put the new hard-coded IP address
+line *before* the localhost line in /etc/hosts...
+
+If you don't want to manually change your /etc/hosts file in this way,
+then please see the Linux Networking HOWTO for information on
+automatically handling this scenario (via ifup-local and ifdown-local
+scripts).
+
+Also keep in mind that you can start PVM using the '-n' flag to select
+a specific host name & corresponding IP address, as in:
+
+	$ pvm -nfoo
+
+Note that there is no space between the '-n' and your desired host name.
+
+
+Clusters with Internal and External Networks
+--------------------------------------------
+
+If you have a cluster system with an internal network that can't
+be seen from outside the cluster, then you may have problems adding
+cluster nodes to a virtual machine that was started on the head
+cluster node.
+
+The problem is likely related to a mixing of your cluster's internal
+versus external networking setup.  Your front-end head cluster node
+likely has *two* IP addresses, one for the external network, and
+one for the internal network.  This is a common scenario where the
+front-end node that can see both the external network and also
+the internal cluster network, but the internal cluster nodes cannot
+see the external network.
+
+When you start PVM on the master node, by default it uses the system
+host name to look up the network interface and corresponding IP address
+(using gethostbyname()).  In most cases, this will be the IP address
+for the externally visible network interface.
+
+So, when you try to add an internal cluster node from the master,
+PVM will initiate the connection using this external IP address,
+which the cluster node can't see from inside its private, internal
+network.  Then PVM will in fact double-check the source IP address
+of incoming message packets at the internal cluster nodes, and if
+the IP's don't match, it drops the packets (for security reasons).
+Therefore, the replies from the cluster nodes' PVM daemons will
+never reach the master PVM daemon.
+
+The solution is to start PVM using the *internal* network interface
+(and corresponding IP address) on the master node, so that the internal
+cluster nodes will correctly recognize the front-end node's IP address
+and network packets.  This can be accomplished using the '-n' argument
+to the "pvm" console, as in:
+
+	pvm -nfoo
+
+where "foo" is the master's host name on the internal network.
+
+(Note: there is no space between the '-n' and the 'foo'... :-)
+
+Clearly, for this to work, your front-end master cluster node must
+have 2 entries in its /etc/hosts file, one mapping the external IP
+address to some externally recognized host name, and there must be
+another line with the internal network IP address and a distinct
+internal network host name.
+
+You should be aware that running PVM on the master node using the
+internal network interface, to enable the internal cluster nodes
+to see the master, precludes adding hosts from the external network
+to your virtual machine.  The master node does *not* act as a gateway
+between the internal and external networks in PVM.
+
+Instead, if you really need to include nodes on an external network
+in the same PVM virtual machine with your cluster nodes, then you
+should use the BEOLIN port of PVM, which uses a single PVM daemon
+on the master node and treats the cluster as one computational
+resource.  (See the pvm3/Readme.Beolin file for information and
+usage.)
+
+Hope this helps!
+
+
+GCC "tmpnam()" Warnings
+-----------------------
+
+With the latest versions of gcc, if you get the warning:
+
+	"the use of `tmpnam' is dangerous, better use `mkstemp'"
+
+during compilation of PVM, you may safely ignore it.  While the
+use of tmpnam() for temporary file generation is generally unsafe,
+PVM 3.4.6 has now been revamped to _never_ do a straight fopen()
+for writing any temporary file - all writing/appending to such
+files is done using open() with the O_CREAT and O_EXCL flags.
+
+If the warnings are annoying to you, then please add "-DNOTMPNAM"
+to the ARCHCFLAGS definition in your $PVM_ROOT/conf/$PVM_ARCH.def
+file, and then "make clean ; make" in $PVM_ROOT.
+
+Enjoy!  :-D
+
+
+APPLICATION PROGRAMS
+
+C, C++ and Fortran programs must be linked with the main PVM library,
+$PVM_ROOT/lib/$PVM_ARCH/libpvm3.a, and Fortran programs must also be
+linked with the $PVM_ROOT/lib/$PVM_ARCH/libfpvm3.a library file.
+User program source files should include the $PVM_ROOT/include/pvm3.h
+header file for C/C++ programs, to define PVM constants and function
+prototypes.  The corresponding Fortran header file is
+$PVM_ROOT/include/fpvm3.h.
+
+Executables should be installed in $PVM_ROOT/bin/$PVM_ARCH for a
+user installation (where the $PVM_ROOT directory is somewhere in a
+user-writable area), and in $HOME/pvm3/bin/$PVM_ARCH for a system-wide
+PVM installation (such as /usr/local/pvm3, where the user may not be
+able to write to the $PVM_ROOT/bin/$PVM_ARCH directory).  The default
+execution path can be changed; see the "ep=" option on the pvmd man
+page.
+
+When user programs are spawned by PVM, by default they execute in the
+$HOME directory of the user.  Any input or data files should therefore
+reside in or be linked to $HOME.  This default working directory
+can be changed; see the "wd=" option on the pvmd man page.
+
+
+CONTACT
+
+The PVM web home page is at
+
+    http://www.csm.ornl.gov/pvm/pvm_home.html
+
+A newsgroup, comp.parallel.pvm, exists for discussions about PVM
+and help with specific problems.
+
+Please direct any e-mail (questions, bugs, bug fixes, etc.) to:
+
+    pvm@msr.CSM.ORNL.GOV
+
+To report bugs or problems with PVM, please see the file
+
+    $PVM_ROOT/doc/bugreport .
+
+________________________________________________________________________
+
+Sincerely,
+The PVM research group
+

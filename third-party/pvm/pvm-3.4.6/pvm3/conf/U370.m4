@@ -1,0 +1,7 @@
+undefine(`len')
+define(`FUNCTION',`$1_')
+define(`STRING_ARG',`$1_ptr, $1_len')
+define(`STRING_ARG_DECL',`char * $1_ptr; int * $1_len')
+define(`STRING_LEN',`(*$1_len)')
+define(`STRING_PTR',`$1_ptr')
+define(`ARGS',`($1)')

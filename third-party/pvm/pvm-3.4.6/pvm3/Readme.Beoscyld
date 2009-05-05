@@ -1,0 +1,109 @@
+
+This readme file describes the BEOSCYLD (Scyld Beowulf) port of PVM.
+
+DESCRIPTION:
+
+The purpose of this port is to implement a version of PVM for use with
+the Scyld Beowulf cluster operating system. Since the slave nodes in a
+Scyld Beowulf cluster do not by default contain a full installation,
+the primary changes for this port were to provide the mechanisms for
+getting jobs out to the slave nodes. There were two major problems to
+solve. Number one, how do we get PVM slave daemons out to the slave
+nodes? And number two, how can a slave daemon spawn a job when there
+typically aren't any binaries on the slave node?
+
+The first problem is typically solved using 'rsh' or 'ssh'. However
+since Scyld slave nodes don't contain a full Linux installation, these
+tools couldn't be used. The solution was to use 'bpsh'. The bproc shell
+facility is used to migrate PVM slave daemons from the master node to
+the appropriate slave nodes.
+
+The solution to the second problem was implemented through the magic
+of bproc. The traditional fork/exec sequence could not be used on a
+slave node because in all likelihood the desired binary would not be
+available locally. When a PVM slave daemon performs a task spawn, the
+following sequence occurs: 1) fork is called to create a new process;
+2) using bproc, the new process is moved back to the master node; 3)
+the binary is located on the master by searching the DEFBINDIR path;
+4) once located, bproc is again used to execmove the process back to
+the slave node from which it came.
+
+The master PVM daemon can be started on the master node using the PVM
+console. You can use the console's add command to add slave nodes to
+your virtual machine. The syntax for the command would be as follows:
+"add .#", replacing the '#' character with the node's assigned number
+in the cluster (as listed in beosetup). Alternately, you can start the
+PVM console by specifying a hostfile name on the command line. This
+file should contain the .# names of the slave nodes you want as part
+of the virtual machine. As with standard PVM, this method automatically
+spawns PVM slave daemons to the appropriate slave nodes in the cluster.
+
+INSTALLATION & RUNTIME ISSUES:
+
+This section describes the installation and runtime issues associated
+with the RPM installation of the BEOSCYLD PVM port. If you're working
+from a tarball, with the BEOSCYLD patches applied, you need to define
+the following environment variables (as specified below) as explained
+in the general PVM Readme file:
+
+    export PVM_ARCH=BEOSCYLD
+    export PVM_RSH=`which bpsh`
+    export PVM_ROOT=<path where PVM resides>
+
+The use of these variables and others is explained in more detail in
+the pvm_intro man page. It's also probably a good idea to examine the
+build time configuration file: $PVM_ROOT/conf/BEOSCYLD.def.
+
+Assuming you're using the PVM tools from the RPM installation, the
+following build / runtime information may prove useful.
+
+1) PVM_ARCH was set to BEOSCYLD when building the binaries.
+
+2) PVM_ROOT was set to /usr/share/pvm3 when building the binaries. You
+can override this setting at runtime by creating a PVM_ROOT environment
+variable.
+
+3) RSHCOMMAND was set to /usr/bin/bpsh when building the binaries. You
+can override this setting at runtime by creating a PVM_RSH environment
+variable.
+
+4) PVMDPATH was set to /usr/sbin/pvmd3 when building the binaries.
+
+5) The default binary directory search path, DEFBINDIR, was set to the
+following when building the binaries:
+
+        /usr/bin:$PVM_ROOT/bin/$PVM_ARCH:$HOME/pvm3/bin/$PVM_ARCH
+
+PVM_ROOT and PVM_ARCH are as defined above and $HOME will of course be
+expanded appropriately at runtime.
+
+6) All PVM tools and applications which make use of the PVM library, are
+statically linked against /usr/lib/libbproc.a. This alleviates the need
+to have the shared library version of libbproc out on the slave nodes to
+execute PVM binaries.
+
+KNOWN BUGS:
+
+This port was verified using the pvmtest33 "pvm test suite" tarball. All
+tests were executed and all tests passed. The only item worth mentioning
+is that if a PVM daemon running on a slave node crashes such that the
+file /tmp/pvmd.uid does not get deleted, the daemon will not restart
+on that slave node until the file is removed. This is not really a bug,
+but a result of PVM's implementation. It's mentioned merely because it
+is an easy thing to verify when things don't appear to be working
+properly with respect to slave nodes. Note that the PVM debugger was
+not tested.
+
+SUPPORT:
+
+For questions or comments about this PVM port, contact the author by
+sending an email to Joe Vitale at Scyld Computing Corporation,
+vitale@scyld.com, or by contacting the Scyld Technical Support Team
+directly at support@scyld.com.
+
+DISCLAIMER:
+
+THE AUTHOR MAKES NO REPRESENTATION ABOUT THE SUITABILITY OF THIS
+SOFTWARE FOR ANY PURPOSE. IT IS PROVIDED "AS IS" WITHOUT EXPRESSED
+OR IMPLIED WARRANTY.
+

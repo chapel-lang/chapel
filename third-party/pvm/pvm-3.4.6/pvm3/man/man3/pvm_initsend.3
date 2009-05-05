@@ -1,0 +1,98 @@
+.\" $Id: pvm_initsend.3,v 1.1 1996/09/23 22:05:11 pvmsrc Exp $
+.TH INITSEND 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_initsend \- Clear default send buffer and specify message encoding.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int bufid = pvm_initsend( int encoding )
+.br
+
+Fortran	call pvmfinitsend( encoding, bufid )
+.fi
+
+.SH PARAMETERS
+.IP encoding 0.8i
+Integer specifying the next message's encoding scheme.
+.ta 0.5i 2.5i 3.0i
+.nf
+Options in C are:
+	Encoding value		MEANING
+	PvmDataDefault	0	XDR
+	PvmDataRaw	1	no encoding
+	PvmDataInPlace	2	data left in place
+
+Option names are in Fortran are:
+	Encoding value		MEANING
+	PVMDEFAULT	0	XDR
+	PVMRAW	1	no encoding
+	PVMINPLACE	2	data left in place
+.fi
+.IP bufid
+Integer returned containing the message buffer identifier.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_initsend
+clears the send buffer
+and prepares it for packing a new message.
+The encoding scheme
+used for the packing is set by
+.I encoding.
+XDR encoding is used by default
+because PVM can not know
+if the user is going to add a heterogeneous machine
+before this message is sent.
+If the user knows that the
+next message will only be sent to a machine that understands
+the native format, then he can use \fIPvmDataRaw\fR encoding
+and save on encoding costs.
+.PP
+PvmDataInPlace encoding specifies that data be left in place during
+packing.
+The message buffer only contains the sizes and pointers to the items
+to be sent. When pvm_send is called the items are copied directly
+out of the user's memory. This option decreases the number of
+times a message is copied at the expense of requiring the user
+to not modify the items between the time they are packed and the time
+they are sent.
+.PP
+If pvm_initsend is successful, then
+.I bufid
+will contain the
+message buffer identifier.
+If some error occurs then
+.I bufid
+will be < 0.
+
+.SH RESTRICTIONS
+PvmDataInPlace allows only dense (stride = 1) data in version 3.3.
+It cannot be used on shared memory (*MP) architectures;
+a PvmNotImpl error will occur at send time.
+
+.SH EXAMPLES
+.nf
+C:
+	bufid = pvm_initsend( PvmDataDefault );
+	info = pvm_pkint( array, 10, 1 );
+	msgtag = 3 ;
+	info = pvm_send( tid, msgtag );
+.sp
+Fortran:
+	CALL PVMFINITSEND(PVMRAW, BUFID)
+	CALL PVMFPACK( REAL4, DATA, 100, 1, INFO )
+	CALL PVMFSEND( TID, 3, INFO )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_initsend
+.IP PvmBadParam
+giving an invalid encoding value
+.IP PvmNoMem
+Malloc has failed. There is not enough memory to create the buffer
+.PP
+.SH SEE ALSO
+pvm_mkbuf(3PVM)

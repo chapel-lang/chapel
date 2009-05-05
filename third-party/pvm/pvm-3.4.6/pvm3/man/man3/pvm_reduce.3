@@ -1,0 +1,210 @@
+.\" $Id: pvm_reduce.3,v 1.1 1996/09/23 22:06:01 pvmsrc Exp $
+.TH REDUCE 3PVM "6 February, 1995" "" "PVM Version 3.4"
+.SH NAME
+pvm_reduce \- Performs a reduction operation over members of the specified group. 
+
+.SH SYNOPSIS
+.ft B
+C    int info = pvm_reduce( void (*func)(),
+.br
+                  void *data, int count, int datatype,
+.br
+                  int msgtag, char *group, int rootginst)
+.br
+
+Fortran    call pvmfreduce(func, data, count, datatype, 
+.br
+                           msgtag, group, rootginst, info)
+.fi
+
+.SH PARAMETERS
+.IP func 0.8i
+Function which defines the operation performed on the 
+global data. Predefined are PvmMax, PvmMin, PvmSum, and PvmProduct.
+Users can define their own function.
+.br
+
+  SYNOPSIS for func
+.nf
+.br
+  C   void func(int *datatype, void *x, void *y, 
+.br
+                int *num, int *info)
+.br
+  Fortran    call func(datatype, x, y, num, info)
+.br
+.IP data 
+Pointer to the starting address of an array of local values.
+On return, the data array on the root will be overwritten
+with the result of the reduce operation over the group.
+For the other (non-root) members of the group the values
+of the data array upon return from the reduce operation
+are not defined; the values may be different than 
+those originally passed to pvm_reduce.
+.br
+.IP count
+Integer specifying the number of elements of 
+.I datatype 
+in the data array.
+The value of count should agree between all members of the group.
+.br
+.IP datatype 
+Integer specifying the type of the entries in the data array.
+(See below for defined types.)
+.IP msgtag   
+Integer message tag supplied by the user.
+msgtag should be >= 0.  It allows the user's program to 
+distinguish between different kinds of messages.
+.br
+.IP group    
+Character string group name of an existing group.
+.br
+.IP rootginst  
+Integer instance number of group member who gets the result.
+.br
+.IP info     
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+
+.SH DESCRIPTION
+.I pvm_reduce() 
+performs global operations such as max, min, sum, or a 
+user provided operation on the data provided
+by the members of a group. 
+All group members call pvm_reduce with the same size local
+.I data 
+array which may contain one or more entries.
+The 
+.I root
+task is identified by its instance number in the group.
+.PP
+The inner workings of the pvm_reduce call are implementation dependent;
+however, when the pvm_reduce call completes, the root's data 
+array will be equal to the specified operation applied element-wise to
+the data arrays of all the group members.
+.PP
+A broadcast by the root can be used if the other members of the group 
+need the resultant value(s).
+.PP
+PVM supplies the following predefined functions 
+that can be specified in
+.I func.
+.nf
+         PvmMin
+         PvmMax 
+         PvmSum 
+         PvmProduct 
+.fi
+
+PvmMax and PvmMin are implemented for all the datatypes listed below.
+For complex values the minimum [maximum] is that 
+complex pair with the minimum [maximum] modulus.
+PvmSum and PvmProduct are implemented for all the datatypes listed 
+below with the exception of PVM_BYTE and BYTE1.
+.PP
+C and Fortran defined 
+.I datatypes 
+are:
+.nf
+           C datatypes   FORTRAN datatypes
+         -----------------------------------
+           PVM_BYTE       BYTE1             
+           PVM_SHORT      INTEGER2             
+           PVM_INT        INTEGER4            
+           PVM_FLOAT      REAL4          
+           PVM_CPLX       COMPLEX8      
+           PVM_DOUBLE     REAL8        
+           PVM_DCPLX      COMPLEX16   
+           PVM_LONG  
+.fi
+.PP
+A user defined function may be used in 
+.I func.
+The argument func is a function with four arguments.  It is the base 
+function used for the reduction operation.  Both x and y are
+arrays of type specified by datatype with num entries.
+The arguments datatype and info are as specified above.
+The arguments x and num correspond to data and count above.
+The argument y contains received values.
+.PP
+Caveat: pvm_reduce() does not block, a call to pvm_barrier may be necessary.
+For example,
+an error may occur if a task calls pvm_reduce and then leaves the group 
+before the root has completed its call to pvm_reduce.
+Similarly, an error may occur if a task joins the group after the root 
+has issued its call to pvm_reduce.
+Synchronization of the tasks (such as a call to pvm_barrier) was not 
+included within the pvm_reduce implementation since this overhead 
+is unnecessary in many user codes (which may already synchronize
+the tasks for other purposes).
+.PP
+The current algorithm is very simple and robust.  A future implementation
+may make more efficient use of the architecture to allow greater
+parallelism.
+
+.SH ILLUSTRATION
+.PP
+The following example illustrates a call to pvm_reduce.
+Suppose you have three group members (instance numbers 0, 1, 2)
+with an array called Idata with 5 values as specified:
+.PP
+.nf
+     instance       the 5 values in the integer array
+        0                1,   2,   3,   4,   5
+        1               10,  20,  30,  40,  50
+        2              100, 200, 300, 400, 500
+.fi
+
+.PP
+And, suppose that a call to reduce (such as the ones following) are
+issued where the root is the group member with instance value of 1:
+.PP
+.nf
+   C:
+      root = 1;
+      info = pvm_reduce(PvmSum, &Idata, 5, PVM_INT, msgtag, 
+                        "worker", root);
+   Fortran:
+      root = 1
+      call pvmfreduce(PvmSum, Idata, 5, INTEGER4, msgtag, 
+                      "worker", root, info)
+.fi
+
+.PP
+Then, upon completion of the reduce call, the following will result:
+.PP
+.nf
+     instance       the 5 values in the integer array
+        0              .... not defined.......
+        1              111, 222, 333, 444, 555
+        2              .... not defined ......
+.fi
+
+
+.SH EXAMPLES
+.nf
+C:
+   info =  pvm_reduce(PvmMax, &myvals, 10, PVM_FLOAT,
+                      msgtag, "worker", rootginst);
+.sp
+Fortran:
+   CALL PVMFREDUCE(PvmMax, MYVALS, COUNT, REAL4,
+  &                MTAG, 'worker', ROOT, INFO)
+.fi
+
+.SH ERRORS
+These error conditions can be returned by 
+.I pvm_reduce
+.IP PvmNoInst
+Calling task is not in the group
+.IP PvmBadParam
+The datatype specified is not appropriate
+for the specified reduction function.
+.IP PvmSysErr
+Pvm system error
+.PP
+.SH SEE ALSO
+pvm_bcast(3PVM),
+pvm_barrier(3PVM),
+pvm_psend(3PVM)

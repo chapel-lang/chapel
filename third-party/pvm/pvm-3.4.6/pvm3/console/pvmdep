@@ -1,0 +1,44 @@
+#
+# *** DO NOT MODIFY ***  AUTOMATICALLY GENERATED  ***
+#
+# $Id: pvmdep,v 1.1 1997/05/13 14:36:43 pvmsrc Exp $
+#
+# PVM Source Header Dependencies
+#
+
+cmds.o:	$(PVMDIR)/include/pvm3.h
+cmds.o:	$(PVMDIR)/include/pvmtev.h
+cmds.o:	$(PVMDIR)/src/bfunc.h
+cmds.o:	$(PVMDIR)/src/listmac.h
+cmds.o:	$(PVMDIR)/tracer/trcdef.h
+cmds.o:	$(PVMDIR)/tracer/trcproto.h
+cmds.o:	$(PVMDIR)/tracer/trctype.h
+cmds.o:	$(SDIR)/cmd.h
+cmds.o:	$(SDIR)/job.h
+cmds.o:	$(SDIR)/myalloc.h
+cons.o:	$(PVMDIR)/include/pvm3.h
+cons.o:	$(PVMDIR)/include/pvmtev.h
+cons.o:	$(PVMDIR)/src/bfunc.h
+cons.o:	$(PVMDIR)/src/listmac.h
+cons.o:	$(PVMDIR)/tracer/trcdef.h
+cons.o:	$(PVMDIR)/tracer/trcproto.h
+cons.o:	$(PVMDIR)/tracer/trctype.h
+cons.o:	$(SDIR)/cmd.h
+cons.o:	$(SDIR)/job.h
+cons.o:	$(SDIR)/myalloc.h
+job.o:	$(PVMDIR)/include/pvm3.h
+job.o:	$(PVMDIR)/include/pvmtev.h
+job.o:	$(PVMDIR)/src/bfunc.h
+job.o:	$(PVMDIR)/src/listmac.h
+job.o:	$(PVMDIR)/tracer/trcdef.h
+job.o:	$(PVMDIR)/tracer/trcproto.h
+job.o:	$(PVMDIR)/tracer/trctype.h
+job.o:	$(SDIR)/job.h
+job.o:	$(SDIR)/myalloc.h
+trc.o:	$(PVMDIR)/include/pvm3.h
+trc.o:	$(PVMDIR)/include/pvmtev.h
+trc.o:	$(PVMDIR)/tracer/trcdef.h
+trc.o:	$(PVMDIR)/tracer/trcproto.h
+trc.o:	$(PVMDIR)/tracer/trctype.h
+trc.o:	$(SDIR)/job.h
+

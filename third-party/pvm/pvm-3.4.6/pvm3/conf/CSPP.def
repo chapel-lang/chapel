@@ -1,0 +1,57 @@
+# NOTES:
+#
+#   1 - When building with the HP compilers or GNU compilers, make sure
+#       that /bin appears in the PATH environment varaible before the
+#       Convex compilers or loader (e.g. /usr/convex/bin).  Otherwise
+#       the Convex compiler will be used and an incompatible crt0.o
+#       will be used to link the executables, resulting in unresolved
+#       symbols.
+#
+#   2 - When building with the Convex compilers be sure that
+#       /usr/convex/bin appears before /bin in the PATH environment
+#       variable.
+#
+#   3 - When compiling on an HP workstation for an Exemplar target using
+#       the Convex compilers, use the '-Wl,+tmspp1' flag to tell the
+#       compiler to use the Exemplar instruction set.  The HP
+#       workstation being used for the build will also require
+#       /lib/libcnx_syscall.a and /lib/libail.sl files to be installed
+#       from an Exemplar.
+#
+#   4 - When building libraries with the Convex C compiler that must be
+#       compatible with GNU C and HP C objects, compile with the
+#       -U_REENTRANT flag.  This turns off the multi-threading of
+#       'errno'.
+#
+#  
+# --------------------- Build with GNU C -----------------------
+#CC		= gcc -g
+#F77	= fort77
+#FFLAGS	= -g
+
+# --------------------- Build with Convex C -------------------
+#CC		= /opt/ansic/bin/cc
+#C_OPT	= -U_REENTRANT +DA1.1 +DS1.1 -Wl,+tm,hpux
+#F77	= /opt/fortran/bin/f77
+#AS		= /usr/ccs/bin/as
+
+# --------------------- Standard Stuff ------------------------------
+
+ARCHCFLAGS	=	$(C_OPT) -DSHMEM -DSYSVSIGNAL -DNOWAIT3 -DNOGETDTBLSIZ \
+				-DRSHCOMMAND=\"/usr/bin/remsh\" -DNOUNIXDOM \
+				-DCLUMP_ALLOC -DHASSTDLIB -DSUBCOMPLEX_SUPPORT \
+				-DFDSETISINT -DBALANCED_SPAWN
+ARCHOBJ		=	-lcnx_syscall /lib/libail.sl
+ARCHDOBJ	=
+ARCHDLIB	=	$(ARCHOBJ)
+ARCHLIB		=	$(ARCHLDFLAGS) $(ARCHOBJ)
+ARCHFLIB	=	$(ARCHLDFFLAGS) $(ARCHOBJ)
+HASRANLIB	=	f
+LD			=	$(CC)
+PVM_ARCH	=	CSPP
+#AR			=	/usr/bin/ar
+AR			=	ar
+LOPT		=	-Wl,-aarchive
+NEEDF2M4	=	t
+AMEMOBJ		=	amem.o
+MAKE		=	make

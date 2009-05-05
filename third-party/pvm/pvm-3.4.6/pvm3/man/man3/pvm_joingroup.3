@@ -1,0 +1,68 @@
+.\" $Id: pvm_joingroup.3,v 1.1 1996/09/23 22:05:14 pvmsrc Exp $
+.TH JOINGROUP 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_joingroup \- Enrolls the calling process in a named group.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int inum = pvm_joingroup( char *group )
+.br
+
+Fortran	call pvmfjoingroup( group, inum )
+.fi
+
+.SH PARAMETERS
+.IP group 0.8i
+Character string group name of an existing group.
+.br
+.IP inum
+Integer instance number returned by the routine.
+Instance numbers start at 0 and count up.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_joingroup
+enrolls the calling task in
+the group named
+.I group
+and returns the instance number
+.I inum
+of this task in this group.
+If there is an error
+.I inum
+will be negative.
+.PP
+Instance numbers start at 0 and count up.
+When using groups a (group, inum) pair uniquely identifies a
+PVM process.
+This is consistent with the PVM 2.4 naming schemes.
+If a task leaves a group by calling pvm_lvgroup
+and later rejoins the same group,
+the task is not guaranteed to get the same instance number.
+PVM attempts to reuse old instance numbers, so when a task
+joins a group it will get the lowest available instance number.
+A task can be a member of multiple groups simultaneously.
+
+.SH EXAMPLES
+.nf
+C:
+	inum = pvm_joingroup( "worker" );
+.sp
+Fortran:
+	CALL PVMFJOINGROUP( 'group2', INUM )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_joingroup
+.IP PvmSysErr
+pvmd was not started or has crashed.
+.IP PvmBadParam
+giving a NULL group name.
+.IP PvmDupGroup
+trying to join a group you are already in.
+.PP
+.SH SEE ALSO
+pvm_lvgroup(3PVM)

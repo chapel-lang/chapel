@@ -1,0 +1,19 @@
+#
+# Note: The -DCTIMEISTIMET flag in the ARCHCFLAGS definition may not
+#           be required on all Alpha systems...
+#
+# Similarly, to fix an XDR bug on some Alpha systems, add the
+#	-DUSE_XDR_LONGLONG flag to ARCHCFLAGS...
+#
+ARCHCFLAGS	=	-DHASSTDLIB -DCTIMEISTIMET
+#ARCHCFLAGS	=	-DHASSTDLIB -DCTIMEISTIMET -DUSE_XDR_LONGLONG
+ARCHDLIB	=
+ARCHDOBJ	=
+ARCHLIB		=
+HASRANLIB	=	t
+PVM_ARCH	=	ALPHA
+AR			=	ar
+# PVMDEPPATH Not Needed on *All* DEC Alpha Systems
+#PVMDEPPATH	=
+PVMDEPPATH	=	ALPHA/
+MAKE		=	make

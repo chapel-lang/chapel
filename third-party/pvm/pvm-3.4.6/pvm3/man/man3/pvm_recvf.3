@@ -1,0 +1,113 @@
+.\" $Id: pvm_recvf.3,v 1.1 1996/09/23 22:06:00 pvmsrc Exp $
+.TH RECVF 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_recvf \- Redefines the comparison function used to accept messages.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int (*old)() = pvm_recvf( int (*new)( int bufid, int tid, int tag ))
+.br
+
+Fortran	NOT AVAILABLE
+.fi
+
+.SH DESCRIPTION
+The routine
+.I pvm_recvf
+defines the comparison function to be
+used by the pvm_recv, pvm_nrecv, and pvm_probe functions.
+It is available as a means to customize PVM message passing.
+pvm_recvf sets a user supplied comparison function to
+evaluate messages for receiving.
+.PP
+recvf returns the old value of the matching function, or 0
+if the old function was the default matcher
+.PP
+pvm_recvf is intended for sophisticated C programmers
+who understand the function of such routines (like signal)
+and who require a receive routine that can match on more
+complex message contexts than the default provides.
+
+.SH MATCHING FUNCTION
+The default comparison function evaluates the source
+and message tag associated with all incoming messages.
+
+.SH PARAMETERS
+.IP tid 0.8i
+Integer task identifier of sending process supplied by the user.
+.br
+.IP tag
+Integer message tag supplied by the user.
+.br
+.IP bufid
+Integer message buffer identifier.
+.PP
+The matching function should return:
+.ta 0.5i 1.5i
+.nf
+
+	Value	Action taken
+	< 0	Return immediately with this error code.
+	  0	Do not pick this message.
+	  1	Pick this message and do not scan the rest.
+	> 1	Pick this highest ranked message after
+		scanning them all.
+.fi
+.bp
+.SH EXAMPLES
+Implementing message probe with recvf, using our matching function to return
+information in a global variable.
+.ta 0.5i 1.0i 1.5i
+.nf
+
+#include <pvm3.h>
+
+static int foundit = 0;
+
+static int
+foo_match(mid, tid, tag)
+	int mid;
+	int tid;
+	int tag;
+{
+	int t, c;
+	struct pvmminfo header;
+
+	pvm_getminfo(mid, &header);
+
+	if ((tid == -1 || tid == header.src) && (tag == -1 || tag == header.tag))
+		foundit = 1;
+
+	return 0;
+}
+
+int
+probe(src, tag)
+{
+	int (*omatch)();
+	int cc;
+
+	omatch = pvm_recvf(foo_match);
+
+	foundit = 0;
+
+	if ((cc = pvm_nrecv(src, tag)) < 0)
+		return cc;
+
+	pvm_recvf(omatch);
+
+	return foundit;
+}
+.fi
+
+.SH ERRORS
+No error conditions are returned by
+.I pvm_recvf
+.SH SEE ALSO
+pvm_bufinfo(3PVM),
+pvm_getminfo(3PVM),
+pvm_recv(3PVM),
+pvm_nrecv(3PVM),
+pvm_probe(3PVM),
+pvm_trecv(3PVM)

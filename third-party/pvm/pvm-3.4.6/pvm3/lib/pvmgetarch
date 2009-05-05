@@ -1,0 +1,285 @@
+#!/bin/sh
+#
+# $Id: pvmgetarch,v 1.28 2007/11/29 21:17:02 pvmsrc Exp $
+#
+# pvmgetarch.sh
+#
+# Generate PVM architecture string.
+#
+# This is a heuristic thing that may need to be tuned from time
+# to time.  I don't know of a real solution to determining the
+# machine type.
+#
+# Notes:
+#   1. Local people mess with things.
+#   2. It's good to try a few things for robustness.
+#   3. Don't use test -x
+#
+# 08 Apr 1993  Robert Manchek  manchek@CS.UTK.EDU.
+# 24 Aug 1994  last revision
+# 28 Jul 1995  release 3.3.8
+#
+
+#
+# begin section that may need to be tuned.
+#
+ARCH=UNKNOWN
+
+#
+# determine the machine type from scratch
+#
+if [ -f /bin/uname -o -f /usr/bin/uname \
+		-o -f /bin/uname.exe -o -f /usr/bin/uname.exe ]; then
+	if [ -f /bin/uname ]; then
+		os="`/bin/uname -s`"
+		ht="`/bin/uname -m`"
+		ov="`/bin/uname -v`"
+	elif [ -f /usr/bin/uname ]; then
+		os="`/usr/bin/uname -s`"
+		ht="`/usr/bin/uname -m`"
+		ov="`/usr/bin/uname -v`"
+	elif [ -f /bin/uname.exe ]; then
+		os="`/bin/uname.exe -s`"
+		ht="`/bin/uname.exe -m`"
+		ov="`/bin/uname.exe -v`"
+	else
+		os="`/usr/bin/uname.exe -s`"
+		ht="`/usr/bin/uname.exe -m`"
+		ov="`/usr/bin/uname.exe -v`"
+	fi
+
+	case "$os,$ht" in
+	SunOS,sun3* )           ARCH=SUN3 ;;
+	SunOS,sun4* )           ARCH=SUN4 ;;
+	SunOS,i86pc )           ARCH=X86SOL2 ;;
+	ULTRIX,RISC )           ARCH=PMAX ;;
+	ULTRIX,VAX )            ARCH=UVAX ;;
+	AIX*,* )                ARCH=RS6K ;;
+	*HP*,9000/[2345]* )     ARCH=HP300 ;;
+	*HP*,9000/[78]* )       ARCH=HPPA ;;
+	*HP*,ia64 )       		ARCH=HPIA64 ;;
+	IRIX,* )                ARCH=SGI ;;
+	IRIX64,* )              ARCH=SGI64 ;;
+	*OSF*,alpha )           ARCH=ALPHA ;;
+	CRSOS,smp )             ARCH=CRAYSMP ;;
+	*,paragon )             ARCH=PGON ;;
+	dgux,AViiON )           ARCH=DGAV ;;
+	*,88k )                 ARCH=E88K ;;
+	*,mips )                ARCH=MIPS ;;
+	*,CRAY-2 )              ARCH=CRAY2 ;;
+	Linux,i[3456]86 )       ARCH=LINUX ;;
+	Linux,ia64 )            ARCH=LINUX64 ;;
+	Linux,x86_64 )          ARCH=LINUX64 ;;
+	Linux,alpha )           ARCH=LINUXALPHA ;;
+	Linux,arm* )            ARCH=LINUXARM ;;
+	Linux,sparc* )          ARCH=LINUXSPARC ;;
+	Linux,hp_pa )           ARCH=LINUXHPPA ;;
+	Linux,ppc )             ARCH=LINUXPPC ;;
+	Linux,m68k )            ARCH=LINUXATARI ;;
+	BSD/OS,i[3456]86 )      ARCH=BSD386 ;;
+	FreeBSD,i[3456]86 )     ARCH=FREEBSD ;;
+	FreeBSD,alpha )         ARCH=FREEBSD ;;
+	SUPER-UX,SX-3 )         ARCH=SX3 ;;
+	uts,* )                 ARCH=UTS2 ;;
+	realix,M88* )           ARCH=M88K ;;
+	DomainOS,DN* )          ARCH=APOLLO ;;
+	OS/2,i[3456]86 )        ARCH=OS2 ;;
+	CYGWIN*,i[3456]86 )     ARCH=CYGWIN ;;
+	Darwin,* )              ARCH=DARWIN ;;
+	Rhapsody,"Power Macintosh" )    ARCH=MACOSX ;;
+	esac
+fi
+
+# there is no other way to detect DG/intel than to run 'uname -a'
+if [ "$ARCH" = DGAV ]; then
+	if uname -a | grep 'PentiumPro$' > /dev/null ; then
+		ARCH=DGIX
+	fi
+fi
+
+if [ "$ARCH" = UNKNOWN ]; then
+	if [ -f /bin/arch ]; then
+		case "`/bin/arch`" in
+		ksr1 ) ARCH=KSR1 ;;
+		sun2 ) ARCH=SUN2 ;;
+		sun3 ) ARCH=SUN3 ;;
+		sun4 ) ARCH=SUN4 ;;
+		esac
+	fi
+fi
+
+if [ "$ARCH" = UNKNOWN ]; then
+
+	if [ -f /usr/etc/RELDEF ]; then ARCH=ATT; fi
+
+	if [ -f /ultrixboot ]; then
+		if [ -f /pcs750.bin ]; then
+			ARCH=UVAX
+		else
+			ARCH=PMAX
+		fi
+	else
+		if [ -f /pcs750.bin ]; then ARCH=VAX; fi
+	fi
+
+	if [ -d /usr/alliant ]; then ARCH=AFX8; fi
+	if [ -f /usr/bin/cluster ]; then ARCH=BFLY; fi
+	if [ -d /usr/convex ]; then ARCH=CNVX; fi
+	if [ -f /unicos ]; then ARCH=CRAY; fi
+	if [ -f /hp-ux ]; then ARCH=HP300; fi
+	if [ -f /usr/bin/getcube ]; then ARCH=I860; fi
+	if [ -f /usr/bin/asm56000 ]; then ARCH=NEXT; fi
+	if [ -f /etc/vg ]; then ARCH=RS6K; fi
+	if [ -d /usr/include/caif ]; then ARCH=RT; fi
+	if [ -f /bin/4d ]; then ARCH=SGI; fi
+	if [ -f /dynix ]; then ARCH=SYMM; fi
+	if [ -f /bin/titan ]; then ARCH=TITN; fi
+
+	if [ -f /netbsd ]; then
+		# amiga)  ARCH=NETBSDAMIGA ;;  --> NETBSDM68K
+		# hp300)  ARCH=NETBSDHP300 ;;  --> NETBSDM68K
+		# mac68k) ARCH=NETBSDMAC68K ;;  --> NETBSDM68K
+		# pmax)   ARCH=NETBSDPMAX ;;  --> NETBSDMIPSEL
+		# sun3)   ARCH=NETBSDSUN3 ;;  --> NETBSDM68K
+		case "`/usr/bin/uname -p`" in
+		alpha)   ARCH=NETBSDALPHA ;;
+		arm32)   ARCH=NETBSDARM32 ;;
+		i386)    ARCH=NETBSDI386 ;;
+		m68k)    ARCH=NETBSDM68K ;;
+		mipseb)  ARCH=NETBSDMIPSEB ;;
+		mipsel)  ARCH=NETBSDMIPSEL ;;
+		ns32k)   ARCH=NETBSDNS32K ;;
+		powerpc) ARCH=NETBSDPOWERPC ;;
+		sh3)     ARCH=NETBSDSH3 ;;
+		sparc)   ARCH=NETBSDSPARC ;;
+		sparc64) ARCH=NETBSDSPARC64 ;;
+		vax)     ARCH=NETBSDVAX ;;
+		esac
+	elif [ -f /usr/bin/machine ]; then
+		case "`/usr/bin/machine`" in
+		i386 ) ARCH=BSD386 ;;
+		esac
+	fi
+	if [ -f /usr/bin/uxpm ] && /usr/bin/uxpm ; then
+		ARCH=UXPM
+	fi
+	if [ -f /usr/bin/uxpv ] && /usr/bin/uxpv ; then
+		ARCH=UXPV
+	fi
+fi
+
+if [ "$ARCH" = UNKNOWN ]; then
+	if [ -f /bin/uname -o -f /usr/bin/uname ]; then
+		if [ -f /bin/uname ]; then
+			os="`/bin/uname -s`"
+			ht="`/bin/uname -m`"
+			rv="`/bin/uname -r`"
+		else
+			os="`/usr/bin/uname -s`"
+			ht="`/usr/bin/uname -m`"
+			rv="`/usr/bin/uname -r`"
+		fi
+
+		case "$os,$ht" in
+		*,i[3456]86 )    case "$rv" in
+				4.*) ARCH=UWARE ;;
+				*) ARCH=SCO ;;
+				esac
+		esac
+	fi
+fi
+
+#
+# update the machine type to derive subclasses
+#
+if [ "$ARCH" = SUN4 ]; then
+	rel="`/bin/uname -r`"
+	case "$rel" in
+	5.* )   ARCH=SUN4SOL2 ;;
+	esac
+fi
+if [ "$ARCH" = SUN4SOL2 ]; then
+	nproc="`/bin/mpstat | wc -l`"
+	if [ $nproc -gt 2 -a "$PVM_SHMEM" = ON ];
+		then ARCH=SUNMP;
+	fi
+fi
+if [ "$ARCH" = ALPHA ]; then
+	rel="`/usr/bin/uname -r`"
+	case "$rel" in
+	*[34].*)
+		nproc="`/usr/sbin/sizer -p`"
+		if [ $nproc -gt 1 -a "$PVM_SHMEM" = ON ];
+			then ARCH=ALPHAMP;
+		fi ;;
+	esac
+fi
+if [ "$ARCH" = SGI ]; then
+	rel="`/bin/uname -r`"
+	case "$rel" in
+	5.* )   ARCH=SGI5 ;;
+	6.* )   ARCH=SGI6 ;;
+	esac
+fi
+if [ "$ARCH" = SGI64 ]; then
+	nproc="`/usr/sbin/mpadmin -n | wc -w`"
+	if [ $nproc -gt 1 -a "$PVM_SHMEM" = ON ];
+		then ARCH=SGIMP64;
+	fi
+fi
+if [ "$ARCH" = SGI5 ]; then
+	nproc="`/usr/sbin/mpadmin -n | wc -w`"
+	if [ $nproc -gt 1 -a "$PVM_SHMEM" = ON ];
+		then ARCH=SGIMP;
+	fi
+fi
+if [ "$ARCH" = SGI6 ]; then
+	nproc="`/usr/sbin/mpadmin -n | wc -w`"
+	if [ $nproc -gt 1 -a "$PVM_SHMEM" = ON ];
+		then ARCH=SGIMP6;
+	fi
+fi
+if [ "$ARCH" = SUN4 -a -f /dev/cm ]; then ARCH=CM2; fi
+if [ "$ARCH" = SUN4 -a -f /dev/cmni ]; then ARCH=CM5; fi
+if [ "$ARCH" = CNVX ]; then
+	if /usr/convex/getsysinfo -f native_default; then
+		ARCH=CNVXN
+	fi
+fi
+if [ "$ARCH" = PMAX -a -d /usr/maspar ]; then ARCH=MASPAR; fi
+if [ "$ARCH" = RS6K ]; then
+	case "$os,$ov" in
+	AIX*,4 )	nproc="`/usr/sbin/lsdev -C -c processor | wc -l`"
+			if [ $nproc -gt 1 -a "$PVM_SHMEM" = ON ]; then 
+				ARCH=AIX4MP;
+			else
+				ARCH=AIX46K;
+			fi ;;
+	AIX*,5 )	nproc="`/usr/sbin/lsdev -C -c processor | wc -l`"
+			if [ $nproc -gt 1 -a "$PVM_SHMEM" = ON ]; then 
+				ARCH=AIX5MP;
+			else
+				ARCH=AIX56K;
+			fi ;;
+	esac
+fi
+if [ "$ARCH" = HPPA -a -f /bin/sysinfo ]; then ARCH=CSPP; fi
+if [ "$ARCH" = HPPA ]; then
+	nproc="`/usr/bin/vmstat -n | wc -l`"
+	if [ $nproc -gt 8 -a "$PVM_SHMEM" = ON ];
+		then ARCH=HPPAMP;
+	fi
+fi
+if [ "$ARCH" = LINUX ]; then
+	rel="`/bin/uname -r`"
+	case "$rel" in
+		*.beo* ) ARCH=BEOSCYLD ;;
+	esac
+fi
+#
+# ugh, done.
+#
+
+echo $ARCH
+exit
+

@@ -1,0 +1,243 @@
+.\" $Id: pvm_pack.3,v 1.1 1996/09/23 22:05:27 pvmsrc Exp $
+.TH PACK 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_pack \- Pack the active message buffer with arrays
+of prescribed data type.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C
+.br
+	int info = pvm_packf( const char *fmt, ... )
+.br
+	int info = pvm_pkbyte( char *xp, int nitem, int stride )
+.br
+	int info = pvm_pkcplx( float *cp, int nitem, int stride )
+.br
+	int info = pvm_pkdcplx( double *zp, int nitem, int stride )
+.br
+	int info = pvm_pkdouble( double *dp, int nitem, int stride )
+.br
+	int info = pvm_pkfloat( float *fp, int nitem, int stride )
+.br
+	int info = pvm_pkint( int *ip, int nitem, int stride )
+.br
+	int info = pvm_pkuint( unsigned int *ip, int nitem, int stride )
+.br
+	int info = pvm_pkushort( unsigned short *ip, int nitem, int stride )
+.br
+	int info = pvm_pkulong( unsigned long *ip, int nitem, int stride )
+.br
+	int info = pvm_pklong( long *ip, int nitem, int stride )
+.br
+	int info = pvm_pkshort( short *jp, int nitem, int stride )
+.br
+	int info = pvm_pkstr( char *sp )
+
+Fortran
+.br
+	call pvmfpack( what, xp, nitem, stride, info )
+.fi
+
+.SH PARAMETERS
+.IP fmt 0.8i
+Printf\-like format expression specifying what to pack. (See discussion).
+.br
+.IP nitem
+The total number of \fIitems\fR to be packed
+(not the number of bytes).
+.\" For example, if nitem = 5 in pvm_pkdouble, then 5 double precision
+.\" floating point values will be packed.
+.br
+.IP stride
+The stride to be used when packing the items.
+For example, if stride = 2 in pvm_pkcplx, then every other complex
+number will be packed.
+.br
+.IP xp
+Pointer to the beginning of a block of bytes. Can be any data type,
+but must match the corresponding unpack data type.
+.br
+.IP cp
+Complex array at least nitem*stride items long.
+.br
+.IP zp
+Double precision complex array at least nitem*stride items long.
+.br
+.IP dp
+Double precision real array at least nitem*stride items long.
+.br
+.IP fp
+Real array at least nitem*stride items long.
+.br
+.IP ip
+Integer array at least nitem*stride items long.
+.br
+.IP jp
+Integer*2 array at least nitem*stride items long.
+.br
+.IP sp
+Pointer to a null terminated character string.
+.br
+.IP what
+Integer specifying the type of data being packed.
+.ta 0.5i 2.0i 2.5i 4.0i
+.nf
+	\fIwhat\fR options
+	STRING	0	REAL4	4
+	BYTE1	1	COMPLEX8	5
+	INTEGER2	2	REAL8	6
+	INTEGER4	3	COMPLEX16	7
+.fi
+.IP info
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+Each of the pvm_pk* routines packs an array of the
+given data type into the active send buffer.
+The arguments for each of the routines are a pointer
+to the first item to be packed,
+.I nitem
+which is the
+total number of items to pack from this array, and
+.I stride
+which is the stride to use when packing.
+.PP
+An exception is pvm_pkstr() which by definition packs
+a NULL terminated character string and thus does not need
+.I nitem
+or
+.I stride
+arguments.
+The Fortran routine pvmfpack( STRING, ... ) expects
+.I nitem
+to be the number of characters in the string and
+.I stride
+to be 1.
+.PP
+A null string ("") can be packed;
+this is just a string with no characters before the terminating '\\0'.
+However,
+packing a null string pointer, (char *)0, is not allowed.
+.PP
+If the packing is successful,
+.I info
+will be 0. If some error occurs then
+.I info
+will be < 0.
+.PP
+A single variable (not an array) can be packed by setting
+.I nitem
+= 1 and
+.I stride
+= 1.
+.PP
+The routine pvm_packf() uses a printf\-like format expression
+to specify what and how to pack data into the send buffer.
+All variables are passed as addresses if count and stride are specified
+otherwise, variables are assumed to be values.
+A BNF-like description of the format syntax is:
+.br
+    format : null | init | format fmt
+.br
+    init : null | '%' '+'
+.br
+    fmt : '%' count stride modifiers fchar
+.br
+    fchar : 'c' | 'd' | 'f' | 'x' | 's'
+.br
+    count : null | [0-9]+ | '*'
+.br
+    stride : null | '.' ( [0-9]+ | '*' )
+.br
+    modifiers : null | modifiers mchar
+.br
+    mchar : 'h' | 'l' | 'u'
+
+Formats:
+.nf
+  +  means initsend - must match an int (how) in the param list.
+  c  pack/unpack bytes
+  d  integers
+  f  float
+  x  complex float
+  s  string
+
+Modifiers:
+  h  short (int)
+  l  long  (int, float, complex float)
+  u  unsigned (int)
+
+'*' count or stride must match an int in the param list.
+.fi
+
+.PP
+Future extensions to the
+.I what
+argument in pvmfpack will include
+64 bit types when XDR encoding of these types is available.
+Meanwhile users should be aware that precision can be lost
+when passing data from a 64 bit machine like a Cray to a
+32 bit machine like a SPARCstation. As a mnemonic the
+.I what
+argument name includes the number of bytes of
+precision to expect. By setting encoding to PVMRAW (see pvmfinitsend)
+data can be transferred between two 64 bit machines with
+full precision even if the PVM configuration is heterogeneous.
+.PP
+Messages should be unpacked exactly like they were packed
+to insure data integrity.
+Packing integers and unpacking
+them as floats will often fail because a type encoding
+will have occurred transferring the data between heterogeneous
+hosts. Packing 10 integers and 100 floats then trying to
+unpack only 3 integers and the 100 floats will also fail.
+
+.SH EXAMPLES
+.nf
+C:
+	info = pvm_initsend( PvmDataDefault );
+	info = pvm_pkstr( "initial data" );
+	info = pvm_pkint( &size, 1, 1 );
+	info = pvm_pkint( array, size, 1 );
+	info = pvm_pkdouble( matrix, size*size, 1 );
+	msgtag = 3 ;
+	info = pvm_send( tid, msgtag );
+.sp
+    int count, *iarry;
+    double darry[4];
+    pvm_packf("%+ %d %*d %4lf", PvmDataRaw, count, count, iarry, darry);
+.sp
+Fortran:
+	CALL PVMFINITSEND(PVMRAW, INFO)
+	CALL PVMFPACK( INTEGER4, NSIZE, 1, 1, INFO )
+	CALL PVMFPACK( STRING, 'row 5 of NXN matrix', 19, 1, INFO )
+	CALL PVMFPACK( REAL8, A(5,1), NSIZE, NSIZE , INFO )
+	CALL PVMFSEND( TID, MSGTAG, INFO )
+.fi
+
+.SH WARNINGS
+Strings cannot be packed when using the PvmDataInPlace encoding,
+due to limitations in the implementation.
+Attempting to pack a string using
+pvm_pkstr or pvm_packf
+will cause error code PvmNotImpl to be returned.
+.SH ERRORS
+.IP PvmNoMem
+Malloc has failed. Message buffer size has exceeded
+the available memory on this host.
+.IP PvmNoBuf
+There is no active send buffer to pack into.
+Try calling pvm_initsend before packing message.
+.IP PvmOverflow
+Attempt to pack a value too large.
+E.g. packing an 8-byte long with XDR encoding if the value won't fit into 4 bytes.
+.PP
+.SH SEE ALSO
+pvm_initsend(3PVM),
+pvm_unpack(3PVM),
+pvm_send(3PVM),
+pvm_recv(3PVM),
+pvm_pkmesg(3PVM)

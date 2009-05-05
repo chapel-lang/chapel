@@ -1,0 +1,92 @@
+.\" $Id: pvm_freezegroup.3,v 1.1 1996/09/23 22:01:17 pvmsrc Exp $
+.TH FREEZEGROUP 3PVM "16 March 1995" "" "PVM Version 3.4"
+.SH NAME
+pvm_freezegroup \- Freezes dynamic group membership and caches info locally 
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_freezegroup( char *group , int size)
+.br
+
+Fortran	call pvmffreezegroup( group, size, info )
+.fi
+
+.SH PARAMETERS
+.IP group 0.8i
+Character string group name of an existing group.
+.br
+.IP size
+Size of the group when it is frozen 
+.IP info
+size of group on success. Values less than 0 indicate and error.
+.SH DESCRIPTION
+The routine
+.I pvm_freezegroup
+makes a dynamic group named 
+.I group
+static. The group information is  then "cached" by all group members.
+pvm_freezegroup is a synchronizing routine and must
+be called by all group members to complete.
+.I size 
+indicates the size the dynamic group should be when made static. 
+A value of -1 indicates that the current size of the group should
+be used.
+.I info
+returns error information.
+.PP
+Once a dynamic group has been frozen with
+.I pvm_freezegroup
+, all subsequent operations that can be satisfied with local data use
+the locally held information. For processes that are outside of the group,
+the first group call, e.g., pvm_bcast(), will cause the static group
+information to be copied to the calling process. 
+Subsequent operations then use the local information. Barriers are still
+arbitrated by the group server.
+.PP
+Group members should call \fI pvm_lvgroup \fR to leave the group
+and free any allocated structures that hold the group information.
+Processes not in the group may call \fI pvm_lvgroup \fR to free any
+locally allocated structures. In this case, an error code of
+PvmNotInGroup or PvmNoGroup will be returned to the caller.
+
+Barrier are always arbitrated by the group server, even if the group has 
+been made static with \fIpvm_freezegroup\fR. If a process leaves 
+a static group while other process are waiting at a barrier, then
+\fIPvmNoGroup\fR is returned to all processes waiting at the barrier.
+Future barrier calls with the defunct static group, return the same
+error.
+
+.SH EXAMPLES
+.nf
+C:
+        inum = pvm_joingroup("worker");
+	info = pvm_freezegroup( "worker", size );
+.sp
+Fortran:
+        CALL PVMFJOINGROUP('group2', inum)
+	CALL PVMFFREEZEGROUP( 'group2', size, info )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_freezegroup
+.IP PvmSysErr
+pvmd was not started or has crashed.
+.IP PvmBadParam
+giving a NULL group name.
+.IP PvmDupGroup
+trying to freeze a group that is already frozen.
+.IP PvmNotInGroup
+trying to freeze a group that you are not in.
+.PP
+.SH BUGS
+There is no way to unfreeze a group.
+
+Processes are not notified if a frozen group becomes invalid.
+
+Having a non-member process call pvm_lvgroup to free structures is
+a bit strange.
+.SH SEE ALSO
+pvm_barrier(3PVM),
+pvm_lvgroup(3PVM)

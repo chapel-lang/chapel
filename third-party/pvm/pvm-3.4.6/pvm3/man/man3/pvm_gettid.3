@@ -1,0 +1,64 @@
+.\" $Id: pvm_gettid.3,v 1.1 1996/09/23 22:01:30 pvmsrc Exp $
+.TH GETTID 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_gettid \- Returns the tid of the process identified by a
+group name and instance number.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int tid = pvm_gettid( char *group, int inum )
+.br
+
+Fortran	call pvmfgettid( group, inum, tid )
+.fi
+
+.SH PARAMETERS
+.IP group 0.8i
+Character string that contains the name of an existing group.
+.br
+.IP inum
+Integer instance number of the process in the group.
+.br
+.IP tid
+Integer task identifier returned.
+
+.SH DESCRIPTION
+The routine
+.I pvm_gettid
+returns the tid of the PVM process
+identified by the group name
+.I group
+and the instance number
+.I inum.
+If pvm_gettid is successful,
+.I tid
+will be > 0.
+If some error occurs then
+.I tid
+will be < 0.
+
+.SH EXAMPLES
+.nf
+C:
+	  tid = pvm_gettid("worker",0);
+.sp
+Fortran:
+	   CALL PVMFGETTID('worker',5,TID)
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_gettid.
+.IP PvmSysErr
+Can not contact the local pvmd; most likely it is not running.
+.IP PvmBadParam
+Bad Parameter most likely a NULL character string.
+.IP PvmNoGroup
+No group exists by that name.
+.IP PvmNoInst
+No such instance in the group.
+.PP
+.SH SEE ALSO
+pvm_joingroup(3PVM),
+pvm_getinst(3PVM)

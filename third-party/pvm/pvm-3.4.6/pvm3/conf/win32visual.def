@@ -1,0 +1,106 @@
+#
+# $Id: win32visual.def,v 1.4 1999/03/12 20:47:02 pvmsrc Exp $
+#
+
+#######################################################
+# For Alpha 
+#######################################################
+
+!if "$(PROCESSOR_ARCHITECTURE)" == "ALPHA"
+
+cc			=	cl.exe
+fc			=	f77.exe
+conflags	=	/MACHINE:ALPHA /NOLOGO
+
+#######################################################
+# For Intel 
+#######################################################
+
+!else
+
+cc		=	cl.exe
+fc		=	df.exe
+conflags	=	/MACHINE:IX86 /NOLOGO
+
+!endif
+
+OUT		=	/Fo
+OUTBIN		=	-out:
+OUTLIB		=	-out:
+OUTDLL		=	-out:
+
+MAKE		=	nmake
+
+EXESFX		=	.exe
+
+linkexe		=	link
+linklib		=	link -lib
+linkdll		=	link -dll
+
+link_flags	=	$(PVM_CLIBDIR)\wsock32.lib \
+				$(PVM_CLIBDIR)\kernel32.lib\
+				$(PVM_CLIBDIR)\libc.lib \
+				$(PVM_CLIBDIR)\gdi32.lib \
+				$(PVM_CLIBDIR)\winspool.lib \
+				$(PVM_CLIBDIR)\comdlg32.lib \
+				$(PVM_CLIBDIR)\advapi32.lib \
+				$(PVM_CLIBDIR)\shell32.lib \
+				$(PVM_CLIBDIR)\ole32.lib \
+				$(PVM_CLIBDIR)\oleaut32.lib \
+				$(PVM_CLIBDIR)\uuid.lib \
+				$(PVM_CLIBDIR)\oldnames.lib \
+				/nodefaultlib:"LIBCMT.LIB"
+
+fl32_link	=	$(PVM_CLIBDIR)\wsock32.lib \
+				$(PVM_CLIBDIR)\kernel32.lib \
+				$(PVM_CLIBDIR)\gdi32.lib \
+				$(PVM_CLIBDIR)\winspool.lib \
+				$(PVM_CLIBDIR)\comdlg32.lib \
+				$(PVM_CLIBDIR)\advapi32.lib \
+				$(PVM_CLIBDIR)\shell32.lib \
+				$(PVM_CLIBDIR)\ole32.lib \
+				$(PVM_CLIBDIR)\oleaut32.lib \
+				$(PVM_CLIBDIR)\uuid.lib \
+				$(PVM_CLIBDIR)\oldnames.lib
+
+link_multithread	=	$(PVM_CLIBDIR)\wsock32.lib \
+					$(PVM_CLIBDIR)\kernel32.lib \
+					$(PVM_CLIBDIR)\libcmt.lib \
+					$(PVM_CLIBDIR)\gdi32.lib \
+					$(PVM_CLIBDIR)\winspool.lib \
+					$(PVM_CLIBDIR)\comdlg32.lib \
+					$(PVM_CLIBDIR)\advapi32.lib \
+					$(PVM_CLIBDIR)\shell32.lib \
+					$(PVM_CLIBDIR)\ole32.lib \
+					$(PVM_CLIBDIR)\oleaut32.lib \
+					$(PVM_CLIBDIR)\uuid.lib \
+					$(PVM_CLIBDIR)\oldnames.lib \
+					$(PVM_CLIBDIR)\libcpmt.lib
+
+conlibs		=	$(libc)
+
+########################################################
+# Optimized Code
+########################################################
+cflags		=	/c /WX $(ARCHCFLAGS) /nologo /GX /O2 /D "NDEBUG" \
+				/D "_CONSOLE" -I$(PVM_CINCLUDE) -I$(PVM_ROOT)\include \
+				-I$(PVM_ROOT)\tracer -I$(PVM_ROOT)\src
+
+fflags		=	/c $(ARCHCFLAGS) /nologo /D "NDEBUG" /D "_CONSOLE" \
+				-I $(PVM_CINCLUDE) -I $(PVM_ROOT)\include \
+				-I $(PVM_ROOT)\src
+
+########################################################
+# Debugging mode
+########################################################
+#cflags		=	/c /W2 $(ARCHCFLAGS) /nologo /MTd /Gm /GX /Zi /Od /D \
+#				"_DEBUG" /D "_CONSOLE" \
+#				-I$(PVM_CINCLUDE) -I$(PVM_ROOT)\include \
+#				-I$(PVM_ROOT)\tracer -I$(PVM_ROOT)\src
+
+########################################################
+
+libpvm3dll	=	libpvm3.dll
+libgpvm3dll	=	libgpvm3.dll
+pvmd3exe	=	visual_pvmd3.exe
+

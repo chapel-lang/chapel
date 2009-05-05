@@ -1,0 +1,76 @@
+.\" $Id: pvm_advise.3,v 1.1 1996/09/23 22:01:00 pvmsrc Exp $
+.TH ADVISE 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_advise() \- Controls use of direct task-to-task routing.
+.br
+[In Version 3.2: Replaced by pvm_setopt]
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_advise( int route )
+.br
+
+Fortran	call pvmfadvise( route, info )
+.fi
+
+.SH PARAMETERS
+.IP route 0.8i
+Integer advising PVM to set up direct task-to-task links.
+.br
+.ce
+.I route options
+.ta 2.0i 2.5i
+.nf
+PvmDontRoute	1	Don't allow direct links to this task
+PvmAllowDirect	2	Allow but don't request direct links
+PvmRouteDirect	3	Request direct links
+.fi
+.IP info
+Integer returning error status.
+
+.SH DESCRIPTION
+The routine
+.I pvm_advise
+advises PVM on whether or not
+to set up direct task-to-task links (using TCP) for
+all subsequent communication. Once a link is established it
+remains until the application finishes.
+If a direct link can not be established because one of the two tasks
+has requested
+.I PvmDontRoute
+or because no resources are available,
+then the default route through the PVM daemons is used.
+pvm_advise can be called multiple times to selectively establish
+direct links,
+but is typically set only once near the beginning of each task.
+.I PvmAllowDirect
+is the default advise setting.
+This setting on task A allows other tasks to set up direct links to A.
+Once a direct link is established between tasks
+both tasks will use it for sending messages.
+pvm_advise returns the error status in
+.I info.
+The performance of direct task-to-task links can be up to a factor
+of two better than the default route. The draw back is a lack of
+scalability of the direct links.
+Some versions of UNIX limit the number of links to no more than 30.
+
+.SH EXAMPLES
+.nf
+C:
+	info = pvm_advise( PvmRouteDirect );
+.sp
+Fortran:
+	CALL PVMFADVISE( PVMROUTEDIRECT, INFO )
+.fi
+
+.SH ERRORS
+This error condition can be returned by
+.I pvm_advise
+.IP PvmBadParam
+giving an invalid route value.
+.PP
+
+.SH SEE ALSO
+pvm_setopt(3PVM)

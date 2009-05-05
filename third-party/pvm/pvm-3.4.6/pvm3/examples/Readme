@@ -1,0 +1,252 @@
+ PVM Version 3.4
+ EXAMPLES
+ _____________________________________________________________________
+
+ This directory contains C and FORTRAN example programs using PVM 3.4
+
+ All examples assume that pvm is installed and currently running.
+
+ Each target can be made separately by typing in
+
+ 	% aimk <target>
+
+ Each section tells how to compile the example, run the example,
+ and what output is expected. Some of the examples run slightly
+ differently on MPPs (PGON and SP2MPI), the difference are noted,
+ where applicable in the section "MPP notes".
+
+ ===============================================================
+ 1.) hello + hello_other:
+ 	Two programs that cooperate - shows how to create a new task
+ 	and pass messages between tasks.
+ 	
+ 	Source files:
+ 		hello.c hello_other.c
+
+ 	To compile:
+ 		% aimk hello hello_other
+
+ 	Run from shell:
+ 		% hello
+
+     Run from pvm console:
+ 		pvm> spawn -> hello
+
+ 	Sample output:
+ 		i'm t40002
+ 		from t40003: hello, world from gollum.epm.ornl.gov
+
+ 	MPP Notes:
+ 		If you desire to run the hello example from the shell, then
+ 		you need to compile the "helloh"
+ 		% aimk helloh
+ 		% helloh
+
+
+ ===============================================================
+ 2.) master1 + slave1, fmaster1 + fslave1
+ 	A master/slave example where the master process creates and
+ 	directs some number of slave processes that cooperate to do the
+ 	work.  C and FORTRAN versions. [f]master1 will spawn 3*<#hosts>
+ 	slave tasks on the virtual machine.
+
+ 	Source files:
+ 		master1.c slave1.c master1.f slave1.f
+
+ 	To compile:	
+ 		% aimk master1 slave1 fmaster1 fslave1
+
+ 	To run from shell (C version):
+ 		% master1
+
+ 	To run from shell (Fortran version)
+ 		% fmaster1
+ 	
+ 	To Run from PVM console:
+ 		pvm> spawn -> master1
+
+ 		OR
+
+ 		pvm> spawn -> fmaster1
+
+
+ 	Sample output:
+ 		Spawning 3 worker tasks ... SUCCESSFUL
+         I got 100.000000 from 1; (expecting 100.000000)
+         I got 200.000000 from 0; (expecting 200.000000)
+         I got 300.000000 from 2; (expecting 300.000000)
+
+ 	MPP Notes:
+ 		If you desire to run the master examples from the shell, then
+ 		you need to compile the "master1h", fmaster1h"
+ 		% aimk master1h fmaster1h
+ 		% master1h
+
+
+ ===============================================================
+ 3.) spmd, fspmd
+
+ 	An SPMD (Single Program Multiple Data) example that uses
+ 	pvm_siblings (pvmfsiblings) to determine the number of tasks
+ 	(and their task ids) that were spawned together. The parallel
+ 	computation then performs a simple token ring and passes a message.
+ 	This program should be run from the pvm console.
+
+
+ 	Source Files:
+ 		spmd.c spmd.f
+
+ 	To compile:
+ 		% aimk spmd fspmd
+
+ 	To run from pvm console:
+ 		pvm> spawn -4 -> spmd
+
+ 		OR
+
+ 		pvm> spawn -4 -> fspmd
+
+  	Sample output:
+ 		[4:t4000f]  Pass a token through the 4 tid ring:
+ 		[4:t4000f]  262159 ->  262160 ->  262161 ->  262162 ->  262159
+ 		[4:t4000f]  token ring done
+
+
+ ===============================================================
+ 4.) dbwtest, ibwtest, pbwtest, rbwtest
+ 	A simple bandwidth tester. This test uses standard ping-pong type
+ 	tests and illustrates how different packing/sending can affect
+ 	message performance.
+
+ 	This example can be compiled with several different
+ 	options to test different types of packing.
+
+ 	dbwtest - pvm default (PvmDataDefault) packing
+ 	ibwtest - pvm inplace packing (PvmInPlace)
+ 	pbwtest - pvm_psend/precv
+ 	rbwtest - pvm raw data packing (PvmRaw)
+
+ 	Source files:
+ 		bwtest.c
+
+ 	To compile:
+ 		% aimk dbwtest ibwtest pbwtest rbwtest
+
+ 	To run from console:
+ 		pvm> spawn -2 -> dbwtest
+
+ 	To run from the shell:
+ 		machine1% dbwtest
+ 		machine2% dbwtest
+ 	(Note two copies of _bwtest must be running for the code to complete)
+
+ 	Sample output:	
+ 	[4:t40003] --- Simple PVM Bandwidth Test ----
+ 	[4:t40003]  Using pack option: PvmDataDefault
+ 	[4:t40003]  Max data size is: 800000
+ 	[4:t40003]  Number of iterations/sample: 20
+ 	[4:t40003]
+ 	[4:t40003]
+ 	[4:t40003]  Roundtrip time is measured from user-space to user-space.
+ 	[4:t40003]  For packed messages this includes the combined time of:
+ 	[4:t40003]     inst 0: pvm_initsend()
+ 	[4:t40003]     inst 0: pvm_pack()
+ 	[4:t40003]     inst 0: pvm_send()
+ 	[4:t40003]     inst 1: pvm_recv()
+ 	[4:t40003]     inst 1: pvm_unpack()
+ 	[4:t40003]     inst 1: pvm_initsend()
+ 	[4:t40003]     inst 1: pvm_pack()
+ 	[4:t40003]     inst 1: pvm_send()
+ 	[4:t40003]     inst 0: pvm_recv()
+ 	[4:t40003]     inst 0: pvm_unpack()
+ 	[4:t40003]
+ 	[4:t40003]
+ 	[4:t40003] ---------------------------------------
+ 	[4:t40003] 40003 -- I am the master
+ 	[4:t40003] t40003: 100000 doubles received correctly
+ 	[4:t40003]
+ 	[4:t40003]
+ 	[4:t40003] Roundtrip T = 1247 (us)  (0.0000 MB/s)  Data size: 0
+ 	[4:t40003] Roundtrip T = 1090 (us)  (0.0147 MB/s)  Data size: 8
+ 	[4:t40003] Roundtrip T = 1161 (us)  (0.1378 MB/s)  Data size: 80
+ 	[4:t40003] Roundtrip T = 1589 (us)  (1.0069 MB/s)  Data size: 800
+ 	[4:t40003] Roundtrip T = 6556 (us)  (2.4405 MB/s)  Data size: 8000
+ 	[4:t40003] Roundtrip T = 64579 (us)  (2.4776 MB/s)  Data size: 80000
+ 	[4:t40003] Roundtrip T = 668035 (us)  (2.3951 MB/s)  Data size: 800000
+
+
+ ===============================================================
+ 5.) timing + timing_slave:
+ 	A simple program to illustrate how to measure network bandwidth
+ 	and latency.
+
+
+ ===============================================================
+ 6.) hitc + hitc_slave:
+     A simplified kernel of a larger supercondutor application,
+     hitc illustrates dynamic load balancing using the
+     'pool of tasks' paradigm. A synthetic workload is created
+     in this example, and hitc automatically places one slave per host.
+
+
+ ===============================================================
+ 7.) gexample, fgexample
+
+     Illustrates the use of group functions including reduce f.e. global sum
+     and user defined reduce functions.
+
+ 	Source files:
+ 		gexample.c gexample.f
+
+ 	To compile:
+ 		% aimk gexample fgexample
+
+ 	To run from the shell:
+ 		% gexample
+
+ 	To run from the PVM console:
+ 		pvm> spawn -3  -> gexample
+
+ 	Sample output:
+
+ 		[7:t4004f]  This program demonstrates some group and reduction
+ 		[7:t4004f]  operations in PVM.  The output displays the
+ 		[7:t4004f]  the product of the first column of a Toeplitz matrix
+ 		[7:t4004f]  and the matrix 1-norm. The matrix data is distributed
+ 		[7:t4004f]  among several processors.  The Toeplitz matrix is
+ 		[7:t4004f]  symmetric with the first row being the row
+ 		[7:t4004f]  vector [1 2 ... n].
+ 		[7:t4004f]
+ 		[7:t4004f]        --> Using 3 processors <--
+ 		[7:t4004f]
+ 		[7:t4004f]  The 1-Norm is 5050
+ 		[7:t4004f]  ( Should be the sum of the integers from 1 to 100 )
+ 		[7:t4004f]  The product of column 1 is 9.33262e+157
+ 		[7:t4004f]  ( Should be 100 factorial)
+
+ 	MPP Notes:
+ 		MPPs need host versions of programs run from the shell.
+ 		These are the targets gexampleh, fgexampleh.
+ 		
+ 			% aimk gexampleh fgexampleh
+ 			% gexampleh
+
+ ***********************************************************************
+ ***********************************************************************
+
+ The executables are placed in pvm3/bin/ARCH.
+
+ Step 1)
+
+ Start PVM
+ Start up PVM by typing
+     pvm  [hostfile]
+ This console allows the user to add/delete hosts if desired.
+
+ Step 2) Run the desired example
+
+ Step 3) Stop PVM
+ When the user is through with the virtual machine
+ PVM can be shut down by giving 'halt' command to PVM console.
+     pvm> halt
+

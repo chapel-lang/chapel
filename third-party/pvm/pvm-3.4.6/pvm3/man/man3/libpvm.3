@@ -1,0 +1,196 @@
+.\" $Id: libpvm.3,v 1.1 1996/09/23 22:00:02 pvmsrc Exp $
+.TH LIBPVM 3PVM "27 June, 1994" "" "PVM Version 3.4"
+.SH NAME
+libpvm3.a, libfpvm3.a \- PVM C and Fortran programming libraries
+
+.SH DESCRIPTION
+
+All PVM applications must be linked with the libpvm library to allow them
+to communicate with other entities in the PVM system.
+The base library (libpvm3.a) is
+written in C and
+directly supports C and C++ applications.
+The Fortran library (libfpvm3.a) consists of wrapper functions to
+convert Fortran calling sequences to C.
+
+Applications written in C
+must be linked with at least the base PVM library, libpvm3.a.
+Fortran applications must be linked with both libfpvm3.a and libpvm3.a.
+On some operating systems,
+PVM programs must be linked with
+other vendor-provided libraries
+(containing for example, socket or XDR functions).
+
+Programs that use group functions
+must also be linked with libgpvm3.a.
+
+.SH SUBROUTINES
+The libpvm subroutines can be divided into roughly five classes:
+
+.IP Message\ Passing
+pvm_bufinfo,
+pvm_freebuf,
+pvm_getrbuf,
+pvm_getsbuf,
+pvm_initsend,
+pvm_mcast,
+pvm_mkbuf,
+pvm_nrecv,
+pvm_pack,
+pvm_precv,
+pvm_probe,
+pvm_psend,
+pvm_recv,
+pvm_recvf,
+pvm_send,
+pvm_sendsig,
+pvm_setmwid,
+pvm_setrbuf,
+pvm_setsbuf,
+pvm_trecv,
+pvm_unpack
+.IP Task\ Control
+pvm_exit,
+pvm_kill,
+pvm_mytid,
+pvm_parent,
+pvm_pstat,
+pvm_spawn,
+pvm_tasks
+.IP Group\ Library\ Functions
+pvm_barrier,
+pvm_bcast,
+pvm_gather,
+pvm_getinst,
+pvm_gettid,
+pvm_gsize,
+pvm_joingroup,
+pvm_lvgroup,
+pvm_reduce,
+pvm_scatter
+.IP Virtual\ Machine\ Control
+pvm_addhosts,
+pvm_config,
+pvm_delhosts,
+pvm_halt,
+pvm_mstat,
+pvm_reg_hoster,
+pvm_reg_rm,
+pvm_reg_tasker,
+pvm_start_pvmd
+.IP Miscellaneous
+pvm_archcode,
+pvm_catchout,
+pvm_getopt,
+pvm_hostsync,
+pvm_notify,
+pvm_perror,
+pvm_setopt,
+pvm_settmask,
+pvm_tidtohost
+.PP
+
+
+.SH ERRORS
+On success, most libpvm functions return the constant PvmOk.
+The following error conditions can be returned by libpvm functions:
+
+.IP PvmAlready
+The requested operation requires exclusive access,
+and another was already in progress.
+.IP PvmBadMsg
+The received messages has a data format native to another machine,
+which cannot be decoded by libpvm.
+.IP PvmBadParam
+A bad parameter was passed to the function.
+.IP PvmBadVersion
+Two PVM components (pvmd and task, two pvmds or two tasks) have
+incompatible protocol versions and cannot interoperate.
+Version mismatch
+.IP PvmCantStart
+A pvmd could not be started on the local host,
+or a slave pvmd could not be started on a remote host.
+.IP PvmDSysErr
+Some internal mechanism in the pvmd failed during the requested operation.
+.IP PvmDupEntry
+The class server already has an entry matching the insert request.
+[In Version 3.4: Relaced by PvmExists]
+.IP PvmDupGroup
+The task has already a member of the group it attempted to join.
+.IP PvmDupHost
+An attempt was made to add the same host to a virtual machine more than
+once,
+or to add a host already a member of another virtual machine owned by
+the same user.
+.IP PvmDenied
+Operation is refused due to locking, permissions, etc.
+.IP PvmExists
+There is already an entry matching the insert request.
+.IP PvmHostFail
+A foreign host in the virtual machine failed during the requested operation.
+.IP PvmMismatch
+A parameter does not match a corresponding one.
+.IP PvmNoBuf
+There is no current message buffer to pack or unpack.
+.IP PvmNoData
+The end of a message buffer was reached while trying to unpack data.
+.IP PvmNoEntry
+The class server has no entry matching the lookup request.
+.br
+[In Version 3.4: Relaced by PvmNotFound]
+.IP PvmNoFile
+The named executable does not exist.
+.IP PvmNoGroup
+The named group does not exist.
+.IP PvmNoHost
+There is no host in the virtual machine with the given name,
+or the name could not be resolved to an address.
+.IP PvmNoInst
+The named group has no member with this instance.
+.IP PvmNoMem
+Malloc failed to get memory for libpvm.
+.IP PvmNoParent
+This task has no parent task.
+.IP PvmNoSuchBuf
+There is no message buffer with the given buffer handle.
+.IP PvmNoTask
+No task exists with the given tid.
+.IP PvmNotFound
+No entry matching the lookup request was found.
+.IP PvmNotImpl
+This libpvm function or option is not implemented.
+.IP PvmNotInGroup
+The named group has no such member task.
+.IP PvmNullGroup
+A null group name was passed to a function.
+.IP PvmOutOfRes
+The requested operation could not be completed due to lack of resources.
+.IP PvmOverflow
+A value is too large to be packed or unpacked.
+.IP PvmSysErr
+Libpvm could not contact a pvmd on the local host,
+or the pvmd failed during an operation.
+.PP
+
+.SH FILES
+.IP $PVM_ROOT/include/fpvm3.h
+Fortran header file
+.IP $PVM_ROOT/include/pvm3.h
+C header file
+.IP $PVM_ROOT/include/pvmsdpro.h
+Header file for tasker, hoster and resource manager tasks
+.IP $PVM_ROOT/include/pvmtev.h
+Header file for tasks manipulating trace events
+.IP $PVM_ROOT/lib/$PVM_ARCH/libpvm3.a
+C (base) library
+.IP $PVM_ROOT/lib/$PVM_ARCH/libfpvm3.a
+Fortran wrapper library
+.IP $PVM_ROOT/lib/$PVM_ARCH/libgpvm3.a
+Group function library
+.PP
+
+.SH SEE ALSO
+aimk(1PVM),
+pvm(1PVM),
+pvm_intro(1PVM),
+pvmd3(1PVM)

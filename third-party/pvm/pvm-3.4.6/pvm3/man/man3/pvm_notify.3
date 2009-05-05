@@ -1,0 +1,127 @@
+.\" $Id: pvm_notify.3,v 1.2 2001/09/06 14:21:31 pvmsrc Exp $
+.TH NOTIFY 3PVM "31 January, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_notify \- Request notification of PVM event such as host failure.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_notify( int what, int msgtag, int cnt, int *tids )
+.br
+
+Fortran	call pvmfnotify( what, msgtag, cnt, tids, info )
+.fi
+
+.SH PARAMETERS
+.IP what 0.8i
+Type of event to trigger the notification.
+Presently one of:
+.ta 0.5i 2.5i
+.nf
+	Value	Meaning
+	PvmTaskExit	Task exits or is killed
+	PvmHostDelete	Host is deleted or crashes
+	PvmHostAdd	New host is added
+.fi
+.IP msgtag
+Message tag to be used in notification.
+.br
+.IP cnt
+For \fIPvmTaskExit\fR and \fIPvmHostDelete\fR,
+specifies the length of the \fItids\fR array.
+For \fIPvmHostAdd\fR,
+specifies the number of times to notify.
+.br
+.IP tids
+For \fIPvmTaskExit\fR and \fIPvmHostDelete\fR,
+an array of length
+.I cnt
+of task or pvmd TIDs to be notified about.
+The array is not used with the \fIPvmHostAdd\fR option.
+.br
+.IP info
+Integer status code returned by the routine.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_notify
+requests PVM to notify the caller on detecting certain events.
+One or more notify messages (see below)
+are sent by PVM back to the calling task.
+The messages have tag \fImsgtag\fR supplied to notify.
+
+The notification messages have the following format:
+.IP PvmTaskExit
+One notify message for each TID requested.
+The message body contains a single TID of exited task.
+.sp
+.IP PvmHostDelete
+One notify message for each TID requested.
+The message body contains a single pvmd-TID of exited pvmd.
+.sp
+.IP PvmHostAdd
+\fIcnt\fR notify messages are sent,
+one each time the local pvmd's host table is updated.
+The message body contains an integer length followed by a list of
+pvmd-TIDs of new pvmds.
+The counter of \fIPvmHostAdd\fR messages yet to be sent is
+replaced by successive calls to \fIpvm_notify\fR.
+Specifying a \fIcnt\fR
+of -1 turns on \fIPvmHostAdd\fR messages until a future notify;
+a count
+of zero disables them.
+.PP
+TIDs in the notify messages are packed as integers.
+.PP
+The calling task is responsible for receiving messages
+with the specified tag and taking appropriate action.
+.PP
+Future versions of PVM may expand the list of available
+notification events.
+
+.SH EXAMPLES
+.nf
+C:
+	info = pvm_notify( PvmTaskExit, 9999, ntask, tids );
+.sp
+Fortran:
+	CALL PVMFNOTIFY( PVMHOSTDELETE, 1111, NUMHOSTS, DTIDS, INFO )
+.fi
+
+.PP
+To "cancel" a notify request in PVM, the
+.I pvm_notify
+routine can be re-invoked with an additional
+.I PvmNotifyCancel
+flag in the
+.I what
+argument.
+The remaining arguments to this cancelling invocation must
+match the original invocation exactly, aside from the additional
+.I PvmNotifyCancel
+which can be added(+) or OR-ed(|) to the
+.I what
+argument:
+
+.nf
+	pvm_notify( PvmTaskExit, 9999, ntask, tids );
+
+	. . .
+
+	pvm_notify( PvmTaskExit | PvmNotifyCancel, 9999, ntask, tids );
+.fi
+
+Note that when a notify is cancelled, the notify message
+is \fIdelivered\fR, as if the given event (i.e. task exit,
+host add or delete) had occurred.
+
+.SH ERRORS
+.IP PvmSysErr
+pvmd not responding.
+.IP PvmBadParam
+giving an invalid argument value.
+.PP
+.SH SEE ALSO
+pvm_tasks(3PVM),
+pvm_config(3PVM)

@@ -1,0 +1,38 @@
+
+Xhoster
+09 Oct 1995
+
+________________________________________________________________________
+
+This is a little X-Windows program that enrolls as the hoster task,
+giving the user a convenient place to type passwords when starting
+hosts that require them.  It also logs problems related to startup,
+for help in debugging.
+
+To build it, type "xmkmf" then "aimk" in this directory, and install
+it wherever you want, f.e. $PVM_ROOT/lib/$PVM_ARCH/xhoster.
+
+Suggested X defaults to make it look less ugly would be:
+
+    xhoster*background: antiquewhite3
+    xhoster*font: -*-helvetica-medium-r-normal--14-100-*-*-p-*-*-*
+    xhoster.geometry: 700x300
+
+The xhoster can be attached and detached without shutting down the
+pvmds.
+
+-b
+
+------------------------------------------------------------------------
+August 19, 1999
+
+The hoster protocols have changed enough in PVM 3.4.2 that this
+xhoster no longer works.  Consider this source code a template
+for constructing a X-Windows hoster program, and refer to the
+text-based hoster in pvm3/hoster for assiatance in constructing
+your own hoster.
+
+All the Best,
+
+	Jimbo
+------------------------------------------------------------------------

@@ -1,0 +1,73 @@
+.\" $Id: pvm_getopt.3,v 1.2 2000/02/11 22:28:06 pvmsrc Exp $
+.TH GETOPT 3PVM "4 April, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_getopt \- Returns the value of libpvm options.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int val = pvm_getopt( int what )
+.br
+
+Fortran	call pvmfgetopt( what, val )
+.fi
+
+.SH PARAMETERS
+.IP what 0.8i
+Integer defining option to get.
+One of:
+.nf
+PvmRoute              1    Message routing policy
+PvmDebugMask          2    Libpvm debug mask
+PvmAutoErr            3    Auto error reporting
+PvmOutputTid          4    Stdout destination for children
+PvmOutputCode         5    Output message tag for children
+PvmTraceTid           6    Trace data destination for children
+PvmTraceCode          7    Trace message tag for children
+PvmTraceBuffer        8    Trace buffer size for children
+PvmTraceOptions       9    Trace collection options for children
+PvmFragSize          10    Message fragment size
+PvmResvTids          11    Allow messages to reserved tags and TIDs
+PvmSelfOutputTid     12    Stdout destination
+PvmSelfOutputCode    13    Output message tag
+PvmSelfTraceTid      14    Trace data destination
+PvmSelfTraceCode     15    Trace message tag
+PvmSelfTraceBuffer   16    Trace buffer size
+PvmSelfTraceOptions  17    Trace collection options
+PvmShowTids          18    pvm_catchout prints task ids with output
+PvmPollType          19    Message wait policy (shared memory)
+PvmPollTime          20    Message spinwait duration
+PvmOutputContext     21    Output message context for children
+PvmTraceContext      22    Trace message context for children
+PvmSelfOutputContext 23    Output message context
+PvmSelfTraceContext  24    Trace message context
+PvmNoReset           25    Do not kill task on reset
+.fi
+.br
+.IP val
+Integer returning the value of the option.
+
+.SH DESCRIPTION
+The routine
+.I pvm_getopt
+returns the value of the specified option in PVM.
+For a discussion of options and values,
+see \fIpvm_setopt\fR.
+
+If an error occurs,
+the PVM error code is returned in place of the option value.
+
+.SH EXAMPLES
+.nf
+C:
+	val = pvm_getopt( PvmFragSize );
+Fortran:
+	CALL PVMFGETOPT( PVMAUTOERR, VAL )
+
+.SH ERRORS
+This error condition can be returned
+.IP PvmBadParam
+giving an invalid value.
+.PP
+.SH SEE ALSO
+pvm_setopt(3PVM)

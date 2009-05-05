@@ -1,0 +1,67 @@
+.\" $Id: pvm_mytid.3,v 1.1 1996/09/23 22:05:23 pvmsrc Exp $
+.TH MYTID 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_mytid \- Returns the \fItid\fR of the calling process.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int tid = pvm_mytid( void )
+.br
+
+Fortran	call pvmfmytid( tid )
+.fi
+
+.SH PARAMETERS
+.IP tid 0.8i
+Integer returning the task identifier of the calling PVM process.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_mytid
+enrolls this process
+into PVM on its first call. It also generates a unique
+.I tid
+if this process was not created by pvm_spawn.
+pvm_mytid returns the
+.I tid
+of the calling process
+and can be called multiple times in an application.
+.PP
+Any PVM system call (not just pvm_mytid) will enroll a task in PVM
+if the task is not enrolled before the call.
+.PP
+The tid is a 32 bit positive integer created by the local pvmd.
+The 32 bits are divided into fields that encode various
+information about this process such as its location in
+the virtual machine (i.e. local pvmd address),
+the CPU number in the case where the process is on
+a multiprocessor, and a process ID field. This information
+is used by PVM and is not expected to be used by applications.
+Applications should not attempt to predict or interpret the tid with
+the exception of calling tidtohost()
+.PP
+If PVM has not been started before an application calls pvm_mytid
+the returned
+.I tid
+will be < 0.
+
+.SH EXAMPLES
+.nf
+C:
+	tid = pvm_mytid( );
+.sp
+Fortran:
+	CALL PVMFMYTID( TID )
+.fi
+
+.SH ERRORS
+This error condition can be returned by
+.I pvm_mytid
+.IP PvmSysErr
+pvmd not responding.
+.PP
+.SH SEE ALSO
+pvm_tidtohost(3PVM),
+pvm_parent(3PVM)

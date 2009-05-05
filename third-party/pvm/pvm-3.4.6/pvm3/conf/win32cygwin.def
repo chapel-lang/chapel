@@ -1,0 +1,25 @@
+#*****************************************************************************#
+# 
+# Definitions
+# for cygwin.mak files
+#
+#*****************************************************************************#
+
+PVM_ARCH = CYGWIN
+
+LINK_FLAGS = 
+LINK_MULTITHREAD =  
+
+ARCHCFLAGS = -DCYGWIN -DHASSTDLIB -DSYSVBFUNC -DNOTMPNAM \
+ -DSYSVSTR -DNOGETDTBLSIZ -DNOUNIXDOM -DNOREXEC -DFDSETNOTSTRUCT \
+ -DNEEDSFFS -DSTDC_HEADERS -DRSHCOMMAND=\"rsh\" \
+ -DNO_NETINET_TCP_H -DUSESTRERROR -DSYSVSIGNAL -DNOWAIT3
+# if available -DHASREADLINE
+
+LIB = $(PVM_ROOT_U)/lib/$(PVM_ARCH)/libpvm3.a
+GLIB = $(PVM_ROOT_U)/lib/$(PVM_ARCH)/libgpvm3.a
+
+CFLAGS = -c $(ARCHCFLAGS) -I$(PVM_ROOT_U)/include -I$(PVM_ROOT_U)/src \
+	  -I$(PVM_ROOT_U)/tracer 
+
+CDEBUG = -g -O

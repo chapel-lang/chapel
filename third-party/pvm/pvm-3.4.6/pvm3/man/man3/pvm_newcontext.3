@@ -1,0 +1,115 @@
+.\" $Id: pvm_newcontext.3,v 1.3 2004/11/29 18:57:08 pvmsrc Exp $
+.TH CONTEXT 3PVM "8 April, 1997" "" "PVM Version 3.4"
+.SH NAME
+pvm_newcontext, pvm_setcontext, pvm_freecontext, pvm_getcontext
+\- Request new context, change context, free existing context,
+and get current context, respectively.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int ctx = pvm_newcontext( void )
+.br
+	int old_ctx = pvm_setcontext( int new_ctx )
+.br
+	int info = pvm_freecontext( ctx )
+.br
+	int ctx = pvm_getcontext( void )
+.br
+
+Fortran
+.br
+	call pvmfnewcontext( ctx )
+.br
+	call pvmfsetcontext( new_ctx, old_ctx )
+.br
+	call pvmffreecontext( ctx, info )
+.br
+	call pvmfgetcontext( ctx )
+.br
+.fi
+
+.SH PARAMETERS
+.IP ctx
+.br
+Context value.
+.IP new_ctx
+.br
+New context value.
+.IP old_ctx
+.br
+Prior context value.
+.IP info
+.br
+Result code.
+
+.SH DESCRIPTION
+The context functions provide a system-wide unique context and
+the means to manipulate this context.
+
+Contexts provide the ability for communicating tasks to automatically
+differentiate messages by the context in which they were sent.
+Thus a message sent in context A by the sender must be received
+in context A by the recipient.  A sender may send in any context.
+However, a recipient will not accept a message sent in a context 
+that differs from its own.
+
+One such use of contexts is with library routines.  Using contexts,
+library routine inter-communication may be logically seperated from the 
+user's application inter-communication. This will prevent the inadvertent
+receipt of one another's messages.
+
+Spawned tasks inherit the spawn-time context of their parent.
+Existing PVM applications work unchanged using the default context.
+
+pvm_newcontext returns a newly allocated context.
+However, this new context is not yet active.
+
+pvm_setcontext changes the current context from 
+\fIold_ctx\fR to \fInew_ctx\fR.
+
+pvm_freecontext frees \fIctx\fR so that it may be reused.
+Contexts are a system resource that will be exhausted if not recycled.
+
+pvm_getcontext returns the current context of the requesting task.
+
+
+.SH EXAMPLES
+.nf
+/* parent task with context */
+	int cc, context0, context1;
+	char buf[25];
+
+	context0 = pvm_getcontext();		/*  get my current context */
+	context1 = pvm_newcontext();		/*  get a new context */
+	pvm_setcontext(context1);		/*  set my context to new context */
+	printf("My context is: %d", context1);
+	pvm_spawn("child", (char**)0, PvmTaskDefault, "", 1, &tid);
+	cc = pvm_recv(-1, -1);			/*  receive message from child - in context1 */
+	pvm_upkstr(buf);
+	printf("%s", buf);
+	pvm_setcontext(context0);		/*  reset my context to my original context0 */
+
+
+
+/* child task with context - child inherits parent's context as default */
+	int context;
+	int ptid;
+	char buf[25];
+
+	ptid = pvm_parent();
+	context = pvm_getcontext();		/*  get my current context */
+	sprintf(buf, "Greetings from child who's context is: %d.", context);
+	pvm_initsend(PvmDataDefault);
+	pvm_pkstr(buf);
+	pvm_send(ptid, 1);
+
+
+.fi
+
+.SH ERRORS
+Only system resource errors will be returned as the context
+programs themselves do not generate errors.
+.PP
+.SH SEE ALSO
+

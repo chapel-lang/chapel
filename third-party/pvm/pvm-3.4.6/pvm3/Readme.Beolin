@@ -1,0 +1,141 @@
+
+This readme file describes the BEOLIN (Beowulf LINUX) port of PVM.
+
+PURPOSE:
+
+Some Beowulf clusters are designed so that not all nodes are visible
+to the external world.  In these cases, there is often a "front end"
+node which connects to the world, and the rest of the nodes are on an
+internal network.  This has the disadvantage for PVM users running
+on an outside computer who want to add the Beowulf computer to their
+configuration:  the PVM code on their computer will be unable to
+communicate with the Beowulf nodes on the internal network.
+
+The BEOLIN port of PVM solves this problem by making the parallelism
+of the Beowulf computer transparent to the user.  This is done in a
+way similar to the MPP ports of PVM for parallel computers such as
+the IBM SP2, Cray T3D and others.
+
+ARCHITECTURE:
+
+This port generates a single copy of the PVM daemon (pvmd).  The daemon
+spawns tasks onto other processors which are selected based on the
+contents of the PROC_LIST environment variable (see below), with each
+task going onto a separate processor.  Initially each task communicates
+with the PVM daemon using what is assumed to be a shared files system,
+in the /tmps directory.  Each task then sets up sockets to communicate
+with the daemon and with each other.  To avoid communication bottlenecks
+through the daemon, it is strongly recommended that the PvmRoute option
+be set to PvmRouteDirect in your PVM applications using the pvm_setopt()
+library call (see the man page for pvm_setopt).  It should be noted that
+this single daemon approach works equally well on a cluster where nodes
+do have externally visible IP addresses.  This would be useful on any
+group of machines where only a single copy of the pvmd is desired.
+
+For each task the daemon initiates, it forks a process which in turn
+executes an rsh to initiate the task on a cluster host.  Each forked
+process shows up in the task list, as <taskname>.host.  The forked
+process takes care of certain communications to and from the task,
+such as standard I/O.
+
+If a group server is started by a Beowulf task, it will be run on
+the same master node which is running the Beowulf PVM daemon.
+
+INSTALLATION NOTES:
+
+To select this Beowulf port when compiling PVM, the PVM_ARCH flag should
+first be manually set to "BEOLIN" in your $HOME/.cshrc (or equivalent)
+shell startup file.
+
+The /tmps directory must be a shared file system among all the Beowulf
+processors which will be involved in running PVM tasks.  If a different
+shared directory is desired, this can be set using the new PVM_TMP
+environment variable, as is now possible with all standard PVM
+architectures.
+
+This distribution is shipped by default with the compile flag -DNOPROT
+added to the ARCHCFLAGS define in the pvm3/conf/BEOLIN.def configuration
+file.  This turns off security checking between the pvmd and a task
+when the task initiates the connection process.  It has been turned off
+because of NFS performance problems over a shared file system.  If you
+want to turn authentication protection back on, and don't mind the wait
+(approximately 15 seconds per check), then the -DNOPROT flag should be
+removed from the ARCHCFLAGS define and PVM should be recompiled.
+
+The front-end node of a Beowulf system which provides access to the
+internal network will have two IP addresses:  one registered address
+visible to the outside world and one internal address visible only to
+the other nodes in the cluster.  The gethostname() function, when run
+on this front-end node, must return the host name which is recognized
+by the other nodes in the cluster, in order for them to communicate
+with the pvmd daemon on the front end.  External hosts wishing to add
+the Beowulf cluster to a virtual machine will use the host name that
+maps to the registered external IP address.  (PVM resolves multiple
+network (IP) addresses using the host names associated with each
+address on a given system, as typically specified in the /etc/hosts
+file.)
+
+RUNNING:
+
+The desired processors on the internal network should appear in the
+environment variable PROC_LIST, as a list of host names separated by
+colons.  For example, on our internal network, the processors are named
+beginning with the letter 'h' followed by the processor number.  So
+in my $HOME/.cshrc file I might have the statement:
+
+	setenv PROC_LIST h11:h12:h13:h14
+
+This would allow PVM tasks to be spawned onto h11-14, a total of 4
+processors.  Any additional spawns beyond the first 4 would result
+in an error message, unless the earlier tasks completed before the
+new spawns occurred.
+
+Remember, when you use this version of PVM you don't add the nodes
+individually--just do a spawn, and PVM will automatically spawn to the
+nodes in your PROC_LIST variable.
+
+KNOWN BUGS:
+
+Signals don't seem to propagate from the daemon to a task.  LINUX
+claims that signals will be communicated across an rsh connection,
+but this doesn't work for me.
+
+SUPPORT:
+
+There is no formal support for this product, but if you find a bug
+or have a question about it, I'll do what I can.  Send email to Paul
+Springer at the Jet Propulsion Laboratory, Paul.Springer@jpl.nasa.gov.
+
+Legal Notice (for the Beolin code only):
+
+************************************************************************ 
+Caltech has designated this Software as Technology and Software Publicly
+Available ("TSPA"), which means that this software is publicly
+available under U.S. Export Laws.
+
+THIS SOFTWARE AND ANY RELATED MATERIALS WERE CREATED BY THE CALIFORNIA
+INSTITUTE OF TECHNOLOGY (CALTECH) UNDER A U.S. GOVERNMENT CONTRACT WITH
+THE NATIONAL AERONAUTICS AND SPACE ADMINISTRATION (NASA). THE SOFTWARE
+IS TECHNOLOGY AND SOFTWARE PUBLICLY AVAILABLE UNDER U.S. EXPORT LAWS AND
+IS PROVIDED "AS-IS" TO THE RECIPIENT WITHOUT WARRANTY OF ANY
+KIND, INCLUDING ANY WARRANTIES OF PERFORMANCE OR MERCHANTABILITY OR
+FITNESS FOR A PARTICULAR USE OR PURPOSE (AS SET FORTH IN UNITED STATES
+UCC§2312-§2313) OR FOR ANY PURPOSE WHATSOEVER, FOR THE SOFTWARE AND
+RELATED MATERIALS, HOWEVER USED.
+
+IN NO EVENT SHALL CALTECH, ITS JET PROPULSION LABORATORY, OR NASA BE
+LIABLE FOR ANY DAMAGES AND/OR COSTS, INCLUDING, BUT NOT LIMITED TO,
+INCIDENTAL OR CONSEQUENTIAL DAMAGES OF ANY KIND, INCLUDING ECONOMIC
+DAMAGE OR INJURY TO PROPERTY AND LOST PROFITS, REGARDLESS OF WHETHER
+CALTECH, JPL, OR NASA BE ADVISED, HAVE REASON TO KNOW, OR, IN FACT,
+SHALL KNOW OF THE POSSIBILITY.
+
+RECIPIENT BEARS ALL RISK RELATING TO QUALITY AND PERFORMANCE OF THE
+SOFTWARE AND ANY RELATED MATERIALS, AND AGREES TO INDEMNIFY CALTECH AND
+NASA FOR ALL THIRD-PARTY CLAIMS RESULTING FROM THE ACTIONS OF RECIPIENT
+IN THE USE OF THE SOFTWARE.
+
+**************************************************************************
+
+
+

@@ -1,0 +1,129 @@
+.\" $Id: pvm_shmd.1,v 1.2 2004/02/17 17:53:05 pvmsrc Exp $
+.TH PVM_SHMD 1PVM "11 March, 1999" "G.E.Fagg" "PVM Version 3.4"
+.SH NAME
+pvm_shmd \- PVM shared memory (2) daemon
+.SH SYNOPSIS
+.ft B
+pvm_shmd
+[
+\-options
+]
+[
+hostfile
+]
+.ft R
+.SH DESCRIPTION
+.I Pvm_shmd
+is a daemon process which maintains and handles the usage of shared memory
+resources (memory segments, semaphores, message queues) on a particular PVM
+host.
+One \fIpvm_shmd\fR must run on each host in a virtual machine that wants to 
+use the shmd shared memory message passing layer. The \fIshmd\fR message
+passing layer allows local processes to a host to use shared memory for
+message passing on that host ONLY. See the shmd directory README for further
+notes and restrictions.
+
+The daemon can be started manually as with any other PVM task. 
+Only one \fIpvm_shmd\fR can be active per host. If the \fIpvm_shmd\fR
+detects another \fIpvm_shmd\fR it will shutdown.
+
+The \fIpvm_shmd\fR can be killed from the PVM console by using the reset
+command.
+Local and remote pvm_shmds can also be started from the PVM console
+program \fIpvm\fR.
+
+The name of the daemon executable is \fIpvm_shmd\fR.
+
+.SH Shared Resource Usage
+The \fIpvm_shmd\fR will attempt to create upto \fIMAXSEG\fR shared memory
+segments of upto \fIMAXPAGES\fR memory pages in size. The size of each memory
+page is architecture dependent(see getpagesize(3C)). 
+The segments are then numbered 0..N-1 where N is the number of segments created.
+The first segement (0) has the shared memory control structure placed in its
+head. This structure allows alien processes to located the other shared memory
+segments and any required controlling information.
+
+The message passing layer, allocates memory from these segments asynchronously
+without any interaction with the \fIpvm_shmd\fR using semaphores to protect
+data during updates to any associated structures. 
+For each segment there is an associated page map of which processes have
+currently locked a page. Each page map for a segment has a separate semaphore
+protecting it. The semaphores are accessed with the SEM_UNDO flag set so that
+if a process holding a semaphore should die, the OS (should) reset the
+semaphore automatically, thus allowing any waiting/blocked processes to
+continue.
+
+The \fIpvm_shmd\fR only
+maintains the segments and their allocation page map(s).
+Thus if a process allocated pages in a segment and then exits, it is the 
+\fIpvm_shmd\fR that detects this and then frees the allocated pages.
+
+The \fIpvm_shmd\fR can have its status checked at any time by using the 
+\fIpvm_shmd_stat\fR process to kick it into reporting onto either stdio or the
+pvm log file (pvml.uid) its internal state.
+
+The shared memory and all associated processes can be cleared by sending the 
+\fIpvm_shmd\fR a HUP signal.
+
+Sending the \fIpvm_shmd\fR a TERM signal will just cause it to clear any shared
+resources and then exit.
+
+The \fIpvm_shmd\fR cannot catch the KILL signal.
+
+If the \fIpvm_shmd\fR is killed without clearing all of its shared resources
+these can be cleared by calling \fIipcfree\fR which resides in the pvm3/lib
+directory.
+.PP
+
+.SH Message Passing using SHMD
+The \fIpvm_shmd\fR handles resources that are used by special versions of 
+pvm_psend() and pvm_precv() stored in the libpvmshmd.a library. Thus to use
+these facilities, applications have to link to this library instead of the
+usual libpvm3.a library.
+.PP
+
+.SH OPTIONS
+The following options may be specified on the command line when
+starting the pvm_shmd:
+.TP 8
+-debug=\fIlevel\fR
+Sets the \fIpvm_shmd\fR debug level.
+Used to debug the pvm_shmd or libpvmshmd (not intended to be used to debug
+application programs).
+.PP
+.TP 8
+-maxsegs=\fImaxsegs\fR
+Sets the maximum number of segments that the \fIpvm_shmd\fR can create. This is
+used to over-ride the compiled in value from shmd.h. Note that the value cannot
+be above the MAXSEGS in the shmd.h file.
+.TP 8
+-maxpages=\fImaxpages\fR
+Sets the maximum segment size to \fImaxpages\fR pages of memory. This value
+cannot be above the compiled value MAXPAGES in shmd.h or the actual OS defined
+limit.
+
+.SH NOTES
+Remember that \fIpvm_shmd\fR allocated memory from the VM available on the
+machine. Allocating more segements improves performance as there is less
+sharing of segments (semaphores for their page maps). Although you must
+remember to leave some memory available for normal program and OS system
+usage, as the \fIpvm_shmd\fR allocated memory is *ONLY* used for message
+passing.
+.SH FILES
+.ta 4 40
+.nf
+  $PVM_ROOT/lib/$PVM_ARCH/pvm_shmd PVM shared memory daemon executable
+  $PVM_ROOT/shmd/shmd.h Shared Memory hard limits header file
+  /tmp/pvml.\fIuid\fR Pvmd runtime error log
+.fi
+
+.SH SEE ALSO
+pvm(1PVM),
+pvmd(1PVM),
+getpagesize(3C),
+ipcs(1),
+msgctl(2),
+semctl(2),
+shmctl(2),
+signal(5)
+

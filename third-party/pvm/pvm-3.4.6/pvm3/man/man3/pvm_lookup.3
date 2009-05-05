@@ -1,0 +1,48 @@
+.\" $Id: pvm_lookup.3,v 1.2 1996/10/08 18:33:37 pvmsrc Exp $
+.TH LOOKUP 3PVM "27 June, 1994" "" "PVM Version 3.4"
+.SH NAME
+pvm_lookup \- retrieve data from pvmd database
+.br
+[In Version 3.4: Relaced by pvm_getinfo]
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int cc = pvm_lookup( char *name, int index, int *data )
+.br
+
+Fortran	Not available
+.fi
+
+.SH PARAMETERS
+.IP name 0.8i
+The class name, a null-terminated string.
+.IP index 0.8i
+The class index, >= 0 or -1 for first available.
+.IP data 0.8i
+Returns the data stored in the <name, index> entry.
+
+.SH DESCRIPTION
+See pvm_insert(3PVM) for a description of this database.
+
+\fIpvm_lookup\fR
+retrieves data stored in the location given by <name, index>.
+If index is -1,
+the data stored at the first existing index in the named class
+is returned.
+
+.\".SH EXAMPLES
+
+.SH ERRORS
+If successful, pvm_lookup returns the index at which the data was stored
+(>= 0),
+otherwise it returns a negative error code:
+.IP PvmBadParam
+giving an invalid argument value.
+.IP PvmNoEntry
+the requested <name, index> pair does not exist.
+.PP
+.SH SEE ALSO
+pvm_delete(3PVM),
+pvm_insert(3PVM)
+

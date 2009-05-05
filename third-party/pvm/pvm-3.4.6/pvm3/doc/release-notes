@@ -1,0 +1,367 @@
+
+------------------------------------------------------------------------
+
+                PVM Version 3.4.6 is Available on Netlib
+                              2 February 2009
+
+------------------------------------------------------------------------
+
+The latest PVM release 3.4.6 is mainly bug fixes and additional
+support for varying Linux distributions and gcc updates, and of
+course yet-more-better-64-bit support.  While there's a variety
+of other little tweaks, there are no significant changes or
+additions to the basic functionality.
+
+Some specifics:
+
+* The biggest thing has probably been plugging up various holes
+relating to file security, at the behest of several concerned
+users - there are no more fopen()'s for writing/appending
+temporary files in PVM, it's all popen() or open()'s with O_EXCL
+now, to protect you and yours.  :-)
+
+* An updated version of the BEOLIN architecture port has been
+included, straight from Paul Springer <pls@jpl.nasa.gov>.
+
+* Fixed long-standing console output error.
+
+* Added check to prevent users running PVM as "root" - just
+not a good idea...  :-)
+
+* Header Files: Fixed annoyingly omitted "pvmtev.h" header #includes
+that caused "global.h" usage to raise compiler warnings...  :-b
+Also added some now-standard system headers, like <unistd.h> and
+<stdlib.h>, where appropriate...  Added some <string.h> #includes
+(or <strings.h> depending on your flavor :-).
+
+* Added support for building "shared" libraries for PVM...! Yay! :-D
+Just run "make shared" at the top level directory (pvm3/).
+Also, see the SHAREDCFLAGS and SHAREDLDFLAGS definitions,
+e.g. in pvm3/conf/LINUX.def, for customizing shared library
+build settings for other architectures.
+
+* Fixed typos/formatting in man pages.  That was fun.  :)
+
+* Added new pvm_strerror() function, submitted by Frank Sonntag
+<frank.sonntag@metservice.com>.  Fixed other goofy strerror() crap.
+
+* Added new HPIA64 arch, submitted by Max Zinal <MaxZinal@yandex.ru>.
+
+Anyway, it was just time to stop patching (+10!) and do a
+real release...  So here it is...!  :-D
+
+As Always, Enjoy...!  :D
+
+------------------------------------------------------------------------
+
+                PVM Version 3.4.5 is Available on Netlib
+                              8 September 2004
+
+------------------------------------------------------------------------
+
+The latest PVM release 3.4.5 is mainly bug fixes and additional
+support for varying Linux distributions and some better 64-bit
+Linux/AMD support (like it doesn't seg fault any more :-).
+Added strerror() support instead of old crusty global vars.
+New architectures were added for AIX5*.  Fixed hilarious bug
+in pvmtmpnam(), caused crash after 10,000 spawns...  :-D
+While there's a variety of little tweaks, there are no significant
+changes or additions to the basic functionality.
+
+------------------------------------------------------------------------
+
+                PVM Version 3.4.4 is Available on Netlib
+                              28 September 2001
+
+------------------------------------------------------------------------
+
+There are many bug fixes and a couple new features included in the
+Version 3.4.4 release.  Most of these are not significant, unless
+you are running on some of the less common architectures which may
+now be supported!  :-)
+
+* One new feature in PVM 3.4.4 is the concept of a "Virtual Machine ID".
+  You can now set the PVM_VMID environment variable to an arbitrary
+  string (or use the "id=" option in a host file), and this will
+  distinguish multiple virtual machines all running on the same set
+  of hosts under the same userid.  (This feature was originally
+  introduced by SGI in their commercial PVM product, and has now been
+  generalized for the public PVM system.)  This feature seems to be
+  something that people often want, and the PVM_VMID seems to be the
+  cleanest way to provide this functionality, rather than overloading
+  the SHAREDTMP and other internals.
+* Linux / gcc fixes:  got rid of many invasive new compiler
+  warnings, like "tmpnam() is dangerous" and some old
+  crusty varargs code.
+* Added some new archs, like DARWIN & MACOSX for Macs (huhuhuhuh),
+  CYGWIN, and BEOSCYLD, and updated some arches like FreeBSD systems.
+* Extended the syntax of the "where" argument in pvm_spawn()
+  to include a working directory, as in "foo.org:/home/joe".
+* Fixed direct routing bug that could result in deadlock,
+  also fixed (?) direct routing in WIN32.
+* Fixed bug to appropriately set message context around message
+  handler invocations.
+* Added use of new strerror() function in place of direct use of
+  sys_errlist/sys_nerr, for systems that don't grok that.
+* Minor WIN32 tweaks and bug fixes...
+
+Please see the notes in the "pvm_intro" and "pvmd3" man pages for more
+details.  Several other new environment variables are also documented
+there.
+
+------------------------------------------------------------------------
+
+                PVM Version 3.4.0 is Available on Netlib
+                              12 March 1999
+
+------------------------------------------------------------------------
+
+Besides bug fixes to 3.3, there are many new features in Version 3.4
+(see man pages for more details):
+
+  -------- Message Context --------
+
+* To allow more flexibility in organizing message tags sets, and
+  to provide support for "safe" libraries that will not inadvertently
+  intercept user messages, the concept of "message context" in PVM
+  has been introduced.  The context is an additional system-defined
+  message tag that each message carries, such that each given message
+  can only be sent or received within a single unique context.  For
+  example, all internal system messages in PVM now utilize a different
+  context than the base user application context, so that system
+  messages cannot be incorrectly received by the application.  The
+  user can determine the current context, create a new context,
+  set the current context and free message contexts using the new
+  routines pvm_getcontext(), pvm_newcontext(), pvm_setcontext() and
+  pvm_freecontext(), respectively (see man pages for details).  The
+  context itself is an integer value which can be packed into messages
+  and sent to cooperating tasks, or placed in a message mailbox (see
+  below) for client-service lookup.  By default, all tasks are spawned
+  in the same base context.
+
+  -------- Message Handlers --------
+
+* In the spirit of Active Messages, PVM now supports "message handlers"
+  for automatic processing of incoming messages.  The user can define
+  any number of message handler functions, each with a corresponding
+  (source, tag, context) tuple.  Then when a message matching a
+  particular tuple arrives at the local task, the user-specified
+  handler routine is automatically invoked to process the message. 
+  Within a message handler, the message can be unpacked and a simple
+  response message can be packed and sent (using pvm_send() only).
+  The new PVM routines for creating and deleting message handlers are
+  pvm_addmhf() and pvm_delmhf(), respectively (see man pages for
+  details).  Note that message handlers are only invoked when the
+  application is already executing a PVM messaging routine - handlers
+  cannot interrupt normal program execution.  Typically, message
+  handlers will trigger transparently during other communication,
+  but the user can specifically invoke them by calling pvm_probe()
+  or an equivalent function in a loop.
+
+  -------- Message Mailboxes --------
+
+* To provide a new means for name service that does not require the
+  PVM dynamic group server ("pvmgs"), a "message mailbox" mechanism
+  has been added to PVM 3.4.  Using this feature a user application
+  can post a message to a public mailbox which can subsequently be
+  "looked up" and retrieved by other independently spawned tasks in
+  the virtual machine.  Each mailbox is created using a specific
+  "class name" and can consist of either exactly one or many entries
+  for that given name.  When a task "looks up" a mailbox entry, it
+  receives back the message contained in it, to be unpacked and
+  processed as desired.  Mailboxes can be mutually exclusive, to
+  act as a locking mechanism for resources, and can be created as
+  "persistent" so that they will continue to exist after the owner
+  (or creator) task exits.  The new routines in PVM for creating,
+  retrieving and freeing message mailboxes are pvm_putinfo(),
+  pvm_recvinfo() and pvm_delinfo(), respectively, plus an additional
+  routine, pvm_getmboxinfo(), for obtaining a list of the currently-
+  defined class names (see man pages for details).
+
+  -------- Spawn Siblings --------
+
+* Often when designing SPMD programs, it is useful to know which tasks
+  were spawned together as a group.  This information can be used to 
+  form static groups for efficient group communication, or simply for
+  referencing other members of your own "spawn siblings".  The new
+  PVM call pvm_siblings() (see man page for details) returns a list
+  of integer task ids that corresponds to all the tasks that were
+  spawned together from a single pvm_spawn() call (or from the "pvm"
+  console).
+
+  -------- Tracing --------
+
+* Routines in libpvm and the group library have included built-in
+  tracing of calling parameter/results since PVM 3.3.  In PVM 3.4,
+  the tracing facility has been completely rewritten to be more
+  general, flexible and maintainable.  As a result, the tracing 
+  capabilities of PVM 3.4 have been expanded to support trace
+  buffering, several levels of tracing, and user-defined trace
+  events.  The graphical PVM interface, XPVM 1.2, has been rewritten
+  to use a new PVM library, libpvmtrc, and a new text-based trace
+  collection tool ("tracer") has been added to the standard PVM
+  distribution to allow easy trace file collection on systems where
+  X11 compilation is either difficult or impossible.  In addition,
+  the new tracing facility now supports "automatic" attachment to
+  trace collection programs, so that when tasks are independently
+  spawned, e.g. from the shell, their trace events will still
+  propagate to the proper trace tool (without any manual "attachment"
+  procedure).  Other various improvements have been applied to
+  specific trace events, e.g. pvm_send() events now carry the message
+  size information, allowing proper driving of XPVM's Message
+  Queue View (you will notice the difference in the message coloring
+  to indicate this added capability).  Upon re-compiling XPVM with
+  the new PVM 3.4 libraries (by clearing the defines for PVMVERSION
+  and PVMGLIB, and modifying TRCDIR to point to pvm3/tracer in the
+  file "xpvm/src/Makefile.aimk"), you will find additional options
+  on the "Tasks.../SPAWN" dialog to control the new tracing features.
+  The new "pvm" console also supports new options to the "trace"
+  commands (type "help trace" in the console for a description).
+  For additional information regarding use of the more advanced
+  tracing features, send email to "kohlja@ornl.gov".
+
+* Added new "trcsort" program (in pvm3/tracer subdirectory) for
+  sorting trace files by timestamp.  Takes into account approximate
+  clock skew among hosts (still no guarantees about "tachyons" though).
+
+  -------- Misc --------
+
+* Most of the MIMD and SHMEM code has been completely rewritten
+  (as of this beta release, the SHMEM ports are still work in progress)
+  to eliminate many bugs and improve maintainability and robustness.
+  On architectures that support shared memory operations, the
+  default PVM architecture selection is now non-shmem, and to turn
+  on selection of the appropriate *MP architecture the user must
+  set the environment variable "PVM_SHMEM" to "ON", as in
+  "setenv PVM_SHMEM ON" (see "Potential Incompatibilities" below).
+  The style of compiling PVM applications for MPP systems has
+  also changed slightly - please refer to the pvm3/examples directory
+  for the proper Makefile.aimk targets.
+
+* The Makefiles for PVM 3.4 have been completely overhauled to
+  (theoretically) allow easier setting of desired compile options
+  from the new top level Makefile.aimk.  The new defines "CFLOPTS" and 
+  "FFLOPTS" are passed down into the various subdirectories and then
+  prepended to the definitions for CFLAGS and FFLAGS, respectively.
+  Likewise, setting CC or F77 at the top level will force that setting
+  throughout the source tree when making at the top level.
+
+* Extensive work has been done on the PVM port to Windows systems,
+  the "WIN32" architecture.  The stuff really works now!  :-)
+
+* Added new "srm" simple resource manager example, in pvm3/rm.
+
+* Added new pvm_setopt() option "PvmNoReset" for system tasks, to
+  prevent tasks from being killed during a system reset.
+
+* Added new pvm_setopt() option "PvmNoSpawnParent" so that tasks can
+  now use pvm_parent() to determine if they are the "master" in
+  master-slave applications, even if tasks are spawned from the
+  "pvm" console or XPVM.
+
+------------------------------------------------------------------------
+
+Bug Fixes:
+
+* Remote task output collection and tracing is now correctly working
+  on MPP systems such as PGON and SHMEM architectures.
+
+* It is now possible to fully interoperate pvm_send(), pvm_recv(),
+  pvm_nrecv() and pvm_trecv() with pvm_psend() and pvm_precv()
+  (assuming that the appropriate PvmDataRaw data encoding is used!).
+  MPPs can use pvm_psend() and pvm_precv() off-machine with tasks
+  that are using the traditional send and receive routines.
+
+* Modified pvm_freebuf() so that freeing a NULL buffer no longer
+  generates an error.  Many 3.3 codes exhibited this error through
+  the use of pvm_freebuf( pvm_setsbuf(x) ) where there was no old
+  send buffer.
+
+* A static character variable has been utilized inside pvm_version()
+  to prevent stack problems on certain architectures.
+
+* Cleaned up LINUX defines for latest Linux kernel header files,
+  no longer yaks on "struct fd_set rfds" everywhere.
+
+* Removed ancient "-lmutex" from SGI architectures ARCHDLIB defines!
+
+* Lots of manual pages additions and fixes (more to come...).
+
+------------------------------------------------------------------------
+
+Changes - Potential Incompatibilities:
+
+* The old "$SGIMP" environment variable has been subsumed with the
+  new "$PVM_SHMEM" environment variable.
+
+* Due to incompatibilities between AIX 4.1 and 4.2, the previous RS6K
+  architecture has been split to add several new architectures for
+  different OS / SHMEM combinations:  AIX46K, AIX4MP, AIX4SP2.
+
+* All of the various daemon-to-task and task-to-task protocols have
+  been moved to a new public header file, "pvm3/include/pvmproto.h".
+  The constants for utilizing the protocols for task control messages
+  and other system support programs are all included in this new header
+  file.
+
+* Tracing facility has been completely rewritten, new trace messages
+  are incompatible with PVM 3.3 tracing tools (except XPVM 1.2, see
+  above).  However, the new libpvmtrc.a tracing library is provided
+  for collecting and manipulating PVM trace files.  See the "tracer"
+  example for details.
+
+* Defunct functs - the following functions are no longer supported
+  in PVM 3.4:  pvm_insert(), pvm_delete(), pvm_lookup().  The name
+  service features that these routines provided are now handled
+  using the message mailbox system.  For backwards compatibility,
+  these functions have been implemented on top of the mailbox
+  system, but pvm_insert(), pvm_delete(), pvm_lookup() are obsolete
+  and should not be used.
+
+* Obsolete functions - the following functions will be eliminated
+  in a future release:  pvm_getmwid(), pvm_setmwid().  Users should
+  switch to pvm_getminfo() and pvm_setminfo().
+
+------------------------------------------------------------------------
+
+  How to get it:
+
+  It's just been put on netlib2.CS.UTK.EDU and will propagate to the
+  other servers soon.
+
+  From Netlib, to get a uuencoded, compressed tarfile:
+      echo "send pvm3.3.tar.z.uu from pvm3" | mail netlib@ORNL.GOV
+
+  For more information from Netlib about PVM:
+      echo "send index from pvm3" | mail netlib@ORNL.GOV
+
+  Using Xnetlib:
+      select directory pvm3, file pvm3.3.tar.z.uu
+
+  Via FTP:
+      host netlib2.CS.UTK.EDU, login anonymous, directory /pvm3
+
+  For more information about file retrieval from netlib:
+      finger anon@netlib2.CS.UTK.EDU
+
+  Send bug reports, comments, questions to:
+      pvm@MSR.EPM.ORNL.GOV
+
+  Use newsgroup for discussion:
+      comp.parallel.pvm
+
+------------------------------------------------------------------------
+
+Sincerely,
+The PVM research group
+
+(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:
+
+  James Arthur Kohl, Ph.D.              "Da Blooos Brathas?!  They
+  Keeper of the PVM Code...  :-o            still owe you money, Fool!"
+  Oak Ridge National Laboratory
+  kohlja@ornl.gov
+  http://www.csm.ornl.gov/~kohl/        Long Live Curtis Blues!!!
+
+:):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):)
+

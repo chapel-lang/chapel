@@ -1,0 +1,104 @@
+.\" $Id: pvm_recv.3,v 1.1 1996/09/23 22:05:59 pvmsrc Exp $
+.TH RECV 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_recv \- Receive a message.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int bufid = pvm_recv( int tid, int msgtag )
+.br
+
+Fortran	call pvmfrecv( tid, msgtag, bufid )
+.fi
+
+.SH PARAMETERS
+.IP tid 0.8i
+Integer task identifier of sending process supplied by the user.
+.br
+.IP msgtag
+Integer message tag supplied by the user.
+msgtag should be >= 0.
+.br
+.IP bufid
+Integer returns the value of the new active receive buffer identifier.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_recv
+blocks the process until a message with label
+.I msgtag
+has arrived from
+.I tid.
+pvm_recv then places the message in a new \fIactive\fR receive buffer,
+which also clears the current receive buffer.
+.PP
+A -1 in
+.I msgtag
+or
+.I tid
+matches anything.
+This allows the user the following options.
+If tid = -1 and msgtag is defined by the user,
+then pvm_recv will accept a message from any process
+which has a matching msgtag.
+If msgtag = -1 and tid is defined by the user,
+then pvm_recv will accept any message that is sent from process tid.
+If tid = -1 and msgtag = -1,
+then pvm_recv will accept any message from any process.
+.PP
+The PVM model guarantees the following about message order.
+If task 1 sends message A to task 2, then task 1 sends message B to task 2,
+message A will arrive at task 2 before message B.
+Moreover, if both messages arrive before task 2 does a receive,
+then a wildcard receive will always return message A.
+.PP
+If pvm_recv is successful,
+.I bufid
+will be the value of the new active receive buffer identifier.
+If some error occurs then
+.I bufid
+will be < 0.
+.PP
+pvm_recv is blocking which means the routine waits until a message
+matching the user specified tid and msgtag values arrives at the
+local pvmd. If the message has already arrived then pvm_recv
+returns immediately with the message.
+.PP
+Once pvm_recv returns, the data in the message can be unpacked
+into the user's memory using the unpack routines.
+
+.SH EXAMPLES
+.nf
+C:
+	tid = pvm_parent();
+	msgtag = 4 ;
+	bufid = pvm_recv( tid, msgtag );
+	info = pvm_upkint( tid_array, 10, 1 );
+	info = pvm_upkint( problem_size, 1, 1 );
+	info = pvm_upkfloat( input_array, 100, 1 );
+.sp
+Fortran:
+	CALL PVMFRECV( -1, 4, BUFID )
+	CALL PVMFUNPACK( INTEGER4, TIDS, 25, 1, INFO )
+	CALL PVMFUNPACK( REAL8, MATRIX, 100, 100, INFO )
+.fi
+
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_recv
+.IP PvmBadParam
+giving an invalid tid value, or msgtag < -1.
+.IP PvmSysErr
+pvmd not responding.
+.PP
+.SH SEE ALSO
+pvm_bufinfo(3PVM),
+pvm_getminfo(3PVM),
+pvm_nrecv(3PVM),
+pvm_unpack(3PVM),
+pvm_probe(3PVM),
+pvm_send(3PVM),
+pvm_mcast(3PVM)

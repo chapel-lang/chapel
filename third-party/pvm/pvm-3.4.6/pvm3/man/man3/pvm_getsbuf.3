@@ -1,0 +1,41 @@
+.\" $Id: pvm_getsbuf.3,v 1.1 1996/09/23 22:01:29 pvmsrc Exp $
+.TH GETSBUF 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_getsbuf \- Returns the message buffer identifier for the
+active send buffer.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int bufid = pvm_getsbuf( void )
+.br
+
+Fortran	call pvmfgetsbuf( bufid )
+.fi
+
+.SH PARAMETERS
+.IP bufid 0.8i
+Integer returning message buffer identifier for the active
+send buffer.
+
+.SH DESCRIPTION
+The routine
+.I pvm_getsbuf
+returns the message buffer identifier
+.I bufid
+for the active send buffer or 0 if there is no current buffer.
+
+.SH EXAMPLES
+.nf
+C:
+	bufid = pvm_getsbuf();
+.sp
+Fortran:
+	CALL PVMFGETSBUF( BUFID )
+.fi
+
+.SH ERRORS
+No error conditions are returned by
+.I pvm_getsbuf
+.SH SEE ALSO
+pvm_getrbuf(3PVM)

@@ -1,0 +1,122 @@
+.\" $Id: pvm_mkbuf.3,v 1.1 1996/09/23 22:05:21 pvmsrc Exp $
+.TH MKBUF 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_mkbuf \- Creates a new message buffer.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int bufid = pvm_mkbuf( int encoding )
+.br
+
+Fortran	call pvmfmkbuf( encoding, bufid )
+.fi
+
+.SH PARAMETERS
+.IP encoding 0.8i
+Integer specifying the buffer's encoding scheme.
+.ta 0.5i 2.5i 3.0i
+.nf
+Options in C are:
+	Encoding value		MEANING
+	PvmDataDefault	0	XDR
+	PvmDataRaw	1	no encoding
+	PvmDataInPlace	2	data left in place
+
+Option names in Fortran are:
+	Encoding value		MEANING
+	PVMDEFAULT	0	XDR
+	PVMRAW	1	no encoding
+	PVMINPLACE	2	data left in place
+.fi
+.IP bufid
+Integer message buffer identifier returned.
+Values less than zero indicate an error.
+
+.SH DESCRIPTION
+The routine
+.I pvm_mkbuf
+creates a new message buffer and
+sets its encoding status to
+.I encoding.
+If pvm_mkbuf is successful,
+.I bufid
+will be the identifier
+for the new buffer, which can be used as a send buffer.
+If some error occurs then
+.I bufid
+will be < 0.
+.PP
+With the default setting
+XDR encoding is used when packing the message
+because PVM can not know
+if the user is going to add a heterogeneous machine
+before this message is sent.
+The other options to encoding allow the user to take advantage
+of knowledge about his virtual machine even when it is
+heterogeneous. For example, if the user knows that the
+next message will only be sent to a machine that understands
+the native format, then he can use \fIPvmDataRaw\fR encoding
+and save on encoding costs.
+.PP
+PvmDataInPlace encoding specifies that data be left in place during
+packing.
+The message buffer only contains the sizes and pointers to the items
+to be sent. When pvm_send is called the items are copied directly
+out of the user's memory. This option decreases the number of
+times a message is copied at the expense of requiring the user
+to not modify the items between the time they are packed and the time
+they are sent.
+.PP
+pvm_mkbuf is required if the user wishes to manage multiple
+message buffers and should be used in conjunction with pvm_freebuf.
+pvm_freebuf should be called for a send buffer
+after a message has been sent and is no longer needed.
+.PP
+Receive buffers are created automatically by the pvm_recv and
+pvm_nrecv routines and do not have to be freed unless they
+have been explicitly saved with pvm_setrbuf.
+.PP
+Typically multiple send and receive buffers are not needed
+and the user can simply use the pvm_initsend routine to
+reset the default send buffer.
+.PP
+There are several cases where multiple buffers are useful.
+One example where multiple message buffers are needed involves
+libraries or graphical interfaces that use PVM and
+interact with a running PVM application but do not want
+to interfere with the application's own communication.
+.PP
+When multiple buffers are used they generally are made and
+freed for each message that is packed.
+
+.SH RESTRICTIONS
+PvmDataInPlace allows only dense (stride = 1) data in version 3.3.
+It cannot be used on shared memory (*MP) architectures;
+a PvmNotImpl error will occur at send time.
+
+.SH EXAMPLES
+.nf
+C:
+	bufid = pvm_mkbuf( PvmDataRaw );
+	/* send message */
+	info = pvm_freebuf( bufid );
+.sp
+Fortran:
+	CALL PVMFMKBUF(PVMDEFAULT, MBUF)
+*	SEND MESSAGE HERE
+	CALL PVMFFREEBUF( MBUF, INFO )
+.fi
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_mkbuf
+.ta 0.5i 2.0i
+.nf
+	PvmBadParam	giving an invalid encoding value.
+	PvmNoMem	Malloc has failed. There is not enough memory
+		to create the buffer
+.fi
+.SH SEE ALSO
+pvm_initsend(3PVM),
+pvm_freebuf(3PVM)

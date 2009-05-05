@@ -1,0 +1,66 @@
+.\" $Id: pvm_setrbuf.3,v 1.1 1996/09/23 22:06:19 pvmsrc Exp $
+.TH SETRBUF 3PVM "30 August, 1993" "" "PVM Version 3.4"
+.SH NAME
+pvm_setrbuf \- Switches the active receive buffer and saves the
+previous buffer.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int oldbuf = pvm_setrbuf( int bufid )
+.br
+
+Fortran	call pvmfsetrbuf( bufid, oldbuf )
+.fi
+
+.SH PARAMETERS
+.IP bufid 0.8i
+Integer specifying the message buffer identifier
+for the new active receive buffer.
+.br
+.IP oldbuf
+Integer returning the message buffer identifier
+for the previous active receive buffer.
+
+.SH DESCRIPTION
+The routine
+.I pvm_setrbuf
+switches the active receive buffer
+to
+.I bufid
+and saves the previous active receive buffer
+.I oldbuf.
+If
+.I bufid
+is set to 0 then the present active receive buffer
+is saved and no active receive buffer exists.
+.PP
+A successful receive automatically creates a new active receive buffer.
+If a previous receive has not been unpacked and needs to be saved
+for later, then the previous bufid can be saved and reset later
+to the active buffer for unpacking.
+.PP
+The routine is required when managing multiple message buffers.
+For example switching back and forth between two buffers.
+One buffer could be used to send information to a graphical interface
+while a second buffer could be used send data to other tasks
+in the application.
+
+.SH EXAMPLES
+.nf
+C:
+	rbuf1 = pvm_setrbuf( rbuf2 );
+.sp
+Fortran:
+	CALL PVMFSETRBUF( NEWBUF, OLDBUF )
+
+.SH ERRORS
+These error conditions can be returned by
+.I pvm_setrbuf
+.IP PvmBadParam
+giving an invalid bufid.
+.IP PvmNoSuchBuf
+switching to a non-existent message buffer.
+.PP
+.SH SEE ALSO
+pvm_setsbuf(3PVM)

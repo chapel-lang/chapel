@@ -1,0 +1,89 @@
+.\" $Id: pvm_setminfo.3,v 1.1 1996/09/23 22:06:14 pvmsrc Exp $
+.TH SETMINFO 3PVM "13 March, 1996" "" "PVM Version 3.4"
+.SH NAME
+pvm_getminfo,
+pvm_setminfo \- Get or set header information of a message.
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int info = pvm_getminfo( int bufid, struct pvmminfo *mi )
+.br
+	int info = pvm_setminfo( int bufid, struct pvmminfo *mi )
+.br
+
+Fortran	call pvmfgetminfo( bufid, len, ctx, tag, wid, enc, crc,
+                           src, dst, info )
+	call pvmfsetminfo( bufid, ctx, tag, wid, src, dst, info )
+.fi
+
+.SH PARAMETERS
+.IP bufid 0.8i
+Message buffer identifier.
+.IP mi
+Struct containing header information.
+.IP info
+Result code.
+.PP
+For a description of the Fortran parameters,
+see below.
+
+.SH DESCRIPTION
+These functions read and set information passed in message headers,
+which may be of interest to certain applications.
+Typically,
+they will be used when it is necessary to get the message context or
+wait id to use the same values in a reply message.
+
+The fields affected are:
+.IP len
+The length in bytes of the body of the message.
+This will be equal to the actual size of the data packed,
+if \fIPvmDataRaw\fR is used,
+otherwise it may include pad bytes.
+.IP ctx
+The context sent with the message.
+.IP tag
+The tag sent with the message.
+.IP wid
+Wait Identifier, used to match a reply message to the corresponding request.
+.IP enc
+Message Encoding,
+either the \fIdata signature\fR of the sender,
+or 0x10000000 for XDR.
+.IP crc
+The CRC checksum of the message body.
+.IP src
+The tid of the sender.
+.IP dst
+The tid of the destination.
+.PP
+All fields may be read,
+but only \fIctx\fR, \fItag\fR, \fIwid\fR, \fIsrc\fR and \fIdst\fR
+may be set.
+
+pvm_getmwid and pvm_setmwid return PvmOk if successful,
+or else a negative error code.
+
+.SH EXAMPLES
+.nf
+	/* return a message to a caller with the same tag and wait id */
+	struct pvmminfo mi1, mi2;
+
+	pvm_recv(-1, -1);
+	/* ... process, compose reply message */
+	pvm_getminfo(pvm_getrbuf(), &mi1);
+	pvm_getminfo(pvm_getsbuf(), &mi2);
+	mi2.wid = mi1.wid;
+	pvm_send(mi1.src, mi1.tag);
+
+.SH ERRORS
+The following error conditions can be returned by
+pvm_getmwid or pvm_setmwid:
+.IP PvmBadParam
+Invalid value for \fIbufid\fR or \fImi\fR argument.
+.IP PvmNoSuchBuf
+Message buffer \fIbufid\fR doesn't exist.
+.PP
+.SH SEE ALSO
+pvm_bufinfo(3PVM)

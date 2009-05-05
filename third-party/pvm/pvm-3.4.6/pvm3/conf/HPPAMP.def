@@ -1,0 +1,22 @@
+# --------------------- Build with HP C -------------------
+#CC		= /opt/ansic/bin/cc
+#C_OPT	= -U_REENTRANT +DA1.1 +DS1.1 -Wl,+tm,hpux
+#F77	= /opt/fortran/bin/f77
+#AS		= /usr/ccs/bin/as
+# --------------------- Standard Stuff ---------------------------------
+ARCHCFLAGS	=	-DSHMEM -DSYSVSIGNAL -DNOWAIT3 -DNOGETDTBLSIZ \
+				-DRSHCOMMAND=\"/usr/bin/remsh\" -DNOUNIXDOM \
+				-DCLUMP_ALLOC -DHASSTDLIB -DFDSETISINT
+# remove -DFDSETISINT above for HP-UX 11.0...?
+ARCHDLIB	=
+# ARCHDLIB	=	-lnsl	# for HP-UX 11.0
+ARCHDOBJ	=
+# ARCHLIB	=	-lnsl	# for HP-UX 11.0
+HASRANLIB	=	f
+PVM_ARCH	=	HPPAMP
+#AR			=	/usr/bin/ar
+AR			=	ar
+FC			=	fort77
+NEEDF2M4	=	t
+AMEMOBJ		=	amem.o
+MAKE		=	make

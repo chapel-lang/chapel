@@ -1,0 +1,17 @@
+# --------------------- Build with GCC -------------------
+#CC	= gcc 
+#C_OPT	= -mlp64 -pipe -O3 -g -Wall
+#F77	= g77
+#AS	= /usr/ccs/bin/as
+# --------------------- Standard Stuff ---------------------------------
+ARCHCFLAGS	=	-DSYSVSIGNAL -DNOWAIT3 -DNOGETDTBLSIZ \
+			-DRSHCOMMAND=\"/usr/bin/remsh\" \
+			-DCLUMP_ALLOC -DHASSTDLIB
+ARCHDLIB	=	-lnsl
+ARCHLIB		=	-lnsl
+HASRANLIB	=	f
+PVM_ARCH	=	HPIA64
+AR		=	ar
+FC		=	g77
+NEEDF2M4	=	t
+MAKE		=	gmake

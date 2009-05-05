@@ -1,0 +1,99 @@
+#!/bin/sh
+#
+#	$Id: pvmd,v 1.5 2000/02/14 20:30:37 pvmsrc Exp $
+#
+#	Start the appropriate pvmd3.
+#	If PVM_ROOT is not set in environment,
+#		we try to guess it by combining the working directory with
+#		argv[0], otherwise it defaults to $HOME/pvm3.
+#	If PVM_ARCH is not set,
+#		we get it by execing $PVMROOT/lib/pvmgetarch.
+#	Called with "-exe" flag executes "pvm.exe" instead of "pvm" (OS2).
+#
+#	03 Jun 1994  Manchek
+#
+
+case "x$PVM_ROOT" in x )
+	case "$0" in
+	/*) PVM_ROOT="$0" ;;
+	*) PVM_ROOT=`pwd`/"$0" ;;
+	esac
+	PVM_ROOT=`echo "$PVM_ROOT" | sed -e 's/\/lib\/pvmd//'`
+	if [ -d $PVM_ROOT ]; then
+		export PVM_ROOT
+	else
+		if [ -d $HOME/pvm3 ]; then
+			PVM_ROOT=$HOME/pvm3
+			export PVM_ROOT
+		else
+			echo pvmd: PVM_ROOT not defined >&2
+			exit 1
+		fi
+	fi
+;; esac
+
+#
+# these lines let you set environment variables on systems
+# where a shell profile doesn't get read when rshing in.
+#
+if [ -f $PVM_ROOT/.pvmprofile ]; then
+	. $PVM_ROOT/.pvmprofile
+fi
+if [ -f $HOME/.pvmprofile ]; then
+	. $HOME/.pvmprofile
+fi
+
+case "x$PVM_ARCH" in x | xUNKNOWN )
+	PVM_ARCH="`$PVM_ROOT/lib/pvmgetarch`"
+	case "x$PVM_ARCH" in x )
+		echo pvmd: can\'t set arch >&2
+		exit 1
+	;; esac
+;; esac
+
+export PVM_ARCH
+# make a joyful noise.
+case "x$PVM_ARCH" in
+xSGI | xSGI5 | xSGI6 | xSGIMP | xSGIMP6 | xSGI64 | xSGIMP64 )
+	trap '' 2
+;;
+xPGON )                # for PGONs with pexec
+	PEXEC=/bin/pexec   # change this if pexec resides elsewhere
+	if [ -x $PEXEC ];  then
+		if [ "x$NX_DFLT_SIZE" = x ]; then  NX_DFLT_SIZE=1; fi
+		for args do
+			if [ "$args" = "-s" -o "$args" = "-S" ]; then PGONSLAVE="-f"; fi
+			if [ "$CLSIZE" = "t" ]; then CLSIZE="f"; NX_DFLT_SIZE=$args; fi
+			if [ "$args" = "-sz" ]; then CLSIZE="t"; fi
+		done
+		PGONCALL="$PVM_ROOT/lib/$PVM_ARCH/pvmd3 $PGONSLAVE $*"
+		exec $PEXEC "$PGONCALL" -sz $NX_DFLT_SIZE
+		exit 1
+	fi
+;; esac
+
+if [ "$1" = '-exe' ]; then
+	sfx=".exe"
+	shift
+else
+	sfx=""
+fi
+
+if [ ! -f $PVM_ROOT/lib/$PVM_ARCH/pvmd3$sfx ]; then
+	echo "pvmd: $PVM_ROOT/lib/$PVM_ARCH/pvmd3$sfx doesn't exist." >&2
+	echo "Make sure PVM is built and PVM_ROOT is set correctly" >&2
+	exit 1
+fi
+
+case "x$PVMD_NOHOLD" in x | xNO )
+	exec $PVM_ROOT/lib/$PVM_ARCH/pvmd3$sfx $@
+;;
+* )
+	# Don't hold shell - put pvmd3 in background
+	# (apparently helps with init scripts in RedHat Linux)
+	#     - change submitted by "Mike Wangsmo" <wanger@redhat.com>
+	$PVM_ROOT/lib/$PVM_ARCH/pvmd3$sfx $@ &
+;; esac
+
+exit 0
+

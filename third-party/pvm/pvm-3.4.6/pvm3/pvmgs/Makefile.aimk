@@ -1,0 +1,136 @@
+#
+# $Id: Makefile.aimk,v 1.11 2001/11/30 20:33:11 pvmsrc Exp $
+#
+# Generic Makefile body to be concatenated to config header.
+#
+# Imports:
+#  PVM_ARCH   = the official pvm-name of your processor
+#  ARCHCFLAGS = special cc flags
+#  ARCHLIB    = special libs needed for daemon
+#  HASRANLIB  = 't' or 'f'
+#
+# Define:
+#  NOSTRCASE       if libc doesn't have strcasecmp, strncasecmp
+#  SYSVSIGNAL      for system5 signal handling
+#  SYSVSTR         for strchr() instead of index()
+#
+SHELL		=	/bin/sh
+PVMDIR		=	../..
+SDIR		=	$(PVMDIR)/pvmgs
+DOBJ		=	pvmgs_core.o pvmgs_func.o
+LOBJ		=	pvmgsu_core.o pvmgsu_aux.o pvmgs_func.o
+PVMIDIR		=	$(PVMDIR)/include
+PVMSDIR		=	$(PVMDIR)/src
+PVMBDIR		=	$(PVMDIR)/bin
+PVMXDIR		=	$(PVMBDIR)/$(PVM_ARCH)
+PVMLDIR		=	$(PVMDIR)/lib/$(PVM_ARCH)
+PVMLIB		=	pvm3
+LIBPREFIX	=	lib
+PVMLIBDEP	=	$(PVMLDIR)/$(LIBPREFIX)$(PVMLIB).a
+
+# Add -DPVMGSTIMEOUT=XXX to CFLAGS to allow timeouts for PVM group
+# server requests, where XXX is the number of seconds for the timeout.
+# (Note: this flag can also be added to the ARCHCFLAGS define in the
+# PVM conf file, i.e.:  $PVM_ROOT/conf/$PVM_ARCH.def )
+CFLAGS		=	$(CFLOPTS) -I$(PVMIDIR) -I$(PVMSDIR) -DIMA_$(PVM_ARCH) \
+				$(ARCHCFLAGS)
+
+LIBS		=	$(LOPT) -L$(PVMLDIR) -l$(PVMLIB) $(ARCHLIB)
+
+DIRS		=	$(PVMXDIR) $(PVMLDIR)
+
+PROGS		=	$(PVMXDIR)/pvm_gstat$(EXESFX) \
+				$(PVMXDIR)/pvmgs$(EXESFX) \
+				$(PVMXDIR)/pvmgroups$(EXESFX)
+
+LPROGS		=	$(PVMLDIR)/pvmgs$(EXESFX)
+
+LIBGPVM		=	$(LIBPREFIX)gpvm3.a
+
+install:	all
+
+install-mpp:	all-mpp
+
+all:	$(DIRS) $(PROGS) $(PVMLDIR)/$(LIBGPVM) $(LPROGS)
+
+all-mpp:	$(DIRS) $(PROGS) $(PVMLDIR)/$(LIBGPVM)-mpp $(LPROGS)
+
+$(PVMXDIR):
+	- mkdir $(PVMBDIR)
+	- mkdir $(PVMXDIR)
+
+$(PVMLDIR):
+	- mkdir $(PVMLDIR)
+
+$(PVMXDIR)/pvm_gstat$(EXESFX):  pvm_gstat$(EXESFX)
+	cp pvm_gstat$(EXESFX) $(PVMXDIR)
+
+$(PVMXDIR)/pvmgs$(EXESFX):  pvmgs$(EXESFX)
+	cp pvmgs$(EXESFX) $(PVMXDIR)
+
+$(PVMXDIR)/pvmgroups$(EXESFX):  pvmgroups$(EXESFX)
+	cp pvmgroups$(EXESFX) $(PVMXDIR)
+
+$(PVMLDIR)/$(LIBGPVM):  $(LIBGPVM)
+	cp $(LIBGPVM) $(PVMLDIR)
+	case x$(HASRANLIB) in xt ) echo ranlib; ranlib $(PVMLDIR)/$(LIBGPVM) ;; esac
+
+$(PVMLDIR)/$(LIBGPVM)-mpp:  $(LIBGPVM)-mpp
+	cp $(LIBGPVM) $(PVMLDIR)
+	case x$(HASRANLIB) in xt ) echo ranlib; ranlib $(PVMLDIR)/$(LIBGPVM) ;; esac
+	touch $(PVMLDIR)/$(LIBGPVM)-mpp
+
+$(PVMLDIR)/pvmgs$(EXESFX):  pvmgs$(EXESFX)
+	cp pvmgs$(EXESFX) $(PVMLDIR)
+
+pvmgroups$(EXESFX):	pvmgroups.o $(LIBGPVM) $(PVMLIBDEP)
+	$(CC) $(CFLAGS) -o $@ pvmgroups.o $(LIBGPVM) $(LIBS) 
+
+pvmgs$(EXESFX):	$(DOBJ) $(PVMLIBDEP)
+	$(CC) $(CFLAGS) -o $@ $(DOBJ) $(LIBS)
+
+$(LIBGPVM):	$(LOBJ)
+	rm -f $(LIBGPVM)
+	$(AR) cr $(LIBGPVM) $(LOBJ)
+	case x$(HASRANLIB) in xt ) echo ranlib; ranlib $(LIBGPVM) ;; esac
+
+$(LIBGPVM)-mpp:	$(LOBJ)
+	rm -f $(LIBGPVM)
+	$(AR_FRONT) cr $(LIBGPVM) $(LOBJ)
+	case x$(HASRANLIB) in xt ) echo ranlib; ranlib $(LIBGPVM) ;; esac
+	touch $(LIBGPVM)-mpp
+
+pvm_gstat$(EXESFX): pvm_gstat.o $(LIBGPVM) $(PVMLIBDEP)
+	$(CC) $(CFLAGS) -o $@ pvm_gstat.o $(LIBGPVM) $(LIBS)
+
+clean:
+	rm -f $(DOBJ) $(LOBJ) pvmgs$(EXESFX) $(LIBGPVM) \
+		pvm_gstat.o pvmgroups.o pvm_gstat$(EXESFX) pvmgroups$(EXESFX)
+
+tidy:
+	rm -f $(DOBJ) $(LOBJ)
+
+lint:
+	lint -DARCHCLASS=\"$(PVM_ARCH)\" pvmgs.c > Ld
+	lint -DARCHCLASS=\"$(PVM_ARCH)\" pvm_gsulib.c > Ll
+
+#
+pvmgsu_core.o:	$(SDIR)/pvmgsu_core.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmgsu_core.c
+pvmgsu_aux.o:	$(SDIR)/pvmgsu_aux.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmgsu_aux.c
+pvmgroups.o:	$(SDIR)/pvmgroups.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmgroups.c
+pvm_gstat.o:	$(SDIR)/pvm_gstat.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvm_gstat.c
+pvmgs_core.o:	$(SDIR)/pvmgs_core.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmgs_core.c
+pvmgs_func.o:	$(SDIR)/pvmgs_func.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvmgs_func.c
+
+#
+# Source File Dependencies
+#
+
+include $(PVMDEPPATH)$(SDIR)/pvmdep
+

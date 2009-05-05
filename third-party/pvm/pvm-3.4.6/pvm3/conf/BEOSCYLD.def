@@ -1,0 +1,24 @@
+#
+# Notes on readline Usage:
+#
+#	If your Linux system has readline, then you may append the
+#	following flags to the defines below:
+#
+#		ARCHCFLAGS = . . .  -DHASREADLINE
+#		ARCHLIB = . . .  -lreadline
+#
+#	and recompile PVM.
+#
+#	On some Linux systems, readline requires ncurses, so you
+#	must also add "-lncurses" to the ARCHLIB define.
+#
+ARCHCFLAGS	=	-DSYSVSIGNAL -DNOWAIT3 -DRSHCOMMAND=\"/usr/bin/bpsh\" \
+				-DNEEDENDIAN -DFDSETNOTSTRUCT -DHASERRORVARS \
+				-DCTIMEISTIMET -DSYSERRISCONST -DNOTMPNAM
+ARCHDLIB	=	/usr/lib/libbproc.a
+ARCHDOBJ	=
+ARCHLIB		=	/usr/lib/libbproc.a
+HASRANLIB	=	t
+AR			=	ar
+PVM_ARCH	=	BEOSCYLD
+MAKE		=	make

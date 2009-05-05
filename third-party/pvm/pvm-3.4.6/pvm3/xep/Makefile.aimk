@@ -1,0 +1,68 @@
+#
+# $Id: Makefile.aimk,v 1.6 1997/08/29 14:17:48 pvmsrc Exp $
+#
+# Generic Makefile body to be concatenated to config header.
+#
+# Imports:
+#  PVM_ARCH   = the official pvm-name of your processor
+#  ARCHCFLAGS = special cc flags
+#  ARCHLIB    = special libs needed for daemon
+#
+SHELL		=	/bin/sh
+PVMDIR		=	../..
+PVMIDIR		=	$(PVMDIR)/include
+PVMLDIR		=	$(PVMDIR)/lib/$(PVM_ARCH)
+PVMLIB		=	pvm3
+LIBPREFIX	=	lib
+PVMLIBDEP	=	$(PVMLDIR)/$(LIBPREFIX)$(PVMLIB).a
+SDIR		=	$(PVMDIR)/xep
+BDIR		=	$(PVMDIR)/bin
+XDIR		=	$(BDIR)/$(PVM_ARCH)
+
+#CFLOPTS	=	-O
+CFLOPTS		=	-g
+CFLAGS		=	$(CFLOPTS) -I$(PVMIDIR) -L$(PVMLDIR) $(ARCHCFLAGS)
+LIBS		=	-l$(PVMLIB) $(ARCHLIB) $(OS2XEPLIBS)
+XLIBS		=	-lXaw -lXmu -lXext -lXt -lX11
+XCFLAGS		=	-I/usr/local/X11R5/include -I/usr/local/X11/include \
+				-L/usr/local/X11R5/lib -L/usr/local/X11/lib
+
+HEADERS		=	$(SDIR)/hostc.h $(SDIR)/imp.h $(SDIR)/myalloc.h \
+				$(PVMIDIR)/pvm3.h $(PVMDIR)/src/bfunc.h
+
+default:	mtile$(EXESFX) xep$(EXESFX)
+
+all:	mmain$(EXESFX) mtile$(EXESFX) xep$(EXESFX)
+
+$(XDIR):
+	- mkdir $(BDIR)
+	- mkdir $(XDIR)
+
+mmain$(EXESFX):	$(SDIR)/mmain.c $(XDIR) $(PVMLIBDEP)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/mmain.c $(LIBS)
+	mv $@ $(XDIR)
+
+mtile$(EXESFX):	$(SDIR)/mtile.c $(XDIR) $(PVMLIBDEP)
+	$(CC) $(CFLAGS) -o $@ $(SDIR)/mtile.c $(LIBS) -lm
+	mv $@ $(XDIR)
+
+xep$(EXESFX):	xep.o hostc.o calc.o imp.o $(XDIR) $(PVMLIBDEP)
+	$(CC) $(XCFLAGS) $(CFLAGS) -o $@ xep.o calc.o imp.o hostc.o \
+		$(XLIBS) $(LIBS) -lm
+	mv $@ $(XDIR)
+
+clean:
+	rm -f mmain$(EXESFX) mtile$(EXESFX) xep$(EXESFX) *.o
+
+xep.o:	$(SDIR)/xep.c $(HEADERS)
+	$(CC) $(XCFLAGS) $(CFLAGS) -c $(SDIR)/xep.c
+
+imp.o:	$(SDIR)/imp.c $(HEADERS)
+	$(CC) $(XCFLAGS) $(CFLAGS) -c $(SDIR)/imp.c
+
+calc.o:	$(SDIR)/calc.c $(HEADERS)
+	$(CC) $(XCFLAGS) $(CFLAGS) -c $(SDIR)/calc.c
+
+hostc.o:	$(SDIR)/hostc.c $(HEADERS)
+	$(CC) $(XCFLAGS) $(CFLAGS) -c $(SDIR)/hostc.c
+

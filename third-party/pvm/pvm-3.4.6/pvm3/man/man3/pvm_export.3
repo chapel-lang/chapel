@@ -1,0 +1,54 @@
+.\" $Id: pvm_export.3,v 1.2 1997/03/17 22:00:22 pvmsrc Exp $
+.TH EXPORT 3PVM "15 May, 1996"
+.SH NAME
+pvm_export, pvm_unexport \- Mark environment variables to export through spawn
+
+.SH SYNOPSIS
+.nf
+.ft B
+C	int cc = pvm_export( char *name )
+	int cc = pvm_unexport( char *name )
+.br
+
+Fortran	Not available
+.fi
+
+.SH PARAMETERS
+.IP name 0.8i
+Name of an environment variable to add to or delete from export list.
+
+.SH DESCRIPTION
+The routines
+.I pvm_export
+and
+.I pvm_unexport
+are provided for convenience in editing environment variable
+.I PVM_EXPORT,
+while maintaining the colon-separated list syntax
+it requires.
+The variable can be modified by other means,
+and at the same time by the pvm_export functions.
+.PP
+pvm_export checks to see if a name is already in PVM_EXPORT before
+including it,
+and exporting a name more than once is not considered an error.
+Likewise,
+pvm_unexport will not complain if you specify a name not in PVM_EXPORT.
+
+.SH EXAMPLES
+.nf
+C:
+	/* PVM_EXPORT=SHELL:HOME */
+	pvm_export("DISPLAY");
+	pvm_export("TERM");
+	pvm_unexport("HOME");
+	/* PVM_EXPORT=SHELL:DISPLAY:TERM */
+.fi
+
+.SH ERRORS
+No error conditions are currently returned by pvm_export and pvm_unexport.
+
+.SH SEE ALSO
+pvm(1PVM)
+pvm_spawn(3PVM)
+

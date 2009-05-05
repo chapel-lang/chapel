@@ -1,0 +1,16 @@
+ARCHCFLAGS	=	-DSYSVBFUNC -DSYSVSTR -DNOGETDTBLSIZ -DSYSVSIGNAL \
+				-DNOWAIT3 -DRSHCOMMAND=\"/usr/bin/rsh\" -DNOUNIXDOM \
+				-DUSESTRERROR -DSHMEM 
+#				-DUSESTRERROR -DSHMEM -DPVMUSEMUTEX
+# If you want to use MUTEX instead of Semaphores set -DPVMUSEMUTEX here
+# and remove the PLOCKFILE definition below
+# Note some older machines cannot use the v8plus directive
+PLOCKFILE	=	../tas.il -xarch=v8plusa	# Test And Set In Line code
+#PLOCKFILE	= 
+ARCHDLIB	=	-lnsl -lsocket -lthread
+ARCHDOBJ	=
+ARCHLIB		=	-lnsl -lsocket -lthread
+HASRANLIB	=	f
+AR			=	ar
+PVM_ARCH	=	SUNMP
+MAKE		=	make

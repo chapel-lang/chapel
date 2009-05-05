@@ -1,0 +1,9 @@
+ARCHCFLAGS	=	-DSYSVSIGNAL -DRSHCOMMAND=\"/usr/bsd/rsh\" -DNOUNIXDOM \
+				-DSHMEM
+ARCHDLIB	=	-lsun
+ARCHDOBJ	=
+ARCHLIB		=	-lsun
+HASRANLIB	=	f
+AR			=	ar
+PVM_ARCH	=	SGIMP
+MAKE		=	make

@@ -1,0 +1,32 @@
+#!/bin/sh
+#
+# $Id: ipcfree,v 1.2 1999/02/17 16:43:10 pvmsrc Exp $
+#
+# ipcfree
+#
+# Delete any shared memory, semaphores and message queues lying around after 
+# a PVM
+# program bombs out or is killed ungracefully.
+# Run it if you're getting error messages like:
+#   semget: ... No space left on device
+#   shmget: ... No space left on device
+# when using one of the *MP PVM architectures.
+# Or when using the pvm_shmd shared memory daemon.
+#
+
+if [ "$USER" = "" ]; then
+	USER=` whoami `
+fi
+
+m=` ipcs | awk '$1~/^[msq]$/ && $5~/'$USER'/ {print "-"$1, $2}' `
+
+case "$m" in
+?*) echo "deleting $m"
+    ipcrm $m
+;;
+*) echo "didn't find anything"
+;;
+esac
+
+exit 0
+

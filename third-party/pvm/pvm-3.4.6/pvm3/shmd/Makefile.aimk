@@ -1,0 +1,145 @@
+#
+# $Id: Makefile.aimk,v 1.4 1999/03/11 20:19:33 pvmsrc Exp $
+#
+# Generic Makefile body to be concatenated to config header.
+#
+# Imports:
+#  PVM_ARCH   = the official pvm-name of your processor
+#  ARCHCFLAGS = special cc flags
+#  ARCHLIB    = special libs needed for daemon
+#  HASRANLIB  = 't' or 'f'
+#
+# Define:
+#  NOSTRCASE       if libc doesn't have strcasecmp, strncasecmp
+#  SYSVSIGNAL      for system5 signal handling
+#  SYSVSTR         for strchr() instead of index()
+#
+SHELL		=	/bin/sh
+PVMDIR		=	../..
+SDIR		=	$(PVMDIR)/shmd
+DOBJ		=	pvm_shmd.o block.o sem.o tidinfo.o
+LOBJ		=	sendrecv.o block.o sem.o tidinfo.o lpvm.o
+PVMIDIR		=	$(PVMDIR)/include
+PVMSDIR		=	$(PVMDIR)/src
+PVMSLDIR	=	$(PVM_ROOT)/src
+PVMBDIR		=	$(PVMDIR)/bin
+PVMXDIR		=	$(PVMBDIR)/$(PVM_ARCH)
+PVMLDIR		=	$(PVMDIR)/lib/$(PVM_ARCH)
+PVMLODIR	=	$(PVM_ROOT)/src/$(PVM_ARCH)
+LPOBJ		= \
+			$(PVMLODIR)/imalloc.o $(PVMLODIR)/tev.o $(PVMLODIR)/lpvmcat.o $(PVMLODIR)/lpvmgen.o \
+			$(PVMLODIR)/lpvmpack.o $(PVMLODIR)/lpvmglob.o $(PVMLODIR)/pmsg.o $(PVMLODIR)/pvmalloc.o \
+			$(PVMLODIR)/pvmcruft.o $(PVMLODIR)/pvmerr.o $(PVMLODIR)/pvmfrag.o $(PVMLODIR)/waitc.o \
+			$(PVMLODIR)/pvmregex.o $(PVMLODIR)/regex.o $(PVMLODIR)/global.o $(PVMLODIR)/pvmdabuf.o 
+
+PVMLIB		=	pvm3
+LIBPREFIX	=	lib
+PVMLIBDEP	=	$(PVMLDIR)/$(LIBPREFIX)$(PVMLIB).a
+CFLAGS		=	$(CFLOPTS) -I$(PVMIDIR) -I$(PVMSDIR) -DIMA_$(PVM_ARCH) \
+				$(ARCHCFLAGS) -DSEM
+LIBS		=	$(LOPT) -L$(PVMLDIR) -l$(PVMLIB) $(ARCHLIB)
+
+
+DIRS		=	$(PVMXDIR) $(PVMLDIR)
+
+PROGS		=	$(PVMXDIR)/pvm_shmd_stat$(EXESFX) \
+				$(PVMXDIR)/pvm_shmd$(EXESFX) 
+
+LPROGS		=	$(PVMLDIR)/pvm_shmd$(EXESFX)
+
+LIBSHMDPVM	=	$(LIBPREFIX)pvm3shmd.a
+
+install:	all
+
+install-mpp:	all-mpp
+
+all:	$(DIRS) $(PROGS) $(PVMLDIR)/$(LIBSHMDPVM) $(LPROGS)
+
+all-mpp:	$(DIRS) $(PROGS) $(PVMLDIR)/$(LIBSHMDPVM)-mpp $(LPROGS)
+
+$(PVMXDIR):
+	- mkdir $(PVMBDIR)
+	- mkdir $(PVMXDIR)
+
+$(PVMLDIR):
+	- mkdir $(PVMLDIR)
+
+$(PVMXDIR)/pvm_shmd_stat$(EXESFX):  pvm_shmd_stat$(EXESFX)
+	cp pvm_shmd_stat$(EXESFX) $(PVMXDIR)
+
+$(PVMXDIR)/pvm_shmd$(EXESFX):  pvm_shmd$(EXESFX)
+	cp pvm_shmd$(EXESFX) $(PVMXDIR)
+
+
+$(PVMLDIR)/$(LIBSHMDPVM):  $(LIBSHMDPVM)
+	cp $(LIBSHMDPVM) $(PVMLDIR)
+	case x$(HASRANLIB) in xt ) echo ranlib; ranlib $(PVMLDIR)/$(LIBSHMDPVM) ;; esac
+
+$(PVMLDIR)/$(LIBSHMDPVM)-mpp:  $(LIBSHMDPVM)-mpp
+	cp $(LIBSHMDPVM) $(PVMLDIR)
+	case x$(HASRANLIB) in xt ) echo ranlib; ranlib $(PVMLDIR)/$(LIBSHMDPVM) ;; esac
+	touch $(PVMLDIR)/$(LIBSHMDPVM)-mpp
+
+$(PVMLDIR)/pvm_shmd$(EXESFX):  pvm_shmd$(EXESFX)
+	cp pvm_shmd $(PVMLDIR)
+
+pvm_shmd$(EXESFX):	$(DOBJ) $(PVMLIBDEP)
+	$(CC) $(CFLAGS) -o $@ $(DOBJ) $(LIBS)
+
+pbwtest.shmd:  ../../examples/bwtest.c $(XDIR)
+	$(CC) $(CFLAGS) -o $@ ../../examples/bwtest.c -L$(PVMLDIR) \
+					-lpvm3shmd -lgpvm3
+	mv $@ $(PVMXDIR)
+
+
+$(LIBSHMDPVM):	$(LOBJ) $(LPOBJ)
+	rm -f $(LIBSHMDPVM)
+	$(AR) cr $(LIBSHMDPVM) $(LOBJ) $(LPOBJ)
+	case x$(HASRANLIB) in xt ) echo ranlib; ranlib $(LIBSHMDPVM) ;; esac
+
+$(LIBSHMDPVM)-mpp:	$(LOBJ)
+	rm -f $(LIBSHMDPVM)
+	$(AR_FRONT) cr $(LIBSHMDPVM) $(LOBJ)
+	case x$(HASRANLIB) in xt ) echo ranlib; ranlib $(LIBSHMDPVM) ;; esac
+	touch $(LIBSHMDPVM)-mpp
+
+pvm_shmd_stat$(EXESFX): pvm_shmd_stat.o $(LIBSHMDPVM) $(PVMLIBDEP)
+	$(CC) $(CFLAGS) -o $@ pvm_shmd_stat.o $(LIBSHMDPVM) $(LIBS)
+
+clean:
+	rm -f $(DOBJ) $(LOBJ) pvm_shmd$(EXESFX) $(LIBSHMDPVM) \
+		pvm_shmd_stat.o pvm_shmd_stat$(EXESFX) 
+
+tidy:
+	rm -f $(DOBJ) $(LOBJ)
+
+lint:
+	lint -DARCHCLASS=\"$(PVM_ARCH)\" pvm_shmd.c > Ld
+	lint -DARCHCLASS=\"$(PVM_ARCH)\" sendrecv.c > Ll
+
+#
+block.o:	$(SDIR)/block.c
+	$(CC) $(CFLAGS) -c $(SDIR)/block.c
+sem.o:	$(SDIR)/sem.c
+	$(CC) $(CFLAGS) -c $(SDIR)/sem.c
+tidinfo.o:	$(SDIR)/tidinfo.c
+	$(CC) $(CFLAGS) -c $(SDIR)/tidinfo.c
+pvm_shmd.o:	$(SDIR)/pvm_shmd.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvm_shmd.c
+pvm_shmd_stat.o:	$(SDIR)/pvm_shmd_stat.c
+	$(CC) $(CFLAGS) -c $(SDIR)/pvm_shmd_stat.c
+sendrecv.o:	$(SDIR)/sendrecv.c
+	$(CC) $(CFLAGS) -c $(SDIR)/sendrecv.c
+
+#
+# OK to build a complete user lib we need to recompile the lpvm file
+#
+lpvm.o:		$(PVMSLDIR)/lpvm.c
+	$(CC) $(CFLAGS) -DPVM_SHMD -c $(PVMSLDIR)/lpvm.c
+
+#
+# Source File Dependencies
+#
+
+include $(PVMDEPPATH)$(SDIR)/pvmdep
+

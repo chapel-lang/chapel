@@ -1,0 +1,10 @@
+ARCHCFLAGS	=	-DHASSTDLIB -DNOUNIXDOM -DNOGETDTBLSIZ -DNOWAIT3 \
+				-DRSHCOMMAND=\"/usr/bin/remsh\" -DSYSVBFUNC \
+				-DSYSVSIGNAL -DSYSVSTR -DNEEDSENDIAN
+ARCHDLIB	=	-lnsl -lsocket -L/usr/ucblib -lucb
+ARCHDOBJ	=
+ARCHLIB		=	-lnsl -lsocket -L/usr/ucblib -lucb
+HASRANLIB	=	f
+AR			=	ar
+PVM_ARCH	=	ATT
+MAKE		=	make

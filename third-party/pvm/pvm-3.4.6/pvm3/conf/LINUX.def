@@ -1,0 +1,43 @@
+#
+# Notes on readline Usage:
+#
+#	If your Linux system has readline, then you may append the
+#	following flags to the defines below:
+#
+#		ARCHCFLAGS = . . .  -DHASREADLINE
+#		ARCHLIB = . . .  -lreadline
+#
+#	and recompile PVM.
+#
+#	On some Linux systems, readline requires ncurses, so you
+#	must also add "-lncurses" to the ARCHLIB define.
+#
+# For building shared libraries, swap the SHAREDCFLAGS define below
+#	to use the -fpic (or -fPIC, usually equivalent) setting,
+#   (be sure $(SHAREDCFLAGS) is included in $(ARCHCFLAGS) below)
+#	and then do a "make clean ; make shared" in $PVM_ROOT.
+#
+# SHAREDCFLAGS = -fpic
+SHAREDCFLAGS =
+SHAREDLDFLAGS = -shared
+#
+ARCHCFLAGS	=	-DSYSVSIGNAL -DNOWAIT3 -DRSHCOMMAND=\"/usr/bin/rsh\" \
+				-DNEEDENDIAN -DFDSETNOTSTRUCT -DHASERRORVARS \
+				-DCTIMEISTIMET -DSYSERRISCONST -DNOTMPNAM \
+				-DUSESTRERROR -DSYSVSTR -DHASSTDLIB -DSYSVBFUNC \
+				$(SHAREDCFLAGS)
+#
+#				-DHASREADLINE
+#
+# For Absoft Fortran 95 Compiler:
+# ARCHFFLAGS	=	-B108 -YEXT_NAMES="LCS"
+# (submitted by Reggie Chang <reggie@zonatech.com>)
+#
+ARCHDLIB	=
+ARCHDOBJ	=
+# ARCHLIB	=	-lreadline
+ARCHLIB		=	
+HASRANLIB	=	t
+AR			=	ar
+PVM_ARCH	=	LINUX
+MAKE		=	make
