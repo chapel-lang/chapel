@@ -1,2 +1,3 @@
 GEN_CFLAGS += -I$(PVM_ROOT)/include
+PVM_ARCH = $(shell $(PVM_ROOT)/lib/pvmgetarch)
 LIBS += -L$(PVM_ROOT)/lib/$(PVM_ARCH) -lpvm3 -lgpvm3

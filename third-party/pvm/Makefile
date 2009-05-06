@@ -3,8 +3,7 @@ CHAPEL_SUBDIR = third-party/pvm
 include $(CHAPEL_ROOT)/make/Makefile.base
 
 PVM_ABS_DIR = $(shell pwd)
-PVM_VERSION = 3.4.6
-PVM_SUBDIR = pvm-$(PVM_VERSION)/pvm3-trial
+PVM_SUBDIR = pvm-$(PVM_VERSION)/pvm3
 
 default: all
 
