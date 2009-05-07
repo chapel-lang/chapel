@@ -438,11 +438,11 @@ void printToMemLog(const char* memType, size_t number, size_t size,
   if (chunk >= memthresholdValue &&
       ((reportOnlyUserAllocations && userCode) || (!reportOnlyUserAllocations && !userCode))) {
     if (moreMemAlloc && (moreMemAlloc != memAlloc)) {
-      fprintf(memlog, "%s called at %s:%d on locale %d for %zu items of size %zu for %s:  0x%p -> 0x%p\n",
+      fprintf(memlog, "%s called at %s:%"PRId32" on locale %"PRId32" for %zu items of size %zu for %s:  0x%p -> 0x%p\n",
               memType, filename, lineno, chpl_localeID, number, size, description,
               memAlloc, moreMemAlloc);
     } else {
-      fprintf(memlog, "%s called at %s:%d on locale %d for %zu items of size %zu for %s:  %p\n",
+      fprintf(memlog, "%s called at %s:%"PRId32" on locale %"PRId32" for %zu items of size %zu for %s:  %p\n",
               memType, filename, lineno, chpl_localeID, number, size, description, memAlloc);
     }
   }

@@ -1,1 +1,1 @@
-error: Unrecognized configuration variable 'astring'
+configVarFileStringsNoEquals.input: error: Unrecognized configuration variable 'astring'

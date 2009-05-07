@@ -1,1 +1,1 @@
-error: Unexpected flag:  "-whatsThis"
+<command-line arg>:1: error: Unexpected flag:  "-whatsThis"

@@ -1,1 +1,1 @@
-error: String exceeds the maximum string length of 256
+configVarFileStringOverflow.input: error: String exceeds the maximum string length of 256

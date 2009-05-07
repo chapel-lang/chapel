@@ -6,17 +6,19 @@
 #define _config_has_value(v,m) (lookupSetValue(v,m) != NULL)
 #define _config_get_value(v, m) (lookupSetValue(v,m))
 
-typedef enum { fdash, sdash, ddash } configSource;
-
-void addToConfigList(const char* currentArg, configSource argSource);
-void parseConfigArgs(void);
 void printHelpMessage(void);
 void initConfigVarTable(void);
 void printConfigVarTable(void);
-void initSetValue(char* varName, char* value, const char* moduleName);
+void initSetValue(const char* varName, const char* value, 
+                  const char* moduleName, int32_t lineno, chpl_string filename);
 char* lookupSetValue(const char* varName, const char* moduleName);
 void installConfigVar(const char* varName, const char* value, 
                       const char* moduleName);
+
+int handlePossibleConfigVar(int* argc, char* argv[], int argnum, 
+                            int32_t lineno, chpl_string filename);
+void parseConfigFile(const char* configFilename, 
+                     int32_t lineno, chpl_string filename);
 
 #endif
 

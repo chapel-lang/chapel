@@ -106,7 +106,8 @@ static void printHelpTable(void) {
 }
 
 
-static int64_t getIntArg(char* valueString, const char* memFlag) {
+static int64_t getIntArg(char* valueString, const char* memFlag, 
+                             int32_t lineno, chpl_string filename) {
   char extraChars;
   int64_t value = 0;  /* initialization is silly hack for freebsd */
   int numScans;
@@ -114,39 +115,41 @@ static int64_t getIntArg(char* valueString, const char* memFlag) {
 
   if (!valueString || strcmp(valueString, "") == 0) {
     message = chpl_glom_strings(3, "The ", memFlag, " flag is missing its int input");
-    chpl_error(message, 0, 0);
+    chpl_error(message, lineno, filename);
   }
   numScans = sscanf(valueString, _default_format_read_int64"%c", 
                     &value, &extraChars);
   if (numScans != 1) {
     message = chpl_glom_strings(2, valueString, " is not of int type");
-    chpl_error(message, 0, 0);
+    chpl_error(message, lineno, filename);
   }
   return value; 
 }
 
 
-static char* getStringArg(char* valueString, const char* memFlag) {
+static char* getStringArg(char* valueString, const char* memFlag, 
+                             int32_t lineno, chpl_string filename) {
   char* message;
   if (!valueString || strcmp(valueString, "") == 0) {
     message = chpl_glom_strings(3, "The ", memFlag, " flag is missing its string input");
-    chpl_error(message, 0, 0);
+    chpl_error(message, lineno, filename);
   }
   return valueString;
 }
 
 
-static void exitIfEqualsSign(char* equalsSign, const char* memFlag) {
+static void exitIfEqualsSign(char* equalsSign, const char* memFlag, 
+                             int32_t lineno, chpl_string filename) {
   if (equalsSign) {
     char* message = chpl_glom_strings(3, "The ", memFlag, " flag takes no argument");
-    chpl_error(message, 0, 0);
+    chpl_error(message, lineno, filename);
   }
 }
 
 typedef enum _MemFlagType {MemMax, MemStat, MemFinalStat, MemTrack, MemThreshold, MemTrace,
                            MOther} MemFlagType;
 
-static int parseMemFlag(const char* memFlag) {
+static int parseMemFlag(const char* memFlag, int32_t lineno, chpl_string filename) {
   char* equalsSign;
   char* valueString;
   MemFlagType flag = MOther;
@@ -179,28 +182,28 @@ static int parseMemFlag(const char* memFlag) {
   case MemMax:
     {
       int64_t value;
-      value = getIntArg(valueString, "--memmax");
+      value = getIntArg(valueString, "--memmax", lineno, filename);
       setMemmax(value);
       break;
     }
 
   case MemStat:
     {
-      exitIfEqualsSign(equalsSign, "--memstat");
+      exitIfEqualsSign(equalsSign, "--memstat", lineno, filename);
       setMemstat();
       break;
     }
    
   case MemFinalStat:
     {
-      exitIfEqualsSign(equalsSign, "--memfinalstat");
+      exitIfEqualsSign(equalsSign, "--memfinalstat", lineno, filename);
       setMemfinalstat();
       break;
     }
    
   case MemTrack:
     {
-      exitIfEqualsSign(equalsSign, "--memtrack");
+      exitIfEqualsSign(equalsSign, "--memtrack", lineno, filename);
       setMemtrack();
       break;
     }
@@ -208,14 +211,14 @@ static int parseMemFlag(const char* memFlag) {
   case MemThreshold:
     {
       int64_t value;
-      value = getIntArg(valueString, "--memthreshold");
+      value = getIntArg(valueString, "--memthreshold", lineno, filename);
       setMemthreshold(value);
       break;
     }
 
   case MemTrace:
     {
-      valueString = getStringArg(valueString, "--memtrace");
+      valueString = getStringArg(valueString, "--memtrace", lineno, filename);
       setMemtrace(valueString);
       break;
     }
@@ -228,26 +231,21 @@ static int parseMemFlag(const char* memFlag) {
 }
 
 
-static void unexpectedArg(const char* currentArg) {
-  char* message = chpl_glom_strings(3, "Unexpected flag:  \"", currentArg, "\"");
-  chpl_error(message, 0, 0);
-}
-
-
 static int32_t _argNumLocales = 0;
 
-static void parseNumLocales(const char* numPtr) {
+static void parseNumLocales(const char* numPtr, int32_t lineno, chpl_string filename) {
   int invalid;
   char invalidChars[2] = "\0\0";
   _argNumLocales = chpl_string_to_int32_t_precise(numPtr, &invalid, invalidChars);
   if (invalid) {
     char* message = chpl_glom_strings(3, "\"", numPtr, 
                                       "\" is not a valid number of locales");
-    chpl_error(message, 0, 0);
+    chpl_error(message, lineno, filename);
   }
   if (_argNumLocales < 1) {
-    chpl_error("Number of locales must be greater than 0", 0, 0);
+    chpl_error("Number of locales must be greater than 0", lineno, filename);
   }
+  initSetValue("numLocales", numPtr, "Built-in", lineno, filename);
 }
 
 
@@ -256,11 +254,14 @@ int32_t getArgNumLocales(void) {
 }
 
 
-void parseArgs(int argc, char* argv[]) {
+void parseArgs(int* argc, char* argv[]) {
   int i;
   int printHelp = 0;
+  int origargc = *argc;
 
-  for (i = 1; i < argc; i++) {
+  for (i = 1; i < *argc; i++) {
+    const char* filename = "<command-line arg>";
+    int lineno = i + (origargc - *argc);
     int argLength = 0;
     const char* currentArg = argv[i];
     argLength = strlen(currentArg);
@@ -268,7 +269,7 @@ void parseArgs(int argc, char* argv[]) {
     if (argLength < 2) {
       const char* message = chpl_glom_strings(3, "\"", currentArg, 
                                               "\" is not a valid argument");
-      chpl_error(message, 0, 0);
+      chpl_error(message, lineno, filename);
     }
 
     switch (currentArg[0]) {
@@ -305,24 +306,32 @@ void parseArgs(int argc, char* argv[]) {
           }
           if (strncmp(flag, "numLocales", 10) == 0) {
             if (flag[10] == '=') {
-              parseNumLocales(&(flag[11]));
+              parseNumLocales(&(flag[11]), lineno, filename);
             }
           }
-          if (flag[0] == 'm' && parseMemFlag(flag)) {
+          if (flag[0] == 'm' && parseMemFlag(flag, lineno, filename)) {
             break;
           }
           if (argLength < 3) {
             char* message = chpl_glom_strings(3, "\"", currentArg, 
                                               "\" is not a valid argument");
-            chpl_error(message, 0, 0);
+            chpl_error(message, lineno, filename);
           }
-          addToConfigList(currentArg + 2, ddash);
+          i += handlePossibleConfigVar(argc, argv, i, lineno, filename);
           break;
         }
 
       case 'f':
-        {
-          addToConfigList(currentArg + 2, fdash);
+        if (currentArg[2] == '\0') {
+          i++;
+          if (i >= *argc) {
+            chpl_error("-f flag is missing <filename> argument", 
+                       lineno, filename);
+          }
+          currentArg = argv[i];
+          parseConfigFile(currentArg, lineno, filename);
+        } else {
+          parseConfigFile(currentArg + 2, lineno, filename);
           break;
         }
 
@@ -330,37 +339,35 @@ void parseArgs(int argc, char* argv[]) {
         if (currentArg[2] == '\0') {
           printHelp = 1;
         } else {
-          unexpectedArg(currentArg);
+          i += handleNonstandardArg(argc, argv, i, lineno, filename);
         }
         break;
 
       case 'n':
         if (currentArg[2] == 'l') {
           const char* numPtr;
-          char numLocalesBuffer[128];
           if (currentArg[3] == '\0') {
             i++;
-            if (i >= argc) {
-              chpl_error("-nl flag is missing <numLocales> argument", 0, 0);
+            if (i >= *argc) {
+              chpl_error("-nl flag is missing <numLocales> argument", 
+                         lineno, filename);
             }
             currentArg = argv[i];
             numPtr = currentArg;
           } else {
             numPtr = &(currentArg[3]);
           }
-          parseNumLocales(numPtr);
-          sprintf(numLocalesBuffer, "Built-in.numLocales=%" PRId32, _argNumLocales);
-          addToConfigList(numLocalesBuffer, sdash);
+          parseNumLocales(numPtr, lineno, filename);
           break;
         }
-        unexpectedArg(currentArg);
+        i += handleNonstandardArg(argc, argv, i, lineno, filename);
         break;
 
       case 'q':
         if (currentArg[2] == '\0') {
           verbosity = 0;
         } else {
-          unexpectedArg(currentArg);
+          i += handleNonstandardArg(argc, argv, i, lineno, filename);
         }
         break;
 
@@ -369,14 +376,14 @@ void parseArgs(int argc, char* argv[]) {
           if (argLength < 3) {
             char* message = chpl_glom_strings(3, "\"", currentArg, 
                                               "\" is not a valid argument");
-            chpl_error(message, 0, 0);
+            chpl_error(message, lineno, filename);
           }
           if (strncmp(currentArg+2, "numLocales", 10) == 0) {
             if (currentArg[12] == '=') {
-              parseNumLocales(&(currentArg[13]));
+              parseNumLocales(&(currentArg[13]), lineno, filename);
             }
           }
-          addToConfigList(currentArg + 2, sdash);
+          i += handlePossibleConfigVar(argc, argv, i, lineno, filename);
           break;
         }
 
@@ -384,31 +391,34 @@ void parseArgs(int argc, char* argv[]) {
         if (currentArg[2] == '\0') {
           verbosity = 2;
         } else {
-          unexpectedArg(currentArg);
+          i += handleNonstandardArg(argc, argv, i, lineno, filename);
         }
         break;
       case 'b':
         if (currentArg[2] == '\0') {
           blockreport = 1;
         } else {
-          unexpectedArg(currentArg);
+          i += handleNonstandardArg(argc, argv, i, lineno, filename);
         }
         break;
       case 't':
         if (currentArg[2] == '\0') {
             taskreport = 1;
         } else {
-          unexpectedArg(currentArg);
+          i += handleNonstandardArg(argc, argv, i, lineno, filename);
         }
         break;
       default:
-        unexpectedArg(currentArg);
+        i += handleNonstandardArg(argc, argv, i, lineno, filename);
       }
+      break;
+
+    default:
+      i += handleNonstandardArg(argc, argv, i, lineno, filename);
     }
   }
 
   if (printHelp) {
-    CreateConfigVarTable();    // get ready to start tracking config vars
     printHelpTable();
     printConfigVarTable();
   }

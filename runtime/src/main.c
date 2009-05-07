@@ -15,6 +15,15 @@
 #include <stdint.h>
 
 
+int handleNonstandardArg(int* argc, char* argv[], int argNum, 
+                         int32_t lineno, chpl_string filename) {
+  char* message = chpl_glom_strings(3, "Unexpected flag:  \"", argv[argNum], 
+                                    "\"");
+  chpl_error(message, lineno, filename);
+  return 0;
+}
+
+
 int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
@@ -24,7 +33,8 @@ int main(int argc, char* argv[]) {
 
   chpl_comm_barrier("about to leave comm init code");
   chpl__heapAllocateGlobals();    // allocate global vars on heap for multilocale
-  parseArgs(argc, argv);
+  CreateConfigVarTable();    // get ready to start tracking config vars
+  parseArgs(&argc, argv);
   runInGDB = _runInGDB();
   if (runInGDB) {
     int status;
@@ -47,7 +57,6 @@ int main(int argc, char* argv[]) {
   chpl_comm_verify_num_locales(execNumLocales);
   chpl_comm_rollcall();
   initMemTable();            // get ready to start tracking memory
-  CreateConfigVarTable();    // get ready to start tracking config vars
   chpl_init_chapel_code();
   initChplThreads();         // initialize the threads layer
   chpl__initModuleGuards();  // initialize per-locale run once guard vars

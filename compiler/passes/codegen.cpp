@@ -457,8 +457,6 @@ codegen_config(FILE* outfile) {
     }
   }
 
-  fprintf(outfile, "parseConfigArgs();\n");
-
   fprintf(outfile, "}\n");
 
   closeCFile(&configFile);

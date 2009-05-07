@@ -1,1 +1,1 @@
-error: Unrecognized flag: '--a'
+<command-line arg>:1: error: Unexpected flag:  "--a"
