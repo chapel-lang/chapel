@@ -1,1 +1,1 @@
-In M1.foo()
+configParamNoUse.chpl:12: error: symbols in module 'M1' must be visible at point of module access

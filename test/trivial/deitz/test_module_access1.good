@@ -1,3 +1,10 @@
-0000
-1234
-5
+test_module_access1.chpl:12: In function 'foo':
+test_module_access1.chpl:13: error: symbols in module 'M' must be visible at point of module access
+test_module_access1.chpl:14: error: symbols in module 'M' must be visible at point of module access
+test_module_access1.chpl:15: error: symbols in module 'N' must be visible at point of module access
+test_module_access1.chpl:16: error: symbols in module 'N' must be visible at point of module access
+test_module_access1.chpl:21: In function 'bar':
+test_module_access1.chpl:22: error: symbols in module 'M' must be visible at point of module access
+test_module_access1.chpl:22: error: symbols in module 'M' must be visible at point of module access
+test_module_access1.chpl:22: error: symbols in module 'N' must be visible at point of module access
+test_module_access1.chpl:22: error: symbols in module 'N' must be visible at point of module access

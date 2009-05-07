@@ -174,9 +174,6 @@ class RandomStream {
 
 
 def fillRandom(x:[], initseed: int(64) = SeedGenerator.clockMS) {
-  use Random; // This is ridiculous, but only required for modules
-              // that call Random.fillRandom without use-ing Random
-              // like test/modules/standard/stonea/fillRandom.chpl
   var randNums = new RandomStream(initseed);
 
   randNums.fillRandom(x); 

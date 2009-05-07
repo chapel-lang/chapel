@@ -3,6 +3,7 @@ module M1 {
 }
 
 module M2 {
+  use M1;
   def main {
     var f = 4;
     writeln(f);

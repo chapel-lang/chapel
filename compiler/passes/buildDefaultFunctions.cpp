@@ -574,7 +574,7 @@ static void build_record_copy_function(ClassType* ct) {
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   arg->markedGeneric = true;
   fn->insertFormalAtTail(arg);
-  CallExpr* call = new CallExpr(ct->defaultConstructor->name);
+  CallExpr* call = new CallExpr(ct->defaultConstructor);
   for_fields(tmp, ct) {
     if (strcmp("_promotionType", tmp->name))
       call->insertAtTail(new NamedExpr(tmp->name, new CallExpr(".", arg, new_StringSymbol(tmp->name))));

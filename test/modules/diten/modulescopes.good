@@ -1,2 +1,5 @@
 modulescopes.chpl:11: In function 'main':
+modulescopes.chpl:13: error: symbols in module 'M1' must be visible at point of module access
+modulescopes.chpl:13: error: symbols in module 'M2' must be visible at point of module access
+modulescopes.chpl:13: error: symbols in module 'M3' must be visible at point of module access
 modulescopes.chpl:13: error: Symbol 'a' undeclared in module 'M3'

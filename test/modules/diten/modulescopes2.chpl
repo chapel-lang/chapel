@@ -7,6 +7,7 @@ module M1 {
 }
 
 module M4 {
+  use M1, M1.M2, M1.M2.M3;
   var a = 4;
   def main() {
     foo();
