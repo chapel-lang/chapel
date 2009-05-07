@@ -104,11 +104,9 @@ def main() {
   // communications.  Compute the update using r both to compute the
   // index and as the update value.
   //
-  startVerboseComm();
   forall (_, r) in (Updates, RAStream()) do
     on T.domain.dist.ind2loc(r & indexMask) do
       T(r & indexMask) ^= r;
-  stopVerboseComm();
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 
