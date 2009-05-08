@@ -83,9 +83,37 @@ wide strings leaked (?) (04/02/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-??? (04/24/09)
---------------
-[Error matching program output for release/examples/hpcc/ra]
+counting of gasnet arguments is off by a bit (05/08/09)
+-------------------------------------------------------
+[Error matching program output for execflags/bradc/badConfigDDash]
+[Error matching program output for execflags/bradc/configForgotArg]
+[Error matching program output for execflags/bradc/configHasEqualsNoVal2]
+[Error matching program output for execflags/bradc/configHasEqualsNoVal]
+[Error matching program output for execflags/bradc/configNoEquals]
+[Error matching program output for execflags/bradc/strayArg2]
+[Error matching program output for execflags/bradc/strayArg]
+[Error matching program output for execflags/dinan/configvar_error_message]
+[Error matching program output for execflags/shannon/configs/configVarDashSVarEquals]
+[Error matching program output for execflags/shannon/configs/configVarDashS]
+[Error matching program output for execflags/shannon/configs/configVarDash]
+[Error matching program output for execflags/shannon/configs/configVarInvalidName]
+[Error matching program output for execflags/shannon/configs/configVarNotInModule]
+[Error matching program output for execflags/shannon/configs/configVarSetNotDeclared]
+[Error matching program output for execflags/shannon/configs/configVarTwoModsNoneSpecified]
+[Error matching program output for execflags/shannon/configs/configVarWithSpaces]
+[Error matching program output for execflags/shannon/invalidExecOption]
+[Error matching program output for execflags/shannon/spellingTest]
+[Error matching program output for execflags/shannon/unexpectedFlag]
+[Error matching program output for memory/shannon/invalidMemFlag]
+[Error matching program output for memory/shannon/memmaxBytes]
+[Error matching program output for memory/shannon/memmaxInput]
+[Error matching program output for memory/shannon/memmaxIntOnly]
+[Error matching program output for memory/shannon/memstatEquals]
+[Error matching program output for memory/shannon/memtraceNoFilename]
+[Error matching program output for multilocale/numLocales/bradc/printNumLocalesMissingArg]
+[Error matching program output for multilocale/numLocales/bradc/printNumLocalesNonIntArg]
+[Error matching program output for multilocale/numLocales/bradc/printNumLocalesZero]
+[Error: Timed out executing program users/agnieszka/multiArrayI10]
 
 occasional nondeterminism in output (01/30/09, 02/03/09)
 --------------------------------------------------------
