@@ -1,1 +1,1 @@
-configParamNoUse.chpl:12: error: symbols in module 'M1' must be visible at point of module access
+configParamNoUse.chpl:12: error: module 'M1' must be used before accessing its symbols

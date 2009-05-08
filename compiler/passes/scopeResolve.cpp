@@ -1266,7 +1266,7 @@ void scopeResolve(void) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
           if (!verifyModuleUsed(mod, call))
-            USR_FATAL_CONT(call, "symbols in module '%s' must be visible at point of module access",
+            USR_FATAL_CONT(call, "module '%s' must be used before accessing its symbols",
                            mod->name);
           SET_LINENO(call);
           SymbolTableEntry* entry = symbolTable.get(mod->initFn->body);

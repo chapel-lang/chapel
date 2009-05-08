@@ -1,2 +1,2 @@
-fillRandom.chpl:3: error: symbols in module 'Random' must be visible at point of module access
-fillRandom.chpl:4: error: symbols in module 'Random' must be visible at point of module access
+fillRandom.chpl:3: error: module 'Random' must be used before accessing its symbols
+fillRandom.chpl:4: error: module 'Random' must be used before accessing its symbols
