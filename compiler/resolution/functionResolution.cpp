@@ -2246,7 +2246,7 @@ preFold(Expr* expr) {
                 Type* dst = sym->var->type;
                 if ((is_int_type(src) || is_uint_type(src) ||
                      is_bool_type(src)) &&
-		    (is_int_type(dst) || is_uint_type(dst) ||
+                    (is_int_type(dst) || is_uint_type(dst) ||
                      is_bool_type(dst) || is_enum_type(dst) ||
                      dst == dtString)) {
                   VarSymbol* typevar = toVarSymbol(dst->defaultValue);

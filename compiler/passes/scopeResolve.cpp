@@ -177,8 +177,8 @@ buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
 //
 static bool
 verifyModuleUsed(ModuleSymbol* module, BaseAST* scope,
-		 Vec<BaseAST*>* alreadyVisited = NULL,
-		 bool scanModuleUses = true) {
+                 Vec<BaseAST*>* alreadyVisited = NULL,
+                 bool scanModuleUses = true) {
   Vec<BaseAST*> nestedscopes;
   if (!alreadyVisited) {
     return verifyModuleUsed(module, scope, &nestedscopes, scanModuleUses);
@@ -214,8 +214,8 @@ verifyModuleUsed(ModuleSymbol* module, BaseAST* scope,
         INT_ASSERT(modules);
         forv_Vec(ModuleSymbol, mod, *modules) {
           if (mod == module) {
-	    return true;
-	  } else if (mod) {
+            return true;
+          } else if (mod) {
             if (mod != rootModule) {
               if (verifyModuleUsed(module, mod->initFn->body, alreadyVisited, false))
                 return true;
@@ -233,11 +233,11 @@ verifyModuleUsed(ModuleSymbol* module, BaseAST* scope,
     if (scope->getModule()->block == scope) {
       ModuleSymbol* mod = scope->getModule();
       if (mod == module)
-	return true;
+        return true;
     }
     if (getScope(scope)) {
       if (verifyModuleUsed(module, getScope(scope), alreadyVisited, scanModuleUses))
-	return true;
+        return true;
     }
   }
 
@@ -1265,9 +1265,9 @@ void scopeResolve(void) {
     if (call->isNamed(".")) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
-	  if (!verifyModuleUsed(mod, call))
-	    USR_FATAL_CONT(call, "symbols in module '%s' must be visible at point of module access",
-			   mod->name);
+          if (!verifyModuleUsed(mod, call))
+            USR_FATAL_CONT(call, "symbols in module '%s' must be visible at point of module access",
+                           mod->name);
           SET_LINENO(call);
           SymbolTableEntry* entry = symbolTable.get(mod->initFn->body);
           Symbol* sym = (entry) ? entry->get(get_string(call->get(2))) : 0;
