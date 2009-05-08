@@ -1230,7 +1230,15 @@ pragma "inline" def _createFieldDefault(type t, init: single) {
 // does not actually result in temps.
 //
 def chpldev_refToString(inout ref) {
-  return __primitive("ref to string", ref);
+
+  //
+  // print out the address of class references as well
+  //
+  def chpldev_classToString(x: object)
+    return " (class = " + __primitive("ref to string", x) + ")";
+  def chpldev_classToString(x) return "";
+
+  return __primitive("ref to string", ref) + chpldev_classToString(ref);
 }
 
 
