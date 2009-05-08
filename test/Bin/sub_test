@@ -263,9 +263,9 @@ foreach chplsrc ($testsrc)
     endif
 
     if (-r ./$execfile.$execoptsuffix) then
-	set execopts = "$numlocexecopts $globalExecopts `cat ./$execfile.$execoptsuffix`"
+	set execopts = "$globalExecopts `cat ./$execfile.$execoptsuffix` $numlocexecopts"
     else
-        set execopts = "$numlocexecopts $globalExecopts"
+        set execopts = "$globalExecopts $numlocexecopts"
     endif
 
     if (-r ./$execfile.timeout) then
