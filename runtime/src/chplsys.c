@@ -1,9 +1,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <errno.h>
 #include <unistd.h>
 #if defined __APPLE__ || defined __MTA__
 #include <sys/sysctl.h>
+#endif
+#if defined _AIX
+#include <sys/systemcfg.h>
 #endif
 #include <sys/utsname.h>
 #if defined __MTA__
@@ -35,11 +39,17 @@ uint64_t chpl_bytesPerLocale(void) {
   size_t len = sizeof(membytes);
   sysctl(mib, 2, &membytes, &len, NULL, 0);
   return membytes;
+#elif defined _AIX
+  return _system_configuration.physmem;
 #else
-  uint64_t numPages = sysconf(_SC_PHYS_PAGES);
-  uint64_t pageSize = chplGetPageSize();
-  uint64_t total = numPages * pageSize;
-  return total;
+  long int numPages, pageSize;
+  numPages = sysconf(_SC_PHYS_PAGES);
+  if (errno)
+    chpl_internal_error("query of physical memory failed");
+  pageSize = chplGetPageSize();
+  if (errno)
+    chpl_internal_error("query of physical memory failed");
+  return (uint64_t)(numPages * pageSize);
 #endif
 }
 
