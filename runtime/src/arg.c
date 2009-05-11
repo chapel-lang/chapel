@@ -233,7 +233,7 @@ static int parseMemFlag(const char* memFlag, int32_t lineno, chpl_string filenam
 
 static int32_t _argNumLocales = 0;
 
-static void parseNumLocales(const char* numPtr, int32_t lineno, chpl_string filename) {
+void parseNumLocales(const char* numPtr, int32_t lineno, chpl_string filename) {
   int invalid;
   char invalidChars[2] = "\0\0";
   _argNumLocales = chpl_string_to_int32_t_precise(numPtr, &invalid, invalidChars);
@@ -245,7 +245,6 @@ static void parseNumLocales(const char* numPtr, int32_t lineno, chpl_string file
   if (_argNumLocales < 1) {
     chpl_error("Number of locales must be greater than 0", lineno, filename);
   }
-  initSetValue("numLocales", numPtr, "Built-in", lineno, filename);
 }
 
 
@@ -304,11 +303,6 @@ void parseArgs(int* argc, char* argv[]) {
             verbosity = 0;
             break;
           }
-          if (strncmp(flag, "numLocales", 10) == 0) {
-            if (flag[10] == '=') {
-              parseNumLocales(&(flag[11]), lineno, filename);
-            }
-          }
           if (flag[0] == 'm' && parseMemFlag(flag, lineno, filename)) {
             break;
           }
@@ -357,7 +351,7 @@ void parseArgs(int* argc, char* argv[]) {
           } else {
             numPtr = &(currentArg[3]);
           }
-          parseNumLocales(numPtr, lineno, filename);
+          initSetValue("numLocales", numPtr, "Built-in", lineno, filename);
           break;
         }
         i += handleNonstandardArg(argc, argv, i, lineno, filename);
@@ -377,11 +371,6 @@ void parseArgs(int* argc, char* argv[]) {
             char* message = chpl_glom_strings(3, "\"", currentArg, 
                                               "\" is not a valid argument");
             chpl_error(message, lineno, filename);
-          }
-          if (strncmp(currentArg+2, "numLocales", 10) == 0) {
-            if (currentArg[12] == '=') {
-              parseNumLocales(&(currentArg[13]), lineno, filename);
-            }
           }
           i += handlePossibleConfigVar(argc, argv, i, lineno, filename);
           break;

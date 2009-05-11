@@ -10,6 +10,7 @@
 extern int32_t blockreport;
 extern int32_t taskreport;
 
+void parseNumLocales(const char* numPtr, int32_t lineno, chpl_string filename);
 void parseArgs(int* argc, char* argv[]);
 int32_t getArgNumLocales(void);
 int _runInGDB(void);

@@ -245,6 +245,9 @@ void initSetValue(const char* varName, const char* value,
   if (configVar == NULL || configVar == ambiguousConfigVar) {
     chpl_internal_error("unknown config var case not handled appropriately");
   }
+  if (strcmp(varName, "numLocales") == 0) {
+    parseNumLocales(value, lineno, filename);
+  }
   configVar->setValue = chpl_glom_strings(1, value);
 }
 
