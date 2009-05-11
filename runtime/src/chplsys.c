@@ -44,10 +44,10 @@ uint64_t chpl_bytesPerLocale(void) {
 #else
   long int numPages, pageSize;
   numPages = sysconf(_SC_PHYS_PAGES);
-  if (errno)
+  if (numPages < 0)
     chpl_internal_error("query of physical memory failed");
   pageSize = chplGetPageSize();
-  if (errno)
+  if (pageSize < 0)
     chpl_internal_error("query of physical memory failed");
   return (uint64_t)(numPages * pageSize);
 #endif
