@@ -17,6 +17,10 @@
 general regressions
 ===================
 
+regression caused by line number changes (05/09/08)
+---------------------------------------------------
+[Error matching compiler output for users/brodtkorb/coercionQuestion]
+
 spurious verification failures on RA (e.g. 04/04/09)
 ----------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -83,37 +87,16 @@ wide strings leaked (?) (04/02/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-counting of gasnet arguments is off by a bit (05/08/09)
--------------------------------------------------------
-[Error matching program output for execflags/bradc/badConfigDDash]
-[Error matching program output for execflags/bradc/configForgotArg]
-[Error matching program output for execflags/bradc/configHasEqualsNoVal2]
-[Error matching program output for execflags/bradc/configHasEqualsNoVal]
-[Error matching program output for execflags/bradc/configNoEquals]
-[Error matching program output for execflags/bradc/strayArg2]
-[Error matching program output for execflags/bradc/strayArg]
-[Error matching program output for execflags/dinan/configvar_error_message]
-[Error matching program output for execflags/shannon/configs/configVarDashSVarEquals]
-[Error matching program output for execflags/shannon/configs/configVarDashS]
-[Error matching program output for execflags/shannon/configs/configVarDash]
-[Error matching program output for execflags/shannon/configs/configVarInvalidName]
-[Error matching program output for execflags/shannon/configs/configVarNotInModule]
-[Error matching program output for execflags/shannon/configs/configVarSetNotDeclared]
-[Error matching program output for execflags/shannon/configs/configVarTwoModsNoneSpecified]
-[Error matching program output for execflags/shannon/configs/configVarWithSpaces]
-[Error matching program output for execflags/shannon/invalidExecOption]
-[Error matching program output for execflags/shannon/spellingTest]
-[Error matching program output for execflags/shannon/unexpectedFlag]
-[Error matching program output for memory/shannon/invalidMemFlag]
-[Error matching program output for memory/shannon/memmaxBytes]
-[Error matching program output for memory/shannon/memmaxInput]
-[Error matching program output for memory/shannon/memmaxIntOnly]
-[Error matching program output for memory/shannon/memstatEquals]
-[Error matching program output for memory/shannon/memtraceNoFilename]
-[Error matching program output for multilocale/numLocales/bradc/printNumLocalesMissingArg]
-[Error matching program output for multilocale/numLocales/bradc/printNumLocalesNonIntArg]
-[Error matching program output for multilocale/numLocales/bradc/printNumLocalesZero]
-[Error: Timed out executing program users/agnieszka/multiArrayI10]
+argument number failure due to Brad's recent changes (05/09/08)
+---------------------------------------------------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/test_unknown_config]
+
+memory query failed due to Steve's recent change (05/09/08)
+-----------------------------------------------------------
+[Error matching program output for modules/standard/memory/countMemory/countMemory]
+[Error matching program output for studies/hpcc/2008/testProbSize]
+[Error matching program output for studies/hpcc/common/testProbSize]
+
 
 occasional nondeterminism in output (01/30/09, 02/03/09)
 --------------------------------------------------------
@@ -134,7 +117,7 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09, 04/18/09, 04/21/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09, 04/18/09, 04/21/09, 05/10/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09, 03/14/09, 03/22/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09, 03/24/09, 03/28/09, 04/02/09, 04/12/09, 04/22/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
@@ -192,7 +175,13 @@ opts-specific tests
 (Example runs: 0)
  
 
-(Full run: 48)
+(Full run: 84 -- 48 without standard errors)
+
+all
+---
+[Error matching compiler output for functions/bradc/namedArgs/forceNamedArgs-createdummy]
+[Error matching compiler output for users/brodtkorb/coercionQuestion]
+
 
 --no-dead-code-elimination
 --------------------------
