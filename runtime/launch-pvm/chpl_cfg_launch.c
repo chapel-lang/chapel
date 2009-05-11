@@ -1,17 +1,16 @@
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include "chpllaunch.h"
 #include "chplmem.h"
 #include "error.h"
 #include <stdlib.h>
 
 // TODO: Un-hard-code this stuff:
-static const char* pvmrunPath = "/tmp/Chapel/pvm3/lib/";
-static const char* hostfile = "hostfile";
+static const char* pvmrunPath = "/users/ljprokow/Projects/Chapel/Chapel/third-party/pvm/pvm-3.4.6/pvm3/lib/";
+static const char* hostfile = "/users/ljprokow/Projects/Chapel/Chapel/third-party/pvm/pvm-3.4.6/pvm3/hostfile";
 
-
-static char* chpl_launch_create_command(int argc, char* argv[], 
-                                        int32_t numLocales) {
+static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i;
   char i_str[128];
   int size;
@@ -46,9 +45,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   deletesize = addsize;
   addsize += (i * strlen("add \n")) + strlen("echo \"\"");
   basesize += strlen("echo \"\" | pvm && sleep 5 && ") + strlen(pvmrunPath) + (i * strlen("spawn - -> _real   \n")) + (i * strlen(argv[0])) + (i * strlen(argv[1])) + (i * strlen(argv[2])) + (i * strlen(i_str));
-  //  basesize += (i * strlen("echo\"spawn - -> _real   \" | pvm && sleep 5 && ")) + (i * strlen(argv[0])) + (i * strlen(pvmrunPath)) + (i * strlen(argv[1])) + (i * strlen(argv[2])) + (i * sizeof(i_str)) + (strlen("sleep 10"));
-  //  basesize += (i * strlen(" ")) + strlen("spawn -> \n") + strlen(argv[0]);
-  //  basesize += strlen(argv[0]) + strlen("_real;") + (i * strlen(" "));
   deletesize += (i * strlen("delete \n")) + strlen("echo \"\"");
   topvmsize = strlen(" | pvm") + strlen(pvmrunPath);
   if (i < numLocales) {
@@ -77,9 +73,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   *topvmCommand = '\0';
   strcat(addCommand, "echo \"");
   strcat(deleteCommand, "echo \"");
-  // strcat(baseCommand, "spawn -> ");
-  //  strcat(baseCommand, argv[0]);
-  //  strcat(baseCommand, "_real");
   strcat(baseCommand, "echo \"");
   while (i < numLocales) {
     sprintf(i_str, "%d", i);
@@ -97,8 +90,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     strcat(baseCommand, " ");
     strcat(baseCommand, i_str);
     strcat(baseCommand, "\n");
-    //    strcat(baseCommand, " ");
-    //    strcat(baseCommand, nodestoadd[i]);
     strcat(deleteCommand, "delete ");
     strcat(deleteCommand, nodestoadd[i]);
     strcat(deleteCommand, "\n");
