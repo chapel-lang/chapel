@@ -17,10 +17,6 @@
 general regressions
 ===================
 
-regression caused by line number changes (05/09/08)
----------------------------------------------------
-[Error matching compiler output for users/brodtkorb/coercionQuestion]
-
 spurious verification failures on RA (e.g. 04/04/09)
 ----------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -86,6 +82,10 @@ wide strings leaked (?) (04/02/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+missing chpl_alloc routines (05/12/09)
+--------------------------------------
+***everything***
 
 argument number failure due to Brad's recent changes (05/09/08)
 ---------------------------------------------------------------
@@ -224,6 +224,10 @@ all
 =======================
 x2-specific regressions
 =======================
+
+missing chpl_alloc routines (05/12/09)
+--------------------------------------
+***everything***
 
 spurious errno routing to host message
 --------------------------------------
