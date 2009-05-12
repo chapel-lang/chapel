@@ -1,12 +1,11 @@
 
 ================================================================================
-----------------------
-***Allocated Memory***
-----------------------
-Size:    Number:  Total:   Address:    Description:
-(bytes)           (bytes)  
+---------------------
+*** Leaked Memory ***
+---------------------
+    Number    Total Size  Description
+   of items     (bytes) 
 ================================================================================
-32       1        32       0x00000000  instance of class C2
-8        1        8        0x00000000  instance of class C
+          1           32  instance of class C2
+          1            8  instance of class C
 
-Final Memory Statistics:  totalMem=40, maxMem=40

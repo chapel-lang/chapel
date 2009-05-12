@@ -36,9 +36,7 @@ void printFinalMemStat(int32_t lineno, chpl_string filename);
 void printMemStat(int32_t lineno, chpl_string filename);
 void printMemTable(int64_t threshold, chpl_bool userCode,
                    int32_t lineno, chpl_string filename);
-// calls printMemTable if --memfinalstat was specified on the command line;
-// otherwise does nothing
-void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename);
+void chpl_printMemTable(void);
 void printToMemLog(const char* memType, size_t number, size_t size,
                    const char* description, chpl_bool userCode,
                    int32_t lineno, chpl_string filename,
@@ -52,6 +50,7 @@ void setMemthreshold(int64_t value);
 void setMemtrace(char* memlogname);
 void setMemtrack(void);
 void startTrackingMem(void);
+void  stopTrackingMem(void);
 void updateMemory(memTableEntry* memEntry, void* oldAddress,
                   void* newAddress, size_t number, size_t size);
 

@@ -5,6 +5,7 @@
 
 #include "chplrt.h"
 #include "chplmemtrack.h"
+#include "chapel_code.h"
 #include "chplthreads.h"
 #include "chplcomm.h"
 #include "error.h"
@@ -15,13 +16,8 @@
 
 #define CHPL_DEBUG_MEMTRACK 0
 
-#if CHPL_DEBUG_MEMTRACK
-#define PRINTF(_s) {                  \
-  printf("%s\n", _s); fflush(stdout); \
-}
-#else
-#define PRINTF(_s)
-#endif
+#define PRINTF(s) do if (CHPL_DEBUG_MEMTRACK) \
+                       { printf("%s%s\n", __func__, s); fflush(stdout); } while (0)
 
 
 static memTableEntry* memTable[HASHSIZE];
@@ -149,7 +145,6 @@ void setMemstat(void) {
 
 void setMemfinalstat(void) {
   memfinalstatSet = true;
-  memstatSet = true;
   memtrackSet = true;
 }
 
@@ -182,6 +177,7 @@ void setMemtrace(char* memlogname) {
       memlog = stdout;
   }
 }
+
 
 void increaseMemStat(size_t chunk, chpl_bool userCode,
                      int32_t lineno, chpl_string filename) {
@@ -223,6 +219,14 @@ void startTrackingMem(void) {
     memstat = memstatSet;
     memtrack = memtrackSet;
     memtrace = memtraceSet;
+}
+
+
+void stopTrackingMem(void) {
+    memfinalstat = false;
+    memstat = false;
+    memtrack = false;
+    memtrace = false;
 }
 
 
@@ -311,22 +315,61 @@ void printMemTable(int64_t threshold, chpl_bool userCode,
 }
 
 
-void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
-  if (memfinalstat)
-    printMemTable(threshold>=0 ? threshold : memthresholdValue,
-                  reportOnlyUserAllocations, lineno, filename);
+void chpl_printMemTable(void) {
+  memTableEntry* memEntry = NULL;
+
+  const int numberWidth   = 11;
+
+  const char* size        = "Total Size";
+  const char* bytes       = "(bytes) ";
+  const char* number      = "Number ";
+  const char* items       = "of items";
+  const char* description = "Description";
+  const char* line40      = "========================================";
+
+  _Bool printHeadings     = false;
+
+  stopTrackingMem();
+
+  for (memEntry = first; memEntry != NULL; memEntry = memEntry->nextInstalled) {
+    size_t chunk = memEntry->number * memEntry->size;
+    if (chunk >= memthresholdValue &&
+        ((reportOnlyUserAllocations && memEntry->userCode) ||
+         (!reportOnlyUserAllocations && !memEntry->userCode))) {
+      chpl____mem_alloc_add(memEntry->description, chunk);
+      printHeadings = true;
+    }
+  }
+  if (printHeadings) {
+    char format[64];
+    printf("\n%s%s\n", line40, line40);
+    printf("---------------------\n");
+    printf("*** Leaked Memory ***\n");
+    printf("---------------------\n");
+    printf("%*s  %*s  %s\n",
+           numberWidth, number,
+           numberWidth, size,
+           description);
+    printf("%*s  %*s\n",
+           numberWidth, items,
+           numberWidth, bytes);
+    printf("%s%s\n", line40, line40);
+    snprintf(format, sizeof(format), "%%%d%s", numberWidth, PRIu64);
+    chpl____mem_alloc_print(format);
+    putchar('\n');
+  }
 }
 
 
 memTableEntry* lookupMemory(void* memAlloc) {
   memTableEntry* found = NULL;
-  PRINTF("lookupMemory");
+  PRINTF("");
   chpl_mutex_lock(&memtrack_lock);
 
   found = lookupMemoryNoLock(memAlloc);
 
   chpl_mutex_unlock(&memtrack_lock);
-  PRINTF("lookupMemory done");
+  PRINTF(" done");
   return found;
 }
 
@@ -335,7 +378,7 @@ void installMemory(void* memAlloc, size_t number, size_t size,
                    const char* description, chpl_bool userCode) {
   unsigned hashValue;
   memTableEntry* memEntry;
-  PRINTF("installMemory");
+  PRINTF("");
   chpl_mutex_lock(&memtrack_lock);
   memEntry = lookupMemoryNoLock(memAlloc);
 
@@ -372,14 +415,14 @@ void installMemory(void* memAlloc, size_t number, size_t size,
   memEntry->size = size;
   memEntry->userCode = userCode;
   chpl_mutex_unlock(&memtrack_lock);
-  PRINTF("installMemory done");
+  PRINTF(" done");
 }
 
 
 void updateMemory(memTableEntry* memEntry, void* oldAddress, void* newAddress,
                   size_t number, size_t size) {
   unsigned newHashValue;
-  PRINTF("updateMemory");
+  PRINTF("");
   chpl_mutex_lock(&memtrack_lock);
   newHashValue = hash(newAddress);
 
@@ -392,13 +435,13 @@ void updateMemory(memTableEntry* memEntry, void* oldAddress, void* newAddress,
   memEntry->number = number;
   memEntry->size = size;
   chpl_mutex_unlock(&memtrack_lock);
-  PRINTF("updateMemory done");
+  PRINTF(" done");
 }
 
 void removeMemory(void* memAlloc, int32_t lineno, chpl_string filename) {
   memTableEntry* thisBucketEntry;
   memTableEntry* memEntry;
-  PRINTF("removeMemory");
+  PRINTF("");
   chpl_mutex_lock(&memtrack_lock);
   memEntry = lookupMemoryNoLock(memAlloc);
 
@@ -423,7 +466,7 @@ void removeMemory(void* memAlloc, int32_t lineno, chpl_string filename) {
   } else {
     chpl_error("Attempting to free memory that wasn't allocated", lineno, filename);
   }
-  PRINTF("removeMemory done");
+  PRINTF(" done");
   chpl_mutex_unlock(&memtrack_lock);
 }
 

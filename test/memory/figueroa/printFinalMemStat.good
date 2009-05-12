@@ -1,14 +1,10 @@
 
 ================================================================================
-----------------------
-***Allocated Memory***
-----------------------
-Size:    Number:  Total:   Address:    Description:
-(bytes)           (bytes)  
+---------------------
+*** Leaked Memory ***
+---------------------
+    Number    Total Size  Description
+   of items     (bytes) 
 ================================================================================
-64       1        64       0x00000000  64 bytes
-64       1        64       0x00000000  64 bytes
-64       1        64       0x00000000  64 bytes
-64       1        64       0x00000000  64 bytes
+          4          256  64 bytes
 
-Final Memory Statistics:  totalMem=256, maxMem=256
