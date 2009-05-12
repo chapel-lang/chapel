@@ -383,13 +383,11 @@ static void polling(void* x) {
       fflush(stderr);
       chpl_mutex_unlock(&termination_lock);
       finished = 1;
-      okay_to_barrier = 1;
       break;
     }
     default: {
       chpl_internal_error("Error: default case should never get reached");
       finished = 1;
-      okay_to_barrier = 1;
       break;
     }
     }
@@ -499,8 +497,37 @@ void chpl_comm_broadcast_private(void* addr, int size) {
 }
 
 void chpl_comm_barrier(const char *msg) {
+  int bufid = 0;
   PRINTF(msg);
-  while (!okay_to_barrier) {}
+
+  // Exit is a funny case, and most of the barrier case is built up around it.
+  // Node 0 ignores the barrier before the exit and tears down its threads
+  // (which have finished), and calls chpl_comm_exit_all. The rest of the
+  // nodes wait for a signal from node 0 that it's ready for them.
+
+  // The signal is okay_to_barrier.
+
+  // okay_to_barrier starts out true, but once all the setup is complete,
+  // okay_to_barrier is set to false (done in chpl_comm_rollcall). This
+  // safegaurd is important because chpl_comm_barrier is blocking, not
+  // thread-safe, and it holds the pvm_lock.
+
+  // Once node 0 tells everyone it's okay to barrier, everyone does the
+  // barrier (including node 0 -- done in chpl_comm_exit_all), and proceeds
+  // to the termination.
+  if (!(strcmp(msg, "chpl_comm_exit_all")) && chpl_localeID == 0) {
+    return;
+  }
+  while (!okay_to_barrier) {
+    while (bufid == 0) {
+      PVM_PACK_SAFE(bufid = pvm_nrecv(-1, BCASTTAG), "pvm_recv", "chpl_comm_barrier");
+      if (bufid == 0) {
+        chpl_mutex_unlock(&pvm_lock);
+      }
+    }
+    PVM_UNPACK_SAFE(pvm_upkint(&okay_to_barrier, 1, 1), "pvm_upkint", "chpl_comm_barrier");
+  }
+
   PVM_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_barrier");
   return;
 }
@@ -508,26 +535,27 @@ void chpl_comm_barrier(const char *msg) {
 void chpl_comm_exit_all(int status) {
   _chpl_message_info msg_info;
   PRINTF("chpl_comm_exit_all called\n");
-  // Exiting not working totally correctly right now, so leaving debug in
-  // for now.
-  fprintf(stderr, "chpl_comm_exit_all called\n");
+  // Matches code in chpl_comm_barrier. Node 0, on exit, needs to signal
+  // to everyone that it's okay to barrier (and thus exit).
+  if (chpl_localeID == 0) {
+    okay_to_barrier = 1;
+    PVM_PACK_SAFE(pvm_initsend(PvmDataRaw), "pvm_initsend", "chpl_comm_exit_all");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&okay_to_barrier, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
+    PVM_UNPACK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
+    // Do a matching barrier to everyone still in chpl_comm_barrier.
+    PVM_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_exit_all");
+  }
   msg_info.msg_type = ChplCommFinish;
   chpl_pvm_send(chpl_localeID, TAGMASK+1, &msg_info, sizeof(_chpl_message_info));
   PRINTF("Sent shutdown message.");
-  fprintf(stderr, "Sent shutdown message.\n");
   chpl_mutex_lock(&termination_lock);
   chpl_mutex_unlock(&termination_lock);
-  fprintf(stderr, "Calling chpl_comm_barrier from chpl_comm_exit_all.\n");
   chpl_comm_barrier("About to finalize");
-  fprintf(stderr, "Left chpl_comm_barrier from chpl_comm_exit_all.\n");
   PVM_SAFE(pvm_halt(), "pvm_halt", "chpl_comm_exit_all");
   return;
 }
 
 void chpl_comm_exit_any(int status) {
-  // Exiting not working totally correctly right now, so leaving debug in
-  // for now.
-  fprintf(stderr, "chpl_comm_exit_any called\n");
   PVM_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_any");
   PVM_SAFE(pvm_exit(), "pvm_exit", "chpl_comm_exit_any");
   return;
