@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include "pvm3.h"
 
-#define CHPL_DIST_DEBUG 1
+#define CHPL_DIST_DEBUG 0
 
 #if CHPL_DIST_DEBUG
 #define DEBUG_MSG_LENGTH 256
@@ -35,14 +35,45 @@ int lock_num = 0;
     sprintf(msg, "\n\n%d/%d:%d PVM call failed.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self());                                                \
     chpl_error(msg, __LINE__, __FILE__);                                   \
   }                                                                        \
+}
+
+#define PVM_PACK_SAFE(call, who, in) {                                     \
+  int retcode;                                                             \
+  chpl_mutex_lock(&pvm_lock);                                              \
+  retcode = call;                                                          \
+  lock_num++;                                                              \
+  if (retcode < 0) {                                                       \
+    char msg[256];                                                         \
+    sprintf(msg, "\n\n%d/%d:%d PVM call failed.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self());                                                \
+    chpl_error(msg, __LINE__, __FILE__);                                   \
+  }                                                                        \
+}
+
+#define PVM_UNPACK_SAFE(call, who, in) {                                   \
+  int retcode;                                                             \
+  retcode = call;                                                          \
   chpl_mutex_unlock(&pvm_lock);                                            \
+  if (retcode < 0) {                                                       \
+    char msg[256];                                                         \
+    sprintf(msg, "\n\n%d/%d:%d PVM call failed.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self());                                                \
+    chpl_error(msg, __LINE__, __FILE__);                                   \
+  }                                                                        \
+}
+
+#define PVM_NO_LOCK_SAFE(call, who, in) {                                  \
+  int retcode;                                                             \
+  retcode = call;                                                          \
+  if (retcode < 0) {                                                       \
+    char msg[256];                                                         \
+    sprintf(msg, "\n\n%d/%d:%d PVM call failed.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self());                                                \
+    chpl_error(msg, __LINE__, __FILE__);                                   \
+  }                                                                        \
 }
 
 #define TAGMASK 4194303
 #define BCASTTAG 4194299
 
 chpl_mutex_t pvm_lock;
-chpl_mutex_t pack_lock;
 chpl_mutex_t termination_lock;
 
 static int chpl_comm_diagnostics = 0;           // set via startCommDiagnostics
@@ -55,6 +86,8 @@ static int chpl_comm_no_debug_private = 0;
 
 int tids[64]; // tid list for all nodes
 int instance;
+
+int okay_to_barrier = 1;
 
 //
 // Chapel interface starts here
@@ -154,39 +187,39 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   PRINTF(debugMsg);
 #endif
   bufid = 0;
-  fprintf(stderr, "Waiting on tid=%d, msgtag=%d\n", tid, msgtag); // Dele
+  //  fprintf(stderr, "Waiting on tid=%d, msgtag=%d\n", tid, msgtag); // Dele
   while (bufid == 0) {
-    chpl_mutex_lock(&pack_lock);
-    PVM_SAFE(bufid = pvm_nrecv(tid, msgtag), "pvm_nrecv", "chpl_pvm_recv");
+    PVM_PACK_SAFE(bufid = pvm_nrecv(tid, msgtag), "pvm_nrecv", "chpl_pvm_recv");
     if (bufid == 0) {
-      chpl_mutex_unlock(&pack_lock);
+      chpl_mutex_unlock(&pvm_lock);
     }
   }
-  PVM_SAFE(pvm_bufinfo(bufid, &bytes, &pvmtype, &source), "pvm_bufinfo", "chpl_pvm_recv");
-  fprintf(stderr, "bufinfo - bufid=%d, bytes=%d, tag=%d, source=%d\n", bufid, bytes, pvmtype, source); // Dele
+  PVM_NO_LOCK_SAFE(pvm_bufinfo(bufid, &bytes, &pvmtype, &source), "pvm_bufinfo", "chpl_pvm_recv");
+  //  fprintf(stderr, "bufinfo - bufid=%d, bytes=%d, tag=%d, source=%d\n", bufid, bytes, pvmtype, source); // Dele
 
   // Either getting "metadata" case, which is the chpl_message_info
   // containing the information about what's to come, or getting
   // actual data.
   if (msgtag == TAGMASK+1) {
-    fprintf(stderr, "Receiving _chpl_message_info\n"); // Dele
-    PVM_SAFE(pvm_upkint(&pvmtype, 1, 1), "pvm_upkint", "chpl_pvm_recv");
-    fprintf(stderr, "Received pvmtype=%d\n", pvmtype); // Dele
-    PVM_SAFE(pvm_upkint(&repTag, 1, 1), "pvm_upkint", "chpl_pvm_recv");
-    fprintf(stderr, "Received repTag=%d\n", repTag); // Dele
-    PVM_SAFE(pvm_upkint(&bytes, 1, 1), "pvm_upkint", "chpl_pvm_recv");
-    fprintf(stderr, "Received bytes=%d\n", bytes); // Dele
+    //    fprintf(stderr, "Receiving _chpl_message_info\n"); // Dele
+    PVM_NO_LOCK_SAFE(pvm_upkint(&pvmtype, 1, 1), "pvm_upkint", "chpl_pvm_recv");
+    //    fprintf(stderr, "Received pvmtype=%d\n", pvmtype); // Dele
+    PVM_NO_LOCK_SAFE(pvm_upkint(&repTag, 1, 1), "pvm_upkint", "chpl_pvm_recv");
+    //    fprintf(stderr, "Received repTag=%d\n", repTag); // Dele
+    PVM_NO_LOCK_SAFE(pvm_upkint(&bytes, 1, 1), "pvm_upkint", "chpl_pvm_recv");
+    //    fprintf(stderr, "Received bytes=%d\n", bytes); // Dele
     // Metadata case either contains an address for the data or a
     // function ID (or, if ChplCommFinish, nothing).
     if ((pvmtype == ChplCommPut) || (pvmtype == ChplCommGet)) {
-      PVM_SAFE(pvm_upkint(&packagesize, 1, 1), "pvm_upkint", "chpl_pvm_recv");
-      PVM_SAFE(pvm_upkbyte((void *)&(((_chpl_message_info *)buf)->u.data), packagesize, 1), "pvm_upkbyte", "chpl_pvm_recv");
+      PVM_NO_LOCK_SAFE(pvm_upkint(&packagesize, 1, 1), "pvm_upkint", "chpl_pvm_recv");
+      PVM_UNPACK_SAFE(pvm_upkbyte((void *)&(((_chpl_message_info *)buf)->u.data), packagesize, 1), "pvm_upkbyte", "chpl_pvm_recv");
     } else if (pvmtype == ChplCommFinish) {
       // Do nothing. Nothing in the union.
+      chpl_mutex_unlock(&pvm_lock);
     } else {
-      PVM_SAFE(pvm_upkint(&fnid, 1, 1), "pvm_upkint", "chpl_pvm_recv");
+      PVM_UNPACK_SAFE(pvm_upkint(&fnid, 1, 1), "pvm_upkint", "chpl_pvm_recv");
       ((_chpl_message_info *)buf)->u.fid = (chpl_fn_int_t) fnid;
-      fprintf(stderr, "Received fnid=%d\n", fnid); // Dele
+      //      fprintf(stderr, "Received fnid=%d\n", fnid); // Dele
     }
     ((_chpl_message_info *)buf)->msg_type = (int) pvmtype;
     ((_chpl_message_info *)buf)->replyTag = (int) repTag;
@@ -194,10 +227,9 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
 
   // Getting actual data
   } else {
-    PVM_SAFE(pvm_upkbyte(((void *)buf), sz, 1), "pvm_upkbyte", "chpl_pvm_recv");
-    fprintf(stderr, "Receiving something via upkbyte of size %d.\n", sz); // Dele
+    PVM_UNPACK_SAFE(pvm_upkbyte(((void *)buf), sz, 1), "pvm_upkbyte", "chpl_pvm_recv");
+    //    fprintf(stderr, "Receiving something via upkbyte of size %d.\n", sz); // Dele
   }
-  chpl_mutex_unlock(&pack_lock);
 #if CHPL_DIST_DEBUG
   sprintf(debugMsg, "chpl_pvm_recv(%p, from=%d, tag=%d, sz=%d) done", buf, tid, msgtag, sz);
   PRINTF(debugMsg);
@@ -220,45 +252,44 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
   sprintf(debugMsg, "chpl_pvm_send(%p, to=%d, tag=%d, sz=%d)", buf, tid, msgtag, sz);
   PRINTF(debugMsg);
 #endif
-  chpl_mutex_lock(&pack_lock);
-  PVM_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_pvm_send");
+  PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_pvm_send");
 
   // Either sending "metadata" case, which is the chpl_message_info
   // containing the information about what's to come, or sending
   // actual data.
   if (msgtag == TAGMASK+1) {
-    fprintf(stderr, "Sending _chpl_message_info with type=%d, tag=%d, size=%d\n", ((_chpl_message_info *)buf)->msg_type, ((_chpl_message_info *)buf)->replyTag, ((_chpl_message_info *)buf)->size); // Dele
+    //    fprintf(stderr, "Sending _chpl_message_info with type=%d, tag=%d, size=%d\n", ((_chpl_message_info *)buf)->msg_type, ((_chpl_message_info *)buf)->replyTag, ((_chpl_message_info *)buf)->size); // Dele
     msgtype = ((_chpl_message_info *)buf)->msg_type;
     repTag = ((_chpl_message_info *)buf)->replyTag;
     datasize = ((_chpl_message_info *)buf)->size;
-    PVM_SAFE(pvm_pkint(&msgtype, 1, 1), "pvm_pkint", "chpl_pvm_send");
-    fprintf(stderr, "Sent msgtype=%d\n", msgtype); // Dele
-    PVM_SAFE(pvm_pkint(&repTag, 1, 1), "pvm_pkint", "chpl_pvm_send");
-    fprintf(stderr, "Sent repTag=%d\n", repTag); // Dele
-    PVM_SAFE(pvm_pkint(&datasize, 1, 1), "pvm_pkint", "chpl_pvm_send");
-    fprintf(stderr, "Sent datasize=%d\n", datasize); // Dele
+    PVM_NO_LOCK_SAFE(pvm_pkint(&msgtype, 1, 1), "pvm_pkint", "chpl_pvm_send");
+    //    fprintf(stderr, "Sent msgtype=%d\n", msgtype); // Dele
+    PVM_NO_LOCK_SAFE(pvm_pkint(&repTag, 1, 1), "pvm_pkint", "chpl_pvm_send");
+    //    fprintf(stderr, "Sent repTag=%d\n", repTag); // Dele
+    PVM_NO_LOCK_SAFE(pvm_pkint(&datasize, 1, 1), "pvm_pkint", "chpl_pvm_send");
+    //    fprintf(stderr, "Sent datasize=%d\n", datasize); // Dele
     // Metadata case either contains an address for the data or a
     // function ID (or, if ChplCommFinish, nothing).
     if ((msgtype == ChplCommPut) || (msgtype == ChplCommGet)) {
       packagesize = sizeof(void *);
-      PVM_SAFE(pvm_pkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
-      PVM_SAFE(pvm_pkbyte((void *)&(((_chpl_message_info *)buf)->u.data), packagesize, 1), "pvm_pkbyte", "chpl_pvm_send");
-      fprintf(stderr, "Sent address data of size %d.\n", packagesize); // Dele
+      PVM_NO_LOCK_SAFE(pvm_pkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
+      PVM_NO_LOCK_SAFE(pvm_pkbyte((void *)&(((_chpl_message_info *)buf)->u.data), packagesize, 1), "pvm_pkbyte", "chpl_pvm_send");
+      //      fprintf(stderr, "Sent address data of size %d.\n", packagesize); // Dele
     } else if (msgtype == ChplCommFinish) {
       // Do nothing. Nothing in the union.
+      // Unlock is done in the PVM_UNPACK_SAFE on the actual pvm_send.
     } else {
       fnid = ((_chpl_message_info *)buf)->u.fid;
-      PVM_SAFE(pvm_pkint(&fnid, 1, 1), "pvm_pkint", "chpl_pvm_send");
-      fprintf(stderr, "Sent fnid=%d\n", fnid); // Dele
+      PVM_NO_LOCK_SAFE(pvm_pkint(&fnid, 1, 1), "pvm_pkint", "chpl_pvm_send");
+      //      fprintf(stderr, "Sent fnid=%d\n", fnid); // Dele
     }
   // Sending actual data
   } else {
-    fprintf(stderr, "Sending something via pkbyte of size %d.\n", sz); // Dele
-    PVM_SAFE(pvm_pkbyte(((void *)buf), sz, 1), "pvm_pkbyte", "chpl_pvm_send");
-    fprintf(stderr, "Sent something.\n"); // Dele
+    //    fprintf(stderr, "Sending something via pkbyte of size %d.\n", sz); // Dele
+    PVM_NO_LOCK_SAFE(pvm_pkbyte(((void *)buf), sz, 1), "pvm_pkbyte", "chpl_pvm_send");
+    //    fprintf(stderr, "Sent something.\n"); // Dele
   }
-  PVM_SAFE(pvm_send(tid, msgtag), "pvm_pksend", "chpl_pvm_send");
-  chpl_mutex_unlock(&pack_lock);
+  PVM_UNPACK_SAFE(pvm_send(tid, msgtag), "pvm_pksend", "chpl_pvm_send");
 
 #if CHPL_DIST_DEBUG
   sprintf(debugMsg, "chpl_pvm_send(%p, to=%d, tag=%d, sz=%d) done", buf, tid, msgtag, sz);
@@ -352,11 +383,13 @@ static void polling(void* x) {
       fflush(stderr);
       chpl_mutex_unlock(&termination_lock);
       finished = 1;
+      okay_to_barrier = 1;
       break;
     }
     default: {
       chpl_internal_error("Error: default case should never get reached");
       finished = 1;
+      okay_to_barrier = 1;
       break;
     }
     }
@@ -369,9 +402,17 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   int i;
   int max;
 
+#if CHPL_DIST_DEBUG
+  char debugMsg[DEBUG_MSG_LENGTH];
+#endif
+
   // Figure out who I am
   chpl_numLocales = (int32_t)atoi((*argv_p)[2]);
   chpl_localeID = (int32_t)atoi((*argv_p)[3]);
+#if CHPL_DIST_DEBUG
+  sprintf(debugMsg, "Starting with chpl_numLocales=%d. I am chpl_localeID=%d.", chpl_numLocales, chpl_localeID);
+  PRINTF(debugMsg);
+#endif
 
   // Join the group of all nodes (named "job")
   // Barrier until everyone (numLocales) has joined
@@ -405,6 +446,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 
 void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID, chpl_numLocales, chpl_localeName());
+  okay_to_barrier = 0;
   return;
 }
 
@@ -421,24 +463,24 @@ void chpl_comm_alloc_registry(int numGlobals) {
 void chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
   int size;
+  char debugMsg[128];
   PRINTF("start broadcast globals");
   for (i = 0; i < numGlobals; i++) {
-    chpl_mutex_lock(&pack_lock);
     // Either the root node broadcasting with pvm_bcast, or we're one of
     // the slave nodes getting the data.
     if (chpl_localeID == 0) {
-      PVM_SAFE(pvm_initsend(PvmDataRaw), "pvm_initsend", "chpl_comm_broadcast_global_vars");
+      PVM_PACK_SAFE(pvm_initsend(PvmDataRaw), "pvm_initsend", "chpl_comm_broadcast_global_vars");
       size = sizeof(void *);
-      PVM_SAFE(pvm_pkint(&size, 1, 1), "pvm_pkint", "chpl_comm_broadcast_global_vars");
-      PVM_SAFE(pvm_pkbyte((char *)&chpl_globals_registry[i], size, 1), "pvm_pkbyte", "chpl_comm_broadcast_global_vars");
-      PVM_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_broadcast_global_vars");
+      PVM_NO_LOCK_SAFE(pvm_pkint(&size, 1, 1), "pvm_pkint", "chpl_comm_broadcast_global_vars");
+      PVM_NO_LOCK_SAFE(pvm_pkbyte((char *)&chpl_globals_registry[i], size, 1), "pvm_pkbyte", "chpl_comm_broadcast_global_vars");
+      PVM_UNPACK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_broadcast_global_vars");
     } else {
-      PVM_SAFE(pvm_recv(-1, BCASTTAG), "pvm_recv", "chpl_comm_broadcast_global_vars");
-      PVM_SAFE(pvm_upkint(&size, 1, 1), "pvm_upkint", "chpl_comm_broadcast_global_vars");
-      PVM_SAFE(pvm_upkbyte(chpl_globals_registry[i], size, 1), "pvm_upkbyte", "chpl_comm_broadcast_global_vars");
+      PVM_PACK_SAFE(pvm_recv(-1, BCASTTAG), "pvm_recv", "chpl_comm_broadcast_global_vars");
+      PVM_NO_LOCK_SAFE(pvm_upkint(&size, 1, 1), "pvm_upkint", "chpl_comm_broadcast_global_vars");
+      PVM_UNPACK_SAFE(pvm_upkbyte(chpl_globals_registry[i], size, 1), "pvm_upkbyte", "chpl_comm_broadcast_global_vars");
     }
-    chpl_comm_barrier("chpl_comm_broadcast_global_vars barrier.");
-    chpl_mutex_unlock(&pack_lock);
+    sprintf(debugMsg, "chpl_comm_broadcast_global_vars barrier %d.", i);;
+    chpl_comm_barrier(debugMsg);
   }
   PRINTF("end broadcast globals");
   return;
@@ -458,6 +500,7 @@ void chpl_comm_broadcast_private(void* addr, int size) {
 
 void chpl_comm_barrier(const char *msg) {
   PRINTF(msg);
+  while (!okay_to_barrier) {}
   PVM_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_barrier");
   return;
 }
@@ -469,8 +512,6 @@ void chpl_comm_exit_all(int status) {
   // for now.
   fprintf(stderr, "chpl_comm_exit_all called\n");
   msg_info.msg_type = ChplCommFinish;
-  // Need to fix this so we exit efficiently:
-  sleep(30);
   chpl_pvm_send(chpl_localeID, TAGMASK+1, &msg_info, sizeof(_chpl_message_info));
   PRINTF("Sent shutdown message.");
   fprintf(stderr, "Sent shutdown message.\n");
