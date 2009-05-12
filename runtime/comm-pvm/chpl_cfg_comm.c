@@ -187,7 +187,6 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   PRINTF(debugMsg);
 #endif
   bufid = 0;
-  //  fprintf(stderr, "Waiting on tid=%d, msgtag=%d\n", tid, msgtag); // Dele
   while (bufid == 0) {
     PVM_PACK_SAFE(bufid = pvm_nrecv(tid, msgtag), "pvm_nrecv", "chpl_pvm_recv");
     if (bufid == 0) {
@@ -195,19 +194,14 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
     }
   }
   PVM_NO_LOCK_SAFE(pvm_bufinfo(bufid, &bytes, &pvmtype, &source), "pvm_bufinfo", "chpl_pvm_recv");
-  //  fprintf(stderr, "bufinfo - bufid=%d, bytes=%d, tag=%d, source=%d\n", bufid, bytes, pvmtype, source); // Dele
 
   // Either getting "metadata" case, which is the chpl_message_info
   // containing the information about what's to come, or getting
   // actual data.
   if (msgtag == TAGMASK+1) {
-    //    fprintf(stderr, "Receiving _chpl_message_info\n"); // Dele
     PVM_NO_LOCK_SAFE(pvm_upkint(&pvmtype, 1, 1), "pvm_upkint", "chpl_pvm_recv");
-    //    fprintf(stderr, "Received pvmtype=%d\n", pvmtype); // Dele
     PVM_NO_LOCK_SAFE(pvm_upkint(&repTag, 1, 1), "pvm_upkint", "chpl_pvm_recv");
-    //    fprintf(stderr, "Received repTag=%d\n", repTag); // Dele
     PVM_NO_LOCK_SAFE(pvm_upkint(&bytes, 1, 1), "pvm_upkint", "chpl_pvm_recv");
-    //    fprintf(stderr, "Received bytes=%d\n", bytes); // Dele
     // Metadata case either contains an address for the data or a
     // function ID (or, if ChplCommFinish, nothing).
     if ((pvmtype == ChplCommPut) || (pvmtype == ChplCommGet)) {
@@ -219,7 +213,6 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
     } else {
       PVM_UNPACK_SAFE(pvm_upkint(&fnid, 1, 1), "pvm_upkint", "chpl_pvm_recv");
       ((_chpl_message_info *)buf)->u.fid = (chpl_fn_int_t) fnid;
-      //      fprintf(stderr, "Received fnid=%d\n", fnid); // Dele
     }
     ((_chpl_message_info *)buf)->msg_type = (int) pvmtype;
     ((_chpl_message_info *)buf)->replyTag = (int) repTag;
@@ -228,7 +221,6 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   // Getting actual data
   } else {
     PVM_UNPACK_SAFE(pvm_upkbyte(((void *)buf), sz, 1), "pvm_upkbyte", "chpl_pvm_recv");
-    //    fprintf(stderr, "Receiving something via upkbyte of size %d.\n", sz); // Dele
   }
 #if CHPL_DIST_DEBUG
   sprintf(debugMsg, "chpl_pvm_recv(%p, from=%d, tag=%d, sz=%d) done", buf, tid, msgtag, sz);
@@ -258,36 +250,28 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
   // containing the information about what's to come, or sending
   // actual data.
   if (msgtag == TAGMASK+1) {
-    //    fprintf(stderr, "Sending _chpl_message_info with type=%d, tag=%d, size=%d\n", ((_chpl_message_info *)buf)->msg_type, ((_chpl_message_info *)buf)->replyTag, ((_chpl_message_info *)buf)->size); // Dele
     msgtype = ((_chpl_message_info *)buf)->msg_type;
     repTag = ((_chpl_message_info *)buf)->replyTag;
     datasize = ((_chpl_message_info *)buf)->size;
     PVM_NO_LOCK_SAFE(pvm_pkint(&msgtype, 1, 1), "pvm_pkint", "chpl_pvm_send");
-    //    fprintf(stderr, "Sent msgtype=%d\n", msgtype); // Dele
     PVM_NO_LOCK_SAFE(pvm_pkint(&repTag, 1, 1), "pvm_pkint", "chpl_pvm_send");
-    //    fprintf(stderr, "Sent repTag=%d\n", repTag); // Dele
     PVM_NO_LOCK_SAFE(pvm_pkint(&datasize, 1, 1), "pvm_pkint", "chpl_pvm_send");
-    //    fprintf(stderr, "Sent datasize=%d\n", datasize); // Dele
     // Metadata case either contains an address for the data or a
     // function ID (or, if ChplCommFinish, nothing).
     if ((msgtype == ChplCommPut) || (msgtype == ChplCommGet)) {
       packagesize = sizeof(void *);
       PVM_NO_LOCK_SAFE(pvm_pkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
       PVM_NO_LOCK_SAFE(pvm_pkbyte((void *)&(((_chpl_message_info *)buf)->u.data), packagesize, 1), "pvm_pkbyte", "chpl_pvm_send");
-      //      fprintf(stderr, "Sent address data of size %d.\n", packagesize); // Dele
     } else if (msgtype == ChplCommFinish) {
       // Do nothing. Nothing in the union.
       // Unlock is done in the PVM_UNPACK_SAFE on the actual pvm_send.
     } else {
       fnid = ((_chpl_message_info *)buf)->u.fid;
       PVM_NO_LOCK_SAFE(pvm_pkint(&fnid, 1, 1), "pvm_pkint", "chpl_pvm_send");
-      //      fprintf(stderr, "Sent fnid=%d\n", fnid); // Dele
     }
   // Sending actual data
   } else {
-    //    fprintf(stderr, "Sending something via pkbyte of size %d.\n", sz); // Dele
     PVM_NO_LOCK_SAFE(pvm_pkbyte(((void *)buf), sz, 1), "pvm_pkbyte", "chpl_pvm_send");
-    //    fprintf(stderr, "Sent something.\n"); // Dele
   }
   PVM_UNPACK_SAFE(pvm_send(tid, msgtag), "pvm_pksend", "chpl_pvm_send");
 
@@ -461,7 +445,7 @@ void chpl_comm_alloc_registry(int numGlobals) {
 void chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
   int size;
-  char debugMsg[128];
+  //  char debugMsg[128];
   PRINTF("start broadcast globals");
   for (i = 0; i < numGlobals; i++) {
     // Either the root node broadcasting with pvm_bcast, or we're one of
@@ -477,8 +461,8 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
       PVM_NO_LOCK_SAFE(pvm_upkint(&size, 1, 1), "pvm_upkint", "chpl_comm_broadcast_global_vars");
       PVM_UNPACK_SAFE(pvm_upkbyte(chpl_globals_registry[i], size, 1), "pvm_upkbyte", "chpl_comm_broadcast_global_vars");
     }
-    sprintf(debugMsg, "chpl_comm_broadcast_global_vars barrier %d.", i);;
-    chpl_comm_barrier(debugMsg);
+    //    sprintf(debugMsg, "chpl_comm_broadcast_global_vars barrier %d.", i);;
+    //    chpl_comm_barrier(debugMsg);
   }
   PRINTF("end broadcast globals");
   return;
