@@ -336,7 +336,9 @@ void chpl_printMemTable(void) {
     if (chunk >= memthresholdValue &&
         ((reportOnlyUserAllocations && memEntry->userCode) ||
          (!reportOnlyUserAllocations && !memEntry->userCode))) {
+#ifndef LAUNCHER
       chpl____mem_alloc_add(memEntry->description, chunk);
+#endif
       printHeadings = true;
     }
   }
@@ -355,7 +357,9 @@ void chpl_printMemTable(void) {
            numberWidth, bytes);
     printf("%s%s\n", line40, line40);
     snprintf(format, sizeof(format), "%%%d%s", numberWidth, PRIu64);
+#ifndef LAUNCHER
     chpl____mem_alloc_print(format);
+#endif
     putchar('\n');
   }
 }
