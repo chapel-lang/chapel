@@ -767,15 +767,6 @@ static void fixup_array_formals(FnSymbol* fn) {
 
 static void clone_parameterized_primitive_methods(FnSymbol* fn) {
   if (toArgSymbol(fn->_this)) {
-    if (fn->_this->type == dtBools[BOOL_SIZE_SYS]) {
-      for (int i=BOOL_SIZE_1; i<BOOL_SIZE_NUM; i++) {
-        if (dtBools[i] && i != BOOL_SIZE_SYS) {
-          FnSymbol* nfn = fn->copy();
-          nfn->_this->type = dtBools[i];
-          fn->defPoint->insertBefore(new DefExpr(nfn));
-        }
-      }
-    }
     if (fn->_this->type == dtInt[INT_SIZE_32]) {
       for (int i=INT_SIZE_1; i<INT_SIZE_NUM; i++) {
         if (dtInt[i] && i != INT_SIZE_32) {
