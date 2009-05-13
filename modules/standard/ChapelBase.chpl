@@ -592,9 +592,9 @@ def _cond_invalid(x) param return true;
 //  bug?  in setters, parameterize real argument over complex bit width
 //
 pragma "inline" pragma "ref this"
-def complex.re var return __primitive("complex_get_real", this);
+def chpl_anycomplex.re var return __primitive("complex_get_real", this);
 pragma "inline" pragma "ref this"
-def complex.im var return __primitive("complex_get_imag", this);
+def chpl_anycomplex.im var return __primitive("complex_get_imag", this);
 
 //
 // helper functions

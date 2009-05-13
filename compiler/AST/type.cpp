@@ -548,6 +548,8 @@ void initPrimitiveTypes(void) {
   dtAny->symbol->addFlag(FLAG_GENERIC);
   dtIntegral = createPrimitiveType ("integral", "integral");
   dtIntegral->symbol->addFlag(FLAG_GENERIC);
+  dtAnyComplex = createPrimitiveType("chpl_anycomplex", "complex");
+  dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
   dtNumeric = createPrimitiveType ("numeric", "numeric");
   dtNumeric->symbol->addFlag(FLAG_GENERIC);
   dtIteratorRecord = createPrimitiveType("_iteratorRecord", "_iteratorRecord");

@@ -767,50 +767,34 @@ static void fixup_array_formals(FnSymbol* fn) {
 
 static void clone_parameterized_primitive_methods(FnSymbol* fn) {
   if (toArgSymbol(fn->_this)) {
-    if (fn->_this->type == dtInt[INT_SIZE_32]) {
+    /* The following works but is not currently necessary:
+    if (fn->_this->type == dtIntegral) {
       for (int i=INT_SIZE_1; i<INT_SIZE_NUM; i++) {
-        if (dtInt[i] && i != INT_SIZE_32) {
+        if (dtInt[i]) { // Need this because of our bogus dtInt sizes
           FnSymbol* nfn = fn->copy();
           nfn->_this->type = dtInt[i];
           fn->defPoint->insertBefore(new DefExpr(nfn));
         }
       }
-    }
-    if (fn->_this->type == dtUInt[INT_SIZE_32]) {
       for (int i=INT_SIZE_1; i<INT_SIZE_NUM; i++) {
-        if (dtUInt[i] && i != INT_SIZE_32) {
+        if (dtUInt[i]) { // Need this because of our bogus dtUint sizes
           FnSymbol* nfn = fn->copy();
           nfn->_this->type = dtUInt[i];
           fn->defPoint->insertBefore(new DefExpr(nfn));
         }
       }
+      fn->defPoint->remove();
     }
-    if (fn->_this->type == dtReal[FLOAT_SIZE_64]) {
-      for (int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++) {
-        if (dtReal[i] && i != FLOAT_SIZE_64) {
-          FnSymbol* nfn = fn->copy();
-          nfn->_this->type = dtReal[i];
-          fn->defPoint->insertBefore(new DefExpr(nfn));
-        }
-      }
-    }
-    if (fn->_this->type == dtImag[FLOAT_SIZE_64]) {
-      for (int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++) {
-        if (dtImag[i] && i != FLOAT_SIZE_64) {
-          FnSymbol* nfn = fn->copy();
-          nfn->_this->type = dtImag[i];
-          fn->defPoint->insertBefore(new DefExpr(nfn));
-        }
-      }
-    }
-    if (fn->_this->type == dtComplex[COMPLEX_SIZE_128]) {
+    */
+    if (fn->_this->type == dtAnyComplex) {
       for (int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++) {
-        if (dtComplex[i] && i != COMPLEX_SIZE_128) {
+        if (dtComplex[i]) { // Need this because of our bogus dtComplex sizes
           FnSymbol* nfn = fn->copy();
           nfn->_this->type = dtComplex[i];
           fn->defPoint->insertBefore(new DefExpr(nfn));
         }
       }
+      fn->defPoint->remove();
     }
   }
 }
