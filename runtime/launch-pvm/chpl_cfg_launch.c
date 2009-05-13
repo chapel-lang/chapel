@@ -7,8 +7,8 @@
 #include <stdlib.h>
 
 // TODO: Un-hard-code this stuff:
-static const char* pvmrunPath = "/users/ljprokow/Projects/Chapel/Chapel/third-party/pvm/pvm-3.4.6/pvm3/lib/";
-static const char* hostfile = "/users/ljprokow/Projects/Chapel/Chapel/third-party/pvm/pvm-3.4.6/pvm3/hostfile";
+static const char* pvmrunPath = "$CHPL_HOME/third-party/pvm/pvm-3.4.6/pvm3/lib/";
+static const char* hostfile = "$CHPL_HOME/third-party/pvm/pvm-3.4.6/pvm3/hostfile";
 
 static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i;
