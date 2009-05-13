@@ -17,6 +17,10 @@
 general regressions
 ===================
 
+known regression due to Sam's checkin of awhile back
+----------------------------------------------------
+[Error matching compiler output for functions/bradc/namedArgs/forceNamedArgs-createdummy]
+
 spurious verification failures on RA (e.g. 04/04/09)
 ----------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -82,21 +86,6 @@ wide strings leaked (?) (04/02/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
-
-missing chpl_alloc routines (05/12/09)
---------------------------------------
-***everything***
-
-argument number failure due to Brad's recent changes (05/09/08)
----------------------------------------------------------------
-[Error matching program output for multilocale/deitz/needMultiLocales/test_unknown_config]
-
-memory query failed due to Steve's recent change (05/09/08)
------------------------------------------------------------
-[Error matching program output for modules/standard/memory/countMemory/countMemory]
-[Error matching program output for studies/hpcc/2008/testProbSize]
-[Error matching program output for studies/hpcc/common/testProbSize]
-
 
 occasional nondeterminism in output (01/30/09, 02/03/09)
 --------------------------------------------------------
@@ -224,10 +213,6 @@ all
 =======================
 x2-specific regressions
 =======================
-
-missing chpl_alloc routines (05/12/09)
---------------------------------------
-***everything***
 
 spurious errno routing to host message
 --------------------------------------
