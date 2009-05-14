@@ -3270,7 +3270,7 @@ resolveFns(FnSymbol* fn) {
       if (!ct->destructor &&
           !ct->symbol->hasFlag(FLAG_REF)) {
         VarSymbol* tmp = newTemp(ct);
-        CallExpr* call = new CallExpr("~chpl_destroy", gMethodToken, tmp);
+        CallExpr* call = new CallExpr("~chpl_destroy", gMethodToken, tmp, new SymExpr(gFalse));
         fn->insertAtHead(new CallExpr(call));
         fn->insertAtHead(new DefExpr(tmp));
         resolveCall(call);

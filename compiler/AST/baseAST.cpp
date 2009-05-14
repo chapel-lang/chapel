@@ -110,7 +110,7 @@ static inline bool isAlive(Type* type) {
 }
 
 static inline bool isAlive(Symbol* symbol) {
-  return symbol == rootModule || symbol->defPoint->parentSymbol;
+  return symbol == rootModule || (symbol->defPoint && symbol->defPoint->parentSymbol);
 }
 
 #define clean_gvec(type)                        \

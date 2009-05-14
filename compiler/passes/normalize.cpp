@@ -212,11 +212,13 @@ void normalize(void) {
       VarSymbol* tmp = newTemp();
       call->insertBefore(new DefExpr(tmp));
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(1)->remove()));
-      call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
-      if (call->numActuals() > 0)
+      if (call->numActuals() > 0) {
+        call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp, call->get(1)->copy()));
         call->insertBefore(new CallExpr(PRIM_CHPL_FREE, tmp, call->get(1)->remove()));
-      else
+      } else {
+        call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
         call->insertBefore(new CallExpr(PRIM_CHPL_FREE, tmp));
+      }
       call->remove();
     }
   }
@@ -274,6 +276,8 @@ void normalize(void) {
           USR_FATAL(fn, "destructor name must match class name");
         } else {
           fn->name = astr("~chpl_destroy");
+          fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "userCode", dtBool,
+                                               NULL, new SymExpr(gFalse)));
         }
       }
     }

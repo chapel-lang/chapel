@@ -885,7 +885,7 @@ static void buildStringCastFunction(EnumType* et) {
 
 
 static void buildDefaultDestructor(ClassType* ct) {
-  if (function_exists("~chpl_destroy", 2, dtMethodToken, ct))
+  if (function_exists("~chpl_destroy", 3, dtMethodToken, ct, dtBool))
     return;
 
   SET_LINENO(ct->symbol);
@@ -898,6 +898,8 @@ static void buildDefaultDestructor(ClassType* ct) {
   fn->insertFormalAtTail(fn->_this);
   fn->retType = dtVoid;
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "userCode", dtBool,
+                                       NULL, new SymExpr(gFalse)));
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
   fn->addFlag(FLAG_METHOD);
   ct->methods.add(fn);

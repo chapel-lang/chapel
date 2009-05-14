@@ -17,6 +17,9 @@ bool fEnableDestructorCalls = true;
 
 void fixupDestructors(void) {
 
+  Map<Symbol*,Vec<SymExpr*>*> defMap, useMap;
+  buildDefUseMaps(defMap, useMap);
+
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->type->destructor) {
       ClassType* ct = toClassType(ts->type);
@@ -36,7 +39,16 @@ void fixupDestructors(void) {
             ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
             ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
               new CallExpr(useRefType ? PRIM_GET_MEMBER : PRIM_GET_MEMBER_VALUE, ct->destructor->_this, field)));
-            ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
+            if (strcmp(ct->destructor->getFormal(ct->destructor->numFormals())->name, "userCode"))
+              ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp, new SymExpr(gFalse)));
+            else {
+              ArgSymbol* userCode = ct->destructor->getFormal(ct->destructor->numFormals());
+              INT_ASSERT(useMap.get(userCode)->length() == 1);
+              CallExpr* move = toCallExpr(useMap.get(userCode)->first()->parentExpr->parentExpr);
+              INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+              ct->destructor->insertBeforeReturnAfterLabel(
+                new CallExpr(field->type->destructor, tmp, move->get(1)->copy()));
+            }
           }
           count++;
         } else if (field->type == dtString && !ct->symbol->hasFlag(FLAG_TUPLE)) {
@@ -44,7 +56,16 @@ void fixupDestructors(void) {
           ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
             new CallExpr(PRIM_GET_MEMBER_VALUE, ct->destructor->_this, field)));
-          ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
+          if (strcmp(ct->destructor->getFormal(ct->destructor->numFormals())->name, "userCode"))
+            ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
+          else {
+            ArgSymbol* userCode = ct->destructor->getFormal(ct->destructor->numFormals());
+            INT_ASSERT(useMap.get(userCode)->length() == 1);
+            CallExpr* move = toCallExpr(useMap.get(userCode)->first()->parentExpr->parentExpr);
+            INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+            ct->destructor->insertBeforeReturnAfterLabel(
+              new CallExpr(PRIM_CHPL_FREE, tmp, move->get(1)->copy()));
+          }
         }
       }
       if (count <= 1 ||
@@ -64,11 +85,21 @@ void fixupDestructors(void) {
           ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
             new CallExpr(PRIM_CAST, tmpType->symbol, ct->destructor->_this)));
-          ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor, tmp));
+          if (strcmp(ct->destructor->getFormal(ct->destructor->numFormals())->name, "userCode"))
+            ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor, tmp, new SymExpr(gFalse)));
+          else {
+            ArgSymbol* userCode = ct->destructor->getFormal(ct->destructor->numFormals());
+            INT_ASSERT(useMap.get(userCode)->length() == 1);
+            CallExpr* move = toCallExpr(useMap.get(userCode)->first()->parentExpr->parentExpr);
+            INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+            ct->destructor->insertBeforeReturnAfterLabel(
+              new CallExpr(parentDestructor, tmp, move->get(1)->copy()));
+          }
         }
       }
     }
   }
+  freeDefUseMaps(defMap, useMap);
 }
 
 static bool tupleContainsArrayOrDomain(ClassType* t) {
@@ -320,7 +351,7 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
                   new CallExpr(PRIM_SET_REF, lhs->var)));
               else
                 fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp, lhs->var));
-              fn->insertBeforeReturnAfterLabel(new CallExpr(ct->destructor, tmp));
+              fn->insertBeforeReturnAfterLabel(new CallExpr(ct->destructor, tmp, new SymExpr(gFalse)));
             } else {
               INT_ASSERT(parentBlock);
               VarSymbol* tmp = newTemp(useRefType ? ct->refType : ct);
@@ -330,7 +361,7 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
                   new CallExpr(PRIM_SET_REF, lhs->var)));
               else
                 parentBlock->insertAtTailBeforeGoto(new CallExpr(PRIM_MOVE, tmp, lhs->var));
-              parentBlock->insertAtTailBeforeGoto(new CallExpr(ct->destructor, tmp));
+              parentBlock->insertAtTailBeforeGoto(new CallExpr(ct->destructor, tmp, new SymExpr(gFalse)));
             }
           } else {
             INT_ASSERT(lhs->var->type == dtString);
