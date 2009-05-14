@@ -225,14 +225,14 @@ void createInitFn(ModuleSymbol* mod) {
     // guard init function so it is not run more than once
     // ChapelStandard's init function is only called by theProgram->initFn,
     // so it does not need a guard
-    mod->privGuard = new VarSymbol(astr("chpl__guard_", istr(mod->id), "_",  mod->name));
+    mod->privGuard = new VarSymbol(astr("chpl__guard_", istr(mod->id), "_", mod->name));
     mod->privGuard->addFlag(FLAG_PRIVATE); // private = separate copy per locale
     theProgram->initFn->insertAtHead(new DefExpr(mod->privGuard, new SymExpr(gTrue)));
     if (!fRuntime && strcmp(mod->name, "ChapelBase")) {
       initModuleGuards->insertAtTail(new CallExpr(PRIM_MOVE, mod->privGuard, gTrue));
       // ChapelBase cannot have a sync guard because it defines operations on sync vars,
       // so "use ChapelBase" has to be processed before using any sync vars
-      mod->guard = new VarSymbol(astr("chpl__sync_guard_", istr(mod->id), "_",  mod->name));
+      mod->guard = new VarSymbol(astr("chpl__sync_guard_", istr(mod->id), "_", mod->name));
       // the last statement in theProgram->initFn is assumed to be "use ChapelStandard"
       theProgram->initFn->body->body.tail->insertBefore(
         new DefExpr(mod->guard, new SymExpr(gTrue),
