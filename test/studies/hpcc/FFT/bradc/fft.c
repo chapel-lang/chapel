@@ -15,13 +15,25 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
-//#include <sys/mta_task.h>
-//#include <machine/runtime.h>
+#ifdef __MTA__
+#include <sys/mta_task.h>
+#include <machine/runtime.h>
+#else
+#include <sys/time.h>
+#endif
 
-/*
-double timer()
-{ return ((double) mta_get_clock(0) / mta_clock_freq()); }
-*/
+
+double timer() {
+#ifdef __MTA__
+  return ((double) mta_get_clock(0) / mta_clock_freq());
+#else
+  struct timeval time;
+  struct timezone tz;
+  gettimeofday(&time, &tz);
+  return (double)time.tv_sec + (double)time.tv_usec/1e6;
+#endif
+}
+
 
 int N2;  // hoisted this here to support routines like the following:
 
@@ -182,7 +194,7 @@ void twiddles(int n, double *w)
 void cft1st(int n, double *a, double *w)
 { int j, k1;
 
- printf("cft1st()\n"); 
+// printf("cft1st()\n"); 
 
   double *v   = w + 1;
   double *b   = a + 2;
@@ -231,7 +243,7 @@ void cft1st(int n, double *a, double *w)
   a[14] = wk1r * (x0i - x0r);
   a[15] = wk1r * (x0i + x0r);
 
-  printf("  // computes first 8 complexes manually\n");
+//  printf("  // computes first 8 complexes manually\n");
 
   writeA(a);
 
@@ -258,7 +270,7 @@ void cft1st(int n, double *a, double *w)
 
 void cftmd0(int n, int l, double *a, double *w)
 { int j, m = l << 2;
- printf("  cftmd0()\n"); 
+// printf("  cftmd0()\n"); 
 
   double wk1r = w[2];
 
@@ -276,13 +288,13 @@ void cftmd0(int n, int l, double *a, double *w)
 #pragma mta assert no dependence
   for (j = m; j < l + m; j += 2)
       btrfly(j, wk1r, wk1r, 0.0, 1.0, - wk1r, wk1r, a, b, c, d);
-  printf("  returning from cftmd0()\n"); 
+//  printf("  returning from cftmd0()\n"); 
 }
 
 void cftmd1(int n, int l, double *a, double *w)
 { int j, k, k1;
 
- printf("cftmd1();\n"); 
+// printf("cftmd1();\n"); 
 
   int m  = l << 2;
   int m2 = 2 * m;
@@ -324,7 +336,7 @@ void cftmd21(int n, int l, double *a, double *w)
   int m2 = 2 * m;
   int m3 = 3 * m;
 
-  printf("cftmd21();\n");
+//  printf("cftmd21();\n");
 
   double *v = w + 1;
   double *b = a + l;
@@ -355,13 +367,13 @@ void cftmd21(int n, int l, double *a, double *w)
       btrfly (j, wk1r, wk1i, - wk2i, wk2r, wk3r, wk3i, a, b, c, d);
 
 }
-  printf("returning from cftmd21();\n");
+//  printf("returning from cftmd21();\n");
 }
 
 void cftmd2(int n, int l, double *a, double *w)
 { int j, k, k1;
 
- printf("cftmd2();\n"); 
+// printf("cftmd2();\n"); 
 
   int m  = l << 2;
   int m2 = 2 * m;
@@ -404,7 +416,7 @@ void cftmd2(int n, int l, double *a, double *w)
 
 } } 
 
- printf("returning from cftmd2();\n"); 
+// printf("returning from cftmd2();\n"); 
 }
 
 void dfft(int n, int logn, double *a, double *w)
@@ -424,7 +436,7 @@ void dfft(int n, int logn, double *a, double *w)
   d = a + l + l + l;
 
   if ((l << 2) == n) {
-    printf("l << 2 == n\n");
+//    printf("l << 2 == n\n");
     
 #pragma mta use 100 streams
 #pragma mta assert no dependence
@@ -432,7 +444,7 @@ void dfft(int n, int logn, double *a, double *w)
          btrfly(j, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, a, b, c, d);
 
   } else {
-    printf("l << 2 != n\n");
+//    printf("l << 2 != n\n");
 
 #pragma mta use 100 streams
 #pragma mta assert no dependence
@@ -495,13 +507,13 @@ int main(int argc, char *argv[])
       {a[i] = a[i] / N; a[i + 1] = -a[i + 1] / N;}
   writeA(a);
 
-  //  time = timer();
+  time = timer();
 
   a = bit_reverse(N, a);
   dfft(N2, logN, a, w);
   writeA(a);
 
-  //  time  = timer() - time;
+  time  = timer() - time;
   gflop = 5.0 * N * logN / 1000000000.0;
 
 /* verify fft */
