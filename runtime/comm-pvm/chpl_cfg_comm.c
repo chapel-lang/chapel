@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include "pvm3.h"
 
-#define CHPL_DIST_DEBUG 0
+#define CHPL_DIST_DEBUG 1
 
 #if CHPL_DIST_DEBUG
 #define DEBUG_MSG_LENGTH 256
@@ -447,6 +447,9 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
   int size;
   //  char debugMsg[128];
   PRINTF("start broadcast globals");
+  if (chpl_numLocales == 1) {
+    return;
+  }
   for (i = 0; i < numGlobals; i++) {
     // Either the root node broadcasting with pvm_bcast, or we're one of
     // the slave nodes getting the data.
@@ -521,7 +524,10 @@ void chpl_comm_exit_all(int status) {
   PRINTF("chpl_comm_exit_all called\n");
   // Matches code in chpl_comm_barrier. Node 0, on exit, needs to signal
   // to everyone that it's okay to barrier (and thus exit).
-  if (chpl_localeID == 0) {
+  if (chpl_numLocales == 1) {
+    okay_to_barrier = 1;
+  }
+  else if (chpl_localeID == 0) {
     okay_to_barrier = 1;
     PVM_PACK_SAFE(pvm_initsend(PvmDataRaw), "pvm_initsend", "chpl_comm_exit_all");
     PVM_NO_LOCK_SAFE(pvm_pkint(&okay_to_barrier, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
