@@ -202,15 +202,14 @@ buildDefaultWrapper(FnSymbol* fn,
                    strcmp(wrapper->getFormal(wrapper->numFormals()-1)->name, "userCode"));
         VarSymbol* description = new_StringSymbol(astr("instance of class ",
                                                        fn->_this->type->symbol->name));
-        CallExpr* callAlloc;
+        SymExpr* userCode;
         if (wrapper->numFormals() > 0 &&
-            !strcmp(wrapper->getFormal(wrapper->numFormals())->name, "userCode")) {
-          callAlloc = new CallExpr(PRIM_CHPL_ALLOC, wrapper->_this, description,
-                                   wrapper->getFormal(wrapper->numFormals()));
-        } else {
-          callAlloc = new CallExpr(PRIM_CHPL_ALLOC, wrapper->_this, description,
-                                   new SymExpr(gFalse));
-        }
+            !strcmp(wrapper->getFormal(wrapper->numFormals())->name, "userCode"))
+          userCode = new SymExpr(wrapper->getFormal(wrapper->numFormals()));
+        else
+          userCode = new SymExpr(gFalse);
+        CallExpr* callAlloc = new CallExpr(PRIM_CHPL_ALLOC, wrapper->_this, description,
+                                           userCode);
         wrapper->_this->defPoint->insertAfter(new CallExpr(PRIM_MOVE, wrapper->_this, callAlloc));
       }
     }
