@@ -526,6 +526,7 @@ void chpl_comm_barrier(const char *msg) {
 
 void chpl_comm_exit_all(int status) {
   _chpl_message_info msg_info;
+  int parent;
   PRINTF("chpl_comm_exit_all called\n");
   // Matches code in chpl_comm_barrier. Node 0, on exit, needs to signal
   // to everyone that it's okay to barrier (and thus exit).
@@ -549,9 +550,12 @@ void chpl_comm_exit_all(int status) {
 
   // Send a signal back to the launcher that we're done.
   end = 1;
-  PVM_PACK_SAFE(pvm_initsend(PvmDataRaw), "pvm_initsend", "chpl_comm_exit_all");
-  PVM_NO_LOCK_SAFE(pvm_pkint(&end, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
-  PVM_UNPACK_SAFE(pvm_send(pvm_parent(), NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
+  parent = pvm_parent();
+  if (parent >= 0) {
+    PVM_PACK_SAFE(pvm_initsend(PvmDataRaw), "pvm_initsend", "chpl_comm_exit_all");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&end, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
+    PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
+  }
 
   PVM_SAFE(pvm_halt(), "pvm_halt", "chpl_comm_exit_all");
   return;
