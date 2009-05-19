@@ -1,14 +1,17 @@
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "pvm3.h"
+
 #include "chplrt.h"
 #include "chplcomm.h"
 #include "chplmem.h"
 #include "chplsys.h"
 #include "chplthreads.h"
 #include "error.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include "pvm3.h"
 
 #define CHPL_DIST_DEBUG 1
 
@@ -711,3 +714,54 @@ int32_t chpl_numCommForks(void) {
 int32_t chpl_numCommNBForks(void) {
   return chpl_comm_nb_forks;
 }
+
+
+/* TODO: eventually make this a bit more clever, as with the
+   make_message call on the vsprintf man page, in order to remove the
+   statically-sized buffer and internal error if it overflows.  Let's
+   get this working first, though */
+
+#define PRINTF_BUFF_LEN 1024
+
+#define CHPL_PVM_PRINTF_GUTS                                            \
+  va_list args;                                                         \
+  int retval;                                                           \
+  char buffer[PRINTF_BUFF_LEN];                                         \
+                                                                        \
+  va_start(args, format);                                               \
+  retval = vsnprintf(buffer, PRINTF_BUFF_LEN, format, args);            \
+  if (retval > PRINTF_BUFF_LEN) {                                       \
+    chpl_internal_error("PVM fprintf insufficient buffer space");       \
+  }                                                                     \
+  va_end(args)
+
+
+/* Undefine these to avoid an infinite loop in the code below */
+#undef printf
+#undef fprintf
+
+int chpl_pvm_fprintf(FILE* outfile, const char* format, ...) {
+  CHPL_PVM_PRINTF_GUTS;
+
+  /* Here, we really want to send this string to the parent to print
+     for us if outfile is stdout or stderr.  For now, I just print it
+     out. */
+  fprintf(outfile, "%s", buffer);
+
+  return retval;
+}
+
+
+int chpl_pvm_printf(const char* format, ...) {
+  CHPL_PVM_PRINTF_GUTS;
+
+  /* Here, we really want to send this string to the parent to print
+     for us if outfile is stdout or stderr.  For now, I just print it
+     out. */
+  printf("%s", buffer);
+
+  return retval;
+}
+
+/* NOTHING SHOULD GO BELOW THESE FUNCTIONS (PARTICULARLY, NOTHING THAT
+   USES PRINTF) */

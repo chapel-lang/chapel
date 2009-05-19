@@ -1,8 +1,9 @@
 #ifndef _chplrt_H_
 #define _chplrt_H_
 
-#include "chpltypes.h"
 #include <stdint.h>
+#include <chplio_md.h>
+#include "chpltypes.h"
 
 extern void chpl__initModuleGuards(void);
 

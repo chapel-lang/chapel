@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <chplio_md.h>
+
 #include "chplcast.h"
 #include "chplio.h"
 #include "chplmem.h"

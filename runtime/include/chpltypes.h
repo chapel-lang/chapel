@@ -82,8 +82,10 @@ struct __chpl____wide_chpl_string;
 //
 // stopgap formatting
 //
+#undef printf
 chpl_string _format(chpl_string format, ...)
   __attribute__((format(printf, 1, 2)));
+#define printf PRINTF_DEF
 
 char* chpl_glom_strings(int numstrings, ...);
 
