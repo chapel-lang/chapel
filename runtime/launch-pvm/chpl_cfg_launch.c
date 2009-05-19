@@ -6,7 +6,8 @@
 #include "error.h"
 #include <stdlib.h>
 #include "pvm3.h"
-#include <unistd.h>
+
+#define NOTIFYTAG 4194295
 
 extern int pvm_addhosts(char **hosts, int nhost, int *infos);
 
@@ -16,8 +17,8 @@ static const char* hostfile = "/users/ljprokow/Projects/Chapel/Chapel/third-part
 
 static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i;
-  /*
   char i_str[128];
+  /*
   int size;
   int addsize = 0;
   int basesize = 0;
@@ -31,14 +32,22 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   */
 
   int info;
-  int infos[3];
+  int infos[256];
   char pvmnodetoadd[256];
   char* pvmnodestoadd[2048];
-  //  int pvmsize = 0;
+  int pvmsize = 0;
+  int pvmsize2 = 0;
+  int end = 0;
   //  char* hosts;
+  char* commandtopvm;
+  char* argtopvm;
   static char *hosts2[] = {};
   int numt;
   int tids[32];
+  static char *argtostart[] = {};
+  char* argtostart2[2];
+  int bufid;
+  int bytes, pvmtype, source;
 
   // Add nodes to PVM configuration.
   FILE* nodelistfile;
@@ -162,10 +171,8 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
       chpl_internal_error("Memory allocation error.");
     }
     strcpy(pvmnodestoadd[i], pvmnodetoadd);
-    //    pvmsize += strlen(pvmnodestoadd[i]);
     i++;
   }
-  //  pvmsize += ((i - 1) * strlen("\"\", ")) + (strlen("[\"\"]"));
   if (i < numLocales) {
     fclose(nodelistfile);
     while (i >= 0) {
@@ -175,21 +182,11 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     chpl_internal_error("Number of locales specified is greater than what's known in PVM hostfile.");
   }
   fclose(nodelistfile);
-  //  hosts = chpl_malloc(pvmsize, sizeof(char*), "hosts to add", false, -1, "");
-  //  *hosts = '\0';
-  //  strcat(hosts, "[");
-  //  while (i < numLocales) {
-  //    if (i == (numLocales - 1)) {
-  //      strcat(hosts, "\"");
-  //      strcat(hosts, pvmnodestoadd[i]);
-  //      strcat(hosts, "\"]");
-  //    } else {
-  //      strcat(hosts, "\"");
-  //      strcat(hosts, pvmnodestoadd[i]);
-  //      strcat(hosts, "\", ");
-  //    }
-  //    i++;
-  //  }
+
+  info = pvm_start_pvmd(0, argtostart, 1);
+  if (info != 0) {
+    chpl_internal_error("Problem starting PVM daemon.");
+  }
 
   for (i = 0; i < numLocales; i++) {
     hosts2[i] = (char *)pvmnodestoadd[i];
@@ -204,16 +201,53 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     fprintf(stderr, "hosts2[%d]=%s\n", i, hosts2[i]);
   }
 
-  numt = pvm_spawn( (char *)"hello_real -nl 1 0", (char **)0, 0, (char *)"", numLocales, tids );
-  fprintf(stderr, "numt=%d\n", numt);
+  pvmsize += strlen("_real") + strlen(argv[0]);
+  pvmsize2 += strlen("  ") + strlen(argv[1]) + strlen(argv[2]) + strlen(i_str);
+  commandtopvm = chpl_malloc(pvmsize, sizeof(char*), "thing to execute via PVM spawn", false, -1, "");
+  argtopvm = chpl_malloc(pvmsize, sizeof(char*), "arguments to commandtopvm", false, -1, "");
+  for (i = 0; i < numLocales; i++) {
+    *commandtopvm = '\0';
+    *argtopvm = '\0';
+    sprintf(i_str, "%d", i);
+    strcat(commandtopvm, argv[0]);
+    strcat(commandtopvm, "_real");
 
-  sleep(20);
+    strcat(argtopvm, argv[1]);
+    strcat(argtopvm, " ");
+    strcat(argtopvm, argv[2]);
+    strcat(argtopvm, " ");
+    strcat(argtopvm, i_str);
+    fprintf(stderr, "String is: %s %s\n", commandtopvm, argtopvm);
+    argtostart2[0] = argtopvm;
+    numt = pvm_spawn( (char *)"hello_real", argtostart2, 1, (char *)pvmnodestoadd[i], 1, &tids[i] );
+    fprintf(stderr, "numt=%d on %s with tids[%d]=%d of numLocales=%d\n", numt, pvmnodestoadd[i], i, tids[i], numLocales);
+  }
+
+  info = pvm_mytid();
+  fprintf(stderr, "I am tid=%d\n", info);
+
+  bufid = pvm_recv(-1, NOTIFYTAG);
+  pvm_bufinfo(bufid, &bytes, &pvmtype, &source);
+  fprintf(stderr, "Received bytes=%d, pvmtype=%d, source=%d\n", bytes, pvmtype, source);
+  pvm_upkint(&end, 1, 1);
+  if (end == 1) {
+    fprintf(stderr, "Got call to end.\n");
+  }
+
+  //  sleep(20);
+
+  fprintf(stderr, "Got here to delete.\n");
+  info = pvm_delhosts( (char **)hosts2, i, infos );
+  fprintf(stderr, "info=%d\n", info);
 
   while (i >= 0) {
     free(pvmnodestoadd[i]);
     i--;
   }
   //  chpl_free(hosts, false, -1, "");
+  chpl_free(commandtopvm, false, -1, "");
+  chpl_free(argtopvm, false, -1, "");
+  pvm_halt();
   return (char *)"date";
 }
 

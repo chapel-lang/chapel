@@ -75,6 +75,7 @@ int lock_num = 0;
 
 #define TAGMASK 4194303
 #define BCASTTAG 4194299
+#define NOTIFYTAG 4194295
 
 chpl_mutex_t pvm_lock;
 chpl_mutex_t termination_lock;
@@ -91,6 +92,7 @@ int tids[64]; // tid list for all nodes
 int instance;
 
 int okay_to_barrier = 1;
+int end = 0;
 
 //
 // Chapel interface starts here
@@ -544,6 +546,13 @@ void chpl_comm_exit_all(int status) {
   chpl_mutex_lock(&termination_lock);
   chpl_mutex_unlock(&termination_lock);
   chpl_comm_barrier("About to finalize");
+
+  // Send a signal back to the launcher that we're done.
+  end = 1;
+  PVM_PACK_SAFE(pvm_initsend(PvmDataRaw), "pvm_initsend", "chpl_comm_exit_all");
+  PVM_NO_LOCK_SAFE(pvm_pkint(&end, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
+  PVM_UNPACK_SAFE(pvm_send(pvm_parent(), NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
+
   PVM_SAFE(pvm_halt(), "pvm_halt", "chpl_comm_exit_all");
   return;
 }
