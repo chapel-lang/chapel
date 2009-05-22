@@ -54,8 +54,8 @@ $(OBJ_SUBDIR)/lex.yy.o: lex.yy.cpp $(OBJ_SUBDIR_MADE) chapel.tab.h $(LEXYACC_INC
 # need to handle these ones specially as well on intel because it
 # #includes chapel.tab.h
 #
-$(OBJ_SUBDIR)/parser.o: parser.cpp $(OBJ_SUBDIR_MADE)
+$(OBJ_SUBDIR)/parser.o: parser.cpp $(OBJ_SUBDIR_MADE) chapel.tab.h
 	$(CXX) -c $(COMP_CFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
 
-$(OBJ_SUBDIR)/processTokens.o: processTokens.cpp $(OBJ_SUBDIR_MADE)
+$(OBJ_SUBDIR)/processTokens.o: processTokens.cpp $(OBJ_SUBDIR_MADE) chapel.tab.h
 	$(CXX) -c $(COMP_CFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
