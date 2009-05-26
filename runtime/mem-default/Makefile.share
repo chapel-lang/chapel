@@ -1,4 +1,4 @@
-MEM_SRCS = chplmem.c
+MEM_SRCS = chpl_default_mem.c
 
 SVN_SRCS = $(MEM_SRCS)
 SRCS = $(SVN_SRCS)
