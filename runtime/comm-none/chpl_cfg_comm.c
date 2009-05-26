@@ -55,7 +55,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 void chpl_comm_init_shared_heap(void) {
-  initHeap(NULL, 0);
+  chpl_initHeap(NULL, 0);
 }
 
 void chpl_comm_rollcall(void) {

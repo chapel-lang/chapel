@@ -438,7 +438,7 @@ void chpl_comm_rollcall(void) {
 }
 
 void chpl_comm_init_shared_heap(void) {
-  initHeap(NULL, 0);
+  chpl_initHeap(NULL, 0);
   return;
 }
 

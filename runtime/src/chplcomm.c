@@ -1,6 +1,5 @@
 //
-// This file can hold shared code between the different comm
-// implementation files.
+// Shared code for different comm implementations in comm-*/chpl_cfg_comm.c
 //
 #include "chplrt.h"
 #include "chplcomm.h"

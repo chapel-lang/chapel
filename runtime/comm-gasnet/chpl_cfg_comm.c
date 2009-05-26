@@ -274,9 +274,9 @@ void chpl_comm_init_shared_heap(void) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
   void* heapStart = chpl_numGlobalsOnHeap*sizeof(void*) + (char*)seginfo_table[chpl_localeID].addr;
   size_t heapSize = seginfo_table[chpl_localeID].size - chpl_numGlobalsOnHeap*sizeof(void*);
-  initHeap(heapStart, heapSize);
+  chpl_initHeap(heapStart, heapSize);
 #else
-  initHeap(NULL, 0);
+  chpl_initHeap(NULL, 0);
 #endif
 }
 

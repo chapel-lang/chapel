@@ -149,7 +149,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 void chpl_comm_init_shared_heap(void) {
   void* heapStart = chpl_numGlobalsOnHeap*sizeof(void*) + (char*)globalPtrs[chpl_localeID];
   size_t heapSize = _MAX_ARMCI_MEMSZ - chpl_numGlobalsOnHeap*sizeof(void*);
-  initHeap(heapStart, heapSize);
+  chpl_initHeap(heapStart, heapSize);
 }
 
 //
