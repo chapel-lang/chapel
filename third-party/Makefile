@@ -26,9 +26,6 @@ mpich1: FORCE
 pvm: FORCE
 	cd pvm && $(MAKE)
 
-libheapmm: FORCE
-	cd heapmm && $(MAKE)
-
 libdlmalloc: FORCE
 	cd dlmalloc && $(MAKE)
 

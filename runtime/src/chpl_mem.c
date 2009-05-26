@@ -1,5 +1,5 @@
 //
-// Shared code for different mem implementations in mem-*/chpl_cfg_mem.c
+// Shared code for different mem implementations in mem-*/chpl_*_mem.c
 //
 #include <stdio.h>
 #include <stdlib.h>

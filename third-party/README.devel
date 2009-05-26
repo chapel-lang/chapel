@@ -20,18 +20,6 @@ armci/
   See also: armci/armci-*/README
 
 
-heapmm/
-  Summary: Walt Karas' heap memory manager which we initially used as
-           an alternative to dlmalloc.
-
-  License: Public Domain (see comments at top of source files,
-           http://www.geocities.com/wkaras/ and 
-           http://creativecommons.org/licenses/publicdomain/
-
-  Contact: For more information, please refer to:
-           http://www.geocities.com/wkaras/heapmm/heapmm.html
-
-
 mpich1/
   Summary: the MPICH1 implementation of MPI that we use to launch
            ARMCI programs
