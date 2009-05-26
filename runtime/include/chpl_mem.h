@@ -23,10 +23,10 @@ void  chpl_free(void* ptr, chpl_bool userCode,
                 int32_t lineno, chpl_string filename);
 
 extern int heapInitialized;
-void confirm(void*, const char*, int32_t, chpl_string);
-size_t computeChunkSize(size_t, size_t, chpl_bool, int32_t, chpl_string);
-void track_malloc(void*, size_t, size_t, size_t, const char*, chpl_bool, int32_t, chpl_string);
-void track_free(void*, chpl_bool, int32_t, chpl_string);
-void track_realloc(size_t, void*, void*, size_t, size_t, const char*, int32_t, chpl_string);
+
+void chpl_md_initHeap(void* start, size_t size);
+void* chpl_md_malloc(size_t chunk);
+void chpl_md_free(void* memAlloc);
+void* chpl_md_realloc(void* memAlloc, size_t newChunk);
 
 #endif
