@@ -4,7 +4,7 @@
 #include "arg.h"
 #include "chplexit.h"
 #include "chplio.h"
-#include "chplmem.h"
+#include "chpl_mem.h"
 #include "chplrt.h"
 #include "config.h"
 #include "error.h"

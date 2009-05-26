@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include "chplexit.h"
 #include "chplcomm.h"
-#include "chplmem.h"
+#include "chpl_mem.h"
 #include "chplrt.h"
 #include "chplthreads.h"
 #include "error.h"

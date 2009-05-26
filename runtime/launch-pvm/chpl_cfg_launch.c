@@ -2,7 +2,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include "chpllaunch.h"
-#include "chplmem.h"
+#include "chpl_mem.h"
 #include "error.h"
 #include <stdlib.h>
 #include "pvm3.h"

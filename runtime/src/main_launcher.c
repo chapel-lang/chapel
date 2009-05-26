@@ -4,7 +4,7 @@
 #include "chplcgfns.h"
 #include "chplcomm_locales.h"
 #include "chpllaunch.h"
-#include "chplmem.h"
+#include "chpl_mem.h"
 #include "chpltypes.h"
 #include "error.h"
 

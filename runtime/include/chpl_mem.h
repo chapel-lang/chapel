@@ -1,5 +1,5 @@
-#ifndef _chplmem_H_
-#define _chplmem_H_
+#ifndef _chpl_mem_H_
+#define _chpl_mem_H_
 
 #include <stddef.h>
 #include <stdint.h>

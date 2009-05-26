@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "chplcomm.h"
 #include "chplexit.h"
-#include "chplmem.h"
+#include "chpl_mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
 #include "gdb.h"

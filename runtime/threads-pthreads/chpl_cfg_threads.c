@@ -10,7 +10,7 @@
 #include "chapel_code.h"
 #include "chplcomm.h"
 #include "chplexit.h"
-#include "chplmem.h"
+#include "chpl_mem.h"
 #include "chplrt.h"
 #include "chplthreads.h"
 #include "error.h"

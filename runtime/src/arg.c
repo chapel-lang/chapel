@@ -7,7 +7,7 @@
 #include "chplcgfns.h"
 #include "chplexit.h"
 #include "chplio.h"
-#include "chplmem.h"
+#include "chpl_mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
 #include "chplthreads.h"

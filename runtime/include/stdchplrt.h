@@ -14,7 +14,7 @@
 
 #include "chplcast.h"
 #include "chplio.h"
-#include "chplmem.h"
+#include "chpl_mem.h"
 #include "chplrt.h"
 #include "chplthreads.h"
 #include "chpltypes.h"

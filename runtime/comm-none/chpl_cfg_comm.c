@@ -7,7 +7,7 @@
 #include "chplcomm.h"
 #include "chplexit.h"
 #include "error.h"
-#include "chplmem.h"
+#include "chpl_mem.h"
 #include "chplthreads.h"
 
 // Helper functions

@@ -8,7 +8,7 @@
 
 #include "chplrt.h"
 #include "chplcomm.h"
-#include "chplmem.h"
+#include "chpl_mem.h"
 #include "chplsys.h"
 #include "chplthreads.h"
 #include "error.h"

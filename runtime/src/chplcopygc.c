@@ -5,7 +5,7 @@
 #include "chplcopygc.h"
 #include "chplrt.h"
 #include "error.h"
-#include "chplmem.h"
+#include "chpl_mem.h"
 
 _memory_space *_from_space, *_to_space;
 

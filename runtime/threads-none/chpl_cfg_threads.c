@@ -5,7 +5,7 @@
 
 #include "chplrt.h"
 #include "chplthreads.h"
-#include "chplmem.h"
+#include "chpl_mem.h"
 #include "error.h"
 #include <assert.h>
 #include <stdint.h>

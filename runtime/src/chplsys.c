@@ -14,7 +14,7 @@
 #include <machine/runtime.h>
 #endif
 #include "chplrt.h"
-#include "chplmem.h"
+#include "chpl_mem.h"
 #include "chplsys.h"
 #include "chplthreads.h"
 #include "chplcomm.h"

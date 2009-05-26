@@ -24,7 +24,7 @@
 #include <chplfp.h>
 #include "chplio.h"
 #include "chplmath.h"
-#include "chplmem.h"
+#include "chpl_mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
 #include "chplsys.h"

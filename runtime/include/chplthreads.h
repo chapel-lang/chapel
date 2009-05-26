@@ -12,7 +12,7 @@
 extern int32_t maxThreads;
 
 // Mutexes
-// (These are only needed in chplmem.c - perhaps chpl_sync_lock and chpl_sync_unlock
+// (These are only needed in chpl_mem.c - perhaps chpl_sync_lock and chpl_sync_unlock
 // should be used instead?)
 
 typedef chpl_mutex_t* chpl_mutex_p;
