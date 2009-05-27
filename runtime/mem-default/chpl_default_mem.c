@@ -18,16 +18,16 @@ void chpl_md_initHeap(void* start, size_t size) {
 }
 
 
-void* chpl_md_malloc(size_t chunk) {
+void* chpl_md_malloc(size_t chunk, int32_t lineno, chpl_string filename) {
   return (chunk) ? malloc(chunk) : NULL;
 }
 
 
-void chpl_md_free(void* memAlloc) {
+void chpl_md_free(void* memAlloc, int32_t lineno, chpl_string filename) {
   free(memAlloc);
 }
 
 
-void* chpl_md_realloc(void* memAlloc, size_t newChunk) {
+void* chpl_md_realloc(void* memAlloc, size_t newChunk, int32_t lineno, chpl_string filename) {
   return realloc(memAlloc, newChunk);
 }

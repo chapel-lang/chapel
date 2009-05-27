@@ -18,15 +18,15 @@ void chpl_md_initHeap(void* start, size_t size) {
 }
 
 
-void* chpl_md_malloc(size_t size) {
+void* chpl_md_malloc(size_t size, int32_t lineno, chpl_string filename) {
   if (!heapInitialized) {
     chpl_error("chpl_malloc called before the heap is initialized", lineno, filename);
   }
-  return mspace_malloc(chpl_heap, chunk);
+  return mspace_malloc(chpl_heap, size);
 }
 
 
-void chpl_md_free(void* memAlloc) {
+void chpl_md_free(void* memAlloc, int32_t lineno, chpl_string filename) {
   if (!heapInitialized) {
     chpl_error("chpl_free called before the heap is initialized", lineno, filename);
   }
@@ -34,6 +34,6 @@ void chpl_md_free(void* memAlloc) {
 }
 
 
-void* chpl_md_realloc(void* memAlloc, size_t newChunk) {
+void* chpl_md_realloc(void* memAlloc, size_t newChunk, int32_t lineno, chpl_string filename) {
   return mspace_realloc(chpl_heap, memAlloc, newChunk);
 }

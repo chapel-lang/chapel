@@ -64,7 +64,7 @@ chpl_stopMemDiagnosis() {
 void* chpl_malloc(size_t number, size_t size, const char* description,
                   chpl_bool userCode, int32_t lineno, chpl_string filename) {
   size_t chunk = computeChunkSize(number, size, false, lineno, filename);
-  void* memAlloc = chpl_md_malloc(chunk);
+  void* memAlloc = chpl_md_malloc(chunk, lineno, filename);
   if (chunk != 0) {
     confirm(memAlloc, description, lineno, filename);
   }
@@ -106,7 +106,7 @@ void chpl_free(void* memAlloc, chpl_bool userCode,
       removeMemory(memAlloc, lineno, filename);
     }
 
-    chpl_md_free(memAlloc);
+    chpl_md_free(memAlloc, lineno, filename);
   }
 }
 
@@ -134,7 +134,7 @@ void* chpl_realloc(void* memAlloc, size_t number, size_t size,
                  lineno, filename);
   }
 
-  moreMemAlloc = chpl_md_realloc(memAlloc, newChunk);
+  moreMemAlloc = chpl_md_realloc(memAlloc, newChunk, lineno, filename);
 
   confirm(moreMemAlloc, description, lineno, filename);
 
