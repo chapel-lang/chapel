@@ -133,14 +133,14 @@ void _chpl_gc_init(size_t heapsize) {
   char *heap1, *heap2;
 
   // allocate the from and to spaces
-  heap1 = (char*)chpl_malloc(1, heapsize, "Heap 1", false, 1, "");
-  heap2 = (char*)chpl_malloc(1, heapsize, "Heap 2", false, 1, "");
+  heap1 = (char*)chpl_malloc(1, heapsize, "Heap 1", 1, "");
+  heap2 = (char*)chpl_malloc(1, heapsize, "Heap 2", 1, "");
 
   // allocate structs to point into the spaces
   _from_space = (_memory_space*)chpl_malloc(1, sizeof(_memory_space),
-                                             "Space pointer 1", false, 1, "");
+                                             "Space pointer 1", 1, "");
   _to_space = (_memory_space*)chpl_malloc(1, sizeof(_memory_space),
-                                           "Space pointer 2", false, 1, "");
+                                           "Space pointer 2", 1, "");
 
   // fill in the pointers
   _from_space->head = heap1;
@@ -152,8 +152,8 @@ void _chpl_gc_init(size_t heapsize) {
 }
 
 void _chpl_gc_cleanup(void) {
-  chpl_free(_to_space->head, false, __LINE__, __FILE__);
-  chpl_free(_from_space->head, false, __LINE__, __FILE__);
-  chpl_free(_to_space, false, __LINE__, __FILE__);
-  chpl_free(_from_space, false, __LINE__, __FILE__);
+  chpl_free(_to_space->head, __LINE__, __FILE__);
+  chpl_free(_from_space->head, __LINE__, __FILE__);
+  chpl_free(_to_space, __LINE__, __FILE__);
+  chpl_free(_from_space, __LINE__, __FILE__);
 }

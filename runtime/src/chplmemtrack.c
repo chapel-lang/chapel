@@ -40,7 +40,6 @@ static size_t totalMem = 0;         /* total memory currently allocated */
 static size_t totalTrackedMem = 0;  /* total memory being tracked */
 static size_t maxMem = 0;           /* maximum total memory during run  */
 
-static _Bool reportOnlyUserAllocations = true;
 static _Bool alreadyPrintingStat = false;
 
 #ifndef LAUNCHER
@@ -161,8 +160,6 @@ void setMemthreshold(int64_t value) {
   memthresholdValue = value >= 0 ? value : -value;
   if (memthresholdValue < 0)
     memthresholdValue = INT64_MAX;
-  if (value < 0)
-    reportOnlyUserAllocations = false;
 }
 
 
@@ -179,30 +176,23 @@ void setMemtrace(char* memlogname) {
 }
 
 
-void increaseMemStat(size_t chunk, chpl_bool userCode,
-                     int32_t lineno, chpl_string filename) {
+void increaseMemStat(size_t chunk, int32_t lineno, chpl_string filename) {
   chpl_mutex_lock(&memstat_lock);
   totalMem += chunk;
   if (memmaxValue && (totalMem > memmaxValue)) {
     chpl_mutex_unlock(&memstat_lock);
     chpl_error("Exceeded memory limit", lineno, filename);
   }
-  if ((userCode && reportOnlyUserAllocations) ||
-      (!userCode && !reportOnlyUserAllocations)) {
-    totalTrackedMem += chunk;
-    updateMaxMem();
-  }
+  totalTrackedMem += chunk;
+  updateMaxMem();
   chpl_mutex_unlock(&memstat_lock);
 }
 
 
-void decreaseMemStat(size_t chunk, chpl_bool userCode) {
+void decreaseMemStat(size_t chunk) {
   chpl_mutex_lock(&memstat_lock);
   totalMem = chunk > totalMem ? 0 : totalMem - chunk;
-  if ((userCode && reportOnlyUserAllocations) ||
-      (!userCode && !reportOnlyUserAllocations)) {
-    totalTrackedMem = chunk > totalTrackedMem ? 0 : totalTrackedMem - chunk;
-  }
+  totalTrackedMem = chunk > totalTrackedMem ? 0 : totalTrackedMem - chunk;
   chpl_mutex_unlock(&memstat_lock);
 }
 
@@ -259,8 +249,7 @@ void printFinalMemStat(int32_t lineno, chpl_string filename) {
 }
 
 
-void printMemTable(int64_t threshold, chpl_bool userCode,
-                   int32_t lineno, chpl_string filename) {
+void printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
   memTableEntry* memEntry = NULL;
 
   const int numberWidth   = 9;
@@ -300,9 +289,7 @@ void printMemTable(int64_t threshold, chpl_bool userCode,
 
   for (memEntry = first; memEntry != NULL; memEntry = memEntry->nextInstalled) {
     size_t chunk = memEntry->number * memEntry->size;
-    if (chunk >= threshold &&
-        ((userCode && memEntry->userCode) ||
-         (!userCode && !memEntry->userCode))) {
+    if (chunk >= threshold) {
       printf("%-*zu%-*zu%-*zu%#-*.*" PRIxPTR "%-s\n",
              numberWidth, memEntry->size,
              numberWidth, memEntry->number,
@@ -333,9 +320,7 @@ void chpl_printMemTable(void) {
 
   for (memEntry = first; memEntry != NULL; memEntry = memEntry->nextInstalled) {
     size_t chunk = memEntry->number * memEntry->size;
-    if (chunk >= memthresholdValue &&
-        ((reportOnlyUserAllocations && memEntry->userCode) ||
-         (!reportOnlyUserAllocations && !memEntry->userCode))) {
+    if (chunk >= memthresholdValue) {
 #ifndef LAUNCHER
       chpl____mem_alloc_add(memEntry->description, chunk);
 #endif
@@ -379,7 +364,7 @@ memTableEntry* lookupMemory(void* memAlloc) {
 
 
 void installMemory(void* memAlloc, size_t number, size_t size,
-                   const char* description, chpl_bool userCode) {
+                   const char* description) {
   unsigned hashValue;
   memTableEntry* memEntry;
   PRINTF("");
@@ -417,7 +402,6 @@ void installMemory(void* memAlloc, size_t number, size_t size,
   }
   memEntry->number = number;
   memEntry->size = size;
-  memEntry->userCode = userCode;
   chpl_mutex_unlock(&memtrack_lock);
   PRINTF(" done");
 }
@@ -476,14 +460,13 @@ void removeMemory(void* memAlloc, int32_t lineno, chpl_string filename) {
 
 
 void printToMemLog(const char* memType, size_t number, size_t size,
-                   const char* description, chpl_bool userCode,
+                   const char* description,
                    int32_t lineno, chpl_string filename,
                    void* memAlloc, void* moreMemAlloc) {
 #ifndef LAUNCHER
   size_t chunk = number * size;
   chpl_mutex_lock(&memtrace_lock);
-  if (chunk >= memthresholdValue &&
-      ((reportOnlyUserAllocations && userCode) || (!reportOnlyUserAllocations && !userCode))) {
+  if (chunk >= memthresholdValue) {
     if (moreMemAlloc && (moreMemAlloc != memAlloc)) {
       fprintf(memlog, "%s called at %s:%"PRId32" on locale %"PRId32" for %zu items of size %zu for %s:  0x%p -> 0x%p\n",
               memType, filename, lineno, chpl_localeID, number, size, description,

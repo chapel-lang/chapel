@@ -126,8 +126,6 @@ const char* toString(CallInfo* info) {
   if (_this)
     start = 2;
   for (int i = start; i < info->actuals.n; i++) {
-    if (info->actualNames.v[i] && !strcmp(info->actualNames.v[i], "userCode"))
-      continue;
     if (!first)
       first = true;
     else
@@ -297,8 +295,7 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
   VarSymbol* ret = newTemp("ic", ii->iclass);
   ii->getIterator->insertAtTail(new DefExpr(ret));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CHPL_ALLOC, ii->iclass->symbol,
-                                                                          new_StringSymbol("iterator class"))));
+  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CHPL_ALLOC, ii->iclass->symbol, new_StringSymbol("iterator class"))));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
@@ -3270,7 +3267,7 @@ resolveFns(FnSymbol* fn) {
       if (!ct->destructor &&
           !ct->symbol->hasFlag(FLAG_REF)) {
         VarSymbol* tmp = newTemp(ct);
-        CallExpr* call = new CallExpr("~chpl_destroy", gMethodToken, tmp, new SymExpr(gFalse));
+        CallExpr* call = new CallExpr("~chpl_destroy", gMethodToken, tmp);
         fn->insertAtHead(new CallExpr(call));
         fn->insertAtHead(new DefExpr(tmp));
         resolveCall(call);

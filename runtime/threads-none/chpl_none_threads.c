@@ -42,7 +42,7 @@ launch_next_task(void) {
     chpl_set_serial(task->serial_state);
 
     (*task->fun)(task->arg);
-    chpl_free(task, false, 0, 0);
+    chpl_free(task, 0, 0);
 
     return true;
   } else {

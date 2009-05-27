@@ -212,13 +212,11 @@ void normalize(void) {
       VarSymbol* tmp = newTemp();
       call->insertBefore(new DefExpr(tmp));
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(1)->remove()));
-      if (call->numActuals() > 0) {
-        call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp, call->get(1)->copy()));
+      call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
+      if (call->numActuals() > 0)
         call->insertBefore(new CallExpr(PRIM_CHPL_FREE, tmp, call->get(1)->remove()));
-      } else {
-        call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
+      else
         call->insertBefore(new CallExpr(PRIM_CHPL_FREE, tmp));
-      }
       call->remove();
     }
   }
@@ -276,8 +274,6 @@ void normalize(void) {
           USR_FATAL(fn, "destructor name must match class name");
         } else {
           fn->name = astr("~chpl_destroy");
-          fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "userCode", dtBool,
-                                               NULL, new SymExpr(gFalse)));
         }
       }
     }
@@ -408,26 +404,12 @@ static void call_constructor_for_class(CallExpr* call) {
           if (!ct->defaultConstructor)
             INT_FATAL(call, "class type has no default constructor");
           se->replace(new UnresolvedSymExpr(ct->defaultConstructor->name));
-          if (CallExpr* pe = toCallExpr(parent->parentExpr)) {
-            if ((pe->isPrimitive(PRIM_MOVE) ||
-                 (isUnresolvedSymExpr(pe->baseExpr) &&
-                  !strcmp(toUnresolvedSymExpr(pe->baseExpr)->unresolved, "_copy")))
-                && parent->numActuals() > 1 && toSymExpr(parent->get(2))->var == gTrue)
-              call->insertAtTail(new NamedExpr("userCode", parent->get(2)->remove()));
-          }
           parent->replace(call->remove());
         } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
                    call->partialTag == true) {
           if (!ct->defaultConstructor)
             INT_FATAL(call, "class type has no default constructor");
           se->replace(new UnresolvedSymExpr(ct->defaultConstructor->name));
-          if (CallExpr* pe = toCallExpr(parentParent->parentExpr)) {
-            if ((pe->isPrimitive(PRIM_MOVE) ||
-                 (isUnresolvedSymExpr(pe->baseExpr) &&
-                  !strcmp(toUnresolvedSymExpr(pe->baseExpr)->unresolved, "_copy")))
-                && parentParent->numActuals() > 1 && toSymExpr(parentParent->get(2))->var == gTrue)
-              call->insertAtTail(new NamedExpr("userCode", parentParent->get(2)->remove()));
-          }
           parentParent->replace(parent->remove());
         } else {
           if (!ct->defaultTypeConstructor)
@@ -987,9 +969,6 @@ static void change_method_into_constructor(FnSymbol* fn) {
   ClassType* ct = toClassType(fn->getFormal(2)->type);
   if (!ct)
     INT_FATAL(fn, "constructor on non-class type");
-  // add arg to propagate whether call came from explicit user code
-  ArgSymbol* userCode = new ArgSymbol(INTENT_BLANK, "userCode", dtBool, NULL, new SymExpr(gFalse));
-  fn->insertFormalAtTail(userCode);
   CallExpr* call = new CallExpr(ct->defaultConstructor);
   for_formals(defaultTypeConstructorArg, ct->defaultTypeConstructor) {
     ArgSymbol* arg = NULL;

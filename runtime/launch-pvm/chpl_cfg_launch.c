@@ -89,10 +89,10 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   // The third part (built with the first) is the deleteCommand for PVM
   // Finally, this needs to be passed to PVM with a pipe
   i = 0;
-  addCommand = chpl_malloc(addsize, sizeof(char*), "first part pvm command buffer", false, -1, "");
-  baseCommand = chpl_malloc(basesize, sizeof(char*), "actual command to spawn", false, -1, "");
-  deleteCommand = chpl_malloc(deletesize, sizeof(char*), "last part pvm command buffer", false, -1, "");
-  topvmCommand = chpl_malloc(topvmsize, sizeof(char*), "send to pvm via pipe command buffer", false, -1, "");
+  addCommand = chpl_malloc(addsize, sizeof(char*), "first part pvm command buffer", -1, "");
+  baseCommand = chpl_malloc(basesize, sizeof(char*), "actual command to spawn", -1, "");
+  deleteCommand = chpl_malloc(deletesize, sizeof(char*), "last part pvm command buffer", -1, "");
+  topvmCommand = chpl_malloc(topvmsize, sizeof(char*), "send to pvm via pipe command buffer", -1, "");
   *addCommand = '\0';
   *baseCommand = '\0';
   *deleteCommand = '\0';
@@ -131,7 +131,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   strcat(topvmCommand, "pvm");
 
   size = strlen(addCommand) + strlen(topvmCommand) + strlen(" && ") + strlen(deleteCommand) + strlen(baseCommand) + strlen(topvmCommand) + 1;
-  command = chpl_malloc(size, sizeof(char*), "pvm command buffer", false, -1, "");
+  command = chpl_malloc(size, sizeof(char*), "pvm command buffer", -1, "");
   *command = '\0';
 
   strcat(command, addCommand);
@@ -155,9 +155,9 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     free(nodestoadd[i]);
     i--;
   }
-  chpl_free(addCommand, false, -1, "");
-  chpl_free(deleteCommand, false, -1, "");
-  chpl_free(topvmCommand, false, -1, "");
+  chpl_free(addCommand, -1, "");
+  chpl_free(deleteCommand, -1, "");
+  chpl_free(topvmCommand, -1, "");
 
   fprintf(stderr, "\n\n\nStarting again.\n\n\n");
   */
@@ -203,8 +203,8 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
 
   pvmsize += strlen("_real") + strlen(argv[0]);
   pvmsize2 += strlen("  ") + strlen(argv[1]) + strlen(argv[2]) + strlen(i_str);
-  commandtopvm = chpl_malloc(pvmsize, sizeof(char*), "thing to execute via PVM spawn", false, -1, "");
-  argtopvm = chpl_malloc(pvmsize, sizeof(char*), "arguments to commandtopvm", false, -1, "");
+  commandtopvm = chpl_malloc(pvmsize, sizeof(char*), "thing to execute via PVM spawn", -1, "");
+  argtopvm = chpl_malloc(pvmsize, sizeof(char*), "arguments to commandtopvm", -1, "");
   for (i = 0; i < numLocales; i++) {
     *commandtopvm = '\0';
     *argtopvm = '\0';
@@ -244,9 +244,9 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     free(pvmnodestoadd[i]);
     i--;
   }
-  //  chpl_free(hosts, false, -1, "");
-  chpl_free(commandtopvm, false, -1, "");
-  chpl_free(argtopvm, false, -1, "");
+  //  chpl_free(hosts, -1, "");
+  chpl_free(commandtopvm, -1, "");
+  chpl_free(argtopvm, -1, "");
   pvm_halt();
   return (char *)"date";
 }

@@ -67,7 +67,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     size += strlen(argv[i]) + 3;
   }
 
-  command = chpl_malloc(size, sizeof(char*), "aprun command buffer", false, -1, "");
+  command = chpl_malloc(size, sizeof(char*), "aprun command buffer", -1, "");
   
   sprintf(command, "%s", baseCommand);
   for (i=1; i<argc; i++) {
