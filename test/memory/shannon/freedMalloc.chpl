@@ -11,5 +11,4 @@ var unfreedFloat = chpl_malloc(1, numBytes(real(64)), "_real64", linenum, filena
 
 printMemTable(2, linenum, filename);
 chpl_free(freedInt, linenum, filename);
-writeln("And this is the memory hash table after the int variable has been freed:");
 printMemTable(2, linenum, filename);
