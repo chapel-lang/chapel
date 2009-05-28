@@ -46,7 +46,6 @@ system("cd $tmpdir && svn export -q $svnroot chapel");
        "util/commSubstrate.pl",
        "util/compiler.pl",
        "util/launcher.pl",
-       "util/makechpl",
        "util/mem.pl",
        "util/platform.pl",
        "util/printchplenv.pl",

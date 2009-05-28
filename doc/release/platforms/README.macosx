@@ -1,47 +1,15 @@
-======================================
-Compiling Chapel on a Mac running OS X
-======================================
+==================================
+Using Chapel on a Mac running OS X
+==================================
 
-On a Mac, the Chapel compiler can be built in one of three ways:
+By and large, Chapel can be used on a Macintosh running OS X just like
+any other platform -- refer to the top-level README file for general
+instructions on building and using Chapel.
 
-1) using the make command as described in the top level README file;
-2) by launching Xcode and opening the project in make/Chapel.xcodeproj,
-   and then building the "Compiler and Runtime" target; or
-3) using the util/makechpl shell script, which invokes the xcodebuild
-   command on the aforementioned Xcode project.
-
-The advantage of either of the two latter alternatives is that they
-can be much faster than using make, particularly since they will take
-advantage of all the CPU cores on your computer, as well as any
-computers you have specified for use with distributed builds.
-
-Note that the directories used for intermediate files in the first
-alternative above is different than that used by the latter two
-alternatives.  Consequently, if you build the Chapel compiler using
-the first alternative, and you subsequently build it again with either
-of the other two alternatives, the Chapel compiler will be built again
-from scratch.
-
-The third alternative above enables optimization while compiling the
-Chapel compiler source code.  If you would like to build the Chapel
-compiler even faster, you can use the following command:
-
-     util/makechpl debug
-
-This will disable optimization when compiling the Chapel compiler
-source code.
-
-The makechpl script understands the following targets: Compiler,
-Runtime, all, comprt (i.e., both compiler and runtime), and clean.
-You can also specify additional arguments to be passed on to
-xcodebuild.  For example, you can request to have the compiler and
-runtime built from scratch, with intermediate files put in /tmp, by
-using:
-
-     util/makechpl clean all SYMROOT=/tmp
-
-By the way, if you invoke util/makechpl on a system that is not
-running Mac OS X, this script will simply build the Chapel compiler
-using make.  On a non-Mac OS X system, there is no advantage to using
-this script, but there is also no harm either.  All targets mentioned
-above can be specified.
+For Macintosh developers, we have in the past supported an Xcode
+project for building the Chapel compiler and runtime, but this has not
+been kept up-to-date and is unlikely to work today.  To see the
+project file in its current state, open the project
+make/Chapel.xcodeproj within Xcode.  If you would like to contribute
+to the Chapel project by updating and maintaining the Xcode project
+over time, please let us know at chapel_info.cray.com.

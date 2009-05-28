@@ -88,7 +88,6 @@ For more detailed information about...      refer to...
 
   ...using Chapel on a Cray XT (CLE)         ...doc/platforms/README.xt-cle
   ...using Chapel on a Cray CX1 (Linux)      ...doc/platforms/README.cx1-linux
-  ...using Chapel with Mac OS X              ...doc/platforms/README.macosx
   ...using Chapel with Cygwin over Windows   ...doc/platforms/README.cygwin
   ...using Chapel on an IBM system           ...doc/platforms/README.ibm
 
