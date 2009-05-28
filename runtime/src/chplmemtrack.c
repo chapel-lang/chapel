@@ -21,14 +21,14 @@ static int memDiagnosisFlag = 0;
 #define PRINTF(s) do if (CHPL_DEBUG_MEMTRACK) \
                        { printf("%s%s\n", __func__, s); fflush(stdout); } while (0)
 
-typedef char str80_t[81];
-
-typedef struct _memTableEntry { /* table entry */
+typedef struct memTableEntry_struct { /* table entry */
   size_t number;
   size_t size;
   char* description;
   void* memAlloc;
-  struct _memTableEntry* nextInBucket;
+  int32_t lineno;
+  chpl_string filename;
+  struct memTableEntry_struct* nextInBucket;
 } memTableEntry;
 
 #define HASHSIZE 1019
@@ -262,8 +262,16 @@ void printFinalMemStat(int32_t lineno, chpl_string filename) {
 }
 
 
-static int str80cmp(const void* str1, const void* str2) {
-  return strcmp(*(str80_t*)str1, *(str80_t*)str2);
+static int descCmp(const void* p1, const void* p2) {
+  memTableEntry* m1 = *(memTableEntry**)p1;
+  memTableEntry* m2 = *(memTableEntry**)p2;
+
+  int val = strcmp(m1->description, m2->description);
+  if (val == 0 && m1->filename && m2->filename)
+    val = strcmp(m1->filename, m2->filename);
+  if (val == 0)
+    val = (m1->lineno < m2->lineno) ? -1 : ((m1->lineno > m2->lineno) ? 1 : 0);
+  return val;
 }
 
 
@@ -274,51 +282,46 @@ void printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
   const int precision     = sizeof(uintptr_t) * 2;
   const int addressWidth  = precision + 4;
   const int descWidth     = 80-3*numberWidth-addressWidth;
-
-  const char* size        = "Size:";
-  const char* bytes       = "(bytes)";
-  const char* number      = "Number:";
-  const char* total       = "Total:";
-  const char* address     = "Address:";
-  const char* description = "Description:";
-  const char* line40      = "========================================";
+  int filenameWidth       = strlen("Allocated Memory (Bytes)");
 
   int n, i;
-  str80_t* table;
+  char* loc;
+  memTableEntry** table;
 
   if (!memtrack)
     chpl_error("The printMemTable function only works with the --memtrack flag", lineno, filename);
 
-  printf("\n%s%s\n", line40, line40);
-
-  printf("----------------------\n");
-  printf("***Allocated Memory***\n");
-  printf("----------------------\n");
-
-  printf("%-*s%-*s%-*s%-*s%-*s\n",
-         numberWidth, size,
-         numberWidth, number,
-         numberWidth, total,
-         descWidth, description,
-         addressWidth, address);
-
-  printf("%-*s%-*s%-*s\n",
-         numberWidth, bytes,
-         numberWidth, "",
-         numberWidth, bytes);
-
-  printf("%s%s\n", line40, line40);
-
   n = 0;
+  filenameWidth = strlen("Allocated Memory (Bytes)");
   for (i = 0; i < HASHSIZE; i++) {
     for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
       size_t chunk = memEntry->number * memEntry->size;
       if (chunk >= threshold) {
         n += 1;
+        if (memEntry->filename) {
+          int filenameLength = strlen(memEntry->filename);
+          if (filenameLength > filenameWidth)
+            filenameWidth = filenameLength;
+        }
       }
     }
   }
-  table = (str80_t*)malloc(n*sizeof(str80_t));
+
+  for (i = 0; i < filenameWidth+numberWidth*4+descWidth+addressWidth; i++)
+    printf("=");
+  printf("\n");
+  printf("%-*s%-*s%-*s%-*s%-*s%-*s\n",
+         filenameWidth+numberWidth, "Allocated Memory (Bytes)",
+         numberWidth, "Number",
+         numberWidth, "Size",
+         numberWidth, "Total",
+         descWidth, "Description",
+         addressWidth, "Address");
+  for (i = 0; i < filenameWidth+numberWidth*4+descWidth+addressWidth; i++)
+    printf("=");
+  printf("\n");
+
+  table = (memTableEntry**)malloc(n*sizeof(memTableEntry*));
   if (!table)
     chpl_error("out of memory printing memory table", lineno, filename);
 
@@ -327,23 +330,31 @@ void printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
     for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
       size_t chunk = memEntry->number * memEntry->size;
       if (chunk >= threshold) {
-        if (strlen(memEntry->description) > descWidth)
-          memEntry->description[descWidth-1] = '\0';
-        sprintf(table[n++],
-                "%-*zu%-*zu%-*zu%-*s%#-*.*" PRIxPTR,
-                numberWidth, memEntry->size,
-                numberWidth, memEntry->number,
-                numberWidth, chunk,
-                descWidth, memEntry->description,
-                addressWidth, precision, (uintptr_t)memEntry->memAlloc);
+        table[n++] = memEntry;
       }
     }
   }
-  qsort(table, n, sizeof(str80_t), str80cmp);
+  qsort(table, n, sizeof(memTableEntry*), descCmp);
+
+  loc = (char*)malloc((filenameWidth+numberWidth+1)*sizeof(char));
 
   for (i = 0; i < n; i++) {
-    printf("%s\n", table[i]);
+    memEntry = table[i];
+    if (memEntry->filename)
+      sprintf(loc, "%s:%d", memEntry->filename, memEntry->lineno);
+    else
+      sprintf(loc, "--");
+    printf("%-*s%-*zu%-*zu%-*zu%-*s%#-*.*" PRIxPTR "\n",
+           filenameWidth+numberWidth, loc,
+           numberWidth, memEntry->number,
+           numberWidth, memEntry->size,
+           numberWidth, memEntry->size*memEntry->number,
+           descWidth, memEntry->description,
+           addressWidth, precision, (uintptr_t)memEntry->memAlloc);
   }
+  for (i = 0; i < filenameWidth+numberWidth*4+descWidth+addressWidth; i++)
+    printf("=");
+  printf("\n");
   putchar('\n');
 }
 
@@ -413,7 +424,7 @@ static memTableEntry* lookupMemory(void* memAlloc) {
 }
 
 
-static void installMemory(void* memAlloc, size_t number, size_t size, const char* description) {
+static void installMemory(void* memAlloc, size_t number, size_t size, const char* description, int32_t lineno, chpl_string filename) {
   unsigned hashValue;
   memTableEntry* memEntry;
   PRINTF("");
@@ -425,7 +436,7 @@ static void installMemory(void* memAlloc, size_t number, size_t size, const char
     if (!memEntry) {
       char* message = chpl_glom_strings(3, "Out of memory allocating table entry for \"",
                                         description, "\"");
-      chpl_error(message, 0, 0);
+      chpl_error(message, lineno, filename);
     }
 
     hashValue = hash(memAlloc);
@@ -440,6 +451,8 @@ static void installMemory(void* memAlloc, size_t number, size_t size, const char
     }
     strcpy(memEntry->description, description);
     memEntry->memAlloc = memAlloc;
+    memEntry->lineno = lineno;
+    memEntry->filename = filename;
   }
   memEntry->number = number;
   memEntry->size = size;
@@ -527,7 +540,7 @@ void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size,
                   lineno, filename, memAlloc, NULL);
   }
   if (memtrack) {
-    installMemory(memAlloc, number, size, description);
+    installMemory(memAlloc, number, size, description, lineno, filename);
     if (memstat) {
       increaseMemStat(chunk, lineno, filename);
     }
@@ -582,7 +595,7 @@ void chpl_track_realloc2(void* memEntryV, void* moreMemAlloc, size_t newChunk, v
         updateMemory(memEntry, memAlloc, moreMemAlloc, number, size);
       }
     } else
-      installMemory(moreMemAlloc, number, size, description);
+      installMemory(moreMemAlloc, number, size, description, lineno, filename);
     if (memstat)
       increaseMemStat(newChunk, lineno, filename);
   }

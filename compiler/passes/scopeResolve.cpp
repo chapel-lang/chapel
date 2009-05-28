@@ -694,7 +694,7 @@ static void build_constructor(ClassType* ct) {
   CallExpr* allocCall = NULL;
   if (ct->symbol->hasFlag(FLAG_REF) || ct->symbol->hasFlag(FLAG_SYNC)) {
     allocCall = new CallExpr(PRIM_CHPL_ALLOC, fn->_this,
-                         new_StringSymbol(astr("instance of class ", ct->symbol->name)));
+                         new_StringSymbol(ct->symbol->name));
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
     meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL, new SymExpr(gTypeDefaultToken));
