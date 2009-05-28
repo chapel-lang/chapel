@@ -340,10 +340,12 @@ def write(args ...?n) {
 
 def writeln(args ...?n) {
   stdout.writeln((...args));
+  stdout.flush();
 }
 
 def writeln() {
   stdout.writeln();
+  stdout.flush();
 }
 
 def read(inout args ...?n) {
