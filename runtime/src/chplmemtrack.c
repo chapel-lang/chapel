@@ -14,12 +14,24 @@
 #undef calloc
 #undef free
 
-#define CHPL_DEBUG_MEMTRACK 0
+#define MEM_DIAGNOSIS 0
+static int memDiagnosisFlag = 0;
 
+#define CHPL_DEBUG_MEMTRACK 0
 #define PRINTF(s) do if (CHPL_DEBUG_MEMTRACK) \
                        { printf("%s%s\n", __func__, s); fflush(stdout); } while (0)
 
 typedef char str80_t[81];
+
+typedef struct _memTableEntry { /* table entry */
+  size_t number;
+  size_t size;
+  char* description;
+  void* memAlloc;
+  struct _memTableEntry* nextInBucket;
+} memTableEntry;
+
+#define HASHSIZE 1019
 
 static memTableEntry* memTable[HASHSIZE];
 
@@ -51,6 +63,8 @@ static unsigned hash(void* memAlloc);
 static void updateMaxMem(void);
 static memTableEntry* removeBucketEntry(void* address);
 static memTableEntry* lookupMemoryNoLock(void* memAlloc);
+static memTableEntry* lookupMemory(void* memAlloc);
+
 
 /* hashing function */
 static unsigned hash(void* memAlloc) {
@@ -175,7 +189,7 @@ void setMemtrace(char* memlogname) {
 }
 
 
-void increaseMemStat(size_t chunk, int32_t lineno, chpl_string filename) {
+static void increaseMemStat(size_t chunk, int32_t lineno, chpl_string filename) {
   chpl_mutex_lock(&memstat_lock);
   totalMem += chunk;
   if (memmaxValue && (totalMem > memmaxValue)) {
@@ -188,7 +202,7 @@ void increaseMemStat(size_t chunk, int32_t lineno, chpl_string filename) {
 }
 
 
-void decreaseMemStat(size_t chunk) {
+static void decreaseMemStat(size_t chunk) {
   chpl_mutex_lock(&memstat_lock);
   totalMem = chunk > totalMem ? 0 : totalMem - chunk;
   totalTrackedMem = chunk > totalTrackedMem ? 0 : totalTrackedMem - chunk;
@@ -386,7 +400,7 @@ void chpl_printMemTable(void) {
 }
 
 
-memTableEntry* lookupMemory(void* memAlloc) {
+static memTableEntry* lookupMemory(void* memAlloc) {
   memTableEntry* found = NULL;
   PRINTF("");
   chpl_mutex_lock(&memtrack_lock);
@@ -399,8 +413,7 @@ memTableEntry* lookupMemory(void* memAlloc) {
 }
 
 
-void installMemory(void* memAlloc, size_t number, size_t size,
-                   const char* description) {
+static void installMemory(void* memAlloc, size_t number, size_t size, const char* description) {
   unsigned hashValue;
   memTableEntry* memEntry;
   PRINTF("");
@@ -435,8 +448,8 @@ void installMemory(void* memAlloc, size_t number, size_t size,
 }
 
 
-void updateMemory(memTableEntry* memEntry, void* oldAddress, void* newAddress,
-                  size_t number, size_t size) {
+static void updateMemory(memTableEntry* memEntry, void* oldAddress, void* newAddress,
+                         size_t number, size_t size) {
   unsigned newHashValue;
   PRINTF("");
   chpl_mutex_lock(&memtrack_lock);
@@ -454,7 +467,7 @@ void updateMemory(memTableEntry* memEntry, void* oldAddress, void* newAddress,
   PRINTF(" done");
 }
 
-void removeMemory(void* memAlloc, int32_t lineno, chpl_string filename) {
+static void removeMemory(void* memAlloc, int32_t lineno, chpl_string filename) {
   memTableEntry* thisBucketEntry;
   memTableEntry* memEntry;
   PRINTF("");
@@ -474,10 +487,10 @@ void removeMemory(void* memAlloc, int32_t lineno, chpl_string filename) {
 }
 
 
-void printToMemLog(const char* memType, size_t number, size_t size,
-                   const char* description,
-                   int32_t lineno, chpl_string filename,
-                   void* memAlloc, void* moreMemAlloc) {
+static void printToMemLog(const char* memType, size_t number, size_t size,
+                          const char* description,
+                          int32_t lineno, chpl_string filename,
+                          void* memAlloc, void* moreMemAlloc) {
 #ifndef LAUNCHER
   size_t chunk = number * size;
   chpl_mutex_lock(&memtrace_lock);
@@ -493,4 +506,88 @@ void printToMemLog(const char* memType, size_t number, size_t size,
   }
   chpl_mutex_unlock(&memtrace_lock);
 #endif
+}
+
+
+void
+chpl_startMemDiagnosis() {
+  memDiagnosisFlag = 1;
+}
+
+
+void
+chpl_stopMemDiagnosis() {
+  memDiagnosisFlag = 0;
+}
+
+
+void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size, const char* description, int32_t lineno, chpl_string filename) {
+  if (memtrace && (!MEM_DIAGNOSIS || memDiagnosisFlag)) {
+    printToMemLog("malloc", number, size, description,
+                  lineno, filename, memAlloc, NULL);
+  }
+  if (memtrack) {
+    installMemory(memAlloc, number, size, description);
+    if (memstat) {
+      increaseMemStat(chunk, lineno, filename);
+    }
+  }
+}
+
+
+void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename) {
+  if (memtrace) {
+    if (memtrack) {
+      memTableEntry* memEntry;
+      memEntry = lookupMemory(memAlloc);
+      if (!MEM_DIAGNOSIS || memDiagnosisFlag)
+        printToMemLog("free", memEntry->number, memEntry->size,
+                      memEntry->description, lineno, filename,
+                      memAlloc, NULL);
+    } else if (!MEM_DIAGNOSIS || memDiagnosisFlag)
+      printToMemLog("free", 0, 0, "", lineno, filename, memAlloc, NULL);
+  }
+
+  if (memtrack) {
+    if (memstat) {
+      memTableEntry* memEntry = lookupMemory(memAlloc);
+      if (memEntry)
+        decreaseMemStat(memEntry->number * memEntry->size);
+    }
+    removeMemory(memAlloc, lineno, filename);
+  }
+}
+
+
+void* chpl_track_realloc1(void* memAlloc, size_t number, size_t size, const char* description, int32_t lineno, chpl_string filename) {
+  memTableEntry* memEntry = 0;
+  if (memtrack && memAlloc != NULL) {
+    memEntry = lookupMemory(memAlloc);
+    if (!memEntry)
+      chpl_error(chpl_glom_strings(3, "Attempting to realloc memory for ",
+                                   description, " that wasn't allocated"),
+                 lineno, filename);
+  }
+  return memEntry;
+}
+
+
+void chpl_track_realloc2(void* memEntryV, void* moreMemAlloc, size_t newChunk, void* memAlloc, size_t number, size_t size, const char* description, int32_t lineno, chpl_string filename) {
+  memTableEntry* memEntry = (memTableEntry*)memEntryV;
+  if (memtrack) { 
+    if (memAlloc != NULL) {
+      if (memEntry) {
+        if (memstat)
+          decreaseMemStat(memEntry->number * memEntry->size);
+        updateMemory(memEntry, memAlloc, moreMemAlloc, number, size);
+      }
+    } else
+      installMemory(moreMemAlloc, number, size, description);
+    if (memstat)
+      increaseMemStat(newChunk, lineno, filename);
+  }
+  if (memtrace && (!MEM_DIAGNOSIS || memDiagnosisFlag)) {
+    printToMemLog("realloc", number, size, description, lineno, filename,
+                  memAlloc, moreMemAlloc);
+  }
 }

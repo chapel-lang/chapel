@@ -15,10 +15,6 @@
 int heapInitialized = 0;
 
 
-#define MEM_DIAGNOSIS 0
-static int memDiagnosisFlag = 0;
-
-
 static void
 confirm(void* memAlloc, const char* description, int32_t lineno, 
         chpl_string filename) {
@@ -49,18 +45,6 @@ void chpl_initHeap(void* start, size_t size) {
 }
 
 
-void
-chpl_startMemDiagnosis() {
-  memDiagnosisFlag = 1;
-}
-
-
-void
-chpl_stopMemDiagnosis() {
-  memDiagnosisFlag = 0;
-}
-
-
 void* chpl_malloc(size_t number, size_t size, const char* description,
                   int32_t lineno, chpl_string filename) {
   size_t chunk = computeChunkSize(number, size, false, lineno, filename);
@@ -68,43 +52,14 @@ void* chpl_malloc(size_t number, size_t size, const char* description,
   if (chunk != 0) {
     confirm(memAlloc, description, lineno, filename);
   }
-  if (memtrace && (!MEM_DIAGNOSIS || memDiagnosisFlag)) {
-    printToMemLog("malloc", number, size, description,
-                  lineno, filename, memAlloc, NULL);
-  }
-  if (memtrack) {
-    installMemory(memAlloc, number, size, description);
-    if (memstat) {
-      increaseMemStat(chunk, lineno, filename);
-    }
-  }
+  chpl_track_malloc(memAlloc, chunk, number, size, description, lineno, filename);
   return memAlloc;
 }
 
 
 void chpl_free(void* memAlloc, int32_t lineno, chpl_string filename) {
   if (memAlloc != NULL) {
-    if (memtrace) {
-      if (memtrack) {
-        memTableEntry* memEntry;
-        memEntry = lookupMemory(memAlloc);
-        if (!MEM_DIAGNOSIS || memDiagnosisFlag)
-          printToMemLog("free", memEntry->number, memEntry->size,
-                        memEntry->description, lineno, filename,
-                        memAlloc, NULL);
-      } else if (!MEM_DIAGNOSIS || memDiagnosisFlag)
-        printToMemLog("free", 0, 0, "", lineno, filename, memAlloc, NULL);
-    }
-
-    if (memtrack) {
-      if (memstat) {
-        memTableEntry* memEntry = lookupMemory(memAlloc);
-        if (memEntry)
-          decreaseMemStat(memEntry->number * memEntry->size);
-      }
-      removeMemory(memAlloc, lineno, filename);
-    }
-
+    chpl_track_free(memAlloc, lineno, filename);
     chpl_md_free(memAlloc, lineno, filename);
   }
 }
@@ -114,7 +69,7 @@ void* chpl_realloc(void* memAlloc, size_t number, size_t size,
                    const char* description, int32_t lineno, chpl_string filename) {
   size_t newChunk = computeChunkSize(number, size, true, lineno, filename);
   void* moreMemAlloc;
-  memTableEntry* memEntry = NULL;
+  void* memEntry = NULL;
 
   if (!newChunk) {
     chpl_free(memAlloc, lineno, filename);
@@ -125,34 +80,13 @@ void* chpl_realloc(void* memAlloc, size_t number, size_t size,
     chpl_error("chpl_realloc called before the heap is initialized", lineno, filename);
   }
 
-  if (memtrack && memAlloc != NULL) {
-    memEntry = lookupMemory(memAlloc);
-    if (!memEntry)
-      chpl_error(chpl_glom_strings(3, "Attempting to realloc memory for ",
-                                   description, " that wasn't allocated"),
-                 lineno, filename);
-  }
+  memEntry = chpl_track_realloc1(memAlloc, number, size, description, lineno, filename);
 
   moreMemAlloc = chpl_md_realloc(memAlloc, newChunk, lineno, filename);
 
   confirm(moreMemAlloc, description, lineno, filename);
 
-  if (memtrack) { 
-    if (memAlloc != NULL) {
-      if (memEntry) {
-        if (memstat)
-          decreaseMemStat(memEntry->number * memEntry->size);
-        updateMemory(memEntry, memAlloc, moreMemAlloc, number, size);
-      }
-    } else
-      installMemory(moreMemAlloc, number, size, description);
-    if (memstat)
-      increaseMemStat(newChunk, lineno, filename);
-  }
-  if (memtrace && (!MEM_DIAGNOSIS || memDiagnosisFlag)) {
-    printToMemLog("realloc", number, size, description, lineno, filename,
-                  memAlloc, moreMemAlloc);
-  }
+  chpl_track_realloc2(memEntry, moreMemAlloc, newChunk, memAlloc, number, size, description, lineno, filename);
 
   return moreMemAlloc;
 }

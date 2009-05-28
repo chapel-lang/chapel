@@ -9,9 +9,6 @@
 
 void chpl_initHeap(void* start, size_t size);
 
-void chpl_startMemDiagnosis(void);
-void chpl_stopMemDiagnosis(void);
-
 #define CHPL_ALLOC_PERMIT_ZERO(s,d,l,f) ((s == 0) ? NULL : chpl_alloc(s,d,l,f))
 #define chpl_alloc(size, description, lineno, filename) \
   chpl_malloc(1, size, description, lineno, filename)

@@ -11,30 +11,12 @@ extern _Bool memstat;
 extern _Bool memtrace;
 extern _Bool memtrack;
 
-typedef struct _memTableEntry { /* table entry */
-  size_t number;
-  size_t size;
-  char* description;
-  void* memAlloc;
-  struct _memTableEntry* nextInBucket;
-} memTableEntry;
-
-void decreaseMemStat(size_t chunk);
-void increaseMemStat(size_t chunk, int32_t lineno, chpl_string filename);
 void initMemTable(void);
-void installMemory(void* memAlloc, size_t number, size_t size,
-                   const char* description);
-memTableEntry* lookupMemory(void* memAlloc);
 uint64_t mem_used(int32_t lineno, chpl_string filename);
 void printFinalMemStat(int32_t lineno, chpl_string filename);
 void printMemStat(int32_t lineno, chpl_string filename);
 void printMemTable(int64_t threshold, int32_t lineno, chpl_string filename);
 void chpl_printMemTable(void);
-void printToMemLog(const char* memType, size_t number, size_t size,
-                   const char* description,
-                   int32_t lineno, chpl_string filename,
-                   void* memAlloc, void* moreMemAlloc);
-void removeMemory(void* memAlloc, int32_t lineno, chpl_string filename);
 void resetMemStat(void);
 void setMemmax(int64_t value);
 void setMemstat(void);
@@ -44,7 +26,12 @@ void setMemtrace(char* memlogname);
 void setMemtrack(void);
 void startTrackingMem(void);
 void  stopTrackingMem(void);
-void updateMemory(memTableEntry* memEntry, void* oldAddress,
-                  void* newAddress, size_t number, size_t size);
+
+void chpl_startMemDiagnosis(void);
+void chpl_stopMemDiagnosis(void);
+void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size, const char* description, int32_t lineno, chpl_string filename);
+void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename);
+void* chpl_track_realloc1(void* memAlloc, size_t number, size_t size, const char* description, int32_t lineno, chpl_string filename);
+void chpl_track_realloc2(void* memEntry, void* moreMemAlloc, size_t newChunk, void* memAlloc, size_t number, size_t size, const char* description, int32_t lineno, chpl_string filename);
 
 #endif
