@@ -1,0 +1,5 @@
+bug: compiler warns about control reaching end of function in let expression
+
+When a let expression evaluates to a variable declared outside of the
+expression, the compiler issues a warning about control reaching the end of
+a function that returns a value.
