@@ -3,19 +3,19 @@
 ----------------------
 ***Allocated Memory***
 ----------------------
-Size:    Number:  Total:   Address:    Description:
+Size:    Number:  Total:   Description:                     Address:    
 (bytes)           (bytes)  
 ================================================================================
-8        1        8        0xnnnnnnnn  int64_t
-8        1        8        0xnnnnnnnn  _real64
+8        1        8        _real64                          0xnnnnnnnn  
+8        1        8        int64_t                          0xnnnnnnnn  
 
 
 ================================================================================
 ----------------------
 ***Allocated Memory***
 ----------------------
-Size:    Number:  Total:   Address:    Description:
+Size:    Number:  Total:   Description:                     Address:    
 (bytes)           (bytes)  
 ================================================================================
-8        1        8        0xnnnnnnnn  _real64
+8        1        8        _real64                          0xnnnnnnnn  
 

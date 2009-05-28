@@ -16,11 +16,7 @@ typedef struct _memTableEntry { /* table entry */
   size_t size;
   char* description;
   void* memAlloc;
-
   struct _memTableEntry* nextInBucket;
-  struct _memTableEntry* prevInstalled;
-  struct _memTableEntry* nextInstalled;
-
 } memTableEntry;
 
 void decreaseMemStat(size_t chunk);

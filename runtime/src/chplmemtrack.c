@@ -19,10 +19,9 @@
 #define PRINTF(s) do if (CHPL_DEBUG_MEMTRACK) \
                        { printf("%s%s\n", __func__, s); fflush(stdout); } while (0)
 
+typedef char str80_t[81];
 
 static memTableEntry* memTable[HASHSIZE];
-static memTableEntry* first = NULL;
-static memTableEntry* last = NULL;
 
 _Bool memfinalstat = false;
 _Bool memstat = false;
@@ -249,12 +248,18 @@ void printFinalMemStat(int32_t lineno, chpl_string filename) {
 }
 
 
+static int str80cmp(const void* str1, const void* str2) {
+  return strcmp(*(str80_t*)str1, *(str80_t*)str2);
+}
+
+
 void printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
   memTableEntry* memEntry = NULL;
 
   const int numberWidth   = 9;
   const int precision     = sizeof(uintptr_t) * 2;
   const int addressWidth  = precision + 4;
+  const int descWidth     = 80-3*numberWidth-addressWidth;
 
   const char* size        = "Size:";
   const char* bytes       = "(bytes)";
@@ -263,6 +268,9 @@ void printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
   const char* address     = "Address:";
   const char* description = "Description:";
   const char* line40      = "========================================";
+
+  int n, i;
+  str80_t* table;
 
   if (!memtrack)
     chpl_error("The printMemTable function only works with the --memtrack flag", lineno, filename);
@@ -273,12 +281,12 @@ void printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
   printf("***Allocated Memory***\n");
   printf("----------------------\n");
 
-  printf("%-*s%-*s%-*s%-*s%-s\n",
+  printf("%-*s%-*s%-*s%-*s%-*s\n",
          numberWidth, size,
          numberWidth, number,
          numberWidth, total,
-         addressWidth, address,
-         description);
+         descWidth, description,
+         addressWidth, address);
 
   printf("%-*s%-*s%-*s\n",
          numberWidth, bytes,
@@ -287,16 +295,40 @@ void printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
 
   printf("%s%s\n", line40, line40);
 
-  for (memEntry = first; memEntry != NULL; memEntry = memEntry->nextInstalled) {
-    size_t chunk = memEntry->number * memEntry->size;
-    if (chunk >= threshold) {
-      printf("%-*zu%-*zu%-*zu%#-*.*" PRIxPTR "%-s\n",
-             numberWidth, memEntry->size,
-             numberWidth, memEntry->number,
-             numberWidth, chunk,
-             addressWidth, precision, (uintptr_t)memEntry->memAlloc,
-             memEntry->description);
+  n = 0;
+  for (i = 0; i < HASHSIZE; i++) {
+    for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
+      size_t chunk = memEntry->number * memEntry->size;
+      if (chunk >= threshold) {
+        n += 1;
+      }
     }
+  }
+  table = (str80_t*)malloc(n*sizeof(str80_t));
+  if (!table)
+    chpl_error("out of memory printing memory table", lineno, filename);
+
+  n = 0;
+  for (i = 0; i < HASHSIZE; i++) {
+    for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
+      size_t chunk = memEntry->number * memEntry->size;
+      if (chunk >= threshold) {
+        if (strlen(memEntry->description) > descWidth)
+          memEntry->description[descWidth-1] = '\0';
+        sprintf(table[n++],
+                "%-*zu%-*zu%-*zu%-*s%#-*.*" PRIxPTR,
+                numberWidth, memEntry->size,
+                numberWidth, memEntry->number,
+                numberWidth, chunk,
+                descWidth, memEntry->description,
+                addressWidth, precision, (uintptr_t)memEntry->memAlloc);
+      }
+    }
+  }
+  qsort(table, n, sizeof(str80_t), str80cmp);
+
+  for (i = 0; i < n; i++) {
+    printf("%s\n", table[i]);
   }
   putchar('\n');
 }
@@ -304,6 +336,7 @@ void printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
 
 void chpl_printMemTable(void) {
   memTableEntry* memEntry = NULL;
+  int i;
 
   const int numberWidth   = 11;
 
@@ -318,13 +351,16 @@ void chpl_printMemTable(void) {
 
   stopTrackingMem();
 
-  for (memEntry = first; memEntry != NULL; memEntry = memEntry->nextInstalled) {
-    size_t chunk = memEntry->number * memEntry->size;
-    if (chunk >= memthresholdValue) {
+
+  for (i = 0; i < HASHSIZE; i++) {
+    for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
+      size_t chunk = memEntry->number * memEntry->size;
+      if (chunk >= memthresholdValue) {
 #ifndef LAUNCHER
-      chpl____mem_alloc_add(memEntry->description, chunk);
+        chpl____mem_alloc_add(memEntry->description, chunk);
 #endif
-      printHeadings = true;
+        printHeadings = true;
+      }
     }
   }
   if (printHeadings) {
@@ -383,14 +419,6 @@ void installMemory(void* memAlloc, size_t number, size_t size,
     memEntry->nextInBucket = memTable[hashValue];
     memTable[hashValue] = memEntry;
 
-    if (first == NULL) {
-      first = memEntry;
-    } else {
-      last->nextInstalled = memEntry;
-      memEntry->prevInstalled = last;
-    }
-    last = memEntry;
-
     memEntry->description = (char*) malloc((strlen(description) + 1));
     if (!memEntry->description) {
       char* message = chpl_glom_strings(3, "Out of memory allocating table entry for \"",
@@ -434,19 +462,6 @@ void removeMemory(void* memAlloc, int32_t lineno, chpl_string filename) {
   memEntry = lookupMemoryNoLock(memAlloc);
 
   if (memEntry) {
-    /* Remove the entry from the first-to-last list. */
-    if (memEntry == first) {
-      first = memEntry->nextInstalled;
-      if (memEntry->nextInstalled)
-        memEntry->nextInstalled->prevInstalled = NULL;
-    } else {
-      memEntry->prevInstalled->nextInstalled = memEntry->nextInstalled;
-      if (memEntry->nextInstalled) {
-        memEntry->nextInstalled->prevInstalled = memEntry->prevInstalled;
-      } else
-        last = memEntry->prevInstalled;
-    }
-
     /* Remove the entry from the bucket list. */
     thisBucketEntry = removeBucketEntry(memAlloc);
     free(thisBucketEntry->description);
