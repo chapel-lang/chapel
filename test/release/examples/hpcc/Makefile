@@ -9,12 +9,14 @@ TARGETS = \
 	fft \
 	hpl \
 
+REALS = $(TARGETS:%=%_real)
+
 default: all
 
 all: $(TARGETS)
 
 clean: FORCE
-	rm -f $(TARGETS)
+	rm -f $(TARGETS) $(REALS)
 
 stream: probSize.chpl stream.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $^

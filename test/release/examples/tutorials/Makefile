@@ -21,12 +21,14 @@ TARGETS = \
 	varargs \
 	variables \
 
+REALS = $(TARGETS:%=%_real)
+
 default: all
 
 all: $(TARGETS)
 
 clean: FORCE
-	rm -f $(TARGETS)
+	rm -f $(TARGETS) $(REALS)
 
 %: %.chpl
 	$(CHPL) -o $@ $<

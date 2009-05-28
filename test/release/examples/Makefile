@@ -8,13 +8,14 @@ TARGETS = \
 	hello-module \
 	hello-multiloc \
 
+REALS = $(TARGETS:%=%_real)
 
 default: all tutorials programs hpcc 
 
 all: $(TARGETS)
 
 clean: FORCE
-	rm -f $(TARGETS)
+	rm -f $(TARGETS) $(REALS)
 	cd tutorials && $(MAKE) clean
 	cd programs && $(MAKE) clean
 	cd hpcc && $(MAKE) clean
