@@ -13,7 +13,7 @@
 #include "chplthreads.h"
 #include "error.h"
 
-#define CHPL_DIST_DEBUG 1
+#define CHPL_DIST_DEBUG 0
 
 #if CHPL_DIST_DEBUG
 #define DEBUG_MSG_LENGTH 256
@@ -88,11 +88,16 @@ static int chpl_comm_nb_forks = 0;
 static int chpl_verbose_comm = 0;               // set via startVerboseComm
 static int chpl_comm_no_debug_private = 0;
 
+int parent = -23;   // used to send messages back to launcher
 int tids[64]; // tid list for all nodes
 int instance;
 
 int okay_to_barrier = 1;
-int end = 0;
+int signal = 0;     // signal to parent process what to do
+                    // 0: noop
+                    // 1: halt
+                    // 2: fprintf
+                    // 3: printf
 
 //
 // Chapel interface starts here
@@ -187,6 +192,7 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   char debugMsg[DEBUG_MSG_LENGTH];
 #endif
   if ((tid <= chpl_numLocales) && (tid > -1)) tid = tids[tid];   // lines up Chapel locales and PVM index
+
 #if CHPL_DIST_DEBUG
   sprintf(debugMsg, "chpl_pvm_recv(%p, from=%d, tag=%d, sz=%d)", buf, tid, msgtag, sz);
   PRINTF(debugMsg);
@@ -341,6 +347,10 @@ static void polling(void* x) {
         args = NULL;
       }
 
+      if (source == tids[chpl_localeID]) {
+        fprintf(stderr, "%d: %d %d !!!Damn it!!!\n", chpl_localeID, source, tids[chpl_localeID]);
+      }
+
       chpl_pvm_recv(source, msg_info.replyTag, args, msg_info.size);
 
       rpcArg->fid = (chpl_fn_int_t)msg_info.u.fid;
@@ -393,17 +403,16 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   char debugMsg[DEBUG_MSG_LENGTH];
 #endif
 
-  // Figure out who I am
+  // Figure out who spawned this thread (if no one, this will be -23).
+  PVM_SAFE(parent = pvm_parent(), "pvm_parent", "chpl_comm_init");
+
+  // Figure out how many nodes there are
   chpl_numLocales = (int32_t)atoi((*argv_p)[2]);
-  chpl_localeID = (int32_t)atoi((*argv_p)[3]);
-#if CHPL_DIST_DEBUG
-  sprintf(debugMsg, "Starting with chpl_numLocales=%d. I am chpl_localeID=%d.", chpl_numLocales, chpl_localeID);
-  PRINTF(debugMsg);
-#endif
 
   // Join the group of all nodes (named "job")
   // Barrier until everyone (numLocales) has joined
-  PVM_SAFE(instance = pvm_joingroup((char *)"job"), "pvm_joingroup", "chpl_comm_init");
+  // Make sure the chpl_localeID lines up with the join order
+  PVM_SAFE(chpl_localeID = pvm_joingroup((char *)"job"), "pvm_joingroup", "chpl_comm_init");
   chpl_comm_barrier("Waiting for all tasks to join group.");
 
   // Figure out who everyone is
@@ -412,6 +421,11 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     PVM_SAFE(tids[i] = pvm_gettid((char *)"job", i), "pvm_gettid", "chpl_comm_init");
   }
   
+#if CHPL_DIST_DEBUG
+  sprintf(debugMsg, "Starting with chpl_numLocales=%d. I am chpl_localeID=%d, or tid=%d", chpl_numLocales, chpl_localeID, tids[chpl_localeID]);
+  PRINTF(debugMsg);
+#endif
+
   // Create the pthread to do the work.
   status = pthread_create(&polling_thread, NULL, (void*(*)(void*))polling, 0);
   if (status)
@@ -450,7 +464,6 @@ void chpl_comm_alloc_registry(int numGlobals) {
 void chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
   int size;
-  //  char debugMsg[128];
   PRINTF("start broadcast globals");
   if (chpl_numLocales == 1) {
     return;
@@ -469,8 +482,6 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
       PVM_NO_LOCK_SAFE(pvm_upkint(&size, 1, 1), "pvm_upkint", "chpl_comm_broadcast_global_vars");
       PVM_UNPACK_SAFE(pvm_upkbyte(chpl_globals_registry[i], size, 1), "pvm_upkbyte", "chpl_comm_broadcast_global_vars");
     }
-    //    sprintf(debugMsg, "chpl_comm_broadcast_global_vars barrier %d.", i);;
-    //    chpl_comm_barrier(debugMsg);
   }
   PRINTF("end broadcast globals");
   return;
@@ -512,7 +523,7 @@ void chpl_comm_barrier(const char *msg) {
   }
   while (!okay_to_barrier) {
     while (bufid == 0) {
-      PVM_PACK_SAFE(bufid = pvm_nrecv(-1, BCASTTAG), "pvm_recv", "chpl_comm_barrier");
+      PVM_PACK_SAFE(bufid = pvm_nrecv(-1, BCASTTAG), "pvm_nrecv", "chpl_comm_barrier");
       if (bufid == 0) {
         chpl_mutex_unlock(&pvm_lock);
       }
@@ -526,7 +537,6 @@ void chpl_comm_barrier(const char *msg) {
 
 void chpl_comm_exit_all(int status) {
   _chpl_message_info msg_info;
-  int parent;
   PRINTF("chpl_comm_exit_all called\n");
   // Matches code in chpl_comm_barrier. Node 0, on exit, needs to signal
   // to everyone that it's okay to barrier (and thus exit).
@@ -549,11 +559,10 @@ void chpl_comm_exit_all(int status) {
   chpl_comm_barrier("About to finalize");
 
   // Send a signal back to the launcher that we're done.
-  end = 1;
-  parent = pvm_parent();
+  signal = 1;
   if (parent >= 0) {
     PVM_PACK_SAFE(pvm_initsend(PvmDataRaw), "pvm_initsend", "chpl_comm_exit_all");
-    PVM_NO_LOCK_SAFE(pvm_pkint(&end, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&signal, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
     PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
   }
 
@@ -562,6 +571,7 @@ void chpl_comm_exit_all(int status) {
 }
 
 void chpl_comm_exit_any(int status) {
+  fprintf(stderr, "%d: I'm in exit_any with status %d!\n", chpl_localeID, status);
   PVM_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_any");
   PVM_SAFE(pvm_exit(), "pvm_exit", "chpl_comm_exit_any");
   return;
@@ -759,8 +769,14 @@ int chpl_pvm_fprintf(FILE* outfile, const char* format, ...) {
   /* Here, we really want to send this string to the parent to print
      for us if outfile is stdout or stderr.  For now, I just print it
      out. */
-  fprintf(outfile, "%s", buffer);
-
+  if (parent >= 0) {
+    signal = 2;
+    PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_pvm_fprintf");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&signal, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
+    PVM_NO_LOCK_SAFE(pvm_pkstr(buffer), "pvm_pkstr", "chpl_pvm_fprintf");
+    PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_pvm_fprintf");
+    signal = 0;
+  } else fprintf(outfile, "%s", buffer);
   return retval;
 }
 
@@ -771,8 +787,15 @@ int chpl_pvm_printf(const char* format, ...) {
   /* Here, we really want to send this string to the parent to print
      for us if outfile is stdout or stderr.  For now, I just print it
      out. */
-  printf("%s", buffer);
+  if (parent >= 0) {
+    signal = 3;
 
+    PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_pvm_printf");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&signal, 1, 1), "pvm_pkint", "chpl_pvm_printf");
+    PVM_NO_LOCK_SAFE(pvm_pkstr(buffer), "pvm_pkstr", "chpl_pvm_printf");
+    PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_pvm_printf");
+    signal = 0;
+  } else printf("%s", buffer);
   return retval;
 }
 
