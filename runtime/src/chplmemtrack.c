@@ -24,7 +24,7 @@ static int memDiagnosisFlag = 0;
 typedef struct memTableEntry_struct { /* table entry */
   size_t number;
   size_t size;
-  char* description;
+  const char* description;
   void* memAlloc;
   int32_t lineno;
   chpl_string filename;
@@ -275,8 +275,8 @@ static int descCmp(const void* p1, const void* p2) {
 }
 
 
-void printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
-  memTableEntry* memEntry = NULL;
+void printMemTable(int64_t threshold, chpl_bool finalAggregated, int32_t lineno, chpl_string filename) {
+  memTableEntry* memEntry = NULL, *memEntry2 = NULL;
 
   const int numberWidth   = 9;
   const int precision     = sizeof(uintptr_t) * 2;
@@ -284,19 +284,37 @@ void printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
   const int descWidth     = 80-3*numberWidth-addressWidth;
   int filenameWidth       = strlen("Allocated Memory (Bytes)");
 
-  int n, i;
+  int n, i, j;
   char* loc;
   memTableEntry** table;
 
   if (!memtrack)
     chpl_error("The printMemTable function only works with the --memtrack flag", lineno, filename);
 
+  if (finalAggregated) {
+    for (i = 0; i < HASHSIZE; i++) {
+      for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
+        if (memEntry->description) {
+          for (j = i; j < HASHSIZE; j++) {
+            for (memEntry2 = (j == i) ? memEntry->nextInBucket : memTable[j]; memEntry2 != NULL; memEntry2 = memEntry2->nextInBucket) {
+              if (memEntry->description == memEntry2->description) {
+                memEntry->number += memEntry2->number;
+                memEntry2->description = 0;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   n = 0;
   filenameWidth = strlen("Allocated Memory (Bytes)");
   for (i = 0; i < HASHSIZE; i++) {
     for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
       size_t chunk = memEntry->number * memEntry->size;
-      if (chunk >= threshold) {
+      if ((!finalAggregated && chunk >= threshold) ||
+          (finalAggregated && memEntry->description)) {
         n += 1;
         if (memEntry->filename) {
           int filenameLength = strlen(memEntry->filename);
@@ -329,7 +347,8 @@ void printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
   for (i = 0; i < HASHSIZE; i++) {
     for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
       size_t chunk = memEntry->number * memEntry->size;
-      if (chunk >= threshold) {
+      if ((!finalAggregated && chunk >= threshold) ||
+          (finalAggregated && memEntry->description)) {
         table[n++] = memEntry;
       }
     }
@@ -443,13 +462,7 @@ static void installMemory(void* memAlloc, size_t number, size_t size, const char
     memEntry->nextInBucket = memTable[hashValue];
     memTable[hashValue] = memEntry;
 
-    memEntry->description = (char*) malloc((strlen(description) + 1));
-    if (!memEntry->description) {
-      char* message = chpl_glom_strings(3, "Out of memory allocating table entry for \"",
-                                        description, "\"");
-      chpl_error(message, 0, 0);
-    }
-    strcpy(memEntry->description, description);
+    memEntry->description = description;
     memEntry->memAlloc = memAlloc;
     memEntry->lineno = lineno;
     memEntry->filename = filename;
@@ -490,7 +503,6 @@ static void removeMemory(void* memAlloc, int32_t lineno, chpl_string filename) {
   if (memEntry) {
     /* Remove the entry from the bucket list. */
     thisBucketEntry = removeBucketEntry(memAlloc);
-    free(thisBucketEntry->description);
     free(thisBucketEntry);
   } else {
     chpl_error("Attempting to free memory that wasn't allocated", lineno, filename);
