@@ -378,58 +378,6 @@ void printMemTable(int64_t threshold, chpl_bool finalAggregated, int32_t lineno,
 }
 
 
-void chpl_printMemTable(void) {
-  memTableEntry* memEntry = NULL;
-  int i;
-
-  const int numberWidth   = 11;
-
-  const char* size        = "Total Size";
-  const char* bytes       = "(bytes) ";
-  const char* number      = "Number ";
-  const char* items       = "of items";
-  const char* description = "Description";
-  const char* line40      = "========================================";
-
-  _Bool printHeadings     = false;
-
-  stopTrackingMem();
-
-
-  for (i = 0; i < HASHSIZE; i++) {
-    for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
-      size_t chunk = memEntry->number * memEntry->size;
-      if (chunk >= memthresholdValue) {
-#ifndef LAUNCHER
-        chpl____mem_alloc_add(memEntry->description, chunk);
-#endif
-        printHeadings = true;
-      }
-    }
-  }
-  if (printHeadings) {
-    char format[64];
-    printf("\n%s%s\n", line40, line40);
-    printf("---------------------\n");
-    printf("*** Leaked Memory ***\n");
-    printf("---------------------\n");
-    printf("%*s  %*s  %s\n",
-           numberWidth, number,
-           numberWidth, size,
-           description);
-    printf("%*s  %*s\n",
-           numberWidth, items,
-           numberWidth, bytes);
-    printf("%s%s\n", line40, line40);
-    snprintf(format, sizeof(format), "%%%d%s", numberWidth, PRIu64);
-#ifndef LAUNCHER
-    chpl____mem_alloc_print(format);
-#endif
-    putchar('\n');
-  }
-}
-
-
 static memTableEntry* lookupMemory(void* memAlloc) {
   memTableEntry* found = NULL;
   PRINTF("");

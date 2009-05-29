@@ -16,7 +16,6 @@ uint64_t mem_used(int32_t lineno, chpl_string filename);
 void printFinalMemStat(int32_t lineno, chpl_string filename);
 void printMemStat(int32_t lineno, chpl_string filename);
 void printMemTable(int64_t threshold, chpl_bool aggregated, int32_t lineno, chpl_string filename);
-void chpl_printMemTable(void);
 void resetMemStat(void);
 void setMemmax(int64_t value);
 void setMemstat(void);
