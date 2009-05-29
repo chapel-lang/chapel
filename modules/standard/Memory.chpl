@@ -17,6 +17,12 @@ def locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) {
 }
 
 def memoryUsed()
-  return __primitive("mem_used");
+  return __primitive("chpl_memoryUsed");
 
-_extern def printMemTable(thresh=0, aggregated=false, lineno=-1, filename="");
+def printMemTable(thresh=0) {
+  __primitive("chpl_printMemTable", thresh, false);
+}
+
+def printMemStat() {
+  __primitive("chpl_printMemStat");
+}

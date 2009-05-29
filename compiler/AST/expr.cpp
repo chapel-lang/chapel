@@ -1965,6 +1965,9 @@ void CallExpr::codegen(FILE* outfile) {
       } else
         codegenBasicPrimitive(outfile, this);
       break;
+    case PRIM_START_TRACKING_MEM:
+      codegenBasicPrimitive(outfile, this);
+      break;
     case PRIM_RT_ERROR:
     case PRIM_RT_WARNING:
       codegenBasicPrimitive(outfile, this);

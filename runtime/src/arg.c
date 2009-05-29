@@ -183,28 +183,28 @@ static int parseMemFlag(const char* memFlag, int32_t lineno, chpl_string filenam
     {
       int64_t value;
       value = getIntArg(valueString, "--memmax", lineno, filename);
-      setMemmax(value);
+      chpl_setMemmax(value);
       break;
     }
 
   case MemStat:
     {
       exitIfEqualsSign(equalsSign, "--memstat", lineno, filename);
-      setMemstat();
+      chpl_setMemstat();
       break;
     }
    
   case MemFinalStat:
     {
       exitIfEqualsSign(equalsSign, "--memfinalstat", lineno, filename);
-      setMemfinalstat();
+      chpl_setMemfinalstat();
       break;
     }
    
   case MemTrack:
     {
       exitIfEqualsSign(equalsSign, "--memtrack", lineno, filename);
-      setMemtrack();
+      chpl_setMemtrack();
       break;
     }
 
@@ -212,14 +212,14 @@ static int parseMemFlag(const char* memFlag, int32_t lineno, chpl_string filenam
     {
       int64_t value;
       value = getIntArg(valueString, "--memthreshold", lineno, filename);
-      setMemthreshold(value);
+      chpl_setMemthreshold(value);
       break;
     }
 
   case MemTrace:
     {
       valueString = getStringArg(valueString, "--memtrace", lineno, filename);
-      setMemtrace(valueString);
+      chpl_setMemtrace(valueString);
       break;
     }
 

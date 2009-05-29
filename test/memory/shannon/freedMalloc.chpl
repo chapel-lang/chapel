@@ -9,6 +9,6 @@ config var filename: string = "";
 var freedInt = chpl_malloc(1, numBytes(int(64)), "int64_t", linenum, filename);
 var unfreedFloat = chpl_malloc(1, numBytes(real(64)), "_real64", linenum, filename);
 
-printMemTable(2, false, linenum, filename);
+printMemTable(2);
 chpl_free(freedInt, linenum, filename);
-printMemTable(2, false, linenum, filename);
+printMemTable(2);

@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
   //
   chpl_comm_verify_num_locales(execNumLocales);
   chpl_comm_rollcall();
-  initMemTable();            // get ready to start tracking memory
+  chpl_initMemTable();            // get ready to start tracking memory
   chpl_init_chapel_code();
   initChplThreads();         // initialize the threads layer
   chpl__initModuleGuards();  // initialize per-locale run once guard vars
@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
   if (chpl_localeID == 0) {      // have locale #0 run the user's main function
     chpl_main();
     if (memfinalstat)
-      printMemTable(0, true, 0, 0);
+      chpl_printMemTable(0, true, 0, 0);
   }
 
   chpl_exit_all(0);         // have everyone exit

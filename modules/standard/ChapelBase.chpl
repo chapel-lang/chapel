@@ -1177,9 +1177,6 @@ pragma "inline" def _cast(type t, x: imag(?w)) where _isBooleanType(t)
   return if x != 0i then true else false;
 
 
-
-pragma "inline" def _startTrackingMem() { __primitive("startTrackingMem"); }
-
 //
 // Default swap operator for most types
 //

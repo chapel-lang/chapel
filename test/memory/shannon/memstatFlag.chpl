@@ -1,9 +1,9 @@
-_extern def printMemStat(lineno=-1, filename="");
+use Memory;
 
 var m = 5;
 var n = 2;
 
-printMemStat(6, "memstatFlag.chpl");
+printMemStat();
 m *= n;
 writeln("m = ", m);
 

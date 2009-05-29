@@ -131,7 +131,7 @@ static memTableEntry* removeBucketEntry(void* address) {
 }
 
 
-void initMemTable(void) {
+void chpl_initMemTable(void) {
   chpl_mutex_init(&memtrace_lock);
   chpl_mutex_init(&memstat_lock);
   chpl_mutex_init(&memtrack_lock);
@@ -143,30 +143,30 @@ void initMemTable(void) {
   }
 }
 
-void setMemmax(int64_t value) {
+void chpl_setMemmax(int64_t value) {
   memmaxValue = value;
-  setMemstat();
+  chpl_setMemstat();
 }
 
 
-void setMemstat(void) {
+void chpl_setMemstat(void) {
   memstatSet = true;
   memtrackSet = true;
 }
 
 
-void setMemfinalstat(void) {
+void chpl_setMemfinalstat(void) {
   memfinalstatSet = true;
   memtrackSet = true;
 }
 
 
-void setMemtrack(void) {
+void chpl_setMemtrack(void) {
   memtrackSet = true;
 }
 
 
-void setMemthreshold(int64_t value) {
+void chpl_setMemthreshold(int64_t value) {
   if (!memlog && !memfinalstatSet) {
     chpl_error("--memthreshold useless when used without --memtrace or --memfinalstat", 0, 0);
   }
@@ -176,7 +176,7 @@ void setMemthreshold(int64_t value) {
 }
 
 
-void setMemtrace(char* memlogname) {
+void chpl_setMemtrace(char* memlogname) {
   memtraceSet = true;
   if (memlogname) {
     if (strcmp(memlogname, "-")) {
@@ -210,14 +210,14 @@ static void decreaseMemStat(size_t chunk) {
 }
 
 
-void resetMemStat(void) {
+void chpl_resetMemStat(void) {
   totalMem = 0;
   totalTrackedMem = 0;
   maxMem = 0;
 }
 
 
-void startTrackingMem(void) {
+void chpl_startTrackingMem(void) {
     memfinalstat = memfinalstatSet;
     memstat = memstatSet;
     memtrack = memtrackSet;
@@ -225,39 +225,30 @@ void startTrackingMem(void) {
 }
 
 
-void stopTrackingMem(void) {
-    memfinalstat = false;
-    memstat = false;
-    memtrack = false;
-    memtrace = false;
-}
-
-
-uint64_t mem_used(int32_t lineno, chpl_string filename) {
+uint64_t chpl_memoryUsed(int32_t lineno, chpl_string filename) {
   alreadyPrintingStat = true; /* hack: don't want to print final stats */
   if (!memstat)
-    chpl_error(chpl_glom_strings(2, __func__, "() only works with the --memstat flag"),
+    chpl_error("memoryUsed() only works with the --memstat flag",
                lineno, filename);
   return (uint64_t)totalMem;
 }
 
 
-void printMemStat(int32_t lineno, chpl_string filename) {
-  if (memstat) {
-    chpl_mutex_lock(&memstat_lock);
-    printf("totalMem=%zu, maxMem=%zu\n", totalTrackedMem, maxMem);
-    alreadyPrintingStat = true;
-    chpl_mutex_unlock(&memstat_lock);
-  } else
-    chpl_error(chpl_glom_strings(2, __func__, "() only works with the --memstat flag"),
+void chpl_printMemStat(int32_t lineno, chpl_string filename) {
+  if (!memstat)
+    chpl_error("printMemStat() only works with the --memstat flag",
                lineno, filename);
+  chpl_mutex_lock(&memstat_lock);
+  printf("totalMem=%zu, maxMem=%zu\n", totalTrackedMem, maxMem);
+  alreadyPrintingStat = true;
+  chpl_mutex_unlock(&memstat_lock);
 }
 
 
-void printFinalMemStat(int32_t lineno, chpl_string filename) {
+void chpl_printFinalMemStat(int32_t lineno, chpl_string filename) {
   if (!alreadyPrintingStat && memstat) {
     printf("Final Memory Statistics:  ");
-    printMemStat(lineno, filename);
+    chpl_printMemStat(lineno, filename);
   }
 }
 
@@ -275,7 +266,7 @@ static int descCmp(const void* p1, const void* p2) {
 }
 
 
-void printMemTable(int64_t threshold, chpl_bool finalAggregated, int32_t lineno, chpl_string filename) {
+void chpl_printMemTable(int64_t threshold, chpl_bool finalAggregated, int32_t lineno, chpl_string filename) {
   memTableEntry* memEntry = NULL, *memEntry2 = NULL;
 
   const int numberWidth   = 9;
