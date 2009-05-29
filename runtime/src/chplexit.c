@@ -27,7 +27,7 @@ static void chpl_exit_common(int status, int all) {
 
 
 void chpl_exit_all(int status) {
-  chpl_printFinalMemStat(0, 0);   // print the final memory statistics
+  chpl_reportMemInfo();
   chpl_exit_common(status, 1);
 }
 

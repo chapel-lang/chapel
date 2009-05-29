@@ -33,7 +33,7 @@
     int length;                                    \
     MPI_Error_string(retcode, mpiError, &length);  \
     sprintf(msg, "\n\n%d/%d:%d MPI call failed with %s\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), mpiError); \
-    chpl_error(msg, __LINE__, __FILE__);   \
+    chpl_error(msg, 0, 0);   \
   } \
 }
 
@@ -125,8 +125,8 @@ static void chpl_RPC(_chpl_RPC_arg* arg) {
   PRINTF("Did task");
   chpl_mpi_send(NULL, 0, MPI_BYTE, arg->joinLocale, arg->replyTag, MPI_COMM_WORLD);
   if (arg->arg != NULL)
-    chpl_free(arg->arg, __LINE__, __FILE__);
-  chpl_free(arg, __LINE__, __FILE__);
+    chpl_free(arg->arg, 0, 0);
+  chpl_free(arg, 0, 0);
 }
 
 
@@ -201,13 +201,13 @@ static void chpl_mpi_polling_thread(void* arg) {
       }
       case ChplCommFork: {
         void* args;
-        _chpl_RPC_arg* rpcArg = chpl_malloc(1, sizeof(_chpl_RPC_arg), "RPC args", __LINE__, __FILE__);
+        _chpl_RPC_arg* rpcArg = chpl_malloc(1, sizeof(_chpl_RPC_arg), "RPC args", 0, 0);
 #if CHPL_DIST_DEBUG
         sprintf(debugMsg, "Fulfilling ChplCommFork(fromloc=%d, tag=%d)", status.MPI_SOURCE, msg_info.replyTag);
         PRINTF(debugMsg);
 #endif
         if (msg_info.size != 0) {
-          args = chpl_malloc(1, msg_info.size, "Args for new remote task", __LINE__, __FILE__);
+          args = chpl_malloc(1, msg_info.size, "Args for new remote task", 0, 0);
         } else {
           args = NULL;
         }
@@ -224,13 +224,13 @@ static void chpl_mpi_polling_thread(void* arg) {
       }
       case ChplCommForkNB: {
         void* args;
-        // ?? compiler complains this is never used        _chpl_RPC_arg* rpcArg = chpl_malloc(1, sizeof(_chpl_RPC_arg), "RPC args", __LINE__, __FILE__);
+        // ?? compiler complains this is never used        _chpl_RPC_arg* rpcArg = chpl_malloc(1, sizeof(_chpl_RPC_arg), "RPC args", 0, 0);
 #if CHPL_DIST_DEBUG
         sprintf(debugMsg, "Fulfilling ChplCommForkNB(fromloc=%d, tag=%d)", status.MPI_SOURCE, msg_info.replyTag);
         PRINTF(debugMsg);
 #endif
         if (msg_info.size != 0) {
-          args = chpl_malloc(1, msg_info.size, "Args for new remote task", __LINE__, __FILE__);
+          args = chpl_malloc(1, msg_info.size, "Args for new remote task", 0, 0);
         } else {
           args = NULL;
         }
@@ -444,7 +444,7 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
 void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   _chpl_mpi_message_info msg_info;
   if (chpl_localeID == locale) {
-    void* argCopy = chpl_malloc(1, arg_size, "fork_nb argument copy", __LINE__, __FILE__);
+    void* argCopy = chpl_malloc(1, arg_size, "fork_nb argument copy", 0, 0);
     memmove(argCopy, arg, arg_size);
     chpl_begin((chpl_fn_p)chpl_ftable[fid], argCopy, false, false, NULL);
   } else {

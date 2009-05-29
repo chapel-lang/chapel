@@ -35,10 +35,10 @@ typedef struct memTableEntry_struct { /* table entry */
 
 static memTableEntry* memTable[HASHSIZE];
 
-_Bool memfinalstat = false;
-_Bool memstat = false;
-_Bool memtrace = false;
-_Bool memtrack = false;
+static _Bool memfinalstat = false;
+static _Bool memstat = false;
+static _Bool memtrace = false;
+static _Bool memtrack = false;
 static _Bool memfinalstatSet = false;
 static _Bool memstatSet = false;
 static _Bool memtraceSet = false;
@@ -245,11 +245,13 @@ void chpl_printMemStat(int32_t lineno, chpl_string filename) {
 }
 
 
-void chpl_printFinalMemStat(int32_t lineno, chpl_string filename) {
+void chpl_reportMemInfo() {
   if (!alreadyPrintingStat && memstat) {
     printf("Final Memory Statistics:  ");
-    chpl_printMemStat(lineno, filename);
+    chpl_printMemStat(0, 0);
   }
+  if (memfinalstat)
+    chpl_printMemTable(0, true, 0, 0);
 }
 
 

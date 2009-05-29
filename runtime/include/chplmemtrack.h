@@ -6,16 +6,11 @@
 
 #define HASHSIZE 1019
 
-extern _Bool memfinalstat;
-extern _Bool memstat;
-extern _Bool memtrace;
-extern _Bool memtrack;
-
 void chpl_initMemTable(void);
 uint64_t chpl_memoryUsed(int32_t lineno, chpl_string filename);
-void chpl_printFinalMemStat(int32_t lineno, chpl_string filename);
 void chpl_printMemStat(int32_t lineno, chpl_string filename);
 void chpl_printMemTable(int64_t threshold, chpl_bool aggregated, int32_t lineno, chpl_string filename);
+void chpl_reportMemInfo(void);
 void chpl_resetMemStat(void);
 void chpl_setMemmax(int64_t value);
 void chpl_setMemstat(void);

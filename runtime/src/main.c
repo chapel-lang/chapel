@@ -63,8 +63,6 @@ int main(int argc, char* argv[]) {
 
   if (chpl_localeID == 0) {      // have locale #0 run the user's main function
     chpl_main();
-    if (memfinalstat)
-      chpl_printMemTable(0, true, 0, 0);
   }
 
   chpl_exit_all(0);         // have everyone exit

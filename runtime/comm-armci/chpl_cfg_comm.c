@@ -340,7 +340,7 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   }
 
   info_size = sizeof(dist_fork_t) + arg_size;
-  info = (dist_fork_t *)chpl_malloc(info_size, sizeof(char), "chpl_comm_fork", __LINE__, __FILE__);
+  info = (dist_fork_t *)chpl_malloc(info_size, sizeof(char), "chpl_comm_fork", 0, 0);
 
   info->caller = chpl_localeID;
   info->serial_state = chpl_get_serial();
@@ -351,14 +351,14 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
     bcopy(arg, &(info->arg), arg_size);
 
   if (arg_size > 0)
-    rdata = chpl_malloc(arg_size, sizeof(char), "GPC exec remote data", __LINE__, __FILE__);
+    rdata = chpl_malloc(arg_size, sizeof(char), "GPC exec remote data", 0, 0);
   else
     rdata = NULL;
   rdlen = arg_size;
 
   header = chpl_malloc(sizeof(void *), sizeof(char), "GPC exec remote header address",
-                       false, __LINE__, __FILE__);
-  rheader = chpl_malloc(rhdr_size, sizeof(char), "GPC exec remote header", __LINE__, __FILE__);
+                       false, 0, 0);
+  rheader = chpl_malloc(rhdr_size, sizeof(char), "GPC exec remote header", 0, 0);
   // must be non-empty  
 
   *(intptr_t *)header = (intptr_t)rheader;
@@ -373,25 +373,25 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
 
   if (ret != 0) {
     chpl_internal_error("ARMCI_Gpc_exec() failed");
-    chpl_free(info, __LINE__, __FILE__);
+    chpl_free(info, 0, 0);
     if (rdata)
-      chpl_free(rdata, __LINE__, __FILE__);
-    chpl_free(header, __LINE__, __FILE__);
-    chpl_free((void *)rheader, __LINE__, __FILE__);
+      chpl_free(rdata, 0, 0);
+    chpl_free(header, 0, 0);
+    chpl_free((void *)rheader, 0, 0);
     return;
   }
 
   while (block && *done == 0)
     ;
 
-  chpl_free(info, __LINE__, __FILE__);
+  chpl_free(info, 0, 0);
   if (rdata) {
     if (block)
       bcopy(rdata, arg, rdlen);
-    chpl_free(rdata, __LINE__, __FILE__);
+    chpl_free(rdata, 0, 0);
   }
-  chpl_free(header, __LINE__, __FILE__);
-  chpl_free((void *)rheader, __LINE__, __FILE__);
+  chpl_free(header, 0, 0);
+  chpl_free((void *)rheader, 0, 0);
 }
 
 void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
@@ -429,10 +429,10 @@ int gpc_call_handler(int to, int from, void *hdr, int hlen,
   gpc_info_t *ginfo;
   intptr_t prhdr;
 
-  finfo = chpl_malloc(dlen, sizeof(char), "Copy of input data", __LINE__, __FILE__);
+  finfo = chpl_malloc(dlen, sizeof(char), "Copy of input data", 0, 0);
   bcopy(data, finfo, dlen);
 
-  ginfo = chpl_malloc(sizeof(gpc_info_t), sizeof(char), "fork struct", __LINE__, __FILE__);
+  ginfo = chpl_malloc(sizeof(gpc_info_t), sizeof(char), "fork struct", 0, 0);
   ginfo->info = finfo;
   prhdr = *(intptr_t *)hdr;
   ginfo->rhdr = (int *)prhdr;
@@ -468,8 +468,8 @@ void *_gpc_thread_handler(void *arg)
 
   ARMCI_Free_local(done);
 
-  chpl_free(ginfo->info, __LINE__, __FILE__);
-  chpl_free(ginfo, __LINE__, __FILE__);
+  chpl_free(ginfo->info, 0, 0);
+  chpl_free(ginfo, 0, 0);
 
   return NULL;
 } /* _gpc_thread_handler */
