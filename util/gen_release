@@ -107,7 +107,6 @@ system("cd chapel/runtime && rm -r launch-apsim");
 system("cd chapel/runtime && rm -r launch-mpirun");
 system("cd chapel/runtime && rm -r launch-pvm");
 system("cd chapel/runtime && rm -r launch-zebra");
-system("cd chapel/runtime && rm -r mem-heapmm");
 system("cd chapel/third-party/gasnet && rm *.tar");
 
 foreach $file (@files) {
