@@ -17,6 +17,16 @@
 general regressions
 ===================
 
+memory stuff in flux (05/30/09)
+-------------------------------
+[Error matching program output for memory/figueroa/printFinalMemStat]
+
+memory stuff in flux (05/29/09)
+-------------------------------
+[Error matching program output for memory/shannon/freedMalloc]
+[Error matching program output for memory/shannon/printMemTable]
+[Error matching program output for memory/shannon/reallocZeroSize]
+
 spurious verification failures on RA (e.g. 04/04/09)
 ----------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -53,6 +63,13 @@ infrequent seg fault on linux32
 valgrind-specific regressions
 =============================
 
+timeouts (05/29/09)
+-------------------
+[Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
+[Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
+[Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6]
+[Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
+
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
 [Error matching program output for parallel/begin/dinan/mvm_coforall]
@@ -67,6 +84,11 @@ no longer needs to be suppressed?
 ====================
 no-local regressions
 ====================
+
+memory stuff in flux (05/28/09)
+-------------------------------
+[Error matching program output for memory/shannon/configVarFile]
+[Error matching program output for memory/shannon/memstatPrint]
 
 wide strings leaked (?) (04/02/09)
 ----------------------------------
@@ -102,7 +124,7 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09, 04/18/09, 04/21/09, 05/10/09, 05/14/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09, 04/18/09, 04/21/09, 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09, 03/14/09, 03/22/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09, 03/24/09, 03/28/09, 04/02/09, 04/12/09, 04/22/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
@@ -127,6 +149,13 @@ GASNet unable to start polling thread
 =======================
 baseline-specific tests
 =======================
+
+??? (05/29/09)
+--------------
+[Error matching program output for studies/shootout/nbody/nbody_iterator_7]
+[Error matching program output for studies/shootout/nbody/nbody_reductions_6]
+[Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
+[Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
 
 ??? (04/11/09)
 --------------
@@ -160,7 +189,14 @@ opts-specific tests
 (Example runs: 0)
  
 
-(Full run: 48 without standard errors)
+(Full run: 48 without standard errors, 104 due to nbody shootout codes)
+
+most
+----
+[Error matching program output for studies/shootout/nbody/nbody_iterator_7]
+[Error matching program output for studies/shootout/nbody/nbody_rangesub_5]
+[Error matching program output for studies/shootout/nbody/nbody_reductions_6]
+[Error matching program output for studies/shootout/nbody/nbody_vector_4]
 
 --no-dead-code-elimination
 --------------------------
@@ -228,6 +264,10 @@ times out in C compiler
 ==========================
 intel-specific regressions
 ==========================
+
+spurious compilation timeout
+----------------------------
+[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 06/01/09)
 
 compilation timeout (new with 11.x)
 -----------------------------------
@@ -340,6 +380,10 @@ sig_send: wait for sig_complete event failed
 =============================
 mta-/xmt-specific regressions
 =============================
+
+started timing out again (05/30/09)
+-----------------------------------
+[Error: Timed out executing program release/examples/hpcc/ra]
 
 timeout since test was added
 ----------------------------
