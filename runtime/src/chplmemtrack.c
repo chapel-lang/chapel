@@ -216,14 +216,12 @@ void chpl_resetMemStat(void) {
   maxMem = 0;
 }
 
-
 void chpl_startTrackingMem(void) {
     memfinalstat = memfinalstatSet;
     memstat = memstatSet;
     memtrack = memtrackSet;
     memtrace = memtraceSet;
 }
-
 
 uint64_t chpl_memoryUsed(int32_t lineno, chpl_string filename) {
   alreadyPrintingStat = true; /* hack: don't want to print final stats */

@@ -39,18 +39,33 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   int bufid;
   char buffer[PRINTF_BUFF_LEN];
 
-  char* argv2[] = { (char *)argv[1], (char *)argv[2], (char *)"", };
+  char** argv2;
+  char* numlocstr;
 
   // Add nodes to PVM configuration.
   FILE* nodelistfile;
 
   char* hostfile;
-  hostfile = chpl_malloc(1024, sizeof(char*), "PVM hostfile", -1, "");
+
+  // Get a new argument list for PVM spawn.
+  // The last argument needs to be the number of locations for the PVM
+  // comm layer to use it. The comm layer strips this off.
+  argv2 = chpl_malloc(((argc+1) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  for (i=0; i < (argc-1); i++) {
+    argv2[i] = argv[i+1];
+  }
+  sprintf(numlocstr, "%d", numLocales);
+  argv2[argc-1] = numlocstr;
+  argv2[argc] = NULL;
+
+  // Add nodes to PVM configuration.
+  hostfile = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
   sprintf(hostfile, "%s%s", getenv((char *)"CHPL_HOME"), "/hostfile");
 
   if ((nodelistfile = fopen(hostfile, "r")) == NULL) {
     fprintf(stderr, "Make sure %s is present and readable.\n", hostfile);
     chpl_free(hostfile, -1, "");
+    chpl_free(argv2, -1, "");
     chpl_internal_error("Exiting.");
   }
   chpl_free(hostfile, -1, "");
@@ -66,6 +81,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
       chpl_free(pvmnodestoadd[i], -1, "");
       i--;
     }
+    chpl_free(argv2, -1, "");
     chpl_internal_error("Number of locales specified is greater than what's known in PVM hostfile.");
   }
   fclose(nodelistfile);
@@ -105,6 +121,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
         i++;
       }
       chpl_free(commandtopvm, -1, "");
+      chpl_free(argv2, -1, "");
       chpl_internal_error("Trouble spawning slave.");
     }
   }
@@ -134,6 +151,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     chpl_free(pvmnodestoadd[i], -1, "");
     i--;
   }
+  chpl_free(argv2, -1, "");
   chpl_free(commandtopvm, -1, "");
 
   pvm_halt();

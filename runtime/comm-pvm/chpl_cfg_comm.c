@@ -399,13 +399,11 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   char debugMsg[DEBUG_MSG_LENGTH];
 #endif
 
-  sleep(20);
-
   // Figure out who spawned this thread (if no one, this will be -23).
   PVM_SAFE(parent = pvm_parent(), "pvm_parent", "chpl_comm_init");
 
   // Figure out how many nodes there are
-  chpl_numLocales = (int32_t)atoi((*argv_p)[2]);
+  chpl_numLocales = (int32_t)atoi((*argv_p)[*argc_p - 1]);
 
   // Join the group of all nodes (named "job")
   // Barrier until everyone (numLocales) has joined
@@ -430,8 +428,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     chpl_internal_error("unable to start polling thread for PVM");
   pthread_detach(polling_thread);
 
-  // Ignore the last argument (the localeID) from here on out.
-  // Only relevant here, and leaving it in confuses parseArgs later.
+  // Drop the last argument: the numLocales from the launcher.
+  // It confuses parseArgs, and we've already captured it.
   *argc_p = *argc_p - 1;
   return;
 }
