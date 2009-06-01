@@ -49,7 +49,7 @@ extern char* chpl_globals_registry_static[];
     size_t chpl_macro_len = strlen(chpl_macro_tmp) + 1;                 \
     (wide).locale = chpl_localeID;                                      \
     (wide).addr = chpl_malloc(chpl_macro_len, sizeof(char),             \
-                              "set wide string", 0, 0);                 \
+                              CHPL_RT_MD_SET_WIDE_STRING, 0, 0);        \
     strncpy((char*)(wide).addr, chpl_macro_tmp, chpl_macro_len);        \
     (wide).size = chpl_macro_len;                                       \
   } while (0)
@@ -117,8 +117,8 @@ extern char* chpl_globals_registry_static[];
   do {                                                                  \
     char* chpl_macro_tmp = chpl_malloc((wide).size,                     \
                                        sizeof(char),                    \
-                                       "wide_get_string",               \
-                                       -1, "<internal>");        \
+                                       CHPL_RT_MD_GET_WIDE_STRING,      \
+                                       -1, "<internal>");               \
     if (chpl_localeID == (wide).locale)                                 \
       memcpy(chpl_macro_tmp, (wide).addr, (wide).size);                 \
     else                                                                \

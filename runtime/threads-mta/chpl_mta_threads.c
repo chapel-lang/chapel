@@ -192,7 +192,7 @@ void chpl_set_serial(chpl_bool state) {
   chpl_bool *p = NULL;
   p = (chpl_bool*) mta_register_task_data(p);
   if (p == NULL)
-    p = (chpl_bool*) chpl_alloc(sizeof(chpl_bool), "serial flag", 0, 0);
+    p = (chpl_bool*) chpl_alloc(sizeof(chpl_bool), CHPL_RT_MD_SERIAL_FLAG, 0, 0);
   if (p) {
     *p = state;
     mta_register_task_data(p);

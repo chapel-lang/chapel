@@ -606,3 +606,17 @@ initPrimitive() {
   prim_def("chpl_startMemDiagnosis", returnInfoVoid, true);
   prim_def("chpl_stopMemDiagnosis", returnInfoVoid, true);
 }
+
+Map<const char*, VarSymbol*> memDescsMap;
+Vec<const char*> memDescsVec;
+
+VarSymbol* newMemDesc(const char* str) {
+  static int memDescInt = 0;
+  const char* s = astr(str);
+  if (VarSymbol* v = memDescsMap.get(s))
+    return v;
+  VarSymbol* memDescVar = new_IntSymbol(memDescInt++, INT_SIZE_16);
+  memDescsMap.put(s, memDescVar);
+  memDescsVec.add(s);
+  return memDescVar;
+}

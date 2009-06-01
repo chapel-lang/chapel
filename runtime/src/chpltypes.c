@@ -32,7 +32,7 @@ char* chpl_glom_strings(int numstrings, ...) {
     len += strlen(va_arg(ap, char*));
   va_end(ap);
 
-  str = (char*)chpl_malloc(len+1, sizeof(char), "chpl_glom_strings result", 0, 0);
+  str = (char*)chpl_malloc(len+1, sizeof(char), CHPL_RT_MD_GLOM_STRINGS_DATA, 0, 0);
 
   va_start(ap, numstrings);
   str[0] = '\0';
@@ -77,22 +77,7 @@ chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl
 
 chpl_string
 string_copy(chpl_string x, int32_t lineno, chpl_string filename) {
-  const char *basename = NULL;
-  char *z, buf[FILENAME_MAX+19];
-  int uncommitted_len, basename_len = 0;
-  if (filename) {
-    basename = strrchr(filename, '/');
-    basename = basename ? basename+1 : filename;
-    basename_len = strlen(basename);
-    snprintf(buf, sizeof(buf), "%"PRId32, lineno);
-    uncommitted_len = sizeof(buf) - strlen(buf) - 14;
-    snprintf(buf, sizeof(buf), "string_copy:%s:%"PRId32,
-             basename_len<=uncommitted_len ? basename
-                                           : basename+(basename_len-uncommitted_len),
-             lineno);
-  }
-  else strcpy(buf, "string_copy");
-  z = (char*)chpl_malloc(strlen(x)+1, sizeof(char), buf, lineno, filename);
+  char *z = (char*)chpl_malloc(strlen(x)+1, sizeof(char), CHPL_RT_MD_STRING_COPY_DATA, lineno, filename);
   return strcpy(z, x);
 }
 
@@ -100,7 +85,7 @@ string_copy(chpl_string x, int32_t lineno, chpl_string filename) {
 chpl_string
 string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename) {
   char *z = (char*)chpl_malloc(strlen(x)+strlen(y)+1, sizeof(char),
-                               "string_concat", lineno, filename);
+                               CHPL_RT_MD_STRING_CONCAT_DATA, lineno, filename);
   z[0] = '\0';
   strcat(z, x);
   strcat(z, y);
@@ -118,7 +103,7 @@ string_strided_select(chpl_string x, int low, int high, int stride, int32_t line
   if (low < 1 || low > length || high > length) {
     chpl_error("string index out of bounds", lineno, filename);
   }
-  result = chpl_malloc(size + 2, sizeof(char), "string_strided_select temp", lineno, filename);
+  result = chpl_malloc(size + 2, sizeof(char), CHPL_RT_MD_STRING_STRIDED_SELECT_DATA, lineno, filename);
   dst = result;
   if (stride > 0) {
     while (src - x <= high - 1) {

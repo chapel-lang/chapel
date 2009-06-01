@@ -15,9 +15,9 @@ void** chpl_privateObjects;
 void chpl_newPrivatizedClass(void* v) {
   chpl_numPrivateObjects += 1;
   if (chpl_numPrivateObjects == 1) {
-    chpl_privateObjects = chpl_malloc(chpl_numPrivateObjects, sizeof(void*), "private objects array", 0, "");
+    chpl_privateObjects = chpl_malloc(chpl_numPrivateObjects, sizeof(void*), CHPL_RT_MD_PRIVATE_OBJECTS_ARRAY, 0, "");
   } else {
-    chpl_privateObjects = chpl_realloc(chpl_privateObjects, chpl_numPrivateObjects, sizeof(void*), "private objects array", 0, "");
+    chpl_privateObjects = chpl_realloc(chpl_privateObjects, chpl_numPrivateObjects, sizeof(void*), CHPL_RT_MD_PRIVATE_OBJECTS_ARRAY, 0, "");
   }
   chpl_privateObjects[chpl_numPrivateObjects-1] = v;
 }

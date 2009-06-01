@@ -133,14 +133,14 @@ void _chpl_gc_init(size_t heapsize) {
   char *heap1, *heap2;
 
   // allocate the from and to spaces
-  heap1 = (char*)chpl_malloc(1, heapsize, "Heap 1", 1, "");
-  heap2 = (char*)chpl_malloc(1, heapsize, "Heap 2", 1, "");
+  heap1 = (char*)chpl_malloc(1, heapsize, CHPL_RT_MD_GC_HEAP, 1, "");
+  heap2 = (char*)chpl_malloc(1, heapsize, CHPL_RT_MD_GC_HEAP, 1, "");
 
   // allocate structs to point into the spaces
   _from_space = (_memory_space*)chpl_malloc(1, sizeof(_memory_space),
-                                             "Space pointer 1", 1, "");
+                                            CHPL_RT_MD_GC_SPACE_POINTER, 1, "");
   _to_space = (_memory_space*)chpl_malloc(1, sizeof(_memory_space),
-                                           "Space pointer 2", 1, "");
+                                          CHPL_RT_MD_GC_SPACE_POINTER, 1, "");
 
   // fill in the pointers
   _from_space->head = heap1;

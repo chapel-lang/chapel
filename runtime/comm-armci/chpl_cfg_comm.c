@@ -196,7 +196,7 @@ void chpl_comm_broadcast_private(void* addr, int size) {
   _broadcast_private_helper bph;
   void* heapAddr = NULL;
 
-  heapAddr = chpl_malloc(1, size, "broadcast private", 0, 0);
+  heapAddr = chpl_malloc(1, size, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
   bcopy(addr, heapAddr, size);
   for (i = 0; i < chpl_numLocales; i++)
     if (i != chpl_localeID) {
@@ -340,7 +340,7 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   }
 
   info_size = sizeof(dist_fork_t) + arg_size;
-  info = (dist_fork_t *)chpl_malloc(info_size, sizeof(char), "chpl_comm_fork", 0, 0);
+  info = (dist_fork_t *)chpl_malloc(info_size, sizeof(char), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
 
   info->caller = chpl_localeID;
   info->serial_state = chpl_get_serial();
@@ -351,14 +351,15 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
     bcopy(arg, &(info->arg), arg_size);
 
   if (arg_size > 0)
-    rdata = chpl_malloc(arg_size, sizeof(char), "GPC exec remote data", 0, 0);
+    rdata = chpl_malloc(arg_size, sizeof(char), CHPL_RT_MD_REMOTE_GPC_DATA, 0, 0);
   else
     rdata = NULL;
   rdlen = arg_size;
 
-  header = chpl_malloc(sizeof(void *), sizeof(char), "GPC exec remote header address",
-                       false, 0, 0);
-  rheader = chpl_malloc(rhdr_size, sizeof(char), "GPC exec remote header", 0, 0);
+  header = chpl_malloc(sizeof(void *), sizeof(char),
+                       CHPL_RT_MD_REMOTE_GPC_HEADER_ADDR, 0, 0);
+  rheader = chpl_malloc(rhdr_size, sizeof(char), CHPL_RT_MD_REMOTE_GPC_HEADER,
+                        0, 0);
   // must be non-empty  
 
   *(intptr_t *)header = (intptr_t)rheader;
@@ -429,10 +430,10 @@ int gpc_call_handler(int to, int from, void *hdr, int hlen,
   gpc_info_t *ginfo;
   intptr_t prhdr;
 
-  finfo = chpl_malloc(dlen, sizeof(char), "Copy of input data", 0, 0);
+  finfo = chpl_malloc(dlen, sizeof(char), CHPL_RT_MD_REMOTE_GPC_COPY_OF_DATA, 0, 0);
   bcopy(data, finfo, dlen);
 
-  ginfo = chpl_malloc(sizeof(gpc_info_t), sizeof(char), "fork struct", 0, 0);
+  ginfo = chpl_malloc(sizeof(gpc_info_t), sizeof(char), CHPL_RT_MD_REMOTE_GPC_FORK_DATA, 0, 0);
   ginfo->info = finfo;
   prhdr = *(intptr_t *)hdr;
   ginfo->rhdr = (int *)prhdr;

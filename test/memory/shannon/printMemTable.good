@@ -1,8 +1,8 @@
 =================================================================================================================
 Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
 =================================================================================================================
-printMemTable.chpl:11            484      8        3872     _data                            0xnnnnnnnn  
-printMemTable.chpl:12            400      8        3200     _data                            0xnnnnnnnn  
+printMemTable.chpl:11            484      8        3872     array elements                   0xnnnnnnnn  
+printMemTable.chpl:12            400      8        3200     array elements                   0xnnnnnnnn  
 =================================================================================================================
 
 Jacobi computation complete.

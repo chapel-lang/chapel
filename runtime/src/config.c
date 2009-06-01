@@ -282,10 +282,8 @@ char* lookupSetValue(const char* varName, const char* moduleName) {
 void installConfigVar(const char* varName, const char* value, 
                       const char* moduleName) {
   unsigned hashValue;
-  char* description = chpl_glom_strings(2, "config table entry for ", varName);
   configVarType* configVar = (configVarType*) 
-    chpl_malloc(1, sizeof(configVarType), description, 0, 0);
-  chpl_free(description, 0, 0);
+    chpl_malloc(1, sizeof(configVarType), CHPL_RT_MD_CONFIG_TABLE_DATA, 0, 0);
 
   hashValue = hash(varName);
   configVar->nextInBucket = configVarTable[hashValue]; 
@@ -356,7 +354,8 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
                             int32_t lineno, chpl_string filename) {
   int retval = 0;
   int arglen = strlen(argv[argnum]+2)+1;
-  char* argCopy = chpl_malloc(arglen, sizeof(char), "arg copy", argnum,
+  char* argCopy = chpl_malloc(arglen, sizeof(char),
+                              CHPL_RT_MD_CONFIG_ARG_COPY_DATA, argnum,
                               "<command-line>");
   char* equalsSign;
   const char* moduleName;

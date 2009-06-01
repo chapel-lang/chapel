@@ -114,7 +114,7 @@ chpl_string chpl_localeName(void) {
   if (newnamelen > namelen) {
     namelen = newnamelen;
     namespace = chpl_realloc(namespace, newnamelen, sizeof(char), 
-                             "buffer for chpl_localeName", 0, NULL);
+                             CHPL_RT_MD_LOCALE_NAME_BUFFER, 0, NULL);
   }
   strcpy(namespace, utsinfo.nodename);
   return namespace;

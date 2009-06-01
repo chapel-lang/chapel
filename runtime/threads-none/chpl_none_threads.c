@@ -177,7 +177,7 @@ void chpl_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
     // create a task from the given function pointer and arguments
     // and append it to the end of the task pool for later execution
     chpl_task_pool_p task = (chpl_task_pool_p)chpl_alloc(sizeof(task_pool_t),
-                                                         "task pool entry",
+                                                         CHPL_RT_MD_TASK_DESCRIPTOR,
                                                          0, 0);
     task->fun = fp;
     task->arg = a;

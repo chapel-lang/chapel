@@ -295,7 +295,7 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
   VarSymbol* ret = newTemp("ic", ii->iclass);
   ii->getIterator->insertAtTail(new DefExpr(ret));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CHPL_ALLOC, ii->iclass->symbol, new_StringSymbol("iterator class"))));
+  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CHPL_ALLOC, ii->iclass->symbol, newMemDesc("iterator class"))));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#define CHPL_MEM_C
 #include "chpl_mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
@@ -16,12 +17,13 @@ int heapInitialized = 0;
 
 
 static void
-confirm(void* memAlloc, const char* description, int32_t lineno, 
+confirm(void* memAlloc, chpl_memDescInt_t description, int32_t lineno, 
         chpl_string filename) {
   if (!memAlloc) {
     const int messageSize = 1024;
     char message[messageSize];
-    snprintf(message, messageSize, "Out of memory allocating \"%s\"", description);
+    snprintf(message, messageSize, "Out of memory allocating \"%s\"",
+             chpl_memDescString(description));
     chpl_error(message, lineno, filename);
   }
 }
@@ -39,13 +41,25 @@ computeChunkSize(size_t number, size_t size, chpl_bool zeroOK,
 }
 
 
+const char* chpl_memDescString(chpl_memDescInt_t mdi) {
+  if (mdi < CHPL_RT_MD_NUM)
+    return chpl_rt_memDescs[mdi];
+#ifndef LAUNCHER
+  else
+    return chpl_memDescs[mdi-CHPL_RT_MD_NUM];
+#else
+  return 0;
+#endif
+}
+
+
 void chpl_initHeap(void* start, size_t size) {
   chpl_md_initHeap(start, size);
   heapInitialized = 1;
 }
 
 
-void* chpl_malloc(size_t number, size_t size, const char* description,
+void* chpl_malloc(size_t number, size_t size, chpl_memDescInt_t description,
                   int32_t lineno, chpl_string filename) {
   size_t chunk = computeChunkSize(number, size, false, lineno, filename);
   void* memAlloc = chpl_md_malloc(chunk, lineno, filename);
@@ -66,7 +80,7 @@ void chpl_free(void* memAlloc, int32_t lineno, chpl_string filename) {
 
 
 void* chpl_realloc(void* memAlloc, size_t number, size_t size, 
-                   const char* description, int32_t lineno, chpl_string filename) {
+                   chpl_memDescInt_t description, int32_t lineno, chpl_string filename) {
   size_t newChunk = computeChunkSize(number, size, true, lineno, filename);
   void* moreMemAlloc;
   void* memEntry = NULL;

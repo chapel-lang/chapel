@@ -1757,7 +1757,12 @@ void CallExpr::codegen(FILE* outfile) {
       if (is_struct) fprintf( outfile, "_");          // need struct of class
       typeInfo()->symbol->codegen( outfile);
       fprintf( outfile, "), ");
-      get(2)->codegen( outfile);
+      if (fRuntime) {
+        fprintf( outfile, "CHPL_RT_MD_CHAPEL_CODE");
+      } else {
+        get(2)->codegen( outfile);
+        fprintf( outfile, " + CHPL_RT_MD_NUM");
+      }
       fprintf( outfile, ", ");
       get(3)->codegen( outfile);
       fprintf( outfile, ", ");

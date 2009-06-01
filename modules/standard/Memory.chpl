@@ -20,7 +20,7 @@ def memoryUsed()
   return __primitive("chpl_memoryUsed");
 
 def printMemTable(thresh=0) {
-  __primitive("chpl_printMemTable", thresh, false);
+  __primitive("chpl_printMemTable", thresh);
 }
 
 def printMemStat() {

@@ -3,13 +3,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "chpl_mem.h"
 
 #define HASHSIZE 1019
 
 void chpl_initMemTable(void);
 uint64_t chpl_memoryUsed(int32_t lineno, chpl_string filename);
 void chpl_printMemStat(int32_t lineno, chpl_string filename);
-void chpl_printMemTable(int64_t threshold, chpl_bool aggregated, int32_t lineno, chpl_string filename);
+void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename);
 void chpl_reportMemInfo(void);
 void chpl_resetMemStat(void);
 void chpl_setMemmax(int64_t value);
@@ -22,9 +23,9 @@ void chpl_startTrackingMem(void);
 
 void chpl_startMemDiagnosis(void);
 void chpl_stopMemDiagnosis(void);
-void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size, const char* description, int32_t lineno, chpl_string filename);
+void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
 void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename);
-void* chpl_track_realloc1(void* memAlloc, size_t number, size_t size, const char* description, int32_t lineno, chpl_string filename);
-void chpl_track_realloc2(void* memEntry, void* moreMemAlloc, size_t newChunk, void* memAlloc, size_t number, size_t size, const char* description, int32_t lineno, chpl_string filename);
+void* chpl_track_realloc1(void* memAlloc, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
+void chpl_track_realloc2(void* memEntry, void* moreMemAlloc, size_t newChunk, void* memAlloc, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
 
 #endif

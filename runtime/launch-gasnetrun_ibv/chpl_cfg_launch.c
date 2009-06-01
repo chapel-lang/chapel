@@ -24,8 +24,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     size += strlen(argv[i]) + 3;
   }
 
-  command = chpl_malloc(size, sizeof(char*), "gasnetrun_ibv command buffer", 
-                        false, -1, "");
+  command = chpl_malloc(size, sizeof(char*), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
   
   sprintf(command, "%s%s", WRAP_TO_STR(LAUNCH_PATH), baseCommand);
   for (i=1; i<argc; i++) {

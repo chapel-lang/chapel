@@ -56,7 +56,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   chpl_free(hostfile, -1, "");
   i = 0;
   while (((fscanf(nodelistfile, "%s", pvmnodetoadd)) == 1) && (i < numLocales)) {
-    pvmnodestoadd[i] = chpl_malloc((strlen(pvmnodetoadd)+1), sizeof(char *), "create a list of nodes", -1, "");
+    pvmnodestoadd[i] = chpl_malloc((strlen(pvmnodetoadd)+1), sizeof(char *), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
     strcpy(pvmnodestoadd[i], pvmnodetoadd);
     i++;
   }
@@ -88,7 +88,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
 
   pvmsize += strlen(getenv((char *)"CHPL_HOME")) + strlen("/_real") + strlen(argv[0]);
 
-  commandtopvm = chpl_malloc(pvmsize, sizeof(char*), "thing to execute via PVM spawn", -1, "");
+  commandtopvm = chpl_malloc(pvmsize, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
   *commandtopvm = '\0';
   strcat(commandtopvm, getenv((char *)"CHPL_HOME"));
   strcat(commandtopvm, "/");

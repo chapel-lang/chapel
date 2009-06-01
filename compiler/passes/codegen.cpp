@@ -423,6 +423,16 @@ static void codegen_header(void) {
     fprintf(outfile, "\nchar** chpl_globals_registry;\n");
     fprintf(outfile, "\nchar* chpl_globals_registry_static[%d];\n", 
             (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
+    fprintf(outfile, "\nconst char* chpl_memDescs[] = {\n");
+    bool first = true;
+    forv_Vec(const char*, memDesc, memDescsVec) {
+      if (!first)
+        fprintf(outfile, ",\n");
+      fprintf(outfile, "\"%s\"", memDesc);
+      first = false;
+    }
+    fprintf(outfile, "\n};\n");
+    fprintf(outfile, "\nconst int chpl_num_memDescs = %d;\n", memDescsVec.n);
   }
 
   if (!fRuntime) {
