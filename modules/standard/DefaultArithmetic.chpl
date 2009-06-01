@@ -211,7 +211,8 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   }
 
   def slice(param stridable: bool, ranges) {
-    var d = new DefaultArithmeticDom(rank, idxType, stridable, dist);
+    var d = new DefaultArithmeticDom(rank, idxType,
+                                     stridable || this.stridable, dist);
     for param i in 1..rank do
       d.ranges(i) = dim(i)(ranges(i));
     return d;
