@@ -22,10 +22,6 @@
 
 extern int pvm_addhosts(char **hosts, int nhost, int *infos);
 
-// TODO: Un-hard-code this stuff:
-//static const char* pvmrunPath = "/users/ljprokow/Projects/Chapel/Chapel/third-party/pvm/pvm-3.4.6/pvm3/lib/";
-static const char* hostfile = "/users/ljprokow/Projects/Chapel/Chapel/third-party/pvm/pvm-3.4.6/pvm3/hostfile";
-
 static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i;
 
@@ -48,10 +44,16 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   // Add nodes to PVM configuration.
   FILE* nodelistfile;
 
+  char* hostfile;
+  hostfile = chpl_malloc(1024, sizeof(char*), "PVM hostfile", -1, "");
+  sprintf(hostfile, "%s%s", getenv((char *)"CHPL_HOME"), "/hostfile");
+
   if ((nodelistfile = fopen(hostfile, "r")) == NULL) {
     fprintf(stderr, "Make sure %s is present and readable.\n", hostfile);
+    chpl_free(hostfile, -1, "");
     chpl_internal_error("Exiting.");
   }
+  chpl_free(hostfile, -1, "");
   i = 0;
   while (((fscanf(nodelistfile, "%s", pvmnodetoadd)) == 1) && (i < numLocales)) {
     pvmnodestoadd[i] = chpl_malloc((strlen(pvmnodetoadd)+1), sizeof(char *), "create a list of nodes", -1, "");
@@ -70,6 +72,11 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
 
   info = pvm_start_pvmd(0, argtostart, 1);
   if (info != 0) {
+    if (info == PvmDupHost) {
+      fprintf(stderr, "Duplicate host. Shutting down host.\n");
+      pvm_halt();
+    }
+    fprintf(stderr, "Exiting.\n");
     chpl_internal_error("Problem starting PVM daemon.");
   }
 
@@ -79,10 +86,12 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
 
   info = pvm_addhosts( (char **)hosts2, i, infos );
 
-  pvmsize += strlen("_real") + strlen(argv[0]);
+  pvmsize += strlen(getenv((char *)"CHPL_HOME")) + strlen("/_real") + strlen(argv[0]);
 
   commandtopvm = chpl_malloc(pvmsize, sizeof(char*), "thing to execute via PVM spawn", -1, "");
   *commandtopvm = '\0';
+  strcat(commandtopvm, getenv((char *)"CHPL_HOME"));
+  strcat(commandtopvm, "/");
   strcat(commandtopvm, argv[0]);
   strcat(commandtopvm, "_real");
 

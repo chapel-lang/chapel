@@ -347,10 +347,6 @@ static void polling(void* x) {
         args = NULL;
       }
 
-      if (source == tids[chpl_localeID]) {
-        fprintf(stderr, "%d: %d %d !!!Damn it!!!\n", chpl_localeID, source, tids[chpl_localeID]);
-      }
-
       chpl_pvm_recv(source, msg_info.replyTag, args, msg_info.size);
 
       rpcArg->fid = (chpl_fn_int_t)msg_info.u.fid;
@@ -402,6 +398,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 #if CHPL_DIST_DEBUG
   char debugMsg[DEBUG_MSG_LENGTH];
 #endif
+
+  sleep(20);
 
   // Figure out who spawned this thread (if no one, this will be -23).
   PVM_SAFE(parent = pvm_parent(), "pvm_parent", "chpl_comm_init");
@@ -571,7 +569,7 @@ void chpl_comm_exit_all(int status) {
 }
 
 void chpl_comm_exit_any(int status) {
-  fprintf(stderr, "%d: I'm in exit_any with status %d!\n", chpl_localeID, status);
+  fprintf(stderr, "%d: chpl error, calling exit_any with status %d!\n", chpl_localeID, status);
   PVM_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_any");
   PVM_SAFE(pvm_exit(), "pvm_exit", "chpl_comm_exit_any");
   return;
