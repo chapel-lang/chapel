@@ -9,7 +9,7 @@
 
 use Time;
 
-config var n = 500000;
+config var n = 10000;
 config const timer : bool = false;
 param PI = 3.141592653589793;
 const solar_mass = (4 * PI * PI);
