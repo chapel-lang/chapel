@@ -18,6 +18,7 @@ CONFIG VAR FLAGS:
 MEMORY FLAGS:
 =============
   --memmax=<n>           : simulate 'n' bytes of memory available
+  --memreport            : report memory statistics and leaks
   --memstat              : print memory statistics
   --memtrack             : track dynamic memory usage using a table
   --memtrace=<filename>  : write memory trace to filename

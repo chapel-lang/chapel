@@ -70,6 +70,7 @@ static void printHelpTable(void) {
     {"-f<filename>", "read in a file of config var assignments", 'c'},
 
     {"--memmax=<n>", "simulate 'n' bytes of memory available", 'm'}, 
+    {"--memreport", "report memory statistics and leaks", 'm'},
     {"--memstat", "print memory statistics", 'm'},
     {"--memtrack", "track dynamic memory usage using a table", 'm'},
     {"--memtrace=<filename>", "write memory trace to filename", 'm'},
@@ -157,7 +158,7 @@ static int parseMemFlag(const char* memFlag, int32_t lineno, chpl_string filenam
     flag = MemMax;
   } else if (strncmp(memFlag, "memstat", 7) == 0) {
     flag = MemStat;
-  } else if (strncmp(memFlag, "memfinalstat", 12) == 0) {
+  } else if (strncmp(memFlag, "memreport", 9) == 0) {
     flag = MemFinalStat;
   } else if (strncmp(memFlag, "memtrack", 8) == 0) {
     flag = MemTrack;
@@ -196,7 +197,7 @@ static int parseMemFlag(const char* memFlag, int32_t lineno, chpl_string filenam
    
   case MemFinalStat:
     {
-      exitIfEqualsSign(equalsSign, "--memfinalstat", lineno, filename);
+      exitIfEqualsSign(equalsSign, "--memreport", lineno, filename);
       chpl_setMemfinalstat();
       break;
     }

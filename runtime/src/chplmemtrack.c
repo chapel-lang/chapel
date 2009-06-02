@@ -47,20 +47,19 @@ static _Bool memtrackSet = false;
 static int64_t memmaxValue = 0;
 static int64_t memthresholdValue = 1;
 static FILE* memlog = NULL;
-static size_t totalMem = 0;         /* total memory currently allocated */
-static size_t totalTrackedMem = 0;  /* total memory being tracked */
-static size_t maxMem = 0;           /* maximum total memory during run  */
+static size_t totalMem = 0;       /* total memory currently allocated */
+static size_t maxMem = 0;         /* maximum total memory during run  */
+static size_t totalAllocated = 0; /* total memory allocated */
+static size_t totalFreed = 0;     /* total memory freed */
 
 static _Bool alreadyPrintingStat = false;
 
 #ifndef LAUNCHER
 static chpl_mutex_t memtrack_lock;
-static chpl_mutex_t memstat_lock;
 static chpl_mutex_t memtrace_lock;
 #endif
 
 static unsigned hash(void* memAlloc);
-static void updateMaxMem(void);
 static memTableEntry* removeBucketEntry(void* address);
 static memTableEntry* lookupMemoryNoLock(void* memAlloc);
 static memTableEntry* lookupMemory(void* memAlloc);
@@ -76,12 +75,6 @@ static unsigned hash(void* memAlloc) {
     fakeCharPtr++;
   }
   return hashValue % HASHSIZE;
-}
-
-
-static inline void updateMaxMem(void) {
-  if (totalTrackedMem > maxMem)
-    maxMem = totalTrackedMem;
 }
 
 
@@ -108,6 +101,9 @@ static memTableEntry* removeBucketEntry(void* address) {
   memTableEntry* thisBucketEntry = memTable[hashValue];
   memTableEntry* deletedBucket = NULL;
 
+  if (!thisBucketEntry)
+    return NULL;
+
   if (thisBucketEntry->memAlloc == address) {
     memTable[hashValue] = thisBucketEntry->nextInBucket;
     deletedBucket = thisBucketEntry;
@@ -124,16 +120,12 @@ static memTableEntry* removeBucketEntry(void* address) {
       }
     }
   }
-  if (deletedBucket == NULL) {
-    chpl_internal_error("Hash table entry has disappeared unexpectedly!");
-  }
   return deletedBucket;
 }
 
 
 void chpl_initMemTable(void) {
   chpl_mutex_init(&memtrace_lock);
-  chpl_mutex_init(&memstat_lock);
   chpl_mutex_init(&memtrack_lock);
   if (memtrack) {
     int i;
@@ -190,31 +182,21 @@ void chpl_setMemtrace(char* memlogname) {
 
 
 static void increaseMemStat(size_t chunk, int32_t lineno, chpl_string filename) {
-  chpl_mutex_lock(&memstat_lock);
   totalMem += chunk;
+  totalAllocated += chunk;
   if (memmaxValue && (totalMem > memmaxValue)) {
-    chpl_mutex_unlock(&memstat_lock);
     chpl_error("Exceeded memory limit", lineno, filename);
   }
-  totalTrackedMem += chunk;
-  updateMaxMem();
-  chpl_mutex_unlock(&memstat_lock);
+  if (totalMem > maxMem)
+    maxMem = totalMem;
 }
 
 
 static void decreaseMemStat(size_t chunk) {
-  chpl_mutex_lock(&memstat_lock);
-  totalMem = chunk > totalMem ? 0 : totalMem - chunk;
-  totalTrackedMem = chunk > totalTrackedMem ? 0 : totalTrackedMem - chunk;
-  chpl_mutex_unlock(&memstat_lock);
+  totalMem -= chunk; // > totalMem ? 0 : totalMem - chunk;
+  totalFreed += chunk;
 }
 
-
-void chpl_resetMemStat(void) {
-  totalMem = 0;
-  totalTrackedMem = 0;
-  maxMem = 0;
-}
 
 void chpl_startTrackingMem(void) {
     memfinalstat = memfinalstatSet;
@@ -222,6 +204,7 @@ void chpl_startTrackingMem(void) {
     memtrack = memtrackSet;
     memtrace = memtraceSet;
 }
+
 
 uint64_t chpl_memoryUsed(int32_t lineno, chpl_string filename) {
   alreadyPrintingStat = true; /* hack: don't want to print final stats */
@@ -236,10 +219,10 @@ void chpl_printMemStat(int32_t lineno, chpl_string filename) {
   if (!memstat)
     chpl_error("printMemStat() only works with the --memstat flag",
                lineno, filename);
-  chpl_mutex_lock(&memstat_lock);
-  printf("totalMem=%zu, maxMem=%zu\n", totalTrackedMem, maxMem);
+  chpl_mutex_lock(&memtrack_lock);
+  printf("totalMem=%zu, maxMem=%zu\n", totalMem, maxMem);
   alreadyPrintingStat = true;
-  chpl_mutex_unlock(&memstat_lock);
+  chpl_mutex_unlock(&memtrack_lock);
 }
 
 
@@ -270,13 +253,18 @@ static void chpl_printLeakedMemTable(void) {
   printf("\n====================");
   printf("\nLeaked Memory Report");
   printf("\n==============================================================");
+  printf("\nTotal Leaked Memory                   = %zd", totalMem);
+  printf("\nMaximum Simultaneous Allocated Memory = %zd", maxMem);
+  printf("\nTotal Allocated Memory                = %zd", totalAllocated);
+  printf("\nTotal Freed Memory                    = %zd", totalFreed);
+  printf("\n==============================================================");
   printf("\nNumber of leaked allocations");
   printf("\n           Total leaked memory (bytes)");
   printf("\n                      Description of allocation");
   printf("\n==============================================================");
   for (i = 0; i < 3*(CHPL_RT_MD_NUM+chpl_num_memDescs); i += 3) {
     if (table[i] > 0) {
-      printf("\n%*zu  %*zu  %s",
+      printf("\n%-*zu  %-*zu  %s",
              numberWidth, table[i+1],
              numberWidth, table[i],
              chpl_memDescString(table[i+2]));
@@ -290,7 +278,7 @@ static void chpl_printLeakedMemTable(void) {
 
 
 void chpl_reportMemInfo() {
-  if (!alreadyPrintingStat && memstat) {
+  if (!memfinalstat && !alreadyPrintingStat && memstat) {
     printf("Final Memory Statistics:  ");
     chpl_printMemStat(0, 0);
   }
@@ -442,13 +430,14 @@ static void installMemory(void* memAlloc, size_t number, size_t size, chpl_memDe
   }
   memEntry->number = number;
   memEntry->size = size;
+  increaseMemStat(number*size, lineno, filename);
   chpl_mutex_unlock(&memtrack_lock);
   PRINTF(" done");
 }
 
 
 static void updateMemory(memTableEntry* memEntry, void* oldAddress, void* newAddress,
-                         size_t number, size_t size) {
+                         size_t number, size_t size, int32_t lineno, chpl_string filename) {
   unsigned newHashValue;
   PRINTF("");
   chpl_mutex_lock(&memtrack_lock);
@@ -462,26 +451,10 @@ static void updateMemory(memTableEntry* memEntry, void* oldAddress, void* newAdd
   memEntry->memAlloc = newAddress;
   memEntry->number = number;
   memEntry->size = size;
+  decreaseMemStat(memEntry->number * memEntry->size);
+  increaseMemStat(number * size, lineno, filename);
   chpl_mutex_unlock(&memtrack_lock);
   PRINTF(" done");
-}
-
-static void removeMemory(void* memAlloc, int32_t lineno, chpl_string filename) {
-  memTableEntry* thisBucketEntry;
-  memTableEntry* memEntry;
-  PRINTF("");
-  chpl_mutex_lock(&memtrack_lock);
-  memEntry = lookupMemoryNoLock(memAlloc);
-
-  if (memEntry) {
-    /* Remove the entry from the bucket list. */
-    thisBucketEntry = removeBucketEntry(memAlloc);
-    free(thisBucketEntry);
-  } else {
-    chpl_error("Attempting to free memory that wasn't allocated", lineno, filename);
-  }
-  PRINTF(" done");
-  chpl_mutex_unlock(&memtrack_lock);
 }
 
 
@@ -526,9 +499,6 @@ void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size,
   }
   if (memtrack) {
     installMemory(memAlloc, number, size, description, lineno, filename);
-    if (memstat) {
-      increaseMemStat(chunk, lineno, filename);
-    }
   }
 }
 
@@ -548,12 +518,18 @@ void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename) {
   }
 
   if (memtrack) {
-    if (memstat) {
-      memTableEntry* memEntry = lookupMemory(memAlloc);
-      if (memEntry)
-        decreaseMemStat(memEntry->number * memEntry->size);
-    }
-    removeMemory(memAlloc, lineno, filename);
+    memTableEntry* memEntry;
+    PRINTF("");
+    chpl_mutex_lock(&memtrack_lock);
+    memEntry = removeBucketEntry(memAlloc);
+
+    if (!memEntry)
+      chpl_error("Attempting to free memory that wasn't allocated", lineno, filename);
+
+    decreaseMemStat(memEntry->number * memEntry->size);
+    free(memEntry);
+    chpl_mutex_unlock(&memtrack_lock);
+    PRINTF(" done");
   }
 }
 
@@ -574,16 +550,11 @@ void* chpl_track_realloc1(void* memAlloc, size_t number, size_t size, chpl_memDe
 void chpl_track_realloc2(void* memEntryV, void* moreMemAlloc, size_t newChunk, void* memAlloc, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename) {
   memTableEntry* memEntry = (memTableEntry*)memEntryV;
   if (memtrack) { 
-    if (memAlloc != NULL) {
-      if (memEntry) {
-        if (memstat)
-          decreaseMemStat(memEntry->number * memEntry->size);
-        updateMemory(memEntry, memAlloc, moreMemAlloc, number, size);
-      }
-    } else
+    if (memEntry) {
+      updateMemory(memEntry, memAlloc, moreMemAlloc, number, size, lineno, filename);
+    } else {
       installMemory(moreMemAlloc, number, size, description, lineno, filename);
-    if (memstat)
-      increaseMemStat(newChunk, lineno, filename);
+    }
   }
   if (memtrace && (!MEM_DIAGNOSIS || memDiagnosisFlag)) {
     printToMemLog("realloc", number, size, description, lineno, filename,

@@ -2,9 +2,14 @@
 ====================
 Leaked Memory Report
 ==============================================================
+Total Leaked Memory                   = 256
+Maximum Simultaneous Allocated Memory = 256
+Total Allocated Memory                = 256
+Total Freed Memory                    = 0
+==============================================================
 Number of leaked allocations
            Total leaked memory (bytes)
                       Description of allocation
 ==============================================================
-        4        256  unknown
+4          256        unknown
 ==============================================================

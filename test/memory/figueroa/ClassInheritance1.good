@@ -2,10 +2,15 @@
 ====================
 Leaked Memory Report
 ==============================================================
+Total Leaked Memory                   = 40
+Maximum Simultaneous Allocated Memory = 40
+Total Allocated Memory                = 40
+Total Freed Memory                    = 0
+==============================================================
 Number of leaked allocations
            Total leaked memory (bytes)
                       Description of allocation
 ==============================================================
-        1         32  C2
-        1          8  C
+1          32         C2
+1          8          C
 ==============================================================
