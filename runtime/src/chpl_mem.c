@@ -83,7 +83,6 @@ void* chpl_realloc(void* memAlloc, size_t number, size_t size,
                    chpl_memDescInt_t description, int32_t lineno, chpl_string filename) {
   size_t newChunk = computeChunkSize(number, size, true, lineno, filename);
   void* moreMemAlloc;
-  void* memEntry = NULL;
 
   if (!newChunk) {
     chpl_free(memAlloc, lineno, filename);
@@ -94,13 +93,13 @@ void* chpl_realloc(void* memAlloc, size_t number, size_t size,
     chpl_error("chpl_realloc called before the heap is initialized", lineno, filename);
   }
 
-  memEntry = chpl_track_realloc1(memAlloc, number, size, description, lineno, filename);
+  chpl_track_realloc1(memAlloc, number, size, description, lineno, filename);
 
   moreMemAlloc = chpl_md_realloc(memAlloc, newChunk, lineno, filename);
 
   confirm(moreMemAlloc, description, lineno, filename);
 
-  chpl_track_realloc2(memEntry, moreMemAlloc, newChunk, memAlloc, number, size, description, lineno, filename);
+  chpl_track_realloc2(moreMemAlloc, newChunk, memAlloc, number, size, description, lineno, filename);
 
   return moreMemAlloc;
 }

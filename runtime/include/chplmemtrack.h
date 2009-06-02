@@ -14,7 +14,7 @@ void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename)
 void chpl_reportMemInfo(void);
 void chpl_setMemmax(int64_t value);
 void chpl_setMemstat(void);
-void chpl_setMemfinalstat(void);
+void chpl_setMemreport(void);
 void chpl_setMemthreshold(int64_t value);
 void chpl_setMemtrace(char* memlogname);
 void chpl_setMemtrack(void);
@@ -24,7 +24,7 @@ void chpl_startMemDiagnosis(void);
 void chpl_stopMemDiagnosis(void);
 void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
 void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename);
-void* chpl_track_realloc1(void* memAlloc, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
-void chpl_track_realloc2(void* memEntry, void* moreMemAlloc, size_t newChunk, void* memAlloc, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
+void chpl_track_realloc1(void* memAlloc, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
+void chpl_track_realloc2(void* moreMemAlloc, size_t newChunk, void* memAlloc, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
 
 #endif

@@ -147,7 +147,7 @@ static void exitIfEqualsSign(char* equalsSign, const char* memFlag,
   }
 }
 
-typedef enum _MemFlagType {MemMax, MemStat, MemFinalStat, MemTrack, MemThreshold, MemTrace,
+typedef enum _MemFlagType {MemMax, MemStat, MemReport, MemTrack, MemThreshold, MemTrace,
                            MOther} MemFlagType;
 
 static int parseMemFlag(const char* memFlag, int32_t lineno, chpl_string filename) {
@@ -159,7 +159,7 @@ static int parseMemFlag(const char* memFlag, int32_t lineno, chpl_string filenam
   } else if (strncmp(memFlag, "memstat", 7) == 0) {
     flag = MemStat;
   } else if (strncmp(memFlag, "memreport", 9) == 0) {
-    flag = MemFinalStat;
+    flag = MemReport;
   } else if (strncmp(memFlag, "memtrack", 8) == 0) {
     flag = MemTrack;
   } else if (strncmp(memFlag, "memthreshold", 12) == 0) {
@@ -195,10 +195,10 @@ static int parseMemFlag(const char* memFlag, int32_t lineno, chpl_string filenam
       break;
     }
    
-  case MemFinalStat:
+  case MemReport:
     {
       exitIfEqualsSign(equalsSign, "--memreport", lineno, filename);
-      chpl_setMemfinalstat();
+      chpl_setMemreport();
       break;
     }
    
