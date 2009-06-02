@@ -9,7 +9,7 @@
 use Time;
 config const timer : bool = false;
 var t : Timer;
-config param NUM = 5500;
+config const NUM = 500;
 
 /* Return: 1.0 / (i + j) * (i + j +1) / 2 + i + 1; */
 def eval_A(i,j : int) : real
