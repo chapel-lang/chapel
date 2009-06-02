@@ -20,8 +20,6 @@
 #define NOTIFYTAG 4194295
 #define PRINTF_BUFF_LEN 1024
 
-extern int pvm_addhosts(char **hosts, int nhost, int *infos);
-
 static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i;
 
@@ -38,7 +36,12 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   int tids[32];
   static char *argtostart[] = {};
   int bufid;
+
+  // These are for receiving singals from slaves
   char buffer[PRINTF_BUFF_LEN];
+  char description[PRINTF_BUFF_LEN];  // gdb specific
+  int ignorestatus;                   // gdb specific
+  int who;                            // gdb specific
 
   char** argv2;
   char* numlocstr;
@@ -159,17 +162,36 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   while (signal == 0) {
     bufid = pvm_recv(-1, NOTIFYTAG);
     pvm_upkint(&signal, 1, 1);
+    // fprintf case
+    // TODO: Right now, it only goes to stderr
     if (signal == 2) {
       pvm_upkstr(buffer);
       fprintf(stderr, "%s", buffer);
       fflush(stderr);
       signal = 0;
     }
+    // printf case
     if (signal == 3) {
       pvm_upkstr(buffer);
       printf("%s", buffer);
       fflush(stderr);
       signal = 0;
+    }
+    // Run in gdb mode
+    if (signal == 4) {
+      pvm_upkint(&who, 1, 1);
+      pvm_upkstr(buffer);
+      pvm_upkstr(description);
+      pvm_upkint(&ignorestatus, 1, 1);
+      info = system(buffer);
+      pvm_initsend(PvmDataDefault);
+      pvm_pkint(&info, 1, 1);
+      pvm_send(who, NOTIFYTAG);
+      if (info == -1) {
+        chpl_error("system() fork failed", 0, "(command-line)");
+      } else if (info != 0 && !ignorestatus) {
+        chpl_error(description, 0, "(command-line)");
+      }
     }
   }
 

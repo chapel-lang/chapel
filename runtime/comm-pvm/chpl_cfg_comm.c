@@ -36,7 +36,7 @@ int lock_num = 0;
   if (retcode < 0) {                                                       \
     char msg[256];                                                         \
     sprintf(msg, "\n\n%d/%d:%d PVM call failed.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self());                                                \
-    chpl_error(msg, 0, 0);                                   \
+    chpl_error(msg, 0, 0);                                                 \
   }                                                                        \
 }
 
@@ -48,7 +48,7 @@ int lock_num = 0;
   if (retcode < 0) {                                                       \
     char msg[256];                                                         \
     sprintf(msg, "\n\n%d/%d:%d PVM call failed.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self());                                                \
-    chpl_error(msg, 0, 0);                                   \
+    chpl_error(msg, 0, 0);                                                 \
   }                                                                        \
 }
 
@@ -59,7 +59,7 @@ int lock_num = 0;
   if (retcode < 0) {                                                       \
     char msg[256];                                                         \
     sprintf(msg, "\n\n%d/%d:%d PVM call failed.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self());                                                \
-    chpl_error(msg, 0, 0);                                   \
+    chpl_error(msg, 0, 0);                                                 \
   }                                                                        \
 }
 
@@ -69,8 +69,16 @@ int lock_num = 0;
   if (retcode < 0) {                                                       \
     char msg[256];                                                         \
     sprintf(msg, "\n\n%d/%d:%d PVM call failed.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self());                                                \
-    chpl_error(msg, 0, 0);                                   \
+    chpl_error(msg, 0, 0);                                                 \
   }                                                                        \
+}
+
+#define PVM_SAFE_OKAY_TO_FAIL(call, who, in) {                             \
+  int retcode;                                                             \
+  chpl_mutex_lock(&pvm_lock);                                              \
+  retcode = call;                                                          \
+  chpl_mutex_unlock(&pvm_lock);                                            \
+  lock_num++;                                                              \
 }
 
 #define TAGMASK 4194303
@@ -400,7 +408,15 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 #endif
 
   // Figure out who spawned this thread (if no one, this will be -23).
-  PVM_SAFE(parent = pvm_parent(), "pvm_parent", "chpl_comm_init");
+  // Still need to lock call, but since -23 is perfectly okay, don't fail.
+  PVM_SAFE_OKAY_TO_FAIL(parent = pvm_parent(), "pvm_parent", "chpl_comm_init");
+  if ((parent < 0) && (parent != -23)) {
+#if CHPL_DIST_DEBUG
+    sprintf(debugMsg, "\n\n%d PVM call failed.\n\n", (int)pthread_self());
+    chpl_error(debugMsg, 0, 0);
+#endif
+    chpl_internal_error("PVM call failed.");
+  }
 
   // Figure out how many nodes there are
   chpl_numLocales = (int32_t)atoi((*argv_p)[*argc_p - 1]);
@@ -437,8 +453,63 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 //
 // No support for gdb for now
 //
+static int mysystem(const char* command, const char* description, int ignorestatus) {
+  int status;
+  int bufid = 0;
+  int me = tids[chpl_localeID];
+  if (parent >= 0) {
+    signal = 4;
+
+    PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "mysystem");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&signal, 1, 1), "pvm_pkint", "mysystem");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&me, 1, 1), "pvm_pkint", "mysystem");
+    PVM_NO_LOCK_SAFE(pvm_pkstr((char *)command), "pvm_pkstr", "mysystem");
+    PVM_NO_LOCK_SAFE(pvm_pkstr((char *)description), "pvm_pkstr", "mysystem");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&ignorestatus, 1, 1), "pvm_pkint", "mysystem");
+    PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "mysystem");
+
+    signal = 0;
+
+    while (bufid == 0) {
+      PVM_PACK_SAFE(bufid = pvm_nrecv(parent, NOTIFYTAG), "pvm_nrecv", "mysystem");
+      if (bufid == 0) {
+        chpl_mutex_unlock(&pvm_lock);
+      }
+    }
+    PVM_UNPACK_SAFE(pvm_upkint(&status, 1, 1), "pvm_upkint", "mysystem");
+  } else {
+
+    status = system(command);
+    
+    if (status == -1) {
+      chpl_error("system() fork failed", 0, "(command-line)");
+    } else if (status != 0 && !ignorestatus) {
+      chpl_error(description, 0, "(command-line)");
+    }
+    
+  }
+  return status;
+}
+
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-  return 0;
+  int i;
+  char* numlocstr;
+  char *command = chpl_glom_strings(2, "gdb -q -ex 'break gdbShouldBreakHere' --args ", argv[0]);
+
+  // Add the number of locales to end of string as per launcher
+  sprintf(numlocstr, "%d", chpl_numLocales);
+  argc = argc + 1;
+  argv[argc-1] = numlocstr;
+  argv[argc] = NULL;
+  for (i=1; i<argc; i++) {
+    if (i != gdbArgnum) {
+      command = chpl_glom_strings(3, command, " ", argv[i]);
+    }
+  }
+
+  *status = mysystem(command, "running gdb", 0);
+
+  return 1;
 }
 
 void chpl_comm_rollcall(void) {
