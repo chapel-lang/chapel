@@ -32,6 +32,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   int pvmsize = 0;
   int signal = 0;
   char* commandtopvm;
+  char* environment;
   static char *hosts2[] = {};
   int numt;
   int tids[32];
@@ -50,7 +51,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   // Get a new argument list for PVM spawn.
   // The last argument needs to be the number of locations for the PVM
   // comm layer to use it. The comm layer strips this off.
-  argv2 = chpl_malloc(((argc+1) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  argv2 = chpl_malloc(((argc+1) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
   for (i=0; i < (argc-1); i++) {
     argv2[i] = argv[i+1];
   }
@@ -59,7 +60,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   argv2[argc] = NULL;
 
   // Add nodes to PVM configuration.
-  hostfile = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  hostfile = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
   sprintf(hostfile, "%s%s", getenv((char *)"CHPL_HOME"), "/hostfile");
 
   if ((nodelistfile = fopen(hostfile, "r")) == NULL) {
@@ -102,14 +103,40 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
 
   info = pvm_addhosts( (char **)hosts2, i, infos );
 
-  pvmsize += strlen(getenv((char *)"CHPL_HOME")) + strlen("/_real") + strlen(argv[0]);
+  pvmsize += strlen(getenv((char *)"PWD")) + strlen("/_real") + strlen(argv[0]);
 
   commandtopvm = chpl_malloc(pvmsize, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
   *commandtopvm = '\0';
-  strcat(commandtopvm, getenv((char *)"CHPL_HOME"));
+  environment = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
+  *environment = '\0';
+  getcwd(environment, 1024);
+  strcat(commandtopvm, environment);
+  chpl_free(environment, -1, "");
   strcat(commandtopvm, "/");
   strcat(commandtopvm, argv[0]);
   strcat(commandtopvm, "_real");
+  if ((nodelistfile = fopen(commandtopvm, "r")) == NULL) {
+    chpl_free(commandtopvm, -1, "");
+    pvmsize = strlen(argv[0]) + strlen("_real");
+    commandtopvm = chpl_malloc(pvmsize, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
+    *commandtopvm = '\0';
+    strcat(commandtopvm, argv[0]);
+    strcat(commandtopvm, "_real");
+    if ((nodelistfile = fopen(commandtopvm, "r")) == NULL) {
+      fprintf(stderr, "Make sure %s is present and readable.\n", commandtopvm);
+      i = 0;
+      info = pvm_delhosts( (char **)hosts2, numLocales, infos );
+      while (i < numLocales) {
+        chpl_free(pvmnodestoadd[i], -1, "");
+        i++;
+      }
+      chpl_free(commandtopvm, -1, "");
+      chpl_free(environment, -1, "");
+      chpl_free(argv2, -1, "");
+      chpl_internal_error("Unknown executable.");
+    }
+  }
+  fclose(nodelistfile);
 
   for (i = 0; i < numLocales; i++) {
     numt = pvm_spawn( (char *)commandtopvm, argv2, 1, (char *)pvmnodestoadd[i], 1, &tids[i] );
@@ -121,6 +148,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
         i++;
       }
       chpl_free(commandtopvm, -1, "");
+      chpl_free(environment, -1, "");
       chpl_free(argv2, -1, "");
       chpl_internal_error("Trouble spawning slave.");
     }
@@ -153,6 +181,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   }
   chpl_free(argv2, -1, "");
   chpl_free(commandtopvm, -1, "");
+  chpl_free(environment, -1, "");
 
   pvm_halt();
   return (char *)"";
