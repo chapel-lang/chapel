@@ -17,9 +17,9 @@
 general regressions
 ===================
 
-memory stuff in flux (05/30/09)
+memory stuff in flux (06/02/09)
 -------------------------------
-[Error matching program output for memory/figueroa/printFinalMemStat]
+[Error matching compiler output for memory/bradc/allocBig]
 
 memory stuff in flux (05/29/09)
 -------------------------------
@@ -53,6 +53,16 @@ maxThreads is 300, but can't create more than 254 threads
 performance-specific regressions
 ================================
 
+timeouts + ??? (06/02/09)
+-------------------------
+[Error matching performance keys for studies/shootout/nbody/nbody_iterator_7]
+[Error matching performance keys for studies/shootout/nbody/nbody_reductions_6]
+[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3]
+[Error: Timed out executing program studies/shootout/nbody/nbody_orig_1]
+[Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
+[Error: Timed out executing program studies/shootout/nbody/nbody_record_2]
+[Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
+
 infrequent seg fault on linux32
 -------------------------------
 [Error matching performance keys for studies/hpcc/STREAMS/bradc/stream-block1d] (e.g., 02/12/09)
@@ -63,12 +73,9 @@ infrequent seg fault on linux32
 valgrind-specific regressions
 =============================
 
-timeouts (05/29/09)
--------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
-[Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
-[Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6]
-[Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
+timeout -- new test (06/02/09)
+------------------------------
+[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm]
 
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
@@ -95,10 +102,6 @@ wide strings leaked (?) (04/02/09)
 [Error matching program output for memory/figueroa/StringLeaks1]
 [Error matching program output for memory/figueroa/StringLeaks4]
 [Error matching program output for memory/figueroa/StringLeaks5]
-
-???
----
-[Error matching program output for memory/diten/reallocToZero]
 
 
 ====================================================
@@ -137,6 +140,10 @@ times out spuriously
 gasnet-fast regressions (other than the above)
 ==============================================
 
+spurious timeout (06/02/09)
+---------------------------
+[Error: Timed out executing program multilocale/deitz/linked/test_linked2]
+
 extremely infrequent dereference of nil after printing results (02/15/09)
 -------------------------------------------------------------------------
 [Error matching program output for release/examples/hpcc/stream]
@@ -150,12 +157,9 @@ GASNet unable to start polling thread
 baseline-specific tests
 =======================
 
-??? (05/29/09)
---------------
-[Error matching program output for studies/shootout/nbody/nbody_iterator_7]
-[Error matching program output for studies/shootout/nbody/nbody_reductions_6]
-[Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
-[Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
+timeout -- new test (06/02/09)
+------------------------------
+[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm]
 
 ??? (04/11/09)
 --------------
@@ -283,6 +287,7 @@ spurious out-of-memory error
 ===========================
 darwin-specific regressions
 ===========================
+
 
 infrequent failure on Sam's Mac
 -------------------------------
