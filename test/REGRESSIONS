@@ -17,9 +17,9 @@
 general regressions
 ===================
 
-memory stuff in flux (06/02/09)
+memory stuff in flux (06/03/09)
 -------------------------------
-[Error matching compiler output for memory/bradc/allocBig]
+[Error matching program output for memory/figueroa/printFinalMemStat]
 
 memory stuff in flux (05/29/09)
 -------------------------------
@@ -73,10 +73,6 @@ infrequent seg fault on linux32
 valgrind-specific regressions
 =============================
 
-timeout -- new test (06/02/09)
-------------------------------
-[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm]
-
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
 [Error matching program output for parallel/begin/dinan/mvm_coforall]
@@ -127,7 +123,7 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09, 04/18/09, 04/21/09, 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09, 04/18/09, 04/21/09, 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09, 03/14/09, 03/22/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09, 03/24/09, 03/28/09, 04/02/09, 04/12/09, 04/22/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
@@ -140,9 +136,9 @@ times out spuriously
 gasnet-fast regressions (other than the above)
 ==============================================
 
-spurious timeout (06/02/09)
----------------------------
-[Error: Timed out executing program multilocale/deitz/linked/test_linked2]
+spurious timeout
+----------------
+[Error: Timed out executing program multilocale/deitz/linked/test_linked2] (e.g., 06/02/09)
 
 extremely infrequent dereference of nil after printing results (02/15/09)
 -------------------------------------------------------------------------
@@ -156,10 +152,6 @@ GASNet unable to start polling thread
 =======================
 baseline-specific tests
 =======================
-
-timeout -- new test (06/02/09)
-------------------------------
-[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm]
 
 ??? (04/11/09)
 --------------
