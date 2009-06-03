@@ -317,8 +317,8 @@ static int descCmp(const void* p1, const void* p2) {
 void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename) {
   const int numberWidth   = 9;
   const int precision     = sizeof(uintptr_t) * 2;
-  const int addressWidth  = precision + 4;
-  const int descWidth     = 80-3*numberWidth-addressWidth;
+  const int addressWidth  = precision+4;
+  const int descWidth     = 33;
   int filenameWidth       = strlen("Allocated Memory (Bytes)");
   int totalWidth;
 
@@ -346,7 +346,7 @@ void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename)
     }
   }
 
-  totalWidth = filenameWidth+numberWidth*4+descWidth+addressWidth;
+  totalWidth = filenameWidth+numberWidth*4+descWidth+20;
   for (i = 0; i < totalWidth; i++)
     printf("=");
   printf("\n");
@@ -356,7 +356,7 @@ void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename)
          numberWidth, "Size",
          numberWidth, "Total",
          descWidth, "Description",
-         addressWidth, "Address");
+         20, "Address");
   for (i = 0; i < totalWidth; i++)
     printf("=");
   printf("\n");
