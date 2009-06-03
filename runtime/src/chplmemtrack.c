@@ -232,7 +232,14 @@ void chpl_printMemStat(int32_t lineno, chpl_string filename) {
     chpl_error("invalid call to printMemStat(); rerun with --memtrack",
                lineno, filename);
   chpl_mutex_lock(&memtrack_lock);
-  printf("totalMem=%zu, maxMem=%zu\n", totalMem, maxMem);
+  printf("=================\n");
+  printf("Memory Statistics\n");
+  printf("==============================================================\n");
+  printf("Current Allocated Memory               %zd\n", totalMem);
+  printf("Maximum Simultaneous Allocated Memory  %zd\n", maxMem);
+  printf("Total Allocated Memory                 %zd\n", totalAllocated);
+  printf("Total Freed Memory                     %zd\n", totalFreed);
+  printf("==============================================================\n");
   chpl_mutex_unlock(&memtrack_lock);
 }
 
@@ -261,27 +268,22 @@ static void chpl_printLeakedMemTable(void) {
 
   qsort(table, numEntries, 3*sizeof(size_t), leakedMemTableEntryCmp);
 
-  printf("\n====================");
-  printf("\nLeaked Memory Report");
-  printf("\n==============================================================");
-  printf("\nTotal Leaked Memory                   = %zd", totalMem);
-  printf("\nMaximum Simultaneous Allocated Memory = %zd", maxMem);
-  printf("\nTotal Allocated Memory                = %zd", totalAllocated);
-  printf("\nTotal Freed Memory                    = %zd", totalFreed);
-  printf("\n==============================================================");
-  printf("\nNumber of leaked allocations");
-  printf("\n           Total leaked memory (bytes)");
-  printf("\n                      Description of allocation");
-  printf("\n==============================================================");
+  printf("====================\n");
+  printf("Leaked Memory Report\n");
+  printf("==============================================================\n");
+  printf("Number of leaked allocations\n");
+  printf("           Total leaked memory (bytes)\n");
+  printf("                      Description of allocation\n");
+  printf("==============================================================\n");
   for (i = 0; i < 3*(CHPL_RT_MD_NUM+chpl_num_memDescs); i += 3) {
     if (table[i] > 0) {
-      printf("\n%-*zu  %-*zu  %s",
+      printf("%-*zu  %-*zu  %s\n",
              numberWidth, table[i+1],
              numberWidth, table[i],
              chpl_memDescString(table[i+2]));
     }
   }
-  printf("\n==============================================================\n");
+  printf("==============================================================\n");
 
   free(table);
 }
@@ -289,12 +291,13 @@ static void chpl_printLeakedMemTable(void) {
 
 
 void chpl_reportMemInfo() {
-  if (!memreport && memstat) {
-    printf("Final Memory Statistics:  ");
+  if (memstat) {
+    printf("\n");
     chpl_printMemStat(0, 0);
   }
 #ifndef LAUNCHER
   if (memreport) {
+    printf("\n");
     chpl_printLeakedMemTable();
   }
 #endif
