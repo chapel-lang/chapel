@@ -514,7 +514,10 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 
 void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID, chpl_numLocales, chpl_localeName());
-  okay_to_barrier = 0;
+  // If just one locale, skip the barrier setup
+  if (chpl_numLocales != 1) {
+    okay_to_barrier = 0;
+  }
   return;
 }
 
@@ -607,6 +610,8 @@ void chpl_comm_exit_all(int status) {
   PRINTF("chpl_comm_exit_all called\n");
   // Matches code in chpl_comm_barrier. Node 0, on exit, needs to signal
   // to everyone that it's okay to barrier (and thus exit).
+
+  // This line should be entirely moot (never unset if chpl_numLocales is 1).
   if (chpl_numLocales == 1) {
     okay_to_barrier = 1;
   }
