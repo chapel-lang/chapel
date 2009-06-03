@@ -20,11 +20,18 @@
 #define NOTIFYTAG 4194295
 #define PRINTF_BUFF_LEN 1024
 
+extern int gethostname(char *name, size_t namelen);
+
 static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
-  int i;
+  int i, j;                           // j acts as an interator for
+                                      // pvm_addhosts and pvm_delhosts
+                                      // if this node (running launcher) is
+                                      // in hostfile, adding or deleting it
+                                      // can result in error
 
   int info;
   int infos[256];
+  char myhostname[256];
   char pvmnodetoadd[256];
   char* pvmnodestoadd[2048];
   int pvmsize = 0;
@@ -100,11 +107,22 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     chpl_internal_error("Problem starting PVM daemon.");
   }
 
-  for (i = 0; i < numLocales; i++) {
-    hosts2[i] = (char *)pvmnodestoadd[i];
+  // Building the hosts2 list to pass to pvm_addhosts and pvm_deletehosts
+  gethostname(myhostname, 256);
+  for (i = 0, j = 0; j < numLocales; ) {
+    if (strcmp((char *)pvmnodestoadd[j], myhostname)) {
+      hosts2[i] = (char *)pvmnodestoadd[j];
+      i++;
+      j++;
+    } else {
+      j++;
+    }
   }
 
-  info = pvm_addhosts( (char **)hosts2, i, infos );
+  if (i != 0) {
+    info = pvm_addhosts( (char **)hosts2, i, infos );
+  }
+  j = i;
 
   pvmsize += strlen(getenv((char *)"PWD")) + strlen("/_real") + strlen(argv[0]);
 
@@ -128,7 +146,9 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     if ((nodelistfile = fopen(commandtopvm, "r")) == NULL) {
       fprintf(stderr, "Make sure %s is present and readable.\n", commandtopvm);
       i = 0;
-      info = pvm_delhosts( (char **)hosts2, numLocales, infos );
+      if (j != 0) {
+        info = pvm_delhosts( (char **)hosts2, j, infos );
+      }
       while (i < numLocales) {
         chpl_free(pvmnodestoadd[i], -1, "");
         i++;
@@ -144,7 +164,9 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   for (i = 0; i < numLocales; i++) {
     numt = pvm_spawn( (char *)commandtopvm, argv2, 1, (char *)pvmnodestoadd[i], 1, &tids[i] );
     if (numt == 0) {
-      info = pvm_delhosts( (char **)hosts2, numLocales, infos );
+      if (j != 0) {
+        info = pvm_delhosts( (char **)hosts2, j, infos );
+      }
       i = 0;
       while (i < numLocales) {
         chpl_free(pvmnodestoadd[i], -1, "");
@@ -195,7 +217,9 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     }
   }
 
-  info = pvm_delhosts( (char **)hosts2, i, infos );
+  if (j != 0) {
+    info = pvm_delhosts( (char **)hosts2, j, infos );
+  }
 
   while (i >= 0) {
     chpl_free(pvmnodestoadd[i], -1, "");
