@@ -361,11 +361,12 @@ int32_t chpl_numCommPuts(void);
 int32_t chpl_numCommForks(void);
 int32_t chpl_numCommNBForks(void);
 
-#else  // LAUNCHER
+#else // LAUNCHER
 
 #define chpl_comm_barrier(x)
 #define chpl_comm_exit_all(x) exit(x)
 #define chpl_comm_exit_any(x) exit(x)
 
 #endif // LAUNCHER
+
 #endif

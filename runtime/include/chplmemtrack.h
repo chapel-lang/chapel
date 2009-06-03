@@ -1,6 +1,8 @@
 #ifndef _chplmemtrack_H_
 #define _chplmemtrack_H_
 
+#ifndef LAUNCHER
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "chpl_mem.h"
@@ -26,5 +28,16 @@ void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size,
 void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename);
 void chpl_track_realloc1(void* memAlloc, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
 void chpl_track_realloc2(void* moreMemAlloc, size_t newChunk, void* memAlloc, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
+
+#else // LAUNCHER
+
+#define chpl_setMemmax(value)
+#define chpl_setMemstat()
+#define chpl_setMemreport()
+#define chpl_setMemthreshold(value)
+#define chpl_setMemtrace(memlogname)
+#define chpl_setMemtrack()
+
+#endif // LAUNCHER
 
 #endif

@@ -1,6 +1,8 @@
 #ifndef _chpl_mem_H_
 #define _chpl_mem_H_
 
+#ifndef LAUNCHER
+
 #include <stddef.h>
 #include <stdint.h>
 #include "arg.h"
@@ -130,5 +132,18 @@ void chpl_md_initHeap(void* start, size_t size);
 void* chpl_md_malloc(size_t chunk, int32_t, chpl_string);
 void chpl_md_free(void* memAlloc, int32_t, chpl_string);
 void* chpl_md_realloc(void* memAlloc, size_t newChunk, int32_t, chpl_string);
+
+#else // LAUNCHER
+
+#include <stdlib.h>
+#include "arg.h"
+
+#define chpl_malloc(number, size, description, lineno, filename)        \
+  malloc(number*size)
+
+#define chpl_free(ptr, lineno, filename)        \
+  free(ptr)
+
+#endif // LAUNCHER
 
 #endif

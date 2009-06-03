@@ -136,7 +136,7 @@ chpl_begin(chpl_fn_p,         // function to fork
                               // thread executing chpl_begin)
            chpl_task_list_p);
 
-#else   // LAUNCHER
+#else // LAUNCHER
 
 #define chpl_mutex_init(x)
 #define chpl_mutex_lock(x)
@@ -146,5 +146,6 @@ typedef void chpl_single_aux_t;
 typedef int chpl_mutex_t;
 #define exitChplThreads()
 
-#endif  // LAUNCHER
-#endif  // _chplthreads_h_
+#endif // LAUNCHER
+
+#endif

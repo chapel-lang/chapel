@@ -1,9 +1,12 @@
 #ifndef _chplrt_H_
 #define _chplrt_H_
 
+#include "chpltypes.h"
+
+#ifndef LAUNCHER
+
 #include <stdint.h>
 #include <chplio_md.h>
-#include "chpltypes.h"
 
 extern void chpl__initModuleGuards(void);
 
@@ -14,20 +17,6 @@ extern chpl_fn_p chpl_ftable[];
     if (x == nil)                                                       \
       chpl_error("attempt to dereference nil", lineno, filename);      \
   } while (0)
-
-#define _timervalue struct timeval
-#define _init_timer(time)
-extern _timervalue* _now_timer_help(_timervalue* time);
-#define _now_timer(time) (*_now_timer_help(&(time)))
-extern _timervalue _default_timer; // hack as a default value
-#define _new_timer() (_default_timer)
-#define _seconds_timer(time) ((_real64)((time).tv_sec))
-#define _microseconds_timer(time) ((_real64)((time).tv_usec))
-int32_t _now_year(void);
-int32_t _now_month(void);
-int32_t _now_day(void);
-int32_t _now_dow(void);
-_real64 _now_time(void);
 
 #define _ARRAY_GET(x, i) (&((x)->_data[i]))
 #define _ARRAY_GET_VALUE(x, i) ((x)->_data[i])
@@ -63,5 +52,7 @@ _real64 _now_time(void);
 #define free    dont_use_free_use_chpl_free_instead
 #define realloc dont_use_realloc_use_chpl_realloc_instead
 #define exit    dont_use_exit_use_chpl_exit_instead
+
+#endif // LAUNCHER
 
 #endif

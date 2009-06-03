@@ -36,14 +36,13 @@ SUBDIRS = \
 	src \
 	comm-$(CHPL_MAKE_COMM) \
 	threads-$(CHPL_MAKE_THREADS) \
-	mem-$(CHPL_MAKE_MEM) \
+	mem-$(CHPL_MAKE_MEM)
 
 else
 SUBDIRS = \
 	src \
 	comm-$(CHPL_MAKE_COMM) \
-	launch-$(CHPL_MAKE_LAUNCHER) \
-	mem-$(CHPL_MAKE_MEM) 
+	launch-$(CHPL_MAKE_LAUNCHER)
 
 endif
 
@@ -63,14 +62,12 @@ RUNTIME_OBJS = \
 	$(COMMON_OBJS) \
 	$(THREADS_OBJS) \
 	$(COMM_OBJS) \
-	$(MEM_COMMON_OBJS) \
+	$(MEM_COMMON_OBJS)
 
 LAUNCH_LIB_OBJS = \
 	$(COMMON_LAUNCHER_OBJS) \
 	$(COMM_LAUNCHER_OBJS) \
-	$(LAUNCHER_OBJS) \
-	$(MEM_LAUNCHER_OBJS) \
-
+	$(LAUNCHER_OBJS)
 
 RUNTIME_DIR = ../$(LIB_RT_DIR)
 RUNTIME_LIB = $(RUNTIME_DIR)/libchpl.a

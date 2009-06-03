@@ -48,10 +48,7 @@ static size_t maxMem = 0;         /* maximum total memory during run  */
 static size_t totalAllocated = 0; /* total memory allocated */
 static size_t totalFreed = 0;     /* total memory freed */
 
-#ifndef LAUNCHER
 static chpl_mutex_t memtrack_lock;
-#endif
-
 
 static unsigned hash(void* memAlloc) {
   unsigned hashValue = 0;
@@ -138,7 +135,6 @@ static void printToMemLog(const char* memType, size_t number, size_t size,
                           chpl_memDescInt_t description,
                           int32_t lineno, chpl_string filename,
                           void* memAlloc, void* moreMemAlloc) {
-#ifndef LAUNCHER
   size_t chunk = number * size;
   if (chunk >= memthresholdValue) {
     if (moreMemAlloc && (moreMemAlloc != memAlloc)) {
@@ -150,7 +146,6 @@ static void printToMemLog(const char* memType, size_t number, size_t size,
               memType, filename, lineno, chpl_localeID, number, size, chpl_memDescString(description), memAlloc);
     }
   }
-#endif
 }
 
 
@@ -244,7 +239,6 @@ void chpl_printMemStat(int32_t lineno, chpl_string filename) {
 }
 
 
-#ifndef LAUNCHER
 static int leakedMemTableEntryCmp(const void* p1, const void* p2) {
   return *(size_t*)p2 - *(size_t*)p1;
 }
@@ -287,7 +281,6 @@ static void chpl_printLeakedMemTable(void) {
 
   free(table);
 }
-#endif
 
 
 void chpl_reportMemInfo() {
@@ -295,12 +288,10 @@ void chpl_reportMemInfo() {
     printf("\n");
     chpl_printMemStat(0, 0);
   }
-#ifndef LAUNCHER
   if (memreport) {
     printf("\n");
     chpl_printLeakedMemTable();
   }
-#endif
 }
 
 

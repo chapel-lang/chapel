@@ -1,20 +1,20 @@
 COMMON_LAUNCHER_SRCS = \
 	arg.c \
 	chplcast.c \
-	chplexit.c \
-	chpl_mem.c \
-	chplmemtrack.c \
-	chpltypes.c \
 	config.c \
 	error.c \
-	gdb.c \
+	chpltypes.c \
 
 COMMON_NOGEN_SRCS = \
 	$(COMMON_LAUNCHER_SRCS) \
 	chplcomm.c \
 	chplcopygc.c \
+	chplexit.c \
 	chplio.c \
+	chpl_mem.c \
+	chplmemtrack.c \
 	chplsys.c \
+	gdb.c \
 
 MAIN_SRCS = \
 	main.c \

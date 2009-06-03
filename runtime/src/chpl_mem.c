@@ -44,12 +44,8 @@ computeChunkSize(size_t number, size_t size, chpl_bool zeroOK,
 const char* chpl_memDescString(chpl_memDescInt_t mdi) {
   if (mdi < CHPL_RT_MD_NUM)
     return chpl_rt_memDescs[mdi];
-#ifndef LAUNCHER
   else
     return chpl_memDescs[mdi-CHPL_RT_MD_NUM];
-#else
-  return 0;
-#endif
 }
 
 

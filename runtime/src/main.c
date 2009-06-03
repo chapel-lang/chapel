@@ -11,7 +11,6 @@
 #include "chplthreads.h"
 #include "config.h"
 #include "error.h"
-#include "gdb.h"
 #include <stdint.h>
 
 

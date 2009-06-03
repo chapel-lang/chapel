@@ -13,7 +13,6 @@
 #include "chplthreads.h"
 #include "config.h"
 #include "error.h"
-#include "gdb.h"
 
 
 static int gdbFlag = 0;

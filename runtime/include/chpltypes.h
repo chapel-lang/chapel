@@ -102,4 +102,18 @@ int64_t string_length(chpl_string x);
 int64_t real2int( _real64 f);       // return the raw bytes of the float
 int64_t object2int( _chpl_object o);  // return the ptr
 
+#define _timervalue struct timeval
+#define _init_timer(time)
+extern _timervalue* _now_timer_help(_timervalue* time);
+#define _now_timer(time) (*_now_timer_help(&(time)))
+extern _timervalue _default_timer; // hack as a default value
+#define _new_timer() (_default_timer)
+#define _seconds_timer(time) ((_real64)((time).tv_sec))
+#define _microseconds_timer(time) ((_real64)((time).tv_usec))
+int32_t _now_year(void);
+int32_t _now_month(void);
+int32_t _now_day(void);
+int32_t _now_dow(void);
+_real64 _now_time(void);
+
 #endif
