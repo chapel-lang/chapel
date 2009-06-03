@@ -229,8 +229,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   chpl_free(commandtopvm, -1, "");
   chpl_free(environment, -1, "");
 
-  pvm_halt();
-  return (char *)"";
+  return (char *)"killall -9 pvmd3 && rm -rf /tmp/*pvm*";
 }
 
 void chpl_launch(int argc, char* argv[], int32_t numLocales) {

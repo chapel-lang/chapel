@@ -638,7 +638,9 @@ void chpl_comm_exit_all(int status) {
     PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
   }
 
-  PVM_SAFE(pvm_halt(), "pvm_halt", "chpl_comm_exit_all");
+  fprintf(stderr, "Comm exiting.\n");
+  PVM_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_all");
+  PVM_SAFE(pvm_exit(), "pvm_exit", "chpl_comm_exit_all");
   return;
 }
 
