@@ -17,25 +17,24 @@ void chpl_reportMemInfo(void);
 void chpl_setMemmax(int64_t value);
 void chpl_setMemstat(void);
 void chpl_setMemreport(void);
-void chpl_setMemthreshold(int64_t value);
-void chpl_setMemtrace(char* memlogname);
 void chpl_setMemtrack(void);
 void chpl_startTrackingMem(void);
 
-void chpl_startMemDiagnosis(void);
-void chpl_stopMemDiagnosis(void);
 void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
 void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename);
 void chpl_track_realloc1(void* memAlloc, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
 void chpl_track_realloc2(void* moreMemAlloc, size_t newChunk, void* memAlloc, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
+
+void chpl_startVerboseMem(void);
+void chpl_stopVerboseMem(void);
+void chpl_startVerboseMemHere(void);
+void chpl_stopVerboseMemHere(void);
 
 #else // LAUNCHER
 
 #define chpl_setMemmax(value)
 #define chpl_setMemstat()
 #define chpl_setMemreport()
-#define chpl_setMemthreshold(value)
-#define chpl_setMemtrace(memlogname)
 #define chpl_setMemtrack()
 
 #endif // LAUNCHER

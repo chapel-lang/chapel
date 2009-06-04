@@ -26,3 +26,8 @@ def printMemTable(thresh=0) {
 def printMemStat() {
   __primitive("chpl_printMemStat");
 }
+
+def startVerboseMem() { __primitive("chpl_startVerboseMem"); }
+def stopVerboseMem() { __primitive("chpl_stopVerboseMem"); }
+def startVerboseMemHere() { __primitive("chpl_startVerboseMemHere"); }
+def stopVerboseMemHere() { __primitive("chpl_stopVerboseMemHere"); }

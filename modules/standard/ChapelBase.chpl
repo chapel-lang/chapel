@@ -82,18 +82,6 @@ def _throwOpError(param op: string) {
     compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
 }
 
-def _startMemDiagnosis() {
-  for loc in Locales do if loc != here then on loc do
-    __primitive("chpl_startMemDiagnosis");
-  __primitive("chpl_startMemDiagnosis");
-}
-
-def _stopMemDiagnosis() {
-  __primitive("chpl_stopMemDiagnosis");
-  for loc in Locales do if loc != here then on loc do
-    __primitive("chpl_stopMemDiagnosis");
-}
-
 def compilerError(param x ...?n) {
   __primitive("error", (...x));
 }

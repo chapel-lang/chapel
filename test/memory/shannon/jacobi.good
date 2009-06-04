@@ -1,4 +1,0 @@
-Jacobi computation complete.
-Delta is 9.68412e-06 (< epsilon = 1e-05)
-# of iterations: 79
-malloc called at jacobi.chpl:9 on locale 0 for 49 items of size 8 for array elements:  0xnnnnnnnn

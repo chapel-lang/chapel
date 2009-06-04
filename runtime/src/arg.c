@@ -72,8 +72,6 @@ static void printHelpTable(void) {
     {"--memreport", "report memory statistics and leaks", 'm'},
     {"--memstat", "print memory statistics", 'm'},
     {"--memtrack", "track dynamic memory usage using a table", 'm'},
-    {"--memtrace=<filename>", "write memory trace to filename", 'm'},
-    {"--memthreshold=<n>", "filter memtrace for sizes >= 'n' bytes", 'm'},
 
     {NULL, NULL, ' '}
   };
@@ -127,15 +125,15 @@ static int64_t getIntArg(char* valueString, const char* memFlag,
 }
 
 
-static char* getStringArg(char* valueString, const char* memFlag, 
-                             int32_t lineno, chpl_string filename) {
-  char* message;
-  if (!valueString || strcmp(valueString, "") == 0) {
-    message = chpl_glom_strings(3, "The ", memFlag, " flag is missing its string input");
-    chpl_error(message, lineno, filename);
-  }
-  return valueString;
-}
+/* static char* getStringArg(char* valueString, const char* memFlag,  */
+/*                              int32_t lineno, chpl_string filename) { */
+/*   char* message; */
+/*   if (!valueString || strcmp(valueString, "") == 0) { */
+/*     message = chpl_glom_strings(3, "The ", memFlag, " flag is missing its string input"); */
+/*     chpl_error(message, lineno, filename); */
+/*   } */
+/*   return valueString; */
+/* } */
 
 
 static void exitIfEqualsSign(char* equalsSign, const char* memFlag, 
@@ -146,8 +144,7 @@ static void exitIfEqualsSign(char* equalsSign, const char* memFlag,
   }
 }
 
-typedef enum _MemFlagType {MemMax, MemStat, MemReport, MemTrack, MemThreshold, MemTrace,
-                           MOther} MemFlagType;
+typedef enum _MemFlagType {MemMax, MemStat, MemReport, MemTrack, MOther} MemFlagType;
 
 static int parseMemFlag(const char* memFlag, int32_t lineno, chpl_string filename) {
   char* equalsSign;
@@ -161,10 +158,6 @@ static int parseMemFlag(const char* memFlag, int32_t lineno, chpl_string filenam
     flag = MemReport;
   } else if (strncmp(memFlag, "memtrack", 8) == 0) {
     flag = MemTrack;
-  } else if (strncmp(memFlag, "memthreshold", 12) == 0) {
-    flag = MemThreshold;
-  } else if (strncmp(memFlag, "memtrace", 8) == 0) {
-    flag = MemTrace;
   }
 
   if (flag == MOther) {
@@ -205,21 +198,6 @@ static int parseMemFlag(const char* memFlag, int32_t lineno, chpl_string filenam
     {
       exitIfEqualsSign(equalsSign, "--memtrack", lineno, filename);
       chpl_setMemtrack();
-      break;
-    }
-
-  case MemThreshold:
-    {
-      int64_t value;
-      value = getIntArg(valueString, "--memthreshold", lineno, filename);
-      chpl_setMemthreshold(value);
-      break;
-    }
-
-  case MemTrace:
-    {
-      valueString = getStringArg(valueString, "--memtrace", lineno, filename);
-      chpl_setMemtrace(valueString);
       break;
     }
 

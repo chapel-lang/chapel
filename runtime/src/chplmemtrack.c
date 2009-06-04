@@ -14,9 +14,6 @@
 #undef calloc
 #undef free
 
-#define MEM_DIAGNOSIS 0
-static int memDiagnosisFlag = 0;
-
 typedef struct memTableEntry_struct { /* table entry */
   size_t number;
   size_t size;
@@ -33,22 +30,18 @@ static memTableEntry* memTable[HASHSIZE];
 
 static _Bool memreport = false;
 static _Bool memstat = false;
-static _Bool memtrace = false;
+static int64_t memmax = 0;
 static _Bool memtrack = false;
-static _Bool memreportSet = false;
-static _Bool memstatSet = false;
-static _Bool memtraceSet = false;
 static _Bool memtrackSet = false;
 
-static int64_t memmaxValue = 0;
-static int64_t memthresholdValue = 1;
-static FILE* memlog = NULL;
 static size_t totalMem = 0;       /* total memory currently allocated */
 static size_t maxMem = 0;         /* maximum total memory during run  */
 static size_t totalAllocated = 0; /* total memory allocated */
 static size_t totalFreed = 0;     /* total memory freed */
 
 static chpl_mutex_t memtrack_lock;
+
+static int chpl_verbose_mem = 0;               // set via startVerboseComm
 
 static unsigned hash(void* memAlloc) {
   unsigned hashValue = 0;
@@ -65,7 +58,7 @@ static unsigned hash(void* memAlloc) {
 static void increaseMemStat(size_t chunk, int32_t lineno, chpl_string filename) {
   totalMem += chunk;
   totalAllocated += chunk;
-  if (memmaxValue && (totalMem > memmaxValue)) {
+  if (memmax && (totalMem > memmax)) {
     chpl_error("Exceeded memory limit", lineno, filename);
   }
   if (totalMem > maxMem)
@@ -131,24 +124,6 @@ static memTableEntry* removeMemTableEntry(void* address) {
 }
 
 
-static void printToMemLog(const char* memType, size_t number, size_t size,
-                          chpl_memDescInt_t description,
-                          int32_t lineno, chpl_string filename,
-                          void* memAlloc, void* moreMemAlloc) {
-  size_t chunk = number * size;
-  if (chunk >= memthresholdValue) {
-    if (moreMemAlloc && (moreMemAlloc != memAlloc)) {
-      fprintf(memlog, "%s called at %s:%"PRId32" on locale %"PRId32" for %zu items of size %zu for %s:  0x%p -> 0x%p\n",
-              memType, filename, lineno, chpl_localeID, number, size, chpl_memDescString(description),
-              memAlloc, moreMemAlloc);
-    } else {
-      fprintf(memlog, "%s called at %s:%"PRId32" on locale %"PRId32" for %zu items of size %zu for %s:  %p\n",
-              memType, filename, lineno, chpl_localeID, number, size, chpl_memDescString(description), memAlloc);
-    }
-  }
-}
-
-
 void chpl_initMemTable(void) {
   chpl_mutex_init(&memtrack_lock);
   if (memtrack) {
@@ -160,19 +135,19 @@ void chpl_initMemTable(void) {
 }
 
 void chpl_setMemmax(int64_t value) {
-  memmaxValue = value;
-  chpl_setMemstat();
+  memmax = value;
+  memtrackSet = true;
 }
 
 
 void chpl_setMemstat(void) {
-  memstatSet = true;
+  memstat = true;
   memtrackSet = true;
 }
 
 
 void chpl_setMemreport(void) {
-  memreportSet = true;
+  memreport = true;
   memtrackSet = true;
 }
 
@@ -182,35 +157,8 @@ void chpl_setMemtrack(void) {
 }
 
 
-void chpl_setMemthreshold(int64_t value) {
-  if (!memlog && !memreportSet) {
-    chpl_error("--memthreshold useless when used without --memtrace or --memreport", 0, 0);
-  }
-  memthresholdValue = value >= 0 ? value : -value;
-  if (memthresholdValue < 0)
-    memthresholdValue = INT64_MAX;
-}
-
-
-void chpl_setMemtrace(char* memlogname) {
-  memtraceSet = true;
-  memtrackSet = true;
-  if (memlogname) {
-    if (strcmp(memlogname, "-")) {
-      memlog = fopen(memlogname, "w");
-      if (!memlog)
-        chpl_error(chpl_glom_strings(3, "Unable to open \"", memlogname, "\""), 0, 0);
-    } else
-      memlog = stdout;
-  }
-}
-
-
 void chpl_startTrackingMem(void) {
-    memreport = memreportSet;
-    memstat = memstatSet;
     memtrack = memtrackSet;
-    memtrace = memtraceSet;
 }
 
 
@@ -396,45 +344,31 @@ void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename)
 }
 
 
-void
-chpl_startMemDiagnosis() {
-  memDiagnosisFlag = 1;
-}
-
-
-void
-chpl_stopMemDiagnosis() {
-  memDiagnosisFlag = 0;
-}
-
-
 void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename) {
   if (memtrack) {
     chpl_mutex_lock(&memtrack_lock);
-    if (memtrace && (!MEM_DIAGNOSIS || memDiagnosisFlag)) {
-      printToMemLog("malloc", number, size, description,
-                    lineno, filename, memAlloc, NULL);
-    }
     addMemTableEntry(memAlloc, number, size, description, lineno, filename);
     chpl_mutex_unlock(&memtrack_lock);
   }
+  if (chpl_verbose_mem)
+    printf("%d: %s:%d: allocate %zuB of %s at %p\n", chpl_localeID, filename, lineno, number*size, chpl_memDescString(description), memAlloc);
 }
 
 
 void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename) {
-  memTableEntry* memEntry;
+  memTableEntry* memEntry = NULL;
 
   if (memtrack) {
     chpl_mutex_lock(&memtrack_lock);
     memEntry = removeMemTableEntry(memAlloc);
     if (!memEntry)
       chpl_error("memtrack fault: invalid memory free", lineno, filename);
-    if (memtrace && (!MEM_DIAGNOSIS || memDiagnosisFlag))
-      printToMemLog("free", memEntry->number, memEntry->size,
-                    memEntry->description, lineno, filename,
-                    memAlloc, NULL);
+    if (chpl_verbose_mem)
+      printf("%d: %s:%d: free %zuB of %s at %p\n", chpl_localeID, filename, lineno, memEntry->number*memEntry->size, chpl_memDescString(memEntry->description), memAlloc);
     free(memEntry);
     chpl_mutex_unlock(&memtrack_lock);
+  } else if (chpl_verbose_mem) {
+    printf("%d: %s:%d: free at %p\n", chpl_localeID, filename, lineno, memAlloc);
   }
 }
 
@@ -459,9 +393,26 @@ void chpl_track_realloc2(void* moreMemAlloc, size_t newChunk, void* memAlloc, si
   if (memtrack) {
     chpl_mutex_lock(&memtrack_lock);
     addMemTableEntry(moreMemAlloc, number, size, description, lineno, filename);
-    if (memtrace && (!MEM_DIAGNOSIS || memDiagnosisFlag))
-      printToMemLog("realloc", number, size, description, lineno, filename,
-                    memAlloc, moreMemAlloc);
     chpl_mutex_unlock(&memtrack_lock);
   }
+  if (chpl_verbose_mem)
+    printf("%d: %s:%d: reallocate %zuB of %s at %p -> %p\n", chpl_localeID, filename, lineno, number*size, chpl_memDescString(description), memAlloc, moreMemAlloc);
+}
+
+void chpl_startVerboseMem() {
+  chpl_verbose_mem = 1;
+  chpl_comm_broadcast_private(&chpl_verbose_mem, sizeof(int));
+}
+
+void chpl_stopVerboseMem() {
+  chpl_verbose_mem = 0;
+  chpl_comm_broadcast_private(&chpl_verbose_mem, sizeof(int));
+}
+
+void chpl_startVerboseMemHere() {
+  chpl_verbose_mem = 1;
+}
+
+void chpl_stopVerboseMemHere() {
+  chpl_verbose_mem = 0;
 }

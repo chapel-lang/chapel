@@ -593,6 +593,11 @@ initPrimitive() {
   prim_def("chpl_startVerboseCommHere", returnInfoVoid, true);
   prim_def("chpl_stopVerboseCommHere", returnInfoVoid, true);
 
+  prim_def("chpl_startVerboseMem", returnInfoVoid, true);
+  prim_def("chpl_stopVerboseMem", returnInfoVoid, true);
+  prim_def("chpl_startVerboseMemHere", returnInfoVoid, true);
+  prim_def("chpl_stopVerboseMemHere", returnInfoVoid, true);
+
   prim_def("chpl_startCommDiagnostics", returnInfoVoid, true);
   prim_def("chpl_stopCommDiagnostics", returnInfoVoid, true);
   prim_def("chpl_startCommDiagnosticsHere", returnInfoVoid, true);
@@ -602,9 +607,6 @@ initPrimitive() {
   prim_def("chpl_numCommPuts", returnInfoInt32);
   prim_def("chpl_numCommForks", returnInfoInt32);
   prim_def("chpl_numCommNBForks", returnInfoInt32);
-
-  prim_def("chpl_startMemDiagnosis", returnInfoVoid, true);
-  prim_def("chpl_stopMemDiagnosis", returnInfoVoid, true);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;
