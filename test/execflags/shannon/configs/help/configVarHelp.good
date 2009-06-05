@@ -15,20 +15,19 @@ CONFIG VAR FLAGS:
   -s, --<cfgVar>=<val>  : set the value of a config var
   -f<filename>          : read in a file of config var assignments
 
-MEMORY FLAGS:
-=============
-  --memmax=<n>          : simulate 'n' bytes of memory available
-  --memreport           : report memory statistics and leaks
-  --memstat             : print memory statistics
-  --memtrack            : track dynamic memory usage using a table
-
 CONFIG VARS:
 ============
 Built-in config vars:
-  numLocales: int (configured to 1)
-  maxThreads: int
+    numLocales: int (configured to 1)
+    maxThreads: int
+      memTrack: bool
+      memStats: bool
+      memLeaks: bool
+        memMax: uint(64)
+  memThreshold: uint(64)
+        memLog: string
 
 configVarHelp config vars:
-    Thursday: string (configured to night)
-    Possible: string (configured to snow)
-       ofOne: string
+      Thursday: string (configured to night)
+      Possible: string (configured to snow)
+         ofOne: string

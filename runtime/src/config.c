@@ -375,6 +375,8 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
     char* value = equalsSign + 1;
     if (equalsSign && *value) {
       initSetValue(varName, value, moduleName, lineno, filename);
+    } else if (!strcmp(configVar->defaultValue, "bool")) {
+      initSetValue(varName, "true", moduleName, lineno, filename);
     } else {
       if (argnum + 1 >= *argc) {
         char* message = chpl_glom_strings(3, "Configuration variable '", varName, 

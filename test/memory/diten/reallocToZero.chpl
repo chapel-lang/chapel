@@ -7,5 +7,5 @@ def main {
   chpl_realloc(o, 0, 0, 0);
   m3 = memoryUsed();
 
-  writeln((m1, m2, m3));
+  writeln((m2-m1, m3-m1));
 }

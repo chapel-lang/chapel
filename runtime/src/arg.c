@@ -36,11 +36,6 @@ static void printHeaders(char thisType, char* lastType) {
       fprintf(stdout, "FLAGS:\n");
       fprintf(stdout, "======\n");
       break;
-      
-    case 'm':
-      fprintf(stdout, "MEMORY FLAGS:\n");
-      fprintf(stdout, "=============\n");        
-      break;
     }
     *lastType = thisType;
   }
@@ -67,11 +62,6 @@ static void printHelpTable(void) {
 
     {"-s, --<cfgVar>=<val>", "set the value of a config var", 'c'},    
     {"-f<filename>", "read in a file of config var assignments", 'c'},
-
-    {"--memmax=<n>", "simulate 'n' bytes of memory available", 'm'}, 
-    {"--memreport", "report memory statistics and leaks", 'm'},
-    {"--memstat", "print memory statistics", 'm'},
-    {"--memtrack", "track dynamic memory usage using a table", 'm'},
 
     {NULL, NULL, ' '}
   };
@@ -101,111 +91,6 @@ static void printHelpTable(void) {
     i++;
   }
   fprintf(stdout, "\n");
-}
-
-
-static int64_t getIntArg(char* valueString, const char* memFlag, 
-                             int32_t lineno, chpl_string filename) {
-  char extraChars;
-  int64_t value = 0;  /* initialization is silly hack for freebsd */
-  int numScans;
-  char* message;
-
-  if (!valueString || strcmp(valueString, "") == 0) {
-    message = chpl_glom_strings(3, "The ", memFlag, " flag is missing its int input");
-    chpl_error(message, lineno, filename);
-  }
-  numScans = sscanf(valueString, _default_format_read_int64"%c", 
-                    &value, &extraChars);
-  if (numScans != 1) {
-    message = chpl_glom_strings(2, valueString, " is not of int type");
-    chpl_error(message, lineno, filename);
-  }
-  return value; 
-}
-
-
-/* static char* getStringArg(char* valueString, const char* memFlag,  */
-/*                              int32_t lineno, chpl_string filename) { */
-/*   char* message; */
-/*   if (!valueString || strcmp(valueString, "") == 0) { */
-/*     message = chpl_glom_strings(3, "The ", memFlag, " flag is missing its string input"); */
-/*     chpl_error(message, lineno, filename); */
-/*   } */
-/*   return valueString; */
-/* } */
-
-
-static void exitIfEqualsSign(char* equalsSign, const char* memFlag, 
-                             int32_t lineno, chpl_string filename) {
-  if (equalsSign) {
-    char* message = chpl_glom_strings(3, "The ", memFlag, " flag takes no argument");
-    chpl_error(message, lineno, filename);
-  }
-}
-
-typedef enum _MemFlagType {MemMax, MemStat, MemReport, MemTrack, MOther} MemFlagType;
-
-static int parseMemFlag(const char* memFlag, int32_t lineno, chpl_string filename) {
-  char* equalsSign;
-  char* valueString;
-  MemFlagType flag = MOther;
-  if (strncmp(memFlag, "memmax", 6) == 0) {
-    flag = MemMax;
-  } else if (strncmp(memFlag, "memstat", 7) == 0) {
-    flag = MemStat;
-  } else if (strncmp(memFlag, "memreport", 9) == 0) {
-    flag = MemReport;
-  } else if (strncmp(memFlag, "memtrack", 8) == 0) {
-    flag = MemTrack;
-  }
-
-  if (flag == MOther) {
-    return 0;
-  }
-
-  equalsSign = strchr(memFlag, '=');
-  valueString = NULL;
-
-  if (equalsSign) {
-    valueString = equalsSign + 1;
-  }
-
-  switch (flag) {
-  case MemMax:
-    {
-      int64_t value;
-      value = getIntArg(valueString, "--memmax", lineno, filename);
-      chpl_setMemmax(value);
-      break;
-    }
-
-  case MemStat:
-    {
-      exitIfEqualsSign(equalsSign, "--memstat", lineno, filename);
-      chpl_setMemstat();
-      break;
-    }
-   
-  case MemReport:
-    {
-      exitIfEqualsSign(equalsSign, "--memreport", lineno, filename);
-      chpl_setMemreport();
-      break;
-    }
-   
-  case MemTrack:
-    {
-      exitIfEqualsSign(equalsSign, "--memtrack", lineno, filename);
-      chpl_setMemtrack();
-      break;
-    }
-
-  case MOther:
-    return 0;  // should never actually get here
-  }
-
-  return 1;
 }
 
 
@@ -279,9 +164,6 @@ void parseArgs(int* argc, char* argv[]) {
           }
           if (strcmp(flag, "quiet") == 0) {
             verbosity = 0;
-            break;
-          }
-          if (flag[0] == 'm' && parseMemFlag(flag, lineno, filename)) {
             break;
           }
           if (argLength < 3) {

@@ -7,5 +7,5 @@ def main {
   m2 = memoryUsed();
   chpl_free(o, -1, "");
   m3 = memoryUsed();
-  writeln((m1, m2, m3));
+  writeln((m2-m1, m3-m1));
 }

@@ -1,1 +1,1 @@
-<command-line arg>:1: error: The --memmax flag is missing its int input
+<command-line arg>:1: error: Configuration variable 'memMax' is missing its initialization value

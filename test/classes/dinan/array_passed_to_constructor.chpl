@@ -11,12 +11,14 @@ class Doppelganger {
   var A: [1..M] int;
 }
 
+var prepre = memoryUsed();
+
 // Create an array to pass to the constructor
 var x: [1..M] int = 1;
 
-var pre  = memoryUsed();
+var pre  = memoryUsed() - prepre;
 var y    = new Doppelganger(x);
-var post = memoryUsed();
+var post = memoryUsed() - prepre;
 
 if post >= 2*pre then
   writeln("Array was copied");

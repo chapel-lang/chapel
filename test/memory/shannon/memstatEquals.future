@@ -1,0 +1,4 @@
+= sign without initialization for config const execopt
+
+How should we deal with bool configuration constants, omissions of
+initialization, and/or omissions of = signs.

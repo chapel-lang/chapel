@@ -295,7 +295,7 @@ static void build_chpl_main(void) {
   }
   if (!fRuntime) {
     VarSymbol* endCount = newTemp("_endCount");
-    chpl_main->insertAtHead(new CallExpr(PRIM_START_TRACKING_MEM));
+    chpl_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
     chpl_main->insertAtHead(new CallExpr(PRIM_SET_END_COUNT, endCount));
     chpl_main->insertAtHead(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
     chpl_main->insertAtHead(new DefExpr(endCount));

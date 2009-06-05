@@ -1,1 +1,0 @@
-reallocWithoutMalloc.chpl:5: error: memtrack fault: invalid memory realloc

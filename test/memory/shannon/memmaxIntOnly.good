@@ -1,1 +1,1 @@
-<command-line arg>:1: error: 1.1 is not of int type
+memmaxIntOnly.chpl:1: error: Unexpected character when converting from string to uint(64): '.'

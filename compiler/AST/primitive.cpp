@@ -576,10 +576,10 @@ initPrimitive() {
   prim_def("chpl_numRunningTasks", returnInfoUInt32);
   prim_def("chpl_numBlockedTasks", returnInfoInt32);
 
-  prim_def(PRIM_START_TRACKING_MEM, "chpl_startTrackingMem", returnInfoVoid, true);
   prim_def("chpl_printMemTable", returnInfoVoid, true, true);
   prim_def("chpl_printMemStat", returnInfoVoid, true, true);
   prim_def("chpl_memoryUsed", returnInfoUInt64, false, true);
+  prim_def("chpl_setMemFlags", returnInfoVoid, true);
 
   prim_def(PRIM_RT_ERROR, "chpl_error", returnInfoVoid, true, true);
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);

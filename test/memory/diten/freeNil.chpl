@@ -5,6 +5,6 @@ def main {
   m1 = memoryUsed();
   chpl_free(o, -1, "");
   m2 = memoryUsed();
-  writeln((m1, m2));
+  writeln(m2-m1);
 }
 
