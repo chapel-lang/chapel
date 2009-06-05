@@ -17,16 +17,6 @@
 general regressions
 ===================
 
-memory stuff in flux (06/03/09)
--------------------------------
-[Error matching program output for memory/figueroa/printFinalMemStat]
-
-memory stuff in flux (05/29/09)
--------------------------------
-[Error matching program output for memory/shannon/freedMalloc]
-[Error matching program output for memory/shannon/printMemTable]
-[Error matching program output for memory/shannon/reallocZeroSize]
-
 spurious verification failures on RA (e.g. 04/04/09)
 ----------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -90,8 +80,8 @@ no-local regressions
 
 memory stuff in flux (05/28/09)
 -------------------------------
-[Error matching program output for memory/shannon/configVarFile]
 [Error matching program output for memory/shannon/memstatPrint]
+[Error matching program output for memory/shannon/printFinalMemStat]
 
 wide strings leaked (?) (04/02/09)
 ----------------------------------
@@ -263,7 +253,7 @@ intel-specific regressions
 
 spurious compilation timeout
 ----------------------------
-[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 06/01/09)
+[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 06/01/09, 06/04/09)
 
 compilation timeout (new with 11.x)
 -----------------------------------
