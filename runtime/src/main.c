@@ -12,6 +12,10 @@
 #include "config.h"
 #include "error.h"
 #include <stdint.h>
+#include <string.h>
+
+
+char* chpl_executionCommand;
 
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum, 
@@ -23,6 +27,20 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
 }
 
 
+static void recordExecutionCommand(int argc, char *argv[]) {
+  int i, length = 0;
+  for (i = 0; i < argc; i++) {
+    length += strlen(argv[i]) + 1;
+  }
+  chpl_executionCommand = (char*)chpl_malloc(length+1, sizeof(char), CHPL_RT_EXECUTION_COMMAND, 0, 0);
+  sprintf(chpl_executionCommand, "%s", argv[0]);
+  for (i = 1; i < argc; i++) {
+    strcat(chpl_executionCommand, " ");
+    strcat(chpl_executionCommand, argv[i]);
+  }
+}
+
+
 int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
@@ -31,8 +49,8 @@ int main(int argc, char* argv[]) {
   chpl_comm_init_shared_heap();
 
   chpl_comm_barrier("about to leave comm init code");
-  chpl__heapAllocateGlobals();    // allocate global vars on heap for multilocale
-  CreateConfigVarTable();    // get ready to start tracking config vars
+  chpl__heapAllocateGlobals(); // allocate global vars on heap for multilocale
+  CreateConfigVarTable();      // get ready to start tracking config vars
   parseArgs(&argc, argv);
   runInGDB = _runInGDB();
   if (runInGDB) {
@@ -59,6 +77,7 @@ int main(int argc, char* argv[]) {
   chpl_init_chapel_code();
   initChplThreads();         // initialize the threads layer
   chpl__initModuleGuards();  // initialize per-locale run once guard vars
+  recordExecutionCommand(argc, argv);
 
   if (chpl_localeID == 0) {      // have locale #0 run the user's main function
     chpl_main();

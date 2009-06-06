@@ -75,6 +75,7 @@
 #   -logfile   <log filename>         $testdir/Logs/<username>.<platform>.log
 #                                     (where $testdir is $CHPL_HOME/test if
 #                                     it exists, $CHPL_HOME/examples otherwise)
+#   -memleaks
 #
 # All options can be used with a double-dash format as well 
 # (e.g. --compopts).
@@ -194,6 +195,8 @@
 # will be skipped when using "none" as the communic layer (either
 # explicitly or by not specifying a -comm flag).
 #
+# The -memleaks=<filename> option requests that the executable run
+# with --memLeaksLog=<filename> option.
 #
 # STRUCTURE OF TEST DIRECTORIES
 #
@@ -498,6 +501,12 @@ while ( $#argv > 0 )
 		set logfile = $argv[1]
 		shift
 		breaksw
+	case -memleaks:
+	case --memleaks:
+		shift
+		set execopts = "$execopts --memLeaksLog=$cwd/$argv[1]"
+		shift
+		breaksw
 	case -valgrind:
 	case --valgrind:
 		shift
@@ -580,6 +589,7 @@ while ( $#argv > 0 )
                 echo "          -suppress <filename>"
 #                echo "          -interpret (or -i)"
 		echo "          -logfile <file>      (currently: $testdir/Logs/$user.$platform.log)"
+		echo "          -memleaks <file>"
 		echo "          -h, -help"
 		exit 0
 		breaksw

@@ -277,7 +277,16 @@ static void codegen_header(void) {
   } else {
     openCFile(&header, "chpl__header", "h");
     outfile = header.fptr;
-    fprintf(outfile, "#define CHPL_GEN_CODE\n\n");
+    fprintf(outfile, "/*** Compilation Info ***/\n\n");
+    fprintf(outfile, "const char* chpl_compileCommand     = \"%s\";\n", compileCommand);
+    fprintf(outfile, "const char* chpl_compileVersion     = \"%s\";\n", compileVersion);
+    fprintf(outfile, "const char* CHPL_HOST_PLATFORM      = \"%s\";\n", CHPL_HOST_PLATFORM);
+    fprintf(outfile, "const char* CHPL_TARGET_PLATFORM    = \"%s\";\n", CHPL_TARGET_PLATFORM);
+    fprintf(outfile, "const char* CHPL_HOST_COMPILER      = \"%s\";\n", CHPL_HOST_COMPILER);
+    fprintf(outfile, "const char* CHPL_TARGET_COMPILER    = \"%s\";\n", CHPL_TARGET_COMPILER);
+    fprintf(outfile, "const char* CHPL_THREADS            = \"%s\";\n", CHPL_THREADS);
+    fprintf(outfile, "const char* CHPL_COMM               = \"%s\";\n", CHPL_COMM);
+    fprintf(outfile, "\n#define CHPL_GEN_CODE\n\n");
   }
   genIncludeCommandLineHeaders(outfile);
 

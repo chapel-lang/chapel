@@ -84,6 +84,9 @@ Timer timer5;
 
 int numGlobalsOnHeap = 0;
 
+const char* compileCommand = NULL;
+char compileVersion[64];
+
 static bool printCopyright = false;
 static bool printHelp = false;
 static bool printEnvHelp = false;
@@ -129,6 +132,15 @@ static void setupOrderedGlobals(void) {
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
   fSerial = !strcmp(CHPL_THREADS, "none"); 
+}
+
+
+static void recordCodeGenStrings(int argc, char* argv[]) {
+  compileCommand = astr("chpl");
+  for (int i = 1; i < argc; i++) {
+    compileCommand = astr(compileCommand, " ", argv[i]);
+  }
+  get_version(compileVersion);
 }
 
 
@@ -386,9 +398,7 @@ static void printStuff(void) {
   bool printedSomething = false;
 
   if (printVersion) {
-    char ver[64];
-    get_version(ver);
-    fprintf(stdout, "%s Version %s\n", arg_state.program_name, ver);
+    fprintf(stdout, "%s Version %s\n", arg_state.program_name, compileVersion);
     printCopyright = true;
     printedSomething = true;
     shouldExit = true;
@@ -436,6 +446,7 @@ int main(int argc, char *argv[]) {
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
+  recordCodeGenStrings(argc, argv);
   startCatchingSignals();
   printStuff();
   if (rungdb)

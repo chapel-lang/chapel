@@ -12,6 +12,16 @@ extern void chpl__initModuleGuards(void);
 
 extern chpl_fn_p chpl_ftable[];
 
+extern const char* chpl_compileCommand;
+extern const char* chpl_compileVersion;
+extern const char* CHPL_HOST_PLATFORM;
+extern const char* CHPL_TARGET_PLATFORM;
+extern const char* CHPL_HOST_COMPILER;
+extern const char* CHPL_TARGET_COMPILER;
+extern const char* CHPL_THREADS;
+extern const char* CHPL_COMM;
+extern char* chpl_executionCommand;
+
 #define _CHECK_NIL(x, lineno, filename)                                 \
   do {                                                                  \
     if (x == nil)                                                       \

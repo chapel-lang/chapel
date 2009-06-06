@@ -3,6 +3,7 @@
 # Usage: paratest.server.pl [-compopts] [-dirfile d] [-filedist] [-futures] 
 #                            [-help|-h] [-nodefile n] [-logfile l] [-valgrind]
 #   -compopts s: s is a string that is passed with -compopts to start_test.
+#   -execopts s: s is a string that is passed with -execopts to start_test.
 #   -comm s    : s is a setting for CHPL_COMM, e.g., none or gasnet
 #   -dirfile  d: d is a file listing directories to test. Default is ".". Lines
 #                beginning with # are ignored.
@@ -15,6 +16,7 @@
 #   -logfile  l: l is the output logfile. Default is "user"."platform".log in
 #                subdirectory Logs.
 #   -valgrind  : pass -valgrind flag to start_test
+#   -memleaks f: f is the name of a file where the leak info should be stored
 #
 # Creating a file name PARAHALT in the root test directory halts the
 # distribution of more work.
@@ -56,6 +58,7 @@ $sleep_time = 1;                       # polling time (sec) to distribute work
 $incl_futures = 0;
 $filedist = 0;
 $valgrind = 0;
+$memleaksflag = 0;
 $suppressions = "";
 
 $localhost = `uname -n`;
@@ -212,13 +215,15 @@ sub feed_nodes {
                 if ($node eq $localnode) {
                     $rem_exec_cmd = "";
                     $compopts = "\"$compopts\"";
+                    $execopts = "\"$execopts\"";
                     $comm = "\"$comm\"";
                 } else {
                     $rem_exec_cmd = "$rem_exe $node";
                     $compopts = "\\\"$compopts\\\"";
+                    $execopts = "\\\"$execopts\\\"";
                     $comm = "\\\"$comm\\\"";
                 }
-                $rem_cmd = "$rem_exec_cmd $pwd/$client_script $readyid $pwd $testdir $incl_futures $valgrind $compopts $comm";
+                $rem_cmd = "$rem_exec_cmd $pwd/$client_script $readyid $pwd $testdir $incl_futures $valgrind $memleaksflag $compopts $execopts $comm";
                 if ($verbose) {
                     systemd ($rem_cmd);
                 } else {
@@ -251,6 +256,8 @@ sub feed_nodes {
     }
 
     $endtime = `date`; chomp $endtime;
+    systemd("cat $logdir/*.memleaks > $memleaks");
+    systemd("rm -f $logdir/*.memleaks");
     collect_logs ($fin_logfile, @logs);
 }
 
@@ -353,14 +360,16 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server.pl [-comm] [-compopts] [-dirfile d] [-filedist] [-futures] [-logfile l] [-nodefile n] [-valgrind] [-help|-h]\n";
+    print "Usage: paratest.server.pl [-comm] [-compopts] [-execopts] [-dirfile d] [-filedist] [-futures] [-logfile l] [-nodefile n] [-valgrind] [-help|-h]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
+    print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
     print "    -comm s    : s is a setting for CHPL_COMM, e.g., none or gasnet.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
     print "    -filedist  : distribute work at the granularity of files (directory granurality is the default).\n";
     print "    -futures   : include .future tests (default is none).\n";
     print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory.\n";
     print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
+    print "    -memleaks f: pass -memleaks to start_test; aggregate all output.\n";
     print "    -valgrind  : pass -valgrind to start_test.\n";
 }
 
@@ -384,6 +393,14 @@ sub main {
                 $compopts = $ARGV[0];
             } else {
                 print "missing -compopts arg\n";
+                exit (8);
+            }
+        } elsif (/^-execopts/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $execopts = $ARGV[0];
+            } else {
+                print "missing -execopts arg\n";
                 exit (8);
             }
         } elsif (/^-comm/) {
@@ -428,6 +445,15 @@ sub main {
                 $nodefile = $ARGV[0];
             } else {
                 print "missing -nodefile arg\n";
+                exit (8);
+            }
+        } elsif (/^-memleaks/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $memleaks = $ARGV[0];
+                $memleaksflag = 1;
+            } else {
+                print "missing -memleaks arg\n";
                 exit (8);
             }
         } elsif (/^-valgrind/) {

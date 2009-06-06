@@ -36,7 +36,7 @@ sub main {
 
     if ($#ARGV < 4) {
         print "@ARGV\n";
-        print "usage: paratest.client.pl id chapeltestdir testdir futures valgrind [compopts] [comm]\n";
+        print "usage: paratest.client.pl id chapeltestdir testdir futures valgrind memleaks [compopts] [execopts] [comm]\n";
         exit (3);
     }
 
@@ -47,11 +47,14 @@ sub main {
     $valgrind = ($ARGV[4] == 1) ? "-valgrind" : "";
 
     print "$id $workingdir $testdir $incl_futures $valgrind" if $debug;
-    if ($#ARGV>=5) {
-        $compopts = "-compopts \"" . $ARGV[5] . "\"";
-    }
     if ($#ARGV>=6) {
-        $comm = "-comm \"" . $ARGV[6] . "\"";
+        $compopts = "-compopts \"" . $ARGV[6] . "\"";
+    }
+    if ($#ARGV>=7) {
+        $execopts = "-execopts \"" . $ARGV[7] . "\"";
+    }
+    if ($#ARGV>=8) {
+        $comm = "-comm \"" . $ARGV[8] . "\"";
     }
 
     $synchfile = "$synchdir/$node.$id";
@@ -81,7 +84,9 @@ sub main {
     $logfile = "$logdir/$dirfname.$node.log";
     unlink $logfile if (-e $logfile);
 
-    $testarg = "-compiler $compiler -logfile $logfile $incl_futures $valgrind $compopts $comm";
+    $memleaks = ($ARGV[5] == 1) ? "-memleaks $logfile.memleaks" : "";
+
+    $testarg = "-compiler $compiler -logfile $logfile $incl_futures $valgrind $compopts $execopts $comm $memleaks";
     $testarg = "$testarg $testdir -norecurse";
     $chplhome = `cd .. && pwd && cd test`; chomp $chplhome;
     $ENV{'CHPL_HOME'} = $chplhome;

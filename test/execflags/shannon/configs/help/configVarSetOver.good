@@ -26,6 +26,7 @@ Built-in config vars:
         memMax: uint(64)
   memThreshold: uint(64)
         memLog: string
+   memLeaksLog: string
 
 module1 config vars:
              x: int (configured to 999)

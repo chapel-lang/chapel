@@ -204,3 +204,9 @@ The configuration constants can be set as follows:
                       locale number is appended to the name of the
                       memLog so that each locale creates its own log
                       file.
+
+  --memLeaksLog=string : specifies a file where the output of
+                         --memStats and --memLeaks is appended (after
+                         the compiler and execution commands).  This
+                         is useful for running multiple programs and
+                         aggregating memory statistics.

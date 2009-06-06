@@ -25,3 +25,4 @@ CONFIG VARS:
         memMax: uint(64)
   memThreshold: uint(64)
         memLog: string
+   memLeaksLog: string

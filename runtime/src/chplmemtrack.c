@@ -35,6 +35,7 @@ static _Bool memTrack = false;
 static uint64_t memThreshold = 0;
 static chpl_string memLog = NULL;
 static FILE* memLogFile = NULL;
+static chpl_string memLeaksLog = NULL;
 
 static size_t totalMem = 0;       /* total memory currently allocated */
 static size_t maxMem = 0;         /* maximum total memory during run  */
@@ -143,7 +144,8 @@ void chpl_setMemFlags(chpl_bool memTrackConfig,
                       chpl_bool memLeaksConfig,
                       uint64_t memMaxConfig,
                       uint64_t memThresholdConfig,
-                      chpl_string memLogConfig) {
+                      chpl_string memLogConfig,
+                      chpl_string memLeaksLogConfig) {
   memTrack = memTrackConfig;
   if (memStatsConfig || memLeaksConfig || memMaxConfig)
     memTrack = true;
@@ -164,6 +166,9 @@ void chpl_setMemFlags(chpl_bool memTrackConfig,
   } else {
     memLogFile = stdout;
   }
+  memLeaksLog = memLeaksLogConfig;
+  if (strcmp(memLeaksLog, ""))
+    memTrack = true;
 }
 
 
@@ -264,6 +269,17 @@ void chpl_reportMemInfo() {
   if (memLeaks) {
     fprintf(memLogFile, "\n");
     chpl_printLeakedMemTable();
+  }
+  if (memLogFile && memLogFile != stdout)
+    fclose(memLogFile);
+  if (memLeaksLog && strcmp(memLeaksLog, "")) {
+    memLogFile = fopen(memLeaksLog, "a");
+    fprintf(memLogFile, "\nCompiler Command : %s\n", chpl_compileCommand);
+    fprintf(memLogFile, "Execution Command: %s\n\n", chpl_executionCommand);
+    chpl_printMemStat(0, 0);
+    fprintf(memLogFile, "\n");
+    chpl_printLeakedMemTable();
+    fclose(memLogFile);
   }
 }
 

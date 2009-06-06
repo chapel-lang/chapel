@@ -48,13 +48,13 @@ bundleArgs(CallExpr* fcall) {
     i++;
   }
   mod->block->insertAtHead(new DefExpr(new_c));
-    
+
   // create the class variable instance and allocate it
   VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
   fcall->insertBefore( new DefExpr( tempc));
   CallExpr *tempc_alloc = new CallExpr(PRIM_CHPL_ALLOC_PERMIT_ZERO,
                                        ctype->symbol,
-                                       newMemDesc(ctype->symbol->name));
+                                       newMemDesc("compiler-inserted argument bundle"));
   fcall->insertBefore( new CallExpr( PRIM_MOVE,
                                      tempc,
                                      tempc_alloc));
@@ -485,7 +485,7 @@ makeHeapAllocations() {
       // In this case, where should we put this?  ack!! let's assume
       // we can put it in front of the first use!
       //
-      useMap.get(var)->v[0]->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc(heapType->symbol->name))));
+      useMap.get(var)->v[0]->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data"))));
       heapAllocatedVars.add(var);
     }
 
@@ -500,7 +500,7 @@ makeHeapAllocations() {
         VarSymbol* tmp = newTemp(var->type);
         move->insertBefore(new DefExpr(tmp));
         move->insertBefore(new CallExpr(PRIM_MOVE, tmp, move->get(2)->remove()));
-        move->insertAtTail(new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc(heapType->symbol->name)));
+        move->insertAtTail(new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data")));
         move->insertAfter(new CallExpr(PRIM_SET_MEMBER, move->get(1)->copy(), heapType->getField(1), tmp));
         heapAllocatedVars.add(var);
       } else if (CallExpr* call = toCallExpr(def->parentExpr)) {
@@ -1389,7 +1389,7 @@ insertWideReferences(void) {
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_MOVE, tmpBool, new CallExpr(PRIM_EQUAL, tmp, new_IntSymbol(0))));
   BlockStmt* block = new BlockStmt();
   forv_Vec(Symbol, sym, heapVars) {
-    block->insertAtTail(new CallExpr(PRIM_MOVE, sym, new CallExpr(PRIM_CHPL_ALLOC, sym->type->getField("addr")->type->symbol, newMemDesc("global var heap allocation"))));
+    block->insertAtTail(new CallExpr(PRIM_MOVE, sym, new CallExpr(PRIM_CHPL_ALLOC, sym->type->getField("addr")->type->symbol, newMemDesc("global heap-converted data"))));
   }
   heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmpBool), block));
   int i = 0;

@@ -26,6 +26,7 @@ extern const char* chpl_rt_memDescs[];
 const char* chpl_rt_memDescs[] = {
   "unknown",
   "chapel runtime code data",
+  "chapel execution command buffer",
   "array elements",
   "set wide string",
   "get wide string",
@@ -69,6 +70,7 @@ const char* chpl_rt_memDescs[] = {
 typedef enum {
   CHPL_RT_MD_UNKNOWN = 0,
   CHPL_RT_MD_CHAPEL_CODE,
+  CHPL_RT_EXECUTION_COMMAND,
   CHPL_RT_MD_ARRAY_ELEMENTS,
   CHPL_RT_MD_SET_WIDE_STRING,
   CHPL_RT_MD_GET_WIDE_STRING,
