@@ -78,6 +78,17 @@ no longer needs to be suppressed?
 no-local regressions
 ====================
 
+new nondeterminism -- extra "waiting for work" printed out (06/06/09)
+---------------------------------------------------------------------
+[Error matching program output for parallel/begin/stonea/reports]
+
+new timeouts (06/06/09)
+-----------------------
+[Error: Timed out executing program parallel/taskPool/figueroa/OneThreadSyncStmt]
+[Error: Timed out executing program parallel/taskPool/figueroa/OneThread]
+[Error: Timed out executing program parallel/taskPool/figueroa/QueuedTasks]
+
+
 memory stuff in flux (05/28/09)
 -------------------------------
 [Error matching program output for memory/shannon/memstatPrint]
@@ -93,6 +104,16 @@ wide strings leaked (?) (04/02/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+memory stuff in flux (06/06/09)
+-------------------------------
+[Error matching program output for memory/figueroa/printFinalMemStat]
+[Error matching program output for memory/shannon/memmaxBytes]
+[Error matching program output for memory/shannon/memmaxInput]
+
+new nondeterminism -- extra "waiting for work" printed out (06/06/09)
+---------------------------------------------------------------------
+[Error matching program output for parallel/coforall/stonea/reports]
 
 occasional nondeterminism in output (01/30/09, 02/03/09)
 --------------------------------------------------------
@@ -175,14 +196,7 @@ opts-specific tests
 (Example runs: 0)
  
 
-(Full run: 48 without standard errors, 104 due to nbody shootout codes)
-
-most
-----
-[Error matching program output for studies/shootout/nbody/nbody_iterator_7]
-[Error matching program output for studies/shootout/nbody/nbody_rangesub_5]
-[Error matching program output for studies/shootout/nbody/nbody_reductions_6]
-[Error matching program output for studies/shootout/nbody/nbody_vector_4]
+(Full run: 52 without standard errors)
 
 --no-dead-code-elimination
 --------------------------
@@ -198,7 +212,6 @@ most
 --baseline --optimize-loop-iterators
 --baseline --scalar-replacement
 --no-scalar-replacement --no-inline
---baseline --no-local
 ------------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for studies/590o/bradc/psp2]
@@ -220,6 +233,17 @@ most
 ---------------------------------------------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+
+--baseline --no-local
+------------------------------------
+[Error matching program output for arrays/deitz/test_descriptor_frees]
+[Error: Timed out executing program parallel/begin/stonea/reports]
+[Error: Timed out executing program parallel/taskPool/figueroa/OneThread]
+[Error: Timed out executing program parallel/taskPool/figueroa/OneThreadSyncStmt]
+[Error: Timed out executing program parallel/taskPool/figueroa/QueuedTasks]
+[Error matching program output for studies/590o/bradc/psp2]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 
 =======================
@@ -253,7 +277,7 @@ intel-specific regressions
 
 spurious compilation timeout
 ----------------------------
-[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 06/01/09, 06/04/09)
+[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 06/01/09, 06/04/09, 06/06/09)
 
 compilation timeout (new with 11.x)
 -----------------------------------
@@ -289,6 +313,10 @@ xt-cle-specific failures
 =============================================================
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
+
+memory stuff in flux (06/06/09)
+-------------------------------
+[Error matching program output for memory/shannon/memmaxExceeds]
 
 some sort of gdb compatability issue?
 -------------------------------------
