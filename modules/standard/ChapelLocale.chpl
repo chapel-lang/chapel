@@ -138,8 +138,11 @@ config const
   memLeaksLog: string = "";
 
 def chpl_startTrackingMemory() {
-  coforall loc in Locales do on loc {
-    const myMemLog = memLog;
-    __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memMax, memThreshold, memLog, memLeaksLog);
+  coforall loc in Locales {
+    if loc == here {
+      __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memMax, memThreshold, memLog, memLeaksLog);
+    } else on loc {
+      __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memMax, memThreshold, memLog, memLeaksLog);
+    }
   }
 }
