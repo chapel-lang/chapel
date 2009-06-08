@@ -45,6 +45,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   int bufid;
 
   // These are for receiving singals from slaves
+  int fdnum;
   char buffer[PRINTF_BUFF_LEN];
   char description[PRINTF_BUFF_LEN];  // gdb specific
   int ignorestatus;                   // gdb specific
@@ -86,6 +87,8 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     strcpy(pvmnodestoadd[i], pvmnodetoadd);
     i++;
   }
+  // Check to make sure user hasn't specified more nodes (-nl <n>) than
+  // what's included in the hostfile.
   if (i < numLocales) {
     fclose(nodelistfile);
     while (i >= 0) {
@@ -97,6 +100,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   }
   fclose(nodelistfile);
 
+  system((char *)"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3 ");
   info = pvm_start_pvmd(0, argtostart, 1);
   if (info != 0) {
     if (info == PvmDupHost) {
@@ -185,10 +189,16 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     bufid = pvm_recv(-1, NOTIFYTAG);
     pvm_upkint(&signal, 1, 1);
     // fprintf case
-    // TODO: Right now, it only goes to stderr
     if (signal == 2) {
+      pvm_upkint(&fdnum, 1, 1);
       pvm_upkstr(buffer);
-      fprintf(stderr, "%s", buffer);
+      if (fdnum == 0) {
+        fprintf(stdin, "%s", buffer);
+      } else if (fdnum == 1) {
+        fprintf(stdout, "%s", buffer);
+      } else {
+        fprintf(stderr, "%s", buffer);
+      }
       fflush(stderr);
       signal = 0;
     }

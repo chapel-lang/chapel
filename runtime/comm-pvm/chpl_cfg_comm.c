@@ -107,6 +107,8 @@ int signal = 0;     // signal to parent process what to do
                     // 2: fprintf
                     // 3: printf
 
+extern int fileno(FILE *stream);
+
 //
 // Chapel interface starts here
 //
@@ -507,6 +509,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
     }
   }
 
+  fprintf(stderr, "command is: %s\n", command);
   *status = mysystem(command, "running gdb", 0);
 
   return 1;
@@ -838,15 +841,20 @@ int32_t chpl_numCommNBForks(void) {
 #undef fprintf
 
 int chpl_pvm_fprintf(FILE* outfile, const char* format, ...) {
+  int fdnum;
   CHPL_PVM_PRINTF_GUTS;
 
   /* Here, we really want to send this string to the parent to print
      for us if outfile is stdout or stderr.  For now, I just print it
      out. */
-  if (parent >= 0) {
+
+  fdnum = fileno(outfile);
+
+  if ((parent >= 0) && ((fdnum == 0) || (fdnum == 1) || (fdnum == 2))) {
     signal = 2;
     PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_pvm_fprintf");
     PVM_NO_LOCK_SAFE(pvm_pkint(&signal, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&fdnum, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
     PVM_NO_LOCK_SAFE(pvm_pkstr(buffer), "pvm_pkstr", "chpl_pvm_fprintf");
     PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_pvm_fprintf");
     signal = 0;
