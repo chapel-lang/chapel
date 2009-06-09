@@ -78,16 +78,9 @@ no longer needs to be suppressed?
 no-local regressions
 ====================
 
-new nondeterminism -- extra "waiting for work" printed out (06/06/09)
----------------------------------------------------------------------
-[Error matching program output for parallel/begin/stonea/reports]
-
-new timeouts (06/06/09)
------------------------
-[Error: Timed out executing program parallel/taskPool/figueroa/OneThreadSyncStmt]
-[Error: Timed out executing program parallel/taskPool/figueroa/OneThread]
-[Error: Timed out executing program parallel/taskPool/figueroa/QueuedTasks]
-
+???
+---
+[Error matching program output for memory/figueroa/ClassInheritance1]
 
 memory stuff in flux (05/28/09)
 -------------------------------
@@ -105,15 +98,14 @@ wide strings leaked (?) (04/02/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+timeout for new test (06/09/09)
+-------------------------------
+[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2]
+
 memory stuff in flux (06/06/09)
 -------------------------------
-[Error matching program output for memory/figueroa/printFinalMemStat]
 [Error matching program output for memory/shannon/memmaxBytes]
 [Error matching program output for memory/shannon/memmaxInput]
-
-new nondeterminism -- extra "waiting for work" printed out (06/06/09)
----------------------------------------------------------------------
-[Error matching program output for parallel/coforall/stonea/reports]
 
 occasional nondeterminism in output (01/30/09, 02/03/09)
 --------------------------------------------------------
