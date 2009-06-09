@@ -287,6 +287,7 @@
 #      <blank>        : a blank line is skipped
 #      <var> == <val> : checks to see if envvar "var" is "val"
 #      <var> != <val> : checks to see if envvar "var" is not "val"
+#      CHPL_MEM_LEAK_TESTING == true : check if we are testing for memory leaks
 #    All of the lines of the "==" and "!=" form are logically
 #    or'd together, and if any of them are true, the test is
 #    skipped.  As with other options, a SKIPIF condition can
@@ -505,6 +506,7 @@ while ( $#argv > 0 )
 	case --memleaks:
 		shift
 		set execopts = "$execopts --memLeaksLog=$cwd/$argv[1]"
+		setenv CHPL_MEM_LEAK_TESTING true
 		shift
 		breaksw
 	case -valgrind:

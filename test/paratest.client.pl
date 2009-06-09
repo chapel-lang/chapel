@@ -84,7 +84,7 @@ sub main {
     $logfile = "$logdir/$dirfname.$node.log";
     unlink $logfile if (-e $logfile);
 
-    $memleaks = ($ARGV[5] == 1) ? "-memleaks $logfile.memleaks" : "";
+    $memleaks = ($ARGV[5] == 1) ? "-memleaks $logdir/tmp.$dirfname.$node.memleaks" : "";
 
     $testarg = "-compiler $compiler -logfile $logfile $incl_futures $valgrind $compopts $execopts $comm $memleaks";
     $testarg = "$testarg $testdir -norecurse";
