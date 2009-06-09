@@ -1,0 +1,4 @@
+bug: Using a zippered range on a distributed array inside a reduction creates warning
+
+If you use a domain instead of a range, the warning disappears.
+e.g. var vv = + reduce [(u,j) in (U,[0..#N]) (u + j);

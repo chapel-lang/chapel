@@ -2,10 +2,11 @@ MAKEFLAGS = --no-print-directory
 
 CHPL = chpl
 
-FLAGS = --fast
+FLAGS = --fast --local
 
 TARGETS = \
 	  spectralnorm \
+	  spectralnorm_2 \
 
 default: all
 

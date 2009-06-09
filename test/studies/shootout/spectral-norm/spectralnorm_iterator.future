@@ -1,0 +1,4 @@
+bug: Using a zippered range on a distributed array inside a forall statement creates warning
+
+If you use a domain instead of a range, the warning disappears.
+e.g. forall (au,i) in (Au,[0..#N]) do { .. }
