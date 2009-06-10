@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "pvm3.h"
 
@@ -35,7 +36,7 @@ int lock_num = 0;
   lock_num++;                                                              \
   if (retcode < 0) {                                                       \
     char msg[256];                                                         \
-    sprintf(msg, "\n\n%d/%d:%d PVM call failed.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self());                                                \
+    sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in);             \
     chpl_error(msg, 0, 0);                                                 \
   }                                                                        \
 }
@@ -47,7 +48,7 @@ int lock_num = 0;
   lock_num++;                                                              \
   if (retcode < 0) {                                                       \
     char msg[256];                                                         \
-    sprintf(msg, "\n\n%d/%d:%d PVM call failed.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self());                                                \
+    sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in);             \
     chpl_error(msg, 0, 0);                                                 \
   }                                                                        \
 }
@@ -58,7 +59,7 @@ int lock_num = 0;
   chpl_mutex_unlock(&pvm_lock);                                            \
   if (retcode < 0) {                                                       \
     char msg[256];                                                         \
-    sprintf(msg, "\n\n%d/%d:%d PVM call failed.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self());                                                \
+    sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in);             \
     chpl_error(msg, 0, 0);                                                 \
   }                                                                        \
 }
@@ -68,7 +69,7 @@ int lock_num = 0;
   retcode = call;                                                          \
   if (retcode < 0) {                                                       \
     char msg[256];                                                         \
-    sprintf(msg, "\n\n%d/%d:%d PVM call failed.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self());                                                \
+    sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in);             \
     chpl_error(msg, 0, 0);                                                 \
   }                                                                        \
 }
@@ -162,11 +163,14 @@ static int makeTag(int threadID, int localeID);
 
 // A simple hash to combine the threadID and localeID into one
 // value that is small enough to use as a PVM message tag
+// Use the hash with a random number seeded with the time and the number
+// of PVM calls (lock_num) to have a pretty random tag
 static int makeTag(int threadID, int localeID) {
   const double A = .61803398874989;
   double s;
   int tag;
   int absTid = threadID < 0 ? -threadID : threadID;
+  float ftag;
 
   s = A * absTid;
   s -= (int)s;
@@ -175,6 +179,16 @@ static int makeTag(int threadID, int localeID) {
   tag = tag << 8;
   tag += localeID;
   tag = tag & TAGMASK;
+
+  srand((unsigned int)time(0));
+  tag = rand() + tag + lock_num;
+  ftag = (float)tag;
+  ftag = ftag/RAND_MAX;
+  ftag = ftag * 4194294;
+  tag = (int)ftag;
+  if (tag <= 0) tag = 1;
+  if (tag > 4194294) tag = 4194294;
+  
   return tag;
 }
 
@@ -378,8 +392,10 @@ static void polling(void* x) {
       } else {
         args = NULL;
       }
+
       chpl_pvm_recv(source, msg_info.replyTag, args, msg_info.size);
       chpl_begin((chpl_fn_p)chpl_ftable[msg_info.u.fid], args, false, false, NULL);
+
       break;
     }
     case ChplCommFinish: {
@@ -641,7 +657,6 @@ void chpl_comm_exit_all(int status) {
     PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
   }
 
-  fprintf(stderr, "Comm exiting.\n");
   PVM_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_all");
   PVM_SAFE(pvm_exit(), "pvm_exit", "chpl_comm_exit_all");
   return;
@@ -670,7 +685,7 @@ void chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln
     msg_info.replyTag = tag;
     msg_info.size = size;
     msg_info.u.data = raddr;
-    
+
     chpl_pvm_send(locale, TAGMASK+1, &msg_info, sizeof(_chpl_message_info));
     chpl_pvm_send(locale, tag, addr, size);
 
