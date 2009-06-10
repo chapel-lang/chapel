@@ -1,0 +1,8 @@
+mystery: why does this forall result in two copies of the body?
+
+This was pointed out by Srinivas -- forall loops over distributions,
+like RA result in two identical copies of the loop body in question in
+the generated code.  It wasn't clear why this would be and it may be a
+performance issue, so I wanted to capture it.  The cloning seems to
+occur in lowerIterators, but I haven't taken it any farther than that
+yet.
