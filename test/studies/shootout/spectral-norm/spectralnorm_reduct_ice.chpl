@@ -6,5 +6,5 @@ var Dom : domain(1, int(64)) distributed Dist = [0..#N];
 
 var U,Au : [Dom] real;
 
-var vv = + reduce [u in U] (u + u);
+var vv = + reduce (U + U);
 writeln(vv);
