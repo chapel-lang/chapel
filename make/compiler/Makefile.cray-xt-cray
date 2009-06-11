@@ -1,1 +1,4 @@
+# Suppress warning about variables used before defined
+XT_GEN_CFLAGS = -hnomessage=7212
+
 include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xt
