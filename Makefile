@@ -9,7 +9,9 @@ default: all
 
 all: comprt man
 
-comprt: compiler runtime
+comprt: FORCE
+	@$(MAKE) compiler
+	@$(MAKE) runtime
 
 compiler: FORCE
 	cd compiler && $(MAKE)
