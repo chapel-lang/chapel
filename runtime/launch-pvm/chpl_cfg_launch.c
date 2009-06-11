@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <chplio_md.h>
 
 #include "pvm3.h"
 
@@ -38,10 +39,10 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   int signal = 0;
   char* commandtopvm;
   char* environment;
-  static char *hosts2[] = {};
+  static char *hosts2[2048];
   int numt;
   int tids[32];
-  static char *argtostart[] = {};
+  static char *argtostart[] = {(char*)""};
   int bufid;
 
   // These are for receiving singals from slaves
@@ -52,7 +53,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   int who;                            // gdb specific
 
   char** argv2;
-  char* numlocstr;
+  char numlocstr[128];
 
   // Add nodes to PVM configuration.
   FILE* nodelistfile;
@@ -158,7 +159,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
         i++;
       }
       chpl_free(commandtopvm, -1, "");
-      chpl_free(environment, -1, "");
       chpl_free(argv2, -1, "");
       chpl_internal_error("Unknown executable.");
     }
@@ -177,7 +177,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
         i++;
       }
       chpl_free(commandtopvm, -1, "");
-      chpl_free(environment, -1, "");
       chpl_free(argv2, -1, "");
       chpl_internal_error("Trouble spawning slave.");
     }
@@ -237,7 +236,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   }
   chpl_free(argv2, -1, "");
   chpl_free(commandtopvm, -1, "");
-  chpl_free(environment, -1, "");
 
   return (char *)"killall -9 pvmd3 && rm -rf /tmp/*pvm*";
 }

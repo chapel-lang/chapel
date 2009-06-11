@@ -859,10 +859,6 @@ int chpl_pvm_fprintf(FILE* outfile, const char* format, ...) {
   int fdnum;
   CHPL_PVM_PRINTF_GUTS;
 
-  /* Here, we really want to send this string to the parent to print
-     for us if outfile is stdout or stderr.  For now, I just print it
-     out. */
-
   fdnum = fileno(outfile);
 
   if ((parent >= 0) && ((fdnum == 0) || (fdnum == 1) || (fdnum == 2))) {
@@ -881,9 +877,6 @@ int chpl_pvm_fprintf(FILE* outfile, const char* format, ...) {
 int chpl_pvm_printf(const char* format, ...) {
   CHPL_PVM_PRINTF_GUTS;
 
-  /* Here, we really want to send this string to the parent to print
-     for us if outfile is stdout or stderr.  For now, I just print it
-     out. */
   if (parent >= 0) {
     signal = 3;
 
@@ -895,6 +888,32 @@ int chpl_pvm_printf(const char* format, ...) {
   } else printf("%s", buffer);
   return retval;
 }
+
+
+int chpl_pvm_vfprintf(FILE* stream, const char* format, va_list ap) {
+  int fdnum;
+  int retval;
+  char buffer[PRINTF_BUFF_LEN];
+
+  retval = vsnprintf(buffer, PRINTF_BUFF_LEN, format, ap);
+  if (retval > PRINTF_BUFF_LEN) {
+    chpl_internal_error("PVM fprintf insufficient buffer space");
+  }
+  
+  fdnum = fileno(stream);
+
+  if ((parent >= 0) && ((fdnum == 0) || (fdnum == 1) || (fdnum == 2))) {
+    signal = 2;
+    PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_pvm_fprintf");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&signal, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&fdnum, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
+    PVM_NO_LOCK_SAFE(pvm_pkstr(buffer), "pvm_pkstr", "chpl_pvm_fprintf");
+    PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_pvm_fprintf");
+    signal = 0;
+  } else fprintf(stream, "%s", buffer);
+  return retval;
+}
+
 
 /* NOTHING SHOULD GO BELOW THESE FUNCTIONS (PARTICULARLY, NOTHING THAT
    USES PRINTF) */
