@@ -676,6 +676,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
     block->insertAtHead(new DefExpr(coforallCount));
     body->insertAtHead(new CallExpr("_upEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
+    block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
     onBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
     return block;
   } else {
@@ -690,6 +691,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
     block->insertAtTail(new CallExpr(PRIM_PROCESS_TASK_LIST, coforallCount));
     beginBlk->insertBefore(new CallExpr("_upEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
+    block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
     return block;
   }
 }
@@ -1324,6 +1326,7 @@ buildSyncStmt(Expr* stmt) {
   block->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, new CallExpr("_endCountAlloc")));
   block->insertAtTail(stmt);
   block->insertAtTail(new CallExpr("_waitEndCount"));
+  block->insertAtTail(new CallExpr("_endCountFree", new CallExpr(PRIM_GET_END_COUNT)));
   block->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCountSave));
   return block;
 }
@@ -1365,6 +1368,8 @@ buildCobeginStmt(BlockStmt* block) {
   block->insertAtHead(new DefExpr(cobeginCount));
   block->insertAtTail(new CallExpr(PRIM_PROCESS_TASK_LIST, cobeginCount));
   block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));
+  block->insertAtTail(new CallExpr("_endCountFree", cobeginCount));
+
   return block;
 }
 

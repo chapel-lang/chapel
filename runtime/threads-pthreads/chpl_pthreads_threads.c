@@ -196,16 +196,16 @@ int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_strin
 
 void chpl_sync_mark_and_signal_full(chpl_sync_aux_t *s) {
   s->is_full = true;
-  chpl_sync_unlock(s);
   if (pthread_cond_signal(s->signal_full))
     chpl_internal_error("pthread_cond_signal() failed");
+  chpl_sync_unlock(s);
 }
 
 void chpl_sync_mark_and_signal_empty(chpl_sync_aux_t *s) {
   s->is_full = false;
-  chpl_sync_unlock(s);
   if (pthread_cond_signal(s->signal_empty))
     chpl_internal_error("pthread_cond_signal() failed");
+  chpl_sync_unlock(s);
 }
 
 chpl_bool chpl_sync_is_full(void *val_ptr, chpl_sync_aux_t *s, chpl_bool simple_sync_var) {

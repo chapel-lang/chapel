@@ -784,7 +784,6 @@ def _syncvar.writeEF(val:base_type) {
 
 def =(sv: sync, val:sv.base_type) {
   sv.writeEF(val);
-  return sv;
 }
 
 // Wait for full, set and signal full.
@@ -919,7 +918,6 @@ def _singlevar.writeEF(val:base_type) {
 
 def =(sv: single, value:sv.base_type) {
   sv.writeEF(value);
-  return sv;
 }
 
 def _singlevar.isFull {
@@ -943,6 +941,12 @@ class _EndCount {
 
 pragma "dont disable remote value forwarding"
 def _endCountAlloc() return new _EndCount();
+
+def _endCountFree(e: _EndCount) {
+  delete e.i;
+  delete e.b;
+  delete e;
+}
 
 pragma "dont disable remote value forwarding"
 def _upEndCount(e: _EndCount) {
@@ -984,7 +988,13 @@ def _downEndCount(e: _EndCount) {
 pragma "dont disable remote value forwarding"
 def _waitEndCount(e: _EndCount) {
   __primitive("execute tasks in list", e.taskList);
+  // First wait for the signal to be set.
   e.b.readFE();
+  // Then wait for e.i to be updated because we may free the end count
+  // class next; note that e.b needs to be signaled when e.i is in an
+  // empty state in cases where the upEndCount and downEndCount calls
+  // alternate.
+  e.i;
   __primitive("free task list", e.taskList);
 }
 

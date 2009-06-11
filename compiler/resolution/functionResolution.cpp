@@ -1731,6 +1731,15 @@ resolveCall(CallExpr* call, bool errorCheck) {
       lhs = se->var;
     INT_ASSERT(lhs);
 
+    if (CallExpr* assignment = toCallExpr(rhs)) {
+      if (FnSymbol* fn = assignment->isResolved()) {
+        if (!strcmp(fn->name, "=") && fn->retType == dtVoid) {
+          //          call->replace(assignment->remove());
+          return;
+        }
+      }
+    }
+
     FnSymbol* fn = toFnSymbol(call->parentSymbol);
 
     if (lhs->hasFlag(FLAG_TYPE_VARIABLE) && !isTypeExpr(rhs)) {
@@ -2601,6 +2610,8 @@ insertValueTemp(Expr* insertPoint, Expr* actual) {
 static Expr*
 postFold(Expr* expr) {
   Expr* result = expr;
+  if (!expr->parentSymbol)
+    return result;
   if (CallExpr* call = toCallExpr(expr)) {
     if (FnSymbol* fn = call->isResolved()) {
       if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM)) {
@@ -2677,6 +2688,12 @@ postFold(Expr* expr) {
           if (CallExpr* rhs = toCallExpr(call->get(2))) {
             if (rhs->isPrimitive(PRIM_TYPEOF)) {
               lhs->var->addFlag(FLAG_TYPE_VARIABLE);
+            }
+            if (FnSymbol* fn = rhs->isResolved()) {
+              if (!strcmp(fn->name, "=") && fn->retType == dtVoid) {
+                call->replace(rhs->remove());
+                result = rhs;
+              }
             }
           }
         }

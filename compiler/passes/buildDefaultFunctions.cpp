@@ -300,6 +300,7 @@ static void build_chpl_main(void) {
     chpl_main->insertAtHead(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
     chpl_main->insertAtHead(new DefExpr(endCount));
     chpl_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
+    //chpl_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
   }
   chpl_main->insertAtHead(new CallExpr(theProgram->initFn));
 }
