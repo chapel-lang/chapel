@@ -1,4 +1,7 @@
 # Suppress warning about variables used before defined
 XT_GEN_CFLAGS = -hnomessage=7212
 
+NO_IEEE_FLOAT_GEN_CFLAGS = -hfp2
+IEEE_FLOAT_GEN_CFLAGS = -hfp0
+
 include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xt
