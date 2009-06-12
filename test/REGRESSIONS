@@ -315,9 +315,43 @@ xt-cle-specific failures
 cray-/cce-specific regressions
 ==============================
 
-use-before-def warnings
------------------------
-*several*
+wrong result
+------------
+[Error matching program output for expressions/bradc/uminusVsTimesPrec]
+[Error matching program output for modules/standard/math/rint]
+[Error matching program output for release/examples/tutorials/fileIO]
+[Error matching program output for types/file/fileIO2]
+[Error matching program output for types/complex/bradc/negateimaginary3]
+[Error matching program output for types/complex/bradc/negativeimaginaryliteral]
+[Error matching program output for types/file/bradc/scalar/floatcomplexexceptions]
+
+warning about integer conversion causing change in sign
+-------------------------------------------------------
+[Error matching program output for reductions/deitz/test_scan1]
+[Error matching program output for trivial/waynew/identity]
+
+declaration expected but not found error
+----------------------------------------
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-fragmented]
+
+error differs
+-------------
+[Error matching program output for studies/hpcc/FFT/marybeth/fft]
+
+precision issues (?) -- is there a floating point flag we need to throw?
+------------------------------------------------------------------------
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
+[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for studies/madness/common/test_diff]
+[Error matching program output for studies/madness/common/test_gaxpy]
+[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching program output for users/rbarrett/diffuse2d-orig-blc]
 
 
 =============================================================
