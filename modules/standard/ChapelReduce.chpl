@@ -14,6 +14,9 @@ def _sum_type(type eltType) {
 
 class ReduceScanOp {
   var lock$: sync bool;
+  def ~ReduceScanOp {
+    delete lock$;
+  }
   def lock() {
     lock$.writeEF(true);
   }

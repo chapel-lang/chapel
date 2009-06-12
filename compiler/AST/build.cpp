@@ -956,8 +956,11 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
         new CallExpr(op,
           new NamedExpr("eltType", new SymExpr(eltType))))));
   if (isScan) {
-    fn->insertAtTail(
-      new CallExpr(PRIM_RETURN, new CallExpr("_scan", globalOp, data)));
+    VarSymbol* tmp = newTemp();
+    fn->insertAtTail(new DefExpr(tmp));
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("_scan", globalOp, data)));
+    fn->insertAtTail(new CallExpr(PRIM_DELETE, globalOp));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   } else {
     if (fSerial || fSerialForall) {
       VarSymbol* index = newTemp("_index");
@@ -1012,6 +1015,7 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
       combineBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("combine")), localOp));
       combineBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("unlock"))));
       followerBlock->insertAtTail(buildOnStmt(new SymExpr(globalOp), combineBlock));
+      followerBlock->insertAtTail(new CallExpr(PRIM_DELETE, localOp));
 
       BlockStmt* beginBlock = new BlockStmt();
       beginBlock->insertAtTail(new DefExpr(leaderIndexCopy));
@@ -1025,7 +1029,11 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
 
       fn->insertAtTail(new CondStmt(new SymExpr(gTryToken), leaderBlock, serialBlock));
     }
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("generate")))));
+    VarSymbol* tmp = newTemp();
+    fn->insertAtTail(new DefExpr(tmp));
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("generate")))));
+    fn->insertAtTail(new CallExpr(PRIM_DELETE, globalOp));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   }
   return new CallExpr(new DefExpr(fn));
 }
