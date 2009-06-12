@@ -942,6 +942,7 @@ class _EndCount {
 pragma "dont disable remote value forwarding"
 def _endCountAlloc() return new _EndCount();
 
+pragma "dont disable remote value forwarding"
 def _endCountFree(e: _EndCount) {
   delete e.i;
   delete e.b;
