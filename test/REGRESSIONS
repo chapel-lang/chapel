@@ -402,6 +402,10 @@ compilation timeout (04/03/09)
 ========================
 xt-gnu specific failures
 ========================
+The C compiler issues a warning when time.h and pthread.h are both included
+and the C code is compiled with -std=c99.
+-------------------------------------------------
+[Error matching program output for extern/bradc/externClock]
 
 
 ========================
