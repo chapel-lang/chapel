@@ -17,9 +17,9 @@
 general regressions
 ===================
 
-line numbers off in ChapelBase.chpl
------------------------------------
-[Error matching compiler output for users/brodtkorb/coercionQuestion]
+error matching output in new test (06/13/09)
+--------------------------------------------
+[Error matching program output for studies/parsec/blackscholes]
 
 spurious verification failures on RA (e.g. 04/04/09)
 ----------------------------------------------------
@@ -47,15 +47,17 @@ maxThreads is 300, but can't create more than 254 threads
 performance-specific regressions
 ================================
 
-timeouts + ??? (06/02/09)
--------------------------
-[Error matching performance keys for studies/shootout/nbody/nbody_iterator_7]
-[Error matching performance keys for studies/shootout/nbody/nbody_reductions_6]
+timeouts (06/02/09; 6/13/09)
+-----------------------------
+[Error matching performance keys for studies/parsec/blackscholes]
+[Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
+[Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6]
 [Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3]
 [Error: Timed out executing program studies/shootout/nbody/nbody_orig_1]
 [Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
 [Error: Timed out executing program studies/shootout/nbody/nbody_record_2]
 [Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
+[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2]
 
 infrequent seg fault on linux32
 -------------------------------
@@ -66,6 +68,10 @@ infrequent seg fault on linux32
 =============================
 valgrind-specific regressions
 =============================
+
+timout (06/14/09)
+-----------------
+[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2]
 
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
@@ -102,12 +108,6 @@ wide strings leaked (?) (04/02/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-??? (05/12/09)
---------------
-[Error matching program output for multilocale/deitz/needMultiLocales/diagnostics/test_remote_value_forwarding2]
-[Error matching program output for multilocale/deitz/needMultiLocales/streamCommCheck]
-
-
 timeout for new test (06/09/09)
 -------------------------------
 [Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2]
@@ -136,9 +136,9 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09, 04/18/09, 04/21/09, 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09, 06/11/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09, 04/18/09, 04/21/09, 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09, 06/11/09, 06/13/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09, 03/14/09, 03/22/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09, 03/24/09, 03/28/09, 04/02/09, 04/12/09, 04/22/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09, 03/24/09, 03/28/09, 04/02/09, 04/12/09, 04/22/09, 06/14/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc] (e.g., 01/29/09)
 [Error: Timed out executing program users/franzf/v1/chpl/main] (e.g., 01/29/09)
@@ -198,7 +198,7 @@ opts-specific tests
 (Example runs: 0)
  
 
-(Full run: 52 without standard errors)
+(Full run: 48)
 
 --no-dead-code-elimination
 --------------------------
@@ -239,10 +239,6 @@ opts-specific tests
 --baseline --no-local
 ------------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
-[Error: Timed out executing program parallel/begin/stonea/reports]
-[Error: Timed out executing program parallel/taskPool/figueroa/OneThread]
-[Error: Timed out executing program parallel/taskPool/figueroa/OneThreadSyncStmt]
-[Error: Timed out executing program parallel/taskPool/figueroa/QueuedTasks]
 [Error matching program output for studies/590o/bradc/psp2]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
@@ -279,7 +275,7 @@ intel-specific regressions
 
 spurious compilation timeout
 ----------------------------
-[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 06/01/09, 06/04/09, 06/06/09, 06/10/09)
+[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 06/01/09, 06/04/09, 06/06/09, 06/10/09, 06/14/09)
 
 compilation timeout (new with 11.x)
 -----------------------------------
@@ -319,11 +315,6 @@ wrong result
 ------------
 [Error matching program output for expressions/bradc/uminusVsTimesPrec]
 [Error matching program output for modules/standard/math/rint]
-[Error matching program output for release/examples/tutorials/fileIO]
-[Error matching program output for types/file/fileIO2]
-[Error matching program output for types/complex/bradc/negateimaginary3]
-[Error matching program output for types/complex/bradc/negativeimaginaryliteral]
-[Error matching program output for types/file/bradc/scalar/floatcomplexexceptions]
 
 warning about integer conversion causing change in sign
 -------------------------------------------------------
@@ -351,7 +342,6 @@ precision issues (?) -- is there a floating point flag we need to throw?
 [Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
-[Error matching program output for users/rbarrett/diffuse2d-orig-blc]
 
 
 =============================================================
@@ -412,10 +402,6 @@ compilation timeout (04/03/09)
 ========================
 xt-gnu specific failures
 ========================
-
-Something seems to be awry in the time.h header?
-------------------------------------------------
-[Error matching program output for extern/bradc/externClock]
 
 
 ========================
