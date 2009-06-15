@@ -161,34 +161,14 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz);
 static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz);
 static int makeTag(int threadID, int localeID);
 
-// A simple hash to combine the threadID and localeID into one
-// value that is small enough to use as a PVM message tag
-// Use the hash with a random number seeded with the time and the number
-// of PVM calls (lock_num) to have a pretty random tag
+int unique_tag = 1;
+// Just need something unique per process
 static int makeTag(int threadID, int localeID) {
-  const double A = .61803398874989;
-  double s;
   int tag;
-  int absTid = threadID < 0 ? -threadID : threadID;
-  float ftag;
-
-  s = A * absTid;
-  s -= (int)s;
-  tag = (int)(4096 * s);
-
-  tag = tag << 8;
-  tag += localeID;
-  tag = tag & TAGMASK;
-
-  srand((unsigned int)time(0));
-  tag = rand() + tag + lock_num;
-  ftag = (float)tag;
-  ftag = ftag/RAND_MAX;
-  ftag = ftag * 4194294;
-  tag = (int)ftag;
-  if (tag <= 0) tag = 1;
-  if (tag > 4194294) tag = 4194294;
-  
+  tag = unique_tag + (10000 * localeID);
+  unique_tag++;
+  while (tag > 4194294) (tag = tag - (1000 * localeID));
+  if (unique_tag > 4194294) unique_tag = 1;
   return tag;
 }
 
@@ -658,14 +638,14 @@ void chpl_comm_exit_all(int status) {
   }
 
   PVM_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_all");
-  PVM_SAFE(pvm_exit(), "pvm_exit", "chpl_comm_exit_all");
+  pvm_exit();
   return;
 }
 
 void chpl_comm_exit_any(int status) {
   fprintf(stderr, "%d: chpl error, calling exit_any with status %d!\n", chpl_localeID, status);
   PVM_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_any");
-  PVM_SAFE(pvm_exit(), "pvm_exit", "chpl_comm_exit_any");
+  pvm_halt();
   return;
 }
 
@@ -674,9 +654,17 @@ void chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln
     memmove(raddr, addr, size);
   } else {
     _chpl_message_info msg_info;
-    int tag = makeTag((int)pthread_self, chpl_localeID);
+    int tag;
+
 #if CHPL_DIST_DEBUG
     char debugMsg[DEBUG_MSG_LENGTH];
+#endif
+
+    // Note: this isn't a PVM call, but we need this locked to make
+    // sure PVM tags are unique.
+    PVM_SAFE(tag = makeTag((int)pthread_self, chpl_localeID), "makeTag", "chpl_comm_put");
+
+#if CHPL_DIST_DEBUG
     sprintf(debugMsg, "chpl_comm_put(loc=(%d, %p), rem=(%d, %p), size=%d, tag=%d)", chpl_localeID, addr, locale, raddr, size, tag);
     PRINTF(debugMsg);
 #endif
@@ -701,9 +689,17 @@ void chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln
     memmove(raddr, addr, size);
   } else {
     _chpl_message_info msg_info;
-    int tag = makeTag((int)pthread_self, chpl_localeID);
+    int tag;
+
 #if CHPL_DIST_DEBUG
     char debugMsg[DEBUG_MSG_LENGTH];
+#endif
+
+    // Note: this isn't a PVM call, but we need this locked to make
+    // sure PVM tags are unique.
+    PVM_SAFE(tag = makeTag((int)pthread_self, chpl_localeID), "makeTag", "chpl_comm_get");
+
+#if CHPL_DIST_DEBUG
     sprintf(debugMsg, "chpl_comm_get(loc=(%d, %p), rem=(%d, %p), size=%d, tag=%d)", chpl_localeID, addr, locale, raddr, size, tag);
     PRINTF(debugMsg);
 #endif
@@ -728,9 +724,17 @@ void chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
     (*chpl_ftable[fid])(arg);
   } else {
     _chpl_message_info msg_info;
-    int tag = makeTag((int)pthread_self, chpl_localeID);
+    int tag;
+
 #if CHPL_DIST_DEBUG
     char debugMsg[DEBUG_MSG_LENGTH];
+#endif
+
+    // Note: this isn't a PVM call, but we need this locked to make
+    // sure PVM tags are unique.
+    PVM_SAFE(tag = makeTag((int)pthread_self, chpl_localeID), "makeTag", "chpl_comm_fork");
+
+#if CHPL_DIST_DEBUG
     sprintf(debugMsg, "chpl_comm_fork(locale=%d, tag=%d)", locale, tag);
     PRINTF(debugMsg);
 #endif
@@ -748,14 +752,21 @@ void chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
 
 void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   _chpl_message_info msg_info;
+  int tag;
+
+#if CHPL_DIST_DEBUG
+    char debugMsg[DEBUG_MSG_LENGTH];
+#endif
+
   if (chpl_localeID == locale) {
     void* argCopy = chpl_malloc(1, arg_size, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
     memmove(argCopy, arg, arg_size);
     chpl_begin((chpl_fn_p)chpl_ftable[fid], argCopy, false, false, NULL);
   } else {
-    int tag = makeTag((int)pthread_self, chpl_localeID);
+    // Note: this isn't a PVM call, but we need this locked to make
+    // sure PVM tags are unique.
+    PVM_SAFE(tag = makeTag((int)pthread_self, chpl_localeID), "makeTag", "chpl_comm_fork_nb");
 #if CHPL_DIST_DEBUG
-    char debugMsg[DEBUG_MSG_LENGTH];
     sprintf(debugMsg, "chpl_comm_fork_nb(locale=%d, tag=%d)", locale, tag);
     PRINTF(debugMsg);
 #endif

@@ -32,6 +32,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
 
   int info;
   int infos[256];
+  int infos2[256];
   char myhostname[256];
   char pvmnodetoadd[256];
   char* pvmnodestoadd[2048];
@@ -40,6 +41,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   char* commandtopvm;
   char* environment;
   static char *hosts2[2048];
+  static char *hosts2redo[2048];
   int numt;
   int tids[32];
   static char *argtostart[] = {(char*)""};
@@ -128,6 +130,22 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     info = pvm_addhosts( (char **)hosts2, i, infos );
   }
   j = i;
+
+  // Something happened on addhosts -- likely old pvmd running
+  for (i = 0; i < j; i++) {
+    if (infos[i] < 0) {
+      sprintf(buffer, "ssh -q %s \"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3\"", hosts2[i]);
+      system(buffer);
+      hosts2redo[0] = hosts2[i];
+      info = pvm_addhosts( (char **)hosts2redo, 1, infos2);
+      if (infos2[0] < 0) {
+        fprintf(stderr, "Remote error on %s: %d\n", hosts2redo[0], infos2[0]);
+        fprintf(stderr, "Shutting down host.\n");
+        pvm_halt();
+        chpl_internal_error("Exiting");
+      }
+    }
+  }
 
   pvmsize += strlen(getenv((char *)"PWD")) + strlen("/_real") + strlen(argv[0]);
 
