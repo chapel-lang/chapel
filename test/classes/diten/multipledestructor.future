@@ -1,0 +1,1 @@
+bug: multiply defined destructor causes segfault in compiler
