@@ -1,3 +1,9 @@
 #!/bin/sh
+export target=$1;
+export comm=`$CHPL_HOME/util/comm.pl`;
+if [[ $comm == 'none' ]]; then export target=$1.comm-$comm; fi
+cat $target.startgood > $1.good
+$CHPL_HOME/util/platform.pl --target | tr -d '\n' >> $1.good
+cat $target.stopgood >> $1.good
 sort $1.exec.out.tmp > $1.prediff.tmp
 mv $1.prediff.tmp $1.exec.out.tmp
