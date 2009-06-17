@@ -134,7 +134,7 @@ replaceLocalsWithFields(IteratorInfo* ii,
             }
           }
           if (defSet.set_in(se) ||
-              call && call->isPrimitive(PRIM_SET_MEMBER)) {
+              (call && call->isPrimitive(PRIM_SET_MEMBER))) {
             if (loop) {
               loop->insertAtHead(new CallExpr(PRIM_SET_MEMBER, ic, field, tmp));
             } else {
@@ -360,9 +360,9 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
       }
       for (int k = bb->exprs.n - 1; k >= 0; k--) {
         CallExpr* call = toCallExpr(bb->exprs.v[k]);
-        if (call && call->isPrimitive(PRIM_YIELD) ||
-            singleLoop && bb->exprs.v[k] == singleLoop->next ||
-            singleLoop && bb->exprs.v[k] == singleLoop->body.head) {
+        if ((call && call->isPrimitive(PRIM_YIELD)) ||
+            (singleLoop && bb->exprs.v[k] == singleLoop->next) ||
+            (singleLoop && bb->exprs.v[k] == singleLoop->body.head)) {
           for (int j = 0; j < locals.n; j++) {
             if (live.get(j)) {
               syms.add_exclusive(locals.v[j]);

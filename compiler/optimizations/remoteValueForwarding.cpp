@@ -90,7 +90,7 @@ isSafeToDeref(Symbol* ref,
   visited->set_add(ref);
 
   int numDefs = (defMap.get(ref)) ? defMap.get(ref)->n : 0;
-  if (isArgSymbol(ref) && numDefs > 0 || numDefs > 1)
+  if ((isArgSymbol(ref) && numDefs > 0) || numDefs > 1)
     return false;
 
   for_uses(use, useMap, ref) {

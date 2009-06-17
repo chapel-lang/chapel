@@ -538,9 +538,9 @@ makeHeapAllocations() {
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->var, heapType->getField(1))));
             use->replace(new SymExpr(tmp));
           }
-        } else if (call->isPrimitive(PRIM_GET_MEMBER) ||
+        } else if ((call->isPrimitive(PRIM_GET_MEMBER) ||
                    call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                   call->isPrimitive(PRIM_SET_MEMBER) &&
+                   call->isPrimitive(PRIM_SET_MEMBER)) &&
                    call->get(1) == use) {
           VarSymbol* tmp = newTemp(var->type->refType);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));

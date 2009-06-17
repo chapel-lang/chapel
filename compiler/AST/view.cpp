@@ -513,7 +513,7 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
     if (toBlockStmt(expr) ||
         toCondStmt(expr) ||
         toGotoStmt(expr) ||
-        expr->getStmtExpr() && expr->getStmtExpr() == expr) {
+        (expr->getStmtExpr() && expr->getStmtExpr() == expr)) {
       if (toBlockStmt(expr))
         fprintf(html_file, "}");
       fprintf(html_file, "</DL>\n");

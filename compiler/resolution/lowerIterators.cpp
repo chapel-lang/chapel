@@ -385,8 +385,8 @@ expand_for_loop(CallExpr* call) {
       iterator->type->defaultConstructor->getFormal(1)->type->defaultConstructor->iteratorInfo &&
       canInlineIterator(iterator->type->defaultConstructor->getFormal(1)->type->defaultConstructor) &&
       (iterator->type->dispatchChildren.n == 0 ||
-       iterator->type->dispatchChildren.n == 1 &&
-       iterator->type->dispatchChildren.v[0] == dtObject)) {
+       (iterator->type->dispatchChildren.n == 1 &&
+       iterator->type->dispatchChildren.v[0] == dtObject))) {
     expandIteratorInline(call);
   } else {
     SET_LINENO(call);

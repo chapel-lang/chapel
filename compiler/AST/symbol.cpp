@@ -244,15 +244,17 @@ void VarSymbol::codegenDef(FILE* outfile) {
   type->codegen(outfile);
   fprintf(outfile, " ");
   fprintf(outfile, "%s", cname);
-  if (ClassType* ct = toClassType(type)) 
+  if (ClassType* ct = toClassType(type)) {
     if (ct->classTag == CLASS_CLASS) {
-      if (isFnSymbol(defPoint->parentSymbol))
+      if (isFnSymbol(defPoint->parentSymbol)) {
         fprintf(outfile, " = NULL");
+      }
     } else if (ct->symbol->hasFlag(FLAG_WIDE) ||
                ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       if (isFnSymbol(defPoint->parentSymbol))
         fprintf(outfile, " = {0,NULL}");
     }
+  }
   fprintf(outfile, ";\n");
 }
 

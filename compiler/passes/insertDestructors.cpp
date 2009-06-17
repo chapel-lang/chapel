@@ -154,8 +154,8 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
   forv_Vec(CallExpr, call, gCallExprs) {
     // look for casts from a numeric type to string,
     // since they will require allocating memory for the resulting string
-    if (call->isPrimitive(PRIM_CAST) && toSymExpr(call->get(1))->var->type == dtString &&
-        is_arithmetic_type(toSymExpr(call->get(2))->var->type) ||
+    if ((call->isPrimitive(PRIM_CAST) && toSymExpr(call->get(1))->var->type == dtString &&
+        is_arithmetic_type(toSymExpr(call->get(2))->var->type)) ||
         call->isPrimitive(PRIM_STRING_COPY))
       constructorCalls.add(call);
   }
@@ -167,11 +167,11 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
       INT_ASSERT(move->isPrimitive(PRIM_MOVE));
       SymExpr* lhs = toSymExpr(move->get(1));
       INT_ASSERT(lhs);
-      if (!lhs->var->type->destructor &&
+      if ((!lhs->var->type->destructor &&
           !call->isPrimitive(PRIM_CAST) && !call->isPrimitive(PRIM_STRING_COPY) &&
           (lhs->var->type != dtString || !isSymExpr(call->baseExpr) ||
-            strcmp(toSymExpr(call->baseExpr)->var->name, "_cast") &&
-            strcmp(toSymExpr(call->baseExpr)->var->name, "_copy")) ||
+            (strcmp(toSymExpr(call->baseExpr)->var->name, "_cast") &&
+            strcmp(toSymExpr(call->baseExpr)->var->name, "_copy")))) ||
           // don't destroy global variables
           isModuleSymbol(lhs->var->defPoint->parentSymbol)) {
         continue;
