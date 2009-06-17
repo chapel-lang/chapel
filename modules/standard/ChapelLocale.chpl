@@ -137,8 +137,8 @@ config const
   memLeaksLog: string = "";
 
 def chpl_startTrackingMemory() {
-  coforall r in Realms do
-    on r do
+  coforall r in Realms {
+    if r.Locales(0) == here {
       coforall loc in r.Locales {
         if loc == here {
           __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memMax, memThreshold, memLog, memLeaksLog);
@@ -146,4 +146,16 @@ def chpl_startTrackingMemory() {
             __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memMax, memThreshold, memLog, memLeaksLog);
         }
       }
+    } else {
+      on r {
+        coforall loc in r.Locales {
+          if loc == here {
+            __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memMax, memThreshold, memLog, memLeaksLog);
+          } else on loc {
+              __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memMax, memThreshold, memLog, memLeaksLog);
+          }
+        }
+      }
+    }
+  }
 }
