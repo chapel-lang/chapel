@@ -52,7 +52,6 @@ def chpl_setupRealm(id, numLocales, baseID) {
       defaultDist = new DefaultDist();
     }
     tmp = new realm(id, chpl_getRealmType(id), numLocales, baseID);
-    chpl_thisRealm = tmp;
   }
   return tmp;
 }

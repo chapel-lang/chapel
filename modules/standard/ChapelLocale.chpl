@@ -38,6 +38,7 @@ def chpl_setupLocale(r, id, uid) {
   on __primitive("chpl_on_locale_num", uid) {
     tmp = new locale(r, id, uid);
     _here = tmp;
+    chpl_thisRealm = r;
     if (defaultDist == nil) {
       defaultDist = new DefaultDist();
     }
