@@ -159,9 +159,9 @@ const char* chpl_realmType(int32_t r) {
   if (r == 0) {
     return "linux";
   } else if (r == 1) {
-    return "sunos";
+    return "darwin";
   } else if (r == 2) {
-    return "macos";
+    return "sunos";
   } else {
     return "linux64";
   }
