@@ -58,6 +58,7 @@ $sleep_time = 1;                       # polling time (sec) to distribute work
 $incl_futures = 0;
 $filedist = 0;
 $valgrind = 0;
+$memleaks = "/dev/null";
 $memleaksflag = 0;
 $suppressions = "";
 
