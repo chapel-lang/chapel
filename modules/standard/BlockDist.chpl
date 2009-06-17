@@ -42,7 +42,7 @@ class Block1D : BaseDist {
   const locDist: [targetLocDom] LocBlock1DDist(idxType);
 
   def Block1D(type idxType = int(64), bbox: domain(1, idxType),
-              targetLocales: [] locale = Locales, 
+              targetLocales: [] locale = thisRealm.Locales, 
 	      tasksPerLocale = 0) {
     boundingBox = bbox;
     targetLocDom = [0..#targetLocales.numElements]; // 0-based for simplicity

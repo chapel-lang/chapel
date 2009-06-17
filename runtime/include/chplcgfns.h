@@ -6,6 +6,8 @@
 
 /* This header file is for routines that are in the generated code */
 
+extern int32_t chpl_numRealms;
+
 /* used for entry point: */
 extern void chpl_main(void);
 

@@ -41,7 +41,7 @@ class Block : BaseDist {
   def Block(param rank: int,
             type idxType = int(64),
             bbox: domain(rank, idxType),
-            targetLocales: [] locale = Locales, 
+            targetLocales: [] locale = thisRealm.Locales, 
             tasksPerLocale = 0) {
     boundingBox = bbox;
     if rank == 1 {

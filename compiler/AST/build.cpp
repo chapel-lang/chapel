@@ -2,6 +2,7 @@
 #include "astutil.h"
 #include "baseAST.h"
 #include "expr.h"
+#include "parser.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -264,8 +265,8 @@ void createInitFn(ModuleSymbol* mod) {
 }
 
 
-ModuleSymbol* buildModule(const char* name, ModTag type, BlockStmt* block, const char* filename) {
-  ModuleSymbol* mod = new ModuleSymbol(name, type, block);
+ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename) {
+  ModuleSymbol* mod = new ModuleSymbol(name, moduleType, block);
   mod->filename = astr(filename);
   createInitFn(mod);
   return mod;

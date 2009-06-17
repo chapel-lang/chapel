@@ -1,6 +1,9 @@
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include "astutil.h"
 #include "driver.h"
 #include "files.h"
+#include "misc.h"
 #include "parser.h"
 #include "passes.h"
 #include "stringutil.h"
@@ -8,10 +11,14 @@
 #include "countTokens.h"
 #include "yy.h"
 
-static ModuleSymbol* parseStandardModule(const char* name) {
-  static const char* modulePath = NULL;
+static ModuleSymbol* parseStandardModule(const char* name, 
+                                         const char* modulePath = NULL) {
+  static const char* defaultModulePath = NULL;
+  if (defaultModulePath == NULL) {
+    defaultModulePath = astr(CHPL_HOME, "/modules/standard/");
+  }
   if (modulePath == NULL) {
-    modulePath = astr(CHPL_HOME, "/modules/standard/");
+    modulePath = defaultModulePath;
   }
   return ParseFile(astr(modulePath, name), MOD_STANDARD);
 }
@@ -19,8 +26,15 @@ static ModuleSymbol* parseStandardModule(const char* name) {
 static void parseStandardModules(void) {
   baseModule = parseStandardModule("ChapelBase.chpl");
 
-  standardModule = parseStandardModule("ChapelStandard.chpl");
+  int32_t numRealms = getNumRealms();
+  standardModule = parseStandardModule("ChapelStandard.chpl"); 
+
+  parseStandardModule(astr("ChapelNumLocales-", ((numRealms == 1) ?
+                                                 "singlerealm" :
+                                                 "multirealm"), ".chpl"));
+  parseStandardModule("ChapelThreads.chpl");
   parseStandardModule("ChapelLocale.chpl");
+  parseStandardModule("ChapelRealm.chpl");
   parseStandardModule("ChapelIO.chpl");
   parseStandardModule("ChapelTuple.chpl");
   parseStandardModule("ChapelReduce.chpl");

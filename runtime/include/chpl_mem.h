@@ -64,7 +64,8 @@ const char* chpl_rt_memDescs[] = {
   "mutex",
   "lock report data",
   "task pool descriptor",
-  "task list descriptor"
+  "task list descriptor",
+  "arrays for localesPerRealm"
 };
 #endif
 typedef enum {
@@ -109,6 +110,7 @@ typedef enum {
   CHPL_RT_MD_LOCK_REPORT_DATA,
   CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
   CHPL_RT_MD_TASK_LIST_DESCRIPTOR,
+  CHPL_RT_MD_LOCALES_PER_REALM,
   CHPL_RT_MD_NUM
 } chpl_rt_enum_memDescs;
 extern const char* chpl_memDescs[];

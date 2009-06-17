@@ -110,9 +110,78 @@ void parseNumLocales(const char* numPtr, int32_t lineno, chpl_string filename) {
   }
 }
 
+extern int32_t chpl_numRealms;
+static int32_t* chpl_arg_LocalesPerRealm;
+static int32_t* chpl_base_unique_localeID;
+
+void parseLocalesPerRealm(const char* arrPtr, int32_t lineno, 
+                          chpl_string filename) {
+  const char* startPtr = arrPtr;
+  int32_t baseID = 0;
+  int i;
+  chpl_arg_LocalesPerRealm = chpl_malloc(chpl_numRealms, sizeof(int32_t),
+                                         CHPL_RT_MD_LOCALES_PER_REALM, 0, NULL);
+  chpl_base_unique_localeID = chpl_malloc(chpl_numRealms, sizeof(int32_t),
+                                          CHPL_RT_MD_LOCALES_PER_REALM, 0, NULL);
+  for (i=0; i<chpl_numRealms; i++) {
+    int charsRead;
+    int numRead = sscanf(startPtr, "%"SCNd32"%n", &chpl_arg_LocalesPerRealm[i],
+                         &charsRead);
+    if (numRead == 0) {
+      chpl_error("--localesPerRealm didn't have enough values", 0, NULL);
+    }
+    chpl_base_unique_localeID[i] = baseID;
+    baseID += chpl_arg_LocalesPerRealm[i];
+    startPtr += charsRead;
+  }
+}
+
+int32_t chpl_localesPerRealm(int32_t r) {
+  if (r >= chpl_numRealms) {
+    char message[80];
+    sprintf(message, 
+            "--localesPerRealm didn't specify a number of locales for realm %" 
+            PRId32, r);
+    chpl_error(message, 0, NULL);
+  }
+  return chpl_arg_LocalesPerRealm[r];
+}
+
+int32_t chpl_baseUniqueLocaleID(int32_t r) {
+  if (r >= chpl_numRealms) {
+    chpl_error("Trying to query using realmID > numRealms", 0, NULL);
+  }
+  return chpl_base_unique_localeID[r];
+}
+
+
+const char* chpl_realmType(int32_t r) {
+  if (r == 0) {
+    return "linux";
+  } else if (r == 1) {
+    return "sunos";
+  } else if (r == 2) {
+    return "macos";
+  } else {
+    return "linux64";
+  }
+}
+
 
 int32_t getArgNumLocales(void) {
-  return _argNumLocales;
+  int32_t retval = 0;
+  if (chpl_numRealms == 1) {
+    if (_argNumLocales) {
+      retval = _argNumLocales;
+    }
+  } else {
+    int i;
+    retval = 0;
+    for (i=0; i<chpl_numRealms; i++) {
+      retval += chpl_arg_LocalesPerRealm[i];
+    }
+  }
+  return retval;
 }
 
 

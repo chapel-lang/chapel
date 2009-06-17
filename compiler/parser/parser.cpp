@@ -62,7 +62,7 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType) {
 
   if (!yyblock->body.head || !containsOnlyModules(yyblock)) {
     const char* modulename = filenameToModulename(filename);
-    newModule = buildModule(modulename, modType, yyblock, yyfilename);
+    newModule = buildModule(modulename, yyblock, yyfilename);
   }
   if (newModule) {
     theProgram->block->insertAtTail(new DefExpr(newModule));

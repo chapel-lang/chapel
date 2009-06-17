@@ -1,4 +1,6 @@
 #define EXTERN
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include "chpl.h"
 #include "arg.h"
 #include "countTokens.h"
@@ -219,6 +221,25 @@ static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
 }
 
 
+int32_t getNumRealms(void) {
+  static int32_t numRealms = 0;
+  if (numRealms == 0) {
+    const char* numRealmsStr = configParamMap.get(astr("numRealms"));
+    if (numRealmsStr != NULL) {
+      char extraChar;
+      int numScans = sscanf(numRealmsStr, "%"PRId32"%c", &numRealms, &extraChar);
+      if (numScans != 1) {
+        USR_FATAL("numRealms value is not of type int(32): %s", numRealmsStr);
+      }
+      if (numRealms < 1) {
+        USR_FATAL("numRealms must be a positive number");
+      }
+    } else {
+      numRealms = 1;
+    }
+  }
+  return numRealms;
+}
 
 
 static void verifySaveCDir(ArgumentState* arg, char* unused) {

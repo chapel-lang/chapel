@@ -635,7 +635,7 @@ use_stmt_ls:
 
 mod_decl_stmt:
   TMODULE identifier TLCBR stmt_ls TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($2, MOD_USER, $4, yyfilename))); }
+    { $$ = buildChapelStmt(new DefExpr(buildModule($2, $4, yyfilename))); }
 ;
 
 

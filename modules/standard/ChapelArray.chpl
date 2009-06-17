@@ -8,18 +8,21 @@ def _newPrivatizedClass(value) {
   privatizeLock$.writeEF(true);
   var n = __primitive("chpl_numPrivatizedClasses");
   var hereID = here.id;
-  coforall loc in Locales {
-    on loc {
-      if hereID != here.id {
-        var mine = value.privatize();
-        __primitive("chpl_newPrivatizedClass", mine);
-        mine.pid = n;
-      } else {
-        __primitive("chpl_newPrivatizedClass", value);
-        value.pid = n;
+  coforall r in Realms do
+    on r {
+      coforall loc in r.Locales {
+        on loc {
+          if hereID != here.id {
+            var mine = value.privatize();
+            __primitive("chpl_newPrivatizedClass", mine);
+            mine.pid = n;
+          } else {
+            __primitive("chpl_newPrivatizedClass", value);
+            value.pid = n;
+          }
+        }
       }
     }
-  }
   privatizeLock$.readFE();
   return n;
 }
@@ -303,15 +306,18 @@ record _domain {
       var other = _value;
       var id = _value.pid;
       var hereID = here.id;
-      coforall loc in Locales {
-        on loc {
-          if hereID != here.id {
-            var tc = _valueType;
-            var pc = __primitive("chpl_getPrivatizedClass", tc, id);
-            pc.reprivatize(other);
+      coforall r in Realms do
+        on r {
+          coforall loc in r.Locales {
+            on loc {
+              if hereID != here.id {
+                var tc = _valueType;
+                var pc = __primitive("chpl_getPrivatizedClass", tc, id);
+                pc.reprivatize(other);
+              }
+            }
           }
         }
-      }
     }
   }
 

@@ -1,4 +1,6 @@
 use ChapelBase;
+use ChapelNumLocales;
+use ChapelThreads;
 use ChapelIO;
 use ChapelTuple;
 use ChapelRange;
@@ -6,6 +8,7 @@ use ChapelReduce;
 use ChapelArray;
 use ChapelDistribution;
 use ChapelLocale;
+use ChapelRealm;
 use DefaultArithmetic;
 use DefaultAssociative;
 use DefaultSparse;

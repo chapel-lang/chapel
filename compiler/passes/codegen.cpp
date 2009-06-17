@@ -478,6 +478,8 @@ codegen_config(FILE* outfile) {
 
   fprintf(outfile, "}\n");
 
+  fprintf(outfile, "int32_t chpl_numRealms = %d;\n", getNumRealms());
+
   closeCFile(&configFile);
   beautify(&configFile);
 }

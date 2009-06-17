@@ -62,21 +62,7 @@ def +(param s: string, param x: bool) param
 def +(param x: bool, param s: string) param
   return x:string + s;
 
-// the number of locales on which to run the program
-config const numLocales: int = __primitive("chpl_comm_default_num_locales");
-
-// the maximum number of threads that can be live at any given time
-config const maxThreads: int = __primitive("chpl_maxThreads");
-const maxThreadsLimit: int = __primitive("chpl_maxThreadsLimit");
-if maxThreadsLimit != 0 {
-  if (maxThreads > maxThreadsLimit) then
-    __primitive("chpl_warning",
-                "specified value of " + maxThreads
-                  + " for maxThreads is too high; limit is " + maxThreadsLimit);
-  else if (maxThreads == 0) then
-    __primitive("chpl_warning",
-                "maxThreads is unbounded; however, the limit is " + maxThreadsLimit);
-}
+config param numRealms: int(32) = 1;
 
 def _throwOpError(param op: string) {
     compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
