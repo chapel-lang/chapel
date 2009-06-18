@@ -21,7 +21,8 @@ record OptionData {
 	var DGrefval : fptype;	// DerivaGem Reference Value
 }
 
-var numError : sync int = 0;
+
+var numError : int = 0;
 
 config var numOptions : int(64) = 1000;
 config const ERR_CHK = false;
@@ -106,26 +107,27 @@ def BlkSchlsEqEuroNoDiv( sptprice : fptype, strike : fptype, rate : fptype,
 	return OptionPrice;
 }
 
+def errChk(i, refval, price) : bool {
+	var priceDelta = refval - price;
+	if (abs(priceDelta) >= 1e-4) then {
+				    writeln("Error on ",i,". Computed=",price,
+						    ", Ref=",data(i).DGrefval,
+						    ", Delta=",priceDelta);
+				    return true;
+	}
+	else return false;
+}
+
 def bs() {
 	for 0..#NUM_RUNS do {
-		forall i in [Dom] do {
-			/* Calling main function to calculate option value based on 
-			 * Black & Sholes's equation.
-			 */
-			prices(i) = BlkSchlsEqEuroNoDiv( data(i).s, data(i).strike,
-					data(i).r, data(i).v, data(i).t, otype(i));
-
-			if ERR_CHK then {
-				var priceDelta = data(i).DGrefval - prices(i);
-				if( abs(priceDelta) >= 1e-4 ){
-					writeln("Error on ",i,". Computed=",prices(i),
-							", Ref=",data(i).DGrefval,
-							", Delta=",priceDelta);
-					numError += 1;
-				}
-			}
-		}
+		/* Calling main function to calculate option value based on 
+		 * Black & Sholes's equation.
+		 */
+		prices = BlkSchlsEqEuroNoDiv( data.s, data.strike,
+				data.r, data.v, data.t, otype);
 	}
+	if ERR_CHK then
+		numError = + reduce [i in [Dom]] errChk(i, data(i).DGrefval, prices(i));
 }
 
 def main() {
@@ -143,6 +145,7 @@ def main() {
 		infile.read(data(i).s, data(i).strike, data(i).r, data(i).divq, 
 				data(i).v, data(i).t, data(i).OptionType,
 				data(i).divs, data(i).DGrefval);
+
 		otype(i) = (data(i).OptionType == "P");
 	}
 

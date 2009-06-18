@@ -6,6 +6,7 @@ FLAGS = --fast --local
 
 TARGETS = \
 	  blackscholes \
+	  blackscholes_promote \
 
 default: all
 
