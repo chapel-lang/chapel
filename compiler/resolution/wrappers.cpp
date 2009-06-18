@@ -157,10 +157,12 @@ buildDefaultWrapper(FnSymbol* fn,
     } else {
       const char* temp_name = astr("_default_temp_", formal->name);
       VarSymbol* temp = newTemp(temp_name);
-      temp->addFlag(FLAG_MAYBE_PARAM);
+      if (formal->intent != INTENT_INOUT && formal->intent != INTENT_OUT)
+        temp->addFlag(FLAG_MAYBE_PARAM);
       if (formal->hasFlag(FLAG_TYPE_VARIABLE))
         temp->addFlag(FLAG_TYPE_VARIABLE);
       copy_map.put(formal, temp);
+      wrapper->insertAtTail(new DefExpr(temp));
       if (formal->intent == INTENT_OUT ||
           !formal->defaultExpr ||
           (formal->defaultExpr->body.length == 1 &&
@@ -172,12 +174,17 @@ buildDefaultWrapper(FnSymbol* fn,
           for_alist(expr, typeExpr->body) {
             wrapper->insertAtTail(expr->remove());
           }
-          wrapper->insertAtTail(new DefExpr(temp, NULL, wrapper->body->body.tail->remove()));
+          if (formal->hasFlag(FLAG_TYPE_VARIABLE))
+            wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapper->body->body.tail->remove()));
+          else
+            wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, wrapper->body->body.tail->remove())));
         } else {
-          wrapper->insertAtTail(new DefExpr(temp, NULL, new SymExpr(formal->type->symbol)));
+          if (formal->hasFlag(FLAG_TYPE_VARIABLE))
+            wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new SymExpr(formal->type->symbol)));
+          else
+            wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, new SymExpr(formal->type->symbol))));
         }
       } else {
-        wrapper->insertAtTail(new DefExpr(temp));
         BlockStmt* defaultExpr = formal->defaultExpr->copy();
         for_alist(expr, defaultExpr->body) {
           wrapper->insertAtTail(expr->remove());
