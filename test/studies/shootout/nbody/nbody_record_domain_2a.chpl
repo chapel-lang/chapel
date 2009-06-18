@@ -22,11 +22,11 @@ record Planet {
 	var mass : real;
 }
 
-def advance(nbodies:int, B: [] Planet, dt: real) {
+def advance(nbodies:int, B: [0..#nbodies] Planet, dt: real) {
 	var b2 : Planet;
 
 	for (b1, i) in (B, 0..) do {
-		for j in i+1..nbodies-1 do {
+		for j in [i+1..nbodies-1] do {
 			var b2 = B(j);
 			var dx = b1.x - b2.x;
 			var dy = b1.y - b2.y;
@@ -50,13 +50,13 @@ def advance(nbodies:int, B: [] Planet, dt: real) {
 	}
 }
 
-def energy(nbodies:int, B : [] Planet) : real {
+def energy(nbodies:int, B : [0..#nbodies] Planet) : real {
 	var b2 : Planet;
 	var e : real;
 
 	for (b1, i) in (B, 0..) do {
 		e += 0.5 * b1.mass * (b1.vx * b1.vx + b1.vy * b1.vy + b1.vz * b1.vz);
-		for j in i+1..nbodies-1 do {
+		for j in [i+1..nbodies-1] do {
 			b2 = B(j);
 			var dx = b1.x - b2.x;
 			var dy = b1.y - b2.y;
@@ -68,7 +68,7 @@ def energy(nbodies:int, B : [] Planet) : real {
 	return e;
 }
 
-def offset_momentum(nbodies:int, B : [] Planet) {
+def offset_momentum(nbodies:int, B : [0..#nbodies] Planet) {
 	var px,py,pz : real;
 	for b in B do {
 		px += b.vx * b.mass;

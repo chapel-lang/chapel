@@ -120,11 +120,11 @@ def main() {
 			5.15138902046611451e-05 * solar_mass
 			);
 	offset_momentum(bodies);
-	writeln(energy(bodies));
+	writeln(format("#.#########", energy(bodies)));
 	for 1..n do {
 		advance(bodies, 0.01);
 	}
-	writeln(energy(bodies));
+	writeln(format("#.#########", energy(bodies)));
 	if timer then {
 		t.stop();
 		writeln("Time elapsed : ", t.elapsed(), " seconds");

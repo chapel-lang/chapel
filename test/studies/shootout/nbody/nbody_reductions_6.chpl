@@ -14,8 +14,8 @@ config const timer : bool = false;
 param PI = 3.141592653589793;
 const solar_mass = (4 * PI * PI);
 param days_per_year = 365.24;
-const vecLen = [0..2];
-const NBODIES = [0..4];
+const vecLen = 0..2;
+const NBODIES = 0..4;
 
 var t : Timer;
 
@@ -101,11 +101,11 @@ def main() {
 	bodies(4) = new Planet(p4,v4, 5.15138902046611451e-05 * solar_mass);
 
 	offset_momentum(bodies);
-	writeln(energy(bodies));
+	writeln(format("#.#########", energy(bodies)));
 	for 1..n do {
 		advance(bodies, 0.01);
 	}
-	writeln(energy(bodies));
+	writeln(format("#.#########", energy(bodies)));
 	if timer then {
 		t.stop();
 		writeln("Time elapsed : ", t.elapsed(), " seconds");

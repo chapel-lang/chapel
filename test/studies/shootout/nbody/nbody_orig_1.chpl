@@ -24,11 +24,11 @@ class Planet {
 	var mass : real;
 }
 
-def advance(nbodies:int, B: [0..#nbodies] Planet, dt: real) {
+def advance(nbodies:int, B: [] Planet, dt: real) {
 	var b2 : Planet;
 
 	for (b1, i) in (B, 0..) do {
-		for j in [i+1..nbodies-1] do {
+		for j in i+1..nbodies-1 do {
 			b2 = B(j);
 			var dx = b1.x - b2.x;
 			var dy = b1.y - b2.y;
@@ -51,14 +51,14 @@ def advance(nbodies:int, B: [0..#nbodies] Planet, dt: real) {
 	}
 }
 
-def energy(nbodies:int, B : [0..#nbodies] Planet) : real {
+def energy(nbodies:int, B : [] Planet) : real {
 	var b2 : Planet;
 	var e : real;
 
 	for (b1, i) in (B, 0..) do {
 		e += 0.5 * b1.mass * (b1.vx * b1.vx + b1.vy * b1.vy + b1.vz * b1.vz);
 		
-		for j in [i+1..nbodies-1] do {
+		for j in i+1..nbodies-1 do {
 			b2 = B(j);
 			var dx = b1.x - b2.x;
 			var dy = b1.y - b2.y;
@@ -70,7 +70,7 @@ def energy(nbodies:int, B : [0..#nbodies] Planet) : real {
 	return e;
 }
 
-def offset_momentum(nbodies:int, B : [0..#nbodies] Planet) {
+def offset_momentum(nbodies:int, B : [] Planet) {
 	var px,py,pz : real;
 	for b in B do {
 		px += b.vx * b.mass;
@@ -127,11 +127,11 @@ def main() {
 			5.15138902046611451e-05 * solar_mass
 			);
 	offset_momentum(NBODIES, bodies);
-	writeln(energy(NBODIES, bodies));
+	writeln(format("#.#########", energy(NBODIES, bodies)));
 	for 1..n do {
 		advance(NBODIES, bodies, 0.01);
 	}
-	writeln(energy(NBODIES, bodies));
+	writeln(format("#.#########", energy(NBODIES, bodies)));
 	if timer then {
 		t.stop();
 		writeln("Time elapsed : ", t.elapsed(), " seconds");

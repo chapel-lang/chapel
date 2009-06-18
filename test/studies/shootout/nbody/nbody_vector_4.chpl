@@ -29,6 +29,7 @@ def advance(B: [] Planet, dt: real) {
 	for (b1, i) in (B, 0..) do {
 		for b2 in B[i+1..] do {
 			var d : [0..2] real = b1.coord_vector - b2.coord_vector;
+			//var d : [] real = b1.coord_vector - b2.coord_vector;
 			var distance = sqrt(d[0]**2 + d[1]**2 + d[2]**2);
 			var mag = dt / (distance**3);
 			b1.vel_vector -= d * b2.mass * mag;
@@ -100,11 +101,11 @@ def main() {
 	bodies(4) = new Planet(p4,v4, 5.15138902046611451e-05 * solar_mass);
 
 	offset_momentum(bodies);
-	writeln(energy(bodies));
+	writeln(format("#.#########", energy(bodies)));
 	for 1..n do {
 		advance(bodies, 0.01);
 	}
-	writeln(energy(bodies));
+	writeln(format("#.#########", energy(bodies)));
 	if timer then {
 		t.stop();
 		writeln("Time elapsed : ", t.elapsed(), " seconds");
