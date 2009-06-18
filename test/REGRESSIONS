@@ -17,10 +17,6 @@
 general regressions
 ===================
 
-thinko with the platform-specificity of the .good file for this test
---------------------------------------------------------------------
-[Error matching program output for multirealm/hello-multirealm]
-
 spurious verification failures on RA (e.g. 04/04/09)
 ----------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -87,13 +83,6 @@ no longer needs to be suppressed?
 no-local regressions
 ====================
 
-regressions due to poor on statement for maxThreads==1 executions (06/17/09)
-----------------------------------------------------------------------------
-[Error matching program output for parallel/begin/stonea/reports]
-[Error: Timed out executing program parallel/taskPool/figueroa/OneThreadSyncStmt]
-[Error: Timed out executing program parallel/taskPool/figueroa/OneThread]
-[Error: Timed out executing program parallel/taskPool/figueroa/QueuedTasks]
-
 ???
 ---
 [Error matching program output for memory/figueroa/ClassInheritance1]
@@ -113,11 +102,6 @@ wide strings leaked (?) (04/02/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
-
-regressions due to poor on statement for maxThreads==1 executions (06/17/09)
-----------------------------------------------------------------------------
-[Error matching program output for memory/figueroa/printFinalMemStat]
-[Error matching program output for parallel/coforall/stonea/reports]
 
 memory stuff in flux (06/06/09)
 -------------------------------
@@ -173,8 +157,8 @@ GASNet unable to start polling thread
 baseline-specific tests
 =======================
 
-regressions due to poor on statement for maxThreads==1 executions (06/17/09)
-----------------------------------------------------------------------------
+??? (06/17/09)
+--------------
 [Error matching program output for classes/diten/test_destructor2]
 
 ??? (04/11/09)
