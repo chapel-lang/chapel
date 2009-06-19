@@ -34,6 +34,9 @@ static void parseStandardModules(void) {
                                                  "multirealm"), ".chpl"));
   parseStandardModule("ChapelThreads.chpl");
   parseStandardModule("ChapelLocale.chpl");
+  parseStandardModule(astr("ChapelRealmSpace-", ((numRealms == 1) ?
+                                                 "singlerealm" :
+                                                 "multirealm"), ".chpl"));
   parseStandardModule("ChapelRealm.chpl");
   parseStandardModule("ChapelIO.chpl");
   parseStandardModule("ChapelTuple.chpl");

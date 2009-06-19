@@ -1,5 +1,3 @@
-use DefaultArithmetic;
-
 // These three variables would be more logical in ChapelLocale.chpl,
 // but I ran into the nasty "sensitive to function resolution order"
 // bug when I did that.
@@ -13,16 +11,6 @@ def here return _here;
 
 pragma "private" var chpl_thisRealm: realm;
 def thisRealm return chpl_thisRealm;
-
-const RealmBox: domain(1) = [0..numRealms-1];
-
-const RealmSpace: sparse subdomain(RealmBox) = chpl_genNonEmptyRealms();
-
-def chpl_genNonEmptyRealms() {
-  for i in RealmBox do
-    if chpl_numLocales(i) > 0 then
-      yield i;
-}
 
 const Realms: [r in RealmSpace] realm = chpl_setupRealm(r, chpl_numLocales(r), 
                                                         chpl_baseLocaleID(r));

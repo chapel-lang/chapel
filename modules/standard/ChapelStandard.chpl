@@ -8,6 +8,7 @@ use ChapelReduce;
 use ChapelArray;
 use ChapelDistribution;
 use ChapelLocale;
+use ChapelRealmSpace;
 use ChapelRealm;
 use DefaultArithmetic;
 use DefaultAssociative;
