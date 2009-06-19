@@ -1,3 +1,4 @@
+#include "arg.h"
 #include "chplrt.h"
 #include "chplcomm_locales.h"
 #include "error.h"
@@ -12,9 +13,7 @@
 // multiple calls to the routine.
 //
 int chpl_comm_default_num_locales(void) {
-  // This is probably a good default for ARMCI:
-  chpl_error("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
-  return 0;
+  return chpl_specify_locales_error();
 }
 
 

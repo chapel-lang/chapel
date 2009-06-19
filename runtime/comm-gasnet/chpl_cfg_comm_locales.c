@@ -1,3 +1,4 @@
+#include "arg.h"
 #include "chplrt.h"
 #include "chplcomm_locales.h"
 #include "error.h"
@@ -6,8 +7,7 @@ int chpl_comm_default_num_locales(void) {
 #if defined(GASNET_CONDUIT_PORTALS)
   return chpl_numLocales;
 #else
-  chpl_error("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
-  return 0;
+  return chpl_specify_locales_error();
 #endif
 }
 

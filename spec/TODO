@@ -1,3 +1,23 @@
+Domains and Arrays
+------------------
+
+* clarify distinction between sparse domains and associative domains
+  of integers?
+
+* summary implies that an associative domain is the same thing as a
+  domain?
+
+* better example of promotion than domain assignment of domain to
+  array?  (see mail with Michael Ferguson)
+
+* better array slicing example (see mail with Michael Ferguson)
+
+* note that array slicing doesn't result in a renumbering of the array
+  -- global indices are preserved -- contrasts with Perl, Python
+
+
+* zippered vs. tensor indexing
+
 TODOs from email:
 
 - last sentence of 23.3.1 : "If there are conflicting distributions"

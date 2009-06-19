@@ -341,3 +341,13 @@ void parseArgs(int* argc, char* argv[]) {
     printConfigVarTable();
   }
 }
+
+
+int chpl_specify_locales_error(void) {
+  if (chpl_numRealms == 1) {
+    chpl_error("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
+  } else {
+    chpl_error("Specify number of locales per realm via --localesPerRealm='<#> <#> ...'", 0, 0);
+  }
+  return 0;
+}

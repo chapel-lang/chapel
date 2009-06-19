@@ -7,7 +7,7 @@ coforall r in Realms {
       on loc {
         var myMessage = message + " (from realm " + thisRealm.id
                       + " of " + numRealms + ", locale " + here.id
-                      + " of " + r.numLocales;
+                      + " of " + thisRealm.numLocales;
         if (printLocaleName) then myMessage += " named " + here.name;
         myMessage += ")";
       
