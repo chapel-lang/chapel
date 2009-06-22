@@ -7,6 +7,7 @@
 
 #include "pvm3.h"
 
+#include "chplcgfns.h"
 #include "chplrt.h"
 #include "chplcomm.h"
 #include "chpl_mem.h"
@@ -24,7 +25,7 @@
 extern int gethostname(char *name, size_t namelen);
 
 static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
-  int i, j;                           // j acts as an interator for
+  int i, j;                           // j acts as an iterator for
                                       // pvm_addhosts and pvm_delhosts
                                       // if this node (running launcher) is
                                       // in hostfile, adding or deleting it
@@ -37,7 +38,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   char pvmnodetoadd[256];
   char* pvmnodestoadd[2048];
   int pvmsize = 0;
-  int signal = 0;
+  int commsig = 0;
   char* commandtopvm;
   char* environment;
   static char *hosts2[2048];
@@ -60,11 +61,15 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   // Add nodes to PVM configuration.
   FILE* nodelistfile;
 
+  int k;                              // k iterates over chpl_numRealms
+  int lpr;                            // locales per realm
+  char* realmtype;
   char* hostfile;
 
   // Get a new argument list for PVM spawn.
   // The last argument needs to be the number of locations for the PVM
   // comm layer to use it. The comm layer strips this off.
+  
   argv2 = chpl_malloc(((argc+1) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
   for (i=0; i < (argc-1); i++) {
     argv2[i] = argv[i+1];
@@ -74,36 +79,58 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   argv2[argc] = NULL;
 
   // Add nodes to PVM configuration.
-  hostfile = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
-  sprintf(hostfile, "%s%s", getenv((char *)"CHPL_HOME"), "/hostfile");
-
-  if ((nodelistfile = fopen(hostfile, "r")) == NULL) {
-    fprintf(stderr, "Make sure %s is present and readable.\n", hostfile);
-    chpl_free(hostfile, -1, "");
-    chpl_free(argv2, -1, "");
-    chpl_internal_error("Exiting.");
-  }
-  chpl_free(hostfile, -1, "");
   i = 0;
-  while (((fscanf(nodelistfile, "%s", pvmnodetoadd)) == 1) && (i < numLocales)) {
-    pvmnodestoadd[i] = chpl_malloc((strlen(pvmnodetoadd)+1), sizeof(char *), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
-    strcpy(pvmnodestoadd[i], pvmnodetoadd);
-    i++;
-  }
-  // Check to make sure user hasn't specified more nodes (-nl <n>) than
-  // what's included in the hostfile.
-  if (i < numLocales) {
-    fclose(nodelistfile);
-    while (i >= 0) {
-      chpl_free(pvmnodestoadd[i], -1, "");
-      i--;
+  for (k = 0; k < chpl_numRealms; k++) {
+    if (chpl_numRealms != 1) {
+      lpr = chpl_localesPerRealm(k);
+      if (lpr == 0) {
+        break;
+      }
+    } else {
+      lpr = numLocales;
     }
-    chpl_free(argv2, -1, "");
-    chpl_internal_error("Number of locales specified is greater than what's known in PVM hostfile.");
+    hostfile = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+    realmtype = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+    if (chpl_numRealms != 1) {
+      sprintf(realmtype, "%s", chpl_realmType(3-k));
+    } else {
+      sprintf(realmtype, "%s", getenv((char *)"CHPL_HOST_PLATFORM"));
+    }
+    sprintf(hostfile, "%s%s%s", getenv((char *)"CHPL_HOME"), "/hostfile.", realmtype);
+    
+    if ((nodelistfile = fopen(hostfile, "r")) == NULL) {
+      fprintf(stderr, "Make sure %s is present and readable.\n", hostfile);
+      chpl_free(hostfile, -1, "");
+      chpl_free(realmtype, -1, "");
+      chpl_free(argv2, -1, "");
+      chpl_internal_error("Exiting.");
+    }
+    chpl_free(hostfile, -1, "");
+    chpl_free(realmtype, -1, "");
+    j = 0;
+    while (((fscanf(nodelistfile, "%s", pvmnodetoadd)) == 1) && (j < lpr)) {
+      pvmnodestoadd[i] = chpl_malloc((strlen(pvmnodetoadd)+1), sizeof(char *), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+      strcpy(pvmnodestoadd[i], pvmnodetoadd);
+      fprintf(stderr, "Adding pvmnodestoadd[%d] of j iter %d: %s\n", i, j, pvmnodestoadd[i]);
+      i++;
+      j++;
+    }
+    // Check to make sure user hasn't specified more nodes (-nl <n>) than
+    // what's included in the hostfile.
+    if (j < lpr) {
+      fclose(nodelistfile);
+      while (i >= 0) {
+        chpl_free(pvmnodestoadd[i], -1, "");
+        i--;
+      }
+      chpl_free(argv2, -1, "");
+      chpl_internal_error("Number of locales specified is greater than what's known in PVM hostfile.");
+    }
+    fclose(nodelistfile);
   }
-  fclose(nodelistfile);
 
-  system((char *)"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3 ");
+  //  system((char *)"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3 ");
+  system((char *)"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm*");
   info = pvm_start_pvmd(0, argtostart, 1);
   if (info != 0) {
     if (info == PvmDupHost) {
@@ -133,7 +160,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
 
   // Something happened on addhosts -- likely old pvmd running
   for (i = 0; i < j; i++) {
-    if (infos[i] < 0) {
+    if ((infos[i] < 0) && (infos[i] != -28)) {
       sprintf(buffer, "ssh -q %s \"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3\"", hosts2[i]);
       system(buffer);
       hosts2redo[0] = hosts2[i];
@@ -202,11 +229,11 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
 
   info = pvm_mytid();
 
-  while (signal == 0) {
+  while (commsig == 0) {
     bufid = pvm_recv(-1, NOTIFYTAG);
-    pvm_upkint(&signal, 1, 1);
+    pvm_upkint(&commsig, 1, 1);
     // fprintf case
-    if (signal == 2) {
+    if (commsig == 2) {
       pvm_upkint(&fdnum, 1, 1);
       pvm_upkstr(buffer);
       if (fdnum == 0) {
@@ -217,17 +244,17 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
         fprintf(stderr, "%s", buffer);
       }
       fflush(stderr);
-      signal = 0;
+      commsig = 0;
     }
     // printf case
-    if (signal == 3) {
+    if (commsig == 3) {
       pvm_upkstr(buffer);
       printf("%s", buffer);
       fflush(stderr);
-      signal = 0;
+      commsig = 0;
     }
     // Run in gdb mode
-    if (signal == 4) {
+    if (commsig == 4) {
       pvm_upkint(&who, 1, 1);
       pvm_upkstr(buffer);
       pvm_upkstr(description);

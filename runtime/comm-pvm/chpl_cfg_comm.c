@@ -4,9 +4,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <pthread.h>
 
 #include "pvm3.h"
 
+#include "chplcgfns.h"
 #include "chplrt.h"
 #include "chplcomm.h"
 #include "chpl_mem.h"
@@ -14,7 +16,7 @@
 #include "chplthreads.h"
 #include "error.h"
 
-#define CHPL_DIST_DEBUG 0
+#define CHPL_DIST_DEBUG 1
 
 #if CHPL_DIST_DEBUG
 #define DEBUG_MSG_LENGTH 256
@@ -102,11 +104,13 @@ int tids[64]; // tid list for all nodes
 int instance;
 
 int okay_to_barrier = 1;
-int signal = 0;     // signal to parent process what to do
-                    // 0: noop
-                    // 1: halt
-                    // 2: fprintf
-                    // 3: printf
+int okay_to_poll = 0;
+int commsig = 0;     // signal to parent process what to do
+                     // 0: noop
+                     // 1: halt
+                     // 2: fprintf
+                     // 3: printf
+                     // 4: gdb
 
 extern int fileno(FILE *stream);
 
@@ -165,9 +169,10 @@ int unique_tag = 1;
 // Just need something unique per process
 static int makeTag(int threadID, int localeID) {
   int tag;
-  tag = unique_tag + (10000 * localeID);
+  int absTid = threadID < 0 ? -threadID : threadID;
+  tag = unique_tag + (1000 * localeID) + (100 * (absTid>>21));
   unique_tag++;
-  while (tag > 4194294) (tag = tag - (1000 * localeID));
+  while (tag > 4194294) (tag = tag - (100 * localeID) - (10 * (absTid>>21)));
   if (unique_tag > 4194294) unique_tag = 1;
   return tag;
 }
@@ -221,6 +226,9 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
     // function ID (or, if ChplCommFinish, nothing).
     if ((pvmtype == ChplCommPut) || (pvmtype == ChplCommGet)) {
       PVM_NO_LOCK_SAFE(pvm_upkint(&packagesize, 1, 1), "pvm_upkint", "chpl_pvm_recv");
+      if (packagesize != sizeof(void *)) {
+        chpl_internal_error("Error: multiple architectures not implemented yet");
+      }
       PVM_UNPACK_SAFE(pvm_upkbyte((void *)&(((_chpl_message_info *)buf)->u.data), packagesize, 1), "pvm_upkbyte", "chpl_pvm_recv");
     } else if (pvmtype == ChplCommFinish) {
       // Do nothing. Nothing in the union.
@@ -235,7 +243,11 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
 
   // Getting actual data
   } else {
-    PVM_UNPACK_SAFE(pvm_upkbyte(((void *)buf), sz, 1), "pvm_upkbyte", "chpl_pvm_recv");
+    PVM_NO_LOCK_SAFE(pvm_upkint(&packagesize, 1, 1), "pvm_upkint", "chpl_pvm_recv");
+    if (packagesize != sizeof(void *)) {
+      chpl_internal_error("Error: multiple architectures not implemented yet");
+    }
+    PVM_UNPACK_SAFE(pvm_upkbyte(buf, sz, 1), "pvm_upkbyte", "chpl_pvm_recv");
   }
 #if CHPL_DIST_DEBUG
   sprintf(debugMsg, "chpl_pvm_recv(%p, from=%d, tag=%d, sz=%d) done", buf, tid, msgtag, sz);
@@ -286,7 +298,9 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
     }
   // Sending actual data
   } else {
-    PVM_NO_LOCK_SAFE(pvm_pkbyte(((void *)buf), sz, 1), "pvm_pkbyte", "chpl_pvm_send");
+    packagesize = sizeof(void *);
+    PVM_NO_LOCK_SAFE(pvm_pkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
+    PVM_NO_LOCK_SAFE(pvm_pkbyte(buf, sz, 1), "pvm_pkbyte", "chpl_pvm_send");
   }
   PVM_UNPACK_SAFE(pvm_send(tid, msgtag), "pvm_pksend", "chpl_pvm_send");
 
@@ -308,6 +322,8 @@ static void polling(void* x) {
   PRINTF("Starting PVM polling thread");
   chpl_mutex_lock(&termination_lock);
   finished = 0;
+
+  while (!okay_to_poll) {}
 
   while (!finished) {
     PRINTF("Poller Receiving");
@@ -405,6 +421,10 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   char debugMsg[DEBUG_MSG_LENGTH];
 #endif
 
+  // Initialize locks
+  chpl_mutex_init(&pvm_lock);
+  chpl_mutex_init(&termination_lock);
+
   // Figure out who spawned this thread (if no one, this will be -23).
   // Still need to lock call, but since -23 is perfectly okay, don't fail.
   PVM_SAFE_OKAY_TO_FAIL(parent = pvm_parent(), "pvm_parent", "chpl_comm_init");
@@ -432,7 +452,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   }
   
 #if CHPL_DIST_DEBUG
-  sprintf(debugMsg, "Starting with chpl_numLocales=%d. I am chpl_localeID=%d, or tid=%d", chpl_numLocales, chpl_localeID, tids[chpl_localeID]);
+  sprintf(debugMsg, "Starting with chpl_numRealms=%d, chpl_numLocales=%d. I am chpl_localeID=%d, or tid=%d", chpl_numRealms, chpl_numLocales, chpl_localeID, tids[chpl_localeID]);
   PRINTF(debugMsg);
 #endif
 
@@ -456,17 +476,17 @@ static int mysystem(const char* command, const char* description, int ignorestat
   int bufid = 0;
   int me = tids[chpl_localeID];
   if (parent >= 0) {
-    signal = 4;
+    commsig = 4;
 
     PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "mysystem");
-    PVM_NO_LOCK_SAFE(pvm_pkint(&signal, 1, 1), "pvm_pkint", "mysystem");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "mysystem");
     PVM_NO_LOCK_SAFE(pvm_pkint(&me, 1, 1), "pvm_pkint", "mysystem");
     PVM_NO_LOCK_SAFE(pvm_pkstr((char *)command), "pvm_pkstr", "mysystem");
     PVM_NO_LOCK_SAFE(pvm_pkstr((char *)description), "pvm_pkstr", "mysystem");
     PVM_NO_LOCK_SAFE(pvm_pkint(&ignorestatus, 1, 1), "pvm_pkint", "mysystem");
     PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "mysystem");
 
-    signal = 0;
+    commsig = 0;
 
     while (bufid == 0) {
       PVM_PACK_SAFE(bufid = pvm_nrecv(parent, NOTIFYTAG), "pvm_nrecv", "mysystem");
@@ -517,6 +537,7 @@ void chpl_comm_rollcall(void) {
   if (chpl_numLocales != 1) {
     okay_to_barrier = 0;
   }
+  okay_to_poll = 1;
   return;
 }
 
@@ -541,15 +562,15 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
     // Either the root node broadcasting with pvm_bcast, or we're one of
     // the slave nodes getting the data.
     if (chpl_localeID == 0) {
-      PVM_PACK_SAFE(pvm_initsend(PvmDataRaw), "pvm_initsend", "chpl_comm_broadcast_global_vars");
+      PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_broadcast_global_vars");
       size = sizeof(void *);
       PVM_NO_LOCK_SAFE(pvm_pkint(&size, 1, 1), "pvm_pkint", "chpl_comm_broadcast_global_vars");
-      PVM_NO_LOCK_SAFE(pvm_pkbyte((char *)&chpl_globals_registry[i], size, 1), "pvm_pkbyte", "chpl_comm_broadcast_global_vars");
+      PVM_NO_LOCK_SAFE(pvm_pkbyte((char *)&(chpl_globals_registry[i]), size, 1), "pvm_pkbyte", "chpl_comm_broadcast_global_vars");
       PVM_UNPACK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_broadcast_global_vars");
     } else {
       PVM_PACK_SAFE(pvm_recv(-1, BCASTTAG), "pvm_recv", "chpl_comm_broadcast_global_vars");
       PVM_NO_LOCK_SAFE(pvm_upkint(&size, 1, 1), "pvm_upkint", "chpl_comm_broadcast_global_vars");
-      PVM_UNPACK_SAFE(pvm_upkbyte(chpl_globals_registry[i], size, 1), "pvm_upkbyte", "chpl_comm_broadcast_global_vars");
+      PVM_UNPACK_SAFE(pvm_upkbyte((char *)(chpl_globals_registry[i]), size, 1), "pvm_upkbyte", "chpl_comm_broadcast_global_vars");
     }
   }
   PRINTF("end broadcast globals");
@@ -616,7 +637,7 @@ void chpl_comm_exit_all(int status) {
   }
   else if (chpl_localeID == 0) {
     okay_to_barrier = 1;
-    PVM_PACK_SAFE(pvm_initsend(PvmDataRaw), "pvm_initsend", "chpl_comm_exit_all");
+    PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
     PVM_NO_LOCK_SAFE(pvm_pkint(&okay_to_barrier, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
     PVM_UNPACK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
     // Do a matching barrier to everyone still in chpl_comm_barrier.
@@ -630,10 +651,10 @@ void chpl_comm_exit_all(int status) {
   chpl_comm_barrier("About to finalize");
 
   // Send a signal back to the launcher that we're done.
-  signal = 1;
+  commsig = 1;
   if (parent >= 0) {
-    PVM_PACK_SAFE(pvm_initsend(PvmDataRaw), "pvm_initsend", "chpl_comm_exit_all");
-    PVM_NO_LOCK_SAFE(pvm_pkint(&signal, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
+    PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
     PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
   }
 
@@ -644,7 +665,7 @@ void chpl_comm_exit_all(int status) {
 
 void chpl_comm_exit_any(int status) {
   fprintf(stderr, "%d: chpl error, calling exit_any with status %d!\n", chpl_localeID, status);
-  PVM_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_any");
+  pvm_lvgroup((char *)"job");
   pvm_halt();
   return;
 }
@@ -873,13 +894,13 @@ int chpl_pvm_fprintf(FILE* outfile, const char* format, ...) {
   fdnum = fileno(outfile);
 
   if ((parent >= 0) && ((fdnum == 0) || (fdnum == 1) || (fdnum == 2))) {
-    signal = 2;
+    commsig = 2;
     PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_pvm_fprintf");
-    PVM_NO_LOCK_SAFE(pvm_pkint(&signal, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
     PVM_NO_LOCK_SAFE(pvm_pkint(&fdnum, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
     PVM_NO_LOCK_SAFE(pvm_pkstr(buffer), "pvm_pkstr", "chpl_pvm_fprintf");
     PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_pvm_fprintf");
-    signal = 0;
+    commsig = 0;
   } else fprintf(outfile, "%s", buffer);
   return retval;
 }
@@ -889,13 +910,13 @@ int chpl_pvm_printf(const char* format, ...) {
   CHPL_PVM_PRINTF_GUTS;
 
   if (parent >= 0) {
-    signal = 3;
+    commsig = 3;
 
     PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_pvm_printf");
-    PVM_NO_LOCK_SAFE(pvm_pkint(&signal, 1, 1), "pvm_pkint", "chpl_pvm_printf");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "chpl_pvm_printf");
     PVM_NO_LOCK_SAFE(pvm_pkstr(buffer), "pvm_pkstr", "chpl_pvm_printf");
     PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_pvm_printf");
-    signal = 0;
+    commsig = 0;
   } else printf("%s", buffer);
   return retval;
 }
@@ -914,13 +935,13 @@ int chpl_pvm_vfprintf(FILE* stream, const char* format, va_list ap) {
   fdnum = fileno(stream);
 
   if ((parent >= 0) && ((fdnum == 0) || (fdnum == 1) || (fdnum == 2))) {
-    signal = 2;
+    commsig = 2;
     PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_pvm_fprintf");
-    PVM_NO_LOCK_SAFE(pvm_pkint(&signal, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
     PVM_NO_LOCK_SAFE(pvm_pkint(&fdnum, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
     PVM_NO_LOCK_SAFE(pvm_pkstr(buffer), "pvm_pkstr", "chpl_pvm_fprintf");
     PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_pvm_fprintf");
-    signal = 0;
+    commsig = 0;
   } else fprintf(stream, "%s", buffer);
   return retval;
 }

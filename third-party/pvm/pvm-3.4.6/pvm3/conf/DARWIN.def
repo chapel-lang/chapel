@@ -1,7 +1,7 @@
 ARCHCFLAGS	=	-DSOCKADHASLEN -DNOREXEC \
-	-DRSHCOMMAND=\"/usr/bin/rsh\" \
+	-DRSHCOMMAND=\"/usr/bin/ssh\" \
 	-DHASSTDLIB -DNEEDMENDIAN -DHASERRORVARS \
-	-DFAKEXDRFLOAT -DSYSERRISCONST \
+	-DSYSERRISCONST \
 	-I/usr/include/malloc \
 	-I/System/Library/Frameworks/System.framework/Headers/bsd/sys
 	# this last -I flag needed for tracer build...
