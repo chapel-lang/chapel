@@ -63,6 +63,11 @@ infrequent seg fault on linux32
 valgrind-specific regressions
 =============================
 
+timeout due to problem size
+---------------------------
+[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2]
+
+
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
 [Error matching program output for parallel/begin/dinan/mvm_coforall]
@@ -98,6 +103,10 @@ wide strings leaked (?) (04/02/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+numLocales flag used erroneously (new test)
+-------------------------------------------
+[Error matching program output for multirealm/zeroLocalesPerRealm]
+
 memory stuff in flux (06/06/09)
 -------------------------------
 [Error matching program output for memory/shannon/memmaxBytes]
@@ -122,7 +131,7 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09, 04/18/09, 04/21/09, 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09, 06/11/09, 06/13/09, 06/17/09, 06/19/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09, 04/18/09, 04/21/09, 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09, 06/11/09, 06/13/09, 06/17/09, 06/19/09, 06/22/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09, 03/14/09, 03/22/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09, 03/24/09, 03/28/09, 04/02/09, 04/12/09, 04/22/09, 06/14/09, 06/16/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
@@ -301,8 +310,13 @@ xt-cle-specific failures
 cray-/cce-specific regressions
 ==============================
 
-wrong result
-------------
+declaration expected but not found error
+----------------------------------------
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-fragmented]
+
+wrong result -- bug in compiler?
+--------------------------------
 [Error matching program output for expressions/bradc/uminusVsTimesPrec]
 [Error matching program output for modules/standard/math/rint]
 
@@ -310,11 +324,6 @@ warning about integer conversion causing change in sign
 -------------------------------------------------------
 [Error matching program output for reductions/deitz/test_scan1]
 [Error matching program output for trivial/waynew/identity]
-
-declaration expected but not found error
-----------------------------------------
-[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
-[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-fragmented]
 
 error differs
 -------------
@@ -337,6 +346,16 @@ precision issues (?) -- is there a floating point flag we need to throw?
 =============================================================
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
+
+undefined reference to pgdbg_stub (06/20/09)
+--------------------------------------------
+*~1000 failures*
+
+???
+---
+[Error matching compiler output for compflags/bradc/html/testit]
+[Error matching program output for types/complex/bradc/negateimaginary3]
+[Error matching program output for types/complex/bradc/negativeimaginaryliteral]
 
 memory stuff in flux (06/06/09)
 -------------------------------
@@ -423,6 +442,10 @@ sig_send: wait for sig_complete event failed
 =============================
 mta-/xmt-specific regressions
 =============================
+
+timeouts in compilation and execution
+-------------------------------------
+[Error: Timed out executing program release/examples/programs/quicksort]
 
 timeout since test was added
 ----------------------------
