@@ -9,7 +9,7 @@
 use Time, MultiBlockDist;
 config const timer : bool = false;
 var t : Timer;
-config const NUM = 2000 : int(64);
+config const NUM = 500 : int(64);
 
 
 /* Return: 1.0 / (i + j) * (i + j +1) / 2 + i + 1; */
