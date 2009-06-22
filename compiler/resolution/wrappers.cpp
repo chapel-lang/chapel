@@ -142,7 +142,7 @@ buildDefaultWrapper(FnSymbol* fn,
               if (!isShadowedField(formal))
                 wrapper->insertAtTail(
                   new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                               new_StringSymbol(formal->name), temp));
+                               new_StringSymbol(formal->name), new CallExpr("_copy", temp)));
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
       call->insertAtTail(paramMap->get(formal));

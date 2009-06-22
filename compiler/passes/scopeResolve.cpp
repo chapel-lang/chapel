@@ -583,6 +583,13 @@ static void build_type_constructor(ClassType* ct) {
           if (field->hasFlag(FLAG_PARAM) || field->hasFlag(FLAG_TYPE_VARIABLE))
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name), arg));
+          else if (arg->type == dtAny &&
+                   !ct->symbol->hasFlag(FLAG_REF) &&
+                   strcmp(ct->symbol->name, "_square_tuple"))
+            fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
+                                          new_StringSymbol(field->name),
+                                          new CallExpr("_copy",
+                                            new CallExpr(PRIM_INIT, arg))));
           else
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name),
@@ -783,9 +790,16 @@ static void build_constructor(ClassType* ct) {
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
     fn->insertFormalAtTail(arg);
-    fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this, 
-                                  new_StringSymbol(arg->name),
-                                  arg));
+    if (arg->type == dtAny && !arg->hasFlag(FLAG_TYPE_VARIABLE) &&
+        !arg->hasFlag(FLAG_PARAM) && !ct->symbol->hasFlag(FLAG_REF) &&
+        strcmp(ct->symbol->name, "_square_tuple"))
+      fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this, 
+                                    new_StringSymbol(arg->name),
+                                    new CallExpr("_copy", arg)));
+    else
+      fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this, 
+                                    new_StringSymbol(arg->name),
+                                    arg));
   }
 
   if (meme)
