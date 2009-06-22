@@ -565,7 +565,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
       PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_broadcast_global_vars");
       size = sizeof(void *);
       PVM_NO_LOCK_SAFE(pvm_pkint(&size, 1, 1), "pvm_pkint", "chpl_comm_broadcast_global_vars");
-      PVM_NO_LOCK_SAFE(pvm_pkbyte((char *)&(chpl_globals_registry[i]), size, 1), "pvm_pkbyte", "chpl_comm_broadcast_global_vars");
+      PVM_NO_LOCK_SAFE(pvm_pkbyte((char *)chpl_globals_registry[i], size, 1), "pvm_pkbyte", "chpl_comm_broadcast_global_vars");
       PVM_UNPACK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_broadcast_global_vars");
     } else {
       PVM_PACK_SAFE(pvm_recv(-1, BCASTTAG), "pvm_recv", "chpl_comm_broadcast_global_vars");

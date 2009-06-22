@@ -429,8 +429,8 @@ static void codegen_header(void) {
 
   if (!fRuntime) {
     fprintf(outfile, "\nconst int chpl_numGlobalsOnHeap = %d;\n", numGlobalsOnHeap);
-    fprintf(outfile, "\nchar** chpl_globals_registry;\n");
-    fprintf(outfile, "\nchar* chpl_globals_registry_static[%d];\n", 
+    fprintf(outfile, "\nvoid** chpl_globals_registry;\n");
+    fprintf(outfile, "\nvoid* chpl_globals_registry_static[%d];\n", 
             (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
     fprintf(outfile, "\nconst char* chpl_memDescs[] = {\n");
     bool first = true;

@@ -22,8 +22,8 @@ extern void* chpl_getPrivatizedClass(int32_t);
 extern void chpl__heapAllocateGlobals(void);
 
 extern const int chpl_numGlobalsOnHeap;
-extern char** chpl_globals_registry;
-extern char* chpl_globals_registry_static[];
+extern void** chpl_globals_registry;
+extern void* chpl_globals_registry_static[];
 
 //
 // Multi-locale macros
@@ -197,14 +197,15 @@ extern char* chpl_globals_registry_static[];
       chpl_error("cannot access remote data in local block", ln, fn);   \
   } while (0)
 
+#ifndef CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA
+#define CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, wide)
+#endif
+
 #define CHPL_HEAP_REGISTER_GLOBAL_VAR(i, wide)            \
   do {                                                    \
     (wide).locale = 0;                                    \
-    if (chpl_localeID == 0) {                                 \
-      chpl_globals_registry[i] = (char*)((wide).addr);    \
-    } else {                                              \
-      chpl_globals_registry[i] = (char*)(&((wide).addr)); \
-    }                                                     \
+    chpl_globals_registry[i] = (&((wide).addr));   \
+    CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, wide)          \
   } while (0)
 
 #define CHPL_COMM_BROADCAST_GLOBAL_VARS(numGlobals)             \

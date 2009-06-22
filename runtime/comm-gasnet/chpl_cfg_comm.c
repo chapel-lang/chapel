@@ -282,11 +282,7 @@ void chpl_comm_init_shared_heap(void) {
 }
 
 void chpl_comm_alloc_registry(int numGlobals) {
-#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-  chpl_globals_registry = numGlobals == 0 ? NULL : seginfo_table[chpl_localeID].addr;
-#else
   chpl_globals_registry = chpl_globals_registry_static;
-#endif
 }
 
 void chpl_comm_broadcast_global_vars(int numGlobals) {
@@ -298,7 +294,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
                      &((void**)seginfo_table[0].addr)[i], sizeof(void*), 0, "");
 #else
       chpl_comm_get(chpl_globals_registry[i], 0,
-                     &chpl_globals_registry[i], sizeof(void*), 0, "");
+                    chpl_globals_registry[i], sizeof(void*), 0, "");
 #endif
     }
   }
@@ -539,4 +535,13 @@ int32_t chpl_numCommForks(void) {
 
 int32_t chpl_numCommNBForks(void) {
   return chpl_comm_nb_forks;
+}
+
+
+void chpl_comm_gasnet_help_register_global_var(int i, void* addr) {
+#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
+  if (chpl_localeID == 0) {
+    ((void**)seginfo_table[0].addr)[i] = addr;
+  }
+#endif
 }
