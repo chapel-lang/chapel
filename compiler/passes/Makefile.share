@@ -5,10 +5,10 @@ PASSES_SRCS = \
         filesToAST.cpp \
         flattenClasses.cpp \
         flattenFunctions.cpp \
-        insertLineNumbers.cpp \
-        parallel.cpp \
         insertDestructors.cpp \
+        insertLineNumbers.cpp \
         normalize.cpp \
+        parallel.cpp \
         scopeResolve.cpp \
         semanticChecks.cpp
 
