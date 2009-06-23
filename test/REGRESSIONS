@@ -63,11 +63,6 @@ infrequent seg fault on linux32
 valgrind-specific regressions
 =============================
 
-timeout due to problem size
----------------------------
-[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2]
-
-
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
 [Error matching program output for parallel/begin/dinan/mvm_coforall]
@@ -103,10 +98,6 @@ wide strings leaked (?) (04/02/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-numLocales flag used erroneously (new test)
--------------------------------------------
-[Error matching program output for multirealm/zeroLocalesPerRealm]
-
 memory stuff in flux (06/06/09)
 -------------------------------
 [Error matching program output for memory/shannon/memmaxBytes]
@@ -131,7 +122,7 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09, 04/18/09, 04/21/09, 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09, 06/11/09, 06/13/09, 06/17/09, 06/19/09, 06/22/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09, 04/18/09, 04/21/09, 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09, 06/11/09, 06/13/09, 06/17/09, 06/19/09, 06/22/09, 06/23/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09, 03/14/09, 03/22/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09, 03/24/09, 03/28/09, 04/02/09, 04/12/09, 04/22/09, 06/14/09, 06/16/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
@@ -197,21 +188,20 @@ opts-specific tests
 (Example runs: 0)
  
 
-(Full run: 48)
+(Full run: 63)
+
+--no-copy-propagation
+---------------------
+[Error matching program output for classes/diten/test_destructor2]
 
 --no-dead-code-elimination
 --------------------------
+[Error matching program output for classes/diten/test_destructor2]
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
 
 --no-inline
---baseline --copy-propagation
---baseline --dead-code-elimination
---baseline --inline-iterators
---baseline --live-analysis
---baseline --optimize-loop-iterators
---baseline --scalar-replacement
 --no-scalar-replacement --no-inline
 ------------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
@@ -221,10 +211,13 @@ opts-specific tests
 
 --no-inline-iterators
 ---------------------
+[Error: Timed out compilation for functions/deitz/test_where_param5]
+[Error: Timed out compilation for functions/deitz/Time/test_getCurrentDate]
+[Error: Timed out compilation for functions/deitz/default/test_default1]
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+[Error: Timed out compilation for trivial/bradc/deadvar]
 
 --no-optimize-loop-iterators
---baseline --inline
 ----------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 
@@ -235,10 +228,30 @@ opts-specific tests
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
+--baseline --copy-propagation
+--baseline --dead-code-elimination
+--baseline --inline-iterators
+--baseline --live-analysis
+--baseline --optimize-loop-iterators
+--baseline --scalar-replacement
+------------------------------------
+[Error matching program output for arrays/deitz/test_descriptor_frees]
+[Error matching program output for classes/diten/test_destructor2]
+[Error matching program output for studies/590o/bradc/psp2]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
+
+--baseline --inline
+----------------------------
+[Error matching program output for arrays/deitz/test_descriptor_frees]
+[Error matching program output for classes/diten/test_destructor2]
+
 --baseline --no-local
 ------------------------------------
 [Error matching program output for arrays/deitz/test_descriptor_frees]
+[Error matching program output for classes/diten/test_destructor2]
 [Error matching program output for studies/590o/bradc/psp2]
+[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
