@@ -176,7 +176,7 @@ NOTES
 %type <pblockstmt> type_select_stmt on_stmt non_empty_stmt use_stmt_ls sync_stmt
 
 %type <pblockstmt> typedef_decl_stmt typedef_decl_stmt_inner fn_decl_stmt class_decl_stmt mod_decl_stmt extern_fn_decl_stmt
-%type <pblockstmt> typevar_decl_stmt enum_decl_stmt use_stmt delete_stmt
+%type <pblockstmt> typevar_decl_stmt enum_decl_stmt use_stmt delete_stmt array_alias_stmt
 
 %type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
 %type <pblockstmt> var_decl_stmt_inner tuple_var_decl_stmt_inner_ls
@@ -318,10 +318,17 @@ non_empty_stmt:
 | cobegin_stmt
 | atomic_stmt
 | local_stmt
+| array_alias_stmt
 | error
     { printf("syntax error"); clean_exit(1); }
 ;
 
+array_alias_stmt:
+  non_tuple_lvalue alias_expr TSEMI
+    {
+      $$ = buildChapelStmt(new CallExpr(new CallExpr(".", $1, new_StringSymbol("makeAlias")), $2));
+    }
+;
 
 class_body_stmt_ls:
   /* nothing */

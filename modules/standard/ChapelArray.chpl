@@ -54,8 +54,8 @@ def _getDomain(value) {
 //
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist, param rank: int, type idxType = int(32),
-                                 param stridable: bool = false) type
-  return _newDomain(dist.newArithmeticDom(rank, idxType, stridable));
+                                 param stridable: bool = false, param alias: bool = false) type
+  return _newDomain(dist.newArithmeticDom(rank, idxType, stridable, alias));
 
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist, type idxType) type
@@ -87,7 +87,7 @@ def chpl__buildSparseDomainRuntimeType(dist, dom: domain) type
 def chpl__convertValueToRuntimeType(dom: domain) type
  where dom._value:BaseArithmeticDom
   return chpl__buildDomainRuntimeType(dom._value.dist, dom._value.rank,
-                            dom._value.idxType, dom._value.stridable);
+                            dom._value.idxType, dom._value.stridable, dom._value.alias);
 
 def chpl__convertValueToRuntimeType(dom: domain) type
  where dom._value:BaseSparseDom
@@ -359,6 +359,10 @@ record _array {
   var _value;     // stores array class, may be privatized
   var _valueType; // stores type of privatized arrays
   var _promotionType: _value.eltType;
+
+  def makeAlias(A: []) {
+    _value.makeAlias(A._value);
+  }
 
   pragma "inline"
   def _value {

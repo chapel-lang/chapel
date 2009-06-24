@@ -78,13 +78,13 @@ class Block1D : BaseDist {
   // initial index set if one exists?  If not, we should rewrite the
   // global domain construction to not do anything with whole...
   //
-  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+  def newArithmeticDom(param rank: int, type idxType, param stridable: bool, param alias:bool=false) {
     if idxType != this.idxType then
       compilerError("Block1D domain index type does not match distribution's");
     if rank != 1 then
       compilerError("Block1D domains are restricted to 1D (rank 1)");
 
-    var dom = new Block1DDom(idxType=idxType, dist=this, stridable=stridable);
+    var dom = new Block1DDom(idxType=idxType, dist=this, stridable=stridable, alias=alias);
     dom.setup();
     return dom;
   }
@@ -201,6 +201,7 @@ class Block1DDom: BaseArithmeticDom {
   type idxType;
   param rank = 1;
   param stridable: bool;
+  param alias: bool = false;
 
   //
   // LEFT LINK: a pointer to the parent distribution

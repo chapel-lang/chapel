@@ -91,7 +91,7 @@ class Block : BaseDist {
 //
 // create a new arithmetic domain over this distribution
 //
-def Block.newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+def Block.newArithmeticDom(param rank: int, type idxType, param stridable: bool, param alias: bool = false) {
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
   if rank != this.rank then
@@ -223,7 +223,7 @@ class BlockDom: BaseArithmeticDom {
   param rank: int;
   type idxType;
   param stridable: bool;
-
+  param alias: bool = false;
   //
   // LEFT LINK: a pointer to the parent distribution
   //

@@ -1,6 +1,6 @@
 class CMODist : BaseDist {
-  def newArithmeticDom(param rank: int, type dimensional_index_type, param stridable: bool) {
-    return new CMODom(rank=rank, idxType=dimensional_index_type, stridable=stridable);
+  def newArithmeticDom(param rank: int, type dimensional_index_type, param stridable: bool, param alias: bool=false) {
+    return new CMODom(rank=rank, idxType=dimensional_index_type, stridable=stridable, alias=alias);
   }
 }
 
@@ -9,6 +9,7 @@ class CMODom: BaseArithmeticDom {
   type idxType;
   param stridable: bool;
   var dist: CMODist;
+  param alias: bool = false;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
   def getIndices() return ranges;
