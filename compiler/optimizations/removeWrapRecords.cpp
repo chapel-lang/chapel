@@ -128,9 +128,9 @@ removeWrapRecords() {
   //
   forv_Vec(ClassType, ct, gClassTypes) {
     if (ct->symbol->hasFlag(FLAG_DATA_CLASS)) {
-      if (TypeSymbol* ts = toTypeSymbol(ct->substitutions.v[0].value)) {
+      if (TypeSymbol* ts = getDataClassType(ct->symbol)) {
         if (ts->hasFlag(FLAG_ARRAY) || ts->hasFlag(FLAG_DOMAIN)) {
-          ct->substitutions.v[0].value = ts->type->getField("_value")->type->symbol;
+          setDataClassType(ct->symbol, ts->type->getField("_value")->type->symbol);
         }
       }
     }

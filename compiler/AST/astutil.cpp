@@ -364,7 +364,7 @@ pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
         pruneVisit(def->sym->type->symbol, fns, types);
   }
   if (ts->hasFlag(FLAG_DATA_CLASS))
-    pruneVisit(toTypeSymbol(ts->type->substitutions.v[0].value), fns, types);
+    pruneVisit(getDataClassType(ts), fns, types);
 }
 
 

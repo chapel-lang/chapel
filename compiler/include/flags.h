@@ -109,6 +109,7 @@ enum Flag {
 int str2flag(const char* str);
 void initFlags();
 void viewFlags(BaseAST* sym);
-
+TypeSymbol* getDataClassType(TypeSymbol* ts);
+void setDataClassType(TypeSymbol* ts, TypeSymbol* ets);
 
 #endif

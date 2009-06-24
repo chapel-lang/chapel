@@ -311,7 +311,7 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "} _u;\n");
   }
   if (symbol->hasFlag(FLAG_DATA_CLASS)) {
-    toTypeSymbol(substitutions.v[0].value)->codegen(outfile);
+    getDataClassType(symbol)->codegen(outfile);
     fprintf(outfile, "* _data;\n");
   }
   fprintf(outfile, "} ");

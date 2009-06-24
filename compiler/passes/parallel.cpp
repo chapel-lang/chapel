@@ -1082,8 +1082,8 @@ insertWideReferences(void) {
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->hasFlag(FLAG_DATA_CLASS)) {
-      if (Type* nt = wideClassMap.get(toTypeSymbol(ts->type->substitutions.v[0].value)->type)) {
-        ts->type->substitutions.v[0].value = nt->symbol;
+      if (Type* nt = wideClassMap.get(getDataClassType(ts)->type)) {
+        setDataClassType(ts, nt->symbol);
       }
     }
   }
