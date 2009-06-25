@@ -16,7 +16,7 @@
 #include "chplthreads.h"
 #include "error.h"
 
-#define CHPL_DIST_DEBUG 1
+#define CHPL_DIST_DEBUG 0
 
 #if CHPL_DIST_DEBUG
 #define DEBUG_MSG_LENGTH 256
