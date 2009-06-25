@@ -1,5 +1,6 @@
 RESOLUTION_SRCS = \
 	caches.cpp \
+	callDestructors.cpp \
 	callInfo.cpp \
 	cullOverReferences.cpp \
 	generics.cpp \

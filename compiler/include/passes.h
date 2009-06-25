@@ -4,13 +4,13 @@
 extern bool normalized;
 extern bool resolved;
 
-extern void fixupDestructors(void);
 void markConstructors(void);
 
 //
 // prototypes of functions that are called as passes (alphabetical)
 //
 void buildDefaultFunctions();
+void callDestructors();
 void checkNormalized();
 void checkParsed();
 void checkResolved();

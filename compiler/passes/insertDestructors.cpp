@@ -15,61 +15,6 @@
 
 bool fEnableDestructorCalls = true;
 
-void fixupDestructors(void) {
-
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->type->destructor) {
-      ClassType* ct = toClassType(ts->type);
-      INT_ASSERT(ct);
-
-      //
-      // insert calls to destructors for all 'value' fields
-      //
-      int count = 0;  // count of how many fields need to be destroyed
-      for_fields_backward(field, ct) {
-        if (field->type->destructor) {
-          ClassType* fct = toClassType(field->type);
-          INT_ASSERT(fct);
-          if (!isClass(fct)) {
-            bool useRefType = !fct->symbol->hasFlag(FLAG_ARRAY) && !fct->symbol->hasFlag(FLAG_DOMAIN);
-            VarSymbol* tmp = useRefType ? newTemp(fct->refType) : newTemp(fct);
-            ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-            ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
-              new CallExpr(useRefType ? PRIM_GET_MEMBER : PRIM_GET_MEMBER_VALUE, ct->destructor->_this, field)));
-            ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
-          }
-          count++;
-        } else if (field->type == dtString && !ct->symbol->hasFlag(FLAG_TUPLE)) {
-          VarSymbol* tmp = newTemp(dtString);
-          ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-          ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
-            new CallExpr(PRIM_GET_MEMBER_VALUE, ct->destructor->_this, field)));
-          ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
-        }
-      }
-      if (count <= 1 ||
-           (count <= 3 && !strncmp(ts->type->destructor->cname, "chpl__auto_destroy", 18)))
-        ts->type->destructor->addFlag(FLAG_INLINE);
-
-      //
-      // insert call to parent destructor
-      //
-      INT_ASSERT(ct->dispatchParents.n <= 1);
-      if (ct->dispatchParents.n >= 1 && isClass(ct)) {
-        // avoid destroying record fields more than once
-        if (FnSymbol* parentDestructor = ct->dispatchParents.v[0]->destructor) {
-          Type* tmpType = isClass(ct) || ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN) ?
-            ct->dispatchParents.v[0] : ct->dispatchParents.v[0]->refType;
-          VarSymbol* tmp = newTemp(tmpType);
-          ct->destructor->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-          ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
-            new CallExpr(PRIM_CAST, tmpType->symbol, ct->destructor->_this)));
-          ct->destructor->insertBeforeReturnAfterLabel(new CallExpr(parentDestructor, tmp));
-        }
-      }
-    }
-  }
-}
 
 static bool tupleContainsArrayOrDomain(ClassType* t) {
   for (int i = 1; i <= t->fields.length; i++) {

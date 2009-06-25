@@ -30,6 +30,7 @@ PassInfo passlist[] = {
   RUN(flattenFunctions),   // denest nested functions
   RUN(lowerIterators),     // lowers iterators into functions/classes
   RUN(cullOverReferences), // remove excess references
+  RUN(callDestructors),
   RUN(parallel),           // parallel transforms
   RUN(prune),              // prune AST of dead functions and types
 
