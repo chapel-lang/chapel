@@ -197,7 +197,7 @@ record _domain {
 
   pragma "dont disable remote value forwarding"
   def initialize() { 
-    _value._count += 1;
+    _value._domCnt$ += 1;
   }
 
   pragma "inline"
@@ -213,7 +213,11 @@ record _domain {
   }
 
   def ~_domain () {
-    _value.destroyDom();
+    if !_supportsPrivatization(_valueType) {
+      var cnt = _value.destroyDom();
+      if cnt == 0 then
+        delete _value;
+    }
   }
 
   def dist return _value.dist;
@@ -247,9 +251,9 @@ record _domain {
 
   def buildArray(type eltType) {
     var x = _value.buildArray(eltType);
-    var cnt = _value._count; // lock
+    var cnt = _value._domCnt$; // lock
     _value._arrs.append(x);
-    _value._count = cnt + 1; // unlock
+    _value._domCnt$ = cnt + 1; // unlock
     return _newArray(x);
   }
 
@@ -377,6 +381,11 @@ record _array {
   }
 
   def ~_array() {
+    if !_supportsPrivatization(_valueType) {
+      var cnt = _value.dom.destroyDom(_value);
+      if cnt == 0 then
+        delete _value.dom;
+    }
     delete _value;
   }
 

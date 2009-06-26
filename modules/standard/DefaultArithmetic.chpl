@@ -332,7 +332,6 @@ class DefaultArithmeticArr: BaseArr {
 
   def ~DefaultArithmeticArr() {
     destroyData();
-    destroyDom();
   }
 
   def destroyData() {
@@ -341,19 +340,6 @@ class DefaultArithmeticArr: BaseArr {
     if cnt < 0 then halt("count is negative!"); // should never happen!
     else if cnt == 0 then
       on data do delete data;
-  }
-
-  def destroyDom() {
-    if !dom.supportsPrivatization() {
-      var cnt = dom._count - 1;
-      if cnt < 0 then halt("count is negative!"); // should never happen!
-      else if cnt == 0 then
-        on dom do delete dom;
-      else {
-        dom._arrs.remove(this);
-        dom._count = cnt;
-      }
-    }
   }
 
   def makeAlias(B: DefaultArithmeticArr) {
@@ -442,7 +428,7 @@ class DefaultArithmeticArr: BaseArr {
     var alias = new DefaultArithmeticArr(eltType, d.rank, d.idxType,
                                          d.stridable, true, d.alias, d, noinit=true);
     //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit=true);
-    d._count += 1;
+    d._domCnt$ += 1;
     data.count += 1;
     alias.data = data;
     alias.size = size: d.idxType;
@@ -465,7 +451,7 @@ class DefaultArithmeticArr: BaseArr {
   def slice(d: DefaultArithmeticDom) {
     var alias = new DefaultArithmeticArr(eltType, rank, idxType,
                                          d.stridable, reindexed, false, d, noinit=true);
-    d._count += 1;
+    d._domCnt$ += 1;
     data.count += 1;
     alias.data = data;
     alias.size = size;
@@ -499,7 +485,7 @@ class DefaultArithmeticArr: BaseArr {
     var alias = new DefaultArithmeticArr(eltType, newRank, idxType,
                                                 newStridable, true, true, d,
                                                 noinit=true);
-    d._count += 1;
+    d._domCnt$ += 1;
     data.count += 1;
     alias.data = data;
     alias.size = size;
@@ -524,7 +510,7 @@ class DefaultArithmeticArr: BaseArr {
     if (d._value.type == dom.type) {
       var copy = new DefaultArithmeticArr(eltType, rank, idxType,
                                           d._value.stridable, reindexed, d._value.alias, d._value);
-      copy.dom._count += 2;
+      copy.dom._domCnt$ += 2;
       for i in d((...dom.ranges)) do
         copy(i) = this(i);
       off = copy.off;

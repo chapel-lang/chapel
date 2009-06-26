@@ -28,22 +28,19 @@ class BaseDist {
 //
 class BaseDom {
   var _arrs: list(BaseArr);
-  var _count: sync int = 0;
+  var _domCnt$: sync int = 0;
 
   def ~BaseDom() {
-    _arrs.destroy();
-    delete _count;
+    delete _domCnt$;
   }
 
-  def destroyDom() {
-    if !supportsPrivatization() {
-      var cnt = _count - 1;
-      if cnt < 0 then halt("count is negative!"); // should never happen!
-      else if cnt == 0 then
-        on this do delete this;
-      else
-        _count = cnt;
-    }
+  def destroyDom(arr: BaseArr = nil) {
+    var cnt = _domCnt$ - 1;
+    if cnt < 0 then halt("count is negative!"); // should never happen!
+    if arr then
+      _arrs.remove(arr);
+    _domCnt$ = cnt;
+    return cnt;
   }
 
   def member(ind) : bool {
