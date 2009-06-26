@@ -20,7 +20,7 @@ fi
 PLATFORMLIST=`cat ${CONFIGFILE} | grep "PLATFORM" | awk -F \= '{print $2}'`
 HOSTLIST=`cat ${CONFIGFILE} | grep "HOST" | awk -F \= '{print $2}'`
 PATHLIST=`cat ${CONFIGFILE} | grep "PATH" | awk -F \= '{print $2}'`
-FLAG=`cat ${CONFIGFILE} | grep "FLAGS" | awk -F \= '{print $2}'`
+FLAG=`cat ${CONFIGFILE} | grep "FLAGS" | sed 's/FLAGS=//'`
 TESTLIST=`cat ${CONFIGFILE} | grep "TEST" | awk -F \= '{print $2}'`
 
 if [ -z "$HOSTLIST" ]; then

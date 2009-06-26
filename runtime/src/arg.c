@@ -159,11 +159,11 @@ const char* chpl_realmType(int32_t r) {
   if (r == 0) {
     return "sunos";
   } else if (r == 1) {
-    return "linux64";
+    return "darwin";
   } else if (r == 2) {
     return "linux";
   } else {
-    return "darwin";
+    return "linux64";
   }
 }
 

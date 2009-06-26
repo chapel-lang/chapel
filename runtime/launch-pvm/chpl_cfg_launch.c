@@ -69,6 +69,8 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   // Get a new argument list for PVM spawn.
   // The last argument needs to be the number of locations for the PVM
   // comm layer to use it. The comm layer strips this off.
+
+  fprintf(stderr, "argv[0]: %s\n", argv[0]);
   
   argv2 = chpl_malloc(((argc+1) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
   for (i=0; i < (argc-1); i++) {
@@ -129,8 +131,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     fclose(nodelistfile);
   }
 
-  //  system((char *)"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3 ");
-  system((char *)"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm*");
   info = pvm_start_pvmd(0, argtostart, 1);
   if (info != 0) {
     if (info == PvmDupHost) {
@@ -174,6 +174,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     }
   }
 
+  // Build the command to send to pvm_spawn.
   pvmsize += strlen(getenv((char *)"PWD")) + strlen("/_real") + strlen(argv[0]);
 
   commandtopvm = chpl_malloc(pvmsize, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
@@ -210,8 +211,12 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   }
   fclose(nodelistfile);
 
+  fprintf(stderr, "Entering for loop\n");
   for (i = 0; i < numLocales; i++) {
+    fprintf(stderr, "Loop i=%d (iteration %d of %d)\n", i, i+1, numLocales); 
+    fprintf(stderr, "spawning %s on %s\n", commandtopvm, pvmnodestoadd[i]);
     numt = pvm_spawn( (char *)commandtopvm, argv2, 1, (char *)pvmnodestoadd[i], 1, &tids[i] );
+    fprintf(stderr, "numt was %d, tids[%d] was %d\n", numt, i, tids[i]);
     if (numt == 0) {
       if (j != 0) {
         info = pvm_delhosts( (char **)hosts2, j, infos );

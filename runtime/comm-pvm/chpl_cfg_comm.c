@@ -14,6 +14,7 @@
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chplthreads.h"
+#include "chpltypes.h"
 #include "error.h"
 
 #define CHPL_DIST_DEBUG 0
@@ -195,7 +196,11 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   int source;
   int repTag;
   int fnid;
-  int packagesize;
+  int packagesize;              // remote node says how big something is
+  int i;                        // iterates over entries in chpl_structType
+  int chpltypetype;             // from enumeration table
+  unsigned long chpltypeoffset; // from enumeration table
+  int break_out = 0;            // to get out of for from switch
 
 #if CHPL_DIST_DEBUG
   char debugMsg[DEBUG_MSG_LENGTH];
@@ -225,11 +230,8 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
     // Metadata case either contains an address for the data or a
     // function ID (or, if ChplCommFinish, nothing).
     if ((pvmtype == ChplCommPut) || (pvmtype == ChplCommGet)) {
-      PVM_NO_LOCK_SAFE(pvm_upkint(&packagesize, 1, 1), "pvm_upkint", "chpl_pvm_recv");
-      if (packagesize != sizeof(void *)) {
-        chpl_internal_error("Error: multiple architectures not implemented yet");
-      }
-      PVM_UNPACK_SAFE(pvm_upkbyte((void *)&(((_chpl_message_info *)buf)->u.data), packagesize, 1), "pvm_upkbyte", "chpl_pvm_recv");
+      // Do nothing. No data to receive yet.
+      chpl_mutex_unlock(&pvm_lock);
     } else if (pvmtype == ChplCommFinish) {
       // Do nothing. Nothing in the union.
       chpl_mutex_unlock(&pvm_lock);
@@ -243,11 +245,41 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
 
   // Getting actual data
   } else {
-    PVM_NO_LOCK_SAFE(pvm_upkint(&packagesize, 1, 1), "pvm_upkint", "chpl_pvm_recv");
-    if (packagesize != sizeof(void *)) {
-      chpl_internal_error("Error: multiple architectures not implemented yet");
+#ifdef CHPL_COMM_HETEROGENEOUS
+    for (i = 0; i < 9; i++) {
+      chpltypetype = GET_TYPE(sz, i);
+      chpltypeoffset = GET_OFFSET(sz, i);
+      switch (chpltypetype) {
+      case CHPL_TYPE_int32_t:
+        PVM_NO_LOCK_SAFE(pvm_upkint((int *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+        break;
+      case CHPL_TYPE_int64_t:
+        PVM_NO_LOCK_SAFE(pvm_upklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
+        break;
+      case CHPL_TYPE_CLASS_REFERENCE:
+        PVM_NO_LOCK_SAFE(pvm_upkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
+        if (packagesize == 4) {
+          PVM_NO_LOCK_SAFE(pvm_upkint((int *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+        } else if (packagesize == 8) {
+          PVM_NO_LOCK_SAFE(pvm_upklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
+        } else {
+          break_out = 1;
+          break;
+        }
+        break;
+      case CHPL_TYPE_DONE:
+      default:
+        break_out = 1;
+        break;
+      }
+      if (break_out == 1) {
+        break;
+      }
     }
+    chpl_mutex_unlock(&pvm_lock);
+#else
     PVM_UNPACK_SAFE(pvm_upkbyte(buf, sz, 1), "pvm_upkbyte", "chpl_pvm_recv");
+#endif
   }
 #if CHPL_DIST_DEBUG
   sprintf(debugMsg, "chpl_pvm_recv(%p, from=%d, tag=%d, sz=%d) done", buf, tid, msgtag, sz);
@@ -261,7 +293,11 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
   int repTag;
   int datasize;
   int fnid;
-  int packagesize;
+  int packagesize;              // tells remote node how big something is
+  int i;                        // iterates over entries in chpl_structType
+  int chpltypetype;             // from enumeration table
+  unsigned long chpltypeoffset; // from enumeration table
+  int break_out = 0;            // to get out of for from switch
 
 #if CHPL_DIST_DEBUG
   char debugMsg[DEBUG_MSG_LENGTH];
@@ -286,9 +322,8 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
     // Metadata case either contains an address for the data or a
     // function ID (or, if ChplCommFinish, nothing).
     if ((msgtype == ChplCommPut) || (msgtype == ChplCommGet)) {
-      packagesize = sizeof(void *);
-      PVM_NO_LOCK_SAFE(pvm_pkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
-      PVM_NO_LOCK_SAFE(pvm_pkbyte((void *)&(((_chpl_message_info *)buf)->u.data), packagesize, 1), "pvm_pkbyte", "chpl_pvm_send");
+      // Do nothing. No data to send yet.
+      // Unlock is done in the PVM_UNPACK_SAFE on the actual pvm_send.
     } else if (msgtype == ChplCommFinish) {
       // Do nothing. Nothing in the union.
       // Unlock is done in the PVM_UNPACK_SAFE on the actual pvm_send.
@@ -298,9 +333,41 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
     }
   // Sending actual data
   } else {
+#ifdef CHPL_COMM_HETEROGENEOUS
     packagesize = sizeof(void *);
-    PVM_NO_LOCK_SAFE(pvm_pkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
+    for (i = 0; i < 9; i++) {
+      chpltypetype = GET_TYPE(sz, i);
+      chpltypeoffset = GET_OFFSET(sz, i);
+      switch (chpltypetype) {
+      case CHPL_TYPE_int32_t:
+        PVM_NO_LOCK_SAFE(pvm_pkint((int *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+        break;
+      case CHPL_TYPE_int64_t:
+        PVM_NO_LOCK_SAFE(pvm_pklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
+        break;
+      case CHPL_TYPE_CLASS_REFERENCE:
+        PVM_NO_LOCK_SAFE(pvm_pkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
+        if (packagesize == 4) {
+          PVM_NO_LOCK_SAFE(pvm_pkint((int *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+        } else if (packagesize == 8) {
+          PVM_NO_LOCK_SAFE(pvm_pklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
+        } else {
+          break_out = 1;
+          break;
+        }
+        break;
+      case CHPL_TYPE_DONE:
+      default:
+        break_out = 1;
+        break;
+      }
+      if (break_out == 1) {
+        break;
+      }
+    }
+#else
     PVM_NO_LOCK_SAFE(pvm_pkbyte(buf, sz, 1), "pvm_pkbyte", "chpl_pvm_send");
+#endif
   }
   PVM_UNPACK_SAFE(pvm_send(tid, msgtag), "pvm_pksend", "chpl_pvm_send");
 
@@ -583,7 +650,10 @@ void chpl_comm_broadcast_private(void* addr, int size) {
 
   for (i = 0; i < chpl_numLocales; i++) {
     if (i != chpl_localeID) {
+#ifdef CHPL_COMM_HETEROGENEOUS
+#else
       chpl_comm_put(addr, i, addr, size, 0, 0);
+#endif
     }
   }
   return;

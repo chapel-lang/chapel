@@ -1,4 +1,4 @@
-config const message = "Hello, world!",
+config var message = "Hello, world!",
              printLocaleName = true;
              
 coforall r in Realms {

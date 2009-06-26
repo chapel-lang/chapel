@@ -1,15 +1,15 @@
-PLATFORM1=
-HOST1=
-PATH1=
+PLATFORM1=darwin
+HOST1=macchapel-mac.wc.cray.com
+PATH1=/Volumes/ljprokow/Projects/Chapel/Chapel/bin/darwin
 
-PLATFORM2=
-HOST2=
-PATH2=
+PLATFORM2=linux
+HOST2=solitary.wc.cray.com
+PATH2=/users/ljprokow/Projects/Chapel/Chapel/bin/linux
 
 PLATFORM3=
 HOST3=
 PATH3=
 
-FLAGS=
-TEST1=
-TEST2=
+FLAGS=-snumRealms=2
+TEST1=test/multirealm/hello-multirealm.chpl
+TEST2=test/release/examples/hello.chpl
