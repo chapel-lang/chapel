@@ -628,7 +628,6 @@ class _ddata {
   var count: sync int = 1;
   def ~_ddata() {
     __primitive("array_free", this);
-    delete count;
   }
   pragma "inline" def init(size: integral) {
     __primitive("array_alloc", this, eltType, size);
@@ -930,8 +929,6 @@ def _endCountAlloc() return new _EndCount();
 
 pragma "dont disable remote value forwarding"
 def _endCountFree(e: _EndCount) {
-  delete e.i;
-  delete e.b;
   delete e;
 }
 

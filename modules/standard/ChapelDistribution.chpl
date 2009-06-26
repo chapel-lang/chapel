@@ -30,10 +30,6 @@ class BaseDom {
   var _arrs: list(BaseArr);
   var _domCnt$: sync int = 0;
 
-  def ~BaseDom() {
-    delete _domCnt$;
-  }
-
   def destroyDom(arr: BaseArr = nil) {
     var cnt = _domCnt$ - 1;
     if cnt < 0 then halt("count is negative!"); // should never happen!
