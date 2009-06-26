@@ -17,16 +17,17 @@ typedef enum {
   CHPL_TYPE_uint16_t,
   CHPL_TYPE_uint32_t,
   CHPL_TYPE_uint64_t,
-  CHPL_TYPE_real32_t,
-  CHPL_TYPE_real64_t,
-  CHPL_TYPE_imag32_t,
-  CHPL_TYPE_imag64_t,
-  CHPL_TYPE_complex64_t,
-  CHPL_TYPE_complex128_t,
+  CHPL_TYPE__real32,
+  CHPL_TYPE__real64,
+  CHPL_TYPE__imag32,
+  CHPL_TYPE__imag64,
+  CHPL_TYPE__complex64,
+  CHPL_TYPE__complex128,
   CHPL_TYPE_chpl_string,
   CHPL_TYPE_wide_string,
   CHPL_TYPE__cfile,
   CHPL_TYPE_chpl_task_list_p,
+  CHPL_TYPE__timervalue,
   CHPL_TYPE_CLASS_REFERENCE,
   CHPL_TYPE_DONE
 } chplType;
@@ -135,7 +136,7 @@ int64_t string_length(chpl_string x);
 int64_t real2int( _real64 f);       // return the raw bytes of the float
 int64_t object2int( _chpl_object o);  // return the ptr
 
-#define _timervalue struct timeval
+typedef struct timeval _timervalue;
 #define _init_timer(time)
 extern _timervalue* _now_timer_help(_timervalue* time);
 #define _now_timer(time) (*_now_timer_help(&(time)))
@@ -148,5 +149,8 @@ int32_t _now_month(void);
 int32_t _now_day(void);
 int32_t _now_dow(void);
 _real64 _now_time(void);
+
+extern chplType chpl_getFieldType(int typeNum, int fieldNum);
+extern size_t chpl_getFieldOffset(int typeNum, int fieldNum);
 
 #endif

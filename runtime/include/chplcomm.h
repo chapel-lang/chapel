@@ -93,7 +93,7 @@ extern void* chpl_globals_registry_static[];
 #define SPECIFY_SIZE(type) chpl_rt_type_id_##type
 #define SPECIFY_STRING_SIZE(size) (chpl_error("unhandled case", 0, 0),0)
 #else
-#define SPECIFY_SIZE(type) sizeof(type)
+#define SPECIFY_SIZE(type) (/*printf("%s\n", "chpl_rt_type_id_" #type),*//*chpl_rt_type_id_##type,*/sizeof(type))
 #define SPECIFY_STRING_SIZE(size) (size)
 #endif
 
@@ -151,7 +151,6 @@ extern void* chpl_globals_registry_static[];
     if (chpl_localeID == (wide).locale)                                 \
       local = ((stype)((wide).addr))->sfield;                           \
     else                                                                \
-      /*      printf("chpl_comm_get(%s, %s);\n", #local, #type);  */    \
       chpl_comm_get(&(local),                                           \
                     (wide).locale,                                      \
                     &((stype)((wide).addr))->sfield,                    \
@@ -173,14 +172,6 @@ extern void* chpl_globals_registry_static[];
 #define CHPL_COMM_WIDE_ARRAY_GET(wide, cls, ind, stype, sfield, etype, ln, fn) \
   do {                                                                  \
     (wide).locale = (cls).locale;                                       \
-    /*                                                                  \
-    printf("CHPL_COMM_WIDE_GET_FIELD_VALUE(local =(chpl_macro_tmp).addr\n"\
-           "                               wide = \n"\
-           "                               stype = \n"\
-           "                               sfield = \n"\
-           "                               type = )\n"\
-           ); \
-    */ \
     CHPL_COMM_WIDE_GET_FIELD_VALUE((wide).addr, cls, stype, sfield, etype, ln, fn); \
     (wide).addr += ind;                                                 \
   } while (0)
@@ -188,15 +179,6 @@ extern void* chpl_globals_registry_static[];
 #define CHPL_COMM_WIDE_ARRAY_GET_VALUE(wide_type, local, cls, ind, stype, sfield, etype, ln, fn) \
   do {                                                                  \
     wide_type chpl_macro_tmp;                                           \
-    /* \
-    printf("CHPL_COMM_WIDE_ARRAY_GET(wide = chpl_macro_tmp: %s,\n" \
-           "                         cls =\n"                      \
-           "                         ind =\n"                      \
-           "                         stype =\n"\
-           "                         sfield =\n"\
-           "                         etype = )\n",      \
-           #wide_type); \
-    */ \
     CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, stype, sfield, etype, ln, fn); \
     CHPL_COMM_WIDE_GET(local, chpl_macro_tmp, stype, ln, fn);           \
   } while (0)
