@@ -86,15 +86,12 @@ extern void* chpl_globals_registry_static[];
   } while (0)
 
 // Enable to support hybrid computing
-#define CHPL_COMM_HETEROGENEOUS
-
+// #define CHPL_COMM_HETEROGENEOUS
+//
 
 #ifdef CHPL_COMM_HETEROGENEOUS
-extern chpl_fieldType chpl_structType[][9];
 #define SPECIFY_SIZE(type) chpl_rt_type_id_##type
 #define SPECIFY_STRING_SIZE(size) (chpl_error("unhandled case", 0, 0),0)
-#define GET_TYPE(record, field) (chpl_structType[record][field]).type
-#define GET_OFFSET(record, field) (chpl_structType[record][field]).offset
 #else
 #define SPECIFY_SIZE(type) (/*printf("%s\n", "chpl_rt_type_id_" #type),*//*chpl_rt_type_id_##type,*/sizeof(type))
 #define SPECIFY_STRING_SIZE(size) (size)
