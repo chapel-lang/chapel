@@ -17,8 +17,8 @@
 general regressions
 ===================
 
-spurious verification failures on RA (e.g. 04/04/09)
-----------------------------------------------------
+spurious verification failures on RA (e.g. 04/04/09, 06/26/09)
+--------------------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
 
 
@@ -97,6 +97,20 @@ wide strings leaked (?) (04/02/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+broken due to brad's structural typing change (06/26/09)
+--------------------------------------------------------
+[Error matching program output for multilocale/deitz/linked/test_linked3c]
+[Error matching program output for multilocale/diten/oneOrMoreLocales/assocArrayOfRemoteArithArray]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented]
+[Error matching program output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
+[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_mul]
+[Error matching program output for studies/madness/aniruddha/madchap/test_showboxes]
 
 memory stuff in flux (06/06/09)
 -------------------------------
@@ -259,6 +273,12 @@ opts-specific tests
 =======================
 x2-specific regressions
 =======================
+
+spurious failures -- apsim problem (06/26/09)
+---------------------------------------------
+[Error matching program output for release/examples/hello-module]  
+[Error matching program output for release/examples/hello-multiloc]
+[Error matching program output for release/examples/hello]
 
 spurious errno routing to host message
 --------------------------------------
