@@ -532,7 +532,7 @@ static void codegen_communicated_types(FILE* hdrfile) {
   fprintf(outfile, "}\n\n");
   closeCFile(&typeStructFile);
   fprintf(hdrfile, "#define CHPL_MAX_FIELDS_PER_TYPE %d\n", maxFieldsPerType);
-  fprintf(hdrfile, "const int chpl_max_fields_per_type = %d\n", maxFieldsPerType);
+  fprintf(hdrfile, "const int chpl_max_fields_per_type = %d;\n", maxFieldsPerType);
 }
 
 
