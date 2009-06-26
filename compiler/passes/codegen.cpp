@@ -2,7 +2,6 @@
 #include <cstring>
 #include <cstdio>
 #include "astutil.h"
-#include "beautify.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
@@ -12,10 +11,22 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-static fileinfo runtimeFile;
+#define TYPE_STRUCTURE_FILE "_type_structure.c"
+
+static Map<TypeSymbol*,bool> typesToStructurallyCodegen;
+static int maxFieldsPerType = 0;
+
+
 
 static int max(int a, int b) {
   return (a >= b) ? a : b;
+}
+
+void registerTypeToStructurallyCodegen(TypeSymbol* type) {
+  if (genCommunicatedStructures) {
+    typesToStructurallyCodegen.put(type, true);
+
+  }
 }
 
 static void setOrder(Map<ClassType*,int>& order, int& maxOrder, ClassType* ct);
@@ -117,7 +128,7 @@ genClassTagEnum(FILE* outfile, Vec<TypeSymbol*> typeSymbols) {
 }
 
 
-static void codegen_header(void) {
+static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   ChainHashMap<const char*, StringHashFns, int> cnames;
   Vec<TypeSymbol*> typeSymbols;
   Vec<FnSymbol*> fnSymbols;
@@ -253,71 +264,62 @@ static void codegen_header(void) {
   qsort(typeSymbols.v, typeSymbols.n, sizeof(typeSymbols.v[0]), compareSymbol);
   qsort(fnSymbols.v, fnSymbols.n, sizeof(fnSymbols.v[0]), compareSymbol);
 
-  fileinfo header;
-  FILE* outfile;
   if (fRuntime) {
     chpl_main->cname = astr("chpl_init_", userModules.v[0]->name);
     baseModule->initFn->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, gVoid)));
-    fileinfo runtimeHeaderFile;
-    openRuntimeFile(&runtimeHeaderFile, userModules.v[0]->name, "h");
-    outfile = runtimeHeaderFile.fptr;
-    fprintf(outfile, "#ifndef _%s_H_\n", userModules.v[0]->name);
-    fprintf(outfile, "#define _%s_H_\n", userModules.v[0]->name);
-    fprintf(outfile, "#include \"stdchplrt.h\"\n");
+    fprintf(hdrfile, "#ifndef _%s_H_\n", userModules.v[0]->name);
+    fprintf(hdrfile, "#define _%s_H_\n", userModules.v[0]->name);
+    fprintf(hdrfile, "#include \"stdchplrt.h\"\n");
     forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
       if (fnSymbol->hasFlag(FLAG_EXPORT) || fnSymbol == chpl_main)
-        fnSymbol->codegenPrototype(outfile);
+        fnSymbol->codegenPrototype(hdrfile);
     }
-    fprintf(outfile, "#endif\n");
-    closeCFile(&runtimeHeaderFile);
-    beautify(&runtimeHeaderFile);
-    openRuntimeFile(&runtimeFile, userModules.v[0]->name, "c");
-    outfile = runtimeFile.fptr;
-    fprintf(outfile, "#include \"chapel_code.h\"\n\n");
+    fprintf(hdrfile, "#endif\n");
+    // For the runtime, generate the rest of the things that normally
+    // go into the hdrfile into the codefile
+    hdrfile = codefile;
   } else {
-    openCFile(&header, "chpl__header", "h");
-    outfile = header.fptr;
-    fprintf(outfile, "/*** Compilation Info ***/\n\n");
-    fprintf(outfile, "const char* chpl_compileCommand     = \"%s\";\n", compileCommand);
-    fprintf(outfile, "const char* chpl_compileVersion     = \"%s\";\n", compileVersion);
-    fprintf(outfile, "const char* CHPL_HOST_PLATFORM      = \"%s\";\n", CHPL_HOST_PLATFORM);
-    fprintf(outfile, "const char* CHPL_TARGET_PLATFORM    = \"%s\";\n", CHPL_TARGET_PLATFORM);
-    fprintf(outfile, "const char* CHPL_HOST_COMPILER      = \"%s\";\n", CHPL_HOST_COMPILER);
-    fprintf(outfile, "const char* CHPL_TARGET_COMPILER    = \"%s\";\n", CHPL_TARGET_COMPILER);
-    fprintf(outfile, "const char* CHPL_THREADS            = \"%s\";\n", CHPL_THREADS);
-    fprintf(outfile, "const char* CHPL_COMM               = \"%s\";\n", CHPL_COMM);
-    fprintf(outfile, "\n#define CHPL_GEN_CODE\n\n");
+    fprintf(hdrfile, "/*** Compilation Info ***/\n\n");
+    fprintf(hdrfile, "const char* chpl_compileCommand     = \"%s\";\n", compileCommand);
+    fprintf(hdrfile, "const char* chpl_compileVersion     = \"%s\";\n", compileVersion);
+    fprintf(hdrfile, "const char* CHPL_HOST_PLATFORM      = \"%s\";\n", CHPL_HOST_PLATFORM);
+    fprintf(hdrfile, "const char* CHPL_TARGET_PLATFORM    = \"%s\";\n", CHPL_TARGET_PLATFORM);
+    fprintf(hdrfile, "const char* CHPL_HOST_COMPILER      = \"%s\";\n", CHPL_HOST_COMPILER);
+    fprintf(hdrfile, "const char* CHPL_TARGET_COMPILER    = \"%s\";\n", CHPL_TARGET_COMPILER);
+    fprintf(hdrfile, "const char* CHPL_THREADS            = \"%s\";\n", CHPL_THREADS);
+    fprintf(hdrfile, "const char* CHPL_COMM               = \"%s\";\n", CHPL_COMM);
+    fprintf(hdrfile, "\n#define CHPL_GEN_CODE\n\n");
   }
-  genIncludeCommandLineHeaders(outfile);
+  genIncludeCommandLineHeaders(hdrfile);
 
-  genClassTagEnum(outfile, typeSymbols);
+  genClassTagEnum(hdrfile, typeSymbols);
 
   if (!fRuntime) {
-    fprintf(outfile, "#include \"stdchpl.h\"\n");
+    fprintf(hdrfile, "#include \"stdchpl.h\"\n");
   }
 
-  fprintf(outfile, "\n/*** Class Prototypes ***/\n\n");
+  fprintf(hdrfile, "\n/*** Class Prototypes ***/\n\n");
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
     if (!typeSymbol->hasFlag(FLAG_REF))
-      typeSymbol->codegenPrototype(outfile);
+      typeSymbol->codegenPrototype(hdrfile);
   }
 
   // codegen enumerated types
-  fprintf(outfile, "\n/*** Enumerated Types ***/\n\n");
+  fprintf(hdrfile, "\n/*** Enumerated Types ***/\n\n");
 
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
     if (toEnumType(typeSymbol->type))
-      typeSymbol->codegenDef(outfile);
+      typeSymbol->codegenDef(hdrfile);
   }
 
   // codegen reference types
-  fprintf(outfile, "\n/*** Primitive References ***/\n\n");
+  fprintf(hdrfile, "\n/*** Primitive References ***/\n\n");
   forv_Vec(TypeSymbol, ts, typeSymbols) {
     if (ts->hasFlag(FLAG_REF)) {
       Type* vt = ts->type->getValueType();
       if (isRecord(vt) || isUnion(vt))
         continue; // references to records and unions codegened below
-      ts->codegenPrototype(outfile);
+      ts->codegenPrototype(hdrfile);
     }
   }
 
@@ -339,30 +341,30 @@ static void codegen_header(void) {
   //   printf("%d\n", maxOrder);
 
   // codegen records/unions in topological order
-  fprintf(outfile, "\n/*** Records and Unions (Hierarchically) ***/\n\n");
+  fprintf(hdrfile, "\n/*** Records and Unions (Hierarchically) ***/\n\n");
   for (int i = 1; i <= maxOrder; i++) {
     forv_Vec(TypeSymbol, ts, typeSymbols) {
       if (ClassType* ct = toClassType(ts->type))
         if (order.get(ct) == i && !ct->symbol->hasFlag(FLAG_REF))
-          ts->codegenDef(outfile);
+          ts->codegenDef(hdrfile);
     }
     forv_Vec(TypeSymbol, ts, typeSymbols) {
       if (ts->hasFlag(FLAG_REF))
         if (ClassType* ct = toClassType(ts->type->getValueType()))
           if (order.get(ct) == i)
-            ts->codegenPrototype(outfile);
+            ts->codegenPrototype(hdrfile);
     }
-    fprintf(outfile, "\n");
+    fprintf(hdrfile, "\n");
   }
 
   // codegen remaining types
-  fprintf(outfile, "\n/*** Classes ***/\n\n");
+  fprintf(hdrfile, "\n/*** Classes ***/\n\n");
   forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
     if (isClass(typeSymbol->type) &&
         !typeSymbol->hasFlag(FLAG_REF) &&
         typeSymbol->hasFlag(FLAG_NO_OBJECT) &&
         !typeSymbol->hasFlag(FLAG_OBJECT_CLASS))
-      typeSymbol->codegenDef(outfile);
+      typeSymbol->codegenDef(hdrfile);
   }
   /* Generate class definitions in breadth first order starting with
      "object" and following its dispatch children. */
@@ -373,7 +375,7 @@ static void codegen_header(void) {
   while (current_p->n != 0) {
     forv_Vec(Type, t, *current_p) {
       if (toClassType(t)) {
-        t->symbol->codegenDef(outfile);
+        t->symbol->codegenDef(hdrfile);
         forv_Vec(Type, child, t->dispatchChildren) {
           if (child)
             next_p->set_add(child);
@@ -388,65 +390,60 @@ static void codegen_header(void) {
     next_p->clear();
   }
 
-  fprintf(outfile, "\n/*** Function Prototypes ***/\n\n");
+  fprintf(hdrfile, "\n/*** Function Prototypes ***/\n\n");
   forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
     if (!fnSymbol->hasFlag(FLAG_EXTERN)) {
       if (fRuntime && fnSymbol != chpl_main && !fnSymbol->hasFlag(FLAG_EXPORT))
-        fprintf(outfile, "static ");
+        fprintf(hdrfile, "static ");
       if (!fRuntime || 
           (!fnSymbol->hasFlag(FLAG_EXPORT) && fnSymbol != chpl_main))
-        fnSymbol->codegenPrototype(outfile);
+        fnSymbol->codegenPrototype(hdrfile);
     }
   }
   if (!fRuntime) {
-    fprintf(outfile, "\n/*** Function Pointer Table ***/\n\n");
-    fprintf(outfile, "chpl_fn_p chpl_ftable[] = {\n");
+    fprintf(hdrfile, "\n/*** Function Pointer Table ***/\n\n");
+    fprintf(hdrfile, "chpl_fn_p chpl_ftable[] = {\n");
     int i = 0;
     forv_Vec(FnSymbol, fn, fnSymbols) {
       if (fn->hasFlag(FLAG_BEGIN_BLOCK) ||
           fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
           fn->hasFlag(FLAG_ON_BLOCK)) {
         if (i > 0)
-          fprintf(outfile, ",\n");
+          fprintf(hdrfile, ",\n");
         ftable.put(fn, i++);
-        fprintf(outfile, "(chpl_fn_p)%s", fn->cname);
+        fprintf(hdrfile, "(chpl_fn_p)%s", fn->cname);
       }
     }
     if (i == 0)
-      fprintf(outfile, "(chpl_fn_p)0");
-    fprintf(outfile, "\n};\n");
+      fprintf(hdrfile, "(chpl_fn_p)0");
+    fprintf(hdrfile, "\n};\n");
   }
 
-  fprintf(outfile, "\n/*** Global Variables ***/\n\n");
+  fprintf(hdrfile, "\n/*** Global Variables ***/\n\n");
   forv_Vec(VarSymbol, varSymbol, varSymbols) {
     if (fRuntime) {
       if (varSymbol->defPoint->parentSymbol == baseModule)
         continue;
-      fprintf(outfile, "static ");
+      fprintf(hdrfile, "static ");
     }
-    varSymbol->codegenDef(outfile);
+    varSymbol->codegenDef(hdrfile);
   }
 
   if (!fRuntime) {
-    fprintf(outfile, "\nconst int chpl_numGlobalsOnHeap = %d;\n", numGlobalsOnHeap);
-    fprintf(outfile, "\nvoid** chpl_globals_registry;\n");
-    fprintf(outfile, "\nvoid* chpl_globals_registry_static[%d];\n", 
+    fprintf(hdrfile, "\nconst int chpl_numGlobalsOnHeap = %d;\n", numGlobalsOnHeap);
+    fprintf(hdrfile, "\nvoid** chpl_globals_registry;\n");
+    fprintf(hdrfile, "\nvoid* chpl_globals_registry_static[%d];\n", 
             (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
-    fprintf(outfile, "\nconst char* chpl_memDescs[] = {\n");
+    fprintf(hdrfile, "\nconst char* chpl_memDescs[] = {\n");
     bool first = true;
     forv_Vec(const char*, memDesc, memDescsVec) {
       if (!first)
-        fprintf(outfile, ",\n");
-      fprintf(outfile, "\"%s\"", memDesc);
+        fprintf(hdrfile, ",\n");
+      fprintf(hdrfile, "\"%s\"", memDesc);
       first = false;
     }
-    fprintf(outfile, "\n};\n");
-    fprintf(outfile, "\nconst int chpl_num_memDescs = %d;\n", memDescsVec.n);
-  }
-
-  if (!fRuntime) {
-    closeCFile(&header);
-    beautify(&header);
+    fprintf(hdrfile, "\n};\n");
+    fprintf(hdrfile, "\nconst int chpl_num_memDescs = %d;\n", memDescsVec.n);
   }
 }
 
@@ -481,7 +478,52 @@ codegen_config(FILE* outfile) {
   fprintf(outfile, "int32_t chpl_numRealms = %d;\n", getNumRealms());
 
   closeCFile(&configFile);
-  beautify(&configFile);
+}
+
+
+typedef MapElem<TypeSymbol*, bool> ttscMapElem;
+
+static void codegen_communicated_types(FILE* hdrfile) {
+  fileinfo typeStructFile;
+  openCFile(&typeStructFile, TYPE_STRUCTURE_FILE);
+  FILE* outfile = typeStructFile.fptr;
+
+  fprintf(outfile, "chpl_fieldType chpl_structType[][CHPL_MAX_FIELDS_PER_TYPE] = {\n");
+            
+  int num = 0;
+  form_Map(ttscMapElem, typesymM, typesToStructurallyCodegen) {
+    TypeSymbol* typesym = typesymM->key;
+    if (num) {
+      fprintf(outfile, ",\n");
+    }
+    fprintf(outfile, "/* %s (%s) */\n", typesym->name, typesym->cname);
+    fprintf(outfile, "{\n");
+    if (ClassType* classtype = toClassType(typesym->type)) {
+      int numfields = classtype->codegenFieldStructure(outfile, false);
+      if (numfields > maxFieldsPerType) {
+        maxFieldsPerType = numfields;
+      }
+    } else {
+      typesym->type->codegenStructure(outfile);
+      fprintf(outfile, ", 0},\n");
+      fprintf(outfile, "{CHPL_TYPE_DONE, -1}\n");
+    }
+    fprintf(outfile, "}");
+    num++;
+  }
+  fprintf(outfile, "};\n");
+  fprintf(outfile, "typedef enum {\n");
+  num = 0;
+  form_Map(ttscMapElem, typesymM, typesToStructurallyCodegen) {
+    TypeSymbol* typesym = typesymM->key;
+    fprintf(outfile, "chpl_rt_type_id_");
+    typesym->codegen(outfile);
+    fprintf(outfile, ",\n");
+  }
+  fprintf(outfile, "chpl_num_rt_type_ids\n");
+  fprintf(outfile, "} chpl_rt_types;\n");
+  closeCFile(&typeStructFile);
+  fprintf(hdrfile, "#define CHPL_MAX_FIELDS_PER_TYPE %d\n", maxFieldsPerType);
 }
 
 
@@ -489,15 +531,27 @@ void codegen(void) {
   if (no_codegen)
     return;
 
-  fileinfo mainfile;
+  fileinfo hdrfile, mainfile, runtimeheader, runtimecode;
+  openCFile(&hdrfile, "chpl__header", "h");
   openCFile(&mainfile, "_main", "c");
   fprintf(mainfile.fptr, "#include \"chpl__header.h\"\n");
 
   codegen_makefile(&mainfile);
 
-  codegen_header();
+  if (fRuntime) {
+    openCFile(&runtimeheader, userModules.v[0]->name, "h", true);
+    openCFile(&runtimecode, userModules.v[0]->name, "c", true);
+    fprintf(runtimecode.fptr, "#include \"chapel_code.h\"\n\n");
+  }
+  if (fRuntime)
+    codegen_header(runtimeheader.fptr, runtimecode.fptr);
+  else
+    codegen_header(hdrfile.fptr);
 
   codegen_config(mainfile.fptr);
+
+  if (genCommunicatedStructures) 
+    fprintf(mainfile.fptr, "#include \"" TYPE_STRUCTURE_FILE "\"\n");
 
   ChainHashMap<char*, StringHashFns, int> filenames;
   forv_Vec(ModuleSymbol, currentModule, allModules) {
@@ -538,20 +592,22 @@ void codegen(void) {
     fileinfo modulefile;
     openCFile(&modulefile, filename, "c");
     if (fRuntime) {
-      currentModule->codegenDef(runtimeFile.fptr);
+      currentModule->codegenDef(runtimecode.fptr);
     } else {
       currentModule->codegenDef(modulefile.fptr);
     }
     closeCFile(&modulefile);
     fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
-    beautify(&modulefile);
   }
+
+  if (genCommunicatedStructures) 
+    codegen_communicated_types(hdrfile.fptr);
 
   if (fRuntime) {
-    closeCFile(&runtimeFile);
-    beautify(&runtimeFile);
+    closeCFile(&runtimeheader);
+    closeCFile(&runtimecode);
   }
 
+  closeCFile(&hdrfile);
   closeCFile(&mainfile);
-  beautify(&mainfile);
 }

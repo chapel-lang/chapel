@@ -62,8 +62,14 @@ void Type::codegenDef(FILE* outfile) {
 void Type::codegenPrototype(FILE* outfile) { }
 
 
+int Type::codegenStructure(FILE* outfile) {
+  INT_FATAL(this, "Unexpected type in codegenStructure: %s", symbol->name);
+  return 0;
+}
+
+
 Symbol* Type::getField(const char* name, bool fatal) {
-  INT_FATAL(this, "getField not called on ClassType");
+  INT_FATAL(this, "getField not called on ClassType: %s");
   return NULL;
 }
 
@@ -116,6 +122,12 @@ void PrimitiveType::verify() {
   if (astTag != E_PrimitiveType) {
     INT_FATAL(this, "Bad PrimitiveType::astTag");
   }
+}
+
+
+int PrimitiveType::codegenStructure(FILE* outfile) {
+  fprintf(outfile, "{CHPL_TYPE_%s", symbol->cname);
+  return 1;
 }
 
 
@@ -179,6 +191,11 @@ void EnumType::codegenDef(FILE* outfile) {
   fprintf(outfile, "} ");
   symbol->codegen(outfile);
   fprintf(outfile, ";\n");
+}
+
+int EnumType::codegenStructure(FILE* outfile) {
+  fprintf(outfile, "{CHPL_TYPE_enum");
+  return 1;
 }
 
 
@@ -329,6 +346,54 @@ void ClassType::codegenPrototype(FILE* outfile) {
   else if (classTag == CLASS_CLASS)
     fprintf(outfile, "typedef struct __%s *%s;\n",
             symbol->cname, symbol->cname);
+}
+
+
+int ClassType::codegenStructure(FILE* outfile) {
+  int retval = 0;
+  switch (classTag) {
+  case CLASS_CLASS:
+    fprintf(outfile, "{CHPL_TYPE_CLASS_REFERENCE");
+    return 1;
+    break;
+  case CLASS_RECORD:
+    retval = codegenFieldStructure(outfile, true);
+    if (retval == 1) {
+      return -1;
+    } else {
+      return retval;
+    }
+    break;
+  case CLASS_UNION:
+    INT_FATAL(this, "Don't know how to codegenStructure for unions yet");
+    return 0;
+    break;
+  default:
+    INT_FATAL(this, "Unexpeted case in ClassType::codegenStructure");
+    return 0;
+  }
+}
+
+
+int ClassType::codegenFieldStructure(FILE* outfile, bool nested) {
+  int totfields = 0;
+  for_fields(field, this) {
+    int numfields = field->type->codegenStructure(outfile);
+    if (numfields == 1) {
+      fprintf(outfile, ", offsetof(%c%s, %s)},", 
+              (this->symbol->hasFlag(FLAG_DATA_CLASS) ? '_' : ' '), 
+              this->symbol->cname, field->cname);
+    } else if (numfields == -1) {
+      numfields = 1;
+    }
+    fprintf(outfile, " /* %s */\n", field->name);
+    totfields += numfields;
+  }
+  if (!nested) {
+    fprintf(outfile, "{CHPL_TYPE_DONE, -1}\n");
+    totfields += 1;
+  }
+  return totfields;
 }
 
 

@@ -20,9 +20,9 @@ void codegen_makefile(fileinfo* mainfile);
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 void deleteTmpDir(void);
 
-void openCFile(fileinfo* fi, const char* name, const char* ext = NULL);
-void openRuntimeFile(fileinfo* fi, const char* name, const char* ext = NULL);
-void closeCFile(fileinfo* fi);
+void openCFile(fileinfo* fi, const char* name, const char* ext = NULL,
+               bool runtime=false);
+void closeCFile(fileinfo* fi, bool beautifyIt=true);
 
 fileinfo* openTmpFile(const char* tmpfilename, const char* mode = "w");
 

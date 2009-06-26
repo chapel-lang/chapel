@@ -59,6 +59,7 @@ bool fGenIDS = false;
 bool fSerialForall = false;
 bool fSerial;  // initialized in setupDependentDefaults() below
 bool fLocal;   // initialized in setupDependentDefaults() below
+bool genCommunicatedStructures = false;
 bool fieeefloat = true;
 bool report_inlining = false;
 char chplmake[256] = "";
@@ -134,6 +135,15 @@ static void setupOrderedGlobals(void) {
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
   fSerial = !strcmp(CHPL_THREADS, "none"); 
+  // Eventually, we should only generate structural definitions when
+  // doing multirealm compilations.  However, we don't have the mechanism
+  // in place to support two communication interfaces yet...
+  genCommunicatedStructures = (strcmp(CHPL_COMM, "pvm") == 0);
+  // Currently, our structural definitions don't work with remote value
+  // forwarding.  Not sure why yet.
+  if (genCommunicatedStructures) {
+    fNoRemoteValueForwarding = true;
+  }
 }
 
 

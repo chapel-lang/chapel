@@ -169,28 +169,22 @@ void closefile(fileinfo* thefile) {
 }
 
 
-void openCFile(fileinfo* fi, const char* name, const char* ext) {
+void openCFile(fileinfo* fi, const char* name, const char* ext, bool runtime) {
   if (ext)
     fi->filename = astr(name, ".", ext);
   else
     fi->filename = astr(name);
-  fi->pathname = genIntFilename(fi->filename);
-  fi->fptr = fopen(fi->pathname, "w");
-}
-
-
-void openRuntimeFile(fileinfo* fi, const char* name, const char* ext) {
-  if (ext)
-    fi->filename = astr(name, ".", ext);
+  if (runtime)
+    fi->pathname = fi->filename;
   else
-    fi->filename = astr(name);
-  fi->pathname = fi->filename;
+    fi->pathname = genIntFilename(fi->filename);
   fi->fptr = fopen(fi->pathname, "w");
 }
 
-
-void closeCFile(fileinfo* fi) {
+void closeCFile(fileinfo* fi, bool beautifyIt) {
   fclose(fi->fptr);
+  if (beautifyIt)
+    beautify(fi);
 }
 
 
@@ -456,6 +450,5 @@ void codegen_makefile(fileinfo* mainfile) {
   fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.include\n");
   fprintf(makefile.fptr, "\n");
   genCFileBuildRules(makefile.fptr);
-  closeCFile(&makefile);
+  closeCFile(&makefile, false);
 }
-

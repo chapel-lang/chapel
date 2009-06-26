@@ -53,6 +53,7 @@ extern bool fGenIDS;
 extern bool fSerialForall;
 extern bool fSerial;
 extern bool fLocal;
+extern bool genCommunicatedStructures;
 extern bool fieeefloat;
 
 extern int debugParserLevel;

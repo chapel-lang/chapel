@@ -68,7 +68,11 @@ chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl
     return string_copy(x->addr, lineno, filename);
   else {
     chpl_string s;
+#ifdef CHPL_COMM_HETEROGENEOUS
+    chpl_error("Need to implement chpl_wide_string_copy() for multirealm", 0, 0);
+#else
     CHPL_COMM_WIDE_GET_STRING(s, *x, lineno, filename);
+#endif
     return s;
   }
 }

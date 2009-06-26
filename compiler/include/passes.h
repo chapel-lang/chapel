@@ -1,6 +1,8 @@
 #ifndef _PASSES_H
 #define _PASSES_H_
 
+#include "symbol.h"
+
 extern bool normalized;
 extern bool resolved;
 
@@ -38,5 +40,9 @@ void resolve();
 void scalarReplace();
 void scopeResolve();
 void verify();
+
+// defined in codegen.cpp
+void registerTypeToStructurallyCodegen(TypeSymbol* type);
+
 
 #endif

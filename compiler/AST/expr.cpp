@@ -713,9 +713,13 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ", ");
         get(2)->codegen(outfile);
         fprintf(outfile, ", ");
-        fprintf(outfile, "%s, ", get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+        TypeSymbol* ts = get(1)->typeInfo()->getField("addr")->type->symbol;
+        registerTypeToStructurallyCodegen(ts);
+        fprintf(outfile, "%s, ", ts->cname);
         fprintf(outfile, "_data, ");
-        fprintf(outfile, "%s, ", toTypeSymbol(get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->cname);
+        ts = toTypeSymbol(get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value);
+        //        registerTypeToStructurallyCodegen(ts);
+        fprintf(outfile, "%s, ", ts->cname);
         get(3)->codegen(outfile);
         fprintf(outfile, ", ");
         get(4)->codegen(outfile);
@@ -786,7 +790,8 @@ void CallExpr::codegen(FILE* outfile) {
         if (call->isPrimitive(PRIM_GET_REF)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            if (get(1)->typeInfo() != dtString) {
+            bool stringType = get(1)->typeInfo() == dtString;
+            if (!stringType) {
               fprintf(outfile, "CHPL_COMM_WIDE_GET(");
             } else {
               fprintf(outfile, "CHPL_COMM_WIDE_GET_STRING(");
@@ -795,6 +800,11 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             call->get(1)->codegen(outfile);
             fprintf(outfile, ", ");
+            if (!stringType) {
+              TypeSymbol* ts = get(1)->typeInfo()->symbol;
+              registerTypeToStructurallyCodegen(ts);
+              fprintf(outfile, "%s, ", ts->cname);
+            }
             call->get(2)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(3)->codegen(outfile);
@@ -828,6 +838,7 @@ void CallExpr::codegen(FILE* outfile) {
               fprintf(outfile, ", ");
               call->get(2)->codegen(outfile);
               fprintf(outfile, ", ");
+              fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
               call->get(3)->codegen(outfile);
               fprintf(outfile, ", ");
               call->get(4)->codegen(outfile);
@@ -845,6 +856,9 @@ void CallExpr::codegen(FILE* outfile) {
               fprintf(outfile, "_u.");
             call->get(2)->codegen(outfile);
             fprintf(outfile, ", ");
+            TypeSymbol* ts = get(1)->typeInfo()->symbol;
+            registerTypeToStructurallyCodegen(ts);
+            fprintf(outfile, "%s, ", ts->cname);
             call->get(3)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(4)->codegen(outfile);
@@ -894,7 +908,10 @@ void CallExpr::codegen(FILE* outfile) {
             call->get(2)->codegen(outfile);
             fprintf(outfile, ", ");
             fprintf(outfile, "%s, ", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
-            fprintf(outfile, "_data,");
+            fprintf(outfile, "_data, ");
+            TypeSymbol* ts = get(1)->typeInfo()->getField("addr")->type->symbol;
+            registerTypeToStructurallyCodegen(ts);
+            fprintf(outfile, "%s, ", ts->cname);
             call->get(3)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(4)->codegen(outfile);
@@ -909,7 +926,8 @@ void CallExpr::codegen(FILE* outfile) {
         if (call->isPrimitive(PRIM_ARRAY_GET_VALUE)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             fprintf(outfile, "CHPL_COMM_WIDE_ARRAY_GET_VALUE(");
-            fprintf(outfile, "%s, ", wideRefMap.get(toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->type->refType)->symbol->cname);
+            Type* tt = wideRefMap.get(toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->type->refType);
+            fprintf(outfile, "%s, ", tt->symbol->cname);
             get(1)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(1)->codegen(outfile);
@@ -918,7 +936,9 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             fprintf(outfile, "%s, ", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
             fprintf(outfile, "_data, ");
-            fprintf(outfile, "%s,", toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->cname);
+            //            fprintf(outfile, "%s,", toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->cname);
+            TypeSymbol* ts = tt->getField("addr")->type->symbol;
+            fprintf(outfile, "%s, ", ts->cname);
             call->get(3)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(4)->codegen(outfile);
@@ -938,7 +958,8 @@ void CallExpr::codegen(FILE* outfile) {
             call->get(1)->codegen(outfile);
             fprintf(outfile, ", ");
             fprintf(outfile, "%s*", call->get(1)->typeInfo()->getValueType()->symbol->cname);
-            fprintf(outfile, ", _uid,");
+            fprintf(outfile, ", _uid, ");
+            fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
             call->get(2)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(3)->codegen(outfile);
@@ -1420,7 +1441,9 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_SET_MEMBER:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         fprintf(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE(");
-        fprintf(outfile, "%s, ", get(2)->typeInfo()->symbol->cname);
+        TypeSymbol* ts = get(2)->typeInfo()->symbol;
+        registerTypeToStructurallyCodegen(ts);
+        fprintf(outfile, "%s, ", ts->cname);
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(3)->codegen(outfile);
@@ -1435,7 +1458,9 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ")");
       } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
         fprintf(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE(");
-        fprintf(outfile, "%s, ", get(2)->typeInfo()->symbol->cname);
+        TypeSymbol* ts = get(2)->typeInfo()->symbol;
+        registerTypeToStructurallyCodegen(ts);
+        fprintf(outfile, "%s, ", ts->cname);
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(3)->codegen(outfile);
@@ -2114,9 +2139,19 @@ void CallExpr::codegen(FILE* outfile) {
     get(1)->codegen(outfile);
     fprintf(outfile, ", /* %s */ %d, ", fn->cname, ftable.get(fn));
     get(2)->codegen(outfile);
-    fprintf(outfile, ", sizeof(_");
-    get(2)->typeInfo()->symbol->codegen(outfile);
-    fprintf(outfile, "));\n");
+    Symbol* argType = get(2)->typeInfo()->symbol;
+    fprintf(outfile, ", ");
+    if (genCommunicatedStructures) {
+      fprintf(outfile, "chpl_rt_type_id_");
+      argType->codegen(outfile);
+    } else {
+      // This is strange -- why do I need to put the extra _ before the argType's name?  If not for this, this could/should
+      // use the same SPECIFY_SIZE() macro as in chplcomm.h
+      fprintf(outfile, "sizeof(_");
+      argType->codegen(outfile);
+      fprintf(outfile, ")");
+    }
+    fprintf(outfile, ");\n");
     return;
   }
 

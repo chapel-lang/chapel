@@ -2,6 +2,39 @@
 #define _chpltypes_H_
 
 #include <stdint.h>
+#include <stdlib.h>
+
+#define chpl_rt_type_id_chpl__class_id CHPL_TYPE_enum
+
+typedef enum {
+  CHPL_TYPE_chpl_bool,
+  CHPL_TYPE_enum,
+  CHPL_TYPE_int8,
+  CHPL_TYPE_int16,
+  CHPL_TYPE_int32_t,
+  CHPL_TYPE_int64_t,
+  CHPL_TYPE_uint8_t,
+  CHPL_TYPE_uint16_t,
+  CHPL_TYPE_uint32_t,
+  CHPL_TYPE_uint64_t,
+  CHPL_TYPE_real32_t,
+  CHPL_TYPE_real64_t,
+  CHPL_TYPE_imag32_t,
+  CHPL_TYPE_imag64_t,
+  CHPL_TYPE_complex64_t,
+  CHPL_TYPE_complex128_t,
+  CHPL_TYPE_chpl_string,
+  CHPL_TYPE_wide_string,
+  CHPL_TYPE__cfile,
+  CHPL_TYPE_chpl_task_list_p,
+  CHPL_TYPE_CLASS_REFERENCE,
+  CHPL_TYPE_DONE
+} chplType;
+
+typedef struct _chpl_fieldType {
+  chplType type;
+  size_t offset;
+} chpl_fieldType;
 
 #define nil 0
 #define _nilType void*
