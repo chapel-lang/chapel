@@ -940,8 +940,10 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, "%s, ", ts0->cname);
             fprintf(outfile, "_data, ");
             TypeSymbol* ts = toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value);
-            //            TypeSymbol* ts = tt->getField("addr")->type->symbol;
+            TypeSymbol* ts2 = tt->getField("addr")->type->symbol;
             registerTypeToStructurallyCodegen(ts);
+            registerTypeToStructurallyCodegen(ts2);
+            fprintf(outfile, "%s, ", ts2->cname);
             fprintf(outfile, "%s, ", ts->cname);
             call->get(3)->codegen(outfile);
             fprintf(outfile, ", ");
