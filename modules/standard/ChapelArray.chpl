@@ -422,7 +422,9 @@ record _array {
   def this(ranges: range(?) ...rank) var {
     if boundsChecking then
       _value.checkSlice(ranges);
-    return _newArray(_value.slice(_dom((...ranges))._value));
+    var d = _dom((...ranges));
+    d._value._domCnt$ += 1;
+    return _newArray(_value.slice(d._value));
   }
 
   pragma "valid var"
@@ -431,7 +433,9 @@ record _array {
       _value.checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl__anyStridable(ranges);
-    return _newArray(_value.rankChange(rank, stridable, args));
+    var d = _value.dom.rankChange(rank, stridable, args);
+    d._domCnt$ += 1;
+    return _newArray(_value.rankChange(d, rank, stridable, args));
   }
 
   pragma "inline"
@@ -443,11 +447,13 @@ record _array {
 
   def reindex(d: domain) where rank == 1 {
     var x = _value.reindex(d._value);
+    d._value._domCnt$ += 1;
     return _newArray(x);
   }
 
   def reindex(d: domain) where rank != 1 {
     var x = _value.reindex(d._value);
+    d._value._domCnt$ += 1;
     return _newArray(x);
   }
 
@@ -547,8 +553,9 @@ def chpl__isDomain(x) param return false;
 //
 def =(a: domain, b: domain) {
   var bc = b;
-  for e in a._value._arrs do
+  for e in a._value._arrs do {
     e.reallocate(bc);
+  }
   a.setIndices(bc.getIndices());
   return a;
 }

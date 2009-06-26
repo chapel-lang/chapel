@@ -428,7 +428,6 @@ class DefaultArithmeticArr: BaseArr {
     var alias = new DefaultArithmeticArr(eltType, d.rank, d.idxType,
                                          d.stridable, true, d.alias, d, noinit=true);
     //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit=true);
-    d._domCnt$ += 1;
     data.count += 1;
     alias.data = data;
     alias.size = size: d.idxType;
@@ -451,7 +450,6 @@ class DefaultArithmeticArr: BaseArr {
   def slice(d: DefaultArithmeticDom) {
     var alias = new DefaultArithmeticArr(eltType, rank, idxType,
                                          d.stridable, reindexed, false, d, noinit=true);
-    d._domCnt$ += 1;
     data.count += 1;
     alias.data = data;
     alias.size = size;
@@ -476,16 +474,13 @@ class DefaultArithmeticArr: BaseArr {
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
-  def rankChange(param newRank: int, param newStridable: bool, args) {
-    var d = dom.rankChange(newRank, newStridable, args);
-
+  def rankChange(d, param newRank: int, param newStridable: bool, args) {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
     var alias = new DefaultArithmeticArr(eltType, newRank, idxType,
                                                 newStridable, true, true, d,
                                                 noinit=true);
-    d._domCnt$ += 1;
     data.count += 1;
     alias.data = data;
     alias.size = size;
@@ -510,7 +505,6 @@ class DefaultArithmeticArr: BaseArr {
     if (d._value.type == dom.type) {
       var copy = new DefaultArithmeticArr(eltType, rank, idxType,
                                           d._value.stridable, reindexed, d._value.alias, d._value);
-      copy.dom._domCnt$ += 2;
       for i in d((...dom.ranges)) do
         copy(i) = this(i);
       off = copy.off;

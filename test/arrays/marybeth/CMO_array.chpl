@@ -265,7 +265,6 @@ class CMOArr:BaseArr {
     var alias = new CMOArr(eltType, d.rank, d.idxType, d.stridable, true, d, noinit=true);
     //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit=true);
     alias.D1 = [0:idxType..#size:idxType];
-    d._domCnt$ += 1;
     alias.data = data;
     alias.size = size: d.idxType;
     for param i in 1..rank {
@@ -289,7 +288,6 @@ class CMOArr:BaseArr {
   def slice(d: CMODom) {
     var alias = new CMOArr(eltType, rank, idxType, d.stridable, reindexed, d, noinit=true);
     alias.D1 = [0:idxType..#size:idxType];
-    d._domCnt$ += 1;
     alias.data = data;
     alias.size = size;
     alias.blk = blk;
@@ -314,13 +312,11 @@ class CMOArr:BaseArr {
             halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
-  def rankChange(param newRank: int, param newStridable: bool, irs) {
+  def rankChange(d, param newRank: int, param newStridable: bool, irs) {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
-    var d = dom.rankChange(newRank, newStridable, irs);
     var alias = new CMOArr(eltType, newRank, idxType, newStridable, true, d, noinit=true);
     alias.D1 = [0:idxType..#size:idxType];
-    d._domCnt$ += 1;
     alias.data = data;
     alias.size = size;
     var i = 1;
@@ -344,7 +340,6 @@ class CMOArr:BaseArr {
   def reallocate(d: _domain) {
     if (d._value.type == dom.type) {
       var copy = new CMOArr(eltType, rank, idxType, d._value.stridable, reindexed, d._value);
-      copy.dom._domCnt$ += 2;
       for i in _intersect(d._value, dom) do
         copy(i) = this(i);
       off = copy.off;
