@@ -179,11 +179,11 @@ extern chpl_fieldType chpl_structType[][9];
     (wide).addr += ind;                                                 \
   } while (0)
 
-#define CHPL_COMM_WIDE_ARRAY_GET_VALUE(wide_type, local, cls, ind, stype, sfield, etype, ln, fn) \
+#define CHPL_COMM_WIDE_ARRAY_GET_VALUE(wide_type, local, cls, ind, stype, sfield, etype, etype2, ln, fn) \
   do {                                                                  \
     wide_type chpl_macro_tmp;                                           \
     CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, stype, sfield, etype, ln, fn); \
-    CHPL_COMM_WIDE_GET(local, chpl_macro_tmp, stype, ln, fn);           \
+    CHPL_COMM_WIDE_GET(local, chpl_macro_tmp, etype2, ln, fn);           \
   } while (0)
 
 #define CHPL_COMM_WIDE_ARRAY_SET_VALUE(wide_type, cls, ind, stype, sfield, etype, val, ln, fn) \
