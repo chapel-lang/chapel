@@ -298,7 +298,8 @@ class Block1DDom: BaseArithmeticDom {
   // how to allocate a new array over this domain
   //
   def buildArray(type elemType) {
-    var arr = new Block1DArr(idxType, elemType, stridable, this);
+    var arr = new Block1DArr(idxType=idxType, eltType=elemType,
+                             stridable=stridable, dom=this);
     arr.setup();
     return arr;
   }
@@ -473,7 +474,8 @@ class Block1DArr: BaseArr {
     var dompid = dom.pid;
     var thisdom = dom;
     var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
-    var c = new Block1DArr(idxType, eltType, stridable, privdom);
+    var c = new Block1DArr(idxType=idxType, eltType=eltType,
+                           stridable=stridable, dom=privdom);
     c.locArr = locArr;
     return c;
   }

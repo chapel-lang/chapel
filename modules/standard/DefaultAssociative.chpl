@@ -50,7 +50,8 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   // Standard Internal Domain Interface
   //
   def buildArray(type eltType) {
-    return new DefaultAssociativeArr(eltType, idxType, dom=this); 
+    return new DefaultAssociativeArr(eltType=eltType, idxType=idxType,
+                                     dom=this); 
   }
 
   def getIndices()

@@ -122,6 +122,9 @@ class BaseEnumDom : BaseDom {
 //
 pragma "base array"
 class BaseArr {
+  var _arrCnt$: sync int = 0;
+  var _arrAlias: BaseArr;
+
   def reallocate(d: domain) {
     halt("reallocating not supported for this array type");
   }

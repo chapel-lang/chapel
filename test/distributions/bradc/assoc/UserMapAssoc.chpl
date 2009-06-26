@@ -353,7 +353,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // how to allocate a new array over this domain
   //
   def buildArray(type elemType) {
-    var arr = new UserMapAssocArr(idxType, elemType, this);
+    var arr = new UserMapAssocArr(idxType=idxType, eltType=elemType, dom=this);
     arr.setup();
     return arr;
   }
@@ -549,7 +549,7 @@ class UserMapAssocArr: BaseArr {
     var dompid = dom.pid;
     var thisdom = dom;
     var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
-    var c = new UserMapAssocArr(idxType, eltType, privdom);
+    var c = new UserMapAssocArr(idxType=idxType, eltType=eltType, dom=privdom);
     c.locArrs = locArrs;
     return c;
   }

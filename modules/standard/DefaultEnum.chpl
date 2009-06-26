@@ -43,7 +43,7 @@ class DefaultEnumDom: BaseEnumDom {
   }
 
   def buildArray(type eltType) {
-    var ia = new DefaultEnumArr(eltType, idxType, dom=this);
+    var ia = new DefaultEnumArr(eltType=eltType, idxType=idxType, dom=this);
     return ia;
   }
 }
@@ -73,7 +73,7 @@ class DefaultEnumArr: BaseArr {
   type idxType;
 
   var dom: DefaultEnumDom(idxType=idxType);
-  var anarray = new DefaultAssociativeArr(eltType, idxType, dom.adomain);
+  var anarray = new DefaultAssociativeArr(eltType=eltType, idxType=idxType, dom=dom.adomain);
 
   def this(ind : idxType) var : eltType
     return anarray(ind);

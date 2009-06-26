@@ -99,7 +99,7 @@ class CMODom: BaseArithmeticDom {
   }
 
   def buildArray(type eltType) {
-    return new CMOArr(eltType, rank, idxType, stridable, dom=this);
+    return new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
   }
  
   def buildSubdomain() 
@@ -262,7 +262,7 @@ class CMOArr:BaseArr {
     for param i in 1..rank do
       if d.dim(i).length != dom.dim(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    var alias = new CMOArr(eltType, d.rank, d.idxType, d.stridable, true, d, noinit=true);
+    var alias = new CMOArr(eltType=eltType, rank=d.rank, idxType=d.idxType, stridable=d.stridable, reindexed=true, dom=d, noinit=true);
     //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit=true);
     alias.D1 = [0:idxType..#size:idxType];
     alias.data = data;
@@ -286,7 +286,7 @@ class CMOArr:BaseArr {
   }
 
   def slice(d: CMODom) {
-    var alias = new CMOArr(eltType, rank, idxType, d.stridable, reindexed, d, noinit=true);
+    var alias = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, reindexed=reindexed, dom=d, noinit=true);
     alias.D1 = [0:idxType..#size:idxType];
     alias.data = data;
     alias.size = size;
@@ -315,7 +315,7 @@ class CMOArr:BaseArr {
   def rankChange(d, param newRank: int, param newStridable: bool, irs) {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
-    var alias = new CMOArr(eltType, newRank, idxType, newStridable, true, d, noinit=true);
+    var alias = new CMOArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=newStridable, reindexed=true, dom=d, noinit=true);
     alias.D1 = [0:idxType..#size:idxType];
     alias.data = data;
     alias.size = size;
@@ -339,7 +339,7 @@ class CMOArr:BaseArr {
 
   def reallocate(d: _domain) {
     if (d._value.type == dom.type) {
-      var copy = new CMOArr(eltType, rank, idxType, d._value.stridable, reindexed, d._value);
+      var copy = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d._value.stridable, reindexed=reindexed, dom=d._value);
       for i in _intersect(d._value, dom) do
         copy(i) = this(i);
       off = copy.off;

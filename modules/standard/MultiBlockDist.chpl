@@ -311,7 +311,7 @@ def BlockDom.writeThis(x:Writer) {
 // how to allocate a new array over this domain
 //
 def BlockDom.buildArray(type eltType) {
-  var arr = new BlockArr(eltType, rank, idxType, stridable, this);
+  var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
   arr.setup();
   return arr;
 }
@@ -475,7 +475,7 @@ def BlockArr.privatize() {
   var dompid = dom.pid;
   var thisdom = dom;
   var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
-  var c = new BlockArr(eltType, rank, idxType, stridable, privdom);
+  var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   c.locArr = locArr;
   for localeIdx in dom.dist.targetLocDom do
     if c.locArr(localeIdx).locale == here then

@@ -37,7 +37,7 @@ class CSRDom: BaseSparseDom {
   def setIndices(x) { }
 
   def buildArray(type eltType)
-    return new CSRArr(eltType, rank, idxType, dom=this);
+    return new CSRArr(eltType=eltType, rank=rank, idxType=idxType, dom=this);
 
   def these() {
     var cursorRow = rowRange.low;

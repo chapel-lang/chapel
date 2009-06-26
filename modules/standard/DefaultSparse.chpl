@@ -32,7 +32,8 @@ class DefaultSparseDom: BaseSparseDom {
 
 
   def buildArray(type eltType)
-    return new DefaultSparseArr(eltType, rank, idxType, dom=this);
+    return new DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
+                                dom=this);
 
   def these() {
     for i in 1..nnz {

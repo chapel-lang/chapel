@@ -45,7 +45,7 @@ class DefaultOpaqueDom: BaseOpaqueDom {
   }
 
   def buildArray(type eltType) {
-    var ia = new DefaultOpaqueArr(eltType, idxType, dom=this);
+    var ia = new DefaultOpaqueArr(eltType=eltType, idxType=idxType, dom=this);
     return ia;
   }
 }
@@ -63,7 +63,7 @@ class DefaultOpaqueArr: BaseArr {
   type idxType;
 
   var dom: DefaultOpaqueDom(idxType=idxType);
-  var anarray = new DefaultAssociativeArr(eltType, idxType, dom.adomain);
+  var anarray = new DefaultAssociativeArr(eltType=eltType, idxType=idxType, dom=dom.adomain);
 
   def this(ind : idxType) var : eltType
     return anarray(ind);
