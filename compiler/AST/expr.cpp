@@ -909,8 +909,8 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             fprintf(outfile, "%s, ", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
             fprintf(outfile, "_data, ");
-            TypeSymbol* ts = get(1)->typeInfo()->getField("addr")->type->symbol;
-            //            TypeSymbol* ts = wideRefMap.get(toTypeSymbol(get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->type->refType)->symbol;
+            //            TypeSymbol* ts = get(1)->typeInfo()->getField("addr")->type->symbol;
+            TypeSymbol* ts = toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value);
             registerTypeToStructurallyCodegen(ts);
             fprintf(outfile, "%s, ", ts->cname);
             call->get(3)->codegen(outfile);
