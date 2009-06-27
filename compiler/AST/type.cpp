@@ -376,6 +376,12 @@ int ClassType::codegenStructure(FILE* outfile) {
 
 
 int ClassType::codegenFieldStructure(FILE* outfile, bool nested) {
+  // Handle ref to base types like _ref_int32_t
+  if (symbol->hasFlag(FLAG_REF) && toPrimitiveType(getField(1)->type)) {
+    fprintf(outfile, "{CHPL_TYPE_CLASS_REFERENCE, 0}\n");
+    return 1;
+  }
+
   int totfields = 0;
   for_fields(field, this) {
     int numfields = field->type->codegenStructure(outfile);

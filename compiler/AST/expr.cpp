@@ -909,8 +909,8 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             fprintf(outfile, "%s, ", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
             fprintf(outfile, "_data, ");
-            //            TypeSymbol* ts = get(1)->typeInfo()->getField("addr")->type->symbol;
-            TypeSymbol* ts = toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value);
+            TypeSymbol* ts = get(1)->typeInfo()->getField("addr")->type->symbol;
+            //            TypeSymbol* ts = toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value);
             registerTypeToStructurallyCodegen(ts);
             fprintf(outfile, "%s, ", ts->cname);
             call->get(3)->codegen(outfile);
@@ -2147,21 +2147,13 @@ void CallExpr::codegen(FILE* outfile) {
     get(2)->codegen(outfile);
     Symbol* argType = get(2)->typeInfo()->symbol;
     fprintf(outfile, ", ");
-    /*
     fprintf(outfile, "SPECIFY_SIZE(");
+    // BLC: not sure why I would need this
+    if (!genCommunicatedStructures) {
+      fprintf(outfile, "_");
+    }
     argType->codegen(outfile);
     fprintf(outfile, ")");
-    */
-    if (genCommunicatedStructures) {
-      fprintf(outfile, "chpl_rt_type_id_");
-      argType->codegen(outfile);
-    } else {
-      // This is strange -- why do I need to put the extra _ before the argType's name?  If not for this, this could/should
-      // use the same SPECIFY_SIZE() macro as in chplcomm.h
-      fprintf(outfile, "sizeof(_");
-      argType->codegen(outfile);
-      fprintf(outfile, ")");
-    }
     fprintf(outfile, ");\n");
     return;
   }
