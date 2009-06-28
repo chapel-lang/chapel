@@ -500,12 +500,12 @@ static void codegen_communicated_types(FILE* hdrfile) {
     fprintf(outfile, "/* %s (%s) */\n", typesym->name, typesym->cname);
     fprintf(outfile, "{\n");
     if (ClassType* classtype = toClassType(typesym->type)) {
-      int numfields = classtype->codegenFieldStructure(outfile, false);
+      int numfields = classtype->codegenFieldStructure(outfile, false, "0");
       if (numfields > maxFieldsPerType) {
         maxFieldsPerType = numfields;
       }
     } else {
-      typesym->type->codegenStructure(outfile);
+      typesym->type->codegenStructure(outfile, "0");
       fprintf(outfile, ", 0},\n");
       fprintf(outfile, "{CHPL_TYPE_DONE, -1}\n");
     }

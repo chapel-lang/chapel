@@ -61,7 +61,7 @@ class Type : public BaseAST {
   virtual void codegen(FILE* outfile);
   virtual void codegenDef(FILE* outfile);
   virtual void codegenPrototype(FILE* outfile);
-  virtual int codegenStructure(FILE* outfile);
+  virtual int codegenStructure(FILE* outfile, const char* baseoffset);
 
   virtual Symbol* getField(const char* name, bool fatal=true);
 
@@ -83,7 +83,7 @@ class EnumType : public Type {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   void codegenDef(FILE* outfile);
-  int codegenStructure(FILE* outfile);
+  int codegenStructure(FILE* outfile, const char* baseoffset);
 };
 
 
@@ -109,8 +109,8 @@ class ClassType : public Type {
 
   void codegenDef(FILE* outfile);
   void codegenPrototype(FILE* outfile);
-  int codegenStructure(FILE* outfile);
-  int codegenFieldStructure(FILE* outfile, bool nested);
+  int codegenStructure(FILE* outfile, const char* baseoffset);
+  int codegenFieldStructure(FILE* outfile, bool nested, const char* baseoffset);
 
   Symbol* getField(const char* name, bool fatal=true);
   Symbol* getField(int i);
@@ -124,7 +124,7 @@ class PrimitiveType : public Type {
   DECLARE_COPY(PrimitiveType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  int codegenStructure(FILE* outfile);
+  int codegenStructure(FILE* outfile, const char* baseoffset);
 };
 
 

@@ -62,7 +62,7 @@ void Type::codegenDef(FILE* outfile) {
 void Type::codegenPrototype(FILE* outfile) { }
 
 
-int Type::codegenStructure(FILE* outfile) {
+int Type::codegenStructure(FILE* outfile, const char* baseoffset) {
   INT_FATAL(this, "Unexpected type in codegenStructure: %s", symbol->name);
   return 0;
 }
@@ -125,7 +125,7 @@ void PrimitiveType::verify() {
 }
 
 
-int PrimitiveType::codegenStructure(FILE* outfile) {
+int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
   fprintf(outfile, "{CHPL_TYPE_%s", symbol->cname);
   return 1;
 }
@@ -193,7 +193,7 @@ void EnumType::codegenDef(FILE* outfile) {
   fprintf(outfile, ";\n");
 }
 
-int EnumType::codegenStructure(FILE* outfile) {
+int EnumType::codegenStructure(FILE* outfile, const char* baseoffset) {
   fprintf(outfile, "{CHPL_TYPE_enum");
   return 1;
 }
@@ -349,7 +349,7 @@ void ClassType::codegenPrototype(FILE* outfile) {
 }
 
 
-int ClassType::codegenStructure(FILE* outfile) {
+int ClassType::codegenStructure(FILE* outfile, const char* baseoffset) {
   int retval = 0;
   switch (classTag) {
   case CLASS_CLASS:
@@ -357,7 +357,7 @@ int ClassType::codegenStructure(FILE* outfile) {
     return 1;
     break;
   case CLASS_RECORD:
-    retval = codegenFieldStructure(outfile, true);
+    retval = codegenFieldStructure(outfile, true, baseoffset);
     if (retval == 1) {
       return -1;
     } else {
@@ -369,24 +369,40 @@ int ClassType::codegenStructure(FILE* outfile) {
     return 0;
     break;
   default:
-    INT_FATAL(this, "Unexpeted case in ClassType::codegenStructure");
+    INT_FATAL(this, "Unexpected case in ClassType::codegenStructure");
     return 0;
   }
 }
 
 
-int ClassType::codegenFieldStructure(FILE* outfile, bool nested) {
-  // Handle ref to base types like _ref_int32_t
-  if (symbol->hasFlag(FLAG_REF) && toPrimitiveType(getField(1)->type)) {
-    fprintf(outfile, "{CHPL_TYPE_CLASS_REFERENCE, 0}\n");
+// BLC: I'm not understanding why special cases would need to be called
+// out here
+static bool genMagicUnderscore(Symbol* sym) {
+  if (sym->hasFlag(FLAG_TUPLE)) return false;
+  if (strcmp(sym->cname, "list_BaseArr") == 0) return false;
+  return true;
+}
+
+
+int ClassType::codegenFieldStructure(FILE* outfile, bool nested, 
+                                     const char* baseoffset) {
+  // Handle ref types as pointers
+  if (symbol->hasFlag(FLAG_REF)) {
+    fprintf(outfile, "{CHPL_TYPE_CLASS_REFERENCE, 0},\n");
+    fprintf(outfile, "{CHPL_TYPE_DONE, -1}\n");
     return 1;
   }
 
   int totfields = 0;
   for_fields(field, this) {
-    int numfields = field->type->codegenStructure(outfile);
+    const char* firstpart = astr(baseoffset, " + offsetof(", 
+                                 genMagicUnderscore(this->symbol) ? "_" : " ",
+                                 this->symbol->cname);
+    const char* newbaseoffset = astr(firstpart, ", ", field->cname, ")");
+    int numfields = field->type->codegenStructure(outfile, newbaseoffset);
     if (numfields == 1) {
-      fprintf(outfile, ", offsetof(%c%s, %s)},", 
+      fprintf(outfile, ", %s + offsetof(%c%s, %s)},", 
+              baseoffset,
               (this->symbol->hasFlag(FLAG_DATA_CLASS) ? '_' : ' '), 
               this->symbol->cname, field->cname);
     } else if (numfields == -1) {
