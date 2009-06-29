@@ -625,7 +625,6 @@ def init_elts(x, s, type t) {
 pragma "data class"
 class _ddata {
   type eltType;
-  var count: sync int = 1;
   def ~_ddata() {
     __primitive("array_free", this);
   }

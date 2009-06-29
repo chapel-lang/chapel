@@ -27,12 +27,13 @@ class BaseDist {
 // Abstract domain classes
 //
 class BaseDom {
-  var _arrs: list(BaseArr);
-  var _domCnt$: sync int = 0;
+  var _domCnt$: sync int = 0; // domain reference count and lock
+  var _arrs: list(BaseArr);   // arrays declared over this domain
 
   def destroyDom(arr: BaseArr = nil) {
     var cnt = _domCnt$ - 1;
-    if cnt < 0 then halt("count is negative!"); // should never happen!
+    if cnt < 0 then
+      halt("domain reference count is negative!");
     if arr then
       _arrs.remove(arr);
     _domCnt$ = cnt;
@@ -122,8 +123,20 @@ class BaseEnumDom : BaseDom {
 //
 pragma "base array"
 class BaseArr {
-  var _arrCnt$: sync int = 0;
-  var _arrAlias: BaseArr;
+  var _arrCnt$: sync int = 0; // array reference count (and eventually lock)
+  var _arrAlias: BaseArr;     // reference to base array if an alias
+
+  def destroyArr() {
+    var cnt = _arrCnt$ - 1;
+    if cnt < 0 then
+      halt("array reference count is negative!");
+    _arrCnt$ = cnt;
+    return cnt;
+  }
+
+  def destroyData() {
+
+  }
 
   def reallocate(d: domain) {
     halt("reallocating not supported for this array type");

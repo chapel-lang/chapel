@@ -365,7 +365,19 @@ record _array {
   var _promotionType: _value.eltType;
 
   def makeAlias(A: []) {
+    if _value._arrAlias {
+      var cnt = _value._arrAlias.destroyArr();
+      if cnt == 0 then
+        delete _value._arrAlias;
+    }
     _value.makeAlias(A._value);
+    _value._arrAlias = A._value;
+    _value._arrAlias._arrCnt$ += 1;
+  }
+
+  pragma "dont disable remote value forwarding"
+  def initialize() { 
+    _value._arrCnt$ += 1;
   }
 
   pragma "inline"
@@ -382,11 +394,21 @@ record _array {
 
   def ~_array() {
     if !_supportsPrivatization(_valueType) {
-      var cnt = _value.dom.destroyDom(_value);
-      if cnt == 0 then
-        delete _value.dom;
+      var cnt = _value.destroyArr();
+      if cnt == 0 {
+        var cnt = _value.dom.destroyDom(_value);
+        if cnt == 0 then
+          delete _value.dom;
+        if _value._arrAlias {
+          var cnt = _value._arrAlias.destroyArr();
+          if cnt == 0 then
+            delete _value._arrAlias;
+        } else {
+          _value.destroyData();
+        }
+        delete _value;
+      }
     }
-    delete _value;
   }
 
   def eltType type return _value.eltType;
@@ -424,7 +446,10 @@ record _array {
       _value.checkSlice(ranges);
     var d = _dom((...ranges));
     d._value._domCnt$ += 1;
-    return _newArray(_value.slice(d._value));
+    var a = _value.slice(d._value);
+    a._arrAlias = _value;
+    a._arrAlias._arrCnt$ += 1;
+    return _newArray(a);
   }
 
   pragma "valid var"
@@ -435,7 +460,10 @@ record _array {
     param rank = ranges.size, stridable = chpl__anyStridable(ranges);
     var d = _value.dom.rankChange(rank, stridable, args);
     d._domCnt$ += 1;
-    return _newArray(_value.rankChange(d, rank, stridable, args));
+    var a = _value.rankChange(d, rank, stridable, args);
+    a._arrAlias = _value;
+    a._arrAlias._arrCnt$ += 1;
+    return _newArray(a);
   }
 
   pragma "inline"
@@ -448,12 +476,16 @@ record _array {
   def reindex(d: domain) where rank == 1 {
     var x = _value.reindex(d._value);
     d._value._domCnt$ += 1;
+    x._arrAlias = _value;
+    x._arrAlias._arrCnt$ += 1;
     return _newArray(x);
   }
 
   def reindex(d: domain) where rank != 1 {
     var x = _value.reindex(d._value);
     d._value._domCnt$ += 1;
+    x._arrAlias = _value;
+    x._arrAlias._arrCnt$ += 1;
     return _newArray(x);
   }
 

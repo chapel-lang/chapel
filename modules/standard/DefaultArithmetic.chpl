@@ -331,27 +331,17 @@ class DefaultArithmeticArr: BaseArr {
   var data : _ddata(eltType);
   var noinit: bool = false;
 
-  def ~DefaultArithmeticArr() {
-    destroyData();
-  }
-
   def destroyData() {
-    var cnt = data.count - 1;
-    data.count = cnt;
-    if cnt < 0 then halt("count is negative!"); // should never happen!
-    else if cnt == 0 then
-      on data do delete data;
+    delete data;
   }
 
   def makeAlias(B: DefaultArithmeticArr) {
-    B.data.count += 1;
     var A = B.reindex(dom);
     off = A.off;
     blk = A.blk;
     str = A.str;
     origin = A.origin;
     factoredOffs = A.factoredOffs;
-    destroyData();
     data = A.data;
     delete A;
   }
@@ -431,7 +421,6 @@ class DefaultArithmeticArr: BaseArr {
                                          stridable=d.stridable,
                                          reindexed=true, alias=d.alias, dom=d,
                                          noinit=true);
-    data.count += 1;
     alias.data = data;
     alias.size = size: d.idxType;
     for param i in 1..rank {
@@ -456,7 +445,6 @@ class DefaultArithmeticArr: BaseArr {
                                          stridable=d.stridable,
                                          reindexed=reindexed, alias=false,
                                          dom=d, noinit=true);
-    data.count += 1;
     alias.data = data;
     alias.size = size;
     alias.blk = blk;
@@ -488,7 +476,6 @@ class DefaultArithmeticArr: BaseArr {
                                          idxType=idxType,
                                          stridable=newStridable, reindexed=true,
                                          alias=true, dom=d, noinit=true);
-    data.count += 1;
     alias.data = data;
     alias.size = size;
     var i = 1;
@@ -524,9 +511,8 @@ class DefaultArithmeticArr: BaseArr {
       origin = copy.origin;
       factoredOffs = copy.factoredOffs;
       size = copy.size;
-      destroyData();
+      delete data;
       data = copy.data;
-      data.count += 1;
       delete copy;
     } else {
       halt("illegal reallocation");
