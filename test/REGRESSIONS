@@ -98,20 +98,6 @@ wide strings leaked (?) (04/02/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-broken due to brad's structural typing change (06/26/09)
---------------------------------------------------------
-[Error matching program output for multilocale/deitz/linked/test_linked3c]
-[Error matching program output for multilocale/diten/oneOrMoreLocales/assocArrayOfRemoteArithArray]
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented]
-[Error matching program output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
-[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
-[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
-[Error matching program output for studies/madness/aniruddha/madchap/test_mul]
-[Error matching program output for studies/madness/aniruddha/madchap/test_showboxes]
-
 memory stuff in flux (06/06/09)
 -------------------------------
 [Error matching program output for memory/shannon/memmaxBytes]
@@ -202,7 +188,7 @@ opts-specific tests
 (Example runs: 0)
  
 
-(Full run: 63)
+(Full run: 58)
 
 --no-copy-propagation
 ---------------------
@@ -225,11 +211,7 @@ opts-specific tests
 
 --no-inline-iterators
 ---------------------
-[Error: Timed out compilation for functions/deitz/test_where_param5]
-[Error: Timed out compilation for functions/deitz/Time/test_getCurrentDate]
-[Error: Timed out compilation for functions/deitz/default/test_default1]
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
-[Error: Timed out compilation for trivial/bradc/deadvar]
 
 --no-optimize-loop-iterators
 ----------------------------
@@ -265,7 +247,6 @@ opts-specific tests
 [Error matching program output for arrays/deitz/test_descriptor_frees]
 [Error matching program output for classes/diten/test_destructor2]
 [Error matching program output for studies/590o/bradc/psp2]
-[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
@@ -351,7 +332,6 @@ declaration expected but not found error
 wrong result -- bug in compiler?
 --------------------------------
 [Error matching program output for expressions/bradc/uminusVsTimesPrec]
-[Error matching program output for modules/standard/math/rint]
 
 warning about integer conversion causing change in sign
 -------------------------------------------------------
