@@ -331,7 +331,6 @@ class DefaultArithmeticArr: BaseArr {
   var noinit: bool = false;
 
   def canCopyFromDevice param return true;
-  def canCopyFromHost param return false;
 
   def getBaseDom() return dom;
 
