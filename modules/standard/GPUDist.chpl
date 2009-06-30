@@ -350,6 +350,8 @@ class GPUArithmeticArr: BaseArr {
   var noinit: bool = false;
 
   def canCopyFromHost param return true;
+  def canCopyFromDevice param return false;
+
   def getBaseDom() return dom;
 
   def destroyData() {
