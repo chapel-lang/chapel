@@ -214,9 +214,11 @@ record _domain {
 
   def ~_domain () {
     if !_supportsPrivatization(_valueType) {
-      var cnt = _value.destroyDom();
-      if cnt == 0 then
-        delete _value;
+      on _value {
+        var cnt = _value.destroyDom();
+        if cnt == 0 then
+          delete _value;
+      }
     }
   }
 
@@ -366,9 +368,11 @@ record _array {
 
   def makeAlias(A: []) {
     if _value._arrAlias {
-      var cnt = _value._arrAlias.destroyArr();
-      if cnt == 0 then
-        delete _value._arrAlias;
+      on _value._arrAlias {
+        var cnt = _value._arrAlias.destroyArr();
+        if cnt == 0 then
+          delete _value._arrAlias;
+      }
     }
     _value.makeAlias(A._value);
     _value._arrAlias = A._value;
@@ -394,19 +398,25 @@ record _array {
 
   def ~_array() {
     if !_supportsPrivatization(_valueType) {
-      var cnt = _value.destroyArr();
-      if cnt == 0 {
-        var cnt = _value.dom.destroyDom(_value);
-        if cnt == 0 then
-          delete _value.dom;
-        if _value._arrAlias {
-          var cnt = _value._arrAlias.destroyArr();
-          if cnt == 0 then
-            delete _value._arrAlias;
-        } else {
-          _value.destroyData();
+      on _value {
+        var cnt = _value.destroyArr();
+        if cnt == 0 {
+          on _value.dom {
+            var cnt = _value.dom.destroyDom(_value);
+            if cnt == 0 then
+              delete _value.dom;
+          }
+          if _value._arrAlias {
+            on _value._arrAlias {
+              var cnt = _value._arrAlias.destroyArr();
+              if cnt == 0 then
+                delete _value._arrAlias;
+            }
+          } else {
+            _value.destroyData();
+          }
+          delete _value;
         }
-        delete _value;
       }
     }
   }
@@ -586,7 +596,7 @@ def chpl__isDomain(x) param return false;
 def =(a: domain, b: domain) {
   var bc = b;
   for e in a._value._arrs do {
-    e.reallocate(bc);
+    on e do e.reallocate(bc);
   }
   a.setIndices(bc.getIndices());
   return a;
