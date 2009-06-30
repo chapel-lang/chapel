@@ -85,6 +85,7 @@ static void parseStandardModules(void) {
 
   // standard distributions
   parseStandardModule("DistCSR.chpl");
+  parseStandardModule("GPUDist.chpl");
 }
 
 void parse(void) {

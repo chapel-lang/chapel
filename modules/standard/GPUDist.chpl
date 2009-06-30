@@ -1,38 +1,57 @@
 use Schedules;
 use List;
 
-class DefaultDist: BaseDist {
+pragma "data class"
+class _gdata {
+  type eltType;
+  def ~_gdata() {
+    __primitive("gpu_free", this);
+  }
+  pragma "inline" def init(size: integral) {
+    __primitive("gpu_alloc", this, eltType, size);	  
+  }
+  pragma "inline" def this(i: integral) var {
+    return __primitive("get_gpu_value", this, i);
+  }
+}
+
+class GPUDist: BaseDist {
+  	param rank: int = 1;
+  	type idxType = int(64);
+	const boundingBox: domain(rank, idxType);
+	var threadsPerBlock : int(64);
+	var numBlocks : int(64);
+
+	def GPUDist(param rank : int, 
+		    type idxType = int(64), 
+		    bbox: domain(rank, idxType), threadsPerBlock = 128) {
+		boundingBox = bbox;
+		if rank == 1 then numBlocks = (boundingBox.high + threadsPerBlock - 1) / threadsPerBlock;
+		else compilerError("Can't support dimensions higher than 1 currently");
+		//writeln("Invoking kernel with ",numBlocks," number of blocks, each with ",threadsPerBlock," threads each");
+	}
+
+
   def newArithmeticDom(param rank: int, type idxType, param stridable: bool, param alias: bool=false)
-    return new DefaultArithmeticDom(rank, idxType, stridable, this, alias);
+    return new GPUArithmeticDom(rank, idxType, stridable, this, alias);
 
-  def newAssociativeDom(type idxType)
-    return new DefaultAssociativeDom(idxType, this);
-
-  def newEnumDom(type idxType)
-    return new DefaultEnumDom(idxType, this);
-
-  def newOpaqueDom(type idxType)
-    return new DefaultOpaqueDom(this);
-
-  def newSparseDom(param rank: int, type idxType, dom: domain)
-    return new DefaultSparseDom(rank, idxType, this, dom);
 }
 
 //
 // Note that the replicated copies are set up in ChapelLocale on the
 // other locales.  This just sets it up on this locale.
 //
-pragma "private" var defaultDist: DefaultDist = new DefaultDist();
 
-class DefaultArithmeticDom: BaseArithmeticDom {
+class GPUArithmeticDom: BaseArithmeticDom {
   param rank : int;
   type idxType;
   param stridable: bool;
-  var dist: DefaultDist;
+  var dist: GPUDist;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
   param alias: bool = false;
 
-  def DefaultArithmeticDom(param rank, type idxType, param stridable,
+
+  def GPUArithmeticDom(param rank, type idxType, param stridable, 
                            dist, param alias = false) {
     this.dist = dist;
   }
@@ -207,13 +226,13 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   }
 
   def buildArray(type eltType) {
-    return new DefaultArithmeticArr(eltType=eltType, rank=rank, idxType=idxType,
-                                    stridable=stridable, reindexed=alias,
-                                    alias=alias, dom=this);
+    return new GPUArithmeticArr(eltType=eltType, rank=rank, idxType=idxType, 
+		    		stridable=stridable, reindexed=alias,
+                                alias=alias, dom=this);
   }
 
   def slice(param stridable: bool, ranges) {
-    var d = new DefaultArithmeticDom(rank, idxType,
+    var d = new GPUArithmeticDom(rank, idxType,
                                      stridable || this.stridable, dist);
     for param i in 1..rank do
       d.ranges(i) = dim(i)(ranges(i));
@@ -224,7 +243,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
-    var d = new DefaultArithmeticDom(rank, idxType, stridable, dist, alias=true);
+    var d = new GPUArithmeticDom(rank, idxType, stridable, dist, alias=true);
     var i = 1;
     for param j in 1..args.size {
       if isRange(args(j)) {
@@ -236,21 +255,21 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   }
 
   def translate(off: rank*idxType) {
-    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist, alias);
+    var x = new GPUArithmeticDom(rank, idxType, stridable, dist, alias);
     for i in 1..rank do
       x.ranges(i) = dim(i).translate(off(i));
     return x;
   }
 
   def chpl__unTranslate(off: rank*idxType) {
-    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
+    var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).chpl__unTranslate(off(i));
     return x;
   }
 
   def interior(off: rank*idxType) {
-    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
+    var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do {
       if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
           (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
@@ -262,14 +281,14 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   }
 
   def exterior(off: rank*idxType) {
-    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
+    var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).exterior(off(i));
     return x;
   }
 
   def expand(off: rank*idxType) {
-    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
+    var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do {
       x.ranges(i) = ranges(i).expand(off(i));
       if (x.ranges(i)._low > x.ranges(i)._high) {
@@ -280,7 +299,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   }  
 
   def expand(off: idxType) {
-    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
+    var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i).expand(off);
     return x;
@@ -297,21 +316,21 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   }
 
   def strideBy(str : rank*int) {
-    var x = new DefaultArithmeticDom(rank, idxType, true, dist);
+    var x = new GPUArithmeticDom(rank, idxType, true, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str(i);
     return x;
   }
 
   def strideBy(str : int) {
-    var x = new DefaultArithmeticDom(rank, idxType, true, dist);
+    var x = new GPUArithmeticDom(rank, idxType, true, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str;
     return x;
   }
 }
 
-class DefaultArithmeticArr: BaseArr {
+class GPUArithmeticArr: BaseArr {
   type eltType;
   param rank : int;
   type idxType;
@@ -319,7 +338,7 @@ class DefaultArithmeticArr: BaseArr {
   param reindexed: bool = false; // may have blk(rank) != 1
   param alias: bool = false;
 
-  var dom : DefaultArithmeticDom(rank=rank, idxType=idxType,
+  var dom : GPUArithmeticDom(rank=rank, idxType=idxType,
                                          stridable=stridable, alias=alias);
   var off: rank*idxType;
   var blk: rank*idxType;
@@ -327,17 +346,17 @@ class DefaultArithmeticArr: BaseArr {
   var origin: idxType;
   var factoredOffs: idxType;
   var size : idxType;
-  var data : _ddata(eltType);
+  var data : _gdata(eltType);
   var noinit: bool = false;
 
-  def canCopyFromDevice param return true;
+  def canCopyFromHost param return true;
   def getBaseDom() return dom;
 
   def destroyData() {
     delete data;
   }
 
-  def makeAlias(B: DefaultArithmeticArr) {
+  def makeAlias(B: GPUArithmeticArr) {
     var A = B.reindex(dom);
     off = A.off;
     blk = A.blk;
@@ -381,7 +400,7 @@ class DefaultArithmeticArr: BaseArr {
       blk(dim) = blk(dim+1) * dom.dim(dim+1).length;
     computeFactoredOffs();
     size = blk(1) * dom.dim(1).length;
-    data = new _ddata(eltType);
+    data = new _gdata(eltType);
     data.init(size);
   }
 
@@ -412,17 +431,17 @@ class DefaultArithmeticArr: BaseArr {
     return data(sum);
   }
 
-  def reindex(d: DefaultArithmeticDom) {
+  def reindex(d: GPUArithmeticDom) {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
     for param i in 1..rank do
       if d.dim(i).length != dom.dim(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    var alias = new DefaultArithmeticArr(eltType=eltType, rank=d.rank,
-                                         idxType=d.idxType,
-                                         stridable=d.stridable,
-                                         reindexed=true, alias=d.alias, dom=d,
-                                         noinit=true);
+    var alias = new GPUArithmeticArr(eltType=eltType, rank=d.rank,
+                                     idxType=d.idxType,
+                                     stridable=d.stridable,
+                                     reindexed=true, alias=d.alias, dom=d,
+                                     noinit=true);
     alias.data = data;
     alias.size = size: d.idxType;
     for param i in 1..rank {
@@ -441,8 +460,8 @@ class DefaultArithmeticArr: BaseArr {
         halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
   }
 
-  def slice(d: DefaultArithmeticDom) {
-    var alias = new DefaultArithmeticArr(eltType=eltType, rank=rank,
+  def slice(d: GPUArithmeticDom) {
+    var alias = new GPUArithmeticArr(eltType=eltType, rank=rank,
                                          idxType=idxType,
                                          stridable=d.stridable,
                                          reindexed=reindexed, alias=false,
@@ -474,7 +493,7 @@ class DefaultArithmeticArr: BaseArr {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
-    var alias = new DefaultArithmeticArr(eltType=eltType, rank=newRank,
+    var alias = new GPUArithmeticArr(eltType=eltType, rank=newRank,
                                          idxType=idxType,
                                          stridable=newStridable, reindexed=true,
                                          alias=true, dom=d, noinit=true);
@@ -499,7 +518,7 @@ class DefaultArithmeticArr: BaseArr {
 
   def reallocate(d: domain) {
     if (d._value.type == dom.type) {
-      var copy = new DefaultArithmeticArr(eltType=eltType, rank=rank,
+      var copy = new GPUArithmeticArr(eltType=eltType, rank=rank,
                                           idxType=idxType,
                                           stridable=d._value.stridable,
                                           reindexed=reindexed,
@@ -546,14 +565,14 @@ class DefaultArithmeticArr: BaseArr {
   }
 }
 
-def DefaultArithmeticDom.writeThis(f: Writer) {
+def GPUArithmeticDom.writeThis(f: Writer) {
   f.write("[", dim(1));
   for i in 2..rank do
     f.write(", ", dim(i));
   f.write("]");
 }
 
-def DefaultArithmeticArr.writeThis(f: Writer) {
+def GPUArithmeticArr.writeThis(f: Writer) {
   if dom.numIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do

@@ -702,6 +702,7 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIM_ARRAY_GET:
     case PRIM_ARRAY_GET_VALUE:
+    case PRIM_GPU_GET_VALUE:
       fprintf(outfile, "/* uncaptured _data vector access not generated */");
       break;
     case PRIM_ARRAY_SET:
@@ -739,6 +740,22 @@ void CallExpr::codegen(FILE* outfile) {
                         get(1)->typeInfo()->substitutions.v[0].value,
                         get(3), get(4), get(5));
       }
+      break;
+     case PRIM_GPU_ALLOC:
+        help_codegen_fn(outfile, "_GPU_ALLOC", get(1),
+                        get(1)->typeInfo()->substitutions.v[0].value,
+                        get(3));
+      break;
+     case PRIM_COPY_HOST_GPU:
+        help_codegen_fn(outfile, "_GPU_COPY_HOST_GPU", get(1),
+			get(2), get(3), get(4));
+      break;
+      case PRIM_COPY_GPU_HOST:
+        help_codegen_fn(outfile, "_GPU_COPY_GPU_HOST", get(1),
+			get(2), get(3),get(4));
+      break;
+    case PRIM_GPU_FREE:
+        help_codegen_fn(outfile, "_GPU_FREE", get(1));
       break;
     case PRIM_ARRAY_FREE:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -954,6 +971,12 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, " = ");
             help_codegen_fn(outfile, "_ARRAY_GET_VALUE", call->get(1), call->get(2));
           }
+          break;
+        }
+        if (call->isPrimitive(PRIM_GPU_GET_VALUE)) {
+            get(1)->codegen(outfile);
+            fprintf(outfile, " = ");
+            help_codegen_fn(outfile, "_GPU_GET_VALUE", call->get(1), call->get(2));
           break;
         }
         if (call->isPrimitive(PRIM_UNION_GETID)) {

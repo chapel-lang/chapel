@@ -30,6 +30,9 @@ class BaseDom {
   var _domCnt$: sync int = 0; // domain reference count and lock
   var _arrs: list(BaseArr);   // arrays declared over this domain
 
+  def canCopyFromDevice param return false;
+  def canCopyFromHost param return false;
+
   def destroyDom(arr: BaseArr = nil) {
     var cnt = _domCnt$ - 1;
     if cnt < 0 then

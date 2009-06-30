@@ -1,0 +1,7 @@
+include $(CHAPEL_ROOT)/make/compiler/Makefile.gnu
+
+NVCC = nvcc
+DEVICEEMU = -deviceemu
+
+COMP_GEN_LFLAGS +=-L/usr/local/cuda/lib -lcudart
+RUNTIME_CUDA_CFLAGS = $(DEVICEEMU) --compiler-options -fno-strict-aliasing -DUNIX -O3

@@ -31,6 +31,7 @@
 #include "chplsys.h"
 #include "chplthreads.h"
 #include "chpltypes.h"
+#include "chplgpu.h"
 #include "error.h"
 
 #endif

@@ -16,6 +16,11 @@ COMMON_NOGEN_SRCS = \
 	chplsys.c \
 	gdb.c \
 
+ifdef NVCC
+CUDA_SRCS = \
+	chplgpu.cu
+endif
+
 MAIN_SRCS = \
 	main.c \
 
@@ -39,10 +44,13 @@ MAIN_LAUNCHER_SRCS = \
 SRCS = $(GEN_SRCS) \
 	$(SVN_SRCS) \
 
-
 COMMON_OBJS = \
 	$(COMMON_SRCS:%.c=$(COMMON_OBJDIR)/%.o)
 
+ifdef NVCC
+COMMON_OBJS += \
+	$(CUDA_SRCS:%.cu=$(COMMON_OBJDIR)/%.o)
+endif
 
 MAIN_OBJS = \
 	$(MAIN_SRCS:%.c=$(COMMON_OBJDIR)/%.o)

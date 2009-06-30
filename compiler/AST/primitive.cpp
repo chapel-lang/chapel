@@ -401,6 +401,13 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_FREE_ELTS, "array_free_elts", returnInfoVoid, true);
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false, true);
   prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false, true);
+
+  prim_def(PRIM_GPU_GET_VALUE, "get_gpu_value", returnInfoArrayIndex, false, true);
+  prim_def(PRIM_GPU_ALLOC, "gpu_alloc", returnInfoVoid, true, true);
+  prim_def(PRIM_COPY_HOST_GPU, "copy_host_to_gpu", returnInfoVoid, true, false);
+  prim_def(PRIM_COPY_GPU_HOST, "copy_gpu_to_host", returnInfoVoid, true, false);
+  prim_def(PRIM_GPU_FREE, "gpu_free", returnInfoVoid, true, true);
+
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
   prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true, true);
