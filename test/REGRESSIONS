@@ -43,6 +43,10 @@ maxThreads is 300, but can't create more than 254 threads
 performance-specific regressions
 ================================
 
+occasional timeouts
+-------------------
+[Error: Timed out executing program studies/shootout/nbody/nbody_record_2]
+
 timeouts (06/02/09; 6/13/09)
 -----------------------------
 [Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3]
@@ -97,6 +101,18 @@ wide strings leaked (?) (04/02/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+runtime 'array data not local' error (06/30/09)
+-----------------------------------------------
+[Error matching program output for multilocale/deitz/linked/test_linked3]
+[Error matching program output for multilocale/deitz/linked/test_linked3a]
+[Error matching program output for multilocale/deitz/linked/test_linked3b]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
+[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_mul]
+[Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
 
 memory stuff in flux (06/06/09)
 -------------------------------
