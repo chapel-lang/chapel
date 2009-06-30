@@ -331,6 +331,8 @@ class DefaultArithmeticArr: BaseArr {
   var data : _ddata(eltType);
   var noinit: bool = false;
 
+  def getBaseDom() return dom;
+
   def destroyData() {
     delete data;
   }

@@ -139,6 +139,8 @@ class CSRArr: BaseArr {
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 
+  def getBaseDom() return dom;
+
   //  def this(ind: idxType ... 1) var where rank == 1
   //    return this(ind);
 

@@ -285,6 +285,8 @@ class DefaultAssociativeArr: BaseArr {
   // Standard internal array interface
   // 
 
+  def getBaseDom() return dom;
+
   def reallocate(d: domain) {
     // reallocation is done in the setIndices function
   }

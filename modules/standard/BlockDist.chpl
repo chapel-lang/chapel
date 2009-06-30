@@ -469,6 +469,8 @@ class Block1DArr: BaseArr {
         locArr(localeIdx) = new LocBlock1DArr(idxType, eltType, stridable, dom.locDoms(localeIdx));
   }
 
+  def getBaseDom() return dom;
+
   def supportsPrivatization() param return true;
   def privatize() {
     var dompid = dom.pid;

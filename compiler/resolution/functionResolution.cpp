@@ -2386,7 +2386,8 @@ preFold(Expr* expr) {
               if (lhs->var == fn->getReturnSymbol()) {
                 SymExpr* ret = toSymExpr(call->get(1));
                 INT_ASSERT(ret);
-                if (ret->var->defPoint->getFunction() == move->getFunction())
+                if (ret->var->defPoint->getFunction() == move->getFunction() &&
+                    !ret->var->type->symbol->hasFlag(FLAG_ARRAY))
                   USR_FATAL(ret, "illegal return expression in var function");
                 if (ret->var->isConstant() || ret->var->isParameter())
                   USR_FATAL(ret, "var function returns constant value");

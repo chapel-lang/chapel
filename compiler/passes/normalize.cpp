@@ -527,7 +527,10 @@ fix_def_expr(VarSymbol* var) {
     stmt->insertBefore(new DefExpr(arrTemp));
     stmt->insertBefore(new CallExpr(PRIM_MOVE, arrTemp, init->remove()));
     if (!type) {
-      stmt->insertBefore(new CallExpr(PRIM_MOVE, var, arrTemp));
+      partial = new CallExpr("newAlias", gMethodToken, arrTemp);
+      //      partial->partialTag = true;
+      //      partial->methodTag = true;
+      stmt->insertBefore(new CallExpr(PRIM_MOVE, var, partial)); //new CallExpr(partial)));
     } else {
       partial = new CallExpr("reindex", gMethodToken, arrTemp);
       partial->partialTag = true;

@@ -96,7 +96,7 @@ class LocTree {
             }
         }
        
-        const c => coeffs[node]; 
+        var c => coeffs[node]; 
         oneAtATime$ = true;
         return c;
     }

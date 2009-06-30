@@ -134,6 +134,8 @@ class DefaultSparseArr: BaseArr {
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 
+  def getBaseDom() return dom;
+
   def this(ind: idxType) var where rank == 1 {
     // make sure we're in the dense bounding box
     if boundsChecking then

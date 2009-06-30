@@ -400,23 +400,8 @@ record _array {
     if !_supportsPrivatization(_valueType) {
       on _value {
         var cnt = _value.destroyArr();
-        if cnt == 0 {
-          on _value.dom {
-            var cnt = _value.dom.destroyDom(_value);
-            if cnt == 0 then
-              delete _value.dom;
-          }
-          if _value._arrAlias {
-            on _value._arrAlias {
-              var cnt = _value._arrAlias.destroyArr();
-              if cnt == 0 then
-                delete _value._arrAlias;
-            }
-          } else {
-            _value.destroyData();
-          }
+        if cnt == 0 then
           delete _value;
-        }
       }
     }
   }
@@ -482,6 +467,15 @@ record _array {
   }
 
   def numElements return _dom.numIndices; // assume dom name
+
+  pragma "valid var"
+  def newAlias() {
+    var x = _value; // .reindex(_value.dom); // sjd: I think this should be a reindex call so that we get a new array class, however, this causes problems due to the alias/reindexed parameters.
+    _value.dom._domCnt$ += 1;
+    x._arrAlias = _value;
+    x._arrAlias._arrCnt$ += 1;
+    return _newArray(x);
+  }
 
   def reindex(d: domain) where rank == 1 {
     var x = _value.reindex(d._value);

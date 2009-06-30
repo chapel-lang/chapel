@@ -65,6 +65,8 @@ class DefaultOpaqueArr: BaseArr {
   var dom: DefaultOpaqueDom(idxType=idxType);
   var anarray = new DefaultAssociativeArr(eltType=eltType, idxType=idxType, dom=dom.adomain);
 
+  def getBaseDom() return dom;
+
   def this(ind : idxType) var : eltType
     return anarray(ind);
 

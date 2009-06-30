@@ -538,6 +538,8 @@ class UserMapAssocArr: BaseArr {
 
   var pid: int = -1; // privatized object id
 
+  def getBaseDom() return dom;
+
   def setup() {
     coforall localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do

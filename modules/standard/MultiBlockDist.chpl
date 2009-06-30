@@ -459,6 +459,8 @@ class BlockArr: BaseArr {
   var pid: int = -1; // privatized object id
 }
 
+def BlockArr.getBaseDom() return dom;
+
 def BlockArr.setup() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocs(localeIdx) {

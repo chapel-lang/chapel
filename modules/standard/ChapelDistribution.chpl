@@ -126,17 +126,36 @@ class BaseArr {
   var _arrCnt$: sync int = 0; // array reference count (and eventually lock)
   var _arrAlias: BaseArr;     // reference to base array if an alias
 
-  def destroyArr() {
+  def getBaseDom(): BaseDom {
+    return nil;
+  }
+
+  def destroyArr(): int {
     var cnt = _arrCnt$ - 1;
     if cnt < 0 then
       halt("array reference count is negative!");
     _arrCnt$ = cnt;
+    if cnt == 0 {
+      var dom = getBaseDom();
+      on dom {
+        var cnt = dom.destroyDom(this);
+        if cnt == 0 then
+          delete dom;
+      }
+      if _arrAlias {
+        on _arrAlias {
+          var cnt = _arrAlias.destroyArr();
+          if cnt == 0 then
+            delete _arrAlias;
+        }
+      } else {
+        destroyData();
+      }
+    }
     return cnt;
   }
 
-  def destroyData() {
-
-  }
+  def destroyData() { }
 
   def reallocate(d: domain) {
     halt("reallocating not supported for this array type");

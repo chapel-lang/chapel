@@ -204,6 +204,8 @@ class CMOArr:BaseArr {
   var data: [D1] eltType;
   var noinit: bool = false;
 
+  def getBaseDom() return dom;
+  
   def computeFactoredOffs() {
     factoredOffs = 0:idxType;
     for i in 1..rank do {
