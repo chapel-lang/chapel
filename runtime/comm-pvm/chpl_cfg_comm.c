@@ -114,6 +114,7 @@ int commsig = 0;     // signal to parent process what to do
                      // 4: gdb
 
 extern int fileno(FILE *stream);
+extern const int chpl_max_fields_per_type;
 
 //
 // Chapel interface starts here
@@ -197,10 +198,13 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   int repTag;
   int fnid;
   int packagesize;              // remote node says how big something is
+
+#ifdef CHPL_COMM_HETEROGENEOUS
   int i;                        // iterates over entries in chpl_structType
   int chpltypetype;             // from enumeration table
   unsigned long chpltypeoffset; // from enumeration table
   int break_out = 0;            // to get out of for from switch
+#endif
 
 #if CHPL_DIST_DEBUG
   char debugMsg[DEBUG_MSG_LENGTH];
@@ -230,8 +234,8 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
     // Metadata case either contains an address for the data or a
     // function ID (or, if ChplCommFinish, nothing).
     if ((pvmtype == ChplCommPut) || (pvmtype == ChplCommGet)) {
-      // Do nothing. No data to receive yet.
-      chpl_mutex_unlock(&pvm_lock);
+      PVM_NO_LOCK_SAFE(pvm_upkint(&packagesize, 1, 1), "pvm_upkint", "chpl_pvm_recv");
+      PVM_UNPACK_SAFE(pvm_upkbyte((void *)&(((_chpl_message_info *)buf)->u.data), packagesize, 1), "pvm_upkbyte", "chpl_pvm_recv");
     } else if (pvmtype == ChplCommFinish) {
       // Do nothing. Nothing in the union.
       chpl_mutex_unlock(&pvm_lock);
@@ -246,30 +250,48 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   // Getting actual data
   } else {
 #ifdef CHPL_COMM_HETEROGENEOUS
-    for (i = 0; i < 9; i++) {
-      chpltypetype = GET_TYPE(sz, i);
-      chpltypeoffset = GET_OFFSET(sz, i);
+    for (i = 0; i < chpl_max_fields_per_type; i++) {
+      chpltypetype = chpl_getFieldType(sz, i);
+      chpltypeoffset = chpl_getFieldOffset(sz, i);
       switch (chpltypetype) {
       case CHPL_TYPE_int32_t:
-        PVM_NO_LOCK_SAFE(pvm_upkint((int *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+        PVM_NO_LOCK_SAFE(pvm_upkint((int32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+#if CHPL_DIST_DEBUG
+        sprintf(debugMsg, "Unpacking %d (part %d) of type %d, offset %lu", *(int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+        PRINTF(debugMsg);
+#endif
         break;
       case CHPL_TYPE_int64_t:
         PVM_NO_LOCK_SAFE(pvm_upklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
+#if CHPL_DIST_DEBUG
+        sprintf(debugMsg, "Unpacking %ld (part %d) of type %d, offset %lu", *(long int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+        PRINTF(debugMsg);
+#endif
         break;
       case CHPL_TYPE_CLASS_REFERENCE:
         PVM_NO_LOCK_SAFE(pvm_upkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
         if (packagesize == 4) {
-          PVM_NO_LOCK_SAFE(pvm_upkint((int *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+          PVM_NO_LOCK_SAFE(pvm_upkint((int32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+#if CHPL_DIST_DEBUG
+          sprintf(debugMsg, "Unpacking %d (part %d) of type %d, offset %lu", *(int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          PRINTF(debugMsg);
+#endif
         } else if (packagesize == 8) {
           PVM_NO_LOCK_SAFE(pvm_upklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
+#if CHPL_DIST_DEBUG
+          sprintf(debugMsg, "Unpacking %ld (part %d) of type %d, offset %lu", *(long int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          PRINTF(debugMsg);
+#endif
         } else {
-          break_out = 1;
+          chpl_internal_error("Error: Unexpected byte size!");
           break;
         }
         break;
       case CHPL_TYPE_DONE:
-      default:
         break_out = 1;
+        break;
+      default:
+        chpl_internal_error("Error: Unimplemented case!");
         break;
       }
       if (break_out == 1) {
@@ -294,10 +316,13 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
   int datasize;
   int fnid;
   int packagesize;              // tells remote node how big something is
+
+#ifdef CHPL_COMM_HETEROGENEOUS
   int i;                        // iterates over entries in chpl_structType
   int chpltypetype;             // from enumeration table
   unsigned long chpltypeoffset; // from enumeration table
   int break_out = 0;            // to get out of for from switch
+#endif
 
 #if CHPL_DIST_DEBUG
   char debugMsg[DEBUG_MSG_LENGTH];
@@ -322,8 +347,9 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
     // Metadata case either contains an address for the data or a
     // function ID (or, if ChplCommFinish, nothing).
     if ((msgtype == ChplCommPut) || (msgtype == ChplCommGet)) {
-      // Do nothing. No data to send yet.
-      // Unlock is done in the PVM_UNPACK_SAFE on the actual pvm_send.
+      packagesize = sizeof(void *);
+      PVM_NO_LOCK_SAFE(pvm_pkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
+      PVM_NO_LOCK_SAFE(pvm_pkbyte((void *)&(((_chpl_message_info *)buf)->u.data), packagesize, 1), "pvm_pkbyte", "chpl_pvm_send");
     } else if (msgtype == ChplCommFinish) {
       // Do nothing. Nothing in the union.
       // Unlock is done in the PVM_UNPACK_SAFE on the actual pvm_send.
@@ -335,30 +361,61 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
   } else {
 #ifdef CHPL_COMM_HETEROGENEOUS
     packagesize = sizeof(void *);
-    for (i = 0; i < 9; i++) {
-      chpltypetype = GET_TYPE(sz, i);
-      chpltypeoffset = GET_OFFSET(sz, i);
+    for (i = 0; i < chpl_max_fields_per_type; i++) {
+      chpltypetype = chpl_getFieldType(sz, i);
+      chpltypeoffset = chpl_getFieldOffset(sz, i);
       switch (chpltypetype) {
       case CHPL_TYPE_int32_t:
-        PVM_NO_LOCK_SAFE(pvm_pkint((int *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+        if ((((char *)buf)+chpltypeoffset) == 0) {
+          PVM_NO_LOCK_SAFE(pvm_pkint((int32_t *)0, 1, 1), "pvm_pkint", "chpl_pvm_send");
+        } else {
+          PVM_NO_LOCK_SAFE(pvm_pkint((int32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+        }
+#if CHPL_DIST_DEBUG
+        if ((((char *)buf)+chpltypeoffset) != 0) {
+          sprintf(debugMsg, "Packing %d (part %d) of type %d, offset %lu", *(int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          PRINTF(debugMsg);
+        }
+#endif
         break;
       case CHPL_TYPE_int64_t:
-        PVM_NO_LOCK_SAFE(pvm_pklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
+        if ((((char *)buf)+chpltypeoffset) == 0) {
+          PVM_NO_LOCK_SAFE(pvm_pklong((long *)0, 1, 1), "pvm_pklong", "chpl_pvm_send");
+        } else {
+          PVM_NO_LOCK_SAFE(pvm_pklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
+        }
+#if CHPL_DIST_DEBUG
+        if ((((char *)buf)+chpltypeoffset) != 0) {
+          sprintf(debugMsg, "Packing %ld (part %d) of type %d, offset %lu", *(long int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          PRINTF(debugMsg);
+        }
+#endif
         break;
       case CHPL_TYPE_CLASS_REFERENCE:
         PVM_NO_LOCK_SAFE(pvm_pkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
         if (packagesize == 4) {
-          PVM_NO_LOCK_SAFE(pvm_pkint((int *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+          PVM_NO_LOCK_SAFE(pvm_pkint((int32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+#if CHPL_DIST_DEBUG
+          sprintf(debugMsg, "Packing %d (part %d) of type %d, offset %lu", *(int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          PRINTF(debugMsg);
+#endif
+          
         } else if (packagesize == 8) {
           PVM_NO_LOCK_SAFE(pvm_pklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
+#if CHPL_DIST_DEBUG
+          sprintf(debugMsg, "Packing %ld (part %d) of type %d, offset %lu", *(long int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          PRINTF(debugMsg);
+#endif
         } else {
-          break_out = 1;
+          chpl_internal_error("Error: Unexpected byte size!");
           break;
         }
         break;
       case CHPL_TYPE_DONE:
-      default:
         break_out = 1;
+        break;
+      default:
+        chpl_internal_error("Error: Unimplmented case!");
         break;
       }
       if (break_out == 1) {
@@ -398,8 +455,6 @@ static void polling(void* x) {
     // First signal is metadata case (TAGMASK+1). Contains information
     // about the forthcoming data (or how the node should respond).
     source = chpl_pvm_recv(-1, TAGMASK+1, &msg_info, sizeof(_chpl_message_info));
-    if (msg_info.msg_type == 2) {
-    }
     switch (msg_info.msg_type) {
       // ChplCommPut tells node to store forthcoming data into a location.
     case ChplCommPut: {
@@ -602,6 +657,7 @@ void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID, chpl_numLocales, chpl_localeName());
   // If just one locale, skip the barrier setup
   if (chpl_numLocales != 1) {
+    fprintf(stderr, "%d Setting okay_to_barrier to 0\n", chpl_localeID);
     okay_to_barrier = 0;
   }
   okay_to_poll = 1;
@@ -650,10 +706,11 @@ void chpl_comm_broadcast_private(void* addr, int size) {
 
   for (i = 0; i < chpl_numLocales; i++) {
     if (i != chpl_localeID) {
-#ifdef CHPL_COMM_HETEROGENEOUS
-#else
-      chpl_comm_put(addr, i, addr, size, 0, 0);
-#endif
+      if (chpl_numRealms == 1) {
+        chpl_comm_put(addr, i, addr, size, 0, 0);
+      } else {
+        chpl_internal_error("can't yet broadcast globals in a multirealm execution");
+      }
     }
   }
   return;
@@ -681,6 +738,9 @@ void chpl_comm_barrier(const char *msg) {
   if (!(strcmp(msg, "chpl_comm_exit_all")) && chpl_localeID == 0) {
     return;
   }
+  if (!okay_to_barrier) {
+    PRINTF("Entering okay_to_barrier loop");
+  }
   while (!okay_to_barrier) {
     while (bufid == 0) {
       PVM_PACK_SAFE(bufid = pvm_nrecv(-1, BCASTTAG), "pvm_nrecv", "chpl_comm_barrier");
@@ -689,6 +749,7 @@ void chpl_comm_barrier(const char *msg) {
       }
     }
     PVM_UNPACK_SAFE(pvm_upkint(&okay_to_barrier, 1, 1), "pvm_upkint", "chpl_comm_barrier");
+    fprintf(stderr, "%d Received okay_to_barrier as value %d\n", chpl_localeID, okay_to_barrier);
   }
 
   PVM_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_barrier");
@@ -703,12 +764,15 @@ void chpl_comm_exit_all(int status) {
 
   // This line should be entirely moot (never unset if chpl_numLocales is 1).
   if (chpl_numLocales == 1) {
+    fprintf(stderr, "%d Setting okay_to_barrier to 1\n", chpl_localeID);
     okay_to_barrier = 1;
   }
   else if (chpl_localeID == 0) {
+    fprintf(stderr, "%d Setting okay_to_barrier to 1\n", chpl_localeID);
     okay_to_barrier = 1;
     PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
     PVM_NO_LOCK_SAFE(pvm_pkint(&okay_to_barrier, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
+    fprintf(stderr, "%d Broadcasting okay_to_barrier as value %d\n", chpl_localeID, okay_to_barrier);
     PVM_UNPACK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
     // Do a matching barrier to everyone still in chpl_comm_barrier.
     PVM_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_exit_all");
