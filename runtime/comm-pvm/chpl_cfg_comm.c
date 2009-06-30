@@ -657,7 +657,6 @@ void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID, chpl_numLocales, chpl_localeName());
   // If just one locale, skip the barrier setup
   if (chpl_numLocales != 1) {
-    fprintf(stderr, "%d Setting okay_to_barrier to 0\n", chpl_localeID);
     okay_to_barrier = 0;
   }
   okay_to_poll = 1;
@@ -709,7 +708,7 @@ void chpl_comm_broadcast_private(void* addr, int size) {
       if (chpl_numRealms == 1) {
         chpl_comm_put(addr, i, addr, size, 0, 0);
       } else {
-        chpl_internal_error("can't yet broadcast globals in a multirealm execution");
+        //        chpl_internal_error("can't yet broadcast globals in a multirealm execution");
       }
     }
   }
@@ -749,7 +748,6 @@ void chpl_comm_barrier(const char *msg) {
       }
     }
     PVM_UNPACK_SAFE(pvm_upkint(&okay_to_barrier, 1, 1), "pvm_upkint", "chpl_comm_barrier");
-    fprintf(stderr, "%d Received okay_to_barrier as value %d\n", chpl_localeID, okay_to_barrier);
   }
 
   PVM_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_barrier");
@@ -764,15 +762,12 @@ void chpl_comm_exit_all(int status) {
 
   // This line should be entirely moot (never unset if chpl_numLocales is 1).
   if (chpl_numLocales == 1) {
-    fprintf(stderr, "%d Setting okay_to_barrier to 1\n", chpl_localeID);
     okay_to_barrier = 1;
   }
   else if (chpl_localeID == 0) {
-    fprintf(stderr, "%d Setting okay_to_barrier to 1\n", chpl_localeID);
     okay_to_barrier = 1;
     PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
     PVM_NO_LOCK_SAFE(pvm_pkint(&okay_to_barrier, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
-    fprintf(stderr, "%d Broadcasting okay_to_barrier as value %d\n", chpl_localeID, okay_to_barrier);
     PVM_UNPACK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
     // Do a matching barrier to everyone still in chpl_comm_barrier.
     PVM_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_exit_all");
