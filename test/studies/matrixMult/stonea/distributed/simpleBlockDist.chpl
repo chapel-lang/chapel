@@ -60,13 +60,13 @@ def simpleDistMultiply(
 
     // do local matrix-multiply
     forall (locRow, locCol) in localesDom do on myLocales[locRow,locCol] {
-        var localA => rowCopies[locRow,locCol];
-        var localB => colCopies[locRow,locCol];
-        var localC => C[locRow,locCol];
+        var localA => rowCopies[locRow,locCol].data;
+        var localB => colCopies[locRow,locCol].data;
+        var localC => C[locRow,locCol].data;
 
-        forall i in localC.dom.dim(1) {
-            forall j in localC.dom.dim(2) {
-                for k in localA.dom.dim(2) {
+        forall i in localC.domain.dim(1) {
+            forall j in localC.domain.dim(2) {
+                for k in localA.domain.dim(2) {
                     localC[i,j] += localA[i,k] * localB[k,j];
                 }
             }

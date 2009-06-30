@@ -81,14 +81,14 @@ def luLikeMultiply(
 
     // do local matrix-multiply
     forall (locRow, locCol) in solLocales do on myLocales[locRow,locCol] {
-        var localA   => rowCopies[locRow,locCol];
-        var localB   => colCopies[locRow,locCol];
-        var localSol => A[locRow,locCol];
+        var localA   => rowCopies[locRow,locCol].data;
+        var localB   => colCopies[locRow,locCol].data;
+        var localSol => A[locRow,locCol].data;
 
-        forall i in localSol.dom.dim(1) {
-            forall j in localSol.dom.dim(2) {
+        forall i in localSol.domain.dim(1) {
+            forall j in localSol.domain.dim(2) {
                 localSol[i,j] = 0;
-                for k in localA.dom.dim(2) {
+                for k in localA.domain.dim(2) {
                     localSol[i,j] += localA[i,k] * localB[k,j];
                 }
             }
