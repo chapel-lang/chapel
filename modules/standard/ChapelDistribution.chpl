@@ -38,7 +38,8 @@ class BaseDom {
     if cnt < 0 then
       halt("domain reference count is negative!");
     if arr then
-      _arrs.remove(arr);
+      on arr do
+        _arrs.remove(arr);
     _domCnt$ = cnt;
     return cnt;
   }
