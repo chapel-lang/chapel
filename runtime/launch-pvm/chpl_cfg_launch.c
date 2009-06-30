@@ -211,13 +211,13 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
       argv0rep = replace_str(argv0rep, realmtoadd[baserealm], realmtoadd[i]);
     }
 
-    pvmsize += strlen(getenv((char *)"PWD")) + strlen("/_real") + strlen(argv0rep);
+    pvmsize += strlen(getenv((char *)"CHPL_MULTIREALM_LAUNCH_DIR")) + strlen("/_real") + strlen(argv0rep);
 
     commandtopvm = chpl_malloc(pvmsize, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
     *commandtopvm = '\0';
     environment = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
     *environment = '\0';
-    getcwd(environment, 1024);
+    strcat(environment, getenv((char*)"CHPL_MULTIREALM_LAUNCH_DIR"));
     strcat(commandtopvm, environment);
     chpl_free(environment, -1, "");
     strcat(commandtopvm, "/");
