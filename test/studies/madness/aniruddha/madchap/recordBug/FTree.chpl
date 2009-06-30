@@ -137,8 +137,7 @@ class FTree {
     }
     
     def this((lvl, idx)) var {
-        const n => nodes[mapNodeToLoc(lvl, idx)];
-        return n[lvl, idx];
+        return nodes[mapNodeToLoc(lvl, idx)][lvl,idx];
     }
 
     def this(loc) {
@@ -171,18 +170,15 @@ class FTree {
     }
     
     def peek((lvl, idx)) var {
-        const n => nodes[mapNodeToLoc(lvl, idx)];
-        return n.peek(lvl, idx);
+        return nodes[mapNodeToLoc(lvl, idx)].peek(lvl, idx);
     }
 
     def has_coeffs((lvl, idx)) {
-        const n => nodes[mapNodeToLoc(lvl, idx)];
-        return n.has_coeffs(lvl, idx);
+        return nodes[mapNodeToLoc(lvl, idx)].has_coeffs(lvl, idx);
     }
 
     def remove((lvl, idx)) {
-        const n => nodes[mapNodeToLoc(lvl, idx)];
-        n.remove(lvl, idx);
+        nodes[mapNodeToLoc(lvl, idx)].remove(lvl, idx);
     }
     
     /** Return a copy of this FTree
