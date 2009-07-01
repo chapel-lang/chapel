@@ -5,7 +5,7 @@ foreach $oldfile (@files) {
     $oldfile =~ s/\.\/(.*)/$1/;
     $newfile = $oldfile;
     $newfile = reverse $newfile;
-    $newfile =~ s/\//\/xunil\//;
+    $newfile =~ s/\//\/ung\/46xunil\/neg\//;
     $newfile = reverse $newfile;
     `cp $oldfile $newfile >& /dev/null`;
 
