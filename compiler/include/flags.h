@@ -97,7 +97,6 @@ enum Flag {
   FLAG_TUPLE_INIT,
   FLAG_TYPE_CONSTRUCTOR,
   FLAG_TYPE_VARIABLE, // contains a type instead of a value
-  FLAG_VALID_VAR,
   FLAG_INVISIBLE_FN, // invisible function (not a candidate for resolution)
   FLAG_WIDE,
   FLAG_WIDE_CLASS,

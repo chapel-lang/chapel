@@ -92,7 +92,6 @@ initFlags() {
   defineFlag(FLAG_TUPLE_INIT, "tuple init");
   defineFlag(FLAG_TYPE_CONSTRUCTOR, "type constructor");
   defineFlag(FLAG_TYPE_VARIABLE, "type variable");
-  defineFlag(FLAG_VALID_VAR, "valid var");
   defineFlag(FLAG_INVISIBLE_FN, "invisible fn");
   defineFlag(FLAG_WIDE, "wide");
   defineFlag(FLAG_WIDE_CLASS, "wide class");

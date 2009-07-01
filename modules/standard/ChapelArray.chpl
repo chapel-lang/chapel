@@ -431,11 +431,9 @@ record _array {
   // ranges, but in the sparse case, is there a general
   // representation?
   //
-  pragma "valid var"
   def this(d: domain) var where d.rank == rank
     return this((...d.getIndices()));
 
-  pragma "valid var"
   def this(ranges: range(?) ...rank) var {
     if boundsChecking then
       _value.checkSlice(ranges);
@@ -447,7 +445,6 @@ record _array {
     return _newArray(a);
   }
 
-  pragma "valid var"
   def this(args ...rank) var where _validRankChangeArgs(args, _value.idxType) {
     if boundsChecking then
       _value.checkRankChange(args);
@@ -468,7 +465,6 @@ record _array {
 
   def numElements return _dom.numIndices; // assume dom name
 
-  pragma "valid var"
   def newAlias() {
     var x = _value; // .reindex(_value.dom); // sjd: I think this should be a reindex call so that we get a new array class, however, this causes problems due to the alias/reindexed parameters.
     _value.dom._domCnt$ += 1;

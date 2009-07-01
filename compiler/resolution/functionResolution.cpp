@@ -1779,12 +1779,11 @@ resolveCall(CallExpr* call, bool errorCheck) {
 
     if (isReferenceType(lhsType))
       lhs->removeFlag(FLAG_EXPR_TEMP);
-    if (lhsType->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS))
+    if (lhsType->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
+        lhsType->symbol->hasFlag(FLAG_ARRAY))
       lhs->removeFlag(FLAG_EXPR_TEMP);
     if (CallExpr* call = toCallExpr(rhs)) {
       if (FnSymbol* fn = call->isResolved()) {
-        if (fn->hasFlag(FLAG_VALID_VAR))
-          lhs->removeFlag(FLAG_EXPR_TEMP);
         if (rhsType == dtUnknown) {
           USR_FATAL_CONT(fn, "unable to resolve return type of function '%s'", fn->name);
           USR_FATAL(rhs, "called recursively at this point");
@@ -2378,7 +2377,7 @@ preFold(Expr* expr) {
         call->replace(result);
       } else {
         FnSymbol* fn = call->getFunction();
-        if (!fn->hasFlag(FLAG_WRAPPER) && !fn->hasFlag(FLAG_VALID_VAR)) {
+        if (!fn->hasFlag(FLAG_WRAPPER)) {
           // check legal var function return
           if (CallExpr* move = toCallExpr(call->parentExpr)) {
             if (move->isPrimitive(PRIM_MOVE)) {
