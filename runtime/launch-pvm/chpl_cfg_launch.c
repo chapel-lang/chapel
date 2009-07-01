@@ -77,6 +77,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
 
   char** argv2;
   char* argv0rep;
+  char* multirealmenv;
   char numlocstr[128];
 
   // Add nodes to PVM configuration.
@@ -199,6 +200,10 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     }
   }
 
+  multirealmenv = getenv((char *)"CHPL_MULTIREALM_LAUNCH_DIR");
+  if (multirealmenv == NULL) {
+    multirealmenv = getenv((char *)"CHPL_HOME");
+  }
   argv0rep = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
   strcpy(argv0rep, argv[0]);
   // Build the command to send to pvm_spawn.
@@ -211,7 +216,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
       argv0rep = replace_str(argv0rep, realmtoadd[baserealm], realmtoadd[i]);
     }
 
-    pvmsize += strlen(getenv((char *)"CHPL_MULTIREALM_LAUNCH_DIR")) + strlen("/_real") + strlen(argv0rep);
+    pvmsize += strlen(multirealmenv) + strlen("/_real") + strlen(argv0rep);
 
     commandtopvm = chpl_malloc(pvmsize, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
     *commandtopvm = '\0';
