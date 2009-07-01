@@ -222,7 +222,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     *commandtopvm = '\0';
     environment = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
     *environment = '\0';
-    strcat(environment, getenv((char*)"CHPL_MULTIREALM_LAUNCH_DIR"));
+    strcat(environment, multirealmenv);
     strcat(commandtopvm, environment);
     chpl_free(environment, -1, "");
     strcat(commandtopvm, "/");
