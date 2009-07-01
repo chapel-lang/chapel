@@ -1649,6 +1649,10 @@ resolveCall(CallExpr* call, bool errorCheck) {
     Type* type = sym->var->type;
     if (isReferenceType(type))
       type = type->getValueType();
+
+    if (!type->symbol->hasFlag(FLAG_TUPLE))
+      USR_FATAL(call, "invalid tuple expand primitive");
+
     int size = 0;
     for (int i = 0; i < type->substitutions.n; i++) {
       if (type->substitutions.v[i].key) {
