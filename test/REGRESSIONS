@@ -17,6 +17,10 @@
 general regressions
 ===================
 
+.good file contained debug info (07/02/09)
+------------------------------------------
+[Error matching compiler output for types/tuple/diten/tupleExpandRecord]
+
 spurious verification failures on RA (e.g. 04/04/09, 06/26/09)
 --------------------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -45,7 +49,8 @@ performance-specific regressions
 
 occasional timeouts
 -------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_record_2]
+[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm]
+[Error: Timed out executing program studies/shootout/nbody/nbody_record_2] (e.g., 07/01/09)
 
 timeouts (06/02/09; 6/13/09)
 -----------------------------
@@ -101,18 +106,6 @@ wide strings leaked (?) (04/02/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
-
-runtime 'array data not local' error (06/30/09)
------------------------------------------------
-[Error matching program output for multilocale/deitz/linked/test_linked3]
-[Error matching program output for multilocale/deitz/linked/test_linked3a]
-[Error matching program output for multilocale/deitz/linked/test_linked3b]
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
-[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
-[Error matching program output for studies/madness/aniruddha/madchap/test_mul]
-[Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist]
 
 memory stuff in flux (06/06/09)
 -------------------------------
