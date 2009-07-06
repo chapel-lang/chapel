@@ -741,21 +741,20 @@ void CallExpr::codegen(FILE* outfile) {
                         get(3), get(4), get(5));
       }
       break;
-     case PRIM_GPU_ALLOC:
-        help_codegen_fn(outfile, "_GPU_ALLOC", get(1),
-                        get(1)->typeInfo()->substitutions.v[0].value,
-                        get(3));
+    case PRIM_GPU_ALLOC:
+      help_codegen_fn(outfile, "_GPU_ALLOC", get(1),
+                      get(1)->typeInfo()->substitutions.v[0].value, get(3));
       break;
-     case PRIM_COPY_HOST_GPU:
-        help_codegen_fn(outfile, "_GPU_COPY_HOST_GPU", get(1),
-			get(2), get(3), get(4));
+    case PRIM_COPY_HOST_GPU:
+      help_codegen_fn(outfile, "_GPU_COPY_HOST_GPU", get(1),
+                      get(2), get(3), get(4));
       break;
-      case PRIM_COPY_GPU_HOST:
-        help_codegen_fn(outfile, "_GPU_COPY_GPU_HOST", get(1),
-			get(2), get(3),get(4));
+    case PRIM_COPY_GPU_HOST:
+      help_codegen_fn(outfile, "_GPU_COPY_GPU_HOST", get(1),
+                      get(2), get(3),get(4));
       break;
     case PRIM_GPU_FREE:
-        help_codegen_fn(outfile, "_GPU_FREE", get(1));
+      help_codegen_fn(outfile, "_GPU_FREE", get(1));
       break;
     case PRIM_ARRAY_FREE:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
