@@ -2167,7 +2167,11 @@ void CallExpr::codegen(FILE* outfile) {
     get(1)->codegen(outfile);
     fprintf(outfile, ", /* %s */ %d, ", fn->cname, ftable.get(fn));
     get(2)->codegen(outfile);
-    Symbol* argType = get(2)->typeInfo()->symbol;
+    TypeSymbol* argType = toTypeSymbol(get(2)->typeInfo()->symbol);
+    if (argType == NULL) {
+      INT_FATAL("typeInfo() didn't return a type symbol");
+    }
+    registerTypeToStructurallyCodegen(argType);
     fprintf(outfile, ", ");
     fprintf(outfile, "SPECIFY_SIZE(");
     // BLC: not sure why I would need this

@@ -58,9 +58,6 @@ bundleArgs(CallExpr* fcall) {
   fcall->insertBefore( new CallExpr( PRIM_MOVE,
                                      tempc,
                                      tempc_alloc));
-
-  registerTypeToStructurallyCodegen(new_c);
-  //  printf("Found a type that needs annotating: %s\n", new_c->name);
   
   // set the references in the class instance
   i = 1;
@@ -1165,7 +1162,6 @@ insertWideReferences(void) {
                 call->getStmtExpr()->insertBefore(new DefExpr(tmp));
                 se->replace(new SymExpr(tmp));
                 call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-                
               }
             }
           }
