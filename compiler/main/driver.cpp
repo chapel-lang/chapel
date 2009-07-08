@@ -57,9 +57,9 @@ bool fNoInline = false;
 bool fNoPrivatization = false;
 bool fGenIDS = false;
 bool fSerialForall = false;
-bool fSerial;  // initialized in setupDependentDefaults() below
-bool fLocal;   // initialized in setupDependentDefaults() below
-bool genCommunicatedStructures = false;
+bool fSerial;  // initialized in setupOrderedGlobals() below
+bool fLocal;   // initialized in setupOrderedGlobals() below
+bool genCommunicatedStructures; // initialized in setupOrderedGlobals() below
 bool fieeefloat = true;
 bool report_inlining = false;
 char chplmake[256] = "";
@@ -139,13 +139,20 @@ static void setupOrderedGlobals(void) {
   // doing multirealm compilations.  However, we don't have the mechanism
   // in place to support two communication interfaces yet...
   genCommunicatedStructures = (strcmp(CHPL_COMM, "pvm") == 0);
+}
+
+
+//
+// a place to set up globals that are dependent on others
+//
+static void setupDependentGlobals() {
   // Currently, our structural definitions don't work with remote value
   // forwarding.  Not sure why yet.
   if (genCommunicatedStructures) {
     fNoRemoteValueForwarding = true;
   }
 }
-
+  
 
 static void recordCodeGenStrings(int argc, char* argv[]) {
   compileCommand = astr("chpl");
@@ -412,6 +419,7 @@ static ArgumentDescription arg_desc[] = {
  {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
+ {"gen-communicated-structures", ' ', NULL, "Generate type/offset information for potential use in communications", "N", &genCommunicatedStructures, NULL, NULL},
  {0}
 };
 
@@ -477,6 +485,7 @@ int main(int argc, char *argv[]) {
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
+  setupDependentGlobals();
   recordCodeGenStrings(argc, argv);
   startCatchingSignals();
   printStuff();

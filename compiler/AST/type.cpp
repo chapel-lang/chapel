@@ -401,9 +401,8 @@ int ClassType::codegenFieldStructure(FILE* outfile, bool nested,
     const char* newbaseoffset = astr(firstpart, ", ", field->cname, ")");
     int numfields = field->type->codegenStructure(outfile, newbaseoffset);
     if (numfields == 1) {
-      fprintf(outfile, ", %s + offsetof(%c%s, %s)},", 
+      fprintf(outfile, ", %s + offsetof(%s, %s)},", 
               baseoffset,
-              (this->symbol->hasFlag(FLAG_DATA_CLASS) ? '_' : ' '), 
               this->symbol->cname, field->cname);
     } else if (numfields == -1) {
       numfields = 1;
