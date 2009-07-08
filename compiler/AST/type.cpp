@@ -378,9 +378,9 @@ int ClassType::codegenStructure(FILE* outfile, const char* baseoffset) {
 // BLC: I'm not understanding why special cases would need to be called
 // out here
 static bool genMagicUnderscore(Symbol* sym) {
-  if (sym->hasFlag(FLAG_TUPLE)) return false;
-  if (strcmp(sym->cname, "list_BaseArr") == 0) return false;
-  return true;
+  ClassType* classtype = toClassType(sym->type);
+  return (classtype && classtype->classTag == CLASS_CLASS && 
+          !sym->hasFlag(FLAG_REF));
 }
 
 

@@ -818,7 +818,7 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, ", ");
             if (!stringType) {
               TypeSymbol* ts = get(1)->typeInfo()->symbol;
-              //              registerTypeToStructurallyCodegen(ts);
+              registerTypeToStructurallyCodegen(ts);
               fprintf(outfile, "%s, ", ts->cname);
             }
             call->get(2)->codegen(outfile);
@@ -2174,10 +2174,7 @@ void CallExpr::codegen(FILE* outfile) {
     registerTypeToStructurallyCodegen(argType);
     fprintf(outfile, ", ");
     fprintf(outfile, "SPECIFY_SIZE(");
-    // BLC: not sure why I would need this
-    if (!genCommunicatedStructures) {
-      fprintf(outfile, "_");
-    }
+    fprintf(outfile, "_");
     argType->codegen(outfile);
     fprintf(outfile, ")");
     fprintf(outfile, ");\n");

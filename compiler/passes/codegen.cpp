@@ -518,6 +518,11 @@ static void codegen_communicated_types(FILE* hdrfile) {
   form_Map(ttscMapElem, typesymM, typesToStructurallyCodegen) {
     TypeSymbol* typesym = typesymM->key;
     fprintf(outfile, "chpl_rt_type_id_");
+    ClassType* classtype = toClassType(typesym->type);
+    if (classtype && classtype->classTag == CLASS_CLASS && 
+        !typesym->hasFlag(FLAG_REF)) {
+      fprintf(outfile, "_");
+    }
     typesym->codegen(outfile);
     fprintf(outfile, ",\n");
   }
