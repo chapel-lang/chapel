@@ -48,8 +48,8 @@ refNecessary(SymExpr* se,
 static bool
 isDerefType(Type* type) {
   return
-    type->symbol->hasFlag(FLAG_ARRAY) ||
-    type->symbol->hasFlag(FLAG_DOMAIN) ||
+//     type->symbol->hasFlag(FLAG_ARRAY) ||
+//     type->symbol->hasFlag(FLAG_DOMAIN) ||
     type->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
     type->symbol->hasFlag(FLAG_ITERATOR_CLASS);
 }
@@ -85,6 +85,34 @@ void cullOverReferences() {
     }
   }
   freeDefUseMaps(defMap, useMap);
+
+  //
+  // change functions that return references to arrays and domains
+  // into functions that return arrays and domains
+  //
+  compute_call_sites();
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (Type* vt = fn->retType->getValueType()) {
+      if (vt->symbol->hasFlag(FLAG_ARRAY) || vt->symbol->hasFlag(FLAG_DOMAIN)) {
+        Symbol* tmp = newTemp(vt);
+        CallExpr* ret = toCallExpr(fn->body->body.tail);
+        INT_ASSERT(ret->isPrimitive(PRIM_RETURN));
+        ret->insertBefore(new DefExpr(tmp));
+        ret->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, ret->get(1)->remove())));
+        ret->insertAtTail(tmp);
+        fn->retType = vt;
+        forv_Vec(CallExpr, call, *fn->calledBy) {
+          CallExpr* move = toCallExpr(call->parentExpr);
+          INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+          Symbol* tmp = newTemp(vt);
+          move->insertBefore(new DefExpr(tmp));
+          move->insertAfter(new CallExpr(PRIM_MOVE, move->get(1)->remove(), new CallExpr(PRIM_SET_REF, tmp)));
+          move->insertAtHead(tmp);
+        }
+      }
+    }
+  }
+
 
   //
   // remove references to array and domain wrapper records

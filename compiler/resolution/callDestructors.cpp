@@ -22,7 +22,8 @@ fixupDestructors() {
           ClassType* fct = toClassType(field->type);
           INT_ASSERT(fct);
           if (!isClass(fct) || fct->symbol->hasFlag(FLAG_SYNC)) {
-            bool useRefType = !fct->symbol->hasFlag(FLAG_ARRAY) && !fct->symbol->hasFlag(FLAG_DOMAIN) && !fct->symbol->hasFlag(FLAG_SYNC);
+            bool useRefType = // !fct->symbol->hasFlag(FLAG_ARRAY) && !fct->symbol->hasFlag(FLAG_DOMAIN) &&
+              !fct->symbol->hasFlag(FLAG_SYNC);
             VarSymbol* tmp = useRefType ? newTemp(fct->refType) : newTemp(fct);
             fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
             fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
@@ -47,7 +48,8 @@ fixupDestructors() {
       if (ct->dispatchParents.n >= 1 && isClass(ct)) {
         // avoid destroying record fields more than once
         if (FnSymbol* parentDestructor = ct->dispatchParents.v[0]->destructor) {
-          Type* tmpType = isClass(ct) || ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN) ?
+          Type* tmpType = isClass(ct) // || ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN)
+            ?
             ct->dispatchParents.v[0] : ct->dispatchParents.v[0]->refType;
           VarSymbol* tmp = newTemp(tmpType);
           fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));

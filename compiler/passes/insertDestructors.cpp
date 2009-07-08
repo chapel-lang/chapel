@@ -255,8 +255,9 @@ static void insertDestructorCalls(bool onlyMarkConstructors) {
         if (maybeCallDestructor && !onlyMarkConstructors) {
           // lhs does not "escape" its scope, so go ahead and insert a call to its destructor
           if (ClassType* ct = toClassType(lhs->var->type)) {
-            bool useRefType = !isClass(ct) &&
-              !ct->symbol->hasFlag(FLAG_ARRAY) && !ct->symbol->hasFlag(FLAG_DOMAIN);
+            bool useRefType = !isClass(ct)//  &&
+//               !ct->symbol->hasFlag(FLAG_ARRAY) && !ct->symbol->hasFlag(FLAG_DOMAIN)
+              ;
             if (parentBlock == fn->body) {
               VarSymbol* tmp = newTemp(useRefType ? ct->refType : ct);
               fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
