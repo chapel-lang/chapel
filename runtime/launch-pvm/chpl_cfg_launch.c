@@ -108,7 +108,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     if (chpl_numRealms != 1) {
       lpr = chpl_localesPerRealm(k);
       if (lpr == 0) {
-        break;
+        continue;
       }
     } else {
       lpr = numLocales;
@@ -116,7 +116,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     hostfile = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
     realmtype = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
     if (chpl_numRealms != 1) {
-      sprintf(realmtype, "%s", chpl_realmType(3-k));
+      sprintf(realmtype, "%s", chpl_realmType(k));
     } else {
       sprintf(realmtype, "%s", getenv((char *)"CHPL_HOST_PLATFORM"));
     }

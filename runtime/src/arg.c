@@ -157,13 +157,13 @@ int32_t chpl_baseUniqueLocaleID(int32_t r) {
 
 const char* chpl_realmType(int32_t r) {
   if (r == 0) {
-    return "sunos";
-  } else if (r == 1) {
-    return "darwin";
-  } else if (r == 2) {
-    return "linux";
-  } else {
     return "linux64";
+  } else if (r == 1) {
+    return "linux";
+  } else if (r == 2) {
+    return "darwin";
+  } else {
+    return "sunos";
   }
 }
 
