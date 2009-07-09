@@ -105,7 +105,7 @@ int tids[64]; // tid list for all nodes
 int instance;
 
 int okay_to_barrier = 1;
-int okay_to_poll = 0;
+volatile int okay_to_poll = 0;
 int commsig = 0;     // signal to parent process what to do
                      // 0: noop
                      // 1: halt
