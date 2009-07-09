@@ -21,6 +21,11 @@ spurious verification failures on RA (e.g. 04/04/09, 06/26/09)
 --------------------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
 
+attempt to dereference nil
+--------------------------
+[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
+
 
 =================
 linux regressions
@@ -45,7 +50,7 @@ performance-specific regressions
 
 occasional timeouts
 -------------------
-[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm]
+[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm] (e.g., 07/07/09)
 [Error: Timed out executing program studies/shootout/nbody/nbody_record_2] (e.g., 07/01/09)
 
 timeouts (06/02/09; 6/13/09)
@@ -157,6 +162,10 @@ GASNet unable to start polling thread
 baseline-specific tests
 =======================
 
+attempt to dereference nil errors
+---------------------------------
+**LOTS** (115 new ones)
+
 new test (06/17/09)
 -------------------
 [Error matching program output for classes/diten/test_destructor2]
@@ -190,7 +199,21 @@ memory is leaked due to heap classes (10/22/08)
 opts-specific tests
 ===================
 
-(Example runs: 0)
+(Example runs: 32)
+
+--no-copy-propagation
+--baseline --dead-code-elimination
+--baseline --inline
+--baseline --inline-iterators
+--baseline --live-analysis
+--baseline --optimize-loop-iterators
+--baseline --scalar-replacement
+--baseline --no-local
+---------------------
+[Error: Timed out executing program release/examples/hpcc/hpl]
+[Error matching program output for release/examples/programs/jacobi]
+[Error matching program output for release/examples/tutorials/arrays]
+[Error matching program output for release/examples/tutorials/slices]
  
 
 (Full run: 58)
