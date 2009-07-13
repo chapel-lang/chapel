@@ -77,7 +77,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
 
   char** argv2;
   char* argv0rep;
-  char* multirealmenv;
+  char* nameofbin;
   char numlocstr[128];
 
   // Add nodes to PVM configuration.
@@ -87,6 +87,9 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   int lpr;                            // locales per realm
   char* realmtype;
   char* realmtoadd[2048];
+  char* multirealmenvname;
+  char* multirealmenv;
+  char* multirealmpathtoadd[2048];
   int baserealm;
   char* hostfile;
 
@@ -115,11 +118,18 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     }
     hostfile = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
     realmtype = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+    multirealmenvname = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
     if (chpl_numRealms != 1) {
       sprintf(realmtype, "%s", chpl_realmType(k));
     } else {
       sprintf(realmtype, "%s", getenv((char *)"CHPL_HOST_PLATFORM"));
     }
+    sprintf(multirealmenvname, "CHPL_MULTIREALM_LAUNCH_DIR_%s", realmtype);
+    multirealmenv = getenv(multirealmenvname);
+    if (multirealmenv == NULL) {
+      multirealmenv = getenv((char *)"CHPL_HOME");
+    }
+    chpl_free(multirealmenvname, -1, "");
     sprintf(hostfile, "%s%s%s", getenv((char *)"CHPL_HOME"), "/hostfile.", realmtype);
     
     if ((nodelistfile = fopen(hostfile, "r")) == NULL) {
@@ -134,9 +144,11 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     while (((fscanf(nodelistfile, "%s", pvmnodetoadd)) == 1) && (j < lpr)) {
       pvmnodestoadd[i] = chpl_malloc((strlen(pvmnodetoadd)+1), sizeof(char *), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
       realmtoadd[i] = chpl_malloc((strlen(realmtype)+1), sizeof(char *), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+      multirealmpathtoadd[i] = chpl_malloc((strlen(multirealmenv)+1), sizeof(char *), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
       strcpy(pvmnodestoadd[i], pvmnodetoadd);
       strcpy(realmtoadd[i], realmtype);
-      //      fprintf(stderr, "Adding pvmnodestoadd[%d], realm %s of j iter %d: %s\n", i, realmtoadd[i], j, pvmnodestoadd[i]);
+      strcpy(multirealmpathtoadd[i], multirealmenv);
+      //      fprintf(stderr, "Adding pvmnodestoadd[%d], realm %s of j iter %d on directory %s: %s\n", i, realmtoadd[i], j, multirealmpathtoadd[i], pvmnodestoadd[i]);
       i++;
       j++;
     }
@@ -148,6 +160,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
       while (i >= 0) {
         chpl_free(pvmnodestoadd[i], -1, "");
         chpl_free(realmtoadd[i], -1, "");
+        chpl_free(multirealmpathtoadd[i], -1, "");
         i--;
       }
       chpl_free(argv2, -1, "");
@@ -185,7 +198,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   j = i;
 
   // Something happened on addhosts -- likely old pvmd running
-  for (i = 0; i < j; i++) {
+  for (i = 0; i < numLocales; i++) {
     if ((infos[i] < 0) && (infos[i] != -28)) {
       sprintf(buffer, "ssh -q %s \"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3\"", hosts2[i]);
       system(buffer);
@@ -200,34 +213,34 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     }
   }
 
-  multirealmenv = getenv((char *)"CHPL_MULTIREALM_LAUNCH_DIR");
-  if (multirealmenv == NULL) {
-    multirealmenv = getenv((char *)"CHPL_HOME");
-  }
   argv0rep = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
+  nameofbin = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
   strcpy(argv0rep, argv[0]);
+  nameofbin = strrchr(argv[0], '/');
   // Build the command to send to pvm_spawn.
   //  fprintf(stderr, "Entering for loop\n");
   for (i = 0; i < numLocales; i++) {
     //    fprintf(stderr, "Loop i=%d (iteration %d of %d)\n", i, i+1, numLocales);
-    while (strstr(argv0rep, realmtoadd[baserealm]) && 
-           (chpl_numRealms != 1) &&
-           (strcmp(realmtoadd[baserealm], realmtoadd[i]))) {
-      argv0rep = replace_str(argv0rep, realmtoadd[baserealm], realmtoadd[i]);
-    }
 
-    pvmsize += strlen(multirealmenv) + strlen("/_real") + strlen(argv0rep);
+    pvmsize += strlen(multirealmpathtoadd[i]) + strlen("_real") + strlen(nameofbin);
 
     commandtopvm = chpl_malloc(pvmsize, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
     *commandtopvm = '\0';
     environment = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
     *environment = '\0';
-    strcat(environment, multirealmenv);
+    strcat(environment, multirealmpathtoadd[i]);
     strcat(commandtopvm, environment);
     chpl_free(environment, -1, "");
-    strcat(commandtopvm, "/");
-    strcat(commandtopvm, argv0rep);
+    strcat(commandtopvm, nameofbin);
     strcat(commandtopvm, "_real");
+
+    while (strstr(commandtopvm, realmtoadd[baserealm]) && 
+           (chpl_numRealms != 1) &&
+           (strcmp(realmtoadd[baserealm], realmtoadd[i]))) {
+      commandtopvm = replace_str(commandtopvm, realmtoadd[baserealm], realmtoadd[i]);
+    }
+
+    //    fprintf(stderr, "Trying %s for pvmnodestoadd[%d] %s\n", commandtopvm, i, pvmnodestoadd[i]);
     if ((nodelistfile = fopen(commandtopvm, "r")) == NULL) {
       chpl_free(commandtopvm, -1, "");
       pvmsize = strlen(argv0rep) + strlen("_real");
@@ -241,14 +254,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
         if (j != 0) {
           info = pvm_delhosts( (char **)hosts2, j, infos );
         }
-        while (i < numLocales) {
-          chpl_free(pvmnodestoadd[i], -1, "");
-          chpl_free(realmtoadd[i], -1, "");
-          i++;
-        }
-        chpl_free(argv0rep, -1, "");
-        chpl_free(commandtopvm, -1, "");
-        chpl_free(argv2, -1, "");
         chpl_internal_error("Unknown executable.");
       }
     }
@@ -261,15 +266,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
       if (j != 0) {
         info = pvm_delhosts( (char **)hosts2, j, infos );
       }
-      i = 0;
-      while (i < numLocales) {
-        chpl_free(pvmnodestoadd[i], -1, "");
-        chpl_free(realmtoadd[i], -1, "");
-        i++;
-      }
-      chpl_free(argv0rep, -1, "");
-      chpl_free(commandtopvm, -1, "");
-      chpl_free(argv2, -1, "");
       chpl_internal_error("Trouble spawning slave.");
     }
   }
@@ -321,14 +317,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   if (j != 0) {
     info = pvm_delhosts( (char **)hosts2, j, infos );
   }
-
-  while (i >= 0) {
-    chpl_free(pvmnodestoadd[i], -1, "");
-    chpl_free(realmtoadd[i], -1, "");
-    i--;
-  }
-  chpl_free(argv2, -1, "");
-  chpl_free(commandtopvm, -1, "");
 
   return (char *)"killall -9 pvmd3 && rm -rf /tmp/*pvm*";
 }
