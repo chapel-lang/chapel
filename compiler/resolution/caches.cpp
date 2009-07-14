@@ -132,6 +132,7 @@ freeCache(SymbolVecCache& cache) {
 }
 
 
+SymbolMapCache ordersCache;
 SymbolMapCache genericsCache;
 SymbolMapCache coercionsCache;
 SymbolMapCache promotionsCache;

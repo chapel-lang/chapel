@@ -58,6 +58,7 @@ void freeCache(SymbolVecCache& cache);
 // when instantiating constructors and building up the default
 // wrappers for constructors.
 //
+extern SymbolMapCache ordersCache;
 extern SymbolMapCache genericsCache;
 extern SymbolMapCache coercionsCache;
 extern SymbolMapCache promotionsCache;

@@ -348,6 +348,7 @@ resolveFormals(FnSymbol* fn) {
       if (!formal->type->symbol->hasFlag(FLAG_REF) &&
           (formal->intent == INTENT_INOUT ||
            formal->intent == INTENT_OUT ||
+           formal->hasFlag(FLAG_WRAP_OUT_INTENT) ||
            (formal == fn->_this &&
             (isUnion(formal->type) ||
              isRecord(formal->type) || fn->hasFlag(FLAG_REF_THIS))))) {
@@ -3742,6 +3743,7 @@ resolve() {
   insertReturnTemps(); // must be done before pruneResolvedTree is called.
   pruneResolvedTree();
 
+  freeCache(ordersCache);
   freeCache(defaultsCache);
   freeCache(genericsCache);
   freeCache(coercionsCache);

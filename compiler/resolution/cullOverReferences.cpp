@@ -20,7 +20,8 @@ refNecessary(SymExpr* se,
         if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT)
           return true;
         if (formal->type->symbol->hasFlag(FLAG_REF) &&
-            fn->hasFlag(FLAG_ALLOW_REF))
+            (fn->hasFlag(FLAG_ALLOW_REF) ||
+             formal->hasFlag(FLAG_WRAP_OUT_INTENT)))
           return true;
       } else if (call->isPrimitive(PRIM_MOVE)) {
         if (refNecessary(toSymExpr(call->get(1)), defMap, useMap))

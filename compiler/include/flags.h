@@ -101,6 +101,7 @@ enum Flag {
   FLAG_WIDE,
   FLAG_WIDE_CLASS,
   FLAG_WRAPPER, // wrapper function
+  FLAG_WRAP_OUT_INTENT, // formal argument for wrapper for out/inout intent
   NUM_FLAGS
 };
 

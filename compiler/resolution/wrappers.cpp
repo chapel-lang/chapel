@@ -31,6 +31,21 @@ buildEmptyWrapper(FnSymbol* fn) {
 
 
 //
+// copy a formal and make the copy have blank intent. If the formal to copy has
+// out intent or inout intent, flag the copy to make sure it is a reference
+//
+static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
+  ArgSymbol* wrapperFormal = formal->copy();
+  if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT ||
+      formal->hasFlag(FLAG_WRAP_OUT_INTENT)) {
+    wrapperFormal->addFlag(FLAG_WRAP_OUT_INTENT);
+  }
+  wrapperFormal->intent = INTENT_BLANK;
+  return wrapperFormal;
+}
+
+
+//
 // return true if formal matches name of a subsequent formal
 //
 static bool
@@ -104,7 +119,7 @@ buildDefaultWrapper(FnSymbol* fn,
   for_formals(formal, fn) {
     SET_LINENO(formal);
     if (!defaults->in(formal)) {
-      ArgSymbol* wrapper_formal = formal->copy();
+      ArgSymbol* wrapper_formal = copyFormalForWrapper(formal);
       if (fn->_this == formal)
         wrapper->_this = wrapper_formal;
       if (formal->hasFlag(FLAG_IS_MEME))
@@ -264,6 +279,9 @@ static FnSymbol*
 buildOrderWrapper(FnSymbol* fn,
                   SymbolMap* order_map,
                   bool isSquare) {
+  // return cached if we already created this order wrapper
+  if (FnSymbol* cached = checkCache(ordersCache, fn, order_map))
+    return cached;
   SET_LINENO(fn);
   FnSymbol* wrapper = buildEmptyWrapper(fn);
   wrapper->cname = astr("_order_wrap_", fn->cname);
@@ -272,7 +290,7 @@ buildOrderWrapper(FnSymbol* fn,
   SymbolMap copy_map;
   for_formals(formal, fn) {
     SET_LINENO(formal);
-    Symbol* wrapper_formal = formal->copy();
+    ArgSymbol* wrapper_formal = copyFormalForWrapper(formal);
     if (fn->_this == formal)
       wrapper->_this = wrapper_formal;
     copy_map.put(formal, wrapper_formal);
@@ -287,6 +305,7 @@ buildOrderWrapper(FnSymbol* fn,
   }
   insertWrappedCall(fn, wrapper, call);
   normalize(wrapper);
+  addCache(ordersCache, fn, wrapper, order_map);
   return wrapper;
 }
 
@@ -350,7 +369,7 @@ buildCoercionWrapper(FnSymbol* fn,
   call->square = isSquare;
   for_formals(formal, fn) {
     SET_LINENO(formal);
-    ArgSymbol* wrapperFormal = formal->copy();
+    ArgSymbol* wrapperFormal = copyFormalForWrapper(formal);
     if (fn->_this == formal)
       wrapper->_this = wrapperFormal;
     wrapper->insertFormalAtTail(wrapperFormal);
@@ -452,7 +471,7 @@ buildPromotionWrapper(FnSymbol* fn,
   int i = 1;
   for_formals(formal, fn) {
     SET_LINENO(formal);
-    Symbol* new_formal = formal->copy();
+    ArgSymbol* new_formal = copyFormalForWrapper(formal);
     if (Symbol* p = paramMap.get(formal))
       paramMap.put(new_formal, p);
     if (fn->_this == formal)

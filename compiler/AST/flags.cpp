@@ -96,6 +96,7 @@ initFlags() {
   defineFlag(FLAG_WIDE, "wide");
   defineFlag(FLAG_WIDE_CLASS, "wide class");
   defineFlag(FLAG_WRAPPER, "wrapper");
+  defineFlag(FLAG_WRAP_OUT_INTENT, "wrap out or inout intent formal");
 }
 
 
