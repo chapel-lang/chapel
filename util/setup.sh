@@ -62,22 +62,22 @@ for host in ${HOSTLIST}; do
         if [ x"${RSHELL}" = x/bin/tcsh -o x"${RSHELL}" = x/bin/csh ]; then
             # Comment out the make depend and make line if you don't want to
             # make the Chapel sources remotely.
-            ssh ${host} "setenv CHPL_HOME ${CHPL_HOME}; touch /tmp/Chplpvmtmp; rm -rf /tmp/*pvm*; killall -9 pvmd3; cd ${CHPL_HOME}; 
+            ssh ${host} "setenv CHPL_HOME ${CHPL_HOME}; setenv CHPL_COMM ${CHPL_COMM}; setenv CHPL_DEVELOPER ${CHPL_DEVELOPER}; touch /tmp/Chplpvmtmp; rm -rf /tmp/*pvm*; killall -9 pvmd3; cd ${CHPL_HOME}; 
                 make depend; make
                 "
             for test in ${TESTLIST}; do
                 name=`echo ${test} | awk -F \/ '{print $NF}' | awk -F . '{print $1}'`
-                ssh ${host} "setenv CHPL_HOME ${CHPL_HOME}; ${path}/chpl $FLAG -o ${path}/${name}_${platform} ${CHPL_HOME}/${test}"
+                ssh ${host} "setenv CHPL_HOME ${CHPL_HOME}; setenv CHPL_COMM ${CHPL_COMM}; setenv CHPL_DEVELOPER ${CHPL_DEVELOPER}; ${path}/chpl $FLAG -o ${path}/${name}_${platform} ${CHPL_HOME}/${test}"
             done
         elif [ x"${RSHELL}" = x/bin/ksh -o x"${RSHELL}" = x/bin/bash ]; then
             # Comment out the make depend and make line if you don't want to
             # make the Chapel sources remotely.
-            ssh ${host} "export CHPL_HOME=${CHPL_HOME}; touch /tmp/Chplpvmtmp; rm -rf /tmp/*pvm*; killall -9 pvmd3; cd ${CHPL_HOME};
+            ssh ${host} "export CHPL_HOME=${CHPL_HOME}; export CHPL_COMM=${CHPL_COMM}; export CHPL_DEVELOPER=${CHPL_DEVELOPER}; touch /tmp/Chplpvmtmp; rm -rf /tmp/*pvm*; killall -9 pvmd3; cd ${CHPL_HOME};
                 make depend; make
                 "
             for test in ${TESTLIST}; do
                 name=`echo ${test} | awk -F \/ '{print $NF}' | awk -F . '{print $1}'`
-                ssh ${host} "export CHPL_HOME=${CHPL_HOME}; ${path}/chpl $FLAG -o ${path}/${name}_${platform} ${CHPL_HOME}/${test}"
+                ssh ${host} "export CHPL_HOME=${CHPL_HOME}; export CHPL_COMM=${CHPL_COMM}; export CHPL_DEVELOPER=${CHPL_DEVELOPER}; ${path}/chpl $FLAG -o ${path}/${name}_${platform} ${CHPL_HOME}/${test}"
             done
         else
             echo "Unknown shell $RSHELL on $host."
