@@ -67,6 +67,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   int tids[32];
   static char *argtostart[] = {(char*)""};
   int bufid;
+  char debugMsg[4096];
 
   // These are for receiving singals from slaves
   int fdnum;
@@ -218,7 +219,12 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   strcpy(argv0rep, argv[0]);
   nameofbin = strrchr(argv[0], '/');
   // Build the command to send to pvm_spawn.
-  //  fprintf(stderr, "Entering for loop\n");
+  // First, try the command built from CHPL_MULTIREALM_LAUNCH_DIR_<realm>
+  //      and the executable_real. Replace architecture strings with target
+  //      architecture names.
+  // If this doesn't work, store the name of the file tried with the node
+  //      into a debug message. Then try just what was passed on the command
+  //      line. If this doesn't work, error out with the debug message.
   for (i = 0; i < numLocales; i++) {
     //    fprintf(stderr, "Loop i=%d (iteration %d of %d)\n", i, i+1, numLocales);
 
@@ -240,36 +246,38 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
       commandtopvm = replace_str(commandtopvm, realmtoadd[baserealm], realmtoadd[i]);
     }
 
-    //    fprintf(stderr, "Trying %s for pvmnodestoadd[%d] %s\n", commandtopvm, i, pvmnodestoadd[i]);
-    if ((nodelistfile = fopen(commandtopvm, "r")) == NULL) {
-      chpl_free(commandtopvm, -1, "");
-      pvmsize = strlen(argv0rep) + strlen("_real");
-      commandtopvm = chpl_malloc(pvmsize, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
-      *commandtopvm = '\0';
-      strcat(commandtopvm, argv0rep);
-      strcat(commandtopvm, "_real");
-      if ((nodelistfile = fopen(commandtopvm, "r")) == NULL) {
-        fprintf(stderr, "Make sure %s is present and readable.\n", commandtopvm);
-        i = 0;
-        if (j != 0) {
-          info = pvm_delhosts( (char **)hosts2, j, infos );
-        }
-        chpl_internal_error("Unknown executable.");
-      }
-    }
-    fclose(nodelistfile);
-    
     //    fprintf(stderr, "spawning %s on %s\n", commandtopvm, pvmnodestoadd[i]);
     numt = pvm_spawn( (char *)commandtopvm, argv2, 1, (char *)pvmnodestoadd[i], 1, &tids[i] );
     //    fprintf(stderr, "numt was %d, tids[%d] was %d\n", numt, i, tids[i]);
     if (numt == 0) {
-      if (j != 0) {
-        info = pvm_delhosts( (char **)hosts2, j, infos );
+      sprintf(debugMsg, "Make sure %s is present and readable on %s.", commandtopvm, pvmnodestoadd[i]);
+      if (tids[i] == PvmNoFile) {
+        chpl_free(commandtopvm, -1, "");
+        pvmsize = strlen(argv0rep) + strlen("_real");
+        commandtopvm = chpl_malloc(pvmsize, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
+        *commandtopvm = '\0';
+        strcat(commandtopvm, argv0rep);
+        strcat(commandtopvm, "_real");
+        while (strstr(commandtopvm, realmtoadd[baserealm]) && 
+               (chpl_numRealms != 1) &&
+               (strcmp(realmtoadd[baserealm], realmtoadd[i]))) {
+          commandtopvm = replace_str(commandtopvm, realmtoadd[baserealm], realmtoadd[i]);
+        }
+        //        fprintf(stderr, "trying again to spawn %s on %s\n", commandtopvm, pvmnodestoadd[i]);
+        numt = pvm_spawn( (char *)commandtopvm, argv2, 1, (char *)pvmnodestoadd[i], 1, &tids[i] );
+        //        fprintf(stderr, "numt was %d, tids[%d] was %d\n", numt, i, tids[i]);
+        if (numt == 0) {
+          if (j != 0) {
+            info = pvm_delhosts( (char **)hosts2, j, infos );
+          }
+          chpl_internal_error(debugMsg);
+        }
       }
-      chpl_internal_error("Trouble spawning slave.");
     }
   }
-  
+
+  // We have a working configuration. What follows is the communication
+  // between the slaves and the parent (this process).
   info = pvm_mytid();
 
   while (commsig == 0) {
