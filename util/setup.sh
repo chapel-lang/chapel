@@ -7,22 +7,22 @@ if [ -z "$1" ]; then
     FLAG=""
 else
     FIRSTCHARACTER=`echo $1 | cut -c1`
-    if [ "$FIRSTCHARACTER" = "-" ]; then
+    if [ x"$FIRSTCHARACTER" = x"-" ]; then
         CONFIGFILE=$CHPL_HOME/util/CONFIG
-        FLAG=$*
+        FLAG=$@
     elif [ -r "$1" ]; then
         ISCONFIGFILE=`cat $1 | grep "HOST" | awk -F \= '{print $1}' | grep "HOST"`
         if [ -n "$ISCONFIGFILE" ]; then
             CONFIGFILE=$1
             shift
-            FLAG=$*
+            FLAG=$@
         else
             CONFIGFILE=$CHPL_HOME/util/CONFIG
-            FLAG=$*
+            FLAG=$@
         fi
     else
         CONFIGFILE=$CHPL_HOME/util/CONFIG
-        FLAG=$*
+        FLAG=$@
     fi
 fi
 
@@ -33,12 +33,38 @@ if [ ! -r "$CONFIGFILE" ]; then
     exit 1
 fi
 
+# Parse through the arguments to find things to compile and additional flags.
+# Exclude output files (script provides them anyway).
+HASCOMPILE=`echo "${FLAG}" | grep "\-o"`
+TESTLIST=""
+if [ -n "$HASCOMPILE" ]; then
+    FLAG=""
+    SKIPNEXT=0
+    for arg in "$@"; do
+        FIRSTCHARACTER=`echo $arg | cut -c1`
+        SECONDCHARACTER=`echo $arg | cut -c2`
+        ISCHPL=`echo $arg | grep "\.chpl"`
+        if [ x"$SKIPNEXT" = x"1" ]; then
+            SKIPNEXT=0
+        elif [ x"$FIRSTCHARACTER" = x"-" -a x"$SECONDCHARACTER" = x"o" ]; then
+            THIRDCHARACTER=`echo $arg | cut -c3`
+            if [ -z "$THIRDCHARACTER" ]; then
+                SKIPNEXT=1
+            fi
+        elif [ -z "$ISCHPL" ]; then
+            FLAG="$FLAG $arg"
+        else
+            TESTLIST="$TESTLIST $arg"
+        fi
+    done
+fi
+
 # Capture relevant information into lists from the configuration file.
 PLATFORMLIST=`cat ${CONFIGFILE} | grep "PLATFORM" | awk -F \= '{print $2}'`
 HOSTLIST=`cat ${CONFIGFILE} | grep "HOST" | awk -F \= '{print $2}'`
 PATHLIST=`cat ${CONFIGFILE} | grep "PATH" | awk -F \= '{print $2}'`
 FLAG=$FLAG" "`cat ${CONFIGFILE} | grep "FLAGS" | sed 's/FLAGS=//'`
-TESTLIST=`cat ${CONFIGFILE} | grep "TEST" | awk -F \= '{print $2}'`
+TESTLIST=$TESTLIST" "`cat ${CONFIGFILE} | grep "TEST" | awk -F \= '{print $2}'`
 
 if [ -z "$HOSTLIST" ]; then
     echo "Define some hosts in $CONFIGFILE"
