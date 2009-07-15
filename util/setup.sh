@@ -3,24 +3,41 @@
 # Set the CONFIGFILE to be whatever's in the first argument.
 # If no argument is passed in, then simply use the file CONFIG.
 if [ -z "$1" ]; then
-    CONFIGFILE=$CHPL_HOME/CONFIG
+    CONFIGFILE=$CHPL_HOME/util/CONFIG
+    FLAG=""
 else
-    if [ -x "$1" ]; then
-        CONFIGFILE=$1
+    FIRSTCHARACTER=`echo $1 | cut -c1`
+    if [ "$FIRSTCHARACTER" = "-" ]; then
+        CONFIGFILE=$CHPL_HOME/util/CONFIG
+        FLAG=$*
+    elif [ -r "$1" ]; then
+        ISCONFIGFILE=`cat $1 | grep "HOST" | awk -F \= '{print $1}' | grep "HOST"`
+        if [ -n "$ISCONFIGFILE" ]; then
+            CONFIGFILE=$1
+            shift
+            FLAG=$*
+        else
+            CONFIGFILE=$CHPL_HOME/util/CONFIG
+            FLAG=$*
+        fi
     else
-        echo "Make sure config file exists and is readable."
-        echo "Usage: $0 <config-file>"
-        echo "       $0 (if file called $CHPL_HOME/CONFIG exists)"
-        exit 1
+        CONFIGFILE=$CHPL_HOME/util/CONFIG
+        FLAG=$*
     fi
-    CONFIGFILE=$1
+fi
+
+if [ ! -r "$CONFIGFILE" ]; then
+    echo "Make sure config file exists and is readable."
+    echo "Usage: $0 <config-file> <flags>"
+    echo "       $0 <flags> (if file called $CHPL_HOME/util/CONFIG exists)"
+    exit 1
 fi
 
 # Capture relevant information into lists from the configuration file.
 PLATFORMLIST=`cat ${CONFIGFILE} | grep "PLATFORM" | awk -F \= '{print $2}'`
 HOSTLIST=`cat ${CONFIGFILE} | grep "HOST" | awk -F \= '{print $2}'`
 PATHLIST=`cat ${CONFIGFILE} | grep "PATH" | awk -F \= '{print $2}'`
-FLAG=`cat ${CONFIGFILE} | grep "FLAGS" | sed 's/FLAGS=//'`
+FLAG=$FLAG" "`cat ${CONFIGFILE} | grep "FLAGS" | sed 's/FLAGS=//'`
 TESTLIST=`cat ${CONFIGFILE} | grep "TEST" | awk -F \= '{print $2}'`
 
 if [ -z "$HOSTLIST" ]; then
