@@ -105,7 +105,9 @@ int tids[64]; // tid list for all nodes
 int instance;
 
 int okay_to_barrier = 1;
-volatile int okay_to_poll = 0;
+int okaypoll = 0;
+pthread_mutex_t okay_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t okay_to_poll = PTHREAD_COND_INITIALIZER;
 int commsig = 0;     // signal to parent process what to do
                      // 0: noop
                      // 1: halt
@@ -447,7 +449,11 @@ static void polling(void* x) {
   chpl_mutex_lock(&termination_lock);
   finished = 0;
 
-  while (!okay_to_poll) {}
+  pthread_mutex_lock(&okay_mutex);
+  while (okaypoll == 0) {
+    pthread_cond_wait(&okay_to_poll, &okay_mutex);
+  }
+  pthread_mutex_unlock(&okay_mutex);
 
   while (!finished) {
     PRINTF("Poller Receiving");
@@ -521,6 +527,8 @@ static void polling(void* x) {
       fflush(stdout);
       fflush(stderr);
       chpl_mutex_unlock(&termination_lock);
+      pthread_mutex_destroy(&okay_mutex);
+      pthread_cond_destroy(&okay_to_poll);
       finished = 1;
       break;
     }
@@ -659,7 +667,10 @@ void chpl_comm_rollcall(void) {
   if (chpl_numLocales != 1) {
     okay_to_barrier = 0;
   }
-  okay_to_poll = 1;
+  okaypoll = 1;
+  pthread_mutex_lock(&okay_mutex);
+  pthread_cond_signal(&okay_to_poll);
+  pthread_mutex_unlock(&okay_mutex);
   return;
 }
 
