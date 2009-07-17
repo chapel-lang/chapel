@@ -224,10 +224,11 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   //      architecture names.
   // If this doesn't work, store the name of the file tried with the node
   //      into a debug message. Then try just what was passed on the command
-  //      line. If this doesn't work, error out with the debug message.
+  //      line.
+  // Failing that, try the current working directory with executable_real.
+  // If this doesn't work, error out with the debug message.
   for (i = 0; i < numLocales; i++) {
     //    fprintf(stderr, "Loop i=%d (iteration %d of %d)\n", i, i+1, numLocales);
-
     pvmsize += strlen(multirealmpathtoadd[i]) + strlen("_real") + strlen(nameofbin);
 
     commandtopvm = chpl_malloc(pvmsize, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
@@ -267,10 +268,21 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
         numt = pvm_spawn( (char *)commandtopvm, argv2, 1, (char *)pvmnodestoadd[i], 1, &tids[i] );
         //        fprintf(stderr, "numt was %d, tids[%d] was %d\n", numt, i, tids[i]);
         if (numt == 0) {
-          if (j != 0) {
-            info = pvm_delhosts( (char **)hosts2, j, infos );
+          if (tids[i] == PvmNoFile) {
+            chpl_free(commandtopvm, -1, "");
+            commandtopvm = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
+            *commandtopvm = '\0';
+            sprintf(commandtopvm, "%s%s%s", getenv((char *)"PWD"), nameofbin, "_real");
+            //            fprintf(stderr, "try 3 to spawn %s on %s\n", commandtopvm, pvmnodestoadd[i]);
+            numt = pvm_spawn( (char *)commandtopvm, argv2, 1, (char *)pvmnodestoadd[i], 1, &tids[i] );
+            //            fprintf(stderr, "numt was %d, tids[%d] was %d\n", numt, i, tids[i]);
+            if (numt == 0) {
+              if (j != 0) {
+                info = pvm_delhosts( (char **)hosts2, j, infos );
+              }
+              chpl_internal_error(debugMsg);
+            }
           }
-          chpl_internal_error(debugMsg);
         }
       }
     }
