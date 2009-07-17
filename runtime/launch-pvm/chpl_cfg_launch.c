@@ -170,6 +170,8 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     fclose(nodelistfile);
   }
 
+  sprintf(buffer, "touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3");
+  system(buffer);
   info = pvm_start_pvmd(0, argtostart, 1);
   if (info != 0) {
     if (info == PvmDupHost) {
@@ -199,7 +201,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   j = i;
 
   // Something happened on addhosts -- likely old pvmd running
-  for (i = 0; i < numLocales; i++) {
+  for (i = 0; i < j; i++) {
     if ((infos[i] < 0) && (infos[i] != -28)) {
       sprintf(buffer, "ssh -q %s \"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3\"", hosts2[i]);
       system(buffer);
