@@ -93,6 +93,7 @@ chpl_mutex_t pvm_lock;
 chpl_mutex_t termination_lock;
 
 static int chpl_comm_diagnostics = 0;           // set via startCommDiagnostics
+static chpl_mutex_t chpl_comm_diagnostics_lock;
 static int chpl_comm_gets = 0;
 static int chpl_comm_puts = 0;
 static int chpl_comm_forks = 0;
@@ -205,6 +206,7 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   int i;                        // iterates over entries in chpl_structType
   int chpltypetype;             // from enumeration table
   unsigned long chpltypeoffset; // from enumeration table
+  int sendingnil;               // for send of (nil)
   int break_out = 0;            // to get out of for from switch
 #endif
 
@@ -252,52 +254,71 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   // Getting actual data
   } else {
 #ifdef CHPL_COMM_HETEROGENEOUS
-    for (i = 0; i < chpl_max_fields_per_type; i++) {
-      chpltypetype = chpl_getFieldType(sz, i);
-      chpltypeoffset = chpl_getFieldOffset(sz, i);
-      switch (chpltypetype) {
-      case CHPL_TYPE_int32_t:
-        PVM_NO_LOCK_SAFE(pvm_upkint((int32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+    PVM_NO_LOCK_SAFE(pvm_upkint(&sendingnil, 1 ,1), "pvm_upkint", "chpl_pvm_recv");
+    if (sendingnil == 1) {
+      *(((char *)buf)+chpltypeoffset) = '\0';
+    } else {
+      for (i = 0; i < chpl_max_fields_per_type; i++) {
+        chpltypetype = chpl_getFieldType(sz, i);
+        chpltypeoffset = chpl_getFieldOffset(sz, i);
+        switch (chpltypetype) {
+        case CHPL_TYPE_chpl_bool:
+          PVM_NO_LOCK_SAFE(pvm_upkbyte((((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkint", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
-        sprintf(debugMsg, "Unpacking %d (part %d) of type %d, offset %lu", *(int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
-        PRINTF(debugMsg);
+          sprintf(debugMsg, "Unpacking %d (part %d) of type %d, offset %lu", *(((_Bool *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          PRINTF(debugMsg);
 #endif
-        break;
-      case CHPL_TYPE_int64_t:
-        PVM_NO_LOCK_SAFE(pvm_upklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
-#if CHPL_DIST_DEBUG
-        sprintf(debugMsg, "Unpacking %ld (part %d) of type %d, offset %lu", *(long int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
-        PRINTF(debugMsg);
-#endif
-        break;
-      case CHPL_TYPE_CLASS_REFERENCE:
-        PVM_NO_LOCK_SAFE(pvm_upkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
-        if (packagesize == 4) {
-          PVM_NO_LOCK_SAFE(pvm_upkint((int32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+          break;
+        case CHPL_TYPE_int32_t:
+          PVM_NO_LOCK_SAFE(pvm_upkint((int32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkint", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
           sprintf(debugMsg, "Unpacking %d (part %d) of type %d, offset %lu", *(int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
 #endif
-        } else if (packagesize == 8) {
-          PVM_NO_LOCK_SAFE(pvm_upklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
+          break;
+        case CHPL_TYPE_int64_t:
+          PVM_NO_LOCK_SAFE(pvm_upklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_upklong", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
           sprintf(debugMsg, "Unpacking %ld (part %d) of type %d, offset %lu", *(long int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
 #endif
-        } else {
-          chpl_internal_error("Error: Unexpected byte size!");
+          break;
+        case CHPL_TYPE_chpl_string:
+          PVM_NO_LOCK_SAFE(pvm_upkstr(((char *)buf)+chpltypeoffset), "pvm_upkstr", "chpl_pvm_recv");
+#if CHPL_DIST_DEBUG
+          sprintf(debugMsg, "Unpacking %s (part %d) of type %d, offset %lu", (((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          PRINTF(debugMsg);
+#endif
+          break;
+        case CHPL_TYPE_CLASS_REFERENCE:
+          PVM_NO_LOCK_SAFE(pvm_upkint(&packagesize, 1, 1), "pvm_upkint", "chpl_pvm_recv");
+          if (packagesize == 4) {
+            PVM_NO_LOCK_SAFE(pvm_upkint((int32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkint", "chpl_pvm_recv");
+#if CHPL_DIST_DEBUG
+            sprintf(debugMsg, "Unpacking %d (part %d) of type %d, offset %lu", *(int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+            PRINTF(debugMsg);
+#endif
+          } else if (packagesize == 8) {
+            PVM_NO_LOCK_SAFE(pvm_upklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_upklong", "chpl_pvm_recv");
+#if CHPL_DIST_DEBUG
+            sprintf(debugMsg, "Unpacking %ld (part %d) of type %d, offset %lu", *(long int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+            PRINTF(debugMsg);
+#endif
+          } else {
+            chpl_internal_error("Error: Unexpected byte size!");
+            break;
+          }
+          break;
+        case CHPL_TYPE_DONE:
+          break_out = 1;
+          break;
+        default:
+          chpl_internal_error("Error: Unimplemented case!");
           break;
         }
-        break;
-      case CHPL_TYPE_DONE:
-        break_out = 1;
-        break;
-      default:
-        chpl_internal_error("Error: Unimplemented case!");
-        break;
-      }
-      if (break_out == 1) {
-        break;
+        if (break_out == 1) {
+          break;
+        }
       }
     }
     chpl_mutex_unlock(&pvm_lock);
@@ -323,6 +344,8 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
   int i;                        // iterates over entries in chpl_structType
   int chpltypetype;             // from enumeration table
   unsigned long chpltypeoffset; // from enumeration table
+  char *conversion;             // determine (char *)buf+chpltypeoffset value
+  int sendingnil;               // for send of (nil)
   int break_out = 0;            // to get out of for from switch
 #endif
 
@@ -363,65 +386,80 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
   } else {
 #ifdef CHPL_COMM_HETEROGENEOUS
     packagesize = sizeof(void *);
-    for (i = 0; i < chpl_max_fields_per_type; i++) {
-      chpltypetype = chpl_getFieldType(sz, i);
-      chpltypeoffset = chpl_getFieldOffset(sz, i);
-      switch (chpltypetype) {
-      case CHPL_TYPE_int32_t:
-        if ((((char *)buf)+chpltypeoffset) == 0) {
-          PVM_NO_LOCK_SAFE(pvm_pkint((int32_t *)0, 1, 1), "pvm_pkint", "chpl_pvm_send");
-        } else {
-          PVM_NO_LOCK_SAFE(pvm_pkint((int32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
-        }
+    conversion = (char *)buf;
+    if (conversion == NULL) {
+      sendingnil = 1;
+    } else {
+      sendingnil = 0;
+    }
+    PVM_NO_LOCK_SAFE(pvm_pkint(&sendingnil, 1 ,1), "pvm_pkint", "chpl_pvm_send");
+    if (sendingnil == 0) {
+      for (i = 0; i < chpl_max_fields_per_type; i++) {
+        chpltypetype = chpl_getFieldType(sz, i);
+        chpltypeoffset = chpl_getFieldOffset(sz, i);
+        switch (chpltypetype) {
+        case CHPL_TYPE_chpl_bool:
+          PVM_NO_LOCK_SAFE(pvm_pkbyte((((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
-        if ((((char *)buf)+chpltypeoffset) != 0) {
-          sprintf(debugMsg, "Packing %d (part %d) of type %d, offset %lu", *(int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          sprintf(debugMsg, "Packing %d (part %d) of type %d, offset %lu", *(((_Bool *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
-        }
 #endif
-        break;
-      case CHPL_TYPE_int64_t:
-        if ((((char *)buf)+chpltypeoffset) == 0) {
-          PVM_NO_LOCK_SAFE(pvm_pklong((long *)0, 1, 1), "pvm_pklong", "chpl_pvm_send");
-        } else {
-          PVM_NO_LOCK_SAFE(pvm_pklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
-        }
-#if CHPL_DIST_DEBUG
-        if ((((char *)buf)+chpltypeoffset) != 0) {
-          sprintf(debugMsg, "Packing %ld (part %d) of type %d, offset %lu", *(long int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
-          PRINTF(debugMsg);
-        }
-#endif
-        break;
-      case CHPL_TYPE_CLASS_REFERENCE:
-        PVM_NO_LOCK_SAFE(pvm_pkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
-        if (packagesize == 4) {
+          break;
+        case CHPL_TYPE_int32_t:
           PVM_NO_LOCK_SAFE(pvm_pkint((int32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
-          sprintf(debugMsg, "Packing %d (part %d) of type %d, offset %lu", *(int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
-          PRINTF(debugMsg);
+          if ((((char *)buf)+chpltypeoffset) != 0) {
+            sprintf(debugMsg, "Packing %d (part %d) of type %d, offset %lu", *(int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+            PRINTF(debugMsg);
+          }
 #endif
-          
-        } else if (packagesize == 8) {
+          break;
+        case CHPL_TYPE_int64_t:
           PVM_NO_LOCK_SAFE(pvm_pklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
-          sprintf(debugMsg, "Packing %ld (part %d) of type %d, offset %lu", *(long int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          if ((((char *)buf)+chpltypeoffset) != 0) {
+            sprintf(debugMsg, "Packing %ld (part %d) of type %d, offset %lu", *(long int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+            PRINTF(debugMsg);
+          }
+#endif
+          break;
+        case CHPL_TYPE_chpl_string:
+          PVM_NO_LOCK_SAFE(pvm_pkstr(((char *)buf)+chpltypeoffset), "pvm_pkstr", "chpl_pvm_send");
+#if CHPL_DIST_DEBUG
+          sprintf(debugMsg, "Packing %s (part %d) of type %d, offset %lu", (((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
 #endif
-        } else {
-          chpl_internal_error("Error: Unexpected byte size!");
+          break;
+        case CHPL_TYPE_CLASS_REFERENCE:
+          PVM_NO_LOCK_SAFE(pvm_pkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
+          if (packagesize == 4) {
+            PVM_NO_LOCK_SAFE(pvm_pkint((int32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+#if CHPL_DIST_DEBUG
+            sprintf(debugMsg, "Packing %d (part %d) of type %d, offset %lu", *(int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+            PRINTF(debugMsg);
+#endif
+            
+          } else if (packagesize == 8) {
+            PVM_NO_LOCK_SAFE(pvm_pklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
+#if CHPL_DIST_DEBUG
+            sprintf(debugMsg, "Packing %ld (part %d) of type %d, offset %lu", *(long int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+            PRINTF(debugMsg);
+#endif
+          } else {
+            chpl_internal_error("Error: Unexpected byte size!");
+            break;
+          }
+          break;
+        case CHPL_TYPE_DONE:
+          break_out = 1;
+          break;
+        default:
+          chpl_internal_error("Error: Unimplmented case!");
           break;
         }
-        break;
-      case CHPL_TYPE_DONE:
-        break_out = 1;
-        break;
-      default:
-        chpl_internal_error("Error: Unimplmented case!");
-        break;
-      }
-      if (break_out == 1) {
-        break;
+        if (break_out == 1) {
+          break;
+        }
       }
     }
 #else
@@ -662,6 +700,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 void chpl_comm_rollcall(void) {
+  chpl_mutex_init(&chpl_comm_diagnostics_lock);
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID, chpl_numLocales, chpl_localeName());
   // If just one locale, skip the barrier setup
   if (chpl_numLocales != 1) {
@@ -719,7 +758,8 @@ void chpl_comm_broadcast_private(void* addr, int size) {
       if (chpl_numRealms == 1) {
         chpl_comm_put(addr, i, addr, size, 0, 0);
       } else {
-        //        chpl_internal_error("can't yet broadcast globals in a multirealm execution");
+        //        chpl_comm_put(addr, i, addr, size, 0, 0);
+        chpl_internal_error("can't yet broadcast globals in a multirealm execution");
       }
     }
   }
@@ -821,6 +861,12 @@ void chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln
     char debugMsg[DEBUG_MSG_LENGTH];
 #endif
 
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+      chpl_mutex_lock(&chpl_comm_diagnostics_lock);
+      chpl_comm_puts++;
+      chpl_mutex_unlock(&chpl_comm_diagnostics_lock);
+    }
+
     // Note: this isn't a PVM call, but we need this locked to make
     // sure PVM tags are unique.
     PVM_SAFE(tag = makeTag((int)pthread_self, chpl_localeID), "makeTag", "chpl_comm_put");
@@ -855,6 +901,12 @@ void chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln
 #if CHPL_DIST_DEBUG
     char debugMsg[DEBUG_MSG_LENGTH];
 #endif
+
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+      chpl_mutex_lock(&chpl_comm_diagnostics_lock);
+      chpl_comm_gets++;
+      chpl_mutex_unlock(&chpl_comm_diagnostics_lock);
+    }
 
     // Note: this isn't a PVM call, but we need this locked to make
     // sure PVM tags are unique.
@@ -891,6 +943,12 @@ void chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
     char debugMsg[DEBUG_MSG_LENGTH];
 #endif
 
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+      chpl_mutex_lock(&chpl_comm_diagnostics_lock);
+      chpl_comm_forks++;
+      chpl_mutex_unlock(&chpl_comm_diagnostics_lock);
+    }
+
     // Note: this isn't a PVM call, but we need this locked to make
     // sure PVM tags are unique.
     PVM_SAFE(tag = makeTag((int)pthread_self, chpl_localeID), "makeTag", "chpl_comm_fork");
@@ -924,6 +982,12 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
     memmove(argCopy, arg, arg_size);
     chpl_begin((chpl_fn_p)chpl_ftable[fid], argCopy, false, false, NULL);
   } else {
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+      chpl_mutex_lock(&chpl_comm_diagnostics_lock);
+      chpl_comm_nb_forks++;
+      chpl_mutex_unlock(&chpl_comm_diagnostics_lock);
+    }
+
     // Note: this isn't a PVM call, but we need this locked to make
     // sure PVM tags are unique.
     PVM_SAFE(tag = makeTag((int)pthread_self, chpl_localeID), "makeTag", "chpl_comm_fork_nb");
