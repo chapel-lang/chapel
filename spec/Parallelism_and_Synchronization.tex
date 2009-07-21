@@ -156,7 +156,7 @@ well.  A sync variable of type \chpl{int} is read and then written
 during an update so the full-empty semantics make these updates atomic
 when used in a stylized way.  The code
 \begin{chapel}
-var count$\mbox{{\bf \$}}$: sync int;
+var count$\mbox{{\bf \$}}$: sync int = 0;
 begin count$\mbox{{\bf \$}}$ += 1;
 begin count$\mbox{{\bf \$}}$ += 1;
 begin count$\mbox{{\bf \$}}$ += 1;
