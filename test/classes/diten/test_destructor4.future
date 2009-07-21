@@ -1,0 +1,4 @@
+bug: destructor is called three times with only two record instances
+
+The destructor should only be called twice; once for r1 and once for r2. The
+value of n should be 1 in both cases because of the r2 = r1 assignment.
