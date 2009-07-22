@@ -304,7 +304,8 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
   PRINTF("start broadcast globals");
   for (i = 0; i < numGlobals; i++) {
-    void* buf = chpl_globals_registry[i];
+    void* buf;
+    if (chpl_localeID == 0) buf = *(void**)chpl_globals_registry[i];
     MPI_SAFE(MPI_Bcast(&buf, sizeof(void*), MPI_BYTE, 0, MPI_COMM_WORLD));
     if (chpl_localeID != 0) {
       *(void**)chpl_globals_registry[i] = buf;
@@ -328,6 +329,7 @@ void chpl_comm_broadcast_private(void* addr, int size) {
 
 void chpl_comm_init_shared_heap(void) {
   // Use the regular malloc/free implementation
+  chpl_initHeap(NULL, 0);
 }
 
 

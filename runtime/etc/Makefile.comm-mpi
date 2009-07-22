@@ -1,4 +1,4 @@
-MPI_INSTALL = $(CHAPEL_ROOT)/third-party/openmpi/install
+MPI_INSTALL = $(OPENMPI_INSTALL_DIR)
 
 RUNTIME_LFLAGS += -I$(MPI_INSTALL)/include -pthread -L$(MPI_INSTALL)/lib
 GEN_LFLAGS += $(RUNTIME_LFLAGS)

@@ -1,4 +1,5 @@
-MPI_INSTALL = $(THIRD_PARTY_DIR)/openmpi/install
+MPI_INSTALL = $(OPENMPI_INSTALL_DIR)
+
 COMM_LAUNCHER_SRCS = \
         chpl_cfg_comm_locales.c \
 
@@ -18,6 +19,8 @@ COMM_LAUNCHER_OBJS = \
 ifneq ($(MAKE_LAUNCHER), 1)
 
 RUNTIME_CFLAGS += -I$(MPI_INSTALL)/include -pthread
+$(MPI_INSTALL)/lib/libmpi.la:
+	cd $(THIRD_PARTY_DIR) && $(MAKE) openmpi
 endif
 
 ifdef CHPL_DEVELOPER

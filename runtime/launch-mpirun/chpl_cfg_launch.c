@@ -6,7 +6,7 @@
 
 
 // TODO: Un-hard-code this stuff:
-static const char* mpirunPath = "$CHPL_HOME/third-party/openmpi/install/bin/";
+static const char* mpirunPath = "$CHPL_HOME/third-party/openmpi/install/linux64-gnu/bin/";
 
 static char* chpl_launch_create_command(int argc, char* argv[], 
                                         int32_t numLocales) {

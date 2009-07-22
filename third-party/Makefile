@@ -26,6 +26,9 @@ mpich1: FORCE
 pvm: FORCE
 	cd pvm && $(MAKE)
 
+openmpi: FORCE
+	cd openmpi && $(MAKE)
+
 libdlmalloc: FORCE
 	cd dlmalloc && $(MAKE)
 
