@@ -201,6 +201,7 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   int repTag;
   int fnid;
   int packagesize;              // remote node says how big something is
+  int ack;                      // send an ack to sending node
 
 #ifdef CHPL_COMM_HETEROGENEOUS
   int i;                        // iterates over entries in chpl_structType
@@ -326,6 +327,15 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
     PVM_UNPACK_SAFE(pvm_upkbyte(buf, sz, 1), "pvm_upkbyte", "chpl_pvm_recv");
 #endif
   }
+
+  // Send an ack to the other node
+  if (msgtag != TAGMASK+1) {
+    ack = 0;
+    PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_pvm_recv");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&ack, 1, 1), "pvm_pkint", "chpl_pvm_recv");
+    PVM_UNPACK_SAFE(pvm_send(tid, msgtag), "pvm_send", "chpl_pvm_recv");
+  }
+
 #if CHPL_DIST_DEBUG
   sprintf(debugMsg, "chpl_pvm_recv(%p, from=%d, tag=%d, sz=%d) done", buf, tid, msgtag, sz);
   PRINTF(debugMsg);
@@ -334,12 +344,14 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
 }
 
 static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
+  int bufid;                    // for synchronizing pvm_send at end
   int msgtype;
   int repTag;
   int datasize;
   int fnid;
   int packagesize;              // tells remote node how big something is
-
+  int ack;                      // getting nil as ack from remote recv
+  
 #ifdef CHPL_COMM_HETEROGENEOUS
   int i;                        // iterates over entries in chpl_structType
   int chpltypetype;             // from enumeration table
@@ -467,6 +479,18 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
 #endif
   }
   PVM_UNPACK_SAFE(pvm_send(tid, msgtag), "pvm_pksend", "chpl_pvm_send");
+
+  // Receive an ack from other node
+  if (msgtag != TAGMASK+1) {
+    bufid = 0;
+    while (bufid == 0) {
+      PVM_PACK_SAFE(bufid = pvm_nrecv(tid, msgtag), "pvm_nrecv", "chpl_pvm_send");
+      if (bufid == 0) {
+        chpl_mutex_unlock(&pvm_lock);
+      }
+    }
+    PVM_UNPACK_SAFE(pvm_upkint(&ack, 1, 1), "pvm_upkbyte", "chpl_pvm_send");
+  }
 
 #if CHPL_DIST_DEBUG
   sprintf(debugMsg, "chpl_pvm_send(%p, to=%d, tag=%d, sz=%d) done", buf, tid, msgtag, sz);
