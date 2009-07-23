@@ -10,18 +10,18 @@ COMM_SRCS = \
 SVN_SRCS = $(COMM_SRCS)
 SRCS = $(SVN_SRCS)
 
-COMM_OBJS = \
-	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
+COMM_OBJS = $(MPI_INSTALL)/include/mpi.h $(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
 
-COMM_LAUNCHER_OBJS = \
-	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
+COMM_LAUNCHER_OBJS = $(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
 
 ifneq ($(MAKE_LAUNCHER), 1)
 
 RUNTIME_CFLAGS += -I$(MPI_INSTALL)/include -pthread
-$(MPI_INSTALL)/lib/libmpi.la:
-	cd $(THIRD_PARTY_DIR) && $(MAKE) openmpi
+
 endif
+
+$(MPI_INSTALL)/include/mpi.h:
+	cd $(THIRD_PARTY_DIR) && $(MAKE) openmpi
 
 ifdef CHPL_DEVELOPER
 RUNTIME_CFLAGS += -Wno-strict-prototypes -Wno-missing-prototypes

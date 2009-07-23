@@ -20,7 +20,7 @@ clean: FORCE
 	cd $(OPENMPI_BUILD_DIR) && make clean
 
 clobber: FORCE
-	rm -r $(OPENMPI_BUILD_DIR) $(OPENMPI_INSTALL_DIR)
+	rm -fr $(OPENMPI_BUILD_DIR) $(OPENMPI_INSTALL_DIR)
 
 openmpi-config: FORCE
 	mkdir -p $(OPENMPI_BUILD_DIR)

@@ -11,13 +11,9 @@ COMM_LAUNCHER_OBJDIR = $(LAUNCHER_OBJDIR)
 include Makefile.share
 
 ifneq ($(MAKE_LAUNCHER),1)
-TARGETS = \
-	$(COMM_OBJS) \
-
+TARGETS = $(COMM_OBJS)
 else
-TARGETS = \
-	$(COMM_LAUNCHER_OBJS) \
-
+TARGETS = $(COMM_LAUNCHER_OBJS)
 endif
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
