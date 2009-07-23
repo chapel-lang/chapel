@@ -142,18 +142,6 @@ static void setupOrderedGlobals(void) {
 }
 
 
-//
-// a place to set up globals that are dependent on others
-//
-static void setupDependentGlobals() {
-  // Currently, our structural definitions don't work with remote value
-  // forwarding.  Not sure why yet.
-  if (genCommunicatedStructures) {
-    fNoRemoteValueForwarding = true;
-  }
-}
-  
-
 static void recordCodeGenStrings(int argc, char* argv[]) {
   compileCommand = astr("chpl");
   for (int i = 1; i < argc; i++) {
@@ -485,7 +473,6 @@ int main(int argc, char *argv[]) {
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
-  setupDependentGlobals();
   recordCodeGenStrings(argc, argv);
   startCatchingSignals();
   printStuff();

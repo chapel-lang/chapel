@@ -401,9 +401,11 @@ int ClassType::codegenFieldStructure(FILE* outfile, bool nested,
     const char* newbaseoffset = astr(firstpart, ", ", field->cname, ")");
     int numfields = field->type->codegenStructure(outfile, newbaseoffset);
     if (numfields == 1) {
-      fprintf(outfile, ", %s + offsetof(%s, %s)},", 
+      fprintf(outfile, ", %s + offsetof(%s%s, %s)},", 
               baseoffset,
-              this->symbol->cname, field->cname);
+              genMagicUnderscore(this->symbol) ? "_" : " ",
+              this->symbol->cname,
+              field->cname);
     } else if (numfields == -1) {
       numfields = 1;
     }
