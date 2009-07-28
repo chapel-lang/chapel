@@ -4,7 +4,7 @@ Chapel third-party directory : for developers
 
 This directory is designed to hold sources that were not developed by
 the Chapel team and which are released under distinct licenses from
-Chapel itself.  Current subdirectories that we do not make availble in
+Chapel itself.  Current subdirectories that we do not make available in
 the release are:
 
 armci/
@@ -31,6 +31,18 @@ mpich1/
            http://www.mcs.anl.gov/research/projects/mpi/mpich1/
 
   See also: mpich1/mpich-*/README
+
+
+openmpi/
+  Summary: the Open MPI message passing library used to implement a
+           prototype communication interface
+
+  License: The BSD license (see openmpi/openmpi-*/LICENSE)
+
+  Contact: For more information, please refer to:
+           http://www.open-mpi.org/
+
+  See also: openmpi/openmpi-*/README
 
 
 pvm/
