@@ -70,6 +70,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   char debugMsg[4096];
 
   // These are for receiving singals from slaves
+  int hostsexit;
   int fdnum;
   char buffer[PRINTF_BUFF_LEN];
   char description[PRINTF_BUFF_LEN];  // gdb specific
@@ -83,6 +84,9 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
 
   // Add nodes to PVM configuration.
   FILE* nodelistfile;
+
+  char checkfile[128];
+  int daemonstarted;
 
   int k;                              // k iterates over chpl_numRealms
   int lpr;                            // locales per realm
@@ -170,17 +174,59 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     fclose(nodelistfile);
   }
 
-  sprintf(buffer, "touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3");
+  // Check to see if daemon is started or not by this user. If not, start one.
+  daemonstarted = 1;
+  sprintf(buffer, "grep $USER /etc/passwd || ypmatch $USER passwd | awk -F: '{print $3}' | tee /tmp/chpl.pvmlaunch.txt > /dev/null");
   system(buffer);
-  info = pvm_start_pvmd(0, argtostart, 1);
-  if (info != 0) {
-    if (info == PvmDupHost) {
+  hostfile = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+  sprintf(hostfile, "/tmp/chpl.pvmlaunch.txt");
+  if ((nodelistfile = fopen(hostfile, "r")) == NULL) {
+    fprintf(stderr, "Can't read tempfile %s for PVM daemon processing.\n", hostfile);
+    chpl_internal_error("Exiting.");
+  }
+  chpl_free(hostfile, -1, "");
+  if ((fscanf(nodelistfile, "%s", checkfile)) == 1) {
+    fclose(nodelistfile);
+    hostfile = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+    sprintf(hostfile, "%s%s", "/tmp/pvmd.", checkfile);
+    sprintf(buffer, "file %s | tee /tmp/chpl.pvmlaunch.txt > /dev/null", hostfile);
+    system(buffer);
+    chpl_free(hostfile, -1, "");
+    hostfile = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+    sprintf(hostfile, "/tmp/chpl.pvmlaunch.txt");
+    if ((nodelistfile = fopen(hostfile, "r")) == NULL) {
+      fprintf(stderr, "Can't read tempfile %s for PVM daemon processing.\n", hostfile);
+      chpl_internal_error("Exiting.");
+    }
+    while ((fscanf(nodelistfile, "%s", checkfile)) == 1) {
+      if (strstr(checkfile, "cannot")) {
+        daemonstarted = 0;
+      }
+    }
+    chpl_free(hostfile, -1, "");
+    fclose(nodelistfile);
+  } else {
+    fprintf(stderr, "Can't read tempfile %s for PVM daemon processing.\n", hostfile);
+    chpl_internal_error("Exiting.");
+  }
+  if (!daemonstarted) {
+    info = pvm_start_pvmd(0, argtostart, 1);
+    if (info != 0) {
+      if (info != PvmDupHost) {
+        fprintf(stderr, "Exiting -- pvm_start_pvmd error %d.\n", info);
+        chpl_internal_error("Problem starting PVM daemon.");
+      }
       fprintf(stderr, "Duplicate host. Shutting down host.\n");
       pvm_halt();
+      info = pvm_start_pvmd(0, argtostart, 1);
+      if (info != 0) {
+        fprintf(stderr, "Exiting -- pvm_start_pvmd error %d.\n", info);
+        chpl_internal_error("Problem starting PVM daemon.");
+      }
     }
-    fprintf(stderr, "Exiting.\n");
-    chpl_internal_error("Problem starting PVM daemon.");
   }
+  sprintf(buffer, "rm /tmp/chpl.pvmlaunch.txt");
+  system(buffer);
 
   // Building the hosts2 list to pass to pvm_addhosts and pvm_deletehosts
   gethostname(myhostname, 256);
@@ -294,10 +340,17 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   // between the slaves and the parent (this process).
   info = pvm_mytid();
 
+  hostsexit = 0;
   while (commsig == 0) {
     bufid = pvm_recv(-1, NOTIFYTAG);
     pvm_upkint(&commsig, 1, 1);
     // fprintf case
+    if (commsig == 1) {
+      hostsexit++;
+      if (hostsexit != numLocales) {
+        commsig = 0;
+      }
+    }
     if (commsig == 2) {
       pvm_upkint(&fdnum, 1, 1);
       pvm_upkstr(buffer);
@@ -340,7 +393,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     info = pvm_delhosts( (char **)hosts2, j, infos );
   }
 
-  return (char *)"killall -9 pvmd3 && rm -rf /tmp/*pvm*";
+  return (char *)"";
 }
 
 void chpl_launch(int argc, char* argv[], int32_t numLocales) {

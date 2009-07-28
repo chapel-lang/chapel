@@ -854,6 +854,7 @@ void chpl_comm_exit_all(int status) {
   chpl_mutex_unlock(&termination_lock);
   chpl_comm_barrier("About to finalize");
 
+  PVM_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_all");
   // Send a signal back to the launcher that we're done.
   commsig = 1;
   if (parent >= 0) {
@@ -862,15 +863,13 @@ void chpl_comm_exit_all(int status) {
     PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
   }
 
-  PVM_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_all");
   pvm_exit();
   return;
 }
 
 void chpl_comm_exit_any(int status) {
-  fprintf(stderr, "%d: chpl error, calling exit_any with status %d!\n", chpl_localeID, status);
   pvm_lvgroup((char *)"job");
-  pvm_halt();
+  pvm_exit();
   return;
 }
 
