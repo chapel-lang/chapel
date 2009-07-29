@@ -868,7 +868,39 @@ void chpl_comm_exit_all(int status) {
 }
 
 void chpl_comm_exit_any(int status) {
-  pvm_lvgroup((char *)"job");
+  _chpl_message_info msg_info;
+  PRINTF("chpl_comm_exit_any called\n");
+  // Matches code in chpl_comm_barrier. Node 0, on exit, needs to signal
+  // to everyone that it's okay to barrier (and thus exit).
+
+  // This line should be entirely moot (never unset if chpl_numLocales is 1).
+  if (chpl_numLocales == 1) {
+    okay_to_barrier = 1;
+  }
+  else if (chpl_localeID == 0) {
+    okay_to_barrier = 1;
+    PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&okay_to_barrier, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
+    PVM_UNPACK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
+    // Do a matching barrier to everyone still in chpl_comm_barrier.
+    PVM_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_exit_all");
+  }
+  msg_info.msg_type = ChplCommFinish;
+  chpl_pvm_send(chpl_localeID, TAGMASK+1, &msg_info, sizeof(_chpl_message_info));
+  PRINTF("Sent shutdown message.");
+  chpl_mutex_lock(&termination_lock);
+  chpl_mutex_unlock(&termination_lock);
+  chpl_comm_barrier("About to finalize");
+
+  PVM_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_all");
+  // Send a signal back to the launcher that we're done.
+  commsig = 1;
+  if (parent >= 0) {
+    PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
+    PVM_UNPACK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
+  }
+
   pvm_exit();
   return;
 }
