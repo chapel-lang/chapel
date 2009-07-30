@@ -22,7 +22,8 @@ fixupDestructors() {
           ClassType* fct = toClassType(field->type);
           INT_ASSERT(fct);
           if (!isClass(fct) || fct->symbol->hasFlag(FLAG_SYNC)) {
-            bool useRefType = !fct->symbol->hasFlag(FLAG_ARRAY) && !fct->symbol->hasFlag(FLAG_DOMAIN) && !fct->symbol->hasFlag(FLAG_SYNC);
+            bool useRefType = // !fct->symbol->hasFlag(FLAG_ARRAY) && !fct->symbol->hasFlag(FLAG_DOMAIN) &&
+              !fct->symbol->hasFlag(FLAG_SYNC);
             VarSymbol* tmp = useRefType ? newTemp(fct->refType) : newTemp(fct);
             fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
             fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
@@ -47,7 +48,8 @@ fixupDestructors() {
       if (ct->dispatchParents.n >= 1 && isClass(ct)) {
         // avoid destroying record fields more than once
         if (FnSymbol* parentDestructor = ct->dispatchParents.v[0]->destructor) {
-          Type* tmpType = isClass(ct) || ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN) ?
+          Type* tmpType = isClass(ct) // || ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN)
+            ?
             ct->dispatchParents.v[0] : ct->dispatchParents.v[0]->refType;
           VarSymbol* tmp = newTemp(tmpType);
           fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
@@ -64,4 +66,19 @@ fixupDestructors() {
 void
 callDestructors() {
   fixupDestructors();
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
+      Type* type = call->get(1)->typeInfo();
+      INT_ASSERT(type->destructor);
+      if (call->get(1)->typeInfo()->refType == type->destructor->_this->type) {
+        VarSymbol* tmp = newTemp(type->destructor->_this->type);
+        call->insertBefore(new DefExpr(tmp));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REF, call->get(1)->remove())));
+        call->replace(new CallExpr(type->destructor, tmp));
+      } else {
+        call->replace(new CallExpr(type->destructor, call->get(1)->remove()));
+      }
+    }
+  }
 }

@@ -68,6 +68,7 @@ enum Flag {
   FLAG_MAYBE_PARAM, // symbol can resolve to a param
   FLAG_MAYBE_TYPE, // symbol can resolve to a type
   FLAG_METHOD, // function that is a method
+  FLAG_NO_AUTO_DESTROY,
   FLAG_NO_DEFAULT_FUNCTIONS,
   FLAG_NO_FORMAL_TMP,
   FLAG_NO_OBJECT,

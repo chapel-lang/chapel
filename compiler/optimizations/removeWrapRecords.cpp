@@ -100,6 +100,13 @@ removeWrapRecords() {
             se->var->type->symbol->hasFlag(FLAG_DOMAIN)) {
           call->replace(se->remove());
         }
+        if (se->var->type->symbol->hasFlag(FLAG_REF)) {
+          Type* vt = se->var->type->getValueType();
+          if (vt->symbol->hasFlag(FLAG_ARRAY) ||
+              vt->symbol->hasFlag(FLAG_DOMAIN)) {
+            call->replace(new CallExpr(PRIM_GET_REF, se->remove()));
+          }
+        }
       }
     }
   }

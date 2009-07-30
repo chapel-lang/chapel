@@ -40,10 +40,9 @@ PassInfo passlist[] = {
   RUN(scalarReplace),       // scalar replace all tuples
   RUN(refPropagation),      // reference propagation
   RUN(copyPropagation),     // copy propagation
-  RUN(insertDestructors),   // insert destructors when vars go out of scope
   RUN(removeWrapRecords),   // remove _array and _domain records
   RUN(deadCodeElimination), // eliminate dead code
-  RUN(prune),                // prune AST of dead functions and types again
+  RUN(prune),               // prune AST of dead functions and types again
 
   RUN(insertWideReferences), // inserts wide references for on clauses
 

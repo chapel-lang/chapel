@@ -159,6 +159,7 @@ enum PrimitiveTag {
 
   PRIM_IS_ENUM,   // True if argument is an enum
   PRIM_IS_TUPLE,  // True if argument is a tuple
+  PRIM_CALL_DESTRUCTOR, // call destructor on type (do not free)
 
   PRIM_LOGICAL_FOLDER, // Help fold logical && and ||
 

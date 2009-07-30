@@ -405,7 +405,12 @@ makeHeapAllocations() {
                          rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
                 SymExpr* se = toSymExpr(rhs->get(1));
                 INT_ASSERT(se);
-                if (!varSet.set_in(se->var)) {
+                if (se->var->type->symbol->hasFlag(FLAG_REF)) {
+                  if (!refSet.set_in(se->var)) {
+                    refSet.set_add(se->var);
+                    refVec.add(se->var);
+                  }
+                } else if (!varSet.set_in(se->var)) {
                   varSet.set_add(se->var);
                   varVec.add(se->var);
                 }
@@ -480,7 +485,7 @@ makeHeapAllocations() {
     // handle variables with no definitions
     //  temporaries for destructured indices
     //
-    if (useMap.get(var) && (!defMap.get(var) || defMap.get(var)->n == 0)) {
+    if (first && useMap.get(var) && (!defMap.get(var) || defMap.get(var)->n == 0)) {
       //
       // In this case, where should we put this?  ack!! let's assume
       // we can put it in front of the first use!

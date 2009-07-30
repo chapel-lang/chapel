@@ -1921,6 +1921,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_DELETE:
     case PRIM_IS_ENUM:
     case PRIM_IS_TUPLE:
+    case PRIM_CALL_DESTRUCTOR:
     case PRIM_LOGICAL_FOLDER:
     case PRIM_GET_END_COUNT:
     case PRIM_SET_END_COUNT:

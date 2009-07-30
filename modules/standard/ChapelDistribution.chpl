@@ -27,7 +27,7 @@ class BaseDist {
 // Abstract domain classes
 //
 class BaseDom {
-  var _domCnt$: sync int = 0; // domain reference count and lock
+  var _domCnt$: sync int = 1; // domain reference count and lock
   var _arrs: list(BaseArr);   // arrays declared over this domain
 
 
@@ -125,7 +125,7 @@ class BaseEnumDom : BaseDom {
 //
 pragma "base array"
 class BaseArr {
-  var _arrCnt$: sync int = 0; // array reference count (and eventually lock)
+  var _arrCnt$: sync int = 1; // array reference count (and eventually lock)
   var _arrAlias: BaseArr;     // reference to base array if an alias
 
   def canCopyFromDevice param return false;

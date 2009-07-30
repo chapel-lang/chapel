@@ -195,11 +195,6 @@ record _domain {
   var _valueType; // stores type of privatized domains
   var _promotionType: index(rank, _value.idxType);
 
-  pragma "dont disable remote value forwarding"
-  def initialize() { 
-    _value._domCnt$ += 1;
-  }
-
   pragma "inline"
   def _value {
     if _supportsPrivatization(_valueType) {
@@ -377,11 +372,6 @@ record _array {
     _value.makeAlias(A._value);
     _value._arrAlias = A._value;
     _value._arrAlias._arrCnt$ += 1;
-  }
-
-  pragma "dont disable remote value forwarding"
-  def initialize() { 
-    _value._arrCnt$ += 1;
   }
 
   pragma "inline"

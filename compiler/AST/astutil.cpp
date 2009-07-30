@@ -369,7 +369,7 @@ pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
 
 
 static void
-pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types, bool pruneDestructors) {
+pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   fns.set_add(fn);
   Vec<BaseAST*> asts;
   collect_asts(fn, asts);
@@ -377,37 +377,24 @@ pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types, bool prun
     if (CallExpr* call = toCallExpr(ast)) {
       if (FnSymbol* next = call->isResolved())
         if (!fns.set_in(next))
-          pruneVisit(next, fns, types, pruneDestructors);
+          pruneVisit(next, fns, types);
     } else if (SymExpr* se = toSymExpr(ast)) {
       if (se->var && se->var->type && !types.set_in(se->var->type->symbol))
         pruneVisit(se->var->type->symbol, fns, types);
-    } else if (!pruneDestructors) {
-      // the type of a destructor's argument may not be used anywhere else
-      // since calls to destructors may not have been inserted yet
-      if (ArgSymbol* as = toArgSymbol(ast))
-        if (!types.set_in(as->type->symbol))
-          pruneVisit(as->type->symbol, fns, types);
     }
   }
 }
 
 
-static void
-reallyPrune(bool pruneDestructors) {
+void
+prune() {
   Vec<FnSymbol*> fns;
   Vec<TypeSymbol*> types;
-  pruneVisit(chpl_main, fns, types, pruneDestructors);
+  pruneVisit(chpl_main, fns, types);
   if (fRuntime) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_EXPORT))
-        pruneVisit(fn, fns, types, pruneDestructors);
-    }
-  }
-  if (!pruneDestructors) {
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (!strcmp(fn->name, "~chpl_destroy") || !strcmp(fn->name, "chpl__auto_destroy")) {
-        pruneVisit(fn, fns, types, pruneDestructors);
-      }
+        pruneVisit(fn, fns, types);
     }
   }
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -450,17 +437,4 @@ reallyPrune(bool pruneDestructors) {
     if (def->parentSymbol && def->sym->type && isClassType(def->sym->type) && !isTypeSymbol(def->sym) && !types.set_in(def->sym->type->symbol))
       def->sym->type = dtVoid;
   }
-}
-
-void
-prune() {
-  static bool firstTime = true;
-  if (firstTime) {
-    reallyPrune(!fEnableDestructorCalls);
-    // mark functions that return constructor return values
-    // before function inlining gets rid of them
-    markConstructors();
-    firstTime = false;
-  } else if (fEnableDestructorCalls)
-    reallyPrune(true);
 }

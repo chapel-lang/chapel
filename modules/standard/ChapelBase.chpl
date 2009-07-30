@@ -1197,6 +1197,33 @@ pragma "inline" def _createFieldDefault(type t, init: single) {
   return init;
 }
 
+pragma "inline" def chpl__autoDestroy(x: object) { }
+pragma "inline" def chpl__autoDestroy(x: opaque) { }
+pragma "inline" def chpl__autoDestroy(x: enumerated) { }
+pragma "inline" def chpl__autoDestroy(x: _iteratorClass) { }
+pragma "inline" def chpl__autoDestroy(x: _file) { }
+pragma "inline" def chpl__autoDestroy(type t)  { }
+pragma "inline" def chpl__autoDestroy(x: ?t) where _isPrimitiveType(t) ||
+                                                   _isComplexType(t) { }
+pragma "inline" def chpl__autoDestroy(x: imag(64)) { }
+pragma "inline"
+def chpl__autoDestroy(x: ?t) where !_isPrimitiveType(t) &&
+                                   !_isComplexType(t) {
+  __primitive("call destructor", x);
+}
+pragma "inline" def chpl__autoDestroy(x: domain) {
+  __primitive("call destructor", x);
+}
+pragma "inline" def chpl__autoDestroy(x: []) {
+  __primitive("call destructor", x);
+}
+pragma "inline" def chpl__autoDestroy(x: _syncvar) {
+  delete x;
+}
+pragma "inline" def chpl__autoDestroy(x: _singlevar) {
+  delete x;
+}
+
 //
 // BLC: The inout is used here not because it is necessary, but in
 // order to ensure that the reference to the variable is passed in

@@ -6,7 +6,6 @@
 extern bool normalized;
 extern bool resolved;
 
-void markConstructors(void);
 
 //
 // prototypes of functions that are called as passes (alphabetical)
@@ -25,9 +24,8 @@ void deadCodeElimination();
 void flattenClasses();
 void flattenFunctions();
 void inlineFunctions();
-void insertDestructors();
-void insertWideReferences();
 void insertLineNumbers();
+void insertWideReferences();
 void lowerIterators();
 void makeBinary();
 void normalize();

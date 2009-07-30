@@ -1849,6 +1849,7 @@ insertFormalTemps(FnSymbol* fn) {
       !strcmp(fn->name, "iteratorIndexHelp") ||
       !strcmp(fn->name, "=") ||
       !strcmp(fn->name, "_createFieldDefault") ||
+      !strcmp(fn->name, "chpl__autoDestroy") ||
       !strcmp(fn->name, "chpldev_refToString") ||
       fn->hasFlag(FLAG_ALLOW_REF) ||
       fn->hasFlag(FLAG_REF))
@@ -2155,6 +2156,15 @@ preFold(Expr* expr) {
         result = move;
         return result;
       }
+    }
+
+    if (call->parentSymbol &&
+        !strcmp(call->parentSymbol->name, "chpl__autoDestroyGlobals") &&
+        call->isNamed("chpl__autoDestroy") &&
+        call->get(1)->typeInfo() == dtUnknown) {
+      result = new CallExpr(PRIM_NOOP);
+      call->replace(result);
+      return result;
     }
 
     if (call->isNamed("this")) {
@@ -3627,9 +3637,9 @@ resolve() {
         ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
         !ts->hasFlag(FLAG_GENERIC)) {
       VarSymbol* tmp = newTemp(ts->type);
-      ts->type->defaultConstructor->insertAtTail(new DefExpr(tmp));
+      ts->type->defaultConstructor->insertBeforeReturn(new DefExpr(tmp));
       CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
-      ts->type->defaultConstructor->insertAtTail(call);
+      ts->type->defaultConstructor->insertBeforeReturn(call);
       resolveCall(call);
       resolveFns(call->isResolved());
       valueToRuntimeTypeMap.put(ts->type, call->isResolved());

@@ -441,6 +441,7 @@ initPrimitive() {
 
   prim_def(PRIM_IS_ENUM, "isEnumType", returnInfoBool);
   prim_def(PRIM_IS_TUPLE, "isTupleType", returnInfoBool);
+  prim_def(PRIM_CALL_DESTRUCTOR, "call destructor", returnInfoVoid, true);
 
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 

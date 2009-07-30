@@ -134,7 +134,10 @@ config const
   memLeaks: bool = false,
   memMax: uint(64) = 0,
   memThreshold: uint(64) = 0,
-  memLog: string = "",
+  memLog: string = "";
+
+pragma "no auto destroy"
+config const
   memLeaksLog: string = "";
 
 def chpl_startTrackingMemory() {
