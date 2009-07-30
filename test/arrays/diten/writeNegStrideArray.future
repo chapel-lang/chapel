@@ -1,0 +1,5 @@
+bug: can't print negative stride array with writeln
+
+The writeThis method assumes stride is positive and starts printing from the
+low bound. It then adds the negative stride to get the next element and gets
+an out of bounds access.
