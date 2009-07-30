@@ -55,11 +55,11 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 typedef enum {
-  ChplCommPut,
-  ChplCommGet,
-  ChplCommFork,
-  ChplCommForkNB,
-  ChplCommFinish
+  ChplCommPut = 0,
+  ChplCommGet = 1,
+  ChplCommFork = 2,
+  ChplCommForkNB = 3,
+  ChplCommFinish = 4
 } ChplCommMsgType;
 
 //
@@ -82,15 +82,16 @@ typedef struct __chpl_mpi_message_info {
 // A function and argument for a remote procedure call. When done executing
 // the function, send an empty message to joinLocale with replyTag.
 // 
-typedef struct __chpl_RPC_arg {
+typedef struct __chplForkedTaskArg {
   chpl_fn_int_t fid;
   void* arg;
   int replyTag;
   int joinLocale;
-} _chpl_RPC_arg;
+  int blockingCall;
+} _chplForkedTaskArg;
 
 
-static void chpl_RPC(_chpl_RPC_arg* arg);
+static void chplExecForkedTask(_chplForkedTaskArg* arg);
 static MPI_Status chpl_mpi_recv(void* buf, int count, MPI_Datatype datatype,
                                 int source, int tag, MPI_Comm comm);
 static void chpl_mpi_send(void* buf, int count, MPI_Datatype datatype,
@@ -119,11 +120,12 @@ static int makeTag(int threadID, int localeID) {
 }
 
 
-static void chpl_RPC(_chpl_RPC_arg* arg) {
+static void chplExecForkedTask(_chplForkedTaskArg* arg) {
   PRINTF("Doing forked task");
   (*chpl_ftable[arg->fid])(arg->arg);
   PRINTF("Did task");
-  chpl_mpi_send(NULL, 0, MPI_BYTE, arg->joinLocale, arg->replyTag, MPI_COMM_WORLD);
+  if (arg->blockingCall)
+    chpl_mpi_send(NULL, 0, MPI_BYTE, arg->joinLocale, arg->replyTag, MPI_COMM_WORLD);
   if (arg->arg != NULL)
     chpl_free(arg->arg, 0, 0);
   chpl_free(arg, 0, 0);
@@ -201,7 +203,7 @@ static void chpl_mpi_polling_thread(void* arg) {
       }
       case ChplCommFork: {
         void* args;
-        _chpl_RPC_arg* rpcArg = chpl_malloc(1, sizeof(_chpl_RPC_arg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+        _chplForkedTaskArg* rpcArg = chpl_malloc(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
 #if CHPL_DIST_DEBUG
         sprintf(debugMsg, "Fulfilling ChplCommFork(fromloc=%d, tag=%d)", status.MPI_SOURCE, msg_info.replyTag);
         PRINTF(debugMsg);
@@ -218,13 +220,14 @@ static void chpl_mpi_polling_thread(void* arg) {
         rpcArg->arg = args;
         rpcArg->replyTag = msg_info.replyTag;
         rpcArg->joinLocale = status.MPI_SOURCE;
+        rpcArg->blockingCall = 1;
 
-        chpl_begin((chpl_fn_p)chpl_RPC, rpcArg, false, false, NULL);
+        chpl_begin((chpl_fn_p)chplExecForkedTask, rpcArg, false, false, NULL);
         break;
       }
       case ChplCommForkNB: {
         void* args;
-        // ?? compiler complains this is never used        _chpl_RPC_arg* rpcArg = chpl_malloc(1, sizeof(_chpl_RPC_arg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+        _chplForkedTaskArg* rpcArg = chpl_malloc(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
 #if CHPL_DIST_DEBUG
         sprintf(debugMsg, "Fulfilling ChplCommForkNB(fromloc=%d, tag=%d)", status.MPI_SOURCE, msg_info.replyTag);
         PRINTF(debugMsg);
@@ -236,7 +239,12 @@ static void chpl_mpi_polling_thread(void* arg) {
         }
         chpl_mpi_recv(args, msg_info.size, MPI_BYTE, status.MPI_SOURCE,
                       msg_info.replyTag, MPI_COMM_WORLD);
-        chpl_begin((chpl_fn_p)chpl_ftable[msg_info.u.fid], args, false, false, NULL);
+        rpcArg->fid = (chpl_fn_int_t)msg_info.u.fid;
+        rpcArg->arg = args;
+        rpcArg->replyTag = msg_info.replyTag;
+        rpcArg->joinLocale = status.MPI_SOURCE;
+        rpcArg->blockingCall = 0;
+        chpl_begin((chpl_fn_p)chplExecForkedTask, rpcArg, false, false, NULL);
         break;
       }
       case ChplCommFinish: {
@@ -444,12 +452,18 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
 
 
 void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
-  _chpl_mpi_message_info msg_info;
   if (chpl_localeID == locale) {
     void* argCopy = chpl_malloc(1, arg_size, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
+    _chplForkedTaskArg* rpcArg = chpl_malloc(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
     memmove(argCopy, arg, arg_size);
-    chpl_begin((chpl_fn_p)chpl_ftable[fid], argCopy, false, false, NULL);
+    rpcArg->fid = fid;
+    rpcArg->arg = argCopy;
+    rpcArg->replyTag = 0;
+    rpcArg->joinLocale = 0;
+    rpcArg->blockingCall = 0;
+    chpl_begin((chpl_fn_p)chplExecForkedTask, rpcArg, false, false, NULL);
   } else {
+    _chpl_mpi_message_info msg_info;
     int tag = makeTag((int)pthread_self(), chpl_localeID);
 #if CHPL_DIST_DEBUG
     char debugMsg[DEBUG_MSG_LENGTH];
