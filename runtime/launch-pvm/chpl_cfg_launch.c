@@ -67,7 +67,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   int tids[32];
   static char *argtostart[] = {(char*)""};
   int bufid;
-  char debugMsg[4096];
 
   // These are for receiving singals from slaves
   int hostsexit;
@@ -138,11 +137,11 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     sprintf(hostfile, "%s%s%s", getenv((char *)"CHPL_HOME"), "/hostfile.", realmtype);
     
     if ((nodelistfile = fopen(hostfile, "r")) == NULL) {
-      fprintf(stderr, "Make sure %s is present and readable.\n", hostfile);
       chpl_free(hostfile, -1, "");
       chpl_free(realmtype, -1, "");
       chpl_free(argv2, -1, "");
-      chpl_internal_error("Exiting.");
+      // Let the main launcher print the error (unable to locale file)
+      return (char *)"";
     }
     chpl_free(hostfile, -1, "");
     j = 0;
@@ -299,7 +298,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     numt = pvm_spawn( (char *)commandtopvm, argv2, 1, (char *)pvmnodestoadd[i], 1, &tids[i] );
     //    fprintf(stderr, "numt was %d, tids[%d] was %d\n", numt, i, tids[i]);
     if (numt == 0) {
-      sprintf(debugMsg, "Make sure %s is present and readable on %s.", commandtopvm, pvmnodestoadd[i]);
       if (tids[i] == PvmNoFile) {
         chpl_free(commandtopvm, -1, "");
         pvmsize = strlen(argv0rep) + strlen("_real");
@@ -328,7 +326,8 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
               if (j != 0) {
                 info = pvm_delhosts( (char **)hosts2, j, infos );
               }
-              chpl_internal_error(debugMsg);
+              // Let the main launcher print the error (unable to locale file)
+              return (char *)"";
             }
           }
         }
