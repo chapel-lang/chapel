@@ -825,7 +825,17 @@ void chpl_comm_barrier(const char *msg) {
     PVM_UNPACK_SAFE(pvm_upkint(&okay_to_barrier, 1, 1), "pvm_upkint", "chpl_comm_barrier");
   }
 
-  PVM_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_barrier");
+  if (okay_to_barrier == 2) {
+    // This comes from chpl_comm_exit_any from a node that's not 0.
+    // If this is the case, node 0 is cranking along in main, and
+    // everyone else is waiting here. Let all these nodes exit, but
+    // note that chpl_comm_exit_any() tells node 0 to stop polling (and
+    // hence exit).
+    PVM_SAFE(pvm_barrier((char *)"job", (chpl_numLocales - 1)), "pvm_barrier", "chpl_comm_barrier");
+  } else {
+    PVM_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_barrier");
+  }
+
   return;
 }
 
@@ -884,6 +894,11 @@ void chpl_comm_exit_any(int status) {
     PVM_UNPACK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
     // Do a matching barrier to everyone still in chpl_comm_barrier.
     PVM_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_exit_all");
+  } else {
+    okay_to_barrier = 2;
+    PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&okay_to_barrier, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
+    PVM_UNPACK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
   }
   msg_info.msg_type = ChplCommFinish;
   chpl_pvm_send(chpl_localeID, TAGMASK+1, &msg_info, sizeof(_chpl_message_info));
