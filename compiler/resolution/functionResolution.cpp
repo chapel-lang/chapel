@@ -2384,10 +2384,8 @@ preFold(Expr* expr) {
         call->replace(result);
       }
     } else if (call->isPrimitive(PRIM_SET_REF)) {
-      // remove set ref if already a reference (or an iterator of references)
-      if ((call->get(1)->typeInfo()->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-           call->get(1)->typeInfo()->defaultConstructor->iteratorInfo->getValue->retType->symbol->hasFlag(FLAG_REF)) ||
-          call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      // remove set ref if already a reference
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         result = call->get(1)->remove();
         call->replace(result);
       } else {
@@ -2401,6 +2399,7 @@ preFold(Expr* expr) {
                 SymExpr* ret = toSymExpr(call->get(1));
                 INT_ASSERT(ret);
                 if (ret->var->defPoint->getFunction() == move->getFunction() &&
+                    !ret->var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                     !ret->var->type->symbol->hasFlag(FLAG_ARRAY))
                   USR_FATAL(ret, "illegal return expression in var function");
                 if (ret->var->isConstant() || ret->var->isParameter())

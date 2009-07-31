@@ -61,8 +61,7 @@ void cullOverReferences() {
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));
           SymExpr* se = toSymExpr(move->get(1));
           INT_ASSERT(se);
-          if (!refNecessary(se, defMap, useMap) &&
-              !fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+          if (!refNecessary(se, defMap, useMap)) {
             VarSymbol* tmp = newTemp(copy->retType);
             move->insertBefore(new DefExpr(tmp));
             move->insertAfter(new CallExpr(PRIM_MOVE, se->var,
