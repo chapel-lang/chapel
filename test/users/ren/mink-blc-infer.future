@@ -1,0 +1,6 @@
+bug: type not inferrable from reduction returning array
+
+In this code, the reduction returns an array value, but declaring
+a variable with inferred type results in a runtime nil derefernce
+error.  This may be due to the premature free problem that David
+diagnosed this afternoon.

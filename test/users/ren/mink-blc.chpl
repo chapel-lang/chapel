@@ -1,0 +1,44 @@
+config const n = 10,
+             numMins = 5;
+
+class mink : ReduceScanOp {
+
+  type eltType;
+  const k : int = numMins;
+  var v: [1..k] eltType = max(eltType);
+  
+  def accumulate(x: eltType)
+  {
+    if (x < v[1])
+      {
+        v[1] = x;
+        for i in 2..k
+          {
+            if (v[i-1] < v[i])
+              {
+                v[i] <=> v[i-1];
+              }
+          }
+      }
+  }
+  
+  def combine(s: mink(eltType))
+  {
+    for i in 1..k
+      {
+        accumulate(s.v[i]);
+      }
+  }
+  
+  def generate()
+  {
+    writeln("returning: ", v);
+    return v;
+  }
+}
+
+var A: [i in 1..n] int = i;
+var minimums: [1..numMins] int;
+minimums = mink reduce A;
+
+writeln("minimums is: ", minimums);
