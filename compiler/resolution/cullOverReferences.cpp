@@ -61,7 +61,8 @@ void cullOverReferences() {
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));
           SymExpr* se = toSymExpr(move->get(1));
           INT_ASSERT(se);
-          if (!refNecessary(se, defMap, useMap)) {
+          if (!refNecessary(se, defMap, useMap) &&
+              !fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
             VarSymbol* tmp = newTemp(copy->retType);
             move->insertBefore(new DefExpr(tmp));
             move->insertAfter(new CallExpr(PRIM_MOVE, se->var,
@@ -100,57 +101,6 @@ void cullOverReferences() {
           move->insertAfter(new CallExpr(PRIM_MOVE, move->get(1)->remove(), new CallExpr(PRIM_SET_REF, tmp)));
           move->insertAtHead(tmp);
         }
-      }
-    }
-  }
-
-
-  //
-  // remove references to iterator records and classes
-  //   this is essential for handling the valid var flag
-  //   and may be worthwhile/necessary otherwise
-  //
-  forv_Vec(DefExpr, def, gDefExprs) {
-    if (!isTypeSymbol(def->sym) && def->sym->type) {
-      if (Type* vt = def->sym->type->getValueType()) {
-        if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-          def->sym->type = vt;
-        }
-      }
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        if (Type* vt = fn->retType->getValueType()) {
-          if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-            fn->retType = vt;
-            fn->retTag = RET_VALUE;
-          }
-        }
-      }
-    }
-  }
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_GET_REF) ||
-        call->isPrimitive(PRIM_SET_REF)) {
-      Type* vt = call->get(1)->typeInfo();
-      if (isReferenceType(vt))
-        vt = vt->getValueType();
-      if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-        call->replace(call->get(1)->remove());
-      }
-    }
-    if (call->isPrimitive(PRIM_GET_MEMBER)) {
-      Type* vt = call->get(2)->typeInfo();
-      if (isReferenceType(vt))
-        vt = vt->getValueType();
-      if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-        call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
-      }
-    }
-    if (call->isPrimitive(PRIM_ARRAY_GET)) {
-      Type* vt = call->typeInfo();
-      if (isReferenceType(vt))
-        vt = vt->getValueType();
-      if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-        call->primitive = primitives[PRIM_ARRAY_GET_VALUE];
       }
     }
   }
