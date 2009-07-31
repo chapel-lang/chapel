@@ -22,7 +22,7 @@ fixupDestructors() {
           ClassType* fct = toClassType(field->type);
           INT_ASSERT(fct);
           if (!isClass(fct) || fct->symbol->hasFlag(FLAG_SYNC)) {
-            bool useRefType = // !fct->symbol->hasFlag(FLAG_ARRAY) && !fct->symbol->hasFlag(FLAG_DOMAIN) &&
+            bool useRefType = !fct->symbol->hasFlag(FLAG_ARRAY) && !fct->symbol->hasFlag(FLAG_DOMAIN) &&
               !fct->symbol->hasFlag(FLAG_SYNC);
             VarSymbol* tmp = useRefType ? newTemp(fct->refType) : newTemp(fct);
             fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));

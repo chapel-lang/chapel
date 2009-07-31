@@ -45,8 +45,16 @@ refNecessary(SymExpr* se,
   return false;
 }
 
+static bool
+isDerefType(Type* type) {
+  return (type->symbol->hasFlag(FLAG_ARRAY) ||
+          type->symbol->hasFlag(FLAG_DOMAIN) ||
+          type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
+}
 
+//
 // removes references that are not necessary
+//
 void cullOverReferences() {
   //
   // change call of reference function to value function
@@ -78,28 +86,51 @@ void cullOverReferences() {
   freeDefUseMaps(defMap, useMap);
 
   //
-  // change functions that return references to arrays and domains
-  // into functions that return arrays and domains
+  // remove references to array wrapper records, domain wrapper
+  // records, and iterator records; otherwise we can end up returning
+  // a reference to a location that is on the stack
   //
-  compute_call_sites();
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (Type* vt = fn->retType->getValueType()) {
-      if (vt->symbol->hasFlag(FLAG_ARRAY) || vt->symbol->hasFlag(FLAG_DOMAIN)) {
-        Symbol* tmp = newTemp(vt);
-        CallExpr* ret = toCallExpr(fn->body->body.tail);
-        INT_ASSERT(ret->isPrimitive(PRIM_RETURN));
-        ret->insertBefore(new DefExpr(tmp));
-        ret->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, ret->get(1)->remove())));
-        ret->insertAtTail(tmp);
-        fn->retType = vt;
-        forv_Vec(CallExpr, call, *fn->calledBy) {
-          CallExpr* move = toCallExpr(call->parentExpr);
-          INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-          Symbol* tmp = newTemp(vt);
-          move->insertBefore(new DefExpr(tmp));
-          move->insertAfter(new CallExpr(PRIM_MOVE, move->get(1)->remove(), new CallExpr(PRIM_SET_REF, tmp)));
-          move->insertAtHead(tmp);
+  forv_Vec(DefExpr, def, gDefExprs) {
+    if (!isTypeSymbol(def->sym) && def->sym->type) {
+      if (Type* vt = def->sym->type->getValueType()) {
+        if (isDerefType(vt)) {
+          def->sym->type = vt;
         }
+      }
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        if (Type* vt = fn->retType->getValueType()) {
+          if (isDerefType(vt)) {
+            fn->retType = vt;
+            fn->retTag = RET_VALUE;
+          }
+        }
+      }
+    }
+  }
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_GET_REF) ||
+        call->isPrimitive(PRIM_SET_REF)) {
+      Type* vt = call->get(1)->typeInfo();
+      if (isReferenceType(vt))
+        vt = vt->getValueType();
+      if (isDerefType(vt)) {
+        call->replace(call->get(1)->remove());
+      }
+    }
+    if (call->isPrimitive(PRIM_GET_MEMBER)) {
+      Type* vt = call->get(2)->typeInfo();
+      if (isReferenceType(vt))
+        vt = vt->getValueType();
+      if (isDerefType(vt)) {
+        call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
+      }
+    }
+    if (call->isPrimitive(PRIM_ARRAY_GET)) {
+      Type* vt = call->typeInfo();
+      if (isReferenceType(vt))
+        vt = vt->getValueType();
+      if (isDerefType(vt)) {
+        call->primitive = primitives[PRIM_ARRAY_GET_VALUE];
       }
     }
   }
