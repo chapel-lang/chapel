@@ -1,5 +1,5 @@
 class MyDist : BaseDist {
-  def newArithmeticDom(param rank: int, type idxType, param stridable: bool, param alias:bool) {
+  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     return new MyDom(rank=rank, idxType=idxType);
   }
 }
