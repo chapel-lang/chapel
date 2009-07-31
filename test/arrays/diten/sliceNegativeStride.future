@@ -1,0 +1,1 @@
+bug: slicing array with negative stride by range with negative stride crashes
