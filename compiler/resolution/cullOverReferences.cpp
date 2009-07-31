@@ -46,16 +46,6 @@ refNecessary(SymExpr* se,
 }
 
 
-static bool
-isDerefType(Type* type) {
-  return
-//     type->symbol->hasFlag(FLAG_ARRAY) ||
-//     type->symbol->hasFlag(FLAG_DOMAIN) ||
-    type->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
-    type->symbol->hasFlag(FLAG_ITERATOR_CLASS);
-}
-
-
 // removes references that are not necessary
 void cullOverReferences() {
   //
@@ -116,20 +106,20 @@ void cullOverReferences() {
 
 
   //
-  // remove references to array and domain wrapper records
+  // remove references to iterator records and classes
   //   this is essential for handling the valid var flag
   //   and may be worthwhile/necessary otherwise
   //
   forv_Vec(DefExpr, def, gDefExprs) {
     if (!isTypeSymbol(def->sym) && def->sym->type) {
       if (Type* vt = def->sym->type->getValueType()) {
-        if (isDerefType(vt)) {
+        if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
           def->sym->type = vt;
         }
       }
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (Type* vt = fn->retType->getValueType()) {
-          if (isDerefType(vt)) {
+          if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
             fn->retType = vt;
             fn->retTag = RET_VALUE;
           }
@@ -143,7 +133,7 @@ void cullOverReferences() {
       Type* vt = call->get(1)->typeInfo();
       if (isReferenceType(vt))
         vt = vt->getValueType();
-      if (isDerefType(vt)) {
+      if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         call->replace(call->get(1)->remove());
       }
     }
@@ -151,7 +141,7 @@ void cullOverReferences() {
       Type* vt = call->get(2)->typeInfo();
       if (isReferenceType(vt))
         vt = vt->getValueType();
-      if (isDerefType(vt)) {
+      if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
       }
     }
@@ -159,7 +149,7 @@ void cullOverReferences() {
       Type* vt = call->typeInfo();
       if (isReferenceType(vt))
         vt = vt->getValueType();
-      if (isDerefType(vt)) {
+      if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         call->primitive = primitives[PRIM_ARRAY_GET_VALUE];
       }
     }
