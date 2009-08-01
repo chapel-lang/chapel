@@ -2,7 +2,9 @@
 #define _stringutil_H_
 
 const char* astr(const char* s1, const char* s2 = NULL,
-                 const char* s3 = NULL, const char* s4 = NULL);
+                 const char* s3 = NULL, const char* s4 = NULL,
+                 const char* s5 = NULL, const char* s6 = NULL,
+                 const char* s7 = NULL);
 const char* istr(int i);
 const char* asubstr(const char* s, const char* e);
 

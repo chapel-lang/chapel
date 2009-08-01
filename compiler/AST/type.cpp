@@ -126,7 +126,7 @@ void PrimitiveType::verify() {
 
 
 int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
-  fprintf(outfile, "{CHPL_TYPE_%s", symbol->cname);
+  fprintf(outfile, "{CHPL_TYPE_%s, %s},\n", symbol->cname, baseoffset);
   return 1;
 }
 
@@ -194,7 +194,7 @@ void EnumType::codegenDef(FILE* outfile) {
 }
 
 int EnumType::codegenStructure(FILE* outfile, const char* baseoffset) {
-  fprintf(outfile, "{CHPL_TYPE_enum");
+  fprintf(outfile, "{CHPL_TYPE_enum, %s},\n", baseoffset);
   return 1;
 }
 
@@ -350,19 +350,13 @@ void ClassType::codegenPrototype(FILE* outfile) {
 
 
 int ClassType::codegenStructure(FILE* outfile, const char* baseoffset) {
-  int retval = 0;
   switch (classTag) {
   case CLASS_CLASS:
-    fprintf(outfile, "{CHPL_TYPE_CLASS_REFERENCE");
+    fprintf(outfile, "{CHPL_TYPE_CLASS_REFERENCE, %s},\n", baseoffset);
     return 1;
     break;
   case CLASS_RECORD:
-    retval = codegenFieldStructure(outfile, true, baseoffset);
-    if (retval == 1) {
-      return -1;
-    } else {
-      return retval;
-    }
+    return codegenFieldStructure(outfile, true, baseoffset);
     break;
   case CLASS_UNION:
     INT_FATAL(this, "Don't know how to codegenStructure for unions yet");
@@ -377,7 +371,7 @@ int ClassType::codegenStructure(FILE* outfile, const char* baseoffset) {
 
 // BLC: I'm not understanding why special cases would need to be called
 // out here
-static bool genMagicUnderscore(Symbol* sym) {
+static bool genUnderscore(Symbol* sym) {
   ClassType* classtype = toClassType(sym->type);
   return (classtype && classtype->classTag == CLASS_CLASS && 
           !sym->hasFlag(FLAG_REF));
@@ -395,20 +389,11 @@ int ClassType::codegenFieldStructure(FILE* outfile, bool nested,
 
   int totfields = 0;
   for_fields(field, this) {
-    const char* firstpart = astr(baseoffset, " + offsetof(", 
-                                 genMagicUnderscore(this->symbol) ? "_" : " ",
-                                 this->symbol->cname);
-    const char* newbaseoffset = astr(firstpart, ", ", field->cname, ")");
+    const char* newbaseoffset = astr(baseoffset, " + offsetof(", 
+                                     genUnderscore(this->symbol) ? "_" : " ",
+                                     this->symbol->cname, ", ", field->cname, 
+                                     ")");
     int numfields = field->type->codegenStructure(outfile, newbaseoffset);
-    if (numfields == 1) {
-      fprintf(outfile, ", %s + offsetof(%s%s, %s)},", 
-              baseoffset,
-              genMagicUnderscore(this->symbol) ? "_" : " ",
-              this->symbol->cname,
-              field->cname);
-    } else if (numfields == -1) {
-      numfields = 1;
-    }
     fprintf(outfile, " /* %s */\n", field->name);
     totfields += numfields;
   }

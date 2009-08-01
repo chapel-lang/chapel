@@ -21,7 +21,8 @@ canonicalize_string(const char *s) {
 }
 
 const char*
-astr(const char* s1, const char* s2, const char* s3, const char* s4) {
+astr(const char* s1, const char* s2, const char* s3, const char* s4,
+     const char* s5, const char* s6, const char* s7) {
   int len;
   len = strlen(s1);
   if (s2)
@@ -30,6 +31,12 @@ astr(const char* s1, const char* s2, const char* s3, const char* s4) {
     len += strlen(s3);
   if (s4)
     len += strlen(s4);
+  if (s5)
+    len += strlen(s5);
+  if (s6)
+    len += strlen(s6);
+  if (s7)
+    len += strlen(s7);
   char* s = (char*)malloc(len+1);
   strcpy(s, s1);
   if (s2)
@@ -38,6 +45,12 @@ astr(const char* s1, const char* s2, const char* s3, const char* s4) {
     strcat(s, s3);
   if (s4)
     strcat(s, s4);
+  if (s5)
+    strcat(s, s5);
+  if (s6)
+    strcat(s, s6);
+  if (s7)
+    strcat(s, s7);
   const char* t = canonicalize_string(s);
   if (s != t)
     free(s);

@@ -506,7 +506,6 @@ static void codegen_communicated_types(FILE* hdrfile) {
       }
     } else {
       typesym->type->codegenStructure(outfile, "0");
-      fprintf(outfile, ", 0},\n");
       fprintf(outfile, "{CHPL_TYPE_DONE, -1}\n");
     }
     fprintf(outfile, "}");
