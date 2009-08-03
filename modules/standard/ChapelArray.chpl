@@ -827,13 +827,9 @@ def _freeIterator(ic: _iteratorClass) {
 }
 
 pragma "inline"
-def _freeIterator(x) {
-  __primitive("chpl_free", x);
-}
-
-pragma "inline"
 def _freeIterator(x: _tuple) {
-  // do nothing!
+  for param i in 1..x.size do
+    _freeIterator(x(i));
 }
 
 pragma "inline"

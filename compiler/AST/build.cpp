@@ -612,6 +612,7 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
   destructureIndices(followerBody, indices, new SymExpr(followerIndex), false);
   followerBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, followerIndex, followerIterator);
   followerBlock->insertAtTail(followerBody);
+  followerBlock->insertAtTail(new CallExpr("_freeIterator", followerIterator));
 
   BlockStmt* beginBlock = new BlockStmt();
   beginBlock->insertAtTail(new DefExpr(leaderIndexCopy));
@@ -622,6 +623,7 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
   leaderBlock->insertAtTail(new BlockStmt(new CallExpr(PRIM_MOVE, leaderIndex, new CallExpr("iteratorIndex", leaderIterator)), BLOCK_TYPE));
   leaderBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, leaderIndex, leaderIterator);
   leaderBlock->insertAtTail(leaderBody);
+  leaderBlock->insertAtTail(new CallExpr("_freeIterator", leaderIterator));
 
   return leaderBlock;
 }
@@ -1017,6 +1019,7 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
       combineBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("unlock"))));
       followerBlock->insertAtTail(buildOnStmt(new SymExpr(globalOp), combineBlock));
       followerBlock->insertAtTail(new CallExpr(PRIM_DELETE, localOp));
+      followerBlock->insertAtTail(new CallExpr("_freeIterator", followerIterator));
 
       BlockStmt* beginBlock = new BlockStmt();
       beginBlock->insertAtTail(new DefExpr(leaderIndexCopy));
@@ -1027,6 +1030,7 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
       leaderBlock->insertAtTail(new BlockStmt(new CallExpr(PRIM_MOVE, leaderIndex, new CallExpr("iteratorIndex", leaderIterator)), BLOCK_TYPE));
       leaderBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, leaderIndex, leaderIterator);
       leaderBlock->insertAtTail(leaderBody);
+      leaderBlock->insertAtTail(new CallExpr("_freeIterator", leaderIterator));
 
       fn->insertAtTail(new CondStmt(new SymExpr(gTryToken), leaderBlock, serialBlock));
     }
