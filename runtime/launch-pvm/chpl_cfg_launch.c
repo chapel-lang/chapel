@@ -360,6 +360,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
       } else {
         fprintf(stderr, "%s", buffer);
       }
+      fflush(stdout);
       fflush(stderr);
       commsig = 0;
     }
@@ -367,6 +368,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     if (commsig == 3) {
       pvm_upkstr(buffer);
       printf("%s", buffer);
+      fflush(stdout);
       fflush(stderr);
       commsig = 0;
     }
