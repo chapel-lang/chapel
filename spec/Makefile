@@ -1,4 +1,5 @@
 all:
+	touch spec.ind
 	./collect_syntax.pl
 	pdflatex -file-line-error -halt-on-error spec
 	makeindex spec
@@ -6,6 +7,7 @@ all:
 	./collect_syntax.pl # again to show errors
 
 usedvi:
+	touch spec.ind
 	./collect_syntax.pl
 	latex spec
 	makeindex spec
