@@ -1930,17 +1930,9 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_GET_REAL:
     case PRIM_GET_IMAG:
     case PRIM_TYPE_TO_STRING:
-      INT_FATAL(this, "primitive should no longer be in AST");
-      break;
     case PRIM_TO_LEADER:
-      fprintf(outfile, "GET_LEADER(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ")");
-      break;
     case PRIM_TO_FOLLOWER:
-      fprintf(outfile, "GET_FOLLOWER(");
-      get(1)->codegen(outfile);
-      fprintf(outfile, ")");
+      INT_FATAL(this, "primitive should no longer be in AST");
       break;
     case PRIM_GC_CC_INIT:
       fprintf(outfile, "_chpl_gc_init(");

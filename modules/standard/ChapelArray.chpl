@@ -732,7 +732,10 @@ def iteratorIndex(t: _tuple) {
 }
 
 def iteratorIndexType(x) type {
-  return iteratorIndex(x).type;
+  pragma "no copy" var ic = _getIterator(x);
+  pragma "no copy" var i = iteratorIndex(ic);
+  _freeIterator(ic);
+  return i.type;
 }
 
 def _iteratorRecord.writeThis(f: Writer) {
@@ -752,7 +755,7 @@ def =(ic: _iteratorRecord, xs) {
   return ic;
 }
 
-def =(ic: _iteratorRecord, x: iteratorIndexType(_getIterator(ic))) {
+def =(ic: _iteratorRecord, x: iteratorIndexType(ic)) {
   for e in ic do
     e = x;
   return ic;
@@ -777,7 +780,7 @@ def _copy(ic: _iteratorRecord) {
     // handle this may be to get the static type (not initialize the
     // array) and use a primitive to set the array's element; that may
     // also handle skyline arrays
-    var A: [D] iteratorIndexType(_getIterator(ic));
+    var A: [D] iteratorIndexType(ic);
 
     for e in ic {
       if i > size {
@@ -838,8 +841,10 @@ def _toLeader(iterator: _iteratorClass)
 
 pragma "inline"
 def _toLeader(ir: _iteratorRecord) {
-  var ic = _getIterator(ir);
-  return _toLeader(ic);
+  pragma "no copy" var ic = _getIterator(ir);
+  pragma "no copy" var leader = _toLeader(ic);
+  _freeIterator(ic);
+  return leader;
 }
 
 pragma "inline"
@@ -856,8 +861,10 @@ def _toFollower(iterator: _iteratorClass, leaderIndex)
 
 pragma "inline"
 def _toFollower(ir: _iteratorRecord, leaderIndex) {
-  var ic = _getIterator(ir);
-  return _toFollower(ic, leaderIndex);
+  pragma "no copy" var ic = _getIterator(ir);
+  pragma "no copy" var follower = _toFollower(ic, leaderIndex);
+  _freeIterator(ic);
+  return follower;
 }
 
 
@@ -874,8 +881,10 @@ def _toFollower(iterator: _iteratorClass, leaderIndex, param aligned: bool) {
 
 pragma "inline"
 def _toFollower(ir: _iteratorRecord, leaderIndex, param aligned: bool) {
-  var ic = _getIterator(ir);
-  return _toFollower(ic, leaderIndex, aligned);
+  pragma "no copy" var ic = _getIterator(ir);
+  pragma "no copy" var follower = _toFollower(ic, leaderIndex, aligned);
+  _freeIterator(ic);
+  return follower;
 }
 
 

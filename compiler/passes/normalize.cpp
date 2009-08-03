@@ -519,6 +519,16 @@ fix_def_expr(VarSymbol* var) {
     return; // already fixed
 
   //
+  // handle "no copy" variables
+  //
+  if (var->hasFlag(FLAG_NO_COPY)) {
+    INT_ASSERT(init);
+    INT_ASSERT(!type);
+    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, init->remove()));
+    return;
+  }
+
+  //
   // handle var ... : ... => ...;
   //
   if (var->hasFlag(FLAG_ARRAY_ALIAS)) {
