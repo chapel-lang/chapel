@@ -18,13 +18,4 @@ clean:
 	rm -f *.aux *.blg *.bbl *.dvi *.log
 
 clobber: clean
-	rm -f spec.ps spec.pdf
-
-#
-# BLC: This is a somewhat silly rule, but on a clean build,
-# I seem to need to run pdflatex in order to get an initial
-# spec.idx file and make the rest of the Makefile
-# work.  There may be a smarter way to do this.
-#
-#spec.idx:
-#	-pdflatex -interaction batchmode spec_pl
+	rm -f spec.ps spec.pdf spec.ilg spec.out spec.toc spec.idx spec.ind

@@ -3,30 +3,61 @@
 
 Chapel is a statically typed language with a rich set of types.  These
 include a set of predefined primitive types, enumerated types,
-classes, records, unions, tuples, ranges, domains, and arrays.
-This section defines the primitive types, enumerated types, and type
-aliases.  The syntax of a type is summarized by the following syntax:
+locality types, structured types (classes, records, unions, tuples),
+data parallel types (ranges, domains, arrays), and synchronization
+types (sync, single).
+
+% This section defines the primitive
+% types, enumerated types, and type aliases.  
+
+The syntax of a type is summarized by the following syntax:
+
 \begin{syntax}
 type-specifier:
   primitive-type
   enum-type
+  locality-type
+  structured-type-specifier
+  dataparallel-type-specifier
+  synchronization-type-specifier
+\end{syntax}
+
+The structured types are summarized by the following syntax:
+
+\begin{syntax}
+structured-type-specifier:
   class-type
   record-type
   union-type
   tuple-type
-  range-type
-  domain-type
-  array-type
-  sync-type
-  single-type
-  index-type
 \end{syntax}
 
 Classes are discussed in~\rsec{Classes}.  Records are discussed
 in~\rsec{Records}.  Unions are discussed in~\rsec{Unions}.  Tuples are
-discussed in~\rsec{Tuples}.  Ranges are discussed in~\rsec{Ranges}.
-Domains and arrays are discussed in~\rsec{Domains_and_Arrays}.  Sync
-and single types are discussed in~\rsec{Sync_Variables}
+discussed in~\rsec{Tuples}.  
+
+The data parallel types are summarized by the following syntax:
+
+\begin{syntax}
+dataparallel-type-specifier:
+  range-type
+  domain-type
+  array-type
+  index-type
+\end{syntax}
+
+Ranges are discussed in~\rsec{Ranges}.  Domains, arrays, and index
+types are discussed in~\rsec{Domains_and_Arrays}.
+
+The synchronization types are summarized by the following syntax:
+
+\begin{syntax}
+synchronization-type-specifier:
+  sync-type
+  single-type
+\end{syntax}
+
+Sync and single types are discussed in~\rsec{Sync_Variables}
 and~\rsec{Single_Variables}.
 
 Programmers can define their own enumerated types, classes, records,
@@ -48,9 +79,9 @@ type-declaration-statement:
 The primitive types include the following types: \chpl{bool},
 \chpl{int}, \chpl{uint}, \chpl{real}, \chpl{imag}, \chpl{complex},
 \chpl{string}, and \chpl{locale}.  These primitive types are defined
-in this section except for the \chpl{locale} type which is defined
-in~\rsec{The_Locale_Type}.  The syntax of a primitive type is
-summarized by the following syntax:
+in this section.
+
+The primitive types are summarized by the following syntax:
 \begin{syntax}
 primitive-type:
   `bool' primitive-type-parameter-part[OPT]
@@ -60,11 +91,18 @@ primitive-type:
   `imag' primitive-type-parameter-part[OPT]
   `complex' primitive-type-parameter-part[OPT]
   `string'
-  `locale'
 
 primitive-type-parameter-part:
   ( integer-parameter-expression )
 \end{syntax}
+
+
+\begin{openissue}
+There is an expectation of future support for larger bit width
+primitive types depending on a platform's native support for those
+types.
+\end{openissue}
+
 
 \subsubsection{The Bool Type}
 \label{The_Bool_Type}
@@ -78,8 +116,8 @@ can be specified using a parameter value following the \chpl{bool}
 keyword, such as \chpl{bool(8)} to request an 8-bit boolean value.
 Legal sizes are 8, 16, 32, and 64 bits.
 
-The relational operators return values of \chpl{bool} type and the
-logical operators operate on values of \chpl{bool} type.
+%% The relational operators return values of \chpl{bool} type and the
+%% logical operators operate on values of \chpl{bool} type.
 
 Some statements require expressions of \chpl{bool} type and Chapel
 supports a special conversion of values to \chpl{bool} type when used
@@ -118,6 +156,12 @@ types operate with 32- and 64-bit precision.  Using these operators on
 integral types represented with fewer bits results in a coercion
 according to the rules defined in~\rsec{Implicit_Conversions}.
 
+\begin{openissue}
+There is on going discussion on whether the default size of the
+integral types should be changed to 64 bits.
+\end{openissue}
+
+
 \subsubsection{Real Types}
 \label{Real_Types}
 \index{real@\chpl{real}}
@@ -125,15 +169,9 @@ according to the rules defined in~\rsec{Implicit_Conversions}.
 Like the integral types, the real types can be parameterized by the
 number of bits used to represent them.  The default real
 type, \chpl{real}, is 64 bits.  The real types that are supported are
-machine-dependent, but usually include \chpl{real(32)}
-and \chpl{real(64)}.
-
-Arithmetic over real values follows the IEEE 754 standard.
-
-\begin{openissue}
-There is an expectation of future support for real(128) and/or
-real(80) depending on a platform's native support for those types
-\end{openissue}
+machine-dependent, but usually include \chpl{real(32)} (single
+precision) and \chpl{real(64)} (double precision) following the IEEE
+754 standard.
 
 \subsubsection{Imaginary Types}
 \label{Imaginary_Types}
@@ -143,11 +181,6 @@ The imaginary types can be parameterized by the number of bits used to
 represent them.  The default imaginary type, \chpl{imag}, is 64 bits.
 The imaginary types that are supported are machine-dependent, but
 usually include \chpl{imag(32)} and \chpl{imag(64)}.
-
-\begin{openissue}
-There is an expectation of future support for imag(128) and/or
-imag(80) depending on a platform's native support for those types
-\end{openissue}
 
 \begin{rationale}
 The imaginary type is included to avoid numeric instabilities and
@@ -168,13 +201,13 @@ it consists of two 64-bit real numbers.  The complex types that are
 supported are machine-dependent, but usually
 include \chpl{complex(64)} and \chpl{complex(128)}.
 
-\begin{openissue}
-There is an expectation of future support for complex(256) and/or
-complex(160) depending on a platform's native support for those types
-\end{openissue}
-
 The real and imaginary components can be accessed via the methods
 \chpl{re} and \chpl{im}.  The type of these components is real.
+See~\rsec{Math} for math routines for complex types.
+
+%
+% Add something in the standard modules section
+%
 
 \begin{example}
 Given a complex number \chpl{c} with the value \chpl{3.14+2.72i}, the
@@ -186,8 +219,19 @@ and \chpl{2.72} respectively.
 \label{The_String_Type}
 \index{string@\chpl{string}}
 
-Strings are a primitive type designated by the symbol \chpl{string}.
-Their length is unbounded.
+Strings are a primitive type designated by the symbol \chpl{string}
+comprised of ASCII characters.  Their length is unbounded.
+See~\rsec{Standard} for routines for manipulating strings.
+
+
+\begin{openissue}
+There is an expectation of future support for fix-length strings.
+\end{openissue}
+
+\begin{openissue}
+There is an expectation of future support for different character
+sets, possibly including internationalization.
+\end{openissue}
 
 \subsection{Enumerated Types}
 \label{Enumerated_Types}
@@ -227,23 +271,51 @@ having the value \chpl{1}.
 \begin{example}
 The code
 \begin{chapel}
-enum color { red, white, blue } ;
+enum statesman { Aristotle, Roosevelt, Churchill, Kissinger } ;
 \end{chapel}
-defines an enumerated type with three constants.  The function
+defines an enumerated type with four constants.  The function
 \begin{chapel}
-def rhyme(c: color) {
-  select c {
-    when color.red do writeln("red rhymes with head");
-    when color.white do writeln("white rhymes with spite");
-    when color.blue do writeln("blue rhymes with spew");
+def quote(s: statesman) {
+  select s {
+    when statesman.Aristotle do
+       writeln("All paid jobs absorb and degrade the mind.")
+    when statesman.Roosevelt do
+       writeln("Every reform movement has a lunatic fringe.");
+    when statesman.Churchill do
+       writeln("A joke is a very serious thing.");
+    when statesman.Kissinger do
+       { write("No one will ever win the battle of the sexes; ");
+         writeln("there's too much fraternizing with the enemy."); }
   }
 }
 \end{chapel}
-outputs a rhyme for any given color.  Note that enumerated constants
-must be prefixed by the enumerated type and a dot.
+outputs a quote from the given statesman.  Note that enumerated
+constants must be prefixed by the enumerated type and a dot.
 \end{example}
 
-\subsection{Class Types}
+\subsection{Locality Types}
+\label{Locality_Types}
+\index{types!locality}
+
+Locale types are summarized by the following syntax:
+
+\begin{syntax}
+locality-type:
+  `locale'
+\end{syntax}
+
+The \chpl{locale} type is defined in~\rsec{The_Locale_Type}.
+
+\begin{openissue}
+We expect to support \emph{realms} as another locality type.
+\end{openissue}
+
+\subsection{Structured Types}
+\label{Structured_Types}
+\index{types!structured}
+
+\subsubsection{Class Types}
+\label{Class_Types}
 
 The class type defines a type that contains variables and constants,
 called fields, and functions, called methods.  Classes are defined
@@ -251,36 +323,44 @@ in~\rsec{Classes}.  The class type can also contain type aliases and
 parameters.  Such a class is generic and is defined
 in~\rsec{Generics}.
 
-\subsection{Record Types}
+\subsubsection{Record Types}
+\label{Record_Types}
 
 The record type is similar to a class type; the primary difference is
 that a record is a value rather than a reference.  The difference
 between classes and records is elaborated on in~\rsec{Records}.
 
-\subsection{Union Types}
+\subsubsection{Union Types}
+\label{Union_Types}
 
 The union type defines a type that contains one of a set of variables.
 Like classes and records, unions may also define methods.  Unions are
 defined in~\rsec{Unions}.
 
-\subsection{Tuple Types}
+\subsubsection{Tuple Types}
 \label{Tuple_Types}
 
 A tuple is a light-weight record that consists of one or more
 anonymous fields.  If all the fields are of the same type, the tuple
 is homogeneous.  Tuples are defined in~\rsec{Tuples}.
 
-\subsection{Range Types}
+\subsection{Data Parallel Types}
+\label{Data_Parallel_Types}
+\index{types!dataparallel}
+
+\subsubsection{Range Types}
+\label{Range_Types}
 
 A range defines an integral sequence of some integral type.  Ranges
 are defined in~\rsec{Ranges}.
 
-\subsection{Domain and Array Types}
+\subsubsection{Domain, Array, and Index Types}
 \label{Domain_and_Array_Types}
 
 A domain defines a set of indices and an array defines a set of
-elements that are mapped by the indices in an associated domain.
-Domains and arrays are defined in~\rsec{Domains_and_Arrays}.
+elements that are mapped by the indices in an associated domain.  A
+domain's indicies can be of any type.  Domains, arrays, and index
+types are defined in~\rsec{Domains_and_Arrays}.
 
 \subsection{Type Aliases}
 \label{Type_Aliases}
@@ -308,3 +388,8 @@ record.  Such a type alias is called an unspecified type
 alias. Classes and records that contain type aliases, specified or
 unspecified, are generic~(\rsec{Type_Aliases_in_Generic_Types}).
 
+\begin{openissue}
+There is on going discussion on whether a type alias is a new
+type or simply an alias.  The former should enable redefinition of
+default values, identity elements, etc.
+\end{openissue}
