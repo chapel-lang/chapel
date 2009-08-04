@@ -1,5 +1,0 @@
-bug: corrupted return value from reduction
-
-In this program, the correct array of values is about to be returned
-but the first value is corrupted by the time we print out the result.
-David diagnosed this this afternoon to be due to a premature free.
