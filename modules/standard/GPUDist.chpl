@@ -32,8 +32,8 @@ class GPUDist: BaseDist {
 	}
 
 
-  def newArithmeticDom(param rank: int, type idxType, param stridable: bool, param alias: bool=false)
-    return new GPUArithmeticDom(rank, idxType, stridable, this, alias);
+  def newArithmeticDom(param rank: int, type idxType, param stridable: bool)
+    return new GPUArithmeticDom(rank, idxType, stridable, this);
 
 }
 
@@ -48,11 +48,9 @@ class GPUArithmeticDom: BaseArithmeticDom {
   param stridable: bool;
   var dist: GPUDist;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
-  param alias: bool = false;
 
 
-  def GPUArithmeticDom(param rank, type idxType, param stridable, 
-                           dist, param alias = false) {
+  def GPUArithmeticDom(param rank, type idxType, param stridable, dist) {
     this.dist = dist;
   }
 
@@ -227,8 +225,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
 
   def buildArray(type eltType) {
     return new GPUArithmeticArr(eltType=eltType, rank=rank, idxType=idxType, 
-		    		stridable=stridable, reindexed=alias,
-                                alias=alias, dom=this);
+		    		stridable=stridable, reindexed=true, dom=this);
   }
 
   def slice(param stridable: bool, ranges) {
@@ -243,7 +240,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
-    var d = new GPUArithmeticDom(rank, idxType, stridable, dist, alias=true);
+    var d = new GPUArithmeticDom(rank, idxType, stridable, dist);
     var i = 1;
     for param j in 1..args.size {
       if isRange(args(j)) {
@@ -255,7 +252,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
   }
 
   def translate(off: rank*idxType) {
-    var x = new GPUArithmeticDom(rank, idxType, stridable, dist, alias);
+    var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).translate(off(i));
     return x;
@@ -336,10 +333,9 @@ class GPUArithmeticArr: BaseArr {
   type idxType;
   param stridable: bool;
   param reindexed: bool = false; // may have blk(rank) != 1
-  param alias: bool = false;
 
   var dom : GPUArithmeticDom(rank=rank, idxType=idxType,
-                                         stridable=stridable, alias=alias);
+                                         stridable=stridable);
   var off: rank*idxType;
   var blk: rank*idxType;
   var str: rank*int;
@@ -441,7 +437,7 @@ class GPUArithmeticArr: BaseArr {
     var alias = new GPUArithmeticArr(eltType=eltType, rank=d.rank,
                                      idxType=d.idxType,
                                      stridable=d.stridable,
-                                     reindexed=true, alias=d.alias, dom=d,
+                                     reindexed=true, dom=d,
                                      noinit=true);
     alias.data = data;
     alias.size = size: d.idxType;
@@ -465,7 +461,7 @@ class GPUArithmeticArr: BaseArr {
     var alias = new GPUArithmeticArr(eltType=eltType, rank=rank,
                                          idxType=idxType,
                                          stridable=d.stridable,
-                                         reindexed=reindexed, alias=false,
+                                         reindexed=reindexed,
                                          dom=d, noinit=true);
     alias.data = data;
     alias.size = size;
@@ -497,7 +493,7 @@ class GPUArithmeticArr: BaseArr {
     var alias = new GPUArithmeticArr(eltType=eltType, rank=newRank,
                                          idxType=idxType,
                                          stridable=newStridable, reindexed=true,
-                                         alias=true, dom=d, noinit=true);
+                                         dom=d, noinit=true);
     alias.data = data;
     alias.size = size;
     var i = 1;
@@ -522,9 +518,7 @@ class GPUArithmeticArr: BaseArr {
       var copy = new GPUArithmeticArr(eltType=eltType, rank=rank,
                                           idxType=idxType,
                                           stridable=d._value.stridable,
-                                          reindexed=reindexed,
-                                          alias=d._value.alias,
-                                          dom=d._value);
+                                          reindexed=reindexed, dom=d._value);
       for i in d((...dom.ranges)) do
         copy(i) = this(i);
       off = copy.off;

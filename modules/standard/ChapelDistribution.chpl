@@ -2,7 +2,7 @@
 // Abstract distribution class
 //
 class BaseDist {
-  def newArithmeticDom(param rank: int, type idxType, param stridable: bool, param alias=false) {
+  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     compilerError("arithmetic domains not supported by this distribution");
   }
 
