@@ -504,7 +504,7 @@ static void fix_user_assign(CallExpr* call) {
 //
 // fix_def_expr removes DefExpr::exprType and DefExpr::init from a
 //   variable's def expression, normalizing the AST with primitive
-//   moves, calls to _copy, _init, and _cast, and assignments.
+//   moves, calls to chpl__initCopy, _init, and _cast, and assignments.
 //
 static void
 fix_def_expr(VarSymbol* var) {
@@ -659,7 +659,7 @@ fix_def_expr(VarSymbol* var) {
     //
     stmt->insertAfter(
       new CallExpr(PRIM_MOVE, constTemp,
-        new CallExpr("_copy", init->remove())));
+        new CallExpr("chpl__initCopy", init->remove())));
 
   }
 }

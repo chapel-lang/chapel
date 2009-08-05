@@ -1842,7 +1842,8 @@ formalRequiresTemp(ArgSymbol* formal) {
 static void
 insertFormalTemps(FnSymbol* fn) {
   if (!strcmp(fn->name, "_init") ||
-      !strcmp(fn->name, "_copy") ||
+      !strcmp(fn->name, "chpl__initCopy") ||
+      !strcmp(fn->name, "chpl__initCopyHelp") ||
       !strcmp(fn->name, "_getIterator") ||
       !strcmp(fn->name, "_getIteratorHelp") ||
       !strcmp(fn->name, "iteratorIndex") ||
@@ -1891,16 +1892,17 @@ insertFormalTemps(FnSymbol* fn) {
           fn->insertAtHead(new DefExpr(typeTmp));
         }
       } else if (formal->intent == INTENT_INOUT || formal->intent == INTENT_IN)
-        fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("_copy", formal)));
+        fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", formal)));
       else {
         TypeSymbol* ts = formal->type->symbol;
         if (!ts->hasFlag(FLAG_DOMAIN) &&
             !ts->hasFlag(FLAG_ARRAY) &&
             !ts->hasFlag(FLAG_ITERATOR_CLASS) &&
             !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
+            !ts->hasFlag(FLAG_TUPLE) &&
             !ts->hasFlag(FLAG_REF) &&
             !ts->hasFlag(FLAG_SYNC))
-          fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("_copy", formal)));
+          fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", formal)));
         else
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
       }
@@ -2237,7 +2239,7 @@ preFold(Expr* expr) {
         result = new CallExpr("chpl__convertValueToRuntimeType", call->get(1)->remove());
         call->replace(result);
       }
-    } else if (call->isNamed("_copy")) {
+    } else if (call->isNamed("chpl__initCopy")) {
       if (call->numActuals() == 1) {
         if (SymExpr* symExpr = toSymExpr(call->get(1))) {
           if (VarSymbol* var = toVarSymbol(symExpr->var)) {

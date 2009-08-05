@@ -602,12 +602,6 @@ def =(a: domain, b) {  // b is iteratable
   return a;
 }
 
-def _copy(a: domain) {
-  var b: a.type;
-  b.setIndices(a.getIndices());
-  return b;
-}
-
 pragma "inline" def =(a: [], b : []) where (a._value.canCopyFromHost && b._value.canCopyFromHost) {
 	compilerError("GPU to GPU transfers not yet implemented");
 }
@@ -655,12 +649,6 @@ def =(a: [], b: _desync(a.eltType)) {
   for i in a._dom do
     a(i) = b;
   return a;
-}
-
-def _copy(a: []) {
-  var b : [a._dom] a.eltType;
-  b = a;
-  return b;
 }
 
 def by(a: domain, b) {
@@ -759,40 +747,6 @@ def =(ic: _iteratorRecord, x: iteratorIndexType(ic)) {
   for e in ic do
     e = x;
   return ic;
-}
-
-def _copy(ic: _iteratorRecord) {
-  return _ic_copy_help(_ic_copy_recursive(ic));
-
-  def _ic_copy_recursive(ic) {
-    for e in ic do
-      yield _copy(e);
-  }
-
-  def _ic_copy_help(ic) {
-    var i = 1, size = 4;
-    var D = [1..size];
-
-    // note that _getIterator is called in order to copy the iterator
-    // class since for arrays we need to iterate once to get the
-    // element type (at least for now); this also means that if this
-    // iterator has side effects, we will see them; a better way to
-    // handle this may be to get the static type (not initialize the
-    // array) and use a primitive to set the array's element; that may
-    // also handle skyline arrays
-    var A: [D] iteratorIndexType(ic);
-
-    for e in ic {
-      if i > size {
-        size = size * 2;
-        D = [1..size];
-      }
-      A(i) = e;
-      i = i + 1;
-    }
-    D = [1..i-1];
-    return A;
-  }
 }
 
 pragma "inline" def _getIterator(x) {

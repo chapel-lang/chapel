@@ -569,12 +569,12 @@ static void build_union_assignment_function(ClassType* ct) {
 
 
 static void build_record_copy_function(ClassType* ct) {
-  if (function_exists("_copy", 1, ct))
+  if (function_exists("chpl__initCopy", 1, ct))
     return;
 
   INT_ASSERT(!ct->symbol->hasFlag(FLAG_TUPLE));
 
-  FnSymbol* fn = new FnSymbol("_copy");
+  FnSymbol* fn = new FnSymbol("chpl__initCopy");
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   arg->markedGeneric = true;
   fn->insertFormalAtTail(arg);

@@ -947,7 +947,7 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
     new BlockStmt(
       new CallExpr(PRIM_MOVE, eltType,
         new CallExpr(PRIM_TYPEOF,
-          new CallExpr("_copy",
+          new CallExpr("chpl__initCopy",
             new CallExpr("iteratorIndex",
               new CallExpr("_getIterator", data))))),
       BLOCK_TYPE));

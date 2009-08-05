@@ -588,7 +588,7 @@ static void build_type_constructor(ClassType* ct) {
                    strcmp(ct->symbol->name, "_square_tuple"))
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name),
-                                          new CallExpr("_copy",
+                                          new CallExpr("chpl__initCopy",
                                             new CallExpr(PRIM_INIT, arg))));
           else
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
@@ -601,7 +601,7 @@ static void build_type_constructor(ClassType* ct) {
         } else if (init) {
           fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                         new_StringSymbol(field->name),
-                                        new CallExpr("_copy", init->copy())));
+                                        new CallExpr("chpl__initCopy", init->copy())));
         }
       }
     }
@@ -766,7 +766,7 @@ static void build_constructor(ClassType* ct) {
     bool hasInit = init;
     if (init) {
       if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !exprType) {
-        exprType = new CallExpr(PRIM_TYPEOF, new CallExpr("_copy", init->copy()));
+        exprType = new CallExpr(PRIM_TYPEOF, new CallExpr("chpl__initCopy", init->copy()));
       }
     } else if (exprType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
       init = new CallExpr(PRIM_INIT, exprType->copy());
@@ -775,7 +775,7 @@ static void build_constructor(ClassType* ct) {
       init = new CallExpr("_createFieldDefault", exprType->copy(), init);
     }
     if (!hasType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
-      init = new CallExpr("_copy", init);
+      init = new CallExpr("chpl__initCopy", init);
     }
     if (init) {
       if (hasInit)
@@ -795,7 +795,7 @@ static void build_constructor(ClassType* ct) {
         strcmp(ct->symbol->name, "_square_tuple"))
       fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this, 
                                     new_StringSymbol(arg->name),
-                                    new CallExpr("_copy", arg)));
+                                    new CallExpr("chpl__initCopy", arg)));
     else
       fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this, 
                                     new_StringSymbol(arg->name),

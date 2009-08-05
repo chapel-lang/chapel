@@ -157,7 +157,7 @@ buildDefaultWrapper(FnSymbol* fn,
               if (!isShadowedField(formal))
                 wrapper->insertAtTail(
                   new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                               new_StringSymbol(formal->name), new CallExpr("_copy", temp)));
+                               new_StringSymbol(formal->name), new CallExpr("chpl__initCopy", temp)));
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
       call->insertAtTail(paramMap->get(formal));
@@ -207,13 +207,13 @@ buildDefaultWrapper(FnSymbol* fn,
         if (formal->intent != INTENT_INOUT) {
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapper->body->body.tail->remove()));
         } else {
-          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("_copy", wrapper->body->body.tail->remove())));
+          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("chpl__initCopy", wrapper->body->body.tail->remove())));
           INT_ASSERT(!temp->hasFlag(FLAG_EXPR_TEMP));
           temp->removeFlag(FLAG_MAYBE_PARAM);
         }
       }
       call->insertAtTail(temp);
-      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
+      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple") && strcmp(fn->name, "_construct__square_tuple"))
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE))
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)

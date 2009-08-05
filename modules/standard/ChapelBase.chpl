@@ -518,20 +518,6 @@ pragma "inline" def _statementLevelSymbol(param a) param { return a; }
 pragma "inline" def _statementLevelSymbol(type a) type { return a; }
 
 //
-// _copy on primitive types and classes
-//
-pragma "inline" def _copy(a) {
-  if a.type == string then
-    return __primitive("string_copy", a);
-  else
-    return a;
-}
-
-pragma "inline" def _copy(type t) {
-  compilerError("illegal assignment of type to value");
-}
-
-//
 // _cond_test function supports statement bool conversions and sync
 //   variables in conditional statements; and checks for errors
 // _cond_invalid function checks a conditional expression for
@@ -647,9 +633,6 @@ class _ref {
   var _val;
 }
 
-pragma "inline" pragma "ref"
-def _copy(r: _ref) return _copy(__primitive("get ref", r));
-
 // Returns whether an object of type t occupies a 64-bit word on Cray's MTA/XMT
 // (The definition of this function should be target dependent.  This would avoid
 // the need to write C macros in the runtime that essentially duplicate
@@ -685,10 +668,6 @@ class _syncvar {
       __primitive("sync_reset", this);
     }
   }
-}
-
-def _copy(sv: sync) {
-  return sv.readFE();
 }
 
 // The operations are:
@@ -839,10 +818,6 @@ class _singlevar {
       __primitive("single_reset", this);  // No locking or unlocking done here!
     }
   }
-}
-
-def _copy(sv: single) {
-  return sv.readFF();
 }
 
 // Wait for full. Set and signal full.
@@ -1197,6 +1172,86 @@ pragma "inline" def _createFieldDefault(type t, init: single) {
   return init;
 }
 
+pragma "inline" def chpl__initCopy(a) {
+  if a.type == string then
+    return __primitive("string_copy", a);
+  else
+    return a;
+}
+
+pragma "inline" def chpl__initCopy(type t) {
+  compilerError("illegal assignment of type to value");
+}
+
+pragma "inline" pragma "ref"
+def chpl__initCopy(r: _ref) return chpl__initCopy(__primitive("get ref", r));
+
+pragma "inline" def chpl__initCopy(sv: sync) {
+  return sv.readFE();
+}
+
+pragma "inline" def chpl__initCopy(sv: single) {
+  return sv.readFF();
+}
+
+pragma "inline" def chpl__initCopy(x: _tuple) { 
+  return chpl__initCopyHelp(x, 1, x.size);
+  pragma "inline"
+  def chpl__initCopyHelp(x: _tuple, param lo: int, param hi: int) {
+    if lo == hi then
+      return _build_tuple_always(chpl__initCopy(x(lo)));
+    else
+      return _build_tuple_always((...chpl__initCopyHelp(x, lo, (lo+hi)/2)),
+                                 (...chpl__initCopyHelp(x, (lo+hi)/2+1, hi)));
+  }
+}
+
+def chpl__initCopy(a: domain) {
+  var b: a.type;
+  b.setIndices(a.getIndices());
+  return b;
+}
+
+def chpl__initCopy(a: []) {
+  var b : [a._dom] a.eltType;
+  b = a;
+  return b;
+}
+
+def chpl__initCopy(ir: _iteratorRecord) {
+  return _ir_copy_help(_ir_copy_recursive(ir));
+
+  def _ir_copy_recursive(ir) {
+    for e in ir do
+      yield chpl__initCopy(e);
+  }
+
+  def _ir_copy_help(ir) {
+    var i = 1, size = 4;
+    var D = [1..size];
+
+    // note that _getIterator is called in order to copy the iterator
+    // class since for arrays we need to iterate once to get the
+    // element type (at least for now); this also means that if this
+    // iterator has side effects, we will see them; a better way to
+    // handle this may be to get the static type (not initialize the
+    // array) and use a primitive to set the array's element; that may
+    // also handle skyline arrays
+    var A: [D] iteratorIndexType(ir);
+
+    for e in ir {
+      if i > size {
+        size = size * 2;
+        D = [1..size];
+      }
+      A(i) = e;
+      i = i + 1;
+    }
+    D = [1..i-1];
+    return A;
+  }
+}
+
 pragma "inline" def chpl__autoDestroy(x: object) { }
 pragma "inline" def chpl__autoDestroy(x: opaque) { }
 pragma "inline" def chpl__autoDestroy(x: enumerated) { }
@@ -1206,9 +1261,8 @@ pragma "inline" def chpl__autoDestroy(type t)  { }
 pragma "inline" def chpl__autoDestroy(x: ?t) where _isPrimitiveType(t) ||
                                                    _isComplexType(t) { }
 pragma "inline" def chpl__autoDestroy(x: imag(64)) { }
-pragma "inline"
-def chpl__autoDestroy(x: ?t) where !_isPrimitiveType(t) &&
-                                   !_isComplexType(t) {
+pragma "inline" def chpl__autoDestroy(x: ?t) where !_isPrimitiveType(t) &&
+                                                   !_isComplexType(t) {
   __primitive("call destructor", x);
 }
 pragma "inline" def chpl__autoDestroy(x: domain) {

@@ -250,7 +250,7 @@ static void
 checkInstantiationLimit(FnSymbol* fn) {
   static Map<FnSymbol*,int> instantiationLimitMap;
 
-  if (fn->defPoint->parentSymbol != baseModule) {
+  if (fn->getModule() != baseModule) {
     if (instantiationLimitMap.get(fn) >= instantiation_limit) {
       if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
         USR_FATAL_CONT(fn->retType, "Type '%s' has been instantiated too many times",
