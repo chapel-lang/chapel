@@ -1,3 +1,0 @@
-semantic: arrays in tuples
-
-bug: tuple constructor does not copy arrays
