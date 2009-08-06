@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <chplio_md.h>
+#include <signal.h>
 
 #include "pvm3.h"
 
@@ -23,7 +24,12 @@
 #define PRINTF_BUFF_LEN 1024
 
 extern int gethostname(char *name, size_t namelen);
+void error_exit(int sig);
 char *replace_str(char *str, char *orig, char *rep);
+
+char* pvmnodestoadd[2048];
+int infos[256];
+int tids[32];
 
 // Helper function
 char *replace_str(char *str, char *orig, char *rep)
@@ -45,14 +51,8 @@ char *replace_str(char *str, char *orig, char *rep)
 
 
 static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
-  int i, j;                           // j acts as an iterator for
-                                      // pvm_addhosts and pvm_delhosts
-                                      // if this node (running launcher) is
-                                      // in hostfile, adding or deleting it
-                                      // can result in error
-
-  int info;
-  int infos[256];
+  int i, j, info;
+  //  int infos[256];
   int infos2[256];
   char myhostname[256];
   char pvmnodetoadd[256];
@@ -61,10 +61,10 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   int commsig = 0;
   char* commandtopvm;
   char* environment;
-  static char *hosts2[2048];
+  //  static char *hosts2[2048];
   static char *hosts2redo[2048];
   int numt;
-  int tids[32];
+  //  int tids[32];
   static char *argtostart[] = {(char*)""};
   int bufid;
 
@@ -84,9 +84,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   // Add nodes to PVM configuration.
   FILE* nodelistfile;
 
-  char checkfile[128];
-  int daemonstarted;
-
   int k;                              // k iterates over chpl_numRealms
   int lpr;                            // locales per realm
   char* realmtype;
@@ -96,6 +93,12 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   char* multirealmpathtoadd[2048];
   int baserealm;
   char* hostfile;
+
+  // Signal handlers
+  signal(SIGINT, error_exit);
+  signal(SIGQUIT, error_exit);
+  signal(SIGKILL, error_exit);
+  signal(SIGTERM, error_exit);
 
   // Get a new argument list for PVM spawn.
   // The last argument needs to be the number of locations for the PVM
@@ -174,83 +177,38 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   }
 
   // Check to see if daemon is started or not by this user. If not, start one.
-  daemonstarted = 1;
-  sprintf(buffer, "grep $USER /etc/passwd || ypmatch $USER passwd | awk -F: '{print $3}' | tee /tmp/chpl.pvmlaunch.txt > /dev/null");
+  sprintf(buffer, "killall -q -9 pvmd3 ; rm -f /tmp/pvm*");
   system(buffer);
-  hostfile = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
-  sprintf(hostfile, "/tmp/chpl.pvmlaunch.txt");
-  if ((nodelistfile = fopen(hostfile, "r")) == NULL) {
-    fprintf(stderr, "Can't read tempfile %s for PVM daemon processing.\n", hostfile);
-    chpl_internal_error("Exiting.");
-  }
-  chpl_free(hostfile, -1, "");
-  if ((fscanf(nodelistfile, "%s", checkfile)) == 1) {
-    fclose(nodelistfile);
-    hostfile = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
-    sprintf(hostfile, "%s%s", "/tmp/pvmd.", checkfile);
-    sprintf(buffer, "file %s | tee /tmp/chpl.pvmlaunch.txt > /dev/null", hostfile);
-    system(buffer);
-    chpl_free(hostfile, -1, "");
-    hostfile = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
-    sprintf(hostfile, "/tmp/chpl.pvmlaunch.txt");
-    if ((nodelistfile = fopen(hostfile, "r")) == NULL) {
-      fprintf(stderr, "Can't read tempfile %s for PVM daemon processing.\n", hostfile);
-      chpl_internal_error("Exiting.");
-    }
-    while ((fscanf(nodelistfile, "%s", checkfile)) == 1) {
-      if (strstr(checkfile, "cannot")) {
-        daemonstarted = 0;
-      }
-    }
-    chpl_free(hostfile, -1, "");
-    fclose(nodelistfile);
-  } else {
-    fprintf(stderr, "Can't read tempfile %s for PVM daemon processing.\n", hostfile);
-    chpl_internal_error("Exiting.");
-  }
-  if (!daemonstarted) {
-    info = pvm_start_pvmd(0, argtostart, 1);
-    if (info != 0) {
-      if (info != PvmDupHost) {
-        fprintf(stderr, "Exiting -- pvm_start_pvmd error %d.\n", info);
-        chpl_internal_error("Problem starting PVM daemon.");
-      }
-      fprintf(stderr, "Duplicate host. Shutting down host.\n");
-      pvm_halt();
-      info = pvm_start_pvmd(0, argtostart, 1);
-      if (info != 0) {
-        fprintf(stderr, "Exiting -- pvm_start_pvmd error %d.\n", info);
-        chpl_internal_error("Problem starting PVM daemon.");
-      }
-    }
-  }
-  sprintf(buffer, "rm /tmp/chpl.pvmlaunch.txt");
-  system(buffer);
+  i = pvm_setopt(PvmAutoErr, 0);
+  info = pvm_start_pvmd(0, argtostart, 1);
+  pvm_setopt(PvmAutoErr, i);
 
-  // Building the hosts2 list to pass to pvm_addhosts and pvm_deletehosts
+  if (info != 0) {
+    fprintf(stderr, "Exiting -- pvm_start_pvmd error %d.\n", info);
+    chpl_internal_error("Problem starting PVM daemon.");
+  }
+
+  // Find the node we're on. We use this in spawning (to know what realm
+  // type we are to replace that string with an architecture appropriate one
   gethostname(myhostname, 256);
-  for (i = 0, j = 0; j < numLocales; ) {
-    if (strcmp((char *)pvmnodestoadd[j], myhostname)) {
-      hosts2[i] = (char *)pvmnodestoadd[j];
-      i++;
-      j++;
-    } else {
-      baserealm = j;
-      j++;
+  for (i = 0; i < numLocales; i++) {
+    if (!(strcmp((char *)pvmnodestoadd[i], myhostname))) {
+      baserealm = i;
+      break;
     }
   }
 
-  if (i != 0) {
-    info = pvm_addhosts( (char **)hosts2, i, infos );
-  }
-  j = i;
-
+  // Add everything (turn off errors -- we don't care if we add something
+  // that's already there).
+  i = pvm_setopt(PvmAutoErr, 0);
+  info = pvm_addhosts( (char **)pvmnodestoadd, numLocales, infos );
+  pvm_setopt(PvmAutoErr, i);
   // Something happened on addhosts -- likely old pvmd running
-  for (i = 0; i < j; i++) {
+  for (i = 0; i < numLocales; i++) {
     if ((infos[i] < 0) && (infos[i] != -28)) {
-      sprintf(buffer, "ssh -q %s \"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3\"", hosts2[i]);
+      sprintf(buffer, "ssh -q %s \"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3\"", pvmnodestoadd[i]);
       system(buffer);
-      hosts2redo[0] = hosts2[i];
+      hosts2redo[0] = pvmnodestoadd[i];
       info = pvm_addhosts( (char **)hosts2redo, 1, infos2);
       if (infos2[0] < 0) {
         fprintf(stderr, "Remote error on %s: %d\n", hosts2redo[0], infos2[0]);
@@ -323,9 +281,9 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
             numt = pvm_spawn( (char *)commandtopvm, argv2, 1, (char *)pvmnodestoadd[i], 1, &tids[i] );
             //            fprintf(stderr, "numt was %d, tids[%d] was %d\n", numt, i, tids[i]);
             if (numt == 0) {
-              if (j != 0) {
-                info = pvm_delhosts( (char **)hosts2, j, infos );
-              }
+              i = pvm_setopt(PvmAutoErr, 0);
+              info = pvm_delhosts( (char **)pvmnodestoadd, numLocales, infos );
+              pvm_setopt(PvmAutoErr, i);
               // Let the main launcher print the error (unable to locale file)
               return (char *)"";
             }
@@ -343,13 +301,14 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   while (commsig == 0) {
     bufid = pvm_recv(-1, NOTIFYTAG);
     pvm_upkint(&commsig, 1, 1);
-    // fprintf case
+    // exit case
     if (commsig == 1) {
       hostsexit++;
       if (hostsexit != numLocales) {
         commsig = 0;
       }
     }
+    // fprintf case
     if (commsig == 2) {
       pvm_upkint(&fdnum, 1, 1);
       pvm_upkstr(buffer);
@@ -390,10 +349,11 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     }
   }
 
-  if (j != 0) {
-    info = pvm_delhosts( (char **)hosts2, j, infos );
-  }
+  i = pvm_setopt(PvmAutoErr, 0);
+  info = pvm_delhosts( (char **)pvmnodestoadd, numLocales, infos );
+  pvm_setopt(PvmAutoErr, i);
 
+  exit(0);
   return (char *)"";
 }
 
@@ -406,4 +366,27 @@ void chpl_launch(int argc, char* argv[], int32_t numLocales) {
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, chpl_string filename) {
   return 0;
+}
+
+void error_exit(int sig) {
+  int i, j, info;
+  char buffer[PRINTF_BUFF_LEN];
+  fprintf(stderr, "Received signal: %d\n", sig);
+  fflush(stdout);
+  fflush(stderr);
+
+  for (i=0; tids[i]; i++) {
+    info = pvm_kill(tids[i]);
+    if (info == PvmSysErr) {
+      sprintf(buffer, "ssh -q %s \"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3\"", pvmnodestoadd[i]);
+      system(buffer);
+     }
+  }
+
+  j = pvm_setopt(PvmAutoErr, 0);
+  info = pvm_delhosts( (char **)pvmnodestoadd, i, infos );
+  pvm_setopt(PvmAutoErr, j);
+  
+  pvm_halt();
+  exit(1);
 }
