@@ -754,15 +754,21 @@ void CallExpr::codegen(FILE* outfile) {
                       get(2), get(3),get(4));
       break;
     case PRIM_GPU_FREE:
+      if (fNoMemoryFrees)
+        break;
       help_codegen_fn(outfile, "_GPU_FREE", get(1));
       break;
     case PRIM_ARRAY_FREE:
+      if (fNoMemoryFrees)
+        break;
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         help_codegen_fn(outfile, "_WIDE_ARRAY_FREE", get(1), get(2), get(3));
       else
         help_codegen_fn(outfile, "_ARRAY_FREE", get(1), get(2), get(3));
       break;
     case PRIM_ARRAY_FREE_ELTS:
+      if (fNoMemoryFrees)
+        break;
       help_codegen_fn(outfile, "_ARRAY_FREE_ELTS", get(1), get(2), get(3));
       break;
     case PRIM_NOOP:
@@ -1776,6 +1782,8 @@ void CallExpr::codegen(FILE* outfile) {
       fputc( ')', outfile);
       break;
     case PRIM_FREE_TASK_LIST:
+      if (fNoMemoryFrees)
+        break;
       fputs( "chpl_free_task_list(", outfile);
       get(1)->codegen( outfile);
       fputc( ')', outfile);
@@ -1824,6 +1832,8 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIM_CHPL_FREE: {
+      if (fNoMemoryFrees)
+        break;
       INT_ASSERT(numActuals() == 3);
       fprintf(outfile, "%s((void*)", this->primitive->name);
       bool first_actual = true;
