@@ -1250,6 +1250,36 @@ def chpl__initCopy(ir: _iteratorRecord) {
   return A;
 }
 
+pragma "inline" def chpl__autoCopy(x: domain) {
+  x._value._domCnt$ += 1;
+  return x;
+}
+
+pragma "inline" def chpl__autoCopy(x: []) {
+  x._value._arrCnt$ += 1;
+  return x;
+}
+
+pragma "inline"
+def chpl__autoCopy(x: _tuple) {
+  return chpl__autoCopyHelp(x, 1, x.size);
+  pragma "inline"
+  def chpl__autoCopyHelp(x: _tuple, param lo: int, param hi: int) {
+    if lo == hi then
+      return _build_tuple_always(chpl__autoCopy(x(lo)));
+    else
+      return _build_tuple_always((...chpl__autoCopyHelp(x, lo, (lo+hi)/2)),
+                                 (...chpl__autoCopyHelp(x, (lo+hi)/2+1, hi)));
+  }
+}
+
+pragma "inline" def chpl__autoCopy(ir: _iteratorRecord)
+  return ir;
+
+pragma "inline" def chpl__autoCopy(x) return chpl__initCopy(x);
+
+pragma "inline" def chpl__autoCopy(type t) type return t;
+
 pragma "inline" def chpl__autoDestroy(x: object) { }
 pragma "inline" def chpl__autoDestroy(x: opaque) { }
 pragma "inline" def chpl__autoDestroy(x: enumerated) { }
