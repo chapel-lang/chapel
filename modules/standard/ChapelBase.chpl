@@ -1219,37 +1219,35 @@ def chpl__initCopy(a: []) {
 }
 
 def chpl__initCopy(ir: _iteratorRecord) {
-  return _ir_copy_help(_ir_copy_recursive(ir));
-
   def _ir_copy_recursive(ir) {
     for e in ir do
       yield chpl__initCopy(e);
   }
 
-  def _ir_copy_help(ir) {
-    var i = 1, size = 4;
-    var D = [1..size];
+  pragma "no copy" var irc = _ir_copy_recursive(ir);
 
-    // note that _getIterator is called in order to copy the iterator
-    // class since for arrays we need to iterate once to get the
-    // element type (at least for now); this also means that if this
-    // iterator has side effects, we will see them; a better way to
-    // handle this may be to get the static type (not initialize the
-    // array) and use a primitive to set the array's element; that may
-    // also handle skyline arrays
-    var A: [D] iteratorIndexType(ir);
+  var i = 1, size = 4;
+  var D = [1..size];
 
-    for e in ir {
-      if i > size {
-        size = size * 2;
-        D = [1..size];
-      }
-      A(i) = e;
-      i = i + 1;
+  // note that _getIterator is called in order to copy the iterator
+  // class since for arrays we need to iterate once to get the
+  // element type (at least for now); this also means that if this
+  // iterator has side effects, we will see them; a better way to
+  // handle this may be to get the static type (not initialize the
+  // array) and use a primitive to set the array's element; that may
+  // also handle skyline arrays
+  var A: [D] iteratorIndexType(irc);
+
+  for e in irc {
+    if i > size {
+      size = size * 2;
+      D = [1..size];
     }
-    D = [1..i-1];
-    return A;
+    A(i) = e;
+    i = i + 1;
   }
+  D = [1..i-1];
+  return A;
 }
 
 pragma "inline" def chpl__autoDestroy(x: object) { }
