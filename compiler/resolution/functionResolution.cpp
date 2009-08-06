@@ -3681,6 +3681,7 @@ resolve() {
       calls.add(call);
   }
   forv_Vec(CallExpr, call, calls) {
+    SET_LINENO(call);
     if (FnSymbol* key = call->isResolved()) {
       if (Vec<FnSymbol*>* fns = ddf.get(key)) {
         forv_Vec(FnSymbol, fn, *fns) {
