@@ -177,8 +177,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   }
 
   // Check to see if daemon is started or not by this user. If not, start one.
-  sprintf(buffer, "killall -q -9 pvmd3 ; rm -f /tmp/pvm*");
-  system(buffer);
   i = pvm_setopt(PvmAutoErr, 0);
   info = pvm_start_pvmd(0, argtostart, 1);
   pvm_setopt(PvmAutoErr, i);
@@ -369,24 +367,14 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
 }
 
 void error_exit(int sig) {
-  int i, j, info;
-  char buffer[PRINTF_BUFF_LEN];
-  fprintf(stderr, "Received signal: %d\n", sig);
+  int i;
+
   fflush(stdout);
   fflush(stderr);
 
-  for (i=0; tids[i]; i++) {
-    info = pvm_kill(tids[i]);
-    if (info == PvmSysErr) {
-      sprintf(buffer, "ssh -q %s \"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3\"", pvmnodestoadd[i]);
-      system(buffer);
-     }
-  }
-
-  j = pvm_setopt(PvmAutoErr, 0);
-  info = pvm_delhosts( (char **)pvmnodestoadd, i, infos );
-  pvm_setopt(PvmAutoErr, j);
-  
+  i = pvm_setopt(PvmAutoErr, 0);
   pvm_halt();
+  pvm_setopt(PvmAutoErr, i);
+
   exit(1);
 }
