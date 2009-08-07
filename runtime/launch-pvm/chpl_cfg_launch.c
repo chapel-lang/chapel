@@ -373,8 +373,6 @@ void error_exit(int sig) {
   fflush(stderr);
 
   for (i=0; tids[i]; i++) {
-    info = pvm_kill(tids[i]);
-
     sprintf(buffer, "ssh -q %s \"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3\"", pvmnodestoadd[i]);
     system(buffer);
   }
