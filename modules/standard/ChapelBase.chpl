@@ -1250,11 +1250,13 @@ def chpl__initCopy(ir: _iteratorRecord) {
   return A;
 }
 
+pragma "dont disable remote value forwarding"
 pragma "inline" def chpl__autoCopy(x: domain) {
   x._value._domCnt$ += 1;
   return x;
 }
 
+pragma "dont disable remote value forwarding"
 pragma "inline" def chpl__autoCopy(x: []) {
   x._value._arrCnt$ += 1;
   return x;
