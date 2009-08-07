@@ -1050,17 +1050,10 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
 
       fn->insertAtTail(new CondStmt(new SymExpr(gTryToken), leaderBlock, serialBlock));
     }
-    VarSymbol* tmp = newTemp();
-    fn->insertAtTail(new DefExpr(tmp));
-    fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("generate")))));
-    //
-    // It is currently unsafe to delete the reduction / scan operator class
-    // because its destructor calls the destructors for member variables
-    // such as arrays. This delete should be added again when it is safe to
-    // call the destructors of member variables.
-    //
-    //fn->insertAtTail(new CallExpr(PRIM_DELETE, globalOp));
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+    VarSymbol* result = new VarSymbol("result");
+    fn->insertAtTail(new DefExpr(result, new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("generate")))));
+    fn->insertAtTail(new CallExpr(PRIM_DELETE, globalOp));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, result));
   }
   return new CallExpr(new DefExpr(fn));
 }
