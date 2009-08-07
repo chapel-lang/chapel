@@ -1,6 +1,0 @@
-bug: not all reduction classes are deleted
-
-To prevent arrays returned for reductions from being deleted, I commented out
-the line in the compiler that inserts the delete call to clean up reduction
-classes. Once it is safe to call the array destructor from the reduction
-destructor, that line should be uncommented and this test should start passing.
