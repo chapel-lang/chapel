@@ -27,9 +27,8 @@ extern int gethostname(char *name, size_t namelen);
 void error_exit(int sig);
 char *replace_str(char *str, char *orig, char *rep);
 
-char* pvmnodestoadd[2048];
-int infos[256];
 int tids[32];
+char* pvmnodestoadd[2048];
 
 // Helper function
 char *replace_str(char *str, char *orig, char *rep)
@@ -52,11 +51,11 @@ char *replace_str(char *str, char *orig, char *rep)
 
 static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i, j, info;
-  //  int infos[256];
+  int infos[256];
   int infos2[256];
   char myhostname[256];
   char pvmnodetoadd[256];
-  char* pvmnodestoadd[2048];
+  //  char* pvmnodestoadd[2048];
   int pvmsize = 0;
   int commsig = 0;
   char* commandtopvm;
@@ -181,7 +180,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   info = pvm_start_pvmd(0, argtostart, 1);
   pvm_setopt(PvmAutoErr, i);
 
-  if (info != 0) {
+  if ((info != 0) && (info != -28)) {
     fprintf(stderr, "Exiting -- pvm_start_pvmd error %d.\n", info);
     chpl_internal_error("Problem starting PVM daemon.");
   }
@@ -367,14 +366,18 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
 }
 
 void error_exit(int sig) {
-  int i;
+  int i, info;
+  char buffer[PRINTF_BUFF_LEN];
 
   fflush(stdout);
   fflush(stderr);
 
-  i = pvm_setopt(PvmAutoErr, 0);
-  pvm_halt();
-  pvm_setopt(PvmAutoErr, i);
+  for (i=0; tids[i]; i++) {
+    info = pvm_kill(tids[i]);
+
+    sprintf(buffer, "ssh -q %s \"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3\"", pvmnodestoadd[i]);
+    system(buffer);
+  }
 
   exit(1);
 }
