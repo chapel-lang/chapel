@@ -8,6 +8,8 @@ def *(param p: int, type t) type {
     else
       return _fill(p, ((...x), (..._fill(p-x.size, oneTuple))));
   }
+  if p <= 0 then
+    compilerError("tuple must have positive size");
   return _fill(p, oneTuple);
 }
 
