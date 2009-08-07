@@ -35,6 +35,9 @@ checkControlFlow(Expr* expr, const char* context) {
       }
     } else if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->isLoop() && !loopSet.set_in(block)) {
+        if (block->userLabel != NULL) {
+          labelSet.set_add(block->userLabel);
+        }
         Vec<BaseAST*> loopAsts;
         collect_asts(block, loopAsts);
         forv_Vec(BaseAST, ast, loopAsts) {
@@ -59,9 +62,9 @@ checkControlFlow(Expr* expr, const char* context) {
           USR_FATAL_CONT(call, "yield is not allowed in %s", context);
       }
     } else if (GotoStmt* gs = toGotoStmt(ast)) {
-      if (gs->label && labelSet.set_in(gs->getName()))
+      if (labelSet.set_in(gs->getName()))
         continue; // break or continue target is in scope
-      if (!gs->label && loopSet.set_in(gs))
+      if (toSymExpr(gs->label) && toSymExpr(gs->label)->var == gNil && loopSet.set_in(gs))
         continue; // break or continue loop is in scope
       if (!strcmp(context, "on statement")) {
         USR_PRINT(gs, "the following error is a current limitation");
@@ -183,19 +186,26 @@ buildLabelStmt(const char* name, Expr* stmt) {
   BlockStmt* block = toBlockStmt(stmt);
   if (block) {
     Expr* breakLabelStmt = block->body.tail;
-    if (!isDefExpr(breakLabelStmt) && isDefExpr(breakLabelStmt->prev))
+    if (!isDefExpr(breakLabelStmt) && isDefExpr(breakLabelStmt->prev)) {
       // the last statement in the block could be a call to _freeIterator()
       breakLabelStmt = breakLabelStmt->prev;
-    BlockStmt* loop = toBlockStmt(breakLabelStmt->prev);
-    if (loop && loop->blockInfo && loop->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
-      loop->insertAtTail(new DefExpr(new LabelSymbol(name)));
-      loop->insertAfter(new DefExpr(new LabelSymbol(astr("_post", name))));
-      return block;
     }
+    BlockStmt* loop = toBlockStmt(breakLabelStmt->prev);
+    if (loop && loop->isLoop() &&
+         (loop->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)     ||
+          loop->blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+          loop->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP))) {
+      if (!loop->breakLabel || !loop->continueLabel) {
+        USR_FATAL(stmt, "cannot label parallel loop");
+      } else {
+        loop->userLabel = astr(name);
+      }
+    } else {
+      USR_FATAL(stmt, "cannot label non-loop statement");
+    }
+  } else {
+    USR_FATAL(stmt, "cannot label non-loop statement");
   }
-  block = buildChapelStmt(stmt);
-  block->insertAtHead(new DefExpr(new LabelSymbol(name)));
-  block->insertAtTail(new DefExpr(new LabelSymbol(astr("_post", name))));
   return block;
 }
 
@@ -345,9 +355,11 @@ BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   continueLabel->addFlag(FLAG_TEMP);
   continueLabel->addFlag(FLAG_LABEL_CONTINUE);
+  body->continueLabel = continueLabel;
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
   breakLabel->addFlag(FLAG_TEMP);
   breakLabel->addFlag(FLAG_LABEL_BREAK);
+  body->breakLabel = breakLabel;
   body->insertAtTail(new DefExpr(continueLabel));
   body->insertAtTail(new CallExpr(PRIM_MOVE, condVar, cond->copy()));
   BlockStmt* stmts = buildChapelStmt();
@@ -377,6 +389,8 @@ BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body) {
   breakLabel->addFlag(FLAG_TEMP);
   breakLabel->addFlag(FLAG_LABEL_BREAK);
   BlockStmt* block = new BlockStmt(body);
+  block->continueLabel = continueLabel;
+  block->breakLabel = breakLabel;
   block->blockInfo = new CallExpr(PRIM_BLOCK_DOWHILE_LOOP, condVar);
   BlockStmt* stmts = buildChapelStmt();
   stmts->insertAtTail(new DefExpr(condVar));
@@ -550,9 +564,11 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   continueLabel->addFlag(FLAG_TEMP);
   continueLabel->addFlag(FLAG_LABEL_CONTINUE);
+  body->continueLabel = continueLabel;
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
   breakLabel->addFlag(FLAG_TEMP);
   breakLabel->addFlag(FLAG_LABEL_BREAK);
+  body->breakLabel = breakLabel;
 
   VarSymbol* iterator = newTemp("_iterator");
   stmts->insertAtTail(new DefExpr(iterator));

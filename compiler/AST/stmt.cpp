@@ -22,7 +22,10 @@ BlockStmt::BlockStmt(Expr* init_body, BlockTag init_blockTag) :
   blockTag(init_blockTag),
   body(),
   blockInfo(NULL),
-  modUses(NULL)
+  modUses(NULL),
+  breakLabel(NULL),
+  continueLabel(NULL),
+  userLabel(NULL)
 {
   body.parent = this;
   if (init_body)

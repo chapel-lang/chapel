@@ -432,27 +432,11 @@ resolveGotoLabels() {
         if (!loop)
           USR_FATAL(gs, "break or continue is not in a loop");
         if (gs->gotoTag == GOTO_BREAK) {
-          Symbol* breakLabel = NULL;
-          for (Expr* expr = loop->next; expr; expr = expr->next) {
-            if (DefExpr* def = toDefExpr(expr)) {
-              if (def->sym->hasFlag(FLAG_LABEL_BREAK)) {
-                breakLabel = def->sym;
-                break;
-              }
-            }
-          }
+          Symbol* breakLabel = loop->breakLabel;
           INT_ASSERT(breakLabel);
           gs->label->replace(new SymExpr(breakLabel));
         } else if (gs->gotoTag == GOTO_CONTINUE) {
-          Symbol* continueLabel = NULL;
-          for (Expr* expr = loop->body.tail; expr; expr = expr->prev) {
-            if (DefExpr* def = toDefExpr(expr)) {
-              if (def->sym->hasFlag(FLAG_LABEL_CONTINUE)) {
-                continueLabel = def->sym;
-                break;
-              }
-            }
-          }
+          Symbol* continueLabel = loop->continueLabel;
           INT_ASSERT(continueLabel);
           gs->label->replace(new SymExpr(continueLabel));
         } else
@@ -460,16 +444,19 @@ resolveGotoLabels() {
       }
     } else if (UnresolvedSymExpr* label = toUnresolvedSymExpr(gs->label)) {
       const char* name = label->unresolved;
-      if (gs->gotoTag == GOTO_BREAK)
-        name = astr("_post", name);
-      Vec<BaseAST*> asts;
-      collect_asts(gs->parentSymbol, asts);
-      forv_Vec(BaseAST, ast, asts) {
-        if (LabelSymbol* ls = toLabelSymbol(ast)) {
-          if (!strcmp(ls->name, name))
-            gs->label->replace(new SymExpr(ls));
-        }
+      BlockStmt* loop = find_outer_loop(gs);
+      while (loop && (!loop->userLabel || strcmp(loop->userLabel, name))) {
+        loop = find_outer_loop(loop->parentExpr);
       }
+      if (!loop) {
+        USR_FATAL(gs, "bad label on break or continue");
+      }
+      if (gs->gotoTag == GOTO_BREAK)
+        label->replace(new SymExpr(loop->breakLabel));
+      else if (gs->gotoTag == GOTO_CONTINUE)
+        label->replace(new SymExpr(loop->continueLabel));
+      else
+        INT_FATAL(gs, "unexpected goto type");
     }
   }
 }

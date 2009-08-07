@@ -427,10 +427,11 @@ parameters.  The loop is then unrolled for each iteration.
 \index{break@\chpl{break}}
 \index{continue@\chpl{continue}}
 
-The label-statement is used to apply a label to a specific loop which
-can then be the target of a break- or continue-statement.  If a break-
+The label-statement is used to name a specific loop which can then
+be the target of a break- or continue-statement.  If a break-
 or continue-statement has no label, the target is the lexically
-inner-most loop.
+inner-most loop. Labels can only be given to for-, while-do- and
+do-while-statements.
 
 The syntax for label, break, and continue statements is given by:
 \begin{syntax}
@@ -445,11 +446,28 @@ continue-statement:
 \end{syntax}
 
 If a break-statement is encountered, control will be transferred to
-after the loop.  If a continue-statement is encountered, control will
-be transferred to the end of the loop, but still inside the loop.
-Break-statements cannot be used in parallel loops.  Neither break- nor
-continue-statements can be used in cobegin-, coforall-, begin-, or
-end-statements.
+after the associated loop.  If a continue-statement is encountered,
+control will be transferred to the end of the associated loop, but
+still inside the loop.  Break-statements cannot be used to break out of
+parallel loops.  Neither break- nor continue-statements can
+cross out of cobegin-, coforall-, begin-, or sync-statements.
+
+\begin{example}
+In the following code, the index of the first element in each row of
+\chpl{A} that is equal to \chpl{findVal} is printed.  Once a match is
+found, the continue statement is executed causing the outer loop to
+move to the next row.
+\begin{chapel}
+label outer for i in 1..n {
+  for j in 1..n {
+    if A[i, j] == findVal {
+      writeln("index: ", (i, j), " matches.");
+      continue outer;
+    }
+  }
+}
+\end{chapel}
+\end{example}
 
 \subsection{The Use Statement}
 \label{The_Use_Statement}

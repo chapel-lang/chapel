@@ -170,7 +170,7 @@ NOTES
 %type <pblockstmt> program stmt_ls
 %type <pblockstmt> class_body_stmt_ls
 
-%type <pblockstmt> stmt empty_stmt label_stmt goto_stmt break_stmt continue_stmt
+%type <pblockstmt> stmt empty_stmt label_stmt break_stmt continue_stmt
 %type <pblockstmt> expr_stmt if_stmt param_for_stmt for_stmt forall_stmt coforall_stmt while_do_stmt do_while_stmt serial_stmt
 %type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt class_body_stmt
 %type <pblockstmt> type_select_stmt on_stmt non_empty_stmt use_stmt_ls sync_stmt
@@ -285,7 +285,6 @@ stmt:
 
 non_empty_stmt:
   label_stmt
-| goto_stmt
 | break_stmt
 | continue_stmt
 | expr_stmt
@@ -361,12 +360,6 @@ empty_stmt:
 label_stmt:
   TLABEL identifier stmt
     { $$ = buildLabelStmt($2, $3); }
-;
-
-
-goto_stmt:
-  TGOTO identifier TSEMI
-    { $$ = buildChapelStmt(new GotoStmt(GOTO_NORMAL, $2)); }
 ;
 
 

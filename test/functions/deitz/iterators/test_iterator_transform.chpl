@@ -25,6 +25,7 @@ def goo(n: int)
 
 class bar {
   var n, i, result: int;
+/*
   def getNextCursor(c: int) {
     var n = this.n;
     var i = this.i;
@@ -41,6 +42,29 @@ label L2
     }
     return 0;
   }
+*/
+  def getNextCursor(c: int) {
+    var n = this.n;
+    var i = this.i;
+    if c != 2 {
+      i = 0;
+      this.i = 0;
+      if i < n {
+        this.result = i;
+        return 2;
+      }
+    } else {
+      i = i + 1;
+      this.i = i;
+      if i < n {
+        this.result = i;
+        return 2;
+      }
+    }
+    return 0;
+  }
+
+
   def getHeadCursor() return getNextCursor(1);
   def isValidCursor(c: int) return c != 0;
   def getValue(c: int) return result;

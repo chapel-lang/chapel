@@ -21,6 +21,9 @@ class BlockStmt : public Expr {
   AList body;
   CallExpr* blockInfo;
   CallExpr* modUses;  // module uses via PRIM_USE
+  LabelSymbol* breakLabel;
+  LabelSymbol* continueLabel;
+  const char* userLabel;
 
   BlockStmt(Expr* init_body = NULL, BlockTag init_blockTag = BLOCK_NORMAL);
   ~BlockStmt();

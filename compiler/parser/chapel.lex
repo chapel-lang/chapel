@@ -78,7 +78,6 @@ enum            processToken(TENUM);
 _extern         processToken(TEXTERN);
 for             processToken(TFOR);
 forall          processToken(TFORALL);
-goto            processToken(TGOTO);
 if              processToken(TIF);
 in              processToken(TIN);
 index           processToken(TINDEX);

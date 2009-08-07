@@ -26,6 +26,7 @@ def fun_string_chars(s: string) {
   return ic;
 }
 
+/*
 def IC.next() {
   select cursor {
     when 1 do goto L1;
@@ -41,7 +42,26 @@ def IC.next() {
   }
   cursor = 0;
 }
-
+*/
+def IC.next() {
+  if cursor == 1 {
+    i = 1;
+    limit = length(s);
+    if i <= limit {
+      value = s.substring(i);
+      cursor = 2;
+      return;
+    }
+  } else if cursor == 2 {
+    i += 1;
+    if i <= limit {
+      value = s.substring(i);
+      cursor = 2;
+      return;
+    }
+  }
+  cursor = 0;
+}
 
 def special_fun_string_chars(s: string) {
   var ic = new IC(cursor=1, s=s);
