@@ -18,19 +18,20 @@ CONFIG VAR FLAGS:
 CONFIG VARS:
 ============
 Built-in config vars:
-    numLocales: int (configured to 1)
-    maxThreads: int
-      memTrack: bool
-      memStats: bool
-      memLeaks: bool
-        memMax: uint(64)
-  memThreshold: uint(64)
-        memLog: string
-   memLeaksLog: string
+     numLocales: int (configured to 1)
+     maxThreads: int
+       memTrack: bool
+       memStats: bool
+       memLeaks: bool
+  memLeaksTable: bool
+         memMax: uint(64)
+   memThreshold: uint(64)
+         memLog: string
+    memLeaksLog: string
 
 module1 config vars:
-             x: string (configured to this is a test)
+              x: string (configured to this is a test)
 
 module2 config vars:
-             x: string (configured to of setting strings in two modules)
-             z: string
+              x: string (configured to of setting strings in two modules)
+              z: string

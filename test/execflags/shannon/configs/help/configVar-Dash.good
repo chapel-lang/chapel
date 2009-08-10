@@ -18,17 +18,18 @@ CONFIG VAR FLAGS:
 CONFIG VARS:
 ============
 Built-in config vars:
-    numLocales: int (configured to 1)
-    maxThreads: int
-      memTrack: bool
-      memStats: bool
-      memLeaks: bool
-        memMax: uint(64)
-  memThreshold: uint(64)
-        memLog: string
-   memLeaksLog: string
+     numLocales: int (configured to 1)
+     maxThreads: int
+       memTrack: bool
+       memStats: bool
+       memLeaks: bool
+  memLeaksTable: bool
+         memMax: uint(64)
+   memThreshold: uint(64)
+         memLog: string
+    memLeaksLog: string
 
 configVar-Dash config vars:
-             x: int (configured to 111)
-             y: string (configured to i wanted to see it work again)
-             z: real (configured to 99.9)
+              x: int (configured to 111)
+              y: string (configured to i wanted to see it work again)
+              z: real (configured to 99.9)

@@ -29,6 +29,7 @@ typedef struct memTableEntry_struct { /* table entry */
 static memTableEntry* memTable[HASHSIZE];
 
 static _Bool memLeaks = false;
+static _Bool memLeaksTable = false;
 static _Bool memStats = false;
 static uint64_t memMax = 0;
 static _Bool memTrack = false;
@@ -142,15 +143,17 @@ void chpl_initMemTable(void) {
 void chpl_setMemFlags(chpl_bool memTrackConfig,
                       chpl_bool memStatsConfig,
                       chpl_bool memLeaksConfig,
+                      chpl_bool memLeaksTableConfig,
                       uint64_t memMaxConfig,
                       uint64_t memThresholdConfig,
                       chpl_string memLogConfig,
                       chpl_string memLeaksLogConfig) {
   memTrack = memTrackConfig;
-  if (memStatsConfig || memLeaksConfig || memMaxConfig)
+  if (memStatsConfig || memLeaksConfig || memLeaksTableConfig || memMaxConfig)
     memTrack = true;
   memStats = memStatsConfig;
   memLeaks = memLeaksConfig;
+  memLeaksTable = memLeaksTableConfig;
   memMax = memMaxConfig;
   memThreshold = memThresholdConfig;
   memLog = memLogConfig;
@@ -269,6 +272,10 @@ void chpl_reportMemInfo() {
   if (memLeaks) {
     fprintf(memLogFile, "\n");
     chpl_printLeakedMemTable();
+  }
+  if (memLeaksTable) {
+    fprintf(memLogFile, "\n");
+    chpl_printMemTable(0, 0, 0);
   }
   if (memLogFile && memLogFile != stdout)
     fclose(memLogFile);

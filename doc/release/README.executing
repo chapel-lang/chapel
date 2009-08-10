@@ -175,6 +175,10 @@ The configuration constants can be set as follows:
                       entries in the table are aggregated and
                       summarized.
 
+  --memLeaksTable   : calls printMemTable at the end of the program,
+                      thus printing out a table of all memory that has
+                      not been freed without aggregation.
+
   --memMax=uint(64) : sets a maximum level of allocatable memory.  If
                       this constraint is violated, the program is
                       terminated.  If unset or 0, there is no
