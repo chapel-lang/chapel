@@ -1,4 +1,0 @@
-bug: bounds check fails when slicing stridable array with unstrided range
-
-The check fails because it tests whether the range slice is equal to the
-slicing range. In this case, the slice is stridable, the slicing range is not.
