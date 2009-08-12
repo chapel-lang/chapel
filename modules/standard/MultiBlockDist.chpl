@@ -238,7 +238,7 @@ class BlockDom: BaseArithmeticDom {
   //
   // a domain describing the complete domain
   //
-  const whole: domain(rank, idxType);
+  const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
 
   var pid: int = -1; // privatized object id
 }
@@ -325,7 +325,6 @@ def BlockDom.high return whole.high;
 // domain take a domain rather than something else?
 //
 def BlockDom.setIndices(x: domain) {
-  halt("this is never called");
   if x.rank != rank then
     compilerError("rank mismatch in domain assignment");
   if x._value.idxType != idxType then
@@ -354,14 +353,20 @@ def BlockDom.getDist(): Block(idxType) {
   return dist;
 }
 
+def BlockDom.slice(param stridable: bool, ranges) {
+  var d = new BlockDom(rank=rank, idxType=idxType, dist=dist, stridable=stridable||this.stridable);
+  d.setIndices(whole((...ranges)).getIndices());
+  return d;
+}
+
 def BlockDom.setup() {
   coforall localeIdx in dist.targetLocDom do
     on dist.targetLocs(localeIdx) do
       if (locDoms(localeIdx) == nil) then
         locDoms(localeIdx) = new LocBlockDom(rank, idxType, stridable, this, 
                                                dist.getChunk(whole, localeIdx));
-  else
-    locDoms(localeIdx).myBlock = dist.getChunk(whole, localeIdx);
+      else
+        locDoms(localeIdx).myBlock = dist.getChunk(whole, localeIdx);
   if debugBlockDist then
     for loc in dist.targetLocDom do writeln(loc, " owns ", locDoms(loc));
  
@@ -382,6 +387,17 @@ def BlockDom.reprivatize(other) {
   whole = other.whole;
 }
 
+def BlockDom.member(i) {
+  return whole.member(i);
+}
+
+def BlockDom.order(i) {
+  return whole.order(i);
+}
+
+def BlockDom.position(i) {
+  return whole.position(i);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Block Local Domain Class
@@ -403,7 +419,7 @@ class LocBlockDom {
   // require a glbIdxType offset in order to get from the global
   // indices back to the local index type.
   //
-  var myBlock: domain(rank, idxType);
+  var myBlock: domain(rank, idxType, stridable);
 }
 
 //
@@ -619,6 +635,27 @@ def BlockArr.writeThis(f: Writer) {
 }
 
 def BlockArr.numElements return dom.numIndices;
+
+def BlockArr.checkSlice(ranges) {
+  for param i in 1..rank do
+    if !dom.dim(i).boundsCheck(ranges(i)) then {
+      writeln(dom.dim(i), " ", ranges(i), " ", dom.dim(i).boundsCheck(ranges(i)));
+      halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
+    }
+}
+
+
+def BlockArr.slice(d: BlockDom) {
+  var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
+  for i in dom.dist.targetLocDom {
+    on dom.dist.targetLocs(i) {
+      alias.locArr[i] = new LocBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i]);
+      alias.locArr[i].myElems => locArr[i].myElems[alias.locArr[i].locDom.myBlock];
+    }
+  }
+
+  return alias;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Block Local Array Class
