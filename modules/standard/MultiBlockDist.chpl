@@ -61,8 +61,19 @@ class Block : BaseDist {
       }
     } else {
       if targetLocales.rank != rank then
-        compilerError("locales array rank must be one or match distribution rank");
-      halt("case 2 not handled yet");
+	compilerError("locales array rank must be one or match distribution rank");
+
+      var ranges: rank*range;
+      for param i in 1..rank do {
+	var thisRange = targetLocales.domain.dim(i);
+	ranges(i) = 0..#thisRange.length; 
+      }
+      
+      targetLocDom = [(...ranges)];
+      if debugBlockDist then writeln(targetLocDom);
+
+      targetLocs = reshape(targetLocales, targetLocDom);
+      if debugBlockDist then writeln(targetLocs);
     }
 
     coforall locid in targetLocDom do
