@@ -17,11 +17,9 @@ static void build_record_copy_function(ClassType* ct);
 static void build_record_hash_function(ClassType* ct);
 static void build_record_equality_function(ClassType* ct);
 static void build_record_inequality_function(ClassType* ct);
-static void build_record_init_function(ClassType* ct);
 static void build_union_assignment_function(ClassType* ct);
 static void build_enum_cast_function(EnumType* et);
 static void build_enum_enumerate_function(EnumType* et);
-static void build_enum_init_function(EnumType* et);
 
 static void buildDefaultReadFunction(ClassType* type);
 static void buildDefaultReadFunction(EnumType* type);
@@ -72,7 +70,6 @@ void buildDefaultFunctions(void) {
           }
           build_record_assignment_function(ct);
           build_record_cast_function(ct);
-          build_record_init_function(ct);
           build_record_copy_function(ct);
           build_record_hash_function(ct);
         }
@@ -80,7 +77,6 @@ void buildDefaultFunctions(void) {
           build_union_assignment_function(ct);
       }
       if (EnumType* et = toEnumType(type->type)) {
-        build_enum_init_function(et);
         build_enum_cast_function(et);
         build_enum_assignment_function(et);
         build_enum_enumerate_function(et);
@@ -462,21 +458,6 @@ static void build_enum_cast_function(EnumType* et) {
 }
 
 
-static void build_enum_init_function(EnumType* et) {
-  if (function_exists("_init", 1, et))
-    return;
-
-  FnSymbol* fn = new FnSymbol("_init");
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", et);
-  fn->insertFormalAtTail(arg1);
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, toDefExpr(et->constants.first())->sym));
-  DefExpr* def = new DefExpr(fn);
-  et->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, et->symbol->lineno);
-  normalize(fn);
-}
-
-
 static void build_enum_assignment_function(EnumType* et) {
   if (function_exists("=", 2, et))
     return;
@@ -588,33 +569,6 @@ static void build_record_copy_function(ClassType* ct) {
   ct->symbol->defPoint->insertBefore(def);
   reset_line_info(def, ct->symbol->lineno);
   normalize(fn);
-}
-
-
-static void build_record_init_function(ClassType* ct) {
-  if (function_exists("_init", 1, ct))
-    return;
-
-  FnSymbol* fn = new FnSymbol("_init");
-  fn->addFlag(FLAG_INLINE);
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
-  arg->markedGeneric = true;
-  fn->insertFormalAtTail(arg);
-  CallExpr* call = new CallExpr(ct->defaultConstructor->name);
-  for_formals(formal, ct->defaultConstructor) {
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE) || formal->intent == INTENT_PARAM) {
-      call->insertAtTail(new NamedExpr(formal->name, new CallExpr(".", arg, new_StringSymbol(formal->name))));
-    } else if (!formal->defaultExpr) {
-      call->insertAtTail(new NamedExpr(formal->name, new CallExpr(PRIM_INIT, new CallExpr(".", arg, new_StringSymbol(formal->name)))));
-    }
-  }
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
-  DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
-  normalize(fn);
-  if (ct->symbol->hasFlag(FLAG_TUPLE))
-    fn->addFlag(FLAG_TUPLE_INIT);
 }
 
 

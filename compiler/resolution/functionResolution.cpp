@@ -1841,8 +1841,7 @@ formalRequiresTemp(ArgSymbol* formal) {
 
 static void
 insertFormalTemps(FnSymbol* fn) {
-  if (!strcmp(fn->name, "_init") ||
-      !strcmp(fn->name, "chpl__initCopy") ||
+  if (!strcmp(fn->name, "chpl__initCopy") ||
       !strcmp(fn->name, "chpl__initCopyHelp") ||
       !strcmp(fn->name, "chpl__autoCopy") ||
       !strcmp(fn->name, "chpl__autoCopyHelp") ||

@@ -114,21 +114,6 @@ instantiate_tuple(FnSymbol* fn) {
 
 
 static void
-instantiate_tuple_init(FnSymbol* fn) {
-  if (fn->numFormals() != 1)
-    INT_FATAL(fn, "tuple init function has more than one argument");
-  ArgSymbol* arg = fn->getFormal(1);
-  ClassType* ct = toClassType(arg->type);
-  CallExpr* call = new CallExpr(ct->defaultConstructor->name);
-  call->insertAtTail(new CallExpr(".", arg, new_StringSymbol("size")));
-  for (int i = 1; i < ct->fields.length; i++)
-    call->insertAtTail(new CallExpr(PRIM_INIT, new CallExpr(arg, new_IntSymbol(i))));
-  fn->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, call)));
-  normalize(fn);
-}
-
-
-static void
 instantiate_tuple_hash( FnSymbol* fn) {
   if (fn->numFormals() != 1)
     INT_FATAL(fn, "tuple hash function has more than one argument");
@@ -468,8 +453,6 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
     newFn->retType = newType;
   }
 
-  if (fn->hasFlag(FLAG_TUPLE_INIT))
-    instantiate_tuple_init(newFn);
   if (fn->hasFlag(FLAG_TUPLE_HASH_FUNCTION))
     instantiate_tuple_hash(newFn);
 

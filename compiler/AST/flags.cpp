@@ -91,7 +91,6 @@ initFlags() {
   defineFlag(FLAG_TEMP, "temp");
   defineFlag(FLAG_TUPLE, "tuple");
   defineFlag(FLAG_TUPLE_HASH_FUNCTION, "tuple hash function");
-  defineFlag(FLAG_TUPLE_INIT, "tuple init");
   defineFlag(FLAG_TYPE_CONSTRUCTOR, "type constructor");
   defineFlag(FLAG_TYPE_VARIABLE, "type variable");
   defineFlag(FLAG_INVISIBLE_FN, "invisible fn");

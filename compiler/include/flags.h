@@ -96,7 +96,6 @@ enum Flag {
   FLAG_TEMP, // compiler-inserted temporary
   FLAG_TUPLE,
   FLAG_TUPLE_HASH_FUNCTION,
-  FLAG_TUPLE_INIT,
   FLAG_TYPE_CONSTRUCTOR,
   FLAG_TYPE_VARIABLE, // contains a type instead of a value
   FLAG_INVISIBLE_FN, // invisible function (not a candidate for resolution)
