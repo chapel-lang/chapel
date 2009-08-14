@@ -1264,6 +1264,8 @@ pragma "inline" def chpl__autoCopy(ir: _iteratorRecord)
 
 pragma "inline" def chpl__autoCopy(x) return chpl__initCopy(x);
 
+pragma "inline" pragma "ref" def chpl__autoCopy(r: _ref) return r;
+
 pragma "inline" def chpl__autoCopy(type t) type return t;
 
 pragma "inline" def chpl__autoDestroy(x: object) { }

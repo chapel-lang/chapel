@@ -166,10 +166,13 @@ instantiate_tuple_autoCopy(FnSymbol* fn) {
     INT_FATAL(fn, "tuple autoCopy function has more than one argument");
   ArgSymbol  *arg = fn->getFormal(1);
   ClassType  *ct = toClassType(arg->type);
-  CallExpr *call = new CallExpr("_build_tuple_always");
+  CallExpr *call = new CallExpr("_build_tuple_always_allow_ref");
   BlockStmt* block = new BlockStmt();
   for (int i=1; i<ct->fields.length; i++) {
-    call->insertAtTail(new CallExpr("chpl__autoCopy", new CallExpr(arg, new_IntSymbol(i))));
+    Symbol* tmp = newTemp();
+    block->insertAtTail(new DefExpr(tmp));
+    block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, new_StringSymbol(astr("x", istr(i))))));
+    call->insertAtTail(new CallExpr("chpl__autoCopy", tmp));
   }
   block->insertAtTail(new CallExpr(PRIM_RETURN, call));
   fn->body->replace(block);
