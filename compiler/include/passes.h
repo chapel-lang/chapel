@@ -23,6 +23,7 @@ void cullOverReferences();
 void deadCodeElimination();
 void flattenClasses();
 void flattenFunctions();
+void gpuFlattenArgs();
 void inlineFunctions();
 void insertLineNumbers();
 void insertWideReferences();

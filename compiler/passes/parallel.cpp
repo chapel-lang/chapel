@@ -80,6 +80,9 @@ bundleArgs(CallExpr* fcall) {
   // create wrapper-function that uses the class instance
 
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
+  // Add a special flag for the wrapper-function (caller) of the GPU kernel
+  if (fn->hasFlag(FLAG_GPU_ON))
+    wrap_fn->addFlag(FLAG_GPU_CALL);
   DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
   if (fn->hasFlag(FLAG_ON)) {
     wrap_fn->addFlag(FLAG_ON_BLOCK);
@@ -104,7 +107,6 @@ bundleArgs(CallExpr* fcall) {
       wrap_fn->addFlag(FLAG_BEGIN_BLOCK);
     wrap_fn->insertAtHead(new CallExpr(PRIM_THREAD_INIT));
   }
-    
   // translate the original cobegin function
   CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
   if (fn->hasFlag(FLAG_ON))
@@ -114,14 +116,14 @@ bundleArgs(CallExpr* fcall) {
     VarSymbol* tmp = newTemp(field->type);
     wrap_fn->insertAtTail(new DefExpr(tmp));
     wrap_fn->insertAtTail(
-      new CallExpr(PRIM_MOVE, tmp,
+        new CallExpr(PRIM_MOVE, tmp,
         new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
     new_cofn->insertAtTail(tmp);
   }
 
   wrap_fn->retType = dtVoid;
   wrap_fn->insertAtTail(new_cofn);     // add new call
-  if (fn->hasFlag(FLAG_ON))
+  if (fn->hasFlag(FLAG_ON) || fn->hasFlag(FLAG_GPU_ON))
     fcall->insertAfter(new CallExpr(PRIM_CHPL_FREE, tempc));
   else
     wrap_fn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, wrap_c));
@@ -656,12 +658,28 @@ parallel(void) {
         ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
         fn->insertFormalAtTail(arg);
       }
+      else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
+	fn = new FnSymbol("on_gpu_kernel");
+        fn->addFlag(FLAG_GPU_ON);
+	//Add two formal arguments:
+	// nBlocks = Number of Thread blocks
+	// threadsPerBlock = Number of threads per single thread block
+        ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "nBlocks", dtInt[INT_SIZE_32]);
+        ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "threadsPerBlock", dtInt[INT_SIZE_32]);
+        fn->insertFormalAtTail(arg1);
+        fn->insertFormalAtTail(arg2);
+      }
       if (fn) {
         nestedFunctions.add(fn);
         CallExpr* call = new CallExpr(fn);
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ||
             block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           call->insertAtTail(block->blockInfo->get(1)->remove());
+	else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
+          call->insertAtTail(block->blockInfo->get(1)->remove());
+          call->insertAtTail(block->blockInfo->get(1)->remove());
+	}
+
         block->insertBefore(new DefExpr(fn));
         block->insertBefore(call);
         block->blockInfo->remove();

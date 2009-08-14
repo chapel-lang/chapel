@@ -608,19 +608,13 @@ pragma "inline" def =(a: [], b : []) where (a._value.canCopyFromHost && b._value
 
 pragma "inline" def =(a: [], b : []) where (a._value.canCopyFromDevice && b._value.canCopyFromHost) {
 	__primitive("copy_gpu_to_host", 
-			a._value.data,
-			b._value.data,
-			b._value.eltType,
-			b._value.size);
+			a._value.data, b._value.data, b._value.eltType, b._value.size);
 	return a;
 }
 
 pragma "inline" def =(a: [], b : []) where (a._value.canCopyFromHost && b._value.canCopyFromDevice) {
 	__primitive("copy_host_to_gpu", 
-			a._value.data,
-			b._value.data,
-			b._value.eltType,
-			b._value.size);
+			a._value.data, b._value.data, b._value.eltType, b._value.size);
 	return a;
 }
 

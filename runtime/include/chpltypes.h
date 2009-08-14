@@ -57,7 +57,15 @@ typedef struct _chpl_fieldType {
 #define UINT32( i) (i ## UL)
 #define UINT64( i) (i ## ULL)
 
+
+// Cuda does not suuport c99 bools
+#ifndef ENABLE_GPU
 typedef _Bool chpl_bool;
+#else
+typedef bool chpl_bool;
+#endif
+
+//typedef bool chpl_bool;
 typedef int8_t chpl_bool8;
 typedef int16_t chpl_bool16;
 typedef int32_t chpl_bool32;

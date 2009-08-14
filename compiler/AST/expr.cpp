@@ -703,7 +703,12 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_ARRAY_GET:
     case PRIM_ARRAY_GET_VALUE:
     case PRIM_GPU_GET_VALUE:
+    case PRIM_GPU_GET_VAL:
+    case PRIM_GPU_GET_ARRAY:
       fprintf(outfile, "/* uncaptured _data vector access not generated */");
+      break;
+    case PRIM_CALL_GPU:
+      fprintf(outfile, "/* Calling GPU kernel */");
       break;
     case PRIM_ARRAY_SET:
     case PRIM_ARRAY_SET_FIRST:
@@ -742,21 +747,35 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     case PRIM_GPU_ALLOC:
-      help_codegen_fn(outfile, "_GPU_ALLOC", get(1),
-                      get(1)->typeInfo()->substitutions.v[0].value, get(3));
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        help_codegen_fn(outfile, "_GPU_ALLOC", get(1),
+                        get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value,
+                        get(3));
+      } else {
+	fprintf(outfile, "_GPU_ALLOC(");
+	get(1)->codegen(outfile);
+	fprintf(outfile,", _");
+	get(1)->typeInfo()->symbol->codegen(outfile);
+	fprintf(outfile,", ");
+	get(2)->codegen(outfile);
+	fprintf(outfile,", ");
+	get(3)->typeInfo()->symbol->codegen(outfile);
+	fprintf(outfile,")");
+      }
       break;
     case PRIM_COPY_HOST_GPU:
-      help_codegen_fn(outfile, "_GPU_COPY_HOST_GPU", get(1),
-                      get(2), get(3), get(4));
+      help_codegen_fn(outfile, "_GPU_COPY_HOST_GPU", get(1), get(2), get(3), get(4));
       break;
     case PRIM_COPY_GPU_HOST:
-      help_codegen_fn(outfile, "_GPU_COPY_GPU_HOST", get(1),
-                      get(2), get(3),get(4));
+      help_codegen_fn(outfile, "_GPU_COPY_GPU_HOST", get(1), get(2), get(3), get(4));
       break;
     case PRIM_GPU_FREE:
       if (fNoMemoryFrees)
         break;
-      help_codegen_fn(outfile, "_GPU_FREE", get(1));
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        help_codegen_fn(outfile, "_GPU_FREE", get(1));
+      else
+        help_codegen_fn(outfile, "_GPU_FREE", get(1));
       break;
     case PRIM_ARRAY_FREE:
       if (fNoMemoryFrees)
@@ -979,9 +998,21 @@ void CallExpr::codegen(FILE* outfile) {
           break;
         }
         if (call->isPrimitive(PRIM_GPU_GET_VALUE)) {
-            get(1)->codegen(outfile);
-            fprintf(outfile, " = ");
-            help_codegen_fn(outfile, "_GPU_GET_VALUE", call->get(1), call->get(2));
+          get(1)->codegen(outfile);
+          fprintf(outfile, " = ");
+          help_codegen_fn(outfile, "_GPU_GET_VALUE", call->get(1), call->get(2));
+          break;
+        }
+        if (call->isPrimitive(PRIM_GPU_GET_VAL)) {
+          get(1)->codegen(outfile);
+          fprintf(outfile, " = ");
+          help_codegen_fn(outfile, "_GPU_GET_VAL", call->get(1), call->get(2));
+          break;
+        }
+        if (call->isPrimitive(PRIM_GPU_GET_ARRAY)) {
+          get(1)->codegen(outfile);
+          fprintf(outfile, " = ");
+          help_codegen_fn(outfile, "_GPU_GET_ARRAY", call->get(1));
           break;
         }
         if (call->isPrimitive(PRIM_UNION_GETID)) {
@@ -1942,6 +1973,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_TYPE_TO_STRING:
     case PRIM_TO_LEADER:
     case PRIM_TO_FOLLOWER:
+    case PRIM_ON_GPU:
       INT_FATAL(this, "primitive should no longer be in AST");
       break;
     case PRIM_GC_CC_INIT:
@@ -2185,10 +2217,22 @@ void CallExpr::codegen(FILE* outfile) {
   }
 
   baseExpr->codegen(outfile);
+  if (fn->hasFlag(FLAG_GPU_ON)) {
+    fprintf(outfile,"<<<");
+    get(1)->codegen(outfile);
+    fprintf(outfile,",");
+    get(2)->codegen(outfile);
+    fprintf(outfile, ">>>");
+  }
   fprintf(outfile, "(");
 
   bool first_actual = true;
+  int count = 0;
   for_formals_actuals(formal, actual, this) {
+    if (fn->hasFlag(FLAG_GPU_ON) && count < 2) {
+      count++;
+      continue; // do not print nBlocks and numThreadsPerBlock
+    }
     if (first_actual)
       first_actual = false;
     else
@@ -2210,6 +2254,16 @@ void CallExpr::codegen(FILE* outfile) {
   fprintf(outfile, ")");
   if (getStmtExpr() && getStmtExpr() == this)
     fprintf(outfile, ";\n");
+  if (fn->hasFlag(FLAG_GPU_ON)) {
+    fprintf(outfile, "cudaThreadSynchronize();\n");
+    fprintf(outfile, "cudaError_t err = cudaGetLastError();\n");
+    fprintf(outfile, "if( cudaSuccess != err) {\n");
+    fprintf(outfile, "fprintf(stderr, \"CUDA error: Kernel Execution Failed in file <%%s>, line %%i : %%s.\\n\",");
+    fprintf(outfile, "__FILE__, __LINE__, cudaGetErrorString( err) );\n");
+    fprintf(outfile, "chpl_exit_any(-1);\n");
+    fprintf(outfile, "}\n");
+  }
+
 }
 
 

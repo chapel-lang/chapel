@@ -147,7 +147,13 @@ returnInfoArrayIndexValue(CallExpr* call) {
     type = type->getField("addr")->type;
   if (!type->substitutions.n)
     INT_FATAL(call, "bad primitive");
-  return toTypeSymbol(type->substitutions.v[0].value)->type;
+  // Is this conditional necessary?  Can just assume condition is true?
+  if (type->symbol->hasFlag(FLAG_DATA_CLASS)) {
+    return toTypeSymbol(getDataClassType(type->symbol))->type;
+  }
+  else {
+    return toTypeSymbol(type->substitutions.v[0].value)->type;
+  }
 }
 
 static Type*
@@ -402,11 +408,14 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false, true);
   prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false, true);
 
+  prim_def(PRIM_GPU_GET_ARRAY, "get_gpu_array", returnInfoArrayIndex, false, true);
   prim_def(PRIM_GPU_GET_VALUE, "get_gpu_value", returnInfoArrayIndex, false, true);
+  prim_def(PRIM_GPU_GET_VAL, "get_gpu_val", returnInfoArrayIndex, false, true);
   prim_def(PRIM_GPU_ALLOC, "gpu_alloc", returnInfoVoid, true, true);
   prim_def(PRIM_COPY_HOST_GPU, "copy_host_to_gpu", returnInfoVoid, true, false);
   prim_def(PRIM_COPY_GPU_HOST, "copy_gpu_to_host", returnInfoVoid, true, false);
   prim_def(PRIM_GPU_FREE, "gpu_free", returnInfoVoid, true, true);
+  prim_def(PRIM_ON_GPU, "chpl_on_gpu", returnInfoInt32);
 
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
   prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true, true);

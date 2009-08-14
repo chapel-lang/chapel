@@ -256,6 +256,48 @@ canInlineIterator(FnSymbol* iterator) {
 }
 
 static void
+getRecursiveIterators(Vec<Symbol*>& iterators, Symbol* gIterator) {
+  if (gIterator->type->symbol->hasFlag(FLAG_TUPLE)) {
+    ClassType* iteratorType = toClassType(gIterator->type);
+    for (int i=1; i <= iteratorType->fields.length; i++) {
+	    Symbol *iterator = toSymbol(iteratorType->getField(i));
+	    if (iterator)
+	      getRecursiveIterators(iterators, iterator);
+    }
+  }
+  else {
+    iterators.add(gIterator);
+  }
+}
+
+static bool
+canInlineSingleYieldIterator(Symbol* gIterator) {
+  Vec<Symbol*> iterators;
+  getRecursiveIterators(iterators, gIterator);
+  for (int i = 0; i < iterators.n; i++) {
+    FnSymbol* iterator= iterators.v[i]->type->defaultConstructor->getFormal(1)->type->defaultConstructor;
+    BlockStmt *block = iterator->body;
+
+    INT_ASSERT(block);
+    Vec<BaseAST*> asts;
+    collect_asts(block, asts);
+
+    int numYields = 0;
+    forv_Vec(BaseAST, ast, asts) {
+      CallExpr* call = toCallExpr(ast);
+      if (call && call->isPrimitive(PRIM_YIELD)) {
+        numYields++;
+	if (iterator->body != call->parentExpr) return false;
+      }
+    }
+    if (numYields != 1) return false;
+  }
+  return true;
+}
+
+
+
+static void
 setupSimultaneousIterators(Vec<Symbol*>& iterators,
                            Vec<Symbol*>& indices,
                            Symbol* gIterator,
@@ -366,6 +408,72 @@ buildIteratorCall(Symbol* ret, int fnid, Symbol* iterator, Vec<Type*>& children)
   return outerBlock;
 }
 
+static void
+inlineSingleYieldIterator(CallExpr* call) {
+  BlockStmt* block = toBlockStmt(call->parentExpr);
+  SymExpr* se1 = toSymExpr(call->get(1));
+  SymExpr* se2 = toSymExpr(call->get(2));
+  VarSymbol* index = toVarSymbol(se1->var);
+  VarSymbol* iterator = toVarSymbol(se2->var);
+
+  SET_LINENO(call);
+  Vec<Symbol*> iterators;
+  Vec<Symbol*> indices;
+  setupSimultaneousIterators(iterators, indices, iterator, index, block);
+
+  CallExpr *noop = new CallExpr(PRIM_NOOP);
+  block->insertAtHead(noop);
+  for (int i = 0; i < iterators.n; i++) {
+    FnSymbol *iterator = iterators.v[i]->type->defaultConstructor->getFormal(1)->type->defaultConstructor;
+    Vec<Expr*> exprs;
+
+    BlockStmt *ibody = iterator->body->copy();
+
+    Vec<BaseAST*> asts;
+    collect_asts(ibody, asts);
+    bool afterYield = false;
+    for_alist(expr, ibody->body) {
+      if (CallExpr *curr_expr = toCallExpr(expr)) {
+        if (curr_expr->isPrimitive(PRIM_YIELD)) {
+          afterYield = true;
+          noop->insertAfter(new CallExpr(PRIM_MOVE, indices.v[i], curr_expr->get(1)->remove()));
+        } else if (!curr_expr->isPrimitive(PRIM_RETURN)) {
+          if (afterYield == false)
+            noop->insertBefore(curr_expr->remove());
+          else 
+            block->insertAtTail(curr_expr->remove());
+        }
+      } else {
+        if (afterYield == false)
+          noop->insertBefore(expr->remove());
+        else 
+          block->insertAtTail(expr->remove());
+      }
+    }
+
+    int count = 1;
+    for_formals(formal, iterator) {
+      forv_Vec(BaseAST, ast, asts) {
+        if (SymExpr* se = toSymExpr(ast)) {
+          if (se->var == formal) {
+            //if ((se->var->type == formal->type) && (!strcmp(se->var->name, formal->name))) {
+            // count is used to get the nth field out of the iterator class;
+            // it is replaced by the field once the iterator class is created
+            Expr* stmt = se->getStmtExpr();
+            VarSymbol* tmp = newTemp(formal->name, formal->type);
+            stmt->insertBefore(new DefExpr(tmp));
+            stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, iterators.v[i], new_IntSymbol(count))));
+            se->var = tmp;
+          }
+	}
+      }
+      count++;
+    }
+
+  }
+  noop->remove();
+  call->remove();
+}
 
 static void
 expand_for_loop(CallExpr* call) {
@@ -388,6 +496,8 @@ expand_for_loop(CallExpr* call) {
        (iterator->type->dispatchChildren.n == 1 &&
        iterator->type->dispatchChildren.v[0] == dtObject))) {
     expandIteratorInline(call);
+  } else if (!fNoInlineIterators && canInlineSingleYieldIterator(iterator)) {
+      inlineSingleYieldIterator(call);	
   } else {
     SET_LINENO(call);
     Vec<Symbol*> iterators;
@@ -453,6 +563,13 @@ void lowerIterators() {
   computeRecursiveIteratorSet();
 
   inlineIterators();
+  
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+      collapseBlocks(fn->body);
+      removeUnnecessaryGotos(fn);
+    }
+  }
 
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol)
@@ -460,6 +577,7 @@ void lowerIterators() {
         if (call->numActuals() > 1)
           expand_for_loop(call);
   }
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
       collapseBlocks(fn->body);

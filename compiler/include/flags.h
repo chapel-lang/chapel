@@ -78,6 +78,8 @@ enum Flag {
   FLAG_NON_BLOCKING, // with FLAG_ON/FLAG_ON_BLOCK, non-blocking on functions
   FLAG_OBJECT_CLASS,
   FLAG_OMIT_FROM_CONSTRUCTOR,
+  FLAG_GPU_ON, // Flag to mark GPU device kernel
+  FLAG_GPU_CALL, // Flag to mark caller of GPU kernel
   FLAG_ON,
   FLAG_ON_BLOCK,
   FLAG_PARAM, // parameter (compile-time constant)

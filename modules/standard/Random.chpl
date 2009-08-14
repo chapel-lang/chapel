@@ -96,6 +96,21 @@ class RandomStream {
     return getNext();
   }
 
+  def fillRandom(X: [] real(32)) {
+    lock$;
+    const startCount: int(64) = sharedCount;
+    sharedCount = startCount + X.numElements;
+    lock$ = false;
+    if (X.rank == 1) {
+      forall (x, r) in (X, chpl__these(startCount, X.numElements)) {
+        x = r : real(32);
+      }
+    } else {
+      for (x,r) in (X, chpl__these(startCount, X.numElements)) {
+        x = r : real(32);
+      }
+    }
+  }
 
   def fillRandom(X: [] real) {
     lock$;

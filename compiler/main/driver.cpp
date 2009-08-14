@@ -60,6 +60,7 @@ bool fSerialForall = false;
 bool fSerial;  // initialized in setupOrderedGlobals() below
 bool fLocal;   // initialized in setupOrderedGlobals() below
 bool genCommunicatedStructures; // initialized in setupOrderedGlobals() below
+bool fGPU;
 bool fieeefloat = true;
 bool report_inlining = false;
 char chplmake[256] = "";
@@ -137,6 +138,8 @@ static void setupOrderedGlobals(void) {
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
   fSerial = !strcmp(CHPL_THREADS, "none"); 
+  // Enable if we are going to use Nvidia's NVCC compiler
+  fGPU = !strcmp(CHPL_TARGET_COMPILER, "nvidia");
   // Eventually, we should only generate structural definitions when
   // doing multirealm compilations.  However, we don't have the mechanism
   // in place to support two communication interfaces yet...

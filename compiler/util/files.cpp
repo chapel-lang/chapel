@@ -181,6 +181,17 @@ void openCFile(fileinfo* fi, const char* name, const char* ext, bool runtime) {
   fi->fptr = fopen(fi->pathname, "w");
 }
 
+void appendCFile(fileinfo* fi, const char* name, const char* ext, bool runtime) {
+  if (ext)
+    fi->filename = astr(name, ".", ext);
+  else
+    fi->filename = astr(name);
+  if (runtime)
+    fi->pathname = fi->filename;
+  else
+    fi->pathname = genIntFilename(fi->filename);
+  fi->fptr = fopen(fi->pathname, "a+");
+}
 void closeCFile(fileinfo* fi, bool beautifyIt) {
   fclose(fi->fptr);
   if (beautifyIt)
@@ -390,7 +401,7 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
 }
 
 
-void codegen_makefile(fileinfo* mainfile) {
+void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   fileinfo makefile;
   openCFile(&makefile, "Makefile");
   const char* tmpDirName = intDirName;
@@ -440,6 +451,10 @@ void codegen_makefile(fileinfo* mainfile) {
   fprintf(makefile.fptr, "\n");
   fprintf(makefile.fptr, "CHPLSRC = \\\n");
   fprintf(makefile.fptr, "\t%s \\\n\n", mainfile->pathname);
+  if (fGPU) {
+    fprintf(makefile.fptr, "CHPL_GPU_SRC = \\\n");
+    fprintf(makefile.fptr, "\t%s \\\n\n", gpusrcfile->pathname);
+  }
   genCFiles(makefile.fptr);
   genObjFiles(makefile.fptr);
   fprintf(makefile.fptr, "\nLIBS =");

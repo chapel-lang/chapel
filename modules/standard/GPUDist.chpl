@@ -1,5 +1,16 @@
-use Schedules;
-use List;
+_extern def chpl_init_accelerator();
+_extern def getThreadID_x() : int(32);
+_extern def getThreadID_y() : int(32);
+_extern def getThreadID_z() : int(32);
+_extern def getBlockID_x() : int(32);
+_extern def getBlockID_y() : int(32);
+_extern def getBlockID_z() : int(32);
+_extern def getBlockSize_x() : int(32);
+_extern def getBlockSize_y() : int(32);
+_extern def getBlockSize_z() : int(32);
+
+// Initialize the accelerator device from the beginning
+chpl_init_accelerator();
 
 pragma "data class"
 class _gdata {
@@ -8,33 +19,30 @@ class _gdata {
     __primitive("gpu_free", this);
   }
   pragma "inline" def init(size: integral) {
-    __primitive("gpu_alloc", this, eltType, size);	  
+    __primitive("gpu_alloc", this, size, eltType);
   }
   pragma "inline" def this(i: integral) var {
     return __primitive("get_gpu_value", this, i);
   }
 }
 
+config param debugGPUDist = false; // internal development flag (debugging)
+
 class GPUDist: BaseDist {
-  	param rank: int = 1;
-  	type idxType = int(64);
-	const boundingBox: domain(rank, idxType);
-	var threadsPerBlock : int(64);
-	var numBlocks : int(64);
 
-	def GPUDist(param rank : int, 
-		    type idxType = int(64), 
-		    bbox: domain(rank, idxType), threadsPerBlock = 128) {
-		boundingBox = bbox;
-		if rank == 1 then numBlocks = (boundingBox.high + threadsPerBlock - 1) / threadsPerBlock;
-		else compilerError("Can't support dimensions higher than 1 currently");
-		//writeln("Invoking kernel with ",numBlocks," number of blocks, each with ",threadsPerBlock," threads each");
-	}
+  const threadPerBlock : int;
 
+  def GPUDist(param rank : int, 
+	      type idxType = int(64), 
+	      threadsPerBlock=128) {
+    if (CHPL_TARGET_COMPILER != "nvidia") then 
+      compilerError("Support for non-nvidia compilers not yet defined for GPUDist");
+    threadPerBlock = threadsPerBlock;
+  }
 
-  def newArithmeticDom(param rank: int, type idxType, param stridable: bool)
+  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     return new GPUArithmeticDom(rank, idxType, stridable, this);
-
+  }
 }
 
 //
@@ -49,6 +57,10 @@ class GPUArithmeticDom: BaseArithmeticDom {
   var dist: GPUDist;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
+  var low_val : int(64);
+
+  const threadPerBlock : int;
+  const numBlocks : int;
 
   def GPUArithmeticDom(param rank, type idxType, param stridable, dist) {
     this.dist = dist;
@@ -68,6 +80,17 @@ class GPUArithmeticDom: BaseArithmeticDom {
     if ranges(1).eltType != x(1).eltType then
       compilerError("index type mismatch in domain assignment");
     ranges = x;
+
+    low_val = ranges(1).low;
+    threadPerBlock = dist.threadPerBlock;
+    if rank == 1 then {
+      numBlocks = (ranges(1).length:int + threadPerBlock - 1) / threadPerBlock;
+    }
+    else if rank == 2 then {
+      numBlocks = (ranges(1).length:int + threadPerBlock - 1) / threadPerBlock;
+    }
+    else
+      compilerError("Can't support dimensions higher than 1 currently");
   }
 
   def these_help(param d: int) {
@@ -106,44 +129,26 @@ class GPUArithmeticDom: BaseArithmeticDom {
 
   def these(param tag: iterator) where tag == iterator.leader {
     if rank == 1 {
-      yield 0..ranges(1).length-1;
-    } else {
-      var block = ranges;
-      for param i in 1..rank do
-        block(i) = 0..block(i).length-1;
-      yield block;
+      var nBlocks = numBlocks;
+      var threadsPerBlock = threadPerBlock;
+      var size = ranges(1).length;
+      on __primitive("chpl_on_gpu",nBlocks,threadsPerBlock) do {
+        var tid = getBlockID_x() * getBlockSize_x() + getThreadID_x();
+        if tid < size then
+          yield tid;
+      }
+    } 
+    else {
+      compilerError("No support for multi-dimensional arrays (yet)");
     }
   }
 
   def these(param tag: iterator, follower) where tag == iterator.follower {
     if rank == 1 {
-      if stridable {
-        var block =
-        if ranges(1).stride > 0 then
-          ranges(1).low+follower.low*ranges(1).stride:ranges(1).eltType..ranges(1).low+follower.high*ranges(1).stride:ranges(1).eltType by ranges(1).stride
-        else
-          ranges(1).high+follower.high*ranges(1).stride:ranges(1).eltType..ranges(1).high+follower.low*ranges(1).stride:ranges(1).eltType by ranges(1).stride;
-        for i in block do
-          yield i;
-      } else {
-        var block = follower + ranges(1).low;
-        for i in block do
-          yield i;
-      }
-    } else {
-      if stridable {
-        for param i in 1..rank do
-          follower(i) =
-            if ranges(i).stride > 0 then
-              ranges(i).low+follower(i).low*ranges(i).stride:ranges(i).eltType..ranges(i).low+follower(i).high*ranges(i).stride:ranges(i).eltType by ranges(i).stride
-            else
-              ranges(i).high+follower(i).high*ranges(i).stride:ranges(i).eltType..ranges(i).high+follower(i).low*ranges(i).stride:ranges(i).eltType by ranges(i).stride;
-      } else {
-        for param i in 1..rank do
-          follower(i) = follower(i) + ranges(i).low;
-      }
-      for i in these_help(1, follower) do
-        yield i;
+      yield follower + low_val;
+    } 
+    else {
+      compilerError("No support for multi-dimensional arrays (yet)");
     }
   }
 
@@ -225,7 +230,8 @@ class GPUArithmeticDom: BaseArithmeticDom {
 
   def buildArray(type eltType) {
     return new GPUArithmeticArr(eltType=eltType, rank=rank, idxType=idxType, 
-		    		stridable=stridable, reindexed=true, dom=this);
+		    		stridable=stridable, dom=this, 
+				low_val=ranges(1).low);
   }
 
   def slice(param stridable: bool, ranges) {
@@ -332,18 +338,17 @@ class GPUArithmeticArr: BaseArr {
   param rank : int;
   type idxType;
   param stridable: bool;
-  param reindexed: bool = false; // may have blk(rank) != 1
+  param reindexed: bool = true; // may have blk(rank) != 1
 
   var dom : GPUArithmeticDom(rank=rank, idxType=idxType,
                                          stridable=stridable);
   var off: rank*idxType;
   var blk: rank*idxType;
   var str: rank*int;
-  var origin: idxType;
   var factoredOffs: idxType;
-  var size : idxType;
   var data : _gdata(eltType);
-  var noinit: bool = false;
+  var size : idxType;
+  var low_val : int(64);
 
   def canCopyFromHost param return true;
 
@@ -358,7 +363,6 @@ class GPUArithmeticArr: BaseArr {
     off = A.off;
     blk = A.blk;
     str = A.str;
-    origin = A.origin;
     factoredOffs = A.factoredOffs;
     data = A.data;
     delete A;
@@ -370,13 +374,18 @@ class GPUArithmeticArr: BaseArr {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
-    for block in dom.these(tag=iterator.leader) do
-      yield block;
+      var nBlocks = dom.numBlocks;
+      var threadsPerBlock = dom.threadPerBlock;
+      var highval = size;
+      on __primitive("chpl_on_gpu",nBlocks,threadsPerBlock) do {
+	var tid = getBlockID_x() * getBlockSize_x() + getThreadID_x();
+	if tid < highval then
+	  yield tid;
+      }
   }
 
   def these(param tag: iterator, follower) var where tag == iterator.follower {
-    for i in dom.these(tag=iterator.follower, follower) do
-      yield this(i);
+      yield this(follower + low_val);
   }
 
   def computeFactoredOffs() {
@@ -387,7 +396,6 @@ class GPUArithmeticArr: BaseArr {
   }
 
   def initialize() {
-    if noinit == true then return;
     for param dim in 1..rank {
       off(dim) = dom.dim(dim)._low;
       str(dim) = dom.dim(dim)._stride;
@@ -402,29 +410,13 @@ class GPUArithmeticArr: BaseArr {
   }
 
   pragma "inline"
-  def this(ind: idxType ...1) var where rank == 1
+  def this(ind: idxType ...1) var where rank == 1 {
     return this(ind);
+  }
 
   pragma "inline"
   def this(ind : rank*idxType) var {
-    if boundsChecking then
-      if !dom.member(ind) then
-        halt("array index out of bounds: ", ind);
-    var sum = origin;
-    if stridable {
-      for param i in 1..rank do
-        sum += (ind(i) - off(i)) * blk(i) / str(i):idxType;
-    } else {
-      if reindexed {
-        for param i in 1..rank do
-          sum += ind(i) * blk(i);
-      } else {
-        for param i in 1..rank-1 do
-          sum += ind(i) * blk(i);
-        sum += ind(rank);
-      }
-      sum -= factoredOffs;
-    }
+    var sum = ind(1) - factoredOffs; // Hardcoded to support only 1D arrays
     return data(sum);
   }
 
@@ -437,8 +429,7 @@ class GPUArithmeticArr: BaseArr {
     var alias = new GPUArithmeticArr(eltType=eltType, rank=d.rank,
                                      idxType=d.idxType,
                                      stridable=d.stridable,
-                                     reindexed=true, dom=d,
-                                     noinit=true);
+                                     reindexed=true, dom=d);
     alias.data = data;
     alias.size = size: d.idxType;
     for param i in 1..rank {
@@ -446,7 +437,6 @@ class GPUArithmeticArr: BaseArr {
       alias.blk(i) = (blk(i) * dom.dim(i)._stride / str(i)) : d.idxType;
       alias.str(i) = d.dim(i)._stride;
     }
-    alias.origin = origin:d.idxType;
     alias.computeFactoredOffs();
     return alias;
   }
@@ -462,15 +452,13 @@ class GPUArithmeticArr: BaseArr {
                                          idxType=idxType,
                                          stridable=d.stridable,
                                          reindexed=reindexed,
-                                         dom=d, noinit=true);
+                                         dom=d);
     alias.data = data;
     alias.size = size;
     alias.blk = blk;
     alias.str = str;
-    alias.origin = origin;
     for param i in 1..rank {
       alias.off(i) = d.dim(i)._low;
-      alias.origin += blk(i) * (d.dim(i)._low - off(i)) / str(i);
     }
     alias.computeFactoredOffs();
     return alias;
@@ -493,20 +481,17 @@ class GPUArithmeticArr: BaseArr {
     var alias = new GPUArithmeticArr(eltType=eltType, rank=newRank,
                                          idxType=idxType,
                                          stridable=newStridable, reindexed=true,
-                                         dom=d, noinit=true);
+                                         dom=d);
     alias.data = data;
     alias.size = size;
     var i = 1;
-    alias.origin = origin;
     for param j in 1..args.size {
       if isRange(args(j)) {
         alias.off(i) = d.dim(i)._low;
-        alias.origin += blk(j) * (d.dim(i)._low - off(j)) / str(j);
         alias.blk(i) = blk(j);
         alias.str(i) = str(j);
         i += 1;
       } else {
-        alias.origin += blk(j) * (args(j) - off(j)) / str(j);
       }
     }
     alias.computeFactoredOffs();
@@ -524,7 +509,6 @@ class GPUArithmeticArr: BaseArr {
       off = copy.off;
       blk = copy.blk;
       str = copy.str;
-      origin = copy.origin;
       factoredOffs = copy.factoredOffs;
       size = copy.size;
       delete data;

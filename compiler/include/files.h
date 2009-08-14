@@ -15,12 +15,14 @@ struct fileinfo {
   const char* pathname;
 };
 
-void codegen_makefile(fileinfo* mainfile);
+void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile = NULL);
 
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 void deleteTmpDir(void);
 
 void openCFile(fileinfo* fi, const char* name, const char* ext = NULL,
+               bool runtime=false);
+void appendCFile(fileinfo* fi, const char* name, const char* ext = NULL,
                bool runtime=false);
 void closeCFile(fileinfo* fi, bool beautifyIt=true);
 

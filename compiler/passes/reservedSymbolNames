@@ -101,6 +101,8 @@
   tgamma
   trunc
   div
+  max
+  min
 
   // symbols in stdint.h
   int8_t
@@ -197,3 +199,7 @@
   ; if (!strcmp(CHPL_THREADS, "mta")) {
   purge
   task }
+
+  // reserved words in c++
+  this
+

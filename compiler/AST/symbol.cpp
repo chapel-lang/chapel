@@ -522,6 +522,9 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 void FnSymbol::codegenHeader(FILE* outfile) {
   if (fGenIDS)
     fprintf(outfile, "/* %7d */ ", id);
+  // Prepend function header with necessary __global__ declaration
+  if (hasFlag(FLAG_GPU_ON))
+    fprintf(outfile, "__global__ ");
   retType->codegen(outfile);
   fprintf(outfile, " ");
   fprintf(outfile, "%s", cname);
@@ -529,10 +532,15 @@ void FnSymbol::codegenHeader(FILE* outfile) {
   if (numFormals() == 0) {
     fprintf(outfile, "void");
   } else {
+    int count = 0;
     bool first = true;
     for_formals(formal, this) {
       if (formal->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
         continue; // do not print locale argument for on blocks
+      if (hasFlag(FLAG_GPU_ON) && count < 2) {
+	count++;
+        continue; // do not print nBlocks and numThreadsPerBlock
+      }
       if (!first) {
         fprintf(outfile, ", ");
       }
@@ -798,6 +806,9 @@ static int compareLineno(const void* v1, const void* v2) {
 
 
 void ModuleSymbol::codegenDef(FILE* outfile) {
+  fileinfo gpufile;
+  gpufile.fptr = NULL;
+ 
   Vec<FnSymbol*> fns;
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
@@ -807,7 +818,14 @@ void ModuleSymbol::codegenDef(FILE* outfile) {
   }
   qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
   forv_Vec(FnSymbol, fn, fns) {
-    fn->codegenDef(outfile);
+    // Create external file to be compiled by GPU compiler
+    if (fn->hasFlag(FLAG_GPU_ON) || fn->hasFlag(FLAG_GPU_CALL)) {
+      appendCFile(&gpufile,"chplGPU","cu");
+      fn->codegenDef(gpufile.fptr);
+      closeCFile(&gpufile); 
+    }
+    else
+      fn->codegenDef(outfile);
   }
 }
 
