@@ -1195,15 +1195,7 @@ pragma "inline" def chpl__initCopy(sv: single) {
 }
 
 pragma "inline" def chpl__initCopy(x: _tuple) { 
-  return chpl__initCopyHelp(x, 1, x.size);
-  pragma "inline"
-  def chpl__initCopyHelp(x: _tuple, param lo: int, param hi: int) {
-    if lo == hi then
-      return _build_tuple_always(chpl__initCopy(x(lo)));
-    else
-      return _build_tuple_always((...chpl__initCopyHelp(x, lo, (lo+hi)/2)),
-                                 (...chpl__initCopyHelp(x, (lo+hi)/2+1, hi)));
-  }
+  // body inserted during generic instantiation
 }
 
 def chpl__initCopy(a: domain) {
@@ -1264,15 +1256,7 @@ pragma "inline" def chpl__autoCopy(x: []) {
 
 pragma "inline"
 def chpl__autoCopy(x: _tuple) {
-  return chpl__autoCopyHelp(x, 1, x.size);
-  pragma "inline"
-  def chpl__autoCopyHelp(x: _tuple, param lo: int, param hi: int) {
-    if lo == hi then
-      return _build_tuple_always(chpl__autoCopy(x(lo)));
-    else
-      return _build_tuple_always((...chpl__autoCopyHelp(x, lo, (lo+hi)/2)),
-                                 (...chpl__autoCopyHelp(x, (lo+hi)/2+1, hi)));
-  }
+  // body inserted during generic instantiation
 }
 
 pragma "inline" def chpl__autoCopy(ir: _iteratorRecord)

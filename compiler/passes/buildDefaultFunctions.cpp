@@ -573,10 +573,10 @@ static void build_record_copy_function(ClassType* ct) {
 
 
 static void build_record_hash_function(ClassType *ct) {
-  if (function_exists("_associative_hash", 1, ct))
+  if (function_exists("chpl__defaultHash", 1, ct))
     return;
 
-  FnSymbol *fn = new FnSymbol("_associative_hash");
+  FnSymbol *fn = new FnSymbol("chpl__defaultHash");
   fn->addFlag(FLAG_INLINE);
   ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "r", ct);
   arg->markedGeneric = true;
@@ -590,11 +590,11 @@ static void build_record_hash_function(ClassType *ct) {
     for_fields(field, ct) {
       CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg); 
       if (first) {
-        call = new CallExpr("_associative_hash", field_access);
+        call = new CallExpr("chpl__defaultHash", field_access);
         first = false;
       } else {
         call = new CallExpr("^", 
-                            new CallExpr("_associative_hash",
+                            new CallExpr("chpl__defaultHash",
                                          field_access),
                             new CallExpr("<<",
                                          call,
@@ -607,8 +607,6 @@ static void build_record_hash_function(ClassType *ct) {
   ct->symbol->defPoint->insertBefore(def);
   reset_line_info(def, ct->symbol->lineno);
   normalize(fn);
-  if (ct->symbol->hasFlag(FLAG_TUPLE))
-    fn->addFlag(FLAG_TUPLE_HASH_FUNCTION);
 }
 
 

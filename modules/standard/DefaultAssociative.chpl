@@ -256,7 +256,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
     
   def _lookForSlots(idx: idxType, numSlots = tableSize) {
-    const baseSlot = _associative_hash_wrapper(idx);
+    const baseSlot = chpl__defaultHashWrapper(idx);
     for probe in 0..numSlots/2 {
       yield (baseSlot + probe**2)%numSlots;
     }
@@ -384,8 +384,8 @@ class DefaultAssociativeArr: BaseArr {
 }
 
 
-def _associative_hash_wrapper(x): chpl_table_index_type {
-  const hash = _associative_hash(x); 
+def chpl__defaultHashWrapper(x): chpl_table_index_type {
+  const hash = chpl__defaultHash(x); 
   return (hash & max(chpl_table_index_type)): chpl_table_index_type;
 }
 
@@ -405,7 +405,7 @@ def _gen_key(i: int(64)): int(64) {
 }
 
 pragma "inline"
-def _associative_hash(b: bool): int(64) {
+def chpl__defaultHash(b: bool): int(64) {
   if (b) then
     return 0;
   else
@@ -413,28 +413,28 @@ def _associative_hash(b: bool): int(64) {
 }
 
 pragma "inline"
-def _associative_hash(i: int(64)): int(64) {
+def chpl__defaultHash(i: int(64)): int(64) {
   return _gen_key(i);
 }
 
 pragma "inline"
-def _associative_hash(u: uint(64)): int(64) {
+def chpl__defaultHash(u: uint(64)): int(64) {
   return _gen_key(u:int(64));
 }
 
 pragma "inline"
-def _associative_hash(f: real): int(64) {
+def chpl__defaultHash(f: real): int(64) {
   return _gen_key(__primitive( "real2int", f));
 }
 
 pragma "inline"
-def _associative_hash(c: complex): int(64) {
+def chpl__defaultHash(c: complex): int(64) {
   return _gen_key(__primitive("real2int", c.re) ^ __primitive("real2int", c.im)); 
 }
 
 // Use djb2 (Dan Bernstein in comp.lang.c.
 pragma "inline"
-def _associative_hash(x : string): int(64) {
+def chpl__defaultHash(x : string): int(64) {
   var hash: int(64) = 0;
   for c in 1..length(x) {
     hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
@@ -443,6 +443,6 @@ def _associative_hash(x : string): int(64) {
 }
 
 pragma "inline"
-def _associative_hash(o: object): int(64) {
+def chpl__defaultHash(o: object): int(64) {
   return _gen_key(__primitive( "object2int", o));
 }

@@ -117,34 +117,62 @@ static void
 instantiate_tuple_hash( FnSymbol* fn) {
   if (fn->numFormals() != 1)
     INT_FATAL(fn, "tuple hash function has more than one argument");
+  ArgSymbol* arg = fn->getFormal(1);
+  ClassType* ct = toClassType(arg->type);
+  CallExpr* call = NULL;
+  bool first = true;
+  for (int i=1; i<ct->fields.length; i++) {
+    CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i)); 
+    if (first) {
+      call =  new CallExpr( "chpl__defaultHash", field_access);
+      first = false;
+    } else {
+      call = new CallExpr( "^", 
+                           new CallExpr( "chpl__defaultHash",
+                                         field_access),
+                           new CallExpr( "<<",
+                                         call,
+                                         new_IntSymbol(17)));
+    }
+  }
+  // YAH, make sure that we do not return a negative hash value for now
+  call = new CallExpr( "&", new_IntSymbol( 0x7fffffffffffffffLL, INT_SIZE_64), call);
+  CallExpr* ret = new CallExpr(PRIM_RETURN, new CallExpr("_cast", dtInt[INT_SIZE_64]->symbol, call));
+  fn->body->replace( new BlockStmt( ret));
+  normalize(fn);
+}
+
+
+static void
+instantiate_tuple_initCopy(FnSymbol* fn) {
+  if (fn->numFormals() != 1)
+    INT_FATAL(fn, "tuple initCopy function has more than one argument");
   ArgSymbol  *arg = fn->getFormal(1);
   ClassType  *ct = toClassType(arg->type);
-  CallExpr *ret;
-  if (ct->fields.length < 0) {
-    // unexecuted none/gasnet on 4/25/08
-    ret = new CallExpr(PRIM_RETURN, new_IntSymbol(0, INT_SIZE_64));
-  } else {
-    CallExpr *call = NULL;
-    bool first = true;
-    for (int i=1; i<ct->fields.length; i++) {
-      CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i)); 
-      if (first) {
-        call =  new CallExpr( "_associative_hash", field_access);
-        first = false;
-      } else {
-        call = new CallExpr( "^", 
-                             new CallExpr( "_associative_hash",
-                                           field_access),
-                             new CallExpr( "<<",
-                                           call,
-                                           new_IntSymbol(17)));
-      }
-    }
-    // YAH, make sure that we do not return a negative hash value for now
-    call = new CallExpr( "&", new_IntSymbol( 0x7fffffffffffffffLL, INT_SIZE_64), call);
-    ret = new CallExpr(PRIM_RETURN, new CallExpr("_cast", dtInt[INT_SIZE_64]->symbol, call));
+  CallExpr *call = new CallExpr("_build_tuple_always");
+  BlockStmt* block = new BlockStmt();
+  for (int i=1; i<ct->fields.length; i++) {
+    call->insertAtTail(new CallExpr("chpl__initCopy", new CallExpr(arg, new_IntSymbol(i))));
   }
-  fn->body->replace( new BlockStmt( ret));
+  block->insertAtTail(new CallExpr(PRIM_RETURN, call));
+  fn->body->replace(block);
+  normalize(fn);
+}
+
+
+static void
+instantiate_tuple_autoCopy(FnSymbol* fn) {
+  if (fn->numFormals() != 1)
+    INT_FATAL(fn, "tuple autoCopy function has more than one argument");
+  ArgSymbol  *arg = fn->getFormal(1);
+  ClassType  *ct = toClassType(arg->type);
+  CallExpr *call = new CallExpr("_build_tuple_always");
+  BlockStmt* block = new BlockStmt();
+  for (int i=1; i<ct->fields.length; i++) {
+    call->insertAtTail(new CallExpr("chpl__autoCopy", new CallExpr(arg, new_IntSymbol(i))));
+  }
+  block->insertAtTail(new CallExpr(PRIM_RETURN, call));
+  fn->body->replace(block);
   normalize(fn);
 }
 
@@ -453,8 +481,17 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
     newFn->retType = newType;
   }
 
-  if (fn->hasFlag(FLAG_TUPLE_HASH_FUNCTION))
+  if (!strcmp(fn->name, "chpl__defaultHash") &&
+      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
     instantiate_tuple_hash(newFn);
+
+  if (!strcmp(fn->name, "chpl__initCopy") &&
+      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
+    instantiate_tuple_initCopy(newFn);
+
+  if (!strcmp(fn->name, "chpl__autoCopy") &&
+      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
+    instantiate_tuple_autoCopy(newFn);
 
   newFn->substitutions.append(all_subs);
 
