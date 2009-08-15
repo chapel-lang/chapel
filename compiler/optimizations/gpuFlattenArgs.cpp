@@ -194,7 +194,7 @@ gpuFlattenArgs()  {
     if (call->parentSymbol) {
       if (call->isPrimitive(PRIM_MOVE)) {
         Symbol* lhs = toSymExpr(call->get(1))->var;
-	Symbol* rhs;
+	Symbol* rhs = NULL;
         if (CallExpr* subcall = toCallExpr(call->get(2))) {
   	  if (subcall->isPrimitive(PRIM_GET_REF) ||
 	      subcall->isPrimitive(PRIM_GET_MEMBER) ||
