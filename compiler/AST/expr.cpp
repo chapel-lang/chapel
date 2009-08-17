@@ -752,15 +752,15 @@ void CallExpr::codegen(FILE* outfile) {
                         get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value,
                         get(3));
       } else {
-	fprintf(outfile, "_GPU_ALLOC(");
-	get(1)->codegen(outfile);
-	fprintf(outfile,", _");
-	get(1)->typeInfo()->symbol->codegen(outfile);
-	fprintf(outfile,", ");
-	get(2)->codegen(outfile);
-	fprintf(outfile,", ");
-	get(3)->typeInfo()->symbol->codegen(outfile);
-	fprintf(outfile,")");
+        fprintf(outfile, "_GPU_ALLOC(");
+        get(1)->codegen(outfile);
+        fprintf(outfile,", _");
+        get(1)->typeInfo()->symbol->codegen(outfile);
+        fprintf(outfile,", ");
+        get(2)->codegen(outfile);
+        fprintf(outfile,", ");
+        get(3)->typeInfo()->symbol->codegen(outfile);
+        fprintf(outfile,")");
       }
       break;
     case PRIM_COPY_HOST_GPU:

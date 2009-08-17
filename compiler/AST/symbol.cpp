@@ -538,7 +538,7 @@ void FnSymbol::codegenHeader(FILE* outfile) {
       if (formal->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
         continue; // do not print locale argument for on blocks
       if (hasFlag(FLAG_GPU_ON) && count < 2) {
-	count++;
+        count++;
         continue; // do not print nBlocks and numThreadsPerBlock
       }
       if (!first) {

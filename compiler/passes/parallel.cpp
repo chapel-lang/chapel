@@ -659,11 +659,11 @@ parallel(void) {
         fn->insertFormalAtTail(arg);
       }
       else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
-	fn = new FnSymbol("on_gpu_kernel");
+        fn = new FnSymbol("on_gpu_kernel");
         fn->addFlag(FLAG_GPU_ON);
-	//Add two formal arguments:
-	// nBlocks = Number of Thread blocks
-	// threadsPerBlock = Number of threads per single thread block
+        //Add two formal arguments:
+        // nBlocks = Number of Thread blocks
+        // threadsPerBlock = Number of threads per single thread block
         ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "nBlocks", dtInt[INT_SIZE_32]);
         ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "threadsPerBlock", dtInt[INT_SIZE_32]);
         fn->insertFormalAtTail(arg1);
@@ -675,10 +675,10 @@ parallel(void) {
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ||
             block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           call->insertAtTail(block->blockInfo->get(1)->remove());
-	else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
+        else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
           call->insertAtTail(block->blockInfo->get(1)->remove());
           call->insertAtTail(block->blockInfo->get(1)->remove());
-	}
+        }
 
         block->insertBefore(new DefExpr(fn));
         block->insertBefore(call);

@@ -44,7 +44,7 @@ PassInfo passlist[] = {
   RUN(deadCodeElimination), // eliminate dead code
   RUN(prune),               // prune AST of dead functions and types again
   
-  RUN(gpuFlattenArgs),	  // Flatten out arguments used to call in gpu kernel
+  RUN(gpuFlattenArgs),      // Flatten out arguments used to call in gpu kernel
 
   RUN(insertWideReferences), // inserts wide references for on clauses
   // AST to C

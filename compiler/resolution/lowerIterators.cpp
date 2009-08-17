@@ -260,9 +260,9 @@ getRecursiveIterators(Vec<Symbol*>& iterators, Symbol* gIterator) {
   if (gIterator->type->symbol->hasFlag(FLAG_TUPLE)) {
     ClassType* iteratorType = toClassType(gIterator->type);
     for (int i=1; i <= iteratorType->fields.length; i++) {
-	    Symbol *iterator = toSymbol(iteratorType->getField(i));
-	    if (iterator)
-	      getRecursiveIterators(iterators, iterator);
+      Symbol *iterator = toSymbol(iteratorType->getField(i));
+      if (iterator)
+        getRecursiveIterators(iterators, iterator);
     }
   }
   else {
@@ -287,7 +287,7 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
       CallExpr* call = toCallExpr(ast);
       if (call && call->isPrimitive(PRIM_YIELD)) {
         numYields++;
-	if (iterator->body != call->parentExpr) return false;
+        if (iterator->body != call->parentExpr) return false;
       }
     }
     if (numYields != 1) return false;
@@ -465,7 +465,7 @@ inlineSingleYieldIterator(CallExpr* call) {
             stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, iterators.v[i], new_IntSymbol(count))));
             se->var = tmp;
           }
-	}
+        }
       }
       count++;
     }
@@ -497,7 +497,7 @@ expand_for_loop(CallExpr* call) {
        iterator->type->dispatchChildren.v[0] == dtObject))) {
     expandIteratorInline(call);
   } else if (!fNoInlineIterators && canInlineSingleYieldIterator(iterator)) {
-      inlineSingleYieldIterator(call);	
+    inlineSingleYieldIterator(call);
   } else {
     SET_LINENO(call);
     Vec<Symbol*> iterators;

@@ -101,7 +101,7 @@ void insertLineNumbers() {
     forv_Vec(CallExpr, call, gCallExprs) {
       // We cannot do any I/O on the GPU
       if (call->getFunction()->hasFlag(FLAG_GPU_ON))
-	continue;
+        continue;
       if (call->isPrimitive(PRIM_GET_MEMBER) ||
           call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
           call->isPrimitive(PRIM_SET_MEMBER) ||

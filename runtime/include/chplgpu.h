@@ -30,31 +30,31 @@ void copyHostToGPU(void **dst, void **src, size_t size);
 void chpl_init_accelerator(void);
 #ifdef ENABLE_GPU
 __device__ inline int getThreadID_x(void) {
-	return threadIdx.x;
+  return threadIdx.x;
 }
 __device__ inline int getThreadID_y(void) {
-	return threadIdx.y;
+  return threadIdx.y;
 }
 __device__ inline int getThreadID_z(void) {
-	return threadIdx.z;
+  return threadIdx.z;
 }
 __device__ inline int getBlockID_x(void) {
-	return blockIdx.x;
+  return blockIdx.x;
 }
 __device__ inline int getBlockID_y(void) {
-	return blockIdx.y;
+  return blockIdx.y;
 }
 __device__ inline int getBlockID_z(void) {
-	return blockIdx.y;
+  return blockIdx.y;
 }
 __device__ inline int getBlockSize_x(void) {
-	return blockDim.x;
+  return blockDim.x;
 }
 __device__ inline int getBlockSize_y(void) {
-	return blockDim.y;
+  return blockDim.y;
 }
 __device__ inline int getBlockSize_z(void) {
-	return blockDim.z;
+  return blockDim.z;
 }
 #endif
 #endif // _GPU_H

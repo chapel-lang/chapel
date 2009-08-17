@@ -9,27 +9,24 @@ void gpuAllocate(void **data, size_t size) {
 }
 
 void gpuFree(void **data) {
-	chpl_free( *data, 0, 0);
-	//printf("Freed data : gpuFree (chpl_free) at %p\n", data);
-	printf("Freed data : gpuFree\n");
+  chpl_free( *data, 0, 0);
+  //printf("Freed data : gpuFree (chpl_free) at %p\n", data);
+  printf("Freed data : gpuFree\n");
 }
 
 void copyGPUtoHost(void **dst, void **src, size_t size) {
-	memcpy( *dst, *src, size);
-	//printf("** Copying gpu to host (memcpy): DST = %p SRC = %p SIZE = %u\n", *dst, *src, (unsigned int)size);
-	printf("** Copying gpu to host\n");
+  memcpy( *dst, *src, size);
+  //printf("** Copying gpu to host (memcpy): DST = %p SRC = %p SIZE = %u\n", *dst, *src, (unsigned int)size);
+  printf("** Copying gpu to host\n");
 }
 
 void copyHostToGPU(void **dst, void **src, size_t size) {
-	memcpy( *dst, *src, size);
-	printf("** Copying host to gpu\n");
-	//printf("** Copying host to gpu (memcpy): DST = %p SRC = %p SIZE = %u\n", *dst, *src, (unsigned int)size);
-
+  memcpy( *dst, *src, size);
+  printf("** Copying host to gpu\n");
+  //printf("** Copying host to gpu (memcpy): DST = %p SRC = %p SIZE = %u\n", *dst, *src, (unsigned int)size);
 }
 
 void chpl_init_accelerator(void) {
-	/* Do nothing here since this is a stub */
-	printf("Initializing device 0\n");
+  /* Do nothing here since this is a stub */
+  printf("Initializing device 0\n");
 }
-
-

@@ -282,7 +282,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   } else {
     fprintf(hdrfile, "/*** Compilation Info ***/\n\n");
     if (fGPU)
-	    fprintf(hdrfile, "#ifndef ENABLE_GPU\n");
+      fprintf(hdrfile, "#ifndef ENABLE_GPU\n");
     fprintf(hdrfile, "const char* chpl_compileCommand     = \"%s\";\n", compileCommand);
     fprintf(hdrfile, "const char* chpl_compileVersion     = \"%s\";\n", compileVersion);
     fprintf(hdrfile, "const char* CHPL_HOST_PLATFORM      = \"%s\";\n", CHPL_HOST_PLATFORM);
@@ -292,16 +292,16 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     fprintf(hdrfile, "const char* CHPL_THREADS            = \"%s\";\n", CHPL_THREADS);
     fprintf(hdrfile, "const char* CHPL_COMM               = \"%s\";\n", CHPL_COMM);
     if (fGPU) {
-	    fprintf(hdrfile, "#else\n");
-	    fprintf(hdrfile, "extern const char* chpl_compileCommand;\n");
-	    fprintf(hdrfile, "extern const char* chpl_compileVersion;\n");
-	    fprintf(hdrfile, "extern const char* CHPL_HOST_PLATFORM;\n");
-	    fprintf(hdrfile, "extern const char* CHPL_TARGET_PLATFORM;\n");
-	    fprintf(hdrfile, "extern const char* CHPL_HOST_COMPILER;\n");
-	    fprintf(hdrfile, "extern const char* CHPL_TARGET_COMPILER;\n");
-	    fprintf(hdrfile, "extern const char* CHPL_THREADS;\n");
-	    fprintf(hdrfile, "extern const char* CHPL_COMM;\n");
-	    fprintf(hdrfile, "#endif\n");
+      fprintf(hdrfile, "#else\n");
+      fprintf(hdrfile, "extern const char* chpl_compileCommand;\n");
+      fprintf(hdrfile, "extern const char* chpl_compileVersion;\n");
+      fprintf(hdrfile, "extern const char* CHPL_HOST_PLATFORM;\n");
+      fprintf(hdrfile, "extern const char* CHPL_TARGET_PLATFORM;\n");
+      fprintf(hdrfile, "extern const char* CHPL_HOST_COMPILER;\n");
+      fprintf(hdrfile, "extern const char* CHPL_TARGET_COMPILER;\n");
+      fprintf(hdrfile, "extern const char* CHPL_THREADS;\n");
+      fprintf(hdrfile, "extern const char* CHPL_COMM;\n");
+      fprintf(hdrfile, "#endif\n");
     }
 
     fprintf(hdrfile, "\n#define CHPL_GEN_CODE\n\n");
@@ -412,7 +412,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       fprintf(hdrfile, "\n#ifdef ENABLE_GPU\n");
       fnSymbol->codegenPrototype(hdrfile);
       fprintf(hdrfile, "#endif\n");
-      continue;	    
+      continue;
     }
     if (!fnSymbol->hasFlag(FLAG_EXTERN)) {
       if (fRuntime && fnSymbol != chpl_main && !fnSymbol->hasFlag(FLAG_EXPORT))
@@ -464,69 +464,69 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       varSymbol->codegenDef(hdrfile);
     }
 
-	  if (!fRuntime) {
-		  fprintf(hdrfile, "\nconst int chpl_numGlobalsOnHeap = %d;\n", numGlobalsOnHeap);
-		  fprintf(hdrfile, "\nvoid** chpl_globals_registry;\n");
-		  fprintf(hdrfile, "\nvoid* chpl_globals_registry_static[%d];\n", 
-				  (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
-		  fprintf(hdrfile, "\nconst char* chpl_memDescs[] = {\n");
-		  bool first = true;
-		  forv_Vec(const char*, memDesc, memDescsVec) {
-			  if (!first)
-				  fprintf(hdrfile, ",\n");
-			  fprintf(hdrfile, "\"%s\"", memDesc);
-			  first = false;
-		  }
-		  fprintf(hdrfile, "\n};\n");
-		  fprintf(hdrfile, "\nconst int chpl_num_memDescs = %d;\n", memDescsVec.n);
-	  }
-	  fprintf(hdrfile, "#else\n");
-	  forv_Vec(VarSymbol, varSymbol, varSymbols) {
-		  if (fRuntime) {
-			  if (varSymbol->defPoint->parentSymbol == baseModule)
-				  continue;
-			  fprintf(hdrfile, "static ");
-		  }
-		  fprintf(hdrfile,"extern ");
-		  varSymbol->codegenDef(hdrfile);
-	  }
+    if (!fRuntime) {
+      fprintf(hdrfile, "\nconst int chpl_numGlobalsOnHeap = %d;\n", numGlobalsOnHeap);
+      fprintf(hdrfile, "\nvoid** chpl_globals_registry;\n");
+      fprintf(hdrfile, "\nvoid* chpl_globals_registry_static[%d];\n", 
+          (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
+      fprintf(hdrfile, "\nconst char* chpl_memDescs[] = {\n");
+      bool first = true;
+      forv_Vec(const char*, memDesc, memDescsVec) {
+        if (!first)
+          fprintf(hdrfile, ",\n");
+        fprintf(hdrfile, "\"%s\"", memDesc);
+        first = false;
+      }
+      fprintf(hdrfile, "\n};\n");
+      fprintf(hdrfile, "\nconst int chpl_num_memDescs = %d;\n", memDescsVec.n);
+    }
+    fprintf(hdrfile, "#else\n");
+    forv_Vec(VarSymbol, varSymbol, varSymbols) {
+      if (fRuntime) {
+        if (varSymbol->defPoint->parentSymbol == baseModule)
+          continue;
+        fprintf(hdrfile, "static ");
+      }
+      fprintf(hdrfile,"extern ");
+      varSymbol->codegenDef(hdrfile);
+    }
 
-	  if (!fRuntime) {
-		  fprintf(hdrfile, "\nextern const int chpl_numGlobalsOnHeap;\n");
-		  fprintf(hdrfile, "\nextern void** chpl_globals_registry;\n");
-		  fprintf(hdrfile, "\nextern void* chpl_globals_registry_static[];\n");
-		  fprintf(hdrfile, "\nextern const char* chpl_memDescs[];\n");
-		  fprintf(hdrfile, "\nextern const int chpl_num_memDescs;\n");
-	  }
-	  fprintf(hdrfile, "#endif\n");
+    if (!fRuntime) {
+      fprintf(hdrfile, "\nextern const int chpl_numGlobalsOnHeap;\n");
+      fprintf(hdrfile, "\nextern void** chpl_globals_registry;\n");
+      fprintf(hdrfile, "\nextern void* chpl_globals_registry_static[];\n");
+      fprintf(hdrfile, "\nextern const char* chpl_memDescs[];\n");
+      fprintf(hdrfile, "\nextern const int chpl_num_memDescs;\n");
+    }
+    fprintf(hdrfile, "#endif\n");
   }
   else {
-	  fprintf(hdrfile, "\n/*** Global Variables ***/\n\n");
-	  forv_Vec(VarSymbol, varSymbol, varSymbols) {
-		  if (fRuntime) {
-			  if (varSymbol->defPoint->parentSymbol == baseModule)
-				  continue;
-			  fprintf(hdrfile, "static ");
-		  }
-		  varSymbol->codegenDef(hdrfile);
-	  }
+    fprintf(hdrfile, "\n/*** Global Variables ***/\n\n");
+    forv_Vec(VarSymbol, varSymbol, varSymbols) {
+      if (fRuntime) {
+        if (varSymbol->defPoint->parentSymbol == baseModule)
+          continue;
+        fprintf(hdrfile, "static ");
+      }
+      varSymbol->codegenDef(hdrfile);
+    }
 
-	  if (!fRuntime) {
-		  fprintf(hdrfile, "\nconst int chpl_numGlobalsOnHeap = %d;\n", numGlobalsOnHeap);
-		  fprintf(hdrfile, "\nvoid** chpl_globals_registry;\n");
-		  fprintf(hdrfile, "\nvoid* chpl_globals_registry_static[%d];\n", 
-				  (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
-		  fprintf(hdrfile, "\nconst char* chpl_memDescs[] = {\n");
-		  bool first = true;
-		  forv_Vec(const char*, memDesc, memDescsVec) {
-			  if (!first)
-				  fprintf(hdrfile, ",\n");
-			  fprintf(hdrfile, "\"%s\"", memDesc);
-			  first = false;
-		  }
-		  fprintf(hdrfile, "\n};\n");
-		  fprintf(hdrfile, "\nconst int chpl_num_memDescs = %d;\n", memDescsVec.n);
-	  }
+    if (!fRuntime) {
+      fprintf(hdrfile, "\nconst int chpl_numGlobalsOnHeap = %d;\n", numGlobalsOnHeap);
+      fprintf(hdrfile, "\nvoid** chpl_globals_registry;\n");
+      fprintf(hdrfile, "\nvoid* chpl_globals_registry_static[%d];\n", 
+          (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
+      fprintf(hdrfile, "\nconst char* chpl_memDescs[] = {\n");
+      bool first = true;
+      forv_Vec(const char*, memDesc, memDescsVec) {
+        if (!first)
+          fprintf(hdrfile, ",\n");
+        fprintf(hdrfile, "\"%s\"", memDesc);
+        first = false;
+      }
+      fprintf(hdrfile, "\n};\n");
+      fprintf(hdrfile, "\nconst int chpl_num_memDescs = %d;\n", memDescsVec.n);
+    }
   }
 }
 
@@ -638,7 +638,7 @@ void codegen(void) {
         fprintf(gpusrcfile.fptr, "extern \"C\" \x7b\n");
         fprintf(gpusrcfile.fptr, "#include \"chpl__header.h\"\n");
         fprintf(gpusrcfile.fptr,"\x7d\n"); // acsii for the "{" character
-	break;
+        break;
       }
     }
     codegen_makefile(&mainfile, &gpusrcfile);
