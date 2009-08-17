@@ -99,9 +99,6 @@ void insertLineNumbers() {
   // insert nil checks primitives in front of all member accesses
   if (!fNoNilChecks) {
     forv_Vec(CallExpr, call, gCallExprs) {
-      // We cannot do any I/O on the GPU
-      if (call->getFunction()->hasFlag(FLAG_GPU_ON))
-        continue;
       if (call->isPrimitive(PRIM_GET_MEMBER) ||
           call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
           call->isPrimitive(PRIM_SET_MEMBER) ||
@@ -111,8 +108,9 @@ void insertLineNumbers() {
         SET_LINENO(stmt);
         ClassType* ct = toClassType(call->get(1)->typeInfo());
         if (ct && (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS))) {
-          stmt->insertBefore(
-            new CallExpr(PRIM_CHECK_NIL, call->get(1)->copy()));
+          if (!call->getFunction()->hasFlag(FLAG_GPU_ON)) // disable I/O on GPU
+            stmt->insertBefore(
+              new CallExpr(PRIM_CHECK_NIL, call->get(1)->copy()));
         }
       }
     }
