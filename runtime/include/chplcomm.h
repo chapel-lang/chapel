@@ -86,7 +86,8 @@ extern void* chpl_globals_registry_static[];
   } while (0)
 
 // Enable to support hybrid computing
-#define CHPL_COMM_HETEROGENEOUS
+//#define CHPL_COMM_HETEROGENEOUS
+//
 
 
 #ifdef CHPL_COMM_HETEROGENEOUS
