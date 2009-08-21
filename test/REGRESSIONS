@@ -23,8 +23,13 @@ spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09)
+[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 08/07/09)
+
+spurious failure
+----------------
+[Error matching program output for parallel/serial/deitz/test_serial1.chpl]
 
 
 =================
@@ -63,11 +68,6 @@ out of memory errors due to intentional leaking of locals (07/31/09)
 [Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
 [Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2]
 
-infrequent seg fault on linux32
--------------------------------
-[Error matching performance keys for studies/hpcc/STREAMS/bradc/stream-block1d] (e.g., 02/12/09)
-
-
 
 =============================
 valgrind-specific regressions
@@ -88,6 +88,10 @@ no longer needs to be suppressed?
 no-local regressions
 ====================
 
+spurious race in deadlock detection code? (08/12/09) 
+----------------------------------------------------
+[Error matching program output for test parallel/taskPool/figueroa/TotalThreads.chpl]
+
 ???
 ---
 [Error matching program output for memory/figueroa/ClassInheritance1]
@@ -106,10 +110,7 @@ memory stuff in flux (06/06/09)
 -------------------------------
 [Error matching program output for memory/shannon/memmaxBytes]
 [Error matching program output for memory/shannon/memmaxInput]
-
-occasional nondeterminism in output (01/30/09, 02/03/09)
---------------------------------------------------------
-[Error matching program output for multilocale/deitz/needMultiLocales/streamCommCheck]
+[Error matching program output for memory/shannon/memstatPrint]
 
 verbose output now shows launch command (10/31/08) (bradc)
 ----------------------------------------------------------
@@ -118,7 +119,6 @@ verbose output now shows launch command (10/31/08) (bradc)
 
 times out fairly consistently
 -----------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
@@ -126,13 +126,8 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 01/01/09, 01/04/09, 01/11/09, 01/14/09, 01/15/09, 01/17/09, 01/21/09, 01/24/09, 10/28/09, 01/29/09, 02/04/09, 02/05/09, 02/10/09, 02/11/09, 02/14/09, 02/17/09, 02/20/09, 02/22/09, 02/24/09, 03/04/09, 03/12/09, 03/15/09, 03/18/09, 03/19/09, 03/21/09, 03/23/09, 03/27/09, 03/31/09, 04/04/09, 04/05/09, 04/08/09, 04/12/09, 04/14/09, 04/18/09, 04/21/09, 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09, 06/11/09, 06/13/09, 06/17/09, 06/19/09, 06/22/09, 06/23/09, 06/24/09, 07/03/09, 07/04/09, 07/05/09, 07/10/09, 07/11/09, 07/13/09, 07/15/09, 07/19/09, 07/24/09, 07/30/09, 08/01/09)
-[Error: Timed out executing program users/agnieszka/test2] (e.g., 01/03/09, 01/29/09, 03/14/09, 03/22/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 01/19/09, 01/29/09, 02/06/09, 02/11/09, 03/16/09, 03/20/09, 03/24/09, 03/28/09, 04/02/09, 04/12/09, 04/22/09, 06/14/09, 06/16/09)
-[Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 01/29/09)
-[Error: Timed out executing program users/shetag/fock/fock-stc] (e.g., 01/29/09)
-[Error: Timed out executing program users/franzf/v1/chpl/main] (e.g., 01/29/09)
-
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09, 06/11/09, 06/13/09, 06/17/09, 06/19/09, 06/22/09, 06/23/09, 06/24/09, 07/03/09, 07/04/09, 07/05/09, 07/10/09, 07/11/09, 07/13/09, 07/15/09, 07/19/09, 07/24/09, 07/30/09, 08/01/09, 08/06/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 06/14/09, 06/16/09)
 
 
 ==============================================
@@ -142,10 +137,6 @@ gasnet-fast regressions (other than the above)
 spurious timeout
 ----------------
 [Error: Timed out executing program multilocale/deitz/linked/test_linked2] (e.g., 06/02/09)
-
-extremely infrequent dereference of nil after printing results (02/15/09)
--------------------------------------------------------------------------
-[Error matching program output for release/examples/hpcc/stream]
 
 GASNet unable to start polling thread
 -------------------------------------
@@ -164,14 +155,11 @@ opts-specific tests
 (Example runs: 0)
 
 
-(Full run: 44)
-
---no-copy-propagation
----------------------
-[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
+(Full run: 75)
 
 --no-dead-code-elimination
 --------------------------
+[Error: Timed out compilation for studies/hpcc/RA/diten/ra]
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
@@ -186,12 +174,62 @@ opts-specific tests
 --no-scalar-replacement --no-inline
 --baseline --no-local
 ------------------------------------
-[Error matching program output for arrays/deitz/test_plus_assign_iter]
-[Error matching program output for npb/is/diten/is_mt]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 --no-inline-iterators
+---------------------
+[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+[Error: Timed out compilation for trivial/deitz/test_forall]
+[Error: Timed out compilation for trivial/deitz/test_function1]
+[Error: Timed out compilation for trivial/deitz/test_hex_literal]
+[Error: Timed out compilation for trivial/deitz/test_if_else]
+[Error: Timed out compilation for trivial/deitz/test_if_expr]
+[Error: Timed out compilation for trivial/deitz/test_if_expr2]
+[Error: Timed out compilation for trivial/deitz/test_if_expr3]
+[Error: Timed out compilation for trivial/deitz/test_if_expr4]
+[Error: Timed out compilation for trivial/deitz/test_if_then_else]
+[Error: Timed out compilation for trivial/deitz/test_imag_coerce]
+[Error: Timed out compilation for trivial/deitz/test_imag_coerce3]
+[Error: Timed out compilation for trivial/deitz/test_init_int8]
+[Error: Timed out compilation for trivial/deitz/test_int32]
+[Error: Timed out compilation for trivial/deitz/test_int32b]
+[Error: Timed out compilation for trivial/deitz/test_int_long]
+[Error: Timed out compilation for trivial/deitz/test_int_sizes]
+[Error: Timed out compilation for trivial/deitz/test_integer_method]
+[Error: Timed out compilation for trivial/deitz/test_integer_method2]
+[Error: Timed out compilation for trivial/deitz/test_integer_method4]
+[Error: Timed out compilation for trivial/deitz/test_let1]
+[Error: Timed out compilation for trivial/deitz/test_let2]
+[Error: Timed out compilation for trivial/deitz/test_let3]
+[Error: Timed out compilation for trivial/deitz/test_let4]
+[Error: Timed out compilation for trivial/deitz/test_let5]
+[Error: Timed out compilation for trivial/deitz/test_let6]
+[Error: Timed out compilation for trivial/deitz/test_let7]
+[Error: Timed out compilation for trivial/deitz/test_let8]
+[Error: Timed out compilation for trivial/deitz/test_longToken]
+[Error: Timed out compilation for trivial/deitz/test_loop_noindex]
+[Error: Timed out compilation for trivial/deitz/test_negate_uint32]
+[Error: Timed out compilation for trivial/deitz/test_nested_fors]
+[Error: Timed out compilation for trivial/deitz/test_nested_fors2]
+[Error: Timed out compilation for trivial/deitz/test_nested_function_call]
+[Error: Timed out compilation for trivial/deitz/test_nested_function_call2]
+[Error: Timed out compilation for trivial/deitz/test_on_syntax]
+[Error: Timed out compilation for trivial/deitz/test_param_fold1]
+[Error: Timed out compilation for trivial/deitz/test_param_fold2]
+[Error: Timed out compilation for trivial/deitz/test_param_fold3]
+[Error: Timed out compilation for trivial/deitz/test_param_fold4]
+[Error: Timed out compilation for trivial/deitz/test_param_fold5]
+[Error: Timed out compilation for trivial/deitz/test_plusassign]
+[Error: Timed out compilation for trivial/deitz/test_predicate]
+[Error: Timed out compilation for trivial/deitz/test_scope1]
+[Error: Timed out compilation for trivial/deitz/test_scope3]
+[Error: Timed out compilation for trivial/deitz/test_select1]
+[Error: Timed out compilation for trivial/deitz/test_short_identifiers]
+[Error: Timed out compilation for trivial/deitz/test_shortcircuit_land_lor]
+[Error: Timed out compilation for trivial/deitz/test_string2int]
+[Error: Timed out compilation for trivial/deitz/test_string2prims]
+
 --no-scalar-replacement
 --no-optimize-loop-iterators --no-inline-iterators
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
@@ -208,10 +246,6 @@ spurious failures -- apsim problem (06/26/09)
 [Error matching program output for release/examples/hello-module]  
 [Error matching program output for release/examples/hello-multiloc]
 [Error matching program output for release/examples/hello]
-
-spurious errno routing to host message
---------------------------------------
-[Error matching program output for release/examples/hello] (e.g., 03/18/09)
 
 use-before-def problem (02/18/09)
 ---------------------------------
@@ -236,7 +270,7 @@ intel-specific regressions
 
 spurious compilation timeout
 ----------------------------
-[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 06/01/09, 06/04/09, 06/06/09, 06/10/09, 06/14/09, 07/11/09, 07/15/09)
+[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 06/01/09, 06/04/09, 06/06/09, 06/10/09, 06/14/09, 07/11/09, 07/15/09, 08/05/09)
 
 compilation timeout (new with 11.x)
 -----------------------------------
@@ -244,20 +278,10 @@ compilation timeout (new with 11.x)
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
 
-spurious out-of-memory error
-----------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (e.g., 03/07/09, 03/27/09)
-
 
 ===========================
 darwin-specific regressions
 ===========================
-
-
-infrequent failure on Sam's Mac
--------------------------------
-[Error matching program output for trivial/diten/tutorial/timers] (e.g., 03/13/09, 03/27/09)
-
 
 infrequent seg fault on Sam's Mac
 ---------------------------------
@@ -267,6 +291,7 @@ infrequent seg fault on Sam's Mac
 ========================
 xt-cle-specific failures
 ========================
+
 
 ==============================
 cray-/cce-specific regressions
@@ -368,18 +393,10 @@ exp2 not supported:
 -------------------
 [Error matching program output for functions/dinan/exp2] 
 
-compilation timeout (04/03/09)
-------------------------------
-[Error: Timed out compilation for studies/hpcc/RA/diten/ra]
-
 
 ========================
 xt-gnu specific failures
 ========================
-The C compiler issues a warning when time.h and pthread.h are both included
-and the C code is compiled with -std=c99.
--------------------------------------------------
-[Error matching program output for extern/bradc/externClock]
 
 
 ========================
@@ -427,10 +444,6 @@ execution timeout (03/07/09)
 compilation timeout (03/06/09)
 ------------------------------
 [Error: Timed out compilation for release/examples/tutorials/arrays]
-
-occasional timeouts? or slowed down during iterator rewrites? (e.g., 07/02/08)
-------------------------------------------------------------------------------
-[Error: Timed out executing program release/examples/hpcc/ra]
 
 unreachable line causes compiler warning
 ----------------------------------------
