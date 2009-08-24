@@ -159,10 +159,11 @@ opts-specific tests
 (Example runs: 0)
 
 
-(Full run: 75)
+(Full run: 28)
 
 --no-dead-code-elimination
 --------------------------
+[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
 [Error: Timed out compilation for studies/hpcc/RA/diten/ra]
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
@@ -182,63 +183,15 @@ opts-specific tests
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 --no-inline-iterators
----------------------
-[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
-[Error: Timed out compilation for trivial/deitz/test_forall]
-[Error: Timed out compilation for trivial/deitz/test_function1]
-[Error: Timed out compilation for trivial/deitz/test_hex_literal]
-[Error: Timed out compilation for trivial/deitz/test_if_else]
-[Error: Timed out compilation for trivial/deitz/test_if_expr]
-[Error: Timed out compilation for trivial/deitz/test_if_expr2]
-[Error: Timed out compilation for trivial/deitz/test_if_expr3]
-[Error: Timed out compilation for trivial/deitz/test_if_expr4]
-[Error: Timed out compilation for trivial/deitz/test_if_then_else]
-[Error: Timed out compilation for trivial/deitz/test_imag_coerce]
-[Error: Timed out compilation for trivial/deitz/test_imag_coerce3]
-[Error: Timed out compilation for trivial/deitz/test_init_int8]
-[Error: Timed out compilation for trivial/deitz/test_int32]
-[Error: Timed out compilation for trivial/deitz/test_int32b]
-[Error: Timed out compilation for trivial/deitz/test_int_long]
-[Error: Timed out compilation for trivial/deitz/test_int_sizes]
-[Error: Timed out compilation for trivial/deitz/test_integer_method]
-[Error: Timed out compilation for trivial/deitz/test_integer_method2]
-[Error: Timed out compilation for trivial/deitz/test_integer_method4]
-[Error: Timed out compilation for trivial/deitz/test_let1]
-[Error: Timed out compilation for trivial/deitz/test_let2]
-[Error: Timed out compilation for trivial/deitz/test_let3]
-[Error: Timed out compilation for trivial/deitz/test_let4]
-[Error: Timed out compilation for trivial/deitz/test_let5]
-[Error: Timed out compilation for trivial/deitz/test_let6]
-[Error: Timed out compilation for trivial/deitz/test_let7]
-[Error: Timed out compilation for trivial/deitz/test_let8]
-[Error: Timed out compilation for trivial/deitz/test_longToken]
-[Error: Timed out compilation for trivial/deitz/test_loop_noindex]
-[Error: Timed out compilation for trivial/deitz/test_negate_uint32]
-[Error: Timed out compilation for trivial/deitz/test_nested_fors]
-[Error: Timed out compilation for trivial/deitz/test_nested_fors2]
-[Error: Timed out compilation for trivial/deitz/test_nested_function_call]
-[Error: Timed out compilation for trivial/deitz/test_nested_function_call2]
-[Error: Timed out compilation for trivial/deitz/test_on_syntax]
-[Error: Timed out compilation for trivial/deitz/test_param_fold1]
-[Error: Timed out compilation for trivial/deitz/test_param_fold2]
-[Error: Timed out compilation for trivial/deitz/test_param_fold3]
-[Error: Timed out compilation for trivial/deitz/test_param_fold4]
-[Error: Timed out compilation for trivial/deitz/test_param_fold5]
-[Error: Timed out compilation for trivial/deitz/test_plusassign]
-[Error: Timed out compilation for trivial/deitz/test_predicate]
-[Error: Timed out compilation for trivial/deitz/test_scope1]
-[Error: Timed out compilation for trivial/deitz/test_scope3]
-[Error: Timed out compilation for trivial/deitz/test_select1]
-[Error: Timed out compilation for trivial/deitz/test_short_identifiers]
-[Error: Timed out compilation for trivial/deitz/test_shortcircuit_land_lor]
-[Error: Timed out compilation for trivial/deitz/test_string2int]
-[Error: Timed out compilation for trivial/deitz/test_string2prims]
-
 --no-scalar-replacement
 --no-optimize-loop-iterators --no-inline-iterators
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
 ---------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+
+--baseline --inline
+-------------------
+[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
 
 
 =======================
