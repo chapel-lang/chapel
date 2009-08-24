@@ -89,10 +89,9 @@ extern void* chpl_globals_registry_static[];
 //#define CHPL_COMM_HETEROGENEOUS
 //
 
-
 #ifdef CHPL_COMM_HETEROGENEOUS
 #define SPECIFY_SIZE(type) chpl_rt_type_id_##type
-#define SPECIFY_STRING_SIZE(size) chpl_rt_type_id_chpl____wide_chpl_string
+#define SPECIFY_STRING_SIZE(size) CHPL_TYPE_chpl_string
 #else
 #define SPECIFY_SIZE(type) (/*printf("%s\n", "chpl_rt_type_id_" #type),*//*chpl_rt_type_id_##type,*/sizeof(type))
 #define SPECIFY_STRING_SIZE(size) (size)
