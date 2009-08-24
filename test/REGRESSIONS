@@ -23,8 +23,8 @@ spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09)
 [Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 08/07/09)
 
 spurious failure
@@ -35,6 +35,10 @@ spurious failure
 =================
 linux regressions
 =================
+
+/tmp filled up (08/22/09)
+-------------------------
+*most*
 
 spurious verification failed
 ----------------------------
@@ -397,6 +401,11 @@ exp2 not supported:
 ========================
 xt-gnu specific failures
 ========================
+
+The C compiler issues a warning when time.h and pthread.h are both
+included and the C code is compiled with -std=c99.
+------------------------------------------------------------------
+[Error matching program output for extern/bradc/externClock]    
 
 
 ========================
