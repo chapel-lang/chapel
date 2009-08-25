@@ -36,9 +36,9 @@ spurious failure
 linux regressions
 =================
 
-/tmp filled up (08/22/09)
--------------------------
-*most*
+memory stuff in flux?
+---------------------
+[Error matching program output for memory/figueroa/ClassInheritance1]
 
 spurious verification failed
 ----------------------------
