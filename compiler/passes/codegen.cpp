@@ -452,34 +452,56 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     }
   }
   
-  if (fGPU) {
+  if (fGPU)
     fprintf(hdrfile, "\n#ifndef ENABLE_GPU\n");
-    fprintf(hdrfile, "\n/*** Global Variables ***/\n\n");
-    forv_Vec(VarSymbol, varSymbol, varSymbols) {
-      if (fRuntime) {
-        if (varSymbol->defPoint->parentSymbol == baseModule)
-          continue;
-        fprintf(hdrfile, "static ");
-      }
-      varSymbol->codegenDef(hdrfile);
-    }
 
-    if (!fRuntime) {
-      fprintf(hdrfile, "\nconst int chpl_numGlobalsOnHeap = %d;\n", numGlobalsOnHeap);
-      fprintf(hdrfile, "\nvoid** chpl_globals_registry;\n");
-      fprintf(hdrfile, "\nvoid* chpl_globals_registry_static[%d];\n", 
-          (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
-      fprintf(hdrfile, "\nconst char* chpl_memDescs[] = {\n");
-      bool first = true;
-      forv_Vec(const char*, memDesc, memDescsVec) {
-        if (!first)
-          fprintf(hdrfile, ",\n");
-        fprintf(hdrfile, "\"%s\"", memDesc);
-        first = false;
-      }
-      fprintf(hdrfile, "\n};\n");
-      fprintf(hdrfile, "\nconst int chpl_num_memDescs = %d;\n", memDescsVec.n);
+  fprintf(hdrfile, "\n/*** Global Variables ***/\n\n");
+  forv_Vec(VarSymbol, varSymbol, varSymbols) {
+    if (fRuntime) {
+      if (varSymbol->defPoint->parentSymbol == baseModule)
+        continue;
+      fprintf(hdrfile, "static ");
     }
+    varSymbol->codegenDef(hdrfile);
+  }
+
+  if (!fRuntime) {
+    fprintf(hdrfile, "\nconst int chpl_numGlobalsOnHeap = %d;\n", numGlobalsOnHeap);
+    fprintf(hdrfile, "\nvoid** chpl_globals_registry;\n");
+    fprintf(hdrfile, "\nvoid* chpl_globals_registry_static[%d];\n", 
+            (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
+    fprintf(hdrfile, "\nconst char* chpl_memDescs[] = {\n");
+    bool first = true;
+    forv_Vec(const char*, memDesc, memDescsVec) {
+      if (!first)
+        fprintf(hdrfile, ",\n");
+      fprintf(hdrfile, "\"%s\"", memDesc);
+      first = false;
+    }
+    fprintf(hdrfile, "\n};\n");
+    fprintf(hdrfile, "\nconst int chpl_num_memDescs = %d;\n", memDescsVec.n);
+
+    //
+    // add table of private-broadcast constants
+    //
+    fprintf(hdrfile, "\nvoid* const chpl_private_broadcast_table[] = {\n");
+    fprintf(hdrfile, "&chpl_verbose_comm");
+    fprintf(hdrfile, ",\n&chpl_comm_diagnostics");
+    fprintf(hdrfile, ",\n&chpl_verbose_mem");
+    int i = 3;
+    forv_Vec(CallExpr, call, gCallExprs) {
+      if (call->isPrimitive(PRIM_PRIVATE_BROADCAST)) {
+        SymExpr* se = toSymExpr(call->get(1));
+        INT_ASSERT(se);
+        fprintf(hdrfile, ",\n&%s", se->var->cname);
+        call->insertAtHead(new_IntSymbol(i));
+        i++;
+      }
+    }
+    fprintf(hdrfile, "\n};\n");
+  }
+
+  if (fGPU) {
     fprintf(hdrfile, "#else\n");
     forv_Vec(VarSymbol, varSymbol, varSymbols) {
       if (fRuntime) {
@@ -499,34 +521,6 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       fprintf(hdrfile, "\nextern const int chpl_num_memDescs;\n");
     }
     fprintf(hdrfile, "#endif\n");
-  }
-  else {
-    fprintf(hdrfile, "\n/*** Global Variables ***/\n\n");
-    forv_Vec(VarSymbol, varSymbol, varSymbols) {
-      if (fRuntime) {
-        if (varSymbol->defPoint->parentSymbol == baseModule)
-          continue;
-        fprintf(hdrfile, "static ");
-      }
-      varSymbol->codegenDef(hdrfile);
-    }
-
-    if (!fRuntime) {
-      fprintf(hdrfile, "\nconst int chpl_numGlobalsOnHeap = %d;\n", numGlobalsOnHeap);
-      fprintf(hdrfile, "\nvoid** chpl_globals_registry;\n");
-      fprintf(hdrfile, "\nvoid* chpl_globals_registry_static[%d];\n", 
-          (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
-      fprintf(hdrfile, "\nconst char* chpl_memDescs[] = {\n");
-      bool first = true;
-      forv_Vec(const char*, memDesc, memDescsVec) {
-        if (!first)
-          fprintf(hdrfile, ",\n");
-        fprintf(hdrfile, "\"%s\"", memDesc);
-        first = false;
-      }
-      fprintf(hdrfile, "\n};\n");
-      fprintf(hdrfile, "\nconst int chpl_num_memDescs = %d;\n", memDescsVec.n);
-    }
   }
 }
 

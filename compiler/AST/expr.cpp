@@ -2024,10 +2024,10 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     case PRIM_PRIVATE_BROADCAST:
-      fprintf(outfile, "chpl_comm_broadcast_private(&(");
+      fprintf(outfile, "chpl_comm_broadcast_private(");
       get(1)->codegen(outfile);
-      fprintf(outfile, "), sizeof(");
-      get(1)->typeInfo()->codegen(outfile);
+      fprintf(outfile, ", sizeof(");
+      get(2)->typeInfo()->codegen(outfile);
       fprintf(outfile, "))");
       break;
     case PRIM_INT_ERROR:

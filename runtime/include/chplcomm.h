@@ -25,6 +25,8 @@ extern const int chpl_numGlobalsOnHeap;
 extern void** chpl_globals_registry;
 extern void* chpl_globals_registry_static[];
 
+extern void* const chpl_private_broadcast_table[];
+
 //
 // Multi-locale macros
 //
@@ -289,13 +291,11 @@ void chpl_comm_alloc_registry(int numGlobals);
 void chpl_comm_broadcast_global_vars(int numGlobals);
 
 //
-// Broadcast the value at addr on the calling locale to the same
-// address on every other locale.  This is done to set up global
-// constants of simple scalar types
+// Broadcast the value of 'id'th entry in chpl_private_broadcast_table
+// on the calling locale onto every other locale.  This is done to set
+// up global constants of simple scalar types (primarily).
 //
-// Assumes global variables have the same addresses across locales.
-//
-void chpl_comm_broadcast_private(void* addr, int size);
+void chpl_comm_broadcast_private(int id, int size);
 
 //
 // barrier for synchronization between all processes; currently only

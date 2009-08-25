@@ -92,13 +92,11 @@ int lock_num = 0;
 chpl_mutex_t pvm_lock;
 chpl_mutex_t termination_lock;
 
-static int chpl_comm_diagnostics = 0;           // set via startCommDiagnostics
 static chpl_mutex_t chpl_comm_diagnostics_lock;
 static int chpl_comm_gets = 0;
 static int chpl_comm_puts = 0;
 static int chpl_comm_forks = 0;
 static int chpl_comm_nb_forks = 0;
-static int chpl_verbose_comm = 0;               // set via startVerboseComm
 static int chpl_comm_no_debug_private = 0;
 
 int parent = -23;   // used to send messages back to launcher
@@ -773,16 +771,16 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
   return;
 }
 
-void chpl_comm_broadcast_private(void* addr, int size) {
+void chpl_comm_broadcast_private(int id, int size) {
   int i;
   PRINTF("broadcast private");
 
   for (i = 0; i < chpl_numLocales; i++) {
     if (i != chpl_localeID) {
       if (chpl_numRealms == 1) {
-        chpl_comm_put(addr, i, addr, size, 0, 0);
+        chpl_comm_put(chpl_private_broadcast_table[id], i, chpl_private_broadcast_table[id], size, 0, 0);
       } else {
-        //        chpl_comm_put(addr, i, addr, size, 0, 0);
+        //        chpl_comm_put(chpl_private_broadcast_table[id], i, chpl_private_broadcast_table[id], size, 0, 0);
         chpl_internal_error("can't yet broadcast globals in a multirealm execution");
       }
     }
@@ -1079,14 +1077,14 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
 void chpl_startVerboseComm() {
   chpl_verbose_comm = 1;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(&chpl_verbose_comm, sizeof(int));
+  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int));
   chpl_comm_no_debug_private = 0;
 }
 
 void chpl_stopVerboseComm() {
   chpl_verbose_comm = 0;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(&chpl_verbose_comm, sizeof(int));
+  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int));
   chpl_comm_no_debug_private = 0;
 }
 
@@ -1101,14 +1099,14 @@ void chpl_stopVerboseCommHere() {
 void chpl_startCommDiagnostics() {
   chpl_comm_diagnostics = 1;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(&chpl_comm_diagnostics, sizeof(int));
+  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int));
   chpl_comm_no_debug_private = 0;
 }
 
 void chpl_stopCommDiagnostics() {
   chpl_comm_diagnostics = 0;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(&chpl_comm_diagnostics, sizeof(int));
+  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int));
   chpl_comm_no_debug_private = 0;
 }
 

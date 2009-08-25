@@ -323,13 +323,13 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
 }
 
 
-void chpl_comm_broadcast_private(void* addr, int size) {
+void chpl_comm_broadcast_private(int id, int size) {
   int i;
   PRINTF("broadcast private");
 
   for (i = 0; i < chpl_numLocales; i++) {
     if (i != chpl_localeID) {
-      chpl_comm_put(addr, i, addr, size, 0, 0);
+      chpl_comm_put(chpl_private_broadcast_table[id], i, chpl_private_broadcast_table[id], size, 0, 0);
     }
   }
 }

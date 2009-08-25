@@ -16,13 +16,11 @@
 #define CHPL_COMM_GASNET_SETENV
 #endif
 
-static int chpl_comm_diagnostics = 0;           // set via startCommDiagnostics
 static chpl_mutex_t chpl_comm_diagnostics_lock;
 static int chpl_comm_gets = 0;
 static int chpl_comm_puts = 0;
 static int chpl_comm_forks = 0;
 static int chpl_comm_nb_forks = 0;
-static int chpl_verbose_comm = 0;               // set via startVerboseComm
 static int chpl_comm_no_debug_private = 0;
 
 //
@@ -300,14 +298,14 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
   }
 }
 
-void chpl_comm_broadcast_private(void* addr, int size) {
+void chpl_comm_broadcast_private(int id, int size) {
   int locale;
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
   int payloadSize = size + sizeof(put_t);
   put_t* pbp = chpl_malloc(1, payloadSize, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
-  pbp->addr = addr;
+  pbp->addr = chpl_private_broadcast_table[id];
   pbp->size = size;
-  memcpy(pbp->data, addr, size);
+  memcpy(pbp->data, chpl_private_broadcast_table[id], size);
 #endif
 
   for (locale = 0; locale < chpl_numLocales; locale++) {
@@ -315,7 +313,7 @@ void chpl_comm_broadcast_private(void* addr, int size) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
       GASNET_Safe(gasnet_AMRequestMedium0(locale, PUTDATA, pbp, payloadSize));
 #else
-      chpl_comm_put(addr, locale, addr, size, 0, "");
+      chpl_comm_put(chpl_private_broadcast_table[id], locale, chpl_private_broadcast_table[id], size, 0, "");
 #endif
     }
   }
@@ -480,14 +478,14 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
 void chpl_startVerboseComm() {
   chpl_verbose_comm = 1;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(&chpl_verbose_comm, sizeof(int));
+  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int));
   chpl_comm_no_debug_private = 0;
 }
 
 void chpl_stopVerboseComm() {
   chpl_verbose_comm = 0;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(&chpl_verbose_comm, sizeof(int));
+  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int));
   chpl_comm_no_debug_private = 0;
 }
 
@@ -502,14 +500,14 @@ void chpl_stopVerboseCommHere() {
 void chpl_startCommDiagnostics() {
   chpl_comm_diagnostics = 1;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(&chpl_comm_diagnostics, sizeof(int));
+  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int));
   chpl_comm_no_debug_private = 0;
 }
 
 void chpl_stopCommDiagnostics() {
   chpl_comm_diagnostics = 0;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(&chpl_comm_diagnostics, sizeof(int));
+  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int));
   chpl_comm_no_debug_private = 0;
 }
 

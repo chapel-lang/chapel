@@ -12,6 +12,10 @@ int32_t chpl_numLocales = -1;
 int32_t chpl_numPrivateObjects = 0;
 void** chpl_privateObjects;
 
+int chpl_verbose_comm;
+int chpl_comm_diagnostics;
+int chpl_verbose_mem;
+
 void chpl_newPrivatizedClass(void* v) {
   chpl_numPrivateObjects += 1;
   if (chpl_numPrivateObjects == 1) {

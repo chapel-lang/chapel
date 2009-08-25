@@ -12,6 +12,10 @@ extern void chpl__initModuleGuards(void);
 
 extern chpl_fn_p chpl_ftable[];
 
+extern int chpl_verbose_comm;     // set via startVerboseComm
+extern int chpl_comm_diagnostics; // set via startCommDiagnostics
+extern int chpl_verbose_mem;      // set via startVerboseMem
+
 extern const char* chpl_compileCommand;
 extern const char* chpl_compileVersion;
 extern const char* CHPL_HOST_PLATFORM;

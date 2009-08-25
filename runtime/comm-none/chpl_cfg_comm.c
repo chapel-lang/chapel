@@ -68,7 +68,7 @@ void chpl_comm_alloc_registry(int numGlobals) {
 
 void chpl_comm_broadcast_global_vars(int numGlobals) { }
 
-void chpl_comm_broadcast_private(void* addr, int size) { }
+void chpl_comm_broadcast_private(int id, int size) { }
 
 void chpl_comm_barrier(const char *msg) { }
 

@@ -191,16 +191,16 @@ void _broadcastPrivateHelperFn(struct __broadcast_private_helper *arg) {
   chpl_comm_get(arg->addr, arg->locale, arg->raddr, arg->size, 0, "");
 }
 
-void chpl_comm_broadcast_private(void* addr, int size) {
+void chpl_comm_broadcast_private(int id, int size) {
   int i;
   _broadcast_private_helper bph;
   void* heapAddr = NULL;
 
   heapAddr = chpl_malloc(1, size, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
-  bcopy(addr, heapAddr, size);
+  bcopy(chpl_private_broadcast_table[id], heapAddr, size);
   for (i = 0; i < chpl_numLocales; i++)
     if (i != chpl_localeID) {
-      bph.addr = addr;
+      bph.addr = chpl_private_broadcast_table[id];
       bph.raddr = heapAddr;
       bph.locale = chpl_localeID;
       bph.size = size;

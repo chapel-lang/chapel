@@ -45,8 +45,6 @@ static size_t totalFreed = 0;     /* total memory freed */
 
 static chpl_mutex_t memTrack_lock;
 
-static int chpl_verbose_mem = 0;               // set via startVerboseComm
-
 static unsigned hash(void* memAlloc) {
   unsigned hashValue = 0;
   char* fakeCharPtr = (char*)&memAlloc;
@@ -452,12 +450,12 @@ void chpl_track_realloc2(void* moreMemAlloc, size_t newChunk, void* memAlloc, si
 
 void chpl_startVerboseMem() {
   chpl_verbose_mem = 1;
-  chpl_comm_broadcast_private(&chpl_verbose_mem, sizeof(int));
+  chpl_comm_broadcast_private(2 /* &chpl_verbose_mem */, sizeof(int));
 }
 
 void chpl_stopVerboseMem() {
   chpl_verbose_mem = 0;
-  chpl_comm_broadcast_private(&chpl_verbose_mem, sizeof(int));
+  chpl_comm_broadcast_private(2 /* &chpl_verbose_mem */, sizeof(int));
 }
 
 void chpl_startVerboseMemHere() {
