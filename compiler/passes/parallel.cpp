@@ -305,26 +305,9 @@ makeHeapAllocations() {
   Vec<Symbol*> varSet;
   Vec<Symbol*> varVec;
 
-  // compute def uses with postorder asts set so that the first def is
-  // the defining one; see ack!! below
-  Vec<BaseAST*> asts;
-  collect_asts(rootModule, asts);
-  Vec<Symbol*> symSet;
-  Vec<SymExpr*> symExprs;
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (def->parentSymbol) {
-        if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
-          symSet.set_add(def->sym);
-        }
-      }
-    } else if (SymExpr* se = toSymExpr(ast)) {
-      symExprs.add(se);
-    }
-  }
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(symSet, symExprs, defMap, useMap);
+  buildDefUseMaps(defMap, useMap);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_ON)) {
