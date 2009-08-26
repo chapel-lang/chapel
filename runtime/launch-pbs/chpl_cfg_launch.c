@@ -66,6 +66,7 @@ static int getNumCoresPerLocale(void) {
   int bitMask = 0x1;
   int numCores;
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
+  char* command = NULL;
 
   if (numCoresString) {
     numCores = atoi(numCoresString);
@@ -73,7 +74,7 @@ static int getNumCoresPerLocale(void) {
       return numCores;
   }
 
-  char* command = chpl_glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
+  command = chpl_glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
   system(command);
   sysFile = fopen(sysFilename, "r");
   if (fscanf(sysFile, "%d\n", &coreMask) != 1 || !feof(sysFile)) {
@@ -177,9 +178,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(expectFile, "send \"exit\\n\"\n");
   }
   fprintf(expectFile, "spawn qsub -z ");
-  if (getenv("GASNET_MAX_SEGSIZE")) {
-    fprintf(expectFile, "-vGASNET_MAX_SEGSIZE ");
-  }
+  fprintf(expectFile, "-V "); // pass through all environment variables
   fprintf(expectFile, "-I %s\n", pbsFilename);
   fprintf(expectFile, "expect {\n");
   fprintf(expectFile, "  \"A project was not specified\" {send_user "
