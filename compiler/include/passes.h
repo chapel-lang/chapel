@@ -40,8 +40,4 @@ void scalarReplace();
 void scopeResolve();
 void verify();
 
-// defined in codegen.cpp
-void registerTypeToStructurallyCodegen(TypeSymbol* type);
-
-
 #endif

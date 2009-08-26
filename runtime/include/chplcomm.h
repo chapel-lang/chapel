@@ -95,7 +95,7 @@ extern void* const chpl_private_broadcast_table[];
 #define SPECIFY_SIZE(type) chpl_rt_type_id_##type
 #define SPECIFY_STRING_SIZE(size) CHPL_TYPE_chpl_string
 #else
-#define SPECIFY_SIZE(type) (/*printf("%s\n", "chpl_rt_type_id_" #type),*//*chpl_rt_type_id_##type,*/sizeof(type))
+#define SPECIFY_SIZE(type) (/*chpl_rt_type_id_##type,*/sizeof(type))
 #define SPECIFY_STRING_SIZE(size) (size)
 #endif
 

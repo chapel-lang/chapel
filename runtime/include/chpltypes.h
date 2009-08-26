@@ -158,7 +158,4 @@ int32_t _now_day(void);
 int32_t _now_dow(void);
 _real64 _now_time(void);
 
-extern chplType chpl_getFieldType(int typeNum, int fieldNum);
-extern size_t chpl_getFieldOffset(int typeNum, int fieldNum);
-
 #endif

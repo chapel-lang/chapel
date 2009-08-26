@@ -196,4 +196,8 @@ bool isUnion(Type* t);
 
 bool isReferenceType(Type* t);
 
+void registerTypeToStructurallyCodegen(TypeSymbol* type);
+void codegenTypeStructures(FILE* hdrfile);
+void codegenTypeStructureInclude(FILE* outfile);
+
 #endif
