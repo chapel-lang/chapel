@@ -24,7 +24,7 @@ spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 spurious compilation timeouts
 ----------------------------
 [Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09)
 [Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 08/07/09)
 
 spurious failure
@@ -77,6 +77,12 @@ out of memory errors due to intentional leaking of locals (07/31/09)
 valgrind-specific regressions
 =============================
 
+three new 'the impossible has happened' (08/26/09)
+--------------------------------------------------
+[Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc-domainPromote]
+[Error matching compiler output for users/shetag/assocarr]
+[Error matching compiler output for users/shetag/classWithArray/initArrWithFn]
+
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
 [Error matching program output for parallel/begin/dinan/mvm_coforall]
@@ -109,6 +115,10 @@ memory stuff in flux (05/28/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+gasnet_barrier_notify() called twice in a row error (08/26/09)
+--------------------------------------------------------------
+[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock5]
 
 memory stuff in flux (06/06/09)
 -------------------------------
@@ -354,6 +364,10 @@ exp2 not supported:
 ========================
 xt-gnu specific failures
 ========================
+
+-target=linux unrecognized (08/26/09)
+-------------------------------------
+*all*
 
 The C compiler issues a warning when time.h and pthread.h are both
 included and the C code is compiled with -std=c99.
