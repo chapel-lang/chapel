@@ -27,8 +27,7 @@ class CSRDom: BaseSparseDom {
   def initialize() {
     if (rank != 2) then
       compilerError("Only 2D sparse domains are supported presently");
-    for i in rowDom do rowStart(i) = 1;
-    nnz = 0;
+    clear();
   }
 
   def numIndices return nnz;
@@ -47,6 +46,24 @@ class CSRDom: BaseSparseDom {
       }
       yield (cursorRow, colIdx(i));
     }
+  }
+
+  def these(param tag: iterator) where tag == iterator.leader {
+    yield true;
+  }
+
+  def these(param tag: iterator, follower: bool) where tag == iterator.follower {
+    var cursorRow = rowRange.low;
+    for i in 1..nnz {
+      while (rowStart(cursorRow+1) <= i) {
+        cursorRow += 1;
+      }
+      yield (cursorRow, colIdx(i));
+    }
+  }
+
+  def these(param tag: iterator, follower) where tag == iterator.follower {
+    compilerError("Sparse iterators can't yet be zippered with others");
   }
 
   def dim(d : int) {
@@ -118,6 +135,7 @@ class CSRDom: BaseSparseDom {
 
   def clear() {
     nnz = 0;
+    rowStart = 1;
   }
 
   def dimIter(param d, ind) {
@@ -158,6 +176,10 @@ class CSRArr: BaseArr {
       return data(loc);
     else
       return irv;
+  }
+
+  def these() var {
+    for e in data[1..dom.nnz] do yield e;
   }
 
   def IRV var {

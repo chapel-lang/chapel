@@ -210,8 +210,9 @@ def DefaultSparseDom.writeThis(f: Writer) {
         prevInd = indices(i);
         f.write(" ", prevInd);
       }
+      f.writeln();
     }
-    f.writeln("\n]");
+    f.writeln("]");
   }
 }
 
