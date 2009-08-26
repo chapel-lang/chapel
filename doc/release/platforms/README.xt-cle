@@ -29,9 +29,9 @@ know at chapel_info@cray.com.
 
 3) If your XT requires PBS/qsub to launch jobs onto the compute nodes
    (or you simply want to use it as your job launch mechanism), set
-   CHPL_LAUNCHER to 'pbs'.  For example:
+   CHPL_LAUNCHER to 'pbs-aprun'.  For example:
 
-     setenv CHPL_LAUNCHER pbs
+     setenv CHPL_LAUNCHER pbs-aprun
 
    Otherwise, CHPL_LAUNCHER will default to 'aprun' on xt-cle systems.
    Note that for some system installations, you may need to execute
@@ -48,15 +48,22 @@ know at chapel_info@cray.com.
      setenv CHPL_LAUNCHER_CORES_PER_LOCALE 4
 
 
-5) When using CHPL_LAUNCHER == pbs, you can optionally specify a queue
-   name using the environment variable CHPL_LAUNCHER_QUEUE.  For
+5) When using CHPL_LAUNCHER == pbs-aprun, you can optionally specify a
+   queue name using the environment variable CHPL_LAUNCHER_QUEUE.  For
    example:
 
      setenv CHPL_LAUNCHER_QUEUE 64n24h
 
-   If this variable is left unset, typically no queue name will be
-   specified.  For NCCS users, the debug queue will be used.
+   If this variable is left unset, no queue name will be specified.
+   You can also optionally set a wall clock time limit for the job
+   using CHPL_LAUNCHER_WALLTIME.  For example to specify a 10-minute
+   time limit, use:
 
+     setenv CHPL_LAUNCHER_WALLTIME 00:10:00
+
+   NCCS users must specify either a queue or a walltime using the
+   mechanisms above.
+   
 
 6) Ensure that you have one of the following Programming Environment
    modules loaded which will specify the C compiler used to compile
@@ -162,8 +169,8 @@ NCCS user notes
 ---------------
 
 * NCCS XT machines use a different qsub mechanism in order to enforce
-  their queuing policies.  We have attempted to make our qsub launch
-  code work with this version of qsub, but require a
+  their queuing policies.  We have attempted to make our pbs-aprun
+  launch code work with this version of qsub, but require a
   CHPL_LAUNCHER_ACCOUNT environment variable to be set to specify your
   NCCS account name.  For example:
 
@@ -171,14 +178,15 @@ NCCS user notes
 
 
 * If our PBS launcher does not work for you, you can fall back on a
-  more manual launch of your program as always:
+  more manual launch of your program as always, either by:
 
-  - launch the a.out_real binary manually using aprun within a
+  - launching the a.out_real binary manually using aprun within a
     manually-generated qsub script/command
 
-  - set CHPL_LAUNCHER to aprun, rebuild and recompile, and execute the
-    resulting binary within a manually-generated qsub script.
+  - setting CHPL_LAUNCHER to aprun, rebuilding the runtime,
+    recompiling your program, and executing the resulting binary
+    within a manually-generated qsub script.
 
 
-* As noted above, if CHPL_LAUNCHER_QUEUE is not specified, the debug
-  queue will be used by default.
+* NCCS users either need to specify 'debug' as their queue using the
+  CHPL_LAUNCHER_QUEUE or a walltime using CHPL_LAUNCHER_WALLTIME.

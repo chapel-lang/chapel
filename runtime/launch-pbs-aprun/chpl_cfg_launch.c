@@ -98,6 +98,8 @@ static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
 
   if (queue)
     fprintf(pbsFile, "#PBS -q %s\n", queue);
+  if (walltime) 
+    fprintf(pbsFile, "#PBS -l walltime=%s\n", walltime);
   switch (qsub) {
   case pbspro:
   case unknown:
@@ -106,14 +108,10 @@ static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
     fprintf(pbsFile, "#PBS -l mppdepth=%d\n", numCoresPerLocale);
     break;
   case nccs:
-    if (queue)
-      fprintf(pbsFile, "#PBS -q %s\n", queue);
-    else if (!walltime)
+    if (!queue && !walltime)
       chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
 		 "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
 		 "environment variables", 0, 0);
-    if (walltime) 
-      fprintf(pbsFile, "#PBS -l walltime=%s\n", walltime);
     fprintf(pbsFile, "#PBS -l size=%d\n", numCoresPerLocale*numLocales);
     break;
   }

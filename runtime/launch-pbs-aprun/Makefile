@@ -1,5 +1,5 @@
 RUNTIME_ROOT = ..
-RUNTIME_SUBDIR = launch-pbs
+RUNTIME_SUBDIR = launch-pbs-aprun
 
 #
 # standard header
