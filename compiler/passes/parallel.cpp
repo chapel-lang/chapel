@@ -473,44 +473,20 @@ makeHeapAllocations() {
       continue;
     }
     ClassType* heapType = buildHeapType(var->type);
-    bool first = true;
 
     //
-    // global heap variables are put on the heap during program startup
+    // allocate local variables on the heap; global variables are put
+    // on the heap during program startup
     //
-    if (isModuleSymbol(var->defPoint->parentSymbol)) {
-      //      chpl_main->insertAtHead(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, new_StringSymbol("heap class"))));
-      first = false;
-    }
-
-    //
-    // handle variables with no definitions
-    //  temporaries for destructured indices
-    //
-    if (first && useMap.get(var) && (!defMap.get(var) || defMap.get(var)->n == 0)) {
-      //
-      // In this case, where should we put this?  ack!! let's assume
-      // we can put it in front of the first use!
-      //
-      useMap.get(var)->v[0]->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data"))));
+    if (!isModuleSymbol(var->defPoint->parentSymbol) &&
+        ((useMap.get(var) && useMap.get(var)->n > 0) ||
+         (defMap.get(var) && defMap.get(var)->n > 0))) {
+      var->defPoint->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data"))));
       heapAllocatedVars.add(var);
     }
 
     for_defs(def, defMap, var) {
-
-      // ack!! this is troublesome: we're assuming that the first
-      // definition in the defs vector is the initial definition
-      if (first) {
-        first = false;
-        CallExpr* move = toCallExpr(def->parentExpr);
-        INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-        VarSymbol* tmp = newTemp(var->type);
-        move->insertBefore(new DefExpr(tmp));
-        move->insertBefore(new CallExpr(PRIM_MOVE, tmp, move->get(2)->remove()));
-        move->insertAtTail(new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data")));
-        move->insertAfter(new CallExpr(PRIM_SET_MEMBER, move->get(1)->copy(), heapType->getField(1), tmp));
-        heapAllocatedVars.add(var);
-      } else if (CallExpr* call = toCallExpr(def->parentExpr)) {
+      if (CallExpr* call = toCallExpr(def->parentExpr)) {
         if (call->isPrimitive(PRIM_MOVE)) {
           VarSymbol* tmp = newTemp(var->type);
           call->insertBefore(new DefExpr(tmp));
