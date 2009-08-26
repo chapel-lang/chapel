@@ -26,6 +26,8 @@ extern const char* CHPL_THREADS;
 extern const char* CHPL_COMM;
 extern char* chpl_executionCommand;
 
+extern int chpl_threads_initialized;
+
 #define _CHECK_NIL(x, lineno, filename)                                 \
   do {                                                                  \
     if (x == nil)                                                       \

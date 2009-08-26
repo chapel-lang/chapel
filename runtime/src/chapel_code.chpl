@@ -8,12 +8,22 @@ use DefaultAssociative;
 use Containers;
 use Sort;
 
-/* The following deals with the task table structure. The task table is
-   responsible for keeping track of the current running and pending tasks
-   and where these tasks spawned from. This information is used to generate
-   a task report (optionally displayed when the user Ctrl+C's out of 
-   the program).
+/* 
+   This code keeps track of thread identifiers, along with the current
+   running and pending tasks and where these tasks spawned from.
+
+   The thread ID information is used for thread teardown at the end of
+   program execution.
+
+   The taks information is used to generate a task report (optionally
+   displayed when the user Ctrl+C's out of the program).
+
 */
+
+// type used to communicate thread identifiers between C code and
+// Chapel code in the runtime. Should match chpl_threadID_t defined in
+// chplthreads.h.
+type chpl_threadID_t = uint(64);
 
 // Represents a currently running task
 record chpldev_Task {
@@ -21,34 +31,61 @@ record chpldev_Task {
     var filename  : string;
 }
 
-var chpldev_taskTableD : domain(uint(64));
+var chpldev_taskTableD : domain(chpl_threadID_t);
 var chpldev_taskTable : [chpldev_taskTableD] Vector(chpldev_Task);
 
+pragma "export" def chpldev_taskTable_addThread( threadID : chpl_threadID_t )
+{
+  if(!chpldev_taskTableD.member(threadID)) {
+    chpldev_taskTableD.add(threadID);
+  }
+}
+
 pragma "export" def chpldev_taskTable_add(
-    threadID : uint(64),
+    threadID : chpl_threadID_t,
     lineno   : uint(32),
     filename : string)
 {
-    // add task to table set it to be pending
-    if(!chpldev_taskTableD.member(threadID)) {
-        chpldev_taskTableD.add(threadID);
-        chpldev_taskTable[threadID] =
-            new Vector(chpldev_Task);
-    }
-    chpldev_taskTable[threadID].push(
-        new chpldev_Task(lineno, filename));
+
+  // make sure this thread ID is in the domain.
+  chpldev_taskTable_addThread(threadID);
+
+  // make sure a task vector exits for this thread ID.
+  if (chpldev_taskTable[threadID] == nil) {
+    chpldev_taskTable[threadID] = new Vector(chpldev_Task);
+  }
+
+  // add task to table; set it to be pending
+  chpldev_taskTable[threadID].push(
+    new chpldev_Task(lineno, filename));
 }
 
-pragma "export" def chpldev_taskTable_remove(threadID : uint(64))
+pragma "export" def chpldev_taskTable_remove(threadID : chpl_threadID_t)
 {
     chpldev_taskTable[threadID].pop();
 }
 
-pragma "export" def chpldev_taskTable_print() {
-    for thread in chpldev_taskTableD {
-        for task in chpldev_taskTable[thread] {
-            stderr.writeln("- ", task.filename, ":", task.lineno,
-                " on ", thread);
-        }
+pragma "export" def chpldev_taskTable_print() 
+{
+  for thread in chpldev_taskTableD {
+    for task in chpldev_taskTable[thread] {
+      stderr.writeln("- ", task.filename, ":", task.lineno,
+		     " on ", thread);
     }
+  }
 }
+
+
+// callbacks to C part of runtime for thread cleanup.
+_extern def chpl_thread_cancel(threadID : chpl_threadID_t );
+_extern def chpl_thread_join  (threadID : chpl_threadID_t );
+
+
+pragma "export" def chpldev_endAllThreads() : void
+{
+  for thread in chpldev_taskTableD do
+    chpl_thread_cancel(thread);
+  for thread in chpldev_taskTableD do
+    chpl_thread_join(thread);
+}
+    

@@ -392,13 +392,31 @@ void initChplThreads() {
 }
 
 
+
 void exitChplThreads() {
   chpl_bool debug = false;
   if (debug)
     fprintf(stderr, "A total of %d threads were created; waking_cnt = %d\n", threads_cnt, waking_cnt);
+
+  // calls cancel and join (below) for all threads
+  chpldev_endAllThreads(); 
+
   pthread_key_delete(serial_key);
 }
 
+void chpl_thread_cancel(chpl_threadID_t threadID) {
+  pthread_t thread = (pthread_t) threadID;
+  if (0 != pthread_cancel(thread)) {
+    chpl_internal_error("thread cancel failed");
+  }
+}    
+
+void chpl_thread_join(chpl_threadID_t threadID) {
+  pthread_t thread = (pthread_t) threadID;
+  if (0 != pthread_join(thread, NULL)) {
+    chpl_internal_error("thread join failed");
+  }
+}    
 
 void chpl_thread_init(void) {
   if (blockreport)
@@ -406,7 +424,7 @@ void chpl_thread_init(void) {
 }
 
 
-uint64_t chpl_thread_id(void) {
+chpl_threadID_t chpl_thread_id(void) {
   return (uintptr_t) pthread_self();
 }
 
@@ -459,7 +477,6 @@ static void traverseLockedThreads(int sig) {
     tasksReport(SIGINT);
   }
 
-  exitChplThreads();
   chpl_exit_any(1);
 }
 
@@ -485,9 +502,6 @@ static void tasksReport(int sig) {
     printf("Executing tasks:\n");
     chpldev_taskTable_print();
 
-    // be nice and honor the user's wish to interrupt program execution -
-    // kill all threads and exit program
-    exitChplThreads();
     chpl_exit_any(1);
 }
 
@@ -578,12 +592,26 @@ static void skip_over_begun_tasks (void) {
   }
 }
 
+
+//
+// used to release threading lock when a task thread is cancelled
+// during a cond_wait.
+//
+static void chpl_task_thread_cleanup(void* unused) {
+  chpl_mutex_unlock(&threading_lock);
+}
+
 //
 // thread wrapper function runs the user function, waits for more
 // tasks, and runs those as they become available
 //
 static void
 chpl_begin_helper (chpl_task_pool_p task) {
+
+  // disable cancellation immediately
+  // enable only while waiting for new work
+  pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL); 
+  
   if (blockreport)
     initializeLockReportForThread();
 
@@ -605,6 +633,7 @@ chpl_begin_helper (chpl_task_pool_p task) {
 
     // begin critical section
     chpl_mutex_lock(&threading_lock);
+    pthread_cleanup_push( chpl_task_thread_cleanup, NULL );
 
     chpl_free(task, 0, 0);  // make sure task_pool_head no longer points to this task!
 
@@ -624,17 +653,29 @@ chpl_begin_helper (chpl_task_pool_p task) {
     //
     do {
       chpl_bool timed_out = false;
+
       while (!task_pool_head || timed_out) {
+
         timed_out = false;
         if (setBlockingLocation(0, idleThreadName)) {
           // all other threads appear to be blocked
           struct timeval now;
-          struct timespec wakep_time;
+	  struct timespec wakep_time;
+	  int last_cancel_state, cond_timedwait_result;
+
           gettimeofday (&now, NULL);
           wakep_time.tv_sec = now.tv_sec + 2;
           wakep_time.tv_nsec = 0;
-          if (pthread_cond_timedwait(&wakeup_signal, &threading_lock, &wakep_time)
-              == ETIMEDOUT) {
+	  
+	  // enable cancellation with cleanup handler and wait for wakeup signal
+	  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
+	  assert(last_cancel_state == PTHREAD_CANCEL_DISABLE); // sanity check
+
+	  cond_timedwait_result = pthread_cond_timedwait(&wakeup_signal, &threading_lock, &wakep_time);
+
+	  pthread_setcancelstate(last_cancel_state, NULL);
+
+          if (cond_timedwait_result == ETIMEDOUT) {
             lockReport* lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
             if (lockRprt->maybeDeadlocked) {
               fflush(stdout);
@@ -643,9 +684,18 @@ chpl_begin_helper (chpl_task_pool_p task) {
             }
             timed_out = true;
           }
+
         }
-        else
+        else {
+	  // enable cancellation with cleanup handler and wait for wakeup signal
+	  int last_cancel_state;
+	  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
+	  assert(last_cancel_state == PTHREAD_CANCEL_DISABLE);
+	
           pthread_cond_wait(&wakeup_signal, &threading_lock);
+
+	  pthread_setcancelstate(last_cancel_state, NULL);
+	}
         unsetBlockingLocation();
       }
       // skip over any tasks that have already started executing
@@ -692,6 +742,7 @@ chpl_begin_helper (chpl_task_pool_p task) {
       pthread_cond_signal(&wakeup_signal);
 
     // end critical section
+    pthread_cleanup_pop(0); // remove cleanup handler now that cancellation is disabled.
     chpl_mutex_unlock(&threading_lock);
   }
 }
@@ -727,6 +778,10 @@ launch_next_task(void) {
     } else {
       assert(queued_cnt > 0);
       queued_cnt--;
+
+      // remember thread ID for later use
+      chpldev_taskTable_addThread(thread); // requires threading lock
+
       threads_cnt++;
       running_cnt++;
       if (task->task_list_entry) {
@@ -736,7 +791,7 @@ launch_next_task(void) {
         task->task_list_entry = NULL;
       }
       task->begun = true;
-      pthread_detach(thread);
+
       task_pool_head = task_pool_head->next;
       if (task_pool_head == NULL)  // task pool is now empty
         task_pool_tail = NULL;

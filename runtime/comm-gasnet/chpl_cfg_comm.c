@@ -218,9 +218,9 @@ static void chpl_comm_gasnet_set_max_segsize() {
 }
 #endif
 
+static pthread_t polling_thread;
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
-  pthread_t polling_thread;
   int status;
 
   CHPL_COMM_GASNET_SETENV
@@ -252,7 +252,6 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     status = pthread_create(&polling_thread, NULL, (void*(*)(void*))polling, 0);
     if (status)
       chpl_internal_error("unable to start polling thread for gasnet");
-    pthread_detach(polling_thread);
   }
 }
 
@@ -329,8 +328,14 @@ static void chpl_comm_exit_common(int status) {
                                         SIGNAL,
                                         &ack,
                                         sizeof(ack)));
+    if ( pthread_join(polling_thread, NULL ) ) { // cleanup 
+      chpl_internal_error("Polling thread join failed.");
+    } 
   }
-  gasnet_exit(status);
+  
+  chpl_comm_barrier("chpl_comm_exit_common_gasnet_exit"); 
+  //exit(); // depending on PAT exit strategy, maybe switch to this
+  gasnet_exit(status); // not a collective operation, but one locale will win and all locales will die.
 }
 
 void chpl_comm_exit_all(int status) {

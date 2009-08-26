@@ -11,6 +11,11 @@
 
 extern int32_t maxThreads;
 
+// type used to communicate thread identifiers between C code and
+// Chapel code in the runtime. Should match chpl_threadID_t defined in
+// chapel_code.chpl
+typedef uint64_t chpl_threadID_t;
+
 // Mutexes
 // (These are only needed in chpl_mem.c - perhaps chpl_sync_lock and chpl_sync_unlock
 // should be used instead?)
@@ -102,10 +107,13 @@ int32_t chpl_numBlockedTasks(void);
 void      initChplThreads(void);           // main thread init's thread support
 void      exitChplThreads(void);           // called by the main thread
 
-uint64_t  chpl_thread_id(void);            // return caller's thread id
-void      chpl_thread_init(void);          // setup per-thread state
-chpl_bool chpl_get_serial(void);           // set dynamic serial state
-void      chpl_set_serial(chpl_bool);      // set dynamic serial state true or false
+chpl_threadID_t  chpl_thread_id(void);       // return caller's thread id
+void     	 chpl_thread_init(void);     // setup per-thread state
+chpl_bool	 chpl_get_serial(void);      // get dynamic serial state
+void     	 chpl_set_serial(chpl_bool); // set dynamic serial state true or false
+
+void     	 chpl_thread_cancel(chpl_threadID_t); // ask thread to terminate
+void     	 chpl_thread_join(chpl_threadID_t);   // wait for thread termination
 
 typedef struct chpl_task_list*   chpl_task_list_p;
 typedef struct chpl_pool_struct* chpl_task_pool_p;

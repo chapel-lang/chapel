@@ -17,7 +17,8 @@ static void chpl_exit_common(int status, int all) {
   }
   if (all) {
     chpl_comm_barrier("chpl_comm_exit_all");
-    exitChplThreads();         // tear down the threads
+    if (chpl_threads_initialized) // if we might have threads to tear down,
+      exitChplThreads();          // tear them down.
     chpl_comm_exit_all(status);
   } else {
     chpl_comm_exit_any(status);

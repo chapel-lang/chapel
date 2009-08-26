@@ -17,6 +17,7 @@
 
 char* chpl_executionCommand;
 
+int chpl_threads_initialized = 0;
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum, 
                          int32_t lineno, chpl_string filename) {
@@ -75,7 +76,10 @@ int main(int argc, char* argv[]) {
   chpl_comm_rollcall();
   chpl_initMemTable();            // get ready to start tracking memory
   chpl_init_chapel_code();
+
   initChplThreads();         // initialize the threads layer
+  chpl_threads_initialized = 1;
+
   chpl__initModuleGuards();  // initialize per-locale run once guard vars
   recordExecutionCommand(argc, argv);
 

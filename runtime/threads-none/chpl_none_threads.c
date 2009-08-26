@@ -161,7 +161,17 @@ void initChplThreads() {
 void exitChplThreads() { }
 void chpl_thread_init(void) { }
 
-uint64_t chpl_thread_id(void) { return 0; }
+chpl_threadID_t chpl_thread_id(void) { return 0; }
+
+void chpl_thread_cancel(chpl_threadID_t threadID) {
+  chpl_internal_error("chpl_thread_cancel() shouldn't be called in threads-none");
+}
+
+void chpl_thread_join(chpl_threadID_t threadID) {
+  chpl_internal_error("chpl_thread_join() shouldn't be called in threads-none");
+}
+
+
 
 chpl_bool chpl_get_serial(void) { return serial_state; }
 

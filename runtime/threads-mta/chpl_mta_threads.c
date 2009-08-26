@@ -171,9 +171,18 @@ void exitChplThreads() {
 void chpl_thread_init(void) {}  // No need to do anything!
 
 
-uint64_t chpl_thread_id(void) {
-  return mta_get_threadid();
+chpl_threadID_t chpl_thread_id(void) {
+  return (chpl_threadID_t) mta_get_threadid(); 
 }
+
+void chpl_thread_cancel(chpl_threadID_t threadID) {
+  chpl_internal_error("chpl_thread_cancel() shouldn't be called in threads-mta");
+}
+
+void chpl_thread_join(chpl_threadID_t threadID) {
+  chpl_internal_error("chpl_thread_join() shouldn't be called in threads-mta");
+}
+
 
 
 chpl_bool chpl_get_serial(void) {
