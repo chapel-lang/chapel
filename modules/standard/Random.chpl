@@ -191,5 +191,7 @@ class RandomStream {
 def fillRandom(x:[], initseed: int(64) = SeedGenerator.clockMS) {
   var randNums = new RandomStream(initseed);
 
-  randNums.fillRandom(x); 
+  randNums.fillRandom(x);
+
+  delete randNums;
 }
