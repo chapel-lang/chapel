@@ -660,20 +660,20 @@ chpl_begin_helper (chpl_task_pool_p task) {
         if (setBlockingLocation(0, idleThreadName)) {
           // all other threads appear to be blocked
           struct timeval now;
-	  struct timespec wakep_time;
-	  int last_cancel_state, cond_timedwait_result;
+          struct timespec wakep_time;
+          int last_cancel_state, cond_timedwait_result;
 
           gettimeofday (&now, NULL);
           wakep_time.tv_sec = now.tv_sec + 2;
           wakep_time.tv_nsec = 0;
-	  
-	  // enable cancellation with cleanup handler and wait for wakeup signal
-	  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
-	  assert(last_cancel_state == PTHREAD_CANCEL_DISABLE); // sanity check
+          
+          // enable cancellation with cleanup handler and wait for wakeup signal
+          pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
+          assert(last_cancel_state == PTHREAD_CANCEL_DISABLE); // sanity check
 
-	  cond_timedwait_result = pthread_cond_timedwait(&wakeup_signal, &threading_lock, &wakep_time);
+          cond_timedwait_result = pthread_cond_timedwait(&wakeup_signal, &threading_lock, &wakep_time);
 
-	  pthread_setcancelstate(last_cancel_state, NULL);
+          pthread_setcancelstate(last_cancel_state, NULL);
 
           if (cond_timedwait_result == ETIMEDOUT) {
             lockReport* lockRprt = (lockReport*)pthread_getspecific(lock_report_key);
@@ -687,15 +687,15 @@ chpl_begin_helper (chpl_task_pool_p task) {
 
         }
         else {
-	  // enable cancellation with cleanup handler and wait for wakeup signal
-	  int last_cancel_state;
-	  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
-	  assert(last_cancel_state == PTHREAD_CANCEL_DISABLE);
-	
+          // enable cancellation with cleanup handler and wait for wakeup signal
+          int last_cancel_state;
+          pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
+          assert(last_cancel_state == PTHREAD_CANCEL_DISABLE);
+        
           pthread_cond_wait(&wakeup_signal, &threading_lock);
 
-	  pthread_setcancelstate(last_cancel_state, NULL);
-	}
+          pthread_setcancelstate(last_cancel_state, NULL);
+        }
         unsetBlockingLocation();
       }
       // skip over any tasks that have already started executing

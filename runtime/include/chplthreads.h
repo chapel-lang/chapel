@@ -108,12 +108,12 @@ void      initChplThreads(void);           // main thread init's thread support
 void      exitChplThreads(void);           // called by the main thread
 
 chpl_threadID_t  chpl_thread_id(void);       // return caller's thread id
-void     	 chpl_thread_init(void);     // setup per-thread state
-chpl_bool	 chpl_get_serial(void);      // get dynamic serial state
-void     	 chpl_set_serial(chpl_bool); // set dynamic serial state true or false
+void             chpl_thread_init(void);     // setup per-thread state
+chpl_bool        chpl_get_serial(void);      // get dynamic serial state
+void             chpl_set_serial(chpl_bool); // set dynamic serial state true or false
 
-void     	 chpl_thread_cancel(chpl_threadID_t); // ask thread to terminate
-void     	 chpl_thread_join(chpl_threadID_t);   // wait for thread termination
+void             chpl_thread_cancel(chpl_threadID_t); // ask thread to terminate
+void             chpl_thread_join(chpl_threadID_t);   // wait for thread termination
 
 typedef struct chpl_task_list*   chpl_task_list_p;
 typedef struct chpl_pool_struct* chpl_task_pool_p;
