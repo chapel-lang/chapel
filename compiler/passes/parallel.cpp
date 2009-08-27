@@ -346,9 +346,20 @@ makeHeapAllocations() {
         }
       } else if (def->sym->type->symbol->hasFlag(FLAG_ARRAY) ||
                  def->sym->type->symbol->hasFlag(FLAG_DOMAIN)) {
-        SymExpr* se = defMap.get(def->sym)->v[0];
-        INT_ASSERT(se);
-        se->getStmtExpr()->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+        ModuleSymbol* mod = toModuleSymbol(def->parentSymbol);
+        Expr* stmt = mod->initFn->body->body.head;
+        bool found = false;
+        while (stmt->next && !found) {
+          stmt = stmt->next;
+          Vec<SymExpr*> symExprs;
+          collectSymExprs(stmt, symExprs);
+          forv_Vec(SymExpr, se, symExprs) {
+            if (se->var == def->sym)
+              found = true;
+          }
+        }
+        INT_ASSERT(found);
+        stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
       } else {
         // put other global constants and all global variables on the heap
         varSet.set_add(def->sym);
