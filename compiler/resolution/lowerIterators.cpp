@@ -538,6 +538,9 @@ expand_for_loop(CallExpr* call) {
       call->insertAtTail(firstCond);
     else
       call->insertAtTail(gTrue);
+
+    if (!strcmp(index->name, "_indexOfInterest"))
+      block->insertAtHead(index->defPoint->remove());
   }
 }
 
