@@ -110,8 +110,8 @@ static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
   case nccs:
     if (!queue && !walltime)
       chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
-		 "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
-		 "environment variables", 0, 0);
+                 "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
+                 "environment variables", 0, 0);
     fprintf(pbsFile, "#PBS -l size=%d\n", numCoresPerLocale*numLocales);
     break;
   }
