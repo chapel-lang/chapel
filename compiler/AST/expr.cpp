@@ -2026,7 +2026,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_PRIVATE_BROADCAST:
       fprintf(outfile, "chpl_comm_broadcast_private(");
       get(1)->codegen(outfile);
-      fprintf(outfile, ", sizeof(");
+      fprintf(outfile, ", SPECIFY_SIZE(");
       get(2)->typeInfo()->codegen(outfile);
       fprintf(outfile, "))");
       break;
