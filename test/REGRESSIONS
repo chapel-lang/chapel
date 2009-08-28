@@ -79,13 +79,19 @@ valgrind-specific regressions
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for spec/marybeth/seq2] (e.g., 08/28/09)
+[Error matching compiler output for studies/590o/alexco/AverageFiles] (e.g., 08/28/09)
+[Error matching compiler output for users/shetag/classWithArray/classWithArray-init3] (e.g., 08/28/09)
+[Error matching compiler output for users/shetag/inlineArrInitInClass] (e.g., 08/28/09)
+[Error matching compiler output for users/shetag/shareIterator-blc] (e.g., 08/28/09)
 [Error matching compiler output for parallel/begin/deitz/test_heap_ref] (e.g., 08/27/09)
+[Error matching program output for npb/cg/bradc/cg-sparse] (e.g., 08/27/09)
 [Error matching compiler output for users/shetag/assocInRecord] (e.g., 08/27/09)
 [Error matching compiler output for users/thom/tupleToArray] (e.g., 08/27/09)
-[Error matching program output for npb/cg/bradc/cg-sparse] (e.g., 08/27/09)
 [Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc-domainPromote] (e.g., 08/26/09)
 [Error matching compiler output for users/shetag/assocarr] (e.g., 08/26/09)
 [Error matching compiler output for users/shetag/classWithArray/initArrWithFn] (e.g., 08/26/09)
+
 
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
@@ -119,30 +125,6 @@ memory stuff in flux (05/28/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
-
-attempt to dereference nil (08/27/09)
--------------------------------------
-[Error matching program output for multilocale/bradc/locales/queryClassField]
-[Error matching program output for multilocale/deitz/linked/test_linked3a]
-[Error matching program output for multilocale/deitz/linked/test_linked3b]
-[Error matching program output for multilocale/deitz/linked/test_linked3c]
-[Error matching program output for multilocale/deitz/linked/test_linked3d]
-[Error matching program output for multilocale/deitz/linked/test_linked3e]
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock6]
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock7]
-[Error matching program output for release/examples/tutorials/multilocale]
-[Error matching program output for users/shetag/fock/fock-dyn-prog-cntr]
-[Error matching program output for users/shetag/fock/fock-dyn-prog-pool]
-[Error matching program output for users/shetag/fock/fock-stc-1]
-[Error matching program output for users/shetag/fock/fock-stc]
-
-cannot access remote data in local block (08/27/09)
----------------------------------------------------
-[Error matching program output for release/examples/hpcc/ra]
-
-seg fault (08/27/09)
---------------------
-[Error matching program output for studies/hpcc/2008/ra]
 
 gasnet_barrier_notify() called twice in a row error (08/26/09)
 --------------------------------------------------------------
@@ -189,22 +171,12 @@ GASNet unable to start polling thread
 baseline-specific tests
 =======================
 
-incorrect result (indices no longer being privatized?) (08/27/09)
------------------------------------------------------------------
-[Error matching program output for studies/590o/bradc/coforall-private-indices]
-[Error matching program output for studies/590o/bradc/forall-begin-private-indices]
-[Error matching program output for users/shetag/fock/fock-stc-1]
-
 
 ===================
 opts-specific tests
 ===================
 
-(Example runs: 1)
-
---baseline --no-local:
-----------------------
-[Error matching program output for release/examples/hpcc/ra]
+(Example runs: 0)
 
 
 (Full run: 28)
