@@ -1,6 +1,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "passes.h"
+#include "resolution.h"
 #include "stmt.h"
 #include "symbol.h"
 
@@ -72,8 +73,16 @@ void cullOverReferences() {
           if (!refNecessary(se, defMap, useMap)) {
             VarSymbol* tmp = newTemp(copy->retType);
             move->insertBefore(new DefExpr(tmp));
-            move->insertAfter(new CallExpr(PRIM_MOVE, se->var,
-                                new CallExpr(PRIM_SET_REF, tmp)));
+            if (autoCopyMap.get(tmp->type)) {
+              tmp->addFlag(FLAG_INSERT_AUTO_COPY);
+              tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+            }
+            if (useMap.get(se->var) && useMap.get(se->var)->n > 0) {
+              move->insertAfter(new CallExpr(PRIM_MOVE, se->var,
+                                  new CallExpr(PRIM_SET_REF, tmp)));
+            } else {
+              se->var->defPoint->remove();
+            }
             se->var = tmp;
             SymExpr* base = toSymExpr(call->baseExpr);
             base->var = copy;

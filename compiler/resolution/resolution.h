@@ -5,6 +5,10 @@ class CallInfo;
 
 extern SymbolMap paramMap;
 extern Vec<CallExpr*> callStack;
+extern Map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
+extern Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
+
+FnSymbol* requiresImplicitDestroy(CallExpr* call);
 
 bool isDispatchParent(Type* t, Type* pt);
 

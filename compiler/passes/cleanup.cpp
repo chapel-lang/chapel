@@ -78,8 +78,9 @@ static void destructure_tuple(CallExpr* call) {
   Expr* stmt = parent->getStmtExpr();
   VarSymbol* temp = newTemp();
   stmt->insertBefore(new DefExpr(temp));
-  stmt = new CallExpr(PRIM_MOVE, temp, parent->get(2)->remove());
+  stmt = new CallExpr(PRIM_MOVE, temp, new CallExpr("chpl__initCopy", parent->get(2)->remove()));
   parent->replace(stmt);
+  stmt->insertAfter(new CallExpr("chpl__autoDestroy", temp));
   int i = 1;
   for_actuals(expr, call) {
     Expr *removed_expr = expr->remove();

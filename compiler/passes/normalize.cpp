@@ -22,6 +22,7 @@ static void hack_resolve_types(ArgSymbol* arg);
 static void applyGetterTransform(CallExpr* call);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
+static void insert_auto_destroy(VarSymbol* var);
 static void fix_def_expr(VarSymbol* var);
 static void fixup_array_formals(FnSymbol* fn);
 static void clone_parameterized_primitive_methods(FnSymbol* fn);
@@ -163,6 +164,10 @@ markAlignedArrays() {
       if (CallExpr* tuple = toCallExpr(call->get(1))) {
         if (tuple->isNamed("_build_tuple")) {
           CallExpr* move = toCallExpr(call->parentExpr);
+          INT_ASSERT(move);
+          if (!move->isPrimitive(PRIM_MOVE))
+            if (move->isNamed("chpl__autoCopy"))
+              move = toCallExpr(move->parentExpr);
           INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
           SymExpr* se = toSymExpr(move->get(1));
           INT_ASSERT(se);
@@ -294,7 +299,17 @@ void normalize(BaseAST* base) {
   forv_Vec(Symbol, symbol, symbols) {
     if (FnSymbol* fn = toFnSymbol(symbol))
       normalize_returns(fn);
-    else if (VarSymbol* var = toVarSymbol(symbol))
+  }
+
+  forv_Vec(Symbol, symbol, symbols) {
+    if (VarSymbol* var = toVarSymbol(symbol))
+      if (isFnSymbol(var->defPoint->parentSymbol))
+        if (var->defPoint->init || var->defPoint->exprType)
+          insert_auto_destroy(var);
+  }
+
+  forv_Vec(Symbol, symbol, symbols) {
+    if (VarSymbol* var = toVarSymbol(symbol))
       if (isFnSymbol(var->defPoint->parentSymbol))
         fix_def_expr(var);
   }
@@ -330,8 +345,18 @@ static void normalize_returns(FnSymbol* fn) {
   }
   if (rets.n == 1) {
     CallExpr* ret = rets.v[0];
-    if (ret == fn->body->body.last() && toSymExpr(ret->get(1)))
-      return;
+    if (ret == fn->body->body.last()) {
+      if (SymExpr* se = toSymExpr(ret->get(1))) {
+        if (!strncmp("_type_construct_", fn->name, 16) ||
+            !strncmp("_construct_", fn->name, 11) ||
+            !strncmp("_if_fn", fn->name, 6) ||
+            !strcmp("=", fn->name) ||
+            !strcmp("_init", fn->name) ||
+            !strcmp("_ret", se->var->name)) {
+          return;
+        }
+      }
+    }
   }
   SymExpr* retSym = toSymExpr(rets.v[0]->get(1));
   bool returns_void = retSym && retSym->var == gVoid;
@@ -474,14 +499,15 @@ static void insert_call_temps(CallExpr* call) {
       call->isPrimitive(PRIM_GET_MEMBER_VALUE))
     return;
 
-  if (CallExpr* parentCall = toCallExpr(call->parentExpr))
-    if (parentCall->isPrimitive(PRIM_MOVE))
-      return;
+  CallExpr* parentCall = toCallExpr(call->parentExpr);
+  if (parentCall && parentCall->isPrimitive(PRIM_MOVE))
+    return;
 
   SET_LINENO(call);
   Expr* stmt = call->getStmtExpr();
   VarSymbol* tmp = newTemp();
-  tmp->addFlag(FLAG_EXPR_TEMP);
+  if (!parentCall || !parentCall->isNamed("chpl__initCopy"))
+    tmp->addFlag(FLAG_EXPR_TEMP);
   tmp->addFlag(FLAG_MAYBE_PARAM);
   tmp->addFlag(FLAG_MAYBE_TYPE);
   call->replace(new SymExpr(tmp));
@@ -500,6 +526,40 @@ static void fix_user_assign(CallExpr* call) {
   call->replace(move);
   move->insertAtTail(call);
 }
+
+
+static void
+insert_auto_destroy(VarSymbol* var) {
+  if (var->hasFlag(FLAG_NO_AUTO_DESTROY) ||
+      var->hasFlag(FLAG_PARAM))
+    return;
+
+  if (FnSymbol* fn = toFnSymbol(var->defPoint->parentSymbol)) {
+    if (!strcmp(fn->name, "chpl__initCopy") ||
+        fn->_this == var ||
+        fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
+      return;
+  }
+
+  if (BlockStmt* block = toBlockStmt(var->defPoint->parentExpr)) {
+    if (FnSymbol* fn = toFnSymbol(block->parentSymbol)) {
+      if (fn != fn->getModule()->initFn) {
+        GotoStmt* gs = toGotoStmt(block->body.tail);
+        //        CallExpr* call = gs ? toCallExpr(gs->prev) : NULL;
+        CallExpr* ret = toCallExpr(block->body.tail);
+        //        if (call && call->isPrimitive(PRIM_MOVE) &&
+        //            toSymExpr(call->get(1))->var == fn->getReturnSymbol())
+        if (gs)
+          gs->insertBefore(new CallExpr("chpl__autoDestroy", var));
+        else if (ret && ret->isPrimitive(PRIM_RETURN))
+          ret->insertBefore(new CallExpr("chpl__autoDestroy", var));
+        else
+          block->insertAtTail(new CallExpr("chpl__autoDestroy", var));
+      }
+    }
+  }
+}
+
 
 //
 // fix_def_expr removes DefExpr::exprType and DefExpr::init from a
@@ -533,19 +593,16 @@ fix_def_expr(VarSymbol* var) {
   //
   if (var->hasFlag(FLAG_ARRAY_ALIAS)) {
     CallExpr* partial;
-    VarSymbol* arrTemp = newTemp();
-    stmt->insertBefore(new DefExpr(arrTemp));
-    stmt->insertBefore(new CallExpr(PRIM_MOVE, arrTemp, init->remove()));
     if (!type) {
-      partial = new CallExpr("newAlias", gMethodToken, arrTemp);
+      partial = new CallExpr("newAlias", gMethodToken, init->remove());
       //      partial->partialTag = true;
       //      partial->methodTag = true;
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, partial)); //new CallExpr(partial)));
+      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", partial)));
     } else {
-      partial = new CallExpr("reindex", gMethodToken, arrTemp);
+      partial = new CallExpr("reindex", gMethodToken, init->remove());
       partial->partialTag = true;
       partial->methodTag = true;
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(partial, type->remove())));
+      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", new CallExpr(partial, type->remove()))));
     }
     return;
   }
@@ -747,14 +804,25 @@ static void fixup_array_formals(FnSymbol* fn) {
               if (se->var == arg)
                 se->var = tmp;
             }
+            BlockStmt* thenBlock = new BlockStmt();
+            VarSymbol* tmp2 = newTemp();
+            thenBlock->insertAtTail(new DefExpr(tmp2));
+            thenBlock->insertAtTail(new CallExpr(PRIM_MOVE, tmp2,
+                                      new CallExpr(
+                                        new CallExpr(".", arg,
+                                          new_StringSymbol("reindex")),
+                                        call->get(1)->copy())));
+            thenBlock->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
+                                      new CallExpr("chpl__autoCopy", tmp2)));
             fn->insertAtHead(new CondStmt(
                                new CallExpr("!=", dtNil->symbol, arg),
-                               new CallExpr(PRIM_MOVE, tmp,
-                                 new CallExpr(
-                                   new CallExpr(".", arg,
-                                     new_StringSymbol("reindex")),
-                                   call->get(1)->copy())),
+                               thenBlock,
                                new CallExpr(PRIM_MOVE, tmp, gNil)));
+            // TO DO: need to delete _reindex
+            //            fn->insertAtTail(new CondStmt(
+            //                               new CallExpr("!=", dtNil->symbol, arg),
+            //                               new CallExpr("chpl__autoDestroy", tmp),
+            //                               new CallExpr(PRIM_NOOP)));
             fn->insertAtHead(new DefExpr(tmp));
           }
         }

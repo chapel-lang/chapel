@@ -870,8 +870,7 @@ static void insertGlobalAutoDestroyCalls() {
       if (def->parentSymbol != rootModule)
         if (VarSymbol* var = toVarSymbol(def->sym))
           if (!var->isParameter())
-            if (!var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
-                !var->hasFlag(FLAG_ARRAY_ALIAS))
+            if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
               fn->insertAtTail(new CallExpr("chpl__autoDestroy", var));
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));

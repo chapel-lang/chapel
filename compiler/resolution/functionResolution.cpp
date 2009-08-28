@@ -43,6 +43,9 @@ static Map<Type*,Type*> runtimeTypeMap; // map static types to runtime types
 static Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
 static Map<Type*,FnSymbol*> runtimeTypeToValueMap; // convertRuntimeTypeToValue
 
+Map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
+Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
+
 static Type* resolve_type_expr(Expr* expr);
 
 static void resolveFns(FnSymbol* fn);
@@ -53,6 +56,21 @@ static void pruneResolvedTree();
 //
 // build reference type
 //
+static FnSymbol*
+resolveUninsertedCall(Type* type, CallExpr* call) {
+  if (type->defaultConstructor) {
+    if (type->defaultConstructor->instantiationPoint)
+      type->defaultConstructor->instantiationPoint->insertAtHead(call);
+    else
+      type->symbol->defPoint->insertBefore(call);
+  } else
+    chpl_main->insertAtHead(call);
+  resolveCall(call);
+  call->remove();
+  return call->isResolved();
+}
+
+
 static void makeRefType(Type* type) {
   if (!type)
     return;
@@ -67,17 +85,33 @@ static void makeRefType(Type* type) {
     return;
 
   CallExpr* call = new CallExpr("_type_construct__ref", type->symbol);
-  if (type->defaultConstructor) {
-    if (type->defaultConstructor->instantiationPoint)
-      type->defaultConstructor->instantiationPoint->insertAtHead(call);
-    else
-      type->symbol->defPoint->insertBefore(call);
-  } else
-    chpl_main->insertAtHead(call);
-  resolveCall(call);
-  call->remove();
-  type->refType = toClassType(call->isResolved()->retType);
+  FnSymbol* fn = resolveUninsertedCall(type, call);
+  type->refType = toClassType(fn->retType);
   type->refType->getField(1)->type = type;
+}
+
+
+static void
+resolveAutoCopy(Type* type) {
+  Symbol* tmp = newTemp(type);
+  chpl_main->insertAtHead(new DefExpr(tmp));
+  CallExpr* call = new CallExpr("chpl__autoCopy", tmp);
+  FnSymbol* fn = resolveUninsertedCall(type, call);
+  resolveFns(fn);
+  autoCopyMap.put(type, fn);
+  tmp->defPoint->remove();
+}
+
+
+static void
+resolveAutoDestroy(Type* type) {
+  Symbol* tmp = newTemp(type);
+  chpl_main->insertAtHead(new DefExpr(tmp));
+  CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
+  FnSymbol* fn = resolveUninsertedCall(type, call);
+  resolveFns(fn);
+  autoDestroyMap.put(type, fn);
+  tmp->defPoint->remove();
 }
 
 
@@ -1782,11 +1816,6 @@ resolveCall(CallExpr* call, bool errorCheck) {
 
     Type* lhsType = lhs->type;
 
-    if (isReferenceType(lhsType))
-      lhs->removeFlag(FLAG_EXPR_TEMP);
-    if (lhsType->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
-        lhsType->symbol->hasFlag(FLAG_ARRAY))
-      lhs->removeFlag(FLAG_EXPR_TEMP);
     if (CallExpr* call = toCallExpr(rhs)) {
       if (FnSymbol* fn = call->isResolved()) {
         if (rhsType == dtUnknown) {
@@ -1841,10 +1870,10 @@ formalRequiresTemp(ArgSymbol* formal) {
 
 static void
 insertFormalTemps(FnSymbol* fn) {
-  if (!strcmp(fn->name, "chpl__initCopy") ||
-      !strcmp(fn->name, "chpl__initCopyHelp") ||
+  if (!strcmp(fn->name, "_init") ||
+      !strcmp(fn->name, "_cast") ||
+      !strcmp(fn->name, "chpl__initCopy") ||
       !strcmp(fn->name, "chpl__autoCopy") ||
-      !strcmp(fn->name, "chpl__autoCopyHelp") ||
       !strcmp(fn->name, "_getIterator") ||
       !strcmp(fn->name, "_getIteratorHelp") ||
       !strcmp(fn->name, "iteratorIndex") ||
@@ -1901,9 +1930,10 @@ insertFormalTemps(FnSymbol* fn) {
             !ts->hasFlag(FLAG_ITERATOR_CLASS) &&
             !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
             !ts->hasFlag(FLAG_REF) &&
-            !ts->hasFlag(FLAG_SYNC))
+            !ts->hasFlag(FLAG_SYNC)) {
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__autoCopy", formal)));
-        else
+          fn->insertBeforeReturnAfterLabel(new CallExpr("chpl__autoDestroy", tmp));
+        } else
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
       }
       fn->insertAtHead(new DefExpr(tmp));
@@ -2149,6 +2179,7 @@ preFold(Expr* expr) {
         base->replace(base->baseExpr->remove());
       } else {
         VarSymbol* this_temp = newTemp("_this_temp");
+        this_temp->addFlag(FLAG_EXPR_TEMP);
         base->replace(new UnresolvedSymExpr("this"));
         CallExpr* move = new CallExpr(PRIM_MOVE, this_temp, base);
         call->insertAtHead(new SymExpr(this_temp));
@@ -2624,6 +2655,36 @@ insertValueTemp(Expr* insertPoint, Expr* actual) {
   }
 }
 
+
+//
+// returns resolved function if the function requires an implicit
+// destroy of its returned value
+//
+FnSymbol*
+requiresImplicitDestroy(CallExpr* call) {
+  if (FnSymbol* fn = call->isResolved()) {
+    FnSymbol* parent = call->getFunction();
+    INT_ASSERT(parent);
+    if (strcmp(parent->name, "chpl__autoCopy") &&
+        (isRecord(fn->retType) ||
+         fn->retType->symbol->hasFlag(FLAG_REF) &&
+         (fn->retType->getValueType()->symbol->hasFlag(FLAG_ARRAY) ||
+          fn->retType->getValueType()->symbol->hasFlag(FLAG_DOMAIN))) &&
+        !fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
+        !fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
+        strcmp(fn->name, "chpl__initCopy") &&
+        strcmp(fn->name, "chpl__autoCopy") &&
+        strcmp(fn->name, "=") &&
+        !fn->hasFlag(FLAG_AUTO_II) &&
+        strncmp(fn->name, "_construct_", 11) &&
+        !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
+      return fn;
+    }
+  }
+  return NULL;
+}
+
+
 static Expr*
 postFold(Expr* expr) {
   Expr* result = expr;
@@ -2710,9 +2771,26 @@ postFold(Expr* expr) {
               if (!strcmp(fn->name, "=") && fn->retType == dtVoid) {
                 call->replace(rhs->remove());
                 result = rhs;
+                set = true;
               }
             }
           }
+        }
+        if (!set) {
+          if (lhs->var->hasFlag(FLAG_EXPR_TEMP) &&
+              !lhs->var->hasFlag(FLAG_TYPE_VARIABLE)) {
+            if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
+              if (requiresImplicitDestroy(rhsCall)) {
+                lhs->var->addFlag(FLAG_INSERT_AUTO_COPY);
+                lhs->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+              }
+            }
+          }
+
+          if (isReferenceType(lhs->var->type) ||
+              lhs->var->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
+              lhs->var->type->symbol->hasFlag(FLAG_ARRAY))
+            lhs->var->removeFlag(FLAG_EXPR_TEMP);
         }
       }
     } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
@@ -3650,6 +3728,13 @@ resolve() {
     }
   }
 
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (isRecord(ts->type) && !ts->hasFlag(FLAG_GENERIC)) {
+      resolveAutoCopy(ts->type);
+      resolveAutoDestroy(ts->type);
+    }
+  }
+
   //
   // resolve PRIM_INITs for records
   //
@@ -4101,7 +4186,11 @@ pruneResolvedTree() {
               tmp->addFlag(FLAG_TYPE_VARIABLE);
             runtimeTypeToValueCall->insertAtTail(tmp);
           }
-          call->replace(runtimeTypeToValueCall);
+          VarSymbol* tmp = newTemp(runtimeTypeToValueFn->retType);
+          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, runtimeTypeToValueCall));
+          INT_ASSERT(autoCopyMap.get(tmp->type));
+          call->replace(new CallExpr(autoCopyMap.get(tmp->type), tmp));
         } else if (rt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           //
           // This is probably related to a comment that used to handle

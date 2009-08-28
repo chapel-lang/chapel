@@ -456,7 +456,7 @@ record _array {
   def numElements return _dom.numIndices; // assume dom name
 
   def newAlias() {
-    var x = _value; // .reindex(_value.dom); // sjd: I think this should be a reindex call so that we get a new array class, however, this causes problems due to the alias/reindexed parameters.
+    var x = _value.reindex(_value.dom);
     _value.dom._domCnt$ += 1;
     x._arrAlias = _value;
     x._arrAlias._arrCnt$ += 1;

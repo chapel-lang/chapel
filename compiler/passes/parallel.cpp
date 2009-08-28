@@ -486,6 +486,9 @@ makeHeapAllocations() {
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
           call->replace(new CallExpr(PRIM_SET_MEMBER, call->get(1)->copy(), heapType->getField(1), tmp));
+        } else if (call->isResolved() &&
+                   !strcmp("chpl__autoDestroy", call->isResolved()->name)) {
+          call->remove();
         } else {
           VarSymbol* tmp = newTemp(var->type);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -507,7 +510,9 @@ makeHeapAllocations() {
             call->replace(new CallExpr(PRIM_GET_MEMBER, use->var, heapType->getField(1)));
           }
         } else if (call->isResolved()) {
-          if (actual_to_formal(use)->type == heapType) {
+          if (!strcmp("chpl__autoDestroy", call->isResolved()->name)) {
+            call->remove();
+          } else if (actual_to_formal(use)->type == heapType) {
             // do nothing
           } else {
             VarSymbol* tmp = newTemp(var->type);

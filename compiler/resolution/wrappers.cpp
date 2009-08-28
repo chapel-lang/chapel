@@ -66,7 +66,13 @@ insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
     wrapper->insertAtTail(call);
   } else {
     //if (!fn->hasFlag(FLAG_ITERATOR_FN)) {
-    wrapper->insertAtTail(new CallExpr(PRIM_RETURN, call));
+    Symbol* tmp = newTemp();
+    tmp->addFlag(FLAG_EXPR_TEMP);
+    tmp->addFlag(FLAG_MAYBE_PARAM);
+    tmp->addFlag(FLAG_MAYBE_TYPE);
+    wrapper->insertAtTail(new DefExpr(tmp));
+    wrapper->insertAtTail(new CallExpr(PRIM_MOVE, tmp, call));
+    wrapper->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   } /*else {
     VarSymbol* index = newTemp("_i");
     wrapper->insertAtTail(new DefExpr(index));
@@ -150,14 +156,20 @@ buildDefaultWrapper(FnSymbol* fn,
       call->insertAtTail(temp);
       if (Symbol* value = paramMap->get(formal))
         paramMap->put(wrapper_formal, value);
-      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple") && strcmp(fn->name, "_construct__square_tuple"))
+      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple")) // && strcmp(fn->name, "_construct__square_tuple"))
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && !paramMap->get(formal) && formal->type != dtMethodToken)
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
-              if (!isShadowedField(formal))
+              if (!isShadowedField(formal)) {
+                Symbol* copyTemp = newTemp();
+                wrapper->insertAtTail(new DefExpr(copyTemp));
+                wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
                 wrapper->insertAtTail(
                   new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                               new_StringSymbol(formal->name), new CallExpr("chpl__initCopy", temp)));
+                               new_StringSymbol(formal->name), copyTemp));
+                copy_map.put(formal, copyTemp);
+                call->argList.tail->replace(new SymExpr(copyTemp));
+              }
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
       call->insertAtTail(paramMap->get(formal));
@@ -172,8 +184,10 @@ buildDefaultWrapper(FnSymbol* fn,
     } else {
       const char* temp_name = astr("_default_temp_", formal->name);
       VarSymbol* temp = newTemp(temp_name);
-      if (formal->intent != INTENT_INOUT && formal->intent != INTENT_OUT)
+      if (formal->intent != INTENT_INOUT && formal->intent != INTENT_OUT) {
         temp->addFlag(FLAG_MAYBE_PARAM);
+        temp->addFlag(FLAG_EXPR_TEMP);
+      }
       if (formal->hasFlag(FLAG_TYPE_VARIABLE))
         temp->addFlag(FLAG_TYPE_VARIABLE);
       copy_map.put(formal, temp);
@@ -213,7 +227,7 @@ buildDefaultWrapper(FnSymbol* fn,
         }
       }
       call->insertAtTail(temp);
-      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple") && strcmp(fn->name, "_construct__square_tuple"))
+      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple")) // && strcmp(fn->name, "_construct__square_tuple"))
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE))
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
@@ -541,14 +555,26 @@ buildPromotionWrapper(FnSymbol* fn,
       VarSymbol* followerIterator = newTemp("_followerIterator");
       fifn->insertAtTail(new DefExpr(followerIterator));
       fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower)));
-      fifn->insertAtTail(buildForLoopStmt(indices->copy(&followerMap), new SymExpr(followerIterator), new BlockStmt(new CallExpr(PRIM_YIELD, actualCall->copy(&followerMap)))));
+      BlockStmt* followerBlock = new BlockStmt();
+      Symbol* yieldTmp = newTemp();
+      yieldTmp->addFlag(FLAG_EXPR_TEMP);
+      followerBlock->insertAtTail(new DefExpr(yieldTmp));
+      followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall->copy(&followerMap)));
+      followerBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
+      fifn->insertAtTail(buildForLoopStmt(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock));
       theProgram->block->insertAtTail(new DefExpr(fifn));
       normalize(fifn);
       fifn->removeFlag(FLAG_INVISIBLE_FN);
       fifn->addFlag(FLAG_GENERIC);
       fifn->instantiationPoint = getVisibilityBlock(info->call);
     }
-    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(new CallExpr(PRIM_YIELD, actualCall)))));
+    BlockStmt* yieldBlock = new BlockStmt();
+    Symbol* yieldTmp = newTemp();
+    yieldTmp->addFlag(FLAG_EXPR_TEMP);
+    yieldBlock->insertAtTail(new DefExpr(yieldTmp));
+    yieldBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall));
+    yieldBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
+    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, yieldBlock)));
   }
   fn->defPoint->insertBefore(new DefExpr(wrapper));
   normalize(wrapper);

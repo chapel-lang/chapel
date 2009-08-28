@@ -441,7 +441,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond) {
   FnSymbol* fn = new FnSymbol(astr("_loopexpr", istr(loopexpr_uid++)));
   VarSymbol* iterator = newTemp("_iterator");
   fn->insertAtTail(new DefExpr(iterator));
-  fn->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("chpl__autoCopy", new CallExpr("_checkIterator", iteratorExpr))));
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
@@ -608,6 +608,7 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
 
   BlockStmt* leaderBlock = buildChapelStmt();
   VarSymbol* iterator = newTemp("_iterator");
+  iterator->addFlag(FLAG_EXPR_TEMP);
   leaderBlock->insertAtTail(new DefExpr(iterator));
   leaderBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
   VarSymbol* leaderIndex = newTemp("_leaderIndex");
@@ -764,6 +765,7 @@ buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs) {
 
   VarSymbol* rtmp = newTemp();
   rtmp->addFlag(FLAG_MAYBE_PARAM);
+  rtmp->addFlag(FLAG_EXPR_TEMP);
   stmt->insertAtTail(new DefExpr(rtmp));
   stmt->insertAtTail(new CallExpr(PRIM_MOVE, rtmp, rhs));
 

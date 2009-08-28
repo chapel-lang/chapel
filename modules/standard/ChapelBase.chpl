@@ -604,7 +604,7 @@ pragma "inline" def exit(status: int) {
 
 def init_elts(x, s, type t) {
   for i in 1..s {
-    var y: t;
+    pragma "no auto destroy" var y: t;
     __primitive("array_set_first", x, i-1, y);
   }
 }
@@ -1149,21 +1149,21 @@ pragma "inline" def _chpl_swap(inout x, inout y) {
 
 pragma "dont disable remote value forwarding"
 pragma "inline" def _createFieldDefault(type t, init) {
-  var x: t;
+  pragma "no auto destroy" var x: t;
   x = init;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "inline" def _createFieldDefault(type t, param init) {
-  var x: t;
+  pragma "no auto destroy" var x: t;
   x = init;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "inline" def _createFieldDefault(type t, init: _nilType) {
-  var x: t;
+  pragma "no auto destroy" var x: t;
   return x;
 }
 
@@ -1244,7 +1244,7 @@ def chpl__initCopy(ir: _iteratorRecord) {
     i = i + 1;
   }
   D = [1..i-1];
-  return A;
+  return chpl__autoCopy(A);
 }
 
 pragma "dont disable remote value forwarding"
@@ -1259,6 +1259,14 @@ pragma "inline" def chpl__autoCopy(x: []) {
   return x;
 }
 
+pragma "dont disable remote value forwarding"
+pragma "inline"
+def chpl__autoCopy(x: sync) return x;
+
+pragma "dont disable remote value forwarding"
+pragma "inline"
+def chpl__autoCopy(x: single) return x;
+
 pragma "inline"
 def chpl__autoCopy(x: _tuple) {
   // body inserted during generic instantiation
@@ -1269,7 +1277,7 @@ pragma "inline" def chpl__autoCopy(ir: _iteratorRecord)
 
 pragma "inline" def chpl__autoCopy(x) return chpl__initCopy(x);
 
-pragma "inline" pragma "ref" def chpl__autoCopy(r: _ref) return r;
+pragma "inline" pragma "ref" def chpl__autoCopy(r: _ref) var return r;
 
 pragma "inline" def chpl__autoCopy(type t) type return t;
 
@@ -1277,14 +1285,13 @@ pragma "inline" def chpl__autoDestroy(x: object) { }
 pragma "inline" def chpl__autoDestroy(x: opaque) { }
 pragma "inline" def chpl__autoDestroy(x: enumerated) { }
 pragma "inline" def chpl__autoDestroy(x: _iteratorClass) { }
+pragma "inline" def chpl__autoDestroy(x: _iteratorRecord) { }
 pragma "inline" def chpl__autoDestroy(x: _file) { }
 pragma "inline" def chpl__autoDestroy(type t)  { }
-pragma "inline" def chpl__autoDestroy(x: ?t) where _isPrimitiveType(t) ||
-                                                   _isComplexType(t) { }
 pragma "inline" def chpl__autoDestroy(x: imag(64)) { }
-pragma "inline" def chpl__autoDestroy(x: ?t) where !_isPrimitiveType(t) &&
-                                                   !_isComplexType(t) {
-  __primitive("call destructor", x);
+pragma "inline" def chpl__autoDestroy(x: ?t) {
+  if !_isPrimitiveType(t) && !_isComplexType(t) then
+    __primitive("call destructor", x);
 }
 pragma "inline" def chpl__autoDestroy(x: domain) {
   __primitive("call destructor", x);
