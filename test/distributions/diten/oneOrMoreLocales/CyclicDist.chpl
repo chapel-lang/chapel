@@ -284,6 +284,8 @@ class CyclicArr: BaseArr {
   var locArr: [dom.dist.targetLocDom] LocCyclicArr(eltType, rank, idxType, stridable);
   var pid: int = -1;
 
+  def getBaseDom() return dom;
+
   def setup() {
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocs(localeIdx) {
