@@ -9,8 +9,6 @@
 #include "chpltypes.h"
 #include "error.h"
 
-#define DEBUG_LAUNCH
-
 #define LAUNCH_PATH_HELP WRAP_TO_STR(LAUNCH_PATH)
 #define WRAP_TO_STR(x) TO_STR(x)
 #define TO_STR(x) #x
@@ -32,6 +30,7 @@ char sysFilename[FILENAME_MAX];
 typedef enum {
   pbspro,
   nccs,
+  torque,
   unknown
 } qsubVersion;
 
@@ -60,18 +59,16 @@ static qsubVersion determineQsubVersion(void) {
     return nccs;
   } else if (strstr(version, "PBSPro")) {
     return pbspro;
+  } else if (strstr(version, "version: ")) {
+    return torque;
   } else {
     return unknown;
   }
 }
 
 static int getNumCoresPerLocale(void) {
-  FILE* sysFile;
-  int coreMask;
-  int bitMask = 0x1;
-  int numCores;
+  int numCores = 0;
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
-  char* command = NULL;
 
   if (numCoresString) {
     numCores = atoi(numCoresString);
@@ -79,19 +76,6 @@ static int getNumCoresPerLocale(void) {
       return numCores;
   }
 
-  command = chpl_glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
-  system(command);
-  sysFile = fopen(sysFilename, "r");
-  if (fscanf(sysFile, "%d\n", &coreMask) != 1 || !feof(sysFile)) {
-    chpl_error("unable to determine number of cores per locale; please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
-  }
-  coreMask >>= 1;
-  numCores = 1;
-  while (coreMask & bitMask) {
-    coreMask >>= 1;
-    numCores += 1;
-  }
-  fclose(sysFile);
   return numCores;
 }
 
@@ -110,14 +94,19 @@ static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
   case unknown:
     fprintf(pbsFile, "#PBS -l mppwidth=%d\n", numLocales);
     fprintf(pbsFile, "#PBS -l mppnppn=%d\n", procsPerNode);
-    fprintf(pbsFile, "#PBS -l mppdepth=%d\n", numCoresPerLocale);
+    if (numCoresPerLocale)
+      fprintf(pbsFile, "#PBS -l mppdepth=%d\n", numCoresPerLocale);
+    break;
+  case torque:
+    fprintf(pbsFile, "#PBS -l nodes=%d\n", numLocales);
     break;
   case nccs:
     if (!queue && !walltime)
       chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
                  "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
                  "environment variables", 0, 0);
-    fprintf(pbsFile, "#PBS -l size=%d\n", numCoresPerLocale*numLocales);
+    if (numCoresPerLocale)
+      fprintf(pbsFile, "#PBS -l size=%d\n", numCoresPerLocale*numLocales);
     break;
   }
 }
@@ -132,7 +121,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* projectString = getenv(launcherAccountEnvvar);
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
-  int numCoresPerLocale;
 
   if (basenamePtr == NULL) {
       basenamePtr = argv[0];
@@ -149,12 +137,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
   sprintf(pbsFilename, "%s%d", basePBSFilename, (int)mypid);
 
-  numCoresPerLocale = getNumCoresPerLocale();
-
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
   fprintf(pbsFile, "#PBS -N Chpl-%.10s\n", basenamePtr);
-  genNumLocalesOptions(pbsFile, determineQsubVersion(), numLocales, numCoresPerLocale);
+  genNumLocalesOptions(pbsFile, determineQsubVersion(), numLocales, getNumCoresPerLocale());
   if (projectString && strlen(projectString) > 0)
     fprintf(pbsFile, "#PBS -A %s\n", projectString);
   fclose(pbsFile);
@@ -164,7 +150,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(expectFile, "log_user 0\n");
   }
   fprintf(expectFile, "set timeout -1\n");
-  fprintf(expectFile, "set prompt \"(%%|#|\\$|>) $\"\n");
+  fprintf(expectFile, "set prompt \"(%%|#|\\\\$|>) $\"\n");
   fprintf(expectFile, "spawn qsub -z ");
   fprintf(expectFile, "-V "); // pass through all environment variables
   fprintf(expectFile, "-I %s\n", pbsFilename);
