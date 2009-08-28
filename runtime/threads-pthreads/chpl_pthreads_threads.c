@@ -404,16 +404,14 @@ void exitChplThreads() {
   pthread_key_delete(serial_key);
 }
 
-void chpl_thread_cancel(chpl_threadID_t threadID) {
-  pthread_t thread = (pthread_t) threadID;
-  if (0 != pthread_cancel(thread)) {
+void chpl_thread_cancel(chpl_threadID_t thread) {
+  if (0 != pthread_cancel((pthread_t) thread)) {
     chpl_internal_error("thread cancel failed");
   }
 }    
 
-void chpl_thread_join(chpl_threadID_t threadID) {
-  pthread_t thread = (pthread_t) threadID;
-  if (0 != pthread_join(thread, NULL)) {
+void chpl_thread_join(chpl_threadID_t thread) {
+  if (0 != pthread_join((pthread_t) thread, NULL)) {
     chpl_internal_error("thread join failed");
   }
 }    
@@ -424,10 +422,9 @@ void chpl_thread_init(void) {
 }
 
 
-chpl_threadID_t chpl_thread_id(void) {
-  return (uintptr_t) pthread_self();
-}
-
+chpl_threadID_t chpl_thread_id(void) { 
+  return (chpl_threadID_t) pthread_self(); 
+} 
 
 chpl_bool chpl_get_serial(void) {
   chpl_bool *p;
@@ -462,6 +459,7 @@ static void traverseLockedThreads(int sig) {
                        // and it should only be handled if blockreport is on
   signal(sig, SIG_IGN);
   fflush(stdout);
+  fflush(stderr);
   rep = lockReportHead;
   while (rep != NULL) {
     if (rep->maybeLocked) {
@@ -484,22 +482,22 @@ static void traverseLockedThreads(int sig) {
 static void tasksReport(int sig) {
     chpl_task_pool_p pendingTask = task_pool_head;
 
-    printf("Task report\n");
-    printf("--------------------------------\n");
+    fprintf(stderr, "Task report\n");
+    fprintf(stderr, "--------------------------------\n");
 
     // print out pending tasks
-    printf("Pending tasks:\n");
+    fprintf(stderr, "Pending tasks:\n");
     while(pendingTask != NULL) {
         if(! pendingTask->begun) {
-            printf("- %s:%d\n", pendingTask->filename,
+          fprintf(stderr, "- %s:%d\n", pendingTask->filename,
                 (int)pendingTask->lineno);
         }
         pendingTask = pendingTask->next;
     }
-    printf("\n");
+    fprintf(stderr, "\n");
     
     // print out running tasks
-    printf("Executing tasks:\n");
+    fprintf(stderr, "Executing tasks:\n");
     chpldev_taskTable_print();
 
     chpl_exit_any(1);
@@ -780,7 +778,7 @@ launch_next_task(void) {
       queued_cnt--;
 
       // remember thread ID for later use
-      chpldev_taskTable_addThread(thread); // requires threading lock
+      chpldev_taskTable_addThread((chpl_threadID_t) thread); // requires threading lock
 
       threads_cnt++;
       running_cnt++;

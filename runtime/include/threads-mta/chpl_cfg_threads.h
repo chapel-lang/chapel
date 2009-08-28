@@ -30,4 +30,9 @@ typedef struct {
 #define chpl_single_write_EF(x,y) writeef(&((x)->value), (y))
 #define chpl_single_reset(x) purge(&((x)->value))
 
+// type (and default value) used to communicate thread identifiers
+// between C code and Chapel code in the runtime.
+typedef int64_t chpl_threadID_t;
+#define chpl_nullThreadID 0
+
 #endif

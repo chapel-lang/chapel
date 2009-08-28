@@ -259,6 +259,7 @@ extern Symbol *gVoid;
 extern Symbol *gFile;
 extern Symbol *gOpaque;
 extern Symbol *gTimer;
+extern Symbol *gThreadID;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 extern VarSymbol *gTryToken; // try token for conditional function resolution

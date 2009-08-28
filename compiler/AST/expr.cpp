@@ -1897,6 +1897,12 @@ void CallExpr::codegen(FILE* outfile) {
       Type* src = get(2)->typeInfo();
       if (dst == src) {
         get(2)->codegen(outfile);
+      } else if ((is_int_type(dst) || is_uint_type(dst)) && src == dtThreadID) {
+          fprintf(outfile, "((");
+          typeInfo()->codegen(outfile);
+          fprintf(outfile, ") (intptr_t) (");
+          get(2)->codegen(outfile);
+          fprintf(outfile, "))");
       } else if (dst == dtString || src == dtString) {
         fprintf(outfile, *dst->symbol->cname == '_' ? "%s_to%s(" : "%s_to_%s(",
                 src->symbol->cname, dst->symbol->cname);

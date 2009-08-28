@@ -162,6 +162,7 @@ TYPE_EXTERN PrimitiveType* dtSymbol;
 TYPE_EXTERN PrimitiveType* dtFile; 
 TYPE_EXTERN PrimitiveType* dtOpaque;
 TYPE_EXTERN PrimitiveType* dtTimer; 
+TYPE_EXTERN PrimitiveType* dtThreadID;
 TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtTaskList;

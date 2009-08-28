@@ -18,12 +18,10 @@ use Sort;
    The taks information is used to generate a task report (optionally
    displayed when the user Ctrl+C's out of the program).
 
-*/
+   The type chpl_threadID_t is a primitve type defined in the include
+   files for each threading layer.
 
-// type used to communicate thread identifiers between C code and
-// Chapel code in the runtime. Should match chpl_threadID_t defined in
-// chplthreads.h.
-type chpl_threadID_t = uint(64);
+*/
 
 // Represents a currently running task
 record chpldev_Task {
@@ -67,11 +65,11 @@ pragma "export" def chpldev_taskTable_remove(threadID : chpl_threadID_t)
 
 pragma "export" def chpldev_taskTable_print() 
 {
-  for thread in chpldev_taskTableD {
-    for task in chpldev_taskTable[thread] {
+  for threadID in chpldev_taskTableD {
+    for task in chpldev_taskTable[threadID] {
       stderr.writeln("- ", task.filename, ":", task.lineno,
-		     " on ", thread);
-    }
+		     " on ", threadID : uint(64));
+     }
   }
 }
 

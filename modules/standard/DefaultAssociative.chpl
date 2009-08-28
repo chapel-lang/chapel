@@ -432,6 +432,11 @@ def chpl__defaultHash(c: complex): int(64) {
   return _gen_key(__primitive("real2int", c.re) ^ __primitive("real2int", c.im)); 
 }
 
+pragma "inline"
+def chpl__defaultHash(u: chpl_threadID_t): int(64) {
+  return _gen_key(u:int(64));
+}
+
 // Use djb2 (Dan Bernstein in comp.lang.c.
 pragma "inline"
 def chpl__defaultHash(x : string): int(64) {

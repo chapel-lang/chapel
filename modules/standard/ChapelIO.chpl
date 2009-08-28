@@ -264,6 +264,11 @@ def bool.writeThis(f: Writer) {
   f.writeIt(this:string);
 }
 
+def chpl_threadID_t.writeThis(f: Writer) {
+  var tmp : uint(64) = this : uint(64);
+  f.writeIt(tmp : string);
+}
+
 def file.writeIt(s: string) {
   if !isOpen then
     _checkOpen(this, isRead = false);
@@ -290,7 +295,7 @@ def string.write(args ...?n) {
 }
 
 def file.lockWrite() {
-  var me: uint(64) = __primitive("thread_id");
+  var me: uint(64) = __primitive("thread_id") : uint(64);
   if _lock.isFull then
     if _lock.readXX() == me then
       return false;

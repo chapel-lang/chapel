@@ -11,11 +11,6 @@
 
 extern int32_t maxThreads;
 
-// type used to communicate thread identifiers between C code and
-// Chapel code in the runtime. Should match chpl_threadID_t defined in
-// chapel_code.chpl
-typedef uint64_t chpl_threadID_t;
-
 // Mutexes
 // (These are only needed in chpl_mem.c - perhaps chpl_sync_lock and chpl_sync_unlock
 // should be used instead?)

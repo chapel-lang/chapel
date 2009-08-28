@@ -59,6 +59,11 @@ returnInfoReal64(CallExpr* call) {
 }
 
 static Type*
+returnInfoThreadID(CallExpr* call) {
+  return dtThreadID;
+}
+
+static Type*
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
   Type *t = call->get(1)->typeInfo();
   if (t->symbol->hasFlag(FLAG_REF))
@@ -343,7 +348,7 @@ initPrimitive() {
 
   // thread primitives
   prim_def(PRIM_THREAD_INIT, "thread_init", returnInfoVoid, true);
-  prim_def(PRIM_THREAD_ID, "thread_id", returnInfoUInt64, true);  // 64-bit
+  prim_def(PRIM_THREAD_ID, "thread_id", returnInfoThreadID, true);
   prim_def(PRIM_GET_SERIAL, "thread_get_serial", returnInfoBool);
   prim_def(PRIM_SET_SERIAL, "thread_set_serial", returnInfoVoid, true);
 
