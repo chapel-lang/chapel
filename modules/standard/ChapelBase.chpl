@@ -1293,9 +1293,11 @@ pragma "inline" def chpl__autoDestroy(x: ?t) {
   if !_isPrimitiveType(t) && !_isComplexType(t) then
     __primitive("call destructor", x);
 }
+pragma "dont disable remote value forwarding"
 pragma "inline" def chpl__autoDestroy(x: domain) {
   __primitive("call destructor", x);
 }
+pragma "dont disable remote value forwarding"
 pragma "inline" def chpl__autoDestroy(x: []) {
   __primitive("call destructor", x);
 }
