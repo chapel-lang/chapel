@@ -257,10 +257,8 @@ sub feed_nodes {
     }
 
     $endtime = `date`; chomp $endtime;
-    if ($memleakflag) {
-        systemd("cat $logdir/tmp.*.memleaks > $memleaks");
-        systemd("rm -f $logdir/tmp.*.memleaks");
-    }
+    systemd("cat $logdir/tmp.*.memleaks > $memleaks");
+    systemd("rm -f $logdir/tmp.*.memleaks");
     collect_logs ($fin_logfile, @logs);
 }
 
