@@ -24,9 +24,16 @@ typedef struct memTableEntry_struct { /* table entry */
   struct memTableEntry_struct* nextInBucket;
 } memTableEntry;
 
-#define HASHSIZE 1019
+#define NUM_HASH_SIZE_INDICES 20
 
-static memTableEntry* memTable[HASHSIZE];
+static int hashSizes[NUM_HASH_SIZE_INDICES] = { 1543, 3079, 6151, 12289, 24593, 49157, 98317,
+                                                196613, 393241, 786433, 1572869, 3145739,
+                                                6291469, 12582917, 25165843, 50331653,
+                                                100663319, 201326611, 402653189, 805306457 };
+static int hashSizeIndex = 0;
+static int hashSize = 0;
+
+static memTableEntry** memTable = NULL;
 
 static _Bool memLeaks = false;
 static _Bool memLeaksTable = false;
@@ -42,10 +49,11 @@ static size_t totalMem = 0;       /* total memory currently allocated */
 static size_t maxMem = 0;         /* maximum total memory during run  */
 static size_t totalAllocated = 0; /* total memory allocated */
 static size_t totalFreed = 0;     /* total memory freed */
+static size_t totalEntries = 0;     /* number of entries in hash table */
 
 static chpl_mutex_t memTrack_lock;
 
-static unsigned hash(void* memAlloc) {
+static unsigned hash(void* memAlloc, int hashSize) {
   unsigned hashValue = 0;
   char* fakeCharPtr = (char*)&memAlloc;
   size_t i;
@@ -53,7 +61,7 @@ static unsigned hash(void* memAlloc) {
     hashValue = *fakeCharPtr + 31 * hashValue;
     fakeCharPtr++;
   }
-  return hashValue % HASHSIZE;
+  return hashValue % hashSize;
 }
 
 
@@ -74,9 +82,40 @@ static void decreaseMemStat(size_t chunk) {
 }
 
 
+static void
+resizeTable(int direction) {
+  memTableEntry** newMemTable = NULL;
+  int newHashSizeIndex, newHashSize, newHashValue;
+  int i;
+  memTableEntry* me;
+  memTableEntry* next;
+
+  newHashSizeIndex = hashSizeIndex + direction;
+  newHashSize = hashSizes[newHashSizeIndex];
+  newMemTable = calloc(newHashSize, sizeof(memTableEntry*));
+
+  for (i = 0; i < hashSize; i++) {
+    for (me = memTable[i]; me != NULL; me = next) {
+      next = me->nextInBucket;
+      newHashValue = hash(me->memAlloc, newHashSize);
+      me->nextInBucket = newMemTable[newHashValue];
+      newMemTable[newHashValue] = me;
+    }
+  }
+
+  free(memTable);
+  memTable = newMemTable;
+  hashSize = newHashSize;
+  hashSizeIndex = newHashSizeIndex;
+}
+
+
 static void addMemTableEntry(void* memAlloc, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename) {
   unsigned hashValue;
   memTableEntry* memEntry;
+
+  if ((totalEntries+1)*2 > hashSize && hashSizeIndex < NUM_HASH_SIZE_INDICES-1)
+    resizeTable(1);
 
   memEntry = (memTableEntry*) calloc(1, sizeof(memTableEntry));
   if (!memEntry) {
@@ -84,7 +123,7 @@ static void addMemTableEntry(void* memAlloc, size_t number, size_t size, chpl_me
                lineno, filename);
   }
 
-  hashValue = hash(memAlloc);
+  hashValue = hash(memAlloc, hashSize);
   memEntry->nextInBucket = memTable[hashValue];
   memTable[hashValue] = memEntry;
   memEntry->description = description;
@@ -94,11 +133,12 @@ static void addMemTableEntry(void* memAlloc, size_t number, size_t size, chpl_me
   memEntry->number = number;
   memEntry->size = size;
   increaseMemStat(number*size, lineno, filename);
+  totalEntries += 1;
 }
 
 
 static memTableEntry* removeMemTableEntry(void* address) {
-  unsigned hashValue = hash(address);
+  unsigned hashValue = hash(address, hashSize);
   memTableEntry* thisBucketEntry = memTable[hashValue];
   memTableEntry* deletedBucket = NULL;
 
@@ -121,20 +161,13 @@ static memTableEntry* removeMemTableEntry(void* address) {
       }
     }
   }
-  if (deletedBucket)
+  if (deletedBucket) {
     decreaseMemStat(deletedBucket->number * deletedBucket->size);
-  return deletedBucket;
-}
-
-
-void chpl_initMemTable(void) {
-  chpl_mutex_init(&memTrack_lock);
-  if (memTrack) {
-    int i;
-    for (i = 0; i < HASHSIZE; i++) {
-      memTable[i] = NULL;
-    }
+    totalEntries -= 1;
+    if (totalEntries*8 < hashSize && hashSizeIndex > 0)
+      resizeTable(-1);
   }
+  return deletedBucket;
 }
 
 
@@ -170,6 +203,13 @@ void chpl_setMemFlags(chpl_bool memTrackConfig,
   memLeaksLog = memLeaksLogConfig;
   if (strcmp(memLeaksLog, ""))
     memTrack = true;
+
+  if (memTrack) {
+    chpl_mutex_init(&memTrack_lock);
+    hashSizeIndex = 0;
+    hashSize = hashSizes[hashSizeIndex];
+    memTable = calloc(hashSize, sizeof(memTableEntry*));
+  }
 }
 
 
@@ -231,7 +271,7 @@ static void chpl_printLeakedMemTable(void) {
 
   table = (size_t*)calloc(numEntries, 3*sizeof(size_t));
 
-  for (i = 0; i < HASHSIZE; i++) {
+  for (i = 0; i < hashSize; i++) {
     for (me = memTable[i]; me != NULL; me = me->nextInBucket) {
       table[3*me->description] += me->number*me->size;
       table[3*me->description+1] += 1;
@@ -320,7 +360,7 @@ void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename)
 
   n = 0;
   filenameWidth = strlen("Allocated Memory (Bytes)");
-  for (i = 0; i < HASHSIZE; i++) {
+  for (i = 0; i < hashSize; i++) {
     for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
       size_t chunk = memEntry->number * memEntry->size;
       if (chunk >= threshold) {
@@ -354,7 +394,7 @@ void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename)
     chpl_error("out of memory printing memory table", lineno, filename);
 
   n = 0;
-  for (i = 0; i < HASHSIZE; i++) {
+  for (i = 0; i < hashSize; i++) {
     for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
       size_t chunk = memEntry->number * memEntry->size;
       if (chunk >= threshold) {

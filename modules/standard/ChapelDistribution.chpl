@@ -141,12 +141,6 @@ class BaseArr {
       halt("array reference count is negative!");
     _arrCnt$ = cnt;
     if cnt == 0 {
-      var dom = getBaseDom();
-      on dom {
-        var cnt = dom.destroyDom(this);
-        if cnt == 0 then
-          delete dom;
-      }
       if _arrAlias {
         on _arrAlias {
           var cnt = _arrAlias.destroyArr();
@@ -155,6 +149,12 @@ class BaseArr {
         }
       } else {
         destroyData();
+      }
+      var dom = getBaseDom();
+      on dom {
+        var cnt = dom.destroyDom(this);
+        if cnt == 0 then
+          delete dom;
       }
     }
     return cnt;

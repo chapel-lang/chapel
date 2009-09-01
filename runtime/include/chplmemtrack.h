@@ -9,7 +9,6 @@
 
 #define HASHSIZE 1019
 
-void chpl_initMemTable(void);
 uint64_t chpl_memoryUsed(int32_t lineno, chpl_string filename);
 void chpl_printMemStat(int32_t lineno, chpl_string filename);
 void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename);

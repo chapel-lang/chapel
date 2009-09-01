@@ -74,7 +74,6 @@ int main(int argc, char* argv[]) {
   //
   chpl_comm_verify_num_locales(execNumLocales);
   chpl_comm_rollcall();
-  chpl_initMemTable();            // get ready to start tracking memory
   chpl_init_chapel_code();
 
   initChplThreads();         // initialize the threads layer
