@@ -22,7 +22,6 @@ static void hack_resolve_types(ArgSymbol* arg);
 static void applyGetterTransform(CallExpr* call);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
-static void insert_auto_destroy(VarSymbol* var);
 static void fix_def_expr(VarSymbol* var);
 static void fixup_array_formals(FnSymbol* fn);
 static void clone_parameterized_primitive_methods(FnSymbol* fn);
@@ -304,13 +303,6 @@ void normalize(BaseAST* base) {
   forv_Vec(Symbol, symbol, symbols) {
     if (VarSymbol* var = toVarSymbol(symbol))
       if (isFnSymbol(var->defPoint->parentSymbol))
-        if (var->defPoint->init || var->defPoint->exprType)
-          insert_auto_destroy(var);
-  }
-
-  forv_Vec(Symbol, symbol, symbols) {
-    if (VarSymbol* var = toVarSymbol(symbol))
-      if (isFnSymbol(var->defPoint->parentSymbol))
         fix_def_expr(var);
   }
 
@@ -528,39 +520,6 @@ static void fix_user_assign(CallExpr* call) {
 }
 
 
-static void
-insert_auto_destroy(VarSymbol* var) {
-  if (var->hasFlag(FLAG_NO_AUTO_DESTROY) ||
-      var->hasFlag(FLAG_PARAM))
-    return;
-
-  if (FnSymbol* fn = toFnSymbol(var->defPoint->parentSymbol)) {
-    if (!strcmp(fn->name, "chpl__initCopy") ||
-        fn->_this == var ||
-        fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
-      return;
-  }
-
-  if (BlockStmt* block = toBlockStmt(var->defPoint->parentExpr)) {
-    if (FnSymbol* fn = toFnSymbol(block->parentSymbol)) {
-      if (fn != fn->getModule()->initFn) {
-        GotoStmt* gs = toGotoStmt(block->body.tail);
-        //        CallExpr* call = gs ? toCallExpr(gs->prev) : NULL;
-        CallExpr* ret = toCallExpr(block->body.tail);
-        //        if (call && call->isPrimitive(PRIM_MOVE) &&
-        //            toSymExpr(call->get(1))->var == fn->getReturnSymbol())
-        if (gs)
-          gs->insertBefore(new CallExpr("chpl__autoDestroy", var));
-        else if (ret && ret->isPrimitive(PRIM_RETURN))
-          ret->insertBefore(new CallExpr("chpl__autoDestroy", var));
-        else
-          block->insertAtTail(new CallExpr("chpl__autoDestroy", var));
-      }
-    }
-  }
-}
-
-
 //
 // fix_def_expr removes DefExpr::exprType and DefExpr::init from a
 //   variable's def expression, normalizing the AST with primitive
@@ -577,6 +536,20 @@ fix_def_expr(VarSymbol* var) {
 
   if (!type && !init)
     return; // already fixed
+
+  //
+  // add "insert auto destroy" pragma to user variables that should be
+  // auto destroyed
+  //
+  FnSymbol* fn = toFnSymbol(var->defPoint->parentSymbol);
+  INT_ASSERT(fn);
+  if (!var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
+      !var->hasFlag(FLAG_PARAM) &&
+      fn != fn->getModule()->initFn &&
+      strcmp(fn->name, "chpl__initCopy") &&
+      fn->_this != var &&
+      !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
+    var->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
   //
   // handle "no copy" variables

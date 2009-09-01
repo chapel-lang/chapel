@@ -8,8 +8,10 @@
 
 
 static void
-insertAutoDestroyTemp(Symbol* tmp, Expr* stmt) {
+insertAutoDestroyTemp(Symbol* tmp, FnSymbol* autoDestroyFn) {
+  Expr* stmt = tmp->defPoint;
   if (isArgSymbol(stmt->parentSymbol)) {
+    INT_ASSERT(false); // delete this code
     BlockStmt* block = toBlockStmt(stmt->parentExpr);
     INT_ASSERT(block);
     SymExpr* se = toSymExpr(block->body.tail);
@@ -22,7 +24,7 @@ insertAutoDestroyTemp(Symbol* tmp, Expr* stmt) {
       se = new SymExpr(tmp2);
       block->insertAtTail(se);
     }
-    se->insertBefore(new CallExpr(autoDestroyMap.get(tmp->type), tmp));
+    se->insertBefore(new CallExpr(autoDestroyFn, tmp));
     return;
   } else {
     while (stmt) {
@@ -30,7 +32,7 @@ insertAutoDestroyTemp(Symbol* tmp, Expr* stmt) {
       if (!stmt->next ||
           (call && call->isPrimitive(PRIM_RETURN)) ||
           isGotoStmt(stmt->next)) {
-        stmt->insertAfter(new CallExpr(autoDestroyMap.get(tmp->type), tmp));
+        stmt->insertAfter(new CallExpr(autoDestroyFn, tmp));
         return;
       }
       stmt = stmt->next;
@@ -306,9 +308,9 @@ callDestructors() {
   }
 
   forv_Vec(VarSymbol, sym, gVarSymbols) {
-    if (sym->hasFlag(FLAG_INSERT_AUTO_DESTROY)) {
-      insertAutoDestroyTemp(sym, sym->defPoint);
-    }
+    if (sym->hasFlag(FLAG_INSERT_AUTO_DESTROY))
+      if (FnSymbol* autoDestroyFn = autoDestroyMap.get(sym->type))
+        insertAutoDestroyTemp(sym, autoDestroyFn);
   }
 
   freeDefUseMaps(defMap, useMap);
