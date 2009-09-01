@@ -179,4 +179,6 @@ def main() {
     for i in 0..2 do
         for n in f.lvl_iter(i) do
             writeln(i, ": ", n);
+
+    delete f;
 }

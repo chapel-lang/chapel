@@ -39,6 +39,7 @@ def hg_readCoeffs(inputfile) {
     }
 
     coeffData.close();
+    delete coeffData;
 }
 
 
