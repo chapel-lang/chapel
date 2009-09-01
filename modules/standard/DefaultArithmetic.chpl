@@ -337,7 +337,7 @@ class DefaultArithmeticArr: BaseArr {
     for i in 0..dom.numIndices-1 {
       pragma "no copy" pragma "no auto destroy" var dr = data;
       pragma "no copy" pragma "no auto destroy" var dv = __primitive("get ref", dr);
-      pragma "no copy" pragma "no auto destroy" var e = __primitive("array_get_value", dv, i);
+      pragma "no copy" pragma "no auto destroy" var e = __primitive("array_get", dv, i);
       chpl__autoDestroy(e);
     }
     delete data;
