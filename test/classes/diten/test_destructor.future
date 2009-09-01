@@ -1,4 +1,0 @@
-bug: destructor not called when record leaves scope
-
-Adding a second instance of the C class to the record (see
-test_destructor2.chpl) causes the destructor to get called.
