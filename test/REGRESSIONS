@@ -62,6 +62,10 @@ maxThreads is 300, but can't create more than 254 threads
 performance-specific regressions
 ================================
 
+incompatible types in assignment in destructor (09/01/09)
+---------------------------------------------------------
+[Error matching compiler output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
+
 execution timeouts (08/29/09)
 -----------------------------
 [Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -106,6 +110,11 @@ spurious timeouts (starting 08/29/09)
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for domains/bradc/arrayLinkage] (e.g., 08/31/09)
+[Error matching compiler output for parallel/cobegin/waynew/depend] (e.g., 08/31/09)
+[Error matching compiler output for parallel/syncStmt/deitz/test_end2] (e.g., 08/31/09)
+[Error matching compiler output for spec/marybeth/select] (e.g., 08/31/09)
+[Error matching compiler output for users/shetag/condarr-blc2] (e.g., 08/31/09)
 [Error matching compiler output for studies/hpcc/2008/stream] (e.g., 08/30/09)
 [Error matching compiler output for parallel/cobegin/bradc/arrayargs] (e.g., 08/29/09)
 [Error matching compiler output for studies/590o/blucia/img_proc] (e.g., 08/29/09)
@@ -138,6 +147,19 @@ no longer needs to be suppressed?
 no-local regressions
 ====================
 
+incompatible types in assignment in destructor (09/01/09)
+---------------------------------------------------------
+[Error matching compiler output for studies/hpcc/2008/stream-fragforall]
+[Error matching compiler output for studies/hpcc/2008/stream-fragfrag]
+[Error matching compiler output for studies/hpcc/2008/stream-fragmented]
+[Error matching compiler output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
+
+internal failure (09/01/09)
+---------------------------
+[Error matching compiler output for studies/parsec/blackscholes]
+[Error matching compiler output for studies/parsec/blackscholes_promote]
+
+
 different output (08/29/09)
 ---------------------------
 [Error matching program output for classes/figueroa/RecordDestructor1]
@@ -166,19 +188,15 @@ gasnet-everything regressions (other than the above)
 
 new spurious timeouts
 -----------------------
+[Error: Timed out executing program multilocale/deitz/linked/test_linked2] (e.g., 09/01/09)
 [Error: Timed out executing program studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 08/30/09)
-[Error matching program output for multilocale/deitz/needMultiLocales/streamCommCheck] (e.g., 08/29/09)
 [Error: Timed out executing program multilocale/deitz/linked/test_linked2] (e.g., 08/29/09)
-[Error: Timed out executing program multilocale/deitz/linked/test_linked3] (e.g., 08/29/09)
+[Error: Timed out executing program multilocale/deitz/linked/test_linked3] (e.g., 08/29/09, 09/01/09)
 [Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09)
 [Error: Timed out executing program stress/deitz/test_10k_local_coforall_with_remote_update] (e.g., 08/29/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 08/29/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 08/29/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 08/29/09, 08/31/09)
-
-gasnet_barrier_notify() called twice in a row error (08/26/09)
---------------------------------------------------------------
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock5]
 
 memory stuff in flux (06/06/09)
 -------------------------------
@@ -221,19 +239,30 @@ GASNet unable to start polling thread
 baseline-specific tests
 =======================
 
+internal failure (09/01/09)
+---------------------------
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+
+memory stuff in flux (09/01/09)
+-------------------------------
+[Error matching program output for memory/shannon/printFinalMemStat]
+
 
 ===================
 opts-specific tests
 ===================
 
-(Example runs: 0)
+(Example runs: 3)
+
+[Error matching compiler output for release/examples/hpcc/hpl]
+[Error matching compiler output for release/examples/hpcc/ra]
+[Error matching compiler output for release/examples/hpcc/stream]
 
 
-(Full run: 28)
+(Full run: 30)
 
 --no-dead-code-elimination
 --------------------------
-[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
 [Error: Timed out compilation for studies/hpcc/RA/diten/ra]
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
@@ -246,8 +275,6 @@ opts-specific tests
 --baseline --live-analysis
 --baseline --optimize-loop-iterators
 --baseline --scalar-replacement
---no-scalar-replacement --no-inline
---baseline --no-local
 ------------------------------------
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
@@ -256,13 +283,22 @@ opts-specific tests
 --no-scalar-replacement
 --no-optimize-loop-iterators --no-inline-iterators
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
----------------------
+---------------------------------------------------------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
---baseline --inline
--------------------
+--no-scalar-replacement --no-inline
+-----------------------------------
 [Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
+--baseline --no-local
+------------------------------------
+[Error matching program output for classes/figueroa/RecordDestructor1]
+[Error: Timed out executing program npb/cg/bradc/cg-sparse]
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 =======================
 x2-specific regressions
@@ -501,6 +537,34 @@ sig_send: wait for sig_complete event failed
 =============================
 mta-/xmt-specific regressions
 =============================
+
+warnings about loop not iterating or being unused (09/01/09)
+------------------------------------------------------------
+[Error matching program output for release/examples/hello-multiloc]
+[Error matching program output for release/examples/hello]
+[Error matching program output for release/examples/hpcc/fft]
+[Error matching program output for release/examples/hpcc/stream]
+[Error matching program output for release/examples/programs/beer]
+[Error matching program output for release/examples/programs/genericStack]
+[Error matching program output for release/examples/programs/jacobi]
+[Error matching program output for release/examples/programs/linkedList]
+[Error matching program output for release/examples/programs/norm]
+[Error matching program output for release/examples/programs/tree]
+[Error matching program output for release/examples/tutorials/arrays]
+[Error matching program output for release/examples/tutorials/block2D]
+[Error matching program output for release/examples/tutorials/classes]
+[Error matching program output for release/examples/tutorials/fileIO]
+[Error matching program output for release/examples/tutorials/genericClasses]
+[Error matching program output for release/examples/tutorials/iterators]
+[Error matching program output for release/examples/tutorials/multilocale]
+[Error matching program output for release/examples/tutorials/opaque]
+[Error matching program output for release/examples/tutorials/ranges]
+[Error matching program output for release/examples/tutorials/reductions]
+[Error matching program output for release/examples/tutorials/slices]
+[Error matching program output for release/examples/tutorials/sparse]
+[Error matching program output for release/examples/tutorials/varargs]
+[Error matching program output for release/examples/tutorials/variables]
+
 
 timeouts in compilation and execution
 -------------------------------------
