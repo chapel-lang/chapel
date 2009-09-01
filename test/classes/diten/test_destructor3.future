@@ -1,4 +1,0 @@
-semantic: records with destructors that delete object fields passed to functions
-
-The destructor is called at the end of f, then again at the end of the loop
-block, so the class fields are deleted twice.
