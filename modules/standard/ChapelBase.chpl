@@ -1282,16 +1282,9 @@ pragma "inline" pragma "ref" def chpl__autoCopy(r: _ref) var return r;
 pragma "inline" def chpl__autoCopy(type t) type return t;
 
 pragma "inline" def chpl__autoDestroy(x: object) { }
-pragma "inline" def chpl__autoDestroy(x: opaque) { }
-pragma "inline" def chpl__autoDestroy(x: enumerated) { }
-pragma "inline" def chpl__autoDestroy(x: _iteratorClass) { }
-pragma "inline" def chpl__autoDestroy(x: _iteratorRecord) { }
-pragma "inline" def chpl__autoDestroy(x: _file) { }
 pragma "inline" def chpl__autoDestroy(type t)  { }
-pragma "inline" def chpl__autoDestroy(x: imag(64)) { }
 pragma "inline" def chpl__autoDestroy(x: ?t) {
-  if !_isPrimitiveType(t) && !_isComplexType(t) then
-    __primitive("call destructor", x);
+  __primitive("call destructor", x);
 }
 pragma "dont disable remote value forwarding"
 pragma "inline" def chpl__autoDestroy(x: domain) {
