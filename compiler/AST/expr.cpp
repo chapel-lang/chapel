@@ -1114,8 +1114,10 @@ void CallExpr::codegen(FILE* outfile) {
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
           !get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
           !get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+        TypeSymbol* ts = get(2)->typeInfo()->symbol;
+        registerTypeToStructurallyCodegen(ts);
         fprintf(outfile, "CHPL_COMM_WIDE_PUT(");
-        fprintf(outfile, "%s, ", get(2)->typeInfo()->symbol->cname);
+        fprintf(outfile, "%s, ", ts->cname);
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(2)->codegen(outfile);
