@@ -64,6 +64,7 @@ typedef struct {
 #define SIGNAL        132 // ack of synchronous fork
 #define PRIV_BCAST    133 // put data at addr (used for private broadcast)
 #define FREE          134 // free data at addr
+#define EXIT_ANY      135 // free data at addr
 
 static void fork_wrapper(fork_t *f) {
   if (f->arg_size)
@@ -159,6 +160,15 @@ static void AM_free(gasnet_token_t token, void* buf, size_t nbytes) {
   chpl_free(*(void**)buf, 0, 0);
 }
 
+// this is currently unused; it's intended to be used to implement
+// exit_any with cleanup on all nodes. 
+static void AM_exit_any(gasnet_token_t token, void* buf, size_t nbytes) {
+  int **status = (int**)buf;
+  chpl_internal_error("clean exit_any is not implemented.");
+  // here we basically need to call chpl_exit_all, but we need to
+  // ensure only one thread calls chpl_exit_all on this locale.
+}
+
 static gasnet_handlerentry_t ftable[] = {
   {FORK,          AM_fork},
   {FORK_LARGE,    AM_fork_large},
@@ -166,7 +176,8 @@ static gasnet_handlerentry_t ftable[] = {
   {FORK_NB_LARGE, AM_fork_nb_large},
   {SIGNAL,        AM_signal},
   {PRIV_BCAST,    AM_priv_bcast},
-  {FREE,          AM_free}
+  {FREE,          AM_free},
+  {EXIT_ANY,      AM_exit_any}
 };
 
 static gasnet_seginfo_t* seginfo_table;
@@ -332,7 +343,7 @@ static void chpl_comm_exit_common(int status) {
       chpl_internal_error("Polling thread join failed.");
     } 
   }
-  
+
   chpl_comm_barrier("chpl_comm_exit_common_gasnet_exit"); 
   //exit(); // depending on PAT exit strategy, maybe switch to this
   gasnet_exit(status); // not a collective operation, but one locale will win and all locales will die.
@@ -342,8 +353,32 @@ void chpl_comm_exit_all(int status) {
   chpl_comm_exit_common(status);
 }
 
+void chpl_comm_exit_any_dirty(int status) {
+  // clean up nothing; just ask GASNet to exit
+  // GASNet will then kill all other locales.
+  gasnet_exit(status);
+}
+
+// this is currently unused; it's intended to be used to implement
+// exit_any with cleanup on all nodes
+void chpl_comm_exit_any_clean(int status) {
+  int* status_p = &status;
+  int locale;
+
+  // notify all other locales that this locale is entering a clean exit_any
+  for (locale = 0; locale < chpl_numLocales; locale++) {
+    if (locale != chpl_localeID) {
+      GASNET_Safe(gasnet_AMRequestMedium0(locale, EXIT_ANY, &status_p, sizeof(status_p)));
+    }
+  }
+    
+  // (for code reuse) ask this locale to perform a clean exit_any
+  GASNET_Safe(gasnet_AMRequestMedium0(chpl_localeID, EXIT_ANY, &status_p, sizeof(status_p)));
+}
+
 void chpl_comm_exit_any(int status) {
-  chpl_comm_exit_common(status);
+  // when chpl_comm_exit_any_clean is finished, consider switching to that.
+  chpl_comm_exit_any_dirty(status); 
 }
 
 void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {

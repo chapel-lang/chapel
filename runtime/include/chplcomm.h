@@ -328,6 +328,8 @@ void chpl_comm_exit_all(int status);
 // chpl_comm_exit_all() routine.
 //
 void chpl_comm_exit_any(int status);
+void chpl_comm_exit_any_dirty(int status);
+void chpl_comm_exit_any_clean(int status);
 
 //
 // put 'size' bytes of local data at 'addr' to remote data at
