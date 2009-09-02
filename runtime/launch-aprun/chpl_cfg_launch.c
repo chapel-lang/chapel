@@ -20,6 +20,7 @@ static int getNumCoresPerLocale(void) {
   int numCores;
   pid_t mypid;
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
+  char* command;
 
   if (numCoresString) {
     numCores = atoi(numCoresString);
@@ -33,7 +34,7 @@ static int getNumCoresPerLocale(void) {
   mypid = 0;
 #endif
   sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
-  char* command = chpl_glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
+  command = chpl_glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
   system(command);
   sysFile = fopen(sysFilename, "r");
   if (fscanf(sysFile, "%d\n", &coreMask) != 1 || !feof(sysFile)) {
