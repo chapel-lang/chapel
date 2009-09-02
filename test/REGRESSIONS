@@ -87,8 +87,6 @@ execution timeouts (08/29/09)
 [Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
 [Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2]
 
-
-
 occasional timeouts
 -------------------
 [Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm] (e.g., 07/07/09)
@@ -109,6 +107,10 @@ out of memory errors due to intentional leaking of locals (07/31/09)
 valgrind-specific regressions
 =============================
 
+double free (09/02/09)
+----------------------
+[Error matching program output for classes/diten/test_destructor3]
+
 spurious timeouts (starting 08/29/09)
 -------------------------------------
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
@@ -116,6 +118,7 @@ spurious timeouts (starting 08/29/09)
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for statements/sungeun/continue_label] (e.g., 09/02/09)
 [Error matching compiler output for trivial/bradc/write/writen] (e.g., 09/01/09)
 [Error matching compiler output for domains/bradc/arrayLinkage] (e.g., 08/31/09)
 [Error matching compiler output for parallel/cobegin/waynew/depend] (e.g., 08/31/09)
@@ -158,8 +161,8 @@ incompatible types in assignment in destructor (09/01/09)
 ---------------------------------------------------------
 [Error matching compiler output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
 
-different output (08/29/09)
----------------------------
+not freeing heap-allocated globals (08/29/09)
+---------------------------------------------
 [Error matching program output for classes/figueroa/RecordDestructor1]
 
 new timeouts (08/29/09)
