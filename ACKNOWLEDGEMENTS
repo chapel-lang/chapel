@@ -7,7 +7,8 @@ Research Projects Agency under its Agreement No. HR0011-07-9-0001 and
 its Contract No. NBCH3039003.
 
 This project was supported by a grant from Washington Technology
-Center.
+Center and was hosted for several years at the University of
+Washington -- thanks to both groups for their support.
 
 This research used resources of the National Center for Computational
 Sciences at Oak Ridge National Laboratory, which is supported by the
@@ -18,3 +19,6 @@ Thanks very much to HPCx (http://www.hpcx.ac.uk), SARA
 (http://www.sara.nl), and the University of Vienna
 (http://www.univie.ac.at/) for grants of machine time for testing the
 portability of our code.
+
+Thanks very much to Intel for donating compiler licenses for the
+purpose of portability testing.
