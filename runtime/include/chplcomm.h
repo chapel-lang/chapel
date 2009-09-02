@@ -93,7 +93,6 @@ extern void* const chpl_private_broadcast_table[];
 
 #ifdef CHPL_COMM_HETEROGENEOUS
 #define SPECIFY_SIZE(type) chpl_rt_type_id_##type
-#define SPECIFY_STRING_SIZE(size) CHPL_TYPE_chpl_string
 #else
 #define SPECIFY_SIZE(type) (/*chpl_rt_type_id_##type,*/sizeof(type))
 #define SPECIFY_STRING_SIZE(size) (size)
@@ -128,6 +127,21 @@ extern void* const chpl_private_broadcast_table[];
                     (wide).addr, SPECIFY_SIZE(type), ln, fn);           \
   } while (0)
 
+#ifdef CHPL_COMM_HETEROGENEOUS
+#define CHPL_COMM_WIDE_GET_STRING(local, wide, ln, fn)                  \
+  do {                                                                  \
+    char* chpl_macro_tmp = chpl_malloc((wide).size,                     \
+                                       sizeof(char),                    \
+                                       CHPL_RT_MD_GET_WIDE_STRING,      \
+                                       -1, "<internal>");               \
+    if (chpl_localeID == (wide).locale)                                 \
+      memcpy(chpl_macro_tmp, (wide).addr, (wide).size);                 \
+    else                                                                \
+      chpl_comm_get(chpl_macro_tmp, (wide).locale,                      \
+                    (void*)((wide).addr), -CHPL_TYPE_chpl_string, ln, fn); \
+    local = chpl_macro_tmp;                                             \
+  } while (0)
+#else
 #define CHPL_COMM_WIDE_GET_STRING(local, wide, ln, fn)                  \
   do {                                                                  \
     char* chpl_macro_tmp = chpl_malloc((wide).size,                     \
@@ -141,6 +155,7 @@ extern void* const chpl_private_broadcast_table[];
                     (void*)((wide).addr), SPECIFY_STRING_SIZE((wide).size), ln, fn); \
     local = chpl_macro_tmp;                                             \
   } while (0)
+#endif
 
 #define CHPL_WIDE_GET_FIELD(wide1, wide2, stype, sfield)                \
   do {                                                                  \
