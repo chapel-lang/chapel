@@ -13,6 +13,7 @@ Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right);
 Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right);
 
 BlockStmt* buildChapelStmt(BaseAST* ast = NULL);
+BlockStmt* buildUseList(BaseAST* module, BlockStmt* list = NULL);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);

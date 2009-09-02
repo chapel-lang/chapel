@@ -38,8 +38,10 @@ enum IntentTag {
 };
 
 enum ModTag {
-  MOD_STANDARD,
-  MOD_USER
+  MOD_INTERNAL,  // an internal module that the user shouldn't know about
+  MOD_STANDARD,  // a standard module from the Chapel libraries
+  MOD_USER,      // a module found along the user's search path
+  MOD_MAIN       // a module from a file listed on the compiler command line
 };
 
 class Symbol : public BaseAST {

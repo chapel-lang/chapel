@@ -1,2 +1,1 @@
-fillRandom.chpl:3: error: module 'Random' must be used before accessing its symbols
-fillRandom.chpl:4: error: module 'Random' must be used before accessing its symbols
+fillRandom.chpl:3: error: 'Random' undeclared (first use this function)

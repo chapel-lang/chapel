@@ -268,14 +268,18 @@ const char* astTagName[E_BaseAST+1] = {
 
 int currentLineno = 0;
 
+Vec<ModuleSymbol*> mainModules; // Contains main modules
+Vec<ModuleSymbol*> userModules; // Contains user + main modules
 Vec<ModuleSymbol*> allModules;  // Contains all modules
-Vec<ModuleSymbol*> userModules; // Contains user modules
 
 void registerModule(ModuleSymbol* mod) {
   switch (mod->modTag) {
+  case MOD_MAIN:
+    mainModules.add(mod);
   case MOD_USER:
     userModules.add(mod);
   case MOD_STANDARD:
+  case MOD_INTERNAL:
     if (strcmp(mod->name, "_root"))
       allModules.add(mod);
     break;

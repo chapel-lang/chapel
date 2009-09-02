@@ -143,7 +143,8 @@ extern int currentLineno;
 #define SET_LINENO(ast) currentLineno = ast->lineno;
 
 extern Vec<ModuleSymbol*> allModules;     // Contains all modules
-extern Vec<ModuleSymbol*> userModules;    // Contains user modules
+extern Vec<ModuleSymbol*> userModules;    // Contains main + user modules
+extern Vec<ModuleSymbol*> mainModules;    // Contains main modules
 
 void registerModule(ModuleSymbol* mod);
 

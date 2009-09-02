@@ -6,5 +6,9 @@
 extern ModTag moduleType;
 
 ModuleSymbol* ParseFile(const char* filename, ModTag modtype);
+ModuleSymbol* ParseMod(const char* modname, ModTag modtype);
+
+void addModuleToParseList(const char* name);
+void parseDependentModules(ModTag modtype);
 
 #endif

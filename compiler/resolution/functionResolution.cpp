@@ -1169,10 +1169,10 @@ userCall(CallExpr* call) {
   if (developer)
     return call;
   if (call->getFunction()->hasFlag(FLAG_TEMP) ||
-      call->getModule()->modTag == MOD_STANDARD) {
+      call->getModule()->modTag == MOD_INTERNAL) {
     for (int i = callStack.n-1; i >= 0; i--) {
       if (!callStack.v[i]->getFunction()->hasFlag(FLAG_TEMP) &&
-          callStack.v[i]->getModule()->modTag != MOD_STANDARD)
+          callStack.v[i]->getModule()->modTag != MOD_INTERNAL)
         return callStack.v[i];
     }
   }
@@ -3049,7 +3049,7 @@ static void issueCompilerError(CallExpr* call) {
   CallExpr* from = NULL;
   for (int i = callStack.n-2; i >= 0; i--) {
     from = callStack.v[i];
-    if (from->lineno > 0 && from->getModule()->modTag != MOD_STANDARD)
+    if (from->lineno > 0 && from->getModule()->modTag != MOD_INTERNAL)
       break;
   }
   const char* str = "";

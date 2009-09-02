@@ -1,5 +1,5 @@
-MRA.chpl:430: In function 'norm2':
-MRA.chpl:432: warning: reduction will be executed serially
+./MRA.chpl:430: In function 'norm2':
+./MRA.chpl:432: warning: reduction will be executed serially
 
 
 

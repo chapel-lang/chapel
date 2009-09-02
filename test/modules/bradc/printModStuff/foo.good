@@ -1,0 +1,26 @@
+module search dirs:
+  subdir
+  .
+  subdir1
+  subdir2
+  subdir3
+  subdir4/subdir
+  $CHPL_HOME/modules/standard
+end of module search dirs
+Parsing module files:
+  subdir/bar.chpl
+  foo.chpl
+  subdir/baz.chpl
+  subdir1/bak.chpl
+  subdir3/bam.chpl
+  subdir2/bap.chpl
+  subdir4/subdir/bax.chpl
+  ./bah.chpl
+In bar
+In baz
+In bak
+In bam
+In bap
+In bax
+In bah
+In foo

@@ -1,1 +1,1 @@
---serial -sparallel=false uts_rec.chpl
+--serial -sparallel=false

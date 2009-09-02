@@ -11,8 +11,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-char executableFilename[FILENAME_MAX] = "a.out";
-char saveCDir[FILENAME_MAX] = "";
+char executableFilename[FILENAME_MAX+1] = "a.out";
+char saveCDir[FILENAME_MAX+1] = "";
 char ccflags[256] = "";
 char ldflags[256] = "";
 bool ccwarnings = false;
@@ -133,7 +133,8 @@ static const char* stripdirectories(const char* filename) {
 }
 
 
-static FILE* openfile(const char* filename, const char* mode = "w") {
+static FILE* openfile(const char* filename, const char* mode = "w", 
+                      bool fatal = true) {
   FILE* newfile;
 
   newfile = fopen(filename, mode);
@@ -142,7 +143,9 @@ static FILE* openfile(const char* filename, const char* mode = "w") {
     const char* errormsg = astr(errorstr, filename, ": ", 
                                      strerror(errno));
 
-    USR_FATAL(errormsg);
+    if (fatal) {
+      USR_FATAL(errormsg);
+    }
   }
 
   return newfile;
@@ -466,4 +469,119 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   fprintf(makefile.fptr, "\n");
   genCFileBuildRules(makefile.fptr);
   closeCFile(&makefile, false);
+}
+
+
+static const char* searchPath(Vec<const char*> path, const char* filename,
+                              const char* foundfile = NULL) {
+  forv_Vec(const char*, dirname, path) {
+    //    printf("searching %s\n", dirname);
+    const char* fullfilename = astr(dirname, "/", filename);
+    FILE* file = openfile(fullfilename, "r", false);
+    if (file != NULL) {
+      closefile(file);
+      if (foundfile == NULL) {
+        foundfile = fullfilename;
+      } else {
+        USR_WARN("Ambiguous module source file -- using %s over %s", 
+                 foundfile, fullfilename);
+      }
+    }
+  }
+  return foundfile;
+}
+
+static Vec<const char*> intModPath;
+static Vec<const char*> stdModPath;
+static Vec<const char*> usrModPath;
+static Vec<const char*> fileModPath;
+static Vec<const char*> fileModPathSet;
+
+void setupModulePaths(void) {
+  intModPath.add(astr(CHPL_HOME, "/modules/standard"));
+  stdModPath.add(astr(CHPL_HOME, "/modules/standard"));
+  const char* envvarpath = getenv("CHPL_MODULE_PATH");
+  if (envvarpath) {
+    char path[FILENAME_MAX+1];
+    strncpy(path, envvarpath, FILENAME_MAX);
+    char* colon = path-1;
+    do {
+      char* start = colon+1;
+      colon = strchr(start, ':');
+      if (colon) {
+        *colon = '\0';
+      }
+      addUserModulePath(start);
+    } while (colon);
+  }
+}
+
+
+void addStdRealmsPath(void) {
+  int32_t numRealms = getNumRealms();
+
+  intModPath.add(astr(intModPath.v[0], "/", 
+                      numRealms == 1 ? "singlerealm" : "multirealm"));
+}
+
+
+void addUserModulePath(const char* newpath) {
+  const char* uniquedir = astr(newpath);
+  usrModPath.add(uniquedir);
+}
+
+
+static void addModulePathFromFilenameHelp(const char* name) {
+  const char* uniquename = astr(name);
+  if (!fileModPathSet.set_in(uniquename)) {
+    fileModPath.add(uniquename);
+    fileModPathSet.set_add(uniquename);
+  }
+}
+
+
+void addModulePathFromFilename(const char* origfilename) {
+  char dirname[FILENAME_MAX+1];
+  strncpy(dirname, origfilename, FILENAME_MAX);
+  char* lastslash = strrchr(dirname, '/');
+  bool addedDot = false;
+  if (lastslash != NULL) {
+    *lastslash = '\0';
+    addModulePathFromFilenameHelp(dirname);
+    *lastslash = '/';
+  } else if (!addedDot) {
+    addModulePathFromFilenameHelp(".");
+    addedDot = true;
+  }
+}
+
+
+const char* modNameToFilename(const char* modName, bool isInternal, 
+                              bool* isStandard) {
+  const char* filename = astr(modName, ".chpl");
+  const char* fullfilename;
+  if (isInternal) {
+    fullfilename = searchPath(intModPath, filename);
+  } else {
+    fullfilename = searchPath(fileModPath, filename);
+    fullfilename = searchPath(usrModPath, filename, fullfilename);
+    *isStandard = (fullfilename == NULL);
+    fullfilename = searchPath(stdModPath, filename, fullfilename);
+  }
+  return  fullfilename;
+}
+
+
+static void helpPrintPath(Vec<const char*> path) {
+  forv_Vec(const char*, dirname, path) {
+    fprintf(stderr, "  %s\n", dirname);
+  }
+}
+
+void printModuleSearchPath(void) {
+  fprintf(stderr, "module search dirs:\n");
+  helpPrintPath(fileModPath);
+  helpPrintPath(usrModPath);
+  helpPrintPath(stdModPath);
+  fprintf(stderr, "end of module search dirs\n");
 }

@@ -253,10 +253,10 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   qsort(fnSymbols.v, fnSymbols.n, sizeof(fnSymbols.v[0]), compareSymbol);
 
   if (fRuntime) {
-    chpl_main->cname = astr("chpl_init_", userModules.v[0]->name);
+    chpl_main->cname = astr("chpl_init_", mainModules.v[0]->name);
     baseModule->initFn->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, gVoid)));
-    fprintf(hdrfile, "#ifndef _%s_H_\n", userModules.v[0]->name);
-    fprintf(hdrfile, "#define _%s_H_\n", userModules.v[0]->name);
+    fprintf(hdrfile, "#ifndef _%s_H_\n", mainModules.v[0]->name);
+    fprintf(hdrfile, "#define _%s_H_\n", mainModules.v[0]->name);
     fprintf(hdrfile, "#include \"stdchplrt.h\"\n");
     forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
       if (fnSymbol->hasFlag(FLAG_EXPORT) || fnSymbol == chpl_main)
@@ -571,8 +571,8 @@ void codegen(void) {
     codegen_makefile(&mainfile);
 
   if (fRuntime) {
-    openCFile(&runtimeheader, userModules.v[0]->name, "h", true);
-    openCFile(&runtimecode, userModules.v[0]->name, "c", true);
+    openCFile(&runtimeheader, mainModules.v[0]->name, "h", true);
+    openCFile(&runtimecode, mainModules.v[0]->name, "c", true);
     fprintf(runtimecode.fptr, "#include \"chapel_code.h\"\n\n");
   }
   if (fRuntime)

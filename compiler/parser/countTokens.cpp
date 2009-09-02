@@ -109,6 +109,7 @@ static void initTokenCount(void) {
   }
 }
 
+static bool tokenCountingOn = false;
 
 void startCountingFileTokens(const char* filename) {
   static bool firstCall = true;
@@ -117,6 +118,8 @@ void startCountingFileTokens(const char* filename) {
     firstCall = false;
     initTokenCount();
   }
+
+  tokenCountingOn = true;
 
   if (countTokens) {
     clearFile();
@@ -130,6 +133,8 @@ void startCountingFileTokens(const char* filename) {
 
 
 void stopCountingFileTokens(void) {
+  tokenCountingOn = false;
+  
   if (printTokens) {
     if (strcmp(line, "") != 0) {
       processNewline();
@@ -156,7 +161,7 @@ void finishCountingTokens(void) {
 
 
 void countToken(const char* text) {
-  if (countTokens) {
+  if (tokenCountingOn && countTokens) {
     if (printTokens) {
       int start = strlen(line);
       int attempted = snprintf(&line[start], LINE_SIZE - start, " %s", text);
@@ -174,7 +179,7 @@ void countToken(const char* text) {
 
 
 void countNewline(void) {
-  if (countTokens) {
+  if (tokenCountingOn && countTokens) {
     if (lineBlank) {
       blankLines++;
     } else if (lineComment) {
@@ -200,7 +205,7 @@ void countNewline(void) {
 
 
 void countCommentLine(void) {
-  if (countTokens) {
+  if (tokenCountingOn && countTokens) {
     lineBlank = false;
   }
 }

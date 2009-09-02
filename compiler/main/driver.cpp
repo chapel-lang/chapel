@@ -30,6 +30,7 @@ const char* CHPL_COMM = NULL;
 
 int fdump_html = 0;
 static char libraryFilename[FILENAME_MAX] = "";
+static char moduleSearchPath[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
 bool fRuntime = false;
@@ -74,6 +75,8 @@ int num_constants_per_variable = 1;
 char defaultDist[256] = "DefaultDist";
 int instantiation_limit = 256;
 char mainModuleName[256] = "";
+bool printSearchDirs = false;
+bool printModuleFiles = false;
 
 Map<const char*, const char*> configParamMap;
 bool debugCCode = false;
@@ -231,6 +234,11 @@ static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
 }
 
 
+static void addModulePath(ArgumentState* arg_state, char* newpath) {
+  addUserModulePath(newpath);
+}
+
+
 int32_t getNumRealms(void) {
   static int32_t numRealms = 0;
   if (numRealms == 0) {
@@ -327,13 +335,13 @@ Flag types:
 */
 
 static ArgumentDescription arg_desc[] = {
- {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
- {"print-commands", ' ', NULL, "Print system commands", "F", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
- {"print-passes", ' ', NULL, "Print compiler passes", "F", &printPasses, "CHPL_PRINT_PASSES", NULL},
-
- {"", ' ', NULL, "Code Size Options", NULL, NULL, NULL, NULL},
- {"count-tokens", ' ', NULL, "Count tokens", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
- {"print-code-size", ' ', NULL, "Print code size statistics", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
+  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
+  {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", moduleSearchPath, NULL, addModulePath},
+  {"main-module", ' ', "<module>", "Specify entry point module", "S256", mainModuleName, NULL, NULL},
+  {"print-search-dirs", ' ', "", "Print module search path", "F", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
+  {"print-module-files", ' ', "", "Print module file locations", "F", &printModuleFiles, NULL, NULL},
+  {"count-tokens", ' ', NULL, "Count tokens in main modules", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
+  {"print-code-size", ' ', NULL, "Print code size of main modules", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", NULL},
@@ -374,12 +382,15 @@ static ArgumentDescription arg_desc[] = {
  {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
 
+ {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
+ {"print-commands", ' ', NULL, "Print system commands", "F", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
+ {"print-passes", ' ', NULL, "Print compiler passes", "F", &printPasses, "CHPL_PRINT_PASSES", NULL},
+
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
  {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
- {"main-module", ' ', "<module>", "Specify module where main is located", "S256", mainModuleName, NULL, NULL},
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfigParam},
 
@@ -478,6 +489,7 @@ int main(int argc, char *argv[]) {
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
+  setupModulePaths();
   recordCodeGenStrings(argc, argv);
   startCatchingSignals();
   printStuff();

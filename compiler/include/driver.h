@@ -62,6 +62,8 @@ extern bool printCppLineno;
 
 extern char defaultDist[256];
 extern char mainModuleName[256];
+extern bool printSearchDirs;
+extern bool printModuleFiles;
 extern bool ignore_warnings;
 extern bool ignore_errors;
 extern int squelch_header_errors;

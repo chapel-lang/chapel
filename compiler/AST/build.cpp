@@ -134,6 +134,29 @@ BlockStmt* buildChapelStmt(BaseAST* ast) {
 }
 
 
+static void addModuleToSearchList(BaseAST* module) {
+  UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
+  if (modNameExpr) {
+    addModuleToParseList(modNameExpr->unresolved);
+  } else if (CallExpr* callExpr = toCallExpr(module)) {
+    addModuleToSearchList(callExpr->argList.first());
+  }
+}
+
+
+BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
+  CallExpr* newUse = new CallExpr(PRIM_USE, module);
+  addModuleToSearchList(module);
+  if (list == NULL) {
+    return buildChapelStmt(newUse);
+  } else {
+    list->insertAtTail(newUse);
+    return list;
+  }
+
+}
+
+
 static void
 buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
   int count = 1;

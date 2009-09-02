@@ -1,12 +1,12 @@
 Usage: chpl [flags] [source files]
 
-Compilation Trace Options:
-      --print-commands                   Print system commands
-      --print-passes                     Print compiler passes
-
-Code Size Options:
-      --count-tokens                     Count tokens
-      --print-code-size                  Print code size statistics
+Module Processing Options:
+  -M, --module-dir <directory>           Add directory to module search path
+      --main-module <module>             Specify entry point module
+      --print-search-dirs                Print module search path
+      --print-module-files               Print module file locations
+      --count-tokens                     Count tokens in main modules
+      --print-code-size                  Print code size of main modules
 
 Parallelism Control Options:
       --[no-]local                       Target one [many] locale[s]
@@ -54,6 +54,10 @@ C Code Compilation Options:
   -O, --[no-]optimize                    [Don't] Optimize generated C code
   -o, --output <filename>                Name output executable
 
+Compilation Trace Options:
+      --print-commands                   Print system commands
+      --print-passes                     Print compiler passes
+
 Miscellaneous Options:
       --[no-]devel                       Compile as a developer [user]
       --explain-call <call>[:<module>][:<line>]
@@ -61,7 +65,6 @@ Miscellaneous Options:
       --explain-instantiation <function|type>[:<module>][:<line>]
                                          Explain instantiation of type
       --instantiate-max <max>            Limit number of instantiations
-      --main-module <module>             Specify module where main is located
       --no-warnings                      Disable output of warnings
   -s, --set <name>[=<value>]             Set config param value
 

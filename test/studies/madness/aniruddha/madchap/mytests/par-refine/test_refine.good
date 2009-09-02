@@ -1,3 +1,4 @@
+warning: Ambiguous module source file -- using ./MRA.chpl over ../../MRA.chpl
 Mad Chapel -- Concurrent Refinement Test
 
 ** Testing function 1

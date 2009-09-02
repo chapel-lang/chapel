@@ -624,12 +624,9 @@ use_stmt:
 
 use_stmt_ls:
   lvalue
-    { $$ = buildChapelStmt(new CallExpr(PRIM_USE, $1)); }
+    { $$ = buildUseList($1); }
 | use_stmt_ls TCOMMA lvalue
-    {
-      $1->insertAtTail(new CallExpr(PRIM_USE, $3));
-      $$ = $1;
-    }
+    { $$ = buildUseList($3, $1); }
 ;
 
 

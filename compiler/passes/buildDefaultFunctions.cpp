@@ -201,33 +201,29 @@ static void build_getter(ClassType* ct, Symbol *field) {
 
 static FnSymbol* chpl_main_exists(void) {
   FnSymbol* match = NULL;
+  ModuleSymbol* module = NULL;
   if (strlen(mainModuleName) != 0) {
-    ModuleSymbol* module = NULL;
     forv_Vec(ModuleSymbol, mod, allModules) {
       if (!strcmp(mainModuleName, mod->name))
         module = mod;
     }
     if (!module)
       USR_FATAL("Couldn't find module %s", mainModuleName);
-
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (!strcmp("main", fn->name) && !fn->numFormals() && fn->getModule() == module) {
-        if (!match) {
-          match = fn;
-        } else {
-          USR_FATAL(fn, "main multiply defined in module %s -- first occurrence at %s", mainModuleName, match->stringLoc());
-        }
-      }
-    }
-  } else {
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (!strcmp("main", fn->name) && !fn->numFormals()) {
-        if (!match) {
-          match = fn;
-        } else {
-          USR_FATAL(fn, "main multiply defined -- first occurrence at %s",
-                    match->stringLoc());
-        }
+  }
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!strcmp("main", fn->name) && !fn->numFormals() && 
+        (module == NULL || fn->getModule() == module)) {
+      if (!match || (match->getModule()->modTag != MOD_MAIN && 
+                     module->modTag == MOD_MAIN)) {
+        match = fn;
+      } else {
+        if (fn->getModule()->modTag == MOD_MAIN) {
+          if (mainModuleName[0] != '\0') {
+            USR_FATAL(fn, "main multiply defined in module %s -- first occurrence at %s", mainModuleName, match->stringLoc());
+          } else {
+            USR_FATAL(fn, "main multiply defined -- first occurrence at %s", match->stringLoc());
+          }
+        } // else, this is not a candidate for the main module
       }
     }
   }
@@ -241,7 +237,7 @@ static void build_chpl_main(void) {
   if (fRuntime) {
     if (chpl_main)
       INT_FATAL(chpl_main, "'main' found when compiling runtime file");
-    if (userModules.n != 1)
+    if (mainModules.n != 1)
       INT_FATAL("expected one module when compiling runtime file");
   }
 
@@ -258,7 +254,7 @@ static void build_chpl_main(void) {
       for_alist(expr, theProgram->block->body) {
         if (DefExpr* def = toDefExpr(expr)) {
           if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-            if (mod->modTag == MOD_USER) {
+            if (mod->modTag == MOD_MAIN) {
               if (mainModule) {
                 USR_FATAL_CONT("a program with multiple user modules requires a main function");
                 USR_PRINT("alternatively, specify a main module with --main-module");

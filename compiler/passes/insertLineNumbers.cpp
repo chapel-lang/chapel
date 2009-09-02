@@ -35,7 +35,8 @@ insertLineNumber(CallExpr* call) {
   ModuleSymbol* mod = fn->getModule();
   if (!strcmp(fn->name, "chpl__heapAllocateGlobals") ||
       !strcmp(fn->name, "chpl__initModuleGuards") ||
-      (mod->modTag == MOD_USER && !fn->hasFlag(FLAG_TEMP) && !fn->hasFlag(FLAG_INLINE)) ||
+      ((mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) && 
+       !fn->hasFlag(FLAG_TEMP) && !fn->hasFlag(FLAG_INLINE)) ||
       (developer == true && strcmp(fn->name, "halt"))) {
     // call is in user code; insert AST line number and filename
     // or developer flag is on and the call is not the halt() call

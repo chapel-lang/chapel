@@ -1,10 +1,10 @@
 NAME
   chpl - Cray Inc. compiler for the Chapel parallel language
 SYNOPSIS
-  chpl [-o outfile] [--no-checks] [-O]
-       [--savec dir] [-g]
-       [--print-passes] [--print-commands]
-       [flags...] [source-files...]
+  chpl [-O] [--no-checks] [--fast]
+       [-g] [--savec dir]
+       [-M dir...] [--main-module mod]
+       [-o outfile] [flags...] source-files...
 DESCRIPTION
   The chpl compiler converts one or more Chapel source files into an 
   executable. It does this by compiling Chapel to ISO C code and then 
@@ -47,25 +47,36 @@ OPTIONS
 
   --version       Print the version number of the compiler.
 
-  Compilation Trace Options
+  Module Processing Options
 
-  --print-commands  Prints the system commands that the compiler 
-                    executes in order to compile the Chapel program.
+  -M, --module-dir <dir>   Add the specified directory to the search path used
+                    to find Chapel source files to fulfill module use 
+                    statements.
 
-  --print-passes    Prints the compiler passes during compilation and the
-                    amount of wall clock time required for the pass.
+  --main-module <module>   For programs that supply multiple possible entry
+                     points (main() functions or module initializers that
+                     can serve as an entry point), this option can be used 
+                     to specify which module should serve as the starting 
+                     point for program execution.
 
-  Code Size Options
+  --print-search-dirs   Print the module search path used to resolve module
+                    use statements. This is the list of directories
+                    named by Chapel source files on the command line followed
+                    by those specified with the -M option followed by those
+                    specified by the $CHPL_MODULE_PATH environment variable.
+
+  --print-module-files   Prints the Chapel module source files parsed by
+                    the Chapel compiler.
 
   --count-tokens    Prints the total number of static lexical tokens in 
-                    the user's Chapel code.
+                    the Chapel code files named on the command line.
 
-  --print-code-size    Prints out the size of the user's code in great
-                    detail: For each code file, first the code is
-                    echoed back to the screen, prefixing each line with 
-                    the number of lexical tokens it contains, or *C* if 
-                    the line only contains comments, or *B* if the line 
-                    is blank. Next, the total number of tokens for the
+  --print-code-size    Prints out the size of the Chapel code files named
+                    on the command line in great detail: For each code file, 
+                    first the code is echoed back to the screen, prefixing 
+                    each line with the number of lexical tokens it contains, 
+                    or *C* if the line only contains comments, or *B* if the
+                    line is blank. Next, the total number of tokens for the
                     file is printed. Then the number of lines is 
                     displayed, broken down into code lines, comment-only 
                     lines, and blank lines. Then the maximum and average 
@@ -101,14 +112,9 @@ OPTIONS
   --baseline        Turns off all optimizations in the Chapel compiler and
                     generates naive C code with many temporaries.
 
-  --fast            Turns off all runtime checks and ensures that most
-                    compiler optimizations are enabled. This option
-                    implicitly undoes any previous usage of --baseline,
-                    --no-copy-propagation, --no-dead-code-elimination,
-                    --no-inline, --no-inline-iterators, --no-live-analysis,
-                    --no-optimize-loop-iterators and
-                    --no-scalar-replacement. This option implies
-                    --no-checks and --no-ieee-float.
+  --fast            Turns off all runtime checks using --no-checks, turns
+                    on --no-ieee-float, and enables all other compiler
+                    optimizations in the rest of this section.
  
   --[no-]ieee-float   Disable [enable] optimizations that may affect IEEE
                     floating point conformance. The default is --ieee-float,
@@ -170,7 +176,7 @@ OPTIONS
                     C code back to the Chapel source code that it implements.
                     The [no-] version of this flag turns this feature off.
 
-  --savec <directory>    Saves the compiler-generated C code in the specified 
+  --savec <dir>    Saves the compiler-generated C code in the specified 
                     directory, creating the directory if it does not already
                     exist.
 
@@ -185,7 +191,7 @@ OPTIONS
   -l, --lib-linkage <library>   Specify a C library to link in on the C 
                      compiler command line.
 
-  -L, --lib-search-path <path>   Specify a C library search path on the C
+  -L, --lib-search-path <dir>   Specify a C library search path on the C
                      compiler command line.
 
   --make <make utility>   Specify the gmake-compatible utility that should be 
@@ -208,6 +214,14 @@ OPTIONS
 
   -o, --output <filename>   Specify the name of the compiler-generated
                      executable (defaults to a.out if unspecified).
+
+  Compilation Trace Options
+
+  --print-commands  Prints the system commands that the compiler 
+                    executes in order to compile the Chapel program.
+
+  --print-passes    Prints the compiler passes during compilation and the
+                    amount of wall clock time required for the pass.
 
   Miscellaneous Options
 
@@ -239,11 +253,6 @@ OPTIONS
                      maximum in the event that a legal instantiation
                      is being pruned too aggressively.
 
-  --main-module <module>   For programs that supply multiple possible entry
-                     points, this option can be used to specify which
-                     module should serve as the entry point for program
-                     execution.
-
   --no-warnings      Turns off compiler warnings.
 
   -s, --set <config param>[=<value>]   Overrides the default value of
@@ -258,6 +267,10 @@ ENVIRONMENT
   settings (as explicitly set and inferred).
 
   CHPL_HOME           Specifies the location of the chapel installation directory
+
+  CHPL_MODULE_PATH    Specifies a search path for Chapel source files that
+                      satisfy module use statements as a colon-separated
+                      list of directories
 
   CHPL_HOST_PLATFORM  Specifies the platform on which the Chapel compiler is
                       running (defaults to our best guess)

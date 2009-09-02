@@ -487,10 +487,10 @@ createPrimitiveType(const char *name, const char *cname) {
 
 void initPrimitiveTypes(void) {
   // Inititalize the outermost module
-  rootModule = new ModuleSymbol("_root", MOD_STANDARD, new BlockStmt());
+  rootModule = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
   rootModule->filename = astr("<internal>");
 
-  theProgram = new ModuleSymbol("chpl__Program", MOD_STANDARD, new BlockStmt());
+  theProgram = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
   theProgram->filename = astr("<internal>");
   rootModule->block->insertAtTail(new DefExpr(theProgram));
 

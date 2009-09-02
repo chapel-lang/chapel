@@ -3,8 +3,8 @@
 
 #include <cstdio>
 
-extern char executableFilename[FILENAME_MAX];
-extern char saveCDir[FILENAME_MAX];
+extern char executableFilename[FILENAME_MAX+1];
+extern char saveCDir[FILENAME_MAX+1];
 extern char ccflags[256];
 extern char ldflags[256];
 extern bool ccwarnings;
@@ -45,5 +45,14 @@ const char* createGDBFile(int argc, char* argv[]);
 void makeBinary(void);
 
 const char* runUtilScript(const char* script);
+
+void setupModulePaths(void);
+void addStdRealmsPath(void);
+void addUserModulePath(const char* newpath);
+void addModulePathFromFilename(const char* filename);
+
+const char* modNameToFilename(const char* modName, bool isInternal, 
+                              bool* isStandard);
+void printModuleSearchPath(void);
 
 #endif
