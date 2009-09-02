@@ -807,8 +807,13 @@ static void localizeCall(CallExpr* call) {
             Expr* stmt = call->getStmtExpr();
             INT_ASSERT(lhs && stmt);
             insertLocalTemp(rhs->get(1));
-            VarSymbol* localVar = newTemp(astr("local_", lhs->var->name),
-                                          lhs->var->type->getField("addr")->type);
+            VarSymbol* localVar = NULL;
+            if (rhs->isPrimitive(PRIM_ARRAY_GET))
+              localVar = newTemp(astr("local_", lhs->var->name),
+                                 lhs->var->type->getField("addr")->type);
+            else
+              localVar = newTemp(astr("local_", lhs->var->name),
+                                 lhs->var->type);
             stmt->insertBefore(new DefExpr(localVar));
             lhs->replace(new SymExpr(localVar));
             stmt->insertAfter(new CallExpr(PRIM_MOVE, lhs,
