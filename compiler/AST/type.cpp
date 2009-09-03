@@ -817,12 +817,35 @@ void codegenTypeStructures(FILE* hdrfile) {
   }
   fprintf(outfile, "chpl_num_rt_type_ids\n");
   fprintf(outfile, "} chpl_rt_types;\n\n");
+
+  fprintf(outfile, "size_t chpl_sizeType[] = {\n");
+  num = 0;
+  form_Map(ttscMapElem, typesymM, typesToStructurallyCodegen) {
+    if (num) {
+      fprintf(outfile, ",\n");
+    }
+    fprintf(outfile, "sizeof(");
+    TypeSymbol* typesym = typesymM->key;
+    ClassType* classtype = toClassType(typesym->type);
+    if (classtype && classtype->classTag == CLASS_CLASS &&
+        !typesym->hasFlag(FLAG_REF)) {
+      fprintf(outfile, "_");
+    }
+    fprintf(outfile, "%s)", typesym->cname);
+    num++;
+  }
+  fprintf(outfile, "};\n\n");
+
   fprintf(outfile, "chplType chpl_getFieldType(int typeNum, int fieldNum) {\n");
   fprintf(outfile, "return chpl_structType[typeNum][fieldNum].type;\n");
   fprintf(outfile, "}\n\n");
 
   fprintf(outfile, "size_t chpl_getFieldOffset(int typeNum, int fieldNum) {\n");
   fprintf(outfile, "return chpl_structType[typeNum][fieldNum].offset;\n");
+  fprintf(outfile, "}\n\n");
+
+  fprintf(outfile, "size_t chpl_getFieldSize(int typeNum) {\n");
+  fprintf(outfile, "return chpl_sizeType[typeNum];\n");
   fprintf(outfile, "}\n\n");
   closeCFile(&typeStructFile);
   fprintf(hdrfile, "#define CHPL_MAX_FIELDS_PER_TYPE %d\n", maxFieldsPerType);
