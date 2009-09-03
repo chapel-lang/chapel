@@ -12,6 +12,10 @@ class DefaultEnumDom: BaseEnumDom {
       adomain.add(enumTuple(i));
   }
 
+  def ~DefaultEnumDom() {
+    delete adomain;
+  }
+
   def getIndices() return adomain;
 
   def setIndices(b: DefaultAssociativeDom) {
@@ -74,6 +78,10 @@ class DefaultEnumArr: BaseArr {
 
   var dom: DefaultEnumDom(idxType=idxType);
   var anarray = new DefaultAssociativeArr(eltType=eltType, idxType=idxType, dom=dom.adomain);
+
+  def ~DefaultEnumArr() {
+    delete anarray;
+  }
 
   def getBaseDom() return dom;
 

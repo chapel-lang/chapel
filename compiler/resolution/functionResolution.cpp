@@ -3541,8 +3541,7 @@ add_all_children_ddf(FnSymbol* fn, ClassType* ct) {
 static void
 build_ddf() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->hasFlag(FLAG_WRAPPER) && resolvedFns.get(fn) && !fn->hasFlag(FLAG_NO_PARENS)
-        && !fn->hasFlag(FLAG_DESTRUCTOR)) {
+    if (!fn->hasFlag(FLAG_WRAPPER) && resolvedFns.get(fn) && !fn->hasFlag(FLAG_NO_PARENS)) {
       if (fn->numFormals() > 1) {
         if (fn->getFormal(1)->type == dtMethodToken) {
           if (ClassType* pt = toClassType(fn->getFormal(2)->type)) {
