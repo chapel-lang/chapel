@@ -12,22 +12,21 @@
 extern int32_t maxThreads;
 
 // Mutexes
-// (These are only needed in chpl_mem.c - perhaps chpl_sync_lock and chpl_sync_unlock
-// should be used instead?)
 
 typedef chpl_mutex_t* chpl_mutex_p;
 
-void chpl_mutex_init(chpl_mutex_p mutex);
-int chpl_mutex_lock(chpl_mutex_p);
+void chpl_mutex_init(chpl_mutex_p);
+chpl_mutex_p chpl_mutex_new(void);
+void chpl_mutex_lock(chpl_mutex_p);
 void chpl_mutex_unlock(chpl_mutex_p);
 
 
 // Sync variables
 
-int chpl_sync_lock(chpl_sync_aux_t *);
+void chpl_sync_lock(chpl_sync_aux_t *);
 void chpl_sync_unlock(chpl_sync_aux_t *);
-int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *, int32_t, chpl_string);
-int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *, int32_t, chpl_string);
+void chpl_sync_wait_full_and_lock(chpl_sync_aux_t *, int32_t, chpl_string);
+void chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *, int32_t, chpl_string);
 void chpl_sync_mark_and_signal_full(chpl_sync_aux_t *);     // also unlocks
 void chpl_sync_mark_and_signal_empty(chpl_sync_aux_t *);    // also unlocks
 chpl_bool chpl_sync_is_full(void *, chpl_sync_aux_t *, chpl_bool);
@@ -37,12 +36,13 @@ void chpl_destroy_sync_aux(chpl_sync_aux_t *);
 
 // Single variables
 
-int chpl_single_lock(chpl_single_aux_t *);
+void chpl_single_lock(chpl_single_aux_t *);
 void chpl_single_unlock(chpl_single_aux_t *);
-int chpl_single_wait_full(chpl_single_aux_t *, int32_t, chpl_string);
+void chpl_single_wait_full(chpl_single_aux_t *, int32_t, chpl_string);
 void chpl_single_mark_and_signal_full(chpl_single_aux_t *); // also unlocks
 chpl_bool chpl_single_is_full(void *, chpl_single_aux_t *, chpl_bool);
 void chpl_init_single_aux(chpl_single_aux_t *);
+void chpl_destroy_single_aux(chpl_single_aux_t *);
 
 
 //
@@ -99,6 +99,7 @@ int32_t chpl_numBlockedTasks(void);
 
 
 // Chapel system thread control
+
 void      initChplThreads(void);           // main thread init's thread support
 void      exitChplThreads(void);           // called by the main thread
 
@@ -110,23 +111,22 @@ void             chpl_set_serial(chpl_bool); // set dynamic serial state true or
 void             chpl_thread_cancel(chpl_threadID_t); // ask thread to terminate
 void             chpl_thread_join(chpl_threadID_t);   // wait for thread termination
 
-typedef struct chpl_task_list*   chpl_task_list_p;
-typedef struct chpl_pool_struct* chpl_task_pool_p;
+
+typedef struct chpl_task_list* chpl_task_list_p;
 
 void chpl_add_to_task_list(
-    chpl_fn_int_t fid,           // function to call for task
-    void* arg,                   // argument to the function
-    chpl_task_list_p *task_list,
-    int32_t task_list_locale,    // locale where task list resides
-    chpl_bool call_chpl_begin,   // whether to call chpl_begin
-    int lineno,
-    chpl_string filename);
-void chpl_process_task_list (chpl_task_list_p);
-void chpl_execute_tasks_in_list (chpl_task_list_p);
-void chpl_free_task_list (chpl_task_list_p);
+    chpl_fn_int_t,      // function to call for task
+    void*,              // argument to the function
+    chpl_task_list_p*,  // task list
+    int32_t,            // locale where task list resides
+    chpl_bool,          // whether to call chpl_begin
+    int,                // line at which function begins
+    chpl_string);       // name of file containing functions
+void chpl_process_task_list(chpl_task_list_p);
+void chpl_execute_tasks_in_list(chpl_task_list_p);
+void chpl_free_task_list(chpl_task_list_p);
 
 // Fork one thread.  Do not wait.  Used to implement Chapel's begin statement.
-// Returns a pointer to the task pool entry.
 void
 chpl_begin(chpl_fn_p,         // function to fork
            void*,             // function arg

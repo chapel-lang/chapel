@@ -13,7 +13,9 @@ COMMON_NOGEN_SRCS = \
 	chplio.c \
 	chpl_mem.c \
 	chplmemtrack.c \
+	chpl_sync_single_generic.c \
 	chplsys.c \
+	chpl_tasks_generic.c \
 	gdb.c \
 
 ifdef NVCC

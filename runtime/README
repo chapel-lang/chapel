@@ -21,3 +21,6 @@ The directory structure of the runtime/ directory is as follows:
   src/              : source code for the runtime
   threads-none/     : source code for no threading package
   threads-pthreads/ : source code for interfacing with pthreads
+  threads-pthreads-minimal/
+                    : source code demonstrating use of the generic threading
+                      implementation with a minimal pthreads threading layer

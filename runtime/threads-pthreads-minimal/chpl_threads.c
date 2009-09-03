@@ -1,5 +1,5 @@
 //
-// Pthread implementation of Chapel threading interface
+// Minimal pthread implementation of Chapel threading interface
 //
 
 #ifdef __OPTIMIZE__
@@ -13,8 +13,6 @@
 #include "chplthreads.h"
 #include "error.h"
 #include <stdio.h>
-#include <string.h>
-#include <signal.h>
 #include <assert.h>
 #include <pthread.h>
 #include <inttypes.h>
@@ -27,19 +25,15 @@ typedef struct {
 } thread_func_t;
 
 
-static pthread_cond_t wakeup_cond = PTHREAD_COND_INITIALIZER;
-static pthread_key_t  thread_private_key;
+static pthread_key_t thread_private_key;
 
-static chpl_condvar_t* chpl_condvar_new(void);
-static void            destroy_thread_private_data(void*);
-static void*           pthread_func(void*);
-static void            pool_suspend_cancel_cleanup(void*);
+static void  destroy_thread_private_data(void*);
+static void* pthread_func(void*);
 
 
 // Mutex
 
 void chpl_mutex_init(chpl_mutex_p mutex) {
-  // WAW: how to explicitly specify blocking-type?
   if (pthread_mutex_init(mutex, NULL))
     chpl_internal_error("pthread_mutex_init() failed");
 }
@@ -87,81 +81,38 @@ void chpl_thread_join(chpl_threadID_t thread) {
 }    
 
 
-// Condition variables
-
-static chpl_condvar_t* chpl_condvar_new(void) {
-  chpl_condvar_t* cv;
-  cv = (chpl_condvar_t*) chpl_alloc(sizeof(chpl_condvar_t), CHPL_RT_MD_COND_VAR, 0, 0);
-  if (pthread_cond_init(cv, NULL))
-    chpl_internal_error("pthread_cond_init() failed");
-  return cv;
-}
-
-
 // Sync variable callbacks for the generic threading implementation
 
 chpl_bool threadlayer_sync_suspend(chpl_sync_aux_t *s,
                                    struct timeval *deadline) {
-  chpl_condvar_t* cond;
-  cond = s->is_full ? s->tl_aux.signal_empty : s->tl_aux.signal_full;
-
-  if (deadline == NULL) {
-    (void) pthread_cond_wait(cond, s->lock);
-    return false;
-  }
-  else {
-    struct timespec ts;
-    ts.tv_sec  = deadline->tv_sec;
-    ts.tv_nsec = deadline->tv_usec * 1000UL;
-    return pthread_cond_timedwait(cond, s->lock, &ts) == ETIMEDOUT;
-  }
+  chpl_mutex_unlock(s->lock);
+  sched_yield();
+  chpl_mutex_lock(s->lock);
+  return false;
 }
 
-void threadlayer_sync_awaken(chpl_sync_aux_t *s) {
-  if (pthread_cond_signal(s->is_full ?
-                          s->tl_aux.signal_full : s->tl_aux.signal_empty))
-    chpl_internal_error("pthread_cond_signal() failed");
-}
+void threadlayer_sync_awaken(chpl_sync_aux_t *s) { }
 
-void threadlayer_init_sync(chpl_sync_aux_t *s) {
-  s->tl_aux.signal_full = chpl_condvar_new();
-  s->tl_aux.signal_empty = chpl_condvar_new();
-}
+void threadlayer_init_sync(chpl_sync_aux_t *s) { }
 
-void threadlayer_destroy_sync(chpl_sync_aux_t *s) {
-  chpl_free(s->tl_aux.signal_full, 0, 0);
-  chpl_free(s->tl_aux.signal_empty, 0, 0);
-}
+void threadlayer_destroy_sync(chpl_sync_aux_t *s) { }
+
 
 // Single variable callbacks for the generic threading implementation
 
 chpl_bool threadlayer_single_suspend(chpl_single_aux_t *s,
                                      struct timeval *deadline) {
-  if (deadline == NULL) {
-    (void) pthread_cond_wait(s->tl_aux.signal_full, s->lock);
-    return false;
-  }
-  else {
-    struct timespec ts;
-    ts.tv_sec  = deadline->tv_sec;
-    ts.tv_nsec = deadline->tv_usec * 1000UL;
-    return
-      pthread_cond_timedwait(s->tl_aux.signal_full, s->lock, &ts) == ETIMEDOUT;
-  }
+  chpl_mutex_unlock(s->lock);
+  sched_yield();
+  chpl_mutex_lock(s->lock);
+  return false;
 }
 
-void threadlayer_single_awaken(chpl_single_aux_t *s) {
-  if (pthread_cond_signal(s->tl_aux.signal_full))
-    chpl_internal_error("pthread_cond_signal() failed");
-}
+void threadlayer_single_awaken(chpl_single_aux_t *s) { }
 
-void threadlayer_init_single(chpl_single_aux_t *s) {
-  s->tl_aux.signal_full = chpl_condvar_new();
-}
+void threadlayer_init_single(chpl_single_aux_t *s) { }
 
-void threadlayer_destroy_single(chpl_single_aux_t *s) {
-  chpl_free(s->tl_aux.signal_full, 0, 0);
-}
+void threadlayer_destroy_single(chpl_single_aux_t *s) { }
 
 
 // Thread callbacks for the generic threading implementation
@@ -209,39 +160,23 @@ static void* pthread_func(void* void_f) {
 chpl_bool threadlayer_pool_suspend(chpl_mutex_t *lock,
                                    struct timeval *deadline) {
   int last_cancel_state;
-  chpl_bool res;
 
-  // enable cancellation with cleanup handler before waiting for wakeup signal
-  pthread_cleanup_push(pool_suspend_cancel_cleanup, lock);
+  chpl_mutex_unlock(lock);
+  sched_yield();
+
+  // enable cancellation, check to see if we've been cancelled, and then
+  // disable cancellation again
   (void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
   assert(last_cancel_state == PTHREAD_CANCEL_DISABLE); // sanity check
-
-  if (deadline == NULL) {
-    (void) pthread_cond_wait(&wakeup_cond, lock);
-    res = false;
-  }
-  else {
-    struct timespec ts;
-    ts.tv_sec  = deadline->tv_sec;
-    ts.tv_nsec = deadline->tv_usec * 1000UL;
-    res = (pthread_cond_timedwait(&wakeup_cond, lock, &ts) == ETIMEDOUT);
-  }
-
-  // disable cancellation again
+  pthread_testcancel();
   (void) pthread_setcancelstate(last_cancel_state, NULL);
-  pthread_cleanup_pop(0);
 
-  return res;
+  chpl_mutex_lock(lock);
+
+  return false;
 }
 
-static void pool_suspend_cancel_cleanup(void* void_lock) {
-  chpl_mutex_unlock((chpl_mutex_p) void_lock);
-}
-
-void threadlayer_pool_awaken(void) {
-  if (pthread_cond_signal(&wakeup_cond))
-    chpl_internal_error("pthread_cond_signal() failed");
-}
+void threadlayer_pool_awaken(void) { }
 
 void* threadlayer_get_thread_private_data(void) {
   return pthread_getspecific(thread_private_key);

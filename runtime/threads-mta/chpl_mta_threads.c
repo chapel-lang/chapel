@@ -22,9 +22,8 @@ void chpl_mutex_init(chpl_mutex_p mutex) {
   purge(mutex);                     // set to zero and mark empty
 }
 
-int chpl_mutex_lock(chpl_mutex_p mutex) {
+void chpl_mutex_lock(chpl_mutex_p mutex) {
   writeef(mutex, 1);                // set to one and mark full
-  return 0;
 }
 
 void chpl_mutex_unlock(chpl_mutex_p mutex) {
@@ -34,9 +33,8 @@ void chpl_mutex_unlock(chpl_mutex_p mutex) {
 
 // Sync variables
 
-int chpl_sync_lock(chpl_sync_aux_t *s) {
+void chpl_sync_lock(chpl_sync_aux_t *s) {
   readfe(&(s->is_full));            // mark empty
-  return 0;
 }
 
 void chpl_sync_unlock(chpl_sync_aux_t *s) {
@@ -44,24 +42,22 @@ void chpl_sync_unlock(chpl_sync_aux_t *s) {
   writeef(&(s->is_full), is_full);  // mark full
 }
 
-int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
+void chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
   chpl_sync_lock(s);
   while (!readxx(&(s->is_full))) {
     chpl_sync_unlock(s);
     readfe(&(s->signal_full));
     chpl_sync_lock(s);
   }
-  return 0;
 }
 
-int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
+void chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
   chpl_sync_lock(s);
   while (readxx(&(s->is_full))) {
     chpl_sync_unlock(s);
     readfe(&(s->signal_empty));
     chpl_sync_lock(s);
   }
-  return 0;
 }
 
 void chpl_sync_mark_and_signal_full(chpl_sync_aux_t *s) {
@@ -92,9 +88,8 @@ void chpl_destroy_sync_aux(chpl_sync_aux_t *s) { }
 
 // Single variables
 
-int chpl_single_lock(chpl_single_aux_t *s) {
+void chpl_single_lock(chpl_single_aux_t *s) {
   readfe(&(s->is_full));            // mark empty
-  return 0;
 }
 
 void chpl_single_unlock(chpl_single_aux_t *s) {
@@ -102,10 +97,9 @@ void chpl_single_unlock(chpl_single_aux_t *s) {
   writeef(&(s->is_full), is_full);  // mark full
 }
 
-int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, chpl_string filename) {
+void chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, chpl_string filename) {
   while (!readxx(&(s->is_full)))
     readff(&(s->signal_full));
-  return 0;
 }
 
 void chpl_single_mark_and_signal_full(chpl_single_aux_t *s) {

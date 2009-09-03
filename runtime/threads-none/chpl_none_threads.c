@@ -13,6 +13,8 @@
 //
 // task pool: linked list of tasks
 //
+typedef struct chpl_pool_struct* chpl_task_pool_p;
+
 typedef struct chpl_pool_struct {
   chpl_fn_p fun;          // function to call for task
   void*     arg;          // argument to the function
@@ -52,36 +54,29 @@ launch_next_task(void) {
 
 // Mutex
 void chpl_mutex_init(chpl_mutex_p mutex) { }
-int chpl_mutex_lock(chpl_mutex_p mutex) { return 0; }
+void chpl_mutex_lock(chpl_mutex_p mutex) { }
 void chpl_mutex_unlock(chpl_mutex_p mutex) { }
 
 
 // Sync variables
 
-int chpl_sync_lock(chpl_sync_aux_t *s) { return s == NULL; }
+void chpl_sync_lock(chpl_sync_aux_t *s) { }
 void chpl_sync_unlock(chpl_sync_aux_t *s) { }
 
-int chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
+void chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
   // while blocked, try running tasks from the task pool
   while (!*s && launch_next_task())
     /* do nothing! */;
-  if (*s)
-    return 0;
-  else {
+  if (!*s)
     chpl_error("sync var empty (running in single-threaded mode)", lineno, filename);
-    return 1;
-  }
 }
 
-int chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
+void chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
   // while blocked, try running tasks from the task pool
   while (*s && launch_next_task())
     /* do nothing! */;
-  if (*s) {
+  if (*s)
     chpl_error("sync var full (running in single-threaded mode)", lineno, filename);
-    return 1;
-  }
-  else return 0;
 }
 
 void chpl_sync_mark_and_signal_full(chpl_sync_aux_t *s) {
@@ -105,20 +100,16 @@ void chpl_destroy_sync_aux(chpl_sync_aux_t *s) { }
 
 // Single variables
 
-int chpl_single_lock(chpl_single_aux_t *s) { return s == NULL; }
+void chpl_single_lock(chpl_single_aux_t *s) { }
 
 void chpl_single_unlock(chpl_single_aux_t *s) { }
 
-int chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, chpl_string filename) {
+void chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, chpl_string filename) {
   // while blocked, try running tasks from the task pool
   while (!*s && launch_next_task())
     /* do nothing! */;
-  if (*s)
-    return 0;
-  else {
+  if (!*s)
     chpl_error("single var empty (running in single-threaded mode)", lineno, filename);
-    return 1;
-  }
 }
 
 void chpl_single_mark_and_signal_full(chpl_single_aux_t *s) {
