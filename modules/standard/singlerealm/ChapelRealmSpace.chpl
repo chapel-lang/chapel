@@ -1,3 +1,1 @@
-module ChapelRealmSpace {
-  const RealmSpace: domain(1) = [0..0];
-}
+const RealmSpace: domain(1) = [0..0];
