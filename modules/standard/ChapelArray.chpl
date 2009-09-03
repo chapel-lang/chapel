@@ -296,11 +296,6 @@ record _domain {
   def chpl__unTranslate(i: _value.idxType ...rank) return chpl__unTranslate(i);
   def chpl__unTranslate(i: rank*_value.idxType) return _newDomain(_value.chpl__unTranslate(i));
 
-  def subBlocks {
-    for d in _value.subBlocks do
-      yield d;
-  }
-
   def setIndices(x) {
     _value.setIndices(x);
     if _supportsPrivatization(_valueType) {

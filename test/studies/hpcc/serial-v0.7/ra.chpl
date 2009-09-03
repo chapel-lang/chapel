@@ -34,9 +34,8 @@ def main() {
 
   [i in TableSpace] T(i) = i;
 
-  coforall block in UpdateSpace.subBlocks do
-    for r in RAStream(block) do
-      T(r & indexMask) ^= r;
+  forall (_, r) in (UpdateSpace, RAStream()) do
+    T(r & indexMask) ^= r;
 
   const execTime = getCurrentTime() - startTime;
 
@@ -57,7 +56,7 @@ def verifyResults(T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   if (sequentialVerify) then
-    for r in RAStream(0:indexType..#N_U) do
+    for r in RAStream(N_U) do
       T(r & indexMask) ^= r;
   else
     forall i in UpdateSpace {

@@ -164,13 +164,6 @@ class CMODom: BaseArithmeticDom {
     return x;
   }
 
-  // this should eventually...
-  //  ...be in the distribtion's implementation of the blocked domain
-  // ...yield a subBlock of the domain per thread per locale
-  def subBlocks {
-    yield this;
-  }
-
   def strideBy(str : rank*int) {
     var x = new CMODom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
     for i in 1..rank do

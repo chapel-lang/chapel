@@ -6,16 +6,31 @@ module RARandomStream {
         m2: [bitDom] randType = computeM2Vals(randWidth);
 
 
-  def RAStream(block) {
-    var val = getNthRandom(block.low);
-    for i in block {
+  def RAStream() {
+    var val = getNthRandom(0);
+    while (1) {
       getNextRandom(val);
       yield val;
     }
   }
 
+  def RAStream(n: uint(64)) {
+    var val = getNthRandom(0);
+    for i in 1..n {
+      getNextRandom(val);
+      yield val;
+    }
+  }
 
-  def getNthRandom(in n) {
+  def RAStream(param tag: iterator, follower) where tag == iterator.follower {
+    var val = getNthRandom(follower.low);
+    for follower {
+      getNextRandom(val);
+      yield val;
+    }
+  }
+
+  def getNthRandom(in n: uint(64)) {
     param period = 0x7fffffffffffffff/7;
     
     n %= period;

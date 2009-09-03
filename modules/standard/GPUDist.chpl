@@ -308,16 +308,6 @@ class GPUArithmeticDom: BaseArithmeticDom {
     return x;
   }
 
-  // this should eventually...
-  //  ...be in the distribtion's implementation of the blocked domain
-  // ...yield a subBlock of the domain per thread per locale
-  def subBlocks {
-    if (rank != 1) then halt("subBlocks not yet implemented for >1D domains");
-    for block in BlockSchedule(this, Locales(0).numCores) {
-      yield block;
-    }
-  }
-
   def strideBy(str : rank*int) {
     var x = new GPUArithmeticDom(rank, idxType, true, dist);
     for i in 1..rank do
