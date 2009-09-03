@@ -17,7 +17,7 @@
 #include "chpltypes.h"
 #include "error.h"
 
-#define CHPL_DIST_DEBUG 1
+#define CHPL_DIST_DEBUG 0
 
 #if CHPL_DIST_DEBUG
 #define DEBUG_MSG_LENGTH 256
@@ -186,8 +186,9 @@ static void chpl_RPC(_chpl_RPC_arg* arg) {
   (*chpl_ftable[arg->fid])(arg->arg);
   PRINTF("Did task");
   chpl_pvm_send(arg->joinLocale, arg->replyTag, NULL, 0);
-  if (arg->arg != NULL)
+  if (arg->arg != NULL) {
     chpl_free(arg->arg, 0, 0);
+  }
   chpl_free(arg, 0, 0);
 }
 
@@ -447,7 +448,7 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
 #if CHPL_DIST_DEBUG
   char debugMsg[DEBUG_MSG_LENGTH];
 #endif
-  if ((tid <= chpl_numLocales) && (tid > -1)) tid = tids[tid];   // lines up Chapel locales and PVM index
+  if ((tid < chpl_numLocales) && (tid > -1)) tid = tids[tid];   // lines up Chapel locales and PVM index
 
 #if CHPL_DIST_DEBUG
   sprintf(debugMsg, "chpl_pvm_recv(%p, from=%d, tag=%d, sz=%d)", buf, tid, msgtag, sz);
@@ -493,8 +494,20 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
       //      *(((char *)buf)+chpltypeoffset) = '\0';
       //    } else {
       for (i = 0; i < chpl_max_fields_per_type; i++) {
-        chpltypetype = chpl_getFieldType(sz, i);
-        chpltypeoffset = chpl_getFieldOffset(sz, i);
+        // A positive size represents the entry into the chpl_rt_types
+        //      enumeration.
+        // A negative size represents a direct call for a get (in which
+        //      we've sent the chplType enumeration without conversion
+        //      after the negative.
+        if (sz < 0) {
+          chpltypetype = sz * -1;
+          chpltypeoffset = 0;
+          i = chpl_max_fields_per_type;
+        }
+        else {
+          chpltypetype = chpl_getFieldType(sz, i);
+          chpltypeoffset = chpl_getFieldOffset(sz, i);
+        }
         switch (chpltypetype) {
         case CHPL_TYPE_chpl_bool:
           PVM_NO_LOCK_SAFE(pvm_upkbyte((((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkint", "chpl_pvm_recv");
@@ -579,7 +592,7 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
 #if CHPL_DIST_DEBUG
   char debugMsg[DEBUG_MSG_LENGTH];
 #endif
-  if ((tid <= chpl_numLocales) && (tid > -1)) tid = tids[tid];  // lines up Chapel locales and PVM index
+  if ((tid < chpl_numLocales) && (tid > -1)) tid = tids[tid];  // lines up Chapel locales and PVM index
 #if CHPL_DIST_DEBUG
   sprintf(debugMsg, "chpl_pvm_send(%p, to=%d, tag=%d, sz=%d)", buf, tid, msgtag, sz);
   PRINTF(debugMsg);
@@ -621,8 +634,20 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
     PVM_NO_LOCK_SAFE(pvm_pkint(&sendingnil, 1 ,1), "pvm_pkint", "chpl_pvm_send");
     if (sendingnil == 0) {
       for (i = 0; i < chpl_max_fields_per_type; i++) {
-        chpltypetype = chpl_getFieldType(sz, i);
-        chpltypeoffset = chpl_getFieldOffset(sz, i);
+        // A positive size represents the entry into the chpl_rt_types
+        //      enumeration.
+        // A negative size represents a direct call for a get (in which
+        //      we've sent the chplType enumeration without conversion
+        //      after the negative.
+        if (sz < 0) {
+          chpltypetype = sz * -1;
+          chpltypeoffset = 0;
+          i = chpl_max_fields_per_type;
+        }
+        else {
+          chpltypetype = chpl_getFieldType(sz, i);
+          chpltypeoffset = chpl_getFieldOffset(sz, i);
+        }
         switch (chpltypetype) {
         case CHPL_TYPE_chpl_bool:
           PVM_NO_LOCK_SAFE(pvm_pkbyte((((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkbyte", "chpl_pvm_send");
@@ -699,6 +724,10 @@ static void polling(void* x) {
   char debugMsg[DEBUG_MSG_LENGTH];
 #endif
 
+#ifdef CHPL_COMM_HETEROGENEOUS
+  int mallocsize;
+#endif
+
   PRINTF("Starting PVM polling thread");
   chpl_mutex_lock(&termination_lock);
   finished = 0;
@@ -743,8 +772,14 @@ static void polling(void* x) {
       sprintf(debugMsg, "Fulfilling ChplCommFork(fromloc=%d, tag=%d, fnid=%d)", source, msg_info.replyTag, msg_info.u.fid);
       PRINTF(debugMsg);
 #endif
-      if (msg_info.size != 0) {
-        args = chpl_malloc(1, msg_info.size, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+
+#ifdef CHPL_COMM_HETEROGENEOUS
+      mallocsize = chpl_getFieldSize(msg_info.size);
+#else
+      mallocsize = msg_info.size;
+#endif
+      if (mallocsize != 0) {
+        args = chpl_malloc(1, mallocsize, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
       } else {
         args = NULL;
       }
@@ -765,8 +800,14 @@ static void polling(void* x) {
       sprintf(debugMsg, "Fulfilling ChplCommForkNB(fromloc=%d, tag=%d)", source, msg_info.replyTag);
       PRINTF(debugMsg);
 #endif
-      if (msg_info.size != 0) {
-        args = chpl_malloc(1, msg_info.size, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+
+#ifdef CHPL_COMM_HETEROGENEOUS
+      mallocsize = chpl_getFieldSize(msg_info.size);
+#else
+      mallocsize = msg_info.size;
+#endif
+      if (mallocsize != 0) {
+        args = chpl_malloc(1, mallocsize, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
       } else {
         args = NULL;
       }
@@ -964,7 +1005,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
     // the slave nodes getting the data.
     if (chpl_localeID == 0) {
 #if CHPL_DIST_DEBUG
-      sprintf(debugMsg, "Packing chpl_globals_registry[%d] %s", i, (char *)chpl_globals_registry[i]);
+      sprintf(debugMsg, "Packing chpl_globals_registry[%d] %p", i, chpl_globals_registry[i]);
       PRINTF(debugMsg);
 #endif
       PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_broadcast_global_vars");
@@ -977,7 +1018,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
       PVM_NO_LOCK_SAFE(pvm_upkint(&size, 1, 1), "pvm_upkint", "chpl_comm_broadcast_global_vars");
       PVM_UNPACK_SAFE(pvm_upkbyte((char *)(chpl_globals_registry[i]), size, 1), "pvm_upkbyte", "chpl_comm_broadcast_global_vars");
 #if CHPL_DIST_DEBUG
-      sprintf(debugMsg, "Unpacking chpl_globals_registry[%d] %s", i, (char *)chpl_globals_registry[i]);
+      sprintf(debugMsg, "Unpacking chpl_globals_registry[%d] %p", i, chpl_globals_registry[i]);
       PRINTF(debugMsg);
 #endif
     }
@@ -1161,7 +1202,11 @@ void chpl_comm_exit_any(int status) {
 
 void chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   if (chpl_localeID == locale) {
+#ifdef CHPL_COMM_HETEROGENEOUS
+    memmove(raddr, addr, chpl_getFieldSize(size));
+#else
     memmove(raddr, addr, size);
+#endif
   } else {
     _chpl_message_info msg_info;
     int tag;
@@ -1202,7 +1247,11 @@ void chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln
 
 void chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   if (chpl_localeID == locale) {
+#ifdef CHPL_COMM_HETEROGENEOUS
+    memmove(raddr, addr, chpl_getFieldSize(size));
+#else
     memmove(raddr, addr, size);
+#endif
   } else {
     _chpl_message_info msg_info;
     int tag;
@@ -1283,12 +1332,19 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   int tag;
 
 #if CHPL_DIST_DEBUG
-    char debugMsg[DEBUG_MSG_LENGTH];
+  char debugMsg[DEBUG_MSG_LENGTH];
+#endif
+
+  int mallocsize;
+#ifdef CHPL_COMM_HETEROGENEOUS
+  mallocsize = chpl_getFieldSize(arg_size);
+#else
+  mallocsize = arg_size;
 #endif
 
   if (chpl_localeID == locale) {
-    void* argCopy = chpl_malloc(1, arg_size, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
-    memmove(argCopy, arg, arg_size);
+    void* argCopy = chpl_malloc(1, mallocsize, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
+    memmove(argCopy, arg, mallocsize);
     chpl_begin((chpl_fn_p)chpl_ftable[fid], argCopy, false, false, NULL);
   } else {
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
@@ -1315,17 +1371,32 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   }
 }
 
+// Macro to clean up broadcast_private calling for heterogeneous and
+// homogeneous cases.
+// index 0 = &chpl_verbose_comm
+// index 1 = &chpl_comm_diagnostics
+// index 2 = &chpl_verbose_mem
+#ifdef CHPL_COMM_HETEROGENEOUS
+#define COMM_SIZE(index) {                                                 \
+  chpl_comm_broadcast_private(index, -CHPL_TYPE_int32_t);                  \
+}
+#else                                                                      
+#define COMM_SIZE(index) {                                                 \
+  chpl_comm_broadcast_private(index, sizeof(int));                         \
+}
+#endif
+
 void chpl_startVerboseComm() {
   chpl_verbose_comm = 1;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int));
+  COMM_SIZE(0);
   chpl_comm_no_debug_private = 0;
 }
 
 void chpl_stopVerboseComm() {
   chpl_verbose_comm = 0;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int));
+  COMM_SIZE(0);
   chpl_comm_no_debug_private = 0;
 }
 
@@ -1340,14 +1411,14 @@ void chpl_stopVerboseCommHere() {
 void chpl_startCommDiagnostics() {
   chpl_comm_diagnostics = 1;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int));
+  COMM_SIZE(1);
   chpl_comm_no_debug_private = 0;
 }
 
 void chpl_stopCommDiagnostics() {
   chpl_comm_diagnostics = 0;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int));
+  COMM_SIZE(1);
   chpl_comm_no_debug_private = 0;
 }
 
