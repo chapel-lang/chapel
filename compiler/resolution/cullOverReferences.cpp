@@ -71,9 +71,11 @@ void cullOverReferences() {
           SymExpr* se = toSymExpr(move->get(1));
           INT_ASSERT(se);
           if (!refNecessary(se, defMap, useMap)) {
+            SymExpr* base = toSymExpr(call->baseExpr);
+            base->var = copy;
             VarSymbol* tmp = newTemp(copy->retType);
             move->insertBefore(new DefExpr(tmp));
-            if (autoCopyMap.get(tmp->type)) {
+            if (requiresImplicitDestroy(call)) {
               tmp->addFlag(FLAG_INSERT_AUTO_COPY);
               tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
             }
@@ -84,8 +86,6 @@ void cullOverReferences() {
               se->var->defPoint->remove();
             }
             se->var = tmp;
-            SymExpr* base = toSymExpr(call->baseExpr);
-            base->var = copy;
           }
         } else
           INT_FATAL("unexpected case");
