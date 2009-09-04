@@ -8,6 +8,7 @@ OPTIMIZATIONS_SRCS = \
 	liveVariableAnalysis.cpp \
 	reachingDefinitionsAnalysis.cpp \
 	remoteValueForwarding.cpp \
+	removeUnnecessaryAutoCopyCalls.cpp \
 	removeUnnecessaryGotos.cpp \
 	removeWrapRecords.cpp \
 	scalarReplace.cpp

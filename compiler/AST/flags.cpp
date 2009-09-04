@@ -86,6 +86,8 @@ initFlags() {
   defineFlag(FLAG_REF, "ref");
   defineFlag(FLAG_REF_ITERATOR_CLASS, "ref iterator class");
   defineFlag(FLAG_REF_THIS, "ref this");
+  defineFlag(FLAG_REMOVABLE_AUTO_COPY, "removable auto copy");
+  defineFlag(FLAG_REMOVABLE_AUTO_DESTROY, "removable auto destroy");
   defineFlag(FLAG_SINGLE, "single");
   defineFlag(FLAG_SPECIFIED_RETURN_TYPE, "specified return type");
   defineFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING, "dont disable remote value forwarding");

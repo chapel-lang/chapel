@@ -1248,13 +1248,13 @@ def chpl__initCopy(ir: _iteratorRecord) {
 }
 
 pragma "dont disable remote value forwarding"
-pragma "inline" def chpl__autoCopy(x: domain) {
+pragma "removable auto copy" def chpl__autoCopy(x: domain) {
   x._value._domCnt$ += 1;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
-pragma "inline" def chpl__autoCopy(x: []) {
+pragma "removable auto copy" def chpl__autoCopy(x: []) {
   x._value._arrCnt$ += 1;
   return x;
 }
@@ -1287,11 +1287,11 @@ pragma "inline" def chpl__autoDestroy(x: ?t) {
   __primitive("call destructor", x);
 }
 pragma "dont disable remote value forwarding"
-pragma "inline" def chpl__autoDestroy(x: domain) {
+pragma "removable auto destroy" def chpl__autoDestroy(x: domain) {
   __primitive("call destructor", x);
 }
 pragma "dont disable remote value forwarding"
-pragma "inline" def chpl__autoDestroy(x: []) {
+pragma "removable auto destroy" def chpl__autoDestroy(x: []) {
   __primitive("call destructor", x);
 }
 pragma "inline" def chpl__autoDestroy(x: _syncvar) {
