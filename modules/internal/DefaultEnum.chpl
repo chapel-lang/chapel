@@ -1,4 +1,3 @@
-use List;
 class DefaultEnumDom: BaseEnumDom {
   type idxType;
   var dist: DefaultDist;

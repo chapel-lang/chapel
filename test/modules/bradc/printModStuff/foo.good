@@ -12,7 +12,6 @@ Parsing module files:
   foo.chpl
   $CHPL_HOME/modules/standard/Types.chpl
   $CHPL_HOME/modules/standard/Math.chpl
-  $CHPL_HOME/modules/standard/Schedules.chpl
   $CHPL_HOME/modules/standard/List.chpl
   $CHPL_HOME/modules/standard/Sort.chpl
   $CHPL_HOME/modules/standard/Search.chpl

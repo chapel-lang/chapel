@@ -1,5 +1,4 @@
 use Search;
-use List;
 
 class DefaultSparseDom: BaseSparseDom {
   param rank : int;

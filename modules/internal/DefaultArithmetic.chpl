@@ -1,6 +1,3 @@
-use Schedules;
-use List;
-
 class DefaultDist: BaseDist {
   def newArithmeticDom(param rank: int, type idxType, param stridable: bool)
     return new DefaultArithmeticDom(rank, idxType, stridable, this);

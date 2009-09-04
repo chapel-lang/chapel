@@ -1,4 +1,3 @@
-use List;
 class DefaultOpaqueDom: BaseOpaqueDom {
   type idxType = _OpaqueIndex;
   var dist: DefaultDist;

@@ -1,3 +1,5 @@
+use List;
+
 //
 // Abstract distribution class
 //
