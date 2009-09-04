@@ -128,9 +128,6 @@ ModuleSymbol* ParseMod(const char* modname, ModTag modType) {
 
   const char* filename = modNameToFilename(modname, internal, &isStandard);
   if (filename == NULL) {
-    if (internal) {
-      INT_FATAL("Can't find internal module %s", modname);
-    }
     return NULL;
   } else {
     if (!internal && isStandard) {
@@ -143,11 +140,10 @@ ModuleSymbol* ParseMod(const char* modname, ModTag modType) {
 
 void parseDependentModules(ModTag modtype) {
   forv_Vec(const char*, modName, modNameList) {
-    //    printf("Processing %s\n", modName);
     if (!modDoneSet.set_in(modName)) {
-      //      printf("We haven't seen this one yet\n");
-      modDoneSet.set_add(modName);
-      ParseMod(modName, modtype);
+      if (ParseMod(modName, modtype)) {
+        modDoneSet.set_add(modName);
+      }
     }
   }
 }

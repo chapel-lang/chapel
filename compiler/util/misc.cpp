@@ -38,14 +38,15 @@ static FnSymbol* err_fn = NULL;
 
 static const char* cleanFilename(BaseAST* ast) {
   ModuleSymbol* mod = ast->getModule();
+  int chplHomeLen = strlen(CHPL_HOME);
   if (mod) {
-    if (strstr(ast->getModule()->filename, "/modules/standard")) {
-      return astr("$CHPL_HOME", strstr(ast->getModule()->filename, "/modules/standard"));
+    if (!strncmp(ast->getModule()->filename, CHPL_HOME, chplHomeLen)) {
+      return astr("$CHPL_HOME", ast->getModule()->filename + chplHomeLen);
     } else {
       return ast->getModule()->filename;
     }
-  } else if (strstr(yyfilename, "/modules/standard")) {
-    return astr("$CHPL_HOME", strstr(yyfilename, "/modules/standard"));
+  } else if (!strncmp(yyfilename, CHPL_HOME, chplHomeLen)) {
+    return astr("$CHPL_HOME", yyfilename + chplHomeLen);
   } else {
     return yyfilename;
   }

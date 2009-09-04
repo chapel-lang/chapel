@@ -498,7 +498,7 @@ static Vec<const char*> fileModPath;
 static Vec<const char*> fileModPathSet;
 
 void setupModulePaths(void) {
-  intModPath.add(astr(CHPL_HOME, "/modules/standard"));
+  intModPath.add(astr(CHPL_HOME, "/modules/internal"));
   stdModPath.add(astr(CHPL_HOME, "/modules/standard"));
   const char* envvarpath = getenv("CHPL_MODULE_PATH");
   if (envvarpath) {

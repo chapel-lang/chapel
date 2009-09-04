@@ -117,6 +117,11 @@ spurious timeouts (starting 08/29/09)
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for classes/deitz/test_mf_class] (e.g., 09/03/09)
+[Error matching compiler output for parallel/taskPool/figueroa/ManyThreads] (e.g., 09/03/09)
+[Error matching compiler output for studies/590o/alaska/graph] (e.g., 09/03/09)
+[Error matching compiler output for users/thom/domCapture] (e.g., 09/03/09)
+[Error matching compiler output for users/thom/passStrRngToNonstrRng-generic] (e.g., 09/03/09)
 [Error matching compiler output for statements/sungeun/continue_label] (e.g., 09/02/09)
 [Error matching compiler output for trivial/bradc/write/writen] (e.g., 09/01/09)
 [Error matching compiler output for domains/bradc/arrayLinkage] (e.g., 08/31/09)
@@ -318,6 +323,11 @@ times out in C compiler
 ==========================
 intel-specific regressions
 ==========================
+
+new timeouts (09/03/09)
+-----------------------
+[Error: Timed out compilation for classes/deitz/test_nested_method]
+[Error: Timed out compilation for studies/hpcc/STREAMS/bradc/stream-fragmented]
 
 new unreachable line warnings (08/29/09)
 ----------------------------------------

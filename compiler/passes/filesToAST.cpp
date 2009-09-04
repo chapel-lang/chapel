@@ -13,7 +13,11 @@
 
 
 static ModuleSymbol* parseInternalModule(const char* name) {
-  return ParseMod(name, MOD_INTERNAL);
+  ModuleSymbol* modsym = ParseMod(name, MOD_INTERNAL);
+  if (modsym == NULL) {
+    INT_FATAL("Couldn't find module %s\n", name);
+  }
+  return modsym;
 }
 
 
