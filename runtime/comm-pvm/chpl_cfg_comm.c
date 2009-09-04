@@ -1039,7 +1039,7 @@ static int mysystem(const char* command, const char* description, int ignorestat
 
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   int i;
-  char* numlocstr;
+  char numlocstr[128];
   char *command = chpl_glom_strings(2, "gdb -q -ex 'break gdbShouldBreakHere' --args ", argv[0]);
 
   // Add the number of locales to end of string as per launcher

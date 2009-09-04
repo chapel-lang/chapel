@@ -104,7 +104,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   int k;                              // k iterates over chpl_numRealms
   int lpr;                            // locales per realm
   char* multirealmenv;
-  int baserealm;
+  int baserealm = 0;
 
   // Signal handlers
   signal(SIGINT, error_exit);
