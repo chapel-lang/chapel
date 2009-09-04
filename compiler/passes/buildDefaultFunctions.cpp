@@ -152,6 +152,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   }
 
   FnSymbol* fn = new FnSymbol(field->name);
+  fn->addFlag(FLAG_NO_IMPLICIT_COPY);
   fn->addFlag(FLAG_INLINE);
   fn->addFlag(FLAG_TEMP);
   if (ct->symbol->hasFlag(FLAG_SYNC)) 

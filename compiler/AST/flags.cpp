@@ -69,6 +69,7 @@ initFlags() {
   defineFlag(FLAG_NO_COPY, "no copy");
   defineFlag(FLAG_NO_DEFAULT_FUNCTIONS, "no default functions");
   defineFlag(FLAG_NO_FORMAL_TMP, "no formal tmp");
+  defineFlag(FLAG_NO_IMPLICIT_COPY, "no implicit copy");
   defineFlag(FLAG_NO_OBJECT, "no object");
   defineFlag(FLAG_NO_PARENS, "no parens");
   defineFlag(FLAG_NO_WIDE_CLASS, "no wide class");

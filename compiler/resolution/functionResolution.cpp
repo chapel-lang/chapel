@@ -2670,6 +2670,7 @@ requiresImplicitDestroy(CallExpr* call) {
          fn->retType->symbol->hasFlag(FLAG_REF) &&
          (fn->retType->getValueType()->symbol->hasFlag(FLAG_ARRAY) ||
           fn->retType->getValueType()->symbol->hasFlag(FLAG_DOMAIN))) &&
+        !fn->hasFlag(FLAG_NO_IMPLICIT_COPY) &&
         !fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
         strcmp(fn->name, "chpl__initCopy") &&
@@ -3163,6 +3164,8 @@ resolveFns(FnSymbol* fn) {
     if (!fn->hasFlag(FLAG_ITERATOR_FN)) {
       FnSymbol* copy = fn->copy();
       copy->addFlag(FLAG_INVISIBLE_FN);
+      if (fn->hasFlag(FLAG_NO_IMPLICIT_COPY))
+        copy->addFlag(FLAG_NO_IMPLICIT_COPY);
       copy->retTag = RET_VALUE;
       fn->defPoint->insertBefore(new DefExpr(copy));
       fn->valueFunction = copy;

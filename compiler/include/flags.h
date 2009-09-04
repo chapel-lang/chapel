@@ -74,6 +74,7 @@ enum Flag {
   FLAG_NO_COPY, // do not apply chpl__initCopy to initialization of a variable
   FLAG_NO_DEFAULT_FUNCTIONS,
   FLAG_NO_FORMAL_TMP,
+  FLAG_NO_IMPLICIT_COPY, // function does not require autoCopy/autoDestroy
   FLAG_NO_OBJECT,
   FLAG_NO_PARENS, // function without parentheses
   FLAG_NO_WIDE_CLASS,
