@@ -791,11 +791,10 @@ static void fixup_array_formals(FnSymbol* fn) {
                                new CallExpr("!=", dtNil->symbol, arg),
                                thenBlock,
                                new CallExpr(PRIM_MOVE, tmp, gNil)));
-            // TO DO: need to delete _reindex
-            //            fn->insertAtTail(new CondStmt(
-            //                               new CallExpr("!=", dtNil->symbol, arg),
-            //                               new CallExpr("chpl__autoDestroy", tmp),
-            //                               new CallExpr(PRIM_NOOP)));
+            fn->insertAtTail(new CondStmt(
+                               new CallExpr("!=", dtNil->symbol, arg),
+                               new CallExpr("chpl__autoDestroy", tmp),
+                               new CallExpr(PRIM_NOOP)));
             fn->insertAtHead(new DefExpr(tmp));
           }
         }
