@@ -188,11 +188,12 @@ void initChplThreads_generic() {
 
   tp = chpl_alloc(sizeof(thread_private_data_t), CHPL_RT_MD_THREAD_PRIVATE_DATA, 0, 0);
   threadlayer_set_thread_private_data(tp);
-
-  chpl_thread_init_generic();
+  tp->serial_state = false;
 
   if (blockreport)
     chpl_mutex_init(&report_lock);
+
+  chpl_thread_init_generic();
 
   if (blockreport || taskreport) {
     signal(SIGINT, SIGINT_handler);
