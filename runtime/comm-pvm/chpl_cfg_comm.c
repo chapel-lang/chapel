@@ -819,9 +819,7 @@ static void polling(void* x) {
   char debugMsg[DEBUG_MSG_LENGTH];
 #endif
 
-#ifdef CHPL_COMM_HETEROGENEOUS
   int mallocsize;
-#endif
 
   PRINTF("Starting PVM polling thread");
   chpl_mutex_lock(&termination_lock);
