@@ -5,8 +5,12 @@ if `uname -s` == "SunOS" then
     set grep = /usr/xpg4/bin/grep
 endif
 
-cd $CHPL_HOME/modules/standard
+cd $CHPL_HOME
 
-$grep -e "$argv" *.chpl
+$grep -e "$argv" modules/internal/*.chpl
 
 cd -
+
+cd $CHPL_HOME
+
+$grep -e "$argv" modules/standard/*.chpl
