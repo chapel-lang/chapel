@@ -17,11 +17,6 @@
 general regressions
 ===================
 
-oops -- insufficiently regular expression (09/03/09)
-----------------------------------------------------
-[Error matching program output for modules/bradc/overrideStd/foo]
-[Error matching program output for modules/bradc/printModStuff/foo]
-
 new timeouts (08/29/09)
 -----------------------
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
@@ -46,9 +41,9 @@ spurious failure
 linux regressions
 =================
 
-new timeout (09/03/09)
-----------------------
-[Error: Timed out compilation for release/examples/tutorials/varargs]
+spurious timeout
+----------------
+[Error: Timed out compilation for release/examples/tutorials/varargs] (e.g., 09/03/09)
 
 memory stuff in flux?
 ---------------------
@@ -105,6 +100,10 @@ out of memory errors due to intentional leaking of locals (07/31/09)
 =============================
 valgrind-specific regressions
 =============================
+
+valgrind errors in thread/task stuff (09/04/09)
+-----------------------------------------------
+*most*
 
 double free (09/02/09)
 ----------------------
@@ -189,7 +188,7 @@ gasnet-everything regressions (other than the above)
 
 new spurious timeouts
 -----------------------
-[Error: Timed out executing program multilocale/deitz/linked/test_linked2] (e.g., 09/01/09)
+[Error: Timed out executing program multilocale/deitz/linked/test_linked2] (e.g., 09/01/09, 09/04/09)
 [Error: Timed out executing program studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 08/30/09)
 [Error: Timed out executing program multilocale/deitz/linked/test_linked2] (e.g., 08/29/09)
 [Error: Timed out executing program multilocale/deitz/linked/test_linked3] (e.g., 08/29/09, 09/01/09, 09/03/09)
@@ -354,6 +353,41 @@ compilation timeout (new with 11.x)
 ===========================
 darwin-specific regressions
 ===========================
+
+case insensitive file system results in ambiguous module inclusion (09/04/09)
+-----------------------------------------------------------------------------
+[Error matching compiler output for modules/standard/Schedules/bradc/schedules]
+[Error matching program output for spec/marybeth/assign]
+[Error matching program output for spec/marybeth/block]
+[Error matching program output for spec/marybeth/casts]
+[Error matching program output for spec/marybeth/cond]
+[Error matching program output for spec/marybeth/condexp]
+[Error matching program output for spec/marybeth/expstmt]
+[Error matching program output for spec/marybeth/for]
+[Error matching program output for spec/marybeth/iterator2]
+[Error matching program output for spec/marybeth/iterator]
+[Error matching program output for spec/marybeth/let]
+[Error matching program output for spec/marybeth/modulesexample]
+[Error matching program output for spec/marybeth/query]
+[Error matching program output for spec/marybeth/select]
+[Error matching program output for spec/marybeth/seq2]
+[Error matching program output for spec/marybeth/sort]
+[Error matching program output for spec/marybeth/testnorm]
+[Error matching program output for spec/marybeth/typeselect]
+[Error matching program output for spec/marybeth/use]
+[Error matching program output for spec/marybeth/while]
+
+pthread_mutex_lock() fails (09/04/09)
+-------------------------------------
+[Error matching program output for parallel/begin/stonea/reportsManyThreads]
+[Error matching program output for parallel/begin/stonea/reports]
+[Error matching program output for parallel/cobegin/stonea/reports]
+[Error matching program output for parallel/coforall/stonea/reports]
+[Error matching program output for parallel/taskPool/figueroa/TotalThreads]
+
+??? 63 other failures on Sam's Mac (09/04/09)
+---------------------------------------------
+*63 tests*
 
 new timeout (09/03/09)
 ----------------------
