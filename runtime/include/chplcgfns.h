@@ -29,5 +29,6 @@ extern size_t* cid2offsets(chpl__class_id cid);
    communication layer to query types of communicated buffers */
 extern chplType chpl_getFieldType(int typeNum, int fieldNum);
 extern size_t chpl_getFieldOffset(int typeNum, int fieldNum);
+extern size_t chpl_getFieldSize(int typeNum);
 
 #endif
