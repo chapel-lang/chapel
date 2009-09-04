@@ -1,7 +1,11 @@
+var A: [1..3] domain(1);
+
 def foo() {
   for i in 1..3 do
     yield [i..5];
 }
 
-coforall i in foo() do
-  writeln(i);
+coforall (i, j) in (foo(), 1..3) do
+  A(j) = i;
+
+writeln(A);
