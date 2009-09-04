@@ -360,6 +360,89 @@ static void chpl_upkuint64_t(void* buf, int i, int chpltypetype, unsigned long c
 /////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////////
+// float32_t
+// No matter what (32->32, 32->64, or 64->32), the sender is just sending
+// 32 bits, and the receiver receives 32 bits. No conversions should be
+// necessary.
+static void chpl_pkfloat32_t(void* buf, int i, int chpltypetype, unsigned long chpltypeoffset) {
+#if CHPL_DIST_DEBUG
+  char debugMsg[DEBUG_MSG_LENGTH];
+#endif
+
+  PVM_NO_LOCK_SAFE(pvm_pkfloat((float *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkfloat", "chpl_pvm_send");
+#if CHPL_DIST_DEBUG
+  if ((((char *)buf)+chpltypeoffset) != 0) {
+    sprintf(debugMsg, "Packing float %f (part %d) of type %d, offset %lu", *(float *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+    PRINTF(debugMsg);
+  }
+#endif
+
+  return;
+}
+
+static void chpl_upkfloat32_t(void* buf, int i, int chpltypetype, unsigned long chpltypeoffset) {
+#if CHPL_DIST_DEBUG
+  char debugMsg[DEBUG_MSG_LENGTH];
+#endif
+
+  PVM_NO_LOCK_SAFE(pvm_upkfloat((float *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkfloat", "chpl_pvm_recv");
+#if CHPL_DIST_DEBUG
+  sprintf(debugMsg, "Unpacking float %f (part %d) of type %d, offset %lu", *(float *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+  PRINTF(debugMsg);
+#endif
+
+  return;
+}
+/////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////
+// int64_t
+// If the receiver is 32-bit, conversion is necessary.
+static void chpl_pkdouble64_t(void* buf, int i, int chpltypetype, unsigned long chpltypeoffset) {
+  int part1, part2;
+#if CHPL_DIST_DEBUG
+  char debugMsg[DEBUG_MSG_LENGTH];
+#endif
+
+  part1 = (int)*(int64_t *)(((char *)buf)+chpltypeoffset);
+  part2 = (int)((*(int64_t *)(((char *)buf)+chpltypeoffset)) >> 32);
+
+  //  PVM_NO_LOCK_SAFE(pvm_pklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+  PVM_NO_LOCK_SAFE(pvm_pkint(&part1, 1, 1), "pvm_pkint", "chpl_pvm_send");
+  PVM_NO_LOCK_SAFE(pvm_pkint(&part2, 1, 1), "pvm_pkint", "chpl_pvm_send");
+#if CHPL_DIST_DEBUG
+  if ((((char *)buf)+chpltypeoffset) != 0) {
+    sprintf(debugMsg, "Packing double %f (part %d) of type %d, offset %lu", *(double *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+    PRINTF(debugMsg);
+  }
+#endif
+
+  return;
+}
+
+static void chpl_upkdouble64_t(void* buf, int i, int chpltypetype, unsigned long chpltypeoffset, int mysize) {
+  int part1, part2;
+#if CHPL_DIST_DEBUG
+  char debugMsg[DEBUG_MSG_LENGTH];
+#endif
+
+  PVM_NO_LOCK_SAFE(pvm_upkint(&part1, 1, 1), "pvm_upkint", "chpl_pvm_recv");
+  PVM_NO_LOCK_SAFE(pvm_upkint(&part2, 1, 1), "pvm_upkint", "chpl_pvm_recv");
+  *(double *)(((char *)buf)+chpltypeoffset) = (double)((((int64_t)part2) << 32) + (((int64_t)part1) & 0x00000000ffffffff));
+  //  if (mysize == 8) {
+  //    PVM_NO_LOCK_SAFE(pvm_upklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkint", "chpl_pvm_recv");
+#if CHPL_DIST_DEBUG
+  sprintf(debugMsg, "Unpacking double %f (part %d) of type %d, offset %lu", *(double *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+  PRINTF(debugMsg);
+#endif
+  //  } else {
+  //    chpl_internal_error("Error: Conversion necessary!");
+  //  }
+  return;
+}
+/////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////
 // CLASS_REFERENCE
 // A pointer can be of size 32 or 64 depending on the sender.
 // So, if the sender and receiver have the same size, no conversion is
@@ -528,6 +611,12 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
         case CHPL_TYPE_uint64_t:
           chpl_upkuint64_t(buf, i, chpltypetype, chpltypeoffset, sizeof(void *));
           break;
+        case 10:
+          chpl_upkfloat32_t(buf, i, chpltypetype, chpltypeoffset);
+          break;
+        case 11:
+          chpl_upkdouble64_t(buf, i, chpltypetype, chpltypeoffset, sizeof(void *));
+          break;
         case CHPL_TYPE_chpl_string:
           PVM_NO_LOCK_SAFE(pvm_upkstr(((char *)buf)+chpltypeoffset), "pvm_upkstr", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
@@ -667,6 +756,12 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
           break;
         case CHPL_TYPE_uint64_t:
           chpl_pkuint64_t(buf, i, chpltypetype, chpltypeoffset);
+          break;
+        case 10:
+          chpl_pkfloat32_t(buf, i, chpltypetype, chpltypeoffset);
+          break;
+        case 11:
+          chpl_pkdouble64_t(buf, i, chpltypetype, chpltypeoffset);
           break;
         case CHPL_TYPE_chpl_string:
           PVM_NO_LOCK_SAFE(pvm_pkstr(((char *)buf)+chpltypeoffset), "pvm_pkstr", "chpl_pvm_send");
