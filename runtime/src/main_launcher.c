@@ -12,18 +12,13 @@
 static void chpl_launch_sanity_checks(char* argv0) {
   // Do sanity checks just before launching.
   struct stat statBuf;
-  char realName[256];
-  int retVal;
-  
-  retVal = snprintf(realName, 256, "%s_real", argv0);
-  if (retVal < 0 || retVal >= 256) {
-    chpl_internal_error("error generating back-end filename");
-  }
 
   // Make sure the _real binary exists
-  if (stat(realName, &statBuf) != 0) {
+  // (this should be called after someone has called
+  // chpl_compute_real_binary_name() )
+  if (stat(chpl_get_real_binary_name(), &statBuf) != 0) {
     char errorMsg[256];
-    sprintf(errorMsg, "unable to locate file: %s", realName);
+    sprintf(errorMsg, "unable to locate file: %s", chpl_get_real_binary_name());
     chpl_error(errorMsg, -1, "<internal>");
   }
 }
@@ -57,6 +52,29 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
   }
 }
 
+
+static char chpl_real_binary_name[256];
+
+void chpl_compute_real_binary_name(const char* argv0) {
+
+  int retVal;
+  const char* default_real_suffix = "_real";
+  const char* real_suffix = getenv("CHPL_LAUNCHER_SUFFIX");
+  
+  if (NULL == real_suffix) {
+    real_suffix = default_real_suffix;
+  }
+  
+  retVal = snprintf(chpl_real_binary_name, 256, "%s%s", argv0, real_suffix);
+
+  if (retVal < 0 || retVal >= 256) {
+    chpl_internal_error("error generating back-end filename");
+  }
+}
+
+const char* chpl_get_real_binary_name(void) {
+  return &chpl_real_binary_name[0];
+}
 
 int main(int argc, char* argv[]) {
   //

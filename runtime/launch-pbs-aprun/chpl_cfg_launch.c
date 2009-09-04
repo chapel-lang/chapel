@@ -134,6 +134,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
       basenamePtr++;
   }
+  chpl_compute_real_binary_name(argv[0]);
 
 #ifndef DEBUG_LAUNCH
   mypid = getpid();
@@ -192,19 +193,19 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "send \"aprun -q -b -d%d -n1 -N1 ls %s_real\\n\"\n", numCoresPerLocale, argv[0]);
+  fprintf(expectFile, "send \"aprun -q -b -d%d -n1 -N1 ls %s\\n\"\n", numCoresPerLocale, chpl_get_real_binary_name());
   fprintf(expectFile, "expect {\n");
   fprintf(expectFile, "  \"failed: chdir\" {send_user "
-          "\"error: %s/%s_real must be launched from and/or stored on a "
+          "\"error: %s must be launched from and/or stored on a "
           "cross-mounted file system\\n\" ; exit 1}\n", 
-          basenamePtr, basenamePtr);
+          basenamePtr);
   fprintf(expectFile, "  -re $prompt\n");
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"aprun ");
   if (verbosity < 2) {
     fprintf(expectFile, "-q ");
   }
-  fprintf(expectFile, "-d%d -n%d -N%d %s_real", numCoresPerLocale, numLocales, procsPerNode, argv[0]);
+  fprintf(expectFile, "-d%d -n%d -N%d %s", numCoresPerLocale, numLocales, procsPerNode, chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " '%s'", argv[i]);
   }

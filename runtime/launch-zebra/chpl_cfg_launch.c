@@ -11,7 +11,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   int size;
   char baseCommand[256];
   char* command;
-  sprintf(baseCommand, "zebra -fast -r %s_real", argv[0]);
+
+  chpl_compute_real_binary_name(argv[0]);
+
+  sprintf(baseCommand, "zebra -fast -r %s", chpl_get_real_binary_name());
 
   size = strlen(baseCommand) + 1;
 

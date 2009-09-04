@@ -55,6 +55,15 @@ installation-specific configuration, e.g.), you can often use the -v
 flag to capture the commands that the launcher executes on your behalf
 and customize them for your needs.  
 
+--------------------------------
+Real binary suffix for execution
+--------------------------------
+
+In order to support profiling tools that produce new binaries for the
+launcher to execute, the suffix of the real binary executed by the
+launcher may be changed with the CHPL_LAUNCHER_SUFFIX environment
+variable. If this variable is unset, the suffix defaults to "_real",
+matching the compiler's output.
 
 ----------------------
 Bypassing the launcher

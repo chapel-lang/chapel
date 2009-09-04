@@ -38,6 +38,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       basenamePtr++;
   }
 
+  chpl_compute_real_binary_name(argv[0]);
+
 #ifndef DEBUG_LAUNCH
   mypid = getpid();
 #else
@@ -57,7 +59,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(llFile, "# @ error = err.$(jobid)\n");
   fprintf(llFile, "# @ queue\n");
   fprintf(llFile, "\n");
-  fprintf(llFile, "%s_real", argv[0]);
+  fprintf(llFile, "%s", chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
       fprintf(llFile, " '%s'", argv[i]);
   }

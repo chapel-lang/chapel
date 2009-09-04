@@ -17,8 +17,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char baseCommand[256];
   char* command;
 
-  sprintf(baseCommand, "amudprun -np %d %s_real", numLocales, argv[0]);
+  chpl_compute_real_binary_name(argv[0]);
 
+  sprintf(baseCommand, "amudprun -np %d %s", numLocales, chpl_get_real_binary_name());
+  
   size = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen(baseCommand) + 1;
 
   for (i=1; i<argc; i++) {

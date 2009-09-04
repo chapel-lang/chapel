@@ -58,9 +58,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   int size;
   char baseCommand[256];
   char* command;
-  sprintf(baseCommand, "aprun %s -d%d -n%d -N1 %s_real", 
+
+  chpl_compute_real_binary_name(argv[0]);
+
+  sprintf(baseCommand, "aprun %s -d%d -n%d -N1 %s", 
           ((verbosity < 2) ? "-q" : ""), getNumCoresPerLocale(), numLocales, 
-          argv[0]);
+          chpl_get_real_binary_name());
 
   size = strlen(baseCommand) + 1;
 

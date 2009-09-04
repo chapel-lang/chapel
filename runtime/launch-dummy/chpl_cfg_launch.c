@@ -14,7 +14,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   if (numLocales != 1) {
     chpl_error("dummy launcher only supports numLocales==1", 0, "<command-line>");
   }
-  sprintf(baseCommand, "%s_real", argv[0]);
+
+  chpl_compute_real_binary_name(argv[0]);
+
+  sprintf(baseCommand, "%s", chpl_get_real_binary_name());
 
   size = strlen(baseCommand) + 1;
 

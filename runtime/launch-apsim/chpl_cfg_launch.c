@@ -21,8 +21,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
     chpl_internal_error("unknown target type for apsim launcher");
   }
+
+  chpl_compute_real_binary_name(argv[0]);
     
-  sprintf(baseCommand, "apsim -P p%c %s_real", targetType, argv[0]);
+  sprintf(baseCommand, "apsim -P p%c %s", targetType, chpl_get_real_binary_name());
 
   size = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen(baseCommand) + 2;
 

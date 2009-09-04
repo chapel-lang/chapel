@@ -8,6 +8,8 @@
 //
 void chpl_launch_using_system(char* command, char* argv0);
 
+void chpl_compute_real_binary_name(const char* argv0);
+const char* chpl_get_real_binary_name(void);
 
 //
 // Defined in chpl_cfg_launch.c
