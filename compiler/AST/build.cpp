@@ -134,19 +134,19 @@ BlockStmt* buildChapelStmt(BaseAST* ast) {
 }
 
 
-static void addModuleToSearchList(BaseAST* module) {
+static void addModuleToSearchList(CallExpr* newUse, BaseAST* module) {
   UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
   if (modNameExpr) {
-    addModuleToParseList(modNameExpr->unresolved);
+    addModuleToParseList(modNameExpr->unresolved, newUse);
   } else if (CallExpr* callExpr = toCallExpr(module)) {
-    addModuleToSearchList(callExpr->argList.first());
+    addModuleToSearchList(newUse, callExpr->argList.first());
   }
 }
 
 
 BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
   CallExpr* newUse = new CallExpr(PRIM_USE, module);
-  addModuleToSearchList(module);
+  addModuleToSearchList(newUse, module);
   if (list == NULL) {
     return buildChapelStmt(newUse);
   } else {
@@ -299,7 +299,7 @@ void createInitFn(ModuleSymbol* mod) {
 
 
 ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename) {
-  ModuleSymbol* mod = new ModuleSymbol(name, moduleType, block);
+  ModuleSymbol* mod = new ModuleSymbol(name, currentModuleType, block);
   mod->filename = astr(filename);
   createInitFn(mod);
   return mod;

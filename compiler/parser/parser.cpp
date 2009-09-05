@@ -12,20 +12,24 @@ BlockStmt* yyblock = NULL;
 const char* yyfilename;
 int chplLineno;
 int yystartlineno;
-ModTag moduleType;
+ModTag currentModuleType;
 
 
 static Vec<const char*> modNameSet;
 static Vec<const char*> modNameList;
 static Vec<const char*> modDoneSet;
+static Vec<CallExpr*> modReqdByInt;  // modules required by internal ones
 
 
-void addModuleToParseList(const char* name) {
+void addModuleToParseList(const char* name, CallExpr* useExpr) {
   const char* modName = astr(name);
   if (modDoneSet.set_in(modName) || modNameSet.set_in(modName)) {
     //    printf("We've already seen %s\n", modName);
   } else {
     //    printf("Need to parse %s\n", modName);
+    if (currentModuleType == MOD_INTERNAL) {
+      modReqdByInt.add(useExpr);
+    }
     modNameSet.set_add(modName);
     modNameList.add(modName);
   }
@@ -67,14 +71,14 @@ static bool firstFile = true;
 
 ModuleSymbol* ParseFile(const char* filename, ModTag modType) {
   ModuleSymbol* newModule = NULL;
-  moduleType = modType;
+  currentModuleType = modType;
   yyfilename = filename;
 
   yylloc.first_column = yylloc.last_column = 0;
   yylloc.first_line = yylloc.last_line = yystartlineno = chplLineno = 1;
   yyin = openInputFile(filename);
 
-  if (printModuleFiles && modType != MOD_INTERNAL) {
+  if (printModuleFiles && (modType != MOD_INTERNAL || developer)) {
     if (firstFile) {
       fprintf(stderr, "Parsing module files:\n");
       firstFile = false;
@@ -143,6 +147,52 @@ void parseDependentModules(ModTag modtype) {
     if (!modDoneSet.set_in(modName)) {
       if (ParseMod(modName, modtype)) {
         modDoneSet.set_add(modName);
+      }
+    }
+  }
+
+  // Clear the list of things we need out.  On the first pass, this
+  // will be the standard modules used by the internal modules which
+  // are already captured in the modReqdByInt vector and will be dealt
+  // with by the conditional below.  On the second pass, we're done
+  // with these data structures, so clearing them out is just fine.
+  modNameList.clear();
+  modNameSet.clear();
+
+  // if we've just finished parsing the dependent modules for the
+  // user, let's make sure that we've parsed all the standard modules
+  // required for the internal modules require
+  if (modtype == MOD_USER) {
+    forv_Vec(CallExpr*, moduse, modReqdByInt) {
+      BaseAST* moduleExpr = moduse->argList.first();
+      UnresolvedSymExpr* oldModNameExpr = toUnresolvedSymExpr(moduleExpr);
+      if (oldModNameExpr == NULL) {
+        INT_FATAL("It seems an internal module is using a mod.submod form");
+      }
+      const char* modName = oldModNameExpr->unresolved;
+      bool foundInt = false;
+      bool foundUsr = false;
+      forv_Vec(ModuleSymbol, mod, allModules) {
+        if (strcmp(mod->name, modName) == 0) {
+          if (mod->modTag == MOD_STANDARD || mod->modTag == MOD_INTERNAL) {
+            foundInt = true;
+          } else {
+            foundUsr = true;
+          }
+        }
+      }
+      // if we haven't found the standard version of the module then we
+      // need to parse it
+      if (!foundInt) {
+        ModuleSymbol* mod = ParseFile(stdModNameToFilename(modName), 
+                                      MOD_STANDARD);
+        // if we also found a user module by the same name, we need to
+        // rename the standard module and the use of it
+        if (foundUsr) {
+          mod->name = astr("chpl_", modName);
+          UnresolvedSymExpr* newModNameExpr = new UnresolvedSymExpr(mod->name);
+          oldModNameExpr->replace(newModNameExpr);
+        }
       }
     }
   }

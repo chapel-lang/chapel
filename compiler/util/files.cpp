@@ -571,6 +571,15 @@ const char* modNameToFilename(const char* modName, bool isInternal,
   return  fullfilename;
 }
 
+const char* stdModNameToFilename(const char* modName) {
+  const char* fullfilename = searchPath(stdModPath, astr(modName, ".chpl"), 
+                                        NULL);
+  if (fullfilename == NULL) {
+    INT_FATAL("Can't find standard module %s\n", modName);
+  }
+  return fullfilename;
+}
+
 
 static void helpPrintPath(Vec<const char*> path) {
   forv_Vec(const char*, dirname, path) {

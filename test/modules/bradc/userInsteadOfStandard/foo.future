@@ -1,5 +1,0 @@
-bug: user module usurps standard module needed by internal module
-
-This test demonstrates that a user module with an unfortunately-chosen
-filename may usurp a standard module expected/required by an internal
-module.

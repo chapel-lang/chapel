@@ -53,6 +53,8 @@ void addModulePathFromFilename(const char* filename);
 
 const char* modNameToFilename(const char* modName, bool isInternal, 
                               bool* isStandard);
+const char* stdModNameToFilename(const char* modName);
+
 void printModuleSearchPath(void);
 
 #endif
