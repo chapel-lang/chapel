@@ -893,24 +893,26 @@ static void handleLocalBlocks() {
         if (FnSymbol* alreadyLocal = cache.get(fn)) {
           call->baseExpr->replace(new SymExpr(alreadyLocal));
         } else {
-          FnSymbol* local = fn->copy();
-          local->name = astr("_local_", fn->name);
-          local->cname = astr("_local_", fn->cname);
-          fn->defPoint->insertBefore(new DefExpr(local));
-          call->baseExpr->replace(new SymExpr(local));
-          queue.add(local->body);
-          cache.put(fn, local);
-          if (local->retType->symbol->hasFlag(FLAG_WIDE)) {
-            CallExpr* ret = toCallExpr(local->body->body.tail);
-            INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
-            Type* narrowType = local->retType->getField("addr")->type;
-            local->retType = narrowType;
-            VarSymbol* tmp = newTemp(narrowType);
-            ret->insertBefore(new DefExpr(tmp));
-            if (!fNoLocalChecks)
-              ret->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, ret->get(1)->copy()));
-            ret->insertBefore(new CallExpr(PRIM_MOVE, tmp, ret->get(1)->copy()));
-            ret->get(1)->replace(new SymExpr(tmp));
+          if (!fn->hasFlag(FLAG_EXTERN)) {
+            FnSymbol* local = fn->copy();
+            local->name = astr("_local_", fn->name);
+            local->cname = astr("_local_", fn->cname);
+            fn->defPoint->insertBefore(new DefExpr(local));
+            call->baseExpr->replace(new SymExpr(local));
+            queue.add(local->body);
+            cache.put(fn, local);
+            if (local->retType->symbol->hasFlag(FLAG_WIDE)) {
+              CallExpr* ret = toCallExpr(local->body->body.tail);
+              INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
+              Type* narrowType = local->retType->getField("addr")->type;
+              local->retType = narrowType;
+              VarSymbol* tmp = newTemp(narrowType);
+              ret->insertBefore(new DefExpr(tmp));
+              if (!fNoLocalChecks)
+                ret->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, ret->get(1)->copy()));
+              ret->insertBefore(new CallExpr(PRIM_MOVE, tmp, ret->get(1)->copy()));
+              ret->get(1)->replace(new SymExpr(tmp));
+            }
           }
         }
       }
