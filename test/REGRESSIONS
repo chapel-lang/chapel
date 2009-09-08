@@ -17,17 +17,13 @@
 general regressions
 ===================
 
-new timeouts (08/29/09)
------------------------
-[Error: Timed out executing program npb/cg/bradc/cg-sparse]
-
 spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09, 09/05/09, 09/06/09)
 [Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09, 08/29/09, 08/31/09, 09/02/09)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 08/31/09)
 [Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 08/07/09)
@@ -40,6 +36,10 @@ spurious failure
 =================
 linux regressions
 =================
+
+??? (09/05/09)
+--------------
+[Error matching program output for arrays/deitz/test_record_of_domain_type]
 
 spurious timeout
 ----------------
@@ -68,30 +68,13 @@ performance-specific regressions
 
 execution timeouts (08/29/09)
 -----------------------------
-[Error: Timed out executing program studies/hpcc/RA/bradc/parallel/ra-dist]
-[Error: Timed out executing program studies/hpcc/STREAMS/bradc/stream-block1d-local]
-[Error: Timed out executing program studies/hpcc/STREAMS/bradc/stream-block1d-promote]
-[Error: Timed out executing program studies/hpcc/STREAMS/bradc/stream-block1d]
 [Error: Timed out executing program studies/parsec/blackscholes]
 [Error: Timed out executing program studies/parsec/blackscholes_promote]
 [Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3]
 [Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
 [Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
-[Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6]
-[Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
-[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2]
-
-occasional timeouts
--------------------
-[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm] (e.g., 07/07/09)
-[Error: Timed out executing program studies/shootout/nbody/nbody_record_2] (e.g., 07/01/09)
-
-out of memory errors due to intentional leaking of locals (07/31/09)
---------------------------------------------------------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3]
-[Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
+[Error: Timed out executing program studies/shootout/nbody/nbody_record_2]
 [Error: Timed out executing program studies/shootout/nbody/nbody_record_domain_2a]
-[Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
 [Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6]
 [Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
 [Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2]
@@ -101,41 +84,43 @@ out of memory errors due to intentional leaking of locals (07/31/09)
 valgrind-specific regressions
 =============================
 
-valgrind errors in thread/task stuff (09/04/09)
------------------------------------------------
-*most*
+conditional jump on uninited value in convertRuntimeTypeToValue (09/05/09)
+--------------------------------------------------------------------------
+[Error matching program output for arrays/deitz/test_record_of_domain_type]
 
 double free (09/02/09)
 ----------------------
 [Error matching program output for classes/diten/test_destructor3]
 
-spurious timeouts (starting 08/29/09)
--------------------------------------
-[Error: Timed out executing program npb/cg/bradc/cg-sparse]
-[Error: Timed out executing program performance/compiler/bradc/cg-sparse-timecomp]
-
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for parallel/begin/deitz/test_nested_fn_begin1] (e.g., 09/07/09)
+[Error matching compiler output for users/shetag/unboundslice] (e.g., 09/07/09)
+[Error matching compiler output for spec/marybeth/sort] (e.g., 09/06/09)
+[Error matching compiler output for multilocale/deitz/linked/test_linked2] (e.g., 09/05/09)
+[Error matching compiler output for release/examples/hpcc/ra] (e.g., 09/05/09)
+[Error matching compiler output for trivial/bradc/entrypoint/twomains2] (e.g., 09/05/09)
+[Error matching compiler output for users/wmikanik/domain64] (e.g., 09/05/09)
 [Error matching compiler output for classes/deitz/test_mf_class] (e.g., 09/03/09)
 [Error matching compiler output for parallel/taskPool/figueroa/ManyThreads] (e.g., 09/03/09)
-[Error matching compiler output for studies/590o/alaska/graph] (e.g., 09/03/09)
+[Error matching compiler output for studies/590o/alaska/graph] (e.g., 09/03/09, 09/05/09)
 [Error matching compiler output for users/thom/domCapture] (e.g., 09/03/09)
 [Error matching compiler output for users/thom/passStrRngToNonstrRng-generic] (e.g., 09/03/09)
 [Error matching compiler output for statements/sungeun/continue_label] (e.g., 09/02/09)
 [Error matching compiler output for trivial/bradc/write/writen] (e.g., 09/01/09)
 [Error matching compiler output for domains/bradc/arrayLinkage] (e.g., 08/31/09)
-[Error matching compiler output for parallel/cobegin/waynew/depend] (e.g., 08/31/09)
+[Error matching compiler output for parallel/cobegin/waynew/depend] (e.g., 08/31/09, 09/07/09)
 [Error matching compiler output for parallel/syncStmt/deitz/test_end2] (e.g., 08/31/09)
 [Error matching compiler output for spec/marybeth/select] (e.g., 08/31/09)
 [Error matching compiler output for users/shetag/condarr-blc2] (e.g., 08/31/09)
 [Error matching compiler output for studies/hpcc/2008/stream] (e.g., 08/30/09)
 [Error matching compiler output for parallel/cobegin/bradc/arrayargs] (e.g., 08/29/09)
 [Error matching compiler output for studies/590o/blucia/img_proc] (e.g., 08/29/09, 09/01/09)
-[Error matching compiler output for spec/marybeth/seq2] (e.g., 08/28/09)
+[Error matching compiler output for spec/marybeth/seq2] (e.g., 08/28/09, 09/07/09)
 [Error matching compiler output for studies/590o/alexco/AverageFiles] (e.g., 08/28/09)
 [Error matching compiler output for users/shetag/classWithArray/classWithArray-init3] (e.g., 08/28/09)
 [Error matching compiler output for users/shetag/inlineArrInitInClass] (e.g., 08/28/09)
-[Error matching compiler output for users/shetag/shareIterator-blc] (e.g., 08/28/09)
+[Error matching compiler output for users/shetag/shareIterator-blc] (e.g., 08/28/09, 09/05/09)
 [Error matching compiler output for parallel/begin/deitz/test_heap_ref] (e.g., 08/27/09)
 [Error matching program output for npb/cg/bradc/cg-sparse] (e.g., 08/27/09)
 [Error matching compiler output for users/shetag/assocInRecord] (e.g., 08/27/09)
@@ -164,17 +149,9 @@ not freeing heap-allocated globals (08/29/09)
 ---------------------------------------------
 [Error matching program output for classes/figueroa/RecordDestructor1]
 
-new timeouts (08/29/09)
------------------------
-[Error: Timed out executing program performance/compiler/bradc/cg-sparse-timecomp]
-
 spurious race in deadlock detection code? (08/12/09) 
 ----------------------------------------------------
 [Error matching program output for test parallel/taskPool/figueroa/TotalThreads.chpl]
-
-???
----
-[Error matching program output for memory/figueroa/ClassInheritance1]
 
 memory stuff in flux (05/28/09)
 -------------------------------
@@ -188,12 +165,8 @@ gasnet-everything regressions (other than the above)
 
 new spurious timeouts
 -----------------------
-[Error: Timed out executing program multilocale/deitz/linked/test_linked2] (e.g., 09/01/09, 09/04/09)
 [Error: Timed out executing program studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 08/30/09)
-[Error: Timed out executing program multilocale/deitz/linked/test_linked2] (e.g., 08/29/09)
-[Error: Timed out executing program multilocale/deitz/linked/test_linked3] (e.g., 08/29/09, 09/01/09, 09/03/09)
-[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09)
-[Error: Timed out executing program stress/deitz/test_10k_local_coforall_with_remote_update] (e.g., 08/29/09)
+[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 08/29/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 08/29/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 08/29/09, 08/31/09, 09/02/09)
@@ -226,6 +199,10 @@ times out spuriously
 gasnet-fast regressions (other than the above)
 ==============================================
 
+new spurious error
+------------------
+[Error matching program output for types/string/bradc/string2ints/badstring2int2] (e.g., 09/05/09)
+
 spurious timeout
 ----------------
 [Error: Timed out executing program multilocale/deitz/linked/test_linked2] (e.g., 06/02/09)
@@ -251,7 +228,16 @@ opts-specific tests
 (Example runs: 0)
 
 
-(Full run: 30)
+(Full run: 68)
+
+all
+---
+[Error matching program output for modules/bradc/overrideStd/foo]
+[Error matching program output for modules/bradc/printModStuff/foo]
+
+--no-copy-propagation
+---------------------
+[Error matching program output for arrays/deitz/test_record_of_domain_type]
 
 --no-dead-code-elimination
 --------------------------
@@ -271,11 +257,20 @@ opts-specific tests
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
+--baseline --inline
+-------------------
+[Error matching program output for arrays/deitz/test_record_of_domain_type]
+
 --no-inline-iterators
 --no-scalar-replacement
 --no-optimize-loop-iterators --no-inline-iterators
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
 ---------------------------------------------------------------------
+[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+
+--no-scalar-replacement
+-----------------------
+[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
 --no-scalar-replacement --no-inline
@@ -286,9 +281,8 @@ opts-specific tests
 
 --baseline --no-local
 ------------------------------------
+[Error matching program output for arrays/deitz/test_record_of_domain_type]
 [Error matching program output for classes/figueroa/RecordDestructor1]
-[Error: Timed out executing program npb/cg/bradc/cg-sparse]
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
@@ -323,21 +317,14 @@ times out in C compiler
 intel-specific regressions
 ==========================
 
-new timeouts (09/03/09)
------------------------
-[Error: Timed out compilation for classes/deitz/test_nested_method]
-[Error: Timed out compilation for studies/hpcc/STREAMS/bradc/stream-fragmented]
+??? (09/05/09)
+--------------
+[Error matching program output for arrays/deitz/test_record_of_domain_type]
 
-new unreachable line warnings (08/29/09)
-----------------------------------------
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample2]
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample3]
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample4]
-[Error matching program output for trivial/diten/mandelbrot]
-
-spurious compilation timeout
-----------------------------------
-[Error: Timed out compilation for studies/hpcc/STREAMS/bradc/stream-fragmented] (e.g., 08/29/09)
+new spurious timeouts
+---------------------
+[Error: Timed out compilation for classes/deitz/test_nested_method] (e.g., 09/03/09)
+[Error: Timed out compilation for studies/hpcc/STREAMS/bradc/stream-fragmented] (e.g., 09/03/09)
 
 spurious compilation timeout
 ----------------------------
@@ -353,45 +340,6 @@ compilation timeout (new with 11.x)
 ===========================
 darwin-specific regressions
 ===========================
-
-case insensitive file system results in ambiguous module inclusion (09/04/09)
------------------------------------------------------------------------------
-[Error matching compiler output for modules/standard/Schedules/bradc/schedules]
-[Error matching program output for spec/marybeth/assign]
-[Error matching program output for spec/marybeth/block]
-[Error matching program output for spec/marybeth/casts]
-[Error matching program output for spec/marybeth/cond]
-[Error matching program output for spec/marybeth/condexp]
-[Error matching program output for spec/marybeth/expstmt]
-[Error matching program output for spec/marybeth/for]
-[Error matching program output for spec/marybeth/iterator2]
-[Error matching program output for spec/marybeth/iterator]
-[Error matching program output for spec/marybeth/let]
-[Error matching program output for spec/marybeth/modulesexample]
-[Error matching program output for spec/marybeth/query]
-[Error matching program output for spec/marybeth/select]
-[Error matching program output for spec/marybeth/seq2]
-[Error matching program output for spec/marybeth/sort]
-[Error matching program output for spec/marybeth/testnorm]
-[Error matching program output for spec/marybeth/typeselect]
-[Error matching program output for spec/marybeth/use]
-[Error matching program output for spec/marybeth/while]
-
-pthread_mutex_lock() fails (09/04/09)
--------------------------------------
-[Error matching program output for parallel/begin/stonea/reportsManyThreads]
-[Error matching program output for parallel/begin/stonea/reports]
-[Error matching program output for parallel/cobegin/stonea/reports]
-[Error matching program output for parallel/coforall/stonea/reports]
-[Error matching program output for parallel/taskPool/figueroa/TotalThreads]
-
-??? 63 other failures on Sam's Mac (09/04/09)
----------------------------------------------
-*63 tests*
-
-new timeout (09/03/09)
-----------------------
-[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2]
 
 double free (09/02/09)
 ----------------------
@@ -524,6 +472,14 @@ exp2 not supported:
 ==================================================================
 XT intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
+
+??? (09/05/09)
+--------------
+[Error matching program output for arrays/deitz/test_record_of_domain_type]
+
+Another numerical accuracy issue? (09/05/09)
+--------------------------------------------
+[Error matching program output for types/complex/bradc/negativeimaginaryliteral]
 
 Numerical accuracy issues (08/29/09)
 ------------------------------------
