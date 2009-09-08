@@ -139,7 +139,9 @@ buildDefaultWrapper(FnSymbol* fn,
           temp->addFlag(FLAG_TYPE_VARIABLE); // unexecuted none/gasnet on 4/25/08
         wrapper->insertAtTail(new DefExpr(temp));
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_SET_REF, wrapper_formal)));
-      } else if (specializeDefaultConstructor && wrapper_formal->typeExpr) {
+      } else if (specializeDefaultConstructor && wrapper_formal->typeExpr &&
+                 (wrapper_formal->type->symbol->hasFlag(FLAG_ARRAY) ||
+                  wrapper_formal->type->symbol->hasFlag(FLAG_DOMAIN))) {
         temp = newTemp();
         temp->addFlag(FLAG_MAYBE_PARAM);
         if (formal->hasFlag(FLAG_TYPE_VARIABLE))
