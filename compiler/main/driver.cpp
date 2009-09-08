@@ -30,6 +30,7 @@ const char* CHPL_COMM = NULL;
 
 int fdump_html = 0;
 static char libraryFilename[FILENAME_MAX] = "";
+static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
@@ -181,6 +182,10 @@ handleLibrary(ArgumentState* arg_state, char* arg_unused) {
 static void 
 handleLibPath(ArgumentState* arg_state, char* arg_unused) {
   addLibInfo(astr("-L", libraryFilename));
+}
+
+static void handleIncDir(ArgumentState* arg_state, char* arg_unused) {
+  addIncInfo(incFilename);
 }
 
 static void
@@ -375,6 +380,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "C Code Compilation Options", NULL, NULL, NULL, NULL},
  {"ccflags", ' ', "<flags>", "Back-end C compiler flags", "S256", ccflags, "CHPL_CC_FLAGS", NULL},
  {"ldflags", ' ', "<flags>", "Back-end C linker flags", "S256", ldflags, "CHPL_LD_FLAGS", NULL},
+  {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, NULL, handleIncDir},
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
  {"make", ' ', "<make utility>", "Make utility for generated code", "S256", &chplmake, "CHPL_MAKE", NULL},

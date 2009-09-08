@@ -191,6 +191,9 @@ OPTIONS
   -l, --lib-linkage <library>   Specify a C library to link in on the C 
                      compiler command line.
 
+  -I, --hdr-search-path <dir>   Add dir to the back-end C compiler's search 
+                     path for header files.
+
   -L, --lib-search-path <dir>   Specify a C library search path on the C
                      compiler command line.
 

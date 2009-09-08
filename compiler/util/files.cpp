@@ -25,6 +25,8 @@ static const int MAX_CHARS_PER_PID = 32;
 static int numLibFlags = 0;
 static const char** libFlag = NULL;
 
+Vec<const char*> incDirs;
+
 
 void addLibInfo(const char* libName) {
   static int libSpace = 0;
@@ -35,6 +37,10 @@ void addLibInfo(const char* libName) {
     libFlag = (const char**)realloc(libFlag, libSpace*sizeof(char*));
   }
   libFlag[numLibFlags-1] = astr(libName);
+}
+
+void addIncInfo(const char* incDir) {
+  incDirs.add(astr(incDir));
 }
 
 
@@ -266,13 +272,16 @@ void testInputFiles(int numFilenames, char* filename[]) {
       USR_FATAL(astr("file '", filename[i], 
                           "' does not have a recognized suffix"));
     }
-    FILE* testfile = openInputFile(filename[i]);
-    if (fscanf(testfile, "%c", &achar) != 1) {
-      USR_FATAL(astr("source file '", filename[i], 
-                          "' is either empty or a directory"));
+    // WE SHOULDN"T TRY TO OPEN .h files, just .c and .chpl and .o
+    if (!isCHeader(filename[i])) {
+      FILE* testfile = openInputFile(filename[i]);
+      if (fscanf(testfile, "%c", &achar) != 1) {
+        USR_FATAL(astr("source file '", filename[i], 
+                       "' is either empty or a directory"));
+      }
+      
+      closeInputFile(testfile);
     }
-    
-    closeInputFile(testfile);
     inputFilenames[i] = astr(filename[i]);
   }
   inputFilenames[i] = NULL;
@@ -423,6 +432,9 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
     fprintf(makefile.fptr, " $(IEEE_FLOAT_GEN_CFLAGS)");
   } else {
     fprintf(makefile.fptr, " $(NO_IEEE_FLOAT_GEN_CFLAGS)");
+  }
+  forv_Vec(const char*, dirName, incDirs) {
+    fprintf(makefile.fptr, " -I%s", dirName);
   }
   fprintf(makefile.fptr, " %s\n", ccflags);
   fprintf(makefile.fptr, "COMP_GEN_LFLAGS =");

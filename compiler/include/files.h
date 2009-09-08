@@ -37,6 +37,7 @@ bool isChplSource(const char* filename);
 void testInputFiles(int numFilenames, char* filename[]);
 const char* nthFilename(int i);
 void addLibInfo(const char* filename);
+void addIncInfo(const char* incDir);
 
 void genIncludeCommandLineHeaders(FILE* outfile);
 
