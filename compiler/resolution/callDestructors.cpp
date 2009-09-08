@@ -7,38 +7,74 @@
 #include "view.h"
 
 
+static bool
+doesExitBlock(BlockStmt* block, GotoStmt* gotoStmt) {
+  SymExpr* labelSymExpr = toSymExpr(gotoStmt->label);
+  INT_ASSERT(labelSymExpr);
+  Expr* expr = labelSymExpr->var->defPoint;
+  while (expr) {
+    if (expr == block)
+      return false;
+    expr = expr->parentExpr;
+  }
+  return true;
+}
+
+
 static void
-insertAutoDestroyTemp(Symbol* tmp, FnSymbol* autoDestroyFn) {
-  Expr* stmt = tmp->defPoint;
-  if (isArgSymbol(stmt->parentSymbol)) {
-    INT_ASSERT(false); // delete this code
-    BlockStmt* block = toBlockStmt(stmt->parentExpr);
-    INT_ASSERT(block);
-    SymExpr* se = toSymExpr(block->body.tail);
-    if (!se) {
-      VarSymbol* tmp2 = newTemp();
-      tmp2->addFlag(FLAG_MAYBE_PARAM);
-      tmp2->addFlag(FLAG_MAYBE_TYPE);
-      block->insertAtHead(new DefExpr(tmp2));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, block->body.tail->remove()));
-      se = new SymExpr(tmp2);
-      block->insertAtTail(se);
-    }
-    se->insertBefore(new CallExpr(autoDestroyFn, tmp));
-    return;
-  } else {
-    while (stmt) {
-      CallExpr* call = toCallExpr(stmt->next);
-      if (!stmt->next ||
-          (call && call->isPrimitive(PRIM_RETURN)) ||
-          isGotoStmt(stmt->next)) {
-        stmt->insertAfter(new CallExpr(autoDestroyFn, tmp));
-        return;
+insertAutoDestroyTemps() {
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    Vec<VarSymbol*> vars;
+    for_alist(stmt, block->body) {
+      //
+      // find variables that should be destroyed before exiting block
+      //
+      if (DefExpr* def = toDefExpr(stmt))
+        if (VarSymbol* var = toVarSymbol(def->sym))
+          if (var->hasFlag(FLAG_INSERT_AUTO_DESTROY))
+            vars.add(var);
+
+      //
+      // find 'may' exit points and insert autoDestroy calls
+      //   a 'may' exit point is a point where control may exit the
+      //   block such as a 'break' or 'continue' out of a loop, or a
+      //   'return' in a conditional
+      // do not clear vector of variables
+      //
+      if (!isDefExpr(stmt) &&
+          !isSymExpr(stmt) &&
+          !isCallExpr(stmt) &&
+          !isGotoStmt(stmt)) {
+        Vec<GotoStmt*> gotoStmts;
+        collectGotoStmts(stmt, gotoStmts);
+        forv_Vec(GotoStmt, gotoStmt, gotoStmts) {
+          if (doesExitBlock(block, gotoStmt)) {
+            forv_Vec(VarSymbol, var, vars) {
+              if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+                gotoStmt->insertBefore(new CallExpr(autoDestroyFn, var));
+              }
+            }
+          }
+        }
       }
-      stmt = stmt->next;
+
+      //
+      // find 'must' exit points and insert autoDestroy calls
+      // clear vector of variables
+      //
+      CallExpr* call = toCallExpr(stmt->next);
+      if ((call && call->isPrimitive(PRIM_RETURN)) ||
+          (!stmt->next) ||
+          (isGotoStmt(stmt->next))) {
+        forv_Vec(VarSymbol, var, vars) {
+          if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+            stmt->insertAfter(new CallExpr(autoDestroyFn, var));
+          }
+        }
+        vars.clear();
+      }
     }
   }
-  INT_ASSERT(false);
 }
 
 
@@ -307,11 +343,7 @@ callDestructors() {
     }
   }
 
-  forv_Vec(VarSymbol, sym, gVarSymbols) {
-    if (sym->hasFlag(FLAG_INSERT_AUTO_DESTROY))
-      if (FnSymbol* autoDestroyFn = autoDestroyMap.get(sym->type))
-        insertAutoDestroyTemp(sym, autoDestroyFn);
-  }
+  insertAutoDestroyTemps();
 
   freeDefUseMaps(defMap, useMap);
 
