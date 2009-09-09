@@ -310,9 +310,11 @@ void normalize(BaseAST* base) {
   collectCallExprs(base, calls);
   forv_Vec(CallExpr, call, calls) {
     applyGetterTransform(call);
-    call_constructor_for_class(call);
     insert_call_temps(call);
     fix_user_assign(call);
+  }
+  forv_Vec(CallExpr, call, calls) {
+    call_constructor_for_class(call);
   }
 }
 
@@ -492,7 +494,8 @@ static void insert_call_temps(CallExpr* call) {
     return;
 
   CallExpr* parentCall = toCallExpr(call->parentExpr);
-  if (parentCall && parentCall->isPrimitive(PRIM_MOVE))
+  if (parentCall && (parentCall->isPrimitive(PRIM_MOVE) ||
+                     parentCall->isPrimitive(PRIM_NEW)))
     return;
 
   SET_LINENO(call);
@@ -500,6 +503,8 @@ static void insert_call_temps(CallExpr* call) {
   VarSymbol* tmp = newTemp();
   if (!parentCall || !parentCall->isNamed("chpl__initCopy"))
     tmp->addFlag(FLAG_EXPR_TEMP);
+  if (call->isPrimitive(PRIM_NEW))
+    tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
   tmp->addFlag(FLAG_MAYBE_PARAM);
   tmp->addFlag(FLAG_MAYBE_TYPE);
   call->replace(new SymExpr(tmp));
@@ -687,9 +692,23 @@ fix_def_expr(VarSymbol* var) {
     //
     // initialize untyped variable with initialization expression
     //
-    stmt->insertAfter(
-      new CallExpr(PRIM_MOVE, constTemp,
-        new CallExpr("chpl__initCopy", init->remove())));
+    // sjd: this new specialization of PRIM_NEW addresses the test
+    //         test/classes/diten/test_destructor.chpl
+    //      in which we call an explicit record destructor and avoid
+    //      calling the default constructor.  However, if written with
+    //      an explicit type, this would happen.  The record in this
+    //      test is an issue since its destructor deletes field c, but
+    //      the default constructor does not 'new' it.  Thus if we
+    //      pass the record to a function and it is copied, we have an
+    //      issue since we will do a double free.
+    //
+    CallExpr* initCall = toCallExpr(init);
+    if (initCall && initCall->isPrimitive(PRIM_NEW))
+      stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, init->remove()));
+    else
+      stmt->insertAfter(
+        new CallExpr(PRIM_MOVE, constTemp,
+          new CallExpr("chpl__initCopy", init->remove())));
 
   }
 }
