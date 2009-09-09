@@ -526,17 +526,11 @@ void html_view(const char* passName) {
   static int uid = 1;
   FILE* html_file;
   const char* filename;
-  Vec<ModuleSymbol*> mods;
 
   fprintf(html_index_file, "<TR><TD>");
   fprintf(html_index_file, "%s", passName);
   fprintf(html_index_file, "</TD><TD>");
-  for_alist(expr, theProgram->block->body)
-    if (DefExpr* def = toDefExpr(expr))
-      if (ModuleSymbol* mod = toModuleSymbol(def->sym))
-        mods.add(mod);
-  // mods.add(theProgram); // The whole program nested in one module
-  forv_Vec(ModuleSymbol, mod, mods) {
+  forv_Vec(ModuleSymbol, mod, allModules) {
     filename = html_file_name( uid, mod->name);
     fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", filename, mod->name);
     html_file = fopen(astr(log_dir, filename), "w");
