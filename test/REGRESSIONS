@@ -37,10 +37,6 @@ spurious failure
 linux regressions
 =================
 
-??? (09/05/09)
---------------
-[Error matching program output for arrays/deitz/test_record_of_domain_type]
-
 spurious timeout
 ----------------
 [Error: Timed out compilation for release/examples/tutorials/varargs] (e.g., 09/03/09)
@@ -51,7 +47,7 @@ memory stuff in flux?
 
 spurious verification failed
 ----------------------------
-[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist] (e.g., 03/24/09, 07/11/09)
+[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist] (e.g., 03/24/09, 07/11/09, 09/09/09)
 
 signal 11 (03/10/09)
 --------------------
@@ -84,16 +80,14 @@ execution timeouts (08/29/09)
 valgrind-specific regressions
 =============================
 
-conditional jump on uninited value in convertRuntimeTypeToValue (09/05/09)
---------------------------------------------------------------------------
-[Error matching program output for arrays/deitz/test_record_of_domain_type]
-
 double free (09/02/09)
 ----------------------
 [Error matching program output for classes/diten/test_destructor3]
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for studies/shootout/nbody/nbody_record_2] (e.g., 09/09/09)
+[Error matching compiler output for users/thom/initArrOfClasses] (e.g., 09/09/09)
 [Error matching compiler output for parallel/begin/deitz/test_nested_fn_begin1] (e.g., 09/07/09)
 [Error matching compiler output for users/shetag/unboundslice] (e.g., 09/07/09)
 [Error matching compiler output for spec/marybeth/sort] (e.g., 09/06/09)
@@ -126,7 +120,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for users/shetag/assocInRecord] (e.g., 08/27/09)
 [Error matching compiler output for users/thom/tupleToArray] (e.g., 08/27/09)
 [Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc-domainPromote] (e.g., 08/26/09)
-[Error matching compiler output for users/shetag/assocarr] (e.g., 08/26/09)
+[Error matching compiler output for users/shetag/assocarr] (e.g., 08/26/09, 09/09/09)
 [Error matching compiler output for users/shetag/classWithArray/initArrWithFn] (e.g., 08/26/09, 08/29/09)
 
 
@@ -166,7 +160,7 @@ gasnet-everything regressions (other than the above)
 new spurious timeouts
 -----------------------
 [Error: Timed out executing program studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 08/30/09)
-[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09)
+[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09, 09/09/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 08/29/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 08/29/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 08/29/09, 08/31/09, 09/02/09)
