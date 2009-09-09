@@ -6,7 +6,6 @@ use ChapelArray;
 use DefaultArithmetic;
 use DefaultAssociative;
 use Containers;
-use Sort;
 
 /* 
    This code keeps track of thread identifiers, along with the current
