@@ -441,12 +441,10 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
         } else if (toLabelSymbol(e->sym)) {
           fprintf(html_file, "<B>label</B> ");
           html_print_symbol( html_file, pass, e->sym, true);
-        } else if (ModuleSymbol* mod = toModuleSymbol(e->sym)) {
-          fprintf(html_file, "<UL CLASS =\"mktree\">\n<LI>");
-          fprintf(html_file, "<CHPLTAG=\"MOD%d\">\n", mod->id);
-          fprintf(html_file, "<B>module ");
-          html_print_symbol(html_file, pass, e->sym, true);
-          fprintf(html_file, "</B><UL>\n");
+        } else if (toModuleSymbol(e->sym)) {
+          // Don't process nested modules -- they'll be handled at the
+          // top-level
+          return;
         } else {
           fprintf(html_file, "<B>def</B> ");
           html_print_symbol( html_file, pass, e->sym, true);
