@@ -442,6 +442,7 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
           fprintf(html_file, "<B>label</B> ");
           html_print_symbol( html_file, pass, e->sym, true);
         } else if (toModuleSymbol(e->sym)) {
+          fprintf(html_file, "</DL>\n");
           // Don't process nested modules -- they'll be handled at the
           // top-level
           return;
