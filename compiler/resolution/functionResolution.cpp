@@ -2667,9 +2667,9 @@ requiresImplicitDestroy(CallExpr* call) {
     INT_ASSERT(parent);
     if (strcmp(parent->name, "chpl__autoCopy") &&
         (isRecord(fn->retType) ||
-         fn->retType->symbol->hasFlag(FLAG_REF) &&
+         (fn->retType->symbol->hasFlag(FLAG_REF) &&
          (fn->retType->getValueType()->symbol->hasFlag(FLAG_ARRAY) ||
-          fn->retType->getValueType()->symbol->hasFlag(FLAG_DOMAIN))) &&
+          fn->retType->getValueType()->symbol->hasFlag(FLAG_DOMAIN)))) &&
         !fn->hasFlag(FLAG_NO_IMPLICIT_COPY) &&
         !fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
