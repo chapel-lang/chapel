@@ -672,14 +672,10 @@ fix_def_expr(VarSymbol* var) {
       new CallExpr(PRIM_MOVE, typeTemp,
         new CallExpr(PRIM_INIT, type->remove())));
     if (init) {
-      VarSymbol* initTemp = newTemp();
-      initTemp->addFlag(FLAG_MAYBE_PARAM);
-      stmt->insertBefore(new DefExpr(initTemp));
-      stmt->insertBefore(new CallExpr(PRIM_MOVE, initTemp, init->remove()));
       stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
       stmt->insertAfter(
         new CallExpr(PRIM_MOVE, typeTemp,
-          new CallExpr("=", typeTemp, initTemp)));
+          new CallExpr("=", typeTemp, init->remove())));
     } else {
       if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
         stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, new CallExpr(PRIM_TYPEOF, typeTemp)));
