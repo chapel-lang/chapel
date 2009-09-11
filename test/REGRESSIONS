@@ -23,8 +23,8 @@ spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09, 09/05/09, 09/06/09, 09/10/09)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09, 08/29/09, 08/31/09, 09/02/09, 09/10/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09, 09/05/09, 09/06/09, 09/10/09, 09/11/09)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09, 08/29/09, 08/31/09, 09/02/09, 09/10/09, 09/11/09)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 08/31/09)
 [Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 08/07/09)
 
@@ -86,6 +86,10 @@ double free (09/02/09)
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for sparse/bradc/sparseArray5] (e.g., 09/11/09)
+[Error matching compiler output for statements/sungeun/continue_label] (e.g., 09/11/09)
+[Error matching compiler output for studies/hpcc/FFT/bradc/fft-perm] (e.g., 09/11/09)
+[Error matching compiler output for users/thom/itoverride] (e.g., 09/11/09)
 [Error matching compiler output for studies/shootout/nbody/nbody_record_2] (e.g., 09/09/09)
 [Error matching compiler output for users/thom/initArrOfClasses] (e.g., 09/09/09)
 [Error matching compiler output for parallel/begin/deitz/test_nested_fn_begin1] (e.g., 09/07/09)
@@ -100,7 +104,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for studies/590o/alaska/graph] (e.g., 09/03/09, 09/05/09)
 [Error matching compiler output for users/thom/domCapture] (e.g., 09/03/09)
 [Error matching compiler output for users/thom/passStrRngToNonstrRng-generic] (e.g., 09/03/09)
-[Error matching compiler output for statements/sungeun/continue_label] (e.g., 09/02/09)
+[Error matching compiler output for statements/sungeun/continue_label] (e.g., 09/02/09, 09/11/09)
 [Error matching compiler output for trivial/bradc/write/writen] (e.g., 09/01/09)
 [Error matching compiler output for domains/bradc/arrayLinkage] (e.g., 08/31/09)
 [Error matching compiler output for parallel/cobegin/waynew/depend] (e.g., 08/31/09, 09/07/09)
@@ -139,6 +143,12 @@ no longer needs to be suppressed?
 no-local regressions
 ====================
 
+??? (spurious?) (09/11/09)
+--------------------------
+[Error: Timed out compilation for trivial/shannon/readWriteComplexFail1]
+[Error: Timed out compilation for trivial/shannon/readWriteComplex]
+[Error: Timed out compilation for trivial/shannon/readWriteEnum]
+
 not freeing heap-allocated globals (08/29/09)
 ---------------------------------------------
 [Error matching program output for classes/figueroa/RecordDestructor1]
@@ -160,7 +170,7 @@ gasnet-everything regressions (other than the above)
 new spurious timeouts
 -----------------------
 [Error: Timed out executing program studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 08/30/09)
-[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09, 09/09/09)
+[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09, 09/09/09, 09/11/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 08/29/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 08/29/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 08/29/09, 08/31/09, 09/02/09)
