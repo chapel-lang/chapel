@@ -79,7 +79,6 @@ int main(int argc, char* argv[]) {
   initChplThreads();         // initialize the threads layer
   chpl_threads_initialized = 1;
 
-  chpl__initModuleGuards();  // initialize per-locale run once guard vars
   recordExecutionCommand(argc, argv);
 
   if (chpl_localeID == 0) {      // have locale #0 run the user's main function

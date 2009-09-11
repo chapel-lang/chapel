@@ -5,9 +5,16 @@ module M1 {
   class C {
     var field: int;
   }
-  lock1 = false;
-  lock2;
-  var a = new C(1);
+  var a: C;
+  var raninit = false;
+  def init() {
+    if (!raninit) {
+      raninit = true;
+      lock1 = false;
+      lock2;
+      a = new C(1);
+    }
+  }
 }
 
 module M2 {
@@ -15,10 +22,12 @@ module M2 {
     var b, c: sync object;
     begin {
       use M1;
+      M1.init();
       b = a;
     }
     lock1;
     use M1;
+    M1.init();
     c = a;
     lock2 = false;
 

@@ -232,7 +232,44 @@ static FnSymbol* chpl_main_exists(void) {
 }
 
 
+static Vec<ModuleSymbol*> initMods;
+
+
+static void addModuleInits(BlockStmt* block, ModuleSymbol* mod) {
+  //  printf("Adding module inits for %s\n", mod->name);
+  if (initMods.set_in(mod)) {
+    //    printf("...already done\n");
+    return;
+  }
+  //  printf("---start %s\n", mod->name);
+  initMods.set_add(mod);
+  if (!fRuntime || mod->modTag != MOD_INTERNAL) {
+    forv_Vec(ModuleSymbol*, usedmod, mod->modUseList) {
+      addModuleInits(block, usedmod);
+    }
+  }
+  //  printf("---stop %s\n", mod->name);
+
+  // Insert module initializations for any parent modules that we haven't
+  if (ModuleSymbol* parent = mod->defPoint->getModule()) {
+    addModuleInits(block, parent);
+  }
+  block->insertAtTail(new CallExpr(mod->initFn));
+}
+
+
+static BlockStmt* createModuleInitBlock(ModuleSymbol* startModule) {
+  // we're going to insert the init call for the program manually later
+  initMods.set_add(theProgram);
+
+  BlockStmt* initBlock = new BlockStmt();
+  addModuleInits(initBlock, startModule);
+  return initBlock;
+}
+
+
 static void build_chpl_main(void) {
+  ModuleSymbol* mainModule = NULL;
   chpl_main = chpl_main_exists();
 
   if (fRuntime) {
@@ -243,7 +280,6 @@ static void build_chpl_main(void) {
   }
 
   if (!chpl_main) {
-    ModuleSymbol* mainModule = NULL;
     if (strlen(mainModuleName) != 0) {
       forv_Vec(ModuleSymbol, mod, userModules) {
         if (!strcmp(mod->name, mainModuleName))
@@ -272,21 +308,16 @@ static void build_chpl_main(void) {
     chpl_main->retType = dtVoid;
     mainModule->block->insertAtTail(new DefExpr(chpl_main));
     normalize(chpl_main);
-  } else if (!isModuleSymbol(chpl_main->defPoint->parentSymbol)) {
-    USR_FATAL(chpl_main, "main function must be defined at module scope");
+  } else {
+    if (!isModuleSymbol(chpl_main->defPoint->parentSymbol)) {
+      USR_FATAL(chpl_main, "main function must be defined at module scope");
+    }
+    mainModule = chpl_main->getModule();
   }
   SET_LINENO(chpl_main);
-  if (fRuntime)
-    chpl_main->insertAtHead(new CallExpr(chpl_main->getModule()->initFn));
-  else {
-    VarSymbol* guard = newTemp(dtBool);
-    chpl_main->insertAtHead(new CondStmt(new SymExpr(guard),
-                                         new CallExpr(chpl_main->getModule()->initFn)));
-    // make sure the guard becomes empty so it can be written to
-    chpl_main->insertAtHead(new CallExpr(PRIM_MOVE, guard,
-                                         new CallExpr("_cond_test", chpl_main->getModule()->guard)));
-    chpl_main->insertAtHead(new DefExpr(guard));
-  }
+  BlockStmt* stdInits = createModuleInitBlock(standardModule);
+  BlockStmt* usrInits = createModuleInitBlock(mainModule);
+  chpl_main->insertAtHead(usrInits);
   if (!fRuntime) {
     VarSymbol* endCount = newTemp("_endCount");
     chpl_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
@@ -296,6 +327,8 @@ static void build_chpl_main(void) {
     chpl_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
     //chpl_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
   }
+
+  theProgram->initFn->insertAtHead(stdInits);
   chpl_main->insertAtHead(new CallExpr(theProgram->initFn));
   if (!fRuntime)
     insertGlobalAutoDestroyCalls();

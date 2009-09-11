@@ -8,8 +8,6 @@
 #include <stdint.h>
 #include <chplio_md.h>
 
-extern void chpl__initModuleGuards(void);
-
 extern chpl_fn_p chpl_ftable[];
 
 extern int chpl_verbose_comm;     // set via startVerboseComm

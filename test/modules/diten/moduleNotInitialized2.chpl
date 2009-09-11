@@ -2,9 +2,16 @@ var lock1: sync bool;
 var lock2: sync bool;
 
 module M1 {
-  lock1 = false;
-  lock2;
-  var a = 2;
+  var a: int;
+  var raninit = false;
+  def init() {
+    if (!raninit) {
+      raninit = true;
+      lock1 = false;
+      lock2;
+      a = 2;
+    }
+  }
 }
 
 module M2 {
@@ -12,10 +19,12 @@ module M2 {
     var b, c: sync int;
     begin {
       use M1;
+      M1.init();
       b = a;
     }
     lock1;
     use M1;
+    M1.init();
     c = a;
     lock2 = false;
     writeln(b);

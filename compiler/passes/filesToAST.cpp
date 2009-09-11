@@ -88,12 +88,17 @@ void parse(void) {
 
   parseDependentModules(MOD_USER);
 
-  
   forv_Vec(ModuleSymbol, mod, allModules) {
-    if (mod != standardModule && mod != theProgram && mod != rootModule) {
+    if (mod != standardModule && mod != theProgram && mod != rootModule &&
+        (!fRuntime || mod->modTag != MOD_MAIN)) {
       mod->block->addUse(standardModule);
+      mod->modUseSet.clear();
+      mod->modUseList.clear();
+      mod->modUseSet.set_add(standardModule);
+      mod->modUseList.add(standardModule);
     }
   }
+
   baseModule->block->addUse(rootModule);
   finishCountingTokens();
 }

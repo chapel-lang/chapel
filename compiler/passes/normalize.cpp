@@ -980,7 +980,7 @@ fixup_query_formals(FnSymbol* fn) {
         collectSymExprs(fn, symExprs);
         SymExpr* base = toSymExpr(call->baseExpr);
         if (!base)
-          USR_FATAL(base, "illegal queried type expression");
+          USR_FATAL(call, "illegal queried type expression");
         TypeSymbol* ts = toTypeSymbol(base->var);
         if (!ts)
           USR_FATAL(base, "illegal queried type expression");

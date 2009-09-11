@@ -931,21 +931,15 @@ process_import_expr(CallExpr* call) {
   ModuleSymbol* mod = getUsedModule(call);
   if (!mod)
     USR_FATAL(call, "Cannot find module");
-  if (!strcmp(mod->name, "ChapelStandard"))
-    // ChapelStandard does not have a guard
-    call->getStmtExpr()->insertBefore(new CallExpr(mod->initFn));
-  else {
-    BlockStmt* thenBlock = new BlockStmt(new CallExpr(PRIM_MOVE, mod->privGuard, gFalse));
-    if (fRuntime || !strcmp(mod->name, "ChapelBase"))
-      thenBlock->insertAtTail(new CallExpr(mod->initFn));
-    else {
-      thenBlock->insertAtTail(buildOnStmt(new CallExpr(PRIM_ON_LOCALE_NUM, new SymExpr(new_IntSymbol(0))),
-                                          new CondStmt(new CallExpr("_cond_test", mod->guard),
-                                                       new CallExpr(mod->initFn),
-                                                       new CallExpr(PRIM_MOVE, mod->guard,
-                                                                    new CallExpr("=", mod->guard, new SymExpr(gFalse))))));
-    }
-    call->getStmtExpr()->insertBefore(new CondStmt(new SymExpr(mod->privGuard), thenBlock));
+  ModuleSymbol* enclosingModule = call->getModule();
+  //  printf("Adding %s to %s's use list\n", mod->name, enclosingModule->name);
+  if (!enclosingModule->modUseSet.set_in(mod)) {
+    enclosingModule->modUseSet.set_add(mod);
+    enclosingModule->modUseList.add(mod);
+  }
+  if (strcmp(mod->name, "ChapelStandard")) {
+    BlockStmt* thenBlock = new BlockStmt();
+    call->getStmtExpr()->insertBefore(thenBlock);
   }
   if (call->getFunction() == call->getModule()->initFn)
     call->getModule()->block->addUse(mod);
@@ -992,10 +986,12 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
   for_alist(expr, ct->inherits) {
     UnresolvedSymExpr* se = toUnresolvedSymExpr(expr);
     INT_ASSERT(se);
+    //    printf("looking up %s\n", se->unresolved);
     Symbol* sym = lookup(expr, se->unresolved);
     TypeSymbol* ts = toTypeSymbol(sym);
     if (!ts)
       USR_FATAL(expr, "Illegal super class");
+    //    printf("found it in %s\n", sym->getModule()->name);
     ClassType* pt = toClassType(ts->type);
     if (!pt)
       USR_FATAL(expr, "Illegal super class %s", ts->name);

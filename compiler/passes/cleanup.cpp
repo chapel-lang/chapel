@@ -130,45 +130,7 @@ static void change_cast_in_where(FnSymbol* fn) {
 }
 
 
-//
-// Make all modules call their parent module's init function to make sure
-// it has been run and the module's symbols are initialized.  This is NOT
-// the same as using the outer module.
-//
-static void initializeOuterModules(ModuleSymbol* mod) {
-  for_alist(stmt, mod->block->body) {
-    if (BlockStmt* b = toBlockStmt(stmt))
-      stmt = b->body.first();
-    if (DefExpr* def = toDefExpr(stmt)) {
-      if (ModuleSymbol* m = toModuleSymbol(def->sym)) {
-        if (mod != theProgram) {
-          if (!m->initFn || !mod->initFn)
-            INT_FATAL("Module with no initialization function");
-          INT_ASSERT(strcmp(mod->name, "ChapelStandard") && strcmp(mod->name, "ChapelBase"));
-          BlockStmt* thenBlock = new BlockStmt(new CallExpr(PRIM_MOVE, mod->privGuard, gFalse));
-          if (fRuntime)
-            thenBlock->insertAtTail(new CallExpr(mod->initFn));
-          else {
-            thenBlock->insertAtTail(buildOnStmt(new CallExpr(PRIM_ON_LOCALE_NUM, new SymExpr(new_IntSymbol(0))),
-                                                new CondStmt(new CallExpr("_cond_test", mod->guard),
-                                                             new CallExpr(mod->initFn),
-                                                             new CallExpr(PRIM_MOVE, mod->guard,
-                                                                          new CallExpr("=", mod->guard, new SymExpr(gFalse))))));
-          }
-          // the first statement in m->initFn is assumed to set its sync guard to false
-          m->initFn->body->body.head->insertAfter(new CondStmt(new SymExpr(mod->privGuard),
-                                                               thenBlock));
-        }
-        initializeOuterModules(m);
-      }
-    }
-  }
-}
-
-
 void cleanup(void) {
-  initializeOuterModules(theProgram);
-
   Vec<BaseAST*> asts;
   collect_asts(rootModule, asts);
 
