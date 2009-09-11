@@ -537,9 +537,21 @@ codegen_config(FILE* outfile) {
     }
   }
 
-  fprintf(outfile, "}\n");
+  fprintf(outfile, "}\n\n\n");
 
-  fprintf(outfile, "int32_t chpl_numRealms = %d;\n", getNumRealms());
+  int numRealms = getNumRealms();
+  fprintf(outfile, "int32_t chpl_numRealms = %d;\n\n\n", numRealms);
+
+  fprintf(outfile, "const char* chpl_realmType(int32_t r) {\n");
+  fprintf(outfile, "  switch (r) {\n");
+  for (int i=0; i<numRealms; i++) {
+    fprintf(outfile, "    case %d: return \"%s\"; break;\n", i, getRealmType(i));
+  }
+  fprintf(outfile, "    default:\n");
+  fprintf(outfile, "      chpl_internal_error(\"attempt to query realm other than 0-%d\\n\");\n", numRealms-1);
+  fprintf(outfile, "      return \"unknown\";\n");
+  fprintf(outfile, "  }\n");
+  fprintf(outfile, "}\n");
 
   closeCFile(&configFile);
 }
@@ -580,7 +592,8 @@ void codegen(void) {
   else
     codegen_header(hdrfile.fptr);
 
-  codegen_config(mainfile.fptr);
+  if (!fRuntime)
+    codegen_config(mainfile.fptr);
 
   if (genCommunicatedStructures)
     codegenTypeStructureInclude(mainfile.fptr);

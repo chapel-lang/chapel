@@ -6,7 +6,10 @@
 
 /* This header file is for routines that are in the generated code */
 
+/* defined in _config.c: */
+
 extern int32_t chpl_numRealms;
+const char* chpl_realmType(int32_t r);
 
 /* used for entry point: */
 extern void chpl_main(void);

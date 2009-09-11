@@ -1,0 +1,1 @@
+<command-line>: error: must specify number of locales per realm via --localesPerRealm='nl0 nl1 nl2 ...'

@@ -155,19 +155,6 @@ int32_t chpl_baseUniqueLocaleID(int32_t r) {
 }
 
 
-const char* chpl_realmType(int32_t r) {
-  if (r == 0) {
-    return "linux64";
-  } else if (r == 1) {
-    return "linux";
-  } else if (r == 2) {
-    return "darwin";
-  } else {
-    return "sunos";
-  }
-}
-
-
 int32_t getArgNumLocales(void) {
   int32_t retval = 0;
   if (chpl_numRealms == 1) {
@@ -175,10 +162,15 @@ int32_t getArgNumLocales(void) {
       retval = _argNumLocales;
     }
   } else {
-    int i;
-    retval = 0;
-    for (i=0; i<chpl_numRealms; i++) {
-      retval += chpl_arg_LocalesPerRealm[i];
+    if (!chpl_arg_LocalesPerRealm) {
+      chpl_error("must specify number of locales per realm "
+                 "via --localesPerRealm='nl0 nl1 nl2 ...'", 0, "<command-line>");
+    } else {
+      int i;
+      retval = 0;
+      for (i=0; i<chpl_numRealms; i++) {
+        retval += chpl_arg_LocalesPerRealm[i];
+      }
     }
   }
   return retval;

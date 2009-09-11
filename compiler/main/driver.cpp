@@ -265,6 +265,44 @@ int32_t getNumRealms(void) {
 }
 
 
+const char* getRealmType(int i) {
+  static int numRealms = getNumRealms();
+  static int last = -1;
+  static const char* allrealms = configParamMap.get(astr("realmTypes"));
+  static const char* start = allrealms;
+  const char* retval;
+  if (i != last+1) {
+    INT_FATAL("Must call getRealmType() in order");
+  }
+  if (allrealms == NULL) {
+    if (numRealms == 1) {
+      retval = CHPL_TARGET_PLATFORM;
+    } else {
+      USR_FATAL("Must specify realm types using -srealmTypes='rt0 rt1 ...'");
+    }
+  } else {
+    char* end = strchr(start, ' ');
+    if (end == NULL) {
+      if (i != numRealms-1) {
+        USR_FATAL("Didn't specify enough realmTypes");
+      } else {
+        retval = start;
+      }
+    } else {
+      if (i == numRealms-1) {
+        USR_FATAL("Specified too many realmTypes");
+      } else {
+        retval = start;
+        *end = '\0';
+        start = end + 1;
+      }
+    }
+  }
+  last++;
+  return retval;
+}
+
+
 static void verifySaveCDir(ArgumentState* arg, char* unused) {
   if (saveCDir[0] == '-') {
     USR_FATAL("--savec takes a directory name as its argument\n"

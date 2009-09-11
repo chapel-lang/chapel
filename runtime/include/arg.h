@@ -17,7 +17,6 @@ void parseArgs(int* argc, char* argv[]);
 int32_t getArgNumLocales(void);
 int32_t chpl_localesPerRealm(int32_t r);
 int32_t chpl_baseUniqueLocaleID(int32_t r);
-const char* chpl_realmType(int32_t r);
 int _runInGDB(void);
 int chpl_specify_locales_error(void);
 
