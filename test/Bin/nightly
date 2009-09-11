@@ -60,6 +60,8 @@ while (@ARGV) {
 
 if ($ENV{'CHPL_COMM'} eq "gasnet") {
     $gasnet = 1;
+} elsif ($ENV{'CHPL_COMM'} eq "pvm") {
+    $pvm = 1;
 }
 
 $statdate = `date +%D`; chomp($statdate);
@@ -330,6 +332,8 @@ if ($hostplatform eq "cygwin") {
 
 if ($gasnet == 1) {
     mysystem("cd $chapeldir/third-party && $make gasnet", "making GASNet", 1, 1);
+} elsif ($pvm == 1) {
+    mysystem("cd $chapeldir/third-party && $make pvm", "making PVM", 1, 1);
 }
 $makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
 if ($makestat != 0) {
@@ -393,6 +397,8 @@ if ($parnodefile eq "") {
 } else {
     if ($gasnet == 1) {
         $testflags = "$testflags -comm gasnet";
+    } elsif ($pvm == 1) {
+        $testflags = "$testflags -comm pvm";
     }
 }
     
