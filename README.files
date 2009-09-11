@@ -23,6 +23,9 @@ contain.
     $CHPL_HOST_PLATFORM/ 
   compiler/         : source code for the compiler
   doc/              : documentation and READMEs
+  etc/
+    emacs/          : rudimentary emacs mode for Chapel
+    vim/            : vim mode for Chapel
   examples/         : example Chapel codes
     hpcc/           : source code for HPC Challenge benchmarks
   lib/              : stores the runtime and launcher libraries, once built:

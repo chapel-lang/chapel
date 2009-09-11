@@ -37,6 +37,7 @@ system("cd $tmpdir && svn export -q $svnroot chapel");
        "README.files",
        "STATUS",
        "compiler/passes/reservedSymbolNames",
+       "etc/README",
        "man/man1/chpl.1",
        "third-party/Makefile",
        "third-party/README",
@@ -64,6 +65,8 @@ system("cd $tmpdir && svn export -q $svnroot chapel");
 # include these dirs and their entire contents
 @complete_dirs = (
     "doc",
+    "etc/emacs",
+    "etc/vim",
     "examples",
     "make",
     "modules",

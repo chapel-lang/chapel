@@ -29,8 +29,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-[Please note that software contained within the third-party directory
+[Please note that the software contained in the third-party/ directory
 has not been developed by the Chapel project but rather by other open
-source projects.  These packages are being redistributed in accordance
+source efforts.  These packages are being redistributed in accordance
 to their individual licensing terms.  See third-party/README for more
-information on these packages and their respective licenses.]
+information on each package and its respective license.]
+
+[Note furthermore that the emacs/vim modes defined in the etc/
+directory are derivative of existing editor modes for emacs and vim
+and bear the licenses of their respective projects.  See etc/LICENSE
+for more details.]
