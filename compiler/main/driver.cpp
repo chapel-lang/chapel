@@ -270,7 +270,7 @@ const char* getRealmType(int i) {
   static int last = -1;
   static const char* allrealms = configParamMap.get(astr("realmTypes"));
   static const char* start = allrealms;
-  const char* retval;
+  const char* retval = NULL;
   if (i != last+1) {
     INT_FATAL("Must call getRealmType() in order");
   }
