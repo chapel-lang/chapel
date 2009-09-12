@@ -519,6 +519,8 @@ codegen_config(FILE* outfile) {
   openCFile(&configFile, "_config.c");
   outfile = configFile.fptr;
 
+  fprintf(outfile, "#include \"error.h\"\n\n");
+
   fprintf(outfile, "void CreateConfigVarTable(void) {\n");
   fprintf(outfile, "initConfigVarTable();\n");
 
