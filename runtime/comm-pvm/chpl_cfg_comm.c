@@ -360,7 +360,7 @@ static void chpl_upkuint64_t(void* buf, int i, int chpltypetype, unsigned long c
 /////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////////
-// float32_t
+// real32_t
 // No matter what (32->32, 32->64, or 64->32), the sender is just sending
 // 32 bits, and the receiver receives 32 bits. No conversions should be
 // necessary.
@@ -396,7 +396,7 @@ static void chpl_upkfloat32_t(void* buf, int i, int chpltypetype, unsigned long 
 /////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////////
-// int64_t
+// real64_t
 // If the receiver is 32-bit, conversion is necessary.
 static void chpl_pkdouble64_t(void* buf, int i, int chpltypetype, unsigned long chpltypeoffset) {
   int part1, part2;
@@ -884,7 +884,7 @@ static void polling(void* x) {
       rpcArg->replyTag = msg_info.replyTag;
       rpcArg->joinLocale = source;
 
-      chpl_begin((chpl_fn_p)chpl_RPC, rpcArg, false, false, NULL);
+      chpl_begin((chpl_fn_p)chpl_RPC, rpcArg, true, false, NULL);
       break;
     }
     case ChplCommForkNB: {
@@ -906,7 +906,7 @@ static void polling(void* x) {
       }
 
       chpl_pvm_recv(source, msg_info.replyTag, args, msg_info.size);
-      chpl_begin((chpl_fn_p)chpl_ftable[msg_info.u.fid], args, false, false, NULL);
+      chpl_begin((chpl_fn_p)chpl_ftable[msg_info.u.fid], args, true, false, NULL);
 
       break;
     }
@@ -1438,7 +1438,7 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   if (chpl_localeID == locale) {
     void* argCopy = chpl_malloc(1, mallocsize, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
     memmove(argCopy, arg, mallocsize);
-    chpl_begin((chpl_fn_p)chpl_ftable[fid], argCopy, false, false, NULL);
+    chpl_begin((chpl_fn_p)chpl_ftable[fid], argCopy, true, false, NULL);
   } else {
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_mutex_lock(&chpl_comm_diagnostics_lock);
