@@ -399,17 +399,11 @@ static void chpl_upkfloat32_t(void* buf, int i, int chpltypetype, unsigned long 
 // real64_t
 // If the receiver is 32-bit, conversion is necessary.
 static void chpl_pkdouble64_t(void* buf, int i, int chpltypetype, unsigned long chpltypeoffset) {
-  int part1, part2;
 #if CHPL_DIST_DEBUG
   char debugMsg[DEBUG_MSG_LENGTH];
 #endif
 
-  part1 = (int)*(int64_t *)(((char *)buf)+chpltypeoffset);
-  part2 = (int)((*(int64_t *)(((char *)buf)+chpltypeoffset)) >> 32);
-
-  //  PVM_NO_LOCK_SAFE(pvm_pklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
-  PVM_NO_LOCK_SAFE(pvm_pkint(&part1, 1, 1), "pvm_pkint", "chpl_pvm_send");
-  PVM_NO_LOCK_SAFE(pvm_pkint(&part2, 1, 1), "pvm_pkint", "chpl_pvm_send");
+  PVM_NO_LOCK_SAFE(pvm_pkdouble((double *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkdouble", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
   if ((((char *)buf)+chpltypeoffset) != 0) {
     sprintf(debugMsg, "Packing double %f (part %d) of type %d, offset %lu", *(double *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
@@ -421,23 +415,15 @@ static void chpl_pkdouble64_t(void* buf, int i, int chpltypetype, unsigned long 
 }
 
 static void chpl_upkdouble64_t(void* buf, int i, int chpltypetype, unsigned long chpltypeoffset, int mysize) {
-  int part1, part2;
 #if CHPL_DIST_DEBUG
   char debugMsg[DEBUG_MSG_LENGTH];
 #endif
 
-  PVM_NO_LOCK_SAFE(pvm_upkint(&part1, 1, 1), "pvm_upkint", "chpl_pvm_recv");
-  PVM_NO_LOCK_SAFE(pvm_upkint(&part2, 1, 1), "pvm_upkint", "chpl_pvm_recv");
-  *(double *)(((char *)buf)+chpltypeoffset) = (double)((((int64_t)part2) << 32) + (((int64_t)part1) & 0x00000000ffffffff));
-  //  if (mysize == 8) {
-  //    PVM_NO_LOCK_SAFE(pvm_upklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkint", "chpl_pvm_recv");
+  PVM_NO_LOCK_SAFE(pvm_upkdouble((double *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkdouble", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
   sprintf(debugMsg, "Unpacking double %f (part %d) of type %d, offset %lu", *(double *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
   PRINTF(debugMsg);
 #endif
-  //  } else {
-  //    chpl_internal_error("Error: Conversion necessary!");
-  //  }
   return;
 }
 /////////////////////////////////////////////////////////////////////////////
