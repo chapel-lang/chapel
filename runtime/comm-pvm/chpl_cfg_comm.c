@@ -560,9 +560,28 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
 #ifdef CHPL_COMM_HETEROGENEOUS
     PVM_NO_LOCK_SAFE(pvm_upkint(&sendingnil, 1 ,1), "pvm_upkint", "chpl_pvm_recv");
     if (sendingnil != 1) {
-      //      *(((char *)buf)+chpltypeoffset) = '\0';
-      //    } else {
-      for (i = 0; i < chpl_max_fields_per_type; i++) {
+      // Handle types that aren't easy to send via PVM.
+      i = 0;
+      if (sz > 0) {
+        for (; i < chpl_max_fields_per_type; i++) {
+          if (chpl_getFieldType(sz, i) == CHPL_TYPE_enum) {
+            PVM_NO_LOCK_SAFE(pvm_upkbyte(((char *)buf), chpl_getFieldSize(sz), 1), "pvm_upkbyte", "chpl_pvm_recv");
+#if CHPL_DIST_DEBUG
+            sprintf(debugMsg, "Unpacking something with an enum");
+            PRINTF(debugMsg);
+#endif
+            i = chpl_max_fields_per_type;
+          }
+        }
+      }
+      if (i == chpl_max_fields_per_type) {
+        // If i is chpl_max_fields_per_type + 1, we found a type we couldn't
+        // use this table for. Thus, we sent it as a collection of bytes, and
+        // we short-circuit this table. Otherwise, run through this table
+        // normally.
+        i = 0;
+      }
+      for (; i < chpl_max_fields_per_type; i++) {
         // A positive size represents the entry into the chpl_rt_types
         //      enumeration.
         // A negative size represents a direct call for a get (in which
@@ -708,7 +727,28 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
     }
     PVM_NO_LOCK_SAFE(pvm_pkint(&sendingnil, 1 ,1), "pvm_pkint", "chpl_pvm_send");
     if (sendingnil == 0) {
-      for (i = 0; i < chpl_max_fields_per_type; i++) {
+      // Handle types that aren't easy to send via PVM.
+      i = 0;
+      if (sz > 0) {
+        for (; i < chpl_max_fields_per_type; i++) {
+          if (chpl_getFieldType(sz, i) == CHPL_TYPE_enum) {
+            PVM_NO_LOCK_SAFE(pvm_pkbyte(((char *)buf), chpl_getFieldSize(sz), 1), "pvm_pkbyte", "chpl_pvm_send");
+#if CHPL_DIST_DEBUG
+            sprintf(debugMsg, "Packing something with an enum");
+            PRINTF(debugMsg);
+#endif
+            i = chpl_max_fields_per_type;
+          }
+        }
+      }
+      if (i == chpl_max_fields_per_type) {
+        // If i is chpl_max_fields_per_type + 1, we found a type we couldn't
+        // use this table for. Thus, we sent it as a collection of bytes, and
+        // we short-circuit this table. Otherwise, run through this table
+        // normally.
+        i = 0;
+      }
+      for (; i < chpl_max_fields_per_type; i++) {
         // A positive size represents the entry into the chpl_rt_types
         //      enumeration.
         // A negative size represents a direct call for a get (in which
