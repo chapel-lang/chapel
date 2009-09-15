@@ -2671,7 +2671,7 @@ requiresImplicitDestroy(CallExpr* call) {
          (fn->retType->getValueType()->symbol->hasFlag(FLAG_ARRAY) ||
           fn->retType->getValueType()->symbol->hasFlag(FLAG_DOMAIN)))) &&
         !fn->hasFlag(FLAG_NO_IMPLICIT_COPY) &&
-        !fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
+        !fn->hasFlag(FLAG_ITERATOR_FN) &&
         !fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
         strcmp(fn->name, "chpl__initCopy") &&
         strcmp(fn->name, "chpl__autoCopy") &&

@@ -613,6 +613,13 @@ pragma "inline" def =(a: [], b : []) where (a._value.canCopyFromHost && b._value
 	return a;
 }
 
+pragma "inline" def =(a: [], b: []) {
+  if b._value != nil then
+    for (i,bb) in (a._dom,b) do
+      a(i) = bb;
+  return a;
+}
+
 pragma "inline" def =(a: [], b) {
   for (i,bb) in (a._dom,b) do
     a(i) = bb;
@@ -779,8 +786,9 @@ def _freeIterator(x: _tuple) {
 }
 
 pragma "inline"
+pragma "no implicit copy"
 def _toLeader(iterator: _iteratorClass)
-  return __primitive("to leader", iterator);
+  return chpl__autoCopy(__primitive("to leader", iterator));
 
 pragma "inline"
 def _toLeader(ir: _iteratorRecord) {
@@ -799,8 +807,9 @@ def _toLeader(x)
   return _toLeader(x.these());
 
 pragma "inline"
+pragma "no implicit copy"
 def _toFollower(iterator: _iteratorClass, leaderIndex)
-  return __primitive("to follower", iterator, leaderIndex);
+  return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex));
 
 pragma "inline"
 def _toFollower(ir: _iteratorRecord, leaderIndex) {
@@ -818,8 +827,9 @@ def _toFollower(ir: _iteratorRecord, leaderIndex) {
 // iterator if the array supports aligned followers
 //
 pragma "inline"
+pragma "no implicit copy"
 def _toFollower(iterator: _iteratorClass, leaderIndex, param aligned: bool) {
-  return __primitive("to follower", iterator, leaderIndex, aligned);
+  return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex, aligned));
 }
 
 pragma "inline"

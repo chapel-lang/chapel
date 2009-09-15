@@ -143,15 +143,16 @@ buildDefaultWrapper(FnSymbol* fn,
                  (wrapper_formal->type->symbol->hasFlag(FLAG_ARRAY) ||
                   wrapper_formal->type->symbol->hasFlag(FLAG_DOMAIN))) {
         temp = newTemp();
-        temp->addFlag(FLAG_MAYBE_PARAM);
-        if (formal->hasFlag(FLAG_TYPE_VARIABLE))
-          temp->addFlag(FLAG_TYPE_VARIABLE); // unexecuted none/gasnet on 4/25/08
+        if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
+          if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
+            temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         wrapper->insertAtTail(new DefExpr(temp));
         BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
         for_alist(expr, typeExpr->body) {
           wrapper->insertAtTail(expr->remove());
         }
-        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("_createFieldDefault", wrapper->body->body.tail->remove(), wrapper_formal)));
+        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, wrapper->body->body.tail->remove())));
+        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("=", temp, wrapper_formal)));
       } else
         temp = wrapper_formal;
       copy_map.put(formal, temp);
@@ -535,6 +536,7 @@ buildPromotionWrapper(FnSymbol* fn,
       VarSymbol* leaderIndex = newTemp("_leaderIndex");
       lifn->insertAtTail(new DefExpr(leaderIndex));
       VarSymbol* leaderIterator = newTemp("_leaderIterator");
+      leaderIterator->addFlag(FLAG_EXPR_TEMP);
       lifn->insertAtTail(new DefExpr(leaderIterator));
       lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", iterator->copy(&leaderMap))));
       lifn->insertAtTail(buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex))));
@@ -555,6 +557,7 @@ buildPromotionWrapper(FnSymbol* fn,
       fifn->insertFormalAtTail(fifnFollower);
       fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
       VarSymbol* followerIterator = newTemp("_followerIterator");
+      followerIterator->addFlag(FLAG_EXPR_TEMP);
       fifn->insertAtTail(new DefExpr(followerIterator));
       fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower)));
       BlockStmt* followerBlock = new BlockStmt();

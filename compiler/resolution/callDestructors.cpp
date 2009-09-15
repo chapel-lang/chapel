@@ -216,8 +216,8 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
     //  list_view(fn);
   } else {
     if (useMap.get(lhs) && useMap.get(lhs)->n > 0) {
-      //      USR_WARN(move, "possible premature free (use not found)");
-      //      list_view(move);
+      //USR_WARN(move, "possible premature free (use not found)");
+      //nprint_view(move);
     }
   }
 }
@@ -261,6 +261,7 @@ fixupDestructors() {
           ClassType* fct = toClassType(field->type);
           INT_ASSERT(fct);
           if (!isClass(fct) || fct->symbol->hasFlag(FLAG_SYNC)) {
+            //INT_ASSERT(autoDestroyMap.get(field->type));
             bool useRefType = !fct->symbol->hasFlag(FLAG_ARRAY) && !fct->symbol->hasFlag(FLAG_DOMAIN) &&
               !fct->symbol->hasFlag(FLAG_SYNC);
             VarSymbol* tmp = useRefType ? newTemp(fct->refType) : newTemp(fct);
@@ -271,6 +272,13 @@ fixupDestructors() {
             if (fct->symbol->hasFlag(FLAG_SYNC))
               fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
           }
+        } else if (FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type)) {
+          VarSymbol* tmp = newTemp(field->type);
+          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+          fn->insertBeforeReturnAfterLabel(
+                new CallExpr(PRIM_MOVE, tmp,
+                  new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
+          fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
         } else if (field->type == dtString && !ct->symbol->hasFlag(FLAG_TUPLE)) {
           VarSymbol* tmp = newTemp(dtString);
           fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));

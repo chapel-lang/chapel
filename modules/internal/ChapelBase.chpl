@@ -1226,7 +1226,7 @@ def chpl__initCopy(ir: _iteratorRecord) {
   pragma "no copy" var irc = _ir_copy_recursive(ir);
 
   var i = 1, size = 4;
-  var D = [1..size];
+  pragma "insert auto destroy" var D = [1..size];
 
   // note that _getIterator is called in order to copy the iterator
   // class since for arrays we need to iterate once to get the
@@ -1246,7 +1246,7 @@ def chpl__initCopy(ir: _iteratorRecord) {
     i = i + 1;
   }
   D = [1..i-1];
-  return chpl__autoCopy(A);
+  return A;
 }
 
 pragma "dont disable remote value forwarding"
@@ -1274,8 +1274,14 @@ def chpl__autoCopy(x: _tuple) {
   // body inserted during generic instantiation
 }
 
-pragma "inline" def chpl__autoCopy(ir: _iteratorRecord)
+pragma "inline" def chpl__autoCopy(ir: _iteratorRecord) {
+  // body modified during call destructors pass
   return ir;
+}
+
+pragma "inline" def chpl__autoDestroy(ir: _iteratorRecord) {
+  // body inserted during call destructors pass
+}
 
 pragma "inline" def chpl__autoCopy(x) return chpl__initCopy(x);
 

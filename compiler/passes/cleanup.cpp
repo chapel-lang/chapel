@@ -34,7 +34,8 @@ flatten_scopeless_block(BlockStmt* block) {
 //
 static void normalize_nested_function_expressions(DefExpr* def) {
   if ((!strncmp("_anon_record", def->sym->name, 12)) ||
-      (!strncmp("_loopexpr", def->sym->name, 9)) ||
+      (!strncmp("_parloopexpr", def->sym->name, 12)) ||
+      (!strncmp("_seqloopexpr", def->sym->name, 12)) ||
       (!strncmp("_forallexpr", def->sym->name, 11)) ||
       (!strncmp("_forallinit", def->sym->name, 11)) ||
       (!strncmp("_let_fn", def->sym->name, 7)) ||
@@ -53,9 +54,9 @@ static void normalize_nested_function_expressions(DefExpr* def) {
     }
     def->replace(new UnresolvedSymExpr(def->sym->name));
     stmt->insertBefore(def);
-  } else if (!strncmp("_iterator_for_loopexpr", def->sym->name, 22)) {
+  } else if (!strncmp("_iterator_for_parloopexpr", def->sym->name, 25)) {
     while (Symbol* parent = def->parentSymbol) {
-      if (!strncmp("_loopexpr", parent->name, 9))
+      if (!strncmp("_parloopexpr", parent->name, 9))
         parent->defPoint->insertBefore(def->remove());
       else
         break;
