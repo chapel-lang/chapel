@@ -564,10 +564,10 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
       i = 0;
       if (sz > 0) {
         for (; i < chpl_max_fields_per_type; i++) {
-          if (chpl_getFieldType(sz, i) == CHPL_TYPE_enum) {
+          if (chpl_getFieldType(sz, i) == 19) {
             PVM_NO_LOCK_SAFE(pvm_upkbyte(((char *)buf), chpl_getFieldSize(sz), 1), "pvm_upkbyte", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
-            sprintf(debugMsg, "Unpacking something with an enum");
+            sprintf(debugMsg, "Unpacking something with a chpl_task_list_p");
             PRINTF(debugMsg);
 #endif
             i = chpl_max_fields_per_type;
@@ -604,6 +604,7 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
           PRINTF(debugMsg);
 #endif
           break;
+        case CHPL_TYPE_enum:
         case CHPL_TYPE_int32_t:
           chpl_upkint32_t(buf, i, chpltypetype, chpltypeoffset);
           break;
@@ -731,10 +732,10 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
       i = 0;
       if (sz > 0) {
         for (; i < chpl_max_fields_per_type; i++) {
-          if (chpl_getFieldType(sz, i) == CHPL_TYPE_enum) {
+          if (chpl_getFieldType(sz, i) == 19) {
             PVM_NO_LOCK_SAFE(pvm_pkbyte(((char *)buf), chpl_getFieldSize(sz), 1), "pvm_pkbyte", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
-            sprintf(debugMsg, "Packing something with an enum");
+            sprintf(debugMsg, "Packing something with a chpl_task_list_p");
             PRINTF(debugMsg);
 #endif
             i = chpl_max_fields_per_type;
@@ -771,6 +772,7 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
           PRINTF(debugMsg);
 #endif
           break;
+        case CHPL_TYPE_enum:
         case CHPL_TYPE_int32_t:
           chpl_pkint32_t(buf, i, chpltypetype, chpltypeoffset);
           break;
