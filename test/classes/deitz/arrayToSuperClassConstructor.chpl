@@ -11,3 +11,4 @@ d.A(2) = 2;
 writeln(d);
 writeln(A);
 
+delete d;
