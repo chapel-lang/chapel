@@ -4126,12 +4126,13 @@ pruneResolvedTree() {
         }
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-          FnSymbol* fn = valueToRuntimeTypeMap.get(formal->type);
-          Type* rt = (fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ?
-                      fn->retType : runtimeTypeMap.get(fn->retType);
-          INT_ASSERT(rt);
-          formal->type =  rt;
-          formal->removeFlag(FLAG_TYPE_VARIABLE);
+          if (FnSymbol* fn = valueToRuntimeTypeMap.get(formal->type)) {
+            Type* rt = (fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ?
+                        fn->retType : runtimeTypeMap.get(fn->retType);
+            INT_ASSERT(rt);
+            formal->type =  rt;
+            formal->removeFlag(FLAG_TYPE_VARIABLE);
+          }
         }
       }
       if (fn->where)
@@ -4139,13 +4140,14 @@ pruneResolvedTree() {
       if (fn->retTag == RET_TYPE) {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
         if (ret && ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-          FnSymbol* rtfn = valueToRuntimeTypeMap.get(ret->type);
-          Type* rt = (rtfn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ?
-                      rtfn->retType : runtimeTypeMap.get(rtfn->retType);
-          INT_ASSERT(rt);
-          ret->type = rt;
-          fn->retType = ret->type;
-          fn->retTag = RET_VALUE;
+          if (FnSymbol* rtfn = valueToRuntimeTypeMap.get(ret->type)) {
+            Type* rt = (rtfn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ?
+                        rtfn->retType : runtimeTypeMap.get(rtfn->retType);
+            INT_ASSERT(rt);
+            ret->type = rt;
+            fn->retType = ret->type;
+            fn->retTag = RET_VALUE;
+          }
         }
       }
     }
