@@ -753,7 +753,13 @@ static void build_constructor(ClassType* ct) {
     bool hasInit = init;
     if (init) {
       if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !exprType) {
-        exprType = new CallExpr(PRIM_TYPEOF, new CallExpr("chpl__initCopy", init->copy()));
+        VarSymbol* tmp = newTemp();
+        tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        tmp->addFlag(FLAG_MAYBE_PARAM);
+        tmp->addFlag(FLAG_MAYBE_TYPE);
+        exprType = new BlockStmt(new DefExpr(tmp), BLOCK_SCOPELESS);
+        toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", init->copy())));
+        toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
       }
     } else if (exprType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
       init = new CallExpr(PRIM_INIT, exprType->copy());
@@ -770,8 +776,12 @@ static void build_constructor(ClassType* ct) {
       else
         arg->defaultExpr = new BlockStmt(new SymExpr(gTypeDefaultToken));
     }
-    if (exprType)
-      arg->typeExpr = new BlockStmt(exprType, BLOCK_SCOPELESS);
+    if (exprType) {
+      if (!isBlockStmt(exprType))
+        arg->typeExpr = new BlockStmt(exprType, BLOCK_SCOPELESS);
+      else
+        arg->typeExpr = toBlockStmt(exprType);
+    }
     if (field->hasFlag(FLAG_TYPE_VARIABLE))
       arg->addFlag(FLAG_TYPE_VARIABLE);
     if (!exprType && arg->type == dtUnknown)
