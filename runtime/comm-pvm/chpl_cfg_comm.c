@@ -564,10 +564,11 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
       i = 0;
       if (sz > 0) {
         for (; i < chpl_max_fields_per_type; i++) {
-          if (chpl_getFieldType(sz, i) == 19) {
+          if ((chpl_getFieldType(sz, i) == 19) ||
+              (chpl_getFieldType(sz, i) == CHPL_TYPE__cfile)) {
             PVM_NO_LOCK_SAFE(pvm_upkbyte(((char *)buf), chpl_getFieldSize(sz), 1), "pvm_upkbyte", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
-            sprintf(debugMsg, "Unpacking something with a chpl_task_list_p");
+            sprintf(debugMsg, "Unpacking something");
             PRINTF(debugMsg);
 #endif
             i = chpl_max_fields_per_type;
@@ -732,10 +733,11 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
       i = 0;
       if (sz > 0) {
         for (; i < chpl_max_fields_per_type; i++) {
-          if (chpl_getFieldType(sz, i) == 19) {
+          if ((chpl_getFieldType(sz, i) == 19) ||
+              (chpl_getFieldType(sz, i) == CHPL_TYPE__cfile)) {
             PVM_NO_LOCK_SAFE(pvm_pkbyte(((char *)buf), chpl_getFieldSize(sz), 1), "pvm_pkbyte", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
-            sprintf(debugMsg, "Packing something with a chpl_task_list_p");
+            sprintf(debugMsg, "Packing something");
             PRINTF(debugMsg);
 #endif
             i = chpl_max_fields_per_type;
