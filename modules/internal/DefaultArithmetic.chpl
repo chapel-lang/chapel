@@ -504,7 +504,7 @@ class DefaultArithmeticArr: BaseArr {
       origin = copy.origin;
       factoredOffs = copy.factoredOffs;
       size = copy.size;
-      delete data;
+      destroyData();
       data = copy.data;
       delete copy;
     } else {
