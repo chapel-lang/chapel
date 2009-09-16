@@ -176,10 +176,9 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-AM_ERR_RESOURCE failulre (09/16/09)
------------------------------------
+AM_ERR_RESOURCE failure (09/16/09)
+----------------------------------
 [Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock6]
-
 
 spurious recursive shutdown failure
 -----------------------------------
