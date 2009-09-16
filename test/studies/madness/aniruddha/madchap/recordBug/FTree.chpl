@@ -314,4 +314,6 @@ def main() {
     writeln("\n\nall tree indices = ");
     for (n, l) in f.idx_iter() do
         writeln(n,l);
+
+    delete f;
 }

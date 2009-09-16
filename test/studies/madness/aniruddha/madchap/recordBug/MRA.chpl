@@ -87,6 +87,12 @@ class Function {
     }
 
 
+    def ~Function() {
+        delete sumC;
+        delete diffC;
+    }
+
+
     /** Initialize the quadrature coefficient matricies.
      */
     def init_quadrature(order: int) {

@@ -58,6 +58,9 @@ def main() {
         df.f = dtest;
 
         df.evalNPT(npt);
+
+        delete df;
+        delete f;
     }
 
     // addition test which in turn tests gaxpy
@@ -75,7 +78,11 @@ def main() {
         f3.summarize();
 
         f3.evalNPT(npt);
-            
+
+        delete f1;
+        delete f2;
+        delete f3.f;
+        delete f3;
     }
     
     
@@ -94,5 +101,15 @@ def main() {
         f3.summarize();
 
         f3.evalNPT(npt);
+
+        delete f1;
+        delete f2;
+        delete f3.f;
+        delete f3;
+    }
+
+    for (t,d) in (tests,dtests) {
+      delete t;
+      delete d;
     }
 }

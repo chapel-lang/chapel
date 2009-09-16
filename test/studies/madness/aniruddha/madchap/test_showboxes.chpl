@@ -26,4 +26,8 @@ def main() {
             write(" [",n,", ",l,"]");
     }
     writeln();
+
+    delete fcn;
+    delete dfcn;
+    delete F;
 }

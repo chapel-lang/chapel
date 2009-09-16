@@ -62,6 +62,11 @@ class Function {
     var   r0    : [dcDom] real;
     var   rp    : [dcDom] real;
 
+    def ~Function() {
+        delete sumC;
+        delete diffC;
+    }
+
     def initialize() {
         if debug then writeln("Creating Function: k=", k, " thresh=", thresh);
 

@@ -21,6 +21,8 @@ def main() {
         writeln("\nEvaluating F+G on [0, 1]:");
         H.evalNPT(npt);
 
+        delete H;
+
         writeln("\nSubtracting F", i, " ...");
         H = F - G;
         if verbose then H.summarize();
@@ -29,6 +31,14 @@ def main() {
         H.evalNPT(npt);
 
         if i < 3 then writeln("\n======================================================================\n");
+        delete F;
+        delete G;
+        delete H;
+    }
+
+    for (f,d) in (fcn,dfcn) {
+      delete f;
+      delete d;
     }
 
 }

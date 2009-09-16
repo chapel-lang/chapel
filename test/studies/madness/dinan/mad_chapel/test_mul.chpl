@@ -32,6 +32,7 @@ def main() {
         writeln("\nMultiplying F",i,"*F",i," ...");
         var H2 = F1 * F1;
         H2.f = new Square(fcn[i]):AFcn;
+        delete H2.f;
         H2.f = fcn[i];
         if verbose then H2.summarize();
 
@@ -40,6 +41,16 @@ def main() {
 
         if i < fcn.domain.dim(1).high then
             writeln("\n======================================================================\n");
+
+        delete F1;
+        delete F2;
+        delete G.f;
+        delete G;
+        delete H1;
+        delete H2;
     }
+
+    for f in fcn do
+      delete f;
 
 }

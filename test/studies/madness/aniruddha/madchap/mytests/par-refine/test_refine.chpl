@@ -22,5 +22,11 @@ def main() {
 
         if i < fcn.domain.dim(1).high then
             writeln("\n======================================================================\n");
+        delete F;
+    }
+
+    for (f,d) in (fcn,dfcn) {
+      delete f;
+      delete d;
     }
 }

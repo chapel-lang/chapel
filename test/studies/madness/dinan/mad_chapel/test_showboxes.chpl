@@ -26,4 +26,8 @@ def main() {
             if n == lvl then write(" [",n,", ",l,"]");
     }
     writeln();
+
+    delete fcn;
+    delete dfcn;
+    delete F;
 }

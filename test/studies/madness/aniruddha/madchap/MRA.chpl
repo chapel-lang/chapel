@@ -95,6 +95,12 @@ class Function {
     }
 
 
+    def ~Function() {
+        delete sumC;
+        delete diffC;
+    }
+
+
     /** Initialize the two-scale relation coefficient matricies.
      */
     def init_twoscale(k) {

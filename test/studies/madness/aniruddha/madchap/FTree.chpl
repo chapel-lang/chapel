@@ -181,6 +181,11 @@ class FTree {
             on loc do tree[loc.id] = new LocTree(coeffDom);
     }
 
+    def ~FTree() {
+        coforall loc in Locales do
+            on loc do delete tree[loc.id];
+    }
+
     def node2loc(node: Node) {
         const loc = (2**node.lvl + node.idx)%numLocales;
         return Locales(loc);
@@ -278,6 +283,7 @@ def main() {
     writeln("f[(4, 5)] = ", f[node]);
     writeln("f.remove((4, 5))");
     f.remove(node);
+    delete node;
 
     node = new Node(1, 2);
     writeln("\n\nf.has_coeffs((1, 2)) = ", f.has_coeffs(node));
@@ -285,6 +291,7 @@ def main() {
     writeln("f[(1, 2)] = ", f[node]);
     writeln("f.remove((1, 2))");
     f.remove(node);
+    delete node;
 
     node = new Node(3, 4);
     writeln("\n\nf.remove((3, 4))");
@@ -299,6 +306,7 @@ def main() {
     writeln("\n\nentire tree = ");
     for coeffs in f do
         writeln(coeffs);
+    delete node;
 
     var f1 = f.copy();
 
@@ -329,4 +337,8 @@ def main() {
     writeln("\n\nall tree indices = ");
     for node in f.node_iter() do
         writeln(node.get_coords());
+
+    delete node;
+    delete f1;
+    delete f;
 }
