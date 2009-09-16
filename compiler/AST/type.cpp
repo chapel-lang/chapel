@@ -7,6 +7,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "vec.h"
 
 
 Type::Type(AstTag astTag, Symbol* init_defaultVal) :
@@ -758,19 +759,18 @@ bool isReferenceType(Type* t) {
 }
 
 
-static Map<TypeSymbol*,bool> typesToStructurallyCodegen;
+static Vec<TypeSymbol*> typesToStructurallyCodegen;
 
 
 void registerTypeToStructurallyCodegen(TypeSymbol* type) {
   //  printf("registering chpl_rt_type_id_%s\n", type->cname);
   if (genCommunicatedStructures) {
-    typesToStructurallyCodegen.put(type, true);
+    typesToStructurallyCodegen.set_add(type);
 
   }
 }
 
 
-typedef MapElem<TypeSymbol*, bool> ttscMapElem;
 #define TYPE_STRUCTURE_FILE "_type_structure.c"
 static int maxFieldsPerType = 0;
 
@@ -782,8 +782,7 @@ void codegenTypeStructures(FILE* hdrfile) {
   fprintf(outfile, "chpl_fieldType chpl_structType[][CHPL_MAX_FIELDS_PER_TYPE] = {\n");
             
   int num = 0;
-  form_Map(ttscMapElem, typesymM, typesToStructurallyCodegen) {
-    TypeSymbol* typesym = typesymM->key;
+  forv_Vec(TypeSymbol*, typesym, typesToStructurallyCodegen) {
     if (num) {
       fprintf(outfile, ",\n");
     }
@@ -804,8 +803,7 @@ void codegenTypeStructures(FILE* hdrfile) {
   fprintf(outfile, "};\n");
   fprintf(outfile, "typedef enum {\n");
   num = 0;
-  form_Map(ttscMapElem, typesymM, typesToStructurallyCodegen) {
-    TypeSymbol* typesym = typesymM->key;
+  forv_Vec(TypeSymbol*, typesym, typesToStructurallyCodegen) {
     fprintf(outfile, "chpl_rt_type_id_");
     ClassType* classtype = toClassType(typesym->type);
     if (classtype && classtype->classTag == CLASS_CLASS && 
@@ -820,12 +818,11 @@ void codegenTypeStructures(FILE* hdrfile) {
 
   fprintf(outfile, "size_t chpl_sizeType[] = {\n");
   num = 0;
-  form_Map(ttscMapElem, typesymM, typesToStructurallyCodegen) {
+  forv_Vec(TypeSymbol*, typesym, typesToStructurallyCodegen) {
     if (num) {
       fprintf(outfile, ",\n");
     }
     fprintf(outfile, "sizeof(");
-    TypeSymbol* typesym = typesymM->key;
     ClassType* classtype = toClassType(typesym->type);
     if (classtype && classtype->classTag == CLASS_CLASS &&
         !typesym->hasFlag(FLAG_REF)) {
