@@ -17,6 +17,12 @@
 general regressions
 ===================
 
+messed up my prediff scripts again (09/16/09)
+---------------------------------------------
+[Error matching program output for modules/bradc/overrideStd/foo]
+[Error matching program output for modules/bradc/printModStuff/foo]
+[Error matching program output for modules/bradc/userInsteadOfStandard/foo2]
+
 spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -86,6 +92,7 @@ double free (09/02/09)
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for trivial/bradc/conditional] (e.g., 09/15/09)
 [Error matching compiler output for studies/hpcc/2008/stream-promoted] (e.g., 09/15/09)
 [Error matching compiler output for users/shetag/assocInRecord-blc] (e.g., 09/15/09)
 [Error matching compiler output for sparse/bradc/sparseArray4] (e.g., 09/13/09)
@@ -132,7 +139,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for users/shetag/assocInRecord] (e.g., 08/27/09, 09/14/09)
 [Error matching compiler output for users/thom/tupleToArray] (e.g., 08/27/09)
 [Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc-domainPromote] (e.g., 08/26/09)
-[Error matching compiler output for users/shetag/assocarr] (e.g., 08/26/09, 09/09/09, 09/13/09)
+[Error matching compiler output for users/shetag/assocarr] (e.g., 08/26/09, 09/09/09, 09/13/09, 09/16/09)
 [Error matching compiler output for users/shetag/classWithArray/initArrWithFn] (e.g., 08/26/09, 08/29/09)
 
 
@@ -169,26 +176,19 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-recursive shutdown failure (09/15/09)
--------------------------------------
-[Error matching program output for associative/waynew/add_remove2]
-[Error matching program output for sparse/bradc/outOfBounds]
+AM_ERR_RESOURCE failulre (09/16/09)
+-----------------------------------
+[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock6]
 
-segfault (09/15/09)
--------------------
-[Error matching program output for studies/hpcc/common/bradc/unit/modifyLocales]
 
-spurious timeouts? (09/15/09)
------------------------------
-[Error: Timed out compilation for multilocale/deitz/needMultiLocales/dist/test_block1d_2]
-[Error: Timed out executing program multilocale/deitz/linked/test_linked3c]
-[Error: Timed out executing program users/agnieszka/multiArrayI10]
-[Error: Timed out executing program users/agnieszka/multiArrayI]
-[Error: Timed out executing program users/agnieszka/test1]
-[Error: Timed out executing program users/agnieszka/test2]
-[Error: Timed out executing program users/shetag/fock/fock-stc-1]
-[Error: Timed out executing program users/shetag/fock/fock-stc]
+spurious recursive shutdown failure
+-----------------------------------
+[Error matching program output for associative/waynew/add_remove2] (e.g., 09/15/09)
+[Error matching program output for sparse/bradc/outOfBounds] (e.g., 09/15/09)
 
+spurious segfault
+-----------------
+[Error matching program output for studies/hpcc/common/bradc/unit/modifyLocales] (e.g., 09/15/09)
 
 brad's recent changes (09/12/09)
 --------------------------------
@@ -197,6 +197,14 @@ brad's recent changes (09/12/09)
 
 new spurious timeouts
 -----------------------
+[Error: Timed out compilation for multilocale/deitz/needMultiLocales/dist/test_block1d_2] (e.g., 09/15/09)
+[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 09/15/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 09/15/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI] (e.g., 09/15/09)
+[Error: Timed out executing program users/agnieszka/test1] (e.g., 09/15/09)
+[Error: Timed out executing program users/agnieszka/test2] (e.g., 09/15/09)
+[Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 09/15/09)
+[Error: Timed out executing program users/shetag/fock/fock-stc] (e.g., 09/15/09)
 [Error: Timed out executing program studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 08/30/09)
 [Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09, 09/09/09, 09/11/09, 09/14/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 08/29/09)
