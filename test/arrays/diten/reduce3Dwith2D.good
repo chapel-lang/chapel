@@ -1,0 +1,2 @@
+reduce3Dwith2D.chpl:4: warning: reduction will be executed serially
+0
