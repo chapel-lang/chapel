@@ -17,4 +17,6 @@ def main() {
   var d: D = new D();
   d.doit;
   writeln(d);
+  delete d;
+  delete globc;
 }

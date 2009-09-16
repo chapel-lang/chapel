@@ -17,3 +17,4 @@ class C {
 var c = new C(int);
 c.foo();
 writeln(c);
+delete c;

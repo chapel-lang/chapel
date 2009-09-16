@@ -9,3 +9,5 @@ var c: C(int);
 c = new C(int);
 
 writeln(c);
+
+delete c;

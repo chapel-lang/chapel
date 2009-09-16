@@ -13,4 +13,5 @@ def main {
   writeln(array);
   array.classField -= 1;
   writeln(array.classMethod[array.classField, array.classField]);
+  [i in 0..1] delete array(i);
 }

@@ -11,3 +11,5 @@ var s: string;
 s.write(s, c);
 
 writeln(s);
+
+delete c;

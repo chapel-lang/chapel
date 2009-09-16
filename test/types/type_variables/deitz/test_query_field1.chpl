@@ -14,3 +14,4 @@ def foo(c: C(?t, ?tt)) {
 var c = new C(int, real);
 writeln(c);
 foo(c);
+delete c;

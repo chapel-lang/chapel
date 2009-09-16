@@ -34,4 +34,7 @@ def main {
   writeln(a.name);
   b.sayTypeName();
   writeln(b.name);
+
+  delete a;
+  delete b;
 }

@@ -14,7 +14,7 @@ for i in myC do
   writeln("i is: ", i);
 
 
-
+delete myC;
 
 
 

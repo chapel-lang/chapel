@@ -9,7 +9,10 @@ type t = sync int;
 
 var c = new C(t);
 
-begin writeln(c.x);
+begin {
+  writeln(c.x);
+  delete c;
+}
 
 sleep(2);
 

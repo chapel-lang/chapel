@@ -15,4 +15,5 @@ def main {
   writeln(c.n);
   c.callUpit();
   writeln(c.n);
+  delete c;
 }

@@ -23,3 +23,5 @@ var myC = new C();
 forall i in myC {
   writeln("i is: ", i);
 }
+
+delete myC;

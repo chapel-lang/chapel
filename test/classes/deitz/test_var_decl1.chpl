@@ -25,3 +25,5 @@ writeln(c);
 writeln(r);
 writeln(c2);
 writeln(r2);
+
+delete c;

@@ -16,3 +16,4 @@ class C {
 
 var myC = new C(real(64), Locales);
 writeln("myC = ", myC);
+delete myC;

@@ -10,3 +10,5 @@ class C {
 var myC = new C(targetLocs=Locales);
 
 writeln("myC = ", myC);
+
+delete myC;

@@ -14,3 +14,6 @@ writeln(s);
 s.concat(makeList(c1, c2));
 
 writeln(s);
+
+delete c1;
+delete c2;

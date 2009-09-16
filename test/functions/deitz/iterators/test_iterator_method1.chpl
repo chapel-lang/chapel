@@ -9,3 +9,5 @@ var c = new C();
 
 for i in c.foo() do
   writeln(i);
+
+delete c;

@@ -22,3 +22,5 @@ writeln("succeeded");
 writeln("c1 is: ", c1);
 writeln("foo().x = ", foo().x);
 writeln("bar().x = ", bar().x);
+
+delete c1;

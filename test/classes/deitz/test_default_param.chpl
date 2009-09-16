@@ -7,3 +7,5 @@ var c: C;
 c = new C();
 
 writeln(c);
+
+delete c;

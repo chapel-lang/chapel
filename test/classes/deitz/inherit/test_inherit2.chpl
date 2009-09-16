@@ -17,3 +17,6 @@ writeln(d);
 
 foo(c);
 foo(d);
+
+delete c;
+delete d;

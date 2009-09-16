@@ -15,3 +15,5 @@ if c != nil then
   writeln(c.x);
 else
   writeln("c is nil");
+
+delete c;

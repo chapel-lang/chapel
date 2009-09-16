@@ -15,3 +15,4 @@ setVolcano(mtStHelens.alertLevel, name);
 writeln("Name: ", name);
 writeln("Alert Level: ", mtStHelens.alertLevel);
 
+delete mtStHelens;

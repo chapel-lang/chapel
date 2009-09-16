@@ -25,3 +25,9 @@ class C {
 var myC = new C(targetLocs=Locales);
 
 writeln("myC = ", myC);
+
+for loc in myC.targetLocs do
+  on loc do
+    delete myC.A(loc);
+
+delete myC;

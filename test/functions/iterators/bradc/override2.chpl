@@ -29,4 +29,6 @@ def test(x: C) {
   writeln();
 }
 
-
+delete c1;
+delete c2;
+delete d;

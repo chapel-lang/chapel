@@ -241,6 +241,7 @@ def create_tree(inout q: DeQueue(TreeNode)) {
     var node = q.popTop();
     count += node.genChildren(q);
     maxDepth = max(maxDepth, node.depth);
+    delete node;
 
     if (q.size > 2*chunkSize) then
       balance_load(ldbal_state, q);
@@ -285,4 +286,6 @@ def main() {
   writeln("Tree size = ", global_count.readXX(), ", depth = ", global_maxDepth.readXX());
   if !testMode then writeln("Time: t_create= ", t_create.elapsed(),
           " (", global_count.readXX()/t_create.elapsed(), " nodes/sec)");
+
+
 }

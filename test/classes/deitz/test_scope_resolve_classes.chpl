@@ -13,5 +13,6 @@ module M {
   def main() {
     var c = new C();
     c.foo();
+    delete c;
   }
 }

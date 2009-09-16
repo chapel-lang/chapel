@@ -48,7 +48,9 @@ module dequeue {
       top = top.next;
       if top == nil then bottom = nil;  // Empty
       size -= 1;
-      return oldTop.item;
+      var result = oldTop.item;
+      delete oldTop;
+      return result;
     }
 
     // popBottom: remove an item from the bottom of the DeQueue
@@ -59,7 +61,9 @@ module dequeue {
       bottom = bottom.prev;
       if bottom == nil then top = nil;  // Empty
       size -= 1;
-      return oldBottom.item;
+      var result = oldBottom.item;
+      delete oldBottom;
+      return result;
     }
 
     // Split n elements off the bottom of the Dequeue and

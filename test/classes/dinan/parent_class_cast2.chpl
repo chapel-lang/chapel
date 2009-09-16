@@ -17,3 +17,6 @@ var d = new D();
 d.p = new C(5);
 
 writeln(d.p.f());
+
+delete d.p;
+delete d;

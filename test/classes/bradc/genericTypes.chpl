@@ -18,3 +18,6 @@ c.foo();
 
 var c2 = new C(3,real);
 c2.foo();
+
+delete c;
+delete c2;

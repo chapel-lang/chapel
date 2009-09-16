@@ -7,3 +7,5 @@ c.s = true;
 c.s;
 
 if (c.s.isFull) then halt("Should never get here.");
+
+delete c;

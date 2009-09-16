@@ -13,3 +13,5 @@ n[1] = new C(3,4);
 var o : C = n[1];
 writeln(o);
 
+delete m;
+delete o;

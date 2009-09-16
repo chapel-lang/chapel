@@ -12,6 +12,7 @@ def jam() {
   begin {
     c.x = 14;
     writeln( c);
+    delete c;
   }
 }
 

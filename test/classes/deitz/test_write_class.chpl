@@ -13,3 +13,5 @@ var c = new C();
 c.write(41, 32, 23, 14);
 
 writeln(c);
+
+delete c;

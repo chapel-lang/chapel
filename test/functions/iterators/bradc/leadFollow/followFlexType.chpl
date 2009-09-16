@@ -48,3 +48,6 @@ writeln();
 forall (i,j) in (myD,myC) do
   writeln("(i,j) = ", (i,j));
 writeln();
+
+delete myC;
+delete myD;

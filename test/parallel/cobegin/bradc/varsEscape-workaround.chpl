@@ -15,3 +15,8 @@ var c = new C(new C(), new C(new C(), new C()));
 
 writeln("c has ", c.countNodes(), " nodes");
 
+delete c.left;
+delete c.right.left;
+delete c.right.right;
+delete c.right;
+delete c;

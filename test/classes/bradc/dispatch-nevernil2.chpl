@@ -20,4 +20,7 @@ def main() {
   var myD = new D(new C());
   myD.y.x = 2;
   foo(myD);
+  delete myC;
+  delete myD.y;
+  delete myD;
 }

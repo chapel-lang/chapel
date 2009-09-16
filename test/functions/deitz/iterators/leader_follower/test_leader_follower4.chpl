@@ -34,3 +34,5 @@ forall e in c do
   e = 2;
 
 writeln(c);
+
+delete c;

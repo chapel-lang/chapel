@@ -15,3 +15,6 @@ var s: list(C) = makeList( new C(1), new D(2,3), new C(4), new D(5,6) );
 writeln(s);
 
 for e in s do e.foo();
+
+for e in s do
+  delete e;

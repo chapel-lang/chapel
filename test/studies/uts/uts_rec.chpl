@@ -281,6 +281,13 @@ def create_tree(parent: TreeNode, wasParallel: bool = false): int {
 } 
 
 
+def destroyTree(tn: TreeNode) {
+  for child in tn.children do
+    destroyTree(child);
+  delete tn;
+}
+
+
 def main {
   var t_create: Timer();
   var t_dfs   : Timer();
@@ -312,4 +319,6 @@ def main {
   if !testMode then writeln("Time: t_create= ", t_create.elapsed(),
           " (", created/t_create.elapsed(), " nodes/sec)", ", t_dfs = ", t_dfs.elapsed(),
           " (", counted/t_dfs.elapsed(), " nodes/sec)");
+
+  destroyTree(root);
 }

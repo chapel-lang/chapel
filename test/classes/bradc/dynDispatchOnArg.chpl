@@ -20,3 +20,5 @@ def foo(cOrD:C) {
 var myD = new D();
 
 foo(myD);
+
+delete myD;

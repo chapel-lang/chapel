@@ -10,3 +10,6 @@ var c : C = new C(), d : D = new D();
 
 writeln(c);
 writeln(d);
+
+delete c;
+delete d;

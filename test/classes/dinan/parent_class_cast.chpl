@@ -15,3 +15,6 @@ var ps: [1..2] P = (new C(), new D());
 
 for i in ps do
     writeln(i.f());
+
+delete ps(1);
+delete ps(2);

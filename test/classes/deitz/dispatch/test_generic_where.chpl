@@ -15,7 +15,9 @@ class D: C {
 var c = new C();
 c.foo(1);
 c.foo(2);
+delete c;
 
 c = new D();
 c.foo(1);
 c.foo(2);
+delete c;

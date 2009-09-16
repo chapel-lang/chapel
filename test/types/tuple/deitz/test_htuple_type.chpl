@@ -6,3 +6,4 @@ class C {
 }
 var c = new C(2*int);
 writeln(c);
+delete c;

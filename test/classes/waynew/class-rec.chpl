@@ -15,3 +15,4 @@ class C {
 }
 
 var c: C(real) = new C(real);
+delete c;

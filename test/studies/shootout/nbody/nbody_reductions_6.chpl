@@ -111,4 +111,6 @@ def main() {
 		writeln("Time elapsed : ", t.elapsed(), " seconds");
 	}
 
+        for body in bodies do delete body;
+
 }

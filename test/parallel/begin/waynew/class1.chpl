@@ -11,4 +11,5 @@ writeln( c);
 begin {
   c.x = 14;
   writeln( c);
+  delete c;
 }

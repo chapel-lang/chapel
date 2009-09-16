@@ -8,4 +8,4 @@ var c = new C(A);
 c.A(2) = 2;
 writeln(c);
 writeln(A);
-
+delete c;

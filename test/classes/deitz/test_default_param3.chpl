@@ -10,4 +10,6 @@ writeln(c);
 
 var cc = new C(Colors.Blue);
 writeln(cc);
-  
+
+delete c;
+delete cc;

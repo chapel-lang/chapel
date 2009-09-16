@@ -12,8 +12,10 @@ var c: C = new C();
 
 c.foo(1);
 c.bar(1);
+delete c;
 
 c = new D();
 
 c.foo(1);
 c.bar(1);
+delete c;

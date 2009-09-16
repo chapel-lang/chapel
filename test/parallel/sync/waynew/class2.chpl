@@ -22,6 +22,7 @@ begin {
     writeln( "2: got ", r);
     j += 1;
   }
+  delete c;
 }
 
 var k: int;

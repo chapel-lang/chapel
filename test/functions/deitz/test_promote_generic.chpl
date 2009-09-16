@@ -12,3 +12,5 @@ var A: [i in 1..4] C(int) = new C(int, i);
 writeln(A);
 
 writeln(foo(A));
+
+for a in A do delete a;

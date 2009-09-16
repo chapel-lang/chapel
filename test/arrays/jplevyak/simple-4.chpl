@@ -29,3 +29,7 @@ y2.a(2) = z;
 writeln(y2.a(2));
 y3.a(2) = z;
 writeln(y3.a(2));
+
+delete y1;
+delete y2;
+delete y3;

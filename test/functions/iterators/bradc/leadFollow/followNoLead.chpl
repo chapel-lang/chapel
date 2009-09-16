@@ -35,3 +35,6 @@ var myD = new D();
 forall (i,j) in (myC, myD) {
   writeln("(i,j) = ", (i,j));
 }
+
+delete myC;
+delete myD;

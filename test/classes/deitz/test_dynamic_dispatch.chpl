@@ -8,5 +8,7 @@ class D : C {
 
 var c = new C();
 c.foo();
+delete c;
 c = new D();
 c.foo();
+delete c;

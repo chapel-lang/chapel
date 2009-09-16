@@ -1,6 +1,11 @@
 class C {}
 
-def bar() return new C();
+var c: C;
+
+def bar() {
+  c = new C();
+  return c;
+}
 
 writeln(bar().locale.id);
 
@@ -11,3 +16,5 @@ on foo() {
 }
 
 writeln(foo().locale.id);
+
+delete c;

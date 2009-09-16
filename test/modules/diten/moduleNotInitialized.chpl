@@ -33,5 +33,6 @@ module M2 {
 
     writeln(b);
     writeln(c);
+    delete M1.a;
   }
 }

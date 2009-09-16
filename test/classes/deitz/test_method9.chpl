@@ -12,3 +12,4 @@ class C {
 var c = new C();
 c.foo();
 c.bar();
+delete c;

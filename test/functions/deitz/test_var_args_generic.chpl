@@ -13,3 +13,5 @@ class C {
 var c = new C(1);
 
 c.foo(1);
+
+delete c;

@@ -19,4 +19,7 @@ def main() {
   foo(myC);
   var myD = new D(new C(2));
   foo(myD);
+  delete myC;
+  delete myD.y;
+  delete myD;
 }

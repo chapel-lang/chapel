@@ -53,3 +53,4 @@ def simple4( c: C) : int {
 var c: C = new C();
 c.max = 10;
 writeln( "test4: ", simple4( c));
+delete c;

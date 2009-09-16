@@ -33,4 +33,8 @@ writeln("myD = ", myD);
 if (runsegfault) {
   var myD2 = myD.buildNew();
   writeln("myD2 = ", myD2);
+  delete myD2;
 }
+
+delete myC;
+delete myD;

@@ -9,3 +9,4 @@ c.y = (1, 2, 3);
 writeln(c);
 writeln(c.x);
 writeln(c.x(3));
+delete c;

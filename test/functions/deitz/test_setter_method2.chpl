@@ -16,3 +16,5 @@ class D {
 
 var d = new D();
 d.bar();
+delete d.c;
+delete d;

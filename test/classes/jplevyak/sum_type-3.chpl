@@ -18,3 +18,6 @@ px(c);
 px(d);
 py(c);
 py(d);
+
+delete c;
+delete d;

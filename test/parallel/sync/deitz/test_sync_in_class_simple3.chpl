@@ -16,4 +16,6 @@ begin {
   r = c.s;
 
   writeln(r);
+
+  delete c;
 }

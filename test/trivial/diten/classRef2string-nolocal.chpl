@@ -10,4 +10,5 @@ def main {
   //  writeln(chpldev_classToString(b));
   writeln(chpldev_refToString(b.a));
   writeln(chpldev_refToString(b.b));
+  delete b;
 }

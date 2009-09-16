@@ -29,3 +29,7 @@ writeln(c.a(1));
 
 c.b(1) = 2;
 writeln(c.b(1));
+
+delete a;
+delete c.a;
+delete c;

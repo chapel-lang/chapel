@@ -8,3 +8,6 @@ writeln(c);
 
 var c2 = new C();
 writeln(c2);
+
+delete c;
+delete c2;

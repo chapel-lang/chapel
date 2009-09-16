@@ -10,3 +10,5 @@ for i in 1..3 {
   writeln("myC.arr(", i, ") = ", myC.arr(i).readXX());
   writeln("myC.arr(", i, ").isFull = ", myC.arr(i).isFull);
 }
+
+delete myC;

@@ -6,3 +6,5 @@ class C {
 var c = new C(4);
 
 writeln(c.foo);
+
+delete c;

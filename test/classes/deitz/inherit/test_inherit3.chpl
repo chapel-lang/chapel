@@ -14,5 +14,7 @@ var c : C;
 
 c = new C();
 foo(c);
+delete c;
 c = new D();
 foo(c);
+delete c;

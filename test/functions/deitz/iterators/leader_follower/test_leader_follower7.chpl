@@ -39,3 +39,5 @@ forall (e,f) in (c, forall f in c do f) do
   e = f + 1;
 
 writeln(c);
+
+delete c;

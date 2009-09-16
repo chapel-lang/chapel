@@ -19,15 +19,18 @@ d = c:D;
 if d then writeln(d); else writeln("nil value");
 e = c:E;
 if e then writeln(e); else writeln("nil value");
+delete c;
 
 c = new D();
 d = c:D;
 if d then writeln(d); else writeln("nil value");
 e = c:E;
 if e then writeln(e); else writeln("nil value");
+delete c;
 
 c = new E();
 d = c:D;
 if d then writeln(d); else writeln("nil value");
 e = c:E;
 if e then writeln(e); else writeln("nil value");
+delete c;

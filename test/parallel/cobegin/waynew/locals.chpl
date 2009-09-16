@@ -69,6 +69,10 @@ def function3() {
   }
 
   writeln( "test3:", c, d);
+
+  delete d.c;
+  delete d;
+  delete c;
 }
 
 function3();

@@ -11,3 +11,4 @@ writeln(c);
 writeln(c.foo());
 c.foo() = 3;
 writeln(c);
+delete c;

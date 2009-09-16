@@ -25,3 +25,6 @@ foo(d);
 
 bar(c);
 bar(d);
+
+delete c;
+delete d;

@@ -6,3 +6,5 @@ class C {
 
 var c = new C(n = 8);
 writeln(c);
+
+delete c;

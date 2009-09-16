@@ -10,6 +10,8 @@ def foo(c: C(int, ?tt) ...?k) {
   var yy: tt(1);
   writeln((y, yy));
   writeln(c);
+  delete c(1);
+  delete c(2);
 }
 
 def foo(c: C(real, ?tt) ...?k) {
@@ -17,6 +19,8 @@ def foo(c: C(real, ?tt) ...?k) {
   var yy: tt(1);
   writeln((y, yy));
   writeln(c);
+  delete c(1);
+  delete c(2);
 }
 
 foo(new C(int, real), new C(int, real));

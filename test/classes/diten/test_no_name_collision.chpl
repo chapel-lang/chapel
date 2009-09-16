@@ -5,6 +5,7 @@ class outerClass {
   def foo() {
     var c = new aClass(4);
     writeln(c.a);
+    delete c;
   }
 }
 
@@ -17,4 +18,6 @@ def main() {
   var b = new outerClass();
   b.foo();
   writeln(a.b);
+  delete a;
+  delete b;
 }

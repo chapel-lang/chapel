@@ -20,5 +20,6 @@ module M2 {
   def main() {
     var c = new C(R);
     writeln(c.bar());
+    delete c;
   }
 }

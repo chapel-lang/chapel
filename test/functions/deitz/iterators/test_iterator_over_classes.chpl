@@ -14,3 +14,7 @@ def foo() {
 
 for i in foo() do
   writeln(i);
+
+delete c1;
+delete c2;
+delete c3;

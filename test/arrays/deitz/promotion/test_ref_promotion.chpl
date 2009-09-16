@@ -9,3 +9,5 @@ c.A = 1..5;
 B = 6..10;
 
 writeln(B*c.A);
+
+delete c;

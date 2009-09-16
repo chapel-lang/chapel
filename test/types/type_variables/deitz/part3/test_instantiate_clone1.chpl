@@ -11,3 +11,5 @@ writeln(c);
 c.x = 12;
 
 writeln(c);
+
+delete c;

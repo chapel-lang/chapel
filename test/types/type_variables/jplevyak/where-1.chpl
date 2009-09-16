@@ -12,3 +12,5 @@ def f(x : ?t) where x.bar == int {
 var c = new C(bar=int, x=1);
 
 f(c);
+
+delete c;

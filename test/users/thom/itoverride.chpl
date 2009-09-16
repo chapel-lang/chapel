@@ -46,4 +46,5 @@ def main()
 
     //code compiles without this line
     writeln("Many: ",o.manyC());
+    delete o;
 }

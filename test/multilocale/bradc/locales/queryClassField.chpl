@@ -14,3 +14,5 @@ for i in LocaleSpace {
   writeln("x[", i, "] is on locale: ", x(i).locale.id);
   writeln("x[", i, "].myid is on locale: ", x(i).myid.locale.id);
 }
+
+for xx in x do on xx do delete xx;

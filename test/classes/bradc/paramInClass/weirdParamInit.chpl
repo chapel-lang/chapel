@@ -12,3 +12,5 @@ param x = c.x;
 
 writeln("c is: ", c);
 writeln("x is: ", x);
+
+delete c;

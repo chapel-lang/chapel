@@ -12,3 +12,4 @@ class C {
 var c = new C();
 c.x = 2;
 writeln(c.x);
+delete c;

@@ -8,6 +8,7 @@ module M2 {
   def main {
     var c = bar();
     writeln(baz(c));
+    delete c;
   }
   def bar() {
     return new C();

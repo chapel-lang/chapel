@@ -12,6 +12,7 @@ module M2 {
   def main {
     var c = bar();
     writeln(baz(c));
+    delete c;
   }
   def bar() {
     use M1;

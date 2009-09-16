@@ -17,3 +17,5 @@ def foo(c: C = myC, fmt: string = "foo", x: int) {
 
 writeln("Calling the overloaded foo function with an int argument,");
 foo(3);
+
+delete myC;

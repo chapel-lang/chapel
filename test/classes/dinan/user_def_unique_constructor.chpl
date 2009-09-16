@@ -9,3 +9,5 @@ class C {
 var c = new C(2, 3);
 
 writeln(c.x);
+
+delete c;

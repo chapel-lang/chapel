@@ -10,3 +10,5 @@ class C {
 var c = new C();
 
 writeln(c.x);
+
+delete c;

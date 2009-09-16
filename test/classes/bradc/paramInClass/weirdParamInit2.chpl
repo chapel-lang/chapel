@@ -12,3 +12,6 @@ var d = new D(c.x);
 
 writeln("c is: ", c);
 writeln("d is: ", d);
+
+delete c;
+delete d;

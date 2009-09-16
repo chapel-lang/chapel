@@ -18,3 +18,7 @@ writeln(c);
 writeln(c.d);
 writeln(c.d.f);
 writeln(c.d().x);
+
+delete c.d.f;
+delete c.d;
+delete c;

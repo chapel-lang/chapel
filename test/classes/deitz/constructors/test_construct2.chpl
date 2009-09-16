@@ -11,3 +11,4 @@ class C {
 
 var c = new C(true);
 writeln(c);
+delete c;

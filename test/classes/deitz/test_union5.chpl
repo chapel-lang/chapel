@@ -17,3 +17,4 @@ x.c.f = 2.2;
 
 writeln("x: (", x.c.f, ")");
 
+delete x;

@@ -3,4 +3,7 @@ class C {
   var x: t;
 }
 
-writeln(new C(t=C(int).type,x=new C(int)));
+var c = (new C(t=C(int).type,x=new C(int)));
+writeln(c);
+delete c.x;
+delete c;

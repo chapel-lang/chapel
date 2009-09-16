@@ -5,3 +5,5 @@ class C {
 var c : C = new C("hello world");
 
 writeln(c);
+
+delete c;

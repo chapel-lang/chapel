@@ -19,7 +19,9 @@ class C : D {
 
 var d = new D();
 writeln(d);
+delete d;
 
 var c = new C();
 c.foo();
 writeln(c);
+delete c;

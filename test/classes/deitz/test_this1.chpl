@@ -13,3 +13,6 @@ var c : C = new C();
 writeln(c);
 writeln(c.d);
 writeln(c().x);
+
+delete c.d;
+delete c;

@@ -17,8 +17,12 @@ def foo(d: D) {
 def main() {
   var myC = new C(x=1);
   foo(myC);
+  delete myC;
   var myD = new D();
+  delete myD.y;
   myD.y = new C();
   myD.y.x = 2;
   foo(myD);
+  delete myD.y;
+  delete myD;
 }

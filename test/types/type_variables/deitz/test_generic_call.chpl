@@ -11,3 +11,6 @@ def foo(c1: C, c2: C) {
 }
 
 foo(c1, c2);
+
+delete c1;
+delete c2;

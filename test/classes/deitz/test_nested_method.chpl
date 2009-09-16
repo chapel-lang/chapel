@@ -14,3 +14,5 @@ var c : C = new C();
 
 writeln(c);
 c.foo();
+
+delete c;

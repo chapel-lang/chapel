@@ -24,6 +24,8 @@ writeln("myR is: ", myR);
 baz(myC, 20);
 writeln("myC is: ", myC);
 
+delete myC;
+
 def foo(x,y) {
   x(1) = y;
 }

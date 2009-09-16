@@ -9,3 +9,4 @@ var c = new C();
 writeln(c);
 c.foo(3);
 c.foo();
+delete c;

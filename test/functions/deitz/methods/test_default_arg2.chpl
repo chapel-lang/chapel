@@ -10,3 +10,4 @@ writeln(c);
 c.foo(3, 5);
 c.foo(3);
 c.foo();
+delete c;

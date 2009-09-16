@@ -12,3 +12,4 @@ writeln(c.g());
 // error: writeln(c.g);
 // error: writeln(c.f());
 
+delete c;

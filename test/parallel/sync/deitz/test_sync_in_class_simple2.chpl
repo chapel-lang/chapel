@@ -15,3 +15,5 @@ c.s = 3;
 r = c.s;
 
 writeln(r);
+
+delete c;

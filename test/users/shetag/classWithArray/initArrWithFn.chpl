@@ -17,4 +17,5 @@ class C {
 
 var c = new C(4);
 writeln(c);
+delete c;
 

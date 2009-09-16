@@ -10,3 +10,5 @@ writeln(c);
 var a: c.x.type;
 
 writeln(a);
+
+delete c;

@@ -15,6 +15,7 @@ class D: C {
 
 def bar(c: C) {
   c.foo();
+  delete c;
 }
 
 bar(new C(x=3));

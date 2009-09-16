@@ -18,5 +18,7 @@ foo(c);
 bar(d);
 writeln(c);
 writeln(d);
+delete c;
+delete d;
 
 

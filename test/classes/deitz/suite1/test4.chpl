@@ -5,3 +5,4 @@ class C {
 
 var c = new C(int, 12);
 writeln(c);
+delete c;

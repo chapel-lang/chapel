@@ -20,3 +20,6 @@ def bar(x: ?) {
 bar(c1);
 bar(c2);
 bar(3.14);
+
+delete c1;
+delete c2;

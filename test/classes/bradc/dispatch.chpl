@@ -21,4 +21,7 @@ def main() {
   myD.y = new C();
   myD.y.x = 2;
   foo(myD);
+  delete myC;
+  delete myD.y;
+  delete myD;
 }

@@ -13,5 +13,6 @@ module M1 {
   def main {
     var c = new C();
     writeln(c);
+    delete c;
   }
 }

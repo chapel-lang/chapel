@@ -10,3 +10,5 @@ record R {
 var c = new C(R);
 
 writeln(c);
+
+delete c;

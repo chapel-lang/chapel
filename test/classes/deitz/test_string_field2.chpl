@@ -6,3 +6,5 @@ class C {
 var c : C = new C(2, "hello world");
 
 writeln(c);
+
+delete c;

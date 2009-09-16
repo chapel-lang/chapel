@@ -25,3 +25,7 @@ Y2.a(2) = z;
 writeln(Y2.a(2));
 Y3.a(2) = z;
 writeln(Y3.a(2));
+
+delete Y1;
+delete Y2;
+delete Y3;

@@ -15,5 +15,6 @@ module M {
     }
     var c = new C();
     c.foo();
+    delete c;
   }
 }

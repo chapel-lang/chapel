@@ -8,3 +8,5 @@ var d : c.t;
 
 d = 1;
 writeln(d);
+
+delete c;

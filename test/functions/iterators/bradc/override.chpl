@@ -33,3 +33,6 @@ for i in d {
 }
 writeln();
 
+delete c1;
+delete c2;
+delete d;

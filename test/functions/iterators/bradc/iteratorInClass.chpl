@@ -29,3 +29,4 @@ for j in myC.iterate(10, 0.5) {
 }
 writeln("myC.bar is: ", myC.bar);
 
+delete myC;

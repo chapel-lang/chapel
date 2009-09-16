@@ -64,10 +64,14 @@ class D: C {
 // Because the class 'D' is derived from 'C', the variable 'c' can
 // reference an object of type 'D'.  If an overridden method such as
 // printFields is called, it is dynamically dispatched to the method
-// with the most specific dynamic type.
+// with the most specific dynamic type.  The 'delete' keyword can be
+// used to free memory associated with c before pointing it an instance
+// of 'D'.
 //
+delete c;
 c = new D(3, 4);
 c.printFields();
+delete c;
 
 //
 // There are a few method names that cause the method to have special
@@ -105,3 +109,4 @@ a(4) = 2; // call to this function
 
 for elt in a do // invocation of these iterator
   writeln(elt);
+delete a;

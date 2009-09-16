@@ -12,4 +12,5 @@ class C {
 
 var c = new C();
 c.d.foo();
-
+delete c.d;
+delete c;

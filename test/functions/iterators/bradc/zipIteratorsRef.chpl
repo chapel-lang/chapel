@@ -34,3 +34,6 @@ for (c1, c2) in (otherC, myC) {
 writeln("otherC is: ");
 for c in otherC do
   writeln(c, " ");
+
+delete myC;
+delete otherC;

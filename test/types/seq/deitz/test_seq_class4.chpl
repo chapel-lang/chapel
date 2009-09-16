@@ -14,3 +14,5 @@ s.append(new D(1, 2));
 s.append(new C(3));
 
 writeln(s);
+
+for c in s do delete c;

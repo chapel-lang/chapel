@@ -19,3 +19,7 @@ writeln("c1 is: ", c1);
 writeln("c2 is: ", c2);
 writeln("c3 is: ", c3);
 writeln("c4 is: ", c4);
+
+delete c1;
+delete c2;
+delete c3;

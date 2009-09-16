@@ -18,8 +18,12 @@ for i in c.foo(4) do
   writeln(i);
 writeln();
 
+delete c;
+
 c = new D();
 
 for i in c.foo(4) do
   writeln(i);
 writeln();
+
+delete c;

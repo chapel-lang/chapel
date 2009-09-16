@@ -15,6 +15,7 @@ s.y = 3;
 s.y = 4;
 s.z = 5;
 s.z = 6;
-writeln( s);
-
+var c = s;
+writeln( c);
+delete c;
 

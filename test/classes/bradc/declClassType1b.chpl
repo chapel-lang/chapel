@@ -18,4 +18,6 @@ def main() {
   globc = nil;
   d.doit;
   writeln(d);
+  delete globc;
+  delete d;
 }

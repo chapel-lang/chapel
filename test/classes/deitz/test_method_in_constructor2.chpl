@@ -7,3 +7,5 @@ class C {
 var c = new C(int(64));
 
 writeln(c);
+
+delete c;

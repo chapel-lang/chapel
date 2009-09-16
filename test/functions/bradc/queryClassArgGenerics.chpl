@@ -19,3 +19,6 @@ var myC = new C(int, 2),
 
 foo(myC, myC2);
 foo(myC, myC3);
+delete myC;
+delete myC2;
+delete myC3;

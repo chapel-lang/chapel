@@ -11,3 +11,5 @@ c.D = [1..8];
 writeln(c);
 D = [1..8];
 writeln(c);
+
+delete c;

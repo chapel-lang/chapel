@@ -8,6 +8,7 @@ def foo() {
   }
   var a = new C();
   a.a();
+  delete a;
 }
 
 foo();

@@ -14,3 +14,7 @@ var d = new C();
 
 writeln(c);
 writeln(d);
+
+delete e;
+delete c;
+delete d;

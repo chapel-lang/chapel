@@ -20,4 +20,7 @@ def main {
   writeln(d);
   c.foo(3);
   writeln(d);
+
+  delete d;
+  delete c;
 }

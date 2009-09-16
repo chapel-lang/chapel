@@ -17,3 +17,6 @@ class C {
 
 var c = new C(2,int);
 writeln("c.A is: ", c.A);
+
+delete c.d;
+delete c;

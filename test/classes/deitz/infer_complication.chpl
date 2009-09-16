@@ -11,3 +11,6 @@ writeln(c.foo());
 
 var d = new C("hello", "world");
 writeln(d.foo());
+
+delete c;
+delete d;
