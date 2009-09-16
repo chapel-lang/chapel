@@ -36,19 +36,23 @@ static int err_ignore;
 static FnSymbol* err_fn = NULL;
 
 
+const char* cleanFilename(const char* name) {
+  static int chplHomeLen = strlen(CHPL_HOME);
+
+  if (!strncmp(name, CHPL_HOME, chplHomeLen)) {
+    return astr("$CHPL_HOME", name + chplHomeLen);
+  } else {
+    return name;
+  }
+}  
+
+
 static const char* cleanFilename(BaseAST* ast) {
   ModuleSymbol* mod = ast->getModule();
-  int chplHomeLen = strlen(CHPL_HOME);
   if (mod) {
-    if (!strncmp(ast->getModule()->filename, CHPL_HOME, chplHomeLen)) {
-      return astr("$CHPL_HOME", ast->getModule()->filename + chplHomeLen);
-    } else {
-      return ast->getModule()->filename;
-    }
-  } else if (!strncmp(yyfilename, CHPL_HOME, chplHomeLen)) {
-    return astr("$CHPL_HOME", yyfilename + chplHomeLen);
+    return cleanFilename(ast->getModule()->filename);
   } else {
-    return yyfilename;
+    return cleanFilename(yyfilename);
   }
 }
 

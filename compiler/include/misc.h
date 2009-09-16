@@ -22,6 +22,8 @@
 
 class BaseAST;
 
+const char* cleanFilename(const char* name);
+
 void setupError(const char* filename, int lineno, int tag);
 void handleError(const char* fmt, ...);
 void handleError(BaseAST* ast, const char* fmt, ...);

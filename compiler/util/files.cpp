@@ -496,7 +496,7 @@ static const char* searchPath(Vec<const char*> path, const char* filename,
         foundfile = fullfilename;
       } else {
         USR_WARN("Ambiguous module source file -- using %s over %s", 
-                 foundfile, fullfilename);
+                 cleanFilename(foundfile), cleanFilename(fullfilename));
       }
     }
   }
@@ -595,7 +595,7 @@ const char* stdModNameToFilename(const char* modName) {
 
 static void helpPrintPath(Vec<const char*> path) {
   forv_Vec(const char*, dirname, path) {
-    fprintf(stderr, "  %s\n", dirname);
+    fprintf(stderr, "  %s\n", cleanFilename(dirname));
   }
 }
 

@@ -83,7 +83,7 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType) {
       fprintf(stderr, "Parsing module files:\n");
       firstFile = false;
     }
-    fprintf(stderr, "  %s\n", filename);
+    fprintf(stderr, "  %s\n", cleanFilename(filename));
   }
   
   yyblock = NULL;
