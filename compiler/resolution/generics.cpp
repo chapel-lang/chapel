@@ -285,12 +285,12 @@ checkInstantiationLimit(FnSymbol* fn) {
 
 
 static void
-renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs) {
+renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
   sym->name = astr(sym->name, "(");
   sym->cname = astr(sym->cname, "_");
   bool first = false;
-  for (int i = 0; i < subs->n; i++) {
-    if (Symbol* value = subs->v[i].value) {
+  for_formals(formal, fn) {
+    if (Symbol* value = subs->get(formal)) {
       if (TypeSymbol* ts = toTypeSymbol(value)) {
         if (!first && !strncmp(sym->name, "_tuple", 6)) {
           sym->name = astr("(");
@@ -380,7 +380,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
     INT_ASSERT(isClassType(fn->retType));
     newType = fn->retType->symbol->copy()->type;
-    renameInstantiatedType(newType->symbol, subs);
+    renameInstantiatedType(newType->symbol, subs, fn);
     fn->retType->symbol->defPoint->insertBefore(new DefExpr(newType->symbol));
     newType->symbol->copyFlags(fn);
     if (newType->symbol->hasFlag(FLAG_SYNC))
