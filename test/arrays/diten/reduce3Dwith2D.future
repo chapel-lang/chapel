@@ -1,10 +1,9 @@
 bug: zipper iteration of mismatched ranks
 
-This test needs a good compile-time error message.
+This test needs a compiler error message.
 
 was:
 
-bug: reducing a 2D array + a 3D array causes compile time tuple index OOB.
 
 The current expected behavior of this test is to use the default iteration
 orders of both arrays to produce a 1D sum, which is reduced.
