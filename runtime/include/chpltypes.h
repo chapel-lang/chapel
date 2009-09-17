@@ -9,8 +9,8 @@
 typedef enum {
   CHPL_TYPE_chpl_bool,
   CHPL_TYPE_enum,
-  CHPL_TYPE_int8,
-  CHPL_TYPE_int16,
+  CHPL_TYPE_int8_t,
+  CHPL_TYPE_int16_t,
   CHPL_TYPE_int32_t,
   CHPL_TYPE_int64_t,
   CHPL_TYPE_uint8_t,
