@@ -1,7 +1,13 @@
 #!/usr/bin/perl
 
 while (<>) {
-    if (m/Memory Statistics/) {
+    if (m/Compiler Command : .*\s(.*\.chpl)$/) {
+        $program = $1;
+    } elsif (m/Execution Command:.*tmp\.\.\-(.*?)\./) {
+        $path = $1;
+        $path =~ s/\-/\//g;
+        $program = "$path/$program";
+    } elsif (m/Memory Statistics/) {
         $memstats = 1;
     } elsif (m/Leaked Memory Report/) {
         $memleaks = 1;
@@ -33,6 +39,15 @@ while (<>) {
         if (m/==============================================================/) {
             $memleaks = 0;
         } elsif (m/(\d*)\s*(\d*)\s*(.*)$/) {
+            if (($3 eq "string copy data") ||
+                ($3 eq "glom strings data") ||
+                ($3 eq "string concat data") ||
+                ($3 eq "set wide string") ||
+                ($3 eq "get wide string") ||
+                ($3 eq "string strided select data")) {
+            } else {
+                $TP{$program} += $2;
+            }
             $TZ{$3} += $2; # table of size of leaked memory
             $TN{$3} += $1; # table of number of leaked allocations
         }
@@ -61,4 +76,21 @@ printf("==============================================================\n");
 foreach $desc (@descs) {
     printf("%12d  %12d  $desc\n", $TN{$desc}, $TZ{$desc});
 }
+
+printf("==============================================================\n");
+printf("\n");
+printf("=======================\n");
+printf("Memory Leaking Programs\n");
+printf("   (ignoring strings)\n");
+printf("==============================================================\n");
+printf("Total leaked memory (bytes)\n");
+printf("              Program\n");
+printf("==============================================================\n");
+
+@programs = sort { $TP{$b} <=> $TP{$a} } keys %TP;
+
+foreach $program (@programs) {
+    printf("%12d  $program\n", $TP{$program});
+}
+
 printf("==============================================================\n");
