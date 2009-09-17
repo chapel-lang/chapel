@@ -1,0 +1,4 @@
+bug: config param command line settings aren't type checked
+
+This test shows that we don't type check config param settings as well
+as we do config var/const.        
