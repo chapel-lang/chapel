@@ -17,12 +17,6 @@
 general regressions
 ===================
 
-messed up my prediff scripts again (09/16/09)
----------------------------------------------
-[Error matching program output for modules/bradc/overrideStd/foo]
-[Error matching program output for modules/bradc/printModStuff/foo]
-[Error matching program output for modules/bradc/userInsteadOfStandard/foo2]
-
 spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -30,7 +24,7 @@ spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 spurious compilation timeouts
 ----------------------------
 [Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09, 09/05/09, 09/06/09, 09/10/09, 09/11/09, 09/13/09)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09, 08/29/09, 08/31/09, 09/02/09, 09/10/09, 09/11/09, 09/13/09)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09, 08/29/09, 08/31/09, 09/02/09, 09/10/09, 09/11/09, 09/13/09, 09/17/09)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 08/31/09)
 [Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 08/07/09)
 
@@ -92,6 +86,10 @@ double free (09/02/09)
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for spec/marybeth/modulesexample] (e.g., 09/17/09)
+[Error matching compiler output for users/shetag/objRefAsFormArg] (e.g., 09/17/09)
+[Error matching compiler output for users/thom/class-override] (e.g., 09/17/09)
+[Error matching compiler output for users/thom/varargsInt] (e.g., 09/17/09)
 [Error matching compiler output for trivial/bradc/conditional] (e.g., 09/15/09)
 [Error matching compiler output for studies/hpcc/2008/stream-promoted] (e.g., 09/15/09)
 [Error matching compiler output for users/shetag/assocInRecord-blc] (e.g., 09/15/09)
@@ -110,7 +108,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for parallel/begin/deitz/test_nested_fn_begin1] (e.g., 09/07/09)
 [Error matching compiler output for users/shetag/unboundslice] (e.g., 09/07/09)
 [Error matching compiler output for spec/marybeth/sort] (e.g., 09/06/09)
-[Error matching compiler output for multilocale/deitz/linked/test_linked2] (e.g., 09/05/09)
+[Error matching compiler output for multilocale/deitz/linked/test_linked2] (e.g., 09/05/09, 09/17/09)
 [Error matching compiler output for release/examples/hpcc/ra] (e.g., 09/05/09)
 [Error matching compiler output for trivial/bradc/entrypoint/twomains2] (e.g., 09/05/09)
 [Error matching compiler output for users/wmikanik/domain64] (e.g., 09/05/09)
@@ -158,6 +156,10 @@ no longer needs to be suppressed?
 no-local regressions
 ====================
 
+spurious timeouts
+-----------------
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr] (e.g., 09/17/09)
+
 not freeing heap-allocated globals (08/29/09)
 ---------------------------------------------
 [Error matching program output for classes/figueroa/RecordDestructor1]
@@ -176,9 +178,9 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-AM_ERR_RESOURCE failure (09/16/09)
-----------------------------------
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock6]
+AM_ERR_RESOURCE failure
+-----------------------
+[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock6] (09/16/09)
 
 spurious recursive shutdown failure
 -----------------------------------
@@ -189,15 +191,11 @@ spurious segfault
 -----------------
 [Error matching program output for studies/hpcc/common/bradc/unit/modifyLocales] (e.g., 09/15/09)
 
-brad's recent changes (09/12/09)
---------------------------------
-[Error matching program output for multilocale/deitz/needMultiLocales/test_module_use_locales]
-[Error matching program output for multirealm/problems/noLocalesPerRealm]
-
 new spurious timeouts
 -----------------------
+[Error: Timed out executing program studies/hpcc/STREAMS/bradc/stream-block1dpar-arr] (e.g., 09/17/09)
 [Error: Timed out compilation for multilocale/deitz/needMultiLocales/dist/test_block1d_2] (e.g., 09/15/09)
-[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 09/15/09)
+[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 09/15/09, 09/17/09)
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 09/15/09)
 [Error: Timed out executing program users/agnieszka/multiArrayI] (e.g., 09/15/09)
 [Error: Timed out executing program users/agnieszka/test1] (e.g., 09/15/09)
@@ -257,6 +255,10 @@ GASNet unable to start polling thread
 =======================
 baseline-specific tests
 =======================
+
+attempt to dereference nil error (09/17/09)
+-------------------------------------------
+[Error matching program output for classes/bradc/declClassType1b]
 
 memory stuff in flux (09/01/09)
 -------------------------------
