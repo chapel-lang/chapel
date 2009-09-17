@@ -6,5 +6,5 @@ def iter() {
 def iter(param tag: iterator) where tag == iterator.leader { }
 def iter(param tag: iterator, follower) where tag == iterator.follower { }
 
-coforall i in iter() do
+forall i in iter() do
   writeln(i);
