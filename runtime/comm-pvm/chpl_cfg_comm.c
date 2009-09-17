@@ -360,7 +360,7 @@ static void chpl_upkuint64_t(void* buf, int i, int chpltypetype, unsigned long c
 /////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////////
-// real32_t
+// real32_t, imag32_t
 // No matter what (32->32, 32->64, or 64->32), the sender is just sending
 // 32 bits, and the receiver receives 32 bits. No conversions should be
 // necessary.
@@ -396,7 +396,7 @@ static void chpl_upkfloat32_t(void* buf, int i, int chpltypetype, unsigned long 
 /////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////////
-// real64_t
+// real64_t, imag64_t
 // If the receiver is 32-bit, conversion is necessary.
 static void chpl_pkdouble64_t(void* buf, int i, int chpltypetype, unsigned long chpltypeoffset) {
 #if CHPL_DIST_DEBUG
@@ -564,7 +564,7 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
       i = 0;
       if (sz > 0) {
         for (; i < chpl_max_fields_per_type; i++) {
-          if ((chpl_getFieldType(sz, i) == 19) ||
+          if ((chpl_getFieldType(sz, i) == CHPL_TYPE_chpl_task_list_p) ||
               (chpl_getFieldType(sz, i) == CHPL_TYPE__cfile)) {
             PVM_NO_LOCK_SAFE(pvm_upkbyte(((char *)buf), chpl_getFieldSize(sz), 1), "pvm_upkbyte", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
@@ -618,10 +618,12 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
         case CHPL_TYPE_uint64_t:
           chpl_upkuint64_t(buf, i, chpltypetype, chpltypeoffset, sizeof(void *));
           break;
-        case 10:
+        case CHPL_TYPE__real32:
+        case CHPL_TYPE__imag32:
           chpl_upkfloat32_t(buf, i, chpltypetype, chpltypeoffset);
           break;
-        case 11:
+        case CHPL_TYPE__real64:
+        case CHPL_TYPE__imag64:
           chpl_upkdouble64_t(buf, i, chpltypetype, chpltypeoffset, sizeof(void *));
           break;
         case CHPL_TYPE_chpl_string:
@@ -733,7 +735,7 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
       i = 0;
       if (sz > 0) {
         for (; i < chpl_max_fields_per_type; i++) {
-          if ((chpl_getFieldType(sz, i) == 19) ||
+          if ((chpl_getFieldType(sz, i) == CHPL_TYPE_chpl_task_list_p) ||
               (chpl_getFieldType(sz, i) == CHPL_TYPE__cfile)) {
             PVM_NO_LOCK_SAFE(pvm_pkbyte(((char *)buf), chpl_getFieldSize(sz), 1), "pvm_pkbyte", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
@@ -787,10 +789,12 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
         case CHPL_TYPE_uint64_t:
           chpl_pkuint64_t(buf, i, chpltypetype, chpltypeoffset);
           break;
-        case 10:
+        case CHPL_TYPE__real32:
+        case CHPL_TYPE__imag32:
           chpl_pkfloat32_t(buf, i, chpltypetype, chpltypeoffset);
           break;
-        case 11:
+        case CHPL_TYPE__real64:
+        case CHPL_TYPE__imag64:
           chpl_pkdouble64_t(buf, i, chpltypetype, chpltypeoffset);
           break;
         case CHPL_TYPE_chpl_string:
