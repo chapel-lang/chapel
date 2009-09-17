@@ -188,4 +188,6 @@ def init(A:[?D]) {
 
   rstream.fillRandom(Asquare);
   rstream.fillRandom(b);
+
+  delete rstream;
 }

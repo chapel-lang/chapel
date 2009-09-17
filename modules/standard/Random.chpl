@@ -13,13 +13,13 @@ use Time;
 
 config param debugParRandom: bool = false;
 
-class SeedGeneratorClass {
+record SeedGeneratorRecord {
   def clockMS {
     return getCurrentTime(unit=TimeUnits.microseconds):int(64);
   }
 }
 
-var SeedGenerator = new SeedGeneratorClass();
+var SeedGenerator: SeedGeneratorRecord;
 
 class RandomStream {
   const seed:int(64) = SeedGenerator.clockMS; 

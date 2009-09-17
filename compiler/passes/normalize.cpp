@@ -788,28 +788,16 @@ static void fixup_array_formals(FnSymbol* fn) {
             }
           } else if (!noDomain) {
             VarSymbol* tmp = newTemp("_reindex");
+            tmp->addFlag(FLAG_EXPR_TEMP);
             forv_Vec(SymExpr, se, symExprs) {
               if (se->var == arg)
                 se->var = tmp;
             }
-            BlockStmt* thenBlock = new BlockStmt();
-            VarSymbol* tmp2 = newTemp();
-            thenBlock->insertAtTail(new DefExpr(tmp2));
-            thenBlock->insertAtTail(new CallExpr(PRIM_MOVE, tmp2,
-                                      new CallExpr(
-                                        new CallExpr(".", arg,
-                                          new_StringSymbol("reindex")),
-                                        call->get(1)->copy())));
-            thenBlock->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
-                                      new CallExpr("chpl__autoCopy", tmp2)));
-            fn->insertAtHead(new CondStmt(
-                               new CallExpr("!=", dtNil->symbol, arg),
-                               thenBlock,
-                               new CallExpr(PRIM_MOVE, tmp, gNil)));
-            fn->insertAtTail(new CondStmt(
-                               new CallExpr("!=", dtNil->symbol, arg),
-                               new CallExpr("chpl__autoDestroy", tmp),
-                               new CallExpr(PRIM_NOOP)));
+            fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp,
+                               new CallExpr(
+                                 new CallExpr(".", arg,
+                                   new_StringSymbol("reindex")),
+                                 call->get(1)->copy())));
             fn->insertAtHead(new DefExpr(tmp));
           }
         }

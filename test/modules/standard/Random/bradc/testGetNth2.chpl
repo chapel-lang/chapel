@@ -72,4 +72,6 @@ def checkArrays(str) {
   }
 }
 
-      
+delete randStr1;
+delete randStr2;
+delete randStr3;

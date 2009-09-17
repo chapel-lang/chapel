@@ -24,3 +24,4 @@ totalTime = (getCurrentTime(TimeUnits.microseconds) - startTime) / 1000000;
 if (verbose) then
   writeln("Calculation took: ", totalTime, " seconds");
 
+delete rs;

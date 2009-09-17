@@ -35,9 +35,12 @@ module CGMakeA {
       size *= ratio;
     }
 
+    delete randStr;
+    
     for i in 1..n {
       yield ((i, i), rcond - shift);
     }
+
   }
 
 

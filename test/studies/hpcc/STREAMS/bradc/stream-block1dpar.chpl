@@ -91,6 +91,7 @@ def initVectors(B, C) {
       randlist.fillRandom(B.locArr(loc).myElems);
       randlist.skipToNth(B.numElements + C.locArr(loc).locDom.low);
       randlist.fillRandom(C.locArr(loc).myElems);
+      delete randlist;
     }
   }
 

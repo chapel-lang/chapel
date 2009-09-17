@@ -13,6 +13,7 @@ def main() {
 
   // Fill A with random int values in [0, 99999]
   randomStream.fillRandom(rands);
+  delete randomStream;
   [i in 1..size] A(i) = (100000 * rands(i)):int;
 
   QuickSort(A);

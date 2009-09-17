@@ -70,6 +70,8 @@ def initVectors(B, C) {
     writeln("B is: ", B, "\n");
     writeln("C is: ", C, "\n");
   }
+
+  delete randlist;
 }
 
 

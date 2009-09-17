@@ -88,6 +88,8 @@ def main() {
     writeln(" Verification    = SUCCESSFUL");
   else
     writeln(" Verification    = FAILED ", passedVerifications);
+
+  delete randomStream;
 } 
 
 

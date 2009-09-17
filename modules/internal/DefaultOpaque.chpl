@@ -8,6 +8,11 @@ class DefaultOpaqueDom: BaseOpaqueDom {
     adomain = new DefaultAssociativeDom(_OpaqueIndex, dist);
   }
 
+  def ~DefaultOpaqueDom() {
+    for i in adomain do delete i;
+    delete adomain;
+  }
+
   def create() {
     var i = new _OpaqueIndex();
     adomain.add(i);
@@ -63,6 +68,10 @@ class DefaultOpaqueArr: BaseArr {
 
   var dom: DefaultOpaqueDom(idxType=idxType);
   var anarray = new DefaultAssociativeArr(eltType=eltType, idxType=idxType, dom=dom.adomain);
+
+  def ~DefaultOpaqueArr() {
+    delete anarray;
+  }
 
   def getBaseDom() return dom;
 

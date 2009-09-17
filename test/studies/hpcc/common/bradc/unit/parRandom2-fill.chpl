@@ -25,3 +25,5 @@ for (i,a,b) in (ProblemSpace,A,B) {
     writeln("#", format("#####", i), " = ", a);
 }
 
+delete randStr1;
+delete randStr2;

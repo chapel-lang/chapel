@@ -275,5 +275,7 @@ def createRandomGraph() {
       to(newEdge) = vj;
     }
   }
+
+  delete myRandNums;
 }
 

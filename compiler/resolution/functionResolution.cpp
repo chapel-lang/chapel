@@ -1921,9 +1921,10 @@ insertFormalTemps(FnSymbol* fn) {
           fn->insertAtHead(new DefExpr(refTmp));
           fn->insertAtHead(new DefExpr(typeTmp));
         }
-      } else if (formal->intent == INTENT_INOUT || formal->intent == INTENT_IN)
+      } else if (formal->intent == INTENT_INOUT || formal->intent == INTENT_IN) {
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", formal)));
-      else {
+        tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      } else {
         TypeSymbol* ts = formal->type->symbol;
         if (!ts->hasFlag(FLAG_DOMAIN) &&
             !ts->hasFlag(FLAG_ARRAY) &&
@@ -1932,7 +1933,7 @@ insertFormalTemps(FnSymbol* fn) {
             !ts->hasFlag(FLAG_REF) &&
             !ts->hasFlag(FLAG_SYNC)) {
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__autoCopy", formal)));
-          fn->insertBeforeReturnAfterLabel(new CallExpr("chpl__autoDestroy", tmp));
+          tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         } else
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
       }

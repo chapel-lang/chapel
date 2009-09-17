@@ -325,6 +325,7 @@ def test_LUFactorize(rprt = true) : bool {
     var rand = new RandomStream(seed);
     var A : [1..n, 1..n+1] real;
     for idx in A.domain do A[idx] = rand.getNext();
+    delete rand;
 
     // save a copy
     var origA = A;

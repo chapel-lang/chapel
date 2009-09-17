@@ -78,6 +78,8 @@ def initStreamVectors() {
   randlist.fillRandom(C);
 
   A = 2.0 * A;
+
+  delete randlist;
 }
 
 def computeStreamResults() {
@@ -96,6 +98,8 @@ def checkSTREAMresults() {
   randlist.fillRandom(Aref);
   randlist.fillRandom(Bref);
   randlist.fillRandom(Cref);
+
+  delete randlist;
 
   for i in VecDomain {
     Aref(i) = 2.0 * Aref(i);

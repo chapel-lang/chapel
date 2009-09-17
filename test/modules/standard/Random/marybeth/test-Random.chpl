@@ -14,5 +14,7 @@ fillRandom(Vec1,314159265);
 writeln(Vec1);
 fillRandom(Vec1,314159265);
 writeln(Vec1);
+
+delete rng;
 }
 

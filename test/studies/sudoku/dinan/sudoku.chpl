@@ -155,4 +155,6 @@ def main() {
   }
 
   writeln("\nSolution:\n", bestBoard);
+
+  delete myRand;
 }

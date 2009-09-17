@@ -63,6 +63,8 @@ module CGMakeA {
       size *= ratio;
     }
 
+    delete randStr;
+
     //
     // yield additional values for the diagonal of the matrix
     //

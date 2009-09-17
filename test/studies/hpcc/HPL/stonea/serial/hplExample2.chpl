@@ -334,6 +334,8 @@ def test_permuteMatrix(rprt = true) : bool {
         piv[randRow1] <=> piv[randRow2];
     }
 
+    delete rand;
+
     // permute original version of A
     permuteMatrix(AOrig, piv);
 
@@ -358,6 +360,8 @@ def test_panelSolve(rprt = true) : bool {
     var AOrig = A;
 
     var AOrig2 = A;
+
+    delete rand;
 
     // grab a panel and solve it
     param offset = 3;
@@ -400,6 +404,7 @@ def test_updateBlockRow(rprt = true) : bool {
     var A : [randomOffset..randomOffset+randomHeight-1,
              randomOffset..randomOffset+randomWidth-1] real;
     rand.fillRandom(A);
+    delete rand;
     var OrigA = A;
     
     // capture X and Y
@@ -474,6 +479,8 @@ def test_LUFactorize(rprt = true, seed = -1) : bool {
     var randomN : int = (rand.getNext() * 10):int + 1;
     var A : [1..randomN, 1..randomN+1] real;
     for idx in A.domain do A[idx] = rand.getNext() * 2.0 - 1.0;
+
+    delete rand;
 
     // save a copy
     var origA = A;

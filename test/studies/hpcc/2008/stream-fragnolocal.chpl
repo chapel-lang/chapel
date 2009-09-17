@@ -85,6 +85,8 @@ def initVectors(B, C, ProblemSpace) {
     writelnFragArray("B is: ", B, "\n");
     writelnFragArray("C is: ", C, "\n");
   }
+
+  delete randlist;
 }
 
 

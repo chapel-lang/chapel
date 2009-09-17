@@ -133,4 +133,6 @@ def main() {
     lst.remove(i);
 
   writeln("The list contains: ", lst);
+
+  delete rnd;
 }
