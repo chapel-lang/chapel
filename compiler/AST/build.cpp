@@ -518,11 +518,13 @@ destructureIndices(BlockStmt* block,
     var->addFlag(FLAG_INDEX_VAR);
     if (coforall)
       var->addFlag(FLAG_HEAP_ALLOCATE);
+    var->addFlag(FLAG_INSERT_AUTO_DESTROY);
   } else if (SymExpr* sym = toSymExpr(indices)) {
     block->insertAtHead(new CallExpr(PRIM_MOVE, sym->var, init));
     sym->var->addFlag(FLAG_INDEX_VAR);
     if (coforall)
       sym->var->addFlag(FLAG_HEAP_ALLOCATE);
+    sym->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 }
 
