@@ -243,6 +243,10 @@ static void addModuleInits(BlockStmt* block, ModuleSymbol* mod) {
   }
   //  printf("---start %s\n", mod->name);
   initMods.set_add(mod);
+  // Insert module initializations for any parent modules that we haven't
+  if (ModuleSymbol* parent = mod->defPoint->getModule()) {
+    addModuleInits(block, parent);
+  }
   if (!fRuntime || mod->modTag != MOD_INTERNAL) {
     forv_Vec(ModuleSymbol*, usedmod, mod->modUseList) {
       addModuleInits(block, usedmod);
@@ -250,10 +254,6 @@ static void addModuleInits(BlockStmt* block, ModuleSymbol* mod) {
   }
   //  printf("---stop %s\n", mod->name);
 
-  // Insert module initializations for any parent modules that we haven't
-  if (ModuleSymbol* parent = mod->defPoint->getModule()) {
-    addModuleInits(block, parent);
-  }
   block->insertAtTail(new CallExpr(mod->initFn));
 }
 
