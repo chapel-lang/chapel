@@ -385,7 +385,7 @@ def range.these(param tag: iterator, follower) where tag == iterator.follower {
     for i in r do
       yield i;
   } else {
-    var r = low+follower;
+    var r = low+followThis;
     for i in r do
       yield i;
   }
