@@ -15,7 +15,7 @@ module RARandomStream {
   }
 
   def RAStream(param tag: iterator, follower) where tag == iterator.follower {
-    var val = getNthRandom(follower.low);
+    var val = getNthRandom(follower(1).low);
     for follower {
       getNextRandom(val);
       yield val;

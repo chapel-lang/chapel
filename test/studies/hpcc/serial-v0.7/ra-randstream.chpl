@@ -23,7 +23,9 @@ module RARandomStream {
   }
 
   def RAStream(param tag: iterator, follower) where tag == iterator.follower {
-    var val = getNthRandom(follower.low);
+    if follower.size != 1 then
+      halt("RAStream cannot use multi-dimensional iterator");
+    var val = getNthRandom(follower(1).low);
     for follower {
       getNextRandom(val);
       yield val;

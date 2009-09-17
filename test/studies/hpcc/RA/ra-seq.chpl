@@ -29,11 +29,11 @@ record FakeLeader {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
-    yield 0:indexType..#N_U;
+    yield tuple(0:indexType..#N_U);
   }
   
   def these(param tag: iterator, follower) where tag == iterator.follower {
-    for i in follower do
+    for i in follower(1) do
       yield follower;
   }
 }

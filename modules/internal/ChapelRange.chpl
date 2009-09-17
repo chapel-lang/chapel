@@ -368,17 +368,20 @@ def range.these(param tag: iterator) where tag == iterator.leader {
     v = (low - high) / stride:eltType + 1;
   if v < 0 then
     v = 0;
-  yield 0..v-1;
+  yield tuple(0..v-1);
 }
 
 def range.these(param tag: iterator, follower) where tag == iterator.follower {
   if boundedType == BoundedRangeType.boundedNone then
     halt("iteration over a range with no bounds");
+  if follower.size != 1 then
+    halt("iteration over a range with multi-dimensional iterator");
+  var followThis = follower(1);
   if stridable {
     var r = if stride > 0 then
-        low+follower.low*stride:eltType..low+follower.high*stride:eltType by stride
+        low+followThis.low*stride:eltType..low+followThis.high*stride:eltType by stride
       else
-        high+follower.high*stride:eltType..high+follower.low*stride:eltType by stride;
+        high+followThis.high*stride:eltType..high+followThis.low*stride:eltType by stride;
     for i in r do
       yield i;
   } else {

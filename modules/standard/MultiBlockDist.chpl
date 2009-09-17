@@ -170,7 +170,11 @@ def Block.ind2locInd(ind: idxType) where rank == 1 {
   return max(0, min(locInd:int, (targetLocDom.dim(1).length-1):int));
 }
 
-def Block.ind2locInd(ind: rank*idxType) {
+def Block.ind2locInd(ind: rank*idxType) where rank == 1 {
+  return ind2locInd(ind(1));
+}
+
+def Block.ind2locInd(ind: rank*idxType) where rank != 1 {
   var locInd: rank*int;
   for param i in 1..rank {
     const ind0 = ind(i) - boundingBox.low(i);
@@ -265,27 +269,23 @@ def BlockDom.these(param tag: iterator) where tag == iterator.leader {
   const precomputedNumTasks = dist.tasksPerLocale;
   const precomputedWholeLow = whole.low;
   coforall locDom in locDoms do on locDom {
-    const locBlock = locDom.myBlock - precomputedWholeLow,
-      numTasks = precomputedNumTasks;
+    var tmpBlock = locDom.myBlock - precomputedWholeLow;
+    const numTasks = precomputedNumTasks;
+
+    var locBlock: rank*range(idxType);
+    for param i in 1..tmpBlock.rank {
+      locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
+    }
     if (numTasks == 1) {
       yield locBlock;
     } else {
       coforall taskid in 0..#numTasks {
-        if rank == 1 {
-          const (lo,hi) = _computeBlock(locBlock.low, locBlock.numIndices,
-                                        locBlock.low, locBlock.high,
-                                        numTasks, taskid);
-          yield [lo..hi];
-        } else {
-          var tuple: rank*range(idxType);
-          const (lo,hi) = _computeBlock(locBlock.low(1), locBlock.dim(1).length,
-                                        locBlock.low(1), locBlock.high(1),
-                                        numTasks, taskid);
-          tuple(1) = lo..hi;
-          for param i in 2..rank do
-            tuple(i) = locBlock.low(i)..locBlock.high(i);
-          yield [(...tuple)];
-        }
+        var tuple: rank*range(idxType) = locBlock;
+        const (lo,hi) = _computeBlock(locBlock(1).low, locBlock(1).length,
+                                      locBlock(1).low, locBlock(1).high,
+                                      numTasks, taskid);
+        tuple(1) = lo..hi;
+        yield tuple;
       }
     }
   }
@@ -304,12 +304,38 @@ def BlockDom.these(param tag: iterator) where tag == iterator.leader {
 // stencil communication will be done on a per-locale basis.
 //
 def BlockDom.these(param tag: iterator, follower) where tag == iterator.follower {
-  const followThis = follower + whole.low;
-
-  for i in followThis {
+  var t: rank*range(idxType, stridable=stridable);
+  for param i in 1..rank {
+    var stride = whole.dim(i).stride: idxType;
+    var low = stride * follower(i).low;
+    var high = stride * follower(i).high;
+    t(i) = (low..high by stride:int) + whole.dim(i).low;
+  }
+  for i in [(...t)] {
     yield i;
   }
 }
+
+def BlockDom.strideBy(str: int) {
+  var alias = new BlockDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
+  var t: rank*range(eltType=idxType, stridable=true);
+  for i in 1..rank {
+    t(i) = this.dim(i) by str;
+  }
+  alias.setIndices(t);
+  return alias;
+}
+
+def BlockDom.strideBy(str: rank*int) {
+  var alias = new BlockDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
+  var t: rank*range(eltType=idxType, stridable=true);
+  for i in 1..rank {
+    t(i) = this.dim(i) by str(i);
+  }
+  alias.setIndices(t);
+  return alias;
+}
+
 
 //
 // output domain
@@ -357,7 +383,7 @@ def BlockDom.setIndices(x) {
 }
 
 def BlockDom.getIndices() {
-  return whole;
+  return whole.getIndices();
 }
 
 def BlockDom.getDist(): Block(idxType) {
@@ -552,29 +578,26 @@ def BlockArr.these(param tag: iterator) where tag == iterator.leader {
   const precomputedNumTasks = dom.dist.tasksPerLocale;
   const precomputedWholeLow = dom.whole.low;
   coforall locDom in dom.locDoms do on locDom {
-    const locBlock = locDom.myBlock - precomputedWholeLow,
-      numTasks = precomputedNumTasks;
+    var tmpBlock = locDom.myBlock - precomputedWholeLow;
+    const numTasks = precomputedNumTasks;
+    var locBlock: rank*range(idxType);
+    for param i in 1..tmpBlock.rank {
+      locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
+    }
+
+
     if (numTasks == 1) {
       yield locBlock;
     } else {
       coforall taskid in 0..#numTasks {
-        if rank == 1 {
-          const (lo,hi) = _computeBlock(locBlock.low, locBlock.numIndices,
-                                        locBlock.low, locBlock.high,
-                                        numTasks, taskid);
-          yield [lo..hi];
-        } else {
-          var tuple: rank*range(idxType);
-          const (lo,hi) = _computeBlock(locBlock.low(1), locBlock.dim(1).length,
-                                        locBlock.low(1), locBlock.high(1),
-                                        numTasks, taskid);
-          if hi >= lo {
-            tuple(1) = lo..hi;
-            for param i in 2..rank do
-              tuple(i) = locBlock.low(i)..locBlock.high(i);
-            yield [(...tuple)];
-          }
-        }
+        var tuple: rank*range(idxType) = locBlock;
+        const (lo,hi) = _computeBlock(locBlock(1).low, locBlock(1).length,
+                                      locBlock(1).low, locBlock(1).high,
+                                      numTasks, taskid);
+          
+        tuple(1) = lo..hi;
+        yield tuple;
+
       }
     }
   }
@@ -583,17 +606,27 @@ def BlockArr.these(param tag: iterator) where tag == iterator.leader {
 def BlockArr.supportsAlignedFollower() param return true;
 
 def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
-  const followThis = follower + dom.low;
+  var followThis: rank*range(eltType=idxType, stridable=stridable);
+  var lowIdx: rank*idxType;
+
+  for param i in 1..rank {
+    var stride = dom.whole.dim(i).stride;
+    var low = follower(i).low * stride;
+    var high = follower(i).high * stride;
+    followThis(i) = (low..high by stride) + dom.whole.dim(i).low;
+    lowIdx(i) = followThis(i).low;
+  }
+  const followThisDom = [(...followThis)];
 
   //
   // TODO: The following is a buggy hack that will only work when we're
   // distributing across the entire Locales array.  I still think the
   // locArr/locDoms arrays should be associative over locale values.
   //
-  const myLocArr = locArr(dom.dist.ind2locInd(followThis.low));
+  const myLocArr = locArr(dom.dist.ind2locInd(lowIdx));
   if aligned {
     local {
-      for i in followThis {
+      for i in followThisDom {
         yield myLocArr.this(i);
       }
     }
@@ -610,7 +643,7 @@ def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) v
 //      }
       return this(i);
     }
-    for i in followThis {
+    for i in followThisDom {
       yield accessHelper(i);
     }
   }

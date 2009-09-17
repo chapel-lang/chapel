@@ -681,6 +681,10 @@ def reshape(A: [], D: domain) {
   return B;
 }
 
+def linearize(Xs) {
+  for x in Xs do yield x;
+}
+
 def _callSupportsAlignedFollower(A) param where A: BaseArr
   return A.supportsAlignedFollower();
 
@@ -704,9 +708,8 @@ pragma "expand tuples with values"
 def iteratorIndex(t: _tuple) {
   pragma "expand tuples with values"
   def iteratorIndexHelp(t: _tuple, param dim: int) {
-    if dim == t.size-1 then
-      return _build_tuple_always_allow_ref(iteratorIndex(t(dim)),
-                                           iteratorIndex(t(dim+1)));
+    if dim == t.size then
+      return _build_tuple_always_allow_ref(iteratorIndex(t(dim)));
     else
       return _build_tuple_always_allow_ref(iteratorIndex(t(dim)),
                                            (...iteratorIndexHelp(t, dim+1)));
@@ -754,12 +757,15 @@ pragma "inline" def _getIterator(ic: _iteratorClass)
 
 pragma "inline" def _getIterator(x: _tuple) {
   pragma "inline" def _getIteratorHelp(x: _tuple, param dim: int) {
-    if dim == x.size-1 then
-      return (_getIterator(x(dim)), _getIterator(x(dim+1)));
+    if dim == x.size then
+      return tuple(_getIterator(x(dim)));
     else
       return (_getIterator(x(dim)), (..._getIteratorHelp(x, dim+1)));
   }
-  return _getIteratorHelp(x, 1);
+  if x.size == 1 then
+    return _getIterator(x(1));
+  else
+    return _getIteratorHelp(x, 1);
 }
 
 def _getIterator(type t) {

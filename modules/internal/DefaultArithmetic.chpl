@@ -84,7 +84,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
 
   def these(param tag: iterator) where tag == iterator.leader {
     if rank == 1 {
-      yield 0..ranges(1).length-1;
+      yield tuple(0..ranges(1).length-1);
     } else {
       var block = ranges;
       for param i in 1..rank do
@@ -94,33 +94,23 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   }
 
   def these(param tag: iterator, follower) where tag == iterator.follower {
-    if rank == 1 {
-      if stridable {
-        var block =
-        if ranges(1).stride > 0 then
-          ranges(1).low+follower.low*ranges(1).stride:ranges(1).eltType..ranges(1).low+follower.high*ranges(1).stride:ranges(1).eltType by ranges(1).stride
-        else
-          ranges(1).high+follower.high*ranges(1).stride:ranges(1).eltType..ranges(1).high+follower.low*ranges(1).stride:ranges(1).eltType by ranges(1).stride;
-        for i in block do
-          yield i;
-      } else {
-        var block = follower + ranges(1).low;
-        for i in block do
-          yield i;
-      }
+    var block: ranges.type;
+    if stridable {
+      for param i in 1..rank do
+        block(i) =
+          if ranges(i).stride > 0 then
+            ranges(i).low+follower(i).low*ranges(i).stride:ranges(i).eltType..ranges(i).low+follower(i).high*ranges(i).stride:ranges(i).eltType by ranges(i).stride
+          else
+            ranges(i).high+follower(i).high*ranges(i).stride:ranges(i).eltType..ranges(i).high+follower(i).low*ranges(i).stride:ranges(i).eltType by ranges(i).stride;
     } else {
-      if stridable {
-        for param i in 1..rank do
-          follower(i) =
-            if ranges(i).stride > 0 then
-              ranges(i).low+follower(i).low*ranges(i).stride:ranges(i).eltType..ranges(i).low+follower(i).high*ranges(i).stride:ranges(i).eltType by ranges(i).stride
-            else
-              ranges(i).high+follower(i).high*ranges(i).stride:ranges(i).eltType..ranges(i).high+follower(i).low*ranges(i).stride:ranges(i).eltType by ranges(i).stride;
-      } else {
-        for param i in 1..rank do
-          follower(i) = follower(i) + ranges(i).low;
-      }
-      for i in these_help(1, follower) do
+      for  param i in 1..rank do
+        block(i) = follower(i) + ranges(i).low;
+    }
+    if rank == 1 {
+      for i in block do
+        yield i;
+    } else {
+      for i in these_help(1, block) do
         yield i;
     }
   }

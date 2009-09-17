@@ -494,3 +494,6 @@ pragma "inline" def _build_tuple(type t ...?size) type
 
 pragma "inline" def _build_tuple_always(x ...?size)
   return x;
+
+pragma "inline" def tuple(x ...?size)
+  return x;

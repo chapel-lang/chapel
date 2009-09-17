@@ -159,9 +159,11 @@ class RandomStream {
 
   def chpl__these(param tag: iterator, follower, startAt: int(64), numElements)
       where tag == iterator.follower {
+    if follower.size != 1 then
+      halt("RandomStream's parallel iterator cannot use multi-dimensional iterators");
     // make a local copy of the 'this' random stream class
     var locStream = new RandomStream(seed);
-    locStream.skipToNth(follower.low + startAt);
+    locStream.skipToNth(follower(1).low + startAt);
     for i in follower {
       if (debugParRandom) then
         writeln("Doing iteration ", format("#####", i+1), " on locale ", here.id);

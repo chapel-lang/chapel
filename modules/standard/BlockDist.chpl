@@ -254,13 +254,13 @@ class Block1DDom: BaseArithmeticDom {
       const locBlock = locDom.myBlock - whole.low,
             numTasks = precomputedNumTasks;
       if (numTasks == 1) {
-        yield locBlock;
+        yield tuple(locBlock.low..locBlock.high);
       } else {
         coforall taskid in 0..#numTasks {
           const (lo,hi) = _computeBlock(locBlock.low, locBlock.numIndices,
                                         locBlock.low, locBlock.high, 
                                         numTasks, taskid);
-          yield [lo..hi];
+          yield tuple(lo..hi);
         }
       }
     }
@@ -279,7 +279,7 @@ class Block1DDom: BaseArithmeticDom {
   // stencil communication will be done on a per-locale basis.
   //
   def these(param tag: iterator, follower) where tag == iterator.follower {
-    const followThis = follower + whole.low;
+    const followThis = follower(1) + whole.low;
 
     for i in followThis {
       yield i;
@@ -515,13 +515,13 @@ class Block1DArr: BaseArr {
       const locBlock = locDom.myBlock - precomputedWholeLow,
             numTasks = precomputedNumTasks;
       if (numTasks == 1) {
-        yield locBlock;
+        yield tuple(locBlock.low..locBlock.high);
       } else {
         coforall taskid in 0..#numTasks {
           const (lo,hi) = _computeBlock(locBlock.low, locBlock.numIndices,
                                         locBlock.low, locBlock.high, 
                                         numTasks, taskid);
-          yield [lo..hi];
+          yield tuple(lo..hi);
         }
       }
     }
@@ -530,7 +530,7 @@ class Block1DArr: BaseArr {
   def supportsAlignedFollower() param return true;
 
   def these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
-    const followThis = follower + dom.low;
+    const followThis = follower(1) + dom.low;
 
     //
     // TODO: The following is a buggy hack that will only work when we're
