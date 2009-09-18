@@ -550,7 +550,7 @@ fix_def_expr(VarSymbol* var) {
   INT_ASSERT(fn);
   if (!var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
       !var->hasFlag(FLAG_PARAM) &&
-      fn != fn->getModule()->initFn &&
+      var->defPoint->parentExpr != fn->getModule()->initFn->body &&
       strcmp(fn->name, "chpl__initCopy") &&
       fn->_this != var &&
       !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
