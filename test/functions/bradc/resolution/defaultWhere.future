@@ -1,0 +1,10 @@
+semantic: priority of where-less function
+
+This semantic future suggests that a function with no where clause should
+not be as attractive an option as one whose where clause is true.  Given
+the functions shown here, it seems reasonable that the final of the four
+combinations should be selected if neither of the other three matches
+(and it does), but unfortunately it also results in an ambiguity when
+either of the other three matches, essentially making the first three
+functions useless since there is no way to call them.  We discussed this
+at lunch today.
