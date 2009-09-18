@@ -392,8 +392,9 @@ int ClassType::codegenFieldStructure(FILE* outfile, bool nested,
   for_fields(field, this) {
     const char* newbaseoffset = astr(baseoffset, " + offsetof(", 
                                      genUnderscore(this->symbol) ? "_" : " ",
-                                     this->symbol->cname, ", ", field->cname, 
-                                     ")");
+                                     this->symbol->cname, ", ", 
+                                     this->classTag == CLASS_UNION ? "_u." : "",
+                                     field->cname, ")");
     int numfields = field->type->codegenStructure(outfile, newbaseoffset);
     fprintf(outfile, " /* %s */\n", field->name);
     totfields += numfields;
