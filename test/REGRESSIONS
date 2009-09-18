@@ -23,7 +23,7 @@ spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09, 09/05/09, 09/06/09, 09/10/09, 09/11/09, 09/13/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09, 09/05/09, 09/06/09, 09/10/09, 09/11/09, 09/13/09, 09/18/09)
 [Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09, 08/29/09, 08/31/09, 09/02/09, 09/10/09, 09/11/09, 09/13/09, 09/17/09)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 08/31/09)
 [Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 08/07/09)
@@ -180,6 +180,7 @@ gasnet-everything regressions (other than the above)
 
 AM_ERR_RESOURCE failure
 -----------------------
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar] (09/18/09)
 [Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock6] (09/16/09)
 
 spurious recursive shutdown failure
@@ -205,7 +206,7 @@ new spurious timeouts
 [Error: Timed out executing program studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 08/30/09)
 [Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09, 09/09/09, 09/11/09, 09/14/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 08/29/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 08/29/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 08/29/09, 09/18/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 08/29/09, 08/31/09, 09/02/09)
 
 memory stuff in flux (06/06/09)
@@ -369,7 +370,7 @@ spurious timeouts
 
 infrequent seg fault on Sam's Mac
 ---------------------------------
-[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-fill] (e.g., 03/10/09, 06/24/09)
+[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-fill] (e.g., 03/10/09, 06/24/09, 09/18/09)
 
 
 ========================
