@@ -105,7 +105,6 @@ bundleArgs(CallExpr* fcall) {
   if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
     if (fn->hasFlag(FLAG_BEGIN))
       wrap_fn->addFlag(FLAG_BEGIN_BLOCK);
-    wrap_fn->insertAtHead(new CallExpr(PRIM_THREAD_INIT));
   }
   // translate the original cobegin function
   CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);

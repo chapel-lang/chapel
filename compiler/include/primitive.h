@@ -60,7 +60,6 @@ enum PrimitiveTag {
 
   PRIM_LOCAL_CHECK,          // assert that a wide ref is on this locale
 
-  PRIM_THREAD_INIT,
   PRIM_THREAD_ID,
   PRIM_GET_SERIAL,                // get serial state
   PRIM_SET_SERIAL,                // set serial state to true or false

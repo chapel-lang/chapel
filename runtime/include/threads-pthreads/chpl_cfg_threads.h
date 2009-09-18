@@ -76,32 +76,10 @@ typedef struct {
 #define chpl_destroy_single_aux_generic  \
         chpl_destroy_single_aux
 
-#define chpl_threads_getMaxThreads_generic  \
-        chpl_threads_getMaxThreads
-#define chpl_threads_maxThreadsLimit_generic  \
-        chpl_threads_maxThreadsLimit
-#define chpl_numThreads_generic  \
-        chpl_numThreads
-#define chpl_numIdleThreads_generic  \
-        chpl_numIdleThreads
-#define chpl_numQueuedTasks_generic  \
-        chpl_numQueuedTasks
-#define chpl_numRunningTasks_generic  \
-        chpl_numRunningTasks
-#define chpl_numBlockedTasks_generic  \
-        chpl_numBlockedTasks
-
-#define initChplThreads_generic  \
-        initChplThreads
-#define exitChplThreads_generic  \
-        exitChplThreads
-
-#define chpl_thread_init_generic  \
-        chpl_thread_init
-#define chpl_get_serial_generic  \
-        chpl_get_serial
-#define chpl_set_serial_generic  \
-        chpl_set_serial
+#define chpl_tasking_init_generic  \
+        chpl_tasking_init
+#define chpl_tasking_exit_generic  \
+        chpl_tasking_exit
 
 #define chpl_add_to_task_list_generic  \
         chpl_add_to_task_list
@@ -114,6 +92,27 @@ typedef struct {
 
 #define chpl_begin_generic  \
         chpl_begin
+
+#define chpl_get_serial_generic  \
+        chpl_get_serial
+#define chpl_set_serial_generic  \
+        chpl_set_serial
+
+#define chpl_numQueuedTasks_generic  \
+        chpl_numQueuedTasks
+#define chpl_numRunningTasks_generic  \
+        chpl_numRunningTasks
+#define chpl_numBlockedTasks_generic  \
+        chpl_numBlockedTasks
+
+#define chpl_threads_getMaxThreads_generic  \
+        chpl_threads_getMaxThreads
+#define chpl_threads_maxThreadsLimit_generic  \
+        chpl_threads_maxThreadsLimit
+#define chpl_numThreads_generic  \
+        chpl_numThreads
+#define chpl_numIdleThreads_generic  \
+        chpl_numIdleThreads
 
 
 #endif // _chpl_cfg_threads_h_

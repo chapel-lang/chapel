@@ -1570,10 +1570,6 @@ void CallExpr::codegen(FILE* outfile) {
       get(3)->codegen(outfile);
       fprintf(outfile, ")");
       break;
-    case PRIM_THREAD_INIT: {
-      fprintf( outfile, "chpl_thread_init()");
-      break;
-    }
     case PRIM_THREAD_ID:
       fprintf(outfile, "chpl_thread_id()");
       break;

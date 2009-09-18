@@ -17,8 +17,6 @@
 
 char* chpl_executionCommand;
 
-int chpl_threads_initialized = 0;
-
 int handleNonstandardArg(int* argc, char* argv[], int argNum, 
                          int32_t lineno, chpl_string filename) {
   char* message = chpl_glom_strings(3, "Unexpected flag:  \"", argv[argNum], 
@@ -76,8 +74,7 @@ int main(int argc, char* argv[]) {
   chpl_comm_rollcall();
   chpl_init_chapel_code();
 
-  initChplThreads();         // initialize the threads layer
-  chpl_threads_initialized = 1;
+  chpl_tasking_init();      // initialize the task management layer
 
   recordExecutionCommand(argc, argv);
 

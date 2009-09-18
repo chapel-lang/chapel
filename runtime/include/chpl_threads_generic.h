@@ -156,23 +156,15 @@ void chpl_init_single_aux_generic(chpl_single_aux_t *);
 void chpl_destroy_single_aux_generic(chpl_single_aux_t *);
 
 
-// Counter functions
+// Tasks
 
-int32_t  chpl_threads_getMaxThreads_generic(void);
-int32_t  chpl_threads_maxThreadsLimit_generic(void);
-uint32_t chpl_numThreads_generic(void);
-uint32_t chpl_numIdleThreads_generic(void);
 uint32_t chpl_numQueuedTasks_generic(void);
 uint32_t chpl_numRunningTasks_generic(void);
 int32_t  chpl_numBlockedTasks_generic(void);
 
+void      chpl_tasking_init_generic(void);
+void      chpl_tasking_exit_generic(void);
 
-// Chapel system thread control
-
-void      initChplThreads_generic(void);
-void      exitChplThreads_generic(void);
-
-void      chpl_thread_init_generic(void);
 chpl_bool chpl_get_serial_generic(void);
 void      chpl_set_serial_generic(chpl_bool);
 
@@ -187,6 +179,14 @@ void chpl_free_task_list_generic(chpl_task_list_generic_p);
 
 void chpl_begin_generic(chpl_fn_p, void*, chpl_bool, chpl_bool,
                         chpl_task_list_generic_p);
+
+
+// Threads
+
+int32_t  chpl_threads_getMaxThreads_generic(void);
+int32_t  chpl_threads_maxThreadsLimit_generic(void);
+uint32_t chpl_numThreads_generic(void);
+uint32_t chpl_numIdleThreads_generic(void);
 
 
 //
@@ -235,8 +235,8 @@ chpl_bool chpl_pool_is_empty(void);
 //
 
 //
-// These are called once each, from initChplThreads_generic() and
-// exitChplThreads_generic().
+// These are called once each, from chpl_tasking_init_generic() and
+// chpl_tasking_exit_generic().
 //
 void threadlayer_init(void);
 void threadlayer_exit(void);
@@ -376,7 +376,7 @@ void* threadlayer_get_thread_private_data(void);
 #define chpl_mutex_lock(x)
 #define chpl_mutex_unlock(x)
 typedef int chpl_mutex_t;
-#define exitChplThreads()
+#define chpl_tasking_exit()
 
 #endif // LAUNCHER
 

@@ -26,31 +26,8 @@ static chpl_task_pool_p     task_pool_head; // head of task pool
 static chpl_task_pool_p     task_pool_tail; // tail of task pool
 static int                  queued_cnt;     // number of tasks in the task pool
 
-static chpl_bool
-launch_next_task(void) {
-  if (task_pool_head) {
-    // retrieve the first task from the task pool
-    chpl_task_pool_p task = task_pool_head;
-    task_pool_head = task_pool_head->next;
-    if (task_pool_head == NULL)  // task pool is now empty
-      task_pool_tail = NULL;
+static chpl_bool launch_next_task(void);
 
-    assert(queued_cnt > 0);
-    queued_cnt--;
-
-    //
-    // reset serial state
-    //
-    chpl_set_serial(task->serial_state);
-
-    (*task->fun)(task->arg);
-    chpl_free(task, 0, 0);
-
-    return true;
-  } else {
-    return false;  // task pool was empty!
-  }
-}
 
 // Mutex
 void chpl_mutex_init(chpl_mutex_p mutex) { }
@@ -125,50 +102,33 @@ void chpl_init_single_aux(chpl_single_aux_t *s) {
 }
 
 
-// Threads
-
-int32_t chpl_threads_getMaxThreads(void) { return 1; }
-
-int32_t chpl_threads_maxThreadsLimit(void) { return 1; }
-
-uint32_t chpl_numThreads(void) { return 1; }
-
-uint32_t chpl_numIdleThreads(void) { return 0; }
-
-uint32_t chpl_numQueuedTasks(void) { return queued_cnt; }
-
-uint32_t chpl_numRunningTasks(void) { return 1; }
-
-int32_t  chpl_numBlockedTasks(void) { return 0; }
+// Tasks
 
 static chpl_bool serial_state;
 
-void initChplThreads() {
+void chpl_tasking_init() {
   task_pool_head = task_pool_tail = NULL;
   serial_state = false;
   queued_cnt = 0;
 }
 
-void exitChplThreads() { }
-void chpl_thread_init(void) { }
+void chpl_tasking_exit() { }
 
-chpl_threadID_t chpl_thread_id(void) { return 0; }
-
-void chpl_thread_cancel(chpl_threadID_t threadID) {
-  chpl_internal_error("chpl_thread_cancel() shouldn't be called in threads-none");
+void chpl_add_to_task_list(chpl_fn_int_t fid,
+                           void* arg,
+                           chpl_task_list_p *task_list,
+                           int32_t task_list_locale,
+                           chpl_bool call_chpl_begin,
+                           int lineno,
+                           chpl_string filename) {
+  chpl_begin(chpl_ftable[fid], arg, false, false, NULL);
 }
 
-void chpl_thread_join(chpl_threadID_t threadID) {
-  chpl_internal_error("chpl_thread_join() shouldn't be called in threads-none");
-}
+void chpl_process_task_list (chpl_task_list_p task_list) { }
 
+void chpl_execute_tasks_in_list (chpl_task_list_p task_list) { }
 
-
-chpl_bool chpl_get_serial(void) { return serial_state; }
-
-void chpl_set_serial(chpl_bool new_state) {
-  serial_state = new_state;
-}
+void chpl_free_task_list (chpl_task_list_p task_list) { }
 
 void chpl_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
                 chpl_bool serial_state, chpl_task_list_p task_list_entry) {
@@ -196,18 +156,64 @@ void chpl_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
   }
 }
 
-void chpl_add_to_task_list(chpl_fn_int_t fid,
-                           void* arg,
-                           chpl_task_list_p *task_list,
-                           int32_t task_list_locale,
-                           chpl_bool call_chpl_begin,
-                           int lineno,
-                           chpl_string filename) {
-  chpl_begin(chpl_ftable[fid], arg, false, false, NULL);
+chpl_bool chpl_get_serial(void) { return serial_state; }
+
+void chpl_set_serial(chpl_bool new_state) {
+  serial_state = new_state;
 }
 
-void chpl_process_task_list (chpl_task_list_p task_list) { }
+uint32_t chpl_numQueuedTasks(void) { return queued_cnt; }
 
-void chpl_execute_tasks_in_list (chpl_task_list_p task_list) { }
+uint32_t chpl_numRunningTasks(void) { return 1; }
 
-void chpl_free_task_list (chpl_task_list_p task_list) { }
+int32_t  chpl_numBlockedTasks(void) { return 0; }
+
+
+// Internal utility functions for task management
+
+static chpl_bool
+launch_next_task(void) {
+  if (task_pool_head) {
+    // retrieve the first task from the task pool
+    chpl_task_pool_p task = task_pool_head;
+    task_pool_head = task_pool_head->next;
+    if (task_pool_head == NULL)  // task pool is now empty
+      task_pool_tail = NULL;
+
+    assert(queued_cnt > 0);
+    queued_cnt--;
+
+    //
+    // reset serial state
+    //
+    chpl_set_serial(task->serial_state);
+
+    (*task->fun)(task->arg);
+    chpl_free(task, 0, 0);
+
+    return true;
+  } else {
+    return false;  // task pool was empty!
+  }
+}
+
+
+// Threads
+
+int32_t chpl_threads_getMaxThreads(void) { return 1; }
+
+int32_t chpl_threads_maxThreadsLimit(void) { return 1; }
+
+uint32_t chpl_numThreads(void) { return 1; }
+
+uint32_t chpl_numIdleThreads(void) { return 0; }
+
+chpl_threadID_t chpl_thread_id(void) { return 0; }
+
+void chpl_thread_cancel(chpl_threadID_t threadID) {
+  chpl_internal_error("chpl_thread_cancel() shouldn't be called in threads-none");
+}
+
+void chpl_thread_join(chpl_threadID_t threadID) {
+  chpl_internal_error("chpl_thread_join() shouldn't be called in threads-none");
+}

@@ -45,31 +45,43 @@ void chpl_init_single_aux(chpl_single_aux_t *);
 void chpl_destroy_single_aux(chpl_single_aux_t *);
 
 
-//
-// returns the default maximum number of threads that can be handled by this
-// threading layer (initial value of maxThreads); use the sentinel value 0
-// if the maximum number of threads is limited only by the system's available
-// resources.
-//
-int32_t   chpl_threads_getMaxThreads(void);
+// Tasks
+
+void      chpl_tasking_init(void);        // main task initializes tasking
+void      chpl_tasking_exit(void);        // called by the main task
+
+typedef struct chpl_task_list* chpl_task_list_p;
+
+void chpl_add_to_task_list(
+    chpl_fn_int_t,      // function to call for task
+    void*,              // argument to the function
+    chpl_task_list_p*,  // task list
+    int32_t,            // locale where task list resides
+    chpl_bool,          // whether to call chpl_begin
+    int,                // line at which function begins
+    chpl_string);       // name of file containing functions
+void chpl_process_task_list(chpl_task_list_p);
+void chpl_execute_tasks_in_list(chpl_task_list_p);
+void chpl_free_task_list(chpl_task_list_p);
+
+// Fork one task.  Do not wait.  Used to implement Chapel's begin statement.
+void
+chpl_begin(chpl_fn_p,         // function to fork
+           void*,             // function arg
+           chpl_bool,         // ignore_serial = force spawning task regardless
+                              // of serial state; as in the case of calling
+                              // for on-statement implementation
+           chpl_bool,         // serial state (must be "false" except when
+                              // called from a comm lib such as gasnet;
+                              // otherwise, serial state is that of the
+                              // task executing chpl_begin)
+           chpl_task_list_p);
 
 //
-// returns the upper limit on the maximum number of threads that can be handled
-// by this threading layer; use the sentinel value 0 if the maximum number of
-// threads is limited only by the system's available resources.
+// Get and set dynamic serial state.
 //
-int32_t   chpl_threads_maxThreadsLimit(void);
-
-//
-// returns the total number of threads that currently exist, whether running,
-// blocked, or idle
-//
-uint32_t  chpl_numThreads(void);
-
-//
-// returns the number of threads that are currently idle
-//
-uint32_t  chpl_numIdleThreads(void);
+chpl_bool chpl_get_serial(void);
+void      chpl_set_serial(chpl_bool);
 
 //
 // returns the number of tasks that are ready to run on the current locale,
@@ -98,46 +110,39 @@ uint32_t  chpl_numRunningTasks(void);
 int32_t chpl_numBlockedTasks(void);
 
 
-// Chapel system thread control
+// Threads
 
-void      initChplThreads(void);           // main thread init's thread support
-void      exitChplThreads(void);           // called by the main thread
-
-chpl_threadID_t  chpl_thread_id(void);       // return caller's thread id
-void             chpl_thread_init(void);     // setup per-thread state
-chpl_bool        chpl_get_serial(void);      // get dynamic serial state
-void             chpl_set_serial(chpl_bool); // set dynamic serial state true or false
+chpl_threadID_t  chpl_thread_id(void);                // caller's thread id
 
 void             chpl_thread_cancel(chpl_threadID_t); // ask thread to terminate
+
 void             chpl_thread_join(chpl_threadID_t);   // wait for thread termination
 
+//
+// returns the default maximum number of threads that can be handled by this
+// threading layer (initial value of maxThreads); use the sentinel value 0
+// if the maximum number of threads is limited only by the system's available
+// resources.
+//
+int32_t   chpl_threads_getMaxThreads(void);
 
-typedef struct chpl_task_list* chpl_task_list_p;
+//
+// returns the upper limit on the maximum number of threads that can be handled
+// by this threading layer; use the sentinel value 0 if the maximum number of
+// threads is limited only by the system's available resources.
+//
+int32_t   chpl_threads_maxThreadsLimit(void);
 
-void chpl_add_to_task_list(
-    chpl_fn_int_t,      // function to call for task
-    void*,              // argument to the function
-    chpl_task_list_p*,  // task list
-    int32_t,            // locale where task list resides
-    chpl_bool,          // whether to call chpl_begin
-    int,                // line at which function begins
-    chpl_string);       // name of file containing functions
-void chpl_process_task_list(chpl_task_list_p);
-void chpl_execute_tasks_in_list(chpl_task_list_p);
-void chpl_free_task_list(chpl_task_list_p);
+//
+// returns the total number of threads that currently exist, whether running,
+// blocked, or idle
+//
+uint32_t  chpl_numThreads(void);
 
-// Fork one thread.  Do not wait.  Used to implement Chapel's begin statement.
-void
-chpl_begin(chpl_fn_p,         // function to fork
-           void*,             // function arg
-           chpl_bool,         // ignore_serial = force spawning task regardless
-                              // of serial state; as in the case of calling
-                              // for on-statement implementation
-           chpl_bool,         // serial state (must be "false" except when
-                              // called from a comm lib such as gasnet;
-                              // otherwise, serial state is that of the
-                              // thread executing chpl_begin)
-           chpl_task_list_p);
+//
+// returns the number of threads that are currently idle
+//
+uint32_t  chpl_numIdleThreads(void);
 
 #else // LAUNCHER
 
@@ -147,7 +152,7 @@ chpl_begin(chpl_fn_p,         // function to fork
 typedef void chpl_sync_aux_t;
 typedef void chpl_single_aux_t;
 typedef int chpl_mutex_t;
-#define exitChplThreads()
+#define chpl_tasking_exit()
 
 #endif // LAUNCHER
 

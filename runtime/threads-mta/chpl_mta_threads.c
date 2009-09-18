@@ -120,40 +120,14 @@ void chpl_init_single_aux(chpl_single_aux_t *s) {
 }
 
 
-// Threads
+// Tasks
 
-int32_t chpl_threads_getMaxThreads(void) {
-  return chpl_coresPerLocale() * 100;
-}
-
-int32_t chpl_threads_maxThreadsLimit(void) {
-  return chpl_coresPerLocale() * 104;
-}
-
-// not sure what the correct value should be here!
-uint32_t chpl_numThreads(void) { return 1; }
-
-// not sure what the correct value should be here!
-uint32_t chpl_numIdleThreads(void) { return 0; }
-
-// not sure what the correct value should be here!
-uint32_t chpl_numQueuedTasks(void) { return 0; }
-
-// not sure what the correct value should be here!
-uint32_t chpl_numRunningTasks(void) { return 1; }
-
-// not sure what the correct value should be here!
-int32_t  chpl_numBlockedTasks(void) { return -1; }
-
-void initChplThreads() {
+void chpl_tasking_init() {
   chpl_begin_cnt = 0;                     // only main thread running
   chpl_can_exit = 1;                      // mark full - no threads created yet
-
-  chpl_thread_init();
 }
 
-
-void exitChplThreads() {
+void chpl_tasking_exit() {
   int ready=0;
   do
     // this will block until chpl_can_exit is marked full!
@@ -161,48 +135,21 @@ void exitChplThreads() {
   while (!ready);
 }
 
-
-void chpl_thread_init(void) {}  // No need to do anything!
-
-
-chpl_threadID_t chpl_thread_id(void) {
-  return (chpl_threadID_t) mta_get_threadid(); 
+void chpl_add_to_task_list(chpl_fn_int_t fid,
+                           void* arg,
+                           chpl_task_list_p *task_list,
+                           int32_t task_list_locale,
+                           chpl_bool call_chpl_begin,
+                           int lineno,
+                           chpl_string filename) {
+  chpl_begin(chpl_ftable[fid], arg, false, false, NULL);
 }
 
-void chpl_thread_cancel(chpl_threadID_t threadID) {
-  chpl_internal_error("chpl_thread_cancel() shouldn't be called in threads-mta");
-}
+void chpl_process_task_list (chpl_task_list_p task_list) { }
 
-void chpl_thread_join(chpl_threadID_t threadID) {
-  chpl_internal_error("chpl_thread_join() shouldn't be called in threads-mta");
-}
+void chpl_execute_tasks_in_list (chpl_task_list_p task_list) { }
 
-
-
-chpl_bool chpl_get_serial(void) {
-  chpl_bool *p = NULL;
-  p = (chpl_bool*) mta_register_task_data(p);
-  if (p == NULL)
-    return false;
-  else {
-    mta_register_task_data(p); // Put back the value retrieved above.
-    return *p;
-  }
-}
-
-
-void chpl_set_serial(chpl_bool state) {
-  chpl_bool *p = NULL;
-  p = (chpl_bool*) mta_register_task_data(p);
-  if (p == NULL)
-    p = (chpl_bool*) chpl_alloc(sizeof(chpl_bool), CHPL_RT_MD_SERIAL_FLAG, 0, 0);
-  if (p) {
-    *p = state;
-    mta_register_task_data(p);
-  } else
-    chpl_internal_error("out of memory while creating serial state");
-}
-
+void chpl_free_task_list (chpl_task_list_p task_list) { }
 
 void
 chpl_begin (chpl_fn_p fp, void* arg, chpl_bool ignore_serial, 
@@ -232,18 +179,63 @@ chpl_begin (chpl_fn_p fp, void* arg, chpl_bool ignore_serial,
   }
 }
 
-void chpl_add_to_task_list(chpl_fn_int_t fid,
-                           void* arg,
-                           chpl_task_list_p *task_list,
-                           int32_t task_list_locale,
-                           chpl_bool call_chpl_begin,
-                           int lineno,
-                           chpl_string filename) {
-  chpl_begin(chpl_ftable[fid], arg, false, false, NULL);
+chpl_bool chpl_get_serial(void) {
+  chpl_bool *p = NULL;
+  p = (chpl_bool*) mta_register_task_data(p);
+  if (p == NULL)
+    return false;
+  else {
+    mta_register_task_data(p); // Put back the value retrieved above.
+    return *p;
+  }
 }
 
-void chpl_process_task_list (chpl_task_list_p task_list) { }
+void chpl_set_serial(chpl_bool state) {
+  chpl_bool *p = NULL;
+  p = (chpl_bool*) mta_register_task_data(p);
+  if (p == NULL)
+    p = (chpl_bool*) chpl_alloc(sizeof(chpl_bool), CHPL_RT_MD_SERIAL_FLAG, 0, 0);
+  if (p) {
+    *p = state;
+    mta_register_task_data(p);
+  } else
+    chpl_internal_error("out of memory while creating serial state");
+}
 
-void chpl_execute_tasks_in_list (chpl_task_list_p task_list) { }
+// not sure what the correct value should be here!
+uint32_t chpl_numQueuedTasks(void) { return 0; }
 
-void chpl_free_task_list (chpl_task_list_p task_list) { }
+// not sure what the correct value should be here!
+uint32_t chpl_numRunningTasks(void) { return 1; }
+
+// not sure what the correct value should be here!
+int32_t  chpl_numBlockedTasks(void) { return -1; }
+
+
+// Threads
+
+chpl_threadID_t chpl_thread_id(void) {
+  return (chpl_threadID_t) mta_get_threadid(); 
+}
+
+void chpl_thread_cancel(chpl_threadID_t threadID) {
+  chpl_internal_error("chpl_thread_cancel() shouldn't be called in threads-mta");
+}
+
+void chpl_thread_join(chpl_threadID_t threadID) {
+  chpl_internal_error("chpl_thread_join() shouldn't be called in threads-mta");
+}
+
+int32_t chpl_threads_getMaxThreads(void) {
+  return chpl_coresPerLocale() * 100;
+}
+
+int32_t chpl_threads_maxThreadsLimit(void) {
+  return chpl_coresPerLocale() * 104;
+}
+
+// not sure what the correct value should be here!
+uint32_t chpl_numThreads(void) { return 1; }
+
+// not sure what the correct value should be here!
+uint32_t chpl_numIdleThreads(void) { return 0; }

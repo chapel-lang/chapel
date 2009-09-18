@@ -347,7 +347,6 @@ initPrimitive() {
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
 
   // thread primitives
-  prim_def(PRIM_THREAD_INIT, "thread_init", returnInfoVoid, true);
   prim_def(PRIM_THREAD_ID, "thread_id", returnInfoThreadID, true);
   prim_def(PRIM_GET_SERIAL, "thread_get_serial", returnInfoBool);
   prim_def(PRIM_SET_SERIAL, "thread_set_serial", returnInfoVoid, true);
