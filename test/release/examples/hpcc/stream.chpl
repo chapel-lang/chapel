@@ -2,7 +2,7 @@
 // Use standard modules for Block distributions, Timing routines, Type
 // utility functions, and Random numbers
 //
-use MultiBlockDist, Time, Types, Random;
+use BlockDist, Time, Types, Random;
 
 //
 // Use shared user module for computing HPCC problem sizes

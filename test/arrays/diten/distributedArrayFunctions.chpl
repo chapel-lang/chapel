@@ -1,4 +1,4 @@
-use MultiBlockDist;
+use BlockDist;
 
 var dist = new Block(rank=2, bbox=[1..3, 1..3], idxType=int);
 var dom: domain(2) distributed dist = [1..3, 1..3];

@@ -1,4 +1,4 @@
-use MultiBlockDist;
+use BlockDist;
 
 config const n: int(64) = 4;
 

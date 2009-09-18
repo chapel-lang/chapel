@@ -20,7 +20,7 @@ locale 2 owns chunk: [8..2147483647]
 1 owns [5..7]
 2 owns [8..10]
 ProblemDist =
-Block1D
+Block
 -------
 distributes: [1..10]
 across locales: LOCALE0 LOCALE1 LOCALE2

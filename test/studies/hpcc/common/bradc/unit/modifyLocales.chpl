@@ -9,7 +9,7 @@ writeln("myLocales = ", myLocales);
 // TODO: That int(64) is really unfortunate.  We really need param
 // domains and ranges and the obvious conversions between them.
 // 
-const ProblemDist = new Block1D(bbox=[1..10:int(64)], targetLocales=myLocales);
+const ProblemDist = new Block(rank=1, bbox=[1..10:int(64)], targetLocales=myLocales);
 
 writeln("ProblemDist =\n", ProblemDist);
 writeln();

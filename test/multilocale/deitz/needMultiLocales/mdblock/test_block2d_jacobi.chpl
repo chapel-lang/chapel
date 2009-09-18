@@ -1,4 +1,4 @@
-use MultiBlockDist;
+use BlockDist;
 
 config var n : int = 5;
 config var epsilon : real = 0.00001;

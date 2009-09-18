@@ -1,4 +1,4 @@
-use MultiBlockDist, Time, Memory, Types, Random;
+use BlockDist, Time, Memory, Types, Random;
 
 type elemType = real(64);
 config const m: int(64) = 8, alpha = 3.0;

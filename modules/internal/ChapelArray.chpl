@@ -613,16 +613,16 @@ pragma "inline" def =(a: [], b : []) where (a._value.canCopyFromHost && b._value
 	return a;
 }
 
-pragma "inline" def =(a: [], b: []) {
+pragma "inline" def =(a: [], b: []) where (a._value.canCopyFromDevice && b._value.canCopyFromDevice) {
   if b._value != nil then
-    for (i,bb) in (a._dom,b) do
-      a(i) = bb;
+    for (aa,bb) in (a,b) do
+      aa = bb;
   return a;
 }
 
 pragma "inline" def =(a: [], b) {
-  for (i,bb) in (a._dom,b) do
-    a(i) = bb;
+  for (aa,bb) in (a,b) do
+    aa = bb;
   return a;
 }
 

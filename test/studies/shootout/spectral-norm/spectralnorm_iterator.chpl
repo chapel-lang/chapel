@@ -1,4 +1,4 @@
-use MultiBlockDist;
+use BlockDist;
 config const N = 500 : int(64);
 
 var Dist = new Block(rank=1, bbox=[0..#N]);

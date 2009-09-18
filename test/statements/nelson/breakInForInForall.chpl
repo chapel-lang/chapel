@@ -1,5 +1,5 @@
 
-use MultiBlockDist;
+use BlockDist;
 
 config const size : int = 8;
 const sizeRange = 0..#(size : int(64));

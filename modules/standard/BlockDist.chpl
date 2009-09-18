@@ -1,150 +1,194 @@
 //
-// Block1D Distribution
+// Block Distribution
 // 
-//      Block1D       Block1DDom     Block1DArr
+//      Block       BlockDom     BlockArr
 //
-//   LocBlock1DDist  LocBlock1DDom  LocBlock1DArr
+//   LocBlock    LocBlockDom  LocBlockArr
 //
 
-// TODO: Make multidimensional
+//
+// TODO List
+//
+// 1. Make multi-dimensional
+// 2. Support strided domains of locales
+// 3. Support strided Block domains
+// 4. Support slices
+//
+// Limitations
+//
+// 1. Changes to Block.tasksPerLocale are not made in privatized
+//    copies of this distribution.
+//
 
-// TODO: Make this work for a strided domain of locales; for a strided
-// domain implemented using this distribution.
 
-// TODO: implement the slicing interface?
-
-config param debugBlock1D = false;
+config param debugBlockDist = false; // internal development flag (debugging)
 
 
-class Block1D : BaseDist {
-  type idxType = int(64); // distribution's index type, for domain
+////////////////////////////////////////////////////////////////////////////////
+// Block Distribution Class
+//
+class Block : BaseDist {
+  param rank: int;
+  type idxType = int(64);
 
-  const boundingBox: domain(1, idxType);
-
-  //
-  // a domain and array describing the set of target locales to which
-  // the indices are mapped
-  //
-  const targetLocDom: domain(1);
+  const boundingBox: domain(rank, idxType);
+  const targetLocDom: domain(rank);
   const targetLocs: [targetLocDom] locale;
+  const locDist: [targetLocDom] LocBlock(rank, idxType);
 
-  //
-  // sjd: note this is a variable but it shouldn't be changed after
-  // privatization, because it won't be reflected everywhere.  should
-  // this be a constant?  how should we handle such?
-  //
-  var tasksPerLoc: int;
+  var tasksPerLocale: int; // tasks per locale for forall iteration
 
-  //
-  // DOWN LINK: an array of local distribution class descriptors --
-  // set up in the class constructor
-  //
-  const locDist: [targetLocDom] LocBlock1DDist(idxType);
-
-  def Block1D(type idxType = int(64), bbox: domain(1, idxType),
-              targetLocales: [] locale = thisRealm.Locales, 
-	      tasksPerLocale = 0) {
+  def Block(param rank: int,
+            type idxType = int(64),
+            bbox: domain(rank, idxType),
+            targetLocales: [] locale = thisRealm.Locales, 
+            tasksPerLocale = 0) {
     boundingBox = bbox;
-    targetLocDom = [0..#targetLocales.numElements]; // 0-based for simplicity
-    targetLocs = targetLocales;
+    if rank == 1 {
+      targetLocDom = [0..#targetLocales.numElements]; // 0-based for simplicity
+      targetLocs = targetLocales;
+    } else if targetLocales.rank == 1 then {
+      const factors = _factor(rank, targetLocales.numElements);
+      var ranges: rank*range;
+      for param i in 1..rank do
+        ranges(i) = 0..factors(i)-1;
+      targetLocDom = [(...ranges)];
+      for (loc1, loc2) in (targetLocs, targetLocales) do
+        loc1 = loc2;
+      if debugBlockDist {
+        writeln(targetLocDom);
+        writeln(targetLocs);
+      }
+    } else {
+      if targetLocales.rank != rank then
+	compilerError("locales array rank must be one or match distribution rank");
+
+      var ranges: rank*range;
+      for param i in 1..rank do {
+	var thisRange = targetLocales.domain.dim(i);
+	ranges(i) = 0..#thisRange.length; 
+      }
+      
+      targetLocDom = [(...ranges)];
+      if debugBlockDist then writeln(targetLocDom);
+
+      targetLocs = reshape(targetLocales, targetLocDom);
+      if debugBlockDist then writeln(targetLocs);
+    }
 
     coforall locid in targetLocDom do
       on targetLocs(locid) do
-        locDist(locid) = new LocBlock1DDist(idxType, locid, this);
+        locDist(locid) = new LocBlock(rank, idxType, locid, this);
 
-    tasksPerLoc = tasksPerLocale;
-    if (tasksPerLoc == 0) then tasksPerLoc = min reduce targetLocs.numCores;
+    if tasksPerLocale == 0 then
+      this.tasksPerLocale = min reduce targetLocs.numCores;
+    else
+      this.tasksPerLocale = tasksPerLocale;
 
-    if debugBlock1D then
+    if debugBlockDist then
       for loc in locDist do writeln(loc);
   }
 
-  //
-  // builds up a privatized (replicated copy)
-  //
-  def Block1D(type idxType = int(64), other: Block1D(idxType)) {
+  // copy constructor for privatization
+  def Block(param rank: int, type idxType, other: Block(rank, idxType)) {
     boundingBox = other.boundingBox;
     targetLocDom = other.targetLocDom;
     targetLocs = other.targetLocs;
-    tasksPerLoc = other.tasksPerLoc;
     locDist = other.locDist;
-  }
-
-  //
-  // Create a new domain over this distribution with the given index
-  // set (inds) and global index type (idxType, idxType)
-  //
-  // INTERFACE NOTES: Should we support a form that passes in an
-  // initial index set if one exists?  If not, we should rewrite the
-  // global domain construction to not do anything with whole...
-  //
-  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
-    if idxType != this.idxType then
-      compilerError("Block1D domain index type does not match distribution's");
-    if rank != 1 then
-      compilerError("Block1D domains are restricted to 1D (rank 1)");
-
-    var dom = new Block1DDom(idxType=idxType, dist=this, stridable=stridable);
-    dom.setup();
-    return dom;
-  }
-
-  //
-  // print out the distribution
-  //
-  def writeThis(x:Writer) {
-    x.writeln("Block1D");
-    x.writeln("-------");
-    x.writeln("distributes: ", boundingBox);
-    x.writeln("across locales: ", targetLocs);
-    x.writeln("indexed via: ", targetLocDom);
-    x.writeln("resulting in: ");
-    for locid in targetLocDom do
-      x.writeln("  [", locid, "] ", locDist(locid));
-  }
-
-  //
-  // convert an index into a locale value
-  //
-  def ind2loc(ind: idxType) {
-    return targetLocs(ind2locInd(ind));
-  }
-
-  //
-  // compute what chunk of inds is owned by a given locale -- assumes
-  // it's being called on the locale in question
-  //
-  def getChunk(inds, locid) {
-    // use domain slicing to get the intersection between what the
-    // locale owns and the domain's index set
-    //
-    // TODO: Should this be able to be written as myChunk[inds] ???
-    //
-    // TODO: Does using David's detupling trick work here?
-    //
-    return locDist(locid).myChunk(inds.dim(1));
-  }
-  
-  //
-  // Determine which locale owns a particular index
-  //
-  // TODO: I jotted down a note during the code review asking whether
-  // targetLocs.numElements and boundingbox.numIndices should be
-  // captured locally, or captured in the default dom/array implementation
-  // or inlined.  Not sure what that point was anymore, though.  Maybe
-  // someone else can help me remember it (since it was probably someone
-  // else's suggestion).
-  //
-  def ind2locInd(ind: idxType) {
-    //    writeln("distribution = ", this);
-    const ind0 = ind - boundingBox.low;
-    const locInd = (ind0 * targetLocs.numElements:idxType) / boundingBox.numIndices;
-    return max(0, min(locInd:int, (targetLocDom.dim(1).length-1):int));
+    tasksPerLocale = other.tasksPerLocale;
   }
 }
 
+//
+// create a new arithmetic domain over this distribution
+//
+def Block.newArithmeticDom(param rank: int, type idxType,
+                           param stridable: bool) {
+  if idxType != this.idxType then
+    compilerError("Block domain index type does not match distribution's");
+  if rank != this.rank then
+    compilerError("Block domain rank does not match distribution's");
+  
+  var dom = new BlockDom(rank=rank, idxType=idxType, dist=this, stridable=stridable);
+  dom.setup();
+  return dom;
+}
 
-class LocBlock1DDist {
+//
+// output distribution
+//
+def Block.writeThis(x:Writer) {
+  x.writeln("Block");
+  x.writeln("-------");
+  x.writeln("distributes: ", boundingBox);
+  x.writeln("across locales: ", targetLocs);
+  x.writeln("indexed via: ", targetLocDom);
+  x.writeln("resulting in: ");
+  for locid in targetLocDom do
+    x.writeln("  [", locid, "] ", locDist(locid));
+}
+
+//
+// convert an index into a locale value
+//
+def Block.ind2loc(ind: idxType) where rank == 1 {
+  return targetLocs(ind2locInd(ind));
+}
+
+def Block.ind2loc(ind: rank*idxType) {
+  return targetLocs(ind2locInd(ind));
+}
+
+//
+// compute what chunk of inds is owned by a given locale -- assumes
+// it's being called on the locale in question
+//
+def Block.getChunk(inds, locid) {
+  // use domain slicing to get the intersection between what the
+  // locale owns and the domain's index set
+  //
+  // TODO: Should this be able to be written as myChunk[inds] ???
+  //
+  // TODO: Does using David's detupling trick work here?
+  //
+  return locDist(locid).myChunk((...inds.getIndices()));
+}
+
+//
+// determine which locale owns a particular index
+//
+// TODO: I jotted down a note during the code review asking whether
+// targetLocs.numElements and boundingbox.numIndices should be
+// captured locally, or captured in the default dom/array implementation
+// or inlined.  Not sure what that point was anymore, though.  Maybe
+// someone else can help me remember it (since it was probably someone
+// else's suggestion).
+//
+def Block.ind2locInd(ind: idxType) where rank == 1 {
+  const ind0 = ind - boundingBox.low;
+  const locInd = (ind0 * targetLocs.numElements:idxType) / boundingBox.numIndices;
+  return max(0, min(locInd:int, (targetLocDom.dim(1).length-1):int));
+}
+
+def Block.ind2locInd(ind: rank*idxType) where rank == 1 {
+  return ind2locInd(ind(1));
+}
+
+def Block.ind2locInd(ind: rank*idxType) where rank != 1 {
+  var locInd: rank*int;
+  for param i in 1..rank {
+    const ind0 = ind(i) - boundingBox.low(i);
+    const dimLocInd = (ind0 * targetLocDom.dim(i).length:idxType) / boundingBox.dim(i).length;
+    locInd(i) = max(0, min(dimLocInd:int, (targetLocDom.dim(i).length-1):int));
+  }
+  return locInd;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Block Local Distribution Class
+//
+class LocBlock {
+  param rank: int;
   type idxType;
 
   //
@@ -153,232 +197,266 @@ class LocBlock1DDist {
   // to use lclIdxType here is wrong since we're talking about
   // the section of the global index space owned by the locale.
   //
-  const myChunk: domain(1, idxType);
-
-  //
-  // The locale owning this class
-  //
-  // TODO: This is only used in the writeThis() class -- can we remove it?
-  //
-  const loc: locale;
+  const myChunk: domain(rank, idxType);
 
   //
   // Constructor computes what chunk of index(1) is owned by the
   // current locale
   //
-  def LocBlock1DDist(type idxType, 
-                     _localeIdx: int, // the locale index from the target domain
-                     dist: Block1D(idxType) // reference to glob dist
-                     ) {
-    const localeIdx = _localeIdx;
-    loc = dist.targetLocs(localeIdx);
-    //
-    // TODO: Create these assertions for other local classes as well
-    //
-    if (loc != here) then
-      halt("Creating a local distribution class on the wrong locale");
-
-    const lo = dist.boundingBox.low;
-    const hi = dist.boundingBox.high;
-    const numelems = hi - lo + 1;
-    const numlocs = dist.targetLocDom.numIndices;
-    const (blo, bhi) = _computeBlock(min(idxType), numelems, lo,
-                                     max(idxType), numlocs, localeIdx);
-    
-    myChunk = [blo..bhi];
-  }
-
-  //
-  // print out the local distribution class
-  //
-  def writeThis(x:Writer) {
-    x.write("locale ", loc.id, " owns chunk: ", myChunk);
+  def LocBlock(param rank: int,
+                 type idxType, 
+                 locid,   // the locale index from the target domain
+                 dist: Block(rank, idxType)) { // reference to glob dist
+    if rank == 1 {
+      const lo = dist.boundingBox.low;
+      const hi = dist.boundingBox.high;
+      const numelems = hi - lo + 1;
+      const numlocs = dist.targetLocDom.numIndices;
+      const (blo, bhi) = _computeBlock(min(idxType), numelems, lo,
+                                       max(idxType), numlocs, locid);
+      myChunk = [blo..bhi];
+    } else {
+      var tuple: rank*range(idxType);
+      for param i in 1..rank {
+        const lo = dist.boundingBox.low(i);
+        const hi = dist.boundingBox.high(i);
+        const numelems = hi - lo + 1;
+        const numlocs = dist.targetLocDom.dim(i).length;
+        const (blo, bhi) = _computeBlock(min(idxType), numelems, lo,
+                                         max(idxType), numlocs, locid(i));
+        tuple(i) = blo..bhi;
+      }
+      myChunk = [(...tuple)];
+    }
   }
 }
 
 
-class Block1DDom: BaseArithmeticDom {
-  type idxType;
-  param rank = 1;
-  param stridable: bool;
+def LocBlock.writeThis(x:Writer) {
+  var localeid: int;
+  on this {
+    localeid = here.id;
+  }
+  x.write("locale ", localeid, " owns chunk: ", myChunk);
+}
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Block Domain Class
+//
+class BlockDom: BaseArithmeticDom {
+  param rank: int;
+  type idxType;
+  param stridable: bool;
   //
   // LEFT LINK: a pointer to the parent distribution
   //
-  const dist: Block1D(idxType);
+  const dist: Block(rank, idxType);
 
   //
   // DOWN LINK: an array of local domain class descriptors -- set up in
   // setup() below
   //
-  // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method; would want to be able to use
-  // an on-clause at the expression list to make this work.
-  // Otherwise, would have to move the allocation into a function
-  // just to get it at the statement level.
-  // SJD: note cannot do this anymore because constructor does not
-  // setup (for privatization reasons)
-  //
-  var locDoms: [dist.targetLocDom] LocBlock1DDom(idxType, stridable);
+  var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
 
   //
   // a domain describing the complete domain
   //
-  const whole: domain(1, idxType);
+  const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
 
   var pid: int = -1; // privatized object id
+}
 
-  //
-  // TODO: This really should go over the elements in row-major order,
-  // not the block orders.
-  //
-  def these() {
-    for blk in locDoms do
-      for ind in blk do
-        yield ind;
-  }
+def BlockDom.dim(d: int) return whole.dim(d);
 
-  //
-  // TODO: Steve's question: how would a leader containing an on
-  // clause interact with a loop that used an on clause explicitly
-  // within its body?  How would it be done efficiently?
-  //
-  // TODO: Abstract this subtraction of low into a function?
-  // Note relationship between this operation and the
-  // order/position functions -- any chance for creating similar
-  // support? (esp. given how frequent this seems likely to be?)
-  //
-  def these(param tag: iterator) where tag == iterator.leader {
-    const precomputedNumTasks = dist.tasksPerLoc;
-    coforall locDom in locDoms do on locDom {
-      const locBlock = locDom.myBlock - whole.low,
-            numTasks = precomputedNumTasks;
-      if (numTasks == 1) {
-        yield tuple(locBlock.low..locBlock.high);
-      } else {
-        coforall taskid in 0..#numTasks {
-          const (lo,hi) = _computeBlock(locBlock.low, locBlock.numIndices,
-                                        locBlock.low, locBlock.high, 
-                                        numTasks, taskid);
-          yield tuple(lo..hi);
-        }
+def BlockDom.these() {
+  for i in whole do
+    yield i;
+}
+
+def BlockDom.these(param tag: iterator) where tag == iterator.leader {
+  const precomputedNumTasks = dist.tasksPerLocale;
+  const precomputedWholeLow = whole.low;
+  coforall locDom in locDoms do on locDom {
+    var tmpBlock = locDom.myBlock - precomputedWholeLow;
+    const numTasks = precomputedNumTasks;
+
+    var locBlock: rank*range(idxType);
+    for param i in 1..tmpBlock.rank {
+      locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
+    }
+    if (numTasks == 1) {
+      yield locBlock;
+    } else {
+      coforall taskid in 0..#numTasks {
+        var tuple: rank*range(idxType) = locBlock;
+        const (lo,hi) = _computeBlock(locBlock(1).low, locBlock(1).length,
+                                      locBlock(1).low, locBlock(1).high,
+                                      numTasks, taskid);
+        tuple(1) = lo..hi;
+        yield tuple;
       }
     }
   }
+}
 
-  //
-  // TODO: Abstract the addition of low into a function?
-  // Note relationship between this operation and the
-  // order/position functions -- any chance for creating similar
-  // support? (esp. given how frequent this seems likely to be?)
-  //
-  // TODO: Is there some clever way to invoke the leader/follower
-  // iterator on the local blocks in here such that the per-core
-  // parallelism is expressed at that level?  Seems like a nice
-  // natural composition and might help with my fears about how
-  // stencil communication will be done on a per-locale basis.
-  //
-  def these(param tag: iterator, follower) where tag == iterator.follower {
-    const followThis = follower(1) + whole.low;
-
-    for i in followThis {
-      yield i;
-    }
+//
+// TODO: Abstract the addition of low into a function?
+// Note relationship between this operation and the
+// order/position functions -- any chance for creating similar
+// support? (esp. given how frequent this seems likely to be?)
+//
+// TODO: Is there some clever way to invoke the leader/follower
+// iterator on the local blocks in here such that the per-core
+// parallelism is expressed at that level?  Seems like a nice
+// natural composition and might help with my fears about how
+// stencil communication will be done on a per-locale basis.
+//
+def BlockDom.these(param tag: iterator, follower) where tag == iterator.follower {
+  var t: rank*range(idxType, stridable=stridable);
+  for param i in 1..rank {
+    var stride = whole.dim(i).stride: idxType;
+    var low = stride * follower(i).low;
+    var high = stride * follower(i).high;
+    t(i) = (low..high by stride:int) + whole.dim(i).low;
   }
-
-  //
-  // the print method for the domain
-  //
-  def writeThis(x:Writer) {
-    x.write(whole);
-  }
-
-  //
-  // how to allocate a new array over this domain
-  //
-  def buildArray(type elemType) {
-    var arr = new Block1DArr(idxType=idxType, eltType=elemType,
-                             stridable=stridable, dom=this);
-    arr.setup();
-    return arr;
-  }
-
-  //
-  // queries for the number of indices, low, and high bounds
-  //
-  def numIndices return whole.numIndices;
-  def low return whole.low;
-  def high return whole.high;
-
-  //
-  // INTERFACE NOTES: Could we make setIndices() for an arithmetic
-  // domain take a domain rather than something else?
-  //
-  def setIndices(x: domain) {
-    if x.rank != 1 then
-      compilerError("rank mismatch in domain assignment");
-    if x._value.idxType != idxType then
-      compilerError("index type mismatch in domain assignment");
-    whole = x;
-    setup();
-  }
-
-  def setIndices(x) {
-    if x.size != 1 then
-      compilerError("rank mismatch in domain assignment");
-    if x(1).eltType != idxType then
-      compilerError("index type mismatch in domain assignment");
-    //
-    // TODO: This seems weird:
-    //
-    whole = x(1);
-    setup();
-  }
-
-  def getIndices() {
-    return whole;
-  }
-
-  def getDist(): Block1D(idxType) {
-    return dist;
-  }
-
-  def setup() {
-    coforall localeIdx in dist.targetLocDom do
-      on dist.targetLocs(localeIdx) do
-        if (locDoms(localeIdx) == nil) then
-          locDoms(localeIdx) = new LocBlock1DDom(idxType, stridable, this, 
-                                                 dist.getChunk(whole, localeIdx));
-        else
-          locDoms(localeIdx).myBlock = dist.getChunk(whole, localeIdx);
-    if debugBlock1D then
-      for loc in dist.targetLocDom do writeln(loc, " owns ", locDoms(loc));
-
-  }
-
-  def supportsPrivatization() param return true;
-  def privatize() {
-    var privateDist = new Block1D(idxType, dist);
-    var c = new Block1DDom(idxType=idxType, rank=rank, stridable=stridable, dist=privateDist);
-    c.locDoms = locDoms;
-    c.whole = whole;
-    return c;
-  }
-  def reprivatize(other) {
-    locDoms = other.locDoms;
-    whole = other.whole;
+  for i in [(...t)] {
+    yield i;
   }
 }
 
+def BlockDom.strideBy(str: int) {
+  var alias = new BlockDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
+  var t: rank*range(eltType=idxType, stridable=true);
+  for i in 1..rank {
+    t(i) = this.dim(i) by str;
+  }
+  alias.setIndices(t);
+  return alias;
+}
 
-class LocBlock1DDom {
+def BlockDom.strideBy(str: rank*int) {
+  var alias = new BlockDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
+  var t: rank*range(eltType=idxType, stridable=true);
+  for i in 1..rank {
+    t(i) = this.dim(i) by str(i);
+  }
+  alias.setIndices(t);
+  return alias;
+}
+
+
+//
+// output domain
+//
+def BlockDom.writeThis(x:Writer) {
+  x.write(whole);
+}
+
+//
+// how to allocate a new array over this domain
+//
+def BlockDom.buildArray(type eltType) {
+  var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+  arr.setup();
+  return arr;
+}
+
+def BlockDom.numIndices return whole.numIndices;
+def BlockDom.low return whole.low;
+def BlockDom.high return whole.high;
+
+//
+// INTERFACE NOTES: Could we make setIndices() for an arithmetic
+// domain take a domain rather than something else?
+//
+def BlockDom.setIndices(x: domain) {
+  if x.rank != rank then
+    compilerError("rank mismatch in domain assignment");
+  if x._value.idxType != idxType then
+    compilerError("index type mismatch in domain assignment");
+  whole = x;
+  setup();
+}
+
+def BlockDom.setIndices(x) {
+  if x.size != rank then
+    compilerError("rank mismatch in domain assignment");
+  if x(1).eltType != idxType then
+    compilerError("index type mismatch in domain assignment");
+  //
+  // TODO: This seems weird:
+  //
+  whole.setIndices(x);
+  setup();
+}
+
+def BlockDom.getIndices() {
+  return whole.getIndices();
+}
+
+def BlockDom.getDist(): Block(idxType) {
+  return dist;
+}
+
+def BlockDom.slice(param stridable: bool, ranges) {
+  var d = new BlockDom(rank=rank, idxType=idxType, dist=dist, stridable=stridable||this.stridable);
+  d.setIndices(whole((...ranges)).getIndices());
+  return d;
+}
+
+def BlockDom.setup() {
+  coforall localeIdx in dist.targetLocDom do
+    on dist.targetLocs(localeIdx) do
+      if (locDoms(localeIdx) == nil) then
+        locDoms(localeIdx) = new LocBlockDom(rank, idxType, stridable, this, 
+                                               dist.getChunk(whole, localeIdx));
+      else
+        locDoms(localeIdx).myBlock = dist.getChunk(whole, localeIdx);
+  if debugBlockDist then
+    for loc in dist.targetLocDom do writeln(loc, " owns ", locDoms(loc));
+ 
+}
+
+def BlockDom.supportsPrivatization() param return true;
+
+def BlockDom.privatize() {
+  var privateDist = new Block(rank, idxType, dist);
+  var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privateDist);
+  c.locDoms = locDoms;
+  c.whole = whole;
+  return c;
+}
+
+def BlockDom.reprivatize(other) {
+  locDoms = other.locDoms;
+  whole = other.whole;
+}
+
+def BlockDom.member(i) {
+  return whole.member(i);
+}
+
+def BlockDom.order(i) {
+  return whole.order(i);
+}
+
+def BlockDom.position(i) {
+  return whole.position(i);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Block Local Domain Class
+//
+class LocBlockDom {
+  param rank: int;
   type idxType;
   param stridable: bool;
 
   //
   // UP LINK: a reference to the parent global domain class
   //
-  const wholeDom: Block1DDom(idxType, 1, stridable);
+  const wholeDom: BlockDom(rank, idxType, stridable);
 
   //
   // a local domain describing the indices owned by this locale
@@ -387,221 +465,264 @@ class LocBlock1DDom {
   // require a glbIdxType offset in order to get from the global
   // indices back to the local index type.
   //
-  var myBlock: domain(1, idxType);
+  var myBlock: domain(rank, idxType, stridable);
+}
 
-  def these() {
-    for ind in myBlock do
-      yield ind;
-  }
+//
+// output local domain piece
+//
+def LocBlockDom.writeThis(x:Writer) {
+  x.write(myBlock);
+}
 
-  //
-  // this is the parallel iterator for the local domain, see global
-  // domain parallel iterators for general notes on the approach
-  //
-  def these(param tag: iterator) where tag == iterator.leader {
-    halt("This is bogus");
-    yield [1..100];
-  }
+//
+// queries for this locale's number of indices, low, and high bounds
+//
+// TODO: I believe these are only used by the random number generator
+// in stream -- will they always be required once that is rewritten?
+//
+def LocBlockDom.numIndices {
+  return myBlock.numIndices;
+}
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
-    halt("This is bogus");
-    yield 2;
-  }
+def LocBlockDom.low {
+  return myBlock.low;
+}
 
-  //
-  // how to write out this locale's indices
-  //
-  def writeThis(x:Writer) {
-    x.write(myBlock);
-  }
-
-  //
-  // queries for this locale's number of indices, low, and high bounds
-  //
-  // TODO: I believe these are only used by the random number generator
-  // in stream -- will they always be required once that is rewritten?
-  //
-  def numIndices {
-    return myBlock.numIndices;
-  }
-
-  def low {
-    return myBlock.low;
-  }
-
-  def high {
-    return myBlock.high;
-  }
+def LocBlockDom.high {
+  return myBlock.high;
 }
 
 
-class Block1DArr: BaseArr {
-  type idxType;
+////////////////////////////////////////////////////////////////////////////////
+// Block Array Class
+//
+class BlockArr: BaseArr {
   type eltType;
+  param rank: int;
+  type idxType;
   param stridable: bool;
 
   //
   // LEFT LINK: the global domain descriptor for this array
   //
-  var dom: Block1DDom(idxType, 1, stridable);
+  var dom: BlockDom(rank, idxType, stridable);
 
   //
   // DOWN LINK: an array of local array classes
   //
-  // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method; would want to be able to use
-  // an on-clause at the expression list to make this work.
-  // Otherwise, would have to move the allocation into a function
-  // just to get it at the statement level.
-  // SJD: note cannot do this anymore because constructor does not
-  // setup (for privatization reasons)
-  // SJD update: maybe can do this again with privatize simplification
-  // SJD: actually, this can only be const if the Chapel array is const?
+  var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
+
   //
-  var locArr: [dom.dist.targetLocDom] LocBlock1DArr(idxType, eltType, stridable);
+  // optimized reference to a local LocBlockArr instance (or nil)
+  //
+  var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
 
   var pid: int = -1; // privatized object id
+}
 
-  def setup() {
-    coforall localeIdx in dom.dist.targetLocDom do
-      on dom.dist.targetLocs(localeIdx) do
-        locArr(localeIdx) = new LocBlock1DArr(idxType, eltType, stridable, dom.locDoms(localeIdx));
-  }
+def BlockArr.getBaseDom() return dom;
 
-  def getBaseDom() return dom;
-
-  def supportsPrivatization() param return true;
-  def privatize() {
-    var dompid = dom.pid;
-    var thisdom = dom;
-    var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
-    var c = new Block1DArr(idxType=idxType, eltType=eltType,
-                           stridable=stridable, dom=privdom);
-    c.locArr = locArr;
-    return c;
-  }
-
-  //
-  // the global accessor for the array
-  //
-  // TODO: Do we need a global bounds check here or in ind2locind?
-  //
-  def this(i: idxType) var {
-    const myLocArr = locArr(here.id);
-    local {
-      if myLocArr.locDom.myBlock.member(i) then
-        return myLocArr.this(i);
+def BlockArr.setup() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocs(localeIdx) {
+      locArr(localeIdx) = new LocBlockArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx));
+      if this.locale == here then
+        myLocArr = locArr(localeIdx);
     }
-    return locArr(dom.dist.ind2locInd(i))(i);
-  }
-
-  def these() var {
-    for loc in dom.dist.targetLocDom {
-      for elem in locArr(loc) {
-        yield elem;
-      }
-    }
-  }
-
-  //
-  // TODO: Rewrite this to reuse more of the global domain iterator
-  // logic?  (e.g., can we forward the forall to the global domain
-  // somehow?
-  //
-  def these(param tag: iterator) where tag == iterator.leader {
-    const precomputedNumTasks = dom.dist.tasksPerLoc;
-    const precomputedWholeLow = dom.whole.low;
-    coforall locDom in dom.locDoms do on locDom {
-      const locBlock = locDom.myBlock - precomputedWholeLow,
-            numTasks = precomputedNumTasks;
-      if (numTasks == 1) {
-        yield tuple(locBlock.low..locBlock.high);
-      } else {
-        coforall taskid in 0..#numTasks {
-          const (lo,hi) = _computeBlock(locBlock.low, locBlock.numIndices,
-                                        locBlock.low, locBlock.high, 
-                                        numTasks, taskid);
-          yield tuple(lo..hi);
-        }
-      }
-    }
-  }
-
-  def supportsAlignedFollower() param return true;
-
-  def these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
-    const followThis = follower(1) + dom.low;
-
-    //
-    // TODO: The following is a buggy hack that will only work when we're
-    // distributing across the entire Locales array.  I still think the
-    // locArr/locDoms arrays should be associative over locale values.
-    //
-    const myLocArr = locArr(here.id);
-    if aligned {
-      local {
-        for i in followThis {
-          yield myLocArr.this(i);
-        }
-      }
-    } else {
-      //
-      // we don't own all the elements we're following
-      //
-      def accessHelper(i) var {
-        local {
-          if myLocArr.locDom.myBlock.member(i) then
-            return myLocArr.this(i);
-        }
-        return this(i);
-      }
-      for i in followThis {
-        yield accessHelper(i);
-      }
-    }
-  }
-
-  //
-  // how to print out the whole array, sequentially
-  //
-  def writeThis(x: Writer) {
-
-    var first = true;
-    for loc in dom.dist.targetLocDom {
-      // May want to do something like the following:
-      //      on loc {
-      // but it causes deadlock -- see writeThisUsingOn.chpl
-        if (locArr(loc).numElements >= 1) {
-          if (first) {
-            first = false;
-          } else {
-            x.write(" ");
-          }
-          x.write(locArr(loc));
-        }
-        //    }
-      stdout.flush();
-    }
-  }
-
-  //
-  // a query for the number of elements in the array
-  //
-  def numElements {
-    return dom.numIndices;
   }
 }
 
+def BlockArr.supportsPrivatization() param return true;
 
-class LocBlock1DArr {
-  type idxType;
+def BlockArr.privatize() {
+  var dompid = dom.pid;
+  var thisdom = dom;
+  var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+  var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
+  c.locArr = locArr;
+  for localeIdx in dom.dist.targetLocDom do
+    if c.locArr(localeIdx).locale == here then
+      c.myLocArr = c.locArr(localeIdx);
+  return c;
+}
+
+//
+// the global accessor for the array
+//
+// TODO: Do we need a global bounds check here or in ind2locind?
+//
+def BlockArr.this(i: idxType) var where rank == 1 {
+  if myLocArr then local {
+    if myLocArr.locDom.myBlock.member(i) then
+      return myLocArr.this(i);
+  }
+  return locArr(dom.dist.ind2locInd(i))(i);
+}
+
+def BlockArr.this(i: rank*idxType) var {
+//   const myLocArr = locArr(here.id);
+//   local {
+//     if myLocArr.locDom.myBlock.member(i) then
+//       return myLocArr.this(i);
+//   }
+  if rank == 1 {
+    return this(i(1));
+  } else {
+    return locArr(dom.dist.ind2locInd(i))(i);
+  }
+}
+
+def BlockArr.these() var {
+  for i in dom do
+    yield this(i);
+}
+
+//
+// TODO: Rewrite this to reuse more of the global domain iterator
+// logic?  (e.g., can we forward the forall to the global domain
+// somehow?
+//
+def BlockArr.these(param tag: iterator) where tag == iterator.leader {
+  const precomputedNumTasks = dom.dist.tasksPerLocale;
+  const precomputedWholeLow = dom.whole.low;
+  coforall locDom in dom.locDoms do on locDom {
+    var tmpBlock = locDom.myBlock - precomputedWholeLow;
+    const numTasks = precomputedNumTasks;
+    var locBlock: rank*range(idxType);
+    for param i in 1..tmpBlock.rank {
+      locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
+    }
+
+
+    if (numTasks == 1) {
+      yield locBlock;
+    } else {
+      coforall taskid in 0..#numTasks {
+        var tuple: rank*range(idxType) = locBlock;
+        const (lo,hi) = _computeBlock(locBlock(1).low, locBlock(1).length,
+                                      locBlock(1).low, locBlock(1).high,
+                                      numTasks, taskid);
+          
+        tuple(1) = lo..hi;
+        yield tuple;
+
+      }
+    }
+  }
+}
+
+def BlockArr.supportsAlignedFollower() param return true;
+
+def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
+  var followThis: rank*range(eltType=idxType, stridable=stridable);
+  var lowIdx: rank*idxType;
+
+  for param i in 1..rank {
+    var stride = dom.whole.dim(i).stride;
+    var low = follower(i).low * stride;
+    var high = follower(i).high * stride;
+    followThis(i) = (low..high by stride) + dom.whole.dim(i).low;
+    lowIdx(i) = followThis(i).low;
+  }
+  const followThisDom = [(...followThis)];
+
+  //
+  // TODO: The following is a buggy hack that will only work when we're
+  // distributing across the entire Locales array.  I still think the
+  // locArr/locDoms arrays should be associative over locale values.
+  //
+  const myLocArr = locArr(dom.dist.ind2locInd(lowIdx));
+  if aligned {
+    local {
+      for i in followThisDom {
+        yield myLocArr.this(i);
+      }
+    }
+  } else {
+    //
+    // we don't own all the elements we're following
+    //
+    def accessHelper(i) var {
+//      if myLocArr.locale == here {
+//	local {
+//          if myLocArr.locDom.myBlock.member(i) then
+//            return myLocArr.this(i);
+//        }
+//      }
+      return this(i);
+    }
+    for i in followThisDom {
+      yield accessHelper(i);
+    }
+  }
+}
+
+//
+// output array
+//
+def BlockArr.writeThis(f: Writer) {
+  if dom.numIndices == 0 then return;
+  var i : rank*idxType;
+  for dim in 1..rank do
+    i(dim) = dom.dim(dim)._low;
+  label next while true {
+    f.write(this(i));
+    if i(rank) <= (dom.dim(rank)._high - dom.dim(rank)._stride:idxType) {
+      f.write(" ");
+      i(rank) += dom.dim(rank)._stride:idxType;
+    } else {
+      for dim in 1..rank-1 by -1 {
+        if i(dim) <= (dom.dim(dim)._high - dom.dim(dim)._stride:idxType) {
+          i(dim) += dom.dim(dim)._stride:idxType;
+          for dim2 in dim+1..rank {
+            f.writeln();
+            i(dim2) = dom.dim(dim2)._low;
+          }
+          continue next;
+        }
+      }
+      break;
+    }
+  }
+}
+
+def BlockArr.numElements return dom.numIndices;
+
+def BlockArr.checkSlice(ranges) {
+  for param i in 1..rank do
+    if !dom.dim(i).boundsCheck(ranges(i)) then {
+      writeln(dom.dim(i), " ", ranges(i), " ", dom.dim(i).boundsCheck(ranges(i)));
+      halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
+    }
+}
+
+
+def BlockArr.slice(d: BlockDom) {
+  var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
+  for i in dom.dist.targetLocDom {
+    on dom.dist.targetLocs(i) {
+      alias.locArr[i] = new LocBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i]);
+      alias.locArr[i].myElems => locArr[i].myElems[alias.locArr[i].locDom.myBlock];
+    }
+  }
+
+  return alias;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Block Local Array Class
+//
+class LocBlockArr {
   type eltType;
+  param rank: int;
+  type idxType;
   param stridable: bool;
 
   //
   // LEFT LINK: a reference to the local domain class for this array and locale
   //
-  const locDom: LocBlock1DDom(idxType, stridable);
+  const locDom: LocBlockDom(rank, idxType, stridable);
 
 
   // STATE:
@@ -610,61 +731,24 @@ class LocBlock1DArr {
   // the block of local array data
   //
   var myElems: [locDom.myBlock] eltType;
-
-
-  // LOCAL ARRAY INTERFACE:
-
-  //
-  // the accessor for the local array -- assumes the index is local
-  //
-  def this(i: idxType) var {
-    return myElems(i);
-  }
-
-  //
-  // iterator over the elements owned by this locale
-  //
-  def these() var {
-    for elem in myElems {
-      yield elem;
-    }
-  }
-
-  //
-  // this is the parallel iterator for the local array, see global
-  // domain parallel iterators for general notes on the approach
-  //
-  def these(param tag: iterator) where tag == iterator.leader {
-    halt("This is bogus");
-    yield [1..100];
-  }
-
-  def these(param tag: iterator, follower) var where tag == iterator.follower {
-    yield myElems(0);
-  }
-
-
-  //
-  // prints out this locale's piece of the array
-  //
-  def writeThis(x: Writer) {
-    // May want to do something like the following:
-    //      on loc {
-    // but it causes deadlock -- see writeThisUsingOn.chpl
-    x.write(myElems);
-  }
-
-  //
-  // query for the number of local array elements
-  //
-  def numElements {
-    return myElems.numElements;
-  }
-
-  def owns(x) {
-    return locDom.myBlock.dim(1).boundsCheck(x.dim(1));
-  }
 }
+
+//
+// the accessor for the local array -- assumes the index is local
+//
+def LocBlockArr.this(i) var {
+  return myElems(i);
+}
+
+//
+// output local array piece
+//
+def LocBlockArr.writeThis(x: Writer) {
+  // note on this fails; see writeThisUsingOn.chpl
+  x.write(myElems);
+}
+
+def LocBlockArr.numElements return myElems.numElements;
 
 
 //
@@ -672,14 +756,46 @@ class LocBlock1DArr {
 //
 def _computeBlock(waylo, numelems, lo, wayhi, numblocks, blocknum) {
   def procToData(x, lo)
-    return lo + (x: lo.type) + (x:real != x:int:real): lo.type;
+    return lo + (x:lo.type) + (x:real != x:int:real):lo.type;
 
   const blo =
-    if (blocknum == 0) then waylo
-      else procToData((numelems: real * blocknum) / numblocks, lo);
+    if blocknum == 0 then waylo
+      else procToData((numelems:real * blocknum) / numblocks, lo);
   const bhi =
-    if (blocknum == numblocks - 1) then wayhi
-      else procToData((numelems: real * (blocknum+1)) / numblocks, lo) - 1;
+    if blocknum == numblocks - 1 then wayhi
+      else procToData((numelems:real * (blocknum+1)) / numblocks, lo) - 1;
 
   return (blo, bhi);
+}
+
+//
+// naive routine for dividing numLocales into rank factors
+//
+def _factor(param rank: int, value) {
+  var factors: rank*int;
+  for param i in 1..rank do
+    factors(i) = 1;
+  if value >= 1 {
+    var iv = value;
+    var factor = 1;
+    while iv > 1 {
+      for i in 2..iv {
+        if iv % i == 0 {
+          var j = 1;
+          for i in 2..rank {
+            if factors(i) < factors(j) then
+              j = i;
+          }
+          factors(j) *= i;
+          iv = iv / i;
+          break;
+        }
+      }
+    }
+  }
+  for i in 1..rank do
+    for j in i+1..rank do
+      if factors(i) < factors(j) then
+        factors(i) <=> factors(j);
+  return factors;
 }

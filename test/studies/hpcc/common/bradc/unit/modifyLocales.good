@@ -1,6 +1,6 @@
 myLocales = LOCALE0 LOCALE1 LOCALE2 LOCALE0
 ProblemDist =
-Block1D
+Block
 -------
 distributes: [1..10]
 across locales: LOCALE0 LOCALE1 LOCALE2 LOCALE0
@@ -14,7 +14,7 @@ resulting in:
 
 myLocales = LOCALE0 LOCALE1 LOCALE2
 ProblemDist =
-Block1D
+Block
 -------
 distributes: [1..10]
 across locales: LOCALE0 LOCALE1 LOCALE2 LOCALE0

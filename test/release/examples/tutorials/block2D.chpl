@@ -16,9 +16,9 @@
  */
 
 //
-// Standard module MultiBlockDist defines the Block distribution.
+// Standard module BlockDist defines the Block distribution.
 //
-use MultiBlockDist;
+use BlockDist;
 
 //
 // Size of each dimension of our domain.  Note that int(64) is the

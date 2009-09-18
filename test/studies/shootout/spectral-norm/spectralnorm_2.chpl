@@ -6,7 +6,7 @@
  * Conversion to Chapel by Albert Sidelnik
  */
 
-use Time, MultiBlockDist;
+use Time, BlockDist;
 config const timer : bool = false;
 var t : Timer;
 config const NUM = 500 : int(64);

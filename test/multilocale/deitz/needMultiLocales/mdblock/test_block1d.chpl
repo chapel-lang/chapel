@@ -1,4 +1,4 @@
-use MultiBlockDist;
+use BlockDist;
 
 config var n: int(64) = 8, tpl=1;
 

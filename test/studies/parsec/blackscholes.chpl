@@ -1,4 +1,4 @@
-use Time, MultiBlockDist;
+use Time, BlockDist;
 
 config const timer : bool = false;
 var t : Timer;
