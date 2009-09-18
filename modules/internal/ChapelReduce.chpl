@@ -1,10 +1,18 @@
 def _scan(r, s) {
-  var s2: list(r.eltType);
+  var i=1, size=4;
+  var D = [1..size];
+  var A: [D] r.eltType;
   for e in s {
+    if i > size {
+      size = size * 2;
+      D = [1..size];
+    }
     r.accumulate(e);
-    s2.append(r.generate());
+    A(i) = r.generate();
+    i = i + 1;
   }
-  return s2;
+  D = [1..i-1];
+  return A;
 }
 
 def _sum_type(type eltType) {

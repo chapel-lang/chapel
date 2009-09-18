@@ -977,6 +977,7 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
           new NamedExpr("eltType", new SymExpr(eltType))))));
   if (isScan) {
     VarSymbol* tmp = newTemp();
+    tmp->addFlag(FLAG_EXPR_TEMP);
     fn->insertAtTail(new DefExpr(tmp));
     fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("_scan", globalOp, data)));
     fn->insertAtTail(new CallExpr(PRIM_DELETE, globalOp));
