@@ -57,10 +57,11 @@ while (<>) {
 printf("=================\n");
 printf("Memory Statistics\n");
 printf("==============================================================\n");
-printf("Total Leaked Memory:      %12d\n", $totalLeakedMemory);
-printf("Total Allocated Memory:   %12d\n", $totalAllocatedMemory);
-printf("Total Freed Memory:       %12d\n", $totalFreedMemory);
-printf("Maximum Allocated Memory: %12d\n", $maximumAllocatedMemory);
+printf("Total Leaked Memory:        %12d\n", $totalLeakedMemory);
+printf("Total Allocated Memory:     %12d\n", $totalAllocatedMemory);
+printf("Total Freed Memory:         %12d\n", $totalFreedMemory);
+printf("Maximum Allocated Memory:   %12d\n", $maximumAllocatedMemory);
+printf("Number of Tests with Leaks: %12d\n", scalar keys %TP);
 printf("==============================================================\n");
 printf("\n");
 printf("====================\n");
