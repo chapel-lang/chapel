@@ -221,7 +221,7 @@ class CMOArr:BaseArr {
     data = 0:eltType;
   }
 
-  def these() {
+  def these() var {
     for i in dom do {
       yield this(i);
     }
