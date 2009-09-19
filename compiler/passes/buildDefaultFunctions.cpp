@@ -202,6 +202,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
 
 static FnSymbol* chpl_main_exists(void) {
   FnSymbol* match = NULL;
+  ModuleSymbol* matchMod = NULL;
   ModuleSymbol* module = NULL;
   if (strlen(mainModuleName) != 0) {
     forv_Vec(ModuleSymbol, mod, allModules) {
@@ -211,22 +212,29 @@ static FnSymbol* chpl_main_exists(void) {
     if (!module)
       USR_FATAL("Couldn't find module %s", mainModuleName);
   }
+  bool firstProblem = true;
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!strcmp("main", fn->name) && !fn->numFormals() && 
-        (module == NULL || fn->getModule() == module)) {
-      if (!match || (match->getModule()->modTag != MOD_MAIN && 
-                     module->modTag == MOD_MAIN)) {
-        match = fn;
-      } else {
-        if (fn->getModule()->modTag == MOD_MAIN) {
-          if (mainModuleName[0] != '\0') {
-            USR_FATAL(fn, "main multiply defined in module %s -- first occurrence at %s", mainModuleName, match->stringLoc());
-          } else {
-            USR_FATAL(fn, "main multiply defined -- first occurrence at %s", match->stringLoc());
+    if (!strcmp("main", fn->name) && !fn->numFormals()) {
+      ModuleSymbol* fnMod = fn->getModule();
+      if ((module == NULL && fnMod->modTag == MOD_MAIN) ||
+          fnMod == module) {
+        if (!match) {
+          match = fn;
+          matchMod = fnMod;
+        } else {
+          if (firstProblem) {
+            firstProblem = false;
+            USR_FATAL_CONT("Ambiguous main() function%s:",
+                           fnMod == matchMod ? "" : " (use --main-module to disambiguate)");
+            USR_PRINT(match, "in module %s", matchMod->name);
           }
+          USR_PRINT(fn, "in module %s", fnMod->name);
         } // else, this is not a candidate for the main module
       }
     }
+  }
+  if (firstProblem == false) {
+    USR_STOP();
   }
   return match;
 }
