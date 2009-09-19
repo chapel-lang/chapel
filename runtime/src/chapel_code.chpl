@@ -67,7 +67,7 @@ pragma "export" def chpldev_taskTable_print()
   for threadID in chpldev_taskTableD {
     for task in chpldev_taskTable[threadID] {
       stderr.writeln("- ", task.filename, ":", task.lineno,
-		     " on ", threadID : uint(64));
+                     " on ", threadID : uint(64));
      }
   }
 }
