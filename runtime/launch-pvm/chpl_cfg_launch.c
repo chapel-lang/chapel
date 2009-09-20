@@ -80,7 +80,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   int infos2[256];
   char myhostname[256];
   char pvmnodetoadd[256];
-  int pvmsize = 0;
   int commsig = 0;
   static char *hosts2redo[2048];
   int numt;
@@ -247,12 +246,10 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   //      line.
   // Failing that, try the current working directory with executable_real.
   // If this doesn't work, error out with the debug message.
+  commandtopvm = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
+  memalloced |= M_COMMANDTOPVM;
   for (i = 0; i < numLocales; i++) {
     //    fprintf(stderr, "Loop i=%d (iteration %d of %d)\n", i, i+1, numLocales);
-    pvmsize += strlen(multirealmpathtoadd[i]) + strlen("_real") + strlen(nameofbin);
-
-    commandtopvm = chpl_malloc(pvmsize, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
-    memalloced |= M_COMMANDTOPVM;
     *commandtopvm = '\0';
     environment = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
     memalloced |= M_ENVIRONMENT;
@@ -275,11 +272,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     //    fprintf(stderr, "numt was %d, tids[%d] was %d\n", numt, i, tids[i]);
     if (numt == 0) {
       if (tids[i] == PvmNoFile) {
-        chpl_free(commandtopvm, -1, "");
-        memalloced &= ~M_COMMANDTOPVM;
-        pvmsize = strlen(argv0rep) + strlen("_real");
-        commandtopvm = chpl_malloc(pvmsize, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
-        memalloced |= M_COMMANDTOPVM;
         *commandtopvm = '\0';
         strcat(commandtopvm, argv0rep);
         strcat(commandtopvm, "_real");
@@ -293,10 +285,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
         //        fprintf(stderr, "numt was %d, tids[%d] was %d\n", numt, i, tids[i]);
         if (numt == 0) {
           if (tids[i] == PvmNoFile) {
-            chpl_free(commandtopvm, -1, "");
-            memalloced &= ~M_COMMANDTOPVM;
-            commandtopvm = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
-            memalloced |= M_COMMANDTOPVM;
             *commandtopvm = '\0';
             sprintf(commandtopvm, "%s%s%s", getenv((char *)"PWD"), nameofbin, "_real");
             //            fprintf(stderr, "try 3 to spawn %s on %s\n", commandtopvm, pvmnodestoadd[i]);
@@ -319,8 +307,6 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   memalloced &= ~M_ARGV0REP;
   chpl_free(argv2, -1, "");
   memalloced &= ~M_ARGV2;
-  chpl_free(commandtopvm, -1, "");
-  memalloced &= ~M_COMMANDTOPVM;
   for (i = 0; i < totalalloced; i++) chpl_free(multirealmpathtoadd[i], -1, "");
   memalloced &= ~M_MULTIREALMPATHTOADD;
   for (i = 0; i < totalalloced; i++) chpl_free(realmtoadd[i], -1, "");
@@ -422,7 +408,6 @@ void memory_cleanup() {
   int i;
   if (memalloced & M_ARGV0REP) chpl_free(argv0rep, -1, "");
   if (memalloced & M_ARGV2) chpl_free(argv2, -1, "");
-  if (memalloced & M_COMMANDTOPVM) chpl_free(commandtopvm, -1, "");
   if (memalloced & M_ENVIRONMENT) chpl_free(environment, -1, "");
   if (memalloced & M_HOSTFILE) chpl_free(hostfile, -1, "");
   if (memalloced & M_MULTIREALMENVNAME) chpl_free(multirealmenvname, -1, "");
