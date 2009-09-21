@@ -452,8 +452,9 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
         }
       } else if (VarSymbol* e = get_constant(expr)) {
         if (e->immediate) {
-          char imm[128];
-          sprint_imm(imm, *e->immediate);
+          const size_t bufSize = 128;
+          char imm[bufSize];
+          snprint_imm(imm, bufSize, *e->immediate);
           fprintf(html_file, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, is_imag_type(e->type) ? "i" : "");
         } else {
           fprintf(html_file, "<i><FONT COLOR=\"blue\">%s</FONT></i>", e->name);

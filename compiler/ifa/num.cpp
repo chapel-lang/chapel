@@ -30,7 +30,7 @@ sprint_complex_val(char* str, double real, double imm) {
 }
 
 int 
-sprint_imm(char *str, char *control_string, Immediate &imm) {
+snprint_imm(char *str, size_t max, char *control_string, Immediate &imm) {
   int res = -1;
   switch (imm.const_kind) {
     case NUM_KIND_NONE:
@@ -38,15 +38,15 @@ sprint_imm(char *str, char *control_string, Immediate &imm) {
     case NUM_KIND_UINT: {
       switch (imm.num_index) {
         case INT_SIZE_1: 
-          res = sprintf(str, control_string, imm.v_bool); break;
+          res = snprintf(str, max, control_string, imm.v_bool); break;
         case INT_SIZE_8: 
-          res = sprintf(str, control_string, imm.v_uint8); break;
+          res = snprintf(str, max, control_string, imm.v_uint8); break;
         case INT_SIZE_16:
-          res = sprintf(str, control_string, imm.v_uint16); break;
+          res = snprintf(str, max, control_string, imm.v_uint16); break;
         case INT_SIZE_32:
-          res = sprintf(str, control_string, imm.v_uint32); break;
+          res = snprintf(str, max, control_string, imm.v_uint32); break;
         case INT_SIZE_64:
-          res = sprintf(str, control_string, imm.v_uint64); break;
+          res = snprintf(str, max, control_string, imm.v_uint64); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -54,15 +54,15 @@ sprint_imm(char *str, char *control_string, Immediate &imm) {
     case NUM_KIND_INT: {
       switch (imm.num_index) {
         case INT_SIZE_1: 
-          res = sprintf(str, control_string, imm.v_bool); break;
+          res = snprintf(str, max, control_string, imm.v_bool); break;
         case INT_SIZE_8: 
-          res = sprintf(str, control_string, imm.v_int8); break;
+          res = snprintf(str, max, control_string, imm.v_int8); break;
         case INT_SIZE_16:
-          res = sprintf(str, control_string, imm.v_int16); break;
+          res = snprintf(str, max, control_string, imm.v_int16); break;
         case INT_SIZE_32:
-          res = sprintf(str, control_string, imm.v_int32); break;
+          res = snprintf(str, max, control_string, imm.v_int32); break;
         case INT_SIZE_64:
-          res = sprintf(str, control_string, imm.v_int64); break;
+          res = snprintf(str, max, control_string, imm.v_int64); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -70,34 +70,34 @@ sprint_imm(char *str, char *control_string, Immediate &imm) {
     case NUM_KIND_FLOAT: case NUM_KIND_IMAG:
       switch (imm.num_index) {
         case FLOAT_SIZE_32:
-          res = sprintf(str, control_string, imm.v_float32); break;
+          res = snprintf(str, max, control_string, imm.v_float32); break;
         case FLOAT_SIZE_64:
-          res = sprintf(str, control_string, imm.v_float64); break;
+          res = snprintf(str, max, control_string, imm.v_float64); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
     case NUM_KIND_COMPLEX:
       switch (imm.num_index) {
         case COMPLEX_SIZE_64:
-          res = sprintf(str, control_string, 
+          res = snprintf(str, max, control_string, 
                         imm.v_complex64.r, imm.v_complex64.i);
           break;
         case COMPLEX_SIZE_128:
-          res = sprintf(str, control_string, 
+          res = snprintf(str, max, control_string, 
                         imm.v_complex128.r, imm.v_complex128.i); 
           break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
     case CONST_KIND_STRING:
-      res = sprintf(str, control_string, imm.v_string);
+      res = snprintf(str, max, control_string, imm.v_string);
       break;
   }
   return res;
 }
 
 int 
-sprint_imm(char *str, Immediate &imm) {
+snprint_imm(char *str, size_t max, Immediate &imm) {
   int res = -1;
   switch (imm.const_kind) {
     case NUM_KIND_NONE:
@@ -105,15 +105,15 @@ sprint_imm(char *str, Immediate &imm) {
     case NUM_KIND_UINT: {
       switch (imm.num_index) {
         case INT_SIZE_1: 
-          res = sprintf(str, "%u", (unsigned)imm.v_bool); break;
+          res = snprintf(str, max, "%u", (unsigned)imm.v_bool); break;
         case INT_SIZE_8: 
-          res = sprintf(str, "%u", (unsigned)imm.v_uint8); break;
+          res = snprintf(str, max, "%u", (unsigned)imm.v_uint8); break;
         case INT_SIZE_16:
-          res = sprintf(str, "%u", (unsigned)imm.v_uint16); break;
+          res = snprintf(str, max, "%u", (unsigned)imm.v_uint16); break;
         case INT_SIZE_32:
-          res = sprintf(str, "%u", (unsigned)imm.v_uint32); break;
+          res = snprintf(str, max, "%u", (unsigned)imm.v_uint32); break;
         case INT_SIZE_64:
-          res = sprintf(str, "%"PRIu64, imm.v_uint64); break;
+          res = snprintf(str, max, "%"PRIu64, imm.v_uint64); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -121,15 +121,15 @@ sprint_imm(char *str, Immediate &imm) {
     case NUM_KIND_INT: {
       switch (imm.num_index) {
         case INT_SIZE_1: 
-          res = sprintf(str, "%d", imm.v_bool); break;
+          res = snprintf(str, max, "%d", imm.v_bool); break;
         case INT_SIZE_8: 
-          res = sprintf(str, "%d", imm.v_int8); break;
+          res = snprintf(str, max, "%d", imm.v_int8); break;
         case INT_SIZE_16:
-          res = sprintf(str, "%d", imm.v_int16); break;
+          res = snprintf(str, max, "%d", imm.v_int16); break;
         case INT_SIZE_32:
-          res = sprintf(str, "%"PRId32, imm.v_int32); break;
+          res = snprintf(str, max, "%"PRId32, imm.v_int32); break;
         case INT_SIZE_64:
-          res = sprintf(str, "%"PRId64, imm.v_int64); break;
+          res = snprintf(str, max, "%"PRId64, imm.v_int64); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -155,7 +155,7 @@ sprint_imm(char *str, Immediate &imm) {
       }
       break;
     case CONST_KIND_STRING:
-      res = sprintf(str, "\"%s\"", imm.v_string);
+      res = snprintf(str, max, "\"%s\"", imm.v_string);
       break;
   }
   return res;

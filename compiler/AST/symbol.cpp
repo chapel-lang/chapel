@@ -1056,12 +1056,13 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), t);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
-  char str[512];
+  const size_t bufSize = 512;
+  char str[bufSize];
   const char* ss = str;
   if (imm->const_kind == CONST_KIND_STRING)
     ss = imm->v_string;
   else
-    sprint_imm(str, *imm);
+    snprint_imm(str, bufSize, *imm);
   s->cname = astr(ss);
   *s->immediate = *imm;
   uniqueConstantsHash.put(s->immediate, s);

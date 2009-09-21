@@ -172,8 +172,8 @@ ImmHashFns::equal(Immediate *imm1, Immediate *imm2) {
 }
 
 int fprint_imm(FILE *fp, Immediate &imm);
-int sprint_imm(char *s, Immediate &imm);
-int sprint_imm(char *str, char *control_string, Immediate &imm);
+int snprint_imm(char *s, size_t max, Immediate &imm);
+int snprint_imm(char *str, size_t max, char *control_string, Immediate &imm);
 void coerce_immediate(Immediate *from, Immediate *to);
 void fold_result(Immediate *imm1, Immediate *imm2, Immediate *imm);
 void fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm);

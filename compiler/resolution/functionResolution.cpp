@@ -176,8 +176,9 @@ const char* toString(CallInfo* info) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
         str = astr(str, "\"", var->immediate->v_string, "\"");
       } else {
-        char buff[512];
-        sprint_imm(buff, *var->immediate);
+        const size_t bufSize = 512;
+        char buff[bufSize];
+        snprint_imm(buff, bufSize, *var->immediate);
         str = astr(str, buff);
       }
     } else

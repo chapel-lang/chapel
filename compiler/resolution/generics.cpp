@@ -309,10 +309,69 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
         }
         VarSymbol* var = toVarSymbol(value);
         if (var && var->immediate) {
-          char imm[128];
-          sprint_imm(imm, *var->immediate);
-          sym->name = astr(sym->name, imm);
-          sym->cname = astr(sym->cname, imm);
+          if (var->type == dtString) {
+            
+            const size_t bufSize = 128;
+            char immediate[bufSize]; 
+            snprint_imm(immediate, bufSize, *var->immediate);
+
+
+            // escape quote characters in name string
+            char name[bufSize];
+            char * name_p = &name[0]; 
+            char * immediate_p = &immediate[0];
+            for ( ; 
+                  name_p < &name[bufSize-1] && // don't overflow buffer
+                    '\0' != *immediate_p;      // stop at null in source
+                  name_p++, immediate_p++) {
+              if ('"' == *immediate_p) { // escape quotes
+                *name_p++ = '\\';
+              }
+              *name_p = *immediate_p;
+            }
+            *name_p = '\0';
+            sym->name = astr(sym->name, name);
+            
+            // add ellipsis if too long for buffer
+            if (name_p == &name[bufSize-1]) {       
+              sym->name = astr(sym->name, "...");
+            }
+
+
+            // filter unacceptable characters for cname string
+            char cname[bufSize];
+            char * cname_p = &cname[0];
+            immediate_p = &immediate[0];
+            size_t maxNameLength = 32; // add "_etc" after this many characters
+
+            for ( ; immediate_p < &immediate_p[bufSize-1] &&  // don't overflow buffer
+                    cname_p < &cname[maxNameLength-1] &&      // stop at max length
+                    '\0' != *immediate_p; 
+                  immediate_p++ ) { 	
+              if (('A' <= *immediate_p && *immediate_p <= 'Z') ||
+                  ('a' <= *immediate_p && *immediate_p <= 'z') ||
+                  ('0' <= *immediate_p && *immediate_p <= '9') ||
+                  ('_' == *immediate_p)) {
+                *cname_p = *immediate_p;
+                cname_p++;
+              }
+            }
+            *cname_p = '\0';
+            sym->cname = astr(sym->cname, cname);
+
+            // add _etc if too long
+            if (immediate_p == &immediate[bufSize-1] || // too long for buffer
+                cname_p == &cname[maxNameLength-1]) {   // exceeds max length
+              sym->cname = astr(sym->cname, "_etc");
+            }                   
+
+          } else {
+            const size_t bufSize = 128;
+            char imm[bufSize];
+            snprint_imm(imm, bufSize, *var->immediate);
+            sym->name = astr(sym->name, imm);
+            sym->cname = astr(sym->cname, imm);
+          }
         } else {
           sym->name = astr(sym->name, value->cname);
           sym->cname = astr(sym->cname, value->cname);
