@@ -310,6 +310,29 @@ fixupDestructors() {
 }
 
 
+static void insertGlobalAutoDestroyCalls() {
+  const char* name = (!fRuntime)
+    ? "chpl__autoDestroyGlobals" : "chpl__autoDestroyRuntimeGlobals";
+  FnSymbol* fn = new FnSymbol(name);
+  fn->retType = dtVoid;
+  chpl_main->defPoint->insertBefore(new DefExpr(fn));
+  if (!fRuntime)
+    chpl_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
+  else
+    fn->addFlag(FLAG_EXPORT);
+  forv_Vec(DefExpr, def, gDefExprs) {
+    if (isModuleSymbol(def->parentSymbol))
+      if (def->parentSymbol != rootModule)
+        if (VarSymbol* var = toVarSymbol(def->sym))
+          if (!var->isParameter())
+            if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
+              if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type))
+                fn->insertAtTail(new CallExpr(autoDestroy, var));
+  }
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+}
+
+
 void
 callDestructors() {
   fixupDestructors();
@@ -381,4 +404,6 @@ callDestructors() {
       }
     }
   }
+
+  insertGlobalAutoDestroyCalls();
 }

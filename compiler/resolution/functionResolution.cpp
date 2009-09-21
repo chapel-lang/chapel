@@ -2192,15 +2192,6 @@ preFold(Expr* expr) {
       }
     }
 
-    if (call->parentSymbol &&
-        !strcmp(call->parentSymbol->name, "chpl__autoDestroyGlobals") &&
-        call->isNamed("chpl__autoDestroy") &&
-        call->get(1)->typeInfo() == dtUnknown) {
-      result = new CallExpr(PRIM_NOOP);
-      call->replace(result);
-      return result;
-    }
-
     if (call->isNamed("this")) {
       SymExpr* base = toSymExpr(call->get(2));
       INT_ASSERT(base);
@@ -3732,7 +3723,9 @@ resolve() {
   }
 
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (isRecord(ts->type) && !ts->hasFlag(FLAG_GENERIC)) {
+    if ((isRecord(ts->type) ||
+         ts->hasFlag(FLAG_SYNC)) &&
+        !ts->hasFlag(FLAG_GENERIC)) {
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);
     }

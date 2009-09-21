@@ -119,6 +119,7 @@ void chpl_init_single_aux(chpl_single_aux_t *s) {
   purge(&(s->signal_full));
 }
 
+void chpl_destroy_single_aux(chpl_single_aux_t *s) { }
 
 // Tasks
 

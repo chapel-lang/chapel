@@ -77,3 +77,9 @@ foo(myAssocC);
 foo(myOpaqueC);
 foo(mySparseC);
 foo(myEnumC);
+
+delete myArithC;
+delete myAssocC;
+delete myOpaqueC;
+delete mySparseC;
+delete myEnumC;

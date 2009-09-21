@@ -361,6 +361,7 @@ initPrimitive() {
   prim_def(PRIM_SYNC_SIGNAL_FULL, "sync_mark_and_signal_full", returnInfoVoid, true);
   prim_def(PRIM_SYNC_SIGNAL_EMPTY, "sync_mark_and_signal_empty", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_INIT, "init_single_aux", returnInfoVoid, true);
+  prim_def(PRIM_SINGLE_DESTROY, "destroy_single_aux", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_LOCK, "single_lock", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_UNLOCK, "single_unlock", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_WAIT_FULL, "single_wait_full", returnInfoVoid, true, true);

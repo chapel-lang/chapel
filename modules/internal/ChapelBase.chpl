@@ -815,6 +815,8 @@ class _singlevar {
   // Ideally, the definition of this class should be target and base_type dependent,
   // since not all targets need to have a single_aux field if base_type is sufficiently simple.
 
+  def ~_singlevar() { __primitive("destroy_single_aux", this); }
+
   def initialize() {
     __primitive("init_single_aux", this);
     if (isSimpleSyncBaseType(this.base_type)) {

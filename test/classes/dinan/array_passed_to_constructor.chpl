@@ -24,3 +24,5 @@ if post >= 2*pre then
   writeln("Array was copied");
 else
   writeln("Array was not copied");
+
+delete y;

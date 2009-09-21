@@ -21,6 +21,8 @@ for ij in TableSpace {
    }
 }
 
+delete infile;
+
 
 //---------------------- Print out the puzzle that was given as input -----
 

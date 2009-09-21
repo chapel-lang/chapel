@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "chapel_code.h"
 #include "chplcomm.h"
 #include "chplexit.h"
 #include "chpl_mem.h"
@@ -18,6 +19,9 @@ static void chpl_exit_common(int status, int all) {
   if (all) {
     chpl_comm_barrier("chpl_comm_exit_all");
     chpl_tasking_exit();
+    if (!_runInGDB())
+      chpl__autoDestroyRuntimeGlobals();
+    chpl_reportMemInfo();
     chpl_comm_exit_all(status);
   } else {
     chpl_comm_exit_any(status);
@@ -27,7 +31,6 @@ static void chpl_exit_common(int status, int all) {
 
 
 void chpl_exit_all(int status) {
-  chpl_reportMemInfo();
   chpl_exit_common(status, 1);
 }
 

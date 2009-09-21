@@ -57,6 +57,12 @@ def main {
     writeln("Parse succeeded!");
     parsedElements(minindex,maxindex).print;
   }
+
+  for i in AllPairs do
+    if parsedElements(i).readXX() {
+      var pe = parsedElements(i);
+      delete pe;
+    }
 }
 
 def hasIndex(start, stop, indices) {

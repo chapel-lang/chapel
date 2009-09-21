@@ -28,7 +28,6 @@ static void buildDefaultWriteFunction(ClassType* type);
 static void buildStringCastFunction(EnumType* type);
 
 static void buildDefaultDestructor(ClassType* ct);
-static void insertGlobalAutoDestroyCalls(void);
 
 
 void buildDefaultFunctions(void) {
@@ -338,8 +337,6 @@ static void build_chpl_main(void) {
 
   theProgram->initFn->insertAtHead(stdInits);
   chpl_main->insertAtHead(new CallExpr(theProgram->initFn));
-  if (!fRuntime)
-    insertGlobalAutoDestroyCalls();
 }
 
 
@@ -896,20 +893,4 @@ static void buildDefaultDestructor(ClassType* ct) {
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
   fn->addFlag(FLAG_METHOD);
   ct->methods.add(fn);
-}
-
-
-static void insertGlobalAutoDestroyCalls() {
-  FnSymbol* fn = new FnSymbol("chpl__autoDestroyGlobals");
-  chpl_main->defPoint->insertBefore(new DefExpr(fn));
-  chpl_main->insertBeforeReturn(new CallExpr(fn));
-  forv_Vec(DefExpr, def, gDefExprs) {
-    if (isModuleSymbol(def->parentSymbol))
-      if (def->parentSymbol != rootModule)
-        if (VarSymbol* var = toVarSymbol(def->sym))
-          if (!var->isParameter())
-            if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
-              fn->insertAtTail(new CallExpr("chpl__autoDestroy", var));
-  }
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
