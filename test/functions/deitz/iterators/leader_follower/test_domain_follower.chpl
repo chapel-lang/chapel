@@ -21,6 +21,6 @@ def foo(param tag: iterator, follower) where tag == iterator.follower {
 for i in foo() do
   writeln(i);
 writeln();
-for i in foo() do
+forall i in foo() do
   writeln(i);
 
