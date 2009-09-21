@@ -23,7 +23,7 @@
 #define NOTIFYTAG 4194295
 #define PRINTF_BUFF_LEN 1024
 
-extern int gethostname(char *name, size_t namelen);
+extern int gethostname(char *, int);
 void error_exit(int sig);
 void memory_cleanup(void);
 char *replace_str(char *str, char *orig, char *rep);
