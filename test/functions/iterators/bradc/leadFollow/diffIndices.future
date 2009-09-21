@@ -1,0 +1,18 @@
+bug: leaders/followers don't work across index types
+
+It seems that when the compiler inserts some code related to
+leaders/followers that either doesn't preserve index types or somehow
+tries to mix index types from the leader and follower in a way that it
+seems it shouldn't need to.  In particular, compiling this code in
+developer mode gives:
+
+$CHPL_HOME/modules/internal/ChapelRange.chpl:223: In function '=':
+$CHPL_HOME/modules/internal/ChapelRange.chpl:229: error: type mismatch in assignment from int(64) to int [functionResolution.cpp:1842]
+
+while compiling it in user mode gives:
+
+test/functions/iterators/bradc/leadFollow/diffIndices.chpl:16: error: type mismatch in assignment from int(64) to int
+
+
+I ran into this with the FFT tests when trying to convert array
+assignment from a for loop into a forall loop.
