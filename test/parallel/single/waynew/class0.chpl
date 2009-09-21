@@ -11,6 +11,7 @@ var f: real;
 begin {
   writeln( "2: got ", d.s);
   writeln( "2: got ", d.s);
+  delete d;
 }
 f = 4.0;
 writeln( "1: going to sleep with ", f);

@@ -198,12 +198,16 @@ int threadlayer_thread_create(void* thread,
 
 static void* pthread_func(void* void_f) {
   thread_func_t* f = (thread_func_t*) void_f;
+  void* (*fn)(void*) = f->fn;
+  void* arg = f->arg;
+
+  chpl_free(f, 0, 0);
 
   // disable cancellation immediately
   // enable only while waiting for new work
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL); 
 
-  return (*(f->fn))(f->arg);
+  return (*(fn))(arg);
 }
 
 chpl_bool threadlayer_pool_suspend(chpl_mutex_t *lock,
