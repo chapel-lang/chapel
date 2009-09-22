@@ -2,7 +2,7 @@ class A {
   def hello() { writeln("hello from A!"); }
 }
 
-def bar(type T : A) {
+def bar(type T) {
   var t = new T();
   t.hello();
 }
