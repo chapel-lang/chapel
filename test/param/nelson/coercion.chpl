@@ -12,6 +12,6 @@ def f(param i : uint) {
 
 def main() {
   var a = new C(0 : uint); // this works
-  var b = new C(1:uint);        // this doesn't
+  var b = new C(1);        // this doesn't
   f(2); // this also works
 }
