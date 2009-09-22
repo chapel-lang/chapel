@@ -1240,11 +1240,12 @@ def chpl__initCopy(ir: _iteratorRecord) {
   var A: [D] iteratorIndexType(irc);
 
   for e in irc {
+    pragma "no copy" pragma "insert auto destroy" var ee = e;
     if i > size {
       size = size * 2;
       D = [1..size];
     }
-    A(i) = e;
+    A(i) = ee;
     i = i + 1;
   }
   D = [1..i-1];

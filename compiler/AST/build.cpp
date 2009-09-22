@@ -615,6 +615,7 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
   leaderBlock->insertAtTail(new DefExpr(leaderIterator));
   VarSymbol* leaderIndexCopy = newTemp("_leaderIndexCopy");
   leaderIndexCopy->addFlag(FLAG_INDEX_VAR);
+  leaderIndexCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
   leaderBlock->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_getIterator", new CallExpr("_toLeader", iterator))));
   BlockStmt* followerBlock = new BlockStmt();
   VarSymbol* followerIndex = newTemp("_followerIndex");
@@ -1003,6 +1004,7 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
 
       VarSymbol* leaderIndexCopy = newTemp("_leaderIndexCopy");
       leaderIndexCopy->addFlag(FLAG_INDEX_VAR);
+      leaderIndexCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
       leaderBlock->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_getIterator", new CallExpr("_toLeader", data))));
 
