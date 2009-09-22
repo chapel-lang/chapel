@@ -109,7 +109,6 @@ class BlockCyclic : BaseDist {
 //
 // create a new arithmetic domain over this distribution
 //
-/*
 def BlockCyclic.newArithmeticDom(param rank: int, type idxType,
                            param stridable: bool) {
   if idxType != this.idxType then
@@ -121,7 +120,6 @@ def BlockCyclic.newArithmeticDom(param rank: int, type idxType,
   dom.setup();
   return dom;
 }
-*/
 
 //
 // output distribution
@@ -153,7 +151,7 @@ def BlockCyclic.ind2loc(ind: rank*idxType) {
 // compute what chunk of inds is owned by a given locale -- assumes
 // it's being called on the locale in question
 //
-def BlockCyclic.getChunk(inds, locid) {
+def BlockCyclic.getStarts(inds, locid) {
   // use domain slicing to get the intersection between what the
   // locale owns and the domain's index set
   //
@@ -161,7 +159,30 @@ def BlockCyclic.getChunk(inds, locid) {
   //
   // TODO: Does using David's detupling trick work here?
   //
-  return locDist(locid).myChunk((...inds.getIndices()));
+  var D: domain(rank, idxType, stridable=true);
+  var R: rank*range(idxType, stridable=true);
+  for i in 1..rank {
+    var lo, hi: idxType;
+    const domlo = inds.dim(i).low, 
+          domhi = inds.dim(i).high;
+    const mylo = locDist(locid).myStarts(i).low;
+    const mystr = locDist(locid).myStarts(i).stride;
+    if (domlo != lowIdx(i)) {
+      if (domlo <= domhi) {
+        writeln("domlo = ", domlo, "; lowIdx(", i, ") = ", lowIdx(i));
+        halt("BLC: need to handle the case where low bound is not the start");
+      } else {
+        lo = domlo;
+        hi = domhi;
+      }
+    } else {
+      lo = mylo;
+      hi = domhi;
+    }
+    R(i) = lo..hi by mystr;
+  }
+  D.setIndices(R);
+  return D;
 }
 
 //
@@ -240,7 +261,6 @@ def LocBlockCyclic.writeThis(x:Writer) {
   x.write("locale ", localeid, " owns blocks: ", myStarts);
 }
 
-/*
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Domain Class
 //
@@ -263,6 +283,7 @@ class BlockCyclicDom: BaseArithmeticDom {
   // a domain describing the complete domain
   //
   const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
+  //  const startLoc: index(dist.targetLocDom);
 
   var pid: int = -1; // privatized object id
 }
@@ -278,7 +299,7 @@ def BlockCyclicDom.these(param tag: iterator) where tag == iterator.leader {
   const precomputedNumTasks = dist.tasksPerLocale;
   const precomputedWholeLow = whole.low;
   coforall locDom in locDoms do on locDom {
-    var tmpBlockCyclic = locDom.myBlockCyclic - precomputedWholeLow;
+    var tmpBlockCyclic = locDom.myStarts - precomputedWholeLow;
     const numTasks = precomputedNumTasks;
 
     var locBlockCyclic: rank*range(idxType);
@@ -356,11 +377,13 @@ def BlockCyclicDom.writeThis(x:Writer) {
 //
 // how to allocate a new array over this domain
 //
+/*
 def BlockCyclicDom.buildArray(type eltType) {
   var arr = new BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
   arr.setup();
   return arr;
 }
+*/
 
 def BlockCyclicDom.numIndices return whole.numIndices;
 def BlockCyclicDom.low return whole.low;
@@ -410,12 +433,17 @@ def BlockCyclicDom.setup() {
     on dist.targetLocs(localeIdx) do
       if (locDoms(localeIdx) == nil) then
         locDoms(localeIdx) = new LocBlockCyclicDom(rank, idxType, stridable, this, 
-                                               dist.getChunk(whole, localeIdx));
+                                                   dist.getStarts(whole, localeIdx));
       else
-        locDoms(localeIdx).myBlockCyclic = dist.getChunk(whole, localeIdx);
+        locDoms(localeIdx).myStarts = dist.getStarts(whole, localeIdx);
   if debugBlockCyclicDist then
-    for loc in dist.targetLocDom do writeln(loc, " owns ", locDoms(loc));
- 
+    enumerateBlocks();
+}
+
+def BlockCyclicDom.enumerateBlocks() {
+  for locidx in dist.targetLocDom {
+    on dist.targetLocs(locidx) do locDoms(locidx).enumerateBlocks();
+  }
 }
 
 def BlockCyclicDom.supportsPrivatization() param return true;
@@ -465,15 +493,36 @@ class LocBlockCyclicDom {
   // require a glbIdxType offset in order to get from the global
   // indices back to the local index type.
   //
-  var myBlockCyclic: domain(rank, idxType, stridable);
+  var myStarts: domain(rank, idxType, stridable=true);
 }
 
 //
 // output local domain piece
 //
 def LocBlockCyclicDom.writeThis(x:Writer) {
-  x.write(myBlockCyclic);
+  x.write(myStarts);
 }
+
+def LocBlockCyclicDom.enumerateBlocks() {
+  for i in myStarts {
+    write(here.id, ": [");
+    for param j in 1..rank {
+      if (j != 1) {
+        write(", ");
+      }
+      // TODO: support a tuple-oriented iteration of vectors to avoid this?
+      var lo: idxType;
+      if rank == 1 then
+        lo = i;
+      else
+        lo = i(j);
+      write(lo, "..", min(lo + wholeDom.dist.blocksize(j)-1, 
+                          wholeDom.whole.dim(j).high));
+    }
+    writeln("]");
+  } 
+}
+  
 
 //
 // queries for this locale's number of indices, low, and high bounds
@@ -482,18 +531,18 @@ def LocBlockCyclicDom.writeThis(x:Writer) {
 // in stream -- will they always be required once that is rewritten?
 //
 def LocBlockCyclicDom.numIndices {
-  return myBlockCyclic.numIndices;
+  return myStarts.numIndices;
 }
 
 def LocBlockCyclicDom.low {
-  return myBlockCyclic.low;
+  return myStarts.low;
 }
 
 def LocBlockCyclicDom.high {
-  return myBlockCyclic.high;
+  return myStarts.high;
 }
 
-
+/*
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
@@ -554,7 +603,7 @@ def BlockCyclicArr.privatize() {
 //
 def BlockCyclicArr.this(i: idxType) var where rank == 1 {
   if myLocArr then local {
-    if myLocArr.locDom.myBlockCyclic.member(i) then
+    if myLocArr.locDom.myStarts.member(i) then
       return myLocArr.this(i);
   }
   return locArr(dom.dist.ind2locInd(i))(i);
@@ -563,7 +612,7 @@ def BlockCyclicArr.this(i: idxType) var where rank == 1 {
 def BlockCyclicArr.this(i: rank*idxType) var {
 //   const myLocArr = locArr(here.id);
 //   local {
-//     if myLocArr.locDom.myBlockCyclic.member(i) then
+//     if myLocArr.locDom.myStarts.member(i) then
 //       return myLocArr.this(i);
 //   }
   if rank == 1 {
@@ -587,7 +636,7 @@ def BlockCyclicArr.these(param tag: iterator) where tag == iterator.leader {
   const precomputedNumTasks = dom.dist.tasksPerLocale;
   const precomputedWholeLow = dom.whole.low;
   coforall locDom in dom.locDoms do on locDom {
-    var tmpBlockCyclic = locDom.myBlockCyclic - precomputedWholeLow;
+    var tmpBlockCyclic = locDom.myStarts - precomputedWholeLow;
     const numTasks = precomputedNumTasks;
     var locBlockCyclic: rank*range(idxType);
     for param i in 1..tmpBlockCyclic.rank {
@@ -646,7 +695,7 @@ def BlockCyclicArr.these(param tag: iterator, follower, param aligned: bool = fa
     def accessHelper(i) var {
 //      if myLocArr.locale == here {
 //	local {
-//          if myLocArr.locDom.myBlockCyclic.member(i) then
+//          if myLocArr.locDom.myStarts.member(i) then
 //            return myLocArr.this(i);
 //        }
 //      }
@@ -703,7 +752,7 @@ def BlockCyclicArr.slice(d: BlockCyclicDom) {
   for i in dom.dist.targetLocDom {
     on dom.dist.targetLocs(i) {
       alias.locArr[i] = new LocBlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i]);
-      alias.locArr[i].myElems => locArr[i].myElems[alias.locArr[i].locDom.myBlockCyclic];
+      alias.locArr[i].myElems => locArr[i].myElems[alias.locArr[i].locDom.myStarts];
     }
   }
 
@@ -730,7 +779,7 @@ class LocBlockCyclicArr {
   //
   // the block of local array data
   //
-  var myElems: [locDom.myBlockCyclic] eltType;
+  var myElems: [locDom.myStarts] eltType;
 }
 
 //

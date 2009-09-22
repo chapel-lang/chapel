@@ -1,3 +1,11 @@
 locale 0 owns blocks: (1.. by 12)
 locale 1 owns blocks: (5.. by 12)
 locale 2 owns blocks: (9.. by 12)
+0: [1..4]
+0: [13..16]
+0: [25..25]
+1: [5..8]
+1: [17..20]
+2: [9..12]
+2: [21..24]
+D is: [1..25]
