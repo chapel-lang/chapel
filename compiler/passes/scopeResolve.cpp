@@ -1069,11 +1069,20 @@ void scopeResolve(void) {
     //
     // add field to empty records and unions
     //
-    if (!isClass(ct) && ct->fields.length == 0)
-      ct->fields.insertAtHead(
-        new DefExpr(
-          new VarSymbol("emptyRecordPlaceholder"),
-          new SymExpr(new_IntSymbol(0))));
+    if (!isClass(ct)) {
+      bool isEmpty = true;
+      for_fields(field, ct) {
+        if (ct->symbol->hasFlag(FLAG_TUPLE) ||
+            (!field->hasFlag(FLAG_PARAM) &&
+             !field->hasFlag(FLAG_TYPE_VARIABLE)))
+          isEmpty = false;
+      }
+      if (isEmpty)
+        ct->fields.insertAtHead(
+          new DefExpr(
+            new VarSymbol("emptyRecordPlaceholder"),
+            new SymExpr(new_IntSymbol(0))));
+    }
   }
 
   //

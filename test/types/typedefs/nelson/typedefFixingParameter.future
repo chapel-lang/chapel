@@ -1,1 +1,0 @@
-bug: strange nil dereference when instantiating typedef'd record in implicit main block
