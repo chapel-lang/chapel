@@ -16,18 +16,14 @@
 general regressions
 ===================
 
-.good file only works with multiple tasks (09/19/09)
-----------------------------------------------------
-[Error matching program output for multirealm/typeProblem]
-
 spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09, 09/05/09, 09/06/09, 09/10/09, 09/11/09, 09/13/09, 09/18/09, 09/19/09)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09, 08/29/09, 08/31/09, 09/02/09, 09/10/09, 09/11/09, 09/13/09, 09/17/09, 09/19/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09, 09/05/09, 09/06/09, 09/10/09, 09/11/09, 09/13/09, 09/18/09, 09/19/09, 09/22/09)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09, 08/29/09, 08/31/09, 09/02/09, 09/10/09, 09/11/09, 09/13/09, 09/17/09, 09/19/09, 09/22/09)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 08/31/09)
 [Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 08/07/09)
 
@@ -93,6 +89,8 @@ double free (09/02/09)
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for parallel/begin/deitz/test_string_cat] (e.g., 09/22/09)
+[Error matching compiler output for studies/590o/kfm/solver] (e.g., 09/22/09)
 [Error matching compiler output for spec/marybeth/seq2] (e.g., 09/21/09)
 [Error matching compiler output for parallel/begin/diten/forParamBegin] (e.g., 09/19/09)
 [Error matching compiler output for parallel/cobegin/waynew/cobegin.simple2] (e.g., 09/19/09)
@@ -116,7 +114,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for studies/hpcc/FFT/bradc/fft-perm] (e.g., 09/11/09)
 [Error matching compiler output for users/thom/itoverride] (e.g., 09/11/09, 09/18/09)
 [Error matching compiler output for studies/shootout/nbody/nbody_record_2] (e.g., 09/09/09)
-[Error matching compiler output for users/thom/initArrOfClasses] (e.g., 09/09/09)
+[Error matching compiler output for users/thom/initArrOfClasses] (e.g., 09/09/09, 09/22/09)
 [Error matching compiler output for parallel/begin/deitz/test_nested_fn_begin1] (e.g., 09/07/09)
 [Error matching compiler output for users/shetag/unboundslice] (e.g., 09/07/09)
 [Error matching compiler output for spec/marybeth/sort] (e.g., 09/06/09)
@@ -147,7 +145,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for parallel/begin/deitz/test_heap_ref] (e.g., 08/27/09)
 [Error matching program output for npb/cg/bradc/cg-sparse] (e.g., 08/27/09, 09/08/09)
 [Error matching compiler output for users/shetag/assocInRecord] (e.g., 08/27/09, 09/14/09)
-[Error matching compiler output for users/thom/tupleToArray] (e.g., 08/27/09)
+[Error matching compiler output for users/thom/tupleToArray] (e.g., 08/27/09, 09/22/09)
 [Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc-domainPromote] (e.g., 08/26/09)
 [Error matching compiler output for users/shetag/assocarr] (e.g., 08/26/09, 09/09/09, 09/13/09, 09/16/09)
 [Error matching compiler output for users/shetag/classWithArray/initArrWithFn] (e.g., 08/26/09, 08/29/09)
