@@ -1,0 +1,2 @@
+bug report: odd type string when printing the name of type of a
+class/record with parameters having default values. 
