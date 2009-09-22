@@ -73,6 +73,12 @@ char *replace_str(char *str, char *orig, char *rep)
 }
 
 
+static void missing_file_error(const char* filename) {
+  char errorMsg[FILENAME_MAX + 256];
+  sprintf(errorMsg, "unable to locate file: %s", filename);
+  chpl_error(errorMsg, -1, "<PVM launcher>");
+  memory_cleanup();
+}
 
 static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocales) {
   int i, j, info;
@@ -156,9 +162,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
     sprintf(hostfile, "%s%s%s", getenv((char *)"CHPL_HOME"), "/hostfile.", realmtype);
     
     if ((nodelistfile = fopen(hostfile, "r")) == NULL) {
-      memory_cleanup();
-      // Let the main launcher print the error (unable to locale file)
-      return (char *)"";
+      missing_file_error(hostfile);
     }
     chpl_free(hostfile, -1, "");
     memalloced &= ~M_HOSTFILE;
@@ -192,6 +196,9 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
 
   // Check to see if daemon is started or not by this user. If not, start one.
   i = pvm_setopt(PvmAutoErr, 0);
+  if (verbosity > 1) {
+    printf("calling pvm_start_pvmd(0, {""}, 1);\n");
+  }
   info = pvm_start_pvmd(0, argtostart, 1);
   pvm_setopt(PvmAutoErr, i);
 
@@ -295,7 +302,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
               info = pvm_delhosts( (char **)pvmnodestoadd, numLocales, infos );
               pvm_setopt(PvmAutoErr, i);
               memory_cleanup();
-              // Let the main launcher print the error (unable to locale file)
+              // Let the main launcher print the error (unable to locate file)
               return (char *)"";
             }
           }
