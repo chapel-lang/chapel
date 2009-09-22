@@ -201,12 +201,10 @@ OPTIONS
                     used when compiling the generated code.
 
   -g, --[no-]debug  Causes the generated C code to be compiled with debugging
-                    turned on, and also turns on the --cg-cpp-lines option.
-                    If you are trying to debug a Chapel program, this flag
-                    is virtually essential, along with the --savec flag. 
-                    If you want to debug a Chapel program in terms of the
-                    generated C code's line numbers, use the --no-cg-cpp-lines 
-                    option.
+                    turned on. If you are trying to debug a Chapel program,
+                    this flag is virtually essential along with the --savec
+                    flag. This flag also turns on the --cg-cpp-lines option
+                    unless compiling as a developer (for example, via --devel).
 
   -O, --[no-]optimize  Causes the generated C code to be compiled with
                     [without] optimizations turned on. The specific set of

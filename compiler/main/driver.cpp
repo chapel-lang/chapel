@@ -72,6 +72,7 @@ char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
 bool fWarnPromotion = false;
 bool printCppLineno = false;
+bool userSetCppLineno = false;
 int num_constants_per_variable = 1;
 char defaultDist[256] = "DefaultDist";
 int instantiation_limit = 256;
@@ -303,6 +304,11 @@ const char* getRealmType(int i) {
 }
 
 
+static void noteCppLinesSet(ArgumentState* arg, char* unused) {
+  userSetCppLineno = true;
+}
+
+
 static void verifySaveCDir(ArgumentState* arg, char* unused) {
   if (saveCDir[0] == '-') {
     USR_FATAL("--savec takes a directory name as its argument\n"
@@ -412,7 +418,7 @@ static ArgumentDescription arg_desc[] = {
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
 
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
- {"cpp-lines", ' ', NULL, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", NULL},
+ {"cpp-lines", ' ', NULL, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", noteCppLinesSet},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 
  {"", ' ', NULL, "C Code Compilation Options", NULL, NULL, NULL, NULL},
@@ -480,6 +486,13 @@ static ArgumentState arg_state = {
 };
 
 
+static void setupDependentVars(void) {
+  if (developer && !userSetCppLineno) {
+    printCppLineno = false;
+  }
+}
+
+
 static void printStuff(void) {
   bool shouldExit = false;
   bool printedSomething = false;
@@ -533,6 +546,7 @@ int main(int argc, char *argv[]) {
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
+  setupDependentVars();
   setupModulePaths();
   recordCodeGenStrings(argc, argv);
   startCatchingSignals();
