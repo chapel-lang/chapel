@@ -531,6 +531,7 @@ buildPromotionWrapper(FnSymbol* fn,
           paramMap.put(e->value, s);
       }
       ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", gLeaderTag->type);
+      lifn->addFlag(FLAG_INLINE_ITERATOR);
       lifn->insertFormalAtTail(lifnTag);
       lifn->where = new BlockStmt(new CallExpr("==", lifnTag, gLeaderTag));
       VarSymbol* leaderIndex = newTemp("_leaderIndex");
