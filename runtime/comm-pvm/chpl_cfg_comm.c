@@ -1263,7 +1263,10 @@ void chpl_comm_alloc_registry(int numGlobals) {
 
 void chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
+
+#ifndef CHPL_COMM_HETEROGENEOUS
   int size;
+#endif
 
 #if CHPL_DIST_DEBUG
   char debugMsg[DEBUG_MSG_LENGTH];
@@ -1282,14 +1285,23 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
       PRINTF(debugMsg);
 #endif
       PVM_PACK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_broadcast_global_vars");
+#ifdef CHPL_COMM_HETEROGENEOUS
+      chpl_pkCLASS_REFERENCE(chpl_globals_registry[i], 0, CHPL_TYPE_CLASS_REFERENCE, 0);
+#else
       size = sizeof(void *);
       PVM_NO_LOCK_SAFE(pvm_pkint(&size, 1, 1), "pvm_pkint", "chpl_comm_broadcast_global_vars");
       PVM_NO_LOCK_SAFE(pvm_pkbyte((char *)chpl_globals_registry[i], size, 1), "pvm_pkbyte", "chpl_comm_broadcast_global_vars");
+#endif
       PVM_UNPACK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_broadcast_global_vars");
     } else {
       PVM_PACK_SAFE(pvm_recv(-1, BCASTTAG), "pvm_recv", "chpl_comm_broadcast_global_vars");
+#ifdef CHPL_COMM_HETEROGENEOUS
+      chpl_upkCLASS_REFERENCE(chpl_globals_registry[i], 0, CHPL_TYPE_CLASS_REFERENCE, 0, sizeof(void *));
+      chpl_mutex_unlock(&pvm_lock);
+#else
       PVM_NO_LOCK_SAFE(pvm_upkint(&size, 1, 1), "pvm_upkint", "chpl_comm_broadcast_global_vars");
       PVM_UNPACK_SAFE(pvm_upkbyte((char *)(chpl_globals_registry[i]), size, 1), "pvm_upkbyte", "chpl_comm_broadcast_global_vars");
+#endif
 #if CHPL_DIST_DEBUG
       sprintf(debugMsg, "Unpacking chpl_globals_registry[%d] %p", i, chpl_globals_registry[i]);
       PRINTF(debugMsg);
