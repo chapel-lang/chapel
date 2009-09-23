@@ -188,9 +188,13 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+fixed to work for CHPL_COMM=none, but not multilocale (09/23/09)
+----------------------------------------------------------------
+[Error matching program output for multilocale/deitz/oneOrMoreLocales/test_reduce_of_promote_of_distributed]
+
 AM_ERR_RESOURCE failure
 -----------------------
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar] (09/18/09)
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar] (09/18/09, 09/23/09)
 [Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock6] (09/16/09)
 
 spurious recursive shutdown failure
@@ -207,17 +211,15 @@ new spurious timeouts
 -----------------------
 [Error: Timed out executing program studies/hpcc/STREAMS/bradc/stream-block1dpar-arr] (e.g., 09/17/09)
 [Error: Timed out compilation for multilocale/deitz/needMultiLocales/dist/test_block1d_2] (e.g., 09/15/09)
-[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 09/15/09, 09/17/09, 09/19/09)
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 09/15/09)
 [Error: Timed out executing program users/agnieszka/multiArrayI] (e.g., 09/15/09)
 [Error: Timed out executing program users/agnieszka/test1] (e.g., 09/15/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 09/15/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 09/15/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc] (e.g., 09/15/09)
 [Error: Timed out executing program studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 08/30/09)
-[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09, 09/09/09, 09/11/09, 09/14/09, 09/21/09)
+[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09, 09/09/09, 09/11/09, 09/14/09, 09/15/09, 09/17/09, 09/19/09, 09/21/09, 09/23/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 08/29/09, 09/19/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 08/29/09, 09/18/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 08/29/09, 09/18/09, 09/23/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 08/29/09, 08/31/09, 09/02/09)
 
 memory stuff in flux (06/06/09)
@@ -240,7 +242,7 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09, 06/11/09, 06/13/09, 06/17/09, 06/19/09, 06/22/09, 06/23/09, 06/24/09, 07/03/09, 07/04/09, 07/05/09, 07/10/09, 07/11/09, 07/13/09, 07/15/09, 07/19/09, 07/24/09, 07/30/09, 08/01/09, 08/06/09, 08/29/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09, 06/11/09, 06/13/09, 06/17/09, 06/19/09, 06/22/09, 06/23/09, 06/24/09, 07/03/09, 07/04/09, 07/05/09, 07/10/09, 07/11/09, 07/13/09, 07/15/09, 07/19/09, 07/24/09, 07/30/09, 08/01/09, 08/06/09, 08/29/09, 09/15/09, 09/23/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 06/14/09, 06/16/09)
 
 
