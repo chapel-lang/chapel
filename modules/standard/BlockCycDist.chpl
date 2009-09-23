@@ -87,7 +87,7 @@ class BlockCyclic : BaseDist {
         locDist(locid) = new LocBlockCyclic(rank, idxType, locid, this);
 
     if tasksPerLocale == 0 then
-      this.tasksPerLocale = here.numCores;
+      this.tasksPerLocale = 1;   // TODO: here.numCores;
     else
       this.tasksPerLocale = tasksPerLocale;
 
@@ -298,25 +298,27 @@ def BlockCyclicDom.these() {
 def BlockCyclicDom.these(param tag: iterator) where tag == iterator.leader {
   const precomputedNumTasks = dist.tasksPerLocale;
   const precomputedWholeLow = whole.low;
+  if (precomputedNumTasks != 1) then
+    halt("Can't use more than one task per locale with Block-Cyclic currently");
   coforall locDom in locDoms do on locDom {
-    var tmpBlockCyclic = locDom.myStarts - precomputedWholeLow;
-    const numTasks = precomputedNumTasks;
-
-    var locBlockCyclic: rank*range(idxType);
-    for param i in 1..tmpBlockCyclic.rank {
-      locBlockCyclic(i) = (tmpBlockCyclic.dim(i).low/tmpBlockCyclic.dim(i).stride:idxType)..#(tmpBlockCyclic.dim(i).length);
-    }
-    if (numTasks == 1) {
-      yield locBlockCyclic;
-    } else {
-      coforall taskid in 0..#numTasks {
-        var tuple: rank*range(idxType) = locBlockCyclic;
-        const (lo,hi) = _computeBlockCyclic(locBlockCyclic(1).low, locBlockCyclic(1).length,
-                                      locBlockCyclic(1).low, locBlockCyclic(1).high,
-                                      numTasks, taskid);
-        tuple(1) = lo..hi;
-        yield tuple;
+    var tmpblock:rank*range(idxType);
+    for i in locDom.myStarts {
+      for param j in 1..rank {
+        // TODO: support a tuple-oriented iteration of vectors to avoid this?
+        var lo: idxType;
+        if rank == 1 then
+          lo = i;
+        else
+          lo = i(j);
+        tmpblock(j) = lo..min(lo + dist.blocksize(j)-1, 
+                              whole.dim(j).high);
       }
+
+      var retblock: rank*range(idxType);
+      for param i in 1..rank {
+        retblock(i) = tmpblock(i) - whole.dim(i).low;
+      }
+      yield retblock;
     }
   }
 }
