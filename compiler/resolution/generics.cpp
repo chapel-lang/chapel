@@ -347,7 +347,7 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
             for ( ; immediate_p < &immediate_p[bufSize-1] &&  // don't overflow buffer
                     cname_p < &cname[maxNameLength-1] &&      // stop at max length
                     '\0' != *immediate_p; 
-                  immediate_p++ ) { 	
+                  immediate_p++ ) { 
               if (('A' <= *immediate_p && *immediate_p <= 'Z') ||
                   ('a' <= *immediate_p && *immediate_p <= 'z') ||
                   ('0' <= *immediate_p && *immediate_p <= '9') ||
