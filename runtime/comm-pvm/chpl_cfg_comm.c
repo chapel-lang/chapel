@@ -516,9 +516,9 @@ static void chpl_pkCLASS_REFERENCE(void* buf, int i, int chpltypetype, unsigned 
   int packagesize = sizeof(void *);
   PVM_NO_LOCK_SAFE(pvm_pkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
   if (packagesize == 4) {
-    PVM_NO_LOCK_SAFE(pvm_pkint((int32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
+    PVM_NO_LOCK_SAFE(pvm_pkuint((uint32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkuint", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
-    sprintf(debugMsg, "Packing CLASS_REFERENCE %d (part %d) of type %d, offset %lu", *(int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+    sprintf(debugMsg, "Packing CLASS_REFERENCE 0x%x (part %d) of type %d, offset %lu", *(unsigned int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
     PRINTF(debugMsg);
 #endif
     
@@ -526,11 +526,12 @@ static void chpl_pkCLASS_REFERENCE(void* buf, int i, int chpltypetype, unsigned 
     part1 = (int)*(int64_t *)(((char *)buf)+chpltypeoffset);
     part2 = (int)((*(int64_t *)(((char *)buf)+chpltypeoffset)) >> 32);
 
+    // pklong doesn't work here since it assumes a long is 32-bits
     //    PVM_NO_LOCK_SAFE(pvm_pklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
     PVM_NO_LOCK_SAFE(pvm_pkint(&part1, 1, 1), "pvm_pkint", "chpl_pvm_send");
     PVM_NO_LOCK_SAFE(pvm_pkint(&part2, 1, 1), "pvm_pkint", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
-    sprintf(debugMsg, "Packing CLASS_REFERENCE %ld (part %d) of type %d, offset %lu", *(long int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+    sprintf(debugMsg, "Packing CLASS_REFERENCE 0x%lx (part %d) of type %d, offset %lu", *(long unsigned int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
     PRINTF(debugMsg);
 #endif
   } else {
@@ -546,18 +547,19 @@ static void chpl_upkCLASS_REFERENCE(void* buf, int i, int chpltypetype, unsigned
   int packagesize;
   PVM_NO_LOCK_SAFE(pvm_upkint(&packagesize, 1, 1), "pvm_upkint", "chpl_pvm_recv");
   if (packagesize == 4) {
-    PVM_NO_LOCK_SAFE(pvm_upkint((int32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkint", "chpl_pvm_recv");
+    PVM_NO_LOCK_SAFE(pvm_upkuint((uint32_t *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkuint", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
-    sprintf(debugMsg, "Unpacking CLASS_REFERENCE %d (part %d) of type %d, offset %lu", *(int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+    sprintf(debugMsg, "Unpacking CLASS_REFERENCE 0x%x (part %d) of type %d, offset %lu", *(unsigned int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
     PRINTF(debugMsg);
 #endif
   } else if (packagesize == 8) {
     PVM_NO_LOCK_SAFE(pvm_upkint(&part1, 1, 1), "pvm_upkint", "chpl_pvm_recv");
     PVM_NO_LOCK_SAFE(pvm_upkint(&part2, 1, 1), "pvm_upkint", "chpl_pvm_recv");
     *(int64_t *)(((char *)buf)+chpltypeoffset) = (int64_t)((((int64_t)part2) << 32) + (((int64_t)part1) & 0x00000000ffffffff));
+    // pklong doesn't work here since it assumes a long is 32-bits
     //    PVM_NO_LOCK_SAFE(pvm_upklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_upklong", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
-    sprintf(debugMsg, "Unpacking CLASS_REFERENCE %ld (part %d) of type %d, offset %lu", *(long int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+    sprintf(debugMsg, "Unpacking CLASS_REFERENCE 0x%lx (part %d) of type %d, offset %lu", *(long unsigned int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
     PRINTF(debugMsg);
 #endif
   } else {
@@ -575,7 +577,6 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   int source;
   int repTag;
   int fnid;
-  int packagesize;              // remote node says how big something is
   int ack;                      // send an ack to sending node
 
 #ifdef CHPL_COMM_HETEROGENEOUS
@@ -584,6 +585,8 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   unsigned long chpltypeoffset; // from enumeration table
   int sendingnil;               // for send of (nil)
   int break_out = 0;            // to get out of for from switch
+#else
+  int packagesize;              // remote node says how big something is
 #endif
 
 #if CHPL_DIST_DEBUG
@@ -614,8 +617,13 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
     // Metadata case either contains an address for the data or a
     // function ID (or, if ChplCommFinish, nothing).
     if ((pvmtype == ChplCommPut) || (pvmtype == ChplCommGet)) {
+#ifdef CHPL_COMM_HETEROGENEOUS
+      chpl_upkCLASS_REFERENCE((void *)&(((_chpl_message_info *)buf)->u.data), 0, CHPL_TYPE_CLASS_REFERENCE, 0, sizeof(void *));
+      chpl_mutex_unlock(&pvm_lock);
+#else
       PVM_NO_LOCK_SAFE(pvm_upkint(&packagesize, 1, 1), "pvm_upkint", "chpl_pvm_recv");
       PVM_UNPACK_SAFE(pvm_upkbyte((void *)&(((_chpl_message_info *)buf)->u.data), packagesize, 1), "pvm_upkbyte", "chpl_pvm_recv");
+#endif
     } else if (pvmtype == ChplCommFinish) {
       // Do nothing. Nothing in the union.
       chpl_mutex_unlock(&pvm_lock);
@@ -730,6 +738,7 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
           break;
         case CHPL_TYPE_chpl_string:
           PVM_NO_LOCK_SAFE(pvm_upkstr(((char *)buf)+chpltypeoffset), "pvm_upkstr", "chpl_pvm_recv");
+          //          PVM_NO_LOCK_SAFE(pvm_upkint((int *)(((int *)buf)+chpltypeoffset), 1, 1), "pvm_upkint", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
           sprintf(debugMsg, "Unpacking chpl_string %s (part %d) of type %d, offset %lu", (((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
@@ -777,7 +786,6 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
   int repTag;
   int datasize;
   int fnid;
-  int packagesize;              // tells remote node how big something is
   int ack;                      // getting nil as ack from remote recv
   
 #ifdef CHPL_COMM_HETEROGENEOUS
@@ -787,6 +795,8 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
   char *conversion;             // determine (char *)buf+chpltypeoffset value
   int sendingnil;               // for send of (nil)
   int break_out = 0;            // to get out of for from switch
+#else
+  int packagesize;              // tells remote node how big something is
 #endif
 
 #if CHPL_DIST_DEBUG
@@ -812,9 +822,13 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
     // Metadata case either contains an address for the data or a
     // function ID (or, if ChplCommFinish, nothing).
     if ((msgtype == ChplCommPut) || (msgtype == ChplCommGet)) {
+#ifdef CHPL_COMM_HETEROGENEOUS
+      chpl_pkCLASS_REFERENCE((void *)&(((_chpl_message_info *)buf)->u.data), 0, CHPL_TYPE_CLASS_REFERENCE, 0);
+#else
       packagesize = sizeof(void *);
       PVM_NO_LOCK_SAFE(pvm_pkint(&packagesize, 1, 1), "pvm_pkint", "chpl_pvm_send");
       PVM_NO_LOCK_SAFE(pvm_pkbyte((void *)&(((_chpl_message_info *)buf)->u.data), packagesize, 1), "pvm_pkbyte", "chpl_pvm_send");
+#endif
     } else if (msgtype == ChplCommFinish) {
       // Do nothing. Nothing in the union.
       // Unlock is done in the PVM_UNPACK_SAFE on the actual pvm_send.
@@ -931,12 +945,12 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
           break;
         case CHPL_TYPE_chpl_string:
           PVM_NO_LOCK_SAFE(pvm_pkstr(((char *)buf)+chpltypeoffset), "pvm_pkstr", "chpl_pvm_send");
+          //          PVM_NO_LOCK_SAFE(pvm_pkint((int *)(((int *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
           sprintf(debugMsg, "Packing chpl_string %s (part %d) of type %d, offset %lu", (((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
 #endif
           break;
-
         case CHPL_TYPE_CLASS_REFERENCE:
           chpl_pkCLASS_REFERENCE(buf, i, chpltypetype, chpltypeoffset);
           break;
