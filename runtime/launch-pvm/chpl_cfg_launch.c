@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <unistd.h>
+#include <sys/utsname.h>
 #include <chplio_md.h>
 #include <signal.h>
 
@@ -23,7 +23,6 @@
 #define NOTIFYTAG 4194295
 #define PRINTF_BUFF_LEN 1024
 
-extern int gethostname(char *, int);
 void error_exit(int sig);
 void memory_cleanup(void);
 char *replace_str(char *str, char *orig, char *rep);
@@ -84,7 +83,7 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
   int i, j, info;
   int infos[256];
   int infos2[256];
-  char myhostname[256];
+  struct utsname myhostname;
   char pvmnodetoadd[256];
   int commsig = 0;
   static char *hosts2redo[2048];
@@ -210,9 +209,9 @@ static char* chpl_launch_create_command(int argc, char* argv[], int32_t numLocal
 
   // Find the node we're on. We use this in spawning (to know what realm
   // type we are to replace that string with an architecture appropriate one
-  gethostname(myhostname, 256);
+  uname(&myhostname);
   for (i = 0; i < numLocales; i++) {
-    if (!(strcmp((char *)pvmnodestoadd[i], myhostname))) {
+    if (!(strcmp((char *)pvmnodestoadd[i], myhostname.nodename))) {
       baserealm = i;
       break;
     }
