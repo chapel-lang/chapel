@@ -672,7 +672,11 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
         //      we've sent the chplType enumeration without conversion
         //      after the negative.
         if (sz < 0) {
-          chpltypetype = sz * -1;
+          if (sz != -CHPL_TYPE_chpl_string) {
+            chpltypetype = sz * -1;
+          } else {
+            chpltypetype = -CHPL_TYPE_chpl_string;
+          }
           chpltypeoffset = 0;
           i = chpl_max_fields_per_type;
         }
@@ -739,14 +743,14 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
           chpl_upkdouble64_t(buf, i, chpltypetype, chpltypeoffset, sizeof(void *));
           chpl_upkdouble64_t(buf, i, chpltypetype, (chpltypeoffset + sizeof(double)), sizeof(void *));
           break;
-        case CHPL_TYPE_chpl_string:
+        case -CHPL_TYPE_chpl_string:
           PVM_NO_LOCK_SAFE(pvm_upkstr(((char *)buf)+chpltypeoffset), "pvm_upkstr", "chpl_pvm_recv");
-          //          PVM_NO_LOCK_SAFE(pvm_upkint((int *)(((int *)buf)+chpltypeoffset), 1, 1), "pvm_upkint", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
           sprintf(debugMsg, "Unpacking chpl_string %s (part %d) of type %d, offset %lu", (((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
 #endif
           break;
+        case CHPL_TYPE_chpl_string:
         case CHPL_TYPE_CLASS_REFERENCE:
           chpl_upkCLASS_REFERENCE(buf, i, chpltypetype, chpltypeoffset, sizeof(void *));
           break;
@@ -882,7 +886,11 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
         //      we've sent the chplType enumeration without conversion
         //      after the negative.
         if (sz < 0) {
-          chpltypetype = sz * -1;
+          if (sz != -CHPL_TYPE_chpl_string) {
+            chpltypetype = sz * -1;
+          } else {
+            chpltypetype = -CHPL_TYPE_chpl_string;
+          }
           chpltypeoffset = 0;
           i = chpl_max_fields_per_type;
         }
@@ -948,14 +956,14 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
           chpl_pkdouble64_t(buf, i, chpltypetype, chpltypeoffset);
           chpl_pkdouble64_t(buf, i, chpltypetype, (chpltypeoffset + sizeof(double)));
           break;
-        case CHPL_TYPE_chpl_string:
+        case -CHPL_TYPE_chpl_string:
           PVM_NO_LOCK_SAFE(pvm_pkstr(((char *)buf)+chpltypeoffset), "pvm_pkstr", "chpl_pvm_send");
-          //          PVM_NO_LOCK_SAFE(pvm_pkint((int *)(((int *)buf)+chpltypeoffset), 1, 1), "pvm_pkint", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
           sprintf(debugMsg, "Packing chpl_string %s (part %d) of type %d, offset %lu", (((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
 #endif
           break;
+        case CHPL_TYPE_chpl_string:
         case CHPL_TYPE_CLASS_REFERENCE:
           chpl_pkCLASS_REFERENCE(buf, i, chpltypetype, chpltypeoffset);
           break;
