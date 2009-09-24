@@ -649,6 +649,7 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
               (chpl_getFieldType(sz, i) == CHPL_TYPE__cfile) ||
               (chpl_getFieldType(sz, i) == CHPL_TYPE_chpl_task_list_p) ||
               (chpl_getFieldType(sz, i) == CHPL_TYPE__timervalue)) {
+            chpl_internal_error("Error: Unimplmented case!");
             PVM_NO_LOCK_SAFE(pvm_upkbyte(((char *)buf), chpl_getFieldSize(sz), 1), "pvm_upkbyte", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
             sprintf(debugMsg, "Unpacking something");
@@ -758,7 +759,7 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
           break_out = 1;
           break;
         default:
-          chpl_internal_error("Error: Unimplemented case!");
+          chpl_internal_error("Error: Unknown case!");
           break;
         }
         if (break_out == 1) {
@@ -863,6 +864,7 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
               (chpl_getFieldType(sz, i) == CHPL_TYPE__cfile) ||
               (chpl_getFieldType(sz, i) == CHPL_TYPE_chpl_task_list_p) ||
               (chpl_getFieldType(sz, i) == CHPL_TYPE__timervalue)) {
+            chpl_internal_error("Error: Unimplmented case!");
             PVM_NO_LOCK_SAFE(pvm_pkbyte(((char *)buf), chpl_getFieldSize(sz), 1), "pvm_pkbyte", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
             sprintf(debugMsg, "Packing something");
@@ -971,7 +973,7 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
           break_out = 1;
           break;
         default:
-          chpl_internal_error("Error: Unimplmented case!");
+          chpl_internal_error("Error: Unknown case!");
           break;
         }
         if (break_out == 1) {
@@ -1500,6 +1502,9 @@ void chpl_comm_exit_any(int status) {
 
 void chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   if (chpl_localeID == locale) {
+    if (size < 0) {
+      chpl_internal_error("memmove error");
+    }
 #ifdef CHPL_COMM_HETEROGENEOUS
     memmove(raddr, addr, chpl_getFieldSize(size));
 #else
@@ -1545,6 +1550,9 @@ void chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln
 
 void chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   if (chpl_localeID == locale) {
+    if (size < 0) {
+      chpl_internal_error("memmove error");
+    }
 #ifdef CHPL_COMM_HETEROGENEOUS
     memmove(raddr, addr, chpl_getFieldSize(size));
 #else
@@ -1635,6 +1643,9 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
 
   int mallocsize;
 #ifdef CHPL_COMM_HETEROGENEOUS
+  if (arg_size < 0) {
+    chpl_internal_error("memmove error");
+  }
   mallocsize = chpl_getFieldSize(arg_size);
 #else
   mallocsize = arg_size;
