@@ -585,6 +585,7 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   unsigned long chpltypeoffset; // from enumeration table
   int sendingnil;               // for send of (nil)
   int break_out = 0;            // to get out of for from switch
+  int32_t boolconvert;          // convert bool to int32_t for send/recv
 #else
   int packagesize;              // remote node says how big something is
 #endif
@@ -681,9 +682,11 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
         }
         switch (chpltypetype) {
         case CHPL_TYPE_chpl_bool:
-          PVM_NO_LOCK_SAFE(pvm_upkbyte((((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkbyte", "chpl_pvm_recv");
+          boolconvert = 0;
+          PVM_NO_LOCK_SAFE(pvm_upkint(&boolconvert, 1, 1), "pvm_upkint", "chpl_pvm_recv");
+          *(chpl_bool *)(((char *)buf)+chpltypeoffset) = (chpl_bool)boolconvert;
 #if CHPL_DIST_DEBUG
-          sprintf(debugMsg, "Unpacking %d (part %d) of type %d, offset %lu", *(((_Bool *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          sprintf(debugMsg, "Unpacking %d (part %d) of type %d, offset %lu", *(((chpl_bool *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
 #endif
           break;
@@ -795,6 +798,7 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
   char *conversion;             // determine (char *)buf+chpltypeoffset value
   int sendingnil;               // for send of (nil)
   int break_out = 0;            // to get out of for from switch
+  int32_t boolconvert;          // convert bool to int32_t for send/recv
 #else
   int packagesize;              // tells remote node how big something is
 #endif
@@ -888,9 +892,10 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
         }
         switch (chpltypetype) {
         case CHPL_TYPE_chpl_bool:
-          PVM_NO_LOCK_SAFE(pvm_pkbyte((((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkbyte", "chpl_pvm_send");
+          boolconvert = (int32_t)*(((chpl_bool *)buf)+chpltypeoffset);
+          PVM_NO_LOCK_SAFE(pvm_pkint(&boolconvert, 1, 1), "pvm_pkint", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
-          sprintf(debugMsg, "Packing %d (part %d) of type %d, offset %lu", *(((_Bool *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          sprintf(debugMsg, "Packing %d (part %d) of type %d, offset %lu", *(((chpl_bool *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
 #endif
           break;
