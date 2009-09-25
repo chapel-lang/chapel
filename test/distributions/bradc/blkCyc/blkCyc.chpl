@@ -15,8 +15,8 @@ writeln();
 writeln("D is: ", D);
 writeln("D2 is: ", D2);
 
-var A: [1..n] real;
-var A2: [1..7] real;
+var A: [D] real;
+var A2: [D2] real;
 
 forall i in D do
   A(i) = i;
@@ -35,6 +35,9 @@ forall (i, a) in (D2, A2) do
 
 writeln("A is: ", A);
 writeln("A2 is: ", A2);
+
+        A = 0;
+        A2 = 0;
 
 forall (a, i) in (A, D) do
   a = i;

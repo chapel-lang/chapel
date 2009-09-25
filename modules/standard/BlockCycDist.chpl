@@ -196,9 +196,9 @@ def BlockCyclic.getStarts(inds, locid) {
 // else's suggestion).
 //
 def BlockCyclic.ind2locInd(ind: idxType) where rank == 1 {
-  const ind0 = ind - lowIdx;
-  const locInd = (ind0 / blocksize) / targetLocs.numElements:idxType;
-  return max(0, min(locInd:int, (targetLocDom.dim(1).length-1):int));
+  const ind0 = ind - lowIdx(1);
+  //  compilerError(typeToString((ind0/blocksize(1)%targetLocDom.dim(1).type));
+  return (ind0 / blocksize(1)) % targetLocDom.dim(1).length;
 }
 
 def BlockCyclic.ind2locInd(ind: rank*idxType) where rank == 1 {
@@ -209,8 +209,7 @@ def BlockCyclic.ind2locInd(ind: rank*idxType) where rank != 1 {
   var locInd: rank*int;
   for param i in 1..rank {
     const ind0 = ind(i) - lowIdx(i);
-    const dimLocInd = (ind0 / blocksize(i)) / targetLocDom.dim(i).length;
-    locInd(i) = max(0, min(dimLocInd:int, (targetLocDom.dim(i).length-1):int));
+    locInd(i) = (ind(i) / blocksize(i)) % targetLocDom.dim(i).length;  
   }
   return locInd;
 }
@@ -318,6 +317,7 @@ def BlockCyclicDom.these(param tag: iterator) where tag == iterator.leader {
       for param i in 1..rank {
         retblock(i) = tmpblock(i) - whole.dim(i).low;
       }
+      //      writeln(here.id, ": Domain leader yielding", retblock);
       yield retblock;
     }
   }
@@ -336,6 +336,7 @@ def BlockCyclicDom.these(param tag: iterator) where tag == iterator.leader {
 // stencil communication will be done on a per-locale basis.
 //
 def BlockCyclicDom.these(param tag: iterator, follower) where tag == iterator.follower {
+  //  writeln(here.id, ": Domain follower following ", follower);
   var t: rank*range(idxType, stridable=stridable);
   for param i in 1..rank {
     var stride = whole.dim(i).stride: idxType;
@@ -343,6 +344,7 @@ def BlockCyclicDom.these(param tag: iterator, follower) where tag == iterator.fo
     var high = stride * follower(i).high;
     t(i) = (low..high by stride:int) + whole.dim(i).low;
   }
+  //  writeln(here.id, ": Changed it into: ", t);
   for i in [(...t)] {
     yield i;
   }
@@ -379,13 +381,11 @@ def BlockCyclicDom.writeThis(x:Writer) {
 //
 // how to allocate a new array over this domain
 //
-/*
 def BlockCyclicDom.buildArray(type eltType) {
   var arr = new BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
   arr.setup();
   return arr;
 }
-*/
 
 def BlockCyclicDom.numIndices return whole.numIndices;
 def BlockCyclicDom.low return whole.low;
@@ -436,8 +436,10 @@ def BlockCyclicDom.setup() {
       if (locDoms(localeIdx) == nil) then
         locDoms(localeIdx) = new LocBlockCyclicDom(rank, idxType, stridable, this, 
                                                    dist.getStarts(whole, localeIdx));
-      else
+      else {
         locDoms(localeIdx).myStarts = dist.getStarts(whole, localeIdx);
+        locDoms(localeIdx).myFlatInds = [0:uint(64)..#locDoms(localeIdx).computeFlatInds()];
+      }
   if debugBlockCyclicDist then
     enumerateBlocks();
 }
@@ -486,7 +488,7 @@ class LocBlockCyclicDom {
   //
   // UP LINK: a reference to the parent global domain class
   //
-  const wholeDom: BlockCyclicDom(rank, idxType, stridable);
+  const globDom: BlockCyclicDom(rank, idxType, stridable);
 
   //
   // a local domain describing the indices owned by this locale
@@ -496,6 +498,18 @@ class LocBlockCyclicDom {
   // indices back to the local index type.
   //
   var myStarts: domain(rank, idxType, stridable=true);
+  var myFlatInds: domain(1, uint(64)) = [0:uint(64)..#computeFlatInds()];
+}
+
+//
+// Initialization helpers
+//
+def LocBlockCyclicDom.computeFlatInds() {
+  //  writeln("myStarts = ", myStarts);
+  const numBlocks: uint(64) = * reduce [d in 1..rank] (myStarts.dim(d).length):uint(64),
+    indsPerBlk: uint(64) = * reduce [d in 1..rank] (globDom.dist.blocksize(d)):uint(64);
+  //  writeln("Total number of inds = ", numBlocks * indsPerBlk);
+  return numBlocks * indsPerBlk;
 }
 
 //
@@ -518,8 +532,8 @@ def LocBlockCyclicDom.enumerateBlocks() {
         lo = i;
       else
         lo = i(j);
-      write(lo, "..", min(lo + wholeDom.dist.blocksize(j)-1, 
-                          wholeDom.whole.dim(j).high));
+      write(lo, "..", min(lo + globDom.dist.blocksize(j)-1, 
+                          globDom.whole.dim(j).high));
     }
     writeln("]");
   } 
@@ -544,7 +558,6 @@ def LocBlockCyclicDom.high {
   return myStarts.high;
 }
 
-/*
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
@@ -604,10 +617,14 @@ def BlockCyclicArr.privatize() {
 // TODO: Do we need a global bounds check here or in ind2locind?
 //
 def BlockCyclicArr.this(i: idxType) var where rank == 1 {
-  if myLocArr then local {
+  if myLocArr then /* TODO: reenable */ /* local */ {
     if myLocArr.locDom.myStarts.member(i) then
       return myLocArr.this(i);
   }
+  //  var loci = dom.dist.ind2locInd(i);
+  //  compilerError(typeToString(loci.type));
+  //  var desc = locArr(loci);
+  //  return locArr(loci)(i);
   return locArr(dom.dist.ind2locInd(i))(i);
 }
 
@@ -624,6 +641,7 @@ def BlockCyclicArr.this(i: rank*idxType) var {
   }
 }
 
+
 def BlockCyclicArr.these() var {
   for i in dom do
     yield this(i);
@@ -637,33 +655,34 @@ def BlockCyclicArr.these() var {
 def BlockCyclicArr.these(param tag: iterator) where tag == iterator.leader {
   const precomputedNumTasks = dom.dist.tasksPerLocale;
   const precomputedWholeLow = dom.whole.low;
+  if (precomputedNumTasks != 1) then
+    halt("Can't use more than one task per locale with Block-Cyclic currently");
   coforall locDom in dom.locDoms do on locDom {
-    var tmpBlockCyclic = locDom.myStarts - precomputedWholeLow;
-    const numTasks = precomputedNumTasks;
-    var locBlockCyclic: rank*range(idxType);
-    for param i in 1..tmpBlockCyclic.rank {
-      locBlockCyclic(i) = (tmpBlockCyclic.dim(i).low/tmpBlockCyclic.dim(i).stride:idxType)..#(tmpBlockCyclic.dim(i).length);
-    }
-
-
-    if (numTasks == 1) {
-      yield locBlockCyclic;
-    } else {
-      coforall taskid in 0..#numTasks {
-        var tuple: rank*range(idxType) = locBlockCyclic;
-        const (lo,hi) = _computeBlockCyclic(locBlockCyclic(1).low, locBlockCyclic(1).length,
-                                      locBlockCyclic(1).low, locBlockCyclic(1).high,
-                                      numTasks, taskid);
-          
-        tuple(1) = lo..hi;
-        yield tuple;
-
+    var tmpblock:rank*range(idxType);
+    for i in locDom.myStarts {
+      for param j in 1..rank {
+        // TODO: support a tuple-oriented iteration of vectors to avoid this?
+        var lo: idxType;
+        if rank == 1 then
+          lo = i;
+        else
+          lo = i(j);
+        tmpblock(j) = lo..min(lo + dom.dist.blocksize(j)-1, 
+                              dom.whole.dim(j).high);
       }
+
+      var retblock: rank*range(idxType);
+      for param i in 1..rank {
+        retblock(i) = tmpblock(i) - dom.whole.dim(i).low;
+      }
+      //      writeln(here.id, ": Array leader yielding", retblock);
+      yield retblock;
     }
   }
 }
 
-def BlockCyclicArr.supportsAlignedFollower() param return true;
+// TODO: add support for an aligned follower; the default one fails
+def BlockCyclicArr.supportsAlignedFollower() param return false;
 
 def BlockCyclicArr.these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
   var followThis: rank*range(eltType=idxType, stridable=stridable);
@@ -685,7 +704,7 @@ def BlockCyclicArr.these(param tag: iterator, follower, param aligned: bool = fa
   //
   const myLocArr = locArr(dom.dist.ind2locInd(lowIdx));
   if aligned {
-    local {
+    /* TODO: reenable */ /*  local */ {
       for i in followThisDom {
         yield myLocArr.this(i);
       }
@@ -781,14 +800,95 @@ class LocBlockCyclicArr {
   //
   // the block of local array data
   //
-  var myElems: [locDom.myStarts] eltType;
+  var myElems: [locDom.myFlatInds] eltType;
+
+  // TODO: need to be able to access these, but is this the right place?
+  const blocksize: [d in 1..rank] uint(64) = locDom.globDom.dist.blocksize(d): uint(64);
+  const low = locDom.globDom.low;
+  const locsize: [d in 1..rank] uint(64) = locDom.globDom.dist.targetLocDom.dim(d).length: uint(64);
+                                                                                  const numblocks: [d in 1..rank] uint(64) = (locDom.myStarts.dim(d).length):uint(64);
+
+}
+
+
+def LocBlockCyclicArr.mdInd2FlatInd(i: ?t, dim = 1) where t == idxType {
+  //  writeln("blksize");
+  const blksize = blocksize(dim);
+  //  writeln("ind0");
+  const ind0 = (i - low): uint(64);
+  //  writeln("blkNum");
+  const blkNum = ind0 / (blksize * locsize(dim));
+  //  writeln("blkOff");
+  const blkOff = ind0 % blksize;
+  //  writeln("returning");
+  return  blkNum * blksize + blkOff;
+}
+
+def LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
+  if (false) {  // CMO
+    var blkmults = * scan [d in 1..rank] blocksize(d);
+    //    writeln("blkmults = ", blkmults);
+    var numwholeblocks: uint(64) = 0;
+    var blkOff: uint(64) = 0;
+    for param d in rank..1 by -1 {
+      const blksize = blocksize(d);
+      const ind0 = (i(d) - low(d)): uint(64);
+      const blkNum = ind0 / (blksize * locsize(d));
+      const blkDimOff = ind0 % blksize;
+      if (d != rank) {
+        numwholeblocks *= numblocks(rank-d);
+        blkOff *= blkmults(rank-d);
+      }
+      numwholeblocks += blkNum;
+      blkOff += blkDimOff;
+    }
+    return (numwholeblocks * blocksize(rank)) + blkOff;
+  } else { // RMO
+    //TODO: want negative scan: var blkmults = * scan [d in 1..rank] blocksize(d);
+    var blkmults: [1..rank] uint(64);
+    blkmults(rank) = blocksize(rank);
+    for d in rank-1..1 by -1 do
+      blkmults(d) = blkmults(d+1) * blocksize(d);
+    //    writeln("blkmults = ", blkmults);
+    var numwholeblocks: uint(64) = 0;
+    var blkOff: uint(64) = 0;
+    for param d in 1..rank {
+      const blksize = blocksize(d);
+      const ind0 = (i(d) - low(d)): uint(64);
+      const blkNum = ind0 / (blksize * locsize(d));
+      const blkDimOff = ind0 % blksize;
+      if (d != 1) {
+        numwholeblocks *= numblocks(rank-d+2);
+        blkOff *= blkmults(rank-d+2);
+      }
+      numwholeblocks += blkNum;
+      blkOff += blkDimOff;
+      if (false && (i == (13,0) || i == (1,32))) {
+          writeln(here.id, ":", "blksize = ", blksize);
+          writeln(here.id, ":", "ind0 = ", ind0);
+          writeln(here.id, ":", "blkNum = ", blkNum);
+          writeln(here.id, ":", "blkDimOff = ", blkDimOff);
+        }
+    }
+
+    if (false && (i == (13,0) || i == (1,32))) {
+      writeln(here.id, ":", "numblocks = ", numblocks);
+      writeln(here.id, ":", i, "->"); 
+      writeln(here.id, ":","numwholeblocks = ", numwholeblocks);
+      writeln(here.id, ":","blkOff = ", blkOff);
+      writeln(here.id, ":","total = ", numwholeblocks * blkmults(1) + blkOff);
+    }
+    return (numwholeblocks * blkmults(1)) + blkOff;
+  }
 }
 
 //
 // the accessor for the local array -- assumes the index is local
 //
 def LocBlockCyclicArr.this(i) var {
-  return myElems(i);
+  const flatInd = mdInd2FlatInd(i);
+  //    writeln(i, "->", flatInd);
+  return myElems(flatInd);
 }
 
 //
@@ -818,7 +918,6 @@ def _computeBlockCyclic(waylo, numelems, lo, wayhi, numblocks, blocknum) {
 
   return (blo, bhi);
 }
-*/
 
 
 // BLC: Common code, factor out
