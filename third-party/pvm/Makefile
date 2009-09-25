@@ -10,7 +10,7 @@ default: all
 all: pvm
 
 clean: FORCE
-	cd $(PVM_SUBDIR) && make clean
+	cd $(PVM_SUBDIR) && PVM_ROOT=$(PVM_ABS_DIR)/$(PVM_SUBDIR) && export PVM_ROOT && $(MAKE) clean
 
 clobber: FORCE
 
