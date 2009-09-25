@@ -15,6 +15,6 @@ clean: FORCE
 clobber: FORCE
 
 pvm: FORCE
-	cd $(PVM_SUBDIR) && PVM_ROOT=$(PVM_ABS_DIR)/$(PVM_SUBDIR) && export PVM_ROOT && $(MAKE)
+	cd $(PVM_SUBDIR) && PVM_ROOT=$(PVM_ABS_DIR)/$(PVM_SUBDIR) && export PVM_ROOT && CC=$(CC) && export CC && $(MAKE)
 
 FORCE:
