@@ -17,18 +17,9 @@
 #include "error.h"
 
 #include "chpllaunch.h"
-/*#include "chplmem.h"
-#include "error.h"
-*/
+
 #define NOTIFYTAG 4194295
 #define PRINTF_BUFF_LEN 1024
-
-#define LAUNCH_PATH_HELP WRAP_TO_STR(LAUNCH_PATH)
-#define TO_STR_HELP(x) #x
-#define TO_STR(x) TO_STR_HELP(x)
-
-#define CHPL_HOME TO_STR(_CHPL_HOME)
-#define PVM_ROOT TO_STR(_PVM_ROOT)
 
 int tids[32];
 
