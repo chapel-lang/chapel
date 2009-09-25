@@ -311,14 +311,14 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
     if ((infos[i] < 0) && (infos[i] != PvmDupHost)) {
       hosts2redo[0] = pvmnodestoadd[i];
       if (verbosity > 1) {
-	fprintf(stderr, "calling pvm_addhosts({%s}, 1, infos2);\n", *hosts2redo);
+        fprintf(stderr, "calling pvm_addhosts({%s}, 1, infos2);\n", *hosts2redo);
       }
       info = pvm_addhosts( (char **)hosts2redo, 1, infos2);
       if (infos2[0] < 0) {
-	char errorMsg[256];
-	snprintf(errorMsg, 255, "Remote error on %s (%d) -- shutting down host",
-		 hosts2redo[0], infos2[0]);
-	pvm_launcher_error(errorMsg);
+        char errorMsg[256];
+        snprintf(errorMsg, 255, "Remote error on %s (%d) -- shutting down host",
+                 hosts2redo[0], infos2[0]);
+        pvm_launcher_error(errorMsg);
       }
     }
   }
@@ -363,15 +363,15 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
       strcat(commandtopvm, argv0rep);
       strcat(commandtopvm, "_real");
       while (strstr(commandtopvm, realmtoadd[baserealm]) && 
-	     (chpl_numRealms != 1) &&
-	     (strcmp(realmtoadd[baserealm], realmtoadd[i]))) {
-	commandtopvm = replace_str(commandtopvm, realmtoadd[baserealm], realmtoadd[i]);
+             (chpl_numRealms != 1) &&
+             (strcmp(realmtoadd[baserealm], realmtoadd[i]))) {
+        commandtopvm = replace_str(commandtopvm, realmtoadd[baserealm], realmtoadd[i]);
       }
       if (!pvm_spawn_wrapper(commandtopvm, argv2, pvmnodestoadd[i], &tids[i] )) {
-	sprintf(commandtopvm, "%s%s%s", getenv((char *)"PWD"), nameofbin, "_real");
-	if (!pvm_spawn_wrapper(commandtopvm, argv2, pvmnodestoadd[i], &tids[i] )) {
-	  pvm_launcher_error("Unable to spawn child process(es)");
-	}
+        sprintf(commandtopvm, "%s%s%s", getenv((char *)"PWD"), nameofbin, "_real");
+        if (!pvm_spawn_wrapper(commandtopvm, argv2, pvmnodestoadd[i], &tids[i] )) {
+          pvm_launcher_error("Unable to spawn child process(es)");
+        }
       }
     }
   }
@@ -433,9 +433,9 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
       pvm_pkint(&info, 1, 1);
       pvm_send(who, NOTIFYTAG);
       if (info == -1) {
-	pvm_launcher_error("system() fork failed");
+        pvm_launcher_error("system() fork failed");
       } else if (info != 0 && !ignorestatus) {
-	pvm_launcher_error(description);
+        pvm_launcher_error(description);
       }
     }
   }
