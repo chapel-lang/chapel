@@ -168,7 +168,7 @@ if ($mailer eq "") {
 # directory variables
 #
 if ($debug == 1) {
-    $tmpdir = "$basetmpdir/chapel-debug-$fullplatform-day$today-$user";
+    $tmpdir = "$basetmpdir/chapel-debug-$fullplatform-$user";
 } else {
     $tmpdir = "$basetmpdir/chapel-$fullplatform-day$today-$user";
 }
@@ -330,10 +330,16 @@ if ($hostplatform eq "cygwin") {
 # build stuff
 #
 
-if ($gasnet == 1) {
-    mysystem("cd $chapeldir/third-party && $make gasnet", "making GASNet", 1, 1);
-} elsif ($pvm == 1) {
+if ($pvm == 1) {
     mysystem("cd $chapeldir/third-party && $make pvm", "making PVM", 1, 1);
+    mysystem("uname -n > $chapeldir/hostfile.$hostplatform");
+    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
+    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
+    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
+    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
+    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
+    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
+    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
 }
 $makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
 if ($makestat != 0) {
