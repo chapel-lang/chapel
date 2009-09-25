@@ -1,0 +1,7 @@
+#!/usr/bin/tcsh
+
+#
+# Test a PVM compile
+#
+source ~/.chapelcshrc-cron-pvm
+$CHPL_HOME/test/Bin/nightly -cron -examples
