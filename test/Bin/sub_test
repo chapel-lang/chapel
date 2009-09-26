@@ -195,6 +195,11 @@ endif
 # compile, execute, and compare each source file
 foreach chplsrc ($testsrc)
 
+    if ($CHPL_COMM == "pvm") then
+        echo \[Resetting PVM to be safe\]
+        echo "halt" |& $CHPL_HOME/third-party/pvm/pvm-3.4.6/pvm3/lib/pvm
+    endif
+
     # set execfile now since used in both if branches
     set execfile = $chplsrc:r
     # allow a platform-specific .good file to be used, if it exists
