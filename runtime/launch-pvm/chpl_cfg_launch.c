@@ -186,7 +186,9 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   numLocales = init_numLocales;
 
   // Ensure PVM_ROOT is set if the user hasn't
-  setenv("PVM_ROOT", PVM_ROOT, 0);
+  if (getenv("PVM_ROOT") == NULL) {
+    putenv((char*)"PVM_ROOT="PVM_ROOT);
+  }
 
   // Signal handlers
   signal(SIGINT, error_exit);
