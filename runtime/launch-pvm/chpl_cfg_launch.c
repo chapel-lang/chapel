@@ -52,6 +52,7 @@ int totalalloced = 0;
 static char *replace_str(char *str, char *orig, char *rep)
 {
   static char buffer[4096];
+  static char part2[4096];
   char *p;
 
   if(!(p = strstr(str, orig)))  // Is 'orig' even in 'str'?
@@ -60,7 +61,8 @@ static char *replace_str(char *str, char *orig, char *rep)
   strncpy(buffer, str, p-str); // Copy characters from 'str' start to 'orig' st$
   buffer[p-str] = '\0';
 
-  sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
+  sprintf(part2, "%s", p+strlen(orig));
+  sprintf(buffer+(p-str), "%s%s", rep, part2);
 
   return buffer;
 }
