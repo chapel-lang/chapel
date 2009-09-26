@@ -22,8 +22,8 @@ spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09, 09/05/09, 09/06/09, 09/10/09, 09/11/09, 09/13/09, 09/18/09, 09/19/09, 09/22/09)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09, 08/29/09, 08/31/09, 09/02/09, 09/10/09, 09/11/09, 09/13/09, 09/17/09, 09/19/09, 09/22/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09, 09/05/09, 09/06/09, 09/10/09, 09/11/09, 09/13/09, 09/18/09, 09/19/09, 09/22/09, 09/25/09)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09, 08/29/09, 08/31/09, 09/02/09, 09/10/09, 09/11/09, 09/13/09, 09/17/09, 09/19/09, 09/22/09, 09/25/09)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 08/31/09)
 [Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 08/07/09)
 
@@ -89,6 +89,8 @@ double free (09/02/09)
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching program output for npb/cg/bradc/cg-printa] (e.g., 09/25/09)
+[Error matching compiler output for users/wmikanik/domain64-badworkaround] (e.g., 09/25/09)
 [Error matching compiler output for spec/marybeth/typeselect] (e.g., 09/23/09)
 [Error matching compiler output for parallel/begin/deitz/test_string_cat] (e.g., 09/22/09)
 [Error matching compiler output for studies/590o/kfm/solver] (e.g., 09/22/09)
@@ -140,7 +142,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for studies/590o/blucia/img_proc] (e.g., 08/29/09, 09/01/09, 09/23/09)
 [Error matching compiler output for spec/marybeth/seq2] (e.g., 08/28/09, 09/07/09, 09/13/09)
 [Error matching compiler output for studies/590o/alexco/AverageFiles] (e.g., 08/28/09)
-[Error matching compiler output for users/shetag/classWithArray/classWithArray-init3] (e.g., 08/28/09)
+[Error matching compiler output for users/shetag/classWithArray/classWithArray-init3] (e.g., 08/28/09, 09/25/09)
 [Error matching compiler output for users/shetag/inlineArrInitInClass] (e.g., 08/28/09, 09/08/09, 09/13/09, 09/19/09)
 [Error matching compiler output for users/shetag/shareIterator-blc] (e.g., 08/28/09, 09/05/09, 09/12/09, 09/20/09)
 [Error matching compiler output for parallel/begin/deitz/test_heap_ref] (e.g., 08/27/09)
@@ -166,6 +168,12 @@ no longer needs to be suppressed?
 ====================
 no-local regressions
 ====================
+
+bad output (09/25/09)
+(perhaps same problem as test_reduce_of_promote_of_distributed below?)
+----------------------------------------------------------------------
+[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
+
 
 spurious timeouts
 -----------------
@@ -200,6 +208,7 @@ AM_ERR_RESOURCE failure
 
 spurious recursive shutdown failure
 -----------------------------------
+[Error matching program output for parallel/coforall/stonea/reports] (e.g., 09/25/09)
 [Error matching program output for types/file/freadNoFloat] (e.g., 09/20/09)
 [Error matching program output for associative/waynew/add_remove2] (e.g., 09/15/09)
 [Error matching program output for sparse/bradc/outOfBounds] (e.g., 09/15/09)
@@ -218,7 +227,7 @@ new spurious timeouts
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 09/15/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc] (e.g., 09/15/09)
 [Error: Timed out executing program studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 08/30/09)
-[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09, 09/09/09, 09/11/09, 09/14/09, 09/15/09, 09/17/09, 09/19/09, 09/21/09, 09/23/09, 09/24/09)
+[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09, 09/09/09, 09/11/09, 09/14/09, 09/15/09, 09/17/09, 09/19/09, 09/21/09, 09/23/09, 09/24/09, 09/25/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 08/29/09, 09/19/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 08/29/09, 09/18/09, 09/23/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 08/29/09, 08/31/09, 09/02/09)
@@ -265,6 +274,34 @@ spurious timeout
 GASNet unable to start polling thread
 -------------------------------------
 [Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
+
+
+==================
+pvm-specific tests
+==================
+
+things take too long
+--------------------
+[Error: Timed out compilation for release/examples/hpcc/stream]
+[Error: Timed out compilation for release/examples/programs/beer]
+[Error: Timed out compilation for release/examples/programs/genericStack]
+[Error: Timed out compilation for release/examples/programs/jacobi]
+[Error: Timed out compilation for release/examples/tutorials/classes]
+[Error: Timed out compilation for release/examples/tutorials/fileIO]
+[Error: Timed out compilation for release/examples/tutorials/genericClasses]
+[Error: Timed out compilation for release/examples/tutorials/iterators]
+[Error: Timed out compilation for release/examples/tutorials/multilocale]
+[Error: Timed out compilation for release/examples/tutorials/opaque]
+[Error: Timed out compilation for release/examples/tutorials/ranges]
+[Error: Timed out compilation for release/examples/tutorials/reductions]
+[Error: Timed out compilation for release/examples/tutorials/slices]
+[Error: Timed out compilation for release/examples/tutorials/sparse]
+[Error: Timed out compilation for release/examples/tutorials/taskParallel]
+[Error: Timed out compilation for release/examples/tutorials/timers]
+[Error: Timed out compilation for release/examples/tutorials/varargs]
+[Error: Timed out compilation for release/examples/tutorials/variables]
+[Error: Timed out executing program release/examples/hpcc/ra]
+[Error: Timed out executing program release/examples/tutorials/block2D]
 
 
 =======================
@@ -376,7 +413,7 @@ double free (09/02/09)
 
 spurious timeouts
 -----------------
-[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2] (e.g., 09/02/09)
+[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2] (e.g., 09/02/09, 09/25/09)
 
 infrequent seg fault on Sam's Mac
 ---------------------------------
