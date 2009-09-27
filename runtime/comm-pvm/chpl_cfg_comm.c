@@ -585,7 +585,8 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   unsigned long chpltypeoffset; // from enumeration table
   int sendingnil;               // for send of (nil)
   int break_out = 0;            // to get out of for from switch
-  int32_t boolconvert;          // convert bool to int32_t for send/recv
+  int32_t convertvar;           // convert var to int32_t for send/recv
+  uint32_t uconvertvar;         // convert var to uint32_t for send/recv
 #else
   int packagesize;              // remote node says how big something is
 #endif
@@ -687,18 +688,21 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
         }
         switch (chpltypetype) {
         case CHPL_TYPE_chpl_bool:
-          boolconvert = 0;
-          PVM_NO_LOCK_SAFE(pvm_upkint(&boolconvert, 1, 1), "pvm_upkint", "chpl_pvm_recv");
-          *(chpl_bool *)(((char *)buf)+chpltypeoffset) = (chpl_bool)boolconvert;
+          convertvar = 0;
+          PVM_NO_LOCK_SAFE(pvm_upkint(&convertvar, 1, 1), "pvm_upkint", "chpl_pvm_recv");
+          *(chpl_bool *)(((char *)buf)+chpltypeoffset) = (chpl_bool)convertvar;
 #if CHPL_DIST_DEBUG
-          sprintf(debugMsg, "Unpacking %d (part %d) of type %d, offset %lu", *(((chpl_bool *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          sprintf(debugMsg, "Unpacking %d (part %d) of type %d, offset %lu", *(chpl_bool *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
 #endif
           break;
         case CHPL_TYPE_int8_t:
-          PVM_NO_LOCK_SAFE(pvm_upkbyte((((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkint", "chpl_pvm_recv");
+          convertvar = 0;
+          PVM_NO_LOCK_SAFE(pvm_upkint(&convertvar, 1, 1), "pvm_upkint", "chpl_pvm_recv");
+          *(int8_t *)(((char *)buf)+chpltypeoffset) = (int8_t)convertvar;
+          //          PVM_NO_LOCK_SAFE(pvm_upkbyte((((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkint", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
-          sprintf(debugMsg, "Unpacking %d (part %d) of type %d, offset %lu", *(((int8_t *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          sprintf(debugMsg, "Unpacking %d (part %d) of type %d, offset %lu", *(int8_t *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
 #endif
           break;
@@ -713,9 +717,12 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
           chpl_upkint64_t(buf, i, chpltypetype, chpltypeoffset, sizeof(void *));
           break;
         case CHPL_TYPE_uint8_t:
-          PVM_NO_LOCK_SAFE(pvm_upkbyte((((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkint", "chpl_pvm_recv");
+          uconvertvar = 0;
+          PVM_NO_LOCK_SAFE(pvm_upkuint(&uconvertvar, 1, 1), "pvm_upkuint", "chpl_pvm_recv");
+          *(uint8_t *)(((char *)buf)+chpltypeoffset) = (uint8_t)uconvertvar;
+          //          PVM_NO_LOCK_SAFE(pvm_upkbyte((((char *)buf)+chpltypeoffset), 1, 1), "pvm_upkint", "chpl_pvm_recv");
 #if CHPL_DIST_DEBUG
-          sprintf(debugMsg, "Unpacking %d (part %d) of type %d, offset %lu", *(((uint8_t *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          sprintf(debugMsg, "Unpacking %u (part %d) of type %d, offset %lu", *(uint8_t *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
 #endif
           break;
@@ -803,7 +810,8 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
   char *conversion;             // determine (char *)buf+chpltypeoffset value
   int sendingnil;               // for send of (nil)
   int break_out = 0;            // to get out of for from switch
-  int32_t boolconvert;          // convert bool to int32_t for send/recv
+  int32_t convertvar;           // convert var to int32_t for send/recv
+  uint32_t uconvertvar;         // convert var to uint32_t for send/recv
 #else
   int packagesize;              // tells remote node how big something is
 #endif
@@ -902,17 +910,19 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
         }
         switch (chpltypetype) {
         case CHPL_TYPE_chpl_bool:
-          boolconvert = (int32_t)*(((chpl_bool *)buf)+chpltypeoffset);
-          PVM_NO_LOCK_SAFE(pvm_pkint(&boolconvert, 1, 1), "pvm_pkint", "chpl_pvm_send");
+          convertvar = (int32_t)*(chpl_bool *)(((char *)buf)+chpltypeoffset);
+          PVM_NO_LOCK_SAFE(pvm_pkint(&convertvar, 1, 1), "pvm_pkint", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
-          sprintf(debugMsg, "Packing %d (part %d) of type %d, offset %lu", *(((chpl_bool *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          sprintf(debugMsg, "Packing %d (part %d) of type %d, offset %lu", *(chpl_bool *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
 #endif
           break;
         case CHPL_TYPE_int8_t:
-          PVM_NO_LOCK_SAFE(pvm_pkbyte((((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkbyte", "chpl_pvm_send");
+          convertvar = (int32_t)*(int8_t *)(((char *)buf)+chpltypeoffset);
+          PVM_NO_LOCK_SAFE(pvm_pkint(&convertvar, 1, 1), "pvm_pkint", "chpl_pvm_send");
+          //          PVM_NO_LOCK_SAFE(pvm_pkbyte((((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkbyte", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
-          sprintf(debugMsg, "Packing %d (part %d) of type %d, offset %lu", *(((int8_t *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          sprintf(debugMsg, "Packing %d (part %d) of type %d, offset %lu", *(int8_t *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
 #endif
           break;
@@ -927,9 +937,11 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
           chpl_pkint64_t(buf, i, chpltypetype, chpltypeoffset);
           break;
         case CHPL_TYPE_uint8_t:
-          PVM_NO_LOCK_SAFE(pvm_pkbyte((((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkbyte", "chpl_pvm_send");
+          uconvertvar = (uint32_t)*(uint8_t *)(((char *)buf)+chpltypeoffset);
+          PVM_NO_LOCK_SAFE(pvm_pkuint(&uconvertvar, 1, 1), "pvm_pkuint", "chpl_pvm_send");
+          //          PVM_NO_LOCK_SAFE(pvm_pkbyte((((char *)buf)+chpltypeoffset), 1, 1), "pvm_pkbyte", "chpl_pvm_send");
 #if CHPL_DIST_DEBUG
-          sprintf(debugMsg, "Packing %d (part %d) of type %d, offset %lu", *(((uint8_t *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+          sprintf(debugMsg, "Packing %u (part %d) of type %d, offset %lu", *(uint8_t *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
           PRINTF(debugMsg);
 #endif
           break;
