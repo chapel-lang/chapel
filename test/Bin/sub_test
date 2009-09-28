@@ -38,6 +38,8 @@ set diffargs = ""
 
 # make sure can execute compiler
 
+echo "CHPL_HOME = $CHPL_HOME"
+
 set testdir = "$CHPL_HOME/test"
 if (! -d $testdir || ! -x $testdir) then
     set testdir = "$CHPL_HOME/examples"
