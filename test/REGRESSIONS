@@ -22,9 +22,9 @@ spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09, 09/05/09, 09/06/09, 09/10/09, 09/11/09, 09/13/09, 09/18/09, 09/19/09, 09/22/09, 09/25/09)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09, 08/29/09, 08/31/09, 09/02/09, 09/10/09, 09/11/09, 09/13/09, 09/17/09, 09/19/09, 09/22/09, 09/25/09)
-[Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 08/31/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09, 09/05/09, 09/06/09, 09/10/09, 09/11/09, 09/13/09, 09/18/09, 09/19/09, 09/22/09, 09/25/09, 09/28/09)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09, 08/29/09, 08/31/09, 09/02/09, 09/10/09, 09/11/09, 09/13/09, 09/17/09, 09/19/09, 09/22/09, 09/25/09, 09/27/09, 09/28/09)
+[Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 08/31/09, 09/28/09)
 [Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 08/07/09)
 
 spurious failure
@@ -64,6 +64,7 @@ performance-specific regressions
 execution timeouts (09/19/09)
 -----------------------------
 [Error: Timed out executing program studies/hpcc/STREAMS/bradc/stream-block1d-promote]
+[Error: Timed out executing program studies/hpcc/STREAMS/bradc/stream-block1d]
 
 execution timeouts (08/29/09)
 -----------------------------
@@ -89,8 +90,11 @@ double free (09/02/09)
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for modules/standard/math/atanh_out_of_range] (e.g., 09/27/09)
+[Error matching compiler output for users/shetag/classWithArray/classWithArray] (e.g., 09/27/09)
+[Error matching compiler output for parallel/coforall/bradc/manyThreads-revorder] (e.g., 09/26/09)
 [Error matching program output for npb/cg/bradc/cg-printa] (e.g., 09/25/09)
-[Error matching compiler output for users/wmikanik/domain64-badworkaround] (e.g., 09/25/09)
+[Error matching compiler output for users/wmikanik/domain64-badworkaround] (e.g., 09/25/09, 09/28/09)
 [Error matching compiler output for spec/marybeth/typeselect] (e.g., 09/23/09)
 [Error matching compiler output for parallel/begin/deitz/test_string_cat] (e.g., 09/22/09)
 [Error matching compiler output for studies/590o/kfm/solver] (e.g., 09/22/09)
@@ -101,23 +105,23 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for users/wmikanik/domain64-workaround] (e.g., 09/19/09)
 [Error matching compiler output for spec/marybeth/modulesexample] (e.g., 09/17/09, 09/24/09)
 [Error matching compiler output for users/shetag/objRefAsFormArg] (e.g., 09/17/09)
-[Error matching compiler output for users/thom/class-override] (e.g., 09/17/09)
+[Error matching compiler output for users/thom/class-override] (e.g., 09/17/09, 09/26/09)
 [Error matching compiler output for users/thom/varargsInt] (e.g., 09/17/09, 09/19/09)
 [Error matching compiler output for trivial/bradc/conditional] (e.g., 09/15/09)
 [Error matching compiler output for studies/hpcc/2008/stream-promoted] (e.g., 09/15/09)
 [Error matching compiler output for users/shetag/assocInRecord-blc] (e.g., 09/15/09)
 [Error matching compiler output for sparse/bradc/sparseArray4] (e.g., 09/13/09)
 [Error matching compiler output for users/thom/returnGenericLineno/util] (e.g., 09/13/09)
-[Error matching compiler output for users/wmikanik/domain641D] (e.g., 09/13/09)
+[Error matching compiler output for users/wmikanik/domain641D] (e.g., 09/13/09, 09/28/09)
 [Error matching compiler output for release/examples/tutorials/fileIO] (e.g., 09/12/09)
 [Error matching compiler output for studies/sudoku/deitz/sudoku2] (e.g., 09/12/09)
 [Error matching compiler output for trivial/deitz/coerce] (e.g., 09/12/09)
-[Error matching compiler output for sparse/bradc/sparseArray5] (e.g., 09/11/09)
-[Error matching compiler output for statements/sungeun/continue_label] (e.g., 09/11/09)
+[Error matching compiler output for sparse/bradc/sparseArray5] (e.g., 09/11/09, 09/28/09)
+[Error matching compiler output for statements/sungeun/continue_label] (e.g., 09/11/09, 09/27/09)
 [Error matching compiler output for studies/hpcc/FFT/bradc/fft-perm] (e.g., 09/11/09)
 [Error matching compiler output for users/thom/itoverride] (e.g., 09/11/09, 09/18/09)
 [Error matching compiler output for studies/shootout/nbody/nbody_record_2] (e.g., 09/09/09)
-[Error matching compiler output for users/thom/initArrOfClasses] (e.g., 09/09/09, 09/22/09)
+[Error matching compiler output for users/thom/initArrOfClasses] (e.g., 09/09/09, 09/22/09, 09/26/09)
 [Error matching compiler output for parallel/begin/deitz/test_nested_fn_begin1] (e.g., 09/07/09)
 [Error matching compiler output for users/shetag/unboundslice] (e.g., 09/07/09)
 [Error matching compiler output for spec/marybeth/sort] (e.g., 09/06/09)
@@ -134,20 +138,20 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for trivial/bradc/write/writen] (e.g., 09/01/09)
 [Error matching compiler output for domains/bradc/arrayLinkage] (e.g., 08/31/09)
 [Error matching compiler output for parallel/cobegin/waynew/depend] (e.g., 08/31/09, 09/07/09)
-[Error matching compiler output for parallel/syncStmt/deitz/test_end2] (e.g., 08/31/09)
+[Error matching compiler output for parallel/syncStmt/deitz/test_end2] (e.g., 08/31/09, 09/26/09)
 [Error matching compiler output for spec/marybeth/select] (e.g., 08/31/09)
-[Error matching compiler output for users/shetag/condarr-blc2] (e.g., 08/31/09, 09/10/09, 09/14/09)
+[Error matching compiler output for users/shetag/condarr-blc2] (e.g., 08/31/09, 09/10/09, 09/14/09, 09/28/09)
 [Error matching compiler output for studies/hpcc/2008/stream] (e.g., 08/30/09)
 [Error matching compiler output for parallel/cobegin/bradc/arrayargs] (e.g., 08/29/09)
 [Error matching compiler output for studies/590o/blucia/img_proc] (e.g., 08/29/09, 09/01/09, 09/23/09)
 [Error matching compiler output for spec/marybeth/seq2] (e.g., 08/28/09, 09/07/09, 09/13/09)
-[Error matching compiler output for studies/590o/alexco/AverageFiles] (e.g., 08/28/09)
+[Error matching compiler output for studies/590o/alexco/AverageFiles] (e.g., 08/28/09, 09/26/09)
 [Error matching compiler output for users/shetag/classWithArray/classWithArray-init3] (e.g., 08/28/09, 09/25/09)
 [Error matching compiler output for users/shetag/inlineArrInitInClass] (e.g., 08/28/09, 09/08/09, 09/13/09, 09/19/09)
 [Error matching compiler output for users/shetag/shareIterator-blc] (e.g., 08/28/09, 09/05/09, 09/12/09, 09/20/09)
 [Error matching compiler output for parallel/begin/deitz/test_heap_ref] (e.g., 08/27/09)
 [Error matching program output for npb/cg/bradc/cg-sparse] (e.g., 08/27/09, 09/08/09, 09/24/09)
-[Error matching compiler output for users/shetag/assocInRecord] (e.g., 08/27/09, 09/14/09)
+[Error matching compiler output for users/shetag/assocInRecord] (e.g., 08/27/09, 09/14/09, 09/27/09)
 [Error matching compiler output for users/thom/tupleToArray] (e.g., 08/27/09, 09/22/09)
 [Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc-domainPromote] (e.g., 08/26/09)
 [Error matching compiler output for users/shetag/assocarr] (e.g., 08/26/09, 09/09/09, 09/13/09, 09/16/09, 09/24/09)
@@ -169,11 +173,10 @@ no longer needs to be suppressed?
 no-local regressions
 ====================
 
-bad output (09/25/09)
+bad output (spurious?)
 (perhaps same problem as test_reduce_of_promote_of_distributed below?)
 ----------------------------------------------------------------------
-[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
-
+[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist] (e.g., 09/25/09)
 
 spurious timeouts
 -----------------
@@ -203,6 +206,7 @@ fixed to work for CHPL_COMM=none, but not multilocale (09/23/09)
 
 AM_ERR_RESOURCE failure
 -----------------------
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar] (09/28/09)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar] (09/18/09, 09/23/09)
 [Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock6] (09/16/09)
 
@@ -228,8 +232,8 @@ new spurious timeouts
 [Error: Timed out executing program users/shetag/fock/fock-stc] (e.g., 09/15/09)
 [Error: Timed out executing program studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 08/30/09)
 [Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09, 09/09/09, 09/11/09, 09/14/09, 09/15/09, 09/17/09, 09/19/09, 09/21/09, 09/23/09, 09/24/09, 09/25/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 08/29/09, 09/19/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 08/29/09, 09/18/09, 09/23/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 08/29/09, 09/19/09, 09/26/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 08/29/09, 09/18/09, 09/23/09, 09/28/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 08/29/09, 08/31/09, 09/02/09)
 
 memory stuff in flux (06/06/09)
@@ -324,7 +328,7 @@ opts-specific tests
 (Example runs: 0)
 
 
-(Full run: 36)
+(Full run: 37)
 
 --no-dead-code-elimination
 --------------------------
@@ -346,8 +350,15 @@ opts-specific tests
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
---no-scalar-replacement
+--no-scalar-replacement --no-inline
+------------------------------------
+[Error matching program output for classes/bradc/declClassType1b]
+[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
+[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
+
 --no-inline-iterators
+--no-scalar-replacement
 --no-scalar-replacement
 --no-optimize-loop-iterators --no-inline-iterators
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
@@ -534,9 +545,13 @@ exp2 not supported:
 XT intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
 
-seg fault (09/20/09)
---------------------
-[Error matching program output for parallel/sync/deitz/test_sync1]
+double free or corruption (09/28/09)
+------------------------------------
+[Error matching program output for release/examples/programs/tree]
+
+spurious seg fault
+------------------
+[Error matching program output for parallel/sync/deitz/test_sync1] (e.g., 09/20/09)
 
 ??? (09/05/09)
 --------------
