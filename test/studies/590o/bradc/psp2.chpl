@@ -7,9 +7,10 @@ var A: [(i,j) in D] real = i + j/10.0;
 writeln("A is: ", A);
 
 
-foo[ A[1, ..], A[.., 1] ];
+var str = foo[ A[1, ..], A[.., 1] ];
 
+writeln(str);
 
 def foo(r: real, c: real) {
-  writeln("aRow is: ", r, "; aCol is: ", c);
+  return "aRow is: " + r + "; aCol is: " + c + "\n";
 }
