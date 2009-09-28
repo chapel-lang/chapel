@@ -535,12 +535,14 @@ buildPromotionWrapper(FnSymbol* fn,
       lifn->insertFormalAtTail(lifnTag);
       lifn->where = new BlockStmt(new CallExpr("==", lifnTag, gLeaderTag));
       VarSymbol* leaderIndex = newTemp("_leaderIndex");
-      lifn->insertAtTail(new DefExpr(leaderIndex));
       VarSymbol* leaderIterator = newTemp("_leaderIterator");
       leaderIterator->addFlag(FLAG_EXPR_TEMP);
       lifn->insertAtTail(new DefExpr(leaderIterator));
       lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", iterator->copy(&leaderMap))));
-      lifn->insertAtTail(buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex))));
+      BlockStmt* body = new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex));
+      BlockStmt* loop = buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body);
+      body->insertAtHead(new DefExpr(leaderIndex));
+      lifn->insertAtTail(loop);
       theProgram->block->insertAtTail(new DefExpr(lifn));
       normalize(lifn);
       lifn->removeFlag(FLAG_INVISIBLE_FN);
