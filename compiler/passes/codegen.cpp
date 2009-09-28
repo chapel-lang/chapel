@@ -547,7 +547,7 @@ codegen_config(FILE* outfile) {
   fprintf(outfile, "const char* chpl_realmType(int32_t r) {\n");
   fprintf(outfile, "  switch (r) {\n");
   for (int i=0; i<numRealms; i++) {
-    fprintf(outfile, "    case %d: return \"%s\"; break;\n", i, getRealmType(i));
+    fprintf(outfile, "    case %d: return \"%s\";\n", i, getRealmType(i));
   }
   fprintf(outfile, "    default:\n");
   fprintf(outfile, "      chpl_internal_error(\"attempt to query realm other than 0-%d\\n\");\n", numRealms-1);
