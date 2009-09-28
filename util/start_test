@@ -625,6 +625,7 @@ echo \[Starting Chapel regression tests - $datestr\] |& $tee $logtmp
 echo \[starting directory: \"$invocationDir\"] |& $tee -a $logtmp
 echo \[test directory: \"$testdir\"\] |& $tee -a $logtmp
 
+echo \[CHPL_HOME: $CHPL_HOME\] |& $tee -a $logtmp
 echo \[platform: $platform\] |& $tee -a $logtmp
 # see if valgrind is on.  If it is, reset the compiler
 if ($valgrind) then
