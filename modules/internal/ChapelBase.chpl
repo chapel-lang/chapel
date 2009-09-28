@@ -1282,20 +1282,26 @@ pragma "inline" def chpl__autoCopy(ir: _iteratorRecord) {
   return ir;
 }
 
-pragma "inline" def chpl__autoDestroy(ir: _iteratorRecord) {
-  // body inserted during call destructors pass
-}
-
 pragma "inline" def chpl__autoCopy(x) return chpl__initCopy(x);
 
 pragma "inline" pragma "ref" def chpl__autoCopy(r: _ref) var return r;
 
 pragma "inline" def chpl__autoCopy(type t) type return t;
 
+pragma "inline" def chpl__maybeAutoDestroyed(x) param
+  return !(_isPrimitiveType(x.type) ||
+           _isImagType(x.type) ||
+           _isComplexType(x.type));
+pragma "inline" def chpl__maybeAutoDestroyed(x: enumerated) param return false;
+pragma "inline" def chpl__maybeAutoDestroyed(x: object) param return false;
+
 pragma "inline" def chpl__autoDestroy(x: object) { }
 pragma "inline" def chpl__autoDestroy(type t)  { }
 pragma "inline" def chpl__autoDestroy(x: ?t) {
   __primitive("call destructor", x);
+}
+pragma "inline" def chpl__autoDestroy(ir: _iteratorRecord) {
+  // body inserted during call destructors pass
 }
 pragma "dont disable remote value forwarding"
 pragma "removable auto destroy" def chpl__autoDestroy(x: domain) {

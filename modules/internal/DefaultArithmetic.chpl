@@ -311,12 +311,20 @@ class DefaultArithmeticArr: BaseArr {
   def getBaseDom() return dom;
 
   def destroyData() {
-    for i in 0..dom.numIndices-1 {
+    if dom.numIndices > 0 {
       pragma "no copy" pragma "no auto destroy" var dr = data;
       pragma "no copy" pragma "no auto destroy" var dv = __primitive("get ref", dr);
-      pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, i);
+      pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, 0);
       pragma "no copy" pragma "no auto destroy" var ev = __primitive("get ref", er);
-      chpl__autoDestroy(ev);
+      if (chpl__maybeAutoDestroyed(ev)) {
+        for i in 0..dom.numIndices-1 {
+          pragma "no copy" pragma "no auto destroy" var dr = data;
+          pragma "no copy" pragma "no auto destroy" var dv = __primitive("get ref", dr);
+          pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, i);
+          pragma "no copy" pragma "no auto destroy" var ev = __primitive("get ref", er);
+          chpl__autoDestroy(ev);
+        }
+      }
     }
     delete data;
   }
