@@ -1,6 +1,0 @@
-bug: Reduction on a distributed array
-
-If you try to do a reduction on an entire vector (this is distributed) without
-using indices, we get an internal compiler error.
-
-e.g. var vv = + reduce (V + V) <--- where V is a distributed array
