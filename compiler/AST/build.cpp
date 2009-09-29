@@ -689,7 +689,6 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
     //   on-statement.
     //
     VarSymbol* coforallCount = newTemp("_coforallCount");
-    onBlock->insertAtTail(new CallExpr("_downEndCount", coforallCount));
     BlockStmt* block = buildForLoopStmt(indices, iterator, body);
     block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
     block->insertAtHead(new DefExpr(coforallCount));
@@ -697,6 +696,12 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
     onBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
+    BlockStmt* innerOnBlock = new BlockStmt();
+    for_alist(tmp, onBlock->body) {
+      innerOnBlock->insertAtTail(tmp->remove());
+    }
+    onBlock->insertAtHead(innerOnBlock);
+    onBlock->insertAtTail(new CallExpr("_downEndCount", coforallCount));
     return block;
   } else {
     VarSymbol* coforallCount = newTemp("_coforallCount");
