@@ -200,6 +200,7 @@ foreach chplsrc ($testsrc)
     if ($CHPL_COMM == "pvm") then
         echo \[Resetting PVM to be safe\]
         echo "halt" |& $CHPL_HOME/third-party/pvm/pvm-3.4.6/pvm3/lib/pvm
+        rm -f /tmp/pvm*
     endif
 
     # set execfile now since used in both if branches
