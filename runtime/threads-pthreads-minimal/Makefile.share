@@ -1,5 +1,5 @@
 THREADS_SRCS = \
-	chpl_threads.c
+	chpl_pthreads_minimal_threads.c
 
 SVN_SRCS = $(THREADS_SRCS)
 SRCS = $(SVN_SRCS)

@@ -23,7 +23,13 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 LAUNCHER_CFLAGS = $(RUNTIME_CFLAGS) -DLAUNCHER
 LAUNCHER_INCLS = -I$(RUNTIME_ROOT)/include/comp-$(CHPL_MAKE_HOST_COMPILER) -I$(RUNTIME_ROOT)/include/$(subst -sim,,$(CHPL_MAKE_HOST_PLATFORM)) -I$(RUNTIME_ROOT)/include
 
-RUNTIME_INCLS = -I. -I$(RUNTIME_ROOT)/include/comm-$(CHPL_MAKE_COMM) -I$(RUNTIME_ROOT)/include/threads-$(CHPL_MAKE_THREADS) -I$(RUNTIME_ROOT)/include/comp-$(CHPL_MAKE_COMPILER) -I$(RUNTIME_ROOT)/include/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) -I$(RUNTIME_ROOT)/include
+#
+# We always search the include/threads-generic subdir, even when our
+# threading model doesn't use generic threading.  This doesn't hurt
+# anything, since if generic threading isn't used we won't #include
+# the only file in that subdir anyway.
+#
+RUNTIME_INCLS = -I. -I$(RUNTIME_ROOT)/include/comm-$(CHPL_MAKE_COMM) -I$(RUNTIME_ROOT)/include/threads-$(CHPL_MAKE_THREADS) -I$(RUNTIME_ROOT)/include/threads-generic -I$(RUNTIME_ROOT)/include/comp-$(CHPL_MAKE_COMPILER) -I$(RUNTIME_ROOT)/include/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) -I$(RUNTIME_ROOT)/include
 
 
 RUNTIME_OBJ_DIR = ./$(RUNTIME_OBJDIR)
