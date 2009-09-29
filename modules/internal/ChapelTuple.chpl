@@ -429,6 +429,7 @@ record _square_tuple {
     }
   }
 
+  pragma "inline iterator"
   pragma "expand tuples with values"
   def lead_help(param dim: int) {
     if dim == size - 1 {
