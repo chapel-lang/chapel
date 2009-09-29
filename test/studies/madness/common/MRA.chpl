@@ -589,8 +589,8 @@ class Function {
             //        "  f_analytic()=", format("% 0.5e", fval), " err=", format("% 0.5e", Fval-fval),
             //        if abs(Fval-fval) > thresh then "  > thresh" else "");
             writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.8f", Fval),
-                    "  f_analytic()=", format("% 0.8f", fval), " err=", format("% 0.1e", Fval-fval),
-                    if abs(Fval-fval) > thresh then "  > thresh" else "");
+                    "  f_analytic()=", format("% 0.8f", fval),
+                    if abs(Fval-fval) > thresh then " err > thresh" else "");
         }
     }
 }

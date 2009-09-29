@@ -39,7 +39,7 @@ def readArray(filename) {
   const XDom = [1..m, 1..n];
   var X: [XDom] real;
 
-  [ij in XDom] infile.read(X(ij));
+  for ij in XDom do infile.read(X(ij));
 
   infile.close();
 

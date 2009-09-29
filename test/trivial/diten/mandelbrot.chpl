@@ -13,7 +13,7 @@ def main() {
                                    (i:real/half_height)*1.0);
 
   // Print the set
-  forall (i, j) in grid.domain {
+  for (i, j) in grid.domain {
     if (grid(i,j)) then
       write('#');
     else

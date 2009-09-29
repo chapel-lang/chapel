@@ -50,7 +50,8 @@ def randomAccessUpdate() {
   if debug then writeln("Ran is: ", Ran);
 
   for i in updateDom by numRandoms {
-    forall j in ranDom {
+    // do serially to avoid errors in validation
+    for j in ranDom {
       Ran(j) = bitMunge(Ran(j));
       Table((Ran(j) & (tableSize-1)):int) ^= Ran(j); // BLC: unfortunate cast
     }

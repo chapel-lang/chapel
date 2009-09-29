@@ -10,8 +10,8 @@ forall i1 in d {
   }
 }
 
-forall i1 in d {
-  forall i2 in d {
+for i1 in d {
+  for i2 in d {
     writeln(a(i1)(i2));
   }
 }

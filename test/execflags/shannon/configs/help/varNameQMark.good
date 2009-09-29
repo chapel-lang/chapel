@@ -18,18 +18,20 @@ CONFIG VAR FLAGS:
 CONFIG VARS:
 ============
 Built-in config vars:
-     numLocales: int (configured to 1)
-     maxThreads: int
-       memTrack: bool
-       memStats: bool
-       memLeaks: bool
-  memLeaksTable: bool
-         memMax: uint(64)
-   memThreshold: uint(64)
-         memLog: string
-    memLeaksLog: string
+        numLocales: int (configured to 1)
+        maxThreads: int
+  minElemsPerChunk: uint(64)
+         maxChunks: int
+          memTrack: bool
+          memStats: bool
+          memLeaks: bool
+     memLeaksTable: bool
+            memMax: uint(64)
+      memThreshold: uint(64)
+            memLog: string
+       memLeaksLog: string
 
 varNameQMark config vars:
-         second: int (configured to 111)
-           last: int (configured to 222)
-       multiple: int (configured to 333)
+            second: int (configured to 111)
+              last: int (configured to 222)
+          multiple: int (configured to 333)

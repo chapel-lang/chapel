@@ -237,15 +237,18 @@ def fullVerify() {
   for i in 0..maxKey-1 do
     keyBuff1(i, 0) = + reduce keyBuff1(i, 0..nThreads-1);
   buffer = keyArray;
-  [i in D] {
-    atomic {
-      keyBuff1(buffer(i), 0) -= 1;
-      keyArray(keyBuff1(buffer(i), 0)) = buffer(i);
-    }
-  }
 
-  [i in 0..D.numIndices-2]
-    if (keyArray(i) > keyArray(i+1)) then failures += 1;
+  serial true {
+    [i in D] {
+      atomic {
+	keyBuff1(buffer(i), 0) -= 1;
+	keyArray(keyBuff1(buffer(i), 0)) = buffer(i);
+      }
+    }
+
+    [i in 0..D.numIndices-2]
+      if (keyArray(i) > keyArray(i+1)) then failures += 1;
+  }
 
   if (failures != 0) then
     halt("Full verification: number of keys out of sort ", failures);

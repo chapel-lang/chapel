@@ -56,7 +56,8 @@ def randomAccessUpdate() {
   if debug then writeln("Ran is: ", Ran);
 
   for i in updateDom by numRandoms {
-    forall j in ranDom {
+    // do serially to avoid errors in validation
+    for j in ranDom {
       // BLC: This appears everywhere.  Might be nice to make it a macro-ish thing?
       Ran(j) = (Ran(j) << 1) ^ (if Ran(j):int(64) < 0 then POLY else 0:uint(64));
       Table((Ran(j) & (tableSize-1)):int) ^= Ran(j); // BLC: unfortunate cast
@@ -117,9 +118,9 @@ def HPCCstarts(in n:int(64)) {
     high -= 1;
 
   var ran: uint(64) = 0x2;
-  forall i in 0..high-1 by -1 {
+  for i in 0..high-1 by -1 {
     var temp: uint(64) = 0;  // BLC: is there a better name for this?
-    for j in m2Dom {
+    forall j in m2Dom {
       if ((ran >> j:uint(64)) & 1) then temp ^= m2(j); // BLC: unfortunate cast
     }
     ran = temp;

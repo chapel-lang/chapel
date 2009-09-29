@@ -83,7 +83,7 @@ def checkSTREAMresults( doIO: bool): bool {
   var asum = 0.0;
   var bsum = 0.0;
   var csum = 0.0;
-  [j in Vector] {
+  for j in Vector {
     asum += a[j];
     bsum += b[j];
     csum += c[j];

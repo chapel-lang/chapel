@@ -23,12 +23,12 @@ def main() {
 
   while (delta > epsilon) {
     [(i,j) in R] Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
-    var sum = 0.0;
-    forall (i,j) in R {
-      sum += Temp(i,j)-A(i,j);
+    var my_max = 0.0;
+    for (i,j) in R {
+      my_max = max(my_max, Temp(i,j)-A(i,j));
       A(i,j) = Temp(i,j);
     }
-    delta = sum;
+    delta = my_max;
     iteration += 1;
     if (verbose) {
       write("Configuration after iteration: ", iteration);

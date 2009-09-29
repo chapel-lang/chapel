@@ -89,7 +89,7 @@ var
   Twiddle : [DXYZ] real;
 
 def compute_initial_conditions(X1) {
-  forall (i,j,k) in DXYZ {
+  for (i,j,k) in DXYZ { // serial to ensure proper repeatable results
     X1(i,j,k).re = randlc(((i*ny+j)*nz+k)*2);
     X1(i,j,k).im = randlc(((i*ny+j)*nz+k)*2+1);
   }

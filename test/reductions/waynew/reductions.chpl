@@ -23,7 +23,7 @@ writeln( "+ reduce I[D] = ", + reduce I);
 writeln( "* reduce I[D] = ", * reduce I);
 
 var neg: bool = false;
-forall i in D do {
+for i in D do {
   neg = !neg;
   if (neg) {
     I(i) = -1 * i;
@@ -48,7 +48,7 @@ writeln( "+ reduce UI[D] = ", + reduce UI);
 writeln( "* reduce UI[D] = ", * reduce UI);
 
 var F: [D] real;
-forall i in D do {
+for i in D do {
   neg = !neg;
   if (neg) {
     F(i) = -1.0 * i;

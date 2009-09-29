@@ -7,4 +7,6 @@ var s : [1..4] int;
 for i in 1..4 do
   s(i) = i;
 
-foo(s);
+serial true {
+  foo(s);
+}

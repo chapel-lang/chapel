@@ -15,6 +15,6 @@ forall (i,j) in d {
   a(i,j).f = 3.5 * i;
 }
 
-forall (i,j) in d {
+for (i,j) in d {
   writeln(a(i,j).i);
 }

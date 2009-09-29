@@ -1,5 +1,8 @@
 use List;
 
+config const minElemsPerChunk: uint(64) = 1;
+config const maxChunks: int = -1;
+
 //
 // Abstract distribution class
 //

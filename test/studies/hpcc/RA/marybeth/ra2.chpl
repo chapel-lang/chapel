@@ -78,7 +78,10 @@ def RandomStart(step0:int):uint(64) {
     i = log2(step0);
   while (i > 0) do {
     var temp:uint(64) = 0;
-    [j in RandStepsDomain] if (( ran >> j) & 1) then temp ^= RandomSteps(j);
+    // do serially to avoid errors in validation
+    serial true {
+      [j in RandStepsDomain] if (( ran >> j) & 1) then temp ^= RandomSteps(j);
+    }
     ran = temp;
     i -= 1;
     if (( step0 >> i) & 1) then

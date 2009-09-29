@@ -18,12 +18,12 @@ var iter = 0;
 do {
   [i in D] Temp(i) = (+ reduce A(i + stencil)) / 4.0;
   iter += 1;
-  if (+ reduce abs(A - Temp)) <= epsilon {
+  if (max reduce abs(A - Temp)) <= epsilon {
     break;
   }
   [i in D] A(i) = (+ reduce Temp(i + stencil)) / 4.0;
   iter += 1;
-} while (+ reduce abs(A - Temp)) > epsilon;
+} while (max reduce abs(A - Temp)) > epsilon;
 
-writeln("Delta = ", + reduce abs(A - Temp));
+writeln("Delta = ", max reduce abs(A - Temp));
 writeln("Iterations = ", iter);

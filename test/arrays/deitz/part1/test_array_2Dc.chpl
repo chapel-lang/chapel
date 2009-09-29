@@ -7,6 +7,6 @@ forall (i,j) in d {
   a(i,j) = (i-1)*3 + j;
 }
 
-forall (i,j) in d {
+for (i,j) in d {
   writeln(a(i,j));
 }

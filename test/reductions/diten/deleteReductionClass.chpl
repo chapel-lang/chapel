@@ -4,11 +4,9 @@ class LastOp: ReduceScanOp {
   var last: eltType;
 
   def LastOp(type eltType) {
-    writeln("LastOp");
     count$ += 1;
   }
   def ~LastOp() {
-    writeln("~LastOp");
     count$ -= 1;
   }
   def accumulate(x) {
@@ -27,6 +25,8 @@ def main {
   var x: int;
   x = LastOp reduce A;
 
-  if count$ != 0 then
+  if count$ == 0 then
+    writeln("Deleted every reduction class.");
+  else
     halt("didn't delete every reduction class");
 }

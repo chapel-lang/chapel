@@ -6,5 +6,5 @@ printMemTable.chpl:12            400      8        3200     array elements      
 =================================================================================================================
 
 Jacobi computation complete.
-Delta is 9.9418e-06 (< epsilon = 1e-05)
-# of iterations: 1007
+Delta is 9.95649e-06 (< epsilon = 1e-05)
+# of iterations: 545

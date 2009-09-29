@@ -32,8 +32,8 @@ while (delta > epsilon) {
     Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
   }
   delta = 0.0;
-  forall (i,j) in R {
-    delta += Temp(i,j)-A(i,j);
+  for (i,j) in R {
+    delta = max(delta, Temp(i,j)-A(i,j));
     A(i,j) = Temp(i,j);
   }
   iteration += 1;

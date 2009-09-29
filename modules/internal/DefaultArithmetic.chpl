@@ -1,3 +1,5 @@
+config param debugDefaultDist = false;
+
 class DefaultDist: BaseDist {
   def newArithmeticDom(param rank: int, type idxType, param stridable: bool)
     return new DefaultArithmeticDom(rank, idxType, stridable, this);
@@ -87,17 +89,56 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
-    if rank == 1 {
-      yield tuple(0..ranges(1).length-1);
+    if debugDefaultDist then
+      writeln("*** In domain leader code: this = ", this);
+    var numChunks: uint(64);
+    if maxChunks == -1 {
+      if maxThreads == 0 then numChunks = (here.numCores):uint(64);
+      else numChunks = (min(here.numCores, maxThreads)):uint(64);
     } else {
-      var block = ranges;
+      if maxThreads == 0 then numChunks = (min(here.numCores, maxChunks)):uint(64);
+      else numChunks = (min(here.numCores, min(maxThreads, maxChunks))):uint(64);
+    }
+
+    var numelems: uint(64) = 0;
+    for param i in 1..rank do
+      numelems += (ranges(i).length):uint(64);
+    if debugDefaultDist then
+      writeln("*** DI: rank=", rank, " numelems=", numelems, " numChunks=", numChunks, " ranges(1).length=", ranges(1).length);
+
+    if (numelems <= minElemsPerChunk*numChunks) || (numChunks == 1) {
+      if debugDefaultDist then
+	writeln("*** minElemsPerChunk*numChunks = ",
+		minElemsPerChunk*numChunks, ", using 1 chunk");
+      if rank == 1 {
+	yield tuple(0..ranges(1).length-1);
+      } else {
+	var block: rank*range(idxType);
+	for param i in 1..rank do
+	  block(i) = 0..ranges(i).length-1;
+	yield block;
+      }
+    } else {
+      var locBlock: rank*range(idxType);
       for param i in 1..rank do
-        block(i) = 0..block(i).length-1;
-      yield block;
+	locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
+      if debugDefaultDist then
+	writeln("*** DI: locBlock = ", locBlock);
+      coforall chunk in 0..numChunks-1 {
+	var tuple: rank*range(idxType) = locBlock;
+	const (lo,hi) = _computeMyChunk(locBlock(1).length, locBlock(1).high,
+					numChunks, chunk);
+	tuple(1) = lo..hi;
+	if debugDefaultDist then
+	  writeln("*** DI: tuple = ", tuple);
+	yield tuple;
+      }
     }
   }
 
   def these(param tag: iterator, follower) where tag == iterator.follower {
+    if debugDefaultDist then
+      writeln("In domain follower code: Following ", follower);
     var block: ranges.type;
     if stridable {
       for param i in 1..rank do
@@ -350,11 +391,56 @@ class DefaultArithmeticArr: BaseArr {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
-    for block in dom.these(tag=iterator.leader) do
-      yield block;
+    if debugDefaultDist then
+      writeln("*** In array leader code: [\n", this, "]");
+    var numChunks: uint(64);
+    if maxChunks == -1 {
+      if maxThreads == 0 then numChunks = (here.numCores):uint(64);
+      else numChunks = (min(here.numCores, maxThreads)):uint(64);
+    } else {
+      if maxThreads == 0 then numChunks = (min(here.numCores, maxChunks)):uint(64);
+      else numChunks = (min(here.numCores, min(maxThreads, maxChunks))):uint(64);
+    }
+
+    var numelems: uint(64) = 0;
+    for param i in 1..rank do
+      numelems += (dom.ranges(i).length):uint(64);
+    if debugDefaultDist then
+      writeln("*** AI: rank=", rank, " numelems=", numelems, " numChunks=", numChunks, " dom.ranges(1).length=", dom.ranges(1).length);
+
+    if (numelems <= minElemsPerChunk*numChunks) || (numChunks == 1) {
+      if debugDefaultDist then
+	writeln("*** minElemsPerChunk*numChunks = ",
+		minElemsPerChunk*numChunks, ", using 1 chunk");
+      if rank == 1 {
+	yield tuple(0..dom.ranges(1).length-1);
+      } else {
+	var block: rank*range(idxType);
+	for param i in 1..rank do
+	  block(i) = 0..dom.ranges(i).length-1;
+	yield block;
+      }
+    } else {
+      var locBlock: rank*range(idxType);
+      for param i in 1..rank do
+	locBlock(i) = 0:dom.ranges(i).low.type..#(dom.ranges(i).length);
+      if debugDefaultDist then
+	writeln("*** AI: locBlock = ", locBlock);
+      coforall chunk in 0..numChunks-1 {
+	var tuple: rank*range(idxType) = locBlock;
+	const (lo,hi) = _computeMyChunk(locBlock(1).length, locBlock(1).high,
+					numChunks, chunk);
+	tuple(1) = lo..hi;
+	if debugDefaultDist then
+	  writeln("*** AI: tuple = ", tuple);
+	yield tuple;
+      }
+    }
   }
 
   def these(param tag: iterator, follower) var where tag == iterator.follower {
+    if debugDefaultDist then
+      writeln("*** In array follower code: [\n", this, "]");
     for i in dom.these(tag=iterator.follower, follower) do
       yield this(i);
   }
@@ -571,3 +657,53 @@ def DefaultArithmeticArr.writeThis(f: Writer) {
     }
   }
 }
+
+//
+// helper function for blocking index ranges (copied from _computeBlock())
+//
+def _computeMyChunkOLD(waylo, numelems, lo, wayhi, numblocks, blocknum) {
+  if debugDefaultDist then
+    writeln("in _computeMyChunk: waylo=", waylo, " numelems=",  numelems,
+	    " lo=", lo, " wayhi=", wayhi,
+	    " numblocks=", numblocks, " blocknum=", blocknum);
+  if numblocks == 1 then
+    return (waylo, waylo+numelems:lo.type-1);
+
+  def procToData(x, lo)
+    return lo + (x:lo.type) + (x:real != x:int:real):lo.type;
+
+  const blo =
+    if blocknum == 0 then waylo
+      else procToData((numelems:real * blocknum) / numblocks, lo);
+  const bhi =
+    if blocknum == numblocks - 1 then wayhi
+      else procToData((numelems:real * (blocknum+1)) / numblocks, lo) - 1;
+
+  return (blo, bhi);
+}
+
+//
+// helper function for blocking index ranges
+// - based on _computeBlock() but specialized for cases
+//   where the low bound is always zero
+//
+def _computeMyChunk(numelems, wayhi, numblocks, blocknum) {
+  if debugDefaultDist then
+    writeln("in _computeMyChunk: numelems=",  numelems, " wayhi=", wayhi,
+	    " numblocks=", numblocks, " blocknum=", blocknum);
+  if numblocks == 1 then
+    return (0:wayhi.type, numelems:wayhi.type-1);
+
+  def procToData(x)
+    return x:wayhi.type + (x:real != x:int:real):wayhi.type;
+
+  const blo =
+    if blocknum == 0 then 0
+      else procToData((numelems:real * blocknum) / numblocks);
+  const bhi =
+    if blocknum == numblocks - 1 then wayhi
+      else procToData((numelems:real * (blocknum+1)) / numblocks) - 1;
+
+  return (blo, bhi);
+}
+

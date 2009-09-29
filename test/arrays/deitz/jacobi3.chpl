@@ -16,23 +16,23 @@ if (verbose) {
 }
 
 var iteration : int = 0;
-var delta : real = 1.0;
+var delta : sync real = 1.0;
 
 while (delta > epsilon) {
   [(i,j) in R] Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
   delta = 0.0;
   [(i,j) in R] {
-    delta += Temp(i,j)-A(i,j);
+    delta = max(delta, Temp(i,j)-A(i,j));
     A(i,j) = Temp(i,j);
   }
   iteration += 1;
   if (verbose) {
     writeln("iteration: ", iteration);
-    writeln("delta:     ", delta);
+    writeln("delta:     ", delta.readXX());
     writeln(A);
   }
 }
 
 writeln("Jacobi computation complete.");
-writeln("Delta is ", delta, " (< epsilon = ", epsilon, ")");
+writeln("Delta is ", delta.readXX(), " (< epsilon = ", epsilon, ")");
 writeln("# of iterations: ", iteration);

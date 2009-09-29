@@ -7,7 +7,7 @@ forall ij in d {
   a(i,j) = (i-1)*3 + j;
 }
 
-forall ij in d {
+for ij in d {
   var i : int = ij(1);
   var j : int = ij(2);
   writeln(a(i,j));

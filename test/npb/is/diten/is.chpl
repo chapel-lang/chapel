@@ -251,15 +251,18 @@ def partialVerification(iteration: int) {
 def fullVerify() {
   var failures = 0;
   buffer = keyArray;
-  [i in D] {
-    atomic {
-      keyBuff1(buffer(i)) -= 1;
-      keyArray(keyBuff1(buffer(i))) = buffer(i);
-    }
-  }
 
-  [i in 0..D.numIndices-2]
-    if (keyArray(i) > keyArray(i+1)) then failures += 1;
+  serial true {
+    [i in D] {
+      atomic {
+	keyBuff1(buffer(i)) -= 1;
+	keyArray(keyBuff1(buffer(i))) = buffer(i);
+      }
+    }
+
+    [i in 0..D.numIndices-2]
+      if (keyArray(i) > keyArray(i+1)) then failures += 1;
+  }
 
   if (failures != 0) then
     halt("Full verification: number of keys out of sort ", failures);
