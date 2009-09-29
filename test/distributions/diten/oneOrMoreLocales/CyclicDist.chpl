@@ -61,7 +61,13 @@ class CyclicDist : BaseDist {
     } else {
       if targetLocales.rank != rank then
         compilerError("locales array rank must be one or match distribution rank");
-      halt("This case not handled yet.");
+      var ranges: rank*range;
+      for param i in 1..rank do {
+	var thisRange = targetLocales.domain.dim(i);
+	ranges(i) = 0..#thisRange.length; 
+      }
+      targetLocDom = [(...ranges)];
+      targetLocs = reshape(targetLocales, targetLocDom);
     }
     tasksPerLoc = tasksPerLocale;
     coforall locid in targetLocDom {
@@ -70,6 +76,8 @@ class CyclicDist : BaseDist {
       }
     }
   }
+
+  def clone() return new CyclicDist(rank, idxType, targetLocs, tasksPerLoc);
 
   def CyclicDist(param rank: int, type idxType, other: CyclicDist(rank, idxType)) {
     targetLocDom = other.targetLocDom;

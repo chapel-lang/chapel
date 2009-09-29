@@ -1207,6 +1207,11 @@ pragma "inline" def chpl__initCopy(x: _tuple) {
   // body inserted during generic instantiation
 }
 
+def chpl__initCopy(a: _distribution) {
+  pragma "no copy" var b = chpl__autoCopy(a.clone());
+  return b;
+}
+
 def chpl__initCopy(a: domain) {
   var b: a.type;
   b.setIndices(a.getIndices());
@@ -1250,6 +1255,13 @@ def chpl__initCopy(ir: _iteratorRecord) {
   }
   D = [1..i-1];
   return A;
+}
+
+pragma "dont disable remote value forwarding"
+pragma "removable auto copy" def chpl__autoCopy(x: _distribution) {
+  if x._value then
+    x._value._distCnt$ += 1;
+  return x;
 }
 
 pragma "dont disable remote value forwarding"
@@ -1302,6 +1314,10 @@ pragma "inline" def chpl__autoDestroy(x: ?t) {
 }
 pragma "inline" def chpl__autoDestroy(ir: _iteratorRecord) {
   // body inserted during call destructors pass
+}
+pragma "dont disable remote value forwarding"
+pragma "removable auto destroy" def chpl__autoDestroy(x: _distribution) {
+  __primitive("call destructor", x);
 }
 pragma "dont disable remote value forwarding"
 pragma "removable auto destroy" def chpl__autoDestroy(x: domain) {

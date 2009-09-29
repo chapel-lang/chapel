@@ -3,6 +3,8 @@ class DefaultOpaqueDom: BaseOpaqueDom {
   var dist: DefaultDist;
   var adomain: DefaultAssociativeDom(idxType=_OpaqueIndex);
 
+  def linksDistribution() param return false;
+
   def DefaultOpaqueDom(dist: DefaultDist) {
     this.dist = dist;
     adomain = new DefaultAssociativeDom(_OpaqueIndex, dist);

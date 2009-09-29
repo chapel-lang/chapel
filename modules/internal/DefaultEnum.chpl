@@ -3,6 +3,8 @@ class DefaultEnumDom: BaseEnumDom {
   var dist: DefaultDist;
   var adomain: DefaultAssociativeDom(idxType);
 
+  def linksDistribution() param return false;
+
   def DefaultEnumDom(type idxType, dist: DefaultDist) {
     this.dist = dist;
     adomain = new DefaultAssociativeDom(idxType, dist);

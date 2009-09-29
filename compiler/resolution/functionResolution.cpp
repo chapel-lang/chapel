@@ -1929,6 +1929,7 @@ insertFormalTemps(FnSymbol* fn) {
         TypeSymbol* ts = formal->type->symbol;
         if (!ts->hasFlag(FLAG_DOMAIN) &&
             !ts->hasFlag(FLAG_ARRAY) &&
+            !ts->hasFlag(FLAG_DISTRIBUTION) &&
             !ts->hasFlag(FLAG_ITERATOR_CLASS) &&
             !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
             !ts->hasFlag(FLAG_REF) &&
@@ -2472,6 +2473,7 @@ preFold(Expr* expr) {
       // wrapper
       //
       if (type->symbol->hasFlag(FLAG_ARRAY) ||
+          type->symbol->hasFlag(FLAG_DISTRIBUTION) ||
           type->symbol->hasFlag(FLAG_DOMAIN)) {
         VarSymbol* tmp = newTemp();
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));

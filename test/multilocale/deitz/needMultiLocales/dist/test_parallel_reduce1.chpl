@@ -2,7 +2,7 @@ use BlockDist;
 
 config const tasksPerLocale=2, m=8:int(64), iters=100, verbose=false;
 
-const Dist = new Block(rank=1, bbox=[1..m], tasksPerLocale=tasksPerLocale);
+const Dist = distributionValue(new Block(rank=1, bbox=[1..m], tasksPerLocale=tasksPerLocale));
 const Dom: domain(1, int(64)) distributed Dist = [1..m];
 var A, B: [Dom] real;
 

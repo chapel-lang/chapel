@@ -38,6 +38,8 @@ class Block : BaseDist {
 
   var tasksPerLocale: int; // tasks per locale for forall iteration
 
+  var pid: int = -1; // privatized object id
+
   def Block(param rank: int,
             type idxType = int(64),
             bbox: domain(rank, idxType),
@@ -76,9 +78,10 @@ class Block : BaseDist {
       if debugBlockDist then writeln(targetLocs);
     }
 
-    coforall locid in targetLocDom do
+    coforall locid in targetLocDom do {
       on targetLocs(locid) do
         locDist(locid) = new LocBlock(rank, idxType, locid, this);
+    }
 
     if tasksPerLocale == 0 then
       this.tasksPerLocale = min reduce targetLocs.numCores;
@@ -97,6 +100,31 @@ class Block : BaseDist {
     locDist = other.locDist;
     tasksPerLocale = other.tasksPerLocale;
   }
+
+  def clone() {
+    return new Block(rank, idxType, boundingBox, targetLocs, tasksPerLocale);
+  }
+
+  def destroyDistributionDescriptor() {
+    coforall ld in locDist do {
+      on ld do
+        delete ld;
+    }
+  }
+}
+
+def Block.supportsPrivatization() param return true;
+
+def Block.privatize() {
+  return new Block(rank=rank, idxType=idxType, this);
+}
+
+def Block.reprivatize(other) {
+  boundingBox = other.boundingBox;
+  targetLocDom = other.targetLocDom;
+  targetLocs = other.targetLocs;
+  locDist = other.locDist;
+  tasksPerLocale = other.tasksPerLocale;
 }
 
 //
@@ -265,6 +293,8 @@ class BlockDom: BaseArithmeticDom {
   const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
 
   var pid: int = -1; // privatized object id
+
+  def getBaseDist() return dist;
 }
 
 def BlockDom.dim(d: int) return whole.dim(d);
@@ -406,13 +436,14 @@ def BlockDom.slice(param stridable: bool, ranges) {
 }
 
 def BlockDom.setup() {
-  coforall localeIdx in dist.targetLocDom do
+  coforall localeIdx in dist.targetLocDom do {
     on dist.targetLocs(localeIdx) do
       if (locDoms(localeIdx) == nil) then
         locDoms(localeIdx) = new LocBlockDom(rank, idxType, stridable, this, 
                                                dist.getChunk(whole, localeIdx));
       else
         locDoms(localeIdx).myBlock = dist.getChunk(whole, localeIdx);
+  }
   if debugBlockDist then
     for loc in dist.targetLocDom do writeln(loc, " owns ", locDoms(loc));
  
@@ -421,8 +452,10 @@ def BlockDom.setup() {
 def BlockDom.supportsPrivatization() param return true;
 
 def BlockDom.privatize() {
-  var privateDist = new Block(rank, idxType, dist);
-  var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privateDist);
+  var distpid = dist.pid;
+  var thisdist = dist;
+  var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
+  var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
   c.locDoms = locDoms;
   c.whole = whole;
   return c;

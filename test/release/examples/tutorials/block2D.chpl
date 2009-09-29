@@ -32,7 +32,7 @@ config const n: int(64) = 8;
 // a distributed domain Dom, and a distributed array A.  By default,
 // the Block distribution distributes the domain across all locales.
 //
-var Dist = new Block(rank=2, bbox=[1..n, 1..n]);
+var Dist = distributionValue(new Block(rank=2, bbox=[1..n, 1..n]));
 var Dom: domain(2,int(64)) distributed Dist = [1..n, 1..n];
 var A: [Dom] int;
 

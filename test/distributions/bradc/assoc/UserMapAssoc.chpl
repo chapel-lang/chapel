@@ -89,6 +89,10 @@ class UserMapAssoc : BaseDist {
     locDist = other.locDist;
   }
 
+  def clone() {
+    return new UserMapAssoc(idxType, mapper, targetLocs);
+  }
+
   // DISTRIBUTION INTERFACE:
 
   //

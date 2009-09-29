@@ -2,6 +2,8 @@ class MyDist : BaseDist {
   def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     return new MyDom(rank=rank, idxType=idxType);
   }
+
+  def clone() return new MyDist();
 }
 
 class MyDom : BaseArithmeticDom {

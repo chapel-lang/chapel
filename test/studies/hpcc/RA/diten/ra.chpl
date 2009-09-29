@@ -62,10 +62,11 @@ config const printParams = true,
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new Block(rank=1, indexType, bbox=[0..m-1], 
-                            tasksPerLocale=tasksPerLocale),
-      UpdateDist = new Block(rank=1, indexType, bbox=[0..N_U-1],
-                             tasksPerLocale=tasksPerLocale);
+const
+  TableDist = distributionValue(new Block(rank=1, indexType, bbox=[0..m-1], 
+                                          tasksPerLocale=tasksPerLocale)),
+  UpdateDist = distributionValue(new Block(rank=1, indexType, bbox=[0..N_U-1],
+                                           tasksPerLocale=tasksPerLocale));
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -117,17 +118,15 @@ def main() {
   // pending for that locale.
   //
   forall (_, r) in (Updates, RAStream()) {
-    // This ind2locInd usage is not correct if the set of locales used
-    // for the distribution is not the Locales array.
-    var loc = T.domain.dist.ind2locInd(r&indexMask);
-    if loc == here.id {
+    var loc = T.domain.dist.ind2loc(r&indexMask);
+    if loc == here {
       T(r&indexMask) ^= r;
     } else {
       if myBuckets.pendingUpdates < maxLookahead-1 {
-        myBuckets.insertUpdate(r, loc);
+        myBuckets.insertUpdate(r, loc.id);
       } else {
         var buffer: [0..#maxLookahead] uint(64);
-        myBuckets.insertUpdate(r, loc);
+        myBuckets.insertUpdate(r, loc.id);
         var (remloc, nu) = myBuckets.getUpdates(buffer);
         doUpdates(buffer, nu);
       }

@@ -44,6 +44,7 @@ initFlags() {
   defineFlag(FLAG_DEFAULT_CONSTRUCTOR, "default constructor");
   defineFlag(FLAG_DESTRUCTOR, "destructor");
   defineFlag(FLAG_DOMAIN, "domain");
+  defineFlag(FLAG_DISTRIBUTION, "distribution");
   defineFlag(FLAG_EXPAND_TUPLES_WITH_VALUES, "expand tuples with values");
   defineFlag(FLAG_EXPORT, "export");
   defineFlag(FLAG_EXPR_TEMP, "expr temp");

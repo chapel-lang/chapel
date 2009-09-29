@@ -104,6 +104,10 @@ class BlockCyclic : BaseDist {
     locDist = other.locDist;
     tasksPerLocale = other.tasksPerLocale;
   }
+
+  def clone() {
+    return new BlockCyclic(rank, idxType, lowIdx, blocksize, targetLocs, tasksPerLocale);
+  }
 }
 
 //
@@ -285,6 +289,8 @@ class BlockCyclicDom: BaseArithmeticDom {
   //  const startLoc: index(dist.targetLocDom);
 
   var pid: int = -1; // privatized object id
+
+  def getBaseDist() return dist;
 }
 
 def BlockCyclicDom.dim(d: int) return whole.dim(d);

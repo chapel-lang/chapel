@@ -48,27 +48,41 @@ def _getDomain(value) {
     return new _domain(value, value);
 }
 
+def _newDistribution(value) {
+  if _supportsPrivatization(value) then
+    return new _distribution(_newPrivatizedClass(value), value);
+  else
+    return new _distribution(value, value);
+}
+
+def _getDistribution(value) {
+  if _supportsPrivatization(value) then
+    return new _distribution(value.pid, value);
+  else
+    return new _distribution(value, value);
+}
+
 
 //
 // Support for domain types
 //
 pragma "has runtime type"
-def chpl__buildDomainRuntimeType(dist, param rank: int, type idxType = int(32),
+def chpl__buildDomainRuntimeType(dist: _distribution, param rank: int, type idxType = int(32),
                                  param stridable: bool = false) type
   return _newDomain(dist.newArithmeticDom(rank, idxType, stridable));
 
 pragma "has runtime type"
-def chpl__buildDomainRuntimeType(dist, type idxType) type
+def chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type
  where !__primitive("isEnumType", idxType) && idxType != opaque && idxType != _OpaqueIndex
   return _newDomain(dist.newAssociativeDom(idxType));
 
 pragma "has runtime type"
-def chpl__buildDomainRuntimeType(dist, type idxType) type
+def chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type
  where __primitive("isEnumType", idxType)
   return _newDomain(dist.newEnumDom(idxType));
 
 pragma "has runtime type"
-def chpl__buildDomainRuntimeType(dist, type idxType) type
+def chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type
  where idxType == _OpaqueIndex
   return _newDomain(dist.newOpaqueDom(idxType));
 
@@ -76,26 +90,26 @@ def chpl__buildDomainRuntimeType(dist, type idxType) type
 // opaque domains is _OpaqueIndex, not opaque.  This function is
 // essentially a wrapper around the function that actually builds up
 // the runtime type.
-def chpl__buildDomainRuntimeType(dist, type idxType) type
+def chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type
  where idxType == opaque
   return chpl__buildDomainRuntimeType(dist, _OpaqueIndex);
 
 pragma "has runtime type"
-def chpl__buildSparseDomainRuntimeType(dist, dom: domain) type
+def chpl__buildSparseDomainRuntimeType(dist: _distribution, dom: domain) type
   return _newDomain(dist.newSparseDom(dom.rank, dom._value.idxType, dom));
 
 def chpl__convertValueToRuntimeType(dom: domain) type
  where dom._value:BaseArithmeticDom
-  return chpl__buildDomainRuntimeType(dom._value.dist, dom._value.rank,
+  return chpl__buildDomainRuntimeType(dom.dist, dom._value.rank,
                             dom._value.idxType, dom._value.stridable);
 
 def chpl__convertValueToRuntimeType(dom: domain) type
  where dom._value:BaseSparseDom
-  return chpl__buildSparseDomainRuntimeType(dom._value.dist, dom._value.parentDom);
+  return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
 
 def chpl__convertValueToRuntimeType(dom: domain) type
 where !dom._value:BaseArithmeticDom && !dom._value:BaseSparseDom
-  return chpl__buildDomainRuntimeType(dom._value.dist, dom._value.idxType);
+  return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
 
 //
 // Support for array types
@@ -186,6 +200,120 @@ def isSparseDom(d: domain) param {
 }
 
 //
+// Support for distributions
+//
+def distributionType(type dist) type where dist: BaseDist {
+  var d: _distribution(dist, dist);
+  return d.type;
+}
+
+def distributionType(type dist) where !(dist: BaseDist) {
+  compilerError("illegal distribution type specifier");
+}
+
+def distributionValue(dist) where dist: BaseDist {
+  return _newDistribution(dist);
+}
+
+def distributionValue(dist) where !(dist: BaseDist) {
+  compilerError("illegal distribution value specifier");
+}
+
+//
+// Distribution wrapper record
+//
+pragma "distribution"
+record _distribution {
+  var _value;
+  var _valueType;
+
+  pragma "inline"
+  def _value {
+    if _supportsPrivatization(_valueType) {
+      var tc = _valueType;
+      var id = _value;
+      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
+      return pc;
+    } else {
+      return _value;
+    }
+  }
+
+  def ~_distribution() {
+    if !_supportsPrivatization(_valueType) {
+      on _value {
+        var cnt = _value.destroyDist();
+        if cnt == 0 {
+          _value.destroyDistributionDescriptor();
+          delete _value;
+        }
+      }
+    }
+  }
+
+  def clone() {
+    return _newDistribution(_value.clone());
+  }
+
+  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+    var x = _value.newArithmeticDom(rank, idxType, stridable);
+    if x.linksDistribution() {
+      var cnt = _value._distCnt$;
+      _value._doms.append(x);
+      _value._distCnt$ = cnt + 1;
+    }
+    return x;
+  }
+
+  def newAssociativeDom(type idxType) {
+    var x = _value.newAssociativeDom(idxType);
+    if x.linksDistribution() {
+      var cnt = _value._distCnt$;
+      _value._doms.append(x);
+      _value._distCnt$ = cnt + 1;
+    }
+    return x;
+  }
+
+  def newEnumDom(type idxType) {
+    var x = _value.newEnumDom(idxType);
+    if x.linksDistribution() {
+      var cnt = _value._distCnt$;
+      _value._doms.append(x);
+      _value._distCnt$ = cnt + 1;
+    }
+    return x;
+  }
+
+  def newOpaqueDom(type idxType) {
+    var x = _value.newOpaqueDom(idxType);
+    if x.linksDistribution() {
+      var cnt = _value._distCnt$;
+      _value._doms.append(x);
+      _value._distCnt$ = cnt + 1;
+    }
+    return x;
+  }
+
+  def newSparseDom(param rank: int, type idxType, dom: domain) {
+    var x = _value.newSparseDom(rank, idxType, dom);
+    if x.linksDistribution() {
+      var cnt = _value._distCnt$;
+      _value._doms.append(x);
+      _value._distCnt$ = cnt + 1;
+    }
+    return x;
+  }
+
+  def ind2loc(ind) return _value.ind2loc(ind);
+
+  def writeThis(x: Writer) {
+    _value.writeThis(x);
+  }
+}
+
+
+//
 // Domain wrapper record
 //
 pragma "domain"
@@ -217,7 +345,7 @@ record _domain {
     }
   }
 
-  def dist return _value.dist;
+  def dist return _getDistribution(_value.dist);
 
   def rank param {
     if isArithmeticDom(this) || isSparseDom(this) then
@@ -568,6 +696,14 @@ def chpl__isDomain(x) param return false;
 //
 // Assignment of domains and arrays
 //
+def =(a: _distribution, b: _distribution) {
+  if a._value == nil then
+    return chpl__autoCopy(b.clone());
+  else
+    halt("distribution assignment is not yet supported");
+  return a;
+}
+
 def =(a: domain, b: domain) {
   var bc = b;
   for e in a._value._arrs do {

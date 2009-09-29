@@ -39,8 +39,8 @@ def chpl_setupLocale(r, id, uid) {
     tmp = new locale(r, id, uid);
     _here = tmp;
     chpl_thisRealm = r;
-    if (defaultDist == nil) {
-      defaultDist = new DefaultDist();
+    if (defaultDist._value == nil) {
+      defaultDist = distributionValue(new DefaultDist());
     }
   }
   return tmp;

@@ -27,7 +27,7 @@ config var numOptions : int(64) = 1000;
 config const ERR_CHK = false;
 config const filename = "optionData.txt";
 
-const Dist = new Block(rank=1, bbox=[0..#numOptions], tasksPerLocale=here.numCores);
+const Dist = distributionValue(new Block(rank=1, bbox=[0..#numOptions], tasksPerLocale=here.numCores));
 const Dom : domain(1, int(64)) distributed Dist = [0..#numOptions];
 
 var data : [Dom] OptionData;

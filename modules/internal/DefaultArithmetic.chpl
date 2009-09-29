@@ -13,13 +13,15 @@ class DefaultDist: BaseDist {
 
   def newSparseDom(param rank: int, type idxType, dom: domain)
     return new DefaultSparseDom(rank, idxType, this, dom);
+
+  def clone() return this;
 }
 
 //
 // Note that the replicated copies are set up in ChapelLocale on the
 // other locales.  This just sets it up on this locale.
 //
-pragma "private" var defaultDist: DefaultDist = new DefaultDist();
+pragma "private" var defaultDist = distributionValue(new DefaultDist());
 
 class DefaultArithmeticDom: BaseArithmeticDom {
   param rank : int;
@@ -27,6 +29,8 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   param stridable: bool;
   var dist: DefaultDist;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
+
+  def linksDistribution() param return false;
 
   def DefaultArithmeticDom(param rank, type idxType, param stridable, dist) {
     this.dist = dist;

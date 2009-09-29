@@ -186,9 +186,11 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   // add any functions that call the functions added so far
   forv_Vec(FnSymbol, fn, fnsContainingTaskll) {
     forv_Vec(CallExpr, call, *fn->calledBy) {
-      FnSymbol* caller = toFnSymbol(call->parentSymbol);
-      INT_ASSERT(caller);
-      fnsContainingTaskll.add_exclusive(caller);
+      if (call->parentSymbol) {
+        FnSymbol* caller = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(caller);
+        fnsContainingTaskll.add_exclusive(caller);
+      }
     }
   }
 

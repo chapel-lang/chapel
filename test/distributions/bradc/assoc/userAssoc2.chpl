@@ -7,7 +7,7 @@ class myMapper : AbstractMapper {
   }
 }
 
-var newDist = new UserMapAssoc(idxType=real, initMapper=new myMapper());
+var newDist = distributionValue(new UserMapAssoc(idxType=real, initMapper=new myMapper()));
 
 var D: domain(real) distributed newDist;
 

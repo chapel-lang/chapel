@@ -12,6 +12,8 @@ class DefaultSparseDom: BaseSparseDom {
 
   var indices: [nnzDom] index(rank);
 
+  def linksDistribution() param return false;
+
   def DefaultSparseDom(param rank, type idxType, 
                                dist: DefaultDist,
                                parentDom: domain(rank, idxType)) {

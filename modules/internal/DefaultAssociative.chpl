@@ -42,6 +42,8 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   var tmpDom2 = [0..-1:chpl_table_index_type];
   var tmpTable2: [tmpDom2] idxType;
 
+  def linksDistribution() param return false;
+
   def DefaultAssociativeDom(type idxType, dist: DefaultDist) {
     this.dist = dist;
   }

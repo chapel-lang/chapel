@@ -44,7 +44,7 @@ def eval_AtA_times_u(u,AtAu,v : [] real, inRange)
 
 def spectral_game(N) : real
 {
-	var Dist = new Block(rank=1, bbox=[0..#N], tasksPerLocale=here.numCores);
+	var Dist = distributionValue(new Block(rank=1, bbox=[0..#N], tasksPerLocale=here.numCores));
 	var Dom : domain(1, int(64)) distributed Dist = [0..#N];
 
 	var tmp, U, V : [Dom] real;

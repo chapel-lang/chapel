@@ -2,7 +2,7 @@ use BlockDist;
 
 config const n: int(64) = 4;
 
-const MyBlock = new Block(rank=2, bbox=[1..n,1..n]);
+const MyBlock = distributionValue(new Block(rank=2, bbox=[1..n,1..n]));
 const D: domain(2,int(64)) distributed MyBlock = [1..n,1..n];
 var A, B: [D] int(64);
 

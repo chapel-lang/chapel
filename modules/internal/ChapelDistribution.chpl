@@ -4,6 +4,20 @@ use List;
 // Abstract distribution class
 //
 class BaseDist {
+  var _distCnt$: sync int = 0; // distribution reference count and lock
+  var _doms: list(BaseDom);    // arrays declared over this domain
+
+  def destroyDist(dom: BaseDom = nil) {
+    var cnt = _distCnt$ - 1;
+    if cnt < 0 then
+      halt("distribution reference count is negative!");
+    if dom then
+      on dom do
+        _doms.remove(dom);
+    _distCnt$ = cnt;
+    return cnt;
+  }
+
   def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     compilerError("arithmetic domains not supported by this distribution");
   }
@@ -23,6 +37,10 @@ class BaseDist {
   def newSparseDom(param rank: int, type idxType, dom: domain) {
     compilerError("opaque domains not supported by this distribution");
   }
+
+  def supportsPrivatization() param return false;
+
+  def destroyDistributionDescriptor() { }
 }
 
 //
@@ -32,6 +50,9 @@ class BaseDom {
   var _domCnt$: sync int = 0; // domain reference count and lock
   var _arrs: list(BaseArr);   // arrays declared over this domain
 
+  def getBaseDist(): BaseDist {
+    return nil;
+  }
 
   def destroyDom(arr: BaseArr = nil) {
     var cnt = _domCnt$ - 1;
@@ -41,6 +62,14 @@ class BaseDom {
       on arr do
         _arrs.remove(arr);
     _domCnt$ = cnt;
+    if cnt == 0 {
+      var dist = getBaseDist();
+      if dist then on dist {
+        var cnt = dist.destroyDist(this);
+        if cnt == 0 then
+          delete dist;
+      }
+    }
     return cnt;
   }
 
@@ -66,6 +95,11 @@ class BaseDom {
   }
 
   def supportsPrivatization() param return false;
+
+  // false for default distribution so that we don't increment the
+  // default distribution's reference count and add domains to the
+  // default distribution's list of domains
+  def linksDistribution() param return true;
 }
 
 class BaseArithmeticDom : BaseDom {

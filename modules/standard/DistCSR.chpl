@@ -1,7 +1,9 @@
-class CSR {
+class CSR: BaseDist {
   def newSparseDom(param rank: int, type idxType, dom: domain) {
     return new CSRDom(rank=rank, idxType=idxType, dist=this, parentDom=dom);
   }
+
+  def clone() return new CSR();
 }
 
 use Search;
@@ -23,6 +25,8 @@ class CSRDom: BaseSparseDom {
 
   var rowStart: [rowDom] idxType;      // would like index(nnzDom)
   var colIdx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
+
+  def getBaseDist() return dist;
 
   def initialize() {
     if (rank != 2) then

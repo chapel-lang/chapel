@@ -2,7 +2,7 @@ use BlockDist;
 
 config var n: int(64) = 8, tpl=1;
 
-var Dist = new Block(rank=2, bbox=[1..n, 1..n],tasksPerLocale=tpl);
+var Dist = distributionValue(new Block(rank=2, bbox=[1..n, 1..n],tasksPerLocale=tpl));
 var Dom: domain(2,int(64)) distributed Dist = [1..n, 1..n];
 var A: [Dom] real;
 writeln(Dom);
