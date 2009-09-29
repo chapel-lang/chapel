@@ -261,12 +261,6 @@ void initSetValue(const char* varName, const char* value,
 }
 
 
-// a weak test, but the same one we've been using for some time
-static int isInternalModuleName(const char* name) {
-  return (strncmp(name, "Chapel", 6) == 0);
-}
-
-
 
 char* lookupSetValue(const char* varName, const char* moduleName) {
   configVarType* configVar;
@@ -274,9 +268,6 @@ char* lookupSetValue(const char* varName, const char* moduleName) {
     const char* message = "Attempted to lookup value with the module name an "
       "empty string";
     chpl_internal_error(message);
-  }
-  if (isInternalModuleName(moduleName)) {
-    moduleName = "Built-in";
   }
 
   configVar = lookupConfigVar(moduleName, varName);
@@ -305,11 +296,7 @@ void installConfigVar(const char* varName, const char* value,
   }
   lastInTable = configVar;
   configVar->varName = chpl_glom_strings(1, varName);
-  if (isInternalModuleName(moduleName)) {
-    configVar->moduleName = "Built-in";
-  } else {
-    configVar->moduleName = chpl_glom_strings(1, moduleName);
-  }
+  configVar->moduleName = chpl_glom_strings(1, moduleName);
   configVar->defaultValue = chpl_glom_strings(1, value);
   configVar->setValue = NULL;
 } 

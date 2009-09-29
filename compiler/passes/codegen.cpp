@@ -535,7 +535,11 @@ codegen_config(FILE* outfile) {
       if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
         type = type->getField("addr")->type;
       fprintf(outfile, "%s", type->symbol->name);
-      fprintf(outfile, "\", \"%s\");\n", var->getModule()->name);
+      if (var->getModule()->modTag == MOD_INTERNAL) {
+	fprintf(outfile, "\", \"Built-in\");\n");
+      } else {
+	fprintf(outfile, "\", \"%s\");\n", var->getModule()->name);
+      }
     }
   }
 
