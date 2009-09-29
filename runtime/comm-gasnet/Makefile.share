@@ -39,3 +39,6 @@ else
 $(GASNET_INC_MAKEFILE):
 	cd $(THIRD_PARTY_DIR) && $(MAKE) gasnet
 endif
+
+$(RUNTIME_OBJ_DIR)/chpl_cfg_comm.o: chpl_cfg_comm.c $(RUNTIME_OBJ_DIR_STAMP)
+	$(ENSURE_GASNET_COMPATIBLE_COMPILER) $(CC) -c $(RUNTIME_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
