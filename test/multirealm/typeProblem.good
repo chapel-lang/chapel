@@ -13,6 +13,7 @@ realm: 0 locale: 0 Hello!
 realm: 0 locale: 0 enum: dorchester
 realm: 0 locale: 0 class, int(32): 2147483640
 realm: 0 locale: 0 record, uint(32): 2147483640
+realm: 0 locale: 0 union, real(32): 0.98
 (0.76i, 0.54 + 0.32i)
 1 2 3 4 5 6 7 8 9 10
 realm: 0 locale: 0 type, int: 4
