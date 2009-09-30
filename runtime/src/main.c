@@ -78,6 +78,8 @@ int main(int argc, char* argv[]) {
 
   recordExecutionCommand(argc, argv);
 
+  chpl_comm_barrier("barrier before main");
+
   if (chpl_localeID == 0) {      // have locale #0 run the user's main function
     chpl_main();
   }
