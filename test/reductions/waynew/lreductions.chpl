@@ -18,10 +18,11 @@ writeln( "\nB[D] = ", B);
 writeln( "&& reduce B[D] = ", && reduce B);
 writeln( "|| reduce B[D] = ", || reduce B);
 
-var toggle: bool = false;
+var toggle: sync bool = false;
 forall i in D do {
-  toggle = !toggle;
-  B(i) = toggle;
+  var my_toggle = !toggle;
+  toggle = my_toggle;
+  B(i) = my_toggle;
 }
 writeln( "\nB[D] = ", B);
 writeln( "&& reduce B[D] = ", && reduce B);
