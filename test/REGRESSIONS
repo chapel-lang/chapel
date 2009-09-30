@@ -22,8 +22,8 @@ spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09, 09/05/09, 09/06/09, 09/10/09, 09/11/09, 09/13/09, 09/18/09, 09/19/09, 09/22/09, 09/25/09, 09/28/09)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09, 08/29/09, 08/31/09, 09/02/09, 09/10/09, 09/11/09, 09/13/09, 09/17/09, 09/19/09, 09/22/09, 09/25/09, 09/27/09, 09/28/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/17/09, 08/18/09, 08/22/09, 08/24/09, 08/31/09, 09/05/09, 09/06/09, 09/10/09, 09/11/09, 09/13/09, 09/18/09, 09/19/09, 09/22/09, 09/25/09, 09/28/09, 09/29/09)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 08/01/09, 08/03/09, 08/14/09, 08/18/09, 08/24/09, 08/26/09, 08/29/09, 08/31/09, 09/02/09, 09/10/09, 09/11/09, 09/13/09, 09/17/09, 09/19/09, 09/22/09, 09/25/09, 09/27/09, 09/28/09, 09/29/09)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 08/31/09, 09/28/09)
 [Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 08/07/09)
 
@@ -128,7 +128,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for multilocale/deitz/linked/test_linked2] (e.g., 09/05/09, 09/17/09)
 [Error matching compiler output for release/examples/hpcc/ra] (e.g., 09/05/09)
 [Error matching compiler output for trivial/bradc/entrypoint/twomains2] (e.g., 09/05/09)
-[Error matching compiler output for users/wmikanik/domain64] (e.g., 09/05/09)
+[Error matching compiler output for users/wmikanik/domain64] (e.g., 09/05/09, 09/29/09)
 [Error matching compiler output for classes/deitz/test_mf_class] (e.g., 09/03/09)
 [Error matching compiler output for parallel/taskPool/figueroa/ManyThreads] (e.g., 09/03/09)
 [Error matching compiler output for studies/590o/alaska/graph] (e.g., 09/03/09, 09/05/09)
@@ -174,8 +174,7 @@ no-local regressions
 ====================
 
 bad output (spurious?)
-(perhaps same problem as test_reduce_of_promote_of_distributed below?)
-----------------------------------------------------------------------
+----------------------
 [Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist] (e.g., 09/25/09)
 
 spurious timeouts
@@ -200,14 +199,9 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-fixed to work for CHPL_COMM=none, but not multilocale (09/23/09)
-----------------------------------------------------------------
-[Error matching program output for multilocale/deitz/oneOrMoreLocales/test_reduce_of_promote_of_distributed]
-
-AM_ERR_RESOURCE failure
------------------------
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar] (09/28/09)
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar] (09/18/09, 09/23/09)
+spurious AM_ERR_RESOURCE failure
+--------------------------------
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar] (09/18/09, 09/23/09, 09/28/09)
 [Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock6] (09/16/09)
 
 spurious recursive shutdown failure
@@ -231,7 +225,7 @@ new spurious timeouts
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 09/15/09)
 [Error: Timed out executing program users/shetag/fock/fock-stc] (e.g., 09/15/09)
 [Error: Timed out executing program studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 08/30/09)
-[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09, 09/09/09, 09/11/09, 09/14/09, 09/15/09, 09/17/09, 09/19/09, 09/21/09, 09/23/09, 09/24/09, 09/25/09)
+[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09, 09/09/09, 09/11/09, 09/14/09, 09/15/09, 09/17/09, 09/19/09, 09/21/09, 09/23/09, 09/24/09, 09/25/09, 09/29/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 08/29/09, 09/19/09, 09/26/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 08/29/09, 09/18/09, 09/23/09, 09/28/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 08/29/09, 08/31/09, 09/02/09)
@@ -286,25 +280,8 @@ pvm-specific tests
 
 things take too long
 --------------------
-[Error: Timed out compilation for release/examples/hpcc/stream]
-[Error: Timed out compilation for release/examples/programs/beer]
-[Error: Timed out compilation for release/examples/programs/genericStack]
-[Error: Timed out compilation for release/examples/programs/jacobi]
-[Error: Timed out compilation for release/examples/tutorials/classes]
-[Error: Timed out compilation for release/examples/tutorials/fileIO]
-[Error: Timed out compilation for release/examples/tutorials/genericClasses]
-[Error: Timed out compilation for release/examples/tutorials/iterators]
-[Error: Timed out compilation for release/examples/tutorials/multilocale]
-[Error: Timed out compilation for release/examples/tutorials/opaque]
-[Error: Timed out compilation for release/examples/tutorials/ranges]
-[Error: Timed out compilation for release/examples/tutorials/reductions]
-[Error: Timed out compilation for release/examples/tutorials/slices]
-[Error: Timed out compilation for release/examples/tutorials/sparse]
-[Error: Timed out compilation for release/examples/tutorials/taskParallel]
-[Error: Timed out compilation for release/examples/tutorials/timers]
-[Error: Timed out compilation for release/examples/tutorials/varargs]
-[Error: Timed out compilation for release/examples/tutorials/variables]
 [Error: Timed out executing program release/examples/hpcc/ra]
+[Error: Timed out executing program release/examples/hpcc/stream]
 [Error: Timed out executing program release/examples/tutorials/block2D]
 
 
@@ -315,10 +292,6 @@ baseline-specific tests
 attempt to dereference nil error (09/17/09)
 -------------------------------------------
 [Error matching program output for classes/bradc/declClassType1b]
-
-memory stuff in flux (09/01/09)
--------------------------------
-[Error matching program output for memory/shannon/printFinalMemStat]
 
 
 ===================
@@ -545,9 +518,9 @@ exp2 not supported:
 XT intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
 
-double free or corruption (09/28/09)
-------------------------------------
-[Error matching program output for release/examples/programs/tree]
+spurious double free or corruption
+----------------------------------
+[Error matching program output for release/examples/programs/tree] (e.g., 09/28/09)
 
 spurious seg fault
 ------------------
@@ -614,78 +587,28 @@ sig_send: wait for sig_complete event failed
 [Error matching program output for users/jglewis/badGetModule]
 
 
-=============================
-mta-/xmt-specific regressions
-=============================
+========================
+xmt-specific regressions
+========================
 
-warnings about loop not iterating or being unused (09/01/09)
-------------------------------------------------------------
-[Error matching program output for release/examples/hello-multiloc]
-[Error matching program output for release/examples/hello]
-[Error matching program output for release/examples/hpcc/fft]
-[Error matching program output for release/examples/hpcc/stream]
-[Error matching program output for release/examples/programs/beer]
-[Error matching program output for release/examples/programs/genericStack]
-[Error matching program output for release/examples/programs/jacobi]
-[Error matching program output for release/examples/programs/linkedList]
-[Error matching program output for release/examples/programs/norm]
-[Error matching program output for release/examples/programs/tree]
-[Error matching program output for release/examples/tutorials/arrays]
-[Error matching program output for release/examples/tutorials/block2D]
-[Error matching program output for release/examples/tutorials/classes]
-[Error matching program output for release/examples/tutorials/fileIO]
-[Error matching program output for release/examples/tutorials/genericClasses]
-[Error matching program output for release/examples/tutorials/iterators]
-[Error matching program output for release/examples/tutorials/multilocale]
-[Error matching program output for release/examples/tutorials/opaque]
-[Error matching program output for release/examples/tutorials/ranges]
-[Error matching program output for release/examples/tutorials/reductions]
-[Error matching program output for release/examples/tutorials/slices]
-[Error matching program output for release/examples/tutorials/sparse]
-[Error matching program output for release/examples/tutorials/varargs]
-[Error matching program output for release/examples/tutorials/variables]
-
-
-timeouts in compilation and execution
+use-before-def + ra traps with poison
 -------------------------------------
-[Error: Timed out executing program release/examples/programs/quicksort]
-
-timeout since test was added
-----------------------------
-[Error: Timed out executing program release/examples/tutorials/timers]
-
-use-before-def warning in generated code -- should disable (03/06/09)
----------------------------------------------------------------------
 [Error matching program output for release/examples/hpcc/ra]
 
-execution timeout (03/07/09)
-----------------------------
+loop does not iterate or is not used warning
+--------------------------------------------
+[Error matching program output for release/examples/programs/genericStack]
+[Error matching program output for release/examples/tutorials/opaque]
+[Error matching program output for release/examples/tutorials/sparse]
+
+compilation timeouts
+--------------------
+[Error: Timed out compilation for release/examples/hello-module]
+[Error: Timed out compilation for release/examples/hpcc/hpl]
+
+execution timeouts
+------------------
 [Error: Timed out executing program release/examples/programs/prodCons]
-
-compilation timeout (03/06/09)
-------------------------------
-[Error: Timed out compilation for release/examples/tutorials/arrays]
-
-unreachable line causes compiler warning
-----------------------------------------
-[Error matching program output for release/examples/tutorials/arrays]
-[Error matching program output for release/examples/hpcc/hpl]
-
-
-===========================================
-xmt-specific regressions (beyond the above)
-===========================================
-
-simulation timeouts
--------------------
-[Error: Timed out executing program release/examples/hpcc/ra]
 [Error: Timed out executing program release/examples/programs/quicksort]
 [Error: Timed out executing program release/examples/tutorials/taskParallel]
-
-
-
-===============================
-CHPL_THREADS = none regressions
-===============================
-
-Never has worked well enough to be worth tracking...
+[Error: Timed out executing program release/examples/tutorials/timers]
