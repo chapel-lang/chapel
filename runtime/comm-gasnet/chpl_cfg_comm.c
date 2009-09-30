@@ -354,8 +354,21 @@ void chpl_comm_exit_all(int status) {
 }
 
 void chpl_comm_exit_any_dirty(int status) {
+  // kill the polling thread on locale 0, but other than that...
   // clean up nothing; just ask GASNet to exit
   // GASNet will then kill all other locales.
+  int* ack = &done;
+
+  if (chpl_localeID == 0) {
+    GASNET_Safe(gasnet_AMRequestMedium0(chpl_localeID,
+                                        SIGNAL,
+                                        &ack,
+                                        sizeof(ack)));
+    if ( pthread_join(polling_thread, NULL ) ) { // cleanup 
+      chpl_internal_error("Polling thread join failed.");
+    } 
+  }
+
   gasnet_exit(status);
 }
 
