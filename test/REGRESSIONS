@@ -16,6 +16,30 @@
 general regressions
 ===================
 
+comm-none.good file not updated (09/30/09)
+------------------------------------------
+[Error matching program output for distributions/bradc/blkCyc/blkCyc2d]
+[Error matching program output for distributions/bradc/blkCyc/blkCyc]
+[Error matching program output for studies/hpcc/common/bradc/unit/multipleDomains2]
+
+new memory leaks (due to Sung's commit?) (09/30/09)
+---------------------------------------------------
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemory3]
+
+out-of-bounds due to new default parallel iterators (race-y) (09/30/09)
+-----------------------------------------------------------------------
+[Error matching program output for studies/lu/marybeth/nopivlublock-alias]
+
+deadlocks and/or pthread_mutex_lock_failures (09/30/09)
+-------------------------------------------------------
+[Error matching program output for arrays/diten/assignBlockSlice]
+[Error matching program output for arrays/diten/strideBlock]
+
+(race-y?) incorrect output (09/30/09)
+-------------------------------------
+[Error matching program output for reductions/waynew/lreductions]
+
 spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -199,36 +223,19 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+local block violation (09/30/09)
+--------------------------------
+[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock7]
+
+output mismatch (09/30/09)
+--------------------------
+[Error matching program output for types/string/bradc/string2complex/badStringToImag]
+
 spurious AM_ERR_RESOURCE failure
 --------------------------------
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar] (09/18/09, 09/23/09, 09/28/09)
 [Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock6] (09/16/09)
-
-spurious recursive shutdown failure
------------------------------------
-[Error matching program output for parallel/coforall/stonea/reports] (e.g., 09/25/09)
-[Error matching program output for types/file/freadNoFloat] (e.g., 09/20/09)
-[Error matching program output for associative/waynew/add_remove2] (e.g., 09/15/09)
-[Error matching program output for sparse/bradc/outOfBounds] (e.g., 09/15/09)
-
-spurious segfault
------------------
-[Error matching program output for studies/hpcc/common/bradc/unit/modifyLocales] (e.g., 09/15/09)
-
-new spurious timeouts
------------------------
 [Error: Timed out executing program studies/hpcc/STREAMS/bradc/stream-block1dpar-arr] (e.g., 09/17/09)
-[Error: Timed out compilation for multilocale/deitz/needMultiLocales/dist/test_block1d_2] (e.g., 09/15/09)
-[Error: Timed out executing program users/agnieszka/multiArrayI] (e.g., 09/15/09)
-[Error: Timed out executing program users/agnieszka/test1] (e.g., 09/15/09)
-[Error: Timed out executing program users/agnieszka/test2] (e.g., 09/15/09)
-[Error: Timed out executing program users/shetag/fock/fock-stc-1] (e.g., 09/15/09)
-[Error: Timed out executing program users/shetag/fock/fock-stc] (e.g., 09/15/09)
-[Error: Timed out executing program studies/hpcc/common/bradc/unit/parBlock1D] (e.g., 08/30/09)
-[Error: Timed out executing program multilocale/deitz/linked/test_linked3c] (e.g., 08/29/09, 08/31/09, 09/03/09, 09/06/09, 09/09/09, 09/11/09, 09/14/09, 09/15/09, 09/17/09, 09/19/09, 09/21/09, 09/23/09, 09/24/09, 09/25/09, 09/29/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 08/29/09, 09/19/09, 09/26/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 08/29/09, 09/18/09, 09/23/09, 09/28/09)
-[Error: Timed out executing program users/agnieszka/test2] (e.g., 08/29/09, 08/31/09, 09/02/09)
 
 memory stuff in flux (06/06/09)
 -------------------------------
@@ -257,6 +264,10 @@ times out spuriously
 ==============================================
 gasnet-fast regressions (other than the above)
 ==============================================
+
+memory differences (09/30/09)
+-----------------------------
+[Error matching program output for memory/bradc/memmax]
 
 recursive shutdown failure (09/15/09)
 -------------------------------------
@@ -390,6 +401,11 @@ spurious compilation timeout
 ===========================
 darwin-specific regressions
 ===========================
+
+??? (09/30/09)
+--------------
+[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround]
+[Error matching program output for studies/590o/bradc/forall-begin-private-indices]
 
 double free (09/02/09)
 ----------------------
