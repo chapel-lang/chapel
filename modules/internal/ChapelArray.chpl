@@ -359,13 +359,20 @@ record _domain {
     return _value.these();
   }
 
-  def this(ranges: range(?) ...rank)
-    return _newDomain(_value.slice(chpl__anyStridable(ranges), ranges));
+  def this(ranges: range(?) ...rank) {
+    var d = _value.slice(chpl__anyStridable(ranges), ranges);
+    if (d.linksDistribution()) then
+      d.dist._distCnt$ += 1;
+    return _newDomain(d);
+  }
 
   def this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl__anyStridable(ranges);
-    return _newDomain(_value.rankChange(rank, stridable, args));
+    var d = _value.rankChange(rank, stridable, args);
+    if (d.linksDistribution()) then
+      d.dist._distCnt$ += 1;
+    return _newDomain(d);
   }
 
   def dim(d : int) return _value.dim(d);
@@ -785,6 +792,8 @@ def =(a: [], b: _desync(a.eltType)) {
 
 def by(a: domain, b) {
   var x = a._value.strideBy(b);
+  if (x.linksDistribution()) then
+    x.dist._distCnt$ += 1;
   return _newDomain(x);
 }
 
