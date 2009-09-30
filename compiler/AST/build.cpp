@@ -689,7 +689,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
     //   on-statement.
     //
     VarSymbol* coforallCount = newTemp("_coforallCount");
-    BlockStmt* block = buildForLoopStmt(indices, iterator, body);
+    BlockStmt* block = buildForLoopStmt(indices, iterator, body, true);
     block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
     block->insertAtHead(new DefExpr(coforallCount));
     body->insertAtHead(new CallExpr("_upEndCount", coforallCount));
