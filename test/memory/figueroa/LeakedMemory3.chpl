@@ -9,7 +9,7 @@ var sum = -3;
 
 def foo (X) {
   var sum = 0;
-  [i in X.domain] sum += X[i]*i;
+  for i in X.domain do sum += X[i]*i;
   return sum;
 }
 
