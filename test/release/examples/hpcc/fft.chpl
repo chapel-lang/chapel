@@ -1,7 +1,7 @@
 //
 // Use standard modules for Bit operations, Random numbers, and Timing
 //
-use BitOps, Random, Time;
+use BitOps, Random, Time, BlockDist;
 
 //
 // Use shared user module for computing HPCC problem sizes
@@ -60,9 +60,11 @@ def main() {
   //
   // ProblemDom describes the index set used to define the input and
   // output vectors and is also a 1D domain indexed by 64-bit ints
-  // from 0 to m-1.  Z and z are the vectors themselves
+  // from 0 to m-1.  It is distributes the vectors Z and z across the
+  // locales using the Block distribution.
   //
-  const ProblemDom: domain(1, int(64)) = [0..m-1];
+  const ProblemDist = distributionValue(new Block(rank=1, idxType=int(64), bbox=[0..m-1]));
+  const ProblemDom: domain(1, int(64)) distributed ProblemDist = [0..m-1];
   var Z, z: [ProblemDom] elemType;
 
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
