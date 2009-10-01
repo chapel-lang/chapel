@@ -16,26 +16,6 @@
 general regressions
 ===================
 
-comm-none.good file not updated (09/30/09)
-------------------------------------------
-[Error matching program output for distributions/bradc/blkCyc/blkCyc2d]
-[Error matching program output for distributions/bradc/blkCyc/blkCyc]
-[Error matching program output for studies/hpcc/common/bradc/unit/multipleDomains2]
-
-new memory leaks (due to Sung's commit?) (09/30/09)
----------------------------------------------------
-[Error matching program output for memory/figueroa/LeakedMemory2]
-[Error matching program output for memory/figueroa/LeakedMemory3]
-
-out-of-bounds due to new default parallel iterators (race-y) (09/30/09)
------------------------------------------------------------------------
-[Error matching program output for studies/lu/marybeth/nopivlublock-alias]
-
-deadlocks and/or pthread_mutex_lock_failures (09/30/09)
--------------------------------------------------------
-[Error matching program output for arrays/diten/assignBlockSlice]
-[Error matching program output for arrays/diten/strideBlock]
-
 (race-y?) incorrect output (09/30/09)
 -------------------------------------
 [Error matching program output for reductions/waynew/lreductions]
@@ -114,6 +94,8 @@ double free (09/02/09)
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for arrays/bradc/enumIterate] (e.g., 09/30/09)
+[Error matching compiler output for users/shetag/assocDomOfRecord] (e.g., 09/30/09)
 [Error matching compiler output for modules/standard/math/atanh_out_of_range] (e.g., 09/27/09)
 [Error matching compiler output for users/shetag/classWithArray/classWithArray] (e.g., 09/27/09)
 [Error matching compiler output for parallel/coforall/bradc/manyThreads-revorder] (e.g., 09/26/09)
@@ -136,7 +118,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for users/shetag/assocInRecord-blc] (e.g., 09/15/09)
 [Error matching compiler output for sparse/bradc/sparseArray4] (e.g., 09/13/09)
 [Error matching compiler output for users/thom/returnGenericLineno/util] (e.g., 09/13/09)
-[Error matching compiler output for users/wmikanik/domain641D] (e.g., 09/13/09, 09/28/09)
+[Error matching compiler output for users/wmikanik/domain641D] (e.g., 09/13/09, 09/28/09, 09/30/09)
 [Error matching compiler output for release/examples/tutorials/fileIO] (e.g., 09/12/09)
 [Error matching compiler output for studies/sudoku/deitz/sudoku2] (e.g., 09/12/09)
 [Error matching compiler output for trivial/deitz/coerce] (e.g., 09/12/09)
@@ -197,10 +179,6 @@ no longer needs to be suppressed?
 no-local regressions
 ====================
 
-bad output (spurious?)
-----------------------
-[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist] (e.g., 09/25/09)
-
 spurious timeouts
 -----------------
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr] (e.g., 09/17/09)
@@ -215,6 +193,7 @@ spurious race in deadlock detection code? (08/12/09)
 
 memory stuff in flux (05/28/09)
 -------------------------------
+[Error matching program output for memory/figueroa/ClassInheritance1]
 [Error matching program output for memory/shannon/memstatPrint]
 [Error matching program output for memory/shannon/printFinalMemStat]
 
@@ -223,19 +202,9 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-local block violation (09/30/09)
---------------------------------
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock7]
-
-output mismatch (09/30/09)
---------------------------
-[Error matching program output for types/string/bradc/string2complex/badStringToImag]
-
-spurious AM_ERR_RESOURCE failure
---------------------------------
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar] (09/18/09, 09/23/09, 09/28/09)
+AM_ERR_RESOURCE failure
+-----------------------
 [Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock6] (09/16/09)
-[Error: Timed out executing program studies/hpcc/STREAMS/bradc/stream-block1dpar-arr] (e.g., 09/17/09)
 
 memory stuff in flux (06/06/09)
 -------------------------------
@@ -265,15 +234,6 @@ times out spuriously
 gasnet-fast regressions (other than the above)
 ==============================================
 
-memory differences (09/30/09)
------------------------------
-[Error matching program output for memory/bradc/memmax]
-
-recursive shutdown failure (09/15/09)
--------------------------------------
-[Error matching program output for types/string/bradc/string2ints/badstring2uint64-2]
-[Error matching program output for types/string/bradc/string2ints/badstring2uint64]
-
 spurious timeout
 ----------------
 [Error: Timed out executing program multilocale/deitz/linked/test_linked2] (e.g., 06/02/09)
@@ -288,6 +248,11 @@ GASNet unable to start polling thread
 ==================
 pvm-specific tests
 ==================
+
+things sometimes take too long
+------------------------------
+[Error: Timed out executing program release/examples/hello-multiloc]
+[Error: Timed out executing program release/examples/tutorials/multilocale]
 
 things take too long
 --------------------
@@ -402,8 +367,8 @@ spurious compilation timeout
 darwin-specific regressions
 ===========================
 
-??? (09/30/09)
---------------
+spurious ??? (09/30/09)
+-----------------------
 [Error matching program output for studies/590o/bradc/coforall-private-indices-workaround]
 [Error matching program output for studies/590o/bradc/forall-begin-private-indices]
 
