@@ -665,11 +665,11 @@ def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) v
   // distributing across the entire Locales array.  I still think the
   // locArr/locDoms arrays should be associative over locale values.
   //
-  const myLocArr = locArr(dom.dist.ind2locInd(lowIdx));
+  const arrSection = locArr(dom.dist.ind2locInd(lowIdx));
   if aligned {
     local {
       for i in followThisDom {
-        yield myLocArr.this(i);
+        yield arrSection.this(i);
       }
     }
   } else {
@@ -677,12 +677,10 @@ def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) v
     // we don't own all the elements we're following
     //
     def accessHelper(i) var {
-//      if myLocArr.locale == here {
-//	local {
-//          if myLocArr.locDom.myBlock.member(i) then
-//            return myLocArr.this(i);
-//        }
-//      }
+      local {
+        if myLocArr.locDom.myBlock.member(i) then
+          return myLocArr.this(i);
+      }
       return this(i);
     }
     for i in followThisDom {
