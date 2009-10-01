@@ -111,7 +111,7 @@ def HPCCstarts(in n:int(64)) { // BLC: unfortunate type specification
     high -= 1;
 
   var ran = 0x2: uint(64);
-  forall i in 0..high-1 by -1 {
+  for i in 0..high-1 by -1 {
     var temp = 0:uint(64);  // BLC: is there a better name for this?
     for j in m2Dom {
       if ((ran >> j:uint) & 1) then temp ^= m2(j); // BLC: unfortunate cast

@@ -120,7 +120,7 @@ def HPCCstarts(in n:int(64)) {
   var ran: uint(64) = 0x2;
   for i in 0..high-1 by -1 {
     var temp: uint(64) = 0;  // BLC: is there a better name for this?
-    forall j in m2Dom {
+    for j in m2Dom {
       if ((ran >> j:uint(64)) & 1) then temp ^= m2(j); // BLC: unfortunate cast
     }
     ran = temp;

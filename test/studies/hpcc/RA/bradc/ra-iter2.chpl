@@ -72,7 +72,7 @@ def getNthRandom(in n:int(64)) {
     high -= 1;
 
   var ran = 0x2: tableElem;
-  forall i in 0..high-1 by -1 {
+  for i in 0..high-1 by -1 {
     var temp = 0:tableElem;  // BLC: is there a better name for this?
     for j in m2Dom {
       if ((ran >> j) & 1) then temp ^= m2(j);
