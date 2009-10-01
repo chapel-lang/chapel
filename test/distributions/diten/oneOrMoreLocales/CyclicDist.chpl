@@ -1,4 +1,3 @@
-module CyclicDistrib {
 //
 // naive routine for dividing numLocales into rank factors
 //
@@ -31,20 +30,28 @@ def _factor(param rank: int, value) {
   return factors;
 }
 
-class CyclicDist : BaseDist {
+config param debugCyclicDist = false;
+config param verboseCyclicDistWriters = false;
+
+class Cyclic: BaseDist {
   param rank: int = 1;
   type idxType = int(64);
 
+  const lowIdx: rank*idxType;
   const targetLocDom: domain(rank);
   const targetLocs: [targetLocDom] locale;
 
-  const locDist: [targetLocDom] LocCyclicDist(rank, idxType);
+  const locDist: [targetLocDom] LocCyclic(rank, idxType);
 
-  const tasksPerLoc = 1;
+  const tasksPerLocale = 1;
+  var pid: int = -1;
 
-  def CyclicDist(param rank: int,
-                 type idxType = int(64),
-                 targetLocales: [] locale = Locales, tasksPerLocale=1) {
+  def Cyclic(param rank: int,
+             type idxType = int(64),
+             low: rank*idxType,
+             targetLocales: [] locale = thisRealm.Locales,
+             tasksPerLocale=0) {
+    lowIdx = low;
     if rank == 1  {
       targetLocDom = [0..#targetLocales.numElements];
       targetLocs = targetLocales;
@@ -63,67 +70,95 @@ class CyclicDist : BaseDist {
         compilerError("locales array rank must be one or match distribution rank");
       var ranges: rank*range;
       for param i in 1..rank do {
-	var thisRange = targetLocales.domain.dim(i);
-	ranges(i) = 0..#thisRange.length; 
+        var thisRange = targetLocales.domain.dim(i);
+        ranges(i) = 0..#thisRange.length; 
       }
       targetLocDom = [(...ranges)];
       targetLocs = reshape(targetLocales, targetLocDom);
     }
-    tasksPerLoc = tasksPerLocale;
+
+    if tasksPerLocale == 0 then
+      this.tasksPerLocale = min reduce targetLocales.numCores;
+    else
+      this.tasksPerLocale = tasksPerLocale;
     coforall locid in targetLocDom {
       on targetLocs(locid) {
-        locDist(locid) = new LocCyclicDist(rank, idxType, locid, this);
+        locDist(locid) = new LocCyclic(rank, idxType, locid, this);
       }
     }
+    if debugCyclicDist then
+      for loc in locDist do writeln(loc);
   }
 
-  def clone() return new CyclicDist(rank, idxType, targetLocs, tasksPerLoc);
+  def clone() return new Cyclic(rank=rank, idxType=idxType, other=this);
 
-  def CyclicDist(param rank: int, type idxType, other: CyclicDist(rank, idxType)) {
+  def Cyclic(param rank, type idxType, other: Cyclic(rank, idxType)) {
     targetLocDom = other.targetLocDom;
     targetLocs = other.targetLocs;
+    lowIdx = other.lowIdx;
     locDist = other.locDist;
-    tasksPerLoc = other.tasksPerLoc;
+    tasksPerLocale = other.tasksPerLocale;
   }
 
   def getChunk(inds, locid) {
     return inds((...locDist(locid).myChunk.getIndices()));
   }
 
-  def newArithmeticDom(param rank: int, type idxType, param stridable: bool, param alias: bool = false) {
+  def supportsPrivatization() param return true;
+
+  def privatize() {
+    return new Cyclic(rank=rank, idxType=idxType, other=this);
+  }
+
+  def reprivatize(other) {
+    targetLocDom = other.targetLocDom;
+    targetLocs = other.targetLocs;
+    locDist = other.locDist;
+    lowIdx = other.lowIdx;
+    tasksPerLocale = other.tasksPerLocale;
+  }
+
+  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     if idxType != this.idxType then
-      compilerError("Block domain index type does not match distribution's");
+      compilerError("Cyclic domain index type does not match distribution's");
     if rank != this.rank then
-      compilerError("Block domain rank does not match distribution's");
-    var dom = new CyclicDom(rank=rank, idxType=idxType, dist = this, stridable=stridable, alias=false);
+      compilerError("Cyclic domain rank does not match distribution's");
+    var dom = new CyclicDom(rank=rank, idxType=idxType, dist = this, stridable=stridable);
     dom.setup();
     return dom;
   } 
 
   def writeThis(x: Writer) {
-    x.writeln("Cyclic");
+    x.writeln(typeToString(this.type));
     x.writeln("------");
     for locid in targetLocDom do
       x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ", locDist(locid).myChunk); 
   }
 
+
+
   def ind2locInd(i: idxType) {
+/*
     pragma "inline" def mod(a:integral, b:integral) {
       if (b <= 0) then
         halt("modulus divisor must be positive");
       var tmp = a % b:a.type;
       return if tmp < 0 then b:a.type + tmp else tmp;
     }
+*/
     const numLocs:idxType = targetLocDom.numIndices:idxType;
-    return mod(mod(i, numLocs) - mod(min(idxType), numLocs), numLocs):int;
+    // this is wrong if i is less than lowIdx
+    //return ((i - lowIdx(1)) % numLocs):int;
+    // this works even if i is less than lowIdx
+    return mod(mod(i, numLocs) - mod(lowIdx(1), numLocs), numLocs):int;
   }
 
   def ind2locInd(ind: rank*idxType) {
-    var x: rank*idxType;
-    var minIdx = min(idxType);
+    var x: rank*int;
     for param i in 1..rank {
       var dimLen = targetLocDom.dim(i).length;
-      x(i) = mod(mod(ind(i), dimLen) - mod(minIdx, dimLen), dimLen);
+      //x(i) = ((ind(i) - lowIdx(i)) % dimLen):int;
+      x(i) = mod(mod(ind(i), dimLen) - mod(lowIdx(i), dimLen), dimLen);
     }
     return x;
   }
@@ -135,24 +170,30 @@ class CyclicDist : BaseDist {
   }
 }
 
-class LocCyclicDist {
+class LocCyclic {
   param rank: int;
   type idxType;
 
   const myChunk: domain(rank, idxType, true);
 
-  def LocCyclicDist(param rank, type idxType, locid, dist: CyclicDist(rank, idxType)) {
-    if rank == 1 {
-      const lo = min(idxType) + locid:idxType;
-      const hi = max(idxType);
-      myChunk = [lo..hi by dist.targetLocDom.numIndices];
-    } else {
-      var tuple: rank*range(idxType, stridable=true);
-      for param i in 1..rank {
-        tuple(i) = (min(idxType) + locid(i):idxType)..max(idxType) by dist.targetLocDom.dim(i).length;
-      }
-      myChunk = [(...tuple)];
+  def LocCyclic(param rank, type idxType, locid, dist: Cyclic(rank, idxType)) {
+    var locidx: rank*int;
+    var lowIdx = dist.lowIdx;
+
+    if rank == 1 then
+      locidx(1) = locid;
+    else
+      locidx = locid;
+
+    var tuple: rank*range(idxType, stridable=true);
+
+    for param i in 1..rank {
+      const lower = min(idxType)..(lowIdx(i)+locidx(i)) by -dist.targetLocDom.dim(i).length;
+      const upper = (lowIdx(i) + locidx(i))..max(idxType) by dist.targetLocDom.dim(i).length;
+      const lo = lower.low, hi = upper.high;
+      tuple(i) = lo..hi by dist.targetLocDom.dim(i).length;
     }
+    myChunk = [(...tuple)];
   }
 }
 
@@ -160,9 +201,8 @@ class CyclicDom : BaseArithmeticDom {
   param rank: int;
   type idxType;
   param stridable: bool;
-  param alias: bool = false;
 
-  const dist: CyclicDist(rank, idxType);
+  const dist: Cyclic(rank, idxType);
 
   var locDoms: [dist.targetLocDom] LocCyclicDom(rank, idxType, stridable);
 
@@ -180,7 +220,7 @@ class CyclicDom : BaseArithmeticDom {
   }
 
   def buildArray(type eltType) {
-    var arr = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this, alias=false);
+    var arr = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
     arr.setup();
     return arr;
   }
@@ -191,8 +231,14 @@ class CyclicDom : BaseArithmeticDom {
   }
 
   def writeThis(x: Writer) {
-    for loc in dist.targetLocDom {
-      x.writeln("[", loc, "=", dist.targetLocs(loc), "] owns ", locDoms(loc).myBlock);
+    if verboseCyclicDistWriters {
+      writeln(typeToString(this.type));
+      writeln("------");
+      for loc in dist.targetLocDom {
+        x.writeln("[", loc, "=", dist.targetLocs(loc), "] owns ", locDoms(loc).myBlock);
+      }
+    } else {
+      x.writeln(whole);
     }
   }
   def numIndices return whole.numIndices;
@@ -204,12 +250,12 @@ class CyclicDom : BaseArithmeticDom {
 
   def these(param tag: iterator) where tag == iterator.leader {
     const wholeLow = whole.low,
-          precomputedNumTasks = dist.tasksPerLoc;
+          precomputedNumTasks = dist.tasksPerLocale;
     coforall locDom in locDoms do on locDom {
       const locBlock = locDom.myBlock - wholeLow;
       const numTasks = precomputedNumTasks;
       if numTasks == 1 {
-        yield locBlock;
+        yield locBlock.getIndices();
       } else {
         if rank == 1 {
           coforall taskid in 0..#numTasks {
@@ -217,7 +263,7 @@ class CyclicDom : BaseArithmeticDom {
             const (lo,hi) = _computeBlock(low, high - low + 1,
                                          low, high,
                                          numTasks, taskid);
-            yield locBlock[lo..hi];
+            yield locBlock[lo..hi].getIndices();
           }
         } else {
           var ranges: rank*range(stridable=true);
@@ -229,7 +275,7 @@ class CyclicDom : BaseArithmeticDom {
                                           low, high,
                                           numTasks, taskid);
             ranges(1) = locBlock.dim(1)(lo..hi);
-            yield locBlock[(...ranges)];
+            yield locBlock[(...ranges)].getIndices();
           }
         }
       }
@@ -237,23 +283,31 @@ class CyclicDom : BaseArithmeticDom {
   }
 
   def these(param tag: iterator, follower, param aligned: bool = false) where tag == iterator.follower {
-    const followThis = follower + whole.low;
-    for i in followThis do
+    var t: rank*range(idxType, stridable=true);
+    for param i in 1..rank {
+      t(i) = follower(i) + whole.dim(i).low;
+    }
+    for i in [(...t)] do
       yield i;
   }
 
   def supportsPrivatization() param return true;
+
   def privatize() {
-    var privateDist = new CyclicDist(rank, idxType, dist);
-    var c = new CyclicDom(idxType=idxType, rank=rank, stridable=stridable, dist=privateDist);
+    var distpid = dist.pid;
+    var thisdist = dist;
+    var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
+    var c = new CyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
     c.locDoms = locDoms;
     c.whole = whole;
     return c;
   }
+
   def reprivatize(other) {
     locDoms = other.locDoms;
     whole = other.whole;
   }
+
   def dim(d: int) return whole.dim(d);
 }
 
@@ -286,10 +340,10 @@ class CyclicArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  param alias: bool = false;
   var dom: CyclicDom(rank, idxType, stridable);
 
   var locArr: [dom.dist.targetLocDom] LocCyclicArr(eltType, rank, idxType, stridable);
+  var myLocArr: LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable);
   var pid: int = -1;
 
   def getBaseDom() return dom;
@@ -298,27 +352,36 @@ class CyclicArr: BaseArr {
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocs(localeIdx) {
         locArr(localeIdx) = new LocCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx));
+        if this.locale == here then
+          myLocArr = locArr(localeIdx);
       }
     }
   }
 
   def supportsPrivatization() param return true;
+
   def privatize() {
     var dompid = dom.pid;
     var thisdom = dom;
     var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
     var c = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
     c.locArr = locArr;
+    for localeIdx in dom.dist.targetLocDom do
+      if c.locArr(localeIdx).locale == here then
+        c.myLocArr = c.locArr(localeIdx);
     return c;
   }
 
   def this(i: idxType) var where rank == 1 {
+    local {
+      if myLocArr.locDom.myBlock.member(i) then
+        return myLocArr.this(i);
+    }
     return locArr(dom.dist.ind2locInd(i))(i);
   }
 
   def this(i:rank*idxType) var {
-    var x = locArr(dom.dist.ind2locInd(i));
-    return x(i);
+    return locArr(dom.dist.ind2locInd(i))(i);
   }
 
   def these() var {
@@ -328,12 +391,12 @@ class CyclicArr: BaseArr {
 
   def these(param tag: iterator) where tag == iterator.leader {
     const wholeLow = dom.whole.low,
-          precomputedNumTasks = dom.dist.tasksPerLoc;
+          precomputedNumTasks = dom.dist.tasksPerLocale;
     coforall locDom in dom.locDoms do on locDom {
       const locBlock = locDom.myBlock - wholeLow;
       const numTasks = precomputedNumTasks;
       if numTasks == 1 {
-        yield locBlock;
+        yield locBlock.getIndices();
       } else {
         if rank == 1 {
           coforall taskid in 0..#numTasks {
@@ -341,7 +404,7 @@ class CyclicArr: BaseArr {
             const (lo,hi) = _computeBlock(low, high - low + 1,
                                          low, high,
                                          numTasks, taskid);
-            yield locBlock[lo..hi];
+            yield locBlock[lo..hi].getIndices();
           }
         } else {
           var ranges: rank*range(stridable=true);
@@ -353,7 +416,7 @@ class CyclicArr: BaseArr {
                                           low, high,
                                           numTasks, taskid);
             ranges(1) = locBlock.dim(1)(lo..hi);
-            yield locBlock[(...ranges)];
+            yield locBlock[(...ranges)].getIndices();
           }
         }
       }
@@ -363,12 +426,16 @@ class CyclicArr: BaseArr {
   def supportsAlignedFollower() param return true;
 
   def these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
-    const followThis = follower + dom.whole.low;
-    const myLocArr = locArr(dom.dist.ind2locInd(followThis.low));
+    var t: rank*range(eltType=idxType, stridable=true);
+    for param i in 1..rank {
+      t(i) = follower(i) + dom.whole.dim(i).low;
+    }
+    const followThis = [(...t)];
+    const arrSection = locArr(dom.dist.ind2locInd(followThis.low));
     if aligned {
       local {
         for i in followThis {
-          yield myLocArr.this(i);
+          yield arrSection.this(i);
         }
       }
     } else {
@@ -387,6 +454,10 @@ class CyclicArr: BaseArr {
   }
 
   def writeThis(f: Writer) {
+    if verboseCyclicDistWriters {
+      writeln(typeToString(this.type));
+      writeln("------");
+    }
     for i in dom {
       writeln(this(i));
     }
@@ -416,63 +487,4 @@ class LocCyclicArr {
       yield elem;
     }
   }
-}
-
-config const tpl = 2;
-
-def smain {
-  const r = 3.0;
-  const Dist = new CyclicDist(1, int(64), tasksPerLocale = 2);
-  const Dom: domain(1, int(64)) distributed Dist = [1..10:int(64)];
-  var A, B: [Dom] real;
-
-  forall i in Dom {
-    B(i) = i;
-  }
-
-  forall (a, b) in (A, B) {
-    a = b * r;
-  }
-
-  writeln(A);
-  writeln(B);
-}
-
-def tmain {
-  var Locs = Locales;
-  var Dist = new CyclicDist(2, int, Locs, tasksPerLocale=tpl);
-  var Dom: domain(2, int) distributed Dist = [1..10, 1..10];
-  var Arr: [Dom] real;
-
-  writeln(Dist);
-  writeln(Dom);
-  writeln(Arr);
-  for (i,j) in Dom {
-    writeln(Arr(i,j).locale, ": Arr(", i, ",", j, ") = ", Arr(i,j));
-  }
-
-  forall (i,j) in Dom { Arr(i,j) = i*100 + j; }
-  forall a in Arr { a += 1; }
-  writeln(Arr);
-  /*
-  var Dom: domain(1, int) distributed Dist = [-10..#20];
-  var Arr: [Dom] int;
-  Arr(5) = 1;
-  writeln(Dist);
-  writeln(Dom);
-  writeln(Arr);
-  for i in Dom {
-    writeln("Arr(", i, ").locale = ", Arr(i).locale);
-  }
-  for a in Arr {
-    writeln("a.locale = ", a.locale);
-  }
-  forall a in Arr {
-    writeln(a.locale);
-  }
-  forall i in Dom {
-    writeln(here, ": Arr(", i, ") = ", Arr(i), " Arr(", i, ").locale = ", Arr(i).locale);
-  }
-  */
-}
 }
