@@ -15,9 +15,9 @@ class D {
 
 def main() {
   var d: D = new D();
+  delete globc;
   globc = nil;
   d.doit;
   writeln(d);
-  delete globc;
   delete d;
 }
