@@ -127,7 +127,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
       coforall chunk in 0..numChunks-1 {
 	var tuple: rank*range(idxType) = locBlock;
 	const (lo,hi) = _computeMyChunk(locBlock(1).length, locBlock(1).high,
-					numChunks, chunk);
+                                        numChunks, chunk);
 	tuple(1) = lo..hi;
 	if debugDefaultDist then
 	  writeln("*** DI: tuple = ", tuple);
@@ -429,7 +429,7 @@ class DefaultArithmeticArr: BaseArr {
       coforall chunk in 0..numChunks-1 {
 	var tuple: rank*range(idxType) = locBlock;
 	const (lo,hi) = _computeMyChunk(locBlock(1).length, locBlock(1).high,
-					numChunks, chunk);
+                                        numChunks, chunk);
 	tuple(1) = lo..hi;
 	if debugDefaultDist then
 	  writeln("*** AI: tuple = ", tuple);
@@ -659,30 +659,6 @@ def DefaultArithmeticArr.writeThis(f: Writer) {
 }
 
 //
-// helper function for blocking index ranges (copied from _computeBlock())
-//
-def _computeMyChunkOLD(waylo, numelems, lo, wayhi, numblocks, blocknum) {
-  if debugDefaultDist then
-    writeln("in _computeMyChunk: waylo=", waylo, " numelems=",  numelems,
-	    " lo=", lo, " wayhi=", wayhi,
-	    " numblocks=", numblocks, " blocknum=", blocknum);
-  if numblocks == 1 then
-    return (waylo, waylo+numelems:lo.type-1);
-
-  def procToData(x, lo)
-    return lo + (x:lo.type) + (x:real != x:int:real):lo.type;
-
-  const blo =
-    if blocknum == 0 then waylo
-      else procToData((numelems:real * blocknum) / numblocks, lo);
-  const bhi =
-    if blocknum == numblocks - 1 then wayhi
-      else procToData((numelems:real * (blocknum+1)) / numblocks, lo) - 1;
-
-  return (blo, bhi);
-}
-
-//
 // helper function for blocking index ranges
 // - based on _computeBlock() but specialized for cases
 //   where the low bound is always zero
@@ -691,8 +667,13 @@ def _computeMyChunk(numelems, wayhi, numblocks, blocknum) {
   if debugDefaultDist then
     writeln("in _computeMyChunk: numelems=",  numelems, " wayhi=", wayhi,
 	    " numblocks=", numblocks, " blocknum=", blocknum);
+  /*
   if numblocks == 1 then
     return (0:wayhi.type, numelems:wayhi.type-1);
+  */
+
+  if numelems == 0 then
+    return (1:wayhi.type, 0:wayhi.type);
 
   def procToData(x)
     return x:wayhi.type + (x:real != x:int:real):wayhi.type;
@@ -706,4 +687,6 @@ def _computeMyChunk(numelems, wayhi, numblocks, blocknum) {
 
   return (blo, bhi);
 }
+
+
 
