@@ -33,6 +33,7 @@ insertAutoDestroyTemps() {
         if (VarSymbol* var = toVarSymbol(def->sym)) {
           if (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
               (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) &&
+               !var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                !var->type->symbol->hasFlag(FLAG_ARRAY) &&
                !var->type->symbol->hasFlag(FLAG_DISTRIBUTION) &&
                !var->type->symbol->hasFlag(FLAG_DOMAIN)))
