@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
   chpl_comm_rollcall();
   chpl_init_chapel_code();
 
-  chpl_tasking_init();      // initialize the task management layer
+  CHPL_TASKING_INIT();      // initialize the task management layer
 
   recordExecutionCommand(argc, argv);
 

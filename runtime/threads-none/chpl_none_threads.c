@@ -30,117 +30,127 @@ static chpl_bool launch_next_task(void);
 
 
 // Mutex
-void chpl_mutex_init(chpl_mutex_p mutex) { }
-void chpl_mutex_lock(chpl_mutex_p mutex) { }
-void chpl_mutex_unlock(chpl_mutex_p mutex) { }
+void CHPL_MUTEX_INIT(chpl_mutex_p mutex) { }
+void CHPL_MUTEX_LOCK(chpl_mutex_p mutex) { }
+void CHPL_MUTEX_UNLOCK(chpl_mutex_p mutex) { }
 
 
 // Sync variables
 
-void chpl_sync_lock(chpl_sync_aux_t *s) { }
-void chpl_sync_unlock(chpl_sync_aux_t *s) { }
+void CHPL_SYNC_LOCK(chpl_sync_aux_t *s) { }
+void CHPL_SYNC_UNLOCK(chpl_sync_aux_t *s) { }
 
-void chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
+void CHPL_SYNC_WAIT_FULL_AND_LOCK(chpl_sync_aux_t *s,
+                                  int32_t lineno, chpl_string filename) {
   // while blocked, try running tasks from the task pool
   while (!*s && launch_next_task())
     /* do nothing! */;
   if (!*s)
-    chpl_error("sync var empty (running in single-threaded mode)", lineno, filename);
+    chpl_error("sync var empty (running in single-threaded mode)",
+               lineno, filename);
 }
 
-void chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s, int32_t lineno, chpl_string filename) {
+void CHPL_SYNC_WAIT_EMPTY_AND_LOCK(chpl_sync_aux_t *s,
+                                   int32_t lineno, chpl_string filename) {
   // while blocked, try running tasks from the task pool
   while (*s && launch_next_task())
     /* do nothing! */;
   if (*s)
-    chpl_error("sync var full (running in single-threaded mode)", lineno, filename);
+    chpl_error("sync var full (running in single-threaded mode)",
+               lineno, filename);
 }
 
-void chpl_sync_mark_and_signal_full(chpl_sync_aux_t *s) {
+void CHPL_SYNC_MARK_AND_SIGNAL_FULL(chpl_sync_aux_t *s) {
   *s = true;
 }
 
-void chpl_sync_mark_and_signal_empty(chpl_sync_aux_t *s) {
+void CHPL_SYNC_MARK_AND_SIGNAL_EMPTY(chpl_sync_aux_t *s) {
   *s = false;
 }
 
-chpl_bool chpl_sync_is_full(void *val_ptr, chpl_sync_aux_t *s, chpl_bool simple_sync_var) {
+chpl_bool CHPL_SYNC_IS_FULL(void *val_ptr, chpl_sync_aux_t *s,
+                            chpl_bool simple_sync_var) {
   return *s;
 }
 
-void chpl_init_sync_aux(chpl_sync_aux_t *s) {
+void CHPL_INIT_SYNC_AUX(chpl_sync_aux_t *s) {
   *s = false;
 }
 
-void chpl_destroy_sync_aux(chpl_sync_aux_t *s) { }
+void CHPL_DESTROY_SYNC_AUX(chpl_sync_aux_t *s) { }
 
 
 // Single variables
 
-void chpl_single_lock(chpl_single_aux_t *s) { }
+void CHPL_SINGLE_LOCK(chpl_single_aux_t *s) { }
 
-void chpl_single_unlock(chpl_single_aux_t *s) { }
+void CHPL_SINGLE_UNLOCK(chpl_single_aux_t *s) { }
 
-void chpl_single_wait_full(chpl_single_aux_t *s, int32_t lineno, chpl_string filename) {
+void CHPL_SINGLE_WAIT_FULL(chpl_single_aux_t *s,
+                           int32_t lineno, chpl_string filename) {
   // while blocked, try running tasks from the task pool
   while (!*s && launch_next_task())
     /* do nothing! */;
   if (!*s)
-    chpl_error("single var empty (running in single-threaded mode)", lineno, filename);
+    chpl_error("single var empty (running in single-threaded mode)",
+               lineno, filename);
 }
 
-void chpl_single_mark_and_signal_full(chpl_single_aux_t *s) {
+void CHPL_SINGLE_MARK_AND_SIGNAL_FULL(chpl_single_aux_t *s) {
   *s = true;
 }
 
-chpl_bool chpl_single_is_full(void *val_ptr, chpl_single_aux_t *s, chpl_bool simple_single_var) {
+chpl_bool CHPL_SINGLE_IS_FULL(void *val_ptr, chpl_single_aux_t *s,
+                              chpl_bool simple_single_var) {
   return *s;
 }
 
-void chpl_init_single_aux(chpl_single_aux_t *s) {
+void CHPL_INIT_SINGLE_AUX(chpl_single_aux_t *s) {
   *s = false;
 }
 
-void chpl_destroy_single_aux(chpl_single_aux_t *s) { }
+void CHPL_DESTROY_SINGLE_AUX(chpl_single_aux_t *s) { }
 
 // Tasks
 
 static chpl_bool serial_state;
 
-void chpl_tasking_init() {
+void CHPL_TASKING_INIT() {
   task_pool_head = task_pool_tail = NULL;
   serial_state = false;
   queued_cnt = 0;
 }
 
-void chpl_tasking_exit() { }
+void CHPL_TASKING_EXIT() { }
 
-void chpl_add_to_task_list(chpl_fn_int_t fid,
+void CHPL_ADD_TO_TASK_LIST(chpl_fn_int_t fid,
                            void* arg,
                            chpl_task_list_p *task_list,
                            int32_t task_list_locale,
                            chpl_bool call_chpl_begin,
                            int lineno,
                            chpl_string filename) {
-  chpl_begin(chpl_ftable[fid], arg, false, false, NULL);
+  CHPL_BEGIN(chpl_ftable[fid], arg, false, false, NULL);
 }
 
-void chpl_process_task_list (chpl_task_list_p task_list) { }
+void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) { }
 
-void chpl_execute_tasks_in_list (chpl_task_list_p task_list) { }
+void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) { }
 
-void chpl_free_task_list (chpl_task_list_p task_list) { }
+void CHPL_FREE_TASK_LIST(chpl_task_list_p task_list) { }
 
-void chpl_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
+void CHPL_BEGIN(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
                 chpl_bool serial_state, chpl_task_list_p task_list_entry) {
-  if (!ignore_serial && chpl_get_serial()) {
+  if (!ignore_serial && CHPL_GET_SERIAL()) {
     (*fp)(a);
   } else {
     // create a task from the given function pointer and arguments
     // and append it to the end of the task pool for later execution
-    chpl_task_pool_p task = (chpl_task_pool_p)chpl_alloc(sizeof(task_pool_t),
-                                                         CHPL_RT_MD_TASK_DESCRIPTOR,
-                                                         0, 0);
+    chpl_task_pool_p task;
+
+    task = (chpl_task_pool_p)chpl_alloc(sizeof(task_pool_t),
+                                        CHPL_RT_MD_TASK_DESCRIPTOR,
+                                        0, 0);
     task->fun = fp;
     task->arg = a;
     task->serial_state = serial_state;
@@ -157,17 +167,17 @@ void chpl_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
   }
 }
 
-chpl_bool chpl_get_serial(void) { return serial_state; }
+chpl_bool CHPL_GET_SERIAL(void) { return serial_state; }
 
-void chpl_set_serial(chpl_bool new_state) {
+void CHPL_SET_SERIAL(chpl_bool new_state) {
   serial_state = new_state;
 }
 
-uint32_t chpl_numQueuedTasks(void) { return queued_cnt; }
+uint32_t CHPL_NUMQUEUEDTASKS(void) { return queued_cnt; }
 
-uint32_t chpl_numRunningTasks(void) { return 1; }
+uint32_t CHPL_NUMRUNNINGTASKS(void) { return 1; }
 
-int32_t  chpl_numBlockedTasks(void) { return 0; }
+int32_t  CHPL_NUMBLOCKEDTASKS(void) { return 0; }
 
 
 // Internal utility functions for task management
@@ -187,7 +197,7 @@ launch_next_task(void) {
     //
     // reset serial state
     //
-    chpl_set_serial(task->serial_state);
+    CHPL_SET_SERIAL(task->serial_state);
 
     (*task->fun)(task->arg);
     chpl_free(task, 0, 0);
@@ -201,20 +211,20 @@ launch_next_task(void) {
 
 // Threads
 
-int32_t chpl_threads_getMaxThreads(void) { return 1; }
+int32_t CHPL_THREADS_GETMAXTHREADS(void) { return 1; }
 
-int32_t chpl_threads_maxThreadsLimit(void) { return 1; }
+int32_t CHPL_THREADS_MAXTHREADSLIMIT(void) { return 1; }
 
-uint32_t chpl_numThreads(void) { return 1; }
+uint32_t CHPL_NUMTHREADS(void) { return 1; }
 
-uint32_t chpl_numIdleThreads(void) { return 0; }
+uint32_t CHPL_NUMIDLETHREADS(void) { return 0; }
 
-chpl_threadID_t chpl_thread_id(void) { return 0; }
+chpl_threadID_t CHPL_THREAD_ID(void) { return 0; }
 
-void chpl_thread_cancel(chpl_threadID_t threadID) {
-  chpl_internal_error("chpl_thread_cancel() shouldn't be called in threads-none");
+void CHPL_THREAD_CANCEL(chpl_threadID_t threadID) {
+  chpl_internal_error("CHPL_THREAD_CANCEL() shouldn't be called in threads-none");
 }
 
-void chpl_thread_join(chpl_threadID_t threadID) {
-  chpl_internal_error("chpl_thread_join() shouldn't be called in threads-none");
+void CHPL_THREAD_JOIN(chpl_threadID_t threadID) {
+  chpl_internal_error("CHPL_THREAD_JOIN() shouldn't be called in threads-none");
 }

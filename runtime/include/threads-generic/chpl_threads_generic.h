@@ -1,8 +1,6 @@
 #ifndef _chpl_threads_generic_h_
 #define _chpl_threads_generic_h_
 
-#ifndef LAUNCHER
-
 #include <stdint.h>
 
 
@@ -10,31 +8,36 @@
 // The generic implementation of threading is a least-common-denominator
 // version of threading whose purpose is to minimize the work needed to
 // get Chapel tasking working on top of some new threading layer.  The
-// generic implementation supplies all of the types in the public (to
-// the rest of Chapel) threading interface, plus versions of all of the
+// generic implementation supplies all of the types in the public (to the
+// rest of Chapel) threading interface, plus versions of all of the
 // functions in that interface, with "_generic" appended to their names.
-// These latter functions can be renamed using #defines so that they
-// satisfy the public interface.  The threading layer only has to supply
-// a small amount of support: mutexes, functions to retrieve thread
-// identifiers and to cancel and join with specific threads, and some
-// supplementary types and callback functions.  The complete list is:
+// If the threading layer #defines GENERIC_THREADING_SATISFIES_INTERFACE,
+// these generic versions of the functions satisfy the public interface.
+// Otherwise, the threading layer must supply these functions itself,
+// with "_" and the expansion of CHPL_THREADS appended to their names,
+// and these versions satisfy the interface.
+//
+// The threading layer only has to supply a small amount of support:
+// mutexes, functions to retrieve thread identifiers and to cancel and
+// join with specific threads, and some supplementary types and callback
+// functions.  The complete list is:
 //
 // For mutexes
 //   type(s)
 //     chpl_mutex_t
 //   functions
-//     chpl_mutex_init()
-//     chpl_mutex_new()
-//     chpl_mutex_lock()
-//     chpl_mutex_unlock()
+//     CHPL_MUTEX_INIT()
+//     CHPL_MUTEX_NEW()
+//     CHPL_MUTEX_LOCK()
+//     CHPL_MUTEX_UNLOCK()
 //
 // For thread management
 //   type(s)
 //     <none>
 //   functions
-//     chpl_thread_id()
-//     chpl_thread_cancel()
-//     chpl_thread_join()
+//     CHPL_THREAD_ID()
+//     CHPL_THREAD_CANCEL()
+//     CHPL_THREAD_JOIN()
 //
 // For sync variables
 //   type(s)
@@ -77,16 +80,9 @@
 // from what is done for other threading layers.  For an example of a
 // minimal implementation, see "pthreads-minimal" threading.
 //
-// Also note that to the extent a threading layer defines its own
-// implementations of the two major pieces of threading functionality
-// (sync/single variable support and task management, which are in
-// runtime/src/chpl_sync_single_generic.c and chpl_task_generic.c
-// respectively), it need not supply the callbacks needed by the generic
-// implementation.  So for example, if a threading layer provides its
-// own implementations of the sync and single variable support functions
-// (chpl_sync_wait_full_and_lock(), etc.), it will not have to supply
-// the above threadlayer_{sync,single}_*() functions, since those are
-// only referenced from the generic implementation.
+// Also note that if a threading layer defines the public functions
+// itself, it need not supply the callbacks needed by the generic
+// implementation.
 //
 // Generally speaking the chpl_cfg_threads.h for the threading layer
 // will define at least the types listed above, then #include this file,
@@ -94,15 +90,7 @@
 // things this file defines the chpl_sync_aux_t and chpl_single_aux_t
 // types, so anything needing those declarations in chpl_cfg_threads.h
 // must come after the point at which this file is #include'd into that
-// one.  Most commonly the major additional things in chpl_cfg_threads.h
-// will be #defines to rename the X_generic() functions of the generic
-// threading implementation to the X() public interface names, so that
-// the versions in the generic implementation satisfy the declarations
-// of the public interface.  For example:
-//   #define chpl_sync_lock_generic chpl_sync_lock
-// This won't change the declarations in this file, but those don't
-// matter as long as there are no actual references to the *_generic()
-// names.
+// one.
 //
 
 
@@ -120,17 +108,17 @@ typedef struct {
   threadlayer_sync_aux_t tl_aux;
 } chpl_sync_aux_t;
 
-void chpl_sync_lock_generic(chpl_sync_aux_t *);
-void chpl_sync_unlock_generic(chpl_sync_aux_t *);
-void chpl_sync_wait_full_and_lock_generic(chpl_sync_aux_t *,
-                                          int32_t, chpl_string);
-void chpl_sync_wait_empty_and_lock_generic(chpl_sync_aux_t *,
-                                           int32_t, chpl_string);
-void chpl_sync_mark_and_signal_full_generic(chpl_sync_aux_t *);  // and unlock
-void chpl_sync_mark_and_signal_empty_generic(chpl_sync_aux_t *); // and unlock
+void      chpl_sync_lock_generic(chpl_sync_aux_t *);
+void      chpl_sync_unlock_generic(chpl_sync_aux_t *);
+void      chpl_sync_wait_full_and_lock_generic(chpl_sync_aux_t *,
+                                               int32_t, chpl_string);
+void      chpl_sync_wait_empty_and_lock_generic(chpl_sync_aux_t *,
+                                                int32_t, chpl_string);
+void      chpl_sync_mark_and_signal_full_generic(chpl_sync_aux_t *);
+void      chpl_sync_mark_and_signal_empty_generic(chpl_sync_aux_t *);
 chpl_bool chpl_sync_is_full_generic(void *, chpl_sync_aux_t *, chpl_bool);
-void chpl_init_sync_aux_generic(chpl_sync_aux_t *);
-void chpl_destroy_sync_aux_generic(chpl_sync_aux_t *);
+void      chpl_init_sync_aux_generic(chpl_sync_aux_t *);
+void      chpl_destroy_sync_aux_generic(chpl_sync_aux_t *);
 
 
 //
@@ -147,13 +135,14 @@ typedef struct {
   threadlayer_single_aux_t tl_aux;
 } chpl_single_aux_t;
 
-void chpl_single_lock_generic(chpl_single_aux_t *);
-void chpl_single_unlock_generic(chpl_single_aux_t *);
-void chpl_single_wait_full_generic(chpl_single_aux_t *, int32_t, chpl_string);
-void chpl_single_mark_and_signal_full_generic(chpl_single_aux_t *); // and unlock
+void      chpl_single_lock_generic(chpl_single_aux_t *);
+void      chpl_single_unlock_generic(chpl_single_aux_t *);
+void      chpl_single_wait_full_generic(chpl_single_aux_t *,
+                                        int32_t, chpl_string);
+void      chpl_single_mark_and_signal_full_generic(chpl_single_aux_t *);
 chpl_bool chpl_single_is_full_generic(void *, chpl_single_aux_t *, chpl_bool);
-void chpl_init_single_aux_generic(chpl_single_aux_t *);
-void chpl_destroy_single_aux_generic(chpl_single_aux_t *);
+void      chpl_init_single_aux_generic(chpl_single_aux_t *);
+void      chpl_destroy_single_aux_generic(chpl_single_aux_t *);
 
 
 // Tasks
@@ -187,32 +176,6 @@ int32_t  chpl_threads_getMaxThreads_generic(void);
 int32_t  chpl_threads_maxThreadsLimit_generic(void);
 uint32_t chpl_numThreads_generic(void);
 uint32_t chpl_numIdleThreads_generic(void);
-
-
-//
-// Deadlock detection support.
-//
-// These are defined in chpl_task_generic.c, but are called both from
-// there and from chpl_sync_single_generic.c.  They aren't intended for
-// use outside those two files, but we need the declarations to be in a
-// common place, so they're here.
-//
-// Chpl_thread_set_block_loc() informs task management that the thread
-// (task) is about to suspend waiting for a sync or single variable to
-// change state or the task pool to become nonempty.  The return value
-// is true if the program may be deadlocked, indicating that the thread
-// should use a timeout deadline on its suspension if possible, and
-// false otherwise.
-//
-// Chpl_thread_unset_block_loc() informs task management that the thread
-// (task) is no longer suspended.
-//
-// Chpl_thread_check_for_deadlock() checks for and reports deadlock,
-// when a suspension deadline passes.
-//
-chpl_bool chpl_thread_set_block_loc(int lineno, chpl_string filename);
-void      chpl_thread_unset_block_loc(void);
-void      chpl_thread_check_for_deadlock(void);
 
 
 //
@@ -283,13 +246,13 @@ void threadlayer_destroy_sync(chpl_sync_aux_t *s);
 //
 // Single variables
 //
-// Analogous to the sync case, the chpl_single_wait_full() function
-// calls threadlayer_single_suspend() when a single variable is not
-// full.  The call will be made with the single variable's mutex held.
-// It should return (with the mutex again held) as soon as it can once
-// either the single variable becomes full, or (if the given deadline
-// pointer is non-NULL) the deadline passes.  It can return also early,
-// before either of these things occur, with no ill effects.  If a
+// Analogous to the sync case, the chpl_single_wait_full_generic()
+// function calls threadlayer_single_suspend() when a single variable is
+// not full.  The call will be made with the single variable's mutex
+// held.  It should return (with the mutex again held) as soon as it can
+// once either the single variable becomes full, or (if the given
+// deadline pointer is non-NULL) the deadline passes.  It can return also
+// early, before either of these things occur, with no ill effects.  If a
 // deadline is given and it does pass, then threadlayer_single_suspend()
 // must return true; otherwise false.
 //
@@ -300,7 +263,7 @@ void threadlayer_destroy_sync(chpl_sync_aux_t *s);
 // routine waits for the variable to become full or the deadline to
 // pass, or livelock may result.
 //
-// The chpl_single_mark_and_signal_full() function will call
+// The chpl_single_mark_and_signal_full_generic() function will call
 // threadlayer_single_awaken() every time it is called, not just when it
 // fills the single variable.
 //
@@ -369,15 +332,5 @@ void threadlayer_pool_awaken(void);
 //
 void  threadlayer_set_thread_private_data(void*);
 void* threadlayer_get_thread_private_data(void);
-
-#else // LAUNCHER
-
-#define chpl_mutex_init(x)
-#define chpl_mutex_lock(x)
-#define chpl_mutex_unlock(x)
-typedef int chpl_mutex_t;
-#define chpl_tasking_exit()
-
-#endif // LAUNCHER
 
 #endif

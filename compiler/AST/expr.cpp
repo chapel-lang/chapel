@@ -1571,41 +1571,41 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     case PRIM_THREAD_ID:
-      fprintf(outfile, "chpl_thread_id()");
+      fprintf(outfile, "CHPL_THREAD_ID()");
       break;
     case PRIM_GET_SERIAL:
-      fprintf(outfile, "chpl_get_serial()");
+      fprintf(outfile, "CHPL_GET_SERIAL()");
       break;
     case PRIM_SET_SERIAL:
-      fprintf(outfile, "chpl_set_serial(");
+      fprintf(outfile, "CHPL_SET_SERIAL(");
       get(1)->codegen( outfile);
       fprintf(outfile, ")");
       break;
     case PRIM_SYNC_INIT:
     case PRIM_SYNC_DESTROY:
       fprintf( outfile, primitive->tag == PRIM_SYNC_INIT ?
-               "chpl_init_sync_aux(&((" : "chpl_destroy_sync_aux(&((");
+               "CHPL_INIT_SYNC_AUX(&((" : "CHPL_DESTROY_SYNC_AUX(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, ")->sync_aux))");
       break;
     case PRIM_SYNC_LOCK:
-      fprintf( outfile, "chpl_sync_lock(&((");
+      fprintf( outfile, "CHPL_SYNC_LOCK(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, ")->sync_aux))");
       break;
     case PRIM_SYNC_UNLOCK:
-      fprintf(outfile, "chpl_sync_unlock(&((");
+      fprintf(outfile, "CHPL_SYNC_UNLOCK(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf(outfile, ")->sync_aux))");
       break;
     case PRIM_SYNC_WAIT_FULL:
-      fprintf( outfile, "chpl_sync_wait_full_and_lock(&((");
+      fprintf( outfile, "CHPL_SYNC_WAIT_FULL_AND_LOCK(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
@@ -1616,7 +1616,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
       break;
     case PRIM_SYNC_WAIT_EMPTY:
-      fprintf( outfile, "chpl_sync_wait_empty_and_lock(&((");
+      fprintf( outfile, "CHPL_SYNC_WAIT_EMPTY_AND_LOCK(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
@@ -1627,14 +1627,14 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
       break;
     case PRIM_SYNC_SIGNAL_FULL:
-      fprintf(outfile, "chpl_sync_mark_and_signal_full(&((");
+      fprintf(outfile, "CHPL_SYNC_MARK_AND_SIGNAL_FULL(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf(outfile, ")->sync_aux))");
       break;
     case PRIM_SYNC_SIGNAL_EMPTY:
-      fprintf( outfile, "chpl_sync_mark_and_signal_empty(&((");
+      fprintf( outfile, "CHPL_SYNC_MARK_AND_SIGNAL_EMPTY(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
@@ -1643,28 +1643,28 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_SINGLE_INIT:
     case PRIM_SINGLE_DESTROY:
       fprintf(outfile, primitive->tag == PRIM_SINGLE_INIT ?
-              "chpl_init_single_aux(&((" : "chpl_destroy_single_aux(&((");
+              "CHPL_INIT_SINGLE_AUX(&((" : "CHPL_DESTROY_SINGLE_AUX(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, ")->single_aux))");
       break;
     case PRIM_SINGLE_LOCK:
-      fprintf( outfile, "chpl_single_lock(&((");
+      fprintf( outfile, "CHPL_SINGLE_LOCK(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, ")->single_aux))");
       break;
     case PRIM_SINGLE_UNLOCK:
-      fprintf( outfile, "chpl_single_unlock(&((");
+      fprintf( outfile, "CHPL_SINGLE_UNLOCK(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
       fprintf( outfile, ")->single_aux))");
       break;
     case PRIM_SINGLE_WAIT_FULL:
-      fprintf( outfile, "chpl_single_wait_full(&((");
+      fprintf( outfile, "CHPL_SINGLE_WAIT_FULL(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
@@ -1675,7 +1675,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
       break;
     case PRIM_SINGLE_SIGNAL_FULL:
-      fprintf(outfile, "chpl_single_mark_and_signal_full(&((");
+      fprintf(outfile, "CHPL_SINGLE_MARK_AND_SIGNAL_FULL(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
@@ -1737,7 +1737,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, "))");
       break;
     case PRIM_SYNC_ISFULL:
-      fprintf( outfile, "chpl_sync_is_full(&((");
+      fprintf( outfile, "CHPL_SYNC_IS_FULL(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
@@ -1780,7 +1780,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, "))");
       break;
     case PRIM_SINGLE_ISFULL:
-      fprintf( outfile, "chpl_single_is_full(&((");
+      fprintf( outfile, "CHPL_SINGLE_IS_FULL(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
@@ -1793,7 +1793,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
       break;
     case PRIM_PROCESS_TASK_LIST:
-      fputs( "chpl_process_task_list(", outfile);
+      fputs( "CHPL_PROCESS_TASK_LIST(", outfile);
       get(1)->codegen( outfile);
       {
         ClassType *endCountType = toClassType(toSymExpr(get(1))->typeInfo());
@@ -1808,14 +1808,14 @@ void CallExpr::codegen(FILE* outfile) {
       fputc( ')', outfile);
       break;
     case PRIM_EXECUTE_TASKS_IN_LIST:
-      fputs( "chpl_execute_tasks_in_list(", outfile);
+      fputs( "CHPL_EXECUTE_TASKS_IN_LIST(", outfile);
       get(1)->codegen( outfile);
       fputc( ')', outfile);
       break;
     case PRIM_FREE_TASK_LIST:
       if (fNoMemoryFrees)
         break;
-      fputs( "chpl_free_task_list(", outfile);
+      fputs( "CHPL_FREE_TASK_LIST(", outfile);
       get(1)->codegen( outfile);
       fputc( ')', outfile);
       break;
@@ -2064,6 +2064,21 @@ void CallExpr::codegen(FILE* outfile) {
       } else
         codegenBasicPrimitive(outfile, this);
       break;
+    case PRIM_CHPL_NUMTHREADS:
+      fprintf(outfile, "CHPL_NUMTHREADS()");
+      break;
+    case PRIM_CHPL_NUMIDLETHREADS:
+      fprintf(outfile, "CHPL_NUMIDLETHREADS()");
+      break;
+    case PRIM_CHPL_NUMQUEUEDTASKS:
+      fprintf(outfile, "CHPL_NUMQUEUEDTASKS()");
+      break;
+    case PRIM_CHPL_NUMRUNNINGTASKS:
+      fprintf(outfile, "CHPL_NUMRUNNINGTASKS()");
+      break;
+    case PRIM_CHPL_NUMBLOCKEDTASKS:
+      fprintf(outfile, "CHPL_NUMBLOCKEDTASKS()");
+      break;
     case PRIM_RT_ERROR:
     case PRIM_RT_WARNING:
       codegenBasicPrimitive(outfile, this);
@@ -2100,7 +2115,7 @@ void CallExpr::codegen(FILE* outfile) {
   INT_ASSERT(fn);
 
   if (fn->hasFlag(FLAG_BEGIN_BLOCK)) {
-    fputs("chpl_add_to_task_list(", outfile);
+    fputs("CHPL_ADD_TO_TASK_LIST(", outfile);
     fprintf(outfile, "/* %s */ %d, ", fn->cname, ftable.get(fn));
     fputs("(void*)", outfile);
     if (Expr *actuals = get(1)) {
@@ -2138,7 +2153,7 @@ void CallExpr::codegen(FILE* outfile) {
             fn->lineno, fn->getModule()->filename);
     return;
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
-    fputs("chpl_add_to_task_list(", outfile);
+    fputs("CHPL_ADD_TO_TASK_LIST(", outfile);
     fprintf(outfile, "/* %s */ %d, ", fn->cname, ftable.get(fn));
     fputs("(void*)", outfile);
     if (Expr *actuals = get(1)) {

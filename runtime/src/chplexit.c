@@ -18,7 +18,7 @@ static void chpl_exit_common(int status, int all) {
   }
   if (all) {
     chpl_comm_barrier("chpl_comm_exit_all");
-    chpl_tasking_exit();
+    CHPL_TASKING_EXIT();
     if (!_runInGDB())
       chpl__autoDestroyRuntimeGlobals();
     chpl_reportMemInfo();

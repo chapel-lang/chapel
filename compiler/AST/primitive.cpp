@@ -347,7 +347,7 @@ initPrimitive() {
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
 
   // thread primitives
-  prim_def(PRIM_THREAD_ID, "thread_id", returnInfoThreadID, true);
+  prim_def(PRIM_THREAD_ID, "thread_id", returnInfoThreadID);
   prim_def(PRIM_GET_SERIAL, "thread_get_serial", returnInfoBool);
   prim_def(PRIM_SET_SERIAL, "thread_set_serial", returnInfoVoid, true);
 
@@ -592,11 +592,11 @@ initPrimitive() {
   prim_def("chpl_localeName", returnInfoString);
   prim_def("chpl_maxThreads", returnInfoInt32);
   prim_def("chpl_maxThreadsLimit", returnInfoInt32);
-  prim_def("chpl_numThreads", returnInfoUInt32);
-  prim_def("chpl_numIdleThreads", returnInfoUInt32);
-  prim_def("chpl_numQueuedTasks", returnInfoUInt32);
-  prim_def("chpl_numRunningTasks", returnInfoUInt32);
-  prim_def("chpl_numBlockedTasks", returnInfoInt32);
+  prim_def(PRIM_CHPL_NUMTHREADS, "chpl_numThreads", returnInfoUInt32);
+  prim_def(PRIM_CHPL_NUMIDLETHREADS, "chpl_numIdleThreads", returnInfoUInt32);
+  prim_def(PRIM_CHPL_NUMQUEUEDTASKS, "chpl_numQueuedTasks", returnInfoUInt32);
+  prim_def(PRIM_CHPL_NUMRUNNINGTASKS, "chpl_numRunningTasks", returnInfoUInt32);
+  prim_def(PRIM_CHPL_NUMBLOCKEDTASKS, "chpl_numBlockedTasks", returnInfoInt32);
 
   prim_def("chpl_printMemTable", returnInfoVoid, true, true);
   prim_def("chpl_printMemStat", returnInfoVoid, true, true);

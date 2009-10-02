@@ -38,25 +38,25 @@ static void            pool_suspend_cancel_cleanup(void*);
 
 // Mutex
 
-void chpl_mutex_init(chpl_mutex_p mutex) {
+void CHPL_MUTEX_INIT(chpl_mutex_p mutex) {
   // WAW: how to explicitly specify blocking-type?
   if (pthread_mutex_init(mutex, NULL))
     chpl_internal_error("pthread_mutex_init() failed");
 }
 
-chpl_mutex_p chpl_mutex_new(void) {
+chpl_mutex_p CHPL_MUTEX_NEW(void) {
   chpl_mutex_p m;
   m = (chpl_mutex_p) chpl_alloc(sizeof(chpl_mutex_t), CHPL_RT_MD_MUTEX, 0, 0);
-  chpl_mutex_init(m);
+  CHPL_MUTEX_INIT(m);
   return m;
 }
 
-void chpl_mutex_lock(chpl_mutex_p mutex) {
+void CHPL_MUTEX_LOCK(chpl_mutex_p mutex) {
   if (pthread_mutex_lock(mutex))
     chpl_internal_error("pthread_mutex_lock() failed");
 }
 
-void chpl_mutex_unlock(chpl_mutex_p mutex) {
+void CHPL_MUTEX_UNLOCK(chpl_mutex_p mutex) {
   if (pthread_mutex_unlock(mutex))
     chpl_internal_error("pthread_mutex_unlock() failed");
 }
@@ -64,14 +64,14 @@ void chpl_mutex_unlock(chpl_mutex_p mutex) {
 
 // Thread id
 
-chpl_threadID_t chpl_thread_id(void) {
+chpl_threadID_t CHPL_THREAD_ID(void) {
   return (chpl_threadID_t) pthread_self();
 }
 
 
 // Thread cancellation
 
-void chpl_thread_cancel(chpl_threadID_t thread) {
+void CHPL_THREAD_CANCEL(chpl_threadID_t thread) {
   if (0 != pthread_cancel((pthread_t) thread)) {
     chpl_internal_error("thread cancel failed");
   }
@@ -80,7 +80,7 @@ void chpl_thread_cancel(chpl_threadID_t thread) {
 
 // Thread join (wait for completion)
 
-void chpl_thread_join(chpl_threadID_t thread) {
+void CHPL_THREAD_JOIN(chpl_threadID_t thread) {
   if (0 != pthread_join((pthread_t) thread, NULL)) {
     chpl_internal_error("thread join failed");
   }
@@ -239,7 +239,7 @@ chpl_bool threadlayer_pool_suspend(chpl_mutex_t *lock,
 }
 
 static void pool_suspend_cancel_cleanup(void* void_lock) {
-  chpl_mutex_unlock((chpl_mutex_p) void_lock);
+  CHPL_MUTEX_UNLOCK((chpl_mutex_p) void_lock);
 }
 
 void threadlayer_pool_awaken(void) {

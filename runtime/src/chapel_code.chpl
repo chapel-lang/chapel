@@ -74,15 +74,15 @@ pragma "export" def chpldev_taskTable_print()
 
 
 // callbacks to C part of runtime for thread cleanup.
-_extern def chpl_thread_cancel(threadID : chpl_threadID_t );
-_extern def chpl_thread_join  (threadID : chpl_threadID_t );
+_extern def CHPL_THREAD_CANCEL(threadID : chpl_threadID_t );
+_extern def CHPL_THREAD_JOIN  (threadID : chpl_threadID_t );
 
 
 pragma "export" def chpldev_endAllThreads() : void
 {
   for thread in chpldev_taskTableD do
-    chpl_thread_cancel(thread);
+    CHPL_THREAD_CANCEL(thread);
   for thread in chpldev_taskTableD do
-    chpl_thread_join(thread);
+    CHPL_THREAD_JOIN(thread);
 }
     

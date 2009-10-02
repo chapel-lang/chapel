@@ -177,7 +177,7 @@ static void chpl_mpi_polling_thread(void* arg) {
 
   PRINTF("Starting mpi polling thread");
 
-  chpl_mutex_lock(&termination_lock);
+  CHPL_MUTEX_LOCK(&termination_lock);
   while (!finished) {
     PRINTF("Poller Receiving");
     status = chpl_mpi_recv(&msg_info, sizeof(_chpl_mpi_message_info),
@@ -222,7 +222,7 @@ static void chpl_mpi_polling_thread(void* arg) {
         rpcArg->joinLocale = status.MPI_SOURCE;
         rpcArg->blockingCall = 1;
 
-        chpl_begin((chpl_fn_p)chplExecForkedTask, rpcArg, false, false, NULL);
+        CHPL_BEGIN((chpl_fn_p)chplExecForkedTask, rpcArg, false, false, NULL);
         break;
       }
       case ChplCommForkNB: {
@@ -244,14 +244,14 @@ static void chpl_mpi_polling_thread(void* arg) {
         rpcArg->replyTag = msg_info.replyTag;
         rpcArg->joinLocale = status.MPI_SOURCE;
         rpcArg->blockingCall = 0;
-        chpl_begin((chpl_fn_p)chplExecForkedTask, rpcArg, false, false, NULL);
+        CHPL_BEGIN((chpl_fn_p)chplExecForkedTask, rpcArg, false, false, NULL);
         break;
       }
       case ChplCommFinish: {
         PRINTF("ChplCommFinish");
         fflush(stdout);
         fflush(stderr);
-        chpl_mutex_unlock(&termination_lock);
+        CHPL_MUTEX_UNLOCK(&termination_lock);
         finished = 1;
         break;
       }
@@ -287,8 +287,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   chpl_comm_barrier("barrier in init");
 
-  if (pthread_mutex_init(&termination_lock, NULL))
-    chpl_internal_error("pthread_mutex_init() failed");
+  CHPL_MUTEX_INIT(&termination_lock);
 
   if (pthread_create(&polling_thread, NULL,
                      (void*(*)(void*))chpl_mpi_polling_thread, 0))
@@ -358,8 +357,8 @@ void chpl_comm_exit_all(int status) {
   chpl_mpi_send(&msg_info, sizeof(_chpl_mpi_message_info), MPI_BYTE,
                 chpl_localeID, TAGMASK+1, MPI_COMM_WORLD);
   PRINTF("Sent shutdown message");
-  chpl_mutex_lock(&termination_lock);
-  chpl_mutex_unlock(&termination_lock);
+  CHPL_MUTEX_LOCK(&termination_lock);
+  CHPL_MUTEX_UNLOCK(&termination_lock);
   chpl_comm_barrier("About to finalize");
   MPI_SAFE(MPI_Finalize());
 }
@@ -461,7 +460,7 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
     rpcArg->replyTag = 0;
     rpcArg->joinLocale = 0;
     rpcArg->blockingCall = 0;
-    chpl_begin((chpl_fn_p)chplExecForkedTask, rpcArg, false, false, NULL);
+    CHPL_BEGIN((chpl_fn_p)chplExecForkedTask, rpcArg, false, false, NULL);
   } else {
     _chpl_mpi_message_info msg_info;
     int tag = makeTag((int)pthread_self(), chpl_localeID);

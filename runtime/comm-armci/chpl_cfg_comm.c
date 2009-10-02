@@ -122,6 +122,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   int nprocs, me;
   armci_size_t sz;
 
+  CHPL_MUTEX_INIT(&armci_lock);
+
   MPI_SAFE(MPI_Init(argc_p, argv_p));
   ARMCI_SAFE(ARMCI_Init());
   armci_init_called = 1;
@@ -284,9 +286,9 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
   if (chpl_localeID == locale)
     memmove(raddr, addr, size);
   else {
-    chpl_mutex_lock(&armci_lock);
+    CHPL_MUTEX_LOCK(&armci_lock);
     ARMCI_SAFE(ARMCI_Put(addr, raddr, size, locale));
-    chpl_mutex_unlock(&armci_lock);
+    CHPL_MUTEX_UNLOCK(&armci_lock);
   }
 }
 
@@ -304,9 +306,9 @@ void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int l
   if (chpl_localeID == locale)
     memmove(addr, raddr, size);
   else {
-    chpl_mutex_lock(&armci_lock);
+    CHPL_MUTEX_LOCK(&armci_lock);
     ARMCI_SAFE(ARMCI_Get((void*)raddr, addr, size, locale));
-    chpl_mutex_unlock(&armci_lock);
+    CHPL_MUTEX_UNLOCK(&armci_lock);
   }
 }
 
@@ -343,7 +345,7 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   info = (dist_fork_t *)chpl_malloc(info_size, sizeof(char), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
 
   info->caller = chpl_localeID;
-  info->serial_state = chpl_get_serial();
+  info->serial_state = CHPL_GET_SERIAL();
   info->fid = fid;
   info->arg_size = arg_size;
   info->block = block;
@@ -367,10 +369,10 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   done = rheader;
   *done = 0;
 
-  chpl_mutex_lock(&armci_lock);
+  CHPL_MUTEX_LOCK(&armci_lock);
   ret = ARMCI_Gpc_exec(ghndl, locale, header, sizeof(void *), info, info_size, (void *)rheader, rhdr_size,
                        rdata, rdlen, NULL);
-  chpl_mutex_unlock(&armci_lock);
+  CHPL_MUTEX_UNLOCK(&armci_lock);
 
   if (ret != 0) {
     chpl_internal_error("ARMCI_Gpc_exec() failed");
@@ -438,7 +440,7 @@ int gpc_call_handler(int to, int from, void *hdr, int hlen,
   prhdr = *(intptr_t *)hdr;
   ginfo->rhdr = (int *)prhdr;
 
-  chpl_begin(_gpc_thread_handler, ginfo, true, finfo->serial_state, NULL);
+  CHPL_BEGIN(_gpc_thread_handler, ginfo, true, finfo->serial_state, NULL);
 
   /* Small return header */
   *rhsize = sizeof(int);
