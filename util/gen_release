@@ -64,6 +64,7 @@ system("cd $tmpdir && svn export -q $svnroot chapel");
 
 # include these dirs and their entire contents
 @complete_dirs = (
+    "compiler/etc",
     "doc",
     "etc/emacs",
     "etc/vim",
