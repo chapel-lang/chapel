@@ -191,7 +191,7 @@ void chpl_setMemFlags(chpl_bool memTrackConfig,
   if (strcmp(memLog, "")) {
     if (chpl_numLocales > 1) {
       char* filename = (char*)malloc((strlen(memLog)+10)*sizeof(char));
-      sprintf(filename, "%s.%d", memLog, chpl_localeID);
+      sprintf(filename, "%s.%"PRId32, memLog, chpl_localeID);
       memLogFile = fopen(filename, "w");
       free(filename);
     } else {
@@ -409,7 +409,7 @@ void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename)
   for (i = 0; i < n; i++) {
     memEntry = table[i];
     if (memEntry->filename)
-      sprintf(loc, "%s:%d", memEntry->filename, memEntry->lineno);
+      sprintf(loc, "%s:%"PRId32, memEntry->filename, memEntry->lineno);
     else
       sprintf(loc, "--");
     fprintf(memLogFile, "%-*s%-*zu%-*zu%-*zu%-*s%#-*.*" PRIxPTR "\n",
@@ -438,7 +438,7 @@ void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size,
       chpl_mutex_unlock(&memTrack_lock);
     }
     if (chpl_verbose_mem)
-      fprintf(memLogFile, "%d: %s:%d: allocate %zuB of %s at %p\n", chpl_localeID, filename, lineno, number*size, chpl_memDescString(description), memAlloc);
+      fprintf(memLogFile, "%"PRId32": %s:%"PRId32": allocate %zuB of %s at %p\n", chpl_localeID, filename, lineno, number*size, chpl_memDescString(description), memAlloc);
   }
 }
 
@@ -451,12 +451,12 @@ void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename) {
     memEntry = removeMemTableEntry(memAlloc);
     if (memEntry) {
       if (chpl_verbose_mem)
-        fprintf(memLogFile, "%d: %s:%d: free %zuB of %s at %p\n", chpl_localeID, filename, lineno, memEntry->number*memEntry->size, chpl_memDescString(memEntry->description), memAlloc);
+        fprintf(memLogFile, "%"PRId32": %s:%"PRId32": free %zuB of %s at %p\n", chpl_localeID, filename, lineno, memEntry->number*memEntry->size, chpl_memDescString(memEntry->description), memAlloc);
       free(memEntry);
     }
     chpl_mutex_unlock(&memTrack_lock);
   } else if (chpl_verbose_mem && !memEntry) {
-    fprintf(memLogFile, "%d: %s:%d: free at %p\n", chpl_localeID, filename, lineno, memAlloc);
+    fprintf(memLogFile, "%"PRId32": %s:%"PRId32": free at %p\n", chpl_localeID, filename, lineno, memAlloc);
   }
 }
 
@@ -484,7 +484,7 @@ void chpl_track_realloc2(void* moreMemAlloc, size_t newChunk, void* memAlloc, si
       chpl_mutex_unlock(&memTrack_lock);
     }
     if (chpl_verbose_mem)
-      fprintf(memLogFile, "%d: %s:%d: reallocate %zuB of %s at %p -> %p\n", chpl_localeID, filename, lineno, number*size, chpl_memDescString(description), memAlloc, moreMemAlloc);
+      fprintf(memLogFile, "%"PRId32": %s:%"PRId32": reallocate %zuB of %s at %p -> %p\n", chpl_localeID, filename, lineno, number*size, chpl_memDescString(description), memAlloc, moreMemAlloc);
   }
 }
 
