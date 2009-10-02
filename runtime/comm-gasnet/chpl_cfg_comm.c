@@ -224,7 +224,7 @@ static void chpl_comm_gasnet_set_max_segsize() {
      heuristically */
   memtotal *= 0.9;
 
-  snprintf(segsizeval, 80, "%d", memtotal);
+  snprintf(segsizeval, 80, "%dKB", memtotal);
   setenv( "GASNET_MAX_SEGSIZE", segsizeval, 0 );
 }
 #endif

@@ -1,4 +1,5 @@
-#ifndef _CHPLCOMM_MD_H_
+#ifndef _chplcomm_comm_md_h_
+#define _chplcomm_comm_md_h_
 
 
 void chpl_comm_gasnet_help_register_global_var(int i, void* wide);

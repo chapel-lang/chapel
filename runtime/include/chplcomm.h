@@ -4,7 +4,8 @@
 #ifndef LAUNCHER
 
 #include <stdint.h>
-#include <chplcomm_md.h>
+#include <chplcomm_comm_md.h>
+#include <chplcomm_plat_md.h>
 #include "chplcomm_locales.h"
 #include "chpltypes.h"
 
