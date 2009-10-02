@@ -6,11 +6,6 @@
 
 #include <inttypes.h>
 
-#define PRIxPTR "p"
-
-typedef enum {
-  false=0,
-  true=1
-} _Bool;
+#define PRIxPTR "x"
 
 #endif
