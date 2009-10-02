@@ -55,11 +55,16 @@ static void normalize_nested_function_expressions(DefExpr* def) {
     def->replace(new UnresolvedSymExpr(def->sym->name));
     stmt->insertBefore(def);
   } else if (!strncmp("_iterator_for_parloopexpr", def->sym->name, 25)) {
-    while (Symbol* parent = def->parentSymbol) {
-      if (!strncmp("_parloopexpr", parent->name, 9))
-        parent->defPoint->insertBefore(def->remove());
-      else
-        break;
+    FnSymbol* parent = toFnSymbol(def->parentSymbol);
+    INT_ASSERT(!strncmp("_parloopexpr", parent->name, 12));
+    while (!strncmp("_parloopexpr", parent->defPoint->parentSymbol->name, 12))
+      parent = toFnSymbol(parent->defPoint->parentSymbol);
+    if (TypeSymbol* ts = toTypeSymbol(parent->defPoint->parentSymbol)) {
+      ClassType* ct = toClassType(ts->type);
+      INT_ASSERT(ct);
+      ct->addDeclarations(def->remove(), true);
+    } else {
+      parent->defPoint->insertBefore(def->remove());
     }
   }
 }
@@ -148,7 +153,7 @@ void cleanup(void) {
           iter->remove();
           if (def->init) {
             Expr* init = def->init->copy();
-            def->init->replace(buildForLoopExpr(indices, iter, init));
+            def->init->replace(buildForallLoopExpr(indices, iter, init));
           }
         } else {
           USR_FATAL(call, "unhandled case of array type loop expression");
