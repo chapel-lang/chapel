@@ -13,19 +13,20 @@
 
 use threads;
 
-die "error: runManyTimes.pl <NT> <NIPT> [<COMMAND>]" unless $#ARGV > 0 && $#ARGV < 3;
+die "error: runManyTimes.pl <NT> <NIPT> [<COMMAND>]" unless $#ARGV > 0;
 
 $NT = @ARGV[0];
 $NIPT = @ARGV[1];
-if ($#ARGV == 2) {
-    $COMMAND = @ARGV[2];
+
+if ($#ARGV >= 2) {
+    @COMMAND = @ARGV[2..$#ARGV];
 } else {
-    $COMMAND = "a.out";
+    @COMMAND = ("a.out");
 }
 
 print "Threads               = $NT\n";
 print "Iterations Per Thread = $NIPT\n";
-print "Command               = $COMMAND\n";
+print "Command               = @COMMAND\n";
 
 for ($i = 0; $i < $NT; $i++) {
     @thr[$i] = threads->new(\&com, $i);
@@ -44,7 +45,7 @@ sub com {
     my $i = @_[0];
     my $hundredths = 1;
     for ($j = 1; $j <= $NIPT; $j++) {
-        system("$COMMAND >& .runManyTimes.out.$i.$j");
+        system("@COMMAND >& .runManyTimes.out.$i.$j");
         system("echo \"----------\" >> .runManyTimes.out.$i.$j");
         while ($j >= ($NIPT / 100 * $hundredths)) {
             printf(".");
