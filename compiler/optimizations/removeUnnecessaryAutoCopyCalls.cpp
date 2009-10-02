@@ -115,8 +115,6 @@ void removeUnnecessaryAutoCopyCalls() {
         fn->getFormal(1)->type == fn->retType) {
       if (isPrimitiveInitCopy(primitiveInitCopyTypeSet, fn->retType)) {
         forv_Vec(CallExpr, call, *fn->calledBy) {
-          CallExpr* move = toCallExpr(call->parentExpr);
-          INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
           call->replace(call->get(1)->remove());
         }
       }
