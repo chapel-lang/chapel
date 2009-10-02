@@ -1404,6 +1404,11 @@ void chpl_comm_barrier(const char *msg) {
   if (!(strcmp(msg, "chpl_comm_exit_all")) && chpl_localeID == 0) {
     return;
   }
+  if (!(strcmp(msg, "barrier before main"))) {
+    // Accounts for the barrier before the main loop.
+    PVM_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_barrier");
+    return;
+  }
   if (!okay_to_barrier) {
     PRINTF("Entering okay_to_barrier loop");
   }
