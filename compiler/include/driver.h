@@ -25,6 +25,7 @@ extern bool fNoLiveAnalysis;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoRemoteValueForwarding;
+extern bool fNoRemoveCopyCalls;
 extern bool fNoScalarReplacement;
 extern bool fNoOptimizeLoopIterators;
 extern bool fNoPrivatization;

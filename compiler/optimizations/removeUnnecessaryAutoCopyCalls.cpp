@@ -101,6 +101,9 @@ isPrimitiveInitCopy(Vec<Type*>& primitiveInitCopyTypeSet, Type* type) {
 }
 
 void removeUnnecessaryAutoCopyCalls() {
+  if (fNoRemoveCopyCalls)
+    return;
+
   //
   // remove pointless initCopy calls, e.g., initCopy calls on records of
   // primitive types

@@ -147,6 +147,12 @@ OPTIONS
                     if reading them early does not violate program
                     semantics.
 
+  --[no-]remove-copy-calls   Enable [disable] removal of copy calls
+                    (including calls to what amounts to a copy
+                    constructor for records) that ensure Chapel
+                    semantics but which can often be optimized away by
+                    this optimization.
+
   --[no-]scalar-replacement   Enable [disable] scalar replacement of records
                     and classes for some compiler-generated data structures
                     that support language features such as tuples and
