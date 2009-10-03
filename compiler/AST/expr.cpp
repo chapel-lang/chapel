@@ -2099,6 +2099,15 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_GET_ERRNO:
       fprintf(outfile, "get_errno()");
       break;
+    case PRIM_NEXT_UINT32:
+      INT_FATAL(this, "next uint32 primitive should no longer be in AST");
+      break;
+    case PRIM_GET_USER_LINE:
+      INT_FATAL(this, "get user line primitive should no longer be in AST");
+      break;
+    case PRIM_GET_USER_FILE:
+      INT_FATAL(this, "get user file primitive should no longer be in AST");
+      break;
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "Impossible");
       break;

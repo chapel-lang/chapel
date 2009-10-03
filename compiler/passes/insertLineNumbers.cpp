@@ -24,6 +24,20 @@ static Vec<FnSymbol*> queue;
 static Map<FnSymbol*,ArgSymbol*> linenoMap; // fn to line number argument
 static Map<FnSymbol*,ArgSymbol*> filenameMap; // fn to filename argument
 
+static ArgSymbol* newLine(FnSymbol* fn) {
+  ArgSymbol* line = new ArgSymbol(INTENT_BLANK, "_ln", dtInt[INT_SIZE_32]);
+  fn->insertFormalAtTail(line);
+  linenoMap.put(fn, line);
+  return line;
+}
+
+static ArgSymbol* newFile(FnSymbol* fn) {
+  ArgSymbol* file = new ArgSymbol(INTENT_BLANK, "_fn", dtString);
+  fn->insertFormalAtTail(file);
+  filenameMap.put(fn, file);
+  return file;
+}
+
 //
 // insert a line number and filename actual into a call; add line
 // number and filename formal arguments to the function in which this
@@ -33,15 +47,35 @@ static void
 insertLineNumber(CallExpr* call) {
   FnSymbol* fn = call->getFunction();
   ModuleSymbol* mod = fn->getModule();
-  if (!strcmp(fn->name, "chpl__heapAllocateGlobals") ||
-      !strcmp(fn->name, "chpl__initModuleGuards") ||
-      ((mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) && 
-       !fn->hasFlag(FLAG_TEMP) && !fn->hasFlag(FLAG_INLINE)) ||
-      (developer == true && strcmp(fn->name, "halt"))) {
+  ArgSymbol* file = filenameMap.get(fn);
+  ArgSymbol* line = linenoMap.get(fn);
+
+  if (call->isPrimitive(PRIM_GET_USER_FILE) || 
+      call->isPrimitive(PRIM_GET_USER_LINE)) {
+    
+    // add both arguments or none
+    if (!file) { 
+      line = newLine(fn);
+      file = newFile(fn);
+      queue.add(fn);
+    }
+    
+    // 
+    if (call->isPrimitive(PRIM_GET_USER_FILE)) {
+      call->replace(new SymExpr(file));
+    } else if (call->isPrimitive(PRIM_GET_USER_LINE)) {
+      call->replace(new SymExpr(line));
+    }
+  } else
+    if (!strcmp(fn->name, "chpl__heapAllocateGlobals") ||
+             !strcmp(fn->name, "chpl__initModuleGuards") ||
+             ((mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) && 
+              !fn->hasFlag(FLAG_TEMP) && !fn->hasFlag(FLAG_INLINE)) ||
+             (developer == true && strcmp(fn->name, "halt"))) {
     // call is in user code; insert AST line number and filename
     // or developer flag is on and the call is not the halt() call
-    if (call->isResolved() &&
-        call->isResolved()->hasFlag(FLAG_COMMAND_LINE_SETTING)) {
+      if (call->isResolved() &&
+          call->isResolved()->hasFlag(FLAG_COMMAND_LINE_SETTING)) {
       call->insertAtTail(new_IntSymbol(0));
       FnSymbol* fn = call->isResolved();
       INT_ASSERT(fn);
@@ -57,23 +91,20 @@ insertLineNumber(CallExpr* call) {
       call->insertAtTail(new_IntSymbol(call->lineno));
       call->insertAtTail(new_StringSymbol(call->getModule()->filename));
     }
-  } else if (linenoMap.get(fn)) {
+  } else if (file) {
     // call is in non-user code, but the function already has line
     // number and filename arguments
-    call->insertAtTail(linenoMap.get(fn));
-    call->insertAtTail(filenameMap.get(fn));
-  } else {
-    // call is in non-user code, and the function requires new line
-    // number and filename arguments
-    ArgSymbol* line = new ArgSymbol(INTENT_BLANK, "_ln", dtInt[INT_SIZE_32]);
-    ArgSymbol* file = new ArgSymbol(INTENT_BLANK, "_fn", dtString);
-    fn->insertFormalAtTail(line);
-    fn->insertFormalAtTail(file);
     call->insertAtTail(line);
     call->insertAtTail(file);
-    linenoMap.put(fn, line);
-    filenameMap.put(fn, file);
-    queue.add(fn);
+  } else {
+      // call is in non-user code, and the function requires new line
+      // number and filename arguments
+      line = newLine(fn);
+      file = newFile(fn);
+      queue.add(fn);
+
+      call->insertAtTail(line);
+      call->insertAtTail(file);
   }
 }
 

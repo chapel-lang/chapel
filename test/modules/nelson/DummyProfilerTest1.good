@@ -1,0 +1,71 @@
+1
+profiling begin region #0 name=r1 userfile=DummyProfilerTest1.chpl userline=8
+profiling begin region #1 name=r1a userfile=DummyProfilerTest1.chpl userline=9
+profiling begin region #2 name=r1b userfile=DummyProfilerTest1.chpl userline=10
+2
+profiling begin region #3 name= userfile=DummyProfilerTest1.chpl userline=12
+profiling begin region #4 name= userfile=DummyProfilerTest1.chpl userline=13
+profiling begin region #5 name= userfile=DummyProfilerTest1.chpl userline=14
+main
+profiling trace event main
+r12
+profiling begin region #6 name=r12 userfile=DummyProfilerTest1.chpl userline=21
+profiling begin region #7 name=r12x userfile=DummyProfilerTest1.chpl userline=22
+profiling begin region #8 name=r12y userfile=DummyProfilerTest1.chpl userline=23
+r13
+profiling begin region #9 name= userfile=DummyProfilerTest1.chpl userline=25
+profiling begin region #10 name= userfile=DummyProfilerTest1.chpl userline=26
+profiling begin region #11 name= userfile=DummyProfilerTest1.chpl userline=27
+profiling trace event r12loop with value 1
+profiling trace event r12loop with values 12345
+loop
+profiling end region #11 name= userfile=DummyProfilerTest1.chpl userline=27
+profiling end region #10 name= userfile=DummyProfilerTest1.chpl userline=26
+profiling end region #9 name= userfile=DummyProfilerTest1.chpl userline=25
+profiling end region #8 name=r12y userfile=DummyProfilerTest1.chpl userline=23
+profiling end region #7 name=r12x userfile=DummyProfilerTest1.chpl userline=22
+profiling end region #6 name=r12 userfile=DummyProfilerTest1.chpl userline=21
+r12
+profiling begin region #6 name=r12 userfile=DummyProfilerTest1.chpl userline=21
+profiling begin region #7 name=r12x userfile=DummyProfilerTest1.chpl userline=22
+profiling begin region #8 name=r12y userfile=DummyProfilerTest1.chpl userline=23
+r13
+profiling begin region #9 name= userfile=DummyProfilerTest1.chpl userline=25
+profiling begin region #10 name= userfile=DummyProfilerTest1.chpl userline=26
+profiling begin region #11 name= userfile=DummyProfilerTest1.chpl userline=27
+profiling trace event r12loop with value 2
+profiling trace event r12loop with values 23456
+loop
+profiling end region #11 name= userfile=DummyProfilerTest1.chpl userline=27
+profiling end region #10 name= userfile=DummyProfilerTest1.chpl userline=26
+profiling end region #9 name= userfile=DummyProfilerTest1.chpl userline=25
+profiling end region #8 name=r12y userfile=DummyProfilerTest1.chpl userline=23
+profiling end region #7 name=r12x userfile=DummyProfilerTest1.chpl userline=22
+profiling end region #6 name=r12 userfile=DummyProfilerTest1.chpl userline=21
+r12
+profiling begin region #6 name=r12 userfile=DummyProfilerTest1.chpl userline=21
+profiling begin region #7 name=r12x userfile=DummyProfilerTest1.chpl userline=22
+profiling begin region #8 name=r12y userfile=DummyProfilerTest1.chpl userline=23
+r13
+profiling begin region #9 name= userfile=DummyProfilerTest1.chpl userline=25
+profiling begin region #10 name= userfile=DummyProfilerTest1.chpl userline=26
+profiling begin region #11 name= userfile=DummyProfilerTest1.chpl userline=27
+profiling trace event r12loop with value 3
+profiling trace event r12loop with values 34567
+loop
+profiling end region #11 name= userfile=DummyProfilerTest1.chpl userline=27
+profiling end region #10 name= userfile=DummyProfilerTest1.chpl userline=26
+profiling end region #9 name= userfile=DummyProfilerTest1.chpl userline=25
+profiling end region #8 name=r12y userfile=DummyProfilerTest1.chpl userline=23
+profiling end region #7 name=r12x userfile=DummyProfilerTest1.chpl userline=22
+profiling end region #6 name=r12 userfile=DummyProfilerTest1.chpl userline=21
+profiling enabled = false
+no profiling here
+profiling enabled = true
+done
+profiling end region #5 name= userfile=DummyProfilerTest1.chpl userline=14
+profiling end region #4 name= userfile=DummyProfilerTest1.chpl userline=13
+profiling end region #3 name= userfile=DummyProfilerTest1.chpl userline=12
+profiling end region #2 name=r1b userfile=DummyProfilerTest1.chpl userline=10
+profiling end region #1 name=r1a userfile=DummyProfilerTest1.chpl userline=9
+profiling end region #0 name=r1 userfile=DummyProfilerTest1.chpl userline=8

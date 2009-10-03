@@ -57,6 +57,7 @@ insertAutoDestroyTemps() {
           if (doesExitBlock(block, gotoStmt)) {
             forv_Vec(VarSymbol, var, vars) {
               if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+                SET_LINENO(var);
                 gotoStmt->insertBefore(new CallExpr(autoDestroyFn, var));
               }
             }
@@ -74,6 +75,7 @@ insertAutoDestroyTemps() {
           (isGotoStmt(stmt->next))) {
         forv_Vec(VarSymbol, var, vars) {
           if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+            SET_LINENO(var);
             stmt->insertAfter(new CallExpr(autoDestroyFn, var));
           }
         }

@@ -2525,6 +2525,11 @@ preFold(Expr* expr) {
         call->replace(followerCall);
         result = followerCall;
       }
+    } else if (call->isPrimitive(PRIM_NEXT_UINT32)) {
+      static unsigned int next_region_id = 0;
+      result = new SymExpr(new_UIntSymbol(next_region_id, INT_SIZE_32));
+      ++next_region_id;
+      call->replace(result);
     }
   }
   return result;
