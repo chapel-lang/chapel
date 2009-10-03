@@ -16,10 +16,6 @@
 general regressions
 ===================
 
-internal error (10/02/09)
--------------------------
-[Error matching compiler output for functions/diten/parallel_iterator]
-
 spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -187,6 +183,11 @@ no longer needs to be suppressed?
 no-local regressions
 ====================
 
+line error numbers are off (10/03/09)
+-------------------------------------
+[Error matching program output for memory/shannon/memmaxExceeds]
+[Error matching program output for types/locale/bradc/createNewLocale]
+
 spurious timeouts
 -----------------
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr] (e.g., 09/17/09)
@@ -259,8 +260,8 @@ pvm-specific tests
 
 things sometimes take too long
 ------------------------------
-[Error: Timed out executing program release/examples/hello-multiloc]
-[Error: Timed out executing program release/examples/tutorials/multilocale]
+[Error: Timed out executing program release/examples/hello-multiloc] (e.g., 10/03/09)
+[Error: Timed out executing program release/examples/tutorials/multilocale] (e.g., 10/03/09)
 
 things take too long
 --------------------
