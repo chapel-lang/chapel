@@ -48,8 +48,7 @@ config const useRandomSeed = true,
 //
 config const printParams = true,
              printArrays = false,
-             printStats = true,
-             verbose = false;
+             printStats = true;
 
 //
 // The program entry point
@@ -70,25 +69,18 @@ def main() {
   //
   const ProblemSpace: domain(1, int(64)) distributed BlockDist = [1..m];
 
-  if verbose then writeln("Declaring vectors");
-
   //
   // A, B, and C are the three distributed vectors, declared to store
   // a variable of type elemType for each index in ProblemSpace.
   //
   var A, B, C: [ProblemSpace] elemType;
 
-  if verbose then writeln("Initializing vectors");
-
   initVectors(B, C);    // Initialize the input vectors, B and C
 
   var execTime: [1..numTrials] real;                 // an array of timings
 
   for trial in 1..numTrials {                        // loop over the trials
-    if verbose then writeln("Starting trial ", trial);
     const startTime = getCurrentTime();              // capture the start time
-
-    if verbose then writeln("Starting forall loop");
 
     //
     // The main loop: Iterate over the vectors A, B, and C in a
@@ -98,17 +90,10 @@ def main() {
     forall (a, b, c) in (A, B, C) do
       a = b + alpha * c;
 
-    if verbose then writeln("Completed forall loop");
-
     execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
   }
 
-  if verbose then writeln("Verifying results");
-
   const validAnswer = verifyResults(A, B, C);        // verify...
-
-  if verbose then writeln("Printing results");
-
   printResults(validAnswer, execTime);               // ...and print the results
 }
 
@@ -147,7 +132,6 @@ def initVectors(B, C) {
 def verifyResults(A, B, C) {
   if (printArrays) then writeln("A is:     ", A, "\n");  // optionally print A
 
-  if (verbose) then writeln("accumulating into B");
   //
   // recompute the computation, destructively storing into B to save space
   //
@@ -156,15 +140,12 @@ def verifyResults(A, B, C) {
 
   if (printArrays) then writeln("A-hat is: ", B, "\n");  // and A-hat too
 
-  if (verbose) then writeln("computing infNorm");
   //
   // Compute the infinity-norm by computing the maximum reduction of the
   // absolute value of A's elements minus the new result computed in B.
   // "[i in I]" represents an expression-level loop: "forall i in I"
   //
   const infNorm = max reduce [(a,b) in (A,B)] abs(a - b);
-
-  if (verbose) then writeln("Returning");
 
   return (infNorm <= epsilon);    // return whether the error is acceptable
 }
