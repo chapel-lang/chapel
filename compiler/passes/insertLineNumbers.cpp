@@ -155,7 +155,6 @@ void insertLineNumbers() {
       insertLineNumber(call);
     }
   }
-
   // loop over all functions in the queue and all calls to these
   // functions, and pass the calls an actual line number and filename
   forv_Vec(FnSymbol, fn, queue) {
@@ -166,10 +165,17 @@ void insertLineNumbers() {
 
   // pass line number and filename arguments to functions that are
   // forked via the argument class
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isResolved()) {
-      if ((call->numActuals() > 2 && call->isResolved()->hasFlag(FLAG_ON_BLOCK)) ||
-          (call->numActuals() > 1 && call->isResolved()->hasFlag(FLAG_BEGIN_BLOCK))) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if ((fn->numFormals() > 4 && fn->hasFlag(FLAG_ON_BLOCK)) ||
+        (fn->numFormals() > 3 && fn->hasFlag(FLAG_BEGIN_BLOCK))) {
+
+      DefExpr* filenameFormal = toDefExpr(fn->formals.tail);
+      filenameFormal->remove();
+      DefExpr* linenoFormal = toDefExpr(fn->formals.tail);
+      linenoFormal->remove();
+      DefExpr* argClassFormal = toDefExpr(fn->formals.tail);
+
+      forv_Vec(CallExpr, call, *fn->calledBy) {
         Expr* filename = call->argList.tail->remove();
         Expr* lineno = call->argList.tail->remove();
         Expr* argClass = call->argList.tail;
@@ -180,12 +186,6 @@ void insertLineNumbers() {
         ct->fields.insertAtTail(new DefExpr(filenameField));
         call->insertBefore(new CallExpr(PRIM_SET_MEMBER, argClass->copy(), linenoField, lineno));
         call->insertBefore(new CallExpr(PRIM_SET_MEMBER, argClass->copy(), filenameField, filename));
-        FnSymbol* fn = call->isResolved();
-        DefExpr* filenameFormal = toDefExpr(fn->formals.tail);
-        filenameFormal->remove();
-        DefExpr* linenoFormal = toDefExpr(fn->formals.tail);
-        linenoFormal->remove();
-        DefExpr* argClassFormal = toDefExpr(fn->formals.tail);
         VarSymbol* filenameLocal = newTemp("_fn", filename->typeInfo());
         VarSymbol* linenoLocal = newTemp("_ln", lineno->typeInfo());
         fn->insertAtHead(new CallExpr(PRIM_MOVE, filenameLocal, new CallExpr(PRIM_GET_MEMBER_VALUE, argClassFormal->sym, filenameField)));
