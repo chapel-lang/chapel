@@ -6,4 +6,6 @@ foo(1);
 writeln();
 foo();
 writeln();
-foo(1..4);
+serial true {
+  foo(1..4);
+}

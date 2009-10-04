@@ -6,7 +6,9 @@ writeln("Size = ", v.size);
 writeln("Capacity = ", v.capacity);
 
 writeln("push 1 through 100 ");
-v.push(1..100);
+serial true {
+  v.push(1..100);
+}
 writeln("Size = ", v.size);
 writeln("Capacity = ", v.capacity);
 
@@ -25,7 +27,9 @@ writeln("Size = ", v2.size);
 writeln("Capacity = ", v2.capacity);
 
 writeln("push 1 through 100 ");
-v2.push(1..100);
+serial true {
+  v2.push(1..100);
+}
 writeln("Size = ", v2.size);
 writeln("Capacity = ", v2.capacity);
 

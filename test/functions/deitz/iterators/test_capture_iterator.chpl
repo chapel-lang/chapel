@@ -9,4 +9,6 @@ def bar(n: int) {
   writeln("Array = ", A);
 }
 
-bar(1..100);
+serial true {
+  bar(1..100);
+}

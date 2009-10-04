@@ -1,3 +1,5 @@
+config param debugChapelRange = false;
+
 //
 // range type
 //
@@ -361,6 +363,21 @@ def range.these(param tag: iterator) where tag == iterator.leader {
   // resolved wherever an iterator is.
   if boundedType == BoundedRangeType.boundedNone then
     halt("iteration over a range with no bounds");
+  if debugChapelRange then
+    writeln("*** In range leader: ", this);
+  var numChunks: uint(64) =
+    if maxChunks == -1 then
+      if maxThreads == 0 then (here.numCores):uint(64)
+      else (min(here.numCores, maxThreads)):uint(64)
+    else if maxThreads == 0 then (min(here.numCores, maxChunks)):uint(64)
+      else (min(here.numCores, min(maxThreads, maxChunks))):uint(64);
+
+  var numelems: uint(64) = if stridable then (abs(high-low)/stride):uint(64)
+    else abs(high-low):uint(64);
+
+  if debugChapelRange then
+    writeln("*** RI: numelems=", numelems, " numChunks=", numChunks);
+
   var v: eltType;
   if stride > 0 then
     v = (high - low) / stride:eltType + 1;
@@ -368,7 +385,18 @@ def range.these(param tag: iterator) where tag == iterator.leader {
     v = (low - high) / stride:eltType + 1;
   if v < 0 then
     v = 0;
-  yield tuple(0..v-1);
+
+  if (numelems <= minElemsPerChunk*numChunks) || (numChunks == 1) {
+    if debugChapelRange then
+      writeln("*** minElemsPerChunk*numChunks = ",
+              minElemsPerChunk*numChunks, ", using 1 chunk");
+    yield tuple(0..v-1);
+  } else {
+    coforall chunk in 0..numChunks-1 {
+      const (lo,hi) = _computeMyChunk(v, v-1, numChunks, chunk);
+      yield tuple(lo..hi);
+    }
+  }
 }
 
 def range.these(param tag: iterator, follower) where tag == iterator.follower {
@@ -561,3 +589,34 @@ pragma "inline" def string.substring(s: range(?e,?b,?st)) {
   else
     return __primitive("string_select", this, s.low, s.high);
 }
+
+//
+// helper function for blocking index ranges
+// - based on _computeBlock() but specialized for cases
+//   where the low bound is always zero
+//
+def _computeMyChunk(numelems, wayhi, numblocks, blocknum) {
+  if debugDefaultDist then
+    writeln("in _computeMyChunk: numelems=",  numelems, " wayhi=", wayhi,
+	    " numblocks=", numblocks, " blocknum=", blocknum);
+  /*
+  if numblocks == 1 then
+    return (0:wayhi.type, numelems:wayhi.type-1);
+  */
+
+  if numelems == 0 then
+    return (1:wayhi.type, 0:wayhi.type);
+
+  def procToData(x)
+    return x:wayhi.type + (x:real != x:int:real):wayhi.type;
+
+  const blo =
+    if blocknum == 0 then 0
+      else procToData((numelems:real * blocknum) / numblocks);
+  const bhi =
+    if blocknum == numblocks - 1 then wayhi
+      else procToData((numelems:real * (blocknum+1)) / numblocks) - 1;
+
+  return (blo, bhi);
+}
+

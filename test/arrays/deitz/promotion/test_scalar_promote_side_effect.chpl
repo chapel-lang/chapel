@@ -7,4 +7,7 @@ def foo(i: int) {
 
 def bar(i: int) return n + i;
 
-foo(bar(1..10));
+serial true {
+  foo(bar(1..10));
+}
+

@@ -336,7 +336,9 @@ def verify() {
 
 def checksum(i, X1) {
   var chk : complex;
-  [j in 1..1024] chk += X1((5*j) % nx, (3*j) % ny, j % nz);
+  serial true {
+    [j in 1..1024] chk += X1((5*j) % nx, (3*j) % ny, j % nz);
+  }
   chk = chk / ((nx * ny * nz) + 0i);
   sums(i) = chk;
   if verbose then
