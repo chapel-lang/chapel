@@ -16,6 +16,18 @@
 general regressions
 ===================
 
+failures due to Jacob backing out line# change (10/05/09)
+---------------------------------------------------------
+[Error matching program output for modules/nelson/CrayPatProfilerTest1]
+[Error matching program output for modules/nelson/DummyProfilerTest1]
+
+failures due to parallel forall loop over ranges? (10/04/09)
+------------------------------------------------------------
+[Error matching program output for sparse/bradc/accumInds]
+[Error matching program output for spec/marybeth/seq2]
+[Error matching program output for studies/hpcc/FFT/marybeth/fft-test-even]
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample3]
+
 spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -89,6 +101,9 @@ double free (09/02/09)
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for trivial/bradc/entrypoint/main] (e.g., 10/04/09)
+[Error matching compiler output for arrays/bradc/sliceassign] (e.g., 10/03/09)
+[Error matching program output for studies/madness/aniruddha/madchap/test_diff] (e.g., 10/03/09)
 [Error matching compiler output for arrays/bradc/slices/icError] (e.g., 10/02/09)
 [Error matching compiler output for arrays/bradc/slices/reindexIndTypeMismatch] (e.g., 10/02/09)
 [Error matching compiler output for performance/compiler/bradc/compSampler-timecomp] (e.g., 10/02/09)
@@ -131,7 +146,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for studies/hpcc/FFT/bradc/fft-perm] (e.g., 09/11/09)
 [Error matching compiler output for users/thom/itoverride] (e.g., 09/11/09, 09/18/09)
 [Error matching compiler output for studies/shootout/nbody/nbody_record_2] (e.g., 09/09/09)
-[Error matching compiler output for users/thom/initArrOfClasses] (e.g., 09/09/09, 09/22/09, 09/26/09, 10/02/09)
+[Error matching compiler output for users/thom/initArrOfClasses] (e.g., 09/09/09, 09/22/09, 09/26/09, 10/02/09, 10/04/09)
 [Error matching compiler output for parallel/begin/deitz/test_nested_fn_begin1] (e.g., 09/07/09)
 [Error matching compiler output for users/shetag/unboundslice] (e.g., 09/07/09)
 [Error matching compiler output for spec/marybeth/sort] (e.g., 09/06/09)
@@ -150,7 +165,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for parallel/cobegin/waynew/depend] (e.g., 08/31/09, 09/07/09, 10/01/09)
 [Error matching compiler output for parallel/syncStmt/deitz/test_end2] (e.g., 08/31/09, 09/26/09)
 [Error matching compiler output for spec/marybeth/select] (e.g., 08/31/09)
-[Error matching compiler output for users/shetag/condarr-blc2] (e.g., 08/31/09, 09/10/09, 09/14/09, 09/28/09)
+[Error matching compiler output for users/shetag/condarr-blc2] (e.g., 08/31/09, 09/10/09, 09/14/09, 09/28/09, 10/03/09)
 [Error matching compiler output for studies/hpcc/2008/stream] (e.g., 08/30/09)
 [Error matching compiler output for parallel/cobegin/bradc/arrayargs] (e.g., 08/29/09)
 [Error matching compiler output for studies/590o/blucia/img_proc] (e.g., 08/29/09, 09/01/09, 09/23/09)
@@ -182,6 +197,28 @@ no longer needs to be suppressed?
 ====================
 no-local regressions
 ====================
+
+missing reports numbers (10/05/09)
+----------------------------------
+[Error matching program output for parallel/begin/stonea/reportsManyThreads]
+[Error matching program output for parallel/begin/stonea/reports]
+[Error matching program output for parallel/cobegin/stonea/reports]
+[Error matching program output for parallel/coforall/stonea/reports]
+
+line error numbers are off (10/05/09)
+-------------------------------------
+[Error matching program output for parallel/single/waynew/simple0]
+[Error matching program output for parallel/single/waynew/simple0b]
+[Error matching program output for trivial/shannon/readStringOverflow]
+[Error matching program output for types/file/closeStdin]
+[Error matching program output for types/file/closedWithoutOpen]
+[Error matching program output for types/file/freadIntFailed]
+[Error matching program output for types/file/freadNoFloat]
+[Error matching program output for types/file/freadNoInt]
+[Error matching program output for types/file/fwriteIntFailed]
+[Error matching program output for types/file/fwriteIntUnopenedFile]
+[Error matching program output for types/file/openStdout]
+[Error matching program output for types/file/unableToOpenFile]
 
 line error numbers are off (10/03/09)
 -------------------------------------
@@ -235,8 +272,9 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09, 06/11/09, 06/13/09, 06/17/09, 06/19/09, 06/22/09, 06/23/09, 06/24/09, 07/03/09, 07/04/09, 07/05/09, 07/10/09, 07/11/09, 07/13/09, 07/15/09, 07/19/09, 07/24/09, 07/30/09, 08/01/09, 08/06/09, 08/29/09, 09/15/09, 09/23/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 06/14/09, 06/16/09, 10/02/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09, 06/11/09, 06/13/09, 06/17/09, 06/19/09, 06/22/09, 06/23/09, 06/24/09, 07/03/09, 07/04/09, 07/05/09, 07/10/09, 07/11/09, 07/13/09, 07/15/09, 07/19/09, 07/24/09, 07/30/09, 08/01/09, 08/06/09, 08/29/09, 09/15/09, 09/23/09, 10/04/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 06/14/09, 06/16/09, 10/02/09, 10/04/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09)
 
 
 ==============================================
@@ -261,7 +299,7 @@ pvm-specific tests
 things sometimes take too long
 ------------------------------
 [Error: Timed out executing program release/examples/hello-multiloc] (e.g., 10/03/09)
-[Error: Timed out executing program release/examples/tutorials/multilocale] (e.g., 10/03/09)
+[Error: Timed out executing program release/examples/tutorials/multilocale] (e.g., 10/03/09, 10/04/09)
 
 things take too long
 --------------------
@@ -371,6 +409,10 @@ spurious compilation timeout
 darwin-specific regressions
 ===========================
 
+execution timeout (10/05/09)
+----------------------------
+[Error: Timed out executing program npb/cg/bradc/cg-sparse]
+
 ??? (10/02/09)
 --------------
 [Error matching program output for studies/hpcc/RA/marybeth/ra3]
@@ -397,6 +439,11 @@ xt-cle-specific failures
 ==============================
 cray-/cce-specific regressions
 ==============================
+
+seg fault (10/03/09)
+--------------------
+[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround]
+[Error matching program output for types/tuple/bradc/homogTupleArr]
 
 new timeouts (08/30/09)
 -----------------------
@@ -442,9 +489,9 @@ precision issues (?) -- is there a floating point flag we need to throw?
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
 
-can't find float.h (08/30/09)
------------------------------
-*a bunch of failures when full tests are run*
+core dump (10/04/09)
+--------------------
+[Error matching program output for users/shetag/fock/fock-1-latest]
 
 ???
 ---
@@ -506,6 +553,7 @@ XT intel-specific regressions (in addition to xt-cle errors above)
 spurious double free or corruption
 ----------------------------------
 [Error matching program output for release/examples/programs/tree] (e.g., 09/28/09)
+[Error matching program output for stress/deitz/test_10k_coforall] (e.g., 10/03/09)
 
 spurious seg fault
 ------------------
@@ -515,15 +563,10 @@ spurious seg fault
 --------------
 [Error matching program output for arrays/deitz/test_record_of_domain_type]
 
-Another numerical accuracy issue? (09/05/09)
---------------------------------------------
-[Error matching program output for types/complex/bradc/negativeimaginaryliteral]
-
 Numerical accuracy issues (08/29/09)
 ------------------------------------
 [Error matching program output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress]
 [Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-refine/test_refine]
 [Error matching program output for studies/madness/aniruddha/madchap/test_diff]
 [Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
 [Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
