@@ -3,11 +3,10 @@
 \index{class@\chpl{class}}
 \index{classes}
 
-Classes are an abstraction of a data structure where the storage
-location is allocated independent of the scope of the variable of
-class type.  Each call to the constructor creates a new data object
-and returns a reference to the object.  Storage is reclaimed
-automatically as described in~\rsec{Automatic_Memory_Management}.
+Classes are an abstraction of a data structure where the storage location is
+allocated independent of the scope of the variable of class type.  Each call to
+the constructor, preceded by the \chpl{new} keyword, creates a new data object
+and returns a reference to the object.  Storage can be reclaimed by deleting the object with the \chpl{delete} keyword.
 
 \subsection{Class Types}
 \label{Class_Types}
@@ -394,11 +393,29 @@ A class defined within another class is a nested class.
 Nested classes can refer to fields and methods in the outer class
 implicitly or explicitly with an \chpl{outer} reference.
 
-\subsection{Automatic Memory Management}
-\label{Automatic_Memory_Management}
-\index{automatic memory management}
+\subsection{Dynamic Memory Management}
+\label{Dynamic_Memory_Management}
+\index{memory management}
 
-Memory associated with class instances is reclaimed automatically when
-there is no way for the current program to reference this memory.  The
-programmer does not need to free the memory associated with class
-instances.
+Memory associated with class instances can be reclaimed with the \chpl{delete}
+keyword.
+
+\begin{example}
+The following example allocates a new object \chpl{c} of class type \chpl{C}
+and then deletes it.
+\begin{chapel}
+var c = new C();
+delete c;
+\end{chapel}
+\end{example}
+
+\begin{openissue}
+Chapel was originally specified without a \chpl{delete} keyword.  The intention
+was that Chapel would be implemented with a distributed-memory garbage
+collector.  This is a research challenge.  In order to focus elsewhere, the
+design has been scaled back.  There is an expectation that Chapel will
+eventually support an optional distributed-memory garbage collector as well as
+a region-based memory management scheme similar to that used in the Titanium
+language.  Support of \chpl{delete} will likely continue even as these optional
+features become supported.
+\end{openissue}
