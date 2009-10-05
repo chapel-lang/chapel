@@ -1,4 +1,4 @@
-bug: Can't specify function return type to be tuple of arrays.
+bug: tuple of array return type
 
 This test will work if the return type for foo is inferred and not explicitly
 specified.

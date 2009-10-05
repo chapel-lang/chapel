@@ -1,10 +1,6 @@
 class EC {
   var i: sync int(64) = 0;
   var b: sync bool = true;
-  def ~EC() {
-    delete i;
-    delete b;
-  }
 }
 
 def up(e: EC) {

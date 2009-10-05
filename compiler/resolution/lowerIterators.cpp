@@ -560,6 +560,29 @@ inlineIterators() {
 
 
 void lowerIterators() {
+  //
+  // check for parallel constructs in non-leader iterators
+  //
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_ITERATOR_FN) && !fn->hasFlag(FLAG_INLINE_ITERATOR)) {
+      Vec<CallExpr*> calls;
+      collectCallExprs(fn, calls);
+      forv_Vec(CallExpr, call, calls) {
+        if ((call->isPrimitive(PRIM_BLOCK_BEGIN)) ||
+            (call->isPrimitive(PRIM_BLOCK_COBEGIN)) ||
+            (call->isPrimitive(PRIM_BLOCK_COFORALL)) ||
+            (call->isNamed("_toLeader"))) {
+          USR_FATAL_CONT(call, "invalid use of parallel construct in serial iterator");
+        }
+        if ((call->isPrimitive(PRIM_BLOCK_ON)) ||
+            (call->isPrimitive(PRIM_BLOCK_ON_NB))) {
+          USR_FATAL_CONT(call, "invalid use of 'on' in serial iterator");
+        }
+      }
+    }
+  }
+  USR_STOP();
+
   fragmentLocalBlocks();
 
   computeRecursiveIteratorSet();

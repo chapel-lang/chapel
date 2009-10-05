@@ -1,3 +1,6 @@
+bug: writeln fails on array over domain with negative stride
+
+Was
 bug: can't print negative stride array with writeln
 
 The writeThis method assumes stride is positive and starts printing from the

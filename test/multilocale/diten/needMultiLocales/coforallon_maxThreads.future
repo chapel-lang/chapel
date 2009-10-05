@@ -1,1 +1,5 @@
+bug: deadlock because of too few threads (coforall ... on)
+
+Was:
+
 bug: coforall + on deadlocks if maxThreads is equal to numLocales

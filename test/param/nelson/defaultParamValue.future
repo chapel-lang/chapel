@@ -1,2 +1,6 @@
-bug report: odd type string when printing the name of type of a
+bug: odd type name due to partial instantiation
+
+Was:
+
+odd type string when printing the name of type of a
 class/record with parameters having default values. 

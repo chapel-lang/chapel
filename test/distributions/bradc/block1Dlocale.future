@@ -1,3 +1,10 @@
+bug: multi-locale strings assigned by reference
+
+Wide strings are implemented with references.  This bug will hopefully be fixed
+when strings are overhauled to use a wrapper record.
+
+Was:
+
 bug: .locale on array string elements returns wrong locale
 
 This is an interesting test that I bumped into on accident.  It seems

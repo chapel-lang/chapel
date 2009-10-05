@@ -1,3 +1,7 @@
+semantic: bool config const without =true or =false on command line
+
+Was:
+
 = sign without initialization for config const execopt
 
 How should we deal with bool configuration constants, omissions of

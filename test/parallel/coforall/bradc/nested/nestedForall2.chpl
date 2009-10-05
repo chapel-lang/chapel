@@ -4,12 +4,12 @@ config const numTasks=4;
 
 def iterate() {
   coforall loc in Locales {
-    on loc {
+//    on loc {
       coforall taskid in 0..#numTasks {
-        const (lo,hi) = chpl_computeBlock(loc.id, 1, loc.id, loc.id, numTasks, taskid);
+        const (lo,hi) = (1, 10);
         yield [lo..hi];
       }
-    }
+//    }
   }
 }
 

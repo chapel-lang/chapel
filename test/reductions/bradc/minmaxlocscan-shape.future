@@ -1,4 +1,4 @@
-bug: array shape preserved in scan
+bug: array shape not preserved in scan
 
 bug: array type inference
 

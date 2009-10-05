@@ -714,8 +714,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_ARRAY_SET_FIRST:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         fprintf(outfile, "CHPL_COMM_WIDE_ARRAY_SET_VALUE(");
-        fprintf(outfile, "%s, ", wideRefMap.get(toTypeSymbol(get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->type->refType)->symbol->cname);
-        get(1)->codegen(outfile);
+        fprintf(outfile, "%s, ", wideRefMap.get(getDataClassType(get(1)->typeInfo()->getField("addr")->type->symbol)->type->refType)->symbol->cname);
+	get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(2)->codegen(outfile);
         fprintf(outfile, ", ");
@@ -723,7 +723,7 @@ void CallExpr::codegen(FILE* outfile) {
         //registerTypeToStructurallyCodegen(ts);
         fprintf(outfile, "%s, ", ts->cname);
         fprintf(outfile, "_data, ");
-        ts = toTypeSymbol(get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value);
+        ts = getDataClassType(get(1)->typeInfo()->getField("addr")->type->symbol);
         registerTypeToStructurallyCodegen(ts);
         fprintf(outfile, "%s, ", ts->cname);
         get(3)->codegen(outfile);
@@ -738,18 +738,18 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_ARRAY_ALLOC:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         help_codegen_fn(outfile, "_WIDE_ARRAY_ALLOC", get(1),
-                        get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value,
+                        getDataClassType(get(1)->typeInfo()->getField("addr")->type->symbol),
                         get(3), get(4), get(5));
       } else {
         help_codegen_fn(outfile, "_ARRAY_ALLOC", get(1),
-                        get(1)->typeInfo()->substitutions.v[0].value,
+                        getDataClassType(get(1)->typeInfo()->symbol),
                         get(3), get(4), get(5));
       }
       break;
     case PRIM_GPU_ALLOC:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         help_codegen_fn(outfile, "_GPU_ALLOC", get(1),
-                        get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value,
+                        getDataClassType(get(1)->typeInfo()->getField("addr")->type->symbol),
                         get(3));
       } else {
         fprintf(outfile, "_GPU_ALLOC(");
@@ -951,7 +951,6 @@ void CallExpr::codegen(FILE* outfile) {
             fprintf(outfile, "%s, ", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
             fprintf(outfile, "_data, ");
             TypeSymbol* ts = get(1)->typeInfo()->getField("addr")->type->symbol;
-            //            TypeSymbol* ts = toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value);
             registerTypeToStructurallyCodegen(ts);
             fprintf(outfile, "%s, ", ts->cname);
             call->get(3)->codegen(outfile);
@@ -968,7 +967,7 @@ void CallExpr::codegen(FILE* outfile) {
         if (call->isPrimitive(PRIM_ARRAY_GET_VALUE)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             fprintf(outfile, "CHPL_COMM_WIDE_ARRAY_GET_VALUE(");
-            Type* tt = wideRefMap.get(toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value)->type->refType);
+            Type* tt = wideRefMap.get(getDataClassType(call->get(1)->typeInfo()->getField("addr")->type->symbol)->type->refType);
             fprintf(outfile, "%s, ", tt->symbol->cname);
             get(1)->codegen(outfile);
             fprintf(outfile, ", ");
@@ -980,7 +979,7 @@ void CallExpr::codegen(FILE* outfile) {
             registerTypeToStructurallyCodegen(ts0);
             fprintf(outfile, "%s, ", ts0->cname);
             fprintf(outfile, "_data, ");
-            TypeSymbol* ts = toTypeSymbol(call->get(1)->typeInfo()->getField("addr")->type->substitutions.v[0].value);
+            TypeSymbol* ts = getDataClassType(call->get(1)->typeInfo()->getField("addr")->type->symbol);
             TypeSymbol* ts2 = tt->getField("addr")->type->symbol;
             registerTypeToStructurallyCodegen(ts);
             registerTypeToStructurallyCodegen(ts2);
