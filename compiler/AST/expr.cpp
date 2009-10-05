@@ -715,7 +715,7 @@ void CallExpr::codegen(FILE* outfile) {
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         fprintf(outfile, "CHPL_COMM_WIDE_ARRAY_SET_VALUE(");
         fprintf(outfile, "%s, ", wideRefMap.get(getDataClassType(get(1)->typeInfo()->getField("addr")->type->symbol)->type->refType)->symbol->cname);
-	get(1)->codegen(outfile);
+        get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(2)->codegen(outfile);
         fprintf(outfile, ", ");
