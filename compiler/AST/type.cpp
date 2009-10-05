@@ -322,8 +322,12 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "int64_t _uid;\n");
     fprintf(outfile, "union {\n");
   }
-  for_fields(field, this) {
-    field->codegenDef(outfile);
+  if (this->fields.length == 0) {
+    fprintf(outfile, "int dummyFieldToAvoidWarning;\n");
+  } else {
+    for_fields(field, this) {
+      field->codegenDef(outfile);
+    }
   }
   if (classTag == CLASS_UNION) {
     fprintf(outfile, "} _u;\n");
