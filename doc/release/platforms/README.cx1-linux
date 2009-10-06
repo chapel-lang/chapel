@@ -22,10 +22,26 @@ instructions in the top-level README to get started with the language.
    multiple locales and GASNet.
 
 
-3) Set GASNET_SSH_SERVERS to list the names of the compute nodes on
-   your system.  For example:
+3) If your CX1 uses PBS for scheduling jobs between multiple users,
+   you can have Chapel take care of the details for you by setting
+   CHPL_LAUNCHER to pbs-gasnetrun_ibv.  For example:
+
+     setenv CHPL_LAUNCHER pbs-gasnetrun_ibv
+
+   This will cause the generated Chapel program to submit a qsub job
+   on your behalf and then launch your program using the gasnetrun_ibv
+   launcher.
+
+   If your CX1 does not use PBS, you do not need to set CHPL_LAUNCHER,
+   in which case it will default to gasnetrun_ibv (a GASNet launch
+   script for Infiniband networks.  In this case, you will need to set
+   GASNET_SSH_SERVERS to list the names of the compute nodes on your
+   system.  For example:
 
      setenv GASNET_SSH_SERVERS 'compute-0-0.local compute-0-1.local'
+
+   See README.launcher for more information on Chapel's launcher
+   capabilities.
 
 
 4) By default, Chapel will use gcc as the compiler for a CX1.  If you
@@ -53,7 +69,7 @@ instructions in the top-level README to get started with the language.
    should see two binaries (e.g., hello-multiloc and
    hello-multiloc_real).  The first binary contains code to launch the
    Chapel program onto the compute nodes, as specified by your
-   GASNET_SSH_SERVERS variable.  The second contains the program code
+   CHPL_LAUNCHER setting.  The second contains the program code
    itself.  You can use the -v flag to see the commands used to launch
    your program.  See README.launcher for further details.
 
