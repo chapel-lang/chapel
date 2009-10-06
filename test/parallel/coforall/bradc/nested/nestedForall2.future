@@ -1,3 +1,0 @@
-bug: coforall in iterator
-
-This currently seg faults.  Should probably generate an error message.

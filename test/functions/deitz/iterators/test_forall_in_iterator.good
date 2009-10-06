@@ -1,0 +1,2 @@
+test_forall_in_iterator.chpl:1: In iterator 'foo':
+test_forall_in_iterator.chpl:2: error: invalid use of parallel construct in serial iterator
