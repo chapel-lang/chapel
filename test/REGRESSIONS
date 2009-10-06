@@ -16,6 +16,10 @@
 general regressions
 ===================
 
+??? (10/6/09)
+-------------
+[Error matching program output for memory/figueroa/ClassInheritance1]
+
 failures due to Jacob backing out line# change (10/05/09)
 ---------------------------------------------------------
 [Error matching program output for modules/nelson/CrayPatProfilerTest1]
@@ -73,15 +77,8 @@ maxThreads is 300, but can't create more than 254 threads
 performance-specific regressions
 ================================
 
-execution timeouts (09/19/09)
------------------------------
-[Error: Timed out executing program studies/hpcc/STREAMS/bradc/stream-block1d-promote]
-[Error: Timed out executing program studies/hpcc/STREAMS/bradc/stream-block1d]
-
 execution timeouts (08/29/09)
 -----------------------------
-[Error: Timed out executing program studies/parsec/blackscholes]
-[Error: Timed out executing program studies/parsec/blackscholes_promote]
 [Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3]
 [Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
 [Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
@@ -204,33 +201,6 @@ no longer needs to be suppressed?
 no-local regressions
 ====================
 
-missing reports numbers (10/05/09)
-----------------------------------
-[Error matching program output for parallel/begin/stonea/reportsManyThreads]
-[Error matching program output for parallel/begin/stonea/reports]
-[Error matching program output for parallel/cobegin/stonea/reports]
-[Error matching program output for parallel/coforall/stonea/reports]
-
-line error numbers are off (10/05/09)
--------------------------------------
-[Error matching program output for parallel/single/waynew/simple0]
-[Error matching program output for parallel/single/waynew/simple0b]
-[Error matching program output for trivial/shannon/readStringOverflow]
-[Error matching program output for types/file/closeStdin]
-[Error matching program output for types/file/closedWithoutOpen]
-[Error matching program output for types/file/freadIntFailed]
-[Error matching program output for types/file/freadNoFloat]
-[Error matching program output for types/file/freadNoInt]
-[Error matching program output for types/file/fwriteIntFailed]
-[Error matching program output for types/file/fwriteIntUnopenedFile]
-[Error matching program output for types/file/openStdout]
-[Error matching program output for types/file/unableToOpenFile]
-
-line error numbers are off (10/03/09)
--------------------------------------
-[Error matching program output for memory/shannon/memmaxExceeds]
-[Error matching program output for types/locale/bradc/createNewLocale]
-
 spurious timeouts
 -----------------
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr] (e.g., 09/17/09)
@@ -253,10 +223,6 @@ memory stuff in flux (05/28/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
-
-seg fault (10/02/09)
---------------------
-[Error matching program output for release/examples/hpcc/fft]
 
 memory stuff in flux (06/06/09)
 -------------------------------
@@ -418,10 +384,6 @@ darwin-specific regressions
 execution timeout (10/05/09)
 ----------------------------
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
-
-??? (10/02/09)
---------------
-[Error matching program output for studies/hpcc/RA/marybeth/ra3]
 
 spurious sprintf not thread-safe
 --------------------------------
