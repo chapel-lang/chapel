@@ -1,3 +1,7 @@
+bug: 'setter' in var iterators
+
+Was:
+
 bug: promoted var function is always in setter mode when zippered
 
 The setter argument is not correctly set for var functions that are promoted

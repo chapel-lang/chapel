@@ -1,3 +1,7 @@
+bug: range op overflow
+
+Was:
+
 bug: range slice causes integral overflow
 
 When checking if the ranges have an empty intersection, the subtraction

@@ -1,3 +1,7 @@
+bug: range op overflow
+
+Was:
+
 bug: range slice causes integral overflow
 
 When computing the alignment to snap a range to, an overflow can occur causing

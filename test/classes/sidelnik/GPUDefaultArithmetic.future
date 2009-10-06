@@ -1,3 +1,7 @@
+???: Is this still an issue?
+
+Was:
+
 bug: Segfault is occuring when wrapping a class with "pragma data class"
 
 When using the pragma "data class" on line 317, I am seeing a segmentation fault

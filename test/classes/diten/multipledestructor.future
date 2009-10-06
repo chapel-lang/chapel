@@ -1,1 +1,7 @@
+bug: multiple destructors crash compiler
+
+This is now giving a decent error message:  ambiguous call of the two destructors.
+
+Was:
+
 bug: multiply defined destructor causes segfault in compiler

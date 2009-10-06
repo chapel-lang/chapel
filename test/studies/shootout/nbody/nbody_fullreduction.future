@@ -1,4 +1,4 @@
-bug: Reduction on an array element type
+bug: reduction of arrays
 
 We are seeing a strange bug in where performing a reduction
 on an array element type, AND, traversing the outer array in a

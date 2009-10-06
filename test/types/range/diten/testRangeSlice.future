@@ -1,3 +1,7 @@
+bug: range op overflow
+
+Was:
+
 bug: range slice causes integral overflow
 
 The extendedEuclid function defined in range.this correctly returns (1, -1)

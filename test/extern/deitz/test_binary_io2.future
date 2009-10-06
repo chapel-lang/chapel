@@ -1,1 +1,5 @@
+semantic: inout extern arguments
+
+Was:
+
 bug: ref arg to extern function results in strange behavior
