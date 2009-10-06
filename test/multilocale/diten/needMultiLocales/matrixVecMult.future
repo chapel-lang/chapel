@@ -1,7 +1,0 @@
-bug: Distributed array of arrays fails to compile when compiling generated code
-
-This code should create a 1D block distributed array of arrays for use in
-the parallel matrix vector multiply. The generated C code has type errors.
-
-Changing the uses of DistColumnDom to just ColumnDom allows the code to compile
-and run.
