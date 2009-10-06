@@ -166,8 +166,13 @@ void insertLineNumbers() {
   // pass line number and filename arguments to functions that are
   // forked via the argument class
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if ((fn->numFormals() > 4 && fn->hasFlag(FLAG_ON_BLOCK)) ||
-        (fn->numFormals() > 3 && fn->hasFlag(FLAG_BEGIN_BLOCK))) {
+    // If we added arguments to a the the following wrapper functions,
+    //  the number of formals should be now be (precisely two) greater
+    //  than the expected number.  Both block types below expect an
+    //  argument bundle, and the on-block expects an additional argument
+    //  that is the locale on which it should be executed.
+    if ((fn->numFormals() > 2 && fn->hasFlag(FLAG_ON_BLOCK)) ||
+        (fn->numFormals() > 1 && fn->hasFlag(FLAG_BEGIN_BLOCK))) {
 
       DefExpr* filenameFormal = toDefExpr(fn->formals.tail);
       filenameFormal->remove();
