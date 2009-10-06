@@ -1,8 +1,13 @@
 ifneq ($(MAKE_LAUNCHER), 1)
 include $(GASNET_INC_MAKEFILE)
 
+ifneq ($(CHPL_MAKE_TARGET_COMPILER),cray-xt-cray)
 CC = $(GASNET_CC) $(GASNET_CPPFLAGS) $(GASNET_CFLAGS)
 LD = $(GASNET_LD) $(GASNET_LFLAGS)
+else
+CC = $(GASNET_CC)
+LD = $(GASNET_LD)
+endif
 
 LIBS += $(GASNET_LIBS)
 endif
