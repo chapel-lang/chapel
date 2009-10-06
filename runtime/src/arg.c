@@ -110,7 +110,6 @@ void parseNumLocales(const char* numPtr, int32_t lineno, chpl_string filename) {
   }
 }
 
-extern int32_t chpl_numRealms;
 static int32_t* chpl_arg_LocalesPerRealm;
 static int32_t* chpl_base_unique_localeID;
 

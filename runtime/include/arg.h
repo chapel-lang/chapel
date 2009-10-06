@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "chpltypes.h"
 
+extern int32_t chpl_numRealms;
+
 //
 // defined in arg.c
 //

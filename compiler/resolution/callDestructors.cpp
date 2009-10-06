@@ -227,7 +227,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
 }
 
 
-void
+static void
 returnRecordsByReferenceArguments() {
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
