@@ -526,6 +526,10 @@ def LocBlockDom.high {
   return myBlock.high;
 }
 
+//
+// Added as a performance stopgap to avoid returning a domain
+//
+def LocBlockDom.member(i) return myBlock.member(i);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Block Array Class
@@ -587,7 +591,7 @@ def BlockArr.privatize() {
 //
 def BlockArr.this(i: idxType) var where rank == 1 {
   if myLocArr then local {
-    if myLocArr.locDom.myBlock.member(i) then
+    if myLocArr.locDom.member(i) then
       return myLocArr.this(i);
   }
   return locArr(dom.dist.ind2locInd(i))(i);
@@ -596,7 +600,7 @@ def BlockArr.this(i: idxType) var where rank == 1 {
 def BlockArr.this(i: rank*idxType) var {
 //   const myLocArr = locArr(here.id);
 //   local {
-//     if myLocArr.locDom.myBlock.member(i) then
+//     if myLocArr.locDom.member(i) then
 //       return myLocArr.this(i);
 //   }
   if rank == 1 {
@@ -678,7 +682,7 @@ def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) v
     //
     def accessHelper(i) var {
       local {
-        if myLocArr.locDom.myBlock.member(i) then
+        if myLocArr.locDom.member(i) then
           return myLocArr.this(i);
       }
       return this(i);
