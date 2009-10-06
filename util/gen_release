@@ -108,6 +108,7 @@ system("cd chapel/runtime && rm -r comm-armci");
 system("cd chapel/runtime && rm -r comm-mpi");
 system("cd chapel/runtime && rm -r comm-pvm");
 system("cd chapel/runtime && rm -r launch-apsim");
+system("cd chapel/runtime && rm -r launch-dummy");
 system("cd chapel/runtime && rm -r launch-mpirun");
 system("cd chapel/runtime && rm -r launch-pvm");
 system("cd chapel/runtime && rm -r launch-zebra");
