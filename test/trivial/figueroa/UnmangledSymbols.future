@@ -1,3 +1,7 @@
+bug: name mangling
+
+Was:
+
 bug: some symbol names are erroneously not mangled in the generated C code
 
 for example, reserved words in C that are not reserved words in Chapel, symbol
