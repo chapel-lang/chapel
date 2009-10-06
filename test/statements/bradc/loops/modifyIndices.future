@@ -1,4 +1,4 @@
-semantic: const-ness of indices
+error message: const indices
 
 I believe that index variables should be constant to avoid
 confusion in believing that they are a single variable

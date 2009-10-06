@@ -19,6 +19,8 @@ General (see also portability section at the bottom of this file)
   Workaround: Please ask us for help interpreting any that you struggle with
 - Compiler and runtime errors don't always report useful line numbers
   Workaround: Please ask us for help finding the correct error location
+- Names in a Chapel program can collide with names used internally
+  Workaround: Avoid using chpl_ or chpl__ as prefixes to symbol names
 
 
 --------------------------------
@@ -28,19 +30,24 @@ Variables, Types and Expressions
 Unimplemented Features:
 
 Bugs:
-- Constant arrays and records can be modified (without error)
-- Array types cannot be specified in tuple types or expression contexts
-- Tuples of array and domain values may not reference vs. copy correctly
-- parameter for loops do not correctly preserve index type
+- Constant arrays, domains, records, and indices can be modified (without error)
+- Array types cannot be specified in expressions, tuple types, or return types
+- Indices over parameter for loops are changed to values of 'int' type
+- Types and values can be compared (without error)
+    e.g., "int == 2"
+- Configuration parameters are not type-checked when on the command line
+
 
 -------
 Modules
 -------
 
 Unimplemented Features:
-- The argv array is unimplemented
 
 Bugs:
+- There is an odd case where a function call can resolve to a function in a
+  different module if a use of that module exists in an inner scope (without
+  error)
 
 
 ---------
@@ -50,7 +57,11 @@ Functions
 Unimplemented Features:
 
 Bugs:
-- Programs requiring non-linear function resolution may not work
+- Programs requiring non-linear function resolution may not work resulting in
+  an internal failure with code CAL0035
+    e.g., mutual module uses that access variables across both modules
+- Variable functions can return local data through an lvalue that is not a
+  simple identifier
 
 
 ----------------------------
@@ -60,12 +71,13 @@ Classes, Records, and Unions
 Unimplemented Features:
 - Multiple inheritance is not supported
 - Type select on unions is not implemented
-- Garbage collection is not supported
 
 Bugs:
 - Constant fields can be modified (without error)
-- Record field initializers may be evaluated more than once
-- User-defined constructors are not completely robust
+- User-defined constructors are not robust
+- Constructors with side effects may be invoked when their type is declared
+- The default output function for empty records and classes may display a
+  place-holder field which is an artifact of our implementation
 
 
 -----------------------------
@@ -75,33 +87,36 @@ Tuples, Ranges, and Iterators
 Unimplemented Features:
 
 Bugs:
-- Nested var iterators do not work correctly
+- Nested var iterators may not work correctly
 - The implicit 'setter' argument does not work in var iterators
+- Iterators in records cannot change fields in that record
 
 
-------------------
-Arrays and Domains
-------------------
+---------------------------
+Ranges, Arrays, and Domains
+---------------------------
 
 Unimplemented Features:
-- Array promotion/forall expressions always evaluate to 1D arrays
+- Array promotion/forall/for/scan expressions always evaluate to 1D arrays
     e.g., foo(A) where A promotes foo() should result in an array of type:
           [A.domain] foo(A(i)).type but instead results in a 1D array
     e.g., [i in D] foo(i) should result in an array of type: [D] foo(i).type
           but instead results in a 1D array
 - Arrays of arrays where the inner arrays vary in size are not supported
-- Strided domains sliced by unstrided domains are not handled correctly
-- Sparse domains/arrays are incomplete:
-  - Can't be sliced nor used to slice dense domains/arrays
-  - Don't yet support remove methods or the -= operator
-  - Assignment between sparse domains is not yet implemented
+- Sparse domain/array assignment, slicing, and index removal is not supported
 - There are no bounds checks on index types
 - There are no subset checks on subdomains
 
 Bugs:
-- Constant domains can be modified illegally if passed to functions
+- Constant domains can be modified if passed to functions
 - Records with array members of recursive types do not work
 - Arrays and domains of different ranks can be zippered serially
+- Domains of different index types cannot be zippered
+- Array and domain runtime information is not preserved through generic types
+- Array aliases cannot be declared as fields without an element type
+- Range operations can result in overflow
+    e.g., (0:uint..5 by -1).length
+- Arrays declared over domains with negative strides may not work
 
 
 --------
@@ -112,6 +127,12 @@ Unimplemented Features:
 
 Bugs:
 - Subclassing uninstantiated generic classes should be prohibited but is not
+- Compiler errors via the compilerError function may be issued too eagerly in
+  the presence of dynamic dispatch
+- Generic type names can sometimes contain extra parentheses especially in the
+  presence of parameters with default values
+- Records cannot be generic over real parameters
+- Type and parameter functions are not checked for side effects
 
 
 -------------------------------
@@ -120,10 +141,13 @@ Parallelism and Synchronization
 
 Unimplemented Features:
 - Atomic statements are not implemented
-- Some data-parallel constructs are serialized by default
-  e.g., forall loops, promoted calls, reductions, scans over default arrays
+- Whole array assignment is serialized
 
 Bugs:
+- Deadlocks are possible if the system has too few threads or maxThreads is set
+  too low
+- Array elements accessed via references in begin statements in which the array
+  is not also accessed may outlive the existence of the array
 
 
 --------------------
@@ -134,6 +158,8 @@ Unimplemented Features:
 - User-defined reductions and scans are not yet implemented
 
 Bugs:
+- Reductions and scans do not work when their element type is itself an array
+- Scans are serial.
 
 
 --------------------------
@@ -143,11 +169,14 @@ Locality and Distributions
 Unimplemented Features:
 - On statement var declarations are not yet supported
     e.g., on Locales(1) var x: real;
-- Multi-locale distributed domains/arrays are under development
-- the draft Block1D/Block distributions do not support slicing or reindexing
+- Support for multi-locale distributed domains and arrays is limited
+- The Block distribution does not support array resizing
+- The BlockCyclic and Cyclic distributions do not support slicing, reindexing,
+  or resizing
 
 Bugs:
-- string assignment across locales causes the string's location to migrate
+- String assignment across locales is by reference
+- The locale type has a default value of 'nil'
 
 
 ----------------
@@ -162,6 +191,8 @@ Unimplemented Features:
     e.g., for i in A.domain do read(A(i));
 
 Bugs:
+- Specifying a writeThis method for user-defined output of records or classes
+  with an on-statement can lead to a deadlock
 
 
 -----------------
@@ -169,7 +200,7 @@ Standard Library
 -----------------
 
 Unimplemented Features:
-- On some platforms, math library is limited by C support
+- On some platforms, the Math module is limited by C support
 
 Bugs:
 
@@ -179,15 +210,16 @@ Memory Management
 -----------------
 
 Status:
-
-The compiler-generated code may contain memory leaks.
+- Strings are leaked
+- Distributed domains and arrays, which are privatized for performance, are
+  leaked
+- Data associated with iterators may be leaked
+- Some data that the compiler moves to the heap are leaked
 
 
 -----------
 Portability
 -----------
-
-Status:
 
 Cray XT:
 - The memory limit for Chapel programs may need to be set manually --
@@ -203,9 +235,6 @@ PBS launcher:
 IBM Power5/Power6 systems:
 - we have had some initial successes executing Chapel on these machines --
   see doc/platforms/README.ibm for details
-
-
-Bugs:
 
 Cygwin:
 - Cygwin executions occasionally result in a pthread_cond_init()
