@@ -42,3 +42,7 @@ endif
 
 $(RUNTIME_OBJ_DIR)/chpl_cfg_comm.o: chpl_cfg_comm.c $(RUNTIME_OBJ_DIR_STAMP)
 	$(ENSURE_GASNET_COMPATIBLE_COMPILER) $(CC) -c $(GASNET_RUNTIME_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
+
+chpl_cfg_comm.depend: chpl_cfg_comm.c $(DEPEND_STAMP)
+	@$(CMAKEDEPEND) $(DEPEND_CFLAGS) $(GASNET_CPPFLAGS) $(GASNET_CFLAGS) $(SUPPORT_SETENV_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS) $(DEPEND_INCLS) $< | sed s/$*\\\.o/\\\$(DEPEND_DIR_SAFESLASH)\\\/$*\\\.o/ >> $(SVN_DEPENDS).tmp
+
