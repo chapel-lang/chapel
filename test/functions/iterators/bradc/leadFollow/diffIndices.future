@@ -1,3 +1,7 @@
+bug: cannot zipper domains of different index types
+
+Was:
+
 bug: leaders/followers don't work across index types
 
 It seems that when the compiler inserts some code related to

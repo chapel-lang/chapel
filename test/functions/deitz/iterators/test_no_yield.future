@@ -1,1 +1,1 @@
-bug: error message for iterator that does not yield a value
+bug: no error message for empty yield
