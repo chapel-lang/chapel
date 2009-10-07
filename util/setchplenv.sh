@@ -5,7 +5,7 @@
 path_tail=`pwd | sed 's/.*\///g'`
 if [ "$path_tail" != "chapel" ] 
    then
-      echo "Error: You muse use '. util/setchplenv' from within the chapel directory"
+      echo "Error: You must use '. util/setchplenv' from within the chapel directory"
    else
       echo "Setting CHPL_HOME..."
       CHPL_HOME=`pwd`
