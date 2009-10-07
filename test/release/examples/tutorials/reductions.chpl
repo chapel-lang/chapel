@@ -8,7 +8,7 @@
 use Random; // For random number generation
 
 config const seed = 31415; // Random generation seed
-config const size = 5;     // The size of each side of the array
+config const size = 10;    // The size of each side of the array
 
 var A: [1..size, 1..size] real; // The 2D work array
 
