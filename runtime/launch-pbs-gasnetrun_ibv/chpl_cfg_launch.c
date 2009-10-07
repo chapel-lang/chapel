@@ -1,3 +1,8 @@
+/**************************************************************************
+  Copyright (c) 2004-2009 Cray Inc.  (See LICENSE file for more details)
+**************************************************************************/
+
+
 #include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -127,6 +132,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
       basenamePtr++;
   }
+  chpl_compute_real_binary_name(argv[0]);
 
 #ifndef DEBUG_LAUNCH
   mypid = getpid();
@@ -157,8 +163,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "expect -re $prompt\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "send \"%s/gasnetrun_ibv -n %d %s_real ", 
-          WRAP_TO_STR(LAUNCH_PATH), numLocales, argv[0]);
+  fprintf(expectFile, "send \"%s/gasnetrun_ibv -n %d %s ", 
+          WRAP_TO_STR(LAUNCH_PATH), numLocales, chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " '%s'", argv[i]);
   }
