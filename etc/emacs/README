@@ -18,7 +18,7 @@ To use these modes, it is suggested that you install these directories
 so that they appear under your Chapel release as follows:
 
    $CHPL_HOME/    -- the location of your normal Chapel installation
-     etc/         -- the result of un-tarring chapel-editors.tar.gz
+     etc/
        emacs/     -- this directory
 
 In which case, you should be able to use these modes by adding the
