@@ -44,7 +44,7 @@ How to call a C routine from Chapel
    burden of making types match is on the user, though any problematic
    mismatches ought to be flagged during Chapel's C compilation step.
 
-   Note that Chapel C strings can be passed to C functions, though
+   Note that Chapel strings can be passed to C functions, though
    warnings can occur during C compilation due to mismatches between
    the const-ness of the char*'s used to implement the strings.
 
