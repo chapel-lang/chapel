@@ -98,6 +98,10 @@ double free (09/02/09)
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for sparse/bradc/sparseInClass2] (e.g., 10/06/09)
+[Error matching compiler output for studies/hpcc/HPL/marybeth/HPL] (e.g., 10/06/09)
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1dclass] (e.g., 10/06/09)
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_showboxes] (e.g., 10/06/09)
 [Error matching compiler output for arrays/bradc/slices/fftSlice] (e.g., 10/05/09)
 [Error matching compiler output for sparse/bradc/CSR/sparse] (e.g., 10/05/09)
 [Error matching compiler output for sparse/bradc/sparseInClass] (e.g., 10/05/09)
@@ -130,7 +134,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for parallel/begin/diten/forParamBegin] (e.g., 09/19/09)
 [Error matching compiler output for parallel/cobegin/waynew/cobegin.simple2] (e.g., 09/19/09)
 [Error matching compiler output for users/shetag/ccs] (e.g., 09/19/09)
-[Error matching compiler output for users/wmikanik/domain64-workaround] (e.g., 09/19/09)
+[Error matching compiler output for users/wmikanik/domain64-workaround] (e.g., 09/19/09, 10/06/09)
 [Error matching compiler output for spec/marybeth/modulesexample] (e.g., 09/17/09, 09/24/09)
 [Error matching compiler output for users/shetag/objRefAsFormArg] (e.g., 09/17/09)
 [Error matching compiler output for users/thom/class-override] (e.g., 09/17/09, 09/26/09)
@@ -183,7 +187,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for users/thom/tupleToArray] (e.g., 08/27/09, 09/22/09)
 [Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc-domainPromote] (e.g., 08/26/09)
 [Error matching compiler output for users/shetag/assocarr] (e.g., 08/26/09, 09/09/09, 09/13/09, 09/16/09, 09/24/09)
-[Error matching compiler output for users/shetag/classWithArray/initArrWithFn] (e.g., 08/26/09, 08/29/09, 10/02/09)
+[Error matching compiler output for users/shetag/classWithArray/initArrWithFn] (e.g., 08/26/09, 08/29/09, 10/02/09, 10/06/09)
 
 
 internal valgrind stuff 'the impossible has happened'
