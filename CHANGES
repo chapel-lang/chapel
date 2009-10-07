@@ -2,7 +2,7 @@
 Release Changes List
 ====================
 
-*** Stopped at r16116 -- 2009-10-01 ***
+*** Stopped at r16171 -- 2009-10-07 ***
 
 ===========
 version 1.0
@@ -33,6 +33,8 @@ Newly Implemented Features:
 - added == and != for imag and complex types; added >, >=, <, <= for imag types
 - improved support for and correctness of record and class destructors
 - forall loops over ranges & default arithmetic domains/arrays are now parallel
+- array declaration+initialization syntax now results in parallel evaluation
+  e.g., var A: [i in D] real = foo(i);  will be evaluated in parallel
 
 Portability of code base:
 -------------------------
@@ -95,11 +97,13 @@ Runtime Library Changes:
 
 Documentation:
 --------------
-- improved the Types and Ranges chapters of the language specification
+- improved the Types, Modules, and Ranges chapters of the language specification
 - improved the Label, Break, and Continue subsection of the language spec
-- minor changes to the Lexical Structure and Expressions chapters of the spec
+- minor changes to the Lexical Structure, Conversions, Expressions chapters of the spec
 - updated README.xt-cle and README.launcher to reflect new pbs features
 - updated ACKNOWLEDGEMENTS and CONTRIBUTORS files
+- added mention of delete to language specification
+- updated STATUS file
 
 Example Codes:
 --------------
@@ -165,6 +169,8 @@ Bug Fixes/New Semantic Checks (for old semantics):
 - removed a subtle race condition in program startup
 - fixed a bug in which indices were inadvertantly shared/non-local in promotions
 - added a semantic check against tuples sized by 0 or a negative value
+- for Cray XT, fixed default setting of GASNET_MAX_SEGSIZE to specify size in KB
+- fixed a race in the creation of private, replicated distribution classes
 
 Error Message Improvements:
 ---------------------------
@@ -223,6 +229,8 @@ Internal:
 - changed array assignments to use array iteration rather than random access
 - made --no-cpp-lines the default for -g for developers
 - improved handling, robustness of built-in configuration variables
+- split chpl_comm_md.h into two files to permit platform- and comm- overrides
+- some initial work toward supporting profiling tools with Chapel
 
 ===========
 version 0.9
