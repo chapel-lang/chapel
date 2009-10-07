@@ -159,8 +159,18 @@ The configuration constants can be set as follows:
 
   --memTrack        : turns on memory tracking and enables the
                       functions memoryUsed, printMemStat, and
-                      printMemTable.  This flag is implied by
-                      memStats, memLeaks, and memMax.
+ 		      printMemTable.  This flag is implied by
+ 		      memStats, memLeaks, and memMax.  To call these
+ 		      functions from a Chapel program, the module
+ 		      Memory must be explicitly used.  The
+ 		      printMemTable function prints out a table of all
+ 		      of the currently allocated memory.  It takes an
+ 		      optional argument to restrict the printing to
+ 		      allocations greater than a threshold (in bytes).
+ 		      The printMemStat function prints out statistic
+ 		      as explained below.  The memoryUsed function
+ 		      returns the number of bytes that are currently
+ 		      allocated.
 
   --memStats        : makes the call printMemStat() when the
                       program completes, printing out the following
