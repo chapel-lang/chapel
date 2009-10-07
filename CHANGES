@@ -2,6 +2,145 @@
 Release Changes List
 ====================
 
+*** Stopped at r15792 -- 2009-08-03 ***
+
+===========
+version 1.0
+===========
+
+Third public release of Chapel compiler, October 15, 2009
+
+High-Level Themes:
+------------------
+- parallel forall loops over ranges and arithmetic domains by default
+- improved support for distributions
+- memory improvements:
+  - plugged most compiler-introduced memory leaks in generated code
+  - improved support for memory tracing and tracking (see README.executing)
+
+Environment Changes:
+--------------------
+
+Changes to Chapel Language:
+---------------------------
+- removed implicit coercions from primitive types to strings to avoid confusion
+- require accesses to variable x in module M using 'M.x' must follow a 'use M'
+- any array variable can now be made to alias another via the => operator
+
+Newly Implemented Features:
+---------------------------
+- added == and != for imag and complex types; added >, >=, <, <= for imag types
+- improved support for and correctness of record and class destructors
+
+Portability of code base:
+-------------------------
+- improved portability with respect to Intel icc/icpc v11.x
+- removed assumptions that Sun compiler environments are as bad as ours are
+- removed the makechpl script for Mac users because of portability issues
+- improved support for the Cray compiler on XT systems (cray-xt-cray)
+- reduced warnings for gcc > 4.3
+
+Semantic Changes:
+-----------------
+- changed interpretation of method definitions on scalar types
+  e.g., 'def int.foo()' now defines foo() for default-sized ints, not all ints
+- improved flushing of writeln() statements to the file being written to
+- added support for returning locally scoped arrays from variable functions
+
+Syntactic/Naming Changes:
+-------------------------
+
+Compiler Changes:
+-----------------
+- improved support for slicing strided domains with strided/unstrided ranges
+
+Third Party Changes:
+--------------------
+
+Runtime Library Changes:
+------------------------
+- added support for memory tracking for multi-locale executions
+
+Documentation:
+--------------
+- improved the Ranges chapter of the language specification
+- minor changes to the Lexical Structure and Expressions chapters of the spec
+
+Example Codes:
+--------------
+- improved scalability of RA by privatizing the constant array m2
+
+Standard Modules:
+-----------------
+- added printMemStat() to the standard Memory module; improved printMemTable()
+- added start/stopVerboseMem[Here]() to the Memory module for tracing memory use
+- improved reference counting of domains and arrays
+- added initial support for a Cyclic distribution
+- added very preliminary support for a Block-Cyclic distribution
+
+Compiler Flags:
+---------------
+
+Generated Code Flags:
+---------------------
+- improved/changed the flags that support memory tracking (see README.executing)
+- improved error messages to indicate the argument number
+- added support for specifying configuration variables/constants without =
+  e.g., you can now use './a.out --n 4' in addition to ./a.out --n=4'
+- improved robustness of --numLocales flag
+
+Bug Fixes/New Semantic Checks (for old semantics):
+--------------------------------------------------
+- improved error checking when assigning between ranges of different boundedness
+- fixed a bug in which we called default constructrs by name
+- fixed a bug in which we were accidentally supporting illegal parameter casts
+- fixed a bug in which generic fields were incorrectly aliased in constructors
+- added an error for using => on non-array types
+- added an error for using (...x) on non-tuple types
+- fixed deletion of list elements in List module
+
+Error Message Improvements:
+---------------------------
+
+Compiler Analysis and Optimizations/Performance of Generated Code:
+------------------------------------------------------------------
+- improved performance of loops using Block distributions
+- improved performance and reduced memory requirements for memory tracking
+- vastly reduced amount of memory leaked due to compiler-allocated data
+
+Compiler Performance and Cleanup:
+---------------------------------
+
+Cleanup of Generated Code:
+--------------------------
+- added information about compilation options to the generated code
+
+Testing system:
+---------------
+- made parallel testint place -nl x flags at the end of the command line
+- improved precedence of execution options specified via .execopts or EXECOPTS
+
+Internal:
+---------
+- replaced uses of "[unsigned] long long" with [u]int64_t for sane portability
+- some unification of reserved names, though more remains
+- improved Chapel's launcher runtime interface to be more general
+- added a mechanism for intercepting printf/fprintf calls if required
+- Makefile refactorings working toward supporting parallel make
+- refactored runtime/mem- directories to decrease duplicated code
+- renamed runtime files to improve standardization, though more remains
+- removed linked list pointers from memory tracking table
+- reduced amount of runtime code linked into the launcher binary
+- made the use of chpl_globals_registry more consistent across locales
+- relaxed compiler assumptions about classes with the "data class" pragma
+- added support for generating type and offset information for communications
+- some initial work toward supporting CPU<->GPU computations in Chapel
+- some initial work toward supporting execution on heterogeneous architectures
+- removed "valid var" pragma
+- made wrapper functions use blank intent rather than inheriting from wrappee
+- changed strategy for determining when value types should be copied/destroyed
+- made domain and array classes always have reindexed set to true by default
+
 ===========
 version 0.9
 ===========
