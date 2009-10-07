@@ -30,6 +30,11 @@ def _factor(param rank: int, value) {
   return factors;
 }
 
+def _tupleOfZero(param size: int, type t) {
+  var tmp: size * t;
+  return tmp;
+}
+
 config param debugCyclicDist = false;
 config param verboseCyclicDistWriters = false;
 
@@ -49,7 +54,7 @@ class Cyclic: BaseDist {
 
   def Cyclic(param rank: int,
              type idxType = int(64),
-             low: rank*idxType,
+             low: rank*idxType = _tupleOfZero(rank, idxType),
              targetLocales: [] locale = thisRealm.Locales,
              tasksPerLocale=0) {
     lowIdx = low;
