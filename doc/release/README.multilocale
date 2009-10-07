@@ -21,7 +21,7 @@ To run Chapel on multiple locales, the following steps are required:
    $CHPL_HOME/third-party/gasnet/README and
    $CHPL_HOME/third-party/README for details.  Future releases of
    Chapel are expected to support additional communication layer
-   options such as PNNL's ARMCI library.
+   options such as PNNL's ARMCI library and PVM.
 
 
 2) Advanced users can set CHPL_COMM_SUBSTRATE to indicate the GASNet

@@ -3,7 +3,7 @@ Chapel programs and threads
 ===========================
 
 Chapel programs create new tasks via the begin, cobegin, and coforall
-statements.  Tasks are computations that can conceptually
+statements.  Tasks are computations that can conceptually execute
 concurrently, though they may or may not do so in practice.  Tasks are
 executed using threads, where the implementation of these threads may
 vary depending on the target platform ($CHPL_TARGET_PLATFORM) and

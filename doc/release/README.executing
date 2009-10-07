@@ -80,6 +80,14 @@ may be used per locale to implement the program.  See README.threads
 for more information on the role of this variable in creating threads
 and executing tasks.
 
+Additionally, the default distribution and Chapel ranges support
+parallel execution for forall loops.  The iterations are divided up
+into "chunks" which are executed by threads.  The maximum number of
+chunks can be specified by the built-in configuration constant
+maxChunks.  By default maxChunks is set to the minimum of maxThreads
+(if it is specified) and the number of cores on the CPU.  Another
+built-in configuration constant called minElemsPerChunk specifies the
+minimum number of elements in a chunk (default 1).
 
 -----------------------------------------
 Controlling the amount of non-user output
@@ -105,6 +113,9 @@ Running in gdb
 The compiler-generated executable has a --gdb flag that can be used to
 launch the program within a gdb session.  For best results, make sure
 that your program has been compiled using the chpl compiler's -g flag.
+For GASNet, launching gdb is supported via the environment variable
+CHPL_COMM_USE_GDB (See $CHPL_HOME/third-party/gasnet/README for more
+information).
 
 The utility of this feature depends greatly on your familiarity with
 the Chapel generated code.  However, if your program is crashing or
