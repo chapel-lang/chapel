@@ -2,7 +2,7 @@
 Release Changes List
 ====================
 
-*** Stopped at r15792 -- 2009-08-03 ***
+*** Stopped at r16116 -- 2009-10-01 ***
 
 ===========
 version 1.0
@@ -12,7 +12,7 @@ Third public release of Chapel compiler, October 15, 2009
 
 High-Level Themes:
 ------------------
-- parallel forall loops over ranges and arithmetic domains by default
+- forall loops over ranges and arithmetic domains/arrays are now parallel
 - improved support for distributions
 - memory improvements:
   - plugged most compiler-introduced memory leaks in generated code
@@ -20,6 +20,7 @@ High-Level Themes:
 
 Environment Changes:
 --------------------
+- added emacs/vim modes to release -- see $CHPL_HOME/etc/README
 
 Changes to Chapel Language:
 ---------------------------
@@ -31,6 +32,7 @@ Newly Implemented Features:
 ---------------------------
 - added == and != for imag and complex types; added >, >=, <, <= for imag types
 - improved support for and correctness of record and class destructors
+- forall loops over ranges & default arithmetic domains/arrays are now parallel
 
 Portability of code base:
 -------------------------
@@ -40,19 +42,47 @@ Portability of code base:
 - improved support for the Cray compiler on XT systems (cray-xt-cray)
 - reduced warnings for gcc > 4.3
 
+Platform-specific notes:
+------------------------
+- several improvements to the pbs launcher (see README.launcher/README.xt-cle)
+  - environment variables are now propagated to the application
+  - a queue can be specified via the CHPL_LAUNCHER_QUEUE environment variable
+  - a wallclock limit can be specified via CHPL_LAUNCHER_WALLTIME
+  - the NCCS pbs launcher no longer uses the debug queue by default
+- added a PBS launcher for the Cray CX1 named pbs-gasnetrun_ibv
+
+Launcher-specific notes:
+------------------------
+- several improvements to the pbs launcher (see README.launcher/README.xt-cle)
+  - environment variables are now propagated to the application
+  - a queue can be specified via the CHPL_LAUNCHER_QUEUE environment variable
+  - a wallclock limit can be specified via CHPL_LAUNCHER_WALLTIME
+  - the NCCS pbs launcher no longer uses the debug queue by default
+- added a PBS launcher for the Cray CX1 named pbs-gasnetrun_ibv
+- added support for CHPL_LAUNCHER_SUFFIX to launch a file other than ..._real
+
 Semantic Changes:
 -----------------
 - changed interpretation of method definitions on scalar types
   e.g., 'def int.foo()' now defines foo() for default-sized ints, not all ints
 - improved flushing of writeln() statements to the file being written to
 - added support for returning locally scoped arrays from variable functions
+- made module initialization occur at program startup rather than use statements
+- only modules specified on the command-line are candidates for the main module
+- changed distributions from having class/reference semantics to value semantics
 
 Syntactic/Naming Changes:
 -------------------------
+- renamed the pbs launcher for Cray XT to pbs-aprun since it wraps both packages
+- renamed MultiBlockDist.chpl to BlockDist.chpl
+- removed the Block1D distribution since Block subsumed it
+- put in placeholder notation for creating new distribution values
+  e.g., new Block(...) => distributionValue(new Block(...))
 
 Compiler Changes:
 -----------------
-- improved support for slicing strided domains with strided/unstrided ranges
+- improved support for slicing [strided] domains/arrays with [strided] slices
+- removed support for goto from the compiler's front-end
 
 Third Party Changes:
 --------------------
@@ -60,26 +90,50 @@ Third Party Changes:
 Runtime Library Changes:
 ------------------------
 - added support for memory tracking for multi-locale executions
+- improved pthread setup, termination, and cleanup for non-erroneous exits
+- refactored threading runtime to support code reuse for pthread-like threads
 
 Documentation:
 --------------
-- improved the Ranges chapter of the language specification
+- improved the Types and Ranges chapters of the language specification
+- improved the Label, Break, and Continue subsection of the language spec
 - minor changes to the Lexical Structure and Expressions chapters of the spec
+- updated README.xt-cle and README.launcher to reflect new pbs features
+- updated ACKNOWLEDGEMENTS and CONTRIBUTORS files
 
 Example Codes:
 --------------
 - improved scalability of RA by privatizing the constant array m2
+- changed fft to use a Block distribution
+- changed default value of tasksPerLocale in HPCC benchmarks to avoid reductions
 
 Standard Modules:
 -----------------
 - added printMemStat() to the standard Memory module; improved printMemTable()
 - added start/stopVerboseMem[Here]() to the Memory module for tracing memory use
 - improved reference counting of domains and arrays
+- removed the (undocumented) Schedules module
+
+Standard Distributions:
+-----------------------
+- merged Block1D and Block since the latter subsumed the former
+- removed the default rank of 1 for the Block distribution
+- added support for slicing to the Block distribution
+- added support for member, order, and position methods on the Block distribution
+- improved support for strided domains/arrays in the Block distribution
+- added support for a multidimensional target array of locales to Block
 - added initial support for a Cyclic distribution
 - added very preliminary support for a Block-Cyclic distribution
+- improved the support for the CSR distribution to match the default sparse case
+- removed subBlocks() from the standard distribution interface
+- unified leader/follower iterators to always work on tuples of ranges
 
 Compiler Flags:
 ---------------
+- added support for a module path flag (-M) to search for modules via filenames
+- added a flag to print the module search path (--print-search-dirs)
+- added a flag to print module files being parsed (--print-module-files)
+- added support for a -I flag to specify a search directory for C headers
 
 Generated Code Flags:
 ---------------------
@@ -88,6 +142,7 @@ Generated Code Flags:
 - added support for specifying configuration variables/constants without =
   e.g., you can now use './a.out --n 4' in addition to ./a.out --n=4'
 - improved robustness of --numLocales flag
+- made compiler-generated generic type names deterministic
 
 Bug Fixes/New Semantic Checks (for old semantics):
 --------------------------------------------------
@@ -98,9 +153,22 @@ Bug Fixes/New Semantic Checks (for old semantics):
 - added an error for using => on non-array types
 - added an error for using (...x) on non-tuple types
 - fixed deletion of list elements in List module
+- fixed an error in which tuple copies sometimes aliased the original tuple
+- made labels on statements other than serial loops be errors
+- made break and continue only applicable within serial loops
+- fixed a bug in which breaks in serial loops gave errors in parallel contexts
+- fixed a bug in which pbs launchers did not work with shell prompts ending in $
+- fixed a bug in which the compiler attempted to clone external functions
+- added support for generating the implicit Program module in --html view
+- fixed a bug in which string parameter members broke the compile
+- fixed a bug in which tensor iteration resulted in internal errors
+- removed a subtle race condition in program startup
+- fixed a bug in which indices were inadvertantly shared/non-local in promotions
+- added a semantic check against tuples sized by 0 or a negative value
 
 Error Message Improvements:
 ---------------------------
+- fixed line numbers in errors involving dynamic dispatch
 
 Compiler Analysis and Optimizations/Performance of Generated Code:
 ------------------------------------------------------------------
@@ -119,6 +187,7 @@ Testing system:
 ---------------
 - made parallel testint place -nl x flags at the end of the command line
 - improved precedence of execution options specified via .execopts or EXECOPTS
+- added support for PVM-based testing to the test script
 
 Internal:
 ---------
@@ -140,6 +209,20 @@ Internal:
 - made wrapper functions use blank intent rather than inheriting from wrappee
 - changed strategy for determining when value types should be copied/destroyed
 - made domain and array classes always have reindexed set to true by default
+- added a developer flag for disabling compiler-introduced memory frees
+- removed support for _init functions from the compiler
+- removed assumptions that replicated global constants are stored symmetrically
+- added thread cancel and join functions to the threading runtime interface
+- added a type, chpl_threadID_t to pass thread IDs between C and Chapel
+- changed point at which variables are put on the heap
+- made all built-in modules be filename based
+- refactored directory structure of $CHPL_HOME/modules into standard/internal...
+- added optimizations to remove unnecessary autocopy/autodestroy calls
+- improved robustness of internal modules that use standard ones
+- changed the scan implementation to generate an array rather than a list
+- changed array assignments to use array iteration rather than random access
+- made --no-cpp-lines the default for -g for developers
+- improved handling, robustness of built-in configuration variables
 
 ===========
 version 0.9
