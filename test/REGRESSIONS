@@ -16,6 +16,11 @@
 general regressions
 ===================
 
+prematurely retired future? (10/07/09)
+--------------------------------------
+[Error matching program output for memory/figueroa/LeakedMemory5]
+[Error matching program output for classes/diten/record_initialize]
+
 ??? (10/6/09)
 -------------
 [Error matching program output for memory/figueroa/ClassInheritance1]
@@ -98,6 +103,12 @@ double free (09/02/09)
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching compiler output for parallel/sync/bradc/syncArrInClass] (e.g., 10/07/09)
+[Error matching compiler output for spec/marybeth/let] (e.g., 10/07/09)
+[Error matching compiler output for studies/hpcc/FFT/fft-hpcc06] (e.g., 10/07/09)
+[Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc-badparam] (e.g., 10/07/09)
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_diff] (e.g., 10/07/09)
+[Error: Timed out compilation for parallel/sync/diten/userLevelEndCount] (e.g., 10/07/09)
 [Error matching compiler output for sparse/bradc/sparseInClass2] (e.g., 10/06/09)
 [Error matching compiler output for studies/hpcc/HPL/marybeth/HPL] (e.g., 10/06/09)
 [Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-block1dclass] (e.g., 10/06/09)
@@ -180,9 +191,9 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for studies/590o/alexco/AverageFiles] (e.g., 08/28/09, 09/26/09)
 [Error matching compiler output for users/shetag/classWithArray/classWithArray-init3] (e.g., 08/28/09, 09/25/09)
 [Error matching compiler output for users/shetag/inlineArrInitInClass] (e.g., 08/28/09, 09/08/09, 09/13/09, 09/19/09, 10/05/09)
-[Error matching compiler output for users/shetag/shareIterator-blc] (e.g., 08/28/09, 09/05/09, 09/12/09, 09/20/09)
+[Error matching compiler output for users/shetag/shareIterator-blc] (e.g., 08/28/09, 09/05/09, 09/12/09, 09/20/09, 10/07/09)
 [Error matching compiler output for parallel/begin/deitz/test_heap_ref] (e.g., 08/27/09)
-[Error matching program output for npb/cg/bradc/cg-sparse] (e.g., 08/27/09, 09/08/09, 09/24/09)
+[Error matching program output for npb/cg/bradc/cg-sparse] (e.g., 08/27/09, 09/08/09, 09/24/09, 10/07/09)
 [Error matching compiler output for users/shetag/assocInRecord] (e.g., 08/27/09, 09/14/09, 09/27/09, 10/02/09)
 [Error matching compiler output for users/thom/tupleToArray] (e.g., 08/27/09, 09/22/09)
 [Error matching compiler output for studies/hpcc/RA/bradc/ra-bradc-domainPromote] (e.g., 08/26/09)
@@ -249,7 +260,7 @@ times out fairly consistently
 times out spuriously
 --------------------
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09, 06/11/09, 06/13/09, 06/17/09, 06/19/09, 06/22/09, 06/23/09, 06/24/09, 07/03/09, 07/04/09, 07/05/09, 07/10/09, 07/11/09, 07/13/09, 07/15/09, 07/19/09, 07/24/09, 07/30/09, 08/01/09, 08/06/09, 08/29/09, 09/15/09, 09/23/09, 10/04/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 06/14/09, 06/16/09, 10/02/09, 10/04/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 06/14/09, 06/16/09, 10/02/09, 10/04/09, 10/07/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09)
 
 
@@ -385,6 +396,10 @@ spurious compilation timeout
 darwin-specific regressions
 ===========================
 
+??? (10/07/09)
+--------------
+[Error matching program output for studies/hpcc/RA/marybeth/ra3]
+
 execution timeout (10/05/09)
 ----------------------------
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
@@ -392,7 +407,7 @@ execution timeout (10/05/09)
 spurious sprintf not thread-safe
 --------------------------------
 [Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 09/30/09, 10/02/09)
-[Error matching program output for studies/590o/bradc/forall-begin-private-indices] (e.g., 09/30/09)
+[Error matching program output for studies/590o/bradc/forall-begin-private-indices] (e.g., 09/30/09, 10/07/09)
 
 spurious timeouts
 -----------------
