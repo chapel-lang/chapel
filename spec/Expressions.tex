@@ -1061,15 +1061,12 @@ overloading~(\rsec{Function_Overloading}).
 \label{The_String_Concatenation_Operator}
 \index{+@\chpl{+}}
 
-The string concatenation operator is predefined as follows:
-\begin{chapel}
-def +(a: string, b: string): string
-\end{chapel}
-The result is the concatenation of \chpl{a} followed by \chpl{b}.
+The string concatenation operator \chpl{+} is predefined over numeric, boolean,
+and enumerated types with strings. It casts its operands to string type and
+concatenation of them together.
+
 \begin{example}
-Since integers can be implicitly converted to strings, an integer can
-be appended to a string using the string concatenation operator.  The
-code
+The code
 \begin{chapel}
 "result: "+i
 \end{chapel}
