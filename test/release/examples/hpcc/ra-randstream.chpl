@@ -54,7 +54,7 @@ module RARandomStream {
     for i in 0..log2(n)-1 by -1 {
       var val: randType = 0;
       for j in 0..#randWidth do
-        if ((ran >> j) & 1) then val ^= m2(j);
+        if ((ran >> j) & 1) then val ^= m2(j+1);
       ran = val;
       if ((n >> i) & 1) then getNextRandom(ran);
     }
