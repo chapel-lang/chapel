@@ -106,7 +106,9 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     if debugDefaultDist then
       writeln("*** DI: rank=", rank, " numelems=", numelems, " numChunks=", numChunks, " ranges(1).length=", ranges(1).length);
 
-    if (numelems <= minElemsPerChunk*numChunks) || (numChunks == 1) {
+    if ((numelems <= minElemsPerChunk*numChunks) ||
+        ((ranges(1).length):uint(64) < numChunks) ||
+        (numChunks == 1)) {
       if debugDefaultDist then
 	writeln("*** minElemsPerChunk*numChunks = ",
 		minElemsPerChunk*numChunks, ", using 1 chunk");
@@ -408,7 +410,9 @@ class DefaultArithmeticArr: BaseArr {
     if debugDefaultDist then
       writeln("*** AI: rank=", rank, " numelems=", numelems, " numChunks=", numChunks, " dom.ranges(1).length=", dom.ranges(1).length);
 
-    if (numelems <= minElemsPerChunk*numChunks) || (numChunks == 1) {
+    if ((numelems <= minElemsPerChunk*numChunks) ||
+        ((dom.ranges(1).length):uint(64) < numChunks) ||
+        (numChunks == 1)) {
       if debugDefaultDist then
 	writeln("*** minElemsPerChunk*numChunks = ",
 		minElemsPerChunk*numChunks, ", using 1 chunk");
