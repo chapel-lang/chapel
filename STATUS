@@ -30,7 +30,7 @@ Variables, Types and Expressions
 Unimplemented Features:
 
 Bugs:
-- Constant arrays, domains, records, and indices can be modified (without error)
+- Constant arrays, domains, records, and tuples can be modified (without error)
 - Array types cannot be specified in expressions, tuple types, or return types
 - Indices over parameter for loops are changed to values of 'int' type
 - Types and values can be compared (without error)
@@ -57,8 +57,8 @@ Functions
 Unimplemented Features:
 
 Bugs:
-- Programs requiring non-linear function resolution may not work resulting in
-  an internal failure with code CAL0035
+- Programs requiring non-linear function resolution may not work, resulting 
+  in an internal failure with code CAL0035
     e.g., mutual module uses that access variables across both modules
 - Variable functions can return local data through an lvalue that is not a
   simple identifier
@@ -111,7 +111,7 @@ Bugs:
 - Constant domains can be modified if passed to functions
 - Records with array members of recursive types do not work
 - Arrays and domains of different ranks can be zippered serially
-- Domains of different index types cannot be zippered
+- Domains/arrays of different index types cannot be zippered in parallel
 - Array and domain runtime information is not preserved through generic types
 - Array aliases cannot be declared as fields without an element type
 - Range operations can result in overflow
@@ -160,7 +160,7 @@ Unimplemented Features:
 
 Bugs:
 - Reductions and scans do not work when their element type is itself an array
-- Scans are serial.
+- Scans are serial
 
 
 --------------------------
@@ -168,15 +168,14 @@ Locality and Distributions
 --------------------------
 
 Unimplemented Features:
-- On statement var declarations are not yet supported
+- On statement variable declarations are not yet supported
     e.g., on Locales(1) var x: real;
 - Support for multi-locale distributed domains and arrays is limited
 - The Block distribution does not support array resizing
-- The BlockCyclic and Cyclic distributions do not support slicing, reindexing,
-  or resizing
+- The Cyclic and BlockCyclic distributions are not yet complete
 
 Bugs:
-- String assignment across locales is by reference
+- String assignment across locales is by reference rather than value
 - The locale type has a default value of 'nil'
 
 
@@ -212,8 +211,7 @@ Memory Management
 
 Status:
 - Strings are leaked
-- Distributed domains and arrays, which are privatized for performance, are
-  leaked
+- Distributed privatized domains and arrays are leaked
 - Data associated with iterators may be leaked
 - Some data that the compiler moves to the heap are leaked
 
@@ -229,18 +227,10 @@ Cray XT:
 Cray CX1:
 - We currently only support CX1s running Linux
 
-PBS launcher:
-- while our PBS launcher will eventually be generalized, it is
-  currently fairly specific to supporting PBS on Cray XTs
-
 IBM Power5/Power6 systems:
 - we have had some initial successes executing Chapel on these machines --
   see doc/platforms/README.ibm for details
 
-Cygwin:
-- Cygwin executions occasionally result in a pthread_cond_init()
-  failure.  Contact us if this prevents you from making progress.
-
 PGI compilers (and possibly others):
 - Identifiers in the generated code may exceed the back-end compiler's limit
-- Floating point literals of -0.0 may not work as expected
+- Floating point literals of -0.0 may not work as intended
