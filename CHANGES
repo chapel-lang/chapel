@@ -2,8 +2,6 @@
 Release Changes List
 ====================
 
-*** Stopped at r16171 -- 2009-10-07 ***
-
 ===========
 version 1.0
 ===========
@@ -12,11 +10,11 @@ Third public release of Chapel compiler, October 15, 2009
 
 High-Level Themes:
 ------------------
-- forall loops over ranges and arithmetic domains/arrays are now parallel
-- improved support for distributions
-- memory improvements:
-  - plugged most compiler-introduced memory leaks in generated code
-  - improved support for memory tracing and tracking (see README.executing)
+- multi-locale task parallelism
+- improved support for single- and multi-locale data parallelism
+- improved stability and portability
+- improved memory utilization of compiler-generated code
+- target audience: general public
 
 Environment Changes:
 --------------------
@@ -25,32 +23,27 @@ Environment Changes:
 Changes to Chapel Language:
 ---------------------------
 - removed implicit coercions from primitive types to strings to avoid confusion
-- require accesses to variable x in module M using 'M.x' must follow a 'use M'
-- any array variable can now be made to alias another via the => operator
+- a default array variable can now be made to alias another via the => operator
+- accesses to variable x in module M using 'M.x' must now follow a 'use M'
 
 Newly Implemented Features:
 ---------------------------
-- added == and != for imag and complex types; added >, >=, <, <= for imag types
+- forall loops over ranges & arithmetic domains/arrays are now parallelized
 - improved support for and correctness of record and class destructors
-- forall loops over ranges & default arithmetic domains/arrays are now parallel
 - array declaration+initialization syntax now results in parallel evaluation
   e.g., var A: [i in D] real = foo(i);  will be evaluated in parallel
+- added == and != for imag and complex types; added >, >=, <, <= for imag types
 
 Portability of code base:
 -------------------------
-- improved portability with respect to Intel icc/icpc v11.x
-- removed assumptions that Sun compiler environments are as bad as ours are
-- removed the makechpl script for Mac users because of portability issues
 - improved support for the Cray compiler on XT systems (cray-xt-cray)
 - reduced warnings for gcc > 4.3
+- improved portability with respect to Intel icc/icpc v11.x
+- removed outdated assumptions about Sun compiler environments
+- removed the makechpl script for Mac users because of portability issues
 
 Platform-specific notes:
 ------------------------
-- several improvements to the pbs launcher (see README.launcher/README.xt-cle)
-  - environment variables are now propagated to the application
-  - a queue can be specified via the CHPL_LAUNCHER_QUEUE environment variable
-  - a wallclock limit can be specified via CHPL_LAUNCHER_WALLTIME
-  - the NCCS pbs launcher no longer uses the debug queue by default
 - added a PBS launcher for the Cray CX1 named pbs-gasnetrun_ibv
 
 Launcher-specific notes:
@@ -60,56 +53,56 @@ Launcher-specific notes:
   - a queue can be specified via the CHPL_LAUNCHER_QUEUE environment variable
   - a wallclock limit can be specified via CHPL_LAUNCHER_WALLTIME
   - the NCCS pbs launcher no longer uses the debug queue by default
-- added a PBS launcher for the Cray CX1 named pbs-gasnetrun_ibv
 - added support for CHPL_LAUNCHER_SUFFIX to launch a file other than ..._real
 
 Semantic Changes:
 -----------------
-- changed interpretation of method definitions on scalar types
-  e.g., 'def int.foo()' now defines foo() for default-sized ints, not all ints
-- improved flushing of writeln() statements to the file being written to
-- added support for returning locally scoped arrays from variable functions
+- changed distributions from having class/reference semantics to value semantics
 - made module initialization occur at program startup rather than use statements
 - only modules specified on the command-line are candidates for the main module
-- changed distributions from having class/reference semantics to value semantics
+- added support for returning locally scoped arrays from variable functions
+- changed interpretation of method definitions on scalar types
+  e.g., 'def int.foo()' now defines foo() for default-sized ints, not all ints
 
 Syntactic/Naming Changes:
 -------------------------
-- renamed the pbs launcher for Cray XT to pbs-aprun since it wraps both packages
 - renamed MultiBlockDist.chpl to BlockDist.chpl
 - removed the Block1D distribution since Block subsumed it
-- put in placeholder notation for creating new distribution values
+- added placeholder notation for creating new distribution values
   e.g., new Block(...) => distributionValue(new Block(...))
+- renamed the pbs launcher for Cray XT to pbs-aprun since it wraps both packages
 
 Compiler Changes:
 -----------------
 - improved support for slicing [strided] domains/arrays with [strided] slices
+- improved flushing of writeln() statements to the file being written to
 - removed support for goto from the compiler's front-end
-
-Third Party Changes:
---------------------
 
 Runtime Library Changes:
 ------------------------
-- added support for memory tracking for multi-locale executions
 - improved pthread setup, termination, and cleanup for non-erroneous exits
 - refactored threading runtime to support code reuse for pthread-like threads
+- added support for memory tracking for multi-locale executions
 
 Documentation:
 --------------
 - improved the Types, Modules, and Ranges chapters of the language specification
+- added mention of 'delete' to language specification
 - improved the Label, Break, and Continue subsection of the language spec
-- minor changes to the Lexical Structure, Conversions, Expressions chapters of the spec
+- minor changes to other chapters of the language specification
 - updated README.xt-cle and README.launcher to reflect new pbs features
-- updated ACKNOWLEDGEMENTS and CONTRIBUTORS files
-- added mention of delete to language specification
-- updated STATUS file
+- updated the various READMEs to reflect minor changes and wording
 
 Example Codes:
 --------------
-- improved scalability of RA by privatizing the constant array m2
 - changed fft to use a Block distribution
+- changed reference to MultiBlockDist module in block2D.chpl to BlockDist
+- changed distributions to use the placeholder value type notation
 - changed default value of tasksPerLocale in HPCC benchmarks to avoid reductions
+- changed RA's constant array m2 into a constant scalar for performance reasons
+- changed follower iterator in ra-randstream.chpl to accept tuple of ranges
+- deleted classes in example programs to reclaim memory
+- increased problem size for reductions.chpl to avoid bug w/ 5+ cores per locale
 
 Standard Modules:
 -----------------
@@ -122,15 +115,15 @@ Standard Distributions:
 -----------------------
 - merged Block1D and Block since the latter subsumed the former
 - removed the default rank of 1 for the Block distribution
-- added support for slicing to the Block distribution
-- added support for member, order, and position methods on the Block distribution
-- improved support for strided domains/arrays in the Block distribution
 - added support for a multidimensional target array of locales to Block
+- improved support for strided domains/arrays in the Block distribution
+- added support for slicing to the Block distribution
+- added support for member(), order(), and position() to the Block distribution
 - added initial support for a Cyclic distribution
 - added very preliminary support for a Block-Cyclic distribution
 - improved the support for the CSR distribution to match the default sparse case
-- removed subBlocks() from the standard distribution interface
 - unified leader/follower iterators to always work on tuples of ranges
+- removed subBlocks() from the standard distribution interface
 
 Compiler Flags:
 ---------------
@@ -141,58 +134,55 @@ Compiler Flags:
 
 Generated Code Flags:
 ---------------------
-- improved/changed the flags that support memory tracking (see README.executing)
-- improved error messages to indicate the argument number
 - added support for specifying configuration variables/constants without =
   e.g., you can now use './a.out --n 4' in addition to ./a.out --n=4'
-- improved robustness of --numLocales flag
+- improved flags for tracking memory utilization (see README.executing)
+- improved error messages to indicate the argument number
 - made compiler-generated generic type names deterministic
+- improved robustness of --numLocales flag
 
 Bug Fixes/New Semantic Checks (for old semantics):
 --------------------------------------------------
-- improved error checking when assigning between ranges of different boundedness
-- fixed a bug in which we called default constructrs by name
-- fixed a bug in which we were accidentally supporting illegal parameter casts
-- fixed a bug in which generic fields were incorrectly aliased in constructors
 - added an error for using => on non-array types
 - added an error for using (...x) on non-tuple types
-- fixed deletion of list elements in List module
-- fixed an error in which tuple copies sometimes aliased the original tuple
+- added a semantic check against tuples sized by 0 or a negative value
 - made labels on statements other than serial loops be errors
 - made break and continue only applicable within serial loops
+- improved error checking when assigning between ranges of different boundedness
 - fixed a bug in which breaks in serial loops gave errors in parallel contexts
+- fixed a bug in which tuple copies sometimes aliased the original tuple
+- fixed a bug in which generic fields were incorrectly aliased in constructors
+- fixed a bug in which we were accidentally supporting illegal parameter casts
+- fixed a bug in which string parameter members broke the compile
+- fixed a bug in which indices were inadvertantly shared/non-local in promotions
 - fixed a bug in which pbs launchers did not work with shell prompts ending in $
 - fixed a bug in which the compiler attempted to clone external functions
-- added support for generating the implicit Program module in --html view
-- fixed a bug in which string parameter members broke the compile
-- fixed a bug in which tensor iteration resulted in internal errors
-- removed a subtle race condition in program startup
-- fixed a bug in which indices were inadvertantly shared/non-local in promotions
-- added a semantic check against tuples sized by 0 or a negative value
 - for Cray XT, fixed default setting of GASNET_MAX_SEGSIZE to specify size in KB
 - fixed a race in the creation of private, replicated distribution classes
+- fixed a bug in which tensor iteration resulted in internal errors
+- removed a subtle race condition in program startup
+- fixed a bug in which we called default constructrs by name
+- fixed deletion of list elements in List module
+- added support for generating the implicit Program module in --html view
 
 Error Message Improvements:
 ---------------------------
-- fixed line numbers in errors involving dynamic dispatch
+- fixed line numbers in errors involving dynamic dispatch and [con/de]structors
 
 Compiler Analysis and Optimizations/Performance of Generated Code:
 ------------------------------------------------------------------
+- vastly reduced amount of memory leaked due to compiler-allocated data
 - improved performance of loops using Block distributions
 - improved performance and reduced memory requirements for memory tracking
-- vastly reduced amount of memory leaked due to compiler-allocated data
-
-Compiler Performance and Cleanup:
----------------------------------
 
 Cleanup of Generated Code:
 --------------------------
-- added information about compilation options to the generated code
+- embedded information about compilation options to the generated code
 
 Testing system:
 ---------------
-- made parallel testint place -nl x flags at the end of the command line
 - improved precedence of execution options specified via .execopts or EXECOPTS
+- made parallel testint place -nl x flags at the end of the command line
 - added support for PVM-based testing to the test script
 
 Internal:
@@ -209,8 +199,9 @@ Internal:
 - made the use of chpl_globals_registry more consistent across locales
 - relaxed compiler assumptions about classes with the "data class" pragma
 - added support for generating type and offset information for communications
-- some initial work toward supporting CPU<->GPU computations in Chapel
 - some initial work toward supporting execution on heterogeneous architectures
+- some initial work toward supporting CPU<->GPU computations in Chapel
+- some initial work toward supporting profiling tools with Chapel
 - removed "valid var" pragma
 - made wrapper functions use blank intent rather than inheriting from wrappee
 - changed strategy for determining when value types should be copied/destroyed
@@ -230,7 +221,7 @@ Internal:
 - made --no-cpp-lines the default for -g for developers
 - improved handling, robustness of built-in configuration variables
 - split chpl_comm_md.h into two files to permit platform- and comm- overrides
-- some initial work toward supporting profiling tools with Chapel
+
 
 ===========
 version 0.9
