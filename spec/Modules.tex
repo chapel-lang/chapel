@@ -5,7 +5,7 @@
 
 Chapel supports modules to manage name spaces.  A program consists of
 one or more modules.  Every symbol, including variables, functions,
-and types, are associated with some module.
+and types, is associated with some module.
 
 Module definitions are described in~\rsec{Module_Definitions}.  The
 relation between files and modules is described
@@ -27,20 +27,37 @@ module-declaration-statement:
 module-identifier:
   identifier
 \end{syntax}
+%% COMMENT FROM BRAD
+%% * sec 1.1, par 1: ``in this block statement'' -- do you think we need to
+%%    clarify that only top-level symbols are defined in (at?) the
+%%    module's scope?  I.e., to point out the distinction between foo and
+%%    x in:
+%%      def foo() {
+%%        var x = ...
+%%      }
+%%    since using the module will import foo but not x?  Do you think it
+%%    would be worthwhile to coin a term like ``top-level module symbol''
+%%    (or a better term?  ``module definitions''?  ``module symbols'' is
+%%    tempting but potentially confusing since the module's name could
+%%    also be considered a ``module symbol'') to define to these symbols as
+%%    the ones that will be available when a 'module use' is encountered?
+%%    (this comes up in the examples and using modules section below as
+%%    well).
+
 A module's name is specified after the \chpl{module} keyword.
 The \sntx{block-statement} opens the module's scope.  Symbols defined
 in this block statement are defined in the module's scope.
 
 Module declaration statements must be top-level statements within a
-module.  A module that is declared in another module is called a
+module.  A module that is declared within another module is called a
 nested module~(\rsec{Nested_Modules}).
 
 \subsection{Implicit Modules}
 \label{Implicit_Modules}
 \index{modules!and files}
 
-Multiple modules can be defined in the same file and do not need to
-bear any relation to the file in terms of their names.
+Multiple modules can be defined in the same file and need not bear any
+relation to the file in terms of their names.
 
 \begin{example}
 The following file contains two explicitly named modules, MX and MY.
@@ -63,8 +80,8 @@ module MY {
 
 For any file that contains top-level statements other than module
 declarations, the file is treated as the module declaration.  In this
-case, the module takes its name from the file.  The file name contains
-illegal Chapel symbols, the module name cannot be used in a use
+case, the module takes its name from the file.  If the file name is
+not a legal Chapel identifier, the module name cannot be used in a use
 statement.
 
 
@@ -89,7 +106,7 @@ def printY() {
 \label{Nested_Modules}
 \index{modules!nested}
 
-A nested module is a module that is defined inside another module, the
+A nested module is a module that is defined within another module, the
 outer module.  Nested modules automatically have access to all of the
 symbols in the outer module.  However, the outer module needs to
 explicitly use a nested module to have access to its symbols.
@@ -109,8 +126,8 @@ Files with both module declarations and top-level statements result in
 nested modules.
 
 \begin{example}
-The following file, named my\_nested\_module.chpl, defines an
-implicitly named module called my\_nested\_module, with nested modules
+The following file, named my\_module.chpl, defines an
+implicitly named module called my\_module, with nested modules
 MX and MY.
 \begin{chapelcode}
 module MX {
@@ -124,11 +141,11 @@ module MY {
 use MX, MY;
 
 def printX() {
-  writeln(MX.x);
+  writeln(x);
 }
 
 def printY() {
-  writeln(MY.y);
+  writeln(y);
 }
 \end{chapelcode}
 \end{example}
@@ -138,8 +155,8 @@ def printY() {
 \label{Using_Modules}
 \index{modules!using}
 
-Modules can be used by code outside of that module.  This allows
-access to the symbols in the modules without the need for explicit
+A module can be used by code outside of that module.  This allows
+access to the symbols in the module without the need for explicit
 naming~(\rsec{Explicit_Naming}).  Using modules is accomplished via
 the use statement as defined in~\rsec{The_Use_Statement}.
 
@@ -157,9 +174,9 @@ module-identifier-list:
 
 \end{syntax}
 This allows two variables that have the same name to be distinguished
-based on the name of their module.  For functions, the visible
-functions are restricted to the specified module.  For all symbols,
-the symbol must be declared top-level to the specified module.
+based on the name of their module.  Using explicit module naming in a
+function call restricts the set of candidate functions to those in the
+specified module.
 
 If code refers to symbols that are defined by multiple modules, the
 compiler will issue an error.  Explicit naming can be used to
@@ -172,20 +189,20 @@ disambiguated the symbols in this case.
 \index{modules!initialization}
 
 Module initialization occurs at program start-up.  All top-level
-statements in a module (other than function and type declarations) are
+statements in a module other than function and type declarations are
 executed during module initialization.
 
 \begin{example}
 In the code,
 \begin{chapel}
-var x: foo();        // executed at module initialization
+var x = foo();       // executed at module initialization
 writeln("Hi!");      // executed at module initialization
 def sayGoodbye {
   writeln("Bye!");   // not executed at module initialization
 }
 \end{chapel}
-All statements outside the function declaration are executed at module
-initialization time.
+The function foo() will be invoked and its result assigned to x.  Then
+``Hi!'' will be printed.
 \end{example}
 
 Module initialization order is discussed
@@ -204,17 +221,18 @@ the main function~(\rsec{The_main_Function}).
 
 \index{main@\chpl{main}}
 The main function must be called \chpl{main} and must have zero
-arguments.  It can be specified with or without parentheses.  There
-can be only one main function in all of the modules that make up a
-program.  Implementations may provide a compiler flag that
+arguments.  It can be specified with or without parentheses.  In any
+Chapel program, there is a single main function that defines the
+program's entry point.  If a program defines multiple potential entry
+points, the implementation may provide a compiler flag that
 disambiguates between main functions in multiple modules.
 
 \begin{craychapel}
-In the Cray Chapel compiler implementation, the \emph{--main-module}
-flag can be used to specify the module from which the main function
-definition will be used.  Only modules passed to the compiler on the
-command line will be searched for main functions unless
-the \emph{--main-module} flag is used.
+In the Cray Chapel compiler implementation, the \emph{--
+--main-module} flag can be used to specify the module from which the
+main function definition will be used.  Only modules passed to the
+compiler on the command line will be searched for main functions
+unless the \emph{-- --main-module} flag is used.
 \end{craychapel}
 
 \index{exploratory programming}
@@ -222,33 +240,33 @@ the \emph{--main-module} flag is used.
 %% \subsubsection{Programs with a Single Module}
 %% \label{Programs_with_a_Single_Module}
 
-To aid in exploratory programming, if a program is defined using a
-single module that uses only standard modules, the module need not
-define a main function.  In this case, a default main function is
-created to execute the module code.
+To aid in exploratory programming, if the file(s) listed on the
+compiler's command line only define a single module, the module need
+not define a main function.  In this case, a default main function is
+created to execute the module initialization code.
 \begin{example}
 The code
 \begin{chapel}
 writeln("hello, world");
 \end{chapel}
-is a legal and complete Chapel program.  The module declaration is
-taken to be the file as described in~\rsec{Implicit_Modules}.
+is a legal and complete Chapel program.  Its initialization function,
+which also serves as the program's main function, is the top-level
+writeln() statement.  The module declaration is taken to be the file
+as described in~\rsec{Implicit_Modules}.
 \end{example}
 
 
 \subsubsection{Module Initialization Order}
 \label{Module_Initialization_Order}
 
-Module initialization is perform using the following algorithm.
+Module initialization is performed using the following algorithm.
 
-Module use can be represented by a directed graph where an edge from a
-node M1 (representing module M1) to node M2 (representing module M2)
-denotes that M1 uses M2.  Starting from the module that defines the
-main function, initialize modules in the order implied by a
-depth-first, post-order traversal of the graph.  Modules are
-initialized in the order in which they appear in the program text.
-For nested modules, uses in the parent module are initialized before
-uses in the nested module.
+Module use can be represented by a directed graph over the modules.
+Starting from the module that defines the main function, modules are
+initialized in the order implied by a depth-first, post-order
+traversal of the graph.  Modules are initialized in the order in which
+they appear in the program text.  For nested modules, uses in the
+parent module are initialized before uses in the nested module.
 
 \begin{example}
 The code
