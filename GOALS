@@ -10,8 +10,12 @@ The goals of this release are as follows:
   multi-locale setting
 
 * to demonstrate Chapel's data parallel features via a combination of
-  (i)  a single-threaded, single-locale implementation; and
-  (ii) a *very* initial/limited multi-threaded, multi-locale implementation
+  (i)   a multi-threaded, single-locale implementation for ranges, and
+        non-distributed arithmetic domains and arrays;
+  (ii)  a single-threaded, single-locale reference implementation for
+        sparse, associative, and opaque domains and arrays; and
+  (iii) a preliminary multi-threaded, multi-locale implementation for
+        distributed arithmetic domains and arrays
 
 * to give the general public an opportunity to see the state and
   evolution of the Chapel implementation first-hand
