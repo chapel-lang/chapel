@@ -324,9 +324,16 @@ void GotoStmt::verify() {
     INT_FATAL(this, "GotoStmt has no label");
   if (label->list)
     INT_FATAL(this, "GotoStmt::label is a list");
-
   if (label && label->parentExpr != this)
     INT_FATAL(this, "Bad GotoStmt::label::parentExpr");
+  if (SymExpr* se = toSymExpr(label)) {
+    if (isLabelSymbol(se->var)) {
+      if (!isFnSymbol(se->var->defPoint->parentSymbol))
+        INT_FATAL(this, "goto label is not in a function");
+      if (se->var->defPoint->parentSymbol != this->parentSymbol)
+        INT_FATAL(this, "goto label is in a different function than the goto");
+    }
+  }
 }
 
 

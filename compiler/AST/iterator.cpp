@@ -579,7 +579,7 @@ void lowerIterator(FnSymbol* fn) {
     ii->irecord->fields.insertAtTail(new DefExpr(new VarSymbol("chpl__empty_record", dtInt[INT_SIZE_32])));
 
   replaceLocalsWithFields(ii, asts, local2field, locals);
-  if (!ii->iclass->defaultConstructor->hasFlag(FLAG_INLINE_ITERATOR)) {
+  if (!fn->hasFlag(FLAG_INLINE_ITERATOR)) {
     if (singleLoop) {
       buildZip1(ii, asts, singleLoop);
       buildZip2(ii, asts, singleLoop);
