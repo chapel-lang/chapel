@@ -75,7 +75,7 @@ def luLikeMultiply(
     // stamp A across into ACopies,
     forall blkCol in blk+1..blksHoriz {
         const cBlkD = [(ADmn.dim(1))(ptSol..),
-                       (ABlkDmn.dim(2))((blkCol-1)*blkSize+1..)];
+                       (ABlkDmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)];
         const aBlkD = [ptSol..#cBlkD.dim(1).length,
                        ptOp..#cBlkD.dim(2).length];
 
@@ -84,7 +84,7 @@ def luLikeMultiply(
 
     // stamp B down into BCopies,
     forall blkRow in blk+1..blksVert {
-        const cBlkD = [(ABlkDmn.dim(1))((blkRow-1)*blkSize+1..),
+        const cBlkD = [(ABlkDmn.dim(1))((blkRow-1)*blkSize+1..#blkSize),
                        (ADmn.dim(2))(ptSol..)];
         const bBlkD = [ptOp..#cBlkD.dim(1).length,
                        ptSol..#cBlkD.dim(2).length];
