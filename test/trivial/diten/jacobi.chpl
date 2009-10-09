@@ -6,7 +6,7 @@ var BD= [0..N+1, 0..N+1];
 
 def main(){
   var A : [BD] real(64);
-  var tmp : [BD] real(64);
+  var tmp : [D] real(64);
   var delta : real(64);
 
   // set bottom border to 1.0
@@ -16,12 +16,9 @@ def main(){
                          A(ij + (1, 0))  + 
                          A(ij + (0, -1)) + 
                          A(ij + (-1, 0))) / 4.0;
-    delta = 0;
 
-    [ij in D] {
-      delta = delta + abs(tmp(ij) - A(ij));
-      A(ij) = tmp(ij);
-    }
+    delta = + reduce abs(tmp - A[D]);
+    A[D] = tmp;
   } while (delta > epsilon);
   writeln(A(D));
 }
