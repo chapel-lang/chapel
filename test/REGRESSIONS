@@ -16,6 +16,10 @@
 general regressions
 ===================
 
+spurious ??? (10/07/09)
+-----------------------
+[Error matching program output for studies/hpcc/RA/marybeth/ra3]
+
 prematurely retired future? (10/07/09)
 --------------------------------------
 [Error matching program output for memory/figueroa/LeakedMemory5]
@@ -35,7 +39,6 @@ failures due to parallel forall loop over ranges? (10/04/09)
 [Error matching program output for sparse/bradc/accumInds]
 [Error matching program output for spec/marybeth/seq2]
 [Error matching program output for studies/hpcc/FFT/marybeth/fft-test-even]
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample3]
 
 spurious verification failures on RA (e.g. 04/04/09, 06/26/09, 07/19/09)
 ------------------------------------------------------------------------
@@ -103,6 +106,8 @@ double free (09/02/09)
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
+[Error matching program output for performance/deitz/test_cgapb] (e.g., 09/08/09)
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample2] (e.g., 09/08/09)
 [Error matching compiler output for parallel/sync/bradc/syncArrInClass] (e.g., 10/07/09)
 [Error matching compiler output for spec/marybeth/let] (e.g., 10/07/09)
 [Error matching compiler output for studies/hpcc/FFT/fft-hpcc06] (e.g., 10/07/09)
@@ -116,7 +121,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for arrays/bradc/slices/fftSlice] (e.g., 10/05/09)
 [Error matching compiler output for sparse/bradc/CSR/sparse] (e.g., 10/05/09)
 [Error matching compiler output for sparse/bradc/sparseInClass] (e.g., 10/05/09)
-[Error matching compiler output for studies/590o/blerner/nilClassCheck] (e.g., 10/05/09)
+[Error matching compiler output for studies/590o/blerner/nilClassCheck] (e.g., 10/05/09, 09/08/09)
 [Error matching compiler output for studies/madness/dinan/mad_chapel/test_mul] (e.g., 10/05/09
 [Error matching compiler output for users/shetag/classWithArray/classWithArray-init2] (e.g., 10/05/09)
 [Error matching compiler output for trivial/bradc/entrypoint/main] (e.g., 10/04/09)
@@ -143,7 +148,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for studies/590o/kfm/solver] (e.g., 09/22/09)
 [Error matching compiler output for spec/marybeth/seq2] (e.g., 09/21/09, 10/05/09)
 [Error matching compiler output for parallel/begin/diten/forParamBegin] (e.g., 09/19/09)
-[Error matching compiler output for parallel/cobegin/waynew/cobegin.simple2] (e.g., 09/19/09)
+[Error matching compiler output for parallel/cobegin/waynew/cobegin.simple2] (e.g., 09/19/09, 09/08/09)
 [Error matching compiler output for users/shetag/ccs] (e.g., 09/19/09)
 [Error matching compiler output for users/wmikanik/domain64-workaround] (e.g., 09/19/09, 10/06/09)
 [Error matching compiler output for spec/marybeth/modulesexample] (e.g., 09/17/09, 09/24/09)
@@ -158,7 +163,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for users/wmikanik/domain641D] (e.g., 09/13/09, 09/28/09, 09/30/09)
 [Error matching compiler output for release/examples/tutorials/fileIO] (e.g., 09/12/09)
 [Error matching compiler output for studies/sudoku/deitz/sudoku2] (e.g., 09/12/09)
-[Error matching compiler output for trivial/deitz/coerce] (e.g., 09/12/09)
+[Error matching compiler output for trivial/deitz/coerce] (e.g., 09/12/09, 09/08/09)
 [Error matching compiler output for sparse/bradc/sparseArray5] (e.g., 09/11/09, 09/28/09)
 [Error matching compiler output for statements/sungeun/continue_label] (e.g., 09/11/09, 09/27/09)
 [Error matching compiler output for studies/hpcc/FFT/bradc/fft-perm] (e.g., 09/11/09)
@@ -166,7 +171,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for studies/shootout/nbody/nbody_record_2] (e.g., 09/09/09)
 [Error matching compiler output for users/thom/initArrOfClasses] (e.g., 09/09/09, 09/22/09, 09/26/09, 10/02/09, 10/04/09)
 [Error matching compiler output for parallel/begin/deitz/test_nested_fn_begin1] (e.g., 09/07/09)
-[Error matching compiler output for users/shetag/unboundslice] (e.g., 09/07/09)
+[Error matching compiler output for users/shetag/unboundslice] (e.g., 09/07/09, 09/08/09)
 [Error matching compiler output for spec/marybeth/sort] (e.g., 09/06/09)
 [Error matching compiler output for multilocale/deitz/linked/test_linked2] (e.g., 09/05/09, 09/17/09)
 [Error matching compiler output for release/examples/hpcc/ra] (e.g., 09/05/09)
@@ -182,7 +187,7 @@ spurious 'the impossible has happened' problems (starting 08/26/09)
 [Error matching compiler output for domains/bradc/arrayLinkage] (e.g., 08/31/09)
 [Error matching compiler output for parallel/cobegin/waynew/depend] (e.g., 08/31/09, 09/07/09, 10/01/09)
 [Error matching compiler output for parallel/syncStmt/deitz/test_end2] (e.g., 08/31/09, 09/26/09)
-[Error matching compiler output for spec/marybeth/select] (e.g., 08/31/09)
+[Error matching compiler output for spec/marybeth/select] (e.g., 08/31/09, 09/08/09)
 [Error matching compiler output for users/shetag/condarr-blc2] (e.g., 08/31/09, 09/10/09, 09/14/09, 09/28/09, 10/03/09)
 [Error matching compiler output for studies/hpcc/2008/stream] (e.g., 08/30/09)
 [Error matching compiler output for parallel/cobegin/bradc/arrayargs] (e.g., 08/29/09)
@@ -261,7 +266,7 @@ times out spuriously
 --------------------
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 05/10/09, 05/14/09, 05/21/09, 05/30/09, 06/01/09, 06/03/09, 06/11/09, 06/13/09, 06/17/09, 06/19/09, 06/22/09, 06/23/09, 06/24/09, 07/03/09, 07/04/09, 07/05/09, 07/10/09, 07/11/09, 07/13/09, 07/15/09, 07/19/09, 07/24/09, 07/30/09, 08/01/09, 08/06/09, 08/29/09, 09/15/09, 09/23/09, 10/04/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 06/14/09, 06/16/09, 10/02/09, 10/04/09, 10/07/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09)
 
 
 ==============================================
@@ -396,17 +401,13 @@ spurious compilation timeout
 darwin-specific regressions
 ===========================
 
-??? (10/07/09)
---------------
-[Error matching program output for studies/hpcc/RA/marybeth/ra3]
-
 execution timeout (10/05/09)
 ----------------------------
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
 
 spurious sprintf not thread-safe
 --------------------------------
-[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 09/30/09, 10/02/09)
+[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 09/30/09, 10/02/09, 10/09/09)
 [Error matching program output for studies/590o/bradc/forall-begin-private-indices] (e.g., 09/30/09, 10/07/09)
 
 spurious timeouts
