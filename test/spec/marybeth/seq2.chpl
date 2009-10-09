@@ -1,2 +1,3 @@
 var fours = (0..36 by 4);
-[i in fours] writeln(i);
+for i in fours do
+  writeln(i);
