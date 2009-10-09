@@ -62,14 +62,17 @@ def main() {
 def randomAccessUpdate() {
  
   [i in TableDomain] Table(i) = i;
-  
+  var lock: sync bool = true;
+
   forall j in StreamDomain {
     var ranvec: [LittleStepDomain] uint(64);
     [k in LittleStepDomain] ranvec(k) = randomStart(bigStep*j+(bigStep/littleStep)*k);
     for i in BigStepDomain by littleStep{
       for k in LittleStepDomain{
         ranvec(k) = (ranvec(k) << 1) ^ (if (ranvec(k):int(64) < 0) then POLY else 0);
+        lock;
         atomic {Table(ranvec(k) & (tableSize-1)) ^= ranvec(k);}
+        lock = true;
       }
     }
   }

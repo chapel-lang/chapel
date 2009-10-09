@@ -59,8 +59,12 @@ def printConfiguration() {
 def verifyResults(T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
-  forall (i,r) in (UpdateSpace, RAStream()) do
+  var lock: sync bool = true;
+  forall (i,r) in (UpdateSpace, RAStream()) {
+    lock;
     atomic T(r & indexMask) ^= r;
+    lock = true;
+  }
 
   if (printArrays) then writeln("After verification, T is: ", T, "\n");
 
