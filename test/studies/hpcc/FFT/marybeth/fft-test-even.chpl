@@ -107,7 +107,7 @@ def dfft(A: [?AD] complex, W) {
   
   var l = 1;
   var lasti:int;
-  var m, m2, k1: int;
+  var m, m2: int;
 
   const n = AD.dim(1).length;
 
@@ -115,8 +115,8 @@ def dfft(A: [?AD] complex, W) {
     m = l << 2;
     m2 = 2*m;
     if (m2 > n) then break;
-    k1 = 0;
     forall k in 0..#n by m2 {
+      var k1 = k/m2;
       var wk2 = W[k1];
       var wk1 = W[2*k1];
       var wk3 = (wk1.re - 2 * wk2.im * wk1.im,
@@ -132,8 +132,6 @@ def dfft(A: [?AD] complex, W) {
       for j in k+m..#l {
         butterfly(wk1, (-wk2.im, wk2.re):complex, wk3, A[j..j+3*l by l]);
       }
-
-      k1 += 1;
     }
     l *= 4;
     lasti = i;
