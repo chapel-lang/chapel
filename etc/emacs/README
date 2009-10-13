@@ -47,7 +47,7 @@ following lines to your standard .emacs file:
 (autoload 'chpl-mode "chpl-mode" "Chpl enhanced cc-mode" t)
 
 ; make loading files with a .chpl extension put emacs into chpl-mode
-(setq 'auto-mode-alist '("\\.chpl$" . chpl-mode))
+(add-to-list 'auto-mode-alist '("\\.chpl$" . chpl-mode))
 
 
 ------------------------------------------------------------------------
