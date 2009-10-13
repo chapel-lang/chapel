@@ -20,11 +20,6 @@ general regressions
 -------------
 [Error matching program output for memory/figueroa/ClassInheritance1]
 
-failures due to Jacob backing out line# change (10/05/09)
----------------------------------------------------------
-[Error matching program output for modules/nelson/CrayPatProfilerTest1]
-[Error matching program output for modules/nelson/DummyProfilerTest1]
-
 spurious verification failures on RA
 ------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -122,7 +117,7 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09)
 
@@ -156,9 +151,9 @@ things take too long
 baseline-specific tests
 =======================
 
-gets wrong result (10/12/09)
-----------------------------
-[Error matching program output for reductions/diten/reduction_name_collision]
+spurious wrong result
+---------------------
+[Error matching program output for reductions/diten/reduction_name_collision] (e.g., 10/12/09)
 
 
 ===================
