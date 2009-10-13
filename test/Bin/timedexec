@@ -41,7 +41,7 @@ if ($@) {
     print "timedexec Alarm Clock\n";
 #    $child_pgrp = getpgrp($child_pid);
 #    $self_pgrp = getpgrp($$);
-    kill (-9, $child_pid);
+    kill (-15, $child_pid);
     exit(222);
 } else {
     exit($cmdStatus);
