@@ -33,12 +33,13 @@ following lines to your standard .emacs file:
 ; is your emacs version number
 (if (string= chpl-home nil)
     nil
-  (setq load-path (cons (concat chpl-home
-                                "/etc/emacs/"
-                                (number-to-string emacs-major-version) 
-                                "."
-                                (number-to-string emacs-minor-version))
-                        load-path))
+  (add-to-list 'load-path (concat chpl-home
+                                  "/etc/emacs/"
+                                  (number-to-string emacs-major-version) 
+                                  "."
+                                  (number-to-string emacs-minor-version)
+                                  )
+               )
   )
 
 ; make sure that when chpl-mode is entered, (our modified) cc-mode is
@@ -46,8 +47,7 @@ following lines to your standard .emacs file:
 (autoload 'chpl-mode "chpl-mode" "Chpl enhanced cc-mode" t)
 
 ; make loading files with a .chpl extension put emacs into chpl-mode
-(setq auto-mode-alist (cons '("\\.chpl$" . chpl-mode)
-                            auto-mode-alist))
+(setq 'auto-mode-alist '("\\.chpl$" . chpl-mode))
 
 
 ------------------------------------------------------------------------
