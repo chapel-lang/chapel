@@ -339,7 +339,12 @@ makeHeapAllocations() {
           (is_int_type(def->sym->type) ||
            is_uint_type(def->sym->type) ||
            is_real_type(def->sym->type) ||
-           def->sym->type == dtBool)) {
+           def->sym->type == dtBool ||
+           (isRecord(def->sym->type) &&
+            !def->sym->type->symbol->hasFlag(FLAG_ARRAY) &&
+            !def->sym->type->symbol->hasFlag(FLAG_DOMAIN) &&
+            !def->sym->type->symbol->hasFlag(FLAG_DISTRIBUTION) &&
+            !def->sym->type->symbol->hasFlag(FLAG_SYNC)))) {
         // replicate global const of primitive type
         INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
         for_defs(se, defMap, def->sym) {

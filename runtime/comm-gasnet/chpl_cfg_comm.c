@@ -54,6 +54,13 @@ typedef struct {
   char data[0];  // data
 } priv_bcast_t;
 
+typedef struct {
+  int id;        // private broadcast table entry to update
+  int size;      // size of data
+  int offset;    // offset of piece of data
+  char data[0];  // data
+} priv_bcast_large_t;
+
 //
 // AM functions
 //
@@ -63,8 +70,9 @@ typedef struct {
 #define FORK_NB_LARGE 131 // non-blocking fork with a huge argument
 #define SIGNAL        132 // ack of synchronous fork
 #define PRIV_BCAST    133 // put data at addr (used for private broadcast)
-#define FREE          134 // free data at addr
-#define EXIT_ANY      135 // free data at addr
+#define PRIV_BCAST_LARGE 134 // put data at addr (used for private broadcast)
+#define FREE          135 // free data at addr
+#define EXIT_ANY      136 // free data at addr
 
 static void fork_wrapper(fork_t *f) {
   if (f->arg_size)
@@ -155,6 +163,11 @@ static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
   memcpy(chpl_private_broadcast_table[pbp->id], pbp->data, pbp->size);
 }
 
+static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) {
+  priv_bcast_large_t* pblp = buf;
+  memcpy((char*)chpl_private_broadcast_table[pblp->id]+pblp->offset, pblp->data, pblp->size);
+}
+
 static void AM_free(gasnet_token_t token, void* buf, size_t nbytes) {
   chpl_free(*(void**)(*(fork_t**)buf)->arg, 0, 0);
   chpl_free(*(void**)buf, 0, 0);
@@ -176,6 +189,7 @@ static gasnet_handlerentry_t ftable[] = {
   {FORK_NB_LARGE, AM_fork_nb_large},
   {SIGNAL,        AM_signal},
   {PRIV_BCAST,    AM_priv_bcast},
+  {PRIV_BCAST_LARGE, AM_priv_bcast_large},
   {FREE,          AM_free},
   {EXIT_ANY,      AM_exit_any}
 };
@@ -309,19 +323,40 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
 }
 
 void chpl_comm_broadcast_private(int id, int size) {
-  int locale;
+  int locale, offset;
   int payloadSize = size + sizeof(priv_bcast_t);
-  priv_bcast_t* pbp = chpl_malloc(1, payloadSize, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
-  pbp->id = id;
-  pbp->size = size;
-  memcpy(pbp->data, chpl_private_broadcast_table[id], size);
 
-  for (locale = 0; locale < chpl_numLocales; locale++) {
-    if (locale != chpl_localeID) {
-      GASNET_Safe(gasnet_AMRequestMedium0(locale, PRIV_BCAST, pbp, payloadSize));
+  if (payloadSize <= gasnet_AMMaxMedium()) {
+    priv_bcast_t* pbp = chpl_malloc(1, payloadSize, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
+    memcpy(pbp->data, chpl_private_broadcast_table[id], size);
+    pbp->id = id;
+    pbp->size = size;
+    for (locale = 0; locale < chpl_numLocales; locale++) {
+      if (locale != chpl_localeID) {
+        GASNET_Safe(gasnet_AMRequestMedium0(locale, PRIV_BCAST, pbp, payloadSize));
+      }
     }
+    chpl_free(pbp, 0, 0);
+  } else {
+    int maxpayloadsize = gasnet_AMMaxMedium();
+    int maxsize = maxpayloadsize - sizeof(priv_bcast_large_t);
+    priv_bcast_large_t* pblp = chpl_malloc(1, maxpayloadsize, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
+    pblp->id = id;
+    for (offset = 0; offset < size; offset += maxsize) {
+      int thissize = size - offset;
+      if (thissize > maxsize)
+        thissize = maxsize;
+      pblp->offset = offset;
+      pblp->size = thissize;
+      memcpy(pblp->data, (char*)chpl_private_broadcast_table[id]+offset, thissize);
+      for (locale = 0; locale < chpl_numLocales; locale++) {
+        if (locale != chpl_localeID) {
+          GASNET_Safe(gasnet_AMRequestMedium0(locale, PRIV_BCAST_LARGE, pblp, sizeof(priv_bcast_large_t)+thissize));
+        }
+      }
+    }
+    chpl_free(pblp, 0, 0);
   }
-  chpl_free(pbp, 0, 0);
 }
 
 void chpl_comm_barrier(const char *msg) {
