@@ -1,4 +1,7 @@
-*** delete keyword
+Locales and Affinity
+--------------------
+* add statement that global non-distributed constants are replicated
+  across all locales
 
 Standard Modules
 ----------------
