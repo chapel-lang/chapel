@@ -570,6 +570,19 @@ void initPrimitiveTypes(void) {
     gPrivatization->immediate = new Immediate;
     *gPrivatization->immediate = *gTrue->immediate;
   }
+
+  gLocal = new VarSymbol("_local", dtBool);
+  gLocal->addFlag(FLAG_PARAM);
+  rootModule->block->insertAtTail(new DefExpr(gLocal));
+  if (fLocal) {
+    gLocal->immediate = new Immediate;
+    *gLocal->immediate = *gTrue->immediate;
+  } else {
+    gLocal->immediate = new Immediate;
+    *gLocal->immediate = *gFalse->immediate;
+  }
+
+
   
   INIT_PRIM_BOOL("bool(8)", 8);
   INIT_PRIM_BOOL("bool(16)", 16);

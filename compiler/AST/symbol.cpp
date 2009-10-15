@@ -39,6 +39,7 @@ VarSymbol *gFalse = NULL;
 VarSymbol *gTryToken = NULL;
 VarSymbol *gBoundsChecking = NULL;
 VarSymbol* gPrivatization = NULL;
+VarSymbol* gLocal = NULL;
 
 Map<FnSymbol*,int> ftable;
 

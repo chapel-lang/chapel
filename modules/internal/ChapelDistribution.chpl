@@ -42,6 +42,7 @@ class BaseDist {
   }
 
   def supportsPrivatization() param return false;
+  def requiresPrivatization() param return false;
 
   def destroyDistributionDescriptor() { }
 }
@@ -98,6 +99,7 @@ class BaseDom {
   }
 
   def supportsPrivatization() param return false;
+  def requiresPrivatization() param return false;
 
   // false for default distribution so that we don't increment the
   // default distribution's reference count and add domains to the
@@ -235,4 +237,5 @@ class BaseArr {
   def supportsAlignedFollower() param return false;
 
   def supportsPrivatization() param return false;
+  def requiresPrivatization() param return false;
 }

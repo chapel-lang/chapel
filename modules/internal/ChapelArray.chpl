@@ -1,8 +1,8 @@
 var privatizeLock$: sync int;
 
 pragma "privatized class"
-def _supportsPrivatization(value) param
-  return _privatization & value.supportsPrivatization();
+def _isPrivatized(value) param
+  return !_local & ((_privatization & value.supportsPrivatization()) | value.requiresPrivatization());
 
 def _newPrivatizedClass(value) {
   privatizeLock$.writeEF(true);
@@ -28,35 +28,35 @@ def _newPrivatizedClass(value) {
 }
 
 def _newArray(value) {
-  if _supportsPrivatization(value) then
+  if _isPrivatized(value) then
     return new _array(_newPrivatizedClass(value), value);
   else
     return new _array(value, value);
 }
 
 def _newDomain(value) {
-  if _supportsPrivatization(value) then
+  if _isPrivatized(value) then
     return new _domain(_newPrivatizedClass(value), value);
   else
     return new _domain(value, value);
 }
 
 def _getDomain(value) {
-  if _supportsPrivatization(value) then
+  if _isPrivatized(value) then
     return new _domain(value.pid, value);
   else
     return new _domain(value, value);
 }
 
 def _newDistribution(value) {
-  if _supportsPrivatization(value) then
+  if _isPrivatized(value) then
     return new _distribution(_newPrivatizedClass(value), value);
   else
     return new _distribution(value, value);
 }
 
 def _getDistribution(value) {
-  if _supportsPrivatization(value) then
+  if _isPrivatized(value) then
     return new _distribution(value.pid, value);
   else
     return new _distribution(value, value);
@@ -229,7 +229,7 @@ record _distribution {
 
   pragma "inline"
   def _value {
-    if _supportsPrivatization(_valueType) {
+    if _isPrivatized(_valueType) {
       var tc = _valueType;
       var id = _value;
       var pc = __primitive("chpl_getPrivatizedClass", tc, id);
@@ -240,7 +240,7 @@ record _distribution {
   }
 
   def ~_distribution() {
-    if !_supportsPrivatization(_valueType) {
+    if !_isPrivatized(_valueType) {
       on _value {
         var cnt = _value.destroyDist();
         if cnt == 0 {
@@ -325,7 +325,7 @@ record _domain {
 
   pragma "inline"
   def _value {
-    if _supportsPrivatization(_valueType) {
+    if _isPrivatized(_valueType) {
       var tc = _valueType;
       var id = _value;
       var pc = __primitive("chpl_getPrivatizedClass", tc, id);
@@ -336,7 +336,7 @@ record _domain {
   }
 
   def ~_domain () {
-    if !_supportsPrivatization(_valueType) {
+    if !_isPrivatized(_valueType) {
       on _value {
         var cnt = _value.destroyDom();
         if cnt == 0 then
@@ -433,7 +433,7 @@ record _domain {
 
   def setIndices(x) {
     _value.setIndices(x);
-    if _supportsPrivatization(_valueType) {
+    if _isPrivatized(_valueType) {
       var other = _value;
       var id = _value.pid;
       var hereID = here.id;
@@ -506,7 +506,7 @@ record _array {
 
   pragma "inline"
   def _value {
-    if _supportsPrivatization(_valueType) {
+    if _isPrivatized(_valueType) {
       var tc = _valueType;
       var id = _value;
       var pc = __primitive("chpl_getPrivatizedClass", tc, id);
@@ -517,7 +517,7 @@ record _array {
   }
 
   def ~_array() {
-    if !_supportsPrivatization(_valueType) {
+    if !_isPrivatized(_valueType) {
       on _value {
         var cnt = _value.destroyArr();
         if cnt == 0 then
