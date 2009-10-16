@@ -1,0 +1,4 @@
+#
+# For now, we are assuming that all PVM builds are for multirealm executions
+#
+RUNTIME_CFLAGS += -DCHPL_COMM_HETEROGENEOUS
