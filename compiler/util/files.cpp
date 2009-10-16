@@ -233,9 +233,8 @@ static const char** inputFilenames = {NULL};
 
 
 static bool checkSuffix(const char* filename, const char* suffix) {
-  char* dot;
-  return ((dot = strrchr(filename, '.')) &&
-          strcmp(dot+1, suffix) == 0);
+  const char* dot = strrchr(filename, '.');
+  return (dot && strcmp(dot+1, suffix) == 0);
 }
 
 

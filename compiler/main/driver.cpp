@@ -221,7 +221,7 @@ static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
   // 2. name       -- set the boolean config param "name" to NOT("name")
   //                  if name is not type bool, set it to 0.
 
-  const char *name = astr(arg_unused);
+  char *name = (char*)astr(arg_unused);
   char *value;
   value = strstr(name, "=");
   if (value) {
@@ -271,7 +271,6 @@ const char* getRealmType(int i) {
   static int numRealms = getNumRealms();
   static int last = -1;
   static const char* allrealms = configParamMap.get(astr("realmTypes"));
-  static const char* start = allrealms;
   const char* retval = NULL;
   if (i != last+1) {
     INT_FATAL("Must call getRealmType() in order");
@@ -283,6 +282,7 @@ const char* getRealmType(int i) {
       USR_FATAL("Must specify realm types using -srealmTypes='rt0 rt1 ...'");
     }
   } else {
+    static char* start = (char*)astr(allrealms);
     char* end = strchr(start, ' ');
     if (end == NULL) {
       if (i != numRealms-1) {

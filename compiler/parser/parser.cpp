@@ -43,7 +43,7 @@ static void addModuleToDoneList(const char* name) {
 
 static const char* filenameToModulename(const char* filename) {
   const char* modulename = astr(filename);
-  char* lastslash = strrchr(modulename, '/');
+  const char* lastslash = strrchr(modulename, '/');
   if (lastslash) {
     modulename = lastslash+1;
   }
