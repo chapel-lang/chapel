@@ -1260,19 +1260,19 @@ def chpl__initCopy(ir: _iteratorRecord) {
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" def chpl__autoCopy(x: _distribution) {
   if x._value then
-    x._value._distCnt$ += 1;
+    on x._value do x._value._distCnt$ += 1;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" def chpl__autoCopy(x: domain) {
-  x._value._domCnt$ += 1;
+  on x._value do x._value._domCnt$ += 1;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" def chpl__autoCopy(x: []) {
-  x._value._arrCnt$ += 1;
+  on x._value do x._value._arrCnt$ += 1;
   return x;
 }
 
