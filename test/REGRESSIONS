@@ -31,8 +31,8 @@ spurious verification failures on RA
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 10/11/09)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 10/11/09, 10/14/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 10/11/09, 10/16/09)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 10/11/09, 10/14/09, 10/16/09)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 10/12/09)
 
 
