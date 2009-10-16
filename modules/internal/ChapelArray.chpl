@@ -383,9 +383,13 @@ record _domain {
 
   def buildArray(type eltType) {
     var x = _value.buildArray(eltType);
-    var cnt = _value._domCnt$; // lock
-    _value._arrs.append(x);
-    _value._domCnt$ = cnt + 1; // unlock
+    pragma "dont disable remote value forwarding"
+    def help() {
+      var cnt = _value._domCnt$; // lock
+      _value._arrs.append(x);
+      _value._domCnt$ = cnt + 1; // unlock
+    }
+    help();
     return _newArray(x);
   }
 

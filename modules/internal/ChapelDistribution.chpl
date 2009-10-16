@@ -10,6 +10,7 @@ class BaseDist {
   var _distCnt$: sync int = 0; // distribution reference count and lock
   var _doms: list(BaseDom);    // arrays declared over this domain
 
+  pragma "dont disable remote value forwarding"
   def destroyDist(dom: BaseDom = nil) {
     var cnt = _distCnt$ - 1;
     if cnt < 0 then
@@ -58,6 +59,7 @@ class BaseDom {
     return nil;
   }
 
+  pragma "dont disable remote value forwarding"
   def destroyDom(arr: BaseArr = nil) {
     var cnt = _domCnt$ - 1;
     if cnt < 0 then
@@ -176,6 +178,7 @@ class BaseArr {
     return nil;
   }
 
+  pragma "dont disable remote value forwarding"
   def destroyArr(): int {
     var cnt = _arrCnt$ - 1;
     if cnt < 0 then

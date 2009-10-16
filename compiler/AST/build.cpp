@@ -958,6 +958,7 @@ buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
   }
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(astr("_reduce_scan", istr(uid++)));
+  fn->addFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING);
   fn->addFlag(FLAG_INLINE);
   VarSymbol* data = newTemp();
   data->addFlag(FLAG_EXPR_TEMP);

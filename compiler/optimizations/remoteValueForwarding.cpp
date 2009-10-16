@@ -4,6 +4,9 @@
 #include "stmt.h"
 
 
+//#define DEBUG_SYNC_ACCESS_FUNCTION_SET
+
+
 //
 // Compute set of functions that access sync variables.
 //
@@ -17,7 +20,6 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
       if (call->isPrimitive(PRIM_SYNC_INIT) ||
-          call->isPrimitive(PRIM_SYNC_DESTROY) ||
           call->isPrimitive(PRIM_SYNC_LOCK) ||
           call->isPrimitive(PRIM_SYNC_UNLOCK) ||
           call->isPrimitive(PRIM_SYNC_WAIT_FULL) ||
@@ -48,6 +50,9 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
             !syncAccessFunctionSet.set_in(parent)) {
           syncAccessFunctionSet.set_add(parent);
           syncAccessFunctionVec.add(parent);
+#ifdef DEBUG_SYNC_ACCESS_FUNCTION_SET
+          printf("%s:%d %s\n", parent->getModule()->name, parent->lineno, parent->name);
+#endif
         }
       }
     }
@@ -64,6 +69,10 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
           !syncAccessFunctionSet.set_in(parent)) {
         syncAccessFunctionSet.set_add(parent);
         syncAccessFunctionVec.add(parent);
+#ifdef DEBUG_SYNC_ACCESS_FUNCTION_SET
+        printf("%s:%d %s\n", parent->getModule()->name, parent->lineno, parent->name);
+        printf("  %s:%d %s\n", fn->getModule()->name, fn->lineno, fn->name);
+#endif
       }
     }
   }
