@@ -56,7 +56,9 @@ def _newDistribution(value) {
 }
 
 def _getDistribution(value) {
-  if _isPrivatized(value) then
+  if value.type == defaultDist._value.type then
+    return defaultDist;
+  else if _isPrivatized(value) then
     return new _distribution(value.pid, value);
   else
     return new _distribution(value, value);

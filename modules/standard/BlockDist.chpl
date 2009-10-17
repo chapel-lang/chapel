@@ -96,8 +96,10 @@ class Block : BaseDist {
   def Block(param rank: int, type idxType, other: Block(rank, idxType)) {
     boundingBox = other.boundingBox;
     targetLocDom = other.targetLocDom;
-    targetLocs = other.targetLocs;
-    locDist = other.locDist;
+    for i in targetLocDom {
+      targetLocs(i) = other.targetLocs(i);
+      locDist(i) = other.locDist(i);
+    }
     tasksPerLocale = other.tasksPerLocale;
   }
 
@@ -456,13 +458,15 @@ def BlockDom.privatize() {
   var thisdist = dist;
   var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
   var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
-  c.locDoms = locDoms;
+  for i in c.dist.targetLocDom do
+    c.locDoms(i) = locDoms(i);
   c.whole = whole;
   return c;
 }
 
 def BlockDom.reprivatize(other) {
-  locDoms = other.locDoms;
+  for i in dist.targetLocDom do
+    locDoms(i) = other.locDoms(i);
   whole = other.whole;
 }
 
@@ -561,10 +565,11 @@ class BlockArr: BaseArr {
 def BlockArr.getBaseDom() return dom;
 
 def BlockArr.setup() {
+  var thisid = this.locale.id;
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocs(localeIdx) {
       locArr(localeIdx) = new LocBlockArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx));
-      if this.locale == here then
+      if thisid == here.id then
         myLocArr = locArr(localeIdx);
     }
   }
@@ -577,10 +582,11 @@ def BlockArr.privatize() {
   var thisdom = dom;
   var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
   var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
-  c.locArr = locArr;
-  for localeIdx in dom.dist.targetLocDom do
+  for localeIdx in c.dom.dist.targetLocDom {
+    c.locArr(localeIdx) = locArr(localeIdx);
     if c.locArr(localeIdx).locale == here then
       c.myLocArr = c.locArr(localeIdx);
+  }
   return c;
 }
 
