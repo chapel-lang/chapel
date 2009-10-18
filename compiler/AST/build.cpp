@@ -82,6 +82,12 @@ checkControlFlow(Expr* expr, const char* context) {
 
 
 Expr* buildDotExpr(BaseAST* base, const char* member) {
+  if (!strcmp("id", member))
+    if (CallExpr* intToLocale = toCallExpr(base))
+      if (intToLocale->isNamed("chpl_int_to_locale"))
+        if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
+          if (getLocale->isPrimitive(PRIM_GET_LOCALEID))
+            return getLocale->remove();
   if (!strcmp("locale", member))
     return new CallExpr("chpl_int_to_locale", 
                         new CallExpr(PRIM_GET_LOCALEID, base));

@@ -301,6 +301,9 @@ class BlockDom: BaseArithmeticDom {
 
 def BlockDom.dim(d: int) return whole.dim(d);
 
+// stopgap to avoid accessing locDoms field (and returning an array)
+def BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
+
 def BlockDom.these() {
   for i in whole do
     yield i;
@@ -568,7 +571,8 @@ def BlockArr.setup() {
   var thisid = this.locale.id;
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocs(localeIdx) {
-      locArr(localeIdx) = new LocBlockArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx));
+      const locDom = dom.getLocDom(localeIdx);
+      locArr(localeIdx) = new LocBlockArr(eltType, rank, idxType, stridable, locDom);
       if thisid == here.id then
         myLocArr = locArr(localeIdx);
     }
@@ -584,7 +588,7 @@ def BlockArr.privatize() {
   var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);
-    if c.locArr(localeIdx).locale == here then
+    if c.locArr(localeIdx).locale.id == here.id then
       c.myLocArr = c.locArr(localeIdx);
   }
   return c;
