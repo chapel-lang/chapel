@@ -1049,6 +1049,8 @@ void CallExpr::codegen(FILE* outfile) {
         if (call->isPrimitive(PRIM_CAST)) {
           if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
               call->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+            TypeSymbol* ts = get(1)->typeInfo()->symbol;
+            registerTypeToStructurallyCodegen(ts);
             fprintf(outfile, "CHPL_WIDE_CAST(");
             get(1)->codegen(outfile);
             fprintf(outfile, ", ");
