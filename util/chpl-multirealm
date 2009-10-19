@@ -48,6 +48,11 @@ if [ -z "$PLATFORMLIST" ]; then
     exit 1
 fi
 
+# If -o isn't given, set to a.out.
+if [ -z "$OUTFILE" ]; then
+    OUTFILE=a.out
+fi
+
 # Check to see if last character of --savec path is a backslash.
 # If so, remove it.
 LASTNUM=`echo $OUTDIR | wc -c`
