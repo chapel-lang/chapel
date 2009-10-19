@@ -107,7 +107,7 @@ for host in ${HOSTLIST}; do
             ${CHPL_HOME}/bin/$platform/chpl "$@" -o "$OUTFILE"_$platform
         fi
     else
-        CMD='env | grep SHELL | awk -F \= '"'"'{print $2}'"'"
+        CMD='env | grep ^SHELL= | awk -F \= '"'"'{print $2}'"'"
         RSHELL="$(ssh $host "$CMD")"
         if [ x"${RSHELL}" = x/bin/tcsh -o x"${RSHELL}" = x/bin/csh ]; then
             if [ ! -z "$OUTDIR" ]; then
