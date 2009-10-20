@@ -679,8 +679,15 @@ def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) v
   // distributing across the entire Locales array.  I still think the
   // locArr/locDoms arrays should be associative over locale values.
   //
-  const arrSection = locArr(dom.dist.ind2locInd(lowIdx));
+  var arrSection = locArr(dom.dist.ind2locInd(lowIdx));
   if aligned {
+    //
+    // if arrSection is not local and we're not aligned, it means that
+    // followThisDom is empty; make arrSection local so that we can
+    // use the local block below
+    //
+    if arrSection.locale.id != here.id then
+      arrSection = myLocArr;
     local {
       for e in arrSection.myElems(followThisDom) do
         yield e;
