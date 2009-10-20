@@ -155,6 +155,47 @@ HPCC_InputFileInit(HPCC_Params *params) {
     icopy( params->nbs, params->nbval, 1, params->PTRANSnbval + n, 1 );
     params->PTRANSnbs = n + params->nbs;
 
+    /* Added support to turn on and off "Run" parameters */
+    if (fgets(buf, nbuf, f)) {
+      /* ignore comment */
+      if (fgets(buf, nbuf, f)) {
+        unsigned u;
+        rv = sscanf( buf, "%u", &u );
+        if (rv != 1 || n < 0) { /* parse error or negative value*/
+          BEGIN_IO( myRank, params->outFname, outputFile );
+          fprintf( outputFile, "Error in line %d of the input file.\n", line );
+          END_IO( myRank, outputFile );
+        } else {
+          unsigned mask = 1;
+          params->RunLatencyBandwidth = u&mask ? 1 : 0;
+          mask <<= 1;
+          params->RunSingleFFT = u&mask ? 1 : 0;
+          mask <<= 1;
+          params->RunStarFFT = u&mask ? 1 : 0;
+          mask <<= 1;
+          params->RunMPIFFT = u&mask ? 1 : 0;
+          mask <<= 1;
+          params->RunSingleRandomAccess = u&mask ? 1 : 0;
+          mask <<= 1;
+          params->RunStarRandomAccess = u&mask ? 1 : 0;
+          mask <<= 1;
+          params->RunMPIRandomAccess = u&mask ? 1 : 0;
+          mask <<= 1;
+          params->RunSingleStream = u&mask ? 1 : 0;
+          mask <<= 1;
+          params->RunStarStream = u&mask ? 1 : 0;
+          mask <<= 1;
+          params->RunSingleDGEMM = u&mask ? 1 : 0;
+          mask <<= 1;
+          params->RunStarDGEMM = u&mask ? 1 : 0;
+          mask <<= 1;
+          params->RunHPL = u&mask ? 1 : 0;
+          mask <<= 1;
+          params->RunPTRANS = u&mask ? 1 : 0;
+        }
+      }
+    }
+
     ioErr = 0;
     ioEnd:
     if (f) fclose( f );
@@ -179,6 +220,20 @@ HPCC_InputFileInit(HPCC_Params *params) {
   MPI_Bcast( &params->PTRANSnbs, 1, MPI_INT, 0, comm );
   if (params->PTRANSnbs > 0)
     MPI_Bcast( &params->PTRANSnbval, params->PTRANSnbs, MPI_INT, 0, comm );
+
+  MPI_Bcast( &params->RunPTRANS, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->RunHPL, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->RunStarDGEMM, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->RunSingleDGEMM, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->RunStarStream, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->RunSingleStream, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->RunMPIRandomAccess, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->RunStarRandomAccess, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->RunSingleRandomAccess, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->RunMPIFFT, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->RunStarFFT, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->RunSingleFFT, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->RunLatencyBandwidth, 1, MPI_INT, 0, comm );
 
   /* copy what HPL has */
   params->PTRANSnpqs = params->npqs;
@@ -260,7 +315,6 @@ HPCC_Init(HPCC_Params *params) {
   params->Failure = 0;
 
   HPCC_InitHPL( params ); /* HPL calls exit() if there is a problem */
-  HPCC_InputFileInit( params );
 
   params->RunHPL = 0;
   params->RunStarDGEMM = 0;
@@ -273,6 +327,9 @@ HPCC_Init(HPCC_Params *params) {
   params->RunSingleRandomAccess = 1;
   params->RunLatencyBandwidth = 0;
   params->RunMPIFFT = 1;
+
+  HPCC_InputFileInit( params );
+
   /*
   params->RunHPL = params->RunStarDGEMM = params->RunSingleDGEMM =
   params->RunPTRANS = params->RunStarStream = params->RunSingleStream =
