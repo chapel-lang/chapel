@@ -564,10 +564,14 @@ record _array {
     if boundsChecking then
       _value.checkSlice(ranges);
     var d = _dom((...ranges));
-    d._value._domCnt$ += 1;
     var a = _value.slice(d._value);
     a._arrAlias = _value;
-    a._arrAlias._arrCnt$ += 1;
+    pragma "dont disable remote value forwarding"
+    def help() {
+      d._value._domCnt$ += 1;
+      a._arrAlias._arrCnt$ += 1;
+    }
+    help();
     return _newArray(a);
   }
 

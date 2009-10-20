@@ -388,8 +388,17 @@ class DefaultArithmeticArr: BaseArr {
   }
 
   def these() var {
-    for i in dom do
-      yield this(i);
+    if rank == 1 {
+      var first = getDataIndex(dom.low);
+      var second = getDataIndex(dom.low+dom.ranges(1).stride:idxType);
+      var step = (second-first):int;
+      var last = first + (dom.numIndices-1) * step:idxType;
+      for i in first..last by step do
+        yield data(i);
+    } else {
+      for i in dom do
+        yield this(i);
+    }
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
@@ -472,14 +481,11 @@ class DefaultArithmeticArr: BaseArr {
   }
 
   pragma "inline"
-  def this(ind: idxType ...1) var where rank == 1
-    return this(ind);
+  def getDataIndex(ind: idxType ...1) where rank == 1
+    return getDataIndex(ind);
 
   pragma "inline"
-  def this(ind : rank*idxType) var {
-    if boundsChecking then
-      if !dom.member(ind) then
-        halt("array index out of bounds: ", ind);
+  def getDataIndex(ind: rank* idxType) {
     var sum = origin;
     if stridable {
       for param i in 1..rank do
@@ -495,7 +501,19 @@ class DefaultArithmeticArr: BaseArr {
       }
       sum -= factoredOffs;
     }
-    return data(sum);
+    return sum;
+  }
+
+  pragma "inline"
+  def this(ind: idxType ...1) var where rank == 1
+    return this(ind);
+
+  pragma "inline"
+  def this(ind : rank*idxType) var {
+    if boundsChecking then
+      if !dom.member(ind) then
+        halt("array index out of bounds: ", ind);
+    return data(getDataIndex(ind));
   }
 
   def reindex(d: DefaultArithmeticDom) {

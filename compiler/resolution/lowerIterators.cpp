@@ -85,7 +85,7 @@ fragmentLocalBlocks() {
   //
   Vec<BlockStmt*> localBlocks; // old local blocks
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->blockInfo && block->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL) && !leaveLocalBlockUnfragmented(block))
+    if (block->parentSymbol && block->blockInfo && block->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL) && !leaveLocalBlockUnfragmented(block))
       localBlocks.add(block);
   }
 
@@ -583,8 +583,6 @@ void lowerIterators() {
   }
   USR_STOP();
 
-  fragmentLocalBlocks();
-
   computeRecursiveIteratorSet();
 
   inlineIterators();
@@ -602,6 +600,8 @@ void lowerIterators() {
         if (call->numActuals() > 1)
           expand_for_loop(call);
   }
+
+  fragmentLocalBlocks();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {

@@ -682,9 +682,8 @@ def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) v
   const arrSection = locArr(dom.dist.ind2locInd(lowIdx));
   if aligned {
     local {
-      for i in followThisDom {
-        yield arrSection.this(i);
-      }
+      for e in arrSection.myElems(followThisDom) do
+        yield e;
     }
   } else {
     //
