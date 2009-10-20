@@ -351,7 +351,8 @@ makeHeapAllocations() {
           se->getStmtExpr()->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
         }
       } else if (def->sym->type->symbol->hasFlag(FLAG_ARRAY) ||
-                 def->sym->type->symbol->hasFlag(FLAG_DOMAIN)) {
+                 def->sym->type->symbol->hasFlag(FLAG_DOMAIN) ||
+                 def->sym->type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
         ModuleSymbol* mod = toModuleSymbol(def->parentSymbol);
         Expr* stmt = mod->initFn->body->body.head;
         bool found = false;
