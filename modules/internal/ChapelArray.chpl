@@ -465,6 +465,10 @@ record _domain {
     f.write(_value);
   }
 
+  def localSlice(r: range(?)... rank) {
+    return _value.localSlice(chpl__anyStridable(r), r);
+  }
+
   // associative array interface
 
   def sorted() {
@@ -586,6 +590,10 @@ record _array {
     a._arrAlias = _value;
     a._arrAlias._arrCnt$ += 1;
     return _newArray(a);
+  }
+
+  def localSlice(r: range(?)... rank) {
+    return _value.localSlice(r);
   }
 
   pragma "inline"

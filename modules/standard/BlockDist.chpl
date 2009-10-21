@@ -440,6 +440,10 @@ def BlockDom.slice(param stridable: bool, ranges) {
   return d;
 }
 
+def BlockDom.localSlice(param stridable: bool, ranges) {
+  return whole((...ranges));
+}
+
 def BlockDom.setup() {
   coforall localeIdx in dist.targetLocDom do {
     on dist.targetLocs(localeIdx) do
@@ -759,6 +763,13 @@ def BlockArr.slice(d: BlockDom) {
   }
 
   return alias;
+}
+
+def BlockArr.localSlice(d) {
+  var A: [(...d)] eltType;
+  for ind in d do
+    A(ind) = this(ind);
+  return A;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

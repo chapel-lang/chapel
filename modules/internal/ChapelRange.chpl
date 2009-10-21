@@ -292,8 +292,16 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
                          max(lo1, lo2),
                          min(hi1, hi2),
                          st1 * st2 / g);
-
-  if abs(lo1 - lo2) % g:eltType != 0 {
+  if lo1 > hi1 || lo2 > hi2 {
+    // empty intersection
+    if result.low < result.high then
+      result._low <=> result._high;
+    else if result.high == result.low then
+      (result._low, result._high) = (1:eltType, 0:eltType);
+    var al = al1 + (al2 - al1) * x:eltType * st1:eltType / g:eltType;
+    result._alignLow(al);
+    result._alignHigh(al);
+  } else if abs(lo1 - lo2) % g:eltType != 0 {
     // empty intersection, return degenerate result
     result._low <=> result._high;
   } else {
@@ -431,6 +439,8 @@ def range.these(param tag: iterator, follower) where tag == iterator.follower {
 def range.length {
   if boundedType != BoundedRangeType.bounded then
     compilerError("unbounded range has infinite length");
+  if low > high then
+    return 0:eltType;
   const retVal = if stride > 0
                then (high - low) / stride:eltType + 1
                else (low - high) / stride:eltType + 1;

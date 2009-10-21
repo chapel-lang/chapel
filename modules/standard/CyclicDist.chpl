@@ -57,7 +57,6 @@ class Cyclic: BaseDist {
              low: rank*idxType = _tupleOfZero(rank, idxType),
              targetLocales: [] locale = thisRealm.Locales,
              tasksPerLocale=0) {
-    lowIdx = low;
     if rank == 1  {
       targetLocDom = [0..#targetLocales.numElements];
       targetLocs = targetLocales;
@@ -82,6 +81,9 @@ class Cyclic: BaseDist {
       targetLocDom = [(...ranges)];
       targetLocs = reshape(targetLocales, targetLocDom);
     }
+
+    for param i in 1..rank do
+      lowIdx(i) = mod(low(i), targetLocDom.dim(i).length);
 
     if tasksPerLocale == 0 then
       this.tasksPerLocale = min reduce targetLocales.numCores;
@@ -109,7 +111,27 @@ class Cyclic: BaseDist {
 
 
 def Cyclic.getChunk(inds, locid) {
-  return inds((...locDist(locid).myChunk.getIndices()));
+  var sliceBy: rank*range(eltType=idxType, stridable=true);
+  var locidtup: rank*int;
+  if rank == 1 then
+    locidtup(1) = locid;
+  else
+    locidtup = locid;
+  for param i in 1..rank {
+    var distStride = targetLocDom.dim(i).length;
+    var loclowidx = mod(lowIdx(i) + locidtup(i), distStride);
+    var lowmod = mod(inds.dim(i).low, distStride);
+    var offset = loclowidx - lowmod;
+    if offset < 0 then
+      sliceBy(i) = inds.dim(i).low + (distStride + offset)..inds.dim(i).high by distStride;
+    else
+      sliceBy(i) = inds.dim(i).low + offset..inds.dim(i).high by distStride;
+  }
+  return inds((...sliceBy));
+  //
+  // WANT:
+  //var distWhole = locDist(locid).myChunk.getIndices();
+  //return inds((...distWhole));
 }
 
 def Cyclic.supportsPrivatization() param return true;
@@ -236,6 +258,10 @@ def CyclicDom.buildArray(type eltType) {
   return arr;
 }
 
+def CyclicDom.getIndices() {
+  return whole.getIndices();
+}
+
 def CyclicDom.setIndices(x) {
   whole.setIndices(x);
   setup();
@@ -264,31 +290,38 @@ def CyclicDom.these(param tag: iterator) where tag == iterator.leader {
   const wholeLow = whole.low,
         precomputedNumTasks = dist.tasksPerLocale;
   coforall locDom in locDoms do on locDom {
-    const locBlock = locDom.myBlock - wholeLow;
     const numTasks = precomputedNumTasks;
+
+    var result: rank*range(eltType=idxType, stridable=true);
+    var zeroedLocalPart = whole((...locDom.myBlock.getIndices())) - whole.low;
+    for param i in 1..rank {
+      var dim = zeroedLocalPart.dim(i);
+      var wholestride = whole.dim(i).stride;
+      if dim.high >= dim.low then
+        result(i) = (dim.low / wholestride)..(dim.high / wholestride) by (dim.stride / wholestride);
+      else
+        result(i) = 1..0 by 1;
+    }
     if numTasks == 1 {
-      yield locBlock.getIndices();
+      if debugCyclicDist then
+        writeln(here.id, ": leader whole: ", whole,
+                         " result: ", result,
+                         " myblock: ", locDom.myBlock);
+      yield result;
     } else {
-      if rank == 1 {
-        coforall taskid in 0..#numTasks {
-          const low = locBlock.low, high = locBlock.high;
-          const (lo,hi) = _computeBlock(low, high - low + 1,
-                                       low, high,
-                                       numTasks, taskid);
-          yield locBlock[lo..hi].getIndices();
-        }
-      } else {
-        var ranges: rank*range(stridable=true);
-        for param i in 2..rank do
-          ranges(i) = locBlock.dim(i);
-        coforall taskid in 0..#numTasks {
-          const low = locBlock.dim(1).low, high = locBlock.dim(1).high;
-          const (lo,hi) = _computeBlock(low, high - low + 1,
-                                        low, high,
-                                        numTasks, taskid);
-          ranges(1) = locBlock.dim(1)(lo..hi);
-          yield locBlock[(...ranges)].getIndices();
-        }
+      var splitRanges: rank*range(eltType=idxType, stridable=true) = result;
+
+      coforall taskid in 0..#numTasks {
+        const low = result(1).low, high = result(1).high;
+        const (lo,hi) = _computeBlock(low, high - low + 1,
+                                      low, high,
+                                      numTasks, taskid);
+        splitRanges(1) = result(1)(lo..hi);
+        if debugCyclicDist then
+          writeln(here.id, ": leader whole: ", whole,
+                           " result: ", result,
+                           " splitRanges: ", splitRanges);
+        yield splitRanges;
       }
     }
   }
@@ -296,9 +329,15 @@ def CyclicDom.these(param tag: iterator) where tag == iterator.leader {
 
 def CyclicDom.these(param tag: iterator, follower, param aligned: bool = false) where tag == iterator.follower {
   var t: rank*range(idxType, stridable=true);
+  if debugCyclicDist then
+    writeln(here.id, ": follower whole is: ", whole,
+                     " follower is: ", follower);
   for param i in 1..rank {
-    t(i) = follower(i) + whole.dim(i).low;
+    const wholestride = whole.dim(i).stride;
+    t(i) = ((follower(i).low*wholestride)..(follower(i).high*wholestride) by (follower(i).stride*wholestride)) + whole.dim(i).low;
   }
+  if debugCyclicDist then
+    writeln(here.id, ": follower maps to: ", t);
   for i in [(...t)] do
     yield i;
 }
@@ -321,6 +360,36 @@ def CyclicDom.reprivatize(other) {
 }
 
 def CyclicDom.dim(d: int) return whole.dim(d);
+
+def CyclicDom.strideBy(str: int) {
+  var alias = new CyclicDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
+  var t: rank*range(eltType=idxType, stridable=true);
+  for param i in 1..rank {
+    t(i) = this.dim(i) by str;
+  }
+  alias.setIndices(t);
+  return alias;
+}
+
+def CyclicDom.strideBy(str: rank*int) {
+  var alias = new CyclicDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
+  var t: rank*range(eltType=idxType, stridable=true);
+  for i in 1..rank {
+    t(i) = this.dim(i) by str(i);
+  }
+  alias.setIndices(t);
+  return alias;
+}
+
+def CyclicDom.slice(param stridable: bool, ranges) {
+  var alias = new CyclicDom(rank=rank, idxType=idxType, dist=dist, stridable=stridable||this.stridable);
+  alias.setIndices(whole((...ranges)).getIndices());
+  return alias;
+}
+
+def CyclicDom.localSlice(param stridable: bool, ranges) {
+  return whole((...ranges));
+}
 
 
 class LocCyclicDom {
@@ -360,6 +429,33 @@ class CyclicArr: BaseArr {
   var pid: int = -1;
 }
 
+def CyclicArr.checkSlice(ranges) {
+  for param i in 1..rank {
+    if !dom.dim(i).boundsCheck(ranges(i)) {
+      writeln(dom.dim(i), " ", ranges(i), " ", dom.dim(i).boundsCheck(ranges(i)));
+      halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
+    }
+  }
+}
+
+def CyclicArr.slice(d: CyclicDom) {
+  var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
+  for i in dom.dist.targetLocDom {
+    on dom.dist.targetLocs(i) {
+      alias.locArr[i] = new LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i]);
+      alias.locArr[i].myElems => locArr[i].myElems[alias.locArr[i].locDom.myBlock];
+      alias.myLocArr = alias.locArr[i];
+    }
+  }
+  return alias;
+}
+
+def CyclicArr.localSlice(d) {
+  var A: [(...d)] eltType;
+  for ind in d do
+    A(ind) = this(ind);
+  return A;
+}
 
 def CyclicArr.getBaseDom() return dom;
 
@@ -408,31 +504,38 @@ def CyclicArr.these(param tag: iterator) where tag == iterator.leader {
   const wholeLow = dom.whole.low,
         precomputedNumTasks = dom.dist.tasksPerLocale;
   coforall locDom in dom.locDoms do on locDom {
-    const locBlock = locDom.myBlock - wholeLow;
     const numTasks = precomputedNumTasks;
+
+    var result: rank*range(eltType=idxType, stridable=true);
+    var zeroedLocalPart = dom.whole((...locDom.myBlock.getIndices())) - wholeLow;
+    for param i in 1..rank {
+      var dim = zeroedLocalPart.dim(i);
+      var wholestride = dom.whole.dim(i).stride;
+      if dim.high >= dim.low then
+        result(i) = (dim.low / wholestride)..(dim.high / wholestride) by (dim.stride / wholestride);
+      else
+        result(i) = 1..0 by 1;
+    }
     if numTasks == 1 {
-      yield locBlock.getIndices();
+      if debugCyclicDist then
+        writeln(here.id, ": leader whole: ", dom.whole,
+                         " result: ", result,
+                         " myblock: ", locDom.myBlock);
+      yield result;
     } else {
-      if rank == 1 {
-        coforall taskid in 0..#numTasks {
-          const low = locBlock.low, high = locBlock.high;
-          const (lo,hi) = _computeBlock(low, high - low + 1,
-                                       low, high,
-                                       numTasks, taskid);
-          yield locBlock[lo..hi].getIndices();
-        }
-      } else {
-        var ranges: rank*range(stridable=true);
-        for param i in 2..rank do
-          ranges(i) = locBlock.dim(i);
-        coforall taskid in 0..#numTasks {
-          const low = locBlock.dim(1).low, high = locBlock.dim(1).high;
-          const (lo,hi) = _computeBlock(low, high - low + 1,
-                                        low, high,
-                                        numTasks, taskid);
-          ranges(1) = locBlock.dim(1)(lo..hi);
-          yield locBlock[(...ranges)].getIndices();
-        }
+      var splitRanges: rank*range(eltType=idxType, stridable=true) = result;
+
+      coforall taskid in 0..#numTasks {
+        const low = result(1).low, high = result(1).high;
+        const (lo,hi) = _computeBlock(low, high - low + 1,
+                                      low, high,
+                                      numTasks, taskid);
+        splitRanges(1) = result(1)(lo..hi);
+        if debugCyclicDist then
+          writeln(here.id, ": leader whole: ", dom.whole,
+                           " result: ", result,
+                           " splitRanges: ", splitRanges);
+        yield splitRanges;
       }
     }
   }
@@ -443,7 +546,8 @@ def CyclicArr.supportsAlignedFollower() param return true;
 def CyclicArr.these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
   var t: rank*range(eltType=idxType, stridable=true);
   for param i in 1..rank {
-    t(i) = follower(i) + dom.whole.dim(i).low;
+    const wholestride = dom.whole.dim(i).stride;
+    t(i) = ((follower(i).low*wholestride)..(follower(i).high*wholestride) by (follower(i).stride*wholestride)) + dom.whole.dim(i).low;
   }
   const followThis = [(...t)];
   const arrSection = locArr(dom.dist.ind2locInd(followThis.low));
