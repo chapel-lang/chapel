@@ -365,12 +365,17 @@ def range.these(param tag: iterator) where tag == iterator.leader {
     halt("iteration over a range with no bounds");
   if debugChapelRange then
     writeln("*** In range leader: ", this);
+  var numCores = here.numCores;
+  var runningTasks = here.runningTasks();
+  if debugChapelRange then
+    writeln("    numCores=", numCores, ", runningTasks=", runningTasks());
   var numChunks: uint(64) =
-    if maxChunks == -1 then
-      if maxThreads == 0 then (here.numCores):uint(64)
-      else (min(here.numCores, maxThreads)):uint(64)
-    else if maxThreads == 0 then (min(here.numCores, maxChunks)):uint(64)
-      else (min(here.numCores, min(maxThreads, maxChunks))):uint(64);
+  if (runningTasks >= numCores) then 1
+  else if maxChunks == -1 then
+    if maxThreads == 0 then (numCores-runningTasks+1):uint(64)
+    else (min(numCores-runningTasks+1, maxThreads)):uint(64)
+  else if maxThreads == 0 then (min(numCores-runningTasks+1, maxChunks)):uint(64)
+    else (min(numCores-runningTasks+1, min(maxThreads, maxChunks))):uint(64);
 
   var numelems: uint(64) = if stridable then (abs(high-low)/stride):uint(64)
     else abs(high-low):uint(64);
@@ -596,7 +601,7 @@ pragma "inline" def string.substring(s: range(?e,?b,?st)) {
 //   where the low bound is always zero
 //
 def _computeMyChunk(numelems, wayhi, numblocks, blocknum) {
-  if debugDefaultDist then
+  if debugChapelRange then
     writeln("in _computeMyChunk: numelems=",  numelems, " wayhi=", wayhi,
 	    " numblocks=", numblocks, " blocknum=", blocknum);
   /*

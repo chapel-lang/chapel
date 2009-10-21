@@ -91,14 +91,18 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   def these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
       writeln("*** In domain leader code: this = ", this);
-    var numChunks: uint(64);
-    if maxChunks == -1 {
-      if maxThreads == 0 then numChunks = (here.numCores):uint(64);
-      else numChunks = (min(here.numCores, maxThreads)):uint(64);
-    } else {
-      if maxThreads == 0 then numChunks = (min(here.numCores, maxChunks)):uint(64);
-      else numChunks = (min(here.numCores, min(maxThreads, maxChunks))):uint(64);
-    }
+    var numCores = here.numCores;
+    var runningTasks = here.runningTasks();
+    if debugDefaultDist then
+      writeln("    numCores=", numCores, ", runningTasks=", runningTasks());
+
+    var numChunks: uint(64) =
+    if (runningTasks >= numCores) then 1
+    else if maxChunks == -1 then
+      if maxThreads == 0 then (numCores-runningTasks+1):uint(64)
+      else (min(numCores-runningTasks+1, maxThreads)):uint(64)
+    else if maxThreads == 0 then (min(numCores-runningTasks+1, maxChunks)):uint(64)
+      else (min(numCores-runningTasks+1, min(maxThreads, maxChunks))):uint(64);
 
     var numelems: uint(64) = 0;
     for param i in 1..rank do
@@ -404,14 +408,17 @@ class DefaultArithmeticArr: BaseArr {
   def these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
       writeln("*** In array leader code: [\n", this, "]");
-    var numChunks: uint(64);
-    if maxChunks == -1 {
-      if maxThreads == 0 then numChunks = (here.numCores):uint(64);
-      else numChunks = (min(here.numCores, maxThreads)):uint(64);
-    } else {
-      if maxThreads == 0 then numChunks = (min(here.numCores, maxChunks)):uint(64);
-      else numChunks = (min(here.numCores, min(maxThreads, maxChunks))):uint(64);
-    }
+    var numCores = here.numCores;
+    var runningTasks = here.runningTasks();
+    if debugDefaultDist then
+      writeln("    numCores=", numCores, ", runningTasks=", runningTasks());
+    var numChunks: uint(64) =
+    if (runningTasks >= numCores) then 1
+    else if maxChunks == -1 then
+      if maxThreads == 0 then (numCores-runningTasks+1):uint(64)
+      else (min(numCores-runningTasks+1, maxThreads)):uint(64)
+    else if maxThreads == 0 then (min(numCores-runningTasks+1, maxChunks)):uint(64)
+      else (min(numCores-runningTasks+1, min(maxThreads, maxChunks))):uint(64);
 
     var numelems: uint(64) = 0;
     for param i in 1..rank do
