@@ -324,11 +324,14 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
 
 void chpl_comm_broadcast_private(int id, int size) {
   int i;
+  chpl_wide_voidStar rref;
   PRINTF("broadcast private");
 
   for (i = 0; i < chpl_numLocales; i++) {
     if (i != chpl_localeID) {
-      chpl_comm_put(chpl_private_broadcast_table[id], i, chpl_private_broadcast_table[id], size, 0, 0);
+      rref.locale = i;
+      rref.addr = chpl_private_broadcast_table[id];
+      chpl_comm_put(chpl_private_broadcast_table[id], &rref, size, 0, 0);
     }
   }
 }
@@ -369,7 +372,9 @@ void chpl_comm_exit_any(int status) {
 }
 
 
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_put(void* addr, void* rref, int32_t size, int ln, chpl_string fn) {
+  int32_t locale = ((chpl_wide_voidStar *)rref)->locale;
+  void* raddr = ((chpl_wide_voidStar *)rref)->addr;
   if (chpl_localeID == locale) {
     memmove(raddr, addr, size);
   } else {
@@ -397,7 +402,9 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
 }
 
 
-void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_get(void *addr, void* rref, int32_t size, int ln, chpl_string fn) {
+  int32_t locale = ((chpl_wide_voidStar *)rref)->locale;
+  void* raddr = ((chpl_wide_voidStar *)rref)->addr;
   if (chpl_localeID == locale) {
     memmove(addr, raddr, size);
   } else {

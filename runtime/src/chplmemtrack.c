@@ -246,10 +246,16 @@ void chpl_printMemStat(int32_t lineno, chpl_string filename) {
     fprintf(memLogFile, "==============================================================\n");
     for (i = 0; i < chpl_numLocales; i++) {
       static size_t m1, m2, m3, m4;
-      chpl_comm_get(&m1, i, &totalMem, sizeof(size_t), lineno, filename);
-      chpl_comm_get(&m2, i, &maxMem, sizeof(size_t), lineno, filename);
-      chpl_comm_get(&m3, i, &totalAllocated, sizeof(size_t), lineno, filename);
-      chpl_comm_get(&m4, i, &totalFreed, sizeof(size_t), lineno, filename);
+      chpl_wide_voidStar rref;
+      rref.locale = i;
+      rref.addr = &totalMem;
+      chpl_comm_get(&m1, &rref, sizeof(size_t), lineno, filename);
+      rref.addr = &maxMem;
+      chpl_comm_get(&m2, &rref, sizeof(size_t), lineno, filename);
+      rref.addr = &totalAllocated;
+      chpl_comm_get(&m3, &rref, sizeof(size_t), lineno, filename);
+      rref.addr = &totalFreed;
+      chpl_comm_get(&m4, &rref, sizeof(size_t), lineno, filename);
       fprintf(memLogFile, "%-9d  %-9zu  %-9zu  %-9zu  %-9zu\n", i, m1, m2, m3, m4);
     }
     fprintf(memLogFile, "==============================================================\n");

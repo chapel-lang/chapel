@@ -28,6 +28,11 @@ extern void* chpl_globals_registry_static[];
 
 extern void* const chpl_private_broadcast_table[];
 
+typedef struct _chpl_wide_voidStar {
+  int32_t locale;
+  void* addr;
+} chpl_wide_voidStar;
+
 //
 // Multi-locale macros
 //
@@ -106,8 +111,7 @@ extern void* const chpl_private_broadcast_table[];
     if (chpl_localeID == (wide).locale)                                 \
       local = *(wide).addr;                                             \
     else                                                                \
-      chpl_comm_get(&(local), (wide).locale, (wide).addr,               \
-                    SPECIFY_SIZE(type), ln, fn);                        \
+      chpl_comm_get(&(local), &(wide), SPECIFY_SIZE(type), ln, fn);     \
   } while (0)
 
 #define CHPL_COMM_WIDE_GET_LOCALE(local, wide, ln, fn)                  \
@@ -115,8 +119,7 @@ extern void* const chpl_private_broadcast_table[];
     if (chpl_localeID == (wide).locale)                                 \
       local = (wide).addr->locale;                                      \
     else                                                                \
-      chpl_comm_get(&(local), (wide).locale, (wide).addr,               \
-                    SPECIFY_SIZE(int32_t), ln, fn);                     \
+      chpl_comm_get(&(local), &(wide), SPECIFY_SIZE(int32_t), ln, fn);  \
   } while (0)
 
 #define CHPL_COMM_WIDE_PUT(type, wide, local, ln, fn)                   \
@@ -125,8 +128,8 @@ extern void* const chpl_private_broadcast_table[];
     if (chpl_localeID == (wide).locale)                                 \
       *(wide).addr = chpl_macro_tmp2;                                   \
     else                                                                \
-      chpl_comm_put(&chpl_macro_tmp2, (wide).locale,                    \
-                    (wide).addr, SPECIFY_SIZE(type), ln, fn);           \
+      chpl_comm_put(&chpl_macro_tmp2, &(wide),                          \
+                    SPECIFY_SIZE(type), ln, fn);                        \
   } while (0)
 
 #define CHPL_COMM_WIDE_GET_STRING(local, wide, ln, fn)                  \
@@ -138,8 +141,8 @@ extern void* const chpl_private_broadcast_table[];
     if (chpl_localeID == (wide).locale)                                 \
       memcpy(chpl_macro_tmp, (wide).addr, (wide).size);                 \
     else                                                                \
-      chpl_comm_get(chpl_macro_tmp, (wide).locale,                      \
-                    (void*)((wide).addr), SPECIFY_STRING_SIZE((wide).size), ln, fn); \
+      chpl_comm_get(chpl_macro_tmp, &(wide),                            \
+                    SPECIFY_STRING_SIZE((wide).size), ln, fn);          \
     local = chpl_macro_tmp;                                             \
   } while (0)
 
@@ -153,11 +156,12 @@ extern void* const chpl_private_broadcast_table[];
   do {                                                                  \
     if (chpl_localeID == (wide).locale)                                 \
       local = ((stype)((wide).addr))->sfield;                           \
-    else                                                                \
-      chpl_comm_get(&(local),                                           \
-                    (wide).locale,                                      \
-                    &((stype)((wide).addr))->sfield,                    \
-                    SPECIFY_SIZE(type), ln, fn);                        \
+    else {                                                              \
+      chpl_wide_voidStar rref;                                          \
+      rref.locale = (wide).locale;                                      \
+      rref.addr = &((stype)((wide).addr))->sfield;                      \
+      chpl_comm_get(&(local), &rref, SPECIFY_SIZE(type), ln, fn);       \
+    }                                                                   \
   } while (0)
 
 #define CHPL_COMM_WIDE_SET_FIELD_VALUE(type, wide, local, stype, sfield, ln, fn) \
@@ -165,11 +169,13 @@ extern void* const chpl_private_broadcast_table[];
     type chpl_macro_tmp = local;                                        \
     if (chpl_localeID == (wide).locale)                                 \
       ((stype)((wide).addr))->sfield = chpl_macro_tmp;                  \
-    else                                                                \
-      chpl_comm_put(&chpl_macro_tmp,                                    \
-                    (wide).locale,                                      \
-                    &((stype)((wide).addr))->sfield,                    \
+    else {                                                              \
+      chpl_wide_voidStar rref;                                          \
+      rref.locale = (wide).locale;                                      \
+      rref.addr = &((stype)((wide).addr))->sfield;                      \
+      chpl_comm_put(&chpl_macro_tmp, &rref,                             \
                     SPECIFY_SIZE(type), ln, fn);                        \
+    }                                                                   \
   } while (0)
 
 #define CHPL_COMM_WIDE_ARRAY_GET(wide, cls, ind, stype, sfield, etype, ln, fn) \
@@ -334,21 +340,21 @@ void chpl_comm_exit_any_clean(int status);
 
 //
 // put 'size' bytes of local data at 'addr' to remote data at
-// 'raddr' on locale 'locale'
+// 'rref->raddr' on locale 'rref->locale'
 // notes:
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn);
+void  chpl_comm_put(void* addr, void *rref, int32_t size, int ln, chpl_string fn);
 
 //
-// get 'size' bytes of remote data at 'raddr' on locale 'locale' to
+// get 'size' bytes of remote data at 'rref->raddr' on locale 'rref->locale' to
 // local data at 'addr'
 // notes:
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn);
+void  chpl_comm_get(void *addr, void *rref, int32_t size, int ln, chpl_string fn);
 
 //
 // remote fork should launch a thread on locale that runs function f

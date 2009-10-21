@@ -173,10 +173,14 @@ void chpl_comm_alloc_registry(int numGlobals) {
 
 void chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
+  chpl_wide_voidStar rref;
 
   if (chpl_localeID != 0) {
-    for (i = 0; i < numGlobals; i++)
-      chpl_comm_get(chpl_globals_registry[i], 0, &((void **)globalPtrs[0])[i], sizeof(void *), 0, "");
+    for (i = 0; i < numGlobals; i++) {
+      rref.locale = 0;
+      rref.addr = &((void **)globalPtrs[0])[i];
+      chpl_comm_get(chpl_globals_registry[i], &rref, sizeof(void *), 0, "");
+    }
   }
 }
 
@@ -190,7 +194,10 @@ typedef struct __broadcast_private_helper {
 static void _broadcastPrivateHelperFn(struct __broadcast_private_helper *arg);
 
 void _broadcastPrivateHelperFn(struct __broadcast_private_helper *arg) {
-  chpl_comm_get(arg->addr, arg->locale, arg->raddr, arg->size, 0, "");
+  chpl_wide_voidStar rref;
+  rref.locale = arg->locale;
+  rref.addr = arg->raddr;
+  chpl_comm_get(arg->addr, &rref, arg->size, 0, "");
 }
 
 void chpl_comm_broadcast_private(int id, int size) {
@@ -280,8 +287,10 @@ void chpl_comm_exit_any(int status) {
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, char* fn) {
+void  chpl_comm_put(void* addr, void* rref, int32_t size, int ln, char* fn) {
   // this should be an ARMCI put call
+  int32_t locale = ((chpl_wide_voidStar *)rref)->locale;
+  void* raddr = ((chpl_wide_voidStar *)rref)->addr;
 
   if (chpl_localeID == locale)
     memmove(raddr, addr, size);
@@ -300,8 +309,10 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int ln, char* fn) {
+void  chpl_comm_get(void *addr, void* rref, int32_t size, int ln, char* fn) {
   // this should be an ARMCI get call
+  int32_t locale = ((chpl_wide_voidStar *)rref)->locale;
+  void* raddr = ((chpl_wide_voidStar *)rref)->addr;
 
   if (chpl_localeID == locale)
     memmove(addr, raddr, size);
@@ -453,6 +464,7 @@ void *_gpc_thread_handler(void *arg)
 {
   gpc_info_t *ginfo;
   int *done;
+  chpl_wide_voidStar rref;
 
   done = ARMCI_Malloc_local(sizeof(int));
 
@@ -466,8 +478,11 @@ void *_gpc_thread_handler(void *arg)
 
   *done = 1;
 
-  if (ginfo->info->block)
-    chpl_comm_put(done, ginfo->info->caller, ginfo->rhdr, sizeof(int), 0, "");
+  if (ginfo->info->block) {
+    rref.locale = ginfo->info->caller;
+    rref.addr = ginfo->rhdr;
+    chpl_comm_put(done, &rref, sizeof(int), 0, "");
+  }
 
   ARMCI_Free_local(done);
 

@@ -93,9 +93,12 @@ static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
 }
 
 static void fork_large_wrapper(fork_t* f) {
+  chpl_wide_voidStar rref;
   void* arg = chpl_malloc(1, f->arg_size, CHPL_RT_MD_AM_FORK_ARG, 0, 0);
 
-  chpl_comm_get(arg, f->caller, *(void**)f->arg, f->arg_size, 0, "fork large");
+  rref.locale = f->caller;
+  rref.addr = *(void**)f->arg;
+  chpl_comm_get(arg, &rref, f->arg_size, 0, "fork large");
   (*chpl_ftable[f->fid])(arg);
   GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
                                       SIGNAL,
@@ -134,9 +137,12 @@ static void AM_fork_nb(gasnet_token_t  token,
 }
 
 static void fork_nb_large_wrapper(fork_t* f) {
+  chpl_wide_voidStar rref;
   void* arg = chpl_malloc(1, f->arg_size, CHPL_RT_MD_AM_NB_FORK_ARG, 0, 0);
 
-  chpl_comm_get(arg, f->caller, *(void**)f->arg, f->arg_size, 0, "fork large");
+  rref.locale = f->caller;
+  rref.addr = *(void**)f->arg;
+  chpl_comm_get(arg, &rref, f->arg_size, 0, "fork large");
   GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
                                       FREE,
                                       &(f->ack),
@@ -309,14 +315,17 @@ void chpl_comm_alloc_registry(int numGlobals) {
 
 void chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
+  chpl_wide_voidStar rref;
   if (chpl_localeID != 0) {
     for (i = 0; i < numGlobals; i++) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-      chpl_comm_get(chpl_globals_registry[i], 0,
-                     &((void**)seginfo_table[0].addr)[i], sizeof(void*), 0, "");
+      rref.locale = 0;
+      rref.addr = &((void**)seginfo_table[0].addr)[i];
+      chpl_comm_get(chpl_globals_registry[i], &rref, sizeof(void*), 0, "");
 #else
-      chpl_comm_get(chpl_globals_registry[i], 0,
-                    chpl_globals_registry[i], sizeof(void*), 0, "");
+      rref.locale = 0;
+      rref.addr = chpl_globals_registry[i];
+      chpl_comm_get(chpl_globals_registry[i], &rref, sizeof(void*), 0, "");
 #endif
     }
   }
@@ -429,7 +438,9 @@ void chpl_comm_exit_any(int status) {
   chpl_comm_exit_any_dirty(status); 
 }
 
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_put(void* addr, void* rref, int32_t size, int ln, chpl_string fn) {
+  int32_t locale = ((chpl_wide_voidStar *)rref)->locale;
+  void* raddr = ((chpl_wide_voidStar *)rref)->addr;
   if (chpl_localeID == locale) {
     memcpy(raddr, addr, size);
   } else {
@@ -447,7 +458,9 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
 ////GASNET - pass trace info to gasnet_get
 ////GASNET - define GASNET_E_ PUTGET always REMOTE
 ////GASNET - look at GASNET tools at top of README.tools has atomic counters
-void  chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_get(void* addr, void* rref, int32_t size, int ln, chpl_string fn) {
+  int32_t locale = ((chpl_wide_voidStar *)rref)->locale;
+  void* raddr = ((chpl_wide_voidStar *)rref)->addr;
   if (chpl_localeID == locale) {
     memcpy(addr, raddr, size);
   } else {
