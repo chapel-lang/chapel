@@ -18,7 +18,7 @@ general regressions
 
 spurious failure
 ----------------
-[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist] (e.g., 10/12/09, 10/15/09)
+[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist] (e.g., 10/12/09, 10/15/09, 10/19/09)
 
 ??? (10/6/09)
 -------------
@@ -31,9 +31,9 @@ spurious verification failures on RA
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 10/11/09, 10/16/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 10/11/09, 10/16/09, 10/17/09)
 [Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 10/11/09, 10/14/09, 10/16/09)
-[Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 10/12/09)
+[Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 10/12/09, 10/19/09)
 
 
 =================
@@ -117,9 +117,9 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09)
 
 
 ==============================================
@@ -135,16 +135,10 @@ GASNet unable to start polling thread
 pvm-specific tests
 ==================
 
-all multilocale PVM tests seem to deadlock with CHPL_COMM_HETEROGENEOUS on
---------------------------------------------------------------------------
-[Error: Timed out executing program release/examples/hello-multiloc]
-[Error: Timed out executing program release/examples/hpcc/fft]
-[Error: Timed out executing program release/examples/tutorials/multilocale]
-
 things sometimes take too long
 ------------------------------
 [Error: Timed out executing program release/examples/hello-multiloc] (e.g., 10/03/09)
-[Error: Timed out executing program release/examples/tutorials/multilocale] (e.g., 10/03/09, 10/04/09)
+[Error: Timed out executing program release/examples/tutorials/multilocale] (e.g., 10/03/09, 10/04/09, 10/22/09)
 
 things take too long
 --------------------
@@ -159,26 +153,30 @@ baseline-specific tests
 
 spurious wrong result
 ---------------------
-[Error matching program output for reductions/diten/reduction_name_collision] (e.g., 10/12/09)
+[Error matching program output for reductions/diten/reduction_name_collision] (e.g., 10/12/09, 10/17/09, 10/20/09)
 
 
 ===================
 opts-specific tests
 ===================
 
-(Example runs: 0)
-
-
-(Full run: 77)
-
-*all*
------
-[Error matching program output for modules/nelson/CrayPatProfilerTest1]
-[Error matching program output for modules/nelson/DummyProfilerTest1]
+(Example runs: 1)
 
 --no-dead-code-elimination
 --------------------------
-[Error matching program output for reductions/diten/reduction_name_collision]
+[Error matching program output for release/examples/programs/tree]
+
+
+(Full run: 38)
+
+some spurious cases:
+--------------------
+[Error matching program output for reductions/diten/reduction_name_collision] (--no-copy-propagation, --baseline --copy-propagation)
+[Error matching program output for studies/lu/marybeth/pivlublock-alias] (--baseline --optimize-loop-iterators)
+[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist] (--no-scalar-replacement --no-inline)
+
+--no-dead-code-elimination
+--------------------------
 [Error: Timed out compilation for users/franzf/v0/chpl/main]
 [Error: Timed out compilation for users/franzf/v1/chpl/main]
 [Error: Timed out compilation for users/franzf/v2/chpl/main]
@@ -190,17 +188,15 @@ opts-specific tests
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 --no-inline-iterators
+--no-scalar-replacement
 --no-optimize-loop-iterators --no-inline-iterators
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
 ---------------------------------------------------------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
 
---no-scalar-replacement
------------------------
-[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
-[Error matching program output for reductions/diten/reduction_name_collision]
-
 --baseline --copy-propagation
+--baseline --dead-code-elimination
+--baseline --inline-iterators
 --baseline --live-analysis
 --baseline --optimize-loop-iterators
 --baseline --scalar-replacement
@@ -209,23 +205,9 @@ opts-specific tests
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
---baseline --dead-code-elimination
-----------------------------------
-[Error matching program output for classes/figueroa/RecordConstructor2]
-[Error matching program output for reductions/bradc/manual/promote]
-[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
-[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
-
 --baseline --inline
 -------------------
 [Error matching program output for classes/figueroa/RecordConstructor2]
-
---baseline --inline-iterators
------------------------------
-[Error matching program output for classes/figueroa/RecordConstructor2]
-[Error matching program output for studies/lu/marybeth/pivlublock-alias]
-[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
-[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 --baseline --no-local
 ------------------------------------
@@ -268,12 +250,21 @@ spurious compilation timeouts
 -----------------------------
 [Error: Timed out compilation for parallel/sync/diten/userLevelEndCount] (e.g., 10/10/09)
 [Error: Timed out compilation for studies/hpcc/STREAMS/bradc/stream-fragmented] (e.g., 10/02/09)
-[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 10/02/09, 10/13/09, 10/13/09, 10/15/09)
+[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 10/02/09, 10/13/09, 10/13/09, 10/15/09, 10/17/09, 10/09/09)
 
 
 ===========================
 darwin-specific regressions
 ===========================
+
+??? (Sam's) 10/20/09
+--------------------
+[Error matching program output for functions/bradc/intents-arrays2a]
+[Error matching program output for studies/590o/blerner/xml-parse]
+
+spurious failure
+----------------
+[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-fill] (e.g., 10/20/09)
 
 execution timeout (10/05/09)
 ----------------------------
@@ -281,8 +272,9 @@ execution timeout (10/05/09)
 
 spurious sprintf not thread-safe
 --------------------------------
-[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 10/02/09, 10/08/09, 10/09/09, 10/14/09)
-[Error matching program output for studies/590o/bradc/coforall-private-indices] (e.g., 10/08/09, 10/15/09)
+[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 10/02/09, 10/08/09, 10/09/09, 10/14/09, 10/21/09)
+[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround2] (e.g., 10/19/09)
+[Error matching program output for studies/590o/bradc/coforall-private-indices] (e.g., 10/08/09, 10/15/09, 10/20/09)
 [Error matching program output for studies/590o/bradc/forall-begin-private-indices] (e.g., 10/07/09, 10/14/09)
 
 
@@ -298,7 +290,7 @@ cray-/cce-specific regressions
 spurious timeout
 ----------------
 [Error: Timed out compilation for parallel/sync/diten/userLevelEndCount] (e.g., 10/10/09)
-[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09)
+[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09)
 
 spurious seg fault
 ------------------
@@ -404,7 +396,7 @@ XT intel-specific regressions (in addition to xt-cle errors above)
 
 spurious double free or corruption
 ----------------------------------
-[Error matching program output for stress/deitz/test_10k_coforall] (e.g., 10/03/09)
+[Error matching program output for stress/deitz/test_10k_coforall] (e.g., 10/03/09, 10/18/09)
 
 Numerical accuracy issues (08/29/09)
 ------------------------------------
@@ -430,9 +422,9 @@ Numerical accuracy issues (08/29/09)
 xt-gnu specific failures
 ========================
 
-seg fault (10/10/09)
---------------------
-[Error matching program output for parallel/serial/waynew/cobegin1a]
+spurious seg fault
+------------------
+[Error matching program output for parallel/serial/waynew/cobegin1a] (e.g., 10/10/09)
 
 The C compiler issues a warning when time.h and pthread.h are both
 included and the C code is compiled with -std=c99.
