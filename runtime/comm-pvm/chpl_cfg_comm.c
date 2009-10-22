@@ -1517,9 +1517,7 @@ void chpl_comm_exit_any(int status) {
   return;
 }
 
-void chpl_comm_put(void* addr, void* rref, int32_t size, int ln, chpl_string fn) {
-  int32_t locale = ((chpl_wide_voidStar *)rref)->locale;
-  void* raddr = ((chpl_wide_voidStar *)rref)->addr;
+void chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   if (chpl_localeID == locale) {
     if (size < 0) {
       chpl_internal_error("memmove error");
@@ -1567,9 +1565,7 @@ void chpl_comm_put(void* addr, void* rref, int32_t size, int ln, chpl_string fn)
   }
 }
 
-void chpl_comm_get(void* addr, void* rref, int32_t size, int ln, chpl_string fn) {
-  int32_t locale = ((chpl_wide_voidStar *)rref)->locale;
-  void* raddr = ((chpl_wide_voidStar *)rref)->addr;
+void chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   if (chpl_localeID == locale) {
     if (size < 0) {
       chpl_internal_error("memmove error");
