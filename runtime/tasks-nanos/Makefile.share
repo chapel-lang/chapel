@@ -1,0 +1,11 @@
+GENERIC_THREADS_SRCS = \
+	chpl_nanos_tasks.c
+
+SVN_SRCS = $(GENERIC_THREADS_SRCS)
+SRCS = $(SVN_SRCS)
+
+GENERIC_THREADS_OBJS = \
+	$(GENERIC_THREADS_SRCS:%.c=$(GENERIC_THREADS_OBJDIR)/%.o)
+
+RUNTIME_CFLAGS += -I/home/alex/usr/include
+
