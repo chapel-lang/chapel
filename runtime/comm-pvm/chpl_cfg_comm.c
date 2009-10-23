@@ -525,13 +525,12 @@ static void chpl_pkCLASS_REFERENCE(void* buf, int i, int chpltypetype, unsigned 
   } else if (packagesize == 8) {
     part1 = (int)*(int64_t *)(((char *)buf)+chpltypeoffset);
     part2 = (int)((*(int64_t *)(((char *)buf)+chpltypeoffset)) >> 32);
-
-    // pklong doesn't work here since it assumes a long is 32-bits
-    //    PVM_NO_LOCK_SAFE(pvm_pklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_pklong", "chpl_pvm_send");
+    
     PVM_NO_LOCK_SAFE(pvm_pkint(&part1, 1, 1), "pvm_pkint", "chpl_pvm_send");
     PVM_NO_LOCK_SAFE(pvm_pkint(&part2, 1, 1), "pvm_pkint", "chpl_pvm_send");
+
 #if CHPL_DIST_DEBUG
-    sprintf(debugMsg, "Packing CLASS_REFERENCE 0x%lx (part %d) of type %d, offset %lu", *(long unsigned int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+    sprintf(debugMsg, "Packing CLASS_REFERENCE 0x%llx (part %d) of type %d, offset %lu", *(long long unsigned int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
     PRINTF(debugMsg);
 #endif
   } else {
@@ -556,10 +555,9 @@ static void chpl_upkCLASS_REFERENCE(void* buf, int i, int chpltypetype, unsigned
     PVM_NO_LOCK_SAFE(pvm_upkint(&part1, 1, 1), "pvm_upkint", "chpl_pvm_recv");
     PVM_NO_LOCK_SAFE(pvm_upkint(&part2, 1, 1), "pvm_upkint", "chpl_pvm_recv");
     *(int64_t *)(((char *)buf)+chpltypeoffset) = (int64_t)((((int64_t)part2) << 32) + (((int64_t)part1) & 0x00000000ffffffff));
-    // pklong doesn't work here since it assumes a long is 32-bits
-    //    PVM_NO_LOCK_SAFE(pvm_upklong((long *)(((char *)buf)+chpltypeoffset), 1, 1), "pvm_upklong", "chpl_pvm_recv");
+
 #if CHPL_DIST_DEBUG
-    sprintf(debugMsg, "Unpacking CLASS_REFERENCE 0x%lx (part %d) of type %d, offset %lu", *(long unsigned int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
+    sprintf(debugMsg, "Unpacking CLASS_REFERENCE 0x%llx (part %d) of type %d, offset %lu", *(long long unsigned int *)(((char *)buf)+chpltypeoffset), i, chpltypetype, chpltypeoffset);
     PRINTF(debugMsg);
 #endif
   } else {
