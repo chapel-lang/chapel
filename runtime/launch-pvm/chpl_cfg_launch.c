@@ -165,6 +165,7 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   int commsig = 0;
   static char *hosts2redo[2048];
   int bufid;
+  int usingbaserealm;
 
   // These are for receiving singals from slaves
   int hostsexit;
@@ -290,11 +291,18 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   // Find the node we're on. We use this in spawning (to know what realm
   // type we are to replace that string with an architecture appropriate one
   uname(&myhostname);
+  usingbaserealm = 0;
   for (i = 0; i < numLocales; i++) {
     if (!(strcmp((char *)pvmnodestoadd[i], myhostname.nodename))) {
       baserealm = i;
+      usingbaserealm = 1;
       break;
     }
+  }
+  if (!usingbaserealm) {
+    realmtype = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+    memalloced |= M_REALMTYPE;
+    sprintf(realmtype, "%s", getenv((char *)"CHPL_HOST_PLATFORM"));
   }
 
   // Add everything (turn off errors -- we don't care if we add something
@@ -356,21 +364,35 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
     strcat(commandtopvm, nameofbin);
     strcat(commandtopvm, "_real");
 
-    while (strstr(commandtopvm, realmtoadd[baserealm]) && 
-           (chpl_numRealms != 1) &&
-           (strcmp(realmtoadd[baserealm], realmtoadd[i]))) {
-      commandtopvm = replace_str(commandtopvm, realmtoadd[baserealm], realmtoadd[i]);
+    if (usingbaserealm) {
+      while (strstr(commandtopvm, realmtoadd[baserealm]) && 
+             (chpl_numRealms != 1) &&
+             (strcmp(realmtoadd[baserealm], realmtoadd[i]))) {
+        commandtopvm = replace_str(commandtopvm, realmtoadd[baserealm], realmtoadd[i]);
+      }
+    } else {
+      while (strstr(commandtopvm, realmtype)) {
+        commandtopvm = replace_str(commandtopvm, realmtype, realmtoadd[i]);
+      }
     }
 
     if (!pvm_spawn_wrapper(commandtopvm, argv2, pvmnodestoadd[i], &tids[i])) {
       *commandtopvm = '\0';
       strcat(commandtopvm, argv0rep);
       strcat(commandtopvm, "_real");
-      while (strstr(commandtopvm, realmtoadd[baserealm]) && 
-             (chpl_numRealms != 1) &&
-             (strcmp(realmtoadd[baserealm], realmtoadd[i]))) {
-        commandtopvm = replace_str(commandtopvm, realmtoadd[baserealm], realmtoadd[i]);
+
+      if (usingbaserealm) {
+        while (strstr(commandtopvm, realmtoadd[baserealm]) && 
+               (chpl_numRealms != 1) &&
+               (strcmp(realmtoadd[baserealm], realmtoadd[i]))) {
+          commandtopvm = replace_str(commandtopvm, realmtoadd[baserealm], realmtoadd[i]);
+        }
+      } else {
+        while (strstr(commandtopvm, realmtype)) {
+          commandtopvm = replace_str(commandtopvm, realmtype, realmtoadd[i]);
+        }
       }
+
       if (!pvm_spawn_wrapper(commandtopvm, argv2, pvmnodestoadd[i], &tids[i] )) {
         sprintf(commandtopvm, "%s%s%s", getenv((char *)"PWD"), nameofbin, "_real");
         if (!pvm_spawn_wrapper(commandtopvm, argv2, pvmnodestoadd[i], &tids[i] )) {
@@ -383,6 +405,10 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   memalloced &= ~M_ARGV0REP;
   chpl_free(argv2, -1, "");
   memalloced &= ~M_ARGV2;
+  if (!usingbaserealm) {
+    chpl_free(realmtype, -1, "");
+    memalloced &= ~M_REALMTYPE;
+  }
   for (i = 0; i < totalalloced; i++) chpl_free(multirealmpathtoadd[i], -1, "");
   memalloced &= ~M_MULTIREALMPATHTOADD;
   for (i = 0; i < totalalloced; i++) chpl_free(realmtoadd[i], -1, "");
