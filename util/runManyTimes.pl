@@ -54,8 +54,7 @@ sub com {
             }
             $hundredths++;
         }
+        system("cat .runManyTimes.out.$i.$j >> .runManyTimes.out.$i");
+        system("rm .runManyTimes.out.$i.$j");
     }
-
-    system("cat .runManyTimes.out.$i.* > .runManyTimes.out.$i");
-    system("rm .runManyTimes.out.$i.*");
 }
