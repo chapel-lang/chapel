@@ -39,7 +39,7 @@ class BaseDist {
   }
 
   def newSparseDom(param rank: int, type idxType, dom: domain) {
-    compilerError("opaque domains not supported by this distribution");
+    compilerError("sparse domains not supported by this distribution");
   }
 
   def supportsPrivatization() param return false;
