@@ -114,8 +114,34 @@ static void error_exit(int sig) {
   fflush(stdout);
   fflush(stderr);
 
-  for (i=0; tids[i]; i++) {
-    sprintf(buffer, "ssh -q %s \"touch /tmp/Chplpvmtmp && rm -rf /tmp/*pvm* && killall -q -9 pvmd3\"", pvmnodestoadd[i]);
+  if (verbosity > 1) {
+    fprintf(stderr, "Received a signal\n");
+  }
+  for (i=0; i<numLocales; i++) {
+    if (verbosity > 1) {
+      fprintf(stderr, "Calling pvm_kill(%d)\n", tids[i]);
+    }
+    pvm_kill(tids[i]);
+  }
+  if (verbosity > 1) {
+    fprintf(stderr, "Calling pvm_halt()\n");
+  }
+  pvm_halt();
+  sprintf(buffer, "echo reset | %s/lib/pvm > /dev/null 2>&1", PVM_ROOT);
+  if (verbosity > 1) {
+    fprintf(stderr, "Calling '%s'\n", buffer);
+  }
+  system(buffer);
+  sprintf(buffer, "echo halt | %s/lib/pvm > /dev/null 2>&1", PVM_ROOT);
+  if (verbosity > 1) {
+    fprintf(stderr, "Calling '%s'\n", buffer);
+  }
+  system(buffer);
+  for (i=0; i<numLocales; i++) {
+    sprintf(buffer, "ssh -q %s \"touch /tmp/pvm-chpl-deleteme && rm -rf /tmp/pvm*\" > /dev/null 2>&1", pvmnodestoadd[i]);
+    if (verbosity > 1) {
+      fprintf(stderr, "Calling '%s'\n", buffer);
+    }
     system(buffer);
   }
   
@@ -151,6 +177,9 @@ static int pvm_spawn_wrapper(char* command, char** args, char* node, int* tid) {
     }
     return 0;
   } else {
+    if (verbosity > 1) {
+      fprintf(stderr, "tid = %d\n", *tid);
+    }
     return 1;
   }
 }
