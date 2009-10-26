@@ -1527,7 +1527,7 @@ void CallExpr::codegen(FILE* outfile) {
       } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
         fprintf(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE(");
         TypeSymbol* ts = get(2)->typeInfo()->symbol;
-        //        registerTypeToStructurallyCodegen(ts);  // range_int32_t_bounded_0, wide_listNode_BaseArr
+        registerTypeToStructurallyCodegen(ts);
         fprintf(outfile, "%s, ", ts->cname);
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
@@ -2034,6 +2034,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "chpl_comm_broadcast_private(");
       get(1)->codegen(outfile);
       fprintf(outfile, ", SPECIFY_SIZE(");
+      registerTypeToStructurallyCodegen(get(2)->typeInfo()->symbol);
       get(2)->typeInfo()->codegen(outfile);
       fprintf(outfile, "))");
       break;
