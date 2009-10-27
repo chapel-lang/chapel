@@ -94,7 +94,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     var numCores = here.numCores;
     var runningTasks = here.runningTasks();
     if debugDefaultDist then
-      writeln("    numCores=", numCores, ", runningTasks=", runningTasks());
+      writeln("    numCores=", numCores, ", runningTasks=", runningTasks);
 
     var numChunks: uint(64) =
     if (runningTasks >= numCores) then 1
