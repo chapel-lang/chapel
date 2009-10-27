@@ -1,0 +1,99 @@
+Step 1: Set up your environment so that you can ssh between the nodes you're targeting without providing a password, for example using ssh-agent/ssh-add.
+
+Step 2: Set the following environment variables on your launcher node (the node you're using to run the compiled executable):
+
+set...                              to...
+  CHPL_MULTIREALM_LAUNCH_DIR_<arch>   <where the specific executable lives>
+
+  For example, if you're running from a 32-bit Linux node and a Mac, and you
+  put the compiled binaries in $CHPL_HOME/bin, then you would set
+  CHPL_MULTIREALM_LAUNCH_DIR_linux to $CHPL_HOME/bin and
+  CHPL_MULTIREALM_LAUNCH_DIR_darwin to $CHPL_HOME/bin. Note that these
+  directories don't have to match, though if the compiled executables have
+  names differing only in architecture (a.out_linux and a.out_darwin),
+  they can use the same directory.
+
+  The names of the architectures should match the output from
+  $CHPL_HOME_PLATFORM found in step 4a.
+
+Step 3: For now, make sure all your nodes use the same pointer size. We are currently work on relaxing the assumption the pointer size needs to be the same.
+
+Step 4a: Set the following environment variables on all nodes being targeted:
+
+set...                         to...
+  CHPL_HOME                      <root of Chapel install>
+  CHPL_HOST_PLATFORM             `$CHPL_HOME/util/platform.pl --host`
+  CHPL_COMM                      pvm
+
+Step 4b: Add the following environment variables to your shell's config file, and set them on all nodes being targeted:
+
+set...                         to...
+  PVM_ROOT                       $CHPL_HOME/third-party/pvm/pvm-3.4.6/pvm3
+  PVM_RSH                        ssh
+  PVM_DPATH                      $PVM_ROOT/lib/pvmd
+
+Step 4c: Set the following environment variables on all nodes being targeted:
+
+set...                         to...
+  path                           (prepend $PVM_ROOT/bin $PVM_ROOT/lib
+                                   $CHPL_MULTIREALM_LAUNCH_DIR_<arch>)
+
+Step 5: On each platform that you're targeting, cd to $CHPL_HOME/third-party and type 'make pvm' to build pvm.
+
+Step 6: On each platform that you're targeting, cd to $CHPL_HOME and type 'make' to make the Chapel compiler and runtime.
+
+Step 7: In $CHPL_HOME on the launcher node, create readable hostfiles using fully qualified names (xxxxxx.domain.com):
+
+  hostfile.<arch1> -- lists all nodes of the first platform type (1/line)
+  hostfile.<arch2> -- lists all nodes of the second platform type (1/line)
+  ...
+
+Step 8: On the launcher node, compile your application using:
+
+  $CHPL_HOME/util/chpl-multirealm -srealmTypes='<arch1 arch2...>' 
+    -o <path to output file> <path to app> <other arguments>
+
+  For example, if you want to compile
+  $CHPL_HOME/test/release/examples/tutorials/multirealm.chpl
+  to run between a Mac and 2 Linux nodes, you would type:
+
+  $CHPL_HOME/util/chpl-multirealm -srealmTypes='darwin linux'
+    -o $CHPL_MULTIREALM_LAUNCH_DIR_darwin/multirealm
+    $CHPL_HOME/test/release/examples/tutorials/multirealm.chpl
+
+  This will create 4 files in $CHPL_MULTIREALM_LAUNCH_DIR_darwin:
+    multirealm_darwin
+    multirealm_darwin_real
+    multirealm_linux
+    multirealm_linux_real
+
+  The launcher assumes these files are found in the location specified in
+  step 2 for each architecture.
+
+  When running from the Mac (step 9), the user will execute the binary
+  specific to the launcher platform (multirealm_darwin) which will spawn
+  the real binary on each of the run platforms (multirealm_darwin_real
+  and multirealm_linux_real).
+
+  Note that once an application is compiled for specific realms, you must
+  run across those realms when you run the application (even if the number
+  of locales within that realm is zero).
+
+  Another note: make sure relevant unique environment variables are set in
+  your shell's config file. For example, if you use a different C compiler
+  for a specific node, make sure CC is defined appropriately for that
+  $host with the correct path.
+
+Step 9: Execute the program on the launcher node:
+
+  <binary>_<arch1> --localesPerRealm='<numLocales for arch1>
+    <numLocales for arch2> ...'
+
+  For example, if you want to run ./bin/multirealm_darwin between 2 Mac 
+  and 3 Linux nodes, run:
+
+  multirealm_darwin --localesPerRealm='2 3'
+
+  Should you only require one architecture type, compile and run as you
+  always have. If you compile with one specified realm, you must run with
+  -nl specifying the number of locales.
