@@ -2116,6 +2116,9 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_WARNING:
       fprintf(outfile, "/* compilerWarning was here */");
       break;
+    case PRIM_COUNT_NUM_REALMS:
+      INT_FATAL(this, "count num realms primitive should no longer be in AST");
+      break;
     }
     if (getStmtExpr() && getStmtExpr() == this)
       fprintf(outfile, ";\n");

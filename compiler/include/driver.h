@@ -89,6 +89,6 @@ extern const char* compileCommand;
 extern char compileVersion[64];
 
 int32_t getNumRealms(void);
-const char* getRealmType(int i);
+extern Vec<const char*> realms;
 
 #endif

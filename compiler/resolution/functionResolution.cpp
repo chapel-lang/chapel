@@ -2530,6 +2530,9 @@ preFold(Expr* expr) {
       result = new SymExpr(new_UIntSymbol(next_region_id, INT_SIZE_32));
       ++next_region_id;
       call->replace(result);
+    } else if (call->isPrimitive(PRIM_COUNT_NUM_REALMS)) {
+      result = new SymExpr(new_IntSymbol(getNumRealms()));
+      call->replace(result);
     }
   }
   return result;

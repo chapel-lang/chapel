@@ -62,9 +62,8 @@ def +(param s: string, param x: bool) param
 def +(param x: bool, param s: string) param
   return x:string + s;
 
-config param numRealms: int(32) = 1;
-
 config param realmTypes: string = CHPL_TARGET_PLATFORM;
+param numRealms: int(32) = __primitive("get num realms"); // defined by realmTypes
 
 def _throwOpError(param op: string) {
     compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");

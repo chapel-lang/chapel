@@ -633,6 +633,8 @@ initPrimitive() {
   prim_def(PRIM_NEXT_UINT32, "_next_uint32", returnInfoUInt32);
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoInt32, true, true);
   prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoString, true, true);
+
+  prim_def(PRIM_COUNT_NUM_REALMS, "get num realms", returnInfoInt32);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

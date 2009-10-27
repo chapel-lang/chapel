@@ -245,63 +245,43 @@ static void addModulePath(ArgumentState* arg_state, char* newpath) {
   addUserModulePath(newpath);
 }
 
+Vec<const char*> realms;
 
 int32_t getNumRealms(void) {
-  static int32_t numRealms = 0;
-  if (numRealms == 0) {
-    const char* numRealmsStr = configParamMap.get(astr("numRealms"));
-    if (numRealmsStr != NULL) {
-      char extraChar;
-      int numScans = sscanf(numRealmsStr, "%"PRId32"%c", &numRealms, &extraChar);
-      if (numScans != 1) {
-        USR_FATAL("numRealms value is not of type int(32): %s", numRealmsStr);
-      }
-      if (numRealms < 1) {
-        USR_FATAL("numRealms must be a positive number");
-      }
-    } else {
-      numRealms = 1;
-    }
-  }
-  return numRealms;
+  INT_ASSERT(realms.n);
+  return (int32_t)realms.n;
 }
 
-
-const char* getRealmType(int i) {
-  static int numRealms = getNumRealms();
-  static int last = -1;
-  static const char* allrealms = configParamMap.get(astr("realmTypes"));
-  const char* retval = NULL;
-  if (i != last+1) {
-    INT_FATAL("Must call getRealmType() in order");
-  }
+static void processRealmArgs(void) {
+  const char* allrealms = configParamMap.get(astr("realmTypes"));
   if (allrealms == NULL) {
-    if (numRealms == 1) {
-      retval = CHPL_TARGET_PLATFORM;
-    } else {
-      USR_FATAL("Must specify realm types using -srealmTypes='rt0 rt1 ...'");
-    }
+    realms.add(CHPL_TARGET_PLATFORM);
   } else {
-    static char* start = (char*)astr(allrealms);
-    char* end = strchr(start, ' ');
-    if (end == NULL) {
-      if (i != numRealms-1) {
-        USR_FATAL("Didn't specify enough realmTypes");
+    const char* start = allrealms;
+    int numRealms = 0;
+    const char* space;
+    do {
+      space = strchr(start, ' ');
+      if (space == NULL) {
+        realms.add(start);
       } else {
-        retval = start;
+        int len = space-start+1;
+        //        printf("len = %d\n", len);
+        char* realmStr = (char*)malloc(sizeof(char)*len);
+        strncpy(realmStr, start, len);
+        realmStr[len-1] = '\0';
+        //        printf("realmstr = '%s'\n", realmStr);
+        realms.add(realmStr);
+        start = space+1;
       }
-    } else {
-      if (i == numRealms-1) {
-        USR_FATAL("Specified too many realmTypes");
-      } else {
-        retval = start;
-        *end = '\0';
-        start = end + 1;
-      }
+      numRealms += 1;
+    } while (space != NULL);
+    numRealms = 0;
+    forv_Vec(const char*, realm, realms) {
+      //      printf("realm %d = %s\n", numRealms, realm);
+      numRealms += 1;
     }
   }
-  last++;
-  return retval;
 }
 
 
@@ -494,6 +474,7 @@ static void setupDependentVars(void) {
   if (developer && !userSetCppLineno) {
     printCppLineno = false;
   }
+  processRealmArgs();
 }
 
 
