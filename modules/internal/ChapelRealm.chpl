@@ -17,6 +17,45 @@ const Realms: [r in RealmSpace] realm = chpl_setupRealm(r, chpl_numLocales(r),
 
 doneCreatingLocales = true;
 
+//
+// tree for recursive task invocation during privatization
+//
+record chpl_localeTreeRecord {
+  var left, right: locale;
+}
+pragma "private" var chpl_localeTree: chpl_localeTreeRecord;
+
+def chpl_initLocaleTree() {
+  var numAllLocales = 0;
+  for r in Realms do
+    numAllLocales += r.numLocales;
+
+  var AllLocales: [1..numAllLocales] locale;
+  var i = 1;
+  for r in Realms {
+    for loc in r.Locales {
+      AllLocales[i] = loc;
+      i += 1;
+    }
+  }
+
+  for i in 1..numAllLocales {
+    var left: locale = nil;
+    var right: locale = nil;
+    if i*2 <= numAllLocales then
+      left = AllLocales[i*2];
+    if i*2+1 <= numAllLocales then
+      right = AllLocales[i*2+1];
+    if left != nil then
+      on AllLocales(i) {
+        chpl_localeTree.left = left;
+        chpl_localeTree.right = right;
+      }
+  }
+}
+
+chpl_initLocaleTree();
+
 class realm {
   const chpl_id: int(32);
   const rtype: string;

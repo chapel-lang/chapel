@@ -9,21 +9,27 @@ def _newPrivatizedClass(value) {
   var n = __primitive("chpl_numPrivatizedClasses");
   var hereID = here.uid;
   const privatizeData = value.getPrivatizeData();
-  coforall r in Realms do
-    on r {
-      coforall loc in r.Locales {
-        on loc {
-          if hereID != here.uid {
-            var mine = value.privatize(privatizeData);
-            __primitive("chpl_newPrivatizedClass", mine);
-            mine.pid = n;
-          } else {
-            __primitive("chpl_newPrivatizedClass", value);
-            value.pid = n;
-          }
-        }
-      }
+  on Realms(0) do
+    _newPrivatizedClassHelp(value);
+  def _newPrivatizedClassHelp(value) {
+    var newValue = value;
+    if hereID != here.uid {
+      newValue = value.privatize(privatizeData);
+      __primitive("chpl_newPrivatizedClass", newValue);
+      newValue.pid = n;
+    } else {
+      __primitive("chpl_newPrivatizedClass", value);
+      value.pid = n;
     }
+    cobegin {
+      if chpl_localeTree.left then
+        on chpl_localeTree.left do
+          _newPrivatizedClassHelp(newValue);
+      if chpl_localeTree.right then
+        on chpl_localeTree.right do
+          _newPrivatizedClassHelp(newValue);
+    }
+  }
   privatizeLock$.readFE();
   return n;
 }
