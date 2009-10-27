@@ -7,13 +7,13 @@ def _isPrivatized(value) param
 def _newPrivatizedClass(value) {
   privatizeLock$.writeEF(true);
   var n = __primitive("chpl_numPrivatizedClasses");
-  var hereID = here.id;
+  var hereID = here.uid;
   const privatizeData = value.getPrivatizeData();
   coforall r in Realms do
     on r {
       coforall loc in r.Locales {
         on loc {
-          if hereID != here.id {
+          if hereID != here.uid {
             var mine = value.privatize(privatizeData);
             __primitive("chpl_newPrivatizedClass", mine);
             mine.pid = n;
@@ -445,12 +445,12 @@ record _domain {
     if _isPrivatized(_valueType) {
       var other = _value;
       var id = _value.pid;
-      var hereID = here.id;
+      var hereID = here.uid;
       coforall r in Realms do
         on r {
           coforall loc in r.Locales {
             on loc {
-              if hereID != here.id {
+              if hereID != here.uid {
                 var tc = _valueType;
                 var pc = __primitive("chpl_getPrivatizedClass", tc, id);
                 pc.reprivatize(other);

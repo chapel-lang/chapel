@@ -1,0 +1,1 @@
+probSize.chpl allLocales.chpl -srealmTypes='linux linux' --no-warnings

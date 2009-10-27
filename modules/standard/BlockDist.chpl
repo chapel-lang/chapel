@@ -272,7 +272,7 @@ class LocBlock {
 def LocBlock.writeThis(x:Writer) {
   var localeid: int;
   on this {
-    localeid = here.id;
+    localeid = here.uid;
   }
   x.write("locale ", localeid, " owns chunk: ", myChunk);
 }
@@ -583,12 +583,12 @@ class BlockArr: BaseArr {
 def BlockArr.getBaseDom() return dom;
 
 def BlockArr.setup() {
-  var thisid = this.locale.id;
+  var thisid = this.locale.uid;
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocs(localeIdx) {
       const locDom = dom.getLocDom(localeIdx);
       locArr(localeIdx) = new LocBlockArr(eltType, rank, idxType, stridable, locDom);
-      if thisid == here.id then
+      if thisid == here.uid then
         myLocArr = locArr(localeIdx);
     }
   }
@@ -605,7 +605,7 @@ def BlockArr.privatize(privatizeData) {
   var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);
-    if c.locArr(localeIdx).locale.id == here.id then
+    if c.locArr(localeIdx).locale.uid == here.uid then
       c.myLocArr = c.locArr(localeIdx);
   }
   return c;
@@ -703,7 +703,7 @@ def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) v
     // followThisDom is empty; make arrSection local so that we can
     // use the local block below
     //
-    if arrSection.locale.id != here.id then
+    if arrSection.locale.uid != here.uid then
       arrSection = myLocArr;
     local {
       for e in arrSection.myElems(followThisDom) do

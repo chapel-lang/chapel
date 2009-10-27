@@ -18,6 +18,10 @@ class locale {
     return chpl_id;
   }
 
+  def uid {
+    return chpl_uid;
+  }
+
   def name {
     var locName: string;
     on this do locName = __primitive("chpl_localeName");
@@ -28,7 +32,7 @@ class locale {
     if (numRealms == 1) {
       f.write("LOCALE", id);
     } else {
-      f.write("LOCALE", myRealm.id, "-", chpl_id);
+      f.write("LOCALE", myRealm.id, "-", id);
     }
   }
 }
@@ -52,8 +56,14 @@ def locale.numCores {
   return numCores;
 }
 
-def chpl_int_to_locale(id) {
-  return Locales(id);
+def chpl_int_to_locale(in id) {
+  for r in Realms {
+    if id < r.numLocales then
+      return r.Locales[id];
+    id -= r.numLocales;
+  }
+  halt("id out of range in chpl_int_to_locale()");
+  return Realms[0].Locales[0];
 }
 
 
