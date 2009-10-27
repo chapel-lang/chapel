@@ -95,14 +95,14 @@ class Block : BaseDist {
   }
 
   // copy constructor for privatization
-  def Block(param rank: int, type idxType, other: Block(rank, idxType)) {
-    boundingBox = other.boundingBox;
-    targetLocDom = other.targetLocDom;
+  def Block(param rank: int, type idxType, other: Block(rank, idxType), privateData) {
+    boundingBox = [(...privateData(1))];
+    targetLocDom = [(...privateData(2))];
+    tasksPerLocale = privateData(3);
     for i in targetLocDom {
       targetLocs(i) = other.targetLocs(i);
       locDist(i) = other.locDist(i);
     }
-    tasksPerLocale = other.tasksPerLocale;
   }
 
   def clone() {
@@ -119,8 +119,12 @@ class Block : BaseDist {
 
 def Block.supportsPrivatization() param return true;
 
-def Block.privatize() {
-  return new Block(rank=rank, idxType=idxType, this);
+def Block.getPrivatizeData() {
+  return (boundingBox.dims(), targetLocDom.dims(), tasksPerLocale);
+}
+
+def Block.privatize(privatizeData) {
+  return new Block(rank=rank, idxType=idxType, this, privatizeData);
 }
 
 def Block.reprivatize(other) {
@@ -465,7 +469,9 @@ def BlockDom.setup() {
 
 def BlockDom.supportsPrivatization() param return true;
 
-def BlockDom.privatize() {
+def BlockDom.getPrivatizeData() return 0;
+
+def BlockDom.privatize(privatizeData) {
   var distpid = dist.pid;
   var thisdist = dist;
   var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
@@ -590,7 +596,9 @@ def BlockArr.setup() {
 
 def BlockArr.supportsPrivatization() param return true;
 
-def BlockArr.privatize() {
+def BlockArr.getPrivatizeData() return 0;
+
+def BlockArr.privatize(privatizeData) {
   var dompid = dom.pid;
   var thisdom = dom;
   var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);

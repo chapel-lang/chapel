@@ -403,7 +403,8 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
 
   def supportsPrivatization() param return true;
-  def privatize() {
+  def getPrivatizeData() return 0;
+  def privatize(privatizeData) {
     var privateDist = new UserMapAssoc(idxType, dist);
     var c = new UserMapAssocDom(idxType=idxType, dist=privateDist);
     c.locDoms = locDoms;
@@ -551,7 +552,8 @@ class UserMapAssocArr: BaseArr {
   }
 
   def supportsPrivatization() param return true;
-  def privatize() {
+  def getPrivatizeData() return 0;
+  def privatize(privatizeData) {
     var dompid = dom.pid;
     var thisdom = dom;
     var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);

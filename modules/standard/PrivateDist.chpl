@@ -49,7 +49,9 @@ class PrivateDom: BaseArithmeticDom {
   def requiresPrivatization() param return true;
   def linksDistribution() param return false;
 
-  def privatize()
+  def getPrivatizeData() return 0;
+
+  def privatize(privatizeData)
     return new PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
 
   def reprivatize(other) { }
@@ -71,7 +73,9 @@ def PrivateArr.getBaseDom() return dom;
 
 def PrivateArr.requiresPrivatization() param return true;
 
-def PrivateArr.privatize() {
+def PrivateArr.getPrivatizeData() return 0;
+
+def PrivateArr.privatize(privatizeData) {
   var dompid = dom.pid;
   var thisdom = dom;
   var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);

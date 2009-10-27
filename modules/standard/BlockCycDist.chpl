@@ -458,7 +458,9 @@ def BlockCyclicDom.enumerateBlocks() {
 
 def BlockCyclicDom.supportsPrivatization() param return true;
 
-def BlockCyclicDom.privatize() {
+def BlockCyclicDom.getPrivatizeData() return 0;
+
+def BlockCyclicDom.privatize(privatizeData) {
   var privateDist = new BlockCyclic(rank, idxType, dist);
   var c = new BlockCyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privateDist);
   c.locDoms = locDoms;
@@ -605,7 +607,9 @@ def BlockCyclicArr.setup() {
 
 def BlockCyclicArr.supportsPrivatization() param return true;
 
-def BlockCyclicArr.privatize() {
+def BlockCyclicArr.getPrivatizeData() return 0;
+
+def BlockCyclicArr.privatize(privatizeData) {
   var dompid = dom.pid;
   var thisdom = dom;
   var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);

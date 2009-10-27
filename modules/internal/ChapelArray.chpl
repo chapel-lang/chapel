@@ -8,12 +8,13 @@ def _newPrivatizedClass(value) {
   privatizeLock$.writeEF(true);
   var n = __primitive("chpl_numPrivatizedClasses");
   var hereID = here.id;
+  const privatizeData = value.getPrivatizeData();
   coforall r in Realms do
     on r {
       coforall loc in r.Locales {
         on loc {
           if hereID != here.id {
-            var mine = value.privatize();
+            var mine = value.privatize(privatizeData);
             __primitive("chpl_newPrivatizedClass", mine);
             mine.pid = n;
           } else {

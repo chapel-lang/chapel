@@ -136,7 +136,9 @@ def Cyclic.getChunk(inds, locid) {
 
 def Cyclic.supportsPrivatization() param return true;
 
-def Cyclic.privatize() {
+def Cyclic.getPrivatizeData() return 0;
+
+def Cyclic.privatize(privatizeData) {
   return new Cyclic(rank=rank, idxType=idxType, other=this);
 }
 
@@ -344,7 +346,9 @@ def CyclicDom.these(param tag: iterator, follower, param aligned: bool = false) 
 
 def CyclicDom.supportsPrivatization() param return true;
 
-def CyclicDom.privatize() {
+def CyclicDom.getPrivatizeData() return 0;
+
+def CyclicDom.privatize(privatizeData) {
   var distpid = dist.pid;
   var thisdist = dist;
   var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
@@ -471,7 +475,9 @@ def CyclicArr.setup() {
 
 def CyclicArr.supportsPrivatization() param return true;
 
-def CyclicArr.privatize() {
+def CyclicArr.getPrivatizeData() return 0;
+
+def CyclicArr.privatize(privatizeData) {
   var dompid = dom.pid;
   var thisdom = dom;
   var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
