@@ -2535,6 +2535,10 @@ preFold(Expr* expr) {
       call->replace(result);
     }
   }
+  //
+  // ensure result of pre-folding is in the AST
+  //
+  INT_ASSERT(result->parentSymbol);
   return result;
 }
 
