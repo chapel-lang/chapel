@@ -1,0 +1,14 @@
+#!/bin/sh
+export target=$1;
+cat $target.startgood1 > $1.good
+$CHPL_HOME/util/platform.pl --target | tr -d '\n' >> $1.good
+cat $target.startgood2 >> $1.good
+$CHPL_HOME/util/platform.pl --target | tr -d '\n' >> $1.good
+cat $target.startgood3 >> $1.good
+$CHPL_HOME/util/platform.pl --target | tr -d '\n' >> $1.good
+cat $target.startgood4 >> $1.good
+$CHPL_HOME/util/platform.pl --target | tr -d '\n' >> $1.good
+cat $target.stopgood >> $1.good
+sed -n '1,2p' $1.exec.out.tmp | sort > $1.prediff.tmp
+tail +3 $1.exec.out.tmp >> $1.prediff.tmp
+mv $1.prediff.tmp $1.exec.out.tmp

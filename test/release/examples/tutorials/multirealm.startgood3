@@ -1,0 +1,8 @@
+, numLocales = 2, LocaleSpace = [0..1], Locales = LOCALE0 LOCALE1}
+Query by data variable
+here is 1
+x is 1
+Flattening the realms array into one single array of locales
+LOCALE0 LOCALE1
+here.id is 1
+here.myRealm is {chpl_id = 0, rtype = 
