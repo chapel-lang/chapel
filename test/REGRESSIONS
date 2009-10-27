@@ -175,7 +175,7 @@ opts-specific tests
 
 some spurious cases:
 --------------------
-[Error matching program output for reductions/diten/reduction_name_collision] (--no-copy-propagation, --baseline --copy-propagation)
+[Error matching program output for reductions/diten/reduction_name_collision] (--no-copy-propagation, --baseline --copy-propagation, --no-dead-code-elimination, --no-scalar-replacement --no-inline, --baseline --no-local)
 [Error matching program output for studies/lu/marybeth/pivlublock-alias] (--baseline --optimize-loop-iterators)
 [Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist] (--no-scalar-replacement --no-inline)
 
@@ -277,9 +277,9 @@ execution timeout (10/05/09)
 spurious sprintf not thread-safe
 --------------------------------
 [Error matching program output for studies/590o/bradc/coforall-private-indices] (e.g., 10/08/09, 10/15/09, 10/20/09, 10/23/09)
-[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 10/02/09, 10/08/09, 10/09/09, 10/14/09, 10/21/09)
+[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 10/02/09, 10/08/09, 10/09/09, 10/14/09, 10/21/09, 10/27/09)
 [Error matching program output for studies/590o/bradc/coforall-private-indices-workaround2] (e.g., 10/19/09)
-[Error matching program output for studies/590o/bradc/forall-begin-private-indices] (e.g., 10/07/09, 10/14/09)
+[Error matching program output for studies/590o/bradc/forall-begin-private-indices] (e.g., 10/07/09, 10/14/09, 10/27/09)
 
 
 ========================
