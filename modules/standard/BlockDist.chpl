@@ -78,10 +78,12 @@ class Block : BaseDist {
       if debugBlockDist then writeln(targetLocs);
     }
 
-    coforall locid in targetLocDom do {
+    const boundingBoxDims = boundingBox.dims();
+    const targetLocDomDims = targetLocDom.dims();
+    coforall locid in targetLocDom do
       on targetLocs(locid) do
-        locDist(locid) = new LocBlock(rank, idxType, locid, this);
-    }
+        locDist(locid) =  new LocBlock(rank, idxType, locid, boundingBoxDims,
+                                       targetLocDomDims);
 
     if tasksPerLocale == 0 then
       this.tasksPerLocale = min reduce targetLocs.numCores;
@@ -234,24 +236,25 @@ class LocBlock {
   // current locale
   //
   def LocBlock(param rank: int,
-                 type idxType, 
-                 locid,   // the locale index from the target domain
-                 dist: Block(rank, idxType)) { // reference to glob dist
+               type idxType, 
+               locid,   // the locale index from the target domain
+               boundingBox: rank*range(idxType),
+               targetLocBox: rank*range) {
     if rank == 1 {
-      const lo = dist.boundingBox.low;
-      const hi = dist.boundingBox.high;
+      const lo = boundingBox(1).low;
+      const hi = boundingBox(1).high;
       const numelems = hi - lo + 1;
-      const numlocs = dist.targetLocDom.numIndices;
+      const numlocs = targetLocBox(1).length;
       const (blo, bhi) = _computeBlock(min(idxType), numelems, lo,
                                        max(idxType), numlocs, locid);
       myChunk = [blo..bhi];
     } else {
       var tuple: rank*range(idxType);
       for param i in 1..rank {
-        const lo = dist.boundingBox.low(i);
-        const hi = dist.boundingBox.high(i);
+        const lo = boundingBox(i).low;
+        const hi = boundingBox(i).high;
         const numelems = hi - lo + 1;
-        const numlocs = dist.targetLocDom.dim(i).length;
+        const numlocs = targetLocBox(i).length;
         const (blo, bhi) = _computeBlock(min(idxType), numelems, lo,
                                          max(idxType), numlocs, locid(i));
         tuple(i) = blo..bhi;
@@ -298,6 +301,8 @@ class BlockDom: BaseArithmeticDom {
 
   def getBaseDist() return dist;
 }
+
+def BlockDom.dims() return whole.dims();
 
 def BlockDom.dim(d: int) return whole.dim(d);
 

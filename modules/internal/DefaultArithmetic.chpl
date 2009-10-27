@@ -209,6 +209,9 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     return pos;
   }
 
+  def dims()
+    return ranges;
+
   def dim(d : int)
     return ranges(d);
 

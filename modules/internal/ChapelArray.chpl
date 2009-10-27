@@ -377,6 +377,8 @@ record _domain {
     return _newDomain(d);
   }
 
+  def dims() return _value.dims();
+
   def dim(d : int) return _value.dim(d);
 
   def dimIter(param d, ind) {
