@@ -1,11 +1,9 @@
 use BlockDist, Random;
 
-use AllLocales;
-
-coforall loc in allLocales do on loc do
+coforall loc in AllLocales do on loc do
   writeln("hello from locale ", loc);
 
-const MyBlock = distributionValue(new Block(rank=1,idxType=int(32),bbox=[1..10],targetLocales=allLocales));
+const MyBlock = distributionValue(new Block(rank=1,idxType=int(32),bbox=[1..10],targetLocales=AllLocales));
 
 const D: domain(1) distributed MyBlock = [1..10];
 

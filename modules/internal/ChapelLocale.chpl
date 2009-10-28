@@ -37,12 +37,11 @@ class locale {
   }
 }
 
-def chpl_setupLocale(r, id, uid) {
+def chpl_setupLocale(uid) {
   var tmp: locale;
   on __primitive("chpl_on_locale_num", uid) {
-    tmp = new locale(r, id, uid);
+    tmp = new locale(uid=uid);
     _here = tmp;
-    chpl_thisRealm = r;
     if (defaultDist._value == nil) {
       defaultDist = distributionValue(new DefaultDist());
     }

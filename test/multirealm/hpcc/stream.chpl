@@ -10,11 +10,6 @@ use BlockDist, Time, Types, Random;
 use HPCCProblemSize;
 
 //
-// Helper module for multirealm runs
-//
-use AllLocales;
-
-//
 // The number of vectors and element type of those vectors
 //
 const numVectors = 3;
@@ -65,7 +60,7 @@ def main() {
   // BlockDist is a 1D block distribution that is computed by blocking
   // the bounding box 1..m across the set of locales
   //
-  const BlockDist = distributionValue(new Block(rank=1,bbox=[1..m],tasksPerLocale=tasksPerLocale,targetLocales=allLocales));
+  const BlockDist = distributionValue(new Block(rank=1,bbox=[1..m],tasksPerLocale=tasksPerLocale,targetLocales=AllLocales));
 
   //
   // ProblemSpace describes the index set for the three vectors.  It
