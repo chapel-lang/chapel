@@ -1,8 +1,3 @@
-/**************************************************************************
-  Copyright (c) 2004-2009 Cray Inc.  (See LICENSE file for more details)
-**************************************************************************/
-
-
 #include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
