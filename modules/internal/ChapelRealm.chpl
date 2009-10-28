@@ -50,10 +50,10 @@ def chpl_initLocaleTree() {
       child += 1;
       if child < totNumLocales then
         right = AllLocales[child];
-      on AllLocales(i) {
-        chpl_localeTree.left = left;
-        chpl_localeTree.right = right;
-      }
+    }
+    on AllLocales(i) {
+      chpl_localeTree.left = left;
+      chpl_localeTree.right = right;
     }
   }
 }
