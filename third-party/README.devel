@@ -45,19 +45,6 @@ openmpi/
   See also: openmpi/openmpi-*/README
 
 
-pvm/
-  Summary: the PVM message passing library that we are using to
-           prototype hybrid (multi-realm) Chapel execution
-
-  License: an ORNL variant off the BSD license (see the top of
-           pvm/pvm-*/pvm3/Readme for example)
-
-  Contact: For more information, please refer to:
-           http://www.csm.ornl.gov/pvm/)
-
-  See also: pvm/README
-
-
 txt2man/
   Summary: Marc Vertes' shell script for converting text files to man
            pages.  We use this to generate the Chapel man page
