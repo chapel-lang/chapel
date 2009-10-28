@@ -1,6 +1,0 @@
-, numLocales = 2, LocaleSpace = [0..1], Locales = LOCALE0 LOCALE1}
-Using RealmSpace to iterate over Realms array
-Total number of locales: 2
-Example of using Realm members
-here is 1
-myRealm is {chpl_id = 0, rtype = 

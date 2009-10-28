@@ -87,6 +87,10 @@ class realm {
   def id {
     return chpl_id;
   }
+
+  def writeThis(x:Writer) {
+    x.write("{id = ", id, ", rtype = ", rtype, ", numLocales = ", numLocales, ", LocaleSpace = ", LocaleSpace, ", Locales = ", Locales, "}");
+  }
 }
 
 def chpl_setupRealm(id, numLocales, baseID) {
