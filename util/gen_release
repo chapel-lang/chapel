@@ -41,6 +41,7 @@ system("cd $tmpdir && svn export -q $svnroot chapel");
        "man/man1/chpl.1",
        "third-party/Makefile",
        "third-party/README",
+       "util/chpl-multirealm",
        "util/chplmake",
        "util/comm.pl",
        "util/commSegment.pl",
