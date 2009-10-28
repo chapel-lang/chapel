@@ -214,6 +214,7 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   int lpr;                            // locales per realm
   const char* multirealmenv;
   int baserealm = 0;
+  const char* t;                      // temp string for checking nil
 
   numLocales = init_numLocales;
 
@@ -368,7 +369,12 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   argv0rep = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
   memalloced |= M_ARGV0REP;
   strcpy(argv0rep, argv[0]);
-  strcpy(nameofbin, strrchr(argv[0], '/'));
+  // Take extra if-else step in case there's no / in executed command
+  t = strrchr(argv[0], '/');
+  if (t)
+    strcpy(nameofbin, t);
+  else
+    strcpy(nameofbin, argv[0]);
   // Build the command to send to pvm_spawn.
   // First, try the command built from CHPL_MULTIREALM_LAUNCH_DIR_<realm>
   //      and the executable_real. Replace architecture strings with target
@@ -386,7 +392,7 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
     environment = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
     memalloced |= M_ENVIRONMENT;
     *environment = '\0';
-    strcat(environment, multirealmpathtoadd[i]);
+    sprintf(environment, "%s/", multirealmpathtoadd[i]);
     strcat(commandtopvm, environment);
     chpl_free(environment, -1, "");
     memalloced &= ~M_ENVIRONMENT;
@@ -423,7 +429,7 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
       }
 
       if (!pvm_spawn_wrapper(commandtopvm, argv2, pvmnodestoadd[i], &tids[i] )) {
-        sprintf(commandtopvm, "%s%s%s", getenv((char *)"PWD"), nameofbin, "_real");
+        sprintf(commandtopvm, "%s/%s%s", getenv((char *)"PWD"), nameofbin, "_real");
         if (!pvm_spawn_wrapper(commandtopvm, argv2, pvmnodestoadd[i], &tids[i] )) {
           pvm_launcher_error("Unable to spawn child process(es)");
         }
