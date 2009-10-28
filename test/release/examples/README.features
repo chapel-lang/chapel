@@ -21,6 +21,7 @@ iterators      : iterators of various styles
 jacobi         : 2D domains and arrays; stencil operations; reductions
 linkedList     : nested generic classes; iterators, writeThis methods
 multilocale    : multiple locales, on clauses, multi-locale task parallelism
+multirealm     : multiple realms, on clauses, realm variables and methods
 norm           : reductions; function overloading and where clauses; modules
 opaque         : opaque domains and arrays; graph-based data structures
 prodCons       : synchronization variables; task parallelism using cobegin
@@ -75,6 +76,7 @@ iterators      |       |   x   |       |       |       |       |       |
 jacobi         |       |   *   |       |       |       |       |       |
 linkedList     |       |   x   |       |       |   *   |       |       |
 multilocale    |       |   x   |       |       |       |       |       |
+multirealm     |       |   x   |       |   x   |       |       |       |
 norm           |       |   x   |       |   x   |       |       |       |
 opaque         |       |   x   |       |       |       |       |       |
 prodCons       |       |   x   |       |       |       |       |       |
@@ -123,6 +125,7 @@ iterators      |       |       |       |       |   *   |       |       |
 jacobi         |       |       |   x   |       |       |   x   |       |
 linkedList     |       |   *   |   x   |   x   |   x   |   x   |   *   |
 multilocale    |       |   x   |       |   x   |       |   x   |       |
+multirealm     |       |       |       |       |       |   x   |       |
 norm           |   *   |       |   x   |   x   |       |       |       |
 opaque         |       |   x   |       |   x   |       |   x   |       |
 prodCons       |       |       |   x   |   x   |   x   |   x   |       |
@@ -174,6 +177,7 @@ iterators      |   x   |   x   |       |   x   |       |   x   |       |
 jacobi         |       |   x   |       |       |       |   x   |       |
 linkedList     |       |       |       |   *   |   *   |   x   |       |
 multilocale    |       |       |       |   x   |       |   x   |       |
+multirealm     |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |   x   |   x   |   x
 opaque         |   x   |       |       |       |       |   x   |       |
 prodCons       |       |       |       |       |       |   x   |       |
@@ -223,6 +227,7 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |   x   |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |    
 multilocale    |   x   |       |       |       |       |       |       |
+multirealm     |   x   |       |       |       |       |       |       |
 norm           |   x   |       |       |       |       |       |       |
 opaque         |       |       |       |       |   *   |       |   x   |   x
 prodCons       |   x   |       |       |       |       |       |       |
@@ -272,6 +277,7 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |   *   |       |   *   |       |   *   |       |       |
 linkedList     |       |       |       |       |       |       |       |
 multilocale    |       |       |       |       |       |       |       |
+multirealm     |       |       |       |       |       |       |       |
 norm           |   x   |   x   |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
@@ -320,6 +326,7 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |
 multilocale    |       |       |   *   |   *   |       |       |       |
+multirealm     |       |       |   x   |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |   *   |       |       |   *   |       |       |
@@ -354,7 +361,7 @@ key:
 -------------------------------------------------------------------------------
                |              Locality Features
                |
-test           | nmloc | locle | LocSp | Lcles |  on   | .locl | here  | local
+test           | nmloc | locle | LocSp | Lcles |  on   | .locl | here  | realm
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
@@ -370,6 +377,7 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |
 multilocale    |   *   |   *   |   *   |   *   |   *   |   *   |   *   |
+multirealm     |   x   |   x   |   x   |   x   |   x   |       |   x   |
 norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
@@ -386,7 +394,7 @@ variables      |       |       |       |       |       |       |       |
 hpcc/stream    |       |       |       |       |       |       |       |
 hpcc/ra        |       |       |       |       |       |       |       |
 hpcc/fft       |       |       |       |       |       |       |       |
-hpcc/hpl       |       |       |       |       |       |       |       |   *
+hpcc/hpl       |       |       |       |       |       |       |       | 
 -------------------------------------------------------------------------------
 key:
   nmloc = uses the numLocales constant
@@ -396,7 +404,7 @@ key:
   on    = uses on clauses
   .locl = uses .locale queries on expressions
   here  = uses here
-  local = uses local statement
+  local = uses realms
 -------------------------------------------------------------------------------
 
 
@@ -421,6 +429,7 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |
 multilocale    |       |       |       |       |       |       |       |
+multirealm     |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
@@ -436,7 +445,7 @@ varargs        |       |       |       |       |       |       |       |
 variables      |       |       |       |       |       |       |       |
 hpcc/stream    |   x   |       |       |       |       |       |       |
 hpcc/ra        |   x   |       |       |       |       |       |       |
-hpcc/fft       |       |       |       |       |       |       |       |
+hpcc/fft       |   x   |       |       |       |       |       |       |
 hpcc/hpl       |       |       |       |       |       |       |       |
 -------------------------------------------------------------------------------
 key:
@@ -460,6 +469,7 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |
 multilocale    |       |       |       |       |       |       |       |
+multirealm     |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |

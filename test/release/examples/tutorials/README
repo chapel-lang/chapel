@@ -13,6 +13,7 @@ more of these.
      genericClasses.chpl    : examples of defining and using generic classes
      iterators.chpl         : sample iterators
      multilocale.chpl       : demonstration of multi-locale concepts
+     multirealm.chpl        : demonstration of multi-realm concepts
      opaque.chpl            : tutorial for Chapel opaque arrays
      ranges.chpl            : uses of ranges and operations on ranges
      reductions.chpl        : applies several array reductions on a 2D array
