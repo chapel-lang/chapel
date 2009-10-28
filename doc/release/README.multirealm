@@ -16,7 +16,8 @@ set...                              to...
   The names of the architectures should match the output from
   $CHPL_HOME_PLATFORM found in step 4a.
 
-Step 3: For now, make sure all your nodes use the same pointer size. We are currently work on relaxing the assumption the pointer size needs to be the same.
+Step 3: For now, make sure all your nodes use the same pointer size. We are currently working on relaxing the assumption the pointer size needs to be
+the same.
 
 Step 4a: Set the following environment variables on all nodes being targeted:
 
@@ -37,6 +38,10 @@ Step 4c: Set the following environment variables on all nodes being targeted:
 set...                         to...
   path                           (prepend $PVM_ROOT/bin $PVM_ROOT/lib
                                    $CHPL_MULTIREALM_LAUNCH_DIR_<arch>)
+
+  If you don't plan to launch from a given node, you don't need
+  $CHPL_MULTIREALM_LAUNCH_DIR_<arch>. If you do, then set this variable via
+  the instructions in step 2.
 
 Step 5: On each platform that you're targeting, cd to $CHPL_HOME/third-party and type 'make pvm' to build pvm.
 
@@ -83,6 +88,11 @@ Step 8: On the launcher node, compile your application using:
   your shell's config file. For example, if you use a different C compiler
   for a specific node, make sure CC is defined appropriately for that
   $host with the correct path.
+
+  The output flag (-o) expects the file directory will exist on each node
+  type, though it doesn't necessary have to be a place that is
+  cross-mounted. For example, if you compile to -o /tmp/file, each node
+  would need a /tmp directory.
 
 Step 9: Execute the program on the launcher node:
 
