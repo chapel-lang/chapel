@@ -10,24 +10,24 @@ def _newPrivatizedClass(value) {
   var hereID = here.uid;
   const privatizeData = value.getPrivatizeData();
   on Realms(0) do
-    _newPrivatizedClassHelp(value);
-  def _newPrivatizedClassHelp(value) {
-    var newValue = value;
+    _newPrivatizedClassHelp(value, value);
+  def _newPrivatizedClassHelp(parentValue, originalValue) {
+    var newValue = originalValue;
     if hereID != here.uid {
-      newValue = value.privatize(privatizeData);
+      newValue = parentValue.privatize(privatizeData);
       __primitive("chpl_newPrivatizedClass", newValue);
       newValue.pid = n;
     } else {
-      __primitive("chpl_newPrivatizedClass", value);
-      value.pid = n;
+      __primitive("chpl_newPrivatizedClass", newValue);
+      newValue.pid = n;
     }
     cobegin {
       if chpl_localeTree.left then
         on chpl_localeTree.left do
-          _newPrivatizedClassHelp(newValue);
+          _newPrivatizedClassHelp(newValue, originalValue);
       if chpl_localeTree.right then
         on chpl_localeTree.right do
-          _newPrivatizedClassHelp(newValue);
+          _newPrivatizedClassHelp(newValue, originalValue);
     }
   }
   privatizeLock$.readFE();
