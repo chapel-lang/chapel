@@ -111,6 +111,7 @@ done
 # Main loop.
 i=1
 for host in ${HOSTLIST}; do
+    echo "Starting build on ${host}."
     platform=`echo ${PLATFORMLIST} | awk '{print $'$i'}'`
     if [ x"$host" = x`uname -n` ]; then
         if [ ! -z "$OUTDIR" ]; then
@@ -138,6 +139,7 @@ for host in ${HOSTLIST}; do
         fi
     fi
     i=$(($i+1))
+    echo "Finished build on ${host}."
 done
 
 exit
