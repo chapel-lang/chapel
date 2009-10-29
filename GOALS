@@ -1,6 +1,6 @@
-==================================
-Chapel Public Release (v1.0) Goals
-==================================
+===================================
+Chapel Public Release (v1.01) Goals
+===================================
 
 The goals of this release are as follows:
 
@@ -16,6 +16,9 @@ The goals of this release are as follows:
         sparse, associative, and opaque domains and arrays; and
   (iii) a preliminary multi-threaded, multi-locale implementation for
         distributed arithmetic domains and arrays
+
+* to provide an initial prototype of Chapel's support for multirealm
+  computation, supporting heterogeneous, loosely-coupled architectures
 
 * to give the general public an opportunity to see the state and
   evolution of the Chapel implementation first-hand
