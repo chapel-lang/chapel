@@ -16,9 +16,9 @@
 general regressions
 ===================
 
-never worked (10/28/09)
------------------------
-[Error matching program output for release/examples/tutorials/multirealm]
+forgot to update .good for CHPL_COMM == none testing
+----------------------------------------------------
+[Error matching program output for multirealm/hello-multirealm]
 
 spurious failure
 ----------------
@@ -106,6 +106,10 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+anticipated race in .good file (09/29/09)
+-----------------------------------------
+[Error matching program output for release/examples/tutorials/multirealm]
+
 memory stuff in flux (06/06/09)
 -------------------------------
 [Error matching program output for memory/shannon/memmaxBytes]
@@ -128,7 +132,7 @@ times out spuriously
 --------------------
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09)
 [Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09)
 
@@ -153,6 +157,7 @@ things sometimes take too long
 
 things take too long
 --------------------
+[Error: Timed out executing program release/examples/tutorials/multirealm]
 [Error: Timed out executing program release/examples/hpcc/ra]
 [Error: Timed out executing program release/examples/hpcc/stream]
 [Error: Timed out executing program release/examples/tutorials/block2D]
@@ -258,7 +263,7 @@ spurious compilation timeouts
 -----------------------------
 [Error: Timed out compilation for parallel/sync/diten/userLevelEndCount] (e.g., 10/10/09)
 [Error: Timed out compilation for studies/hpcc/STREAMS/bradc/stream-fragmented] (e.g., 10/02/09)
-[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 10/02/09, 10/13/09, 10/13/09, 10/15/09, 10/17/09, 10/09/09, 10/24/09)
+[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 10/02/09, 10/13/09, 10/13/09, 10/15/09, 10/17/09, 10/09/09, 10/24/09, 10/28/09)
 
 
 ===========================
@@ -282,7 +287,7 @@ spurious sprintf not thread-safe
 --------------------------------
 [Error matching program output for studies/590o/bradc/coforall-private-indices] (e.g., 10/08/09, 10/15/09, 10/20/09, 10/23/09)
 [Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 10/02/09, 10/08/09, 10/09/09, 10/14/09, 10/21/09, 10/27/09)
-[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround2] (e.g., 10/19/09)
+[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround2] (e.g., 10/19/09, 10/29/09)
 [Error matching program output for studies/590o/bradc/forall-begin-private-indices] (e.g., 10/07/09, 10/14/09, 10/27/09)
 
 
