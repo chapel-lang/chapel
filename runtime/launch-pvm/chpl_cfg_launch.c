@@ -108,7 +108,7 @@ static void pvm_launcher_error(const char* errorMsg) {
 
 
 static void error_exit(int sig) {
-  int i;
+  int i, info;
   char buffer[PRINTF_BUFF_LEN];
 
   fflush(stdout);
@@ -121,12 +121,18 @@ static void error_exit(int sig) {
     if (verbosity > 1) {
       fprintf(stderr, "Calling pvm_kill(%d)\n", tids[i]);
     }
-    pvm_kill(tids[i]);
+    info = pvm_kill(tids[i]);
+    if ((verbosity > 1) && (info < 0)) {
+      pvm_perror((char *)"<PVM launcher>");
+    }
   }
   if (verbosity > 1) {
     fprintf(stderr, "Calling pvm_halt()\n");
   }
-  pvm_halt();
+  info = pvm_halt();
+  if ((verbosity > 1) && (info < 0)) {
+    pvm_perror((char *)"<PVM launcher>");
+  }
   sprintf(buffer, "echo reset | %s/lib/pvm > /dev/null 2>&1", PVM_ROOT);
   if (verbosity > 1) {
     fprintf(stderr, "Calling '%s'\n", buffer);
@@ -173,6 +179,29 @@ static int pvm_spawn_wrapper(char* command, char** args, char* node, int* tid) {
     if (*tid != PvmNoFile) {
       char errorMsg[256];
       snprintf(errorMsg, 255, "pvm_spawn got error %d", *tid);
+ 
+      if ((*tid < 0) && (verbosity > 1)) {
+        switch (*tid) {
+        case PvmBadParam:
+          fprintf(stderr, "Bad parameter passed to spawn on %s\n", node);
+          break;
+        case PvmNoHost:
+          fprintf(stderr, "No host named %s\n", node);
+          break;
+        case PvmNoFile:
+          break;
+        case PvmNoMem:
+          fprintf(stderr, "Not enough memory on %s\n", node);
+          break;
+        case PvmSysErr:
+          fprintf(stderr, "pvmd not responding on %s\n", node);
+          break;
+        case PvmOutOfRes:
+          fprintf(stderr, "PVM has run out of system resources for %s\n", node);
+          break;
+        }
+      }
+
       pvm_launcher_error(errorMsg);
     }
     return 0;
@@ -310,6 +339,9 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
     fprintf(stderr, "calling pvm_start_pvmd(0, NULL, 1);\n");
   }
   info = pvm_start_pvmd(0, NULL, 1);
+  if ((verbosity > 1) && (info < 0)) {
+    pvm_perror((char *)"<PVM launcher>");
+  }
   pvm_setopt(PvmAutoErr, i);
 
   if ((info != 0) && (info != -28)) {
@@ -347,9 +379,30 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
     fprintf(stderr, "}, %d, infos);\n", numLocales);
   }
   info = pvm_addhosts( (char **)pvmnodestoadd, numLocales, infos );
+  if ((verbosity > 1) && (info < 0)) {
+      pvm_perror((char *)"<PVM launcher>");
+  }
   pvm_setopt(PvmAutoErr, i);
   // Something happened on addhosts -- likely old pvmd running
   for (i = 0; i < numLocales; i++) {
+    if ((infos[i] < 0) && (verbosity > 1)) {
+      switch (infos[i]) {
+      case PvmBadParam:
+        fprintf(stderr, "Bad parameter passed to %s\n", pvmnodestoadd[i]);
+        break;
+      case PvmNoHost:
+        fprintf(stderr, "No host named %s\n", pvmnodestoadd[i]);
+        break;
+      case PvmCantStart:
+        fprintf(stderr, "Failed to start pvmd on %s\n", pvmnodestoadd[i]);
+        break;
+      case PvmDupHost:
+        break;
+      case PvmOutOfRes:
+        fprintf(stderr, "PVM has run out of system resources for %s\n", pvmnodestoadd[i]);
+        break;
+      }
+    }
     if ((infos[i] < 0) && (infos[i] != PvmDupHost)) {
       hosts2redo[0] = pvmnodestoadd[i];
       if (verbosity > 1) {
@@ -452,6 +505,9 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   // We have a working configuration. What follows is the communication
   // between the slaves and the parent (this process).
   info = pvm_mytid();
+  if ((verbosity > 1) && (info < 0)) {
+    pvm_perror((char *)"<PVM launcher>");
+  }
 
   hostsexit = 0;
   while (commsig == 0) {
