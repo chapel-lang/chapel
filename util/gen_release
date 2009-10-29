@@ -114,6 +114,7 @@ system("cd chapel/runtime && rm -r launch-dummy");
 system("cd chapel/runtime && rm -r launch-mpirun");
 system("cd chapel/runtime && rm -r launch-pvm");
 system("cd chapel/runtime && rm -r launch-zebra");
+system("cd chapel/runtime && rm -r tasks-nanos");
 system("cd chapel/third-party/gasnet && rm *.tar");
 
 foreach $file (@files) {
