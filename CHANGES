@@ -7,6 +7,7 @@ version 1.01
 ============
 
 Update to third public release of Chapel, October 30, 2009
+(see also changes for version 1.0)
 
 High-Level Themes:
 ------------------
@@ -15,93 +16,51 @@ High-Level Themes:
 - improved scalability and stability
 - prototype implementation of realms for hybrid computing in Chapel
   (see doc/technotes/README.multirealm)
-- target audience: general public
 
 Packaging Changes:
 ------------------
+- added a utility script, chpl-multirealm, to help with multi-realm compilation
 - added PVM to the third-party directory to support multi-realm computation
-- added a utility script, chpl-multirealm, to help with multi-realm computation
-
-Environment Changes:
---------------------
-
-Changes to Chapel Language:
----------------------------
 
 Newly Implemented Features:
 ---------------------------
 - added support for multi-realm features to support heterogeneous computation
 - extended replication of global constants to include record types
 
-Portability of code base:
--------------------------
-
 Platform-specific notes:
 ------------------------
 - made XT GASNet compiles use "cc" without the full path discovered by GASNet
 
-Launcher-specific notes:
-------------------------
-
-Semantic Changes:
------------------
-
-Syntactic/Naming Changes:
--------------------------
-
-Compiler Changes:
------------------
-
-Runtime Library Changes:
-------------------------
-
 Documentation:
 --------------
-- updated excerpts for .emacs files to use more modern idioms
+- updated .emacs excerpts in etc/emacs/README to use more modern idioms
 
 Example Codes:
 --------------
 - added an example demonstrating multirealm computation features
 - cleaned up RA to refer to TableDist in on-clauses rather than T.domain.dist
-- added calls to localSlice() to the fft example
-
-Standard Modules:
------------------
 
 Standard Distributions:
 -----------------------
-- added initial support for a "Private" distribution with one index per locale
 - made the default distributions throttle parallelism based on #tasks running
 - improved the Cyclic distribution to support strides and slicing
-- added local slicing to the Block and Cyclic distributions
-
-Compiler Flags:
----------------
-
-Generated Code Flags:
----------------------
+- added initial support for a "Private" distribution with one index per locale
 
 Bug Fixes/New Semantic Checks (for old semantics):
 --------------------------------------------------
-- fixed a bug with parallel iteration when problem size ~= #cores
 - fixed a bug in which distributions deadlocked when numLocales > maxThreads
-- fixed some bugs in distributions when iterating over degenerate ranges
+- fixed a bug with parallel iteration when problem size ~= #cores
 - fixed some bugs with slicing and querying the length of degenerate ranges
-
-Error Message Improvements:
----------------------------
+- fixed some bugs in distributions when iterating over degenerate ranges
 
 Compiler Analysis and Optimizations/Performance of Generated Code:
 ------------------------------------------------------------------
 - reduced the number of communications required to set up distributions
 - reduced the time required to set up Block distributions
 - reduced the time required to create privatized data structures
-- optimized .dist methods on default domains to return the private distribution
-- optimized the expression .locale.uid to avoid communication
 - optimized iterators for Block- and Default-distributed Arithmetic arrays
-
-Cleanup of Generated Code:
---------------------------
+- optimized the expression .locale.uid to avoid communication
+- optimized .dist methods on default domains to return the private distribution
 
 Testing system:
 ---------------
@@ -109,9 +68,8 @@ Testing system:
 
 Internal:
 ---------
-- added verification that gotos are in same functions as their labels
 - fixed some const char* issues in strstr, strchr, strrchr calls
-- fixed a bug in which privatized variables were not initialized
+- added verification that gotos are in same functions as their labels
 
 
 ===========
