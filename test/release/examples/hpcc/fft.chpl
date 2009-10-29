@@ -119,7 +119,7 @@ def dfft(A: [?ADom], W) {
       //       lo.. by str #num == lo, lo+str, lo+2*str, ... lo+(num-1)*str
       //
       forall lo in bankStart..#str do
-        butterfly(wk1, wk2, wk3, A, lo.. by str #radix);
+        butterfly(wk1, wk2, wk3, A(lo.. by str #radix));
 
       //
       // update the multipliers for the high bank
@@ -133,7 +133,7 @@ def dfft(A: [?ADom], W) {
       // loop in parallel over the high bank, computing butterflies
       //
       forall lo in bankStart+span..#str do
-        butterfly(wk1, wk2, wk3, A, lo.. by str #radix);
+        butterfly(wk1, wk2, wk3, A(lo.. by str #radix));
     }
   }
 
@@ -147,7 +147,7 @@ def dfft(A: [?ADom], W) {
   //
   if (str*radix == numElements) then
     forall lo in 0..#str do
-      butterfly(1.0, 1.0, 1.0, A, lo.. by str #radix);
+      butterfly(1.0, 1.0, 1.0, A(lo.. by str #radix));
   //
   // ...otherwise using a simple radix-2 butterfly scheme
   //
@@ -164,8 +164,8 @@ def dfft(A: [?ADom], W) {
 // this is the radix-4 butterfly routine that takes multipliers wk1,
 // wk2, and wk3 and a 4-element array (slice) A.
 //
-def butterfly(wk1, wk2, wk3, A, rng) {
-  var X: [0..#radix] elemType = A.localSlice(rng);  // make a local copy of A on this locale
+def butterfly(wk1, wk2, wk3, A) {
+  var X: [0..#radix] elemType = A;  // make a local copy of A on this locale
   var x0 = X(0) + X(1),
       x1 = X(0) - X(1),
       x2 = X(2) + X(3),
@@ -179,7 +179,7 @@ def butterfly(wk1, wk2, wk3, A, rng) {
   x0 = x1 - x3rot;
   X(3) = wk3 * x0;
 
-  for (i, x) in (rng, X) do A(i) = x;  // copy the result back into A
+  A = X;
 }
 
 //
