@@ -167,7 +167,8 @@ Optional Settings
    communication.  Current options are:
 
         none   : only supports single-locale execution
-        gasnet : use the Berkeley GASNet-based runtime
+        gasnet : use the GASNet-based communication layer
+        pvm    : use the PVM-based communication layer
 
    If unset, CHPL_COMM defaults to "none".  See README.multilocale for
    more information on executing Chapel programs using multiple

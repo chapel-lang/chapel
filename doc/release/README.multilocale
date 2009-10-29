@@ -19,9 +19,13 @@ To run Chapel on multiple locales, the following steps are required:
    inter-locale communication.  GASNet is a one-sided communication
    and active message layer developed at UC Berkeley.  Refer to:
    $CHPL_HOME/third-party/gasnet/README and
-   $CHPL_HOME/third-party/README for details.  Future releases of
-   Chapel are expected to support additional communication layer
-   options such as PNNL's ARMCI library and PVM.
+   $CHPL_HOME/third-party/README for details.  
+
+   Note that it is also possible to run multi-locale Chapel using PVM
+   by setting CHPL_COMM to pvm, though this version does not perform
+   as well and is not as well-tested.  Future releases of Chapel are
+   expected to support additional communication layer options such as
+   PNNL's ARMCI library.
 
 
 2) Advanced users can set CHPL_COMM_SUBSTRATE to indicate the GASNet

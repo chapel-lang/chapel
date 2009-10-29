@@ -42,6 +42,7 @@ This directory contains the following documentation:
     README.comm-diagnostics : technical note about tracking communication events
     README.extern           : technical note on calling external C routines
     README.format           : technical note on value-to-string formatting
+    README.multirealm       : technical note on multi-realm execution
 
 
 --------------------

@@ -64,5 +64,6 @@ Other files
   *.good          : "
   *.notest        : "
   *.numlocales    : "
+  *.skipif        : "
   *.perfkeys      : "
   *.timeout       : "
