@@ -59,12 +59,12 @@ Step 8: On the launcher node, compile your application using:
     -o <path to output file> <path to app> <other arguments>
 
   For example, if you want to compile
-  $CHPL_HOME/test/release/examples/tutorials/multirealm.chpl
+  $CHPL_HOME/examples/tutorials/multirealm.chpl
   to run between a Mac and 2 Linux nodes, you would type:
 
   $CHPL_HOME/util/chpl-multirealm -srealmTypes='darwin linux'
     -o $CHPL_MULTIREALM_LAUNCH_DIR_darwin/multirealm
-    $CHPL_HOME/test/release/examples/tutorials/multirealm.chpl
+    $CHPL_HOME/examples/tutorials/multirealm.chpl
 
   This will create 4 files in $CHPL_MULTIREALM_LAUNCH_DIR_darwin:
     multirealm_darwin
