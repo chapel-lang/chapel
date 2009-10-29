@@ -16,7 +16,8 @@ fi
 
 # First, make sure $CHPL_HOME is set. If not, make it $PWD.
 if [ -z "$CHPL_HOME" ]; then
-    CHPL_HOME="$PWD"
+    FULLPATH="$(dirname $(readlink -f $0))/../"
+    CHPL_HOME="$FULLPATH"
 fi
 
 # Collect all platforms from -srealmTypes='arch1 arch2 arch3 ...'
