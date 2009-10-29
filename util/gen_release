@@ -95,7 +95,7 @@ system("cd chapel && rm -r examples");
 system("cd chapel && cp -r test/release/examples .");
 system("cd chapel/util && cp start_test ../examples/");
 system("cd chapel/examples && mkdir Bin");
-system("cd chapel/test/Bin && cp timedexec sub_test sub_clean computePerfStats.pl filterSuppressions.pl ../../examples/Bin/");
+system("cd chapel/test/Bin && cp timedexec sub_test sub_clean computePerfStats.pl filterSuppressions.pl testEnv.pl ../../examples/Bin/");
 
 print "Building the man page...\n";
 system("cd chapel && make man");
