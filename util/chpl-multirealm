@@ -1,5 +1,19 @@
 #!/bin/bash
 
+if [ x"$1" = x"-h" -o x"$1" = x"-help" -o x"$1" = x"--h" -o x"$1" = x"--help" ]; then
+    echo "Run chpl-multirealm like you would run chpl."
+    echo "Usage: chpl-multirealm [flags] [source files]"
+    echo " "
+    echo "Returns: two files per realm compiled on first file defined in hostfile.<realm>"
+    echo "   a.out_<realm>"
+    echo "   a.out_<realm>_real"
+    echo "Run a.out_<realm> on correct architecture to use."
+    echo "See README.multirealm for example usage."
+    if [ -z "$2" ]; then
+        exit 0
+    fi
+fi
+
 # First, make sure $CHPL_HOME is set. If not, make it $PWD.
 if [ -z "$CHPL_HOME" ]; then
     CHPL_HOME="$PWD"
