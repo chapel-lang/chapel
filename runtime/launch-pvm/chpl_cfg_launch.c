@@ -24,10 +24,8 @@
 int tids[32];
 
 // For memory allocation
-#define M_ARGV0REP            0x1
 #define M_ARGV2               0x2
 #define M_COMMANDTOPVM        0x4
-#define M_ENVIRONMENT         0x8
 #define M_HOSTFILE            0x10
 #define M_MULTIREALMENVNAME   0x20
 #define M_MULTIREALMPATHTOADD 0x40
@@ -35,9 +33,7 @@ int tids[32];
 #define M_REALMTOADD          0x100
 #define M_REALMTYPE           0x200
 char** argv2;
-char* argv0rep;
 char* commandtopvm;
-char* environment;
 char* hostfile;
 char* multirealmenvname;
 char* multirealmpathtoadd[2048];
@@ -82,9 +78,7 @@ static void hosts_cleanup(void) {
 
 static void memory_cleanup(void) {
   int i;
-  if (memalloced & M_ARGV0REP) chpl_free(argv0rep, -1, "");
   if (memalloced & M_ARGV2) chpl_free(argv2, -1, "");
-  if (memalloced & M_ENVIRONMENT) chpl_free(environment, -1, "");
   if (memalloced & M_HOSTFILE) chpl_free(hostfile, -1, "");
   if (memalloced & M_MULTIREALMENVNAME) chpl_free(multirealmenvname, -1, "");
   if (memalloced & M_MULTIREALMPATHTOADD) for (i = 0; i < totalalloced; i++) chpl_free(multirealmpathtoadd[i], -1, "");
@@ -288,15 +282,11 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
     memalloced |= M_REALMTYPE;
     multirealmenvname = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
     memalloced |= M_MULTIREALMENVNAME;
-    if (chpl_numRealms != 1) {
-      sprintf(realmtype, "%s", chpl_realmType(k));
-    } else {
-      sprintf(realmtype, "%s", getenv((char *)"CHPL_HOST_PLATFORM"));
-    }
+    sprintf(realmtype, "%s", chpl_realmType(k));
     sprintf(multirealmenvname, "CHPL_MULTIREALM_LAUNCH_DIR_%s", realmtype);
     multirealmenv = getenv(multirealmenvname);
     if (multirealmenv == NULL) {
-      multirealmenv = CHPL_HOME;
+      multirealmenv = "";
     }
     chpl_free(multirealmenvname, -1, "");
     memalloced &= ~M_MULTIREALMENVNAME;
@@ -419,9 +409,6 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   }
   hostsAdded = 1;
 
-  argv0rep = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
-  memalloced |= M_ARGV0REP;
-  strcpy(argv0rep, argv[0]);
   // Take extra if-else step in case there's no / in executed command
   t = strrchr(argv[0], '/');
   if (t)
@@ -441,15 +428,16 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   memalloced |= M_COMMANDTOPVM;
   for (i = 0; i < numLocales; i++) {
     //    fprintf(stderr, "Loop i=%d (iteration %d of %d)\n", i, i+1, numLocales);
-    *commandtopvm = '\0';
-    environment = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
-    memalloced |= M_ENVIRONMENT;
-    *environment = '\0';
-    sprintf(environment, "%s/", multirealmpathtoadd[i]);
-    strcat(commandtopvm, environment);
-    chpl_free(environment, -1, "");
-    memalloced &= ~M_ENVIRONMENT;
-    strcat(commandtopvm, nameofbin);
+    if (multirealmpathtoadd[i] && multirealmpathtoadd[i][0]) {
+      sprintf(commandtopvm, "%s%s", multirealmpathtoadd[i], nameofbin);
+    } else {
+      if (argv[0][0] != '/') {
+        sprintf(commandtopvm, "%s/", getenv("PWD"));
+      } else {
+        commandtopvm[0] = '\0';
+      }
+      strcat(commandtopvm, argv[0]);
+    }
     strcat(commandtopvm, "_real");
 
     if (usingbaserealm) {
@@ -465,32 +453,11 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
     }
 
     if (!pvm_spawn_wrapper(commandtopvm, argv2, pvmnodestoadd[i], &tids[i])) {
-      *commandtopvm = '\0';
-      strcat(commandtopvm, argv0rep);
-      strcat(commandtopvm, "_real");
-
-      if (usingbaserealm) {
-        while (strstr(commandtopvm, realmtoadd[baserealm]) && 
-               (chpl_numRealms != 1) &&
-               (strcmp(realmtoadd[baserealm], realmtoadd[i]))) {
-          commandtopvm = replace_str(commandtopvm, realmtoadd[baserealm], realmtoadd[i]);
-        }
-      } else {
-        while (strstr(commandtopvm, realmtype)) {
-          commandtopvm = replace_str(commandtopvm, realmtype, realmtoadd[i]);
-        }
-      }
-
-      if (!pvm_spawn_wrapper(commandtopvm, argv2, pvmnodestoadd[i], &tids[i] )) {
-        sprintf(commandtopvm, "%s/%s%s", getenv((char *)"PWD"), nameofbin, "_real");
-        if (!pvm_spawn_wrapper(commandtopvm, argv2, pvmnodestoadd[i], &tids[i] )) {
-          pvm_launcher_error("Unable to spawn child process(es)");
-        }
-      }
+      pvm_launcher_error("Unable to spawn child process(es).  Suggestions:\n"
+                         "* check your CHPL_MULTIREALM_LAUNCH_DIR_<platform> environment variables\n"
+                         "* re-run with --verbose to see more details");
     }
   }
-  chpl_free(argv0rep, -1, "");
-  memalloced &= ~M_ARGV0REP;
   chpl_free(argv2, -1, "");
   memalloced &= ~M_ARGV2;
   if (!usingbaserealm) {
