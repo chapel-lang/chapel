@@ -117,8 +117,6 @@ Bugs:
 - Range operations can result in overflow
     e.g., (0:uint..5 by -1).length
 - Arrays declared over domains with negative strides may not work
-- Parallel iterations over domains/arrays may be problematic as
-  problem sizes approach number of cores
 
 --------
 Generics
