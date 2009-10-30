@@ -128,8 +128,7 @@ i=1
 for host in ${HOSTLIST}; do
     echo "Starting build on ${host}."
     platform=`echo ${PLATFORMLIST} | awk '{print $'$i'}'`
-    REMOTEPATHNAMEPLUS=$(eval echo $`echo CHPL_MULTIREALM_LAUNCH_DIR_$platform`)
-    REMOTEPATHNAME=`echo $REMOTEPATHNAMEPLUS | awk -F- '{print $1}'`
+    REMOTEPATHNAME=$(eval echo $`echo CHPL_MULTIREALM_LAUNCH_DIR_$platform`)
 
     if [ ! -z "$REMOTEPATHNAME" ]; then
         CHECK=`echo $OUTFILE | grep "/"`
