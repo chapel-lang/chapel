@@ -171,15 +171,15 @@ and $CHPL_HOME/third-party/pvm/README.
 GENERAL CAVEATS:
 
 Unfortunately, there are some portions of this process that assume the
-file system structure is the same across all hosts.  Note that the
+file system structure is symmetric across all hosts.  Note that the
 physical volume (disk) need not be the same, just the structure
-(paths).  We are working on removing these assumptions, but for now
+(paths).  We are working on relaxing these assumptions, but for now
 the following conditions must be met.
 
   - CHPL_HOME must reside in the same location on all hosts.
 
   - The directory from which you invoke a multi-realm compilation must
-    exists on all hosts.
+    exist on all hosts.
 
   - The Chapel source files being compiled (whether specified via
     relative or absolute path) must exist on all hosts in the same
@@ -189,76 +189,78 @@ In addition, all hosts used to run a multi-realm Chapel program must
 use the same pointer size.  Again, we are currently working on
 relaxing this assumption.
 
+The performance of the PVM communication layer is currently less than
+optimal, and particularly bogs down when a single host is
+oversubscribed.  For best results, only map a single locale to each
+host.
 
 
-BUILDING CHAPEL MULTI-REALM
+BUILDING CHAPEL FOR MULTI-REALM EXECUTION:
 
-Build the Chapel compiler and runtime as you normally would, setting
-CHPL_COMM appropriately (gasnet or pvm), on every host type you wish
-to use (See note above regarding the location of CHPL_HOME).  Build
-the necessary CHPL_COMM layer on each host.  A machine's host type can
-be found by running '$CHPL_HOME/util/platform.pl --host'.
+Set CHPL_COMM to pvm and build the Chapel compiler and runtime as you
+normally would for every host type you wish to use (See note above
+regarding the location of CHPL_HOME).  A machine's host type can be
+found by running '$CHPL_HOME/util/platform.pl --host'.
 
- SPECIAL NOTES ON PVM:
 
- PVM requires certain environment variables to be set in your shell's
- config file (e.g., .bashrc, .cshrc):
+SETTING UP YOUR ENVIRONMENT TO USE PVM:
+
+PVM requires certain environment variables to be set in your shell's
+config file (e.g., .bashrc, .cshrc):
 
   PVM_ROOT  =  $CHPL_HOME/third-party/pvm/pvm-3.4.6/pvm3
   PVM_RSH   =  `which ssh`
   PVM_DPATH =  $PVM_ROOT/lib/pvmd
 
- In addition, you must add (prepend) $PVM_ROOT/bin and $PVM_ROOT/lib
- to your search path.
+In addition, $PVM_ROOT/bin and $PVM_ROOT/lib must be in your
+executable search path.
 
- It is strongly advised that you to test your PVM installation between
- the hosts that you wish to use for your Chapel program.  See the
- sample programs and Readme in
- $CHPL_HOME/third-party/pvm/pvm-3.4.6/pvm3/examples to test your PVM
- installation.
-
-
-
-COMPILING A MULTI-REALM CHAPEL PROGRAM
-
-You should first set up your environment so that you can ssh between
+You should also set up your environment so that you can ssh between
 the nodes you are targeting without providing a password, for example
 using ssh-agent/ssh-add (not strictly required for compilation, but
 convenient, and required for running).
 
-On the compile host, you can optionally specify a directory into which
-each host type's binary should be copied.
+It is strongly advised that you test your PVM installation between the
+hosts that you wish to use for your Chapel program.  See the sample
+programs and Readme in
+$CHPL_HOME/third-party/pvm/pvm-3.4.6/pvm3/examples to test your PVM
+installation.
 
-  CHPL_MULTIREALM_LAUNCH_DIR_<hosttype> = <path to binary>
-
-The paths do not have to be the same on all the hosts or in the same
-physical location (though they can be as the binaries are named with
-their host type).  If the variable is not specified for a particular
-host, the binary will be put in the same directory from which
-chpl-multirealm was launched.
-
-Host names must be specified in a hostfile in $CHPL_HOME, one for each
-host type, with a single host name per line.  It is advisable to use
-fully qualified domain names in the hostfiles.
+For Chapel's use, host names must be specified in a hostfile in
+$CHPL_HOME, one for each host type, with a single host name per line.
+It is advisable to use fully qualified domain names in the hostfiles.
 
   hostfile.<hosttype1> -- lists all nodes of the first host type
   hostfile.<hosttype2> -- lists all nodes of the second host type
   ...
 
-The first entry in each hostfile will be the host that is used to
-compile Chapel multi-realm binaries.
+On the host from which you will be compiling and launching, you can
+optionally specify a directory for each host type that you are
+targeting, specifying where binaries should be stored for that host.
+
+  CHPL_MULTIREALM_LAUNCH_DIR_<hosttype> = <path to binary>
+
+These directories do not have to be the same on all the hosts.  If the
+variable is not specified for a particular host, the compiler and
+launcher will assume a symmetric file system with the current host.
 
 
-Now you are ready to compile a multi-realm Chapel program!
+COMPILING A MULTI-REALM CHAPEL PROGRAM
 
-When compiling a Chapel program for multi-realm execution, you must
-invoke a wrapper script to the Chapel compiler, located in
-$CHPL_HOME/util/chpl-multirealm.  This script is run from a single
-machine (compile host) and will invoke the Chapel compiler on all
-specified hosts (see below), generating a binary for each host type.
-The script takes all the same arguments as the normal Chapel compiler
-and one addition required argument, -srealmTypes, which takes a quoted
-list of host types to build for.
+To help with the process of compiling a Chapel program for multiple
+target platforms, we have provided a wrapper script to the Chapel
+compiler, located in $CHPL_HOME/util/chpl-multirealm.  This script is
+run from a single machine (the compile host) and will invoke the
+Chapel compiler for each specified target host, generating a binary
+for each host type.  The script accepts all the usual Chapel compiler
+arguments.  To invoke the compiler, it ssh's to the first machine
+listed in the corresponding hostfile (described above).  (Note that
+you can also invoke chpl manually to create a multi-realm run, but
+must do so for each target platform, ensuring that the same options
+are provided in for each invocation of the compiler).
+
+The chpl-multirealm script requires the configuration parameter
+realmTypes to be set to a quoted list of host types to build for:
 
   chpl-multirealm -srealmTypes='hosttype1 hosttype2 ..' <flags> <Chapel files>
 
@@ -267,46 +269,42 @@ between a Mac running darwin and a Linux host, you would use:
 
   % chpl-multirealm -srealmTypes='darwin linux' -o multirealm multirealm.chpl
 
-Assume the first entry in your hostfile.darwin is
+Assuming the first entry in your hostfile.darwin is
 'darwinchapel.cray.com' and the first entry in your hostfile.linux is
-'linuxchapel.cray.com'.
-
-The above invocation of chpl-multirealm will launch a remote shell to
-compile multirealm.chpl on darwinchapel.cray.com, generating the
-binaries multirealm_darwin and multirealm_darwin_real.  The location
-of these files will depend either on the environment variable
-CHPL_MULTIREALM_LAUNCH_DIR_darwin, if specified, or as described
-above.
-
-Next, chpl-multirealm will launch a remote shell to compile
-multirealm.chpl on linuxchapel.cray.com, generating the binaries
-multirealm_linux and multirealm_linux_real.  The location of these
-files will depend either on the environment variable
-CHPL_MULTIREALM_LAUNCH_DIR_linux, if specified, or as described above.
+'linuxchapel.cray.com', the above invocation of chpl-multirealm will
+use ssh to launch a remote compilation of multirealm.chpl on
+darwinchapel.cray.com, generating the binaries multirealm_darwin and
+multirealm_darwin_real.  The location of these files will depend
+either on the environment variable CHPL_MULTIREALM_LAUNCH_DIR_darwin,
+if specified or the current working directory if not.  It will then
+use ssh to launch a remote compilation of multirealm.chpl on
+linuxchapel.cray.com, generating the binaries multirealm_linux and
+multirealm_linux_real.  The location of these files will depend either
+on the environment variable CHPL_MULTIREALM_LAUNCH_DIR_linux, if
+specified, or the current working directory if not.
 
 The binaries ending with '_real' are the actual Chapel program and
 multirealm_darwin and multirealm_linux are the launcher programs.  The
-program may be started using either of the two launchers.
-
-
+program may be started using either of the two launchers from the
+corresponding host type.
 
 
 RUNNING A MULTI-REALM CHAPEL PROGRAM
 
 Running a multi-realm Chapel program is similar to running a regular
 Chapel program with the additional required argument,
---localesPerRealm, which takes a quoted list of locale per host type
+--localesPerRealm, which takes a quoted list of locales per host type
 to run (zero is a valid number of locales).
 
   launcher_hosttype --localesPerRealm='l1 l2 ..'
 
-The enviroment variables CHPL_MULTIREALM_LAUNCH_DIR_<hosttype> may be
-set for each host type (remote hosts) on the host that you are
-launching from.  This specifies the path on the remote host in which
-to find the '_real' binary.  If this environment variable is not set
-for a particular host, launcher_hosttype will assume a symmetric file
-system and look for the '_real' binary in the same directory that the
-launcher program itself resides in.
+If the enviroment variable CHPL_MULTIREALM_LAUNCH_DIR_<hosttype> is
+set for one of the realm types you've compiled for, that path will be
+used to locate the '_real' binary by the launcher.  If this
+environment variable is not set for a particular host,
+launcher_hosttype will assume a symmetric file system and look for the
+'_real' binary in the same directory that was used to invoke the
+launcher program.
 
 For the example above, assume the following environment variables are
 set:
@@ -319,7 +317,7 @@ Assume the file multirealm_darwin_real is in the directory
 multirealm_linux_real is in the directory /home/chapel/bin/linux on
 linuxchapel.cray.com.
 
-You can launch the multirealm program from both a darwin host or a
+You can launch the multirealm program from either a darwin host or a
 linux host.  For example,
 
 On linuxchapel.cray.com, run:
@@ -387,7 +385,8 @@ There was a problem starting the PVM binary on the remote host.
 
 If you see this error:
 
-   <PVM launcher>: error: Remote error on darwinchapel (-6) -- shutting down host
+   <PVM launcher>: error: Remote error on darwinchapel (-6) --
+   shutting down host
 
 PVM could not connect to the remote host (darwinchapel, in this
 example).
@@ -395,6 +394,5 @@ example).
   - Make sure your host name in the hostfile.<hosttype> is correct and
     reachable from the launch host.
 
-  - Make sure you can execute a password-less ssh to and from the
-    remote host.
-
+  - Make sure you can ssh to and from the remote host without
+    specifying a password.
