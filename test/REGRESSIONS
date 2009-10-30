@@ -16,10 +16,6 @@
 general regressions
 ===================
 
-forgot to update .good for CHPL_COMM == none testing
-----------------------------------------------------
-[Error matching program output for multirealm/hello-multirealm]
-
 spurious failure
 ----------------
 [Error matching program output for reductions/diten/reduction_name_collision] (e.g., 10/12/09, 10/17/09, 10/20/09, 10/28/09 -- especially with --baseline)
@@ -36,7 +32,7 @@ spurious verification failures on RA
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 10/11/09, 10/16/09, 10/17/09, 10/23/09, 10/28/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 10/11/09, 10/16/09, 10/17/09, 10/23/09, 10/28/09, 10/30/09)
 [Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 10/11/09, 10/14/09, 10/16/09, 10/23/09, 10/24/09, 10/28/09)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 10/12/09, 10/19/09)
 
@@ -154,12 +150,12 @@ things sometimes take too long
 ------------------------------
 [Error: Timed out executing program release/examples/hello-multiloc] (e.g., 10/03/09)
 [Error: Timed out executing program release/examples/tutorials/multilocale] (e.g., 10/03/09, 10/04/09, 10/22/09, 10/26/09)
+[Error: Timed out executing program release/examples/hpcc/stream] (e.g., 10/29/09)
 
 things take too long
 --------------------
 [Error: Timed out executing program release/examples/tutorials/multirealm]
 [Error: Timed out executing program release/examples/hpcc/ra]
-[Error: Timed out executing program release/examples/hpcc/stream]
 [Error: Timed out executing program release/examples/tutorials/block2D]
 
 
@@ -234,9 +230,11 @@ some spurious cases:
 x2-specific regressions
 =======================
 
-spurious timeout (10/14/09)
----------------------------
-[Error: Timed out executing program release/examples/hello-module]
+spurious timeout
+----------------
+[Error: Timed out executing program release/examples/hello-module] (e.g., 10/14/09, 10/30/09)
+[Error: Timed out executing program release/examples/hello-multiloc] (e.g., 10/30/09)
+[Error: Timed out executing program release/examples/hello] (e.g., 10/30/09)
 
 use-before-def problem (02/18/09)
 ---------------------------------
@@ -286,7 +284,7 @@ execution timeout (10/05/09)
 spurious sprintf not thread-safe
 --------------------------------
 [Error matching program output for studies/590o/bradc/coforall-private-indices] (e.g., 10/08/09, 10/15/09, 10/20/09, 10/23/09)
-[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 10/02/09, 10/08/09, 10/09/09, 10/14/09, 10/21/09, 10/27/09)
+[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 10/02/09, 10/08/09, 10/09/09, 10/14/09, 10/21/09, 10/27/09, 10/30/09)
 [Error matching program output for studies/590o/bradc/coforall-private-indices-workaround2] (e.g., 10/19/09, 10/29/09)
 [Error matching program output for studies/590o/bradc/forall-begin-private-indices] (e.g., 10/07/09, 10/14/09, 10/27/09)
 
