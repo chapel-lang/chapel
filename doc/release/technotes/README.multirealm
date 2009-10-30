@@ -171,8 +171,8 @@ section.
 Multi-realm execution using PVM
 -------------------------------
 
-PVM is a communication layer developed by ORNL, the University of
-Tennessee, Knoxville, and Emory University which provides message
+PVM is a communication layer jointly developed by ORNL, the University
+of Tennessee Knoxville, and Emory University which provides message
 passing capabilities between heterogeneous architectures.  Our
 prototype implementation of multi-realm Chapel is built using PVM.
 For more information about PVM refer to $CHPL_HOME/third-party/README
@@ -208,8 +208,12 @@ host.
 
 BUILDING CHAPEL FOR MULTI-REALM EXECUTION:
 
-Set CHPL_COMM to pvm and build the Chapel compiler and runtime as you
-normally would for every host type you wish to use (See note above
+Set CHPL_COMM to pvm, cd to $CHPL_HOME/third-party, and make pvm:
+
+    [g]make pvm
+
+Then build the Chapel compiler and runtime as you normally would.
+Repeat these steps for each host type you wish to use (See note above
 regarding the location of CHPL_HOME).  A machine's host type can be
 found by running '$CHPL_HOME/util/platform.pl --host'.
 
