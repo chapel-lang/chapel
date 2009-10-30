@@ -1,3 +1,171 @@
+===============================
+Multi-realm execution in Chapel
+===============================
+
+Chapel has traditionally assumed that the set of locales on which a
+program is running are reasonably homogenous -- for example, that they
+can run the same executables and use the same data format.  To support
+loosely-coupled heterogeneous computing in Chapel, we have recently
+been investigating a concept we're calling the 'realm' to describe
+locales of distinct types.  For example, to run on a series of
+networked workstations of various types, you might use one realm to
+describe the linux nodes, a second to describe the sun nodes, and a
+third to describe the darwin (Mac OS X) nodes.  
+
+In a multi-realm execution, each realm contains a member variable for
+numLocales, LocaleSpace, and Locales, describing the locale resources
+of that realm type.  In this model, traditional Chapel programs can be
+viewed as single-realm executions where the realm type is determined
+by the CHPL_TARGET_PLATFORM environment variable and the numLocales,
+LocaleSpace, and Locales members of the single realm are exposed as
+global variables.
+
+This release includes a prototype implementation of multi-realm
+execution, and this README provides some technical notes on using the
+features.  It starts with a description of the new concepts in Chapel
+added to support realms and then describes how to compile and execute
+multi-realm programs.
+
+
+-----------------------
+New Language Constructs
+-----------------------
+
+The following new constructs are available in Chapel.  See
+$CHPL_HOME/examples/multirealm.chpl for an example program that
+demonstrates them.
+
+type realm;
+
+    a type describing a realm within the Chapel program analogous to
+    locale in traditional Chapel.
+
+
+config param realmTypes: string = CHPL_TARGET_PLATFORM;
+
+    a configuration parameter describing the realms to target,
+    separated by spaces.  Set by default to CHPL_TARGET_PLATFORM,
+    suggesting a single-realm execution for traditional usage.
+    Override using the compiler flag: -srealmTypes="realm1 realm2
+    realm3 ..."
+
+
+param numRealms: int(32) = ...;
+
+    a parameter value describing the number of realms that the Chapel
+    program was compiled for.  Determined by the number of platforms
+    specified in the realmTypes variable.
+
+
+const RealmSpace: domain(1) = [0..#numRealms];
+const Realms: [RealmSpace] realm = ...;
+
+    a domain and array available within the Chapel program to describe
+    the set of realms on which the program is executing.
+
+
+realm.id
+
+    the unique ID of a realm value, equivalent to its index in
+    RealmSpace.
+
+
+realm.rtype
+
+    a string describing the type of a realm value as specified by its
+    substring in the realmTypes parameter.
+
+
+realm.numLocales
+realm.LocaleSpace
+realm.Locales
+
+    members of a realm value describing the number of locales, and the
+    set of locales belonging to that realm.
+
+
+totNumLocales
+AllLocaleSpace
+AllLocales
+
+    global variables describing the set of locales across all realms,
+    and the array of realms in sorted order
+
+
+thisRealm
+
+    a global identifier that refers to the realm in which the current
+    task is executing.  Similar to "here" for locales.
+
+
+locale.id
+locale.uid
+
+    a locale value's "id" member is its local ID within a realm,
+    corresponding to its index in that realm's LocaleSpace.  Its uid
+    member is a globally unique ID, corresponding to its index in
+    AllLocaleSpace.
+
+
+locale.myRealm
+
+    a locale value can be queried as to the realm it belongs to
+    
+    
+on <realm-expr> ...
+
+    an expression of realm type can be used in an on-clause.  This
+    will cause the task to execute on locale #0 of that realm.
+
+
+----------------------------------------------
+Simulating multi-realm executions using GASNet
+----------------------------------------------
+
+Assuming you are already set up to execute multi-locale programs using
+GASNet (as described in $CHPL_HOME/doc/README.multilocale), it is
+quite easy to try out Chapel's multi-realm features.  However, by
+design GASNet does not support communication between distinct
+architectures, so therefore it can only be used to experiment with
+multi-realm features on a single architectural type (negating the
+purpose of realms, but providing a simple way to try the concepts).
+
+To compile a Chapel program for multiple realms using GASNet, set up
+your environment variables as usual and then compile using a
+command-line like:
+
+  chpl ...normal arguments... -srealmTypes="linux linux linux"
+
+The -srealmTypes flag says to set the config param "realmTypes" to the
+specified value.  Here, the mention of linux three times indicates our
+desire to run on three realms, each one a linux platform (due to
+GASNet's homogeneous assumptions).
+
+Then, to run the program, use a command-line like:
+
+  ./a.out --localesPerRealm='#nl1 #nl2 #nl3'
+
+This specifies that the program should be launched using #nl1 locales
+in the first realm, #nl2 locales in the second realm, and #nl3 locales
+in the third realm.  The assignment of machine resources to locales is
+governed by GASNet's normal mechanisms for job launch as described in
+README.multilocale and/or the GASNet documentation.
+
+To execute a true multi-realm execution using multiple architectures,
+you'll need to use the PVM implementation described in the next
+section.
+
+
+-------------------------------
+Multi-realm execution using PVM
+-------------------------------
+
+PVM is a communication layer developed by ORNL, the University of
+Tennessee, Knoxville, and Emory University which provides message
+passing capabilities between heterogeneous architectures.  Our
+prototype implementation of multi-realm Chapel is built using PVM.
+For more information about PVM refer to $CHPL_HOME/third-party/README
+and $CHPL_HOME/third-party/pvm/README.
 
 
 GENERAL CAVEATS:
