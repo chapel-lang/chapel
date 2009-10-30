@@ -45,8 +45,11 @@ config const numTrials = 10,
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.clockMS else 314159265;
 
+//
+// To ensure determinism of output, there is no more printing of the
+// arrays in initVectors and verifyResults.
+//
 config const printParams = true,
-             printArrays = false,
              printStats = true;
 
 def main() {
@@ -135,8 +138,12 @@ def printConfiguration() {
 }
 
 //
-// Both initVectors and verifyResults are identical to stream.chpl
-// even though they are called with arrays that are not distributed.
+// Both initVectors and verifyResults are almost identical to
+// stream.chpl even though they are called with arrays that are not
+// distributed.  The only difference is that the arrays are not
+// printed.  This ensures determinism of output.  Printing the arrays
+// also violates the locality constraint imposed by the local block
+// from which these functions are called.
 //
 def initVectors(B, C) {
   var randlist = new RandomStream(seed);
@@ -144,21 +151,12 @@ def initVectors(B, C) {
   randlist.fillRandom(B);
   randlist.fillRandom(C);
 
-  if (printArrays) {
-    writeln("B is: ", B, "\n");
-    writeln("C is: ", C, "\n");
-  }
-
   delete randlist;
 }
 
 def verifyResults(A, B, C) {
-  if (printArrays) then writeln("A is:     ", A, "\n");
-
   forall (b, c) in (B, C) do
     b += alpha *c;  
-
-  if (printArrays) then writeln("A-hat is: ", B, "\n");
 
   const infNorm = max reduce [(a,b) in (A,B)] abs(a - b);
 
