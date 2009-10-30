@@ -23,17 +23,28 @@ global variables.
 This release includes a prototype implementation of multi-realm
 execution, and this README provides some technical notes on using the
 features.  It starts with a description of the new concepts in Chapel
-added to support realms and then describes how to compile and execute
-multi-realm programs.
+added to support realms.  It then goes on to describe how to compile
+and execute multi-realm programs using GASNET (single-architecture
+only) and PVM (multi-architecture).  It ends with some troubleshooting
+notes.
 
 
 -----------------------
 New Language Constructs
 -----------------------
 
-The following new constructs are available in Chapel.  See
+This section describes new Chapel constructs that have been added to
+support multi-realm programming.  See
 $CHPL_HOME/examples/multirealm.chpl for an example program that
-demonstrates them.
+demonstrates them in practice.  For an early technical paper proposing
+the realm concept, please refer to:
+
+   http://chapel.cray.com/realms-deliv7.pdf.
+
+
+Language constructs that support multi-realm programming are as
+follows:
+
 
 type realm;
 
@@ -337,8 +348,9 @@ specified in $CHPL_HOME/hostfile.darwin and multirealm_linux_real on
 the first four hosts specified in $CHPL_HOME/hostfile.linux.
 
 
-
-TROUBLESHOOTING
+-------------------
+Troubleshooting PVM
+-------------------
 
 If your build does not succeed, look for lines like the following:
 
