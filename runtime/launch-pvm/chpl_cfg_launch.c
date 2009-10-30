@@ -428,9 +428,7 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   memalloced |= M_COMMANDTOPVM;
   for (i = 0; i < numLocales; i++) {
     //    fprintf(stderr, "Loop i=%d (iteration %d of %d)\n", i, i+1, numLocales);
-
-    if ((multirealmpathtoadd[i] && multirealmpathtoadd[i][0]) &&
-        (!((char *)getenv("CHPL_TEST_INVOKE_DIR")))) {
+    if (multirealmpathtoadd[i] && multirealmpathtoadd[i][0]) {
       sprintf(commandtopvm, "%s%s", multirealmpathtoadd[i], nameofbin);
     } else {
       if (argv[0][0] != '/') {
