@@ -168,14 +168,6 @@ def Cyclic.writeThis(x: Writer) {
 }
 
 def Cyclic.ind2locInd(i: idxType) {
-/*
-  pragma "inline" def mod(a:integral, b:integral) {
-    if (b <= 0) then
-      halt("modulus divisor must be positive");
-    var tmp = a % b:a.type;
-    return if tmp < 0 then b:a.type + tmp else tmp;
-  }
-*/
   const numLocs:idxType = targetLocDom.numIndices:idxType;
   // this is wrong if i is less than lowIdx
   //return ((i - lowIdx(1)) % numLocs):int;
@@ -188,7 +180,7 @@ def Cyclic.ind2locInd(ind: rank*idxType) {
   for param i in 1..rank {
     var dimLen = targetLocDom.dim(i).length;
     //x(i) = ((ind(i) - lowIdx(i)) % dimLen):int;
-    x(i) = mod(mod(ind(i), dimLen) - mod(lowIdx(i), dimLen), dimLen);
+    x(i) = mod(mod(ind(i), dimLen) - mod(lowIdx(i), dimLen), dimLen):int;
   }
   return x;
 }
@@ -277,7 +269,7 @@ def CyclicDom.writeThis(x: Writer) {
       x.writeln("[", loc, "=", dist.targetLocs(loc), "] owns ", locDoms(loc).myBlock);
     }
   } else {
-    x.writeln(whole);
+    x.write(whole);
   }
 }
 
@@ -454,11 +446,18 @@ def CyclicArr.slice(d: CyclicDom) {
   return alias;
 }
 
-def CyclicArr.localSlice(d) {
-  var A: [(...d)] eltType;
-  for ind in d do
-    A(ind) = this(ind);
-  return A;
+def CyclicArr.localSlice(ranges) {
+  var low: rank*idxType;
+  for param i in 1..rank {
+    low(i) = ranges(i).low;
+  }
+  if rank == 1 {
+    var A => locArr(dom.dist.ind2locInd(low)(1)).myElems((...ranges));
+    return A;
+  } else {
+    var A => locArr(dom.dist.ind2locInd(low)).myElems((...ranges));
+    return A;
+  }
 }
 
 def CyclicArr.getBaseDom() return dom;

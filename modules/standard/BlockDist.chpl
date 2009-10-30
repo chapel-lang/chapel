@@ -778,11 +778,18 @@ def BlockArr.slice(d: BlockDom) {
   return alias;
 }
 
-def BlockArr.localSlice(d) {
-  var A: [(...d)] eltType;
-  for ind in d do
-    A(ind) = this(ind);
-  return A;
+def BlockArr.localSlice(ranges) {
+  var low: rank*idxType;
+  for param i in 1..rank {
+    low(i) = ranges(i).low;
+  }
+  if rank == 1 {
+    var A => locArr(dom.dist.ind2locInd(low)(1)).myElems((...ranges));
+    return A;
+  } else {
+    var A => locArr(dom.dist.ind2locInd(low)).myElems((...ranges));
+    return A;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
