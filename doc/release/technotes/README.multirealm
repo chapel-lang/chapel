@@ -26,7 +26,9 @@ features.  It starts with a description of the new concepts in Chapel
 added to support realms.  It then goes on to describe how to compile
 and execute multi-realm programs using GASNET (single-architecture
 only) and PVM (multi-architecture).  It ends with some troubleshooting
-notes.
+notes.  Note that this README generally assumes that you're familiar
+with Chapel and have used it to compile and run programs.  If not, you
+may wish to start with the top-level Chapel README.
 
 
 -----------------------
@@ -35,9 +37,9 @@ New Language Constructs
 
 This section describes new Chapel constructs that have been added to
 support multi-realm programming.  See
-$CHPL_HOME/examples/multirealm.chpl for an example program that
-demonstrates them in practice.  For an early technical paper proposing
-the realm concept, please refer to:
+$CHPL_HOME/examples/tutorials/multirealm.chpl for an example program
+that demonstrates them in practice.  For an early technical paper
+proposing the realm concept, please refer to:
 
    http://chapel.cray.com/realms-deliv7.pdf.
 
@@ -223,12 +225,18 @@ SETTING UP YOUR ENVIRONMENT TO USE PVM:
 PVM requires certain environment variables to be set in your shell's
 config file (e.g., .bashrc, .cshrc):
 
+  CHPL_HOME =  ...
   PVM_ROOT  =  $CHPL_HOME/third-party/pvm/pvm-3.4.6/pvm3
   PVM_RSH   =  `which ssh`
   PVM_DPATH =  $PVM_ROOT/lib/pvmd
 
 In addition, $PVM_ROOT/bin and $PVM_ROOT/lib must be in your
 executable search path.
+
+Note that this README assumes that you will be using ssh to execute
+commands between nodes.  If you can use rsh instead, you are welcome
+to leave PVM_RSH unset and substitute 'rsh' for 'ssh' in the
+descriptions below.
 
 You should also set up your environment so that you can ssh between
 the nodes you are targeting without providing a password, for example
@@ -279,8 +287,8 @@ realmTypes to be set to a quoted list of host types to build for:
 
   chpl-multirealm -srealmTypes='hosttype1 hosttype2 ..' <flags> <Chapel files>
 
-For example, to compile a Chapel program called multirealm.chpl to run
-between a Mac running darwin and a Linux host, you would use:
+For example, to compile $CHPL_HOME/examples/tutorials/multirealm.chpl
+to run between a Mac running darwin and a Linux host, you would use:
 
   % chpl-multirealm -srealmTypes='darwin linux' -o multirealm multirealm.chpl
 
