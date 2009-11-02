@@ -468,7 +468,9 @@ def BlockCyclicDom.privatize(privatizeData) {
   return c;
 }
 
-def BlockCyclicDom.reprivatize(other) {
+def BlockCyclicDom.getReprivatizeData() return 0;
+
+def BlockCyclicDom.reprivatize(other, reprivatizeData) {
   locDoms = other.locDoms;
   whole = other.whole;
 }

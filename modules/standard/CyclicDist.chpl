@@ -142,7 +142,9 @@ def Cyclic.privatize(privatizeData) {
   return new Cyclic(rank=rank, idxType=idxType, other=this);
 }
 
-def Cyclic.reprivatize(other) {
+def Cyclic.getReprivatizeData() return 0;
+
+def Cyclic.reprivatize(other, reprivatizeData) {
   targetLocDom = other.targetLocDom;
   targetLocs = other.targetLocs;
   locDist = other.locDist;
@@ -353,7 +355,9 @@ def CyclicDom.privatize(privatizeData) {
   return c;
 }
 
-def CyclicDom.reprivatize(other) {
+def CyclicDom.getReprivatizeData() return 0;
+
+def CyclicDom.reprivatize(other, reprivatizeData) {
   locDoms = other.locDoms;
   whole = other.whole;
 }

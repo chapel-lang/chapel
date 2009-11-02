@@ -454,38 +454,43 @@ def BlockDom.localSlice(param stridable: bool, ranges) {
 }
 
 def BlockDom.setup() {
-  coforall localeIdx in dist.targetLocDom do {
-    on dist.targetLocs(localeIdx) do
-      if (locDoms(localeIdx) == nil) then
+  if locDoms(dist.targetLocDom.low) == nil {
+    coforall localeIdx in dist.targetLocDom do {
+      on dist.targetLocs(localeIdx) do
         locDoms(localeIdx) = new LocBlockDom(rank, idxType, stridable, this, 
-                                               dist.getChunk(whole, localeIdx));
-      else
+                                             dist.getChunk(whole, localeIdx));
+    }
+  } else {
+    coforall localeIdx in dist.targetLocDom do {
+      on dist.targetLocs(localeIdx) do
         locDoms(localeIdx).myBlock = dist.getChunk(whole, localeIdx);
+    }
   }
   if debugBlockDist then
     for loc in dist.targetLocDom do writeln(loc, " owns ", locDoms(loc));
- 
 }
 
 def BlockDom.supportsPrivatization() param return true;
 
-def BlockDom.getPrivatizeData() return 0;
+def BlockDom.getPrivatizeData() return (dist.pid, whole.dims());
 
 def BlockDom.privatize(privatizeData) {
-  var distpid = dist.pid;
+  var distpid = privatizeData(1);
   var thisdist = dist;
   var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
   var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
-  c.whole = whole;
+  c.whole = [(...privatizeData(2))];
   return c;
 }
 
-def BlockDom.reprivatize(other) {
+def BlockDom.getReprivatizeData() return whole.dims();
+
+def BlockDom.reprivatize(other, reprivatizeData) {
   for i in dist.targetLocDom do
     locDoms(i) = other.locDoms(i);
-  whole = other.whole;
+  whole = [(...reprivatizeData)];
 }
 
 def BlockDom.member(i) {
@@ -596,10 +601,10 @@ def BlockArr.setup() {
 
 def BlockArr.supportsPrivatization() param return true;
 
-def BlockArr.getPrivatizeData() return 0;
+def BlockArr.getPrivatizeData() return dom.pid;
 
 def BlockArr.privatize(privatizeData) {
-  var dompid = dom.pid;
+  var dompid = privatizeData;
   var thisdom = dom;
   var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
   var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);

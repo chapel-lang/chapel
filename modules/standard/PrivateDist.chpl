@@ -54,7 +54,9 @@ class PrivateDom: BaseArithmeticDom {
   def privatize(privatizeData)
     return new PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
 
-  def reprivatize(other) { }
+  def getReprivatizeData() return 0;
+
+  def reprivatize(other, reprivatizeData) { }
 
   def member(i) return 0 <= i && i <= numLocales-1;
 }

@@ -10,8 +10,8 @@ def _newPrivatizedClass(value) {
   var hereID = here.uid;
   const privatizeData = value.getPrivatizeData();
   on Realms(0) do
-    _newPrivatizedClassHelp(value, value);
-  def _newPrivatizedClassHelp(parentValue, originalValue) {
+    _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
+  def _newPrivatizedClassHelp(parentValue, originalValue, n, hereID, privatizeData) {
     var newValue = originalValue;
     if hereID != here.uid {
       newValue = parentValue.privatize(privatizeData);
@@ -24,14 +24,37 @@ def _newPrivatizedClass(value) {
     cobegin {
       if chpl_localeTree.left then
         on chpl_localeTree.left do
-          _newPrivatizedClassHelp(newValue, originalValue);
+          _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
       if chpl_localeTree.right then
         on chpl_localeTree.right do
-          _newPrivatizedClassHelp(newValue, originalValue);
+          _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
     }
   }
   privatizeLock$.readFE();
   return n;
+}
+
+def _reprivatize(value) {
+  var pid = value.pid;
+  var hereID = here.uid;
+  const reprivatizeData = value.getReprivatizeData();
+  on Realms(0) do
+    _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
+  def _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {
+    var newValue = originalValue;
+    if hereID != here.uid {
+      newValue = __primitive("chpl_getPrivatizedClass", newValue, pid);
+      newValue.reprivatize(parentValue, reprivatizeData);
+    }
+    cobegin {
+      if chpl_localeTree.left then
+        on chpl_localeTree.left do
+          _reprivatizeHelp(newValue, originalValue, pid, hereID, reprivatizeData);
+      if chpl_localeTree.right then
+        on chpl_localeTree.right do
+          _reprivatizeHelp(newValue, originalValue, pid, hereID, reprivatizeData);
+    }
+  }
 }
 
 def _newArray(value) {
@@ -449,21 +472,7 @@ record _domain {
   def setIndices(x) {
     _value.setIndices(x);
     if _isPrivatized(_valueType) {
-      var other = _value;
-      var id = _value.pid;
-      var hereID = here.uid;
-      coforall r in Realms do
-        on r {
-          coforall loc in r.Locales {
-            on loc {
-              if hereID != here.uid {
-                var tc = _valueType;
-                var pc = __primitive("chpl_getPrivatizedClass", tc, id);
-                pc.reprivatize(other);
-              }
-            }
-          }
-        }
+      _reprivatize(_value);
     }
   }
 
