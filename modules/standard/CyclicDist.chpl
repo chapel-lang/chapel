@@ -182,7 +182,10 @@ def Cyclic.ind2locInd(ind: rank*idxType) {
     //x(i) = ((ind(i) - lowIdx(i)) % dimLen):int;
     x(i) = mod(mod(ind(i), dimLen) - mod(lowIdx(i), dimLen), dimLen):int;
   }
-  return x;
+  if rank == 1 then
+    return x(1);
+  else
+    return x;
 }
 
 def Cyclic.ind2loc(i: idxType) where rank == 1 {
@@ -451,13 +454,9 @@ def CyclicArr.localSlice(ranges) {
   for param i in 1..rank {
     low(i) = ranges(i).low;
   }
-  if rank == 1 {
-    var A => locArr(dom.dist.ind2locInd(low)(1)).myElems((...ranges));
-    return A;
-  } else {
-    var A => locArr(dom.dist.ind2locInd(low)).myElems((...ranges));
-    return A;
-  }
+
+  var A => locArr(dom.dist.ind2locInd(low)).myElems((...ranges));
+  return A;
 }
 
 def CyclicArr.getBaseDom() return dom;
