@@ -380,11 +380,10 @@ pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   Vec<BaseAST*> asts;
   collect_asts(fn, asts);
   forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (FnSymbol* next = call->isResolved())
+    if (SymExpr* se = toSymExpr(ast)) {
+      if (FnSymbol* next = toFnSymbol(se->var))
         if (!fns.set_in(next))
           pruneVisit(next, fns, types);
-    } else if (SymExpr* se = toSymExpr(ast)) {
       if (se->var && se->var->type && !types.set_in(se->var->type->symbol))
         pruneVisit(se->var->type->symbol, fns, types);
     }

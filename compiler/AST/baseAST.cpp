@@ -47,8 +47,8 @@ void printStatistics(const char* pass) {
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
-  int nType = nPrimitiveType+nEnumType+nClassType;
-  int kType = kPrimitiveType+kEnumType+kClassType;
+  int nType = nPrimitiveType+nFnType+nEnumType+nClassType;
+  int kType = kPrimitiveType+kFnType+kEnumType+kClassType;
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
@@ -89,14 +89,14 @@ void printStatistics(const char* pass) {
             kSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Type %9d  Prim  %9d  Enum %9d  Class %9d\n",
-            nType, nPrimitiveType, nEnumType, nClassType);
+    fprintf(stderr, "    Type %9d  Prim  %9d  Enum %9d  Class %9d  Fn %9d\n",
+            nType, nPrimitiveType, nEnumType, nClassType, nFnType);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Type %9dK Prim  %9dK Enum %9dK Class %9dK\n",
-            kType, kPrimitiveType, kEnumType, kClassType);
+    fprintf(stderr, "    Type %9dK Prim  %9dK Enum %9dK Class %9dK Fn %9dK\n",
+            kType, kPrimitiveType, kEnumType, kClassType, kFnType);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Type %6dK Prim  %6dK Enum %6dK Class %6dK\n",
-            kType, kPrimitiveType, kEnumType, kClassType);
+    fprintf(stderr, "    Type %6dK Prim  %6dK Enum %6dK Class %6dK Fn %9dK\n",
+            kType, kPrimitiveType, kEnumType, kClassType, kFnType);
   last_nasts = nasts;
 }
 
@@ -259,6 +259,7 @@ const char* astTagName[E_BaseAST+1] = {
   "Symbol",
 
   "PrimitiveType",
+  "FnType",
   "EnumType",
   "ClassType",
   "Type",

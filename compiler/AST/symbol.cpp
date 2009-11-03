@@ -33,6 +33,7 @@ Symbol *gThreadID = NULL;
 Symbol *gSyncVarAuxFields = NULL;
 Symbol *gSingleVarAuxFields = NULL;
 Symbol *gTaskList = NULL;
+Symbol *gFnArgs = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
@@ -157,9 +158,10 @@ VarSymbol::~VarSymbol() {
 
 void VarSymbol::verify() {
   Symbol::verify();
-  if (astTag != E_VarSymbol) {
+  if (astTag != E_VarSymbol)
     INT_FATAL(this, "Bad VarSymbol::astTag");
-  }
+  if (!type)
+    INT_FATAL(this, "VarSymbol::type is NULL");
 }
 
 
@@ -412,6 +414,14 @@ void TypeSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 void TypeSymbol::codegenPrototype(FILE* outfile) {
   type->codegenPrototype(outfile);
+}
+
+
+void TypeSymbol::codegen(FILE* outfile) {
+  if (isFnType(type))
+    fprintf(outfile, "chpl_fn_p");
+  else
+    fprintf(outfile, "%s", cname);
 }
 
 

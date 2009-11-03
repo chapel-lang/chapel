@@ -6,6 +6,7 @@
 
 #define foreach_ast_sep(macro, sep)                \
   macro(PrimitiveType) sep                         \
+  macro(FnType) sep                                \
   macro(EnumType) sep                              \
   macro(ClassType) sep                             \
   macro(ModuleSymbol) sep                          \
@@ -79,6 +80,7 @@ enum AstTag {
   E_Symbol,
 
   E_PrimitiveType,
+  E_FnType,
   E_EnumType,
   E_ClassType,
   E_Type,
@@ -171,6 +173,7 @@ void registerModule(ModuleSymbol* mod);
 #define isEnumSymbol(a)        ((a) && (a)->astTag == E_EnumSymbol)
 #define isLabelSymbol(a)       ((a) && (a)->astTag == E_LabelSymbol)
 #define isPrimitiveType(a)     ((a) && (a)->astTag == E_PrimitiveType)
+#define isFnType(a)            ((a) && (a)->astTag == E_FnType)
 #define isEnumType(a)          ((a) && (a)->astTag == E_EnumType)
 #define isClassType(a)         ((a) && (a)->astTag == E_ClassType)
 
@@ -197,6 +200,7 @@ void registerModule(ModuleSymbol* mod);
 #define toLabelSymbol(a)       def_to_ast(LabelSymbol, a)
 #define toSymbol(a)            def_to_ast(Symbol, a)
 #define toPrimitiveType(a)     def_to_ast(PrimitiveType, a)
+#define toFnType(a)            def_to_ast(FnType, a)
 #define toEnumType(a)          def_to_ast(EnumType, a)
 #define toClassType(a)         def_to_ast(ClassType, a)
 #define toType(a)              def_to_ast(Type, a)

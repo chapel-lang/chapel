@@ -133,6 +133,7 @@ class TypeSymbol : public Symbol {
   void verify(); 
   DECLARE_SYMBOL_COPY(TypeSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
   void codegenPrototype(FILE* outfile);
 };
@@ -273,6 +274,7 @@ extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
 
 extern Symbol *gTaskList;
+extern Symbol *gFnArgs;
 
 extern Map<FnSymbol*,int> ftable;
 

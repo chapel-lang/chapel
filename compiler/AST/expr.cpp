@@ -484,8 +484,12 @@ void CallExpr::verify() {
     if (FnSymbol* fn = isResolved()) {
       if (!fn->hasFlag(FLAG_EXTERN)) {
         for_formals_actuals(formal, actual, this) {
-          if (formal->type != actual->typeInfo() && actual->typeInfo() != dtNil)
-            INT_FATAL(this, "actual formal type mismatch");
+          if (formal->type != actual->typeInfo() && actual->typeInfo() != dtNil) {
+            SymExpr* se = toSymExpr(actual);
+            if (!se || !isFnSymbol(se->var) || !isFnType(formal->type))
+              if (formal->type != dtFnArgs)
+                INT_FATAL(this, "actual formal type mismatch");
+          }
         }
       }
     }
@@ -1982,6 +1986,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_TO_FOLLOWER:
     case PRIM_ON_GPU:
       INT_FATAL(this, "primitive should no longer be in AST");
+      fprintf(outfile, "/* ERR %s */", primitive->name);
       break;
     case PRIM_GC_CC_INIT:
       fprintf(outfile, "_chpl_gc_init(");
@@ -2123,6 +2128,34 @@ void CallExpr::codegen(FILE* outfile) {
     if (getStmtExpr() && getStmtExpr() == this)
       fprintf(outfile, ";\n");
     return;
+  }
+
+  //
+  // indirect function call via a function pointer
+  //
+  if (Symbol* base = toSymExpr(baseExpr)->var) {
+    if (!isFnSymbol(base) && isFnType(base->type)) {
+      fprintf(outfile, "((void(*)(");
+      bool first = true;
+      for_actuals(actual, this) {
+        if (!first)
+          fprintf(outfile, ",");
+        actual->typeInfo()->codegen(outfile);
+        first = false;
+      }
+      fprintf(outfile, "))*%s)(", base->cname);
+      first = true;
+      for_actuals(actual, this) {
+        if (!first)
+          fprintf(outfile, ", ");
+        actual->codegen(outfile);
+        first = false;
+      }
+      fprintf(outfile, ")");
+      if (getStmtExpr() && getStmtExpr() == this)
+        fprintf(outfile, ";\n");
+      return;
+    }
   }
 
   FnSymbol* fn = isResolved();
@@ -2278,6 +2311,9 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "&(");
     if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo() == dtString)
       fprintf(outfile, "((char*)");
+    SymExpr* se = toSymExpr(actual);
+    if (se && isFnSymbol(se->var))
+      fprintf(outfile, "(chpl_fn_p)&");
     actual->codegen(outfile);
     if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo() == dtString)
       fprintf(outfile, ")");

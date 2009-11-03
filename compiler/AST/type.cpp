@@ -132,6 +132,41 @@ int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
 }
 
 
+FnType::FnType(FnSymbol *init_function) :
+  Type(E_FnType, NULL)
+{
+  function = init_function;
+  gFnTypes.add(this);
+}
+
+
+FnType*
+FnType::copyInner(SymbolMap* map) {
+  INT_FATAL(this, "unexpected call to FnType::copyInner");
+  return this;
+}
+
+
+void FnType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected case in FnType::replaceChild");
+}
+
+
+
+void FnType::verify() {
+  Type::verify();
+  if (astTag != E_FnType) {
+    INT_FATAL(this, "Bad FnType::astTag");
+  }
+}
+
+
+int FnType::codegenStructure(FILE* outfile, const char* baseoffset) {
+  INT_FATAL("FnType::codegenStructure is undefined");
+  return 1;
+}
+
+
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
   constants()
@@ -455,6 +490,17 @@ createPrimitiveType(const char *name, const char *cname) {
 }
 
 
+FnType*
+createFnType(FnSymbol* fn) {
+  static int uid = 1;
+
+  FnType* ft = new FnType(fn);
+  TypeSymbol* ts = new TypeSymbol(astr("_fn_type_", istr(uid++)), ft);
+  rootModule->block->insertAtTail(new DefExpr(ts));
+  return ft;
+}
+
+
 // Create new primitive type for integers. Specify name for now. Though it will 
 // probably be something like int1, int8, etc. in the end. In that case
 // we can just specify the width (i.e., size).
@@ -657,6 +703,9 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL(dtTypeDefaultToken, gTypeDefaultToken, "_typeDefaultT");
   dtModuleToken = createPrimitiveType("tmodule=", "tmodule=");
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
+  dtFnArgs = createPrimitiveType("chpl_fn_args", "chpl_fn_args");
+  CREATE_DEFAULT_SYMBOL(dtFnArgs, gFnArgs, "chpl_fn_args_nil");
+
   dtEnumerated = createPrimitiveType ("enumerated", "enumerated");
   dtEnumerated->symbol->addFlag(FLAG_GENERIC);
 }
