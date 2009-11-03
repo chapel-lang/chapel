@@ -18,7 +18,7 @@ general regressions
 
 spurious failure
 ----------------
-[Error matching program output for reductions/diten/reduction_name_collision] (e.g., 10/12/09, 10/17/09, 10/20/09, 10/28/09 -- especially with --baseline)
+[Error matching program output for reductions/diten/reduction_name_collision] (e.g., 10/12/09, 10/17/09, 10/20/09, 10/28/09, 10/31/09, 11/01/09 -- especially with --baseline)
 [Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist] (e.g., 10/12/09, 10/15/09, 10/19/09, 10/24/09)
 
 ??? (10/6/09)
@@ -41,9 +41,9 @@ spurious compilation timeouts
 linux regressions
 =================
 
-double free or corruption (10/26/09)
-------------------------------------
-[Error matching program output for functions/deitz/iterators/leader_follower/test_leader_follower6]
+spurious double free or corruption
+----------------------------------
+[Error matching program output for functions/deitz/iterators/leader_follower/test_leader_follower6] (e.g., 10/26/09)
 
 spurious system fork failure
 ----------------------------
@@ -102,10 +102,6 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-anticipated race in .good file (09/29/09)
------------------------------------------
-[Error matching program output for release/examples/tutorials/multirealm]
-
 memory stuff in flux (06/06/09)
 -------------------------------
 [Error matching program output for memory/shannon/memmaxBytes]
@@ -128,8 +124,8 @@ times out spuriously
 --------------------
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09)
 [Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09)
 
 
@@ -145,19 +141,6 @@ GASNet unable to start polling thread
 ==================
 pvm-specific tests
 ==================
-
-things sometimes take too long
-------------------------------
-[Error: Timed out executing program release/examples/hello-multiloc] (e.g., 10/03/09)
-[Error: Timed out executing program release/examples/tutorials/multilocale] (e.g., 10/03/09, 10/04/09, 10/22/09, 10/26/09)
-[Error: Timed out executing program release/examples/hpcc/stream] (e.g., 10/29/09)
-
-things take too long
---------------------
-[Error: Timed out executing program release/examples/tutorials/multirealm]
-[Error: Timed out executing program release/examples/hpcc/ra]
-[Error: Timed out executing program release/examples/tutorials/block2D]
-
 
 =======================
 baseline-specific tests
@@ -261,7 +244,8 @@ spurious compilation timeouts
 -----------------------------
 [Error: Timed out compilation for parallel/sync/diten/userLevelEndCount] (e.g., 10/10/09)
 [Error: Timed out compilation for studies/hpcc/STREAMS/bradc/stream-fragmented] (e.g., 10/02/09)
-[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 10/02/09, 10/13/09, 10/13/09, 10/15/09, 10/17/09, 10/09/09, 10/24/09, 10/28/09)
+[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 10/02/09, 10/13/09, 10/13/09, 10/15/09, 10/17/09, 10/09/09, 10/24/09, 10/28/09, 10/30/09)
+[Error: Timed out compilation for studies/madness/common/test_likepy] (e.g., 10/30/09)
 
 
 ===========================
@@ -302,6 +286,7 @@ spurious timeout
 ----------------
 [Error: Timed out compilation for parallel/sync/diten/userLevelEndCount] (e.g., 10/10/09)
 [Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09)
+[Error: Timed out compilation for arrays/deitz/jacobi-unoptimized] (e.g., 10/31/09)
 
 spurious seg fault
 ------------------
