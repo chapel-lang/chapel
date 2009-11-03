@@ -4,9 +4,13 @@ def foo(n: int) {
 }
 
 def foo(param tag: iterator, n: int):range where tag == iterator.leader {
-  for i in foo(iterator.leader, n/2) do
-    yield i;
-  yield n/2..n;
+  if n == 1 then
+    yield 1..1;
+  else {
+    for i in foo(iterator.leader, n/2) do
+      yield i;
+    yield n/2..n;
+  }
 }
 
 def foo(param tag: iterator, follower, n: int) where tag == iterator.follower {

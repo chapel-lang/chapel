@@ -2140,7 +2140,10 @@ void CallExpr::codegen(FILE* outfile) {
       for_actuals(actual, this) {
         if (!first)
           fprintf(outfile, ",");
-        actual->typeInfo()->codegen(outfile);
+        Type* actualType = actual->typeInfo();
+        actualType->codegen(outfile);
+        if (isRecord(actualType) || isUnion(actualType))
+          fprintf(outfile, "*");
         first = false;
       }
       fprintf(outfile, "))*%s)(", base->cname);
@@ -2148,6 +2151,8 @@ void CallExpr::codegen(FILE* outfile) {
       for_actuals(actual, this) {
         if (!first)
           fprintf(outfile, ", ");
+        if (isRecord(actual->typeInfo()) || isUnion(actual->typeInfo()))
+          fprintf(outfile, "&");
         actual->codegen(outfile);
         first = false;
       }
