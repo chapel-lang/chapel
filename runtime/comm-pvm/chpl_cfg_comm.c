@@ -1,3 +1,5 @@
+#include <pthread.h>
+#include <sched.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -590,6 +592,7 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
     PVM_LOCK_SAFE(bufid = pvm_nrecv(tid, msgtag), "pvm_nrecv", "chpl_pvm_recv");
     if (bufid == 0) {
       CHPL_MUTEX_UNLOCK(&pvm_lock);
+      sched_yield();
     }
   }
   PVM_NO_LOCK_SAFE(pvm_bufinfo(bufid, &bytes, &pvmtype, &source), "pvm_bufinfo", "chpl_pvm_recv");
@@ -991,6 +994,7 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
       PVM_LOCK_SAFE(bufid = pvm_nrecv(tid, msgtag), "pvm_nrecv", "chpl_pvm_send");
       if (bufid == 0) {
         CHPL_MUTEX_UNLOCK(&pvm_lock);
+        sched_yield();
       }
     }
     PVM_UNLOCK_SAFE(pvm_upkint(&ack, 1, 1), "pvm_upkbyte", "chpl_pvm_send");
@@ -1019,6 +1023,7 @@ static void polling(void* x) {
   pthread_mutex_lock(&okay_mutex);
   while (okaypoll == 0) {
     pthread_cond_wait(&okay_to_poll, &okay_mutex);
+    sched_yield();
   }
   pthread_mutex_unlock(&okay_mutex);
 
@@ -1171,6 +1176,15 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   PRINTF(debugMsg);
 #endif
 
+  // Found on http://www.ieeetcsc.org/node/33/630:
+  // Replacing PvmRouteDefault with PvmRouteDirect can result in a four-fold
+  // bandwidth increase. The direct method sets up a TCP socket directly
+  // between the two tasks bypassing the pvmd. In general, the direct method
+  // should be used. But be aware: setting up the TCP socket has a one-time
+  // very large latency. It only makes sense if many messages or large
+  // volumes of data are going to pass between two tasks.
+  PVM_LOCK_UNLOCK_SAFE(status = pvm_setopt(PvmRoute, PvmRouteDirect), "pvm_setopt", "chpl_comm_init");
+
   // Create the pthread to do the work.
   status = pthread_create(&polling_thread, NULL, (void*(*)(void*))polling, 0);
   if (status)
@@ -1207,6 +1221,7 @@ static int mysystem(const char* command, const char* description, int ignorestat
       PVM_LOCK_SAFE(bufid = pvm_nrecv(parent, NOTIFYTAG), "pvm_nrecv", "mysystem");
       if (bufid == 0) {
         CHPL_MUTEX_UNLOCK(&pvm_lock);
+        sched_yield();
       }
     }
     PVM_UNLOCK_SAFE(pvm_upkint(&status, 1, 1), "pvm_upkint", "mysystem");
@@ -1399,6 +1414,7 @@ void chpl_comm_barrier(const char *msg) {
       PVM_LOCK_SAFE(bufid = pvm_nrecv(-1, BCASTTAG), "pvm_nrecv", "chpl_comm_barrier");
       if (bufid == 0) {
         CHPL_MUTEX_UNLOCK(&pvm_lock);
+        sched_yield();
       }
     }
     PVM_UNLOCK_SAFE(pvm_upkint(&okay_to_barrier, 1, 1), "pvm_upkint", "chpl_comm_barrier");

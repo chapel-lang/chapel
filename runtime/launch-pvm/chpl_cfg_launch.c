@@ -1,10 +1,10 @@
+#include <chplio_md.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
-#include <chplio_md.h>
-#include <signal.h>
 
 #include "pvm3.h"
 
@@ -408,6 +408,8 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
     }
   }
   hostsAdded = 1;
+
+  info = pvm_setopt(PvmRoute, PvmRouteDirect);
 
   // Take extra if-else step in case there's no / in executed command
   t = strrchr(argv[0], '/');
