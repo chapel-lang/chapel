@@ -201,19 +201,33 @@ equivalentTypes(Type* t1, Type* t2) {
     return true;
   if (isFnType(t1) && isFnType(t2))
     return true;
+  if (!strcmp(t1->symbol->name, "_fn_arg_bundle") &&
+      !strcmp(t2->symbol->name, "_fn_arg_bundle"))
+    return true;
+  if (!strcmp(t1->symbol->name, "_ref_fn_arg_bundle") &&
+      !strcmp(t2->symbol->name, "_ref_fn_arg_bundle"))
+    return true;
   return false;
 }
 
 
-static void
+static ClassType* 
 bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
                                       CallExpr* loopBodyFnCall,
                                       FnSymbol* loopBodyFnWrapper) {
   ClassType* ct = new ClassType(CLASS_CLASS);
   TypeSymbol* ts = new TypeSymbol("_fn_arg_bundle", ct);
   ts->addFlag(FLAG_NO_OBJECT);
-  ts->addFlag(FLAG_NO_WIDE_CLASS);
   iteratorFnCall->parentSymbol->defPoint->insertBefore(new DefExpr(ts));
+
+  ClassType* rct = new ClassType(CLASS_CLASS);
+  TypeSymbol* rts = new TypeSymbol("_ref_fn_arg_bundle", rct);
+  rts->addFlag(FLAG_NO_OBJECT);
+  rts->addFlag(FLAG_REF);
+  iteratorFnCall->parentSymbol->defPoint->insertBefore(new DefExpr(rts));
+  rct->fields.insertAtTail(new DefExpr(new VarSymbol("_val", ct)));
+  ct->refType = rct;
+  
   VarSymbol* tmp = newTemp(ct);
   iteratorFnCall->insertBefore(new DefExpr(tmp));
   iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, tmp,
@@ -225,7 +239,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   FnSymbol* loopBodyFn = loopBodyFnCall->isResolved();
   ArgSymbol* wrapperIndexArg = loopBodyFn->getFormal(1)->copy();
   loopBodyFnWrapper->insertFormalAtTail(wrapperIndexArg);
-  ArgSymbol* wrapperArgsArg = new ArgSymbol(INTENT_BLANK, "fn_args", dtFnArgs);
+  ArgSymbol* wrapperArgsArg = new ArgSymbol(INTENT_BLANK, "fn_args", ct);
   loopBodyFnWrapper->insertFormalAtTail(wrapperArgsArg);
   CallExpr* loopBodyFnWrapperCall = new CallExpr(loopBodyFn, wrapperIndexArg);
   VarSymbol* wrapperArgsVar = new VarSymbol("fn_args_tmp", ct);
@@ -247,6 +261,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   loopBodyFnWrapper->insertAtTail(loopBodyFnWrapperCall);
   loopBodyFnWrapper->retType = dtVoid;
   loopBodyFnWrapper->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  return ct;
 }
 
 
@@ -330,7 +345,7 @@ expandIteratorInline(CallExpr* call) {
     if (!iteratorFn) {
       iteratorFn = new FnSymbol(astr("_rec_iter_fn_", iterator->name));
       iteratorFnCall->baseExpr->replace(new SymExpr(iteratorFn));
-      bundleLoopBodyFnArgsForIteratorFnCall(iteratorFnCall, loopBodyFnCall, loopBodyFnWrapper);
+      ClassType* argsBundleType = bundleLoopBodyFnArgsForIteratorFnCall(iteratorFnCall, loopBodyFnCall, loopBodyFnWrapper);
       iteratorFn->insertAtTail(iterator->body->copy());
       iterator->defPoint->insertBefore(new DefExpr(iteratorFn));
       Vec<BaseAST*> asts;
@@ -340,7 +355,7 @@ expandIteratorInline(CallExpr* call) {
       replaceIteratorFormalsWithIteratorFields(iterator, icArg, asts);
       ArgSymbol* loopBodyFnArg = new ArgSymbol(INTENT_BLANK, "_loopBodyFn", createFnType(loopBodyFn));
       iteratorFn->insertFormalAtTail(loopBodyFnArg);
-      ArgSymbol* loopBodyFnArgArgs = new ArgSymbol(INTENT_BLANK, "_loopBodyFnArgs", dtFnArgs);
+      ArgSymbol* loopBodyFnArgArgs = new ArgSymbol(INTENT_BLANK, "_loopBodyFnArgs", argsBundleType);
       iteratorFn->insertFormalAtTail(loopBodyFnArgArgs);
       forv_Vec(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
@@ -348,10 +363,7 @@ expandIteratorInline(CallExpr* call) {
             Symbol* yieldedIndex = newTemp("_yieldedIndex", index->type);
             call->insertBefore(new DefExpr(yieldedIndex));
             call->insertBefore(new CallExpr(PRIM_MOVE, yieldedIndex, call->get(1)->remove()));
-            CallExpr* loopBodyFnArgCall = new CallExpr(loopBodyFnArg, yieldedIndex);
-            for (int i = 3; i <= iteratorFn->numFormals(); i++) {
-              loopBodyFnArgCall->insertAtTail(iteratorFn->getFormal(i));
-            }
+            CallExpr* loopBodyFnArgCall = new CallExpr(loopBodyFnArg, yieldedIndex, loopBodyFnArgArgs);
             call->replace(loopBodyFnArgCall);
           }
           if (call->isPrimitive(PRIM_RETURN))
@@ -366,6 +378,10 @@ expandIteratorInline(CallExpr* call) {
     } else {
       iteratorFnCall->baseExpr->replace(new SymExpr(iteratorFn));
       bundleLoopBodyFnArgsForIteratorFnCall(iteratorFnCall, loopBodyFnCall, loopBodyFnWrapper);
+      Symbol* argBundleTmp = newTemp(iteratorFn->getFormal(3)->type);
+      iteratorFnCall->insertBefore(new DefExpr(argBundleTmp));
+      iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, argBundleTmp, new CallExpr(PRIM_CAST, argBundleTmp->type->symbol, iteratorFnCall->get(3)->remove())));
+      iteratorFnCall->insertAtTail(argBundleTmp);
     }
     return;
   }

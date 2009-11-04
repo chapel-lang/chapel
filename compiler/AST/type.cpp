@@ -497,6 +497,7 @@ createFnType(FnSymbol* fn) {
   FnType* ft = new FnType(fn);
   TypeSymbol* ts = new TypeSymbol(astr("_fn_type_", istr(uid++)), ft);
   rootModule->block->insertAtTail(new DefExpr(ts));
+  ts->cname = astr("chpl_fn_p");
   return ft;
 }
 
@@ -703,8 +704,6 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL(dtTypeDefaultToken, gTypeDefaultToken, "_typeDefaultT");
   dtModuleToken = createPrimitiveType("tmodule=", "tmodule=");
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
-  dtFnArgs = createPrimitiveType("chpl_fn_args", "chpl_fn_args");
-  CREATE_DEFAULT_SYMBOL(dtFnArgs, gFnArgs, "chpl_fn_args_nil");
 
   dtEnumerated = createPrimitiveType ("enumerated", "enumerated");
   dtEnumerated->symbol->addFlag(FLAG_GENERIC);

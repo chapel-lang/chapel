@@ -487,8 +487,7 @@ void CallExpr::verify() {
           if (formal->type != actual->typeInfo() && actual->typeInfo() != dtNil) {
             SymExpr* se = toSymExpr(actual);
             if (!se || !isFnSymbol(se->var) || !isFnType(formal->type))
-              if (formal->type != dtFnArgs)
-                INT_FATAL(this, "actual formal type mismatch");
+              INT_FATAL(this, "actual formal type mismatch");
           }
         }
       }
