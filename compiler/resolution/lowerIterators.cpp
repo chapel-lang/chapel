@@ -369,13 +369,32 @@ expandIteratorInline(CallExpr* call) {
         if (CallExpr* call = toCallExpr(ast)) {
           if (call->isPrimitive(PRIM_YIELD)) {
             Symbol* yieldedIndex = newTemp("_yieldedIndex", index->type);
-            call->insertBefore(new DefExpr(yieldedIndex));
-            call->insertBefore(new CallExpr(PRIM_MOVE, yieldedIndex, call->get(1)->remove()));
+            Symbol* yieldedSymbol = toSymExpr(call->get(1))->var;
+            INT_ASSERT(yieldedSymbol);
+
+            // remove move to return-temp that is defined at top of iterator
+            bool inserted = false;
+            if (CallExpr* prev = toCallExpr(call->prev)) {
+              if (prev->isPrimitive(PRIM_MOVE)) {
+                if (SymExpr* lhs = toSymExpr(prev->get(1))) {
+                  if (lhs->var == yieldedSymbol) {
+                    lhs->var = yieldedIndex;
+                    prev->insertBefore(new DefExpr(yieldedIndex));
+                    inserted = true;
+                  }
+                }
+              }
+            }
+
+            if (!inserted) {
+              call->insertBefore(new DefExpr(yieldedIndex));
+              call->insertBefore(new CallExpr(PRIM_MOVE, yieldedIndex, call->get(1)->remove()));
+            }
             CallExpr* loopBodyFnArgCall = new CallExpr(PRIM_FTABLE_CALL, loopBodyFnArg, yieldedIndex, loopBodyFnArgArgs);
             call->replace(loopBodyFnArgCall);
-          }
-          if (call->isPrimitive(PRIM_RETURN))
+          } else if (call->isPrimitive(PRIM_RETURN)) {
             call->remove();
+          }
         }
       }
       iteratorFn->retType = dtVoid;
