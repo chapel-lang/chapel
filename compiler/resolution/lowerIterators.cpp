@@ -274,8 +274,6 @@ expandIteratorInline(CallExpr* call) {
   Symbol* ic = toSymExpr(call->get(2))->var;
   FnSymbol* iterator = ic->type->defaultConstructor->getFormal(1)->type->defaultConstructor;
 
-  SET_LINENO(call);
-
   if (recursiveIteratorSet.set_in(iterator)) {
 
     //
@@ -284,6 +282,8 @@ expandIteratorInline(CallExpr* call) {
     //
     if (recursiveIteratorSet.set_in(toFnSymbol(call->parentSymbol)))
       return;
+
+    SET_LINENO(call);
 
     //
     // create a nested function for the loop body (call->parentExpr),
@@ -351,9 +351,12 @@ expandIteratorInline(CallExpr* call) {
       }
     }
     if (!iteratorFn) {
+      SET_LINENO(iterator);
       iteratorFn = new FnSymbol(astr("_rec_iter_fn_", iterator->name));
+      SET_LINENO(call);
       iteratorFnCall->baseExpr->replace(new SymExpr(iteratorFn));
       ClassType* argsBundleType = bundleLoopBodyFnArgsForIteratorFnCall(iteratorFnCall, loopBodyFnCall, loopBodyFnWrapper);
+      SET_LINENO(iterator);
       iteratorFn->insertAtTail(iterator->body->copy());
       iterator->defPoint->insertBefore(new DefExpr(iteratorFn));
       Vec<BaseAST*> asts;
@@ -368,6 +371,7 @@ expandIteratorInline(CallExpr* call) {
       forv_Vec(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
           if (call->isPrimitive(PRIM_YIELD)) {
+            SET_LINENO(call);
             Symbol* yieldedIndex = newTemp("_yieldedIndex", index->type);
             Symbol* yieldedSymbol = toSymExpr(call->get(1))->var;
             INT_ASSERT(yieldedSymbol);
@@ -413,6 +417,8 @@ expandIteratorInline(CallExpr* call) {
     }
     return;
   }
+
+  SET_LINENO(call);
 
   BlockStmt* ibody = iterator->body->copy();
   reset_line_info(ibody, call->lineno);
