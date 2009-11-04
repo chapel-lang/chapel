@@ -61,19 +61,18 @@ def main() {
   //
   //const TwiddleDist = distributionValue(new Cyclic(rank=1, idxType=int(64), tasksPerLocale=tasksPerLocale));
   const TwiddleDist = distributionValue(new Block(rank=1, idxType=int(64), bbox=[0..m/4-1], targetLocales=Locales));
-  //const TwiddleDist = defaultDist;
   const TwiddleDom: domain(1, int(64)) distributed TwiddleDist = [0..m/4-1];
   var Twiddles: [TwiddleDom] elemType;
 
   //
-  // ProblemDom describes the index set used to define the input and
+  // BlkDom describes the index set used to define the input and
   // output vectors and is also a 1D domain indexed by 64-bit ints
   // from 0 to m-1.  It is distributes the vectors Z and z across the
   // locales using the Block distribution.
   //
-  const ProblemDist = distributionValue(new Block(rank=1, idxType=int(64), bbox=[0..m-1], targetLocales=Locales, tasksPerLocale=tasksPerLocale));
-  const ProblemDom: domain(1, int(64)) distributed ProblemDist = [0..m-1];
-  var Z, z: [ProblemDom] elemType;
+  const BlkDist = distributionValue(new Block(rank=1, idxType=int(64), bbox=[0..m-1], targetLocales=Locales, tasksPerLocale=tasksPerLocale));
+  const BlkDom: domain(1, int(64)) distributed BlkDist = [0..m-1];
+  var Z, z: [BlkDom] elemType;
 
   const CycDist = distributionValue(new Cyclic(rank=1, idxType=int(64), targetLocales=Locales, tasksPerLocale=tasksPerLocale));
   const CycDom: domain(1, int(64)) distributed CycDist = [0..m-1];
@@ -85,10 +84,10 @@ def main() {
 
   Z = conjg(z);                        // store the conjugate of z in Z
   bitReverseShuffle(Z);                // permute Z
-  dfft(Z, Twiddles, 0);                // compute the discrete Fourier transform
+  dfft(Z, Twiddles, 0);   // compute the Fourier transform block phase
   forall (b, c) in (Z, Zcyc) do
     c = b;
-  dfft(Zcyc, Twiddles, 1);
+  dfft(Zcyc, Twiddles, 1); // compute the Fourier transform cyclic phase
   forall (b, c) in (Z, Zcyc) do
     b = c;
 
@@ -109,18 +108,7 @@ def dfft(A: [?ADom], W, phase) {
   // iterator genDFTStrideSpan that yields the stride and span for
   // each bank of butterfly calculations
   //
-  var start = if phase == 0 then 1 else numLocales;
-  for (str, span) in genDFTStrideSpan(numElements, start) {
-
-    if str >= numLocales && phase == 0 {
-      //
-      // This is the point where switching from a block distribution to a
-      // cyclic distribution is useful. Return from this function to allow
-      // the calling code to copy the result so far to a cyclic array.
-      //
-      return;
-    }
-
+  for (str, span) in genDFTStrideSpan(numElements, phase) {
     //
     // loop in parallel over each of the banks of butterflies with
     // shared twiddle factors, zippering with the unbounded range
@@ -134,19 +122,18 @@ def dfft(A: [?ADom], W, phase) {
           wk1 = W(2*twidIndex),
           wk3 = (wk1.re - 2 * wk2.im * wk1.im,
                  2 * wk2.im * wk1.re - wk1.im):elemType;
-
       //
       // loop in parallel over the low bank, computing butterflies
       // Note: lo..#num         == lo, lo+1, lo+2, ..., lo+num-1
       //       lo.. by str #num == lo, lo+str, lo+2*str, ... lo+(num-1)*str
       //
-      forall lo in bankStart..#str do
+      forall lo in bankStart..#str {
         on ADom.dist.ind2loc(lo) {
-          //local {
+          local {
             butterfly(wk1, wk2, wk3, A.localSlice(lo..by str #radix));
-          //}
+          }
         }
-
+      }
       //
       // update the multipliers for the high bank
       //
@@ -158,36 +145,39 @@ def dfft(A: [?ADom], W, phase) {
       //
       // loop in parallel over the high bank, computing butterflies
       //
-      forall lo in bankStart+span..#str do
+      forall lo in bankStart+span..#str {
         on ADom.dist.ind2loc(lo) {
-          //local {
+          local {
             butterfly(wk1, wk2, wk3, A.localSlice(lo.. by str #radix));
-          //}
+          }
         }
+      }
     }
   }
 
-  //
-  // Do the last set of butterflies...
-  //
-  const str = radix**log4(numElements-1);
-  //
-  // ...using the radix-4 butterflies with 1.0 multipliers if the
-  // problem size is a power of 4
-  //
-  if (str*radix == numElements) then
-    forall lo in 0..#str do
-      butterfly(1.0, 1.0, 1.0, A, lo.. by str #radix);
-  //
-  // ...otherwise using a simple radix-2 butterfly scheme
-  //
-  else
-    forall lo in 0..#str {
-      const a = A(lo),
-            b = A(lo+str);
-      A(lo)     = a + b;
-      A(lo+str) = a - b;
-    }
+  if phase == 1 {
+    //
+    // Do the last set of butterflies...
+    //
+    const str = radix**log4(numElements-1);
+    //
+    // ...using the radix-4 butterflies with 1.0 multipliers if the
+    // problem size is a power of 4
+    //
+    if (str*radix == numElements) then
+      forall lo in 0..#str do
+        butterfly(1.0, 1.0, 1.0, A, lo.. by str #radix);
+    //
+    // ...otherwise using a simple radix-2 butterfly scheme
+    //
+    else
+      forall lo in 0..#str {
+        const a = A(lo),
+              b = A(lo+str);
+        A(lo)     = a + b;
+        A(lo+str) = a - b;
+      }
+  }
 }
 
 //
@@ -222,9 +212,11 @@ def butterfly(wk1, wk2, wk3, A, rng) {
 // this iterator generates the stride and span values for the phases
 // of the DFFT simply by yielding tuples: (radix**i, radix**(i+1))
 //
-def genDFTStrideSpan(numElements, start) {
+def genDFTStrideSpan(numElements, phase) {
+  const (start, end) =
+    if phase == 0 then (1, numLocales:int(64)) else (numLocales, numElements-1);
   var stride = start;
-  for i in (log4(start)+1)..log4(numElements-1) {
+  for i in log4(start)+1..log4(end):int {
     const span = stride * radix;
     yield (stride, span);
     stride = span;

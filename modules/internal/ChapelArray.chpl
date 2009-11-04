@@ -529,7 +529,11 @@ record _array {
     }
     _value.makeAlias(A._value);
     _value._arrAlias = A._value;
-    _value._arrAlias._arrCnt$ += 1;
+    pragma "dont disable remote value forwarding"
+    def help() {
+      _value._arrAlias._arrCnt$ += 1;
+    }
+    help();
   }
 
   pragma "inline"
@@ -623,17 +627,25 @@ record _array {
 
   def newAlias() {
     var x = _value.reindex(_value.dom);
-    _value.dom._domCnt$ += 1;
     x._arrAlias = _value;
-    x._arrAlias._arrCnt$ += 1;
+    pragma "dont disable remote value forwarding"
+    def help() {
+      _value.dom._domCnt$ += 1;
+      x._arrAlias._arrCnt$ += 1;
+    }
+    help();
     return _newArray(x);
   }
 
   def reindex(d: domain) where rank == 1 {
     var x = _value.reindex(d._value);
-    d._value._domCnt$ += 1;
     x._arrAlias = _value;
-    x._arrAlias._arrCnt$ += 1;
+    pragma "dont disable remote value forwarding"
+    def help() {
+      d._value._domCnt$ += 1;
+      x._arrAlias._arrCnt$ += 1;
+    }
+    help();
     return _newArray(x);
   }
 
