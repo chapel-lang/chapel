@@ -202,6 +202,8 @@ enum PrimitiveTag {
   
   PRIM_COUNT_NUM_REALMS,
 
+  PRIM_FTABLE_CALL,
+
   NUM_KNOWN_PRIMS
 };
 

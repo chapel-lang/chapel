@@ -265,7 +265,8 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
 }
 
 
-static Map<FnSymbol*,Vec<FnSymbol*>*> recursiveIteratorMap;
+static Map<FnSymbol*,Vec<FnSymbol*>*> iterator2iteratorFnMap;
+static Map<FnSymbol*,Vec<FnSymbol*>*> iterator2loopFnMap;
 
 static void
 expandIteratorInline(CallExpr* call) {
@@ -296,6 +297,8 @@ expandIteratorInline(CallExpr* call) {
 
     FnSymbol* loopBodyFnWrapper = new FnSymbol(astr("_rec_iter_loop_wrapper_", call->parentSymbol->name));
     call->parentSymbol->defPoint->insertBefore(new DefExpr(loopBodyFnWrapper));
+    ftableVec.add(loopBodyFnWrapper);
+    ftableMap.put(loopBodyFnWrapper, ftableVec.n-1);
 
     //
     // insert a call to the iterator function (using iterator as a
@@ -304,7 +307,7 @@ expandIteratorInline(CallExpr* call) {
     // build this to capture the actual arguments that should be
     // passed to it when this function is flattened)
     //
-    CallExpr* iteratorFnCall = new CallExpr(iterator, ic, loopBodyFnWrapper);
+    CallExpr* iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)));
     // replace function in iteratorFnCall with iterator function once that is created
     CallExpr* loopBodyFnCall = new CallExpr(loopBodyFn, gVoid);
     // use and remove loopBodyFnCall later
@@ -320,25 +323,30 @@ expandIteratorInline(CallExpr* call) {
     nestedFunctions.add(loopBodyFn);
     flattenNestedFunctions(nestedFunctions);
 
-    Vec<FnSymbol*>* iteratorFnVec = recursiveIteratorMap.get(iterator);
+    Vec<FnSymbol*>* iteratorFnVec = iterator2iteratorFnMap.get(iterator);
+    Vec<FnSymbol*>* loopFnVec = iterator2loopFnMap.get(iterator);
     FnSymbol* iteratorFn = NULL;
     if (!iteratorFnVec) {
       iteratorFnVec = new Vec<FnSymbol*>();
-      recursiveIteratorMap.put(iterator, iteratorFnVec);
+      iterator2iteratorFnMap.put(iterator, iteratorFnVec);
+      loopFnVec = new Vec<FnSymbol*>();
+      iterator2loopFnMap.put(iterator, loopFnVec);
     }
-    forv_Vec(FnSymbol, fn, *iteratorFnVec) {
+    for (int i = 0; i < iteratorFnVec->n; i++) {
+      FnSymbol* cachedIteratorFn = iteratorFnVec->v[i];
+      FnSymbol* cachedLoopFn = loopFnVec->v[i];
+      INT_ASSERT(cachedIteratorFn);
+      INT_ASSERT(cachedLoopFn);
       bool found = true;
-      FnType* ft = toFnType(fn->getFormal(2)->typeInfo());
-      INT_ASSERT(ft);
-      if (loopBodyFn->numFormals() != ft->function->numFormals())
+      if (loopBodyFn->numFormals() != cachedLoopFn->numFormals())
         continue;
       for (int i = 1; i <= loopBodyFn->numFormals(); i++) {
         if (!equivalentTypes(loopBodyFn->getFormal(i)->typeInfo(),
-                             ft->function->getFormal(i)->typeInfo()))
+                             cachedLoopFn->getFormal(i)->typeInfo()))
           found = false;
       }
       if (found) {
-        iteratorFn = fn;
+        iteratorFn = cachedIteratorFn;
         break;
       }
     }
@@ -353,7 +361,7 @@ expandIteratorInline(CallExpr* call) {
       ArgSymbol* icArg = new ArgSymbol(INTENT_BLANK, "_ic", ic->type);
       iteratorFn->insertFormalAtTail(icArg);
       replaceIteratorFormalsWithIteratorFields(iterator, icArg, asts);
-      ArgSymbol* loopBodyFnArg = new ArgSymbol(INTENT_BLANK, "_loopBodyFn", createFnType(loopBodyFn));
+      ArgSymbol* loopBodyFnArg = new ArgSymbol(INTENT_BLANK, "_loopBodyFn", dtInt[INT_SIZE_32]);
       iteratorFn->insertFormalAtTail(loopBodyFnArg);
       ArgSymbol* loopBodyFnArgArgs = new ArgSymbol(INTENT_BLANK, "_loopBodyFnArgs", argsBundleType);
       iteratorFn->insertFormalAtTail(loopBodyFnArgArgs);
@@ -363,7 +371,7 @@ expandIteratorInline(CallExpr* call) {
             Symbol* yieldedIndex = newTemp("_yieldedIndex", index->type);
             call->insertBefore(new DefExpr(yieldedIndex));
             call->insertBefore(new CallExpr(PRIM_MOVE, yieldedIndex, call->get(1)->remove()));
-            CallExpr* loopBodyFnArgCall = new CallExpr(loopBodyFnArg, yieldedIndex, loopBodyFnArgArgs);
+            CallExpr* loopBodyFnArgCall = new CallExpr(PRIM_FTABLE_CALL, loopBodyFnArg, yieldedIndex, loopBodyFnArgArgs);
             call->replace(loopBodyFnArgCall);
           }
           if (call->isPrimitive(PRIM_RETURN))
@@ -375,6 +383,7 @@ expandIteratorInline(CallExpr* call) {
       iteratorFn->removeFlag(FLAG_INLINE_ITERATOR);
       iteratorFn->removeFlag(FLAG_ITERATOR_FN);
       iteratorFnVec->add(iteratorFn);
+      loopFnVec->add(loopBodyFn);
     } else {
       iteratorFnCall->baseExpr->replace(new SymExpr(iteratorFn));
       bundleLoopBodyFnArgsForIteratorFnCall(iteratorFnCall, loopBodyFnCall, loopBodyFnWrapper);

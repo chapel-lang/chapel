@@ -41,7 +41,8 @@ VarSymbol *gBoundsChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
 
-Map<FnSymbol*,int> ftable;
+Map<FnSymbol*,int> ftableMap;
+Vec<FnSymbol*> ftableVec;
 
 Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),

@@ -396,6 +396,8 @@ prune() {
   Vec<FnSymbol*> fns;
   Vec<TypeSymbol*> types;
   pruneVisit(chpl_main, fns, types);
+  forv_Vec(FnSymbol, fn, ftableVec)
+    pruneVisit(fn, fns, types);
   if (fRuntime) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_EXPORT))

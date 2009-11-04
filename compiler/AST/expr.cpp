@@ -2123,43 +2123,34 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_COUNT_NUM_REALMS:
       INT_FATAL(this, "count num realms primitive should no longer be in AST");
       break;
+    case PRIM_FTABLE_CALL:
+      //
+      // indirect function call via a function pointer
+      //
+      fprintf(outfile, "((void(*)(");
+      get(2)->typeInfo()->codegen(outfile);
+      if (isRecord(get(2)->typeInfo()))
+        fprintf(outfile, "*");
+      fprintf(outfile, ",");
+      get(3)->typeInfo()->codegen(outfile);
+      if (isRecord(get(3)->typeInfo()))
+        fprintf(outfile, "*");
+      fprintf(outfile, "))*chpl_ftable[");
+      get(1)->codegen(outfile);
+      fprintf(outfile, "])(");
+      if (isRecord(get(2)->typeInfo()))
+        fprintf(outfile, "&");
+      get(2)->codegen(outfile);
+      fprintf(outfile, ", ");
+      if (isRecord(get(3)->typeInfo()))
+        fprintf(outfile, "&");
+      get(3)->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
     }
     if (getStmtExpr() && getStmtExpr() == this)
       fprintf(outfile, ";\n");
     return;
-  }
-
-  //
-  // indirect function call via a function pointer
-  //
-  if (Symbol* base = toSymExpr(baseExpr)->var) {
-    if (!isFnSymbol(base) && isFnType(base->type)) {
-      fprintf(outfile, "((void(*)(");
-      bool first = true;
-      for_actuals(actual, this) {
-        if (!first)
-          fprintf(outfile, ",");
-        Type* actualType = actual->typeInfo();
-        actualType->codegen(outfile);
-        if (isRecord(actualType) || isUnion(actualType))
-          fprintf(outfile, "*");
-        first = false;
-      }
-      fprintf(outfile, "))*%s)(", base->cname);
-      first = true;
-      for_actuals(actual, this) {
-        if (!first)
-          fprintf(outfile, ", ");
-        if (isRecord(actual->typeInfo()) || isUnion(actual->typeInfo()))
-          fprintf(outfile, "&");
-        actual->codegen(outfile);
-        first = false;
-      }
-      fprintf(outfile, ")");
-      if (getStmtExpr() && getStmtExpr() == this)
-        fprintf(outfile, ";\n");
-      return;
-    }
   }
 
   FnSymbol* fn = isResolved();
@@ -2167,7 +2158,7 @@ void CallExpr::codegen(FILE* outfile) {
 
   if (fn->hasFlag(FLAG_BEGIN_BLOCK)) {
     fputs("CHPL_ADD_TO_TASK_LIST(", outfile);
-    fprintf(outfile, "/* %s */ %d, ", fn->cname, ftable.get(fn));
+    fprintf(outfile, "/* %s */ %d, ", fn->cname, ftableMap.get(fn));
     fputs("(void*)", outfile);
     if (Expr *actuals = get(1)) {
       actuals->codegen(outfile);
@@ -2205,7 +2196,7 @@ void CallExpr::codegen(FILE* outfile) {
     return;
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
     fputs("CHPL_ADD_TO_TASK_LIST(", outfile);
-    fprintf(outfile, "/* %s */ %d, ", fn->cname, ftable.get(fn));
+    fprintf(outfile, "/* %s */ %d, ", fn->cname, ftableMap.get(fn));
     fputs("(void*)", outfile);
     if (Expr *actuals = get(1)) {
       actuals->codegen (outfile);
@@ -2272,7 +2263,7 @@ void CallExpr::codegen(FILE* outfile) {
     else
       fprintf(outfile, "chpl_comm_fork(");
     get(1)->codegen(outfile);
-    fprintf(outfile, ", /* %s */ %d, ", fn->cname, ftable.get(fn));
+    fprintf(outfile, ", /* %s */ %d, ", fn->cname, ftableMap.get(fn));
     get(2)->codegen(outfile);
     TypeSymbol* argType = toTypeSymbol(get(2)->typeInfo()->symbol);
     if (argType == NULL) {

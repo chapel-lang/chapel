@@ -274,6 +274,7 @@ extern Symbol *gSingleVarAuxFields;
 
 extern Symbol *gTaskList;
 
-extern Map<FnSymbol*,int> ftable;
+extern Map<FnSymbol*,int> ftableMap;
+extern Vec<FnSymbol*> ftableVec;
 
 #endif

@@ -417,21 +417,24 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
 
     fprintf(hdrfile, "\n/*** Function Pointer Table ***/\n\n");
     fprintf(hdrfile, "chpl_fn_p chpl_ftable[] = {\n");
-    int i = 0;
     forv_Vec(FnSymbol, fn, fnSymbols) {
       if (fn->hasFlag(FLAG_BEGIN_BLOCK) ||
           fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
           fn->hasFlag(FLAG_ON_BLOCK)) {
-        if (i > 0)
-          fprintf(hdrfile, ",\n");
-        ftable.put(fn, i++);
-        fprintf(hdrfile, "(chpl_fn_p)%s", fn->cname);
+      ftableVec.add(fn);
+      ftableMap.put(fn, ftableVec.n-1);
       }
     }
-    if (i == 0)
+    bool first = true;
+    forv_Vec(FnSymbol, fn, ftableVec) {
+      if (!first)
+        fprintf(hdrfile, ",\n");
+      fprintf(hdrfile, "(chpl_fn_p)%s", fn->cname);
+      first = false;
+    }
+    if (ftableVec.n == 0)
       fprintf(hdrfile, "(chpl_fn_p)0");
     fprintf(hdrfile, "\n};\n");
-  
     if (fGPU) {
       fprintf(hdrfile, "#else\n");
       fprintf(hdrfile, "extern chpl_fn_p chpl_ftable[];\n");
