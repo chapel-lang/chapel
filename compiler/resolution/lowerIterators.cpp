@@ -215,9 +215,8 @@ static ClassType*
 bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
                                       CallExpr* loopBodyFnCall,
                                       FnSymbol* loopBodyFnWrapper) {
-  ClassType* ct = new ClassType(CLASS_CLASS);
+  ClassType* ct = new ClassType(CLASS_RECORD);
   TypeSymbol* ts = new TypeSymbol("_fn_arg_bundle", ct);
-  ts->addFlag(FLAG_NO_OBJECT);
   iteratorFnCall->parentSymbol->defPoint->insertBefore(new DefExpr(ts));
 
   ClassType* rct = new ClassType(CLASS_CLASS);
@@ -230,10 +229,6 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   
   VarSymbol* tmp = newTemp(ct);
   iteratorFnCall->insertBefore(new DefExpr(tmp));
-  iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                                 new CallExpr(PRIM_CHPL_ALLOC_PERMIT_ZERO,
-                                              ts,
-                                              newMemDesc("compiler-inserted argument bundle"))));
   iteratorFnCall->insertAtTail(tmp);
 
   FnSymbol* loopBodyFn = loopBodyFnCall->isResolved();
@@ -357,7 +352,7 @@ expandIteratorInline(CallExpr* call) {
       iteratorFnCall->baseExpr->replace(new SymExpr(iteratorFn));
       ClassType* argsBundleType = bundleLoopBodyFnArgsForIteratorFnCall(iteratorFnCall, loopBodyFnCall, loopBodyFnWrapper);
       SET_LINENO(iterator);
-      iteratorFn->insertAtTail(iterator->body->copy());
+      iteratorFn->body = iterator->body->copy();
       iterator->defPoint->insertBefore(new DefExpr(iteratorFn));
       Vec<BaseAST*> asts;
       collect_asts(iteratorFn, asts);
@@ -368,32 +363,44 @@ expandIteratorInline(CallExpr* call) {
       iteratorFn->insertFormalAtTail(loopBodyFnArg);
       ArgSymbol* loopBodyFnArgArgs = new ArgSymbol(INTENT_BLANK, "_loopBodyFnArgs", argsBundleType);
       iteratorFn->insertFormalAtTail(loopBodyFnArgArgs);
+
+      //
+      // localize return symbols
+      //
+      Symbol* ret = iteratorFn->getReturnSymbol();
+      Map<BlockStmt*,Symbol*> retReplacementMap;
+      forv_Vec(BaseAST, ast, asts) {
+        if (SymExpr* se = toSymExpr(ast)) {
+          if (se->var == ret) {
+            BlockStmt* block = NULL;
+            for (Expr* parent = se->parentExpr; parent; parent = parent->parentExpr) {
+              block = toBlockStmt(parent);
+              if (block)
+                break;
+            }
+            INT_ASSERT(block);
+            if (block != ret->defPoint->parentExpr) {
+              if (Symbol* repl = retReplacementMap.get(block)) {
+                se->var = repl;
+              } else {
+                Symbol* newRet = newTemp(ret->type);
+                block->insertAtHead(new CallExpr(PRIM_MOVE, newRet, ret));
+                block->insertAtHead(new DefExpr(newRet));
+                se->var = newRet;
+                retReplacementMap.put(block, newRet);
+              }
+            }
+          }
+        }
+      }
+
       forv_Vec(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
           if (call->isPrimitive(PRIM_YIELD)) {
             SET_LINENO(call);
             Symbol* yieldedIndex = newTemp("_yieldedIndex", index->type);
-            Symbol* yieldedSymbol = toSymExpr(call->get(1))->var;
-            INT_ASSERT(yieldedSymbol);
-
-            // remove move to return-temp that is defined at top of iterator
-            bool inserted = false;
-            if (CallExpr* prev = toCallExpr(call->prev)) {
-              if (prev->isPrimitive(PRIM_MOVE)) {
-                if (SymExpr* lhs = toSymExpr(prev->get(1))) {
-                  if (lhs->var == yieldedSymbol) {
-                    lhs->var = yieldedIndex;
-                    prev->insertBefore(new DefExpr(yieldedIndex));
-                    inserted = true;
-                  }
-                }
-              }
-            }
-
-            if (!inserted) {
-              call->insertBefore(new DefExpr(yieldedIndex));
-              call->insertBefore(new CallExpr(PRIM_MOVE, yieldedIndex, call->get(1)->remove()));
-            }
+            call->insertBefore(new DefExpr(yieldedIndex));
+            call->insertBefore(new CallExpr(PRIM_MOVE, yieldedIndex, call->get(1)->remove()));
             CallExpr* loopBodyFnArgCall = new CallExpr(PRIM_FTABLE_CALL, loopBodyFnArg, yieldedIndex, loopBodyFnArgArgs);
             call->replace(loopBodyFnArgCall);
           } else if (call->isPrimitive(PRIM_RETURN)) {

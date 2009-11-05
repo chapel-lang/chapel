@@ -13,12 +13,12 @@ def main() {
   var A, B, C: [ProblemSpace] elemType;
 
   var randlist = new RandomStream(seed);
-  randlist.fillRandom(B);
-  randlist.fillRandom(C);
-  startCommDiagnostics();
+  //  randlist.fillRandom(B);
+  //  randlist.fillRandom(C);
+  startVerboseComm(); // startCommDiagnostics();
   forall (a, b, c) in (A, B, C) do
     a = b + alpha * c;
-  stopCommDiagnostics();
+  stopVerboseComm(); // stopCommDiagnostics();
 
   writeln("B: ", B);
   writeln("C: ", C);
