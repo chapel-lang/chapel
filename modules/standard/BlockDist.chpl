@@ -20,7 +20,6 @@
 //    copies of this distribution.
 //
 
-config param disableRecursiveLeader = false;
 
 config param debugBlockDist = false; // internal development flag (debugging)
 
@@ -653,68 +652,30 @@ def BlockArr.these() var {
 // logic?  (e.g., can we forward the forall to the global domain
 // somehow?
 //
-def BlockArr.these(param tag: iterator, i:int = dom.dist.targetLocDom.low): rank*range(idxType) where tag == iterator.leader {
-  if !disableRecursiveLeader && rank == 1 {
-    const high = dom.dist.targetLocDom.high;
-    const left = (i+1)*2-1;
-    const right = (i+1)*2;
-    const pid = this.pid;
-    cobegin {
-      if left <= high then
-        on dom.locDoms(left) {
-          var myThis = __primitive("chpl_getPrivatizedClass", this, pid);
-          for i in myThis.these(tag, left) do
-            yield i;
-        }
-      if right <= high then
-        on dom.locDoms(right) {
-          var myThis = __primitive("chpl_getPrivatizedClass", this, pid);
-          for i in myThis.these(tag, right) do
-            yield i;
-        }
-      {
-        var tmpBlock = dom.locDoms(i).myBlock - dom.whole.low;
-        const numTasks = dom.dist.tasksPerLocale;
-        var locBlock: rank*range(idxType);
-        for param i in 1..tmpBlock.rank {
-          locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
-        }
-        if (numTasks == 1) {
-          yield locBlock;
-        } else {
-          coforall taskid in 0..#numTasks {
-            var tuple: rank*range(idxType) = locBlock;
-            const (lo,hi) = _computeBlock(locBlock(1).low, locBlock(1).length,
-                                          locBlock(1).low, locBlock(1).high,
-                                          numTasks, taskid);
-            tuple(1) = lo..hi;
-            yield tuple;
-          }
-        }
-      }
+def BlockArr.these(param tag: iterator) where tag == iterator.leader {
+  const precomputedNumTasks = dom.dist.tasksPerLocale;
+  const precomputedWholeLow = dom.whole.low;
+  coforall locDom in dom.locDoms do on locDom {
+    var tmpBlock = locDom.myBlock - precomputedWholeLow;
+    const numTasks = precomputedNumTasks;
+    var locBlock: rank*range(idxType);
+    for param i in 1..tmpBlock.rank {
+      locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
     }
-  } else {
-    const precomputedNumTasks = dom.dist.tasksPerLocale;
-    const precomputedWholeLow = dom.whole.low;
-    coforall locDom in dom.locDoms do on locDom {
-      var tmpBlock = locDom.myBlock - precomputedWholeLow;
-      const numTasks = precomputedNumTasks;
-      var locBlock: rank*range(idxType);
-      for param i in 1..tmpBlock.rank {
-        locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
-      }
-      if (numTasks == 1) {
-        yield locBlock;
-      } else {
-        coforall taskid in 0..#numTasks {
-          var tuple: rank*range(idxType) = locBlock;
-          const (lo,hi) = _computeBlock(locBlock(1).low, locBlock(1).length,
-                                        locBlock(1).low, locBlock(1).high,
-                                        numTasks, taskid);
-          tuple(1) = lo..hi;
-          yield tuple;
 
-        }
+
+    if (numTasks == 1) {
+      yield locBlock;
+    } else {
+      coforall taskid in 0..#numTasks {
+        var tuple: rank*range(idxType) = locBlock;
+        const (lo,hi) = _computeBlock(locBlock(1).low, locBlock(1).length,
+                                      locBlock(1).low, locBlock(1).high,
+                                      numTasks, taskid);
+          
+        tuple(1) = lo..hi;
+        yield tuple;
+
       }
     }
   }
