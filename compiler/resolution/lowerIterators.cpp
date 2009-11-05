@@ -190,33 +190,13 @@ replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic, Vec<Bas
 }
 
 
-//
-// return true if either hold
-//   the types are equal
-//   the types are both function types and their formal types are equivalent
-//
-static bool
-equivalentTypes(Type* t1, Type* t2) {
-  if (t1 == t2)
-    return true;
-  if (isFnType(t1) && isFnType(t2))
-    return true;
-  if (!strcmp(t1->symbol->name, "_fn_arg_bundle") &&
-      !strcmp(t2->symbol->name, "_fn_arg_bundle"))
-    return true;
-  if (!strcmp(t1->symbol->name, "_ref_fn_arg_bundle") &&
-      !strcmp(t2->symbol->name, "_ref_fn_arg_bundle"))
-    return true;
-  return false;
-}
-
-
 static ClassType* 
 bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
                                       CallExpr* loopBodyFnCall,
                                       FnSymbol* loopBodyFnWrapper) {
-  ClassType* ct = new ClassType(CLASS_RECORD);
+  ClassType* ct = new ClassType(CLASS_CLASS);
   TypeSymbol* ts = new TypeSymbol("_fn_arg_bundle", ct);
+  ts->addFlag(FLAG_NO_OBJECT);
   iteratorFnCall->parentSymbol->defPoint->insertBefore(new DefExpr(ts));
 
   ClassType* rct = new ClassType(CLASS_CLASS);
@@ -229,6 +209,10 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   
   VarSymbol* tmp = newTemp(ct);
   iteratorFnCall->insertBefore(new DefExpr(tmp));
+  iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, tmp,
+                                 new CallExpr(PRIM_CHPL_ALLOC_PERMIT_ZERO,
+                                              ts,
+                                              newMemDesc("compiler-inserted argument bundle"))));
   iteratorFnCall->insertAtTail(tmp);
 
   FnSymbol* loopBodyFn = loopBodyFnCall->isResolved();
@@ -260,8 +244,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
 }
 
 
-static Map<FnSymbol*,Vec<FnSymbol*>*> iterator2iteratorFnMap;
-static Map<FnSymbol*,Vec<FnSymbol*>*> iterator2loopFnMap;
+static Map<FnSymbol*,FnSymbol*> iteratorFnMap;
 
 static void
 expandIteratorInline(CallExpr* call) {
@@ -318,33 +301,7 @@ expandIteratorInline(CallExpr* call) {
     nestedFunctions.add(loopBodyFn);
     flattenNestedFunctions(nestedFunctions);
 
-    Vec<FnSymbol*>* iteratorFnVec = iterator2iteratorFnMap.get(iterator);
-    Vec<FnSymbol*>* loopFnVec = iterator2loopFnMap.get(iterator);
-    FnSymbol* iteratorFn = NULL;
-    if (!iteratorFnVec) {
-      iteratorFnVec = new Vec<FnSymbol*>();
-      iterator2iteratorFnMap.put(iterator, iteratorFnVec);
-      loopFnVec = new Vec<FnSymbol*>();
-      iterator2loopFnMap.put(iterator, loopFnVec);
-    }
-    for (int i = 0; i < iteratorFnVec->n; i++) {
-      FnSymbol* cachedIteratorFn = iteratorFnVec->v[i];
-      FnSymbol* cachedLoopFn = loopFnVec->v[i];
-      INT_ASSERT(cachedIteratorFn);
-      INT_ASSERT(cachedLoopFn);
-      bool found = true;
-      if (loopBodyFn->numFormals() != cachedLoopFn->numFormals())
-        continue;
-      for (int i = 1; i <= loopBodyFn->numFormals(); i++) {
-        if (!equivalentTypes(loopBodyFn->getFormal(i)->typeInfo(),
-                             cachedLoopFn->getFormal(i)->typeInfo()))
-          found = false;
-      }
-      if (found) {
-        iteratorFn = cachedIteratorFn;
-        break;
-      }
-    }
+    FnSymbol* iteratorFn = iteratorFnMap.get(iterator);
     if (!iteratorFn) {
       SET_LINENO(iterator);
       iteratorFn = new FnSymbol(astr("_rec_iter_fn_", iterator->name));
@@ -412,8 +369,7 @@ expandIteratorInline(CallExpr* call) {
       iteratorFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
       iteratorFn->removeFlag(FLAG_INLINE_ITERATOR);
       iteratorFn->removeFlag(FLAG_ITERATOR_FN);
-      iteratorFnVec->add(iteratorFn);
-      loopFnVec->add(loopBodyFn);
+      iteratorFnMap.put(iterator, iteratorFn);
     } else {
       iteratorFnCall->baseExpr->replace(new SymExpr(iteratorFn));
       bundleLoopBodyFnArgsForIteratorFnCall(iteratorFnCall, loopBodyFnCall, loopBodyFnWrapper);
