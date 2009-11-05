@@ -1922,7 +1922,7 @@ void CallExpr::codegen(FILE* outfile) {
         if (isRecord(typeInfo()) || isUnion(typeInfo())) {
           fprintf(outfile, "(*((");
           typeInfo()->codegen(outfile);
-          fprintf(outfile, "*)(&(");
+          fprintf(outfile, "*)(void*)(&(");
           get(2)->codegen(outfile);
           fprintf(outfile, "))))");
         } else {
