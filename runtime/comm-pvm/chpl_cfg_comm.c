@@ -100,8 +100,8 @@ static int chpl_comm_forks = 0;
 static int chpl_comm_nb_forks = 0;
 static int chpl_comm_no_debug_private = 0;
 
-int parent = -23;   // used to send messages back to launcher
-int tids[64]; // tid list for all nodes
+int parent = PvmNoParent;   // used to send messages back to launcher
+int tids[64];               // tid list for all nodes
 int instance;
 
 int okay_to_barrier = 1;
@@ -1138,10 +1138,11 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   // Initialize locks
   CHPL_MUTEX_INIT(&pvm_lock);
 
-  // Figure out who spawned this thread (if no one, this will be -23).
-  // Still need to lock call, but since -23 is perfectly okay, don't fail.
+  // Figure out who spawned this thread (if no one, this will be PvmNoParent).
+  // Still need to lock call, but since PvmNoParent is perfectly okay, don't
+  // fail. In PVM 3.4.6, the error code matching PvmNoParent is -23.
   PVM_LOCK_UNLOCK_SAFE_OKAY_TO_FAIL(parent = pvm_parent(), "pvm_parent", "chpl_comm_init");
-  if ((parent < 0) && (parent != -23)) {
+  if ((parent < 0) && (parent != PvmNoParent)) {
 #if CHPL_DIST_DEBUG
     sprintf(debugMsg, "\n\n%d PVM call failed.\n\n", (int)pthread_self());
     chpl_error(debugMsg, 0, 0);
