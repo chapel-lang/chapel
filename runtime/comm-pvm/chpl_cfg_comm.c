@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stdarg.h>
@@ -103,6 +102,7 @@ static int chpl_comm_no_debug_private = 0;
 
 static int parent = PvmNoParent;   // used to send messages back to launcher
 static int *tids;                  // tid list for all nodes
+static char jobname[64];           // used for PVM groups
 
 static int okay_to_barrier = 1;
 static volatile int okaypoll = 0;
@@ -1153,20 +1153,26 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   }
 
   // Figure out how many nodes there are
-  chpl_numLocales = (int32_t)atoi((*argv_p)[*argc_p - 1]);
+  chpl_numLocales = (int32_t)atoi((*argv_p)[*argc_p - 2]);
+  
+  // Get a unique job name for the PVM group name to use throughout life of
+  // this application.
+  sprintf(jobname, "job%s", (*argv_p)[*argc_p - 1]);
 
-  // Join the group of all nodes (named "job")
+  // Join the group of all nodes (named "job" plus launcher pid)
   // Barrier until everyone (numLocales) has joined
   // Make sure the chpl_localeID lines up with the join order
-  PVM_LOCK_UNLOCK_SAFE(chpl_localeID = pvm_joingroup((char *)"job"), "pvm_joingroup", "chpl_comm_init");
+  PVM_LOCK_UNLOCK_SAFE(chpl_localeID = pvm_joingroup((char *)jobname), "pvm_joingroup", "chpl_comm_init");
   chpl_comm_barrier("Waiting for all tasks to join group.");
 
   // Figure out who everyone is
-  PVM_LOCK_UNLOCK_SAFE(max = pvm_gsize((char *)"job"), "pvm_gsize", "chpl_comm_init");
-  assert(max == chpl_numLocales);
+  PVM_LOCK_UNLOCK_SAFE(max = pvm_gsize((char *)jobname), "pvm_gsize", "chpl_comm_init");
+  if (max != chpl_numLocales) {
+    chpl_internal_error("PVM group configuration failed");
+  }
   tids = chpl_malloc(chpl_numLocales, sizeof(int), CHPL_RT_MD_PVM_LIST_OF_NODES, 0, 0);
   for (i=0; i < chpl_numLocales; i++) {
-    PVM_LOCK_UNLOCK_SAFE(tids[i] = pvm_gettid((char *)"job", i), "pvm_gettid", "chpl_comm_init");
+    PVM_LOCK_UNLOCK_SAFE(tids[i] = pvm_gettid((char *)jobname, i), "pvm_gettid", "chpl_comm_init");
   }
   
 #if CHPL_DIST_DEBUG
@@ -1191,7 +1197,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   // Drop the last argument: the numLocales from the launcher.
   // It confuses parseArgs, and we've already captured it.
-  *argc_p = *argc_p - 1;
+  *argc_p = *argc_p - 2;
   return;
 }
 
@@ -1313,7 +1319,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
       PVM_NO_LOCK_SAFE(pvm_pkint(&size, 1, 1), "pvm_pkint", "chpl_comm_broadcast_global_vars");
       PVM_NO_LOCK_SAFE(pvm_pkbyte((char *)chpl_globals_registry[i], size, 1), "pvm_pkbyte", "chpl_comm_broadcast_global_vars");
 #endif
-      PVM_UNLOCK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_broadcast_global_vars");
+      PVM_UNLOCK_SAFE(pvm_bcast((char *)jobname, BCASTTAG), "pvm_bcast", "chpl_comm_broadcast_global_vars");
     } else {
       PVM_LOCK_SAFE(pvm_recv(-1, BCASTTAG), "pvm_recv", "chpl_comm_broadcast_global_vars");
 #ifdef CHPL_COMM_HETEROGENEOUS
@@ -1400,7 +1406,7 @@ void chpl_comm_barrier(const char *msg) {
   }
   if (!(strcmp(msg, "barrier before main"))) {
     // Accounts for the barrier before the main loop.
-    PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_barrier");
+    PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)jobname, chpl_numLocales), "pvm_barrier", "chpl_comm_barrier");
     return;
   }
   if (!okay_to_barrier) {
@@ -1423,9 +1429,9 @@ void chpl_comm_barrier(const char *msg) {
     // everyone else is waiting here. Let all these nodes exit, but
     // note that chpl_comm_exit_any() tells node 0 to stop polling (and
     // hence exit).
-    PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)"job", (chpl_numLocales - 1)), "pvm_barrier", "chpl_comm_barrier");
+    PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)jobname, (chpl_numLocales - 1)), "pvm_barrier", "chpl_comm_barrier");
   } else {
-    PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_barrier");
+    PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)jobname, chpl_numLocales), "pvm_barrier", "chpl_comm_barrier");
   }
 
   return;
@@ -1447,16 +1453,16 @@ void chpl_comm_exit_all(int status) {
     okay_to_barrier = 1;
     PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
     PVM_NO_LOCK_SAFE(pvm_pkint(&okay_to_barrier, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
-    PVM_UNLOCK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
+    PVM_UNLOCK_SAFE(pvm_bcast((char *)jobname, BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
     // Do a matching barrier to everyone still in chpl_comm_barrier.
-    PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_exit_all");
+    PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)jobname, chpl_numLocales), "pvm_barrier", "chpl_comm_exit_all");
   }
   msg_info.msg_type = ChplCommFinish;
   chpl_pvm_send(chpl_localeID, TAGMASK+1, &msg_info, sizeof(_chpl_message_info));
   PRINTF("Sent shutdown message.");
   chpl_comm_barrier("About to finalize");
 
-  PVM_LOCK_UNLOCK_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_all");
+  PVM_LOCK_UNLOCK_SAFE(pvm_lvgroup((char *)jobname), "pvm_lvgroup", "chpl_comm_exit_all");
   // Send a signal back to the launcher that we're done.
   commsig = CommHalt;
   if (parent >= 0) {
@@ -1486,21 +1492,21 @@ void chpl_comm_exit_any(int status) {
     okay_to_barrier = 1;
     PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
     PVM_NO_LOCK_SAFE(pvm_pkint(&okay_to_barrier, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
-    PVM_UNLOCK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
+    PVM_UNLOCK_SAFE(pvm_bcast((char *)jobname, BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
     // Do a matching barrier to everyone still in chpl_comm_barrier.
-    PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)"job", chpl_numLocales), "pvm_barrier", "chpl_comm_exit_all");
+    PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)jobname, chpl_numLocales), "pvm_barrier", "chpl_comm_exit_all");
   } else {
     okay_to_barrier = 2;
     PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
     PVM_NO_LOCK_SAFE(pvm_pkint(&okay_to_barrier, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
-    PVM_UNLOCK_SAFE(pvm_bcast((char *)"job", BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
+    PVM_UNLOCK_SAFE(pvm_bcast((char *)jobname, BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
   }
   msg_info.msg_type = ChplCommFinish;
   chpl_pvm_send(chpl_localeID, TAGMASK+1, &msg_info, sizeof(_chpl_message_info));
   PRINTF("Sent shutdown message.");
   chpl_comm_barrier("About to finalize");
 
-  PVM_LOCK_UNLOCK_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_all");
+  PVM_LOCK_UNLOCK_SAFE(pvm_lvgroup((char *)jobname), "pvm_lvgroup", "chpl_comm_exit_all");
   // Send a signal back to the launcher that we're done.
   commsig = CommHalt;
   if (parent >= 0) {

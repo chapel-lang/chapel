@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
+#include <unistd.h>
 
 #include "pvm3.h"
 
@@ -229,6 +230,7 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
 
   char nameofbin[1024];
   char numlocstr[128];
+  char numpidstr[128];
 
   // Add nodes to PVM configuration.
   FILE* nodelistfile;
@@ -256,14 +258,16 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   // The last argument needs to be the number of locations for the PVM
   // comm layer to use it. The comm layer strips this off.
 
-  argv2 = chpl_malloc(((argc+1) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
+  argv2 = chpl_malloc(((argc+2) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
   memalloced |= M_ARGV2;
   for (i=0; i < (argc-1); i++) {
     argv2[i] = argv[i+1];
   }
   sprintf(numlocstr, "%d", numLocales);
+  sprintf(numpidstr, "%d", (int)getpid());
   argv2[argc-1] = numlocstr;
-  argv2[argc] = NULL;
+  argv2[argc] = numpidstr;
+  argv2[argc+1] = NULL;
 
   // Add nodes to PVM configuration.
   i = 0;
