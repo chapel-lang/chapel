@@ -102,7 +102,7 @@ static int chpl_comm_nb_forks = 0;
 static int chpl_comm_no_debug_private = 0;
 
 static int parent = PvmNoParent;   // used to send messages back to launcher
-static int tids[64];               // tid list for all nodes
+static int *tids;                  // tid list for all nodes
 
 static int okay_to_barrier = 1;
 static volatile int okaypoll = 0;
@@ -1164,7 +1164,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   // Figure out who everyone is
   PVM_LOCK_UNLOCK_SAFE(max = pvm_gsize((char *)"job"), "pvm_gsize", "chpl_comm_init");
   assert(max == chpl_numLocales);
-  for (i=0; i < max; i++) {
+  tids = chpl_malloc(chpl_numLocales, sizeof(int), CHPL_RT_MD_PVM_LIST_OF_NODES, 0, 0);
+  for (i=0; i < chpl_numLocales; i++) {
     PVM_LOCK_UNLOCK_SAFE(tids[i] = pvm_gettid((char *)"job", i), "pvm_gettid", "chpl_comm_init");
   }
   
@@ -1464,6 +1465,7 @@ void chpl_comm_exit_all(int status) {
     PVM_UNLOCK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
   }
 
+  chpl_free(tids, 0, 0);
   pvm_exit();
   return;
 }
@@ -1507,6 +1509,7 @@ void chpl_comm_exit_any(int status) {
     PVM_UNLOCK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
   }
 
+  chpl_free(tids, 0, 0);
   pvm_exit();
   return;
 }
