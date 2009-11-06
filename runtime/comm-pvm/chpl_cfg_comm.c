@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stdarg.h>
@@ -1162,6 +1163,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   // Figure out who everyone is
   PVM_LOCK_UNLOCK_SAFE(max = pvm_gsize((char *)"job"), "pvm_gsize", "chpl_comm_init");
+  assert(max == chpl_numLocales);
   for (i=0; i < max; i++) {
     PVM_LOCK_UNLOCK_SAFE(tids[i] = pvm_gettid((char *)"job", i), "pvm_gettid", "chpl_comm_init");
   }
