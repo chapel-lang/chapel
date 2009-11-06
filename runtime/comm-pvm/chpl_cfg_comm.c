@@ -105,9 +105,7 @@ int tids[64]; // tid list for all nodes
 int instance;
 
 int okay_to_barrier = 1;
-int okaypoll = 0;
-pthread_mutex_t okay_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t okay_to_poll = PTHREAD_COND_INITIALIZER;
+volatile int okaypoll = 0;
 int commsig = 0;     // signal to parent process what to do
                      // 0: noop
                      // 1: halt
@@ -1020,12 +1018,9 @@ static void polling(void* x) {
   PRINTF("Starting PVM polling thread");
   finished = 0;
 
-  pthread_mutex_lock(&okay_mutex);
   while (okaypoll == 0) {
-    pthread_cond_wait(&okay_to_poll, &okay_mutex);
     sched_yield();
   }
-  pthread_mutex_unlock(&okay_mutex);
 
   while (!finished) {
     PRINTF("Poller Receiving");
@@ -1110,8 +1105,6 @@ static void polling(void* x) {
       PRINTF("ChplCommFinish\n");
       fflush(stdout);
       fflush(stderr);
-      pthread_mutex_destroy(&okay_mutex);
-      pthread_cond_destroy(&okay_to_poll);
       finished = 1;
       break;
     }
@@ -1269,9 +1262,6 @@ void chpl_comm_rollcall(void) {
     okay_to_barrier = 0;
   }
   okaypoll = 1;
-  pthread_mutex_lock(&okay_mutex);
-  pthread_cond_signal(&okay_to_poll);
-  pthread_mutex_unlock(&okay_mutex);
   return;
 }
 
