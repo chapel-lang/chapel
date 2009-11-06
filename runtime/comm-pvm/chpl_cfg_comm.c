@@ -105,12 +105,6 @@ static int tids[64];               // tid list for all nodes
 
 static int okay_to_barrier = 1;
 static volatile int okaypoll = 0;
-static int commsig = 0;     // signal to parent process what to do
-                            // 0: noop
-                            // 1: halt
-                            // 2: fprintf
-                            // 3: printf
-                            // 4: gdb
 
 extern int fileno(FILE *stream);
 extern const int chpl_max_fields_per_type;
@@ -136,6 +130,15 @@ typedef enum {
   ChplCommFinish,
   ChplCommBroadcastPrivate
 } ChplCommMsgType;
+
+// signal to parent process what to do
+typedef enum {
+  CommNoop,
+  CommHalt,
+  CommFprintf,
+  CommPrintf,
+  CommGDB
+} CommSignals;
 
 //
 // Sent over network for every chpl_comm_get, _put, _fork, or _fork_nb.
@@ -1197,8 +1200,10 @@ static int mysystem(const char* command, const char* description, int ignorestat
   int status;
   int bufid = 0;
   int me = tids[chpl_localeID];
+  int commsig = CommNoop;
+
   if (parent >= 0) {
-    commsig = 4;
+    commsig = CommGDB;
 
     PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "mysystem");
     PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "mysystem");
@@ -1208,7 +1213,7 @@ static int mysystem(const char* command, const char* description, int ignorestat
     PVM_NO_LOCK_SAFE(pvm_pkint(&ignorestatus, 1, 1), "pvm_pkint", "mysystem");
     PVM_UNLOCK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "mysystem");
 
-    commsig = 0;
+    commsig = CommNoop;
 
     while (bufid == 0) {
       PVM_LOCK_SAFE(bufid = pvm_nrecv(parent, NOTIFYTAG), "pvm_nrecv", "mysystem");
@@ -1426,6 +1431,8 @@ void chpl_comm_barrier(const char *msg) {
 
 void chpl_comm_exit_all(int status) {
   _chpl_message_info msg_info;
+  int commsig = CommNoop;
+
   PRINTF("chpl_comm_exit_all called");
   // Matches code in chpl_comm_barrier. Node 0, on exit, needs to signal
   // to everyone that it's okay to barrier (and thus exit).
@@ -1449,7 +1456,7 @@ void chpl_comm_exit_all(int status) {
 
   PVM_LOCK_UNLOCK_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_all");
   // Send a signal back to the launcher that we're done.
-  commsig = 1;
+  commsig = CommHalt;
   if (parent >= 0) {
     PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
     PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
@@ -1462,6 +1469,8 @@ void chpl_comm_exit_all(int status) {
 
 void chpl_comm_exit_any(int status) {
   _chpl_message_info msg_info;
+  int commsig = CommNoop;
+
   PRINTF("chpl_comm_exit_any called");
   // Matches code in chpl_comm_barrier. Node 0, on exit, needs to signal
   // to everyone that it's okay to barrier (and thus exit).
@@ -1490,7 +1499,7 @@ void chpl_comm_exit_any(int status) {
 
   PVM_LOCK_UNLOCK_SAFE(pvm_lvgroup((char *)"job"), "pvm_lvgroup", "chpl_comm_exit_all");
   // Send a signal back to the launcher that we're done.
-  commsig = 1;
+  commsig = CommHalt;
   if (parent >= 0) {
     PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
     PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
@@ -1783,34 +1792,38 @@ int32_t chpl_numCommNBForks(void) {
 
 int chpl_pvm_fprintf(FILE* outfile, const char* format, ...) {
   int fdnum;
+  int commsig = CommNoop;
+
   CHPL_PVM_PRINTF_GUTS;
 
   fdnum = fileno(outfile);
 
   if ((parent >= 0) && ((fdnum == 0) || (fdnum == 1) || (fdnum == 2))) {
-    commsig = 2;
+    commsig = CommFprintf;
     PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_pvm_fprintf");
     PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
     PVM_NO_LOCK_SAFE(pvm_pkint(&fdnum, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
     PVM_NO_LOCK_SAFE(pvm_pkstr(buffer), "pvm_pkstr", "chpl_pvm_fprintf");
     PVM_UNLOCK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_pvm_fprintf");
-    commsig = 0;
+    commsig = CommNoop;
   } else fprintf(outfile, "%s", buffer);
   return retval;
 }
 
 
 int chpl_pvm_printf(const char* format, ...) {
+  int commsig = CommNoop;
+
   CHPL_PVM_PRINTF_GUTS;
 
   if (parent >= 0) {
-    commsig = 3;
+    commsig = CommPrintf;
 
     PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_pvm_printf");
     PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "chpl_pvm_printf");
     PVM_NO_LOCK_SAFE(pvm_pkstr(buffer), "pvm_pkstr", "chpl_pvm_printf");
     PVM_UNLOCK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_pvm_printf");
-    commsig = 0;
+    commsig = CommNoop;
   } else printf("%s", buffer);
   return retval;
 }
@@ -1820,6 +1833,7 @@ int chpl_pvm_vfprintf(FILE* stream, const char* format, va_list ap) {
   int fdnum;
   int retval;
   char buffer[PRINTF_BUFF_LEN];
+  int commsig = CommNoop;
 
   retval = vsnprintf(buffer, PRINTF_BUFF_LEN, format, ap);
   if (retval > PRINTF_BUFF_LEN) {
@@ -1829,13 +1843,13 @@ int chpl_pvm_vfprintf(FILE* stream, const char* format, va_list ap) {
   fdnum = fileno(stream);
 
   if ((parent >= 0) && ((fdnum == 0) || (fdnum == 1) || (fdnum == 2))) {
-    commsig = 2;
+    commsig = CommFprintf;
     PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_pvm_fprintf");
     PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
     PVM_NO_LOCK_SAFE(pvm_pkint(&fdnum, 1, 1), "pvm_pkint", "chpl_pvm_fprintf");
     PVM_NO_LOCK_SAFE(pvm_pkstr(buffer), "pvm_pkstr", "chpl_pvm_fprintf");
     PVM_UNLOCK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_pvm_fprintf");
-    commsig = 0;
+    commsig = CommNoop;
   } else fprintf(stream, "%s", buffer);
   return retval;
 }
