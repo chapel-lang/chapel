@@ -32,66 +32,66 @@
 #define PRINTF(_s)
 #endif
 
-int lock_num = 0;
-#define PVM_LOCK_UNLOCK_SAFE(call, who, in) {                                          \
-  int retcode;                                                             \
-  CHPL_MUTEX_LOCK(&pvm_lock);                                              \
-  retcode = call;                                                          \
-  CHPL_MUTEX_UNLOCK(&pvm_lock);                                            \
-  lock_num++;                                                              \
-  if (retcode < 0) {                                                       \
-    char msg[256];                                                         \
-    sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in);             \
-    chpl_error(msg, 0, 0);                                                 \
-  }                                                                        \
-}
+#define PVM_LOCK_UNLOCK_SAFE(call, who, in) {                           \
+    int retcode;                                                        \
+    CHPL_MUTEX_LOCK(&pvm_lock);                                         \
+    retcode = call;                                                     \
+    CHPL_MUTEX_UNLOCK(&pvm_lock);                                       \
+    if (retcode < 0) {                                                  \
+      char msg[256];                                                    \
+      sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in); \
+      chpl_error(msg, 0, 0);                                            \
+    }                                                                   \
+  }
 
-#define PVM_LOCK_SAFE(call, who, in) {                                     \
-  int retcode;                                                             \
-  CHPL_MUTEX_LOCK(&pvm_lock);                                              \
-  retcode = call;                                                          \
-  lock_num++;                                                              \
-  if (retcode < 0) {                                                       \
-    char msg[256];                                                         \
-    sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in);             \
-    chpl_error(msg, 0, 0);                                                 \
-  }                                                                        \
-}
+#define PVM_LOCK_SAFE(call, who, in) {                                  \
+    int retcode;                                                        \
+    CHPL_MUTEX_LOCK(&pvm_lock);                                         \
+    retcode = call;                                                     \
+    if (retcode < 0) {                                                  \
+      char msg[256];                                                    \
+      sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in); \
+      CHPL_MUTEX_UNLOCK(&pvm_lock);                                     \
+      chpl_error(msg, 0, 0);                                            \
+    }                                                                   \
+  }
 
-#define PVM_UNLOCK_SAFE(call, who, in) {                                   \
-  int retcode;                                                             \
-  retcode = call;                                                          \
-  CHPL_MUTEX_UNLOCK(&pvm_lock);                                            \
-  if (retcode < 0) {                                                       \
-    char msg[256];                                                         \
-    sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in);             \
-    chpl_error(msg, 0, 0);                                                 \
-  }                                                                        \
-}
+#define PVM_UNLOCK_SAFE(call, who, in) {                                \
+    int retcode;                                                        \
+    retcode = call;                                                     \
+    CHPL_MUTEX_UNLOCK(&pvm_lock);                                       \
+    if (retcode < 0) {                                                  \
+      char msg[256];                                                    \
+      sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in); \
+      chpl_error(msg, 0, 0);                                            \
+    }                                                                   \
+  }
 
-#define PVM_NO_LOCK_SAFE(call, who, in) {                                  \
-  int retcode;                                                             \
-  retcode = call;                                                          \
-  if (retcode < 0) {                                                       \
-    char msg[256];                                                         \
-    sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in);             \
-    chpl_error(msg, 0, 0);                                                 \
-  }                                                                        \
-}
+// This is never called without first taking out a lock, so it is okay
+// to unlock on error.
+#define PVM_NO_LOCK_SAFE(call, who, in) {                               \
+    int retcode;                                                        \
+    retcode = call;                                                     \
+    if (retcode < 0) {                                                  \
+      char msg[256];                                                    \
+      sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in); \
+      CHPL_MUTEX_UNLOCK(&pvm_lock);                                     \
+      chpl_error(msg, 0, 0);                                            \
+    }                                                                   \
+  }
 
-#define PVM_LOCK_UNLOCK_SAFE_OKAY_TO_FAIL(call, who, in) {                             \
-  int retcode;                                                             \
-  CHPL_MUTEX_LOCK(&pvm_lock);                                              \
-  retcode = call;                                                          \
-  CHPL_MUTEX_UNLOCK(&pvm_lock);                                            \
-  lock_num++;                                                              \
-}
+#define PVM_LOCK_UNLOCK_UNSAFE(call, who, in) {                         \
+    int retcode;                                                        \
+    CHPL_MUTEX_LOCK(&pvm_lock);                                         \
+    retcode = call;                                                     \
+    CHPL_MUTEX_UNLOCK(&pvm_lock);                                       \
+  }
 
 #define TAGMASK 4194303
 #define BCASTTAG 4194299
 #define NOTIFYTAG 4194295
 
-chpl_mutex_t pvm_lock;
+static chpl_mutex_t pvm_lock;
 
 static chpl_mutex_t chpl_comm_diagnostics_lock;
 static int chpl_comm_gets = 0;
@@ -102,7 +102,6 @@ static int chpl_comm_no_debug_private = 0;
 
 int parent = PvmNoParent;   // used to send messages back to launcher
 int tids[64];               // tid list for all nodes
-int instance;
 
 int okay_to_barrier = 1;
 volatile int okaypoll = 0;
@@ -1141,7 +1140,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   // Figure out who spawned this thread (if no one, this will be PvmNoParent).
   // Still need to lock call, but since PvmNoParent is perfectly okay, don't
   // fail. In PVM 3.4.6, the error code matching PvmNoParent is -23.
-  PVM_LOCK_UNLOCK_SAFE_OKAY_TO_FAIL(parent = pvm_parent(), "pvm_parent", "chpl_comm_init");
+  PVM_LOCK_UNLOCK_UNSAFE(parent = pvm_parent(), "pvm_parent", "chpl_comm_init");
   if ((parent < 0) && (parent != PvmNoParent)) {
 #if CHPL_DIST_DEBUG
     sprintf(debugMsg, "\n\n%d PVM call failed.\n\n", (int)pthread_self());
