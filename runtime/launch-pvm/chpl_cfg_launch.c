@@ -230,7 +230,7 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
 
   char nameofbin[1024];
   char numlocstr[128];
-  char numpidstr[128];
+  char numpidandhoststr[128];
 
   // Add nodes to PVM configuration.
   FILE* nodelistfile;
@@ -258,18 +258,17 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   // The last argument needs to be the number of locations for the PVM
   // comm layer to use it. The comm layer strips this off.
 
-  argv2 = chpl_malloc(((argc+3) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
+  argv2 = chpl_malloc(((argc+2) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
   memalloced |= M_ARGV2;
   for (i=0; i < (argc-1); i++) {
     argv2[i] = argv[i+1];
   }
-  sprintf(numlocstr, "%d", numLocales);
-  sprintf(numpidstr, "%d", (int)getpid());
   uname(&myhostname);
+  sprintf(numlocstr, "%d", numLocales);
+  sprintf(numpidandhoststr, "%d%s", (int)getpid(), myhostname.nodename);
   argv2[argc-1] = numlocstr;
-  argv2[argc] = numpidstr;
-  argv2[argc+1] = myhostname.nodename;
-  argv2[argc+2] = NULL;
+  argv2[argc] = numpidandhoststr;
+  argv2[argc+1] = NULL;
 
   // Add nodes to PVM configuration.
   i = 0;
