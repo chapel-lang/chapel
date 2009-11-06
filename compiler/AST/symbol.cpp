@@ -40,6 +40,8 @@ VarSymbol *gTryToken = NULL;
 VarSymbol *gBoundsChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
+Symbol *gCLine = NULL;
+Symbol *gCFile = NULL;
 
 Map<FnSymbol*,int> ftableMap;
 Vec<FnSymbol*> ftableVec;

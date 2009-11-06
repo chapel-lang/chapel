@@ -88,8 +88,19 @@ insertLineNumber(CallExpr* call) {
                                                var->immediate->v_string,
                                                "'>")));
     } else {
-      call->insertAtTail(new_IntSymbol(call->lineno));
-      call->insertAtTail(new_StringSymbol(call->getModule()->filename));
+      if (fCLineNumbers) {
+        if (!gCLine) {
+          gCLine = new VarSymbol("__LINE__", dtInt[INT_SIZE_32]);
+          rootModule->block->insertAtTail(new DefExpr(gCLine));
+          gCFile = new VarSymbol("__FILE__", dtString);
+          rootModule->block->insertAtTail(new DefExpr(gCFile));
+        }
+        call->insertAtTail(gCLine);
+        call->insertAtTail(gCFile);
+      } else {
+        call->insertAtTail(new_IntSymbol(call->lineno));
+        call->insertAtTail(new_StringSymbol(call->getModule()->filename));
+      }
     }
   } else if (file) {
     // call is in non-user code, but the function already has line

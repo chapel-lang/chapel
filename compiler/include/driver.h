@@ -44,6 +44,7 @@ extern char chplmake[256];
 extern char fExplainCall[256];
 extern char fExplainInstantiation[256];
 
+extern bool fCLineNumbers;
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
 extern bool fGenIDS;
