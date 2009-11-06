@@ -100,17 +100,17 @@ static int chpl_comm_forks = 0;
 static int chpl_comm_nb_forks = 0;
 static int chpl_comm_no_debug_private = 0;
 
-int parent = PvmNoParent;   // used to send messages back to launcher
-int tids[64];               // tid list for all nodes
+static int parent = PvmNoParent;   // used to send messages back to launcher
+static int tids[64];               // tid list for all nodes
 
-int okay_to_barrier = 1;
-volatile int okaypoll = 0;
-int commsig = 0;     // signal to parent process what to do
-                     // 0: noop
-                     // 1: halt
-                     // 2: fprintf
-                     // 3: printf
-                     // 4: gdb
+static int okay_to_barrier = 1;
+static volatile int okaypoll = 0;
+static int commsig = 0;     // signal to parent process what to do
+                            // 0: noop
+                            // 1: halt
+                            // 2: fprintf
+                            // 3: printf
+                            // 4: gdb
 
 extern int fileno(FILE *stream);
 extern const int chpl_max_fields_per_type;
@@ -167,7 +167,7 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz);
 static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz);
 static int makeTag(int threadID, int localeID);
 
-int unique_tag = 1;
+static int unique_tag = 1;
 // Just need something unique per process
 static int makeTag(int threadID, int localeID) {
   int tag;
