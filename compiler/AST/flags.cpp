@@ -64,6 +64,7 @@ initFlags() {
   defineFlag(FLAG_ITERATOR_RECORD, "iterator record");
   defineFlag(FLAG_LABEL_BREAK, "label break");
   defineFlag(FLAG_LABEL_CONTINUE, "label continue");
+  defineFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS, "loop body argument class");
   defineFlag(FLAG_MAYBE_PARAM, "maybe param");
   defineFlag(FLAG_MAYBE_TYPE, "maybe type");
   defineFlag(FLAG_METHOD, "method");

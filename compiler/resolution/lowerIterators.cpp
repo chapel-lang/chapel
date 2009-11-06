@@ -197,6 +197,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   ClassType* ct = new ClassType(CLASS_CLASS);
   TypeSymbol* ts = new TypeSymbol("_fn_arg_bundle", ct);
   ts->addFlag(FLAG_NO_OBJECT);
+  ts->addFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS);
   iteratorFnCall->parentSymbol->defPoint->insertBefore(new DefExpr(ts));
 
   ClassType* rct = new ClassType(CLASS_CLASS);
@@ -221,9 +222,6 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   ArgSymbol* wrapperArgsArg = new ArgSymbol(INTENT_BLANK, "fn_args", ct);
   loopBodyFnWrapper->insertFormalAtTail(wrapperArgsArg);
   CallExpr* loopBodyFnWrapperCall = new CallExpr(loopBodyFn, wrapperIndexArg);
-  VarSymbol* wrapperArgsVar = new VarSymbol("fn_args_tmp", ct);
-  loopBodyFnWrapper->insertAtTail(new DefExpr(wrapperArgsVar));
-  loopBodyFnWrapper->insertAtTail(new CallExpr(PRIM_MOVE, wrapperArgsVar, new CallExpr(PRIM_CAST, ts, wrapperArgsArg)));
 
   int i = 1;
   while (loopBodyFnCall->numActuals() >= 2) {
@@ -233,7 +231,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
     iteratorFnCall->insertBefore(new CallExpr(PRIM_SET_MEMBER, tmp, field, actual));
     VarSymbol* tmp = newTemp(field->type);
     loopBodyFnWrapper->insertAtTail(new DefExpr(tmp));
-    loopBodyFnWrapper->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, wrapperArgsVar, field)));
+    loopBodyFnWrapper->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, wrapperArgsArg, field)));
     loopBodyFnWrapperCall->insertAtTail(tmp);
   }
   loopBodyFnCall->remove();

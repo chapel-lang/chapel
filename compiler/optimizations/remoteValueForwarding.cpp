@@ -141,6 +141,59 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
   Map<Symbol*,Vec<SymExpr*>*> useMap;
   buildDefUseMaps(defMap, useMap);
 
+  //
+  // change reference type fields in loop body argument classes
+  // (created when transforming recursive leader iterators into
+  // recursive functions) to value type fields if safe
+  //
+  forv_Vec(ClassType, ct, gClassTypes) {
+    if (ct->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
+      for_fields(field, ct) {
+        if (field->type->symbol->hasFlag(FLAG_REF)) {
+          INT_ASSERT(!defMap.get(field));
+          bool safeToDeref = true;
+          for_uses(use, useMap, field) {
+            CallExpr* call = toCallExpr(use->parentExpr);
+            INT_ASSERT(call);
+            if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+              CallExpr* move = toCallExpr(call->parentExpr);
+              INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+              SymExpr* lhs = toSymExpr(move->get(1));
+              INT_ASSERT(lhs);
+              if (!isSafeToDeref(lhs->var, defMap, useMap, NULL)) {
+                safeToDeref = false;
+                break;
+              }
+            } else if (!call->isPrimitive(PRIM_SET_MEMBER))
+              INT_FATAL(field, "unexpected case");
+          }
+          if (safeToDeref) {
+            Type* vt = field->type->getValueType();
+            for_uses(use, useMap, field) {
+              CallExpr* call = toCallExpr(use->parentExpr);
+              INT_ASSERT(call);
+              if (call->isPrimitive(PRIM_SET_MEMBER)) {
+                Symbol* tmp = newTemp(vt);
+                call->insertBefore(new DefExpr(tmp));
+                call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, call->get(3)->remove())));
+                call->insertAtTail(tmp);
+              } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+                CallExpr* move = toCallExpr(call->parentExpr);
+                INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+                Symbol* tmp = newTemp(vt);
+                move->insertBefore(new DefExpr(tmp));
+                move->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->remove()));
+                move->insertAtTail(new CallExpr(PRIM_SET_REF, tmp));
+              } else
+                INT_FATAL(field, "unexpected case");
+            }
+            field->type = vt;
+          }
+        }
+      }
+    }
+  }
+
   forv_Vec(FnSymbol, fn, fns) {
     if (!syncAccessFunctionSet.set_in(fn)) {
       INT_ASSERT(fn->calledBy->n == 1);
