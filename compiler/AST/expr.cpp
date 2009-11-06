@@ -484,11 +484,8 @@ void CallExpr::verify() {
     if (FnSymbol* fn = isResolved()) {
       if (!fn->hasFlag(FLAG_EXTERN)) {
         for_formals_actuals(formal, actual, this) {
-          if (formal->type != actual->typeInfo() && actual->typeInfo() != dtNil) {
-            SymExpr* se = toSymExpr(actual);
-            if (!se || !isFnSymbol(se->var) || !isFnType(formal->type))
-              INT_FATAL(this, "actual formal type mismatch");
-          }
+          if (formal->type != actual->typeInfo() && actual->typeInfo() != dtNil)
+            INT_FATAL(this, "actual formal type mismatch");
         }
       }
     }

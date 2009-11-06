@@ -126,18 +126,6 @@ class PrimitiveType : public Type {
 };
 
 
-class FnType: public Type {
-public:
-  FnSymbol* function;
-  FnType(FnSymbol* init_function);
-  void verify();
-  DECLARE_COPY(FnType);
-  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  int codegenStructure(FILE* outfile, const char* baseoffset);
-};
-
-FnType* createFnType(FnSymbol* fn);
-
 #ifndef TYPE_EXTERN
 #define TYPE_EXTERN extern
 #endif

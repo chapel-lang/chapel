@@ -109,7 +109,6 @@ void deadCodeElimination(FnSymbol* fn) {
         if (CallExpr* call = toCallExpr(ast)) {
           // mark function calls and essential primitives as essential
           if (call->isResolved() ||
-              (call->baseExpr && isFnType(call->baseExpr->typeInfo())) ||
               (call->primitive && call->primitive->isEssential))
             essential = true;
           // mark assignments to global variables as essential
