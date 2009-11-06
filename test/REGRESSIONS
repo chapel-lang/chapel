@@ -44,6 +44,7 @@ linux regressions
 spurious double free or corruption
 ----------------------------------
 [Error matching program output for functions/deitz/iterators/leader_follower/test_leader_follower6] (e.g., 10/26/09)
+[Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist] (e.g., 11/05/09)
 
 spurious system fork failure
 ----------------------------
@@ -124,9 +125,9 @@ times out spuriously
 --------------------
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09)
-[Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09)
+[Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09)
 
 
 ==============================================
@@ -242,6 +243,7 @@ intel-specific regressions
 
 spurious compilation timeouts
 -----------------------------
+[Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09)
 [Error: Timed out compilation for parallel/sync/diten/userLevelEndCount] (e.g., 10/10/09)
 [Error: Timed out compilation for studies/hpcc/STREAMS/bradc/stream-fragmented] (e.g., 10/02/09)
 [Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 10/02/09, 10/13/09, 10/13/09, 10/15/09, 10/17/09, 10/09/09, 10/24/09, 10/28/09, 10/30/09)
@@ -259,7 +261,7 @@ spurious failures on Sam's machine
 
 spurious failure
 ----------------
-[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-fill] (e.g., 10/20/09, 10/28/09)
+[Error matching program output for studies/hpcc/common/bradc/unit/parRandom2-fill] (e.g., 10/20/09, 10/28/09, 11/04/09)
 
 execution timeout (10/05/09)
 ----------------------------
