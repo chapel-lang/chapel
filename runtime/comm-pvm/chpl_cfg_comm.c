@@ -1270,11 +1270,6 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 void chpl_comm_rollcall(void) {
   CHPL_MUTEX_INIT(&chpl_comm_diagnostics_lock);
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID, chpl_numLocales, chpl_localeName());
-  // If just one locale, skip the barrier setup
-  if (chpl_numLocales != 1) {
-    okay_to_barrier = 0;
-  }
-  okaypoll = 1;
   return;
 }
 
@@ -1394,7 +1389,7 @@ void chpl_comm_barrier(const char *msg) {
   // The signal is okay_to_barrier.
 
   // okay_to_barrier starts out true, but once all the setup is complete,
-  // okay_to_barrier is set to false (done in chpl_comm_rollcall). This
+  // okay_to_barrier is set to false (see below on entering main). This
   // safegaurd is important because chpl_comm_barrier is blocking, not
   // thread-safe, and it holds the pvm_lock.
 
@@ -1407,6 +1402,14 @@ void chpl_comm_barrier(const char *msg) {
   if (!(strcmp(msg, "barrier before main"))) {
     // Accounts for the barrier before the main loop.
     PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)jobname, chpl_numLocales), "pvm_barrier", "chpl_comm_barrier");
+
+    // If just one locale, skip the barrier setup
+    // These steps open the floodgates.
+    if (chpl_numLocales != 1) {
+      okay_to_barrier = 0;
+    }
+    okaypoll = 1;
+
     return;
   }
   if (!okay_to_barrier) {
