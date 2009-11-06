@@ -107,7 +107,6 @@ static int okay_to_barrier = 1;
 static volatile int okaypoll = 0;
 
 extern int fileno(FILE *stream);
-extern const int chpl_max_fields_per_type;
 
 //
 // Chapel interface starts here

@@ -33,5 +33,6 @@ extern size_t* cid2offsets(chpl__class_id cid);
 extern chplType chpl_getFieldType(int typeNum, int fieldNum);
 extern size_t chpl_getFieldOffset(int typeNum, int fieldNum);
 extern size_t chpl_getFieldSize(int typeNum);
+extern const int chpl_max_fields_per_type;
 
 #endif
