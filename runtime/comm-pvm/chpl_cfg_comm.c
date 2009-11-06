@@ -1153,11 +1153,11 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   }
 
   // Figure out how many nodes there are
-  chpl_numLocales = (int32_t)atoi((*argv_p)[*argc_p - 2]);
+  chpl_numLocales = (int32_t)atoi((*argv_p)[*argc_p - 3]);
   
   // Get a unique job name for the PVM group name to use throughout life of
   // this application.
-  sprintf(jobname, "job%s", (*argv_p)[*argc_p - 1]);
+  sprintf(jobname, "job%s%s", (*argv_p)[*argc_p - 2], (*argv_p)[*argc_p - 1]);
 
   // Join the group of all nodes (named "job" plus launcher pid)
   // Barrier until everyone (numLocales) has joined
@@ -1197,7 +1197,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   // Drop the last argument: the numLocales from the launcher.
   // It confuses parseArgs, and we've already captured it.
-  *argc_p = *argc_p - 2;
+  *argc_p = *argc_p - 3;
   return;
 }
 

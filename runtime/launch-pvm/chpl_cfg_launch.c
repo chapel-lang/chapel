@@ -258,16 +258,18 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   // The last argument needs to be the number of locations for the PVM
   // comm layer to use it. The comm layer strips this off.
 
-  argv2 = chpl_malloc(((argc+2) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
+  argv2 = chpl_malloc(((argc+3) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
   memalloced |= M_ARGV2;
   for (i=0; i < (argc-1); i++) {
     argv2[i] = argv[i+1];
   }
   sprintf(numlocstr, "%d", numLocales);
   sprintf(numpidstr, "%d", (int)getpid());
+  uname(&myhostname);
   argv2[argc-1] = numlocstr;
   argv2[argc] = numpidstr;
-  argv2[argc+1] = NULL;
+  argv2[argc+1] = myhostname.nodename;
+  argv2[argc+2] = NULL;
 
   // Add nodes to PVM configuration.
   i = 0;
@@ -344,9 +346,8 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
     pvm_launcher_error(errorMsg);
   }
 
-  // Find the node we're on. We use this in spawning (to know what realm
-  // type we are to replace that string with an architecture appropriate one
-  uname(&myhostname);
+  // We use the node we're on in spawning (to know what realm
+  // type we are to replace that string with an architecture appropriate one)
   usingbaserealm = 0;
   for (i = 0; i < numLocales; i++) {
     if (!(strcmp((char *)pvmnodestoadd[i], myhostname.nodename))) {
