@@ -85,14 +85,20 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
 // of the reference is a simple dereference or is passed or moved to
 // another reference that is safe to dereference.
 //
+// The argument safeSettableField is used to ignore SET_MEMBER in that
+// case of testing whether a reference field can be replaced with a
+// value; this handles the case where the reference field is
+// reassigned to itself (probably of another instance)
+//
 static bool
 isSafeToDeref(Symbol* ref,
               Map<Symbol*,Vec<SymExpr*>*>& defMap,
               Map<Symbol*,Vec<SymExpr*>*>& useMap,
-              Vec<Symbol*>* visited) {
+              Vec<Symbol*>* visited,
+              Symbol* safeSettableField) {
   if (!visited) {
     Vec<Symbol*> newVisited;
-    return isSafeToDeref(ref, defMap, useMap, &newVisited);
+    return isSafeToDeref(ref, defMap, useMap, &newVisited, safeSettableField);
   }
   if (visited->set_in(ref))
     return true;
@@ -106,12 +112,17 @@ isSafeToDeref(Symbol* ref,
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
       if (call->isResolved()) {
         ArgSymbol* arg = actual_to_formal(use);
-        if (!isSafeToDeref(arg, defMap, useMap, visited))
+        if (!isSafeToDeref(arg, defMap, useMap, visited, safeSettableField))
           return false;
       } else if (call->isPrimitive(PRIM_MOVE)) {
         SymExpr* newRef = toSymExpr(call->get(1));
         INT_ASSERT(newRef);
-        if (!isSafeToDeref(newRef->var, defMap, useMap, visited))
+        if (!isSafeToDeref(newRef->var, defMap, useMap, visited, safeSettableField))
+          return false;
+      } else if (call->isPrimitive(PRIM_SET_MEMBER) && safeSettableField) {
+        SymExpr* se = toSymExpr(call->get(2));
+        INT_ASSERT(se);
+        if (se->var != safeSettableField)
           return false;
       } else if (!call->isPrimitive(PRIM_GET_REF))
         return false; // what cases does this preclude? can this be an assert?
@@ -160,7 +171,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
               INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
               SymExpr* lhs = toSymExpr(move->get(1));
               INT_ASSERT(lhs);
-              if (!isSafeToDeref(lhs->var, defMap, useMap, NULL)) {
+              if (!isSafeToDeref(lhs->var, defMap, useMap, NULL, field)) {
                 safeToDeref = false;
                 break;
               }
@@ -204,7 +215,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
       //
       for_formals(arg, fn) {
         if (arg->type->symbol->hasFlag(FLAG_REF) &&
-            isSafeToDeref(arg, defMap, useMap, NULL)) {
+            isSafeToDeref(arg, defMap, useMap, NULL, NULL)) {
 
           //
           // Find actual for arg and dereference arg type.
