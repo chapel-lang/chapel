@@ -1,0 +1,154 @@
+GASNet shmem-conduit documentation
+Christian Bell <csbell@cs.berkeley.edu>
+
+User Information:
+-----------------
+
+The most important difference between GASNet and shmem lies in the semantics
+for synchronization.  While GASNet strives for general and flexible
+synchronization, shmem provides only two synchronization primitives -- a fence
+for ordering puts and a quiet for guaranteeing remote completion.  Moreover,
+these primitives are exclusively temporal in that they cannot be associated
+with any specific operation, and only applies to put (write) operations (get
+operations block). GASNet attempts to expose finer-grained synchronization
+control over individual memory operations, which on shmem only translates to
+added overhead since there is no way one-to-one mapping between per-operation
+GASNet synchronization and shmem put/get calls.
+
+Since shmem targets are usually shared-memory machines that allow loads/stores
+to be issued to global memory, the GASNet conduit is engineered to allow
+non-blocking puts/gets to be issued with the least amount of instructions.
+
+The conduit implementation differs from other conduits in that most of the
+extended functionality is actually inlined through
+gasnet_extended_help_extra.h.  The core AM functionality is fairly tuned and is
+not inlined, as are the various split-phase barrier mechanisms.
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+
+* GASNET_NETWORKDEPTH
+  Can be set to a any power of 2, smaller or equal to 256 and constitutes the
+  queue depth set aside for incoming GASNet core AM requests from all nodes
+  that can be queued at a given node without blocking.
+
+* GASNET_SHMEM_DEBUGALLOC
+  Set to 1 to output shmem allocation debug information (such as which
+  addresses are being mapped by each process for the GASNet segment).
+
+* GASNET_BARRIER=SHMEM (default)
+  Enables shmem-native implementation of GASNet barriers
+
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
+* GASNETE_NBISYNC_ALWAYS_QUIET: See description above in 'GASNet implicit
+  memory operations and synchronization (nbi)'
+
+* GASNETE_GLOBAL_ADDRESS_CLIENT: If defined, the conduit makes no effort to
+  translate global addresses and assumes that every address passed to GASNet is
+  a global address that requires no further translation.  In other words,
+  issuing a gasnet_put(0xaaaaa, 5) at node 5 translates into a store exactly at
+  address 0xaaaa.  If undefined, the conduit uses whatever the system offers to
+  translate local into global pointers.
+
+Known problems:
+---------------
+
+* See the Berkeley UPC Bugzilla server for details on known bugs.
+
+* Conduit only works with SGI and Cray X1 'flavors' of shmem.  These two
+  implementations have native hardware access to global memory, a feature that
+  was considered when designing the conduit.
+  The SGI 'flavor' is know to work on an SGI Altix (Linux based), while
+  only partial success was observed on an SGI Origin 2000 (IRIX based).
+
+Future work:
+------------
+
+* Port the conduit to other shmem flavors, particularly those on cluster-based
+  systems for which nothing other than MPI and shmem is available.
+* Possibly complete the testing and debugging of support on IRIX.
+
+===============================================================================
+
+Design Overview:
+----------------
+
+GASNet explicit memory operations (nb):
+
+  put_nb, put_nb_bulk:
+    returns GASNETE_SYNC_QUIET
+    * Actual data transfer mechanism optimized per-target (X1, Altix, ...)
+    * A subsequent call to individually sync a put operation calls shmem_quiet
+      and returns GASNET_OK.
+    * A subsequent call to sync an array of puts calls shmem_quiet only once
+      and marks the remaining puts as invalid and returns GASNET_OK.
+
+  memset_nb
+    returns GASNETE_SYNC_NONE
+    * Always issued as a blocking operation, for simplicity.  If these were
+      non-blocking, the sync_nb calls that we would want as lightweight would
+      have to poll on AM arrivals -- too expensive and complex for the
+      seemingly useless non-blocking memset.  Always return SYNC_NONE since we
+      complete the operation before returning.
+
+  get_nb, get_nb_bulk:
+    returns GASNETE_SYNC_DONE
+    * Actual data transfer mechanism optimized per-target (X1, Altix, ...)
+    * Since transfers on the typical shmem targets (X1, Altix) are through
+      registers, the main processor cannot asynchronously fetch data and the
+      processor will stall if it attempts to use any value obtained through the
+      memory transfer.  These transfers are always blocking and therefore
+      return SYNC_NONE since no subsequent synchronization is required.
+
+
+GASNet explicit synchronization (nb):
+  Try and Wait are the same -- try always commits the sync.
+
+  wait_syncnb, try_syncb:
+    returns GASNET_OK *always*
+    * Implemented as inlined function (important for vectorization).
+    * If handle is SYNC_QUIET, issue a shmem_quiet and return GASNET_OK
+    * If handle is SYNC_NONE, simply return GASNET_OK
+
+  wait_syncnb_all, try_syncnb_all, wait_syncnb_some, try_syncnb_some:
+    returns GASNET_OK *always*
+    * Implemented as function calls.
+    * Mark all handles as invalid (done)
+    * If at least one SYNC_QUIET was encountered, issue shmem_quiet.
+
+
+GASNet implicit memory operations and synchronization (nbi):
+
+  GASNETE_NBISYNC_ALWAYS_QUIET: When set to 1, no per-operation information is
+    kept for each put/get operation and a subsequent sync_nbi always causes a
+    shmem_quiet().  This has the disadvantage of issuing a quiet for nbi
+    operations consisting of only gets but allows simpler code paths for
+    issuing the nbi operations since no metadata is required -- the
+    put_nbi/get_nbi is effectively only a store/load.
+
+  All NBI synchronization is accumulated in 'gasnete_nbisync_cur'.  For
+  regions, ending a region returns the current value of gasnete_nbisync_cur and
+  gasnete_nbisync_cur is reset for subsequent regions or other NBI operations.
+
+  put_nbi, put_nbi_bulk, get_nbi, get_nbi_bulk:
+    * Actual data transfer mechanism optimized per-target (X1, Altix, ...)
+
+  memset_nbi
+    * Always issued as blocking operation (see memset_nb above).
+
+  syncnbi_gets:
+    returns GASNET_OK
+    * No synchronization required, gets are always blocking
+
+  syncnbi_puts:
+    if GASNETE_NBISYNC_ALWAYS_QUIET, issues shmem_quiet and returns GASNET_OK
+    else, issues shmem_quiet and returns GASNET_OK iff gasnete_nbi_sync_cur is
+          set to SYNC_QUIET.
+
+
