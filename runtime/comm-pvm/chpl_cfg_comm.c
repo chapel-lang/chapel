@@ -106,6 +106,7 @@ static char jobname[64];           // used for PVM groups
 
 static int okay_to_barrier = 1;
 static volatile int okaypoll = 0;
+static int* poll_retval;           // polling thread finished
 
 extern int fileno(FILE *stream);
 
@@ -1125,6 +1126,8 @@ static void polling(void* x) {
     }
     }
   }
+  okaypoll = 0;
+  pthread_exit(poll_retval);
 }
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
@@ -1193,6 +1196,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   status = pthread_create(&polling_thread, NULL, (void*(*)(void*))polling, 0);
   if (status)
     chpl_internal_error("unable to start polling thread for PVM");
+  poll_retval = (int *)polling_thread;
   pthread_detach(polling_thread);
 
   // Drop the last argument: the numLocales from the launcher.
@@ -1463,7 +1467,10 @@ void chpl_comm_exit_all(int status) {
   msg_info.msg_type = ChplCommFinish;
   chpl_pvm_send(chpl_localeID, TAGMASK+1, &msg_info, sizeof(_chpl_message_info));
   PRINTF("Sent shutdown message.");
-  chpl_comm_barrier("About to finalize");
+
+  while (okaypoll) {
+    sched_yield();
+  }
 
   PVM_LOCK_UNLOCK_SAFE(pvm_lvgroup((char *)jobname), "pvm_lvgroup", "chpl_comm_exit_all");
   // Send a signal back to the launcher that we're done.
@@ -1507,7 +1514,10 @@ void chpl_comm_exit_any(int status) {
   msg_info.msg_type = ChplCommFinish;
   chpl_pvm_send(chpl_localeID, TAGMASK+1, &msg_info, sizeof(_chpl_message_info));
   PRINTF("Sent shutdown message.");
-  chpl_comm_barrier("About to finalize");
+
+  while (okaypoll) {
+    sched_yield();
+  }
 
   PVM_LOCK_UNLOCK_SAFE(pvm_lvgroup((char *)jobname), "pvm_lvgroup", "chpl_comm_exit_all");
   // Send a signal back to the launcher that we're done.
