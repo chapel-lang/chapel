@@ -215,6 +215,9 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   def dim(d : int)
     return ranges(d);
 
+  def dim(param d : int)
+    return ranges(d);
+
   def numIndices {
     var sum = 1:idxType;
     for param i in 1..rank do

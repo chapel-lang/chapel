@@ -411,6 +411,8 @@ record _domain {
 
   def dim(d : int) return _value.dim(d);
 
+  def dim(param d : int) return _value.dim(d);
+
   def dimIter(param d, ind) {
     for i in _value.dimIter(d, ind) do yield i;
   }
@@ -623,7 +625,7 @@ record _array {
     return _value.these();
   }
 
-  def numElements return _dom.numIndices; // assume dom name
+  def numElements return _value.dom.numIndices; // assume dom name
 
   def newAlias() {
     var x = _value.reindex(_value.dom);
