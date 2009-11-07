@@ -1167,14 +1167,10 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   // Join the group of all nodes (named "job" plus launcher pid)
   // Barrier until everyone (numLocales) has joined
   // Make sure the chpl_localeID lines up with the join order
-  if (order == 0) {
-    PVM_LOCK_UNLOCK_SAFE(chpl_localeID = pvm_joingroup((char *)jobname), "pvm_joingroup", "chpl_comm_init");
-  } else {
-    while (order != pvm_gsize((char *)jobname)) {
-      sched_yield();
-    }
-    PVM_LOCK_UNLOCK_SAFE(chpl_localeID = pvm_joingroup((char *)jobname), "pvm_joingroup", "chpl_comm_init");
+  while ((order > 0) && (order != pvm_gsize((char *)jobname))) {
+    sched_yield();
   }
+  PVM_LOCK_UNLOCK_SAFE(chpl_localeID = pvm_joingroup((char *)jobname), "pvm_joingroup", "chpl_comm_init");
   chpl_comm_barrier("Waiting for all tasks to join group.");
 
   // Figure out who everyone is
