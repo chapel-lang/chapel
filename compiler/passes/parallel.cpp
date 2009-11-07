@@ -788,6 +788,7 @@ static void localizeCall(CallExpr* call) {
               insertLocalTemp(rhs->get(1));
             }
           }
+          break;
         } else if (rhs->isPrimitive(PRIM_GET_REF)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -798,6 +799,7 @@ static void localizeCall(CallExpr* call) {
               rhs->replace(rhs->get(1)->remove());
             }
           }
+          break;
         } else if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -807,6 +809,7 @@ static void localizeCall(CallExpr* call) {
               insertLocalTemp(rhs->get(1));
             }
           }
+          break;
         } else if (rhs->isPrimitive(PRIM_ARRAY_GET) ||
                    rhs->isPrimitive(PRIM_ARRAY_GET_VALUE)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -826,18 +829,27 @@ static void localizeCall(CallExpr* call) {
             stmt->insertAfter(new CallExpr(PRIM_MOVE, lhs,
                                            new SymExpr(localVar)));
           }
+          break;
         } else if (rhs->isPrimitive(PRIM_UNION_GETID)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             insertLocalTemp(rhs->get(1));
           }
+          break;
         } else if (rhs->isPrimitive(PRIM_GETCID)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             insertLocalTemp(rhs->get(1));
           }
+          break;
         }
-      } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-                 !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-                 !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+        ;
+      }
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+          !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        break;
+      }
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+          !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+          !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         insertLocalTemp(call->get(1));
       }
       break;
@@ -1351,3 +1363,4 @@ insertWideReferences(void) {
   handleLocalBlocks();
   narrowReferences();
 }
+
