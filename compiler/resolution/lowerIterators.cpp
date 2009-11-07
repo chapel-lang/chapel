@@ -193,6 +193,56 @@ replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic, Vec<Bas
 static Map<FnSymbol*,FnSymbol*> iteratorFnMap;
 static Vec<FnSymbol*> iteratorWithOnStatementSet;
 static FnSymbol* argBundleCopyFn = NULL;
+static FnSymbol* argBundleFreeFn = NULL;
+
+
+static void
+createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
+  if (argBundleFreeFn == NULL) {
+    argBundleFreeFn = new FnSymbol("chpl__freeRecursiveIteratorArgumentBundle");
+    argBundleFreeFn->retType = dtVoid;
+    argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_loopBodyFn", dtInt[INT_SIZE_32]));
+    argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_loopBodyFnArgs", ct));
+    argBundleFreeFn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, argBundleFreeFn->getFormal(2)));
+    argBundleFreeFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    ct->symbol->defPoint->insertBefore(new DefExpr(argBundleFreeFn));
+  }
+
+  bool addRecursiveCall = false;
+  ArgSymbol* loopBodyFnArg = argBundleFreeFn->getFormal(1);
+  ArgSymbol* loopBodyFnArgsArg = argBundleFreeFn->getFormal(2);
+
+  BlockStmt* block = new BlockStmt();
+  Symbol* loopBodyFnArgsArgTmp = newTemp(ct);
+  block->insertAtTail(new DefExpr(loopBodyFnArgsArgTmp));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_CAST, ct->symbol, loopBodyFnArgsArg)));
+  Symbol* lastField = NULL; // assume function pointer for function argument bundle
+  for_fields(field, ct) {
+    if (field->type->getValueType() && field->type->getValueType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
+      addRecursiveCall = true;
+      Symbol* tmp = newTemp(field->type);
+      block->insertAtTail(new DefExpr(tmp));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, loopBodyFnArgsArgTmp, field)));
+      Symbol* lastTmp = newTemp(lastField->type);
+      block->insertAtTail(new DefExpr(lastTmp));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, lastTmp, new CallExpr(PRIM_GET_MEMBER_VALUE, loopBodyFnArgsArgTmp, lastField)));
+      VarSymbol* loopBodyFnArgTmp = newTemp(dtInt[INT_SIZE_32]);
+      VarSymbol* loopBodyFnArgsArgTmp = newTemp(field->type->getValueType());
+      block->insertAtTail(new DefExpr(loopBodyFnArgTmp));
+      block->insertAtTail(new DefExpr(loopBodyFnArgsArgTmp));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgTmp, new CallExpr(PRIM_GET_REF, lastTmp)));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_GET_REF, tmp)));
+      block->insertAtTail(new CallExpr(argBundleFreeFn, loopBodyFnArgTmp, loopBodyFnArgsArgTmp));
+    }
+    lastField = field;
+  }
+  if (addRecursiveCall) {
+    Symbol* cond = newTemp(dtBool);
+    argBundleFreeFn->insertAtHead(new CondStmt(new SymExpr(cond), block));
+    argBundleFreeFn->insertAtHead(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnArg, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)))));
+    argBundleFreeFn->insertAtHead(new DefExpr(cond));
+  }
+}
 
 
 static void
@@ -208,6 +258,7 @@ createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
     argBundleCopyFn->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
     ct->symbol->defPoint->insertBefore(new DefExpr(argBundleCopyFn));
   }
+
   ArgSymbol* loopBodyFnArg = argBundleCopyFn->getFormal(1);
   ArgSymbol* loopBodyFnArgsArg = argBundleCopyFn->getFormal(2);
 
@@ -320,6 +371,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
         iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, retTmp, new CallExpr(argBundleCopyFn, loopBodyFnArgTmp, loopBodyFnArgsArgTmp)));
         iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, castTmp, new CallExpr(PRIM_CAST, castTmp->type->symbol, retTmp)));
         iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REF, castTmp)));
+        iteratorFnCall->insertAfter(new CallExpr(argBundleFreeFn, loopBodyFnArgTmp, retTmp));
         actual = new SymExpr(tmp);
       }
     }
@@ -335,6 +387,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   loopBodyFnWrapper->retType = dtVoid;
   loopBodyFnWrapper->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   createArgBundleCopyFn(ct, loopBodyFnWrapper);
+  createArgBundleFreeFn(ct, loopBodyFnWrapper);
   return ct;
 }
 
