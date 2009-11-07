@@ -231,6 +231,7 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   char nameofbin[1024];
   char numlocstr[128];
   char numpidandhoststr[128];
+  char numordstr[128];
 
   // Add nodes to PVM configuration.
   FILE* nodelistfile;
@@ -258,7 +259,7 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   // The last argument needs to be the number of locations for the PVM
   // comm layer to use it. The comm layer strips this off.
 
-  argv2 = chpl_malloc(((argc+2) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
+  argv2 = chpl_malloc(((argc+3) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
   memalloced |= M_ARGV2;
   for (i=0; i < (argc-1); i++) {
     argv2[i] = argv[i+1];
@@ -268,7 +269,8 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   sprintf(numpidandhoststr, "%d%s", (int)getpid(), myhostname.nodename);
   argv2[argc-1] = numlocstr;
   argv2[argc] = numpidandhoststr;
-  argv2[argc+1] = NULL;
+  // argv2[argc+1] is the order number and is set on spawn
+  argv2[argc+2] = NULL;
 
   // Add nodes to PVM configuration.
   i = 0;
@@ -458,6 +460,8 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
       }
     }
 
+    sprintf(numordstr, "%d", i);
+    argv2[argc+1] = numordstr;
     if (!pvm_spawn_wrapper(commandtopvm, argv2, pvmnodestoadd[i], &tids[i])) {
       pvm_launcher_error("Unable to spawn child process(es).  Suggestions:\n"
                          "* check your CHPL_MULTIREALM_LAUNCH_DIR_<platform> environment variables\n"

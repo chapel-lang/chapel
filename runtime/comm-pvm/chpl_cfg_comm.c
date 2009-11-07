@@ -1133,8 +1133,7 @@ static void polling(void* x) {
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   pthread_t polling_thread;
   int status;
-  int i;
-  int max;
+  int i, order, max;
 
 #if CHPL_DIST_DEBUG
   char debugMsg[DEBUG_MSG_LENGTH];
@@ -1156,16 +1155,26 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   }
 
   // Figure out how many nodes there are
-  chpl_numLocales = (int32_t)atoi((*argv_p)[*argc_p - 2]);
+  chpl_numLocales = (int32_t)atoi((*argv_p)[*argc_p - 3]);
   
   // Get a unique job name for the PVM group name to use throughout life of
   // this application.
-  sprintf(jobname, "job%s", (*argv_p)[*argc_p - 1]);
+  sprintf(jobname, "job%s", (*argv_p)[*argc_p - 2]);
+
+  // Figure out what order this was spawned in (0..n-1)
+  order = (int32_t)atoi((*argv_p)[*argc_p - 1]);
 
   // Join the group of all nodes (named "job" plus launcher pid)
   // Barrier until everyone (numLocales) has joined
   // Make sure the chpl_localeID lines up with the join order
-  PVM_LOCK_UNLOCK_SAFE(chpl_localeID = pvm_joingroup((char *)jobname), "pvm_joingroup", "chpl_comm_init");
+  if (order == 0) {
+    PVM_LOCK_UNLOCK_SAFE(chpl_localeID = pvm_joingroup((char *)jobname), "pvm_joingroup", "chpl_comm_init");
+  } else {
+    while (order != pvm_gsize((char *)jobname)) {
+      sched_yield();
+    }
+    PVM_LOCK_UNLOCK_SAFE(chpl_localeID = pvm_joingroup((char *)jobname), "pvm_joingroup", "chpl_comm_init");
+  }
   chpl_comm_barrier("Waiting for all tasks to join group.");
 
   // Figure out who everyone is
@@ -1201,7 +1210,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   // Drop the last argument: the numLocales from the launcher.
   // It confuses parseArgs, and we've already captured it.
-  *argc_p = *argc_p - 2;
+  *argc_p = *argc_p - 3;
   return;
 }
 
