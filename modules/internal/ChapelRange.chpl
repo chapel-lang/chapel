@@ -291,7 +291,7 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
                          this.stridable | other.stridable,
                          max(lo1, lo2),
                          min(hi1, hi2),
-                         st1 * st2 / g);
+                         st1 * (st2 / g));
   if lo1 > hi1 || lo2 > hi2 {
     // empty intersection
     if result.low < result.high then
