@@ -212,11 +212,9 @@ static int pvm_spawn_wrapper(char* command, char** args, char* node, int* tid) {
 void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   int i, j, info;
   int infos[256];
-  int infos2[256];
   struct utsname myhostname;
   char pvmnodetoadd[256];
   int commsig = 0;
-  static char *hosts2redo[2048];
   int bufid;
   int usingbaserealm;
 
@@ -400,17 +398,10 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
       }
     }
     if ((infos[i] < 0) && (infos[i] != PvmDupHost)) {
-      hosts2redo[0] = pvmnodestoadd[i];
-      if (verbosity > 1) {
-        fprintf(stderr, "calling pvm_addhosts({%s}, 1, infos2);\n", *hosts2redo);
-      }
-      info = pvm_addhosts( (char **)hosts2redo, 1, infos2);
-      if (infos2[0] < 0) {
-        char errorMsg[256];
-        snprintf(errorMsg, 255, "Remote error on %s (%d) -- shutting down host",
-                 hosts2redo[0], infos2[0]);
-        pvm_launcher_error(errorMsg);
-      }
+      char errorMsg[256];
+      snprintf(errorMsg, 255, "Remote error on %s (%d) -- shutting down host",
+               pvmnodestoadd[i], infos[i]);
+      pvm_launcher_error(errorMsg);
     }
   }
   hostsAdded = 1;
