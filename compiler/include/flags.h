@@ -82,6 +82,7 @@ enum Flag {
   FLAG_NO_PARENS, // function without parentheses
   FLAG_NO_WIDE_CLASS,
   FLAG_NON_BLOCKING, // with FLAG_ON/FLAG_ON_BLOCK, non-blocking on functions
+  FLAG_FAST_ON, // with FLAG_ON/FLAG_ON_BLOCK, use fast spawning option (if available)
   FLAG_OBJECT_CLASS,
   FLAG_OMIT_FROM_CONSTRUCTOR,
   FLAG_GPU_ON, // Flag to mark GPU device kernel

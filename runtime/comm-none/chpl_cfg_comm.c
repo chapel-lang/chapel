@@ -115,6 +115,11 @@ void chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   (*chpl_ftable[fid])(arg);
 }
 
+// Same as chpl_comm_fork()
+void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+  (*chpl_ftable[fid])(arg);
+}
+
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }
 void chpl_startVerboseCommHere() { }

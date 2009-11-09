@@ -363,6 +363,11 @@ void chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size);
 //
 void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size);
 
+//
+// fast (non-forking) fork (i.e., run in handler)
+//
+void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size);
+
 void chpl_startVerboseComm(void);
 void chpl_stopVerboseComm(void);
 void chpl_startVerboseCommHere(void);

@@ -29,6 +29,8 @@ extern bool fNoRemoveCopyCalls;
 extern bool fNoScalarReplacement;
 extern bool fNoOptimizeLoopIterators;
 extern bool fNoPrivatization;
+extern bool fNoFastOn;
+extern int fast_on_limit;
 
 extern bool report_inlining;
 extern char CHPL_HOME[FILENAME_MAX];

@@ -68,11 +68,34 @@ typedef struct {
 #define FORK_LARGE    129 // synchronous fork with a huge argument
 #define FORK_NB       130 // non-blocking fork 
 #define FORK_NB_LARGE 131 // non-blocking fork with a huge argument
-#define SIGNAL        132 // ack of synchronous fork
-#define PRIV_BCAST    133 // put data at addr (used for private broadcast)
-#define PRIV_BCAST_LARGE 134 // put data at addr (used for private broadcast)
-#define FREE          135 // free data at addr
-#define EXIT_ANY      136 // free data at addr
+#define FORK_FAST     132 // run the function in the handler (use with care)
+#define SIGNAL        133 // ack of synchronous fork
+#define PRIV_BCAST    134 // put data at addr (used for private broadcast)
+#define PRIV_BCAST_LARGE 135 // put data at addr (used for private broadcast)
+#define FREE          136 // free data at addr
+#define EXIT_ANY      137 // free data at addr
+
+static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
+  fork_t *f = buf;
+
+  if (chpl_verbose_comm) {
+    char mybuf[128];
+    sprintf(mybuf, "%d: running (fast) remote task created by %d\n",
+            chpl_localeID, f->caller);
+    write(2, mybuf, strlen(mybuf));
+  }
+
+  if (f->arg_size)
+    (*chpl_ftable[f->fid])(&f->arg);
+  else
+    (*chpl_ftable[f->fid])(0);
+#ifdef BLAH
+  GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
+                                      SIGNAL,
+                                      &(f->ack),
+                                      sizeof(f->ack)));
+#endif
+}
 
 static void fork_wrapper(fork_t *f) {
   if (f->arg_size)
@@ -187,6 +210,7 @@ static gasnet_handlerentry_t ftable[] = {
   {FORK_LARGE,    AM_fork_large},
   {FORK_NB,       AM_fork_nb},
   {FORK_NB_LARGE, AM_fork_nb_large},
+  {FORK_FAST,     AM_fork_fast},
   {SIGNAL,        AM_signal},
   {PRIV_BCAST,    AM_priv_bcast},
   {PRIV_BCAST_LARGE, AM_priv_bcast_large},
@@ -551,6 +575,49 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
       chpl_free(info, 0, 0);
     } else {
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB_LARGE, info, info_size));
+    }
+  }
+}
+
+// GASNET - should only be called for "small" functions
+void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+  fork_t* info;
+  int     info_size;
+  int     done;
+  int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
+
+  if (chpl_localeID == locale) {
+    (*chpl_ftable[fid])(arg);
+  } else {
+    if (passArg) {
+      if (chpl_verbose_comm && !chpl_comm_no_debug_private)
+        printf("%d: remote (no-fork) task created on %d\n",
+               chpl_localeID, locale);
+      if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+        CHPL_MUTEX_LOCK(&chpl_comm_diagnostics_lock);
+        chpl_comm_forks++;
+        CHPL_MUTEX_UNLOCK(&chpl_comm_diagnostics_lock);
+      }
+
+      info_size = sizeof(fork_t) + arg_size;
+      info = (fork_t*)chpl_malloc(1, info_size, CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+      info->caller = chpl_localeID;
+      info->ack = &done;
+      info->serial_state = CHPL_GET_SERIAL();
+      info->fid = fid;
+      info->arg_size = arg_size;
+
+      done = 0;
+
+      if (arg_size)
+        memcpy(&(info->arg), arg, arg_size);
+      GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_FAST, info, info_size));
+
+      // GASNET_BLOCKUNTIL(1==done);
+      chpl_free(info, 0, 0);
+    } else {
+      // Call the normal chpl_comm_fork()
+      chpl_comm_fork(locale, fid, arg, arg_size);
     }
   }
 }

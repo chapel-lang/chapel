@@ -27,6 +27,7 @@ void gpuFlattenArgs();
 void inlineFunctions();
 void insertLineNumbers();
 void insertWideReferences();
+void markFastOn();
 void lowerIterators();
 void makeBinary();
 void normalize();

@@ -58,6 +58,8 @@ bool fNoNilChecks = false;
 bool fNoChecks = false;
 bool fNoInline = false;
 bool fNoPrivatization = false;
+bool fNoFastOn = false;
+int fast_on_limit = 20;
 bool fGenIDS = false;
 bool fSerialForall = false;
 bool fSerial;  // initialized in setupOrderedGlobals() below
@@ -326,6 +328,7 @@ static void setFastFlag(ArgumentState* arg, char* unused) {
   fNoBoundsChecks = true;
   fNoLocalChecks = true;
   fNoNilChecks = true;
+  fNoFastOn = false;
   optimizeCCode = true;
 }
 
@@ -344,6 +347,7 @@ static void setBaselineFlag(ArgumentState* arg, char* unused) {
   fNoRemoveCopyCalls = true;
   fNoScalarReplacement = true;
   fNoPrivatization = true;
+  fNoFastOn = true;
 }
 
 static void setHelpTrue(ArgumentState* arg, char* unused) {
@@ -395,6 +399,8 @@ static ArgumentDescription arg_desc[] = {
  {"remote-value-forwarding", ' ', NULL, "Enable [disable] remote value forwarding", "n", &fNoRemoteValueForwarding, "CHPL_DISABLE_REMOTE_VALUE_FORWARDING", NULL},
  {"remove-copy-calls", ' ', NULL, "Enable [disable] remove copy calls", "n", &fNoRemoveCopyCalls, "CHPL_DISABLE_REMOVE_COPY_CALLS", NULL},
  {"scalar-replacement", ' ', NULL, "Enable [disable] scalar replacement", "n", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
+ {"fast-on", ' ', NULL, "Enable [disable] fast remote on", "n", &fNoFastOn, "CHPL_DISABLE_FAST_ON", NULL},
+ {"fast-on-limit", ' ', "<limit>", "Limit recursion depth of fast on optimization search", "I", &fast_on_limit, "CHPL_FAST_ON_LIMIT", NULL},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},

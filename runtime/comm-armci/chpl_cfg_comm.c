@@ -405,6 +405,11 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
   chpl_comm_fork_common(locale, fid, arg, arg_size, false);
 }
 
+// Same as chpl_comm_fork()
+void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+  chpl_comm_fork_common(locale, fid, arg, arg_size, true);
+}
+
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }
 void chpl_startVerboseCommHere() { }

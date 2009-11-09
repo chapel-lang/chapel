@@ -33,6 +33,9 @@ Optimization Control Options:
                                          forwarding
       --[no-]remove-copy-calls           Enable [disable] remove copy calls
       --[no-]scalar-replacement          Enable [disable] scalar replacement
+      --[no-]fast-on                     Enable [disable] fast remote on
+      --fast-on-limit <limit>            Limit recursion depth of fast on
+                                         optimization search
 
 Run-time Semantic Check Options:
       --no-checks                        Disable all following checks

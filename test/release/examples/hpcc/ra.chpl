@@ -105,8 +105,12 @@ def main() {
   // index and as the update value.
   //
   forall (_, r) in (Updates, RAStream()) do
-    on TableDist.ind2loc(r & indexMask) do
-      T(r & indexMask) ^= r;
+    on TableDist.ind2loc(r & indexMask) do {
+      const myR = r;
+      local {
+        T(myR & indexMask) ^= myR;
+      }
+   }
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 

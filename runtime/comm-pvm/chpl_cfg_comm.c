@@ -1718,6 +1718,11 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   }
 }
 
+// Just call chpl_comm_fork()
+void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+  chpl_comm_fork(locale, fid, arg, arg_size);
+}
+
 // Macro to clean up broadcast_private calling for heterogeneous and
 // homogeneous cases.
 // index 0 = &chpl_verbose_comm
