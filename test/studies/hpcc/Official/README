@@ -1,0 +1,29 @@
+MODIFICATIONS MADE TO THE ORIGINAL hpcc-1.2.0
+
+src/io.c:
+
+Make it possible to specify at runtime the benchmarks to be run.
+Specify 2 additional lines in hpccinf.txt (if EOF is hit, ignore).
+
+The 2 additional lines are as follows:
+
+(1) ignored line (will fill with benchmark order for reference)
+
+## PTRANS|HPL|*DGEMM|sDGEMM|*Stream|sStream|MPIRA|*RA|sRA|MPIFFT|*FFT|sFFT|LB ##
+
+(2) an unsigned integer which is used as a bit mask to turn the
+    various benchmarks on/off (based on order above).  For example,
+    384==110000000 which means run StarStream and Single Stream.
+
+The only additional overhead added is that these settings must be
+broadcast to all processors.  To avoid changing the params data
+structure, I just always have it broadcast all the values.  If this
+turns out to take too much time, I can changed it to be smarter (only
+broadcast if necessary, broadcast a single message, etc.)
+
+
+RandomAccess/RandomAccess.h:
+
+Surround #define MAX_TOTAL_PENDING_UPDATE with an #ifndef to make it
+possible to change this value via a compile-time flag.
+
