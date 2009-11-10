@@ -139,6 +139,12 @@ OPTIONS
                     aggressively optimize iterators that are defined in terms
                     of a single loop. By default this is enabled.
 
+  --[no-]optimize-on-clauses   Enable [disable] optimization of on clauses.
+                    By default this is disabled.
+
+  --optimize-on-clause-limit   Limit on the function call depth to allow
+                    for on clause optimization. The default value is 20.
+
   --[no-]privatization   Enable [disable] privatization of distributed arrays
                     and domains if the distribution supports it.
 
