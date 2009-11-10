@@ -51,10 +51,10 @@ config const numTrials = 10,
              epsilon = 0.0;
 
 //
-// *** Use the global config constant maxChunks to set the number of
-// *** tasks per locale since this value is used to control the number
-// *** of tasks that can implement a forall loop over a default
-// *** arithmetic array.
+// *** There isn't (yet) a way to set the number of tasks to use for
+// *** implementing a forall loop over a default array.  When there is
+// *** such a way, we will want to set it via this configuration
+// *** constant to get functionality like we have with stream.chpl.
 //
 // config const tasksPerLocale = here.numCores;
 
@@ -157,12 +157,9 @@ def main() {
 def printConfiguration() {
   if (printParams) {
     //
-    // *** Here we multiple m by the number of locales so that we can
-    // *** print out the global problem size.  We print out the value
-    // *** of the global configuration constant maxChunks as tasks per
-    // *** locale.
+    // *** Here we multiply m by the number of locales so that we can
+    // *** print out the global problem size.
     //
-    if (printStats) then printLocalesTasks(maxChunks);
     printProblemSize(elemType, numVectors, m * numLocales);
     writeln("Number of trials = ", numTrials, "\n");
   }
@@ -171,11 +168,14 @@ def printConfiguration() {
 //
 // *** Both initVectors and verifyResults are almost identical to
 // *** stream.chpl even though they are called with arrays that are
-// *** not distributed.  The only difference is that the arrays are
-// *** not printed.  This ensures determinism of output.  Printing the
-// *** arrays also violates the locality constraint imposed by the
-// *** local block from which these functions are called.
-//
+// *** not distributed.  For initialization, the same random stream is
+// *** used on each locale.  In the global version, a single logical
+// *** stream of random numbers is used across all of the locales.
+// ***
+// *** In this version, we've omitted a way to print the arrays.  This
+// *** ensures determinism of output.  Printing the arrays also
+// *** violates the locality constraint imposed by the local block
+// *** from which these functions are called.
 //
 // Initialize vectors B and C using a random stream of values
 //
