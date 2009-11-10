@@ -242,18 +242,20 @@ static void polling(void* x) {
 static char segsizeval[80];
 
 static void chpl_comm_gasnet_set_max_segsize() {
+  FILE* file = NULL;
+  int memtotal;
+
   if (getenv("GASNET_MAX_SEGSIZE")) {
     return;
   }
 
-  FILE* file = fopen( "/proc/meminfo", "r" );
+  file = fopen( "/proc/meminfo", "r" );
   if (file == NULL) {
     return;
   }
   /* The first line of /proc/meminfo looks something like:
    * MemTotal:      1027296 kB
    */
-  int memtotal;
   if (fscanf(file, "MemTotal: %d kB", &memtotal) != 1) {
     return;
   }
