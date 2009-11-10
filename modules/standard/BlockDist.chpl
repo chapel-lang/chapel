@@ -22,6 +22,7 @@
 
 
 config param debugBlockDist = false; // internal development flag (debugging)
+config param sanityCheckDistribution = false; // ditto; should promote to compiler flag
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -187,7 +188,17 @@ def Block.getChunk(inds, locid) {
   //
   // TODO: Does using David's detupling trick work here?
   //
-  return locDist(locid).myChunk((...inds.getIndices()));
+  const chunk = locDist(locid).myChunk((...inds.getIndices()));
+  if sanityCheckDistribution then
+    if chunk.numIndices > 0 {
+      if ind2locInd(chunk.low) != locid then
+        writeln("[", here.id, "] ", chunk.low, " is in my chunk but maps to ",
+                ind2locInd(chunk.low));
+      if ind2locInd(chunk.high) != locid then
+        writeln("[", here.id, "] ", chunk.high, " is in my chunk but maps to ",
+                ind2locInd(chunk.high));
+    }
+  return chunk;
 }
 
 //
@@ -837,15 +848,14 @@ def LocBlockArr.numElements return myElems.numElements;
 // helper function for blocking index ranges
 //
 def _computeBlock(waylo, numelems, lo, wayhi, numblocks, blocknum) {
-  def procToData(x, lo)
-    return lo + (x:lo.type) + (x:real != x:int:real):lo.type;
+  def intCeilXDivByY(x, y) return ((x + (y-1)) / y);
 
   const blo =
     if blocknum == 0 then waylo
-      else procToData((numelems:real * blocknum) / numblocks, lo);
+    else lo + intCeilXDivByY(numelems * blocknum:lo.type, numblocks:lo.type);
   const bhi =
     if blocknum == numblocks - 1 then wayhi
-      else procToData((numelems:real * (blocknum+1)) / numblocks, lo) - 1;
+    else lo + intCeilXDivByY(numelems * (blocknum+1):lo.type, numblocks:lo.type) - 1;
 
   return (blo, bhi);
 }
