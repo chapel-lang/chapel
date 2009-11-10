@@ -166,8 +166,9 @@ def dfft(A: [?ADom], W, cyclicPhase) {
       // Note: lo..#num         == lo, lo+1, lo+2, ..., lo+num-1
       //       lo.. by str #num == lo, lo+str, lo+2*str, ... lo+(num-1)*str
       //
-      forall lo in ADom[bankStart..#str] do
-        local butterfly(wk1, wk2, wk3, A.localSlice(lo..by str #radix));
+      forall lo in bankStart..#str do
+        on ADom.dist.ind2loc(lo) do
+          local butterfly(wk1, wk2, wk3, A.localSlice(lo..by str #radix));
 
       //
       // update the multipliers for the high bank
@@ -180,8 +181,9 @@ def dfft(A: [?ADom], W, cyclicPhase) {
       //
       // loop in parallel over the high bank, computing butterflies
       //
-      forall lo in ADom[bankStart+span..#str] do
-        local butterfly(wk1, wk2, wk3, A.localSlice(lo.. by str #radix));
+      forall lo in bankStart+span..#str do
+        on ADom.dist.ind2loc(lo) do
+          local butterfly(wk1, wk2, wk3, A.localSlice(lo.. by str #radix));
     }
   }
 
@@ -195,21 +197,22 @@ def dfft(A: [?ADom], W, cyclicPhase) {
     // problem size is a power of 4
     //
     if (str*radix == numElements) {
-      writeln("looping over ", 0..#str, "; slice = lo.. by ", str, " # ", radix);
-      forall lo in ADom[0..#str] do
-        local butterfly(1.0, 1.0, 1.0, A.localSlice(lo.. by str # radix));
+      forall lo in 0..#str do
+        on ADom.dist.ind2loc(lo) do
+          local butterfly(1.0, 1.0, 1.0, A.localSlice(lo.. by str # radix));
     }
     //
     // ...otherwise using a simple radix-2 butterfly scheme
     //
     else
-      forall lo in ADom[0..#str] do
-        local {
-          const a = A(lo),
-                b = A(lo+str);
-          A(lo)     = a + b;
-          A(lo+str) = a - b;
-        }
+      forall lo in 0..#str do
+        on ADom.dist.ind2loc(lo) do
+          local {
+            const a = A(lo),
+                  b = A(lo+str);
+            A(lo)     = a + b;
+            A(lo+str) = a - b;
+          }
   }
 }
 
