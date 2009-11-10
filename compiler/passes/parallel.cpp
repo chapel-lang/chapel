@@ -1601,8 +1601,8 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
 //  the handler (rather than creating a new task).
 //
 void
-markFastOn(void) {
-  if (fNoFastOn)
+optimizeOnClauses(void) {
+  if (fNoOptimizeOnClauses)
     return;
 
   compute_call_sites();
@@ -1615,7 +1615,7 @@ markFastOn(void) {
 #endif
       Vec<FnSymbol*> visited;
 
-      if (markFastSafeFn(fn, fast_on_limit, &visited)) {
+      if (markFastSafeFn(fn, optimize_on_clause_limit, &visited)) {
 #ifdef DEBUG
         printf("\t[CANDIDATE FOR NO_FORK]\n");
 #endif
