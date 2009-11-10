@@ -196,14 +196,12 @@ def dfft(A: [?ADom], W, cyclicPhase) {
     // ...using the radix-4 butterflies with 1.0 multipliers if the
     // problem size is a power of 4
     //
-    if (str*radix == numElements) then
-      forall lo in 0..#str {
-        // We need to use a temporary array X here because our Cyclic
-        // distribution doesn't yet support the reindex operator.
-        var X: [0..radix] complex = A[lo.. by str #radix];
-        local butterfly(1.0, 1.0, 1.0, X);
-        A[lo.. by str #radix] = X;
-      }
+    if (str*radix == numElements) {
+      writeln("looping over ", 0..#str, "; slice = lo.. by ", str, " # ", radix);
+      forall lo in 0..#str do
+        on ADom.dist.ind2loc(lo) do
+          local butterfly(1.0, 1.0, 1.0, A.localSlice(lo.. by str # radix));
+    }
     //
     // ...otherwise using a simple radix-2 butterfly scheme
     //
