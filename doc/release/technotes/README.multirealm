@@ -183,29 +183,10 @@ and $CHPL_HOME/third-party/pvm/README.
 
 GENERAL CAVEATS:
 
-Unfortunately, there are some portions of this process that assume the
-file system structure is symmetric across all hosts.  Note that the
-physical volume (disk) need not be the same, just the structure
-(paths).  We are working on relaxing these assumptions, but for now
-the following conditions must be met.
-
-  - CHPL_HOME must reside in the same location on all hosts.
-
-  - The directory from which you invoke a multi-realm compilation must
-    exist on all hosts.
-
-  - The Chapel source files being compiled (whether specified via
-    relative or absolute path) must exist on all hosts in the same
-    location.
-
-In addition, all hosts used to run a multi-realm Chapel program must
-use the same pointer size.  Again, we are currently working on
+In our current implementation, all hosts that are used to run a
+multi-realm Chapel program must use the same native pointer size
+(e.g., sizeof(void*) in the C compiler).  We are currently working on
 relaxing this assumption.
-
-The performance of the PVM communication layer is currently less than
-optimal, and particularly bogs down when a single host is
-oversubscribed.  For best results, only map a single locale to each
-host.
 
 
 BUILDING CHAPEL FOR MULTI-REALM EXECUTION:
@@ -277,10 +258,27 @@ run from a single machine (the compile host) and will invoke the
 Chapel compiler for each specified target host, generating a binary
 for each host type.  The script accepts all the usual Chapel compiler
 arguments.  To invoke the compiler, it ssh's to the first machine
-listed in the corresponding hostfile (described above).  (Note that
-you can also invoke chpl manually to create a multi-realm run, but
-must do so for each target platform, ensuring that the same options
-are provided in for each invocation of the compiler).
+listed in the corresponding hostfile (described above).  
+
+Because of its approach, the chpl-multirealm script assumes that the
+file system across the target hosts is symmetric, which is to say the
+same logical paths need to exist on each machine.  In particular:
+
+* CHPL_HOME must reside in the same location on all hosts
+
+* The directory from which you invoke a multi-realm compilation must
+  exist on all hosts
+
+* The Chapel source files being compiled (whether specified via a
+  relative or absolute path) must exist on all hosts at the same
+  location
+
+Note that there is no requirement to use the chpl-multirealm script,
+it is simply provided for convenience.  If you cannot use it due to
+the assumptions above (or simply choose not to use it), you can invoke
+the chpl compiler on each platform by hand, ensuring that the same
+options (and environment variables that specify compilation options)
+are the same for each invocation of the compiler.
 
 The chpl-multirealm script requires the configuration parameter
 realmTypes to be set to a quoted list of host types to build for:
