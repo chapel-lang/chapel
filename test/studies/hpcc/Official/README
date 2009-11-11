@@ -1,4 +1,35 @@
+BUILDING
+========
+
+Set the enviroment variable HPCC_VERSIONS to the list of "arch" types
+you want to build for.  The "arch" types are defined by files in
+hpl/Make.<arch>.  For example, if you want to build all the versions
+for the HPCC Challenge 2009, set HPCC_VERSIONS to:
+
+    'CrayXT-hpcc09 CrayXT-hpcc09-openmp CrayXT-hpcc09.bucket=1 CrayXT-hpcc09-openmp.bucket=1'
+
+This builds MPI and OpenMP versions with the default bucket size
+(1024) and bucekt size equal to "1".
+
+The binaries are place in a directory named BUILD.<timestamp>.
+
+
+NEW FILES
+=========
+
+hpl/Make.*:
+
+"arch" definitions for various machines (CrayXT, CrayCX1, etc.).
+These are all very similar (some possibly even the same).
+
+MakeAll (new):
+
+Build for all "arch" in the environment variable HPCC_VERSIONS.  The
+resulting binaries are place in a directory named BUILD.<timestamp>.
+
+
 MODIFICATIONS MADE TO THE ORIGINAL hpcc-1.2.0
+=============================================
 
 src/io.c:
 

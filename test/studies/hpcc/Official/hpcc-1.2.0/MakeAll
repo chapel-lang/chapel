@@ -1,0 +1,31 @@
+#! /usr/bin/env bash
+
+# DEBUG=echo
+
+if [ "$HPCC_VERSIONS" = '' ] ; then
+   HPCC_VERSIONS='CrayXT-hpcc09 CrayXT-hpcc09-openmp CrayXT-hpcc09.bucket=1 CrayXT-hpcc09-openmp.bucket=1'
+fi
+
+BUILD_DIR=BUILD.`date +%y%m%d.%R:%S`
+
+echo "***"
+echo "*** Building: $HPCC_VERSIONS"
+echo "*** Binaries will be placed in $BUILD_DIR"
+echo "***"
+
+for v in $HPCC_VERSIONS
+do
+    echo "***"
+    echo "*** Building $v"
+    echo "***"
+    $DEBUG mkdir -p $BUILD_DIR/$v
+    $DEBUG make arch=$v clean
+    $DEBUG make arch=$v
+    $DEBUG mv hpcc $BUILD_DIR/$v
+done
+
+echo "***"
+echo "*** Build complete"
+echo "*** Binaries in $BUILD_DIR"
+echo "***"
+
