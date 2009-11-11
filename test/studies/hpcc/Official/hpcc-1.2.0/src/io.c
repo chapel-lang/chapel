@@ -155,13 +155,15 @@ HPCC_InputFileInit(HPCC_Params *params) {
     icopy( params->nbs, params->nbval, 1, params->PTRANSnbval + n, 1 );
     params->PTRANSnbs = n + params->nbs;
 
+    line++;
     /* Added support to turn on and off "Run" parameters */
     if (fgets(buf, nbuf, f)) {
+      line++;
       /* ignore comment */
       if (fgets(buf, nbuf, f)) {
         unsigned u;
         rv = sscanf( buf, "%u", &u );
-        if (rv != 1 || n < 0) { /* parse error or negative value*/
+        if (rv != 1) { /* parse error or negative value*/
           BEGIN_IO( myRank, params->outFname, outputFile );
           fprintf( outputFile, "Error in line %d of the input file.\n", line );
           END_IO( myRank, outputFile );
@@ -193,7 +195,43 @@ HPCC_InputFileInit(HPCC_Params *params) {
           mask <<= 1;
           params->RunPTRANS = u&mask ? 1 : 0;
         }
+      } else {
+        goto ioEnd;
       }
+    } else {
+      goto ioEnd;
+    }
+
+    line++;
+    /* Added support to specify log of table size for Random Access */
+    if (fgets(buf, nbuf, f)) {
+      unsigned u;
+      rv = sscanf( buf, "%u", &u );
+      if (rv != 1) {
+        BEGIN_IO( myRank, params->outFname, outputFile );
+        fprintf( outputFile, "Error in line %d of the input file.\n", line );
+        END_IO( myRank, outputFile );
+      } else {
+        params->RandomAccess_N = params->MPIRandomAccess_N = u;
+      }
+    } else {
+      goto ioEnd;
+    }
+
+    line++;
+    /* Added support to specify number of updates for Random Access */
+    if (fgets(buf, nbuf, f)) {
+      unsigned u;
+      rv = sscanf( buf, "%u", &u );
+      if (rv != 1) { /* parse error or negative value*/
+        BEGIN_IO( myRank, params->outFname, outputFile );
+        fprintf( outputFile, "Error in line %d of the input file.\n", line );
+        END_IO( myRank, outputFile );
+      } else {
+        params->MPIRandomAccess_ExeUpdates = u;
+      }
+    } else {
+      goto ioEnd;
     }
 
     ioErr = 0;
@@ -234,6 +272,10 @@ HPCC_InputFileInit(HPCC_Params *params) {
   MPI_Bcast( &params->RunStarFFT, 1, MPI_INT, 0, comm );
   MPI_Bcast( &params->RunSingleFFT, 1, MPI_INT, 0, comm );
   MPI_Bcast( &params->RunLatencyBandwidth, 1, MPI_INT, 0, comm );
+
+  MPI_Bcast( &params->RandomAccess_N, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->MPIRandomAccess_N, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->MPIRandomAccess_ExeUpdates, 1, MPI_INT, 0, comm );
 
   /* copy what HPL has */
   params->PTRANSnpqs = params->npqs;
@@ -328,6 +370,12 @@ HPCC_Init(HPCC_Params *params) {
   params->RunLatencyBandwidth = 0;
   params->RunMPIFFT = 1;
 
+  params->MPIFFT_N =
+  params->RandomAccess_N =
+  params->MPIRandomAccess_N =
+  params->MPIRandomAccess_Errors =
+  params->MPIRandomAccess_ExeUpdates = (s64Int)(-1);
+
   HPCC_InputFileInit( params );
 
   /*
@@ -370,12 +418,6 @@ HPCC_Init(HPCC_Params *params) {
   params->StreamThreads = 1;
 
   params->FFTEnblk = params->FFTEnp = params->FFTEl2size = -1;
-
-  params->MPIFFT_N =
-  params->RandomAccess_N =
-  params->MPIRandomAccess_N =
-  params->MPIRandomAccess_Errors =
-  params->MPIRandomAccess_ExeUpdates = (s64Int)(-1);
 
   procMax = procMin = params->pval[0] * params->qval[0];
   for (i = 1; i < params->npqs; ++i) {

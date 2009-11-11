@@ -5,7 +5,7 @@ src/io.c:
 Make it possible to specify at runtime the benchmarks to be run.
 Specify 2 additional lines in hpccinf.txt (if EOF is hit, ignore).
 
-The 2 additional lines are as follows:
+The 4 additional lines are as follows:
 
 (1) ignored line (will fill with benchmark order for reference)
 
@@ -14,6 +14,11 @@ The 2 additional lines are as follows:
 (2) an unsigned integer which is used as a bit mask to turn the
     various benchmarks on/off (based on order above).  For example,
     384==110000000 which means run StarStream and Single Stream.
+
+(3) Log of the MPIRandomAccess problem size
+
+(4) Log of the MPIRandomAccess number of updates
+
 
 The only additional overhead added is that these settings must be
 broadcast to all processors.  To avoid changing the params data
@@ -26,4 +31,11 @@ RandomAccess/RandomAccess.h:
 
 Surround #define MAX_TOTAL_PENDING_UPDATE with an #ifndef to make it
 possible to change this value via a compile-time flag.
+
+
+RandomAccess/MPIRandomAccess.c:
+
+Small change to use (3) & (4) above if defined in the input file.
+
+
 

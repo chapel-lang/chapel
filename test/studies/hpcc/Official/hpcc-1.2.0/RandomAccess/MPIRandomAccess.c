@@ -112,6 +112,7 @@
 
 
 #include <hpcc.h>
+#include <math.h>
 
 #include "RandomAccess.h"
 #include "buckets.h"
@@ -710,16 +711,25 @@ HPCC_MPIRandomAccess(HPCC_Params *params) {
     if (! outFile) outFile = stderr;
   }
 
-  TotalMem = params->HPLMaxProcMem; /* max single node memory */
-  TotalMem *= NumProcs;             /* max memory in NumProcs nodes */
-  TotalMem /= sizeof(u64Int);
+  if (params->MPIRandomAccess_N == -1) {
+    TotalMem = params->HPLMaxProcMem; /* max single node memory */
+    TotalMem *= NumProcs;             /* max memory in NumProcs nodes */
+    TotalMem /= sizeof(u64Int);
 
-  /* calculate TableSize --- the size of update array (must be a power of 2) */
-  for (TotalMem *= 0.5, logTableSize = 0, TableSize = 1;
-       TotalMem >= 1.0;
-       TotalMem *= 0.5, logTableSize++, TableSize <<= 1)
-    ; /* EMPTY */
+    /* calculate TableSize --- the size of update array (must be a power of 2) */
+    for (TotalMem *= 0.5, logTableSize = 0, TableSize = 1;
+         TotalMem >= 1.0;
+         TotalMem *= 0.5, logTableSize++, TableSize <<= 1)
+      ; /* EMPTY */
 
+  } else {
+    // MPIRandomAccess_N = Log of TableSize
+    logTableSize = params->MPIRandomAccess_N;
+    if (MyProc == 0) {
+      TableSize = (u64Int) pow(2, logTableSize);
+    }
+    MPI_Bcast( &TableSize, 1, INT64_DT, 0, MPI_COMM_WORLD );
+  }
 
   /* determine whether the number of processors is a power of 2 */
   for (i = 1, logNumProcs = 0; ; logNumProcs++, i <<= 1) {
@@ -732,7 +742,7 @@ HPCC_MPIRandomAccess(HPCC_Params *params) {
       GlobalStartMyProc = (MinLocalTableSize * MyProc);
       break;
 
-    /* number of processes is not a power 2 (too many shifts may introduce negative values or 0) */
+      /* number of processes is not a power 2 (too many shifts may introduce negative values or 0) */
 
     }
     else if (i > NumProcs || i <= 0) {
@@ -745,13 +755,13 @@ HPCC_MPIRandomAccess(HPCC_Params *params) {
       Top = (MinLocalTableSize + 1) * Remainder;
       /* Local table size */
       if (MyProc < Remainder) {
-          LocalTableSize = (MinLocalTableSize + 1);
-          GlobalStartMyProc = ( (MinLocalTableSize + 1) * MyProc);
-        }
-        else {
-          LocalTableSize = MinLocalTableSize;
-          GlobalStartMyProc = ( (MinLocalTableSize * MyProc) + Remainder );
-        }
+        LocalTableSize = (MinLocalTableSize + 1);
+        GlobalStartMyProc = ( (MinLocalTableSize + 1) * MyProc);
+      }
+      else {
+        LocalTableSize = MinLocalTableSize;
+        GlobalStartMyProc = ( (MinLocalTableSize * MyProc) + Remainder );
+      }
       break;
 
     } /* end else if */
@@ -777,10 +787,19 @@ HPCC_MPIRandomAccess(HPCC_Params *params) {
 
   params->MPIRandomAccess_N = (s64Int)TableSize;
 
-  /* Default number of global updates to table: 4x number of table entries */
-  NumUpdates_Default = 4 * TableSize;
-  ProcNumUpdates = 4*LocalTableSize;
-  NumUpdates = NumUpdates_Default;
+  if (params->MPIRandomAccess_ExeUpdates == -1) {
+    /* Default number of global updates to table: 4x number of table entries */
+    NumUpdates_Default = 4 * TableSize;
+    ProcNumUpdates = 4*LocalTableSize;
+    NumUpdates = NumUpdates_Default;
+  } else {
+    int logNumUpdates = params->MPIRandomAccess_ExeUpdates;
+    if (MyProc == 0) {
+      NumUpdates = (u64Int) pow(2, logNumUpdates);
+    }
+    MPI_Bcast( &NumUpdates, 1, INT64_DT, 0, MPI_COMM_WORLD );
+    ProcNumUpdates = NumUpdates/NumProcs;
+  }
 
   /* The time bound is only accurate for standard RandomAccess algorithm. */
 #ifdef HPCC_RA_STDALG
@@ -830,6 +849,9 @@ HPCC_MPIRandomAccess(HPCC_Params *params) {
 #ifdef RA_TIME_BOUND
     fprintf( outFile, "Number of updates EXECUTED = " FSTR64 " (for a TIME BOUND of %.2f secs)\n",
              NumUpdates, timeBound);
+#else
+    fprintf( outFile, "Number of updates EXECUTED = " FSTR64 "\n",
+             NumUpdates);
 #endif
     params->MPIRandomAccess_ExeUpdates = NumUpdates;
     params->MPIRandomAccess_TimeBound = timeBound;
