@@ -389,19 +389,19 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
         panic = 1;
         switch (infos[i]) {
         case PvmBadParam:
-          snprintf(errorMsg, 4095, "%s | %d: Bad parameter passed to %s -- shutting down host", errorMsg, pvmnodestoadd[i]);
+          snprintf(errorMsg, 4095, "%s | %d: Bad parameter passed to %s -- shutting down host", errorMsg, i, pvmnodestoadd[i]);
           break;
         case PvmNoHost:
-          snprintf(errorMsg, 4095, "%s | %d: No host named %s -- shutting down host", errorMsg, pvmnodestoadd[i]);
+          snprintf(errorMsg, 4095, "%s | %d: No host named %s -- shutting down host", errorMsg, i, pvmnodestoadd[i]);
           break;
         case PvmCantStart:
-          snprintf(errorMsg, 4095, "%s | %d: Failed to start pvmd on %s -- shutting down host", errorMsg, pvmnodestoadd[i]);
+          snprintf(errorMsg, 4095, "%s | %d: Failed to start pvmd on %s -- shutting down host", errorMsg, i, pvmnodestoadd[i]);
           break;
         case PvmOutOfRes:
-          snprintf(errorMsg, 4095, "%s | %d: PVM has run out of system resources for %s -- shutting down host", errorMsg, pvmnodestoadd[i]);
+          snprintf(errorMsg, 4095, "%s | %d: PVM has run out of system resources for %s -- shutting down host", errorMsg, i, pvmnodestoadd[i]);
           break;
         default:
-          snprintf(errorMsg, 4095, "%s | %d: Unknown error %d on %s -- shutting down host", errorMsg, infos[i], pvmnodestoadd[i]);
+          snprintf(errorMsg, 4095, "%s | %d: Unknown error %d on %s -- shutting down host", errorMsg, i, infos[i], pvmnodestoadd[i]);
           break;
         }
       }
