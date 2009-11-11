@@ -1,3 +1,14 @@
+Ranges
+------
+* should we define ranges/domains as being array-like where the
+  indices serve as both indices and values?  (for the purposes of
+  slicing, e.g.)
+
+Operators
+---------
+* clarify definition of %
+* consider supporting other modulus operators/functions as well?
+
 Locales and Affinity
 --------------------
 * add statement that global non-distributed constants are replicated
