@@ -77,7 +77,6 @@ For more detailed information about...      refer to...
 
   ...example Chapel programs                 ...examples/README
   ...a quick reference for Chapel syntax     ...doc/quickReference.pdf
-  ...a tutorial using three HPCC benchmarks  ...doc/hpccTutorial.pdf
   ...the Chapel language specification       ...doc/chapelLanguageSpec.pdf
 
   ...executing programs on multiple locales  ...doc/README.multilocale
