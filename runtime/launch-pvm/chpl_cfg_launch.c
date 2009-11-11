@@ -382,31 +382,38 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   pvm_setopt(PvmAutoErr, i);
   // Something happened on addhosts -- likely old pvmd running
   if ((info > 0) && (info < numLocales)) {
-    char errorMsg[4095];
+    char errorMsg[512];
     int panic = 0;
     for (i = 0; i < numLocales; i++) {
       if ((infos[i] < 0) && (infos[i] != PvmDupHost)) {
         panic = 1;
         switch (infos[i]) {
         case PvmBadParam:
-          snprintf(errorMsg, 4095, "%s | %d: Bad parameter passed to %s -- shutting down host", errorMsg, i, pvmnodestoadd[i]);
+          snprintf(errorMsg, 511, "PVM launcher array element %d: Bad parameter passed to %s -- shutting down host", i, pvmnodestoadd[i]);
           break;
         case PvmNoHost:
-          snprintf(errorMsg, 4095, "%s | %d: No host named %s -- shutting down host", errorMsg, i, pvmnodestoadd[i]);
+          snprintf(errorMsg, 511, "PVM launcher array element %d: No host named %s -- shutting down host", i, pvmnodestoadd[i]);
           break;
         case PvmCantStart:
-          snprintf(errorMsg, 4095, "%s | %d: Failed to start pvmd on %s -- shutting down host", errorMsg, i, pvmnodestoadd[i]);
+          snprintf(errorMsg, 511, "PVM launcher array element %d: Failed to start pvmd on %s -- shutting down host", i, pvmnodestoadd[i]);
           break;
         case PvmOutOfRes:
-          snprintf(errorMsg, 4095, "%s | %d: PVM has run out of system resources for %s -- shutting down host", errorMsg, i, pvmnodestoadd[i]);
+          snprintf(errorMsg, 511, "PVM launcher array element %d: PVM has run out of system resources for %s -- shutting down host", i, pvmnodestoadd[i]);
           break;
         default:
-          snprintf(errorMsg, 4095, "%s | %d: Unknown error %d on %s -- shutting down host", errorMsg, i, infos[i], pvmnodestoadd[i]);
+          snprintf(errorMsg, 511, "PVM launcher array element %d: Unknown error %d on %s -- shutting down host", i, infos[i], pvmnodestoadd[i]);
           break;
+        }
+        if (verbosity > 1) {
+          fprintf(stderr, "%s\n", errorMsg);
         }
       }
     }
     if (panic == 1) {
+      snprintf(errorMsg, 511, "PVM launcher error adding hosts.");
+      if (verbosity > 1) {
+        snprintf(errorMsg, 511, "%s Use --verbosity=1 to diagnose.", errorMsg);
+      }
       pvm_launcher_error(errorMsg);
     }
   }
