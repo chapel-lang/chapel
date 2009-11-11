@@ -128,10 +128,17 @@ class RandomStream {
     }
   }
 
-  def fillRandom(x: [] complex) {
-    for i in x.domain {
-      x(i).re = getNext();
-      x(i).im = getNext();
+  def fillRandom(X: [] complex) {
+    lock$;
+    const startCount: int(64) = sharedCount;
+    sharedCount = startCount + 2*X.numElements;
+    lock$ = false;
+    if X.rank == 1 {
+      forall (x, r) in (X, chpl__cplx_these(startCount, X.numElements)) do
+        x = r;
+    } else {
+      for (x, r) in (X, chpl__these(startCount, X.numElements)) do
+        x = r;
     }
   }
 
@@ -168,6 +175,38 @@ class RandomStream {
       if (debugParRandom) then
         writeln("Doing iteration ", format("#####", i+1), " on locale ", here.id);
       const val = locStream.getNext();
+      yield val;
+    }
+    delete locStream;
+  }
+
+  def chpl__cplx_these(startAt: int(64), numElements) {
+    skipToNth(startAt);
+    for i in 1..numElements {
+      const val = (getNext(), getNext()):complex;
+      yield val;
+    }
+  }
+
+  def chpl__cplx_these(param tag: iterator, startAt: int(64), numElements)
+      where tag == iterator.leader {
+    var D: domain(1, int(64)) = [1..numElements:int(64)];
+    halt("Someone's trying to call the leader");
+    yield D;
+  }
+
+  def chpl__cplx_these(param tag: iterator, follower,
+                       startAt: int(64), numElements)
+      where tag == iterator.follower {
+    if follower.size != 1 then
+      halt("RandomStream's parallel iterator cannot use multi-dimensional iterators");
+    // make a local copy of the 'this' random stream class
+    var locStream = new RandomStream(seed);
+    locStream.skipToNth((2*follower(1).low + startAt));
+    for i in follower {
+      if (debugParRandom) then
+        writeln("Doing iteration ", format("#####", i+1), " on locale ", here.id);
+      const val = (locStream.getNext(), locStream.getNext()):complex;
       yield val;
     }
     delete locStream;

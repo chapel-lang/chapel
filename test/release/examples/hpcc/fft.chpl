@@ -117,7 +117,7 @@ def main() {
 
   const startTime = getCurrentTime();  // capture the start time
 
-  Zblk = conjg(z);                        // store the conjugate of z in Zblk
+  [(a,b) in (Zblk, z)] a = conjg(b);      // store the conjugate of z in Zblk
   bitReverseShuffle(Zblk);                // permute Zblk
 
   dfft(Zblk, Twiddles, cyclicPhase=false); // compute the DFFT, block phases
@@ -327,7 +327,7 @@ def log4(x) return logBasePow2(x, 2);
 def verifyResults(z, Zblk, Zcyc, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Zblk, "\n");
 
-  Zblk = conjg(Zblk) / m;
+  [z in Zblk] z = conjg(z) / m;
   bitReverseShuffle(Zblk);
   dfft(Zblk, Twiddles, cyclicPhase=false);
   forall (b, c) in (Zblk, Zcyc) do
