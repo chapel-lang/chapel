@@ -205,14 +205,14 @@ HPCC_InputFileInit(HPCC_Params *params) {
     line++;
     /* Added support to specify log of table size for Random Access */
     if (fgets(buf, nbuf, f)) {
-      unsigned u;
-      rv = sscanf( buf, "%u", &u );
-      if (rv != 1) {
+      s64Int l;
+      rv = sscanf( buf, "%ul", &l );
+      if ((rv != 1) || (l < 0)) { /* parse error or negative value*/
         BEGIN_IO( myRank, params->outFname, outputFile );
         fprintf( outputFile, "Error in line %d of the input file.\n", line );
         END_IO( myRank, outputFile );
       } else {
-        params->RandomAccess_N = params->MPIRandomAccess_N = u;
+        params->RandomAccess_N = params->MPIRandomAccess_N = l;
       }
     } else {
       goto ioEnd;
@@ -221,14 +221,30 @@ HPCC_InputFileInit(HPCC_Params *params) {
     line++;
     /* Added support to specify number of updates for Random Access */
     if (fgets(buf, nbuf, f)) {
-      unsigned u;
-      rv = sscanf( buf, "%u", &u );
-      if (rv != 1) { /* parse error or negative value*/
+      s64Int l;
+      rv = sscanf( buf, "%u", &l );
+      if ((rv != 1) || (l < 0)) { /* parse error or negative value*/
         BEGIN_IO( myRank, params->outFname, outputFile );
         fprintf( outputFile, "Error in line %d of the input file.\n", line );
         END_IO( myRank, outputFile );
       } else {
-        params->MPIRandomAccess_ExeUpdates = u;
+        params->MPIRandomAccess_ExeUpdates = l;
+      }
+    } else {
+      goto ioEnd;
+    }
+
+    line++;
+    /* Added support to specify problem size for STREAM */
+    if (fgets(buf, nbuf, f)) {
+      int d;
+      rv = sscanf( buf, "%d", &d );
+      if ((rv != 1) || (d < 0)) { /* parse error or negative value*/
+        BEGIN_IO( myRank, params->outFname, outputFile );
+        fprintf( outputFile, "Error in line %d of the input file.\n", line );
+        END_IO( myRank, outputFile );
+      } else {
+        params->StreamVectorSize = d;
       }
     } else {
       goto ioEnd;
@@ -273,9 +289,11 @@ HPCC_InputFileInit(HPCC_Params *params) {
   MPI_Bcast( &params->RunSingleFFT, 1, MPI_INT, 0, comm );
   MPI_Bcast( &params->RunLatencyBandwidth, 1, MPI_INT, 0, comm );
 
-  MPI_Bcast( &params->RandomAccess_N, 1, MPI_INT, 0, comm );
-  MPI_Bcast( &params->MPIRandomAccess_N, 1, MPI_INT, 0, comm );
-  MPI_Bcast( &params->MPIRandomAccess_ExeUpdates, 1, MPI_INT, 0, comm );
+  MPI_Bcast( &params->RandomAccess_N, 1, MPI_LONG, 0, comm );
+  MPI_Bcast( &params->MPIRandomAccess_N, 1, MPI_LONG, 0, comm );
+  MPI_Bcast( &params->MPIRandomAccess_ExeUpdates, 1, MPI_LONG, 0, comm );
+
+  MPI_Bcast( &params->StreamVectorSize, 1, MPI_INT, 0, comm );
 
   /* copy what HPL has */
   params->PTRANSnpqs = params->npqs;
@@ -370,11 +388,11 @@ HPCC_Init(HPCC_Params *params) {
   params->RunLatencyBandwidth = 0;
   params->RunMPIFFT = 1;
 
-  params->MPIFFT_N =
   params->RandomAccess_N =
   params->MPIRandomAccess_N =
-  params->MPIRandomAccess_Errors =
   params->MPIRandomAccess_ExeUpdates = (s64Int)(-1);
+
+  params->StreamVectorSize = -1;
 
   HPCC_InputFileInit( params );
 
@@ -411,13 +429,15 @@ HPCC_Init(HPCC_Params *params) {
 
   params->DGEMM_N =
   params->FFT_N =
-  params->StreamVectorSize =
   params->MPIRandomAccess_Algorithm =
   params->MPIFFT_Procs = -1;
 
   params->StreamThreads = 1;
 
   params->FFTEnblk = params->FFTEnp = params->FFTEl2size = -1;
+
+  params->MPIFFT_N =
+  params->MPIRandomAccess_Errors = (s64Int)(-1);
 
   procMax = procMin = params->pval[0] * params->qval[0];
   for (i = 1; i < params->npqs; ++i) {
@@ -672,6 +692,13 @@ HPCC_Finalize(HPCC_Params *params) {
 int
 HPCC_LocalVectorSize(HPCC_Params *params, int vecCnt, size_t size, int pow2) {
   int flg2, maxIntBits2;
+
+  if (vecCnt == 3) {
+    // STREAM benchmark
+    if (params->StreamVectorSize != 0) {
+      return params->StreamVectorSize;
+    }
+  }
 
   /* this is the maximum power of 2 that that can be held in a signed integer (for a 4-byte
      integer, 2**31-1 is the maximum integer, so the maximum power of 2 is 30) */

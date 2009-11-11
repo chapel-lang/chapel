@@ -21,7 +21,13 @@ do
     $DEBUG mkdir -p $BUILD_DIR/$v
     $DEBUG make arch=$v clean
     $DEBUG make arch=$v
-    $DEBUG mv hpcc $BUILD_DIR/$v
+    if [ $? != 0 ] ; then
+        echo "***"
+        echo "*** FAILED BUILD: $v"
+        echo "***"
+    else
+        $DEBUG mv hpcc $BUILD_DIR/$v
+    fi
 done
 
 echo "***"
