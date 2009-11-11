@@ -226,7 +226,12 @@ def printResults(successful, minTimes) {
     writeln("  avg = ", avgTime);
     writeln("  min = ", minTime);
 
-    const GBPerSec = numVectors * numBytes(elemType) * (numLocales * m / minTime) * 1e-9;
-    writeln("Performance (GB/s) = ", GBPerSec);
+    const maxGBPerSec = numVectors * numBytes(elemType) * (m / minTime) * 1e-9,
+          avgGBPerSec = numVectors * numBytes(elemType) * (m / avgTime) * 1e-9,
+          minGBPerSec = numVectors * numBytes(elemType) * (m / maxTime) * 1e-9;
+    writeln("Performance (GB/s):");
+    writeln("  max = ", maxGBPerSec);
+    writeln("  avg = ", avgGBPerSec);
+    writeln("  min = ", minGBPerSec);
   }
 }
