@@ -3,6 +3,74 @@ Release Changes List
 ====================
 
 ============
+version 1.02
+============
+
+Update to third public release of Chapel, November 12, 2009
+(see also changes below for version 1.01 and 1.0)
+
+High-Level Themes:
+------------------
+- single- and multi-locale task parallelism
+- single- and multi-locale data parallelism
+- improved performance and scalability
+- bug fixes
+
+Packaging Changes:
+------------------
+- added GASNet 1.14.0 to third-party/ though 1.12.0 is still the default
+  (see third-party/gasnet/README)
+
+Runtime Library Changes:
+------------------------
+- vastly improved the performance of CHPL_COMM=pvm, esp. when oversubscribing
+
+Documentation:
+--------------
+- removed the HPCC-related PDFs from doc/ as they seem better suited for the web
+
+Example Codes:
+--------------
+- added an EP version of stream to showcase Chapel in an SPMD-like mode
+  (see $CHPL_HOME/examples/hpcc/stream-ep.chpl)
+- added local blocks to ra.chpl and fft.chpl to assert regions of locality
+- changed fft.chpl to use both Block and Cyclic arrays to optimize for locality
+
+Standard Distributions:
+-----------------------
+- optimized the Block distribution via privatization and remote value forwarding
+- added support for a .localSlice() operation for Block and Cyclic array
+- optimized away some extraneous copies from standard distributions
+
+Compiler Flags:
+---------------
+- added --[no-]optimize-on-clauses and --optimize-on-clause-limit
+
+Bug Fixes/New Semantic Checks (for old semantics):
+--------------------------------------------------
+- fixed a bug in which wide references weren't removed from local blocks
+- fixed a bug in which range slicing resulted in divide-by-zero due to overflow
+- fixed a bug in which Block misdistributed indices at sufficiently large sizes
+- fixed a bug in which multirealm PVM runs could set up locales in wrong order
+
+Error Message Improvements:
+---------------------------
+- improved the error messages for failed pvm launches
+
+Compiler Analysis and Optimizations/Performance of Generated Code:
+------------------------------------------------------------------
+- added an optimization to execute on-clauses using a remote locale's listener
+  (see --[no-]optimize-on-clauses and --optimize-on-clause-limit)
+
+Internal:
+---------
+- added initial support for recursive leader iterators
+- added support for generating Chapel errors in terms of C line/file
+- refactored and cleaned code in PVM launcher and comm layer (more remains)
+- added Makefile.tau for experimental use of Chapel with Tau
+
+
+============
 version 1.01
 ============
 
