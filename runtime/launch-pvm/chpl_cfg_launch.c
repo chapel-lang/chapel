@@ -411,8 +411,8 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
     }
     if (panic == 1) {
       snprintf(errorMsg, 511, "PVM launcher error adding hosts.");
-      if (verbosity > 1) {
-        snprintf(errorMsg, 511, "%s Use --verbosity=1 to diagnose.", errorMsg);
+      if (!(verbosity > 1)) {
+        snprintf(errorMsg, 511, "%s Use --verbosity to diagnose.", errorMsg);
       }
       pvm_launcher_error(errorMsg);
     }
