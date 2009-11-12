@@ -120,7 +120,6 @@ system("cd chapel/runtime && rm -r launch-mpirun");
 system("cd chapel/runtime && rm -r launch-zebra");
 system("cd chapel/runtime && rm -r tasks-nanos");
 system("cd chapel/runtime/include && rm -r sunos_old");
-system("cd chapel/third-party/gasnet && rm *.tar");
 
 foreach $file (@files) {
     $dfile = "chapel/$file";
