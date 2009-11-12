@@ -137,7 +137,7 @@ class RandomStream {
       forall (x, r) in (X, chpl__cplx_these(startCount, X.numElements)) do
         x = r;
     } else {
-      for (x, r) in (X, chpl__these(startCount, X.numElements)) do
+      for (x, r) in (X, chpl__cplx_these(startCount, X.numElements)) do
         x = r;
     }
   }
