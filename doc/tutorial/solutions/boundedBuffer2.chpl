@@ -8,7 +8,7 @@ config const problemSize: int = 10;
 config const nConsumers:int = 2;
 config const nMiddleSteps:int = 3;
 
-record BoundedBuffer {
+class BoundedBuffer {
   param bufSize:int = 2;
   type eltType = int;
 
@@ -43,7 +43,7 @@ record BoundedBuffer {
   }
 }
 
-var buffers: [0..nMiddleSteps] BoundedBuffer;
+var buffers: [i in 0..nMiddleSteps] BoundedBuffer = new BoundedBuffer();
 
 // Given a value, do some work on it to create the next value. In this
 // case, the work is sleeping for a second and leaving the value unchanged.
