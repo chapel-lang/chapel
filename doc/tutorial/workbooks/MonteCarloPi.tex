@@ -40,6 +40,7 @@ generator. A simple one, taken from \cite{63042}, is a multiplicative
 linear congruential generator defined by the following formula:\begin{equation}
 x_{n+1}=ax_{n}\mathrm{mod}m,\label{eq:MLCG}\end{equation}
 where the multiplier $a=16807$ and the modulus $m=2^{31}-1=2147483647$.
+Note that multiplication and modulus are of the same operational order.
 To get started with this exercise, you will implement this random
 number generator as a function that takes an argument (corresponding
 to $x_{n}$ in the formula above) and use it to compute and return
@@ -61,13 +62,15 @@ calls the one you just wrote, subtracts 1 from the return value (so
 the value is now in the range of 0 and 2147483645 inclusive), and
 then divides that by 2147483645 (using floating-point arithmetic).
 Your new function can pass in a global variable to the one you wrote
-before.
+before. See Chapter 9 of the Chapel Language Specification to learn about
+how variables of different types get passed to each other; an incorrect
+conversion may lead your answer to always be 0.
 \item Since you follow good software engineering practices, you will want
 to encapsulate your code in a module. First, replace your random number
 generator's argument (often referred to as the seed) with a (global)
 config var that is initialized to 1. This will have the advantage
 of allowing the initial value to be specified on the command line
-when you run your program by using the {}``--<\emph{config-var-name}>=<\emph{value}>''
+when you run your program by using the {}``-- --<\emph{config-var-name}>=<\emph{value}>''
 flag (without the double quotes), where \emph{config-var-name} is
 the name of your config var, and \emph{value} is the initial value
 you want to use (instead of 1). Next, to make things more convenient
