@@ -7,7 +7,9 @@
 #ifdef GENERIC_THREADING_SATISFIES_INTERFACE
 #define THREAD_FUNC_SUFFIX generic
 #else
+#ifdef CHPL_THREADS
 #define THREAD_FUNC_SUFFIX CHPL_THREADS
+#endif
 #endif
 
 //
@@ -15,9 +17,13 @@
 // function name".)
 //
 
+#ifdef THREAD_FUNC_SUFFIX
 #define _TFN_CONCAT(name, suffix)    name##_##suffix
 #define _TFN_INDIRECT(name, suffix)  _TFN_CONCAT(name, suffix)
 #define _TFN(name)                   _TFN_INDIRECT(name, THREAD_FUNC_SUFFIX)
+#else
+#define _TFN(name)                   name
+#endif
 
 
 //
