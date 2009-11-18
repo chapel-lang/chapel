@@ -1,0 +1,4 @@
+bug: assigning a forall expression to a type variable causes compiler crash
+
+This should get an error about assigning an array value to a type variable.
+Instead it crashes during the cleanup pass.

@@ -1,0 +1,1 @@
+bug: assigning values to type variables is not an error.
