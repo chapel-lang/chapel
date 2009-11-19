@@ -30,7 +30,7 @@ pragma "tuple" record _tuple {
   }
 }
 
-pragma "inline" def =(x : _tuple, y) {
+pragma "inline" def =(x: _tuple, y: _tuple) where x.size == y.size {
   for param i in 1..x.size do
     x(i) = y(i);
   return x;
