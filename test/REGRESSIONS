@@ -16,15 +16,11 @@
 general regressions
 ===================
 
-new complex random number generator
------------------------------------
-[Error matching program output for modules/standard/Random/diten/test_2D_fillRandom_complex]
-
-
 spurious failure
 ----------------
-[Error matching program output for reductions/diten/reduction_name_collision] (e.g., 10/12/09, 10/17/09, 10/20/09, 10/28/09, 10/31/09, 11/01/09, 11/06/09, 11/09/09 -- especially with --baseline, although on other runs as well)
+[Error matching program output for reductions/diten/reduction_name_collision] (e.g., 10/12/09, 10/17/09, 10/20/09, 10/28/09, 10/31/09, 11/01/09, 11/06/09, 11/09/09, 11/16/09, 11/19/09 -- especially with --baseline, although on other runs as well)
 [Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist] (e.g., 10/12/09, 10/15/09, 10/19/09, 10/24/09, 11/07/09)
+[Error matching program output for types/tuple/bradc/homogTupleArr] (e.g., 10/03/09:cray, 11/17/09:gasnet-fast)
 
 ??? (10/6/09)
 -------------
@@ -37,8 +33,11 @@ spurious verification failures on RA
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 10/11/09, 10/16/09, 10/17/09, 10/23/09, 10/28/09, 10/30/09, 11/07/09, 11/08/09, 11/10/09, 11/11/09)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 10/11/09, 10/14/09, 10/16/09, 10/23/09, 10/24/09, 10/28/09, 11/07/09, 11/08/09, 11/10/09, 11/11/09)
+[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09)
+[Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09, 11/14/09, 11/15/09, 11/17/09)
+[Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (e.g., 11/14/09, 11/15/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 10/11/09, 10/16/09, 10/17/09, 10/23/09, 10/28/09, 10/30/09, 11/07/09, 11/08/09, 11/10/09, 11/11/09, 11/13/09, 11/18/09)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 10/11/09, 10/14/09, 10/16/09, 10/23/09, 10/24/09, 10/28/09, 11/07/09, 11/08/09, 11/10/09, 11/11/09, 11/13/09, 11/18/09)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 10/12/09, 10/19/09, 11/08/09)
 
 
@@ -131,11 +130,11 @@ times out spuriously
 --------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (e.g., 11/09/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (e.g., 11/09/09)
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09)
-[Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09)
+[Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09)
 
 
 ==============================================
@@ -158,8 +157,8 @@ baseline-specific tests
 
 spurious wrong result
 ---------------------
-[Error matching program output for studies/lu/marybeth/pivlublock-alias] (e.g., 10/23/09)
-[Error matching program output for studies/lu/marybeth/nopivlublock-alias] (e.g., 10/24/09)
+[Error matching program output for studies/lu/marybeth/pivlublock-alias] (e.g., 10/23/09, 11/14/09)
+[Error matching program output for studies/lu/marybeth/nopivlublock-alias] (e.g., 10/24/09, 11/14/09)
 
 
 ===================
@@ -241,10 +240,6 @@ no warning generated because of threads-none? (11/11/08)
 --------------------------------------------------------
 [Error matching program output for release/examples/tutorials/sparse]
 
-times out in C compiler
------------------------
-[Error: Timed out compilation for release/examples/hpcc/fft]
-
 
 ==========================
 intel-specific regressions
@@ -252,11 +247,9 @@ intel-specific regressions
 
 spurious compilation timeouts
 -----------------------------
-[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 11/10/09)
-[Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09)
+[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 10/02/09, 10/13/09, 10/13/09, 10/15/09, 10/17/09, 10/09/09, 10/24/09, 10/28/09, 10/30/09, 11/09/09, 11/12/09, 11/15/09, 11/17/09)
 [Error: Timed out compilation for parallel/sync/diten/userLevelEndCount] (e.g., 10/10/09)
 [Error: Timed out compilation for studies/hpcc/STREAMS/bradc/stream-fragmented] (e.g., 10/02/09)
-[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 10/02/09, 10/13/09, 10/13/09, 10/15/09, 10/17/09, 10/09/09, 10/24/09, 10/28/09, 10/30/09, 11/09/09)
 [Error: Timed out compilation for studies/madness/common/test_likepy] (e.g., 10/30/09)
 
 
@@ -279,7 +272,7 @@ execution timeout (10/05/09)
 
 spurious sprintf not thread-safe
 --------------------------------
-[Error matching program output for studies/590o/bradc/coforall-private-indices] (e.g., 10/08/09, 10/15/09, 10/20/09, 10/23/09, 11/09/09, 11/10/09)
+[Error matching program output for studies/590o/bradc/coforall-private-indices] (e.g., 10/08/09, 10/15/09, 10/20/09, 10/23/09, 11/09/09, 11/10/09, 11/13/09)
 [Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 10/02/09, 10/08/09, 10/09/09, 10/14/09, 10/21/09, 10/27/09, 10/30/09, 11/06/09)
 [Error matching program output for studies/590o/bradc/coforall-private-indices-workaround2] (e.g., 10/19/09, 10/29/09)
 [Error matching program output for studies/590o/bradc/forall-begin-private-indices] (e.g., 10/07/09, 10/14/09, 10/27/09)
@@ -297,13 +290,11 @@ cray-/cce-specific regressions
 spurious timeout
 ----------------
 [Error: Timed out compilation for parallel/sync/diten/userLevelEndCount] (e.g., 10/10/09)
-[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version)
 [Error: Timed out compilation for arrays/deitz/jacobi-unoptimized] (e.g., 10/31/09)
 
 spurious seg fault
 ------------------
 [Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 10/03/09)
-[Error matching program output for types/tuple/bradc/homogTupleArr] (e.g., 10/03/09)
 
 new timeouts (08/30/09)
 -----------------------
