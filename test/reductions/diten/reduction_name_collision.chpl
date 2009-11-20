@@ -7,9 +7,10 @@ writeln(+ reduce [1..n] s.next());
 writeln(+ reduce [1..n] longerName.next());
 
 class R {
-  var count = 0;
+  var count: sync int = 0;
   def next() {
-    count += 1;
-    return count;
+    var c = count + 1;
+    count = c;
+    return c;
   }
 }

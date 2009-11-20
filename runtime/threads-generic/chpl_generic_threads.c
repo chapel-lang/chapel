@@ -306,7 +306,9 @@ void chpl_tasking_exit_generic() {
   if (debug)
     fprintf(stderr, "A total of %d threads were created; waking_cnt = %d\n", threads_cnt, waking_cnt);
 
+  CHPL_MUTEX_LOCK(&threading_lock);
   remove_begun_tasks_from_pool();
+  CHPL_MUTEX_UNLOCK(&threading_lock);
 
   // calls CHPL_THREAD_CANCEL() and CHPL_THREAD_JOIN() for all threads
   chpldev_endAllThreads(); 
