@@ -640,12 +640,18 @@ fix_def_expr(VarSymbol* var) {
             }
           } else if (EnumSymbol* sym = toEnumSymbol(symExpr->var)) {
             if (EnumType* et = toEnumType(sym->type)) {
+              bool validEnumValue = false;
               for_enums(constant, et) {
                 if (!strcmp(constant->sym->name, value)) {
                   init->replace(new SymExpr(constant->sym));
                   init = var->defPoint->init;
+                  validEnumValue = true;
                   break;
                 }
+              }
+              if (!validEnumValue) {
+                USR_FATAL(astr("invalid command line setting of config param ",
+                               var->name));
               }
             }
           }
