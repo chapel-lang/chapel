@@ -7,4 +7,4 @@ SVN_SRCS = $(IFA_SRCS)
 SRCS = $(SVN_SRCS) 
 
 IFA_OBJS = \
-	$(IFA_SRCS:%.cpp=$(IFA_OBJDIR)/%.$(OBJ_SUFFIX)) \
+	$(IFA_SRCS:%.cpp=$(IFA_OBJDIR)/%.$(OBJ_SUFFIX))
