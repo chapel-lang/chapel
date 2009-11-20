@@ -7,6 +7,8 @@ include $(CHAPEL_ROOT)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
 
+GEN_CFLAGS += -DCHPL_THREADS=$(subst -,_,$(CHPL_MAKE_THREADS))
+
 #
 # We always search the include/threads-generic subdir, even when our
 # threading model doesn't use generic threading.  This doesn't hurt
