@@ -104,9 +104,10 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     else if maxThreads == 0 then (min(numCores-runningTasks+1, maxChunks)):uint(64)
       else (min(numCores-runningTasks+1, min(maxThreads, maxChunks))):uint(64);
 
-    var numelems: uint(64) = 0;
+    var numelems: uint(64) = 1;
     for param i in 1..rank do
-      numelems += (ranges(i).length):uint(64);
+      numelems *= ranges(i).length:uint(64);
+
     if debugDefaultDist then
       writeln("*** DI: rank=", rank, " numelems=", numelems, " numChunks=", numChunks, " ranges(1).length=", ranges(1).length);
 
@@ -426,9 +427,10 @@ class DefaultArithmeticArr: BaseArr {
     else if maxThreads == 0 then (min(numCores-runningTasks+1, maxChunks)):uint(64)
       else (min(numCores-runningTasks+1, min(maxThreads, maxChunks))):uint(64);
 
-    var numelems: uint(64) = 0;
+    var numelems: uint(64) = 1;
     for param i in 1..rank do
-      numelems += (dom.ranges(i).length):uint(64);
+      numelems *= dom.ranges(i).length:uint(64);
+
     if debugDefaultDist then
       writeln("*** AI: rank=", rank, " numelems=", numelems, " numChunks=", numChunks, " dom.ranges(1).length=", dom.ranges(1).length);
 
