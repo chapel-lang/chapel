@@ -280,7 +280,7 @@ void chpl_comm_exit_any(int status) {
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, char* fn) {
+void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   // this should be an ARMCI put call
 
   if (chpl_localeID == locale)
@@ -300,7 +300,7 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int ln, char* fn) {
+void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
   // this should be an ARMCI get call
 
   if (chpl_localeID == locale)
@@ -425,7 +425,7 @@ int32_t chpl_numCommPuts(void) { return -1; }
 int32_t chpl_numCommForks(void) { return -1; }
 int32_t chpl_numCommNBForks(void) { return -1; }
 
-static void *_gpc_thread_handler(void *arg);
+static void _gpc_thread_handler(void *arg);
 
 int gpc_call_handler(int to, int from, void *hdr, int hlen,
                      void *data,  int dlen,
@@ -454,7 +454,7 @@ int gpc_call_handler(int to, int from, void *hdr, int hlen,
   return GPC_DONE;
 } /* gpc_call_handler */
 
-void *_gpc_thread_handler(void *arg)
+void _gpc_thread_handler(void *arg)
 {
   gpc_info_t *ginfo;
   int *done;
@@ -478,6 +478,4 @@ void *_gpc_thread_handler(void *arg)
 
   chpl_free(ginfo->info, 0, 0);
   chpl_free(ginfo, 0, 0);
-
-  return NULL;
 } /* _gpc_thread_handler */
