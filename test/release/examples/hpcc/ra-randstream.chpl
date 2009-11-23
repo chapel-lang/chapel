@@ -7,9 +7,8 @@ module RARandomStream {
   type randType = uint(randWidth);   // the type of the random numbers
 
   //
-  // bitDom is a non-distributed domain whose indices correspond to
-  // the bit positions in the random values.  m2 is a table of helper
-  // values used to fast-forward through the random stream.
+  // m2 is a table (tuple) of helper values used to fast-forward
+  // through the random stream.
   //
   const m2: randWidth*randType = computeM2Vals();
 
