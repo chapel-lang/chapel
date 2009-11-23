@@ -308,9 +308,9 @@ def CyclicDom.these(param tag: iterator) where tag == iterator.leader {
                          " myblock: ", locDom.myBlock);
       yield result;
     } else {
-      var splitRanges: rank*range(eltType=idxType, stridable=true) = result;
 
       coforall taskid in 0..#numTasks {
+        var splitRanges: rank*range(eltType=idxType, stridable=true) = result;
         const low = result(1).low, high = result(1).high;
         const (lo,hi) = _computeBlock(low, high - low + 1,
                                       low, high,
@@ -531,9 +531,9 @@ def CyclicArr.these(param tag: iterator) where tag == iterator.leader {
                          " myblock: ", locDom.myBlock);
       yield result;
     } else {
-      var splitRanges: rank*range(eltType=idxType, stridable=true) = result;
 
       coforall taskid in 0..#numTasks {
+        var splitRanges: rank*range(eltType=idxType, stridable=true) = result;
         const low = result(1).low, high = result(1).high;
         const (lo,hi) = _computeBlock(low, high - low + 1,
                                       low, high,
