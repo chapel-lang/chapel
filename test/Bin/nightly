@@ -100,6 +100,7 @@ if ($debugmail eq "") {
     $debugmail = "$user\@cray.com";
 }
 $today = `date +%w-%a`; chomp($today);
+$starttime = localtime;
 
 #
 # directory locations
@@ -347,6 +348,7 @@ if ($makestat != 0) {
 }
 
 if ($buildruntime == 0) {
+    $endtime = localtime;
     $shortstatus = "Passed";
 
     $mailsubject = "$subjectid $shortstatus ($fullplatform)";
@@ -354,11 +356,9 @@ if ($buildruntime == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL "=== Summary ==========================================================\n";
+    print MAIL startMailHeader($starttime, $endtime);
     print MAIL "Built compiler but not runtime, and did not run tests\n";
-    print MAIL "======================================================================\n";
-    print MAIL "\n";
-    
+    print MAIL endMailHeader();
     close(MAIL);
     exit 0;
 }
@@ -436,6 +436,7 @@ if ($componly == 1) {
 }
 
 if ($runtests == 0) {
+    $endtime = localtime;
     $shortstatus = "Passed";
 
     $mailsubject = "$subjectid $shortstatus ($fullplatform)";
@@ -443,10 +444,9 @@ if ($runtests == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL "=== Summary ==========================================================\n";
+    print MAIL startMailHeader($starttime, $endtime);
     print MAIL "Built compiler and runtime but did not run tests\n";
-    print MAIL "======================================================================\n";
-    print MAIL "\n";
+    print MAIL endMailHeader();
     
     close(MAIL);
     
@@ -461,6 +461,7 @@ if ($runtests == 0) {
     }
 
 
+    $endtime = localtime;
 
 #
 # sort output
@@ -522,11 +523,10 @@ if ($runtests == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL "=== Summary ==========================================================\n";
+    print MAIL startMailHeader($starttime, $endtime);
     print MAIL "$numtestssummary\n";
     print MAIL "$summary\n";
-    print MAIL "======================================================================\n";
-    print MAIL "\n";
+    print MAIL endMailHeader();
     
     if ($status == 0) {
         print MAIL "--- New Errors ($morechars) -----------------------------------------\n";
@@ -611,6 +611,7 @@ sub mysystem {
 
     $status = system($command);
     if ($status != 0) {
+        $endtime = localtime;
 	$somethingfailed = 1;
         $status = $status / 256;
 	print "Error $_[1]: $status\n";
@@ -621,10 +622,10 @@ sub mysystem {
 
             print "Trying to mail message... using $mailcommand\n";
 	    open(MAIL, $mailcommand);
-	    print MAIL "=== Summary ===================================================\n";
+            print MAIL startMailHeader($starttime, $endtime);
 	    print MAIL "ERROR $_[1]: $status\n";
 	    print MAIL "(workspace left at $tmpdir)\n";
-	    print MAIL "===============================================================\n";
+            print MAIL endMailHeader();
 	    close(MAIL);
 	}
 
@@ -698,3 +699,22 @@ sub ensureSummaryExists {
         mysystem("echo \"[Summary: #Successes = 0 | #Failures = 0 | #Futures = 0]\" > $summary", "creating $summary", 1, 1);
     }
 }
+
+use Sys::Hostname;
+sub startMailHeader {
+    my $mystr =
+        "=== Summary ===================================================\n" .
+        "Hostname:   " . hostname . "\n" .
+        "Start time: " . shift(@_) . "\n" .
+        "End time:   " . shift(@_) . "\n\n";
+
+    $mystr;
+}
+
+sub endMailHeader {
+    my $mystr =
+        "======================================================================\n\n";
+
+    $mystr;
+}
+
