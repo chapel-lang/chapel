@@ -366,6 +366,31 @@ codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
 }
 
 
+static void
+codegenExprMinusOne(FILE* outfile, Expr* expr) {
+  long i;
+  if (get_int(expr, &i)) {
+    fprintf(outfile, "%ld", i-1);
+  } else {
+    expr->codegen(outfile);
+    fprintf(outfile, "-1");
+  }
+}
+
+
+static void
+codegenTupleMember(FILE* outfile, Expr* base, Expr* member) {
+  if (base->typeInfo()->symbol->hasFlag(FLAG_REF))
+    fprintf(outfile, "(*");
+  base->codegen(outfile);
+  if (base->typeInfo()->symbol->hasFlag(FLAG_REF))
+    fprintf(outfile, ")");
+  fprintf(outfile, "[");
+  codegenExprMinusOne(outfile, member);
+  fprintf(outfile, "]");
+}
+
+
 static void callExprHelper(CallExpr* call, BaseAST* arg) {
   if (!arg)
     return;
@@ -713,26 +738,33 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_ARRAY_SET:
     case PRIM_ARRAY_SET_FIRST:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        fprintf(outfile, "CHPL_COMM_WIDE_ARRAY_SET_VALUE(");
-        fprintf(outfile, "%s, ", wideRefMap.get(getDataClassType(get(1)->typeInfo()->getField("addr")->type->symbol)->type->refType)->symbol->cname);
+        Type* classType = get(1)->typeInfo()->getField("addr")->type;
+        Type* elementType = getDataClassType(classType->symbol)->type;
+        Type* wideElementType = wideRefMap.get(elementType->refType);
+        if (elementType->symbol->hasFlag(FLAG_STAR_TUPLE))
+          fprintf(outfile, "CHPL_COMM_WIDE_ARRAY_SET_VALUE_SVEC(");
+        else
+          fprintf(outfile, "CHPL_COMM_WIDE_ARRAY_SET_VALUE(");
+        wideElementType->codegen(outfile);
+        fprintf(outfile, ", ");
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(2)->codegen(outfile);
         fprintf(outfile, ", ");
-        TypeSymbol* ts = get(1)->typeInfo()->getField("addr")->type->symbol;
-        //registerTypeToStructurallyCodegen(ts);
-        fprintf(outfile, "%s, ", ts->cname);
-        fprintf(outfile, "_data, ");
-        ts = getDataClassType(get(1)->typeInfo()->getField("addr")->type->symbol);
-        registerTypeToStructurallyCodegen(ts);
-        fprintf(outfile, "%s, ", ts->cname);
+        classType->codegen(outfile);
+        fprintf(outfile, ", _data, ");
+        registerTypeToStructurallyCodegen(elementType->symbol);
+        elementType->codegen(outfile);
+        fprintf(outfile, ", ");
         get(3)->codegen(outfile);
         fprintf(outfile, ", ");
         get(4)->codegen(outfile);
         fprintf(outfile, ", ");
         get(5)->codegen(outfile);
         fprintf(outfile, ")");
-      } else
+      } else if (getDataClassType(get(1)->typeInfo()->symbol)->type->symbol->hasFlag(FLAG_STAR_TUPLE))
+        help_codegen_fn(outfile, "_ARRAY_SET_SVEC", get(1), get(2), get(3));
+      else
         help_codegen_fn(outfile, "_ARRAY_SET", get(1), get(2), get(3));
       break;
     case PRIM_ARRAY_ALLOC:
@@ -831,25 +863,36 @@ void CallExpr::codegen(FILE* outfile) {
         if (call->isPrimitive(PRIM_GET_REF)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            Type* valueType = call->get(1)->typeInfo()->getValueType();
+            if (!valueType)
+              valueType = call->get(1)->typeInfo()->getField("addr")->type;
+            INT_ASSERT(valueType == get(1)->typeInfo());
             bool stringType = get(1)->typeInfo() == dtString;
-            if (!stringType) {
-              fprintf(outfile, "CHPL_COMM_WIDE_GET(");
-            } else {
+            if (valueType == dtString)
               fprintf(outfile, "CHPL_COMM_WIDE_GET_STRING(");
-            }
+            else if (valueType->symbol->hasFlag(FLAG_STAR_TUPLE))
+              fprintf(outfile, "CHPL_COMM_WIDE_GET_SVEC(");
+            else
+              fprintf(outfile, "CHPL_COMM_WIDE_GET(");
             get(1)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(1)->codegen(outfile);
             fprintf(outfile, ", ");
             if (!stringType) {
-              TypeSymbol* ts = get(1)->typeInfo()->symbol;
-              registerTypeToStructurallyCodegen(ts);
-              fprintf(outfile, "%s, ", ts->cname);
+              registerTypeToStructurallyCodegen(valueType->symbol);
+              valueType->codegen(outfile);
+              fprintf(outfile, ", ");
             }
             call->get(2)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(3)->codegen(outfile);
             fprintf(outfile, ")");
+          } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+            fprintf(outfile, "CHPL_ASSIGN_SVEC(");
+            get(1)->codegen(outfile);
+            fprintf(outfile, ", *(");
+            call->get(1)->codegen(outfile);
+            fprintf(outfile, "))");
           } else {
             get(1)->codegen(outfile);
             fprintf(outfile, " = *(");
@@ -860,33 +903,47 @@ void CallExpr::codegen(FILE* outfile) {
         }
         if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            Type* classType = call->get(1)->typeInfo()->getField("addr")->type;
             SymExpr* se = toSymExpr(call->get(2));
             INT_ASSERT(se);
             if (se->var->hasFlag(FLAG_SUPER_CLASS)) {
               fprintf(outfile, "CHPL_WIDE_CLASS_GET_SUPER(");
-              fprintf(outfile, "%s, ", get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+              get(1)->typeInfo()->getField("addr")->type->codegen(outfile);
+              fprintf(outfile, ", ");
               get(1)->codegen(outfile);
               fprintf(outfile, ", ");
               call->get(1)->codegen(outfile);
               fprintf(outfile, ")");
             } else {
-              fprintf(outfile, "CHPL_COMM_WIDE_GET_FIELD_VALUE(");
+              Type* fieldType = call->get(2)->typeInfo();
+              if (fieldType->symbol->hasFlag(FLAG_STAR_TUPLE))
+                fprintf(outfile, "CHPL_COMM_WIDE_GET_FIELD_VALUE_SVEC(");
+              else
+                fprintf(outfile, "CHPL_COMM_WIDE_GET_FIELD_VALUE(");
               get(1)->codegen(outfile);
               fprintf(outfile, ", ");
               call->get(1)->codegen(outfile);
               fprintf(outfile, ", ");
-              fprintf(outfile, "%s", call->get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+              classType->codegen(outfile);
               fprintf(outfile, ", ");
               call->get(2)->codegen(outfile);
               fprintf(outfile, ", ");
-              fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
+
+              // fprintf(outfile, "%s, ", get(1)->typeInfo()->symbol->cname);
+              fieldType->codegen(outfile);
+              fprintf(outfile, ", ");
+
               call->get(3)->codegen(outfile);
               fprintf(outfile, ", ");
               call->get(4)->codegen(outfile);
               fprintf(outfile, ")");
             }
           } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-            fprintf(outfile, "CHPL_COMM_WIDE_GET_FIELD_VALUE(");
+            Type* fieldType = call->get(2)->typeInfo();
+            if (fieldType->symbol->hasFlag(FLAG_STAR_TUPLE))
+              fprintf(outfile, "CHPL_COMM_WIDE_GET_FIELD_VALUE_SVEC(");
+            else
+              fprintf(outfile, "CHPL_COMM_WIDE_GET_FIELD_VALUE(");
             get(1)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(1)->codegen(outfile);
@@ -897,12 +954,18 @@ void CallExpr::codegen(FILE* outfile) {
               fprintf(outfile, "_u.");
             call->get(2)->codegen(outfile);
             fprintf(outfile, ", ");
-            TypeSymbol* ts = get(1)->typeInfo()->symbol;
-            registerTypeToStructurallyCodegen(ts);
-            fprintf(outfile, "%s, ", ts->cname);
+            registerTypeToStructurallyCodegen(fieldType->symbol);
+            fieldType->codegen(outfile);
+            fprintf(outfile, ", ");
             call->get(3)->codegen(outfile);
             fprintf(outfile, ", ");
             call->get(4)->codegen(outfile);
+            fprintf(outfile, ")");
+          } else if (get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+            fprintf(outfile, "CHPL_ASSIGN_SVEC(");
+            get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            codegen_member(outfile, call->get(1), call->get(2));
             fprintf(outfile, ")");
           } else {
             get(1)->codegen(outfile);
@@ -937,7 +1000,64 @@ void CallExpr::codegen(FILE* outfile) {
             call->get(2)->codegen(outfile);
             fprintf(outfile, ")");
             break;
+          } else if (get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+            fprintf(outfile, "CHPL_ASSIGN_SVEC(");
+            get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            codegen_member(outfile, call->get(1), call->get(2));
+            fprintf(outfile, ")");
+            break;
           }
+        }
+        if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
+          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+            fprintf(outfile, "CHPL_WIDE_GET_TUPLE_COMPONENT(");
+            get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            codegenExprMinusOne(outfile, call->get(2));
+            fprintf(outfile, ")");
+            break;
+          }
+        }
+        if (call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
+          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+            Type* valueType = call->get(1)->typeInfo()->getValueType();
+            Type* fieldType = valueType->getField("x1")->type;
+            if (fieldType->symbol->hasFlag(FLAG_STAR_TUPLE))
+              fprintf(outfile, "CHPL_COMM_WIDE_GET_TUPLE_COMPONENT_VALUE_SVEC(");
+            else
+              fprintf(outfile, "CHPL_COMM_WIDE_GET_TUPLE_COMPONENT_VALUE(");
+            get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(1)->codegen(outfile);
+            fprintf(outfile, ", ");
+            codegenExprMinusOne(outfile, call->get(2));
+            fprintf(outfile, ", ");
+            fieldType->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(3)->codegen(outfile);
+            fprintf(outfile, ", ");
+            call->get(4)->codegen(outfile);
+            fprintf(outfile, ")");
+          } else {
+            Type* tupleType = call->get(1)->typeInfo();
+            if (tupleType->symbol->hasFlag(FLAG_REF))
+              tupleType = tupleType->getValueType();
+            bool useMemCpy = tupleType->getField("x1")->type->symbol->hasFlag(FLAG_STAR_TUPLE);
+            if (useMemCpy)
+              fprintf(outfile, "CHPL_ASSIGN_SVEC(");
+            get(1)->codegen(outfile);
+            if (useMemCpy)
+              fprintf(outfile, ", ");
+            else
+              fprintf(outfile, " = ");
+            codegenTupleMember(outfile, call->get(1), call->get(2));
+            if (useMemCpy)
+              fprintf(outfile, ")");
+          }
+          break;
         }
         if (call->isPrimitive(PRIM_ARRAY_GET)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -1115,10 +1235,14 @@ void CallExpr::codegen(FILE* outfile) {
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
           !get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
           !get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-        TypeSymbol* ts = get(2)->typeInfo()->symbol;
-        registerTypeToStructurallyCodegen(ts);
-        fprintf(outfile, "CHPL_COMM_WIDE_PUT(");
-        fprintf(outfile, "%s, ", ts->cname);
+        Type* valueType = get(2)->typeInfo();
+        registerTypeToStructurallyCodegen(valueType->symbol);
+        if (valueType->symbol->hasFlag(FLAG_STAR_TUPLE))
+          fprintf(outfile, "CHPL_COMM_WIDE_PUT_SVEC(");
+        else
+          fprintf(outfile, "CHPL_COMM_WIDE_PUT(");
+        valueType->codegen(outfile);
+        fprintf(outfile, ", ");
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(2)->codegen(outfile);
@@ -1142,6 +1266,17 @@ void CallExpr::codegen(FILE* outfile) {
           !get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) &&
           get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         fprintf(outfile, "CHPL_NARROW(");
+        get(1)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(2)->codegen(outfile);
+        fprintf(outfile, ")");
+        break;
+      }
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+        fprintf(outfile, "CHPL_ASSIGN_SVEC(");
+        if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          fprintf(outfile, "*");
+        }
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(2)->codegen(outfile);
@@ -1494,6 +1629,43 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ".");
       fprintf(outfile, "_uid)");
       break;
+    case PRIM_SET_SVEC_MEMBER: {
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        Type* valueType = get(1)->typeInfo()->getValueType();
+        Type* fieldType = valueType->getField("x1")->type;
+        if (fieldType->symbol->hasFlag(FLAG_STAR_TUPLE))
+          fprintf(outfile, "CHPL_COMM_WIDE_SET_TUPLE_COMPONENT_VALUE_SVEC(");
+        else
+          fprintf(outfile, "CHPL_COMM_WIDE_SET_TUPLE_COMPONENT_VALUE(");
+        registerTypeToStructurallyCodegen(fieldType->symbol);
+        fieldType->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(1)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(3)->codegen(outfile);
+        fprintf(outfile, ", ");
+        valueType->codegen(outfile);
+        fprintf(outfile, ", ");
+        codegenExprMinusOne(outfile, get(2));
+        fprintf(outfile, ", ");
+        get(4)->codegen(outfile);
+        fprintf(outfile, ", ");
+        get(5)->codegen(outfile);
+        fprintf(outfile, ")");
+      } else {
+        if (get(3)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE))
+          fprintf(outfile, "CHPL_ASSIGN_SVEC(");
+        codegenTupleMember(outfile, get(1), get(2));
+        if (get(3)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE))
+          fprintf(outfile, ", ");
+        else
+          fprintf(outfile, " = ");
+        get(3)->codegen(outfile);
+        if (get(3)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE))
+          fprintf(outfile, ")");
+      }
+      break;
+    }
     case PRIM_GET_MEMBER:
     {
       if (!get(2)->typeInfo()->symbol->hasFlag(FLAG_REF))
@@ -1503,20 +1675,37 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, "))");
       break;
     }
+    case PRIM_GET_SVEC_MEMBER: {
+      Type* tupleType = get(1)->typeInfo();
+      if (tupleType->symbol->hasFlag(FLAG_REF))
+        tupleType = tupleType->getValueType();
+      if (!tupleType->getField("x1")->type->symbol->hasFlag(FLAG_REF))
+        fprintf(outfile, "(&(");
+      codegenTupleMember(outfile, get(1), get(2));
+      if (!tupleType->getField("x1")->type->symbol->hasFlag(FLAG_REF))
+        fprintf(outfile, "))");
+      break;
+    }
+    case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_GET_MEMBER_VALUE:
       INT_FATAL(this, "generated by PRIM_MOVE");
       break;
     case PRIM_SET_MEMBER:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        fprintf(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE(");
-        TypeSymbol* ts = get(2)->typeInfo()->symbol;
-        registerTypeToStructurallyCodegen(ts);
-        fprintf(outfile, "%s, ", ts->cname);
+        Type* classType = get(1)->typeInfo()->getField("addr")->type;
+        Type* fieldType = get(2)->typeInfo();
+        if (fieldType->symbol->hasFlag(FLAG_STAR_TUPLE))
+          fprintf(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE_SVEC(");
+        else
+          fprintf(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE(");
+        registerTypeToStructurallyCodegen(fieldType->symbol);
+        fieldType->codegen(outfile);
+        fprintf(outfile, ", ");
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(3)->codegen(outfile);
         fprintf(outfile, ", ");
-        fprintf(outfile, "%s", get(1)->typeInfo()->getField("addr")->type->symbol->cname);
+        classType->codegen(outfile);
         fprintf(outfile, ", ");
         get(2)->codegen(outfile);
         fprintf(outfile, ", ");
@@ -1525,23 +1714,34 @@ void CallExpr::codegen(FILE* outfile) {
         get(5)->codegen(outfile);
         fprintf(outfile, ")");
       } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-        fprintf(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE(");
-        TypeSymbol* ts = get(2)->typeInfo()->symbol;
-        registerTypeToStructurallyCodegen(ts);
-        fprintf(outfile, "%s, ", ts->cname);
+        Type* valueType = get(1)->typeInfo()->getValueType();
+        Type* fieldType = get(2)->typeInfo();
+        if (fieldType->symbol->hasFlag(FLAG_STAR_TUPLE))
+          fprintf(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE_SVEC(");
+        else
+          fprintf(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE(");
+        registerTypeToStructurallyCodegen(fieldType->symbol);
+        fieldType->codegen(outfile);
+        fprintf(outfile, ", ");
         get(1)->codegen(outfile);
         fprintf(outfile, ", ");
         get(3)->codegen(outfile);
         fprintf(outfile, ", ");
-        fprintf(outfile, "%s*", get(1)->typeInfo()->getValueType()->symbol->cname);
-        fprintf(outfile, ", ");
-        if (isUnion(get(1)->typeInfo()->getValueType()))
+        valueType->codegen(outfile);
+        fprintf(outfile, "*, ");
+        if (isUnion(valueType))
           fprintf(outfile, "_u.");
         get(2)->codegen(outfile);
         fprintf(outfile, ", ");
         get(4)->codegen(outfile);
         fprintf(outfile, ", ");
         get(5)->codegen(outfile);
+        fprintf(outfile, ")");
+      } else if (get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+        fprintf(outfile, "CHPL_ASSIGN_SVEC(");
+        codegen_member(outfile, get(1), get(2));
+        fprintf(outfile, ", ");
+        get(3)->codegen(outfile);
         fprintf(outfile, ")");
       } else {
         codegen_member(outfile, get(1), get(2));
@@ -1981,6 +2181,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_TO_LEADER:
     case PRIM_TO_FOLLOWER:
     case PRIM_ON_GPU:
+    case PRIM_IS_STAR_TUPLE_TYPE:
       INT_FATAL(this, "primitive should no longer be in AST");
       fprintf(outfile, "/* ERR %s */", primitive->name);
       break;

@@ -297,6 +297,15 @@ void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void ClassType::codegenDef(FILE* outfile) {
+  if (symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    fprintf(outfile, "typedef ");
+    getField("x1")->type->codegen(outfile);
+    fprintf(outfile, " ");
+    symbol->codegen(outfile);
+    fprintf(outfile, "[%d];\n\n", fields.length);
+    return;
+  }
+
   fprintf(outfile, "typedef struct __");
   symbol->codegen(outfile);
 

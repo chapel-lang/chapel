@@ -26,6 +26,9 @@ extern char* chpl_executionCommand;
 
 extern int chpl_threads_initialized;
 
+#define CHPL_ASSIGN_SVEC(x, y)                     \
+  memcpy(&x, &y, sizeof(x))
+
 #define _CHECK_NIL(x, lineno, filename)                                 \
   do {                                                                  \
     if (x == nil)                                                       \
@@ -35,6 +38,7 @@ extern int chpl_threads_initialized;
 #define _ARRAY_GET(x, i) (&((x)->_data[i]))
 #define _ARRAY_GET_VALUE(x, i) ((x)->_data[i])
 #define _ARRAY_SET(x, i, v) ((x)->_data[i] = v)
+#define _ARRAY_SET_SVEC(x, i, v) CHPL_ASSIGN_SVEC(((x)->_data[i]), v)
 
 #define _ARRAY_ALLOC(x, type, size, lineno, filename) \
   (x)->_data = (size == 0) ? (void*)(0x0) : chpl_malloc(size, sizeof(type), CHPL_RT_MD_ARRAY_ELEMENTS, lineno, filename)

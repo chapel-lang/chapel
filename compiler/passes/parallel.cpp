@@ -1179,6 +1179,17 @@ insertWideReferences(void) {
                 se->replace(new SymExpr(tmp));
                 call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
               }
+            } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+              Type* valueType = call->get(1)->typeInfo();
+              if (valueType->symbol->hasFlag(FLAG_WIDE))
+                valueType = valueType->getValueType();
+              Type* componentType = valueType->getField("x1")->type;
+              if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+                VarSymbol* tmp = newTemp(componentType);
+                call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                se->replace(new SymExpr(tmp));
+                call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+              }
             } else if (call->isPrimitive(PRIM_ARRAY_SET_FIRST)) {
               if (SymExpr* wide = toSymExpr(call->get(3))) {
                 Type* type = wide->var->type;
@@ -1252,10 +1263,22 @@ insertWideReferences(void) {
             if (wctype->symbol->hasFlag(FLAG_WIDE_CLASS) ||
                 wctype->symbol->hasFlag(FLAG_WIDE)) {
               VarSymbol* tmp = newTemp(wctype);
-              call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+              call->insertBefore(new DefExpr(tmp));
               se->replace(new SymExpr(tmp));
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
+              call->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
             }
+          }
+        } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+          Type* valueType = call->get(1)->typeInfo();
+          if (valueType->symbol->hasFlag(FLAG_WIDE))
+            valueType = valueType->getValueType();
+          Type* componentType = valueType->getField("x1")->type;
+          if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+              componentType->symbol->hasFlag(FLAG_WIDE)) {
+            VarSymbol* tmp = newTemp(componentType);
+            call->insertBefore(new DefExpr(tmp));
+            se->replace(new SymExpr(tmp));
+            call->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
           }
         } else if (call->isPrimitive(PRIM_RETURN)) {
           FnSymbol* fn = toFnSymbol(call->parentSymbol);

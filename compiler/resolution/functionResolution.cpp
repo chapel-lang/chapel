@@ -2533,6 +2533,14 @@ preFold(Expr* expr) {
     } else if (call->isPrimitive(PRIM_COUNT_NUM_REALMS)) {
       result = new SymExpr(new_IntSymbol(getNumRealms()));
       call->replace(result);
+    } else if (call->isPrimitive(PRIM_IS_STAR_TUPLE_TYPE)) {
+      Type* tupleType = call->get(1)->typeInfo();
+      INT_ASSERT(tupleType->symbol->hasFlag(FLAG_TUPLE));
+      if (tupleType->symbol->hasFlag(FLAG_STAR_TUPLE))
+        result = new SymExpr(gTrue);
+      else
+        result = new SymExpr(gFalse);
+      call->replace(result);
     }
   }
   //

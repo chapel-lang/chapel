@@ -104,7 +104,7 @@ instantiate_tuple(FnSymbol* fn) {
       arg->addFlag(FLAG_TYPE_VARIABLE);
     fn->insertFormalAtTail(arg);
     last->insertBefore(new CallExpr(PRIM_SET_MEMBER, fn->_this,
-                                    new_StringSymbol(name), arg));
+                                    new_IntSymbol(i), arg));
     if (tuple)
       tuple->fields.insertAtTail(new DefExpr(new VarSymbol(name)));
   }
@@ -171,7 +171,11 @@ instantiate_tuple_autoCopy(FnSymbol* fn) {
   for (int i=1; i<ct->fields.length; i++) {
     Symbol* tmp = newTemp();
     block->insertAtTail(new DefExpr(tmp));
+//     if (ct->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+//       block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_SVEC_MEMBER_VALUE, arg, new_IntSymbol(i))));
+//     } else {
     block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, new_StringSymbol(astr("x", istr(i))))));
+      //    }
     call->insertAtTail(new CallExpr("chpl__autoCopy", tmp));
   }
   block->insertAtTail(new CallExpr(PRIM_RETURN, call));
@@ -292,15 +296,23 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
   for_formals(formal, fn) {
     if (Symbol* value = subs->get(formal)) {
       if (TypeSymbol* ts = toTypeSymbol(value)) {
-        if (!first && !strncmp(sym->name, "_tuple", 6)) {
-          sym->name = astr("(");
+        if (!first && sym->hasFlag(FLAG_TUPLE)) {
+          if (sym->hasFlag(FLAG_STAR_TUPLE)) {
+            sym->name = astr(istr(fn->numFormals()-1), "*", ts->name);
+            sym->cname = astr(sym->cname, "star_", ts->cname);
+            return;
+          } else {
+            sym->name = astr("(");
+          }
         }
-        if (first) {
-          sym->name = astr(sym->name, ",");
-          sym->cname = astr(sym->cname, "_");
+        if (!sym->hasFlag(FLAG_STAR_TUPLE)) {
+          if (first) {
+            sym->name = astr(sym->name, ",");
+            sym->cname = astr(sym->cname, "_");
+          }
+          sym->name = astr(sym->name, ts->name);
+          sym->cname = astr(sym->cname, ts->cname);
         }
-        sym->cname = astr(sym->cname, ts->cname);
-        sym->name = astr(sym->name, ts->name);
         first = true;
       } else {
         if (first) {
@@ -314,7 +326,6 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
             const size_t bufSize = 128;
             char immediate[bufSize]; 
             snprint_imm(immediate, bufSize, *var->immediate);
-
 
             // escape quote characters in name string
             char name[bufSize];
@@ -336,7 +347,6 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
             if (name_p == &name[bufSize-1]) {       
               sym->name = astr(sym->name, "...");
             }
-
 
             // filter unacceptable characters for cname string
             char cname[bufSize];
@@ -439,6 +449,27 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
     INT_ASSERT(isClassType(fn->retType));
     newType = fn->retType->symbol->copy()->type;
+
+    //
+    // mark star tuples, add star flag
+    //
+    if (!fn->hasFlag(FLAG_TUPLE) && newType->symbol->hasFlag(FLAG_TUPLE)) {
+      bool markStar = true;
+      Type* starType = NULL;
+      form_Map(SymbolMapElem, e, *subs) {
+        TypeSymbol* ts = toTypeSymbol(e->value);
+        INT_ASSERT(ts && ts->type);
+        if (starType == NULL) {
+          starType = ts->type;
+        } else if (starType != ts->type) {
+          markStar = false;
+          break;
+        }
+      }
+      if (markStar == true)
+        newType->symbol->addFlag(FLAG_STAR_TUPLE);
+    }
+
     renameInstantiatedType(newType->symbol, subs, fn);
     fn->retType->symbol->defPoint->insertBefore(new DefExpr(newType->symbol));
     newType->symbol->copyFlags(fn);

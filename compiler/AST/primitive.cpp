@@ -205,6 +205,25 @@ returnInfoGetMember(CallExpr* call) {
 }
 
 static Type*
+returnInfoGetTupleMember(CallExpr* call) {
+  SymExpr* se = toSymExpr(call->get(1));
+  INT_ASSERT(se);
+  ClassType* ct = toClassType(se->var->type);
+  if (ct->symbol->hasFlag(FLAG_WIDE))
+    ct = toClassType(ct->getField("addr")->type);
+  if (ct->symbol->hasFlag(FLAG_REF))
+    ct = toClassType(ct->getValueType());
+  INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
+  return ct->getField("x1")->type;
+}
+
+static Type*
+returnInfoGetTupleMemberRef(CallExpr* call) {
+  Type* type = returnInfoGetTupleMember(call);
+  return (type->refType) ? type->refType : type;
+}
+
+static Type*
 returnInfoGetMemberRef(CallExpr* call) {
   SymExpr* sym1 = toSymExpr(call->get(1));
   if (!sym1)
@@ -637,6 +656,11 @@ initPrimitive() {
   prim_def(PRIM_COUNT_NUM_REALMS, "get num realms", returnInfoInt32);
 
   prim_def(PRIM_FTABLE_CALL, "call ftable function", returnInfoVoid, true);
+
+  prim_def(PRIM_IS_STAR_TUPLE_TYPE, "is star tuple type", returnInfoBool);
+  prim_def(PRIM_SET_SVEC_MEMBER, "set svec member", returnInfoVoid, true, true);
+  prim_def(PRIM_GET_SVEC_MEMBER, "get svec member", returnInfoGetTupleMemberRef);
+  prim_def(PRIM_GET_SVEC_MEMBER_VALUE, "get svec member value", returnInfoGetTupleMember, false, true);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

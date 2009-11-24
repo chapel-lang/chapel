@@ -27,7 +27,8 @@ refNecessary(SymExpr* se,
       } else if (call->isPrimitive(PRIM_MOVE)) {
         if (refNecessary(toSymExpr(call->get(1)), defMap, useMap))
           return true;
-      } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
+      } else if (call->isPrimitive(PRIM_GET_MEMBER) ||
+                 call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
         CallExpr* move = toCallExpr(call->parentExpr);
         INT_ASSERT(move);
         INT_ASSERT(move->isPrimitive(PRIM_MOVE));
@@ -122,25 +123,32 @@ void cullOverReferences() {
       Type* vt = call->get(1)->typeInfo();
       if (isReferenceType(vt))
         vt = vt->getValueType();
-      if (isDerefType(vt)) {
+      if (isDerefType(vt))
         call->replace(call->get(1)->remove());
-      }
     }
     if (call->isPrimitive(PRIM_GET_MEMBER)) {
       Type* vt = call->get(2)->typeInfo();
       if (isReferenceType(vt))
         vt = vt->getValueType();
-      if (isDerefType(vt)) {
+      if (isDerefType(vt))
         call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
-      }
+    }
+    if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
+      Type* tupleType = call->get(1)->typeInfo();
+      if (isReferenceType(tupleType))
+        tupleType = tupleType->getValueType();
+      Type* vt = tupleType->getField("x1")->typeInfo();
+      if (isReferenceType(vt))
+        vt = vt->getValueType();
+      if (isDerefType(vt))
+        call->primitive = primitives[PRIM_GET_SVEC_MEMBER_VALUE];
     }
     if (call->isPrimitive(PRIM_ARRAY_GET)) {
       Type* vt = call->typeInfo();
       if (isReferenceType(vt))
         vt = vt->getValueType();
-      if (isDerefType(vt)) {
+      if (isDerefType(vt))
         call->primitive = primitives[PRIM_ARRAY_GET_VALUE];
-      }
     }
   }
 }

@@ -18,15 +18,19 @@ def *(p: int, type t) type {
   compilerError("tuple size must be static");
 }
 
+def _isStarTupleType(x: _tuple) param
+  return __primitive("is star tuple type", x);
+
 pragma "tuple" record _tuple {
   param size : int;
 
-  def this(i : int) var {  // for homogeneous tuples
-    for param j in 1..size do
-      if i == j then
-        return this(j);
-    halt("tuple indexing out-of-bounds error");
-    return this(1);
+  def this(i : int) var {
+    if !_isStarTupleType(this) then
+      compilerError("cannot index into non-homogeneous tuples with non-parameter value");
+    if boundsChecking then
+      if i < 1 || i > size then
+        halt("tuple indexing out-of-bounds error");
+    return __primitive("get svec member", this, i);
   }
 }
 
@@ -89,21 +93,6 @@ pragma "inline" def -(a: _tuple) {
   return a;
 }
 
-// def _isHomogeneous(t: _tuple) param {
-//   def _isHomogeneousHelp(param i: int, t: _tuple) param {
-//     if t(i).type != t(1).type then
-//       return false;
-//     else if i < t.size then
-//       return _isHomogeneousHelp(i+1, t);
-//     else
-//       return true;
-//   }
-//   if t.size == 1 then
-//     return true;
-//   else
-//     return _isHomogeneousHelp(2, t);
-// }
-
 pragma "inline" def +(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
     if i == a.size {
@@ -122,35 +111,6 @@ pragma "inline" def +(a: _tuple, b: _tuple) {
 
   return help(1);
 }
-
-    /*
-pragma "inline" def +(a: _tuple, b) where _isHomogeneous(a) && b:a(1).type {
-  var first = a(1) + b;
-  var result: a.size*first.type;
-  result(1) = first;
-  for param i in 2..a.size do
-    result(i) = a(i) + b;
-  return result;
-}
-
-pragma "inline" def +(b, a: _tuple) where _isHomogeneous(a) && b:a(1).type {
-  var first = b + a(1);
-  var result: a.size*first.type;
-  result(1) = first;
-  for param i in 2..a.size do
-    result(i) = b + a(i);
-  return result;
-}
-
-pragma "inline" def +(a: _tuple, b: _tuple) where _isHomogeneous(a) && _isHomogeneous(b) && a.size == b.size {
-  var first = a(1) + b(1);
-  var result: a.size*first.type;
-  result(1) = first;
-  for param i in 2..a.size do
-    result(i) = a(i) + b(i);
-  return result;
-}
-    */
 
 pragma "inline" def -(a: _tuple, b: _tuple) {
   pragma "inline" def help(param i: int) {
