@@ -77,7 +77,7 @@ module RARandomStream {
   def computeM2Vals() {
     var m2tmp: randWidth*randType;
     var nextVal = 0x1: randType;
-    for param i in 1..randWidth {
+    for i in 1..randWidth {
       m2tmp(i) = nextVal;
       getNextRandom(nextVal);
       getNextRandom(nextVal);
