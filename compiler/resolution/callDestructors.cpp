@@ -254,7 +254,7 @@ fixupDestructors() {
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
       ClassType* ct = toClassType(fn->_this->type);
       if (ct->symbol->hasFlag(FLAG_REF))
-        ct = toClassType(ct->getValueType());
+        ct = toClassType(ct->getValType());
       INT_ASSERT(ct);
 
       //

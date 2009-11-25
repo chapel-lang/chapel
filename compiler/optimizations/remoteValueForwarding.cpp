@@ -179,7 +179,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
               INT_FATAL(field, "unexpected case");
           }
           if (safeToDeref) {
-            Type* vt = field->type->getValueType();
+            Type* vt = field->getValType();
             for_uses(use, useMap, field) {
               CallExpr* call = toCallExpr(use->parentExpr);
               INT_ASSERT(call);
@@ -222,7 +222,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
           //
           SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
           INT_ASSERT(actual && actual->var->type == arg->type);
-          arg->type = arg->type->getValueType();
+          arg->type = arg->getValType();
 
           //
           // Insert de-reference temp of value.

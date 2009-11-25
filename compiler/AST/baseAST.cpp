@@ -238,6 +238,34 @@ FnSymbol* BaseAST::getFunction() {
 }
 
 
+Type* BaseAST::getValType() {
+  Type* type = typeInfo();
+  INT_ASSERT(type);
+  if (type->symbol->hasFlag(FLAG_REF))
+    return type->getField("_val")->type;
+  else if (type->symbol->hasFlag(FLAG_WIDE))
+    return type->getField("addr")->getValType();
+  return NULL;
+}
+
+Type* BaseAST::getRefType() {
+  Type* type = typeInfo();
+  INT_ASSERT(type);
+  return type->refType;
+}
+
+Type* BaseAST::getWideRefType() {
+  Type* type = typeInfo();
+  INT_ASSERT(type);
+  if (type->symbol->hasFlag(FLAG_REF))
+    return wideRefMap.get(type);
+  type = type->getRefType();
+  if (type)
+    return wideRefMap.get(type);
+  return NULL;
+}
+
+
 const char* astTagName[E_BaseAST+1] = {
   "SymExpr",
   "UnresolvedSymExpr",

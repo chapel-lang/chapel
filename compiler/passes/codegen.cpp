@@ -319,7 +319,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   fprintf(hdrfile, "\n/*** Primitive References ***/\n\n");
   forv_Vec(TypeSymbol, ts, typeSymbols) {
     if (ts->hasFlag(FLAG_REF)) {
-      Type* vt = ts->type->getValueType();
+      Type* vt = ts->getValType();
       if (isRecord(vt) || isUnion(vt))
         continue; // references to records and unions codegened below
       ts->codegenPrototype(hdrfile);
@@ -353,7 +353,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     }
     forv_Vec(TypeSymbol, ts, typeSymbols) {
       if (ts->hasFlag(FLAG_REF))
-        if (ClassType* ct = toClassType(ts->type->getValueType()))
+        if (ClassType* ct = toClassType(ts->getValType()))
           if (order.get(ct) == i)
             ts->codegenPrototype(hdrfile);
     }

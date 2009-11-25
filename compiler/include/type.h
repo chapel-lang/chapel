@@ -64,9 +64,6 @@ class Type : public BaseAST {
   virtual int codegenStructure(FILE* outfile, const char* baseoffset);
 
   virtual Symbol* getField(const char* name, bool fatal=true);
-
-  Type* getValueType();
-  Type* getReferenceType();
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)

@@ -130,12 +130,16 @@ class BaseAST {
   virtual BaseAST* copy(SymbolMap* map = NULL, bool internal = false) = 0;
   virtual BaseAST* copyInner(SymbolMap* map) = 0;
   virtual bool inTree(void) = 0;
-  virtual Type* typeInfo(void) = 0;
   virtual void codegen(FILE* outfile) = 0;
 
   const char* stringLoc(void);
   ModuleSymbol* getModule();
   FnSymbol* getFunction();
+
+  virtual Type* typeInfo(void) = 0;
+  Type* getValType();
+  Type* getRefType();
+  Type* getWideRefType();
 };
 
 extern int currentLineno;

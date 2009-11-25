@@ -75,29 +75,6 @@ Symbol* Type::getField(const char* name, bool fatal) {
 }
 
 
-Type* Type::getValueType() {
-  if (symbol->hasFlag(FLAG_REF)) {
-    ClassType* ct = toClassType(this);
-    INT_ASSERT(ct);
-    return ct->getField("_val")->type;
-  }
-  if (symbol->hasFlag(FLAG_WIDE)) {
-    ClassType* ct = toClassType(this);
-    INT_ASSERT(ct);
-    return ct->getField("addr")->type->getValueType();
-  }
-  return NULL;
-}
-
-Type* Type::getReferenceType() {
-  if (!symbol->hasFlag(FLAG_REF)) {
-    INT_ASSERT(refType);
-    return refType;
-  }
-  return NULL;
-}
-
-
 PrimitiveType::PrimitiveType(Symbol *init) :
   Type(E_PrimitiveType, init)
 {

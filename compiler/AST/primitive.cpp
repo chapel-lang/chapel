@@ -67,7 +67,7 @@ static Type*
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
   Type *t = call->get(1)->typeInfo();
   if (t->symbol->hasFlag(FLAG_REF))
-    t = t->getValueType();
+    t = t->getValType();
   if (t == dtComplex[COMPLEX_SIZE_64]) {
     return dtReal[FLOAT_SIZE_32]->refType;
   } else if (t == dtComplex[COMPLEX_SIZE_128]) {
@@ -87,7 +87,7 @@ static Type*
 returnInfoFirstDeref(CallExpr* call) {
   Type *t = call->get(1)->typeInfo();
   if (t->symbol->hasFlag(FLAG_REF))
-    t = t->getValueType();
+    t = t->getValType();
   return t;
 }
 
@@ -183,7 +183,7 @@ returnInfoGetMember(CallExpr* call) {
     INT_FATAL(call, "bad member primitive");
   ClassType* ct = toClassType(sym1->var->type);
   if (ct->symbol->hasFlag(FLAG_REF))
-    ct = toClassType(ct->getValueType());
+    ct = toClassType(ct->getValType());
   if (!ct)
     INT_FATAL(call, "bad member primitive");
   SymExpr* sym = toSymExpr(call->get(2));
@@ -212,7 +212,7 @@ returnInfoGetTupleMember(CallExpr* call) {
   if (ct->symbol->hasFlag(FLAG_WIDE))
     ct = toClassType(ct->getField("addr")->type);
   if (ct->symbol->hasFlag(FLAG_REF))
-    ct = toClassType(ct->getValueType());
+    ct = toClassType(ct->getValType());
   INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
   return ct->getField("x1")->type;
 }
@@ -230,7 +230,7 @@ returnInfoGetMemberRef(CallExpr* call) {
     INT_FATAL(call, "bad member primitive");
   ClassType* ct = toClassType(sym1->var->type);
   if (ct->symbol->hasFlag(FLAG_REF))
-    ct = toClassType(ct->getValueType());
+    ct = toClassType(ct->getValType());
   if (!ct)
     INT_FATAL(call, "bad member primitive");
   SymExpr* sym = toSymExpr(call->get(2));

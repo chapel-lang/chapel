@@ -67,7 +67,7 @@ void returnStarTuplesByReferenceArguments() {
         call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
       Type* type = call->get(1)->typeInfo();
       if (type->symbol->hasFlag(FLAG_REF))
-        type = type->getValueType();
+        type = type->getValType();
       if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
         ClassType* ct = toClassType(type);
         SymExpr* se = toSymExpr(call->get(2));

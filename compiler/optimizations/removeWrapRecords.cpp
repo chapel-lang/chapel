@@ -101,7 +101,7 @@ removeWrapRecords() {
           call->replace(se->remove());
         }
         if (se->var->type->symbol->hasFlag(FLAG_REF)) {
-          Type* vt = se->var->type->getValueType();
+          Type* vt = se->getValType();
           if (vt->symbol->hasFlag(FLAG_ARRAY) ||
               vt->symbol->hasFlag(FLAG_DOMAIN)) {
             call->replace(new CallExpr(PRIM_GET_REF, se->remove()));
@@ -151,7 +151,7 @@ getWrapRecordBaseType(Type* type) {
       type->symbol->hasFlag(FLAG_DOMAIN)) {
     return type->getField("_value")->type;
   } else if (type->symbol->hasFlag(FLAG_REF)) {
-    Type* vt = type->getValueType();
+    Type* vt = type->getValType();
     if (vt->symbol->hasFlag(FLAG_ARRAY) ||
         vt->symbol->hasFlag(FLAG_DOMAIN)) {
       return vt->getField("_value")->type->refType;

@@ -561,7 +561,7 @@ void lowerIterator(FnSymbol* fn) {
       : astr("F", istr(i++), "_", local->name);
     Type* type = local->type;
     if (type->symbol->hasFlag(FLAG_REF) && local == fn->_this)
-      type = type->getValueType();
+      type = type->getValType();
     Symbol* field = new VarSymbol(fieldName, type);
     local2field.put(local, field);
     ii->iclass->fields.insertAtTail(new DefExpr(field));

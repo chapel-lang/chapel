@@ -424,7 +424,7 @@ prune() {
         //
         if (ts->type->refType)
           ts->type->refType->symbol->defPoint->remove();
-        Type *vt = ts->typeInfo()->getValueType();
+        Type *vt = ts->getValType();
         // don't remove reference to nil, as it may be used when widening
         if (vt != dtNil) {
           if (vt) {

@@ -589,10 +589,10 @@ reprivatizeIterators() {
           move->insertBefore(new DefExpr(tmp));
           lhs->replace(new SymExpr(tmp));
           call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
-          VarSymbol* valTmp = newTemp(lhs->var->type->getValueType());
+          VarSymbol* valTmp = newTemp(lhs->getValType());
           move->insertBefore(new DefExpr(valTmp));
           move->insertAfter(new CallExpr(PRIM_MOVE, lhs, new CallExpr(PRIM_SET_REF, valTmp)));
-          move->insertAfter(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_GET_PRIV_CLASS, lhs->var->type->getValueType()->symbol, tmp)));
+          move->insertAfter(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_GET_PRIV_CLASS, lhs->getValType()->symbol, tmp)));
         } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
           ClassType* ct = toClassType(se->var->type);
           VarSymbol* tmp = newTemp(ct->getField("pid")->type);
@@ -784,7 +784,7 @@ static void localizeCall(CallExpr* call) {
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
         if (rhs->isPrimitive(PRIM_GET_LOCALEID)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-            if (rhs->get(1)->typeInfo()->getValueType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            if (rhs->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               insertLocalTemp(rhs->get(1));
             }
           }
@@ -1182,7 +1182,7 @@ insertWideReferences(void) {
             } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
               Type* valueType = call->get(1)->typeInfo();
               if (valueType->symbol->hasFlag(FLAG_WIDE))
-                valueType = valueType->getValueType();
+                valueType = valueType->getValType();
               Type* componentType = valueType->getField("x1")->type;
               if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
                 VarSymbol* tmp = newTemp(componentType);
@@ -1271,7 +1271,7 @@ insertWideReferences(void) {
         } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
           Type* valueType = call->get(1)->typeInfo();
           if (valueType->symbol->hasFlag(FLAG_WIDE))
-            valueType = valueType->getValueType();
+            valueType = valueType->getValType();
           Type* componentType = valueType->getField("x1")->type;
           if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS) ||
               componentType->symbol->hasFlag(FLAG_WIDE)) {
@@ -1341,8 +1341,8 @@ insertWideReferences(void) {
         call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
         call->isPrimitive(PRIM_SET_MEMBER)) {
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-          call->get(1)->typeInfo()->getValueType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        VarSymbol* tmp = newTemp(call->get(1)->typeInfo()->getValueType());
+          call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        VarSymbol* tmp = newTemp(call->get(1)->getValType());
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, call->get(1)->remove())));
         call->insertAtHead(tmp);

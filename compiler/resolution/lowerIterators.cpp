@@ -218,7 +218,7 @@ createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
   block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_CAST, ct->symbol, loopBodyFnArgsArg)));
   Symbol* lastField = NULL; // assume function pointer for function argument bundle
   for_fields(field, ct) {
-    if (field->type->getValueType() && field->type->getValueType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
+    if (field->getValType() && field->getValType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
       addRecursiveCall = true;
       Symbol* tmp = newTemp(field->type);
       block->insertAtTail(new DefExpr(tmp));
@@ -227,7 +227,7 @@ createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
       block->insertAtTail(new DefExpr(lastTmp));
       block->insertAtTail(new CallExpr(PRIM_MOVE, lastTmp, new CallExpr(PRIM_GET_MEMBER_VALUE, loopBodyFnArgsArgTmp, lastField)));
       VarSymbol* loopBodyFnArgTmp = newTemp(dtInt[INT_SIZE_32]);
-      VarSymbol* loopBodyFnArgsArgTmp = newTemp(field->type->getValueType());
+      VarSymbol* loopBodyFnArgsArgTmp = newTemp(field->getValType());
       block->insertAtTail(new DefExpr(loopBodyFnArgTmp));
       block->insertAtTail(new DefExpr(loopBodyFnArgsArgTmp));
       block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgTmp, new CallExpr(PRIM_GET_REF, lastTmp)));
@@ -278,10 +278,10 @@ createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
     block->insertAtTail(new DefExpr(tmp));
     block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, loopBodyFnArgsArgTmp, field)));
 
-    if (field->type->getValueType() && field->type->getValueType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
+    if (field->getValType() && field->getValType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
       VarSymbol* copy = newTemp(field->type);
       VarSymbol* loopBodyFnArgTmp = newTemp(dtInt[INT_SIZE_32]);
-      VarSymbol* loopBodyFnArgsArgTmp = newTemp(field->type->getValueType());
+      VarSymbol* loopBodyFnArgsArgTmp = newTemp(field->getValType());
       block->insertAtTail(new DefExpr(copy));
       block->insertAtTail(new DefExpr(loopBodyFnArgTmp));
       block->insertAtTail(new DefExpr(loopBodyFnArgsArgTmp));
@@ -289,7 +289,7 @@ createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
       block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_GET_REF, tmp)));
       VarSymbol* retTmp = newTemp(argBundleCopyFn->retType);
       block->insertAtTail(new DefExpr(retTmp));
-      VarSymbol* castTmp = newTemp(field->type->getValueType());
+      VarSymbol* castTmp = newTemp(field->getValType());
       block->insertAtTail(new DefExpr(castTmp));
       block->insertAtTail(new CallExpr(PRIM_MOVE, retTmp, new CallExpr(argBundleCopyFn, loopBodyFnArgTmp, loopBodyFnArgsArgTmp)));
       block->insertAtTail(new CallExpr(PRIM_MOVE, castTmp, new CallExpr(PRIM_CAST, castTmp->type->symbol, retTmp)));
@@ -351,14 +351,14 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
     Expr* actual = loopBodyFnCall->get(2)->remove();
     VarSymbol* field = new VarSymbol(astr("_arg", istr(i++)), actual->typeInfo());
     ct->fields.insertAtTail(new DefExpr(field));
-    if (field->type->getValueType() && field->type->getValueType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
+    if (field->getValType() && field->getValType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
       if (iteratorWithOnStatementSet.set_in(iteratorFn)) {
         //
         // build up a local copy of the argument bundle (recursive copy)
         //
         VarSymbol* tmp = newTemp(field->type);
         VarSymbol* loopBodyFnArgTmp = newTemp(dtInt[INT_SIZE_32]);
-        VarSymbol* loopBodyFnArgsArgTmp = newTemp(field->type->getValueType());
+        VarSymbol* loopBodyFnArgsArgTmp = newTemp(field->getValType());
         iteratorFnCall->insertBefore(new DefExpr(tmp));
         iteratorFnCall->insertBefore(new DefExpr(loopBodyFnArgTmp));
         iteratorFnCall->insertBefore(new DefExpr(loopBodyFnArgsArgTmp));
@@ -366,7 +366,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
         iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_GET_REF, actual)));
         VarSymbol* retTmp = newTemp(argBundleCopyFn->retType);
         iteratorFnCall->insertBefore(new DefExpr(retTmp));
-        VarSymbol* castTmp = newTemp(field->type->getValueType());
+        VarSymbol* castTmp = newTemp(field->getValType());
         iteratorFnCall->insertBefore(new DefExpr(castTmp));
         iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, retTmp, new CallExpr(argBundleCopyFn, loopBodyFnArgTmp, loopBodyFnArgsArgTmp)));
         iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, castTmp, new CallExpr(PRIM_CAST, castTmp->type->symbol, retTmp)));
@@ -679,7 +679,7 @@ isBoundedIterator(FnSymbol* fn) {
   if (fn->_this) {
     Type* type = fn->_this->type;
     if (type->symbol->hasFlag(FLAG_REF))
-      type = type->getValueType();
+      type = type->getValType();
     if (type->symbol->hasFlag(FLAG_RANGE)) {
       if (!strcmp(type->substitutions.v[1].value->name, "bounded"))
         return true;
@@ -977,7 +977,7 @@ void lowerIterators() {
     if (call->parentSymbol && call->isPrimitive(PRIM_GET_MEMBER)) {
       ClassType* ct = toClassType(call->get(1)->typeInfo());
       if (ct->symbol->hasFlag(FLAG_REF))
-        ct = toClassType(ct->getValueType());
+        ct = toClassType(ct->getValType());
       long num;
       if (get_int(call->get(2), &num)) {
         Symbol* field = ct->getField(num+1); // add 1 for super
@@ -1002,14 +1002,14 @@ void lowerIterators() {
         if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
             (isDefExpr(fn->formals.tail) &&
              !strcmp(toDefExpr(fn->formals.tail)->sym->name, "_retArg") &&
-             toDefExpr(fn->formals.tail)->sym->type->getValueType() &&
-             toDefExpr(fn->formals.tail)->sym->type->getValueType()->symbol->hasFlag(FLAG_ITERATOR_RECORD))) {
+             toDefExpr(fn->formals.tail)->sym->getValType() &&
+             toDefExpr(fn->formals.tail)->sym->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD))) {
           if (!strcmp(call->parentSymbol->name, "_toLeader") ||
               !strcmp(call->parentSymbol->name, "_toFollower")) {
             ArgSymbol* iterator = toFnSymbol(call->parentSymbol)->getFormal(1);
             Type* iteratorType = iterator->type;
             if (iteratorType->symbol->hasFlag(FLAG_REF))
-              iteratorType = iteratorType->getValueType();
+              iteratorType = iteratorType->getValType();
             int i = 2; // first field is super
             for_actuals(actual, call) {
               SymExpr* se = toSymExpr(actual);

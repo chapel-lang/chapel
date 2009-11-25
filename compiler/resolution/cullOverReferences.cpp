@@ -102,13 +102,13 @@ void cullOverReferences() {
   //
   forv_Vec(DefExpr, def, gDefExprs) {
     if (!isTypeSymbol(def->sym) && def->sym->type) {
-      if (Type* vt = def->sym->type->getValueType()) {
+      if (Type* vt = def->sym->getValType()) {
         if (isDerefType(vt)) {
           def->sym->type = vt;
         }
       }
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        if (Type* vt = fn->retType->getValueType()) {
+        if (Type* vt = fn->retType->getValType()) {
           if (isDerefType(vt)) {
             fn->retType = vt;
             fn->retTag = RET_VALUE;
@@ -122,31 +122,31 @@ void cullOverReferences() {
         call->isPrimitive(PRIM_SET_REF)) {
       Type* vt = call->get(1)->typeInfo();
       if (isReferenceType(vt))
-        vt = vt->getValueType();
+        vt = vt->getValType();
       if (isDerefType(vt))
         call->replace(call->get(1)->remove());
     }
     if (call->isPrimitive(PRIM_GET_MEMBER)) {
       Type* vt = call->get(2)->typeInfo();
       if (isReferenceType(vt))
-        vt = vt->getValueType();
+        vt = vt->getValType();
       if (isDerefType(vt))
         call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
     }
     if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
       Type* tupleType = call->get(1)->typeInfo();
       if (isReferenceType(tupleType))
-        tupleType = tupleType->getValueType();
+        tupleType = tupleType->getValType();
       Type* vt = tupleType->getField("x1")->typeInfo();
       if (isReferenceType(vt))
-        vt = vt->getValueType();
+        vt = vt->getValType();
       if (isDerefType(vt))
         call->primitive = primitives[PRIM_GET_SVEC_MEMBER_VALUE];
     }
     if (call->isPrimitive(PRIM_ARRAY_GET)) {
       Type* vt = call->typeInfo();
       if (isReferenceType(vt))
-        vt = vt->getValueType();
+        vt = vt->getValType();
       if (isDerefType(vt))
         call->primitive = primitives[PRIM_ARRAY_GET_VALUE];
     }
