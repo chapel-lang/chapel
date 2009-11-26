@@ -1,3 +1,5 @@
+#!/bin/bash
+
 grep Foo_x $2 | grep -v _coerce_ > out.tmp
 grep Foo_y $2 | grep -v _coerce_ >> out.tmp
 grep Foo_z $2 | grep -v _coerce_ >> out.tmp

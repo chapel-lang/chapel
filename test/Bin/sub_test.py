@@ -49,7 +49,7 @@
 # DIRECTORY-WIDE FILES:  These settings are for the entire directory and
 #  in many cases can be overridden or augmented with test-specific settings.
 #
-# TIMEOUT: Timeout for compiler or test execution (default 300, 600 for valgind)
+# TIMEOUT: Timeout for compiler or test execution (default 300, 600 for valgrind)
 # KILLTIMEOUT: Timeout before kill'ed processes are sent 'kill -9' (default 10)
 # NOEXEC: Do not execute tests in this directory
 # NOVGRBIN: Do not execute valgrind
@@ -190,7 +190,6 @@ def kill_proc(p, timeout):
 # Start of sub_test proper
 #
 
-
 if len(sys.argv)!=2:
     print 'usage: sub_test.py compiler'
     sys.exit(0)
@@ -287,7 +286,7 @@ if os.access('./NUMLOCALES',os.R_OK):
     globalNumlocales=subprocess.Popen(['cat', './NUMLOCALES'], stdout=subprocess.PIPE).communicate()[0]
     globalNumlocales.strip(globalNumlocales)
 else:
-    globalNumlocales=None
+    globalNumlocales=os.getenv('NUMLOCALES')
 # sys.stdout.write('globalNumlocales=%s\n'%(globalNumlocales))
 
 if os.access('./CATFILES',os.R_OK):
@@ -381,7 +380,7 @@ if os.access('./PREDIFF',os.R_OK|os.X_OK):
     globalPrediff='./PREDIFF'
 else:
     globalPrediff=None
-sys.stdout.write('globalPrediff=%s\n'%(globalPrediff))
+# sys.stdout.write('globalPrediff=%s\n'%(globalPrediff))
 if os.access('./PREEXEC',os.R_OK|os.X_OK):
     globalPreexec='./PREEXEC'
 else:
@@ -404,6 +403,8 @@ else:
 # sys.stdout.write('testsrc=%s\n'%(testsrc))
 
 for testname in testsrc:
+    sys.stdout.flush()
+
     # print testname
     execname=testname[:len(testname)-5]
     # print execname
@@ -413,7 +414,7 @@ for testname in testsrc:
     numlocales = globalNumlocales
     lastcompopts = list()
     if globalLastcompopts:
-        lastcompopts.append(globalLastcompopts)
+        lastcompopts += globalLastcompopts
     # sys.stdout.write("lastcompopts=%s\n"%(lastcompopts))
 
     # Get the list of files starting with 'execname.'
@@ -453,7 +454,7 @@ for testname in testsrc:
 
         elif (suffix=='.skipif' and (os.access(f, os.R_OK) and
                (os.getenv('CHPL_TEST_SINGLES')=='0'))):
-            skiptest=subprocess.Popen([chpl_base+'/Bin/testEnv.pl', './'+f], stdout=subprocess.PIPE).communicate()[0]
+            skiptest=subprocess.Popen([testdir+'/Bin/testEnv.pl', './'+f], stdout=subprocess.PIPE).communicate()[0]
             if skiptest:
                 sys.stdout.write('[Skipping %s based on .skipif environment settings]\n'%(f))
                 do_not_test=True
@@ -513,10 +514,10 @@ for testname in testsrc:
         continue # on to next test
 
     # Set numlocales
-    if (numlocales == 0 or (os.getenv('CHPL_COMM')=='none')):
+    if (os.getenv('CHPL_COMM', 'none')=='none'):
         numlocexecopts = None
     else:
-        numlocexecopts = '-nl '+str(numlocales)
+        numlocexecopts = ' -nl '+str(numlocales)
 
     # Get list of test specific compiler options
     if os.access(execname+compoptssuffix, os.R_OK):
@@ -550,14 +551,15 @@ for testname in testsrc:
     # sys.stdout.write('default checkfile=%s\n'%(checkfile))
 
     # For all compopts + execopts combos..
+    compoptsnum = 0
     for compopts in compoptslist:
+        sys.stdout.flush()
+
         if len(compoptslist) == 1:
             complog=execname+'.comp.out.tmp'
         else:
-            if compopts != ' ':
-                complog = execname+'.'+compopts+'.comp.out.tmp'
-            else:
-                complog = execname+'.comp.out.tmp'
+            compoptsnum += 1
+            complog = execname+'.'+str(compoptsnum)+'.comp.out.tmp'
 
         #
         # Build the test program
@@ -587,8 +589,8 @@ for testname in testsrc:
         try:
             output = SuckOutputWithTimeout(p.stdout, timeout)
         except ReadTimeoutException:
-            sys.stdout.write('%s[Error: Timed out compilation for %s/%s]\n'%
-                             (futuretest, localdir, execname))
+            sys.stdout.write('%s[Error: Timed out compilation for %s/%s (%d)]\n'%
+                             (futuretest, localdir, execname, compoptsnum))
             kill_proc(p, killtimeout)
             continue # on to next compopts
 
@@ -611,13 +613,13 @@ for testname in testsrc:
 
             if globalPrediff:
                 sys.stdout.write('Executing ./PREDIFF\n')
-                output=subprocess.Popen(['./PREDIFF',
-                                         execname,complog,compiler],
-                                        stdout=subprocess.PIPE).communicate()[0]
+                subprocess.Popen(['./PREDIFF',
+                                  execname,complog,compiler]).wait()
+
             if prediff:
-                output=subprocess.Popen([execname+'.prediff',
-                                         execname,complog,compiler],
-                                        stdout=subprocess.PIPE).communicate()[0]
+                subprocess.Popen(['./'+execname+'.prediff',
+                                  execname,complog,compiler]).wait()
+
             sys.stdout.write('output=%s\n'%(output))
 
             # Find the default 'golden' output file
@@ -645,8 +647,8 @@ for testname in testsrc:
                 sys.stdout.write('%s[Success '%(futuretest))
             else:
                 sys.stdout.write('%s[Error '%(futuretest))
-            sys.stdout.write('matching compiler output for %s/%s]\n'%
-                                 (localdir, execname))
+            sys.stdout.write('matching compiler output for %s/%s (%d)]\n'%
+                                 (localdir, execname, compoptsnum))
 
             continue # on to next compopts
         else:
@@ -668,9 +670,14 @@ for testname in testsrc:
             redirectin = '/dev/null'
 
         # Execute the test for all requested execopts
+        execoptsnum = 0
         for texecopts in execoptslist:
+            sys.stdout.flush()
+
             tlist = texecopts.split('#')
             execopts = tlist[0].strip()
+            if numlocexecopts != None:
+                execopts += numlocexecopts;
             if len(tlist) > 1:
                 # Ignore everything after the first token
                 execcheckfile = tlist[1].strip().split()[0]
@@ -681,27 +688,26 @@ for testname in testsrc:
             if (len(execoptslist)==1) and (len(compoptslist)==1):
                 execlog=execname+'.exec.out.tmp'
             else:
-                if compopts != ' ':
-                    execlog = execname+'.'+compopts+'.'+execopts+'.exec.out.tmp'
-                elif execopts != ' ':
-                    execlog = execname+'.exec.out.tmp'
+                execoptsnum += 1
+                execlog = execname+'.'+str(compoptsnum)+'-'+str(execoptsnum)+'.exec.out.tmp'
 
             if globalPreexec:
                 sys.stdout.write('[Executing PREEXEC]\n')
-                output=subprocess.Popen(['./PREEXEC',
-                                         execname,execlog,compiler],
-                                        stdout=subprocess.PIPE).communicate()[0]
+                subprocess.Popen(['./PREEXEC',
+                                  execname,execlog,compiler]).wait()
+
             if preexec:
                 sys.stdout.write('[Executing %s.preexec]\n'%(execname))
-                output=subprocess.Popen([execname+'.preexec',
-                                         execname,execlog,compiler],
-                                        stdout=subprocess.PIPE).communicate()[0]
+                subprocess.Popen([execname+'.preexec',
+                                  execname,execlog,compiler]).wait()
 
             if not os.access(execname, os.R_OK|os.X_OK):
-                sys.stdout.write('%s[Error could not locate executable %s for %s/%s]\n'%(futuretest, execname, localdir, execname))
+                sys.stdout.write('%s[Error could not locate executable %s for %s/%s (%d-%d)]\n'%
+                                 (futuretest, execname, localdir, execname,
+                                  compoptsnum, execoptsnum))
                 break; # on to next compopts
 
-            args=list(globalExecopts)
+            args=list();
             if launchcmd:
                 cmd=launchcmd
                 args+=['./'+execname]
@@ -710,7 +716,9 @@ for testname in testsrc:
                 args+=valgrindbinopts+['./'+execname]
             else:
                 cmd='./'+execname
-            args+=shlex.split(execopts) # split preserving quoted strings
+
+            args+=globalExecopts
+            args+=shlex.split(execopts)
 
             #
             # Run program (with timeout)
@@ -724,8 +732,9 @@ for testname in testsrc:
             try:
                 output = SuckOutputWithTimeout(p.stdout, timeout)
             except ReadTimeoutException:
-                sys.stdout.write('%s[Error: Timed out compilation for %s/%s]\n'%
-                                 (futuretest, localdir, execname))
+                sys.stdout.write('%s[Error: Timed out executing program %s/%s (%d-%d)]\n'%
+                                 (futuretest, localdir, execname,
+                                  compoptsnum, execoptsnum))
                 kill_proc(p, killtimeout)
                 continue # on to next execopts
 
@@ -748,19 +757,18 @@ for testname in testsrc:
 
             if globalPrediff:
                 sys.stdout.write('[Executing PREDIFF]\n')
-                output=subprocess.Popen(['./PREDIFF',
-                                         execname,execlog,compiler],
-                                        stdout=subprocess.PIPE).communicate()[0]
+                subprocess.Popen(['./PREDIFF',
+                                  execname,execlog,compiler]).wait()
+
             if prediff:
                 sys.stdout.write('[Executing %s.prediff]\n'%(execname))
-                output=subprocess.Popen([execname+'.prediff',
-                                         execname,execlog,compiler],
-                                        stdout=subprocess.PIPE).communicate()[0]
+                subprocess.Popen(['./'+execname+'.prediff',
+                                  execname,execlog,compiler]).wait()
 
             if not perftest:
                 if (execcheckfile == None):
                     # try one more time to find the "golden" output
-                    #  as it might have been generated byt prediff script
+                    #  as it might have been generated by the prediff script
                     execcheckfile = execname+'.good'
 
                 if (not execcheckfile or not os.access(execcheckfile, os.R_OK)):
@@ -775,8 +783,8 @@ for testname in testsrc:
                     sys.stdout.write('%s[Success '%(futuretest))
                 else:
                     sys.stdout.write('%s[Error '%(futuretest))
-                sys.stdout.write('matching program output for %s/%s]\n'%
-                                 (localdir, execname))
+                sys.stdout.write('matching program output for %s/%s (%d-%d)]\n'%
+                                 (localdir, execname, compoptsnum, execoptsnum))
 
             else:
                 if not os.path.isdir(perfdir) and not os.path.isfile(perfdir):
@@ -797,7 +805,8 @@ for testname in testsrc:
                     sys.stdout.write('[Success')
                 else:
                     sys.stdout.write('[Error')
-                sys.stdout.write(' matching performance keys for %s/%s]\n'%(localdir, execname))
+                sys.stdout.write(' matching performance keys for %s/%s (%d-%d)]\n'%
+                                 (localdir, execname, compoptsnum, execoptsnum))
 
         if os.path.isfile(execname):
             os.unlink(execname)
