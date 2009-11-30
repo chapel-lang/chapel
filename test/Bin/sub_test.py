@@ -1,3 +1,4 @@
+#!/not/the/path/to/python
 #!/usr/bin/env python
 #
 # Rewrite of sub_test by Sung-Eun Choi (sungeun@cray.com)
